@@ -1,0 +1,19 @@
+{
+  "preset": "google",
+
+  "maximumLineLength": {
+    "value": 120,
+    "allowComments": true,
+    "allowRegex": true
+  },
+  "requireCurlyBraces": [
+      "for",
+      "while",
+      "do",
+      "try",
+      "catch"
+  ],
+  "disallowTrailingComma": null,
+  "requireCamelCaseOrUpperCaseIdentifiers": null,
+  "disallowSpacesInAnonymousFunctionExpression": null
+}
