@@ -120,7 +120,7 @@ function readRow(row: BookRow): void {
 
 const bookListFile = './data/books.csv'
 const bookUpdatedListFile = './data/books-searched.csv'
-const writeStream = format()
+const writeStream = format({ headers: true })
 const readStream = parseFile<Row<BookRow>, Row>(bookListFile, { headers: true })
 const googleBooksApiKey = process.env.GOOGLE_BOOKS_API_KEY
 const googleBooks = google.books({ version: 'v1', auth: googleBooksApiKey })
