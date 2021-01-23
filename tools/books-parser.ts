@@ -42,19 +42,20 @@ async function findWithOpenLibrary(book: BookRow): Promise<BookRow> {
     'http://openlibrary.org/search.json',
     {
       params: {
-        title: book.title,
-        author: book.author,
+        title: book.title.replace(/:.+/g, '').replace(/!/g, ''),
+        author: book.author.replace(/,.+/g, '').replace(/!/g, ''),
       },
     }
   )
 
-  if (response.status === 200 && response.data.num_found > 0) {
+  if (response.status === 200 && response.data.num_found > 0 && response.data.docs[0].isbn) {
     const bookSearchDocs = response.data.docs[0]
-    isbn = bookSearchDocs.isbn.reduce((accumulator, currentValue) => {
+    isbn = bookSearchDocs.isbn?.reduce((accumulator, currentValue) => {
       return accumulator.length > currentValue.length ? accumulator : currentValue
     })
     title = bookSearchDocs.title
     author = bookSearchDocs.author_name.join(',')
+    console.log(`found '${book.title}' at ${isbn}`)
   } else {
     console.log(`no results found for '${book.title}'`)
   }
@@ -93,8 +94,8 @@ async function searchBook(book: BookRow, stream: CsvFormatterStream<Row, Row>): 
     const search = useGoogleSearch ? findWithGoogle : findWithOpenLibrary
     const bookUpdated = await search(book)
     title = bookUpdated.title
-    author = bookUpdated.author
     isbn = bookUpdated.isbn
+    author = bookUpdated.author
   }
 
   stream.write({ title, author, readDate: book.readDate, isbn })
@@ -113,18 +114,18 @@ async function readFinished(
 }
 
 function readRow(row: BookRow): void {
-  searchQueue.push({ row, stream: writeStream }, () =>
-    console.log(`scanned and searched for '${row.title}'`)
-  )
+  if (row.title) {
+    searchQueue.push({ row, stream: writeStream })
+  }
 }
 
 const bookListFile = './data/books.csv'
-const bookUpdatedListFile = './data/books-searched.csv'
+const bookUpdatedListFile = './data/books.search.csv'
 const writeStream = format({ headers: true })
 const readStream = parseFile<Row<BookRow>, Row>(bookListFile, { headers: true })
 const googleBooksApiKey = process.env.GOOGLE_BOOKS_API_KEY
 const googleBooks = google.books({ version: 'v1', auth: googleBooksApiKey })
-const useGoogleSearch = true
+const useGoogleSearch = false
 const searchQueue = queue<BookSearchQueue, void>(async (task, callback) => {
   await searchBook(task.row, task.stream)
   callback()
