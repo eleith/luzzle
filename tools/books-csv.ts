@@ -16,18 +16,15 @@ async function forEachRowIn(
   filename: string,
   onRow: (row: BookRow) => Promise<void>,
   options?: {
-    onEnd?: (rowCount: number) => Promise<void>
+    onEnd?: (rowCount: number) => void
     maxRows?: number
   }
 ): Promise<void> {
-  async function readFinished(
-    rowCount: number,
-    queue: QueueObject<BookSearchQueue>
-  ): Promise<void> {
-    queue.drain(async function () {
+  function readFinished(rowCount: number, queue: QueueObject<BookSearchQueue>): void {
+    queue.drain(function () {
       console.log(`[csv] parsed all ${rowCount} rows`)
       if (options?.onEnd) {
-        await options.onEnd(rowCount)
+        options.onEnd(rowCount)
       }
     })
   }

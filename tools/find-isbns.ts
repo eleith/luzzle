@@ -55,7 +55,7 @@ async function searchBook(book: BookRow): Promise<void> {
   writeStream.write({ title, author, readDate: book.readDate, isbn })
 }
 
-async function readFinished(): Promise<void> {
+function readFinished(): void {
   writeStream.end()
 }
 
