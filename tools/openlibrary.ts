@@ -12,7 +12,7 @@ export interface OpenLibraryResponseSearch {
   docs: Array<OpenLibrarySearchBook>
 }
 
-export interface OpenLibraryResponseBook {
+export interface OpenLibraryResponseBooks {
   authors: Array<{ url: string; name: string }>
   cover: { large: string }
   url: string
@@ -24,6 +24,14 @@ export interface OpenLibraryResponseBook {
   identifiers: { openlibrary: Array<string> }
   subject_places?: Array<{ name: string; url: string }>
   key: string
+}
+
+export interface OpenLibraryResponseWork {
+  description?: { type: string; value: string }
+}
+
+export interface OpenLibraryResponseBook {
+  works: Array<{ key: string }>
 }
 
 async function findIsbn(title: string, author: string): Promise<string | null> {
@@ -47,8 +55,8 @@ async function findIsbn(title: string, author: string): Promise<string | null> {
   return null
 }
 
-async function getDetailsByIsbn(isbn: string): Promise<OpenLibraryResponseBook | null> {
-  const response = await axios.get<{ [key: string]: OpenLibraryResponseBook }>(
+async function getDetailsByIsbn(isbn: string): Promise<OpenLibraryResponseBooks | null> {
+  const response = await axios.get<{ [key: string]: OpenLibraryResponseBooks }>(
     `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`
   )
 
@@ -61,4 +69,28 @@ async function getDetailsByIsbn(isbn: string): Promise<OpenLibraryResponseBook |
   return null
 }
 
-export { findIsbn, getDetailsByIsbn }
+async function getDetailsByWorkId(workId: string): Promise<OpenLibraryResponseWork | null> {
+  const response = await axios.get<OpenLibraryResponseWork>(
+    `https://openlibrary.org/works/${workId}.json`
+  )
+
+  if (response.status === 200) {
+    return response.data
+  }
+
+  return null
+}
+
+async function getDetailsByBookId(bookId: string): Promise<OpenLibraryResponseBook | null> {
+  const response = await axios.get<OpenLibraryResponseBook>(
+    `https://openlibrary.org/books/${bookId}.json`
+  )
+
+  if (response.status === 200) {
+    return response.data
+  }
+
+  return null
+}
+
+export { findIsbn, getDetailsByIsbn, getDetailsByWorkId, getDetailsByBookId }

@@ -1,6 +1,7 @@
-import { PrismaClient, Prisma } from '@prisma/client'
-import { getDetailsByIsbn, OpenLibraryResponseBook } from './openlibrary.js'
-import { forEachRowIn, BookRow } from './books-csv.js'
+import { PrismaClient, Prisma, Book } from '@prisma/client'
+import { getDetailsByIsbn, getDetailsByBookId, OpenLibraryResponseBooks } from './openlibrary'
+import { forEachRowIn, BookRow } from './books-csv'
+import { queue } from 'async'
 
 const prisma = new PrismaClient()
 const genres = [
@@ -53,7 +54,7 @@ const genres = [
 
 function openLibraryResponseBookToBookUpdateInput(
   book: BookRow,
-  details: OpenLibraryResponseBook
+  details: OpenLibraryResponseBooks
 ): Prisma.BookUpdateInput {
   const author = details.authors[0].name
   const coauthors =
@@ -66,7 +67,7 @@ function openLibraryResponseBookToBookUpdateInput(
   const openlibraryId = details.key.replace(/^\/?books\//, '')
   const readDate = book.readDate ? new Date(book.readDate) : undefined
   const publishedYear = details.publish_date
-    ? new Date(details.publish_date).getUTCFullYear()
+    ? new Date(details.publish_date).getUTCFullYear() || undefined
     : undefined
   const subjects = details.subjects?.length
     ? [details.subjects.map((x) => x.name)].join(',')
@@ -85,7 +86,7 @@ function openLibraryResponseBookToBookUpdateInput(
     pages: details.number_of_pages,
     year_read: readDate ? readDate.getUTCFullYear() : undefined,
     month_read: readDate ? readDate.getUTCMonth() : undefined,
-    year_published: publishedYear,
+    year_first_published: publishedYear,
     keywords,
   }
 }
@@ -95,6 +96,8 @@ async function onRow(book: BookRow): Promise<void> {
     const details = await getDetailsByIsbn(book.isbn)
     if (details) {
       const info = openLibraryResponseBookToBookUpdateInput(book, details)
+
+      console.log(`updating ${details.title}`)
 
       await prisma.book.upsert({
         where: {
@@ -107,8 +110,38 @@ async function onRow(book: BookRow): Promise<void> {
   }
 }
 
-async function main(): Promise<void> {
-  await forEachRowIn('./data/books.search.csv', onRow)
+async function findWorkIds(): Promise<void> {
+  const books = await prisma.book.findMany()
+  const searchQueue = queue<Book, void>(async (task, callback) => {
+    if (task.id_ol_book) {
+      const details = await getDetailsByBookId(task.id_ol_book)
+      if (details) {
+        console.log(`updating ${task.title}`)
+        await prisma.book.update({
+          where: {
+            id: task.id,
+          },
+          data: {
+            id_ol_work: details.works[0].key.replace(/^\/?works\//, ''),
+          },
+        })
+      }
+    }
+    callback()
+  })
+  books.forEach((book) => searchQueue.push(book))
+  searchQueue.drain(async function () {
+    await prisma.$disconnect()
+  })
 }
 
-await main().catch((e) => console.error(e))
+async function onEnd(): Promise<void> {
+  await prisma.$disconnect()
+}
+
+async function main(): Promise<void> {
+  // await forEachRowIn('./data/books.search.csv', onRow, { onEnd: onEnd })
+  await findWorkIds()
+}
+
+main().catch((e) => console.error(e))

@@ -8,22 +8,22 @@ generator client {
 }
 
 model Book {
-  id              String    @id @default(cuid())
-  id_ol_book      String?   @unique    
-  id_ol_work      String?
-  isbn            String?   @unique
-  title           String
-  subtitle        String?
-  author          String
-  coauthors       String?
-  description     String?
-  pages           Int?
-  year_read       Int?
-  month_read      Int?
-  year_published  Int?
-  date_added      DateTime  @default(now())
-  date_updated    DateTime  @updatedAt
-  keywords        String?
+  id                    String    @id @default(cuid())
+  id_ol_book            String?   @unique    
+  id_ol_work            String?
+  isbn                  String?   @unique
+  title                 String
+  subtitle              String?
+  author                String
+  coauthors             String?
+  description           String?
+  pages                 Int?
+  year_read             Int?
+  month_read            Int?
+  year_first_published  Int?
+  date_added            DateTime  @default(now())
+  date_updated          DateTime  @updatedAt
+  keywords              String?
 
   @@map("books")
 }
