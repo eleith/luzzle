@@ -1,5 +1,10 @@
 import { PrismaClient, Prisma, Book } from '@prisma/client'
-import { getDetailsByIsbn, getDetailsByBookId, OpenLibraryResponseBooks } from './openlibrary'
+import {
+  getDetailsByIsbn,
+  getDetailsByBookId,
+  OpenLibraryResponseBooks,
+  getDetailsByWorkId,
+} from './openlibrary'
 import { forEachRowIn, BookRow } from './books-csv'
 import { queue } from 'async'
 
@@ -135,13 +140,39 @@ async function findWorkIds(): Promise<void> {
   })
 }
 
+async function findDescriptions(): Promise<void> {
+  const books = await prisma.book.findMany()
+  const searchQueue = queue<Book, void>(async (task, callback) => {
+    if (task.id_ol_work) {
+      console.log(`updating ${task.title}`)
+      const details = await getDetailsByWorkId(task.id_ol_work)
+      if (details) {
+        await prisma.book.update({
+          where: {
+            id: task.id,
+          },
+          data: {
+            description: details.description?.value || undefined,
+          },
+        })
+      }
+    }
+    callback()
+  })
+  books.forEach((book) => searchQueue.push(book))
+  searchQueue.drain(async function () {
+    await prisma.$disconnect()
+  })
+}
+
 async function onEnd(): Promise<void> {
   await prisma.$disconnect()
 }
 
 async function main(): Promise<void> {
   // await forEachRowIn('./data/books.search.csv', onRow, { onEnd: onEnd })
-  await findWorkIds()
+  // await findWorkIds()
+  await findDescriptions()
 }
 
 main().catch((e) => console.error(e))
