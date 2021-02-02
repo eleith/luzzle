@@ -165,6 +165,26 @@ async function findDescriptions(): Promise<void> {
   })
 }
 
+async function addGenreTags(): Promise<void> {
+  const addQueue = queue<string, void>(async (task, callback) => {
+    console.log(`adding ${task}`)
+    await prisma.tag.create({
+      data: {
+        type: 'genre',
+        slug: task.replace(/\s+/g, '-'),
+        name: task,
+      },
+    })
+    callback()
+  })
+  genres.forEach((genre) => addQueue.push(genre))
+  addQueue.drain(async function () {
+    await prisma.$disconnect()
+  })
+}
+
+async function downloadCovers(): Promise<void> {}
+
 async function onEnd(): Promise<void> {
   await prisma.$disconnect()
 }
@@ -172,7 +192,8 @@ async function onEnd(): Promise<void> {
 async function main(): Promise<void> {
   // await forEachRowIn('./data/books.search.csv', onRow, { onEnd: onEnd })
   // await findWorkIds()
-  await findDescriptions()
+  // await findDescriptions()
+  // await addGenreTags()
 }
 
 main().catch((e) => console.error(e))
