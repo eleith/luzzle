@@ -7,6 +7,7 @@ import {
 } from './openlibrary'
 import { forEachRowIn, BookRow } from './books-csv'
 import { queue } from 'async'
+import { downloadImage } from './downloader'
 
 const prisma = new PrismaClient()
 const genres = [
@@ -183,7 +184,27 @@ async function addGenreTags(): Promise<void> {
   })
 }
 
-async function downloadCovers(): Promise<void> {}
+async function downloadCovers(): Promise<void> {
+  const books = await prisma.book.findMany()
+  const downloadQueue = queue<Book, void>(async (task, callback) => {
+    if (task.isbn) {
+      console.log(`downloading image for ${task.title}`)
+      const details = await getDetailsByIsbn(task.isbn)
+      if (details?.cover?.large) {
+        const { id } = task
+        const folder1 = id.substr(-2)
+        const folder2 = id.substr(-4, 2)
+        const path = `./data/images/${folder1}/${folder2}/${id}.jpg`
+        downloadImage(details.cover.large, path)
+      }
+    }
+    callback()
+  })
+  books.forEach((book) => downloadQueue.push(book))
+  downloadQueue.drain(async function () {
+    await prisma.$disconnect()
+  })
+}
 
 async function onEnd(): Promise<void> {
   await prisma.$disconnect()
@@ -194,6 +215,7 @@ async function main(): Promise<void> {
   // await findWorkIds()
   // await findDescriptions()
   // await addGenreTags()
+  await downloadCovers()
 }
 
 main().catch((e) => console.error(e))
