@@ -4,3 +4,5 @@ data
 tools/**.js
 prisma/data
 build
+.next
+generated

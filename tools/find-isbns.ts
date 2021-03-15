@@ -71,4 +71,4 @@ async function main(): Promise<void> {
   await forEachRowIn(bookListFile, searchBook, { onEnd: readFinished })
 }
 
-await main().catch((e) => console.error(e))
+main().catch((e) => console.error(e))

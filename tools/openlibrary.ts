@@ -12,9 +12,9 @@ export interface OpenLibraryResponseSearch {
   docs: Array<OpenLibrarySearchBook>
 }
 
-export interface OpenLibraryResponseBooks {
+export interface OpenLibrarySearchResponse {
   authors: Array<{ url: string; name: string }>
-  cover: { large: string }
+  cover?: { large: string }
   url: string
   subtitle?: string
   title: string
@@ -55,8 +55,8 @@ async function findIsbn(title: string, author: string): Promise<string | null> {
   return null
 }
 
-async function getDetailsByIsbn(isbn: string): Promise<OpenLibraryResponseBooks | null> {
-  const response = await axios.get<{ [key: string]: OpenLibraryResponseBooks }>(
+async function getDetailsByIsbn(isbn: string): Promise<OpenLibrarySearchResponse | null> {
+  const response = await axios.get<{ [key: string]: OpenLibrarySearchResponse }>(
     `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`
   )
 
