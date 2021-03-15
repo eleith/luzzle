@@ -24,6 +24,7 @@ model Book {
   date_added            DateTime  @default(now())
   date_updated          DateTime  @updatedAt
   keywords              String?
+  id_cover_image        String?
 
   @@map("books")
 }

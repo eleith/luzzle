@@ -2,7 +2,7 @@ import { PrismaClient, Prisma, Book } from '@prisma/client'
 import {
   getDetailsByIsbn,
   getDetailsByBookId,
-  OpenLibraryResponseBooks,
+  OpenLibrarySearchResponse,
   getDetailsByWorkId,
 } from './openlibrary'
 import { forEachRowIn, BookRow } from './books-csv'
@@ -60,7 +60,7 @@ const genres = [
 
 function openLibraryResponseBookToBookUpdateInput(
   book: BookRow,
-  details: OpenLibraryResponseBooks
+  details: OpenLibrarySearchResponse
 ): Prisma.BookUpdateInput {
   const author = details.authors[0].name
   const coauthors =
