@@ -22,12 +22,12 @@
     "eslint-plugin-react-hooks": "^4.2.0",
     "googleapis": "^67.0.0",
     "prettier": "^2.1.2",
-    "prisma": "^2.18.0",
+    "prisma": "^2.19.0",
     "sharp": "^0.26.3",
     "yargs": "^16.2.0"
   },
   "dependencies": {
-    "@prisma/client": "^2.18.0",
+    "@prisma/client": "^2.19.0",
     "@rmwc/base": "^6.1.4",
     "@rmwc/button": "^6.1.4",
     "@rmwc/card": "^6.1.4",
