@@ -1,55 +1,69 @@
 import yargs from 'yargs'
 import {
-  getDetailsByIsbn as getDetailsByIsbnWithOpenLibrary,
-  getDetailsByBookId,
-  getDetailsByWorkId,
-  OpenLibrarySearchResponse,
+  getBook,
+  getCoverUrl,
+  OpenLibraryBook,
+  OpenLibrarySearchWork,
+  findWork,
 } from './openlibrary'
-import { getDetailsByIsbn as getDetailsByIsbnWithGoogle } from './google-books'
-import { PrismaClient, Book } from '@prisma/client'
+import { findVolume } from './google-books'
+import { PrismaClient, Book, Prisma } from '@prisma/client'
 import { downloadImage } from './downloader'
 import { books_v1 } from 'googleapis'
 import cuid from 'cuid'
 import uniq from 'lodash/uniq'
-import { forEachCsvRow } from './csv'
+import { forEachCsvRow, initializeCsv } from './csv'
 import { existsSync } from 'fs'
 
-export interface BookRow {
+interface BookRow {
+  readDate: string
+  bookId: string
+}
+
+interface UpdatedBookRow {
   title: string
   author: string
   readDate: string
-  isbn: string
+  ol_book_id: string
+  ol_work_id: string
+}
+
+interface Command {
+  bookId: string | undefined
+  file: string | undefined
+  readDate: Date | undefined
 }
 
 function searchToBook(
-  openLibrarySearch: OpenLibrarySearchResponse,
-  googleSearch: books_v1.Schema$Volume
-): Omit<Partial<Book>, 'id' | 'title' | 'author'> & Pick<Book, 'title' | 'author'> {
-  const googleBook = googleSearch.volumeInfo
-  const title = googleBook?.title || openLibrarySearch.title || ''
-  const subtitle = googleBook?.subtitle || openLibrarySearch.subtitle || undefined
-  const authors = googleBook?.authors || openLibrarySearch.authors.map((x) => x.name) || []
-  const coauthors = authors.length > 1 ? authors.slice(1).join(',') : undefined
-  const publishedDate = googleBook?.publishedDate || openLibrarySearch.publish_date || undefined
-  const publishedYear = publishedDate ? new Date(publishedDate).getUTCFullYear() : undefined
+  openLibraryWork: OpenLibrarySearchWork,
+  openLibraryBook: OpenLibraryBook,
+  googleSearch: books_v1.Schema$Volume | null
+): Prisma.BookUncheckedCreateInput {
+  const googleBook = googleSearch?.volumeInfo
+  const title = googleBook?.title || openLibraryWork.title || ''
+  const subtitle = googleBook?.subtitle || openLibraryBook.subtitle
+  const authors = googleBook?.authors || openLibraryWork.author_name || []
+  const author = authors[0]
+  const coauthors = authors.slice(1).join(',')
+  const publishedYear = openLibraryWork.first_publish_year
   const categories = googleBook?.categories || []
-  const subjects = openLibrarySearch.subjects?.map((x) => x.name) || []
-  const places = openLibrarySearch.subject_places?.map((x) => x.name) || []
-  const keywords = uniq([...subjects, ...places, ...categories]).map((x) => x.toLowerCase())
-  const pages = googleBook?.pageCount || openLibrarySearch.number_of_pages || undefined
-  const description = googleBook?.description || undefined
-  const openlibraryId = openLibrarySearch.key.replace(/^\/?books\//, '')
+  const subjects = openLibraryWork.subject || []
+  const keywords = uniq([...subjects, ...categories]).map((x) => x.toLowerCase())
+  const pages = googleBook?.pageCount || openLibraryBook.number_of_pages
+  const description = googleBook?.description
+  const isbnDashes = openLibraryBook.isbn_13?.[0] || openLibraryBook.isbn_10?.[0]
+  const isbn = isbnDashes?.replace(/-|\s+/g, '')
 
   return {
     title,
-    subtitle,
-    author: authors[0],
-    coauthors,
-    pages,
-    description,
-    keywords: keywords.length ? keywords.join(',') : undefined,
-    id_ol_book: openlibraryId,
-    year_first_published: publishedYear,
+    author,
+    ...(subtitle && { subtitle }),
+    ...(isbn && { isbn }),
+    ...(coauthors && { coauthors }),
+    ...(pages && { pages }),
+    ...(description && { description }),
+    ...(keywords.length && { keywords: keywords.join(',') }),
+    ...(publishedYear && { year_first_published: publishedYear }),
   }
 }
 
@@ -59,10 +73,10 @@ function getCoverPath(id: string): string {
   return `./data/images/${folder1}/${folder2}/${id}.jpg`
 }
 
-const commands = yargs(process.argv.slice(2))
+const argv = yargs(process.argv.slice(2))
   .options({
     file: { type: 'string', alias: 'f', description: 'csv of books to parse and add' },
-    isbn: { type: 'string', alias: 'i', description: 'isbn of book to record' },
+    bookId: { type: 'string', alias: 'w', description: 'openlibrary book id' },
     readDate: {
       type: 'string',
       alias: 'r',
@@ -80,8 +94,8 @@ const commands = yargs(process.argv.slice(2))
     },
   })
   .check((argv) => {
-    if (!argv.file && !argv.isbn) {
-      throw new Error('must provide a file or isbn')
+    if (!argv.file && !argv.bookId) {
+      throw new Error('must provide a file or work id')
     }
 
     if (argv.file && !existsSync(argv.file)) {
@@ -91,76 +105,85 @@ const commands = yargs(process.argv.slice(2))
     return true
   }).argv
 
-const prisma = new PrismaClient()
+async function lookup(bookId: string, readDate?: Date): Promise<Prisma.BookCreateInput | null> {
+  const openLibraryBook = await getBook(bookId)
 
-async function isbnLookupAndUpsert(isbn: string, readDate?: Date): Promise<Book | null> {
-  const openLibrarySearchPromise = getDetailsByIsbnWithOpenLibrary(isbn)
-  const googleSearchPromise = getDetailsByIsbnWithGoogle(isbn)
+  if (openLibraryBook) {
+    const workId = openLibraryBook.works[0].key.replace(/\/works\//, '')
+    const openLibraryWork = await findWork(workId)
+    if (openLibraryWork) {
+      const googleVolume = await findVolume(openLibraryWork.title, openLibraryWork.author_name[0])
+      const book = searchToBook(openLibraryWork, openLibraryBook, googleVolume)
 
-  const [openLibrarySearch, googleSearch] = await Promise.all([
-    openLibrarySearchPromise,
-    googleSearchPromise,
-  ])
+      book.id_ol_book = bookId
+      book.id_ol_work = workId
 
-  if (openLibrarySearch && googleSearch) {
-    const book = searchToBook(openLibrarySearch, googleSearch)
-    book.isbn = isbn
-
-    if (book.id_ol_book) {
-      const openLibraryBook = await getDetailsByBookId(book.id_ol_book)
-      if (openLibraryBook) {
-        const workId = openLibraryBook.works[0].key.replace(/^\/?works\//, '')
-        const openLibraryWork = await getDetailsByWorkId(workId)
-        book.id_ol_work = workId
-        book.description = openLibraryWork?.description?.value || book.description
+      if (openLibraryWork.cover_i) {
+        const coverId = cuid()
+        const coverUrl = getCoverUrl(openLibraryWork.cover_i)
+        await downloadImage(coverUrl, getCoverPath(coverId))
+        book.id_cover_image = coverId
       }
+
+      if (readDate) {
+        book.year_read = readDate.getUTCFullYear()
+        book.month_read = readDate.getUTCMonth()
+      }
+
+      return book
     }
-
-    const openLibraryCover = openLibrarySearch.cover?.large
-    const googleCover = googleSearch.volumeInfo?.imageLinks?.extraLarge
-    const coverUrl = openLibraryCover || googleCover
-
-    if (coverUrl) {
-      const coverId = cuid()
-      await downloadImage(coverUrl, getCoverPath(coverId))
-      book.id_cover_image = coverId
-    }
-
-    if (readDate) {
-      book.year_read = readDate.getUTCFullYear()
-      book.month_read = readDate.getUTCMonth()
-    }
-
-    return await prisma.book.upsert({ where: { isbn }, update: book, create: book })
   }
   return null
 }
 
-async function lookupAndRecord(isbn: string, readDate?: Date): Promise<Book | null> {
-  const book = await isbnLookupAndUpsert(isbn, readDate)
+async function lookupAndRecord(
+  prisma: PrismaClient,
+  bookId: string,
+  readDate?: Date
+): Promise<Book | null> {
+  console.log(`looking up [${bookId}]`)
+  const book = await lookup(bookId, readDate)
   if (book) {
-    console.log(`[isbn: ${isbn}] found and updated:\n\n${JSON.stringify(book, null, 2)}\n\n`)
+    console.log(`[${book.title}] found and will be added to db`)
+    return await prisma.book.create({ data: book })
   } else {
-    console.error(`[isbn: ${isbn}] not found!`)
+    console.error(`[bookId: ${bookId}] not found`)
     return null
   }
-  return book
 }
 
-if (commands.isbn) {
-  const { isbn, readDate } = commands
-  lookupAndRecord(isbn, readDate).finally(async () => {
-    await prisma.$disconnect()
-  })
-} else if (commands.file) {
-  forEachCsvRow<BookRow>(
-    commands.file,
-    async (row: BookRow) => {
-      const { isbn, readDate } = row
-      await lookupAndRecord(isbn, readDate ? new Date(readDate) : undefined)
-    },
-    async () => {
-      await prisma.$disconnect()
+async function insertBooksFromCsvFile(prisma: PrismaClient, file: string): Promise<number> {
+  const writeStream = initializeCsv<UpdatedBookRow>(`${file}.updated.csv`)
+  return forEachCsvRow<BookRow>(file, async (row: BookRow) => {
+    const { bookId, readDate } = row
+    if (bookId) {
+      const book = await lookupAndRecord(prisma, bookId, readDate ? new Date(readDate) : undefined)
+
+      writeStream.write({
+        title: book?.title,
+        author: book?.author,
+        readDate: readDate,
+        workId: book?.id_ol_work,
+        bookId: book?.id_ol_book,
+      })
+    } else {
+      console.log(`bad row ${row}`)
     }
-  )
+  })
 }
+
+async function run(command: Command): Promise<void> {
+  const prisma = new PrismaClient()
+
+  if (command.bookId) {
+    await lookupAndRecord(prisma, command.bookId, command.readDate).finally(async () => {
+      await prisma.$disconnect()
+    })
+  } else if (command.file) {
+    await insertBooksFromCsvFile(prisma, command.file).finally(async () => {
+      await prisma.$disconnect()
+    })
+  }
+}
+
+run(argv).catch(console.error)
