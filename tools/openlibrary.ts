@@ -41,6 +41,12 @@ export interface OpenLibraryBook {
   description: string
 }
 
+export type OpenLibraryFullWork = OpenLibrarySearchWork & {
+  subtitle?: string
+  workId: string
+  bookId: string
+}
+
 async function search(title: string, author: string): Promise<Array<OpenLibrarySearchWork>> {
   try {
     const response = await axios.get<OpenLibraryResponseSearch>(
@@ -120,4 +126,22 @@ function getCoverUrl(id: number, size: 'L' | 'M' | 'S' = 'L'): string {
   return `http://covers.openlibrary.org/b/id/${id}-${size}.jpg`
 }
 
-export { search, getWork, getBook, findWork, getCoverUrl }
+async function getWorkFromBook(bookId: string): Promise<OpenLibraryFullWork | null> {
+  const book = await getBook(bookId)
+  if (book) {
+    const workId = book.works[0].key.replace(/\/works\//, '')
+    const openLibraryWork = await findWork(workId)
+
+    if (openLibraryWork) {
+      return {
+        ...openLibraryWork,
+        subtitle: book?.subtitle,
+        workId,
+        bookId,
+      }
+    }
+  }
+  return null
+}
+
+export { search, getWork, getBook, findWork, getCoverUrl, getWorkFromBook }
