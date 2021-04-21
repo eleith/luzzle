@@ -11,7 +11,7 @@ export interface OpenLibrarySearchWork {
   title: string
   publish_year: Array<string>
   number_of_pages: string
-  isbn: Array<string>
+  isbn?: Array<string>
   author_name: Array<string>
   subject: Array<string>
   place: Array<string>
@@ -30,7 +30,7 @@ export interface OpenLibraryWork {
 
 export interface OpenLibraryBook {
   authors: Array<{ key: string }>
-  works: Array<{ key: string }>
+  works?: Array<{ key: string }>
   covers: Array<number>
   isbn_13?: Array<string>
   isbn_10?: Array<string>
@@ -128,7 +128,7 @@ function getCoverUrl(id: number, size: 'L' | 'M' | 'S' = 'L'): string {
 
 async function getWorkFromBook(bookId: string): Promise<OpenLibraryFullWork | null> {
   const book = await getBook(bookId)
-  if (book) {
+  if (book && book.works) {
     const workId = book.works[0].key.replace(/\/works\//, '')
     const openLibraryWork = await findWork(workId)
 

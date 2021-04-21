@@ -36,7 +36,7 @@ function searchToBook(
   const keywords = uniq([...subjects, ...categories]).map((x) => x.toLowerCase())
   const pages = googleBook?.pageCount || Number(openLibraryWork.number_of_pages)
   const description = googleBook?.description
-  const isbn = openLibraryWork.isbn[0]?.replace(/-|\s+/g, '')
+  const isbn = openLibraryWork.isbn?.[0]?.replace(/-|\s+/g, '')
 
   return {
     title,
