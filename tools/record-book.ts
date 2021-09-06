@@ -17,7 +17,7 @@ interface BookRow {
 interface Command {
   bookId: string | undefined
   file: string | undefined
-  readDate: Date | undefined
+  readDate: Date
 }
 
 function searchToBook(
@@ -87,7 +87,8 @@ const argv = yargs(process.argv.slice(2))
     }
 
     return true
-  }).argv
+  })
+  .parseSync()
 
 async function makeBookInput(
   work: OpenLibraryFullWork,
