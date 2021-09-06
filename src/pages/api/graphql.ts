@@ -1,17 +1,16 @@
 import { ApolloServer } from 'apollo-server-micro'
 import { schema } from '../../graphql/schema'
 import { createContext } from './../../graphql/context'
-import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
+import { ApolloServerPluginLandingPageGraphQLPlayground } from 'apollo-server-core'
 
 import type { IncomingMessage, ServerResponse } from 'http'
-
 
 const apolloServer = new ApolloServer({
   context: createContext,
   schema,
   introspection: process.env.NODE_ENV === 'development',
   debug: process.env.NODE_ENV === 'development',
-  plugins: [ ApolloServerPluginLandingPageGraphQLPlayground()],
+  plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
 })
 
 const startServer = apolloServer.start()
@@ -22,7 +21,7 @@ export const config = {
   },
 }
 
-export default async function handler(req: IncomingMessage, res: ServerResponse) {
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   await startServer
 
   await apolloServer.createHandler({
