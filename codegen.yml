@@ -1,11 +1,13 @@
 overwrite: true
 schema: "./generated/schema.graphql"
 generates:
-  ./generated/graphql.types.ts:
+  ./generated/graphql/types.ts:
     plugins:
       - "typescript"
       - "typescript-operations"
-      - "typescript-apollo-client-helpers"
-  ./generated/graphql.introspection.json:
+  ./generated/graphql/request.ts:
+    plugins:
+      - "typescript-graphql-request"
+  ./generated/graphql/introspection.json:
     plugins:
       - "introspection"
