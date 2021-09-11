@@ -16,8 +16,14 @@
     "outDir": "build",
     "baseUrl": ".",
     "paths": {
-      "@app/gql": ["generated/gql"]
-    }
+      "@app/gql": ["generated/gql"],
+      "@app/lib/*": ["src/lib/*"],
+      "@app/common/*": ["src/common/*"]
+    },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/@types"
+    ]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
