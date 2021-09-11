@@ -1,6 +1,6 @@
 import { ApolloServer } from 'apollo-server-micro'
-import { schema } from '../../graphql/schema'
-import { createContext } from './../../graphql/context'
+import { schema } from '@app/lib/graphql/schema'
+import { createContext } from '@app/lib/graphql/context'
 import { ApolloServerPluginLandingPageGraphQLPlayground } from 'apollo-server-core'
 
 import type { IncomingMessage, ServerResponse } from 'http'

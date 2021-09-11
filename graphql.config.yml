@@ -1,0 +1,10 @@
+schema: generated/schema.graphql
+documents: 
+  - src/**/*.graphql
+  - src/**/*.tsx
+overwrite: true
+extensions:
+  codegen:
+    generates:
+      generated/gql:
+        preset: gql-tag-operations-preset
