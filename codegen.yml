@@ -1,13 +1,7 @@
 overwrite: true
-schema: "./generated/schema.graphql"
+documents:
+  - "src/**/*.tsx"
+schema: "generated/schema.graphql"
 generates:
-  ./generated/graphql/types.ts:
-    plugins:
-      - "typescript"
-      - "typescript-operations"
-  ./generated/graphql/request.ts:
-    plugins:
-      - "typescript-graphql-request"
-  ./generated/graphql/introspection.json:
-    plugins:
-      - "introspection"
+  generated/gql:
+    preset: gql-tag-operations-preset
