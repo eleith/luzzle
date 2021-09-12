@@ -18,7 +18,8 @@
     "paths": {
       "@app/gql": ["generated/gql"],
       "@app/lib/*": ["src/lib/*"],
-      "@app/common/*": ["src/common/*"]
+      "@app/common/*": ["src/common/*"],
+      "@app/public/*": ["src/public/*"]
     },
     "typeRoots": [
       "./node_modules/@types",
