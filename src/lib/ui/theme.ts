@@ -1,13 +1,14 @@
 import type { Theme } from 'theme-ui'
 
 const theme: Theme = {
+  breakpoints: ['40em', '52em', '64em'],
   space: [0, 4, 8, 16, 32, 64, 128, 256, 512],
   fonts: {
     body: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
     heading: 'inherit',
     monospace: 'Menlo, monospace',
   },
-  fontSizes: [12, 14, 16, 20, 24, 32, 48, 64, 96],
+  fontSizes: [16, '1.2rem', '1.4rem', '1.6rem', '1.8rem', '2rem', '2.2rem', '2.4rem', '2.6rem'],
   fontWeights: {
     body: 400,
     heading: 700,
@@ -36,6 +37,7 @@ const theme: Theme = {
       fontFamily: 'body',
       lineHeight: 'body',
       fontWeight: 'body',
+      fontSize: 1,
     },
     h1: {
       color: 'text',

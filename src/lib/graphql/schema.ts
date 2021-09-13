@@ -21,6 +21,7 @@ const Book = objectType({
     t.int('year_first_published')
     t.date('date_updated')
     t.date('date_added')
+    t.string('id_cover_image')
   },
 })
 
