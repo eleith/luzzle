@@ -1,7 +1,8 @@
-import Head from 'next/head'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import { gql } from '@app/gql'
 import request from '@app/lib/graphql/request'
+import Page from '@app/common/components/page'
+import { Box, Card } from "theme-ui"
 
 const booksQuery = gql(`query getBooks {
   books {
@@ -30,17 +31,14 @@ export async function getStaticProps(): Promise<{ props: HomeProps }> {
 
 export default function Home({ books }: HomeProps): JSX.Element {
   return (
-    <>
-      <Head>
-        <title>Home</title>
-      </Head>
-      <div>
+    <Page meta={{ title: 'home' }}>
+      <Box>
         {books
           .filter((x): x is Book => !!x)
           .map((book) => (
-            <div key={book.id}>{book.title}</div>
+            <Card key={book.id}>{book.title}</Card>
           ))}
-      </div>
-    </>
+      </Box>
+    </Page>
   )
 }
