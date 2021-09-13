@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev": "next dev",
-    "build:nexus": "ts-node --transpile-only -P nexus.tsconfig.json ./src/graphql/schema.ts",
+    "build:nexus": "ts-node --transpile-only -P nexus.tsconfig.json ./src/lib/graphql/schema.ts",
     "build": "npm run build:nexus && next build",
     "start": "next start",
     "codegen": "graphql-codegen",

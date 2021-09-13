@@ -6,3 +6,5 @@ prisma/data
 build
 .next
 generated
+src/public/images/covers
+public/images/covers

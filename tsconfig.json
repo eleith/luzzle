@@ -19,7 +19,7 @@
       "@app/gql": ["generated/gql"],
       "@app/lib/*": ["src/lib/*"],
       "@app/common/*": ["src/common/*"],
-      "@app/public/*": ["src/public/*"]
+      "@app/public/*": ["public/*"]
     },
     "typeRoots": [
       "./node_modules/@types",
