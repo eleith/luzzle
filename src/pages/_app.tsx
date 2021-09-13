@@ -1,14 +1,12 @@
 import { AppProps } from 'next/app'
-import Head from 'next/head'
 import '@app/public/styles/reboot.css'
+import { ThemeProvider } from 'theme-ui'
+import theme from '@app/lib/ui/theme'
 
 export default function MyApp({ Component, pageProps }: AppProps): JSX.Element {
   return (
-    <>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </Head>
+    <ThemeProvider theme={theme}>
       <Component {...pageProps} />
-    </>
+    </ThemeProvider>
   )
 }

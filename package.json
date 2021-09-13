@@ -70,6 +70,7 @@
     "react-markdown": "^7.0.1",
     "react-syntax-highlighter": "^15.4.4",
     "swr": "^1.0.0",
+    "theme-ui": "^0.11.2",
     "typescript": "^4.4.2",
     "uuid": "^8.3.2"
   },
