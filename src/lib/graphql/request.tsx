@@ -4,7 +4,7 @@ import config from '@app/common/config'
 
 type Variables = { [key: string]: string }
 
-const localUrl = `${config.HOST}${config.GRAPHQL_ENDPOINT}`
+const localGraphEndpoint = `${config.HOST}${config.GRAPHQL_ENDPOINT}`
 
 type ArrayElementType<T> = T extends (infer R)[] ? R : T
 export type ExtractResultFieldTypeFor<T, K extends keyof ResultOf<T>> = NonNullable<
@@ -18,8 +18,8 @@ export default async function request<X extends TypedDocumentNode, V = Variables
   variables?: V
 ): Promise<ResultOf<X>> {
   if (variables) {
-    return await graphqlRequest<ResultOf<X>, V>(localUrl, gql, variables)
+    return await graphqlRequest<ResultOf<X>, V>(localGraphEndpoint, gql, variables)
   } else {
-    return await graphqlRequest<ResultOf<X>>(localUrl, gql)
+    return await graphqlRequest<ResultOf<X>>(localGraphEndpoint, gql)
   }
 }
