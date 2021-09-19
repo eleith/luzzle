@@ -1,8 +1,9 @@
-import { ResultOf } from '@graphql-typed-document-node/core'
 import { gql } from '@app/gql'
-import request from '@app/lib/graphql/request'
+import request, { ExtractResultFieldTypeFor } from '@app/lib/graphql/request'
 import Page from '@app/common/components/page'
-import { Card, Container, Flex, Image, Box, Text } from 'theme-ui'
+import { Container, Flex, Box } from 'theme-ui'
+import { getBookSize, getCoverPath, makeBook } from '@app/common/components/books'
+import Link from 'next/link'
 
 const booksQuery = gql(`query getBooks {
   books {
@@ -15,54 +16,36 @@ const booksQuery = gql(`query getBooks {
     isbn
     subtitle
     year_first_published
+    pages
   }
 }`)
 
-function getCoverPath(id: string): string {
-  const folder1 = id.substr(-2)
-  const folder2 = id.substr(-4, 2)
-  return `/images/covers/${folder1}/${folder2}/${id}.jpg`
+type Book = ExtractResultFieldTypeFor<typeof booksQuery, 'books'>
+type HomePageProps = { books: Book[] }
+
+function makeBookCard(book: Book): JSX.Element {
+  const coverUrl = book.id_cover_image ? getCoverPath(book.id_cover_image) : undefined
+  const cover = makeBook(getBookSize(book.pages || 200), coverUrl)
+
+  return (
+    <Box key={book.id} sx={{ position: 'relative' }}>
+      <Link href={`/books/${book.id}`}>{cover}</Link>
+    </Box>
+  )
 }
 
-type BooksQueryResult = ResultOf<typeof booksQuery>
-type ArrayElementType<T> = T extends (infer R)[] ? R : T
-type Book = NonNullable<ArrayElementType<BooksQueryResult['books']>>
-type HomeProps = { books: Book[] }
-
-export async function getStaticProps(): Promise<{ props: HomeProps }> {
-  const data = await request<BooksQueryResult>(booksQuery)
+export async function getStaticProps(): Promise<{ props: HomePageProps }> {
+  const data = await request(booksQuery)
   return {
     props: { books: (data?.books as Book[]) || [] },
   }
 }
 
-export default function Home({ books }: HomeProps): JSX.Element {
+export default function Home({ books }: HomePageProps): JSX.Element {
   return (
     <Page meta={{ title: 'home' }}>
-      <Container sx={{ width: [null, '75%', '50%'] }}>
-        <Flex
-          sx={{
-            flexDirection: 'column',
-            justifyContent: 'center',
-            height: '100vh',
-            minHeight: 'fill-available',
-          }}
-        >
-          {books?.length && (
-            <Card key={books[0].id}>
-              <Flex sx={{ flexDirection: ['column', 'row', 'row'] }}>
-                <Image
-                  alt="book cover art for x"
-                  src={`${getCoverPath(books[0].id_cover_image || '')}`}
-                  width="50%"
-                />
-                <Box>
-                  <Text>{books[0].title}</Text>
-                </Box>
-              </Flex>
-            </Card>
-          )}
-        </Flex>
+      <Container sx={{ width: '70%' }}>
+        <Flex sx={{ flexWrap: 'wrap' }}>{books.map((book) => makeBookCard(book))}</Flex>
       </Container>
     </Page>
   )
