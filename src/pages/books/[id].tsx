@@ -5,7 +5,8 @@ import { gql } from '@app/gql'
 import { getBookSize, makeBook, getCoverPath } from '@app/common/components/books'
 import { Box } from 'theme-ui'
 import Link from 'next/link'
-import request, { ExtractResultFieldTypeFor } from '@app/lib/graphql/request'
+import { ExtractResultFieldTypeFor } from '@app/lib/graphql/request'
+import localRequest from '@app/lib/graphql/localRequest'
 
 interface BookPageStaticParams {
   params: {
@@ -43,12 +44,13 @@ interface BookPageProps {
 export async function getStaticProps({
   params,
 }: BookPageStaticParams): Promise<{ props: BookPageProps }> {
-  const data = await request(bookQuery, { id: params.id })
+  const response = await localRequest.query({ query: bookQuery, variables: { id: params.id } })
+  const book = response.data.book
 
-  if (data.book) {
+  if (book) {
     return {
       props: {
-        book: data.book,
+        book: book,
       },
     }
   } else {
@@ -73,8 +75,9 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 }
 
 export async function getStaticPaths(): Promise<GetStaticPathsResult> {
-  const data = await request(booksIdQuery)
-  const bookParams = data.books?.map((partialBook) => ({ params: { id: partialBook?.id } })) || []
+  const response = await localRequest.query({ query: booksIdQuery })
+  const books = response.data.books
+  const bookParams = books?.map((partialBook) => ({ params: { id: partialBook?.id } })) || []
 
   return {
     paths: bookParams,

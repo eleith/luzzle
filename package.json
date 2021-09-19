@@ -6,7 +6,9 @@
     "start": "next start",
     "codegen": "graphql-codegen",
     "codegen-debug": "VERBOSE=1 DEBUG=1 graphql-codegen",
-    "lint": "next lint"
+    "lint": "next lint",
+    "submit": "gcloud builds submit --gcs-source-staging-dir gs://eleith-cloud-builds/eleith-io-site --tag gcr.io/eleith-cloud/eleith-io-site",
+    "deploy": "gcloud run deploy eleith-io-site --image gcr.io/eleith-cloud/eleith-io-site --platform managed --region us-central1"
   },
   "devDependencies": {
     "@fast-csv/format": "^4.3.5",
@@ -42,6 +44,7 @@
     "yargs": "^17.1.1"
   },
   "dependencies": {
+    "@apollo/client": "^3.4.12",
     "@prisma/client": "^3.0.2",
     "@rmwc/base": "^6.1.4",
     "@rmwc/button": "^6.1.4",
