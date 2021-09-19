@@ -67,7 +67,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
   )
   return (
     <Page meta={{ title: 'home' }}>
-      <Container sx={{ width: '70%' }}>{bookBox}</Container>
+      <Container sx={{ width: 'fit-content' }}>{bookBox}</Container>
     </Page>
   )
 }
