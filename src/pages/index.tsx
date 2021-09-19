@@ -1,9 +1,10 @@
 import { gql } from '@app/gql'
-import request, { ExtractResultFieldTypeFor } from '@app/lib/graphql/request'
+import { ExtractResultFieldTypeFor } from '@app/lib/graphql/request'
 import Page from '@app/common/components/page'
 import { Container, Flex, Box } from 'theme-ui'
 import { getBookSize, getCoverPath, makeBook } from '@app/common/components/books'
 import Link from 'next/link'
+import localRequest from '@app/lib/graphql/localRequest'
 
 const booksQuery = gql(`query getBooks {
   books {
@@ -35,9 +36,10 @@ function makeBookCard(book: Book): JSX.Element {
 }
 
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
-  const data = await request(booksQuery)
+  const response = await localRequest.query({ query: booksQuery })
+  const books = response.data?.books
   return {
-    props: { books: (data?.books as Book[]) || [] },
+    props: { books: (books as Book[]) || [] },
   }
 }
 
