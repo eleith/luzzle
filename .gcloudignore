@@ -1,5 +1,21 @@
 .gcloudignore
 .git
 .gitignore
+.env.production
+.env.dev
+.next
+nexus.tsconfig.json
+graphql.config.yml
+.prettierrc.json
+.stylelintrc.json
 
 node_modules
+tools
+prisma/migrate
+build
+data
+
+!prisma/data/
+!generated/
+!.env
+!public/images/covers/
