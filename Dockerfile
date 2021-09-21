@@ -6,8 +6,8 @@ WORKDIR /app
 COPY .env ./
 COPY package.json ./
 COPY package-lock.json ./
-COPY generated ./
-COPY prisma ./
+COPY generated ./generated
+COPY prisma ./prisma
 RUN npm ci --only=production
 RUN npm run prisma-create
 
@@ -19,7 +19,16 @@ ENV NEXT_TELEMETRY_DISABLED 1
 # Rebuild the source code only when needed
 FROM node:alpine AS builder
 WORKDIR /app
-COPY . .
+COPY babel.config.js ./
+COPY public ./public
+COPY generated ./generated
+COPY prisma ./prisma
+COPY src ./src
+COPY next-env.d.ts ./
+COPY tsconfig.json ./
+COPY package.json ./
+COPY .env ./
+COPY .env.local ./
 COPY --from=deps /app/node_modules ./node_modules
 RUN npm run build
 

@@ -1,10 +1,10 @@
-node_modules
 .env*
+.next
+
+node_modules
 data
 tools/**.js
 prisma/data
 generated
 build
-.next
-src/public/images/covers
 public/images/covers

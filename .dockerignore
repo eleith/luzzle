@@ -1,5 +1,7 @@
 Dockerfile
 .dockerignore
+.gitignore
+.git
 node_modules
 tools
 prisma/migrate
@@ -10,3 +12,5 @@ data
 .next
 nexus.tsconfig.json
 graphql.config.yml
+.prettierrc.json
+.stylelintrc.json
