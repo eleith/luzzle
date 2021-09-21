@@ -1,0 +1,12 @@
+Dockerfile
+.dockerignore
+node_modules
+tools
+prisma/migrate
+.env.production
+.env.dev
+build
+data
+.next
+nexus.tsconfig.json
+graphql.config.yml
