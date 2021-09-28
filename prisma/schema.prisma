@@ -5,6 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output = "../generated/prisma/client"
 }
 
 model Book {
@@ -26,6 +27,7 @@ model Book {
   keywords             String?
   id_cover_image       String?
   slug                 String   @unique
+  note                 String?
 
   @@map("books")
 }

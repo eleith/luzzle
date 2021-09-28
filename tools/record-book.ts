@@ -8,6 +8,7 @@ import cuid from 'cuid'
 import uniq from 'lodash/uniq'
 import { forEachCsvRow } from './csv'
 import { existsSync, unlinkSync } from 'fs'
+import slugify from 'limax'
 
 interface BookRow {
   readDate: string
@@ -37,10 +38,12 @@ function searchToBook(
   const pages = googleBook?.pageCount || Number(openLibraryWork.number_of_pages)
   const description = googleBook?.description
   const isbn = openLibraryWork.isbn?.[0]?.replace(/-|\s+/g, '')
+  const slug = slugify(title)
 
   return {
     title,
     author,
+    slug,
     ...(subtitle && { subtitle }),
     ...(isbn && { isbn }),
     ...(coauthors && { coauthors }),
