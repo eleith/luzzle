@@ -28,6 +28,7 @@
     "@types/yargs": "^17.0.3",
     "@typescript-eslint/eslint-plugin": "^4.32.0",
     "@typescript-eslint/parser": "^4.32.0",
+    "ajv": "^8.6.3",
     "apollo": "^2.33.6",
     "async": "^3.2.1",
     "axios": "^0.21.4",
