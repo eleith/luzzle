@@ -1,12 +1,18 @@
 import yargs from 'yargs'
-import { Prisma, PrismaClient, Book } from '@app/prisma'
+import { Prisma, PrismaClient } from '@app/prisma'
 import { promises, existsSync } from 'fs'
 import { eachLimit } from 'async'
 import path from 'path'
-import { Transformer } from 'unified'
-import { VisitorResult } from 'unist-util-visit'
-import YAML from 'yaml'
-import { Node } from 'mdast-util-to-markdown/lib'
+import {
+  BookMd,
+  bookToString,
+  readBookDir,
+  filterRecentlyUpdatedBooks,
+  extractBooksOnDisk,
+  bookOnDiskToBookCreateInput,
+  bookOnDiskToBookUpdateInput,
+  findNonExistantBooks,
+} from './lib/book'
 
 const commands = yargs(process.argv.slice(2))
   .options({
@@ -26,108 +32,84 @@ const commands = yargs(process.argv.slice(2))
   })
   .parseSync()
 
-async function parseBookFromMarkdown(bookEntryFileName: string): Promise<Prisma.BookCreateInput> {
-  const { remark } = await import('remark')
-  const { default: remarkFrontMatter } = await import('remark-frontmatter')
-  const { visit, EXIT } = await import('unist-util-visit')
-  const { filter } = await import('unist-util-filter')
-  const { toMarkdown } = await import('mdast-util-to-markdown')
+async function addBook(prisma: PrismaClient, bookMd: BookMd, dir: string): Promise<void> {
+  const slug = bookMd.filename
+  const bookCreateInput = bookOnDiskToBookCreateInput(bookMd)
+  const bookAdded = await prisma.book.create({ data: bookCreateInput })
+  const bookMdString = await bookToString(bookAdded)
 
-  function extractFrontMatter(): Transformer {
-    const transformer: Transformer = (tree, vfile) => {
-      function visitor(node: { value: string }): VisitorResult {
-        vfile.data.frontmatter = YAML.parse(node.value)
-        return EXIT
-      }
-
-      visit(tree, 'yaml', visitor)
+  try {
+    await promises.writeFile(path.join(dir, `${slug}.md`), bookMdString)
+    await promises.utimes(
+      path.join(dir, `${slug}.md`),
+      bookAdded.date_updated,
+      bookAdded.date_updated
+    )
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      console.log(err.code, err.message)
     }
-    return transformer
-  }
-
-  function removeFrontMatter(): Transformer {
-    const plugin: Transformer = (tree, vfile) => {
-      const newTree = filter(tree, (node) => node.type !== 'yaml')
-      vfile.data.content = newTree ? toMarkdown(newTree as Node) : ''
-    }
-    return plugin
-  }
-
-  const bookEntryContents = await promises.readFile(bookEntryFileName, 'utf-8')
-
-  const { data } = await remark()
-    .use(remarkFrontMatter)
-    .use(extractFrontMatter)
-    .use(removeFrontMatter)
-    .process(bookEntryContents)
-
-  return {
-    ...(data.frontmatter as Omit<Prisma.BookCreateInput, 'note'>),
-    note: data.content as string | null,
   }
 }
 
-async function isUpdated(filename: string, lastUpdated?: Date): Promise<boolean> {
-  const stat = await promises.stat(filename)
-  if (lastUpdated) {
-    if (stat.mtime > lastUpdated) {
-      return true
+async function updateBook(prisma: PrismaClient, bookMd: BookMd, dir: string): Promise<void> {
+  const id = bookMd.frontmatter.id
+  const slug = bookMd.filename
+  const book = await prisma.book.findUnique({ where: { id } })
+
+  try {
+    if (book) {
+      const bookUpdateInput = bookOnDiskToBookUpdateInput(bookMd, book)
+      const bookUpdate = await prisma.book.update({
+        where: { id },
+        data: bookUpdateInput,
+      })
+      const bookMdString = await bookToString(bookUpdate)
+      await promises.writeFile(path.join(dir, `${slug}.md`), bookMdString)
+      await promises.utimes(
+        path.join(dir, `${slug}.md`),
+        bookUpdate.date_updated,
+        bookUpdate.date_updated
+      )
     }
-    return false
-  } else {
-    return true
+    console.log("can't update book. no matching id")
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      console.log(err.code, err.message)
+    }
+  }
+}
+
+async function removeBook(prisma: PrismaClient, bookFiles: string[]): Promise<void> {
+  const booksInDb = await prisma.book.findMany({ select: { id: true, slug: true } })
+  const booksToRemove = findNonExistantBooks(bookFiles, booksInDb)
+  const ids = booksToRemove.map((book) => book.id)
+
+  try {
+    await prisma.book.deleteMany({ where: { id: { in: ids } } })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      console.log(err.code, err.message)
+    }
   }
 }
 
 async function run(command: typeof commands): Promise<void> {
   const prisma = new PrismaClient()
-  const slugToDate = {} as { [key: string]: Date | undefined }
-  const booksById = {} as { [key: string]: { book: Book; found: boolean } | undefined }
-  const bookEntriesToUpdate = [] as Array<{ fromDb?: Book; fromMd: Prisma.BookCreateInput }>
-  const books = await prisma.book.findMany()
+  const bookFiles = await readBookDir(command.dir)
+  const books = await prisma.book.findMany({ select: { date_updated: true, slug: true } })
+  const updatedBookFiles = await filterRecentlyUpdatedBooks(bookFiles, books, command.dir)
+  const bookMds = await extractBooksOnDisk(updatedBookFiles, command.dir)
 
-  books.forEach((book) => {
-    slugToDate[`${book.slug}.md`] = book.date_updated
-    booksById[book.id] = { book, found: false }
-  })
-
-  const files = await promises.readdir(command.dir, { withFileTypes: true })
-  const bookEntryFiles = files
-    .filter((dirent) => dirent.isFile() && path.extname(dirent.name) === '.md')
-    .map((dirent) => path.basename(dirent.name))
-
-  await eachLimit(bookEntryFiles, 20, async (filename) => {
-    const updated = await isUpdated(path.join(command.dir, filename), slugToDate[filename])
-    if (updated) {
-      const fromMd = await parseBookFromMarkdown(path.join(command.dir, filename))
-      const lookup = fromMd.id ? booksById[fromMd.id] : undefined
-      bookEntriesToUpdate.push({ fromMd, fromDb: lookup?.book })
-    }
-  })
-
-  await eachLimit(bookEntriesToUpdate, 1, async ({ fromMd, fromDb }) => {
-    if (fromDb) {
-      // compare data, validate data
-      // update db with newer things
-      // should abstract this and log out we are updating the book
-      await prisma.book.update({ where: { id: fromDb.id }, data: fromMd })
+  await eachLimit(bookMds, 1, async (bookMd) => {
+    if (bookMd.frontmatter.id) {
+      await updateBook(prisma, bookMd, command.dir)
     } else {
-      // validate data
-      // should abstract this and log out we are creating a new book
-      await prisma.book.create({ data: fromMd })
+      await addBook(prisma, bookMd, command.dir)
     }
-
-    // should rewrite data?
   })
 
-  const booksToDelete = Object.keys(booksById).filter((id) => {
-    booksById[id]?.found === false
-  })
-
-  await eachLimit(booksToDelete, 1, async (id) => {
-    // should abstract this and log out we are deleating the book!
-    await prisma.book.delete({ where: { id } })
-  })
+  await removeBook(prisma, bookFiles)
 
   await prisma.$disconnect()
 }
