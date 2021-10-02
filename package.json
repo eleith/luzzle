@@ -8,7 +8,7 @@
     "codegen": "graphql-codegen",
     "codegen-debug": "VERBOSE=1 DEBUG=1 graphql-codegen",
     "lint": "next lint",
-    "build-tools": "esbuild tools/md-books-to-db.ts --platform=node --target=node14 --bundle --outfile=build/books.cli.js --external:yargs",
+    "build-tools": "esbuild tools/md-books-to-db.ts --platform=node --target=node14 --bundle --outfile=build/books.cli.js --external:yargs --external:ajv",
     "submit": "gcloud builds submit --gcs-source-staging-dir gs://eleith-cloud-builds/eleith-io-site --tag gcr.io/eleith-cloud/eleith-io-site",
     "deploy": "gcloud run deploy eleith-io-site --image gcr.io/eleith-cloud/eleith-io-site --platform managed --region us-central1"
   },
