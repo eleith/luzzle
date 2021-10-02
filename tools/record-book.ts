@@ -1,7 +1,7 @@
 import yargs from 'yargs'
 import { getCoverUrl, getWorkFromBook, OpenLibraryFullWork } from './openlibrary'
 import { findVolume } from './google-books'
-import { PrismaClient, Book, Prisma } from '@prisma/client'
+import { PrismaClient, Book, Prisma } from '@app/prisma'
 import { downloadImage } from './downloader'
 import { books_v1 } from 'googleapis'
 import cuid from 'cuid'

@@ -3,6 +3,7 @@ import { PrismaClient } from '@app/prisma'
 import { promises, existsSync } from 'fs'
 import { eachLimit } from 'async'
 import path from 'path'
+import { cpus } from 'os'
 import {
   BookMd,
   bookToString,
@@ -28,10 +29,10 @@ const commands = yargs(process.argv.slice(2))
       default: true,
     },
     sync: {
-      choices: ['both', 'db', 'db'],
+      choices: ['both', 'disk', 'db'],
       alias: 's',
       description: 'direction of sync',
-      default: 'both',
+      default: 'disk',
     },
   })
   .check((argv) => {
@@ -147,8 +148,14 @@ async function syncToDisk(): Promise<void> {
   const { dir } = commands
   const books = await prisma.book.findMany()
 
-  await eachLimit(books, 20, async (book) => {
+  await eachLimit(books, cpus().length, async (book) => {
     const bookMdString = await bookToString(book)
+
+    if (commands.dryrun) {
+      console.log(`[disk] adding ${book.slug}.md`)
+      return
+    }
+
     await promises.writeFile(path.join(commands.dir, `${book.slug}.md`), bookMdString)
     await promises.utimes(path.join(dir, `${book.slug}.md`), book.date_updated, book.date_updated)
   })
