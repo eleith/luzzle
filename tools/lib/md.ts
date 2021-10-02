@@ -6,7 +6,7 @@ import { Node } from 'mdast-util-to-markdown/lib'
 
 async function addFrontMatter(
   markdown = '',
-  metadata: { [key: string]: string | number }
+  metadata: { [key: string]: string | number | Date }
 ): Promise<string> {
   const yamlString = YAML.stringify(metadata)
   const content = markdown.trim()

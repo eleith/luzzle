@@ -1,5 +1,5 @@
 import yargs from 'yargs'
-import { PrismaClient, Book } from '@prisma/client'
+import { PrismaClient, Book } from '@app/prisma'
 import yaml from 'yaml'
 import { promises, existsSync } from 'fs'
 import { eachLimit } from 'async'

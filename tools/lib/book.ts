@@ -5,6 +5,7 @@ import path from 'path'
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd'
 import { extract, addFrontMatter } from './md'
 import { differenceWith } from 'lodash'
+import { cpus } from 'os'
 
 type NonNullableProperties<T> = { [K in keyof T]: NonNullable<T[K]> }
 export type BookMd = {
@@ -99,7 +100,7 @@ async function filterRecentlyUpdatedBooks(
   books: Pick<Book, 'date_updated' | 'slug'>[],
   dirpath: string
 ): Promise<string[]> {
-  const updated = await filterLimit(bookFiles, 20, async (filename) => {
+  const updated = await filterLimit(bookFiles, cpus().length, async (filename) => {
     const book = books.find((book) => book.slug === filename)
     if (book) {
       const stat = await promises.stat(path.join(dirpath, `${filename}.md`))
@@ -108,11 +109,11 @@ async function filterRecentlyUpdatedBooks(
     return true
   })
 
-  return updated.map((book) => book.slug)
+  return updated
 }
 
 async function extractBooksOnDisk(bookFiles: string[], dirpath: string): Promise<Array<BookMd>> {
-  return mapLimit(bookFiles, 20, async (filename) => {
+  return mapLimit(bookFiles, cpus().length, async (filename) => {
     const data = await extract(path.join(dirpath, `${filename}.md`))
     try {
       return makeBookMd(filename, data.markdown, data.frontmatter)
