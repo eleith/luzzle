@@ -1,19 +1,20 @@
-import yargs from 'yargs'
-import { PrismaClient } from '@app/prisma'
-import { promises, existsSync } from 'fs'
+import { Book, PrismaClient } from '@app/prisma'
 import { eachLimit } from 'async'
-import path from 'path'
+import { existsSync, promises } from 'fs'
 import { cpus } from 'os'
+import path from 'path'
+import yargs from 'yargs'
 import {
   BookMd,
-  bookToString,
-  readBookDir,
-  filterRecentlyUpdatedBooks,
-  extractBooksOnDisk,
   bookOnDiskToBookCreateInput,
   bookOnDiskToBookUpdateInput,
+  bookToString,
+  extractBooksOnDisk,
+  filterRecentlyUpdatedBooks,
   findNonExistantBooks,
+  readBookDir,
 } from './lib/book'
+import log from 'npmlog'
 
 const commands = yargs(process.argv.slice(2))
   .options({
@@ -25,14 +26,19 @@ const commands = yargs(process.argv.slice(2))
     },
     dryrun: {
       type: 'boolean',
+      alias: 'dry-run',
       description: 'run without making permanent changes',
-      default: true,
+      default: false,
     },
     sync: {
       choices: ['both', 'disk', 'db'],
       alias: 's',
       description: 'direction of sync',
       default: 'disk',
+    },
+    verbose: {
+      alias: 'v',
+      type: 'count',
     },
   })
   .check((argv) => {
@@ -46,19 +52,25 @@ const commands = yargs(process.argv.slice(2))
 
 const prisma = new PrismaClient()
 
-async function addBook(bookMd: BookMd): Promise<unknown> {
+async function addBookToDb(bookMd: BookMd): Promise<unknown> {
+  const err = commands.dryrun ? null : await addBookToDbExecute(bookMd)
+
+  if (!err) {
+    log.info('[db]', `added ${bookMd.filename}.md`)
+  } else {
+    log.error('[db]', err as string)
+  }
+
+  return err
+}
+
+async function addBookToDbExecute(bookMd: BookMd): Promise<unknown> {
   const slug = bookMd.filename
   const bookCreateInput = bookOnDiskToBookCreateInput(bookMd)
   const bookAdded = await prisma.book.create({ data: bookCreateInput })
   const bookMdString = await bookToString(bookAdded)
-  const errors = []
 
   try {
-    if (commands.dryrun) {
-      console.log(`adding ${slug}.md to db`)
-      return
-    }
-
     await promises.writeFile(path.join(commands.dir, `${slug}.md`), bookMdString)
     await promises.utimes(
       path.join(commands.dir, `${slug}.md`),
@@ -66,109 +78,116 @@ async function addBook(bookMd: BookMd): Promise<unknown> {
       bookAdded.date_updated
     )
   } catch (err) {
-    errors.push(err)
+    return err
   }
-
-  return errors.length ? errors : null
 }
 
-async function updateBook(bookMd: BookMd): Promise<unknown> {
+async function updateBookToDb(bookMd: BookMd): Promise<unknown> {
   const id = bookMd.frontmatter.id
-  const slug = bookMd.filename
   const book = await prisma.book.findUnique({ where: { id } })
 
-  try {
-    if (book) {
-      const bookUpdateInput = bookOnDiskToBookUpdateInput(bookMd, book)
+  if (book) {
+    const err = commands.dryrun ? null : await updateBookToDbExecute(bookMd, book)
 
-      if (commands.dryrun) {
-        console.log(`updating ${slug}.md`)
-        return
-      }
-
-      const bookUpdate = await prisma.book.update({
-        where: { id },
-        data: bookUpdateInput,
-      })
-      const bookMdString = await bookToString(bookUpdate)
-      await promises.writeFile(path.join(commands.dir, `${slug}.md`), bookMdString)
-      await promises.utimes(
-        path.join(commands.dir, `${slug}.md`),
-        bookUpdate.date_updated,
-        bookUpdate.date_updated
-      )
+    if (!err) {
+      log.info('[db]', `updated ${bookMd.filename}.md`)
+    } else {
+      log.error('[db]', err as string)
     }
-    console.log("can't update book. no matching id")
+    return err
+  }
+
+  return new Error(`${bookMd.filename}.md pointed to non-existant ${id}`)
+}
+
+async function updateBookToDbExecute(bookMd: BookMd, book: Book): Promise<unknown> {
+  const slug = bookMd.filename
+
+  try {
+    const bookUpdateInput = bookOnDiskToBookUpdateInput(bookMd, book)
+    const bookUpdate = await prisma.book.update({
+      where: { id: book.id },
+      data: bookUpdateInput,
+    })
+    const bookMdString = await bookToString(bookUpdate)
+    await promises.writeFile(path.join(commands.dir, `${slug}.md`), bookMdString)
+    await promises.utimes(
+      path.join(commands.dir, `${slug}.md`),
+      bookUpdate.date_updated,
+      bookUpdate.date_updated
+    )
   } catch (err) {
     return err
   }
 }
 
-async function removeBook(bookFiles: string[]): Promise<unknown> {
+async function removeBookFromDb(bookFiles: string[]): Promise<unknown> {
   const booksInDb = await prisma.book.findMany({ select: { id: true, slug: true } })
   const booksToRemove = findNonExistantBooks(bookFiles, booksInDb)
   const ids = booksToRemove.map((book) => book.id)
 
-  try {
-    if (commands.dryrun) {
-      console.log(`deleting ${booksToRemove.map((book) => book.slug)}`)
-      return
-    }
+  const err = commands.dryrun ? null : await removeBookFromDbExecute(ids)
 
+  if (!err) {
+    log.info('[db]', `deleted ${booksToRemove.map((book) => book.slug)}`)
+  } else {
+    log.error('[db]', err as string)
+  }
+
+  return err
+}
+
+async function removeBookFromDbExecute(ids: string[]): Promise<unknown> {
+  try {
     await prisma.book.deleteMany({ where: { id: { in: ids } } })
   } catch (err) {
     return err
   }
 }
 
-async function syncTwoWay(): Promise<void> {
+async function syncToDb(): Promise<void> {
   const { dir } = commands
   const bookFiles = await readBookDir(commands.dir)
   const books = await prisma.book.findMany({ select: { date_updated: true, slug: true } })
   const updatedBookFiles = await filterRecentlyUpdatedBooks(bookFiles, books, dir)
   const bookMds = await extractBooksOnDisk(updatedBookFiles, dir)
-  const errors = []
+  const errors: unknown[] = []
 
   await eachLimit(bookMds, 1, async (bookMd) => {
     if (bookMd.frontmatter.id) {
-      const err = await updateBook(bookMd)
+      const err = await updateBookToDb(bookMd)
       errors.push(err)
     } else {
-      const err = await addBook(bookMd)
+      const err = await addBookToDb(bookMd)
       errors.push(err)
     }
   })
 
   if (errors.length === 0) {
-    await removeBook(bookFiles)
+    await removeBookFromDb(bookFiles)
   }
 }
 
 async function syncToDisk(): Promise<void> {
-  const { dir } = commands
   const books = await prisma.book.findMany()
 
   await eachLimit(books, cpus().length, async (book) => {
-    const bookMdString = await bookToString(book)
-
-    if (commands.dryrun) {
-      console.log(`[disk] adding ${book.slug}.md`)
-      return
+    if (!commands.dryrun) {
+      await syncBookToDiskExecute(book)
     }
-
-    await promises.writeFile(path.join(commands.dir, `${book.slug}.md`), bookMdString)
-    await promises.utimes(path.join(dir, `${book.slug}.md`), book.date_updated, book.date_updated)
+    log.info('[disk]', `wrote ${book.slug}.md`)
   })
 }
 
-async function syncToDb(): Promise<void> {
-  const { dir } = commands
-  const bookFiles = await readBookDir(commands.dir)
-  const bookMds = await extractBooksOnDisk(bookFiles, dir)
+async function syncBookToDiskExecute(book: Book): Promise<void> {
+  const bookMdString = await bookToString(book)
 
-  await eachLimit(bookMds, 1, async (bookMd) => {
-    await addBook(bookMd)
-  })
+  await promises.writeFile(path.join(commands.dir, `${book.slug}.md`), bookMdString)
+  await promises.utimes(
+    path.join(commands.dir, `${book.slug}.md`),
+    book.date_updated,
+    book.date_updated
+  )
 }
 
 async function cleanup(): Promise<void> {
@@ -176,11 +195,12 @@ async function cleanup(): Promise<void> {
 }
 
 async function run(): Promise<void> {
-  const { sync } = commands
+  const { sync, verbose, dryrun } = commands
 
-  if (sync === 'both') {
-    await syncTwoWay()
-  } else if (sync === 'disk') {
+  log.level = verbose === 0 ? 'info' : 'silly'
+  log.heading = dryrun ? '[would]' : ''
+
+  if (sync === 'disk') {
     await syncToDisk()
   } else if (sync === 'db') {
     await syncToDb()
