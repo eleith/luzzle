@@ -1,18 +1,28 @@
-import { Prisma, Book } from '@app/prisma'
-import { promises } from 'fs'
-import { filterLimit, mapLimit } from 'async'
-import path from 'path'
+import { Book, Prisma } from '@app/prisma'
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd'
-import { extract, addFrontMatter } from './md'
+import { filterLimit, mapLimit } from 'async'
+import { promises } from 'fs'
 import { differenceWith } from 'lodash'
 import { cpus } from 'os'
+import path from 'path'
+import { addFrontMatter, extract } from './md'
+import log from './log'
 
 type NonNullableProperties<T> = { [K in keyof T]: NonNullable<T[K]> }
+type BookDbRequiredFields = 'slug' | 'id' | 'date_added' | 'date_updated'
+type BookDbOptionalFields = 'id_cover_image'
+type BookDbFields = BookDbRequiredFields | BookDbOptionalFields
+type BookMdRequiredFields = 'title' | 'author'
+type BookMdFields = Exclude<keyof Book, BookDbFields | 'note'>
+
 export type BookMd = {
   filename: string
-  frontmatter: Pick<Book, 'title' | 'author'> &
-    Partial<NonNullableProperties<Omit<Book, 'title' | 'author' | 'note'>>>
   markdown?: string
+  frontmatter: Pick<Book, BookMdRequiredFields> &
+    Partial<NonNullableProperties<Omit<Book, BookMdRequiredFields | 'note' | BookDbFields>>> & {
+      __database_cache?: Pick<Book, BookDbRequiredFields> &
+        Partial<NonNullableProperties<Pick<Book, BookDbOptionalFields>>>
+    }
 }
 
 const bookMdSchema: JTDSchemaType<BookMd> = {
@@ -24,10 +34,8 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
         author: { type: 'string' },
       },
       optionalProperties: {
-        id: { type: 'string' },
         id_ol_book: { type: 'string' },
         id_ol_work: { type: 'string' },
-        slug: { type: 'string' },
         isbn: { type: 'string' },
         subtitle: { type: 'string' },
         coauthors: { type: 'string' },
@@ -37,9 +45,17 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
         month_read: { type: 'uint32' },
         year_first_published: { type: 'uint32' },
         keywords: { type: 'string' },
-        id_cover_image: { type: 'string' },
-        date_added: { type: 'timestamp' },
-        date_updated: { type: 'timestamp' },
+        __database_cache: {
+          properties: {
+            id: { type: 'string' },
+            date_added: { type: 'timestamp' },
+            date_updated: { type: 'timestamp' },
+            slug: { type: 'string' },
+          },
+          optionalProperties: {
+            id_cover_image: { type: 'string' },
+          },
+        },
       },
     },
   },
@@ -52,24 +68,33 @@ const ajv = new Ajv()
 const bookMdValidator = ajv.compile(bookMdSchema)
 
 async function bookToString(book: Book): Promise<string> {
-  const bookYamlObject: { [key: string]: string | number | Date } = {}
-  const bookKeys = Object.keys(book) as Array<keyof Book>
-  const skipFields = ['date_added', 'date_updated', 'slug']
-  const content = book.note || ''
+  const bookFrontmatter: Partial<{ [key in BookMdFields]: unknown }> = {}
+  const bookDbCache: Partial<{ [key in BookDbFields]: unknown }> = {}
+  const bookFrontmatterSchema = bookMdSchema.properties.frontmatter
+  const bookMdFields = [
+    ...Object.keys(bookFrontmatterSchema.properties),
+    ...Object.keys(bookFrontmatterSchema.optionalProperties),
+  ].filter((key) => key !== '__database_cache') as Array<BookMdFields>
+  const bookDbFields = [
+    ...Object.keys(bookFrontmatterSchema.optionalProperties.__database_cache.properties),
+    ...Object.keys(bookFrontmatterSchema.optionalProperties.__database_cache.optionalProperties),
+  ] as Array<BookDbFields>
 
-  bookKeys.forEach((key) => {
+  bookMdFields.forEach((key) => {
     const bookAttribute = book[key]
-    if (
-      bookAttribute !== null &&
-      bookAttribute !== undefined &&
-      skipFields.indexOf(key) === -1 &&
-      !(bookAttribute instanceof Date)
-    ) {
-      bookYamlObject[key] = bookAttribute
+    if (bookAttribute !== null && bookAttribute !== undefined) {
+      bookFrontmatter[key] = bookAttribute
     }
   })
 
-  return addFrontMatter(content, bookYamlObject)
+  bookDbFields.forEach((key) => {
+    const bookAttribute = book[key]
+    if (bookAttribute !== null && bookAttribute !== undefined) {
+      bookDbCache[key] = bookAttribute
+    }
+  })
+
+  return addFrontMatter(book.note || '', { ...bookFrontmatter, __database_cache: bookDbCache })
 }
 
 function makeBookMd(filename: string, markdown: unknown, frontmatter: unknown): BookMd {
@@ -83,7 +108,7 @@ function makeBookMd(filename: string, markdown: unknown, frontmatter: unknown): 
     return bookOnDisk
   }
 
-  throw new Error('omg')
+  throw new Error(`${filename} is not a valid bookMd`)
 }
 
 async function readBookDir(dirPath: string): Promise<Array<string>> {
@@ -118,7 +143,7 @@ async function extractBooksOnDisk(bookFiles: string[], dirpath: string): Promise
     try {
       return makeBookMd(filename, data.markdown, data.frontmatter)
     } catch (err) {
-      // log something here
+      log.error('[md-extract]', err as string)
     }
   })
 }

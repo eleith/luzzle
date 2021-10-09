@@ -14,14 +14,14 @@ import {
   findNonExistantBooks,
   readBookDir,
 } from './lib/book'
-import log from 'npmlog'
+import log from './lib/log'
 
 const commands = yargs(process.argv.slice(2))
   .options({
     dir: {
       type: 'string',
       alias: 'd',
-      description: 'directory to store book entries as md files',
+      description: 'directory for the book entries',
       demandOption: true,
     },
     dryrun: {
@@ -31,8 +31,7 @@ const commands = yargs(process.argv.slice(2))
       default: false,
     },
     sync: {
-      choices: ['both', 'disk', 'db'],
-      alias: 's',
+      choices: ['disk', 'db'],
       description: 'direction of sync',
       default: 'disk',
     },
@@ -83,7 +82,7 @@ async function addBookToDbExecute(bookMd: BookMd): Promise<unknown> {
 }
 
 async function updateBookToDb(bookMd: BookMd): Promise<unknown> {
-  const id = bookMd.frontmatter.id
+  const id = bookMd.frontmatter.__database_cache?.id
   const book = await prisma.book.findUnique({ where: { id } })
 
   if (book) {
@@ -154,7 +153,7 @@ async function syncToDb(): Promise<void> {
   const errors: unknown[] = []
 
   await eachLimit(bookMds, 1, async (bookMd) => {
-    if (bookMd.frontmatter.id) {
+    if (bookMd.frontmatter.__database_cache?.id) {
       const err = await updateBookToDb(bookMd)
       errors.push(err)
     } else {
@@ -172,22 +171,45 @@ async function syncToDisk(): Promise<void> {
   const books = await prisma.book.findMany()
 
   await eachLimit(books, cpus().length, async (book) => {
-    if (!commands.dryrun) {
-      await syncBookToDiskExecute(book)
-    }
-    log.info('[disk]', `wrote ${book.slug}.md`)
+    await syncBookToDisk(book)
   })
 }
 
-async function syncBookToDiskExecute(book: Book): Promise<void> {
-  const bookMdString = await bookToString(book)
+async function syncBookToDisk(book: Book): Promise<void> {
+  const bookMd = await bookToString(book)
+  const file = path.join(commands.dir, `${book.slug}.md`)
+  const exists = existsSync(file)
 
-  await promises.writeFile(path.join(commands.dir, `${book.slug}.md`), bookMdString)
-  await promises.utimes(
-    path.join(commands.dir, `${book.slug}.md`),
-    book.date_updated,
-    book.date_updated
-  )
+  if (exists) {
+    const currentBookMdString = await promises.readFile(
+      path.join(commands.dir, `${book.slug}.md`),
+      'utf-8'
+    )
+    if (currentBookMdString === bookMd) {
+      return
+    }
+  }
+
+  const err = commands.dryrun ? null : await syncBookToDiskExecute(file, bookMd, book.date_updated)
+
+  if (!err) {
+    log.info('[disk]', `wrote ${book.slug}.md`)
+  } else {
+    log.error('[disk]', err as string)
+  }
+}
+
+async function syncBookToDiskExecute(
+  filepath: string,
+  bookMd: string,
+  updated: Date
+): Promise<unknown> {
+  try {
+    await promises.writeFile(filepath, bookMd)
+    await promises.utimes(filepath, updated, updated)
+  } catch (err) {
+    return err
+  }
 }
 
 async function cleanup(): Promise<void> {
