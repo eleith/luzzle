@@ -55,7 +55,8 @@ async function addBookToDb(bookMd: BookMd): Promise<unknown> {
   const err = commands.dryrun ? null : await addBookToDbExecute(bookMd)
 
   if (!err) {
-    log.info('[db]', `added ${bookMd.filename}.md`)
+    log.info('[db]', `added ${bookMd.filename}`)
+    log.info('[disk]', `synced db cache to ${bookMd.filename}`)
   } else {
     log.error('[db]', err as string)
   }
@@ -64,18 +65,15 @@ async function addBookToDb(bookMd: BookMd): Promise<unknown> {
 }
 
 async function addBookToDbExecute(bookMd: BookMd): Promise<unknown> {
-  const slug = bookMd.filename
+  const filename = bookMd.filename
+  const filepath = path.join(commands.dir, filename)
   const bookCreateInput = bookOnDiskToBookCreateInput(bookMd)
   const bookAdded = await prisma.book.create({ data: bookCreateInput })
   const bookMdString = await bookToString(bookAdded)
 
   try {
-    await promises.writeFile(path.join(commands.dir, `${slug}.md`), bookMdString)
-    await promises.utimes(
-      path.join(commands.dir, `${slug}.md`),
-      bookAdded.date_updated,
-      bookAdded.date_updated
-    )
+    await promises.writeFile(filepath, bookMdString)
+    await promises.utimes(filepath, bookAdded.date_updated, bookAdded.date_updated)
   } catch (err) {
     return err
   }
@@ -89,18 +87,20 @@ async function updateBookToDb(bookMd: BookMd): Promise<unknown> {
     const err = commands.dryrun ? null : await updateBookToDbExecute(bookMd, book)
 
     if (!err) {
-      log.info('[db]', `updated ${bookMd.filename}.md`)
+      log.info('[db]', `updated ${bookMd.filename}`)
+      log.info('[disk]', `synced db cache ${bookMd.filename}`)
     } else {
       log.error('[db]', err as string)
     }
     return err
   }
 
-  return new Error(`${bookMd.filename}.md pointed to non-existant ${id}`)
+  return new Error(`${bookMd.filename} pointed to non-existant ${id}`)
 }
 
 async function updateBookToDbExecute(bookMd: BookMd, book: Book): Promise<unknown> {
-  const slug = bookMd.filename
+  const filename = bookMd.filename
+  const filepath = path.join(commands.dir, filename)
 
   try {
     const bookUpdateInput = bookOnDiskToBookUpdateInput(bookMd, book)
@@ -109,31 +109,28 @@ async function updateBookToDbExecute(bookMd: BookMd, book: Book): Promise<unknow
       data: bookUpdateInput,
     })
     const bookMdString = await bookToString(bookUpdate)
-    await promises.writeFile(path.join(commands.dir, `${slug}.md`), bookMdString)
-    await promises.utimes(
-      path.join(commands.dir, `${slug}.md`),
-      bookUpdate.date_updated,
-      bookUpdate.date_updated
-    )
+    await promises.writeFile(filepath, bookMdString)
+    await promises.utimes(filepath, bookUpdate.date_updated, bookUpdate.date_updated)
   } catch (err) {
     return err
   }
 }
 
-async function removeBookFromDb(bookFiles: string[]): Promise<unknown> {
+async function removeBookFromDb(bookSlugs: string[]): Promise<unknown> {
   const booksInDb = await prisma.book.findMany({ select: { id: true, slug: true } })
-  const booksToRemove = findNonExistantBooks(bookFiles, booksInDb)
+  const booksToRemove = findNonExistantBooks(bookSlugs, booksInDb)
   const ids = booksToRemove.map((book) => book.id)
 
-  const err = commands.dryrun ? null : await removeBookFromDbExecute(ids)
+  if (ids.length) {
+    const err = commands.dryrun ? null : await removeBookFromDbExecute(ids)
 
-  if (!err) {
-    log.info('[db]', `deleted ${booksToRemove.map((book) => book.slug)}`)
-  } else {
-    log.error('[db]', err as string)
+    if (!err) {
+      log.info('[db]', `deleted ${booksToRemove.map((book) => book.slug)}`)
+    } else {
+      log.error('[db]', err as string)
+    }
+    return err
   }
-
-  return err
 }
 
 async function removeBookFromDbExecute(ids: string[]): Promise<unknown> {
@@ -146,9 +143,9 @@ async function removeBookFromDbExecute(ids: string[]): Promise<unknown> {
 
 async function syncToDb(): Promise<void> {
   const { dir } = commands
-  const bookFiles = await readBookDir(commands.dir)
+  const bookSlugs = await readBookDir(commands.dir)
   const books = await prisma.book.findMany({ select: { date_updated: true, slug: true } })
-  const updatedBookFiles = await filterRecentlyUpdatedBooks(bookFiles, books, dir)
+  const updatedBookFiles = await filterRecentlyUpdatedBooks(bookSlugs, books, dir)
   const bookMds = await extractBooksOnDisk(updatedBookFiles, dir)
   const errors: unknown[] = []
 
@@ -163,7 +160,7 @@ async function syncToDb(): Promise<void> {
   })
 
   if (errors.length === 0) {
-    await removeBookFromDb(bookFiles)
+    await removeBookFromDb(bookSlugs)
   }
 }
 
@@ -193,7 +190,7 @@ async function syncBookToDisk(book: Book): Promise<void> {
   const err = commands.dryrun ? null : await syncBookToDiskExecute(file, bookMd, book.date_updated)
 
   if (!err) {
-    log.info('[disk]', `wrote ${book.slug}.md`)
+    log.info('[disk]', `wrote ${file}`)
   } else {
     log.error('[disk]', err as string)
   }
