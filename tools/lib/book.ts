@@ -2,7 +2,7 @@ import { Book, Prisma } from '@app/prisma'
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd'
 import { filterLimit, mapLimit } from 'async'
 import { promises } from 'fs'
-import { differenceWith } from 'lodash'
+import { differenceWith, omit } from 'lodash'
 import { cpus } from 'os'
 import path from 'path'
 import { addFrontMatter, extract } from './md'
@@ -113,22 +113,22 @@ function makeBookMd(filename: string, markdown: unknown, frontmatter: unknown): 
 
 async function readBookDir(dirPath: string): Promise<Array<string>> {
   const files = await promises.readdir(dirPath, { withFileTypes: true })
-  const bookFiles = files
+  const bookSlugs = files
     .filter((dirent) => dirent.isFile() && path.extname(dirent.name) === '.md')
-    .map((dirent) => path.basename(dirent.name))
+    .map((dirent) => path.basename(dirent.name, '.md'))
 
-  return bookFiles
+  return bookSlugs
 }
 
 async function filterRecentlyUpdatedBooks(
-  bookFiles: string[],
+  bookSlugs: string[],
   books: Pick<Book, 'date_updated' | 'slug'>[],
   dirpath: string
 ): Promise<string[]> {
-  const updated = await filterLimit(bookFiles, cpus().length, async (filename) => {
-    const book = books.find((book) => book.slug === filename)
+  const updated = await filterLimit(bookSlugs, cpus().length, async (slug) => {
+    const book = books.find((book) => book.slug === slug)
     if (book) {
-      const stat = await promises.stat(path.join(dirpath, `${filename}.md`))
+      const stat = await promises.stat(path.join(dirpath, `${slug}.md`))
       return stat.mtime > book.date_updated
     }
     return true
@@ -137,11 +137,11 @@ async function filterRecentlyUpdatedBooks(
   return updated
 }
 
-async function extractBooksOnDisk(bookFiles: string[], dirpath: string): Promise<Array<BookMd>> {
-  return mapLimit(bookFiles, cpus().length, async (filename) => {
-    const data = await extract(path.join(dirpath, `${filename}.md`))
+async function extractBooksOnDisk(bookSlugs: string[], dirpath: string): Promise<Array<BookMd>> {
+  return mapLimit(bookSlugs, cpus().length, async (slug) => {
+    const data = await extract(path.join(dirpath, `${slug}.md`))
     try {
-      return makeBookMd(filename, data.markdown, data.frontmatter)
+      return makeBookMd(`${slug}.md`, data.markdown, data.frontmatter)
     } catch (err) {
       log.error('[md-extract]', err as string)
     }
@@ -149,62 +149,39 @@ async function extractBooksOnDisk(bookFiles: string[], dirpath: string): Promise
 }
 
 function findNonExistantBooks(
-  bookFiles: string[],
+  bookSlugs: string[],
   booksInDb: Pick<Book, 'id' | 'slug'>[]
 ): Pick<Book, 'id' | 'slug'>[] {
-  return differenceWith(booksInDb, bookFiles, (book, slug) => book.slug === slug)
+  return differenceWith(booksInDb, bookSlugs, (book, slug) => book.slug === slug)
 }
 
 function bookOnDiskToBookCreateInput(bookOnDisk: BookMd): Prisma.BookCreateInput {
-  const stripCreateFields: Array<keyof Prisma.BookCreateInput> = [
-    'id',
-    'date_added',
-    'date_updated',
-    'slug',
-  ]
+  const bookMdFields = omit(bookOnDisk.frontmatter, ['__database_cache'])
   const bookCreateInput = {
-    ...bookOnDisk.frontmatter,
-    slug: bookOnDisk.filename,
-  } as Prisma.BookCreateInput
-
-  stripCreateFields.forEach((field) => {
-    delete bookCreateInput[field]
-  })
-
-  if (bookOnDisk.markdown) {
-    bookCreateInput.note = bookOnDisk.markdown
+    ...bookMdFields,
+    slug: path.basename(bookOnDisk.filename, '.md'),
+    note: bookOnDisk.markdown || '',
   }
 
   return bookCreateInput
 }
 
 function bookOnDiskToBookUpdateInput(bookOnDisk: BookMd, book: Book): Prisma.BookUpdateInput {
-  const stripUpdateFields: Array<keyof Prisma.BookUpdateInput> = [
-    'id',
-    'date_added',
-    'date_updated',
-    'slug',
-  ]
+  const bookMdFields = omit(bookOnDisk.frontmatter, ['__database_cache'])
   const bookUpdateInput = {
-    ...bookOnDisk.frontmatter,
-    slug: bookOnDisk.filename,
-  } as Prisma.BookUpdateInput
+    ...bookMdFields,
+    slug: path.basename(bookOnDisk.filename, '.md'),
+    note: bookOnDisk.markdown || '',
+  }
 
-  stripUpdateFields.forEach((field) => {
-    delete bookUpdateInput[field]
-  })
+  const bookKeys = Object.keys(bookUpdateInput) as Array<keyof typeof bookUpdateInput>
 
-  const bookKeys = Object.keys(bookUpdateInput) as Array<keyof Prisma.BookUpdateInput>
-
+  // restrict updates to only fields that have changed between the md and db data
   bookKeys.forEach((field) => {
     if (bookUpdateInput[field] === book[field]) {
       delete bookUpdateInput[field]
     }
   })
-
-  if (bookOnDisk.markdown) {
-    bookUpdateInput.note = bookOnDisk.markdown
-  }
 
   return bookUpdateInput
 }
