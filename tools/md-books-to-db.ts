@@ -169,8 +169,24 @@ async function syncToDisk(): Promise<void> {
 
   await eachLimit(books, cpus().length, async (book) => {
     await syncBookToDisk(book)
+    // await syncBookCoverToDisk(book)
   })
 }
+
+// async function syncBookCoverToDisk(book: Book): Promise<void> {
+//   const file = path.join(commands.dir, `${book.slug}.md`)
+//   const exists = existsSync(file)
+//
+//   if (exists && book.id_cover_image) {
+//     const folder1 = book.id_cover_image.substr(-2)
+//     const folder2 = book.id_cover_image.substr(-4, 2)
+//     const oldCoverPath = `data/images/${folder1}/${folder2}/${book.id_cover_image}.jpg`
+//     const newCoverPath = path.join(commands.dir, 'assets', 'covers', `${book.slug}.jpg`)
+//
+//     await promises.copyFile(oldCoverPath, newCoverPath)
+//     log.info('[disk]', `copied ${oldCoverPath} to ${newCoverPath}`)
+//   }
+// }
 
 async function syncBookToDisk(book: Book): Promise<void> {
   const bookMd = await bookToString(book)
