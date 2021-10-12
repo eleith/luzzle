@@ -15,6 +15,7 @@ import {
   readBookDir,
 } from './lib/book'
 import log from './lib/log'
+// import sharp from 'sharp'
 
 const commands = yargs(process.argv.slice(2))
   .options({
@@ -178,13 +179,23 @@ async function syncToDisk(): Promise<void> {
 //   const exists = existsSync(file)
 //
 //   if (exists && book.id_cover_image) {
-//     const folder1 = book.id_cover_image.substr(-2)
-//     const folder2 = book.id_cover_image.substr(-4, 2)
-//     const oldCoverPath = `data/images/${folder1}/${folder2}/${book.id_cover_image}.jpg`
-//     const newCoverPath = path.join(commands.dir, 'assets', 'covers', `${book.slug}.jpg`)
+//     log.info('[disk]', `about to update ${book.slug}`)
+//     const coverPath = path.join(commands.dir, 'assets', 'covers', `${book.slug}.jpg`)
+//     const metadata = await sharp(coverPath).metadata()
 //
-//     await promises.copyFile(oldCoverPath, newCoverPath)
-//     log.info('[disk]', `copied ${oldCoverPath} to ${newCoverPath}`)
+//     const updateCoverPath = path.join('assets', 'covers', `${book.slug}.jpg`)
+//     await prisma.book.update({
+//       where: { id: book.id },
+//       data: {
+//         cover_path: updateCoverPath,
+//         cover_width: metadata.width,
+//         cover_height: metadata.height,
+//       },
+//     })
+//     log.info(
+//       '[disk]',
+//       `updated cover_path to ${updateCoverPath} with width: ${metadata.width} and height: ${metadata.height}`
+//     )
 //   }
 // }
 
