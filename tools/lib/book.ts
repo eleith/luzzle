@@ -1,29 +1,42 @@
 import { Book, Prisma } from '@app/prisma'
-import Ajv, { JTDSchemaType } from 'ajv/dist/jtd'
+import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
 import { filterLimit, mapLimit } from 'async'
-import { promises } from 'fs'
+import { existsSync, promises } from 'fs'
 import { differenceWith, omit } from 'lodash'
 import { cpus } from 'os'
-import path from 'path'
+import path, { extname } from 'path'
 import { addFrontMatter, extract } from './md'
 import log from './log'
+import { downloadTo } from './web'
+import { fromFile } from 'file-type'
 
 type NonNullableProperties<T> = { [K in keyof T]: NonNullable<T[K]> }
 type BookDbRequiredFields = 'slug' | 'id' | 'date_added' | 'date_updated'
-type BookDbOptionalFields = 'id_cover_image'
+type BookDbOptionalFields = 'cover_width' | 'cover_height' | 'cover_path'
 type BookDbFields = BookDbRequiredFields | BookDbOptionalFields
 type BookMdRequiredFields = 'title' | 'author'
 type BookMdFields = Exclude<keyof Book, BookDbFields | 'note'>
+type BookMdDatabaseCache = {
+  __database_cache?: Pick<Book, BookDbRequiredFields> &
+    Partial<NonNullableProperties<Pick<Book, BookDbOptionalFields>>>
+}
+type BookMdInput = {
+  __input?: { cover?: string }
+}
 
 export type BookMd = {
   filename: string
   markdown?: string
   frontmatter: Pick<Book, BookMdRequiredFields> &
-    Partial<NonNullableProperties<Omit<Book, BookMdRequiredFields | 'note' | BookDbFields>>> & {
-      __database_cache?: Pick<Book, BookDbRequiredFields> &
-        Partial<NonNullableProperties<Pick<Book, BookDbOptionalFields>>>
-    }
+    Partial<NonNullableProperties<Omit<Book, BookMdRequiredFields | 'note' | BookDbFields>>> &
+    BookMdDatabaseCache &
+    BookMdInput
 }
+
+const bookMdSpecialFields: Array<keyof BookMdDatabaseCache | keyof BookMdInput> = [
+  '__database_cache',
+  '__input',
+]
 
 const bookMdSchema: JTDSchemaType<BookMd> = {
   properties: {
@@ -45,6 +58,11 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
         month_read: { type: 'uint32' },
         year_first_published: { type: 'uint32' },
         keywords: { type: 'string' },
+        __input: {
+          optionalProperties: {
+            cover: { type: 'string' },
+          },
+        },
         __database_cache: {
           properties: {
             id: { type: 'string' },
@@ -53,7 +71,9 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
             slug: { type: 'string' },
           },
           optionalProperties: {
-            id_cover_image: { type: 'string' },
+            cover_width: { type: 'uint32' },
+            cover_height: { type: 'uint32' },
+            cover_path: { type: 'string' },
           },
         },
       },
@@ -66,6 +86,7 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
 
 const ajv = new Ajv()
 const bookMdValidator = ajv.compile(bookMdSchema)
+const bookCoverDir = path.join('.assets', 'covers')
 
 async function bookToString(book: Book): Promise<string> {
   const bookFrontmatter: Partial<{ [key in BookMdFields]: unknown }> = {}
@@ -74,7 +95,7 @@ async function bookToString(book: Book): Promise<string> {
   const bookMdFields = [
     ...Object.keys(bookFrontmatterSchema.properties),
     ...Object.keys(bookFrontmatterSchema.optionalProperties),
-  ].filter((key) => key !== '__database_cache') as Array<BookMdFields>
+  ] as Array<BookMdFields>
   const bookDbFields = [
     ...Object.keys(bookFrontmatterSchema.optionalProperties.__database_cache.properties),
     ...Object.keys(bookFrontmatterSchema.optionalProperties.__database_cache.optionalProperties),
@@ -82,7 +103,11 @@ async function bookToString(book: Book): Promise<string> {
 
   bookMdFields.forEach((key) => {
     const bookAttribute = book[key]
-    if (bookAttribute !== null && bookAttribute !== undefined) {
+    if (
+      bookAttribute !== null &&
+      bookAttribute !== undefined &&
+      (bookMdSpecialFields as string[]).indexOf(key) === -1
+    ) {
       bookFrontmatter[key] = bookAttribute
     }
   })
@@ -156,7 +181,7 @@ function findNonExistantBooks(
 }
 
 function bookOnDiskToBookCreateInput(bookOnDisk: BookMd): Prisma.BookCreateInput {
-  const bookMdFields = omit(bookOnDisk.frontmatter, ['__database_cache'])
+  const bookMdFields = omit(bookOnDisk.frontmatter, bookMdSpecialFields)
   const bookCreateInput = {
     ...bookMdFields,
     slug: path.basename(bookOnDisk.filename, '.md'),
@@ -167,7 +192,7 @@ function bookOnDiskToBookCreateInput(bookOnDisk: BookMd): Prisma.BookCreateInput
 }
 
 function bookOnDiskToBookUpdateInput(bookOnDisk: BookMd, book: Book): Prisma.BookUpdateInput {
-  const bookMdFields = omit(bookOnDisk.frontmatter, ['__database_cache'])
+  const bookMdFields = omit(bookOnDisk.frontmatter, bookMdSpecialFields)
   const bookUpdateInput = {
     ...bookMdFields,
     slug: path.basename(bookOnDisk.filename, '.md'),
@@ -186,7 +211,42 @@ function bookOnDiskToBookUpdateInput(bookOnDisk: BookMd, book: Book): Prisma.Boo
   return bookUpdateInput
 }
 
+async function findCoverUpload(bookOnDisk: BookMd, outputDir: string): Promise<void> {
+  const upload = bookOnDisk.frontmatter.__input?.cover
+
+  if (upload) {
+    const slug = path.basename(bookOnDisk.filename, '.md')
+    const outputPath = path.join(outputDir, bookCoverDir, `${slug}.jpg`)
+
+    if (/https?:\/\//i.test(upload)) {
+      const tempFile = await downloadTo(upload)
+
+      if (extname(tempFile) === '.jpg') {
+        await promises.copyFile(tempFile, outputPath)
+        await promises.unlink(tempFile)
+      } else {
+        await promises.unlink(tempFile)
+        throw new Error("upload wasn't a jpg")
+      }
+    } else if (upload.startsWith('/') || upload.startsWith('../')) {
+      const uploadPath = path.resolve(outputDir, upload)
+      if (existsSync(uploadPath)) {
+        const fileType = await fromFile(upload)
+
+        if (fileType?.ext === 'jpg') {
+          await promises.copyFile(upload, outputPath)
+        } else {
+          throw new Error("upload wasn't a jpg")
+        }
+      } else {
+        throw new Error("upload doesn't exist")
+      }
+    }
+  }
+}
+
 export {
+  findCoverUpload,
   bookToString,
   makeBookMd,
   readBookDir,

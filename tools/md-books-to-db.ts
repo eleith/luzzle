@@ -1,4 +1,5 @@
-import { Book, PrismaClient } from '@app/prisma'
+import { Book } from '@app/prisma'
+import Prisma from '@app/prisma'
 import { eachLimit } from 'async'
 import { existsSync, promises } from 'fs'
 import { cpus } from 'os'
@@ -13,9 +14,12 @@ import {
   filterRecentlyUpdatedBooks,
   findNonExistantBooks,
   readBookDir,
+  findCoverUpload,
 } from './lib/book'
 import log from './lib/log'
 // import sharp from 'sharp'
+
+const { PrismaClient } = Prisma
 
 const commands = yargs(process.argv.slice(2))
   .options({
@@ -69,10 +73,12 @@ async function addBookToDbExecute(bookMd: BookMd): Promise<unknown> {
   const filename = bookMd.filename
   const filepath = path.join(commands.dir, filename)
   const bookCreateInput = bookOnDiskToBookCreateInput(bookMd)
-  const bookAdded = await prisma.book.create({ data: bookCreateInput })
-  const bookMdString = await bookToString(bookAdded)
 
   try {
+    const bookAdded = await prisma.book.create({ data: bookCreateInput })
+    const bookMdString = await bookToString(bookAdded)
+
+    await findCoverUpload(bookMd, commands.dir)
     await promises.writeFile(filepath, bookMdString)
     await promises.utimes(filepath, bookAdded.date_updated, bookAdded.date_updated)
   } catch (err) {
@@ -170,34 +176,8 @@ async function syncToDisk(): Promise<void> {
 
   await eachLimit(books, cpus().length, async (book) => {
     await syncBookToDisk(book)
-    // await syncBookCoverToDisk(book)
   })
 }
-
-// async function syncBookCoverToDisk(book: Book): Promise<void> {
-//   const file = path.join(commands.dir, `${book.slug}.md`)
-//   const exists = existsSync(file)
-//
-//   if (exists && book.id_cover_image) {
-//     log.info('[disk]', `about to update ${book.slug}`)
-//     const coverPath = path.join(commands.dir, 'assets', 'covers', `${book.slug}.jpg`)
-//     const metadata = await sharp(coverPath).metadata()
-//
-//     const updateCoverPath = path.join('assets', 'covers', `${book.slug}.jpg`)
-//     await prisma.book.update({
-//       where: { id: book.id },
-//       data: {
-//         cover_path: updateCoverPath,
-//         cover_width: metadata.width,
-//         cover_height: metadata.height,
-//       },
-//     })
-//     log.info(
-//       '[disk]',
-//       `updated cover_path to ${updateCoverPath} with width: ${metadata.width} and height: ${metadata.height}`
-//     )
-//   }
-// }
 
 async function syncBookToDisk(book: Book): Promise<void> {
   const bookMd = await bookToString(book)

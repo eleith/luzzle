@@ -30,8 +30,8 @@
     ]
   },
   "ts-node": {
-    "require": ["tsconfig-paths/register"],
-    "files": true
+    "transpileOnly": true,
+    "transpiler": "ts-node/transpilers/swc-experimental"
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "build"]

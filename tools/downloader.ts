@@ -1,6 +1,6 @@
 import { createWriteStream, mkdirSync } from 'fs'
-import axios from 'axios'
 import { dirname } from 'path'
+import got from 'got'
 
 async function downloadImage(url: string, outputPath: string): Promise<void> {
   const basepath = dirname(outputPath)
@@ -8,13 +8,9 @@ async function downloadImage(url: string, outputPath: string): Promise<void> {
   mkdirSync(basepath, { recursive: true })
 
   const writer = createWriteStream(outputPath)
-  const response = await axios({
-    url,
-    method: 'GET',
-    responseType: 'stream',
-  })
+  const response = got.stream(url)
 
-  response.data.pipe(writer)
+  response.pipe(writer)
 
   return new Promise((resolve, reject) => {
     writer.on('finish', resolve)
