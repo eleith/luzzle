@@ -1,4 +1,4 @@
-import axios from 'axios'
+import got from 'got'
 
 interface OpenLibraryResponseSearch {
   start: number
@@ -49,18 +49,18 @@ export type OpenLibraryFullWork = OpenLibrarySearchWork & {
 
 async function search(title: string, author: string): Promise<Array<OpenLibrarySearchWork>> {
   try {
-    const response = await axios.get<OpenLibraryResponseSearch>(
+    const response = await got.get<OpenLibraryResponseSearch>(
       'http://openlibrary.org/search.json',
       {
-        params: {
+        searchParams: {
           title: title.replace(/:.+/g, '').replace(/!/g, ''),
           author: author.replace(/,.+/g, '').replace(/!/g, ''),
         },
       }
     )
 
-    if (response.status === 200 && response.data.num_found > 0) {
-      return response.data.docs.filter((item) => item.type === 'work')
+    if (response.statusCode === 200 && response.body.num_found > 0) {
+      return response.body.docs.filter((item) => item.type === 'work')
     }
   } catch (e) {
     console.log(e)
@@ -71,17 +71,17 @@ async function search(title: string, author: string): Promise<Array<OpenLibraryS
 
 async function findWork(id: string): Promise<OpenLibrarySearchWork | null> {
   try {
-    const response = await axios.get<OpenLibraryResponseSearch>(
+    const response = await got.get<OpenLibraryResponseSearch>(
       'http://openlibrary.org/search.json',
       {
-        params: {
+        searchParams: {
           q: id,
         },
       }
     )
 
-    if (response.status === 200 && response.data.num_found > 0) {
-      return response.data.docs.filter((item) => item.type === 'work')[0]
+    if (response.statusCode === 200 && response.body.num_found > 0) {
+      return response.body.docs.filter((item) => item.type === 'work')[0]
     }
   } catch (e) {
     console.log(e)
@@ -92,12 +92,10 @@ async function findWork(id: string): Promise<OpenLibrarySearchWork | null> {
 
 async function getWork(workId: string): Promise<OpenLibraryWork | null> {
   try {
-    const response = await axios.get<OpenLibraryWork>(
-      `https://openlibrary.org/works/${workId}.json`
-    )
+    const response = await got.get<OpenLibraryWork>(`https://openlibrary.org/works/${workId}.json`)
 
-    if (response.status === 200) {
-      return response.data
+    if (response.statusCode === 200) {
+      return response.body
     }
   } catch (e) {
     console.log(e)
@@ -108,12 +106,10 @@ async function getWork(workId: string): Promise<OpenLibraryWork | null> {
 
 async function getBook(bookId: string): Promise<OpenLibraryBook | null> {
   try {
-    const response = await axios.get<OpenLibraryBook>(
-      `https://openlibrary.org/books/${bookId}.json`
-    )
+    const response = await got.get<OpenLibraryBook>(`https://openlibrary.org/books/${bookId}.json`)
 
-    if (response.status === 200) {
-      return response.data
+    if (response.statusCode === 200) {
+      return response.body
     }
   } catch (e) {
     console.log(e)
