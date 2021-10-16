@@ -9,8 +9,8 @@ import { addFrontMatter, extract } from './md'
 import log from './log'
 import { downloadTo } from './web'
 import { fromFile } from 'file-type'
-import { findVolume } from '../google-books'
-import { getCoverUrl, getWorkFromBook } from 'tools/openlibrary'
+import { findVolume } from './google-books'
+import { getCoverUrl, getWorkFromBook } from './open-library'
 
 type NonNullableProperties<T> = { [K in keyof T]: NonNullable<T[K]> }
 type BookDbRequiredFields = 'slug' | 'id' | 'date_added' | 'date_updated'
