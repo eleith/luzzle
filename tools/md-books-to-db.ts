@@ -5,59 +5,58 @@ import { existsSync, promises } from 'fs'
 import { cpus } from 'os'
 import path from 'path'
 import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
 import {
   BookMd,
-  bookOnDiskToBookCreateInput,
-  bookOnDiskToBookUpdateInput,
+  bookMdToBookCreateInput,
+  bookMdToBookUpdateInput,
   bookToString,
   extractBooksOnDisk,
   filterRecentlyUpdatedBooks,
   findNonExistantBooks,
   readBookDir,
-  processInputs,
 } from './lib/book'
 import log from './lib/log'
-// import sharp from 'sharp'
 
 const { PrismaClient } = Prisma
 
-const commands = yargs(process.argv.slice(2))
+const commands = yargs(hideBin(process.argv))
+  .command('sync <dir>', 'sync directory to local database')
+  .command('dump <dir>', 'dump database to local markdown files')
+  .positional('dir', {
+    type: 'string',
+    description: 'directory for the book entries',
+    demandOption: true,
+  })
   .options({
-    dir: {
-      type: 'string',
-      alias: 'd',
-      description: 'directory for the book entries',
-      demandOption: true,
-    },
-    dryrun: {
+    'dry-run': {
       type: 'boolean',
-      alias: 'dry-run',
       description: 'run without making permanent changes',
       default: false,
-    },
-    sync: {
-      choices: ['disk', 'db'],
-      description: 'direction of sync',
-      default: 'disk',
     },
     verbose: {
       alias: 'v',
       type: 'count',
     },
   })
-  .check((argv) => {
-    if (argv.dir && !existsSync(argv.dir)) {
-      throw new Error(`${argv.dir} does not exist`)
+  .check((args) => {
+    if (args.dir && !existsSync(args.dir)) {
+      throw new Error(`[error] '${args.dir}' is not a folder`)
+    }
+
+    if (['sync', 'dump'].indexOf(args._[0] as string) == -1) {
+      throw new Error(`[error] '${args._}' is not a valid command`)
     }
 
     return true
   })
+  .demandCommand(1, `[error] please specify a command`)
   .parseSync()
 
 const prisma = new PrismaClient()
 
 async function addBookToDb(bookMd: BookMd): Promise<unknown> {
-  const err = commands.dryrun ? null : await addBookToDbExecute(bookMd)
+  const err = commands['dry-run'] ? null : await addBookToDbExecute(bookMd)
 
   if (!err) {
     log.info('[db]', `added ${bookMd.filename}`)
@@ -74,8 +73,7 @@ async function addBookToDbExecute(bookMd: BookMd): Promise<unknown> {
   const filepath = path.join(commands.dir, filename)
 
   try {
-    const bookMdProcessed = await processInputs(bookMd, commands.dir)
-    const bookCreateInput = bookOnDiskToBookCreateInput(bookMdProcessed)
+    const bookCreateInput = await bookMdToBookCreateInput(bookMd, commands.dir)
     const bookAdded = await prisma.book.create({ data: bookCreateInput })
     const bookMdString = await bookToString(bookAdded)
 
@@ -91,7 +89,7 @@ async function updateBookToDb(bookMd: BookMd): Promise<unknown> {
   const book = await prisma.book.findUnique({ where: { id } })
 
   if (book) {
-    const err = commands.dryrun ? null : await updateBookToDbExecute(bookMd, book)
+    const err = commands['dry-run'] ? null : await updateBookToDbExecute(bookMd, book)
 
     if (!err) {
       log.info('[db]', `updated ${bookMd.filename}`)
@@ -110,8 +108,7 @@ async function updateBookToDbExecute(bookMd: BookMd, book: Book): Promise<unknow
   const filepath = path.join(commands.dir, filename)
 
   try {
-    const bookMdProcessed = await processInputs(bookMd, commands.dir)
-    const bookUpdateInput = bookOnDiskToBookUpdateInput(bookMdProcessed, book)
+    const bookUpdateInput = await bookMdToBookUpdateInput(bookMd, book, commands.dir)
     const bookUpdate = await prisma.book.update({
       where: { id: book.id },
       data: bookUpdateInput,
@@ -130,7 +127,7 @@ async function removeBookFromDb(bookSlugs: string[]): Promise<unknown> {
   const ids = booksToRemove.map((book) => book.id)
 
   if (ids.length) {
-    const err = commands.dryrun ? null : await removeBookFromDbExecute(ids)
+    const err = commands['dry-run'] ? null : await removeBookFromDbExecute(ids)
 
     if (!err) {
       log.info('[db]', `deleted ${booksToRemove.map((book) => book.slug)}`)
@@ -195,7 +192,9 @@ async function syncBookToDisk(book: Book): Promise<void> {
     }
   }
 
-  const err = commands.dryrun ? null : await syncBookToDiskExecute(file, bookMd, book.date_updated)
+  const err = commands['dry-run']
+    ? null
+    : await syncBookToDiskExecute(file, bookMd, book.date_updated)
 
   if (!err) {
     log.info('[disk]', `wrote ${file}`)
@@ -222,14 +221,13 @@ async function cleanup(): Promise<void> {
 }
 
 async function run(): Promise<void> {
-  const { sync, verbose, dryrun } = commands
+  const command = commands._[0]
+  log.level = commands.verbose === 0 ? 'info' : 'silly'
+  log.heading = commands['dry-run'] ? '[would-have]' : ''
 
-  log.level = verbose === 0 ? 'info' : 'silly'
-  log.heading = dryrun ? '[would]' : ''
-
-  if (sync === 'disk') {
+  if (command === 'sync') {
     await syncToDisk()
-  } else if (sync === 'db') {
+  } else if (command === 'dump') {
     await syncToDb()
   }
 

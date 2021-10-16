@@ -11,6 +11,7 @@ import { downloadTo } from './web'
 import { fromFile } from 'file-type'
 import { findVolume } from './google-books'
 import { getCoverUrl, getWorkFromBook } from './open-library'
+import sharp from 'sharp'
 
 type NonNullableProperties<T> = { [K in keyof T]: NonNullable<T[K]> }
 type BookDbRequiredFields = 'slug' | 'id' | 'date_added' | 'date_updated'
@@ -181,23 +182,57 @@ function findNonExistantBooks(
   return differenceWith(booksInDb, bookSlugs, (book, slug) => book.slug === slug)
 }
 
-function bookOnDiskToBookCreateInput(bookOnDisk: BookMd): Prisma.BookCreateInput {
-  const bookMdFields = omit(bookOnDisk.frontmatter, bookMdSpecialFields)
+async function getBookCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
+  bookMd: BookMd,
+  dir: string
+): Promise<Pick<T, 'cover_path' | 'cover_width' | 'cover_height'>> {
+  const coverPath = getCoverPathForBook(bookMd)
+  const coverImage = await sharp(path.join(dir, coverPath)).metadata()
+  const coverWidth = coverImage.width?.valueOf()
+  const coverHeight = coverImage.height?.valueOf()
+
+  return {
+    cover_path: coverPath,
+    cover_width: coverWidth,
+    cover_height: coverHeight,
+  }
+}
+
+async function bookMdToBookCreateInput(
+  _bookMd: BookMd,
+  dir: string
+): Promise<Prisma.BookCreateInput> {
+  const bookMd = await processInputs(_bookMd, dir)
+  const cover = bookMd.frontmatter.__input?.cover
   const bookCreateInput = {
-    ...bookMdFields,
-    slug: path.basename(bookOnDisk.filename, '.md'),
-    note: bookOnDisk.markdown || '',
+    ...omit(bookMd.frontmatter, bookMdSpecialFields),
+    slug: path.basename(bookMd.filename, '.md'),
+    note: bookMd.markdown || '',
+  }
+
+  if (cover) {
+    const coverData = await getBookCoverData<Prisma.BookCreateInput>(bookMd, dir)
+
+    return {
+      ...bookCreateInput,
+      ...coverData,
+    }
   }
 
   return bookCreateInput
 }
 
-function bookOnDiskToBookUpdateInput(bookOnDisk: BookMd, book: Book): Prisma.BookUpdateInput {
-  const bookMdFields = omit(bookOnDisk.frontmatter, bookMdSpecialFields)
+async function bookMdToBookUpdateInput(
+  _bookMd: BookMd,
+  book: Book,
+  dir: string
+): Promise<Prisma.BookUpdateInput> {
+  const bookMd = await processInputs(_bookMd, dir)
+  const cover = bookMd.frontmatter.__input?.cover
   const bookUpdateInput = {
-    ...bookMdFields,
-    slug: path.basename(bookOnDisk.filename, '.md'),
-    note: bookOnDisk.markdown || '',
+    ...omit(bookMd.frontmatter, bookMdSpecialFields),
+    slug: path.basename(bookMd.filename, '.md'),
+    note: bookMd.markdown || '',
   }
 
   const bookKeys = Object.keys(bookUpdateInput) as Array<keyof typeof bookUpdateInput>
@@ -209,16 +244,29 @@ function bookOnDiskToBookUpdateInput(bookOnDisk: BookMd, book: Book): Prisma.Boo
     }
   })
 
+  if (cover) {
+    const coverData = await getBookCoverData<Prisma.BookUpdateInput>(bookMd, dir)
+
+    return {
+      ...bookUpdateInput,
+      ...coverData,
+    }
+  }
+
   return bookUpdateInput
 }
 
-async function getCover(
+function getCoverPathForBook(bookMd: BookMd): string {
+  const slug = path.basename(bookMd.filename, '.md')
+  return path.join(bookCoverDir, `${slug}.jpg`)
+}
+
+async function downloadCover(
   bookMd: BookMd & { frontmatter: { __input: { cover: string } } },
   outputDir: string
 ): Promise<void> {
   const cover = bookMd.frontmatter.__input?.cover
-  const slug = path.basename(bookMd.filename, '.md')
-  const outputPath = path.join(outputDir, bookCoverDir, `${slug}.jpg`)
+  const outputPath = path.join(outputDir, getCoverPathForBook(bookMd))
 
   if (/https?:\/\//i.test(cover)) {
     const tempFile = await downloadTo(cover)
@@ -356,21 +404,24 @@ async function processInputs(bookMd: BookMd, outputDir: string): Promise<BookMd>
   }
 
   if (bookMd.frontmatter.__input?.cover) {
-    await getCover(bookMd as BookMd & { frontmatter: { __input: { cover: string } } }, outputDir)
+    await downloadCover(
+      bookMd as BookMd & { frontmatter: { __input: { cover: string } } },
+      outputDir
+    )
   }
 
   return bookMdProcessed
 }
 
 export {
-  getCover,
+  downloadCover,
   bookToString,
   makeBookMd,
   readBookDir,
   extractBooksOnDisk,
   filterRecentlyUpdatedBooks,
-  bookOnDiskToBookUpdateInput,
-  bookOnDiskToBookCreateInput,
+  bookMdToBookUpdateInput,
+  bookMdToBookCreateInput,
   findNonExistantBooks,
-  processInputs,
+  getCoverPathForBook,
 }
