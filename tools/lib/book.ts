@@ -2,13 +2,15 @@ import { Book, Prisma } from '@app/prisma'
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
 import { filterLimit, mapLimit } from 'async'
 import { existsSync, promises } from 'fs'
-import { differenceWith, omit } from 'lodash'
+import { differenceWith, merge, omit, uniq } from 'lodash'
 import { cpus } from 'os'
 import path, { extname } from 'path'
 import { addFrontMatter, extract } from './md'
 import log from './log'
 import { downloadTo } from './web'
 import { fromFile } from 'file-type'
+import { findVolume } from '../google-books'
+import { getCoverUrl, getWorkFromBook } from 'tools/openlibrary'
 
 type NonNullableProperties<T> = { [K in keyof T]: NonNullable<T[K]> }
 type BookDbRequiredFields = 'slug' | 'id' | 'date_added' | 'date_updated'
@@ -16,27 +18,25 @@ type BookDbOptionalFields = 'cover_width' | 'cover_height' | 'cover_path'
 type BookDbFields = BookDbRequiredFields | BookDbOptionalFields
 type BookMdRequiredFields = 'title' | 'author'
 type BookMdFields = Exclude<keyof Book, BookDbFields | 'note'>
-type BookMdDatabaseCache = {
-  __database_cache?: Pick<Book, BookDbRequiredFields> &
-    Partial<NonNullableProperties<Pick<Book, BookDbOptionalFields>>>
-}
+type BookMdDatabaseCache = Pick<Book, BookDbRequiredFields> &
+  Partial<NonNullableProperties<Pick<Book, BookDbOptionalFields>>>
+type BookMdInputSearch = 'google' | 'open-library' | 'all'
 type BookMdInput = {
-  __input?: { cover?: string }
+  cover?: string
+  search?: BookMdInputSearch
 }
+type BookMdProcessFields = '__database_cache' | '__input'
 
 export type BookMd = {
   filename: string
   markdown?: string
   frontmatter: Pick<Book, BookMdRequiredFields> &
-    Partial<NonNullableProperties<Omit<Book, BookMdRequiredFields | 'note' | BookDbFields>>> &
-    BookMdDatabaseCache &
-    BookMdInput
+    Partial<NonNullableProperties<Omit<Book, BookMdRequiredFields | 'note' | BookDbFields>>> & {
+      __database_cache?: BookMdDatabaseCache
+    } & { __input?: BookMdInput }
 }
 
-const bookMdSpecialFields: Array<keyof BookMdDatabaseCache | keyof BookMdInput> = [
-  '__database_cache',
-  '__input',
-]
+const bookMdSpecialFields: Array<BookMdProcessFields> = ['__database_cache', '__input']
 
 const bookMdSchema: JTDSchemaType<BookMd> = {
   properties: {
@@ -61,6 +61,7 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
         __input: {
           optionalProperties: {
             cover: { type: 'string' },
+            search: { enum: ['google', 'open-library', 'all'] },
           },
         },
         __database_cache: {
@@ -211,42 +212,158 @@ function bookOnDiskToBookUpdateInput(bookOnDisk: BookMd, book: Book): Prisma.Boo
   return bookUpdateInput
 }
 
-async function findCoverUpload(bookOnDisk: BookMd, outputDir: string): Promise<void> {
-  const upload = bookOnDisk.frontmatter.__input?.cover
+async function getCover(
+  bookMd: BookMd & { frontmatter: { __input: { cover: string } } },
+  outputDir: string
+): Promise<void> {
+  const cover = bookMd.frontmatter.__input?.cover
+  const slug = path.basename(bookMd.filename, '.md')
+  const outputPath = path.join(outputDir, bookCoverDir, `${slug}.jpg`)
 
-  if (upload) {
-    const slug = path.basename(bookOnDisk.filename, '.md')
-    const outputPath = path.join(outputDir, bookCoverDir, `${slug}.jpg`)
+  if (/https?:\/\//i.test(cover)) {
+    const tempFile = await downloadTo(cover)
 
-    if (/https?:\/\//i.test(upload)) {
-      const tempFile = await downloadTo(upload)
+    if (extname(tempFile) === '.jpg') {
+      await promises.copyFile(tempFile, outputPath)
+      await promises.unlink(tempFile)
+    } else {
+      await promises.unlink(tempFile)
+      throw new Error("upload wasn't a jpg")
+    }
+  } else if (cover.startsWith('/') || cover.startsWith('../')) {
+    const uploadPath = path.resolve(outputDir, cover)
+    if (existsSync(uploadPath)) {
+      const fileType = await fromFile(cover)
 
-      if (extname(tempFile) === '.jpg') {
-        await promises.copyFile(tempFile, outputPath)
-        await promises.unlink(tempFile)
+      if (fileType?.ext === 'jpg') {
+        await promises.copyFile(cover, outputPath)
       } else {
-        await promises.unlink(tempFile)
         throw new Error("upload wasn't a jpg")
       }
-    } else if (upload.startsWith('/') || upload.startsWith('../')) {
-      const uploadPath = path.resolve(outputDir, upload)
-      if (existsSync(uploadPath)) {
-        const fileType = await fromFile(upload)
-
-        if (fileType?.ext === 'jpg') {
-          await promises.copyFile(upload, outputPath)
-        } else {
-          throw new Error("upload wasn't a jpg")
-        }
-      } else {
-        throw new Error("upload doesn't exist")
-      }
+    } else {
+      throw new Error("upload doesn't exist")
     }
   }
+
+  throw new Error('cover is not understandable')
+}
+
+async function searchGoogleBooks(
+  bookTitle: string,
+  bookAuthor: string
+): Promise<BookMd['frontmatter'] | null> {
+  const volume = await findVolume(bookTitle, bookAuthor)
+  const googleBook = volume?.volumeInfo
+
+  if (googleBook) {
+    const title = googleBook.title || bookTitle
+    const subtitle = googleBook.subtitle
+    const authors = googleBook.authors || []
+    const author = authors[0] || bookAuthor
+    const coauthors = authors.slice(1).join(',')
+    const categories = googleBook.categories || []
+    const keywords = categories.map((x) => x.toLowerCase())
+    const pages = googleBook.pageCount
+    const description = googleBook.description
+
+    return {
+      title,
+      author,
+      description,
+      ...(subtitle && { subtitle }),
+      ...(coauthors && { coauthors }),
+      ...(pages && !isNaN(pages) && { pages }),
+      ...(keywords.length && { keywords: keywords.join(',') }),
+      ...(description && { description }),
+    }
+  }
+
+  return null
+}
+
+async function searchOpenLibrary(
+  bookMd: BookMd & { frontmatter: { id_ol_book: string } }
+): Promise<BookMd['frontmatter'] | null> {
+  const work = await getWorkFromBook(bookMd.frontmatter.id_ol_book)
+
+  if (work) {
+    const title = work.title || bookMd.frontmatter.title
+    const subtitle = work.subtitle
+    const author = work.author_name[0] || bookMd.frontmatter.author
+    const coauthors = work.author_name.slice(1).join(',')
+    const isbn = work.isbn?.[0]
+    const publishedYear = work.first_publish_year
+    const pages = Number(work.number_of_pages)
+    const subjects = work.subject || []
+    const places = work.place
+    const keywords = uniq([...subjects, ...places]).map((x) => x.toLowerCase())
+    const coverUrl = getCoverUrl(work.cover_i)
+
+    return {
+      title,
+      author,
+      id_ol_work: work.workId,
+      ...(subtitle && { subtitle }),
+      ...(isbn && { isbn }),
+      ...(coauthors && { coauthors }),
+      ...(pages && !isNaN(pages) && { pages }),
+      ...(keywords.length && { keywords: keywords.join(',') }),
+      ...(publishedYear && { year_first_published: publishedYear }),
+      __input: {
+        cover: coverUrl,
+      },
+    }
+  }
+
+  return null
+}
+
+async function processSearch(
+  bookMd: BookMd & { frontmatter: { __input: { search: 'all' | 'open-library' | 'google' } } }
+): Promise<BookMd> {
+  const search = bookMd.frontmatter.__input.search
+  const bookId = bookMd.frontmatter.id_ol_book
+
+  if (bookId && search === 'all') {
+    const openWork = await searchOpenLibrary(
+      bookMd as BookMd & { frontmatter: { id_ol_book: string } }
+    )
+    const googleBook = await searchGoogleBooks(bookMd.frontmatter.title, bookMd.frontmatter.author)
+
+    return merge({ frontmatter: openWork }, { frontmatter: googleBook }, bookMd)
+  } else if (bookId && search === 'open-library') {
+    const openWork = await searchOpenLibrary(
+      bookMd as BookMd & { frontmatter: { id_ol_book: string } }
+    )
+
+    return merge({ frontmatter: openWork }, bookMd)
+  } else if (search == 'google') {
+    const googleBook = await searchGoogleBooks(bookMd.frontmatter.title, bookMd.frontmatter.author)
+
+    return merge({ frontmatter: googleBook }, bookMd)
+  }
+
+  return bookMd
+}
+
+async function processInputs(bookMd: BookMd, outputDir: string): Promise<BookMd> {
+  let bookMdProcessed = bookMd
+
+  if (bookMd.frontmatter.__input?.search) {
+    bookMdProcessed = await processSearch(
+      bookMd as BookMd & { frontmatter: { __input: { search: BookMdInputSearch } } }
+    )
+  }
+
+  if (bookMd.frontmatter.__input?.cover) {
+    await getCover(bookMd as BookMd & { frontmatter: { __input: { cover: string } } }, outputDir)
+  }
+
+  return bookMdProcessed
 }
 
 export {
-  findCoverUpload,
+  getCover,
   bookToString,
   makeBookMd,
   readBookDir,
@@ -255,4 +372,5 @@ export {
   bookOnDiskToBookUpdateInput,
   bookOnDiskToBookCreateInput,
   findNonExistantBooks,
+  processInputs,
 }

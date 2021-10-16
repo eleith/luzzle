@@ -14,7 +14,7 @@ import {
   filterRecentlyUpdatedBooks,
   findNonExistantBooks,
   readBookDir,
-  findCoverUpload,
+  processInputs,
 } from './lib/book'
 import log from './lib/log'
 // import sharp from 'sharp'
@@ -72,13 +72,13 @@ async function addBookToDb(bookMd: BookMd): Promise<unknown> {
 async function addBookToDbExecute(bookMd: BookMd): Promise<unknown> {
   const filename = bookMd.filename
   const filepath = path.join(commands.dir, filename)
-  const bookCreateInput = bookOnDiskToBookCreateInput(bookMd)
 
   try {
+    const bookMdProcessed = await processInputs(bookMd, commands.dir)
+    const bookCreateInput = bookOnDiskToBookCreateInput(bookMdProcessed)
     const bookAdded = await prisma.book.create({ data: bookCreateInput })
     const bookMdString = await bookToString(bookAdded)
 
-    await findCoverUpload(bookMd, commands.dir)
     await promises.writeFile(filepath, bookMdString)
     await promises.utimes(filepath, bookAdded.date_updated, bookAdded.date_updated)
   } catch (err) {
@@ -110,7 +110,8 @@ async function updateBookToDbExecute(bookMd: BookMd, book: Book): Promise<unknow
   const filepath = path.join(commands.dir, filename)
 
   try {
-    const bookUpdateInput = bookOnDiskToBookUpdateInput(bookMd, book)
+    const bookMdProcessed = await processInputs(bookMd, commands.dir)
+    const bookUpdateInput = bookOnDiskToBookUpdateInput(bookMdProcessed, book)
     const bookUpdate = await prisma.book.update({
       where: { id: book.id },
       data: bookUpdateInput,
