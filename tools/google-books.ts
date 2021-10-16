@@ -33,4 +33,33 @@ async function findVolume(title: string, author: string): Promise<books_v1.Schem
   return books?.[0] || null
 }
 
+// async function searchBook(title: string, author: string): Promise<> {
+//   const volume = await findVolume(title, author)
+//   const googleBook = volume?.volumeInfo
+// 
+//   if (googleBook) {
+//     const title = googleBook.title || bookMd.frontmatter.title
+//     const subtitle = googleBook.subtitle
+//     const authors = googleBook.authors || []
+//     const author = authors[0] || bookMd.frontmatter.author
+//     const coauthors = authors.slice(1).join(',')
+//     const categories = googleBook.categories || []
+//     const keywords = categories.map((x) => x.toLowerCase()).join(',')
+//     const pages = googleBook.pageCount
+//     const description = googleBook.description
+// 
+//     return {
+//       title,
+//       author,
+//       subtitle,
+//       coauthors,
+//       keywords,
+//       pages,
+//       description,
+//     }
+//   }
+// 
+//   return null
+// }
+
 export { findVolumeByIsbn, findVolumes, findVolume }
