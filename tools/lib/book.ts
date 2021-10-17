@@ -424,4 +424,5 @@ export {
   bookMdToBookCreateInput,
   findNonExistantBooks,
   getCoverPathForBook,
+  bookCoverDir
 }
