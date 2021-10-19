@@ -150,12 +150,12 @@ async function readBookDir(dirPath: string): Promise<Array<string>> {
 async function filterRecentlyUpdatedBooks(
   bookSlugs: string[],
   books: Pick<Book, 'date_updated' | 'slug'>[],
-  dirpath: string
+  dir: string
 ): Promise<string[]> {
   const updated = await filterLimit(bookSlugs, cpus().length, async (slug) => {
     const book = books.find((book) => book.slug === slug)
     if (book) {
-      const stat = await promises.stat(path.join(dirpath, `${slug}.md`))
+      const stat = await promises.stat(path.join(dir, `${slug}.md`))
       return stat.mtime > book.date_updated
     }
     return true
@@ -424,5 +424,5 @@ export {
   bookMdToBookCreateInput,
   findNonExistantBooks,
   getCoverPathForBook,
-  bookCoverDir
+  bookCoverDir,
 }

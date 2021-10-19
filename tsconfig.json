@@ -30,9 +30,8 @@
     ]
   },
   "ts-node": {
-    "transpileOnly": true,
-    "transpiler": "ts-node/transpilers/swc-experimental"
+    "transpileOnly": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "tsconfig.json"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "tsconfig.json", "jest.config.ts"],
   "exclude": ["node_modules", "build"]
 }

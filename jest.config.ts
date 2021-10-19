@@ -6,6 +6,10 @@ const config: Config.InitialOptions = {
   verbose: true,
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths),
   preset: 'ts-jest',
+  transform: {
+    '.(ts|tsx)': 'ts-jest',
+  },
+  setupFiles: ['<rootDir>tests/config.ts'],
   globals: {
     'ts-jest': {
       isolatedModules: true,
