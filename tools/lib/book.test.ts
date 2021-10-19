@@ -7,10 +7,10 @@ import {
   filterRecentlyUpdatedBooks,
   getCoverPathForBook,
   makeBookMd,
+  readBookDir,
 } from './book'
 import YAML from 'yaml'
-import { Stats } from 'fs'
-import { mocked } from 'ts-jest/utils'
+import { Dirent, Stats } from 'fs'
 
 const bookMdSimple: BookMd = {
   filename: 'slugified-title.md',
@@ -63,10 +63,32 @@ const mockStat = jest.fn().mockImplementation(async (): Promise<Stats> => {
   return Promise.resolve(stat)
 })
 
+const mockReaddir = jest.fn().mockImplementation(async (): Promise<Dirent[]> => {
+  const files: Dirent[] = [
+    {
+      name: 'one.md',
+      isFile: () => true,
+    },
+    {
+      name: 'two.md',
+      isFile: () => true,
+    },
+    {
+      name: 'three.md',
+      isFile: () => true,
+    },
+    {
+      name: 'assets',
+      isFile: () => false,
+    },
+  ] as Dirent[]
+  return Promise.resolve(files)
+})
+
 jest.mock('fs', () => ({
   promises: {
     stat: (path: string) => mockStat(path),
-    readdir: jest.fn(),
+    readdir: (path: string) => mockReaddir(path),
     copyFile: jest.fn(),
     unlinke: jest.fn(),
   },
@@ -87,6 +109,11 @@ jest.mock('./open-library', () => ({
 }))
 
 describe('book', () => {
+  beforeEach(() => {
+    mockStat.mockClear()
+    mockReaddir.mockClear()
+  })
+
   test('getCoverPathforBook', () => {
     const bookMd = bookMdSimple
     const coverPath = getCoverPathForBook(bookMd)
@@ -122,8 +149,33 @@ describe('book', () => {
     expect(() => makeBookMd(...args)).toThrow()
   })
 
+  test('readBookDir', async () => {
+    const dir = 'dirPath'
+    const files = await readBookDir(dir)
+
+    expect(mockReaddir).toHaveBeenCalledTimes(1)
+    expect(mockReaddir).toHaveBeenCalledWith(dir)
+    expect(files).toHaveLength(3)
+    expect(files).toEqual(['one', 'two', 'three'])
+  })
+
   test('filterRecentlyUpdatedBooks', async () => {
     const bookSlugs = ['one', 'two', 'three']
+    const books: Pick<Book, 'date_updated' | 'slug'>[] = [
+      { date_updated: new Date('2200-11-11'), slug: 'one' },
+      { date_updated: new Date('2200-11-11'), slug: 'two' },
+      { date_updated: new Date('2202-11-11'), slug: 'three' },
+    ]
+    const dir = 'dirPath'
+    const updated = await filterRecentlyUpdatedBooks(bookSlugs, books, dir)
+
+    expect(mockStat).toHaveBeenCalledTimes(3)
+    expect(mockStat).toHaveBeenLastCalledWith('dirPath/three.md')
+    expect(updated).toHaveLength(2)
+  })
+
+  test('filterRecentlyUpdatedBooks handles new files', async () => {
+    const bookSlugs = ['one', 'two', 'three', 'four']
     const books: Pick<Book, 'date_updated' | 'slug'>[] = [
       { date_updated: new Date('2200-11-11'), slug: 'one' },
       { date_updated: new Date('2200-11-11'), slug: 'two' },
@@ -134,6 +186,6 @@ describe('book', () => {
 
     expect(mockStat).toHaveBeenCalledTimes(3)
     expect(mockStat).toHaveBeenLastCalledWith('dirPath/three.md')
-    expect(updated).toHaveLength(3)
+    expect(updated).toHaveLength(4)
   })
 })
