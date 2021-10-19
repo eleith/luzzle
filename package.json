@@ -11,7 +11,8 @@
     "build-tools": "esbuild tools/md-books-to-db.ts --platform=node --target=node14 --bundle --outfile=build/books.cli.js --external:yargs --external:ajv --external:sharp --external:tempy",
     "submit": "gcloud builds submit --gcs-source-staging-dir gs://eleith-cloud-builds/eleith-io-site --tag gcr.io/eleith-cloud/eleith-io-site",
     "deploy": "gcloud run deploy eleith-io-site --image gcr.io/eleith-cloud/eleith-io-site --platform managed --region us-central1",
-    "test": "jest"
+    "test": "jest",
+    "prepare": "ts-patch install -s"
   },
   "devDependencies": {
     "@fast-csv/format": "^4.3.5",
@@ -49,7 +50,7 @@
     "got": "^11.8.2",
     "graphql": "^15.6.1",
     "gray-matter": "^4.0.3",
-    "jest": "^27.2.5",
+    "jest": "^27.3.0",
     "limax": "^3.0.0",
     "mdast-util-to-markdown": "^1.2.3",
     "npmlog": "^5.0.1",
@@ -62,6 +63,8 @@
     "tempy": "^2.0.0",
     "ts-jest": "^27.0.7",
     "ts-node": "^10.2.1",
+    "ts-patch": "^1.4.4",
+    "typescript": "^4.4.4",
     "unified": "^10.1.0",
     "unist-util-filter": "^4.0.0",
     "unist-util-visit": "^4.1.0",
@@ -89,7 +92,6 @@
     "react-syntax-highlighter": "^15.4.4",
     "swr": "^1.0.1",
     "theme-ui": "^0.11.3",
-    "typescript": "^4.4.3",
     "uuid": "^8.3.2"
   },
   "volta": {
