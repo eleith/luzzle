@@ -1,7 +1,8 @@
 import { Book, Prisma } from '@app/prisma'
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
 import { filterLimit, mapLimit } from 'async'
-import { existsSync, promises } from 'fs'
+import { existsSync } from 'fs'
+import { copyFile, unlink, stat, readdir } from 'fs/promises'
 import { differenceWith, merge, omit, uniq } from 'lodash'
 import { cpus } from 'os'
 import path, { extname } from 'path'
@@ -139,7 +140,7 @@ function makeBookMd(filename: string, markdown: unknown, frontmatter: unknown): 
 }
 
 async function readBookDir(dirPath: string): Promise<Array<string>> {
-  const files = await promises.readdir(dirPath, { withFileTypes: true })
+  const files = await readdir(dirPath, { withFileTypes: true })
   const bookSlugs = files
     .filter((dirent) => dirent.isFile() && path.extname(dirent.name) === '.md')
     .map((dirent) => path.basename(dirent.name, '.md'))
@@ -152,27 +153,32 @@ async function filterRecentlyUpdatedBooks(
   books: Pick<Book, 'date_updated' | 'slug'>[],
   dir: string
 ): Promise<string[]> {
-  const updated = await filterLimit(bookSlugs, cpus().length, async (slug) => {
+  return filterLimit(bookSlugs, cpus().length, async (slug) => {
     const book = books.find((book) => book.slug === slug)
     if (book) {
-      const stat = await promises.stat(path.join(dir, `${slug}.md`))
-      return stat.mtime > book.date_updated
+      const fileStat = await stat(path.join(dir, `${slug}.md`))
+      return fileStat.mtime > book.date_updated
     }
     return true
   })
-
-  return updated
 }
 
 async function extractBooksOnDisk(bookSlugs: string[], dirpath: string): Promise<Array<BookMd>> {
-  return mapLimit(bookSlugs, cpus().length, async (slug) => {
-    const data = await extract(path.join(dirpath, `${slug}.md`))
-    try {
-      return makeBookMd(`${slug}.md`, data.markdown, data.frontmatter)
-    } catch (err) {
-      log.error('[md-extract]', err as string)
+  const bookMds = await mapLimit(
+    bookSlugs,
+    cpus().length,
+    async (slug) => {
+      try {
+        const data = await extract(path.join(dirpath, `${slug}.md`))
+        return makeBookMd(`${slug}.md`, data.markdown, data.frontmatter)
+      } catch (err) {
+        log.error('[md-extract]', err as string)
+        return null
+      }
     }
-  })
+  )
+
+  return bookMds.filter((bookMd): bookMd is BookMd => bookMd !== null)
 }
 
 function findNonExistantBooks(
@@ -272,10 +278,10 @@ async function downloadCover(
     const tempFile = await downloadTo(cover)
 
     if (extname(tempFile) === '.jpg') {
-      await promises.copyFile(tempFile, outputPath)
-      await promises.unlink(tempFile)
+      await copyFile(tempFile, outputPath)
+      await unlink(tempFile)
     } else {
-      await promises.unlink(tempFile)
+      await unlink(tempFile)
       throw new Error("upload wasn't a jpg")
     }
   } else if (cover.startsWith('/') || cover.startsWith('../')) {
@@ -284,7 +290,7 @@ async function downloadCover(
       const fileType = await fromFile(cover)
 
       if (fileType?.ext === 'jpg') {
-        await promises.copyFile(cover, outputPath)
+        await copyFile(cover, outputPath)
       } else {
         throw new Error("upload wasn't a jpg")
       }
