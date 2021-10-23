@@ -164,19 +164,15 @@ async function filterRecentlyUpdatedBooks(
 }
 
 async function extractBooksOnDisk(bookSlugs: string[], dirpath: string): Promise<Array<BookMd>> {
-  const bookMds = await mapLimit(
-    bookSlugs,
-    cpus().length,
-    async (slug) => {
-      try {
-        const data = await extract(path.join(dirpath, `${slug}.md`))
-        return makeBookMd(`${slug}.md`, data.markdown, data.frontmatter)
-      } catch (err) {
-        log.error('[md-extract]', err as string)
-        return null
-      }
+  const bookMds = await mapLimit(bookSlugs, cpus().length, async (slug) => {
+    try {
+      const data = await extract(path.join(dirpath, `${slug}.md`))
+      return makeBookMd(`${slug}.md`, data.markdown, data.frontmatter)
+    } catch (err) {
+      log.error('[md-extract]', err as string)
+      return null
     }
-  )
+  })
 
   return bookMds.filter((bookMd): bookMd is BookMd => bookMd !== null)
 }
@@ -188,14 +184,14 @@ function findNonExistantBooks(
   return differenceWith(booksInDb, bookSlugs, (book, slug) => book.slug === slug)
 }
 
-async function getBookCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
+export const _getCoverData = async <T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
   bookMd: BookMd,
   dir: string
-): Promise<Pick<T, 'cover_path' | 'cover_width' | 'cover_height'>> {
+): Promise<Pick<T, 'cover_path' | 'cover_width' | 'cover_height'>> => {
   const coverPath = getCoverPathForBook(bookMd)
   const coverImage = await sharp(path.join(dir, coverPath)).metadata()
-  const coverWidth = coverImage.width?.valueOf()
-  const coverHeight = coverImage.height?.valueOf()
+  const coverWidth = coverImage.width
+  const coverHeight = coverImage.height
 
   return {
     cover_path: coverPath,
@@ -208,7 +204,7 @@ async function bookMdToBookCreateInput(
   _bookMd: BookMd,
   dir: string
 ): Promise<Prisma.BookCreateInput> {
-  const bookMd = await processInputs(_bookMd, dir)
+  const bookMd = await _processInputs(_bookMd, dir)
   const cover = bookMd.frontmatter.__input?.cover
   const bookCreateInput = {
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
@@ -217,7 +213,7 @@ async function bookMdToBookCreateInput(
   }
 
   if (cover) {
-    const coverData = await getBookCoverData<Prisma.BookCreateInput>(bookMd, dir)
+    const coverData = await _getCoverData<Prisma.BookCreateInput>(bookMd, dir)
 
     return {
       ...bookCreateInput,
@@ -233,7 +229,7 @@ async function bookMdToBookUpdateInput(
   book: Book,
   dir: string
 ): Promise<Prisma.BookUpdateInput> {
-  const bookMd = await processInputs(_bookMd, dir)
+  const bookMd = await _processInputs(_bookMd, dir)
   const cover = bookMd.frontmatter.__input?.cover
   const bookUpdateInput = {
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
@@ -251,7 +247,7 @@ async function bookMdToBookUpdateInput(
   })
 
   if (cover) {
-    const coverData = await getBookCoverData<Prisma.BookUpdateInput>(bookMd, dir)
+    const coverData = await _getCoverData<Prisma.BookUpdateInput>(bookMd, dir)
 
     return {
       ...bookUpdateInput,
@@ -400,7 +396,7 @@ async function processSearch(
   return bookMd
 }
 
-async function processInputs(bookMd: BookMd, outputDir: string): Promise<BookMd> {
+export const _processInputs = async (bookMd: BookMd, outputDir: string): Promise<BookMd> => {
   let bookMdProcessed = bookMd
 
   if (bookMd.frontmatter.__input?.search) {
@@ -427,8 +423,8 @@ export {
   extractBooksOnDisk,
   filterRecentlyUpdatedBooks,
   bookMdToBookUpdateInput,
-  bookMdToBookCreateInput,
   findNonExistantBooks,
   getCoverPathForBook,
   bookCoverDir,
+  bookMdToBookCreateInput,
 }

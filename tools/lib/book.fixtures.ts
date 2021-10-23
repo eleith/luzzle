@@ -1,16 +1,19 @@
-import YAML from 'yaml'
 import { Book } from '@app/prisma'
+import { omit } from 'lodash'
 import { BookMd } from './book'
 
-function makeBookMd(overrides: Partial<BookMd> = {}): BookMd {
+function makeBookMd(
+  overrides: Partial<BookMd | { frontmatter: Partial<BookMd['frontmatter']> }> = {}
+): BookMd {
   return {
     filename: 'slugified-title.md',
     frontmatter: {
       title: 'title of the book',
       author: 'writer of book',
+      ...overrides.frontmatter,
     },
     markdown: 'a note about the book',
-    ...overrides,
+    ...omit(overrides, 'frontmatter'),
   }
 }
 
