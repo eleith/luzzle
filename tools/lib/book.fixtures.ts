@@ -2,17 +2,22 @@ import { Book } from '@app/prisma'
 import { omit } from 'lodash'
 import { BookMd } from './book'
 
+const title = 'title of the book'
+const author = 'author of the book'
+const note = 'a note about the book'
+const slug = 'slugified-title'
+
 function makeBookMd(
   overrides: Partial<BookMd | { frontmatter: Partial<BookMd['frontmatter']> }> = {}
 ): BookMd {
   return {
-    filename: 'slugified-title.md',
+    filename: `${slug}.md`,
     frontmatter: {
-      title: 'title of the book',
-      author: 'writer of book',
+      title,
+      author,
       ...overrides.frontmatter,
     },
-    markdown: 'a note about the book',
+    markdown: note,
     ...omit(overrides, 'frontmatter'),
   }
 }
@@ -23,9 +28,9 @@ function makeBook(overrides: Partial<Book> = {}): Book {
     id_ol_book: null,
     id_ol_work: null,
     isbn: null,
-    title: 'title of the book',
+    title,
     subtitle: null,
-    author: 'write of book',
+    author,
     coauthors: null,
     description: null,
     pages: null,
@@ -38,8 +43,8 @@ function makeBook(overrides: Partial<Book> = {}): Book {
     cover_width: null,
     cover_height: null,
     cover_path: null,
-    slug: 'book-simple',
-    note: null,
+    slug,
+    note,
     ...overrides,
   }
 }

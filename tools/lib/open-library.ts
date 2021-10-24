@@ -41,7 +41,7 @@ export interface OpenLibraryBook {
   description: string
 }
 
-export type OpenLibraryFullWork = OpenLibrarySearchWork & {
+export type OpenLibraryWorkBook = OpenLibrarySearchWork & {
   subtitle?: string
   workId: string
   bookId: string
@@ -122,7 +122,7 @@ function getCoverUrl(id: number, size: 'L' | 'M' | 'S' = 'L'): string {
   return `http://covers.openlibrary.org/b/id/${id}-${size}.jpg`
 }
 
-async function getWorkFromBook(bookId: string): Promise<OpenLibraryFullWork | null> {
+async function getWorkFromBook(bookId: string): Promise<OpenLibraryWorkBook | null> {
   const book = await getBook(bookId)
   if (book && book.works) {
     const workId = book.works[0].key.replace(/\/works\//, '')

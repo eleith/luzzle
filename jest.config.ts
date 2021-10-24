@@ -9,6 +9,8 @@ const config: Config.InitialOptions = {
   transform: {
     '.(ts|tsx)': 'ts-jest',
   },
+  collectCoverageFrom: ['src/**/*.ts', 'tools/**/*.ts'],
+  coveragePathIgnorePatterns: ['.mock.ts', '.fixtures.ts', '.d.ts'],
   setupFiles: ['<rootDir>tests/config.ts'],
   globals: {
     'ts-jest': {

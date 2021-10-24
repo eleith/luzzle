@@ -1,7 +1,6 @@
 import { Book, Prisma } from '@app/prisma'
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
 import { filterLimit, mapLimit } from 'async'
-import { existsSync } from 'fs'
 import { copyFile, unlink, stat, readdir } from 'fs/promises'
 import { differenceWith, merge, omit, uniq } from 'lodash'
 import { cpus } from 'os'
@@ -37,6 +36,10 @@ export type BookMd = {
       __database_cache?: BookMdDatabaseCache
     } & { __input?: BookMdInput }
 }
+
+export type BookMdWithCover = BookMd & { frontmatter: { __input: { cover: string } } }
+export type BookMdWithOpenLib = BookMd & { frontmatter: { id_ol_book: string } }
+export type BookMdWithSearch = BookMd & { frontmatter: { __input: { search: BookMdInputSearch } } }
 
 const bookMdSpecialFields: Array<BookMdProcessFields> = ['__database_cache', '__input']
 
@@ -263,10 +266,7 @@ function getCoverPathForBook(bookMd: BookMd): string {
   return path.join(bookCoverDir, `${slug}.jpg`)
 }
 
-async function downloadCover(
-  bookMd: BookMd & { frontmatter: { __input: { cover: string } } },
-  outputDir: string
-): Promise<void> {
+export const _downloadCover = async (bookMd: BookMdWithCover, outputDir: string): Promise<void> => {
   const cover = bookMd.frontmatter.__input?.cover
   const outputPath = path.join(outputDir, getCoverPathForBook(bookMd))
 
@@ -280,28 +280,30 @@ async function downloadCover(
       await unlink(tempFile)
       throw new Error("upload wasn't a jpg")
     }
-  } else if (cover.startsWith('/') || cover.startsWith('../')) {
-    const uploadPath = path.resolve(outputDir, cover)
-    if (existsSync(uploadPath)) {
-      const fileType = await fromFile(cover)
+  } else if (/^..\/|^\//.test(cover)) {
+    const coverPath = path.join(outputDir, cover)
+    const coverStat = await stat(coverPath)
+
+    if (coverStat.isFile()) {
+      const fileType = await fromFile(coverPath)
 
       if (fileType?.ext === 'jpg') {
-        await copyFile(cover, outputPath)
+        await copyFile(coverPath, outputPath)
       } else {
         throw new Error("upload wasn't a jpg")
       }
     } else {
       throw new Error("upload doesn't exist")
     }
+  } else {
+    throw new Error('cover is not understandable')
   }
-
-  throw new Error('cover is not understandable')
 }
 
-async function searchGoogleBooks(
+export const _searchGoogleBooks = async (
   bookTitle: string,
   bookAuthor: string
-): Promise<BookMd['frontmatter'] | null> {
+): Promise<BookMd['frontmatter'] | null> => {
   const volume = await findVolume(bookTitle, bookAuthor)
   const googleBook = volume?.volumeInfo
 
@@ -331,9 +333,9 @@ async function searchGoogleBooks(
   return null
 }
 
-async function searchOpenLibrary(
-  bookMd: BookMd & { frontmatter: { id_ol_book: string } }
-): Promise<BookMd['frontmatter'] | null> {
+export const _searchOpenLibrary = async (
+  bookMd: BookMdWithOpenLib
+): Promise<BookMd['frontmatter'] | null> => {
   const work = await getWorkFromBook(bookMd.frontmatter.id_ol_book)
 
   if (work) {
@@ -368,55 +370,44 @@ async function searchOpenLibrary(
   return null
 }
 
-async function processSearch(
-  bookMd: BookMd & { frontmatter: { __input: { search: 'all' | 'open-library' | 'google' } } }
-): Promise<BookMd> {
+export const _processSearch = async (bookMd: BookMdWithSearch): Promise<BookMd> => {
   const search = bookMd.frontmatter.__input.search
   const bookId = bookMd.frontmatter.id_ol_book
 
   if (bookId && search === 'all') {
-    const openWork = await searchOpenLibrary(
-      bookMd as BookMd & { frontmatter: { id_ol_book: string } }
-    )
-    const googleBook = await searchGoogleBooks(bookMd.frontmatter.title, bookMd.frontmatter.author)
+    const openWork = await _searchOpenLibrary(bookMd as BookMdWithOpenLib)
+    const googleBook = await _searchGoogleBooks(bookMd.frontmatter.title, bookMd.frontmatter.author)
 
     return merge({ frontmatter: openWork }, { frontmatter: googleBook }, bookMd)
   } else if (bookId && search === 'open-library') {
-    const openWork = await searchOpenLibrary(
-      bookMd as BookMd & { frontmatter: { id_ol_book: string } }
-    )
+    const openWork = await _searchOpenLibrary(bookMd as BookMdWithOpenLib)
 
     return merge({ frontmatter: openWork }, bookMd)
   } else if (search == 'google') {
-    const googleBook = await searchGoogleBooks(bookMd.frontmatter.title, bookMd.frontmatter.author)
+    const googleBook = await _searchGoogleBooks(bookMd.frontmatter.title, bookMd.frontmatter.author)
 
     return merge({ frontmatter: googleBook }, bookMd)
   }
 
-  return bookMd
+  /* istanbul ignore next */
+  return bookMd as never
 }
 
 export const _processInputs = async (bookMd: BookMd, outputDir: string): Promise<BookMd> => {
   let bookMdProcessed = bookMd
 
   if (bookMd.frontmatter.__input?.search) {
-    bookMdProcessed = await processSearch(
-      bookMd as BookMd & { frontmatter: { __input: { search: BookMdInputSearch } } }
-    )
+    bookMdProcessed = await _processSearch(bookMd as BookMdWithSearch)
   }
 
   if (bookMd.frontmatter.__input?.cover) {
-    await downloadCover(
-      bookMd as BookMd & { frontmatter: { __input: { cover: string } } },
-      outputDir
-    )
+    await _downloadCover(bookMd as BookMdWithCover, outputDir)
   }
 
   return bookMdProcessed
 }
 
 export {
-  downloadCover,
   bookToString,
   makeBookMd,
   readBookDir,
