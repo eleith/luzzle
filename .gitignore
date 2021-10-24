@@ -8,3 +8,4 @@ prisma/data
 generated
 build
 public/images/covers
+coverage

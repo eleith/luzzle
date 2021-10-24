@@ -2,11 +2,13 @@
   "root": true,
   "env": {
     "node": true,
-    "es6": true
+    "es6": true,
+    "jest/globals": true
   },
   "parserOptions": { "ecmaVersion": 8 },
   "ignorePatterns": ["node_modules/*", ".next/*", ".out/*", "!.prettierrc.js"],
   "extends": ["eslint:recommended", "next"],
+  "plugins": ["jest"],
   "overrides": [
     {
       "files": ["**/*.ts", "**/*.tsx"],
@@ -24,7 +26,9 @@
         "plugin:react-hooks/recommended",
         "plugin:jsx-a11y/recommended",
         "plugin:prettier/recommended",
-        "plugin:@next/next/recommended"
+        "plugin:@next/next/recommended",
+        "plugin:jest/style",
+        "plugin:jest/recommended"
       ],
       "rules": {
         "prettier/prettier": ["error", {}, { "usePrettierrc": true }],
