@@ -125,7 +125,10 @@ async function bookToString(book: Book): Promise<string> {
     }
   })
 
-  return addFrontMatter(book.note || '', { ...bookFrontmatter, __database_cache: bookDbCache })
+  return addFrontMatter(book.note?.toString(), {
+    ...bookFrontmatter,
+    __database_cache: bookDbCache,
+  })
 }
 
 function makeBookMd(filename: string, markdown: unknown, frontmatter: unknown): BookMd {
@@ -212,7 +215,7 @@ async function bookMdToBookCreateInput(
   const bookCreateInput = {
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
     slug: path.basename(bookMd.filename, '.md'),
-    note: bookMd.markdown || '',
+    note: bookMd.markdown,
   }
 
   if (cover) {
@@ -237,7 +240,7 @@ async function bookMdToBookUpdateInput(
   const bookUpdateInput = {
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
     slug: path.basename(bookMd.filename, '.md'),
-    note: bookMd.markdown || '',
+    note: bookMd.markdown,
   }
 
   const bookKeys = Object.keys(bookUpdateInput) as Array<keyof typeof bookUpdateInput>
@@ -321,7 +324,6 @@ export const _searchGoogleBooks = async (
     return {
       title,
       author,
-      description,
       ...(subtitle && { subtitle }),
       ...(coauthors && { coauthors }),
       ...(pages && !isNaN(pages) && { pages }),
@@ -346,7 +348,7 @@ export const _searchOpenLibrary = async (
     const isbn = work.isbn?.[0]
     const publishedYear = work.first_publish_year
     const pages = Number(work.number_of_pages)
-    const subjects = work.subject || []
+    const subjects = work.subject
     const places = work.place
     const keywords = uniq([...subjects, ...places]).map((x) => x.toLowerCase())
     const coverUrl = getCoverUrl(work.cover_i)
@@ -374,16 +376,23 @@ export const _processSearch = async (bookMd: BookMdWithSearch): Promise<BookMd> 
   const search = bookMd.frontmatter.__input.search
   const bookId = bookMd.frontmatter.id_ol_book
 
-  if (bookId && search === 'all') {
-    const openWork = await _searchOpenLibrary(bookMd as BookMdWithOpenLib)
-    const googleBook = await _searchGoogleBooks(bookMd.frontmatter.title, bookMd.frontmatter.author)
+  /* istanbul ignore else */
+  if (bookId) {
+    /* istanbul ignore else */
+    if (search === 'all') {
+      const openWork = await _searchOpenLibrary(bookMd as BookMdWithOpenLib)
+      const googleBook = await _searchGoogleBooks(
+        bookMd.frontmatter.title,
+        bookMd.frontmatter.author
+      )
 
-    return merge({ frontmatter: openWork }, { frontmatter: googleBook }, bookMd)
-  } else if (bookId && search === 'open-library') {
-    const openWork = await _searchOpenLibrary(bookMd as BookMdWithOpenLib)
+      return merge({ frontmatter: openWork }, { frontmatter: googleBook }, bookMd)
+    } else if (search === 'open-library') {
+      const openWork = await _searchOpenLibrary(bookMd as BookMdWithOpenLib)
 
-    return merge({ frontmatter: openWork }, bookMd)
-  } else if (search == 'google') {
+      return merge({ frontmatter: openWork }, bookMd)
+    }
+  } else if (search === 'google') {
     const googleBook = await _searchGoogleBooks(bookMd.frontmatter.title, bookMd.frontmatter.author)
 
     return merge({ frontmatter: googleBook }, bookMd)
