@@ -4,7 +4,7 @@ import { VisitorResult } from 'unist-util-visit'
 import YAML from 'yaml'
 import { Node } from 'mdast-util-to-markdown/lib'
 
-function addFrontMatter(markdown = '', metadata: { [key: string]: unknown }): string {
+function addFrontMatter(markdown = '', metadata: { [key: string]: unknown } = {}): string {
   const yamlString = YAML.stringify(metadata)
   const content = markdown.trim()
 

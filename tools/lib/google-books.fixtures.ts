@@ -8,11 +8,12 @@ function makeVolumeInfo(
   overrides: Partial<books_v1.Schema$Volume['volumeInfo']> = {}
 ): books_v1.Schema$Volume['volumeInfo'] {
   return {
-    title,
-    authors,
-    description,
     ...overrides,
   }
 }
 
-export { makeVolumeInfo }
+function makeVolumeInfoSimple(): books_v1.Schema$Volume['volumeInfo'] {
+  return makeVolumeInfo({ title, authors, description })
+}
+
+export { makeVolumeInfo, makeVolumeInfoSimple }
