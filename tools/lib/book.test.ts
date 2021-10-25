@@ -11,7 +11,7 @@ import * as googleBooksFixtures from './google-books.fixtures'
 import { findVolume } from './google-books'
 import log from './log'
 import { addFrontMatter, extract } from './md'
-import { getCoverUrl, getWorkFromBook } from './open-library'
+import { findWork, getBook, getCoverUrl } from './open-library'
 import { downloadTo } from './web'
 import { omit } from 'lodash'
 import { FileTypeResult, fromFile } from 'file-type'
@@ -36,7 +36,8 @@ const mocks = {
   downloadTo: mocked(downloadTo),
   findVolume: mocked(findVolume),
   getCoverUrl: mocked(getCoverUrl),
-  getWorkFromBook: mocked(getWorkFromBook),
+  getBook: mocked(getBook),
+  findWork: mocked(findWork),
   logError: mocked(log.error),
   sharp: mocked(sharp),
   fromFile: mocked(fromFile),
@@ -47,7 +48,7 @@ const spies = {
   _getCoverData: jest.spyOn(bookLib, '_getCoverData'),
   _processSearch: jest.spyOn(bookLib, '_processSearch'),
   _searchGoogleBooks: jest.spyOn(bookLib, '_searchGoogleBooks'),
-  _searchopenLibrary: jest.spyOn(bookLib, '_searchOpenLibrary'),
+  _searchOpenLibrary: jest.spyOn(bookLib, '_searchOpenLibrary'),
   _downloadCover: jest.spyOn(bookLib, '_downloadCover'),
 }
 
@@ -325,13 +326,13 @@ describe('book', () => {
 
     mocks.sharp.mockImplementation(
       () =>
+      ({
+        metadata: async () =>
         ({
-          metadata: async () =>
-            ({
-              width,
-              height,
-            } as Metadata),
-        } as Sharp)
+          width,
+          height,
+        } as Metadata),
+      } as Sharp)
     )
 
     const coverData = await bookLib._getCoverData(bookMd, dir)
@@ -480,7 +481,7 @@ describe('book', () => {
     spies._searchGoogleBooks.mockResolvedValueOnce(
       googleBooksResult as bookLib.BookMd['frontmatter']
     )
-    spies._searchopenLibrary.mockResolvedValueOnce(
+    spies._searchOpenLibrary.mockResolvedValueOnce(
       openLibraryResult as bookLib.BookMd['frontmatter']
     )
 
@@ -491,7 +492,7 @@ describe('book', () => {
       bookMd.frontmatter.title,
       bookMd.frontmatter.author
     )
-    expect(spies._searchopenLibrary).toHaveBeenCalledWith(bookMd)
+    expect(spies._searchOpenLibrary).toHaveBeenCalledWith(bookMd)
   })
 
   test('_processSearch open library', async () => {
@@ -505,7 +506,7 @@ describe('book', () => {
       ...{ frontmatter: { ...openLibraryResult, ...bookMd.frontmatter } },
     })
 
-    spies._searchopenLibrary.mockResolvedValueOnce(
+    spies._searchOpenLibrary.mockResolvedValueOnce(
       openLibraryResult as bookLib.BookMd['frontmatter']
     )
 
@@ -513,7 +514,7 @@ describe('book', () => {
 
     expect(bookMdAfter).toEqual(bookMdSearch)
     expect(spies._searchGoogleBooks).not.toHaveBeenCalledWith()
-    expect(spies._searchopenLibrary).toHaveBeenCalledWith(bookMd)
+    expect(spies._searchOpenLibrary).toHaveBeenCalledWith(bookMd)
   })
 
   test('_processSearch google books', async () => {
@@ -538,26 +539,31 @@ describe('book', () => {
       bookMd.frontmatter.title,
       bookMd.frontmatter.author
     )
-    expect(spies._searchopenLibrary).not.toHaveBeenCalled()
+    expect(spies._searchOpenLibrary).not.toHaveBeenCalled()
   })
 
   test('_searchOpenLibrary', async () => {
+    const workId = 'work-id'
+    const bookId = 'book-id'
+    const book = openLibFixtures.makeOpenLibraryBook({ works: [{ key: `/works/${workId}` }] })
     const work = openLibFixtures.makeOpenLibrarySearchWork()
     const coverUrl = 'https://somewhere'
-    const bookId = work.bookId
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
 
-    mocks.getWorkFromBook.mockResolvedValueOnce(work)
+    mocks.getBook.mockResolvedValueOnce(book)
+    mocks.findWork.mockResolvedValueOnce(work)
     mocks.getCoverUrl.mockReturnValue(coverUrl)
 
     const bookMetadata = await bookLib._searchOpenLibrary(bookMd as bookLib.BookMdWithOpenLib)
 
-    expect(mocks.getWorkFromBook).toHaveBeenCalledWith(bookId)
+    expect(mocks.getBook).toHaveBeenCalledWith(bookId)
+    expect(mocks.findWork).toHaveBeenCalledWith(workId)
     expect(mocks.getCoverUrl).toHaveBeenCalledWith(work.cover_i)
     expect(bookMetadata).toEqual({
       title: bookMd.frontmatter.title,
       author: bookMd.frontmatter.author,
-      id_ol_work: work.workId,
+      subtitle: book.subtitle,
+      id_ol_work: workId,
       year_first_published: work.first_publish_year,
       __input: {
         cover: coverUrl,
@@ -566,25 +572,38 @@ describe('book', () => {
   })
 
   test('_searchOpenLibrary all metadata', async () => {
-    const work = openLibFixtures.makeOpenLibrarySearchWorkSimple()
-    const bookId = work.bookId
-    const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
+    const workId = 'work-id'
+    const bookId = 'book-id'
+    const book = openLibFixtures.makeOpenLibraryBook({
+      works: [{ key: `/works/${workId}` }],
+    })
+    const work = openLibFixtures.makeOpenLibrarySearchWork({
+      isbn: ['isbn-13'],
+      author_name: ['author-1', 'co-author'],
+      number_of_pages: '423',
+      subject: ['sci-fi'],
+      place: ['xylo'],
+      first_publish_year: 2016,
+      title: 'book title',
+    })
     const coverUrl = 'https://somewhere'
+    const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
 
-    mocks.getWorkFromBook.mockResolvedValueOnce(work)
+    mocks.getBook.mockResolvedValueOnce(book)
+    mocks.findWork.mockResolvedValueOnce(work)
     mocks.getCoverUrl.mockReturnValue(coverUrl)
 
     const bookMetadata = await bookLib._searchOpenLibrary(bookMd as bookLib.BookMdWithOpenLib)
 
-    expect(mocks.getWorkFromBook).toHaveBeenCalledWith(bookId)
-    expect(mocks.getCoverUrl).toHaveBeenCalledWith(work.cover_i)
+    expect(mocks.getBook).toHaveBeenCalledWith(bookId)
+    expect(mocks.findWork).toHaveBeenCalledWith(workId)
     expect(bookMetadata).toEqual({
       title: work.title,
       author: work.author_name[0],
       coauthors: work.author_name[1],
-      id_ol_work: work.workId,
+      id_ol_work: workId,
       isbn: work.isbn?.[0],
-      subtitle: work.subtitle,
+      subtitle: book.subtitle,
       pages: Number(work.number_of_pages),
       keywords: [...work.subject, ...work.place].join(','),
       year_first_published: work.first_publish_year,
@@ -595,15 +614,19 @@ describe('book', () => {
   })
 
   test('_searchOpenLibrary returns null', async () => {
+    const bookId = 'book-id'
     const work = openLibFixtures.makeOpenLibrarySearchWork()
-    const bookId = work.bookId
+    const coverUrl = 'https://somewhere'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
 
-    mocks.getWorkFromBook.mockResolvedValueOnce(null)
+    mocks.getBook.mockResolvedValueOnce(null)
+    mocks.findWork.mockResolvedValueOnce(work)
+    mocks.getCoverUrl.mockReturnValue(coverUrl)
 
     const bookMetadata = await bookLib._searchOpenLibrary(bookMd as bookLib.BookMdWithOpenLib)
 
-    expect(mocks.getWorkFromBook).toHaveBeenCalledWith(bookId)
+    expect(mocks.getBook).toHaveBeenCalledWith(bookId)
+    expect(mocks.findWork).not.toHaveBeenCalled()
     expect(bookMetadata).toBeNull()
   })
 
