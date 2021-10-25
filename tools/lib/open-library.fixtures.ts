@@ -1,22 +1,16 @@
-import { OpenLibraryWorkBook } from './open-library'
+import { OpenLibrarySearchWork, OpenLibraryBook } from './open-library'
 
-const workId = 'work-id-1'
-const bookId = 'book-id-2'
 const title = 'an open book title'
 const key = 'book-key-3'
-const number_of_pages = '423'
-const type = 'mystery'
 const first_publish_year = 2016
 const cover_i = 123124123847
 const subtitle = 'open book subtitle'
-const isbn = ['isbn-12']
+const description = 'open book description'
 
 function makeOpenLibrarySearchWork(
-  overrides: Partial<OpenLibraryWorkBook> = {}
-): OpenLibraryWorkBook {
+  overrides: Partial<OpenLibrarySearchWork> = {}
+): OpenLibrarySearchWork {
   return {
-    workId,
-    bookId,
     title: '',
     key,
     publish_year: [],
@@ -25,29 +19,23 @@ function makeOpenLibrarySearchWork(
     subject: [],
     cover_i,
     first_publish_year,
-    type: '',
+    type: 'work',
     place: [],
     ...overrides,
   }
 }
 
-function makeOpenLibrarySearchWorkSimple(): OpenLibraryWorkBook {
-  return makeOpenLibrarySearchWork({
-    workId,
-    bookId,
+function makeOpenLibraryBook(overrides: Partial<OpenLibraryBook> = {}): OpenLibraryBook {
+  return {
     title,
-    key,
-    publish_year: ['2010'],
-    number_of_pages,
-    author_name: ['first author', 'second author'],
-    subject: ['sci-fi'],
     subtitle,
-    cover_i,
-    first_publish_year,
-    type,
-    isbn,
-    place: ['xylo'],
-  })
+    description,
+    authors: [],
+    number_of_pages: 423,
+    publish_date: '',
+    covers: [],
+    ...overrides,
+  }
 }
 
-export { makeOpenLibrarySearchWork, makeOpenLibrarySearchWorkSimple }
+export { makeOpenLibrarySearchWork, makeOpenLibraryBook }

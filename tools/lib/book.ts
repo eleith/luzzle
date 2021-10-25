@@ -10,7 +10,7 @@ import log from './log'
 import { downloadTo } from './web'
 import { fromFile } from 'file-type'
 import { findVolume } from './google-books'
-import { getCoverUrl, getWorkFromBook } from './open-library'
+import { findWork, getBook, getCoverUrl, getWorkFromBook } from './open-library'
 import sharp from 'sharp'
 
 type NonNullableProperties<T> = { [K in keyof T]: NonNullable<T[K]> }
@@ -338,11 +338,13 @@ export const _searchGoogleBooks = async (
 export const _searchOpenLibrary = async (
   bookMd: BookMdWithOpenLib
 ): Promise<BookMd['frontmatter'] | null> => {
-  const work = await getWorkFromBook(bookMd.frontmatter.id_ol_book)
+  const book = await getBook(bookMd.frontmatter.id_ol_book)
+  const workId = book?.works?.[0].key.replace(/\/works\//, '')
+  const work = workId ? await findWork(workId) : null
 
-  if (work) {
+  if (book && work) {
     const title = work.title || bookMd.frontmatter.title
-    const subtitle = work.subtitle
+    const subtitle = book.subtitle
     const author = work.author_name[0] || bookMd.frontmatter.author
     const coauthors = work.author_name.slice(1).join(',')
     const isbn = work.isbn?.[0]
@@ -356,7 +358,7 @@ export const _searchOpenLibrary = async (
     return {
       title,
       author,
-      id_ol_work: work.workId,
+      id_ol_work: workId,
       ...(subtitle && { subtitle }),
       ...(isbn && { isbn }),
       ...(coauthors && { coauthors }),
