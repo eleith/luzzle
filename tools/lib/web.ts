@@ -8,7 +8,7 @@ async function downloadTo(url: string): Promise<string> {
 
   const response = got.stream(url)
   const fileType = await fromStream(response)
-  const filePath = tempy.file({ extension: fileType?.ext || '.unknown' })
+  const filePath = tempy.file({ extension: fileType?.ext })
   const writer = createWriteStream(filePath)
 
   response.pipe(writer)
@@ -16,6 +16,7 @@ async function downloadTo(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
     writer.on('finish', () => resolve(filePath))
     writer.on('error', reject)
+    response.on('error', reject)
   })
 }
 

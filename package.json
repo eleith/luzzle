@@ -54,6 +54,7 @@
     "graphql": "^15.6.1",
     "gray-matter": "^4.0.3",
     "jest": "^27.3.0",
+    "jest-mock-extended": "^2.0.4",
     "limax": "^3.0.0",
     "mdast-util-to-markdown": "^1.2.3",
     "npmlog": "^5.0.1",
