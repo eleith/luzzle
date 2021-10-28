@@ -1,7 +1,7 @@
 import { Book, PrismaClient } from '@app/prisma'
 import prisma from './prisma'
 import { eachLimit } from 'async'
-import { existsSync, promises } from 'fs'
+import { writeFile, utimes, readFile, stat } from 'fs/promises'
 import { cpus } from 'os'
 import path from 'path'
 import yargs from 'yargs'
@@ -34,8 +34,8 @@ export type Context = {
   command: Command
 }
 
-export const _parseArgs = (args: string[]): Command => {
-  const command = yargs(args)
+export const _parseArgs = async (args: string[]): Promise<Command> => {
+  const command = await yargs(args)
     .command('sync <dir>', 'sync directory to local database')
     .command('dump <dir>', 'dump database to local markdown files')
     .positional('dir', {
@@ -54,8 +54,9 @@ export const _parseArgs = (args: string[]): Command => {
         type: 'count',
       },
     })
-    .check((args) => {
-      if (args.dir && !existsSync(args.dir)) {
+    .check(async (args) => {
+      const dirStat = await stat(args.dir)
+      if (args.dir && !dirStat.isDirectory()) {
         throw new Error(`[error] '${args.dir}' is not a folder`)
       }
 
@@ -66,7 +67,7 @@ export const _parseArgs = (args: string[]): Command => {
       return true
     })
     .demandCommand(1, `[error] please specify a command`)
-    .parseSync()
+    .parseAsync()
 
   return {
     name: command._[0] as 'sync' | 'dump',
@@ -100,8 +101,8 @@ export const _addBookToDbExecute = async (ctx: Context, bookMd: BookMd): Promise
     const bookAdded = await ctx.prisma.book.create({ data: bookCreateInput })
     const bookMdString = await bookToString(bookAdded)
 
-    await promises.writeFile(filepath, bookMdString)
-    await promises.utimes(filepath, bookAdded.date_updated, bookAdded.date_updated)
+    await writeFile(filepath, bookMdString)
+    await utimes(filepath, bookAdded.date_updated, bookAdded.date_updated)
   } catch (err) {
     return err
   }
@@ -143,8 +144,8 @@ export const _updateBookToDbExecute = async (
       data: bookUpdateInput,
     })
     const bookMdString = await bookToString(bookUpdate)
-    await promises.writeFile(filepath, bookMdString)
-    await promises.utimes(filepath, bookUpdate.date_updated, bookUpdate.date_updated)
+    await writeFile(filepath, bookMdString)
+    await utimes(filepath, bookUpdate.date_updated, bookUpdate.date_updated)
   } catch (err) {
     return err
   }
@@ -212,10 +213,10 @@ export const _syncToDisk = async (ctx: Context): Promise<void> => {
 export const _syncBookToDisk = async (ctx: Context, book: Book): Promise<void> => {
   const bookMd = await bookToString(book)
   const file = path.join(ctx.command.options.dir, `${book.slug}.md`)
-  const exists = existsSync(file)
+  const fileStat = await stat(file)
 
-  if (exists) {
-    const currentBookMdString = await promises.readFile(
+  if (fileStat.isFile()) {
+    const currentBookMdString = await readFile(
       path.join(ctx.command.options.dir, `${book.slug}.md`),
       'utf-8'
     )
@@ -224,28 +225,23 @@ export const _syncBookToDisk = async (ctx: Context, book: Book): Promise<void> =
     }
   }
 
-  const err = ctx.command.options.isDryRun
-    ? null
-    : await _syncBookToDiskExecute(ctx, file, bookMd, book.date_updated)
-
-  if (!err) {
-    log.info('[disk]', `wrote ${file}`)
-  } else {
-    log.error('[disk]', err as string)
+  if (!ctx.command.options.isDryRun) {
+    await _syncBookToDiskExecute(ctx, file, bookMd, book.date_updated)
   }
 }
 
 export const _syncBookToDiskExecute = async (
   _: Context,
   filepath: string,
-  bookMd: string,
+  bookMdString: string,
   updated: Date
-): Promise<unknown> => {
+): Promise<void> => {
   try {
-    await promises.writeFile(filepath, bookMd)
-    await promises.utimes(filepath, updated, updated)
+    await writeFile(filepath, bookMdString)
+    await utimes(filepath, updated, updated)
+    log.info('[disk]', `wrote to ${filepath}`)
   } catch (err) {
-    return err
+    log.error('[disk]', err as string)
   }
 }
 
@@ -254,7 +250,7 @@ export const _cleanup = async (ctx: Context): Promise<void> => {
 }
 
 async function run(): Promise<Context> {
-  const command = _parseArgs(hideBin(process.argv))
+  const command = await _parseArgs(hideBin(process.argv))
   const ctx: Context = {
     prisma,
     log,
