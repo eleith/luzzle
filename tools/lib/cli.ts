@@ -181,7 +181,7 @@ export const _syncToDb = async (ctx: Context): Promise<void> => {
 
   await eachLimit(bookMds, 1, async (bookMd) => {
     if (bookMd.frontmatter.__database_cache?.id) {
-      await _updateBookToDb(ctx, bookMd)
+      await _updateBookToDb(ctx, bookMd as BookMdWithDatabaseId)
     } else {
       await _addBookToDb(ctx, bookMd)
     }
