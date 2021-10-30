@@ -1,5 +1,6 @@
 import { Book } from '@app/prisma'
-import { omit } from 'lodash'
+import { merge } from 'lodash'
+import { DeepPartial } from 'src/@types/utilities'
 import { BookMd } from './book'
 
 const title = 'title of the book'
@@ -7,19 +8,18 @@ const author = 'author of the book'
 const note = 'a note about the book'
 const slug = 'slugified-title'
 
-function makeBookMd(
-  overrides: Partial<BookMd | { frontmatter: Partial<BookMd['frontmatter']> }> = {}
-): BookMd {
-  return {
-    filename: `${slug}.md`,
-    frontmatter: {
-      title,
-      author,
-      ...overrides.frontmatter,
+function makeBookMd(overrides: DeepPartial<BookMd> = {}): BookMd {
+  return merge(
+    {
+      filename: `${slug}.md`,
+      frontmatter: {
+        title,
+        author,
+      },
+      markdown: note,
     },
-    markdown: note,
-    ...omit(overrides, 'frontmatter'),
-  }
+    overrides as BookMd
+  )
 }
 
 function makeBook(overrides: Partial<Book> = {}): Book {

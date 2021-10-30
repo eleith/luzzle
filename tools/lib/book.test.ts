@@ -43,27 +43,10 @@ const mocks = {
   fromFile: mocked(fromFile),
 }
 
-const spies = {
-  _processInput: jest.spyOn(bookLib, '_processInputs'),
-  _getCoverData: jest.spyOn(bookLib, '_getCoverData'),
-  _processSearch: jest.spyOn(bookLib, '_processSearch'),
-  _searchGoogleBooks: jest.spyOn(bookLib, '_searchGoogleBooks'),
-  _searchOpenLibrary: jest.spyOn(bookLib, '_searchOpenLibrary'),
-  _downloadCover: jest.spyOn(bookLib, '_downloadCover'),
-}
-
 describe('book', () => {
   afterEach(() => {
-    const mockKeys = Object.keys(mocks) as (keyof typeof mocks)[]
-    const spyKeys = Object.keys(spies) as (keyof typeof spies)[]
-
-    mockKeys.forEach((key) => {
-      mocks[key].mockReset()
-    })
-
-    spyKeys.forEach((key) => {
-      spies[key].mockClear()
-    })
+    jest.resetAllMocks()
+    jest.restoreAllMocks()
   })
 
   test('getCoverPathforBook', () => {
@@ -225,12 +208,13 @@ describe('book', () => {
   test('bookMdToCreateInput', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const dir = 'dirPath'
+    const spyProcessInputs = jest.spyOn(bookLib, '_processInputs')
 
-    spies._processInput.mockResolvedValueOnce(bookMd)
+    spyProcessInputs.mockResolvedValueOnce(bookMd)
 
     const bookCreateInput = await bookLib.bookMdToBookCreateInput(bookMd, dir)
 
-    expect(spies._processInput).toHaveBeenCalledWith(bookMd, dir)
+    expect(spyProcessInputs).toHaveBeenCalledWith(bookMd, dir)
     expect(bookCreateInput).toEqual({
       ...bookMd.frontmatter,
       slug: path.basename(bookMd.filename, '.md'),
@@ -245,14 +229,16 @@ describe('book', () => {
       frontmatter: { __input: { cover } },
     })
     const dir = 'dirPath'
+    const spyProcessInputs = jest.spyOn(bookLib, '_processInputs')
+    const spyGetCoverData = jest.spyOn(bookLib, '_getCoverData')
 
-    spies._processInput.mockResolvedValueOnce(bookMd)
-    spies._getCoverData.mockResolvedValueOnce(coverData)
+    spyProcessInputs.mockResolvedValueOnce(bookMd)
+    spyGetCoverData.mockResolvedValueOnce(coverData)
 
     const bookCreateInput = await bookLib.bookMdToBookCreateInput(bookMd, dir)
 
-    expect(spies._processInput).toHaveBeenCalledWith(bookMd, dir)
-    expect(spies._getCoverData).toHaveBeenCalledWith(bookMd, dir)
+    expect(spyProcessInputs).toHaveBeenCalledWith(bookMd, dir)
+    expect(spyGetCoverData).toHaveBeenCalledWith(bookMd, dir)
     expect(bookCreateInput).toEqual({
       ...omit(bookMd.frontmatter, '__input'),
       slug: path.basename(bookMd.filename, '.md'),
@@ -271,13 +257,14 @@ describe('book', () => {
       slug: path.basename(bookMd.filename, '.md'),
     })
     const dir = 'dirPath'
+    const spyProcessInputs = jest.spyOn(bookLib, '_processInputs')
 
-    spies._processInput.mockResolvedValueOnce(bookMd)
+    spyProcessInputs.mockResolvedValueOnce(bookMd)
     bookMd.frontmatter.title = title
 
     const bookCreateInput = await bookLib.bookMdToBookUpdateInput(bookMd, book, dir)
 
-    expect(spies._processInput).toHaveBeenCalledWith(bookMd, dir)
+    expect(spyProcessInputs).toHaveBeenCalledWith(bookMd, dir)
     expect(bookCreateInput).toEqual({ title })
   })
 
@@ -294,14 +281,16 @@ describe('book', () => {
       slug: path.basename(bookMd.filename, '.md'),
     })
     const dir = 'dirPath'
+    const spyProcessInputs = jest.spyOn(bookLib, '_processInputs')
+    const spyGetCoverData = jest.spyOn(bookLib, '_getCoverData')
 
-    spies._processInput.mockResolvedValueOnce(bookMd)
-    spies._getCoverData.mockResolvedValueOnce(coverData)
+    spyProcessInputs.mockResolvedValueOnce(bookMd)
+    spyGetCoverData.mockResolvedValueOnce(coverData)
 
     const bookCreateInput = await bookLib.bookMdToBookUpdateInput(bookMd, book, dir)
 
-    expect(spies._processInput).toHaveBeenCalledWith(bookMd, dir)
-    expect(spies._getCoverData).toHaveBeenCalledWith(bookMd, dir)
+    expect(spyProcessInputs).toHaveBeenCalledWith(bookMd, dir)
+    expect(spyGetCoverData).toHaveBeenCalledWith(bookMd, dir)
     expect(bookCreateInput).toEqual({
       ...coverData,
     })
@@ -326,13 +315,13 @@ describe('book', () => {
 
     mocks.sharp.mockImplementation(
       () =>
-      ({
-        metadata: async () =>
         ({
-          width,
-          height,
-        } as Metadata),
-      } as Sharp)
+          metadata: async () =>
+            ({
+              width,
+              height,
+            } as Metadata),
+        } as Sharp)
     )
 
     const coverData = await bookLib._getCoverData(bookMd, dir)
@@ -443,27 +432,31 @@ describe('book', () => {
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input: { cover, search } } })
     const bookMdAfter = bookFixtures.makeBookMd()
     const dir = 'dirPath'
+    const spyProcessSearch = jest.spyOn(bookLib, '_processSearch')
+    const spyDownloadCover = jest.spyOn(bookLib, '_downloadCover')
 
-    spies._processSearch.mockResolvedValueOnce(bookMdAfter)
-    spies._downloadCover.mockResolvedValueOnce()
+    spyProcessSearch.mockResolvedValueOnce(bookMdAfter)
+    spyDownloadCover.mockResolvedValueOnce()
 
     const bookMdProcessed = await bookLib._processInputs(bookMd as bookLib.BookMdWithCover, dir)
 
     expect(bookMdProcessed).toEqual(bookMdAfter)
-    expect(spies._processSearch).toHaveBeenCalledWith(bookMd)
-    expect(spies._downloadCover).toHaveBeenCalledWith(bookMd, dir)
+    expect(spyProcessSearch).toHaveBeenCalledWith(bookMd)
+    expect(spyDownloadCover).toHaveBeenCalledWith(bookMd, dir)
   })
 
   test('_processInputs no inputs', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const bookMdAfter = bookFixtures.makeBookMd()
     const dir = 'dirPath'
+    const spyProcessSearch = jest.spyOn(bookLib, '_processSearch')
+    const spyDownloadCover = jest.spyOn(bookLib, '_downloadCover')
 
     const bookMdProcessed = await bookLib._processInputs(bookMd as bookLib.BookMdWithCover, dir)
 
     expect(bookMdProcessed).toEqual(bookMdAfter)
-    expect(spies._processSearch).not.toHaveBeenCalled()
-    expect(spies._downloadCover).not.toHaveBeenCalled()
+    expect(spyProcessSearch).not.toHaveBeenCalled()
+    expect(spyDownloadCover).not.toHaveBeenCalled()
   })
 
   test('_processSearch open all', async () => {
@@ -477,22 +470,20 @@ describe('book', () => {
       ...bookMd,
       ...{ frontmatter: { ...openLibraryResult, ...googleBooksResult, ...bookMd.frontmatter } },
     })
+    const spySearchGoogleBooks = jest.spyOn(bookLib, '_searchGoogleBooks')
+    const spySearchOpenLibrary = jest.spyOn(bookLib, '_searchOpenLibrary')
 
-    spies._searchGoogleBooks.mockResolvedValueOnce(
-      googleBooksResult as bookLib.BookMd['frontmatter']
-    )
-    spies._searchOpenLibrary.mockResolvedValueOnce(
-      openLibraryResult as bookLib.BookMd['frontmatter']
-    )
+    spySearchGoogleBooks.mockResolvedValueOnce(googleBooksResult as bookLib.BookMd['frontmatter'])
+    spySearchOpenLibrary.mockResolvedValueOnce(openLibraryResult as bookLib.BookMd['frontmatter'])
 
     const bookMdAfter = await bookLib._processSearch(bookMd as bookLib.BookMdWithSearch)
 
     expect(bookMdAfter).toEqual(bookMdSearch)
-    expect(spies._searchGoogleBooks).toHaveBeenCalledWith(
+    expect(spySearchGoogleBooks).toHaveBeenCalledWith(
       bookMd.frontmatter.title,
       bookMd.frontmatter.author
     )
-    expect(spies._searchOpenLibrary).toHaveBeenCalledWith(bookMd)
+    expect(spySearchOpenLibrary).toHaveBeenCalledWith(bookMd)
   })
 
   test('_processSearch open library', async () => {
@@ -505,16 +496,16 @@ describe('book', () => {
       ...bookMd,
       ...{ frontmatter: { ...openLibraryResult, ...bookMd.frontmatter } },
     })
+    const spySearchGoogleBooks = jest.spyOn(bookLib, '_searchGoogleBooks')
+    const spySearchOpenLibrary = jest.spyOn(bookLib, '_searchOpenLibrary')
 
-    spies._searchOpenLibrary.mockResolvedValueOnce(
-      openLibraryResult as bookLib.BookMd['frontmatter']
-    )
+    spySearchOpenLibrary.mockResolvedValueOnce(openLibraryResult as bookLib.BookMd['frontmatter'])
 
     const bookMdAfter = await bookLib._processSearch(bookMd as bookLib.BookMdWithSearch)
 
     expect(bookMdAfter).toEqual(bookMdSearch)
-    expect(spies._searchGoogleBooks).not.toHaveBeenCalledWith()
-    expect(spies._searchOpenLibrary).toHaveBeenCalledWith(bookMd)
+    expect(spySearchGoogleBooks).not.toHaveBeenCalledWith()
+    expect(spySearchOpenLibrary).toHaveBeenCalledWith(bookMd)
   })
 
   test('_processSearch google books', async () => {
@@ -527,19 +518,19 @@ describe('book', () => {
       ...bookMd,
       ...{ frontmatter: { ...googleBooksResult, ...bookMd.frontmatter } },
     })
+    const spySearchGoogleBooks = jest.spyOn(bookLib, '_searchGoogleBooks')
+    const spySearchOpenLibrary = jest.spyOn(bookLib, '_searchOpenLibrary')
 
-    spies._searchGoogleBooks.mockResolvedValueOnce(
-      googleBooksResult as bookLib.BookMd['frontmatter']
-    )
+    spySearchGoogleBooks.mockResolvedValueOnce(googleBooksResult as bookLib.BookMd['frontmatter'])
 
     const bookMdAfter = await bookLib._processSearch(bookMd as bookLib.BookMdWithSearch)
 
     expect(bookMdAfter).toEqual(bookMdSearch)
-    expect(spies._searchGoogleBooks).toHaveBeenCalledWith(
+    expect(spySearchGoogleBooks).toHaveBeenCalledWith(
       bookMd.frontmatter.title,
       bookMd.frontmatter.author
     )
-    expect(spies._searchOpenLibrary).not.toHaveBeenCalled()
+    expect(spySearchOpenLibrary).not.toHaveBeenCalled()
   })
 
   test('_searchOpenLibrary', async () => {

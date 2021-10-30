@@ -10,7 +10,7 @@ import log from './log'
 import { downloadTo } from './web'
 import { fromFile } from 'file-type'
 import { findVolume } from './google-books'
-import { findWork, getBook, getCoverUrl, getWorkFromBook } from './open-library'
+import { findWork, getBook, getCoverUrl } from './open-library'
 import sharp from 'sharp'
 
 type NonNullableProperties<T> = { [K in keyof T]: NonNullable<T[K]> }
@@ -40,6 +40,8 @@ export type BookMd = {
 export type BookMdWithCover = BookMd & { frontmatter: { __input: { cover: string } } }
 export type BookMdWithOpenLib = BookMd & { frontmatter: { id_ol_book: string } }
 export type BookMdWithSearch = BookMd & { frontmatter: { __input: { search: BookMdInputSearch } } }
+export type BookMdWithDatabaseId = BookMd & { frontmatter: { __database_cache: {id:string}} }
+
 
 const bookMdSpecialFields: Array<BookMdProcessFields> = ['__database_cache', '__input']
 

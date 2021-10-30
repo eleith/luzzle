@@ -13,23 +13,10 @@ const mocks = {
   gotGet: mocked(got.get),
 }
 
-const spies = {
-  getBook: jest.spyOn(openLibrary, 'getBook'),
-  findWork: jest.spyOn(openLibrary, 'findWork'),
-}
-
 describe('book', () => {
   afterEach(() => {
-    const mockKeys = Object.keys(mocks) as (keyof typeof mocks)[]
-    const spyKeys = Object.keys(spies) as (keyof typeof spies)[]
-
-    mockKeys.forEach((key) => {
-      mocks[key].mockReset()
-    })
-
-    spyKeys.forEach((key) => {
-      spies[key].mockClear()
-    })
+    jest.resetAllMocks()
+    jest.restoreAllMocks()
   })
 
   test('search', async () => {
