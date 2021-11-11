@@ -6,7 +6,7 @@ jest.mock('./prisma', () => {
   return mockDeep<PrismaClient>()
 })
 
-export const prismaClientMockReset = ():void => {
+export const prismaClientMockReset = (): void => {
   mockReset(prisma)
 }
 

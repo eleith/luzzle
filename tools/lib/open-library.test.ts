@@ -13,7 +13,7 @@ const mocks = {
   gotGet: mocked(got.get),
 }
 
-describe('book', () => {
+describe('open-library', () => {
   afterEach(() => {
     jest.resetAllMocks()
     jest.restoreAllMocks()
