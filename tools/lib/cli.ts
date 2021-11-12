@@ -57,8 +57,9 @@ export const _parseArgs = async (_args: string[]): Promise<Command> => {
       },
     })
     .check(async (args) => {
-      const dirStat = await stat(args.dir)
-      if (args.dir && !dirStat.isDirectory()) {
+      const dirStat = await stat(args.dir).catch(() => null)
+
+      if (args.dir && !dirStat?.isDirectory()) {
         throw new Error(`[error] '${args.dir}' is not a folder`)
       }
 
@@ -201,9 +202,9 @@ export const _syncToDisk = async (ctx: Context): Promise<void> => {
 export const _syncBookToDisk = async (ctx: Context, book: Book): Promise<void> => {
   const bookMd = await bookToString(book)
   const file = path.join(ctx.command.options.dir, `${book.slug}.md`)
-  const fileStat = await stat(file)
+  const fileStat = await stat(file).catch(() => null)
 
-  if (fileStat.isFile()) {
+  if (fileStat?.isFile()) {
     const currentBookMdString = await readFile(
       path.join(ctx.command.options.dir, `${book.slug}.md`),
       'utf-8'
@@ -211,22 +212,25 @@ export const _syncBookToDisk = async (ctx: Context, book: Book): Promise<void> =
     if (currentBookMdString === bookMd) {
       return
     }
+  } else {
+    log.error('[disk]', `${file} isn't a file`)
+    return
   }
 
-  if (!ctx.command.options.isDryRun) {
-    await _syncBookToDiskExecute(ctx, file, bookMd, book.date_updated)
-  }
+  await _syncBookToDiskExecute(ctx, file, bookMd, book.date_updated)
 }
 
 export const _syncBookToDiskExecute = async (
-  _: Context,
+  ctx: Context,
   filepath: string,
   bookMdString: string,
   updated: Date
 ): Promise<void> => {
   try {
-    await writeFile(filepath, bookMdString)
-    await utimes(filepath, updated, updated)
+    if (!ctx.command.options.isDryRun) {
+      await writeFile(filepath, bookMdString)
+      await utimes(filepath, updated, updated)
+    }
     log.info('[disk]', `wrote to ${filepath}`)
   } catch (err) {
     log.error('[disk]', err as string)

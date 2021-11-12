@@ -155,6 +155,18 @@ describe('tools/lib/cli', () => {
     expect(log.error).toHaveBeenCalled()
   })
 
+  test('_syncBookToDiskExecute skips on dry run', async () => {
+    const command = makeCommand({ options: { isDryRun: true } })
+    const ctx = makeContext(command)
+    const filepath = '/somewhere'
+    const bookMdString = 'a book with metadata'
+    const updated = new Date()
+
+    await cli._syncBookToDiskExecute(ctx, filepath, bookMdString, updated)
+
+    expect(log.info).toHaveBeenCalled()
+  })
+
   test('_syncBookToDisk', async () => {
     const ctx = makeContext()
     const book = bookFixtures.makeBook({ date_updated: new Date() })
@@ -167,6 +179,7 @@ describe('tools/lib/cli', () => {
     mocks.stat.mockResolvedValueOnce(fileStat)
     mocks.readFile.mockResolvedValueOnce(fileString)
     mocks.bookToString.mockResolvedValueOnce(bookToString)
+
     spySyncBookToDiskExecute.mockResolvedValueOnce()
 
     await cli._syncBookToDisk(ctx, book)
@@ -203,7 +216,7 @@ describe('tools/lib/cli', () => {
     expect(spySyncBookToDiskExecute).not.toHaveBeenCalled()
   })
 
-  test('_syncBookToDisk syncs if file does not exist', async () => {
+  test('_syncBookToDisk skips if directory found instead of a file', async () => {
     const ctx = makeContext()
     const book = bookFixtures.makeBook({ date_updated: new Date() })
     const fileStat = { isFile: () => false } as Stats
@@ -212,6 +225,26 @@ describe('tools/lib/cli', () => {
     const spySyncBookToDiskExecute = jest.spyOn(cli, '_syncBookToDiskExecute')
 
     mocks.stat.mockResolvedValueOnce(fileStat)
+    mocks.bookToString.mockResolvedValueOnce(bookToString)
+    spySyncBookToDiskExecute.mockResolvedValueOnce()
+
+    await cli._syncBookToDisk(ctx, book)
+
+    expect(mocks.bookToString).toHaveBeenCalledWith(book)
+    expect(mocks.stat).toHaveBeenCalledWith(filePath)
+    expect(mocks.readFile).not.toHaveBeenCalled()
+    expect(mocks.logError).toHaveBeenCalled()
+    expect(spySyncBookToDiskExecute).not.toHaveBeenCalled()
+  })
+
+  test('_syncBookToDisk syncs if file does not exist', async () => {
+    const ctx = makeContext()
+    const book = bookFixtures.makeBook({ date_updated: new Date() })
+    const bookToString = 'something here'
+    const filePath = `${ctx.command.options.dir}/${book.slug}.md`
+    const spySyncBookToDiskExecute = jest.spyOn(cli, '_syncBookToDiskExecute')
+
+    mocks.stat.mockRejectedValueOnce(new Error('boom'))
     mocks.bookToString.mockResolvedValueOnce(bookToString)
     spySyncBookToDiskExecute.mockResolvedValueOnce()
 
@@ -245,7 +278,7 @@ describe('tools/lib/cli', () => {
     expect(mocks.bookToString).toHaveBeenCalledWith(book)
     expect(mocks.stat).toHaveBeenCalledWith(filePath)
     expect(mocks.readFile).not.toHaveBeenCalled()
-    expect(spySyncBookToDiskExecute).not.toHaveBeenCalled()
+    expect(spySyncBookToDiskExecute).toHaveBeenCalled()
   })
 
   test('_syncToDisk', async () => {
@@ -576,13 +609,28 @@ describe('tools/lib/cli', () => {
     })
   })
 
-  test('_parseArgs throws if dir does not exist', async () => {
+  test('_parseArgs throws if dir is a file', async () => {
     const args = ['sync', 'test-folder']
     const dirStats = { isDirectory: () => false } as Stats
     const spyConsoleError = jest.spyOn(console, 'error')
     const spyProcessExit = jest.spyOn(process, 'exit')
 
     mocks.stat.mockResolvedValueOnce(dirStats)
+    spyConsoleError.mockImplementation()
+    spyProcessExit.mockImplementation()
+
+    const command = cli._parseArgs(args)
+
+    await expect(command).rejects.toThrow()
+    expect(spyProcessExit).toHaveBeenCalledWith(1)
+  })
+
+  test('_parseArgs throws if dir does not exist', async () => {
+    const args = ['sync', 'test-folder']
+    const spyConsoleError = jest.spyOn(console, 'error')
+    const spyProcessExit = jest.spyOn(process, 'exit')
+
+    mocks.stat.mockRejectedValueOnce(new Error('boom'))
     spyConsoleError.mockImplementation()
     spyProcessExit.mockImplementation()
 
