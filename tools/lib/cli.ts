@@ -212,7 +212,7 @@ export const _syncBookToDisk = async (ctx: Context, book: Book): Promise<void> =
     if (currentBookMdString === bookMd) {
       return
     }
-  } else {
+  } else if (fileStat) {
     log.error('[disk]', `${file} isn't a file`)
     return
   }
