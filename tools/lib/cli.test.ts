@@ -261,26 +261,6 @@ describe('tools/lib/cli', () => {
     )
   })
 
-  test('_syncBookToDisk skips syncs on dry run', async () => {
-    const command = makeCommand({ options: { isDryRun: true } })
-    const ctx = makeContext(command)
-    const book = bookFixtures.makeBook({ date_updated: new Date() })
-    const fileStat = { isFile: () => false } as Stats
-    const bookToString = 'something here'
-    const filePath = `${ctx.command.options.dir}/${book.slug}.md`
-    const spySyncBookToDiskExecute = jest.spyOn(cli, '_syncBookToDiskExecute')
-
-    mocks.stat.mockResolvedValueOnce(fileStat)
-    mocks.bookToString.mockResolvedValueOnce(bookToString)
-
-    await cli._syncBookToDisk(ctx, book)
-
-    expect(mocks.bookToString).toHaveBeenCalledWith(book)
-    expect(mocks.stat).toHaveBeenCalledWith(filePath)
-    expect(mocks.readFile).not.toHaveBeenCalled()
-    expect(spySyncBookToDiskExecute).toHaveBeenCalled()
-  })
-
   test('_syncToDisk', async () => {
     const command = makeCommand()
     const ctx = makeContext(command)
