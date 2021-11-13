@@ -58,7 +58,7 @@
     "mdast-util-to-markdown": "^1.2.4",
     "npmlog": "^5.0.1",
     "prettier": "^2.4.1",
-    "prisma": "^3.4.2",
+    "prisma": "^3.5.0-integration-fix-bundlers-broken-require.3",
     "remark": "^14.0.1",
     "remark-frontmatter": "^4.0.1",
     "sharp": "^0.29.2",
@@ -75,7 +75,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.4.15",
-    "@prisma/client": "^3.4.2",
+    "@prisma/client": "^3.5.0-integration-fix-bundlers-broken-require.3",
     "@types/jest": "^27.0.2",
     "apollo-server-core": "^3.5.0",
     "apollo-server-micro": "^3.5.0",
