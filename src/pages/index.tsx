@@ -9,6 +9,7 @@ import localRequest from '@app/lib/graphql/localRequest'
 const booksQuery = gql(`query getBooks {
   books {
     id
+    slug
     cover_width
     cover_height
     title
@@ -37,8 +38,9 @@ function makeBookCard(book: Book): JSX.Element {
 }
 
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
-  const response = await localRequest.query({ query: booksQuery })
+  const response = await localRequest().query({ query: booksQuery })
   const books = response.data?.books
+
   return {
     props: { books: (books as Book[]) || [] },
   }
