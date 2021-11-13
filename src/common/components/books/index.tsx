@@ -1,10 +1,8 @@
 import { ThemeUIStyleObject } from 'theme-ui'
 import { Image, Box } from 'theme-ui'
 
-export function getCoverPath(id: string): string {
-  const folder1 = id.substr(-2)
-  const folder2 = id.substr(-4, 2)
-  return `/images/covers/${folder1}/${folder2}/${id}.jpg`
+export function getCoverPath(slug: string): string {
+  return `/images/covers/${slug}.jpg`
 }
 
 const BookSizes = {

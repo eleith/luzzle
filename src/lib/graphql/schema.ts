@@ -9,6 +9,7 @@ const Book = objectType({
   definition(t) {
     t.nonNull.id('id')
     t.nonNull.string('title')
+    t.nonNull.string('slug')
     t.string('subtitle')
     t.string('author')
     t.string('id_ol_book')
@@ -21,7 +22,8 @@ const Book = objectType({
     t.int('year_first_published')
     t.date('date_updated')
     t.date('date_added')
-    t.string('id_cover_image')
+    t.int('cover_width')
+    t.int('cover_height')
   },
 })
 

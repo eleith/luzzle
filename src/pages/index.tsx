@@ -9,7 +9,8 @@ import localRequest from '@app/lib/graphql/localRequest'
 const booksQuery = gql(`query getBooks {
   books {
     id
-    id_cover_image
+    cover_width
+    cover_height
     title
     coauthors
     description
@@ -25,7 +26,7 @@ type Book = ExtractResultFieldTypeFor<typeof booksQuery, 'books'>
 type HomePageProps = { books: Book[] }
 
 function makeBookCard(book: Book): JSX.Element {
-  const coverUrl = book.id_cover_image ? getCoverPath(book.id_cover_image) : undefined
+  const coverUrl = book.cover_width ? getCoverPath(book.slug) : undefined
   const cover = makeBook(getBookSize(book.pages || 200), coverUrl)
 
   return (

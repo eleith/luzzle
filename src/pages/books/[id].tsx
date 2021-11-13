@@ -22,8 +22,10 @@ const booksIdQuery = gql(`query getBookIds {
 
 const bookQuery = gql(`query getBookById($id: String!) {
   book(id: $id) {
+    slug
     id
-    id_cover_image
+    cover_width
+    cover_height
     title
     coauthors
     description
@@ -59,7 +61,7 @@ export async function getStaticProps({
 }
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
-  const coverUrl = book.id_cover_image ? getCoverPath(book.id_cover_image) : undefined
+  const coverUrl = book.cover_width ? getCoverPath(book.slug) : undefined
   const cover = makeBook(getBookSize(book.pages || 200), coverUrl)
 
   const bookBox = (
