@@ -74,7 +74,6 @@
     "yargs": "^17.2.1"
   },
   "dependencies": {
-    "@agney/react-loading": "^0.1.2",
     "@apollo/client": "^3.4.15",
     "@prisma/client": "^3.5.0-integration-fix-bundlers-broken-require.3",
     "@types/jest": "^27.0.2",

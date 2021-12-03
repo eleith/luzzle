@@ -5,8 +5,7 @@ import { gql } from '@app/gql'
 import localRequest from '@app/lib/graphql/localRequest'
 import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
 import Link from 'next/link'
-import { Box, Container, Flex } from 'theme-ui'
-import { useLoading, Rings } from '@agney/react-loading'
+import { Box, Container, Flex, Spinner } from 'theme-ui'
 
 const getTwoBooksQuery = gql(`query getTwoBooks {
   books(take: 2) {
@@ -66,18 +65,14 @@ export async function getStaticProps(): Promise<{ props: HomePageProps }> {
 }
 
 export default function Home({ books }: HomePageProps): JSX.Element {
-  const { data: randomBook, error } = useGraphSWR(getRandomBookQuery)
-  const { containerProps, indicatorEl } = useLoading({
-    loading: true,
-    indicator: <Rings width="50" />,
-  })
+  const { data: randomBook } = useGraphSWR(getRandomBookQuery)
 
   return (
     <Page meta={{ title: 'home' }}>
       <Container sx={{ width: '70%' }}>
-        <Flex sx={{ flexWrap: 'wrap' }} {...containerProps}>
+        <Flex sx={{ flexWrap: 'wrap' }}>
           {books.map((book) => makeBookCard(book))}
-          {randomBook?.books?.length ? makeBookCard(randomBook?.books?.[0] as Book) : indicatorEl}
+          {randomBook?.books?.length ? makeBookCard(randomBook?.books?.[0] as Book) : <Spinner />}
         </Flex>
       </Container>
     </Page>
