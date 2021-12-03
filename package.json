@@ -74,11 +74,13 @@
     "yargs": "^17.2.1"
   },
   "dependencies": {
+    "@agney/react-loading": "^0.1.2",
     "@apollo/client": "^3.4.15",
     "@prisma/client": "^3.5.0-integration-fix-bundlers-broken-require.3",
     "@types/jest": "^27.0.2",
     "apollo-server-core": "^3.5.0",
     "apollo-server-micro": "^3.5.0",
+    "book-cover-3d": "^1.1.2",
     "cuid": "^2.1.8",
     "dotenv": "^10.0.0",
     "graphql-request": "^3.6.1",
@@ -98,6 +100,6 @@
   },
   "volta": {
     "node": "14.17.6",
-    "npm": "7.24.1"
+    "npm": "8.1.4"
   }
 }

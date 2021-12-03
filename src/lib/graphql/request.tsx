@@ -6,13 +6,6 @@ type Variables = { [key: string]: string }
 
 const localGraphEndpoint = `${config.HOST}${config.GRAPHQL_ENDPOINT}`
 
-type ArrayElementType<T> = T extends (infer R)[] ? R : T
-export type ExtractResultFieldTypeFor<T, K extends keyof ResultOf<T>> = NonNullable<
-  ResultOf<T>[K]
-> extends Array<ArrayElementType<ResultOf<T>[K]>>
-  ? NonNullable<ArrayElementType<NonNullable<ResultOf<T>[K]>>>
-  : NonNullable<ResultOf<T>[K]>
-
 export default async function request<X extends TypedDocumentNode, V = Variables>(
   gql: X,
   variables?: V

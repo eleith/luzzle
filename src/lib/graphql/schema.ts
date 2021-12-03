@@ -1,5 +1,15 @@
 import { GraphQLDateTime } from 'graphql-scalars'
-import { queryType, makeSchema, objectType, stringArg, nonNull, asNexusMethod } from 'nexus'
+import {
+  queryType,
+  makeSchema,
+  objectType,
+  stringArg,
+  nonNull,
+  asNexusMethod,
+  intArg,
+  nullable,
+  booleanArg,
+} from 'nexus'
 import path from 'path'
 
 const DateTime = asNexusMethod(GraphQLDateTime, 'date')
@@ -31,8 +41,19 @@ const Query = queryType({
   definition(t) {
     t.list.field('books', {
       type: 'Book',
-      resolve: (_parent, _args, ctx) => {
-        return ctx.prisma.book.findMany({})
+      args: {
+        take: nonNull(intArg({ default: 10 })),
+        random: nullable(booleanArg({ default: false })),
+      },
+      resolve: async (_parent, args, ctx) => {
+        const { take, random } = args
+        if (random) {
+          const count = await ctx.prisma.book.count()
+          const skip = Math.floor(Math.random() * count)
+          return ctx.prisma.book.findMany({ take: 1, skip })
+        } else {
+          return ctx.prisma.book.findMany({ take, orderBy: { date_added: 'asc' } })
+        }
       },
     })
     t.field('book', {
@@ -40,7 +61,7 @@ const Query = queryType({
       args: {
         id: nonNull(stringArg()),
       },
-      resolve: (_parent, args, ctx) => {
+      resolve: async (_parent, args, ctx) => {
         return ctx.prisma.book.findUnique({ where: { id: args.id } })
       },
     })
