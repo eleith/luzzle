@@ -67,7 +67,9 @@ export async function getStaticProps(): Promise<{ props: HomePageProps }> {
 }
 
 export default function Home({ books }: HomePageProps): JSX.Element {
-  const { data: randomBook } = useGraphSWR(getRandomBookQuery)
+  const { data: randomBook } = useGraphSWR(getRandomBookQuery, undefined, {
+    revalidateOnFocus: false,
+  })
 
   return (
     <Page meta={{ title: 'home' }}>
