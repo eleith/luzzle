@@ -1,4 +1,4 @@
-import { getBookSize, getCoverPath, makeBook } from '@app/common/components/books'
+import BookCover from '@app/common/components/books'
 import Page from '@app/common/components/page'
 import useGraphSWR from '@app/common/hooks/useGraphSWR'
 import { gql } from '@app/gql'
@@ -6,6 +6,7 @@ import localRequest from '@app/lib/graphql/localRequest'
 import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
 import Link from 'next/link'
 import { Box, Container, Flex, Spinner } from 'theme-ui'
+import VisuallyHidden from '@reach/visually-hidden'
 
 const getTwoBooksQuery = gql(`query getTwoBooks {
   books(take: 2) {
@@ -45,12 +46,13 @@ type Book = ExtractResultFieldTypeFor<typeof getTwoBooksQuery, 'books'>
 type HomePageProps = { books: Book[] }
 
 function makeBookCard(book: Book): JSX.Element {
-  const coverUrl = book.cover_width ? getCoverPath(book.slug) : undefined
-  const cover = makeBook(getBookSize(book.pages || 200), coverUrl)
-
   return (
-    <Box key={book.id} sx={{ position: 'relative' }}>
-      <Link href={`/books/${book.id}`}>{cover}</Link>
+    <Box key={book.id}>
+      <Link href={`/books/${book.id}`} passHref>
+        <BookCover backgroundImageUrl={`images/covers/${book.slug}.jpg`}>
+          <VisuallyHidden>{book.title}</VisuallyHidden>
+        </BookCover>
+      </Link>
     </Box>
   )
 }
