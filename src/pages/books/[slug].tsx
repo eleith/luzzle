@@ -2,26 +2,25 @@ import Page from '@app/common/components/page'
 import { Container } from 'theme-ui'
 import { GetStaticPathsResult } from 'next'
 import { gql } from '@app/gql'
-import { getBookSize, makeBook, getCoverPath } from '@app/common/components/books'
-import { Box } from 'theme-ui'
-import Link from 'next/link'
-import { ExtractResultFieldTypeFor } from '@app/lib/graphql/request'
+import BookCover from '@app/common/components/books'
 import localRequest from '@app/lib/graphql/localRequest'
+import VisuallyHidden from '@reach/visually-hidden'
+import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
 
 interface BookPageStaticParams {
   params: {
-    id: string
+    slug: string
   }
 }
 
-const booksIdQuery = gql(`query getBookIds {
-  books {
-    id
+const booksSlugQuery = gql(`query getBookSlugs($take: Int!) {
+  books(take: $take) {
+    slug
   }
 }`)
 
-const bookQuery = gql(`query getBookById($id: String!) {
-  book(id: $id) {
+const bookQuery = gql(`query getBookBySlug($slug: String!) {
+  book(slug: $slug) {
     slug
     id
     cover_width
@@ -46,7 +45,10 @@ interface BookPageProps {
 export async function getStaticProps({
   params,
 }: BookPageStaticParams): Promise<{ props: BookPageProps }> {
-  const response = await localRequest.query({ query: bookQuery, variables: { id: params.id } })
+  const response = await localRequest().query({
+    query: bookQuery,
+    variables: { slug: params.slug },
+  })
   const book = response.data.book
 
   if (book) {
@@ -56,30 +58,26 @@ export async function getStaticProps({
       },
     }
   } else {
-    throw `Error: book(id=${params.id}) not found`
+    throw `Error: book(slug=${params.slug}) not found`
   }
 }
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
-  const coverUrl = book.cover_width ? getCoverPath(book.slug) : undefined
-  const cover = makeBook(getBookSize(book.pages || 200), coverUrl)
-
-  const bookBox = (
-    <Box key={book.id} sx={{ position: 'relative' }}>
-      <Link href={`/books/${book.id}`}>{cover}</Link>
-    </Box>
-  )
   return (
     <Page meta={{ title: 'home' }}>
-      <Container sx={{ width: 'fit-content' }}>{bookBox}</Container>
+      <Container sx={{ width: 'fit-content' }}>
+        <BookCover backgroundImageUrl={`/images/covers/${book.slug}.jpg`}>
+          <VisuallyHidden>{book.title}</VisuallyHidden>
+        </BookCover>
+      </Container>
     </Page>
   )
 }
 
 export async function getStaticPaths(): Promise<GetStaticPathsResult> {
-  const response = await localRequest.query({ query: booksIdQuery })
+  const response = await localRequest().query({ query: booksSlugQuery, variables: { take: 500 } })
   const books = response.data.books
-  const bookParams = books?.map((partialBook) => ({ params: { id: partialBook?.id } })) || []
+  const bookParams = books?.map((partialBook) => ({ params: { slug: partialBook?.slug } })) || []
 
   return {
     paths: bookParams,
