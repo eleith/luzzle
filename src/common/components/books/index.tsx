@@ -129,15 +129,15 @@ function getBookContainerStyles(
   return {
     ...bookCssVariables,
     ...bookContainerStyles,
-    '& > :nth-child(1)': {
+    '& > div:nth-of-type(1)': {
       ...bookStyles,
-      '& > :nth-child(1)': {
+      '& > div:nth-of-type(1)': {
         ...bookBeforeStyles,
       },
-      '& > :nth-child(2)': {
+      '& > div:nth-of-type(2)': {
         ...bookChildStyles,
       },
-      '& > :nth-child(3)': {
+      '& > div:nth-of-type(3)': {
         ...bookAfterStyles,
       },
     },

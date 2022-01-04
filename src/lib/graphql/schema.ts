@@ -1,15 +1,5 @@
 import { GraphQLDateTime } from 'graphql-scalars'
-import {
-  queryType,
-  makeSchema,
-  objectType,
-  stringArg,
-  nonNull,
-  asNexusMethod,
-  intArg,
-  nullable,
-  booleanArg,
-} from 'nexus'
+import { queryType, makeSchema, objectType, stringArg, nonNull, asNexusMethod, intArg } from 'nexus'
 import path from 'path'
 
 const DateTime = asNexusMethod(GraphQLDateTime, 'date')
@@ -32,6 +22,8 @@ const Book = objectType({
     t.int('year_first_published')
     t.date('date_updated')
     t.date('date_added')
+    t.int('year_read')
+    t.int('month_read')
     t.int('cover_width')
     t.int('cover_height')
   },
@@ -43,26 +35,35 @@ const Query = queryType({
       type: 'Book',
       args: {
         take: nonNull(intArg({ default: 10 })),
-        random: nullable(booleanArg({ default: false })),
       },
       resolve: async (_parent, args, ctx) => {
-        const { take, random } = args
-        if (random) {
-          const count = await ctx.prisma.book.count()
-          const skip = Math.floor(Math.random() * count)
-          return ctx.prisma.book.findMany({ take: 1, skip })
-        } else {
-          return ctx.prisma.book.findMany({ take, orderBy: { date_added: 'asc' } })
-        }
+        const { take } = args
+
+        return ctx.prisma.book.findMany({
+          take,
+          orderBy: [{ year_read: 'desc' }, { month_read: 'desc' }, { date_added: 'desc' }],
+        })
       },
     })
     t.field('book', {
       type: 'Book',
       args: {
-        id: nonNull(stringArg()),
+        id: stringArg(),
+        slug: stringArg(),
       },
       resolve: async (_parent, args, ctx) => {
-        return ctx.prisma.book.findUnique({ where: { id: args.id } })
+        const { slug, id } = args
+
+        if (slug) {
+          return ctx.prisma.book.findUnique({ where: { slug: slug } })
+        } else if (id) {
+          return ctx.prisma.book.findUnique({ where: { id: id } })
+        } else {
+          const count = await ctx.prisma.book.count()
+          const skip = Math.floor(Math.random() * count)
+          const books = await ctx.prisma.book.findMany({ take: 1, skip })
+          return books[0]
+        }
       },
     })
   },
