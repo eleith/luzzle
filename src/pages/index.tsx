@@ -5,7 +5,7 @@ import { gql } from '@app/gql'
 import localRequest from '@app/lib/graphql/localRequest'
 import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
 import Link from 'next/link'
-import { Box, Container, Grid, Spinner, ThemeUIStyleObject } from 'theme-ui'
+import { Box, Container, Grid, Spinner, Heading, Text } from 'theme-ui'
 import VisuallyHidden from '@reach/visually-hidden'
 
 const getTwoBooksQuery = gql(`query getTwoBooks {
@@ -47,22 +47,21 @@ const getRandomBookQuery = gql(`query getRandomBook {
 }`)
 
 type Book = ExtractResultFieldTypeFor<typeof getTwoBooksQuery, 'books'>
+
 type HomePageProps = {
   book1: Book
   book2: Book
 }
 
-function makeBookCard(book: Book, sx?: ThemeUIStyleObject): JSX.Element {
+function makeBookCardLink(book: Book): JSX.Element {
   return (
-    <Box sx={sx}>
-      <Link href={`/books/${book.slug}`} key={book.id}>
-        <a>
-          <BookCover backgroundImageUrl={`/images/covers/${book.slug}.jpg`}>
-            <VisuallyHidden>{book.title}</VisuallyHidden>
-          </BookCover>
-        </a>
-      </Link>
-    </Box>
+    <Link href={`/books/${book.slug}`} key={book.id}>
+      <a>
+        <BookCover backgroundImageUrl={`/images/covers/${book.slug}.jpg`}>
+          <VisuallyHidden>{book.title}</VisuallyHidden>
+        </BookCover>
+      </a>
+    </Link>
   )
 }
 
@@ -84,30 +83,45 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
     revalidateOnFocus: false,
   })
   const book = data?.book as Book | null
+  const bookCardRandom = (book && makeBookCardLink(book)) || <Spinner />
+  const bookCardLatest = makeBookCardLink(book1)
+  const bookCardLater = makeBookCardLink(book2)
 
   return (
     <Page meta={{ title: 'home' }}>
       <Container>
         <Grid
           sx={{
-            width: '70%',
+            width: ['100%', '100%', '70%'],
             margin: 'auto',
             marginTop: '250px',
             gridTemplateRows: ['1fr 1fr 1fr', '1fr 1fr', '1fr 1fr'],
             gridTemplateColumns: ['1fr 1fr', '1fr 1fr 1fr', '1fr 1fr 1fr'],
             gridAutoFlow: ['row', 'column', 'column'],
             justifyItems: 'center',
+            alignItems: ['center', 'flex-start', 'flex-start'],
             gap: '20px',
+            textAlign: 'center',
           }}
         >
-          {makeBookCard(book1)}
-          <Box sx={{}}>{`${book1.month_read}/${book1.year_read}`}</Box>
-          {makeBookCard(book2, { gridColumnStart: [2, 'auto', 'auto'] })}
-          <Box sx={{ gridColumnStart: [1, 'auto', 'auto'], gridRowStart: [2, 'auto', 'auto'] }}>
-            {`${book2.month_read}/${book2.year_read}`}
+          <Box>{bookCardLatest}</Box>
+          <Box>
+            <Text as="h1" sx={{ fontSize: 0 }}>
+              last read
+            </Text>
           </Box>
-          {(book && makeBookCard(book)) || <Spinner />}
-          <Box sx={{}}>{`${book?.month_read}/${book?.year_read}`}</Box>
+          <Box sx={{ gridColumnStart: [2, 'auto', 'auto'] }}>{bookCardLater}</Box>
+          <Box sx={{ gridColumnStart: [1, 'auto', 'auto'], gridRowStart: [2, 'auto', 'auto'] }}>
+            <Text as="h1" sx={{ fontSize: 0 }}>
+              previously read
+            </Text>
+          </Box>
+          <Box>{bookCardRandom}</Box>
+          <Box>
+            <Text as="h1" sx={{ fontSize: 0 }}>
+              random read
+            </Text>
+          </Box>
         </Grid>
       </Container>
     </Page>

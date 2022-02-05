@@ -43,10 +43,12 @@ function getBookContainerStyles(
     perspective: 'var(--book-perspective)',
   }
 
-  const bookRotateAnimation = keyframes({
-    '0%': { transform: `rotateY(${rotateHover}deg)` },
-    '100%': { transform: `rotateY(${rotate}deg)` },
-  })
+  // disable animation on load
+  //
+  // const bookRotateAnimation = keyframes({
+  //   '0%': { transform: `rotateY(${rotateHover}deg)` },
+  //   '100%': { transform: `rotateY(${rotate}deg)` },
+  // })
 
   const bookStyles: ThemeUIStyleObject = {
     width: 'var(--book-width)',
@@ -56,7 +58,7 @@ function getBookContainerStyles(
     transformStyle: 'preserve-3d',
     transform: `rotateY(var(--book-rotate))`,
     transition: `transform var(--book-transition-duration) ease`,
-    animation: `1s ease 0s 1 ${bookRotateAnimation}`,
+    // animation: `1s ease 0s 1 ${bookRotateAnimation}`,
     ':hover': {
       transform: `rotateY(var(--book-rotate-hover))`,
     },
@@ -164,9 +166,9 @@ type BookProps = {
 function BookCover({
   children,
   backgroundImageUrl,
-  rotateHover = -5,
-  rotate = -30,
-  perspective = 600,
+  rotateHover = -25,
+  rotate = 0,
+  perspective = 900,
   transitionDuration = 1,
   thickness = 50,
   backgroundColor = 'black',
