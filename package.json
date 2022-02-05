@@ -77,10 +77,13 @@
     "@apollo/client": "^3.4.15",
     "@prisma/client": "^3.5.0-integration-fix-bundlers-broken-require.3",
     "@reach/visually-hidden": "^0.16.0",
+    "@theme-ui/typography": "^0.13.1",
     "@types/jest": "^27.0.2",
+    "@types/typography": "^0.16.4",
     "apollo-server-core": "^3.5.0",
     "apollo-server-micro": "^3.5.0",
     "cuid": "^2.1.8",
+    "deepmerge": "^4.2.2",
     "dotenv": "^10.0.0",
     "graphql-request": "^3.6.1",
     "graphql-scalars": "^1.13.1",
@@ -95,6 +98,8 @@
     "react-syntax-highlighter": "^15.4.5",
     "swr": "^1.0.1",
     "theme-ui": "^0.12.0",
+    "typography": "^0.16.21",
+    "typography-theme-sutro": "^0.16.19",
     "uuid": "^8.3.2"
   },
   "volta": {

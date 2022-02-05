@@ -1,6 +1,9 @@
 import type { Theme } from 'theme-ui'
+//import { toTheme } from '@theme-ui/typography'
+//import sutro from 'typography-theme-sutro'
+//import merge from 'deepmerge'
 
-const theme: Theme = {
+const baseTheme: Theme = {
   breakpoints: ['40em', '52em', '64em'],
   space: [0, 4, 8, 16, 32, 64, 128, 256, 512],
   fonts: {
@@ -10,9 +13,8 @@ const theme: Theme = {
   },
   fontSizes: [16, '1.2rem', '1.4rem', '1.6rem', '1.8rem', '2rem', '2.2rem', '2.4rem', '2.6rem'],
   fontWeights: {
-    body: 400,
+    body: 'normal',
     heading: 700,
-    bold: 700,
   },
   lineHeights: {
     body: 1.5,
@@ -37,55 +39,6 @@ const theme: Theme = {
       fontFamily: 'body',
       lineHeight: 'body',
       fontWeight: 'body',
-      fontSize: 1,
-    },
-    h1: {
-      color: 'text',
-      fontFamily: 'heading',
-      lineHeight: 'heading',
-      fontWeight: 'heading',
-      fontSize: 5,
-    },
-    h2: {
-      color: 'text',
-      fontFamily: 'heading',
-      lineHeight: 'heading',
-      fontWeight: 'heading',
-      fontSize: 4,
-    },
-    h3: {
-      color: 'text',
-      fontFamily: 'heading',
-      lineHeight: 'heading',
-      fontWeight: 'heading',
-      fontSize: 3,
-    },
-    h4: {
-      color: 'text',
-      fontFamily: 'heading',
-      lineHeight: 'heading',
-      fontWeight: 'heading',
-      fontSize: 2,
-    },
-    h5: {
-      color: 'text',
-      fontFamily: 'heading',
-      lineHeight: 'heading',
-      fontWeight: 'heading',
-      fontSize: 1,
-    },
-    h6: {
-      color: 'text',
-      fontFamily: 'heading',
-      lineHeight: 'heading',
-      fontWeight: 'heading',
-      fontSize: 0,
-    },
-    p: {
-      color: 'text',
-      fontFamily: 'body',
-      fontWeight: 'body',
-      lineHeight: 'body',
     },
     a: {
       color: 'primary',
@@ -119,5 +72,9 @@ const theme: Theme = {
     },
   },
 }
+
+// const theme = merge(baseTheme, toTheme(sutro)) as Theme
+
+const theme = baseTheme
 
 export default theme
