@@ -6,6 +6,7 @@ import BookCover from '@app/common/components/books'
 import localRequest from '@app/lib/graphql/localRequest'
 import VisuallyHidden from '@reach/visually-hidden'
 import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
+import config from '@app/common/config'
 
 interface BookPageStaticParams {
   params: {
@@ -85,7 +86,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
           }}
         >
           <Box>
-            <BookCover backgroundImageUrl={`/images/covers/${book.slug}.jpg`}>
+            <BookCover backgroundImageUrl={`${config.HOST_PUBLIC}/images/covers/${book.slug}.jpg`}>
               <VisuallyHidden>{book.title}</VisuallyHidden>
             </BookCover>
             <Paragraph sx={{ textAlign: 'center', marginTop: 15 }}>

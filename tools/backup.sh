@@ -1,12 +1,13 @@
 #!/bin/bash
 source .env
+source .env.local
 
 export GOOGLE_PROJECT_ID=$GOOGLE_PROJECT_ID
 export GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS
 export GOOGLE_BACKUP_REPO=$GOOGLE_BACKUP_REPO
 export RESTIC_PASSWORD=$RESTIC_PASSWORD
 
-restic -r gs:$GOOGLE_BACKUP_REPO --verbose backup data/
+restic -r "gs:$GOOGLE_BACKUP_REPO" --verbose backup data/
 
 #create repo
 #restic -r gs:$GOOGLE_BACKUP_REPO init

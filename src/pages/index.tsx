@@ -5,8 +5,9 @@ import { gql } from '@app/gql'
 import localRequest from '@app/lib/graphql/localRequest'
 import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
 import Link from 'next/link'
-import { Box, Container, Grid, Spinner, Heading, Text } from 'theme-ui'
+import { Box, Container, Grid, Spinner, Text } from 'theme-ui'
 import VisuallyHidden from '@reach/visually-hidden'
+import config from '@app/common/config'
 
 const getTwoBooksQuery = gql(`query getTwoBooks {
   books(take: 2) {
@@ -57,7 +58,7 @@ function makeBookCardLink(book: Book): JSX.Element {
   return (
     <Link href={`/books/${book.slug}`} key={book.id}>
       <a>
-        <BookCover backgroundImageUrl={`/images/covers/${book.slug}.jpg`}>
+        <BookCover backgroundImageUrl={`${config.HOST_PUBLIC}/images/covers/${book.slug}.jpg`}>
           <VisuallyHidden>{book.title}</VisuallyHidden>
         </BookCover>
       </a>
