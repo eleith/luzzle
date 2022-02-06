@@ -88,7 +88,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   const bookCardLater = makeBookCardLink(book2)
 
   return (
-    <Page meta={{ title: 'home' }}>
+    <Page meta={{ title: '' }}>
       <Container>
         <Grid
           sx={{
