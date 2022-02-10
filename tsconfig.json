@@ -27,7 +27,8 @@
     "typeRoots": [
       "./node_modules/@types",
       "./src/@types"
-    ]
+    ],
+    "jsxImportSource": "theme-ui"
   },
   "ts-node": {
     "transpileOnly": true
