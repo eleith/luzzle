@@ -1,10 +1,10 @@
-import { mocked } from 'ts-jest/utils'
 import got from 'got'
 import { createWriteStream, WriteStream } from 'fs'
 import { fromStream } from 'file-type'
 import { PassThrough } from 'stream'
 import Request from 'got/dist/source/core'
 import { downloadTo } from './web'
+import { jest } from '@jest/globals'
 
 jest.mock('got')
 jest.mock('fs')
@@ -14,9 +14,9 @@ jest.mock('tempy', () => {
 })
 
 const mocks = {
-  gotStream: mocked(got.stream),
-  createWriteStream: mocked(createWriteStream),
-  fromStream: mocked(fromStream),
+  gotStream: jest.mocked(got.stream),
+  createWriteStream: jest.mocked(createWriteStream),
+  fromStream: jest.mocked(fromStream),
   tempyFile: jest.fn(),
 }
 

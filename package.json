@@ -11,7 +11,7 @@
     "build-tools": "esbuild tools/manage.ts --platform=node --target=node14 --bundle --outfile=build/books.cli.js --external:yargs --external:ajv --external:sharp --external:tempy",
     "submit": "gcloud builds submit --gcs-source-staging-dir gs://eleith-cloud-builds/eleith-io-site --tag gcr.io/eleith-cloud/eleith-io-site --timeout 25m",
     "deploy": "gcloud run deploy eleith-io-site --image gcr.io/eleith-cloud/eleith-io-site --platform managed --region us-central1",
-    "test": "jest"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "devDependencies": {
     "@fast-csv/format": "^4.3.5",
@@ -45,9 +45,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-react": "^7.28.0",
     "eslint-plugin-react-hooks": "^4.3.0",
-    "file-type": "^17.1.1",
     "googleapis": "^95.0.0",
-    "got": "^12.0.1",
     "graphql": "^15.8.0",
     "gray-matter": "^4.0.3",
     "jest": "^27.5.1",
@@ -73,6 +71,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.5.8",
+    "@jest/globals": "^27.5.1",
     "@mdx-js/react": "^1.6.22",
     "@prisma/client": "^3.9.1",
     "@reach/visually-hidden": "^0.16.0",
@@ -84,6 +83,8 @@
     "cuid": "^2.1.8",
     "deepmerge": "^4.2.2",
     "dotenv": "^16.0.0",
+    "file-type": "^16.5.3",
+    "got": "^11.8.3",
     "graphql-request": "^4.0.0",
     "graphql-scalars": "^1.14.1",
     "lodash": "^4.17.21",
