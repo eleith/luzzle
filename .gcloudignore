@@ -1,7 +1,6 @@
 .gcloudignore
 .git
 .gitignore
-.env.production
 .env.dev
 .next
 nexus.tsconfig.json
@@ -14,8 +13,7 @@ tools
 prisma/migrate
 build
 data
+public/images/covers/
 
 !prisma/data/
 !generated/
-!.env
-!public/images/covers/

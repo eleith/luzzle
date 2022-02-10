@@ -5,8 +5,6 @@ Dockerfile
 node_modules
 tools
 prisma/migrate
-.env.production
-.env.dev
 build
 data
 .next
@@ -14,3 +12,4 @@ nexus.tsconfig.json
 graphql.config.yml
 .prettierrc.json
 .stylelintrc.json
+public/images/covers
