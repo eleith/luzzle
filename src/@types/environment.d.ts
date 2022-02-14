@@ -4,7 +4,7 @@ declare global {
       GOOGLE_BOOKS_API_KEY: string
       NEXT_PUBLIC_GRAPHQL_ENDPOINT: string
       HOST: string
-      HOST_PUBLIC: string
+      NEXT_PUBLIC_HOST_STATIC: string
     }
   }
 }
