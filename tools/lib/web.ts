@@ -1,13 +1,11 @@
 import { createWriteStream } from 'fs'
 import got from 'got'
-import { fromStream } from 'file-type'
-// import tempy from 'tempy'
+import { fileTypeFromStream } from 'file-type'
+import tempy from 'tempy'
 
 async function downloadTo(url: string): Promise<string> {
-  const { default: tempy } = await import('tempy')
-
   const response = got.stream(url)
-  const fileType = await fromStream(response)
+  const fileType = await fileTypeFromStream(response)
   const filePath = tempy.file({ extension: fileType?.ext })
   const writer = createWriteStream(filePath)
 

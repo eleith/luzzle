@@ -8,7 +8,7 @@ import path, { extname } from 'path'
 import { addFrontMatter, extract } from './md'
 import log from './log'
 import { downloadTo } from './web'
-import { fromFile } from 'file-type'
+import { fileTypeFromFile } from 'file-type'
 import { findVolume } from './google-books'
 import { findWork, getBook, getCoverUrl } from './open-library'
 import sharp from 'sharp'
@@ -40,8 +40,7 @@ export type BookMd = {
 export type BookMdWithCover = BookMd & { frontmatter: { __input: { cover: string } } }
 export type BookMdWithOpenLib = BookMd & { frontmatter: { id_ol_book: string } }
 export type BookMdWithSearch = BookMd & { frontmatter: { __input: { search: BookMdInputSearch } } }
-export type BookMdWithDatabaseId = BookMd & { frontmatter: { __database_cache: {id:string}} }
-
+export type BookMdWithDatabaseId = BookMd & { frontmatter: { __database_cache: { id: string } } }
 
 const bookMdSpecialFields: Array<BookMdProcessFields> = ['__database_cache', '__input']
 
@@ -95,6 +94,11 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
 const ajv = new Ajv()
 const bookMdValidator = ajv.compile(bookMdSchema)
 const bookCoverDir = path.join('.assets', 'covers')
+
+function getCoverPathForBook(bookMd: BookMd): string {
+  const slug = path.basename(bookMd.filename, '.md')
+  return path.join(bookCoverDir, `${slug}.jpg`)
+}
 
 async function bookToString(book: Book): Promise<string> {
   const bookFrontmatter: Partial<{ [key in BookMdFields]: unknown }> = {}
@@ -172,7 +176,7 @@ async function filterRecentlyUpdatedBooks(
 }
 
 async function extractBooksOnDisk(bookSlugs: string[], dirpath: string): Promise<Array<BookMd>> {
-  const bookMds = await mapLimit(bookSlugs, cpus().length, async (slug) => {
+  const bookMds = await mapLimit(bookSlugs, cpus().length, async (slug: string) => {
     try {
       const data = await extract(path.join(dirpath, `${slug}.md`))
       return makeBookMd(`${slug}.md`, data.markdown, data.frontmatter)
@@ -192,27 +196,11 @@ function findNonExistantBooks(
   return differenceWith(booksInDb, bookSlugs, (book, slug) => book.slug === slug)
 }
 
-export const _getCoverData = async <T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
-  bookMd: BookMd,
-  dir: string
-): Promise<Pick<T, 'cover_path' | 'cover_width' | 'cover_height'>> => {
-  const coverPath = getCoverPathForBook(bookMd)
-  const coverImage = await sharp(path.join(dir, coverPath)).metadata()
-  const coverWidth = coverImage.width
-  const coverHeight = coverImage.height
-
-  return {
-    cover_path: coverPath,
-    cover_width: coverWidth,
-    cover_height: coverHeight,
-  }
-}
-
 async function bookMdToBookCreateInput(
   _bookMd: BookMd,
   dir: string
 ): Promise<Prisma.BookCreateInput> {
-  const bookMd = await _processInputs(_bookMd, dir)
+  const bookMd = await _private._processInputs(_bookMd, dir)
   const cover = bookMd.frontmatter.__input?.cover
   const bookCreateInput = {
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
@@ -221,7 +209,7 @@ async function bookMdToBookCreateInput(
   }
 
   if (cover) {
-    const coverData = await _getCoverData<Prisma.BookCreateInput>(bookMd, dir)
+    const coverData = await _private._getCoverData<Prisma.BookCreateInput>(bookMd, dir)
 
     return {
       ...bookCreateInput,
@@ -237,7 +225,7 @@ async function bookMdToBookUpdateInput(
   book: Book,
   dir: string
 ): Promise<Prisma.BookUpdateInput> {
-  const bookMd = await _processInputs(_bookMd, dir)
+  const bookMd = await _private._processInputs(_bookMd, dir)
   const cover = bookMd.frontmatter.__input?.cover
   const bookUpdateInput = {
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
@@ -255,7 +243,7 @@ async function bookMdToBookUpdateInput(
   })
 
   if (cover) {
-    const coverData = await _getCoverData<Prisma.BookUpdateInput>(bookMd, dir)
+    const coverData = await _private._getCoverData<Prisma.BookUpdateInput>(bookMd, dir)
 
     return {
       ...bookUpdateInput,
@@ -266,12 +254,23 @@ async function bookMdToBookUpdateInput(
   return bookUpdateInput
 }
 
-function getCoverPathForBook(bookMd: BookMd): string {
-  const slug = path.basename(bookMd.filename, '.md')
-  return path.join(bookCoverDir, `${slug}.jpg`)
+async function _getCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
+  bookMd: BookMd,
+  dir: string
+): Promise<Pick<T, 'cover_path' | 'cover_width' | 'cover_height'>> {
+  const coverPath = getCoverPathForBook(bookMd)
+  const coverImage = await sharp(path.join(dir, coverPath)).metadata()
+  const coverWidth = coverImage.width
+  const coverHeight = coverImage.height
+
+  return {
+    cover_path: coverPath,
+    cover_width: coverWidth,
+    cover_height: coverHeight,
+  }
 }
 
-export const _downloadCover = async (bookMd: BookMdWithCover, outputDir: string): Promise<void> => {
+async function _downloadCover(bookMd: BookMdWithCover, outputDir: string): Promise<void> {
   const cover = bookMd.frontmatter.__input?.cover
   const outputPath = path.join(outputDir, getCoverPathForBook(bookMd))
 
@@ -290,7 +289,7 @@ export const _downloadCover = async (bookMd: BookMdWithCover, outputDir: string)
     const coverStat = await stat(coverPath)
 
     if (coverStat.isFile()) {
-      const fileType = await fromFile(coverPath)
+      const fileType = await fileTypeFromFile(coverPath)
 
       if (fileType?.ext === 'jpg') {
         await copyFile(coverPath, outputPath)
@@ -305,10 +304,10 @@ export const _downloadCover = async (bookMd: BookMdWithCover, outputDir: string)
   }
 }
 
-export const _searchGoogleBooks = async (
+async function _searchGoogleBooks(
   bookTitle: string,
   bookAuthor: string
-): Promise<BookMd['frontmatter'] | null> => {
+): Promise<BookMd['frontmatter'] | null> {
   const volume = await findVolume(bookTitle, bookAuthor)
   const googleBook = volume?.volumeInfo
 
@@ -337,9 +336,9 @@ export const _searchGoogleBooks = async (
   return null
 }
 
-export const _searchOpenLibrary = async (
+async function _searchOpenLibrary(
   bookMd: BookMdWithOpenLib
-): Promise<BookMd['frontmatter'] | null> => {
+): Promise<BookMd['frontmatter'] | null> {
   const book = await getBook(bookMd.frontmatter.id_ol_book)
   const workId = book?.works?.[0].key.replace(/\/works\//, '')
   const work = workId ? await findWork(workId) : null
@@ -376,48 +375,55 @@ export const _searchOpenLibrary = async (
   return null
 }
 
-export const _processSearch = async (bookMd: BookMdWithSearch): Promise<BookMd> => {
+async function _search(bookMd: BookMdWithSearch): Promise<BookMd> {
   const search = bookMd.frontmatter.__input.search
   const bookId = bookMd.frontmatter.id_ol_book
 
-  /* istanbul ignore else */
   if (bookId) {
-    /* istanbul ignore else */
     if (search === 'all') {
-      const openWork = await _searchOpenLibrary(bookMd as BookMdWithOpenLib)
-      const googleBook = await _searchGoogleBooks(
+      const openWork = await _private._searchOpenLibrary(bookMd as BookMdWithOpenLib)
+      const googleBook = await _private._searchGoogleBooks(
         bookMd.frontmatter.title,
         bookMd.frontmatter.author
       )
 
       return merge({ frontmatter: openWork }, { frontmatter: googleBook }, bookMd)
     } else if (search === 'open-library') {
-      const openWork = await _searchOpenLibrary(bookMd as BookMdWithOpenLib)
+      const openWork = await _private._searchOpenLibrary(bookMd as BookMdWithOpenLib)
 
       return merge({ frontmatter: openWork }, bookMd)
     }
   } else if (search === 'google') {
-    const googleBook = await _searchGoogleBooks(bookMd.frontmatter.title, bookMd.frontmatter.author)
+    const googleBook = await _private._searchGoogleBooks(
+      bookMd.frontmatter.title,
+      bookMd.frontmatter.author
+    )
 
     return merge({ frontmatter: googleBook }, bookMd)
   }
-
-  /* istanbul ignore next */
-  return bookMd as never
 }
 
-export const _processInputs = async (bookMd: BookMd, outputDir: string): Promise<BookMd> => {
+async function _processInputs(bookMd: BookMd, outputDir: string): Promise<BookMd> {
   let bookMdProcessed = bookMd
 
   if (bookMd.frontmatter.__input?.search) {
-    bookMdProcessed = await _processSearch(bookMd as BookMdWithSearch)
+    bookMdProcessed = await _private._search(bookMd as BookMdWithSearch)
   }
 
   if (bookMd.frontmatter.__input?.cover) {
-    await _downloadCover(bookMd as BookMdWithCover, outputDir)
+    await _private._downloadCover(bookMd as BookMdWithCover, outputDir)
   }
 
   return bookMdProcessed
+}
+
+const _private = {
+  _getCoverData,
+  _processInputs,
+  _search,
+  _downloadCover,
+  _searchGoogleBooks,
+  _searchOpenLibrary,
 }
 
 export {
@@ -431,4 +437,5 @@ export {
   getCoverPathForBook,
   bookCoverDir,
   bookMdToBookCreateInput,
+  _private,
 }

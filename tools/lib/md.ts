@@ -1,8 +1,13 @@
-import { promises } from 'fs'
+import { readFile } from 'fs/promises'
 import { Transformer } from 'unified'
 import { VisitorResult } from 'unist-util-visit'
 import YAML from 'yaml'
 import { Node } from 'mdast-util-to-markdown/lib'
+import { remark } from 'remark'
+import remarkFrontMatter from 'remark-frontmatter'
+import { visit, EXIT } from 'unist-util-visit'
+import { filter } from 'unist-util-filter'
+import { toMarkdown } from 'mdast-util-to-markdown'
 
 function addFrontMatter(markdown = '', metadata: { [key: string]: unknown } = {}): string {
   const yamlString = YAML.stringify(metadata)
@@ -12,12 +17,6 @@ function addFrontMatter(markdown = '', metadata: { [key: string]: unknown } = {}
 }
 
 async function extract(path: string): Promise<{ frontmatter: unknown; markdown: string }> {
-  const { remark } = await import('remark')
-  const { default: remarkFrontMatter } = await import('remark-frontmatter')
-  const { visit, EXIT } = await import('unist-util-visit')
-  const { filter } = await import('unist-util-filter')
-  const { toMarkdown } = await import('mdast-util-to-markdown')
-
   function extractFrontMatter(): Transformer {
     const transformer: Transformer = (tree, vfile) => {
       function visitor(node: { value: string }): VisitorResult {
@@ -38,7 +37,7 @@ async function extract(path: string): Promise<{ frontmatter: unknown; markdown: 
     return plugin
   }
 
-  const contents = await promises.readFile(path, 'utf-8')
+  const contents = await readFile(path, 'utf-8')
 
   const { data } = await remark()
     .use(remarkFrontMatter)
@@ -46,7 +45,11 @@ async function extract(path: string): Promise<{ frontmatter: unknown; markdown: 
     .use(extractContent)
     .process(contents)
 
-  return { frontmatter: data.frontmatter, markdown: data.content as string }
+  const frontmatter = data.frontmatter
+  const content = data.content as string
+  const markdown = content.trimEnd()
+
+  return { frontmatter, markdown }
 }
 
 export { extract, addFrontMatter }

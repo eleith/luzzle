@@ -1,10 +1,8 @@
-import { mocked } from 'ts-jest/utils'
 import { Command } from './cli'
 import { CpuInfo, cpus } from 'os'
 import { merge } from 'lodash'
 import { Stats } from 'fs'
 import { writeFile, readFile, utimes, stat } from 'fs/promises'
-import prisma, { prismaClientMockReset } from './prisma.mock'
 import {
   bookMdToBookCreateInput,
   bookMdToBookUpdateInput,
@@ -20,27 +18,36 @@ import log from './log'
 import * as cli from './cli'
 import { Book } from '@app/prisma'
 import { DeepPartial } from 'src/@types/utilities'
+import { describe, expect, test, vi, afterEach } from 'vitest'
+import './prisma.mock'
+import prisma from './prisma'
 
-jest.mock('os')
-jest.mock('./log')
-jest.mock('fs/promises')
-jest.mock('./book')
+vi.mock('os')
+vi.mock('./log')
+vi.mock('fs/promises')
+vi.mock('./book')
 
 const mocks = {
-  cpus: mocked(cpus),
-  logInfo: mocked(log.info),
-  logError: mocked(log.error),
-  writeFile: mocked(writeFile),
-  utimes: mocked(utimes),
-  stat: mocked(stat),
-  readFile: mocked(readFile),
-  bookToString: mocked(bookToString),
-  filterRecentlyUpdatedBooks: mocked(filterRecentlyUpdatedBooks),
-  extractBooksOnDisk: mocked(extractBooksOnDisk),
-  readBookDir: mocked(readBookDir),
-  findNonExistantBooks: mocked(findNonExistantBooks),
-  bookMdToBookUpdateInput: mocked(bookMdToBookUpdateInput),
-  bookMdToBookCreateInput: mocked(bookMdToBookCreateInput),
+  cpus: vi.mocked(cpus),
+  logInfo: vi.mocked(log.info),
+  logError: vi.mocked(log.error),
+  writeFile: vi.mocked(writeFile),
+  utimes: vi.mocked(utimes),
+  stat: vi.mocked(stat),
+  readFile: vi.mocked(readFile),
+  bookToString: vi.mocked(bookToString),
+  filterRecentlyUpdatedBooks: vi.mocked(filterRecentlyUpdatedBooks),
+  extractBooksOnDisk: vi.mocked(extractBooksOnDisk),
+  readBookDir: vi.mocked(readBookDir),
+  findNonExistantBooks: vi.mocked(findNonExistantBooks),
+  bookMdToBookUpdateInput: vi.mocked(bookMdToBookUpdateInput),
+  bookMdToBookCreateInput: vi.mocked(bookMdToBookCreateInput),
+  prisma$disconnect: vi.spyOn(prisma, '$disconnect'),
+  prismaBookFindMany: vi.spyOn(prisma.book, 'findMany'),
+  prismaBookDeleteMany: vi.spyOn(prisma.book, 'deleteMany'),
+  prismaBookUpdate: vi.spyOn(prisma.book, 'update'),
+  prismaBookFindUnique: vi.spyOn(prisma.book, 'findUnique'),
+  prismaBookCreate: vi.spyOn(prisma.book, 'create'),
 }
 
 function makeCommand(overrides?: DeepPartial<Command>): Command {
@@ -67,22 +74,20 @@ function makeContext(command?: Command): cli.Context {
 
 describe('tools/lib/cli', () => {
   afterEach(() => {
-    const mockKeys = Object.keys(mocks) as (keyof typeof mocks)[]
-
-    mockKeys.forEach((key) => {
-      mocks[key].mockReset()
+    Object.values(mocks).forEach((mock) => {
+      mock.mockReset()
     })
 
-    prismaClientMockReset()
-    jest.restoreAllMocks()
+    vi.resetAllMocks()
+    vi.restoreAllMocks()
   })
 
   test('run with defaults', async () => {
     const command = makeCommand()
-    const spyParseArgs = jest.spyOn(cli, '_parseArgs')
-    const spySyncToDb = jest.spyOn(cli, '_syncToDb')
-    const spyCleanup = jest.spyOn(cli, '_cleanup')
-    const spySyncToDisk = jest.spyOn(cli, '_syncToDisk')
+    const spyParseArgs = vi.spyOn(cli._private, '_parseArgs')
+    const spySyncToDb = vi.spyOn(cli._private, '_syncToDb')
+    const spyCleanup = vi.spyOn(cli._private, '_cleanup')
+    const spySyncToDisk = vi.spyOn(cli._private, '_syncToDisk')
 
     spyParseArgs.mockResolvedValueOnce(command)
     spySyncToDb.mockResolvedValueOnce()
@@ -99,10 +104,10 @@ describe('tools/lib/cli', () => {
 
   test('run with overrides', async () => {
     const command = makeCommand({ name: 'dump', options: { verbose: 1, isDryRun: true } })
-    const spyParseArgs = jest.spyOn(cli, '_parseArgs')
-    const spySyncToDb = jest.spyOn(cli, '_syncToDb')
-    const spyCleanup = jest.spyOn(cli, '_cleanup')
-    const spySyncToDisk = jest.spyOn(cli, '_syncToDisk')
+    const spyParseArgs = vi.spyOn(cli._private, '_parseArgs')
+    const spySyncToDb = vi.spyOn(cli._private, '_syncToDb')
+    const spyCleanup = vi.spyOn(cli._private, '_cleanup')
+    const spySyncToDisk = vi.spyOn(cli._private, '_syncToDisk')
 
     spyParseArgs.mockResolvedValueOnce(command)
     spySyncToDisk.mockResolvedValueOnce()
@@ -120,7 +125,9 @@ describe('tools/lib/cli', () => {
   test('_cleanup', async () => {
     const ctx = makeContext()
 
-    await cli._cleanup(ctx)
+    mocks.prisma$disconnect.mockResolvedValueOnce()
+
+    await cli._private._cleanup(ctx)
 
     expect(prisma.$disconnect).toHaveBeenCalled()
   })
@@ -134,7 +141,7 @@ describe('tools/lib/cli', () => {
     mocks.writeFile.mockResolvedValueOnce()
     mocks.utimes.mockResolvedValueOnce()
 
-    await cli._syncBookToDiskExecute(ctx, filepath, bookMdString, updated)
+    await cli._private._syncBookToDiskExecute(ctx, filepath, bookMdString, updated)
 
     expect(mocks.writeFile).toHaveBeenCalledWith(filepath, bookMdString)
     expect(mocks.utimes).toHaveBeenCalledWith(filepath, updated, updated)
@@ -150,7 +157,7 @@ describe('tools/lib/cli', () => {
     mocks.writeFile.mockResolvedValueOnce()
     mocks.utimes.mockRejectedValueOnce(new Error('boom'))
 
-    await cli._syncBookToDiskExecute(ctx, filepath, bookMdString, updated)
+    await cli._private._syncBookToDiskExecute(ctx, filepath, bookMdString, updated)
 
     expect(log.error).toHaveBeenCalled()
   })
@@ -162,7 +169,7 @@ describe('tools/lib/cli', () => {
     const bookMdString = 'a book with metadata'
     const updated = new Date()
 
-    await cli._syncBookToDiskExecute(ctx, filepath, bookMdString, updated)
+    await cli._private._syncBookToDiskExecute(ctx, filepath, bookMdString, updated)
 
     expect(log.info).toHaveBeenCalled()
   })
@@ -174,7 +181,7 @@ describe('tools/lib/cli', () => {
     const fileString = 'book and metadata here'
     const bookToString = 'book and older metadata here'
     const filePath = `${ctx.command.options.dir}/${book.slug}.md`
-    const spySyncBookToDiskExecute = jest.spyOn(cli, '_syncBookToDiskExecute')
+    const spySyncBookToDiskExecute = vi.spyOn(cli._private, '_syncBookToDiskExecute')
 
     mocks.stat.mockResolvedValueOnce(fileStat)
     mocks.readFile.mockResolvedValueOnce(fileString)
@@ -182,7 +189,7 @@ describe('tools/lib/cli', () => {
 
     spySyncBookToDiskExecute.mockResolvedValueOnce()
 
-    await cli._syncBookToDisk(ctx, book)
+    await cli._private._syncBookToDisk(ctx, book)
 
     expect(mocks.bookToString).toHaveBeenCalledWith(book)
     expect(mocks.stat).toHaveBeenCalledWith(filePath)
@@ -202,13 +209,13 @@ describe('tools/lib/cli', () => {
     const fileString = 'book and metadata here'
     const bookToString = fileString
     const filePath = `${ctx.command.options.dir}/${book.slug}.md`
-    const spySyncBookToDiskExecute = jest.spyOn(cli, '_syncBookToDiskExecute')
+    const spySyncBookToDiskExecute = vi.spyOn(cli._private, '_syncBookToDiskExecute')
 
     mocks.stat.mockResolvedValueOnce(fileStat)
     mocks.readFile.mockResolvedValueOnce(fileString)
     mocks.bookToString.mockResolvedValueOnce(bookToString)
 
-    await cli._syncBookToDisk(ctx, book)
+    await cli._private._syncBookToDisk(ctx, book)
 
     expect(mocks.bookToString).toHaveBeenCalledWith(book)
     expect(mocks.stat).toHaveBeenCalledWith(filePath)
@@ -222,13 +229,13 @@ describe('tools/lib/cli', () => {
     const fileStat = { isFile: () => false } as Stats
     const bookToString = 'something here'
     const filePath = `${ctx.command.options.dir}/${book.slug}.md`
-    const spySyncBookToDiskExecute = jest.spyOn(cli, '_syncBookToDiskExecute')
+    const spySyncBookToDiskExecute = vi.spyOn(cli._private, '_syncBookToDiskExecute')
 
     mocks.stat.mockResolvedValueOnce(fileStat)
     mocks.bookToString.mockResolvedValueOnce(bookToString)
     spySyncBookToDiskExecute.mockResolvedValueOnce()
 
-    await cli._syncBookToDisk(ctx, book)
+    await cli._private._syncBookToDisk(ctx, book)
 
     expect(mocks.bookToString).toHaveBeenCalledWith(book)
     expect(mocks.stat).toHaveBeenCalledWith(filePath)
@@ -242,13 +249,13 @@ describe('tools/lib/cli', () => {
     const book = bookFixtures.makeBook({ date_updated: new Date() })
     const bookToString = 'something here'
     const filePath = `${ctx.command.options.dir}/${book.slug}.md`
-    const spySyncBookToDiskExecute = jest.spyOn(cli, '_syncBookToDiskExecute')
+    const spySyncBookToDiskExecute = vi.spyOn(cli._private, '_syncBookToDiskExecute')
 
     mocks.stat.mockRejectedValueOnce(new Error('boom'))
     mocks.bookToString.mockResolvedValueOnce(bookToString)
     spySyncBookToDiskExecute.mockResolvedValueOnce()
 
-    await cli._syncBookToDisk(ctx, book)
+    await cli._private._syncBookToDisk(ctx, book)
 
     expect(mocks.bookToString).toHaveBeenCalledWith(book)
     expect(mocks.stat).toHaveBeenCalledWith(filePath)
@@ -265,15 +272,14 @@ describe('tools/lib/cli', () => {
     const command = makeCommand()
     const ctx = makeContext(command)
     const books = [bookFixtures.makeBook(), bookFixtures.makeBook(), bookFixtures.makeBook()]
-    const spySyncBookToDisk = jest.spyOn(cli, '_syncBookToDisk')
+    const spySyncBookToDisk = vi.spyOn(cli._private, '_syncBookToDisk')
 
-    prisma.book.findMany.mockResolvedValue(books)
+    mocks.prismaBookFindMany.mockResolvedValue(books)
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
     spySyncBookToDisk.mockResolvedValue()
 
-    await cli._syncToDisk(ctx)
+    await cli._private._syncToDisk(ctx)
 
-    expect(prisma.book.findMany).toHaveBeenCalled()
     expect(spySyncBookToDisk).toHaveBeenCalledWith(ctx, books[0])
     expect(spySyncBookToDisk).toHaveBeenCalledWith(ctx, books[1])
     expect(spySyncBookToDisk).toHaveBeenCalledWith(ctx, books[2])
@@ -286,17 +292,17 @@ describe('tools/lib/cli', () => {
     const bookSlugs = books.map((book) => book.slug)
     const bookMds = [bookFixtures.makeBookMd(), bookFixtures.makeBookMd()]
     const updatedBookSlugs = [books[0].slug, books[2].slug]
-    const spyAddBookToDb = jest.spyOn(cli, '_addBookToDb')
-    const spyRemoveMissingBooksFromDb = jest.spyOn(cli, '_removeMissingBooksFromDb')
+    const spyAddBookToDb = vi.spyOn(cli._private, '_addBookToDb')
+    const spyRemoveMissingBooksFromDb = vi.spyOn(cli._private, '_removeMissingBooksFromDb')
 
-    prisma.book.findMany.mockResolvedValueOnce(books)
+    mocks.prismaBookFindMany.mockResolvedValueOnce(books)
     mocks.filterRecentlyUpdatedBooks.mockResolvedValueOnce([books[0].slug, books[1].slug])
     mocks.extractBooksOnDisk.mockResolvedValueOnce(bookMds)
     mocks.readBookDir.mockResolvedValueOnce(bookSlugs)
     spyRemoveMissingBooksFromDb.mockResolvedValueOnce()
-    spyAddBookToDb.mockResolvedValue(undefined)
+    spyAddBookToDb.mockResolvedValue()
 
-    await cli._syncToDb(ctx)
+    await cli._private._syncToDb(ctx)
 
     expect(mocks.readBookDir).toHaveBeenCalledWith(ctx.command.options.dir)
     expect(prisma.book.findMany).toHaveBeenCalled()
@@ -318,17 +324,17 @@ describe('tools/lib/cli', () => {
     const id = 'aslkjflksjf'
     const bookMds = [bookFixtures.makeBookMd({ frontmatter: { __database_cache: { id } } })]
     const updatedBookSlugs = [books[0].slug]
-    const spyUpdateBookToDb = jest.spyOn(cli, '_updateBookToDb')
-    const spyRemoveMissingBooksFromDb = jest.spyOn(cli, '_removeMissingBooksFromDb')
+    const spyUpdateBookToDb = vi.spyOn(cli._private, '_updateBookToDb')
+    const spyRemoveMissingBooksFromDb = vi.spyOn(cli._private, '_removeMissingBooksFromDb')
 
-    prisma.book.findMany.mockResolvedValueOnce(books)
+    mocks.prismaBookFindMany.mockResolvedValueOnce(books)
     mocks.filterRecentlyUpdatedBooks.mockResolvedValueOnce(bookSlugs)
     mocks.extractBooksOnDisk.mockResolvedValueOnce(bookMds)
     mocks.readBookDir.mockResolvedValueOnce(bookSlugs)
     spyRemoveMissingBooksFromDb.mockResolvedValueOnce()
     spyUpdateBookToDb.mockResolvedValue()
 
-    await cli._syncToDb(ctx)
+    await cli._private._syncToDb(ctx)
 
     expect(mocks.readBookDir).toHaveBeenCalledWith(ctx.command.options.dir)
     expect(prisma.book.findMany).toHaveBeenCalled()
@@ -347,20 +353,20 @@ describe('tools/lib/cli', () => {
     const books = [bookFixtures.makeBook(), bookFixtures.makeBook()]
     const ids = books.map((book) => book.id)
 
-    prisma.book.deleteMany.mockResolvedValueOnce({ count: books.length })
+    mocks.prismaBookDeleteMany.mockResolvedValueOnce({ count: books.length })
 
-    await cli._removeMissingBooksFromDbExecute(ctx, books)
+    await cli._private._removeMissingBooksFromDbExecute(ctx, books)
 
-    expect(prisma.book.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ids } } })
+    expect(mocks.prismaBookDeleteMany).toHaveBeenCalledWith({ where: { id: { in: ids } } })
   })
 
   test('_removeMissingBooksFromDbExecute logs error', async () => {
     const ctx = makeContext()
     const books = [bookFixtures.makeBook(), bookFixtures.makeBook()]
 
-    prisma.book.deleteMany.mockRejectedValueOnce(new Error('boom'))
+    mocks.prismaBookDeleteMany.mockRejectedValueOnce(new Error('boom'))
 
-    await cli._removeMissingBooksFromDbExecute(ctx, books)
+    await cli._private._removeMissingBooksFromDbExecute(ctx, books)
 
     expect(mocks.logError).toHaveBeenCalled()
   })
@@ -370,9 +376,9 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext(command)
     const books = [bookFixtures.makeBook(), bookFixtures.makeBook()]
 
-    await cli._removeMissingBooksFromDbExecute(ctx, books)
+    await cli._private._removeMissingBooksFromDbExecute(ctx, books)
 
-    expect(prisma.book.deleteMany).not.toHaveBeenCalled()
+    expect(mocks.prismaBookDeleteMany).not.toHaveBeenCalled()
     expect(mocks.logInfo).toHaveBeenCalled()
   })
 
@@ -381,13 +387,16 @@ describe('tools/lib/cli', () => {
     const books = [bookFixtures.makeBook(), bookFixtures.makeBook()]
     const booksToRemove = [books[1]]
     const bookSlugs = booksToRemove.map((book) => book.slug)
-    const spyRemoveMissingBooksFromDbExecute = jest.spyOn(cli, '_removeMissingBooksFromDbExecute')
+    const spyRemoveMissingBooksFromDbExecute = vi.spyOn(
+      cli._private,
+      '_removeMissingBooksFromDbExecute'
+    )
 
-    prisma.book.findMany.mockResolvedValueOnce(books)
+    mocks.prismaBookFindMany.mockResolvedValueOnce(books)
     spyRemoveMissingBooksFromDbExecute.mockResolvedValueOnce()
     mocks.findNonExistantBooks.mockReturnValueOnce(booksToRemove)
 
-    await cli._removeMissingBooksFromDb(ctx, bookSlugs)
+    await cli._private._removeMissingBooksFromDb(ctx, bookSlugs)
 
     expect(prisma.book.findMany).toHaveBeenCalled()
     expect(mocks.findNonExistantBooks).toHaveBeenCalledWith(bookSlugs, books)
@@ -399,13 +408,16 @@ describe('tools/lib/cli', () => {
     const books = [bookFixtures.makeBook(), bookFixtures.makeBook()]
     const booksToRemove: Book[] = []
     const bookSlugs = booksToRemove.map((book) => book.slug)
-    const spyRemoveMissingBooksFromDbExecute = jest.spyOn(cli, '_removeMissingBooksFromDbExecute')
+    const spyRemoveMissingBooksFromDbExecute = vi.spyOn(
+      cli._private,
+      '_removeMissingBooksFromDbExecute'
+    )
 
-    prisma.book.findMany.mockResolvedValueOnce(books)
+    mocks.prismaBookFindMany.mockResolvedValueOnce(books)
     spyRemoveMissingBooksFromDbExecute.mockResolvedValueOnce()
     mocks.findNonExistantBooks.mockReturnValueOnce(booksToRemove)
 
-    await cli._removeMissingBooksFromDb(ctx, bookSlugs)
+    await cli._private._removeMissingBooksFromDb(ctx, bookSlugs)
 
     expect(prisma.book.findMany).toHaveBeenCalled()
     expect(mocks.findNonExistantBooks).toHaveBeenCalledWith(bookSlugs, books)
@@ -421,19 +433,19 @@ describe('tools/lib/cli', () => {
     const filePath = `${ctx.command.options.dir}/${bookMd.filename}`
 
     mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(bookUpdate)
-    prisma.book.update.mockResolvedValueOnce(book)
+    mocks.prismaBookUpdate.mockResolvedValueOnce(book)
     mocks.bookToString.mockResolvedValueOnce(bookString)
     mocks.writeFile.mockResolvedValueOnce()
     mocks.utimes.mockResolvedValueOnce()
 
-    await cli._updateBookToDbExecute(ctx, bookMd, book)
+    await cli._private._updateBookToDbExecute(ctx, bookMd, book)
 
     expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledWith(
       bookMd,
       book,
       ctx.command.options.dir
     )
-    expect(prisma.book.update).toHaveBeenCalledWith({
+    expect(mocks.prismaBookUpdate).toHaveBeenCalledWith({
       where: { id: book.id },
       data: bookUpdate,
     })
@@ -451,14 +463,14 @@ describe('tools/lib/cli', () => {
 
     mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(bookUpdate)
 
-    await cli._updateBookToDbExecute(ctx, bookMd, book)
+    await cli._private._updateBookToDbExecute(ctx, bookMd, book)
 
     expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledWith(
       bookMd,
       book,
       ctx.command.options.dir
     )
-    expect(prisma.book.update).not.toHaveBeenCalled()
+    expect(mocks.prismaBookUpdate).not.toHaveBeenCalled()
     expect(mocks.bookToString).not.toHaveBeenCalled()
     expect(mocks.writeFile).not.toHaveBeenCalled()
     expect(mocks.utimes).not.toHaveBeenCalled()
@@ -471,7 +483,7 @@ describe('tools/lib/cli', () => {
 
     mocks.bookMdToBookUpdateInput.mockRejectedValueOnce(new Error('boom'))
 
-    await cli._updateBookToDbExecute(ctx, bookMd, book)
+    await cli._private._updateBookToDbExecute(ctx, bookMd, book)
 
     expect(mocks.logError).toHaveBeenCalled()
   })
@@ -480,14 +492,14 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext()
     const book = bookFixtures.makeBook()
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { __database_cache: { id: book.id } } })
-    const spyUpdateBookToDbExecute = jest.spyOn(cli, '_updateBookToDbExecute')
+    const spyUpdateBookToDbExecute = vi.spyOn(cli._private, '_updateBookToDbExecute')
 
-    prisma.book.findUnique.mockResolvedValueOnce(book)
+    mocks.prismaBookFindUnique.mockResolvedValueOnce(book)
     spyUpdateBookToDbExecute.mockResolvedValueOnce()
 
-    await cli._updateBookToDb(ctx, bookMd as BookMdWithDatabaseId)
+    await cli._private._updateBookToDb(ctx, bookMd as BookMdWithDatabaseId)
 
-    expect(prisma.book.findUnique).toHaveBeenCalledWith({ where: { id: book.id } })
+    expect(mocks.prismaBookFindUnique).toHaveBeenCalledWith({ where: { id: book.id } })
     expect(spyUpdateBookToDbExecute).toHaveBeenCalledWith(ctx, bookMd, book)
   })
 
@@ -495,11 +507,11 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext()
     const book = bookFixtures.makeBook()
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { __database_cache: { id: book.id } } })
-    const spyUpdateBookToDbExecute = jest.spyOn(cli, '_updateBookToDbExecute')
+    const spyUpdateBookToDbExecute = vi.spyOn(cli._private, '_updateBookToDbExecute')
 
-    prisma.book.findUnique.mockResolvedValueOnce(null)
+    mocks.prismaBookFindUnique.mockResolvedValueOnce(null)
 
-    await cli._updateBookToDb(ctx, bookMd as BookMdWithDatabaseId)
+    await cli._private._updateBookToDb(ctx, bookMd as BookMdWithDatabaseId)
 
     expect(spyUpdateBookToDbExecute).not.toHaveBeenCalled()
     expect(mocks.logError).toHaveBeenCalled()
@@ -513,15 +525,15 @@ describe('tools/lib/cli', () => {
     const filePath = `${ctx.command.options.dir}/${bookMd.filename}`
 
     mocks.bookMdToBookCreateInput.mockResolvedValueOnce(bookAdd)
-    prisma.book.create.mockResolvedValueOnce(bookAdd)
+    mocks.prismaBookCreate.mockResolvedValueOnce(bookAdd)
     mocks.bookToString.mockResolvedValueOnce(bookString)
     mocks.writeFile.mockResolvedValueOnce()
     mocks.utimes.mockResolvedValueOnce()
 
-    await cli._addBookToDbExecute(ctx, bookMd)
+    await cli._private._addBookToDbExecute(ctx, bookMd)
 
     expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledWith(bookMd, ctx.command.options.dir)
-    expect(prisma.book.create).toHaveBeenCalledWith({
+    expect(mocks.prismaBookCreate).toHaveBeenCalledWith({
       data: bookAdd,
     })
     expect(mocks.bookToString).toHaveBeenCalledWith(bookAdd)
@@ -537,7 +549,7 @@ describe('tools/lib/cli', () => {
 
     mocks.bookMdToBookCreateInput.mockResolvedValueOnce(bookAdd)
 
-    await cli._addBookToDbExecute(ctx, bookMd)
+    await cli._private._addBookToDbExecute(ctx, bookMd)
 
     expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledWith(bookMd, ctx.command.options.dir)
     expect(prisma.book.create).not.toHaveBeenCalled()
@@ -553,7 +565,7 @@ describe('tools/lib/cli', () => {
 
     mocks.bookMdToBookCreateInput.mockRejectedValueOnce(new Error('boom'))
 
-    await cli._addBookToDbExecute(ctx, bookMd)
+    await cli._private._addBookToDbExecute(ctx, bookMd)
 
     expect(mocks.logError).toHaveBeenCalled()
   })
@@ -561,11 +573,11 @@ describe('tools/lib/cli', () => {
   test('_addBookToDb', async () => {
     const ctx = makeContext()
     const bookMd = bookFixtures.makeBookMd()
-    const spyAddBookToDbExecute = jest.spyOn(cli, '_addBookToDbExecute')
+    const spyAddBookToDbExecute = vi.spyOn(cli._private, '_addBookToDbExecute')
 
     spyAddBookToDbExecute.mockResolvedValueOnce()
 
-    await cli._addBookToDb(ctx, bookMd)
+    await cli._private._addBookToDb(ctx, bookMd)
 
     expect(spyAddBookToDbExecute).toHaveBeenCalledWith(ctx, bookMd)
   })
@@ -576,7 +588,7 @@ describe('tools/lib/cli', () => {
 
     mocks.stat.mockResolvedValueOnce(dirStats)
 
-    const command = await cli._parseArgs(args)
+    const command = await cli._private._parseArgs(args)
 
     expect(mocks.stat).toHaveBeenCalledWith(args[1])
     expect(command).toEqual({
@@ -592,46 +604,37 @@ describe('tools/lib/cli', () => {
   test('_parseArgs throws if dir is a file', async () => {
     const args = ['sync', 'test-folder']
     const dirStats = { isDirectory: () => false } as Stats
-    const spyConsoleError = jest.spyOn(console, 'error')
-    const spyProcessExit = jest.spyOn(process, 'exit')
+    const spyConsoleError = vi.spyOn(console, 'error')
 
     mocks.stat.mockResolvedValueOnce(dirStats)
-    spyConsoleError.mockImplementation()
-    spyProcessExit.mockImplementation()
+    spyConsoleError.mockReturnValue()
 
-    const command = cli._parseArgs(args)
+    const command = cli._private._parseArgs(args)
 
     await expect(command).rejects.toThrow()
-    expect(spyProcessExit).toHaveBeenCalledWith(1)
   })
 
   test('_parseArgs throws if dir does not exist', async () => {
     const args = ['sync', 'test-folder']
-    const spyConsoleError = jest.spyOn(console, 'error')
-    const spyProcessExit = jest.spyOn(process, 'exit')
+    const spyConsoleError = vi.spyOn(console, 'error')
 
     mocks.stat.mockRejectedValueOnce(new Error('boom'))
-    spyConsoleError.mockImplementation()
-    spyProcessExit.mockImplementation()
-
-    const command = cli._parseArgs(args)
+    spyConsoleError.mockReturnValue()
+    const command = cli._private._parseArgs(args)
 
     await expect(command).rejects.toThrow()
-    expect(spyProcessExit).toHaveBeenCalledWith(1)
   })
 
   test('_parseArgs throws if command does not exist', async () => {
     const args = ['boom', 'test-folder']
     const dirStats = { isDirectory: () => true } as Stats
-    const spyConsoleError = jest.spyOn(console, 'error')
-    const spyProcessExit = jest.spyOn(process, 'exit')
+    const spyConsoleError = vi.spyOn(console, 'error')
 
     mocks.stat.mockResolvedValueOnce(dirStats)
-    spyConsoleError.mockImplementation()
-    spyProcessExit.mockImplementation()
+    spyConsoleError.mockReturnValue()
 
-    await cli._parseArgs(args)
+    const command = cli._private._parseArgs(args)
 
-    expect(spyProcessExit).toHaveBeenCalledWith(1)
+    await expect(command).rejects.toThrow()
   })
 })

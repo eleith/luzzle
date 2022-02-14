@@ -4,16 +4,18 @@ const title = 'a book title'
 const description = 'a book description'
 const authors = ['an author']
 
-function makeVolumeInfo(
-  overrides: Partial<books_v1.Schema$Volume['volumeInfo']> = {}
-): books_v1.Schema$Volume['volumeInfo'] {
+function makeVolume(
+  overrides: books_v1.Schema$Volume['volumeInfo'] = {}
+): books_v1.Schema$Volume {
   return {
-    ...overrides,
+    volumeInfo: {
+      ...overrides,
+    },
   }
 }
 
-function makeVolumeInfoSimple(): books_v1.Schema$Volume['volumeInfo'] {
-  return makeVolumeInfo({ title, authors, description })
+function makeVolumeSimple(): books_v1.Schema$Volume {
+  return makeVolume({ title, authors, description })
 }
 
-export { makeVolumeInfo, makeVolumeInfoSimple }
+export { makeVolume, makeVolumeSimple }

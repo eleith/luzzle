@@ -1,51 +1,61 @@
-import { mocked } from 'ts-jest/utils'
-import log from './log'
-import googleBooksMock, { googleBooksMockReset } from './google-books.mock'
 import * as googleBooks from './google-books'
 import * as googleLibraryFixtures from './google-books.fixtures'
+import { describe, expect, test, vi, afterEach } from 'vitest'
+import { books_v1 } from 'googleapis'
+import { GaxiosResponse } from 'gaxios'
 
-jest.mock('./log')
-jest.mock('dotenv')
+vi.mock('./log')
+vi.mock('dotenv')
+
+const fixtures = {
+  volumeSimple: googleLibraryFixtures.makeVolumeSimple(),
+}
 
 const mocks = {
-  logError: mocked(log.error),
+  getGoogleBooks: vi.spyOn(googleBooks._private, '_getGoogleBooks'),
+  volumesList: vi.fn(),
 }
 
 describe('google-books', () => {
   afterEach(() => {
-    jest.resetAllMocks()
-    jest.restoreAllMocks()
-    googleBooksMockReset()
+    vi.resetAllMocks()
+    vi.restoreAllMocks()
   })
 
   test('findVolumes', async () => {
     const title = 'a title'
     const author = 'a author'
 
-    const volume = googleLibraryFixtures.makeVolumeInfoSimple()
+    mocks.volumesList.mockResolvedValueOnce({
+      status: 200,
+      data: { items: [fixtures.volumeSimple] },
+    } as GaxiosResponse<books_v1.Schema$Volumes>)
 
-    googleBooksMock.volumes.list.mockImplementationOnce(async () => {
-      return {
-        status: 200,
-        data: { items: [volume] },
-      }
-    })
+    mocks.getGoogleBooks.mockReturnValueOnce({
+      volumes: {
+        list: mocks.volumesList,
+      },
+    } as unknown as books_v1.Books)
 
     const volumes = await googleBooks.findVolumes(title, author)
 
-    expect(googleBooksMock.volumes.list).toHaveBeenCalledWith({ q: `${title} ${author}` })
-    expect(volumes).toEqual([volume])
+    expect(mocks.volumesList).toHaveBeenCalledWith({ q: `${title} ${author}` })
+    expect(volumes).toEqual([fixtures.volumeSimple])
   })
 
   test('findVolumes returns null', async () => {
     const title = 'a title'
     const author = 'a author'
 
-    googleBooksMock.volumes.list.mockImplementationOnce(async () => {
-      return {
-        status: 400,
-      }
-    })
+    mocks.volumesList.mockResolvedValueOnce({
+      status: 400,
+    } as GaxiosResponse<books_v1.Schema$Volumes>)
+
+    mocks.getGoogleBooks.mockReturnValueOnce({
+      volumes: {
+        list: mocks.volumesList,
+      },
+    } as unknown as books_v1.Books)
 
     const volumes = await googleBooks.findVolumes(title, author)
     expect(volumes).toBeNull()
@@ -55,29 +65,35 @@ describe('google-books', () => {
     const title = 'a title'
     const author = 'a author'
 
-    const simpleVolume = googleLibraryFixtures.makeVolumeInfoSimple()
+    mocks.volumesList.mockResolvedValueOnce({
+      status: 200,
+      data: { items: [fixtures.volumeSimple] },
+    } as GaxiosResponse<books_v1.Schema$Volumes>)
 
-    googleBooksMock.volumes.list.mockImplementationOnce(async () => {
-      return {
-        status: 200,
-        data: { items: [simpleVolume] },
-      }
-    })
+    mocks.getGoogleBooks.mockReturnValueOnce({
+      volumes: {
+        list: mocks.volumesList,
+      },
+    } as unknown as books_v1.Books)
 
     const volume = await googleBooks.findVolume(title, author)
-    expect(simpleVolume).toEqual(volume)
+    expect(volume).toEqual(fixtures.volumeSimple)
   })
 
   test('findVolume returns null', async () => {
     const title = 'a title'
     const author = 'a author'
 
-    googleBooksMock.volumes.list.mockImplementationOnce(async () => {
-      return {
-        status: 200,
-        data: { items: [] },
-      }
-    })
+    mocks.volumesList.mockResolvedValueOnce({
+      status: 200,
+      data: {},
+    } as GaxiosResponse<books_v1.Schema$Volumes>)
+
+    mocks.getGoogleBooks.mockReturnValueOnce({
+      volumes: {
+        list: mocks.volumesList,
+      },
+    } as unknown as books_v1.Books)
 
     const volume = await googleBooks.findVolume(title, author)
     expect(volume).toBeNull()
@@ -86,29 +102,35 @@ describe('google-books', () => {
   test('findVolumeByIsbn', async () => {
     const isbn = 'isbn-number'
 
-    const simpleVolume = googleLibraryFixtures.makeVolumeInfoSimple()
+    mocks.volumesList.mockResolvedValueOnce({
+      status: 200,
+      data: { items: [fixtures.volumeSimple] },
+    } as GaxiosResponse<books_v1.Schema$Volumes>)
 
-    googleBooksMock.volumes.list.mockImplementationOnce(async () => {
-      return {
-        status: 200,
-        data: { items: [simpleVolume] },
-      }
-    })
+    mocks.getGoogleBooks.mockReturnValueOnce({
+      volumes: {
+        list: mocks.volumesList,
+      },
+    } as unknown as books_v1.Books)
 
     const volume = await googleBooks.findVolumeByIsbn(isbn)
 
-    expect(googleBooksMock.volumes.list).toHaveBeenCalledWith({ q: `isbn:${isbn}` })
-    expect(volume).toEqual(simpleVolume)
+    expect(mocks.volumesList).toHaveBeenCalledWith({ q: `isbn:${isbn}` })
+    expect(volume).toEqual(fixtures.volumeSimple)
   })
 
   test('findVolumeByIsbn returns null', async () => {
     const isbn = 'isbn-number'
 
-    googleBooksMock.volumes.list.mockImplementationOnce(async () => {
-      return {
-        status: 404,
-      }
-    })
+    mocks.volumesList.mockResolvedValueOnce({
+      status: 400,
+    } as GaxiosResponse<books_v1.Schema$Volumes>)
+
+    mocks.getGoogleBooks.mockReturnValueOnce({
+      volumes: {
+        list: mocks.volumesList,
+      },
+    } as unknown as books_v1.Books)
 
     const volume = await googleBooks.findVolumeByIsbn(isbn)
 

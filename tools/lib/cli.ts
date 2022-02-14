@@ -35,7 +35,7 @@ export type Context = {
   command: Command
 }
 
-export const _parseArgs = async (_args: string[]): Promise<Command> => {
+async function _parseArgs(_args: string[]): Promise<Command> {
   const command = await yargs(_args)
     .strict()
     .command('sync <dir>', 'sync directory to local database')
@@ -65,6 +65,7 @@ export const _parseArgs = async (_args: string[]): Promise<Command> => {
 
       return true
     })
+    .exitProcess(false)
     .demandCommand(1, `[error] please specify a command`)
     .parseAsync()
 
@@ -78,11 +79,11 @@ export const _parseArgs = async (_args: string[]): Promise<Command> => {
   }
 }
 
-export const _addBookToDb = async (ctx: Context, bookMd: BookMd): Promise<void> => {
-  await _addBookToDbExecute(ctx, bookMd)
+async function _addBookToDb(ctx: Context, bookMd: BookMd): Promise<void> {
+  await _private._addBookToDbExecute(ctx, bookMd)
 }
 
-export const _addBookToDbExecute = async (ctx: Context, bookMd: BookMd): Promise<void> => {
+async function _addBookToDbExecute(ctx: Context, bookMd: BookMd): Promise<void> {
   const filename = bookMd.filename
   const filepath = path.join(ctx.command.options.dir, filename)
 
@@ -101,26 +102,19 @@ export const _addBookToDbExecute = async (ctx: Context, bookMd: BookMd): Promise
   }
 }
 
-export const _updateBookToDb = async (
-  ctx: Context,
-  bookMd: BookMdWithDatabaseId
-): Promise<void> => {
+async function _updateBookToDb(ctx: Context, bookMd: BookMdWithDatabaseId): Promise<void> {
   const id = bookMd.frontmatter.__database_cache.id
   const book = await ctx.prisma.book.findUnique({ where: { id } })
 
   if (book) {
-    await _updateBookToDbExecute(ctx, bookMd, book)
+    await _private._updateBookToDbExecute(ctx, bookMd, book)
     return
   }
 
   log.error('[db]', `${bookMd.filename} pointed to non-existant ${id}`)
 }
 
-export const _updateBookToDbExecute = async (
-  ctx: Context,
-  bookMd: BookMd,
-  book: Book
-): Promise<void> => {
+async function _updateBookToDbExecute(ctx: Context, bookMd: BookMd, book: Book): Promise<void> {
   const filename = bookMd.filename
   const filepath = path.join(ctx.command.options.dir, filename)
 
@@ -143,22 +137,19 @@ export const _updateBookToDbExecute = async (
   }
 }
 
-export const _removeMissingBooksFromDb = async (
-  ctx: Context,
-  bookSlugs: string[]
-): Promise<void> => {
+async function _removeMissingBooksFromDb(ctx: Context, bookSlugs: string[]): Promise<void> {
   const booksInDb = await ctx.prisma.book.findMany({ select: { id: true, slug: true } })
   const booksToRemove = findNonExistantBooks(bookSlugs, booksInDb)
 
   if (booksToRemove.length) {
-    await _removeMissingBooksFromDbExecute(ctx, booksToRemove)
+    await _private._removeMissingBooksFromDbExecute(ctx, booksToRemove)
   }
 }
 
-export const _removeMissingBooksFromDbExecute = async (
+async function _removeMissingBooksFromDbExecute(
   ctx: Context,
   books: Pick<Book, 'id' | 'slug'>[]
-): Promise<void> => {
+): Promise<void> {
   try {
     if (ctx.command.options.isDryRun === false) {
       const ids = books.map((book) => book.id)
@@ -170,7 +161,7 @@ export const _removeMissingBooksFromDbExecute = async (
   }
 }
 
-export const _syncToDb = async (ctx: Context): Promise<void> => {
+async function _syncToDb(ctx: Context): Promise<void> {
   const bookSlugs = await readBookDir(ctx.command.options.dir)
   const books = await ctx.prisma.book.findMany({ select: { date_updated: true, slug: true } })
   const updatedBookSlugs = await filterRecentlyUpdatedBooks(
@@ -182,24 +173,25 @@ export const _syncToDb = async (ctx: Context): Promise<void> => {
 
   await eachLimit(bookMds, 1, async (bookMd) => {
     if (bookMd.frontmatter.__database_cache?.id) {
-      await _updateBookToDb(ctx, bookMd as BookMdWithDatabaseId)
+      await _private._updateBookToDb(ctx, bookMd as BookMdWithDatabaseId)
     } else {
-      await _addBookToDb(ctx, bookMd)
+      await _private._addBookToDb(ctx, bookMd)
     }
   })
 
-  await _removeMissingBooksFromDb(ctx, bookSlugs)
+  await _private._removeMissingBooksFromDb(ctx, bookSlugs)
 }
 
-export const _syncToDisk = async (ctx: Context): Promise<void> => {
+async function _syncToDisk(ctx: Context): Promise<void> {
   const books = await ctx.prisma.book.findMany()
+  const numCpus = cpus().length
 
-  await eachLimit(books, cpus().length, async (book) => {
-    await _syncBookToDisk(ctx, book)
+  await eachLimit(books, numCpus, async (book) => {
+    await _private._syncBookToDisk(ctx, book)
   })
 }
 
-export const _syncBookToDisk = async (ctx: Context, book: Book): Promise<void> => {
+async function _syncBookToDisk(ctx: Context, book: Book): Promise<void> {
   const bookMd = await bookToString(book)
   const file = path.join(ctx.command.options.dir, `${book.slug}.md`)
   const fileStat = await stat(file).catch(() => null)
@@ -217,15 +209,15 @@ export const _syncBookToDisk = async (ctx: Context, book: Book): Promise<void> =
     return
   }
 
-  await _syncBookToDiskExecute(ctx, file, bookMd, book.date_updated)
+  await _private._syncBookToDiskExecute(ctx, file, bookMd, book.date_updated)
 }
 
-export const _syncBookToDiskExecute = async (
+async function _syncBookToDiskExecute(
   ctx: Context,
   filepath: string,
   bookMdString: string,
   updated: Date
-): Promise<void> => {
+): Promise<void> {
   try {
     if (!ctx.command.options.isDryRun) {
       await writeFile(filepath, bookMdString)
@@ -237,12 +229,12 @@ export const _syncBookToDiskExecute = async (
   }
 }
 
-export const _cleanup = async (ctx: Context): Promise<void> => {
+async function _cleanup(ctx: Context): Promise<void> {
   await ctx.prisma.$disconnect()
 }
 
 async function run(): Promise<Context> {
-  const command = await _parseArgs(hideBin(process.argv))
+  const command = await _private._parseArgs(hideBin(process.argv))
   const ctx: Context = {
     prisma,
     log,
@@ -253,14 +245,29 @@ async function run(): Promise<Context> {
   ctx.log.heading = command.options.isDryRun ? '[would-have]' : ''
 
   if (ctx.command.name === 'dump') {
-    await _syncToDisk(ctx)
+    await _private._syncToDisk(ctx)
   } else {
-    await _syncToDb(ctx)
+    await _private._syncToDb(ctx)
   }
 
-  await _cleanup(ctx)
+  await _private._cleanup(ctx)
 
   return ctx
 }
 
-export { run }
+const _private = {
+  _parseArgs,
+  _addBookToDb,
+  _addBookToDbExecute,
+  _updateBookToDb,
+  _updateBookToDbExecute,
+  _removeMissingBooksFromDb,
+  _removeMissingBooksFromDbExecute,
+  _syncToDisk,
+  _syncToDb,
+  _syncBookToDisk,
+  _syncBookToDiskExecute,
+  _cleanup,
+}
+
+export { run, _private }

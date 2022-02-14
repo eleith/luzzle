@@ -1,22 +1,21 @@
-import { mocked } from 'ts-jest/utils'
 import log from './log'
 import got from 'got'
 import * as openLibrary from './open-library'
 import * as openLibraryFixtures from './open-library.fixtures'
+import { describe, expect, test, vi, afterEach } from 'vitest'
 
-jest.mock('got')
-jest.mock('./log')
+vi.mock('./log')
 
 const mocks = {
-  logError: mocked(log.error),
-  logWarn: mocked(log.warn),
-  gotGet: mocked(got.get),
+  logError: vi.mocked(log.error),
+  logWarn: vi.mocked(log.warn),
+  gotGet: vi.spyOn(got, 'get'),
 }
 
 describe('open-library', () => {
   afterEach(() => {
-    jest.resetAllMocks()
-    jest.restoreAllMocks()
+    vi.resetAllMocks()
+    vi.restoreAllMocks()
   })
 
   test('search', async () => {

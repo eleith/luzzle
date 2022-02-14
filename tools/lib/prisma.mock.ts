@@ -1,13 +1,16 @@
-import { DeepMockProxy, mockDeep, mockReset } from 'jest-mock-extended'
-import { PrismaClient } from '@app/prisma'
-import prisma from './prisma'
+import { vi } from 'vitest'
 
-jest.mock('./prisma', () => {
-  return mockDeep<PrismaClient>()
+vi.mock('./prisma', () => {
+  return {
+    default: {
+      $disconnect: vi.fn(),
+      book: {
+        findMany: vi.fn(),
+        deleteMany: vi.fn(),
+        update: vi.fn(),
+        findUnique: vi.fn(),
+        create: vi.fn(),
+      },
+    },
+  }
 })
-
-export const prismaClientMockReset = (): void => {
-  mockReset(prisma)
-}
-
-export default prisma as unknown as DeepMockProxy<PrismaClient>
