@@ -1,7 +1,5 @@
-import Prisma from '@app/prisma'
+import { PrismaClient } from '@app/prisma'
 
 export type { Book, PrismaClient } from '@app/prisma'
 
-const prisma = new Prisma.PrismaClient()
-
-export default prisma
+export default new PrismaClient()

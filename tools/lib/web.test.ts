@@ -1,29 +1,27 @@
+import { describe, expect, test, vi, afterEach } from 'vitest'
 import got from 'got'
 import { createWriteStream, WriteStream } from 'fs'
-import { fromStream } from 'file-type'
+import { fileTypeFromStream } from 'file-type'
 import { PassThrough } from 'stream'
 import Request from 'got/dist/source/core'
 import { downloadTo } from './web'
-import { jest } from '@jest/globals'
+import tempy from 'tempy'
 
-jest.mock('got')
-jest.mock('fs')
-jest.mock('file-type')
-jest.mock('tempy', () => {
-  return { file: mocks.tempyFile }
-})
+vi.mock('fs')
+vi.mock('file-type')
+vi.mock('tempy')
 
 const mocks = {
-  gotStream: jest.mocked(got.stream),
-  createWriteStream: jest.mocked(createWriteStream),
-  fromStream: jest.mocked(fromStream),
-  tempyFile: jest.fn(),
+  gotStream: vi.spyOn(got, 'stream'),
+  createWriteStream: vi.mocked(createWriteStream),
+  fromStream: vi.mocked(fileTypeFromStream),
+  tempyFile: vi.spyOn(tempy, 'file'),
 }
 
 describe('book', () => {
   afterEach(() => {
-    jest.resetAllMocks()
-    jest.restoreAllMocks()
+    vi.resetAllMocks()
+    vi.restoreAllMocks()
   })
 
   test('downloadTo', async () => {
