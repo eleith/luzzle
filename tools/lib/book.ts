@@ -393,14 +393,15 @@ async function _search(bookMd: BookMdWithSearch): Promise<BookMd> {
 
       return merge({ frontmatter: openWork }, bookMd)
     }
-  } else if (search === 'google') {
-    const googleBook = await _private._searchGoogleBooks(
-      bookMd.frontmatter.title,
-      bookMd.frontmatter.author
-    )
-
-    return merge({ frontmatter: googleBook }, bookMd)
   }
+
+  //else if (search === 'google')
+  const googleBook = await _private._searchGoogleBooks(
+    bookMd.frontmatter.title,
+    bookMd.frontmatter.author
+  )
+
+  return merge({ frontmatter: googleBook }, bookMd)
 }
 
 async function _processInputs(bookMd: BookMd, outputDir: string): Promise<BookMd> {

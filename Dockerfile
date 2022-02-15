@@ -8,9 +8,14 @@ COPY .env.local ./
 COPY .env.production ./
 COPY package.json ./
 COPY package-lock.json ./
-COPY generated ./generated
 COPY prisma ./prisma
+COPY nexus.tsconfig.json ./
+COPY graphql.config.yml ./
+COPY src ./src
+COPY tsconfig.json ./
 RUN npm ci
+RUN npm run build:nexus
+RUN npm run codegen
 RUN npm run prisma-create
 
 # Next.js collects completely anonymous telemetry data about general usage.
@@ -18,7 +23,7 @@ RUN npm run prisma-create
 # Uncomment the following line in case you want to disable telemetry.
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Rebuild the source code only when needed
+#l Rebuild the source code only when needed
 FROM node:14-alpine AS builder
 WORKDIR /app
 COPY public ./public
@@ -32,8 +37,8 @@ COPY package-lock.json ./
 COPY .env ./
 COPY .env.local ./
 COPY .env.production ./
-COPY --from=deps /app/node_modules ./node_modules
 COPY next.config.js ./
+RUN npm ci
 RUN npm run build
 
 # Production image, copy all the files and run next

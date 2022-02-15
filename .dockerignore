@@ -8,8 +8,6 @@ prisma/migrate
 build
 data
 .next
-nexus.tsconfig.json
-graphql.config.yml
 .prettierrc.json
 .stylelintrc.json
 public/images/covers
