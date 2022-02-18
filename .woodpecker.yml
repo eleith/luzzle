@@ -19,23 +19,15 @@ pipeline:
       - GCS_SITE_DATA_PATH=eleith-io-site-data/main
     commands:
       - mkdir /tmp/secrets
+      - touch .env.local
       - echo $${CLOUD_RUN_SERVICE_KEY_JSON} | sed -z 's/\n/\\\n/g' | sed -z 's/\\\n$//g' > $RUN_KEY_FILE
       - echo $${RCLONE_SERVICE_KEY_JSON} | sed -z 's/\n/\\\n/g' | sed -z 's/\\\n$//g' > $RCLONE_KEY_FILE
+      - echo $${ENV_PRODUCTION} | sed -z 's/\n/\\\n/g' | sed -z 's/\\\n$//g' > .env.production
       - rclone sync -P --gcs-service-account-file=$RCLONE_KEY_FILE --gcs-location=$GCS_REGION --gcs-storage-class="REGIONAL" --gcs-project-number=$GCS_PROJECT --gcs-bucket-policy-only=true :gcs:$GCS_SITE_DATA_PATH data
       - rclone sync -P --gcs-service-account-file=$RCLONE_KEY_FILE --gcs-location=$GCS_REGION --gcs-storage-class="REGIONAL" --gcs-project-number=$GCS_PROJECT --gcs-bucket-policy-only=true :gcs:$GCS_SITE_PUBLIC_STAGING_PATH :gcs:$GCS_SITE_PUBLIC_PATH
-      - touch .env.local
       - gcloud auth activate-service-account --key-file $RUN_KEY_FILE
       - gcloud builds submit --gcs-source-staging-dir $STAGING_DIR --gcs-log-dir $LOG_DIR --tag $GCR_IMAGE --project=$GCS_PROJECT
       - gcloud run deploy backup-instructions-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
-    secrets: [ cloud_run_service_key_json, rclone_service_key_json ]
+    secrets: [ cloud_run_service_key_json, rclone_service_key_json, env_production ]
     when:
       branch: main
-  notify:
-    image: crazymax/msmtpd:1.8.19
-    environment:
-      - SMTP_TLS=on
-    commands:
-      - echo "$CI_BUILD_LINK" | mail -s "eleith/eleith build result - $CI_JOB_STATUS" online-woodpecker.eleith@eleith.com
-    secrets: [ smtp_user, smtp_password, smtp_host ]
-    when:
-      status: [ success, failure ]
