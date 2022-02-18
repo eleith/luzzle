@@ -13,6 +13,9 @@ COPY nexus.tsconfig.json ./
 COPY graphql.config.yml ./
 COPY src ./src
 COPY tsconfig.json ./
+COPY public ./
+COPY next.config.js ./
+COPY next-env.d.ts ./
 RUN npm ci
 RUN npm run build:nexus
 RUN npm run codegen
@@ -37,7 +40,7 @@ COPY --from=deps package-lock.json ./
 COPY --from=deps .env ./
 COPY --from=deps .env.local ./
 COPY --from=deps .env.production ./
-COPY next.config.js ./
+COPY --from=deps next.config.js ./
 RUN npm ci
 RUN npm run build
 
