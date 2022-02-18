@@ -9,7 +9,7 @@ pipeline:
     environment:
       - LOG_DIR=gs://eleith-cloud-builds/logs
       - STAGING_DIR=gs://eleith-cloud-builds/eleith-io-site
-      - RUN_KEY_FILE=/tmp/secrets/run-service-key.json
+      - RUN_KEY_FILE=/tmp/secrets/service-account-key.json
       - RCLONE_KEY_FILE=/tmp/secrets/rclone-service-key.json
       - GCR_IMAGE=gcr.io/eleith-cloud/eleith-io-site
       - GCS_PROJECT=eleith-cloud
@@ -29,3 +29,12 @@ pipeline:
     secrets: [ cloud_run_service_key_json, rclone_service_key_json ]
     when:
       branch: main
+  notify:
+    image: crazymax/msmtpd:1.8.19
+    environment:
+      - SMTP_TLS=on
+    commands:
+      - echo "$CI_BUILD_LINK" | mail -s "eleith/eleith build result - $CI_JOB_STATUS" online-woodpecker.eleith@eleith.com
+    secrets: [ smtp_user, smtp_password, smtp_host ]
+    when:
+      status: [ success, failure ]
