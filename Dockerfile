@@ -26,17 +26,17 @@ ENV NEXT_TELEMETRY_DISABLED 1
 #l Rebuild the source code only when needed
 FROM node:16-alpine AS builder
 WORKDIR /app
-COPY public ./public
-COPY generated ./generated
-COPY prisma ./prisma
-COPY src ./src
-COPY next-env.d.ts ./
-COPY tsconfig.json ./
-COPY package.json ./
-COPY package-lock.json ./
-COPY .env ./
-COPY .env.local ./
-COPY .env.production ./
+COPY --from=deps public ./public
+COPY --from=deps generated ./generated
+COPY --from=deps prisma ./prisma
+COPY --from=deps src ./src
+COPY --from=deps next-env.d.ts ./
+COPY --from=deps tsconfig.json ./
+COPY --from=deps package.json ./
+COPY --from=deps package-lock.json ./
+COPY --from=deps .env ./
+COPY --from=deps .env.local ./
+COPY --from=deps .env.production ./
 COPY next.config.js ./
 RUN npm ci
 RUN npm run build
