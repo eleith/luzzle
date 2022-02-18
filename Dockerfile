@@ -1,47 +1,31 @@
 # Install dependencies only when needed
-FROM node:16-alpine AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-# RUN apk add --no-cache libc6-compat
+FROM node:16-alpine AS builder
+
 WORKDIR /app
-COPY .env ./
-COPY .env.local ./
-COPY .env.production ./
-COPY package.json ./
-COPY package-lock.json ./
-COPY prisma ./prisma
-COPY nexus.tsconfig.json ./
-COPY graphql.config.yml ./
-COPY src ./src
-COPY tsconfig.json ./
-COPY public ./
-COPY next.config.js ./
-COPY next-env.d.ts ./
-RUN npm ci
-RUN npm run build:nexus
-RUN npm run codegen
-RUN npm run prisma-create
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry.
 ENV NEXT_TELEMETRY_DISABLED 1
 
-#l Rebuild the source code only when needed
-FROM node:16-alpine AS builder
-WORKDIR /app
-COPY --from=deps public ./public
-COPY --from=deps generated ./generated
-COPY --from=deps prisma ./prisma
-COPY --from=deps src ./src
-COPY --from=deps next-env.d.ts ./
-COPY --from=deps tsconfig.json ./
-COPY --from=deps package.json ./
-COPY --from=deps package-lock.json ./
-COPY --from=deps .env ./
-COPY --from=deps .env.local ./
-COPY --from=deps .env.production ./
-COPY --from=deps next.config.js ./
+COPY public ./public
+COPY generated ./generated
+COPY prisma ./prisma
+COPY src ./src
+COPY tsconfig.json ./
+COPY package.json ./
+COPY package-lock.json ./
+COPY .env ./
+COPY .env.local ./
+COPY .env.production ./
+COPY next.config.js ./
+COPY next-env.d.ts ./
+COPY nexus.tsconfig.json ./
+COPY graphql.config.yml ./
 RUN npm ci
+RUN npm run build:nexus
+RUN npm run codegen
+RUN npm run prisma-create
 RUN npm run build
 
 # Production image, copy all the files and run next
