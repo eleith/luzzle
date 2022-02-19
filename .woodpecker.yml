@@ -22,7 +22,7 @@ pipeline:
       - touch .env.local
       - echo $${CLOUD_RUN_SERVICE_KEY_JSON} | sed -z 's/\n/\\\n/g' | sed -z 's/\\\n$//g' > $RUN_KEY_FILE
       - echo $${RCLONE_SERVICE_KEY_JSON} | sed -z 's/\n/\\\n/g' | sed -z 's/\\\n$//g' > $RCLONE_KEY_FILE
-      - echo $${ENV_PRODUCTION} | sed -z 's/\n/\\\n/g' | sed -z 's/\\\n$//g' > .env.production
+      - echo $${ENV_PRODUCTION} > .env.production
       - rclone sync -P --gcs-service-account-file=$RCLONE_KEY_FILE --gcs-location=$GCS_REGION --gcs-storage-class="REGIONAL" --gcs-project-number=$GCS_PROJECT --gcs-bucket-policy-only=true :gcs:$GCS_SITE_DATA_PATH ./prisma/data
       - rclone sync -P --gcs-service-account-file=$RCLONE_KEY_FILE --gcs-location=$GCS_REGION --gcs-storage-class="REGIONAL" --gcs-project-number=$GCS_PROJECT --gcs-bucket-policy-only=true :gcs:$GCS_SITE_PUBLIC_STAGING_PATH :gcs:$GCS_SITE_PUBLIC_PATH
       - gcloud auth activate-service-account --key-file $RUN_KEY_FILE
