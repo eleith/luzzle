@@ -1,7 +1,6 @@
 .gcloudignore
 .git
 .gitignore
-.env.dev
 .next
 .prettierrc.json
 .stylelintrc.json
