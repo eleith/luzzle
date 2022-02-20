@@ -21,9 +21,9 @@ pipeline:
       - touch .env.local
       - eval "echo \"$(cat .env.production)\"" > .env.production
       - echo $${CLOUD_RUN_SERVICE_KEY_JSON} | sed -z 's/\n/\\\n/g' | sed -z 's/\\\n$//g' > $RUN_KEY_FILE
+      - gcloud auth activate-service-account --key-file $RUN_KEY_FILE
       - gsutil rsync -d -r gs://eleith-io-site-dev/main gs://eleith-io-site
       - gsutil rsync -r gs://eleith-io-site-data/main ./prisma/data
-      - gcloud auth activate-service-account --key-file $RUN_KEY_FILE
       - gcloud builds submit --gcs-source-staging-dir $STAGING_DIR --gcs-log-dir $LOG_DIR --tag $GCR_IMAGE --project=$GCS_PROJECT
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
     secrets: [ cloud_run_service_key_json, nextjs_env_host, nextjs_env_public_host_static ]
