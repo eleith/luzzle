@@ -148,7 +148,13 @@ function makeBookMd(filename: string, markdown: unknown, frontmatter: unknown): 
     return bookOnDisk
   }
 
-  throw new Error(`${filename} is not a valid bookMd`)
+  const message = bookMdValidator.errors
+    ?.map((x) => {
+      return `${x.instancePath} -> ${x.message}`
+    })
+    .join(' | ')
+
+  throw new Error(`${filename} is not a valid bookMd, errors: ${message}`)
 }
 
 async function readBookDir(dirPath: string): Promise<Array<string>> {
@@ -200,24 +206,14 @@ async function bookMdToBookCreateInput(
   _bookMd: BookMd,
   dir: string
 ): Promise<Prisma.BookCreateInput> {
-  const bookMd = await _private._processInputs(_bookMd, dir)
-  const cover = bookMd.frontmatter.__input?.cover
+  const bookMd = await _private._maybeSearch(_bookMd)
   const bookCreateInput = {
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
     slug: path.basename(bookMd.filename, '.md'),
     note: bookMd.markdown,
   }
 
-  if (cover) {
-    const coverData = await _private._getCoverData<Prisma.BookCreateInput>(bookMd, dir)
-
-    return {
-      ...bookCreateInput,
-      ...coverData,
-    }
-  }
-
-  return bookCreateInput
+  return await _private._maybeDownloadCover<Prisma.BookCreateInput>(bookMd, bookCreateInput, dir)
 }
 
 async function bookMdToBookUpdateInput(
@@ -225,8 +221,7 @@ async function bookMdToBookUpdateInput(
   book: Book,
   dir: string
 ): Promise<Prisma.BookUpdateInput> {
-  const bookMd = await _private._processInputs(_bookMd, dir)
-  const cover = bookMd.frontmatter.__input?.cover
+  const bookMd = await _private._maybeSearch(_bookMd)
   const bookUpdateInput = {
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
     slug: path.basename(bookMd.filename, '.md'),
@@ -242,16 +237,7 @@ async function bookMdToBookUpdateInput(
     }
   })
 
-  if (cover) {
-    const coverData = await _private._getCoverData<Prisma.BookUpdateInput>(bookMd, dir)
-
-    return {
-      ...bookUpdateInput,
-      ...coverData,
-    }
-  }
-
-  return bookUpdateInput
+  return await _private._maybeDownloadCover<Prisma.BookUpdateInput>(bookMd, bookUpdateInput, dir)
 }
 
 async function _getCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
@@ -271,7 +257,7 @@ async function _getCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdat
 }
 
 async function _downloadCover(bookMd: BookMdWithCover, outputDir: string): Promise<void> {
-  const cover = bookMd.frontmatter.__input?.cover
+  const cover = bookMd.frontmatter.__input.cover
   const outputPath = path.join(outputDir, getCoverPathForBook(bookMd))
 
   if (/https?:\/\//i.test(cover)) {
@@ -280,6 +266,8 @@ async function _downloadCover(bookMd: BookMdWithCover, outputDir: string): Promi
     if (extname(tempFile) === '.jpg') {
       await copyFile(tempFile, outputPath)
       await unlink(tempFile)
+
+      log.info('[download]', `downloaded image for ${bookMd.frontmatter.title}`)
     } else {
       await unlink(tempFile)
       throw new Error("upload wasn't a jpg")
@@ -293,6 +281,8 @@ async function _downloadCover(bookMd: BookMdWithCover, outputDir: string): Promi
 
       if (fileType?.ext === 'jpg') {
         await copyFile(coverPath, outputPath)
+
+        log.info('[copy]', `copied image for ${bookMd.frontmatter.title}`)
       } else {
         throw new Error("upload wasn't a jpg")
       }
@@ -310,6 +300,8 @@ async function _searchGoogleBooks(
 ): Promise<BookMd['frontmatter'] | null> {
   const volume = await findVolume(bookTitle, bookAuthor)
   const googleBook = volume?.volumeInfo
+
+  log.info('[search]', `searching google for ${bookTitle}`)
 
   if (googleBook) {
     const title = googleBook.title || bookTitle
@@ -342,6 +334,8 @@ async function _searchOpenLibrary(
   const book = await getBook(bookMd.frontmatter.id_ol_book)
   const workId = book?.works?.[0].key.replace(/\/works\//, '')
   const work = workId ? await findWork(workId) : null
+
+  log.info('[search]', `searching openlibrary for ${bookMd.frontmatter.title}`)
 
   if (book && work) {
     const title = work.title || bookMd.frontmatter.title
@@ -404,23 +398,37 @@ async function _search(bookMd: BookMdWithSearch): Promise<BookMd> {
   return merge({ frontmatter: googleBook }, bookMd)
 }
 
-async function _processInputs(bookMd: BookMd, outputDir: string): Promise<BookMd> {
-  let bookMdProcessed = bookMd
-
+async function _maybeSearch(bookMd: BookMd): Promise<BookMd> {
   if (bookMd.frontmatter.__input?.search) {
-    bookMdProcessed = await _private._search(bookMd as BookMdWithSearch)
+    return await _private._search(bookMd as BookMdWithSearch)
   }
 
+  return bookMd
+}
+
+async function _maybeDownloadCover<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
+  bookMd: BookMd,
+  bookInput: T,
+  outputDir: string
+): Promise<T> {
   if (bookMd.frontmatter.__input?.cover) {
     await _private._downloadCover(bookMd as BookMdWithCover, outputDir)
+
+    const coverData = await _private._getCoverData<T>(bookMd, outputDir)
+
+    return {
+      ...bookInput,
+      ...coverData,
+    }
   }
 
-  return bookMdProcessed
+  return bookInput
 }
 
 const _private = {
   _getCoverData,
-  _processInputs,
+  _maybeSearch,
+  _maybeDownloadCover,
   _search,
   _downloadCover,
   _searchGoogleBooks,

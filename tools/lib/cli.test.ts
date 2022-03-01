@@ -465,11 +465,7 @@ describe('tools/lib/cli', () => {
 
     await cli._private._updateBookToDbExecute(ctx, bookMd, book)
 
-    expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledWith(
-      bookMd,
-      book,
-      ctx.command.options.dir
-    )
+    expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
     expect(mocks.prismaBookUpdate).not.toHaveBeenCalled()
     expect(mocks.bookToString).not.toHaveBeenCalled()
     expect(mocks.writeFile).not.toHaveBeenCalled()
@@ -551,7 +547,7 @@ describe('tools/lib/cli', () => {
 
     await cli._private._addBookToDbExecute(ctx, bookMd)
 
-    expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledWith(bookMd, ctx.command.options.dir)
+    expect(mocks.bookMdToBookCreateInput).not.toHaveBeenCalled()
     expect(prisma.book.create).not.toHaveBeenCalled()
     expect(mocks.bookToString).not.toHaveBeenCalled()
     expect(mocks.writeFile).not.toHaveBeenCalled()
