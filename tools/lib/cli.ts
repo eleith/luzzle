@@ -88,8 +88,8 @@ async function _addBookToDbExecute(ctx: Context, bookMd: BookMd): Promise<void> 
   const filepath = path.join(ctx.command.options.dir, filename)
 
   try {
-    const bookCreateInput = await bookMdToBookCreateInput(bookMd, ctx.command.options.dir)
     if (ctx.command.options.isDryRun === false) {
+      const bookCreateInput = await bookMdToBookCreateInput(bookMd, ctx.command.options.dir)
       const bookAdded = await ctx.prisma.book.create({ data: bookCreateInput })
       const bookMdString = await bookToString(bookAdded)
 
@@ -119,9 +119,8 @@ async function _updateBookToDbExecute(ctx: Context, bookMd: BookMd, book: Book):
   const filepath = path.join(ctx.command.options.dir, filename)
 
   try {
-    const bookUpdateInput = await bookMdToBookUpdateInput(bookMd, book, ctx.command.options.dir)
-
     if (ctx.command.options.isDryRun === false) {
+      const bookUpdateInput = await bookMdToBookUpdateInput(bookMd, book, ctx.command.options.dir)
       const bookUpdate = await ctx.prisma.book.update({
         where: { id: book.id },
         data: bookUpdateInput,
@@ -235,6 +234,7 @@ async function _cleanup(ctx: Context): Promise<void> {
 
 async function run(): Promise<Context> {
   const command = await _private._parseArgs(hideBin(process.argv))
+
   const ctx: Context = {
     prisma,
     log,
@@ -246,7 +246,7 @@ async function run(): Promise<Context> {
 
   if (ctx.command.name === 'dump') {
     await _private._syncToDisk(ctx)
-  } else {
+  } else if (ctx.command.name === 'sync') {
     await _private._syncToDb(ctx)
   }
 

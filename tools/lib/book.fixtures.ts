@@ -1,4 +1,4 @@
-import { Book } from '@app/prisma'
+import { Book, Prisma } from '@app/prisma'
 import { merge } from 'lodash'
 import { DeepPartial } from 'src/@types/utilities'
 import { BookMd } from './book'
@@ -49,4 +49,23 @@ function makeBook(overrides: Partial<Book> = {}): Book {
   }
 }
 
-export { makeBookMd, makeBook }
+function makeBookUpdateInput(
+  overrides: Partial<Prisma.BookUpdateInput> = {}
+): Prisma.BookUpdateInput {
+  return {
+    id: 'book-id',
+    ...overrides,
+  }
+}
+
+function makeBookCreateInput(
+  overrides: Partial<Prisma.BookCreateInput> = {}
+): Prisma.BookCreateInput {
+  return {
+    title,
+    author,
+    slug,
+    ...overrides,
+  }
+}
+export { makeBookMd, makeBook, makeBookUpdateInput, makeBookCreateInput }

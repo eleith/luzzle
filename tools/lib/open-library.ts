@@ -54,6 +54,7 @@ async function search(title: string, author: string): Promise<Array<OpenLibraryS
         title: title.replace(/:.+/g, '').replace(/!/g, ''),
         author: author.replace(/,.+/g, '').replace(/!/g, ''),
       },
+      responseType: 'json'
     })
 
     if (response.statusCode === 200 && response.body.num_found > 0) {
@@ -74,6 +75,7 @@ async function findWork(id: string): Promise<OpenLibrarySearchWork | null> {
       searchParams: {
         q: id,
       },
+      responseType: 'json',
     })
 
     if (response.statusCode === 200 && response.body.num_found > 0) {
@@ -90,7 +92,10 @@ async function findWork(id: string): Promise<OpenLibrarySearchWork | null> {
 
 async function getWork(workId: string): Promise<OpenLibraryWork | null> {
   try {
-    const response = await got.get<OpenLibraryWork>(`https://openlibrary.org/works/${workId}.json`)
+    const response = await got.get<OpenLibraryWork>(
+      `https://openlibrary.org/works/${workId}.json`,
+      { responseType: 'json' }
+    )
 
     if (response.statusCode === 200) {
       return response.body
@@ -106,7 +111,10 @@ async function getWork(workId: string): Promise<OpenLibraryWork | null> {
 
 const getBook = async (bookId: string): Promise<OpenLibraryBook | null> => {
   try {
-    const response = await got.get<OpenLibraryBook>(`https://openlibrary.org/books/${bookId}.json`)
+    const response = await got.get<OpenLibraryBook>(
+      `https://openlibrary.org/books/${bookId}.json`,
+      { responseType: 'json' }
+    )
 
     if (response.statusCode === 200) {
       return response.body

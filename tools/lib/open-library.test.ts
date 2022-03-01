@@ -3,8 +3,11 @@ import got from 'got'
 import * as openLibrary from './open-library'
 import * as openLibraryFixtures from './open-library.fixtures'
 import { describe, expect, test, vi, afterEach } from 'vitest'
+import { json } from 'stream/consumers'
 
 vi.mock('./log')
+
+const jsonResponseHeaders = { responseType: 'json' }
 
 const mocks = {
   logError: vi.mocked(log.error),
@@ -29,6 +32,7 @@ describe('open-library', () => {
 
     expect(mocks.gotGet).toHaveBeenCalledWith(expect.any(String), {
       searchParams: { title, author },
+      ...jsonResponseHeaders,
     })
     expect(works).toEqual([work])
   })
@@ -67,6 +71,7 @@ describe('open-library', () => {
 
     expect(mocks.gotGet).toHaveBeenCalledWith(expect.any(String), {
       searchParams: { q: workId },
+      ...jsonResponseHeaders,
     })
     expect(getWork).toEqual(work)
   })
@@ -101,7 +106,9 @@ describe('open-library', () => {
 
     const getWork = await openLibrary.getWork(workId)
 
-    expect(mocks.gotGet).toHaveBeenCalledWith(expect.stringContaining(workId))
+    expect(mocks.gotGet).toHaveBeenCalledWith(expect.stringContaining(workId), {
+      responseType: 'json',
+    })
     expect(getWork).toEqual(body)
   })
 
@@ -135,7 +142,7 @@ describe('open-library', () => {
 
     const getBook = await openLibrary.getBook(bookId)
 
-    expect(mocks.gotGet).toHaveBeenCalledWith(expect.stringContaining(bookId))
+    expect(mocks.gotGet).toHaveBeenCalledWith(expect.stringContaining(bookId), jsonResponseHeaders)
     expect(getBook).toEqual(body)
   })
 

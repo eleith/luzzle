@@ -210,43 +210,26 @@ describe('book', () => {
   test('bookMdToCreateInput', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const dir = 'dirPath'
-    const spyProcessInputs = vi.spyOn(bookLib._private, '_processInputs')
+    const spyMaybeSearch = vi.spyOn(bookLib._private, '_maybeSearch')
+    const spyMaybeDownload = vi.spyOn(bookLib._private, '_maybeDownloadCover')
+    const bookInput = bookFixtures.makeBookCreateInput()
 
-    spyProcessInputs.mockResolvedValueOnce(bookMd)
-
-    const bookCreateInput = await bookLib.bookMdToBookCreateInput(bookMd, dir)
-
-    expect(spyProcessInputs).toHaveBeenCalledWith(bookMd, dir)
-    expect(bookCreateInput).toEqual({
-      ...bookMd.frontmatter,
-      slug: path.basename(bookMd.filename, '.md'),
-      note: bookMd.markdown,
-    })
-  })
-
-  test('bookMdToCreateInput downloads cover', async () => {
-    const cover = 'somewhere'
-    const coverData = { cover_path: 'somewhere-else', width: 10, height: 20 }
-    const bookMd = bookFixtures.makeBookMd({
-      frontmatter: { __input: { cover } },
-    })
-    const dir = 'dirPath'
-    const spyProcessInputs = vi.spyOn(bookLib._private, '_processInputs')
-    const spyGetCoverData = vi.spyOn(bookLib._private, '_getCoverData')
-
-    spyProcessInputs.mockResolvedValueOnce(bookMd)
-    spyGetCoverData.mockResolvedValueOnce(coverData)
+    spyMaybeSearch.mockResolvedValueOnce(bookMd)
+    spyMaybeDownload.mockResolvedValueOnce(bookInput)
 
     const bookCreateInput = await bookLib.bookMdToBookCreateInput(bookMd, dir)
 
-    expect(spyProcessInputs).toHaveBeenCalledWith(bookMd, dir)
-    expect(spyGetCoverData).toHaveBeenCalledWith(bookMd, dir)
-    expect(bookCreateInput).toEqual({
-      ...omit(bookMd.frontmatter, '__input'),
-      slug: path.basename(bookMd.filename, '.md'),
-      note: bookMd.markdown,
-      ...coverData,
-    })
+    expect(spyMaybeSearch).toHaveBeenCalledWith(bookMd)
+    expect(spyMaybeDownload).toHaveBeenCalledWith(
+      bookMd,
+      {
+        ...bookMd.frontmatter,
+        slug: path.basename(bookMd.filename, '.md'),
+        note: bookMd.markdown,
+      },
+      dir
+    )
+    expect(bookCreateInput).toEqual(bookInput)
   })
 
   test('bookMdToUpdateInput', async () => {
@@ -259,43 +242,19 @@ describe('book', () => {
       slug: path.basename(bookMd.filename, '.md'),
     })
     const dir = 'dirPath'
-    const spyProcessInputs = vi.spyOn(bookLib._private, '_processInputs')
+    const spyMaybeSearch = vi.spyOn(bookLib._private, '_maybeSearch')
+    const spyMaybeDownload = vi.spyOn(bookLib._private, '_maybeDownloadCover')
+    const bookInput = bookFixtures.makeBookUpdateInput()
 
-    spyProcessInputs.mockResolvedValueOnce(bookMd)
+    spyMaybeSearch.mockResolvedValueOnce(bookMd)
+    spyMaybeDownload.mockResolvedValueOnce(bookInput)
     bookMd.frontmatter.title = title
 
     const bookCreateInput = await bookLib.bookMdToBookUpdateInput(bookMd, book, dir)
 
-    expect(spyProcessInputs).toHaveBeenCalledWith(bookMd, dir)
-    expect(bookCreateInput).toEqual({ title })
-  })
-
-  test('bookMdToUpdateInput downloads cover', async () => {
-    const cover = 'somewhere'
-    const coverData = { cover_path: 'somewhere-else', width: 10, height: 20 }
-    const bookMd = bookFixtures.makeBookMd({
-      frontmatter: { __input: { cover } },
-    })
-    const book = bookFixtures.makeBook({
-      title: bookMd.frontmatter.title,
-      author: bookMd.frontmatter.author,
-      note: bookMd.markdown,
-      slug: path.basename(bookMd.filename, '.md'),
-    })
-    const dir = 'dirPath'
-    const spyProcessInputs = vi.spyOn(bookLib._private, '_processInputs')
-    const spyGetCoverData = vi.spyOn(bookLib._private, '_getCoverData')
-
-    spyProcessInputs.mockResolvedValueOnce(bookMd)
-    spyGetCoverData.mockResolvedValueOnce(coverData)
-
-    const bookCreateInput = await bookLib.bookMdToBookUpdateInput(bookMd, book, dir)
-
-    expect(spyProcessInputs).toHaveBeenCalledWith(bookMd, dir)
-    expect(spyGetCoverData).toHaveBeenCalledWith(bookMd, dir)
-    expect(bookCreateInput).toEqual({
-      ...coverData,
-    })
+    expect(spyMaybeSearch).toHaveBeenCalledWith(bookMd)
+    expect(spyMaybeDownload).toHaveBeenCalledWith(bookMd, { title }, dir)
+    expect(bookCreateInput).toEqual(bookInput)
   })
 
   test('findNonExistantBook', () => {
@@ -428,43 +387,58 @@ describe('book', () => {
     expect(mocks.downloadTo).not.toHaveBeenCalled()
   })
 
-  test('_processInputs', async () => {
+  test('_maybeDownloadCover', async () => {
     const cover = 'somewhere/here/cover.png'
-    const search = 'open-library'
-    const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input: { cover, search } } })
-    const bookMdAfter = bookFixtures.makeBookMd()
+    const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input: { cover } } })
     const dir = 'dirPath'
-    const spyProcessSearch = vi.spyOn(bookLib._private, '_search')
     const spyDownloadCover = vi.spyOn(bookLib._private, '_downloadCover')
+    const spyGetCoverData = vi.spyOn(bookLib._private, '_getCoverData')
+    const bookUpdateInput = bookFixtures.makeBookUpdateInput()
+    const coverData = { cover_path: 'somewhere-else', width: 10, height: 20 }
+
+    spyDownloadCover.mockResolvedValueOnce()
+    spyGetCoverData.mockResolvedValueOnce(coverData)
+
+    const bookInput = await bookLib._private._maybeDownloadCover(bookMd, bookUpdateInput, dir)
+
+    expect(spyDownloadCover).toHaveBeenCalledWith(bookMd, dir)
+    expect(spyGetCoverData).toHaveBeenCalledWith(bookMd, dir)
+    expect(bookInput).toEqual({ ...bookInput, ...coverData })
+  })
+
+  test('_maybeDownloadCover skips', async () => {
+    const bookMd = bookFixtures.makeBookMd()
+    const dir = 'dirPath'
+    const bookUpdateInput = bookFixtures.makeBookUpdateInput()
+
+    const bookInput = await bookLib._private._maybeDownloadCover(bookMd, bookUpdateInput, dir)
+
+    expect(bookInput).toEqual(bookInput)
+  })
+
+  test('_maybeSearch', async () => {
+    const search = 'open-library'
+    const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input: { search } } })
+    const bookMdAfter = bookFixtures.makeBookMd()
+    const spyProcessSearch = vi.spyOn(bookLib._private, '_search')
 
     spyProcessSearch.mockResolvedValueOnce(bookMdAfter)
-    spyDownloadCover.mockResolvedValueOnce()
 
-    const bookMdProcessed = await bookLib._private._processInputs(
-      bookMd as bookLib.BookMdWithCover,
-      dir
-    )
+    const bookMdProcessed = await bookLib._private._maybeSearch(bookMd as bookLib.BookMdWithSearch)
 
     expect(bookMdProcessed).toEqual(bookMdAfter)
     expect(spyProcessSearch).toHaveBeenCalledWith(bookMd)
-    expect(spyDownloadCover).toHaveBeenCalledWith(bookMd, dir)
   })
 
-  test('_processInputs no inputs', async () => {
+  test('_maybeSearch skips', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const bookMdAfter = bookFixtures.makeBookMd()
-    const dir = 'dirPath'
     const spyProcessSearch = vi.spyOn(bookLib._private, '_search')
-    const spyDownloadCover = vi.spyOn(bookLib._private, '_downloadCover')
 
-    const bookMdProcessed = await bookLib._private._processInputs(
-      bookMd as bookLib.BookMdWithCover,
-      dir
-    )
+    const bookMdProcessed = await bookLib._private._maybeSearch(bookMd as bookLib.BookMdWithSearch)
 
     expect(bookMdProcessed).toEqual(bookMdAfter)
     expect(spyProcessSearch).not.toHaveBeenCalled()
-    expect(spyDownloadCover).not.toHaveBeenCalled()
   })
 
   test('_search open all', async () => {
