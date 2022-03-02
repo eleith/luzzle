@@ -1,7 +1,6 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import got from 'got'
 import { createWriteStream, WriteStream } from 'fs'
-import { fileTypeFromStream } from 'file-type'
 import { PassThrough } from 'stream'
 import Request from 'got/dist/source/core'
 import { downloadTo } from './web'
@@ -14,7 +13,6 @@ vi.mock('tempy')
 const mocks = {
   gotStream: vi.spyOn(got, 'stream'),
   createWriteStream: vi.mocked(createWriteStream),
-  fromStream: vi.mocked(fileTypeFromStream),
   tempyFile: vi.spyOn(tempy, 'file'),
 }
 
@@ -32,7 +30,6 @@ describe('book', () => {
 
     mocks.gotStream.mockReturnValueOnce(mockReadable as unknown as Request)
     mocks.createWriteStream.mockReturnValueOnce(mockWritable as unknown as WriteStream)
-    mocks.fromStream.mockResolvedValueOnce({ ext: 'jpg', mime: 'image/jpeg' })
     mocks.tempyFile.mockReturnValueOnce(filePath)
 
     const tempFilePromise = downloadTo(url)
@@ -44,7 +41,6 @@ describe('book', () => {
     const tempFile = await tempFilePromise
 
     expect(mocks.gotStream).toHaveBeenCalledWith(url)
-    expect(mocks.fromStream).toHaveBeenCalledWith(mockReadable)
     expect(mocks.createWriteStream).toHaveBeenCalledWith(filePath)
     expect(tempFile).toEqual(filePath)
   })
@@ -57,7 +53,6 @@ describe('book', () => {
 
     mocks.gotStream.mockReturnValueOnce(mockReadable as unknown as Request)
     mocks.createWriteStream.mockReturnValueOnce(mockWritable as unknown as WriteStream)
-    mocks.fromStream.mockResolvedValueOnce({ ext: 'jpg', mime: 'image/jpeg' })
     mocks.tempyFile.mockReturnValueOnce(filePath)
 
     const tempFilePromise = downloadTo(url)
@@ -68,7 +63,6 @@ describe('book', () => {
 
     await expect(tempFilePromise).rejects.toThrow()
     expect(mocks.gotStream).toHaveBeenCalledWith(url)
-    expect(mocks.fromStream).toHaveBeenCalledWith(mockReadable)
     expect(mocks.createWriteStream).toHaveBeenCalledWith(filePath)
   })
 })

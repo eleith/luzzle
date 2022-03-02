@@ -20,7 +20,6 @@ function makeOpenLibrarySearchWork(
     cover_i,
     first_publish_year,
     type: 'work',
-    place: [],
     ...overrides,
   }
 }

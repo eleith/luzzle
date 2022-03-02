@@ -12,7 +12,6 @@ import log from './log'
 import { addFrontMatter, extract } from './md'
 import { findWork, getBook, getCoverUrl } from './open-library'
 import { downloadTo } from './web'
-import { omit } from 'lodash'
 import { FileTypeResult, fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach } from 'vitest'
 
@@ -268,28 +267,26 @@ describe('book', () => {
   })
 
   test('_getCoverData', async () => {
-    const bookMd = bookFixtures.makeBookMd()
-    const path = bookLib.getCoverPathForBook(bookMd)
     const width = 10
     const height = 15
-    const dir = 'dirPath'
+    const coverPath = 'path/to/image.jpg'
 
     mocks.sharp.mockImplementation(
       () =>
+      ({
+        metadata: async () =>
         ({
-          metadata: async () =>
-            ({
-              width,
-              height,
-            } as Metadata),
-        } as Sharp)
+          width,
+          height,
+        } as Metadata),
+      } as Sharp)
     )
 
-    const coverData = await bookLib._private._getCoverData(bookMd, dir)
+    const coverData = await bookLib._private._getCoverData(coverPath)
 
-    expect(mocks.sharp).toHaveBeenCalledWith(`${dir}/${path}`)
+    expect(mocks.sharp).toHaveBeenCalledWith(coverPath)
     expect(coverData).toEqual({
-      cover_path: path,
+      cover_path: coverPath,
       cover_width: width,
       cover_height: height,
     })
@@ -299,15 +296,15 @@ describe('book', () => {
     const cover = 'https://somewhere'
     const temp = 'somewhere/else/cover.jpg'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input: { cover } } })
-    const dir = 'dirPath'
-    const dest = `${dir}/${bookLib.getCoverPathForBook(bookMd)}`
+    const coverPath = 'path/to/image.jpg'
 
     mocks.downloadTo.mockResolvedValueOnce(temp)
+    mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 
-    await bookLib._private._downloadCover(bookMd as bookLib.BookMdWithCover, dir)
+    await bookLib._private._downloadCover(bookMd as bookLib.BookMdWithCover, coverPath)
 
     expect(mocks.downloadTo).toHaveBeenCalledWith(cover)
-    expect(mocks.copyFile).toHaveBeenCalledWith(temp, dest)
+    expect(mocks.copyFile).toHaveBeenCalledWith(temp, coverPath)
     expect(mocks.unlink).toHaveBeenCalledWith(temp)
   })
 
@@ -315,10 +312,15 @@ describe('book', () => {
     const cover = 'https://somewhere'
     const temp = 'somewhere/else/cover.png'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input: { cover } } })
-    const dir = 'dirPath'
+    const coverPath = 'path/to/image.jpg'
 
     mocks.downloadTo.mockResolvedValueOnce(temp)
-    const downloadCover = bookLib._private._downloadCover(bookMd as bookLib.BookMdWithCover, dir)
+    mocks.fromFile.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
+
+    const downloadCover = bookLib._private._downloadCover(
+      bookMd as bookLib.BookMdWithCover,
+      coverPath
+    )
 
     await expect(downloadCover).rejects.toThrow()
     expect(mocks.downloadTo).toHaveBeenCalledWith(cover)
@@ -329,49 +331,51 @@ describe('book', () => {
   test('_downloadCover with file', async () => {
     const cover = '../somewhere/here/cover.jpg'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input: { cover } } })
-    const dir = 'dirPath'
-    const coverPath = path.join(dir, cover)
-    const dest = `${dir}/${bookLib.getCoverPathForBook(bookMd)}`
+    const coverPath = 'path/to/image.jpg'
 
     mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
     mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 
-    await bookLib._private._downloadCover(bookMd as bookLib.BookMdWithCover, dir)
+    await bookLib._private._downloadCover(bookMd as bookLib.BookMdWithCover, coverPath)
 
-    expect(mocks.stat).toHaveBeenCalledWith(coverPath)
-    expect(mocks.fromFile).toHaveBeenCalledWith(coverPath)
-    expect(mocks.copyFile).toHaveBeenCalledWith(coverPath, dest)
+    expect(mocks.stat).toHaveBeenCalledWith(cover)
+    expect(mocks.fromFile).toHaveBeenCalledWith(cover)
+    expect(mocks.copyFile).toHaveBeenCalledWith(cover, coverPath)
   })
 
   test('_downloadCover with file rejects .png', async () => {
     const cover = '../somewhere/here/cover.png'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input: { cover } } })
-    const dir = 'dirPath'
-    const coverPath = path.join(dir, cover)
+    const coverPath = 'path/to/image.jpg'
 
     mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
     mocks.fromFile.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
 
-    const downloadCover = bookLib._private._downloadCover(bookMd as bookLib.BookMdWithCover, dir)
+    const downloadCover = bookLib._private._downloadCover(
+      bookMd as bookLib.BookMdWithCover,
+      coverPath
+    )
 
     await expect(downloadCover).rejects.toThrow()
-    expect(mocks.stat).toHaveBeenCalledWith(coverPath)
-    expect(mocks.fromFile).toHaveBeenCalledWith(coverPath)
+    expect(mocks.stat).toHaveBeenCalledWith(cover)
+    expect(mocks.fromFile).toHaveBeenCalledWith(cover)
     expect(mocks.copyFile).not.toHaveBeenCalled()
   })
 
   test('_downloadCover rejects non existant file', async () => {
     const cover = '../somewhere/here/cover.png'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input: { cover } } })
-    const dir = 'dirPath'
-    const coverPath = path.join(dir, cover)
+    const coverPath = '/path/to/cover.jpg'
 
     mocks.stat.mockResolvedValueOnce({ isFile: () => false } as Stats)
 
-    const downloadCover = bookLib._private._downloadCover(bookMd as bookLib.BookMdWithCover, dir)
+    const downloadCover = bookLib._private._downloadCover(
+      bookMd as bookLib.BookMdWithCover,
+      coverPath
+    )
 
     await expect(downloadCover).rejects.toThrow()
-    expect(mocks.stat).toHaveBeenCalledWith(coverPath)
+    expect(mocks.stat).toHaveBeenCalledWith(cover)
     expect(mocks.fromFile).not.toHaveBeenCalled()
     expect(mocks.copyFile).not.toHaveBeenCalled()
   })
@@ -379,9 +383,12 @@ describe('book', () => {
   test('_downloadCover rejects file in output dir', async () => {
     const cover = 'somewhere/here/cover.png'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input: { cover } } })
-    const dir = 'dirPath'
+    const coverPath = 'path/to/cover.jpg'
 
-    const downloadCover = bookLib._private._downloadCover(bookMd as bookLib.BookMdWithCover, dir)
+    const downloadCover = bookLib._private._downloadCover(
+      bookMd as bookLib.BookMdWithCover,
+      coverPath
+    )
 
     await expect(downloadCover).rejects.toThrow()
     expect(mocks.downloadTo).not.toHaveBeenCalled()
@@ -395,14 +402,15 @@ describe('book', () => {
     const spyGetCoverData = vi.spyOn(bookLib._private, '_getCoverData')
     const bookUpdateInput = bookFixtures.makeBookUpdateInput()
     const coverData = { cover_path: 'somewhere-else', width: 10, height: 20 }
+    const coverPath = path.join(dir, bookLib.getCoverPathForBook(bookMd))
 
     spyDownloadCover.mockResolvedValueOnce()
     spyGetCoverData.mockResolvedValueOnce(coverData)
 
     const bookInput = await bookLib._private._maybeDownloadCover(bookMd, bookUpdateInput, dir)
 
-    expect(spyDownloadCover).toHaveBeenCalledWith(bookMd, dir)
-    expect(spyGetCoverData).toHaveBeenCalledWith(bookMd, dir)
+    expect(spyDownloadCover).toHaveBeenCalledWith(bookMd, coverPath)
+    expect(spyGetCoverData).toHaveBeenCalledWith(coverPath)
     expect(bookInput).toEqual({ ...bookInput, ...coverData })
   })
 
@@ -582,7 +590,7 @@ describe('book', () => {
       isbn: work.isbn?.[0],
       subtitle: book.subtitle,
       pages: Number(work.number_of_pages),
-      keywords: [...work.subject, ...work.place].join(','),
+      keywords: [...work.subject, ...(work.place || [])].join(','),
       year_first_published: work.first_publish_year,
       __input: {
         cover: coverUrl,

@@ -4,7 +4,7 @@ import { filterLimit, mapLimit } from 'async'
 import { copyFile, unlink, stat, readdir } from 'fs/promises'
 import { differenceWith, merge, omit, uniq } from 'lodash'
 import { cpus } from 'os'
-import path, { extname } from 'path'
+import path from 'path'
 import { addFrontMatter, extract } from './md'
 import log from './log'
 import { downloadTo } from './web'
@@ -241,11 +241,9 @@ async function bookMdToBookUpdateInput(
 }
 
 async function _getCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
-  bookMd: BookMd,
-  dir: string
+  coverPath: string
 ): Promise<Pick<T, 'cover_path' | 'cover_width' | 'cover_height'>> {
-  const coverPath = getCoverPathForBook(bookMd)
-  const coverImage = await sharp(path.join(dir, coverPath)).metadata()
+  const coverImage = await sharp(coverPath).metadata()
   const coverWidth = coverImage.width
   const coverHeight = coverImage.height
 
@@ -256,31 +254,30 @@ async function _getCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdat
   }
 }
 
-async function _downloadCover(bookMd: BookMdWithCover, outputDir: string): Promise<void> {
+async function _downloadCover(bookMd: BookMdWithCover, coverPath: string): Promise<void> {
   const cover = bookMd.frontmatter.__input.cover
-  const outputPath = path.join(outputDir, getCoverPathForBook(bookMd))
 
   if (/https?:\/\//i.test(cover)) {
     const tempFile = await downloadTo(cover)
+    const fileType = await fileTypeFromFile(coverPath)
 
-    if (extname(tempFile) === '.jpg') {
-      await copyFile(tempFile, outputPath)
+    if (fileType?.ext === 'jpg') {
+      await copyFile(tempFile, coverPath)
       await unlink(tempFile)
 
-      log.info('[download]', `downloaded image for ${bookMd.frontmatter.title}`)
+      log.info('[download]', `downloaded ${bookMd.frontmatter.title} cover at ${cover}`)
     } else {
       await unlink(tempFile)
       throw new Error("upload wasn't a jpg")
     }
   } else if (/^..\/|^\//.test(cover)) {
-    const coverPath = path.join(outputDir, cover)
-    const coverStat = await stat(coverPath)
+    const coverStat = await stat(cover)
 
     if (coverStat.isFile()) {
-      const fileType = await fileTypeFromFile(coverPath)
+      const fileType = await fileTypeFromFile(cover)
 
       if (fileType?.ext === 'jpg') {
-        await copyFile(coverPath, outputPath)
+        await copyFile(cover, coverPath)
 
         log.info('[copy]', `copied image for ${bookMd.frontmatter.title}`)
       } else {
@@ -346,8 +343,8 @@ async function _searchOpenLibrary(
     const publishedYear = work.first_publish_year
     const pages = Number(work.number_of_pages)
     const subjects = work.subject
-    const places = work.place
-    const keywords = uniq([...subjects, ...places]).map((x) => x.toLowerCase())
+    const places = work.place || []
+    const keywords = uniq(subjects.concat(places)).map((x) => x.toLowerCase())
     const coverUrl = getCoverUrl(work.cover_i)
 
     return {
@@ -412,9 +409,10 @@ async function _maybeDownloadCover<T extends Prisma.BookCreateInput | Prisma.Boo
   outputDir: string
 ): Promise<T> {
   if (bookMd.frontmatter.__input?.cover) {
-    await _private._downloadCover(bookMd as BookMdWithCover, outputDir)
+    const coverPath = path.join(outputDir, getCoverPathForBook(bookMd))
+    await _private._downloadCover(bookMd as BookMdWithCover, coverPath)
 
-    const coverData = await _private._getCoverData<T>(bookMd, outputDir)
+    const coverData = await _private._getCoverData<T>(coverPath)
 
     return {
       ...bookInput,
