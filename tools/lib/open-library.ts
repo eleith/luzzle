@@ -15,7 +15,7 @@ export interface OpenLibrarySearchWork {
   isbn?: Array<string>
   author_name: Array<string>
   subject: Array<string>
-  place: Array<string>
+  place?: Array<string>
   cover_i: number
   first_publish_year: number
   type: string
@@ -54,7 +54,7 @@ async function search(title: string, author: string): Promise<Array<OpenLibraryS
         title: title.replace(/:.+/g, '').replace(/!/g, ''),
         author: author.replace(/,.+/g, '').replace(/!/g, ''),
       },
-      responseType: 'json'
+      responseType: 'json',
     })
 
     if (response.statusCode === 200 && response.body.num_found > 0) {

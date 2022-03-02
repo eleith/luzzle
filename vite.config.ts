@@ -4,6 +4,10 @@ import path from 'path'
 export default defineConfig({
   test: {
     coverage: {
+      lines: 95,
+      branches: 95,
+      statements: 95,
+      functions: 95,
       exclude: [
         'generated/**',
         '**/*{.,-}fixtures.{js,cjs,mjs,ts,tsx,jsx}',
