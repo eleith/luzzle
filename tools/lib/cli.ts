@@ -1,24 +1,29 @@
 import { Book, PrismaClient } from '@app/prisma'
 import prisma from './prisma'
 import { eachLimit } from 'async'
-import { writeFile, utimes, readFile, stat } from 'fs/promises'
+import { stat } from 'fs/promises'
 import { cpus } from 'os'
-import path from 'path'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import {
   BookMd,
   bookMdToBookCreateInput,
   bookMdToBookUpdateInput,
-  BookMdWithDatabaseId,
-  bookToString,
-  extractBooksOnDisk,
+  getBook,
   filterRecentlyUpdatedBooks,
-  findNonExistantBooks,
+  processBookMd,
   readBookDir,
+  getUpdatedSlugs,
+  cleanUpDerivatives,
+  updateBookMd,
+  cacheBook,
+  getBookCache,
+  getSlugFromBookMd,
+  bookToMd,
 } from './book'
 import log from './log'
 import { Logger } from 'npmlog'
+import { difference } from 'lodash'
 
 export type Command = {
   options: {
@@ -26,7 +31,7 @@ export type Command = {
     isDryRun: boolean
     dir: string
   }
-  name: 'sync' | 'dump'
+  name: 'sync' | 'dump' | 'process'
 }
 
 export type Context = {
@@ -40,6 +45,7 @@ async function _parseArgs(_args: string[]): Promise<Command> {
     .strict()
     .command('sync <dir>', 'sync directory to local database')
     .command('dump <dir>', 'dump database to local markdown files')
+    .command('process <dir>', 'process local markdown files for cleaning')
     .positional('dir', {
       type: 'string',
       description: 'directory for the book entries',
@@ -79,22 +85,34 @@ async function _parseArgs(_args: string[]): Promise<Command> {
   }
 }
 
-async function _addBookToDb(ctx: Context, bookMd: BookMd): Promise<void> {
-  await _private._addBookToDbExecute(ctx, bookMd)
+async function _processBook(ctx: Context, bookMd: BookMd): Promise<void> {
+  const dir = ctx.command.options.dir
+
+  try {
+    if (ctx.command.options.isDryRun === false) {
+      const bookProcessed = await processBookMd(bookMd, dir)
+      await updateBookMd(bookProcessed, dir)
+    }
+    log.info('[disk]', `processed ${bookMd.filename}`)
+  } catch (err) {
+    log.error('[disk]', err as string)
+  }
 }
 
-async function _addBookToDbExecute(ctx: Context, bookMd: BookMd): Promise<void> {
-  const filename = bookMd.filename
-  const filepath = path.join(ctx.command.options.dir, filename)
+async function _syncAddBook(ctx: Context, bookMd: BookMd): Promise<void> {
+  const maybeBook = await ctx.prisma.book.findUnique({ where: { slug: getSlugFromBookMd(bookMd) } })
+
+  if (maybeBook) {
+    await _private._syncUpdateBookExecute(ctx, bookMd, maybeBook)
+    return
+  }
 
   try {
     if (ctx.command.options.isDryRun === false) {
       const bookCreateInput = await bookMdToBookCreateInput(bookMd, ctx.command.options.dir)
       const bookAdded = await ctx.prisma.book.create({ data: bookCreateInput })
-      const bookMdString = await bookToString(bookAdded)
 
-      await writeFile(filepath, bookMdString)
-      await utimes(filepath, bookAdded.date_updated, bookAdded.date_updated)
+      await cacheBook(bookAdded, ctx.command.options.dir)
     }
     log.info('[db]', `added ${bookMd.filename}`)
   } catch (err) {
@@ -102,22 +120,18 @@ async function _addBookToDbExecute(ctx: Context, bookMd: BookMd): Promise<void> 
   }
 }
 
-async function _updateBookToDb(ctx: Context, bookMd: BookMdWithDatabaseId): Promise<void> {
-  const id = bookMd.frontmatter.__database_cache.id
+async function _syncUpdateBook(ctx: Context, bookMd: BookMd, id: string): Promise<void> {
   const book = await ctx.prisma.book.findUnique({ where: { id } })
 
   if (book) {
-    await _private._updateBookToDbExecute(ctx, bookMd, book)
+    await _private._syncUpdateBookExecute(ctx, bookMd, book)
     return
   }
 
   log.error('[db]', `${bookMd.filename} pointed to non-existant ${id}`)
 }
 
-async function _updateBookToDbExecute(ctx: Context, bookMd: BookMd, book: Book): Promise<void> {
-  const filename = bookMd.filename
-  const filepath = path.join(ctx.command.options.dir, filename)
-
+async function _syncUpdateBookExecute(ctx: Context, bookMd: BookMd, book: Book): Promise<void> {
   try {
     if (ctx.command.options.isDryRun === false) {
       const bookUpdateInput = await bookMdToBookUpdateInput(bookMd, book, ctx.command.options.dir)
@@ -125,106 +139,96 @@ async function _updateBookToDbExecute(ctx: Context, bookMd: BookMd, book: Book):
         where: { id: book.id },
         data: bookUpdateInput,
       })
-      const bookMdString = await bookToString(bookUpdate)
-      await writeFile(filepath, bookMdString)
-      await utimes(filepath, bookUpdate.date_updated, bookUpdate.date_updated)
+      await cacheBook(bookUpdate, ctx.command.options.dir)
     }
 
-    log.info('[db-disk]', `updated ${book.slug}`)
+    log.info('[db]', `updated ${book.slug}`)
   } catch (err) {
     log.error('[db]', err as string)
   }
 }
 
-async function _removeMissingBooksFromDb(ctx: Context, bookSlugs: string[]): Promise<void> {
-  const booksInDb = await ctx.prisma.book.findMany({ select: { id: true, slug: true } })
-  const booksToRemove = findNonExistantBooks(bookSlugs, booksInDb)
+async function _syncRemoveBooks(ctx: Context, diskSlugs: string[]): Promise<void> {
+  const booksInDb = await ctx.prisma.book.findMany({ select: { slug: true } })
+  const dbSlugs = booksInDb.map((book) => book.slug)
+  const booksToRemove = difference(dbSlugs, diskSlugs)
 
   if (booksToRemove.length) {
-    await _private._removeMissingBooksFromDbExecute(ctx, booksToRemove)
+    await _private._syncRemoveBooksExecute(ctx, booksToRemove)
   }
 }
 
-async function _removeMissingBooksFromDbExecute(
-  ctx: Context,
-  books: Pick<Book, 'id' | 'slug'>[]
-): Promise<void> {
+async function _syncRemoveBooksExecute(ctx: Context, slugs: string[]): Promise<void> {
   try {
     if (ctx.command.options.isDryRun === false) {
-      const ids = books.map((book) => book.id)
-      await ctx.prisma.book.deleteMany({ where: { id: { in: ids } } })
+      await ctx.prisma.book.deleteMany({ where: { slug: { in: slugs } } })
     }
-    log.info('[db]', `deleted ${books.map((book) => book.slug)}`)
+    log.info('[db]', `deleted ${slugs.join(', ')}`)
   } catch (err) {
     log.error('[db]', err as string)
   }
 }
 
-async function _syncToDb(ctx: Context): Promise<void> {
+async function _sync(ctx: Context): Promise<void> {
   const bookSlugs = await readBookDir(ctx.command.options.dir)
+  const dir = ctx.command.options.dir
   const books = await ctx.prisma.book.findMany({ select: { date_updated: true, slug: true } })
-  const updatedBookSlugs = await filterRecentlyUpdatedBooks(
-    bookSlugs,
-    books,
-    ctx.command.options.dir
-  )
-  const bookMds = await extractBooksOnDisk(updatedBookSlugs, ctx.command.options.dir)
+  const updatedBookSlugs = await filterRecentlyUpdatedBooks(bookSlugs, books, dir)
 
-  await eachLimit(bookMds, 1, async (bookMd) => {
-    if (bookMd.frontmatter.__database_cache?.id) {
-      await _private._updateBookToDb(ctx, bookMd as BookMdWithDatabaseId)
-    } else {
-      await _private._addBookToDb(ctx, bookMd)
+  await eachLimit(updatedBookSlugs, 1, async (slug) => {
+    const bookMd = await getBook(slug, dir)
+    if (bookMd) {
+      const cache = await getBookCache(dir, slug)
+      if (cache.database?.id) {
+        await _private._syncUpdateBook(ctx, bookMd, cache.database.id)
+      } else {
+        await _private._syncAddBook(ctx, bookMd)
+      }
     }
   })
 
-  await _private._removeMissingBooksFromDb(ctx, bookSlugs)
+  await _private._syncRemoveBooks(ctx, bookSlugs)
 }
 
-async function _syncToDisk(ctx: Context): Promise<void> {
+async function _dump(ctx: Context): Promise<void> {
   const books = await ctx.prisma.book.findMany()
   const numCpus = cpus().length
 
   await eachLimit(books, numCpus, async (book) => {
-    await _private._syncBookToDisk(ctx, book)
+    await _private._dumpBook(ctx, book)
   })
 }
 
-async function _syncBookToDisk(ctx: Context, book: Book): Promise<void> {
-  const bookMd = await bookToString(book)
-  const file = path.join(ctx.command.options.dir, `${book.slug}.md`)
-  const fileStat = await stat(file).catch(() => null)
+async function _process(ctx: Context): Promise<void> {
+  const dir = ctx.command.options.dir
+  const bookSlugs = await readBookDir(dir)
+  const updatedBookSlugs = await getUpdatedSlugs(bookSlugs, dir)
 
-  if (fileStat?.isFile()) {
-    const currentBookMdString = await readFile(
-      path.join(ctx.command.options.dir, `${book.slug}.md`),
-      'utf-8'
-    )
-    if (currentBookMdString === bookMd) {
-      return
+  await eachLimit(updatedBookSlugs, 1, async (slug) => {
+    const bookMd = await getBook(slug, dir)
+    if (bookMd) {
+      await _private._processBook(ctx, bookMd)
     }
-  } else if (fileStat) {
-    log.error('[disk]', `${file} isn't a file`)
-    return
-  }
+  })
 
-  await _private._syncBookToDiskExecute(ctx, file, bookMd, book.date_updated)
+  if (ctx.command.options.isDryRun === false) {
+    await cleanUpDerivatives(dir)
+  }
 }
 
-async function _syncBookToDiskExecute(
-  ctx: Context,
-  filepath: string,
-  bookMdString: string,
-  updated: Date
-): Promise<void> {
+async function _dumpBook(ctx: Context, book: Book): Promise<void> {
+  const dir = ctx.command.options.dir
+
   try {
-    if (!ctx.command.options.isDryRun) {
-      await writeFile(filepath, bookMdString)
-      await utimes(filepath, updated, updated)
+    if (ctx.command.options.isDryRun === false) {
+      const bookMd = await bookToMd(book)
+
+      await updateBookMd(bookMd, dir)
+      await cacheBook(book, dir)
     }
-    log.info('[disk]', `wrote to ${filepath}`)
-  } catch (err) {
-    log.error('[disk]', err as string)
+    log.info('[disk]', `saved book to ${book.slug}.md`)
+  } catch (e) {
+    log.error('[disk]', `error saving ${book.slug}`)
   }
 }
 
@@ -245,9 +249,11 @@ async function run(): Promise<Context> {
   ctx.log.heading = command.options.isDryRun ? '[would-have]' : ''
 
   if (ctx.command.name === 'dump') {
-    await _private._syncToDisk(ctx)
+    await _private._dump(ctx)
   } else if (ctx.command.name === 'sync') {
-    await _private._syncToDb(ctx)
+    await _private._sync(ctx)
+  } else if (ctx.command.name === 'process') {
+    await _private._process(ctx)
   }
 
   await _private._cleanup(ctx)
@@ -257,16 +263,16 @@ async function run(): Promise<Context> {
 
 const _private = {
   _parseArgs,
-  _addBookToDb,
-  _addBookToDbExecute,
-  _updateBookToDb,
-  _updateBookToDbExecute,
-  _removeMissingBooksFromDb,
-  _removeMissingBooksFromDbExecute,
-  _syncToDisk,
-  _syncToDb,
-  _syncBookToDisk,
-  _syncBookToDiskExecute,
+  _process,
+  _processBook,
+  _syncAddBook,
+  _syncUpdateBook,
+  _syncUpdateBookExecute,
+  _syncRemoveBooks,
+  _syncRemoveBooksExecute,
+  _dump,
+  _sync,
+  _dumpBook,
   _cleanup,
 }
 
