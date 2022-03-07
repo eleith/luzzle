@@ -1,8 +1,8 @@
 import { Book, Prisma } from '@app/prisma'
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
-import { filterLimit, mapLimit } from 'async'
-import { copyFile, unlink, stat, readdir } from 'fs/promises'
-import { differenceWith, merge, omit, uniq } from 'lodash'
+import { eachLimit, filterLimit } from 'async'
+import { copyFile, unlink, stat, readdir, readFile, writeFile, mkdir } from 'fs/promises'
+import { difference, merge, omit, uniq } from 'lodash'
 import { cpus } from 'os'
 import path from 'path'
 import { addFrontMatter, extract } from './md'
@@ -10,39 +10,55 @@ import log from './log'
 import { downloadTo } from './web'
 import { fileTypeFromFile } from 'file-type'
 import { findVolume } from './google-books'
-import { findWork, getBook, getCoverUrl } from './open-library'
+import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library'
 import sharp from 'sharp'
+import deepmerge from 'deepmerge'
 
+type Timestamp = string
+type ToJsonCompatible<T> = T extends Date
+  ? Timestamp
+  : T extends Array<infer Item>
+  ? Array<ToJsonCompatible<Item>>
+  : T extends Record<string, unknown>
+  ? { [Key in keyof T]: ToJsonCompatible<T[Key]> }
+  : T
 type NonNullableProperties<T> = { [K in keyof T]: NonNullable<T[K]> }
 type BookDbRequiredFields = 'slug' | 'id' | 'date_added' | 'date_updated'
 type BookDbOptionalFields = 'cover_width' | 'cover_height' | 'cover_path'
 type BookDbFields = BookDbRequiredFields | BookDbOptionalFields
 type BookMdRequiredFields = 'title' | 'author'
 type BookMdFields = Exclude<keyof Book, BookDbFields | 'note'>
-type BookMdDatabaseCache = Pick<Book, BookDbRequiredFields> &
-  Partial<NonNullableProperties<Pick<Book, BookDbOptionalFields>>>
+type BookMdDatabaseCache = ToJsonCompatible<
+  Pick<Book, BookDbRequiredFields> &
+    Partial<NonNullableProperties<Pick<Book, BookDbOptionalFields>>>
+>
 type BookMdInputSearch = 'google' | 'open-library' | 'all'
 type BookMdInput = {
   cover?: string
   search?: BookMdInputSearch
 }
-type BookMdProcessFields = '__database_cache' | '__input'
+type BookMdProcessFields = '__input'
+
+export type BookCache = {
+  lastModified: string
+  hasCover?: boolean
+  database?: BookMdDatabaseCache
+}
 
 export type BookMd = {
   filename: string
   markdown?: string
   frontmatter: Pick<Book, BookMdRequiredFields> &
     Partial<NonNullableProperties<Omit<Book, BookMdRequiredFields | 'note' | BookDbFields>>> & {
-      __database_cache?: BookMdDatabaseCache
-    } & { __input?: BookMdInput }
+      __input?: BookMdInput
+    }
 }
 
 export type BookMdWithCover = BookMd & { frontmatter: { __input: { cover: string } } }
 export type BookMdWithOpenLib = BookMd & { frontmatter: { id_ol_book: string } }
 export type BookMdWithSearch = BookMd & { frontmatter: { __input: { search: BookMdInputSearch } } }
-export type BookMdWithDatabaseId = BookMd & { frontmatter: { __database_cache: { id: string } } }
 
-const bookMdSpecialFields: Array<BookMdProcessFields> = ['__database_cache', '__input']
+const bookMdSpecialFields: Array<BookMdProcessFields> = ['__input']
 
 const bookMdSchema: JTDSchemaType<BookMd> = {
   properties: {
@@ -70,19 +86,6 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
             search: { enum: ['google', 'open-library', 'all'] },
           },
         },
-        __database_cache: {
-          properties: {
-            id: { type: 'string' },
-            date_added: { type: 'timestamp' },
-            date_updated: { type: 'timestamp' },
-            slug: { type: 'string' },
-          },
-          optionalProperties: {
-            cover_width: { type: 'uint32' },
-            cover_height: { type: 'uint32' },
-            cover_path: { type: 'string' },
-          },
-        },
       },
     },
   },
@@ -91,27 +94,101 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
   },
 }
 
-const ajv = new Ajv()
-const bookMdValidator = ajv.compile(bookMdSchema)
-const bookCoverDir = path.join('.assets', 'covers')
-
-function getCoverPathForBook(bookMd: BookMd): string {
-  const slug = path.basename(bookMd.filename, '.md')
-  return path.join(bookCoverDir, `${slug}.jpg`)
+const cacheSchema: JTDSchemaType<BookCache> = {
+  properties: {
+    lastModified: {
+      type: 'string',
+    },
+  },
+  optionalProperties: {
+    hasCover: {
+      type: 'boolean',
+    },
+    database: {
+      properties: {
+        id: { type: 'string' },
+        date_added: { type: 'timestamp' },
+        date_updated: { type: 'timestamp' },
+        slug: { type: 'string' },
+      },
+      optionalProperties: {
+        cover_width: { type: 'uint32' },
+        cover_height: { type: 'uint32' },
+        cover_path: { type: 'string' },
+      },
+    },
+  },
 }
 
-async function bookToString(book: Book): Promise<string> {
+const ajv = new Ajv()
+const bookMdValidator = ajv.compile(bookMdSchema)
+const cacheValidator = ajv.compile(cacheSchema)
+const bookCoverDir = path.join('.assets', 'covers')
+const cacheDir = '.cache'
+
+function _getCoverPathForBook(slug: string, baseDir = ''): string {
+  return path.join(baseDir, bookCoverDir, `${slug}.jpg`)
+}
+
+function _getCachePathForBook(slug: string, baseDir = ''): string {
+  return path.join(baseDir, cacheDir, `${slug}.json`)
+}
+
+function _getPathForBook(slug: string, baseDir = ''): string {
+  return path.join(baseDir, `${slug}.md`)
+}
+
+function bookMdToString(bookMd: BookMd): string {
+  return addFrontMatter(bookMd.markdown, bookMd.frontmatter)
+}
+
+async function _updateCache(
+  dir: string,
+  slug: string,
+  cacheUpdate: Partial<BookCache> = {}
+): Promise<void> {
+  const cacheNow = await _private._getBookCache(dir, slug)
+  const cacheFilePath = _getCachePathForBook(slug, dir)
+  const cache = deepmerge(cacheNow, cacheUpdate)
+  const cacheString = JSON.stringify(cache, null, 2)
+
+  await mkdir(path.dirname(cacheFilePath), { recursive: true })
+  await writeFile(cacheFilePath, cacheString)
+}
+
+async function getBookCache(dir: string, slug: string): Promise<BookCache> {
+  const cacheFilePath = _getCachePathForBook(slug, dir)
+
+  try {
+    const cacheString = await readFile(cacheFilePath, 'utf-8')
+    const cache = JSON.parse(cacheString)
+
+    if (cache) {
+      if (cacheValidator(cache)) {
+        return cache
+      }
+      log.warn('[cache]', `${cacheFilePath} is corrupted and will be rebuilt`)
+    }
+  } catch (e) {
+    log.warn('[cache]', `${cacheFilePath} was not found and will be added`)
+  }
+
+  const fileStat = await stat(_getPathForBook(slug, dir)).catch(() => null)
+  const coverStat = await stat(_getCoverPathForBook(slug, dir)).catch(() => null)
+
+  return {
+    lastModified: fileStat?.mtime.toJSON() || new Date().toJSON(),
+    hasCover: coverStat !== null,
+  }
+}
+
+async function bookToMd(book: Book): Promise<BookMd> {
   const bookFrontmatter: Partial<{ [key in BookMdFields]: unknown }> = {}
-  const bookDbCache: Partial<{ [key in BookDbFields]: unknown }> = {}
   const bookFrontmatterSchema = bookMdSchema.properties.frontmatter
   const bookMdFields = [
     ...Object.keys(bookFrontmatterSchema.properties),
     ...Object.keys(bookFrontmatterSchema.optionalProperties),
   ] as Array<BookMdFields>
-  const bookDbFields = [
-    ...Object.keys(bookFrontmatterSchema.optionalProperties.__database_cache.properties),
-    ...Object.keys(bookFrontmatterSchema.optionalProperties.__database_cache.optionalProperties),
-  ] as Array<BookDbFields>
 
   bookMdFields.forEach((key) => {
     const bookAttribute = book[key]
@@ -124,6 +201,16 @@ async function bookToString(book: Book): Promise<string> {
     }
   })
 
+  return _private._makeBookMd(`${book.slug}.md`, book.note?.toString(), bookFrontmatter)
+}
+
+async function cacheBook(book: Book, dir: string): Promise<void> {
+  const bookDbCache: Partial<{ [key in BookDbFields]: unknown }> = {}
+  const bookDbFields = [
+    ...Object.keys(cacheSchema.optionalProperties.database.properties),
+    ...Object.keys(cacheSchema.optionalProperties.database.optionalProperties),
+  ] as Array<BookDbFields>
+
   bookDbFields.forEach((key) => {
     const bookAttribute = book[key]
     if (bookAttribute !== null && bookAttribute !== undefined) {
@@ -131,13 +218,12 @@ async function bookToString(book: Book): Promise<string> {
     }
   })
 
-  return addFrontMatter(book.note?.toString(), {
-    ...bookFrontmatter,
-    __database_cache: bookDbCache,
+  await _private._updateCache(dir, book.slug, {
+    database: bookDbCache as BookMdDatabaseCache,
   })
 }
 
-function makeBookMd(filename: string, markdown: unknown, frontmatter: unknown): BookMd {
+function _makeBookMd(filename: string, markdown: unknown, frontmatter: unknown): BookMd {
   const bookOnDisk = {
     filename,
     frontmatter,
@@ -166,65 +252,94 @@ async function readBookDir(dirPath: string): Promise<Array<string>> {
   return bookSlugs
 }
 
+async function getUpdatedSlugs(bookSlugs: string[], dir: string): Promise<string[]> {
+  return filterLimit(bookSlugs, cpus().length, async (slug) => {
+    const bookCache = await _private._getBookCache(dir, slug)
+    const bookPath = _getPathForBook(slug, dir)
+    const fileStat = await stat(bookPath).catch(() => null)
+
+    if (fileStat) {
+      return fileStat.mtime > new Date(bookCache.lastModified)
+    } else {
+      log.error('[disk]', `could not get stat on ${bookPath}`)
+    }
+
+    return false
+  })
+}
+
+function getSlugFromBookMd(bookMd: BookMd): string {
+  return path.basename(bookMd.filename, '.md')
+}
+
 async function filterRecentlyUpdatedBooks(
   bookSlugs: string[],
-  books: Pick<Book, 'date_updated' | 'slug'>[],
+  books: { date_updated: Date; slug: string }[],
   dir: string
 ): Promise<string[]> {
   return filterLimit(bookSlugs, cpus().length, async (slug) => {
+    // look for a cache file
     const book = books.find((book) => book.slug === slug)
     if (book) {
-      const fileStat = await stat(path.join(dir, `${slug}.md`))
+      const fileStat = await stat(_getPathForBook(slug, dir))
       return fileStat.mtime > book.date_updated
     }
     return true
   })
 }
 
-async function extractBooksOnDisk(bookSlugs: string[], dirpath: string): Promise<Array<BookMd>> {
-  const bookMds = await mapLimit(bookSlugs, cpus().length, async (slug: string) => {
-    try {
-      const data = await extract(path.join(dirpath, `${slug}.md`))
-      return makeBookMd(`${slug}.md`, data.markdown, data.frontmatter)
-    } catch (err) {
-      log.error('[md-extract]', err as string)
-      return null
-    }
-  })
-
-  return bookMds.filter((bookMd): bookMd is BookMd => bookMd !== null)
+async function getBook(slug: string, dir: string): Promise<BookMd | null> {
+  try {
+    const data = await extract(_getPathForBook(slug, dir))
+    return _private._makeBookMd(`${slug}.md`, data.markdown, data.frontmatter)
+  } catch (err) {
+    log.error('[md-extract]', err as string)
+    return null
+  }
 }
 
-function findNonExistantBooks(
-  bookSlugs: string[],
-  booksInDb: Pick<Book, 'id' | 'slug'>[]
-): Pick<Book, 'id' | 'slug'>[] {
-  return differenceWith(booksInDb, bookSlugs, (book, slug) => book.slug === slug)
+async function processBookMd(_bookMd: BookMd, dir: string): Promise<BookMd> {
+  const bookMd = await _private._maybeSearch(_bookMd)
+
+  return await _private._maybeDownloadCover(bookMd, dir)
+}
+
+async function updateBookMd(bookMd: BookMd, dir: string): Promise<void> {
+  const slug = getSlugFromBookMd(bookMd)
+  const bookMdString = bookMdToString(bookMd)
+  const bookPath = _getPathForBook(slug, dir)
+
+  await writeFile(bookPath, bookMdString)
+
+  const fileStat = await stat(bookPath).catch(() => null)
+
+  if (fileStat) {
+    const cache: BookCache = { lastModified: fileStat.mtime.toJSON() }
+    await _private._updateCache(dir, slug, cache)
+  }
 }
 
 async function bookMdToBookCreateInput(
-  _bookMd: BookMd,
+  bookMd: BookMd,
   dir: string
 ): Promise<Prisma.BookCreateInput> {
-  const bookMd = await _private._maybeSearch(_bookMd)
-  const bookCreateInput = {
+  const bookInput = {
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
-    slug: path.basename(bookMd.filename, '.md'),
+    slug: getSlugFromBookMd(bookMd),
     note: bookMd.markdown,
   }
 
-  return await _private._maybeDownloadCover<Prisma.BookCreateInput>(bookMd, bookCreateInput, dir)
+  return await _private._maybeGetCoverData(bookMd, bookInput, dir)
 }
 
 async function bookMdToBookUpdateInput(
-  _bookMd: BookMd,
+  bookMd: BookMd,
   book: Book,
   dir: string
 ): Promise<Prisma.BookUpdateInput> {
-  const bookMd = await _private._maybeSearch(_bookMd)
   const bookUpdateInput = {
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
-    slug: path.basename(bookMd.filename, '.md'),
+    slug: getSlugFromBookMd(bookMd),
     note: bookMd.markdown,
   }
 
@@ -237,24 +352,25 @@ async function bookMdToBookUpdateInput(
     }
   })
 
-  return await _private._maybeDownloadCover<Prisma.BookUpdateInput>(bookMd, bookUpdateInput, dir)
+  return await _private._maybeGetCoverData(bookMd, bookUpdateInput, dir)
 }
 
 async function _getCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
-  coverPath: string
+  coverPath: string,
+  dir: string
 ): Promise<Pick<T, 'cover_path' | 'cover_width' | 'cover_height'>> {
   const coverImage = await sharp(coverPath).metadata()
   const coverWidth = coverImage.width
   const coverHeight = coverImage.height
 
   return {
-    cover_path: coverPath,
+    cover_path: path.relative(dir, coverPath),
     cover_width: coverWidth,
     cover_height: coverHeight,
   }
 }
 
-async function _downloadCover(bookMd: BookMdWithCover, coverPath: string): Promise<void> {
+async function _downloadCover(bookMd: BookMdWithCover, coverPath: string): Promise<boolean> {
   const cover = bookMd.frontmatter.__input.cover
 
   if (/https?:\/\//i.test(cover)) {
@@ -265,12 +381,14 @@ async function _downloadCover(bookMd: BookMdWithCover, coverPath: string): Promi
       await copyFile(tempFile, coverPath)
       await unlink(tempFile)
 
-      log.info('[download]', `downloaded ${bookMd.frontmatter.title} cover at ${cover}`)
+      log.info('[book-cover]', `downloaded ${bookMd.frontmatter.title} cover at ${cover}`)
+
+      return true
     } else {
       await unlink(tempFile)
-      throw new Error("upload wasn't a jpg")
+      log.warn('[book-cover]', `${cover} was not a jpg`)
     }
-  } else if (/^..\/|^\//.test(cover)) {
+  } else {
     const coverStat = await stat(cover)
 
     if (coverStat.isFile()) {
@@ -279,16 +397,18 @@ async function _downloadCover(bookMd: BookMdWithCover, coverPath: string): Promi
       if (fileType?.ext === 'jpg') {
         await copyFile(cover, coverPath)
 
-        log.info('[copy]', `copied image for ${bookMd.frontmatter.title}`)
+        log.info('[book-cover]', `copied image for ${bookMd.frontmatter.title}`)
+
+        return true
       } else {
-        throw new Error("upload wasn't a jpg")
+        log.warn('[book-cover]', `${cover} was not a jpg`)
       }
     } else {
-      throw new Error("upload doesn't exist")
+      log.warn('[book-cover]', `${cover} is not a file`)
     }
-  } else {
-    throw new Error('cover is not understandable')
   }
+
+  return false
 }
 
 async function _searchGoogleBooks(
@@ -298,7 +418,7 @@ async function _searchGoogleBooks(
   const volume = await findVolume(bookTitle, bookAuthor)
   const googleBook = volume?.volumeInfo
 
-  log.info('[search]', `searching google for ${bookTitle}`)
+  log.info('[book-search]', `searching google for ${bookTitle}`)
 
   if (googleBook) {
     const title = googleBook.title || bookTitle
@@ -328,11 +448,11 @@ async function _searchGoogleBooks(
 async function _searchOpenLibrary(
   bookMd: BookMdWithOpenLib
 ): Promise<BookMd['frontmatter'] | null> {
-  const book = await getBook(bookMd.frontmatter.id_ol_book)
+  const book = await getOpenLibraryBook(bookMd.frontmatter.id_ol_book)
   const workId = book?.works?.[0].key.replace(/\/works\//, '')
   const work = workId ? await findWork(workId) : null
 
-  log.info('[search]', `searching openlibrary for ${bookMd.frontmatter.title}`)
+  log.info('[book-search]', `searching openlibrary for ${bookMd.frontmatter.title}`)
 
   if (book && work) {
     const title = work.title || bookMd.frontmatter.title
@@ -403,16 +523,31 @@ async function _maybeSearch(bookMd: BookMd): Promise<BookMd> {
   return bookMd
 }
 
-async function _maybeDownloadCover<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
+async function _maybeDownloadCover(bookMd: BookMd, dir: string): Promise<BookMd> {
+  if (bookMd.frontmatter.__input?.cover) {
+    const slug = getSlugFromBookMd(bookMd)
+    const coverPath = _getCoverPathForBook(slug, dir)
+    const downloaded = await _private._downloadCover(bookMd as BookMdWithCover, coverPath)
+
+    if (downloaded) {
+      await _private._updateCache(dir, slug, { hasCover: true })
+    }
+  }
+
+  return bookMd
+}
+
+async function _maybeGetCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
   bookMd: BookMd,
   bookInput: T,
-  outputDir: string
+  dir: string
 ): Promise<T> {
-  if (bookMd.frontmatter.__input?.cover) {
-    const coverPath = path.join(outputDir, getCoverPathForBook(bookMd))
-    await _private._downloadCover(bookMd as BookMdWithCover, coverPath)
+  const slug = getSlugFromBookMd(bookMd)
+  const coverPath = _getCoverPathForBook(slug, dir)
+  const cache = await _private._getBookCache(dir, slug)
 
-    const coverData = await _private._getCoverData<T>(coverPath)
+  if (cache.hasCover) {
+    const coverData = await _private._getCoverData<T>(coverPath, dir)
 
     return {
       ...bookInput,
@@ -423,26 +558,63 @@ async function _maybeDownloadCover<T extends Prisma.BookCreateInput | Prisma.Boo
   return bookInput
 }
 
+async function cleanUpDerivatives(dir: string): Promise<void> {
+  try {
+    const bookSlugs = await readdir(dir).catch(() => [])
+    const caches = await readdir(path.join(dir, cacheDir)).catch(() => [])
+    const staleCaches = difference(
+      caches.map((cacheFile) => path.basename(cacheFile, '.json')),
+      bookSlugs
+        .filter((bookFile) => path.extname(bookFile) === '.md')
+        .map((bookFile) => path.basename(bookFile, '.md'))
+    )
+
+    await eachLimit(staleCaches, cpus().length, async (slug) => {
+      const cache = await _private._getBookCache(dir, slug)
+
+      await unlink(_getCachePathForBook(slug, dir))
+
+      log.info('[book-cache]', `deleted stale cache for ${slug}`)
+
+      if (cache.hasCover) {
+        await unlink(_getCoverPathForBook(slug, dir))
+        log.info('[book-cover]', `deleted stale cover for ${slug}`)
+      }
+    })
+  } catch (err) {
+    log.error('[disk]', err as string)
+  }
+}
+
 const _private = {
   _getCoverData,
   _maybeSearch,
   _maybeDownloadCover,
+  _maybeGetCoverData,
   _search,
   _downloadCover,
   _searchGoogleBooks,
   _searchOpenLibrary,
+  _updateCache,
+  _getBookCache: getBookCache,
+  _makeBookMd,
 }
 
 export {
-  bookToString,
-  makeBookMd,
+  bookToMd,
+  bookMdToString,
+  cacheBook,
   readBookDir,
-  extractBooksOnDisk,
+  getBook,
   filterRecentlyUpdatedBooks,
+  getUpdatedSlugs,
   bookMdToBookUpdateInput,
-  findNonExistantBooks,
-  getCoverPathForBook,
   bookCoverDir,
+  processBookMd,
+  updateBookMd,
   bookMdToBookCreateInput,
+  getBookCache,
+  getSlugFromBookMd,
+  cleanUpDerivatives,
   _private,
 }

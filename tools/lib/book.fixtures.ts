@@ -1,7 +1,7 @@
 import { Book, Prisma } from '@app/prisma'
 import { merge } from 'lodash'
 import { DeepPartial } from 'src/@types/utilities'
-import { BookMd } from './book'
+import { BookCache, BookMd } from './book'
 
 const title = 'title of the book'
 const author = 'author of the book'
@@ -68,4 +68,14 @@ function makeBookCreateInput(
     ...overrides,
   }
 }
-export { makeBookMd, makeBook, makeBookUpdateInput, makeBookCreateInput }
+
+function makeBookCache(
+  overrides: Partial<BookCache> = {}
+): BookCache {
+  return {
+    lastModified: new Date().toJSON(),
+    ...overrides,
+  }
+}
+
+export { makeBookMd, makeBook, makeBookUpdateInput, makeBookCreateInput, makeBookCache }
