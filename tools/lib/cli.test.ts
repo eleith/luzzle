@@ -7,7 +7,6 @@ import {
   bookMdToBookCreateInput,
   bookMdToBookUpdateInput,
   getBook,
-  filterRecentlyUpdatedBooks,
   readBookDir,
   bookToMd,
   getBookCache,
@@ -36,7 +35,6 @@ const mocks = {
   logInfo: vi.mocked(log.info),
   logError: vi.mocked(log.error),
   stat: vi.mocked(stat),
-  filterRecentlyUpdatedBooks: vi.mocked(filterRecentlyUpdatedBooks),
   getBook: vi.mocked(getBook),
   readBookDir: vi.mocked(readBookDir),
   bookMdToBookUpdateInput: vi.mocked(bookMdToBookUpdateInput),
@@ -64,6 +62,7 @@ function makeCommand(overrides?: DeepPartial<Command>): Command {
         isDryRun: false,
         verbose: 0,
         dir: 'somewhere',
+        force: false,
       },
     },
     overrides
@@ -206,19 +205,16 @@ describe('tools/lib/cli', () => {
 
   test('_sync add books to db', async () => {
     const ctx = makeContext()
-    const books = [bookFixtures.makeBook(), bookFixtures.makeBook(), bookFixtures.makeBook()]
-    const updatedBooks = [books[0].slug, books[1].slug]
-    const bookSlugs = books.map((book) => book.slug)
+    const slugs = ['a', 'b']
     const bookMd = bookFixtures.makeBookMd()
     const cache = bookFixtures.makeBookCache()
     const spyAddBookToDb = vi.spyOn(cli._private, '_syncAddBook')
     const spyUpdateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
     const spyRemoveMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
 
-    mocks.prismaBookFindMany.mockResolvedValueOnce(books)
-    mocks.filterRecentlyUpdatedBooks.mockResolvedValueOnce(updatedBooks)
+    mocks.getUpdatedSlugs.mockResolvedValueOnce(slugs)
     mocks.getBook.mockResolvedValue(bookMd)
-    mocks.readBookDir.mockResolvedValueOnce(bookSlugs)
+    mocks.readBookDir.mockResolvedValueOnce(slugs)
     mocks.getBookCache.mockResolvedValue(cache)
 
     spyRemoveMissingBooksFromDb.mockResolvedValueOnce()
@@ -226,26 +222,25 @@ describe('tools/lib/cli', () => {
 
     await cli._private._sync(ctx)
 
-    expect(spyAddBookToDb).toHaveBeenCalledTimes(updatedBooks.length)
+    expect(mocks.getUpdatedSlugs).toHaveBeenCalledOnce()
+    expect(spyAddBookToDb).toHaveBeenCalledTimes(slugs.length)
     expect(spyUpdateBookToDb).not.toHaveBeenCalled()
     expect(spyRemoveMissingBooksFromDb).toHaveBeenCalledOnce()
   })
 
   test('_sync updates books', async () => {
     const ctx = makeContext()
-    const books = [bookFixtures.makeBook()]
-    const bookSlugs = [books[0].slug]
+    const bookSlugs = ['a']
     const id = 'aslkjflksjf'
     const bookMd = bookFixtures.makeBookMd()
     const spyAddBookToDb = vi.spyOn(cli._private, '_syncAddBook')
     const spyUpdateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
     const spyRemoveMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
     const cache = bookFixtures.makeBookCache({
-      database: { id, date_added: '', date_updated: '', slug: books[0].slug },
+      database: { id, date_added: '', date_updated: '', slug: bookSlugs[0] },
     })
 
-    mocks.prismaBookFindMany.mockResolvedValueOnce(books)
-    mocks.filterRecentlyUpdatedBooks.mockResolvedValueOnce(bookSlugs)
+    mocks.getUpdatedSlugs.mockResolvedValueOnce(bookSlugs)
     mocks.getBook.mockResolvedValueOnce(bookMd)
     mocks.readBookDir.mockResolvedValueOnce(bookSlugs)
     mocks.getBookCache.mockResolvedValue(cache)
@@ -255,6 +250,35 @@ describe('tools/lib/cli', () => {
 
     await cli._private._sync(ctx)
 
+    expect(mocks.getUpdatedSlugs).toHaveBeenCalledOnce()
+    expect(spyAddBookToDb).not.toHaveBeenCalled()
+    expect(spyUpdateBookToDb).toHaveBeenCalledOnce()
+    expect(spyRemoveMissingBooksFromDb).toHaveBeenCalledWith(ctx, bookSlugs)
+  })
+
+  test('_sync force updates books', async () => {
+    const command = makeCommand({ options: { force: true } })
+    const ctx = makeContext(command)
+    const bookSlugs = ['a']
+    const id = 'aslkjflksjf'
+    const bookMd = bookFixtures.makeBookMd()
+    const spyAddBookToDb = vi.spyOn(cli._private, '_syncAddBook')
+    const spyUpdateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
+    const spyRemoveMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
+    const cache = bookFixtures.makeBookCache({
+      database: { id, date_added: '', date_updated: '', slug: bookSlugs[0] },
+    })
+
+    mocks.getBook.mockResolvedValueOnce(bookMd)
+    mocks.readBookDir.mockResolvedValueOnce(bookSlugs)
+    mocks.getBookCache.mockResolvedValue(cache)
+
+    spyRemoveMissingBooksFromDb.mockResolvedValueOnce()
+    spyUpdateBookToDb.mockResolvedValue()
+
+    await cli._private._sync(ctx)
+
+    expect(mocks.getUpdatedSlugs).not.toHaveBeenCalled()
     expect(spyAddBookToDb).not.toHaveBeenCalled()
     expect(spyUpdateBookToDb).toHaveBeenCalledOnce()
     expect(spyRemoveMissingBooksFromDb).toHaveBeenCalledWith(ctx, bookSlugs)
@@ -262,17 +286,15 @@ describe('tools/lib/cli', () => {
 
   test('_sync skips on get book failure', async () => {
     const ctx = makeContext()
-    const books = [bookFixtures.makeBook(), bookFixtures.makeBook(), bookFixtures.makeBook()]
-    const bookSlugs = books.map((book) => book.slug)
+    const slugs = ['a', 'b']
     const cache = bookFixtures.makeBookCache()
     const spyAddBookToDb = vi.spyOn(cli._private, '_syncAddBook')
     const spyUpdateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
     const spyRemoveMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
 
-    mocks.prismaBookFindMany.mockResolvedValueOnce(books)
-    mocks.filterRecentlyUpdatedBooks.mockResolvedValueOnce([books[0].slug, books[1].slug])
+    mocks.getUpdatedSlugs.mockResolvedValueOnce(slugs)
     mocks.getBook.mockResolvedValue(null)
-    mocks.readBookDir.mockResolvedValueOnce(bookSlugs)
+    mocks.readBookDir.mockResolvedValueOnce(slugs)
     mocks.getBookCache.mockResolvedValue(cache)
 
     spyRemoveMissingBooksFromDb.mockResolvedValueOnce()
@@ -514,6 +536,25 @@ describe('tools/lib/cli', () => {
     expect(cleanUpDerivatives).toHaveBeenCalledOnce()
   })
 
+  test('_process force', async () => {
+    const command = makeCommand({ options: { force: true } })
+    const ctx = makeContext(command)
+    const bookMds = [bookFixtures.makeBookMd(), bookFixtures.makeBookMd()]
+    const slugsOnDisk = bookMds.map((x) => path.basename(x.filename, '.md'))
+    const spyOnProcessBook = vi.spyOn(cli._private, '_processBook')
+
+    mocks.readBookDir.mockResolvedValueOnce(slugsOnDisk)
+    mocks.getBook.mockResolvedValue(bookMds[0])
+    mocks.cleanUpDerivatives.mockResolvedValueOnce()
+    spyOnProcessBook.mockResolvedValue()
+
+    await cli._private._process(ctx)
+
+    expect(mocks.getUpdatedSlugs).not.toHaveBeenCalled()
+    expect(spyOnProcessBook).toHaveBeenCalledTimes(slugsOnDisk.length)
+    expect(cleanUpDerivatives).toHaveBeenCalledOnce()
+  })
+
   test('_process skips on getBook failure', async () => {
     const ctx = makeContext()
     const bookMds = [bookFixtures.makeBookMd(), bookFixtures.makeBookMd()]
@@ -602,6 +643,7 @@ describe('tools/lib/cli', () => {
       options: {
         verbose: 0,
         isDryRun: false,
+        force: false,
         dir: args[1],
       },
     })

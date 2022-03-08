@@ -1,4 +1,3 @@
-import { Book } from '@app/prisma'
 import { Dirent, Stats } from 'fs'
 import { copyFile, mkdir, readdir, readFile, stat, unlink, writeFile } from 'fs/promises'
 import path from 'path'
@@ -136,47 +135,6 @@ describe('book', () => {
     expect(mocks.readdir).toHaveBeenCalledWith(dir, { withFileTypes: true })
     expect(files).toHaveLength(3)
     expect(files).toEqual(['one', 'two', 'three'])
-  })
-
-  test('filterRecentlyUpdatedBooks', async () => {
-    const bookSlugs = ['one', 'two', 'three']
-    const updatedAwhileAgo = new Date('2200-11-11')
-    const updatedRecently = new Date('2202-11-11')
-    const updatedDate = new Date('2201-11-11')
-    const books: Pick<Book, 'date_updated' | 'slug'>[] = [
-      { date_updated: updatedAwhileAgo, slug: 'one' },
-      { date_updated: updatedAwhileAgo, slug: 'two' },
-      { date_updated: updatedRecently, slug: 'three' },
-    ]
-    const dir = 'dirPath'
-
-    mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-    mocks.stat.mockResolvedValue({ mtime: updatedDate } as Stats)
-
-    const updated = await bookLib.filterRecentlyUpdatedBooks(bookSlugs, books, dir)
-
-    expect(mocks.stat).toHaveBeenCalledTimes(3)
-    expect(updated).toEqual(['one', 'two'])
-  })
-
-  test('filterRecentlyUpdatedBooks handles new files', async () => {
-    const bookSlugs = ['one', 'two', 'three', 'four']
-    const updatedAwhileAgo = new Date('2200-11-11')
-    const updatedDate = new Date('2199-11-11')
-    const books: Pick<Book, 'date_updated' | 'slug'>[] = [
-      { date_updated: updatedAwhileAgo, slug: 'one' },
-      { date_updated: updatedAwhileAgo, slug: 'two' },
-      { date_updated: updatedAwhileAgo, slug: 'three' },
-    ]
-    const dir = 'dirPath'
-
-    mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-    mocks.stat.mockResolvedValue({ mtime: updatedDate } as Stats)
-
-    const updated = await bookLib.filterRecentlyUpdatedBooks(bookSlugs, books, dir)
-
-    expect(mocks.stat).toHaveBeenCalledTimes(3)
-    expect(updated).toEqual(['four'])
   })
 
   test('getBook', async () => {
@@ -655,17 +613,51 @@ describe('book', () => {
   test('getUpdatedSlugs', async () => {
     const slugs: string[] = ['a', 'b', 'c']
     const dir = 'path/to/books'
-    const lastModified = new Date('2101-11-11')
     const updated = new Date('2201-11-11')
-    const cache = bookFixtures.makeBookCache({ lastModified: lastModified.toJSON() })
+    const cache = bookFixtures.makeBookCache({})
     const spyGetCache = vi.spyOn(bookLib._private, '_getBookCache')
 
     mocks.cpus.mockReturnValue([{} as CpuInfo])
-    mocks.stat.mockResolvedValueOnce({ mtime: lastModified } as Stats)
     mocks.stat.mockResolvedValue({ mtime: updated } as Stats)
     spyGetCache.mockResolvedValue(cache)
 
-    const updatedSlugs = await bookLib.getUpdatedSlugs(slugs, dir)
+    const updatedSlugs = await bookLib.getUpdatedSlugs(slugs, dir, 'lastProcessed')
+
+    expect(updatedSlugs).toHaveLength(3)
+  })
+
+  test('getUpdatedSlugs lastProcessed', async () => {
+    const slugs: string[] = ['a', 'b', 'c']
+    const dir = 'path/to/books'
+    const lastProcessed = new Date('2101-11-11')
+    const updated = new Date('2201-11-11')
+    const cache = bookFixtures.makeBookCache({ lastProcessed: lastProcessed.toJSON() })
+    const spyGetCache = vi.spyOn(bookLib._private, '_getBookCache')
+
+    mocks.cpus.mockReturnValue([{} as CpuInfo])
+    mocks.stat.mockResolvedValueOnce({ mtime: lastProcessed } as Stats)
+    mocks.stat.mockResolvedValue({ mtime: updated } as Stats)
+    spyGetCache.mockResolvedValue(cache)
+
+    const updatedSlugs = await bookLib.getUpdatedSlugs(slugs, dir, 'lastProcessed')
+
+    expect(updatedSlugs).toHaveLength(2)
+  })
+
+  test('getUpdatedSlugs lastSynced', async () => {
+    const slugs: string[] = ['a', 'b', 'c']
+    const dir = 'path/to/books'
+    const lastSynced = new Date('2101-11-11')
+    const updated = new Date('2201-11-11')
+    const cache = bookFixtures.makeBookCache({ lastSynced: lastSynced.toJSON() })
+    const spyGetCache = vi.spyOn(bookLib._private, '_getBookCache')
+
+    mocks.cpus.mockReturnValue([{} as CpuInfo])
+    mocks.stat.mockResolvedValueOnce({ mtime: lastSynced } as Stats)
+    mocks.stat.mockResolvedValue({ mtime: updated } as Stats)
+    spyGetCache.mockResolvedValue(cache)
+
+    const updatedSlugs = await bookLib.getUpdatedSlugs(slugs, dir, 'lastSynced')
 
     expect(updatedSlugs).toHaveLength(2)
   })
@@ -673,15 +665,15 @@ describe('book', () => {
   test('getUpdatedSlugs skips on file failure', async () => {
     const slugs: string[] = ['a']
     const dir = 'path/to/books'
-    const lastModified = new Date('2101-11-11')
-    const cache = bookFixtures.makeBookCache({ lastModified: lastModified.toJSON() })
+    const lastSynced = new Date('2101-11-11')
+    const cache = bookFixtures.makeBookCache({ lastSynced: lastSynced.toJSON() })
     const spyGetCache = vi.spyOn(bookLib._private, '_getBookCache')
 
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
     mocks.stat.mockRejectedValueOnce(new Error('boom'))
     spyGetCache.mockResolvedValue(cache)
 
-    const updatedSlugs = await bookLib.getUpdatedSlugs(slugs, dir)
+    const updatedSlugs = await bookLib.getUpdatedSlugs(slugs, dir, 'lastSynced')
 
     expect(updatedSlugs).toEqual([])
   })
@@ -810,6 +802,7 @@ describe('book', () => {
   })
 
   test('cacheBook', async () => {
+    const lastSynced = new Date(2201, 1, 1)
     const databaseCache = {
       slug: 'a',
       cover_path: 'b',
@@ -821,11 +814,13 @@ describe('book', () => {
     const dir = 'path/to/book'
     const spyUpdate = vi.spyOn(bookLib._private, '_updateCache')
 
+    vi.setSystemTime(lastSynced)
     spyUpdate.mockResolvedValueOnce()
 
     await bookLib.cacheBook(book, dir)
 
     expect(spyUpdate).toHaveBeenCalledWith(dir, book.slug, {
+      lastSynced: lastSynced.toJSON(),
       database: databaseCache,
     })
   })
@@ -858,12 +853,12 @@ describe('book', () => {
     const mtime = new Date()
 
     mocks.readFile.mockRejectedValueOnce(new Error('boom'))
-    mocks.stat.mockResolvedValue({ mtime } as Stats)
+    mocks.stat.mockResolvedValueOnce({ mtime } as Stats)
 
     const cache = await bookLib.getBookCache(dir, slug)
 
-    expect(mocks.stat).toHaveBeenCalledTimes(2)
-    expect(cache).toEqual({ lastModified: mtime.toJSON(), hasCover: true })
+    expect(mocks.stat).toHaveBeenCalledOnce()
+    expect(cache).toEqual({ hasCover: true })
     expect(mocks.logWarn).toHaveBeenCalledOnce()
   })
 
@@ -873,12 +868,12 @@ describe('book', () => {
     const mtime = new Date(2202, 2, 2)
 
     mocks.readFile.mockResolvedValueOnce(JSON.stringify({ invalid: 'cache' }))
-    mocks.stat.mockResolvedValue({ mtime } as Stats)
+    mocks.stat.mockResolvedValueOnce({ mtime } as Stats)
 
     const cache = await bookLib.getBookCache(dir, slug)
 
-    expect(mocks.stat).toHaveBeenCalledTimes(2)
-    expect(cache).toEqual({ lastModified: mtime.toJSON(), hasCover: true })
+    expect(mocks.stat).toHaveBeenCalledOnce()
+    expect(cache).toEqual({ hasCover: true })
   })
 
   test('getBookCache handles invalid stat calls', async () => {
@@ -892,7 +887,7 @@ describe('book', () => {
 
     const cache = await bookLib.getBookCache(dir, slug)
 
-    expect(cache).toEqual({ lastModified: mtime.toJSON(), hasCover: false })
+    expect(cache).toEqual({ hasCover: false })
   })
 
   test('_updateCache', async () => {

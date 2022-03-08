@@ -10,7 +10,6 @@ import {
   bookMdToBookCreateInput,
   bookMdToBookUpdateInput,
   getBook,
-  filterRecentlyUpdatedBooks,
   processBookMd,
   readBookDir,
   getUpdatedSlugs,
@@ -30,6 +29,7 @@ export type Command = {
     verbose: number
     isDryRun: boolean
     dir: string
+    force: boolean
   }
   name: 'sync' | 'dump' | 'process'
 }
@@ -57,6 +57,12 @@ async function _parseArgs(_args: string[]): Promise<Command> {
         description: 'run without making permanent changes',
         default: false,
       },
+      force: {
+        type: 'boolean',
+        alias: 'f',
+        description: 'force updates on all entries',
+        default: false,
+      },
       verbose: {
         alias: 'v',
         type: 'count',
@@ -80,6 +86,7 @@ async function _parseArgs(_args: string[]): Promise<Command> {
     options: {
       verbose: command.verbose,
       isDryRun: command['dry-run'],
+      force: command.force,
       dir: command.dir,
     },
   }
@@ -132,14 +139,15 @@ async function _syncUpdateBook(ctx: Context, bookMd: BookMd, id: string): Promis
 }
 
 async function _syncUpdateBookExecute(ctx: Context, bookMd: BookMd, book: Book): Promise<void> {
+  const dir = ctx.command.options.dir
   try {
     if (ctx.command.options.isDryRun === false) {
-      const bookUpdateInput = await bookMdToBookUpdateInput(bookMd, book, ctx.command.options.dir)
+      const bookUpdateInput = await bookMdToBookUpdateInput(bookMd, book, dir)
       const bookUpdate = await ctx.prisma.book.update({
         where: { id: book.id },
         data: bookUpdateInput,
       })
-      await cacheBook(bookUpdate, ctx.command.options.dir)
+      await cacheBook(bookUpdate, dir)
     }
 
     log.info('[db]', `updated ${book.slug}`)
@@ -172,8 +180,8 @@ async function _syncRemoveBooksExecute(ctx: Context, slugs: string[]): Promise<v
 async function _sync(ctx: Context): Promise<void> {
   const bookSlugs = await readBookDir(ctx.command.options.dir)
   const dir = ctx.command.options.dir
-  const books = await ctx.prisma.book.findMany({ select: { date_updated: true, slug: true } })
-  const updatedBookSlugs = await filterRecentlyUpdatedBooks(bookSlugs, books, dir)
+  const force = ctx.command.options.force
+  const updatedBookSlugs = force ? bookSlugs : await getUpdatedSlugs(bookSlugs, dir, 'lastSynced')
 
   await eachLimit(updatedBookSlugs, 1, async (slug) => {
     const bookMd = await getBook(slug, dir)
@@ -201,8 +209,11 @@ async function _dump(ctx: Context): Promise<void> {
 
 async function _process(ctx: Context): Promise<void> {
   const dir = ctx.command.options.dir
+  const force = ctx.command.options.force
   const bookSlugs = await readBookDir(dir)
-  const updatedBookSlugs = await getUpdatedSlugs(bookSlugs, dir)
+  const updatedBookSlugs = force
+    ? bookSlugs
+    : await getUpdatedSlugs(bookSlugs, dir, 'lastProcessed')
 
   await eachLimit(updatedBookSlugs, 1, async (slug) => {
     const bookMd = await getBook(slug, dir)
