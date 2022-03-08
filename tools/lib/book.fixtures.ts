@@ -73,7 +73,6 @@ function makeBookCache(
   overrides: Partial<BookCache> = {}
 ): BookCache {
   return {
-    lastModified: new Date().toJSON(),
     ...overrides,
   }
 }

@@ -40,7 +40,8 @@ type BookMdInput = {
 type BookMdProcessFields = '__input'
 
 export type BookCache = {
-  lastModified: string
+  lastProcessed?: string
+  lastSynced?: string
   hasCover?: boolean
   database?: BookMdDatabaseCache
 }
@@ -95,12 +96,14 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
 }
 
 const cacheSchema: JTDSchemaType<BookCache> = {
-  properties: {
-    lastModified: {
-      type: 'string',
-    },
-  },
+  properties: {},
   optionalProperties: {
+    lastProcessed: {
+      type: 'timestamp',
+    },
+    lastSynced: {
+      type: 'timestamp',
+    },
     hasCover: {
       type: 'boolean',
     },
@@ -173,11 +176,9 @@ async function getBookCache(dir: string, slug: string): Promise<BookCache> {
     log.warn('[cache]', `${cacheFilePath} was not found and will be added`)
   }
 
-  const fileStat = await stat(_getPathForBook(slug, dir)).catch(() => null)
   const coverStat = await stat(_getCoverPathForBook(slug, dir)).catch(() => null)
 
   return {
-    lastModified: fileStat?.mtime.toJSON() || new Date().toJSON(),
     hasCover: coverStat !== null,
   }
 }
@@ -219,6 +220,7 @@ async function cacheBook(book: Book, dir: string): Promise<void> {
   })
 
   await _private._updateCache(dir, book.slug, {
+    lastSynced: new Date().toJSON(),
     database: bookDbCache as BookMdDatabaseCache,
   })
 }
@@ -252,14 +254,22 @@ async function readBookDir(dirPath: string): Promise<Array<string>> {
   return bookSlugs
 }
 
-async function getUpdatedSlugs(bookSlugs: string[], dir: string): Promise<string[]> {
+async function getUpdatedSlugs(
+  bookSlugs: string[],
+  dir: string,
+  type: 'lastProcessed' | 'lastSynced'
+): Promise<string[]> {
   return filterLimit(bookSlugs, cpus().length, async (slug) => {
     const bookCache = await _private._getBookCache(dir, slug)
     const bookPath = _getPathForBook(slug, dir)
     const fileStat = await stat(bookPath).catch(() => null)
 
     if (fileStat) {
-      return fileStat.mtime > new Date(bookCache.lastModified)
+      if (bookCache[type]) {
+        return fileStat.mtime > new Date(bookCache[type] as string)
+      } else {
+        return true
+      }
     } else {
       log.error('[disk]', `could not get stat on ${bookPath}`)
     }
@@ -270,22 +280,6 @@ async function getUpdatedSlugs(bookSlugs: string[], dir: string): Promise<string
 
 function getSlugFromBookMd(bookMd: BookMd): string {
   return path.basename(bookMd.filename, '.md')
-}
-
-async function filterRecentlyUpdatedBooks(
-  bookSlugs: string[],
-  books: { date_updated: Date; slug: string }[],
-  dir: string
-): Promise<string[]> {
-  return filterLimit(bookSlugs, cpus().length, async (slug) => {
-    // look for a cache file
-    const book = books.find((book) => book.slug === slug)
-    if (book) {
-      const fileStat = await stat(_getPathForBook(slug, dir))
-      return fileStat.mtime > book.date_updated
-    }
-    return true
-  })
 }
 
 async function getBook(slug: string, dir: string): Promise<BookMd | null> {
@@ -314,7 +308,9 @@ async function updateBookMd(bookMd: BookMd, dir: string): Promise<void> {
   const fileStat = await stat(bookPath).catch(() => null)
 
   if (fileStat) {
-    const cache: BookCache = { lastModified: fileStat.mtime.toJSON() }
+    const cache: BookCache = {
+      lastProcessed: new Date().toJSON(),
+    }
     await _private._updateCache(dir, slug, cache)
   }
 }
@@ -606,7 +602,6 @@ export {
   cacheBook,
   readBookDir,
   getBook,
-  filterRecentlyUpdatedBooks,
   getUpdatedSlugs,
   bookMdToBookUpdateInput,
   bookCoverDir,
