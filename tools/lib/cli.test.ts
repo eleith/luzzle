@@ -99,8 +99,7 @@ describe('tools/lib/cli', () => {
 
     const ctx = await cli.run()
 
-    expect(log.level).toBe('info')
-    expect(log.heading).toBe('')
+    expect(log.level).toBe('warn')
     expect(spySyncToDb).toHaveBeenCalledWith(ctx)
     expect(spyCleanup).toHaveBeenCalledWith(ctx)
   })
@@ -117,14 +116,13 @@ describe('tools/lib/cli', () => {
 
     const ctx = await cli.run()
 
-    expect(log.level).toBe('silly')
-    expect(log.heading).toBe('[would-have]')
+    expect(log.level).toBe('info')
     expect(spyDump).toHaveBeenCalledWith(ctx)
     expect(spyCleanup).toHaveBeenCalledWith(ctx)
   })
 
   test('run _process', async () => {
-    const command = makeCommand({ name: 'process', options: { verbose: 1, isDryRun: true } })
+    const command = makeCommand({ name: 'process' })
     const spyParseArgs = vi.spyOn(cli._private, '_parseArgs')
     const spyCleanup = vi.spyOn(cli._private, '_cleanup')
     const spyProcess = vi.spyOn(cli._private, '_process')
@@ -135,8 +133,6 @@ describe('tools/lib/cli', () => {
 
     const ctx = await cli.run()
 
-    expect(log.level).toBe('silly')
-    expect(log.heading).toBe('[would-have]')
     expect(spyProcess).toHaveBeenCalledWith(ctx)
     expect(spyCleanup).toHaveBeenCalledWith(ctx)
   })

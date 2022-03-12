@@ -22,9 +22,9 @@ vi.mock('sharp')
 vi.mock('./web')
 vi.mock('./open-library')
 vi.mock('./google-books')
-vi.mock('./log')
 vi.mock('./md')
 vi.mock('os')
+vi.mock('./log')
 
 const mocks = {
   cpus: vi.mocked(cpus),

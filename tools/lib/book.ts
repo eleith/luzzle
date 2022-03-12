@@ -170,10 +170,10 @@ async function getBookCache(dir: string, slug: string): Promise<BookCache> {
       if (cacheValidator(cache)) {
         return cache
       }
-      log.warn('[cache]', `${cacheFilePath} is corrupted and will be rebuilt`)
+      log.warn(`${cacheFilePath} is corrupted and will be rebuilt`)
     }
   } catch (e) {
-    log.warn('[cache]', `${cacheFilePath} was not found and will be added`)
+    log.warn(`${cacheFilePath} was not found and will be added`)
   }
 
   const coverStat = await stat(_getCoverPathForBook(slug, dir)).catch(() => null)
@@ -271,7 +271,7 @@ async function getUpdatedSlugs(
         return true
       }
     } else {
-      log.error('[disk]', `could not get stat on ${bookPath}`)
+      log.error(`could not get stat on ${bookPath}`)
     }
 
     return false
@@ -287,7 +287,7 @@ async function getBook(slug: string, dir: string): Promise<BookMd | null> {
     const data = await extract(_getPathForBook(slug, dir))
     return _private._makeBookMd(`${slug}.md`, data.markdown, data.frontmatter)
   } catch (err) {
-    log.error('[md-extract]', err as string)
+    log.error(err)
     return null
   }
 }
@@ -371,36 +371,36 @@ async function _downloadCover(bookMd: BookMdWithCover, coverPath: string): Promi
 
   if (/https?:\/\//i.test(cover)) {
     const tempFile = await downloadTo(cover)
-    const fileType = await fileTypeFromFile(coverPath)
+    const fileType = await fileTypeFromFile(tempFile)
 
     if (fileType?.ext === 'jpg') {
       await copyFile(tempFile, coverPath)
       await unlink(tempFile)
 
-      log.info('[book-cover]', `downloaded ${bookMd.frontmatter.title} cover at ${cover}`)
+      log.info(`downloaded ${bookMd.frontmatter.title} cover at ${cover}`)
 
       return true
     } else {
       await unlink(tempFile)
-      log.warn('[book-cover]', `${cover} was not a jpg`)
+      log.warn(`${cover} was not a jpg`)
     }
   } else {
-    const coverStat = await stat(cover)
+    const coverStat = await stat(cover).catch(() => null)
 
-    if (coverStat.isFile()) {
+    if (coverStat && coverStat.isFile()) {
       const fileType = await fileTypeFromFile(cover)
 
       if (fileType?.ext === 'jpg') {
         await copyFile(cover, coverPath)
 
-        log.info('[book-cover]', `copied image for ${bookMd.frontmatter.title}`)
+        log.info(`copied image for ${bookMd.frontmatter.title}`)
 
         return true
       } else {
-        log.warn('[book-cover]', `${cover} was not a jpg`)
+        log.warn(`${cover} was not a jpg`)
       }
     } else {
-      log.warn('[book-cover]', `${cover} is not a file`)
+      log.warn(`${cover} is not a file or does not exist`)
     }
   }
 
@@ -414,7 +414,7 @@ async function _searchGoogleBooks(
   const volume = await findVolume(bookTitle, bookAuthor)
   const googleBook = volume?.volumeInfo
 
-  log.info('[book-search]', `searching google for ${bookTitle}`)
+  log.info(`searching google for ${bookTitle}`)
 
   if (googleBook) {
     const title = googleBook.title || bookTitle
@@ -448,7 +448,7 @@ async function _searchOpenLibrary(
   const workId = book?.works?.[0].key.replace(/\/works\//, '')
   const work = workId ? await findWork(workId) : null
 
-  log.info('[book-search]', `searching openlibrary for ${bookMd.frontmatter.title}`)
+  log.info(`searching openlibrary for ${bookMd.frontmatter.title}`)
 
   if (book && work) {
     const title = work.title || bookMd.frontmatter.title
@@ -570,15 +570,15 @@ async function cleanUpDerivatives(dir: string): Promise<void> {
 
       await unlink(_getCachePathForBook(slug, dir))
 
-      log.info('[book-cache]', `deleted stale cache for ${slug}`)
+      log.info(`deleted stale cache for ${slug}`)
 
       if (cache.hasCover) {
         await unlink(_getCoverPathForBook(slug, dir))
-        log.info('[book-cover]', `deleted stale cover for ${slug}`)
+        log.info(`deleted stale cover for ${slug}`)
       }
     })
   } catch (err) {
-    log.error('[disk]', err as string)
+    log.error(err)
   }
 }
 
