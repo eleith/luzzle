@@ -2,8 +2,8 @@ import { run } from './lib/cli'
 import log from './lib/log'
 
 run()
-  .then(() => log.silly('', 'finito'))
+  .then(() => log.info('finito'))
 
   .catch((err) => {
-    log.error('', err as string)
+    log.error(err as string)
   })

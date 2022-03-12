@@ -21,8 +21,8 @@ import {
   bookToMd,
 } from './book'
 import log from './log'
-import { Logger } from 'npmlog'
 import { difference } from 'lodash'
+import { Logger } from 'pino'
 
 export type Command = {
   options: {
@@ -100,9 +100,9 @@ async function _processBook(ctx: Context, bookMd: BookMd): Promise<void> {
       const bookProcessed = await processBookMd(bookMd, dir)
       await updateBookMd(bookProcessed, dir)
     }
-    log.info('[disk]', `processed ${bookMd.filename}`)
+    log.info(`processed ${bookMd.filename}`)
   } catch (err) {
-    log.error('[disk]', err as string)
+    log.error(err as string)
   }
 }
 
@@ -121,9 +121,9 @@ async function _syncAddBook(ctx: Context, bookMd: BookMd): Promise<void> {
 
       await cacheBook(bookAdded, ctx.command.options.dir)
     }
-    log.info('[db]', `added ${bookMd.filename}`)
+    log.info(`added ${bookMd.filename}`)
   } catch (err) {
-    log.error('[db]', err as string)
+    log.error(err as string)
   }
 }
 
@@ -135,7 +135,7 @@ async function _syncUpdateBook(ctx: Context, bookMd: BookMd, id: string): Promis
     return
   }
 
-  log.error('[db]', `${bookMd.filename} pointed to non-existant ${id}`)
+  log.error(`${bookMd.filename} pointed to non-existant ${id}`)
 }
 
 async function _syncUpdateBookExecute(ctx: Context, bookMd: BookMd, book: Book): Promise<void> {
@@ -150,9 +150,9 @@ async function _syncUpdateBookExecute(ctx: Context, bookMd: BookMd, book: Book):
       await cacheBook(bookUpdate, dir)
     }
 
-    log.info('[db]', `updated ${book.slug}`)
+    log.info(`updated ${book.slug}`)
   } catch (err) {
-    log.error('[db]', err as string)
+    log.error(err as string)
   }
 }
 
@@ -171,9 +171,9 @@ async function _syncRemoveBooksExecute(ctx: Context, slugs: string[]): Promise<v
     if (ctx.command.options.isDryRun === false) {
       await ctx.prisma.book.deleteMany({ where: { slug: { in: slugs } } })
     }
-    log.info('[db]', `deleted ${slugs.join(', ')}`)
+    log.info(`deleted ${slugs.join(', ')}`)
   } catch (err) {
-    log.error('[db]', err as string)
+    log.error(err as string)
   }
 }
 
@@ -237,9 +237,9 @@ async function _dumpBook(ctx: Context, book: Book): Promise<void> {
       await updateBookMd(bookMd, dir)
       await cacheBook(book, dir)
     }
-    log.info('[disk]', `saved book to ${book.slug}.md`)
+    log.info(`saved book to ${book.slug}.md`)
   } catch (e) {
-    log.error('[disk]', `error saving ${book.slug}`)
+    log.error(`error saving ${book.slug}`)
   }
 }
 
@@ -256,8 +256,11 @@ async function run(): Promise<Context> {
     command,
   }
 
-  ctx.log.level = command.options.verbose === 0 ? 'info' : 'silly'
-  ctx.log.heading = command.options.isDryRun ? '[would-have]' : ''
+  ctx.log.level = command.options.verbose === 0 ? 'warn' : 'info'
+
+  if (command.options.isDryRun) {
+    ctx.log.child({dryRun: true})
+  }
 
   if (ctx.command.name === 'dump') {
     await _private._dump(ctx)
