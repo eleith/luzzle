@@ -25,7 +25,7 @@ pipeline:
       - rclone copy :gcs:eleith-io-site-data/main prisma/data
     secrets: [ rclone_webdav_url, rclone_webdav_vendor, rclone_webdav_user, rclone_webdav_pass, rclone_service_key_json, rclone_gcs_project_number]
     when:
-      branch: [ main ]
+      branch: main
   build-content:
     image: node:16
     commands:
@@ -35,7 +35,7 @@ pipeline:
       - mkdir public/images
       - cp -R /workspace/data/books/.assets/covers public/images
     when:
-      branch: [ main ]
+      branch: main
   deploy:
     image: cr.eleith.com/ci/gcs-web-deploy:latest
     environment:
