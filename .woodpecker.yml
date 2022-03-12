@@ -50,7 +50,6 @@ pipeline:
       - GCS_SITE_DATA_PATH=eleith-io-site-data/main
     commands:
       - mkdir /tmp/secrets
-      - mkdir prisma/data
       - touch .env.local
       - eval "echo \"$(cat .env.production)\"" > .env.production
       - echo $${CLOUD_RUN_SERVICE_KEY_JSON} > $RUN_KEY_FILE
