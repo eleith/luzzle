@@ -1,9 +1,41 @@
+workspace:
+  base: /workspace
+  path: src/website
+
 pipeline:
   test:
     image: node:16
     commands:
-      - npm install
+      - npm ci
       - npm run test
+  gather:
+    image: rclone/rclone:1.57
+    environment:
+      - RCLONE_GCS_STORAGE_CLASS=REGIONAL
+      - RCLONE_GCS_BUCKET_POLICY_ONLY=true
+      - RCLONE_GCS_LOCATION=us-central-1
+      - RCLONE_GCS_SERVICE_ACCOUNT_FILE=/tmp/rclone-service-key.json
+    commands:
+      - mkdir /workspace/data
+      - mkdir /workspace/data/books
+      - mkdir prisma/data
+      - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
+      - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
+      - rclone copy :webdav:documents/eleith/notes-md/personal/records/books /workspace/data/books
+      - rclone copy :gcs:eleith-io-site-data/main prisma/data
+    secrets: [ rclone_webdav_url, rclone_webdav_vendor, rclone_webdav_user, rclone_webdav_pass, rclone_service_key_json, rclone_gcs_project_number]
+    when:
+      branch: [ main ]
+  build-content:
+    image: node:16
+    commands:
+      - npm run build:manager
+      - npm run build:prisma
+      - npm run manage sync /workspace/data/books
+      - mkdir public/images
+      - cp -R /workspace/data/books/.assets/covers public/images
+    when:
+      branch: [ main ]
   deploy:
     image: cr.eleith.com/ci/gcs-web-deploy:latest
     environment:
@@ -21,10 +53,11 @@ pipeline:
       - mkdir prisma/data
       - touch .env.local
       - eval "echo \"$(cat .env.production)\"" > .env.production
-      - echo $${CLOUD_RUN_SERVICE_KEY_JSON} | sed -z 's/\n/\\\n/g' | sed -z 's/\\\n$//g' > $RUN_KEY_FILE
+      - echo $${CLOUD_RUN_SERVICE_KEY_JSON} > $RUN_KEY_FILE
+      - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RUN_KEY_FILE
       - gcloud auth activate-service-account --key-file $RUN_KEY_FILE
-      - gsutil rsync -d -r gs://eleith-io-site-dev/main gs://eleith-io-site
-      - gsutil rsync -r gs://eleith-io-site-data/main prisma/data
+      - gsutil rsync -d -r public gs://eleith-io-site
+      - gsutil rsync -d -r prisma/data gs://eleith-io-site-data/main
       - gcloud builds submit --gcs-source-staging-dir $STAGING_DIR --gcs-log-dir $LOG_DIR --tag $GCR_IMAGE --project=$GCS_PROJECT
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
     secrets: [ cloud_run_service_key_json, nextjs_env_host, nextjs_env_public_host_static ]

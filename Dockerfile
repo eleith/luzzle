@@ -25,7 +25,7 @@ COPY graphql.config.yml ./
 RUN npm ci
 RUN npm run build:nexus
 RUN npm run codegen
-RUN npm run prisma-create
+RUN npm run build:prisma
 RUN npm run build
 
 # Production image, copy all the files and run next
