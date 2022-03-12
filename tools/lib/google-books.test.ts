@@ -1,7 +1,7 @@
 import * as googleBooks from './google-books'
 import * as googleLibraryFixtures from './google-books.fixtures'
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import { books_v1 } from 'googleapis'
+import { books_v1 } from '@googleapis/books'
 import { GaxiosResponse } from 'gaxios'
 
 vi.mock('./log')

@@ -1,4 +1,4 @@
-import { books_v1, google } from 'googleapis'
+import google, { books_v1 } from '@googleapis/books'
 import { config } from 'dotenv'
 
 config()
