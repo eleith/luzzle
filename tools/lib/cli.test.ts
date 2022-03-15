@@ -52,6 +52,7 @@ const mocks = {
   updateBookMd: vi.mocked(updateBookMd),
   getUpdatedSlugs: vi.mocked(getUpdatedSlugs),
   cleanUpDerivatives: vi.mocked(cleanUpDerivatives),
+  childLog: vi.mocked(log.child),
 }
 
 function makeCommand(overrides?: DeepPartial<Command>): Command {
@@ -60,7 +61,7 @@ function makeCommand(overrides?: DeepPartial<Command>): Command {
       name: 'sync',
       options: {
         isDryRun: false,
-        verbose: 0,
+        quiet: false,
         dir: 'somewhere',
         force: false,
       },
@@ -99,13 +100,13 @@ describe('tools/lib/cli', () => {
 
     const ctx = await cli.run()
 
-    expect(log.level).toBe('warn')
+    expect(ctx.log.level).toBe('info')
     expect(spySyncToDb).toHaveBeenCalledWith(ctx)
     expect(spyCleanup).toHaveBeenCalledWith(ctx)
   })
 
-  test('run _dump', async () => {
-    const command = makeCommand({ name: 'dump', options: { verbose: 1, isDryRun: true } })
+  test('run _sync with options', async () => {
+    const command = makeCommand({ name: 'dump', options: { quiet: true, isDryRun: true } })
     const spyParseArgs = vi.spyOn(cli._private, '_parseArgs')
     const spyCleanup = vi.spyOn(cli._private, '_cleanup')
     const spyDump = vi.spyOn(cli._private, '_dump')
@@ -116,7 +117,24 @@ describe('tools/lib/cli', () => {
 
     const ctx = await cli.run()
 
-    expect(log.level).toBe('info')
+    expect(ctx.log.level).toBe('warn')
+    expect(mocks.childLog).toHaveBeenCalledWith({ dryRun: true })
+    expect(spyDump).toHaveBeenCalledWith(ctx)
+    expect(spyCleanup).toHaveBeenCalledWith(ctx)
+  })
+
+  test('run _dump', async () => {
+    const command = makeCommand({ name: 'dump' })
+    const spyParseArgs = vi.spyOn(cli._private, '_parseArgs')
+    const spyCleanup = vi.spyOn(cli._private, '_cleanup')
+    const spyDump = vi.spyOn(cli._private, '_dump')
+
+    spyParseArgs.mockResolvedValueOnce(command)
+    spyDump.mockResolvedValueOnce()
+    spyCleanup.mockResolvedValueOnce()
+
+    const ctx = await cli.run()
+
     expect(spyDump).toHaveBeenCalledWith(ctx)
     expect(spyCleanup).toHaveBeenCalledWith(ctx)
   })
@@ -637,7 +655,7 @@ describe('tools/lib/cli', () => {
     expect(command).toEqual({
       name: 'sync',
       options: {
-        verbose: 0,
+        quiet: false,
         isDryRun: false,
         force: false,
         dir: args[1],

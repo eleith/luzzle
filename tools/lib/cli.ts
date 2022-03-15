@@ -26,7 +26,7 @@ import { Logger } from 'pino'
 
 export type Command = {
   options: {
-    verbose: number
+    quiet: boolean
     isDryRun: boolean
     dir: string
     force: boolean
@@ -63,9 +63,10 @@ async function _parseArgs(_args: string[]): Promise<Command> {
         description: 'force updates on all entries',
         default: false,
       },
-      verbose: {
-        alias: 'v',
-        type: 'count',
+      quiet: {
+        alias: 'q',
+        type: 'boolean',
+        default: false,
       },
     })
     .check(async (args) => {
@@ -84,7 +85,7 @@ async function _parseArgs(_args: string[]): Promise<Command> {
   return {
     name: command._[0] as 'sync' | 'dump',
     options: {
-      verbose: command.verbose,
+      quiet: command.quiet,
       isDryRun: command['dry-run'],
       force: command.force,
       dir: command.dir,
@@ -256,10 +257,10 @@ async function run(): Promise<Context> {
     command,
   }
 
-  ctx.log.level = command.options.verbose === 0 ? 'warn' : 'info'
+  ctx.log.level = command.options.quiet ? 'warn' : 'info'
 
   if (command.options.isDryRun) {
-    ctx.log.child({dryRun: true})
+    ctx.log.child({ dryRun: true })
   }
 
   if (ctx.command.name === 'dump') {
