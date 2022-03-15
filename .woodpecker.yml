@@ -45,9 +45,6 @@ pipeline:
       - GCR_IMAGE=gcr.io/eleith-cloud/eleith-io-site
       - GCS_PROJECT=eleith-cloud
       - GCS_REGION=us-central1
-      - GCS_SITE_PUBLIC_PATH=eleith-io-site
-      - GCS_SITE_PUBLIC_STAGING_PATH=eleith-io-site-dev/main
-      - GCS_SITE_DATA_PATH=eleith-io-site-data/main
     commands:
       - mkdir /tmp/secrets
       - touch .env.local
