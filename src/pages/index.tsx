@@ -95,9 +95,9 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           sx={{
             width: ['100%', '100%', '70%'],
             margin: 'auto',
-            marginTop: '250px',
-            gridTemplateRows: ['1fr 1fr 1fr', '1fr 1fr', '1fr 1fr'],
-            gridTemplateColumns: ['1fr 1fr', '1fr 1fr 1fr', '1fr 1fr 1fr'],
+            marginTop: ['20px', '250px', '250px'],
+            gridTemplateRows: ['1fr', '1fr 1fr', '1fr 1fr'],
+            gridTemplateColumns: ['1fr', '1fr 1fr 1fr', '1fr 1fr 1fr'],
             gridAutoFlow: ['row', 'column', 'column'],
             justifyItems: 'center',
             alignItems: ['center', 'flex-start', 'flex-start'],
@@ -111,8 +111,8 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
               last read
             </Text>
           </Box>
-          <Box sx={{ gridColumnStart: [2, 'auto', 'auto'] }}>{bookCardLater}</Box>
-          <Box sx={{ gridColumnStart: [1, 'auto', 'auto'], gridRowStart: [2, 'auto', 'auto'] }}>
+          <Box>{bookCardLater}</Box>
+          <Box>
             <Text as="h1" sx={{ fontSize: 0 }}>
               previously read
             </Text>
