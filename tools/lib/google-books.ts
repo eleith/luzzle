@@ -1,4 +1,4 @@
-import google, { books_v1 } from '@googleapis/books'
+import { books_v1, books } from '@googleapis/books'
 import { config } from 'dotenv'
 
 config()
@@ -6,7 +6,7 @@ config()
 /* c8 ignore start */
 function _getGoogleBooks(): books_v1.Books {
   const googleBooksApiKey = process.env.GOOGLE_BOOKS_API_KEY
-  return google.books({ version: 'v1', auth: googleBooksApiKey })
+  return books({ version: 'v1', auth: googleBooksApiKey })
 }
 /* c8 ignore stop */
 
