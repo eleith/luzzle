@@ -8,7 +8,7 @@
     "codegen": "graphql-codegen",
     "codegen-debug": "VERBOSE=1 DEBUG=1 graphql-codegen",
     "lint": "next lint",
-    "build:manager": "esbuild tools/manage.ts --platform=node --target=node14 --bundle --outfile=build/manager.js --external:sharp --external:generated",
+    "build:manager": "esbuild tools/manage.ts --platform=node --target=node16 --sourcemap --bundle --outfile=build/manager.js --external:sharp --external:generated",
     "manage": "node build/manager.js",
     "test": "vitest run --coverage"
   },
