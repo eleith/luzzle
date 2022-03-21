@@ -76,13 +76,13 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
           sx={{
             width: ['100%', '100%', '70%'],
             margin: 'auto',
-            marginTop: '250px',
-            gridTemplateColumns: ['1fr', '1fr 1fr', '1fr 1fr'],
+            marginTop: ['20px', '150px', '150px'],
+            gridTemplateColumns: ['1fr', '150px 1fr', '200px 1fr'],
             gridTemplateRows: ['fit-content fit-content', '1fr', '1fr'],
             gridAutoFlow: ['row', 'column', 'column'],
             justifyItems: 'center',
             alignItems: 'flex-start',
-            gap: '20px',
+            gap: '40px',
           }}
         >
           <Box>
@@ -93,7 +93,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
               read on {book.month_read}/{book.year_read}
             </Paragraph>
           </Box>
-          <Box>
+          <Box sx={{ padding: ['20px', '0px 20px 0px 0px', '0px'], width: '100%' }}>
             <Heading>{book.title}</Heading>
             {book.subtitle && (
               <Text>
@@ -113,9 +113,6 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
             <Text>published: {book.year_first_published}</Text>
             <br />
             <Text>pages: {book.pages}</Text>
-            <br />
-            <br />
-            <Paragraph>{book.description}</Paragraph>
           </Box>
         </Grid>
       </Container>
