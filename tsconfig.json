@@ -33,6 +33,6 @@
   "ts-node": {
     "transpileOnly": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "tsconfig.json", "jest.config.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "tsconfig.json"],
   "exclude": ["node_modules", "build"]
 }
