@@ -95,6 +95,7 @@
     "react-hook-form": "^7.29.0",
     "react-markdown": "^8.0.1",
     "react-syntax-highlighter": "^15.5.0",
+    "swr": "^1.2.2",
     "theme-ui": "^0.13.1",
     "typography": "^0.16.21",
     "typography-theme-sutro": "^0.16.19",
