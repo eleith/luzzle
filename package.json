@@ -75,6 +75,7 @@
     "@mdx-js/react": "^1",
     "@prisma/client": "^3.11.1",
     "@reach/visually-hidden": "^0.16.0",
+    "@stitches/react": "^1.2.7",
     "@theme-ui/typography": "^0.13.1",
     "@types/typography": "^0.16.4",
     "apollo-server-core": "^3.6.7",
