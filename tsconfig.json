@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["dom", "dom.iterable", "ES2020"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "ES2020"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -18,21 +22,38 @@
     "outDir": "build",
     "baseUrl": ".",
     "paths": {
-      "@app/gql": ["generated/gql"],
-      "@app/prisma": ["generated/prisma/client"],
-      "@app/lib/*": ["src/lib/*"],
-      "@app/common/*": ["src/common/*"],
-      "@app/public/*": ["public/*"]
+      "@app/gql": [
+        "generated/gql"
+      ],
+      "@app/prisma": [
+        "generated/prisma/client"
+      ],
+      "@app/lib/*": [
+        "src/lib/*"
+      ],
+      "@app/common/*": [
+        "src/common/*"
+      ],
+      "@app/public/*": [
+        "public/*"
+      ]
     },
     "typeRoots": [
       "./node_modules/@types",
       "./src/@types"
-    ],
-    "jsxImportSource": "theme-ui"
+    ]
   },
   "ts-node": {
     "transpileOnly": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "tsconfig.json"],
-  "exclude": ["node_modules", "build"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "tsconfig.json"
+  ],
+  "exclude": [
+    "node_modules",
+    "build"
+  ]
 }

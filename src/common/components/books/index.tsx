@@ -1,6 +1,5 @@
-import { ThemeUIStyleObject } from 'theme-ui'
-// import { keyframes } from '@emotion/react'
-import { Box } from 'theme-ui'
+import { CSS } from '@stitches/react'
+import { Box } from '../ui/Box'
 
 function getBookContainerStyles(
   width: number,
@@ -16,9 +15,9 @@ function getBookContainerStyles(
   pagesOffset: number,
   transitionDuration: number,
   backgroundImageUrl?: string
-): ThemeUIStyleObject {
+): CSS {
   /* note: css var do not inherit by psueodo elements */
-  const bookCssVariables: ThemeUIStyleObject = {
+  const bookCssVariables: CSS = {
     '--book-width': `${width}px`,
     '--book-height': `${height}px`,
     '--book-thickness': `${thickness}px`,
@@ -36,7 +35,7 @@ function getBookContainerStyles(
     '--book-transform-thickness': `${-thickness / 2}px`,
   }
 
-  const bookContainerStyles: ThemeUIStyleObject = {
+  const bookContainerStyles: CSS = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -50,7 +49,7 @@ function getBookContainerStyles(
   //   '100%': { transform: `rotateY(${rotate}deg)` },
   // })
 
-  const bookStyles: ThemeUIStyleObject = {
+  const bookStyles: CSS = {
     width: 'var(--book-width)',
     height: 'var(--book-height)',
     position: 'relative',
@@ -64,7 +63,7 @@ function getBookContainerStyles(
     },
   }
 
-  const bookChildStyles: ThemeUIStyleObject = {
+  const bookChildStyles: CSS = {
     position: 'absolute',
     top: '0',
     left: '0',
@@ -81,7 +80,7 @@ function getBookContainerStyles(
     boxShadow: `5px 5px 20px var(--book-shadow-color)`,
   }
 
-  const bookBeforeStyles: ThemeUIStyleObject = {
+  const bookBeforeStyles: CSS = {
     position: 'absolute',
     left: 0,
     top: 'var(--book-page-offset)',
@@ -113,7 +112,7 @@ function getBookContainerStyles(
         )`,
   }
 
-  const bookAfterStyles: ThemeUIStyleObject = {
+  const bookAfterStyles: CSS = {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -196,7 +195,7 @@ function BookCover({
   )
 
   return (
-    <Box sx={coverStyles}>
+    <Box css={coverStyles}>
       <Box>
         <div />
         <div>{children}</div>

@@ -1,12 +1,12 @@
 import Page from '@app/common/components/page'
-import { Container, Grid, Box, Text, Paragraph, Heading } from 'theme-ui'
 import { GetStaticPathsResult } from 'next'
 import { gql } from '@app/gql'
 import BookCover from '@app/common/components/books'
 import localRequest from '@app/lib/graphql/localRequest'
-import VisuallyHidden from '@reach/visually-hidden'
 import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
 import config from '@app/common/config'
+import { Box, Text, Container, Grid } from '@app/common/components/ui'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 
 interface BookPageStaticParams {
   params: {
@@ -73,28 +73,57 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
     <Page meta={{ title: `${book.title}` }}>
       <Container>
         <Grid
-          sx={{
-            width: ['100%', '100%', '70%'],
+          css={{
+            width: '100%',
             margin: 'auto',
-            marginTop: ['20px', '150px', '150px'],
-            gridTemplateColumns: ['1fr', '150px 1fr', '200px 1fr'],
-            gridTemplateRows: ['fit-content fit-content', '1fr', '1fr'],
-            gridAutoFlow: ['row', 'column', 'column'],
+            marginTop: '20px',
+            gridTemplateColumns: '1fr',
+            gridTemplateRows: 'fit-content fit-content',
+            gridAutoFlow: 'row',
             justifyItems: 'center',
             alignItems: 'flex-start',
             gap: '40px',
+            '@tablet': {
+              width: '100%',
+              margin: 'auto',
+              marginTop: '150px',
+              gridTemplateColumns: '150px 1fr',
+              gridTemplateRows: '1fr',
+              gridAutoFlow: 'column',
+              justifyItems: 'center',
+              alignItems: 'flex-start',
+              gap: '40px',
+            },
+            '@desktop': {
+              width: '70%',
+              margin: 'auto',
+              marginTop: '150px',
+              gridTemplateColumns: '200px 1fr',
+              gridTemplateRows: '1fr',
+              gridAutoFlow: 'column',
+              justifyItems: 'center',
+              alignItems: 'flex-start',
+              gap: '40px',
+            },
           }}
         >
           <Box>
             <BookCover backgroundImageUrl={`${config.HOST_PUBLIC}/images/covers/${book.slug}.jpg`}>
               <VisuallyHidden>{book.title}</VisuallyHidden>
             </BookCover>
-            <Paragraph sx={{ textAlign: 'center', marginTop: 15 }}>
+            <Text as="p" css={{ textAlign: 'center', marginTop: 15 }}>
               read on {book.month_read}/{book.year_read}
-            </Paragraph>
+            </Text>
           </Box>
-          <Box sx={{ padding: ['20px', '0px 20px 0px 0px', '0px'], width: '100%' }}>
-            <Heading>{book.title}</Heading>
+          <Box
+            css={{
+              padding: '20px',
+              width: '100%',
+              '@tablet': { padding: '0px 20px 0px 0px', width: '100%' },
+              '@desktop': { padding: '0px', width: '100%' },
+            }}
+          >
+            <Text as="h1">{book.title}</Text>
             {book.subtitle && (
               <Text>
                 <br />
