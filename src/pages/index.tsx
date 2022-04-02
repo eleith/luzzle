@@ -5,9 +5,12 @@ import { gql } from '@app/gql'
 import localRequest from '@app/lib/graphql/localRequest'
 import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
 import Link from 'next/link'
-import { Box, Container, Grid, Spinner, Text } from 'theme-ui'
-import VisuallyHidden from '@reach/visually-hidden'
 import config from '@app/common/config'
+import { Box } from '@app/common/components/ui/Box'
+import { Container } from '@app/common/components/ui/Container'
+import { Grid } from '@app/common/components/ui/Grid'
+import { Text } from '@app/common/components/ui/Text'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 
 const getTwoBooksQuery = gql(`query getTwoBooks {
   books(take: 2) {
@@ -84,7 +87,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
     revalidateOnFocus: false,
   })
   const book = data?.book as Book | null
-  const bookCardRandom = (book && makeBookCardLink(book)) || <Spinner />
+  const bookCardRandom = (book && makeBookCardLink(book)) || <div />
   const bookCardLatest = makeBookCardLink(book1)
   const bookCardLater = makeBookCardLink(book2)
 
@@ -92,36 +95,54 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
     <Page meta={{ title: '' }}>
       <Container>
         <Grid
-          sx={{
-            width: ['100%', '100%', '70%'],
+          css={{
+            width: '100%',
             margin: 'auto',
-            marginTop: ['20px', '250px', '250px'],
-            gridTemplateRows: ['1fr', '1fr 1fr', '1fr 1fr'],
-            gridTemplateColumns: ['1fr', '1fr 1fr 1fr', '1fr 1fr 1fr'],
-            gridAutoFlow: ['row', 'column', 'column'],
+            marginTop: '20px',
+            gridTemplateRows: '1fr',
+            gridTemplateColumns: '1fr',
+            gridAutoFlow: 'row',
             justifyItems: 'center',
-            alignItems: ['center', 'flex-start', 'flex-start'],
+            alignItems: 'center',
             gap: '20px',
             textAlign: 'center',
+            '@tablet': {
+              width: '100%',
+              margin: 'auto',
+              marginTop: '250px',
+              gridTemplateRows: '1fr 1fr',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gridAutoFlow: 'column',
+              justifyItems: 'center',
+              alignItems: 'flex-start',
+              gap: '20px',
+              textAlign: 'center',
+            },
+            '@desktop': {
+              width: '70%',
+              margin: 'auto',
+              marginTop: '250px',
+              gridTemplateRows: '1fr 1fr',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gridAutoFlow: 'column',
+              justifyItems: 'center',
+              alignItems: 'flex-start',
+              gap: '20px',
+              textAlign: 'center',
+            },
           }}
         >
           <Box>{bookCardLatest}</Box>
           <Box>
-            <Text as="h1" sx={{ fontSize: 0 }}>
-              last read
-            </Text>
+            <Text as="h1">last read</Text>
           </Box>
           <Box>{bookCardLater}</Box>
           <Box>
-            <Text as="h1" sx={{ fontSize: 0 }}>
-              previously read
-            </Text>
+            <Text as="h1">previously read</Text>
           </Box>
           <Box>{bookCardRandom}</Box>
           <Box>
-            <Text as="h1" sx={{ fontSize: 0 }}>
-              random read
-            </Text>
+            <Text as="h1">random read</Text>
           </Box>
         </Grid>
       </Container>

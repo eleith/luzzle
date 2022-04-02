@@ -1,12 +1,10 @@
-import { books_v1 } from 'googleapis'
+import { books_v1 } from '@googleapis/books'
 
 const title = 'a book title'
 const description = 'a book description'
 const authors = ['an author']
 
-function makeVolume(
-  overrides: books_v1.Schema$Volume['volumeInfo'] = {}
-): books_v1.Schema$Volume {
+function makeVolume(overrides: books_v1.Schema$Volume['volumeInfo'] = {}): books_v1.Schema$Volume {
   return {
     volumeInfo: {
       ...overrides,
