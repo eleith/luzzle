@@ -34,6 +34,7 @@ const mocks = {
   cpus: vi.mocked(cpus),
   logInfo: vi.mocked(log.info),
   logError: vi.mocked(log.error),
+  logChild: vi.mocked(log.child),
   stat: vi.mocked(stat),
   getBook: vi.mocked(getBook),
   readBookDir: vi.mocked(readBookDir),
@@ -52,7 +53,6 @@ const mocks = {
   updateBookMd: vi.mocked(updateBookMd),
   getUpdatedSlugs: vi.mocked(getUpdatedSlugs),
   cleanUpDerivatives: vi.mocked(cleanUpDerivatives),
-  childLog: vi.mocked(log.child),
 }
 
 function makeCommand(overrides?: DeepPartial<Command>): Command {
@@ -118,7 +118,7 @@ describe('tools/lib/cli', () => {
     const ctx = await cli.run()
 
     expect(ctx.log.level).toBe('warn')
-    expect(mocks.childLog).toHaveBeenCalledWith({ dryRun: true })
+    expect(mocks.logChild).toHaveBeenCalledWith({ dryRun: true })
     expect(spyDump).toHaveBeenCalledWith(ctx)
     expect(spyCleanup).toHaveBeenCalledWith(ctx)
   })

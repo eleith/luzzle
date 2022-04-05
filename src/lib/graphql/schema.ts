@@ -40,7 +40,7 @@ const Query = queryType({
         const { take } = args
 
         return ctx.prisma.book.findMany({
-          take: Math.min(take, 50),
+          take: Math.min(take, 500),
           orderBy: [{ year_read: 'desc' }, { month_read: 'desc' }, { date_added: 'desc' }],
         })
       },
