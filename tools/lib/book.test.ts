@@ -213,13 +213,13 @@ describe('book', () => {
 
     mocks.sharp.mockImplementation(
       () =>
-      ({
-        metadata: async () =>
         ({
-          width,
-          height,
-        } as Metadata),
-      } as Sharp)
+          metadata: async () =>
+            ({
+              width,
+              height,
+            } as Metadata),
+        } as Sharp)
     )
 
     const coverData = await bookLib._private._getCoverData(coverPath, dir)
