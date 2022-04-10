@@ -13,6 +13,7 @@ import { findVolume } from './google-books'
 import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library'
 import sharp from 'sharp'
 import deepmerge from 'deepmerge'
+import crypto from 'crypto'
 
 type Timestamp = string
 type ToJsonCompatible<T> = T extends Date
@@ -24,11 +25,11 @@ type ToJsonCompatible<T> = T extends Date
   : T
 type NonNullableProperties<T> = { [K in keyof T]: NonNullable<T[K]> }
 type BookDbRequiredFields = 'slug' | 'id' | 'date_added' | 'date_updated'
-type BookDbOptionalFields = 'cover_width' | 'cover_height' | 'cover_path'
+type BookDbOptionalFields = 'cover_width' | 'cover_height' | 'cover_path' | 'read_order'
 type BookDbFields = BookDbRequiredFields | BookDbOptionalFields
 type BookMdRequiredFields = 'title' | 'author'
 type BookMdFields = Exclude<keyof Book, BookDbFields | 'note'>
-type BookMdDatabaseCache = ToJsonCompatible<
+type BookDatabaseCache = ToJsonCompatible<
   Pick<Book, BookDbRequiredFields> &
     Partial<NonNullableProperties<Pick<Book, BookDbOptionalFields>>>
 >
@@ -39,7 +40,7 @@ export type BookCache = {
   lastProcessed?: string
   lastSynced?: string
   hasCover?: boolean
-  database?: BookMdDatabaseCache
+  database?: BookDatabaseCache
 }
 
 export type BookMd = {
@@ -106,6 +107,7 @@ const cacheSchema: JTDSchemaType<BookCache> = {
         slug: { type: 'string' },
       },
       optionalProperties: {
+        read_order: { type: 'string' },
         cover_width: { type: 'uint32' },
         cover_height: { type: 'uint32' },
         cover_path: { type: 'string' },
@@ -130,6 +132,16 @@ function _getCachePathForBook(slug: string, baseDir = ''): string {
 
 function _getPathForBook(slug: string, baseDir = ''): string {
   return path.join(baseDir, `${slug}.md`)
+}
+
+function _getReadOrder(
+  year: number = new Date(1970).getFullYear(),
+  month: number = new Date(1970, 1).getMonth() + 1
+): string {
+  const rand = crypto.randomBytes(2).toString('hex')
+  const timeStamp = `${year}${String(month).padStart(2, '0')}0100`
+
+  return `${timeStamp}-${rand}`
 }
 
 function bookMdToString(bookMd: BookMd): string {
@@ -208,7 +220,7 @@ async function cacheBook(book: Book, dir: string): Promise<void> {
 
   await _private._updateCache(dir, book.slug, {
     lastSynced: new Date().toJSON(),
-    database: bookDbCache as BookMdDatabaseCache,
+    database: bookDbCache as BookDatabaseCache,
   })
 }
 
@@ -317,6 +329,7 @@ async function bookMdToBookCreateInput(
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
     slug: getSlugFromBookMd(bookMd),
     note: bookMd.markdown,
+    read_order: _getReadOrder(bookMd.frontmatter.year_read, bookMd.frontmatter.month_read),
   }
 
   return await _private._maybeGetCoverData(bookMd, bookInput, dir)
@@ -331,7 +344,7 @@ async function bookMdToBookUpdateInput(
     ...omit(bookMd.frontmatter, bookMdSpecialFields),
     slug: getSlugFromBookMd(bookMd),
     note: bookMd.markdown,
-  }
+  } as Prisma.BookUpdateInput
 
   const bookKeys = Object.keys(bookUpdateInput) as Array<keyof typeof bookUpdateInput>
 
@@ -341,6 +354,13 @@ async function bookMdToBookUpdateInput(
       delete bookUpdateInput[field]
     }
   })
+
+  if (!book.read_order || bookUpdateInput.year_read || bookUpdateInput.month_read) {
+    const year = bookMd.frontmatter.year_read
+    const month = bookMd.frontmatter.month_read
+    const order = _getReadOrder(year, month)
+    bookUpdateInput.read_order = order
+  }
 
   return await _private._maybeGetCoverData(bookMd, bookUpdateInput, dir)
 }

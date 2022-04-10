@@ -7,6 +7,7 @@ const title = 'title of the book'
 const author = 'author of the book'
 const note = 'a note about the book'
 const slug = 'slugified-title'
+const read_order = '19700101-y47d'
 
 function makeBookMd(overrides: DeepPartial<BookMd> = {}): BookMd {
   return merge(
@@ -45,6 +46,7 @@ function makeBook(overrides: Partial<Book> = {}): Book {
     cover_path: null,
     slug,
     note,
+    read_order,
     ...overrides,
   }
 }
@@ -65,13 +67,12 @@ function makeBookCreateInput(
     title,
     author,
     slug,
+    read_order,
     ...overrides,
   }
 }
 
-function makeBookCache(
-  overrides: Partial<BookCache> = {}
-): BookCache {
+function makeBookCache(overrides: Partial<BookCache> = {}): BookCache {
   return {
     ...overrides,
   }

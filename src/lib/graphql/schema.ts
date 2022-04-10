@@ -4,6 +4,9 @@ import path from 'path'
 
 const DateTime = asNexusMethod(GraphQLDateTime, 'date')
 
+const MAX_TAKE = 500
+const MAX_SKIP = 200000
+
 const Book = objectType({
   name: 'Book',
   definition(t) {
@@ -34,13 +37,15 @@ const Query = queryType({
     t.list.field('books', {
       type: 'Book',
       args: {
+        skip: intArg({ default: 0 }),
         take: nonNull(intArg({ default: 10 })),
       },
       resolve: async (_parent, args, ctx) => {
-        const { take } = args
+        const { take, skip } = args
 
         return ctx.prisma.book.findMany({
-          take: Math.min(take, 500),
+          skip: Math.min(Math.max(skip || 0, 0), MAX_SKIP),
+          take: Math.min(take, MAX_TAKE),
           orderBy: [{ year_read: 'desc' }, { month_read: 'desc' }, { date_added: 'desc' }],
         })
       },
