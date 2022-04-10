@@ -191,6 +191,7 @@ describe('book', () => {
       note: bookMd.markdown,
       slug: path.basename(bookMd.filename, '.md'),
     })
+
     const dir = 'dirPath'
     const bookInput = bookFixtures.makeBookUpdateInput(book)
 
@@ -830,6 +831,7 @@ describe('book', () => {
       date_updated: new Date(),
       date_added: new Date(),
       id: 'x',
+      read_order: 'a',
     }
     const book = bookFixtures.makeBook(databaseCache)
     const dir = 'path/to/book'

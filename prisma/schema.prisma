@@ -5,7 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output = "../generated/prisma/client"
+  output   = "../generated/prisma/client"
 }
 
 model Book {
@@ -30,6 +30,7 @@ model Book {
   cover_path           String?
   slug                 String   @unique
   note                 String?
+  read_order           String   @unique
 
   @@map("books")
 }

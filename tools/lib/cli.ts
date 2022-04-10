@@ -248,32 +248,36 @@ async function _cleanup(ctx: Context): Promise<void> {
   await ctx.prisma.$disconnect()
 }
 
-async function run(): Promise<Context> {
-  const command = await _private._parseArgs(hideBin(process.argv))
+async function run(): Promise<Context | null> {
+  try {
+    const command = await _private._parseArgs(hideBin(process.argv))
 
-  const ctx: Context = {
-    prisma,
-    log,
-    command,
+    const ctx: Context = {
+      prisma,
+      log,
+      command,
+    }
+
+    ctx.log.level = command.options.quiet ? 'warn' : 'info'
+
+    if (command.options.isDryRun) {
+      ctx.log.child({ dryRun: true })
+    }
+
+    if (ctx.command.name === 'dump') {
+      await _private._dump(ctx)
+    } else if (ctx.command.name === 'sync') {
+      await _private._sync(ctx)
+    } else if (ctx.command.name === 'process') {
+      await _private._process(ctx)
+    }
+
+    await _private._cleanup(ctx)
+
+    return ctx
+  } catch (e) {
+    return null
   }
-
-  ctx.log.level = command.options.quiet ? 'warn' : 'info'
-
-  if (command.options.isDryRun) {
-    ctx.log.child({ dryRun: true })
-  }
-
-  if (ctx.command.name === 'dump') {
-    await _private._dump(ctx)
-  } else if (ctx.command.name === 'sync') {
-    await _private._sync(ctx)
-  } else if (ctx.command.name === 'process') {
-    await _private._process(ctx)
-  }
-
-  await _private._cleanup(ctx)
-
-  return ctx
 }
 
 const _private = {
