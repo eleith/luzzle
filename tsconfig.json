@@ -31,6 +31,9 @@
       "@app/lib/*": [
         "src/lib/*"
       ],
+      "@app/graphql/*": [
+        "src/lib/graphql/*"
+      ],
       "@app/common/*": [
         "src/common/*"
       ],

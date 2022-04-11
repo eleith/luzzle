@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev": "next dev",
-    "build:nexus": "ts-node-dev --transpile-only -P nexus.tsconfig.json ./src/lib/graphql/schema.ts",
+    "build:nexus": "ts-node --transpile-only -P nexus.tsconfig.json -r tsconfig-paths/register ./src/lib/graphql/schema.ts",
     "build": "next build",
     "start": "next start",
     "build:prisma": "prisma generate",
@@ -59,7 +59,7 @@
     "stylelint-config-standard": "^25.0.0",
     "tempy": "^2.0.0",
     "ts-node": "^10.7.0",
-    "ts-node-dev": "^1.1.8",
+    "tsconfig-paths": "^3.14.1",
     "tslog": "^3.3.3",
     "typescript": "^4.6.3",
     "unified": "^10.1.2",
