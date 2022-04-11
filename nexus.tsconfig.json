@@ -3,7 +3,30 @@
     "sourceMap": true,
     "outDir": "dist",
     "strict": true,
-    "lib": ["esnext"],
-    "esModuleInterop": true
+    "lib": [
+      "esnext"
+    ],
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@app/gql": [
+        "generated/gql"
+      ],
+      "@app/prisma": [
+        "generated/prisma/client"
+      ],
+      "@app/lib/*": [
+        "src/lib/*"
+      ],
+      "@app/graphql/*": [
+        "src/lib/graphql/*"
+      ],
+      "@app/common/*": [
+        "src/common/*"
+      ],
+      "@app/public/*": [
+        "public/*"
+      ]
+    }
   }
 }

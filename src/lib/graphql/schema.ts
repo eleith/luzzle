@@ -1,81 +1,12 @@
 import { GraphQLDateTime } from 'graphql-scalars'
-import { queryType, makeSchema, objectType, stringArg, nonNull, asNexusMethod, intArg } from 'nexus'
+import { makeSchema, asNexusMethod } from 'nexus'
 import path from 'path'
+import { Book, BooksQuery, BookQuery } from '@app/graphql/book/index'
 
 const DateTime = asNexusMethod(GraphQLDateTime, 'date')
 
-const MAX_TAKE = 500
-const MAX_SKIP = 200000
-
-const Book = objectType({
-  name: 'Book',
-  definition(t) {
-    t.nonNull.id('id')
-    t.nonNull.string('title')
-    t.nonNull.string('slug')
-    t.string('subtitle')
-    t.string('author')
-    t.string('id_ol_book')
-    t.string('id_ol_work')
-    t.string('isbn')
-    t.string('coauthors')
-    t.string('description')
-    t.string('keywords')
-    t.int('pages')
-    t.int('year_first_published')
-    t.date('date_updated')
-    t.date('date_added')
-    t.int('year_read')
-    t.int('month_read')
-    t.int('cover_width')
-    t.int('cover_height')
-  },
-})
-
-const Query = queryType({
-  definition(t) {
-    t.list.field('books', {
-      type: 'Book',
-      args: {
-        skip: intArg({ default: 0 }),
-        take: nonNull(intArg({ default: 10 })),
-      },
-      resolve: async (_parent, args, ctx) => {
-        const { take, skip } = args
-
-        return ctx.prisma.book.findMany({
-          skip: Math.min(Math.max(skip || 0, 0), MAX_SKIP),
-          take: Math.min(take, MAX_TAKE),
-          orderBy: [{ year_read: 'desc' }, { month_read: 'desc' }, { date_added: 'desc' }],
-        })
-      },
-    })
-    t.field('book', {
-      type: 'Book',
-      args: {
-        id: stringArg(),
-        slug: stringArg(),
-      },
-      resolve: async (_parent, args, ctx) => {
-        const { slug, id } = args
-
-        if (slug) {
-          return ctx.prisma.book.findUnique({ where: { slug: slug } })
-        } else if (id) {
-          return ctx.prisma.book.findUnique({ where: { id: id } })
-        } else {
-          const count = await ctx.prisma.book.count()
-          const skip = Math.floor(Math.random() * count)
-          const books = await ctx.prisma.book.findMany({ take: 1, skip })
-          return books[0]
-        }
-      },
-    })
-  },
-})
-
 export const schema = makeSchema({
-  types: [Query, Book, DateTime],
+  types: [DateTime, Book, BookQuery, BooksQuery],
   outputs: {
     typegen: path.join(process.cwd(), 'generated', 'nexus-typegen.ts'),
     schema: path.join(process.cwd(), 'generated', 'schema.graphql'),
