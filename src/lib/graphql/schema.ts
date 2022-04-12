@@ -1,12 +1,12 @@
 import { GraphQLDateTime } from 'graphql-scalars'
 import { makeSchema, asNexusMethod } from 'nexus'
 import path from 'path'
-import { Book, BooksQuery, BookQuery } from '@app/graphql/book/index'
+import * as types from '@app/graphql/book/index'
 
 const DateTime = asNexusMethod(GraphQLDateTime, 'date')
 
 export const schema = makeSchema({
-  types: [DateTime, Book, BookQuery, BooksQuery],
+  types: [DateTime, types],
   outputs: {
     typegen: path.join(process.cwd(), 'generated', 'nexus-typegen.ts'),
     schema: path.join(process.cwd(), 'generated', 'schema.graphql'),

@@ -1,5 +1,6 @@
 import Page from '@app/common/components/page'
 import { GetStaticPathsResult } from 'next'
+import Link from 'next/link'
 import { gql } from '@app/gql'
 import BookCover from '@app/common/components/books'
 import localRequest from '@app/lib/graphql/localRequest'
@@ -39,6 +40,14 @@ const bookQuery = gql(`query getBookBySlug($slug: String!) {
     isbn
     year_read 
     month_read 
+    siblings {
+      previous {
+        slug
+      }
+      next {
+        slug
+      }
+    }
   }
 }`)
 
@@ -60,7 +69,7 @@ export async function getStaticProps({
   if (book) {
     return {
       props: {
-        book: book,
+        book,
       },
     }
   } else {
@@ -142,6 +151,22 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
             <Text>published: {book.year_first_published}</Text>
             <br />
             <Text>pages: {book.pages}</Text>
+          </Box>
+          <Box>
+            {book.siblings?.previous && (
+              <Text>
+                <Link href={`/books/${book.siblings.previous.slug}`}>
+                  <a>previous</a>
+                </Link>
+              </Text>
+            )}
+            {book.siblings?.next && (
+              <Text>
+                <Link href={`/books/${book.siblings.next.slug}`}>
+                  <a>next</a>
+                </Link>
+              </Text>
+            )}
           </Box>
         </Grid>
       </Container>
