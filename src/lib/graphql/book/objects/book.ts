@@ -1,4 +1,5 @@
 import { objectType } from 'nexus'
+import bookSiblingResolver from '../resolvers/bookSiblings'
 
 const Book = objectType({
   name: 'Book',
@@ -22,6 +23,11 @@ const Book = objectType({
     t.int('month_read')
     t.int('cover_width')
     t.int('cover_height')
+    t.nonNull.string('read_order')
+    t.field('siblings', {
+      type: 'BookSiblings',
+      resolve: bookSiblingResolver,
+    })
   },
 })
 

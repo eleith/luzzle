@@ -1,5 +1,6 @@
-import Book from './models/book'
-import BookQuery from './resolvers/bookQuery'
-import BooksQuery from './resolvers/booksQuery'
+import Book from './objects/book'
+import BookQuery from './queries/book'
+import BooksQuery from './queries/books'
+import BookSiblings from './objects/bookSiblings'
 
-export { Book, BookQuery, BooksQuery }
+export { Book, BookQuery, BooksQuery, BookSiblings }
