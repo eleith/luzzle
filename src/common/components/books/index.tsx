@@ -58,7 +58,7 @@ function getBookContainerStyles(
     transform: `rotateY(var(--book-rotate))`,
     transition: `transform var(--book-transition-duration) ease`,
     // animation: `1s ease 0s 1 ${bookRotateAnimation}`,
-    ':hover': {
+    '&:hover': {
       transform: `rotateY(var(--book-rotate-hover))`,
     },
   }
