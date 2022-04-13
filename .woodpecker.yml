@@ -53,7 +53,7 @@ pipeline:
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RUN_KEY_FILE
       - gcloud auth activate-service-account --key-file $RUN_KEY_FILE
       - gsutil -m rsync -d -r public gs://eleith-io-site
-      - gsutil -m rsync -d -r prisma/data gs://eleith-io-site-data/main
+      - gsutil -m rsync -d -r prisma/data/sqlite.dev.db gs://eleith-io-site-data/main
       - gcloud builds submit --gcs-source-staging-dir $STAGING_DIR --gcs-log-dir $LOG_DIR --tag $GCR_IMAGE --project=$GCS_PROJECT
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
     secrets: [ cloud_run_service_key_json, nextjs_env_host, nextjs_env_public_host_static ]
