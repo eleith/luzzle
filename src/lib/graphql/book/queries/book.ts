@@ -1,5 +1,5 @@
 import { stringArg, queryField } from 'nexus'
-import queryBookResolver from '../resolvers/queryBook'
+import resolve from '../resolvers/queryBook'
 
 export default queryField((t) => {
   t.field('book', {
@@ -8,6 +8,6 @@ export default queryField((t) => {
       id: stringArg(),
       slug: stringArg(),
     },
-    resolve: queryBookResolver,
+    resolve,
   })
 })

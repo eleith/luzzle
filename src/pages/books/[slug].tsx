@@ -15,8 +15,8 @@ interface BookPageStaticParams {
   }
 }
 
-const booksSlugQuery = gql(`query getBookSlugs($take: Int!) {
-  books(take: $take) {
+const booksSlugQuery = gql(`query getBookSlugs($take: Int, $skip: Int) {
+  books(take: $take, skip: $skip) {
     slug
   }
 }`)
@@ -151,8 +151,6 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
             <Text>published: {book.year_first_published}</Text>
             <br />
             <Text>pages: {book.pages}</Text>
-          </Box>
-          <Box>
             {book.siblings?.previous && (
               <Text>
                 <Link href={`/books/${book.siblings.previous.slug}`}>
@@ -174,13 +172,44 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
   )
 }
 
+async function getBooksForPage(take: number, page: number): Promise<string[]> {
+  const response = await localRequest().query({
+    query: booksSlugQuery,
+    variables: { take, skip: page * take },
+  })
+  const slugs = response.data.books?.map((book) => book?.slug) || []
+  return slugs.filter(Boolean) as string[]
+}
+
+async function getAllBookSlugs(): Promise<string[]> {
+  const take = 100
+  const slugs: string[] = []
+  let getMoreBooks = true
+  let page = 0
+
+  while (getMoreBooks) {
+    const pageSlugs = await getBooksForPage(take, page)
+
+    if (pageSlugs.length) {
+      slugs.push(...pageSlugs)
+    }
+
+    page += 1
+    getMoreBooks = pageSlugs.length === take
+  }
+
+  return slugs
+}
+
 export async function getStaticPaths(): Promise<GetStaticPathsResult> {
-  const response = await localRequest().query({ query: booksSlugQuery, variables: { take: 500 } })
-  const books = response.data.books
-  const bookParams = books?.map((partialBook) => ({ params: { slug: partialBook?.slug } })) || []
+  const slugs = await getAllBookSlugs()
 
   return {
-    paths: bookParams,
+    paths: slugs.map((slug) => ({
+      params: {
+        slug,
+      },
+    })),
     fallback: false,
   }
 }
