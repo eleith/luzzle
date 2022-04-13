@@ -1,9 +1,8 @@
-import { FieldResolver } from 'nexus'
+import { ResolverArgsFor, ResolverFor } from '@app/graphql/types'
 
-type SiblingsResolverArgs = Parameters<FieldResolver<'Book', 'siblings'>>
-type SiblingsResolver = Promise<Awaited<ReturnType<FieldResolver<'Book', 'siblings'>>>>
-
-async function resolve(...[parent, , ctx]: SiblingsResolverArgs): SiblingsResolver {
+async function resolve(
+  ...[parent, , ctx]: ResolverArgsFor<'Book', 'siblings'>
+): ResolverFor<'Book', 'siblings'> {
   const before = await ctx.prisma.book.findMany({
     take: 1,
     skip: 1,

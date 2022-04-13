@@ -1,9 +1,8 @@
-import { FieldResolver } from 'nexus'
+import { ResolverArgsFor, ResolverFor } from '@app/graphql/types'
 
-type BookResolverArgs = Parameters<FieldResolver<'Query', 'book'>>
-type BookResolver = Promise<Awaited<ReturnType<FieldResolver<'Query', 'book'>>>>
-
-async function resolve(...[, args, ctx]: BookResolverArgs): BookResolver {
+async function resolve(
+  ...[, args, ctx]: ResolverArgsFor<'Query', 'book'>
+): ResolverFor<'Query', 'book'> {
   const { slug, id } = args
 
   if (slug) {

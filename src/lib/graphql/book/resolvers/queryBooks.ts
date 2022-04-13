@@ -1,17 +1,16 @@
-import { FieldResolver } from 'nexus'
+import { ResolverArgsFor, ResolverFor } from '@app/graphql/types'
 
-type BookResolverArgs = Parameters<FieldResolver<'Query', 'books'>>
-type BookResolver = Promise<Awaited<ReturnType<FieldResolver<'Query', 'books'>>>>
+export const SKIP_DEFAULT = 0
+export const SKIP_MAX = 100000
+export const TAKE_DEFAULT = 100
+export const TAKE_MAX = 500
 
-const MAX_TAKE = 500
-const MAX_SKIP = 200000
-
-async function resolve(...[, args, ctx]: BookResolverArgs): BookResolver {
+async function resolve(...[, args, ctx]: ResolverArgsFor<'Query', 'books'>): ResolverFor<'Query', 'books'> {
   const { take, skip } = args
 
   return ctx.prisma.book.findMany({
-    skip: Math.min(Math.max(skip || 0, 0), MAX_SKIP),
-    take: Math.min(take, MAX_TAKE),
+    skip: Math.min(Math.max(skip || SKIP_DEFAULT, SKIP_DEFAULT), SKIP_MAX),
+    take: Math.min(Math.max(take || TAKE_DEFAULT, TAKE_DEFAULT), TAKE_MAX),
     orderBy: { read_order: 'desc' },
   })
 }
