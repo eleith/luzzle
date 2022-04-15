@@ -1,4 +1,6 @@
-schema: generated/schema.graphql
+schema: ./src/lib/graphql/schema.ts
+require:
+  - ts-node/register
 documents: 
   - src/**/*.graphql
   - src/**/*.tsx
@@ -6,5 +8,8 @@ overwrite: true
 extensions:
   codegen:
     generates:
+      generated/schema.graphql:
+        plugins:
+          - schema-ast
       generated/gql:
         preset: gql-tag-operations-preset
