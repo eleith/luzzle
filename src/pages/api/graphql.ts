@@ -1,16 +1,24 @@
 import { ApolloServer } from 'apollo-server-micro'
 import { schema } from '@app/lib/graphql/schema'
 import { createContext } from '@app/lib/graphql/context'
-import { ApolloServerPluginLandingPageGraphQLPlayground } from 'apollo-server-core'
+import {
+  ApolloServerPluginLandingPageDisabled,
+  ApolloServerPluginLandingPageGraphQLPlayground,
+} from 'apollo-server-core'
 
 import type { IncomingMessage, ServerResponse } from 'http'
+
+const playground =
+  process.env.NODE_ENV === 'development'
+    ? ApolloServerPluginLandingPageGraphQLPlayground()
+    : ApolloServerPluginLandingPageDisabled()
 
 const apolloServer = new ApolloServer({
   context: createContext,
   schema,
   introspection: process.env.NODE_ENV === 'development',
   debug: process.env.NODE_ENV === 'development',
-  plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
+  plugins: [playground],
 })
 
 const startServer = apolloServer.start()
