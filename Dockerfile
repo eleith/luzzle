@@ -20,10 +20,8 @@ COPY .env.local ./
 COPY .env.production ./
 COPY next.config.js ./
 COPY next-env.d.ts ./
-COPY nexus.tsconfig.json ./
 COPY graphql.config.yml ./
 RUN npm ci
-RUN npm run build:nexus
 RUN npm run codegen
 RUN npm run build:prisma
 RUN npm run build
