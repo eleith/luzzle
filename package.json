@@ -8,7 +8,9 @@
     "lint": "next lint",
     "build:manager": "esbuild tools/manage.ts --platform=node --target=node16 --sourcemap --bundle --outfile=build/manager.js --external:sharp --external:generated",
     "manage": "node --enable-source-maps build/manager.js",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "prebuild": "npm run build:prisma && npm run codegen",
+    "predev": "npm run build:prisma && npm run codegen"
   },
   "devDependencies": {
     "@fast-csv/format": "^4.3.5",

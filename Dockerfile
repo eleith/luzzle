@@ -22,8 +22,6 @@ COPY next.config.js ./
 COPY next-env.d.ts ./
 COPY graphql.config.yml ./
 RUN npm ci
-RUN npm run codegen
-RUN npm run build:prisma
 RUN npm run build
 
 # Production image, copy all the files and run next
