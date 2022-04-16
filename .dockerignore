@@ -10,3 +10,5 @@ data
 .next
 .stylelintrc.json
 public/images/covers
+.eslintrc.json
+.prettierrc.json

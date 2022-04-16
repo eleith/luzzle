@@ -3,6 +3,8 @@
 .gitignore
 .next
 .stylelintrc.json
+.eslintrc.json
+.prettierrc.json
 
 node_modules
 tools
