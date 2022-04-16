@@ -8,6 +8,7 @@ pipeline:
     commands:
       - npm ci
       - npm run test
+      - npm run lint
   gather:
     image: rclone/rclone:1.57
     environment:
