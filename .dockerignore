@@ -8,6 +8,5 @@ prisma/migrate
 build
 data
 .next
-.prettierrc.json
 .stylelintrc.json
 public/images/covers

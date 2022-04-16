@@ -2,7 +2,6 @@
 .git
 .gitignore
 .next
-.prettierrc.json
 .stylelintrc.json
 
 node_modules
