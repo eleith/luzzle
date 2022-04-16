@@ -15,6 +15,7 @@ COPY src ./src
 COPY tsconfig.json ./
 COPY package.json ./
 COPY package-lock.json ./
+COPY .eslintrc.json ./
 COPY .env ./
 COPY .env.local ./
 COPY .env.production ./
