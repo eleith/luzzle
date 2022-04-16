@@ -1,7 +1,8 @@
 import BookCover from '@app/common/components/books'
 import Page from '@app/common/components/page'
 import useGraphSWR from '@app/common/hooks/useGraphSWR'
-import { gql } from '@app/gql'
+import gql from '@app/graphql/tag'
+import { GetBookHomeDocument, GetRandomBookDocument } from './_gql_/index'
 import localRequest from '@app/lib/graphql/localRequest'
 import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
 import Link from 'next/link'
@@ -12,8 +13,8 @@ import { Grid } from '@app/common/components/ui/Grid'
 import { Text } from '@app/common/components/ui/Text'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 
-const getTwoBooksQuery = gql(`query getTwoBooks {
-  books(take: 2) {
+const getBooksQuery = gql<typeof GetBookHomeDocument>(`query GetBookHome($take: Int) {
+  books(take: $take) {
     id
     slug
     cover_width
@@ -31,7 +32,7 @@ const getTwoBooksQuery = gql(`query getTwoBooks {
   }
 }`)
 
-const getRandomBookQuery = gql(`query getRandomBook {
+const getRandomBookQuery = gql<typeof GetRandomBookDocument>(`query GetRandomBook {
   book {
     id
     slug
@@ -50,7 +51,7 @@ const getRandomBookQuery = gql(`query getRandomBook {
   }
 }`)
 
-type Book = ExtractResultFieldTypeFor<typeof getTwoBooksQuery, 'books'>
+type Book = ExtractResultFieldTypeFor<typeof getBooksQuery, 'books'>
 
 type HomePageProps = {
   book1: Book
@@ -70,7 +71,7 @@ function makeBookCardLink(book: Book): JSX.Element {
 }
 
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
-  const response = await localRequest().query({ query: getTwoBooksQuery })
+  const response = await localRequest().query({ query: getBooksQuery, variables: { take: 2 } })
   const books = response.data?.books
   const nonExistantBook = { title: 'a title', id: 'add-more-books' } as Book
 
@@ -86,7 +87,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   const { data } = useGraphSWR(getRandomBookQuery, undefined, {
     revalidateOnFocus: false,
   })
-  const book = data?.book as Book | null
+  const book = data?.book
   const bookCardRandom = (book && makeBookCardLink(book)) || <div />
   const bookCardLatest = makeBookCardLink(book1)
   const bookCardLater = makeBookCardLink(book2)

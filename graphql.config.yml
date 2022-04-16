@@ -1,9 +1,7 @@
 schema: ./src/lib/graphql/schema.ts
 require:
   - ts-node/register
-documents: 
-  - src/**/*.graphql
-  - src/**/*.tsx
+documents: 'src/**/!(*.generated).{ts,tsx}'
 overwrite: true
 extensions:
   codegen:
@@ -11,5 +9,14 @@ extensions:
       generated/schema.graphql:
         plugins:
           - schema-ast
-      generated/gql:
-        preset: gql-tag-operations-preset
+      src/@types/graphql.d.ts:
+        - typescript
+      src/:
+        preset: near-operation-file
+        presetConfig:
+          extension: .ts
+          baseTypesPath: '@types/graphql.d.ts'
+          folder: _gql_
+        plugins:
+          - typed-document-node
+          - typescript-operations

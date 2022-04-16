@@ -1,7 +1,8 @@
 import Page from '@app/common/components/page'
 import { GetStaticPathsResult } from 'next'
 import Link from 'next/link'
-import { gql } from '@app/gql'
+import gql from '@app/graphql/tag'
+import { GetBookSlugsDocument, GetBookBySlugDocument } from './_gql_/[slug]'
 import BookCover from '@app/common/components/books'
 import localRequest from '@app/lib/graphql/localRequest'
 import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
@@ -15,13 +16,15 @@ interface BookPageStaticParams {
   }
 }
 
-const booksSlugQuery = gql(`query getBookSlugs($take: Int, $skip: Int) {
+const booksSlugQuery = gql<
+  typeof GetBookSlugsDocument
+>(`query GetBookSlugs($take: Int, $skip: Int) {
   books(take: $take, skip: $skip) {
     slug
   }
 }`)
 
-const bookQuery = gql(`query getBookBySlug($slug: String!) {
+const bookQuery = gql<typeof GetBookBySlugDocument>(`query GetBookBySlug($slug: String!) {
   book(slug: $slug) {
     slug
     id
