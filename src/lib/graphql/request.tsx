@@ -1,18 +1,16 @@
 import { request as graphqlRequest } from 'graphql-request'
-import { TypedDocumentNode, ResultOf } from '@graphql-typed-document-node/core'
+import { TypedDocumentNode, ResultOf, VariablesOf } from '@graphql-typed-document-node/core'
 import config from '@app/common/config'
 
-type Variables = { [key: string]: string }
+const graphEndPoint = `${config.HOST}${config.GRAPHQL_ENDPOINT}`
 
-const localGraphEndpoint = `${config.HOST}${config.GRAPHQL_ENDPOINT}`
-
-export default async function request<X extends TypedDocumentNode, V = Variables>(
+export default async function request<X extends TypedDocumentNode<ResultOf<X>, VariablesOf<X>>>(
   gql: X,
-  variables?: V
+  variables?: VariablesOf<X>
 ): Promise<ResultOf<X>> {
   if (variables) {
-    return await graphqlRequest<ResultOf<X>, V>(localGraphEndpoint, gql, variables)
+    return graphqlRequest(graphEndPoint, gql, variables)
   } else {
-    return await graphqlRequest<ResultOf<X>>(localGraphEndpoint, gql)
+    return graphqlRequest(graphEndPoint, gql)
   }
 }
