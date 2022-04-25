@@ -2,7 +2,7 @@ import Page from '@app/common/components/page'
 import { GetStaticPathsResult } from 'next'
 import Link from 'next/link'
 import gql from '@app/graphql/tag'
-import { GetBookSlugsDocument, GetBookBySlugDocument } from './_gql_/[slug]'
+import { GetPartialBooksDocument, GetBookBySlugDocument } from './_gql_/[slug]'
 import BookCover from '@app/common/components/books'
 import localRequest from '@app/lib/graphql/localRequest'
 import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
@@ -13,14 +13,16 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 interface BookPageStaticParams {
   params: {
     slug: string
+    read_order: string
   }
 }
 
-const booksSlugQuery = gql<
-  typeof GetBookSlugsDocument
->(`query GetBookSlugs($take: Int, $skip: Int) {
-  books(take: $take, skip: $skip) {
+const partialBooksQuery = gql<
+  typeof GetPartialBooksDocument
+>(`query GetPartialBooks($take: Int, $after: String) {
+  books(take: $take, after: $after) {
     slug
+    read_order
   }
 }`)
 
@@ -55,6 +57,7 @@ const bookQuery = gql<typeof GetBookBySlugDocument>(`query GetBookBySlug($slug: 
 }`)
 
 type Book = ExtractResultFieldTypeFor<typeof bookQuery, 'book'>
+type PartialBook = ExtractResultFieldTypeFor<typeof partialBooksQuery, 'books'>
 
 interface BookPageProps {
   book: Book
@@ -120,7 +123,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
           }}
         >
           <Box>
-            <BookCover backgroundImageUrl={`${config.HOST_PUBLIC}/images/covers/${book.slug}.jpg`}>
+            <BookCover backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}>
               <VisuallyHidden>{book.title}</VisuallyHidden>
             </BookCover>
             <Text as="p" css={{ textAlign: 'center', marginTop: 15 }}>
@@ -175,30 +178,28 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
   )
 }
 
-async function getBooksForPage(take: number, page: number): Promise<string[]> {
+async function getBooksForPage(take: number, after?: string): Promise<PartialBook[]> {
   const response = await localRequest().query({
-    query: booksSlugQuery,
-    variables: { take, skip: page * take },
+    query: partialBooksQuery,
+    variables: { take, after },
   })
-  const slugs = response.data.books?.map((book) => book?.slug) || []
-  return slugs.filter(Boolean) as string[]
+  const books = response.data.books?.filter(Boolean) || []
+  const partialBooks = books.map((book) => ({ slug: book.slug, read_order: book.read_order }))
+
+  return partialBooks
 }
 
 async function getAllBookSlugs(): Promise<string[]> {
   const take = 100
   const slugs: string[] = []
-  let getMoreBooks = true
-  let page = 0
 
-  while (getMoreBooks) {
-    const pageSlugs = await getBooksForPage(take, page)
+  let partialBooks = await getBooksForPage(take)
+  slugs.push(...partialBooks.map((book) => book.slug))
 
-    if (pageSlugs.length) {
-      slugs.push(...pageSlugs)
-    }
-
-    page += 1
-    getMoreBooks = pageSlugs.length === take
+  while (partialBooks.length === take) {
+    const lastBook = partialBooks[partialBooks.length - 1].read_order
+    partialBooks = await getBooksForPage(take, lastBook)
+    slugs.push(...partialBooks.map((book) => book.slug))
   }
 
   return slugs

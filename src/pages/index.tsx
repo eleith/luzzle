@@ -62,7 +62,7 @@ function makeBookCardLink(book: Book): JSX.Element {
   return (
     <Link href={`/books/${book.slug}`} key={book.id}>
       <a>
-        <BookCover backgroundImageUrl={`${config.HOST_PUBLIC}/images/covers/${book.slug}.jpg`}>
+        <BookCover backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}>
           <VisuallyHidden>{book.title}</VisuallyHidden>
         </BookCover>
       </a>
