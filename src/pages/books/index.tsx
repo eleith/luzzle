@@ -97,7 +97,7 @@ function makeHighlightedBookPanel(book: Book, onClose: MouseEventHandler): JSX.E
         <br />
         <Text>isbn: {book.isbn}</Text>
         <br />
-        <Text>published: {book.year_first_published}</Text>
+        <Text>published: {book.yearFirstPublished}</Text>
         <br />
         <Text>pages: {book.pages}</Text>
       </Box>
