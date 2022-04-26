@@ -8,7 +8,7 @@ import config from '@app/common/config'
 import { Box } from '@app/common/components/ui/Box'
 import { Container } from '@app/common/components/ui/Container'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
-import { Text } from '@app/common/components/ui'
+import { Grid, Text } from '@app/common/components/ui'
 import useGraphSWRInfinite from '@app/common/hooks/useGraphSWRInfinite'
 import { MouseEvent, MouseEventHandler, useState } from 'react'
 import { Flex } from '@app/common/components/ui/Flex'
@@ -38,7 +38,7 @@ const TAKE = 50
 
 function makeBookCardLink(book: Book, onClick: MouseEventHandler): JSX.Element {
   return (
-    <Box key={book.id} onClick={onClick} data-id={book.id}>
+    <Box key={book.id} onClick={onClick} data-id={book.id} css={{ cursor: 'pointer' }}>
       <BookCover
         backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}
         width={100}
@@ -71,7 +71,7 @@ function makeHighlightedBookPanel(book: Book, onClose: MouseEventHandler): JSX.E
         },
       }}
     >
-      <Flex css={{ justifyContent: 'flex-end' }}>
+      <Flex css={{ justifyContent: 'flex-end', cursor: 'pointer' }}>
         <Cross1Icon onClick={onClose} />
       </Flex>
       <Box css={{ marginTop: '25px' }}>
@@ -179,16 +179,18 @@ export default function Home({ books }: BooksProps): JSX.Element {
   return (
     <Page meta={{ title: '' }}>
       <Container css={{ paddingBottom: '20px' }}>
-        <Flex
-          wrap="wrap"
-          justify="start"
+        <Grid
+          justify="center"
           gap="4"
           css={{
+            gridTemplateColumns: 'repeat(auto-fill, 100px)',
             width: '100%',
             margin: 'auto',
             marginTop: '20px',
             marginBottom: '20px',
-            paddingLeft: '20px',
+            '&::last-child': {
+              marginRight: 'auto',
+            },
             '@tablet': {
               paddingRight: highlighted ? '250px' : '0px',
             },
@@ -198,10 +200,12 @@ export default function Home({ books }: BooksProps): JSX.Element {
           }}
         >
           {allBooks}
-        </Flex>
+        </Grid>
         {totalBooks.length === TAKE && (
           <Box css={{ textAlign: 'center' }}>
-            <Button onClick={loadMore}>get more books</Button>
+            <Button size={3} onClick={loadMore}>
+              get more books
+            </Button>
           </Box>
         )}
         {highlighted && makeHighlightedBookPanel(highlighted, closeDetails)}
