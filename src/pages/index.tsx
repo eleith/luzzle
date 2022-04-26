@@ -13,6 +13,7 @@ import { Grid } from '@app/common/components/ui/Grid'
 import { Text } from '@app/common/components/ui/Text'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { ResultOf } from '@graphql-typed-document-node/core'
+import { Button } from '@app/common/components/ui/Button'
 
 const getBooksQuery = gql<typeof GetBookHomeDocument>(
   `query GetBookHome($take: Int) {
@@ -81,7 +82,6 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
             width: '100%',
             margin: 'auto',
             marginTop: '20px',
-            gridTemplateRows: '1fr',
             gridTemplateColumns: '1fr',
             gridAutoFlow: 'row',
             justifyItems: 'center',
@@ -92,7 +92,6 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
               width: '100%',
               margin: 'auto',
               marginTop: '250px',
-              gridTemplateRows: '1fr 1fr',
               gridTemplateColumns: '1fr 1fr 1fr',
               gridAutoFlow: 'column',
               justifyItems: 'center',
@@ -104,7 +103,6 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
               width: '70%',
               margin: 'auto',
               marginTop: '250px',
-              gridTemplateRows: '1fr 1fr',
               gridTemplateColumns: '1fr 1fr 1fr',
               gridAutoFlow: 'column',
               justifyItems: 'center',
@@ -114,19 +112,26 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
             },
           }}
         >
-          <Box>{bookCardLatest}</Box>
           <Box>
+            {bookCardLatest}
             <Text as="h1">last read</Text>
           </Box>
-          <Box>{bookCardLater}</Box>
           <Box>
+            {bookCardLater}
             <Text as="h1">previously read</Text>
           </Box>
-          <Box>{bookCardRandom}</Box>
           <Box>
+            {bookCardRandom}
             <Text as="h1">random read</Text>
           </Box>
         </Grid>
+        <Box css={{ textAlign: 'center', marginTop: '40px' }}>
+          <Link href="/books">
+            <a>
+              <Button size={3}>all reads</Button>
+            </a>
+          </Link>
+        </Box>
       </Container>
     </Page>
   )

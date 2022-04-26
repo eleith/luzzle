@@ -40,6 +40,7 @@ function getBookContainerStyles(
     alignItems: 'center',
     justifyContent: 'center',
     perspective: 'var(--book-perspective)',
+    marginBottom: '20px',
   }
 
   // disable animation on load
