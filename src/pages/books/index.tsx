@@ -127,7 +127,7 @@ export default function Home({ books }: BooksProps): JSX.Element {
         const lastBook = lastData?.[TAKE - 1]
         return {
           gql: getBooksQuery,
-          variables: { take: TAKE, after: lastBook.read_order },
+          variables: { take: TAKE, after: lastBook.readOrder },
         }
       } else {
         return null
