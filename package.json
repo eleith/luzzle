@@ -4,13 +4,13 @@
     "build": "next build",
     "start": "next start",
     "build:prisma": "prisma generate",
-    "codegen": "VERBOSE=1 DEBUG=1 NODE_OPTIONS='--loader ts-node/esm -r tsconfig-paths/register --experimental-specifier-resolution=node' graphql-codegen",
+    "build:graphql": "VERBOSE=1 DEBUG=1 NODE_OPTIONS='--loader ts-node/esm -r tsconfig-paths/register --experimental-specifier-resolution=node' graphql-codegen",
     "lint": "next lint",
     "build:manager": "esbuild tools/manage.ts --platform=node --target=node16 --sourcemap --bundle --outfile=build/manager.js --external:sharp --external:generated",
     "manage": "node --enable-source-maps build/manager.js",
     "test": "vitest run --coverage",
-    "prebuild": "npm run build:prisma && npm run codegen",
-    "predev": "npm run build:prisma && npm run codegen"
+    "prebuild": "npm run build:prisma && npm run build:graphql",
+    "predev": "npm run build:prisma && npm run build:graphql"
   },
   "devDependencies": {
     "@fast-csv/format": "^4.3.5",

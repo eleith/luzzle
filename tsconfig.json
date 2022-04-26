@@ -22,12 +22,6 @@
     "outDir": "build",
     "baseUrl": ".",
     "paths": {
-      "@app/nexus": [
-        "generated/nexus-typegen"
-      ],
-      "@app/gql": [
-        "generated/gql"
-      ],
       "@app/prisma": [
         "generated/prisma/client"
       ],
