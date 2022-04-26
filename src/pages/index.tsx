@@ -1,10 +1,10 @@
 import BookCover from '@app/common/components/books'
 import Page from '@app/common/components/page'
+import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import useGraphSWR from '@app/common/hooks/useGraphSWR'
 import gql from '@app/graphql/tag'
 import { GetBookHomeDocument, GetRandomBookDocument } from './_gql_/index'
-import localRequest from '@app/lib/graphql/localRequest'
-import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
+import staticClient from '@app/common/graphql/staticClient'
 import Link from 'next/link'
 import config from '@app/common/config'
 import { Box } from '@app/common/components/ui/Box'
@@ -12,46 +12,27 @@ import { Container } from '@app/common/components/ui/Container'
 import { Grid } from '@app/common/components/ui/Grid'
 import { Text } from '@app/common/components/ui/Text'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { ResultOf } from '@graphql-typed-document-node/core'
 
-const getBooksQuery = gql<typeof GetBookHomeDocument>(`query GetBookHome($take: Int) {
+const getBooksQuery = gql<typeof GetBookHomeDocument>(
+  `query GetBookHome($take: Int) {
   books(take: $take) {
-    id
-    slug
-    cover_width
-    cover_height
-    title
-    coauthors
-    description
-    author
-    isbn
-    subtitle
-    year_first_published
-    pages
-    year_read
-    month_read
+    ...BookFullDetails
   }
-}`)
+}`,
+  bookFragment
+)
 
-const getRandomBookQuery = gql<typeof GetRandomBookDocument>(`query GetRandomBook {
+const getRandomBookQuery = gql<typeof GetRandomBookDocument>(
+  `query GetRandomBook {
   book {
-    id
-    slug
-    cover_width
-    cover_height
-    title
-    coauthors
-    description
-    author
-    isbn
-    subtitle
-    year_first_published
-    pages
-    year_read
-    month_read
+    ...BookFullDetails
   }
-}`)
+}`,
+  bookFragment
+)
 
-type Book = ExtractResultFieldTypeFor<typeof getBooksQuery, 'books'>
+type Book = NonNullable<ResultOf<typeof getBooksQuery>['books']>[number]
 
 type HomePageProps = {
   book1: Book
@@ -71,7 +52,7 @@ function makeBookCardLink(book: Book): JSX.Element {
 }
 
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
-  const response = await localRequest().query({ query: getBooksQuery, variables: { take: 2 } })
+  const response = await staticClient.query({ query: getBooksQuery, variables: { take: 2 } })
   const books = response.data?.books
   const nonExistantBook = { title: 'a title', id: 'add-more-books' } as Book
 

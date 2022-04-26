@@ -1,5 +1,5 @@
 import { ApolloServer } from 'apollo-server-micro'
-import { schema } from '@app/lib/graphql/schema'
+import schema from '@app/common/graphql/schema'
 import { createContext } from '@app/lib/graphql/context'
 import {
   ApolloServerPluginLandingPageDisabled,

@@ -1,14 +1,15 @@
 import Page from '@app/common/components/page'
+import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import { GetStaticPathsResult } from 'next'
 import Link from 'next/link'
 import gql from '@app/graphql/tag'
 import { GetPartialBooksDocument, GetBookBySlugDocument } from './_gql_/[slug]'
 import BookCover from '@app/common/components/books'
-import localRequest from '@app/lib/graphql/localRequest'
-import { ExtractResultFieldTypeFor } from '@app/lib/graphql/types'
+import staticClient from '@app/common/graphql/staticClient'
 import config from '@app/common/config'
 import { Box, Text, Container, Grid } from '@app/common/components/ui'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { ResultOf } from '@graphql-typed-document-node/core'
 
 interface BookPageStaticParams {
   params: {
@@ -26,25 +27,10 @@ const partialBooksQuery = gql<
   }
 }`)
 
-const bookQuery = gql<typeof GetBookBySlugDocument>(`query GetBookBySlug($slug: String!) {
+const bookQuery = gql<typeof GetBookBySlugDocument>(
+  `query GetBookBySlug($slug: String!) {
   book(slug: $slug) {
-    slug
-    id
-    cover_width
-    cover_height
-    title
-    coauthors
-    description
-    author
-    isbn
-    subtitle
-    year_first_published
-    pages
-    id_ol_work
-    id_ol_book
-    isbn
-    year_read 
-    month_read 
+    ...BookFullDetails,
     siblings {
       previous {
         slug
@@ -54,10 +40,12 @@ const bookQuery = gql<typeof GetBookBySlugDocument>(`query GetBookBySlug($slug: 
       }
     }
   }
-}`)
+}`,
+  bookFragment
+)
 
-type Book = ExtractResultFieldTypeFor<typeof bookQuery, 'book'>
-type PartialBook = ExtractResultFieldTypeFor<typeof partialBooksQuery, 'books'>
+type Book = NonNullable<ResultOf<typeof bookQuery>['book']>
+type PartialBook = NonNullable<ResultOf<typeof partialBooksQuery>['books']>[number]
 
 interface BookPageProps {
   book: Book
@@ -66,7 +54,7 @@ interface BookPageProps {
 export async function getStaticProps({
   params,
 }: BookPageStaticParams): Promise<{ props: BookPageProps }> {
-  const response = await localRequest().query({
+  const response = await staticClient.query({
     query: bookQuery,
     variables: { slug: params.slug },
   })
@@ -179,7 +167,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 }
 
 async function getBooksForPage(take: number, after?: string): Promise<PartialBook[]> {
-  const response = await localRequest().query({
+  const response = await staticClient.query({
     query: partialBooksQuery,
     variables: { take, after },
   })

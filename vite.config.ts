@@ -26,8 +26,6 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@app/gql': path.resolve(__dirname, 'generated/gql'),
-      '@app/nexus': path.resolve(__dirname, 'generated/nexus-typegen'),
       '@app/graphql': path.resolve(__dirname, 'src/lib/graphql/*'),
       '@app/prisma': path.resolve(__dirname, 'generated/prisma/client'),
       '@app/lib/*': path.resolve(__dirname, 'src/lib/*'),

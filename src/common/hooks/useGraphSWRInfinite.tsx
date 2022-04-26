@@ -2,6 +2,9 @@ import useSWRInfinite, { SWRInfiniteResponse, SWRInfiniteConfiguration } from 's
 import { ResultOf, VariablesOf } from '@graphql-typed-document-node/core'
 import { DocumentNode } from 'graphql'
 import fetch from '@app/graphql/request'
+import config from '@app/common/config'
+
+const graphEndPoint = `${config.HOST}${config.GRAPHQL_ENDPOINT}`
 
 type SWRInfiniteGetKey<X> = (
   index: number,
@@ -12,7 +15,7 @@ async function fetcher<X extends DocumentNode>(
   gql: X,
   variables?: VariablesOf<X>
 ): Promise<ResultOf<X>> {
-  return fetch(gql, variables)
+  return fetch(graphEndPoint, gql, variables)
 }
 
 export default function useGraphSWRInfinite<X extends DocumentNode, E extends Error>(
@@ -31,5 +34,9 @@ export default function useGraphSWRInfinite<X extends DocumentNode, E extends Er
       return null
     }
   }
-  return useSWRInfinite<ResultOf<X>, E>(getKey, fetcher as (gql: X, variables?: VariablesOf<X>) => Promise<ResultOf<X>>, options)
+  return useSWRInfinite<ResultOf<X>, E>(
+    getKey,
+    fetcher as (gql: X, variables?: VariablesOf<X>) => Promise<ResultOf<X>>,
+    options
+  )
 }

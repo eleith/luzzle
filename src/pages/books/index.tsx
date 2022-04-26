@@ -1,9 +1,9 @@
 import BookCover from '@app/common/components/books'
 import Page from '@app/common/components/page'
 import gql from '@app/graphql/tag'
-import bookFragment from '@app/graphql/book/fragments/bookFullDetails'
+import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import { GetBooksDocument } from './_gql_/index'
-import localRequest from '@app/lib/graphql/localRequest'
+import staticClient from '@app/common/graphql/staticClient'
 import config from '@app/common/config'
 import { Box } from '@app/common/components/ui/Box'
 import { Container } from '@app/common/components/ui/Container'
@@ -105,7 +105,7 @@ function makeHighlightedBookPanel(book: Book, onClose: MouseEventHandler): JSX.E
 }
 
 export async function getStaticProps(): Promise<{ props: BooksProps }> {
-  const response = await localRequest().query({ query: getBooksQuery, variables: { take: TAKE } })
+  const response = await staticClient.query({ query: getBooksQuery, variables: { take: TAKE } })
   const books = response.data?.books
 
   return {
