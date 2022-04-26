@@ -14,7 +14,7 @@ import { ResultOf } from '@graphql-typed-document-node/core'
 interface BookPageStaticParams {
   params: {
     slug: string
-    read_order: string
+    readOrder: string
   }
 }
 
@@ -23,7 +23,7 @@ const partialBooksQuery = gql<
 >(`query GetPartialBooks($take: Int, $after: String) {
   books(take: $take, after: $after) {
     slug
-    read_order
+    readOrder
   }
 }`)
 
@@ -115,7 +115,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
               <VisuallyHidden>{book.title}</VisuallyHidden>
             </BookCover>
             <Text as="p" css={{ textAlign: 'center', marginTop: 15 }}>
-              read on {book.month_read}/{book.year_read}
+              read on {book.monthRead}/{book.yearRead}
             </Text>
           </Box>
           <Box
@@ -139,10 +139,10 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
             <br />
             <br />
             <Text>
-              isbn: <a href={`https://openlibrary.org/works/${book.id_ol_work}`}>{book.isbn}</a>
+              isbn: <a href={`https://openlibrary.org/works/${book.idOlWork}`}>{book.isbn}</a>
             </Text>
             <br />
-            <Text>published: {book.year_first_published}</Text>
+            <Text>published: {book.yearFirstPublished}</Text>
             <br />
             <Text>pages: {book.pages}</Text>
             {book.siblings?.previous && (
@@ -172,7 +172,7 @@ async function getBooksForPage(take: number, after?: string): Promise<PartialBoo
     variables: { take, after },
   })
   const books = response.data.books?.filter(Boolean) || []
-  const partialBooks = books.map((book) => ({ slug: book.slug, read_order: book.read_order }))
+  const partialBooks = books.map((book) => ({ slug: book.slug, readOrder: book.readOrder }))
 
   return partialBooks
 }
@@ -185,7 +185,7 @@ async function getAllBookSlugs(): Promise<string[]> {
   slugs.push(...partialBooks.map((book) => book.slug))
 
   while (partialBooks.length === take) {
-    const lastBook = partialBooks[partialBooks.length - 1].read_order
+    const lastBook = partialBooks[partialBooks.length - 1].readOrder
     partialBooks = await getBooksForPage(take, lastBook)
     slugs.push(...partialBooks.map((book) => book.slug))
   }
