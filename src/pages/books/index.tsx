@@ -15,6 +15,7 @@ import { Flex } from '@app/common/components/ui/Flex'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import { Cross1Icon } from '@radix-ui/react-icons'
 import Link from 'next/link'
+import { Button } from '@app/common/components/ui/Button'
 
 const getBooksQuery = gql<typeof GetBooksDocument>(
   `query GetBooks($take: Int, $after: String) {
@@ -116,7 +117,7 @@ export async function getStaticProps(): Promise<{ props: BooksProps }> {
 }
 
 export default function Home({ books }: BooksProps): JSX.Element {
-  const totalBooks: Book[] = []
+  // const totalBooks: Book[] = []
   const [shouldFetch, setFetch] = useState(false)
   const [highlighted, setHighlightFor] = useState<Book | null>(null)
   const { data, size, setSize } = useGraphSWRInfinite(
@@ -138,11 +139,16 @@ export default function Home({ books }: BooksProps): JSX.Element {
     }
   )
 
-  totalBooks.push(...books)
+  // until react-virtual supports window in v3
+  const totalBooks: Book[] = []
 
   if (data) {
-    const pages = data.reduce((total, query) => [...total, ...(query.books || [])], [] as Book[])
+    // const pages = data.reduce((total, query) => [...total, ...(query.books || [])], [] as Book[])
+    const pages = data[data.length - 1].books || []
     totalBooks.push(...pages)
+    window.scrollTo({ top: 0 })
+  } else {
+    totalBooks.push(...books)
   }
 
   function loadMore(): void {
@@ -172,16 +178,17 @@ export default function Home({ books }: BooksProps): JSX.Element {
 
   return (
     <Page meta={{ title: '' }}>
-      <Container>
+      <Container css={{ paddingBottom: '20px' }}>
         <Flex
           wrap="wrap"
-          justify="center"
+          justify="start"
           gap="4"
           css={{
             width: '100%',
             margin: 'auto',
             marginTop: '20px',
-            gap: '20px',
+            marginBottom: '20px',
+            paddingLeft: '20px',
             '@tablet': {
               paddingRight: highlighted ? '250px' : '0px',
             },
@@ -191,8 +198,12 @@ export default function Home({ books }: BooksProps): JSX.Element {
           }}
         >
           {allBooks}
-          <Text onClick={loadMore}>load moar current: {size}</Text>
         </Flex>
+        {totalBooks.length === TAKE && (
+          <Box css={{ textAlign: 'center' }}>
+            <Button onClick={loadMore}>get more books</Button>
+          </Box>
+        )}
         {highlighted && makeHighlightedBookPanel(highlighted, closeDetails)}
       </Container>
     </Page>
