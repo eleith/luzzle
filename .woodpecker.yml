@@ -57,7 +57,7 @@ pipeline:
       - gsutil -m rsync -d -r prisma/data gs://eleith-io-site-data/main
       - gcloud builds submit --gcs-source-staging-dir $STAGING_DIR --gcs-log-dir $LOG_DIR --tag $GCR_IMAGE --project=$GCS_PROJECT
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
-    secrets: [ cloud_run_service_key_json, nextjs_env_host, nextjs_env_public_host_static ]
+    secrets: [ cloud_run_service_key_json, nextjs_env_host, nextjs_env_public_host_static, nextjs_env_image_domain ]
     when:
       branch: main
   notify:
