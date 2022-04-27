@@ -230,6 +230,7 @@ function BookCover({
     <Box css={isLoading ? styles.bookCoverLoading : styles.bookCover}>
       {hasBackgroundImage && (
         <Image
+          loader={({ src }) => src}
           src={backgroundImageUrl}
           width={width}
           height={height}
