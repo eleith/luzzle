@@ -51,6 +51,22 @@ interface BookPageProps {
   book: Book
 }
 
+function makeBookCover(book: Book): JSX.Element {
+  if (book.coverWidth) {
+    return (
+      <BookCover backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}>
+        <VisuallyHidden>{book.title}</VisuallyHidden>
+      </BookCover>
+    )
+  } else {
+    return (
+      <BookCover>
+        <VisuallyHidden>{book.title}</VisuallyHidden>
+      </BookCover>
+    )
+  }
+}
+
 export async function getStaticProps({
   params,
 }: BookPageStaticParams): Promise<{ props: BookPageProps }> {
@@ -111,9 +127,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
           }}
         >
           <Box>
-            <BookCover backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}>
-              <VisuallyHidden>{book.title}</VisuallyHidden>
-            </BookCover>
+            {makeBookCover(book)}
             <Text as="p" css={{ textAlign: 'center', marginTop: 15 }}>
               read on {book.monthRead}/{book.yearRead}
             </Text>

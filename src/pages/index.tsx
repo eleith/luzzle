@@ -40,16 +40,36 @@ type HomePageProps = {
   book2: Book
 }
 
-function makeBookCardLink(book: Book): JSX.Element {
-  return (
-    <Link href={`/books/${book.slug}`} key={book.id}>
-      <a>
-        <BookCover backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}>
-          <VisuallyHidden>{book.title}</VisuallyHidden>
-        </BookCover>
-      </a>
-    </Link>
-  )
+function makeBookCardLink(book?: Book): JSX.Element {
+  if (book) {
+    if (book.coverWidth) {
+      return (
+        <Link href={`/books/${book.slug}`} key={book.id}>
+          <a>
+            <BookCover backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}>
+              <VisuallyHidden>{book.title}</VisuallyHidden>
+            </BookCover>
+          </a>
+        </Link>
+      )
+    } else {
+      return (
+        <Link href={`/books/${book.slug}`} key={book.id}>
+          <a>
+            <BookCover>
+              <VisuallyHidden>{book.title}</VisuallyHidden>
+            </BookCover>
+          </a>
+        </Link>
+      )
+    }
+  } else {
+    return (
+      <BookCover loading>
+        <VisuallyHidden>loading a book</VisuallyHidden>
+      </BookCover>
+    )
+  }
 }
 
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
@@ -70,7 +90,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
     revalidateOnFocus: false,
   })
   const book = data?.book
-  const bookCardRandom = (book && makeBookCardLink(book)) || <div />
+  const bookCardRandom = book ? makeBookCardLink(book) : makeBookCardLink()
   const bookCardLatest = makeBookCardLink(book1)
   const bookCardLater = makeBookCardLink(book2)
 
