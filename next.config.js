@@ -1,5 +1,3 @@
-const process = require('process')
-
 module.exports = {
   reactStrictMode: true,
   poweredByHeader: false,
