@@ -1,4 +1,4 @@
-import BookCover from '@app/common/components/books'
+import { BookCover, BookCoverFor } from '@app/common/components/books'
 import Page from '@app/common/components/page'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import useGraphSWR from '@app/common/hooks/useGraphSWR'
@@ -6,7 +6,6 @@ import gql from '@app/graphql/tag'
 import { GetBookHomeDocument, GetRandomBookDocument } from './_gql_/index'
 import staticClient from '@app/common/graphql/staticClient'
 import Link from 'next/link'
-import config from '@app/common/config'
 import { Box } from '@app/common/components/ui/Box'
 import { Container } from '@app/common/components/ui/Container'
 import { Grid } from '@app/common/components/ui/Grid'
@@ -42,30 +41,10 @@ type HomePageProps = {
 
 function makeBookCardLink(book?: Book): JSX.Element {
   if (book) {
-    if (book.coverWidth) {
-      return (
-        <Link href={`/books/${book.slug}`} key={book.id}>
-          <a>
-            <BookCover backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}>
-              <VisuallyHidden>{book.title}</VisuallyHidden>
-            </BookCover>
-          </a>
-        </Link>
-      )
-    } else {
-      return (
-        <Link href={`/books/${book.slug}`} key={book.id}>
-          <a>
-            <BookCover>
-              <VisuallyHidden>{book.title}</VisuallyHidden>
-            </BookCover>
-          </a>
-        </Link>
-      )
-    }
+    return <BookCoverFor book={book} asLink hasCover={!!book.coverWidth} />
   } else {
     return (
-      <BookCover loading>
+      <BookCover>
         <VisuallyHidden>loading a book</VisuallyHidden>
       </BookCover>
     )

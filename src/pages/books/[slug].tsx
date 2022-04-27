@@ -4,11 +4,9 @@ import { GetStaticPathsResult } from 'next'
 import Link from 'next/link'
 import gql from '@app/graphql/tag'
 import { GetPartialBooksDocument, GetBookBySlugDocument } from './_gql_/[slug]'
-import BookCover from '@app/common/components/books'
+import { BookCoverFor } from '@app/common/components/books'
 import staticClient from '@app/common/graphql/staticClient'
-import config from '@app/common/config'
 import { Box, Text, Container, Grid } from '@app/common/components/ui'
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { ResultOf } from '@graphql-typed-document-node/core'
 
 interface BookPageStaticParams {
@@ -49,22 +47,6 @@ type PartialBook = NonNullable<ResultOf<typeof partialBooksQuery>['books']>[numb
 
 interface BookPageProps {
   book: Book
-}
-
-function makeBookCover(book: Book): JSX.Element {
-  if (book.coverWidth) {
-    return (
-      <BookCover backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}>
-        <VisuallyHidden>{book.title}</VisuallyHidden>
-      </BookCover>
-    )
-  } else {
-    return (
-      <BookCover>
-        <VisuallyHidden>{book.title}</VisuallyHidden>
-      </BookCover>
-    )
-  }
 }
 
 export async function getStaticProps({
@@ -127,7 +109,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
           }}
         >
           <Box>
-            {makeBookCover(book)}
+            <BookCoverFor book={book} hasCover={!!book.coverWidth} />
             <Text as="p" css={{ textAlign: 'center', marginTop: 15 }}>
               read on {book.monthRead}/{book.yearRead}
             </Text>

@@ -1,13 +1,11 @@
-import BookCover from '@app/common/components/books'
+import { BookCoverFor } from '@app/common/components/books'
 import Page from '@app/common/components/page'
 import gql from '@app/graphql/tag'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import { GetBooksDocument } from './_gql_/index'
 import staticClient from '@app/common/graphql/staticClient'
-import config from '@app/common/config'
 import { Box } from '@app/common/components/ui/Box'
 import { Container } from '@app/common/components/ui/Container'
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { Grid, Text } from '@app/common/components/ui'
 import useGraphSWRInfinite from '@app/common/hooks/useGraphSWRInfinite'
 import { MouseEvent, MouseEventHandler, useState } from 'react'
@@ -37,28 +35,17 @@ type BooksProps = {
 const TAKE = 50
 
 function makeBookCardLink(book: Book, onClick: MouseEventHandler): JSX.Element {
-  if (book.coverWidth) {
-    return (
-      <Box key={book.id} onClick={onClick} data-id={book.id} css={{ cursor: 'pointer' }}>
-        <BookCover
-          backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}
-          width={100}
-          height={150}
-          thickness={20}
-        >
-          <VisuallyHidden>{book.title}</VisuallyHidden>
-        </BookCover>
-      </Box>
-    )
-  } else {
-    return (
-      <Box key={book.id} onClick={onClick} data-id={book.id} css={{ cursor: 'pointer' }}>
-        <BookCover width={100} height={150} thickness={20}>
-          <VisuallyHidden>{book.title}</VisuallyHidden>
-        </BookCover>
-      </Box>
-    )
-  }
+  return (
+    <Box key={book.id} onClick={onClick} data-id={book.id} css={{ cursor: 'pointer' }}>
+      <BookCoverFor
+        book={book}
+        hasCover={!!book.coverWidth}
+        width={100}
+        height={150}
+        thickness={20}
+      />
+    </Box>
+  )
 }
 
 function makeHighlightedBookPanel(book: Book, onClose: MouseEventHandler): JSX.Element {
@@ -85,9 +72,7 @@ function makeHighlightedBookPanel(book: Book, onClose: MouseEventHandler): JSX.E
         <Cross1Icon onClick={onClose} />
       </Flex>
       <Box css={{ marginTop: '25px' }}>
-        <BookCover backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}>
-          <VisuallyHidden>{book.title}</VisuallyHidden>
-        </BookCover>
+        <BookCoverFor book={book} hasCover={!!book.coverWidth} />
       </Box>
       <Box css={{ marginTop: '25px' }}>
         <Text as="h1">
