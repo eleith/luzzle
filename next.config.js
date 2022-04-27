@@ -1,3 +1,5 @@
+const process = require('process')
+
 module.exports = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -13,6 +15,6 @@ module.exports = {
     ignoreDuringBuilds: true,
   },
   images: {
-      domains: ['localhost']
-  }
+    domains: [process.env.IMAGE_DOMAIN],
+  },
 }
