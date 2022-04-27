@@ -37,18 +37,28 @@ type BooksProps = {
 const TAKE = 50
 
 function makeBookCardLink(book: Book, onClick: MouseEventHandler): JSX.Element {
-  return (
-    <Box key={book.id} onClick={onClick} data-id={book.id} css={{ cursor: 'pointer' }}>
-      <BookCover
-        backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}
-        width={100}
-        height={150}
-        thickness={20}
-      >
-        <VisuallyHidden>{book.title}</VisuallyHidden>
-      </BookCover>
-    </Box>
-  )
+  if (book.coverWidth) {
+    return (
+      <Box key={book.id} onClick={onClick} data-id={book.id} css={{ cursor: 'pointer' }}>
+        <BookCover
+          backgroundImageUrl={`${config.HOST_STATIC}/images/covers/${book.slug}.jpg`}
+          width={100}
+          height={150}
+          thickness={20}
+        >
+          <VisuallyHidden>{book.title}</VisuallyHidden>
+        </BookCover>
+      </Box>
+    )
+  } else {
+    return (
+      <Box key={book.id} onClick={onClick} data-id={book.id} css={{ cursor: 'pointer' }}>
+        <BookCover width={100} height={150} thickness={20}>
+          <VisuallyHidden>{book.title}</VisuallyHidden>
+        </BookCover>
+      </Box>
+    )
+  }
 }
 
 function makeHighlightedBookPanel(book: Book, onClose: MouseEventHandler): JSX.Element {

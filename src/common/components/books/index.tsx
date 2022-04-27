@@ -1,4 +1,7 @@
+import { keyframes } from '@app/lib/ui/stitches.config'
 import { CSS } from '@stitches/react'
+import Image from 'next/image'
+import { useState } from 'react'
 import { Box } from '../ui/Box'
 
 function getBookContainerStyles(
@@ -13,9 +16,8 @@ function getBookContainerStyles(
   shadowColor: string,
   radius: number,
   pagesOffset: number,
-  transitionDuration: number,
-  backgroundImageUrl?: string
-): CSS {
+  transitionDuration: number
+): { container: CSS; book: CSS; bookInner: CSS; bookCover: CSS; bookCoverLoading: CSS } {
   /* note: css var do not inherit by psueodo elements */
   const bookCssVariables: CSS = {
     '--book-width': `${width}px`,
@@ -43,12 +45,18 @@ function getBookContainerStyles(
     marginBottom: '20px',
   }
 
-  // disable animation on load
-  //
-  // const bookRotateAnimation = keyframes({
-  //   '0%': { transform: `rotateY(${rotateHover}deg)` },
-  //   '100%': { transform: `rotateY(${rotate}deg)` },
-  // })
+  const pulse = keyframes({
+    '0%': { backgroundColor: '#494949' },
+    '100%': { backgroundColor: 'var(--book-color)' },
+  })
+
+  const pulseAnimation: CSS = {
+    animationName: `${pulse}`,
+    animationDuration: '500ms',
+    animationDirection: 'alternate',
+    animationIterationCount: 'infinite',
+    animationTimingFunction: 'ease-in-out',
+  }
 
   const bookStyles: CSS = {
     width: 'var(--book-width)',
@@ -58,22 +66,18 @@ function getBookContainerStyles(
     transformStyle: 'preserve-3d',
     transform: `rotateY(var(--book-rotate))`,
     transition: `transform var(--book-transition-duration) ease`,
-    // animation: `1s ease 0s 1 ${bookRotateAnimation}`,
     '&:hover': {
       transform: `rotateY(var(--book-rotate-hover))`,
     },
   }
 
-  const bookChildStyles: CSS = {
+  const bookInnerStyles: CSS = {
     position: 'absolute',
     top: '0',
     left: '0',
     width: 'var(--book-width)',
     height: 'var(--book-height)',
     transform: `translateZ(calc(var(--book-thickness) / 2))`,
-    backgroundColor: 'var(--book-color)',
-    ...(backgroundImageUrl && { backgroundImage: `url('${backgroundImageUrl}')` }),
-    backgroundSize: 'cover',
     borderTopLeftRadius: '0',
     borderTopRightRadius: 'var(--book-border-radius)',
     borderBottomRightRadius: 'var(--book-border-radius)',
@@ -83,6 +87,7 @@ function getBookContainerStyles(
 
   const bookBeforeStyles: CSS = {
     position: 'absolute',
+    content: '""',
     left: 0,
     top: 'var(--book-page-offset)',
     width: 'calc(var(--book-thickness) - 2px)',
@@ -115,6 +120,7 @@ function getBookContainerStyles(
 
   const bookAfterStyles: CSS = {
     position: 'absolute',
+    content: '""',
     top: 0,
     left: 0,
     width: 'var(--book-width)',
@@ -128,20 +134,42 @@ function getBookContainerStyles(
     boxShadow: '-10px 0 50px 10px var(--book-shadow-color)',
   }
 
+  const bookCoverStyles: CSS = {
+    position: 'absolute',
+    top: '0px',
+    left: '0px',
+    bottom: '0px',
+    right: '0px',
+    background: 'var(--book-color)',
+  }
+
+  const bookCoverLoadingStyles: CSS = {
+    ...pulseAnimation,
+  }
+
   return {
-    ...bookCssVariables,
-    ...bookContainerStyles,
-    '& > div:nth-of-type(1)': {
+    container: {
+      ...bookCssVariables,
+      ...bookContainerStyles,
+    },
+    book: {
       ...bookStyles,
-      '& > div:nth-of-type(1)': {
+      '&::before': {
         ...bookBeforeStyles,
       },
-      '& > div:nth-of-type(2)': {
-        ...bookChildStyles,
-      },
-      '& > div:nth-of-type(3)': {
+      '&::after': {
         ...bookAfterStyles,
       },
+    },
+    bookInner: {
+      ...bookInnerStyles,
+    },
+    bookCover: {
+      ...bookCoverStyles,
+    },
+    bookCoverLoading: {
+      ...bookCoverStyles,
+      ...bookCoverLoadingStyles,
     },
   }
 }
@@ -161,6 +189,7 @@ type BookProps = {
   height?: number
   pagesOffset?: number
   backgroundImageUrl?: string
+  loading?: boolean
 }
 
 function BookCover({
@@ -178,8 +207,11 @@ function BookCover({
   width = 200,
   height = 300,
   pagesOffset = 3,
+  loading = false,
 }: BookProps): JSX.Element {
-  const coverStyles = getBookContainerStyles(
+  const hasBackgroundImage = !!backgroundImageUrl
+  const [isLoading, setLoading] = useState(hasBackgroundImage || loading)
+  const styles = getBookContainerStyles(
     width,
     height,
     thickness,
@@ -191,16 +223,36 @@ function BookCover({
     shadowColor,
     radius,
     pagesOffset,
-    transitionDuration,
-    backgroundImageUrl
+    transitionDuration
+  )
+
+  const coverImage = (
+    <Box css={isLoading ? styles.bookCoverLoading : styles.bookCover}>
+      {hasBackgroundImage && (
+        <Image
+          src={backgroundImageUrl}
+          width={width}
+          height={height}
+          alt="" // decorative
+          objectFit="fill"
+          onError={() => {
+            setLoading(false)
+          }}
+          onLoadingComplete={() => {
+            setLoading(false)
+          }}
+        />
+      )}
+    </Box>
   )
 
   return (
-    <Box css={coverStyles}>
-      <Box>
-        <div />
-        <div>{children}</div>
-        <div />
+    <Box css={styles.container}>
+      <Box css={styles.book}>
+        <Box css={styles.bookInner}>
+          {children}
+          {coverImage}
+        </Box>
       </Box>
     </Box>
   )
