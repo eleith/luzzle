@@ -33,8 +33,7 @@ ENV NODE_ENV production
 RUN addgroup --gid 1001 --system nodejs
 RUN adduser --system nextjs --uid 1001
 
-# You only need to copy next.config.js if you are NOT using the default configuration
-# COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
