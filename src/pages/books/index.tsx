@@ -34,7 +34,11 @@ type BooksProps = {
 
 const TAKE = 50
 
-function makeBookCardLink(book: Book, onClick: MouseEventHandler, highlighted?: Book | null): JSX.Element {
+function makeBookCardLink(
+  book: Book,
+  onClick: MouseEventHandler,
+  highlighted?: Book | null
+): JSX.Element {
   return (
     <Box
       key={book.id}
