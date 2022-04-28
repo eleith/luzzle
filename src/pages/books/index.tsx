@@ -34,16 +34,19 @@ type BooksProps = {
 
 const TAKE = 50
 
-function makeBookCardLink(book: Book, onClick: MouseEventHandler): JSX.Element {
+function makeBookCardLink(book: Book, onClick: MouseEventHandler, highlighted?: Book): JSX.Element {
   return (
-    <Box key={book.id} onClick={onClick} data-id={book.id} css={{ cursor: 'pointer' }}>
-      <BookCoverFor
-        book={book}
-        hasCover={!!book.coverWidth}
-        width={100}
-        height={150}
-        thickness={20}
-      />
+    <Box
+      key={book.id}
+      onClick={onClick}
+      data-id={book.id}
+      css={{
+        padding: '10px',
+        cursor: 'pointer',
+        border: highlighted?.id === book.id ? 'dotted black 2px' : 'dotted transparent 2px',
+      }}
+    >
+      <BookCoverFor book={book} hasCover={!!book.coverWidth} scale={0.5} />
     </Box>
   )
 }
@@ -61,10 +64,10 @@ function makeHighlightedBookPanel(book: Book, onClose: MouseEventHandler): JSX.E
         right: '0px',
         padding: '15px',
         '@tablet': {
-          width: '250px',
+          width: '300px',
         },
         '@desktop': {
-          width: '250px',
+          width: '300px',
         },
       }}
     >
@@ -72,7 +75,7 @@ function makeHighlightedBookPanel(book: Book, onClose: MouseEventHandler): JSX.E
         <Cross1Icon onClick={onClose} />
       </Flex>
       <Box css={{ marginTop: '25px' }}>
-        <BookCoverFor book={book} hasCover={!!book.coverWidth} />
+        <BookCoverFor book={book} hasCover={!!book.coverWidth} scale={1} />
       </Box>
       <Box css={{ marginTop: '25px' }}>
         <Text as="h1">
@@ -169,7 +172,7 @@ export default function Home({ books }: BooksProps): JSX.Element {
     setHighlightFor(null)
   }
 
-  const allBooks = totalBooks.map((book) => makeBookCardLink(book, loadDetails))
+  const allBooks = totalBooks.map((book) => makeBookCardLink(book, loadDetails, highlighted))
 
   return (
     <Page meta={{ title: '' }}>
@@ -178,7 +181,8 @@ export default function Home({ books }: BooksProps): JSX.Element {
           justify="center"
           gap="4"
           css={{
-            gridTemplateColumns: 'repeat(auto-fill, 100px)',
+            gridTemplateColumns: 'repeat(auto-fill, 140px)',
+            alignItems: 'center',
             width: '100%',
             margin: 'auto',
             marginTop: '20px',

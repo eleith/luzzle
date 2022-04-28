@@ -26,7 +26,6 @@ function getBookContainerStyles(
     '--book-perspective': `${perspective}px`,
     '--book-rotate': `${rotate}deg`,
     '--book-rotate-hover': `${rotateHover}deg`,
-    '--book-color': `${backgroundColor}`,
     '--book-text-color': `${textColor}`,
     '--book-border-radius': `${radius}px`,
     '--book-shadow-color': `${shadowColor}`,
@@ -42,12 +41,11 @@ function getBookContainerStyles(
     alignItems: 'center',
     justifyContent: 'center',
     perspective: 'var(--book-perspective)',
-    marginBottom: '20px',
   }
 
   const pulse = keyframes({
     '0%': { backgroundColor: '#494949' },
-    '100%': { backgroundColor: 'var(--book-color)' },
+    '100%': { backgroundColor },
   })
 
   const pulseAnimation: CSS = {
@@ -126,7 +124,7 @@ function getBookContainerStyles(
     width: 'var(--book-width)',
     height: 'var(--book-height)',
     transform: 'translateZ(var(--book-transform-thickness))',
-    backgroundColor: 'var(--book-color)',
+    backgroundColor,
     borderTopLeftRadius: '0',
     borderTopRightRadius: 'var(--book-border-radius)',
     borderBottomRightRadius: 'var(--book-border-radius)',
@@ -140,7 +138,7 @@ function getBookContainerStyles(
     left: '0px',
     bottom: '0px',
     right: '0px',
-    background: 'var(--book-color)',
+    backgroundColor,
   }
 
   const bookCoverLoadingStyles: CSS = {

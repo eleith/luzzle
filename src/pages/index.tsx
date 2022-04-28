@@ -84,7 +84,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
             gridTemplateColumns: '1fr',
             gridAutoFlow: 'row',
             justifyItems: 'center',
-            alignItems: 'center',
+            alignItems: 'flex-end',
             gap: '20px',
             textAlign: 'center',
             '@tablet': {
@@ -93,8 +93,6 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
               marginTop: '250px',
               gridTemplateColumns: '1fr 1fr 1fr',
               gridAutoFlow: 'column',
-              justifyItems: 'center',
-              alignItems: 'flex-start',
               gap: '20px',
               textAlign: 'center',
             },
@@ -104,8 +102,6 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
               marginTop: '250px',
               gridTemplateColumns: '1fr 1fr 1fr',
               gridAutoFlow: 'column',
-              justifyItems: 'center',
-              alignItems: 'flex-start',
               gap: '20px',
               textAlign: 'center',
             },
@@ -113,15 +109,21 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
         >
           <Box>
             {bookCardLatest}
-            <Text as="h1">last read</Text>
+            <Text as="h1" css={{ paddingTop: '20px' }}>
+              last read
+            </Text>
           </Box>
           <Box>
             {bookCardLater}
-            <Text as="h1">previously read</Text>
+            <Text as="h1" css={{ paddingTop: '20px' }}>
+              previously read
+            </Text>
           </Box>
           <Box>
             {bookCardRandom}
-            <Text as="h1">random read</Text>
+            <Text as="h1" css={{ paddingTop: '20px' }}>
+              random read
+            </Text>
           </Box>
         </Grid>
         <Box css={{ textAlign: 'center', marginTop: '40px' }}>
