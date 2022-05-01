@@ -39,6 +39,7 @@ function makeBookCardLink(
   onClick: MouseEventHandler,
   highlighted?: Book | null
 ): JSX.Element {
+  const isSelected = highlighted?.id === book.id
   return (
     <Box
       key={book.id}
@@ -47,10 +48,14 @@ function makeBookCardLink(
       css={{
         padding: '10px',
         cursor: 'pointer',
-        border: highlighted?.id === book.id ? 'dotted black 2px' : 'dotted transparent 2px',
       }}
     >
-      <BookCoverFor book={book} hasCover={!!book.coverWidth} scale={0.5} />
+      <BookCoverFor
+        book={book}
+        hasCover={!!book.coverWidth}
+        scale={0.5}
+        rotate={{ x: 0, y: isSelected ? -35 : 0 }}
+      />
     </Box>
   )
 }
@@ -79,7 +84,12 @@ function makeHighlightedBookPanel(book: Book, onClose: MouseEventHandler): JSX.E
         <Cross1Icon onClick={onClose} />
       </Flex>
       <Box css={{ marginTop: '25px' }}>
-        <BookCoverFor book={book} hasCover={!!book.coverWidth} scale={1} />
+        <BookCoverFor
+          book={book}
+          hasCover={!!book.coverWidth}
+          scale={1}
+          rotate={{ x: 0, y: -35 }}
+        />
       </Box>
       <Box css={{ marginTop: '25px' }}>
         <Text as="h1">
@@ -118,7 +128,7 @@ export async function getStaticProps(): Promise<{ props: BooksProps }> {
   }
 }
 
-export default function Home({ books }: BooksProps): JSX.Element {
+export default function Books({ books }: BooksProps): JSX.Element {
   // const totalBooks: Book[] = []
   const [shouldFetch, setFetch] = useState(false)
   const [highlighted, setHighlightFor] = useState<Book | null>(null)

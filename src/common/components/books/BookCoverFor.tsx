@@ -96,7 +96,7 @@ function BookCoverFor({
 
   if (asLink) {
     return (
-      <Link href={`/books/${book.slug}`} key={book.id}>
+      <Link href={`/books/${book.slug}`}>
         <a>
           <BookCover {...bookCoverProps}>
             <VisuallyHidden>{book.title}</VisuallyHidden>

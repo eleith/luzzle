@@ -41,7 +41,21 @@ type HomePageProps = {
 
 function makeBookCardLink(book?: Book): JSX.Element {
   if (book) {
-    return <BookCoverFor book={book} asLink hasCover={!!book.coverWidth} />
+    return (
+      <BookCoverFor
+        book={book}
+        asLink
+        hasCover={!!book.coverWidth}
+        rotate={{
+          x: 0,
+          y: -35,
+        }}
+        rotateInteract={{
+          x: 0,
+          y: 0,
+        }}
+      />
+    )
   } else {
     return (
       <BookCover>
