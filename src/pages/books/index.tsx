@@ -84,12 +84,7 @@ function makeHighlightedBookPanel(book: Book, onClose: MouseEventHandler): JSX.E
         <Cross1Icon onClick={onClose} />
       </Flex>
       <Box css={{ marginTop: '25px' }}>
-        <BookCoverFor
-          book={book}
-          hasCover={!!book.coverWidth}
-          scale={1}
-          rotate={{ x: 0, y: -35 }}
-        />
+        <BookCoverFor book={book} hasCover={!!book.coverWidth} scale={1} />
       </Box>
       <Box css={{ marginTop: '25px' }}>
         <Text as="h1">
@@ -205,10 +200,10 @@ export default function Books({ books }: BooksProps): JSX.Element {
               marginRight: 'auto',
             },
             '@tablet': {
-              paddingRight: highlighted ? '250px' : '0px',
+              paddingRight: highlighted ? '300px' : '0px',
             },
             '@desktop': {
-              paddingRight: highlighted ? '250px' : '0px',
+              paddingRight: highlighted ? '300px' : '0px',
             },
           }}
         >

@@ -48,11 +48,11 @@ function makeBookCardLink(book?: Book): JSX.Element {
         hasCover={!!book.coverWidth}
         rotate={{
           x: 0,
-          y: -35,
+          y: 0,
         }}
         rotateInteract={{
           x: 0,
-          y: 0,
+          y: -35,
         }}
       />
     )

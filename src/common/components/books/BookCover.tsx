@@ -137,9 +137,8 @@ function getBookContainerStyles(
     bottom: 0,
     width: 'calc(var(--book-width) - 4px)',
     height: 'var(--book-thickness)',
-    transform: `translateY(${
-      thickness / 2 - 5
-    }px) translateZ(calc(0px - var(--book-thickness) / 2)) rotateX(270deg)`,
+    transform: `translateY(${thickness / 2 - 5
+      }px) translateZ(calc(0px - var(--book-thickness) / 2)) rotateX(270deg)`,
     background: `linear-gradient(0deg,
         #fff 0%,
         #f9f9f9 5%,
@@ -172,9 +171,8 @@ function getBookContainerStyles(
     top: 0,
     width: 'calc(var(--book-width) - 4px)',
     height: 'var(--book-thickness)',
-    transform: `translateY(-${
-      thickness / 2 - 5
-    }px) translateZ(calc(0px - var(--book-thickness) / 2)) rotateX(270deg)`,
+    transform: `translateY(-${thickness / 2 - 5
+      }px) translateZ(calc(0px - var(--book-thickness) / 2)) rotateX(270deg)`,
     background: `linear-gradient(0deg,
         #fff 0%,
         #f9f9f9 5%,
@@ -207,9 +205,8 @@ function getBookContainerStyles(
     top: 0,
     width: 'calc(var(--book-thickness) - 2px)',
     height: 'var(--book-height)',
-    transform: `translateX(-${
-      thickness / 2 - 2
-    }px) translateZ(calc(0px - var(--book-thickness) / 2)) rotateY(-90deg)`,
+    transform: `translateX(-${thickness / 2 - 2
+      }px) translateZ(calc(0px - var(--book-thickness) / 2)) rotateY(-90deg)`,
     backgroundColor,
   }
 
@@ -338,14 +335,11 @@ function BookCover({
   const [isMoving, setMoving] = useState(false)
   const [rotateTo, setRotate] = useState(rotate)
 
+  // avoid objects as dependencies as they always differ
   useEffect(() => {
     setMoving(true)
-    setRotate(rotate)
-  }, [rotate])
-
-  useEffect(() => {
-    setLoading(loading)
-  }, [loading])
+    setRotate({ x: rotate.x, y: rotate.y })
+  }, [rotate.x, rotate.y])
 
   const styles = getBookContainerStyles(
     width,
