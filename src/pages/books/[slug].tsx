@@ -109,7 +109,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
           }}
         >
           <Box>
-            <BookCoverFor book={book} hasCover={!!book.coverWidth} />
+            <BookCoverFor book={book} hasCover={!!book.coverWidth} rotate={{ x: 0, y: -35 }} />
             <Text as="p" css={{ textAlign: 'center', marginTop: 15 }}>
               read on {book.monthRead}/{book.yearRead}
             </Text>

@@ -1,7 +1,7 @@
 import { keyframes } from '@app/lib/ui/stitches.config'
 import { CSS } from '@stitches/react'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Box } from '../ui/Box'
 
 function getBookContainerStyles(
@@ -9,23 +9,34 @@ function getBookContainerStyles(
   height: number,
   thickness: number,
   perspective: number,
-  rotate: number,
-  rotateHover: number,
+  rotate: { x: number; y: number },
   backgroundColor: string,
   textColor: string,
   shadowColor: string,
   radius: number,
   pagesOffset: number,
-  transitionDuration: number
-): { container: CSS; book: CSS; bookInner: CSS; bookCover: CSS; bookCoverLoading: CSS } {
+  transitionDuration: number,
+  isMoving: boolean
+): {
+  container: CSS
+  book: CSS
+  bookInner: CSS
+  bookCover: CSS
+  bookCoverLoading: CSS
+  bookSpine: CSS
+  bookPages: CSS
+  bookPagesBottom: CSS
+  bookPagesTop: CSS
+  bookBack: CSS
+  bookShadow: CSS
+} {
+  const rotated = rotate.x || rotate.y || isMoving
+
   /* note: css var do not inherit by psueodo elements */
   const bookCssVariables: CSS = {
     '--book-width': `${width}px`,
     '--book-height': `${height}px`,
     '--book-thickness': `${thickness}px`,
-    '--book-perspective': `${perspective}px`,
-    '--book-rotate': `${rotate}deg`,
-    '--book-rotate-hover': `${rotateHover}deg`,
     '--book-text-color': `${textColor}`,
     '--book-border-radius': `${radius}px`,
     '--book-shadow-color': `${shadowColor}`,
@@ -33,14 +44,17 @@ function getBookContainerStyles(
     '--book-transition-duration': `${transitionDuration}s`,
     '--book-page-height': 'calc(var(--book-height) - 2 * var(--book-page-offset))',
     '--book-translate': `${width - thickness / 2 - pagesOffset}px`,
-    '--book-transform-thickness': `${-thickness / 2}px`,
+    '--book-transform-thickness': `${-thickness}px`,
   }
 
   const bookContainerStyles: CSS = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    perspective: 'var(--book-perspective)',
+  }
+
+  if (rotated) {
+    bookContainerStyles.perspective = `${perspective}px`
   }
 
   const pulse = keyframes({
@@ -61,12 +75,12 @@ function getBookContainerStyles(
     height: 'var(--book-height)',
     position: 'relative',
     color: 'var(--book-text-color)',
-    transformStyle: 'preserve-3d',
-    transform: `rotateY(var(--book-rotate))`,
-    transition: `transform var(--book-transition-duration) ease`,
-    '&:hover': {
-      transform: `rotateY(var(--book-rotate-hover))`,
-    },
+  }
+
+  if (rotated) {
+    bookStyles.transformStyle = 'preserve-3d'
+    bookStyles.transition = `transform var(--book-transition-duration) ease`
+    bookStyles.transform = `rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`
   }
 
   const bookInnerStyles: CSS = {
@@ -75,7 +89,6 @@ function getBookContainerStyles(
     left: '0',
     width: 'var(--book-width)',
     height: 'var(--book-height)',
-    transform: `translateZ(calc(var(--book-thickness) / 2))`,
     borderTopLeftRadius: '0',
     borderTopRightRadius: 'var(--book-border-radius)',
     borderBottomRightRadius: 'var(--book-border-radius)',
@@ -83,15 +96,16 @@ function getBookContainerStyles(
     boxShadow: `5px 5px 20px var(--book-shadow-color)`,
   }
 
-  const bookBeforeStyles: CSS = {
+  const bookPagesStyles: CSS = {
+    display: rotated ? 'block' : 'none',
     position: 'absolute',
-    content: '""',
     left: 0,
     top: 'var(--book-page-offset)',
     width: 'calc(var(--book-thickness) - 2px)',
     height: 'var(--book-page-height)',
-    transform: 'translateX(var(--book-translate)) rotateY(90deg)',
-    background: `linear-gradient(90deg, 
+    transform:
+      'translateX(var(--book-translate)) translateZ(calc(0px - var(--book-thickness) / 2)) rotateY(90deg)',
+    background: `linear-gradient(90deg,
         #fff 0%,
         #f9f9f9 5%,
         #fff 10%,
@@ -116,9 +130,92 @@ function getBookContainerStyles(
         )`,
   }
 
-  const bookAfterStyles: CSS = {
+  const bookPagesBottomStyles: CSS = {
+    display: rotated ? 'block' : 'none',
     position: 'absolute',
-    content: '""',
+    left: 1,
+    bottom: 0,
+    width: 'calc(var(--book-width) - 4px)',
+    height: 'var(--book-thickness)',
+    transform: `translateY(${
+      thickness / 2 - 5
+    }px) translateZ(calc(0px - var(--book-thickness) / 2)) rotateX(270deg)`,
+    background: `linear-gradient(0deg,
+        #fff 0%,
+        #f9f9f9 5%,
+        #fff 10%,
+        #f9f9f9 15%,
+        #fff 20%,
+        #f9f9f9 25%,
+        #fff 30%,
+        #f9f9f9 35%,
+        #fff 40%,
+        #f9f9f9 45%,
+        #fff 50%,
+        #f9f9f9 55%,
+        #fff 60%,
+        #f9f9f9 65%,
+        #fff 70%,
+        #f9f9f9 75%,
+        #fff 80%,
+        #f9f9f9 85%,
+        #fff 90%,
+        #f9f9f9 95%,
+        #fff 100%
+        )`,
+  }
+
+  const bookPagesTopStyles: CSS = {
+    display: rotated ? 'block' : 'none',
+    position: 'absolute',
+    right: 1,
+    top: 0,
+    width: 'calc(var(--book-width) - 4px)',
+    height: 'var(--book-thickness)',
+    transform: `translateY(-${
+      thickness / 2 - 5
+    }px) translateZ(calc(0px - var(--book-thickness) / 2)) rotateX(270deg)`,
+    background: `linear-gradient(0deg,
+        #fff 0%,
+        #f9f9f9 5%,
+        #fff 10%,
+        #f9f9f9 15%,
+        #fff 20%,
+        #f9f9f9 25%,
+        #fff 30%,
+        #f9f9f9 35%,
+        #fff 40%,
+        #f9f9f9 45%,
+        #fff 50%,
+        #f9f9f9 55%,
+        #fff 60%,
+        #f9f9f9 65%,
+        #fff 70%,
+        #f9f9f9 75%,
+        #fff 80%,
+        #f9f9f9 85%,
+        #fff 90%,
+        #f9f9f9 95%,
+        #fff 100%
+        )`,
+  }
+
+  const bookSpineStyles: CSS = {
+    display: rotated ? 'block' : 'none',
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 'calc(var(--book-thickness) - 2px)',
+    height: 'var(--book-height)',
+    transform: `translateX(-${
+      thickness / 2 - 2
+    }px) translateZ(calc(0px - var(--book-thickness) / 2)) rotateY(-90deg)`,
+    backgroundColor,
+  }
+
+  const bookBackStyles: CSS = {
+    display: rotated ? 'block' : 'none',
+    position: 'absolute',
     top: 0,
     left: 0,
     width: 'var(--book-width)',
@@ -129,7 +226,24 @@ function getBookContainerStyles(
     borderTopRightRadius: 'var(--book-border-radius)',
     borderBottomRightRadius: 'var(--book-border-radius)',
     borderBottomLeftRadius: '0',
-    boxShadow: '-10px 0 50px 10px var(--book-shadow-color)',
+  }
+
+  const bookShadowStyles: CSS = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 'var(--book-width)',
+    height: 'var(--book-height)',
+    borderTopLeftRadius: '0',
+    borderTopRightRadius: 'var(--book-border-radius)',
+    borderBottomRightRadius: 'var(--book-border-radius)',
+    borderBottomLeftRadius: '0',
+    boxShadow: '-10px 0 50px 0px var(--book-shadow-color)',
+  }
+
+  if (rotated) {
+    bookShadowStyles.boxShadow = '-10px 0 50px 10px var(--book-shadow-color)'
+    bookShadowStyles.transform = 'translateZ(var(--book-transform-thickness))'
   }
 
   const bookCoverStyles: CSS = {
@@ -152,12 +266,24 @@ function getBookContainerStyles(
     },
     book: {
       ...bookStyles,
-      '&::before': {
-        ...bookBeforeStyles,
-      },
-      '&::after': {
-        ...bookAfterStyles,
-      },
+    },
+    bookPages: {
+      ...bookPagesStyles,
+    },
+    bookPagesBottom: {
+      ...bookPagesBottomStyles,
+    },
+    bookPagesTop: {
+      ...bookPagesTopStyles,
+    },
+    bookBack: {
+      ...bookBackStyles,
+    },
+    bookShadow: {
+      ...bookShadowStyles,
+    },
+    bookSpine: {
+      ...bookSpineStyles,
     },
     bookInner: {
       ...bookInnerStyles,
@@ -174,8 +300,6 @@ function getBookContainerStyles(
 
 export type BookCoverProps = {
   children: JSX.Element
-  rotateHover?: number
-  rotate?: number
   perspective?: number
   transitionDuration?: number
   radius?: number
@@ -188,15 +312,17 @@ export type BookCoverProps = {
   pagesOffset?: number
   backgroundImageUrl?: string
   loading?: boolean
+  rotate?: { x: number; y: number }
+  rotateInteract?: { x: number; y: number }
 }
 
 function BookCover({
   children,
   backgroundImageUrl,
-  rotateHover = -25,
-  rotate = 0,
+  rotate = { x: 0, y: 0 },
+  rotateInteract = rotate,
   perspective = 900,
-  transitionDuration = 1,
+  transitionDuration = 0.75,
   thickness = 50,
   backgroundColor = 'black',
   textColor = 'white',
@@ -209,19 +335,31 @@ function BookCover({
 }: BookCoverProps): JSX.Element {
   const hasBackgroundImage = !!backgroundImageUrl
   const [isLoading, setLoading] = useState(hasBackgroundImage || loading)
+  const [isMoving, setMoving] = useState(false)
+  const [rotateTo, setRotate] = useState(rotate)
+
+  useEffect(() => {
+    setMoving(true)
+    setRotate(rotate)
+  }, [rotate])
+
+  useEffect(() => {
+    setLoading(loading)
+  }, [loading])
+
   const styles = getBookContainerStyles(
     width,
     height,
     thickness,
     perspective,
-    rotate,
-    rotateHover,
+    rotateTo,
     backgroundColor,
     textColor,
     shadowColor,
     radius,
     pagesOffset,
-    transitionDuration
+    transitionDuration,
+    isMoving
   )
 
   const coverImage = (
@@ -246,9 +384,40 @@ function BookCover({
     </Box>
   )
 
+  function stop(): void {
+    if (rotate.x != rotateInteract.x || rotate.y != rotateInteract.y) {
+      setMoving(true)
+      setRotate(rotate)
+    }
+  }
+
+  function start(): void {
+    if (rotate.x != rotateInteract.x || rotate.y != rotateInteract.y) {
+      setMoving(true)
+      setRotate(rotateInteract)
+    }
+  }
+
+  function end(): void {
+    setMoving(false)
+  }
+
   return (
-    <Box css={styles.container}>
+    <Box
+      css={styles.container}
+      onMouseOver={start}
+      onMouseLeave={stop}
+      onTransitionEnd={end}
+      onTouchStart={start}
+      onTouchEnd={stop}
+    >
       <Box css={styles.book}>
+        <Box css={styles.bookShadow} />
+        <Box css={styles.bookSpine} />
+        <Box css={styles.bookPages} />
+        <Box css={styles.bookPagesBottom} />
+        <Box css={styles.bookPagesTop} />
+        <Box css={styles.bookBack} />
         <Box css={styles.bookInner}>
           {children}
           {coverImage}
