@@ -6,16 +6,9 @@ import staticClient from '@app/common/graphql/staticClient'
 import { Container } from '@app/common/components/ui/Container'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import Index from '@app/pages-md/index.mdx'
-import * as ReactDOMServer from 'react-dom/server'
-import { unified } from 'unified'
-import rehypeParse from 'rehype-parse'
-import rehypeRemark from 'rehype-remark'
-import remarkStringify from 'remark-stringify'
 import { Box } from '@app/common/components/ui'
-import Link from 'next/link'
-import { MDXComponents } from 'mdx/types'
-import { Heading } from '@app/common/components/ui/Heading'
-import { Paragraph } from '@app/common/components/ui/Paragraph'
+import { jsx2md } from '@app/lib/markdown'
+import components from '@app/common/components/mdx/components'
 
 const getBooksQuery = gql<typeof GetBookHomeMdDocument>(
   `query GetBookHomeMd($take: Int) {
@@ -38,64 +31,19 @@ export async function getStaticProps(): Promise<{ props: HomePageProps }> {
   const response = await staticClient.query({ query: getBooksQuery, variables: { take: 2 } })
   const books = response.data?.books
   const nonExistantBook = { title: 'a title', id: 'add-more-books' } as Book
-  const homePage = <Index book1={books?.[0]} book2={books?.[1]} />
-  const htmlString = ReactDOMServer.renderToStaticMarkup(homePage)
-
-  const markdown = await unified()
-    .use(rehypeParse)
-    .use(rehypeRemark)
-    .use(remarkStringify)
-    .process(htmlString)
+  const homePage = <Index book1={books?.[0]} book2={books?.[1]} components={components} />
+  const markdown = await jsx2md(homePage)
 
   return {
     props: {
       book1: books?.[0] || nonExistantBook,
       book2: books?.[1] || nonExistantBook,
-      markdown: markdown.toString(),
+      markdown,
     },
   }
 }
 
-const components: MDXComponents = {
-  h1: (props) => <Heading size={'4'}>{props.children}</Heading>,
-  h2: (props) => (
-    <Heading as={'h2'} size={'3'}>
-      {props.children}
-    </Heading>
-  ),
-  h3: (props) => (
-    <Heading as={'h3'} size={'2'}>
-      {props.children}
-    </Heading>
-  ),
-  h4: (props) => (
-    <Heading as={'h4'} size={'1'}>
-      {props.children}
-    </Heading>
-  ),
-  h5: (props) => (
-    <Heading as={'h5'} size={'1'}>
-      {props.children}
-    </Heading>
-  ),
-  p: (props) => <Paragraph>{props.children}</Paragraph>,
-  a: (props) => {
-    if (props.href) {
-      return (
-        <Link href={props.href}>
-          <a {...props}>{props.children}</a>
-        </Link>
-      )
-    }
-    return (
-      <a target="_blank" rel="noopener noreferrer" {...props}>
-        {props.children}
-      </a>
-    )
-  },
-}
-
-export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
+export default function HomeMd({ book1, book2 }: HomePageProps): JSX.Element {
   const homePage = <Index components={components} book1={book1} book2={book2} />
 
   return (
