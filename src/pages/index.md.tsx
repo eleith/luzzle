@@ -14,7 +14,7 @@ import remarkStringify from 'remark-stringify'
 import { Box } from '@app/common/components/ui'
 import Link from 'next/link'
 import { MDXComponents } from 'mdx/types'
-import { Heading, HeadingSizeVariants } from '@app/common/components/ui/Heading'
+import { Heading } from '@app/common/components/ui/Heading'
 import { Paragraph } from '@app/common/components/ui/Paragraph'
 
 const getBooksQuery = gql<typeof GetBookHomeMdDocument>(
@@ -95,7 +95,7 @@ const components: MDXComponents = {
   },
 }
 
-export default function Home({ book1, book2, markdown }: HomePageProps): JSX.Element {
+export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   const homePage = <Index components={components} book1={book1} book2={book2} />
 
   return (
