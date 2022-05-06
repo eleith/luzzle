@@ -1,6 +1,6 @@
 import useSWR, { SWRConfiguration, SWRResponse } from 'swr'
 import { ResultOf, TypedDocumentNode, VariablesOf } from '@graphql-typed-document-node/core'
-import fetch from '@app/graphql/request'
+import fetch from '@app/lib/graphql/request'
 import { DocumentNode } from 'graphql'
 import config from '@app/common/config'
 

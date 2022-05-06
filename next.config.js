@@ -1,4 +1,13 @@
-module.exports = {
+const withMDX = require('@next/mdx')({
+  extension: /\.mdx?$/,
+  options: {
+    remarkPlugins: [],
+    rehypePlugins: [],
+    providerImportSource: "@mdx-js/react",
+  },
+})
+
+module.exports = withMDX({
   reactStrictMode: true,
   poweredByHeader: false,
   pageExtensions: ['tsx', 'api.ts'],
@@ -15,4 +24,4 @@ module.exports = {
   images: {
     domains: [process.env.IMAGE_DOMAIN],
   },
-}
+})

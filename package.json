@@ -10,7 +10,8 @@
     "manage": "node --enable-source-maps build/manager.js",
     "test": "vitest run --coverage",
     "prebuild": "npm run build:prisma && npm run build:graphql",
-    "predev": "npm run build:prisma && npm run build:graphql"
+    "predev": "npm run build:prisma && npm run build:graphql",
+    "clean:graphql": "find . -path \\*/_gql_/*.ts -delete"
   },
   "devDependencies": {
     "@fast-csv/format": "^4.3.5",
@@ -29,6 +30,7 @@
     "@types/micro-cors": "^0.1.2",
     "@types/node": "^17.0.24",
     "@types/react": "^18.0.5",
+    "@types/react-dom": "^18.0.3",
     "@types/react-syntax-highlighter": "^13.5.2",
     "@types/sharp": "^0.30.2",
     "@types/uuid": "^8.3.4",
@@ -72,6 +74,9 @@
   },
   "dependencies": {
     "@apollo/client": "^3.5.10",
+    "@mdx-js/loader": "^2.1.1",
+    "@mdx-js/react": "^2.1.1",
+    "@next/mdx": "^12.1.6",
     "@pothos/core": "^3.6.0",
     "@pothos/plugin-simple-objects": "^3.2.0",
     "@prisma/client": "^3.13.0",
@@ -79,6 +84,7 @@
     "@radix-ui/react-icons": "^1.1.0",
     "@radix-ui/react-visually-hidden": "^0.1.4",
     "@stitches/react": "^1.2.7",
+    "@types/mdx": "^2.0.1",
     "@types/typography": "^0.16.4",
     "apollo-server-core": "^3.6.7",
     "apollo-server-micro": "^3.6.7",
@@ -97,8 +103,11 @@
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
     "react-hook-form": "^7.29.0",
-    "react-markdown": "^8.0.2",
+    "react-markdown": "^8.0.3",
     "react-syntax-highlighter": "^15.5.0",
+    "rehype-parse": "^8.0.4",
+    "rehype-remark": "^9.1.2",
+    "remark-stringify": "^10.0.2",
     "swr": "^1.3.0",
     "typography": "^0.16.21",
     "typography-theme-sutro": "^0.16.19",

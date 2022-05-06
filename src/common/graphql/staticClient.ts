@@ -1,4 +1,4 @@
-import staticClient from '@app/graphql/staticClient'
+import staticClient from '@app/lib/graphql/staticClient'
 import schema from './schema'
 
 const client = staticClient(schema)

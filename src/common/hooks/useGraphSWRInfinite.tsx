@@ -1,7 +1,7 @@
 import useSWRInfinite, { SWRInfiniteResponse, SWRInfiniteConfiguration } from 'swr/infinite'
 import { ResultOf, VariablesOf } from '@graphql-typed-document-node/core'
 import { DocumentNode } from 'graphql'
-import fetch from '@app/graphql/request'
+import fetch from '@app/lib/graphql/request'
 import config from '@app/common/config'
 
 const graphEndPoint = `${config.HOST}${config.GRAPHQL_ENDPOINT}`
