@@ -1,4 +1,4 @@
-import builder from '@app/graphql/builder'
+import builder from '@app/lib/graphql/builder'
 import BookObject from './book'
 
 const BookSiblings = builder.simpleObject('BookSiblings', {
