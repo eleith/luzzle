@@ -149,7 +149,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
             </Text>
           </Box>
         </Grid>
-        <Box css={{ textAlign: 'center', marginTop: '40px' }}>
+        <Box css={{ textAlign: 'center', marginTop: '40px', marginBottom: '20px' }}>
           <Link href="/books">
             <a>
               <Button size={3}>all reads</Button>
