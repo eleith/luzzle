@@ -138,9 +138,11 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
             </Text>
             <br />
             <br />
-            <Text>
-              isbn: <a href={`https://openlibrary.org/works/${book.idOlWork}`}>{book.isbn}</a>
-            </Text>
+            {book.idOlWork && book.isbn && (
+              <Text>
+                isbn: <a href={`https://openlibrary.org/works/${book.idOlWork}`}>{book.isbn}</a>
+              </Text>
+            )}
             <br />
             <Text>published: {book.yearFirstPublished}</Text>
             <br />
