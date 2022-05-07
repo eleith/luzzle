@@ -14,7 +14,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import { Button } from '@app/common/components/ui/Button'
 import { Flex } from '@app/common/components/ui/Flex'
-import { FileArrowDown } from 'phosphor-react'
+import { ArrowDown } from 'phosphor-react'
 
 const getBooksQuery = gql<typeof GetBookHomeDocument>(
   `query GetBookHome($take: Int) {
@@ -91,10 +91,10 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
 
   return (
     <Page meta={{ title: '' }}>
-      <Flex justify={'end'}>
+      <Flex justify={'start'} css={{ paddingLeft: '20px', paddingTop: '20px' }}>
         <Link href="/index.md">
           <a>
-            <FileArrowDown size={50} color={'#6f6f6f'} />
+            <ArrowDown size={35} color={'#4f4f4f'} />
           </a>
         </Link>
       </Flex>

@@ -9,7 +9,7 @@ import Index from '@app/pages-md/index.mdx'
 import { Box } from '@app/common/components/ui'
 import { jsx2md } from '@app/lib/markdown'
 import components from '@app/common/components/mdx/components'
-import { FileArrowDown, FileArrowUp, FileCode } from 'phosphor-react'
+import { Swap, ArrowUp } from 'phosphor-react'
 import { useState } from 'react'
 import { Paragraph } from '@app/common/components/ui/Paragraph'
 import { Flex } from '@app/common/components/ui/Flex'
@@ -81,27 +81,18 @@ export default function HomeMd({ book1, book2, markdown }: HomePageProps): JSX.E
 
   return (
     <Page meta={{ title: '' }}>
-      <Flex justify={'end'}>
+      <Flex justify={'start'} css={{ paddingLeft: '20px', paddingTop: '20px' }}>
         <Link href="/">
           <a>
-            <FileArrowUp size={50} color={'#6f6f6f'} />
+            <ArrowUp size={35} color={'#4f4f4f'} />
           </a>
         </Link>
-        <Box css={{ cursor: view === 'html' ? 'default' : 'pointer' }}>
-          <FileArrowDown
-            size={50}
-            color={view === 'html' ? '#cfcfcf' : '#6f6f6f'}
+        <Box css={{ cursor: 'pointer' }}>
+          <Swap
+            size={35}
+            color={'#4f4f4f'}
             onClick={() => {
-              setView('html')
-            }}
-          />
-        </Box>
-        <Box css={{ cursor: view === 'html' ? 'pointer' : 'default' }}>
-          <FileCode
-            size={50}
-            color={view === 'html' ? '#1f1f1f' : '#cfcfcf'}
-            onClick={() => {
-              setView('md')
+              setView(view === 'html' ? 'md' : 'html')
             }}
           />
         </Box>
