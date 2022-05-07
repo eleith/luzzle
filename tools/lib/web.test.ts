@@ -4,7 +4,7 @@ import { createWriteStream, WriteStream } from 'fs'
 import { PassThrough } from 'stream'
 import Request from 'got/dist/source/core'
 import { downloadTo } from './web'
-import tempy from 'tempy'
+import { temporaryFile } from 'tempy'
 
 vi.mock('fs')
 vi.mock('file-type')
@@ -13,7 +13,7 @@ vi.mock('tempy')
 const mocks = {
   gotStream: vi.spyOn(got, 'stream'),
   createWriteStream: vi.mocked(createWriteStream),
-  tempyFile: vi.spyOn(tempy, 'file'),
+  tempyFile: vi.mocked(temporaryFile),
 }
 
 describe('book', () => {

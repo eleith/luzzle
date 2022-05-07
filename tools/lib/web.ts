@@ -1,10 +1,10 @@
 import { createWriteStream } from 'fs'
 import got from 'got'
-import tempy from 'tempy'
+import { temporaryFile } from 'tempy'
 
 async function downloadTo(url: string): Promise<string> {
   const response = got.stream(url)
-  const filePath = tempy.file()
+  const filePath = temporaryFile()
   const writer = createWriteStream(filePath)
 
   response.pipe(writer)
