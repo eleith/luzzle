@@ -1,5 +1,5 @@
 import { BookCover, BookCoverFor } from '@app/common/components/books'
-import Page from '@app/common/components/page'
+import PageFull from '@app/common/components/ui/PageFull'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import useGraphSWR from '@app/common/hooks/useGraphSWR'
 import gql from '@app/lib/graphql/tag'
@@ -13,8 +13,6 @@ import { Text } from '@app/common/components/ui/Text'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import { Button } from '@app/common/components/ui/Button'
-import { Flex } from '@app/common/components/ui/Flex'
-import { ArrowDown } from 'phosphor-react'
 
 const getBooksQuery = gql<typeof GetBookHomeDocument>(
   `query GetBookHome($take: Int) {
@@ -90,14 +88,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   const bookCardLater = makeBookCardLink(book2)
 
   return (
-    <Page meta={{ title: '' }}>
-      <Flex justify={'start'} css={{ paddingLeft: '20px', paddingTop: '20px' }}>
-        <Link href="/index.md">
-          <a>
-            <ArrowDown size={35} color={'#4f4f4f'} />
-          </a>
-        </Link>
-      </Flex>
+    <PageFull meta={{ title: 'books'}} link={'/index.md' }>
       <Container>
         <Grid
           css={{
@@ -157,6 +148,6 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           </Link>
         </Box>
       </Container>
-    </Page>
+    </PageFull>
   )
 }

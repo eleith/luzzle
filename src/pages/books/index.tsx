@@ -1,5 +1,5 @@
 import { BookCoverFor } from '@app/common/components/books'
-import Page from '@app/common/components/page'
+import PageFull from '@app/common/components/ui/PageFull'
 import gql from '@app/lib/graphql/tag'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import { GetBooksDocument } from './_gql_/index'
@@ -184,7 +184,7 @@ export default function Books({ books }: BooksProps): JSX.Element {
   const allBooks = totalBooks.map((book) => makeBookCardLink(book, loadDetails, highlighted))
 
   return (
-    <Page meta={{ title: '' }}>
+    <PageFull meta={{ title: '' }}>
       <Container css={{ paddingBottom: '20px' }}>
         <Grid
           justify="center"
@@ -218,6 +218,6 @@ export default function Books({ books }: BooksProps): JSX.Element {
         )}
         {highlighted && makeHighlightedBookPanel(highlighted, closeDetails)}
       </Container>
-    </Page>
+    </PageFull>
   )
 }
