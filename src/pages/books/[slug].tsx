@@ -1,4 +1,4 @@
-import Page from '@app/common/components/page'
+import PageFull from '@app/common/components/ui/PageFull'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import { GetStaticPathsResult } from 'next'
 import Link from 'next/link'
@@ -71,7 +71,7 @@ export async function getStaticProps({
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
   return (
-    <Page meta={{ title: `${book.title}` }}>
+    <PageFull meta={{ title: `${book.title}` }}>
       <Container>
         <Grid
           css={{
@@ -164,7 +164,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
           </Box>
         </Grid>
       </Container>
-    </Page>
+    </PageFull>
   )
 }
 
