@@ -61,6 +61,30 @@ export const Button = styled('button', {
       },
     },
     variant: {
+      primary: {
+        backgroundColor: '$colors$primary',
+        boxShadow: 'inset 0 0 0 1px $colors$yellow7',
+        color: '$colors$primaryText',
+        '@hover': {
+          '&:hover': {
+            boxShadow: 'inset 0 0 0 1px $colors$yellow8',
+          },
+        },
+        '&:active': {
+          backgroundColor: '$yellow3',
+          boxShadow: 'inset 0 0 0 1px $colors$yellow8',
+          color: '$colors$yellow11',
+        },
+        '&:focus': {
+          boxShadow: 'inset 0 0 0 1px $colors$yellow8, 0 0 0 1px $colors$yellow8',
+        },
+        '&[data-radix-popover-trigger][data-state="open"], &[data-radix-dropdown-menu-trigger][data-state="open"]':
+          {
+            backgroundColor: '$yellow4',
+            boxShadow: 'inset 0 0 0 1px $colors$yellow8',
+            color: '$colors$yellow11',
+          },
+      },
       gray: {
         backgroundColor: '$loContrast',
         boxShadow: 'inset 0 0 0 1px $colors$slate7',
@@ -325,6 +349,6 @@ export const Button = styled('button', {
   ],
   defaultVariants: {
     size: '1',
-    variant: 'gray',
+    variant: 'primary',
   },
 })

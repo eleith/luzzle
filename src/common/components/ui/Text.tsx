@@ -229,6 +229,5 @@ export const Text = styled('span', {
   ],
   defaultVariants: {
     size: '3',
-    variant: 'contrast',
   },
 })
