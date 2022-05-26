@@ -1,7 +1,5 @@
-import { Box, Text, Flex } from '@app/common/components/ui'
+import { Box, Flex } from '@app/common/components/ui'
 import { useEffect, useState } from 'react'
-import { keyframes } from '@app/lib/ui/stitches.config'
-import debounce from 'lodash/debounce'
 import { useTheme } from 'next-themes'
 import { Sun, Moon } from 'phosphor-react'
 
@@ -11,7 +9,6 @@ interface PageProps {
 
 export default function PageMarkdown(props: PageProps): JSX.Element {
   const { children } = props
-  const [showControls, setShowControls] = useState<boolean | null>(null)
   const [mounted, setMounted] = useState(false)
   const { resolvedTheme, setTheme } = useTheme()
 
@@ -23,13 +20,6 @@ export default function PageMarkdown(props: PageProps): JSX.Element {
     return <></>
   }
 
-  const slide = keyframes({
-    '0%': { marginTop: showControls ? '-45px' : '0px' },
-    '100%': { marginTop: showControls ? '0px' : '-45px' },
-  })
-
-  const debounced = debounce(() => setShowControls(false), 350)
-
   function switchTheme(): void {
     setTheme(resolvedTheme === 'light' ? 'dark' : 'light')
   }
@@ -39,8 +29,7 @@ export default function PageMarkdown(props: PageProps): JSX.Element {
       css={{ alignItems: 'center', marginRight: '10px', cursor: 'pointer' }}
       onClick={switchTheme}
     >
-      <Text css={{ marginRight: '10px' }}>light</Text>
-      <Sun size={35} />
+      <Sun size={25} />
     </Flex>
   )
 
@@ -49,8 +38,7 @@ export default function PageMarkdown(props: PageProps): JSX.Element {
       css={{ alignItems: 'center', marginRight: '10px', cursor: 'pointer' }}
       onClick={switchTheme}
     >
-      <Text css={{ marginRight: '10px' }}>dark</Text>
-      <Moon size={35} />
+      <Moon size={25} />
     </Flex>
   )
 
@@ -61,24 +49,11 @@ export default function PageMarkdown(props: PageProps): JSX.Element {
       css={{
         height: '50px',
       }}
-      onMouseEnter={() => {
-        debounced.cancel()
-        setShowControls(true)
-      }}
-      onMouseLeave={debounced}
-      onTouchStart={() => {
-        setShowControls(true)
-      }}
-      onTouchMove={() => {
-        setShowControls(false)
-      }}
     >
       <Flex
         direction={'row'}
         justify={'start'}
         css={{
-          background: '$colors$primary',
-          color: '$colors$primaryText',
           position: 'absolute',
           height: '50px',
           top: '0px',
@@ -87,10 +62,6 @@ export default function PageMarkdown(props: PageProps): JSX.Element {
           paddingLeft: '20px',
           paddingTop: '10px',
           paddingBottom: '10px',
-          marginTop: showControls ? '0px' : '-45px',
-          animationDuration: '250ms',
-          animationTimingFunction: 'ease-out',
-          animationName: showControls !== null ? `${slide}` : 'none',
         }}
       >
         <Box>{children && children}</Box>
