@@ -1,31 +1,30 @@
 import { MDXComponents } from 'mdx/types'
-import { Heading } from '@app/common/components/ui/Heading'
-import { Paragraph } from '@app/common/components/ui/Paragraph'
+import { Text } from '@app/common/ui/components'
 import Link from 'next/link'
 
 const components: MDXComponents = {
-  h1: (props) => <Heading size={'4'}>{props.children}</Heading>,
+  h1: (props) => <Text as={'h1'}>{props.children}</Text>,
   h2: (props) => (
-    <Heading as={'h2'} size={'3'}>
+    <Text as={'h2'}>
       {props.children}
-    </Heading>
+    </Text>
   ),
   h3: (props) => (
-    <Heading as={'h3'} size={'2'}>
+    <Text as={'h3'}>
       {props.children}
-    </Heading>
+    </Text>
   ),
   h4: (props) => (
-    <Heading as={'h4'} size={'1'}>
+    <Text as={'h4'}>
       {props.children}
-    </Heading>
+    </Text>
   ),
   h5: (props) => (
-    <Heading as={'h5'} size={'1'}>
+    <Text as={'h5'}>
       {props.children}
-    </Heading>
+    </Text>
   ),
-  p: (props) => <Paragraph>{props.children}</Paragraph>,
+  p: (props) => <Text>{props.children}</Text>,
   a: (props) => {
     if (props.href) {
       return (

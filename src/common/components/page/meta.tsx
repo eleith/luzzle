@@ -1,5 +1,3 @@
-import { config } from '@app/lib/ui/stitches.config'
-
 const makeTitle = (title: string, name: string): string =>
   title === name ? title : `${title} | ${name}`
 
@@ -41,14 +39,9 @@ const Meta = ({
         <meta key="tw_img" name="twitter:image" content={image} />
       </>
     )}
-    <meta key="theme_color" name="theme-color" content={config.theme.colors.primary} />
-    <meta key="tile_color" name="msapplication-TileColor" content={config.theme.colors.primary} />
-    <link
-      key="safari_icon"
-      rel="mask-icon"
-      href={`${url}/safari-pinned-tab.png`}
-      color={config.theme.colors.primary}
-    />
+    <meta key="theme_color" name="theme-color" content={'blue'} />
+    <meta key="tile_color" name="msapplication-TileColor" content={'blue'} />
+    <link key="safari_icon" rel="mask-icon" href={`${url}/safari-pinned-tab.png`} color={'blue'} />
     <link
       key="apple_icon"
       rel="apple-touch-icon"

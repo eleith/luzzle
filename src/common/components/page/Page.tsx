@@ -1,6 +1,6 @@
-import Meta, { MetaProps } from '@app/common/components/meta'
+import Meta, { MetaProps } from '@app/common/components/page/meta'
 import Head from 'next/head'
-import { Box } from '@app/common/components/ui/Box'
+import { Box } from '@app/common/ui/components/Box'
 
 interface PageProps {
   meta?: MetaProps
