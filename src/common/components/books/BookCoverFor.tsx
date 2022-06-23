@@ -1,7 +1,7 @@
 import config from '@app/common/config'
 import Link from 'next/link'
 import BookCover, { BookCoverProps } from './BookCover'
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { VisuallyHidden } from 'ariakit'
 import { createHash } from 'crypto'
 
 const BookCoverSize = {
@@ -25,15 +25,8 @@ type BookCoverForProps = {
   scale?: number
 } & Omit<BookCoverProps, 'children' | 'backgroundImageUrl'>
 
-const BookColors = [
-  '$red10',
-  '$purple10',
-  '$indigo10',
-  '$blue10',
-  '$cyan10',
-  '$orange10',
-  '$brown10',
-]
+// TODO replace with a nice color palette
+const BookColors = ['red', 'purple', 'indigo', 'blue', 'cyan', 'orange', 'brown']
 
 const sizes = {
   SMALL: {

@@ -1,18 +1,15 @@
 import { BookCover, BookCoverFor } from '@app/common/components/books'
-import PageFull from '@app/common/components/ui/PageFull'
+import PageFull from '@app/common/components/page/PageFull'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import useGraphSWR from '@app/common/hooks/useGraphSWR'
 import gql from '@app/lib/graphql/tag'
 import { GetBookHomeDocument, GetRandomBookDocument } from './_gql_/index'
 import staticClient from '@app/common/graphql/staticClient'
 import Link from 'next/link'
-import { Box } from '@app/common/components/ui/Box'
-import { Container } from '@app/common/components/ui/Container'
-import { Grid } from '@app/common/components/ui/Grid'
-import { Text } from '@app/common/components/ui/Text'
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { Box, Text, Anchor } from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
-import { Button } from '@app/common/components/ui/Button'
+import * as classNames from './index.css'
+import { VisuallyHidden } from 'ariakit'
 
 const getBooksQuery = gql<typeof GetBookHomeDocument>(
   `query GetBookHome($take: Int) {
@@ -65,6 +62,13 @@ function makeBookCardLink(book?: Book): JSX.Element {
   }
 }
 
+function makeBookDateString(book?: Book): string {
+  const month = book && typeof book.monthRead === 'number' ? book.monthRead + 1 : '?'
+  const year = book && typeof book.yearRead === 'number' ? book.yearRead : '?'
+
+  return `${month} / ${year}`
+}
+
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
   const response = await staticClient.query({ query: getBooksQuery, variables: { take: 2 } })
   const books = response.data?.books
@@ -82,72 +86,42 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   const { data } = useGraphSWR(getRandomBookQuery, undefined, {
     revalidateOnFocus: false,
   })
-  const book = data?.book
-  const bookCardRandom = book ? makeBookCardLink(book) : makeBookCardLink()
-  const bookCardLatest = makeBookCardLink(book1)
-  const bookCardLater = makeBookCardLink(book2)
+  const randomBook = data?.book
 
   return (
     <PageFull meta={{ title: 'books' }}>
-      <Container>
-        <Grid
-          css={{
-            width: '100%',
-            margin: 'auto',
-            marginTop: '20px',
-            gridTemplateColumns: '1fr',
-            gridAutoFlow: 'row',
-            justifyItems: 'center',
-            alignItems: 'flex-end',
-            gap: '20px',
-            textAlign: 'center',
-            '@tablet': {
-              width: '100%',
-              margin: 'auto',
-              marginTop: '250px',
-              gridTemplateColumns: '1fr 1fr 1fr',
-              gridAutoFlow: 'column',
-              gap: '20px',
-              textAlign: 'center',
-            },
-            '@desktop': {
-              width: '70%',
-              margin: 'auto',
-              marginTop: '250px',
-              gridTemplateColumns: '1fr 1fr 1fr',
-              gridAutoFlow: 'column',
-              gap: '20px',
-              textAlign: 'center',
-            },
-          }}
-        >
+      <Box>
+        <Box className={classNames.booksContainer}>
           <Box>
-            {bookCardLatest}
-            <Text as="h1" css={{ paddingTop: '20px' }}>
-              last read
+            {makeBookCardLink(book1)}
+            <br />
+            <Text as="h1" size={'medium'}>
+              {makeBookDateString(book1)}
             </Text>
           </Box>
           <Box>
-            {bookCardLater}
-            <Text as="h1" css={{ paddingTop: '20px' }}>
-              previously read
+            {makeBookCardLink(book2)}
+            <br />
+            <Text as="h1" size={'medium'}>
+              {makeBookDateString(book2)}
             </Text>
           </Box>
-          <Box>
-            {bookCardRandom}
-            <Text as="h1" css={{ paddingTop: '20px' }}>
-              random read
-            </Text>
-          </Box>
-        </Grid>
-        <Box css={{ textAlign: 'center', marginTop: '40px', marginBottom: '20px' }}>
-          <Link href="/books">
-            <a>
-              <Button size={3}>all reads</Button>
-            </a>
+          {randomBook && (
+            <Box>
+              {makeBookCardLink(randomBook)}
+              <br />
+              <Text as="h1" size={'medium'}>
+                {makeBookDateString(randomBook)}
+              </Text>
+            </Box>
+          )}
+        </Box>
+        <Box className={classNames.booksActions}>
+          <Link href="/books" passHref>
+            <Anchor hoverAction="animateUnderline">all books</Anchor>
           </Link>
         </Box>
-      </Container>
+      </Box>
     </PageFull>
   )
 }

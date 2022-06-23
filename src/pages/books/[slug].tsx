@@ -1,4 +1,4 @@
-import PageFull from '@app/common/components/ui/PageFull'
+import PageFull from '@app/common/components/page/PageFull'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import { GetStaticPathsResult } from 'next'
 import Link from 'next/link'
@@ -6,8 +6,10 @@ import gql from '@app/lib/graphql/tag'
 import { GetPartialBooksDocument, GetBookBySlugDocument } from './_gql_/[slug]'
 import { BookCoverFor } from '@app/common/components/books'
 import staticClient from '@app/common/graphql/staticClient'
-import { Box, Text, Container, Grid } from '@app/common/components/ui'
+import { Box, Text, Anchor, Divider } from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
+import * as styles from './[slug].css'
+import { CaretLeft, CaretRight } from 'phosphor-react'
 
 interface BookPageStaticParams {
   params: {
@@ -69,101 +71,69 @@ export async function getStaticProps({
   }
 }
 
+function makeBookDateString(book?: Book): string {
+  const month = book && typeof book.monthRead === 'number' ? book.monthRead + 1 : '?'
+  const year = book && typeof book.yearRead === 'number' ? book.yearRead : '?'
+
+  return `${month} / ${year}`
+}
+
 export default function BookPage({ book }: BookPageProps): JSX.Element {
   return (
     <PageFull meta={{ title: `${book.title}` }}>
-      <Container>
-        <Grid
-          css={{
-            width: '100%',
-            margin: 'auto',
-            marginTop: '20px',
-            gridTemplateColumns: '1fr',
-            gridTemplateRows: 'fit-content fit-content',
-            gridAutoFlow: 'row',
-            justifyItems: 'center',
-            alignItems: 'flex-start',
-            gap: '40px',
-            '@tablet': {
-              width: '100%',
-              margin: 'auto',
-              marginTop: '150px',
-              gridTemplateColumns: '150px 1fr',
-              gridTemplateRows: '1fr',
-              gridAutoFlow: 'column',
-              justifyItems: 'center',
-              alignItems: 'flex-start',
-              gap: '40px',
-            },
-            '@desktop': {
-              width: '70%',
-              margin: 'auto',
-              marginTop: '150px',
-              gridTemplateColumns: '200px 1fr',
-              gridTemplateRows: '1fr',
-              gridAutoFlow: 'column',
-              justifyItems: 'center',
-              alignItems: 'flex-start',
-              gap: '40px',
-            },
-          }}
-        >
-          <Box>
-            <BookCoverFor
-              book={book}
-              hasCover={!!book.coverWidth}
-              rotateInteract={{ x: 0, y: -35 }}
-            />
-            <Text as="p" css={{ textAlign: 'center', marginTop: 15 }}>
-              read on {book.monthRead}/{book.yearRead}
-            </Text>
-          </Box>
-          <Box
-            css={{
-              padding: '20px',
-              width: '100%',
-              '@tablet': { padding: '0px 20px 0px 0px', width: '100%' },
-              '@desktop': { padding: '0px', width: '100%' },
-            }}
-          >
-            <Text as="h1">{book.title}</Text>
-            {book.subtitle && (
-              <Text>
-                <br />
-                {book.subtitle}
-              </Text>
-            )}
-            <Text>
-              by {book.author} {book.coauthors}
-            </Text>
-            <br />
-            <br />
-            {book.idOlWork && book.isbn && (
-              <Text>
-                isbn: <a href={`https://openlibrary.org/works/${book.idOlWork}`}>{book.isbn}</a>
-              </Text>
-            )}
-            <br />
-            <Text>published: {book.yearFirstPublished}</Text>
-            <br />
-            <Text>pages: {book.pages}</Text>
-            {book.siblings?.previous && (
-              <Text>
+      <Box>
+        <Box>
+          <Box className={styles.bookContainer}>
+            <Box>
+              {book.siblings?.previous && (
                 <Link href={`/books/${book.siblings.previous.slug}`}>
-                  <a>previous</a>
+                  <Anchor>
+                    <CaretLeft size={45} />
+                  </Anchor>
                 </Link>
-              </Text>
-            )}
-            {book.siblings?.next && (
-              <Text>
+              )}
+            </Box>
+            <Box>
+              <Box className={styles.book}>
+                <BookCoverFor
+                  book={book}
+                  hasCover={!!book.coverWidth}
+                  rotateInteract={{ x: 0, y: -35 }}
+                />
+              </Box>
+              <Divider />
+              <Box className={styles.bookDetails}>
+                <Text as="h1">{book.title}</Text>
+                {book.subtitle && <Text>{book.subtitle}</Text>}
+                <Text>
+                  by {book.author} {book.coauthors}
+                </Text>
+                <br />
+                <Text>read on {makeBookDateString(book)}</Text>
+                {book.idOlWork && book.isbn && (
+                  <Text>
+                    isbn{' '}
+                    <Anchor href={`https://openlibrary.org/works/${book.idOlWork}`}>
+                      {book.isbn}
+                    </Anchor>
+                  </Text>
+                )}
+                <Text>published in {book.yearFirstPublished}</Text>
+                <Text>{book.pages} pages</Text>
+              </Box>
+            </Box>
+            <Box>
+              {book.siblings?.next && (
                 <Link href={`/books/${book.siblings.next.slug}`}>
-                  <a>next</a>
+                  <Anchor>
+                    <CaretRight size={45} />
+                  </Anchor>
                 </Link>
-              </Text>
-            )}
+              )}
+            </Box>
           </Box>
-        </Grid>
-      </Container>
+        </Box>
+      </Box>
     </PageFull>
   )
 }
