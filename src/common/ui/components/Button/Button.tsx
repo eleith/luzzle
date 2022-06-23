@@ -29,7 +29,7 @@ export const Button = React.forwardRef(
     })
 
     return (
-      <AriaButton className={clsx(className, variantClass)} ref={ref} as={as} {...props}>
+      <AriaButton className={clsx(className, variantClass) || undefined} ref={ref} as={as} {...props}>
         {children}
       </AriaButton>
     )

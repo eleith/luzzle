@@ -10,7 +10,7 @@ type Props = {
 export const Divider = React.forwardRef(
   ({ className, ...props }: Props, ref: React.Ref<HTMLHRElement>) => {
     const classVariant = styles.variants({})
-    return <Separator className={clsx(classVariant, className)} ref={ref} {...props} />
+    return <Separator className={clsx(classVariant, className) || undefined} ref={ref} {...props} />
   }
 )
 

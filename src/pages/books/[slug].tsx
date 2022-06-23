@@ -93,7 +93,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                 </Link>
               )}
             </Box>
-            <Box>
+            <Box className={styles.bookDetails}>
               <Box className={styles.book}>
                 <BookCoverFor
                   book={book}
@@ -102,7 +102,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                 />
               </Box>
               <Divider />
-              <Box className={styles.bookDetails}>
+              <Box>
                 <Text as="h1">{book.title}</Text>
                 {book.subtitle && <Text>{book.subtitle}</Text>}
                 <Text>
@@ -118,7 +118,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                     </Anchor>
                   </Text>
                 )}
-                <Text>published in {book.yearFirstPublished}</Text>
+                {book.yearFirstPublished && <Text>published in {book.yearFirstPublished}</Text>}
                 <Text>{book.pages} pages</Text>
               </Box>
             </Box>

@@ -11,7 +11,7 @@ type Props = HTMLProperties & {
 export const Box = React.forwardRef<HTMLElement, Props>(
   ({ as = 'div', className, ...props }: Props, ref) => {
     return React.createElement(as, {
-      className: clsx(className),
+      className: clsx(className) || undefined,
       ...props,
       ref,
     })
