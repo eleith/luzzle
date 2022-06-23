@@ -14,7 +14,7 @@ export const bookContainer = style({
 export const bookDetails = style({
   lineHeight: vars.lineHeights[1.5],
   marginTop: vars.space[5],
-  "@media": {
+  '@media': {
     [mediaBreakpointLaptop]: {
       width: vars.space['1/3'],
     },
