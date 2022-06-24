@@ -21,7 +21,6 @@ import log from './log'
 import * as cli from './cli'
 import { DeepPartial } from 'src/@types/utilities'
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import './prisma.mock'
 import prisma from './prisma'
 import path from 'path'
 
@@ -29,6 +28,20 @@ vi.mock('os')
 vi.mock('./log')
 vi.mock('fs/promises')
 vi.mock('./book')
+vi.mock('./prisma', () => {
+  return {
+    default: {
+      $disconnect: vi.fn(),
+      book: {
+        findMany: vi.fn(),
+        deleteMany: vi.fn(),
+        update: vi.fn(),
+        findUnique: vi.fn(),
+        create: vi.fn(),
+      },
+    },
+  }
+})
 
 const mocks = {
   cpus: vi.mocked(cpus),
