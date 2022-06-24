@@ -89,8 +89,8 @@ export const bookPagesBottomStyles = style({
   left: 1,
   bottom: 0,
   width: `calc(${bookCssVariables.width} - 4px)`,
-  height: `${bookCssVariables.thickness}`,
-  transform: `translateY(calc(${bookCssVariables.thickness} / 2 - 5)) translateZ(calc(0px - ${bookCssVariables.thickness} / 2)) rotateX(270deg)`,
+  height: bookCssVariables.thickness,
+  transform: `translateY(calc(${bookCssVariables.thickness} / 2 - 5px)) translateZ(calc(0px - ${bookCssVariables.thickness} / 2)) rotateX(270deg)`,
   background: `linear-gradient(0deg,
       #fff 0%,
       #f9f9f9 5%,
@@ -123,7 +123,7 @@ export const bookPagesTopStyles = style({
   top: 0,
   width: `calc(${bookCssVariables.width} - 4px)`,
   height: bookCssVariables.thickness,
-  transform: `translateY(calc(0px - (${bookCssVariables.thickness} / 2 - 5))) translateZ(calc(0px - ${bookCssVariables.thickness} / 2)) rotateX(270deg)`,
+  transform: `translateY(calc(0px - (${bookCssVariables.thickness} / 2 - 5px))) translateZ(calc(0px - ${bookCssVariables.thickness} / 2)) rotateX(270deg)`,
   background: `linear-gradient(0deg,
       #fff 0%,
       #f9f9f9 5%,
@@ -156,7 +156,7 @@ export const bookSpineStyles = style({
   top: 0,
   width: `calc(${bookCssVariables.thickness} - 2px)`,
   height: bookCssVariables.height,
-  transform: `translateX(calc(0px - (${bookCssVariables.thickness} / 2 - 2))) translateZ(calc(0px - ${bookCssVariables.thickness} / 2)) rotateY(-90deg)`,
+  transform: `translateX(calc(0px - (${bookCssVariables.thickness} / 2 - 2px))) translateZ(calc(0px - ${bookCssVariables.thickness} / 2)) rotateY(-90deg)`,
   backgroundColor: bookCssVariables.backgroundColor,
 })
 
