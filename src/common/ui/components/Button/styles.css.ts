@@ -17,35 +17,7 @@ const sizeVariants = {
 }
 
 const typeVariants = {
-  primary: style({
-    color: vars.colors.primaryText,
-    background: vars.colors.primary,
-    selectors: {
-      '&:focus': {
-        boxShadow: '0 0 0 0.2em rgba(0, 109, 255, 0.4)',
-      },
-      '&:hover': {},
-      '&:active': {},
-    },
-  }),
-  secondary: style({
-    selectors: {
-      '&:focus': {},
-      '&:hover': {},
-      '&:active': {},
-    },
-  }),
-  tertiary: style({
-    selectors: {
-      '&:focus': {},
-      '&:hover': {},
-      '&:active': {},
-    },
-  }),
-}
-
-export const variants = recipe({
-  base: style({
+  button: style({
     position: 'relative',
     display: 'inline-flex',
     alignItems: 'center',
@@ -58,7 +30,6 @@ export const variants = recipe({
     overflow: 'visible',
     verticalAlign: 'middle',
     padding: '0 8px 0 8px',
-    color: vars.colors.text,
     backgroundColor: 'transparent',
     boxShadow: `0 1px 0 rgba(27,31,36,0.04), inset 0 1px 0 rgba(255,255,255,0.25)`,
     transition: '80ms cubic-bezier(0.33, 1, 0.68, 1)',
@@ -83,6 +54,26 @@ export const variants = recipe({
       },
     },
   }),
+  link: style({}),
+}
+
+const buttonTypeVariants = {
+  primary: style({
+    background: vars.colors.primary,
+    selectors: {
+      '&:focus': {
+        boxShadow: '0 0 0 0.2em rgba(0, 109, 255, 0.4)',
+      },
+      '&:hover': {},
+      '&:active': {},
+    },
+  }),
+}
+
+export const variants = recipe({
+  base: style({
+    color: vars.colors.text,
+  }),
   variants: {
     size: {
       ...sizeVariants,
@@ -96,14 +87,15 @@ export const variants = recipe({
     type: {
       ...typeVariants,
     },
+    buttonType: {
+      ...buttonTypeVariants,
+    },
   },
   compoundVariants: [],
   defaultVariants: {
     size: 'small',
-    type: 'primary',
+    type: 'button',
   },
 })
 
-export type ButtonSize = keyof typeof sizeVariants
-export type ButtonType = keyof typeof typeVariants
 export type ButtonVariants = RecipeVariants<typeof variants>

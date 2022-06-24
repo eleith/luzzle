@@ -17,6 +17,7 @@ export type ModeColors = {
   primaryLinkHover: string
   shadow: string
   text: string
+  textShadow: string
   divider: string
 }
 
@@ -68,6 +69,7 @@ export const colors: Colors = {
     primaryLinkHover: primary.string(),
     shadow: black.string(),
     text: black.string(),
+    textShadow: white.darken(0.3).string(),
     divider: black.lighten(0.2).string(),
   },
   [Modes.dark]: {
@@ -81,6 +83,7 @@ export const colors: Colors = {
     primaryLinkHover: primary.desaturate(0.5).string(),
     shadow: black.string(),
     text: white.string(),
+    textShadow: white.darken(0.7).string(),
     divider: white.darken(0.2).string(),
   },
 }
