@@ -19,17 +19,23 @@ type Props = {
 
 export const Button = React.forwardRef(
   (
-    { as = 'button', children, size = 'large', type = 'primary', className, ...props }: Props,
+    { as = 'button', children, size, type, buttonType, className, disabled, ...props }: Props,
     ref: React.Ref<HTMLButtonElement> | React.Ref<HTMLAnchorElement>
   ) => {
     const variantClass = styles.variants({
-      disabled: props.disabled,
+      disabled: disabled,
       size,
-      type,
+      type: type || as === 'a' ? 'link' : 'button',
+      buttonType,
     })
 
     return (
-      <AriaButton className={clsx(className, variantClass) || undefined} ref={ref} as={as} {...props}>
+      <AriaButton
+        className={clsx(className, variantClass) || undefined}
+        ref={ref}
+        as={as}
+        {...props}
+      >
         {children}
       </AriaButton>
     )

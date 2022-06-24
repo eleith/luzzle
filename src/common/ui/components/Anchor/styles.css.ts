@@ -14,6 +14,14 @@ const colors = {
       '&:visited': {},
     },
   }),
+  inherit: style({
+    color: 'inherit',
+    selectors: {
+      '&:hover': {
+      },
+      '&:visited': {},
+    },
+  }),
 }
 
 const hoverActions = {

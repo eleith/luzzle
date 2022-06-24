@@ -25,7 +25,7 @@ export const Anchor = React.forwardRef(
   ) => {
     const variantClass = styles.variants({ color, hoverAction })
     return (
-      <Box className={clsx(variantClass, className)} ref={ref} as={as} {...props}>
+      <Box className={clsx(variantClass, className) || undefined} ref={ref} as={as} {...props}>
         {children}
       </Box>
     )

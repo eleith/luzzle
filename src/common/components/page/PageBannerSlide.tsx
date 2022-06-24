@@ -1,8 +1,9 @@
-import { Box } from '@app/common/ui/components'
+import { Anchor, Box, Button } from '@app/common/ui/components'
 import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon } from 'phosphor-react'
+import { Sun, Moon, HandWaving } from 'phosphor-react'
 import * as classNames from './PageBannerSlide.css'
+import Link from 'next/link'
 
 interface PageProps {
   children?: React.ReactNode
@@ -42,8 +43,15 @@ export default function PageMarkdown(props: PageProps): JSX.Element {
   return (
     <Box>
       <Box className={classNames.banner}>
+        <Box className={classNames.navItem}>
+          <Link href="/" passHref>
+            <Anchor color="inherit">
+              <HandWaving size={25} />
+            </Anchor>
+          </Link>
+        </Box>
         <Box>{children && children}</Box>
-        <Box className={classNames.themeButton}>{themeToggle}</Box>
+        <Box className={classNames.navItem}>{themeToggle}</Box>
       </Box>
     </Box>
   )
