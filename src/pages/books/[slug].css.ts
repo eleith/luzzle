@@ -8,7 +8,10 @@ export const bookContainer = style({
   marginTop: vars.space[5],
   gap: vars.space[5],
   justifyContent: 'space-between',
-  alignItems: 'center',
+})
+
+export const bookNavigation = style({
+  marginTop: vars.space[52],
 })
 
 export const bookDetails = style({
