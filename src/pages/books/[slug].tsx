@@ -84,7 +84,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
       <Box>
         <Box>
           <Box className={styles.bookContainer}>
-            <Box>
+            <Box className={styles.bookNavigation}>
               {book.siblings?.previous && (
                 <Link href={`/books/${book.siblings.previous.slug}`}>
                   <Anchor>
@@ -122,7 +122,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                 <Text>{book.pages} pages</Text>
               </Box>
             </Box>
-            <Box>
+            <Box className={styles.bookNavigation}>
               {book.siblings?.next && (
                 <Link href={`/books/${book.siblings.next.slug}`}>
                   <Anchor>
