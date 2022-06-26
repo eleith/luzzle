@@ -61,7 +61,7 @@ function getBookContainerVanillaStyles(
     bookShadow: styles.bookShadowStyles,
     bookSpine: styles.bookSpineStyles,
     bookCover: styles.bookCoverStyles,
-    bookCoverLoading: styles.pulseAnimation,
+    bookCoverLoading: styles.coverLoadingStyles,
   }
 }
 
