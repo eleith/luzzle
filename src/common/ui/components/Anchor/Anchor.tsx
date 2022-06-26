@@ -20,12 +20,17 @@ type Props = {
 
 export const Anchor = React.forwardRef(
   (
-    { as = 'a', children, className, color, hoverAction, ...props }: Props,
+    { as = 'a', children, className, disabled, color, hoverAction, ...props }: Props,
     ref: React.Ref<HTMLAnchorElement> | React.Ref<HTMLSpanElement>
   ) => {
-    const variantClass = styles.variants({ color, hoverAction })
+    const variantClass = styles.variants({ color: disabled ? 'inherit' : color, disabled, hoverAction })
     return (
-      <Box className={clsx(variantClass, className) || undefined} ref={ref} as={as} {...props}>
+      <Box
+        className={clsx(variantClass, className) || undefined}
+        ref={ref}
+        as={disabled ? 'span' : as}
+        {...props}
+      >
         {children}
       </Box>
     )

@@ -78,21 +78,49 @@ function makeBookDateString(book?: Book): string {
   return `${month} / ${year}`
 }
 
+function makeNextLink(book: Book): JSX.Element {
+  if (book.siblings?.next) {
+    return (
+      <Link href={`/books/${book.siblings.next.slug}`} passHref>
+        <Anchor>
+          <CaretRight size={45} />
+        </Anchor>
+      </Link>
+    )
+  }
+
+  return (
+    <Anchor disabled>
+      <CaretRight size={45} />
+    </Anchor>
+  )
+}
+
+function makePreviousLink(book: Book): JSX.Element {
+  if (book.siblings?.previous) {
+    return (
+      <Link href={`/books/${book.siblings.previous.slug}`} passHref>
+        <Anchor>
+          <CaretLeft size={45} />
+        </Anchor>
+      </Link>
+    )
+  }
+
+  return (
+    <Anchor disabled>
+      <CaretLeft size={45} />
+    </Anchor>
+  )
+}
+
 export default function BookPage({ book }: BookPageProps): JSX.Element {
   return (
     <PageFull meta={{ title: `${book.title}` }}>
       <Box>
         <Box>
           <Box className={styles.bookContainer}>
-            <Box className={styles.bookNavigation}>
-              {book.siblings?.previous && (
-                <Link href={`/books/${book.siblings.previous.slug}`}>
-                  <Anchor>
-                    <CaretLeft size={45} />
-                  </Anchor>
-                </Link>
-              )}
-            </Box>
+            <Box className={styles.bookNavigation}>{makePreviousLink(book)}</Box>
             <Box className={styles.bookDetails}>
               <Box className={styles.book}>
                 <BookCoverFor
@@ -122,15 +150,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                 <Text>{book.pages} pages</Text>
               </Box>
             </Box>
-            <Box className={styles.bookNavigation}>
-              {book.siblings?.next && (
-                <Link href={`/books/${book.siblings.next.slug}`}>
-                  <Anchor>
-                    <CaretRight size={45} />
-                  </Anchor>
-                </Link>
-              )}
-            </Box>
+            <Box className={styles.bookNavigation}>{makeNextLink(book)}</Box>
           </Box>
         </Box>
       </Box>

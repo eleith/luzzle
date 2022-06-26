@@ -55,7 +55,7 @@ function makeBookCardLink(book?: Book): JSX.Element {
     )
   } else {
     return (
-      <BookCover>
+      <BookCover loading={true}>
         <VisuallyHidden>loading a book</VisuallyHidden>
       </BookCover>
     )

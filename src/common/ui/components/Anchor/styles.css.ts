@@ -17,8 +17,7 @@ const colors = {
   inherit: style({
     color: 'inherit',
     selectors: {
-      '&:hover': {
-      },
+      '&:hover': {},
       '&:visited': {},
     },
   }),
@@ -78,18 +77,29 @@ export const variants = recipe({
     },
   }),
   variants: {
-    color: {
-      ...colors,
+    disabled: {
+      true: {
+        cursor: 'not-allowed',
+        color: vars.colors.textShadow,
+        selectors: {
+          '&:hover': {
+            cursor: 'not-allowed',
+          },
+        },
+      },
     },
-    hoverAction: {
-      ...hoverActions,
+      color: {
+        ...colors,
+      },
+      hoverAction: {
+        ...hoverActions,
+      },
     },
-  },
-  compoundVariants: [],
-  defaultVariants: {
-    color: 'primary',
-    hoverAction: 'none',
-  },
-})
+    compoundVariants: [],
+    defaultVariants: {
+      color: 'primary',
+      hoverAction: 'none',
+    },
+  })
 
 export type AnchorVariants = RecipeVariants<typeof variants>
