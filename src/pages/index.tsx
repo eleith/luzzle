@@ -86,7 +86,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   const { data } = useGraphSWR(getRandomBookQuery, undefined, {
     revalidateOnFocus: false,
   })
-  const randomBook = data?.book
+  const randomBook = data?.book || undefined
 
   return (
     <PageFull meta={{ title: 'books' }}>
@@ -106,15 +106,13 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
               {makeBookDateString(book2)}
             </Text>
           </Box>
-          {randomBook && (
-            <Box>
-              {makeBookCardLink(randomBook)}
-              <br />
-              <Text as="h1" size={'medium'}>
-                {makeBookDateString(randomBook)}
-              </Text>
-            </Box>
-          )}
+          <Box>
+            {makeBookCardLink(randomBook)}
+            <br />
+            <Text as="h1" size={'medium'}>
+              {makeBookDateString(randomBook)}
+            </Text>
+          </Box>
         </Box>
         <Box className={classNames.booksActions}>
           <Link href="/books" passHref>

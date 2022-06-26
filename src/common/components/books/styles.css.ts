@@ -32,7 +32,12 @@ const pulse = keyframes({
   '100%': { backgroundColor: bookCssVariables.backgroundColor },
 })
 
-export const pulseAnimation = style({
+export const coverLoadingStyles = style({
+  position: 'absolute',
+  top: '0px',
+  left: '0px',
+  bottom: '0px',
+  right: '0px',
   animationName: `${pulse}`,
   animationDuration: '500ms',
   animationDirection: 'alternate',
