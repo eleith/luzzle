@@ -10,6 +10,10 @@ import { Box, Text, Anchor, Divider } from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './[slug].css'
 import { CaretLeft, CaretRight } from 'phosphor-react'
+import { useDialogState, Dialog } from 'ariakit/dialog'
+import { Form, useFormState } from 'ariakit'
+import { FormInput } from '@app/common/ui/components/FormInput'
+import { vars } from '@app/common/ui/css'
 
 interface BookPageStaticParams {
   params: {
@@ -115,8 +119,11 @@ function makePreviousLink(book: Book): JSX.Element {
 }
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
+  const dialog = useDialogState()
+  const form = useFormState({ defaultValues: { email: '', message: '' } })
+
   return (
-    <PageFull meta={{ title: `${book.title}` }}>
+    <PageFull meta={{ title: book.title }}>
       <Box>
         <Box>
           <Box className={styles.bookContainer}>
@@ -148,6 +155,37 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                 )}
                 {book.yearFirstPublished && <Text>published in {book.yearFirstPublished}</Text>}
                 <Text>{book.pages} pages</Text>
+              </Box>
+              <Box>
+                <Dialog state={dialog}>
+                  <Box
+                    style={{
+                      background: vars.colors.surface,
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                    }}
+                  >
+                    <Box
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Form state={form}>
+                        <FormInput name={form.names.email} placeholder={'your email'} />
+                        <br />
+                        <FormInput
+                          name={form.names.message}
+                          placeholder={'your message'}
+                          as={'textarea'}
+                        />
+                      </Form>
+                    </Box>
+                  </Box>
+                </Dialog>
               </Box>
             </Box>
             <Box className={styles.bookNavigation}>{makeNextLink(book)}</Box>
