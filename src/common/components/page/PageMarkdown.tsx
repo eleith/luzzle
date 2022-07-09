@@ -7,7 +7,7 @@ import Page from './Page'
 import PageBannerSlide from './PageBannerSlide'
 
 interface PageProps {
-  meta?: MetaProps
+  meta: MetaProps
   children: React.ReactNode
   link: string
   markdown?: string
@@ -36,11 +36,7 @@ export default function PageMarkdown(props: PageProps): JSX.Element {
         </Box>
       </PageBannerSlide>
       <Box>{children}</Box>
-      <Text
-        as={'code'}
-      >
-        {markdown}
-      </Text>
+      <Text as={'code'}>{markdown}</Text>
     </Page>
   )
 }

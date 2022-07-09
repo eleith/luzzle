@@ -36,7 +36,7 @@ const sizes = {
 }
 
 export const variants = recipe({
-  base: {  },
+  base: {},
   variants: {
     size: {
       ...sizes,

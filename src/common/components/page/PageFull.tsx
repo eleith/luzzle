@@ -4,7 +4,7 @@ import Page from './Page'
 import PageBannerSlide from './PageBannerSlide'
 
 interface PageProps {
-  meta?: MetaProps
+  meta: MetaProps
   children: React.ReactNode
 }
 

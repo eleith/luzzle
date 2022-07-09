@@ -103,7 +103,7 @@ export default function Books({ books }: BooksProps): JSX.Element {
   const allBooks = totalBooks.map((book) => makeBookCardLink(book))
 
   return (
-    <PageFull meta={{ title: '' }}>
+    <PageFull meta={{ title: 'books' }}>
       <Box>
         <Box className={styles.booksContainer}>{allBooks}</Box>
         {!isEnd && (

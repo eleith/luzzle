@@ -15,7 +15,7 @@ export const base = style({
   padding: 0,
 
   // Allow adding border to element by just adding borderWidth
-  borderColor: vars.colors.foreground,
+  borderColor: vars.colors.onBackground,
   borderStyle: vars.borderStyles.solid,
   borderWidth: 0,
 
@@ -67,7 +67,7 @@ const field = style([
   style({
     outline: 'none',
     '::placeholder': {
-      color: vars.colors.text,
+      color: vars.colors.background,
       opacity: vars.opacity['100'],
     },
   }),
@@ -181,6 +181,8 @@ globalStyle('*', {
  */
 globalStyle('html, body', {
   height: '100%',
+  background: vars.colors.background,
+  color: vars.colors.onBackground,
 })
 
 /*
@@ -227,5 +229,19 @@ globalStyle('html:focus-within', {
     '(prefers-reduced-motion: reduce)': {
       scrollBehavior: 'auto',
     },
+  },
+})
+
+globalStyle(':root', {
+  vars: {
+    '--mdc-theme-primary': vars.colors.primary,
+    '--mdc-theme-primary-bg': vars.colors.primaryContainer,
+    '--mdc-theme-on-primary': vars.colors.onPrimary,
+    '--mdc-theme-secondary': vars.colors.secondary,
+    '--mdc-theme-secondary-bg': vars.colors.secondaryContainer,
+    '--mdc-theme-on-secondary': vars.colors.onSecondary,
+    '--mdc-theme-surface': vars.colors.surface,
+    '--mdc-theme-on-surface': vars.colors.onSurface,
+    '--mdc-theme-background': vars.colors.background,
   },
 })

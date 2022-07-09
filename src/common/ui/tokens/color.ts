@@ -1,5 +1,8 @@
 import Color from 'color'
 
+// colors generated using builder from:
+// https://material-foundation.github.io/material-theme-builder
+
 export const Modes = {
   light: 'light',
   dark: 'dark',
@@ -7,83 +10,144 @@ export const Modes = {
 
 export type Mode = keyof typeof Modes
 export type ModeColors = {
-  background: string
-  backgroundSecondary: string
-  backgroundTertiary: string
-  foreground: string
   primary: string
-  primaryText: string
-  primaryLink: string
-  primaryLinkHover: string
-  shadow: string
-  text: string
-  textShadow: string
-  divider: string
+  secondary: string
+  tertiary: string
+  error: string
+  outline: string
+  background: string
+  surface: string
+  surfaceInverse: string
+  surfaceVariant: string
+  onPrimary: string
+  onSecondary: string
+  onTertiary: string
+  onError: string
+  onBackground: string
+  onSurface: string
+  onSurfaceInverse: string
+  onSurfaceVariant: string
+  primaryContainer: string
+  secondaryContainer: string
+  tertiaryContainer: string
+  errorContainer: string
+  onPrimaryContainer: string
+  onSecondaryContainer: string
+  onTertiaryContainer: string
+  onErrorContainer: string
 }
 
-const black = Color.rgb(0, 0, 0)
-const white = Color.rgb(255, 255, 255)
-const info = Color('#384d4b')
-const success = Color('#7db94d')
-const warning = Color('#fba915')
-const danger = Color('#f44336')
-const dark = Color('#292d39')
-const light = Color('#ffffff')
-const primary = Color('#ECD348')
-const lightShade = Color('#F5F6F4')
-const lightAccent = Color('#B29D93')
-const darkShade = Color('#3C4A4F')
-const darkAccent = Color('#C55B49')
+// https://material-foundation.github.io/material-theme-builder
 
-const base = {
-  black: black.string(),
-  white: white.string(),
-  info: info.string(),
-  warning: warning.string(),
-  success: success.string(),
-  dark: dark.string(),
-  light: light.string(),
-  danger: danger.string(),
-  lightShade: lightShade.string(),
-  darkShade: darkShade.string(),
-  lightAccent: lightAccent.string(),
-  darkAccent: darkAccent.string(),
-}
+const primaryLight = Color('#715c00')
+const onPrimaryLight = Color('#ffffff')
+const primaryContainerLight = Color('#ffe179')
+const onPrimaryContainerLight = Color('#231b00')
+const secondaryLight = Color('#9f4200')
+const onSecondaryLight = Color('#ffffff')
+const secondaryContainerLight = Color('#ffdbcb')
+const onSecondaryContainerLight = Color('#341100')
+const tertiaryLight = Color('#006c46')
+const onTertiaryLight = Color('#ffffff')
+const tertiaryContainerLight = Color('#8ff7c0')
+const onTertiaryContainerLight = Color('#002112')
+const errorLight = Color('#ba1a1a')
+const onErrorLight = Color('#ffffff')
+const errorContainerLight = Color('#ffdad6')
+const onErrorContainerLight = Color('#410002')
+const outlineLight = Color('#7d7767')
+const backgroundLight = Color('#fffbff')
+const onBackgroundLight = Color('#231b00')
+const surfaceLight = Color('#fffbff')
+const onSurfaceLight = Color('#231b00')
+const surfaceVariantLight = Color('#eae2cf')
+const onSurfaceVariantLight = Color('#4b4639')
+const surfaceInverseLight = Color('#3c2f00')
+const onSurfaceInverseLight = Color('#fff0ca')
+const primaryDark = Color('#e5c449')
+const onPrimaryDark = Color('#3b2f00')
+const primaryContainerDark = Color('#554500')
+const onPrimaryContainerDark = Color('#ffe179')
+const secondaryDark = Color('#ffb692')
+const onSecondaryDark = Color('#552000')
+const secondaryContainerDark = Color('#793100')
+const onSecondaryContainerDark = Color('#ffdbcb')
+const tertiaryDark = Color('#72daa5')
+const onTertiaryDark = Color('#003822')
+const tertiaryContainerDark = Color('#005234')
+const onTertiaryContainerDark = Color('#8ff7c0')
+const errorDark = Color('#ffb4ab')
+const onErrorDark = Color('#690005')
+const errorContainerDark = Color('#93000a')
+const onErrorContainerDark = Color('#ffdad6')
+const outlineDark = Color('#979080')
+const backgroundDark = Color('#231b00')
+const onBackgroundDark = Color('#ffe084')
+const surfaceDark = Color('#231b00')
+const onSurfaceDark = Color('#ffe084')
+const surfaceVariantDark = Color('#4b4639')
+const onSurfaceVariantDark = Color('#cec6b4')
+const surfaceInverseDark = Color('#ffe084')
+const onSurfaceInverseDark = Color('#231b00')
 
 export type Colors = {
-  base: typeof base
   [Modes.light]: ModeColors
   [Modes.dark]: ModeColors
 }
 
 export const colors: Colors = {
-  base,
   [Modes.light]: {
-    background: Color.rgb(0, 0, 0).string(),
-    backgroundSecondary: Color.rgb(247, 247, 247).string(),
-    backgroundTertiary: Color.rgb(247, 247, 247).string(),
-    foreground: Color.rgb(0, 0, 0).string(),
-    primary: Color.rgb(255, 214, 10).string(),
-    primaryText: black.string(),
-    primaryLink: primary.string(),
-    primaryLinkHover: primary.string(),
-    shadow: black.string(),
-    text: black.string(),
-    textShadow: white.darken(0.3).string(),
-    divider: black.lighten(0.2).string(),
+    primary: primaryLight.string(),
+    secondary: secondaryLight.string(),
+    tertiary: tertiaryLight.string(),
+    error: errorLight.string(),
+    outline: outlineLight.string(),
+    background: backgroundLight.string(),
+    surface: surfaceLight.string(),
+    surfaceInverse: surfaceInverseLight.string(),
+    surfaceVariant: surfaceVariantLight.string(),
+    onPrimary: onPrimaryLight.string(),
+    onSecondary: onSecondaryLight.string(),
+    onTertiary: onTertiaryLight.string(),
+    onError: onErrorLight.string(),
+    onBackground: onBackgroundLight.string(),
+    onSurface: onSurfaceLight.string(),
+    onSurfaceInverse: onSurfaceInverseLight.string(),
+    onSurfaceVariant: onSurfaceVariantLight.string(),
+    primaryContainer: primaryContainerLight.string(),
+    secondaryContainer: secondaryContainerLight.string(),
+    tertiaryContainer: tertiaryContainerLight.string(),
+    errorContainer: errorContainerLight.string(),
+    onPrimaryContainer: onPrimaryContainerLight.string(),
+    onSecondaryContainer: onSecondaryContainerLight.string(),
+    onTertiaryContainer: onTertiaryContainerLight.string(),
+    onErrorContainer: onErrorContainerLight.string(),
   },
   [Modes.dark]: {
-    background: Color.rgb(20, 20, 20).string(),
-    backgroundSecondary: Color.rgb(10, 10, 10).string(),
-    backgroundTertiary: Color.rgb(20, 20, 20).string(),
-    foreground: Color.rgb(255, 255, 255).string(),
-    primary: Color.rgb(255, 214, 10).string(),
-    primaryText: black.string(),
-    primaryLink: primary.string(),
-    primaryLinkHover: primary.desaturate(0.5).string(),
-    shadow: black.string(),
-    text: white.string(),
-    textShadow: white.darken(0.7).string(),
-    divider: white.darken(0.2).string(),
+    primary: primaryDark.string(),
+    secondary: secondaryDark.string(),
+    tertiary: tertiaryDark.string(),
+    error: errorDark.string(),
+    outline: outlineDark.string(),
+    background: backgroundDark.string(),
+    surface: surfaceDark.string(),
+    surfaceInverse: surfaceInverseDark.string(),
+    surfaceVariant: surfaceVariantDark.string(),
+    onPrimary: onPrimaryDark.string(),
+    onSecondary: onSecondaryDark.string(),
+    onTertiary: onTertiaryDark.string(),
+    onError: onErrorDark.string(),
+    onBackground: onBackgroundDark.string(),
+    onSurface: onSurfaceDark.string(),
+    onSurfaceInverse: onSurfaceInverseDark.string(),
+    onSurfaceVariant: onSurfaceVariantDark.string(),
+    primaryContainer: primaryContainerDark.string(),
+    secondaryContainer: secondaryContainerDark.string(),
+    tertiaryContainer: tertiaryContainerDark.string(),
+    errorContainer: errorContainerDark.string(),
+    onPrimaryContainer: onPrimaryContainerDark.string(),
+    onSecondaryContainer: onSecondaryContainerDark.string(),
+    onTertiaryContainer: onTertiaryContainerDark.string(),
+    onErrorContainer: onErrorContainerDark.string(),
   },
 }

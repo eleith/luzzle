@@ -6,10 +6,10 @@ import { vars } from '../../css'
 
 const colors = {
   primary: style({
-    color: vars.colors.primaryLink,
+    color: vars.colors.primary,
     selectors: {
       '&:hover': {
-        color: vars.colors.primaryLinkHover,
+        color: vars.colors.onPrimaryContainer,
       },
       '&:visited': {},
     },
@@ -80,7 +80,7 @@ export const variants = recipe({
     disabled: {
       true: {
         cursor: 'not-allowed',
-        color: vars.colors.textShadow,
+        color: vars.colors.surface,
         selectors: {
           '&:hover': {
             cursor: 'not-allowed',
@@ -88,18 +88,18 @@ export const variants = recipe({
         },
       },
     },
-      color: {
-        ...colors,
-      },
-      hoverAction: {
-        ...hoverActions,
-      },
+    color: {
+      ...colors,
     },
-    compoundVariants: [],
-    defaultVariants: {
-      color: 'primary',
-      hoverAction: 'none',
+    hoverAction: {
+      ...hoverActions,
     },
-  })
+  },
+  compoundVariants: [],
+  defaultVariants: {
+    color: 'primary',
+    hoverAction: 'none',
+  },
+})
 
 export type AnchorVariants = RecipeVariants<typeof variants>

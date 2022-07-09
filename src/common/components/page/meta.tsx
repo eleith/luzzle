@@ -1,8 +1,12 @@
-const makeTitle = (title: string, name: string): string =>
-  title === name ? title : `${title} | ${name}`
+import Head from 'next/head'
+
+// NOTE: https://github.com/vercel/next.js/issues/5635
+
+const makeTitle = (title: string, name?: string): string =>
+  title === name || name === undefined ? title : `${title} | ${name}`
 
 export interface MetaProps {
-  title?: string
+  title: string
   name?: string
   description?: string
   image?: string
@@ -10,19 +14,12 @@ export interface MetaProps {
   children?: React.ReactNode
 }
 
-const Meta = ({
-  title = '',
-  name = '',
-  description = '',
-  image = '',
-  url = '',
-  children = [],
-}: MetaProps): JSX.Element => (
-  <>
+const Meta = ({ title, name, description, image, url, children = [] }: MetaProps): JSX.Element => (
+  <Head>
+    <title key="title">{makeTitle(title, name)}</title>
     <meta key="og_locale" property="og:locale" content="en_US" />
     <meta key="og_type" property="og:type" content="website" />
     <meta key="og_site" property="og:site_name" content={name} />
-    <title key="title">{makeTitle(title, name)}</title>
     <meta key="og_title" property="og:title" content={makeTitle(title, name)} />
     <meta key="tw_title" name="twitter:title" content={makeTitle(title, name)} />
     {description && (
@@ -64,7 +61,7 @@ const Meta = ({
     />
     <link key="manifest" rel="manifest" href={`${url}/site.webmanifest`} />
     {children}
-  </>
+  </Head>
 )
 
 export default Meta

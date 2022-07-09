@@ -4,7 +4,7 @@ import { vars } from '../../css'
 
 export const variants = recipe({
   base: style({
-    borderBottomColor: vars.colors.divider,
+    borderBottomColor: vars.colors.outline,
     borderBottomStyle: 'solid',
     borderBottomWidth: '1px',
   }),
