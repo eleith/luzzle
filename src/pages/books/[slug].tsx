@@ -14,6 +14,7 @@ import { useDialogState, Dialog } from 'ariakit/dialog'
 import { Form, useFormState } from 'ariakit'
 import { FormInput } from '@app/common/ui/components/FormInput'
 import { vars } from '@app/common/ui/css'
+import config from '@app/common/config'
 
 interface BookPageStaticParams {
   params: {
@@ -121,9 +122,10 @@ function makePreviousLink(book: Book): JSX.Element {
 export default function BookPage({ book }: BookPageProps): JSX.Element {
   const dialog = useDialogState()
   const form = useFormState({ defaultValues: { email: '', message: '' } })
+  const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
 
   return (
-    <PageFull meta={{ title: book.title }}>
+    <PageFull meta={{ title: book.title, image: coverUrl }}>
       <Box>
         <Box>
           <Box className={styles.bookContainer}>
