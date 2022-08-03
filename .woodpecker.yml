@@ -16,15 +16,26 @@ pipeline:
       - RCLONE_GCS_BUCKET_POLICY_ONLY=true
       - RCLONE_GCS_LOCATION=us-central-1
       - RCLONE_GCS_SERVICE_ACCOUNT_FILE=/tmp/rclone-service-key.json
+      - RCLONE_GCS_DB=:gcs:eleith-io-site-data/main/sqlite.dev.db
+      - RCLONE_DAV_BOOK_SOURCE=:webdav:documents/eleith/notes-md/personal/records/books
+      - RCLONE_DAV_BOOK_DESTINATION=/workspace/data/books
     commands:
       - mkdir /workspace/data
       - mkdir /workspace/data/books
       - mkdir prisma/data
       - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
-      - rclone copy :webdav:documents/eleith/notes-md/personal/records/books /workspace/data/books
-      - rclone copy :gcs:eleith-io-site-data/main/sqlite.dev.db prisma/data
-    secrets: [ rclone_webdav_url, rclone_webdav_vendor, rclone_webdav_user, rclone_webdav_pass, rclone_service_key_json, rclone_gcs_project_number]
+      - rclone copy $RCLONE_DAV_BOOK_SOUCE $RCLONE_DAV_BOOK_DESTINATION
+      - rclone copy $RCLONE_GCS_DB prisma/data
+    secrets:
+      [
+        rclone_webdav_url,
+        rclone_webdav_vendor,
+        rclone_webdav_user,
+        rclone_webdav_pass,
+        rclone_service_key_json,
+        rclone_gcs_project_number,
+      ]
     when:
       branch: main
   build-content:
@@ -38,7 +49,7 @@ pipeline:
     when:
       branch: main
   deploy:
-    image: cr.eleith.com/ci/gcs-web-deploy:latest
+    image: git.eleith.com/eleith/gcs-web-deploy:3.0.0
     environment:
       - LOG_DIR=gs://eleith-cloud-builds/logs
       - STAGING_DIR=gs://eleith-cloud-builds/eleith-io-site
@@ -57,11 +68,17 @@ pipeline:
       - gsutil -m rsync -d -r prisma/data gs://eleith-io-site-data/main
       - gcloud builds submit --gcs-source-staging-dir $STAGING_DIR --gcs-log-dir $LOG_DIR --tag $GCR_IMAGE --project=$GCS_PROJECT
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
-    secrets: [ cloud_run_service_key_json, nextjs_env_host, nextjs_env_public_host_static, nextjs_env_image_domain ]
+    secrets:
+      [
+        cloud_run_service_key_json,
+        nextjs_env_host,
+        nextjs_env_public_host_static,
+        nextjs_env_image_domain,
+      ]
     when:
       branch: main
   notify:
-    image: cr.eleith.com/ci/woodpecker-email:1.0.0
+    image: git.eleith.com/eleith/woodpecker-email:1.0.0
     environment:
       - PLUGIN_FROM_ADDRESS=online-woodpecker@eleith.com
       - PLUGIN_FROM_NAME="eleith ci"
