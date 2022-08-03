@@ -25,7 +25,7 @@ pipeline:
       - mkdir prisma/data
       - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
-      - rclone copy $RCLONE_DAV_BOOK_SOUCE $RCLONE_DAV_BOOK_DESTINATION
+      - rclone copy $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
       - rclone copy $RCLONE_GCS_DB prisma/data
     secrets:
       [
