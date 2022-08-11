@@ -5,7 +5,8 @@ import clsx, { ClassValue } from 'clsx'
 
 type Props = {
   className?: ClassValue
-} & styles.Variants & SeparatorProps
+} & styles.Variants &
+  SeparatorProps
 
 export const Divider = React.forwardRef(
   ({ className, ...props }: Props, ref: React.Ref<HTMLHRElement>) => {

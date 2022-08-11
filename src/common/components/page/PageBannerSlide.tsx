@@ -1,4 +1,4 @@
-import { Anchor, Box, Button } from '@app/common/ui/components'
+import { Anchor, Box } from '@app/common/ui/components'
 import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 import { Sun, Moon, HandWaving } from 'phosphor-react'
