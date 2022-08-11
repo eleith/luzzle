@@ -1,38 +1,37 @@
 import * as React from 'react'
 import * as styles from './styles.css'
-import { Button as MaterialButton, ButtonProps } from '@rmwc/button'
+import { Button as AriaButton } from 'ariakit/button'
 import clsx, { ClassValue } from 'clsx'
-import '@material/button/dist/mdc.button.css'
-import '@material/ripple/dist/mdc.ripple.css'
 
 type Props = {
-  as?: undefined | 'a'
+  as?: 'a' | 'button'
   children?: React.ReactNode
   className?: ClassValue
 } & styles.ButtonVariants &
-  ButtonProps
+  React.HTMLAttributes<HTMLButtonElement>
 
 export const Button = React.forwardRef(
   (
-    { as, children, size, type, buttonType, className, disabled, ...props }: Props,
+    { as = 'button', children, size, type, className, raised, use, disabled, ...props }: Props,
     ref: React.Ref<HTMLButtonElement>
   ) => {
     const variantClass = styles.variants({
       disabled: disabled,
       size,
       type: type || as === 'a' ? 'link' : 'button',
-      buttonType,
+      raised,
+      use,
     })
 
     return (
-      <MaterialButton
+      <AriaButton
         ref={ref}
         className={clsx(className, variantClass) || undefined}
         as={as}
         {...props}
       >
-        {children}
-      </MaterialButton>
+        <span className={styles.label}>{children}</span>
+      </AriaButton>
     )
   }
 )

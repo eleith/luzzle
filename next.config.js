@@ -1,5 +1,4 @@
 const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin')
-
 const withVanillaExtract = createVanillaExtractPlugin()
 
 const withMDX = require('@next/mdx')({

@@ -19,6 +19,9 @@ export type ModeColors = {
   surface: string
   surfaceInverse: string
   surfaceVariant: string
+  shadowLight: string
+  shadowMedium: string
+  shadowHeavy: string
   onPrimary: string
   onSecondary: string
   onTertiary: string
@@ -106,6 +109,9 @@ export const colors: Colors = {
     surface: surfaceLight.string(),
     surfaceInverse: surfaceInverseLight.string(),
     surfaceVariant: surfaceVariantLight.string(),
+    shadowLight: onBackgroundLight.alpha(0.14).string(),
+    shadowMedium: onBackgroundLight.alpha(0.2).string(),
+    shadowHeavy: onBackgroundLight.alpha(0.34).string(),
     onPrimary: onPrimaryLight.string(),
     onSecondary: onSecondaryLight.string(),
     onTertiary: onTertiaryLight.string(),
@@ -133,6 +139,9 @@ export const colors: Colors = {
     surface: surfaceDark.string(),
     surfaceInverse: surfaceInverseDark.string(),
     surfaceVariant: surfaceVariantDark.string(),
+    shadowLight: onBackgroundDark.alpha(0.14).string(),
+    shadowMedium: onBackgroundDark.alpha(0.2).string(),
+    shadowHeavy: onBackgroundDark.alpha(0.34).string(),
     onPrimary: onPrimaryDark.string(),
     onSecondary: onSecondaryDark.string(),
     onTertiary: onTertiaryDark.string(),

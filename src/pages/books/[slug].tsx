@@ -6,13 +6,21 @@ import gql from '@app/lib/graphql/tag'
 import { GetPartialBooksDocument, GetBookBySlugDocument } from './_gql_/[slug]'
 import { BookCoverFor } from '@app/common/components/books'
 import staticClient from '@app/common/graphql/staticClient'
-import { Box, Text, Anchor, Divider } from '@app/common/ui/components'
+import {
+  Box,
+  Text,
+  Anchor,
+  Divider,
+  Button,
+  Input,
+  Select,
+  SelectItem,
+} from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './[slug].css'
 import { CaretLeft, CaretRight } from 'phosphor-react'
-import { useDialogState, Dialog } from 'ariakit/dialog'
-import { Form, useFormState } from 'ariakit'
-import { FormInput } from '@app/common/ui/components/FormInput'
+import { useDialogState, Dialog, DialogHeading, DialogDismiss } from 'ariakit/dialog'
+import { useForm } from 'react-hook-form'
 import { vars } from '@app/common/ui/css'
 import config from '@app/common/config'
 
@@ -121,8 +129,13 @@ function makePreviousLink(book: Book): JSX.Element {
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
   const dialog = useDialogState()
-  const form = useFormState({ defaultValues: { email: '', message: '' } })
+  const {
+    register,
+    handleSubmit,
+    // formState: { errors },
+  } = useForm<{ email: string; message: string }>()
   const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
+  const onSubmit = handleSubmit((data) => console.log(data))
 
   return (
     <PageFull meta={{ title: book.title, image: coverUrl }}>
@@ -157,34 +170,45 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                 )}
                 {book.yearFirstPublished && <Text>published in {book.yearFirstPublished}</Text>}
                 <Text>{book.pages} pages</Text>
+                <Button onClick={dialog.toggle} raised use={'primary'} style={{ display: 'none' }}>
+                  discuss
+                </Button>
               </Box>
               <Box>
-                <Dialog state={dialog}>
-                  <Box
-                    style={{
-                      background: vars.colors.surface,
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                    }}
-                  >
+                <Dialog
+                  state={dialog}
+                  style={{
+                    background: vars.colors.surface,
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                  }}
+                >
+                  <Box as="header">
+                    <DialogHeading>discuss</DialogHeading>
+                    <DialogDismiss>close</DialogDismiss>
+                  </Box>
+                  <Box>
                     <Box
                       style={{
                         display: 'flex',
                         justifyContent: 'center',
                       }}
                     >
-                      <Form state={form}>
-                        <FormInput name={form.names.email} placeholder={'your email'} />
+                      <form onSubmit={onSubmit}>
+                        <Input {...register('email')} label={'email'} />
                         <br />
-                        <FormInput
-                          name={form.names.message}
-                          placeholder={'your message'}
-                          as={'textarea'}
-                        />
-                      </Form>
+                        <br />
+                        <Select label={'topic'} defaultValue={''} style={{ width: '250px' }}>
+                          <SelectItem value={'help'}>help</SelectItem>
+                          <SelectItem value={'help2'}>help2</SelectItem>
+                        </Select>
+                        <br />
+                        <br />
+                        <Input {...register('message')} label={'message'} />
+                      </form>
                     </Box>
                   </Box>
                 </Dialog>
