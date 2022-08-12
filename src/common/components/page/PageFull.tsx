@@ -6,14 +6,13 @@ import PageBannerSlide from './PageBannerSlide'
 interface PageProps {
   meta: MetaProps
   children: React.ReactNode
+  isHome?: boolean
 }
 
-export default function PageMarkdown(props: PageProps): JSX.Element {
-  const { meta, children } = props
-
+export default function PageMarkdown({ meta, children, isHome = false }: PageProps): JSX.Element {
   return (
     <Page meta={meta}>
-      <PageBannerSlide />
+      <PageBannerSlide isHome={isHome} />
       <Box>{children}</Box>
     </Page>
   )
