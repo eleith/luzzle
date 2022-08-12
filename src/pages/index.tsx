@@ -89,7 +89,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   const randomBook = data?.book || undefined
 
   return (
-    <PageFull meta={{ title: 'books' }}>
+    <PageFull meta={{ title: 'books' }} isHome>
       <Box>
         <Box className={classNames.booksContainer}>
           <Box>

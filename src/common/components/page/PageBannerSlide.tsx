@@ -7,10 +7,10 @@ import Link from 'next/link'
 
 interface PageProps {
   children?: React.ReactNode
+  isHome?: boolean
 }
 
-export default function PageMarkdown(props: PageProps): JSX.Element {
-  const { children } = props
+export default function PageMarkdown({ children, isHome = false }: PageProps): JSX.Element {
   const [mounted, setMounted] = useState(false)
   const { resolvedTheme, setTheme } = useTheme()
 
@@ -38,18 +38,20 @@ export default function PageMarkdown(props: PageProps): JSX.Element {
     </Box>
   )
 
+  const homeButton = (
+    <Link href="/" passHref>
+      <Anchor color="inherit">
+        <HandWaving size={25} />
+      </Anchor>
+    </Link>
+  )
+
   const themeToggle = resolvedTheme === 'light' ? darkOn : lightOn
 
   return (
     <Box>
       <Box className={classNames.banner}>
-        <Box className={classNames.navItem}>
-          <Link href="/" passHref>
-            <Anchor color="inherit">
-              <HandWaving size={25} />
-            </Anchor>
-          </Link>
-        </Box>
+        <Box className={classNames.navItem}>{!isHome && homeButton}</Box>
         <Box>{children && children}</Box>
         <Box className={classNames.navItem}>{themeToggle}</Box>
       </Box>
