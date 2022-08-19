@@ -8,21 +8,21 @@ export const variants = recipe({
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02',
     backgroundColor: vars.colors.surfaceVariant,
-    height: '56px',
     borderTopLeftRadius: vars.radii.small,
     borderTopRightRadius: vars.radii.small,
     borderBottomLeftRadius: '0px',
     borderBottomRightRadius: '0px',
-    padding: '0px 16px',
+    padding: 0,
+    minHeight: '56px',
+    height: '100%',
     position: 'relative',
-    overflow: 'hidden',
-    cursor: 'pointer',
+    display: 'block',
     borderBottomStyle: 'solid',
     borderBottomWidth: '1px',
     borderBottomColor: vars.colors.onSurfaceVariant,
     selectors: {
       '&:focus-within': {
-        borderBottom: vars.colors.primary,
+        borderBottomColor: vars.colors.primary,
       },
       '[data-invalid=true] &': {
         borderBottomColor: vars.colors.error,
@@ -32,7 +32,7 @@ export const variants = recipe({
   variants: {},
 })
 
-export const select = style({
+export const textArea = style({
   fontSize: vars.fontSizes.medium,
   fontWeight: vars.fontWeights.normal,
   letterSpacing: '-0.02',
@@ -40,30 +40,27 @@ export const select = style({
   outline: 'none',
   background: 'transparent',
   color: vars.colors.onSurfaceVariant,
-  width: '100%',
-  minWidth: '0px',
-  height: '28px',
   borderRadius: '0px',
+  width: '100%',
   appearance: 'none',
-  flexGrow: '1',
-  padding: 0,
+  paddingLeft: '16px',
+  paddingRight: '16px',
+  overflow: 'scroll',
   fontFamily: vars.fonts.sans,
+  caretColor: vars.colors.primary,
   direction: 'inherit',
-  textAlign: 'inherit',
-  cursor: 'pointer',
-  display: 'flex',
-  justifyContent: 'space-between',
+  resize: 'vertical',
 })
 
 export const label = style({
   fontSize: vars.fontSizes.small,
   fontWeight: vars.fontWeights.light,
   letterSpacing: '-0.02',
-  paddingTop: '3px',
   lineHeight: vars.lineHeights['1.5'],
-  textAlign: 'left',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+  padding: '0px 16px',
+  paddingTop: '3px',
   overflow: 'hidden',
   selectors: {
     '[data-invalid=true] &': {
@@ -87,34 +84,6 @@ export const highlight = style({
     },
   },
 })
-
-export const selectList = style({
-  display: 'flex',
-  flexDirection: 'column',
-  overflow: 'auto',
-  overscrollBehavior: 'contain',
-  filter: `drop-shadow(0px 0px 3px ${vars.colors.shadowHeavy})`,
-  color: vars.colors.onBackground,
-  background: vars.colors.background,
-})
-
-export const selectItem = style({
-  outline: 'none',
-  display: 'flex',
-  scrollMargin: vars.space['0.5'],
-  alignItems: 'center',
-  gap: vars.space['0.5'],
-  padding: '16px',
-  cursor: 'pointer',
-  selectors: {
-    '&[data-active-item]': {
-      backgroundColor: vars.colors.primary,
-      color: vars.colors.onPrimary,
-    },
-  },
-})
-
-export const arrow = style({})
 
 export const helper = style({
   display: 'flex',
@@ -147,4 +116,4 @@ export const error = style({
   },
 })
 
-export type SelectVariants = RecipeVariants<typeof variants>
+export type TextAreaVariants = RecipeVariants<typeof variants>

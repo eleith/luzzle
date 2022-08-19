@@ -1,23 +1,14 @@
 import * as React from 'react'
-import clsx, { ClassValue } from 'clsx'
 
-type HTMLProperties = Omit<React.AllHTMLAttributes<HTMLElement>, 'as' | 'className'>
-
-type Props = HTMLProperties & {
+type Props = {
   as?: React.ElementType
-  className?: ClassValue
-}
+} & React.HTMLAttributes<HTMLElement>
 
-export const Box = React.forwardRef<HTMLElement, Props>(
-  ({ as = 'div', className, ...props }: Props, ref) => {
-    return React.createElement(as, {
-      className: clsx(className) || undefined,
-      ...props,
-      ref,
-    })
-  }
-)
-
-export type BoxProps = Parameters<typeof Box>[0]
+export const Box = React.forwardRef<HTMLElement, Props>(({ as = 'div', ...props }, ref) => {
+  return React.createElement(as, {
+    ...props,
+    ref,
+  })
+})
 
 Box.displayName = 'Box'

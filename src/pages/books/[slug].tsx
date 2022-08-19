@@ -13,13 +13,14 @@ import {
   Divider,
   Button,
   Input,
+  TextArea,
   Select,
   SelectItem,
 } from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './[slug].css'
 import { CaretLeft, CaretRight } from 'phosphor-react'
-import { useDialogState, Dialog, DialogHeading, DialogDismiss } from 'ariakit/dialog'
+import { useDialogState, Dialog, DialogHeading } from 'ariakit/dialog'
 import { useForm } from 'react-hook-form'
 import { vars } from '@app/common/ui/css'
 import config from '@app/common/config'
@@ -133,7 +134,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
     register,
     handleSubmit,
     // formState: { errors },
-  } = useForm<{ email: string; message: string }>()
+  } = useForm<{ email: string; message: string; topic: string }>()
   const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
   const onSubmit = handleSubmit((data) => console.log(data))
 
@@ -170,6 +171,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                 )}
                 {book.yearFirstPublished && <Text>published in {book.yearFirstPublished}</Text>}
                 <Text>{book.pages} pages</Text>
+                <br />
                 <Button onClick={dialog.toggle} raised use={'primary'} style={{ display: 'none' }}>
                   discuss
                 </Button>
@@ -186,10 +188,6 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                     bottom: 0,
                   }}
                 >
-                  <Box as="header">
-                    <DialogHeading>discuss</DialogHeading>
-                    <DialogDismiss>close</DialogDismiss>
-                  </Box>
                   <Box>
                     <Box
                       style={{
@@ -197,18 +195,37 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                         justifyContent: 'center',
                       }}
                     >
-                      <form onSubmit={onSubmit}>
-                        <Input {...register('email')} label={'email'} />
-                        <br />
-                        <br />
-                        <Select label={'topic'} defaultValue={''} style={{ width: '250px' }}>
-                          <SelectItem value={'help'}>help</SelectItem>
-                          <SelectItem value={'help2'}>help2</SelectItem>
-                        </Select>
-                        <br />
-                        <br />
-                        <Input {...register('message')} label={'message'} />
-                      </form>
+                      <Box>
+                        <Text size="large" as="h1">
+                          <DialogHeading>discuss</DialogHeading>
+                        </Text>
+                        <form onSubmit={onSubmit}>
+                          <Select {...register('topic')} label={'topic'} defaultValue={''}>
+                            <SelectItem value={'recommendation'}>
+                              book recommendation similar to this one
+                            </SelectItem>
+                            <SelectItem value={'positive reflection'}>
+                              positive reflections about this book
+                            </SelectItem>
+                            <SelectItem value={'critical reflection'}>
+                              critical reflections about this book
+                            </SelectItem>
+                          </Select>
+                          <br />
+                          <br />
+                          <Input {...register('email')} label={'email'} type={'email'} />
+                          <br />
+                          <br />
+                          <TextArea {...register('message')} label={'message'} />
+                          <br />
+                          <Box style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Button outlined onClick={dialog.hide}>
+                              Cancel
+                            </Button>
+                            <Button type={'submit'}>Send</Button>
+                          </Box>
+                        </form>
+                      </Box>
                     </Box>
                   </Box>
                 </Dialog>

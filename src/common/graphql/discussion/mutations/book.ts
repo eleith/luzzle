@@ -1,9 +1,16 @@
 import builder from '@app/lib/graphql/builder'
+import zod from 'zod'
 
 const DiscussionInput = builder.inputType('DiscussionInput', {
   fields: (t) => ({
-    email: t.string({ required: true }),
-    discussion: t.string({ required: true }),
+    email: t.string({ required: true, validate: { email: true } }),
+    discussion: t.string({ required: true, validate: { maxLength: 1024 } }),
+    topic: t.string({
+      required: true,
+      validate: {
+        schema: zod.enum(['positive-reflection', 'recommendations', 'critical-reflection']),
+      },
+    }),
   }),
 })
 

@@ -2,18 +2,6 @@ import { style } from '@vanilla-extract/css'
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
 import { vars } from '../../css'
 
-const sizeVariants = {
-  small: style({
-    fontSize: vars.fontSizes.small,
-  }),
-  medium: style({
-    fontSize: vars.fontSizes.medium,
-  }),
-  large: style({
-    fontSize: vars.fontSizes.large,
-  }),
-}
-
 const typeVariants = {
   button: style({
     textTransform: 'uppercase',
@@ -43,6 +31,10 @@ export const variants = recipe({
     alignItems: 'center',
     userSelect: 'none',
     appearance: 'none',
+    paddingLeft: vars.space[4],
+    paddingRight: vars.space[4],
+    height: '36px',
+    borderRadius: vars.radii.medium,
     selectors: {
       '&::after': {
         content: '""',
@@ -57,44 +49,31 @@ export const variants = recipe({
       '&:hover::after': {
         opacity: 0.14,
       },
-      '&:active::after': {
+      '&:focus::after': {
         opacity: 0.34,
       },
     },
   }),
   variants: {
-    size: {
-      ...sizeVariants,
-    },
     disabled: {
       true: {},
     },
     raised: {
       true: {
-        paddingLeft: vars.space[4],
-        paddingRight: vars.space[4],
         boxShadow: vars.shadows.raised,
         transition: 'box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1) 0s',
-        height: '36px',
-        borderRadius: vars.radii.medium,
       },
     },
-    type: {
+    outlined: {
+      true: {
+        borderColor: vars.colors.surface,
+      },
+    },
+    as: {
       ...typeVariants,
     },
     use: {
-      primary: {},
-      secondary: {},
-      tertiary: {},
-    },
-  },
-  compoundVariants: [
-    {
-      variants: {
-        raised: true,
-        use: 'primary',
-      },
-      style: {
+      primary: {
         background: vars.colors.primary,
         color: vars.colors.onPrimary,
         selectors: {
@@ -103,11 +82,33 @@ export const variants = recipe({
           },
         },
       },
+      secondary: {},
+      tertiary: {},
+    },
+  },
+  compoundVariants: [
+    {
+      variants: {
+        use: 'primary',
+        outlined: true,
+      },
+      style: {
+        background: vars.colors.background,
+        color: vars.colors.onBackground,
+        borderStyle: 'solid',
+        borderWidth: '1px',
+        borderColor: vars.colors.primary,
+        selectors: {
+          '&::after': {
+            backgroundColor: vars.colors.onBackground,
+          },
+        },
+      },
     },
   ],
   defaultVariants: {
-    size: 'small',
-    type: 'button',
+    as: 'button',
+    use: 'primary',
   },
 })
 
