@@ -7,25 +7,47 @@ import {
   SelectArrow,
   SelectPopover,
   useSelectState,
+  SelectProps,
 } from 'ariakit/select'
+import {
+  FormLabel as AriaFormLabel,
+  FormError as AriaFormError,
+  FormDescription as AriaFormDescription,
+} from 'ariakit/form'
 import { Box } from '../Box'
 import { useState } from 'react'
 
 type Props = {
-  children?: React.ReactNode
+  children: React.ReactNode
   value?: string
   label?: string
+  name: string
   setValue?: (value: string) => void
   defaultValue?: string
   required?: boolean
-  onTouch?: () => void
-} & styles.FormInputVariants &
-  React.ButtonHTMLAttributes<HTMLButtonElement>
+  description?: string
+  error?: string
+  invalid?: boolean
+} & NonNullable<styles.SelectVariants> &
+  Omit<SelectProps, 'state'> &
+  React.HTMLAttributes<HTMLButtonElement>
 
-export const Select = React.forwardRef(
+export const Select = React.forwardRef<HTMLButtonElement, Props>(
   (
-    { children, value, label, setValue, defaultValue, onTouch, className, ...props }: Props,
-    ref: React.Ref<HTMLButtonElement>
+    {
+      children,
+      value,
+      label,
+      name,
+      setValue,
+      defaultValue,
+      className,
+      description,
+      error,
+      invalid = false,
+      ...props
+    },
+    ref
   ) => {
     const boxRef = React.useRef<HTMLDivElement>(null)
     const [highlight, setHighlight] = useState(false)
@@ -35,13 +57,28 @@ export const Select = React.forwardRef(
       sameWidth: true,
       getAnchorRect: () => boxRef.current?.getBoundingClientRect() || null,
       defaultValue,
-      setOpen: (open) => {
-        if (select.open !== open && !open) {
-          onTouch?.()
-        }
-      },
     })
-    const classVariant = styles.variants({ hasLabel: !!label })
+    const classVariant = styles.variants()
+
+    const descriptionElement = description && (
+      <AriaFormDescription name={name} className={styles.description}>
+        ${description}
+      </AriaFormDescription>
+    )
+
+    const errorElement = error && (
+      <AriaFormError name={name} className={styles.error}>
+        ${error}
+      </AriaFormError>
+    )
+
+    const labelElement = label && (
+      <AriaFormLabel id={name} className={styles.label} name={name}>
+        {label}
+      </AriaFormLabel>
+    )
+
+    const highlightElement = highlight && <span className={styles.highlight} />
 
     return (
       <Box
@@ -49,43 +86,28 @@ export const Select = React.forwardRef(
         onMouseEnter={() => setHighlight(true)}
         onMouseLeave={() => setHighlight(false)}
         ref={boxRef}
+        data-invalid={invalid}
       >
-        {label && (
-          <span id="label" className={styles.label}>
-            {label}
-          </span>
-        )}
-        <span className={highlight ? styles.highlight : ''} />
+        {labelElement}
+        {highlightElement}
         <AriaSelect
           state={select}
           as={'button'}
           ref={ref}
-          className={label ? styles.selectWithLabel : styles.select}
+          name={name}
+          className={styles.select}
           {...props}
-          onBlur={(event: React.FocusEvent<HTMLButtonElement>) => {
-            props.onBlur?.(event)
-            if (event.defaultPrevented) return
-            const popover = select.popoverRef.current
-            if (popover?.contains(event.relatedTarget)) return
-            onTouch?.()
-          }}
         >
           {select.value || 'Select an item'}
           <SelectArrow className={styles.arrow} />
         </AriaSelect>
-        <SelectPopover
-          state={select}
-          className={styles.selectList}
-          modal
-          onBlur={(event) => {
-            const disclosure = select.disclosureRef.current
-            if (event.currentTarget.contains(event.relatedTarget)) return
-            if (disclosure?.contains(event.relatedTarget)) return
-            onTouch?.()
-          }}
-        >
+        <SelectPopover state={select} className={styles.selectList} portal>
           {children}
         </SelectPopover>
+        <Box className={styles.helper}>
+          {descriptionElement}
+          {errorElement}
+        </Box>
       </Box>
     )
   }

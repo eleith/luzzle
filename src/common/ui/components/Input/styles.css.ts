@@ -1,14 +1,6 @@
-import { style, globalStyle } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
 import { vars } from '../../css'
-
-globalStyle('.mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label', {
-  color: `${vars.colors.onSurfaceVariant}!important`,
-})
-
-globalStyle('.mdc-text-field:not(.mdc-text-field--disabled)', {
-  backgroundColor: `${vars.colors.surfaceVariant}!important`,
-})
 
 export const variants = recipe({
   base: {
@@ -16,38 +8,28 @@ export const variants = recipe({
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02',
     backgroundColor: vars.colors.surfaceVariant,
-    height: '56px',
     borderTopLeftRadius: vars.radii.small,
     borderTopRightRadius: vars.radii.small,
     borderBottomLeftRadius: '0px',
     borderBottomRightRadius: '0px',
-    display: 'inline-flex',
-    alignItems: 'baseline',
+    display: 'block',
+    height: '56px',
     padding: '0px 16px',
     position: 'relative',
     overflow: 'hidden',
-    borderBottom: `solid ${vars.colors.onSurfaceVariant} 2px`,
+    borderBottomStyle: 'solid',
+    borderBottomWidth: '1px',
+    borderBottomColor: vars.colors.onSurfaceVariant,
     selectors: {
       '&:focus-within': {
-        borderBottom: `solid ${vars.colors.primary} 2px`,
+        borderBottomColor: vars.colors.primary,
+      },
+      '[data-invalid=true] &': {
+        borderBottomColor: vars.colors.error,
       },
     },
   },
-  variants: {
-    hasLabel: {
-      true: {
-        selectors: {
-          '&::before': {
-            display: 'inline-block',
-            width: '0px',
-            height: '40px',
-            content: '""',
-            verticalAlign: '0px',
-          },
-        },
-      },
-    },
-  },
+  variants: {},
 })
 
 export const input = style({
@@ -60,26 +42,6 @@ export const input = style({
   color: vars.colors.onSurfaceVariant,
   width: '100%',
   minWidth: '0px',
-  height: '28px',
-  borderRadius: '0px',
-  appearance: 'none',
-  padding: 0,
-  fontFamily: vars.fonts.sans,
-  caretColor: vars.colors.primary,
-  direction: 'inherit',
-})
-
-export const inputWithLabel = style({
-  fontSize: vars.fontSizes.medium,
-  fontWeight: vars.fontWeights.normal,
-  letterSpacing: '-0.02',
-  border: 'none',
-  outline: 'none',
-  background: 'transparent',
-  color: vars.colors.onSurfaceVariant,
-  width: '100%',
-  minWidth: '0px',
-  height: '100%',
   borderRadius: '0px',
   appearance: 'none',
   padding: 0,
@@ -92,13 +54,17 @@ export const label = style({
   fontSize: vars.fontSizes.small,
   fontWeight: vars.fontWeights.light,
   letterSpacing: '-0.02',
-  position: 'absolute',
-  transformOrigin: 'left top 0px',
   lineHeight: vars.lineHeights['1.5'],
   textAlign: 'left',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+  paddingTop: '3px',
   overflow: 'hidden',
+  selectors: {
+    '[data-invalid=true] &': {
+      color: vars.colors.error,
+    },
+  },
 })
 
 export const highlight = style({
@@ -106,10 +72,46 @@ export const highlight = style({
   position: 'absolute',
   top: 0,
   left: 0,
-  width: '100%',
-  height: '100%',
+  bottom: 0,
+  right: 0,
   opacity: 0.14,
   pointerEvents: 'none',
+  selectors: {
+    '[data-invalid=true] &': {
+      backgroundColor: vars.colors.error,
+    },
+  },
 })
 
-export type FormInputVariants = RecipeVariants<typeof variants>
+export const helper = style({
+  display: 'flex',
+})
+
+export const description = style({
+  color: vars.colors.onBackground,
+  fontSize: vars.fontSizes.small,
+  paddingTop: vars.space[1],
+  paddingBottom: vars.space[1],
+  paddingLeft: vars.space[2],
+  selectors: {
+    '[data-invalid=true] &': {
+      display: 'none',
+    },
+  },
+})
+
+export const error = style({
+  color: vars.colors.error,
+  fontSize: vars.fontSizes.small,
+  paddingTop: vars.space[1],
+  paddingBottom: vars.space[1],
+  paddingLeft: vars.space[2],
+  display: 'none',
+  selectors: {
+    '[data-invalid=true] &': {
+      display: 'inline-block',
+    },
+  },
+})
+
+export type InputVariants = RecipeVariants<typeof variants>

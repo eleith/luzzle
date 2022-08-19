@@ -1,25 +1,35 @@
 import * as React from 'react'
 import * as styles from './styles.css'
-import { Button as AriaButton } from 'ariakit/button'
-import clsx, { ClassValue } from 'clsx'
+import { Button as AriaButton, ButtonProps as AriaButtonProps } from 'ariakit/button'
+import clsx from 'clsx'
+
+type AnchorProps = {
+  as: 'a'
+  children?: React.ReactNode
+} & React.HTMLAttributes<HTMLAnchorElement>
+
+type ButtonProps = {
+  as?: 'button'
+  children?: React.ReactNode
+} & React.HTMLAttributes<HTMLButtonElement>
 
 type Props = {
   as?: 'a' | 'button'
   children?: React.ReactNode
-  className?: ClassValue
-} & styles.ButtonVariants &
-  React.HTMLAttributes<HTMLButtonElement>
+} & AriaButtonProps &
+  styles.ButtonVariants &
+  (AnchorProps | ButtonProps)
 
 export const Button = React.forwardRef(
   (
-    { as = 'button', children, size, type, className, raised, use, disabled, ...props }: Props,
+    { as = 'button', children, outlined, className, raised, use, disabled, ...props }: Props,
     ref: React.Ref<HTMLButtonElement>
   ) => {
     const variantClass = styles.variants({
       disabled: disabled,
-      size,
-      type: type || as === 'a' ? 'link' : 'button',
+      as,
       raised,
+      outlined,
       use,
     })
 

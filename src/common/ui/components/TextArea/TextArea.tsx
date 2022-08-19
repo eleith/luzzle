@@ -16,39 +16,24 @@ type Props = {
   invalid?: boolean
   description?: string
   error?: string
-  type?:
-    | 'text'
-    | 'password'
-    | 'email'
-    | 'number'
-    | 'tel'
-    | 'url'
-    | 'search'
-    | 'date'
-    | 'time'
-    | 'datetime-local'
-    | 'month'
-    | 'week'
-    | 'color'
-    | 'range'
-    | 'hidden'
-} & AriaFormInputProps<'input'> &
-  React.HTMLAttributes<HTMLInputElement> &
-  NonNullable<styles.InputVariants>
+} & NonNullable<styles.TextAreaVariants> &
+  AriaFormInputProps<'textarea'> &
+  React.HTMLAttributes<HTMLTextAreaElement>
 
-export const Input = React.forwardRef<HTMLInputElement, Props>(
+export const TextArea = React.forwardRef<HTMLTextAreaElement, Props>(
   (
     {
       className,
-      type = 'text',
-      invalid = false,
       name,
+      invalid = false,
       label,
       required,
       placeholder,
       value,
       description,
       error,
+      rows = 2,
+      cols = 24,
       ...props
     },
     ref
@@ -67,13 +52,11 @@ export const Input = React.forwardRef<HTMLInputElement, Props>(
         ${error}
       </AriaFormError>
     )
-
     const labelElement = label && (
       <Box id={label} className={styles.label}>
         {label}
       </Box>
     )
-
     const highlightElement = highlight && <span className={styles.highlight} />
 
     return (
@@ -88,14 +71,16 @@ export const Input = React.forwardRef<HTMLInputElement, Props>(
           {highlightElement}
           <AriaFormInput
             name={name}
-            type={type}
+            as="textarea"
+            ref={ref}
+            rows={rows}
+            cols={cols}
             required={required}
             placeholder={placeholder}
-            className={styles.input}
+            className={styles.textArea}
             aria-labelledby={label}
             value={value}
             {...props}
-            ref={ref}
           />
         </AriaFormLabel>
         <Box className={styles.helper}>
@@ -107,4 +92,4 @@ export const Input = React.forwardRef<HTMLInputElement, Props>(
   }
 )
 
-Input.displayName = 'Input'
+TextArea.displayName = 'TextArea'
