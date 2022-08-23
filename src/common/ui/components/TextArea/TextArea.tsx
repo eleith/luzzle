@@ -13,7 +13,6 @@ import { Box } from '../Box'
 
 type Props = {
   label?: string
-  invalid?: boolean
   description?: string
   error?: string
 } & NonNullable<styles.TextAreaVariants> &
@@ -25,13 +24,12 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, Props>(
     {
       className,
       name,
-      invalid = false,
       label,
       required,
       placeholder,
-      value,
       description,
       error,
+      maxLength,
       rows = 2,
       cols = 24,
       ...props
@@ -39,19 +37,28 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, Props>(
     ref
   ) => {
     const [highlight, setHighlight] = useState(false)
+    const [count, setCount] = useState(String(props.value || '').length)
     const classVariant = styles.variants()
+    const invalid = !!error
+
+    const lengthElement = maxLength && (
+      <div className={styles.count}>
+        {count} / {maxLength}
+      </div>
+    )
 
     const descriptionElement = description && (
       <AriaFormDescription name={name} className={styles.description}>
-        ${description}
+        {description}
       </AriaFormDescription>
     )
 
     const errorElement = error && (
       <AriaFormError name={name} className={styles.error}>
-        ${error}
+        {error}
       </AriaFormError>
     )
+
     const labelElement = label && (
       <Box id={label} className={styles.label}>
         {label}
@@ -79,13 +86,16 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, Props>(
             placeholder={placeholder}
             className={styles.textArea}
             aria-labelledby={label}
-            value={value}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+              setCount(e.currentTarget.value.length)
+              props.onChange && props.onChange(e)
+            }}
+            maxLength={maxLength}
             {...props}
           />
         </AriaFormLabel>
         <Box className={styles.helper}>
-          {descriptionElement}
-          {errorElement}
+          {descriptionElement || errorElement || lengthElement || '\u00A0'}
         </Box>
       </Box>
     )

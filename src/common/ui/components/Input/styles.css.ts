@@ -92,12 +92,7 @@ export const description = style({
   fontSize: vars.fontSizes.small,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
-  paddingLeft: vars.space[2],
-  selectors: {
-    '[data-invalid=true] &': {
-      display: 'none',
-    },
-  },
+  paddingLeft: vars.space[1],
 })
 
 export const error = style({
@@ -105,13 +100,7 @@ export const error = style({
   fontSize: vars.fontSizes.small,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
-  paddingLeft: vars.space[2],
-  display: 'none',
-  selectors: {
-    '[data-invalid=true] &': {
-      display: 'inline-block',
-    },
-  },
+  paddingLeft: vars.space[1],
 })
 
 export type InputVariants = RecipeVariants<typeof variants>
