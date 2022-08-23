@@ -21,9 +21,9 @@ import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './[slug].css'
 import { CaretLeft, CaretRight } from 'phosphor-react'
 import { useDialogState, Dialog, DialogHeading } from 'ariakit/dialog'
-import { useForm } from 'react-hook-form'
 import { vars } from '@app/common/ui/css'
 import config from '@app/common/config'
+import { Form, FormState, useFormState } from 'ariakit/form'
 
 interface BookPageStaticParams {
   params: {
@@ -130,13 +130,25 @@ function makePreviousLink(book: Book): JSX.Element {
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
   const dialog = useDialogState()
-  const {
-    register,
-    handleSubmit,
-    // formState: { errors },
-  } = useForm<{ email: string; message: string; topic: string }>()
+  const form = useFormState({
+    defaultValues: { topic: '', message: '', email: '' },
+  })
   const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
-  const onSubmit = handleSubmit((data) => console.log(data))
+
+  form.useSubmit(() => {
+    console.log(form.values)
+  })
+
+  function getTouchedError<T>(form: FormState<T>, name: keyof T): string | undefined {
+    const touched = form.getFieldTouched(name as string)
+    const error = form.getError(name as string)
+
+    if (touched && error) {
+      return error
+    } else {
+      return undefined
+    }
+  }
 
   return (
     <PageFull meta={{ title: book.title, image: coverUrl }}>
@@ -172,7 +184,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                 {book.yearFirstPublished && <Text>published in {book.yearFirstPublished}</Text>}
                 <Text>{book.pages} pages</Text>
                 <br />
-                <Button onClick={dialog.toggle} raised use={'primary'} style={{ display: 'none' }}>
+                <Button onClick={dialog.toggle} raised use={'primary'}>
                   discuss
                 </Button>
               </Box>
@@ -199,32 +211,57 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                         <Text size="large" as="h1">
                           <DialogHeading>discuss</DialogHeading>
                         </Text>
-                        <form onSubmit={onSubmit}>
-                          <Select {...register('topic')} label={'topic'} defaultValue={''}>
-                            <SelectItem value={'recommendation'}>
-                              book recommendation similar to this one
+                        <Form state={form}>
+                          <Select
+                            label={'topic'}
+                            name={form.names.topic}
+                            state={form}
+                            value={form.values.topic}
+                            error={getTouchedError(form, 'topic')}
+                            required
+                          >
+                            <SelectItem value={''}>select a topic</SelectItem>
+                            <SelectItem value={'0'} display={'recommendation'}>
+                              a related book recommendation
                             </SelectItem>
-                            <SelectItem value={'positive reflection'}>
+                            <SelectItem value={'1'} display={'positive reflection'}>
                               positive reflections about this book
                             </SelectItem>
-                            <SelectItem value={'critical reflection'}>
+                            <SelectItem value={'2'} display={'critical reflection'}>
                               critical reflections about this book
                             </SelectItem>
                           </Select>
                           <br />
+                          <Input
+                            required
+                            name={form.names.email}
+                            label={'email'}
+                            type={'email'}
+                            error={getTouchedError(form, 'email')}
+                          />
                           <br />
-                          <Input {...register('email')} label={'email'} type={'email'} />
-                          <br />
-                          <br />
-                          <TextArea {...register('message')} label={'message'} />
+                          <TextArea
+                            name={form.names.message}
+                            value={form.values.message}
+                            label={'message'}
+                            required
+                            error={getTouchedError(form, 'message')}
+                            maxLength={20}
+                          />
                           <br />
                           <Box style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Button outlined onClick={dialog.hide}>
+                            <Button
+                              outlined
+                              onClick={() => {
+                                form.reset()
+                                dialog.hide()
+                              }}
+                            >
                               Cancel
                             </Button>
                             <Button type={'submit'}>Send</Button>
                           </Box>
-                        </form>
+                        </Form>
                       </Box>
                     </Box>
                   </Box>

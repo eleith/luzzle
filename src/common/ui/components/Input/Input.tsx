@@ -13,7 +13,6 @@ import { Box } from '../Box'
 
 type Props = {
   label?: string
-  invalid?: boolean
   description?: string
   error?: string
   type?:
@@ -38,33 +37,22 @@ type Props = {
 
 export const Input = React.forwardRef<HTMLInputElement, Props>(
   (
-    {
-      className,
-      type = 'text',
-      invalid = false,
-      name,
-      label,
-      required,
-      placeholder,
-      value,
-      description,
-      error,
-      ...props
-    },
+    { className, type = 'text', name, label, required, placeholder, description, error, ...props },
     ref
   ) => {
     const [highlight, setHighlight] = useState(false)
     const classVariant = styles.variants()
+    const invalid = !!error
 
     const descriptionElement = description && (
       <AriaFormDescription name={name} className={styles.description}>
-        ${description}
+        {description}
       </AriaFormDescription>
     )
 
     const errorElement = error && (
       <AriaFormError name={name} className={styles.error}>
-        ${error}
+        {error}
       </AriaFormError>
     )
 
@@ -93,15 +81,11 @@ export const Input = React.forwardRef<HTMLInputElement, Props>(
             placeholder={placeholder}
             className={styles.input}
             aria-labelledby={label}
-            value={value}
             {...props}
             ref={ref}
           />
         </AriaFormLabel>
-        <Box className={styles.helper}>
-          {descriptionElement}
-          {errorElement}
-        </Box>
+        <Box className={styles.helper}>{descriptionElement || errorElement || '\u00A0'}</Box>
       </Box>
     )
   }

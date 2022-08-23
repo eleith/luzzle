@@ -7,117 +7,174 @@ import {
   SelectArrow,
   SelectPopover,
   useSelectState,
-  SelectProps,
+  SelectProps as AriaSelectProps,
+  SelectLabel,
 } from 'ariakit/select'
 import {
-  FormLabel as AriaFormLabel,
   FormError as AriaFormError,
   FormDescription as AriaFormDescription,
+  FormField,
+  FormState,
+  FormFieldProps,
 } from 'ariakit/form'
 import { Box } from '../Box'
 import { useState } from 'react'
+import { Disclosure } from 'ariakit'
 
-type Props = {
-  children: React.ReactNode
+type Items = React.ReactElement<SelectItemProps, typeof SelectItem>[]
+
+type SelectProps = {
+  children: Items
   value?: string
-  label?: string
-  name: string
+  label: string
   setValue?: (value: string) => void
   defaultValue?: string
   required?: boolean
   description?: string
   error?: string
-  invalid?: boolean
+  gutter?: number
+  onTouch?: () => void
+  state?: FormState
+  name?: string | FormFieldProps['name']
 } & NonNullable<styles.SelectVariants> &
-  Omit<SelectProps, 'state'> &
-  React.HTMLAttributes<HTMLButtonElement>
+  Omit<AriaSelectProps, 'state' | 'name'>
 
-export const Select = React.forwardRef<HTMLButtonElement, Props>(
+function getSelectedValue(value: string, children: Items) {
+  const item = children.find((child) => child.props.value === value)
+  return item?.props.display || value
+}
+
+const SelectTag = React.forwardRef<HTMLButtonElement, Omit<SelectProps, 'state'>>(
   (
     {
       children,
       value,
       label,
-      name,
       setValue,
       defaultValue,
       className,
       description,
       error,
-      invalid = false,
+      gutter,
+      onTouch,
+      name,
       ...props
     },
     ref
   ) => {
     const boxRef = React.useRef<HTMLDivElement>(null)
     const [highlight, setHighlight] = useState(false)
+    const invalid = !!error
     const select = useSelectState({
       value,
       setValue,
       sameWidth: true,
       getAnchorRect: () => boxRef.current?.getBoundingClientRect() || null,
       defaultValue,
+      gutter,
+      setOpen: (open) => {
+        if (select.open !== open && !open) {
+          onTouch?.()
+        }
+      },
     })
     const classVariant = styles.variants()
-
-    const descriptionElement = description && (
+    const descriptionElement = description && name && (
       <AriaFormDescription name={name} className={styles.description}>
-        ${description}
+        {description}
       </AriaFormDescription>
     )
 
-    const errorElement = error && (
+    const errorElement = error && name && (
       <AriaFormError name={name} className={styles.error}>
-        ${error}
+        {error}
       </AriaFormError>
     )
 
     const labelElement = label && (
-      <AriaFormLabel id={name} className={styles.label} name={name}>
-        {label}
-      </AriaFormLabel>
+      <Disclosure state={select} as={'div'}>
+        <SelectLabel style={{ cursor: 'pointer' }} className={styles.label} state={select}>
+          {label}
+        </SelectLabel>
+      </Disclosure>
     )
 
     const highlightElement = highlight && <span className={styles.highlight} />
 
     return (
-      <Box
-        className={clsx(className, classVariant) || undefined}
-        onMouseEnter={() => setHighlight(true)}
-        onMouseLeave={() => setHighlight(false)}
-        ref={boxRef}
-        data-invalid={invalid}
-      >
-        {labelElement}
-        {highlightElement}
-        <AriaSelect
-          state={select}
-          as={'button'}
-          ref={ref}
-          name={name}
-          className={styles.select}
-          {...props}
+      <Box data-invalid={invalid || undefined}>
+        <Box
+          className={clsx(className, classVariant) || undefined}
+          onMouseEnter={() => setHighlight(true)}
+          onMouseLeave={() => setHighlight(false)}
+          ref={boxRef}
         >
-          {select.value || 'Select an item'}
-          <SelectArrow className={styles.arrow} />
-        </AriaSelect>
-        <SelectPopover state={select} className={styles.selectList} portal>
-          {children}
-        </SelectPopover>
-        <Box className={styles.helper}>
-          {descriptionElement}
-          {errorElement}
+          {labelElement}
+          {highlightElement}
+          <AriaSelect
+            state={select}
+            as={'button'}
+            ref={ref}
+            name={name as string}
+            className={styles.select}
+            onBlur={(event: React.FocusEvent<HTMLButtonElement>) => {
+              const disclosure = select.disclosureRef.current
+              if (event.currentTarget.contains(event.relatedTarget)) return
+              if (disclosure?.contains(event.relatedTarget)) return
+              onTouch?.()
+            }}
+            {...props}
+          >
+            <Box className={styles.selected}>
+              {select.value ? getSelectedValue(select.value, children) : 'Select one'}
+            </Box>
+            <SelectArrow className={styles.arrow} />
+          </AriaSelect>
+          <SelectPopover state={select} className={styles.selectList} portal>
+            {children}
+          </SelectPopover>
         </Box>
+        <Box className={styles.helper}>{descriptionElement || errorElement || '\u00A0'}</Box>
       </Box>
     )
+  }
+)
+
+SelectTag.displayName = 'InputSelect'
+
+export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
+  ({ state, children, value, name, ...props }, ref) => {
+    if (state && name) {
+      return (
+        <FormField
+          as={SelectTag}
+          name={name}
+          value={value}
+          setValue={(value: string) => state?.setValue(name, value)}
+          touchOnBlur={false}
+          onTouch={() => state?.setFieldTouched(name, true)}
+          ref={ref}
+          {...props}
+        >
+          {children}
+        </FormField>
+      )
+    } else {
+      return (
+        <SelectTag name={name} value={value} ref={ref} {...props}>
+          {children}
+        </SelectTag>
+      )
+    }
   }
 )
 
 Select.displayName = 'Select'
 
 export type SelectItemProps = React.HTMLAttributes<HTMLDivElement> & {
-  value?: string
+  value: string
   className?: ClassValue
+  display?: string
 }
 
 export const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(({ ...props }, ref) => {

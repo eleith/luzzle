@@ -13,7 +13,7 @@ export const variants = recipe({
     borderTopRightRadius: vars.radii.small,
     borderBottomLeftRadius: '0px',
     borderBottomRightRadius: '0px',
-    padding: '0px 16px',
+    padding: '0px',
     position: 'relative',
     overflow: 'hidden',
     cursor: 'pointer',
@@ -22,9 +22,9 @@ export const variants = recipe({
     borderBottomColor: vars.colors.onSurfaceVariant,
     selectors: {
       '&:focus-within': {
-        borderBottom: vars.colors.primary,
+        borderBottomColor: vars.colors.primary,
       },
-      '[data-invalid=true] &': {
+      '&[aria-invalid=true]': {
         borderBottomColor: vars.colors.error,
       },
     },
@@ -46,7 +46,7 @@ export const select = style({
   borderRadius: '0px',
   appearance: 'none',
   flexGrow: '1',
-  padding: 0,
+  padding: '0 16px',
   fontFamily: vars.fonts.sans,
   direction: 'inherit',
   textAlign: 'inherit',
@@ -60,6 +60,8 @@ export const label = style({
   fontWeight: vars.fontWeights.light,
   letterSpacing: '-0.02',
   paddingTop: '3px',
+  paddingLeft: '16px',
+  paddingRight: '16px',
   lineHeight: vars.lineHeights['1.5'],
   textAlign: 'left',
   textOverflow: 'ellipsis',
@@ -82,7 +84,7 @@ export const highlight = style({
   opacity: 0.14,
   pointerEvents: 'none',
   selectors: {
-    '[data-invalid=true] &': {
+    '[data-invalid=true] > &': {
       backgroundColor: vars.colors.error,
     },
   },
@@ -91,6 +93,7 @@ export const highlight = style({
 export const selectList = style({
   display: 'flex',
   flexDirection: 'column',
+  outline: 'none',
   overflow: 'auto',
   overscrollBehavior: 'contain',
   filter: `drop-shadow(0px 0px 3px ${vars.colors.shadowHeavy})`,
@@ -125,12 +128,7 @@ export const description = style({
   fontSize: vars.fontSizes.small,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
-  paddingLeft: vars.space[2],
-  selectors: {
-    '[data-invalid=true] &': {
-      display: 'none',
-    },
-  },
+  paddingLeft: vars.space[1],
 })
 
 export const error = style({
@@ -138,13 +136,14 @@ export const error = style({
   fontSize: vars.fontSizes.small,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
-  paddingLeft: vars.space[2],
-  display: 'none',
-  selectors: {
-    '[data-invalid=true] &': {
-      display: 'inline-block',
-    },
-  },
+  paddingLeft: vars.space[1],
+})
+
+export const selected = style({
+  textOverflow: 'ellipsis',
+  overflow: 'hidden',
+  whiteSpace: 'nowrap',
+  width: '100%',
 })
 
 export type SelectVariants = RecipeVariants<typeof variants>

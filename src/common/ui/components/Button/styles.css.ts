@@ -49,7 +49,10 @@ export const variants = recipe({
       '&:hover::after': {
         opacity: 0.14,
       },
-      '&:focus::after': {
+      '&:active::after': {
+        opacity: 0.34,
+      },
+      '&:focus-visible::after': {
         opacity: 0.34,
       },
     },
