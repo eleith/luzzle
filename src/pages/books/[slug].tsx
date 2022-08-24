@@ -3,7 +3,11 @@ import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import { GetStaticPathsResult } from 'next'
 import Link from 'next/link'
 import gql from '@app/lib/graphql/tag'
-import { GetPartialBooksDocument, GetBookBySlugDocument } from './_gql_/[slug]'
+import {
+  GetPartialBooksDocument,
+  GetBookBySlugDocument,
+  CreateBookDiscussionDocument,
+} from './_gql_/[slug]'
 import { BookCoverFor } from '@app/common/components/books'
 import staticClient from '@app/common/graphql/staticClient'
 import {
@@ -24,6 +28,7 @@ import { useDialogState, Dialog, DialogHeading } from 'ariakit/dialog'
 import { vars } from '@app/common/ui/css'
 import config from '@app/common/config'
 import { Form, FormState, useFormState } from 'ariakit/form'
+import fetch from '@app/common/graphql/fetch'
 
 interface BookPageStaticParams {
   params: {
@@ -31,6 +36,12 @@ interface BookPageStaticParams {
     readOrder: string
   }
 }
+
+const bookDiscussionMutation = gql<
+  typeof CreateBookDiscussionDocument
+>(`mutation CreateBookDiscussion($input: DiscussionInput!) {
+  createBookDiscussion(input: $input)
+}`)
 
 const partialBooksQuery = gql<
   typeof GetPartialBooksDocument
@@ -131,12 +142,21 @@ function makePreviousLink(book: Book): JSX.Element {
 export default function BookPage({ book }: BookPageProps): JSX.Element {
   const dialog = useDialogState()
   const form = useFormState({
-    defaultValues: { topic: '', message: '', email: '' },
+    defaultValues: { topic: '', discussion: '', email: '' },
   })
   const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
 
-  form.useSubmit(() => {
+  form.useSubmit(async () => {
     console.log(form.values)
+    const data = await fetch(bookDiscussionMutation, {
+      input: {
+        discussion: form.values.discussion,
+        email: form.values.email,
+        topic: form.values.topic,
+        slug: book.slug,
+      },
+    })
+    console.log(data)
   })
 
   function getTouchedError<T>(form: FormState<T>, name: keyof T): string | undefined {
@@ -221,13 +241,16 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                             required
                           >
                             <SelectItem value={''}>select a topic</SelectItem>
-                            <SelectItem value={'0'} display={'recommendation'}>
+                            <SelectItem value={'recommendation'} display={'recommendation'}>
                               a related book recommendation
                             </SelectItem>
-                            <SelectItem value={'1'} display={'positive reflection'}>
+                            <SelectItem value={'reflection'} display={'positive reflection'}>
                               positive reflections about this book
                             </SelectItem>
-                            <SelectItem value={'2'} display={'critical reflection'}>
+                            <SelectItem
+                              value={'reflection-critical'}
+                              display={'critical reflection'}
+                            >
                               critical reflections about this book
                             </SelectItem>
                           </Select>
@@ -241,11 +264,10 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                           />
                           <br />
                           <TextArea
-                            name={form.names.message}
-                            value={form.values.message}
-                            label={'message'}
+                            name={form.names.discussion}
+                            label={'discussion'}
                             required
-                            error={getTouchedError(form, 'message')}
+                            error={getTouchedError(form, 'discussion')}
                             maxLength={20}
                           />
                           <br />
