@@ -1,5 +1,5 @@
 import builder from '@app/lib/graphql/builder'
-import zod from 'zod'
+import zod, { ZodError } from 'zod'
 
 const DiscussionInput = builder.inputType('DiscussionInput', {
   fields: (t) => ({
@@ -17,6 +17,9 @@ const DiscussionInput = builder.inputType('DiscussionInput', {
 
 builder.mutationFields((t) => ({
   createBookDiscussion: t.boolean({
+    errors: {
+      types: [ZodError],
+    },
     args: {
       input: t.arg({ type: DiscussionInput, required: true }),
     },

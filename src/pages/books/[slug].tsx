@@ -40,7 +40,14 @@ interface BookPageStaticParams {
 const bookDiscussionMutation = gql<
   typeof CreateBookDiscussionDocument
 >(`mutation CreateBookDiscussion($input: DiscussionInput!) {
-  createBookDiscussion(input: $input)
+  createBookDiscussion(input: $input) {
+    ... on Error {
+      message
+    }
+    ... on MutationCreateBookDiscussionSuccess {
+      data
+    }
+  }
 }`)
 
 const partialBooksQuery = gql<

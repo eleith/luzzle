@@ -12,7 +12,7 @@ const builder = new SchemaBuilder<{
 }>({
   plugins: [SimpleObjectPlugin, ErrorsPlugin, ValidationPlugin],
   defaultFieldNullability: true,
-  errorOptions: { defaultTypes: [] },
+  errorOptions: { defaultTypes: [Error] },
 })
 
 builder.addScalarType('Date', GraphQLDateTime, {})
