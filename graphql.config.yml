@@ -1,3 +1,4 @@
+---
 schema: ./src/common/graphql/schema.ts
 require:
   - ts-node/register
