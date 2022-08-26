@@ -4,19 +4,6 @@ import { ErrorInterface } from './error'
 
 // https://pothos-graphql.dev/docs/plugins/errors
 
-const ZodFieldError = builder
-  .objectRef<{
-    message: string
-    path: string[]
-  }>('ZodFieldError')
-  .implement({
-    fields: (t) => ({
-      message: t.exposeString('message'),
-      path: t.exposeStringList('path'),
-    }),
-  })
-
-// Util for flattening zod errors into something easier to represent in your Schema.
 function flattenErrors(
   error: ZodFormattedError<unknown>,
   path: string[]
@@ -29,26 +16,44 @@ function flattenErrors(
 
   Object.keys(error).forEach((key) => {
     if (key !== '_errors') {
-      errors.push(
-        ...flattenErrors((error as Record<string, unknown>)[key] as ZodFormattedError<unknown>, [
-          ...path,
-          key,
-        ])
+      const flatError = flattenErrors(
+        (error as Record<string, unknown>)[key] as ZodFormattedError<unknown>,
+        [...path, key]
       )
+      errors.push(...flatError)
     }
   })
 
   return errors
 }
 
+const ZodFieldError = builder
+  .objectRef<{
+    message: string
+    path: string
+  }>('FieldErrors')
+  .implement({
+    fields: (t) => ({
+      message: t.exposeString('message'),
+      path: t.exposeString('path'),
+    }),
+  })
+
 // The actual error type
 builder.objectType(ZodError, {
-  name: 'ZodError',
+  name: 'ValidationError',
   interfaces: [ErrorInterface],
   fields: (t) => ({
     fieldErrors: t.field({
       type: [ZodFieldError],
-      resolve: (err) => flattenErrors(err.format(), []),
+      resolve: (err) => {
+        const zodErrors = flattenErrors(err.format(), [])
+        const flatErrors = zodErrors.map((zodError) => ({
+          message: zodError.message,
+          path: zodError.path.join('.'),
+        }))
+        return flatErrors
+      },
     }),
   }),
 })

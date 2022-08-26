@@ -41,8 +41,12 @@ const bookDiscussionMutation = gql<
   typeof CreateBookDiscussionDocument
 >(`mutation CreateBookDiscussion($input: DiscussionInput!) {
   createBookDiscussion(input: $input) {
-    ... on Error {
-      message
+    __typename
+    ... on ValidationError {
+      fieldErrors {
+        message
+        path
+      }
     }
     ... on MutationCreateBookDiscussionSuccess {
       data
@@ -154,8 +158,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
   const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
 
   form.useSubmit(async () => {
-    console.log(form.values)
-    const data = await fetch(bookDiscussionMutation, {
+    const response = await fetch(bookDiscussionMutation, {
       input: {
         discussion: form.values.discussion,
         email: form.values.email,
@@ -163,7 +166,14 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
         slug: book.slug,
       },
     })
-    console.log(data)
+    const d = response.createBookDiscussion
+    if (d) {
+      if (d.__typename === 'MutationCreateBookDiscussionSuccess') {
+        console.log('data', d.data)
+      } else if (d.__typename === 'ValidationError') {
+        console.log('validation errors', d.fieldErrors)
+      }
+    }
   })
 
   function getTouchedError<T>(form: FormState<T>, name: keyof T): string | undefined {
@@ -235,9 +245,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                       }}
                     >
                       <Box>
-                        <Text size="large" as="h1">
-                          <DialogHeading>discuss</DialogHeading>
-                        </Text>
+                        <DialogHeading>discuss</DialogHeading>
                         <Form state={form}>
                           <Select
                             label={'topic'}
