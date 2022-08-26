@@ -55,6 +55,7 @@ const SelectTag = React.forwardRef<HTMLButtonElement, Omit<SelectProps, 'state'>
       className,
       description,
       error,
+      disabled,
       gutter,
       onTouch,
       name,
@@ -92,8 +93,12 @@ const SelectTag = React.forwardRef<HTMLButtonElement, Omit<SelectProps, 'state'>
     )
 
     const labelElement = label && (
-      <Disclosure state={select} as={'div'}>
-        <SelectLabel style={{ cursor: 'pointer' }} className={styles.label} state={select}>
+      <Disclosure state={select} as={'div'} disabled={disabled || undefined}>
+        <SelectLabel
+          style={{ cursor: disabled ? 'default' : 'pointer' }}
+          className={styles.label}
+          state={select}
+        >
           {label}
         </SelectLabel>
       </Disclosure>
@@ -102,11 +107,11 @@ const SelectTag = React.forwardRef<HTMLButtonElement, Omit<SelectProps, 'state'>
     const highlightElement = highlight && <span className={styles.highlight} />
 
     return (
-      <Box data-invalid={invalid || undefined}>
+      <Box data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
         <Box
           className={clsx(className, classVariant) || undefined}
-          onMouseEnter={() => setHighlight(true)}
-          onMouseLeave={() => setHighlight(false)}
+          onMouseEnter={() => !disabled && setHighlight(true)}
+          onMouseLeave={() => !disabled && setHighlight(false)}
           ref={boxRef}
         >
           {labelElement}
@@ -117,6 +122,7 @@ const SelectTag = React.forwardRef<HTMLButtonElement, Omit<SelectProps, 'state'>
             ref={ref}
             name={name as string}
             className={styles.select}
+            disabled={disabled || undefined}
             onBlur={(event: React.FocusEvent<HTMLButtonElement>) => {
               const disclosure = select.disclosureRef.current
               if (event.currentTarget.contains(event.relatedTarget)) return

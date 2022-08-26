@@ -28,6 +28,7 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, Props>(
       required,
       placeholder,
       description,
+      disabled,
       error,
       maxLength,
       rows = 2,
@@ -67,10 +68,10 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, Props>(
     const highlightElement = highlight && <span className={styles.highlight} />
 
     return (
-      <Box data-invalid={invalid || undefined}>
+      <Box data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
         <AriaFormLabel
-          onMouseEnter={() => setHighlight(true)}
-          onMouseLeave={() => setHighlight(false)}
+          onMouseEnter={() => !disabled && setHighlight(true)}
+          onMouseLeave={() => !disabled && setHighlight(false)}
           name={name}
           className={clsx(className, classVariant) || undefined}
         >
@@ -86,6 +87,7 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, Props>(
             placeholder={placeholder}
             className={styles.textArea}
             aria-labelledby={label}
+            disabled={disabled || undefined}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
               setCount(e.currentTarget.value.length)
               props.onChange && props.onChange(e)

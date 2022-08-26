@@ -26,7 +26,6 @@ export const Button = React.forwardRef(
     ref: React.Ref<HTMLButtonElement>
   ) => {
     const variantClass = styles.variants({
-      disabled: disabled,
       as,
       raised,
       outlined,
@@ -38,6 +37,7 @@ export const Button = React.forwardRef(
         ref={ref}
         className={clsx(className, variantClass) || undefined}
         as={as}
+        disabled={disabled || undefined}
         {...props}
       >
         <span className={styles.label}>{children}</span>

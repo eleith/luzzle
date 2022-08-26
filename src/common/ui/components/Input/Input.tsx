@@ -37,7 +37,18 @@ type Props = {
 
 export const Input = React.forwardRef<HTMLInputElement, Props>(
   (
-    { className, type = 'text', name, label, required, placeholder, description, error, ...props },
+    {
+      className,
+      type = 'text',
+      name,
+      label,
+      required,
+      disabled,
+      placeholder,
+      description,
+      error,
+      ...props
+    },
     ref
   ) => {
     const [highlight, setHighlight] = useState(false)
@@ -65,10 +76,10 @@ export const Input = React.forwardRef<HTMLInputElement, Props>(
     const highlightElement = highlight && <span className={styles.highlight} />
 
     return (
-      <Box data-invalid={invalid || undefined}>
+      <Box data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
         <AriaFormLabel
-          onMouseEnter={() => setHighlight(true)}
-          onMouseLeave={() => setHighlight(false)}
+          onMouseEnter={() => !disabled && setHighlight(true)}
+          onMouseLeave={() => !disabled && setHighlight(false)}
           name={name}
           className={clsx(className, classVariant) || undefined}
         >
@@ -81,6 +92,7 @@ export const Input = React.forwardRef<HTMLInputElement, Props>(
             placeholder={placeholder}
             className={styles.input}
             aria-labelledby={label}
+            disabled={disabled || undefined}
             {...props}
             ref={ref}
           />
