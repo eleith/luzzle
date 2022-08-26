@@ -1,6 +1,6 @@
 import builder from '@app/lib/graphql/builder'
 
-export const ErrorInterface = builder.interfaceRef<Error>('Error')
+export const ErrorInterface = builder.interfaceRef<Error>('ErrorInterface')
 
 ErrorInterface.implement({
   fields: (t) => ({
@@ -9,6 +9,6 @@ ErrorInterface.implement({
 })
 
 builder.objectType(Error, {
-  name: 'BaseError',
+  name: 'Error',
   interfaces: [ErrorInterface],
 })

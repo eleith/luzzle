@@ -28,7 +28,7 @@ import { useDialogState, Dialog, DialogHeading } from 'ariakit/dialog'
 import { vars } from '@app/common/ui/css'
 import config from '@app/common/config'
 import { Form, FormState, useFormState } from 'ariakit/form'
-import fetch from '@app/common/graphql/fetch'
+import gqlFetch from '@app/common/graphql/fetch'
 
 interface BookPageStaticParams {
   params: {
@@ -42,6 +42,9 @@ const bookDiscussionMutation = gql<
 >(`mutation CreateBookDiscussion($input: DiscussionInput!) {
   createBookDiscussion(input: $input) {
     __typename
+    ... on Error {
+      message
+    }
     ... on ValidationError {
       fieldErrors {
         message
@@ -152,26 +155,36 @@ function makePreviousLink(book: Book): JSX.Element {
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
   const dialog = useDialogState()
-  const form = useFormState({
+  const formState = useFormState({
     defaultValues: { topic: '', discussion: '', email: '' },
   })
   const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
 
-  form.useSubmit(async () => {
-    const response = await fetch(bookDiscussionMutation, {
+  formState.useSubmit(async () => {
+    const { createBookDiscussion } = await gqlFetch(bookDiscussionMutation, {
       input: {
-        discussion: form.values.discussion,
-        email: form.values.email,
-        topic: form.values.topic,
+        discussion: formState.values.discussion,
+        email: formState.values.email,
+        topic: formState.values.topic,
         slug: book.slug,
       },
     })
-    const d = response.createBookDiscussion
-    if (d) {
-      if (d.__typename === 'MutationCreateBookDiscussionSuccess') {
-        console.log('data', d.data)
-      } else if (d.__typename === 'ValidationError') {
-        console.log('validation errors', d.fieldErrors)
+    if (createBookDiscussion) {
+      const type = createBookDiscussion.__typename
+      if (type === 'MutationCreateBookDiscussionSuccess') {
+        dialog.hide()
+        formState.reset()
+      } else if (type === 'Error') {
+        // show error message...
+      } else if (type === 'ValidationError') {
+        const fieldErrors = createBookDiscussion.fieldErrors
+        fieldErrors?.forEach((fieldError) => {
+          const field = fieldError.path?.split('.').pop() || ''
+          if (formState.names[field as keyof typeof formState.values]) {
+            console.log(`setting error for ${field} with message ${fieldError.message}`)
+            formState.setError(field, fieldError.message)
+          }
+        })
       }
     }
   })
@@ -246,13 +259,14 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                     >
                       <Box>
                         <DialogHeading>discuss</DialogHeading>
-                        <Form state={form}>
+                        <Form state={formState} resetOnSubmit={false}>
                           <Select
                             label={'topic'}
-                            name={form.names.topic}
-                            state={form}
-                            value={form.values.topic}
-                            error={getTouchedError(form, 'topic')}
+                            name={formState.names.topic}
+                            state={formState}
+                            value={formState.values.topic}
+                            error={getTouchedError(formState, 'topic')}
+                            disabled={formState.submitting}
                             required
                           >
                             <SelectItem value={''}>select a topic</SelectItem>
@@ -272,31 +286,37 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                           <br />
                           <Input
                             required
-                            name={form.names.email}
+                            name={formState.names.email}
+                            disabled={formState.submitting}
                             label={'email'}
                             type={'email'}
-                            error={getTouchedError(form, 'email')}
+                            pattern={'[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$'}
+                            error={getTouchedError(formState, 'email')}
                           />
                           <br />
                           <TextArea
-                            name={form.names.discussion}
+                            name={formState.names.discussion}
                             label={'discussion'}
                             required
-                            error={getTouchedError(form, 'discussion')}
+                            error={getTouchedError(formState, 'discussion')}
                             maxLength={20}
+                            disabled={formState.submitting}
                           />
                           <br />
                           <Box style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Button
                               outlined
+                              disabled={formState.submitting}
                               onClick={() => {
-                                form.reset()
+                                formState.reset()
                                 dialog.hide()
                               }}
                             >
                               Cancel
                             </Button>
-                            <Button type={'submit'}>Send</Button>
+                            <Button type={'submit'} disabled={formState.submitting}>
+                              Send
+                            </Button>
                           </Box>
                         </Form>
                       </Box>

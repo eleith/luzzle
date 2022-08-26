@@ -58,9 +58,6 @@ export const variants = recipe({
     },
   }),
   variants: {
-    disabled: {
-      true: {},
-    },
     raised: {
       true: {
         boxShadow: vars.shadows.raised,
@@ -77,11 +74,16 @@ export const variants = recipe({
     },
     use: {
       primary: {
-        background: vars.colors.primary,
+        backgroundColor: vars.colors.primary,
         color: vars.colors.onPrimary,
         selectors: {
           '&::after': {
             backgroundColor: vars.colors.onPrimary,
+          },
+          '&[disabled]': {
+            backgroundColor: vars.colors.onSurface,
+            opacity: 0.28,
+            color: vars.colors.surface,
           },
         },
       },
@@ -96,7 +98,7 @@ export const variants = recipe({
         outlined: true,
       },
       style: {
-        background: vars.colors.background,
+        backgroundColor: vars.colors.background,
         color: vars.colors.onBackground,
         borderStyle: 'solid',
         borderWidth: '1px',
@@ -104,6 +106,10 @@ export const variants = recipe({
         selectors: {
           '&::after': {
             backgroundColor: vars.colors.onBackground,
+          },
+          '&[disabled]': {
+            backgroundColor: vars.colors.background,
+            color: vars.colors.onSurface,
           },
         },
       },

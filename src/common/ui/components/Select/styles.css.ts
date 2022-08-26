@@ -27,6 +27,10 @@ export const variants = recipe({
       '&[aria-invalid=true]': {
         borderBottomColor: vars.colors.error,
       },
+      '[data-disabled=true] &': {
+        opacity: 0.38,
+        cursor: 'default',
+      },
     },
   },
   variants: {},

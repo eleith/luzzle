@@ -27,6 +27,10 @@ export const variants = recipe({
       '[data-invalid=true] &': {
         borderBottomColor: vars.colors.error,
       },
+      '[data-disabled=true] &': {
+        opacity: 0.38,
+        cursor: 'default',
+      },
     },
   },
   variants: {},
@@ -85,6 +89,11 @@ export const highlight = style({
 
 export const helper = style({
   display: 'flex',
+  selectors: {
+    '[data-disabled=true] &': {
+      opacity: 0.38,
+    },
+  },
 })
 
 export const description = style({
