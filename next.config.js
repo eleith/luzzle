@@ -25,6 +25,7 @@ module.exports = withVanillaExtract(
     eslint: {
       ignoreDuringBuilds: true,
     },
+    output: 'standalone',
     images: {
       domains: [process.env.IMAGE_DOMAIN],
     },
