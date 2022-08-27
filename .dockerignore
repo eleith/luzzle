@@ -12,3 +12,4 @@ data
 public/images/covers
 .eslintrc.json
 .prettierrc.json
+vite.config.ts
