@@ -1,3 +1,4 @@
+---
 workspace:
   base: /workspace
   path: src/website
@@ -74,6 +75,10 @@ pipeline:
         nextjs_env_host,
         nextjs_env_public_host_static,
         nextjs_env_image_domain,
+        nextjs_env_emailjs_user,
+        nextjs_env_emailjs_password,
+        nextjs_env_emailjs_host,
+        nextjs_env_emailjs_port,
       ]
     when:
       branch: main

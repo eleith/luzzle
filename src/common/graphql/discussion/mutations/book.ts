@@ -18,14 +18,33 @@ const DiscussionInput = builder.inputType('DiscussionInput', {
 builder.mutationFields((t) => ({
   createBookDiscussion: t.boolean({
     errors: {
-      types: [ZodError],
+      types: [ZodError, Error],
     },
     args: {
       input: t.arg({ type: DiscussionInput, required: true }),
     },
-    resolve: async () => {
-      console.log('we are sending mail!')
-      return true
+    resolve: async (_, args, ctx) => {
+      const { slug, email, discussion, topic } = args.input
+
+      try {
+        const book = await ctx.prisma.book.findUnique({ rejectOnNotFound: true, where: { slug } })
+        await ctx.email.sendAsync({
+          text: `topic: ${topic}\nfrom: ${email}\n\ndiscussion:\n--\n\n${discussion}`,
+          'reply-to': email,
+          from: 'online-hi-eleith-com@eleith.com',
+          to: 'online-hi-eleith-com@eleith.com',
+          subject: `discussion on ${book.title}`,
+        })
+
+        return true
+      } catch (error) {
+        if (error instanceof Error && error?.name === 'NotFoundError') {
+          throw new Error(`book ${slug} not found`)
+        } else {
+          console.error(error)
+          throw new Error('internal error. could not start a discussion')
+        }
+      }
     },
   }),
 }))
