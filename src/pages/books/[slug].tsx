@@ -299,7 +299,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                             label={'discussion'}
                             required
                             error={getTouchedError(formState, 'discussion')}
-                            maxLength={20}
+                            maxLength={2048}
                             disabled={formState.submitting}
                           />
                           <br />
