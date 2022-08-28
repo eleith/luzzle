@@ -27,7 +27,7 @@ module.exports = withVanillaExtract(
     },
     output: 'standalone',
     images: {
-      domains: [process.env.IMAGE_DOMAIN],
+      domains: [process.env.IMAGE_DOMAIN || 'localhost'],
     },
   })
 )
