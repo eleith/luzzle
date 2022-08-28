@@ -61,7 +61,7 @@ pipeline:
       - GCS_REGION=us-central1
     commands:
       - mkdir /tmp/secrets
-      - printenv "NEXTJS_ENV_LOCAL" > $ENV_LOCAL_FILE
+      - echo $${NEXTJS_ENV_LOCAL}} > $ENV_LOCAL_FILE
       - echo $${CLOUD_RUN_SERVICE_KEY_JSON} > $RUN_KEY_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RUN_KEY_FILE
       - gcloud auth activate-service-account --key-file $RUN_KEY_FILE
