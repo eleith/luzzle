@@ -33,9 +33,6 @@ RUN addgroup --gid 1001 --system nodejs
 RUN adduser --system nextjs --uid 1001
 
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.env ./.env
-COPY --from=builder /app/.env.production ./.env.production
-COPY --from=builder /app/.env.local ./.env.local
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
