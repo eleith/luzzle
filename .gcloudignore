@@ -5,7 +5,11 @@
 .stylelintrc.json
 .eslintrc.json
 .prettierrc.json
+.tool-versions
+.dockerignore
 
+Dockerfile
+vite.config.ts
 node_modules
 tools
 prisma/migrate
