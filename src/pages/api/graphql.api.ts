@@ -17,6 +17,7 @@ const apolloServer = new ApolloServer({
   context: createContext,
   schema,
   introspection: process.env.NODE_ENV === 'development',
+  cache: 'bounded',
   debug: process.env.NODE_ENV === 'development',
   plugins: [playground],
 })
