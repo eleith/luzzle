@@ -8,7 +8,6 @@
 .tool-versions
 .dockerignore
 
-Dockerfile
 vite.config.ts
 node_modules
 tools
