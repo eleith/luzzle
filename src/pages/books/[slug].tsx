@@ -111,7 +111,7 @@ export async function getStaticProps({
 }
 
 function makeBookDateString(book?: Book): string {
-  const month = book && typeof book.monthRead === 'number' ? book.monthRead + 1 : '?'
+  const month = book && typeof book.monthRead === 'number' ? book.monthRead : '?'
   const year = book && typeof book.yearRead === 'number' ? book.yearRead : '?'
 
   return `${month} / ${year}`
