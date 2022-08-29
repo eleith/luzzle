@@ -1,5 +1,11 @@
 import { style } from '@vanilla-extract/css'
-import { mediaBreakpointLaptop, vars } from '@app/common/ui/css'
+import {
+  mediaBreakpointDesktop,
+  mediaBreakpointLaptop,
+  mediaBreakpointPhone,
+  mediaBreakpointTablet,
+  vars,
+} from '@app/common/ui/css'
 
 export const bookContainer = style({
   display: 'flex',
@@ -20,6 +26,23 @@ export const bookDetails = style({
   '@media': {
     [mediaBreakpointLaptop]: {
       width: vars.space['1/3'],
+    },
+  },
+})
+
+export const showOnMobile = style({
+  '@media': {
+    [mediaBreakpointPhone]: {
+      display: 'none',
+    },
+  },
+})
+
+export const hideOnMobile = style({
+  display: 'none',
+  '@media': {
+    [mediaBreakpointPhone]: {
+      display: 'unset',
     },
   },
 })

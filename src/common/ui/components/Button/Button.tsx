@@ -22,7 +22,17 @@ type Props = {
 
 export const Button = React.forwardRef(
   (
-    { as = 'button', children, outlined, className, raised, use, disabled, ...props }: Props,
+    {
+      as = 'button',
+      children,
+      outlined,
+      className,
+      raised,
+      use,
+      disabled,
+      action,
+      ...props
+    }: Props,
     ref: React.Ref<HTMLButtonElement>
   ) => {
     const variantClass = styles.variants({
@@ -30,6 +40,7 @@ export const Button = React.forwardRef(
       raised,
       outlined,
       use,
+      action,
     })
 
     return (
