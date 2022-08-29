@@ -69,15 +69,6 @@ export const variants = recipe({
         borderColor: vars.colors.surface,
       },
     },
-    action: {
-      true: {
-        height: '56px',
-        position: 'absolute',
-        bottom: vars.space[4],
-        right: vars.space[4],
-        minWidth: 'auto',
-      },
-    },
     as: {
       ...typeVariants,
     },
@@ -132,8 +123,6 @@ export const variants = recipe({
 
 export const label = style({
   position: 'relative',
-  display: 'inline-flex',
-  gap: vars.space[2],
 })
 
-export type ButtonVariants = RecipeVariants<typeof variants>
+export type TooltipVariants = RecipeVariants<typeof variants>

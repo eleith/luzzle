@@ -23,7 +23,7 @@ import {
 } from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './[slug].css'
-import { CaretLeft, CaretRight } from 'phosphor-react'
+import { CaretLeft, CaretRight, ChatsCircle } from 'phosphor-react'
 import { useDialogState, Dialog, DialogHeading } from 'ariakit/dialog'
 import { vars } from '@app/common/ui/css'
 import config from '@app/common/config'
@@ -234,8 +234,22 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                 {book.yearFirstPublished && <Text>published in {book.yearFirstPublished}</Text>}
                 <Text>{book.pages} pages</Text>
                 <br />
-                <Button onClick={dialog.toggle} raised use={'primary'}>
+                <Button
+                  onClick={dialog.toggle}
+                  raised
+                  use={'primary'}
+                  className={styles.hideOnMobile}
+                >
                   discuss
+                </Button>
+                <Button
+                  onClick={dialog.toggle}
+                  raised
+                  use={'primary'}
+                  action
+                  className={styles.showOnMobile}
+                >
+                  <ChatsCircle size={24} /> discuss
                 </Button>
               </Box>
               <Box>
