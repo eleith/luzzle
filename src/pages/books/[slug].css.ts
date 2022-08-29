@@ -1,11 +1,5 @@
 import { style } from '@vanilla-extract/css'
-import {
-  mediaBreakpointDesktop,
-  mediaBreakpointLaptop,
-  mediaBreakpointPhone,
-  mediaBreakpointTablet,
-  vars,
-} from '@app/common/ui/css'
+import { mediaBreakpointLaptop, mediaBreakpointPhone, vars } from '@app/common/ui/css'
 
 export const bookContainer = style({
   display: 'flex',
