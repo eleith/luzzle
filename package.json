@@ -10,7 +10,7 @@
     "compile": "tsc --noEmit",
     "build:manager": "esbuild tools/manage.ts --platform=node --target=node16 --sourcemap --bundle --outfile=build/manager.js --external:sharp --external:generated",
     "manage": "node --enable-source-maps build/manager.js",
-    "test": "vitest run --coverage",
+    "test": "vitest run --coverage --silent",
     "prebuild": "npm run build:prisma && npm run build:graphql",
     "predev": "npm run build:prisma && npm run build:graphql",
     "clean:graphql": "find . -path \\*/_gql_/*.ts -delete"
