@@ -8,8 +8,9 @@ pipeline:
     image: node:16
     commands:
       - npm ci
-      - npm run test
       - npm run lint
+      - npm run test
+      - npm run prebuild
       - npm run compile
   gather:
     image: rclone/rclone:1.57
