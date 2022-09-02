@@ -20,10 +20,11 @@ import {
   TextArea,
   Select,
   SelectItem,
+  useNotificationQueue,
 } from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './[slug].css'
-import { CaretLeft, CaretRight, ChatsCircle } from 'phosphor-react'
+import { CaretLeft, CaretRight, ChatsCircle, CircleNotch } from 'phosphor-react'
 import { useDialogState, Dialog, DialogHeading } from 'ariakit/dialog'
 import { vars } from '@app/common/ui/css'
 import config from '@app/common/config'
@@ -154,6 +155,7 @@ function makePreviousLink(book: Book): JSX.Element {
 }
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
+  const notifications = useNotificationQueue()
   const dialog = useDialogState()
   const formState = useFormState({
     defaultValues: { topic: '', discussion: '', email: '' },
@@ -174,8 +176,10 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
       if (type === 'MutationCreateBookDiscussionSuccess') {
         dialog.hide()
         formState.reset()
+        notifications.add({ item: 'thank you for starting a discussion!' })
       } else if (type === 'Error') {
-        // show error message...
+        console.error(createBookDiscussion)
+        notifications.add({ item: 'your discussion was not sent, try again' })
       } else if (type === 'ValidationError') {
         const fieldErrors = createBookDiscussion.fieldErrors
         fieldErrors?.forEach((fieldError) => {
@@ -255,6 +259,9 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
               <Box>
                 <Dialog
                   state={dialog}
+                  modal={false}
+                  hideOnInteractOutside={false}
+                  hideOnEscape={false}
                   style={{
                     background: vars.colors.surface,
                     position: 'absolute',
@@ -328,8 +335,22 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                             >
                               Cancel
                             </Button>
-                            <Button type={'submit'} disabled={formState.submitting}>
-                              Send
+                            <Button type={'submit'} disabled={formState.submitting} raised>
+                              {formState.submitting ? (
+                                <CircleNotch size={24}>
+                                  <animateTransform
+                                    attributeName="transform"
+                                    attributeType="XML"
+                                    type="rotate"
+                                    dur="0.75s"
+                                    from="0 0 0"
+                                    to="360 0 0"
+                                    repeatCount="indefinite"
+                                  ></animateTransform>
+                                </CircleNotch>
+                              ) : (
+                                'Send'
+                              )}
                             </Button>
                           </Box>
                         </Form>
