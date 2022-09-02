@@ -113,7 +113,7 @@ describe('tools/lib/cli', () => {
 
     const ctx = await cli.run()
 
-    expect(ctx.log.level).toBe('info')
+    expect(ctx?.log.level).toBe('info')
     expect(spySyncToDb).toHaveBeenCalledWith(ctx)
     expect(spyCleanup).toHaveBeenCalledWith(ctx)
   })
@@ -130,7 +130,7 @@ describe('tools/lib/cli', () => {
 
     const ctx = await cli.run()
 
-    expect(ctx.log.level).toBe('warn')
+    expect(ctx?.log.level).toBe('warn')
     expect(mocks.logChild).toHaveBeenCalledWith({ dryRun: true })
     expect(spyDump).toHaveBeenCalledWith(ctx)
     expect(spyCleanup).toHaveBeenCalledWith(ctx)

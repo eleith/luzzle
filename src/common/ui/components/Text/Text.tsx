@@ -39,17 +39,17 @@ export const Text = React.forwardRef(
     ref: React.Ref<HTMLElement>
   ) => {
     const defaultSizes: Record<typeof as, styles.TextSizes> = {
-      h1: 'xl',
-      h2: 'large',
-      h3: 'large',
-      h4: 'large',
-      h5: 'large',
-      h6: 'large',
-      label: 'large',
-      code: 'large',
-      p: 'medium',
-      span: 'medium',
-      div: 'medium',
+      h1: 'h1',
+      h2: 'h2',
+      h3: 'h3',
+      h4: 'body',
+      h5: 'body',
+      h6: 'body',
+      label: 'label',
+      code: 'body',
+      p: 'body',
+      span: 'body',
+      div: 'body',
     }
 
     const classVariant = styles.variants({
