@@ -30,6 +30,7 @@ import { vars } from '@app/common/ui/css'
 import config from '@app/common/config'
 import { Form, FormState, useFormState } from 'ariakit/form'
 import gqlFetch from '@app/common/graphql/fetch'
+import { PageProgress, useProgressPageState } from '@app/common/ui/components/PageProgress'
 
 interface BookPageStaticParams {
   params: {
@@ -157,12 +158,14 @@ function makePreviousLink(book: Book): JSX.Element {
 export default function BookPage({ book }: BookPageProps): JSX.Element {
   const notifications = useNotificationQueue()
   const dialog = useDialogState()
+  const pageProgressState = useProgressPageState({ imitate: true, progress: 0 })
   const formState = useFormState({
     defaultValues: { topic: '', discussion: '', email: '' },
   })
   const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
 
   formState.useSubmit(async () => {
+    pageProgressState.setProgress(Math.random() * 35)
     const { createBookDiscussion } = await gqlFetch(bookDiscussionMutation, {
       input: {
         discussion: formState.values.discussion,
@@ -171,12 +174,13 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
         slug: book.slug,
       },
     })
+    pageProgressState.setProgress(100)
     if (createBookDiscussion) {
       const type = createBookDiscussion.__typename
       if (type === 'MutationCreateBookDiscussionSuccess') {
+        notifications.add({ item: 'thank you for starting a discussion!' })
         dialog.hide()
         formState.reset()
-        notifications.add({ item: 'thank you for starting a discussion!' })
       } else if (type === 'Error') {
         console.error(createBookDiscussion)
         notifications.add({ item: 'your discussion was not sent, try again' })
@@ -280,6 +284,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                     >
                       <Box>
                         <DialogHeading>discuss</DialogHeading>
+                        {pageProgressState.loading && <PageProgress state={pageProgressState} />}
                         <Form state={formState} resetOnSubmit={false}>
                           <Select
                             label={'topic'}

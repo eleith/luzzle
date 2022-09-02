@@ -41,14 +41,12 @@ export const Notification = function ({
 
     document.addEventListener('keydown', onEscape)
 
-    const timeout = setTimeout(() => {
+    const timer = setTimeout(() => {
       notifications.remove(id)
     }, duration)
 
     return (): void => {
-      if (timeout) {
-        clearTimeout(timeout)
-      }
+      clearTimeout(timer)
       document.removeEventListener('keydown', onEscape)
     }
   }, [id, duration, notifications])
