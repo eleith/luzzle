@@ -106,7 +106,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
             Here are my last two,
           </Text>
           <br />
-          <Box style={{ display: 'flex', gap: '3rem' }}>
+          <Box style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
             {makeBookCardLink(book1)}
             {makeBookCardLink(book2)}
           </Box>
