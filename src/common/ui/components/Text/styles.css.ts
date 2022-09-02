@@ -3,26 +3,32 @@ import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
 import { vars } from '../../css'
 
 const sizes = {
-  xl: style({
-    fontSize: vars.fontSizes.xl,
-    fontWeight: vars.fontWeights.medium,
-    letterSpacing: '-0.02',
-    lineHeight: vars.lineHeights[2],
-  }),
-  large: style({
-    fontSize: vars.fontSizes.large,
+  title: style({
+    fontSize: vars.fontSizes.title,
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02',
     lineHeight: vars.lineHeights[2],
   }),
-  small: style({
-    fontSize: vars.fontSizes.small,
+  h1: style({
+    fontSize: vars.fontSizes.h1,
+    fontWeight: vars.fontWeights.normal,
+    letterSpacing: '-0.02',
+    lineHeight: vars.lineHeights[2],
+  }),
+  h2: style({
+    fontSize: vars.fontSizes.h2,
+    fontWeight: vars.fontWeights.normal,
+    letterSpacing: '-0.02',
+    lineHeight: vars.lineHeights[2],
+  }),
+  h3: style({
+    fontSize: vars.fontSizes.h3,
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.01',
     lineHeight: vars.lineHeights[1.5],
   }),
-  medium: style({
-    fontSize: vars.fontSizes.medium,
+  body: style({
+    fontSize: vars.fontSizes.body,
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02',
     lineHeight: vars.lineHeights[1.5],
@@ -48,6 +54,9 @@ export const variants = recipe({
         whiteSpace: 'nowrap',
       }),
     },
+  },
+  defaultVariants: {
+    size: 'body',
   },
 })
 

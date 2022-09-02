@@ -8,7 +8,7 @@ import staticClient from '@app/common/graphql/staticClient'
 import Link from 'next/link'
 import { Box, Text, Anchor } from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
-import * as classNames from './index.css'
+import * as styles from './index.css'
 import { VisuallyHidden } from 'ariakit'
 
 const getBooksQuery = gql<typeof GetBookHomeDocument>(
@@ -62,13 +62,6 @@ function makeBookCardLink(book?: Book): JSX.Element {
   }
 }
 
-function makeBookDateString(book?: Book): string {
-  const month = book && typeof book.monthRead === 'number' ? book.monthRead : '?'
-  const year = book && typeof book.yearRead === 'number' ? book.yearRead : '?'
-
-  return `${month} / ${year}`
-}
-
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
   const response = await staticClient.query({ query: getBooksQuery, variables: { take: 2 } })
   const books = response.data?.books
@@ -88,36 +81,41 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   })
   const randomBook = data?.book || undefined
 
+  const explore = (
+    <Link href="/books" passHref>
+      <Anchor hoverAction="animateUnderline">explore</Anchor>
+    </Link>
+  )
+
   return (
     <PageFull meta={{ title: 'books' }} isHome>
-      <Box>
-        <Box className={classNames.booksContainer}>
-          <Box>
+      <Box className={styles.page}>
+        <Box>
+          <Text as="h1" size={'title'}>
+            Hello.
+          </Text>
+          <Text as="h2" size={'h1'}>
+            This site is a collection of <i>things</i>. Currently, those <i>things</i> are books.
+            <br />
+            <br />
+            Feel free to {explore} and start a discussion on any of them.
+          </Text>
+          <br />
+          <br />
+          <Text as="h3" size={'h1'}>
+            Here are my last two,
+          </Text>
+          <br />
+          <Box style={{ display: 'flex', gap: '3rem' }}>
             {makeBookCardLink(book1)}
-            <br />
-            <Text as="h1" size={'medium'}>
-              {makeBookDateString(book1)}
-            </Text>
-          </Box>
-          <Box>
             {makeBookCardLink(book2)}
-            <br />
-            <Text as="h1" size={'medium'}>
-              {makeBookDateString(book2)}
-            </Text>
           </Box>
-          <Box>
-            {makeBookCardLink(randomBook)}
-            <br />
-            <Text as="h1" size={'medium'}>
-              {makeBookDateString(randomBook)}
-            </Text>
-          </Box>
-        </Box>
-        <Box className={classNames.booksActions}>
-          <Link href="/books" passHref>
-            <Anchor hoverAction="animateUnderline">all books</Anchor>
-          </Link>
+          <br />
+          <Text as="h3" size={'h1'}>
+            Here is a random one,
+          </Text>
+          <br />
+          <Box style={{ display: 'flex', gap: '3rem' }}>{makeBookCardLink(randomBook)}</Box>
         </Box>
       </Box>
     </PageFull>
