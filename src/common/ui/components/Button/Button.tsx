@@ -28,6 +28,7 @@ export const Button = React.forwardRef(
       outlined,
       className,
       raised,
+      standard,
       use,
       disabled,
       action,
@@ -38,6 +39,7 @@ export const Button = React.forwardRef(
     const variantClass = styles.variants({
       as,
       raised,
+      standard: standard || !(raised || outlined || action),
       outlined,
       use,
       action,
@@ -46,6 +48,7 @@ export const Button = React.forwardRef(
     return (
       <AriaButton
         ref={ref}
+        data-bottom-area={action ? true : undefined}
         className={clsx(className, variantClass) || undefined}
         as={as}
         disabled={disabled || undefined}

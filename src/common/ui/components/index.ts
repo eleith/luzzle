@@ -6,4 +6,10 @@ export { Text } from './Text'
 export { Input } from './Input'
 export { Select, SelectItem } from './Select'
 export { TextArea } from './TextArea'
-export { Tooltip } from './Tooltip'
+export { Tooltip, TooltipAnchor, useTooltipState } from './Tooltip'
+export {
+  Notification,
+  NotificationList,
+  NotificationProvider,
+  useNotificationQueue,
+} from './Notification'

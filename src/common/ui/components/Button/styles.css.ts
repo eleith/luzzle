@@ -69,6 +69,11 @@ export const variants = recipe({
         borderColor: vars.colors.surface,
       },
     },
+    standard: {
+      true: {
+        borderColor: 'transparent',
+      },
+    },
     action: {
       true: {
         height: '56px',
@@ -85,6 +90,7 @@ export const variants = recipe({
       primary: {
         backgroundColor: vars.colors.primary,
         color: vars.colors.onPrimary,
+        borderColor: vars.colors.primary,
         selectors: {
           '&::after': {
             backgroundColor: vars.colors.onPrimary,
@@ -107,11 +113,31 @@ export const variants = recipe({
         outlined: true,
       },
       style: {
-        backgroundColor: vars.colors.background,
-        color: vars.colors.onBackground,
+        backgroundColor: 'transparent',
+        color: vars.colors.primary,
         borderStyle: 'solid',
         borderWidth: '1px',
         borderColor: vars.colors.primary,
+        selectors: {
+          '&::after': {
+            backgroundColor: vars.colors.onBackground,
+          },
+          '&[disabled]': {
+            backgroundColor: vars.colors.background,
+            color: vars.colors.onSurface,
+          },
+        },
+      },
+    },
+    {
+      variants: {
+        use: 'primary',
+        standard: true,
+      },
+      style: {
+        backgroundColor: 'transparent',
+        color: vars.colors.primary,
+        border: 'none',
         selectors: {
           '&::after': {
             backgroundColor: vars.colors.onBackground,
@@ -127,6 +153,7 @@ export const variants = recipe({
   defaultVariants: {
     as: 'button',
     use: 'primary',
+    standard: true,
   },
 })
 
