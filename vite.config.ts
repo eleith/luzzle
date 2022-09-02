@@ -3,6 +3,7 @@ import path from 'path'
 
 export default defineConfig({
   test: {
+    exclude: ['generated/**', 'build/**', 'node_modules/**'],
     coverage: {
       lines: 95,
       branches: 95,
@@ -10,6 +11,7 @@ export default defineConfig({
       functions: 95,
       exclude: [
         'generated/**',
+        'build/**',
         '**/*{.,-}fixtures.{js,cjs,mjs,ts,tsx,jsx}',
         'coverage/**',
         'packages/*/test{,s}/**',
