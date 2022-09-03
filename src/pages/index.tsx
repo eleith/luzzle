@@ -98,7 +98,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
             this site is a collection of <i>things</i>. currently, those <i>things</i> are books.
             <br />
             <br />
-            Feel free to {explore} and start a discussion on any of them.
+            feel free to {explore} and start a discussion on any of them.
           </Text>
           <br />
           <br />
