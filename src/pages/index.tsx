@@ -92,10 +92,10 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
       <Box className={styles.page}>
         <Box>
           <Text as="h1" size={'title'}>
-            Hello.
+            hello.
           </Text>
           <Text as="h2" size={'h1'}>
-            This site is a collection of <i>things</i>. Currently, those <i>things</i> are books.
+            this site is a collection of <i>things</i>. currently, those <i>things</i> are books.
             <br />
             <br />
             Feel free to {explore} and start a discussion on any of them.
@@ -103,19 +103,19 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           <br />
           <br />
           <Text as="h3" size={'h1'}>
-            Here are my last two,
+            here are the last two i read,
           </Text>
           <br />
-          <Box style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
+          <Box className={styles.books}>
             {makeBookCardLink(book1)}
             {makeBookCardLink(book2)}
           </Box>
           <br />
           <Text as="h3" size={'h1'}>
-            Here is a random one,
+            here is a random one,
           </Text>
           <br />
-          <Box style={{ display: 'flex', gap: '3rem' }}>{makeBookCardLink(randomBook)}</Box>
+          <Box className={styles.books}>{makeBookCardLink(randomBook)}</Box>
         </Box>
       </Box>
     </PageFull>

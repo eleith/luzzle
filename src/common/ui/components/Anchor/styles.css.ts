@@ -8,9 +8,7 @@ const colors = {
   primary: style({
     color: vars.colors.primary,
     selectors: {
-      '&:hover': {
-        color: vars.colors.onPrimaryContainer,
-      },
+      '&:hover': {},
       '&:visited': {},
     },
   }),
