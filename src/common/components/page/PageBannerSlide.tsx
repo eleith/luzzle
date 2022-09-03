@@ -40,7 +40,7 @@ export default function PageMarkdown({ children, isHome = false }: PageProps): J
 
   const homeButton = (
     <Link href="/" passHref>
-      <Anchor color="inherit">
+      <Anchor color="inherit" style={{ visibility: isHome ? 'hidden' : 'visible' }}>
         <HandWaving size={25} />
       </Anchor>
     </Link>
@@ -51,7 +51,7 @@ export default function PageMarkdown({ children, isHome = false }: PageProps): J
   return (
     <Box>
       <Box className={classNames.banner}>
-        <Box className={classNames.navItem}>{!isHome && homeButton}</Box>
+        <Box className={classNames.navItem}>{homeButton}</Box>
         <Box>{children && children}</Box>
         <Box className={classNames.navItem}>{themeToggle}</Box>
       </Box>

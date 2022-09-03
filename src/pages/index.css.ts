@@ -17,3 +17,10 @@ export const page = style({
     },
   },
 })
+
+export const books = style({
+  display: 'flex',
+  gap: '3rem',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+})
