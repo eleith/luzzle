@@ -7,8 +7,8 @@ export default async function request<X extends TypedDocumentNode<ResultOf<X>, V
   variables?: VariablesOf<X>
 ): Promise<ResultOf<X>> {
   if (variables) {
-    return graphqlRequest(endPoint, gql, variables)
+    return graphqlRequest<ResultOf<X>>(endPoint, gql, variables)
   } else {
-    return graphqlRequest(endPoint, gql)
+    return graphqlRequest<ResultOf<X>>(endPoint, gql)
   }
 }

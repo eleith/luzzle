@@ -7,7 +7,7 @@ interface Queue<T> {
   row: T
 }
 
-function initializeCsv<T>(filename: string): CsvFormatterStream<T, T> {
+function initializeCsv<T extends Row>(filename: string): CsvFormatterStream<T, T> {
   const writeStream = format({ headers: true })
   writeStream.pipe(createWriteStream(filename))
 

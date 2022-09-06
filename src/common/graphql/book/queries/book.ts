@@ -12,9 +12,9 @@ builder.queryFields((t) => ({
       const { slug, id } = args
 
       if (slug) {
-        return await ctx.prisma.book.findUnique({ rejectOnNotFound: true, where: { slug } })
+        return await ctx.prisma.book.findUniqueOrThrow({ where: { slug } })
       } else if (id) {
-        return await ctx.prisma.book.findUnique({ rejectOnNotFound: true, where: { id: id } })
+        return await ctx.prisma.book.findUniqueOrThrow({ where: { id: id } })
       } else {
         const count = await ctx.prisma.book.count()
         const skip = Math.floor(Math.random() * count)
