@@ -20,12 +20,12 @@ import * as bookFixtures from './book.fixtures'
 import log from './log'
 import * as cli from './cli'
 import { DeepPartial } from 'src/@types/utilities'
-import { describe, expect, test, vi, afterEach } from 'vitest'
+import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import prisma from './prisma'
 import path from 'path'
 
 vi.mock('os')
-vi.mock('./log')
+// vi.mock('./log')
 vi.mock('fs/promises')
 vi.mock('./book')
 vi.mock('./prisma', () => {
@@ -45,9 +45,10 @@ vi.mock('./prisma', () => {
 
 const mocks = {
   cpus: vi.mocked(cpus),
-  logInfo: vi.mocked(log.info),
-  logError: vi.mocked(log.error),
-  logChild: vi.mocked(log.child),
+  logInfo: vi.spyOn(log, 'info'),
+  logError: vi.spyOn(log, 'error'),
+  logChild: vi.spyOn(log, 'child'),
+  logLevelSet: vi.spyOn(log, 'level', 'set'),
   stat: vi.mocked(stat),
   getBook: vi.mocked(getBook),
   readBookDir: vi.mocked(readBookDir),
@@ -67,6 +68,8 @@ const mocks = {
   getUpdatedSlugs: vi.mocked(getUpdatedSlugs),
   cleanUpDerivatives: vi.mocked(cleanUpDerivatives),
 }
+
+const spies: { [key: string]: SpyInstance } = {}
 
 function makeCommand(overrides?: DeepPartial<Command>): Command {
   return merge(
@@ -97,75 +100,77 @@ describe('tools/lib/cli', () => {
       mock.mockReset()
     })
 
-    vi.resetAllMocks()
-    vi.restoreAllMocks()
+    Object.keys(spies).forEach((key) => {
+      spies[key].mockRestore()
+      delete spies[key]
+    })
   })
 
   test('run _sync', async () => {
     const command = makeCommand()
-    const spyParseArgs = vi.spyOn(cli._private, '_parseArgs')
-    const spySyncToDb = vi.spyOn(cli._private, '_sync')
-    const spyCleanup = vi.spyOn(cli._private, '_cleanup')
+    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
+    spies.syncToDb = vi.spyOn(cli._private, '_sync')
+    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
 
-    spyParseArgs.mockResolvedValueOnce(command)
-    spySyncToDb.mockResolvedValueOnce()
-    spyCleanup.mockResolvedValueOnce()
+    spies.parseArgs.mockResolvedValueOnce(command)
+    spies.syncToDb.mockResolvedValueOnce(undefined)
+    spies.cleanup.mockResolvedValueOnce(undefined)
 
     const ctx = await cli.run()
 
-    expect(ctx?.log.level).toBe('info')
-    expect(spySyncToDb).toHaveBeenCalledWith(ctx)
-    expect(spyCleanup).toHaveBeenCalledWith(ctx)
+    expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'info')
+    expect(spies.syncToDb).toHaveBeenCalledWith(ctx)
+    expect(spies.cleanup).toHaveBeenCalledWith(ctx)
   })
 
   test('run _sync with options', async () => {
     const command = makeCommand({ name: 'dump', options: { quiet: true, isDryRun: true } })
-    const spyParseArgs = vi.spyOn(cli._private, '_parseArgs')
-    const spyCleanup = vi.spyOn(cli._private, '_cleanup')
-    const spyDump = vi.spyOn(cli._private, '_dump')
+    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
+    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
+    spies.dump = vi.spyOn(cli._private, '_dump')
 
-    spyParseArgs.mockResolvedValueOnce(command)
-    spyDump.mockResolvedValueOnce()
-    spyCleanup.mockResolvedValueOnce()
+    spies.parseArgs.mockResolvedValueOnce(command)
+    spies.dump.mockResolvedValueOnce(undefined)
+    spies.cleanup.mockResolvedValueOnce(undefined)
 
     const ctx = await cli.run()
 
-    expect(ctx?.log.level).toBe('warn')
+    expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'warn')
     expect(mocks.logChild).toHaveBeenCalledWith({ dryRun: true })
-    expect(spyDump).toHaveBeenCalledWith(ctx)
-    expect(spyCleanup).toHaveBeenCalledWith(ctx)
+    expect(spies.dump).toHaveBeenCalledWith(ctx)
+    expect(spies.cleanup).toHaveBeenCalledWith(ctx)
   })
 
   test('run _dump', async () => {
     const command = makeCommand({ name: 'dump' })
-    const spyParseArgs = vi.spyOn(cli._private, '_parseArgs')
-    const spyCleanup = vi.spyOn(cli._private, '_cleanup')
-    const spyDump = vi.spyOn(cli._private, '_dump')
+    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
+    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
+    spies.dump = vi.spyOn(cli._private, '_dump')
 
-    spyParseArgs.mockResolvedValueOnce(command)
-    spyDump.mockResolvedValueOnce()
-    spyCleanup.mockResolvedValueOnce()
+    spies.parseArgs.mockResolvedValueOnce(command)
+    spies.dump.mockResolvedValueOnce(undefined)
+    spies.cleanup.mockResolvedValueOnce(undefined)
 
     const ctx = await cli.run()
 
-    expect(spyDump).toHaveBeenCalledWith(ctx)
-    expect(spyCleanup).toHaveBeenCalledWith(ctx)
+    expect(spies.dump).toHaveBeenCalledWith(ctx)
+    expect(spies.cleanup).toHaveBeenCalledWith(ctx)
   })
 
   test('run _process', async () => {
     const command = makeCommand({ name: 'process' })
-    const spyParseArgs = vi.spyOn(cli._private, '_parseArgs')
-    const spyCleanup = vi.spyOn(cli._private, '_cleanup')
-    const spyProcess = vi.spyOn(cli._private, '_process')
+    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
+    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
+    spies.process = vi.spyOn(cli._private, '_process')
 
-    spyParseArgs.mockResolvedValueOnce(command)
-    spyProcess.mockResolvedValueOnce()
-    spyCleanup.mockResolvedValueOnce()
+    spies.parseArgs.mockResolvedValueOnce(command)
+    spies.process.mockResolvedValueOnce(undefined)
+    spies.cleanup.mockResolvedValueOnce(undefined)
 
     const ctx = await cli.run()
 
-    expect(spyProcess).toHaveBeenCalledWith(ctx)
-    expect(spyCleanup).toHaveBeenCalledWith(ctx)
+    expect(spies.process).toHaveBeenCalledWith(ctx)
+    expect(spies.cleanup).toHaveBeenCalledWith(ctx)
   })
 
   test('_cleanup', async () => {
@@ -219,15 +224,15 @@ describe('tools/lib/cli', () => {
     const command = makeCommand()
     const ctx = makeContext(command)
     const books = [bookFixtures.makeBook(), bookFixtures.makeBook(), bookFixtures.makeBook()]
-    const spySyncBookToDisk = vi.spyOn(cli._private, '_dumpBook')
+    spies.syncBookToDisk = vi.spyOn(cli._private, '_dumpBook')
 
     mocks.prismaBookFindMany.mockResolvedValue(books)
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-    spySyncBookToDisk.mockResolvedValue()
+    spies.syncBookToDisk.mockResolvedValue(undefined)
 
     await cli._private._dump(ctx)
 
-    expect(spySyncBookToDisk).toHaveBeenCalledTimes(3)
+    expect(spies.syncBookToDisk).toHaveBeenCalledTimes(3)
   })
 
   test('_sync add books to db', async () => {
@@ -235,24 +240,25 @@ describe('tools/lib/cli', () => {
     const slugs = ['a', 'b']
     const bookMd = bookFixtures.makeBookMd()
     const cache = bookFixtures.makeBookCache()
-    const spyAddBookToDb = vi.spyOn(cli._private, '_syncAddBook')
-    const spyUpdateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
-    const spyRemoveMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
+
+    spies.addBookToDb = vi.spyOn(cli._private, '_syncAddBook')
+    spies.updateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
+    spies.removeMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
 
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugs)
     mocks.getBook.mockResolvedValue(bookMd)
     mocks.readBookDir.mockResolvedValueOnce(slugs)
     mocks.getBookCache.mockResolvedValue(cache)
 
-    spyRemoveMissingBooksFromDb.mockResolvedValueOnce()
-    spyAddBookToDb.mockResolvedValue()
+    spies.removeMissingBooksFromDb.mockResolvedValueOnce(undefined)
+    spies.addBookToDb.mockResolvedValue(undefined)
 
     await cli._private._sync(ctx)
 
     expect(mocks.getUpdatedSlugs).toHaveBeenCalledOnce()
-    expect(spyAddBookToDb).toHaveBeenCalledTimes(slugs.length)
-    expect(spyUpdateBookToDb).not.toHaveBeenCalled()
-    expect(spyRemoveMissingBooksFromDb).toHaveBeenCalledOnce()
+    expect(spies.addBookToDb).toHaveBeenCalledTimes(slugs.length)
+    expect(spies.updateBookToDb).not.toHaveBeenCalled()
+    expect(spies.removeMissingBooksFromDb).toHaveBeenCalledOnce()
   })
 
   test('_sync updates books', async () => {
@@ -260,9 +266,9 @@ describe('tools/lib/cli', () => {
     const bookSlugs = ['a']
     const id = 'aslkjflksjf'
     const bookMd = bookFixtures.makeBookMd()
-    const spyAddBookToDb = vi.spyOn(cli._private, '_syncAddBook')
-    const spyUpdateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
-    const spyRemoveMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
+    spies.addBookToDb = vi.spyOn(cli._private, '_syncAddBook')
+    spies.updateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
+    spies.removeMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
     const cache = bookFixtures.makeBookCache({
       database: { id, date_added: '', date_updated: '', slug: bookSlugs[0] },
     })
@@ -272,15 +278,15 @@ describe('tools/lib/cli', () => {
     mocks.readBookDir.mockResolvedValueOnce(bookSlugs)
     mocks.getBookCache.mockResolvedValue(cache)
 
-    spyRemoveMissingBooksFromDb.mockResolvedValueOnce()
-    spyUpdateBookToDb.mockResolvedValue()
+    spies.removeMissingBooksFromDb.mockResolvedValueOnce(undefined)
+    spies.updateBookToDb.mockResolvedValue(undefined)
 
     await cli._private._sync(ctx)
 
     expect(mocks.getUpdatedSlugs).toHaveBeenCalledOnce()
-    expect(spyAddBookToDb).not.toHaveBeenCalled()
-    expect(spyUpdateBookToDb).toHaveBeenCalledOnce()
-    expect(spyRemoveMissingBooksFromDb).toHaveBeenCalledWith(ctx, bookSlugs)
+    expect(spies.addBookToDb).not.toHaveBeenCalled()
+    expect(spies.updateBookToDb).toHaveBeenCalledOnce()
+    expect(spies.removeMissingBooksFromDb).toHaveBeenCalledWith(ctx, bookSlugs)
   })
 
   test('_sync force updates books', async () => {
@@ -289,9 +295,9 @@ describe('tools/lib/cli', () => {
     const bookSlugs = ['a']
     const id = 'aslkjflksjf'
     const bookMd = bookFixtures.makeBookMd()
-    const spyAddBookToDb = vi.spyOn(cli._private, '_syncAddBook')
-    const spyUpdateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
-    const spyRemoveMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
+    spies.addBookToDb = vi.spyOn(cli._private, '_syncAddBook')
+    spies.updateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
+    spies.removeMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
     const cache = bookFixtures.makeBookCache({
       database: { id, date_added: '', date_updated: '', slug: bookSlugs[0] },
     })
@@ -300,38 +306,38 @@ describe('tools/lib/cli', () => {
     mocks.readBookDir.mockResolvedValueOnce(bookSlugs)
     mocks.getBookCache.mockResolvedValue(cache)
 
-    spyRemoveMissingBooksFromDb.mockResolvedValueOnce()
-    spyUpdateBookToDb.mockResolvedValue()
+    spies.removeMissingBooksFromDb.mockResolvedValueOnce(undefined)
+    spies.updateBookToDb.mockResolvedValue(undefined)
 
     await cli._private._sync(ctx)
 
     expect(mocks.getUpdatedSlugs).not.toHaveBeenCalled()
-    expect(spyAddBookToDb).not.toHaveBeenCalled()
-    expect(spyUpdateBookToDb).toHaveBeenCalledOnce()
-    expect(spyRemoveMissingBooksFromDb).toHaveBeenCalledWith(ctx, bookSlugs)
+    expect(spies.addBookToDb).not.toHaveBeenCalled()
+    expect(spies.updateBookToDb).toHaveBeenCalledOnce()
+    expect(spies.removeMissingBooksFromDb).toHaveBeenCalledWith(ctx, bookSlugs)
   })
 
   test('_sync skips on get book failure', async () => {
     const ctx = makeContext()
     const slugs = ['a', 'b']
     const cache = bookFixtures.makeBookCache()
-    const spyAddBookToDb = vi.spyOn(cli._private, '_syncAddBook')
-    const spyUpdateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
-    const spyRemoveMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
+    spies.addBookToDb = vi.spyOn(cli._private, '_syncAddBook')
+    spies.updateBookToDb = vi.spyOn(cli._private, '_syncUpdateBook')
+    spies.removeMissingBooksFromDb = vi.spyOn(cli._private, '_syncRemoveBooks')
 
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugs)
     mocks.getBook.mockResolvedValue(null)
     mocks.readBookDir.mockResolvedValueOnce(slugs)
     mocks.getBookCache.mockResolvedValue(cache)
 
-    spyRemoveMissingBooksFromDb.mockResolvedValueOnce()
-    spyAddBookToDb.mockResolvedValue()
+    spies.removeMissingBooksFromDb.mockResolvedValueOnce(undefined)
+    spies.addBookToDb.mockResolvedValue(undefined)
 
     await cli._private._sync(ctx)
 
-    expect(spyAddBookToDb).not.toHaveBeenCalled()
-    expect(spyUpdateBookToDb).not.toHaveBeenCalled()
-    expect(spyRemoveMissingBooksFromDb).toHaveBeenCalledOnce()
+    expect(spies.addBookToDb).not.toHaveBeenCalled()
+    expect(spies.updateBookToDb).not.toHaveBeenCalled()
+    expect(spies.removeMissingBooksFromDb).toHaveBeenCalledOnce()
   })
 
   test('_syncRemoveBooksExecute', async () => {
@@ -372,15 +378,15 @@ describe('tools/lib/cli', () => {
     const books = [bookFixtures.makeBook({ slug: 'x' }), bookFixtures.makeBook({ slug: 'y' })]
     const slugsOnDisk = [books[0].slug]
     const slugsInDb = books.map((x) => x.slug)
-    const spyRemoveMissingBooksFromDbExecute = vi.spyOn(cli._private, '_syncRemoveBooksExecute')
+    spies.removeMissingBooksFromDbExecute = vi.spyOn(cli._private, '_syncRemoveBooksExecute')
 
     mocks.prismaBookFindMany.mockResolvedValueOnce(books)
-    spyRemoveMissingBooksFromDbExecute.mockResolvedValueOnce()
+    spies.removeMissingBooksFromDbExecute.mockResolvedValueOnce(undefined)
 
     await cli._private._syncRemoveBooks(ctx, slugsOnDisk)
 
     expect(prisma.book.findMany).toHaveBeenCalled()
-    expect(spyRemoveMissingBooksFromDbExecute).toHaveBeenCalledTimes(
+    expect(spies.removeMissingBooksFromDbExecute).toHaveBeenCalledTimes(
       slugsInDb.length - slugsOnDisk.length
     )
   })
@@ -389,15 +395,15 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext()
     const books = [bookFixtures.makeBook(), bookFixtures.makeBook()]
     const slugsOnDisk = books.map((x) => x.slug)
-    const spyRemoveMissingBooksFromDbExecute = vi.spyOn(cli._private, '_syncRemoveBooksExecute')
+    spies.removeMissingBooksFromDbExecute = vi.spyOn(cli._private, '_syncRemoveBooksExecute')
 
     mocks.prismaBookFindMany.mockResolvedValueOnce(books)
-    spyRemoveMissingBooksFromDbExecute.mockResolvedValueOnce()
+    spies.removeMissingBooksFromDbExecute.mockResolvedValueOnce(undefined)
 
     await cli._private._syncRemoveBooks(ctx, slugsOnDisk)
 
     expect(prisma.book.findMany).toHaveBeenCalled()
-    expect(spyRemoveMissingBooksFromDbExecute).not.toHaveBeenCalled()
+    expect(spies.removeMissingBooksFromDbExecute).not.toHaveBeenCalled()
   })
 
   test('_syncUpdateBookExecute', async () => {
@@ -456,28 +462,28 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext()
     const book = bookFixtures.makeBook()
     const bookMd = bookFixtures.makeBookMd()
-    const spyUpdateBookToDbExecute = vi.spyOn(cli._private, '_syncUpdateBookExecute')
+    spies.updateBookToDbExecute = vi.spyOn(cli._private, '_syncUpdateBookExecute')
 
     mocks.prismaBookFindUnique.mockResolvedValueOnce(book)
-    spyUpdateBookToDbExecute.mockResolvedValueOnce()
+    spies.updateBookToDbExecute.mockResolvedValueOnce(undefined)
 
     await cli._private._syncUpdateBook(ctx, bookMd, book.id)
 
     expect(mocks.prismaBookFindUnique).toHaveBeenCalledWith({ where: { id: book.id } })
-    expect(spyUpdateBookToDbExecute).toHaveBeenCalledWith(ctx, bookMd, book)
+    expect(spies.updateBookToDbExecute).toHaveBeenCalledWith(ctx, bookMd, book)
   })
 
   test('_syncUpdateBook logs error', async () => {
     const ctx = makeContext()
     const book = bookFixtures.makeBook()
     const bookMd = bookFixtures.makeBookMd()
-    const spyUpdateBookToDbExecute = vi.spyOn(cli._private, '_syncUpdateBookExecute')
+    spies.updateBookToDbExecute = vi.spyOn(cli._private, '_syncUpdateBookExecute')
 
     mocks.prismaBookFindUnique.mockResolvedValueOnce(null)
 
     await cli._private._syncUpdateBook(ctx, bookMd, book.id)
 
-    expect(spyUpdateBookToDbExecute).not.toHaveBeenCalled()
+    expect(spies.updateBookToDbExecute).not.toHaveBeenCalled()
     expect(mocks.logError).toHaveBeenCalled()
   })
 
@@ -485,7 +491,7 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext()
     const bookMd = bookFixtures.makeBookMd()
     const bookAdd = bookFixtures.makeBook()
-    const spyUpdateBook = vi.spyOn(cli._private, '_syncUpdateBookExecute')
+    spies.updateBook = vi.spyOn(cli._private, '_syncUpdateBookExecute')
 
     mocks.bookMdToBookCreateInput.mockResolvedValueOnce(bookAdd)
     mocks.prismaBookCreate.mockResolvedValueOnce(bookAdd)
@@ -494,7 +500,7 @@ describe('tools/lib/cli', () => {
 
     await cli._private._syncAddBook(ctx, bookMd)
 
-    expect(spyUpdateBook).not.toHaveBeenCalledOnce()
+    expect(spies.updateBook).not.toHaveBeenCalledOnce()
     expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledWith(bookMd, ctx.command.options.dir)
     expect(mocks.prismaBookCreate).toHaveBeenCalledWith({
       data: bookAdd,
@@ -506,14 +512,14 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext()
     const bookMd = bookFixtures.makeBookMd()
     const bookAdd = bookFixtures.makeBook()
-    const spyUpdateBook = vi.spyOn(cli._private, '_syncUpdateBookExecute')
+    spies.updateBook = vi.spyOn(cli._private, '_syncUpdateBookExecute')
 
     mocks.cacheBook.mockResolvedValueOnce()
     mocks.prismaBookFindUnique.mockResolvedValueOnce(bookAdd)
 
     await cli._private._syncAddBook(ctx, bookMd)
 
-    expect(spyUpdateBook).toHaveBeenCalledOnce()
+    expect(spies.updateBook).toHaveBeenCalledOnce()
     expect(mocks.bookMdToBookCreateInput).not.toHaveBeenCalled()
     expect(mocks.prismaBookCreate).not.toHaveBeenCalled()
   })
@@ -549,17 +555,17 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext()
     const bookMds = [bookFixtures.makeBookMd(), bookFixtures.makeBookMd()]
     const slugsOnDisk = bookMds.map((x) => path.basename(x.filename, '.md'))
-    const spyOnProcessBook = vi.spyOn(cli._private, '_processBook')
+    spies.onProcessBook = vi.spyOn(cli._private, '_processBook')
 
     mocks.readBookDir.mockResolvedValueOnce(slugsOnDisk)
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugsOnDisk)
     mocks.getBook.mockResolvedValue(bookMds[0])
     mocks.cleanUpDerivatives.mockResolvedValueOnce()
-    spyOnProcessBook.mockResolvedValue()
+    spies.onProcessBook.mockResolvedValue(undefined)
 
     await cli._private._process(ctx)
 
-    expect(spyOnProcessBook).toHaveBeenCalledTimes(slugsOnDisk.length)
+    expect(spies.onProcessBook).toHaveBeenCalledTimes(slugsOnDisk.length)
     expect(cleanUpDerivatives).toHaveBeenCalledOnce()
   })
 
@@ -568,17 +574,17 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext(command)
     const bookMds = [bookFixtures.makeBookMd(), bookFixtures.makeBookMd()]
     const slugsOnDisk = bookMds.map((x) => path.basename(x.filename, '.md'))
-    const spyOnProcessBook = vi.spyOn(cli._private, '_processBook')
+    spies.onProcessBook = vi.spyOn(cli._private, '_processBook')
 
     mocks.readBookDir.mockResolvedValueOnce(slugsOnDisk)
     mocks.getBook.mockResolvedValue(bookMds[0])
     mocks.cleanUpDerivatives.mockResolvedValueOnce()
-    spyOnProcessBook.mockResolvedValue()
+    spies.onProcessBook.mockResolvedValue(undefined)
 
     await cli._private._process(ctx)
 
     expect(mocks.getUpdatedSlugs).not.toHaveBeenCalled()
-    expect(spyOnProcessBook).toHaveBeenCalledTimes(slugsOnDisk.length)
+    expect(spies.onProcessBook).toHaveBeenCalledTimes(slugsOnDisk.length)
     expect(cleanUpDerivatives).toHaveBeenCalledOnce()
   })
 
@@ -586,17 +592,17 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext()
     const bookMds = [bookFixtures.makeBookMd(), bookFixtures.makeBookMd()]
     const slugsOnDisk = bookMds.map((x) => path.basename(x.filename, '.md'))
-    const spyOnProcessBook = vi.spyOn(cli._private, '_processBook')
+    spies.onProcessBook = vi.spyOn(cli._private, '_processBook')
 
     mocks.readBookDir.mockResolvedValueOnce(slugsOnDisk)
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugsOnDisk)
     mocks.getBook.mockResolvedValue(null)
     mocks.cleanUpDerivatives.mockResolvedValueOnce()
-    spyOnProcessBook.mockResolvedValue()
+    spies.onProcessBook.mockResolvedValue(undefined)
 
     await cli._private._process(ctx)
 
-    expect(spyOnProcessBook).toHaveBeenCalledTimes(0)
+    expect(spies.onProcessBook).toHaveBeenCalledTimes(0)
     expect(cleanUpDerivatives).toHaveBeenCalledOnce()
   })
 
@@ -605,16 +611,16 @@ describe('tools/lib/cli', () => {
     const ctx = makeContext(command)
     const bookMds = [bookFixtures.makeBookMd(), bookFixtures.makeBookMd()]
     const slugsOnDisk = bookMds.map((x) => path.basename(x.filename, '.md'))
-    const spyOnProcessBook = vi.spyOn(cli._private, '_processBook')
+    spies.onProcessBook = vi.spyOn(cli._private, '_processBook')
 
     mocks.readBookDir.mockResolvedValueOnce(slugsOnDisk)
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugsOnDisk)
     mocks.getBook.mockResolvedValue(bookMds[0])
-    spyOnProcessBook.mockResolvedValue()
+    spies.onProcessBook.mockResolvedValue(undefined)
 
     await cli._private._process(ctx)
 
-    expect(spyOnProcessBook).toHaveBeenCalledTimes(slugsOnDisk.length)
+    expect(spies.onProcessBook).toHaveBeenCalledTimes(slugsOnDisk.length)
     expect(cleanUpDerivatives).not.toHaveBeenCalled()
   })
 
