@@ -19,6 +19,15 @@ export const bookNavigation = style({
   marginTop: vars.space[52],
 })
 
+export const bookCard = style({
+  display: 'flex',
+  gap: vars.space[10],
+  justifyContent: 'center',
+  margin: '20px',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+})
+
 export const bookDetails = style({
   lineHeight: vars.lineHeights[1.5],
   marginTop: vars.space[5],

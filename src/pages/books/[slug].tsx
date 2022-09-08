@@ -141,16 +141,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
             {book.coauthors && `, ${book.coauthors?.split(',').join(', ')}`}
           </Text>
           <Divider />
-          <Box
-            style={{
-              display: 'flex',
-              gap: '20px',
-              justifyContent: 'space-between',
-              margin: '20px',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-            }}
-          >
+          <Box className={styles.bookCard}>
             <Box className={styles.book}>
               <BookCoverFor
                 book={book}
