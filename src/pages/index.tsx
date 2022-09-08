@@ -23,7 +23,12 @@ const getBooksQuery = gql<typeof GetBookHomeDocument>(
 const getRandomBookQuery = gql<typeof GetRandomBookDocument>(
   `query GetRandomBook {
   book {
-    ...BookFullDetails
+    __typename
+    ... on QueryBookSuccess {
+      data {
+        ...BookFullDetails
+      }
+    }
   }
 }`,
   bookFragment
@@ -79,7 +84,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   const { data } = useGraphSWR(getRandomBookQuery, undefined, {
     revalidateOnFocus: false,
   })
-  const randomBook = data?.book || undefined
+  const randomBook = data?.book?.__typename === 'QueryBookSuccess' ? data.book.data : undefined
 
   const explore = (
     <Link href="/books" passHref>
