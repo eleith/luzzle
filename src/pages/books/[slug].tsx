@@ -7,19 +7,12 @@ import { GetPartialBooksDocument, GetBookBySlugDocument } from './_gql_/[slug]'
 import { BookCoverFor } from '@app/common/components/books'
 import staticClient from '@app/common/graphql/staticClient'
 import { Box, Text, Anchor, Divider, Button } from '@app/common/ui/components'
-import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './[slug].css'
 import { CaretLeft, CaretRight, ChatsCircle } from 'phosphor-react'
 import config from '@app/common/config'
 import DiscussionForm from '@app/common/components/pages/book/DiscussionForm'
 import { useState } from 'react'
-
-interface BookPageStaticParams {
-  params: {
-    slug: string
-    readOrder: string
-  }
-}
+import { ResultOneOf, ResultSuccessOf } from '@app/@types/utilities'
 
 const partialBooksQuery = gql<
   typeof GetPartialBooksDocument
@@ -33,13 +26,21 @@ const partialBooksQuery = gql<
 const bookQuery = gql<typeof GetBookBySlugDocument>(
   `query GetBookBySlug($slug: String!) {
   book(slug: $slug) {
-    ...BookFullDetails,
-    siblings {
-      previous {
-        slug
-      }
-      next {
-        slug
+    __typename
+    ... on Error {
+      message
+    }
+    ... on QueryBookSuccess {
+      data {
+        ...BookFullDetails
+        siblings {
+          previous {
+            slug
+          }
+          next {
+            slug
+          }
+        }
       }
     }
   }
@@ -47,32 +48,10 @@ const bookQuery = gql<typeof GetBookBySlugDocument>(
   bookFragment
 )
 
-type Book = NonNullable<ResultOf<typeof bookQuery>['book']>
-type PartialBook = NonNullable<ResultOf<typeof partialBooksQuery>['books']>[number]
-
-interface BookPageProps {
-  book: Book
-}
-
-export async function getStaticProps({
-  params,
-}: BookPageStaticParams): Promise<{ props: BookPageProps }> {
-  const response = await staticClient.query({
-    query: bookQuery,
-    variables: { slug: params.slug },
-  })
-  const book = response.data.book
-
-  if (book) {
-    return {
-      props: {
-        book,
-      },
-    }
-  } else {
-    throw `Error: book(slug=${params.slug}) not found`
-  }
-}
+type Book = ResultSuccessOf<typeof bookQuery, 'book'>
+type BookOrderPartial = ResultOneOf<typeof partialBooksQuery, 'books'>
+type BookPageStaticParams = { params: BookOrderPartial }
+type BookPageProps = { book: Book }
 
 function makeBookDateString(book?: Book): string {
   const month = book && typeof book.monthRead === 'number' ? book.monthRead : '?'
@@ -81,40 +60,16 @@ function makeBookDateString(book?: Book): string {
   return `${month} / ${year}`
 }
 
-function makeNextLink(book: Book): JSX.Element {
-  if (book.siblings?.next) {
+function makeSiblingLink(image: JSX.Element, slug?: string): JSX.Element {
+  if (slug) {
     return (
-      <Link href={`/books/${book.siblings.next.slug}`} passHref>
-        <Anchor>
-          <CaretRight size={45} />
-        </Anchor>
+      <Link href={`/books/${slug}`} passHref>
+        <Anchor>{image}</Anchor>
       </Link>
     )
   }
 
-  return (
-    <Anchor disabled>
-      <CaretRight size={45} />
-    </Anchor>
-  )
-}
-
-function makePreviousLink(book: Book): JSX.Element {
-  if (book.siblings?.previous) {
-    return (
-      <Link href={`/books/${book.siblings.previous.slug}`} passHref>
-        <Anchor>
-          <CaretLeft size={45} />
-        </Anchor>
-      </Link>
-    )
-  }
-
-  return (
-    <Anchor disabled>
-      <CaretLeft size={45} />
-    </Anchor>
-  )
+  return <Anchor disabled>{image}</Anchor>
 }
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
@@ -126,7 +81,9 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
   const bookPage = (
     <Box>
       <Box className={styles.bookContainer}>
-        <Box className={styles.bookNavigation}>{makePreviousLink(book)}</Box>
+        <Box className={styles.bookNavigation}>
+          {makeSiblingLink(<CaretLeft size={45} />, book.siblings?.previous?.slug)}
+        </Box>
         <Box className={styles.bookDetails}>
           <Text as="h1" size="title">
             {book.title}
@@ -183,7 +140,9 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
             </Box>
           </Box>
         </Box>
-        <Box className={styles.bookNavigation}>{makeNextLink(book)}</Box>
+        <Box className={styles.bookNavigation}>
+          {makeSiblingLink(<CaretRight size={45} />, book.siblings?.next?.slug)}
+        </Box>
       </Box>
     </Box>
   )
@@ -195,7 +154,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
   )
 }
 
-async function getBooksForPage(take: number, after?: string): Promise<PartialBook[]> {
+async function getBooksForPage(take: number, after?: string): Promise<BookOrderPartial[]> {
   const response = await staticClient.query({
     query: partialBooksQuery,
     variables: { take, after },
@@ -231,6 +190,28 @@ export async function getStaticPaths(): Promise<GetStaticPathsResult> {
         slug,
       },
     })),
-    fallback: false,
+    fallback: 'blocking',
+  }
+}
+
+export async function getStaticProps({
+  params,
+}: BookPageStaticParams): Promise<{ props: BookPageProps } | { notFound: true }> {
+  const graphQlresponse = await staticClient.query({
+    query: bookQuery,
+    variables: { slug: params.slug },
+  })
+  const response = graphQlresponse.data.book
+
+  if (response?.__typename === 'QueryBookSuccess') {
+    return {
+      props: {
+        book: response.data,
+      },
+    }
+  } else {
+    return {
+      notFound: true,
+    }
   }
 }

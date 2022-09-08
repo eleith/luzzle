@@ -3,6 +3,9 @@ import BookObject from '../objects/book'
 
 builder.queryFields((t) => ({
   book: t.field({
+    errors: {
+      types: [Error],
+    },
     type: BookObject,
     args: {
       id: t.arg({ type: 'String' }),
