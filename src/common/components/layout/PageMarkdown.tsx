@@ -1,4 +1,4 @@
-import { MetaProps } from '@app/common/components/page/meta'
+import { MetaProps } from '@app/common/components/layout/meta'
 import { Box, Text } from '@app/common/ui/components'
 import Link from 'next/link'
 import { useState } from 'react'

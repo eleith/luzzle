@@ -1,5 +1,5 @@
 import { BookCoverFor } from '@app/common/components/books'
-import PageFull from '@app/common/components/page/PageFull'
+import PageFull from '@app/common/components/layout/PageFull'
 import gql from '@app/lib/graphql/tag'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import { GetBooksDocument } from './_gql_/index'

@@ -1,13 +1,18 @@
 import { style } from '@vanilla-extract/css'
-import { mediaBreakpointLaptop, mediaBreakpointPhone, vars } from '@app/common/ui/css'
+import { mediaBreakpointPhone, mediaBreakpointTablet, vars } from '@app/common/ui/css'
 
 export const bookContainer = style({
   display: 'flex',
-  width: vars.space.full,
   margin: vars.space.auto,
   marginTop: vars.space[5],
   gap: vars.space[5],
   justifyContent: 'space-between',
+  width: vars.space.full,
+  '@media': {
+    [mediaBreakpointTablet]: {
+      width: `clamp(${vars.space[64]}, ${vars.space['2/3']}, ${vars.space[256]})`,
+    },
+  },
 })
 
 export const bookNavigation = style({
@@ -17,11 +22,7 @@ export const bookNavigation = style({
 export const bookDetails = style({
   lineHeight: vars.lineHeights[1.5],
   marginTop: vars.space[5],
-  '@media': {
-    [mediaBreakpointLaptop]: {
-      width: vars.space['1/3'],
-    },
-  },
+  width: vars.space.full,
 })
 
 export const showOnMobile = style({
@@ -43,4 +44,5 @@ export const hideOnMobile = style({
 
 export const book = style({
   marginBottom: vars.space[5],
+  marginTop: vars.space[5],
 })

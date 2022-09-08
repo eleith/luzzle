@@ -1,4 +1,4 @@
-import { MetaProps } from '@app/common/components/page/meta'
+import { MetaProps } from '@app/common/components/layout/meta'
 import { Box } from '@app/common/ui/components'
 import Page from './Page'
 import PageBannerSlide from './PageBannerSlide'
