@@ -1,5 +1,5 @@
 import { BookCover, BookCoverFor } from '@app/common/components/books'
-import PageFull from '@app/common/components/page/PageFull'
+import PageFull from '@app/common/components/layout/PageFull'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import useGraphSWR from '@app/common/hooks/useGraphSWR'
 import gql from '@app/lib/graphql/tag'

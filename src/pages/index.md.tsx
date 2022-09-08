@@ -1,4 +1,4 @@
-import PageMarkdown from '@app/common/components/page/PageMarkdown'
+import PageMarkdown from '@app/common/components/layout/PageMarkdown'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import gql from '@app/lib/graphql/tag'
 import { GetBookHomeMdDocument } from './_gql_/index.md'

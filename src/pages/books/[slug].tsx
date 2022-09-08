@@ -1,36 +1,18 @@
-import PageFull from '@app/common/components/page/PageFull'
+import PageFull from '@app/common/components/layout/PageFull'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import { GetStaticPathsResult } from 'next'
 import Link from 'next/link'
 import gql from '@app/lib/graphql/tag'
-import {
-  GetPartialBooksDocument,
-  GetBookBySlugDocument,
-  CreateBookDiscussionDocument,
-} from './_gql_/[slug]'
+import { GetPartialBooksDocument, GetBookBySlugDocument } from './_gql_/[slug]'
 import { BookCoverFor } from '@app/common/components/books'
 import staticClient from '@app/common/graphql/staticClient'
-import {
-  Box,
-  Text,
-  Anchor,
-  Divider,
-  Button,
-  Input,
-  TextArea,
-  Select,
-  SelectItem,
-  useNotificationQueue,
-} from '@app/common/ui/components'
+import { Box, Text, Anchor, Divider, Button } from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './[slug].css'
-import { CaretLeft, CaretRight, ChatsCircle, CircleNotch } from 'phosphor-react'
-import { useDialogState, Dialog, DialogHeading } from 'ariakit/dialog'
-import { vars } from '@app/common/ui/css'
+import { CaretLeft, CaretRight, ChatsCircle } from 'phosphor-react'
 import config from '@app/common/config'
-import { Form, FormState, useFormState } from 'ariakit/form'
-import gqlFetch from '@app/common/graphql/fetch'
-import { PageProgress, useProgressPageState } from '@app/common/ui/components/PageProgress'
+import DiscussionForm from '@app/common/components/pages/book/DiscussionForm'
+import { useState } from 'react'
 
 interface BookPageStaticParams {
   params: {
@@ -38,26 +20,6 @@ interface BookPageStaticParams {
     readOrder: string
   }
 }
-
-const bookDiscussionMutation = gql<
-  typeof CreateBookDiscussionDocument
->(`mutation CreateBookDiscussion($input: DiscussionInput!) {
-  createBookDiscussion(input: $input) {
-    __typename
-    ... on Error {
-      message
-    }
-    ... on ValidationError {
-      fieldErrors {
-        message
-        path
-      }
-    }
-    ... on MutationCreateBookDiscussionSuccess {
-      data
-    }
-  }
-}`)
 
 const partialBooksQuery = gql<
   typeof GetPartialBooksDocument
@@ -156,219 +118,88 @@ function makePreviousLink(book: Book): JSX.Element {
 }
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
-  const notifications = useNotificationQueue()
-  const dialog = useDialogState()
-  const pageProgressState = useProgressPageState({ imitate: true, progress: 0 })
-  const formState = useFormState({
-    defaultValues: { topic: '', discussion: '', email: '' },
-  })
   const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
+  const [showForm, setShowForm] = useState(false)
 
-  formState.useSubmit(async () => {
-    pageProgressState.setProgress(Math.random() * 35)
-    const { createBookDiscussion } = await gqlFetch(bookDiscussionMutation, {
-      input: {
-        discussion: formState.values.discussion,
-        email: formState.values.email,
-        topic: formState.values.topic,
-        slug: book.slug,
-      },
-    })
-    pageProgressState.setProgress(100)
-    if (createBookDiscussion) {
-      const type = createBookDiscussion.__typename
-      if (type === 'MutationCreateBookDiscussionSuccess') {
-        notifications.add({ item: 'thank you for starting a discussion!' })
-        dialog.hide()
-        formState.reset()
-      } else if (type === 'Error') {
-        console.error(createBookDiscussion)
-        notifications.add({ item: 'your discussion was not sent, try again' })
-      } else if (type === 'ValidationError') {
-        const fieldErrors = createBookDiscussion.fieldErrors
-        fieldErrors?.forEach((fieldError) => {
-          const field = fieldError.path?.split('.').pop() || ''
-          if (formState.names[field as keyof typeof formState.values]) {
-            console.log(`setting error for ${field} with message ${fieldError.message}`)
-            formState.setError(field, fieldError.message)
-          }
-        })
-      }
-    }
-  })
+  const discussionForm = <DiscussionForm slug={book.slug} onClose={() => setShowForm(false)} />
 
-  function getTouchedError<T>(form: FormState<T>, name: keyof T): string | undefined {
-    const touched = form.getFieldTouched(name as string)
-    const error = form.getError(name as string)
-
-    if (touched && error) {
-      return error
-    } else {
-      return undefined
-    }
-  }
+  const bookPage = (
+    <Box>
+      <Box className={styles.bookContainer}>
+        <Box className={styles.bookNavigation}>{makePreviousLink(book)}</Box>
+        <Box className={styles.bookDetails}>
+          <Text as="h1" size="title">
+            {book.title}
+          </Text>
+          {book.subtitle && (
+            <Text as="h2" size="h3">
+              {book.subtitle}
+            </Text>
+          )}
+          <Text>
+            by {book.author}
+            {book.coauthors && `, ${book.coauthors?.split(',').join(', ')}`}
+          </Text>
+          <Divider />
+          <Box
+            style={{
+              display: 'flex',
+              gap: '20px',
+              justifyContent: 'space-between',
+              margin: '20px',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+            }}
+          >
+            <Box className={styles.book}>
+              <BookCoverFor
+                book={book}
+                hasCover={!!book.coverWidth}
+                rotate={{ x: 0, y: -35 }}
+                rotateInteract={{ x: 0, y: 0 }}
+              />
+            </Box>
+            <Box>
+              <Text>read on {makeBookDateString(book)}</Text>
+              {book.idOlWork && book.isbn && (
+                <Text>
+                  isbn{' '}
+                  <Anchor href={`https://openlibrary.org/works/${book.idOlWork}`}>
+                    {book.isbn}
+                  </Anchor>
+                </Text>
+              )}
+              {book.yearFirstPublished && <Text>published in {book.yearFirstPublished}</Text>}
+              <Text>{book.pages} pages</Text>
+              <br />
+              <Button
+                onClick={() => setShowForm(true)}
+                raised
+                use={'primary'}
+                className={styles.hideOnMobile}
+              >
+                discuss
+              </Button>
+              <Button
+                onClick={() => setShowForm(true)}
+                raised
+                use={'primary'}
+                action
+                className={styles.showOnMobile}
+              >
+                <ChatsCircle size={24} /> discuss
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+        <Box className={styles.bookNavigation}>{makeNextLink(book)}</Box>
+      </Box>
+    </Box>
+  )
 
   return (
     <PageFull meta={{ title: book.title, image: coverUrl }}>
-      <Box>
-        <Box>
-          <Box className={styles.bookContainer}>
-            <Box className={styles.bookNavigation}>{makePreviousLink(book)}</Box>
-            <Box className={styles.bookDetails}>
-              <Box className={styles.book}>
-                <BookCoverFor
-                  book={book}
-                  hasCover={!!book.coverWidth}
-                  rotateInteract={{ x: 0, y: -35 }}
-                />
-              </Box>
-              <Divider />
-              <Box>
-                <Text as="h1">{book.title}</Text>
-                {book.subtitle && <Text>{book.subtitle}</Text>}
-                <Text>
-                  by {book.author} {book.coauthors}
-                </Text>
-                <br />
-                <Text>read on {makeBookDateString(book)}</Text>
-                {book.idOlWork && book.isbn && (
-                  <Text>
-                    isbn{' '}
-                    <Anchor href={`https://openlibrary.org/works/${book.idOlWork}`}>
-                      {book.isbn}
-                    </Anchor>
-                  </Text>
-                )}
-                {book.yearFirstPublished && <Text>published in {book.yearFirstPublished}</Text>}
-                <Text>{book.pages} pages</Text>
-                <br />
-                <Button
-                  onClick={dialog.toggle}
-                  raised
-                  use={'primary'}
-                  className={styles.hideOnMobile}
-                >
-                  discuss
-                </Button>
-                <Button
-                  onClick={dialog.toggle}
-                  raised
-                  use={'primary'}
-                  action
-                  className={styles.showOnMobile}
-                >
-                  <ChatsCircle size={24} /> discuss
-                </Button>
-              </Box>
-              <Box>
-                <Dialog
-                  state={dialog}
-                  modal={false}
-                  hideOnInteractOutside={false}
-                  hideOnEscape={false}
-                  style={{
-                    background: vars.colors.surface,
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                  }}
-                >
-                  <Box>
-                    <Box
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Box>
-                        <DialogHeading>discuss</DialogHeading>
-                        {pageProgressState.loading && <PageProgress state={pageProgressState} />}
-                        <Form state={formState} resetOnSubmit={false}>
-                          <Select
-                            label={'topic'}
-                            name={formState.names.topic}
-                            state={formState}
-                            value={formState.values.topic}
-                            error={getTouchedError(formState, 'topic')}
-                            disabled={formState.submitting}
-                            required
-                          >
-                            <SelectItem value={''}>select a topic</SelectItem>
-                            <SelectItem value={'recommendation'} display={'recommendation'}>
-                              a related book recommendation
-                            </SelectItem>
-                            <SelectItem value={'reflection'} display={'positive reflection'}>
-                              positive reflections about this book
-                            </SelectItem>
-                            <SelectItem
-                              value={'reflection-critical'}
-                              display={'critical reflection'}
-                            >
-                              critical reflections about this book
-                            </SelectItem>
-                          </Select>
-                          <br />
-                          <Input
-                            required
-                            name={formState.names.email}
-                            disabled={formState.submitting}
-                            label={'email'}
-                            type={'email'}
-                            pattern={'[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$'}
-                            error={getTouchedError(formState, 'email')}
-                          />
-                          <br />
-                          <TextArea
-                            name={formState.names.discussion}
-                            label={'discussion'}
-                            required
-                            error={getTouchedError(formState, 'discussion')}
-                            maxLength={2048}
-                            disabled={formState.submitting}
-                          />
-                          <br />
-                          <Box style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Button
-                              outlined
-                              disabled={formState.submitting}
-                              onClick={() => {
-                                formState.reset()
-                                dialog.hide()
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                            <Button type={'submit'} disabled={formState.submitting} raised>
-                              {formState.submitting ? (
-                                <CircleNotch size={24}>
-                                  <animateTransform
-                                    attributeName="transform"
-                                    attributeType="XML"
-                                    type="rotate"
-                                    dur="0.75s"
-                                    from="0 0 0"
-                                    to="360 0 0"
-                                    repeatCount="indefinite"
-                                  ></animateTransform>
-                                </CircleNotch>
-                              ) : (
-                                'Send'
-                              )}
-                            </Button>
-                          </Box>
-                        </Form>
-                      </Box>
-                    </Box>
-                  </Box>
-                </Dialog>
-              </Box>
-            </Box>
-            <Box className={styles.bookNavigation}>{makeNextLink(book)}</Box>
-          </Box>
-        </Box>
-      </Box>
+      {showForm ? discussionForm : bookPage}
     </PageFull>
   )
 }
