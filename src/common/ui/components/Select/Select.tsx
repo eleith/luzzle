@@ -59,6 +59,7 @@ const SelectTag = React.forwardRef<HTMLButtonElement, Omit<SelectProps, 'state'>
       gutter,
       onTouch,
       name,
+      hidden,
       ...props
     },
     ref
@@ -107,7 +108,11 @@ const SelectTag = React.forwardRef<HTMLButtonElement, Omit<SelectProps, 'state'>
     const highlightElement = highlight && <span className={styles.highlight} />
 
     return (
-      <Box data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
+      <Box
+        data-invalid={invalid || undefined}
+        data-disabled={disabled || undefined}
+        style={{ display: hidden ? 'none' : 'initial' }}
+      >
         <Box
           className={clsx(className, classVariant) || undefined}
           onMouseEnter={() => !disabled && setHighlight(true)}
@@ -120,6 +125,7 @@ const SelectTag = React.forwardRef<HTMLButtonElement, Omit<SelectProps, 'state'>
             state={select}
             as={'button'}
             ref={ref}
+            hidden={hidden}
             name={name as string}
             className={styles.select}
             disabled={disabled || undefined}
