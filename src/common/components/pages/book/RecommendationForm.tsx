@@ -1,12 +1,10 @@
 import gql from '@app/lib/graphql/tag'
-import { CreateBookDiscussionDocument } from './_gql_/DiscussionForm'
+import { CreateBookRecommendationDocument } from './_gql_/RecommendationForm'
 import {
   Box,
   Button,
   Input,
   TextArea,
-  Select,
-  SelectItem,
   useNotificationQueue,
   Text,
 } from '@app/common/ui/components'
@@ -15,10 +13,10 @@ import { Form, FormState, useFormState } from 'ariakit/form'
 import gqlFetch from '@app/common/graphql/fetch'
 import { PageProgress, useProgressPageState } from '@app/common/ui/components/PageProgress'
 
-const bookDiscussionMutation = gql<
-  typeof CreateBookDiscussionDocument
->(`mutation CreateBookDiscussion($input: DiscussionInput!) {
-  createBookDiscussion(input: $input) {
+const bookRecommendationMutation = gql<
+  typeof CreateBookRecommendationDocument
+>(`mutation CreateBookRecommendation($input: RecommendationInput!) {
+  createBookRecommendation(input: $input) {
     __typename
     ... on Error {
       message
@@ -29,19 +27,19 @@ const bookDiscussionMutation = gql<
         path
       }
     }
-    ... on MutationCreateBookDiscussionSuccess {
+    ... on MutationCreateBookRecommendationSuccess {
       data
     }
   }
 }`)
 
+
 type Props = {
-  slug: string
   onClose?: () => void
   title?: string
 }
 
-export default function DiscussionForm({ slug, onClose, title = 'discuss' }: Props): JSX.Element {
+export default function DiscussionForm({ onClose, title = 'recommend' }: Props): JSX.Element {
   const notifications = useNotificationQueue()
   const pageProgressState = useProgressPageState({ imitate: true, progress: 0 })
   const formState = useFormState({
@@ -50,26 +48,24 @@ export default function DiscussionForm({ slug, onClose, title = 'discuss' }: Pro
 
   formState.useSubmit(async () => {
     pageProgressState.setProgress(Math.random() * 35)
-    const { createBookDiscussion } = await gqlFetch(bookDiscussionMutation, {
+    const { createBookRecommendation } = await gqlFetch(bookRecommendationMutation, {
       input: {
-        discussion: formState.values.discussion,
+        recommendation: formState.values.discussion,
         email: formState.values.email,
-        topic: formState.values.topic,
-        slug,
       },
     })
     pageProgressState.setProgress(100)
-    if (createBookDiscussion) {
-      const type = createBookDiscussion.__typename
-      if (type === 'MutationCreateBookDiscussionSuccess') {
+    if (createBookRecommendation) {
+      const type = createBookRecommendation.__typename
+      if (type === 'MutationCreateBookRecommendationSuccess') {
         notifications.add({ item: 'thank you!' })
         formState.reset()
         onClose?.()
       } else if (type === 'Error') {
-        console.error(createBookDiscussion)
+        console.error(createBookRecommendation)
         notifications.add({ item: 'your message was not sent, try again' })
       } else if (type === 'ValidationError') {
-        const fieldErrors = createBookDiscussion.fieldErrors
+        const fieldErrors = createBookRecommendation.fieldErrors
         fieldErrors?.forEach((fieldError) => {
           const field = fieldError.path?.split('.').pop() || ''
           if (formState.names[field as keyof typeof formState.values]) {
@@ -105,27 +101,6 @@ export default function DiscussionForm({ slug, onClose, title = 'discuss' }: Pro
           </Text>
           {pageProgressState.loading && <PageProgress state={pageProgressState} />}
           <Form state={formState} resetOnSubmit={false}>
-            <Select
-              label={'topic'}
-              name={formState.names.topic}
-              state={formState}
-              value={formState.values.topic}
-              error={getTouchedError(formState, 'topic')}
-              disabled={formState.submitting}
-              required
-            >
-              <SelectItem value={''}>select a topic</SelectItem>
-              <SelectItem value={'recommendation'} display={'recommendation'}>
-                a related book recommendation
-              </SelectItem>
-              <SelectItem value={'reflection'} display={'positive reflection'}>
-                positive reflections about this book
-              </SelectItem>
-              <SelectItem value={'reflection-critical'} display={'critical reflection'}>
-                critical reflections about this book
-              </SelectItem>
-            </Select>
-            <br />
             <Input
               required
               name={formState.names.email}

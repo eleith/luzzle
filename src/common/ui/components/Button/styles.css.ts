@@ -77,7 +77,7 @@ export const variants = recipe({
     action: {
       true: {
         height: '56px',
-        position: 'absolute',
+        position: 'fixed',
         bottom: vars.space[4],
         right: vars.space[4],
         minWidth: 'auto',

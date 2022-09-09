@@ -15,6 +15,13 @@ const DiscussionInput = builder.inputType('DiscussionInput', {
   }),
 })
 
+const RecommendationInput = builder.inputType('RecommendationInput', {
+  fields: (t) => ({
+    email: t.string({ required: true, validate: { email: true } }),
+    recommendation: t.string({ required: true, validate: { maxLength: 1024 } }),
+  }),
+})
+
 builder.mutationFields((t) => ({
   createBookDiscussion: t.boolean({
     errors: {
@@ -42,8 +49,37 @@ builder.mutationFields((t) => ({
           throw new Error(`book ${slug} not found`)
         } else {
           console.error(error)
-          throw new Error('internal error. could not start a discussion')
+          throw new Error('internal error. could send discussion')
         }
+      }
+    },
+  }),
+}))
+
+builder.mutationFields((t) => ({
+  createBookRecommendation: t.boolean({
+    errors: {
+      types: [ZodError, Error],
+    },
+    args: {
+      input: t.arg({ type: RecommendationInput, required: true }),
+    },
+    resolve: async (_, args, ctx) => {
+      const { email, recommendation } = args.input
+
+      try {
+        await ctx.email.sendAsync({
+          text: `from: ${email}\n\nrecommendation:\n--\n\n${recommendation}`,
+          'reply-to': email,
+          from: 'online-hi-eleith-com@eleith.com',
+          to: 'online-hi-eleith-com@eleith.com',
+          subject: `recommendation`,
+        })
+
+        return true
+      } catch (error) {
+        console.error(error)
+        throw new Error('internal error. could not send recommendation')
       }
     },
   }),
