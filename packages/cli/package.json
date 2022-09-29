@@ -1,0 +1,68 @@
+{
+  "name": "@luzzle/cli",
+  "version": "0.0.1",
+  "scripts": {
+    "compile": "tsc --noEmit",
+    "build": "esbuild src/manage.ts --platform=node --target=node16 --banner:js='#!/usr/bin/env node' --sourcemap --bundle --outfile=dist/manager.js --external:sharp",
+    "manage": "node --enable-source-maps dist/manager.js",
+    "test": "vitest run --coverage --silent"
+  },
+  "devDependencies": {
+    "@fast-csv/format": "^4.3.5",
+    "@fast-csv/parse": "^4.3.6",
+    "@googleapis/books": "^0.3.1",
+    "@types/async": "^3.2.15",
+    "@types/lodash": "^4.14.184",
+    "@types/node": "^18.7.15",
+    "@types/sharp": "^0.30.5",
+    "@types/uuid": "^8.3.4",
+    "@types/yargs": "^17.0.12",
+    "@typescript-eslint/eslint-plugin": "^5.36.2",
+    "@typescript-eslint/parser": "^5.36.2",
+    "@vitest/coverage-c8": "^0.23.1",
+    "@vitest/ui": "^0.23.1",
+    "ajv": "^8.11.0",
+    "async": "^3.2.4",
+    "c8": "^7.12.0",
+    "esbuild": "^0.15.7",
+    "eslint": "^8.23.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "gray-matter": "^4.0.3",
+    "mdast-util-to-markdown": "^1.3.0",
+    "pino": "^8.5.0",
+    "pino-pretty": "^9.1.0",
+    "prettier": "^2.7.1",
+    "remark": "^14.0.2",
+    "remark-frontmatter": "^4.0.1",
+    "sharp": "^0.31.0",
+    "tempy": "^3.0.0",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.1.0",
+    "typescript": "^4.8.2",
+    "unified": "^10.1.2",
+    "unist-util-filter": "^4.0.0",
+    "unist-util-visit": "^4.1.1",
+    "vitest": "0.23.1",
+    "yaml": "^2.1.1",
+    "yargs": "^17.5.1"
+  },
+  "dependencies": {
+    "cuid": "^2.1.8",
+    "deepmerge": "^4.2.2",
+    "dotenv": "^16.0.2",
+    "file-type": "^18.0.0",
+    "got": "^12.4.1",
+    "lodash": "^4.17.21",
+    "rehype-parse": "^8.0.4",
+    "rehype-remark": "^9.1.2",
+    "remark-stringify": "^10.0.2",
+    "uuid": "^9.0.0"
+  },
+  "bin": {
+    "manage": "dist/manager.js"
+  },
+  "files": [
+    "dist/*"
+  ]
+}

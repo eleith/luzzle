@@ -1,0 +1,11 @@
+.env.*local
+.next
+
+node_modules
+data
+prisma/data
+generated
+build
+public/images/covers
+**/_gql_
+src/@types/graphql.d.ts
