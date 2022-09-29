@@ -15,12 +15,15 @@ pipeline:
   publish:
     image: node:16
     commands:
-      - cd packages/cli
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- //git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken '$NPM_TOKEN'
+      - cd packages/cli
       - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
       - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
-      - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish --verbose; fi
+      - cd ../..
+      - npm config ls
+      - cat /root/.nmprc
+      - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/cli; fi
     secrets: [npm_token, npm_owner]
   notify:
     image: git.eleith.com/eleith/woodpecker-email:1.0.0
