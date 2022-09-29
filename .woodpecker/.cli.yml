@@ -17,7 +17,7 @@ pipeline:
     commands:
       - cd packages/cli
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
-      - npm config set -- '//git.eleith.com/api/packages/$NPM_OWNER/:_authToken' "$NPM_TOKEN"
+      - npm config set -- '//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken' "$NPM_TOKEN"
       - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
       - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish; fi
