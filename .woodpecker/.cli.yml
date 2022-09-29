@@ -5,10 +5,9 @@ pipeline:
   test:
     image: node:16
     commands:
-      - cd packages/cli
-      - npm ci
-      - npm run lint
-      - npm run test
+      - npm ci -w @luzzle/cli
+      - npm run lint -w @luzzle/cli
+      - npm run test -w @luzzle/cli
     when:
       branch: [main, introduce-monorepo]
       path:
@@ -16,12 +15,11 @@ pipeline:
   publish:
     image: node:16
     commands:
-      - cd packages/cli
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- '//git.eleith.com/api/packages/$NPM_OWNER/:_authToken' "$NPM_TOKEN"
       - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
       - NPM_LATEST_VERSION="$(npm show . version)"
-      - \[\[ $NPM_CURRENT_VERSION == "$NPM_LATEST_VERSION" \]\] && npm publish
+      - \[\[ $NPM_CURRENT_VERSION == "$NPM_LATEST_VERSION" \]\] && npm publish -w cli
     secrets: [npm_token, npm_owner]
   notify:
     image: git.eleith.com/eleith/woodpecker-email:1.0.0

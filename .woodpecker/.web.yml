@@ -5,12 +5,10 @@ pipeline:
   test:
     image: node:16
     commands:
-      - cd packages/web
-      - npm ci
-      - npm run lint
-      - npm run test
-      - npm run prebuild
-      - npm run compile
+      - npm ci -w @luzzle/web
+      - npm run lint -w @luzzle/web
+      - npm run prebuild -w @luzzle/web
+      - npm run compile -w @luzzle/web
     when:
       path:
         include: [".woodpecker/.web.yml", "packages/web/*"]
@@ -39,9 +37,9 @@ pipeline:
   build-content:
     image: node:16
     commands:
+      - npm run build:prisma -w @luzzle/web
+      - npx manage sync /workspace/data/books -w @luzzle/web
       - cd packages/web
-      - npm run build:prisma
-      - npx manage sync /workspace/data/books
       - mkdir public/images
       - cp -R /workspace/data/books/.assets/covers public/images
     when:
