@@ -8,10 +8,6 @@ pipeline:
       - npm ci -w @luzzle/cli
       - npm run lint -w @luzzle/cli
       - npm run test -w @luzzle/cli
-    when:
-      branch: [main, introduce-monorepo]
-      path:
-        include: [".woodpecker/.cli.yml", "packages/cli/*"]
   publish:
     image: node:16
     commands:
@@ -21,8 +17,6 @@ pipeline:
       - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
       - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
       - cd ../..
-      - npm config ls
-      - cat /root/.npmrc
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/cli; fi
     secrets: [npm_token, npm_owner]
   notify:
@@ -42,3 +36,7 @@ pipeline:
         target: plugin_recipients
     when:
       status: [failure, success]
+when:
+  branch: [main]
+  path:
+    include: [".woodpecker/.cli.yml", "packages/cli/*"]
