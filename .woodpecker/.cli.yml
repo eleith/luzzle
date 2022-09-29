@@ -23,6 +23,10 @@ pipeline:
       - cd ../..
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/cli; fi
     secrets: [npm_token, npm_owner]
+    when:
+      branch: [main]
+      path:
+        include: [".woodpecker/.cli.yml", "packages/cli/*"]
   notify:
     image: git.eleith.com/eleith/woodpecker-email:1.0.0
     environment:
@@ -40,3 +44,6 @@ pipeline:
         target: plugin_recipients
     when:
       status: [failure, success]
+      branch: [main]
+      path:
+        include: [".woodpecker/.cli.yml", "packages/cli/*"]
