@@ -8,6 +8,10 @@ pipeline:
       - npm ci -w @luzzle/cli
       - npm run lint -w @luzzle/cli
       - npm run test -w @luzzle/cli
+    when:
+      branch: [main]
+      path:
+        include: [".woodpecker/.cli.yml", "packages/cli/*"]
   publish:
     image: node:16
     commands:
@@ -36,7 +40,3 @@ pipeline:
         target: plugin_recipients
     when:
       status: [failure, success]
-when:
-  branch: [main]
-  path:
-    include: [".woodpecker/.cli.yml", "packages/cli/*"]
