@@ -20,7 +20,7 @@ pipeline:
       - npm config set -- '//git.eleith.com/api/packages/$NPM_OWNER/:_authToken' "$NPM_TOKEN"
       - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
       - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
-      - if test $NPM_CURRENT_VERSION = "$NPM_LATEST_VERSION" ; then npm publish; fi
+      - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish; fi
     secrets: [npm_token, npm_owner]
   notify:
     image: git.eleith.com/eleith/woodpecker-email:1.0.0
