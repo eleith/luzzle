@@ -1,5 +1,5 @@
-import { Book, Prisma } from '@app/prisma'
-import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
+import { Book, Prisma } from './prisma'
+import Ajv, { JTDSchemaType } from 'ajv/dist/jtd'
 import { eachLimit, filterLimit } from 'async'
 import { copyFile, unlink, stat, readdir, readFile, writeFile, mkdir } from 'fs/promises'
 import { difference, merge, omit, uniq } from 'lodash'
@@ -577,7 +577,7 @@ async function cleanUpDerivatives(dir: string): Promise<void> {
     const bookSlugs = await readdir(dir).catch(() => [])
     const caches = await readdir(path.join(dir, cacheDir)).catch(() => [])
     const staleCaches = difference(
-      caches.map((cacheFile) => path.basename(cacheFile, '.json')),
+      caches.map((cacheFile: string) => path.basename(cacheFile, '.json')),
       bookSlugs
         .filter((bookFile) => path.extname(bookFile) === '.md')
         .map((bookFile) => path.basename(bookFile, '.md'))

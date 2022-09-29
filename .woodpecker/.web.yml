@@ -1,17 +1,19 @@
----
 workspace:
   base: /workspace
   path: src/website
-
 pipeline:
   test:
     image: node:16
     commands:
+      - cd packages/web
       - npm ci
       - npm run lint
       - npm run test
       - npm run prebuild
       - npm run compile
+    when:
+      path:
+        include: [".woodpecker/.web.yml", "packages/web/*"]
   gather:
     image: rclone/rclone:1.57
     environment:
@@ -30,23 +32,16 @@ pipeline:
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - rclone copy $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
       - rclone copy $RCLONE_GCS_DB prisma/data
-    secrets:
-      [
-        rclone_webdav_url,
-        rclone_webdav_vendor,
-        rclone_webdav_user,
-        rclone_webdav_pass,
-        rclone_service_key_json,
-        rclone_gcs_project_number,
-      ]
+    secrets: [rclone_webdav_url, rclone_webdav_vendor, rclone_webdav_user, rclone_webdav_pass, rclone_service_key_json, rclone_gcs_project_number]
     when:
       branch: main
+      path: "packages/web/*"
   build-content:
     image: node:16
     commands:
-      - npm run build:manager
+      - cd packages/web
       - npm run build:prisma
-      - npm run manage sync /workspace/data/books
+      - npx manage sync /workspace/data/books
       - mkdir public/images
       - cp -R /workspace/data/books/.assets/covers public/images
     when:
@@ -62,6 +57,7 @@ pipeline:
       - GCS_PROJECT=eleith-cloud
       - GCS_REGION=us-central1
     commands:
+      - cd packages/web
       - mkdir /tmp/secrets
       - printf '%s\n' "$NEXTJS_ENV_LOCAL" > $ENV_LOCAL_FILE
       - echo $${CLOUD_RUN_SERVICE_KEY_JSON} > $RUN_KEY_FILE

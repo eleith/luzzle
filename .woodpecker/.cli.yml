@@ -1,0 +1,42 @@
+workspace:
+  base: /workspace
+  path: src/cli
+pipeline:
+  test:
+    image: node:16
+    commands:
+      - cd packages/cli
+      - npm ci
+      - npm run lint
+      - npm run test
+    when:
+      branch: [main, introduce-monorepo]
+      path:
+        include: [".woodpecker/.cli.yml", "packages/cli/*"]
+  publish:
+    image: node:16
+    commands:
+      - cd packages/cli
+      - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
+      - npm config set -- '//git.eleith.com/api/packages/$NPM_OWNER/:_authToken' "$NPM_TOKEN"
+      - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
+      - NPM_LATEST_VERSION="$(npm show . version)"
+      - \[\[ $NPM_CURRENT_VERSION == "$NPM_LATEST_VERSION" \]\] && npm publish
+    secrets: [npm_token, npm_owner]
+  notify:
+    image: git.eleith.com/eleith/woodpecker-email:1.0.0
+    environment:
+      - PLUGIN_FROM_ADDRESS=online-woodpecker@eleith.com
+      - PLUGIN_FROM_NAME="eleith ci"
+      - PLUGIN_RECIPIENTS_ONLY=true
+    secrets:
+      - source: smtp_username
+        target: plugin_username
+      - source: smtp_password
+        target: plugin_password
+      - source: smtp_host
+        target: plugin_host
+      - source: smtp_to
+        target: plugin_recipients
+    when:
+      status: [failure, success]

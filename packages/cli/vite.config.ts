@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import path from 'path'
+// import path from 'path'
 
 export default defineConfig({
   test: {
@@ -26,13 +26,13 @@ export default defineConfig({
       ],
     },
   },
-  resolve: {
-    alias: {
-      '@app/graphql': path.resolve(__dirname, 'src/lib/graphql/*'),
-      '@app/prisma': path.resolve(__dirname, 'generated/prisma/client'),
-      '@app/lib/*': path.resolve(__dirname, 'src/lib/*'),
-      '@app/common/*': path.resolve(__dirname, 'src/common/*'),
-      '@app/public/*': path.resolve(__dirname, 'public/*'),
-    },
-  },
+  // resolve: {
+  //   alias: {
+  //     '@app/graphql': path.resolve(__dirname, 'src/lib/graphql/*'),
+  //     '@app/prisma': path.resolve(__dirname, 'generated/prisma/client'),
+  //     '@app/lib/*': path.resolve(__dirname, 'src/lib/*'),
+  //     '@app/common/*': path.resolve(__dirname, 'src/common/*'),
+  //     '@app/public/*': path.resolve(__dirname, 'public/*'),
+  //   },
+  // },
 })
