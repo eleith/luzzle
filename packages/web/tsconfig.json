@@ -13,17 +13,20 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "jsx": "preserve",
     "incremental": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "sourceMap": true,
-    "strictNullChecks": true
+    "outDir": "build",
+    "baseUrl": ".",
+    "paths": {
+      "@app/prisma": ["generated/prisma/client"],
+      "@app/public/*": ["public/*"],
+      "@app/*": ["src/*"]
+    },
+    "typeRoots": ["./node_modules/@types", "./src/@types"]
   },
   "ts-node": {
     "transpileOnly": true
-  }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mdx"],
+  "exclude": ["node_modules", "build"]
 }
