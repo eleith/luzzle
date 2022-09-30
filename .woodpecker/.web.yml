@@ -7,7 +7,7 @@ pipeline:
     commands:
       - npm ci -w @luzzle/web -w @luzzle/cli
       - npm run prebuild -w @luzzle/web
-      - npm run build -w @luzzle/cli
+      - npm run prepublishOnly -w @luzzle/cli
     when:
       branch: [main, introduce-monorepo]
       path:
