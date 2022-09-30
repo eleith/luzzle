@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "scripts": {
     "lint": "eslint src",
     "compile": "tsc --noEmit",
@@ -61,7 +61,7 @@
     "uuid": "^9.0.0"
   },
   "bin": {
-    "manage": "dist/manager.js"
+    "luzzle": "dist/manager.js"
   },
   "files": [
     "dist/*"
