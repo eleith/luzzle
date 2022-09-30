@@ -68,6 +68,7 @@ pipeline:
       - GCS_PROJECT=eleith-cloud
       - GCS_REGION=us-central1
     commands:
+      - cp package-lock.json packages/web
       - cd packages/web
       - mkdir /tmp/secrets
       - printf '%s\n' "$NEXTJS_ENV_LOCAL" > $ENV_LOCAL_FILE
