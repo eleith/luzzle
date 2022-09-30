@@ -97,13 +97,13 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
       <Box className={styles.page}>
         <Box>
           <Text as="h1" size={'title'}>
-            hello.
+            hello
           </Text>
           <Text as="h2" size={'h1'}>
-            this site is a collection of <i>things</i>. currently, those <i>things</i> are books.
+            this site is a collection of <i>things</i>. currently, those <i>things</i> are books
             <br />
             <br />
-            feel free to {explore} and start a discussion on any of them.
+            feel free to {explore} and start a discussion on any of them
           </Text>
           <br />
           <br />
