@@ -1,13 +1,14 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
     "compile": "tsc --noEmit",
     "build": "esbuild src/manage.ts --platform=node --target=node16 --banner:js='#!/usr/bin/env node' --sourcemap --bundle --outfile=dist/manager.js --external:sharp",
     "manage": "node --enable-source-maps dist/manager.js",
-    "test": "vitest run --coverage --silent"
+    "test": "vitest run --coverage --silent",
+    "prepublish": "npm run build"
   },
   "engines": {
     "node": ">=16"
