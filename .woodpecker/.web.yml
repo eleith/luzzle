@@ -10,6 +10,7 @@ pipeline:
       - npm run prebuild -w @luzzle/web
       - npm run compile -w @luzzle/web
     when:
+      branch: [main, introduce-monorepo]
       path:
         include: [".woodpecker/.web.yml", "packages/web/*"]
   gather:
@@ -25,6 +26,7 @@ pipeline:
     commands:
       - mkdir /workspace/data
       - mkdir /workspace/data/books
+      - cd packages/web
       - mkdir prisma/data
       - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
@@ -32,18 +34,25 @@ pipeline:
       - rclone copy $RCLONE_GCS_DB prisma/data
     secrets: [rclone_webdav_url, rclone_webdav_vendor, rclone_webdav_user, rclone_webdav_pass, rclone_service_key_json, rclone_gcs_project_number]
     when:
-      branch: main
-      path: "packages/web/*"
+      branch: [main, introduce-monorepo]
+      path:
+        include: [".woodpecker/.web.yml", "packages/web/*"]
   build-content:
     image: node:16
     commands:
+      - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
+      - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
       - npm run build:prisma -w @luzzle/web
-      - npx manage sync /workspace/data/books -w @luzzle/web
+      - npm install -g @luzzle/cli@0.0.4
       - cd packages/web
+      - luzzle sync /workspace/data/books
       - mkdir public/images
       - cp -R /workspace/data/books/.assets/covers public/images
+    secrets: [npm_owner, npm_token]
     when:
-      branch: main
+      branch: [main, introduce-monorepo]
+      path:
+        include: [".woodpecker/.web.yml", "packages/web/*"]
   deploy:
     image: git.eleith.com/eleith/gcs-web-deploy:3.0.0
     environment:
@@ -67,7 +76,9 @@ pipeline:
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
     secrets: [cloud_run_service_key_json, nextjs_env_local]
     when:
-      branch: main
+      branch: [main, introduce-monorepo]
+      path:
+        include: [".woodpecker/.web.yml", "packages/web/*"]
   notify:
     image: git.eleith.com/eleith/woodpecker-email:1.0.0
     environment:
@@ -85,3 +96,6 @@ pipeline:
         target: plugin_recipients
     when:
       status: [failure, success]
+      branch: [main, introduce-monorepo]
+      path:
+        include: [".woodpecker/.web.yml", "packages/web/*"]
