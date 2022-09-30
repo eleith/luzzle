@@ -9,7 +9,7 @@ pipeline:
       - npm run prebuild -w @luzzle/web
       - npm run prepublishOnly -w @luzzle/cli
     when:
-      branch: [main, introduce-monorepo]
+      branch: [main]
       path:
         include: [".woodpecker/.web.yml", "packages/web/*"]
   test:
@@ -18,7 +18,7 @@ pipeline:
       - npm run lint -w @luzzle/web
       - npm run compile -w @luzzle/web
     when:
-      branch: [main, introduce-monorepo]
+      branch: [main]
       path:
         include: [".woodpecker/.web.yml", "packages/web/*"]
   gather:
@@ -42,7 +42,7 @@ pipeline:
       - rclone copy $RCLONE_GCS_DB prisma/data
     secrets: [rclone_webdav_url, rclone_webdav_vendor, rclone_webdav_user, rclone_webdav_pass, rclone_service_key_json, rclone_gcs_project_number]
     when:
-      branch: [main, introduce-monorepo]
+      branch: [main]
       path:
         include: [".woodpecker/.web.yml", "packages/web/*"]
   build-content:
@@ -54,7 +54,7 @@ pipeline:
       - cp -R /workspace/data/books/.assets/covers public/images
     secrets: [npm_owner, npm_token]
     when:
-      branch: [main, introduce-monorepo]
+      branch: [main]
       path:
         include: [".woodpecker/.web.yml", "packages/web/*"]
   deploy:
@@ -81,7 +81,7 @@ pipeline:
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
     secrets: [cloud_run_service_key_json, nextjs_env_local]
     when:
-      branch: [main, introduce-monorepo]
+      branch: [main]
       path:
         include: [".woodpecker/.web.yml", "packages/web/*"]
   notify:
@@ -101,6 +101,6 @@ pipeline:
         target: plugin_recipients
     when:
       status: [failure, success]
-      branch: [main, introduce-monorepo]
+      branch: [main]
       path:
         include: [".woodpecker/.web.yml", "packages/web/*"]
