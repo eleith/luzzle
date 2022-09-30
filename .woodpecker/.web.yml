@@ -2,12 +2,20 @@ workspace:
   base: /workspace
   path: src/website
 pipeline:
+  build:
+    image: node:16
+    commands:
+      - npm ci -w @luzzle/web -w @luzzle/cli
+      - npm run prebuild -w @luzzle/web
+      - npm run build -w @luzzle/cli
+    when:
+      branch: [main, introduce-monorepo]
+      path:
+        include: [".woodpecker/.web.yml", "packages/web/*"]
   test:
     image: node:16
     commands:
-      - npm ci -w @luzzle/web
       - npm run lint -w @luzzle/web
-      - npm run prebuild -w @luzzle/web
       - npm run compile -w @luzzle/web
     when:
       branch: [main, introduce-monorepo]
@@ -45,7 +53,7 @@ pipeline:
       - npm run build:prisma -w @luzzle/web
       - npm install -g @luzzle/cli@0.0.7
       - cd packages/web
-      - luzzle sync /workspace/data/books
+      - ../cli/dist/manager.js sync /workspace/data/books
       - mkdir public/images
       - cp -R /workspace/data/books/.assets/covers public/images
     secrets: [npm_owner, npm_token]
