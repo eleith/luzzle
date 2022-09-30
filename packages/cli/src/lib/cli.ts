@@ -1,4 +1,4 @@
-import { Book, PrismaClient } from '@app/prisma'
+import { Book, PrismaClient } from './prisma'
 import prisma from './prisma'
 import { eachLimit } from 'async'
 import { stat } from 'fs/promises'
