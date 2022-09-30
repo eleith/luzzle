@@ -1,6 +1,7 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.4",
+  "version": "0.0.5",
+  "author": "eleith",
   "scripts": {
     "lint": "eslint src",
     "compile": "tsc --noEmit",
@@ -8,6 +9,22 @@
     "manage": "node --enable-source-maps dist/manager.js",
     "test": "vitest run --coverage --silent"
   },
+  "engines": {
+    "node": ">=16"
+  },
+  "bin": {
+    "luzzle": "dist/manager.js"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://git.eleith.com/eleith/eleith.git"
+  },
+  "homepage": "https://git.eleith.com/eleith/eleith.git",
+  "main": "dist/manager.js",
+  "description": "manage folders of markdown files for building luzzle sites",
   "devDependencies": {
     "@fast-csv/format": "^4.3.5",
     "@fast-csv/parse": "^4.3.6",
@@ -59,12 +76,5 @@
     "rehype-remark": "^9.1.2",
     "remark-stringify": "^10.0.2",
     "uuid": "^9.0.0"
-  },
-  "bin": {
-    "luzzle": "dist/manager.js"
-  },
-  "files": [
-    "dist/*"
-  ]
+  }
 }
-
