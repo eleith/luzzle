@@ -2,10 +2,18 @@ workspace:
   base: /workspace
   path: src/cli
 pipeline:
+  build:
+    image: node:16
+    commands:
+      - npm ci -w @luzzle/web -w @luzzle/cli
+      - npm run build:prisma -w @luzzle/web
+    when:
+      branch: [main, introduce-monorepo]
+      path:
+        include: [".woodpecker/.cli.yml", "packages/cli/*"]
   test:
     image: node:16
     commands:
-      - npm ci -w @luzzle/cli
       - npm run lint -w @luzzle/cli
       - npm run test -w @luzzle/cli
     when:
@@ -17,8 +25,6 @@ pipeline:
     commands:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
-      - npm ci -w @luzzle/web
-      - npm run build:prisma -w @luzzle/web
       - cd packages/cli
       - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
       - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
