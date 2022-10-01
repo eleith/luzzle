@@ -11,3 +11,4 @@ public/images/covers
 coverage
 **/_gql_
 src/@types/graphql.d.ts
+tsconfig.tsbuildinfo
