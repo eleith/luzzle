@@ -18,7 +18,6 @@
     "outDir": "build",
     "baseUrl": ".",
     "paths": {
-      "@app/prisma": ["generated/prisma/client"],
       "@app/public/*": ["public/*"],
       "@app/*": ["src/*"]
     },

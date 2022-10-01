@@ -1,5 +1,4 @@
-import { PrismaClient } from '../../../web/generated/prisma/client'
+import { getPrismaClient } from '@luzzle/prisma'
 
-export type { Book, Prisma, PrismaClient } from '../../../web/generated/prisma/client'
-
-export default new PrismaClient()
+export type { Book, Prisma, PrismaClient } from '@luzzle/prisma'
+export default getPrismaClient()

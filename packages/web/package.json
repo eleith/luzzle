@@ -5,12 +5,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "build:prisma": "prisma generate",
     "build:graphql": "VERBOSE=1 DEBUG=1 NODE_OPTIONS='--loader ts-node/esm -r tsconfig-paths/register --experimental-specifier-resolution=node' graphql-codegen",
     "lint": "next lint",
     "compile": "tsc --noEmit",
-    "prebuild": "npm run build:prisma && npm run build:graphql",
-    "predev": "npm run build:prisma && npm run build:graphql",
+    "prebuild": "npm run build:graphql",
+    "predev": "npm run build:graphql",
     "clean:graphql": "find . -path \\*/_gql_/*.ts -delete"
   },
   "devDependencies": {
@@ -71,6 +70,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.6.9",
+    "@luzzle/prisma": "0.0.2",
     "@mdx-js/loader": "^2.1.3",
     "@mdx-js/react": "^2.1.3",
     "@next/mdx": "^12.2.5",
@@ -78,7 +78,6 @@
     "@pothos/plugin-errors": "^3.7.0",
     "@pothos/plugin-simple-objects": "^3.5.0",
     "@pothos/plugin-validation": "^3.7.0",
-    "@prisma/client": "^4.3.1",
     "@vanilla-extract/css": "^1.9.0",
     "@vanilla-extract/css-utils": "^0.1.2",
     "@vanilla-extract/dynamic": "^2.0.2",
@@ -104,7 +103,6 @@
     "next": "^12.2.5",
     "next-themes": "^0.2.0",
     "phosphor-react": "^1.4.1",
-    "prisma": "^4.3.1",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.34.2",

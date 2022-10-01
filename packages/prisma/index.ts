@@ -1,5 +1,5 @@
-import { PrismaClient } from "./dist/prisma/client";
-import type { Prisma } from "./dist/prisma/client";
+import { PrismaClient } from "./prisma/client";
+import type { Prisma } from "./prisma/client";
 
 type PrismaOptions = Prisma.Subset<
   Prisma.PrismaClientOptions,
@@ -8,12 +8,13 @@ type PrismaOptions = Prisma.Subset<
 
 let prisma: PrismaClient;
 
-export type { Book, Prisma, PrismaClient } from "./dist/prisma/client";
-
-export default function (options?: PrismaOptions) {
+function getPrismaClient(options?: PrismaOptions) {
   if (!prisma) {
     prisma = new PrismaClient(options);
   }
 
   return prisma;
 }
+
+export type { Book, Prisma, PrismaClient } from "./prisma/client";
+export { getPrismaClient };

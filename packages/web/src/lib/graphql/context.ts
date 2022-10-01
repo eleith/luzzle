@@ -1,8 +1,8 @@
-import { PrismaClient } from '@app/prisma'
+import { getPrismaClient, PrismaClient } from '@luzzle/prisma'
 import { client } from '@app/common/emailjs'
 import { SMTPClient } from 'emailjs'
 
-const prisma = new PrismaClient()
+const prisma = getPrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } })
 
 export interface Context {
   prisma: PrismaClient
