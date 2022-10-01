@@ -9,7 +9,7 @@ pipeline:
       - npm run build -w @luzzle/prisma
       - npm run compile -w @luzzle/prisma
       - cd packages/prisma
-      - npm run patch -w @luzzle/prisma
+      - npm run patch
     when:
       branch: [main]
       path:

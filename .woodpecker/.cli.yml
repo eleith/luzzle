@@ -6,7 +6,7 @@ pipeline:
     image: node:16
     commands:
       - npm ci -w @luzzle/cli
-      - npm compile -w @luzzle/cli
+      - npm run compile -w @luzzle/cli
     when:
       branch: [main]
       path:
