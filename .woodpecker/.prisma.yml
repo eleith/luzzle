@@ -6,7 +6,7 @@ pipeline:
     image: node:16
     commands:
       - npm ci -w @luzzle/prisma
-      - npm run build
+      - npm run build -w @luzzle/prisma
     when:
       branch: [main]
       path:
@@ -15,6 +15,7 @@ pipeline:
     image: node:16
     commands:
       - npm run lint -w @luzzle/prisma
+      - npm run compile -w @luzzle/prisma
     when:
       branch: [main]
       path:
