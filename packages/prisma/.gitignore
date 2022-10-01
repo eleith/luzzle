@@ -1,6 +1,6 @@
 .env.*local
 
 node_modules
-prisma/data
+src/data
 dist
-build
+prisma

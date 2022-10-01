@@ -5,7 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../dist/prisma/client"
+  output   = "../prisma/client"
 }
 
 model Book {

@@ -1,5 +1,5 @@
 import builder from '@app/lib/graphql/builder'
-import { Book } from '@app/prisma'
+import { Book } from '@luzzle/prisma'
 import BookSiblings from './bookSiblings'
 
 const BookBuilder = builder.objectRef<Book>('Book')
