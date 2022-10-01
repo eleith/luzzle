@@ -1,0 +1,40 @@
+{
+  "name": "@luzzle/prisma",
+  "version": "0.0.1",
+  "private": true,
+  "author": "eleith",
+  "scripts": {
+    "build": "prisma generate --schema ./src/schema.prisma",
+    "compile": "tsc",
+    "lint": "eslint index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://git.eleith.com/eleith/eleith.git"
+  },
+  "homepage": "https://git.eleith.com/eleith/eleith.git",
+  "main": "index.ts",
+  "devDependencies": {
+    "@types/node": "^18.7.15",
+    "@typescript-eslint/eslint-plugin": "^5.36.2",
+    "@typescript-eslint/parser": "^5.36.2",
+    "eslint": "^8.23.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.7.1",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.1.0",
+    "typescript": "^4.8.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^4.3.1",
+    "prisma": "^4.3.1"
+  }
+}

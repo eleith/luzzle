@@ -1,40 +1,40 @@
 workspace:
   base: /workspace
-  path: src/cli
+  path: src/prisma
 pipeline:
   build:
     image: node:16
     commands:
-      - npm ci -w @luzzle/web -w @luzzle/cli
-      - npm run build:prisma -w @luzzle/web
+      - npm ci -w @luzzle/prisma
+      - npm run build
     when:
       branch: [main]
       path:
-        include: [".woodpecker/.cli.yml", "packages/cli/**"]
+        include: [".woodpecker/.prisma.yml", "packages/prisma/**"]
   test:
     image: node:16
     commands:
-      - npm run lint -w @luzzle/cli
-      - npm run test -w @luzzle/cli
+      - npm run lint -w @luzzle/prisma
     when:
       branch: [main]
       path:
-        include: [".woodpecker/.cli.yml", "packages/cli/**"]
+        include: [".woodpecker/.prisma.yml", "packages/prisma/*"]
   publish:
     image: node:16
     commands:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
-      - cd packages/cli
-      - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
-      - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
-      - cd ../..
-      - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/cli; fi
+      # - cd packages/prisma
+      # - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
+      # - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
+      # - cd ../..
+      # - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/prisma; fi
+      - npm publish -w @luzzle/prisma
     secrets: [npm_token, npm_owner]
     when:
       branch: [main]
       path:
-        include: [".woodpecker/.cli.yml", "packages/cli/**"]
+        include: [".woodpecker/.prisma.yml", "packages/prisma/**"]
   notify:
     image: git.eleith.com/eleith/woodpecker-email:1.0.0
     environment:
@@ -54,4 +54,4 @@ pipeline:
       status: [failure, success]
       branch: [main]
       path:
-        include: [".woodpecker/.cli.yml", "packages/cli/**"]
+        include: [".woodpecker/.prisma.yml", "packages/prisma/**"]
