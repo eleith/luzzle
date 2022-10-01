@@ -1,6 +1,7 @@
 {
   "name": "@luzzle/cli",
   "version": "0.0.8",
+  "private": true,
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
