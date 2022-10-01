@@ -5,8 +5,8 @@ pipeline:
   build:
     image: node:16
     commands:
-      - npm ci -w @luzzle/web -w @luzzle/cli
-      - npm run build:prisma -w @luzzle/web
+      - npm ci -w @luzzle/cli
+      - npm compile -w @luzzle/cli
     when:
       branch: [main]
       path:
