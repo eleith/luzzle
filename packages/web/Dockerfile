@@ -20,7 +20,9 @@ COPY . .
 # disable nextjs telemetry during build
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN npm run build
+RUN npm run prepublishOnly -w @luzzle/prisma
+RUN npm run prepublishOnly -w @luzzle/cli
+RUN npm run build -w @luzzle/web
 
 # Production image, copy all the files and run next
 FROM node:16-alpine AS runner
