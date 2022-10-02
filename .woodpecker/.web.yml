@@ -18,7 +18,6 @@ pipeline:
     image: node:16
     commands:
       - npm run lint -w @luzzle/web
-      - npm run compile -w @luzzle/web
     when:
       branch: [main]
       path:
