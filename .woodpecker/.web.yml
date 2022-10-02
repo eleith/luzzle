@@ -36,6 +36,7 @@ pipeline:
       - mkdir /workspace/data
       - mkdir /workspace/data/books
       - cd packages/web
+      - mkdir prisma
       - mkdir prisma/data
       - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
