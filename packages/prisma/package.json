@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/prisma",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "eleith",
   "scripts": {
     "build": "prisma generate --schema ./src/schema.prisma",
