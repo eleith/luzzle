@@ -119,8 +119,10 @@ const cacheSchema: JTDSchemaType<BookCache> = {
 const ajv = new Ajv()
 const bookMdValidator = ajv.compile(bookMdSchema)
 const cacheValidator = ajv.compile(cacheSchema)
-const bookCoverDir = path.join('.assets', 'covers')
 const cacheDir = '.cache'
+const assetsDir = '.assets'
+const bookCoverDir = path.join(assetsDir, 'covers')
+const dbPath = path.join(assetsDir, 'data', 'sqlite.db')
 
 function _getCoverPathForBook(slug: string, baseDir = ''): string {
   return path.join(baseDir, bookCoverDir, `${slug}.jpg`)
@@ -623,6 +625,7 @@ export {
   getUpdatedSlugs,
   bookMdToBookUpdateInput,
   bookCoverDir,
+  dbPath,
   processBookMd,
   updateBookMd,
   bookMdToBookCreateInput,
