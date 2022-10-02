@@ -1,13 +1,15 @@
 workspace:
   base: /workspace
-  path: src/website
+  path: src
 pipeline:
   build:
     image: node:16
     commands:
-      - npm ci -w @luzzle/web -w @luzzle/cli
-      - npm run prebuild -w @luzzle/web
+      - npm ci
+      - npm run prepublishOnly -w @luzzle/prisma
       - npm run prepublishOnly -w @luzzle/cli
+      - npm run compile -w @luzzle/web
+      - npm run build:graphql -w @luzzle/web
     when:
       branch: [main]
       path:
