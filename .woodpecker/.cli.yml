@@ -30,7 +30,7 @@ pipeline:
       - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
       - cd ../..
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/cli; fi
-    secrets: [npm_token, npm_owner]
+    secrets: [npm_owner, npm_token]
     when:
       branch: [main]
       path:
