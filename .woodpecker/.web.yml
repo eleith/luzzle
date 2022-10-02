@@ -8,8 +8,8 @@ pipeline:
       - npm ci
       - npm run prepublishOnly -w @luzzle/prisma
       - npm run prepublishOnly -w @luzzle/cli
-      - npm run compile -w @luzzle/web
       - npm run build:graphql -w @luzzle/web
+      - npm run compile -w @luzzle/web
     when:
       branch: [main]
       path:

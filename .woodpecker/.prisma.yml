@@ -6,7 +6,8 @@ pipeline:
     image: node:16
     commands:
       - npm ci -w @luzzle/prisma
-      - npm run prepublishOnly -w @luzzle/prisma
+      - npm run build -w @luzzle/prisma
+      - npm run compile -w @luzzle/prisma
     when:
       branch: [main]
       path:

@@ -4,10 +4,10 @@
   "author": "eleith",
   "scripts": {
     "build": "prisma generate --schema ./src/schema.prisma",
-    "compile": "tsc && mv prisma dist",
+    "compile": "tsc",
     "patch": "patch dist/prisma/client/runtime/index.js runtime-patch.txt",
     "lint": "eslint index.ts",
-    "prepublishOnly": "npm run build && npm run compile && npm run patch"
+    "prepublishOnly": "npm run build && npm run compile && mv prisma dist && npm run patch"
   },
   "engines": {
     "node": ">=16"
