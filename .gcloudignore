@@ -9,12 +9,5 @@
 .dockerignore
 
 vite.config.ts
-node_modules
-tools
 prisma/migrate
-build
-data
 public/images/covers/
-
-!prisma/data/
-!generated/
