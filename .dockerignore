@@ -9,9 +9,3 @@
 
 Dockerfile
 node_modules
-tools
-prisma/migrate
-build
-data
-public/images/covers
-vite.config.ts
