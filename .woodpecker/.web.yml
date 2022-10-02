@@ -40,6 +40,7 @@ pipeline:
       - mkdir prisma/data
       - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
+      # TODO: get db from dav book source
       - rclone copy $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
       - rclone copy $RCLONE_GCS_DB prisma/data
     secrets: [rclone_webdav_url, rclone_webdav_vendor, rclone_webdav_user, rclone_webdav_pass, rclone_service_key_json, rclone_gcs_project_number]
