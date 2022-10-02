@@ -21,27 +21,24 @@ import log from './log'
 import * as cli from './cli'
 import { DeepPartial } from 'src/@types/utilities'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import prisma from './prisma'
+import { getPrismaClient, PrismaClient } from './prisma'
 import path from 'path'
 
 vi.mock('os')
-// vi.mock('./log')
 vi.mock('fs/promises')
 vi.mock('./book')
-vi.mock('./prisma', () => {
-  return {
-    default: {
-      $disconnect: vi.fn(),
-      book: {
-        findMany: vi.fn(),
-        deleteMany: vi.fn(),
-        update: vi.fn(),
-        findUnique: vi.fn(),
-        create: vi.fn(),
-      },
-    },
-  }
-})
+vi.mock('./prisma')
+
+const prisma = {
+  $disconnect: vi.fn(),
+  book: {
+    findMany: vi.fn(),
+    deleteMany: vi.fn(),
+    update: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+  },
+}
 
 const mocks = {
   cpus: vi.mocked(cpus),
@@ -67,6 +64,7 @@ const mocks = {
   updateBookMd: vi.mocked(updateBookMd),
   getUpdatedSlugs: vi.mocked(getUpdatedSlugs),
   cleanUpDerivatives: vi.mocked(cleanUpDerivatives),
+  getPrismaClient: vi.mocked(getPrismaClient),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -87,8 +85,10 @@ function makeCommand(overrides?: DeepPartial<Command>): Command {
 }
 
 function makeContext(command?: Command): cli.Context {
+  mocks.getPrismaClient.mockReturnValue(prisma as unknown as PrismaClient)
+
   return {
-    prisma,
+    prisma: mocks.getPrismaClient(),
     log,
     command: command || makeCommand(),
   }
@@ -176,11 +176,11 @@ describe('tools/lib/cli', () => {
   test('_cleanup', async () => {
     const ctx = makeContext()
 
-    mocks.prisma$disconnect.mockResolvedValueOnce()
+    mocks.prisma$disconnect.mockResolvedValueOnce(null)
 
     await cli._private._cleanup(ctx)
 
-    expect(prisma.$disconnect).toHaveBeenCalled()
+    expect(mocks.prisma$disconnect).toHaveBeenCalled()
   })
 
   test('_dumpBook', async () => {

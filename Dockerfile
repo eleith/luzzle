@@ -28,7 +28,6 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN apk add patch
 RUN npm run prepublishOnly -w @luzzle/prisma
-RUN npm run prepublishOnly -w @luzzle/cli
 RUN npm run build -w @luzzle/web
 
 # Production image, copy all the files and run next

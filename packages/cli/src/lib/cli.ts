@@ -1,5 +1,5 @@
 import { Book, PrismaClient } from './prisma'
-import prisma from './prisma'
+import { getPrismaClient } from './prisma'
 import { eachLimit } from 'async'
 import { stat } from 'fs/promises'
 import { cpus } from 'os'
@@ -19,10 +19,12 @@ import {
   getBookCache,
   getSlugFromBookMd,
   bookToMd,
+  dbPath,
 } from './book'
 import log from './log'
 import { difference } from 'lodash'
 import { Logger } from 'pino'
+import path from 'path'
 
 export type Command = {
   options: {
@@ -251,6 +253,9 @@ async function _cleanup(ctx: Context): Promise<void> {
 async function run(): Promise<Context | null> {
   try {
     const command = await _private._parseArgs(hideBin(process.argv))
+    const fullDbPath = path.resolve(path.join(command.options.dir, dbPath))
+    const dbUrl = `file:${fullDbPath}`
+    const prisma = getPrismaClient({ datasources: { db: { url: dbUrl } } })
 
     const ctx: Context = {
       prisma,
