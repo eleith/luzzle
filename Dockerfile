@@ -2,6 +2,7 @@
 
 # Install dependencies only when needed
 FROM node:16-alpine AS deps
+
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -9,17 +10,23 @@ WORKDIR /app
 # Install dependencies
 COPY package.json ./
 COPY package-lock.json ./
+COPY packages ./packages
+
 RUN npm ci
 
 # Rebuild the source code only when needed
 FROM node:16-alpine AS builder
+
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY package.json ./
+COPY tsconfig.json ./
+COPY packages ./packages
 
 # disable nextjs telemetry during build
 ENV NEXT_TELEMETRY_DISABLED 1
 
+RUN apk add patch
 RUN npm run prepublishOnly -w @luzzle/prisma
 RUN npm run prepublishOnly -w @luzzle/cli
 RUN npm run build -w @luzzle/web
@@ -35,13 +42,18 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --gid 1001 --system nodejs
 RUN adduser --system nextjs --uid 1001
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.env.local ./.env.local
+COPY --from=builder /app/packages/web/public ./packages/web/public
+COPY --from=builder /app/packages/web/.env ./packages/web.env
+COPY --from=builder /app/packages/web/.env.local ./packages/web.env.local
+COPY --from=builder /app/packages/web/.env.production ./packages/web.env.production
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/prisma ./packages/prisma
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/standalone ./packages/web
+COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./packages/web/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/packages/web/prisma ./packages/web/prisma
 
 USER nextjs
 
@@ -49,4 +61,4 @@ EXPOSE 3000
 
 ENV PORT 3000
 
-CMD ["node", "server.js"]
+CMD ["node", "/app/packages/web/server.js"]
