@@ -52,7 +52,6 @@ pipeline:
       - ../cli/dist/manager.js sync /workspace/data/books
       - mkdir public/images
       - cp -R /workspace/data/books/.assets/covers public/images
-    secrets: [npm_owner, npm_token]
     when:
       branch: [main]
       path:
