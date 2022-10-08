@@ -19,7 +19,7 @@ import {
 import * as bookFixtures from './book.fixtures'
 import log from './log'
 import * as cli from './cli'
-import { DeepPartial } from 'src/@types/utilities'
+import { DeepPartial } from '../@types/utilities'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { getPrismaClient, PrismaClient } from './prisma'
 import path from 'path'
