@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/prisma",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "author": "eleith",
   "scripts": {
     "build": "prisma generate --schema ./src/schema.prisma",
@@ -30,13 +30,11 @@
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
     "prettier": "^2.7.1",
-    "ts-node": "^10.9.1",
-    "tsconfig-paths": "^4.1.0",
     "typescript": "^4.8.2"
   },
   "dependencies": {
-    "@prisma/client": "^4.3.1",
-    "prisma": "^4.3.1"
+    "@prisma/client": "^4.4.0",
+    "prisma": "^4.4.0"
   },
   "type": "module",
   "exports": "./index.js",
