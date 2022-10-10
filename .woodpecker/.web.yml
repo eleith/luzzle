@@ -7,7 +7,6 @@ pipeline:
     commands:
       - npm ci
       - npm run prepublishOnly -w @luzzle/prisma
-      - npm run prepublishOnly -w @luzzle/cli
       - npm run build:graphql -w @luzzle/web
       - npm run compile -w @luzzle/web
     when:
