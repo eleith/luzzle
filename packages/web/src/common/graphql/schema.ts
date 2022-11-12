@@ -2,6 +2,7 @@ import builder from '@app/lib/graphql/builder'
 import './error'
 import './book'
 import './discussion'
+import './search'
 
 const schema = builder.toSchema({})
 
