@@ -4,7 +4,7 @@ import { vars } from '../../css'
 
 export const variants = recipe({
   base: {
-    fontSize: vars.fontSizes.body,
+    fontSize: vars.fontSizes.bodyMobile,
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02',
     backgroundColor: vars.colors.surfaceVariant,
@@ -37,7 +37,7 @@ export const variants = recipe({
 })
 
 export const select = style({
-  fontSize: vars.fontSizes.body,
+  fontSize: vars.fontSizes.bodyMobile,
   fontWeight: vars.fontWeights.normal,
   letterSpacing: '-0.02',
   border: 'none',
@@ -60,7 +60,7 @@ export const select = style({
 })
 
 export const label = style({
-  fontSize: vars.fontSizes.label,
+  fontSize: vars.fontSizes.labelMobile,
   fontWeight: vars.fontWeights.light,
   letterSpacing: '-0.02',
   paddingTop: '3px',
@@ -129,7 +129,7 @@ export const helper = style({
 
 export const description = style({
   color: vars.colors.onBackground,
-  fontSize: vars.fontSizes.label,
+  fontSize: vars.fontSizes.labelMobile,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
@@ -137,7 +137,7 @@ export const description = style({
 
 export const error = style({
   color: vars.colors.error,
-  fontSize: vars.fontSizes.label,
+  fontSize: vars.fontSizes.labelMobile,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],

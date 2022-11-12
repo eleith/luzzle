@@ -93,7 +93,11 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
     searches.map((book) => (
       <Link key={book.slug} href={`/books/${book.slug}`}>
         <ComboboxItem value={book.title} hideOnClick focusOnHover>
-          {book.title}
+          <Box>
+            <Text size="body">{book.title}</Text>
+            {book.subtitle && <Text size="caption">{book.subtitle}</Text>}
+            {book.author && <Text size="caption">{`${book.author} ${book.coauthors || ''}`}</Text>}
+          </Box>
         </ComboboxItem>
       </Link>
     ))
@@ -119,7 +123,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           <br />
           <Divider />
           <br />
-          <Text as="h2" size={'h1'}>
+          <Text as="h3" size={'h1'}>
             search and start a discussion on one
           </Text>
           <br />
