@@ -85,9 +85,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
           {makeSiblingLink(<CaretLeft size={45} />, book.siblings?.previous?.slug)}
         </Box>
         <Box className={styles.bookDetails}>
-          <Text as="h1" size="title">
-            {book.title}
-          </Text>
+          <Text as="h1">{book.title}</Text>
           {book.subtitle && (
             <Text as="h2" size="h3">
               {book.subtitle}

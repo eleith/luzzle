@@ -5,12 +5,19 @@ export const fonts = {
 
 export const fontSizes = {
   label: '0.875rem',
-  caption: '0.9375rem',
+  caption: '0.70rem',
   body: '1rem',
   h3: '1.1875rem',
   h2: '1.3125rem',
   h1: '1.875rem',
   title: '3rem',
+  labelMobile: '0.50rem',
+  bodyMobile: '0.75rem',
+  h3Mobile: '1.0975rem',
+  h2Mobile: '1.1875rem',
+  h1Mobile: '1.3125rem',
+  titleMobile: '2rem',
+  captionMobile: '0.40rem',
   root: '16px',
 }
 
