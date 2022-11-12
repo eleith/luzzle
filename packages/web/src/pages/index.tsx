@@ -61,7 +61,7 @@ export async function getStaticProps(): Promise<{ props: HomePageProps }> {
 export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   const [searches, setSearches] = useState<Book[]>([])
 
-  const explore = (
+  const booksLink = (
     <Link href="/books" passHref>
       <Anchor hoverAction="animateUnderline">books</Anchor>
     </Link>
@@ -110,7 +110,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           </Text>
           <br />
           <Text as="h2" size={'h1'}>
-            this is an archive of {explore} i&apos;ve read
+            this is an archive of {booksLink} i&apos;ve read
           </Text>
           <br />
           <Text as="h3" size={'h1'}>
