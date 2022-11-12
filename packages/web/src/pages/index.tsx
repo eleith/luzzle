@@ -110,7 +110,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           </Text>
           <br />
           <Text as="h2" size={'h1'}>
-            this site is an archive of {explore} i&apos;ve read
+            this is an archive of {explore} i&apos;ve read
           </Text>
           <br />
           <Text as="h3" size={'h1'}>
