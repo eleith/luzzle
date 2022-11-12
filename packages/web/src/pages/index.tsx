@@ -1,34 +1,33 @@
-import { BookCover, BookCoverFor } from '@app/common/components/books'
 import PageFull from '@app/common/components/layout/PageFull'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
-import useGraphSWR from '@app/common/hooks/useGraphSWR'
 import gql from '@app/lib/graphql/tag'
-import { GetBookHomeDocument, GetRandomBookDocument } from './_gql_/index'
+import { GetBookHomeDocument, GetSearchHomeDocument } from './_gql_/index'
 import staticClient from '@app/common/graphql/staticClient'
 import Link from 'next/link'
-import { Box, Text, Anchor } from '@app/common/ui/components'
+import { Box, Text, Anchor, Combobox, ComboboxItem, Divider } from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './index.css'
-import { VisuallyHidden } from 'ariakit'
+import gqlFetch from '@app/common/graphql/fetch'
+import { ChangeEvent, useState } from 'react'
 
-const getBooksQuery = gql<typeof GetBookHomeDocument>(
-  `query GetBookHome($take: Int) {
-  books(take: $take) {
-    ...BookFullDetails
+const getSearchQuery = gql<typeof GetSearchHomeDocument>(
+  `query GetSearchHome($query: String!) {
+  search(query: $query) {
+    __typename
+    ... on QuerySearchSuccess {
+      data {
+        ...BookFullDetails
+      }
+    }
   }
 }`,
   bookFragment
 )
 
-const getRandomBookQuery = gql<typeof GetRandomBookDocument>(
-  `query GetRandomBook {
-  book {
-    __typename
-    ... on QueryBookSuccess {
-      data {
-        ...BookFullDetails
-      }
-    }
+const getBooksQuery = gql<typeof GetBookHomeDocument>(
+  `query GetBookHome($take: Int) {
+  books(take: $take) {
+    ...BookFullDetails
   }
 }`,
   bookFragment
@@ -41,30 +40,9 @@ type HomePageProps = {
   book2: Book
 }
 
-function makeBookCardLink(book?: Book): JSX.Element {
-  if (book) {
-    return (
-      <BookCoverFor
-        book={book}
-        asLink
-        hasCover={!!book.coverWidth}
-        rotate={{
-          x: 0,
-          y: 0,
-        }}
-        rotateInteract={{
-          x: 0,
-          y: -35,
-        }}
-      />
-    )
-  } else {
-    return (
-      <BookCover loading={true}>
-        <VisuallyHidden>loading a book</VisuallyHidden>
-      </BookCover>
-    )
-  }
+async function getSearchResults(query: string): Promise<Book[]> {
+  const data = await gqlFetch(getSearchQuery, { query })
+  return data.search?.__typename === 'QuerySearchSuccess' ? data.search.data : []
 }
 
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
@@ -81,15 +59,46 @@ export async function getStaticProps(): Promise<{ props: HomePageProps }> {
 }
 
 export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
-  const { data } = useGraphSWR(getRandomBookQuery, undefined, {
-    revalidateOnFocus: false,
-  })
-  const randomBook = data?.book?.__typename === 'QueryBookSuccess' ? data.book.data : undefined
+  const [searches, setSearches] = useState<Book[]>([])
 
   const explore = (
     <Link href="/books" passHref>
-      <Anchor hoverAction="animateUnderline">explore</Anchor>
+      <Anchor hoverAction="animateUnderline">books</Anchor>
     </Link>
+  )
+
+  const book1Link = (
+    <Link href={`/books/${book1.slug}`} passHref>
+      <Anchor hoverAction="animateUnderline">{book1.title}</Anchor>
+    </Link>
+  )
+
+  const book2Link = (
+    <Link href={`/books/${book2.slug}`} passHref>
+      <Anchor hoverAction="animateUnderline">{book2.title}</Anchor>
+    </Link>
+  )
+
+  async function onChange(e: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const query = e.currentTarget.value
+    if (query) {
+      const data = await getSearchResults(query)
+      setSearches(data)
+    } else {
+      setSearches([])
+    }
+  }
+
+  const searchResults = searches.length ? (
+    searches.map((book) => (
+      <Link key={book.slug} href={`/books/${book.slug}`}>
+        <ComboboxItem value={book.title} hideOnClick focusOnHover>
+          {book.title}
+        </ComboboxItem>
+      </Link>
+    ))
+  ) : (
+    <ComboboxItem>no results</ComboboxItem>
   )
 
   return (
@@ -99,28 +108,30 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           <Text as="h1" size={'title'}>
             hello
           </Text>
+          <br />
           <Text as="h2" size={'h1'}>
-            this site is a collection of <i>things</i>. currently, those <i>things</i> are books
-            <br />
-            <br />
-            feel free to {explore} and start a discussion on any of them
+            this site is an archive of {explore} i&apos;ve read
           </Text>
-          <br />
           <br />
           <Text as="h3" size={'h1'}>
-            here are the last two i read,
+            my last two were {book1Link} and {book2Link}
           </Text>
           <br />
-          <Box className={styles.books}>
-            {makeBookCardLink(book1)}
-            {makeBookCardLink(book2)}
+          <Divider />
+          <br />
+          <Text as="h2" size={'h1'}>
+            search and start a discussion on one
+          </Text>
+          <br />
+          <Box>
+            <Combobox
+              state={{ sameWidth: true }}
+              onChange={onChange}
+              placeholder="ex: A Portrait of the Human as a Young Person"
+            >
+              {searchResults}
+            </Combobox>
           </Box>
-          <br />
-          <Text as="h3" size={'h1'}>
-            here is a random one,
-          </Text>
-          <br />
-          <Box className={styles.books}>{makeBookCardLink(randomBook)}</Box>
         </Box>
       </Box>
     </PageFull>

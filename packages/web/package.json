@@ -94,6 +94,7 @@
     "dotenv": "^16.0.2",
     "emailjs": "^4.0.1",
     "file-type": "^18.0.0",
+    "fuse.js": "6.6.2",
     "got": "^12.4.1",
     "graphql-request": "^5.0.0",
     "graphql-scalars": "^1.18.0",

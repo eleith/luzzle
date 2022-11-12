@@ -13,3 +13,4 @@ export {
   NotificationProvider,
   useNotificationQueue,
 } from './Notification'
+export { Combobox, ComboboxItem, ComboboxItemLink } from './Combobox'
