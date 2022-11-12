@@ -12,7 +12,7 @@ COPY package.json ./
 COPY package-lock.json ./
 COPY packages ./packages
 
-RUN npm ci
+RUN npm ci -w @luzzle/web -w @luzzle/prisma
 
 # Rebuild the source code only when needed
 FROM node:16-alpine AS builder
