@@ -4,7 +4,15 @@ import gql from '@app/lib/graphql/tag'
 import { GetBookHomeDocument, GetSearchHomeDocument } from './_gql_/index'
 import staticClient from '@app/common/graphql/staticClient'
 import Link from 'next/link'
-import { Box, Text, Anchor, Combobox, ComboboxItem, Divider } from '@app/common/ui/components'
+import {
+  Box,
+  Text,
+  Anchor,
+  Combobox,
+  ComboboxItem,
+  ComboboxItemLink,
+  Divider,
+} from '@app/common/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './index.css'
 import gqlFetch from '@app/common/graphql/fetch'
@@ -45,6 +53,14 @@ async function getSearchResults(query: string): Promise<Book[]> {
   return data.search?.__typename === 'QuerySearchSuccess' ? data.search.data : []
 }
 
+function makeLink(text: string, href: string) {
+  return (
+    <Link href={href} passHref>
+      <Anchor hoverAction="animateUnderline">{text}</Anchor>
+    </Link>
+  )
+}
+
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
   const response = await staticClient.query({ query: getBooksQuery, variables: { take: 2 } })
   const books = response.data?.books
@@ -61,25 +77,7 @@ export async function getStaticProps(): Promise<{ props: HomePageProps }> {
 export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   const [searches, setSearches] = useState<Book[]>([])
 
-  const booksLink = (
-    <Link href="/books" passHref>
-      <Anchor hoverAction="animateUnderline">books</Anchor>
-    </Link>
-  )
-
-  const book1Link = (
-    <Link href={`/books/${book1.slug}`} passHref>
-      <Anchor hoverAction="animateUnderline">{book1.title}</Anchor>
-    </Link>
-  )
-
-  const book2Link = (
-    <Link href={`/books/${book2.slug}`} passHref>
-      <Anchor hoverAction="animateUnderline">{book2.title}</Anchor>
-    </Link>
-  )
-
-  async function onChange(e: ChangeEvent<HTMLInputElement>): Promise<void> {
+  async function fuzzySearchBook(e: ChangeEvent<HTMLInputElement>): Promise<void> {
     const query = e.currentTarget.value
     if (query) {
       const data = await getSearchResults(query)
@@ -89,21 +87,17 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
     }
   }
 
-  const searchResults = searches.length ? (
-    searches.map((book) => (
-      <Link key={book.slug} href={`/books/${book.slug}`}>
-        <ComboboxItem value={book.title} hideOnClick focusOnHover>
-          <Box>
-            <Text size="body">{book.title}</Text>
-            {book.subtitle && <Text size="caption">{book.subtitle}</Text>}
-            {book.author && <Text size="caption">{`${book.author} ${book.coauthors || ''}`}</Text>}
-          </Box>
-        </ComboboxItem>
-      </Link>
-    ))
-  ) : (
-    <ComboboxItem>no results</ComboboxItem>
-  )
+  const searchResults = searches.map((book) => (
+    <Link key={book.slug} href={`/books/${book.slug}`}>
+      <ComboboxItemLink value={book.title}>
+        <Box>
+          <Text size="body">{book.title}</Text>
+          {book.subtitle && <Text size="caption">{book.subtitle}</Text>}
+          {book.author && <Text size="caption">{`${book.author} ${book.coauthors || ''}`}</Text>}
+        </Box>
+      </ComboboxItemLink>
+    </Link>
+  ))
 
   return (
     <PageFull meta={{ title: 'books' }} isHome>
@@ -114,11 +108,12 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           </Text>
           <br />
           <Text as="h2" size={'h1'}>
-            this is an archive of {booksLink} i&apos;ve read
+            this is an archive of {makeLink('books', '/books')} i&apos;ve read
           </Text>
           <br />
           <Text as="h3" size={'h1'}>
-            my last two were {book1Link} and {book2Link}
+            my last two were {makeLink(book1.title, `/books/${book1.slug}`)} and{' '}
+            {makeLink(book2.title, `/books/${book2.slug}`)}
           </Text>
           <br />
           <Divider />
@@ -130,10 +125,10 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           <Box>
             <Combobox
               state={{ sameWidth: true }}
-              onChange={onChange}
+              onChange={fuzzySearchBook}
               placeholder="ex: A Portrait of the Human as a Young Person"
             >
-              {searchResults}
+              {searches.length ? searchResults : <ComboboxItem>no results</ComboboxItem>}
             </Combobox>
           </Box>
         </Box>
