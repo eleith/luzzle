@@ -42,9 +42,9 @@ RUN addgroup --gid 1001 --system nodejs
 RUN adduser --system nextjs --uid 1001
 
 COPY --from=builder /app/packages/web/public ./packages/web/public
-COPY --from=builder /app/packages/web/.env ./packages/web.env
-COPY --from=builder /app/packages/web/.env.local ./packages/web.env.local
-COPY --from=builder /app/packages/web/.env.production ./packages/web.env.production
+COPY --from=builder /app/packages/web/.env ./packages/web/.env
+COPY --from=builder /app/packages/web/.env.local ./packages/web/.env.local
+COPY --from=builder /app/packages/web/.env.production ./packages/web/.env.production
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/prisma ./packages/prisma
 
