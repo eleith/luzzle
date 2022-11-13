@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
-import { vars } from '../../css'
+import { mediaBreakpointTablet, vars } from '../../css'
 
 export const variants = recipe({
   base: {
@@ -19,6 +19,11 @@ export const variants = recipe({
     borderBottomStyle: 'solid',
     borderBottomWidth: '1px',
     borderBottomColor: vars.colors.onSurfaceVariant,
+    '@media': {
+      [mediaBreakpointTablet]: {
+        fontSize: vars.fontSizes.body,
+      },
+    },
     selectors: {
       '&:focus-within': {
         borderBottomColor: vars.colors.primary,
@@ -53,10 +58,16 @@ export const input = style({
   minWidth: '0px',
   borderRadius: '0px',
   appearance: 'none',
-  padding: '16px',
+  padding: '8px',
   fontFamily: vars.fonts.sans,
   caretColor: vars.colors.primary,
   direction: 'inherit',
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.body,
+      padding: '16px',
+    },
+  },
 })
 
 export const inputWithLabel = style({
@@ -90,10 +101,16 @@ export const label = style({
   whiteSpace: 'nowrap',
   paddingTop: '3px',
   overflow: 'hidden',
-  paddingLeft: '16px',
+  paddingLeft: '8px',
   selectors: {
     '[data-invalid=true] &': {
       color: vars.colors.error,
+    },
+  },
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.label,
+      padding: '16px',
     },
   },
 })
@@ -120,7 +137,14 @@ export const popover = style({
 })
 
 export const item = style({
-  padding: '16px',
+  fontSize: vars.fontSizes.bodyMobile,
+  padding: '8px',
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.body,
+      padding: '16px',
+    },
+  },
   selectors: {
     '&:hover': {
       backgroundColor: vars.colors.onSurfaceVariant,

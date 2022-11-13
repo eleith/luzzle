@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
-import { vars } from '../../css'
+import { mediaBreakpointTablet, vars } from '../../css'
 
 export const variants = recipe({
   base: {
@@ -13,13 +13,18 @@ export const variants = recipe({
     borderBottomLeftRadius: '0px',
     borderBottomRightRadius: '0px',
     display: 'block',
-    height: '56px',
-    padding: '0px 16px',
+    padding: '0px 8px 4px 8px',
     position: 'relative',
     overflow: 'hidden',
     borderBottomStyle: 'solid',
     borderBottomWidth: '1px',
     borderBottomColor: vars.colors.onSurfaceVariant,
+    '@media': {
+      [mediaBreakpointTablet]: {
+        fontSize: vars.fontSizes.body,
+        padding: '0px 16px 8px 16px',
+      },
+    },
     selectors: {
       '&:focus-within': {
         borderBottomColor: vars.colors.primary,
@@ -52,6 +57,11 @@ export const input = style({
   fontFamily: vars.fonts.sans,
   caretColor: vars.colors.primary,
   direction: 'inherit',
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.body,
+    },
+  },
 })
 
 export const label = style({
@@ -67,6 +77,11 @@ export const label = style({
   selectors: {
     '[data-invalid=true] &': {
       color: vars.colors.error,
+    },
+  },
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.label,
     },
   },
 })
@@ -102,6 +117,11 @@ export const description = style({
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.label,
+    },
+  },
 })
 
 export const error = style({
@@ -110,6 +130,11 @@ export const error = style({
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.label,
+    },
+  },
 })
 
 export type InputVariants = RecipeVariants<typeof variants>

@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
-import { vars } from '../../css'
+import { mediaBreakpointTablet, vars } from '../../css'
 
 export const variants = recipe({
   base: {
@@ -13,13 +13,17 @@ export const variants = recipe({
     borderBottomLeftRadius: '0px',
     borderBottomRightRadius: '0px',
     padding: 0,
-    minHeight: '56px',
     height: '100%',
     position: 'relative',
     display: 'block',
     borderBottomStyle: 'solid',
     borderBottomWidth: '1px',
     borderBottomColor: vars.colors.onSurfaceVariant,
+    '@media': {
+      [mediaBreakpointTablet]: {
+        fontSize: vars.fontSizes.body,
+      },
+    },
     selectors: {
       '&:focus-within': {
         borderBottomColor: vars.colors.primary,
@@ -46,13 +50,20 @@ export const textArea = style({
   borderRadius: '0px',
   width: '100%',
   appearance: 'none',
-  paddingLeft: '16px',
-  paddingRight: '16px',
+  paddingLeft: '8px',
+  paddingRight: '8px',
   overflow: 'scroll',
   fontFamily: vars.fonts.sans,
   caretColor: vars.colors.primary,
   direction: 'inherit',
   resize: 'vertical',
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.body,
+      paddingLeft: '16px',
+      paddingRight: '16px',
+    },
+  },
 })
 
 export const label = style({
@@ -62,12 +73,18 @@ export const label = style({
   lineHeight: vars.lineHeights['1.5'],
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  padding: '0px 16px',
+  padding: '0px 8px',
   paddingTop: '3px',
   overflow: 'hidden',
   selectors: {
     '[data-invalid=true] &': {
       color: vars.colors.error,
+    },
+  },
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.label,
+      padding: '0px 16px',
     },
   },
 })
@@ -103,6 +120,11 @@ export const description = style({
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.label,
+    },
+  },
 })
 
 export const count = style({
@@ -112,6 +134,11 @@ export const count = style({
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.label,
+    },
+  },
 })
 
 export const error = style({
@@ -120,6 +147,11 @@ export const error = style({
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
+  '@media': {
+    [mediaBreakpointTablet]: {
+      fontSize: vars.fontSizes.label,
+    },
+  },
 })
 
 export type TextAreaVariants = RecipeVariants<typeof variants>

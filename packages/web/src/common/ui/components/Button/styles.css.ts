@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
-import { vars } from '../../css'
+import { mediaBreakpointTablet, vars } from '../../css'
 
 const typeVariants = {
   button: style({
@@ -23,6 +23,7 @@ export const variants = recipe({
     position: 'relative',
     display: 'inline-flex',
     justifyContent: 'center',
+    fontSize: vars.fontSizes.bodyMobile,
     minWidth: vars.space[24],
     border: 'medium none',
     outline: 'currentcolor none medium',
@@ -33,8 +34,14 @@ export const variants = recipe({
     appearance: 'none',
     paddingLeft: vars.space[4],
     paddingRight: vars.space[4],
-    height: '36px',
+    height: '28px',
     borderRadius: vars.radii.medium,
+    '@media': {
+      [mediaBreakpointTablet]: {
+        fontSize: vars.fontSizes.body,
+        height: '36px',
+      },
+    },
     selectors: {
       '&::after': {
         content: '""',
