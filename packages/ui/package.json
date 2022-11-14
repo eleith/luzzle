@@ -20,6 +20,7 @@
   "main": "src/index.ts",
   "description": "simple material web components built with ariakit and vanilla-extract",
   "devDependencies": {
+    "@types/color": "^3.0.3",
     "@types/lodash": "^4.14.188",
     "@types/node": "^18.11.9",
     "@types/react": "^18",
