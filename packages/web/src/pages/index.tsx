@@ -112,7 +112,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           </Text>
           <br />
           <Text as="h3" size={'h1'}>
-            my last two were {makeLink(book1.title, `/books/${book1.slug}`)} and{' '}
+            the last two are {makeLink(book1.title, `/books/${book1.slug}`)} and{' '}
             {makeLink(book2.title, `/books/${book2.slug}`)}
           </Text>
           <br />
