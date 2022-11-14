@@ -3,14 +3,17 @@
   "version": "0.0.11",
   "author": "eleith",
   "scripts": {
-    "lint": "eslint src",
+    "lint": "eslint types components tokens css",
     "compile": "tsc --noEmit"
   },
   "engines": {
     "node": ">=16"
   },
   "files": [
-    "src/*"
+    "./css/",
+    "./components/",
+    "./types/",
+    "./tokens/"
   ],
   "repository": {
     "type": "git",
