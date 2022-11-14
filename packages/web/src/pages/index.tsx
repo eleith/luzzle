@@ -119,7 +119,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           <Divider />
           <br />
           <Text as="h3" size={'h1'}>
-            search and start a discussion on one
+            search and discuss one with me
           </Text>
           <br />
           <Box>

@@ -12,7 +12,7 @@ COPY package.json ./
 COPY package-lock.json ./
 COPY packages ./packages
 
-RUN npm ci -w @luzzle/web -w @luzzle/prisma
+RUN npm ci -w @luzzle/web -w @luzzle/prisma -w @luzzle/ui
 
 # Rebuild the source code only when needed
 FROM node:16-alpine AS builder
@@ -27,7 +27,7 @@ COPY packages ./packages
 ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN apk add patch
-RUN npm run prepublishOnly -w @luzzle/prisma
+RUN npm run prepublishOnly -w @luzzle/prisma -w @luzzle/ui
 RUN npm run build -w @luzzle/web
 
 # Production image, copy all the files and run next
@@ -47,12 +47,14 @@ COPY --from=builder /app/packages/web/.env.local ./packages/web/.env.local
 COPY --from=builder /app/packages/web/.env.production ./packages/web/.env.production
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/prisma ./packages/prisma
+COPY --from=builder /app/packages/ui ./packages/ui
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/standalone ./packages/web
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./packages/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/prisma ./packages/web/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/packages/web/ui ./packages/web/ui
 
 USER nextjs
 
