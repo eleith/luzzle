@@ -7,6 +7,7 @@ export { Input } from './Input'
 export { Select, SelectItem } from './Select'
 export { TextArea } from './TextArea'
 export { Tooltip, TooltipAnchor, useTooltipState } from './Tooltip'
+export { PageProgress, useProgressPageState } from './PageProgress'
 export {
   Notification,
   NotificationList,

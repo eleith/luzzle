@@ -1,5 +1,5 @@
 import { style } from '@vanilla-extract/css'
-import { mediaBreakpointLaptop, mediaBreakpointTablet, vars } from '@app/common/ui/css'
+import { mediaBreakpointLaptop, mediaBreakpointTablet, vars } from '@luzzle/ui/css'
 
 export const page = style({
   margin: vars.space[4],

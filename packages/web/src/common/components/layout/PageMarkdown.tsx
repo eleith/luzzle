@@ -1,5 +1,5 @@
 import { MetaProps } from '@app/common/components/layout/meta'
-import { Box, Text } from '@app/common/ui/components'
+import { Box, Text } from '@luzzle/ui/components'
 import Link from 'next/link'
 import { useState } from 'react'
 import { ArrowUp, Swap } from 'phosphor-react'

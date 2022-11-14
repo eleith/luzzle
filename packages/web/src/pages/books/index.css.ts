@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
-import { vars } from '@app/common/ui/css'
-import { mediaBreakpointTablet, mediaBreakpointLaptop } from '@app/common/ui/css'
+import { vars } from '@luzzle/ui/css'
+import { mediaBreakpointTablet, mediaBreakpointLaptop } from '@luzzle/ui/css'
 
 export const booksContainer = style({
   display: 'grid',

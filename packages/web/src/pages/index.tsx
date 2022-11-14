@@ -12,7 +12,7 @@ import {
   ComboboxItem,
   ComboboxItemLink,
   Divider,
-} from '@app/common/ui/components'
+} from '@luzzle/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './index.css'
 import gqlFetch from '@app/common/graphql/fetch'

@@ -9,11 +9,11 @@ import {
   SelectItem,
   useNotificationQueue,
   Text,
-} from '@app/common/ui/components'
+} from '@luzzle/ui/components'
 import { CircleNotch } from 'phosphor-react'
 import { Form, FormState, useFormState } from 'ariakit/form'
 import gqlFetch from '@app/common/graphql/fetch'
-import { PageProgress, useProgressPageState } from '@app/common/ui/components/PageProgress'
+import { PageProgress, useProgressPageState } from '@luzzle/ui/components'
 
 const bookDiscussionMutation = gql<
   typeof CreateBookDiscussionDocument

@@ -1,5 +1,5 @@
 import { MDXComponents } from 'mdx/types'
-import { Text } from '@app/common/ui/components'
+import { Text } from '@luzzle/ui/components'
 import Link from 'next/link'
 
 const components: MDXComponents = {

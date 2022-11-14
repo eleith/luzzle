@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import { Box } from '@app/common/ui/components'
+import { Box } from '@luzzle/ui/components'
 import { assignInlineVars } from '@vanilla-extract/dynamic'
 import * as styles from './styles.css'
 

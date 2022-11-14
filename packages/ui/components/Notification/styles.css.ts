@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
-import { mediaBreakpointTablet, vars } from '@app/common/ui/css'
+import { mediaBreakpointTablet, vars } from '../../css'
 
 export const variants = recipe({
   base: style({
