@@ -28,7 +28,8 @@ pipeline:
       - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
       - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
       - cd ../..
-      - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/ui; fi
+      # - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/ui; fi
+      - npm publish -w @luzzle/ui; fi
     secrets: [npm_owner, npm_token]
     when:
       branch: [main]
