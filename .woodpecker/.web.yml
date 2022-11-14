@@ -12,7 +12,7 @@ pipeline:
     when:
       branch: [main]
       path:
-        include: [".woodpecker/.web.yml", "packages/web/**"]
+        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   test:
     image: node:16
     commands:
