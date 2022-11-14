@@ -1,5 +1,5 @@
 import Meta, { MetaProps } from '@app/common/components/layout/meta'
-import { Box } from '@app/common/ui/components/Box'
+import { Box } from '@luzzle/ui/components/Box'
 
 interface PageProps {
   meta: MetaProps

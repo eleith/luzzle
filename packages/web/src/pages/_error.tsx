@@ -2,7 +2,7 @@ import type { NextPageContext } from 'next'
 import type { ErrorProps } from 'next/error'
 import PageFull from '@app/common/components/layout/PageFull'
 import { useRouter } from 'next/router'
-import { Anchor, Box, Text } from '@app/common/ui/components'
+import { Anchor, Box, Text } from '@luzzle/ui/components'
 import RecommendationForm from '@app/common/components/pages/book/RecommendationForm'
 import { useState } from 'react'
 

@@ -5,8 +5,8 @@ pipeline:
   build:
     image: node:16
     commands:
-      - npm ci -w @luzzle/web -w @luzzle/prisma
-      - npm run prepublishOnly -w @luzzle/prisma
+      - npm ci -w @luzzle/web -w @luzzle/prisma -w @luzzle/ui
+      - npm run prepublishOnly -w @luzzle/prisma -w @luzzle/ui
       - npm run build:graphql -w @luzzle/web
       - npm run compile -w @luzzle/web
     when:

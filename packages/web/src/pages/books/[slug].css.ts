@@ -1,5 +1,5 @@
 import { style } from '@vanilla-extract/css'
-import { mediaBreakpointPhone, mediaBreakpointTablet, vars } from '@app/common/ui/css'
+import { mediaBreakpointPhone, mediaBreakpointTablet, vars } from '@luzzle/ui/css'
 
 export const bookContainer = style({
   display: 'flex',

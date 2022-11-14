@@ -1,5 +1,5 @@
 import { MetaProps } from '@app/common/components/layout/meta'
-import { Box } from '@app/common/ui/components'
+import { Box } from '@luzzle/ui/components'
 import Page from './Page'
 import PageBannerSlide from './PageBannerSlide'
 

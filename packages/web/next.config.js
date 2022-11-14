@@ -1,5 +1,6 @@
 const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin')
 const withVanillaExtract = createVanillaExtractPlugin()
+const withTM = require('next-transpile-modules')(['@luzzle/ui'])
 
 const withMDX = require('@next/mdx')({
   extension: /\.mdx?$/,
@@ -10,24 +11,26 @@ const withMDX = require('@next/mdx')({
   },
 })
 
-module.exports = withVanillaExtract(
-  withMDX({
-    reactStrictMode: true,
-    poweredByHeader: false,
-    pageExtensions: ['tsx', 'api.ts'],
-    webpack: (config, { isServer }) => {
-      if (isServer) {
-        config.externals.push('_http_common')
-        config.externals.push('encoding')
-      }
-      return config
-    },
-    eslint: {
-      ignoreDuringBuilds: true,
-    },
-    output: 'standalone',
-    images: {
-      domains: [process.env.IMAGE_DOMAIN || 'localhost'],
-    },
-  })
+module.exports = withTM(
+  withVanillaExtract(
+    withMDX({
+      reactStrictMode: true,
+      poweredByHeader: false,
+      pageExtensions: ['tsx', 'api.ts'],
+      webpack: (config, { isServer }) => {
+        if (isServer) {
+          config.externals.push('_http_common')
+          config.externals.push('encoding')
+        }
+        return config
+      },
+      eslint: {
+        ignoreDuringBuilds: true,
+      },
+      output: 'standalone',
+      images: {
+        domains: [process.env.IMAGE_DOMAIN || 'localhost'],
+      },
+    })
+  )
 )

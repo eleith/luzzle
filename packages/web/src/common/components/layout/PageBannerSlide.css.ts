@@ -1,5 +1,5 @@
 import { style } from '@vanilla-extract/css'
-import { vars } from '@app/common/ui/css'
+import { vars } from '@luzzle/ui/css'
 
 export const navItem = style({
   cursor: 'pointer',
