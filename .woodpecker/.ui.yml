@@ -15,7 +15,6 @@ pipeline:
     image: node:16
     commands:
       - npm run lint -w @luzzle/ui
-      - npm run test -w @luzzle/ui
     when:
       branch: [main]
       path:
