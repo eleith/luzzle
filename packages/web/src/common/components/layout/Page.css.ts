@@ -1,44 +1,15 @@
+import { ThemeContract, initialize } from '@luzzle/ui'
 import Color from 'color'
 
 // colors generated using builder from:
 // https://material-foundation.github.io/material-theme-builder
 
-export const Modes = {
+export const Themes = {
   light: 'light',
   dark: 'dark',
 } as const
 
-export type Mode = keyof typeof Modes
-export type ModeColors = {
-  primary: string
-  secondary: string
-  tertiary: string
-  error: string
-  outline: string
-  background: string
-  surface: string
-  surfaceInverse: string
-  surfaceVariant: string
-  shadowLight: string
-  shadowMedium: string
-  shadowHeavy: string
-  onPrimary: string
-  onSecondary: string
-  onTertiary: string
-  onError: string
-  onBackground: string
-  onSurface: string
-  onSurfaceInverse: string
-  onSurfaceVariant: string
-  primaryContainer: string
-  secondaryContainer: string
-  tertiaryContainer: string
-  errorContainer: string
-  onPrimaryContainer: string
-  onSecondaryContainer: string
-  onTertiaryContainer: string
-  onErrorContainer: string
-}
+export type Theme = keyof typeof Themes
 
 // https://material-foundation.github.io/material-theme-builder
 
@@ -93,13 +64,8 @@ const onSurfaceVariantDark = Color('#cec6b4')
 const surfaceInverseDark = Color('#ffe084')
 const onSurfaceInverseDark = Color('#231b00')
 
-export type Colors = {
-  [Modes.light]: ModeColors
-  [Modes.dark]: ModeColors
-}
-
-export const colors: Colors = {
-  [Modes.light]: {
+const themeLight: ThemeContract = {
+  colors: {
     primary: primaryLight.string(),
     secondary: secondaryLight.string(),
     tertiary: tertiaryLight.string(),
@@ -129,7 +95,17 @@ export const colors: Colors = {
     onTertiaryContainer: onTertiaryContainerLight.string(),
     onErrorContainer: onErrorContainerLight.string(),
   },
-  [Modes.dark]: {
+  shadows: {
+    raised: `0px 3px 1px -2px ${onBackgroundLight
+      .alpha(0.2)
+      .string()}, 0px 2px 2px 0px ${onBackgroundLight
+      .alpha(0.14)
+      .string()}, 0px 1px 5px 0px rgba(0, 0, 0, 0.12)`,
+  },
+}
+
+const themeDark: ThemeContract = {
+  colors: {
     primary: primaryDark.string(),
     secondary: secondaryDark.string(),
     tertiary: tertiaryDark.string(),
@@ -159,4 +135,16 @@ export const colors: Colors = {
     onTertiaryContainer: onTertiaryContainerDark.string(),
     onErrorContainer: onErrorContainerDark.string(),
   },
+  shadows: {
+    raised: `0px 3px 1px -2px ${onBackgroundDark
+      .alpha(0.2)
+      .string()}, 0px 2px 2px 0px ${onBackgroundDark
+      .alpha(0.14)
+      .string()}, 0px 1px 5px 0px rgba(0, 0, 0, 0.12)`,
+  },
 }
+
+initialize({
+  [`[data-theme="${Themes.light}"]`]: themeLight,
+  [`[data-theme="${Themes.dark}"]`]: themeDark,
+})

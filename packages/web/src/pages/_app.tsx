@@ -1,13 +1,13 @@
 import { AppProps } from 'next/dist/shared/lib/router/router'
 import { ThemeProvider } from 'next-themes'
-import { Modes } from '@luzzle/ui/tokens'
 import { NotificationProvider, NotificationList } from '@luzzle/ui/components'
+import { Themes } from '@app/common/components/layout/Page.css'
 
 export default function MyApp({ Component, pageProps }: AppProps): JSX.Element {
   return (
     <ThemeProvider
       disableTransitionOnChange
-      value={{ light: Modes.light, dark: Modes.dark }}
+      value={{ light: Themes.light, dark: Themes.dark }}
       defaultTheme="system"
     >
       <NotificationProvider>

@@ -1,9 +1,6 @@
 export { breakpoints } from './breakpoints'
-export type { Breakpoint } from './breakpoints'
-export { vars } from './vars.css'
-export type { Theme } from './types'
-export { element } from './reset.css'
-export type { Element } from './reset.css'
+export { vars, getVarName, varsContract, tokens } from './vars'
+export { reset } from './reset'
 export {
   mediaMotionSafe,
   mediaBreakpointPhone,
@@ -11,3 +8,6 @@ export {
   mediaBreakpointTablet,
   mediaBreakpointDesktop,
 } from './media'
+export { shadows } from './shadows'
+export { colors } from './color'
+export { theme, themeContract } from './theme'
