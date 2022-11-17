@@ -88,7 +88,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
   }
 
   const searchResults = searches.map((book) => (
-    <Link key={book.slug} href={`/books/${book.slug}`}>
+    <Link key={book.slug} href={`/books/${book.slug}`} passHref>
       <ComboboxItemLink value={book.title}>
         <Box>
           <Text size="body">{book.title}</Text>
