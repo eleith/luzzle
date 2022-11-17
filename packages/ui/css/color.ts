@@ -7,7 +7,7 @@ export const colors = {
   background: '#FFFFFF',
   surface: '#FFFFFF',
   surfaceInverse: '#000000',
-  surfaceVariant: '#FFFFFF',
+  surfaceVariant: '#EFEFEF',
   shadowLight: 'rgba(0, 0, 0, 0.1)',
   shadowMedium: 'rgba(0, 0, 0, 0.2)',
   shadowHeavy: 'rgba(0, 0, 0, 0.3)',

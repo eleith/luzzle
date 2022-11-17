@@ -4,9 +4,9 @@ import { mediaBreakpointTablet, mediaBreakpointLaptop } from '@luzzle/ui/css'
 
 export const booksContainer = style({
   display: 'grid',
-  width: vars.space.full,
-  margin: vars.space.auto,
-  marginTop: vars.space[20],
+  width: '100%',
+  margin: 'auto',
+  marginTop: vars.space[10],
   marginBottom: vars.space[10],
   gridTemplateColumns: 'repeat(auto-fill, 140px)',
   alignItems: 'center',

@@ -1,22 +1,23 @@
 import { style } from '@vanilla-extract/css'
+import { calc } from '@vanilla-extract/css-utils'
 import { mediaBreakpointPhone, mediaBreakpointTablet, vars } from '@luzzle/ui/css'
 
 export const bookContainer = style({
   display: 'flex',
-  margin: vars.space.auto,
+  margin: 'auto',
   marginTop: vars.space[5],
   gap: vars.space[5],
   justifyContent: 'space-between',
-  width: vars.space.full,
+  width: '100%',
   '@media': {
     [mediaBreakpointTablet]: {
-      width: `clamp(${vars.space[64]}, ${vars.space['2/3']}, ${vars.space[256]})`,
+      width: `clamp(500px, 66.6666%, 1000px)`,
     },
   },
 })
 
 export const bookNavigation = style({
-  marginTop: vars.space[52],
+  marginTop: calc.multiply(vars.space[10], 5),
 })
 
 export const bookCard = style({
@@ -29,9 +30,9 @@ export const bookCard = style({
 })
 
 export const bookDetails = style({
-  lineHeight: vars.lineHeights[1.5],
+  lineHeight: '1.5',
   marginTop: vars.space[5],
-  width: vars.space.full,
+  width: '100%',
 })
 
 export const showOnMobile = style({

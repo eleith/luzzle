@@ -1,82 +1,82 @@
 import { style } from '@vanilla-extract/css'
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
-import { vars } from '../../css'
+import { theme } from '../../css/theme'
 import { mediaBreakpointTablet } from '../../css/media'
 
 const sizes = {
   title: style({
-    fontSize: vars.fontSizes.titleMobile,
-    fontWeight: vars.fontWeights.normal,
+    fontSize: theme.fontSizes.titleMobile,
+    fontWeight: theme.fontWeights.normal,
     letterSpacing: '-0.02',
-    lineHeight: vars.lineHeights[2],
+    lineHeight: '2',
     '@media': {
       [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.title,
+        fontSize: theme.fontSizes.title,
       },
     },
   }),
   h1: style({
-    fontSize: vars.fontSizes.h1Mobile,
-    fontWeight: vars.fontWeights.normal,
+    fontSize: theme.fontSizes.h1Mobile,
+    fontWeight: theme.fontWeights.normal,
     letterSpacing: '-0.02',
-    lineHeight: vars.lineHeights[2],
+    lineHeight: '2',
     '@media': {
       [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.h1,
+        fontSize: theme.fontSizes.h1,
       },
     },
   }),
   h2: style({
-    fontSize: vars.fontSizes.h2Mobile,
-    fontWeight: vars.fontWeights.normal,
+    fontSize: theme.fontSizes.h2Mobile,
+    fontWeight: theme.fontWeights.normal,
     letterSpacing: '-0.02',
-    lineHeight: vars.lineHeights[2],
+    lineHeight: '2',
     '@media': {
       [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.h2,
+        fontSize: theme.fontSizes.h2,
       },
     },
   }),
   h3: style({
-    fontSize: vars.fontSizes.h3Mobile,
-    fontWeight: vars.fontWeights.normal,
+    fontSize: theme.fontSizes.h3Mobile,
+    fontWeight: theme.fontWeights.normal,
     letterSpacing: '-0.01',
-    lineHeight: vars.lineHeights[1.5],
+    lineHeight: '1.5',
     '@media': {
       [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.h3,
+        fontSize: theme.fontSizes.h3,
       },
     },
   }),
   body: style({
-    fontSize: vars.fontSizes.bodyMobile,
-    fontWeight: vars.fontWeights.normal,
+    fontSize: theme.fontSizes.bodyMobile,
+    fontWeight: theme.fontWeights.normal,
     letterSpacing: '-0.02',
-    lineHeight: vars.lineHeights[1.5],
+    lineHeight: '1.5',
     '@media': {
       [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.body,
+        fontSize: theme.fontSizes.body,
       },
     },
   }),
   label: style({
-    fontSize: vars.fontSizes.labelMobile,
-    fontWeight: vars.fontWeights.semiBold,
+    fontSize: theme.fontSizes.labelMobile,
+    fontWeight: theme.fontWeights.semiBold,
     letterSpacing: '0.03',
     textTransform: 'uppercase',
     '@media': {
       [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.label,
+        fontSize: theme.fontSizes.label,
       },
     },
   }),
   caption: style({
-    fontSize: vars.fontSizes.captionMobile,
-    fontWeight: vars.fontWeights.normal,
+    fontSize: theme.fontSizes.captionMobile,
+    fontWeight: theme.fontWeights.normal,
     letterSpacing: '0.03',
     '@media': {
       [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.caption,
+        fontSize: theme.fontSizes.caption,
       },
     },
   }),

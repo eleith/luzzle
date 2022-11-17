@@ -1,4 +1,5 @@
 import { style } from '@vanilla-extract/css'
+import { calc } from '@vanilla-extract/css-utils'
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
 import { mediaBreakpointTablet, vars } from '../../css'
 
@@ -24,7 +25,7 @@ export const variants = recipe({
     display: 'inline-flex',
     justifyContent: 'center',
     fontSize: vars.fontSizes.bodyMobile,
-    minWidth: vars.space[24],
+    minWidth: calc.multiply(vars.space[10], 2),
     border: 'medium none',
     outline: 'currentcolor none medium',
     lineHeight: 'inherit',

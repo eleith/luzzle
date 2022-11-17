@@ -1,7 +1,7 @@
-import { breakpoints } from './breakpoints'
+import { theme } from './theme'
 
 export const mediaMotionSafe = '(prefers-reduced-motion: no-preference)'
-export const mediaBreakpointPhone = `screen and (min-width: ${breakpoints.phone}px)`
-export const mediaBreakpointTablet = `screen and (min-width: ${breakpoints.tablet}px)`
-export const mediaBreakpointLaptop = `screen and (min-width: ${breakpoints.laptop}px)`
-export const mediaBreakpointDesktop = `screen and (min-width: ${breakpoints.desktop}px)`
+export const mediaBreakpointPhone = `screen and (min-width: ${theme.breakpoints.phone}px)`
+export const mediaBreakpointTablet = `screen and (min-width: ${theme.breakpoints.tablet}px)`
+export const mediaBreakpointLaptop = `screen and (min-width: ${theme.breakpoints.laptop}px)`
+export const mediaBreakpointDesktop = `screen and (min-width: ${theme.breakpoints.desktop}px)`
