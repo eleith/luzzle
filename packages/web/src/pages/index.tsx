@@ -126,7 +126,7 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
             <Combobox
               state={{ sameWidth: true }}
               onChange={fuzzySearchBook}
-              placeholder="ex: A Portrait of the Human as a Young Person"
+              placeholder="ex: A Tale of Two Websites"
             >
               {searches.length ? searchResults : <ComboboxItem>no results</ComboboxItem>}
             </Combobox>
