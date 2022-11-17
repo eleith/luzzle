@@ -131,6 +131,8 @@ export const popover = style({
 
 export const item = style({
   fontSize: vars.fontSizes.body,
+  textDecoration: 'none',
+  color: vars.colors.onSurfaceVariant,
   padding: '8px',
   '@media': {
     [mediaBreakpointTablet]: {
