@@ -11,13 +11,7 @@ export const fontSizes = {
   h2: '1.825rem',
   h1: '2rem',
   title: '3rem',
-  labelMobile: '0.75rem',
-  bodyMobile: '1rem',
-  h3Mobile: '1.125rem',
-  h2Mobile: '1.25rem',
-  h1Mobile: '1.5rem',
-  titleMobile: '2rem',
-  captionMobile: '0.50rem',
+  mobileResponsiveFactor: '2/3',
   root: '16px',
 }
 

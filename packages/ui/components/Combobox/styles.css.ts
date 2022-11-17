@@ -4,7 +4,7 @@ import { mediaBreakpointTablet, vars } from '../../css'
 
 export const variants = recipe({
   base: {
-    fontSize: vars.fontSizes.bodyMobile,
+    fontSize: vars.fontSizes.body,
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02',
     backgroundColor: vars.colors.surfaceVariant,
@@ -19,11 +19,6 @@ export const variants = recipe({
     borderBottomStyle: 'solid',
     borderBottomWidth: '1px',
     borderBottomColor: vars.colors.onSurfaceVariant,
-    '@media': {
-      [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.body,
-      },
-    },
     selectors: {
       '&:focus-within': {
         borderBottomColor: vars.colors.primary,
@@ -47,7 +42,7 @@ export const variants = recipe({
 })
 
 export const input = style({
-  fontSize: vars.fontSizes.bodyMobile,
+  fontSize: vars.fontSizes.body,
   fontWeight: vars.fontWeights.normal,
   letterSpacing: '-0.02',
   border: 'none',
@@ -64,7 +59,6 @@ export const input = style({
   direction: 'inherit',
   '@media': {
     [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.body,
       padding: '16px',
     },
   },
@@ -92,7 +86,7 @@ export const highlight = style({
 })
 
 export const label = style({
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   fontWeight: vars.fontWeights.light,
   letterSpacing: '-0.02',
   lineHeight: '1.5',
@@ -109,7 +103,6 @@ export const label = style({
   },
   '@media': {
     [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.label,
       padding: '16px',
     },
   },
@@ -137,11 +130,10 @@ export const popover = style({
 })
 
 export const item = style({
-  fontSize: vars.fontSizes.bodyMobile,
+  fontSize: vars.fontSizes.body,
   padding: '8px',
   '@media': {
     [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.body,
       padding: '16px',
     },
   },

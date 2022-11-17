@@ -4,7 +4,7 @@ import { mediaBreakpointTablet, vars } from '../../css'
 
 export const variants = recipe({
   base: {
-    fontSize: vars.fontSizes.bodyMobile,
+    fontSize: vars.fontSizes.body,
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02',
     backgroundColor: vars.colors.surfaceVariant,
@@ -19,11 +19,6 @@ export const variants = recipe({
     borderBottomStyle: 'solid',
     borderBottomWidth: '1px',
     borderBottomColor: vars.colors.onSurfaceVariant,
-    '@media': {
-      [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.body,
-      },
-    },
     selectors: {
       '&:focus-within': {
         borderBottomColor: vars.colors.primary,
@@ -41,7 +36,7 @@ export const variants = recipe({
 })
 
 export const select = style({
-  fontSize: vars.fontSizes.bodyMobile,
+  fontSize: vars.fontSizes.body,
   fontWeight: vars.fontWeights.normal,
   letterSpacing: '-0.02',
   border: 'none',
@@ -60,16 +55,10 @@ export const select = style({
   cursor: 'pointer',
   display: 'flex',
   justifyContent: 'space-between',
-  '@media': {
-    [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.body,
-      padding: '0 16px 8px 16px',
-    },
-  },
 })
 
 export const label = style({
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   fontWeight: vars.fontWeights.light,
   letterSpacing: '-0.02',
   paddingTop: '3px',
@@ -87,7 +76,6 @@ export const label = style({
   },
   '@media': {
     [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.label,
       paddingLeft: '16px',
       paddingRight: '16px',
     },
@@ -124,8 +112,7 @@ export const selectList = style({
 export const selectItem = style({
   outline: 'none',
   display: 'flex',
-  fontSize: vars.fontSizes.bodyMobile,
-
+  fontSize: vars.fontSizes.body,
   scrollMargin: vars.space['0.5'],
   alignItems: 'center',
   gap: vars.space['0.5'],
@@ -139,7 +126,6 @@ export const selectItem = style({
   },
   '@media': {
     [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.body,
       padding: '16px',
     },
   },
@@ -153,7 +139,7 @@ export const helper = style({
 
 export const description = style({
   color: vars.colors.onBackground,
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
@@ -166,7 +152,7 @@ export const description = style({
 
 export const error = style({
   color: vars.colors.error,
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
