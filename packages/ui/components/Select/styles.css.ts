@@ -75,7 +75,7 @@ export const label = style({
   paddingTop: '3px',
   paddingLeft: '8px',
   paddingRight: '8px',
-  lineHeight: vars.lineHeights['1.5'],
+  lineHeight: '1.5',
   textAlign: 'left',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',

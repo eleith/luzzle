@@ -70,7 +70,7 @@ export const label = style({
   fontSize: vars.fontSizes.labelMobile,
   fontWeight: vars.fontWeights.light,
   letterSpacing: '-0.02',
-  lineHeight: vars.lineHeights['1.5'],
+  lineHeight: '1.5',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   padding: '0px 8px',

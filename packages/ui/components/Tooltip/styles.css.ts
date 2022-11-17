@@ -1,4 +1,5 @@
 import { style } from '@vanilla-extract/css'
+import { calc } from '@vanilla-extract/css-utils'
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes'
 import { vars } from '../../css'
 
@@ -23,7 +24,7 @@ export const variants = recipe({
     position: 'relative',
     display: 'inline-flex',
     justifyContent: 'center',
-    minWidth: vars.space[24],
+    minWidth: calc.multiply(vars.space[10], 2),
     border: 'medium none',
     outline: 'currentcolor none medium',
     lineHeight: 'inherit',

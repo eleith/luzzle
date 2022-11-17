@@ -6,14 +6,14 @@ export const page = style({
   marginBottom: vars.space[8],
   '@media': {
     [mediaBreakpointTablet]: {
-      width: vars.space['2/3'],
-      marginLeft: vars.space.auto,
-      marginRight: vars.space.auto,
+      width: '66.66666%',
+      marginLeft: 'auto',
+      marginRight: 'auto',
     },
     [mediaBreakpointLaptop]: {
-      width: vars.space['1/2'],
-      marginLeft: vars.space.auto,
-      marginRight: vars.space.auto,
+      width: '50%',
+      marginLeft: 'auto',
+      marginRight: 'auto',
     },
   },
 })

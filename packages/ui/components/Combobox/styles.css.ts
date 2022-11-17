@@ -95,7 +95,7 @@ export const label = style({
   fontSize: vars.fontSizes.labelMobile,
   fontWeight: vars.fontWeights.light,
   letterSpacing: '-0.02',
-  lineHeight: vars.lineHeights['1.5'],
+  lineHeight: '1.5',
   textAlign: 'left',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
