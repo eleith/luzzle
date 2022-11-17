@@ -24,7 +24,7 @@ export const variants = recipe({
     position: 'relative',
     display: 'inline-flex',
     justifyContent: 'center',
-    fontSize: vars.fontSizes.bodyMobile,
+    fontSize: vars.fontSizes.body,
     minWidth: calc.multiply(vars.space[10], 2),
     border: 'medium none',
     outline: 'currentcolor none medium',
@@ -39,7 +39,6 @@ export const variants = recipe({
     borderRadius: vars.radii.medium,
     '@media': {
       [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.body,
         height: '36px',
       },
     },

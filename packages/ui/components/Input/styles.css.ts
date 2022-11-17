@@ -4,7 +4,7 @@ import { mediaBreakpointTablet, vars } from '../../css'
 
 export const variants = recipe({
   base: {
-    fontSize: vars.fontSizes.bodyMobile,
+    fontSize: vars.fontSizes.body,
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02',
     backgroundColor: vars.colors.surfaceVariant,
@@ -21,7 +21,6 @@ export const variants = recipe({
     borderBottomColor: vars.colors.onSurfaceVariant,
     '@media': {
       [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.body,
         padding: '0px 16px 8px 16px',
       },
     },
@@ -42,7 +41,7 @@ export const variants = recipe({
 })
 
 export const input = style({
-  fontSize: vars.fontSizes.bodyMobile,
+  fontSize: vars.fontSizes.body,
   fontWeight: vars.fontWeights.normal,
   letterSpacing: '-0.02',
   border: 'none',
@@ -57,15 +56,10 @@ export const input = style({
   fontFamily: vars.fonts.sans,
   caretColor: vars.colors.primary,
   direction: 'inherit',
-  '@media': {
-    [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.body,
-    },
-  },
 })
 
 export const label = style({
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   fontWeight: vars.fontWeights.light,
   letterSpacing: '-0.02',
   lineHeight: '1.5',
@@ -77,11 +71,6 @@ export const label = style({
   selectors: {
     '[data-invalid=true] &': {
       color: vars.colors.error,
-    },
-  },
-  '@media': {
-    [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.label,
     },
   },
 })
@@ -113,28 +102,18 @@ export const helper = style({
 
 export const description = style({
   color: vars.colors.onBackground,
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
-  '@media': {
-    [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.label,
-    },
-  },
 })
 
 export const error = style({
   color: vars.colors.error,
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
-  '@media': {
-    [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.label,
-    },
-  },
 })
 
 export type InputVariants = RecipeVariants<typeof variants>

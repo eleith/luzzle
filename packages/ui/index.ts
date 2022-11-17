@@ -1,6 +1,7 @@
 import { createGlobalTheme, globalStyle } from '@vanilla-extract/css'
+import { calc } from '@vanilla-extract/css-utils'
 import merge from 'deepmerge'
-import { reset, theme, vars } from './css'
+import { mediaBreakpointTablet, reset, theme, vars } from './css'
 
 export type ThemeContract = Partial<typeof theme>
 
@@ -16,6 +17,12 @@ export const initialize = function (themes?: { [selector: string]: ThemeContract
     backgroundColor: vars.colors.onPrimary,
     color: vars.colors.onBackground,
     fontFamily: vars.fonts.sans,
+    fontSize: calc.multiply(vars.fontSizes.root, vars.fontSizes.mobileResponsiveFactor),
+    '@media': {
+      [mediaBreakpointTablet]: {
+        fontSize: vars.fontSizes.root,
+      },
+    },
   })
 
   if (themes) {

@@ -4,8 +4,8 @@ import { mediaBreakpointTablet, vars } from '../../css'
 
 export const variants = recipe({
   base: {
-    fontSize: vars.fontSizes.bodyMobile,
     fontWeight: vars.fontWeights.normal,
+    fontSize: vars.fontSizes.body,
     letterSpacing: '-0.02',
     backgroundColor: vars.colors.surfaceVariant,
     borderTopLeftRadius: vars.radii.small,
@@ -19,11 +19,6 @@ export const variants = recipe({
     borderBottomStyle: 'solid',
     borderBottomWidth: '1px',
     borderBottomColor: vars.colors.onSurfaceVariant,
-    '@media': {
-      [mediaBreakpointTablet]: {
-        fontSize: vars.fontSizes.body,
-      },
-    },
     selectors: {
       '&:focus-within': {
         borderBottomColor: vars.colors.primary,
@@ -40,8 +35,8 @@ export const variants = recipe({
 })
 
 export const textArea = style({
-  fontSize: vars.fontSizes.bodyMobile,
   fontWeight: vars.fontWeights.normal,
+  fontSize: vars.fontSizes.body,
   letterSpacing: '-0.02',
   border: 'none',
   outline: 'none',
@@ -59,7 +54,6 @@ export const textArea = style({
   resize: 'vertical',
   '@media': {
     [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.body,
       paddingLeft: '16px',
       paddingRight: '16px',
     },
@@ -67,7 +61,7 @@ export const textArea = style({
 })
 
 export const label = style({
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   fontWeight: vars.fontWeights.light,
   letterSpacing: '-0.02',
   lineHeight: '1.5',
@@ -83,7 +77,6 @@ export const label = style({
   },
   '@media': {
     [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.label,
       padding: '0px 16px',
     },
   },
@@ -116,42 +109,27 @@ export const helper = style({
 
 export const description = style({
   color: vars.colors.onBackground,
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
-  '@media': {
-    [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.label,
-    },
-  },
 })
 
 export const count = style({
   marginLeft: 'auto',
   color: vars.colors.onBackground,
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
-  '@media': {
-    [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.label,
-    },
-  },
 })
 
 export const error = style({
   color: vars.colors.error,
-  fontSize: vars.fontSizes.labelMobile,
+  fontSize: vars.fontSizes.label,
   paddingTop: vars.space[1],
   paddingBottom: vars.space[1],
   paddingLeft: vars.space[1],
-  '@media': {
-    [mediaBreakpointTablet]: {
-      fontSize: vars.fontSizes.label,
-    },
-  },
 })
 
 export type TextAreaVariants = RecipeVariants<typeof variants>
