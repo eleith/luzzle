@@ -93,7 +93,8 @@ export const ComboboxItemLink = forwardRef<HTMLAnchorElement, ComboboxItemProps<
       <AriaComboboxItem
         as={'a'}
         focusOnHover
-        hideOnClick
+        hideOnClick={false}
+        setValueOnClick={false}
         className={styles.item}
         {...props}
         ref={ref}
