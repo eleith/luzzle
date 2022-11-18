@@ -3,7 +3,7 @@ import BookObject from '../../book/objects/book'
 import Fuse from 'fuse.js'
 import { Book } from '@luzzle/prisma'
 
-const MAX_RESULTS = 20
+const MAX_RESULTS = 10
 let allBooks: Array<Book> = []
 
 builder.queryFields((t) => ({
@@ -30,8 +30,8 @@ builder.queryFields((t) => ({
       ]
 
       const fuse = new Fuse(allBooks, { keys })
-      const items = fuse.search(args.query)
-      const books = items.slice(0, MAX_RESULTS).map((result) => result.item)
+      const items = fuse.search(args.query, { limit: MAX_RESULTS })
+      const books = items.map((result) => result.item)
 
       return books
     },

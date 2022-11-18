@@ -19,7 +19,6 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'autoComplete'> &
     error?: string
     cancellable?: boolean
     label?: string
-    preventBodyScroll?: boolean
   }
 
 export const Combobox = forwardRef<HTMLInputElement, Props>(
@@ -34,7 +33,6 @@ export const Combobox = forwardRef<HTMLInputElement, Props>(
       state,
       cancellable,
       children,
-      preventBodyScroll = false,
       ...props
     },
     ref
@@ -71,11 +69,7 @@ export const Combobox = forwardRef<HTMLInputElement, Props>(
           />
           {cancellable && <AriaComboboxCancel state={combobox} className={styles.cancel} />}
         </label>
-        <AriaComboboxPopover
-          state={combobox}
-          className={styles.popover}
-          preventBodyScroll={preventBodyScroll}
-        >
+        <AriaComboboxPopover state={combobox} className={styles.popover}>
           {children}
         </AriaComboboxPopover>
       </Box>
@@ -99,8 +93,7 @@ export const ComboboxItemLink = forwardRef<HTMLAnchorElement, ComboboxItemProps<
       <AriaComboboxItem
         as={'a'}
         focusOnHover
-        hideOnClick={false}
-        setValueOnClick={false}
+        hideOnClick
         className={styles.item}
         {...props}
         ref={ref}
