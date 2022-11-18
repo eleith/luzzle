@@ -89,7 +89,13 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
 
   const searchResults = searches.map((book) => (
     <Link key={book.slug} href={`/books/${book.slug}`} passHref>
-      <ComboboxItemLink value={book.title}>
+      <ComboboxItemLink
+        value={book.title}
+        onTouchStart={(e) => {
+          console.log('touched')
+          e.stopPropagation()
+        }}
+      >
         <Box>
           <Text size="body">{book.title}</Text>
           {book.subtitle && <Text size="caption">{book.subtitle}</Text>}
@@ -124,10 +130,9 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           <br />
           <Box>
             <Combobox
-              state={{ sameWidth: true }}
+              state={{ sameWidth: true, virtualFocus: false }}
               onChange={fuzzySearchBook}
               placeholder="ex: A Tale of Two Websites"
-              preventBodyScroll={false}
             >
               {searches.length ? searchResults : <ComboboxItem>no results</ComboboxItem>}
             </Combobox>
