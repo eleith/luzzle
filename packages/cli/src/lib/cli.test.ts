@@ -1,4 +1,3 @@
-import { Command } from './cli'
 import { CpuInfo, cpus } from 'os'
 import { merge } from 'lodash'
 import { Stats } from 'fs'
@@ -22,12 +21,14 @@ import * as cli from './cli'
 import { DeepPartial } from '../@types/utilities'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { getPrismaClient, PrismaClient } from './prisma'
+import { getDirectoryFromConfig, inititializeConfig, getConfig, Config } from './config'
 import path from 'path'
 
 vi.mock('os')
 vi.mock('fs/promises')
 vi.mock('./book')
 vi.mock('./prisma')
+vi.mock('./config')
 
 const prisma = {
   $disconnect: vi.fn(),
@@ -65,33 +66,54 @@ const mocks = {
   getUpdatedSlugs: vi.mocked(getUpdatedSlugs),
   cleanUpDerivatives: vi.mocked(cleanUpDerivatives),
   getPrismaClient: vi.mocked(getPrismaClient),
+  getDirectoryConfig: vi.mocked(getDirectoryFromConfig),
+  inititializeConfig: vi.mocked(inititializeConfig),
+  getConfig: vi.mocked(getConfig),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
 
-function makeCommand(overrides?: DeepPartial<Command>): Command {
+function makeCommand(
+  overrides?: DeepPartial<{
+    name: string
+    options: {
+      dryRun: boolean
+      force: boolean
+      quiet: boolean
+      dir?: string
+    }
+  }>
+) {
   return merge(
     {
       name: 'sync',
       options: {
-        isDryRun: false,
-        quiet: false,
-        dir: 'somewhere',
+        dryRun: false,
         force: false,
+        quiet: false,
       },
     },
     overrides
   )
 }
 
-function makeContext(command?: Command): cli.Context {
+function makeContext(overrides?: DeepPartial<cli.Context>): cli.Context {
   mocks.getPrismaClient.mockReturnValue(prisma as unknown as PrismaClient)
 
-  return {
-    prisma: mocks.getPrismaClient(),
-    log,
-    command: command || makeCommand(),
-  }
+  return merge(
+    {
+      prisma: mocks.getPrismaClient(),
+      log,
+      directory: 'somewhere',
+      config: {} as Config,
+      flags: {
+        dryRun: false,
+        quiet: false,
+        force: false,
+      },
+    },
+    overrides
+  )
 }
 
 describe('tools/lib/cli', () => {
@@ -108,6 +130,11 @@ describe('tools/lib/cli', () => {
 
   test('run _sync', async () => {
     const command = makeCommand()
+    const config = {} as Config
+
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+
     spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
     spies.syncToDb = vi.spyOn(cli._private, '_sync')
     spies.cleanup = vi.spyOn(cli._private, '_cleanup')
@@ -124,7 +151,12 @@ describe('tools/lib/cli', () => {
   })
 
   test('run _sync with options', async () => {
-    const command = makeCommand({ name: 'dump', options: { quiet: true, isDryRun: true } })
+    const command = makeCommand({ name: 'dump', options: { quiet: true, dryRun: true } })
+    const config = {} as Config
+
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+
     spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
     spies.cleanup = vi.spyOn(cli._private, '_cleanup')
     spies.dump = vi.spyOn(cli._private, '_dump')
@@ -143,6 +175,11 @@ describe('tools/lib/cli', () => {
 
   test('run _dump', async () => {
     const command = makeCommand({ name: 'dump' })
+    const config = {} as Config
+
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+
     spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
     spies.cleanup = vi.spyOn(cli._private, '_cleanup')
     spies.dump = vi.spyOn(cli._private, '_dump')
@@ -159,6 +196,11 @@ describe('tools/lib/cli', () => {
 
   test('run _process', async () => {
     const command = makeCommand({ name: 'process' })
+    const config = {} as Config
+
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+
     spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
     spies.cleanup = vi.spyOn(cli._private, '_cleanup')
     spies.process = vi.spyOn(cli._private, '_process')
@@ -171,6 +213,50 @@ describe('tools/lib/cli', () => {
 
     expect(spies.process).toHaveBeenCalledWith(ctx)
     expect(spies.cleanup).toHaveBeenCalledWith(ctx)
+  })
+
+  test('run init', async () => {
+    const command = makeCommand({ name: 'init', options: { dir: 'somewhere' } })
+    const config = {} as Config
+
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce(command.options.dir as string)
+    mocks.inititializeConfig.mockResolvedValueOnce(config)
+
+    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
+    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
+    spies.process = vi.spyOn(cli._private, '_process')
+
+    spies.parseArgs.mockResolvedValueOnce(command)
+    spies.process.mockResolvedValueOnce(undefined)
+    spies.cleanup.mockResolvedValueOnce(undefined)
+
+    const ctx = await cli.run()
+
+    expect(mocks.inititializeConfig).toHaveBeenCalledWith(command.options.dir)
+    expect(spies.cleanup).toHaveBeenCalledWith(ctx)
+  })
+
+  test('run init throws', async () => {
+    const command = makeCommand({ name: 'init', options: { dir: 'somewhere' } })
+    const config = {} as Config
+
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce(command.options.dir as string)
+    mocks.inititializeConfig.mockRejectedValueOnce(new Error())
+
+    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
+    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
+    spies.process = vi.spyOn(cli._private, '_process')
+
+    spies.parseArgs.mockResolvedValueOnce(command)
+    spies.process.mockResolvedValueOnce(undefined)
+    spies.cleanup.mockResolvedValueOnce(undefined)
+
+    await cli.run()
+
+    expect(mocks.inititializeConfig).toHaveBeenCalledWith(command.options.dir)
+    expect(mocks.logError).toHaveBeenCalled()
   })
 
   test('_cleanup', async () => {
@@ -199,8 +285,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_dumpBook skips on dry run', async () => {
-    const command = makeCommand({ options: { isDryRun: true } })
-    const ctx = makeContext(command)
+    const ctx = makeContext({ flags: { dryRun: true } })
     const book = bookFixtures.makeBook()
 
     await cli._private._dumpBook(ctx, book)
@@ -221,8 +306,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_dump', async () => {
-    const command = makeCommand()
-    const ctx = makeContext(command)
+    const ctx = makeContext()
     const books = [bookFixtures.makeBook(), bookFixtures.makeBook(), bookFixtures.makeBook()]
     spies.syncBookToDisk = vi.spyOn(cli._private, '_dumpBook')
 
@@ -290,8 +374,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_sync force updates books', async () => {
-    const command = makeCommand({ options: { force: true } })
-    const ctx = makeContext(command)
+    const ctx = makeContext({ flags: { force: true } })
     const bookSlugs = ['a']
     const id = 'aslkjflksjf'
     const bookMd = bookFixtures.makeBookMd()
@@ -363,8 +446,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_syncRemoveBooksExecute dry run', async () => {
-    const command = makeCommand({ options: { isDryRun: true } })
-    const ctx = makeContext(command)
+    const ctx = makeContext({ flags: { dryRun: true } })
     const slugs = [bookFixtures.makeBook().slug, bookFixtures.makeBook().slug]
 
     await cli._private._syncRemoveBooksExecute(ctx, slugs)
@@ -418,11 +500,7 @@ describe('tools/lib/cli', () => {
 
     await cli._private._syncUpdateBookExecute(ctx, bookMd, book)
 
-    expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledWith(
-      bookMd,
-      book,
-      ctx.command.options.dir
-    )
+    expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledWith(bookMd, book, ctx.directory)
     expect(mocks.prismaBookUpdate).toHaveBeenCalledWith({
       where: { id: book.id },
       data: bookUpdate,
@@ -431,8 +509,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_syncUpdateBookExecute dry run', async () => {
-    const command = makeCommand({ options: { isDryRun: true } })
-    const ctx = makeContext(command)
+    const ctx = makeContext({ flags: { dryRun: true } })
     const book = bookFixtures.makeBook()
     const bookMd = bookFixtures.makeBookMd()
     const bookUpdate = { title: bookMd.frontmatter.title }
@@ -501,7 +578,7 @@ describe('tools/lib/cli', () => {
     await cli._private._syncAddBook(ctx, bookMd)
 
     expect(spies.updateBook).not.toHaveBeenCalledOnce()
-    expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledWith(bookMd, ctx.command.options.dir)
+    expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledWith(bookMd, ctx.directory)
     expect(mocks.prismaBookCreate).toHaveBeenCalledWith({
       data: bookAdd,
     })
@@ -525,8 +602,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_syncAddBook dry run', async () => {
-    const command = makeCommand({ options: { isDryRun: true } })
-    const ctx = makeContext(command)
+    const ctx = makeContext({ flags: { dryRun: true } })
     const bookMd = bookFixtures.makeBookMd()
     const bookAdd = bookFixtures.makeBook()
 
@@ -570,8 +646,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_process force', async () => {
-    const command = makeCommand({ options: { force: true } })
-    const ctx = makeContext(command)
+    const ctx = makeContext({ flags: { force: true } })
     const bookMds = [bookFixtures.makeBookMd(), bookFixtures.makeBookMd()]
     const slugsOnDisk = bookMds.map((x) => path.basename(x.filename, '.md'))
     spies.onProcessBook = vi.spyOn(cli._private, '_processBook')
@@ -607,8 +682,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_process skips on dry run', async () => {
-    const command = makeCommand({ options: { isDryRun: true } })
-    const ctx = makeContext(command)
+    const ctx = makeContext({ flags: { dryRun: true } })
     const bookMds = [bookFixtures.makeBookMd(), bookFixtures.makeBookMd()]
     const slugsOnDisk = bookMds.map((x) => path.basename(x.filename, '.md'))
     spies.onProcessBook = vi.spyOn(cli._private, '_processBook')
@@ -638,8 +712,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_processBook skips on dry run', async () => {
-    const command = makeCommand({ options: { isDryRun: true } })
-    const ctx = makeContext(command)
+    const ctx = makeContext({ flags: { dryRun: true } })
     const bookMd = bookFixtures.makeBookMd()
 
     mocks.processBookMd.mockResolvedValueOnce(bookMd)
@@ -663,7 +736,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_parseArgs', async () => {
-    const args = ['sync', 'test-folder']
+    const args = ['init', 'test-folder']
     const dirStats = { isDirectory: () => true } as Stats
 
     mocks.stat.mockResolvedValueOnce(dirStats)
@@ -671,11 +744,11 @@ describe('tools/lib/cli', () => {
     const command = await cli._private._parseArgs(args)
 
     expect(mocks.stat).toHaveBeenCalledWith(args[1])
-    expect(command).toEqual({
-      name: 'sync',
+    expect(command).toMatchObject({
+      name: 'init',
       options: {
         quiet: false,
-        isDryRun: false,
+        dryRun: false,
         force: false,
         dir: args[1],
       },
@@ -683,7 +756,7 @@ describe('tools/lib/cli', () => {
   })
 
   test('_parseArgs throws if dir is a file', async () => {
-    const args = ['sync', 'test-folder']
+    const args = ['init', 'test-folder']
     const dirStats = { isDirectory: () => false } as Stats
     const spyConsoleError = vi.spyOn(console, 'error')
 
