@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -53,6 +53,7 @@
     "@luzzle/prisma": "0.0.12",
     "ajv": "^8.11.0",
     "async": "^3.2.4",
+    "conf": "10.2.0",
     "deepmerge": "^4.2.2",
     "dotenv": "16.0.3",
     "file-type": "^18.0.0",
@@ -63,7 +64,7 @@
     "pino-pretty": "9.1.1",
     "remark": "^14.0.2",
     "remark-frontmatter": "^4.0.1",
-    "sharp": "0.31.1",
+    "sharp": "0.31.2",
     "tempy": "^3.0.0",
     "unified": "^10.1.2",
     "unist-util-filter": "^4.0.0",

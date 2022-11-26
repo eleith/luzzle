@@ -1,5 +1,6 @@
 import { Book, PrismaClient } from './prisma'
 import { getPrismaClient } from './prisma'
+import { getDirectoryFromConfig, inititializeConfig, getConfig, Config } from './config'
 import { eachLimit } from 'async'
 import { stat } from 'fs/promises'
 import { cpus } from 'os'
@@ -26,32 +27,42 @@ import { difference } from 'lodash'
 import { Logger } from 'pino'
 import path from 'path'
 
-export type Command = {
-  options: {
-    quiet: boolean
-    isDryRun: boolean
-    dir: string
-    force: boolean
-  }
-  name: 'sync' | 'dump' | 'process'
-}
+export type Commands = 'sync' | 'dump' | 'process' | 'init'
 
 export type Context = {
   prisma: PrismaClient
   log: Logger
-  command: Command
+  directory: string
+  config: Config
+  flags: {
+    force: boolean
+    dryRun: boolean
+    quiet: boolean
+  }
 }
 
-async function _parseArgs(_args: string[]): Promise<Command> {
+async function _parseArgs(_args: string[]) {
   const command = await yargs(_args)
     .strict()
-    .command('sync <dir>', 'sync directory to local database')
-    .command('dump <dir>', 'dump database to local markdown files')
-    .command('process <dir>', 'process local markdown files for cleaning')
-    .positional('dir', {
-      type: 'string',
-      description: 'directory for the book entries',
-      demandOption: 'a directory containing book entries must be provided',
+    .command('sync', 'sync directory to local database')
+    .command('dump', 'dump database to local markdown files')
+    .command('process', 'process local markdown files for cleaning')
+    .command('init <dir>', 'initialize luzzle config with directory', (yargs) => {
+      return yargs
+        .positional('dir', {
+          type: 'string',
+          description: 'directory for the book entries',
+          demandOption: 'a directory containing book entries must be provided',
+        })
+        .check(async (args) => {
+          const dirStat = await stat(args.dir).catch(() => null)
+
+          if (args.dir && !dirStat?.isDirectory()) {
+            throw new Error(`[error] '${args.dir}' is not a folder`)
+          }
+
+          return true
+        })
     })
     .options({
       'dry-run': {
@@ -70,36 +81,27 @@ async function _parseArgs(_args: string[]): Promise<Command> {
         type: 'boolean',
         default: false,
       },
-    })
-    .check(async (args) => {
-      const dirStat = await stat(args.dir).catch(() => null)
-
-      if (args.dir && !dirStat?.isDirectory()) {
-        throw new Error(`[error] '${args.dir}' is not a folder`)
-      }
-
-      return true
+      config: {
+        alias: 'c',
+        type: 'string',
+        description: 'override default system config',
+      },
     })
     .exitProcess(false)
     .demandCommand(1, `[error] please specify a command`)
     .parseAsync()
 
   return {
-    name: command._[0] as 'sync' | 'dump',
-    options: {
-      quiet: command.quiet,
-      isDryRun: command['dry-run'],
-      force: command.force,
-      dir: command.dir,
-    },
+    name: command._[0] as Commands,
+    options: command,
   }
 }
 
 async function _processBook(ctx: Context, bookMd: BookMd): Promise<void> {
-  const dir = ctx.command.options.dir
+  const dir = ctx.directory
 
   try {
-    if (ctx.command.options.isDryRun === false) {
+    if (ctx.flags.dryRun === false) {
       const bookProcessed = await processBookMd(bookMd, dir)
       await updateBookMd(bookProcessed, dir)
     }
@@ -118,11 +120,11 @@ async function _syncAddBook(ctx: Context, bookMd: BookMd): Promise<void> {
   }
 
   try {
-    if (ctx.command.options.isDryRun === false) {
-      const bookCreateInput = await bookMdToBookCreateInput(bookMd, ctx.command.options.dir)
+    if (ctx.flags.dryRun === false) {
+      const bookCreateInput = await bookMdToBookCreateInput(bookMd, ctx.directory)
       const bookAdded = await ctx.prisma.book.create({ data: bookCreateInput })
 
-      await cacheBook(bookAdded, ctx.command.options.dir)
+      await cacheBook(bookAdded, ctx.directory)
     }
     log.info(`added ${bookMd.filename}`)
   } catch (err) {
@@ -142,9 +144,9 @@ async function _syncUpdateBook(ctx: Context, bookMd: BookMd, id: string): Promis
 }
 
 async function _syncUpdateBookExecute(ctx: Context, bookMd: BookMd, book: Book): Promise<void> {
-  const dir = ctx.command.options.dir
+  const dir = ctx.directory
   try {
-    if (ctx.command.options.isDryRun === false) {
+    if (ctx.flags.dryRun === false) {
       const bookUpdateInput = await bookMdToBookUpdateInput(bookMd, book, dir)
       const bookUpdate = await ctx.prisma.book.update({
         where: { id: book.id },
@@ -171,7 +173,7 @@ async function _syncRemoveBooks(ctx: Context, diskSlugs: string[]): Promise<void
 
 async function _syncRemoveBooksExecute(ctx: Context, slugs: string[]): Promise<void> {
   try {
-    if (ctx.command.options.isDryRun === false) {
+    if (ctx.flags.dryRun === false) {
       await ctx.prisma.book.deleteMany({ where: { slug: { in: slugs } } })
     }
     log.info(`deleted ${slugs.join(', ')}`)
@@ -181,9 +183,9 @@ async function _syncRemoveBooksExecute(ctx: Context, slugs: string[]): Promise<v
 }
 
 async function _sync(ctx: Context): Promise<void> {
-  const bookSlugs = await readBookDir(ctx.command.options.dir)
-  const dir = ctx.command.options.dir
-  const force = ctx.command.options.force
+  const bookSlugs = await readBookDir(ctx.directory)
+  const dir = ctx.directory
+  const force = ctx.flags.force
   const updatedBookSlugs = force ? bookSlugs : await getUpdatedSlugs(bookSlugs, dir, 'lastSynced')
 
   await eachLimit(updatedBookSlugs, 1, async (slug) => {
@@ -211,8 +213,8 @@ async function _dump(ctx: Context): Promise<void> {
 }
 
 async function _process(ctx: Context): Promise<void> {
-  const dir = ctx.command.options.dir
-  const force = ctx.command.options.force
+  const dir = ctx.directory
+  const force = ctx.flags.force
   const bookSlugs = await readBookDir(dir)
   const updatedBookSlugs = force
     ? bookSlugs
@@ -225,16 +227,16 @@ async function _process(ctx: Context): Promise<void> {
     }
   })
 
-  if (ctx.command.options.isDryRun === false) {
+  if (ctx.flags.dryRun === false) {
     await cleanUpDerivatives(dir)
   }
 }
 
 async function _dumpBook(ctx: Context, book: Book): Promise<void> {
-  const dir = ctx.command.options.dir
+  const dir = ctx.directory
 
   try {
-    if (ctx.command.options.isDryRun === false) {
+    if (ctx.flags.dryRun === false) {
       const bookMd = await bookToMd(book)
 
       await updateBookMd(bookMd, dir)
@@ -253,34 +255,45 @@ async function _cleanup(ctx: Context): Promise<void> {
 async function run(): Promise<Context | null> {
   try {
     const command = await _private._parseArgs(hideBin(process.argv))
-    const fullDbPath = path.resolve(path.join(command.options.dir, dbPath))
-    const dbUrl = `file:${fullDbPath}`
-    const prisma = getPrismaClient({ datasources: { db: { url: dbUrl } } })
+    const config = getConfig(command.options.config)
+    const directory = getDirectoryFromConfig(config)
 
     const ctx: Context = {
-      prisma,
+      prisma: getPrismaClient({
+        datasources: { db: { url: `file:${path.join(directory, dbPath)}` } },
+      }),
       log,
-      command,
+      directory,
+      config,
+      flags: {
+        dryRun: command.options.dryRun,
+        quiet: command.options.quiet,
+        force: command.options.force,
+      },
     }
 
-    ctx.log.level = command.options.quiet ? 'warn' : 'info'
+    ctx.log.level = ctx.flags.quiet ? 'warn' : 'info'
 
-    if (command.options.isDryRun) {
+    if (command.options.dryRun) {
       ctx.log.child({ dryRun: true })
     }
 
-    if (ctx.command.name === 'dump') {
+    if (command.name === 'dump') {
       await _private._dump(ctx)
-    } else if (ctx.command.name === 'sync') {
+    } else if (command.name === 'sync') {
       await _private._sync(ctx)
-    } else if (ctx.command.name === 'process') {
+    } else if (command.name === 'process') {
       await _private._process(ctx)
+    } else if (command.name === 'init') {
+      await inititializeConfig(directory)
+      log.info(`initialized config at ${ctx.config.path}`)
     }
 
     await _private._cleanup(ctx)
 
     return ctx
   } catch (e) {
+    log.error(e)
     return null
   }
 }
