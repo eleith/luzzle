@@ -7,8 +7,8 @@ pipeline:
     commands:
       - npm ci -w @luzzle/cli
       - npm run prepublishOnly -w @luzzle/prisma
-      - npm run build -w @luzzle/cli
       - npm run compile -w @luzzle/cli
+      - npm run build -w @luzzle/cli
     when:
       branch: [main]
       path:
