@@ -14,7 +14,6 @@ import { downloadTo } from './web'
 import { FileTypeResult, fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
-import deepmerge from 'deepmerge'
 
 vi.mock('file-type')
 vi.mock('fs')
