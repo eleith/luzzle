@@ -33,9 +33,15 @@ export function getConfig(path?: string) {
   }
 }
 
-export function getDirectoryFromConfig(config: Conf<SchemaConfig>): string {
+export function getDirectoryFromConfig(config: Conf<SchemaConfig>): string | never {
   const dirUrlPath = config.get('directory')
-  return fileURLToPath(dirUrlPath)
+  const dirPath = fileURLToPath(dirUrlPath)
+
+  if (existsSync(dirPath)) {
+    return dirPath
+  }
+
+  throw new Error(`config directory does not exist: ${dirPath}`)
 }
 
 export async function inititializeConfig(directory: string): Promise<Conf<SchemaConfig> | never> {

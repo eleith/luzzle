@@ -50,11 +50,23 @@ describe('tools/lib/config', () => {
     const dirUrlPath = `file://${dirPath}`
 
     mocks.ConfGet.mockReturnValue(dirUrlPath)
+    mocks.existsSync.mockReturnValue(true)
 
     const directory = getDirectoryFromConfig(config)
 
     expect(mocks.ConfGet).toHaveBeenCalledWith('directory')
     expect(directory).toBe(dirPath)
+  })
+
+  test('getDirectoryFromConfig fails with a non existant directory', async () => {
+    const config = new Conf<SchemaConfig>()
+    const dirPath = '/some/dir'
+    const dirUrlPath = `file://${dirPath}`
+
+    mocks.ConfGet.mockReturnValue(dirUrlPath)
+    mocks.existsSync.mockReturnValue(false)
+
+    expect(() => getDirectoryFromConfig(config)).toThrow()
   })
 
   test('inititializeConfig', async () => {

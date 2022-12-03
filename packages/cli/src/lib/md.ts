@@ -13,7 +13,7 @@ function addFrontMatter(markdown = '', metadata: { [key: string]: unknown } = {}
   const yamlString = YAML.stringify(metadata)
   const content = markdown.trim()
 
-  return `---\n${yamlString}---\n${content}`
+  return `---\n${yamlString}---\n${content}\n`
 }
 
 async function extract(path: string): Promise<{ frontmatter: unknown; markdown: string }> {
