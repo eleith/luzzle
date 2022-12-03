@@ -11,9 +11,12 @@ import {
   getBookCache,
   cacheBook,
   processBookMd,
-  updateBookMd,
+  writeBookMd,
   getUpdatedSlugs,
   cleanUpDerivatives,
+  fetchBookMd,
+  downloadCover,
+  createBookMd,
 } from './book'
 import * as bookFixtures from './book.fixtures'
 import log from './log'
@@ -62,32 +65,34 @@ const mocks = {
   getBookCache: vi.mocked(getBookCache),
   cacheBook: vi.mocked(cacheBook),
   processBookMd: vi.mocked(processBookMd),
-  updateBookMd: vi.mocked(updateBookMd),
+  writeBookMd: vi.mocked(writeBookMd),
   getUpdatedSlugs: vi.mocked(getUpdatedSlugs),
   cleanUpDerivatives: vi.mocked(cleanUpDerivatives),
   getPrismaClient: vi.mocked(getPrismaClient),
   getDirectoryConfig: vi.mocked(getDirectoryFromConfig),
   inititializeConfig: vi.mocked(inititializeConfig),
   getConfig: vi.mocked(getConfig),
+  fetchBookMd: vi.mocked(fetchBookMd),
+  downloadCover: vi.mocked(downloadCover),
+  createBook: vi.mocked(createBookMd),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
 
-function makeCommand(
-  overrides?: DeepPartial<{
-    name: string
-    options: {
-      dryRun: boolean
-      force: boolean
-      quiet: boolean
-      dir?: string
-    }
-  }>
-) {
+type Command = Awaited<ReturnType<typeof cli._private._parseArgs>>
+
+function makeCommand(overrides?: DeepPartial<Command>): Command {
   return merge(
     {
       name: 'sync',
       options: {
+        _: [],
+        $0: '',
+        slug: 'slug',
+        file: 'file',
+        dir: 'dir',
+        ['dry-run']: false,
+        config: undefined,
         dryRun: false,
         force: false,
         quiet: false,
@@ -143,11 +148,11 @@ describe('tools/lib/cli', () => {
     spies.syncToDb.mockResolvedValueOnce(undefined)
     spies.cleanup.mockResolvedValueOnce(undefined)
 
-    const ctx = await cli.run()
+    await cli.run()
 
     expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'info')
-    expect(spies.syncToDb).toHaveBeenCalledWith(ctx)
-    expect(spies.cleanup).toHaveBeenCalledWith(ctx)
+    expect(spies.syncToDb).toHaveBeenCalled()
+    expect(spies.cleanup).toHaveBeenCalled()
   })
 
   test('run _sync with options', async () => {
@@ -165,12 +170,12 @@ describe('tools/lib/cli', () => {
     spies.dump.mockResolvedValueOnce(undefined)
     spies.cleanup.mockResolvedValueOnce(undefined)
 
-    const ctx = await cli.run()
+    await cli.run()
 
     expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'warn')
     expect(mocks.logChild).toHaveBeenCalledWith({ dryRun: true })
-    expect(spies.dump).toHaveBeenCalledWith(ctx)
-    expect(spies.cleanup).toHaveBeenCalledWith(ctx)
+    expect(spies.dump).toHaveBeenCalled()
+    expect(spies.cleanup).toHaveBeenCalled()
   })
 
   test('run _dump', async () => {
@@ -188,10 +193,10 @@ describe('tools/lib/cli', () => {
     spies.dump.mockResolvedValueOnce(undefined)
     spies.cleanup.mockResolvedValueOnce(undefined)
 
-    const ctx = await cli.run()
+    await cli.run()
 
-    expect(spies.dump).toHaveBeenCalledWith(ctx)
-    expect(spies.cleanup).toHaveBeenCalledWith(ctx)
+    expect(spies.dump).toHaveBeenCalled()
+    expect(spies.cleanup).toHaveBeenCalled()
   })
 
   test('run _process', async () => {
@@ -209,10 +214,77 @@ describe('tools/lib/cli', () => {
     spies.process.mockResolvedValueOnce(undefined)
     spies.cleanup.mockResolvedValueOnce(undefined)
 
-    const ctx = await cli.run()
+    await cli.run()
 
-    expect(spies.process).toHaveBeenCalledWith(ctx)
-    expect(spies.cleanup).toHaveBeenCalledWith(ctx)
+    expect(spies.process).toHaveBeenCalled()
+    expect(spies.cleanup).toHaveBeenCalled()
+  })
+
+  test('run _create', async () => {
+    const command = makeCommand({ name: 'create' })
+    const config = {} as Config
+
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+
+    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
+    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
+    spies.create = vi.spyOn(cli._private, '_create')
+
+    spies.parseArgs.mockResolvedValueOnce(command)
+    spies.create.mockResolvedValueOnce(undefined)
+    spies.cleanup.mockResolvedValueOnce(undefined)
+
+    await cli.run()
+
+    expect(spies.create).toHaveBeenCalled()
+    expect(spies.cleanup).toHaveBeenCalled()
+  })
+
+  test('run _attach', async () => {
+    const command = makeCommand({ name: 'attach', options: { slug: 'slug', file: 'file' } })
+    const config = {} as Config
+
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+
+    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
+    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
+    spies.attach = vi.spyOn(cli._private, '_attach')
+
+    spies.parseArgs.mockResolvedValueOnce(command)
+    spies.attach.mockResolvedValueOnce(undefined)
+    spies.cleanup.mockResolvedValueOnce(undefined)
+
+    await cli.run()
+
+    expect(spies.attach).toHaveBeenCalledWith(
+      expect.anything(),
+      command.options.slug,
+      command.options.file
+    )
+    expect(spies.cleanup).toHaveBeenCalled()
+  })
+
+  test('run _fetch', async () => {
+    const command = makeCommand({ name: 'fetch' })
+    const config = {} as Config
+
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+
+    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
+    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
+    spies.fetch = vi.spyOn(cli._private, '_fetch')
+
+    spies.parseArgs.mockResolvedValueOnce(command)
+    spies.fetch.mockResolvedValueOnce(undefined)
+    spies.cleanup.mockResolvedValueOnce(undefined)
+
+    await cli.run()
+
+    expect(spies.fetch).toHaveBeenCalledWith(expect.anything(), command.options.slug)
+    expect(spies.cleanup).toHaveBeenCalled()
   })
 
   test('run init', async () => {
@@ -231,10 +303,9 @@ describe('tools/lib/cli', () => {
     spies.process.mockResolvedValueOnce(undefined)
     spies.cleanup.mockResolvedValueOnce(undefined)
 
-    const ctx = await cli.run()
+    await cli.run()
 
     expect(mocks.inititializeConfig).toHaveBeenCalledWith(command.options.dir)
-    expect(spies.cleanup).toHaveBeenCalledWith(ctx)
   })
 
   test('run init throws', async () => {
@@ -275,7 +346,7 @@ describe('tools/lib/cli', () => {
     const bookMd = bookFixtures.makeBookMd()
 
     mocks.bookToMd.mockResolvedValueOnce(bookMd)
-    mocks.updateBookMd.mockResolvedValueOnce()
+    mocks.writeBookMd.mockResolvedValueOnce()
     mocks.cacheBook.mockResolvedValueOnce()
 
     await cli._private._dumpBook(ctx, book)
@@ -627,6 +698,127 @@ describe('tools/lib/cli', () => {
     expect(mocks.logError).toHaveBeenCalled()
   })
 
+  test('_create', async () => {
+    const ctx = makeContext()
+    const title = 'A Book Title'
+    const bookMd = bookFixtures.makeBookMd()
+
+    mocks.createBook.mockResolvedValueOnce(bookMd)
+    mocks.writeBookMd.mockResolvedValue()
+
+    await cli._private._create(ctx, title)
+
+    expect(mocks.createBook).toHaveBeenCalled()
+    expect(mocks.writeBookMd).toHaveBeenCalledWith(bookMd, ctx.directory)
+  })
+
+  test('_create dry run', async () => {
+    const ctx = makeContext({ flags: { dryRun: true } })
+    const title = 'A Book Title'
+
+    await cli._private._create(ctx, title)
+
+    expect(mocks.writeBookMd).not.toHaveBeenCalled()
+  })
+
+  test('_create fails', async () => {
+    const ctx = makeContext()
+    const title = 'A Book Title'
+
+    mocks.createBook.mockRejectedValueOnce(new Error('boom'))
+
+    await cli._private._create(ctx, title)
+
+    expect(mocks.writeBookMd).not.toHaveBeenCalled()
+  })
+
+  test('_fetch', async () => {
+    const ctx = makeContext()
+    const slug = 'a-book-slug'
+    const bookMd = bookFixtures.makeBookMd()
+
+    mocks.getBook.mockResolvedValue(bookMd)
+    mocks.fetchBookMd.mockResolvedValue(bookMd)
+    mocks.writeBookMd.mockResolvedValue()
+
+    await cli._private._fetch(ctx, slug)
+
+    expect(mocks.getBook).toHaveBeenCalledWith(slug, ctx.directory)
+    expect(mocks.fetchBookMd).toHaveBeenCalledWith(bookMd, ctx.directory)
+    expect(mocks.writeBookMd).toHaveBeenCalledWith(bookMd, ctx.directory)
+  })
+
+  test('_fetch on non-existant slug', async () => {
+    const ctx = makeContext()
+    const slug = 'a-book-slug'
+
+    mocks.getBook.mockResolvedValue(null)
+
+    await cli._private._fetch(ctx, slug)
+
+    expect(mocks.writeBookMd).not.toHaveBeenCalled()
+    expect(mocks.fetchBookMd).not.toHaveBeenCalled()
+  })
+
+  test('_fetch fails', async () => {
+    const ctx = makeContext()
+    const slug = 'a-book-slug'
+    const bookMd = bookFixtures.makeBookMd()
+
+    mocks.getBook.mockResolvedValue(bookMd)
+    mocks.fetchBookMd.mockRejectedValue(new Error('boom'))
+    mocks.writeBookMd.mockResolvedValue()
+
+    await cli._private._fetch(ctx, slug)
+
+    expect(mocks.logError).toHaveBeenCalled()
+  })
+
+  test('_attach', async () => {
+    const ctx = makeContext()
+    const slug = 'a-book-slug'
+    const cover = 'path/to/cover.png'
+    const bookMd = bookFixtures.makeBookMd()
+
+    mocks.getBook.mockResolvedValue(bookMd)
+    mocks.downloadCover.mockResolvedValue(bookMd)
+    mocks.writeBookMd.mockResolvedValue()
+
+    await cli._private._attach(ctx, slug, cover)
+
+    expect(mocks.getBook).toHaveBeenCalledWith(slug, ctx.directory)
+    expect(mocks.downloadCover).toHaveBeenCalledWith(bookMd, cover, ctx.directory)
+    expect(mocks.writeBookMd).toHaveBeenCalledWith(bookMd, ctx.directory)
+  })
+
+  test('_attach on non-existant slug', async () => {
+    const ctx = makeContext()
+    const slug = 'a-book-slug'
+    const cover = 'path/to/cover.png'
+
+    mocks.getBook.mockResolvedValue(null)
+
+    await cli._private._attach(ctx, slug, cover)
+
+    expect(mocks.downloadCover).not.toHaveBeenCalled()
+    expect(mocks.writeBookMd).not.toHaveBeenCalled()
+  })
+
+  test('_attach fails', async () => {
+    const ctx = makeContext()
+    const slug = 'a-book-slug'
+    const cover = 'path/to/cover.png'
+    const bookMd = bookFixtures.makeBookMd()
+
+    mocks.getBook.mockResolvedValue(bookMd)
+    mocks.downloadCover.mockRejectedValue(new Error('boom'))
+    mocks.writeBookMd.mockResolvedValue()
+
+    await cli._private._attach(ctx, slug, cover)
+
+    expect(mocks.logError).toHaveBeenCalled()
+  })
+
   test('_process', async () => {
     const ctx = makeContext()
     const bookMds = [bookFixtures.makeBookMd(), bookFixtures.makeBookMd()]
@@ -703,12 +895,12 @@ describe('tools/lib/cli', () => {
     const bookMd = bookFixtures.makeBookMd()
 
     mocks.processBookMd.mockResolvedValueOnce(bookMd)
-    mocks.updateBookMd.mockResolvedValueOnce()
+    mocks.writeBookMd.mockResolvedValueOnce()
 
     await cli._private._processBook(ctx, bookMd)
 
     expect(mocks.processBookMd).toHaveBeenCalledOnce()
-    expect(mocks.updateBookMd).toHaveBeenCalledOnce()
+    expect(mocks.writeBookMd).toHaveBeenCalledOnce()
   })
 
   test('_processBook skips on dry run', async () => {
@@ -716,12 +908,12 @@ describe('tools/lib/cli', () => {
     const bookMd = bookFixtures.makeBookMd()
 
     mocks.processBookMd.mockResolvedValueOnce(bookMd)
-    mocks.updateBookMd.mockResolvedValueOnce()
+    mocks.writeBookMd.mockResolvedValueOnce()
 
     await cli._private._processBook(ctx, bookMd)
 
     expect(mocks.processBookMd).not.toHaveBeenCalledOnce()
-    expect(mocks.updateBookMd).not.toHaveBeenCalledOnce()
+    expect(mocks.writeBookMd).not.toHaveBeenCalledOnce()
   })
 
   test('_processBook logs error', async () => {
@@ -749,7 +941,6 @@ describe('tools/lib/cli', () => {
       options: {
         quiet: false,
         dryRun: false,
-        force: false,
         dir: args[1],
       },
     })

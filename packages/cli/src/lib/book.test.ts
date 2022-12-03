@@ -1,4 +1,4 @@
-import { Dirent, Stats } from 'fs'
+import { Dirent, Stats, existsSync } from 'fs'
 import { copyFile, mkdir, readdir, readFile, stat, unlink, writeFile } from 'fs/promises'
 import path from 'path'
 import sharp, { Metadata, Sharp } from 'sharp'
@@ -14,7 +14,7 @@ import { downloadTo } from './web'
 import { FileTypeResult, fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
-import { omit } from 'lodash'
+import deepmerge from 'deepmerge'
 
 vi.mock('file-type')
 vi.mock('fs')
@@ -48,6 +48,7 @@ const mocks = {
   readFile: vi.mocked(readFile),
   writeFile: vi.mocked(writeFile),
   mkdir: vi.mocked(mkdir),
+  existSync: vi.mocked(existsSync),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -83,7 +84,7 @@ describe('book', () => {
   test('_makeBookMd', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const bookMd2 = bookLib._private._makeBookMd(
-      bookMd.filename,
+      path.basename(bookMd.filename, '.md'),
       bookMd.markdown,
       bookMd.frontmatter
     )
@@ -205,10 +206,38 @@ describe('book', () => {
     expect(bookUpdateInput).toEqual(bookInput)
   })
 
+  test('bookMdToUpdateInput updates read order', async () => {
+    const title = 'a new title'
+    const bookMd = bookFixtures.makeBookMd({ frontmatter: { year_read: 2020, month_read: 1 } })
+    const book = bookFixtures.makeBook({
+      title: bookMd.frontmatter.title,
+      author: bookMd.frontmatter.author,
+      note: bookMd.markdown,
+      slug: path.basename(bookMd.filename, '.md'),
+      year_read: 2021,
+      month_read: bookMd.frontmatter.month_read,
+    })
+
+    const dir = 'dirPath'
+    const bookInput = bookFixtures.makeBookUpdateInput(book)
+
+    spies.maybeGetCoverData = vi.spyOn(bookLib._private, '_maybeGetCoverData')
+    spies.maybeGetCoverData.mockResolvedValueOnce(bookInput)
+    bookMd.frontmatter.title = title
+
+    const bookUpdateInput = await bookLib.bookMdToBookUpdateInput(bookMd, book, dir)
+
+    expect(spies.maybeGetCoverData).toHaveBeenCalledWith(
+      bookMd,
+      { title, read_order: expect.any(String), year_read: bookMd.frontmatter.year_read },
+      dir
+    )
+    expect(bookUpdateInput).toEqual(bookInput)
+  })
+
   test('_getCoverData', async () => {
     const width = 10
     const height = 15
-    const dir = 'path/to'
     const coverPathRelative = 'an/image.jpg'
     const coverPath = `path/to/${coverPathRelative}`
 
@@ -223,26 +252,25 @@ describe('book', () => {
         } as Sharp)
     )
 
-    const coverData = await bookLib._private._getCoverData(coverPath, dir)
+    const coverData = await bookLib._private._getCoverData(coverPath)
 
     expect(mocks.sharp).toHaveBeenCalledWith(coverPath)
     expect(coverData).toEqual({
-      cover_path: coverPathRelative,
       cover_width: width,
       cover_height: height,
     })
   })
 
-  test('_downloadCover with url', async () => {
+  test('_download with url', async () => {
     const cover = 'https://somewhere'
     const temp = 'somewhere/else/cover.jpg'
     const bookMd = bookFixtures.makeBookMd()
-    const dir = 'path/to/books'
+    const toPath = 'path/to/books'
 
     mocks.downloadTo.mockResolvedValueOnce(temp)
     mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 
-    const succeed = await bookLib._private._downloadCover(bookMd, dir, cover)
+    const succeed = await bookLib._private._download(bookMd, cover, toPath)
 
     expect(mocks.downloadTo).toHaveBeenCalledWith(cover)
     expect(mocks.copyFile).toHaveBeenCalledOnce()
@@ -250,16 +278,16 @@ describe('book', () => {
     expect(succeed).toBe(true)
   })
 
-  test('_downloadCover with url rejects .png', async () => {
+  test('_download with url rejects .png', async () => {
     const cover = 'https://somewhere'
     const temp = 'somewhere/else/cover.png'
     const bookMd = bookFixtures.makeBookMd()
-    const dir = 'path/to/books'
+    const toPath = 'path/to/books'
 
     mocks.downloadTo.mockResolvedValueOnce(temp)
     mocks.fromFile.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
 
-    const success = await bookLib._private._downloadCover(bookMd, dir, cover)
+    const success = await bookLib._private._download(bookMd, cover, toPath)
 
     expect(success).toBe(false)
     expect(mocks.downloadTo).toHaveBeenCalledWith(cover)
@@ -267,15 +295,15 @@ describe('book', () => {
     expect(mocks.unlink).toHaveBeenCalledWith(temp)
   })
 
-  test('_downloadCover with file', async () => {
+  test('_download with file', async () => {
     const cover = '../somewhere/here/cover.jpg'
     const bookMd = bookFixtures.makeBookMd()
-    const dir = 'path/to/books'
+    const toPath = 'path/to/books'
 
     mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
     mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 
-    const success = await bookLib._private._downloadCover(bookMd, dir, cover)
+    const success = await bookLib._private._download(bookMd, cover, toPath)
 
     expect(success).toBe(true)
     expect(mocks.stat).toHaveBeenCalledWith(cover)
@@ -283,15 +311,15 @@ describe('book', () => {
     expect(mocks.copyFile).toHaveBeenCalledOnce()
   })
 
-  test('_downloadCover with file rejects .png', async () => {
+  test('_download with file rejects .png', async () => {
     const cover = '../somewhere/here/cover.png'
     const bookMd = bookFixtures.makeBookMd()
-    const dir = 'path/to/books'
+    const toPath = 'path/to/books'
 
     mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
     mocks.fromFile.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
 
-    const success = await bookLib._private._downloadCover(bookMd, dir, cover)
+    const success = await bookLib._private._download(bookMd, cover, toPath)
 
     expect(success).toBe(false)
     expect(mocks.stat).toHaveBeenCalledWith(cover)
@@ -299,14 +327,14 @@ describe('book', () => {
     expect(mocks.copyFile).not.toHaveBeenCalled()
   })
 
-  test('_downloadCover rejects non existant file', async () => {
+  test('_download rejects non existant file', async () => {
     const cover = '../somewhere/here/cover.png'
     const bookMd = bookFixtures.makeBookMd()
-    const dir = '/path/to/books'
+    const toPath = '/path/to/books/1.png'
 
     mocks.stat.mockResolvedValueOnce({ isFile: () => false } as Stats)
 
-    const success = await bookLib._private._downloadCover(bookMd, dir, cover)
+    const success = await bookLib._private._download(bookMd, cover, toPath)
 
     expect(success).toBe(false)
     expect(mocks.stat).toHaveBeenCalledWith(cover)
@@ -314,63 +342,22 @@ describe('book', () => {
     expect(mocks.copyFile).not.toHaveBeenCalled()
   })
 
-  test('_maybeDownloadCover', async () => {
+  test('downloadCover', async () => {
     const cover = 'somewhere/here/cover.png'
-    const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input_cover: cover } })
+    const bookMd = bookFixtures.makeBookMd()
     const dir = 'dirPath'
 
-    spies.downloadCover = vi.spyOn(bookLib._private, '_downloadCover')
-    spies.downloadCover.mockResolvedValueOnce(true)
+    spies.download = vi.spyOn(bookLib._private, '_download')
+    spies.download.mockResolvedValueOnce(true)
 
-    const bookMdOutput = await bookLib._private._maybeDownloadCover(bookMd, dir)
+    const bookMdOutput = await bookLib.downloadCover(bookMd, cover, dir)
 
-    expect(spies.downloadCover).toHaveBeenCalled()
-    expect(bookMdOutput).toEqual(omit(bookMd, 'frontmatter.__input_cover'))
-  })
-
-  test('_maybeDownloadCover does not find cover', async () => {
-    const cover = 'somewhere/here/cover.png'
-    const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input_cover: cover } })
-    const dir = 'dirPath'
-
-    spies.downloadCover = vi.spyOn(bookLib._private, '_downloadCover')
-    spies.downloadCover.mockResolvedValueOnce(false)
-
-    const bookMdOutput = await bookLib._private._maybeDownloadCover(bookMd, dir)
-
-    expect(spies.downloadCover).toHaveBeenCalled()
+    expect(spies.download).toHaveBeenCalled()
+    bookMd.frontmatter.cover_path = expect.any(String)
     expect(bookMdOutput).toEqual(bookMd)
   })
 
-  test('_maybeSearch', async () => {
-    const search = 'open-library'
-    const dir = 'path/to/books'
-    const bookMd = bookFixtures.makeBookMd({ frontmatter: { __input_search: search } })
-    const bookMdAfter = bookFixtures.makeBookMd()
-
-    spies.processSearch = vi.spyOn(bookLib._private, '_search')
-    spies.processSearch.mockResolvedValueOnce(bookMdAfter)
-
-    const bookMdProcessed = await bookLib._private._maybeSearch(bookMd, dir)
-
-    expect(bookMdProcessed).toEqual(omit(bookMdAfter, 'frontmatter.__input_search'))
-    expect(spies.processSearch).toHaveBeenCalledWith(bookMd, search, dir)
-  })
-
-  test('_maybeSearch skips', async () => {
-    const dir = 'path/to/books'
-    const bookMd = bookFixtures.makeBookMd()
-    const bookMdAfter = bookFixtures.makeBookMd()
-    const bookMdProcessed = await bookLib._private._maybeSearch(bookMd, dir)
-
-    spies.processSearch = vi.spyOn(bookLib._private, '_search')
-
-    expect(bookMdProcessed).toEqual(bookMdAfter)
-    expect(spies.processSearch).not.toHaveBeenCalled()
-  })
-
-  test('_search all', async () => {
-    const search = 'all'
+  test('fetchBookMd', async () => {
     const dir = 'path/to/books'
     const openLibraryResult = { title: 'a new title' }
     const googleBooksResult = { author: 'a new author' }
@@ -391,7 +378,7 @@ describe('book', () => {
       openLibraryResult as bookLib.BookMd['frontmatter']
     )
 
-    const bookMdAfter = await bookLib._private._search(bookMd, search, dir)
+    const bookMdAfter = await bookLib.fetchBookMd(bookMd, dir)
 
     expect(bookMdAfter).toEqual(bookMdSearch)
     expect(spies.searchGoogleBooks).toHaveBeenCalledWith(
@@ -401,33 +388,7 @@ describe('book', () => {
     expect(spies.searchOpenLibrary).toHaveBeenCalledWith(bookMd, dir)
   })
 
-  test('_search open-library', async () => {
-    const search = 'open-library'
-    const dir = 'path/to/books'
-    const openLibraryResult = { title: 'a new title' }
-    const bookMd = bookFixtures.makeBookMd({
-      frontmatter: { id_ol_book: 'xyz' },
-    })
-    const bookMdSearch = bookFixtures.makeBookMd({
-      ...bookMd,
-      ...{ frontmatter: { ...openLibraryResult, ...bookMd.frontmatter } },
-    })
-
-    spies.searchGoogleBooks = vi.spyOn(bookLib._private, '_searchGoogleBooks')
-    spies.searchOpenLibrary = vi.spyOn(bookLib._private, '_searchOpenLibrary')
-    spies.searchOpenLibrary.mockResolvedValueOnce(
-      openLibraryResult as bookLib.BookMd['frontmatter']
-    )
-
-    const bookMdAfter = await bookLib._private._search(bookMd, search, dir)
-
-    expect(bookMdAfter).toEqual(bookMdSearch)
-    expect(spies.searchGoogleBooks).not.toHaveBeenCalledWith()
-    expect(spies.searchOpenLibrary).toHaveBeenCalledWith(bookMd, dir)
-  })
-
-  test('_search google', async () => {
-    const search = 'google'
+  test('fetchBookMd only searches google', async () => {
     const dir = 'path/to/books'
     const googleBooksResult = { author: 'a new author' }
     const bookMd = bookFixtures.makeBookMd()
@@ -442,7 +403,7 @@ describe('book', () => {
       googleBooksResult as bookLib.BookMd['frontmatter']
     )
 
-    const bookMdAfter = await bookLib._private._search(bookMd, search, dir)
+    const bookMdAfter = await bookLib.fetchBookMd(bookMd, dir)
 
     expect(bookMdAfter).toEqual(bookMdSearch)
     expect(spies.searchGoogleBooks).toHaveBeenCalledWith(
@@ -461,7 +422,7 @@ describe('book', () => {
     const coverUrl = 'https://somewhere'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
 
-    spies.download = vi.spyOn(bookLib._private, '_downloadCover')
+    spies.download = vi.spyOn(bookLib._private, '_download')
 
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.findWork.mockResolvedValueOnce(work)
@@ -482,6 +443,7 @@ describe('book', () => {
       subtitle: book.subtitle,
       id_ol_work: workId,
       year_first_published: work.first_publish_year,
+      cover_path: expect.any(String),
     })
   })
 
@@ -504,7 +466,7 @@ describe('book', () => {
     const coverUrl = 'https://somewhere'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
 
-    spies.download = vi.spyOn(bookLib._private, '_downloadCover')
+    spies.download = vi.spyOn(bookLib._private, '_download')
 
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.findWork.mockResolvedValueOnce(work)
@@ -528,6 +490,7 @@ describe('book', () => {
       pages: Number(work.number_of_pages),
       keywords: [...work.subject, ...(work.place || [])].join(','),
       year_first_published: work.first_publish_year,
+      cover_path: expect.any(String),
     })
   })
 
@@ -681,17 +644,20 @@ describe('book', () => {
     expect(updatedSlugs).toEqual([])
   })
 
-  test('cleanUpDerivates', async () => {
+  test('cleanUpDerivatives', async () => {
     const bookFiles = ['a.md']
     const cacheFiles = ['a.json', 'b.json']
     const cache = bookFixtures.makeBookCache()
     const dir = 'path/to/books'
 
-    spies.getCache = vi.spyOn(bookLib._private, '_getBookCache')
     mocks.readdirString.mockResolvedValueOnce(bookFiles)
     mocks.readdirString.mockResolvedValueOnce(cacheFiles)
     mocks.unlink.mockResolvedValue()
+    mocks.existSync.mockReturnValueOnce(true)
+    mocks.existSync.mockReturnValueOnce(false)
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
+
+    spies.getCache = vi.spyOn(bookLib._private, '_getBookCache')
     spies.getCache.mockResolvedValue(cache)
 
     await bookLib.cleanUpDerivatives(dir)
@@ -699,17 +665,20 @@ describe('book', () => {
     expect(mocks.unlink).toHaveBeenCalledTimes(bookFiles.length)
   })
 
-  test('cleanUpDerivates removes cache and cover', async () => {
+  test('cleanUpDerivatives removes cache and cover', async () => {
     const bookFiles = ['a.md']
     const cacheFiles = ['a.json', 'b.json']
-    const cache = bookFixtures.makeBookCache({ hasCover: true })
+    const cache = bookFixtures.makeBookCache()
     const dir = 'path/to/books'
 
-    spies.getCache = vi.spyOn(bookLib._private, '_getBookCache')
     mocks.readdirString.mockResolvedValueOnce(bookFiles)
     mocks.readdirString.mockResolvedValueOnce(cacheFiles)
     mocks.unlink.mockResolvedValue()
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
+    mocks.existSync.mockReturnValueOnce(true)
+    mocks.existSync.mockReturnValueOnce(true)
+
+    spies.getCache = vi.spyOn(bookLib._private, '_getBookCache')
     spies.getCache.mockResolvedValue(cache)
 
     await bookLib.cleanUpDerivatives(dir)
@@ -728,11 +697,11 @@ describe('book', () => {
   })
 
   test('_maybeGetCoverData', async () => {
-    const bookMd = bookFixtures.makeBookMd()
+    const bookMd = bookFixtures.makeBookMd({ frontmatter: { cover_path: 'xay' } })
     const bookInput = bookFixtures.makeBookCreateInput()
     const dir = 'path/to/book'
-    const cache = bookFixtures.makeBookCache({ hasCover: true })
-    const coverData = { cover_path: 'xay' }
+    const cache = bookFixtures.makeBookCache()
+    const coverData = { cover_width: 100, cover_height: 200 }
 
     spies.getCache = vi.spyOn(bookLib._private, '_getBookCache')
     spies.getCover = vi.spyOn(bookLib._private, '_getCoverData')
@@ -759,75 +728,65 @@ describe('book', () => {
     expect(data).toEqual(bookInput)
   })
 
-  test('updateBookMd', async () => {
+  test('writeBookMd', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const dir = 'path/to/book'
 
     spies.updateCache = vi.spyOn(bookLib._private, '_updateCache')
+    spies.updateCache.mockResolvedValueOnce(true)
+
     mocks.writeFile.mockResolvedValueOnce()
     mocks.stat.mockResolvedValueOnce({ mtime: new Date() } as Stats)
     mocks.stat.mockRejectedValueOnce(new Error('not found'))
-    spies.updateCache.mockResolvedValueOnce(true)
 
-    await bookLib.updateBookMd(bookMd, dir)
+    await bookLib.writeBookMd(bookMd, dir)
 
     expect(mocks.writeFile).toHaveBeenCalledOnce()
     expect(spies.updateCache).toHaveBeenCalledOnce()
   })
 
-  test('updateBookMd with cover', async () => {
+  test('writeBookMd with cover', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const dir = 'path/to/book'
 
     spies.updateCache = vi.spyOn(bookLib._private, '_updateCache')
-    mocks.writeFile.mockResolvedValueOnce()
-    mocks.stat.mockResolvedValue({ mtime: new Date() } as Stats)
     spies.updateCache.mockResolvedValueOnce(true)
 
-    await bookLib.updateBookMd(bookMd, dir)
+    mocks.writeFile.mockResolvedValueOnce()
+    mocks.stat.mockResolvedValue({ mtime: new Date() } as Stats)
+
+    await bookLib.writeBookMd(bookMd, dir)
 
     expect(mocks.writeFile).toHaveBeenCalledOnce()
     expect(spies.updateCache).toHaveBeenCalledWith(dir, expect.any(String), {
       lastProcessed: expect.any(String),
-      hasCover: true,
     })
   })
 
-  test('updateBookMd skips cache', async () => {
+  test('createBookMd', async () => {
     const bookMd = bookFixtures.makeBookMd()
-    const dir = 'path/to/book'
 
-    spies.updateCache = vi.spyOn(bookLib._private, '_updateCache')
-    mocks.writeFile.mockResolvedValueOnce()
-    mocks.stat.mockRejectedValueOnce(new Error('boom'))
+    spies.makeBook = vi.spyOn(bookLib._private, '_makeBookMd')
+    spies.makeBook.mockReturnValueOnce(bookMd)
 
-    await bookLib.updateBookMd(bookMd, dir)
+    const createdBookMd = await bookLib.createBookMd(
+      bookMd.frontmatter.title,
+      bookMd.markdown,
+      bookMd.frontmatter
+    )
 
-    expect(mocks.writeFile).toHaveBeenCalledOnce()
-    expect(spies.updateCache).not.toHaveBeenCalled()
-  })
-
-  test('processBookMd', async () => {
-    const bookMd = bookFixtures.makeBookMd()
-    const dir = 'path/to/book'
-
-    spies.search = vi.spyOn(bookLib._private, '_maybeSearch')
-    spies.download = vi.spyOn(bookLib._private, '_maybeDownloadCover')
-    spies.search.mockResolvedValueOnce(bookMd)
-    spies.download.mockResolvedValueOnce(bookMd)
-
-    const updatedBook = await bookLib.processBookMd(bookMd, dir)
-
-    expect(bookMd).toEqual(updatedBook)
-    expect(spies.search).toHaveBeenCalledOnce()
-    expect(spies.download).toHaveBeenCalledOnce()
+    expect(spies.makeBook).toHaveBeenCalledWith(
+      bookMd.frontmatter.title.toLowerCase().replace(/\s+/g, '-'),
+      bookMd.markdown,
+      bookMd.frontmatter
+    )
+    expect(createdBookMd).toEqual(bookMd)
   })
 
   test('cacheBook', async () => {
     const lastSynced = new Date(2201, 1, 1)
     const databaseCache = {
       slug: 'a',
-      cover_path: 'b',
       date_updated: new Date(),
       date_added: new Date(),
       id: 'x',
@@ -874,30 +833,24 @@ describe('book', () => {
   test('getBookCache makes default cache', async () => {
     const dir = 'path/to/book'
     const slug = 'a'
-    const mtime = new Date()
 
     mocks.readFile.mockRejectedValueOnce(new Error('boom'))
-    mocks.stat.mockResolvedValueOnce({ mtime } as Stats)
 
     const cache = await bookLib.getBookCache(dir, slug)
 
-    expect(mocks.stat).toHaveBeenCalledOnce()
-    expect(cache).toEqual({ hasCover: true })
+    expect(cache).toEqual({})
     expect(mocks.logWarn).toHaveBeenCalledOnce()
   })
 
   test('getBookCache handles invalid cache', async () => {
     const dir = 'path/to/book'
     const slug = 'a'
-    const mtime = new Date(2202, 2, 2)
 
     mocks.readFile.mockResolvedValueOnce(JSON.stringify({ invalid: 'cache' }))
-    mocks.stat.mockResolvedValueOnce({ mtime } as Stats)
 
     const cache = await bookLib.getBookCache(dir, slug)
 
-    expect(mocks.stat).toHaveBeenCalledOnce()
-    expect(cache).toEqual({ hasCover: true })
+    expect(cache).toEqual({})
   })
 
   test('getBookCache handles invalid stat calls', async () => {
@@ -911,7 +864,7 @@ describe('book', () => {
 
     const cache = await bookLib.getBookCache(dir, slug)
 
-    expect(cache).toEqual({ hasCover: false })
+    expect(cache).toEqual({})
   })
 
   test('_updateCache', async () => {

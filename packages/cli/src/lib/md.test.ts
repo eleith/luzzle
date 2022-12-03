@@ -22,7 +22,7 @@ describe('md', () => {
       a: 'awesome',
       b: 'banana',
     }
-    const together = '---\na: awesome\nb: banana\n---\nthis is markdown'
+    const together = '---\na: awesome\nb: banana\n---\nthis is markdown\n'
 
     const combined = md.addFrontMatter(markdown, metadata)
     expect(combined).toBe(together)

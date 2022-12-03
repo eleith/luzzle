@@ -15,19 +15,22 @@ import {
   readBookDir,
   getUpdatedSlugs,
   cleanUpDerivatives,
-  updateBookMd,
-  cacheBook,
+  writeBookMd,
   getBookCache,
   getSlugFromBookMd,
   bookToMd,
   dbPath,
+  createBookMd,
+  cacheBook,
+  fetchBookMd,
+  downloadCover,
 } from './book'
 import log from './log'
 import { difference } from 'lodash'
 import { Logger } from 'pino'
 import path from 'path'
 
-export type Commands = 'sync' | 'dump' | 'process' | 'init'
+export type Commands = 'sync' | 'dump' | 'process' | 'init' | 'create' | 'attach' | 'fetch'
 
 export type Context = {
   prisma: PrismaClient
@@ -46,6 +49,43 @@ async function _parseArgs(_args: string[]) {
     .strict()
     .command('sync', 'sync directory to local database')
     .command('dump', 'dump database to local markdown files')
+    .command('process', 'process local markdown files for cleaning', (yargs) => {
+      return yargs.options({
+        force: {
+          type: 'boolean',
+          alias: 'f',
+          description: 'force updates on all items',
+          default: false,
+        },
+      })
+    })
+    .command('create <slug>', 'create a <type> named <slug>', (yargs) => {
+      return yargs.positional('slug', {
+        type: 'string',
+        description: 'unique slug for <type>',
+        demandOption: 'slug is required and must be unique per <type>',
+      })
+    })
+    .command('fetch <slug>', 'fetch metadata for <type> named <slug>', (yargs) => {
+      return yargs.positional('slug', {
+        type: 'string',
+        description: 'unique slug for <type>',
+        demandOption: 'slug is required and must be unique per <type>',
+      })
+    })
+    .command('attach <slug> <file>', 'attach a copy of path to <type> <slug>', (yargs) => {
+      return yargs
+        .positional('slug', {
+          type: 'string',
+          description: 'slug for <type>',
+          demandOption: 'slug is required',
+        })
+        .positional('file', {
+          type: 'string',
+          description: 'file or url to attach',
+          demandOption: 'file or url is required',
+        })
+    })
     .command('process', 'process local markdown files for cleaning')
     .command('init <dir>', 'initialize luzzle config with directory', (yargs) => {
       return yargs
@@ -68,12 +108,6 @@ async function _parseArgs(_args: string[]) {
       'dry-run': {
         type: 'boolean',
         description: 'run without making permanent changes',
-        default: false,
-      },
-      force: {
-        type: 'boolean',
-        alias: 'f',
-        description: 'force updates on all entries',
         default: false,
       },
       quiet: {
@@ -102,8 +136,8 @@ async function _processBook(ctx: Context, bookMd: BookMd): Promise<void> {
 
   try {
     if (ctx.flags.dryRun === false) {
-      const bookProcessed = await processBookMd(bookMd, dir)
-      await updateBookMd(bookProcessed, dir)
+      const bookProcessed = await processBookMd(bookMd)
+      await writeBookMd(bookProcessed, dir)
     }
     log.info(`processed ${bookMd.filename}`)
   } catch (err) {
@@ -232,6 +266,46 @@ async function _process(ctx: Context): Promise<void> {
   }
 }
 
+async function _fetch(ctx: Context, slug: string): Promise<void> {
+  const dir = ctx.directory
+  const bookMd = await getBook(slug, dir)
+
+  if (!bookMd) {
+    log.info(`${slug} was not found`)
+    return
+  }
+
+  try {
+    if (ctx.flags.dryRun === false) {
+      const bookProcessed = await fetchBookMd(bookMd, dir)
+      await writeBookMd(bookProcessed, dir)
+    }
+    log.info(`processed ${bookMd.filename}`)
+  } catch (err) {
+    log.error(err as string)
+  }
+}
+
+async function _attach(ctx: Context, slug: string, cover: string): Promise<void> {
+  const dir = ctx.directory
+  const bookMd = await getBook(slug, dir)
+
+  if (!bookMd) {
+    log.info(`${slug} was not found`)
+    return
+  }
+
+  try {
+    if (ctx.flags.dryRun === false) {
+      const bookProcessed = await downloadCover(bookMd, cover, dir)
+      await writeBookMd(bookProcessed, dir)
+    }
+    log.info(`uploaded ${cover} to ${bookMd.filename}`)
+  } catch (err) {
+    log.error(err as string)
+  }
+}
+
 async function _dumpBook(ctx: Context, book: Book): Promise<void> {
   const dir = ctx.directory
 
@@ -239,7 +313,7 @@ async function _dumpBook(ctx: Context, book: Book): Promise<void> {
     if (ctx.flags.dryRun === false) {
       const bookMd = await bookToMd(book)
 
-      await updateBookMd(bookMd, dir)
+      await writeBookMd(bookMd, dir)
       await cacheBook(book, dir)
     }
     log.info(`saved book to ${book.slug}.md`)
@@ -248,53 +322,80 @@ async function _dumpBook(ctx: Context, book: Book): Promise<void> {
   }
 }
 
+async function _create(ctx: Context, title: string): Promise<void> {
+  const dir = ctx.directory
+
+  try {
+    if (ctx.flags.dryRun === false) {
+      const bookMd = await createBookMd(title, 'markdown notes', { title, author: 'author' })
+      await writeBookMd(bookMd, dir)
+      log.info(`created new book at ${bookMd.filename}`)
+    } else {
+      log.info(`created new book at ${title.toLowerCase().replace(/\s+/g, '-')}.md`)
+    }
+  } catch (e) {
+    log.error(`error saving ${title}`)
+  }
+}
+
 async function _cleanup(ctx: Context): Promise<void> {
   await ctx.prisma.$disconnect()
 }
 
-async function run(): Promise<Context | null> {
+async function run(): Promise<void> {
   try {
     const command = await _private._parseArgs(hideBin(process.argv))
     const config = getConfig(command.options.config)
-    const directory = getDirectoryFromConfig(config)
 
-    const ctx: Context = {
-      prisma: getPrismaClient({
-        datasources: { db: { url: `file:${path.join(directory, dbPath)}` } },
-      }),
-      log,
-      directory,
-      config,
-      flags: {
-        dryRun: command.options.dryRun,
-        quiet: command.options.quiet,
-        force: command.options.force,
-      },
-    }
-
-    ctx.log.level = ctx.flags.quiet ? 'warn' : 'info'
+    log.level = command.options.quiet ? 'warn' : 'info'
 
     if (command.options.dryRun) {
-      ctx.log.child({ dryRun: true })
+      log.child({ dryRun: true })
     }
 
-    if (command.name === 'dump') {
-      await _private._dump(ctx)
-    } else if (command.name === 'sync') {
-      await _private._sync(ctx)
-    } else if (command.name === 'process') {
-      await _private._process(ctx)
-    } else if (command.name === 'init') {
-      await inititializeConfig(directory)
-      log.info(`initialized config at ${ctx.config.path}`)
+    if (command.name === 'init') {
+      if (command.options.dryRun === false) {
+        await inititializeConfig(command.options.dir)
+      }
+      log.info(`initialized config at ${config.path}`)
+    } else {
+      log.info(`using config at ${config.path}`)
+      const directory = getDirectoryFromConfig(config)
+      const ctx: Context = {
+        prisma: getPrismaClient({
+          datasources: { db: { url: `file:${path.join(directory, dbPath)}` } },
+        }),
+        log,
+        directory,
+        config,
+        flags: {
+          dryRun: command.options.dryRun,
+          quiet: command.options.quiet,
+          force: command.options.force,
+        },
+      }
+      // directory MUST exist
+      if (command.name === 'dump') {
+        await _private._dump(ctx)
+      } else if (command.name === 'sync') {
+        await _private._sync(ctx)
+      } else if (command.name === 'create') {
+        await _private._create(ctx, command.options.slug)
+      } else if (command.name === 'fetch') {
+        await _private._fetch(ctx, command.options.slug)
+      } else if (command.name === 'attach') {
+        await _private._attach(ctx, command.options.slug, command.options.file)
+      } else if (command.name === 'process') {
+        await _private._process(ctx)
+      }
+
+      await _private._cleanup(ctx)
+
+      return
     }
-
-    await _private._cleanup(ctx)
-
-    return ctx
   } catch (e) {
     log.error(e)
-    return null
+    return
   }
 }
 
@@ -308,8 +409,11 @@ const _private = {
   _syncRemoveBooks,
   _syncRemoveBooksExecute,
   _dump,
+  _fetch,
+  _attach,
   _sync,
   _dumpBook,
+  _create,
   _cleanup,
 }
 

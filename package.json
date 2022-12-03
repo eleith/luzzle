@@ -6,6 +6,6 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@vitest/coverage-c8": "^0.24.0"
+    "@vitest/coverage-c8": "^0.25.3"
   }
 }
