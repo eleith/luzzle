@@ -73,7 +73,7 @@ function makeSiblingLink(image: JSX.Element, slug?: string): JSX.Element {
 }
 
 export default function BookPage({ book }: BookPageProps): JSX.Element {
-  const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
+  const coverUrl = `${config.public.HOST_STATIC}/images/covers/${book.slug}.jpg`
   const [showForm, setShowForm] = useState(false)
 
   const discussionForm = <DiscussionForm slug={book.slug} onClose={() => setShowForm(false)} />

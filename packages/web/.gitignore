@@ -7,5 +7,6 @@ prisma/data
 generated
 build
 public/images/covers
+public/rss
 **/_gql_
 src/@types/graphql.d.ts

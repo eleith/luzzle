@@ -77,7 +77,7 @@ function BookCoverFor({
   scale = 1,
   ...coverProps
 }: BookCoverForProps): JSX.Element {
-  const coverUrl = `${config.HOST_STATIC}/images/covers/${book.slug}.jpg`
+  const coverUrl = `${config.public.HOST_STATIC}/images/covers/${book.slug}.jpg`
   const size = getSize(book.pages, scale)
   const color = getColor(book.slug)
   const bookCoverProps = {

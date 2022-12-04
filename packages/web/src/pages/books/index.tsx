@@ -10,6 +10,8 @@ import { useState } from 'react'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import Link from 'next/link'
 import * as styles from './index.css'
+import { generate } from '@app/common/rss'
+import config from '@app/common/config'
 
 const getBooksQuery = gql<typeof GetBooksDocument>(
   `query GetBooks($take: Int, $after: String) {
@@ -50,6 +52,22 @@ function makeBookCardLink(book: Book): JSX.Element {
 export async function getStaticProps(): Promise<{ props: BooksProps }> {
   const response = await staticClient.query({ query: getBooksQuery, variables: { take: TAKE } })
   const books = response.data?.books
+
+  const booksFeed = books?.map((book) => {
+    return {
+      title: book.title,
+      author: [{ name: book.author }],
+      link: `${config.public.HOST}/books/${books[0].slug}`,
+      image: book.coverWidth
+        ? `${config.public.HOST_STATIC}/images/covers/${book.slug}.jpg`
+        : undefined,
+      description: book.description || '',
+      content: book.description || '',
+      date: new Date(`${book.yearRead || 2000}-${book.monthRead || 1}`),
+    }
+  })
+
+  generate(booksFeed || [], 'books')
 
   return {
     props: {

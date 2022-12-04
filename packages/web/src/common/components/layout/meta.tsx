@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import config from '@app/common/config'
 
 // NOTE: https://github.com/vercel/next.js/issues/5635
 
@@ -60,6 +61,12 @@ const Meta = ({ title, name, description, image, url, children = [] }: MetaProps
       href={`${url}/favicon-16x16.png`}
     />
     <link key="manifest" rel="manifest" href={`${url}/site.webmanifest`} />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="rss feed for books"
+      href={`${config.public.HOST}/books/feed.xml`}
+    />
     {children}
   </Head>
 )
