@@ -3,7 +3,7 @@ import fetch from '@app/lib/graphql/request'
 import { DocumentNode } from 'graphql'
 import config from '@app/common/config'
 
-const graphEndPoint = `${config.HOST}${config.GRAPHQL_ENDPOINT}`
+const graphEndPoint = `${config.public.HOST}${config.public.GRAPHQL_ENDPOINT}`
 
 export default async function fetcher<X extends DocumentNode>(
   gql: X,

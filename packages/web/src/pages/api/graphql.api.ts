@@ -7,18 +7,18 @@ import {
 } from 'apollo-server-core'
 
 import type { IncomingMessage, ServerResponse } from 'http'
+import appConfig from '@app/common/config'
 
-const playground =
-  process.env.NODE_ENV === 'development'
-    ? ApolloServerPluginLandingPageGraphQLPlayground()
-    : ApolloServerPluginLandingPageDisabled()
+const playground = appConfig.isDevelopment
+  ? ApolloServerPluginLandingPageGraphQLPlayground()
+  : ApolloServerPluginLandingPageDisabled()
 
 const apolloServer = new ApolloServer({
   context: createContext,
   schema,
-  introspection: process.env.NODE_ENV === 'development',
+  introspection: appConfig.isDevelopment,
   cache: 'bounded',
-  debug: process.env.NODE_ENV === 'development',
+  debug: appConfig.isDevelopment,
   plugins: [playground],
 })
 

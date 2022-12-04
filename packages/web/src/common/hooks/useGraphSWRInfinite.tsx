@@ -4,7 +4,7 @@ import { DocumentNode } from 'graphql'
 import fetch from '@app/lib/graphql/request'
 import config from '@app/common/config'
 
-const graphEndPoint = `${config.HOST}${config.GRAPHQL_ENDPOINT}`
+const graphEndPoint = `${config.public.HOST}${config.public.GRAPHQL_ENDPOINT}`
 
 type SWRInfiniteGetKey<X> = (
   index: number,
