@@ -6,7 +6,7 @@ export const variants = recipe({
   base: {
     fontSize: vars.fontSizes.body,
     fontWeight: vars.fontWeights.normal,
-    letterSpacing: '-0.02',
+    letterSpacing: '-0.02rem',
     backgroundColor: vars.colors.surfaceVariant,
     borderTopLeftRadius: vars.radii.small,
     borderTopRightRadius: vars.radii.small,
@@ -43,7 +43,7 @@ export const variants = recipe({
 export const input = style({
   fontSize: vars.fontSizes.body,
   fontWeight: vars.fontWeights.normal,
-  letterSpacing: '-0.02',
+  letterSpacing: '-0.02rem',
   border: 'none',
   outline: 'none',
   background: 'transparent',
@@ -61,7 +61,7 @@ export const input = style({
 export const label = style({
   fontSize: vars.fontSizes.label,
   fontWeight: vars.fontWeights.light,
-  letterSpacing: '-0.02',
+  letterSpacing: '-0.02rem',
   lineHeight: '1.5',
   textAlign: 'left',
   textOverflow: 'ellipsis',

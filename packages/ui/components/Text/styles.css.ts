@@ -6,43 +6,43 @@ const sizes = {
   title: style({
     fontSize: vars.fontSizes.title,
     fontWeight: vars.fontWeights.normal,
-    letterSpacing: '-0.02',
+    letterSpacing: '-0.02rem',
     lineHeight: '2',
   }),
   h1: style({
     fontSize: vars.fontSizes.h1,
     fontWeight: vars.fontWeights.normal,
-    letterSpacing: '-0.02',
+    letterSpacing: '-0.02rem',
     lineHeight: '2',
   }),
   h2: style({
     fontSize: vars.fontSizes.h2,
     fontWeight: vars.fontWeights.normal,
-    letterSpacing: '-0.02',
+    letterSpacing: '-0.02rem',
     lineHeight: '2',
   }),
   h3: style({
     fontSize: vars.fontSizes.h3,
     fontWeight: vars.fontWeights.normal,
-    letterSpacing: '-0.01',
+    letterSpacing: '-0.01rem',
     lineHeight: '1.5',
   }),
   body: style({
     fontSize: vars.fontSizes.body,
     fontWeight: vars.fontWeights.normal,
-    letterSpacing: '-0.02',
+    letterSpacing: '-0.02rem',
     lineHeight: '1.5',
   }),
   label: style({
     fontSize: vars.fontSizes.label,
     fontWeight: vars.fontWeights.semiBold,
-    letterSpacing: '0.03',
+    letterSpacing: '0.03rem',
     textTransform: 'uppercase',
   }),
   caption: style({
     fontSize: vars.fontSizes.caption,
     fontWeight: vars.fontWeights.normal,
-    letterSpacing: '0.03',
+    letterSpacing: '0.03rem',
   }),
 }
 
