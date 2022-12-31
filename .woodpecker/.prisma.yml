@@ -19,7 +19,7 @@ pipeline:
     when:
       branch: [main]
       path:
-        include: [".woodpecker/.prisma.yml", "packages/prisma/*"]
+        include: [".woodpecker/.prisma.yml", "packages/prisma/**"]
   publish:
     image: node:16
     commands:
