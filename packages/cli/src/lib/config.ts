@@ -13,6 +13,7 @@ const defaultOptions: Options<SchemaConfig> = {
   serialize: YAML.stringify,
   deserialize: YAML.parse,
   projectSuffix: '',
+  projectName: '@luzzle/cli',
   schema: {
     directory: {
       type: 'string',
