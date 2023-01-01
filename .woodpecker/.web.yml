@@ -39,7 +39,7 @@ pipeline:
     when:
       branch: [main]
       path:
-        include: [".woodpecker/.web.yml", "packages/web/**"]
+        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   build-content:
     image: node:16
     commands:
@@ -52,7 +52,7 @@ pipeline:
     when:
       branch: [main]
       path:
-        include: [".woodpecker/.web.yml", "packages/web/**"]
+        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   deploy:
     image: git.eleith.com/eleith/gcs-web-deploy:3.0.0
     environment:
@@ -76,7 +76,7 @@ pipeline:
     when:
       branch: [main]
       path:
-        include: [".woodpecker/.web.yml", "packages/web/**"]
+        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   notify:
     image: git.eleith.com/eleith/woodpecker-email:1.0.0
     environment:
@@ -96,4 +96,4 @@ pipeline:
       status: [failure, success]
       branch: [main]
       path:
-        include: [".woodpecker/.web.yml", "packages/web/**"]
+        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
