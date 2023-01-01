@@ -1,13 +1,13 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
     "compile": "tsc --noEmit",
     "build": "esbuild src/manage.ts --platform=node --target=node16 --banner:js='#!/usr/bin/env node' --sourcemap --bundle --outfile=dist/manager.js --external:sharp",
     "test": "vitest run --coverage --silent",
-    "prepublishOnly": "npm run build && chmod +x dist/manager.js && cp ../prisma/src/schema.prisma dist/schema.prisma"
+    "prepublishOnly": "npm run build && chmod +x dist/manager.js && cp ../prisma/src/schema.prisma dist/schema.prisma && cp ../prisma/prisma/client/libquery* dist/"
   },
   "engines": {
     "node": ">=16"
