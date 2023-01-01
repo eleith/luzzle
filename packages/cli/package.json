@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -51,7 +51,7 @@
     "@fast-csv/format": "^4.3.5",
     "@fast-csv/parse": "^4.3.6",
     "@googleapis/books": "^0.3.1",
-    "@luzzle/prisma": "0.0.20",
+    "@luzzle/prisma": "0.0.21",
     "ajv": "^8.11.0",
     "async": "^3.2.4",
     "conf": "10.2.0",
