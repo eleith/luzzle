@@ -1,13 +1,11 @@
 {
   "name": "@luzzle/prisma",
-  "version": "0.0.17",
+  "version": "0.0.19",
   "author": "eleith",
   "scripts": {
     "build": "prisma generate --schema ./src/schema.prisma",
     "compile": "tsc",
-    "patch": "patch prisma/client/runtime/index.js runtime-patch.txt",
-    "lint": "eslint index.ts",
-    "prepublishOnly": "npm run build && npm run compile && npm run patch"
+    "lint": "eslint index.ts"
   },
   "engines": {
     "node": ">=16"
