@@ -1,7 +1,6 @@
 .gcloudignore
 .git
 .gitignore
-.next
 .stylelintrc.json
 .eslintrc.json
 .prettierrc.json
