@@ -55,6 +55,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/standalone ./p
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./packages/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/prisma ./packages/web/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/packages/prisma/src/schema.prisma ./packages/web/.next/server/chunks/schema.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/packages/prisma/src/schema.prisma ./packages/web/.next/server/pages/api/schema.prisma
 
 USER nextjs
 
