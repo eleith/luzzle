@@ -4,6 +4,7 @@
 node_modules
 data
 prisma/data
+prisma/schema.prisma
 generated
 build
 public/images/covers

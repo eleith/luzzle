@@ -9,7 +9,7 @@
     "build:graphql": "VERBOSE=1 DEBUG=1 NODE_OPTIONS='--loader ts-node/esm -r tsconfig-paths/register --experimental-specifier-resolution=node' graphql-codegen",
     "lint": "next lint",
     "compile": "tsc --noEmit",
-    "prebuild": "npm run build:graphql",
+    "prebuild": "npm run build:graphql && cp ../prisma/src/schema.prisma prisma/schema.prisma",
     "predev": "npm run build:graphql",
     "clean:graphql": "find . -path \\*/_gql_/*.ts -delete"
   },
