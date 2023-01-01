@@ -22,6 +22,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY tsconfig.json ./
 COPY packages ./packages
+COPY packages/prisma/src/schema.prisma ./packages/web/.next/cache/webpack/client-production/schema.prisma
 
 # disable nextjs telemetry during build
 ENV NEXT_TELEMETRY_DISABLED 1
