@@ -487,7 +487,7 @@ describe('book', () => {
       isbn: work.isbn?.[0],
       subtitle: book.subtitle,
       pages: Number(work.number_of_pages),
-      keywords: [...work.subject, ...(work.place || [])].join(','),
+      keywords: [...(work.subject || []), ...(work.place || [])].join(','),
       year_first_published: work.first_publish_year,
       cover_path: expect.any(String),
     })

@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   test: {
-    exclude: ['generated/**', 'build/**', 'node_modules/**'],
+    exclude: ['generated/**', 'build/**', 'node_modules/**', 'dist/**'],
     coverage: {
       lines: 95,
       branches: 95,
@@ -11,7 +11,7 @@ export default defineConfig({
       functions: 95,
       exclude: [
         'generated/**',
-        'build/**',
+        'dist/**',
         '**/*{.,-}fixtures.{js,cjs,mjs,ts,tsx,jsx}',
         'coverage/**',
         'packages/*/test{,s}/**',
