@@ -39,6 +39,7 @@ const Meta = ({ title, name, description, image, url, children = [] }: MetaProps
     )}
     <meta key="theme_color" name="theme-color" content={'blue'} />
     <meta key="tile_color" name="msapplication-TileColor" content={'blue'} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link key="safari_icon" rel="mask-icon" href={`${url}/safari-pinned-tab.png`} color={'blue'} />
     <link
       key="apple_icon"
