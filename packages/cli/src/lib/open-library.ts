@@ -17,7 +17,6 @@ export interface OpenLibrarySearchWork {
   subject?: Array<string>
   place?: Array<string>
   cover_i?: number
-  covers?: Array<number>
   first_publish_year: number
   type: string
 }
@@ -80,7 +79,8 @@ async function findWork(id: string): Promise<OpenLibrarySearchWork | null> {
     })
 
     if (response.statusCode === 200 && response.body.num_found > 0) {
-      return response.body.docs.filter((item) => item.type === 'work')[0]
+      const works = response.body.docs.filter((item) => item.type === 'work') || []
+      return works.find((item) => item.key === `/works/${id}`) || null
     }
 
     log.warn('open-library', `findWork returned http: ${response.statusCode}`)
