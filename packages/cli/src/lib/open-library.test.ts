@@ -62,7 +62,7 @@ describe('open-library', () => {
 
   test('findWork', async () => {
     const workId = 'work-id'
-    const work = openLibraryFixtures.makeOpenLibrarySearchWork()
+    const work = openLibraryFixtures.makeOpenLibrarySearchWork({ key: `/works/${workId}` })
 
     mocks.gotGet.mockResolvedValueOnce({ statusCode: 200, body: { num_found: 1, docs: [work] } })
 
