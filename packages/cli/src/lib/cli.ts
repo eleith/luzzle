@@ -86,7 +86,6 @@ async function _parseArgs(_args: string[]) {
           demandOption: 'file or url is required',
         })
     })
-    .command('process', 'process local markdown files for cleaning')
     .command('init <dir>', 'initialize luzzle config with directory', (yargs) => {
       return yargs
         .positional('dir', {
