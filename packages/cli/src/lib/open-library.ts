@@ -16,8 +16,8 @@ export interface OpenLibrarySearchWork {
   author_name: Array<string>
   subject?: Array<string>
   place?: Array<string>
-  cover_i: number
-  covers: Array<number>
+  cover_i?: number
+  covers?: Array<number>
   first_publish_year: number
   type: string
 }

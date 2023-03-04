@@ -463,7 +463,7 @@ async function _searchOpenLibrary(
     const places = work.place || []
     const coverId = work.cover_i || work.covers?.[0] || undefined
     const keywords = uniq(subjects.concat(places)).map((x) => x.toLowerCase())
-    const coverUrl = coverId ? getCoverUrl(work.cover_i || work.covers[0]) : undefined
+    const coverUrl = coverId ? getCoverUrl(coverId) : undefined
     const coverPath = _getCoverPathForBook(slug, dir)
 
     if (coverUrl) {
