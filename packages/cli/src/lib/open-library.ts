@@ -14,7 +14,7 @@ export interface OpenLibrarySearchWork {
   number_of_pages: string
   isbn?: Array<string>
   author_name: Array<string>
-  subject: Array<string>
+  subject?: Array<string>
   place?: Array<string>
   cover_i: number
   first_publish_year: number

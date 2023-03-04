@@ -459,7 +459,7 @@ async function _searchOpenLibrary(
     const isbn = work.isbn?.[0]
     const publishedYear = work.first_publish_year
     const pages = Number(work.number_of_pages)
-    const subjects = work.subject
+    const subjects = work.subject || []
     const places = work.place || []
     const keywords = uniq(subjects.concat(places)).map((x) => x.toLowerCase())
     const coverUrl = getCoverUrl(work.cover_i)
