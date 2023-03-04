@@ -17,6 +17,7 @@ export interface OpenLibrarySearchWork {
   subject?: Array<string>
   place?: Array<string>
   cover_i: number
+  covers: Array<number>
   first_publish_year: number
   type: string
 }
@@ -42,7 +43,7 @@ export interface OpenLibraryBook {
   description: string
 }
 
-const OPEN_LIBRARY_SEARCH_ENDPOINT = 'http://openlibrary.org/search.json'
+const OPEN_LIBRARY_SEARCH_ENDPOINT = 'https://openlibrary.org/search.json'
 
 async function search(title: string, author: string): Promise<Array<OpenLibrarySearchWork>> {
   try {

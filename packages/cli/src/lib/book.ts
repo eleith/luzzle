@@ -461,8 +461,9 @@ async function _searchOpenLibrary(
     const pages = Number(work.number_of_pages)
     const subjects = work.subject || []
     const places = work.place || []
+    const coverId = work.cover_i || work.covers?.[0] || undefined
     const keywords = uniq(subjects.concat(places)).map((x) => x.toLowerCase())
-    const coverUrl = getCoverUrl(work.cover_i)
+    const coverUrl = coverId ? getCoverUrl(work.cover_i || work.covers[0]) : undefined
     const coverPath = _getCoverPathForBook(slug, dir)
 
     if (coverUrl) {
