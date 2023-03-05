@@ -10,6 +10,7 @@ pipeline:
       - npm run compile -w @luzzle/cli
       - npm run build -w @luzzle/cli
     when:
+      event: [push]
       branch: [main]
       path:
         include: [".woodpecker/.cli.yml", "packages/cli/**"]
@@ -19,6 +20,7 @@ pipeline:
       - npm run lint -w @luzzle/cli
       - npm run test -w @luzzle/cli
     when:
+      event: [push]
       branch: [main]
       path:
         include: [".woodpecker/.cli.yml", "packages/cli/**"]
@@ -34,6 +36,7 @@ pipeline:
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/cli; fi
     secrets: [npm_owner, npm_token]
     when:
+      event: [push]
       branch: [main]
       path:
         include: [".woodpecker/.cli.yml", "packages/cli/**"]
@@ -53,6 +56,7 @@ pipeline:
       - source: smtp_to
         target: plugin_recipients
     when:
+      event: [push]
       status: [failure, success]
       branch: [main]
       path:
