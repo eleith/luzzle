@@ -6,6 +6,11 @@ import path from 'path'
 
 export type SchemaConfig = {
   directory: string
+  deploy: {
+    url: string
+    token: string
+    body?: string
+  }
 }
 
 const defaultOptions: Options<SchemaConfig> = {
@@ -19,6 +24,25 @@ const defaultOptions: Options<SchemaConfig> = {
       type: 'string',
       format: 'uri',
       description: 'directory of luzzle files',
+    },
+    deploy: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          format: 'uri',
+          description: 'url to send webhook to',
+        },
+        body: {
+          type: 'string',
+          description: 'body of webhook',
+        },
+        token: {
+          type: 'string',
+          description: 'authentication token for webhook',
+        },
+      },
+      required: ['url', 'token'],
     },
   },
 }
