@@ -29,8 +29,17 @@ import log from './log'
 import { difference } from 'lodash'
 import { Logger } from 'pino'
 import path from 'path'
+import got from 'got'
 
-export type Commands = 'sync' | 'dump' | 'process' | 'init' | 'create' | 'attach' | 'fetch'
+export type Commands =
+  | 'sync'
+  | 'dump'
+  | 'deploy'
+  | 'process'
+  | 'init'
+  | 'create'
+  | 'attach'
+  | 'fetch'
 
 export type Context = {
   prisma: PrismaClient
@@ -49,6 +58,7 @@ async function _parseArgs(_args: string[]) {
     .strict()
     .command('sync', 'sync directory to local database')
     .command('dump', 'dump database to local markdown files')
+    .command('deploy', 'run deploy webhook to update remote database')
     .command('process', 'process local markdown files for cleaning', (yargs) => {
       return yargs.options({
         force: {
@@ -236,6 +246,21 @@ async function _sync(ctx: Context): Promise<void> {
   await _private._syncRemoveBooks(ctx, bookSlugs)
 }
 
+async function _deploy(ctx: Context): Promise<void> {
+  const { url, token, body } = ctx.config.get('deploy')
+  const headers = { Authorization: `Bearer ${token}` }
+
+  if (ctx.flags.dryRun === false) {
+    if (body) {
+      await got.post(url, { json: JSON.parse(body), headers }).text()
+    } else {
+      await got.post(url, { headers: headers }).text()
+    }
+  }
+
+  ctx.log.info(`deployed to ${url}`)
+}
+
 async function _dump(ctx: Context): Promise<void> {
   const books = await ctx.prisma.book.findMany()
   const numCpus = cpus().length
@@ -374,18 +399,28 @@ async function run(): Promise<void> {
         },
       }
       // directory MUST exist
-      if (command.name === 'dump') {
-        await _private._dump(ctx)
-      } else if (command.name === 'sync') {
-        await _private._sync(ctx)
-      } else if (command.name === 'create') {
-        await _private._create(ctx, command.options.slug)
-      } else if (command.name === 'fetch') {
-        await _private._fetch(ctx, command.options.slug)
-      } else if (command.name === 'attach') {
-        await _private._attach(ctx, command.options.slug, command.options.file)
-      } else if (command.name === 'process') {
-        await _private._process(ctx)
+      switch (command.name) {
+        case 'dump':
+          await _private._dump(ctx)
+          break
+        case 'deploy':
+          await _private._deploy(ctx)
+          break
+        case 'sync':
+          await _private._sync(ctx)
+          break
+        case 'create':
+          await _private._create(ctx, command.options.slug)
+          break
+        case 'fetch':
+          await _private._fetch(ctx, command.options.slug)
+          break
+        case 'attach':
+          await _private._attach(ctx, command.options.slug, command.options.file)
+          break
+        case 'process':
+          await _private._process(ctx)
+          break
       }
 
       await _private._cleanup(ctx)
@@ -411,6 +446,7 @@ const _private = {
   _fetch,
   _attach,
   _sync,
+  _deploy,
   _dumpBook,
   _create,
   _cleanup,
