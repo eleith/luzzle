@@ -9,7 +9,6 @@ pipeline:
       - npm run build -w @luzzle/prisma
       - npm run compile -w @luzzle/prisma
     when:
-      event: [push]
       branch: [main]
       path:
         include: [".woodpecker/.prisma.yml", "packages/prisma/**"]
@@ -18,7 +17,6 @@ pipeline:
     commands:
       - npm run lint -w @luzzle/prisma
     when:
-      event: [push]
       branch: [main]
       path:
         include: [".woodpecker/.prisma.yml", "packages/prisma/**"]
@@ -34,7 +32,6 @@ pipeline:
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/prisma; fi
     secrets: [npm_token, npm_owner]
     when:
-      event: [push]
       branch: [main]
       path:
         include: [".woodpecker/.prisma.yml", "packages/prisma/**"]
