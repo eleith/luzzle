@@ -8,7 +8,6 @@ pipeline:
       - npm ci -w @luzzle/ui
       - npm run compile -w @luzzle/ui
     when:
-      event: [push]
       branch: [main]
       path:
         include: [".woodpecker/.ui.yml", "packages/ui/**"]
@@ -17,7 +16,6 @@ pipeline:
     commands:
       - npm run lint -w @luzzle/ui
     when:
-      event: [push]
       branch: [main]
       path:
         include: [".woodpecker/.ui.yml", "packages/ui/**"]
@@ -33,7 +31,6 @@ pipeline:
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/ui; fi
     secrets: [npm_owner, npm_token]
     when:
-      event: [push]
       branch: [main]
       path:
         include: [".woodpecker/.ui.yml", "packages/ui/**"]
