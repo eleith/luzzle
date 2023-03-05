@@ -37,6 +37,8 @@ pipeline:
       - rclone copy $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
     secrets: [rclone_webdav_url, rclone_webdav_vendor, rclone_webdav_user, rclone_webdav_pass, rclone_service_key_json, rclone_gcs_project_number]
     when:
+      event: [push, deployment]
+      environment: production
       branch: [main]
       path:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
@@ -50,6 +52,8 @@ pipeline:
       - cp -R /workspace/data/books/.assets/covers public/images
       - cp /workspace/data/books/.assets/data/sqlite.db prisma/data
     when:
+      event: [push, deployment]
+      environment: production
       branch: [main]
       path:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
@@ -74,6 +78,8 @@ pipeline:
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
     secrets: [cloud_run_service_key_json, nextjs_env_local]
     when:
+      event: [push, deployment]
+      environment: production
       branch: [main]
       path:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
@@ -93,6 +99,8 @@ pipeline:
       - source: smtp_to
         target: plugin_recipients
     when:
+      event: [push, deployment]
+      environment: production
       status: [failure, success]
       branch: [main]
       path:
