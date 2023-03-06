@@ -252,9 +252,9 @@ async function _deploy(ctx: Context): Promise<void> {
 
   if (ctx.flags.dryRun === false) {
     if (body) {
-      await got.post(url, { json: JSON.parse(body), headers }).text()
+      await got.post(url, { json: JSON.parse(body), headers })
     } else {
-      await got.post(url, { headers: headers }).text()
+      await got.post(url, { headers: headers })
     }
   }
 
@@ -398,6 +398,7 @@ async function run(): Promise<void> {
           force: command.options.force,
         },
       }
+
       // directory MUST exist
       switch (command.name) {
         case 'dump':
