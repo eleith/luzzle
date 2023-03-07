@@ -30,9 +30,11 @@ import { difference } from 'lodash'
 import { Logger } from 'pino'
 import path from 'path'
 import got from 'got'
+import { spawn } from 'child_process'
 
 export type Commands =
   | 'sync'
+  | 'cd'
   | 'dump'
   | 'deploy'
   | 'process'
@@ -59,6 +61,7 @@ async function _parseArgs(_args: string[]) {
     .command('sync', 'sync directory to local database')
     .command('dump', 'dump database to local markdown files')
     .command('deploy', 'run deploy webhook to update remote database')
+    .command('cd', 'change directory to the book directory')
     .command('process', 'process local markdown files for cleaning', (yargs) => {
       return yargs.options({
         force: {
@@ -246,6 +249,27 @@ async function _sync(ctx: Context): Promise<void> {
   await _private._syncRemoveBooks(ctx, bookSlugs)
 }
 
+async function _cd(ctx: Context): Promise<void> {
+  if (process.env.LUZZLE) {
+    log.error('already in luzzle instance')
+    return
+  }
+
+  if (process.env.SHELL) {
+    if (ctx.flags.dryRun === false) {
+      spawn(process.env.SHELL, [], {
+        cwd: ctx.directory,
+        env: { ...process.env, LUZZLE: 'true' },
+        stdio: 'inherit',
+      }).on('exit', process.exit)
+    } else {
+      log.info(`cd to ${ctx.directory}`)
+    }
+  } else {
+    log.error('could not find shell')
+  }
+}
+
 async function _deploy(ctx: Context): Promise<void> {
   const { url, token, body } = ctx.config.get('deploy')
   const headers = { Authorization: `Bearer ${token}` }
@@ -404,6 +428,9 @@ async function run(): Promise<void> {
         case 'dump':
           await _private._dump(ctx)
           break
+        case 'cd':
+          await _private._cd(ctx)
+          break
         case 'deploy':
           await _private._deploy(ctx)
           break
@@ -443,6 +470,7 @@ const _private = {
   _syncUpdateBookExecute,
   _syncRemoveBooks,
   _syncRemoveBooksExecute,
+  _cd,
   _dump,
   _fetch,
   _attach,
