@@ -29,6 +29,7 @@ import { getPrismaClient, PrismaClient } from './prisma'
 import { getDirectoryFromConfig, inititializeConfig, getConfig, Config } from './config'
 import path from 'path'
 import { EventEmitter } from 'stream'
+import commands, { Context } from './commands'
 
 vi.mock('os')
 vi.mock('fs/promises')
@@ -37,6 +38,7 @@ vi.mock('child_process')
 vi.mock('./book')
 vi.mock('./prisma')
 vi.mock('./config')
+vi.mock('./commands')
 
 const prisma = {
   $disconnect: vi.fn(),
@@ -102,14 +104,14 @@ function makeCommand(overrides?: DeepPartial<Command>): Command {
         config: undefined,
         dryRun: false,
         force: false,
-        quiet: false,
+        verbose: false,
       },
     },
     overrides
   )
 }
 
-function makeContext(overrides?: DeepPartial<cli.Context>): cli.Context {
+function makeContext(overrides?: DeepPartial<Context>): Context {
   mocks.getPrismaClient.mockReturnValue(prisma as unknown as PrismaClient)
 
   return merge(
@@ -120,7 +122,7 @@ function makeContext(overrides?: DeepPartial<cli.Context>): cli.Context {
       config: {} as Config,
       flags: {
         dryRun: false,
-        quiet: false,
+        verbose: false,
         force: false,
       },
     },
@@ -157,7 +159,7 @@ describe('tools/lib/cli', () => {
 
     await cli.run()
 
-    expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'info')
+    expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'warn')
     expect(spies.syncToDb).toHaveBeenCalled()
     expect(spies.cleanup).toHaveBeenCalled()
   })
@@ -206,6 +208,29 @@ describe('tools/lib/cli', () => {
     expect(spies.cleanup).toHaveBeenCalled()
   })
 
+  Object.keys(commands).forEach((commandName) => {
+    test(`run ${commandName}`, async () => {
+      const command = commands[commandName as keyof typeof commands]
+      const argv = makeCommand({ name: command.name })
+      const config = {} as Config
+
+      mocks.getConfig.mockReturnValueOnce(config)
+      mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+
+      spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
+      spies.cleanup = vi.spyOn(cli._private, '_cleanup')
+      spies.run = vi.spyOn(command, 'run')
+
+      spies.parseArgs.mockResolvedValueOnce(argv)
+      spies.cleanup.mockResolvedValueOnce(undefined)
+
+      await cli.run()
+
+      expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'warn')
+      expect(spies.run).toHaveBeenCalledOnce()
+    })
+  })
+
   test('run _cd', async () => {
     const command = makeCommand({ name: 'cd' })
     const config = {} as Config
@@ -223,7 +248,7 @@ describe('tools/lib/cli', () => {
 
     await cli.run()
 
-    expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'info')
+    expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'warn')
     expect(spies.cd).toHaveBeenCalledOnce()
   })
 
@@ -244,7 +269,7 @@ describe('tools/lib/cli', () => {
 
     await cli.run()
 
-    expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'info')
+    expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'warn')
     expect(spies.deploy).toHaveBeenCalledOnce()
   })
 
@@ -1089,8 +1114,8 @@ describe('tools/lib/cli', () => {
     expect(command).toMatchObject({
       name: 'init',
       options: {
-        quiet: false,
         dryRun: false,
+        verbose: false,
         dir: args[1],
       },
     })
