@@ -1,6 +1,6 @@
-import { Book, PrismaClient } from './prisma'
+import { Book } from './prisma'
 import { getPrismaClient } from './prisma'
-import { getDirectoryFromConfig, inititializeConfig, getConfig, Config } from './config'
+import { getDirectoryFromConfig, inititializeConfig, getConfig } from './config'
 import { eachLimit } from 'async'
 import { stat } from 'fs/promises'
 import { cpus } from 'os'
@@ -27,33 +27,10 @@ import {
 } from './book'
 import log from './log'
 import { difference } from 'lodash'
-import { Logger } from 'pino'
 import path from 'path'
 import got from 'got'
 import { spawn } from 'child_process'
-
-export type Commands =
-  | 'sync'
-  | 'cd'
-  | 'dump'
-  | 'deploy'
-  | 'process'
-  | 'init'
-  | 'create'
-  | 'attach'
-  | 'fetch'
-
-export type Context = {
-  prisma: PrismaClient
-  log: Logger
-  directory: string
-  config: Config
-  flags: {
-    force: boolean
-    dryRun: boolean
-    quiet: boolean
-  }
-}
+import commands, { Context } from './commands'
 
 async function _parseArgs(_args: string[]) {
   const command = await yargs(_args)
@@ -63,15 +40,14 @@ async function _parseArgs(_args: string[]) {
     .command('deploy', 'run deploy webhook to update remote database')
     .command('cd', 'change directory to the book directory')
     .command('process', 'process local markdown files for cleaning', (yargs) => {
-      return yargs.options({
-        force: {
-          type: 'boolean',
-          alias: 'f',
-          description: 'force updates on all items',
-          default: false,
-        },
+      return yargs.options('force', {
+        type: 'boolean',
+        alias: 'f',
+        description: 'force updates on all items',
+        default: false,
       })
     })
+    .command(commands.edit.name, commands.edit.describe, (yargs) => commands.edit.builder?.(yargs))
     .command('create <slug>', 'create a <type> named <slug>', (yargs) => {
       return yargs.positional('slug', {
         type: 'string',
@@ -122,8 +98,7 @@ async function _parseArgs(_args: string[]) {
         description: 'run without making permanent changes',
         default: false,
       },
-      quiet: {
-        alias: 'q',
+      verbose: {
         type: 'boolean',
         default: false,
       },
@@ -138,7 +113,7 @@ async function _parseArgs(_args: string[]) {
     .parseAsync()
 
   return {
-    name: command._[0] as Commands,
+    name: command._[0],
     options: command,
   }
 }
@@ -395,10 +370,11 @@ async function run(): Promise<void> {
     const command = await _private._parseArgs(hideBin(process.argv))
     const config = getConfig(command.options.config)
 
-    log.level = command.options.quiet ? 'warn' : 'info'
+    log.level = command.options.verbose ? 'info' : 'warn'
 
     if (command.options.dryRun) {
       log.child({ dryRun: true })
+      log.level = 'info'
     }
 
     if (command.name === 'init') {
@@ -418,7 +394,7 @@ async function run(): Promise<void> {
         config,
         flags: {
           dryRun: command.options.dryRun,
-          quiet: command.options.quiet,
+          verbose: command.options.verbose,
           force: command.options.force,
         },
       }
@@ -436,6 +412,12 @@ async function run(): Promise<void> {
           break
         case 'sync':
           await _private._sync(ctx)
+          break
+        case 'edit-config':
+          await commands.editConfig.run(ctx, command.options)
+          break
+        case 'edit':
+          await commands.edit.run(ctx, command.options)
           break
         case 'create':
           await _private._create(ctx, command.options.slug)
