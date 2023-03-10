@@ -9,7 +9,7 @@ const command: Command = {
 
   describe: 'edit the config file',
 
-  run: async function (ctx: Context) {
+  run: async function(ctx: Context) {
     const dir = ctx.directory
 
     if (process.env.EDITOR) {
