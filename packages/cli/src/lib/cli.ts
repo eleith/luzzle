@@ -11,10 +11,8 @@ import {
   bookMdToBookCreateInput,
   bookMdToBookUpdateInput,
   getBook,
-  processBookMd,
   readBookDir,
   getUpdatedSlugs,
-  cleanUpDerivatives,
   writeBookMd,
   getBookCache,
   getSlugFromBookMd,
@@ -38,19 +36,14 @@ async function _parseArgs(_args: string[]) {
     .command('dump', 'dump database to local markdown files')
     .command('deploy', 'run deploy webhook to update remote database')
     .command('cd', 'change directory to the book directory')
-    .command('process', 'process local markdown files for cleaning', (yargs) => {
-      return yargs.options('force', {
-        type: 'boolean',
-        alias: 'f',
-        description: 'force updates on all items',
-        default: false,
-      })
-    })
     .command(commands.edit.name, commands.edit.describe, (yargs) => commands.edit.builder?.(yargs))
     .command(commands.attach.name, commands.attach.describe, (yargs) =>
       commands.attach.builder?.(yargs)
     )
     .command(commands.editConfig.name, commands.editConfig.describe)
+    .command(commands.process.name, commands.process.describe, (yargs) =>
+      commands.process.builder?.(yargs)
+    )
     .command('create <slug>', 'create a <type> named <slug>', (yargs) => {
       return yargs.positional('slug', {
         type: 'string',
@@ -105,20 +98,6 @@ async function _parseArgs(_args: string[]) {
   return {
     name: command._[0],
     options: command,
-  }
-}
-
-async function _processBook(ctx: Context, bookMd: BookMd): Promise<void> {
-  const dir = ctx.directory
-
-  try {
-    if (ctx.flags.dryRun === false) {
-      const bookProcessed = await processBookMd(bookMd)
-      await writeBookMd(bookProcessed, dir)
-    }
-    log.info(`processed ${bookMd.filename}`)
-  } catch (err) {
-    log.error(err as string)
   }
 }
 
@@ -259,25 +238,25 @@ async function _dump(ctx: Context): Promise<void> {
   })
 }
 
-async function _process(ctx: Context): Promise<void> {
-  const dir = ctx.directory
-  const force = ctx.flags.force
-  const bookSlugs = await readBookDir(dir)
-  const updatedBookSlugs = force
-    ? bookSlugs
-    : await getUpdatedSlugs(bookSlugs, dir, 'lastProcessed')
-
-  await eachLimit(updatedBookSlugs, 1, async (slug) => {
-    const bookMd = await getBook(slug, dir)
-    if (bookMd) {
-      await _private._processBook(ctx, bookMd)
-    }
-  })
-
-  if (ctx.flags.dryRun === false) {
-    await cleanUpDerivatives(dir)
-  }
-}
+// async function _process(ctx: Context): Promise<void> {
+//   const dir = ctx.directory
+//   const force = ctx.flags.force
+//   const bookSlugs = await readBookDir(dir)
+//   const updatedBookSlugs = force
+//     ? bookSlugs
+//     : await getUpdatedSlugs(bookSlugs, dir, 'lastProcessed')
+//
+//   await eachLimit(updatedBookSlugs, 1, async (slug) => {
+//     const bookMd = await getBook(slug, dir)
+//     if (bookMd) {
+//       await _private._processBook(ctx, bookMd)
+//     }
+//   })
+//
+//   if (ctx.flags.dryRun === false) {
+//     await cleanUpDerivatives(dir)
+//   }
+// }
 
 async function _fetch(ctx: Context, slug: string): Promise<void> {
   const dir = ctx.directory
@@ -399,7 +378,7 @@ async function run(): Promise<void> {
           await commands.attach.run(ctx, command.options)
           break
         case 'process':
-          await _private._process(ctx)
+          await commands.process.run(ctx, command.options)
           break
       }
 
@@ -415,8 +394,6 @@ async function run(): Promise<void> {
 
 const _private = {
   _parseArgs,
-  _process,
-  _processBook,
   _syncAddBook,
   _syncUpdateBook,
   _syncUpdateBookExecute,

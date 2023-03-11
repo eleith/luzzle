@@ -26,7 +26,7 @@ const command: Command<AttachArgv> = {
       })
   },
 
-  run: async function(ctx, args) {
+  run: async function (ctx, args) {
     const dir = ctx.directory
     const { slug, file } = args
     const bookMd = await getBook(slug, dir)
