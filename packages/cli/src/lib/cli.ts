@@ -23,7 +23,6 @@ import {
   createBookMd,
   cacheBook,
   fetchBookMd,
-  downloadCover,
 } from './book'
 import log from './log'
 import { difference } from 'lodash'
@@ -48,6 +47,10 @@ async function _parseArgs(_args: string[]) {
       })
     })
     .command(commands.edit.name, commands.edit.describe, (yargs) => commands.edit.builder?.(yargs))
+    .command(commands.attach.name, commands.attach.describe, (yargs) =>
+      commands.attach.builder?.(yargs)
+    )
+    .command(commands.editConfig.name, commands.editConfig.describe)
     .command('create <slug>', 'create a <type> named <slug>', (yargs) => {
       return yargs.positional('slug', {
         type: 'string',
@@ -61,19 +64,6 @@ async function _parseArgs(_args: string[]) {
         description: 'unique slug for <type>',
         demandOption: 'slug is required and must be unique per <type>',
       })
-    })
-    .command('attach <slug> <file>', 'attach a copy of path to <type> <slug>', (yargs) => {
-      return yargs
-        .positional('slug', {
-          type: 'string',
-          description: 'slug for <type>',
-          demandOption: 'slug is required',
-        })
-        .positional('file', {
-          type: 'string',
-          description: 'file or url to attach',
-          demandOption: 'file or url is required',
-        })
     })
     .command('init <dir>', 'initialize luzzle config with directory', (yargs) => {
       return yargs
@@ -309,26 +299,6 @@ async function _fetch(ctx: Context, slug: string): Promise<void> {
   }
 }
 
-async function _attach(ctx: Context, slug: string, cover: string): Promise<void> {
-  const dir = ctx.directory
-  const bookMd = await getBook(slug, dir)
-
-  if (!bookMd) {
-    log.info(`${slug} was not found`)
-    return
-  }
-
-  try {
-    if (ctx.flags.dryRun === false) {
-      const bookProcessed = await downloadCover(bookMd, cover, dir)
-      await writeBookMd(bookProcessed, dir)
-    }
-    log.info(`uploaded ${cover} to ${bookMd.filename}`)
-  } catch (err) {
-    log.error(err as string)
-  }
-}
-
 async function _dumpBook(ctx: Context, book: Book): Promise<void> {
   const dir = ctx.directory
 
@@ -426,7 +396,7 @@ async function run(): Promise<void> {
           await _private._fetch(ctx, command.options.slug)
           break
         case 'attach':
-          await _private._attach(ctx, command.options.slug, command.options.file)
+          await commands.attach.run(ctx, command.options)
           break
         case 'process':
           await _private._process(ctx)
@@ -455,7 +425,6 @@ const _private = {
   _cd,
   _dump,
   _fetch,
-  _attach,
   _sync,
   _deploy,
   _dumpBook,

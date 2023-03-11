@@ -315,31 +315,6 @@ describe('tools/lib/cli', () => {
     expect(spies.cleanup).toHaveBeenCalled()
   })
 
-  test('run _attach', async () => {
-    const command = makeCommand({ name: 'attach', options: { slug: 'slug', file: 'file' } })
-    const config = {} as Config
-
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
-
-    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
-    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
-    spies.attach = vi.spyOn(cli._private, '_attach')
-
-    spies.parseArgs.mockResolvedValueOnce(command)
-    spies.attach.mockResolvedValueOnce(undefined)
-    spies.cleanup.mockResolvedValueOnce(undefined)
-
-    await cli.run()
-
-    expect(spies.attach).toHaveBeenCalledWith(
-      expect.anything(),
-      command.options.slug,
-      command.options.file
-    )
-    expect(spies.cleanup).toHaveBeenCalled()
-  })
-
   test('run _fetch', async () => {
     const command = makeCommand({ name: 'fetch' })
     const config = {} as Config
@@ -945,51 +920,6 @@ describe('tools/lib/cli', () => {
     mocks.writeBookMd.mockResolvedValue()
 
     await cli._private._fetch(ctx, slug)
-
-    expect(mocks.logError).toHaveBeenCalled()
-  })
-
-  test('_attach', async () => {
-    const ctx = makeContext()
-    const slug = 'a-book-slug'
-    const cover = 'path/to/cover.png'
-    const bookMd = bookFixtures.makeBookMd()
-
-    mocks.getBook.mockResolvedValue(bookMd)
-    mocks.downloadCover.mockResolvedValue(bookMd)
-    mocks.writeBookMd.mockResolvedValue()
-
-    await cli._private._attach(ctx, slug, cover)
-
-    expect(mocks.getBook).toHaveBeenCalledWith(slug, ctx.directory)
-    expect(mocks.downloadCover).toHaveBeenCalledWith(bookMd, cover, ctx.directory)
-    expect(mocks.writeBookMd).toHaveBeenCalledWith(bookMd, ctx.directory)
-  })
-
-  test('_attach on non-existant slug', async () => {
-    const ctx = makeContext()
-    const slug = 'a-book-slug'
-    const cover = 'path/to/cover.png'
-
-    mocks.getBook.mockResolvedValue(null)
-
-    await cli._private._attach(ctx, slug, cover)
-
-    expect(mocks.downloadCover).not.toHaveBeenCalled()
-    expect(mocks.writeBookMd).not.toHaveBeenCalled()
-  })
-
-  test('_attach fails', async () => {
-    const ctx = makeContext()
-    const slug = 'a-book-slug'
-    const cover = 'path/to/cover.png'
-    const bookMd = bookFixtures.makeBookMd()
-
-    mocks.getBook.mockResolvedValue(bookMd)
-    mocks.downloadCover.mockRejectedValue(new Error('boom'))
-    mocks.writeBookMd.mockResolvedValue()
-
-    await cli._private._attach(ctx, slug, cover)
 
     expect(mocks.logError).toHaveBeenCalled()
   })
