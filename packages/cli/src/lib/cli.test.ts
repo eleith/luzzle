@@ -272,27 +272,6 @@ describe('tools/lib/cli', () => {
     expect(spies.deploy).toHaveBeenCalledOnce()
   })
 
-  test('run _create', async () => {
-    const command = makeCommand({ name: 'create' })
-    const config = {} as Config
-
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
-
-    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
-    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
-    spies.create = vi.spyOn(cli._private, '_create')
-
-    spies.parseArgs.mockResolvedValueOnce(command)
-    spies.create.mockResolvedValueOnce(undefined)
-    spies.cleanup.mockResolvedValueOnce(undefined)
-
-    await cli.run()
-
-    expect(spies.create).toHaveBeenCalled()
-    expect(spies.cleanup).toHaveBeenCalled()
-  })
-
   test('run _fetch', async () => {
     const command = makeCommand({ name: 'fetch' })
     const config = {} as Config
@@ -820,40 +799,6 @@ describe('tools/lib/cli', () => {
     await cli._private._syncAddBook(ctx, bookMd)
 
     expect(mocks.logError).toHaveBeenCalled()
-  })
-
-  test('_create', async () => {
-    const ctx = makeContext()
-    const title = 'A Book Title'
-    const bookMd = bookFixtures.makeBookMd()
-
-    mocks.createBook.mockResolvedValueOnce(bookMd)
-    mocks.writeBookMd.mockResolvedValue()
-
-    await cli._private._create(ctx, title)
-
-    expect(mocks.createBook).toHaveBeenCalled()
-    expect(mocks.writeBookMd).toHaveBeenCalledWith(bookMd, ctx.directory)
-  })
-
-  test('_create dry run', async () => {
-    const ctx = makeContext({ flags: { dryRun: true } })
-    const title = 'A Book Title'
-
-    await cli._private._create(ctx, title)
-
-    expect(mocks.writeBookMd).not.toHaveBeenCalled()
-  })
-
-  test('_create fails', async () => {
-    const ctx = makeContext()
-    const title = 'A Book Title'
-
-    mocks.createBook.mockRejectedValueOnce(new Error('boom'))
-
-    await cli._private._create(ctx, title)
-
-    expect(mocks.writeBookMd).not.toHaveBeenCalled()
   })
 
   test('_fetch', async () => {
