@@ -272,27 +272,6 @@ describe('tools/lib/cli', () => {
     expect(spies.deploy).toHaveBeenCalledOnce()
   })
 
-  test('run _fetch', async () => {
-    const command = makeCommand({ name: 'fetch' })
-    const config = {} as Config
-
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
-
-    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
-    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
-    spies.fetch = vi.spyOn(cli._private, '_fetch')
-
-    spies.parseArgs.mockResolvedValueOnce(command)
-    spies.fetch.mockResolvedValueOnce(undefined)
-    spies.cleanup.mockResolvedValueOnce(undefined)
-
-    await cli.run()
-
-    expect(spies.fetch).toHaveBeenCalledWith(expect.anything(), command.options.slug)
-    expect(spies.cleanup).toHaveBeenCalled()
-  })
-
   test('run init', async () => {
     const command = makeCommand({ name: 'init', options: { dir: 'somewhere' } })
     const config = {} as Config
@@ -797,48 +776,6 @@ describe('tools/lib/cli', () => {
     mocks.bookMdToBookCreateInput.mockRejectedValueOnce(new Error('boom'))
 
     await cli._private._syncAddBook(ctx, bookMd)
-
-    expect(mocks.logError).toHaveBeenCalled()
-  })
-
-  test('_fetch', async () => {
-    const ctx = makeContext()
-    const slug = 'a-book-slug'
-    const bookMd = bookFixtures.makeBookMd()
-
-    mocks.getBook.mockResolvedValue(bookMd)
-    mocks.fetchBookMd.mockResolvedValue(bookMd)
-    mocks.writeBookMd.mockResolvedValue()
-
-    await cli._private._fetch(ctx, slug)
-
-    expect(mocks.getBook).toHaveBeenCalledWith(slug, ctx.directory)
-    expect(mocks.fetchBookMd).toHaveBeenCalledWith(bookMd, ctx.directory)
-    expect(mocks.writeBookMd).toHaveBeenCalledWith(bookMd, ctx.directory)
-  })
-
-  test('_fetch on non-existant slug', async () => {
-    const ctx = makeContext()
-    const slug = 'a-book-slug'
-
-    mocks.getBook.mockResolvedValue(null)
-
-    await cli._private._fetch(ctx, slug)
-
-    expect(mocks.writeBookMd).not.toHaveBeenCalled()
-    expect(mocks.fetchBookMd).not.toHaveBeenCalled()
-  })
-
-  test('_fetch fails', async () => {
-    const ctx = makeContext()
-    const slug = 'a-book-slug'
-    const bookMd = bookFixtures.makeBookMd()
-
-    mocks.getBook.mockResolvedValue(bookMd)
-    mocks.fetchBookMd.mockRejectedValue(new Error('boom'))
-    mocks.writeBookMd.mockResolvedValue()
-
-    await cli._private._fetch(ctx, slug)
 
     expect(mocks.logError).toHaveBeenCalled()
   })

@@ -1,15 +1,13 @@
-import { getBook, writeBookMd, downloadCover } from '../book'
+import { getBook, writeBookMd, fetchBookMd } from '../book'
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import command, { AttachArgv } from './attach'
+import command, { FetchArgv } from './fetch'
 import { ArgumentsCamelCase } from 'yargs'
 import { makeBookMd } from '../book.fixtures'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures'
 
-vi.mock('child_process')
 vi.mock('../book')
-vi.mock('sharp')
 
 const mocks = {
   logInfo: vi.spyOn(log, 'info'),
@@ -17,12 +15,12 @@ const mocks = {
   logChild: vi.spyOn(log, 'child'),
   getBook: vi.mocked(getBook),
   writeBookMd: vi.mocked(writeBookMd),
-  downloadCover: vi.mocked(downloadCover),
+  fetchBookMd: vi.mocked(fetchBookMd),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
 
-describe('tools/lib/commands/attach', () => {
+describe('tools/lib/commands/fetch', () => {
   afterEach(() => {
     Object.values(mocks).forEach((mock) => {
       mock.mockReset()
@@ -38,51 +36,48 @@ describe('tools/lib/commands/attach', () => {
     const ctx = makeContext()
     const book = makeBookMd()
     const slug = 'slug2'
-    const file = 'file2'
 
     mocks.getBook.mockResolvedValueOnce(book)
-    mocks.downloadCover.mockResolvedValueOnce(book)
     mocks.writeBookMd.mockResolvedValueOnce()
+    mocks.fetchBookMd.mockResolvedValueOnce(book)
 
-    await command.run(ctx, { slug, file } as ArgumentsCamelCase<AttachArgv>)
+    await command.run(ctx, { slug } as ArgumentsCamelCase<FetchArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
-    expect(mocks.downloadCover).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).toHaveBeenCalledOnce()
+    expect(mocks.fetchBookMd).toHaveBeenCalledOnce()
   })
 
   test('run with dry-run', async () => {
     const ctx = makeContext({ flags: { dryRun: true } })
     const book = makeBookMd()
     const slug = 'slug2'
-    const file = 'file2'
 
     mocks.getBook.mockResolvedValueOnce(book)
-    mocks.downloadCover.mockResolvedValueOnce(book)
     mocks.writeBookMd.mockResolvedValueOnce()
+    mocks.fetchBookMd.mockResolvedValueOnce(book)
 
-    await command.run(ctx, { slug, file } as ArgumentsCamelCase<AttachArgv>)
+    await command.run(ctx, { slug } as ArgumentsCamelCase<FetchArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
-    expect(mocks.downloadCover).not.toHaveBeenCalledOnce()
-    expect(mocks.writeBookMd).not.toHaveBeenCalledOnce()
+    expect(mocks.writeBookMd).not.toHaveBeenCalled()
+    expect(mocks.fetchBookMd).not.toHaveBeenCalled()
   })
 
   test('run does not find slug', async () => {
     const ctx = makeContext()
     const book = makeBookMd()
     const slug = 'slug2'
-    const file = 'file2'
 
     mocks.getBook.mockResolvedValueOnce(null)
-    mocks.downloadCover.mockResolvedValueOnce(book)
     mocks.writeBookMd.mockResolvedValueOnce()
+    mocks.fetchBookMd.mockResolvedValueOnce(book)
 
-    await command.run(ctx, { slug, file } as ArgumentsCamelCase<AttachArgv>)
+    await command.run(ctx, { slug } as ArgumentsCamelCase<FetchArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
-    expect(mocks.downloadCover).not.toHaveBeenCalledOnce()
-    expect(mocks.writeBookMd).not.toHaveBeenCalledOnce()
+    expect(mocks.writeBookMd).not.toHaveBeenCalled()
+    expect(mocks.fetchBookMd).not.toHaveBeenCalled()
   })
 
   test('builder', async () => {
@@ -91,6 +86,6 @@ describe('tools/lib/commands/attach', () => {
     spies.positional = vi.spyOn(args, 'positional')
     command.builder?.(args)
 
-    expect(spies.positional).toHaveBeenCalledTimes(2)
+    expect(spies.positional).toHaveBeenCalledOnce()
   })
 })
