@@ -18,7 +18,6 @@ import {
   getSlugFromBookMd,
   bookToMd,
   dbPath,
-  createBookMd,
   cacheBook,
   fetchBookMd,
 } from './book'
@@ -44,13 +43,9 @@ async function _parseArgs(_args: string[]) {
     .command(commands.process.name, commands.process.describe, (yargs) =>
       commands.process.builder?.(yargs)
     )
-    .command('create <slug>', 'create a <type> named <slug>', (yargs) => {
-      return yargs.positional('slug', {
-        type: 'string',
-        description: 'unique slug for <type>',
-        demandOption: 'slug is required and must be unique per <type>',
-      })
-    })
+    .command(commands.create.name, commands.create.describe, (yargs) =>
+      commands.create.builder?.(yargs)
+    )
     .command('fetch <slug>', 'fetch metadata for <type> named <slug>', (yargs) => {
       return yargs.positional('slug', {
         type: 'string',
@@ -294,22 +289,6 @@ async function _dumpBook(ctx: Context, book: Book): Promise<void> {
   }
 }
 
-async function _create(ctx: Context, title: string): Promise<void> {
-  const dir = ctx.directory
-
-  try {
-    if (ctx.flags.dryRun === false) {
-      const bookMd = await createBookMd(title, 'markdown notes', { title, author: 'author' })
-      await writeBookMd(bookMd, dir)
-      log.info(`created new book at ${bookMd.filename}`)
-    } else {
-      log.info(`created new book at ${title.toLowerCase().replace(/\s+/g, '-')}.md`)
-    }
-  } catch (e) {
-    log.error(`error saving ${title}`)
-  }
-}
-
 async function _cleanup(ctx: Context): Promise<void> {
   await ctx.prisma.$disconnect()
 }
@@ -369,7 +348,7 @@ async function run(): Promise<void> {
           await commands.edit.run(ctx, command.options)
           break
         case 'create':
-          await _private._create(ctx, command.options.slug)
+          await commands.create.run(ctx, command.options)
           break
         case 'fetch':
           await _private._fetch(ctx, command.options.slug)
@@ -405,7 +384,6 @@ const _private = {
   _sync,
   _deploy,
   _dumpBook,
-  _create,
   _cleanup,
 }
 
