@@ -12,7 +12,7 @@ const command: Command<AttachArgv> = {
 
   describe: 'attach a copy of path to <type> <slug>',
 
-  builder: <T>(yargs: Argv<T>) => {
+  builder: function <T>(yargs: Argv<T>) {
     return yargs
       .positional('slug', {
         type: 'string',
