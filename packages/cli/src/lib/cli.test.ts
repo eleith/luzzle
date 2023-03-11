@@ -272,45 +272,6 @@ describe('tools/lib/cli', () => {
     expect(spies.deploy).toHaveBeenCalledOnce()
   })
 
-  test('run init', async () => {
-    const command = makeCommand({ name: 'init', options: { dir: 'somewhere' } })
-    const config = {} as Config
-
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.getDirectoryConfig.mockReturnValueOnce(command.options.dir as string)
-    mocks.inititializeConfig.mockResolvedValueOnce(config)
-
-    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
-    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
-
-    spies.parseArgs.mockResolvedValueOnce(command)
-    spies.cleanup.mockResolvedValueOnce(undefined)
-
-    await cli.run()
-
-    expect(mocks.inititializeConfig).toHaveBeenCalledWith(command.options.dir)
-  })
-
-  test('run init throws', async () => {
-    const command = makeCommand({ name: 'init', options: { dir: 'somewhere' } })
-    const config = {} as Config
-
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.getDirectoryConfig.mockReturnValueOnce(command.options.dir as string)
-    mocks.inititializeConfig.mockRejectedValueOnce(new Error())
-
-    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
-    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
-
-    spies.parseArgs.mockResolvedValueOnce(command)
-    spies.cleanup.mockResolvedValueOnce(undefined)
-
-    await cli.run()
-
-    expect(mocks.inititializeConfig).toHaveBeenCalledWith(command.options.dir)
-    expect(mocks.logError).toHaveBeenCalled()
-  })
-
   test('_cleanup', async () => {
     const ctx = makeContext()
 
@@ -778,38 +739,6 @@ describe('tools/lib/cli', () => {
     await cli._private._syncAddBook(ctx, bookMd)
 
     expect(mocks.logError).toHaveBeenCalled()
-  })
-
-  test('_parseArgs', async () => {
-    const args = ['init', 'test-folder']
-    const dirStats = { isDirectory: () => true } as Stats
-
-    mocks.stat.mockResolvedValueOnce(dirStats)
-
-    const command = await cli._private._parseArgs(args)
-
-    expect(mocks.stat).toHaveBeenCalledWith(args[1])
-    expect(command).toMatchObject({
-      name: 'init',
-      options: {
-        dryRun: false,
-        verbose: false,
-        dir: args[1],
-      },
-    })
-  })
-
-  test('_parseArgs throws if dir is a file', async () => {
-    const args = ['init', 'test-folder']
-    const dirStats = { isDirectory: () => false } as Stats
-    const spyConsoleError = vi.spyOn(console, 'error')
-
-    mocks.stat.mockResolvedValueOnce(dirStats)
-    spyConsoleError.mockReturnValue()
-
-    const command = cli._private._parseArgs(args)
-
-    await expect(command).rejects.toThrow()
   })
 
   test('_parseArgs throws if dir does not exist', async () => {

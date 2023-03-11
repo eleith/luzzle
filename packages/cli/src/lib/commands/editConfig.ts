@@ -1,6 +1,6 @@
 import log from '../log'
 import { spawn } from 'child_process'
-import { Command, Context } from './_types'
+import { Command } from './_types'
 
 const command: Command = {
   name: 'edit-config',
@@ -9,7 +9,7 @@ const command: Command = {
 
   describe: 'edit the config file',
 
-  run: async function(ctx: Context) {
+  run: async function (ctx) {
     const dir = ctx.directory
 
     if (process.env.EDITOR) {

@@ -20,7 +20,5 @@ export interface Command<U = Record<string, unknown>> {
   command: string | ReadonlyArray<string>
   describe: string
   builder?: <T>(yargs: Argv<T>) => Argv<T & U>
-  run:
-    | ((ctx: Context, args: ArgumentsCamelCase<U>) => void | Promise<void>)
-    | ((ctx: Context) => void | Promise<void>)
+  run: (ctx: Context, args: ArgumentsCamelCase<U>) => Promise<void>
 }

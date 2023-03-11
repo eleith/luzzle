@@ -1,8 +1,7 @@
 import { Book } from './prisma'
 import { getPrismaClient } from './prisma'
-import { getDirectoryFromConfig, inititializeConfig, getConfig } from './config'
+import { getDirectoryFromConfig, getConfig } from './config'
 import { eachLimit } from 'async'
-import { stat } from 'fs/promises'
 import { cpus } from 'os'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
@@ -48,23 +47,7 @@ async function _parseArgs(_args: string[]) {
     .command(commands.fetch.name, commands.fetch.describe, (yargs) =>
       commands.fetch.builder?.(yargs)
     )
-    .command('init <dir>', 'initialize luzzle config with directory', (yargs) => {
-      return yargs
-        .positional('dir', {
-          type: 'string',
-          description: 'directory for the book entries',
-          demandOption: 'a directory containing book entries must be provided',
-        })
-        .check(async (args) => {
-          const dirStat = await stat(args.dir).catch(() => null)
-
-          if (args.dir && !dirStat?.isDirectory()) {
-            throw new Error(`[error] '${args.dir}' is not a folder`)
-          }
-
-          return true
-        })
-    })
+    .command(commands.init.name, commands.init.describe, (yargs) => commands.init.builder?.(yargs))
     .options({
       'dry-run': {
         type: 'boolean',
@@ -261,10 +244,18 @@ async function run(): Promise<void> {
     }
 
     if (command.name === 'init') {
-      if (command.options.dryRun === false) {
-        await inititializeConfig(command.options.dir)
+      const ctx: Context = {
+        prisma: getPrismaClient(),
+        log,
+        directory: command.options.dir,
+        config,
+        flags: {
+          dryRun: command.options.dryRun,
+          verbose: command.options.verbose,
+          force: command.options.force,
+        },
       }
-      log.info(`initialized config at ${config.path}`)
+      await commands.init.run(ctx, command.options)
     } else {
       log.info(`using config at ${config.path}`)
       const directory = getDirectoryFromConfig(config)
