@@ -4,7 +4,7 @@ import { spawn } from 'child_process'
 import { Command } from './_types'
 import { Argv } from 'yargs'
 
-type EditArgv = { slug: string }
+export type EditArgv = { slug: string }
 
 const command: Command<EditArgv> = {
   name: 'edit',

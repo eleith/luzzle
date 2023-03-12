@@ -3,10 +3,8 @@ import { getBook } from '../book'
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { EventEmitter } from 'stream'
-import command, { EditArgv } from './edit'
+import command from './cd'
 import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../book.fixtures'
-import yargs from 'yargs'
 import { makeContext } from './context.fixtures'
 
 vi.mock('child_process')
@@ -37,16 +35,13 @@ describe('tools/lib/commands/edit', () => {
 
   test('run', async () => {
     const ctx = makeContext()
-    const book = makeBookMd()
-    const slug = 'slug2'
 
-    process.env.EDITOR = 'vi'
-    mocks.getBook.mockResolvedValueOnce(book)
+    process.env.SHELL = 'fish'
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<EditArgv>)
+    await command.run(ctx, {} as ArgumentsCamelCase)
 
-    expect(mocks.spawn).toHaveBeenCalledWith(process.env.EDITOR, [book.filename], {
+    expect(mocks.spawn).toHaveBeenCalledWith(process.env.SHELL, [], {
       cwd: ctx.directory,
       env: { ...process.env, LUZZLE: 'true' },
       stdio: 'inherit',
@@ -55,55 +50,38 @@ describe('tools/lib/commands/edit', () => {
 
   test('run dry-run', async () => {
     const ctx = makeContext({ flags: { dryRun: true } })
-    const book = makeBookMd()
-    const slug = 'slug2'
 
-    process.env.EDITOR = 'vi'
-    mocks.getBook.mockResolvedValueOnce(book)
+    process.env.SHELL = 'fish'
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<EditArgv>)
+    await command.run(ctx, {} as ArgumentsCamelCase)
 
     expect(mocks.spawn).not.toHaveBeenCalled()
-  })
-
-  test('run with non existant slug', async () => {
-    const ctx = makeContext({ flags: { dryRun: true } })
-    const slug = 'slug2'
-
-    process.env.EDITOR = 'vi'
-
-    mocks.getBook.mockResolvedValueOnce(null)
-    mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
-
-    await command.run(ctx, { slug } as ArgumentsCamelCase<EditArgv>)
-
-    expect(mocks.spawn).not.toHaveBeenCalled()
-    expect(mocks.logError).toHaveBeenCalledOnce()
   })
 
   test('run with no editor', async () => {
     const ctx = makeContext({ flags: { dryRun: true } })
-    const book = makeBookMd()
-    const slug = 'slug2'
 
-    delete process.env.EDITOR
+    delete process.env.SHELL
 
-    mocks.getBook.mockResolvedValueOnce(book)
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<EditArgv>)
+    await command.run(ctx, {} as ArgumentsCamelCase)
 
     expect(mocks.spawn).not.toHaveBeenCalled()
     expect(mocks.logError).toHaveBeenCalledOnce()
   })
 
-  test('builder', async () => {
-    const args = yargs()
+  test('run when luzzle is already set', async () => {
+    const ctx = makeContext({ flags: { dryRun: true } })
 
-    spies.positional = vi.spyOn(args, 'positional')
-    command.builder?.(args)
+    process.env.LUZZLE = 'true'
 
-    expect(spies.positional).toHaveBeenCalledOnce()
+    mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
+
+    await command.run(ctx, {} as ArgumentsCamelCase)
+
+    expect(mocks.spawn).not.toHaveBeenCalled()
+    expect(mocks.logError).toHaveBeenCalledOnce()
   })
 })

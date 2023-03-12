@@ -9,7 +9,6 @@ import { writeBookMd, bookToMd, dbPath, cacheBook } from './book'
 import log from './log'
 import path from 'path'
 import got from 'got'
-import { spawn } from 'child_process'
 import commands, { Context } from './commands'
 
 async function _parseArgs(_args: string[]) {
@@ -17,7 +16,7 @@ async function _parseArgs(_args: string[]) {
     .strict()
     .command('dump', 'dump database to local markdown files')
     .command('deploy', 'run deploy webhook to update remote database')
-    .command('cd', 'change directory to the book directory')
+    .command(commands.cd.name, commands.cd.describe)
     .command(commands.sync.name, commands.sync.describe)
     .command(commands.edit.name, commands.edit.describe, (yargs) => commands.edit.builder?.(yargs))
     .command(commands.attach.name, commands.attach.describe, (yargs) =>
@@ -57,27 +56,6 @@ async function _parseArgs(_args: string[]) {
   return {
     name: command._[0],
     options: command,
-  }
-}
-
-async function _cd(ctx: Context): Promise<void> {
-  if (process.env.LUZZLE) {
-    log.error('already in luzzle instance')
-    return
-  }
-
-  if (process.env.SHELL) {
-    if (ctx.flags.dryRun === false) {
-      spawn(process.env.SHELL, [], {
-        cwd: ctx.directory,
-        env: { ...process.env, LUZZLE: 'true' },
-        stdio: 'inherit',
-      }).on('exit', process.exit)
-    } else {
-      log.info(`cd to ${ctx.directory}`)
-    }
-  } else {
-    log.error('could not find shell')
   }
 }
 
@@ -173,7 +151,7 @@ async function run(): Promise<void> {
           await _private._dump(ctx)
           break
         case 'cd':
-          await _private._cd(ctx)
+          await commands.cd.run(ctx, command.options)
           break
         case 'deploy':
           await _private._deploy(ctx)
@@ -213,7 +191,6 @@ async function run(): Promise<void> {
 
 const _private = {
   _parseArgs,
-  _cd,
   _dump,
   _deploy,
   _dumpBook,

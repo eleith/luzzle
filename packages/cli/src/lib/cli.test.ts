@@ -2,7 +2,6 @@ import { CpuInfo, cpus } from 'os'
 import { merge } from 'lodash'
 import { Stats } from 'fs'
 import { stat } from 'fs/promises'
-import { ChildProcess, spawn } from 'child_process'
 import got from 'got'
 import {
   bookMdToBookCreateInput,
@@ -27,7 +26,6 @@ import { DeepPartial } from '../@types/utilities'
 import { describe, expect, test, vi, afterEach, SpyInstance, MockedObject } from 'vitest'
 import { getPrismaClient, PrismaClient } from './prisma'
 import { getDirectoryFromConfig, inititializeConfig, getConfig, Config } from './config'
-import { EventEmitter } from 'stream'
 import commands, { Context } from './commands'
 
 vi.mock('os')
@@ -57,7 +55,6 @@ const mocks = {
   logChild: vi.spyOn(log, 'child'),
   logLevelSet: vi.spyOn(log, 'level', 'set'),
   stat: vi.mocked(stat),
-  spawn: vi.mocked(spawn),
   getBook: vi.mocked(getBook),
   readBookDir: vi.mocked(readBookDir),
   bookMdToBookUpdateInput: vi.mocked(bookMdToBookUpdateInput),
@@ -208,27 +205,6 @@ describe('lib/cli', () => {
     })
   })
 
-  test('run _cd', async () => {
-    const command = makeCommand({ name: 'cd' })
-    const config = {} as Config
-
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
-
-    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
-    spies.cd = vi.spyOn(cli._private, '_cd')
-    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
-
-    spies.parseArgs.mockResolvedValueOnce(command)
-    spies.cd.mockResolvedValueOnce(undefined)
-    spies.cleanup.mockResolvedValueOnce(undefined)
-
-    await cli.run()
-
-    expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'warn')
-    expect(spies.cd).toHaveBeenCalledOnce()
-  })
-
   test('run _deploy', async () => {
     const command = makeCommand({ name: 'deploy' })
     const config = {} as Config
@@ -322,56 +298,6 @@ describe('lib/cli', () => {
     await cli._private._dump(ctx)
 
     expect(spies.syncBookToDisk).toHaveBeenCalledTimes(3)
-  })
-
-  test('_cd', async () => {
-    const ctx = makeContext()
-
-    process.env.SHELL = '/usr/bin/fish'
-    mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
-
-    await cli._private._cd(ctx)
-
-    expect(mocks.spawn).toHaveBeenCalledWith(process.env.SHELL, [], {
-      cwd: ctx.directory,
-      env: { ...process.env, LUZZLE: 'true' },
-      stdio: 'inherit',
-    })
-  })
-
-  test('_cd skips if LUZZLE env is present', async () => {
-    const ctx = makeContext()
-
-    process.env.LUZZLE = 'true'
-    mocks.spawn.mockResolvedValueOnce({} as unknown as ChildProcess)
-
-    await cli._private._cd(ctx)
-
-    expect(mocks.spawn).not.toHaveBeenCalled()
-    delete process.env.LUZZLE
-  })
-
-  test('_cd skips if SHELL is not present', async () => {
-    const ctx = makeContext()
-
-    delete process.env.SHELL
-    mocks.spawn.mockResolvedValueOnce({} as unknown as ChildProcess)
-
-    await cli._private._cd(ctx)
-
-    expect(mocks.spawn).not.toHaveBeenCalled()
-  })
-
-  test('_cd skips if dry run', async () => {
-    const ctx = makeContext({ flags: { dryRun: true } })
-
-    process.env.SHELL = '/usr/bin/fish'
-    mocks.spawn.mockResolvedValueOnce({} as unknown as ChildProcess)
-
-    await cli._private._cd(ctx)
-
-    expect(mocks.spawn).not.toHaveBeenCalled()
-    expect(mocks.logInfo).toHaveBeenCalled()
   })
 
   test('_deploy', async () => {
