@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     exclude: ['generated/**', 'dist/**', 'build/**', 'node_modules/**'],
+    setupFiles: './test/setup.ts',
     globalSetup: './test/globalSetup.ts',
     coverage: {
       lines: 95,
