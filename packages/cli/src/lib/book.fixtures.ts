@@ -72,10 +72,8 @@ function makeBookCreateInput(
   }
 }
 
-function makeBookCache(overrides: Partial<BookCache> = {}): BookCache {
-  return {
-    ...overrides,
-  }
+function makeBookCache(overrides: DeepPartial<BookCache> = {}): BookCache {
+  return merge({}, overrides as BookCache)
 }
 
 export { makeBookMd, makeBook, makeBookUpdateInput, makeBookCreateInput, makeBookCache }

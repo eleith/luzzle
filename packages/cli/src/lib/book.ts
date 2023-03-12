@@ -32,7 +32,7 @@ type BookMdRequiredFields = 'title' | 'author'
 type BookMdFields = Exclude<keyof Book, BookDbFields | 'note'>
 type BookDatabaseCache = ToJsonCompatible<
   Pick<Book, BookDbRequiredFields> &
-  Partial<NonNullableProperties<Pick<Book, BookDbOptionalFields>>>
+    Partial<NonNullableProperties<Pick<Book, BookDbOptionalFields>>>
 >
 
 export type BookCache = {
@@ -45,7 +45,7 @@ export type BookMd = {
   filename: string
   markdown?: string
   frontmatter: Pick<Book, BookMdRequiredFields> &
-  Partial<NonNullableProperties<Omit<Book, BookMdRequiredFields | 'note' | BookDbFields>>>
+    Partial<NonNullableProperties<Omit<Book, BookMdRequiredFields | 'note' | BookDbFields>>>
 }
 
 export type BookMdWithOpenLib = BookMd & { frontmatter: { id_ol_book: string } }

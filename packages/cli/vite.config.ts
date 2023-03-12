@@ -1,9 +1,9 @@
-import { defineConfig } from 'vite'
-// import path from 'path'
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    exclude: ['generated/**', 'build/**', 'node_modules/**', 'dist/**'],
+    exclude: ['generated/**', 'dist/**', 'build/**', 'node_modules/**'],
+    globalSetup: './test/globalSetup.ts',
     coverage: {
       lines: 95,
       branches: 95,
@@ -12,6 +12,8 @@ export default defineConfig({
       exclude: [
         'generated/**',
         'dist/**',
+        'build/**',
+        'node_modules/**',
         '**/*{.,-}fixtures.{js,cjs,mjs,ts,tsx,jsx}',
         'coverage/**',
         'packages/*/test{,s}/**',
@@ -26,13 +28,4 @@ export default defineConfig({
       ],
     },
   },
-  // resolve: {
-  //   alias: {
-  //     '@app/graphql': path.resolve(__dirname, 'src/lib/graphql/*'),
-  //     '@app/prisma': path.resolve(__dirname, 'generated/prisma/client'),
-  //     '@app/lib/*': path.resolve(__dirname, 'src/lib/*'),
-  //     '@app/common/*': path.resolve(__dirname, 'src/common/*'),
-  //     '@app/public/*': path.resolve(__dirname, 'public/*'),
-  //   },
-  // },
 })
