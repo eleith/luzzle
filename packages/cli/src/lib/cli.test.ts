@@ -23,7 +23,7 @@ import * as bookFixtures from './book.fixtures'
 import log from './log'
 import * as cli from './cli'
 import { DeepPartial } from '../@types/utilities'
-import { describe, expect, test, vi, afterEach, SpyInstance, MockedObject } from 'vitest'
+import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { getPrismaClient, PrismaClient } from './prisma'
 import { getDirectoryFromConfig, inititializeConfig, getConfig, Config } from './config'
 import commands, { Context } from './commands'
@@ -205,27 +205,6 @@ describe('lib/cli', () => {
     })
   })
 
-  test('run _deploy', async () => {
-    const command = makeCommand({ name: 'deploy' })
-    const config = {} as Config
-
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
-
-    spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
-    spies.deploy = vi.spyOn(cli._private, '_deploy')
-    spies.cleanup = vi.spyOn(cli._private, '_cleanup')
-
-    spies.parseArgs.mockResolvedValueOnce(command)
-    spies.deploy.mockResolvedValueOnce(undefined)
-    spies.cleanup.mockResolvedValueOnce(undefined)
-
-    await cli.run()
-
-    expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'warn')
-    expect(spies.deploy).toHaveBeenCalledOnce()
-  })
-
   test('_cleanup', async () => {
     const ctx = makeContext()
 
@@ -298,43 +277,6 @@ describe('lib/cli', () => {
     await cli._private._dump(ctx)
 
     expect(spies.syncBookToDisk).toHaveBeenCalledTimes(3)
-  })
-
-  test('_deploy', async () => {
-    const deployConfig = { url: 'webhook', token: 'secret', body: '{"body":"body"}' }
-    const config = {
-      get: vi.fn(),
-    } as MockedObject<Config>
-    const ctx = makeContext({ config })
-
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.gotPost.mockResolvedValueOnce({ statusCode: 200 })
-    config.get.mockReturnValueOnce(deployConfig)
-
-    await cli._private._deploy(ctx)
-
-    expect(mocks.gotPost).toHaveBeenCalledWith(deployConfig.url, {
-      json: JSON.parse(deployConfig.body),
-      headers: { Authorization: `Bearer ${deployConfig.token}` },
-    })
-  })
-
-  test('_deploy without body', async () => {
-    const deployConfig = { url: 'webhook', token: 'secret' }
-    const config = {
-      get: vi.fn(),
-    } as MockedObject<Config>
-    const ctx = makeContext({ config })
-
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.gotPost.mockResolvedValueOnce({ statusCode: 200 })
-    config.get.mockReturnValueOnce(deployConfig)
-
-    await cli._private._deploy(ctx)
-
-    expect(mocks.gotPost).toHaveBeenCalledWith(deployConfig.url, {
-      headers: { Authorization: `Bearer ${deployConfig.token}` },
-    })
   })
 
   test('_parseArgs throws if dir does not exist', async () => {
