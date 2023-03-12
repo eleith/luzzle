@@ -8,14 +8,13 @@ import { hideBin } from 'yargs/helpers'
 import { writeBookMd, bookToMd, dbPath, cacheBook } from './book'
 import log from './log'
 import path from 'path'
-import got from 'got'
 import commands, { Context } from './commands'
 
 async function _parseArgs(_args: string[]) {
   const command = await yargs(_args)
     .strict()
     .command('dump', 'dump database to local markdown files')
-    .command('deploy', 'run deploy webhook to update remote database')
+    .command(commands.deploy.name, commands.deploy.describe)
     .command(commands.cd.name, commands.cd.describe)
     .command(commands.sync.name, commands.sync.describe)
     .command(commands.edit.name, commands.edit.describe, (yargs) => commands.edit.builder?.(yargs))
@@ -57,21 +56,6 @@ async function _parseArgs(_args: string[]) {
     name: command._[0],
     options: command,
   }
-}
-
-async function _deploy(ctx: Context): Promise<void> {
-  const { url, token, body } = ctx.config.get('deploy')
-  const headers = { Authorization: `Bearer ${token}` }
-
-  if (ctx.flags.dryRun === false) {
-    if (body) {
-      await got.post(url, { json: JSON.parse(body), headers })
-    } else {
-      await got.post(url, { headers: headers })
-    }
-  }
-
-  ctx.log.info(`deployed to ${url}`)
 }
 
 async function _dump(ctx: Context): Promise<void> {
@@ -154,7 +138,7 @@ async function run(): Promise<void> {
           await commands.cd.run(ctx, command.options)
           break
         case 'deploy':
-          await _private._deploy(ctx)
+          await commands.deploy.run(ctx, command.options)
           break
         case 'sync':
           await commands.sync.run(ctx, command.options)
@@ -192,7 +176,6 @@ async function run(): Promise<void> {
 const _private = {
   _parseArgs,
   _dump,
-  _deploy,
   _dumpBook,
   _cleanup,
 }

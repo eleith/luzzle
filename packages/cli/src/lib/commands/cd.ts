@@ -1,4 +1,3 @@
-import log from '../log'
 import { spawn } from 'child_process'
 import { Command } from './_types'
 
@@ -11,7 +10,7 @@ const command: Command = {
 
   run: async function (ctx) {
     if (process.env.LUZZLE) {
-      log.error('already in luzzle instance')
+      ctx.log.error('already in luzzle instance')
       return
     }
 
@@ -23,10 +22,10 @@ const command: Command = {
           stdio: 'inherit',
         }).on('exit', process.exit)
       } else {
-        log.info(`cd to ${ctx.directory}`)
+        ctx.log.info(`cd to ${ctx.directory}`)
       }
     } else {
-      log.error('could not find shell')
+      ctx.log.error('could not find shell')
     }
   },
 }
