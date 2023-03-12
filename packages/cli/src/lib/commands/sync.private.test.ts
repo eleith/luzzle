@@ -44,7 +44,7 @@ describe('tools/lib/commands/sync.private', () => {
     })
   })
 
-  test.only('syncAddBook', async () => {
+  test('syncAddBook', async () => {
     const ctx = makeContext()
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
@@ -71,7 +71,7 @@ describe('tools/lib/commands/sync.private', () => {
     expect(mocks.cacheBook).toHaveBeenCalledOnce()
   })
 
-  test.only('syncAddBook already exists', async () => {
+  test('syncAddBook already exists', async () => {
     const ctx = makeContext()
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
@@ -99,7 +99,7 @@ describe('tools/lib/commands/sync.private', () => {
     expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
   })
 
-  test.only('syncAddBook with flag dry-run', async () => {
+  test('syncAddBook with flag dry-run', async () => {
     const ctx = makeContext({ flags: { dryRun: true } })
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
@@ -125,7 +125,7 @@ describe('tools/lib/commands/sync.private', () => {
     expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
   })
 
-  test.only('syncAddBook catches error', async () => {
+  test('syncAddBook catches error', async () => {
     const ctx = makeContext()
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
@@ -152,7 +152,7 @@ describe('tools/lib/commands/sync.private', () => {
     expect(mocks.logError).toHaveBeenCalledOnce()
   })
 
-  test.only('syncUpdateBook', async () => {
+  test('syncUpdateBook', async () => {
     const ctx = makeContext()
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
@@ -177,7 +177,7 @@ describe('tools/lib/commands/sync.private', () => {
     expect(mocks.cacheBook).toHaveBeenCalledOnce()
   })
 
-  test.only('syncUpdateBook with flag dry-run', async () => {
+  test('syncUpdateBook with flag dry-run', async () => {
     const ctx = makeContext({ flags: { dryRun: true } })
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
@@ -202,7 +202,7 @@ describe('tools/lib/commands/sync.private', () => {
     expect(mocks.cacheBook).not.toHaveBeenCalledOnce()
   })
 
-  test.only('syncUpdateBook catches error', async () => {
+  test('syncUpdateBook catches error', async () => {
     const ctx = makeContext()
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
@@ -228,7 +228,7 @@ describe('tools/lib/commands/sync.private', () => {
     expect(mocks.logError).toHaveBeenCalledOnce()
   })
 
-  test.only('syncRemoveBook', async () => {
+  test('syncRemoveBook', async () => {
     const ctx = makeContext()
     const slug = 'slug1'
     const book = makeBook({ slug })
@@ -245,7 +245,7 @@ describe('tools/lib/commands/sync.private', () => {
     expect(spies.prismaDeleteMany).toHaveBeenCalledOnce()
   })
 
-  test.only('syncRemoveBook with flag dry-flag', async () => {
+  test('syncRemoveBook with flag dry-flag', async () => {
     const ctx = makeContext({ flags: { dryRun: true } })
     const slug = 'slug1'
     const book = makeBook({ slug })
@@ -262,7 +262,7 @@ describe('tools/lib/commands/sync.private', () => {
     expect(spies.prismaDeleteMany).not.toHaveBeenCalledOnce()
   })
 
-  test.only('syncRemoveBook catches error', async () => {
+  test('syncRemoveBook catches error', async () => {
     const ctx = makeContext()
     const slug = 'slug1'
     const book = makeBook({ slug })
