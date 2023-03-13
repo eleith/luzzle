@@ -7,28 +7,32 @@ import log from './log'
 import path from 'path'
 import commands, { Context } from './commands'
 
-async function _parseArgs(_args: string[]) {
+async function parseArgs(_args: string[]) {
   const command = await yargs(_args)
     .strict()
-    .command(commands.dump.name, commands.dump.describe)
-    .command(commands.deploy.name, commands.deploy.describe)
-    .command(commands.cd.name, commands.cd.describe)
-    .command(commands.sync.name, commands.sync.describe)
-    .command(commands.edit.name, commands.edit.describe, (yargs) => commands.edit.builder?.(yargs))
-    .command(commands.attach.name, commands.attach.describe, (yargs) =>
+    .command(commands.dump.command, commands.dump.describe)
+    .command(commands.deploy.command, commands.deploy.describe)
+    .command(commands.cd.command, commands.cd.describe)
+    .command(commands.sync.command, commands.sync.describe)
+    .command(commands.edit.command, commands.edit.describe, (yargs) =>
+      commands.edit.builder?.(yargs)
+    )
+    .command(commands.attach.command, commands.attach.describe, (yargs) =>
       commands.attach.builder?.(yargs)
     )
-    .command(commands.editConfig.name, commands.editConfig.describe)
-    .command(commands.process.name, commands.process.describe, (yargs) =>
+    .command(commands.editConfig.command, commands.editConfig.describe)
+    .command(commands.process.command, commands.process.describe, (yargs) =>
       commands.process.builder?.(yargs)
     )
-    .command(commands.create.name, commands.create.describe, (yargs) =>
+    .command(commands.create.command, commands.create.describe, (yargs) =>
       commands.create.builder?.(yargs)
     )
-    .command(commands.fetch.name, commands.fetch.describe, (yargs) =>
+    .command(commands.fetch.command, commands.fetch.describe, (yargs) =>
       commands.fetch.builder?.(yargs)
     )
-    .command(commands.init.name, commands.init.describe, (yargs) => commands.init.builder?.(yargs))
+    .command(commands.init.command, commands.init.describe, (yargs) =>
+      commands.init.builder?.(yargs)
+    )
     .options({
       'dry-run': {
         type: 'boolean',
@@ -55,13 +59,13 @@ async function _parseArgs(_args: string[]) {
   }
 }
 
-async function _cleanup(ctx: Context): Promise<void> {
+async function cleanup(ctx: Context): Promise<void> {
   await ctx.prisma.$disconnect()
 }
 
 async function run(): Promise<void> {
   try {
-    const command = await _private._parseArgs(hideBin(process.argv))
+    const command = await parseArgs(hideBin(process.argv))
     const config = getConfig(command.options.config)
 
     log.level = command.options.verbose ? 'info' : 'warn'
@@ -84,8 +88,8 @@ async function run(): Promise<void> {
         },
       }
       await commands.init.run(ctx, command.options)
+      await cleanup(ctx)
     } else {
-      log.info(`using config at ${config.path}`)
       const directory = getDirectoryFromConfig(config)
       const ctx: Context = {
         prisma: getPrismaClient({
@@ -101,53 +105,16 @@ async function run(): Promise<void> {
         },
       }
 
-      // directory MUST exist
-      switch (command.name) {
-        case 'dump':
-          await commands.dump.run(ctx, command.options)
-          break
-        case 'cd':
-          await commands.cd.run(ctx, command.options)
-          break
-        case 'deploy':
-          await commands.deploy.run(ctx, command.options)
-          break
-        case 'sync':
-          await commands.sync.run(ctx, command.options)
-          break
-        case 'edit-config':
-          await commands.editConfig.run(ctx, command.options)
-          break
-        case 'edit':
-          await commands.edit.run(ctx, command.options)
-          break
-        case 'create':
-          await commands.create.run(ctx, command.options)
-          break
-        case 'fetch':
-          await commands.fetch.run(ctx, command.options)
-          break
-        case 'attach':
-          await commands.attach.run(ctx, command.options)
-          break
-        case 'process':
-          await commands.process.run(ctx, command.options)
-          break
-      }
+      log.info(`using config at ${config.path}`)
 
-      await _private._cleanup(ctx)
-
-      return
+      await Object.values(commands)
+        .find((c) => c.name === command.name)
+        ?.run(ctx, command.options)
+      await cleanup(ctx)
     }
   } catch (e) {
     log.error(e)
-    return
   }
 }
 
-const _private = {
-  _parseArgs,
-  _cleanup,
-}
-
-export { run, _private }
+export default run

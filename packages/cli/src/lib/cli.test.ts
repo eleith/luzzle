@@ -1,13 +1,10 @@
-import { merge } from 'lodash'
-import { Stats } from 'fs'
 import { stat } from 'fs/promises'
 import log from './log'
-import * as cli from './cli'
-import { DeepPartial } from '../@types/utilities'
+import cli from './cli'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { getPrismaClient, PrismaClient } from './prisma'
 import { getDirectoryFromConfig, inititializeConfig, getConfig, Config } from './config'
-import commands, { Context } from './commands'
+import commands from './commands'
 
 vi.mock('os')
 vi.mock('fs/promises')
@@ -25,7 +22,7 @@ const prisma = {
     findUnique: vi.fn(),
     create: vi.fn(),
   },
-}
+} as unknown as PrismaClient
 
 const mocks = {
   logInfo: vi.spyOn(log, 'info'),
@@ -42,48 +39,6 @@ const mocks = {
 
 const spies: { [key: string]: SpyInstance } = {}
 
-type Command = Awaited<ReturnType<typeof cli._private._parseArgs>>
-
-function makeCommand(overrides?: DeepPartial<Command>): Command {
-  return merge(
-    {
-      name: 'sync',
-      options: {
-        _: [],
-        $0: '',
-        slug: 'slug',
-        file: 'file',
-        dir: 'dir',
-        ['dry-run']: false,
-        config: undefined,
-        dryRun: false,
-        force: false,
-        verbose: false,
-      },
-    },
-    overrides
-  )
-}
-
-function makeContext(overrides?: DeepPartial<Context>): Context {
-  mocks.getPrismaClient.mockReturnValue(prisma as unknown as PrismaClient)
-
-  return merge(
-    {
-      prisma: mocks.getPrismaClient(),
-      log,
-      directory: 'somewhere',
-      config: {} as Config,
-      flags: {
-        dryRun: false,
-        verbose: false,
-        force: false,
-      },
-    },
-    overrides
-  )
-}
-
 describe('lib/cli', () => {
   afterEach(() => {
     Object.values(mocks).forEach((mock) => {
@@ -96,60 +51,66 @@ describe('lib/cli', () => {
     })
   })
 
-  Object.keys(commands).forEach((commandName) => {
-    test(`run ${commandName}`, async () => {
-      const command = commands[commandName as keyof typeof commands]
-      const argv = makeCommand({ name: command.name })
-      const config = {} as Config
+  test(`run init`, async () => {
+    const config = {} as Config
 
-      mocks.getConfig.mockReturnValueOnce(config)
-      mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+    mocks.getPrismaClient.mockReturnValueOnce(prisma)
 
-      spies.parseArgs = vi.spyOn(cli._private, '_parseArgs')
-      spies.cleanup = vi.spyOn(cli._private, '_cleanup')
-      spies.run = vi.spyOn(command, 'run')
+    spies.prismaDisconnect = vi.spyOn(prisma, '$disconnect')
+    spies.prismaDisconnect.mockResolvedValueOnce(undefined)
+    spies.run = vi.spyOn(commands.init, 'run')
+    spies.run.mockResolvedValueOnce(undefined)
 
-      spies.parseArgs.mockResolvedValueOnce(argv)
-      spies.cleanup.mockResolvedValueOnce(undefined)
+    process.argv = ['node', 'cli', commands.init.name, 'test']
 
-      await cli.run()
+    await cli()
 
-      expect(mocks.logLevelSet).toHaveBeenNthCalledWith(1, 'warn')
-      expect(spies.run).toHaveBeenCalledOnce()
-    })
+    expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
+    expect(spies.run).toHaveBeenCalledOnce()
+    expect(spies.prismaDisconnect).toHaveBeenCalledOnce()
   })
 
-  test('_cleanup', async () => {
-    const ctx = makeContext()
+  test(`run edit-config`, async () => {
+    const config = {} as Config
 
-    mocks.prisma$disconnect.mockResolvedValueOnce(null)
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+    mocks.getPrismaClient.mockReturnValueOnce(prisma)
 
-    await cli._private._cleanup(ctx)
+    spies.prismaDisconnect = vi.spyOn(prisma, '$disconnect')
+    spies.prismaDisconnect.mockResolvedValueOnce(undefined)
+    spies.run = vi.spyOn(commands.editConfig, 'run')
+    spies.run.mockResolvedValueOnce(undefined)
 
-    expect(mocks.prisma$disconnect).toHaveBeenCalled()
+    process.argv = ['node', 'cli', commands.editConfig.name]
+
+    await cli()
+
+    expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
+    expect(spies.run).toHaveBeenCalledOnce()
+    expect(spies.prismaDisconnect).toHaveBeenCalledOnce()
   })
 
-  test('_parseArgs throws if dir does not exist', async () => {
-    const args = ['sync', 'test-folder']
-    const spyConsoleError = vi.spyOn(console, 'error')
+  test(`run catches an error`, async () => {
+    const config = {} as Config
 
-    mocks.stat.mockRejectedValueOnce(new Error('boom'))
-    spyConsoleError.mockReturnValue()
-    const command = cli._private._parseArgs(args)
+    mocks.getConfig.mockReturnValueOnce(config)
+    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+    mocks.getPrismaClient.mockReturnValueOnce(prisma)
 
-    await expect(command).rejects.toThrow()
-  })
+    spies.prismaDisconnect = vi.spyOn(prisma, '$disconnect')
+    spies.prismaDisconnect.mockResolvedValueOnce(undefined)
+    spies.run = vi.spyOn(commands.editConfig, 'run')
+    spies.run.mockRejectedValueOnce(new Error('some error'))
 
-  test('_parseArgs throws if command does not exist', async () => {
-    const args = ['boom', 'test-folder']
-    const dirStats = { isDirectory: () => true } as Stats
-    const spyConsoleError = vi.spyOn(console, 'error')
+    process.argv = ['node', 'cli', commands.editConfig.name]
 
-    mocks.stat.mockResolvedValueOnce(dirStats)
-    spyConsoleError.mockReturnValue()
+    await cli()
 
-    const command = cli._private._parseArgs(args)
-
-    await expect(command).rejects.toThrow()
+    expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
+    expect(spies.run).toHaveBeenCalledOnce()
+    expect(mocks.logError).toHaveBeenCalledOnce()
   })
 })

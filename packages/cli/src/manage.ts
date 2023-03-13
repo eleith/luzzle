@@ -1,4 +1,4 @@
-import { run } from './lib/cli'
+import run from './lib/cli'
 import log from './lib/log'
 
 run()
