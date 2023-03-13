@@ -8,7 +8,8 @@ import init from './init'
 import sync from './sync'
 import cd from './cd'
 import deploy from './deploy'
+import dump from './dump'
 
 export type { Command, Context } from './_types'
 
-export default { edit, editConfig, attach, process, create, fetch, init, sync, cd, deploy }
+export default { edit, editConfig, attach, process, create, fetch, init, sync, cd, deploy, dump }

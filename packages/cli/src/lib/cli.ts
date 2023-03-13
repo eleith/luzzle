@@ -1,11 +1,8 @@
-import { Book } from './prisma'
 import { getPrismaClient } from './prisma'
 import { getDirectoryFromConfig, getConfig } from './config'
-import { eachLimit } from 'async'
-import { cpus } from 'os'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { writeBookMd, bookToMd, dbPath, cacheBook } from './book'
+import { dbPath } from './book'
 import log from './log'
 import path from 'path'
 import commands, { Context } from './commands'
@@ -13,7 +10,7 @@ import commands, { Context } from './commands'
 async function _parseArgs(_args: string[]) {
   const command = await yargs(_args)
     .strict()
-    .command('dump', 'dump database to local markdown files')
+    .command(commands.dump.name, commands.dump.describe)
     .command(commands.deploy.name, commands.deploy.describe)
     .command(commands.cd.name, commands.cd.describe)
     .command(commands.sync.name, commands.sync.describe)
@@ -55,31 +52,6 @@ async function _parseArgs(_args: string[]) {
   return {
     name: command._[0],
     options: command,
-  }
-}
-
-async function _dump(ctx: Context): Promise<void> {
-  const books = await ctx.prisma.book.findMany()
-  const numCpus = cpus().length
-
-  await eachLimit(books, numCpus, async (book) => {
-    await _private._dumpBook(ctx, book)
-  })
-}
-
-async function _dumpBook(ctx: Context, book: Book): Promise<void> {
-  const dir = ctx.directory
-
-  try {
-    if (ctx.flags.dryRun === false) {
-      const bookMd = await bookToMd(book)
-
-      await writeBookMd(bookMd, dir)
-      await cacheBook(book, dir)
-    }
-    log.info(`saved book to ${book.slug}.md`)
-  } catch (e) {
-    log.error(`error saving ${book.slug}`)
   }
 }
 
@@ -132,7 +104,7 @@ async function run(): Promise<void> {
       // directory MUST exist
       switch (command.name) {
         case 'dump':
-          await _private._dump(ctx)
+          await commands.dump.run(ctx, command.options)
           break
         case 'cd':
           await commands.cd.run(ctx, command.options)
@@ -175,8 +147,6 @@ async function run(): Promise<void> {
 
 const _private = {
   _parseArgs,
-  _dump,
-  _dumpBook,
   _cleanup,
 }
 
