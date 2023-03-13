@@ -63,10 +63,51 @@ async function cleanup(ctx: Context): Promise<void> {
   await ctx.prisma.$disconnect()
 }
 
+async function initialize(command: Awaited<ReturnType<typeof parseArgs>>): Promise<void> {
+  const config = getConfig(command.options.config)
+  const ctx: Context = {
+    prisma: getPrismaClient(),
+    log,
+    directory: command.options.dir,
+    config,
+    flags: {
+      dryRun: command.options.dryRun,
+      verbose: command.options.verbose,
+      force: command.options.force,
+    },
+  }
+  await commands.init.run(ctx, command.options)
+  await cleanup(ctx)
+}
+
+async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<void> {
+  const config = getConfig(command.options.config)
+  const directory = getDirectoryFromConfig(config)
+  const ctx: Context = {
+    prisma: getPrismaClient({
+      datasources: { db: { url: `file:${path.join(directory, dbPath)}` } },
+    }),
+    log,
+    directory,
+    config,
+    flags: {
+      dryRun: command.options.dryRun,
+      verbose: command.options.verbose,
+      force: command.options.force,
+    },
+  }
+
+  log.info(`using config at ${config.path}`)
+
+  await Object.values(commands)
+    .find((c) => c.name === command.name)
+    ?.run(ctx, command.options)
+  await cleanup(ctx)
+}
+
 async function run(): Promise<void> {
   try {
     const command = await parseArgs(hideBin(process.argv))
-    const config = getConfig(command.options.config)
 
     log.level = command.options.verbose ? 'info' : 'warn'
 
@@ -76,41 +117,9 @@ async function run(): Promise<void> {
     }
 
     if (command.name === 'init') {
-      const ctx: Context = {
-        prisma: getPrismaClient(),
-        log,
-        directory: command.options.dir,
-        config,
-        flags: {
-          dryRun: command.options.dryRun,
-          verbose: command.options.verbose,
-          force: command.options.force,
-        },
-      }
-      await commands.init.run(ctx, command.options)
-      await cleanup(ctx)
+      await initialize(command)
     } else {
-      const directory = getDirectoryFromConfig(config)
-      const ctx: Context = {
-        prisma: getPrismaClient({
-          datasources: { db: { url: `file:${path.join(directory, dbPath)}` } },
-        }),
-        log,
-        directory,
-        config,
-        flags: {
-          dryRun: command.options.dryRun,
-          verbose: command.options.verbose,
-          force: command.options.force,
-        },
-      }
-
-      log.info(`using config at ${config.path}`)
-
-      await Object.values(commands)
-        .find((c) => c.name === command.name)
-        ?.run(ctx, command.options)
-      await cleanup(ctx)
+      await handle(command)
     }
   } catch (e) {
     log.error(e)
