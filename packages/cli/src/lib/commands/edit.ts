@@ -11,7 +11,7 @@ const command: Command<EditArgv> = {
 
   command: 'edit <slug>',
 
-  describe: 'edit the config file',
+  describe: 'edit a book',
 
   builder: <T>(yargs: Argv<T>) => {
     return yargs.positional('slug', {
