@@ -1,6 +1,5 @@
 import { merge } from 'lodash'
 import { Context } from './index'
-import { DeepPartial } from '../../@types/utilities'
 import { getPrismaClient, PrismaClient } from '../prisma'
 import { Config } from '../config'
 import log from '../log'

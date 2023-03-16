@@ -1,5 +1,5 @@
 import log from '../log'
-import { Command } from './_types'
+import { Command } from './index.types'
 import { Argv } from 'yargs'
 import { inititializeConfig } from '../config'
 import { stat } from 'fs/promises'
@@ -21,7 +21,7 @@ const command: Command<InitArgv> = {
     })
   },
 
-  run: async function (ctx, args) {
+  run: async function(ctx, args) {
     const dir = args.dir
     const dirStat = await stat(args.dir).catch(() => null)
 

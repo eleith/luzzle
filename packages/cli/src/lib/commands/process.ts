@@ -1,5 +1,5 @@
 import log from '../log'
-import { Command, Context } from './_types'
+import { Command, Context } from './index.types'
 import { Argv } from 'yargs'
 import {
   BookMd,
@@ -41,7 +41,7 @@ const command: Command<ProcessArgv> = {
     })
   },
 
-  run: async function (ctx, args) {
+  run: async function(ctx, args) {
     const dir = ctx.directory
     const bookSlugs = await readBookDir(dir)
     const updatedBookSlugs = args.force

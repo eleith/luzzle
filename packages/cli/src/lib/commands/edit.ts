@@ -1,7 +1,7 @@
 import { getBook } from '../book'
 import log from '../log'
 import { spawn } from 'child_process'
-import { Command } from './_types'
+import { Command } from './index.types'
 import { Argv } from 'yargs'
 
 export type EditArgv = { slug: string }
