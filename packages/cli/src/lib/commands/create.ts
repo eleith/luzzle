@@ -20,7 +20,7 @@ const command: Command<CreateArgv> = {
     })
   },
 
-  run: async function(ctx, args) {
+  run: async function (ctx, args) {
     const dir = ctx.directory
     const title = args.slug
 

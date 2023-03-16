@@ -21,7 +21,7 @@ const command: Command<InitArgv> = {
     })
   },
 
-  run: async function(ctx, args) {
+  run: async function (ctx, args) {
     const dir = args.dir
     const dirStat = await stat(args.dir).catch(() => null)
 

@@ -8,7 +8,7 @@ const command: Command = {
 
   describe: 'change direction to the book directory',
 
-  run: async function(ctx) {
+  run: async function (ctx) {
     if (process.env.LUZZLE) {
       ctx.log.error('already in luzzle instance')
       return
