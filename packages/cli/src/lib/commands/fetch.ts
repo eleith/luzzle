@@ -1,5 +1,5 @@
 import log from '../log'
-import { Command } from './_types'
+import { Command } from './index.types'
 import { Argv } from 'yargs'
 import { getBook, writeBookMd, fetchBookMd } from '../book'
 

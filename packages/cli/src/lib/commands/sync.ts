@@ -1,4 +1,4 @@
-import { Command } from './_types'
+import { Command } from './index.types'
 import { getBook, readBookDir, getUpdatedSlugs, getBookCache } from '../book'
 import { eachLimit } from 'async'
 import { syncAddBook, syncRemoveBooks, syncUpdateBook } from './sync.private'

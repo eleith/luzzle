@@ -1,5 +1,5 @@
 import log from '../log'
-import { Context } from './_types'
+import { Context } from './index.types'
 import {
   BookMd,
   cacheBook,

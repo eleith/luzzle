@@ -1,6 +1,5 @@
 import { Book, Prisma } from './prisma'
 import { merge } from 'lodash'
-import { DeepPartial } from '../@types/utilities'
 import { BookCache, BookMd } from './book'
 
 const title = 'title of the book'

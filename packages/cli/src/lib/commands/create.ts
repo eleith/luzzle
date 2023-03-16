@@ -1,5 +1,5 @@
 import log from '../log'
-import { Command } from './_types'
+import { Command } from './index.types'
 import { Argv } from 'yargs'
 import { createBookMd, writeBookMd } from '../book'
 
@@ -20,7 +20,7 @@ const command: Command<CreateArgv> = {
     })
   },
 
-  run: async function (ctx, args) {
+  run: async function(ctx, args) {
     const dir = ctx.directory
     const title = args.slug
 

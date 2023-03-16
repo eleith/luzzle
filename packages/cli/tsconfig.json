@@ -15,5 +15,5 @@
     "strictNullChecks": true,
     "typeRoots": ["./src/@types"]
   },
-  "include": ["vite.config.ts", "src/**/*.ts"]
+  "include": ["vite.config.ts", "src/**/*.ts", "src/**/*.d.ts"]
 }
