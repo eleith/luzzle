@@ -55,7 +55,7 @@ class CacheForType<T extends Record<string, unknown>> {
         log.warn(`${cachePath} is corrupted and will be rebuilt`)
       }
     } catch (e) {
-      log.warn(`${cachePath} was not found and will be added`)
+      log.info(`${cachePath} was not found and will be added`)
     }
 
     return {}
