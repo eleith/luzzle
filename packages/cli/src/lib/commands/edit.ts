@@ -1,4 +1,5 @@
 import { getBook } from '../book'
+import Books from '../books'
 import log from '../log'
 import { spawn } from 'child_process'
 import { Command } from './index.types'
@@ -24,7 +25,8 @@ const command: Command<EditArgv> = {
   run: async function (ctx, args) {
     const dir = ctx.directory
     const slug = args.slug
-    const bookMd = await getBook(slug, dir)
+    const books = new Books(dir)
+    const bookMd = await getBook(books, slug)
 
     if (!bookMd) {
       log.error(`${slug} was not found`)

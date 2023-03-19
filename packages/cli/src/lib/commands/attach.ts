@@ -1,6 +1,7 @@
 import log from '../log'
 import { Argv } from 'yargs'
 import { getBook, writeBookMd, downloadCover } from '../book'
+import Books from '../books'
 import { Command } from './index.types'
 
 export type AttachArgv = { slug: string; file: string }
@@ -29,7 +30,8 @@ const command: Command<AttachArgv> = {
   run: async function (ctx, args) {
     const dir = ctx.directory
     const { slug, file } = args
-    const bookMd = await getBook(slug, dir)
+    const books = new Books(dir)
+    const bookMd = await getBook(books, slug)
 
     if (!bookMd) {
       log.info(`${slug} was not found`)
@@ -37,8 +39,8 @@ const command: Command<AttachArgv> = {
     }
 
     if (ctx.flags.dryRun === false) {
-      const bookProcessed = await downloadCover(bookMd, file, dir)
-      await writeBookMd(bookProcessed, dir)
+      const bookProcessed = await downloadCover(books, bookMd, file)
+      await writeBookMd(books, bookProcessed)
     }
 
     log.info(`uploaded ${file} to ${bookMd.filename}`)

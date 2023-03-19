@@ -1,11 +1,4 @@
-import {
-  getBook,
-  writeBookMd,
-  processBookMd,
-  cleanUpDerivatives,
-  getUpdatedSlugs,
-  readBookDir,
-} from '../book'
+import { getBook, writeBookMd, processBookMd, cleanUpDerivatives, getUpdatedSlugs } from '../book'
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { ProcessArgv } from './process'
@@ -13,8 +6,10 @@ import { ArgumentsCamelCase } from 'yargs'
 import { makeBookMd } from '../book.fixtures'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures'
+import Books from '../books'
 
 vi.mock('../book')
+vi.mock('../books')
 
 const mocks = {
   logInfo: vi.spyOn(log, 'info'),
@@ -25,12 +20,12 @@ const mocks = {
   processBookMd: vi.mocked(processBookMd),
   cleanUpDerivatives: vi.mocked(cleanUpDerivatives),
   getUpdatedSlugs: vi.mocked(getUpdatedSlugs),
-  readBookDir: vi.mocked(readBookDir),
+  Books: vi.mocked(Books),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
 
-describe('tools/lib/commands/attach', () => {
+describe('lib/commands/process', () => {
   afterEach(() => {
     Object.values(mocks).forEach((mock) => {
       mock.mockReset()
@@ -52,14 +47,12 @@ describe('tools/lib/commands/attach', () => {
     mocks.processBookMd.mockResolvedValueOnce(book)
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugs)
     mocks.cleanUpDerivatives.mockResolvedValueOnce()
-    mocks.readBookDir.mockResolvedValueOnce(slugs)
 
     await command.run(ctx, {} as ArgumentsCamelCase<ProcessArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.processBookMd).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.writeBookMd).toHaveBeenCalledTimes(slugs.length)
-    expect(mocks.readBookDir).toHaveBeenCalledOnce()
     expect(mocks.cleanUpDerivatives).toHaveBeenCalledOnce()
     expect(mocks.getUpdatedSlugs).toHaveBeenCalledOnce()
   })
@@ -74,14 +67,12 @@ describe('tools/lib/commands/attach', () => {
     mocks.processBookMd.mockResolvedValueOnce(book)
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugs)
     mocks.cleanUpDerivatives.mockResolvedValueOnce()
-    mocks.readBookDir.mockResolvedValueOnce(slugs)
 
     await command.run(ctx, {} as ArgumentsCamelCase<ProcessArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.processBookMd).not.toHaveBeenCalled()
     expect(mocks.writeBookMd).not.toHaveBeenCalled()
-    expect(mocks.readBookDir).toHaveBeenCalledOnce()
     expect(mocks.cleanUpDerivatives).not.toHaveBeenCalled()
     expect(mocks.getUpdatedSlugs).toHaveBeenCalledOnce()
   })
@@ -91,19 +82,22 @@ describe('tools/lib/commands/attach', () => {
     const book = makeBookMd()
     const slugs = ['slug3', 'slug2']
 
+    mocks.Books.mockImplementation(() => {
+      return {
+        getAllSlugs: async () => slugs,
+      } as unknown as Books
+    })
     mocks.getBook.mockResolvedValue(book)
     mocks.writeBookMd.mockResolvedValueOnce()
     mocks.processBookMd.mockResolvedValueOnce(book)
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugs)
     mocks.cleanUpDerivatives.mockResolvedValueOnce()
-    mocks.readBookDir.mockResolvedValueOnce(slugs)
 
     await command.run(ctx, { force: true } as ArgumentsCamelCase<ProcessArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.processBookMd).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.writeBookMd).toHaveBeenCalledTimes(slugs.length)
-    expect(mocks.readBookDir).toHaveBeenCalledOnce()
     expect(mocks.cleanUpDerivatives).toHaveBeenCalledOnce()
     expect(mocks.getUpdatedSlugs).not.toHaveBeenCalled()
   })

@@ -2,6 +2,7 @@ import log from '../log'
 import { Command } from './index.types'
 import { Argv } from 'yargs'
 import { createBookMd, writeBookMd } from '../book'
+import Books from '../books'
 
 export type CreateArgv = { slug: string }
 
@@ -26,7 +27,8 @@ const command: Command<CreateArgv> = {
 
     if (ctx.flags.dryRun === false) {
       const bookMd = await createBookMd(title, 'markdown notes', { title, author: 'author' })
-      await writeBookMd(bookMd, dir)
+      const books = new Books(dir)
+      await writeBookMd(books, bookMd)
       log.info(`created new book at ${bookMd.filename}`)
     } else {
       log.info(`created new book at ${title.toLowerCase().replace(/\s+/g, '-')}.md`)

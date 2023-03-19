@@ -1,25 +1,30 @@
 import log from '../log'
 import { Context } from './index.types'
 import {
-  BookMd,
-  cacheBook,
+  markBookAsSynced,
   bookMdToBookUpdateInput,
   bookMdToBookCreateInput,
   getSlugFromBookMd,
 } from '../book'
 import { Book } from '../prisma'
 import { difference } from 'lodash'
+import Books from '../books'
+import { BookMd } from '../book.schemas'
 
-async function syncUpdateBookExecute(ctx: Context, bookMd: BookMd, book: Book): Promise<void> {
-  const dir = ctx.directory
+async function syncUpdateBookExecute(
+  ctx: Context,
+  books: Books,
+  bookMd: BookMd,
+  book: Book
+): Promise<void> {
   try {
     if (ctx.flags.dryRun === false) {
-      const bookUpdateInput = await bookMdToBookUpdateInput(bookMd, book, dir)
+      const bookUpdateInput = await bookMdToBookUpdateInput(books, bookMd, book)
       const bookUpdate = await ctx.prisma.book.update({
         where: { id: book.id },
         data: bookUpdateInput,
       })
-      await cacheBook(bookUpdate, dir)
+      await markBookAsSynced(books, bookUpdate)
     }
 
     log.info(`updated ${book.slug}`)
@@ -28,20 +33,20 @@ async function syncUpdateBookExecute(ctx: Context, bookMd: BookMd, book: Book): 
   }
 }
 
-async function syncAddBook(ctx: Context, bookMd: BookMd): Promise<void> {
+async function syncAddBook(ctx: Context, books: Books, bookMd: BookMd): Promise<void> {
   const maybeBook = await ctx.prisma.book.findUnique({ where: { slug: getSlugFromBookMd(bookMd) } })
 
   if (maybeBook) {
-    await syncUpdateBookExecute(ctx, bookMd, maybeBook)
+    await syncUpdateBookExecute(ctx, books, bookMd, maybeBook)
     return
   }
 
   try {
     if (ctx.flags.dryRun === false) {
-      const bookCreateInput = await bookMdToBookCreateInput(bookMd, ctx.directory)
+      const bookCreateInput = await bookMdToBookCreateInput(books, bookMd)
       const bookAdded = await ctx.prisma.book.create({ data: bookCreateInput })
 
-      await cacheBook(bookAdded, ctx.directory)
+      await markBookAsSynced(books, bookAdded)
     }
     log.info(`added ${bookMd.filename}`)
   } catch (err) {
@@ -49,11 +54,16 @@ async function syncAddBook(ctx: Context, bookMd: BookMd): Promise<void> {
   }
 }
 
-async function syncUpdateBook(ctx: Context, bookMd: BookMd, id: string): Promise<void> {
+async function syncUpdateBook(
+  ctx: Context,
+  books: Books,
+  bookMd: BookMd,
+  id: string
+): Promise<void> {
   const book = await ctx.prisma.book.findUnique({ where: { id } })
 
   if (book) {
-    await syncUpdateBookExecute(ctx, bookMd, book)
+    await syncUpdateBookExecute(ctx, books, bookMd, book)
     return
   }
 }
