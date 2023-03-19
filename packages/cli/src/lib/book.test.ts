@@ -76,6 +76,27 @@ describe('lib/book', () => {
     expect(bookString).toBe(randomBookString)
   })
 
+  test('markBookAsSynced', async () => {
+    const books = bookFixtures.makeBooks()
+    const book = bookFixtures.makeBook()
+    const spyUpdateCache = vi.spyOn(books.cache, 'update')
+
+    spyUpdateCache.mockResolvedValueOnce()
+
+    await bookLib.markBookAsSynced(books, book)
+
+    spies.push(spyUpdateCache)
+
+    expect(spyUpdateCache).toHaveBeenCalledWith(book.slug, {
+      lastSynced: expect.any(String),
+      database: expect.objectContaining({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+      }),
+    })
+  })
+
   test('_makeBookMd', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const bookMd2 = bookLib._private._makeBookMd(
@@ -128,7 +149,40 @@ describe('lib/book', () => {
     expect(mocks.logError).toHaveBeenCalledOnce()
   })
 
-  test('bookMdToUpdateInput', async () => {
+  test('bookMdToBookCreateInput', async () => {
+    const bookMd = bookFixtures.makeBookMd()
+    const book = bookFixtures.makeBook({
+      title: bookMd.frontmatter.title,
+      author: bookMd.frontmatter.author,
+      note: bookMd.markdown,
+      slug: path.basename(bookMd.filename, '.md'),
+      year_read: 2022,
+      month_read: 12,
+    })
+    const books = bookFixtures.makeBooks()
+    const bookInput = bookFixtures.makeBookCreateInput(book)
+    const spyGetCoverData = vi.spyOn(bookLib._private, '_maybeGetCoverData')
+
+    spyGetCoverData.mockResolvedValueOnce(bookInput)
+
+    const bookCreateInput = await bookLib.bookMdToBookCreateInput(books, bookMd)
+
+    spies.push(spyGetCoverData)
+
+    expect(spyGetCoverData).toHaveBeenCalledWith(
+      books,
+      bookMd,
+      expect.objectContaining({
+        ...bookMd.frontmatter,
+        note: bookMd.markdown,
+        slug: book.slug,
+        read_order: expect.stringMatching(/^[0-9]+-[0-9,a-f]+$/),
+      })
+    )
+    expect(bookCreateInput).toEqual(bookInput)
+  })
+
+  test('bookMdToBookUpdateInput', async () => {
     const title = 'a new title'
     const bookMd = bookFixtures.makeBookMd()
     const book = bookFixtures.makeBook({
@@ -152,7 +206,7 @@ describe('lib/book', () => {
     expect(bookUpdateInput).toEqual(bookInput)
   })
 
-  test('bookMdToUpdateInput updates read order', async () => {
+  test('bookMdToBookUpdateInput updates read order', async () => {
     const title = 'a new title'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { year_read: 2020, month_read: 1 } })
     const book = bookFixtures.makeBook({
@@ -559,6 +613,23 @@ describe('lib/book', () => {
     const updatedSlugs = await bookLib.getUpdatedSlugs(slugs, books, 'lastProcessed')
 
     expect(updatedSlugs).toHaveLength(2)
+  })
+
+  test('getUpdatedSlugs lastProcessed not present', async () => {
+    const slugs: string[] = ['a', 'b', 'c']
+    const books = bookFixtures.makeBooks()
+    const cacheUpdated = new Date('2101-11-11')
+    const updated = new Date('2201-11-11')
+
+    const spyGetCache = vi.spyOn(books.cache, 'get')
+    mocks.cpus.mockReturnValue([{} as CpuInfo])
+    mocks.stat.mockResolvedValueOnce({ mtime: cacheUpdated } as Stats)
+    mocks.stat.mockResolvedValue({ mtime: updated } as Stats)
+    spyGetCache.mockResolvedValue({})
+
+    const updatedSlugs = await bookLib.getUpdatedSlugs(slugs, books, 'lastProcessed')
+
+    expect(updatedSlugs).toHaveLength(slugs.length)
   })
 
   test('getUpdatedSlugs skips on file failure', async () => {
