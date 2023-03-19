@@ -80,7 +80,7 @@ class CacheForType<T extends Record<string, unknown>> {
   }
 
   async getAllFiles(): Promise<string[]> {
-    return await readdir(path.join(this.rootDir)).catch(() => [])
+    return await readdir(this.rootDir).catch(() => [])
   }
 
   async remove(slug: string): Promise<void> {
