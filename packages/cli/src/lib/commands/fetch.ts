@@ -2,6 +2,7 @@ import log from '../log'
 import { Command } from './index.types'
 import { Argv } from 'yargs'
 import { getBook, writeBookMd, fetchBookMd } from '../book'
+import Books from '../books'
 
 export type FetchArgv = { slug: string }
 
@@ -23,7 +24,8 @@ const command: Command<FetchArgv> = {
   run: async function (ctx, args) {
     const dir = ctx.directory
     const slug = args.slug
-    const bookMd = await getBook(slug, dir)
+    const books = new Books(dir)
+    const bookMd = await getBook(books, slug)
 
     if (!bookMd) {
       log.info(`${slug} was not found`)
@@ -31,8 +33,8 @@ const command: Command<FetchArgv> = {
     }
 
     if (ctx.flags.dryRun === false) {
-      const bookProcessed = await fetchBookMd(bookMd, dir)
-      await writeBookMd(bookProcessed, dir)
+      const bookProcessed = await fetchBookMd(books, bookMd)
+      await writeBookMd(books, bookProcessed)
     }
     log.info(`processed ${bookMd.filename}`)
   },

@@ -3,7 +3,7 @@ import command from './dump'
 import { ArgumentsCamelCase } from 'yargs'
 import { makeBook, makeBookMd } from '../book.fixtures'
 import { makeContext } from './context.fixtures'
-import { bookToMd, writeBookMd, cacheBook } from '../book'
+import { bookToMd, writeBookMd } from '../book'
 import { CpuInfo, cpus } from 'os'
 import log from '../log'
 
@@ -15,7 +15,6 @@ const mocks = {
   logError: vi.spyOn(log, 'error'),
   bookToMd: vi.mocked(bookToMd),
   writeBookMd: vi.mocked(writeBookMd),
-  cacheBook: vi.mocked(cacheBook),
   cpus: vi.mocked(cpus),
 }
 
@@ -44,7 +43,6 @@ describe('lib/commands/dump', () => {
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
     mocks.bookToMd.mockResolvedValueOnce(bookMd)
     mocks.writeBookMd.mockResolvedValueOnce()
-    mocks.cacheBook.mockResolvedValueOnce()
 
     await command.run(ctx, {} as ArgumentsCamelCase)
 
@@ -63,7 +61,6 @@ describe('lib/commands/dump', () => {
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
     mocks.bookToMd.mockResolvedValueOnce(bookMd)
     mocks.writeBookMd.mockResolvedValueOnce()
-    mocks.cacheBook.mockResolvedValueOnce()
 
     await command.run(ctx, {} as ArgumentsCamelCase)
 

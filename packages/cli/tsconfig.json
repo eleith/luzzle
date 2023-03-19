@@ -13,7 +13,8 @@
     "sourceMap": true,
     "strict": true,
     "strictNullChecks": true,
-    "typeRoots": ["./src/@types"]
+    "typeRoots": ["./src/@types"],
+    "resolveJsonModule": true
   },
-  "include": ["vite.config.ts", "src/**/*.ts", "src/**/*.d.ts"]
+  "include": ["vite.config.ts", "src/**/*.ts", "src/**/*.json"]
 }

@@ -1,25 +1,17 @@
 import log from '../log'
 import { Command, Context } from './index.types'
 import { Argv } from 'yargs'
-import {
-  BookMd,
-  getBook,
-  processBookMd,
-  readBookDir,
-  getUpdatedSlugs,
-  cleanUpDerivatives,
-  writeBookMd,
-} from '../book'
+import { getBook, processBookMd, getUpdatedSlugs, cleanUpDerivatives, writeBookMd } from '../book'
 import { eachLimit } from 'async'
+import Books from '../books'
+import { BookMd } from '../book.schemas'
 
 export type ProcessArgv = { force: boolean }
 
-async function processBook(ctx: Context, bookMd: BookMd): Promise<void> {
-  const dir = ctx.directory
-
+async function processBook(ctx: Context, books: Books, bookMd: BookMd): Promise<void> {
   if (ctx.flags.dryRun === false) {
     const bookProcessed = await processBookMd(bookMd)
-    await writeBookMd(bookProcessed, dir)
+    await writeBookMd(books, bookProcessed)
   }
 
   log.info(`processed ${bookMd.filename}`)
@@ -43,20 +35,21 @@ const command: Command<ProcessArgv> = {
 
   run: async function (ctx, args) {
     const dir = ctx.directory
-    const bookSlugs = await readBookDir(dir)
+    const books = new Books(dir)
+    const bookSlugs = await books.getAllSlugs()
     const updatedBookSlugs = args.force
       ? bookSlugs
-      : await getUpdatedSlugs(bookSlugs, dir, 'lastProcessed')
+      : await getUpdatedSlugs(bookSlugs, books, 'lastProcessed')
 
     await eachLimit(updatedBookSlugs, 1, async (slug) => {
-      const bookMd = await getBook(slug, dir)
+      const bookMd = await getBook(books, slug)
       if (bookMd) {
-        await processBook(ctx, bookMd)
+        await processBook(ctx, books, bookMd)
       }
     })
 
     if (ctx.flags.dryRun === false) {
-      await cleanUpDerivatives(dir)
+      await cleanUpDerivatives(books)
     }
   },
 }

@@ -2,10 +2,12 @@ import { getPrismaClient } from './prisma'
 import { getDirectoryFromConfig, getConfig } from './config'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { dbPath } from './book'
 import log from './log'
 import path from 'path'
 import commands, { Context } from './commands'
+import { ASSETS_DIRECTORY } from './assets'
+
+const DATABASE_PATH = path.join(ASSETS_DIRECTORY, 'data', 'sqlite.db')
 
 async function parseArgs(_args: string[]) {
   const command = await yargs(_args)
@@ -85,7 +87,7 @@ async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<v
   const directory = getDirectoryFromConfig(config)
   const ctx: Context = {
     prisma: getPrismaClient({
-      datasources: { db: { url: `file:${path.join(directory, dbPath)}` } },
+      datasources: { db: { url: `file:${path.join(directory, DATABASE_PATH)}` } },
     }),
     log,
     directory,

@@ -1,12 +1,14 @@
 import { Book, Prisma } from './prisma'
 import { merge } from 'lodash'
-import { BookCache, BookMd } from './book'
+import { BookMd } from './book.schemas'
+import Books from './books'
 
 const title = 'title of the book'
 const author = 'author of the book'
 const note = 'a note about the book'
 const slug = 'slugified-title'
 const read_order = '19700101-y47d'
+const directory = 'all-the-books'
 
 function makeBookMd(overrides: DeepPartial<BookMd> = {}): BookMd {
   return merge(
@@ -71,8 +73,9 @@ function makeBookCreateInput(
   }
 }
 
-function makeBookCache(overrides: DeepPartial<BookCache> = {}): BookCache {
-  return merge({}, overrides as BookCache)
+function makeBooks(dir = directory): Books {
+  const args: [dir: string] = [dir]
+  return new Books(...args)
 }
 
-export { makeBookMd, makeBook, makeBookUpdateInput, makeBookCreateInput, makeBookCache }
+export { makeBookMd, makeBook, makeBookUpdateInput, makeBookCreateInput, makeBooks }

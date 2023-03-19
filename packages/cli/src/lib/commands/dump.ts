@@ -1,18 +1,19 @@
 import { Command, Context } from './index.types'
 import { Book } from '../prisma'
-import { writeBookMd, bookToMd, cacheBook } from '../book'
+import { writeBookMd, bookToMd } from '../book'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
+import Books from '../books'
 
 async function dumpBook(ctx: Context, book: Book): Promise<void> {
   const dir = ctx.directory
 
   try {
     if (ctx.flags.dryRun === false) {
+      const books = new Books(dir)
       const bookMd = await bookToMd(book)
 
-      await writeBookMd(bookMd, dir)
-      await cacheBook(book, dir)
+      await writeBookMd(books, bookMd)
     }
     ctx.log.info(`saved book to ${book.slug}.md`)
   } catch (e) {
