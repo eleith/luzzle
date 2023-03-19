@@ -70,7 +70,7 @@ async function markBookAsSynced(books: Books, book: Book): Promise<void> {
   const bookDbCache: Partial<{ [key in BookDatabaseOnlyFields]: unknown }> = {}
   const bookDbFields = [
     ...Object.keys(cacheDatabaseSchema.properties),
-    ...Object.keys(cacheDatabaseSchema.optionalProperties ?? {}),
+    ...Object.keys(cacheDatabaseSchema.optionalProperties),
   ] as Array<BookDatabaseOnlyFields>
 
   bookDbFields.forEach((key) => {
