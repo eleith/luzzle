@@ -1,14 +1,13 @@
-import { getBook, writeBookMd, downloadCover } from '../book'
+import { getBook, writeBookMd, downloadCover } from '../books'
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { AttachArgv } from './attach'
 import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../book.fixtures'
+import { makeBookMd } from '../books/book.fixtures'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures'
 
 vi.mock('child_process')
-vi.mock('../book')
 vi.mock('../books')
 
 const mocks = {

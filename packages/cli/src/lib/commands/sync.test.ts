@@ -1,15 +1,13 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command from './sync'
 import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../book.fixtures'
+import { makeBookMd } from '../books/book.fixtures'
 import { makeContext } from './context.fixtures'
-import { getBook, getUpdatedSlugs } from '../book'
+import { getBook, getUpdatedSlugs, Books } from '../books'
 import { syncAddBook, syncRemoveBooks, syncUpdateBook } from './sync.private'
-import Books from '../books'
-import { BookDatabaseCache } from '../book.schemas'
+import { BookDatabaseCache } from '../books/book.schemas'
 import { Cache } from '../cache'
 
-vi.mock('../book')
 vi.mock('./sync.private')
 vi.mock('../books')
 

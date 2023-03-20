@@ -1,4 +1,4 @@
-import { Book } from './prisma'
+import { Book } from '../prisma'
 import { JTDSchemaType } from 'ajv/dist/jtd'
 import Ajv from 'ajv/dist/jtd'
 

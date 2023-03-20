@@ -1,9 +1,8 @@
 import { Command, Context } from './index.types'
 import { Book } from '../prisma'
-import { writeBookMd, bookToMd } from '../book'
+import { writeBookMd, bookToMd, Books } from '../books'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
-import Books from '../books'
 
 async function dumpBook(ctx: Context, book: Book): Promise<void> {
   const dir = ctx.directory

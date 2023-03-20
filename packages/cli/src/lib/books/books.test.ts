@@ -1,16 +1,15 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import CacheFor from './cache'
+import CacheFor from '../cache'
 import { readdir } from 'fs/promises'
 import Books from './books'
 import { BookDatabaseCache, cacheDatabaseSchema } from './book.schemas'
 import { Dirent } from 'fs'
 import path from 'path'
 
-vi.mock('../book')
 vi.mock('fs/promises')
 vi.mock('fs')
 vi.mock('ajv/dist/jtd')
-vi.mock('./cache')
+vi.mock('../cache')
 
 const mocks = {
   readdir: vi.mocked(readdir),
@@ -19,7 +18,7 @@ const mocks = {
 
 const spies: SpyInstance[] = []
 
-describe('lib/books', () => {
+describe('lib/books/books', () => {
   afterEach(() => {
     Object.values(mocks).forEach((mock) => {
       mock.mockReset()

@@ -1,7 +1,6 @@
 import log from '../log'
 import { Argv } from 'yargs'
-import { getBook, writeBookMd, downloadCover } from '../book'
-import Books from '../books'
+import { getBook, writeBookMd, downloadCover, Books } from '../books'
 import { Command } from './index.types'
 
 export type AttachArgv = { slug: string; file: string }

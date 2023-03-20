@@ -1,16 +1,15 @@
 import { ChildProcess, spawn } from 'child_process'
-import { getBook } from '../book'
+import { getBook } from '../books'
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { EventEmitter } from 'stream'
 import command, { EditArgv } from './edit'
 import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../book.fixtures'
+import { makeBookMd } from '../books/book.fixtures'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures'
 
 vi.mock('child_process')
-vi.mock('../book')
 vi.mock('../books')
 
 const mocks = {

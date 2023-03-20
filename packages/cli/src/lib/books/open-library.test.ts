@@ -1,10 +1,10 @@
-import log from './log'
+import log from '../log'
 import got from 'got'
 import * as openLibrary from './open-library'
 import * as openLibraryFixtures from './open-library.fixtures'
 import { describe, expect, test, vi, afterEach } from 'vitest'
 
-vi.mock('./log')
+vi.mock('../log')
 
 const jsonResponseHeaders = { responseType: 'json' }
 
@@ -14,7 +14,7 @@ const mocks = {
   gotGet: vi.spyOn(got, 'get'),
 }
 
-describe('open-library', () => {
+describe('lib/books/open-library', () => {
   afterEach(() => {
     vi.resetAllMocks()
     vi.restoreAllMocks()

@@ -1,6 +1,6 @@
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import { makeBookMd, makeBook, makeBookCreateInput } from '../book.fixtures'
+import { makeBookMd, makeBook, makeBookCreateInput } from '../books/book.fixtures'
 import { makeContext } from './context.fixtures'
 import {
   getBook,
@@ -8,11 +8,10 @@ import {
   bookMdToBookCreateInput,
   getSlugFromBookMd,
   getUpdatedSlugs,
-} from '../book'
+} from '../books'
 import { syncAddBook, syncUpdateBook, syncRemoveBooks } from './sync.private'
-import { makeBooks } from '../books.mock'
+import { makeBooks } from '../books/books.mock'
 
-vi.mock('../book')
 vi.mock('../books')
 
 const mocks = {
@@ -28,7 +27,7 @@ const mocks = {
 
 const spies: { [key: string]: SpyInstance } = {}
 
-describe('tools/lib/commands/sync.private', () => {
+describe('lib/commands/sync.private', () => {
   afterEach(() => {
     Object.values(mocks).forEach((mock) => {
       mock.mockReset()

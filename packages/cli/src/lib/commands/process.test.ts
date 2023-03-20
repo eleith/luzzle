@@ -1,14 +1,19 @@
-import { getBook, writeBookMd, processBookMd, cleanUpDerivatives, getUpdatedSlugs } from '../book'
+import {
+  getBook,
+  writeBookMd,
+  processBookMd,
+  cleanUpDerivatives,
+  getUpdatedSlugs,
+  Books,
+} from '../books'
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { ProcessArgv } from './process'
 import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../book.fixtures'
+import { makeBookMd } from '../books/book.fixtures'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures'
-import Books from '../books'
 
-vi.mock('../book')
 vi.mock('../books')
 
 const mocks = {
