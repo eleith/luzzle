@@ -8,6 +8,7 @@ import yargs from 'yargs'
 import { makeContext } from './context.fixtures'
 
 vi.mock('../book')
+vi.mock('../books')
 
 const mocks = {
   logInfo: vi.spyOn(log, 'info'),

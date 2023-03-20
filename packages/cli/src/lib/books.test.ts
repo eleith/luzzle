@@ -19,7 +19,7 @@ const mocks = {
 
 const spies: SpyInstance[] = []
 
-describe('tools/lib/commands/attach', () => {
+describe('lib/books', () => {
   afterEach(() => {
     Object.values(mocks).forEach((mock) => {
       mock.mockReset()

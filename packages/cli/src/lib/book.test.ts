@@ -15,6 +15,7 @@ import { FileTypeResult, fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
 import { BookMd, BookMdWithOpenLib } from './book.schemas'
+import { makeBooks } from './books.mock'
 
 vi.mock('file-type')
 vi.mock('fs')
@@ -77,7 +78,7 @@ describe('lib/book', () => {
   })
 
   test('markBookAsSynced', async () => {
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const book = bookFixtures.makeBook()
     const spyUpdateCache = vi.spyOn(books.cache, 'update')
 
@@ -127,7 +128,7 @@ describe('lib/book', () => {
   test('getBook', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const bookSlugs = path.basename(bookMd.filename, '.md')
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
 
     mocks.extract.mockResolvedValueOnce(bookMd as Awaited<ReturnType<typeof mocks.extract>>)
 
@@ -139,7 +140,7 @@ describe('lib/book', () => {
   test('getBook returns null on error', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const bookSlugs = path.basename(bookMd.filename, '.md')
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
 
     mocks.extract.mockRejectedValueOnce(new Error('boom'))
 
@@ -159,7 +160,7 @@ describe('lib/book', () => {
       year_read: 2022,
       month_read: 12,
     })
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const bookInput = bookFixtures.makeBookCreateInput(book)
     const spyGetCoverData = vi.spyOn(bookLib._private, '_maybeGetCoverData')
 
@@ -191,7 +192,7 @@ describe('lib/book', () => {
       note: bookMd.markdown,
       slug: path.basename(bookMd.filename, '.md'),
     })
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const bookInput = bookFixtures.makeBookUpdateInput(book)
     const spyGetCoverData = vi.spyOn(bookLib._private, '_maybeGetCoverData')
 
@@ -219,7 +220,7 @@ describe('lib/book', () => {
     })
 
     const bookInput = bookFixtures.makeBookUpdateInput(book)
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const maybeGetCoverData = vi.spyOn(bookLib._private, '_maybeGetCoverData')
 
     maybeGetCoverData.mockResolvedValueOnce(bookInput)
@@ -347,7 +348,7 @@ describe('lib/book', () => {
   test('downloadCover', async () => {
     const cover = 'somewhere/here/cover.png'
     const bookMd = bookFixtures.makeBookMd()
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
 
     const spyDownload = vi.spyOn(bookLib._private, '_download')
     spyDownload.mockResolvedValueOnce(true)
@@ -362,7 +363,7 @@ describe('lib/book', () => {
   })
 
   test('fetchBookMd', async () => {
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const openLibraryResult = { title: 'a new title' }
     const googleBooksResult = { author: 'a new author' }
     const bookMd = bookFixtures.makeBookMd({
@@ -391,7 +392,7 @@ describe('lib/book', () => {
   })
 
   test('fetchBookMd only searches google', async () => {
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const googleBooksResult = { author: 'a new author' }
     const bookMd = bookFixtures.makeBookMd()
     const bookMdSearch = bookFixtures.makeBookMd({
@@ -418,25 +419,28 @@ describe('lib/book', () => {
   test('_searchOpenLibrary', async () => {
     const workId = 'work-id'
     const bookId = 'book-id'
-    const books = bookFixtures.makeBooks()
+    const coverPath = 'a/b.jpg'
+    const books = makeBooks()
     const book = openLibFixtures.makeOpenLibraryBook({ works: [{ key: `/works/${workId}` }] })
     const work = openLibFixtures.makeOpenLibrarySearchWork()
     const coverUrl = 'https://somewhere'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
 
     const download = vi.spyOn(bookLib._private, '_download')
+    const getPath = vi.spyOn(books, 'getRelativePathForBookCover')
 
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.findWork.mockResolvedValueOnce(work)
     mocks.getCoverUrl.mockReturnValue(coverUrl)
     download.mockResolvedValueOnce(true)
+    getPath.mockReturnValueOnce(coverPath)
 
     const bookMetadata = await bookLib._private._searchOpenLibrary(
       books,
       bookMd as BookMdWithOpenLib
     )
 
-    spies.push(download)
+    spies.push(download, getPath)
 
     expect(mocks.getBook).toHaveBeenCalledWith(bookId)
     expect(mocks.findWork).toHaveBeenCalledWith(workId)
@@ -447,14 +451,15 @@ describe('lib/book', () => {
       subtitle: book.subtitle,
       id_ol_work: workId,
       year_first_published: work.first_publish_year,
-      cover_path: expect.any(String),
+      cover_path: coverPath,
     })
   })
 
   test('_searchOpenLibrary all metadata', async () => {
     const workId = 'work-id'
     const bookId = 'book-id'
-    const books = bookFixtures.makeBooks()
+    const coverPath = 'a/b.jpg'
+    const books = makeBooks()
     const book = openLibFixtures.makeOpenLibraryBook({
       works: [{ key: `/works/${workId}` }],
     })
@@ -469,13 +474,14 @@ describe('lib/book', () => {
     })
     const coverUrl = 'https://somewhere'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
-
+    const getPath = vi.spyOn(books, 'getRelativePathForBookCover')
     const download = vi.spyOn(bookLib._private, '_download')
 
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.findWork.mockResolvedValueOnce(work)
     mocks.getCoverUrl.mockReturnValue(coverUrl)
     download.mockResolvedValueOnce(true)
+    getPath.mockReturnValueOnce(coverPath)
 
     const bookMetadata = await bookLib._private._searchOpenLibrary(
       books,
@@ -496,13 +502,13 @@ describe('lib/book', () => {
       pages: Number(work.number_of_pages),
       keywords: [...(work.subject || []), ...(work.place || [])].join(','),
       year_first_published: work.first_publish_year,
-      cover_path: expect.any(String),
+      cover_path: coverPath,
     })
   })
 
   test('_searchOpenLibrary returns null', async () => {
     const bookId = 'book-id'
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const work = openLibFixtures.makeOpenLibrarySearchWork()
     const coverUrl = 'https://somewhere'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
@@ -586,7 +592,7 @@ describe('lib/book', () => {
     const slugs: string[] = ['a', 'b', 'c']
     const updated = new Date('2201-11-11')
     const cacheUpdated = new Date('2101-11-11')
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
 
     const spyGetCache = vi.spyOn(books.cache, 'get')
     mocks.cpus.mockReturnValue([{} as CpuInfo])
@@ -600,7 +606,7 @@ describe('lib/book', () => {
 
   test('getUpdatedSlugs lastProcessed', async () => {
     const slugs: string[] = ['a', 'b', 'c']
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const cacheUpdated = new Date('2101-11-11')
     const updated = new Date('2201-11-11')
 
@@ -617,7 +623,7 @@ describe('lib/book', () => {
 
   test('getUpdatedSlugs lastProcessed not present', async () => {
     const slugs: string[] = ['a', 'b', 'c']
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const cacheUpdated = new Date('2101-11-11')
     const updated = new Date('2201-11-11')
 
@@ -635,7 +641,7 @@ describe('lib/book', () => {
   test('getUpdatedSlugs skips on file failure', async () => {
     const slugs: string[] = ['a']
     const lastSynced = new Date('2101-11-11')
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const getCache = vi.spyOn(books.cache, 'get')
 
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
@@ -652,7 +658,7 @@ describe('lib/book', () => {
   test('cleanUpDerivatives', async () => {
     const bookFiles = ['a.md']
     const cacheFiles = ['a.json', 'b.json']
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
 
     mocks.unlink.mockResolvedValue()
     mocks.existSync.mockReturnValueOnce(true)
@@ -674,7 +680,7 @@ describe('lib/book', () => {
   test('cleanUpDerivatives removes cache and cover', async () => {
     const bookFiles = ['a.md']
     const cacheFiles = ['a.json', 'b.json']
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
 
     mocks.unlink.mockResolvedValue()
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
@@ -694,7 +700,7 @@ describe('lib/book', () => {
   test('cleanUpDerivates catches error', async () => {
     const bookFiles = ['a.md']
     const cacheFiles = ['a.json', 'b.json']
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
 
     mocks.unlink.mockRejectedValueOnce(new Error('boom'))
 
@@ -711,7 +717,7 @@ describe('lib/book', () => {
   test('_maybeGetCoverData', async () => {
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { cover_path: 'xay' } })
     const bookInput = bookFixtures.makeBookCreateInput()
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
     const coverData = { cover_width: 100, cover_height: 200 }
 
     const getCover = vi.spyOn(bookLib._private, '_getCoverData')
@@ -728,7 +734,7 @@ describe('lib/book', () => {
   test('_maybeGetCoverData returns no cover', async () => {
     const bookMd = bookFixtures.makeBookMd()
     const bookInput = bookFixtures.makeBookCreateInput()
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
 
     const data = await bookLib._private._maybeGetCoverData(books, bookMd, bookInput)
 
@@ -737,7 +743,7 @@ describe('lib/book', () => {
 
   test('writeBookMd', async () => {
     const bookMd = bookFixtures.makeBookMd()
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
 
     const updateCache = vi.spyOn(books.cache, 'update')
     updateCache.mockResolvedValueOnce()
@@ -756,7 +762,7 @@ describe('lib/book', () => {
 
   test('writeBookMd with cover', async () => {
     const bookMd = bookFixtures.makeBookMd()
-    const books = bookFixtures.makeBooks()
+    const books = makeBooks()
 
     const updateCache = vi.spyOn(books.cache, 'update')
     updateCache.mockResolvedValueOnce()

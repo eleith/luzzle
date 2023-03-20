@@ -11,6 +11,7 @@ import { makeContext } from './context.fixtures'
 
 vi.mock('child_process')
 vi.mock('../book')
+vi.mock('../books')
 
 const mocks = {
   logInfo: vi.spyOn(log, 'info'),
