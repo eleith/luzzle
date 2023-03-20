@@ -1,10 +1,16 @@
 import log from '../log'
 import { Command, Context } from './index.types'
 import { Argv } from 'yargs'
-import { getBook, processBookMd, getUpdatedSlugs, cleanUpDerivatives, writeBookMd } from '../book'
+import {
+  getBook,
+  processBookMd,
+  getUpdatedSlugs,
+  cleanUpDerivatives,
+  writeBookMd,
+  Books,
+  BookMd,
+} from '../books'
 import { eachLimit } from 'async'
-import Books from '../books'
-import { BookMd } from '../book.schemas'
 
 export type ProcessArgv = { force: boolean }
 

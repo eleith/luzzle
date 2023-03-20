@@ -1,5 +1,4 @@
-import { getBook } from '../book'
-import Books from '../books'
+import { getBook, Books } from '../books'
 import log from '../log'
 import { spawn } from 'child_process'
 import { Command } from './index.types'

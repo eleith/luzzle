@@ -5,11 +5,11 @@ import {
   bookMdToBookUpdateInput,
   bookMdToBookCreateInput,
   getSlugFromBookMd,
-} from '../book'
+  Books,
+  BookMd,
+} from '../books'
 import { Book } from '../prisma'
 import { difference } from 'lodash'
-import Books from '../books'
-import { BookMd } from '../book.schemas'
 
 async function syncUpdateBookExecute(
   ctx: Context,

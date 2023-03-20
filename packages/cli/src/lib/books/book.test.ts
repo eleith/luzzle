@@ -7,10 +7,10 @@ import * as bookFixtures from './book.fixtures'
 import * as openLibFixtures from './open-library.fixtures'
 import * as googleBooksFixtures from './google-books.fixtures'
 import { findVolume } from './google-books'
-import log from './log'
-import { addFrontMatter, extract } from './md'
+import log from '../log'
+import { addFrontMatter, extract } from '../md'
 import { findWork, getBook, getCoverUrl } from './open-library'
-import { downloadTo } from './web'
+import { downloadTo } from '../web'
 import { FileTypeResult, fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
@@ -21,12 +21,12 @@ vi.mock('file-type')
 vi.mock('fs')
 vi.mock('fs/promises')
 vi.mock('sharp')
-vi.mock('./web')
+vi.mock('../web')
 vi.mock('./open-library')
 vi.mock('./google-books')
-vi.mock('./md')
+vi.mock('../md')
 vi.mock('os')
-vi.mock('./log')
+vi.mock('../log')
 
 const mocks = {
   cpus: vi.mocked(cpus),

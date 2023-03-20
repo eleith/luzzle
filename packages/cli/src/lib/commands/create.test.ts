@@ -1,13 +1,12 @@
-import { writeBookMd, createBookMd } from '../book'
+import { writeBookMd, createBookMd } from '../books'
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { CreateArgv } from './create'
 import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../book.fixtures'
+import { makeBookMd } from '../books/book.fixtures'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures'
 
-vi.mock('../book')
 vi.mock('../books')
 
 const mocks = {

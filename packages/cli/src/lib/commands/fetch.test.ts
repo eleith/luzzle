@@ -1,13 +1,12 @@
-import { getBook, writeBookMd, fetchBookMd } from '../book'
+import { getBook, writeBookMd, fetchBookMd } from '../books'
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { FetchArgv } from './fetch'
 import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../book.fixtures'
+import { makeBookMd } from '../books/book.fixtures'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures'
 
-vi.mock('../book')
 vi.mock('../books')
 
 const mocks = {

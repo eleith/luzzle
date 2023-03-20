@@ -1,4 +1,4 @@
-import { Book, Prisma } from './prisma'
+import { Book, Prisma } from '../prisma'
 import { merge } from 'lodash'
 import { BookMd } from './book.schemas'
 

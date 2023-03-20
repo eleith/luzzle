@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { cacheDatabaseSchema } from './book.schemas'
 import Books from './books'
-import CacheFrom from './cache'
+import CacheFrom from '../cache'
 
 vi.mock('./books')
 vi.mock('./cache')

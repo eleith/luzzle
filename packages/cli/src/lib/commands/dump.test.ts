@@ -1,13 +1,12 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command from './dump'
 import { ArgumentsCamelCase } from 'yargs'
-import { makeBook, makeBookMd } from '../book.fixtures'
+import { makeBook, makeBookMd } from '../books/book.fixtures'
 import { makeContext } from './context.fixtures'
-import { bookToMd, writeBookMd } from '../book'
+import { bookToMd, writeBookMd } from '../books'
 import { CpuInfo, cpus } from 'os'
 import log from '../log'
 
-vi.mock('../book')
 vi.mock('os')
 vi.mock('log')
 vi.mock('../books')

@@ -1,8 +1,7 @@
 import log from '../log'
 import { Command } from './index.types'
 import { Argv } from 'yargs'
-import { getBook, writeBookMd, fetchBookMd } from '../book'
-import Books from '../books'
+import { getBook, writeBookMd, fetchBookMd, Books } from '../books'
 
 export type FetchArgv = { slug: string }
 
