@@ -10,6 +10,7 @@ import log from '../log'
 vi.mock('../book')
 vi.mock('os')
 vi.mock('log')
+vi.mock('../books')
 
 const mocks = {
   logError: vi.spyOn(log, 'error'),

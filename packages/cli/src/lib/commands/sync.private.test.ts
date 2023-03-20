@@ -1,6 +1,6 @@
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import { makeBookMd, makeBook, makeBookCreateInput, makeBooks } from '../book.fixtures'
+import { makeBookMd, makeBook, makeBookCreateInput } from '../book.fixtures'
 import { makeContext } from './context.fixtures'
 import {
   getBook,
@@ -10,8 +10,10 @@ import {
   getUpdatedSlugs,
 } from '../book'
 import { syncAddBook, syncUpdateBook, syncRemoveBooks } from './sync.private'
+import { makeBooks } from '../books.mock'
 
 vi.mock('../book')
+vi.mock('../books')
 
 const mocks = {
   logInfo: vi.spyOn(log, 'info'),
