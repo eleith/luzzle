@@ -25,7 +25,17 @@ const command: Command<CreateArgv> = {
     const title = args.slug
 
     if (ctx.flags.dryRun === false) {
-      const bookMd = await createBookMd(title, 'markdown notes', { title, author: 'author' })
+      const bookMd = await createBookMd(title, 'markdown notes', {
+        title,
+        author: 'author',
+        isbn: '1234',
+        description: 'description',
+        id_ol_book: 'id1234',
+        id_ol_work: 'id5678',
+        coauthors: 'coauthors',
+        year_read: new Date().getFullYear(),
+        month_read: new Date().getMonth() + 1,
+      })
       const books = new Books(dir)
       await writeBookMd(books, bookMd)
       log.info(`created new book at ${bookMd.filename}`)
