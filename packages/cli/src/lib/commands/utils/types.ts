@@ -1,7 +1,7 @@
 import { Logger } from 'pino'
 import { ArgumentsCamelCase, Argv } from 'yargs'
-import { PrismaClient } from '../prisma'
-import { Config } from '../config'
+import { PrismaClient } from '../../prisma'
+import { Config } from '../../config'
 
 export type Context = {
   prisma: PrismaClient

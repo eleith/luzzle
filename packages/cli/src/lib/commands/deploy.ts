@@ -1,4 +1,4 @@
-import { Command } from './index.types'
+import { Command } from './utils/types'
 import got from 'got'
 
 const command: Command = {

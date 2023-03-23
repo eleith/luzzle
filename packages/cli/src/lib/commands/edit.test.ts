@@ -23,7 +23,7 @@ const mocks = {
 
 const spies: { [key: string]: SpyInstance } = {}
 
-describe('tools/lib/commands/edit', () => {
+describe('lib/commands/edit', () => {
   afterEach(() => {
     Object.values(mocks).forEach((mock) => {
       mock.mockReset()
@@ -104,6 +104,6 @@ describe('tools/lib/commands/edit', () => {
     spies.positional = vi.spyOn(args, 'positional')
     command.builder?.(args)
 
-    expect(spies.positional).toHaveBeenCalledOnce()
+    expect(spies.positional).toHaveBeenCalledTimes(2)
   })
 })

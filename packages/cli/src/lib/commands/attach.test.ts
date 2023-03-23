@@ -90,6 +90,6 @@ describe('lib/commands/attach', () => {
     spies.positional = vi.spyOn(args, 'positional')
     command.builder?.(args)
 
-    expect(spies.positional).toHaveBeenCalledTimes(2)
+    expect(spies.positional).toHaveBeenCalledTimes(4)
   })
 })

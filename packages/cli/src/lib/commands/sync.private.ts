@@ -1,5 +1,5 @@
 import log from '../log'
-import { Context } from './index.types'
+import { Context } from './utils/types'
 import {
   markBookAsSynced,
   bookMdToBookUpdateInput,
