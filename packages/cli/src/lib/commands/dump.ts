@@ -1,4 +1,4 @@
-import { Command, Context } from './index.types'
+import { Command, Context } from './utils/types'
 import { Book } from '../prisma'
 import { writeBookMd, bookToMd, Books } from '../books'
 import { eachLimit } from 'async'

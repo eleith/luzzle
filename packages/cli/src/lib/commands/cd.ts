@@ -1,5 +1,5 @@
 import { spawn } from 'child_process'
-import { Command } from './index.types'
+import { Command } from './utils/types'
 
 const command: Command = {
   name: 'cd',

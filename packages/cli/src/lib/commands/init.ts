@@ -1,5 +1,5 @@
 import log from '../log'
-import { Command } from './index.types'
+import { Command } from './utils/types'
 import { Argv } from 'yargs'
 import { inititializeConfig } from '../config'
 import { stat } from 'fs/promises'

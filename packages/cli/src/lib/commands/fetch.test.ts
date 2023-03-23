@@ -20,7 +20,7 @@ const mocks = {
 
 const spies: { [key: string]: SpyInstance } = {}
 
-describe('tools/lib/commands/fetch', () => {
+describe('lib/commands/fetch', () => {
   afterEach(() => {
     Object.values(mocks).forEach((mock) => {
       mock.mockReset()
@@ -32,7 +32,7 @@ describe('tools/lib/commands/fetch', () => {
     })
   })
 
-  test('run', async () => {
+  test('run with slug', async () => {
     const ctx = makeContext()
     const book = makeBookMd()
     const slug = 'slug2'
@@ -86,6 +86,6 @@ describe('tools/lib/commands/fetch', () => {
     spies.positional = vi.spyOn(args, 'positional')
     command.builder?.(args)
 
-    expect(spies.positional).toHaveBeenCalledOnce()
+    expect(spies.positional).toHaveBeenCalledTimes(2)
   })
 })

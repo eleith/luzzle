@@ -10,6 +10,6 @@ import cd from './cd'
 import deploy from './deploy'
 import dump from './dump'
 
-export type { Command, Context } from './index.types'
+export type { Command, Context } from './utils/types'
 
 export default { edit, editConfig, attach, process, create, fetch, init, sync, cd, deploy, dump }
