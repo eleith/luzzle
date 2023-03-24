@@ -366,6 +366,7 @@ describe('lib/book', () => {
     const books = makeBooks()
     const openLibraryResult = { title: 'a new title' }
     const googleBooksResult = { author: 'a new author' }
+    const googleApiKey = 'key'
     const bookMd = bookFixtures.makeBookMd({
       frontmatter: { id_ol_book: 'xyz' },
     })
@@ -379,12 +380,13 @@ describe('lib/book', () => {
     searchGoogleBooks.mockResolvedValueOnce(googleBooksResult as BookMd['frontmatter'])
     searchOpenLibrary.mockResolvedValueOnce(openLibraryResult as BookMd['frontmatter'])
 
-    const bookMdAfter = await bookLib.fetchBookMd(books, bookMd)
+    const bookMdAfter = await bookLib.fetchBookMd(googleApiKey, books, bookMd)
 
     spies.push(searchGoogleBooks, searchOpenLibrary)
 
     expect(bookMdAfter).toEqual(bookMdSearch)
     expect(searchGoogleBooks).toHaveBeenCalledWith(
+      googleApiKey,
       bookMd.frontmatter.title,
       bookMd.frontmatter.author
     )
@@ -395,6 +397,7 @@ describe('lib/book', () => {
     const books = makeBooks()
     const googleBooksResult = { author: 'a new author' }
     const bookMd = bookFixtures.makeBookMd()
+    const googleApiKey = 'key'
     const bookMdSearch = bookFixtures.makeBookMd({
       ...bookMd,
       ...{ frontmatter: { ...googleBooksResult, ...bookMd.frontmatter } },
@@ -406,10 +409,11 @@ describe('lib/book', () => {
 
     spies.push(searchGoogleBooks, searchOpenLibrary)
 
-    const bookMdAfter = await bookLib.fetchBookMd(books, bookMd)
+    const bookMdAfter = await bookLib.fetchBookMd(googleApiKey, books, bookMd)
 
     expect(bookMdAfter).toEqual(bookMdSearch)
     expect(searchGoogleBooks).toHaveBeenCalledWith(
+      googleApiKey,
       bookMd.frontmatter.title,
       bookMd.frontmatter.author
     )
@@ -530,13 +534,14 @@ describe('lib/book', () => {
   test('_searchGooogleBooks', async () => {
     const title = 'a book title'
     const author = 'a book author'
+    const googleApikey = 'key'
     const volume = googleBooksFixtures.makeVolume()
 
     mocks.findVolume.mockResolvedValueOnce(volume)
 
-    const bookMetadata = await bookLib._private._searchGoogleBooks(title, author)
+    const bookMetadata = await bookLib._private._searchGoogleBooks(googleApikey, title, author)
 
-    expect(mocks.findVolume).toHaveBeenCalledWith(title, author)
+    expect(mocks.findVolume).toHaveBeenCalledWith(googleApikey, title, author)
     expect(bookMetadata).toEqual({
       title,
       author,
@@ -548,6 +553,7 @@ describe('lib/book', () => {
     const author = 'a book author'
     const subtitle = 'a book subtitle'
     const authors = ['one author', 'co author']
+    const apiKey = 'key'
     const pageCount = 423
     const categories = ['sci-fi']
     const description = 'intriguing'
@@ -562,9 +568,9 @@ describe('lib/book', () => {
 
     mocks.findVolume.mockResolvedValueOnce(volume)
 
-    const bookMetadata = await bookLib._private._searchGoogleBooks(title, author)
+    const bookMetadata = await bookLib._private._searchGoogleBooks(apiKey, title, author)
 
-    expect(mocks.findVolume).toHaveBeenCalledWith(title, author)
+    expect(mocks.findVolume).toHaveBeenCalledWith(apiKey, title, author)
     expect(bookMetadata).toEqual({
       title,
       author: authors[0],
@@ -579,12 +585,13 @@ describe('lib/book', () => {
   test('_searchGooogleBooks returns null', async () => {
     const title = 'a book title'
     const author = 'a book author'
+    const apiKey = 'key'
 
     mocks.findVolume.mockResolvedValueOnce(null)
 
-    const bookMetadata = await bookLib._private._searchGoogleBooks(title, author)
+    const bookMetadata = await bookLib._private._searchGoogleBooks(apiKey, title, author)
 
-    expect(mocks.findVolume).toHaveBeenCalledWith(title, author)
+    expect(mocks.findVolume).toHaveBeenCalledWith(apiKey, title, author)
     expect(bookMetadata).toBeNull()
   })
 
