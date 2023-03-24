@@ -4,9 +4,9 @@ import Books from './books'
 import CacheFrom from '../cache'
 
 vi.mock('./books')
-vi.mock('./cache')
+vi.mock('../cache')
 
-const directory = 'some_books'
+const directory = 'some_cbooks'
 
 function makeBooks(dir = directory): Books {
   class MockBooks extends Books {
