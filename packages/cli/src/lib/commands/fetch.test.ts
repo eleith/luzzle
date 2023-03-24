@@ -11,7 +11,7 @@ vi.mock('../books')
 
 const mocks = {
   logInfo: vi.spyOn(log, 'info'),
-  logError: vi.spyOn(log, 'error'),
+  logWarn: vi.spyOn(log, 'warn'),
   logChild: vi.spyOn(log, 'child'),
   getBook: vi.mocked(getBook),
   writeBookMd: vi.mocked(writeBookMd),
@@ -33,7 +33,7 @@ describe('lib/commands/fetch', () => {
   })
 
   test('run with slug', async () => {
-    const ctx = makeContext()
+    const ctx = makeContext({ config: { get: () => ({ google_api_key: 'key' }) } })
     const book = makeBookMd()
     const slug = 'slug2'
 
@@ -46,6 +46,19 @@ describe('lib/commands/fetch', () => {
     expect(mocks.getBook).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).toHaveBeenCalledOnce()
     expect(mocks.fetchBookMd).toHaveBeenCalledOnce()
+  })
+
+  test('run with missing api key', async () => {
+    const ctx = makeContext({ config: { get: () => ({ google_api_key: '' }) } })
+    const book = makeBookMd()
+    const slug = 'slug2'
+
+    mocks.getBook.mockResolvedValueOnce(book)
+
+    await command.run(ctx, { slug } as ArgumentsCamelCase<FetchArgv>)
+
+    expect(mocks.getBook).toHaveBeenCalledOnce()
+    expect(mocks.logWarn).toHaveBeenCalledOnce()
   })
 
   test('run with dry-run', async () => {

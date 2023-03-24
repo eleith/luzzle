@@ -39,8 +39,13 @@ const command: Command<FetchArgv> = {
     }
 
     if (ctx.flags.dryRun === false) {
-      const bookProcessed = await fetchBookMd(books, bookMd)
-      await writeBookMd(books, bookProcessed)
+      const { google_api_key } = ctx.config.get('books')
+      if (google_api_key) {
+        const bookProcessed = await fetchBookMd(google_api_key, books, bookMd)
+        await writeBookMd(books, bookProcessed)
+      } else {
+        log.warn('books.google_api_key is not set in your config')
+      }
     }
     log.info(`processed ${bookMd.filename}`)
   },

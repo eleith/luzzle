@@ -1,17 +1,14 @@
 import { books_v1, books } from '@googleapis/books'
-import { config } from 'dotenv'
 
-config()
-
-/* c8 ignore start */
-function _getGoogleBooks(): books_v1.Books {
-  const googleBooksApiKey = process.env.GOOGLE_BOOKS_API_KEY
+function _getGoogleBooks(googleBooksApiKey: string): books_v1.Books {
   return books({ version: 'v1', auth: googleBooksApiKey })
 }
-/* c8 ignore stop */
 
-async function findVolumeByIsbn(isbn: string): Promise<books_v1.Schema$Volume | null> {
-  const googleBooks = _private._getGoogleBooks()
+async function findVolumeByIsbn(
+  googleBooksApiKey: string,
+  isbn: string
+): Promise<books_v1.Schema$Volume | null> {
+  const googleBooks = _private._getGoogleBooks(googleBooksApiKey)
   const response = await googleBooks.volumes.list({ q: `isbn:${isbn}` })
 
   if (response.status === 200 && response.data.items?.length) {
@@ -21,10 +18,11 @@ async function findVolumeByIsbn(isbn: string): Promise<books_v1.Schema$Volume | 
 }
 
 async function findVolumes(
+  googleBooksApiKey: string,
   title: string,
   author: string
 ): Promise<books_v1.Schema$Volume[] | null> {
-  const googleBooks = _private._getGoogleBooks()
+  const googleBooks = _private._getGoogleBooks(googleBooksApiKey)
   const response = await googleBooks.volumes.list({ q: `${title} ${author}` })
 
   if (response.status === 200 && response.data.items?.length) {
@@ -34,8 +32,12 @@ async function findVolumes(
   return null
 }
 
-async function findVolume(title: string, author: string): Promise<books_v1.Schema$Volume | null> {
-  const books = await findVolumes(title, author)
+async function findVolume(
+  googleBooksApiKey: string,
+  title: string,
+  author: string
+): Promise<books_v1.Schema$Volume | null> {
+  const books = await findVolumes(googleBooksApiKey, title, author)
   return books?.[0] || null
 }
 

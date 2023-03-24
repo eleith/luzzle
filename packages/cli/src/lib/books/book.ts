@@ -264,10 +264,11 @@ async function _download(bookMd: BookMd, file: string, toPath: string): Promise<
 }
 
 async function _searchGoogleBooks(
+  googleApiKey: string,
   bookTitle: string,
   bookAuthor: string
 ): Promise<BookMd['frontmatter'] | null> {
-  const volume = await findVolume(bookTitle, bookAuthor)
+  const volume = await findVolume(googleApiKey, bookTitle, bookAuthor)
   const googleBook = volume?.volumeInfo
 
   log.info(`searching google for ${bookTitle}`)
@@ -343,23 +344,20 @@ async function _searchOpenLibrary(
   return null
 }
 
-async function fetchBookMd(books: Books, bookMd: BookMd): Promise<BookMd> {
+async function fetchBookMd(googleApiKey: string, books: Books, bookMd: BookMd): Promise<BookMd> {
   const bookId = bookMd.frontmatter.id_ol_book
 
-  if (bookId) {
-    const openWork = await _private._searchOpenLibrary(books, bookMd as BookMdWithOpenLib)
-    const googleBook = await _private._searchGoogleBooks(
-      bookMd.frontmatter.title,
-      bookMd.frontmatter.author
-    )
-
-    return merge({ frontmatter: openWork }, { frontmatter: googleBook }, bookMd)
-  }
-
   const googleBook = await _private._searchGoogleBooks(
+    googleApiKey,
     bookMd.frontmatter.title,
     bookMd.frontmatter.author
   )
+
+  if (bookId) {
+    const openWork = await _private._searchOpenLibrary(books, bookMd as BookMdWithOpenLib)
+
+    return merge({ frontmatter: openWork }, { frontmatter: googleBook }, bookMd)
+  }
 
   return merge({ frontmatter: googleBook }, bookMd)
 }
