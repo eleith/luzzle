@@ -14,7 +14,7 @@ export const initialize = function (themes?: { [selector: string]: ThemeContract
   reset()
 
   globalStyle('html, body', {
-    backgroundColor: vars.colors.onPrimary,
+    backgroundColor: vars.colors.background,
     color: vars.colors.onBackground,
     fontFamily: vars.fonts.sans,
     fontSize: calc.multiply(vars.fontSizes.root, vars.fontSizes.mobileResponsiveFactor),
