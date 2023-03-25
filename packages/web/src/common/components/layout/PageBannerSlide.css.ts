@@ -4,10 +4,10 @@ import { vars } from '@luzzle/ui/css'
 export const navItem = style({
   cursor: 'pointer',
   padding: vars.space[5],
-  color: vars.colors.surfaceVariant,
+  color: vars.colors.outline,
   selectors: {
     '&:hover': {
-      color: vars.colors.onSurface,
+      color: vars.colors.primary,
     },
   },
 })

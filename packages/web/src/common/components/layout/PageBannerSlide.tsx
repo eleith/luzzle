@@ -18,10 +18,6 @@ export default function PageMarkdown({ children, isHome = false }: PageProps): J
     setMounted(true)
   }, [])
 
-  if (!mounted) {
-    return <></>
-  }
-
   function switchTheme(): void {
     setTheme(resolvedTheme === 'light' ? 'dark' : 'light')
   }
@@ -45,6 +41,17 @@ export default function PageMarkdown({ children, isHome = false }: PageProps): J
       </Anchor>
     </Link>
   )
+
+  if (!mounted) {
+    return (
+      <Box>
+        <Box className={classNames.banner}>
+          <Box className={classNames.navItem}>{homeButton}</Box>
+          <Box>{children && children}</Box>
+        </Box>
+      </Box>
+    )
+  }
 
   const themeToggle = resolvedTheme === 'light' ? darkOn : lightOn
 

@@ -1,9 +1,6 @@
 import { ThemeContract, initialize } from '@luzzle/ui'
 import Color from 'color'
 
-// colors generated using builder from:
-// https://material-foundation.github.io/material-theme-builder
-
 export const Themes = {
   light: 'light',
   dark: 'dark',
@@ -11,58 +8,65 @@ export const Themes = {
 
 export type Theme = keyof typeof Themes
 
-// https://material-foundation.github.io/material-theme-builder
+// https://github.com/morhetz/gruvbox
 
-const primaryLight = Color('#715c00')
-const onPrimaryLight = Color('#ffffff')
-const primaryContainerLight = Color('#ffe179')
-const onPrimaryContainerLight = Color('#231b00')
-const secondaryLight = Color('#9f4200')
-const onSecondaryLight = Color('#ffffff')
-const secondaryContainerLight = Color('#ffdbcb')
-const onSecondaryContainerLight = Color('#341100')
-const tertiaryLight = Color('#006c46')
-const onTertiaryLight = Color('#ffffff')
-const tertiaryContainerLight = Color('#8ff7c0')
-const onTertiaryContainerLight = Color('#002112')
-const errorLight = Color('#ba1a1a')
-const onErrorLight = Color('#ffffff')
-const errorContainerLight = Color('#ffdad6')
-const onErrorContainerLight = Color('#410002')
-const outlineLight = Color('#7d7767')
-const backgroundLight = Color('#fffbff')
-const onBackgroundLight = Color('#231b00')
-const surfaceLight = Color('#fffbff')
-const onSurfaceLight = Color('#231b00')
-const surfaceVariantLight = Color('#eae2cf')
-const onSurfaceVariantLight = Color('#4b4639')
-const surfaceInverseLight = Color('#3c2f00')
-const onSurfaceInverseLight = Color('#fff0ca')
-const primaryDark = Color('#e5c449')
-const onPrimaryDark = Color('#3b2f00')
-const primaryContainerDark = Color('#554500')
-const onPrimaryContainerDark = Color('#ffe179')
-const secondaryDark = Color('#ffb692')
-const onSecondaryDark = Color('#552000')
+// light
+const primaryLight = Color('#98971a')
+const onPrimaryLight = Color('#282828')
+const secondaryLight = Color('#79740e')
+const onSecondaryLight = Color('#fbf1c7')
+const tertiaryLight = Color('#d79921')
+const onTertiaryLight = onPrimaryLight
+const errorLight = Color('#cc241d')
+const onErrorLight = onPrimaryLight
+
+const primaryContainerLight = Color('#fbf1c7')
+const onPrimaryContainerLight = onPrimaryLight
+const secondaryContainerLight = Color('#af3a03')
+const onSecondaryContainerLight = primaryContainerLight
+const tertiaryContainerLight = Color('#d79921')
+const onTertiaryContainerLight = onPrimaryLight
+const errorContainerLight = Color('#9d0006')
+const onErrorContainerLight = primaryContainerLight
+
+const outlineLight = Color('#3c3836')
+const backgroundLight = Color('#fbf1c7')
+const onBackgroundLight = onPrimaryLight
+const surfaceLight = outlineLight
+const onSurfaceLight = backgroundLight
+const surfaceVariantLight = Color('#ebdbb2')
+const onSurfaceVariantLight = onPrimaryLight
+const surfaceInverseLight = Color('#f3e5bc')
+const onSurfaceInverseLight = onPrimaryLight
+
+// dark
+const primaryDark = Color('#fabd2f')
+const onPrimaryDark = Color('#282828')
+const secondaryDark = Color('#d79921')
+const onSecondaryDark = Color('#fbf1c7')
+const tertiaryDark = Color('#98971a')
+const onTertiaryDark = onSecondaryDark
+const errorDark = Color('#fb4934')
+const onErrorDark = onPrimaryDark
+
+const primaryContainerDark = Color('#282828')
+const onPrimaryContainerDark = Color('#d79921')
 const secondaryContainerDark = Color('#793100')
 const onSecondaryContainerDark = Color('#ffdbcb')
-const tertiaryDark = Color('#72daa5')
-const onTertiaryDark = Color('#003822')
-const tertiaryContainerDark = Color('#005234')
-const onTertiaryContainerDark = Color('#8ff7c0')
-const errorDark = Color('#ffb4ab')
-const onErrorDark = Color('#690005')
+const tertiaryContainerDark = Color('#98971a')
+const onTertiaryContainerDark = onSecondaryDark
 const errorContainerDark = Color('#93000a')
-const onErrorContainerDark = Color('#ffdad6')
-const outlineDark = Color('#979080')
-const backgroundDark = Color('#231b00')
-const onBackgroundDark = Color('#faecaf')
-const surfaceDark = Color('#231b00')
-const onSurfaceDark = Color('#ffe084')
-const surfaceVariantDark = Color('#4b4639')
-const onSurfaceVariantDark = Color('#cec6b4')
-const surfaceInverseDark = Color('#ffe084')
-const onSurfaceInverseDark = Color('#231b00')
+const onErrorContainerDark = onSecondaryDark
+
+const outlineDark = Color('#a89984')
+const backgroundDark = Color('#282828')
+const onBackgroundDark = Color('#fbf1c7')
+const surfaceDark = outlineDark
+const onSurfaceDark = onBackgroundDark
+const surfaceVariantDark = Color('#3c3836')
+const onSurfaceVariantDark = onBackgroundDark
+const surfaceInverseDark = Color('#d5c4a1')
+const onSurfaceInverseDark = backgroundDark
 
 const themeLight: ThemeContract = {
   colors: {
