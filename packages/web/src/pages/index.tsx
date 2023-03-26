@@ -114,18 +114,15 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           </Text>
           <br />
           <Text as="h2" size={'h1'}>
-            this is an archive of {makeLink('books', '/books')} i&apos;ve read
-          </Text>
-          <br />
-          <Text as="h3" size={'h1'}>
-            the last two are {makeLink(book1.title, `/books/${book1.slug}`)} and{' '}
-            {makeLink(book2.title, `/books/${book2.slug}`)}
+            this site allows me to recall and share {makeLink('books', '/books')} i&apos;ve read.{' '}
+            {makeLink(book1.title, `/books/${book1.slug}`)} and{' '}
+            {makeLink(book2.title, `/books/${book2.slug}`)} are two of the latest.
           </Text>
           <br />
           <Divider />
           <br />
           <Text as="h3" size={'h1'}>
-            search and start a discussion
+            feel free to search for others
           </Text>
           <br />
           <Box>

@@ -28,6 +28,7 @@ function getBookContainerVanillaStyles(
   bookPagesTop: string
   bookBack: string
   bookShadow: string
+  bookFront: string
 } {
   const rotated = rotate.x || rotate.y || isMoving
 
@@ -62,6 +63,7 @@ function getBookContainerVanillaStyles(
     bookSpine: styles.bookSpineStyles,
     bookCover: styles.bookCoverStyles,
     bookCoverLoading: styles.coverLoadingStyles,
+    bookFront: styles.bookFrontStyles,
   }
 }
 
@@ -125,6 +127,7 @@ function BookCover({
 
   const coverImage = (
     <Box className={isLoading ? bookStyles.bookCoverLoading : bookStyles.bookCover}>
+      <Box className={styles.bookFrontStyles}>{children}</Box>
       {hasBackgroundImage && (
         <Image
           loader={({ src }) => src}
@@ -179,10 +182,7 @@ function BookCover({
         <Box className={bookStyles.bookPagesBottom} />
         <Box className={bookStyles.bookPagesTop} />
         <Box className={bookStyles.bookBack} />
-        <Box>
-          {children}
-          {coverImage}
-        </Box>
+        <Box>{coverImage}</Box>
       </Box>
     </Box>
   )

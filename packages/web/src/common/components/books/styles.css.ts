@@ -178,6 +178,13 @@ export const bookBackStyles = style({
   borderBottomRightRadius: bookCssVariables.borderRadius,
 })
 
+export const bookFrontStyles = style({
+  padding: '3px',
+  position: 'absolute',
+  textAlign: 'center',
+  hyphens: 'auto',
+})
+
 export const bookShadowStyles = style({
   position: 'absolute',
   top: 0,
@@ -206,4 +213,6 @@ export const bookCoverStyles = style({
   overflow: 'hidden',
   borderTopRightRadius: bookCssVariables.borderRadius,
   borderBottomRightRadius: bookCssVariables.borderRadius,
+  display: 'flex',
+  alignItems: 'center',
 })

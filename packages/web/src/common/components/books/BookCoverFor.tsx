@@ -3,6 +3,7 @@ import Link from 'next/link'
 import BookCover, { BookCoverProps } from './BookCover'
 import { VisuallyHidden } from 'ariakit'
 import { createHash } from 'crypto'
+import { Box, Text } from '@luzzle/ui/components'
 
 const BookCoverSize = {
   SMALL: 'SMALL',
@@ -25,8 +26,7 @@ type BookCoverForProps = {
   scale?: number
 } & Omit<BookCoverProps, 'children' | 'backgroundImageUrl'>
 
-// TODO replace with a nice color palette
-const BookColors = ['red', 'purple', 'indigo', 'blue', 'cyan', 'orange', 'brown']
+const BookColors = ['#fb4934', '#b8bb26', '#fabd2f', '#83a598', '#d3869b', '#8ec07c', '#fe8019']
 
 const sizes = {
   SMALL: {
@@ -92,7 +92,10 @@ function BookCoverFor({
       <Link href={`/books/${book.slug}`}>
         <a>
           <BookCover {...bookCoverProps}>
-            <VisuallyHidden>{book.title}</VisuallyHidden>
+            <Box>
+              <Text size="label">{book.title}</Text>
+              <VisuallyHidden>{book.title}</VisuallyHidden>
+            </Box>
           </BookCover>
         </a>
       </Link>
@@ -100,7 +103,10 @@ function BookCoverFor({
   } else {
     return (
       <BookCover {...bookCoverProps}>
-        <VisuallyHidden>{book.title}</VisuallyHidden>
+        <Box>
+          <Text size="label">{book.title}</Text>
+          <VisuallyHidden>{book.title}</VisuallyHidden>
+        </Box>
       </BookCover>
     )
   }
