@@ -35,7 +35,15 @@ pipeline:
       - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - rclone copy $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
-    secrets: [rclone_webdav_url, rclone_webdav_vendor, rclone_webdav_user, rclone_webdav_pass, rclone_service_key_json, rclone_gcs_project_number]
+    secrets:
+      [
+        rclone_webdav_url,
+        rclone_webdav_vendor,
+        rclone_webdav_user,
+        rclone_webdav_pass,
+        rclone_service_key_json,
+        rclone_gcs_project_number,
+      ]
     when:
       branch: [main]
       path:
@@ -78,21 +86,28 @@ pipeline:
       path:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   notify:
-    image: git.eleith.com/eleith/woodpecker-email:1.0.0
-    environment:
-      - PLUGIN_FROM_ADDRESS=online-woodpecker@eleith.com
-      - PLUGIN_FROM_NAME="eleith ci"
-      - PLUGIN_RECIPIENTS_ONLY=true
+    image: deblan/woodpecker-email:1.0.0-wp
     secrets:
-      - source: smtp_username
-        target: plugin_username
-      - source: smtp_password
-        target: plugin_password
-      - source: smtp_host
-        target: plugin_host
-      - source: smtp_to
-        target: plugin_recipients
+      [
+        smtp_notification_from,
+        smtp_notification_host,
+        smtp_notification_password,
+        smtp_notification_from,
+        smtp_notification_recipient,
+      ]
+    settings:
+      from:
+        from_secret: smtp_notification_from
+      host:
+        from_secret: smtp_notification_host
+      password:
+        from_secret: smtp_notification_password
+      username:
+        from_secret: smtp_notification_username
+      recipients:
+        from_secret: smtp_notification_recipient
     when:
+      event: [push]
       status: [failure, success]
       branch: [main]
       path:
