@@ -151,6 +151,28 @@ export const item = style({
     },
   },
 })
-export const cancel = style({})
+
+export const cancel = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  position: 'absolute',
+  padding: '4px',
+  borderRadius: '0.125rem',
+  top: '8px',
+  right: '8px',
+  fontFamily: vars.fonts.sans,
+  caretColor: vars.colors.primary,
+  direction: 'inherit',
+  '@media': {
+    [mediaBreakpointTablet]: {
+      top: '16px',
+      right: '16px',
+    },
+  },
+  border: 'none',
+  backgroundColor: 'transparent',
+  cursor: 'pointer',
+})
 
 export type ComboboxVariants = RecipeVariants<typeof variants>

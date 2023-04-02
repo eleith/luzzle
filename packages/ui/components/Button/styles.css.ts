@@ -81,6 +81,19 @@ export const variants = recipe({
         borderColor: 'transparent',
       },
     },
+    minimal: {
+      true: {
+        height: 'fit-content',
+        '@media': {
+          [mediaBreakpointTablet]: {
+            height: 'fit-content',
+          },
+        },
+        width: 'fit-content',
+        padding: '0px',
+        minWidth: 'auto',
+      },
+    },
     action: {
       true: {
         height: '56px',

@@ -28,6 +28,7 @@ export const Button = React.forwardRef(
       outlined,
       className,
       raised,
+      minimal,
       standard,
       use,
       disabled,
@@ -43,6 +44,7 @@ export const Button = React.forwardRef(
       outlined,
       use,
       action,
+      minimal,
     })
 
     return (

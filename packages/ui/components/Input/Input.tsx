@@ -45,7 +45,7 @@ export const Input = React.forwardRef<HTMLInputElement, Props>(
       required,
       disabled,
       placeholder,
-      description,
+      description = '\u00A0',
       error,
       ...props
     },
@@ -97,7 +97,7 @@ export const Input = React.forwardRef<HTMLInputElement, Props>(
             ref={ref}
           />
         </AriaFormLabel>
-        <Box className={styles.helper}>{descriptionElement || errorElement || '\u00A0'}</Box>
+        <Box className={styles.helper}>{errorElement || descriptionElement}</Box>
       </Box>
     )
   }

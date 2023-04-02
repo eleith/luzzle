@@ -1,9 +1,21 @@
 import { style } from '@vanilla-extract/css'
 import { vars } from '@luzzle/ui/css'
 
+export const leftNavItems = style({
+  padding: vars.space[5],
+  display: 'flex',
+  alignItems: 'left',
+})
+
+export const rightNavItems = style({
+  padding: vars.space[5],
+  display: 'flex',
+  alignItems: 'right',
+  gap: vars.space[5],
+})
+
 export const navItem = style({
   cursor: 'pointer',
-  padding: vars.space[5],
   color: vars.colors.outline,
   selectors: {
     '&:hover': {

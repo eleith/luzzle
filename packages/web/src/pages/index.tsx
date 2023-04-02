@@ -1,36 +1,12 @@
 import PageFull from '@app/common/components/layout/PageFull'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import gql from '@app/lib/graphql/tag'
-import { GetBookHomeDocument, GetSearchHomeDocument } from './_gql_/index'
+import { GetBookHomeDocument } from './_gql_/index'
 import staticClient from '@app/common/graphql/staticClient'
 import Link from 'next/link'
-import {
-  Box,
-  Text,
-  Anchor,
-  Combobox,
-  ComboboxItem,
-  ComboboxItemLink,
-  Divider,
-} from '@luzzle/ui/components'
+import { Box, Text, Anchor } from '@luzzle/ui/components'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './index.css'
-import gqlFetch from '@app/common/graphql/fetch'
-import { ChangeEvent, useState } from 'react'
-
-const getSearchQuery = gql<typeof GetSearchHomeDocument>(
-  `query GetSearchHome($query: String!) {
-  search(query: $query) {
-    __typename
-    ... on QuerySearchSuccess {
-      data {
-        ...BookFullDetails
-      }
-    }
-  }
-}`,
-  bookFragment
-)
 
 const getBooksQuery = gql<typeof GetBookHomeDocument>(
   `query GetBookHome($take: Int) {
@@ -46,11 +22,6 @@ type Book = NonNullable<ResultOf<typeof getBooksQuery>['books']>[number]
 type HomePageProps = {
   book1: Book
   book2: Book
-}
-
-async function getSearchResults(query: string): Promise<Book[]> {
-  const data = await gqlFetch(getSearchQuery, { query })
-  return data.search?.__typename === 'QuerySearchSuccess' ? data.search.data : []
 }
 
 function makeLink(text: string, href: string) {
@@ -75,36 +46,6 @@ export async function getStaticProps(): Promise<{ props: HomePageProps }> {
 }
 
 export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
-  const [searches, setSearches] = useState<Book[]>([])
-
-  async function fuzzySearchBook(e: ChangeEvent<HTMLInputElement>): Promise<void> {
-    const query = e.currentTarget.value
-    if (query) {
-      const data = await getSearchResults(query)
-      setSearches(data)
-    } else {
-      setSearches([])
-    }
-  }
-
-  const searchResults = searches.map((book) => (
-    <Link key={book.slug} href={`/books/${book.slug}`} passHref>
-      <ComboboxItemLink
-        value={book.title}
-        onTouchStart={(e) => {
-          console.log('touched')
-          e.stopPropagation()
-        }}
-      >
-        <Box>
-          <Text size="body">{book.title}</Text>
-          {book.subtitle && <Text size="caption">{book.subtitle}</Text>}
-          {book.author && <Text size="caption">{`${book.author} ${book.coauthors || ''}`}</Text>}
-        </Box>
-      </ComboboxItemLink>
-    </Link>
-  ))
-
   return (
     <PageFull meta={{ title: 'books' }} isHome>
       <Box className={styles.page}>
@@ -115,25 +56,12 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
           <br />
           <Text as="h2" size={'h1'}>
             this site allows me to recall and share {makeLink('books', '/books')} i&apos;ve read.{' '}
-            {makeLink(book1.title, `/books/${book1.slug}`)} and{' '}
-            {makeLink(book2.title, `/books/${book2.slug}`)} are two of the latest.
           </Text>
-          <br />
-          <Divider />
           <br />
           <Text as="h3" size={'h1'}>
-            feel free to search for others
+            the last two i&apos;ve read are {makeLink(book1.title, `/books/${book1.slug}`)} and{' '}
+            {makeLink(book2.title, `/books/${book2.slug}`)}
           </Text>
-          <br />
-          <Box>
-            <Combobox
-              state={{ sameWidth: true, virtualFocus: false }}
-              onChange={fuzzySearchBook}
-              placeholder="ex: A Tale of Two Websites"
-            >
-              {searches.length ? searchResults : <ComboboxItem>no results</ComboboxItem>}
-            </Combobox>
-          </Box>
         </Box>
       </Box>
     </PageFull>
