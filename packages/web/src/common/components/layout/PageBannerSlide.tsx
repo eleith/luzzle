@@ -1,7 +1,7 @@
 import { Anchor, Box } from '@luzzle/ui/components'
 import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, HandWaving } from 'phosphor-react'
+import { Sun, Moon, HandWaving, MagnifyingGlass } from 'phosphor-react'
 import * as classNames from './PageBannerSlide.css'
 import Link from 'next/link'
 
@@ -42,26 +42,30 @@ export default function PageMarkdown({ children, isHome = false }: PageProps): J
     </Link>
   )
 
-  if (!mounted) {
-    return (
-      <Box>
-        <Box className={classNames.banner}>
-          <Box className={classNames.navItem}>{homeButton}</Box>
-          <Box>{children && children}</Box>
-        </Box>
-      </Box>
-    )
-  }
+  const searchButton = (
+    <Link href="/search" passHref>
+      <Anchor color="inherit">
+        <MagnifyingGlass size={25} />
+      </Anchor>
+    </Link>
+  )
 
   const themeToggle = resolvedTheme === 'light' ? darkOn : lightOn
 
-  return (
+  const homeBanner = (
     <Box>
       <Box className={classNames.banner}>
-        <Box className={classNames.navItem}>{homeButton}</Box>
+        <Box className={classNames.leftNavItems}>
+          <Box className={classNames.navItem}>{homeButton}</Box>
+        </Box>
         <Box>{children && children}</Box>
-        <Box className={classNames.navItem}>{themeToggle}</Box>
+        <Box className={classNames.rightNavItems}>
+          <Box className={classNames.navItem}>{searchButton}</Box>
+          <Box className={classNames.navItem}>{mounted && themeToggle}</Box>
+        </Box>
       </Box>
     </Box>
   )
+
+  return homeBanner
 }
