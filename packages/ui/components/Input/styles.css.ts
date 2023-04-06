@@ -40,22 +40,31 @@ export const variants = recipe({
   variants: {},
 })
 
-export const input = style({
-  fontSize: vars.fontSizes.body,
-  fontWeight: vars.fontWeights.normal,
-  letterSpacing: '-0.02rem',
-  border: 'none',
-  outline: 'none',
-  background: 'transparent',
-  color: vars.colors.onSurfaceVariant,
-  width: '100%',
-  minWidth: '0px',
-  borderRadius: '0px',
-  appearance: 'none',
-  padding: 0,
-  fontFamily: vars.fonts.sans,
-  caretColor: vars.colors.primary,
-  direction: 'inherit',
+export const inputVariants = recipe({
+  base: {
+    fontSize: vars.fontSizes.body,
+    fontWeight: vars.fontWeights.normal,
+    letterSpacing: '-0.02rem',
+    border: 'none',
+    outline: 'none',
+    background: 'transparent',
+    color: vars.colors.onSurfaceVariant,
+    width: '100%',
+    minWidth: '0px',
+    borderRadius: '0px',
+    appearance: 'none',
+    padding: 0,
+    fontFamily: vars.fonts.sans,
+    caretColor: vars.colors.primary,
+    direction: 'inherit',
+  },
+  variants: {
+    size: {
+      h1: {
+        fontSize: vars.fontSizes.h1,
+      },
+    },
+  },
 })
 
 export const label = style({
@@ -117,3 +126,4 @@ export const error = style({
 })
 
 export type InputVariants = RecipeVariants<typeof variants>
+export type InputTextVariants = RecipeVariants<typeof inputVariants>

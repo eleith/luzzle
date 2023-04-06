@@ -7,9 +7,7 @@ export const search = style({
   zIndex: 1,
 })
 
-export const searchInput = style({
-  padding: vars.space[2],
-})
+export const searchInput = style({})
 
 export const searchButton = style({
   position: 'absolute',

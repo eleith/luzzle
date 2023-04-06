@@ -77,6 +77,7 @@ export default function SearchPage(): JSX.Element {
           placeholder="title, author or keyword"
           description=""
           autoFocus
+          size="h1"
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
               leave()
