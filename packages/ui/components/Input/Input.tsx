@@ -31,9 +31,10 @@ type Props = {
     | 'color'
     | 'range'
     | 'hidden'
-} & AriaFormInputProps<'input'> &
+} & Omit<AriaFormInputProps<'input'>, 'size'> &
   React.HTMLAttributes<HTMLInputElement> &
-  NonNullable<styles.InputVariants>
+  NonNullable<styles.InputVariants> &
+  NonNullable<styles.InputTextVariants>
 
 export const Input = React.forwardRef<HTMLInputElement, Props>(
   (
@@ -42,6 +43,7 @@ export const Input = React.forwardRef<HTMLInputElement, Props>(
       type = 'text',
       name,
       label,
+      size,
       required,
       disabled,
       placeholder,
@@ -90,7 +92,7 @@ export const Input = React.forwardRef<HTMLInputElement, Props>(
             type={type}
             required={required}
             placeholder={placeholder}
-            className={styles.input}
+            className={styles.inputVariants({ size })}
             aria-labelledby={label}
             disabled={disabled || undefined}
             {...props}

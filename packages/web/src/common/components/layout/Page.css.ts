@@ -68,6 +68,18 @@ const onSurfaceVariantDark = onBackgroundDark
 const surfaceInverseDark = Color('#d5c4a1')
 const onSurfaceInverseDark = backgroundDark
 
+const fontSizes: ThemeContract['fontSizes'] = {
+  label: '0.875rem',
+  caption: '1rem',
+  body: '1.25rem',
+  h3: '1.5rem',
+  h2: '1.825rem',
+  h1: '2rem',
+  title: '3rem',
+  mobileResponsiveFactor: '4/5',
+  root: '18px',
+}
+
 const themeLight: ThemeContract = {
   colors: {
     primary: primaryLight.string(),
@@ -106,6 +118,7 @@ const themeLight: ThemeContract = {
       .alpha(0.14)
       .string()}, 0px 1px 5px 0px rgba(0, 0, 0, 0.12)`,
   },
+  fontSizes,
 }
 
 const themeDark: ThemeContract = {
@@ -146,6 +159,7 @@ const themeDark: ThemeContract = {
       .alpha(0.14)
       .string()}, 0px 1px 5px 0px rgba(0, 0, 0, 0.12)`,
   },
+  fontSizes,
 }
 
 initialize({
