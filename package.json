@@ -6,6 +6,10 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@vitest/coverage-c8": "^0.29.2"
+    "@vitest/coverage-c8": "^0.29.2",
+    "@luzzle/prisma": "*",
+    "@luzzle/cli": "*",
+    "@luzzle/ui": "*",
+    "@luzzle/web": "*"
   }
 }
