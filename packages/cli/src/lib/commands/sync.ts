@@ -2,20 +2,31 @@ import { Command } from './utils/types'
 import { getBook, getUpdatedSlugs, Books } from '../books'
 import { eachLimit } from 'async'
 import { syncAddBook, syncRemoveBooks, syncUpdateBook } from './sync.private'
+import { Argv } from 'yargs'
 
-const command: Command = {
+export type SyncArgv = { force: boolean }
+
+const command: Command<SyncArgv> = {
   name: 'sync',
 
   command: 'sync',
 
   describe: 'sync directory to local database',
 
-  run: async function (ctx) {
+  builder: <T>(yargs: Argv<T>) => {
+    return yargs.options('force', {
+      type: 'boolean',
+      alias: 'f',
+      description: 'force updates on all items',
+      default: false,
+    })
+  },
+
+  run: async function (ctx, args) {
     const dir = ctx.directory
     const books = new Books(dir)
     const bookSlugs = await books.getAllSlugs()
-    const force = ctx.flags.force
-    const updatedBookSlugs = force
+    const updatedBookSlugs = args.force
       ? bookSlugs
       : await getUpdatedSlugs(bookSlugs, books, 'lastSynced')
 

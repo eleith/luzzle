@@ -15,6 +15,24 @@ const prisma = {
     update: vi.fn(),
     findUnique: vi.fn(),
     create: vi.fn(),
+    upsert: vi.fn(),
+  },
+  tag: {
+    findMany: vi.fn(),
+    deleteMany: vi.fn(),
+    update: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    upsert: vi.fn(),
+  },
+  tagMap: {
+    findMany: vi.fn(),
+    deleteMany: vi.fn(),
+    update: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    upsert: vi.fn(),
+    groupBy: vi.fn(),
   },
 } as unknown as PrismaClient
 
