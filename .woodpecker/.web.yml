@@ -6,6 +6,7 @@ pipeline:
     image: node:16
     commands:
       - npm ci -w @luzzle/web -w @luzzle/prisma -w @luzzle/ui
+      - npm run build -w @luzzle/prisma
       - npm run build:graphql -w @luzzle/web
       - npm run compile -w @luzzle/web
     when:
