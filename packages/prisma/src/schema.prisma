@@ -38,13 +38,11 @@ model Book {
 
 model Tag {
   id           String   @id @default(cuid())
-  type         String
-  slug         String
+  slug         String   @unique
   name         String
   date_added   DateTime @default(now())
   date_updated DateTime @updatedAt
 
-  @@unique([type, slug])
   @@map("tags")
 }
 
@@ -56,4 +54,5 @@ model TagMap {
   date_updated DateTime @updatedAt
 
   @@unique([id_tag, id_item, type])
+  @@map("tag_maps")
 }

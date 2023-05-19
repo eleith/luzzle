@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/prisma",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "author": "eleith",
   "scripts": {
     "build": "prisma generate --schema ./src/schema.prisma",
@@ -32,8 +32,8 @@
     "typescript": "^4.8.2"
   },
   "dependencies": {
-    "@prisma/client": "4.8.0",
-    "prisma": "4.8.0"
+    "@prisma/client": "4.13.0",
+    "prisma": "4.13.0"
   },
   "type": "module",
   "exports": "./index.js",
