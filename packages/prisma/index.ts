@@ -16,5 +16,5 @@ function getPrismaClient(options?: PrismaOptions) {
   return prisma;
 }
 
-export type { Book, Prisma, PrismaClient } from "./prisma/client";
+export type { Book, Tag, TagMap, Prisma, PrismaClient } from "./prisma/client";
 export { getPrismaClient };
