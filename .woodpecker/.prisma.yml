@@ -5,8 +5,7 @@ pipeline:
   build:
     image: node:18
     commands:
-      - npm -v
-      - npm install -g npm@latest
+      - npm install
       - npm ci -w @luzzle/prisma
       - npm run compile -w @luzzle/prisma
       - npm run build -w @luzzle/prisma
