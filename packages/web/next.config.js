@@ -1,6 +1,7 @@
 const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin')
 const withVanillaExtract = createVanillaExtractPlugin()
 const withTM = require('next-transpile-modules')(['@luzzle/ui'])
+const { PrismaPlugin } = require('@prisma/nextjs-monorepo-workaround-plugin')
 
 const withMDX = require('@next/mdx')({
   extension: /\.mdx?$/,
@@ -21,6 +22,7 @@ module.exports = withTM(
         if (isServer) {
           config.externals.push('_http_common')
           config.externals.push('encoding')
+          config.plugins = [...config.plugins, new PrismaPlugin()]
         }
         return config
       },

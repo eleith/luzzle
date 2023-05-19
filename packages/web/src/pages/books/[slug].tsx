@@ -33,6 +33,10 @@ const bookQuery = gql<typeof GetBookBySlugDocument>(
     ... on QueryBookSuccess {
       data {
         ...BookFullDetails
+        tags {
+          name
+          slug
+        }
         siblings {
           previous {
             slug
@@ -135,6 +139,18 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
               >
                 <ChatsCircle size={24} /> discuss
               </Button>
+              <br />
+              <br />
+              <Text>tags</Text>
+              <Text size="caption">
+                {book.tags?.map((tag) => (
+                  <>
+                    <Link href={`/tags/${tag.slug}`} key={`${tag.slug}`} passHref>
+                      <Anchor hoverAction="underline">{tag.name}</Anchor>
+                    </Link>{' '}
+                  </>
+                ))}
+              </Text>
             </Box>
           </Box>
         </Box>

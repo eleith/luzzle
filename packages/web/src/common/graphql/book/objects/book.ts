@@ -1,6 +1,7 @@
 import builder from '@app/lib/graphql/builder'
 import { Book } from '@luzzle/prisma'
 import BookSiblings from './bookSiblings'
+import { Tag } from '../../tag'
 
 const BookBuilder = builder.objectRef<Book>('Book')
 
@@ -28,6 +29,20 @@ BookBuilder.implement({
     coverWidth: t.exposeInt('cover_width'),
     coverHeight: t.exposeInt('cover_height'),
     readOrder: t.exposeString('read_order', { nullable: false }),
+    tags: t.field({
+      type: [Tag],
+      resolve: async (parent, _, ctx) => {
+        const tagMaps = await ctx.prisma.tagMap.findMany({
+          where: { id_item: parent.id },
+        })
+
+        const tags = await ctx.prisma.tag.findMany({
+          where: { id: { in: tagMaps.map((x) => x.id_tag) } },
+        })
+
+        return tags
+      },
+    }),
     siblings: t.field({
       type: BookSiblings,
       resolve: async (parent, _, ctx) => {

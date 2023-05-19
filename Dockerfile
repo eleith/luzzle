@@ -22,7 +22,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY tsconfig.json ./
 COPY packages ./packages
-COPY packages/prisma/src/schema.prisma ./packages/web/.next/cache/webpack/client-production/schema.prisma
 
 # disable nextjs telemetry during build
 ENV NEXT_TELEMETRY_DISABLED 1
@@ -54,8 +53,6 @@ COPY --from=builder /app/packages/ui ./packages/ui
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/standalone ./packages/web
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./packages/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/prisma ./packages/web/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/packages/prisma/src/schema.prisma ./packages/web/.next/server/chunks/schema.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/packages/prisma/src/schema.prisma ./packages/web/.next/server/pages/api/schema.prisma
 
 USER nextjs
 
