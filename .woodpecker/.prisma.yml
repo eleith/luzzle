@@ -6,8 +6,8 @@ pipeline:
     image: node:18
     commands:
       - npm ci -w @luzzle/prisma
-      - npm run build -w @luzzle/prisma
       - npm run compile -w @luzzle/prisma
+      - npm run build -w @luzzle/prisma
     when:
       event: [push]
       branch: [main]
