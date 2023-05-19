@@ -15,7 +15,9 @@ async function parseArgs(_args: string[]) {
     .command(commands.dump.command, commands.dump.describe)
     .command(commands.deploy.command, commands.deploy.describe)
     .command(commands.cd.command, commands.cd.describe)
-    .command(commands.sync.command, commands.sync.describe)
+    .command(commands.sync.command, commands.sync.describe, (yargs) =>
+      commands.sync.builder?.(yargs)
+    )
     .command(commands.edit.command, commands.edit.describe, (yargs) =>
       commands.edit.builder?.(yargs)
     )
@@ -53,6 +55,7 @@ async function parseArgs(_args: string[]) {
     })
     .exitProcess(false)
     .demandCommand(1, `[error] please specify a command`)
+    .help()
     .parseAsync()
 
   return {
@@ -75,7 +78,6 @@ async function initialize(command: Awaited<ReturnType<typeof parseArgs>>): Promi
     flags: {
       dryRun: command.options.dryRun,
       verbose: command.options.verbose,
-      force: command.options.force,
     },
   }
   await commands.init.run(ctx, command.options)
@@ -95,7 +97,6 @@ async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<v
     flags: {
       dryRun: command.options.dryRun,
       verbose: command.options.verbose,
-      force: command.options.force,
     },
   }
 

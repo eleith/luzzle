@@ -10,6 +10,7 @@ import {
 } from '../books'
 import { Book } from '../prisma'
 import { difference } from 'lodash'
+import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags'
 
 async function syncUpdateBookExecute(
   ctx: Context,
@@ -24,12 +25,17 @@ async function syncUpdateBookExecute(
         where: { id: book.id },
         data: bookUpdateInput,
       })
+
+      if (bookUpdate.keywords) {
+        await syncTagsFor(ctx, keywordsToTags(bookUpdate.keywords), bookUpdate.id, 'books')
+      }
+
       await markBookAsSynced(books, bookUpdate)
     }
 
     log.info(`updated ${book.slug}`)
   } catch (err) {
-    log.error(`${bookMd.filename} could not be updated`)
+    log.error(`${bookMd.filename} could not be updated: ${err}`)
   }
 }
 
@@ -45,6 +51,10 @@ async function syncAddBook(ctx: Context, books: Books, bookMd: BookMd): Promise<
     if (ctx.flags.dryRun === false) {
       const bookCreateInput = await bookMdToBookCreateInput(books, bookMd)
       const bookAdded = await ctx.prisma.book.create({ data: bookCreateInput })
+
+      if (bookAdded.keywords) {
+        await addTagsTo(ctx, keywordsToTags(bookAdded.keywords), bookAdded.id, 'books')
+      }
 
       await markBookAsSynced(books, bookAdded)
     }
@@ -68,24 +78,28 @@ async function syncUpdateBook(
   }
 }
 
-async function syncRemoveBooksExecute(ctx: Context, slugs: string[]): Promise<void> {
+async function syncRemoveBooksExecute(ctx: Context, ids: string[]): Promise<void> {
   try {
     if (ctx.flags.dryRun === false) {
-      await ctx.prisma.book.deleteMany({ where: { slug: { in: slugs } } })
+      await ctx.prisma.book.deleteMany({ where: { id: { in: ids } } })
+      await removeAllTagsFrom(ctx, ids, 'books')
     }
-    log.info(`deleted ${slugs.join(', ')}`)
+    log.info(`deleted ${ids.length} book(s)`)
   } catch (err) {
     log.error(err as string)
   }
 }
 
 async function syncRemoveBooks(ctx: Context, diskSlugs: string[]): Promise<void> {
-  const booksInDb = await ctx.prisma.book.findMany({ select: { slug: true } })
-  const dbSlugs = booksInDb.map((book) => book.slug)
-  const booksToRemove = difference(dbSlugs, diskSlugs)
+  const booksInDb = await ctx.prisma.book.findMany({ select: { slug: true, id: true } })
+  const dbBookSlugs = booksInDb.map((book) => book.slug)
+  const bookSlugsToRemove = difference(dbBookSlugs, diskSlugs)
+  const bookIdsToRemove = booksInDb
+    .filter((book) => bookSlugsToRemove.includes(book.slug))
+    .map((book) => book.id)
 
-  if (booksToRemove.length) {
-    await syncRemoveBooksExecute(ctx, booksToRemove)
+  if (bookSlugsToRemove.length) {
+    await syncRemoveBooksExecute(ctx, bookIdsToRemove)
   }
 }
 

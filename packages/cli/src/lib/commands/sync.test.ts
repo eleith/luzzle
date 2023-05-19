@@ -1,6 +1,6 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import command from './sync'
-import { ArgumentsCamelCase } from 'yargs'
+import command, { SyncArgv } from './sync'
+import yargs, { ArgumentsCamelCase } from 'yargs'
 import { makeBookMd } from '../books/book.fixtures'
 import { makeContext } from './context.fixtures'
 import { getBook, getUpdatedSlugs, Books } from '../books'
@@ -55,7 +55,7 @@ describe('lib/commands/sync', () => {
     mocks.syncRemoveBooks.mockResolvedValue()
     mocks.syncAddBook.mockResolvedValue()
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as ArgumentsCamelCase<SyncArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.syncRemoveBooks).toHaveBeenCalled()
@@ -84,7 +84,7 @@ describe('lib/commands/sync', () => {
     mocks.syncRemoveBooks.mockResolvedValue()
     mocks.syncUpdateBook.mockResolvedValue()
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as ArgumentsCamelCase<SyncArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.syncRemoveBooks).toHaveBeenCalled()
@@ -93,7 +93,7 @@ describe('lib/commands/sync', () => {
   })
 
   test('sync with flag force', async () => {
-    const ctx = makeContext({ flags: { force: true } })
+    const ctx = makeContext()
     const slugs = ['a', 'b']
     const bookMd = makeBookMd()
     const cache = {
@@ -113,12 +113,21 @@ describe('lib/commands/sync', () => {
     mocks.syncRemoveBooks.mockResolvedValue()
     mocks.syncUpdateBook.mockResolvedValue()
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, { force: true } as ArgumentsCamelCase<SyncArgv>)
 
     expect(mocks.getUpdatedSlugs).not.toHaveBeenCalled()
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.syncRemoveBooks).toHaveBeenCalled()
     expect(mocks.syncUpdateBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.syncAddBook).not.toHaveBeenCalled()
+  })
+
+  test('builder', async () => {
+    const args = yargs()
+
+    spies.options = vi.spyOn(args, 'options')
+    command.builder?.(args)
+
+    expect(spies.options).toHaveBeenCalledOnce()
   })
 })

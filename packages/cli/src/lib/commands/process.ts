@@ -26,9 +26,9 @@ async function processBook(ctx: Context, books: Books, bookMd: BookMd): Promise<
 const command: Command<ProcessArgv> = {
   name: 'process',
 
-  command: 'process local markdown files for cleaning',
+  command: 'process [-f|--force]',
 
-  describe: 'attach a copy of path to <type> <slug>',
+  describe: 'process files',
 
   builder: <T>(yargs: Argv<T>) => {
     return yargs.options('force', {

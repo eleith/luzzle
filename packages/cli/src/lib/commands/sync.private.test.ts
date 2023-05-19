@@ -11,8 +11,10 @@ import {
 } from '../books'
 import { syncAddBook, syncUpdateBook, syncRemoveBooks } from './sync.private'
 import { makeBooks } from '../books/books.mock'
+import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags'
 
 vi.mock('../books')
+vi.mock('../tags')
 
 const mocks = {
   logInfo: vi.spyOn(log, 'info'),
@@ -23,6 +25,10 @@ const mocks = {
   bookMdToBookUpdateInput: vi.mocked(bookMdToBookUpdateInput),
   bookMdToBookCreateInput: vi.mocked(bookMdToBookCreateInput),
   getSlugFromBookMd: vi.mocked(getSlugFromBookMd),
+  addTagsTo: vi.mocked(addTagsTo),
+  removeAllTagsFrom: vi.mocked(removeAllTagsFrom),
+  syncTagsFor: vi.mocked(syncTagsFor),
+  keywordsToTags: vi.mocked(keywordsToTags),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -63,6 +69,37 @@ describe('lib/commands/sync.private', () => {
     expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
     expect(spies.prismaCreate).toHaveBeenCalledOnce()
     expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
+  })
+
+  test('syncAddBook with keywords', async () => {
+    const ctx = makeContext()
+    const bookMd = makeBookMd()
+    const input = makeBookCreateInput()
+    const slug = 'slug1'
+    const keywords = 'one,two'
+    const book = makeBook({ slug, keywords })
+    const books = makeBooks()
+
+    mocks.bookMdToBookCreateInput.mockResolvedValueOnce(input)
+    mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+    mocks.addTagsTo.mockResolvedValueOnce(undefined)
+    mocks.keywordsToTags.mockReturnValueOnce([])
+
+    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
+    spies.prismaCreate = vi.spyOn(ctx.prisma.book, 'create')
+
+    spies.prismaCreate.mockResolvedValueOnce(book)
+    spies.prismaFindUnique.mockResolvedValueOnce(null)
+
+    await syncAddBook(ctx, books, bookMd)
+
+    expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledOnce()
+    expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
+    expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
+    expect(spies.prismaCreate).toHaveBeenCalledOnce()
+    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
+    expect(mocks.keywordsToTags).toHaveBeenCalledWith(keywords)
+    expect(mocks.addTagsTo).toHaveBeenCalledOnce()
   })
 
   test('syncAddBook already exists', async () => {
@@ -154,20 +191,45 @@ describe('lib/commands/sync.private', () => {
     const book = makeBook({ slug })
     const books = makeBooks()
 
-    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(input)
-    mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
-
     spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
     spies.prismaUpdate = vi.spyOn(ctx.prisma.book, 'update')
 
     spies.prismaUpdate.mockResolvedValueOnce(book)
     spies.prismaFindUnique.mockResolvedValueOnce(book)
+    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(input)
+    mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
 
     await syncUpdateBook(ctx, books, bookMd, slug)
 
     expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledOnce()
     expect(spies.prismaUpdate).toHaveBeenCalledOnce()
     expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
+  })
+
+  test('syncUpdateBook with keywords', async () => {
+    const ctx = makeContext()
+    const bookMd = makeBookMd()
+    const input = makeBookCreateInput()
+    const slug = 'slug1'
+    const keywords = 'one,two'
+    const book = makeBook({ slug, keywords })
+    const books = makeBooks()
+
+    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
+    spies.prismaUpdate = vi.spyOn(ctx.prisma.book, 'update')
+
+    spies.prismaUpdate.mockResolvedValueOnce(book)
+    spies.prismaFindUnique.mockResolvedValueOnce(book)
+    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(input)
+    mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+    mocks.syncTagsFor.mockResolvedValue(undefined)
+
+    await syncUpdateBook(ctx, books, bookMd, slug)
+
+    expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledOnce()
+    expect(spies.prismaUpdate).toHaveBeenCalledOnce()
+    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
+    expect(mocks.syncTagsFor).toHaveBeenCalledOnce()
   })
 
   test('syncUpdateBook with flag dry-run', async () => {
@@ -219,7 +281,7 @@ describe('lib/commands/sync.private', () => {
     expect(mocks.logError).toHaveBeenCalledOnce()
   })
 
-  test('syncRemoveBook', async () => {
+  test('syncRemoveBooks', async () => {
     const ctx = makeContext()
     const slug = 'slug1'
     const book = makeBook({ slug })
@@ -229,11 +291,13 @@ describe('lib/commands/sync.private', () => {
 
     spies.prismaFindMany.mockResolvedValueOnce([book])
     spies.prismaDeleteMany.mockResolvedValueOnce(null)
+    mocks.removeAllTagsFrom.mockResolvedValueOnce(undefined)
 
     await syncRemoveBooks(ctx, [])
 
     expect(spies.prismaFindMany).toHaveBeenCalledOnce()
     expect(spies.prismaDeleteMany).toHaveBeenCalledOnce()
+    expect(mocks.removeAllTagsFrom).toHaveBeenCalledOnce()
   })
 
   test('syncRemoveBook with flag dry-flag', async () => {

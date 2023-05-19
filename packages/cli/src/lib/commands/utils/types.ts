@@ -9,7 +9,6 @@ export type Context = {
   directory: string
   config: Config
   flags: {
-    force: boolean
     dryRun: boolean
     verbose: boolean
   }
