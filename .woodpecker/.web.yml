@@ -3,7 +3,7 @@ workspace:
   path: src
 pipeline:
   build:
-    image: node:16
+    image: node:18
     commands:
       - npm ci -w @luzzle/web -w @luzzle/prisma -w @luzzle/ui
       - npm run build -w @luzzle/prisma
@@ -14,7 +14,7 @@ pipeline:
       path:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   test:
-    image: node:16
+    image: node:18
     commands:
       - npm run lint -w @luzzle/web
     when:
@@ -50,7 +50,7 @@ pipeline:
       path:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   build-content:
-    image: node:16
+    image: node:18
     commands:
       - cd packages/web
       - mkdir public/images

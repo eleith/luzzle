@@ -28,8 +28,14 @@ type HomePageProps = {
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
   const response = await staticClient.query({ query: getBooksQuery, variables: { take: 2 } })
   const books = response.data?.books
-  const nonExistantBook = { title: 'a title', id: 'add-more-books' } as Book
-  const homePage = <Index book1={books?.[0]} book2={books?.[1]} components={components} />
+  const nonExistantBook = { title: 'a title', id: 'add-more-books', slug: 'fake-slug' } as Book
+  const homePage = (
+    <Index
+      book1={books?.[0] || nonExistantBook}
+      book2={books?.[1] || nonExistantBook}
+      components={components}
+    />
+  )
   const markdown = await jsx2md(homePage)
 
   return {
