@@ -28,12 +28,10 @@ pipeline:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
       - cd packages/kysely
-      # - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
-      # - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
-      # - cd ../..
-      # - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/kysely; fi
-      # for the first one, let's just push it
-      - npm publish -w @luzzle/kysely
+      - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
+      - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
+      - cd ../..
+      - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/kysely; fi
     secrets: [npm_token, npm_owner]
     when:
       event: [push]
