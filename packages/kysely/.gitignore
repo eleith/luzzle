@@ -1,0 +1,7 @@
+node_modules
+src/**.js
+dist
+coverage
+playground
+.env.local
+.env.*.local

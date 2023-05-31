@@ -1,13 +1,12 @@
-import { getPrismaClient } from './prisma'
+import { getDatabaseClient, LuzzleDatabase } from '@luzzle/kysely'
 import { getDirectoryFromConfig, getConfig } from './config'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import log from './log'
 import path from 'path'
 import commands, { Context } from './commands'
-import { ASSETS_DIRECTORY } from './assets'
-
-const DATABASE_PATH = path.join(ASSETS_DIRECTORY, 'data', 'sqlite.db')
+import { DATABASE_PATH } from './assets'
+import { migrate } from '@luzzle/kysely'
 
 async function parseArgs(_args: string[]) {
   const command = await yargs(_args)
@@ -50,7 +49,7 @@ async function parseArgs(_args: string[]) {
       config: {
         alias: 'c',
         type: 'string',
-        description: 'override default system config',
+        description: 'custom directory to store config',
       },
     })
     .exitProcess(false)
@@ -65,13 +64,13 @@ async function parseArgs(_args: string[]) {
 }
 
 async function cleanup(ctx: Context): Promise<void> {
-  await ctx.prisma.$disconnect()
+  await ctx.db.destroy()
 }
 
 async function initialize(command: Awaited<ReturnType<typeof parseArgs>>): Promise<void> {
   const config = getConfig(command.options.config)
   const ctx: Context = {
-    prisma: getPrismaClient(),
+    db: {} as LuzzleDatabase,
     log,
     directory: command.options.dir,
     config,
@@ -81,16 +80,13 @@ async function initialize(command: Awaited<ReturnType<typeof parseArgs>>): Promi
     },
   }
   await commands.init.run(ctx, command.options)
-  await cleanup(ctx)
 }
 
 async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<void> {
   const config = getConfig(command.options.config)
   const directory = getDirectoryFromConfig(config)
   const ctx: Context = {
-    prisma: getPrismaClient({
-      datasources: { db: { url: `file:${path.join(directory, DATABASE_PATH)}` } },
-    }),
+    db: getDatabaseClient(path.join(directory, DATABASE_PATH)),
     log,
     directory,
     config,
@@ -100,11 +96,14 @@ async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<v
     },
   }
 
+  await migrate(ctx.db)
+
   log.info(`using config at ${config.path}`)
 
   await Object.values(commands)
     .find((c) => c.name === command.name)
     ?.run(ctx, command.options)
+
   await cleanup(ctx)
 }
 

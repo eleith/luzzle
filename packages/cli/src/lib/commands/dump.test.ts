@@ -6,6 +6,7 @@ import { makeContext } from './context.fixtures'
 import { bookToMd, writeBookMd } from '../books'
 import { CpuInfo, cpus } from 'os'
 import log from '../log'
+import { mockDatabase } from '../database.mock'
 
 vi.mock('os')
 vi.mock('log')
@@ -18,7 +19,7 @@ const mocks = {
   cpus: vi.mocked(cpus),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: SpyInstance[] = []
 
 describe('lib/commands/dump', () => {
   afterEach(() => {
@@ -26,63 +27,56 @@ describe('lib/commands/dump', () => {
       mock.mockReset()
     })
 
-    Object.keys(spies).forEach((key) => {
-      spies[key].mockRestore()
-      delete spies[key]
+    spies.map((spy) => {
+      spy.mockRestore()
     })
   })
 
   test('dump', async () => {
-    const ctx = makeContext()
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
     const books = [makeBook(), makeBook(), makeBook()]
     const bookMd = makeBookMd()
 
-    spies.prismaFindMany = vi.spyOn(ctx.prisma.book, 'findMany')
-    spies.prismaFindMany.mockResolvedValueOnce(books)
-
+    kysely.queries.execute.mockResolvedValueOnce(books)
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
     mocks.bookToMd.mockResolvedValueOnce(bookMd)
     mocks.writeBookMd.mockResolvedValueOnce()
 
     await command.run(ctx, {} as ArgumentsCamelCase)
 
-    expect(spies.prismaFindMany).toHaveBeenCalledTimes(1)
     expect(mocks.writeBookMd).toHaveBeenCalledTimes(3)
   })
 
   test('dump with flag dry-run', async () => {
-    const ctx = makeContext({ flags: { dryRun: true } })
+    const kysely = mockDatabase()
+    const ctx = makeContext({ flags: { dryRun: true }, db: kysely.db })
     const books = [makeBook(), makeBook(), makeBook()]
     const bookMd = makeBookMd()
 
-    spies.prismaFindMany = vi.spyOn(ctx.prisma.book, 'findMany')
-    spies.prismaFindMany.mockResolvedValueOnce(books)
-
+    kysely.queries.execute.mockResolvedValueOnce(books)
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
     mocks.bookToMd.mockResolvedValueOnce(bookMd)
     mocks.writeBookMd.mockResolvedValueOnce()
 
     await command.run(ctx, {} as ArgumentsCamelCase)
 
-    expect(spies.prismaFindMany).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).not.toHaveBeenCalled()
   })
 
   test('dump with error', async () => {
-    const ctx = makeContext()
+    const kyselyMock = mockDatabase()
+    const ctx = makeContext({ db: kyselyMock.db })
     const books = [makeBook()]
     const bookMd = makeBookMd()
 
-    spies.prismaFindMany = vi.spyOn(ctx.prisma.book, 'findMany')
-    spies.prismaFindMany.mockResolvedValueOnce(books)
-
+    kyselyMock.queries.execute.mockResolvedValueOnce(books)
     mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
     mocks.bookToMd.mockResolvedValueOnce(bookMd)
     mocks.writeBookMd.mockRejectedValueOnce(new Error('error'))
 
     await command.run(ctx, {} as ArgumentsCamelCase)
 
-    expect(spies.prismaFindMany).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).toHaveBeenCalled()
     expect(mocks.logError).toHaveBeenCalled()
   })

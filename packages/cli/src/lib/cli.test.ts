@@ -1,28 +1,18 @@
 import { stat } from 'fs/promises'
+import { getDatabaseClient } from '@luzzle/kysely'
 import log from './log'
 import cli from './cli'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import { getPrismaClient, PrismaClient } from './prisma'
-import { getDirectoryFromConfig, inititializeConfig, getConfig, Config } from './config'
+import { getDirectoryFromConfig, getConfig, Config } from './config'
 import commands from './commands'
+import { mockDatabase } from './database.mock'
 
 vi.mock('os')
 vi.mock('fs/promises')
 vi.mock('./book')
-vi.mock('./prisma')
+vi.mock('@luzzle/kysely')
 vi.mock('./config')
 vi.mock('./commands')
-
-const prisma = {
-  $disconnect: vi.fn(),
-  book: {
-    findMany: vi.fn(),
-    deleteMany: vi.fn(),
-    update: vi.fn(),
-    findUnique: vi.fn(),
-    create: vi.fn(),
-  },
-} as unknown as PrismaClient
 
 const mocks = {
   logInfo: vi.spyOn(log, 'info'),
@@ -30,14 +20,12 @@ const mocks = {
   logChild: vi.spyOn(log, 'child'),
   logLevelSet: vi.spyOn(log, 'level', 'set'),
   stat: vi.mocked(stat),
-  prisma$disconnect: vi.spyOn(prisma, '$disconnect'),
-  getPrismaClient: vi.mocked(getPrismaClient),
+  getDatabaseClient: vi.mocked(getDatabaseClient),
   getDirectoryConfig: vi.mocked(getDirectoryFromConfig),
-  inititializeConfig: vi.mocked(inititializeConfig),
   getConfig: vi.mocked(getConfig),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: SpyInstance[] = []
 
 describe('lib/cli', () => {
   afterEach(() => {
@@ -45,9 +33,8 @@ describe('lib/cli', () => {
       mock.mockReset()
     })
 
-    Object.keys(spies).forEach((key) => {
-      spies[key].mockRestore()
-      delete spies[key]
+    spies.forEach((spy) => {
+      spy.mockRestore()
     })
   })
 
@@ -56,61 +43,57 @@ describe('lib/cli', () => {
 
     mocks.getConfig.mockReturnValueOnce(config)
     mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
-    mocks.getPrismaClient.mockReturnValueOnce(prisma)
 
-    spies.prismaDisconnect = vi.spyOn(prisma, '$disconnect')
-    spies.prismaDisconnect.mockResolvedValueOnce(undefined)
-    spies.run = vi.spyOn(commands.init, 'run')
-    spies.run.mockResolvedValueOnce(undefined)
+    const spyRun = vi.spyOn(commands.init, 'run')
+    spyRun.mockResolvedValueOnce(undefined)
 
     process.argv = ['node', 'cli', commands.init.name, 'test']
 
     await cli()
 
     expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
-    expect(spies.run).toHaveBeenCalledOnce()
-    expect(spies.prismaDisconnect).toHaveBeenCalledOnce()
+    expect(spyRun).toHaveBeenCalledOnce()
   })
 
   test(`run edit-config`, async () => {
     const config = {} as Config
+    const kysely = mockDatabase()
 
     mocks.getConfig.mockReturnValueOnce(config)
     mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
-    mocks.getPrismaClient.mockReturnValueOnce(prisma)
+    mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
 
-    spies.prismaDisconnect = vi.spyOn(prisma, '$disconnect')
-    spies.prismaDisconnect.mockResolvedValueOnce(undefined)
-    spies.run = vi.spyOn(commands.editConfig, 'run')
-    spies.run.mockResolvedValueOnce(undefined)
+    const spyRun = vi.spyOn(commands.editConfig, 'run')
+    spyRun.mockResolvedValueOnce(undefined)
 
     process.argv = ['node', 'cli', commands.editConfig.name]
 
     await cli()
 
     expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
-    expect(spies.run).toHaveBeenCalledOnce()
-    expect(spies.prismaDisconnect).toHaveBeenCalledOnce()
+    expect(spyRun).toHaveBeenCalledOnce()
+    expect(kysely.db.destroy).toHaveBeenCalledOnce()
   })
 
   test(`run catches an error`, async () => {
     const config = {} as Config
+    const kysely = mockDatabase()
 
     mocks.getConfig.mockReturnValueOnce(config)
     mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
-    mocks.getPrismaClient.mockReturnValueOnce(prisma)
+    mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
 
-    spies.prismaDisconnect = vi.spyOn(prisma, '$disconnect')
-    spies.prismaDisconnect.mockResolvedValueOnce(undefined)
-    spies.run = vi.spyOn(commands.editConfig, 'run')
-    spies.run.mockRejectedValueOnce(new Error('some error'))
+    const spyRun = vi.spyOn(commands.editConfig, 'run')
+    spyRun.mockRejectedValueOnce(new Error('some error'))
+
+    spies.push(spyRun)
 
     process.argv = ['node', 'cli', commands.editConfig.name]
 
     await cli()
 
     expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
-    expect(spies.run).toHaveBeenCalledOnce()
+    expect(spyRun).toHaveBeenCalledOnce()
     expect(mocks.logError).toHaveBeenCalledOnce()
   })
 })

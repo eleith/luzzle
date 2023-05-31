@@ -1,0 +1,40 @@
+{
+  "name": "@luzzle/kysely",
+  "version": "0.0.1",
+  "author": "eleith",
+  "scripts": {
+    "lint": "eslint src",
+    "compile": "tsc --noEmit",
+    "test": "vitest run --coverage --silent"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://git.eleith.com/eleith/eleith.git"
+  },
+  "main": "src/index.ts",
+  "homepage": "https://git.eleith.com/eleith/eleith.git",
+  "description": "luzzle's kysely database connection",
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.4",
+    "@typescript-eslint/eslint-plugin": "5.39.0",
+    "@typescript-eslint/parser": "5.39.0",
+    "@vitest/coverage-c8": "^0.29.2",
+    "@vitest/ui": "0.29.2",
+    "c8": "^7.12.0",
+    "esbuild": "^0.15.7",
+    "eslint": "8.25.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.7.1",
+    "typescript": "4.8.4",
+    "vite": "^4.1.4",
+    "vitest": "0.29.2"
+  },
+  "dependencies": {
+    "better-sqlite3": "8.4.0",
+    "kysely": "0.25.0"
+  }
+}

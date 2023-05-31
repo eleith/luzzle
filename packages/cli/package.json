@@ -1,16 +1,16 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.30",
+  "version": "0.0.31",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
     "compile": "tsc --noEmit",
-    "build": "esbuild src/manage.ts --platform=node --target=node16 --banner:js='#!/usr/bin/env node' --sourcemap --bundle --outfile=dist/manager.js --external:sharp",
+    "build": "esbuild src/manage.ts --platform=node --target=node18 --banner:js='#!/usr/bin/env node' --sourcemap --bundle --outfile=dist/manager.js --external:sharp --external:better-sqlite3",
     "test": "vitest run --coverage --silent",
-    "prepublishOnly": "npm run build && chmod +x dist/manager.js && cp ../prisma/src/schema.prisma dist/schema.prisma && cp ../prisma/prisma/client/libquery* dist/"
+    "prepublishOnly": "npm run build && chmod +x dist/manager.js"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "bin": {
     "luzzle": "dist/manager.js"
@@ -51,7 +51,8 @@
     "@fast-csv/format": "^4.3.5",
     "@fast-csv/parse": "^4.3.6",
     "@googleapis/books": "^0.3.1",
-    "@luzzle/prisma": "0.0.22",
+    "@luzzle/kysely": "0.0.1",
+    "@paralleldrive/cuid2": "2.2.0",
     "@sindresorhus/slugify": "2.2.0",
     "ajv": "^8.11.0",
     "async": "^3.2.4",

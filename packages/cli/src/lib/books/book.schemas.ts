@@ -1,6 +1,6 @@
-import { Book } from '../prisma'
 import { JTDSchemaType } from 'ajv/dist/jtd'
 import Ajv from 'ajv/dist/jtd'
+import { Book } from '@luzzle/kysely'
 
 export type BookDatabaseCache = ToJsonCompatible<
   Pick<Book, NonNullableKeys<Book>> & Partial<UnNullify<Pick<Book, NullableKeys<Book>>>>
@@ -59,8 +59,7 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
 const cacheDatabaseSchema: JTDSchemaType<BookDatabaseCache> = {
   properties: {
     id: { type: 'string' },
-    date_added: { type: 'timestamp' },
-    date_updated: { type: 'timestamp' },
+    date_added: { type: 'float64' },
     slug: { type: 'string' },
     title: { type: 'string' },
     author: { type: 'string' },
@@ -82,6 +81,7 @@ const cacheDatabaseSchema: JTDSchemaType<BookDatabaseCache> = {
     keywords: { type: 'string' },
     cover_path: { type: 'string' },
     note: { type: 'string' },
+    date_updated: { type: 'float64' },
   },
 }
 

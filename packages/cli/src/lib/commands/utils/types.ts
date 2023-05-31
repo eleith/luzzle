@@ -1,10 +1,10 @@
 import { Logger } from 'pino'
 import { ArgumentsCamelCase, Argv } from 'yargs'
-import { PrismaClient } from '../../prisma'
 import { Config } from '../../config'
+import { LuzzleDatabase } from '@luzzle/kysely'
 
 export type Context = {
-  prisma: PrismaClient
+  db: LuzzleDatabase
   log: Logger
   directory: string
   config: Config

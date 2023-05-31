@@ -1,6 +1,11 @@
 import log from '../log'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import { makeBookMd, makeBook, makeBookCreateInput } from '../books/book.fixtures'
+import {
+  makeBookMd,
+  makeBook,
+  makeBookCreateInput,
+  makeBookUpdateInput,
+} from '../books/book.fixtures'
 import { makeContext } from './context.fixtures'
 import {
   getBook,
@@ -12,6 +17,7 @@ import {
 import { syncAddBook, syncUpdateBook, syncRemoveBooks } from './sync.private'
 import { makeBooks } from '../books/books.mock'
 import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags'
+import { mockDatabase } from '../database.mock'
 
 vi.mock('../books')
 vi.mock('../tags')
@@ -46,292 +52,235 @@ describe('lib/commands/sync.private', () => {
   })
 
   test('syncAddBook', async () => {
-    const ctx = makeContext()
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
     const slug = 'slug1'
     const book = makeBook({ slug })
     const books = makeBooks()
 
+    kysely.queries.executeTakeFirst.mockResolvedValueOnce(null)
+    kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
+
     mocks.bookMdToBookCreateInput.mockResolvedValueOnce(input)
     mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
-
-    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
-    spies.prismaCreate = vi.spyOn(ctx.prisma.book, 'create')
-
-    spies.prismaCreate.mockResolvedValueOnce(book)
-    spies.prismaFindUnique.mockResolvedValueOnce(null)
 
     await syncAddBook(ctx, books, bookMd)
 
     expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledOnce()
     expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
     expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
-    expect(spies.prismaCreate).toHaveBeenCalledOnce()
-    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
+    expect(kysely.queries.values).toHaveBeenCalledWith(input)
   })
 
   test('syncAddBook with keywords', async () => {
-    const ctx = makeContext()
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
     const slug = 'slug1'
     const keywords = 'one,two'
     const book = makeBook({ slug, keywords })
     const books = makeBooks()
+
+    kysely.queries.executeTakeFirst.mockResolvedValueOnce(null)
+    kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
 
     mocks.bookMdToBookCreateInput.mockResolvedValueOnce(input)
     mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
     mocks.addTagsTo.mockResolvedValueOnce(undefined)
     mocks.keywordsToTags.mockReturnValueOnce([])
 
-    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
-    spies.prismaCreate = vi.spyOn(ctx.prisma.book, 'create')
-
-    spies.prismaCreate.mockResolvedValueOnce(book)
-    spies.prismaFindUnique.mockResolvedValueOnce(null)
-
     await syncAddBook(ctx, books, bookMd)
 
     expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledOnce()
     expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
     expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
-    expect(spies.prismaCreate).toHaveBeenCalledOnce()
-    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
     expect(mocks.keywordsToTags).toHaveBeenCalledWith(keywords)
     expect(mocks.addTagsTo).toHaveBeenCalledOnce()
   })
 
   test('syncAddBook already exists', async () => {
-    const ctx = makeContext()
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
     const bookMd = makeBookMd()
-    const input = makeBookCreateInput()
+    const update = makeBookUpdateInput()
     const slug = 'slug1'
     const book = makeBook({ slug })
     const books = makeBooks()
 
-    mocks.bookMdToBookCreateInput.mockResolvedValueOnce(input)
+    kysely.queries.executeTakeFirst.mockResolvedValueOnce(book)
+    kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
+
+    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
     mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
-
-    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
-    spies.prismaCreate = vi.spyOn(ctx.prisma.book, 'create')
-    spies.prismaUpdate = vi.spyOn(ctx.prisma.book, 'update')
-
-    spies.prismaCreate.mockResolvedValueOnce(book)
-    spies.prismaFindUnique.mockResolvedValueOnce(book)
 
     await syncAddBook(ctx, books, bookMd)
 
     expect(mocks.bookMdToBookCreateInput).not.toHaveBeenCalledOnce()
     expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
     expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalled()
-    expect(spies.prismaCreate).not.toHaveBeenCalledOnce()
-    expect(spies.prismaUpdate).toHaveBeenCalledOnce()
-    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
   })
 
   test('syncAddBook with flag dry-run', async () => {
-    const ctx = makeContext({ flags: { dryRun: true } })
+    const kysely = mockDatabase()
+    const ctx = makeContext({ flags: { dryRun: true }, db: kysely.db })
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
     const slug = 'slug1'
-    const book = makeBook({ slug })
     const books = makeBooks()
 
     mocks.bookMdToBookCreateInput.mockResolvedValueOnce(input)
     mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
-
-    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
-    spies.prismaCreate = vi.spyOn(ctx.prisma.book, 'create')
-
-    spies.prismaCreate.mockResolvedValueOnce(book)
-    spies.prismaFindUnique.mockResolvedValueOnce(null)
 
     await syncAddBook(ctx, books, bookMd)
 
     expect(mocks.bookMdToBookCreateInput).not.toHaveBeenCalledOnce()
     expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
     expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
-    expect(spies.prismaCreate).not.toHaveBeenCalledOnce()
-    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
   })
 
   test('syncAddBook catches error', async () => {
-    const ctx = makeContext()
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
     const bookMd = makeBookMd()
     const input = makeBookCreateInput()
     const slug = 'slug1'
     const books = makeBooks()
 
+    kysely.queries.executeTakeFirstOrThrow.mockRejectedValueOnce(new Error('test'))
+
     mocks.bookMdToBookCreateInput.mockResolvedValueOnce(input)
     mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
     mocks.logError.mockResolvedValueOnce()
-
-    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
-    spies.prismaCreate = vi.spyOn(ctx.prisma.book, 'create')
-
-    spies.prismaCreate.mockRejectedValueOnce(new Error('error'))
-    spies.prismaFindUnique.mockResolvedValueOnce(null)
 
     await syncAddBook(ctx, books, bookMd)
 
     expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledOnce()
     expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
     expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
-    expect(spies.prismaCreate).toHaveBeenCalledOnce()
-    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
     expect(mocks.logError).toHaveBeenCalledOnce()
   })
 
   test('syncUpdateBook', async () => {
-    const ctx = makeContext()
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
     const bookMd = makeBookMd()
-    const input = makeBookCreateInput()
+    const update = makeBookUpdateInput()
     const slug = 'slug1'
     const book = makeBook({ slug })
     const books = makeBooks()
 
-    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
-    spies.prismaUpdate = vi.spyOn(ctx.prisma.book, 'update')
+    kysely.queries.executeTakeFirst.mockResolvedValueOnce(book)
+    kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
 
-    spies.prismaUpdate.mockResolvedValueOnce(book)
-    spies.prismaFindUnique.mockResolvedValueOnce(book)
-    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(input)
+    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
     mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
 
     await syncUpdateBook(ctx, books, bookMd, slug)
 
     expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledOnce()
-    expect(spies.prismaUpdate).toHaveBeenCalledOnce()
-    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
   })
 
   test('syncUpdateBook with keywords', async () => {
-    const ctx = makeContext()
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
     const bookMd = makeBookMd()
-    const input = makeBookCreateInput()
-    const slug = 'slug1'
     const keywords = 'one,two'
+    const update = makeBookUpdateInput({ keywords })
+    const slug = 'slug1'
     const book = makeBook({ slug, keywords })
     const books = makeBooks()
 
-    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
-    spies.prismaUpdate = vi.spyOn(ctx.prisma.book, 'update')
+    kysely.queries.executeTakeFirst.mockResolvedValueOnce(book)
+    kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
 
-    spies.prismaUpdate.mockResolvedValueOnce(book)
-    spies.prismaFindUnique.mockResolvedValueOnce(book)
-    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(input)
+    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
     mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
     mocks.syncTagsFor.mockResolvedValue(undefined)
 
     await syncUpdateBook(ctx, books, bookMd, slug)
 
     expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledOnce()
-    expect(spies.prismaUpdate).toHaveBeenCalledOnce()
-    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
     expect(mocks.syncTagsFor).toHaveBeenCalledOnce()
   })
 
   test('syncUpdateBook with flag dry-run', async () => {
-    const ctx = makeContext({ flags: { dryRun: true } })
+    const kysely = mockDatabase()
+    const ctx = makeContext({ flags: { dryRun: true }, db: kysely.db })
     const bookMd = makeBookMd()
-    const input = makeBookCreateInput()
+    const update = makeBookUpdateInput()
     const slug = 'slug1'
-    const book = makeBook({ slug })
     const books = makeBooks()
 
-    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(input)
+    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
     mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
-
-    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
-    spies.prismaUpdate = vi.spyOn(ctx.prisma.book, 'update')
-
-    spies.prismaUpdate.mockResolvedValueOnce(book)
-    spies.prismaFindUnique.mockResolvedValueOnce(book)
 
     await syncUpdateBook(ctx, books, bookMd, slug)
 
     expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalledOnce()
-    expect(spies.prismaUpdate).not.toHaveBeenCalledOnce()
-    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
   })
 
   test('syncUpdateBook catches error', async () => {
-    const ctx = makeContext()
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
     const bookMd = makeBookMd()
-    const input = makeBookCreateInput()
+    const update = makeBookUpdateInput()
     const slug = 'slug1'
     const book = makeBook({ slug })
     const books = makeBooks()
 
-    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(input)
+    kysely.queries.executeTakeFirst.mockResolvedValueOnce(book)
+    kysely.queries.executeTakeFirstOrThrow.mockRejectedValueOnce(new Error('test'))
+
+    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
     mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
-
-    spies.prismaFindUnique = vi.spyOn(ctx.prisma.book, 'findUnique')
-    spies.prismaUpdate = vi.spyOn(ctx.prisma.book, 'update')
-
-    spies.prismaUpdate.mockRejectedValueOnce(new Error('error'))
-    spies.prismaFindUnique.mockResolvedValueOnce(book)
 
     await syncUpdateBook(ctx, books, bookMd, slug)
 
     expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledOnce()
-    expect(spies.prismaUpdate).toHaveBeenCalledOnce()
-    expect(spies.prismaFindUnique).toHaveBeenCalledOnce()
     expect(mocks.logError).toHaveBeenCalledOnce()
   })
 
   test('syncRemoveBooks', async () => {
-    const ctx = makeContext()
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
     const slug = 'slug1'
     const book = makeBook({ slug })
 
-    spies.prismaFindMany = vi.spyOn(ctx.prisma.book, 'findMany')
-    spies.prismaDeleteMany = vi.spyOn(ctx.prisma.book, 'deleteMany')
-
-    spies.prismaFindMany.mockResolvedValueOnce([book])
-    spies.prismaDeleteMany.mockResolvedValueOnce(null)
+    kysely.queries.execute.mockResolvedValueOnce([book])
     mocks.removeAllTagsFrom.mockResolvedValueOnce(undefined)
 
     await syncRemoveBooks(ctx, [])
 
-    expect(spies.prismaFindMany).toHaveBeenCalledOnce()
-    expect(spies.prismaDeleteMany).toHaveBeenCalledOnce()
     expect(mocks.removeAllTagsFrom).toHaveBeenCalledOnce()
   })
 
   test('syncRemoveBook with flag dry-flag', async () => {
-    const ctx = makeContext({ flags: { dryRun: true } })
+    const kysely = mockDatabase()
+    const ctx = makeContext({ flags: { dryRun: true }, db: kysely.db })
     const slug = 'slug1'
     const book = makeBook({ slug })
 
-    spies.prismaFindMany = vi.spyOn(ctx.prisma.book, 'findMany')
-    spies.prismaDeleteMany = vi.spyOn(ctx.prisma.book, 'deleteMany')
-
-    spies.prismaFindMany.mockResolvedValueOnce([book])
-    spies.prismaDeleteMany.mockResolvedValueOnce(null)
+    kysely.queries.execute.mockResolvedValueOnce([book])
 
     await syncRemoveBooks(ctx, [])
 
-    expect(spies.prismaFindMany).toHaveBeenCalledOnce()
-    expect(spies.prismaDeleteMany).not.toHaveBeenCalledOnce()
+    expect(kysely.queries.execute).toHaveBeenCalledOnce()
   })
 
   test('syncRemoveBook catches error', async () => {
-    const ctx = makeContext()
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
     const slug = 'slug1'
     const book = makeBook({ slug })
 
-    spies.prismaFindMany = vi.spyOn(ctx.prisma.book, 'findMany')
-    spies.prismaDeleteMany = vi.spyOn(ctx.prisma.book, 'deleteMany')
-
-    spies.prismaFindMany.mockResolvedValueOnce([book])
-    spies.prismaDeleteMany.mockRejectedValueOnce(new Error('error'))
+    kysely.queries.execute.mockResolvedValueOnce([book])
+    kysely.queries.execute.mockRejectedValueOnce(new Error('test'))
 
     await syncRemoveBooks(ctx, [])
 
-    expect(spies.prismaFindMany).toHaveBeenCalledOnce()
-    expect(spies.prismaDeleteMany).toHaveBeenCalledOnce()
     expect(mocks.logError).toHaveBeenCalledOnce()
   })
 })

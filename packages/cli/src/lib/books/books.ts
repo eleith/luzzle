@@ -4,6 +4,7 @@ import { ASSETS_DIRECTORY } from '../assets'
 import { BookDatabaseCache, cacheDatabaseSchema } from './book.schemas'
 import CacheForType from '../cache'
 
+const BOOK_DIRECTORY = 'books'
 const BOOK_COVER_DIRECTORY = path.join(ASSETS_DIRECTORY, 'covers')
 
 class Books {
@@ -11,7 +12,7 @@ class Books {
   public cache: CacheForType<BookDatabaseCache>
 
   constructor(dir: string) {
-    this.rootDir = dir
+    this.rootDir = path.join(dir, BOOK_DIRECTORY)
     this.cache = new CacheForType<BookDatabaseCache>(cacheDatabaseSchema, this.rootDir)
   }
 
