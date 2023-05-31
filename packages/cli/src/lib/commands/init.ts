@@ -1,8 +1,12 @@
 import log from '../log'
 import { Command } from './utils/types'
 import { Argv } from 'yargs'
-import { inititializeConfig } from '../config'
 import { stat } from 'fs/promises'
+import { getDatabaseClient, migrate } from '@luzzle/kysely'
+import path from 'path'
+import { DATABASE_PATH } from '../assets'
+import { existsSync } from 'fs'
+import { pathToFileURL } from 'url'
 
 export type InitArgv = { dir: string }
 
@@ -26,14 +30,25 @@ const command: Command<InitArgv> = {
     const dirStat = await stat(args.dir).catch(() => null)
 
     if (args.dir && !dirStat?.isDirectory()) {
-      throw new Error(`[error] '${args.dir}' is not a folder`)
+      throw new Error(`${args.dir} exists and is not a folder`)
     }
 
     if (ctx.flags.dryRun === false) {
-      const config = await inititializeConfig(dir)
-      log.info(`initialized config at ${config.path}`)
+      const dbPath = path.join(dir, DATABASE_PATH)
+      const dirUri = pathToFileURL(path.resolve(dir))
+
+      if (existsSync(ctx.config.path)) {
+        ctx.log.warn(`config file already exists at ${ctx.config.path}`)
+      }
+
+      ctx.config.set('directory', dirUri.href)
+      ctx.db = getDatabaseClient(dbPath)
+
+      await migrate(ctx.db)
+
+      log.info(`initialized config at ${ctx.config.path} and db at ${dbPath}`)
     } else {
-      log.info(`initialized config`)
+      log.info(`initialized config and db`)
     }
   },
 }

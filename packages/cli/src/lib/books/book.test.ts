@@ -152,7 +152,7 @@ describe('lib/book', () => {
 
   test('bookMdToBookCreateInput', async () => {
     const bookMd = bookFixtures.makeBookMd()
-    const book = bookFixtures.makeBook({
+    const bookInsert = bookFixtures.makeBookInsert({
       title: bookMd.frontmatter.title,
       author: bookMd.frontmatter.author,
       note: bookMd.markdown,
@@ -161,7 +161,7 @@ describe('lib/book', () => {
       month_read: 12,
     })
     const books = makeBooks()
-    const bookInput = bookFixtures.makeBookCreateInput(book)
+    const bookInput = bookFixtures.makeBookCreateInput(bookInsert)
     const spyGetCoverData = vi.spyOn(bookLib._private, '_maybeGetCoverData')
 
     spyGetCoverData.mockResolvedValueOnce(bookInput)
@@ -176,7 +176,7 @@ describe('lib/book', () => {
       expect.objectContaining({
         ...bookMd.frontmatter,
         note: bookMd.markdown,
-        slug: book.slug,
+        slug: bookInsert.slug,
         read_order: expect.stringMatching(/^[0-9]+-[0-9,a-f]+$/),
       })
     )
@@ -186,14 +186,16 @@ describe('lib/book', () => {
   test('bookMdToBookUpdateInput', async () => {
     const title = 'a new title'
     const bookMd = bookFixtures.makeBookMd()
-    const book = bookFixtures.makeBook({
+    const bookDetails = {
       title: bookMd.frontmatter.title,
       author: bookMd.frontmatter.author,
       note: bookMd.markdown,
       slug: path.basename(bookMd.filename, '.md'),
-    })
+    }
+    const book = bookFixtures.makeBook(bookDetails)
+    const bookUpdate = bookFixtures.makeBookInsert(bookDetails)
     const books = makeBooks()
-    const bookInput = bookFixtures.makeBookUpdateInput(book)
+    const bookInput = bookFixtures.makeBookUpdateInput(bookUpdate)
     const spyGetCoverData = vi.spyOn(bookLib._private, '_maybeGetCoverData')
 
     spyGetCoverData.mockResolvedValueOnce(bookInput)
@@ -203,23 +205,28 @@ describe('lib/book', () => {
 
     spies.push(spyGetCoverData)
 
-    expect(spyGetCoverData).toHaveBeenCalledWith(books, bookMd, { title })
+    expect(spyGetCoverData).toHaveBeenCalledWith(books, bookMd, {
+      title,
+      date_updated: expect.any(Number),
+    })
     expect(bookUpdateInput).toEqual(bookInput)
   })
 
   test('bookMdToBookUpdateInput updates read order', async () => {
     const title = 'a new title'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { year_read: 2020, month_read: 1 } })
-    const book = bookFixtures.makeBook({
+    const bookDetails = {
       title: bookMd.frontmatter.title,
       author: bookMd.frontmatter.author,
       note: bookMd.markdown,
       slug: path.basename(bookMd.filename, '.md'),
       year_read: 2021,
       month_read: bookMd.frontmatter.month_read,
-    })
+    }
 
-    const bookInput = bookFixtures.makeBookUpdateInput(book)
+    const book = bookFixtures.makeBook(bookDetails)
+    const bookInsert = bookFixtures.makeBookInsert(bookDetails)
+    const bookInput = bookFixtures.makeBookUpdateInput(bookInsert)
     const books = makeBooks()
     const maybeGetCoverData = vi.spyOn(bookLib._private, '_maybeGetCoverData')
 
@@ -234,6 +241,7 @@ describe('lib/book', () => {
       title,
       read_order: expect.any(String),
       year_read: bookMd.frontmatter.year_read,
+      date_updated: expect.any(Number),
     })
     expect(bookUpdateInput).toEqual(bookInput)
   })

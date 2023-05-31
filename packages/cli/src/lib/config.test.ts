@@ -1,7 +1,7 @@
 import { describe, expect, test, vi, afterEach, SpyInstance, MockedClass } from 'vitest'
 import Conf from 'conf'
 import { existsSync } from 'fs'
-import { getConfig, getDirectoryFromConfig, inititializeConfig, SchemaConfig } from './config'
+import { getConfig, getDirectoryFromConfig, SchemaConfig } from './config'
 
 vi.mock('fs')
 vi.mock('conf', () => {
@@ -67,22 +67,5 @@ describe('tools/lib/config', () => {
     mocks.existsSync.mockReturnValue(false)
 
     expect(() => getDirectoryFromConfig(config)).toThrow()
-  })
-
-  test('inititializeConfig', async () => {
-    const dirPath = '/some/dir'
-    mocks.existsSync.mockReturnValue(false)
-
-    await inititializeConfig(dirPath)
-
-    expect(mocks.Conf).toHaveBeenCalledOnce()
-    expect(mocks.ConfSet).toHaveBeenCalledWith('directory', `file://${dirPath}`)
-  })
-
-  test('inititializeConfig throws', async () => {
-    const dirPath = '/some/dir'
-    mocks.existsSync.mockReturnValue(true)
-
-    await expect(() => inititializeConfig(dirPath)).rejects.toThrow()
   })
 })

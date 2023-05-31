@@ -26,7 +26,7 @@ async function processBook(ctx: Context, books: Books, bookMd: BookMd): Promise<
 const command: Command<ProcessArgv> = {
   name: 'process',
 
-  command: 'process [-f|--force]',
+  command: 'process',
 
   describe: 'process files',
 

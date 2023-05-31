@@ -1,8 +1,7 @@
 import YAML from 'yaml'
 import Conf, { Options } from 'conf'
-import { pathToFileURL, fileURLToPath } from 'url'
+import { fileURLToPath } from 'url'
 import { existsSync } from 'fs'
-import path from 'path'
 
 export type SchemaConfig = {
   directory: string
@@ -72,27 +71,16 @@ export function getConfig(path?: string) {
 
 export function getDirectoryFromConfig(config: Conf<SchemaConfig>): string | never {
   const dirUrlPath = config.get('directory')
-  const dirPath = fileURLToPath(dirUrlPath)
 
-  if (existsSync(dirPath)) {
-    return dirPath
+  if (dirUrlPath) {
+    const dirPath = fileURLToPath(dirUrlPath)
+
+    if (existsSync(dirPath)) {
+      return dirPath
+    }
   }
 
-  throw new Error(`config directory does not exist: ${dirPath}`)
-}
-
-export async function inititializeConfig(directory: string): Promise<Conf<SchemaConfig> | never> {
-  const config = getConfig()
-  const configPath = config.path
-
-  if (existsSync(configPath)) {
-    throw new Error(`config file already exists at ${configPath}, please delete it first`)
-  }
-
-  const dirUri = pathToFileURL(path.resolve(directory))
-  config.set('directory', dirUri.href)
-
-  return config
+  throw new Error(`config doesn't exist: ${config.path}`)
 }
 
 export type Config = Conf<SchemaConfig>

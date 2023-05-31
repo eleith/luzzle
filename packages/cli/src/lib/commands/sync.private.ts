@@ -8,9 +8,9 @@ import {
   Books,
   BookMd,
 } from '../books'
-import { Book } from '../prisma'
 import { difference } from 'lodash'
 import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags'
+import { Book } from '@luzzle/kysely'
 
 async function syncUpdateBookExecute(
   ctx: Context,
@@ -21,13 +21,15 @@ async function syncUpdateBookExecute(
   try {
     if (ctx.flags.dryRun === false) {
       const bookUpdateInput = await bookMdToBookUpdateInput(books, bookMd, book)
-      const bookUpdate = await ctx.prisma.book.update({
-        where: { id: book.id },
-        data: bookUpdateInput,
-      })
+      const bookUpdate = await ctx.db
+        .updateTable('books')
+        .set(bookUpdateInput || { id: book.id })
+        .where('id', '=', book.id)
+        .returningAll()
+        .executeTakeFirstOrThrow()
 
-      if (bookUpdate.keywords) {
-        await syncTagsFor(ctx, keywordsToTags(bookUpdate.keywords), bookUpdate.id, 'books')
+      if (bookUpdateInput?.keywords) {
+        await syncTagsFor(ctx, keywordsToTags(bookUpdateInput.keywords), bookUpdate.id, 'books')
       }
 
       await markBookAsSynced(books, bookUpdate)
@@ -40,7 +42,11 @@ async function syncUpdateBookExecute(
 }
 
 async function syncAddBook(ctx: Context, books: Books, bookMd: BookMd): Promise<void> {
-  const maybeBook = await ctx.prisma.book.findUnique({ where: { slug: getSlugFromBookMd(bookMd) } })
+  const maybeBook = await ctx.db
+    .selectFrom('books')
+    .selectAll()
+    .where('slug', '=', getSlugFromBookMd(bookMd))
+    .executeTakeFirst()
 
   if (maybeBook) {
     await syncUpdateBookExecute(ctx, books, bookMd, maybeBook)
@@ -50,7 +56,11 @@ async function syncAddBook(ctx: Context, books: Books, bookMd: BookMd): Promise<
   try {
     if (ctx.flags.dryRun === false) {
       const bookCreateInput = await bookMdToBookCreateInput(books, bookMd)
-      const bookAdded = await ctx.prisma.book.create({ data: bookCreateInput })
+      const bookAdded = await ctx.db
+        .insertInto('books')
+        .values(bookCreateInput)
+        .returningAll()
+        .executeTakeFirstOrThrow()
 
       if (bookAdded.keywords) {
         await addTagsTo(ctx, keywordsToTags(bookAdded.keywords), bookAdded.id, 'books')
@@ -70,7 +80,7 @@ async function syncUpdateBook(
   bookMd: BookMd,
   id: string
 ): Promise<void> {
-  const book = await ctx.prisma.book.findUnique({ where: { id } })
+  const book = await ctx.db.selectFrom('books').selectAll().where('id', '=', id).executeTakeFirst()
 
   if (book) {
     await syncUpdateBookExecute(ctx, books, bookMd, book)
@@ -81,7 +91,7 @@ async function syncUpdateBook(
 async function syncRemoveBooksExecute(ctx: Context, ids: string[]): Promise<void> {
   try {
     if (ctx.flags.dryRun === false) {
-      await ctx.prisma.book.deleteMany({ where: { id: { in: ids } } })
+      await ctx.db.deleteFrom('books').where('id', 'in', ids).execute()
       await removeAllTagsFrom(ctx, ids, 'books')
     }
     log.info(`deleted ${ids.length} book(s)`)
@@ -91,7 +101,7 @@ async function syncRemoveBooksExecute(ctx: Context, ids: string[]): Promise<void
 }
 
 async function syncRemoveBooks(ctx: Context, diskSlugs: string[]): Promise<void> {
-  const booksInDb = await ctx.prisma.book.findMany({ select: { slug: true, id: true } })
+  const booksInDb = await ctx.db.selectFrom('books').select(['slug', 'id']).execute()
   const dbBookSlugs = booksInDb.map((book) => book.slug)
   const bookSlugsToRemove = difference(dbBookSlugs, diskSlugs)
   const bookIdsToRemove = booksInDb

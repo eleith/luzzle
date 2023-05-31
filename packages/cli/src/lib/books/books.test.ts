@@ -11,6 +11,8 @@ vi.mock('fs')
 vi.mock('ajv/dist/jtd')
 vi.mock('../cache')
 
+const BOOK_DIRECTORY = 'books'
+
 const mocks = {
   readdir: vi.mocked(readdir),
   CacheFor: vi.mocked(CacheFor),
@@ -36,7 +38,7 @@ describe('lib/books/books', () => {
 
     new Books(dir)
 
-    expect(mocks.CacheFor).toHaveBeenCalledWith(cacheDatabaseSchema, dir)
+    expect(mocks.CacheFor).toHaveBeenCalledWith(cacheDatabaseSchema, `${dir}/${BOOK_DIRECTORY}`)
   })
 
   test('getPathForBookCover', () => {
@@ -45,7 +47,7 @@ describe('lib/books/books', () => {
 
     const cover = new Books(dir).getPathForBookCover(slug)
 
-    expect(cover).toEqual(`${dir}/.assets/covers/${slug}.jpg`)
+    expect(cover).toEqual(`${dir}/${BOOK_DIRECTORY}/.assets/covers/${slug}.jpg`)
   })
 
   test('getPathForBookCover', () => {
@@ -54,7 +56,7 @@ describe('lib/books/books', () => {
 
     const cover = new Books(dir).getPathForBookCover(slug)
 
-    expect(cover).toEqual(`${dir}/.assets/covers/${slug}.jpg`)
+    expect(cover).toEqual(`${dir}/${BOOK_DIRECTORY}/.assets/covers/${slug}.jpg`)
   })
 
   test('getRelativePathForBookCover', () => {
@@ -72,7 +74,7 @@ describe('lib/books/books', () => {
 
     const path = new Books(dir).getPathForBook(slug)
 
-    expect(path).toEqual(`${dir}/${slug}.md`)
+    expect(path).toEqual(`${dir}/${BOOK_DIRECTORY}/${slug}.md`)
   })
 
   test('getPathForBook', async () => {
@@ -87,6 +89,6 @@ describe('lib/books/books', () => {
     const paths = await new Books(dir).getAllSlugs()
 
     expect(paths).toEqual([path.basename(slugs[0].name, '.md')])
-    expect(mocks.readdir).toHaveBeenCalledWith(dir, { withFileTypes: true })
+    expect(mocks.readdir).toHaveBeenCalledWith(`${dir}/${BOOK_DIRECTORY}`, { withFileTypes: true })
   })
 })

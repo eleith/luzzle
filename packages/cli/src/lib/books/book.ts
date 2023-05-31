@@ -1,4 +1,3 @@
-import { Book, Prisma } from '../prisma'
 import { eachLimit, filterLimit } from 'async'
 import { copyFile, unlink, stat, writeFile } from 'fs/promises'
 import { difference, merge, uniq } from 'lodash'
@@ -23,6 +22,8 @@ import {
   bookMdValidator,
 } from './book.schemas'
 import Books from './books'
+import { createId } from '@paralleldrive/cuid2'
+import { Book, BookInsert, BookUpdate } from '@luzzle/kysely'
 
 function _getReadOrder(
   year: number = new Date(1970).getFullYear(),
@@ -165,30 +166,29 @@ async function writeBookMd(books: Books, bookMd: BookMd): Promise<void> {
   await books.cache.update(slug, cache)
 }
 
-async function bookMdToBookCreateInput(
-  books: Books,
-  bookMd: BookMd
-): Promise<Prisma.BookCreateInput> {
+async function bookMdToBookCreateInput(books: Books, bookMd: BookMd): Promise<BookInsert> {
   const bookInput = {
     ...bookMd.frontmatter,
+    id: createId(),
     slug: getSlugFromBookMd(bookMd),
     note: bookMd.markdown,
     read_order: _getReadOrder(bookMd.frontmatter.year_read, bookMd.frontmatter.month_read),
   }
 
-  return await _private._maybeGetCoverData(books, bookMd, bookInput)
+  return await _private._maybeGetCoverData<BookInsert>(books, bookMd, bookInput)
 }
 
 async function bookMdToBookUpdateInput(
   books: Books,
   bookMd: BookMd,
   book: Book
-): Promise<Prisma.BookUpdateInput> {
+): Promise<BookUpdate | null> {
   const bookUpdateInput = {
     ...bookMd.frontmatter,
     slug: getSlugFromBookMd(bookMd),
     note: bookMd.markdown,
-  } as Prisma.BookUpdateInput
+    date_updated: new Date().getTime(),
+  } as BookUpdate
 
   const bookKeys = Object.keys(bookUpdateInput) as Array<keyof typeof bookUpdateInput>
 
@@ -206,10 +206,12 @@ async function bookMdToBookUpdateInput(
     bookUpdateInput.read_order = order
   }
 
-  return await _private._maybeGetCoverData(books, bookMd, bookUpdateInput)
+  const update = await _private._maybeGetCoverData(books, bookMd, bookUpdateInput)
+
+  return Object.keys(update).length > 0 ? update : null
 }
 
-async function _getCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
+async function _getCoverData<T extends BookInsert | BookUpdate>(
   coverPath: string
 ): Promise<Pick<T, 'cover_width' | 'cover_height'>> {
   const coverImage = await sharp(coverPath).metadata()
@@ -373,7 +375,7 @@ async function downloadCover(books: Books, bookMd: BookMd, cover: string): Promi
   return bookMd
 }
 
-async function _maybeGetCoverData<T extends Prisma.BookCreateInput | Prisma.BookUpdateInput>(
+async function _maybeGetCoverData<T extends BookInsert | BookUpdate>(
   books: Books,
   bookMd: BookMd,
   bookInput: T

@@ -1,8 +1,8 @@
 import { Command, Context } from './utils/types'
-import { Book } from '../prisma'
 import { writeBookMd, bookToMd, Books } from '../books'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
+import { Book } from '@luzzle/kysely'
 
 async function dumpBook(ctx: Context, book: Book): Promise<void> {
   const dir = ctx.directory
@@ -28,7 +28,7 @@ const command: Command = {
   describe: 'dump database to local markdown files',
 
   run: async function (ctx) {
-    const books = await ctx.prisma.book.findMany()
+    const books = await ctx.db.selectFrom('books').selectAll().execute()
     const numCpus = cpus().length
 
     await eachLimit(books, numCpus, async (book) => {

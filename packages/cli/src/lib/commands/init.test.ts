@@ -5,20 +5,20 @@ import { ArgumentsCamelCase } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures'
 import { stat } from 'fs/promises'
-import { Stats } from 'fs'
-import { inititializeConfig, SchemaConfig } from '../config'
-import Conf from 'conf/dist/source'
+import { existsSync, Stats } from 'fs'
+import { getDatabaseClient, migrate } from '@luzzle/kysely'
+import { mockConfig } from '../config.mock'
 
-vi.mock('../book')
-vi.mock('../config')
 vi.mock('fs/promises')
+vi.mock('@luzzle/kysely')
+vi.mock('fs')
 
 const mocks = {
-  logInfo: vi.spyOn(log, 'info'),
-  logError: vi.spyOn(log, 'error'),
-  logChild: vi.spyOn(log, 'child'),
+  logWarn: vi.spyOn(log, 'warn'),
+  existsSync: vi.mocked(existsSync),
   stat: vi.mocked(stat),
-  inititializeConfig: vi.mocked(inititializeConfig),
+  getDatabaseClient: vi.mocked(getDatabaseClient),
+  migrate: vi.mocked(migrate),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -36,16 +36,32 @@ describe('tools/lib/commands/init', () => {
   })
 
   test('run', async () => {
-    const ctx = makeContext()
+    const config = mockConfig()
+    const ctx = makeContext({ config })
     const dir = 'luzzle-dir'
 
     mocks.stat.mockResolvedValueOnce({ isDirectory: () => true } as Stats)
-    mocks.inititializeConfig.mockResolvedValueOnce({} as Conf<SchemaConfig>)
+    mocks.existsSync.mockReturnValueOnce(false)
 
     await command.run(ctx, { dir } as ArgumentsCamelCase<InitArgv>)
 
-    expect(mocks.stat).toHaveBeenCalledOnce()
-    expect(mocks.inititializeConfig).toHaveBeenCalledOnce()
+    expect(mocks.getDatabaseClient).toHaveBeenCalledOnce()
+    expect(mocks.migrate).toHaveBeenCalledOnce()
+  })
+
+  test('run with existing config', async () => {
+    const config = mockConfig()
+    const ctx = makeContext({ config })
+    const dir = 'luzzle-dir'
+
+    mocks.stat.mockResolvedValueOnce({ isDirectory: () => true } as Stats)
+    mocks.existsSync.mockReturnValueOnce(true)
+
+    await command.run(ctx, { dir } as ArgumentsCamelCase<InitArgv>)
+
+    expect(mocks.getDatabaseClient).toHaveBeenCalledOnce()
+    expect(mocks.migrate).toHaveBeenCalledOnce()
+    expect(mocks.logWarn).toHaveBeenCalledOnce()
   })
 
   test('run with dry run', async () => {
@@ -53,12 +69,12 @@ describe('tools/lib/commands/init', () => {
     const dir = 'luzzle-dir'
 
     mocks.stat.mockResolvedValueOnce({ isDirectory: () => true } as Stats)
-    mocks.inititializeConfig.mockResolvedValueOnce({} as Conf<SchemaConfig>)
+    mocks.existsSync.mockReturnValueOnce(false)
 
     await command.run(ctx, { dir } as ArgumentsCamelCase<InitArgv>)
 
-    expect(mocks.stat).toHaveBeenCalledOnce()
-    expect(mocks.inititializeConfig).not.toHaveBeenCalled()
+    expect(mocks.getDatabaseClient).not.toHaveBeenCalledOnce()
+    expect(mocks.migrate).not.toHaveBeenCalledOnce()
   })
 
   test('run with invalid dir', async () => {
@@ -66,11 +82,9 @@ describe('tools/lib/commands/init', () => {
     const dir = 'luzzle-dir'
 
     mocks.stat.mockResolvedValueOnce({ isDirectory: () => false } as Stats)
-    mocks.inititializeConfig.mockResolvedValueOnce({} as Conf<SchemaConfig>)
 
     const run = command.run(ctx, { dir } as ArgumentsCamelCase<InitArgv>)
 
-    expect(mocks.stat).toHaveBeenCalledOnce()
     expect(run).rejects.toThrow()
   })
 
