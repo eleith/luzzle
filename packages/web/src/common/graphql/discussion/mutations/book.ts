@@ -34,7 +34,12 @@ builder.mutationFields((t) => ({
       const { slug, email, discussion, topic } = args.input
 
       try {
-        const book = await ctx.prisma.book.findUniqueOrThrow({ where: { slug } })
+        const book = await ctx.db
+          .selectFrom('books')
+          .select('title')
+          .where('slug', '=', slug)
+          .executeTakeFirstOrThrow()
+
         await ctx.email.sendAsync({
           text: `topic: ${topic}\nfrom: ${email}\n\ndiscussion:\n--\n\n${discussion}`,
           'reply-to': email,

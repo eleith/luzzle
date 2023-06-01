@@ -5,8 +5,7 @@ pipeline:
   build:
     image: node:18
     commands:
-      - npm ci -w @luzzle/web -w @luzzle/prisma -w @luzzle/ui
-      - npm run build -w @luzzle/prisma
+      - npm ci -w @luzzle/web -w @luzzle/ui
       - npm run build:graphql -w @luzzle/web
       - npm run compile -w @luzzle/web
     when:
@@ -28,11 +27,10 @@ pipeline:
       - RCLONE_GCS_BUCKET_POLICY_ONLY=true
       - RCLONE_GCS_LOCATION=us-central-1
       - RCLONE_GCS_SERVICE_ACCOUNT_FILE=/tmp/rclone-service-key.json
-      - RCLONE_DAV_BOOK_SOURCE=:webdav:documents/eleith/notes-md/personal/records/books
-      - RCLONE_DAV_BOOK_DESTINATION=/workspace/data/books
+      - RCLONE_DAV_BOOK_SOURCE=:webdav:documents/eleith/notes-md/personal/records
+      - RCLONE_DAV_BOOK_DESTINATION=/workspace/data
     commands:
       - mkdir /workspace/data
-      - mkdir /workspace/data/books
       - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - rclone copy $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
@@ -54,10 +52,9 @@ pipeline:
     commands:
       - cd packages/web
       - mkdir public/images
-      - mkdir prisma
-      - mkdir prisma/data
+      - mkdir data
       - cp -R /workspace/data/books/.assets/covers public/images
-      - cp /workspace/data/books/.assets/data/sqlite.db prisma/data
+      - cp /workspace/data/luzzle.sqlite data
     when:
       branch: [main]
       path:

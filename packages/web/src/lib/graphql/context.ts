@@ -1,15 +1,15 @@
-import { getPrismaClient, PrismaClient } from '@luzzle/prisma'
 import { client } from '@app/common/emailjs'
 import { SMTPClient } from 'emailjs'
 import config from '@app/common/config'
+import { getDatabaseClient, LuzzleDatabase } from '@luzzle/kysely'
 
-const prisma = getPrismaClient({ datasources: { db: { url: config.private.DATABASE_URL } } })
+const db = getDatabaseClient(config.private.DATABASE_URL as string)
 
 export interface Context {
-  prisma: PrismaClient
+  db: LuzzleDatabase
   email: SMTPClient
 }
 
 export function createContext(): Context {
-  return { prisma, email: client }
+  return { db, email: client }
 }

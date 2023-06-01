@@ -1,7 +1,7 @@
 import builder from '@app/lib/graphql/builder'
 import BookObject from '../../book/objects/book'
 import Fuse from 'fuse.js'
-import { Book } from '@luzzle/prisma'
+import { Book } from '@luzzle/kysely'
 
 const MAX_RESULTS = 10
 let allBooks: Array<Book> = []
@@ -17,9 +17,11 @@ builder.queryFields((t) => ({
     },
     resolve: async (_, args, ctx) => {
       if (allBooks.length === 0) {
-        allBooks = await ctx.prisma.book.findMany({
-          orderBy: { read_order: 'desc' },
-        })
+        allBooks = await ctx.db
+          .selectFrom('books')
+          .selectAll()
+          .orderBy('read_order', 'desc')
+          .execute()
       }
 
       const keys = [
