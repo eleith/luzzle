@@ -12,13 +12,12 @@ const mocks = {
   SqliteDialect: vi.mocked(SqliteDialect),
 }
 
-describe('book', () => {
+describe('database', () => {
   afterEach(() => {
     vi.resetAllMocks()
-    vi.restoreAllMocks()
   })
 
-  test('downloadTo', async () => {
+  test('getDatabaseClient', async () => {
     const path = 'path/to/db.sqlite'
 
     getDatabaseClient(path)
@@ -26,5 +25,18 @@ describe('book', () => {
     expect(mocks.SqliteDatabase).toHaveBeenCalledWith(path)
     expect(mocks.SqliteDialect).toHaveBeenCalledOnce()
     expect(mocks.Kysely).toHaveBeenCalledOnce()
+  })
+
+  test('getDatabaseClient debug', async () => {
+    const path = 'path/to/db.sqlite'
+
+    getDatabaseClient(path, true)
+
+    expect(mocks.SqliteDatabase).toHaveBeenCalledWith(path)
+    expect(mocks.SqliteDialect).toHaveBeenCalledOnce()
+    expect(mocks.Kysely).toHaveBeenCalledWith({
+      log: ['query', 'error'],
+      dialect: expect.anything(),
+    })
   })
 })

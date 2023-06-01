@@ -16,5 +16,5 @@
     "typeRoots": ["./src/@types"],
     "resolveJsonModule": true
   },
-  "include": ["vite.config.ts", "src/**/*.ts", "src/**/*.json"]
+  "include": ["vite.config.ts", "src/**/*.ts"]
 }
