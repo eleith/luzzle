@@ -5,7 +5,8 @@ pipeline:
   build:
     image: node:18
     commands:
-      - npm ci -w @luzzle/web -w @luzzle/ui
+      - npm ci -w @luzzle/web -w @luzzle/ui -w @luzzle/kysely
+      - npm run build -w @luzzle/kysely
       - npm run build:graphql -w @luzzle/web
       - npm run compile -w @luzzle/web
     when:
