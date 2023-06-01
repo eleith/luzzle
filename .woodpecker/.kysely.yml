@@ -7,7 +7,7 @@ pipeline:
     commands:
       - npm ci -w @luzzle/kysely
       - npm run lint -w @luzzle/kysely
-      - npm run compile -w @luzzle/kysely
+      - npm run build -w @luzzle/kysely
     when:
       event: [push]
       branch: [main]
@@ -16,7 +16,7 @@ pipeline:
   test:
     image: node:18
     commands:
-      - npm run lint -w @luzzle/kysely
+      - npm run test -w @luzzle/kysely
     when:
       event: [push]
       branch: [main]

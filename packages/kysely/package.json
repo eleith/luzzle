@@ -1,20 +1,25 @@
 {
   "name": "@luzzle/kysely",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
-    "compile": "tsc --noEmit",
+    "build": "tsc -p tsconfig.prod.json",
     "test": "vitest run --coverage --silent"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "repository": {
     "type": "git",
     "url": "git+https://git.eleith.com/eleith/eleith.git"
   },
-  "main": "src/index.ts",
+  "files": [
+    "dist/*",
+    "package.json"
+  ],
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "homepage": "https://git.eleith.com/eleith/eleith.git",
   "description": "luzzle's kysely database connection",
   "devDependencies": {
