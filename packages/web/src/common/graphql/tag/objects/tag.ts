@@ -1,5 +1,5 @@
 import builder from '@app/lib/graphql/builder'
-import { Tag } from '@luzzle/prisma'
+import { Tag } from '@luzzle/kysely'
 
 const TagBuilder = builder.objectRef<Tag>('Tag')
 
@@ -10,7 +10,10 @@ TagBuilder.implement({
     id: t.exposeID('id', { nullable: false }),
     name: t.exposeString('name', { nullable: false }),
     slug: t.exposeString('slug', { nullable: false }),
-    dateUpdated: t.field({ type: 'Date', resolve: (x) => x.date_updated, nullable: false }),
-    dateAdded: t.field({ type: 'Date', resolve: (x) => x.date_added, nullable: false }),
+    dateUpdated: t.field({
+      type: 'Date',
+      resolve: (x) => (x.date_updated ? new Date(x.date_updated) : null),
+    }),
+    dateAdded: t.field({ type: 'Date', resolve: (x) => new Date(x.date_added), nullable: false }),
   }),
 })

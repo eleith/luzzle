@@ -15,14 +15,30 @@ builder.queryFields((t) => ({
       const { slug, id } = args
 
       if (slug) {
-        return await ctx.prisma.book.findUniqueOrThrow({ where: { slug } })
+        return await ctx.db
+          .selectFrom('books')
+          .selectAll()
+          .where('slug', '=', slug)
+          .executeTakeFirstOrThrow()
       } else if (id) {
-        return await ctx.prisma.book.findUniqueOrThrow({ where: { id: id } })
+        return await ctx.db
+          .selectFrom('books')
+          .selectAll()
+          .where('id', '=', id)
+          .executeTakeFirstOrThrow()
       } else {
-        const count = await ctx.prisma.book.count()
-        const skip = Math.floor(Math.random() * count)
-        const books = await ctx.prisma.book.findMany({ take: 1, skip })
-        return books[0]
+        const find = await ctx.db
+          .selectFrom('books')
+          .select(ctx.db.fn.count<number>('id').as('book_count'))
+          .executeTakeFirstOrThrow()
+        const skip = Math.floor(Math.random() * find.book_count)
+        const book = await ctx.db
+          .selectFrom('books')
+          .selectAll()
+          .limit(1)
+          .offset(skip)
+          .executeTakeFirstOrThrow()
+        return book
       }
     },
   }),

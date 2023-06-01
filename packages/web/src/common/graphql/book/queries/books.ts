@@ -17,47 +17,61 @@ builder.queryFields((t) => ({
       const takeValidated = Math.min(take && take > 0 ? take : TAKE_DEFAULT, TAKE_MAX)
 
       if (tag) {
-        const oneTag = await ctx.prisma.tag.findUnique({
-          where: { slug: tag },
-        })
+        const oneTag = await ctx.db
+          .selectFrom('tags')
+          .selectAll()
+          .where('slug', '=', tag)
+          .executeTakeFirstOrThrow()
 
         if (oneTag) {
-          const tagMap = await ctx.prisma.tagMap.findMany({
-            where: { id_tag: oneTag.id },
-          })
+          const tagMap = await ctx.db
+            .selectFrom('tag_maps')
+            .selectAll()
+            .where('id_tag', '=', oneTag.id)
+            .execute()
 
           if (after) {
-            return ctx.prisma.book.findMany({
-              skip: 1,
-              take: takeValidated,
-              where: {
-                id: { in: tagMap.map((x) => x.id_item) },
-              },
-              cursor: { id: after },
-            })
+            return ctx.db
+              .selectFrom('books')
+              .selectAll()
+              .where(
+                'id',
+                'in',
+                tagMap.map((x) => x.id_item)
+              )
+              .orderBy('read_order', 'desc')
+              .where('read_order', '<', after)
+              .limit(takeValidated)
+              .execute()
           } else {
-            return ctx.prisma.book.findMany({
-              take: takeValidated,
-              where: {
-                id: { in: tagMap.map((x) => x.id_item) },
-              },
-            })
+            return ctx.db
+              .selectFrom('books')
+              .selectAll()
+              .where(
+                'id',
+                'in',
+                tagMap.map((x) => x.id_item)
+              )
+              .execute()
           }
         }
       }
 
       if (after) {
-        return ctx.prisma.book.findMany({
-          skip: 1,
-          take: takeValidated,
-          orderBy: { read_order: 'desc' },
-          cursor: { read_order: after },
-        })
+        return ctx.db
+          .selectFrom('books')
+          .selectAll()
+          .orderBy('read_order', 'desc')
+          .where('read_order', '<', after)
+          .limit(takeValidated)
+          .execute()
       } else {
-        return ctx.prisma.book.findMany({
-          take: takeValidated,
-          orderBy: { read_order: 'desc' },
-        })
+        return ctx.db
+          .selectFrom('books')
+          .selectAll()
+          .orderBy('read_order', 'desc')
+          .limit(takeValidated)
+          .execute()
       }
     },
   }),

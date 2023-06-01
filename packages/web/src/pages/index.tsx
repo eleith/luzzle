@@ -67,8 +67,3 @@ export default function Home({ book1, book2 }: HomePageProps): JSX.Element {
     </PageFull>
   )
 }
-
-// https://nextjs.org/docs/advanced-features/output-file-tracing#caveats
-export const config = {
-  unstable_includeFiles: ['prisma/data/*'],
-}
