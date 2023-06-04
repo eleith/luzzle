@@ -17,6 +17,7 @@ export const rightNavItems = style({
 export const navItem = style({
   cursor: 'pointer',
   color: vars.colors.outline,
+  // color: vars.colors.background,
   selectors: {
     '&:hover': {
       color: vars.colors.primary,
@@ -24,7 +25,20 @@ export const navItem = style({
   },
 })
 
+export const navItemInverted = style({
+  color: vars.colors.background,
+  selectors: {
+    '&:hover': {
+      color: vars.colors.onBackground,
+    },
+  },
+})
+
 export const banner = style({
   display: 'flex',
   justifyContent: 'space-between',
+})
+
+export const bannerInverted = style({
+  background: vars.colors.surface,
 })

@@ -7,12 +7,18 @@ interface PageProps {
   meta: MetaProps
   children: React.ReactNode
   isHome?: boolean
+  invert?: boolean
 }
 
-export default function PageMarkdown({ meta, children, isHome = false }: PageProps): JSX.Element {
+export default function PageFull({
+  meta,
+  children,
+  isHome = false,
+  invert = false,
+}: PageProps): JSX.Element {
   return (
     <Page meta={meta}>
-      <PageBannerSlide isHome={isHome} />
+      <PageBannerSlide isHome={isHome} invert={invert} />
       <Box>{children}</Box>
     </Page>
   )
