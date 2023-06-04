@@ -6,9 +6,9 @@ import gql from '@app/lib/graphql/tag'
 import { GetPartialBooksDocument, GetBookBySlugDocument } from './_gql_/[slug]'
 import { BookCoverFor } from '@app/common/components/books'
 import staticClient from '@app/common/graphql/staticClient'
-import { Box, Text, Anchor, Divider, Button } from '@luzzle/ui/components'
+import { Box, Text, Anchor, Button, Divider } from '@luzzle/ui/components'
 import * as styles from './[slug].css'
-import { CaretLeft, CaretRight, ChatsCircle } from 'phosphor-react'
+import { CaretLeft, CaretRight, LinkSimple } from 'phosphor-react'
 import config from '@app/common/config'
 import DiscussionForm from '@app/common/components/pages/book/DiscussionForm'
 import { useState } from 'react'
@@ -68,7 +68,9 @@ function makeSiblingLink(image: JSX.Element, slug?: string): JSX.Element {
   if (slug) {
     return (
       <Link href={`/books/${slug}`} passHref>
-        <Anchor>{image}</Anchor>
+        <Anchor color={'inherit'} className={styles.navigation}>
+          {image}
+        </Anchor>
       </Link>
     )
   }
@@ -84,85 +86,81 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 
   const bookPage = (
     <Box>
-      <Box className={styles.bookContainer}>
-        <Box className={styles.bookNavigation}>
-          {makeSiblingLink(<CaretLeft size={45} />, book.siblings?.previous?.slug)}
+      <Box>
+        <Box className={styles.bookCard}>
+          <Box>{makeSiblingLink(<CaretLeft size={45} />, book.siblings?.previous?.slug)}</Box>
+          <Box>
+            <BookCoverFor
+              book={book}
+              hasCover={!!book.coverWidth}
+              rotateInteract={{ x: 0, y: -45 }}
+              scale={1.35}
+            />
+          </Box>
+          <Box>{makeSiblingLink(<CaretRight size={45} />, book.siblings?.next?.slug)}</Box>
         </Box>
-        <Box className={styles.bookDetails}>
-          <Text as="h1">{book.title}</Text>
-          {book.subtitle && (
-            <Text as="h2" size="h3">
-              {book.subtitle}
-            </Text>
-          )}
-          <Text>
-            by {book.author}
-            {book.coauthors && `, ${book.coauthors?.split(',').join(', ')}`}
-          </Text>
-          <Divider />
-          <Box className={styles.bookCard}>
-            <Box className={styles.book}>
-              <BookCoverFor
-                book={book}
-                hasCover={!!book.coverWidth}
-                rotate={{ x: 0, y: -35 }}
-                rotateInteract={{ x: 0, y: 0 }}
-              />
-            </Box>
-            <Box>
-              <Text>read on {makeBookDateString(book)}</Text>
-              {book.idOlWork && book.isbn && (
-                <Text>
-                  isbn{' '}
-                  <Anchor href={`https://openlibrary.org/works/${book.idOlWork}`}>
-                    {book.isbn}
-                  </Anchor>
-                </Text>
+      </Box>
+      <Box>
+        <Box className={styles.bookContainer}>
+          <Box className={styles.bookDetails}>
+            <Box style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+              {book.idOlWork && (
+                <Anchor href={`https://openlibrary.org/works/${book.idOlWork}`}>
+                  <Button minimal use={'primary'} className={styles.bookDiscuss}>
+                    <LinkSimple size={36} />
+                  </Button>
+                </Anchor>
               )}
-              {book.yearFirstPublished && <Text>published in {book.yearFirstPublished}</Text>}
-              <Text>{book.pages} pages</Text>
-              <br />
+
               <Button
                 onClick={() => setShowForm(true)}
                 raised
                 use={'primary'}
-                className={styles.hideOnMobile}
+                className={styles.bookDiscuss}
               >
                 discuss
               </Button>
-              <Button
-                onClick={() => setShowForm(true)}
-                raised
-                use={'primary'}
-                action
-                className={styles.showOnMobile}
-              >
-                <ChatsCircle size={24} /> discuss
-              </Button>
-              <br />
-              <br />
-              <Text>tags</Text>
-              <Text size="caption">
-                {book.tags?.map((tag) => (
-                  <>
-                    <Link href={`/tags/${tag.slug}`} key={`${tag.slug}`} passHref>
-                      <Anchor hoverAction="underline">{tag.name}</Anchor>
-                    </Link>{' '}
-                  </>
-                ))}
+            </Box>
+            <Text as="h1" size="title">
+              {book.title}
+            </Text>
+            {book.subtitle && (
+              <Text as="h2" size="h3">
+                {book.subtitle}
               </Text>
+            )}
+            <br />
+            <Text>
+              by {book.author}
+              {book.coauthors && `, ${book.coauthors?.split(',').join(', ')}`}
+            </Text>
+            <br />
+            <Divider />
+            <br />
+            <Text>
+              <span>tags - </span>
+              {book.tags?.map((tag) => (
+                <span key={tag.slug}>
+                  <Link href={`/tags/${tag.slug}`} passHref>
+                    <Anchor hoverAction="underline">{tag.name}</Anchor>
+                  </Link>{' '}
+                </span>
+              ))}
+            </Text>
+            <br />
+            <Divider />
+            <br />
+            <Box>
+              <Text>read on {makeBookDateString(book)}</Text>
             </Box>
           </Box>
-        </Box>
-        <Box className={styles.bookNavigation}>
-          {makeSiblingLink(<CaretRight size={45} />, book.siblings?.next?.slug)}
         </Box>
       </Box>
     </Box>
   )
 
   return (
-    <PageFull meta={{ title: book.title, image: coverUrl }}>
+    <PageFull meta={{ title: book.title, image: coverUrl }} invert>
       {showForm ? discussionForm : bookPage}
     </PageFull>
   )

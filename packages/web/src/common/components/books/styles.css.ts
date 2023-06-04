@@ -25,6 +25,7 @@ export const bookContainerStyles = style({
   justifyContent: 'center',
   perspective: bookCssVariables.perspective,
   marginBottom: '11px',
+  isolation: 'isolate',
 })
 
 const pulse = keyframes({
