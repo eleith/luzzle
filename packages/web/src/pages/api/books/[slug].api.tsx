@@ -167,11 +167,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       switch (output) {
         case 'svg':
           return ouputSvg(res, await image(html))
-        case 'png':
-          return ouputPng(res, await image(html).then((svg) => new Resvg(svg).render().asPng()))
-        default:
         case 'html':
           return ouputHtml(res, html)
+        default:
+        case 'png':
+          return ouputPng(res, await image(html).then((svg) => new Resvg(svg).render().asPng()))
       }
     }
   }
