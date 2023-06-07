@@ -160,7 +160,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
   )
 
   return (
-    <PageFull meta={{ title: book.title, image: coverUrl }} invert>
+    <PageFull meta={{ title: book.title, image: `/api/books/${book.slug}` }} invert>
       {showForm ? discussionForm : bookPage}
     </PageFull>
   )
