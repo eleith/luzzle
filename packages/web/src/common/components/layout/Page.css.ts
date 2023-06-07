@@ -166,3 +166,5 @@ initialize({
   [`[data-theme="${Themes.light}"]`]: themeLight,
   [`[data-theme="${Themes.dark}"]`]: themeDark,
 })
+
+export { themeLight, themeDark }
