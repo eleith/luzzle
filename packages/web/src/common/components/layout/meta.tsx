@@ -32,9 +32,9 @@ const Meta = ({ title, name, description, image, children = [] }: MetaProps): JS
     {image && (
       <>
         <meta key="og_img" property="og:image" content={`${config.public.HOST}${image}`} />
-        <meta key="og_img" property="og:image:type" content="image/png" />
-        <meta key="og_img" property="og:image:width" content="1200" />
-        <meta key="og_img" property="og:image:height" content="600" />
+        <meta key="og_img_type" property="og:image:type" content="image/png" />
+        <meta key="og_img_width" property="og:image:width" content="1200" />
+        <meta key="og_img_height" property="og:image:height" content="600" />
         <meta key="tw_card" name="twitter:card" content="summary_large_image" />
         <meta key="tw_img" name="twitter:image" content={`${config.public.HOST}${image}`} />
       </>
