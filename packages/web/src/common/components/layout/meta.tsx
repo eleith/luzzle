@@ -11,11 +11,10 @@ export interface MetaProps {
   name?: string
   description?: string
   image?: string
-  url?: string
   children?: React.ReactNode
 }
 
-const Meta = ({ title, name, description, image, url, children = [] }: MetaProps): JSX.Element => (
+const Meta = ({ title, name, description, image, children = [] }: MetaProps): JSX.Element => (
   <Head>
     <title key="title">{makeTitle(title, name)}</title>
     <meta key="og_locale" property="og:locale" content="en_US" />
@@ -33,6 +32,9 @@ const Meta = ({ title, name, description, image, url, children = [] }: MetaProps
     {image && (
       <>
         <meta key="og_img" property="og:image" content={image} />
+        <meta key="og_img" property="og:image:type" content="image/png" />
+        <meta key="og_img" property="og:image:width" content="1200" />
+        <meta key="og_img" property="og:image:height" content="600" />
         <meta key="tw_card" name="twitter:card" content="summary_large_image" />
         <meta key="tw_img" name="twitter:image" content={image} />
       </>
@@ -40,28 +42,27 @@ const Meta = ({ title, name, description, image, url, children = [] }: MetaProps
     <meta key="theme_color" name="theme-color" content={'blue'} />
     <meta key="tile_color" name="msapplication-TileColor" content={'blue'} />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link key="safari_icon" rel="mask-icon" href={`${url}/safari-pinned-tab.png`} color={'blue'} />
     <link
       key="apple_icon"
       rel="apple-touch-icon"
       sizes="180x180"
-      href={`${url}/apple-touch-icon.png`}
+      href={`${config.public.HOST_STATIC}/apple-touch-icon.png`}
     />
     <link
       key="favicon_32"
       rel="icon"
       type="image/png"
       sizes="32x32"
-      href={`${url}/favicon-32x32.png`}
+      href={`${config.public.HOST_STATIC}/favicon-32x32.png`}
     />
     <link
       key="favicon_16"
       rel="icon"
       type="image/png"
       sizes="16x16"
-      href={`${url}/favicon-16x16.png`}
+      href={`${config.public.HOST_STATIC}/favicon-16x16.png`}
     />
-    <link key="manifest" rel="manifest" href={`${url}/site.webmanifest`} />
+    <link key="manifest" rel="manifest" href={`${config.public.HOST_STATIC}/site.webmanifest`} />
     <link
       rel="alternate"
       type="application/rss+xml"
