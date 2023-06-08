@@ -20,6 +20,7 @@ BookBuilder.implement({
     coauthors: t.exposeString('coauthors'),
     description: t.exposeString('description'),
     keywords: t.exposeString('keywords'),
+    note: t.exposeString('note'),
     pages: t.exposeInt('pages'),
     yearFirstPublished: t.exposeInt('year_first_published'),
     dateUpdated: t.field({

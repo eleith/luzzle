@@ -18,6 +18,7 @@ const tag = gql(`fragment BookFullDetails on Book {
     readOrder
     idOlWork
     idOlBook
+    note
 }`)
 
 export default tag
