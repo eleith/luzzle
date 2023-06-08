@@ -135,7 +135,18 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
             <br />
             <Divider />
             <br />
-            <Text>
+            <Box>
+              <Text>{book.note || ' --- '}</Text>
+            </Box>
+            <br />
+            <br />
+            <Box style={{ textAlign: 'right' }}>
+              <Text>read on {makeBookDateString(book)}</Text>
+            </Box>
+            <br />
+            <Divider />
+            <br />
+            <Text size="caption">
               <span>tags - </span>
               {book.tags?.map((tag) => (
                 <span key={tag.slug}>
@@ -146,11 +157,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
               ))}
             </Text>
             <br />
-            <Divider />
             <br />
-            <Box>
-              <Text>read on {makeBookDateString(book)}</Text>
-            </Box>
           </Box>
         </Box>
       </Box>
@@ -161,8 +168,8 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
     <PageFull
       meta={{
         title: book.title,
-        image: `/api/books/${book.slug}`,
-        description: book.description || `${book.title} by ${book.author}`,
+        image: `/api/books/og:image?slug=${book.slug}`,
+        description: book.note || book.description || '',
       }}
       invert
     >
