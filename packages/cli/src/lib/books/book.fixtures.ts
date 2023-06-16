@@ -12,7 +12,7 @@ const read_order = '19700101-y47d'
 function makeBookMd(overrides: DeepPartial<BookMd> = {}): BookMd {
   return merge(
     {
-      filename: `${slug}.md`,
+      filename: `books/${slug}.md`,
       frontmatter: {
         title,
         author,

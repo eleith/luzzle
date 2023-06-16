@@ -4,8 +4,8 @@ import { ASSETS_DIRECTORY } from '../assets.js'
 import { BookDatabaseCache, cacheDatabaseSchema } from './book.schemas.js'
 import CacheForType from '../cache.js'
 
-const BOOK_DIRECTORY = 'books'
-const BOOK_COVER_DIRECTORY = path.join(ASSETS_DIRECTORY, 'covers')
+export const BOOK_DIRECTORY = 'books'
+export const BOOK_COVER_DIRECTORY = path.join(ASSETS_DIRECTORY, 'covers')
 
 class Books {
   private rootDir: string
@@ -13,6 +13,10 @@ class Books {
 
   static getRelativePathForBookCover(slug: string): string {
     return path.join(BOOK_COVER_DIRECTORY, `${slug}.jpg`)
+  }
+
+  static getRelativePathForBook(slug: string): string {
+    return path.join(BOOK_DIRECTORY, `${slug}.md`)
   }
 
   constructor(dir: string) {
