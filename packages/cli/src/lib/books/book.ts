@@ -1,6 +1,6 @@
 import { eachLimit, filterLimit } from 'async'
 import { copyFile, unlink, stat, writeFile } from 'fs/promises'
-import { difference, merge, uniq } from 'lodash'
+import { difference } from 'lodash'
 import { cpus } from 'os'
 import path from 'path'
 import { addFrontMatter, extract } from '../md'
@@ -18,12 +18,12 @@ import {
   BookMd,
   BookDatabaseCache,
   BookDatabaseOnlyFields,
-  BookMdWithOpenLib,
   bookMdValidator,
 } from './book.schemas'
 import Books from './books'
 import { createId } from '@paralleldrive/cuid2'
 import { Book, BookInsert, BookUpdate } from '@luzzle/kysely'
+import { generateDescription, generateTags } from './openai'
 
 function _getReadOrder(
   year: number = new Date(1970).getFullYear(),
@@ -224,9 +224,7 @@ async function _getCoverData<T extends BookInsert | BookUpdate>(
   }
 }
 
-async function _download(bookMd: BookMd, file: string, toPath: string): Promise<boolean> {
-  const slug = getSlugFromBookMd(bookMd)
-
+async function _download(slug: string, file: string, toPath: string): Promise<boolean> {
   if (/https?:\/\//i.test(file)) {
     const tempFile = await downloadTo(file)
     const fileType = await fileTypeFromFile(tempFile)
@@ -265,12 +263,22 @@ async function _download(bookMd: BookMd, file: string, toPath: string): Promise<
   return false
 }
 
-async function _searchGoogleBooks(
-  googleApiKey: string,
+async function completeOpenAI(apiKey: string, bookMd: BookMd): Promise<BookMd['frontmatter']> {
+  const tags = await generateTags(apiKey, bookMd)
+  const description = await generateDescription(apiKey, bookMd)
+
+  bookMd.frontmatter.keywords = tags.join(',')
+  bookMd.frontmatter.description = description
+
+  return bookMd.frontmatter
+}
+
+async function searchGoogleBooks(
+  apiKey: string,
   bookTitle: string,
   bookAuthor: string
-): Promise<BookMd['frontmatter'] | null> {
-  const volume = await findVolume(googleApiKey, bookTitle, bookAuthor)
+): Promise<BookMd['frontmatter']> {
+  const volume = await findVolume(apiKey, bookTitle, bookAuthor)
   const googleBook = volume?.volumeInfo
 
   log.info(`searching google for ${bookTitle}`)
@@ -297,80 +305,60 @@ async function _searchGoogleBooks(
     }
   }
 
-  return null
+  throw new Error(`could not find ${bookTitle} on google books`)
 }
 
-async function _searchOpenLibrary(
+async function searchOpenLibrary(
   books: Books,
-  bookMd: BookMdWithOpenLib
-): Promise<BookMd['frontmatter'] | null> {
-  const book = await getOpenLibraryBook(bookMd.frontmatter.id_ol_book)
+  openLibraryBookId: string,
+  bookSlug: string,
+  bookTitle: string,
+  bookAuthor: string
+): Promise<BookMd['frontmatter']> {
+  const book = await getOpenLibraryBook(openLibraryBookId)
   const workId = book?.works?.[0].key.replace(/\/works\//, '')
   const work = workId ? await findWork(workId) : null
-  const slug = getSlugFromBookMd(bookMd)
 
-  log.info(`searching openlibrary for ${bookMd.frontmatter.title}`)
+  log.info(`searching openlibrary for ${bookTitle}`)
 
   if (book && work) {
-    const title = work.title || bookMd.frontmatter.title
+    const title = work.title || bookTitle
     const subtitle = book.subtitle
-    const author = work.author_name[0] || bookMd.frontmatter.author
+    const author = work.author_name[0] || bookAuthor
     const coauthors = work.author_name.slice(1).join(',')
     const isbn = work.isbn?.[0]
     const publishedYear = work.first_publish_year
     const pages = Number(work.number_of_pages)
-    const subjects = work.subject || []
-    const places = work.place || []
-    const keywords = uniq(subjects.concat(places)).map((x) => x.toLowerCase())
     const coverUrl = work.cover_i ? getCoverUrl(work.cover_i) : undefined
-    const coverPath = books.getPathForBookCover(slug)
+    const coverPath = books.getPathForBookCover(bookSlug)
 
     if (coverUrl) {
-      await _private._download(bookMd, coverUrl, coverPath)
+      await _private._download(bookSlug, coverUrl, coverPath)
     }
 
     return {
       title,
       author,
       id_ol_work: workId,
-      ...(coverUrl && { cover_path: books.getRelativePathForBookCover(slug) }),
+      ...(coverUrl && { cover_path: Books.getRelativePathForBookCover(bookSlug) }),
       ...(subtitle && { subtitle }),
       ...(isbn && { isbn }),
       ...(coauthors && { coauthors }),
       ...(pages && !isNaN(pages) && { pages }),
-      ...(keywords.length && { keywords: keywords.join(',') }),
       ...(publishedYear && { year_first_published: publishedYear }),
     }
   }
 
-  return null
-}
-
-async function fetchBookMd(googleApiKey: string, books: Books, bookMd: BookMd): Promise<BookMd> {
-  const bookId = bookMd.frontmatter.id_ol_book
-
-  const googleBook = await _private._searchGoogleBooks(
-    googleApiKey,
-    bookMd.frontmatter.title,
-    bookMd.frontmatter.author
-  )
-
-  if (bookId) {
-    const openWork = await _private._searchOpenLibrary(books, bookMd as BookMdWithOpenLib)
-
-    return merge({ frontmatter: openWork }, { frontmatter: googleBook }, bookMd)
-  }
-
-  return merge({ frontmatter: googleBook }, bookMd)
+  throw new Error(`could not find ${bookTitle} on openlibrary`)
 }
 
 async function downloadCover(books: Books, bookMd: BookMd, cover: string): Promise<BookMd> {
   const slug = getSlugFromBookMd(bookMd)
   const coverPath = books.getPathForBookCover(slug)
 
-  await _private._download(bookMd, cover, coverPath)
+  await _private._download(slug, cover, coverPath)
 
-  bookMd.frontmatter.cover_path = books.getRelativePathForBookCover(slug)
+  bookMd.frontmatter.cover_path = Books.getRelativePathForBookCover(slug)
 
   return bookMd
 }
@@ -422,8 +410,6 @@ const _private = {
   _getCoverData,
   _maybeGetCoverData,
   _download,
-  _searchGoogleBooks,
-  _searchOpenLibrary,
   _makeBookMd,
 }
 
@@ -436,11 +422,13 @@ export {
   bookMdToBookUpdateInput,
   downloadCover,
   processBookMd,
-  fetchBookMd,
   writeBookMd,
   bookMdToBookCreateInput,
   getSlugFromBookMd,
   cleanUpDerivatives,
   _private,
   createBookMd,
+  completeOpenAI,
+  searchGoogleBooks,
+  searchOpenLibrary,
 }

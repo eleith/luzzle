@@ -10,8 +10,9 @@ export type SchemaConfig = {
     token: string
     body?: string
   }
-  books: {
-    google_api_key: string
+  api_keys: {
+    google: string
+    openai: string
   }
 }
 
@@ -46,12 +47,16 @@ const defaultOptions: Options<SchemaConfig> = {
       },
       required: ['url', 'token'],
     },
-    books: {
+    api_keys: {
       type: 'object',
       properties: {
-        google_api_key: {
+        openai: {
           type: 'string',
-          description: 'google api key for books',
+          description: 'openai key for chatgpt',
+        },
+        google: {
+          type: 'string',
+          description: 'google key for the books api',
         },
       },
     },

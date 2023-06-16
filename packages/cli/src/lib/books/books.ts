@@ -11,6 +11,10 @@ class Books {
   private rootDir: string
   public cache: CacheForType<BookDatabaseCache>
 
+  static getRelativePathForBookCover(slug: string): string {
+    return path.join(BOOK_COVER_DIRECTORY, `${slug}.jpg`)
+  }
+
   constructor(dir: string) {
     this.rootDir = path.join(dir, BOOK_DIRECTORY)
     this.cache = new CacheForType<BookDatabaseCache>(cacheDatabaseSchema, this.rootDir)
@@ -18,10 +22,6 @@ class Books {
 
   getPathForBookCover(slug: string): string {
     return path.join(this.rootDir, BOOK_COVER_DIRECTORY, `${slug}.jpg`)
-  }
-
-  getRelativePathForBookCover(slug: string): string {
-    return path.join(BOOK_COVER_DIRECTORY, `${slug}.jpg`)
   }
 
   getPathForBook(slug: string): string {

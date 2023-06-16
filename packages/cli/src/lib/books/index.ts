@@ -8,11 +8,13 @@ import {
   bookMdToBookUpdateInput,
   downloadCover,
   processBookMd,
-  fetchBookMd,
   writeBookMd,
   getSlugFromBookMd,
   cleanUpDerivatives,
   createBookMd,
+  searchGoogleBooks,
+  searchOpenLibrary,
+  completeOpenAI,
 } from './book'
 import { BookMd } from './book.schemas'
 import Books from './books'
@@ -27,11 +29,13 @@ export {
   bookMdToBookUpdateInput,
   downloadCover,
   processBookMd,
-  fetchBookMd,
   writeBookMd,
   getSlugFromBookMd,
   cleanUpDerivatives,
   createBookMd,
+  searchGoogleBooks,
+  searchOpenLibrary,
+  completeOpenAI,
   Books,
   type BookMd,
 }
