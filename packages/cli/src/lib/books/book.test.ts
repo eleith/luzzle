@@ -4,9 +4,10 @@ import path from 'path'
 import sharp, { Metadata, Sharp } from 'sharp'
 import * as bookLib from './book'
 import * as bookFixtures from './book.fixtures'
-import * as openLibFixtures from './open-library.fixtures'
+import * as openLibraryFixtures from './open-library.fixtures'
 import * as googleBooksFixtures from './google-books.fixtures'
 import { findVolume } from './google-books'
+import { generateTags, generateDescription } from './openai'
 import log from '../log'
 import { addFrontMatter, extract } from '../md'
 import { findWork, getBook, getCoverUrl } from './open-library'
@@ -14,7 +15,6 @@ import { downloadTo } from '../web'
 import { FileTypeResult, fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
-import { BookMd, BookMdWithOpenLib } from './book.schemas'
 import { makeBooks } from './books.mock'
 
 vi.mock('file-type')
@@ -24,6 +24,7 @@ vi.mock('sharp')
 vi.mock('../web')
 vi.mock('./open-library')
 vi.mock('./google-books')
+vi.mock('./openai')
 vi.mock('../md')
 vi.mock('os')
 vi.mock('../log')
@@ -46,6 +47,8 @@ const mocks = {
   fromFile: vi.mocked(fileTypeFromFile),
   writeFile: vi.mocked(writeFile),
   existSync: vi.mocked(existsSync),
+  generateTags: vi.mocked(generateTags),
+  generateDescription: vi.mocked(generateDescription),
 }
 
 const spies: SpyInstance[] = []
@@ -246,6 +249,26 @@ describe('lib/book', () => {
     expect(bookUpdateInput).toEqual(bookInput)
   })
 
+  test('bookMdToBookUpdateInput has no update', async () => {
+    const bookMd = bookFixtures.makeBookMd()
+    const bookDetails = {
+      title: bookMd.frontmatter.title,
+      author: bookMd.frontmatter.author,
+      note: bookMd.markdown,
+      slug: path.basename(bookMd.filename, '.md'),
+    }
+
+    const book = bookFixtures.makeBook(bookDetails)
+    const books = makeBooks()
+    const maybeGetCoverData = vi.spyOn(bookLib._private, '_maybeGetCoverData')
+
+    maybeGetCoverData.mockResolvedValueOnce({})
+
+    const bookUpdateInput = await bookLib.bookMdToBookUpdateInput(books, bookMd, book)
+
+    expect(bookUpdateInput).toBeNull()
+  })
+
   test('_getCoverData', async () => {
     const width = 10
     const height = 15
@@ -275,13 +298,13 @@ describe('lib/book', () => {
   test('_download with url', async () => {
     const cover = 'https://somewhere'
     const temp = 'somewhere/else/cover.jpg'
-    const bookMd = bookFixtures.makeBookMd()
     const toPath = 'path/to/books'
+    const slug = 'else'
 
     mocks.downloadTo.mockResolvedValueOnce(temp)
     mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 
-    const succeed = await bookLib._private._download(bookMd, cover, toPath)
+    const succeed = await bookLib._private._download(slug, cover, toPath)
 
     expect(mocks.downloadTo).toHaveBeenCalledWith(cover)
     expect(mocks.copyFile).toHaveBeenCalledOnce()
@@ -292,13 +315,13 @@ describe('lib/book', () => {
   test('_download with url rejects .png', async () => {
     const cover = 'https://somewhere'
     const temp = 'somewhere/else/cover.png'
-    const bookMd = bookFixtures.makeBookMd()
     const toPath = 'path/to/books'
+    const slug = 'else'
 
     mocks.downloadTo.mockResolvedValueOnce(temp)
     mocks.fromFile.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
 
-    const success = await bookLib._private._download(bookMd, cover, toPath)
+    const success = await bookLib._private._download(slug, cover, toPath)
 
     expect(success).toBe(false)
     expect(mocks.downloadTo).toHaveBeenCalledWith(cover)
@@ -308,13 +331,13 @@ describe('lib/book', () => {
 
   test('_download with file', async () => {
     const cover = '../somewhere/here/cover.jpg'
-    const bookMd = bookFixtures.makeBookMd()
     const toPath = 'path/to/books'
+    const slug = 'else'
 
     mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
     mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 
-    const success = await bookLib._private._download(bookMd, cover, toPath)
+    const success = await bookLib._private._download(slug, cover, toPath)
 
     expect(success).toBe(true)
     expect(mocks.stat).toHaveBeenCalledWith(cover)
@@ -324,13 +347,13 @@ describe('lib/book', () => {
 
   test('_download with file rejects .png', async () => {
     const cover = '../somewhere/here/cover.png'
-    const bookMd = bookFixtures.makeBookMd()
     const toPath = 'path/to/books'
+    const slug = 'else'
 
     mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
     mocks.fromFile.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
 
-    const success = await bookLib._private._download(bookMd, cover, toPath)
+    const success = await bookLib._private._download(slug, cover, toPath)
 
     expect(success).toBe(false)
     expect(mocks.stat).toHaveBeenCalledWith(cover)
@@ -340,12 +363,12 @@ describe('lib/book', () => {
 
   test('_download rejects non existant file', async () => {
     const cover = '../somewhere/here/cover.png'
-    const bookMd = bookFixtures.makeBookMd()
     const toPath = '/path/to/books/1.png'
+    const slug = 'else'
 
     mocks.stat.mockResolvedValueOnce({ isFile: () => false } as Stats)
 
-    const success = await bookLib._private._download(bookMd, cover, toPath)
+    const success = await bookLib._private._download(slug, cover, toPath)
 
     expect(success).toBe(false)
     expect(mocks.stat).toHaveBeenCalledWith(cover)
@@ -370,112 +393,56 @@ describe('lib/book', () => {
     expect(bookMdOutput).toEqual(bookMd)
   })
 
-  test('fetchBookMd', async () => {
-    const books = makeBooks()
-    const openLibraryResult = { title: 'a new title' }
-    const googleBooksResult = { author: 'a new author' }
-    const googleApiKey = 'key'
-    const bookMd = bookFixtures.makeBookMd({
-      frontmatter: { id_ol_book: 'xyz' },
-    })
-    const bookMdSearch = bookFixtures.makeBookMd({
-      ...bookMd,
-      ...{ frontmatter: { ...openLibraryResult, ...googleBooksResult, ...bookMd.frontmatter } },
-    })
-
-    const searchGoogleBooks = vi.spyOn(bookLib._private, '_searchGoogleBooks')
-    const searchOpenLibrary = vi.spyOn(bookLib._private, '_searchOpenLibrary')
-    searchGoogleBooks.mockResolvedValueOnce(googleBooksResult as BookMd['frontmatter'])
-    searchOpenLibrary.mockResolvedValueOnce(openLibraryResult as BookMd['frontmatter'])
-
-    const bookMdAfter = await bookLib.fetchBookMd(googleApiKey, books, bookMd)
-
-    spies.push(searchGoogleBooks, searchOpenLibrary)
-
-    expect(bookMdAfter).toEqual(bookMdSearch)
-    expect(searchGoogleBooks).toHaveBeenCalledWith(
-      googleApiKey,
-      bookMd.frontmatter.title,
-      bookMd.frontmatter.author
-    )
-    expect(searchOpenLibrary).toHaveBeenCalledWith(books, bookMd)
-  })
-
-  test('fetchBookMd only searches google', async () => {
-    const books = makeBooks()
-    const googleBooksResult = { author: 'a new author' }
-    const bookMd = bookFixtures.makeBookMd()
-    const googleApiKey = 'key'
-    const bookMdSearch = bookFixtures.makeBookMd({
-      ...bookMd,
-      ...{ frontmatter: { ...googleBooksResult, ...bookMd.frontmatter } },
-    })
-
-    const searchGoogleBooks = vi.spyOn(bookLib._private, '_searchGoogleBooks')
-    const searchOpenLibrary = vi.spyOn(bookLib._private, '_searchOpenLibrary')
-    searchGoogleBooks.mockResolvedValueOnce(googleBooksResult as BookMd['frontmatter'])
-
-    spies.push(searchGoogleBooks, searchOpenLibrary)
-
-    const bookMdAfter = await bookLib.fetchBookMd(googleApiKey, books, bookMd)
-
-    expect(bookMdAfter).toEqual(bookMdSearch)
-    expect(searchGoogleBooks).toHaveBeenCalledWith(
-      googleApiKey,
-      bookMd.frontmatter.title,
-      bookMd.frontmatter.author
-    )
-    expect(searchOpenLibrary).not.toHaveBeenCalled()
-  })
-
-  test('_searchOpenLibrary', async () => {
+  test('searchOpenLibrary', async () => {
     const workId = 'work-id'
     const bookId = 'book-id'
-    const coverPath = 'a/b.jpg'
+    const slug = 'b'
     const books = makeBooks()
-    const book = openLibFixtures.makeOpenLibraryBook({ works: [{ key: `/works/${workId}` }] })
-    const work = openLibFixtures.makeOpenLibrarySearchWork()
+    const book = openLibraryFixtures.makeOpenLibraryBook({ works: [{ key: `/works/${workId}` }] })
+    const work = openLibraryFixtures.makeOpenLibrarySearchWork()
     const coverUrl = 'https://somewhere'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
 
     const download = vi.spyOn(bookLib._private, '_download')
-    const getPath = vi.spyOn(books, 'getRelativePathForBookCover')
 
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.findWork.mockResolvedValueOnce(work)
     mocks.getCoverUrl.mockReturnValue(coverUrl)
     download.mockResolvedValueOnce(true)
-    getPath.mockReturnValueOnce(coverPath)
 
-    const bookMetadata = await bookLib._private._searchOpenLibrary(
+    const bookMetadata = await bookLib.searchOpenLibrary(
       books,
-      bookMd as BookMdWithOpenLib
+      bookId,
+      slug,
+      bookMd.frontmatter.title,
+      bookMd.frontmatter.author
     )
 
-    spies.push(download, getPath)
+    spies.push(download)
 
     expect(mocks.getBook).toHaveBeenCalledWith(bookId)
     expect(mocks.findWork).toHaveBeenCalledWith(workId)
     expect(mocks.getCoverUrl).toHaveBeenCalledWith(work.cover_i)
+    expect(download).toHaveBeenCalledOnce()
     expect(bookMetadata).toEqual({
       title: bookMd.frontmatter.title,
       author: bookMd.frontmatter.author,
       subtitle: book.subtitle,
       id_ol_work: workId,
       year_first_published: work.first_publish_year,
-      cover_path: coverPath,
+      cover_path: expect.any(String),
     })
   })
 
-  test('_searchOpenLibrary all metadata', async () => {
+  test('searchOpenLibrary all metadata', async () => {
     const workId = 'work-id'
     const bookId = 'book-id'
-    const coverPath = 'a/b.jpg'
+    const slug = 'b'
     const books = makeBooks()
-    const book = openLibFixtures.makeOpenLibraryBook({
+    const book = openLibraryFixtures.makeOpenLibraryBook({
       works: [{ key: `/works/${workId}` }],
     })
-    const work = openLibFixtures.makeOpenLibrarySearchWork({
+    const work = openLibraryFixtures.makeOpenLibrarySearchWork({
       isbn: ['isbn-13'],
       author_name: ['author-1', 'co-author'],
       number_of_pages: '423',
@@ -486,18 +453,19 @@ describe('lib/book', () => {
     })
     const coverUrl = 'https://somewhere'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
-    const getPath = vi.spyOn(books, 'getRelativePathForBookCover')
     const download = vi.spyOn(bookLib._private, '_download')
 
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.findWork.mockResolvedValueOnce(work)
     mocks.getCoverUrl.mockReturnValue(coverUrl)
     download.mockResolvedValueOnce(true)
-    getPath.mockReturnValueOnce(coverPath)
 
-    const bookMetadata = await bookLib._private._searchOpenLibrary(
+    const bookMetadata = await bookLib.searchOpenLibrary(
       books,
-      bookMd as BookMdWithOpenLib
+      bookId,
+      slug,
+      bookMd.frontmatter.title,
+      bookMd.frontmatter.author
     )
 
     spies.push(download)
@@ -512,34 +480,56 @@ describe('lib/book', () => {
       isbn: work.isbn?.[0],
       subtitle: book.subtitle,
       pages: Number(work.number_of_pages),
-      keywords: [...(work.subject || []), ...(work.place || [])].join(','),
       year_first_published: work.first_publish_year,
-      cover_path: coverPath,
+      cover_path: expect.any(String),
     })
   })
 
-  test('_searchOpenLibrary returns null', async () => {
+  test('searchOpenLibrary throws', async () => {
     const bookId = 'book-id'
     const books = makeBooks()
-    const work = openLibFixtures.makeOpenLibrarySearchWork()
+    const work = openLibraryFixtures.makeOpenLibrarySearchWork()
     const coverUrl = 'https://somewhere'
     const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
+    const slug = 'b'
 
     mocks.getBook.mockResolvedValueOnce(null)
     mocks.findWork.mockResolvedValueOnce(work)
     mocks.getCoverUrl.mockReturnValue(coverUrl)
 
-    const bookMetadata = await bookLib._private._searchOpenLibrary(
+    const bookMetadataCall = bookLib.searchOpenLibrary(
       books,
-      bookMd as BookMdWithOpenLib
+      bookId,
+      slug,
+      bookMd.frontmatter.title,
+      bookMd.frontmatter.author
     )
 
+    expect(bookMetadataCall).rejects.toThrowError()
     expect(mocks.getBook).toHaveBeenCalledWith(bookId)
     expect(mocks.findWork).not.toHaveBeenCalled()
-    expect(bookMetadata).toBeNull()
   })
 
-  test('_searchGooogleBooks', async () => {
+  test('searchGooogleBooks', async () => {
+    const openAIKey = 'key'
+    const bookMd = bookFixtures.makeBookMd()
+    const tags = ['tag1', 'tag2']
+    const description = 'a tiny description'
+
+    mocks.generateDescription.mockResolvedValueOnce(description)
+    mocks.generateTags.mockResolvedValueOnce(tags)
+
+    const bookMetadata = await bookLib.completeOpenAI(openAIKey, bookMd)
+
+    expect(mocks.generateDescription).toHaveBeenCalledOnce()
+    expect(mocks.generateTags).toHaveBeenCalledOnce()
+    expect(bookMetadata).toContain({
+      keywords: tags.join(','),
+      description,
+    })
+  })
+
+  test('searchGooogleBooks', async () => {
     const title = 'a book title'
     const author = 'a book author'
     const googleApikey = 'key'
@@ -547,7 +537,7 @@ describe('lib/book', () => {
 
     mocks.findVolume.mockResolvedValueOnce(volume)
 
-    const bookMetadata = await bookLib._private._searchGoogleBooks(googleApikey, title, author)
+    const bookMetadata = await bookLib.searchGoogleBooks(googleApikey, title, author)
 
     expect(mocks.findVolume).toHaveBeenCalledWith(googleApikey, title, author)
     expect(bookMetadata).toEqual({
@@ -556,7 +546,7 @@ describe('lib/book', () => {
     })
   })
 
-  test('_searchGooogleBooks all metadata', async () => {
+  test('searchGooogleBooks all metadata', async () => {
     const title = 'a book title'
     const author = 'a book author'
     const subtitle = 'a book subtitle'
@@ -576,7 +566,7 @@ describe('lib/book', () => {
 
     mocks.findVolume.mockResolvedValueOnce(volume)
 
-    const bookMetadata = await bookLib._private._searchGoogleBooks(apiKey, title, author)
+    const bookMetadata = await bookLib.searchGoogleBooks(apiKey, title, author)
 
     expect(mocks.findVolume).toHaveBeenCalledWith(apiKey, title, author)
     expect(bookMetadata).toEqual({
@@ -590,17 +580,17 @@ describe('lib/book', () => {
     })
   })
 
-  test('_searchGooogleBooks returns null', async () => {
+  test('searchGooogleBooks throws', async () => {
     const title = 'a book title'
     const author = 'a book author'
     const apiKey = 'key'
 
     mocks.findVolume.mockResolvedValueOnce(null)
 
-    const bookMetadata = await bookLib._private._searchGoogleBooks(apiKey, title, author)
+    const bookMetadataCall = bookLib.searchGoogleBooks(apiKey, title, author)
 
+    expect(bookMetadataCall).rejects.toThrowError()
     expect(mocks.findVolume).toHaveBeenCalledWith(apiKey, title, author)
-    expect(bookMetadata).toBeNull()
   })
 
   test('getUpdatedSlugs', async () => {

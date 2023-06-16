@@ -60,10 +60,9 @@ describe('lib/books/books', () => {
   })
 
   test('getRelativePathForBookCover', () => {
-    const dir = 'somewhere'
     const slug = 'slug'
 
-    const cover = new Books(dir).getRelativePathForBookCover(slug)
+    const cover = Books.getRelativePathForBookCover(slug)
 
     expect(cover).toEqual(`.assets/covers/${slug}.jpg`)
   })
