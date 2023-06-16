@@ -1,10 +1,10 @@
 import { ChildProcess, spawn } from 'child_process'
-import log from '../log'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { EventEmitter } from 'stream'
-import command from './editConfig'
-import { ArgumentsCamelCase } from 'yargs'
-import { makeContext } from './context.fixtures'
+import command from './editConfig.js'
+import { Arguments } from 'yargs'
+import { makeContext } from './context.fixtures.js'
 
 vi.mock('child_process')
 
@@ -36,7 +36,7 @@ describe('lib/commands/editConfig', () => {
     process.env.EDITOR = 'vi'
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.spawn).toHaveBeenCalledWith(process.env.EDITOR, [ctx.config.path], {
       cwd: ctx.directory,
@@ -51,7 +51,7 @@ describe('lib/commands/editConfig', () => {
     process.env.EDITOR = 'vi'
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.spawn).not.toHaveBeenCalled()
   })
@@ -63,7 +63,7 @@ describe('lib/commands/editConfig', () => {
 
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.spawn).not.toHaveBeenCalled()
     expect(mocks.logError).toHaveBeenCalledOnce()

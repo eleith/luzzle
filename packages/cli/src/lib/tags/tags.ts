@@ -1,5 +1,5 @@
-import { differenceWith } from 'lodash'
-import { Context } from '../commands/utils/types'
+import { differenceWith } from 'lodash-es'
+import { Context } from '../commands/utils/types.js'
 import slugify from '@sindresorhus/slugify'
 import { createId } from '@paralleldrive/cuid2'
 

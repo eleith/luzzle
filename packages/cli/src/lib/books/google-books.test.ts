@@ -1,5 +1,5 @@
-import * as googleBooks from './google-books'
-import * as googleLibraryFixtures from './google-books.fixtures'
+import * as googleBooks from './google-books.js'
+import * as googleLibraryFixtures from './google-books.fixtures.js'
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import { books_v1, books } from '@googleapis/books'
 import { GaxiosResponse } from 'gaxios'

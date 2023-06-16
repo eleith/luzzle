@@ -1,8 +1,8 @@
 import { vi, Mocked } from 'vitest'
 import Conf from 'conf'
-import { SchemaConfig } from './config'
+import { SchemaConfig } from './config.js'
 
-vi.mock('./config')
+vi.mock('./config.js')
 
 function mockConfig() {
   return {

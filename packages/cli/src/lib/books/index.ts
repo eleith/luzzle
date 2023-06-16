@@ -15,9 +15,9 @@ import {
   searchGoogleBooks,
   searchOpenLibrary,
   completeOpenAI,
-} from './book'
-import { BookMd } from './book.schemas'
-import Books from './books'
+} from './book.js'
+import { BookMd } from './book.schemas.js'
+import Books from './books.js'
 
 export {
   markBookAsSynced,

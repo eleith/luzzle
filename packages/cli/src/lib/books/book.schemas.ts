@@ -1,5 +1,5 @@
-import { JTDSchemaType } from 'ajv/dist/jtd'
-import Ajv from 'ajv/dist/jtd'
+import { JTDSchemaType } from 'ajv/dist/jtd.js'
+import Ajv from 'ajv/dist/jtd.js'
 import { Book } from '@luzzle/kysely'
 
 export type BookDatabaseCache = ToJsonCompatible<
@@ -85,6 +85,6 @@ const cacheDatabaseSchema: JTDSchemaType<BookDatabaseCache> = {
   },
 }
 
-const bookMdValidator = new Ajv().compile(bookMdSchema)
+const bookMdValidator = new Ajv.default().compile(bookMdSchema)
 
 export { bookMdSchema, cacheDatabaseSchema, bookMdValidator }

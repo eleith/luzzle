@@ -1,7 +1,7 @@
-import { Command } from './utils/types'
-import { getBook, getUpdatedSlugs, Books } from '../books'
+import { Command } from './utils/types.js'
+import { getBook, getUpdatedSlugs, Books } from '../books/index.js'
 import { eachLimit } from 'async'
-import { syncAddBook, syncRemoveBooks, syncUpdateBook } from './sync.private'
+import { syncAddBook, syncRemoveBooks, syncUpdateBook } from './sync.private.js'
 import { Argv } from 'yargs'
 
 export type SyncArgv = { force: boolean }

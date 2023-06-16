@@ -1,7 +1,7 @@
 import { describe, expect, test, vi, afterEach, SpyInstance, MockedClass } from 'vitest'
 import Conf from 'conf'
 import { existsSync } from 'fs'
-import { getConfig, getDirectoryFromConfig, SchemaConfig } from './config'
+import { getConfig, getDirectoryFromConfig, SchemaConfig } from './config.js'
 
 vi.mock('fs')
 vi.mock('conf', () => {

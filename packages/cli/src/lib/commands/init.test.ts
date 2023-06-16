@@ -1,13 +1,13 @@
-import log from '../log'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import command, { InitArgv } from './init'
-import { ArgumentsCamelCase } from 'yargs'
+import command, { InitArgv } from './init.js'
+import { Arguments } from 'yargs'
 import yargs from 'yargs'
-import { makeContext } from './context.fixtures'
+import { makeContext } from './context.fixtures.js'
 import { stat } from 'fs/promises'
 import { existsSync, Stats } from 'fs'
 import { getDatabaseClient, migrate } from '@luzzle/kysely'
-import { mockConfig } from '../config.mock'
+import { mockConfig } from '../config.mock.js'
 
 vi.mock('fs/promises')
 vi.mock('@luzzle/kysely')
@@ -43,7 +43,7 @@ describe('tools/lib/commands/init', () => {
     mocks.stat.mockResolvedValueOnce({ isDirectory: () => true } as Stats)
     mocks.existsSync.mockReturnValueOnce(false)
 
-    await command.run(ctx, { dir } as ArgumentsCamelCase<InitArgv>)
+    await command.run(ctx, { dir } as Arguments<InitArgv>)
 
     expect(mocks.getDatabaseClient).toHaveBeenCalledOnce()
     expect(mocks.migrate).toHaveBeenCalledOnce()
@@ -57,7 +57,7 @@ describe('tools/lib/commands/init', () => {
     mocks.stat.mockResolvedValueOnce({ isDirectory: () => true } as Stats)
     mocks.existsSync.mockReturnValueOnce(true)
 
-    await command.run(ctx, { dir } as ArgumentsCamelCase<InitArgv>)
+    await command.run(ctx, { dir } as Arguments<InitArgv>)
 
     expect(mocks.getDatabaseClient).toHaveBeenCalledOnce()
     expect(mocks.migrate).toHaveBeenCalledOnce()
@@ -71,7 +71,7 @@ describe('tools/lib/commands/init', () => {
     mocks.stat.mockResolvedValueOnce({ isDirectory: () => true } as Stats)
     mocks.existsSync.mockReturnValueOnce(false)
 
-    await command.run(ctx, { dir } as ArgumentsCamelCase<InitArgv>)
+    await command.run(ctx, { dir } as Arguments<InitArgv>)
 
     expect(mocks.getDatabaseClient).not.toHaveBeenCalledOnce()
     expect(mocks.migrate).not.toHaveBeenCalledOnce()
@@ -83,7 +83,7 @@ describe('tools/lib/commands/init', () => {
 
     mocks.stat.mockResolvedValueOnce({ isDirectory: () => false } as Stats)
 
-    const run = command.run(ctx, { dir } as ArgumentsCamelCase<InitArgv>)
+    const run = command.run(ctx, { dir } as Arguments<InitArgv>)
 
     expect(run).rejects.toThrow()
   })

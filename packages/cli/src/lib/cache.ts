@@ -1,7 +1,7 @@
-import Ajv, { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd'
+import Ajv, { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd.js'
 import { readFile, writeFile, mkdir, readdir, unlink } from 'fs/promises'
 import path from 'path'
-import log from './log'
+import log from './log.js'
 import deepmerge from 'deepmerge'
 import { existsSync, mkdirSync } from 'fs'
 
@@ -11,7 +11,7 @@ export type Cache<T extends Record<string, unknown>> = {
   database?: T
 }
 
-const ajv = new Ajv()
+const ajv = new Ajv.default()
 const CACHE_DIRECTORY = '.cache'
 
 class CacheForType<T extends Record<string, unknown>> {

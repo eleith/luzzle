@@ -1,12 +1,12 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import command from './dump'
-import { ArgumentsCamelCase } from 'yargs'
-import { makeBook, makeBookMd } from '../books/book.fixtures'
-import { makeContext } from './context.fixtures'
-import { bookToMd, writeBookMd } from '../books'
+import command from './dump.js'
+import { Arguments } from 'yargs'
+import { makeBook, makeBookMd } from '../books/book.fixtures.js'
+import { makeContext } from './context.fixtures.js'
+import { bookToMd, writeBookMd } from '../books/index.js'
 import { CpuInfo, cpus } from 'os'
-import log from '../log'
-import { mockDatabase } from '../database.mock'
+import log from '../log.js'
+import { mockDatabase } from '../database.mock.js'
 
 vi.mock('os')
 vi.mock('log')
@@ -43,7 +43,7 @@ describe('lib/commands/dump', () => {
     mocks.bookToMd.mockResolvedValueOnce(bookMd)
     mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.writeBookMd).toHaveBeenCalledTimes(3)
   })
@@ -59,7 +59,7 @@ describe('lib/commands/dump', () => {
     mocks.bookToMd.mockResolvedValueOnce(bookMd)
     mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.writeBookMd).not.toHaveBeenCalled()
   })
@@ -75,7 +75,7 @@ describe('lib/commands/dump', () => {
     mocks.bookToMd.mockResolvedValueOnce(bookMd)
     mocks.writeBookMd.mockRejectedValueOnce(new Error('error'))
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.writeBookMd).toHaveBeenCalled()
     expect(mocks.logError).toHaveBeenCalled()

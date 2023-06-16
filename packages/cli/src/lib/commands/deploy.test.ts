@@ -1,10 +1,10 @@
-import log from '../log'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance, MockedObject } from 'vitest'
-import command from './deploy'
-import { ArgumentsCamelCase } from 'yargs'
-import { makeContext } from './context.fixtures'
+import command from './deploy.js'
+import { Arguments } from 'yargs'
+import { makeContext } from './context.fixtures.js'
 import got from 'got'
-import { getConfig, Config } from '../config'
+import { getConfig, Config } from '../config.js'
 
 vi.mock('got')
 vi.mock('../config')
@@ -42,7 +42,7 @@ describe('lib/commands/deploy', () => {
     mocks.gotPost.mockResolvedValueOnce({ statusCode: 200 })
     config.get.mockReturnValueOnce(deployConfig)
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.gotPost).toHaveBeenCalledWith(deployConfig.url, {
       json: JSON.parse(deployConfig.body),
@@ -61,7 +61,7 @@ describe('lib/commands/deploy', () => {
     mocks.gotPost.mockResolvedValueOnce({ statusCode: 200 })
     config.get.mockReturnValueOnce(deployConfig)
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.gotPost).toHaveBeenCalledWith(deployConfig.url, {
       headers: { Authorization: `Bearer ${deployConfig.token}` },

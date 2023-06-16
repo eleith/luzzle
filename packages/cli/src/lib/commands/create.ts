@@ -1,7 +1,7 @@
-import log from '../log'
-import { Command } from './utils/types'
+import log from '../log.js'
+import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
-import { createBookMd, writeBookMd, Books } from '../books'
+import { createBookMd, writeBookMd, Books } from '../books/index.js'
 
 export type CreateArgv = { slug: string }
 

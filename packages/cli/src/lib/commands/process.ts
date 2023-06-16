@@ -1,5 +1,5 @@
-import log from '../log'
-import { Command, Context } from './utils/types'
+import log from '../log.js'
+import { Command, Context } from './utils/types.js'
 import { Argv } from 'yargs'
 import {
   getBook,
@@ -9,7 +9,7 @@ import {
   writeBookMd,
   Books,
   BookMd,
-} from '../books'
+} from '../books/index.js'
 import { eachLimit } from 'async'
 
 export type ProcessArgv = { force: boolean }

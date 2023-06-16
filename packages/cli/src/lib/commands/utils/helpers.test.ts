@@ -1,7 +1,7 @@
 import { existsSync } from 'fs'
 import path, { ParsedPath } from 'path'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import * as helpers from './helpers'
+import * as helpers from './helpers.js'
 
 vi.mock('path')
 vi.mock('fs')

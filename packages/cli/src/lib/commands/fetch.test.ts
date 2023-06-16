@@ -4,15 +4,15 @@ import {
   searchGoogleBooks,
   searchOpenLibrary,
   writeBookMd,
-} from '../books'
-import log from '../log'
+} from '../books/index.js'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import command, { FetchArgv } from './fetch'
-import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../books/book.fixtures'
+import command, { FetchArgv } from './fetch.js'
+import { Arguments } from 'yargs'
+import { makeBookMd } from '../books/book.fixtures.js'
 import yargs from 'yargs'
-import { makeContext } from './context.fixtures'
-import { merge } from 'lodash'
+import { makeContext } from './context.fixtures.js'
+import { merge } from 'lodash-es'
 
 vi.mock('../books')
 vi.mock('../log')
@@ -48,7 +48,7 @@ describe('lib/commands/fetch', () => {
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, { slug, service: 'all' } as ArgumentsCamelCase<FetchArgv>)
+    await command.run(ctx, { slug, service: 'all' } as Arguments<FetchArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).toHaveBeenCalledOnce()
@@ -65,7 +65,7 @@ describe('lib/commands/fetch', () => {
     mocks.writeBookMd.mockResolvedValueOnce()
     mocks.searchGoogleBooks.mockResolvedValueOnce(bookGoogle.frontmatter)
 
-    await command.run(ctx, { slug, service: 'google' } as ArgumentsCamelCase<FetchArgv>)
+    await command.run(ctx, { slug, service: 'google' } as Arguments<FetchArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).toHaveBeenCalledWith(expect.anything(), merge(book, bookGoogle))
@@ -86,7 +86,7 @@ describe('lib/commands/fetch', () => {
     mocks.writeBookMd.mockResolvedValueOnce()
     mocks.completeOpenAI.mockResolvedValueOnce(bookGoogle.frontmatter)
 
-    await command.run(ctx, { slug, service: 'openai' } as ArgumentsCamelCase<FetchArgv>)
+    await command.run(ctx, { slug, service: 'openai' } as Arguments<FetchArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).toHaveBeenCalledWith(expect.anything(), merge(book, bookGoogle))
@@ -103,7 +103,7 @@ describe('lib/commands/fetch', () => {
     mocks.writeBookMd.mockResolvedValueOnce()
     mocks.searchOpenLibrary.mockResolvedValueOnce(bookOpenLibrary.frontmatter)
 
-    await command.run(ctx, { slug, service: 'openlibrary' } as ArgumentsCamelCase<FetchArgv>)
+    await command.run(ctx, { slug, service: 'openlibrary' } as Arguments<FetchArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).toHaveBeenCalledWith(expect.anything(), merge(book, bookOpenLibrary))
@@ -124,7 +124,7 @@ describe('lib/commands/fetch', () => {
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<FetchArgv>)
+    await command.run(ctx, { slug } as Arguments<FetchArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).not.toHaveBeenCalled()
@@ -137,7 +137,7 @@ describe('lib/commands/fetch', () => {
     mocks.getBook.mockResolvedValueOnce(null)
     mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<FetchArgv>)
+    await command.run(ctx, { slug } as Arguments<FetchArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).not.toHaveBeenCalled()

@@ -1,10 +1,10 @@
-import log from '../log'
-import { Command } from './utils/types'
+import log from '../log.js'
+import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
 import { stat } from 'fs/promises'
 import { getDatabaseClient, migrate } from '@luzzle/kysely'
 import path from 'path'
-import { DATABASE_PATH } from '../assets'
+import { DATABASE_PATH } from '../assets.js'
 import { existsSync } from 'fs'
 import { pathToFileURL } from 'url'
 

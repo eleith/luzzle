@@ -1,8 +1,8 @@
-import log from '../log'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import { makeContext } from '../commands/context.fixtures'
-import * as tagLibrary from './tags'
-import { mockDatabase } from '../database.mock'
+import { makeContext } from '../commands/context.fixtures.js'
+import * as tagLibrary from './tags.js'
+import { mockDatabase } from '../database.mock.js'
 import { Tag } from '@luzzle/kysely'
 
 const mocks = {

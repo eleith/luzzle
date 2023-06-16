@@ -2,8 +2,8 @@ import { describe, expect, test, vi, afterEach } from 'vitest'
 import got from 'got'
 import { createWriteStream, WriteStream } from 'fs'
 import { PassThrough } from 'stream'
-import Request from 'got/dist/source/core'
-import { downloadTo } from './web'
+import { Request } from 'got'
+import { downloadTo } from './web.js'
 import { temporaryFile } from 'tempy'
 
 vi.mock('fs')

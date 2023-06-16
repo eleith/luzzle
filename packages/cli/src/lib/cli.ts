@@ -1,11 +1,11 @@
 import { getDatabaseClient, LuzzleDatabase } from '@luzzle/kysely'
-import { getDirectoryFromConfig, getConfig } from './config'
+import { getDirectoryFromConfig, getConfig } from './config.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import log from './log'
+import log from './log.js'
 import path from 'path'
-import commands, { Context } from './commands'
-import { DATABASE_PATH } from './assets'
+import commands, { Context } from './commands/index.js'
+import { DATABASE_PATH } from './assets.js'
 import { migrate } from '@luzzle/kysely'
 
 async function parseArgs(_args: string[]) {
@@ -52,9 +52,10 @@ async function parseArgs(_args: string[]) {
         description: 'custom directory to store config',
       },
     })
-    .exitProcess(false)
     .demandCommand(1, `[error] please specify a command`)
     .help()
+    .version('0.0.34')
+    .showHelpOnFail(false)
     .parseAsync()
 
   return {
@@ -76,7 +77,6 @@ async function initialize(command: Awaited<ReturnType<typeof parseArgs>>): Promi
     config,
     flags: {
       dryRun: command.options.dryRun,
-      verbose: command.options.verbose,
     },
   }
   await commands.init.run(ctx, command.options)
@@ -92,7 +92,6 @@ async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<v
     config,
     flags: {
       dryRun: command.options.dryRun,
-      verbose: command.options.verbose,
     },
   }
 
@@ -123,8 +122,13 @@ async function run(): Promise<void> {
     } else {
       await handle(command)
     }
-  } catch (e) {
-    log.error(e)
+  } catch (err) {
+    if (err instanceof Error) {
+      log.error(err?.message)
+      log.info(err?.stack)
+    } else {
+      log.error(err)
+    }
   }
 }
 

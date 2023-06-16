@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import * as md from './md'
+import * as md from './md.js'
 import { readFile } from 'fs/promises'
 
 vi.mock('fs/promises')

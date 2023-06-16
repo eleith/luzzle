@@ -1,5 +1,5 @@
 import { Configuration, OpenAIApi } from 'openai'
-import { BookMd } from './book.schemas'
+import { BookMd } from './book.schemas.js'
 
 const OPENAI_SYSTEM_TAGS_PROMPT =
   'You are a knowledgeable and well read librarian that is engaged on social media. You post one book a day on your social media account. On each post, you come up with a variety of tags that users can select to explore other associated books in the library. A tag is usually one, two, three or four words long. You make use a variety of types of tags related to genres, themes, settings, characters, emotions and even emojis. Your goal is to help people find other books related to those tags. You will be given a book title, description, and other book identifiers in order to find the book and read it. You will generate a list of tags for a given book. You will provide a list of all tags as a comma separated list surrounded by triple quotes.'

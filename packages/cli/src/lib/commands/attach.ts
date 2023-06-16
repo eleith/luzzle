@@ -1,8 +1,8 @@
-import log from '../log'
+import log from '../log.js'
 import { Argv } from 'yargs'
-import { getBook, writeBookMd, downloadCover, Books } from '../books'
-import { Command } from './utils/types'
-import { parseSlugFromPath } from './utils/helpers'
+import { getBook, writeBookMd, downloadCover, Books } from '../books/index.js'
+import { Command } from './utils/types.js'
+import { parseSlugFromPath } from './utils/helpers.js'
 
 export type AttachArgv = { slug: string; path: string; file: string }
 

@@ -1,4 +1,4 @@
-import { OpenLibrarySearchWork, OpenLibraryBook } from './open-library'
+import { OpenLibrarySearchWork, OpenLibraryBook } from './open-library.js'
 
 const title = 'an open book title'
 const key = 'book-key-3'

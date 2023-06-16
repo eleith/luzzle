@@ -1,11 +1,11 @@
-import { getBook, writeBookMd, downloadCover } from '../books'
-import log from '../log'
+import { getBook, writeBookMd, downloadCover } from '../books/index.js'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import command, { AttachArgv } from './attach'
-import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../books/book.fixtures'
+import command, { AttachArgv } from './attach.js'
+import { Arguments } from 'yargs'
+import { makeBookMd } from '../books/book.fixtures.js'
 import yargs from 'yargs'
-import { makeContext } from './context.fixtures'
+import { makeContext } from './context.fixtures.js'
 
 vi.mock('child_process')
 vi.mock('../books')
@@ -43,7 +43,7 @@ describe('lib/commands/attach', () => {
     mocks.downloadCover.mockResolvedValueOnce(book)
     mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, { slug, file } as ArgumentsCamelCase<AttachArgv>)
+    await command.run(ctx, { slug, file } as Arguments<AttachArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
     expect(mocks.downloadCover).toHaveBeenCalledOnce()
@@ -60,7 +60,7 @@ describe('lib/commands/attach', () => {
     mocks.downloadCover.mockResolvedValueOnce(book)
     mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, { slug, file } as ArgumentsCamelCase<AttachArgv>)
+    await command.run(ctx, { slug, file } as Arguments<AttachArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
     expect(mocks.downloadCover).not.toHaveBeenCalledOnce()
@@ -77,7 +77,7 @@ describe('lib/commands/attach', () => {
     mocks.downloadCover.mockResolvedValueOnce(book)
     mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, { slug, file } as ArgumentsCamelCase<AttachArgv>)
+    await command.run(ctx, { slug, file } as Arguments<AttachArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledOnce()
     expect(mocks.downloadCover).not.toHaveBeenCalledOnce()

@@ -1,5 +1,5 @@
-import log from '../log'
-import { Command } from './utils/types'
+import log from '../log.js'
+import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
 import {
   getBook,
@@ -8,9 +8,9 @@ import {
   completeOpenAI,
   searchGoogleBooks,
   searchOpenLibrary,
-} from '../books'
-import { parseSlugFromPath } from './utils/helpers'
-import { merge } from 'lodash'
+} from '../books/index.js'
+import { parseSlugFromPath } from './utils/helpers.js'
+import { merge } from 'lodash-es'
 
 type FetchServices = 'google' | 'openlibrary' | 'openai' | 'all'
 
