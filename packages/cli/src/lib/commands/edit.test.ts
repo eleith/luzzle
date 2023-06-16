@@ -1,13 +1,13 @@
 import { ChildProcess, spawn } from 'child_process'
-import { getBook } from '../books'
-import log from '../log'
+import { getBook } from '../books/index.js'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { EventEmitter } from 'stream'
-import command, { EditArgv } from './edit'
-import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../books/book.fixtures'
+import command, { EditArgv } from './edit.js'
+import { Arguments } from 'yargs'
+import { makeBookMd } from '../books/book.fixtures.js'
 import yargs from 'yargs'
-import { makeContext } from './context.fixtures'
+import { makeContext } from './context.fixtures.js'
 
 vi.mock('child_process')
 vi.mock('../books')
@@ -44,7 +44,7 @@ describe('lib/commands/edit', () => {
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<EditArgv>)
+    await command.run(ctx, { slug } as Arguments<EditArgv>)
 
     expect(mocks.spawn).toHaveBeenCalledWith(process.env.EDITOR, [book.filename], {
       cwd: ctx.directory,
@@ -62,7 +62,7 @@ describe('lib/commands/edit', () => {
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<EditArgv>)
+    await command.run(ctx, { slug } as Arguments<EditArgv>)
 
     expect(mocks.spawn).not.toHaveBeenCalled()
   })
@@ -76,7 +76,7 @@ describe('lib/commands/edit', () => {
     mocks.getBook.mockResolvedValueOnce(null)
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<EditArgv>)
+    await command.run(ctx, { slug } as Arguments<EditArgv>)
 
     expect(mocks.spawn).not.toHaveBeenCalled()
     expect(mocks.logError).toHaveBeenCalledOnce()
@@ -92,7 +92,7 @@ describe('lib/commands/edit', () => {
     mocks.getBook.mockResolvedValueOnce(book)
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<EditArgv>)
+    await command.run(ctx, { slug } as Arguments<EditArgv>)
 
     expect(mocks.spawn).not.toHaveBeenCalled()
     expect(mocks.logError).toHaveBeenCalledOnce()

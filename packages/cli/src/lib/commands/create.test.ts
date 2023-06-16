@@ -1,11 +1,11 @@
-import { writeBookMd, createBookMd } from '../books'
-import log from '../log'
+import { writeBookMd, createBookMd } from '../books/index.js'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import command, { CreateArgv } from './create'
-import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../books/book.fixtures'
+import command, { CreateArgv } from './create.js'
+import { Arguments } from 'yargs'
+import { makeBookMd } from '../books/book.fixtures.js'
 import yargs from 'yargs'
-import { makeContext } from './context.fixtures'
+import { makeContext } from './context.fixtures.js'
 
 vi.mock('../books')
 
@@ -39,7 +39,7 @@ describe('tools/lib/commands/create', () => {
     mocks.createBookMd.mockResolvedValueOnce(book)
     mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<CreateArgv>)
+    await command.run(ctx, { slug } as Arguments<CreateArgv>)
 
     expect(mocks.createBookMd).toHaveBeenCalledOnce()
     expect(mocks.writeBookMd).toHaveBeenCalledOnce()
@@ -53,7 +53,7 @@ describe('tools/lib/commands/create', () => {
     mocks.createBookMd.mockResolvedValueOnce(book)
     mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, { slug } as ArgumentsCamelCase<CreateArgv>)
+    await command.run(ctx, { slug } as Arguments<CreateArgv>)
 
     expect(mocks.createBookMd).not.toHaveBeenCalled()
     expect(mocks.writeBookMd).not.toHaveBeenCalled()

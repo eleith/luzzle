@@ -1,8 +1,8 @@
 import { readdir } from 'fs/promises'
 import path from 'path'
-import { ASSETS_DIRECTORY } from '../assets'
-import { BookDatabaseCache, cacheDatabaseSchema } from './book.schemas'
-import CacheForType from '../cache'
+import { ASSETS_DIRECTORY } from '../assets.js'
+import { BookDatabaseCache, cacheDatabaseSchema } from './book.schemas.js'
+import CacheForType from '../cache.js'
 
 const BOOK_DIRECTORY = 'books'
 const BOOK_COVER_DIRECTORY = path.join(ASSETS_DIRECTORY, 'covers')

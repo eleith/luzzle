@@ -1,8 +1,8 @@
-import logger from 'pino'
+import { pino } from 'pino'
 import pretty from 'pino-pretty'
 
-const log = logger(
-  pretty({
+const log = pino(
+  pretty.default({
     levelFirst: true,
     colorize: true,
     ignore: 'time,hostname,pid',

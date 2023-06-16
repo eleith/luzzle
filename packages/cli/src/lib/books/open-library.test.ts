@@ -1,8 +1,8 @@
-import log from '../log'
+import log from '../log.js'
 import got from 'got'
-import * as openLibrary from './open-library'
-import * as openLibraryFixtures from './open-library.fixtures'
-import { describe, expect, test, vi, afterEach } from 'vitest'
+import { vi, describe, test, afterEach, expect } from 'vitest'
+import * as openLibraryFixtures from './open-library.fixtures.js'
+import * as openLibrary from './open-library.js'
 
 vi.mock('../log')
 

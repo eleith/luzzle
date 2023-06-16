@@ -1,8 +1,8 @@
 import { LuzzleDatabase } from '@luzzle/kysely'
-import { merge, omit } from 'lodash'
-import { Context } from './index'
-import { Config } from '../config'
-import log from '../log'
+import { merge, omit } from 'lodash-es'
+import { Context } from './index.js'
+import { Config } from '../config.js'
+import log from '../log.js'
 
 function makeContext(
   overrides?: Partial<Pick<Context, 'db'>> & DeepPartial<Omit<Context, 'db' | 'log'>>

@@ -1,8 +1,8 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import CacheFor from '../cache'
+import CacheFor from '../cache.js'
 import { readdir } from 'fs/promises'
-import Books from './books'
-import { BookDatabaseCache, cacheDatabaseSchema } from './book.schemas'
+import Books from './books.js'
+import { BookDatabaseCache, cacheDatabaseSchema } from './book.schemas.js'
 import { Dirent } from 'fs'
 import path from 'path'
 

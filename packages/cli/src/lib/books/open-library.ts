@@ -1,5 +1,5 @@
 import got from 'got'
-import log from '../log'
+import log from '../log.js'
 
 interface OpenLibraryResponseSearch {
   start: number

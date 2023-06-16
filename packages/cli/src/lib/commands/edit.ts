@@ -1,9 +1,9 @@
-import { getBook, Books } from '../books'
-import log from '../log'
+import { getBook, Books } from '../books/index.js'
+import log from '../log.js'
 import { spawn } from 'child_process'
-import { Command } from './utils/types'
+import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
-import { parseSlugFromPath } from './utils/helpers'
+import { parseSlugFromPath } from './utils/helpers.js'
 
 export type EditArgv = {
   slug: string

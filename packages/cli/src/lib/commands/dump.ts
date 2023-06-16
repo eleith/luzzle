@@ -1,5 +1,5 @@
-import { Command, Context } from './utils/types'
-import { writeBookMd, bookToMd, Books } from '../books'
+import { Command, Context } from './utils/types.js'
+import { writeBookMd, bookToMd, Books } from '../books/index.js'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
 import { Book } from '@luzzle/kysely'

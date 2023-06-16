@@ -1,6 +1,6 @@
-import log from '../log'
+import log from '../log.js'
 import { spawn } from 'child_process'
-import { Command } from './utils/types'
+import { Command } from './utils/types.js'
 
 const command: Command = {
   name: 'edit-config',

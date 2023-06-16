@@ -1,6 +1,6 @@
 import { Logger } from 'pino'
-import { ArgumentsCamelCase, Argv } from 'yargs'
-import { Config } from '../../config'
+import { Argv, Arguments } from 'yargs'
+import { Config } from '../../config.js'
 import { LuzzleDatabase } from '@luzzle/kysely'
 
 export type Context = {
@@ -10,7 +10,6 @@ export type Context = {
   config: Config
   flags: {
     dryRun: boolean
-    verbose: boolean
   }
 }
 
@@ -19,5 +18,5 @@ export interface Command<U = Record<string, unknown>> {
   command: string | ReadonlyArray<string>
   describe: string
   builder?: <T>(yargs: Argv<T>) => Argv<T & U>
-  run: (ctx: Context, args: ArgumentsCamelCase<U>) => Promise<void>
+  run: (ctx: Context, args: Arguments<U>) => Promise<void>
 }

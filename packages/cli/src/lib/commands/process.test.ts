@@ -5,14 +5,14 @@ import {
   cleanUpDerivatives,
   getUpdatedSlugs,
   Books,
-} from '../books'
-import log from '../log'
+} from '../books/index.js'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import command, { ProcessArgv } from './process'
-import { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../books/book.fixtures'
+import command, { ProcessArgv } from './process.js'
+import { Arguments } from 'yargs'
+import { makeBookMd } from '../books/book.fixtures.js'
 import yargs from 'yargs'
-import { makeContext } from './context.fixtures'
+import { makeContext } from './context.fixtures.js'
 
 vi.mock('../books')
 
@@ -53,7 +53,7 @@ describe('lib/commands/process', () => {
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugs)
     mocks.cleanUpDerivatives.mockResolvedValueOnce()
 
-    await command.run(ctx, {} as ArgumentsCamelCase<ProcessArgv>)
+    await command.run(ctx, {} as Arguments<ProcessArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.processBookMd).toHaveBeenCalledTimes(slugs.length)
@@ -73,7 +73,7 @@ describe('lib/commands/process', () => {
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugs)
     mocks.cleanUpDerivatives.mockResolvedValueOnce()
 
-    await command.run(ctx, {} as ArgumentsCamelCase<ProcessArgv>)
+    await command.run(ctx, {} as Arguments<ProcessArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.processBookMd).not.toHaveBeenCalled()
@@ -98,7 +98,7 @@ describe('lib/commands/process', () => {
     mocks.getUpdatedSlugs.mockResolvedValueOnce(slugs)
     mocks.cleanUpDerivatives.mockResolvedValueOnce()
 
-    await command.run(ctx, { force: true } as ArgumentsCamelCase<ProcessArgv>)
+    await command.run(ctx, { force: true } as Arguments<ProcessArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.processBookMd).toHaveBeenCalledTimes(slugs.length)

@@ -1,6 +1,6 @@
 import * as openAI from 'openai'
-import * as openAILib from './openai'
-import { makeBookMd } from './book.fixtures'
+import * as openAILib from './openai.js'
+import { makeBookMd } from './book.fixtures.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 
 vi.mock('openai')

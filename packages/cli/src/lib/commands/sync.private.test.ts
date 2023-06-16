@@ -1,23 +1,23 @@
-import log from '../log'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import {
   makeBookMd,
   makeBook,
   makeBookCreateInput,
   makeBookUpdateInput,
-} from '../books/book.fixtures'
-import { makeContext } from './context.fixtures'
+} from '../books/book.fixtures.js'
+import { makeContext } from './context.fixtures.js'
 import {
   getBook,
   bookMdToBookUpdateInput,
   bookMdToBookCreateInput,
   getSlugFromBookMd,
   getUpdatedSlugs,
-} from '../books'
-import { syncAddBook, syncUpdateBook, syncRemoveBooks } from './sync.private'
-import { makeBooks } from '../books/books.mock'
-import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags'
-import { mockDatabase } from '../database.mock'
+} from '../books/index.js'
+import { syncAddBook, syncUpdateBook, syncRemoveBooks } from './sync.private.js'
+import { makeBooks } from '../books/books.mock.js'
+import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags/index.js'
+import { mockDatabase } from '../database.mock.js'
 
 vi.mock('../books')
 vi.mock('../tags')

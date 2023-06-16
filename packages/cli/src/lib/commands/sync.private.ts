@@ -1,5 +1,5 @@
-import log from '../log'
-import { Context } from './utils/types'
+import log from '../log.js'
+import { Context } from './utils/types.js'
 import {
   markBookAsSynced,
   bookMdToBookUpdateInput,
@@ -7,9 +7,9 @@ import {
   getSlugFromBookMd,
   Books,
   BookMd,
-} from '../books'
-import { difference } from 'lodash'
-import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags'
+} from '../books/index.js'
+import { difference } from 'lodash-es'
+import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags/index.js'
 import { Book } from '@luzzle/kysely'
 
 async function syncUpdateBookExecute(

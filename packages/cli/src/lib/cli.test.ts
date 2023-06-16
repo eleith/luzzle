@@ -1,11 +1,11 @@
 import { stat } from 'fs/promises'
 import { getDatabaseClient } from '@luzzle/kysely'
-import log from './log'
-import cli from './cli'
+import log from './log.js'
+import cli from './cli.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import { getDirectoryFromConfig, getConfig, Config } from './config'
-import commands from './commands'
-import { mockDatabase } from './database.mock'
+import { getDirectoryFromConfig, getConfig, Config } from './config.js'
+import commands from './commands/index.js'
+import { mockDatabase } from './database.mock.js'
 
 vi.mock('os')
 vi.mock('fs/promises')

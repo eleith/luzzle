@@ -1,11 +1,11 @@
 import { ChildProcess, spawn } from 'child_process'
-import { getBook } from '../books'
-import log from '../log'
+import { getBook } from '../books/index.js'
+import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { EventEmitter } from 'stream'
-import command from './cd'
-import { ArgumentsCamelCase } from 'yargs'
-import { makeContext } from './context.fixtures'
+import command from './cd.js'
+import { Arguments } from 'yargs'
+import { makeContext } from './context.fixtures.js'
 
 vi.mock('child_process')
 vi.mock('../books')
@@ -39,7 +39,7 @@ describe('tools/lib/commands/edit', () => {
     process.env.SHELL = 'fish'
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.spawn).toHaveBeenCalledWith(process.env.SHELL, [], {
       cwd: ctx.directory,
@@ -54,7 +54,7 @@ describe('tools/lib/commands/edit', () => {
     process.env.SHELL = 'fish'
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.spawn).not.toHaveBeenCalled()
   })
@@ -66,7 +66,7 @@ describe('tools/lib/commands/edit', () => {
 
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.spawn).not.toHaveBeenCalled()
     expect(mocks.logError).toHaveBeenCalledOnce()
@@ -79,7 +79,7 @@ describe('tools/lib/commands/edit', () => {
 
     mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
-    await command.run(ctx, {} as ArgumentsCamelCase)
+    await command.run(ctx, {} as Arguments)
 
     expect(mocks.spawn).not.toHaveBeenCalled()
     expect(mocks.logError).toHaveBeenCalledOnce()

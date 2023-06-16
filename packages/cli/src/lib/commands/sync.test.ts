@@ -1,12 +1,12 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import command, { SyncArgv } from './sync'
-import yargs, { ArgumentsCamelCase } from 'yargs'
-import { makeBookMd } from '../books/book.fixtures'
-import { makeContext } from './context.fixtures'
-import { getBook, getUpdatedSlugs, Books } from '../books'
-import { syncAddBook, syncRemoveBooks, syncUpdateBook } from './sync.private'
-import { BookDatabaseCache } from '../books/book.schemas'
-import { Cache } from '../cache'
+import command, { SyncArgv } from './sync.js'
+import yargs, { Arguments } from 'yargs'
+import { makeBookMd } from '../books/book.fixtures.js'
+import { makeContext } from './context.fixtures.js'
+import { getBook, getUpdatedSlugs, Books } from '../books/index.js'
+import { syncAddBook, syncRemoveBooks, syncUpdateBook } from './sync.private.js'
+import { BookDatabaseCache } from '../books/book.schemas.js'
+import { Cache } from '../cache.js'
 
 vi.mock('./sync.private')
 vi.mock('../books')
@@ -55,7 +55,7 @@ describe('lib/commands/sync', () => {
     mocks.syncRemoveBooks.mockResolvedValue()
     mocks.syncAddBook.mockResolvedValue()
 
-    await command.run(ctx, {} as ArgumentsCamelCase<SyncArgv>)
+    await command.run(ctx, {} as Arguments<SyncArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.syncRemoveBooks).toHaveBeenCalled()
@@ -84,7 +84,7 @@ describe('lib/commands/sync', () => {
     mocks.syncRemoveBooks.mockResolvedValue()
     mocks.syncUpdateBook.mockResolvedValue()
 
-    await command.run(ctx, {} as ArgumentsCamelCase<SyncArgv>)
+    await command.run(ctx, {} as Arguments<SyncArgv>)
 
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)
     expect(mocks.syncRemoveBooks).toHaveBeenCalled()
@@ -113,7 +113,7 @@ describe('lib/commands/sync', () => {
     mocks.syncRemoveBooks.mockResolvedValue()
     mocks.syncUpdateBook.mockResolvedValue()
 
-    await command.run(ctx, { force: true } as ArgumentsCamelCase<SyncArgv>)
+    await command.run(ctx, { force: true } as Arguments<SyncArgv>)
 
     expect(mocks.getUpdatedSlugs).not.toHaveBeenCalled()
     expect(mocks.getBook).toHaveBeenCalledTimes(slugs.length)

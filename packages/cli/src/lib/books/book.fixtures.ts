@@ -1,5 +1,5 @@
-import { merge } from 'lodash'
-import { BookMd } from './book.schemas'
+import { merge } from 'lodash-es'
+import { BookMd } from './book.schemas.js'
 import { Book, BookInsert, BookUpdate } from '@luzzle/kysely'
 
 const id = 'book-id'

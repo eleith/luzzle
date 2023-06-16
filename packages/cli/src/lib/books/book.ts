@@ -1,14 +1,14 @@
 import { eachLimit, filterLimit } from 'async'
 import { copyFile, unlink, stat, writeFile } from 'fs/promises'
-import { difference } from 'lodash'
+import { difference } from 'lodash-es'
 import { cpus } from 'os'
 import path from 'path'
-import { addFrontMatter, extract } from '../md'
-import log from '../log'
-import { downloadTo } from '../web'
+import { addFrontMatter, extract } from '../md.js'
+import log from '../log.js'
+import { downloadTo } from '../web.js'
 import { fileTypeFromFile } from 'file-type'
-import { findVolume } from './google-books'
-import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library'
+import { findVolume } from './google-books.js'
+import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library.js'
 import sharp from 'sharp'
 import crypto from 'crypto'
 import { existsSync } from 'fs'
@@ -19,11 +19,11 @@ import {
   BookDatabaseCache,
   BookDatabaseOnlyFields,
   bookMdValidator,
-} from './book.schemas'
-import Books from './books'
+} from './book.schemas.js'
+import Books from './books.js'
 import { createId } from '@paralleldrive/cuid2'
 import { Book, BookInsert, BookUpdate } from '@luzzle/kysely'
-import { generateDescription, generateTags } from './openai'
+import { generateDescription, generateTags } from './openai.js'
 
 function _getReadOrder(
   year: number = new Date(1970).getFullYear(),
