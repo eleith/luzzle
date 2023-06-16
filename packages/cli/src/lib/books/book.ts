@@ -88,7 +88,7 @@ async function markBookAsSynced(books: Books, book: Book): Promise<void> {
 }
 
 function _makeBookMd(slug: string, markdown: unknown, frontmatter: unknown): BookMd {
-  const filename = `${slug}.md`
+  const filename = `${Books.getRelativePathForBook(slug)}`
   const bookOnDisk = {
     filename,
     frontmatter,
