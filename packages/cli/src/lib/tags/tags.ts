@@ -27,7 +27,7 @@ async function syncTagsFor(
     .selectFrom(['tags', 'tag_maps'])
     .select('tags.slug')
     .where('tag_maps.id_item', '=', id)
-    .whereRef('tags.id', 'in', 'tag_maps.id_tag')
+    .whereRef('tags.id', '=', 'tag_maps.id_tag')
     .execute()
 
   const existingSlugs = foundTags.map((tag) => tag.slug)
