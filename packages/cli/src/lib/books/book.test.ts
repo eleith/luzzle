@@ -266,7 +266,7 @@ describe('lib/book', () => {
 
     const bookUpdateInput = await bookLib.bookMdToBookUpdateInput(books, bookMd, book)
 
-    expect(bookUpdateInput).toBeNull()
+    expect(bookUpdateInput).toEqual({ date_updated: expect.any(Number) })
   })
 
   test('_getCoverData', async () => {

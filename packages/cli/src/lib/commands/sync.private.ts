@@ -10,20 +10,19 @@ import {
 } from '../books/index.js'
 import { difference } from 'lodash-es'
 import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags/index.js'
-import { Book } from '@luzzle/kysely'
+import { Book, BookUpdate } from '@luzzle/kysely'
 
 async function syncUpdateBookExecute(
   ctx: Context,
   books: Books,
-  bookMd: BookMd,
-  book: Book
+  book: Book,
+  bookUpdateInput: BookUpdate
 ): Promise<void> {
   try {
     if (ctx.flags.dryRun === false) {
-      const bookUpdateInput = await bookMdToBookUpdateInput(books, bookMd, book)
       const bookUpdate = await ctx.db
         .updateTable('books')
-        .set(bookUpdateInput || { id: book.id })
+        .set(bookUpdateInput)
         .where('id', '=', book.id)
         .returningAll()
         .executeTakeFirstOrThrow()
@@ -37,7 +36,7 @@ async function syncUpdateBookExecute(
 
     log.info(`updated ${book.slug}`)
   } catch (err) {
-    log.error(`${bookMd.filename} could not be updated: ${err}`)
+    log.error(`${book.slug} could not be updated: ${err}`)
   }
 }
 
@@ -49,7 +48,8 @@ async function syncAddBook(ctx: Context, books: Books, bookMd: BookMd): Promise<
     .executeTakeFirst()
 
   if (maybeBook) {
-    await syncUpdateBookExecute(ctx, books, bookMd, maybeBook)
+    const bookUpdateInput = await bookMdToBookUpdateInput(books, bookMd, maybeBook)
+    await syncUpdateBookExecute(ctx, books, maybeBook, bookUpdateInput)
     return
   }
 
@@ -78,12 +78,14 @@ async function syncUpdateBook(
   ctx: Context,
   books: Books,
   bookMd: BookMd,
-  id: string
+  id: string,
+  force = false
 ): Promise<void> {
   const book = await ctx.db.selectFrom('books').selectAll().where('id', '=', id).executeTakeFirst()
 
   if (book) {
-    await syncUpdateBookExecute(ctx, books, bookMd, book)
+    const bookUpdateInput = await bookMdToBookUpdateInput(books, bookMd, book, force)
+    await syncUpdateBookExecute(ctx, books, book, bookUpdateInput)
     return
   }
 }
