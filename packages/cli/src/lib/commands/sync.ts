@@ -24,9 +24,10 @@ const command: Command<SyncArgv> = {
 
   run: async function (ctx, args) {
     const dir = ctx.directory
+    const force = args.force
     const books = new Books(dir)
     const bookSlugs = await books.getAllSlugs()
-    const updatedBookSlugs = args.force
+    const updatedBookSlugs = force
       ? bookSlugs
       : await getUpdatedSlugs(bookSlugs, books, 'lastSynced')
 
@@ -35,7 +36,7 @@ const command: Command<SyncArgv> = {
       if (bookMd) {
         const cache = await books.cache.get(slug)
         if (cache.database?.id) {
-          await syncUpdateBook(ctx, books, bookMd, cache.database.id)
+          await syncUpdateBook(ctx, books, bookMd, cache.database.id, force)
         } else {
           await syncAddBook(ctx, books, bookMd)
         }

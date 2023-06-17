@@ -181,8 +181,9 @@ async function bookMdToBookCreateInput(books: Books, bookMd: BookMd): Promise<Bo
 async function bookMdToBookUpdateInput(
   books: Books,
   bookMd: BookMd,
-  book: Book
-): Promise<BookUpdate | null> {
+  book: Book,
+  force = false
+): Promise<BookUpdate> {
   const bookUpdateInput = {
     ...bookMd.frontmatter,
     slug: getSlugFromBookMd(bookMd),
@@ -194,7 +195,7 @@ async function bookMdToBookUpdateInput(
 
   // restrict updates to only fields that have changed between the md and db data
   bookKeys.forEach((field) => {
-    if (bookUpdateInput[field] === book[field]) {
+    if (!force && bookUpdateInput[field] === book[field]) {
       delete bookUpdateInput[field]
     }
   })
@@ -208,7 +209,7 @@ async function bookMdToBookUpdateInput(
 
   const update = await _private._maybeGetCoverData(books, bookMd, bookUpdateInput)
 
-  return Object.keys(update).length > 0 ? update : null
+  return Object.keys(update).length > 0 ? update : { date_updated: new Date().getTime() }
 }
 
 async function _getCoverData<T extends BookInsert | BookUpdate>(

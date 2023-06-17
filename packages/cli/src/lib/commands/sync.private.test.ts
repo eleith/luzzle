@@ -183,6 +183,26 @@ describe('lib/commands/sync.private', () => {
     expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledOnce()
   })
 
+  test('syncUpdateBook with force', async () => {
+    const kysely = mockDatabase()
+    const ctx = makeContext({ db: kysely.db })
+    const bookMd = makeBookMd()
+    const update = makeBookUpdateInput()
+    const slug = 'slug1'
+    const book = makeBook({ slug })
+    const books = makeBooks()
+
+    kysely.queries.executeTakeFirst.mockResolvedValueOnce(book)
+    kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
+
+    mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
+    mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+
+    await syncUpdateBook(ctx, books, bookMd, slug, true)
+
+    expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledWith(books, bookMd, book, true)
+  })
+
   test('syncUpdateBook with keywords', async () => {
     const kysely = mockDatabase()
     const ctx = makeContext({ db: kysely.db })

@@ -54,7 +54,7 @@ async function parseArgs(_args: string[]) {
     })
     .demandCommand(1, `[error] please specify a command`)
     .help()
-    .version('0.0.35')
+    .version('0.0.37')
     .showHelpOnFail(false)
     .parseAsync()
 
