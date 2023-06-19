@@ -127,7 +127,6 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
                 {book.subtitle}
               </Text>
             )}
-            <br />
             <Text>
               by {book.author}
               {book.coauthors && `, ${book.coauthors?.split(',').join(', ')}`}
@@ -135,16 +134,28 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
             <br />
             <Divider />
             <br />
+            <Text as="h3" size="h3">
+              notes
+            </Text>
+            <br />
             <Box>
               <Text>{book.note || ' --- '}</Text>
             </Box>
             <br />
             <br />
-            <Box style={{ textAlign: 'right' }}>
+            <Box>
               <Text>read on {makeBookDateString(book)}</Text>
             </Box>
             <br />
             <Divider />
+            <br />
+            <Text as="h3" size="h3">
+              about
+            </Text>
+            <br />
+            <Box>
+              <Text>{book.description || ' --- '}</Text>
+            </Box>
             <br />
             <Text size="caption">
               <span>tags - </span>
