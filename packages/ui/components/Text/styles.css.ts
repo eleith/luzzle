@@ -7,19 +7,19 @@ const sizes = {
     fontSize: vars.fontSizes.title,
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02rem',
-    lineHeight: '2',
+    lineHeight: '1.5',
   }),
   h1: style({
     fontSize: vars.fontSizes.h1,
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02rem',
-    lineHeight: '2',
+    lineHeight: '1.5',
   }),
   h2: style({
     fontSize: vars.fontSizes.h2,
     fontWeight: vars.fontWeights.normal,
     letterSpacing: '-0.02rem',
-    lineHeight: '2',
+    lineHeight: '1.5',
   }),
   h3: style({
     fontSize: vars.fontSizes.h3,
