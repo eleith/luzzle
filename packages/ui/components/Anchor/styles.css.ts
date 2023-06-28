@@ -2,8 +2,6 @@ import { style } from '@vanilla-extract/css'
 import { recipe, RecipeVariants } from '@vanilla-extract/recipes'
 import { vars } from '../../css'
 
-// originally adapted from: github.com/primer/css/blob/main/src/marketing/links/link.scss
-
 const colors = {
   primary: style({
     color: vars.colors.primary,
@@ -31,24 +29,20 @@ const hoverActions = {
   }),
   none: style({}),
   animateUnderline: style({
+    backgroundImage: 'linear-gradient(currentColor, currentColor)',
+    backgroundPosition: '0 100%',
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: '0 2px',
+    transition: 'background-size 0.3s',
     selectors: {
-      '&::before': {
-        position: 'absolute',
-        bottom: '0.15em',
-        width: '100%',
-        height: '2px',
-        pointerEvents: 'none',
-        content: '',
-        margin: '1px 0',
-        backgroundColor: 'currentcolor',
-        transform: 'scaleX(0)',
-        transition: 'transform 0.2s ease-in-out 0s',
+      '&:hover': {
+        backgroundSize: '100% 2px',
       },
-      '&:hover::before': {
-        transform: 'scaleX(1)',
+      '&:active': {
+        backgroundSize: '100% 2px',
       },
-      '&:active::before': {
-        transform: 'scaleX(1)',
+      '&:focus': {
+        backgroundSize: '100% 2px',
       },
     },
   }),
@@ -57,7 +51,6 @@ const hoverActions = {
 export const variants = recipe({
   base: style({
     position: 'relative',
-    display: 'inline-block',
     textDecoration: 'none',
     selectors: {
       '&:hover': {
