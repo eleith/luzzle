@@ -5,13 +5,13 @@ import rehypeRemark from 'rehype-remark'
 import remarkStringify from 'remark-stringify'
 
 export default async function mdx2md(jsx: JSX.Element): Promise<string> {
-  const htmlString = ReactDOMServer.renderToStaticMarkup(jsx)
+	const htmlString = ReactDOMServer.renderToStaticMarkup(jsx)
 
-  const markdown = await unified()
-    .use(rehypeParse)
-    .use(rehypeRemark)
-    .use(remarkStringify)
-    .process(htmlString)
+	const markdown = await unified()
+		.use(rehypeParse)
+		.use(rehypeRemark)
+		.use(remarkStringify)
+		.process(htmlString)
 
-  return markdown.toString()
+	return markdown.toString()
 }

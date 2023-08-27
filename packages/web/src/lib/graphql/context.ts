@@ -6,10 +6,10 @@ import { getDatabaseClient, LuzzleDatabase } from '@luzzle/kysely'
 const db = getDatabaseClient(config.private.DATABASE_URL as string)
 
 export interface Context {
-  db: LuzzleDatabase
-  email: SMTPClient
+	db: LuzzleDatabase
+	email: SMTPClient
 }
 
 export function createContext(): Context {
-  return { db, email: client }
+	return { db, email: client }
 }

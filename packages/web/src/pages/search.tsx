@@ -12,7 +12,7 @@ import { useRouter } from 'next/router'
 import * as styles from './search.css'
 
 const getSearchQuery = gql<typeof GetSearchPageBannerDocument>(
-  `query GetSearchPageBanner($query: String!) {
+	`query GetSearchPageBanner($query: String!) {
   search(query: $query) {
     __typename
     ... on QuerySearchSuccess {
@@ -22,76 +22,76 @@ const getSearchQuery = gql<typeof GetSearchPageBannerDocument>(
     }
   }
 }`,
-  bookFragment
+	bookFragment
 )
 
 async function getSearchResults(query: string): Promise<BookSearchResult[]> {
-  const data = await gqlFetch(getSearchQuery, { query })
-  return data.search?.__typename === 'QuerySearchSuccess' ? data.search.data : []
+	const data = await gqlFetch(getSearchQuery, { query })
+	return data.search?.__typename === 'QuerySearchSuccess' ? data.search.data : []
 }
 
 export default function SearchPage(): JSX.Element {
-  const [searches, setSearches] = useState<BookSearchResult[]>([])
-  const router = useRouter()
+	const [searches, setSearches] = useState<BookSearchResult[]>([])
+	const router = useRouter()
 
-  async function fuzzySearchBook(e: ChangeEvent<HTMLInputElement>): Promise<void> {
-    const query = e.currentTarget.value
-    if (query) {
-      const data = await getSearchResults(query)
-      setSearches(data)
-    } else {
-      setSearches([])
-    }
-  }
+	async function fuzzySearchBook(e: ChangeEvent<HTMLInputElement>): Promise<void> {
+		const query = e.currentTarget.value
+		if (query) {
+			const data = await getSearchResults(query)
+			setSearches(data)
+		} else {
+			setSearches([])
+		}
+	}
 
-  const searchResults = searches.map((book) => (
-    <Box key={book.slug} style={{ paddingBottom: '20px' }}>
-      <Link href={`/books/${book.slug}`} passHref>
-        <Anchor hoverAction="animateUnderline">
-          <Text size="h2">{book.title}</Text>
-        </Anchor>
-      </Link>
-      <Box>
-        {book.subtitle && <Text size="caption">{book.subtitle}</Text>}
-        {book.author && <Text size="caption">{`by ${book.author} ${book.coauthors || ''}`}</Text>}
-      </Box>
-    </Box>
-  ))
+	const searchResults = searches.map((book) => (
+		<Box key={book.slug} style={{ paddingBottom: '20px' }}>
+			<Link href={`/books/${book.slug}`} passHref>
+				<Anchor hoverAction="animateUnderline">
+					<Text size="h2">{book.title}</Text>
+				</Anchor>
+			</Link>
+			<Box>
+				{book.subtitle && <Text size="caption">{book.subtitle}</Text>}
+				{book.author && <Text size="caption">{`by ${book.author} ${book.coauthors || ''}`}</Text>}
+			</Box>
+		</Box>
+	))
 
-  const leave = () => {
-    if (window.history.state.options._shouldResolveHref) {
-      router.back()
-    } else {
-      router.push('/')
-    }
-  }
+	const leave = () => {
+		if (window.history.state.options._shouldResolveHref) {
+			router.back()
+		} else {
+			router.push('/')
+		}
+	}
 
-  const searchBox = (
-    <Box>
-      <Box className={styles.search}>
-        <Input
-          type="search"
-          name="search"
-          autoComplete="off"
-          onChange={fuzzySearchBook}
-          placeholder="title, author or keyword"
-          description=""
-          autoFocus
-          size="h1"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              leave()
-            }
-          }}
-          className={styles.searchInput}
-        />
-        <Button className={styles.searchButton} minimal onClick={leave}>
-          <XCircle size={25} />
-        </Button>
-      </Box>
-      <Box className={styles.searchResults}>{searches.length ? searchResults : <Box>...</Box>}</Box>
-    </Box>
-  )
+	const searchBox = (
+		<Box>
+			<Box className={styles.search}>
+				<Input
+					type="search"
+					name="search"
+					autoComplete="off"
+					onChange={fuzzySearchBook}
+					placeholder="title, author or keyword"
+					description=""
+					autoFocus
+					size="h1"
+					onKeyDown={(e) => {
+						if (e.key === 'Escape') {
+							leave()
+						}
+					}}
+					className={styles.searchInput}
+				/>
+				<Button className={styles.searchButton} minimal onClick={leave}>
+					<XCircle size={25} />
+				</Button>
+			</Box>
+			<Box className={styles.searchResults}>{searches.length ? searchResults : <Box>...</Box>}</Box>
+		</Box>
+	)
 
-  return <Page meta={{ title: 'search' }}>{searchBox}</Page>
+	return <Page meta={{ title: 'search' }}>{searchBox}</Page>
 }
