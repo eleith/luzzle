@@ -7,36 +7,36 @@ import config from '@app/common/config'
 const graphEndPoint = `${config.public.HOST}${config.public.GRAPHQL_ENDPOINT}`
 
 type SWRInfiniteGetKey<X> = (
-  index: number,
-  previousData: ResultOf<X> | null
+	index: number,
+	previousData: ResultOf<X> | null
 ) => { gql: X; variables?: VariablesOf<X> } | null
 
 async function fetcher<X extends DocumentNode>(
-  gql: X,
-  variables?: VariablesOf<X>
+	gql: X,
+	variables?: VariablesOf<X>
 ): Promise<ResultOf<X>> {
-  return fetch(graphEndPoint, gql, variables)
+	return fetch(graphEndPoint, gql, variables)
 }
 
 export default function useGraphSWRInfinite<X extends DocumentNode, E extends Error>(
-  getGraph: SWRInfiniteGetKey<X>,
-  options?: SWRInfiniteConfiguration<ResultOf<X>, E>
+	getGraph: SWRInfiniteGetKey<X>,
+	options?: SWRInfiniteConfiguration<ResultOf<X>, E>
 ): SWRInfiniteResponse<ResultOf<X>, E> {
-  const getKey = (i: number, p: ResultOf<X>): X | [X, VariablesOf<X>] | null => {
-    const graph = getGraph(i, p)
+	const getKey = (i: number, p: ResultOf<X>): X | [X, VariablesOf<X>] | null => {
+		const graph = getGraph(i, p)
 
-    if (graph) {
-      if (graph.variables) {
-        return [graph.gql, graph.variables]
-      }
-      return graph.gql
-    } else {
-      return null
-    }
-  }
-  return useSWRInfinite<ResultOf<X>, E>(
-    getKey,
-    fetcher as (gql: X, variables?: VariablesOf<X>) => Promise<ResultOf<X>>,
-    options
-  )
+		if (graph) {
+			if (graph.variables) {
+				return [graph.gql, graph.variables]
+			}
+			return graph.gql
+		} else {
+			return null
+		}
+	}
+	return useSWRInfinite<ResultOf<X>, E>(
+		getKey,
+		fetcher as (gql: X, variables?: VariablesOf<X>) => Promise<ResultOf<X>>,
+		options
+	)
 }
