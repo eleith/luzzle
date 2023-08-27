@@ -9,48 +9,48 @@ import { jsx2md } from '@app/lib/markdown'
 import components from '@app/common/components/mdx/components'
 
 const getBooksQuery = gql<typeof GetBookHomeMdDocument>(
-  `query GetBookHomeMd($take: Int) {
+	`query GetBookHomeMd($take: Int) {
   books(take: $take) {
     ...BookFullDetails
   }
 }`,
-  bookFragment
+	bookFragment
 )
 
 type Book = NonNullable<ResultOf<typeof getBooksQuery>['books']>[number]
 
 type HomePageProps = {
-  book1: Book
-  book2: Book
-  markdown: string
+	book1: Book
+	book2: Book
+	markdown: string
 }
 
 export async function getStaticProps(): Promise<{ props: HomePageProps }> {
-  const response = await staticClient.query({ query: getBooksQuery, variables: { take: 2 } })
-  const books = response.data?.books
-  const nonExistantBook = { title: 'a title', id: 'add-more-books', slug: 'fake-slug' } as Book
-  const homePage = (
-    <Index
-      book1={books?.[0] || nonExistantBook}
-      book2={books?.[1] || nonExistantBook}
-      components={components}
-    />
-  )
-  const markdown = await jsx2md(homePage)
+	const response = await staticClient.query({ query: getBooksQuery, variables: { take: 2 } })
+	const books = response.data?.books
+	const nonExistantBook = { title: 'a title', id: 'add-more-books', slug: 'fake-slug' } as Book
+	const homePage = (
+		<Index
+			book1={books?.[0] || nonExistantBook}
+			book2={books?.[1] || nonExistantBook}
+			components={components}
+		/>
+	)
+	const markdown = await jsx2md(homePage)
 
-  return {
-    props: {
-      book1: books?.[0] || nonExistantBook,
-      book2: books?.[1] || nonExistantBook,
-      markdown,
-    },
-  }
+	return {
+		props: {
+			book1: books?.[0] || nonExistantBook,
+			book2: books?.[1] || nonExistantBook,
+			markdown,
+		},
+	}
 }
 
 export default function HomeMd({ book1, book2, markdown }: HomePageProps): JSX.Element {
-  return (
-    <PageMarkdown meta={{ title: 'books' }} link={'/'} markdown={markdown}>
-      <Index components={components} book1={book1} book2={book2} />
-    </PageMarkdown>
-  )
+	return (
+		<PageMarkdown meta={{ title: 'books' }} link={'/'} markdown={markdown}>
+			<Index components={components} book1={book1} book2={book2} />
+		</PageMarkdown>
+	)
 }

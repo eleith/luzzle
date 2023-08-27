@@ -6,13 +6,13 @@ import ErrorsPlugin from '@pothos/plugin-errors'
 import ValidationPlugin from '@pothos/plugin-validation'
 
 const builder = new SchemaBuilder<{
-  Scalars: { Date: { Input: Date; Output: Date } }
-  Context: Context
-  DefaultFieldNullability: true
+	Scalars: { Date: { Input: Date; Output: Date } }
+	Context: Context
+	DefaultFieldNullability: true
 }>({
-  plugins: [SimpleObjectPlugin, ErrorsPlugin, ValidationPlugin],
-  defaultFieldNullability: true,
-  errorOptions: { defaultTypes: [Error] },
+	plugins: [SimpleObjectPlugin, ErrorsPlugin, ValidationPlugin],
+	defaultFieldNullability: true,
+	errorOptions: { defaultTypes: [Error] },
 })
 
 builder.addScalarType('Date', GraphQLDateTime, {})
