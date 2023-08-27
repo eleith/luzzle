@@ -18,7 +18,7 @@ export function generate(items: Item[], type: string) {
     feedLinks: {
       rss2: `${config.public.HOST}/rss/${type}/feed.xml`,
       json: `${config.public.HOST}/rss/${type}/feed.json`,
-      atom: `${config.public.HOST}/rss/${type}/atom.xml`,
+      // atom: `${config.public.HOST}/rss/${type}/atom.xml`,
     },
     // author: {
     //   name: '',
@@ -32,7 +32,16 @@ export function generate(items: Item[], type: string) {
   })
 
   fs.mkdirSync(`./public/rss/${type}`, { recursive: true })
-  fs.writeFileSync(`./public/rss/${type}/feed.xml`, feed.rss2())
-  fs.writeFileSync(`./public/rss/${type}/atom.xml`, feed.atom1())
+  // https://github.com/jpmonette/feed/issues/140
+  fs.writeFileSync(
+    `./public/rss/${type}/feed.xml`,
+    feed
+      .rss2()
+      .replace(
+        '<?xml version="1.0" encoding="utf-8"?>',
+        '<?xml version="1.0" encoding="utf-8"?>\n<?xml-stylesheet type="text/xsl" href="/rss/feed.xslt"?>'
+      )
+  )
+  //fs.writeFileSync(`./public/rss/${type}/atom.xml`, feed.atom1())
   fs.writeFileSync(`./public/rss/${type}/feed.json`, feed.json1())
 }
