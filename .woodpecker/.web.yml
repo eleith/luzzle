@@ -85,7 +85,7 @@ pipeline:
       path:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   notify:
-    image: deblan/woodpecker-email:1.0.0-wp
+    image: deblan/woodpecker-email:1.0.1-wp
     secrets:
       [
         smtp_notification_from,
