@@ -6,6 +6,6 @@ data
 generated
 build
 public/images/covers
-public/rss
+public/rss/books
 **/_gql_
 src/@types/graphql.d.ts
