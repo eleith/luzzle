@@ -8,36 +8,36 @@ export const BOOK_DIRECTORY = 'books'
 export const BOOK_COVER_DIRECTORY = path.join(ASSETS_DIRECTORY, 'covers')
 
 class Books {
-  private rootDir: string
-  public cache: CacheForType<BookDatabaseCache>
+	private rootDir: string
+	public cache: CacheForType<BookDatabaseCache>
 
-  static getRelativePathForBookCover(slug: string): string {
-    return path.join(BOOK_COVER_DIRECTORY, `${slug}.jpg`)
-  }
+	static getRelativePathForBookCover(slug: string): string {
+		return path.join(BOOK_COVER_DIRECTORY, `${slug}.jpg`)
+	}
 
-  static getRelativePathForBook(slug: string): string {
-    return path.join(BOOK_DIRECTORY, `${slug}.md`)
-  }
+	static getRelativePathForBook(slug: string): string {
+		return path.join(BOOK_DIRECTORY, `${slug}.md`)
+	}
 
-  constructor(dir: string) {
-    this.rootDir = path.join(dir, BOOK_DIRECTORY)
-    this.cache = new CacheForType<BookDatabaseCache>(cacheDatabaseSchema, this.rootDir)
-  }
+	constructor(dir: string) {
+		this.rootDir = path.join(dir, BOOK_DIRECTORY)
+		this.cache = new CacheForType<BookDatabaseCache>(cacheDatabaseSchema, this.rootDir)
+	}
 
-  getPathForBookCover(slug: string): string {
-    return path.join(this.rootDir, BOOK_COVER_DIRECTORY, `${slug}.jpg`)
-  }
+	getPathForBookCover(slug: string): string {
+		return path.join(this.rootDir, BOOK_COVER_DIRECTORY, `${slug}.jpg`)
+	}
 
-  getPathForBook(slug: string): string {
-    return path.join(this.rootDir, `${slug}.md`)
-  }
+	getPathForBook(slug: string): string {
+		return path.join(this.rootDir, `${slug}.md`)
+	}
 
-  async getAllSlugs(): Promise<string[]> {
-    const files = await readdir(this.rootDir, { withFileTypes: true })
-    return files
-      .filter((dirent) => dirent.isFile() && path.extname(dirent.name) === '.md')
-      .map((dirent) => path.basename(dirent.name, '.md'))
-  }
+	async getAllSlugs(): Promise<string[]> {
+		const files = await readdir(this.rootDir, { withFileTypes: true })
+		return files
+			.filter((dirent) => dirent.isFile() && path.extname(dirent.name) === '.md')
+			.map((dirent) => path.basename(dirent.name, '.md'))
+	}
 }
 
 export default Books

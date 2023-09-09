@@ -10,61 +10,61 @@ import { makeContext } from './context.fixtures.js'
 vi.mock('../books')
 
 const mocks = {
-  logInfo: vi.spyOn(log, 'info'),
-  logError: vi.spyOn(log, 'error'),
-  logChild: vi.spyOn(log, 'child'),
-  createBookMd: vi.mocked(createBookMd),
-  writeBookMd: vi.mocked(writeBookMd),
+	logInfo: vi.spyOn(log, 'info'),
+	logError: vi.spyOn(log, 'error'),
+	logChild: vi.spyOn(log, 'child'),
+	createBookMd: vi.mocked(createBookMd),
+	writeBookMd: vi.mocked(writeBookMd),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
 
 describe('tools/lib/commands/create', () => {
-  afterEach(() => {
-    Object.values(mocks).forEach((mock) => {
-      mock.mockReset()
-    })
+	afterEach(() => {
+		Object.values(mocks).forEach((mock) => {
+			mock.mockReset()
+		})
 
-    Object.keys(spies).forEach((key) => {
-      spies[key].mockRestore()
-      delete spies[key]
-    })
-  })
+		Object.keys(spies).forEach((key) => {
+			spies[key].mockRestore()
+			delete spies[key]
+		})
+	})
 
-  test('run', async () => {
-    const ctx = makeContext()
-    const book = makeBookMd()
-    const slug = 'slug2'
+	test('run', async () => {
+		const ctx = makeContext()
+		const book = makeBookMd()
+		const slug = 'slug2'
 
-    mocks.createBookMd.mockResolvedValueOnce(book)
-    mocks.writeBookMd.mockResolvedValueOnce()
+		mocks.createBookMd.mockResolvedValueOnce(book)
+		mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, { slug } as Arguments<CreateArgv>)
+		await command.run(ctx, { slug } as Arguments<CreateArgv>)
 
-    expect(mocks.createBookMd).toHaveBeenCalledOnce()
-    expect(mocks.writeBookMd).toHaveBeenCalledOnce()
-  })
+		expect(mocks.createBookMd).toHaveBeenCalledOnce()
+		expect(mocks.writeBookMd).toHaveBeenCalledOnce()
+	})
 
-  test('run with dry-run', async () => {
-    const ctx = makeContext({ flags: { dryRun: true } })
-    const book = makeBookMd()
-    const slug = 'slug2'
+	test('run with dry-run', async () => {
+		const ctx = makeContext({ flags: { dryRun: true } })
+		const book = makeBookMd()
+		const slug = 'slug2'
 
-    mocks.createBookMd.mockResolvedValueOnce(book)
-    mocks.writeBookMd.mockResolvedValueOnce()
+		mocks.createBookMd.mockResolvedValueOnce(book)
+		mocks.writeBookMd.mockResolvedValueOnce()
 
-    await command.run(ctx, { slug } as Arguments<CreateArgv>)
+		await command.run(ctx, { slug } as Arguments<CreateArgv>)
 
-    expect(mocks.createBookMd).not.toHaveBeenCalled()
-    expect(mocks.writeBookMd).not.toHaveBeenCalled()
-  })
+		expect(mocks.createBookMd).not.toHaveBeenCalled()
+		expect(mocks.writeBookMd).not.toHaveBeenCalled()
+	})
 
-  test('builder', async () => {
-    const args = yargs()
+	test('builder', async () => {
+		const args = yargs()
 
-    spies.positional = vi.spyOn(args, 'positional')
-    command.builder?.(args)
+		spies.positional = vi.spyOn(args, 'positional')
+		command.builder?.(args)
 
-    expect(spies.positional).toHaveBeenCalledOnce()
-  })
+		expect(spies.positional).toHaveBeenCalledOnce()
+	})
 })

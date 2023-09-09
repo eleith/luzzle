@@ -2,13 +2,13 @@ import path from 'path'
 import { existsSync } from 'fs'
 
 function parseSlugFromPath(possiblePath: string): string | null {
-  const isPathToBook = new RegExp(`(.*/)?books/.*\\.md$`)
+	const isPathToBook = new RegExp(`(.*/)?books/.*\\.md$`)
 
-  if (existsSync(possiblePath) && isPathToBook.test(possiblePath)) {
-    return path.parse(possiblePath).name
-  }
+	if (existsSync(possiblePath) && isPathToBook.test(possiblePath)) {
+		return path.parse(possiblePath).name
+	}
 
-  return null
+	return null
 }
 
 export { parseSlugFromPath }

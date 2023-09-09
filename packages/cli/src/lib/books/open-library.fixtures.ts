@@ -8,33 +8,33 @@ const subtitle = 'open book subtitle'
 const description = 'open book description'
 
 function makeOpenLibrarySearchWork(
-  overrides: Partial<OpenLibrarySearchWork> = {}
+	overrides: Partial<OpenLibrarySearchWork> = {}
 ): OpenLibrarySearchWork {
-  return {
-    title: '',
-    key,
-    publish_year: [],
-    number_of_pages: '',
-    author_name: [],
-    subject: [],
-    cover_i,
-    first_publish_year,
-    type: 'work',
-    ...overrides,
-  }
+	return {
+		title: '',
+		key,
+		publish_year: [],
+		number_of_pages: '',
+		author_name: [],
+		subject: [],
+		cover_i,
+		first_publish_year,
+		type: 'work',
+		...overrides,
+	}
 }
 
 function makeOpenLibraryBook(overrides: Partial<OpenLibraryBook> = {}): OpenLibraryBook {
-  return {
-    title,
-    subtitle,
-    description,
-    authors: [],
-    number_of_pages: 423,
-    publish_date: '',
-    covers: [],
-    ...overrides,
-  }
+	return {
+		title,
+		subtitle,
+		description,
+		authors: [],
+		number_of_pages: 423,
+		publish_date: '',
+		covers: [],
+		...overrides,
+	}
 }
 
 export { makeOpenLibrarySearchWork, makeOpenLibraryBook }

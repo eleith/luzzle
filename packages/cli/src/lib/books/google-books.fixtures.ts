@@ -5,15 +5,15 @@ const description = 'a book description'
 const authors = ['an author']
 
 function makeVolume(overrides: books_v1.Schema$Volume['volumeInfo'] = {}): books_v1.Schema$Volume {
-  return {
-    volumeInfo: {
-      ...overrides,
-    },
-  }
+	return {
+		volumeInfo: {
+			...overrides,
+		},
+	}
 }
 
 function makeVolumeSimple(): books_v1.Schema$Volume {
-  return makeVolume({ title, authors, description })
+	return makeVolume({ title, authors, description })
 }
 
 export { makeVolume, makeVolumeSimple }

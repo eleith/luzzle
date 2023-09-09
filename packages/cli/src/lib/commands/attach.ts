@@ -7,55 +7,55 @@ import { parseSlugFromPath } from './utils/helpers.js'
 export type AttachArgv = { slug: string; path: string; file: string }
 
 const command: Command<AttachArgv> = {
-  name: 'attach',
+	name: 'attach',
 
-  command: 'attach <slug|path> <file|url>',
+	command: 'attach <slug|path> <file|url>',
 
-  describe: 'attach a copy of path to <type> <slug>',
+	describe: 'attach a copy of path to <type> <slug>',
 
-  builder: function <T>(yargs: Argv<T>) {
-    return yargs
-      .positional('slug', {
-        type: 'string',
-        description: 'book slug',
-        demandOption: 'slug (or path) is required',
-      })
-      .positional('path', {
-        type: 'string',
-        description: 'path to the book',
-        demandOption: 'path (or slug) is required',
-      })
-      .positional('file', {
-        type: 'string',
-        description: 'file to attach',
-        demandOption: 'file (or url) is required',
-      })
-      .positional('url', {
-        type: 'string',
-        description: 'url to download and attach',
-        demandOption: 'url (or file) is required',
-      })
-  },
+	builder: function <T>(yargs: Argv<T>) {
+		return yargs
+			.positional('slug', {
+				type: 'string',
+				description: 'book slug',
+				demandOption: 'slug (or path) is required',
+			})
+			.positional('path', {
+				type: 'string',
+				description: 'path to the book',
+				demandOption: 'path (or slug) is required',
+			})
+			.positional('file', {
+				type: 'string',
+				description: 'file to attach',
+				demandOption: 'file (or url) is required',
+			})
+			.positional('url', {
+				type: 'string',
+				description: 'url to download and attach',
+				demandOption: 'url (or file) is required',
+			})
+	},
 
-  run: async function (ctx, args) {
-    const dir = ctx.directory
-    const slug = parseSlugFromPath(args.path) || args.slug
-    const file = args.file
-    const books = new Books(dir)
-    const bookMd = await getBook(books, slug)
+	run: async function (ctx, args) {
+		const dir = ctx.directory
+		const slug = parseSlugFromPath(args.path) || args.slug
+		const file = args.file
+		const books = new Books(dir)
+		const bookMd = await getBook(books, slug)
 
-    if (!bookMd) {
-      log.info(`${slug} was not found`)
-      return
-    }
+		if (!bookMd) {
+			log.info(`${slug} was not found`)
+			return
+		}
 
-    if (ctx.flags.dryRun === false) {
-      const bookProcessed = await downloadCover(books, bookMd, file)
-      await writeBookMd(books, bookProcessed)
-    }
+		if (ctx.flags.dryRun === false) {
+			const bookProcessed = await downloadCover(books, bookMd, file)
+			await writeBookMd(books, bookProcessed)
+		}
 
-    log.info(`uploaded ${file} to ${bookMd.filename}`)
-  },
+		log.info(`uploaded ${file} to ${bookMd.filename}`)
+	},
 }
 
 export default command
