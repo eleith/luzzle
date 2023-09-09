@@ -5,9 +5,9 @@ import { SchemaConfig } from './config.js'
 vi.mock('./config.js')
 
 function mockConfig() {
-  return {
-    set: vi.fn(),
-  } as unknown as Mocked<Conf<SchemaConfig>>
+	return {
+		set: vi.fn(),
+	} as unknown as Mocked<Conf<SchemaConfig>>
 }
 
 export { mockConfig }

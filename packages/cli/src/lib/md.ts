@@ -10,46 +10,46 @@ import { filter } from 'unist-util-filter'
 import { toMarkdown } from 'mdast-util-to-markdown'
 
 function addFrontMatter(markdown = '', metadata: { [key: string]: unknown } = {}): string {
-  const yamlString = YAML.stringify(metadata)
-  const content = markdown.trim()
+	const yamlString = YAML.stringify(metadata)
+	const content = markdown.trim()
 
-  return `---\n${yamlString}---\n${content}\n`
+	return `---\n${yamlString}---\n${content}\n`
 }
 
 async function extract(path: string): Promise<{ frontmatter: unknown; markdown: string }> {
-  function extractFrontMatter(): Transformer {
-    const transformer: Transformer = (tree, vfile) => {
-      function visitor(node: { value: string }): VisitorResult {
-        vfile.data.frontmatter = YAML.parse(node.value)
-        return EXIT
-      }
+	function extractFrontMatter(): Transformer {
+		const transformer: Transformer = (tree, vfile) => {
+			function visitor(node: { value: string }): VisitorResult {
+				vfile.data.frontmatter = YAML.parse(node.value)
+				return EXIT
+			}
 
-      visit(tree, 'yaml', visitor)
-    }
-    return transformer
-  }
+			visit(tree, 'yaml', visitor)
+		}
+		return transformer
+	}
 
-  function extractContent(): Transformer {
-    const plugin: Transformer = (tree, vfile) => {
-      const newTree = filter(tree, (node) => node.type !== 'yaml')
-      vfile.data.content = newTree ? toMarkdown(newTree as Node) : ''
-    }
-    return plugin
-  }
+	function extractContent(): Transformer {
+		const plugin: Transformer = (tree, vfile) => {
+			const newTree = filter(tree, (node) => node.type !== 'yaml')
+			vfile.data.content = newTree ? toMarkdown(newTree as Node) : ''
+		}
+		return plugin
+	}
 
-  const contents = await readFile(path, 'utf-8')
+	const contents = await readFile(path, 'utf-8')
 
-  const { data } = await remark()
-    .use(remarkFrontMatter)
-    .use(extractFrontMatter)
-    .use(extractContent)
-    .process(contents)
+	const { data } = await remark()
+		.use(remarkFrontMatter)
+		.use(extractFrontMatter)
+		.use(extractContent)
+		.process(contents)
 
-  const frontmatter = data.frontmatter
-  const content = data.content as string
-  const markdown = content.trimEnd()
+	const frontmatter = data.frontmatter
+	const content = data.content as string
+	const markdown = content.trimEnd()
 
-  return { frontmatter, markdown }
+	return { frontmatter, markdown }
 }
 
 export { extract, addFrontMatter }

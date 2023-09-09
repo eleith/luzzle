@@ -5,36 +5,36 @@ import { cpus } from 'os'
 import { Book } from '@luzzle/kysely'
 
 async function dumpBook(ctx: Context, book: Book): Promise<void> {
-  const dir = ctx.directory
+	const dir = ctx.directory
 
-  try {
-    if (ctx.flags.dryRun === false) {
-      const books = new Books(dir)
-      const bookMd = await bookToMd(book)
+	try {
+		if (ctx.flags.dryRun === false) {
+			const books = new Books(dir)
+			const bookMd = await bookToMd(book)
 
-      await writeBookMd(books, bookMd)
-    }
-    ctx.log.info(`saved book to ${book.slug}.md`)
-  } catch (e) {
-    ctx.log.error(`error saving ${book.slug}`)
-  }
+			await writeBookMd(books, bookMd)
+		}
+		ctx.log.info(`saved book to ${book.slug}.md`)
+	} catch (e) {
+		ctx.log.error(`error saving ${book.slug}`)
+	}
 }
 
 const command: Command = {
-  name: 'dump',
+	name: 'dump',
 
-  command: 'dump',
+	command: 'dump',
 
-  describe: 'dump database to local markdown files',
+	describe: 'dump database to local markdown files',
 
-  run: async function (ctx) {
-    const books = await ctx.db.selectFrom('books').selectAll().execute()
-    const numCpus = cpus().length
+	run: async function (ctx) {
+		const books = await ctx.db.selectFrom('books').selectAll().execute()
+		const numCpus = cpus().length
 
-    await eachLimit(books, numCpus, async (book) => {
-      await dumpBook(ctx, book)
-    })
-  },
+		await eachLimit(books, numCpus, async (book) => {
+			await dumpBook(ctx, book)
+		})
+	},
 }
 
 export default command

@@ -5,50 +5,50 @@ import { readFile } from 'fs/promises'
 vi.mock('fs/promises')
 
 const mocks = {
-  readFile: vi.mocked(readFile),
+	readFile: vi.mocked(readFile),
 }
 
 describe('md', () => {
-  afterEach(() => {
-    Object.values(mocks).forEach((mock) => {
-      mock.mockReset()
-      mock.mockClear()
-    })
-  })
+	afterEach(() => {
+		Object.values(mocks).forEach((mock) => {
+			mock.mockReset()
+			mock.mockClear()
+		})
+	})
 
-  test('addFrontMatter', () => {
-    const markdown = 'this is markdown'
-    const metadata = {
-      a: 'awesome',
-      b: 'banana',
-    }
-    const together = '---\na: awesome\nb: banana\n---\nthis is markdown\n'
+	test('addFrontMatter', () => {
+		const markdown = 'this is markdown'
+		const metadata = {
+			a: 'awesome',
+			b: 'banana',
+		}
+		const together = '---\na: awesome\nb: banana\n---\nthis is markdown\n'
 
-    const combined = md.addFrontMatter(markdown, metadata)
-    expect(combined).toBe(together)
-  })
+		const combined = md.addFrontMatter(markdown, metadata)
+		expect(combined).toBe(together)
+	})
 
-  test('extract markdown and frontmatter', async () => {
-    const path = 'path/to/file.md'
-    const markdownWithFront = '---\na: awesome\nb: banana\n---\nthis is markdown'
+	test('extract markdown and frontmatter', async () => {
+		const path = 'path/to/file.md'
+		const markdownWithFront = '---\na: awesome\nb: banana\n---\nthis is markdown'
 
-    mocks.readFile.mockResolvedValueOnce(markdownWithFront)
+		mocks.readFile.mockResolvedValueOnce(markdownWithFront)
 
-    const extracted = await md.extract(path)
+		const extracted = await md.extract(path)
 
-    expect(extracted.frontmatter).toEqual({ a: 'awesome', b: 'banana' })
-    expect(extracted.markdown).toBe('this is markdown')
-  })
+		expect(extracted.frontmatter).toEqual({ a: 'awesome', b: 'banana' })
+		expect(extracted.markdown).toBe('this is markdown')
+	})
 
-  test('extract only frontmatter', async () => {
-    const path = 'path/to/file.md'
-    const markdownWithFront = '---\na: awesome\nb: banana\n---'
+	test('extract only frontmatter', async () => {
+		const path = 'path/to/file.md'
+		const markdownWithFront = '---\na: awesome\nb: banana\n---'
 
-    mocks.readFile.mockResolvedValueOnce(markdownWithFront)
+		mocks.readFile.mockResolvedValueOnce(markdownWithFront)
 
-    const extracted = await md.extract(path)
+		const extracted = await md.extract(path)
 
-    expect(extracted.frontmatter).toEqual({ a: 'awesome', b: 'banana' })
-    expect(extracted.markdown).toBe('')
-  })
+		expect(extracted.frontmatter).toEqual({ a: 'awesome', b: 'banana' })
+		expect(extracted.markdown).toBe('')
+	})
 })

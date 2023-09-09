@@ -15,85 +15,85 @@ vi.mock('./config')
 vi.mock('./commands')
 
 const mocks = {
-  logInfo: vi.spyOn(log, 'info'),
-  logError: vi.spyOn(log, 'error'),
-  logChild: vi.spyOn(log, 'child'),
-  logLevelSet: vi.spyOn(log, 'level', 'set'),
-  stat: vi.mocked(stat),
-  getDatabaseClient: vi.mocked(getDatabaseClient),
-  getDirectoryConfig: vi.mocked(getDirectoryFromConfig),
-  getConfig: vi.mocked(getConfig),
+	logInfo: vi.spyOn(log, 'info'),
+	logError: vi.spyOn(log, 'error'),
+	logChild: vi.spyOn(log, 'child'),
+	logLevelSet: vi.spyOn(log, 'level', 'set'),
+	stat: vi.mocked(stat),
+	getDatabaseClient: vi.mocked(getDatabaseClient),
+	getDirectoryConfig: vi.mocked(getDirectoryFromConfig),
+	getConfig: vi.mocked(getConfig),
 }
 
 const spies: SpyInstance[] = []
 
 describe('lib/cli', () => {
-  afterEach(() => {
-    Object.values(mocks).forEach((mock) => {
-      mock.mockReset()
-    })
+	afterEach(() => {
+		Object.values(mocks).forEach((mock) => {
+			mock.mockReset()
+		})
 
-    spies.forEach((spy) => {
-      spy.mockRestore()
-    })
-  })
+		spies.forEach((spy) => {
+			spy.mockRestore()
+		})
+	})
 
-  test(`run init`, async () => {
-    const config = {} as Config
+	test(`run init`, async () => {
+		const config = {} as Config
 
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+		mocks.getConfig.mockReturnValueOnce(config)
+		mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
 
-    const spyRun = vi.spyOn(commands.init, 'run')
-    spyRun.mockResolvedValueOnce(undefined)
+		const spyRun = vi.spyOn(commands.init, 'run')
+		spyRun.mockResolvedValueOnce(undefined)
 
-    process.argv = ['node', 'cli', commands.init.name, 'test']
+		process.argv = ['node', 'cli', commands.init.name, 'test']
 
-    await cli()
+		await cli()
 
-    expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
-    expect(spyRun).toHaveBeenCalledOnce()
-  })
+		expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
+		expect(spyRun).toHaveBeenCalledOnce()
+	})
 
-  test(`run edit-config`, async () => {
-    const config = {} as Config
-    const kysely = mockDatabase()
+	test(`run edit-config`, async () => {
+		const config = {} as Config
+		const kysely = mockDatabase()
 
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
-    mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
+		mocks.getConfig.mockReturnValueOnce(config)
+		mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+		mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
 
-    const spyRun = vi.spyOn(commands.editConfig, 'run')
-    spyRun.mockResolvedValueOnce(undefined)
+		const spyRun = vi.spyOn(commands.editConfig, 'run')
+		spyRun.mockResolvedValueOnce(undefined)
 
-    process.argv = ['node', 'cli', commands.editConfig.name]
+		process.argv = ['node', 'cli', commands.editConfig.name]
 
-    await cli()
+		await cli()
 
-    expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
-    expect(spyRun).toHaveBeenCalledOnce()
-    expect(kysely.db.destroy).toHaveBeenCalledOnce()
-  })
+		expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
+		expect(spyRun).toHaveBeenCalledOnce()
+		expect(kysely.db.destroy).toHaveBeenCalledOnce()
+	})
 
-  test(`run catches an error`, async () => {
-    const config = {} as Config
-    const kysely = mockDatabase()
+	test(`run catches an error`, async () => {
+		const config = {} as Config
+		const kysely = mockDatabase()
 
-    mocks.getConfig.mockReturnValueOnce(config)
-    mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
-    mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
+		mocks.getConfig.mockReturnValueOnce(config)
+		mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+		mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
 
-    const spyRun = vi.spyOn(commands.editConfig, 'run')
-    spyRun.mockRejectedValueOnce(new Error('some error'))
+		const spyRun = vi.spyOn(commands.editConfig, 'run')
+		spyRun.mockRejectedValueOnce(new Error('some error'))
 
-    spies.push(spyRun)
+		spies.push(spyRun)
 
-    process.argv = ['node', 'cli', commands.editConfig.name]
+		process.argv = ['node', 'cli', commands.editConfig.name]
 
-    await cli()
+		await cli()
 
-    expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
-    expect(spyRun).toHaveBeenCalledOnce()
-    expect(mocks.logError).toHaveBeenCalledOnce()
-  })
+		expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
+		expect(spyRun).toHaveBeenCalledOnce()
+		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
 })
