@@ -1,7 +1,7 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import CacheFor from '../cache.js'
 import { readdir } from 'fs/promises'
-import Books, { BOOK_DIRECTORY, BOOK_COVER_DIRECTORY } from './books.js'
+import Books, { BOOK_DIRECTORY, BOOK_COVER_DIRECTORY, BOOK_COVER_CACHE_DIRECTORY } from './books.js'
 import { BookDatabaseCache, cacheDatabaseSchema } from './book.schemas.js'
 import { Dirent } from 'fs'
 import path from 'path'
@@ -55,6 +55,21 @@ describe('lib/books/books', () => {
 		const cover = new Books(dir).getPathForBookCover(slug)
 
 		expect(cover).toEqual(`${dir}/${BOOK_DIRECTORY}/${BOOK_COVER_DIRECTORY}/${slug}.jpg`)
+	})
+
+	test('getPathForBookCoverWidthOf', () => {
+		const dir = 'somewhere'
+		const slug = 'slug'
+
+		const coverJpg = new Books(dir).getPathForBookCoverWidthOf(slug, 500)
+		const coverAvif = new Books(dir).getPathForBookCoverWidthOf(slug, 500, 'avif')
+
+		expect(coverJpg).toEqual(
+			`${dir}/${BOOK_DIRECTORY}/${BOOK_COVER_CACHE_DIRECTORY}/${slug}.w500.jpg`
+		)
+		expect(coverAvif).toEqual(
+			`${dir}/${BOOK_DIRECTORY}/${BOOK_COVER_CACHE_DIRECTORY}/${slug}.w500.avif`
+		)
 	})
 
 	test('getRelativePathForBookCover', () => {

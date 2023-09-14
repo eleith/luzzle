@@ -277,13 +277,13 @@ describe('lib/book', () => {
 
 		mocks.sharp.mockImplementation(
 			() =>
+			({
+				metadata: async () =>
 				({
-					metadata: async () =>
-						({
-							width,
-							height,
-						} as Metadata),
-				} as Sharp)
+					width,
+					height,
+				} as Metadata),
+			} as Sharp)
 		)
 
 		const coverData = await bookLib._private._getCoverData(coverPath)
@@ -295,16 +295,25 @@ describe('lib/book', () => {
 		})
 	})
 
-	test('_download with url', async () => {
+	test('_downloadCover with url', async () => {
 		const cover = 'https://somewhere'
 		const temp = 'somewhere/else/cover.jpg'
 		const toPath = 'path/to/books'
 		const slug = 'else'
+		const books = makeBooks()
 
+		const getPathSpy = vi.spyOn(books, 'getPathForBookCover')
+		const makeCoversSpy = vi.spyOn(bookLib._private, '_makeCoverThumbnails')
+
+		getPathSpy.mockReturnValue(toPath)
+		makeCoversSpy.mockResolvedValueOnce()
 		mocks.downloadTo.mockResolvedValueOnce(temp)
 		mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 
-		const succeed = await bookLib._private._download(slug, cover, toPath)
+		spies.push(getPathSpy)
+		spies.push(makeCoversSpy)
+
+		const succeed = await bookLib._private._downloadCover(books, slug, cover)
 
 		expect(mocks.downloadTo).toHaveBeenCalledWith(cover)
 		expect(mocks.copyFile).toHaveBeenCalledOnce()
@@ -315,13 +324,13 @@ describe('lib/book', () => {
 	test('_download with url rejects .png', async () => {
 		const cover = 'https://somewhere'
 		const temp = 'somewhere/else/cover.png'
-		const toPath = 'path/to/books'
-		const slug = 'else'
+		const slug = '1984'
+		const books = makeBooks()
 
 		mocks.downloadTo.mockResolvedValueOnce(temp)
 		mocks.fromFile.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
 
-		const success = await bookLib._private._download(slug, cover, toPath)
+		const success = await bookLib._private._downloadCover(books, slug, cover)
 
 		expect(success).toBe(false)
 		expect(mocks.downloadTo).toHaveBeenCalledWith(cover)
@@ -331,15 +340,20 @@ describe('lib/book', () => {
 
 	test('_download with file', async () => {
 		const cover = '../somewhere/here/cover.jpg'
-		const toPath = 'path/to/books'
-		const slug = 'else'
+		const books = makeBooks()
+		const slug = '1984'
+		const spyThumbs = vi.spyOn(bookLib._private, '_makeCoverThumbnails')
 
+		spyThumbs.mockResolvedValueOnce()
 		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
 		mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 
-		const success = await bookLib._private._download(slug, cover, toPath)
+		const success = await bookLib._private._downloadCover(books, slug, cover)
+
+		spies.push(spyThumbs)
 
 		expect(success).toBe(true)
+		expect(spyThumbs).toHaveBeenCalledOnce()
 		expect(mocks.stat).toHaveBeenCalledWith(cover)
 		expect(mocks.fromFile).toHaveBeenCalledWith(cover)
 		expect(mocks.copyFile).toHaveBeenCalledOnce()
@@ -347,13 +361,13 @@ describe('lib/book', () => {
 
 	test('_download with file rejects .png', async () => {
 		const cover = '../somewhere/here/cover.png'
-		const toPath = 'path/to/books'
 		const slug = 'else'
+		const books = makeBooks()
 
 		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
 		mocks.fromFile.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
 
-		const success = await bookLib._private._download(slug, cover, toPath)
+		const success = await bookLib._private._downloadCover(books, slug, cover)
 
 		expect(success).toBe(false)
 		expect(mocks.stat).toHaveBeenCalledWith(cover)
@@ -363,12 +377,12 @@ describe('lib/book', () => {
 
 	test('_download rejects non existant file', async () => {
 		const cover = '../somewhere/here/cover.png'
-		const toPath = '/path/to/books/1.png'
 		const slug = 'else'
+		const books = makeBooks()
 
 		mocks.stat.mockResolvedValueOnce({ isFile: () => false } as Stats)
 
-		const success = await bookLib._private._download(slug, cover, toPath)
+		const success = await bookLib._private._downloadCover(books, slug, cover)
 
 		expect(success).toBe(false)
 		expect(mocks.stat).toHaveBeenCalledWith(cover)
@@ -381,7 +395,7 @@ describe('lib/book', () => {
 		const bookMd = bookFixtures.makeBookMd()
 		const books = makeBooks()
 
-		const spyDownload = vi.spyOn(bookLib._private, '_download')
+		const spyDownload = vi.spyOn(bookLib._private, '_downloadCover')
 		spyDownload.mockResolvedValueOnce(true)
 
 		const bookMdOutput = await bookLib.downloadCover(books, bookMd, cover)
@@ -403,7 +417,7 @@ describe('lib/book', () => {
 		const coverUrl = 'https://somewhere'
 		const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
 
-		const download = vi.spyOn(bookLib._private, '_download')
+		const download = vi.spyOn(bookLib._private, '_downloadCover')
 
 		mocks.getBook.mockResolvedValueOnce(book)
 		mocks.findWork.mockResolvedValueOnce(work)
@@ -453,7 +467,7 @@ describe('lib/book', () => {
 		})
 		const coverUrl = 'https://somewhere'
 		const bookMd = bookFixtures.makeBookMd({ frontmatter: { id_ol_book: bookId } })
-		const download = vi.spyOn(bookLib._private, '_download')
+		const download = vi.spyOn(bookLib._private, '_downloadCover')
 
 		mocks.getBook.mockResolvedValueOnce(book)
 		mocks.findWork.mockResolvedValueOnce(work)
@@ -717,6 +731,29 @@ describe('lib/book', () => {
 		await bookLib.cleanUpDerivatives(books)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
+
+	test('_makeCoverThumbnails', async () => {
+		const books = makeBooks()
+		const slug = '1984'
+		const toPath = 'to/path/image.jpg'
+		const spyGetPath = vi.spyOn(books, 'getPathForBookCover')
+		const spyGetPathWidth = vi.spyOn(books, 'getPathForBookCoverWidthOf')
+		const mockToFile = vi.fn()
+		const mockResize = vi.fn(() => {
+			return { toFile: mockToFile }
+		})
+
+		mocks.sharp.mockReturnValue({ resize: mockResize } as unknown as Sharp)
+		spyGetPath.mockReturnValueOnce(toPath)
+		spyGetPathWidth.mockReturnValue(toPath)
+
+		await bookLib._private._makeCoverThumbnails(books, slug)
+
+		spies.push(spyGetPath)
+
+		expect(mockToFile).toHaveBeenCalledTimes(8)
+		expect(spyGetPathWidth).toHaveBeenCalledTimes(8)
 	})
 
 	test('_maybeGetCoverData', async () => {

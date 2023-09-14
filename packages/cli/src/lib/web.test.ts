@@ -18,8 +18,9 @@ const mocks = {
 
 describe('book', () => {
 	afterEach(() => {
-		vi.resetAllMocks()
-		vi.restoreAllMocks()
+		Object.values(mocks).forEach((mock) => {
+			mock.mockReset()
+		})
 	})
 
 	test('downloadTo', async () => {

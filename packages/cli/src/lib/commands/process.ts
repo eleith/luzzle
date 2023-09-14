@@ -16,7 +16,7 @@ export type ProcessArgv = { force: boolean }
 
 async function processBook(ctx: Context, books: Books, bookMd: BookMd): Promise<void> {
 	if (ctx.flags.dryRun === false) {
-		const bookProcessed = await processBookMd(bookMd)
+		const bookProcessed = await processBookMd(books, bookMd)
 		await writeBookMd(books, bookProcessed)
 	}
 
