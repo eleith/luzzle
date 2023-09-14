@@ -147,8 +147,13 @@ async function getBook(books: Books, slug: string): Promise<BookMd | null> {
 	}
 }
 
-/* c8 ignore next 4 */
-async function processBookMd(_bookMd: BookMd): Promise<BookMd> {
+/* c8 ignore next 8 */
+async function processBookMd(books: Books, _bookMd: BookMd): Promise<BookMd> {
+	if (_bookMd.frontmatter.cover_path) {
+		const slug = getSlugFromBookMd(_bookMd)
+		await _private._makeCoverThumbnails(books, slug)
+	}
+
 	return _bookMd
 }
 
@@ -225,7 +230,29 @@ async function _getCoverData<T extends BookInsert | BookUpdate>(
 	}
 }
 
-async function _download(slug: string, file: string, toPath: string): Promise<boolean> {
+async function _makeCoverThumbnails(books: Books, slug: string): Promise<void> {
+	const toPath = books.getPathForBookCover(slug)
+	const coverSharp = sharp(toPath)
+	const sizes = [125, 250, 500, 1000] as Array<125 | 250 | 500 | 1000>
+	const types = ['jpg', 'avif'] as Array<'jpg' | 'avif'>
+
+	// possible optimizations
+	//   - don't generate if thumbnail exists AND is newer than cover
+	//   -- requires getting mtime of each thumbnail and comparing to cover
+	//   -- OR try and do this with json cache data
+
+	for (const size of sizes) {
+		for (const type of types) {
+			const thumbnailPath = books.getPathForBookCoverWidthOf(slug, size, type)
+			await coverSharp.resize({ width: size }).toFile(thumbnailPath)
+		}
+	}
+}
+
+async function _downloadCover(books: Books, slug: string, file: string): Promise<boolean> {
+	console.log(books.getPathForBookCover(''))
+	const toPath = books.getPathForBookCover(slug)
+
 	if (/https?:\/\//i.test(file)) {
 		const tempFile = await downloadTo(file)
 		const fileType = await fileTypeFromFile(tempFile)
@@ -233,6 +260,7 @@ async function _download(slug: string, file: string, toPath: string): Promise<bo
 		if (fileType?.ext === 'jpg') {
 			await copyFile(tempFile, toPath)
 			await unlink(tempFile)
+			await _private._makeCoverThumbnails(books, slug)
 
 			log.info(`downloaded ${slug} cover at ${file}`)
 
@@ -249,6 +277,7 @@ async function _download(slug: string, file: string, toPath: string): Promise<bo
 
 			if (fileType?.ext === 'jpg') {
 				await copyFile(file, toPath)
+				await _private._makeCoverThumbnails(books, slug)
 
 				log.info(`copied image for ${slug}`)
 
@@ -331,10 +360,9 @@ async function searchOpenLibrary(
 		const publishedYear = work.first_publish_year
 		const pages = Number(work.number_of_pages)
 		const coverUrl = work.cover_i ? getCoverUrl(work.cover_i) : undefined
-		const coverPath = books.getPathForBookCover(bookSlug)
 
 		if (coverUrl) {
-			await _private._download(bookSlug, coverUrl, coverPath)
+			await _private._downloadCover(books, bookSlug, coverUrl)
 		}
 
 		return {
@@ -355,9 +383,8 @@ async function searchOpenLibrary(
 
 async function downloadCover(books: Books, bookMd: BookMd, cover: string): Promise<BookMd> {
 	const slug = getSlugFromBookMd(bookMd)
-	const coverPath = books.getPathForBookCover(slug)
 
-	await _private._download(slug, cover, coverPath)
+	await _private._downloadCover(books, slug, cover)
 
 	bookMd.frontmatter.cover_path = Books.getRelativePathForBookCover(slug)
 
@@ -410,7 +437,8 @@ async function cleanUpDerivatives(books: Books): Promise<void> {
 const _private = {
 	_getCoverData,
 	_maybeGetCoverData,
-	_download,
+	_downloadCover,
+	_makeCoverThumbnails,
 	_makeBookMd,
 }
 

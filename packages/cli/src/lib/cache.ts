@@ -11,8 +11,8 @@ export type Cache<T extends Record<string, unknown>> = {
 	database?: T
 }
 
+export const CACHE_DIRECTORY = '.cache'
 const ajv = new Ajv.default()
-const CACHE_DIRECTORY = '.cache'
 
 class CacheForType<T extends Record<string, unknown>> {
 	private validator: ReturnType<typeof ajv.compile<T>>

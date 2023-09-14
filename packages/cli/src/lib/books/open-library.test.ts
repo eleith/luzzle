@@ -16,8 +16,9 @@ const mocks = {
 
 describe('lib/books/open-library', () => {
 	afterEach(() => {
-		vi.resetAllMocks()
-		vi.restoreAllMocks()
+		Object.values(mocks).forEach((mock) => {
+			mock.mockReset()
+		})
 	})
 
 	test('search', async () => {
