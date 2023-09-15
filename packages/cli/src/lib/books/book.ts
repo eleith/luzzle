@@ -245,6 +245,7 @@ async function _makeCoverThumbnails(books: Books, slug: string): Promise<void> {
 		for (const type of types) {
 			const thumbnailPath = books.getPathForBookCoverWidthOf(slug, size, type)
 			await coverSharp.resize({ width: size }).toFile(thumbnailPath)
+			log.info(`generated w${size} ${type} thumbnail for ${slug}`)
 		}
 	}
 }
