@@ -93,7 +93,7 @@ async function syncUpdateBook(
 async function syncRemoveBooksExecute(ctx: Context, ids: string[]): Promise<void> {
 	try {
 		if (ctx.flags.dryRun === false) {
-			// we are leaving around assets and asset cache 
+			// we are leaving around assets and asset cache
 			// unless we determine what they are and then remove them
 			await ctx.db.deleteFrom('books').where('id', 'in', ids).execute()
 			await removeAllTagsFrom(ctx, ids, 'books')
