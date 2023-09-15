@@ -70,8 +70,9 @@ function getSize(pages?: number | null, scale = 1): typeof sizes[keyof typeof Bo
 	}
 }
 
-function getCoverUrl(slug: string): string {
-	return `${config.public.HOST_STATIC}/images/covers/${slug}.jpg`
+function getCoverUrl(slug: string, size = 125, type: 'webp' | 'avif' | 'jpg' = 'jpg'): string {
+	const width = size <= 125 ? 125 : size <= 250 ? 250 : size <= 500 ? 500 : 1000
+	return `${config.public.HOST_STATIC}/images/covers-thumbs/${slug}.w${width}.${type}`
 }
 
 function BookCoverFor({
@@ -81,8 +82,11 @@ function BookCoverFor({
 	scale = 1,
 	...coverProps
 }: BookCoverForProps): JSX.Element {
-	const coverUrl = getCoverUrl(book.slug)
 	const size = getSize(book.pages, scale)
+	const coverUrl = {
+		jpg: getCoverUrl(book.slug, size.width, 'jpg'),
+		avif: getCoverUrl(book.slug, size.width, 'avif'),
+	}
 	const color = getColor(book.slug)
 	const bookCoverProps = {
 		...size,

@@ -53,7 +53,7 @@ async function getBook(slug: string) {
 function openGraphImageHtml(book: Book) {
 	const color = getColor(book.slug)
 	const size = getSize(book.pages, 1.5)
-	const url = getCoverUrl(book.slug)
+	const url = getCoverUrl(book.slug, 500)
 
 	const cover = url ? (
 		<img

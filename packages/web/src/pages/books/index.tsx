@@ -59,7 +59,7 @@ export async function getStaticProps(): Promise<{ props: BooksProps }> {
 			author: [{ name: book.author }],
 			link: `${config.public.HOST}/books/${book.slug}`,
 			image: book.coverWidth
-				? `${config.public.HOST_STATIC}/images/covers/${book.slug}.jpg`
+				? `${config.public.HOST_STATIC}/images/covers-thumbs/${book.slug}.w500.jpg`
 				: undefined,
 			description: book.description || '',
 			content: book.description || '',
