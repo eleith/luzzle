@@ -136,6 +136,7 @@ function BookCover({
 						)}
 						<img
 							src={backgroundImageUrl.jpg}
+							style={{ position: 'relative' }}
 							width={width}
 							height={height}
 							alt="" // decorative
