@@ -54,7 +54,8 @@ pipeline:
       - cd packages/web
       - mkdir public/images
       - mkdir data
-      - cp -R /workspace/data/books/.assets/covers public/images
+      - cp -R /workspace/data/books/.assets/covers public/images/covers
+      - cp -R /workspace/data/books/.assets.cache/covers public/images/covers-thumbs
       - cp /workspace/data/luzzle.sqlite data
     when:
       branch: [main]

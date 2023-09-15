@@ -1,4 +1,4 @@
-import Image from 'next/image'
+/* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from 'react'
 import { Box } from '@luzzle/ui/components'
 import { assignInlineVars } from '@vanilla-extract/dynamic'
@@ -78,7 +78,7 @@ export type BookCoverProps = {
 	width?: number
 	height?: number
 	pagesOffset?: number
-	backgroundImageUrl?: string
+	backgroundImageUrl?: { jpg: string; avif?: string; webp?: string }
 	loading?: boolean
 	rotate?: { x: number; y: number }
 	rotateInteract?: { x: number; y: number }
@@ -129,21 +129,25 @@ function BookCover({
 		<Box className={isLoading ? bookStyles.bookCoverLoading : bookStyles.bookCover}>
 			<Box className={styles.bookFrontStyles}>{children}</Box>
 			{hasBackgroundImage && (
-				<Image
-					loader={({ src }) => src}
-					unoptimized
-					src={backgroundImageUrl}
-					width={width}
-					height={height}
-					alt="" // decorative
-					objectFit="fill"
-					onError={() => {
-						setLoading(false)
-					}}
-					onLoadingComplete={() => {
-						setLoading(false)
-					}}
-				/>
+				<picture>
+					<>
+						{backgroundImageUrl?.avif && (
+							<source srcSet={`${backgroundImageUrl?.avif}`} type={`image/avif`} />
+						)}
+						<img
+							src={backgroundImageUrl.jpg}
+							width={width}
+							height={height}
+							alt="" // decorative
+							onError={() => {
+								setLoading(false)
+							}}
+							onLoad={() => {
+								setLoading(false)
+							}}
+						/>
+					</>
+				</picture>
 			)}
 		</Box>
 	)
