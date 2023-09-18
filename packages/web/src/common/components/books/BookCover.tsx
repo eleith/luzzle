@@ -139,6 +139,7 @@ function BookCover({
 							style={{ position: 'relative' }}
 							width={width}
 							height={height}
+							loading="lazy"
 							alt="" // decorative
 							onError={() => {
 								setLoading(false)
