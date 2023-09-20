@@ -32,7 +32,7 @@ type BooksProps = {
 
 const TAKE = 50
 
-function makeBookCardLink(book: Book): JSX.Element {
+function makeBookCardLink(book: Book, index = 0): JSX.Element {
 	return (
 		<Link href={`/books/${book.slug}`} key={book.id}>
 			<a target="_blank">
@@ -42,6 +42,7 @@ function makeBookCardLink(book: Book): JSX.Element {
 						hasCover={!!book.coverWidth}
 						scale={0.5}
 						rotateInteract={{ x: 0, y: -35 }}
+						imgLoading={index < 10 ? 'eager' : 'lazy'}
 					/>
 				</Box>
 			</a>
@@ -118,7 +119,7 @@ export default function Books({ books }: BooksProps): JSX.Element {
 		setSize(size + 1)
 	}
 
-	const allBooks = totalBooks.map((book) => makeBookCardLink(book))
+	const allBooks = totalBooks.map((book, i) => makeBookCardLink(book, i))
 
 	return (
 		<PageFull meta={{ title: 'books' }}>
