@@ -82,6 +82,7 @@ export type BookCoverProps = {
 	loading?: boolean
 	rotate?: { x: number; y: number }
 	rotateInteract?: { x: number; y: number }
+	imgLoading?: 'lazy' | 'eager'
 }
 
 function BookCover({
@@ -99,6 +100,7 @@ function BookCover({
 	height = 300,
 	pagesOffset = 3,
 	loading = false,
+	imgLoading = 'eager',
 }: BookCoverProps): JSX.Element {
 	const hasBackgroundImage = !!backgroundImageUrl
 	const [isLoading, setLoading] = useState(hasBackgroundImage || loading)
@@ -139,7 +141,7 @@ function BookCover({
 							style={{ position: 'relative' }}
 							width={width}
 							height={height}
-							loading="lazy"
+							loading={imgLoading}
 							alt="" // decorative
 							onError={() => {
 								setLoading(false)
