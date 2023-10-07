@@ -1,12 +1,13 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.39",
+  "version": "0.0.40",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
     "compile": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json && chmod +x dist/src/index.js",
-    "test": "vitest run --coverage --silent"
+		"postbuild": "sed -i \"s/'unbuilt'/$(npm pkg get version --workspaces=false)/\" dist/src/version.js",
+    "test": "vitest run --silent --coverage"
   },
   "engines": {
     "node": ">=18"

@@ -1,27 +1,9 @@
-import log from '../log.js'
-import { Command, Context } from './utils/types.js'
+import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
-import {
-	getBook,
-	processBookMd,
-	getUpdatedSlugs,
-	cleanUpDerivatives,
-	writeBookMd,
-	Books,
-	BookMd,
-} from '../books/index.js'
 import { eachLimit } from 'async'
+import { BookPiece } from '../books/index.js'
 
 export type ProcessArgv = { force: boolean }
-
-async function processBook(ctx: Context, books: Books, bookMd: BookMd): Promise<void> {
-	if (ctx.flags.dryRun === false) {
-		const bookProcessed = await processBookMd(books, bookMd)
-		await writeBookMd(books, bookProcessed)
-	}
-
-	log.info(`processed ${bookMd.filename}`)
-}
 
 const command: Command<ProcessArgv> = {
 	name: 'process',
@@ -41,21 +23,18 @@ const command: Command<ProcessArgv> = {
 
 	run: async function (ctx, args) {
 		const dir = ctx.directory
-		const books = new Books(dir)
-		const bookSlugs = await books.getAllSlugs()
-		const updatedBookSlugs = args.force
-			? bookSlugs
-			: await getUpdatedSlugs(bookSlugs, books, 'lastProcessed')
+		const bookPiece = new BookPiece(dir)
 
-		await eachLimit(updatedBookSlugs, 1, async (slug) => {
-			const bookMd = await getBook(books, slug)
-			if (bookMd) {
-				await processBook(ctx, books, bookMd)
-			}
-		})
+		const slugs = args.force
+			? await bookPiece.getSlugs()
+			: await bookPiece.getSlugsUpdated('lastProcessed')
 
 		if (ctx.flags.dryRun === false) {
-			await cleanUpDerivatives(books)
+			await eachLimit(slugs, 1, async (slug) => {
+				await bookPiece.process(slug)
+			})
+
+			await bookPiece.removeStaleCache()
 		}
 	},
 }

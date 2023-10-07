@@ -1,5 +1,5 @@
 import { merge } from 'lodash-es'
-import { BookMd } from './book.schemas.js'
+import { BookMarkDown } from './book.schemas.js'
 import { Book, BookInsert, BookUpdate } from '@luzzle/kysely'
 
 const id = 'book-id'
@@ -9,7 +9,7 @@ const note = 'a note about the book'
 const slug = 'slugified-title'
 const read_order = '19700101-y47d'
 
-function makeBookMd(overrides: DeepPartial<BookMd> = {}): BookMd {
+function makeBookMarkDown(overrides: DeepPartial<BookMarkDown> = {}): BookMarkDown {
 	return merge(
 		{
 			filename: `books/${slug}.md`,
@@ -19,7 +19,7 @@ function makeBookMd(overrides: DeepPartial<BookMd> = {}): BookMd {
 			},
 			markdown: note,
 		},
-		overrides as BookMd
+		overrides as BookMarkDown
 	)
 }
 
@@ -95,4 +95,4 @@ function makeBookCreateInput(overrides: Partial<BookInsert> = {}): BookInsert {
 	}
 }
 
-export { makeBookMd, makeBook, makeBookInsert, makeBookUpdateInput, makeBookCreateInput }
+export { makeBookMarkDown, makeBook, makeBookInsert, makeBookUpdateInput, makeBookCreateInput }

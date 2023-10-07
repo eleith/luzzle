@@ -1,10 +1,8 @@
 import { JTDSchemaType } from 'ajv/dist/jtd.js'
 import Ajv from 'ajv/dist/jtd.js'
 import { Book } from '@luzzle/kysely'
-
-export type BookDatabaseCache = ToJsonCompatible<
-	Pick<Book, NonNullableKeys<Book>> & Partial<UnNullify<Pick<Book, NullableKeys<Book>>>>
->
+import { PieceMarkDown } from '../pieces/markdown.js'
+import { PieceCache } from '../pieces/cache.js'
 
 export type BookDatabaseOnlyFields =
 	| 'id'
@@ -16,18 +14,12 @@ export type BookDatabaseOnlyFields =
 	| 'cover_width'
 	| 'cover_height'
 
-export type BookMd = {
-	filename: string
-	markdown?: string
-	frontmatter: Omit<
-		Pick<Book, NonNullableKeys<Book>> & Partial<UnNullify<Pick<Book, NullableKeys<Book>>>>,
-		BookDatabaseOnlyFields
-	>
-}
+export type BookMarkDown = PieceMarkDown<Book, BookDatabaseOnlyFields>
+export type BookMdWithOpenLib = BookMarkDown & { frontmatter: { id_ol_book: string } }
+export type BookCacheSchema = JTDSchemaType<PieceCache<Book>>
+export type BookSchema = JTDSchemaType<BookMarkDown>
 
-export type BookMdWithOpenLib = BookMd & { frontmatter: { id_ol_book: string } }
-
-const bookMdSchema: JTDSchemaType<BookMd> = {
+const bookMdSchema: BookSchema = {
 	properties: {
 		filename: { type: 'string' },
 		frontmatter: {
@@ -56,7 +48,7 @@ const bookMdSchema: JTDSchemaType<BookMd> = {
 	},
 }
 
-const cacheDatabaseSchema: JTDSchemaType<BookDatabaseCache> = {
+const cacheDatabaseSchema: BookCacheSchema = {
 	properties: {
 		id: { type: 'string' },
 		date_added: { type: 'float64' },
@@ -85,6 +77,6 @@ const cacheDatabaseSchema: JTDSchemaType<BookDatabaseCache> = {
 	},
 }
 
-const bookMdValidator = new Ajv.default().compile(bookMdSchema)
+const bookMdValidator = new Ajv.default().compile<BookMarkDown>(bookMdSchema)
 
 export { bookMdSchema, cacheDatabaseSchema, bookMdValidator }

@@ -1,31 +1,48 @@
 import log from '../log.js'
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
-import { createBookMd, writeBookMd, Books } from '../books/index.js'
+import { PieceType, PieceTypes } from '../pieces/index.js'
+import slugify from '@sindresorhus/slugify'
+import { BookPiece } from '../books/index.js'
 
-export type CreateArgv = { slug: string }
+export type CreateArgv = { piece: PieceType; title: string }
 
 const command: Command<CreateArgv> = {
 	name: 'create',
 
-	command: 'create <slug>',
+	command: `create <title>`,
 
-	describe: 'create a new <slug>',
+	describe: 'create a new piece',
 
 	builder: <T>(yargs: Argv<T>) => {
-		return yargs.positional('slug', {
-			type: 'string',
-			description: 'unique slug for <type>',
-			demandOption: 'slug is required and must be unique per <type>',
-		})
+		return yargs
+			.option('piece', {
+				type: 'string',
+				alias: 'p',
+				description: `piece type`,
+				choices: Object.values(PieceTypes),
+				demandOption: `piece is required`,
+			})
+			.positional('title', {
+				type: 'string',
+				description: `title of piece`,
+				demandOption: `title is required`,
+			}) as Argv<T & CreateArgv>
 	},
 
 	run: async function (ctx, args) {
 		const dir = ctx.directory
-		const title = args.slug
+		const { title } = args
+		const slug = slugify(title)
+		const bookPiece = new BookPiece(dir)
+
+		if (bookPiece.exists(slug)) {
+			log.error(`book already exists at ${bookPiece.getFileName(slug)}`)
+			return
+		}
 
 		if (ctx.flags.dryRun === false) {
-			const bookMd = await createBookMd(title, 'markdown notes', {
+			const markdown = bookPiece.create(slug, 'markdown notes', {
 				title,
 				author: 'author',
 				isbn: '1234',
@@ -36,11 +53,10 @@ const command: Command<CreateArgv> = {
 				year_read: new Date().getFullYear(),
 				month_read: new Date().getMonth() + 1,
 			})
-			const books = new Books(dir)
-			await writeBookMd(books, bookMd)
-			log.info(`created new book at ${bookMd.filename}`)
+			bookPiece.write(slug, markdown)
+			log.info(`created new book at ${bookPiece.getFileName(slug)}`)
 		} else {
-			log.info(`created new book at ${title.toLowerCase().replace(/\s+/g, '-')}.md`)
+			log.info(`created new book at ${slugify(title)}.md`)
 		}
 	},
 }

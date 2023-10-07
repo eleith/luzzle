@@ -1,8 +1,8 @@
 import { Command } from './utils/types.js'
-import { getBook, getUpdatedSlugs, Books } from '../books/index.js'
 import { eachLimit } from 'async'
 import { syncAddBook, syncRemoveBooks, syncUpdateBook } from './sync.private.js'
 import { Argv } from 'yargs'
+import { BookPiece } from '../books/index.js'
 
 export type SyncArgv = { force: boolean }
 
@@ -25,25 +25,22 @@ const command: Command<SyncArgv> = {
 	run: async function (ctx, args) {
 		const dir = ctx.directory
 		const force = args.force
-		const books = new Books(dir)
-		const bookSlugs = await books.getAllSlugs()
-		const updatedBookSlugs = force
-			? bookSlugs
-			: await getUpdatedSlugs(bookSlugs, books, 'lastSynced')
+		const bookPiece = new BookPiece(dir)
+		const slugs = force ? await bookPiece.getSlugs() : await bookPiece.getSlugsUpdated('lastSynced')
 
-		await eachLimit(updatedBookSlugs, 1, async (slug) => {
-			const bookMd = await getBook(books, slug)
+		await eachLimit(slugs, 1, async (slug) => {
+			const bookMd = await bookPiece.get(slug)
 			if (bookMd) {
-				const cache = await books.cache.get(slug)
-				if (cache.database?.id) {
-					await syncUpdateBook(ctx, books, bookMd, cache.database.id, force)
+				const cache = await bookPiece.caches.get(slug)
+				if (cache.database?.slug) {
+					await syncUpdateBook(ctx, slug, bookPiece, bookMd, force)
 				} else {
-					await syncAddBook(ctx, books, bookMd)
+					await syncAddBook(ctx, slug, bookPiece, bookMd)
 				}
 			}
 		})
 
-		await syncRemoveBooks(ctx, bookSlugs)
+		await syncRemoveBooks(ctx, slugs)
 	},
 }
 

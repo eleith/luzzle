@@ -1,18 +1,18 @@
 import { Command, Context } from './utils/types.js'
-import { writeBookMd, bookToMd, Books } from '../books/index.js'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
 import { Book } from '@luzzle/kysely'
+import { BookPiece } from '../books/index.js'
 
 async function dumpBook(ctx: Context, book: Book): Promise<void> {
 	const dir = ctx.directory
 
 	try {
 		if (ctx.flags.dryRun === false) {
-			const books = new Books(dir)
-			const bookMd = await bookToMd(book)
+			const bookPiece = new BookPiece(dir)
+			const markdown = await bookPiece.toMarkDown(book)
 
-			await writeBookMd(books, bookMd)
+			await bookPiece.write(book.slug, markdown)
 		}
 		ctx.log.info(`saved book to ${book.slug}.md`)
 	} catch (e) {

@@ -1,22 +1,25 @@
-import { getBook, writeBookMd, downloadCover } from '../books/index.js'
 import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { AttachArgv } from './attach.js'
-import { Arguments } from 'yargs'
-import { makeBookMd } from '../books/book.fixtures.js'
+import { Arguments, Argv } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
+import { Pieces } from '../pieces/index.js'
+import { BookPiece } from '../books/index.js'
 
 vi.mock('child_process')
 vi.mock('../books')
+vi.mock('../pieces')
+vi.mock('../books/index')
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
 	logError: vi.spyOn(log, 'error'),
 	logChild: vi.spyOn(log, 'child'),
-	getBook: vi.mocked(getBook),
-	writeBookMd: vi.mocked(writeBookMd),
-	downloadCover: vi.mocked(downloadCover),
+	BookPieceExists: vi.spyOn(BookPiece.prototype, 'exists'),
+	BookPieceAttach: vi.spyOn(BookPiece.prototype, 'attach'),
+	piecesParseArgs: vi.spyOn(Pieces, 'parseArgv'),
+	piecesCommand: vi.spyOn(Pieces, 'command'),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -35,61 +38,52 @@ describe('lib/commands/attach', () => {
 
 	test('run', async () => {
 		const ctx = makeContext()
-		const book = makeBookMd()
-		const slug = 'slug2'
+		const path = 'slug2'
 		const file = 'file2'
 
-		mocks.getBook.mockResolvedValueOnce(book)
-		mocks.downloadCover.mockResolvedValueOnce(book)
-		mocks.writeBookMd.mockResolvedValueOnce()
+		mocks.BookPieceExists.mockReturnValue(true)
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
-		await command.run(ctx, { slug, file } as Arguments<AttachArgv>)
+		await command.run(ctx, { path, file } as Arguments<AttachArgv>)
 
-		expect(mocks.getBook).toHaveBeenCalledOnce()
-		expect(mocks.downloadCover).toHaveBeenCalledOnce()
-		expect(mocks.writeBookMd).toHaveBeenCalledOnce()
+		expect(mocks.BookPieceAttach).toHaveBeenCalledWith(path, file)
 	})
 
 	test('run with dry-run', async () => {
 		const ctx = makeContext({ flags: { dryRun: true } })
-		const book = makeBookMd()
-		const slug = 'slug2'
+		const path = 'slug2'
 		const file = 'file2'
 
-		mocks.getBook.mockResolvedValueOnce(book)
-		mocks.downloadCover.mockResolvedValueOnce(book)
-		mocks.writeBookMd.mockResolvedValueOnce()
+		mocks.BookPieceExists.mockReturnValue(true)
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
-		await command.run(ctx, { slug, file } as Arguments<AttachArgv>)
+		await command.run(ctx, { path, file } as Arguments<AttachArgv>)
 
-		expect(mocks.getBook).toHaveBeenCalledOnce()
-		expect(mocks.downloadCover).not.toHaveBeenCalledOnce()
-		expect(mocks.writeBookMd).not.toHaveBeenCalledOnce()
+		expect(mocks.BookPieceAttach).not.toHaveBeenCalled()
 	})
 
 	test('run does not find slug', async () => {
 		const ctx = makeContext()
-		const book = makeBookMd()
-		const slug = 'slug2'
+		const path = 'slug2'
 		const file = 'file2'
 
-		mocks.getBook.mockResolvedValueOnce(null)
-		mocks.downloadCover.mockResolvedValueOnce(book)
-		mocks.writeBookMd.mockResolvedValueOnce()
+		mocks.BookPieceExists.mockReturnValue(false)
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
-		await command.run(ctx, { slug, file } as Arguments<AttachArgv>)
+		await command.run(ctx, { path, file } as Arguments<AttachArgv>)
 
-		expect(mocks.getBook).toHaveBeenCalledOnce()
-		expect(mocks.downloadCover).not.toHaveBeenCalledOnce()
-		expect(mocks.writeBookMd).not.toHaveBeenCalledOnce()
+		expect(mocks.BookPieceAttach).not.toHaveBeenCalled()
 	})
 
 	test('builder', async () => {
-		const args = yargs()
+		const args = yargs() as Argv<AttachArgv>
 
 		spies.positional = vi.spyOn(args, 'positional')
+		mocks.piecesCommand.mockReturnValueOnce(args)
+
 		command.builder?.(args)
 
-		expect(spies.positional).toHaveBeenCalledTimes(4)
+		expect(mocks.piecesCommand).toHaveBeenCalledOnce()
+		expect(spies.positional).toHaveBeenCalledWith('file', expect.any(Object))
 	})
 })

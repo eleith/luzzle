@@ -1,6 +1,6 @@
 import * as openAI from 'openai'
 import * as openAILib from './openai.js'
-import { makeBookMd } from './book.fixtures.js'
+import { makeBookMarkDown } from './book.fixtures.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 
 vi.mock('openai')
@@ -56,7 +56,7 @@ describe('lib/books/openai', () => {
 
 	test('generateTags', async () => {
 		const apiKey = 'test-api-key'
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const tags = ['tag1', 'tag2', 'tag2']
 		const openAIMocks = mockOpenAI()
 
@@ -70,7 +70,7 @@ describe('lib/books/openai', () => {
 
 	test('generateTags does not finish', async () => {
 		const apiKey = 'test-api-key'
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const openAIMocks = mockOpenAI()
 
 		openAIMocks.createChatCompletionMock.mockResolvedValue(makeChatResponse('', 'incomplete'))
@@ -81,7 +81,7 @@ describe('lib/books/openai', () => {
 
 	test('generateTags does not answer with tags', async () => {
 		const apiKey = 'test-api-key'
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const openAIMocks = mockOpenAI()
 
 		openAIMocks.createChatCompletionMock.mockResolvedValue(makeChatResponse('no tags'))
@@ -92,7 +92,7 @@ describe('lib/books/openai', () => {
 
 	test('generateDescription', async () => {
 		const apiKey = 'test-api-key'
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const description = 'a tiny description'
 		const openAIMocks = mockOpenAI()
 
@@ -104,7 +104,7 @@ describe('lib/books/openai', () => {
 
 	test('generateDescription does not finish', async () => {
 		const apiKey = 'test-api-key'
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const openAIMocks = mockOpenAI()
 
 		openAIMocks.createChatCompletionMock.mockResolvedValue(makeChatResponse('', 'incomplete'))
@@ -115,7 +115,7 @@ describe('lib/books/openai', () => {
 
 	test('generateDescription does not have a description', async () => {
 		const apiKey = 'test-api-key'
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const openAIMocks = mockOpenAI()
 
 		openAIMocks.createChatCompletionMock.mockResolvedValue(makeChatResponse('fake description'))

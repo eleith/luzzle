@@ -1,36 +1,28 @@
 import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import {
-	makeBookMd,
+	makeBookMarkDown,
 	makeBook,
 	makeBookCreateInput,
 	makeBookUpdateInput,
 } from '../books/book.fixtures.js'
 import { makeContext } from './context.fixtures.js'
-import {
-	getBook,
-	bookMdToBookUpdateInput,
-	bookMdToBookCreateInput,
-	getSlugFromBookMd,
-	getUpdatedSlugs,
-} from '../books/index.js'
 import { syncAddBook, syncUpdateBook, syncRemoveBooks } from './sync.private.js'
-import { makeBooks } from '../books/books.mock.js'
 import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags/index.js'
 import { mockDatabase } from '../database.mock.js'
+import { BookPiece } from '../books/index.js'
 
-vi.mock('../books')
 vi.mock('../tags')
+vi.mock('../books/index')
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
 	logError: vi.spyOn(log, 'error'),
 	logChild: vi.spyOn(log, 'child'),
-	getUpdatedSlugs: vi.mocked(getUpdatedSlugs),
-	getBook: vi.mocked(getBook),
-	bookMdToBookUpdateInput: vi.mocked(bookMdToBookUpdateInput),
-	bookMdToBookCreateInput: vi.mocked(bookMdToBookCreateInput),
-	getSlugFromBookMd: vi.mocked(getSlugFromBookMd),
+	BookPieceSlugs: vi.spyOn(BookPiece.prototype, 'getSlugsUpdated'),
+	BookPieceGet: vi.spyOn(BookPiece.prototype, 'get'),
+	BookPieceToUpdate: vi.spyOn(BookPiece.prototype, 'toUpdateInput'),
+	BookPieceToCreate: vi.spyOn(BookPiece.prototype, 'toCreateInput'),
 	addTagsTo: vi.mocked(addTagsTo),
 	removeAllTagsFrom: vi.mocked(removeAllTagsFrom),
 	syncTagsFor: vi.mocked(syncTagsFor),
@@ -54,49 +46,45 @@ describe('lib/commands/sync.private', () => {
 	test('syncAddBook', async () => {
 		const kysely = mockDatabase()
 		const ctx = makeContext({ db: kysely.db })
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const input = makeBookCreateInput()
 		const slug = 'slug1'
 		const book = makeBook({ slug })
-		const books = makeBooks()
+		const piece = new BookPiece(ctx.directory)
 
 		kysely.queries.executeTakeFirst.mockResolvedValueOnce(null)
 		kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
 
-		mocks.bookMdToBookCreateInput.mockResolvedValueOnce(input)
-		mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+		mocks.BookPieceToCreate.mockResolvedValueOnce(input)
 
-		await syncAddBook(ctx, books, bookMd)
+		await syncAddBook(ctx, slug, piece, bookMd)
 
-		expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledOnce()
-		expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
-		expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
+		expect(mocks.BookPieceToCreate).toHaveBeenCalledOnce()
+		expect(mocks.BookPieceToUpdate).not.toHaveBeenCalled()
 		expect(kysely.queries.values).toHaveBeenCalledWith(input)
 	})
 
 	test('syncAddBook with keywords', async () => {
 		const kysely = mockDatabase()
 		const ctx = makeContext({ db: kysely.db })
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const input = makeBookCreateInput()
 		const slug = 'slug1'
 		const keywords = 'one,two'
 		const book = makeBook({ slug, keywords })
-		const books = makeBooks()
+		const piece = new BookPiece(ctx.directory)
 
 		kysely.queries.executeTakeFirst.mockResolvedValueOnce(null)
 		kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
 
-		mocks.bookMdToBookCreateInput.mockResolvedValueOnce(input)
-		mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+		mocks.BookPieceToCreate.mockResolvedValueOnce(input)
 		mocks.addTagsTo.mockResolvedValueOnce(undefined)
 		mocks.keywordsToTags.mockReturnValueOnce([])
 
-		await syncAddBook(ctx, books, bookMd)
+		await syncAddBook(ctx, slug, piece, bookMd)
 
-		expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledOnce()
-		expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
-		expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
+		expect(mocks.BookPieceToCreate).toHaveBeenCalledOnce()
+		expect(mocks.BookPieceToUpdate).not.toHaveBeenCalled()
 		expect(mocks.keywordsToTags).toHaveBeenCalledWith(keywords)
 		expect(mocks.addTagsTo).toHaveBeenCalledOnce()
 	})
@@ -104,162 +92,151 @@ describe('lib/commands/sync.private', () => {
 	test('syncAddBook already exists', async () => {
 		const kysely = mockDatabase()
 		const ctx = makeContext({ db: kysely.db })
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const update = makeBookUpdateInput()
 		const slug = 'slug1'
 		const book = makeBook({ slug })
-		const books = makeBooks()
+		const piece = new BookPiece(ctx.directory)
 
 		kysely.queries.executeTakeFirst.mockResolvedValueOnce(book)
 		kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
 
-		mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
-		mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+		mocks.BookPieceToUpdate.mockResolvedValueOnce(update)
 
-		await syncAddBook(ctx, books, bookMd)
+		await syncAddBook(ctx, slug, piece, bookMd)
 
-		expect(mocks.bookMdToBookCreateInput).not.toHaveBeenCalledOnce()
-		expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
-		expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalled()
+		expect(mocks.BookPieceToUpdate).toHaveBeenCalledOnce()
+		expect(mocks.BookPieceToCreate).not.toHaveBeenCalled()
 	})
 
 	test('syncAddBook with flag dry-run', async () => {
 		const kysely = mockDatabase()
 		const ctx = makeContext({ flags: { dryRun: true }, db: kysely.db })
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const input = makeBookCreateInput()
 		const slug = 'slug1'
-		const books = makeBooks()
+		const piece = new BookPiece(ctx.directory)
 
-		mocks.bookMdToBookCreateInput.mockResolvedValueOnce(input)
-		mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+		mocks.BookPieceToCreate.mockResolvedValueOnce(input)
 
-		await syncAddBook(ctx, books, bookMd)
+		await syncAddBook(ctx, slug, piece, bookMd)
 
-		expect(mocks.bookMdToBookCreateInput).not.toHaveBeenCalledOnce()
-		expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
-		expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
+		expect(mocks.BookPieceToCreate).not.toHaveBeenCalledOnce()
+		expect(mocks.BookPieceToUpdate).not.toHaveBeenCalled()
 	})
 
 	test('syncAddBook catches error', async () => {
 		const kysely = mockDatabase()
 		const ctx = makeContext({ db: kysely.db })
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const input = makeBookCreateInput()
 		const slug = 'slug1'
-		const books = makeBooks()
+		const piece = new BookPiece(ctx.directory)
 
 		kysely.queries.executeTakeFirstOrThrow.mockRejectedValueOnce(new Error('test'))
 
-		mocks.bookMdToBookCreateInput.mockResolvedValueOnce(input)
-		mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+		mocks.BookPieceToCreate.mockResolvedValueOnce(input)
 		mocks.logError.mockResolvedValueOnce()
 
-		await syncAddBook(ctx, books, bookMd)
+		await syncAddBook(ctx, slug, piece, bookMd)
 
-		expect(mocks.bookMdToBookCreateInput).toHaveBeenCalledOnce()
-		expect(mocks.getSlugFromBookMd).toHaveBeenCalledOnce()
-		expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalled()
+		expect(mocks.BookPieceToCreate).toHaveBeenCalledOnce()
+		expect(mocks.BookPieceToUpdate).not.toHaveBeenCalled()
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
 	test('syncUpdateBook', async () => {
 		const kysely = mockDatabase()
 		const ctx = makeContext({ db: kysely.db })
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const update = makeBookUpdateInput()
 		const slug = 'slug1'
 		const book = makeBook({ slug })
-		const books = makeBooks()
+		const piece = new BookPiece(ctx.directory)
 
 		kysely.queries.executeTakeFirst.mockResolvedValueOnce(book)
 		kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
 
-		mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
-		mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+		mocks.BookPieceToUpdate.mockResolvedValueOnce(update)
 
-		await syncUpdateBook(ctx, books, bookMd, slug)
+		await syncUpdateBook(ctx, slug, piece, bookMd)
 
-		expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledOnce()
+		expect(mocks.BookPieceToUpdate).toHaveBeenCalledOnce()
 	})
 
 	test('syncUpdateBook with force', async () => {
 		const kysely = mockDatabase()
 		const ctx = makeContext({ db: kysely.db })
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const update = makeBookUpdateInput()
 		const slug = 'slug1'
 		const book = makeBook({ slug })
-		const books = makeBooks()
+		const piece = new BookPiece(ctx.directory)
 
 		kysely.queries.executeTakeFirst.mockResolvedValueOnce(book)
 		kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
 
-		mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
-		mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+		mocks.BookPieceToUpdate.mockResolvedValueOnce(update)
 
-		await syncUpdateBook(ctx, books, bookMd, slug, true)
+		await syncUpdateBook(ctx, slug, piece, bookMd, true)
 
-		expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledWith(books, bookMd, book, true)
+		expect(mocks.BookPieceToUpdate).toHaveBeenCalledWith(slug, bookMd, book, true)
 	})
 
 	test('syncUpdateBook with keywords', async () => {
 		const kysely = mockDatabase()
 		const ctx = makeContext({ db: kysely.db })
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const keywords = 'one,two'
 		const update = makeBookUpdateInput({ keywords })
 		const slug = 'slug1'
 		const book = makeBook({ slug, keywords })
-		const books = makeBooks()
+		const piece = new BookPiece(ctx.directory)
 
 		kysely.queries.executeTakeFirst.mockResolvedValueOnce(book)
 		kysely.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(book)
 
-		mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
-		mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+		mocks.BookPieceToUpdate.mockResolvedValueOnce(update)
 		mocks.syncTagsFor.mockResolvedValue(undefined)
 
-		await syncUpdateBook(ctx, books, bookMd, slug)
+		await syncUpdateBook(ctx, slug, piece, bookMd)
 
-		expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledOnce()
+		expect(mocks.BookPieceToUpdate).toHaveBeenCalledOnce()
 		expect(mocks.syncTagsFor).toHaveBeenCalledOnce()
 	})
 
 	test('syncUpdateBook with flag dry-run', async () => {
 		const kysely = mockDatabase()
 		const ctx = makeContext({ flags: { dryRun: true }, db: kysely.db })
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const update = makeBookUpdateInput()
 		const slug = 'slug1'
-		const books = makeBooks()
+		const piece = new BookPiece(ctx.directory)
 
-		mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
-		mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+		mocks.BookPieceToUpdate.mockResolvedValueOnce(update)
 
-		await syncUpdateBook(ctx, books, bookMd, slug)
+		await syncUpdateBook(ctx, slug, piece, bookMd)
 
-		expect(mocks.bookMdToBookUpdateInput).not.toHaveBeenCalledOnce()
+		expect(mocks.BookPieceToUpdate).not.toHaveBeenCalledOnce()
 	})
 
 	test('syncUpdateBook catches error', async () => {
 		const kysely = mockDatabase()
 		const ctx = makeContext({ db: kysely.db })
-		const bookMd = makeBookMd()
+		const bookMd = makeBookMarkDown()
 		const update = makeBookUpdateInput()
 		const slug = 'slug1'
 		const book = makeBook({ slug })
-		const books = makeBooks()
+		const piece = new BookPiece(ctx.directory)
 
 		kysely.queries.executeTakeFirst.mockResolvedValueOnce(book)
 		kysely.queries.executeTakeFirstOrThrow.mockRejectedValueOnce(new Error('test'))
 
-		mocks.bookMdToBookUpdateInput.mockResolvedValueOnce(update)
-		mocks.getSlugFromBookMd.mockResolvedValueOnce(slug)
+		mocks.BookPieceToUpdate.mockResolvedValueOnce(update)
 
-		await syncUpdateBook(ctx, books, bookMd, slug)
+		await syncUpdateBook(ctx, slug, piece, bookMd)
 
-		expect(mocks.bookMdToBookUpdateInput).toHaveBeenCalledOnce()
+		expect(mocks.BookPieceToUpdate).toHaveBeenCalledOnce()
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 

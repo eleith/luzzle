@@ -1,5 +1,4 @@
 import { ChildProcess, spawn } from 'child_process'
-import { getBook } from '../books/index.js'
 import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { EventEmitter } from 'stream'
@@ -16,7 +15,6 @@ const mocks = {
 	logChild: vi.spyOn(log, 'child'),
 	logLevelSet: vi.spyOn(log, 'level', 'set'),
 	spawn: vi.mocked(spawn),
-	getBook: vi.mocked(getBook),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
