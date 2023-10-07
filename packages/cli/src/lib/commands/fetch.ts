@@ -3,7 +3,7 @@ import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
 import { merge } from 'lodash-es'
 import { Pieces, PieceArgv } from '../pieces/index.js'
-import { BookPiece } from '../books/index.js'
+import { BookPiece } from '../../pieces/books/index.js'
 
 type FetchServices = 'google' | 'openlibrary' | 'openai' | 'all'
 

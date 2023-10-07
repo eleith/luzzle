@@ -6,33 +6,33 @@ import * as openLibraryFixtures from './open-library.fixtures.js'
 import * as googleBooksFixtures from './google-books.fixtures.js'
 import { findVolume } from './google-books.js'
 import { generateTags, generateDescription } from './openai.js'
-import log from '../log.js'
-import { addFrontMatter, extract } from '../md.js'
+import log from '../../lib/log.js'
+import { addFrontMatter, extract } from '../../lib/md.js'
 import { findWork, getBook, getCoverUrl } from './open-library.js'
-import { downloadTo } from '../web.js'
+import { downloadTo } from '../../lib/web.js'
 import { FileTypeResult, fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
 import BookPiece from './piece.js'
-import { Piece, PieceDirectories, toValidatedMarkDown } from '../pieces/index.js'
+import { Piece, PieceDirectories, toValidatedMarkDown } from '../../lib/pieces/index.js'
 import { BookMarkDown } from './book.schemas.js'
-import CacheForType from '../cache.js'
+import CacheForType from '../../lib/cache.js'
 import { Book } from '@luzzle/kysely'
-import { PieceCache } from '../pieces/cache.js'
-import { ASSETS_DIRECTORY } from '../assets.js'
+import { PieceCache } from '../../lib/pieces/cache.js'
+import { ASSETS_DIRECTORY } from '../../lib/assets.js'
 
 vi.mock('file-type')
 vi.mock('fs')
 vi.mock('fs/promises')
 vi.mock('sharp')
-vi.mock('../web')
+vi.mock('../../lib/web')
 vi.mock('./open-library')
 vi.mock('./google-books')
 vi.mock('./openai')
-vi.mock('../md')
+vi.mock('../../lib/md')
 vi.mock('os')
-vi.mock('../log')
-vi.mock('../pieces/index')
+vi.mock('../../lib/log')
+vi.mock('../../lib/pieces/index')
 
 const mocks = {
 	cpus: vi.mocked(cpus),

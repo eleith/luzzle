@@ -4,7 +4,7 @@ import { describe, expect, test, vi, afterEach } from 'vitest'
 import { books_v1, books } from '@googleapis/books'
 import { GaxiosResponse } from 'gaxios'
 
-vi.mock('../log')
+vi.mock('../../lib/log')
 vi.mock('@googleapis/books')
 
 const fixtures = {

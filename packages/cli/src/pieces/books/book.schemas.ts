@@ -1,8 +1,8 @@
 import { JTDSchemaType } from 'ajv/dist/jtd.js'
 import Ajv from 'ajv/dist/jtd.js'
 import { Book } from '@luzzle/kysely'
-import { PieceMarkDown } from '../pieces/markdown.js'
-import { PieceCache } from '../pieces/cache.js'
+import { PieceMarkDown } from '../../lib/pieces/markdown.js'
+import { PieceCache } from '../../lib/pieces/cache.js'
 
 export type BookDatabaseOnlyFields =
 	| 'id'

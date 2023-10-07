@@ -68,11 +68,11 @@ async function generateTags(apiKey: string, bookMd: BookMarkDown): Promise<strin
 	})
 
 	if (response.data.choices[0].finish_reason === 'stop') {
-		const answer = response.data.choices[0].message?.content || ''
-		const tagList = answer.match(OPENAI_DELIMETER_MATCH)?.[1] || ''
-		const tags = tagList.split(',').map((tag) => tag.trim().replace('#', '').toLowerCase()) || []
+		const answer = response.data.choices[0].message?.content
+		const tagList = answer?.match(OPENAI_DELIMETER_MATCH)?.[1]
+		const tags = tagList?.split(',').map((tag) => tag.trim().replace('#', '').toLowerCase())
 
-		if (tagList.length && tags.length > 0) {
+		if (tags && tags.length > 0) {
 			return [...new Set(tags)]
 		} else {
 			throw new Error('OpenAI did not generate any tags')
@@ -96,10 +96,10 @@ async function generateDescription(apiKey: string, bookMd: BookMarkDown): Promis
 	})
 
 	if (response.data.choices[0].finish_reason === 'stop') {
-		const answer = response.data.choices[0].message?.content || ''
-		const description = answer.match(OPENAI_DELIMETER_MATCH)?.[1] || ''
+		const answer = response.data.choices[0].message?.content
+		const description = answer?.match(OPENAI_DELIMETER_MATCH)?.[1]
 
-		if (description.length) {
+		if (description && description.length) {
 			return description
 		} else {
 			throw new Error('OpenAI did not generate a description')

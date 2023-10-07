@@ -2,8 +2,8 @@ import { eachLimit } from 'async'
 import { copyFile, unlink, stat } from 'fs/promises'
 import { cpus } from 'os'
 import path from 'path'
-import log from '../log.js'
-import { downloadTo } from '../web.js'
+import log from '../../lib/log.js'
+import { downloadTo } from '../../lib/web.js'
 import { fileTypeFromFile } from 'file-type'
 import { findVolume } from './google-books.js'
 import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library.js'
@@ -18,11 +18,11 @@ import {
 	bookMdValidator,
 	BookCacheSchema,
 } from './book.schemas.js'
-import { Piece, PieceTypes, toValidatedMarkDown } from '../pieces/index.js'
+import { Piece, PieceTypes, toValidatedMarkDown } from '../../lib/pieces/index.js'
 import { createId } from '@paralleldrive/cuid2'
 import { Book, BookInsert, BookUpdate } from '@luzzle/kysely'
 import { generateDescription, generateTags } from './openai.js'
-import { ASSETS_DIRECTORY } from '../assets.js'
+import { ASSETS_DIRECTORY } from '../../lib/assets.js'
 
 const BOOK_COVER_DIRECTORY = 'covers'
 

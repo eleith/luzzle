@@ -1,16 +1,16 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { SyncArgv } from './sync.js'
 import yargs, { Arguments } from 'yargs'
-import { makeBookMarkDown } from '../books/book.fixtures.js'
+import { makeBookMarkDown } from '../../pieces/books/book.fixtures.js'
 import { makeContext } from './context.fixtures.js'
 import { syncAddBook, syncRemoveBooks, syncUpdateBook } from './sync.private.js'
 import CacheForType from '../cache.js'
-import { BookPiece } from '../books/index.js'
+import { BookPiece } from '../../pieces/books/index.js'
 import { PieceCache } from '../pieces/cache.js'
 import { PieceDatabase } from '../pieces/piece.js'
 
 vi.mock('./sync.private')
-vi.mock('../books/index')
+vi.mock('../../pieces/books/index')
 
 const mocks = {
 	syncAddBook: vi.mocked(syncAddBook),

@@ -4,9 +4,9 @@ import command, { ProcessArgv } from './process.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { BookPiece } from '../books/index.js'
+import { BookPiece } from '../../pieces/books/index.js'
 
-vi.mock('../books/index')
+vi.mock('../../pieces/books/index')
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),

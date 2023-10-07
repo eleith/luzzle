@@ -3,8 +3,7 @@ import { Context } from './utils/types.js'
 import { difference } from 'lodash-es'
 import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags/index.js'
 import { Book, BookUpdate } from '@luzzle/kysely'
-import { BookPiece } from '../books/index.js'
-import { BookMarkDown } from '../books/book.schemas.js'
+import { BookPiece, BookMarkDown } from '../../pieces/books/index.js'
 
 async function syncUpdateBookExecute(
 	ctx: Context,
