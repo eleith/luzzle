@@ -1,20 +1,14 @@
 import log from '../log.js'
 import { Context } from './utils/types.js'
-import {
-	markBookAsSynced,
-	bookMdToBookUpdateInput,
-	bookMdToBookCreateInput,
-	getSlugFromBookMd,
-	Books,
-	BookMd,
-} from '../books/index.js'
 import { difference } from 'lodash-es'
 import { addTagsTo, removeAllTagsFrom, syncTagsFor, keywordsToTags } from '../tags/index.js'
 import { Book, BookUpdate } from '@luzzle/kysely'
+import { BookPiece } from '../books/index.js'
+import { BookMarkDown } from '../books/book.schemas.js'
 
 async function syncUpdateBookExecute(
 	ctx: Context,
-	books: Books,
+	piece: BookPiece,
 	book: Book,
 	bookUpdateInput: BookUpdate
 ): Promise<void> {
@@ -31,7 +25,7 @@ async function syncUpdateBookExecute(
 				await syncTagsFor(ctx, keywordsToTags(bookUpdateInput.keywords), bookUpdate.id, 'books')
 			}
 
-			await markBookAsSynced(books, bookUpdate)
+			await piece.markBookAsSynced(bookUpdate)
 		}
 
 		log.info(`updated ${book.slug}`)
@@ -40,22 +34,27 @@ async function syncUpdateBookExecute(
 	}
 }
 
-async function syncAddBook(ctx: Context, books: Books, bookMd: BookMd): Promise<void> {
+async function syncAddBook(
+	ctx: Context,
+	slug: string,
+	piece: BookPiece,
+	bookMd: BookMarkDown
+): Promise<void> {
 	const maybeBook = await ctx.db
 		.selectFrom('books')
 		.selectAll()
-		.where('slug', '=', getSlugFromBookMd(bookMd))
+		.where('slug', '=', slug)
 		.executeTakeFirst()
 
 	if (maybeBook) {
-		const bookUpdateInput = await bookMdToBookUpdateInput(books, bookMd, maybeBook)
-		await syncUpdateBookExecute(ctx, books, maybeBook, bookUpdateInput)
+		const bookUpdateInput = await piece.toUpdateInput(slug, bookMd, maybeBook)
+		await syncUpdateBookExecute(ctx, piece, maybeBook, bookUpdateInput)
 		return
 	}
 
 	try {
 		if (ctx.flags.dryRun === false) {
-			const bookCreateInput = await bookMdToBookCreateInput(books, bookMd)
+			const bookCreateInput = await piece.toCreateInput(slug, bookMd)
 			const bookAdded = await ctx.db
 				.insertInto('books')
 				.values(bookCreateInput)
@@ -66,7 +65,7 @@ async function syncAddBook(ctx: Context, books: Books, bookMd: BookMd): Promise<
 				await addTagsTo(ctx, keywordsToTags(bookAdded.keywords), bookAdded.id, 'books')
 			}
 
-			await markBookAsSynced(books, bookAdded)
+			await piece.markBookAsSynced(bookAdded)
 		}
 		log.info(`added ${bookMd.filename}`)
 	} catch (err) {
@@ -76,16 +75,20 @@ async function syncAddBook(ctx: Context, books: Books, bookMd: BookMd): Promise<
 
 async function syncUpdateBook(
 	ctx: Context,
-	books: Books,
-	bookMd: BookMd,
-	id: string,
+	slug: string,
+	piece: BookPiece,
+	bookMd: BookMarkDown,
 	force = false
 ): Promise<void> {
-	const book = await ctx.db.selectFrom('books').selectAll().where('id', '=', id).executeTakeFirst()
+	const book = await ctx.db
+		.selectFrom('books')
+		.selectAll()
+		.where('slug', '=', slug)
+		.executeTakeFirst()
 
 	if (book) {
-		const bookUpdateInput = await bookMdToBookUpdateInput(books, bookMd, book, force)
-		await syncUpdateBookExecute(ctx, books, book, bookUpdateInput)
+		const bookUpdateInput = await piece.toUpdateInput(slug, bookMd, book, force)
+		await syncUpdateBookExecute(ctx, piece, book, bookUpdateInput)
 		return
 	}
 }

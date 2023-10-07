@@ -1,24 +1,29 @@
 import { ChildProcess, spawn } from 'child_process'
-import { getBook } from '../books/index.js'
 import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { EventEmitter } from 'stream'
 import command, { EditArgv } from './edit.js'
 import { Arguments } from 'yargs'
-import { makeBookMd } from '../books/book.fixtures.js'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
+import { Pieces } from '../pieces/index.js'
+import { BookPiece } from '../books/index.js'
 
 vi.mock('child_process')
 vi.mock('../books')
+vi.mock('../pieces')
+vi.mock('../books/index')
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
 	logError: vi.spyOn(log, 'error'),
 	logChild: vi.spyOn(log, 'child'),
 	logLevelSet: vi.spyOn(log, 'level', 'set'),
+	piecesParseArgs: vi.spyOn(Pieces, 'parseArgv'),
+	piecesCommand: vi.spyOn(Pieces, 'command'),
+	BookPieceGetPath: vi.spyOn(BookPiece.prototype, 'getPath'),
+	BookPieceExists: vi.spyOn(BookPiece.prototype, 'exists'),
 	spawn: vi.mocked(spawn),
-	getBook: vi.mocked(getBook),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -37,16 +42,18 @@ describe('lib/commands/edit', () => {
 
 	test('run', async () => {
 		const ctx = makeContext()
-		const book = makeBookMd()
-		const slug = 'slug2'
+		const path = 'slug2'
+		const fullPath = `/home/user/${path}.md`
 
 		process.env.EDITOR = 'vi'
-		mocks.getBook.mockResolvedValueOnce(book)
+		mocks.BookPieceGetPath.mockReturnValueOnce(fullPath)
+		mocks.BookPieceExists.mockReturnValueOnce(true)
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
-		await command.run(ctx, { slug } as Arguments<EditArgv>)
+		await command.run(ctx, { path } as Arguments<EditArgv>)
 
-		expect(mocks.spawn).toHaveBeenCalledWith(process.env.EDITOR, [book.filename], {
+		expect(mocks.spawn).toHaveBeenCalledWith(process.env.EDITOR, [fullPath], {
 			cwd: ctx.directory,
 			env: { ...process.env, LUZZLE: 'true' },
 			stdio: 'inherit',
@@ -55,28 +62,32 @@ describe('lib/commands/edit', () => {
 
 	test('run dry-run', async () => {
 		const ctx = makeContext({ flags: { dryRun: true } })
-		const book = makeBookMd()
-		const slug = 'slug2'
+		const path = 'slug2'
+		const fullPath = `/home/user/${path}.md`
 
 		process.env.EDITOR = 'vi'
-		mocks.getBook.mockResolvedValueOnce(book)
+		mocks.BookPieceGetPath.mockReturnValueOnce(fullPath)
+		mocks.BookPieceExists.mockReturnValueOnce(true)
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
-		await command.run(ctx, { slug } as Arguments<EditArgv>)
+		await command.run(ctx, { path } as Arguments<EditArgv>)
 
 		expect(mocks.spawn).not.toHaveBeenCalled()
 	})
 
 	test('run with non existant slug', async () => {
 		const ctx = makeContext({ flags: { dryRun: true } })
-		const slug = 'slug2'
+		const path = 'slug2'
+		const fullPath = `/home/user/${path}.md`
 
 		process.env.EDITOR = 'vi'
-
-		mocks.getBook.mockResolvedValueOnce(null)
+		mocks.BookPieceGetPath.mockReturnValueOnce(fullPath)
+		mocks.BookPieceExists.mockReturnValueOnce(false)
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
-		await command.run(ctx, { slug } as Arguments<EditArgv>)
+		await command.run(ctx, { path } as Arguments<EditArgv>)
 
 		expect(mocks.spawn).not.toHaveBeenCalled()
 		expect(mocks.logError).toHaveBeenCalledOnce()
@@ -84,15 +95,17 @@ describe('lib/commands/edit', () => {
 
 	test('run with no editor', async () => {
 		const ctx = makeContext({ flags: { dryRun: true } })
-		const book = makeBookMd()
-		const slug = 'slug2'
+		const path = 'slug2'
+		const fullPath = `/home/user/${path}.md`
 
 		delete process.env.EDITOR
 
-		mocks.getBook.mockResolvedValueOnce(book)
+		mocks.BookPieceGetPath.mockReturnValueOnce(fullPath)
+		mocks.BookPieceExists.mockReturnValueOnce(true)
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
-		await command.run(ctx, { slug } as Arguments<EditArgv>)
+		await command.run(ctx, { path } as Arguments<EditArgv>)
 
 		expect(mocks.spawn).not.toHaveBeenCalled()
 		expect(mocks.logError).toHaveBeenCalledOnce()
@@ -101,9 +114,8 @@ describe('lib/commands/edit', () => {
 	test('builder', async () => {
 		const args = yargs()
 
-		spies.positional = vi.spyOn(args, 'positional')
 		command.builder?.(args)
 
-		expect(spies.positional).toHaveBeenCalledTimes(2)
+		expect(mocks.piecesCommand).toHaveBeenCalledOnce()
 	})
 })

@@ -5,7 +5,7 @@ import log from './log.js'
 import deepmerge from 'deepmerge'
 import { existsSync, mkdirSync } from 'fs'
 
-export type Cache<T extends Record<string, unknown>> = {
+export type Cache<T> = {
 	lastProcessed?: string
 	lastSynced?: string
 	database?: T
@@ -14,8 +14,8 @@ export type Cache<T extends Record<string, unknown>> = {
 export const CACHE_DIRECTORY = '.cache'
 const ajv = new Ajv.default()
 
-class CacheForType<T extends Record<string, unknown>> {
-	private validator: ReturnType<typeof ajv.compile<T>>
+class CacheForType<T> {
+	private validator: ReturnType<typeof ajv.compile<Cache<T>>>
 	private rootDir: string
 
 	private getFilePath(slug: string): string {
@@ -36,7 +36,7 @@ class CacheForType<T extends Record<string, unknown>> {
 			},
 		}
 
-		this.validator = ajv.compile<T>(schema)
+		this.validator = ajv.compile<Cache<T>>(schema)
 		this.rootDir = path.join(dir, CACHE_DIRECTORY)
 		mkdirSync(this.rootDir, { recursive: true })
 	}

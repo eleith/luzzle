@@ -1,57 +1,37 @@
 import log from '../log.js'
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
-import {
-	getBook,
-	writeBookMd,
-	Books,
-	completeOpenAI,
-	searchGoogleBooks,
-	searchOpenLibrary,
-} from '../books/index.js'
-import { parseSlugFromPath } from './utils/helpers.js'
 import { merge } from 'lodash-es'
+import { Pieces, PieceArgv } from '../pieces/index.js'
+import { BookPiece } from '../books/index.js'
 
 type FetchServices = 'google' | 'openlibrary' | 'openai' | 'all'
 
 export type FetchArgv = {
-	slug: string
-	file: string
 	service: FetchServices
-}
+} & PieceArgv
 
 const command: Command<FetchArgv> = {
 	name: 'fetch',
 
-	command: 'fetch <slug|file>',
+	command: `fetch ${Pieces.COMMAND} [service]`,
 
-	describe: 'fetch metadata for <slug|file> with [google|openlibrary|openai|all]',
+	describe: 'fetch metadata for piece with [google|openlibrary|openai|all]',
 
 	builder: <FetchArgv>(yargs: Argv<FetchArgv>) => {
-		return yargs
-			.positional('slug', {
-				type: 'string',
-				description: 'book slug',
-				demandOption: 'slug (or file) is required',
-			})
-			.positional('file', {
-				type: 'string',
-				description: 'path to the book file',
-				demandOption: 'file (or slug) is required',
-			})
-			.option('service', {
-				type: 'string',
-				description: 'fetch metadata with a specific service',
-				choices: ['google', 'openlibrary', 'openai', 'all'],
-				default: 'all' as FetchServices,
-			})
+		return Pieces.command(yargs).option('service', {
+			type: 'string',
+			description: 'fetch metadata with a specific service',
+			choices: ['google', 'openlibrary', 'openai', 'all'],
+			default: 'all' as FetchServices,
+		})
 	},
 
 	run: async function (ctx, args) {
 		const dir = ctx.directory
-		const slug = parseSlugFromPath(args.file) || args.slug
-		const books = new Books(dir)
-		const bookMd = await getBook(books, slug)
+		const { slug } = Pieces.parseArgv(args)
+		const bookPiece = new BookPiece(dir)
+		const bookMd = await bookPiece.get(slug)
 		const service = args.service
 
 		if (!bookMd) {
@@ -67,7 +47,7 @@ const command: Command<FetchArgv> = {
 
 			if (/google|all/.test(service)) {
 				if (googleKey) {
-					const googleMetadata = await searchGoogleBooks(
+					const googleMetadata = await bookPiece.searchGoogleBooks(
 						googleKey,
 						bookMd.frontmatter.title,
 						bookMd.frontmatter.author
@@ -80,8 +60,7 @@ const command: Command<FetchArgv> = {
 
 			if (/openlibrary|all/.test(service)) {
 				if (bookProcessed.frontmatter.id_ol_book) {
-					const openLibraryMetadata = await searchOpenLibrary(
-						books,
+					const openLibraryMetadata = await bookPiece.searchOpenLibrary(
 						bookProcessed.frontmatter.id_ol_book,
 						slug,
 						bookProcessed.frontmatter.title,
@@ -95,14 +74,14 @@ const command: Command<FetchArgv> = {
 
 			if (/openai|all/.test(service)) {
 				if (openAIKey) {
-					const openAIBook = await completeOpenAI(openAIKey, bookMd)
+					const openAIBook = await bookPiece.completeOpenAI(openAIKey, bookMd)
 					merge(bookProcessed, { frontmatter: openAIBook })
 				} else {
 					log.warn('openai key is not set, tags and description will not be generated')
 				}
 			}
 
-			await writeBookMd(books, bookProcessed)
+			await bookPiece.write(slug, bookProcessed)
 		}
 
 		log.info(`processed ${bookMd.filename}`)

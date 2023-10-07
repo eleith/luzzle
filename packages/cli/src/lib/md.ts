@@ -16,7 +16,9 @@ function addFrontMatter(markdown = '', metadata: { [key: string]: unknown } = {}
 	return `---\n${yamlString}---\n${content}\n`
 }
 
-async function extract(path: string): Promise<{ frontmatter: unknown; markdown: string }> {
+async function extract(
+	path: string
+): Promise<{ frontmatter: { [key: string]: unknown }; markdown: string }> {
 	function extractFrontMatter(): Transformer {
 		const transformer: Transformer = (tree, vfile) => {
 			function visitor(node: { value: string }): VisitorResult {
@@ -45,7 +47,7 @@ async function extract(path: string): Promise<{ frontmatter: unknown; markdown: 
 		.use(extractContent)
 		.process(contents)
 
-	const frontmatter = data.frontmatter
+	const frontmatter = data.frontmatter as { [key: string]: unknown }
 	const content = data.content as string
 	const markdown = content.trimEnd()
 

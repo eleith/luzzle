@@ -7,6 +7,7 @@ import path from 'path'
 import commands, { Context } from './commands/index.js'
 import { DATABASE_PATH } from './assets.js'
 import { migrate } from '@luzzle/kysely'
+import VERSION from '../version.js'
 
 async function parseArgs(_args: string[]) {
 	const command = await yargs(_args)
@@ -54,7 +55,7 @@ async function parseArgs(_args: string[]) {
 		})
 		.demandCommand(1, `[error] please specify a command`)
 		.help()
-		.version('0.0.38') // can we pull this in from package.json ?
+		.version(VERSION)
 		.showHelpOnFail(false)
 		.parseAsync()
 
