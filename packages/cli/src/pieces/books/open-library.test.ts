@@ -1,10 +1,10 @@
-import log from '../log.js'
+import log from '../../lib/log.js'
 import got from 'got'
 import { vi, describe, test, afterEach, expect } from 'vitest'
 import * as openLibraryFixtures from './open-library.fixtures.js'
 import * as openLibrary from './open-library.js'
 
-vi.mock('../log')
+vi.mock('../../lib/log')
 
 const jsonResponseHeaders = { responseType: 'json' }
 
@@ -74,6 +74,20 @@ describe('lib/books/open-library', () => {
 			...jsonResponseHeaders,
 		})
 		expect(getWork).toEqual(work)
+	})
+
+	test('findWork returns null', async () => {
+		const workId = 'work-id'
+
+		mocks.gotGet.mockResolvedValueOnce({ statusCode: 200, body: { num_found: 1, docs: [] } })
+
+		const getWork = await openLibrary.findWork(workId)
+
+		expect(mocks.gotGet).toHaveBeenCalledWith(expect.any(String), {
+			searchParams: { q: workId },
+			...jsonResponseHeaders,
+		})
+		expect(getWork).toEqual(null)
 	})
 
 	test('findWork catches error', async () => {

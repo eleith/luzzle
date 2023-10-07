@@ -1,16 +1,16 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command from './dump.js'
 import { Arguments } from 'yargs'
-import { makeBook, makeBookMarkDown } from '../books/book.fixtures.js'
+import { makeBook, makeBookMarkDown } from '../../pieces/books/book.fixtures.js'
 import { makeContext } from './context.fixtures.js'
 import { CpuInfo, cpus } from 'os'
 import log from '../log.js'
 import { mockDatabase } from '../database.mock.js'
-import { BookPiece } from '../books/index.js'
+import { BookPiece } from '../../pieces/books/index.js'
 
 vi.mock('os')
 vi.mock('log')
-vi.mock('../books/index')
+vi.mock('../../pieces/books/index')
 
 const mocks = {
 	logError: vi.spyOn(log, 'error'),

@@ -2,7 +2,7 @@ import { Command, Context } from './utils/types.js'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
 import { Book } from '@luzzle/kysely'
-import { BookPiece } from '../books/index.js'
+import { BookPiece } from '../../pieces/books/index.js'
 
 async function dumpBook(ctx: Context, book: Book): Promise<void> {
 	const dir = ctx.directory

@@ -3,7 +3,7 @@ import { spawn } from 'child_process'
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
 import { Pieces, PieceArgv } from '../pieces/index.js'
-import { BookPiece } from '../books/index.js'
+import { BookPiece } from '../../pieces/books/index.js'
 
 export type EditArgv = PieceArgv
 

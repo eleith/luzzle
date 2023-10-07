@@ -2,7 +2,7 @@ import log from '../log.js'
 import { Argv } from 'yargs'
 import { Command } from './utils/types.js'
 import { Pieces, PieceArgv } from '../pieces/index.js'
-import { BookPiece } from '../books/index.js'
+import { BookPiece } from '../../pieces/books/index.js'
 
 export type AttachArgv = { file: string } & PieceArgv
 

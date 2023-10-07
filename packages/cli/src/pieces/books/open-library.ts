@@ -1,5 +1,5 @@
 import got from 'got'
-import log from '../log.js'
+import log from '../../lib/log.js'
 
 interface OpenLibraryResponseSearch {
 	start: number
@@ -79,7 +79,7 @@ async function findWork(id: string): Promise<OpenLibrarySearchWork | null> {
 		})
 
 		if (response.statusCode === 200 && response.body.num_found > 0) {
-			const works = response.body.docs.filter((item) => item.type === 'work') || []
+			const works = response.body.docs.filter((item) => item.type === 'work')
 			return works.find((item) => item.key === `/works/${id}`) || null
 		}
 

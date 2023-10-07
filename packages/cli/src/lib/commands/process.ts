@@ -1,7 +1,7 @@
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
 import { eachLimit } from 'async'
-import { BookPiece } from '../books/index.js'
+import { BookPiece } from '../../pieces/books/index.js'
 
 export type ProcessArgv = { force: boolean }
 

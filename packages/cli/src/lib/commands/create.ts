@@ -3,7 +3,7 @@ import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
 import { PieceType, PieceTypes } from '../pieces/index.js'
 import slugify from '@sindresorhus/slugify'
-import { BookPiece } from '../books/index.js'
+import { BookPiece } from '../../pieces/books/index.js'
 
 export type CreateArgv = { piece: PieceType; title: string }
 
