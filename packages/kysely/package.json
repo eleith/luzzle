@@ -1,11 +1,12 @@
 {
   "name": "@luzzle/kysely",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
     "build": "tsc -p tsconfig.prod.json",
-    "test": "vitest run --coverage --silent"
+    "test": "vitest run --coverage --silent",
+		"migration:add": "TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ'); cp ./src/migrations/template.txt ./src/migrations/$TIMESTAMP.ts && echo \"created ./src/migrations/$TIMESTAMP.ts\""
   },
   "engines": {
     "node": ">=18"
