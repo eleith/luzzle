@@ -2,10 +2,12 @@ import { Logger } from 'pino'
 import { Argv, Arguments } from 'yargs'
 import { Config } from '../../config.js'
 import { LuzzleDatabase } from '@luzzle/kysely'
+import { Pieces } from '../../pieces/index.js'
 
 export type Context = {
 	db: LuzzleDatabase
 	log: Logger
+	pieces: Pieces
 	directory: string
 	config: Config
 	flags: {

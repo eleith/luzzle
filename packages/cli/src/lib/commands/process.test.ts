@@ -1,21 +1,15 @@
-import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { ProcessArgv } from './process.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { BookPiece } from '../../pieces/books/index.js'
+import { makePiece } from '../pieces/piece.fixtures.js'
 
-vi.mock('../../pieces/books/index')
+vi.mock('ajv/dist/jtd')
 
 const mocks = {
-	logInfo: vi.spyOn(log, 'info'),
-	logError: vi.spyOn(log, 'error'),
-	logChild: vi.spyOn(log, 'child'),
-	BookPieceSlugs: vi.spyOn(BookPiece.prototype, 'getSlugs'),
-	BookPieceSlugsUpdated: vi.spyOn(BookPiece.prototype, 'getSlugsUpdated'),
-	BookPieceProcess: vi.spyOn(BookPiece.prototype, 'process'),
-	BookPieceStale: vi.spyOn(BookPiece.prototype, 'removeStaleCache'),
+	getPieceTypes: vi.fn(),
+	getPiece: vi.fn(),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -33,45 +27,51 @@ describe('lib/commands/process', () => {
 	})
 
 	test('run', async () => {
-		const ctx = makeContext()
-		const slugs = ['slug3']
+		const slugs = ['slug1', 'slug2', 'slug3']
+		const slugsUpdated = ['slug3']
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceSlugsUpdated.mockResolvedValueOnce(slugs)
-		mocks.BookPieceProcess.mockResolvedValueOnce()
-		mocks.BookPieceStale.mockResolvedValueOnce(slugs)
-
-		await command.run(ctx, {} as Arguments<ProcessArgv>)
-
-		expect(mocks.BookPieceProcess).toHaveBeenCalledOnce()
-		expect(mocks.BookPieceStale).toHaveBeenCalledOnce()
-	})
-
-	test('run with dry-run', async () => {
-		const ctx = makeContext({ flags: { dryRun: true } })
-		const slugs = ['slug3']
-
-		mocks.BookPieceSlugsUpdated.mockResolvedValueOnce(slugs)
-		mocks.BookPieceProcess.mockResolvedValueOnce()
-		mocks.BookPieceStale.mockResolvedValueOnce(slugs)
+		spies.pieceProcess = vi.spyOn(PieceTest.prototype, 'process').mockResolvedValue()
+		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
+		spies.pieceFilterSlugs = vi
+			.spyOn(PieceTest.prototype, 'filterSlugsBy')
+			.mockResolvedValue(slugsUpdated)
 
 		await command.run(ctx, {} as Arguments<ProcessArgv>)
 
-		expect(mocks.BookPieceProcess).not.toHaveBeenCalledOnce()
-		expect(mocks.BookPieceStale).not.toHaveBeenCalledOnce()
+		expect(spies.pieceProcess).toHaveBeenCalledOnce()
+		expect(spies.pieceFilterSlugs).toHaveBeenCalledOnce()
 	})
 
 	test('run with force flag', async () => {
-		const ctx = makeContext()
-		const slugs = ['slug3', 'slug2']
+		const slugs = ['slug1', 'slug2', 'slug3']
+		const slugsUpdated = ['slug3']
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceSlugs.mockResolvedValueOnce(slugs)
-		mocks.BookPieceProcess.mockResolvedValueOnce()
-		mocks.BookPieceStale.mockResolvedValueOnce(slugs)
+		spies.pieceProcess = vi.spyOn(PieceTest.prototype, 'process').mockResolvedValue()
+		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
+		spies.pieceFilterSlugs = vi
+			.spyOn(PieceTest.prototype, 'filterSlugsBy')
+			.mockResolvedValue(slugsUpdated)
 
 		await command.run(ctx, { force: true } as Arguments<ProcessArgv>)
 
-		expect(mocks.BookPieceProcess).toHaveBeenCalledTimes(slugs.length)
-		expect(mocks.BookPieceStale).toHaveBeenCalledOnce()
+		expect(spies.pieceProcess).toHaveBeenCalledOnce()
+		expect(spies.pieceFilterSlugs).not.toHaveBeenCalledOnce()
 	})
 
 	test('builder', async () => {

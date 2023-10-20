@@ -9,10 +9,10 @@ import { mockDatabase } from './database.mock.js'
 
 vi.mock('os')
 vi.mock('fs/promises')
-vi.mock('./book')
 vi.mock('@luzzle/kysely')
 vi.mock('./config')
-vi.mock('./commands')
+vi.mock('./commands/index')
+vi.mock('./pieces/index')
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),

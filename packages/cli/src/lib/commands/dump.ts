@@ -1,24 +1,5 @@
-import { Command, Context } from './utils/types.js'
+import { Command } from './utils/types.js'
 import { eachLimit } from 'async'
-import { cpus } from 'os'
-import { Book } from '@luzzle/kysely'
-import { BookPiece } from '../../pieces/books/index.js'
-
-async function dumpBook(ctx: Context, book: Book): Promise<void> {
-	const dir = ctx.directory
-
-	try {
-		if (ctx.flags.dryRun === false) {
-			const bookPiece = new BookPiece(dir)
-			const markdown = await bookPiece.toMarkDown(book)
-
-			await bookPiece.write(book.slug, markdown)
-		}
-		ctx.log.info(`saved book to ${book.slug}.md`)
-	} catch (e) {
-		ctx.log.error(`error saving ${book.slug}`)
-	}
-}
 
 const command: Command = {
 	name: 'dump',
@@ -28,11 +9,12 @@ const command: Command = {
 	describe: 'dump database to local markdown files',
 
 	run: async function (ctx) {
-		const books = await ctx.db.selectFrom('books').selectAll().execute()
-		const numCpus = cpus().length
+		const dryRun = ctx.flags.dryRun
+		const pieceTypes = ctx.pieces.getPieceTypes()
 
-		await eachLimit(books, numCpus, async (book) => {
-			await dumpBook(ctx, book)
+		await eachLimit(pieceTypes, 1, async (pieceType) => {
+			const pieces = await ctx.pieces.getPiece(pieceType)
+			await pieces.dump(ctx.db, dryRun)
 		})
 	},
 }

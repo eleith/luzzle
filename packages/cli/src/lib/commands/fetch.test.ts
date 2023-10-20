@@ -1,32 +1,23 @@
-import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { FetchArgv } from './fetch.js'
 import { Arguments, Argv } from 'yargs'
-import { makeBookMarkDown } from '../../pieces/books/book.fixtures.js'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { merge } from 'lodash-es'
-import { Pieces } from '../pieces/index.js'
-import { BookPiece } from '../../pieces/books/index.js'
+import { makePieceCommand, parsePieceArgv } from '../pieces/index.js'
+import { makeMarkdownSample, makePiece } from '../pieces/piece.fixtures.js'
 
-vi.mock('../books')
 vi.mock('../log')
-vi.mock('../pieces')
-vi.mock('../../pieces/books/index')
+vi.mock('../pieces/index')
+vi.mock('ajv/dist/jtd')
 
 const mocks = {
-	logInfo: vi.spyOn(log, 'info'),
-	logWarn: vi.spyOn(log, 'warn'),
-	piecesParseArgs: vi.spyOn(Pieces, 'parseArgv'),
-	piecesCommand: vi.spyOn(Pieces, 'command'),
-	BookPieceGet: vi.spyOn(BookPiece.prototype, 'get'),
-	BookPieceSearchOpenLibrary: vi.spyOn(BookPiece.prototype, 'searchOpenLibrary'),
-	BookPieceSearchGoogleBooks: vi.spyOn(BookPiece.prototype, 'searchGoogleBooks'),
-	BookPieceCompleteOpenAI: vi.spyOn(BookPiece.prototype, 'completeOpenAI'),
-	BookPieceWrite: vi.spyOn(BookPiece.prototype, 'write'),
+	piecesParseArgs: vi.mocked(parsePieceArgv),
+	piecesCommand: vi.mocked(makePieceCommand),
+	getPieceTypes: vi.fn(),
+	getPiece: vi.fn(),
 }
 
-const spies: SpyInstance[] = []
+const spies: { [key: string]: SpyInstance } = {}
 
 describe('lib/commands/fetch', () => {
 	afterEach(() => {
@@ -34,130 +25,96 @@ describe('lib/commands/fetch', () => {
 			mock.mockReset()
 		})
 
-		spies.forEach((spy) => {
-			spy.mockRestore()
+		Object.keys(spies).forEach((key) => {
+			spies[key].mockRestore()
+			delete spies[key]
 		})
 	})
 
-	test('run with slug', async () => {
-		const ctx = makeContext({ config: { get: () => ({}) } })
-		const book = makeBookMarkDown()
+	test('run', async () => {
+		const book = makeMarkdownSample()
 		const path = 'slug2'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			config: { get: () => ({}) },
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceGet.mockResolvedValueOnce(book)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(book)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		spies.pieceFetch = vi.spyOn(PieceTest.prototype, 'fetch').mockResolvedValueOnce(book)
+
 		mocks.piecesParseArgs.mockReturnValueOnce({ slug: path, piece: 'books' })
 
 		await command.run(ctx, { path, service: 'all' } as Arguments<FetchArgv>)
 
-		expect(mocks.BookPieceWrite).toHaveBeenCalledOnce()
-		expect(mocks.logWarn).toHaveBeenCalledTimes(3)
-	})
-
-	test('run with google', async () => {
-		const ctx = makeContext({ config: { get: () => ({ google: 'abc' }) } })
-		const book = makeBookMarkDown()
-		const bookGoogle = makeBookMarkDown({ frontmatter: { description: 'a tiny desc' } })
-		const path = 'slug2'
-
-		mocks.BookPieceGet.mockResolvedValueOnce(book)
-		mocks.BookPieceSearchGoogleBooks.mockResolvedValueOnce(bookGoogle.frontmatter)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ slug: path, piece: 'books' })
-
-		await command.run(ctx, { path, service: 'google' } as Arguments<FetchArgv>)
-
-		expect(mocks.BookPieceWrite).toHaveBeenCalledWith(expect.anything(), merge(book, bookGoogle))
-		expect(mocks.BookPieceSearchGoogleBooks).toHaveBeenCalledWith(
-			'abc',
-			book.frontmatter.title,
-			book.frontmatter.author
-		)
-	})
-
-	test('run with openai', async () => {
-		const ctx = makeContext({ config: { get: () => ({ openai: 'abc' }) } })
-		const book = makeBookMarkDown()
-		const bookAi = makeBookMarkDown({ frontmatter: { description: 'a tiny desc' } })
-		const path = 'slug2'
-
-		mocks.BookPieceGet.mockResolvedValueOnce(book)
-		mocks.BookPieceCompleteOpenAI.mockResolvedValueOnce(bookAi.frontmatter)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ slug: path, piece: 'books' })
-
-		await command.run(ctx, { path, service: 'openai' } as Arguments<FetchArgv>)
-
-		expect(mocks.BookPieceWrite).toHaveBeenCalledWith(expect.anything(), merge(book, bookAi))
-		expect(mocks.BookPieceCompleteOpenAI).toHaveBeenCalledOnce()
-	})
-
-	test('run with openlibrary', async () => {
-		const ctx = makeContext({ config: { get: () => ({}) } })
-		const book = makeBookMarkDown({ frontmatter: { id_ol_book: 'abc' } })
-		const bookOpenLibrary = makeBookMarkDown({ frontmatter: { description: 'a tiny desc' } })
-		const path = 'slug2'
-
-		mocks.BookPieceGet.mockResolvedValueOnce(book)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
-		mocks.BookPieceSearchOpenLibrary.mockResolvedValueOnce(bookOpenLibrary.frontmatter)
-		mocks.piecesParseArgs.mockReturnValueOnce({ slug: path, piece: 'books' })
-
-		await command.run(ctx, { path, service: 'openlibrary' } as Arguments<FetchArgv>)
-
-		expect(mocks.BookPieceWrite).toHaveBeenCalledWith(
-			expect.anything(),
-			merge(book, bookOpenLibrary)
-		)
-		expect(mocks.BookPieceSearchOpenLibrary).toHaveBeenCalledWith(
-			book.frontmatter.id_ol_book,
-			path,
-			book.frontmatter.title,
-			book.frontmatter.author
-		)
+		expect(spies.pieceWrite).toHaveBeenCalledOnce()
+		expect(spies.pieceFetch).toHaveBeenCalledOnce()
 	})
 
 	test('run with dry-run', async () => {
-		const ctx = makeContext({ flags: { dryRun: true } })
-		const book = makeBookMarkDown()
+		const book = makeMarkdownSample()
 		const path = 'slug2'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			config: { get: () => ({}) },
+			flags: { dryRun: true },
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceGet.mockResolvedValueOnce(book)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(book)
+		spies.pieceFetch = vi.spyOn(PieceTest.prototype, 'fetch')
+
 		mocks.piecesParseArgs.mockReturnValueOnce({ slug: path, piece: 'books' })
 
 		await command.run(ctx, { path } as Arguments<FetchArgv>)
 
-		expect(mocks.BookPieceGet).toHaveBeenCalledOnce()
-		expect(mocks.BookPieceWrite).not.toHaveBeenCalled()
+		expect(spies.pieceGet).toHaveBeenCalledOnce()
+		expect(spies.pieceFetch).not.toHaveBeenCalled()
 	})
 
 	test('run does not find slug', async () => {
-		const ctx = makeContext()
 		const path = 'slug2'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			flags: { dryRun: true },
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceGet.mockResolvedValueOnce(null)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(null)
+		spies.pieceFetch = vi.spyOn(PieceTest.prototype, 'fetch')
+
 		mocks.piecesParseArgs.mockReturnValueOnce({ slug: path, piece: 'books' })
 
 		await command.run(ctx, { path } as Arguments<FetchArgv>)
 
-		expect(mocks.BookPieceGet).toHaveBeenCalledOnce()
-		expect(mocks.BookPieceWrite).not.toHaveBeenCalled()
+		expect(spies.pieceGet).toHaveBeenCalledOnce()
+		expect(spies.pieceFetch).not.toHaveBeenCalled()
 	})
 
 	test('builder', async () => {
 		const args = yargs() as Argv<FetchArgv>
-		const spyPositional = vi.spyOn(args, 'positional')
-		const spyOption = vi.spyOn(args, 'option')
+
+		spies.positional = vi.spyOn(args, 'positional')
+		spies.option = vi.spyOn(args, 'option')
 
 		mocks.piecesCommand.mockReturnValueOnce(args)
 
 		command.builder?.(args)
 
-		spies.push(spyPositional, spyOption)
-
 		expect(mocks.piecesCommand).toHaveBeenCalledOnce()
-		expect(spyOption).toHaveBeenCalledWith('service', expect.any(Object))
+		expect(spies.option).toHaveBeenCalledWith('service', expect.any(Object))
 	})
 })

@@ -21,7 +21,7 @@ export type BookSchema = JTDSchemaType<BookMarkDown>
 
 const bookMdSchema: BookSchema = {
 	properties: {
-		filename: { type: 'string' },
+		slug: { type: 'string' },
 		frontmatter: {
 			properties: {
 				title: { type: 'string' },

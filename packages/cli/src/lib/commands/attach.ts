@@ -1,20 +1,19 @@
 import log from '../log.js'
 import { Argv } from 'yargs'
 import { Command } from './utils/types.js'
-import { Pieces, PieceArgv } from '../pieces/index.js'
-import { BookPiece } from '../../pieces/books/index.js'
+import { PieceArgv, PieceCommandOption, makePieceCommand, parsePieceArgv } from '../pieces/index.js'
 
 export type AttachArgv = { file: string } & PieceArgv
 
 const command: Command<AttachArgv> = {
 	name: 'attach',
 
-	command: `attach ${Pieces.COMMAND} <file|url>`,
+	command: `attach ${PieceCommandOption} <file|url>`,
 
 	describe: 'download and attach a file to a piece',
 
 	builder: function <T>(yargs: Argv<T>) {
-		return Pieces.command(yargs).positional('file', {
+		return makePieceCommand(yargs).positional('file', {
 			type: 'string',
 			alias: 'url',
 			description: 'file to attach',
@@ -23,21 +22,20 @@ const command: Command<AttachArgv> = {
 	},
 
 	run: async function (ctx, args) {
-		const dir = ctx.directory
-		const { slug } = Pieces.parseArgv(args)
+		const { slug, piece } = parsePieceArgv(args)
 		const file = args.file
-		const bookPiece = new BookPiece(dir)
+		const pieces = await ctx.pieces.getPiece(piece)
 
-		if (bookPiece.exists(slug) === false) {
+		if (pieces.exists(slug) === false) {
 			log.info(`${slug} was not found`)
 			return
 		}
 
 		if (ctx.flags.dryRun === false) {
-			await bookPiece.attach(slug, file)
+			await pieces.attach(slug, file)
 		}
 
-		log.info(`uploaded ${file} to ${bookPiece.getFileName(slug)}`)
+		log.info(`uploaded ${file} to ${pieces.getFileName(slug)}`)
 	},
 }
 

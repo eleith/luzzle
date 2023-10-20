@@ -1,7 +1,6 @@
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
 import { eachLimit } from 'async'
-import { BookPiece } from '../../pieces/books/index.js'
 
 export type ProcessArgv = { force: boolean }
 
@@ -22,20 +21,16 @@ const command: Command<ProcessArgv> = {
 	},
 
 	run: async function (ctx, args) {
-		const dir = ctx.directory
-		const bookPiece = new BookPiece(dir)
+		const force = args.force
+		const dryRun = ctx.flags.dryRun
+		const pieceTypes = ctx.pieces.getPieceTypes()
 
-		const slugs = args.force
-			? await bookPiece.getSlugs()
-			: await bookPiece.getSlugsUpdated('lastProcessed')
-
-		if (ctx.flags.dryRun === false) {
-			await eachLimit(slugs, 1, async (slug) => {
-				await bookPiece.process(slug)
-			})
-
-			await bookPiece.removeStaleCache()
-		}
+		await eachLimit(pieceTypes, 1, async (pieceType) => {
+			const pieces = await ctx.pieces.getPiece(pieceType)
+			const slugs = await pieces.getSlugs()
+			const updatedSlugs = force ? slugs : await pieces.filterSlugsBy(slugs, 'lastProcessed')
+			await pieces.process(updatedSlugs, dryRun)
+		})
 	},
 }
 

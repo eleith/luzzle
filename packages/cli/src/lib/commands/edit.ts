@@ -2,28 +2,27 @@ import log from '../log.js'
 import { spawn } from 'child_process'
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
-import { Pieces, PieceArgv } from '../pieces/index.js'
-import { BookPiece } from '../../pieces/books/index.js'
+import { PieceArgv, PieceCommandOption, makePieceCommand, parsePieceArgv } from '../pieces/index.js'
 
 export type EditArgv = PieceArgv
 
 const command: Command<EditArgv> = {
 	name: 'edit',
 
-	command: `edit ${Pieces.COMMAND}`,
+	command: `edit ${PieceCommandOption}`,
 
 	describe: 'edit a piece',
 
 	builder: <T>(yargs: Argv<T>) => {
-		return Pieces.command(yargs)
+		return makePieceCommand(yargs)
 	},
 
 	run: async function (ctx, args) {
 		const dir = ctx.directory
-		const { slug } = Pieces.parseArgv(args)
-		const bookPiece = new BookPiece(dir)
+		const { slug, piece } = parsePieceArgv(args)
+		const pieces = await ctx.pieces.getPiece(piece)
 
-		if (!bookPiece.exists(slug)) {
+		if (!pieces.exists(slug)) {
 			log.error(`${slug} was not found`)
 			return
 		}
@@ -33,7 +32,7 @@ const command: Command<EditArgv> = {
 			return
 		}
 
-		const piecePath = bookPiece.getPath(slug)
+		const piecePath = pieces.getPath(slug)
 
 		if (ctx.flags.dryRun === false) {
 			spawn(process.env.EDITOR, [piecePath], {

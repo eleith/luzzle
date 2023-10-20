@@ -3,7 +3,7 @@ import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { makeContext } from '../commands/context.fixtures.js'
 import * as tagLibrary from './tags.js'
 import { mockDatabase } from '../database.mock.js'
-import { Tag } from '@luzzle/kysely'
+import { PieceTables, Tag } from '@luzzle/kysely'
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
@@ -32,11 +32,11 @@ describe('lib/tags/tags.ts', () => {
 		const tags = ['one', 'two', 'three']
 		const id = 'id1'
 		const tagId = 'tagId1'
-		const type = tagLibrary.TagMapTypes.BOOKS
+		const type = 'test' as PieceTables
 
 		kysely.queries.executeTakeFirstOrThrow.mockResolvedValue({ id: tagId })
 
-		await tagLibrary.addTagsTo(ctx, tags, id, type)
+		await tagLibrary.addTagsTo(ctx.db, tags, id, type)
 
 		expect(kysely.queries.values).toHaveBeenCalledTimes(tags.length * 2)
 		expect(kysely.queries.execute).toHaveBeenCalledTimes(tags.length)
@@ -53,14 +53,14 @@ describe('lib/tags/tags.ts', () => {
 			item_count: i,
 		}))
 		const id = 'id1'
-		const type = tagLibrary.TagMapTypes.BOOKS
+		const type = 'test' as PieceTables
 
 		kysely.queries.execute.mockResolvedValueOnce(tags)
 		kysely.queries.execute.mockResolvedValueOnce(null)
 		kysely.queries.execute.mockResolvedValueOnce(tagCounts)
 		kysely.queries.execute.mockResolvedValueOnce(null)
 
-		await tagLibrary.removeTagsFrom(ctx, tagSlugs, id, type)
+		await tagLibrary.removeTagsFrom(ctx.db, tagSlugs, id, type)
 
 		expect(kysely.queries.execute).toHaveBeenCalledTimes(4)
 	})
@@ -75,13 +75,13 @@ describe('lib/tags/tags.ts', () => {
 			item_count: i,
 		}))
 		const id = 'id1'
-		const type = tagLibrary.TagMapTypes.BOOKS
+		const type = 'test' as PieceTables
 
 		kysely.queries.execute.mockResolvedValueOnce(null)
 		kysely.queries.execute.mockResolvedValueOnce(tagCounts)
 		kysely.queries.execute.mockResolvedValueOnce(null)
 
-		await tagLibrary.removeAllTagsFrom(ctx, [id], type)
+		await tagLibrary.removeAllTagsFrom(ctx.db, [id], type)
 
 		expect(kysely.db.deleteFrom).toHaveBeenCalledTimes(2)
 		expect(kysely.queries.execute).toHaveBeenCalledTimes(3)
@@ -93,11 +93,11 @@ describe('lib/tags/tags.ts', () => {
 		const tagNames = ['one', 'two', 'three']
 		const tags = ['one', 'two', 'found'].map((slug) => ({ slug, id: 'id' } as Tag))
 		const id = 'id1'
-		const type = tagLibrary.TagMapTypes.BOOKS
+		const type = 'test' as PieceTables
 
 		kysely.queries.execute.mockResolvedValueOnce(tags)
 
-		await tagLibrary.syncTagsFor(ctx, tagNames, id, type)
+		await tagLibrary.syncTagsFor(ctx.db, tagNames, id, type)
 
 		expect(mocks.addTagsTo).toHaveBeenCalledOnce()
 		expect(mocks.removeTagsFrom).toHaveBeenCalledOnce()
