@@ -1,25 +1,20 @@
-import log from '../log.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { AttachArgv } from './attach.js'
 import { Arguments, Argv } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { Pieces } from '../pieces/index.js'
-import { BookPiece } from '../../pieces/books/index.js'
+import { makePieceCommand, parsePieceArgv } from '../pieces/index.js'
+import { makePiece } from '../pieces/piece.fixtures.js'
 
-vi.mock('child_process')
-vi.mock('../books')
-vi.mock('../pieces')
-vi.mock('../../pieces/books/index')
+vi.mock('../pieces/index')
+vi.mock('../log')
+vi.mock('ajv/dist/jtd')
 
 const mocks = {
-	logInfo: vi.spyOn(log, 'info'),
-	logError: vi.spyOn(log, 'error'),
-	logChild: vi.spyOn(log, 'child'),
-	BookPieceExists: vi.spyOn(BookPiece.prototype, 'exists'),
-	BookPieceAttach: vi.spyOn(BookPiece.prototype, 'attach'),
-	piecesParseArgs: vi.spyOn(Pieces, 'parseArgv'),
-	piecesCommand: vi.spyOn(Pieces, 'command'),
+	piecesParseArgs: vi.mocked(parsePieceArgv),
+	piecesCommand: vi.mocked(makePieceCommand),
+	getPieceTypes: vi.fn(),
+	getPiece: vi.fn(),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -37,42 +32,68 @@ describe('lib/commands/attach', () => {
 	})
 
 	test('run', async () => {
-		const ctx = makeContext()
 		const path = 'slug2'
 		const file = 'file2'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceExists.mockReturnValue(true)
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValue(true)
+		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach')
 
 		await command.run(ctx, { path, file } as Arguments<AttachArgv>)
 
-		expect(mocks.BookPieceAttach).toHaveBeenCalledWith(path, file)
+		expect(spies.pieceAttach).toHaveBeenCalledWith(path, file)
 	})
 
 	test('run with dry-run', async () => {
-		const ctx = makeContext({ flags: { dryRun: true } })
 		const path = 'slug2'
 		const file = 'file2'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			flags: { dryRun: true },
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceExists.mockReturnValue(true)
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValue(true)
+		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach')
 
 		await command.run(ctx, { path, file } as Arguments<AttachArgv>)
 
-		expect(mocks.BookPieceAttach).not.toHaveBeenCalled()
+		expect(spies.pieceAttach).not.toHaveBeenCalled()
 	})
 
 	test('run does not find slug', async () => {
-		const ctx = makeContext()
 		const path = 'slug2'
 		const file = 'file2'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			flags: { dryRun: true },
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceExists.mockReturnValue(false)
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValue(false)
+		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach')
 
 		await command.run(ctx, { path, file } as Arguments<AttachArgv>)
 
-		expect(mocks.BookPieceAttach).not.toHaveBeenCalled()
+		expect(spies.pieceAttach).not.toHaveBeenCalled()
 	})
 
 	test('builder', async () => {

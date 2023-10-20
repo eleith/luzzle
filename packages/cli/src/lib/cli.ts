@@ -8,6 +8,7 @@ import commands, { Context } from './commands/index.js'
 import { DATABASE_PATH } from './assets.js'
 import { migrate } from '@luzzle/kysely'
 import VERSION from '../version.js'
+import { Pieces } from './pieces/index.js'
 
 async function parseArgs(_args: string[]) {
 	const command = await yargs(_args)
@@ -74,6 +75,7 @@ async function initialize(command: Awaited<ReturnType<typeof parseArgs>>): Promi
 	const ctx: Context = {
 		db: {} as LuzzleDatabase,
 		log,
+		pieces: new Pieces(command.options.dir),
 		directory: command.options.dir,
 		config,
 		flags: {
@@ -89,6 +91,7 @@ async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<v
 	const ctx: Context = {
 		db: getDatabaseClient(path.join(directory, DATABASE_PATH)),
 		log,
+		pieces: new Pieces(directory),
 		directory,
 		config,
 		flags: {

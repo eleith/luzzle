@@ -1,25 +1,14 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command, { SyncArgv } from './sync.js'
 import yargs, { Arguments } from 'yargs'
-import { makeBookMarkDown } from '../../pieces/books/book.fixtures.js'
 import { makeContext } from './context.fixtures.js'
-import { syncAddBook, syncRemoveBooks, syncUpdateBook } from './sync.private.js'
-import CacheForType from '../cache.js'
-import { BookPiece } from '../../pieces/books/index.js'
-import { PieceCache } from '../pieces/cache.js'
-import { PieceDatabase } from '../pieces/piece.js'
+import { makePiece } from '../pieces/piece.fixtures.js'
 
-vi.mock('./sync.private')
-vi.mock('../../pieces/books/index')
+vi.mock('ajv/dist/jtd')
 
 const mocks = {
-	syncAddBook: vi.mocked(syncAddBook),
-	syncRemoveBooks: vi.mocked(syncRemoveBooks),
-	syncUpdateBook: vi.mocked(syncUpdateBook),
-	BookPieceSlugsUpdated: vi.spyOn(BookPiece.prototype, 'getSlugsUpdated'),
-	BookPieceSlugs: vi.spyOn(BookPiece.prototype, 'getSlugs'),
-	BookPieceGet: vi.spyOn(BookPiece.prototype, 'get'),
-	BookPieceCache: vi.spyOn(BookPiece.prototype, 'caches', 'get'),
+	getPieceTypes: vi.fn(),
+	getPiece: vi.fn(),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -36,70 +25,60 @@ describe('lib/commands/sync', () => {
 		})
 	})
 
-	test('sync adds 2 books to db', async () => {
-		const ctx = makeContext()
-		const slugs = ['a', 'b']
-		const bookMd = makeBookMarkDown()
-		const cache = {
-			get: () => ({ database: null }),
-		} as unknown as CacheForType<PieceCache<PieceDatabase>>
+	test('run', async () => {
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
+		const slugs = ['a', 'b', 'c']
+		const slugsUpdated = ['a', 'b']
 
-		mocks.BookPieceSlugsUpdated.mockResolvedValueOnce(slugs)
-		mocks.BookPieceGet.mockResolvedValue(bookMd)
-		mocks.BookPieceCache.mockReturnValue(cache)
-		mocks.syncRemoveBooks.mockResolvedValue()
-		mocks.syncAddBook.mockResolvedValue()
-
-		await command.run(ctx, {} as Arguments<SyncArgv>)
-
-		expect(mocks.BookPieceGet).toHaveBeenCalledTimes(slugs.length)
-		expect(mocks.syncRemoveBooks).toHaveBeenCalled()
-		expect(mocks.syncAddBook).toHaveBeenCalledTimes(slugs.length)
-		expect(mocks.syncUpdateBook).not.toHaveBeenCalled()
-	})
-
-	test('sync update 2 books to db', async () => {
-		const ctx = makeContext()
-		const slugs = ['a', 'b']
-		const bookMd = makeBookMarkDown()
-		const cache = {
-			get: () => ({ database: { slug: slugs[0] } }),
-		} as unknown as CacheForType<PieceCache<PieceDatabase>>
-
-		mocks.BookPieceSlugsUpdated.mockResolvedValueOnce(slugs)
-		mocks.BookPieceGet.mockResolvedValue(bookMd)
-		mocks.BookPieceCache.mockReturnValue(cache)
-		mocks.syncRemoveBooks.mockResolvedValue()
-		mocks.syncUpdateBook.mockResolvedValue()
+		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
+		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncCleanUp').mockResolvedValue()
+		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
+		spies.pieceFilterSlugsBy = vi
+			.spyOn(PieceTest.prototype, 'filterSlugsBy')
+			.mockResolvedValue(slugsUpdated)
 
 		await command.run(ctx, {} as Arguments<SyncArgv>)
 
-		expect(mocks.BookPieceGet).toHaveBeenCalledTimes(slugs.length)
-		expect(mocks.syncRemoveBooks).toHaveBeenCalled()
-		expect(mocks.syncUpdateBook).toHaveBeenCalledTimes(slugs.length)
-		expect(mocks.syncAddBook).not.toHaveBeenCalled()
+		expect(mocks.getPiece).toHaveBeenCalledWith(pieceType)
+		expect(spies.pieceFilterSlugsBy).toHaveBeenCalledOnce()
+		expect(spies.pieceSync).toHaveBeenCalledOnce()
+		expect(spies.pieceSyncCleanUp).toHaveBeenCalledOnce()
 	})
 
-	test('sync with flag force', async () => {
-		const ctx = makeContext()
+	test('run with force', async () => {
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 		const slugs = ['a', 'b']
-		const bookMd = makeBookMarkDown()
-		const cache = {
-			get: () => ({ database: { slug: slugs[0] } }),
-		} as unknown as CacheForType<PieceCache<PieceDatabase>>
+		const slugsUpdated = ['a', 'b']
 
-		mocks.BookPieceSlugs.mockResolvedValueOnce(slugs)
-		mocks.BookPieceGet.mockResolvedValue(bookMd)
-		mocks.BookPieceCache.mockReturnValue(cache)
-		mocks.syncRemoveBooks.mockResolvedValue()
-		mocks.syncUpdateBook.mockResolvedValue()
+		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
+		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncCleanUp').mockResolvedValue()
+		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
+		spies.pieceFilterSlugsBy = vi
+			.spyOn(PieceTest.prototype, 'filterSlugsBy')
+			.mockResolvedValue(slugsUpdated)
+		mocks.getPiece.mockResolvedValue(new PieceTest())
 
 		await command.run(ctx, { force: true } as Arguments<SyncArgv>)
 
-		expect(mocks.BookPieceGet).toHaveBeenCalledTimes(slugs.length)
-		expect(mocks.syncRemoveBooks).toHaveBeenCalled()
-		expect(mocks.syncUpdateBook).toHaveBeenCalledTimes(slugs.length)
-		expect(mocks.syncAddBook).not.toHaveBeenCalled()
+		expect(mocks.getPiece).toHaveBeenCalledOnce()
+		expect(spies.pieceFilterSlugsBy).not.toHaveBeenCalledOnce()
+		expect(spies.pieceGetSlugs).toHaveBeenCalledOnce()
+		expect(spies.pieceSync).toHaveBeenCalledOnce()
+		expect(spies.pieceSyncCleanUp).toHaveBeenCalledOnce()
 	})
 
 	test('builder', async () => {

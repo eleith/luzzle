@@ -10,19 +10,15 @@ import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-lib
 import sharp from 'sharp'
 import crypto from 'crypto'
 import { existsSync } from 'fs'
-import {
-	bookMdSchema,
-	cacheDatabaseSchema,
-	BookMarkDown,
-	BookDatabaseOnlyFields,
-	bookMdValidator,
-	BookCacheSchema,
-} from './book.schemas.js'
-import { Piece, PieceTypes, toValidatedMarkDown } from '../../lib/pieces/index.js'
+import { BookMarkDown, bookMdValidator, cacheDatabaseSchema } from './book.schemas.js'
+import { Piece, toValidatedMarkDown } from '../../lib/pieces/index.js'
 import { createId } from '@paralleldrive/cuid2'
-import { Book, BookInsert, BookUpdate } from '@luzzle/kysely'
+import { Book, BookInsert, BookUpdate, PieceTable } from '@luzzle/kysely'
 import { generateDescription, generateTags } from './openai.js'
 import { ASSETS_DIRECTORY } from '../../lib/assets.js'
+import { Config } from '../../lib/config.js'
+import { merge } from 'lodash-es'
+import { FetchArgv } from '../../lib/commands/fetch.js'
 
 const BOOK_COVER_DIRECTORY = 'covers'
 
@@ -49,9 +45,9 @@ async function _getCoverData<T extends BookInsert | BookUpdate>(
 	}
 }
 
-class BookPiece extends Piece<typeof PieceTypes.Books, Book, BookMarkDown> {
-	constructor(dir: string) {
-		super(dir, PieceTypes.Books, bookMdValidator, cacheDatabaseSchema)
+class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
+	constructor(piecesRoot: string) {
+		super(piecesRoot, 'books', bookMdValidator, cacheDatabaseSchema)
 	}
 
 	getCoverPath(slug: string): string {
@@ -72,69 +68,22 @@ class BookPiece extends Piece<typeof PieceTypes.Books, Book, BookMarkDown> {
 		return path.join(assetCacheDirectory, BOOK_COVER_DIRECTORY, `${slug}.w${widthSize}.${type}`)
 	}
 
-	async toMarkDown(book: Book): Promise<BookMarkDown> {
-		const bookFrontmatter: Partial<{ [key in keyof BookMarkDown['frontmatter']]: unknown }> = {}
-		const bookMdFields = Object.keys({
-			...bookMdSchema.properties.frontmatter.properties,
-			...bookMdSchema.properties.frontmatter.optionalProperties,
-		}) as Array<keyof BookMarkDown['frontmatter']>
-
-		bookMdFields.forEach((key) => {
-			const bookAttribute = book[key]
-			if (bookAttribute !== null && bookAttribute !== undefined) {
-				bookFrontmatter[key] = bookAttribute
-			}
-		})
-
-		return toValidatedMarkDown(
-			this.getFileName(book.slug),
-			book.note?.toString(),
-			bookFrontmatter,
-			bookMdValidator
-		)
-	}
-
-	async markBookAsSynced(book: Book): Promise<void> {
-		const bookDbCache: Partial<{ [key in BookDatabaseOnlyFields]: unknown }> = {}
-		const bookDbFields = [
-			...Object.keys(cacheDatabaseSchema.properties),
-			...Object.keys(cacheDatabaseSchema.optionalProperties),
-		] as Array<BookDatabaseOnlyFields>
-
-		bookDbFields.forEach((key) => {
-			const bookAttribute = book[key]
-			if (bookAttribute !== null && bookAttribute !== undefined) {
-				bookDbCache[key] = bookAttribute
-			}
-		})
-
-		await this.caches.update(book.slug, {
-			lastSynced: new Date().toJSON(),
-			database: bookDbCache as BookCacheSchema,
-		})
-	}
-
-	async toCreateInput(slug: string, bookMd: BookMarkDown): Promise<BookInsert> {
+	async toCreateInput(markdown: BookMarkDown): Promise<BookInsert> {
 		const bookInput = {
-			...bookMd.frontmatter,
+			...markdown.frontmatter,
 			id: createId(),
-			slug,
-			note: bookMd.markdown,
-			read_order: _getReadOrder(bookMd.frontmatter.year_read, bookMd.frontmatter.month_read),
+			slug: markdown.slug,
+			note: markdown.markdown,
+			read_order: _getReadOrder(markdown.frontmatter.year_read, markdown.frontmatter.month_read),
 		}
 
-		return await this.maybeGetCoverData<BookInsert>(slug, bookMd, bookInput)
+		return await this.maybeGetCoverData<BookInsert>(markdown, bookInput)
 	}
 
-	async toUpdateInput(
-		slug: string,
-		bookMd: BookMarkDown,
-		book: Book,
-		force = false
-	): Promise<BookUpdate> {
+	async toUpdateInput(bookMd: BookMarkDown, book: Book, force = false): Promise<BookUpdate> {
 		const bookUpdateInput = {
 			...bookMd.frontmatter,
-			slug,
+			slug: bookMd.slug,
 			note: bookMd.markdown,
 			date_updated: new Date().getTime(),
 		} as BookUpdate
@@ -155,7 +104,7 @@ class BookPiece extends Piece<typeof PieceTypes.Books, Book, BookMarkDown> {
 			bookUpdateInput.read_order = order
 		}
 
-		const update = await this.maybeGetCoverData(slug, bookMd, bookUpdateInput)
+		const update = await this.maybeGetCoverData(bookMd, bookUpdateInput)
 
 		return Object.keys(update).length > 0 ? update : { date_updated: new Date().getTime() }
 	}
@@ -226,6 +175,8 @@ class BookPiece extends Piece<typeof PieceTypes.Books, Book, BookMarkDown> {
 	async completeOpenAI(apiKey: string, bookMd: BookMarkDown): Promise<BookMarkDown['frontmatter']> {
 		const tags = await generateTags(apiKey, bookMd)
 		const description = await generateDescription(apiKey, bookMd)
+
+		log.info(`generating openAI description for ${bookMd.slug}`)
 
 		bookMd.frontmatter.keywords = tags.join(',')
 		bookMd.frontmatter.description = description
@@ -313,11 +264,10 @@ class BookPiece extends Piece<typeof PieceTypes.Books, Book, BookMarkDown> {
 	}
 
 	async maybeGetCoverData<T extends BookInsert | BookUpdate>(
-		slug: string,
 		bookMd: BookMarkDown,
 		bookInput: T
 	): Promise<T> {
-		const coverPath = this.getCoverPath(slug)
+		const coverPath = this.getCoverPath(bookMd.slug)
 
 		console.log(coverPath)
 
@@ -333,8 +283,8 @@ class BookPiece extends Piece<typeof PieceTypes.Books, Book, BookMarkDown> {
 		return bookInput
 	}
 
-	async removeStaleCache(): Promise<string[]> {
-		const staleSlugs = await super.removeStaleCache()
+	async cleanUpCache(slugs: string[]): Promise<string[]> {
+		const staleSlugs = await super.cleanUpCache(slugs)
 
 		await eachLimit(staleSlugs, cpus().length, async (slug) => {
 			const assets = this.getCoverPath(slug)
@@ -371,10 +321,81 @@ class BookPiece extends Piece<typeof PieceTypes.Books, Book, BookMarkDown> {
 
 			pieceMarkDown.frontmatter.cover_path = this.getRelativeCoverPath(slug)
 
-			await this.write(slug, pieceMarkDown)
+			await this.write(pieceMarkDown)
 		} else {
 			throw new Error(`could not find ${slug} to attach ${file} to`)
 		}
+	}
+
+	async fetch(config: Config, args: FetchArgv, markdown: BookMarkDown): Promise<BookMarkDown> {
+		const service = args.service
+		const apiKeys = config.get('api_keys')
+		const googleKey = apiKeys.google
+		const openAIKey = apiKeys.openai
+		const bookMd = markdown
+		const bookProcessed = merge({}, bookMd)
+
+		if (/google|all/.test(service)) {
+			if (googleKey) {
+				const googleMetadata = await this.searchGoogleBooks(
+					googleKey,
+					bookMd.frontmatter.title,
+					bookMd.frontmatter.author
+				)
+				merge(bookProcessed, { frontmatter: googleMetadata })
+			} else {
+				log.warn('google key is not set, google books metadata will not be fetched')
+			}
+		}
+
+		if (/openlibrary|all/.test(service)) {
+			if (bookProcessed.frontmatter.id_ol_book) {
+				const openLibraryMetadata = await this.searchOpenLibrary(
+					bookProcessed.frontmatter.id_ol_book,
+					bookProcessed.slug,
+					bookProcessed.frontmatter.title,
+					bookProcessed.frontmatter.author
+				)
+				merge(bookProcessed, { frontmatter: openLibraryMetadata })
+			} else {
+				log.warn('id_ol_book is not set, open library metadata will not be fetched')
+			}
+		}
+
+		if (/openai|all/.test(service)) {
+			if (openAIKey) {
+				const openAIBook = await this.completeOpenAI(openAIKey, bookMd)
+				merge(bookProcessed, { frontmatter: openAIBook })
+			} else {
+				log.warn('openai key is not set, tags and description will not be generated')
+			}
+		}
+
+		return bookProcessed
+	}
+
+	create(slug: string, title: string): BookMarkDown {
+		return toValidatedMarkDown(
+			slug,
+			'notes',
+			{
+				title,
+				author: 'author',
+				isbn: '1234',
+				description: 'description',
+				id_ol_book: 'id1234',
+				id_ol_work: 'id5678',
+				coauthors: 'coauthors',
+				year_read: new Date().getFullYear(),
+				month_read: new Date().getMonth() + 1,
+			},
+			this.validator
+		)
+	}
+
+	async process(slugs: string[], dryRun = false) {
+		log.info(`processing ${slugs} with dryRun: ${dryRun}`)
+		return
 	}
 }
 

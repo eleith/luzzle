@@ -11,6 +11,7 @@ vi.mock('../book')
 vi.mock('fs/promises')
 vi.mock('fs')
 vi.mock('ajv/dist/jtd')
+vi.mock('ajv/dist/core')
 
 type TestCache = {
 	id: string

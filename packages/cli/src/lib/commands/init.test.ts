@@ -12,6 +12,7 @@ import { mockConfig } from '../config.mock.js'
 vi.mock('fs/promises')
 vi.mock('@luzzle/kysely')
 vi.mock('fs')
+vi.mock('../log')
 
 const mocks = {
 	logWarn: vi.spyOn(log, 'warn'),

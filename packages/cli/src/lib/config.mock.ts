@@ -7,6 +7,7 @@ vi.mock('./config.js')
 function mockConfig() {
 	return {
 		set: vi.fn(),
+		get: vi.fn(),
 	} as unknown as Mocked<Conf<SchemaConfig>>
 }
 

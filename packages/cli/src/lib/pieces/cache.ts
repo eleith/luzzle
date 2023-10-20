@@ -1,5 +1,5 @@
-import { PieceDatabase } from './piece.js'
+import { PieceSelectable } from '@luzzle/kysely'
 
-export type PieceCache<T extends PieceDatabase> = ToJsonCompatible<
+export type PieceCache<T extends PieceSelectable> = ToJsonCompatible<
 	Pick<T, NonNullableKeys<T>> & Partial<UnNullify<Pick<T, NullableKeys<T>>>>
 >

@@ -6,24 +6,21 @@ import command, { EditArgv } from './edit.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { Pieces } from '../pieces/index.js'
-import { BookPiece } from '../../pieces/books/index.js'
+import { makePieceCommand, parsePieceArgv } from '../pieces/index.js'
+import { makePiece } from '../pieces/piece.fixtures.js'
 
 vi.mock('child_process')
-vi.mock('../books')
-vi.mock('../pieces')
-vi.mock('../../pieces/books/index')
+vi.mock('../pieces/index')
+vi.mock('../log.js')
+vi.mock('ajv/dist/jtd')
 
 const mocks = {
-	logInfo: vi.spyOn(log, 'info'),
 	logError: vi.spyOn(log, 'error'),
-	logChild: vi.spyOn(log, 'child'),
-	logLevelSet: vi.spyOn(log, 'level', 'set'),
-	piecesParseArgs: vi.spyOn(Pieces, 'parseArgv'),
-	piecesCommand: vi.spyOn(Pieces, 'command'),
-	BookPieceGetPath: vi.spyOn(BookPiece.prototype, 'getPath'),
-	BookPieceExists: vi.spyOn(BookPiece.prototype, 'exists'),
+	piecesParseArgs: vi.mocked(parsePieceArgv),
+	piecesCommand: vi.mocked(makePieceCommand),
 	spawn: vi.mocked(spawn),
+	getPieceTypes: vi.fn(),
+	getPiece: vi.fn(),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -41,13 +38,21 @@ describe('lib/commands/edit', () => {
 	})
 
 	test('run', async () => {
-		const ctx = makeContext()
 		const path = 'slug2'
 		const fullPath = `/home/user/${path}.md`
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
 		process.env.EDITOR = 'vi'
-		mocks.BookPieceGetPath.mockReturnValueOnce(fullPath)
-		mocks.BookPieceExists.mockReturnValueOnce(true)
+
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
+		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
@@ -61,13 +66,22 @@ describe('lib/commands/edit', () => {
 	})
 
 	test('run dry-run', async () => {
-		const ctx = makeContext({ flags: { dryRun: true } })
 		const path = 'slug2'
 		const fullPath = `/home/user/${path}.md`
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			flags: { dryRun: true },
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
 		process.env.EDITOR = 'vi'
-		mocks.BookPieceGetPath.mockReturnValueOnce(fullPath)
-		mocks.BookPieceExists.mockReturnValueOnce(true)
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
+		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
+
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
@@ -77,13 +91,22 @@ describe('lib/commands/edit', () => {
 	})
 
 	test('run with non existant slug', async () => {
-		const ctx = makeContext({ flags: { dryRun: true } })
 		const path = 'slug2'
 		const fullPath = `/home/user/${path}.md`
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			flags: { dryRun: true },
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
 		process.env.EDITOR = 'vi'
-		mocks.BookPieceGetPath.mockReturnValueOnce(fullPath)
-		mocks.BookPieceExists.mockReturnValueOnce(false)
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(false)
+		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
+
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
@@ -94,14 +117,22 @@ describe('lib/commands/edit', () => {
 	})
 
 	test('run with no editor', async () => {
-		const ctx = makeContext({ flags: { dryRun: true } })
 		const path = 'slug2'
 		const fullPath = `/home/user/${path}.md`
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			flags: { dryRun: true },
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
 		delete process.env.EDITOR
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
+		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
 
-		mocks.BookPieceGetPath.mockReturnValueOnce(fullPath)
-		mocks.BookPieceExists.mockReturnValueOnce(true)
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 

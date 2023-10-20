@@ -69,7 +69,7 @@ class CacheForType<T> {
 		await writeFile(cacheFilePath, cacheString)
 	}
 
-	async update(slug: string, cacheUpdate: Partial<Cache<T>>): Promise<void> {
+	async update(slug: string, cacheUpdate: Cache<Partial<T>>): Promise<void> {
 		const cacheNow = await this.get(slug)
 		const cacheFilePath = this.getFilePath(slug)
 		const cache = deepmerge(cacheNow, cacheUpdate)

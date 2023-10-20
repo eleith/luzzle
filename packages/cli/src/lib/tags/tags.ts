@@ -1,13 +1,7 @@
 import { differenceWith } from 'lodash-es'
-import { Context } from '../commands/utils/types.js'
 import slugify from '@sindresorhus/slugify'
 import { createId } from '@paralleldrive/cuid2'
-
-export const TagMapTypes = {
-	BOOKS: 'books',
-} as const
-
-export type TagMapType = typeof TagMapTypes[keyof typeof TagMapTypes]
+import { LuzzleDatabase, PieceTables } from '@luzzle/kysely'
 
 function keywordsToTags(keywords: string): string[] {
 	const tags = keywords
@@ -18,12 +12,12 @@ function keywordsToTags(keywords: string): string[] {
 }
 
 async function syncTagsFor(
-	ctx: Context,
+	db: LuzzleDatabase,
 	tags: string[],
 	id: string,
-	type: TagMapType
+	type: PieceTables
 ): Promise<void> {
-	const foundTags = await ctx.db
+	const foundTags = await db
 		.selectFrom(['tags', 'tag_maps'])
 		.select('tags.slug')
 		.where('tag_maps.id_item', '=', id)
@@ -35,47 +29,43 @@ async function syncTagsFor(
 	const removeTagSlugs = differenceWith(existingSlugs, tags, (slug, tag) => slug === slugify(tag))
 
 	if (addTags.length) {
-		await _private.addTagsTo(ctx, addTags, id, type)
+		await _private.addTagsTo(db, addTags, id, type)
 	}
 
 	if (removeTagSlugs.length) {
-		await _private.removeTagsFrom(ctx, removeTagSlugs, id, type)
+		await _private.removeTagsFrom(db, removeTagSlugs, id, type)
 	}
 }
 
 async function addTagsTo(
-	ctx: Context,
+	db: LuzzleDatabase,
 	tags: string[],
 	id: string,
-	type: TagMapType
+	type: PieceTables
 ): Promise<void> {
 	for (const tag of tags) {
 		const slug = slugify(tag)
 
-		const tagDb = await ctx.db
+		const tagDb = await db
 			.insertInto('tags')
 			.values({ slug, name: tag, id: createId() })
 			.onConflict((oc) => oc.column('slug').doUpdateSet({ name: tag }))
 			.returning('id')
 			.executeTakeFirstOrThrow()
 
-		await ctx.db.insertInto('tag_maps').values({ id_item: id, id_tag: tagDb.id, type }).execute()
+		await db.insertInto('tag_maps').values({ id_item: id, id_tag: tagDb.id, type }).execute()
 	}
 }
 
 async function removeTagsFrom(
-	ctx: Context,
+	db: LuzzleDatabase,
 	tagSlugs: string[],
 	id: string,
-	type: TagMapType
+	type: PieceTables
 ): Promise<void> {
-	const findTags = await ctx.db
-		.selectFrom('tags')
-		.select('id')
-		.where('slug', 'in', tagSlugs)
-		.execute()
+	const findTags = await db.selectFrom('tags').select('id').where('slug', 'in', tagSlugs).execute()
 
-	await ctx.db
+	await db
 		.deleteFrom('tag_maps')
 		.where('id_item', '=', id)
 		.where('type', '=', type)
@@ -86,9 +76,9 @@ async function removeTagsFrom(
 		)
 		.execute()
 
-	const tagCounts = await ctx.db
+	const tagCounts = await db
 		.selectFrom('tag_maps')
-		.select([ctx.db.fn.count<number>('id_item').as('item_count'), 'id_tag'])
+		.select([db.fn.count<number>('id_item').as('item_count'), 'id_tag'])
 		.groupBy('id_tag')
 		.where(
 			'id_tag',
@@ -97,7 +87,7 @@ async function removeTagsFrom(
 		)
 		.execute()
 
-	await ctx.db
+	await db
 		.deleteFrom('tags')
 		.where(
 			'id',
@@ -107,17 +97,21 @@ async function removeTagsFrom(
 		.execute()
 }
 
-async function removeAllTagsFrom(ctx: Context, ids: string[], type: TagMapType): Promise<void> {
-	await ctx.db.deleteFrom('tag_maps').where('id_item', 'in', ids).where('type', '=', type).execute()
+async function removeAllTagsFrom(
+	db: LuzzleDatabase,
+	ids: string[],
+	type: PieceTables
+): Promise<void> {
+	await db.deleteFrom('tag_maps').where('id_item', 'in', ids).where('type', '=', type).execute()
 
-	const tagCounts = await ctx.db
+	const tagCounts = await db
 		.selectFrom('tag_maps')
-		.select([ctx.db.fn.count<number>('id_item').as('item_count'), 'id_tag'])
+		.select([db.fn.count<number>('id_item').as('item_count'), 'id_tag'])
 		.groupBy(['id_tag', 'id_item'])
 		.where('id_item', 'in', ids)
 		.execute()
 
-	await ctx.db
+	await db
 		.deleteFrom('tags')
 		.where(
 			'id',

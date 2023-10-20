@@ -5,22 +5,19 @@ import { Arguments } from 'yargs'
 import { makeBookMarkDown } from '../../pieces/books/book.fixtures.js'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { BookPiece } from '../../pieces/books/index.js'
+import { makePiece } from '../pieces/piece.fixtures.js'
 
-vi.mock('../../pieces/books/index')
+vi.mock('ajv/dist/jtd')
 
 const mocks = {
-	logInfo: vi.spyOn(log, 'info'),
 	logError: vi.spyOn(log, 'error'),
-	logChild: vi.spyOn(log, 'child'),
-	BookPieceCreate: vi.spyOn(BookPiece.prototype, 'create'),
-	BookPieceWrite: vi.spyOn(BookPiece.prototype, 'write'),
-	BookPieceExists: vi.spyOn(BookPiece.prototype, 'exists'),
+	getPieceTypes: vi.fn(),
+	getPiece: vi.fn(),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
 
-describe('tools/lib/commands/create', () => {
+describe('lib/commands/create', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -33,52 +30,75 @@ describe('tools/lib/commands/create', () => {
 	})
 
 	test('run', async () => {
-		const ctx = makeContext()
 		const book = makeBookMarkDown()
 		const title = 'slug2'
 		const piece = 'books'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceCreate.mockResolvedValueOnce(book)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
-		mocks.BookPieceExists.mockReturnValueOnce(false)
+		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockResolvedValueOnce(book)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(false)
 
 		await command.run(ctx, { title, piece } as Arguments<CreateArgv>)
 
-		expect(mocks.BookPieceWrite).toHaveBeenCalledOnce()
-		expect(mocks.BookPieceCreate).toHaveBeenCalledOnce()
+		expect(mocks.getPiece).toHaveBeenCalledWith(piece)
+		expect(spies.pieceWrite).toHaveBeenCalledOnce()
 	})
 
 	test('run errors on existing piece', async () => {
-		const ctx = makeContext()
 		const book = makeBookMarkDown()
 		const title = 'slug2'
 		const piece = 'books'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceCreate.mockResolvedValueOnce(book)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
-		mocks.BookPieceExists.mockReturnValueOnce(true)
+		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockResolvedValueOnce(book)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
 
 		await command.run(ctx, { title, piece } as Arguments<CreateArgv>)
 
-		expect(mocks.BookPieceWrite).not.toHaveBeenCalledOnce()
-		expect(mocks.BookPieceCreate).not.toHaveBeenCalledOnce()
+		expect(mocks.getPiece).toHaveBeenCalledWith(piece)
+		expect(spies.pieceCreate).not.toHaveBeenCalledOnce()
+		expect(spies.pieceWrite).not.toHaveBeenCalledOnce()
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
 	test('run with dry-run', async () => {
-		const ctx = makeContext({ flags: { dryRun: true } })
 		const book = makeBookMarkDown()
 		const title = 'slug2'
 		const piece = 'books'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			flags: { dryRun: true },
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		mocks.BookPieceCreate.mockResolvedValueOnce(book)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
-		mocks.BookPieceExists.mockReturnValueOnce(false)
+		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockResolvedValueOnce(book)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(false)
 
 		await command.run(ctx, { title, piece } as Arguments<CreateArgv>)
 
-		expect(mocks.BookPieceWrite).not.toHaveBeenCalledOnce()
-		expect(mocks.BookPieceCreate).not.toHaveBeenCalledOnce()
+		expect(spies.pieceCreate).not.toHaveBeenCalledOnce()
+		expect(spies.pieceWrite).not.toHaveBeenCalledOnce()
 	})
 
 	test('builder', async () => {

@@ -1,25 +1,17 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import command from './dump.js'
 import { Arguments } from 'yargs'
-import { makeBook, makeBookMarkDown } from '../../pieces/books/book.fixtures.js'
 import { makeContext } from './context.fixtures.js'
-import { CpuInfo, cpus } from 'os'
-import log from '../log.js'
-import { mockDatabase } from '../database.mock.js'
-import { BookPiece } from '../../pieces/books/index.js'
+import { makePiece } from '../pieces/piece.fixtures.js'
 
-vi.mock('os')
-vi.mock('log')
-vi.mock('../../pieces/books/index')
+vi.mock('ajv/dist/jtd')
 
 const mocks = {
-	logError: vi.spyOn(log, 'error'),
-	BookPieceWrite: vi.spyOn(BookPiece.prototype, 'write'),
-	BookPieceToMd: vi.spyOn(BookPiece.prototype, 'toMarkDown'),
-	cpus: vi.mocked(cpus),
+	getPieceTypes: vi.fn(),
+	getPiece: vi.fn(),
 }
 
-const spies: SpyInstance[] = []
+const spies: { [key: string]: SpyInstance } = {}
 
 describe('lib/commands/dump', () => {
 	afterEach(() => {
@@ -27,58 +19,28 @@ describe('lib/commands/dump', () => {
 			mock.mockReset()
 		})
 
-		spies.map((spy) => {
-			spy.mockRestore()
+		Object.keys(spies).forEach((key) => {
+			spies[key].mockRestore()
+			delete spies[key]
 		})
 	})
 
 	test('dump', async () => {
-		const kysely = mockDatabase()
-		const ctx = makeContext({ db: kysely.db })
-		const books = [makeBook(), makeBook(), makeBook()]
-		const bookMd = makeBookMarkDown()
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
 
-		kysely.queries.execute.mockResolvedValueOnce(books)
-		mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-		mocks.BookPieceToMd.mockResolvedValueOnce(bookMd)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
-
-		await command.run(ctx, {} as Arguments)
-
-		expect(mocks.BookPieceToMd).toHaveBeenCalledTimes(3)
-		expect(mocks.BookPieceWrite).toHaveBeenCalledTimes(3)
-	})
-
-	test('dump with flag dry-run', async () => {
-		const kysely = mockDatabase()
-		const ctx = makeContext({ flags: { dryRun: true }, db: kysely.db })
-		const books = [makeBook(), makeBook(), makeBook()]
-		const bookMd = makeBookMarkDown()
-
-		kysely.queries.execute.mockResolvedValueOnce(books)
-		mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-		mocks.BookPieceToMd.mockResolvedValueOnce(bookMd)
-		mocks.BookPieceWrite.mockResolvedValueOnce()
+		spies.pieceDump = vi.spyOn(PieceTest.prototype, 'dump').mockResolvedValue()
+		mocks.getPiece.mockReturnValue(new PieceTest())
 
 		await command.run(ctx, {} as Arguments)
 
-		expect(mocks.BookPieceWrite).not.toHaveBeenCalled()
-	})
-
-	test('dump with error', async () => {
-		const kyselyMock = mockDatabase()
-		const ctx = makeContext({ db: kyselyMock.db })
-		const books = [makeBook()]
-		const bookMd = makeBookMarkDown()
-
-		kyselyMock.queries.execute.mockResolvedValueOnce(books)
-		mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-		mocks.BookPieceToMd.mockResolvedValueOnce(bookMd)
-		mocks.BookPieceWrite.mockRejectedValueOnce(new Error('error'))
-
-		await command.run(ctx, {} as Arguments)
-
-		expect(mocks.BookPieceWrite).toHaveBeenCalled()
-		expect(mocks.logError).toHaveBeenCalled()
+		expect(mocks.getPiece).toHaveBeenCalledOnce()
+		expect(spies.pieceDump).toHaveBeenCalledOnce()
 	})
 })

@@ -1,30 +1,31 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import { readdir, stat } from 'fs/promises'
-import { Dirent, existsSync, mkdirSync, Stats } from 'fs'
-import Pieces, { PieceArgv, PieceDirectories } from './pieces.js'
+import { existsSync, mkdirSync } from 'fs'
+import Pieces from './pieces.js'
 import path from 'path'
 import yargs, { Argv } from 'yargs'
-import { PieceCache } from './cache.js'
-import { PieceDatabase } from './piece.js'
-import { JTDSchemaType } from 'ajv/dist/core.js'
-import { cpus, CpuInfo } from 'os'
-import CacheForType from '../cache.js'
+import { makePiece } from './piece.fixtures.js'
+import { makePieceCommand, parsePieceArgv, PieceArgv, PieceTypes } from './utils.js'
+import Piece from './piece.js'
+import { PieceTable } from '@luzzle/kysely'
 
+vi.mock('../../pieces/books/index', () => makePiece())
 vi.mock('fs')
 vi.mock('fs/promises')
 vi.mock('../log')
 vi.mock('./assets')
 vi.mock('../cache')
 vi.mock('os')
+vi.mock('ajv/dist/jtd')
 
 const mocks = {
 	existsSync: vi.mocked(existsSync),
 	mkdirSync: vi.mocked(mkdirSync),
 	readdir: vi.mocked(readdir),
-	cpus: vi.mocked(cpus),
 	stat: vi.mocked(stat),
 }
 
+const directory = 'luzzle-pieces'
 const spies: { [key: string]: SpyInstance } = {}
 
 describe('lib/pieces/pieces', () => {
@@ -40,58 +41,33 @@ describe('lib/pieces/pieces', () => {
 	})
 
 	test('constructor', () => {
-		const dir = 'somewhere'
+		const pieces = new Pieces(directory)
 
-		mocks.existsSync.mockReturnValueOnce(true)
-
-		new Pieces(dir)
-
-		expect(mocks.existsSync).toHaveBeenCalledWith(dir)
-	})
-
-	test('constructor makes root directory', () => {
-		const dir = 'somewhere'
-
-		mocks.existsSync.mockReturnValueOnce(false)
-
-		new Pieces(dir)
-
-		expect(mocks.existsSync).toHaveBeenCalledWith(dir)
-		expect(mocks.mkdirSync).toHaveBeenCalledWith(dir, { recursive: true })
+		expect(pieces.directory).toEqual('luzzle-pieces')
 	})
 
 	test('register', () => {
-		const dir = 'somewhere'
-		const piece = 'books'
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
+		const PieceType = makePiece()
 
+		mocks.existsSync.mockReturnValueOnce(false)
 		mocks.existsSync.mockReturnValue(true)
 
-		const dirs = new Pieces(dir).register(piece, schema).directories(piece)
+		const pieces = new Pieces(directory)
+		pieces.register(PieceType)
 
+		expect(mocks.mkdirSync).toHaveBeenCalledWith(pieces.directory, { recursive: true })
 		expect(mocks.existsSync).toHaveBeenCalledTimes(4)
-		expect(dirs).toEqual({
-			root: expect.any(String),
-			assets: expect.any(String),
-			'assets.cache': expect.any(String),
-		})
 	})
 
 	test('register makes directories', () => {
-		const dir = 'somewhere'
-		const piece = 'books'
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
+		const PieceType = makePiece()
 
 		mocks.existsSync.mockReturnValue(false)
 
-		const dirs = new Pieces(dir).register(piece, schema).directories(piece)
+		const pieces = new Pieces(directory)
+		pieces.register(PieceType)
 
 		expect(mocks.mkdirSync).toHaveBeenCalledTimes(4)
-		expect(dirs).toEqual({
-			root: expect.any(String),
-			assets: expect.any(String),
-			'assets.cache': expect.any(String),
-		})
 	})
 
 	test('parseArgv', () => {
@@ -99,7 +75,7 @@ describe('lib/pieces/pieces', () => {
 		const piece = 'books'
 		const args = { path: slug, piece }
 
-		const parsedArgs = Pieces.parseArgv(args)
+		const parsedArgs = parsePieceArgv(args)
 
 		expect(parsedArgs).toEqual({ slug, piece })
 	})
@@ -111,7 +87,7 @@ describe('lib/pieces/pieces', () => {
 
 		mocks.existsSync.mockReturnValue(true)
 
-		const parsedArgs = Pieces.parseArgv(args)
+		const parsedArgs = parsePieceArgv(args)
 
 		expect(parsedArgs).toEqual({ slug, piece })
 	})
@@ -124,7 +100,7 @@ describe('lib/pieces/pieces', () => {
 		mocks.existsSync.mockReturnValue(true)
 		spies.resolve = vi.spyOn(path, 'resolve').mockReturnValue(`/somewhere/${piece}/${slug}.md`)
 
-		const parsedArgs = Pieces.parseArgv(args)
+		const parsedArgs = parsePieceArgv(args)
 
 		expect(parsedArgs).toEqual({ slug, piece })
 	})
@@ -135,7 +111,7 @@ describe('lib/pieces/pieces', () => {
 
 		mocks.existsSync.mockReturnValue(false)
 
-		expect(() => Pieces.parseArgv(args)).toThrow()
+		expect(() => parsePieceArgv(args)).toThrow()
 	})
 
 	test('parseArgv throws if piece option is required', () => {
@@ -144,7 +120,7 @@ describe('lib/pieces/pieces', () => {
 
 		mocks.existsSync.mockReturnValue(false)
 
-		expect(() => Pieces.parseArgv(args)).toThrow()
+		expect(() => parsePieceArgv(args)).toThrow()
 	})
 
 	test('parseArgv throws is piece is not valid', () => {
@@ -153,7 +129,7 @@ describe('lib/pieces/pieces', () => {
 
 		mocks.existsSync.mockReturnValue(false)
 
-		expect(() => Pieces.parseArgv(args)).toThrow()
+		expect(() => parsePieceArgv(args)).toThrow()
 	})
 
 	test('command', () => {
@@ -162,193 +138,26 @@ describe('lib/pieces/pieces', () => {
 		spies.option = vi.spyOn(args, 'option')
 		spies.positional = vi.spyOn(args, 'positional')
 
-		Pieces.command(args)
+		makePieceCommand(args)
 
 		expect(spies.option).toHaveBeenCalledWith('piece', expect.any(Object))
 		expect(spies.positional).toHaveBeenCalledWith('path', expect.any(Object))
 	})
 
-	test('getAllSlugs', async () => {
-		const dir = 'somewhere'
-		const piece = 'books'
-		const slugs = ['1984', '1q84']
-		const files = slugs.map((slug) => `${dir}/${piece}/${slug}.md`)
-		const dirent = files.map((file) => ({ isFile: () => true, name: file })) as Dirent[]
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
+	test('getPiece', async () => {
+		const pieces = new Pieces(directory)
+		spies.register = vi
+			.spyOn(pieces, 'register')
+			.mockReturnValueOnce(Piece as unknown as InstanceType<typeof Piece>)
 
-		mocks.existsSync.mockReturnValue(true)
-		mocks.readdir.mockResolvedValue(dirent)
+		const piece = await pieces.getPiece(PieceTable.Books)
 
-		const allSlugs = await new Pieces(dir).register(piece, schema).getSlugs(piece)
-
-		expect(allSlugs).toEqual(slugs)
+		expect(piece).toEqual(Piece)
+		expect(spies.register).toHaveBeenCalled()
 	})
 
-	test('getSlugsUpdated', async () => {
-		const slugs: string[] = ['a', 'b', 'c']
-		const fileUpdated = new Date('2201-11-11')
-		const cacheUpdated = new Date('2101-11-11')
-		const piece = 'books'
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
-		const dir = 'somewhere'
-		const pieces = new Pieces(dir).register(piece, schema)
-		const cache = {
-			get: async () => ({ lastProcessed: cacheUpdated }),
-		} as unknown as CacheForType<PieceCache<PieceDatabase>>
-
-		spies.getSlugs = vi.spyOn(pieces, 'getSlugs').mockResolvedValue(slugs)
-		spies.caches = vi.spyOn(pieces, 'caches').mockReturnValue(cache)
-		spies.getPath = vi.spyOn(pieces, 'getPath').mockReturnValue('somewhere/slug')
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.stat.mockResolvedValue({ mtime: fileUpdated } as Stats)
-
-		const updatedSlugs = await pieces.getSlugsUpdated(piece, 'lastProcessed')
-
-		expect(updatedSlugs).toEqual(slugs)
-	})
-
-	test('getSlugsUpdated filters untouched files', async () => {
-		const slugs: string[] = ['a', 'b', 'c']
-		const fileUpdated = new Date('2001-11-11')
-		const cacheUpdated = new Date('2101-11-11')
-		const piece = 'books'
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
-		const dir = 'somewhere'
-		const pieces = new Pieces(dir).register(piece, schema)
-		const cache = {
-			get: async () => ({ lastProcessed: cacheUpdated }),
-		} as unknown as CacheForType<PieceCache<PieceDatabase>>
-
-		spies.getSlugs = vi.spyOn(pieces, 'getSlugs').mockResolvedValue(slugs)
-		spies.caches = vi.spyOn(pieces, 'caches').mockReturnValue(cache)
-		spies.getPath = vi.spyOn(pieces, 'getPath').mockReturnValue('somewhere/slug')
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.stat.mockResolvedValue({ mtime: fileUpdated } as Stats)
-
-		const updatedSlugs = await pieces.getSlugsUpdated(piece, 'lastProcessed')
-
-		expect(updatedSlugs).toEqual([])
-	})
-
-	test('getSlugsUpdated filters in new files', async () => {
-		const slugs: string[] = ['a', 'b', 'c']
-		const fileUpdated = new Date('2001-11-11')
-		const piece = 'books'
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
-		const dir = 'somewhere'
-		const pieces = new Pieces(dir).register(piece, schema)
-		const cache = {
-			get: async () => ({}),
-		} as unknown as CacheForType<PieceCache<PieceDatabase>>
-
-		spies.getSlugs = vi.spyOn(pieces, 'getSlugs').mockResolvedValue(slugs)
-		spies.caches = vi.spyOn(pieces, 'caches').mockReturnValue(cache)
-		spies.getPath = vi.spyOn(pieces, 'getPath').mockReturnValue('somewhere/slug')
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.stat.mockResolvedValue({ mtime: fileUpdated } as Stats)
-
-		const updatedSlugs = await pieces.getSlugsUpdated(piece, 'lastProcessed')
-
-		expect(updatedSlugs).toEqual(slugs)
-	})
-
-	test('getSlugsUpdated filters non-existant files', async () => {
-		const slugs: string[] = ['a', 'b', 'c']
-		const cacheUpdated = new Date('2101-11-11')
-		const piece = 'books'
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
-		const dir = 'somewhere'
-		const pieces = new Pieces(dir).register(piece, schema)
-		const cache = {
-			get: async () => ({ lastProcessed: cacheUpdated }),
-		} as unknown as CacheForType<PieceCache<PieceDatabase>>
-
-		spies.getSlugs = vi.spyOn(pieces, 'getSlugs').mockResolvedValue(slugs)
-		spies.caches = vi.spyOn(pieces, 'caches').mockReturnValue(cache)
-		spies.getPath = vi.spyOn(pieces, 'getPath').mockReturnValue('somewhere/slug')
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.stat.mockRejectedValue(new Error('no file'))
-
-		const updatedSlugs = await pieces.getSlugsUpdated(piece, 'lastProcessed')
-
-		expect(updatedSlugs).toEqual([])
-	})
-
-	test('removeStaleCache', async () => {
-		const oldSlugs: string[] = ['a', 'b', 'c']
-		const slugs: string[] = []
-		const piece = 'books'
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
-		const dir = 'somewhere'
-		const pieces = new Pieces(dir).register(piece, schema)
-		const cache = {
-			remove: vi.fn(async () => {
-				await Promise.resolve()
-			}),
-			getAllFiles: async () => oldSlugs,
-		} as unknown as CacheForType<PieceCache<PieceDatabase>>
-
-		spies.getSlugs = vi.spyOn(pieces, 'getSlugs').mockResolvedValue(slugs)
-		spies.caches = vi.spyOn(pieces, 'caches').mockReturnValue(cache)
-		spies.getPath = vi.spyOn(pieces, 'getPath').mockReturnValue('somewhere/slug')
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-
-		const removed = await pieces.removeStaleCache(piece)
-
-		expect(removed).toEqual(oldSlugs)
-		expect(cache.remove).toHaveBeenCalledTimes(oldSlugs.length)
-	})
-
-	test('removeStaleCache skips on error', async () => {
-		const oldSlugs: string[] = ['a', 'b', 'c']
-		const slugs: string[] = []
-		const piece = 'books'
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
-		const dir = 'somewhere'
-		const pieces = new Pieces(dir).register(piece, schema)
-		const cache = {
-			remove: vi.fn(async () => {
-				throw new Error('no file')
-			}),
-			getAllFiles: async () => oldSlugs,
-		} as unknown as CacheForType<PieceCache<PieceDatabase>>
-
-		spies.getSlugs = vi.spyOn(pieces, 'getSlugs').mockResolvedValue(slugs)
-		spies.caches = vi.spyOn(pieces, 'caches').mockReturnValue(cache)
-		spies.getPath = vi.spyOn(pieces, 'getPath').mockReturnValue('somewhere/slug')
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-
-		const removed = await pieces.removeStaleCache(piece)
-
-		expect(removed).toEqual([])
-	})
-
-	test('getPath', () => {
-		const dir = 'somewhere'
-		const piece = 'books'
-		const slug = 'slug'
-		const root = 'root'
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
-		const pieces = new Pieces(dir).register(piece, schema)
-		const directories = { root } as PieceDirectories
-		const filename = 'filename'
-
-		spies.caches = vi.spyOn(pieces, 'directories').mockReturnValue(directories)
-		spies.getFileName = vi.spyOn(pieces, 'getFileName').mockReturnValue(filename)
-
-		const getPath = pieces.getPath(piece, slug)
-
-		expect(getPath).toEqual(`${root}/${filename}`)
-	})
-
-	test('getFileName', () => {
-		const dir = 'somewhere'
-		const piece = 'books'
-		const slug = 'slug'
-		const schema = {} as JTDSchemaType<PieceCache<PieceDatabase>>
-
-		const filename = new Pieces(dir).register(piece, schema).getFileName(slug)
-
-		expect(filename).toEqual(`${slug}.md`)
+	test('getPiece throws', async () => {
+		const pieces = new Pieces(directory)
+		expect(() => pieces.getPiece('fake' as unknown as PieceTypes)).rejects.toThrow()
 	})
 })

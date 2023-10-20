@@ -3,6 +3,7 @@ import { merge, omit } from 'lodash-es'
 import { Context } from './index.js'
 import { Config } from '../config.js'
 import log from '../log.js'
+import { Pieces } from '../pieces/index.js'
 
 function makeContext(
 	overrides?: Partial<Pick<Context, 'db'>> & DeepPartial<Omit<Context, 'db' | 'log'>>
@@ -13,10 +14,10 @@ function makeContext(
 			{
 				log,
 				directory: 'somewhere',
+				pieces: {} as Pieces,
 				config: {} as Config,
 				flags: {
 					dryRun: false,
-					verbose: false,
 				},
 			},
 			omit(overrides, 'db')

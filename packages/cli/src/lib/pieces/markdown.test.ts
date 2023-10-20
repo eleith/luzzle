@@ -2,13 +2,15 @@ import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import * as pieceMarkdown from './markdown.js'
 import Ajv from 'ajv/dist/jtd.js'
 import { addFrontMatter } from '../md.js'
-import { PieceDatabase } from './piece.js'
+import { PieceSelectable } from '@luzzle/kysely'
 
 vi.mock('../md')
 vi.mock('ajv/dist/jtd.js')
 vi.mock('./piece')
 
-type TestValidator = Ajv.ValidateFunction<pieceMarkdown.PieceMarkDown<PieceDatabase, ''>>
+type TestValidator = Ajv.ValidateFunction<
+	pieceMarkdown.PieceMarkDown<PieceSelectable, keyof PieceSelectable>
+>
 
 const mocks = {
 	addFrontMatter: vi.mocked(addFrontMatter),
@@ -29,27 +31,27 @@ describe('lib/pieces/markdown', () => {
 	})
 
 	test('toValidatedMarkDown', async () => {
-		const filename = 'path/to/some-piece.md'
+		const slug = 'path/to/some-piece.md'
 		const markdown = 'a tale of two mark downs'
 		const frontmatter = { title: 'two', metadata: 'three' }
 		const validator = () => true
 
 		const md = pieceMarkdown.toValidatedMarkDown(
-			filename,
+			slug,
 			markdown,
 			frontmatter,
 			validator as unknown as TestValidator
 		)
 
 		expect(md).toEqual({
-			filename,
+			slug,
 			frontmatter,
 			markdown,
 		})
 	})
 
 	test('toValidatedMarkDown catches validation error', async () => {
-		const filename = 'path/to/some-piece.md'
+		const slug = 'path/to/some-piece.md'
 		const markdown = 'a tale of two mark downs'
 		const frontmatter = { title: 'two', metadata: 'three' }
 		const validator = () => false
@@ -58,7 +60,7 @@ describe('lib/pieces/markdown', () => {
 
 		expect(() =>
 			pieceMarkdown.toValidatedMarkDown(
-				filename,
+				slug,
 				markdown,
 				frontmatter,
 				validator as unknown as TestValidator
@@ -67,7 +69,9 @@ describe('lib/pieces/markdown', () => {
 	})
 
 	test('toMarkDownString', () => {
-		pieceMarkdown.toMarkDownString({} as unknown as pieceMarkdown.PieceMarkDown<PieceDatabase, ''>)
+		pieceMarkdown.toMarkDownString(
+			{} as unknown as pieceMarkdown.PieceMarkDown<PieceSelectable, keyof PieceSelectable>
+		)
 		expect(mocks.addFrontMatter).toHaveBeenCalled()
 	})
 })

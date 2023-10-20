@@ -12,7 +12,7 @@ const read_order = '19700101-y47d'
 function makeBookMarkDown(overrides: DeepPartial<BookMarkDown> = {}): BookMarkDown {
 	return merge(
 		{
-			filename: `books/${slug}.md`,
+			slug,
 			frontmatter: {
 				title,
 				author,
