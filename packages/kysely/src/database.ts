@@ -3,6 +3,8 @@ import SqliteDatabase from 'better-sqlite3'
 import { Database } from './database.schema'
 
 function getDatabaseClient(pathToDb: string, debug = false) {
+	console.log(SqliteDatabase, Kysely)
+
 	return new Kysely<Database>({
 		log: debug ? ['query', 'error'] : [],
 		dialect: new SqliteDialect({
