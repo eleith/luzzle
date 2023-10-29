@@ -51,7 +51,8 @@ steps:
         smtp_notification_recipient,
       ]
     settings:
-      from.address: smtp_notification_from
+      from.address: 
+        from_secret: smtp_notification_from
       host:
         from_secret: smtp_notification_host
       password:
