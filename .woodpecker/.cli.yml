@@ -43,7 +43,7 @@ steps:
   notify:
     image: deblan/woodpecker-email:1.0.1-wp
     settings:
-      from.address: 'online-woodpecker-ci@eleith.com'
+      from: 'online-woodpecker-ci@eleith.com'
       host:
         from_secret: smtp_notification_host
       password:
