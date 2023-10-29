@@ -1,4 +1,4 @@
-import { toValidatedMarkDown, PieceMarkDown } from './markdown.js'
+import { toValidatedMarkDown, PieceMarkDown, PieceMarkdownError } from './markdown.js'
 import { PieceCache } from './cache.js'
 import {
 	PieceArgv,
@@ -18,6 +18,7 @@ export type { PieceArgv, PieceDirectories, PieceMarkDown, PieceCache, PieceTypes
 export {
 	Piece,
 	Pieces,
+	PieceMarkdownError,
 	toValidatedMarkDown,
 	PieceCommandOption,
 	PieceFileType,
