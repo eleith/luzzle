@@ -42,17 +42,8 @@ steps:
         include: [".woodpecker/.cli.yml", "packages/cli/**"]
   notify:
     image: deblan/woodpecker-email:1.0.1-wp
-    secrets:
-      [
-        smtp_notification_from,
-        smtp_notification_username,
-        smtp_notification_host,
-        smtp_notification_password,
-        smtp_notification_recipient,
-      ]
     settings:
-      from.address: 
-        from_secret: smtp_notification_from
+      from.address: 'online-woodpecker-ci@eleith.com'
       host:
         from_secret: smtp_notification_host
       password:
