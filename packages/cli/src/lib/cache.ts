@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir, readdir, unlink } from 'fs/promises'
 import path from 'path'
 import log from './log.js'
 import deepmerge from 'deepmerge'
-import { existsSync, mkdirSync } from 'fs'
+import { existsSync } from 'fs'
 
 export type Cache<T> = {
 	lastProcessed?: string
@@ -38,7 +38,6 @@ class CacheForType<T> {
 
 		this.validator = ajv.compile<Cache<T>>(schema)
 		this.rootDir = path.join(dir, CACHE_DIRECTORY)
-		mkdirSync(this.rootDir, { recursive: true })
 	}
 
 	async get(slug: string): Promise<Cache<T>> {
