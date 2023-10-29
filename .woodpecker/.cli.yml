@@ -1,7 +1,7 @@
 workspace:
   base: /workspace
   path: src
-pipeline:
+steps:
   build:
     image: node:18
     commands:
@@ -51,7 +51,7 @@ pipeline:
         smtp_notification_recipient,
       ]
     settings:
-      from:
+      from.address:
         from_secret: smtp_notification_from
       host:
         from_secret: smtp_notification_host
