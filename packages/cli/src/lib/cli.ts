@@ -19,6 +19,9 @@ async function parseArgs(_args: string[]) {
 		.command(commands.sync.command, commands.sync.describe, (yargs) =>
 			commands.sync.builder?.(yargs)
 		)
+		.command(commands.validate.command, commands.validate.describe, (yargs) =>
+			commands.validate.builder?.(yargs)
+		)
 		.command(commands.edit.command, commands.edit.describe, (yargs) =>
 			commands.edit.builder?.(yargs)
 		)

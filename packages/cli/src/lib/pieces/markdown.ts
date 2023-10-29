@@ -1,6 +1,16 @@
 import { PieceSelectable } from '@luzzle/kysely'
-import Ajv from 'ajv/dist/jtd.js'
+import Ajv, { ValidateFunction } from 'ajv/dist/jtd.js'
 import { addFrontMatter } from '../md.js'
+
+export class PieceMarkdownError<Y> extends Error {
+	validationErrors: ValidateFunction<Y>['errors']
+
+	constructor(message: string, errors: ValidateFunction<Y>['errors']) {
+		super(message)
+		this.name = 'PieceMarkdownError'
+		this.validationErrors = errors
+	}
+}
 
 export type PieceMarkDown<T extends PieceSelectable, K extends keyof T> = {
 	slug: string
@@ -21,13 +31,12 @@ export function toValidatedMarkDown<
 		return md
 	}
 
-	const message = validator.errors
-		?.map((x) => {
-			return `${x.instancePath} -> ${x.message}`
-		})
-		.join(' | ')
+	const pieceValidationError = new PieceMarkdownError(
+		`${slug} is not a valid piece`,
+		validator.errors
+	)
 
-	throw new Error(`${slug} is not valid, errors: ${message}`)
+	throw pieceValidationError
 }
 
 export function toMarkDownString<T extends PieceSelectable, K extends keyof T>(
