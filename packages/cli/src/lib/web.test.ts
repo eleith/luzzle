@@ -3,7 +3,7 @@ import got from 'got'
 import { createWriteStream, WriteStream } from 'fs'
 import { PassThrough } from 'stream'
 import { Request } from 'got'
-import { downloadTo } from './web.js'
+import { downloadToTmp } from './web.js'
 import { temporaryFile } from 'tempy'
 
 vi.mock('fs')
@@ -23,7 +23,7 @@ describe('book', () => {
 		})
 	})
 
-	test('downloadTo', async () => {
+	test('downloadToTmp', async () => {
 		const mockReadable = new PassThrough()
 		const mockWritable = new PassThrough()
 		const url = 'https://somewhere'
@@ -33,7 +33,7 @@ describe('book', () => {
 		mocks.createWriteStream.mockReturnValueOnce(mockWritable as unknown as WriteStream)
 		mocks.tempyFile.mockReturnValueOnce(filePath)
 
-		const tempFilePromise = downloadTo(url)
+		const tempFilePromise = downloadToTmp(url)
 
 		process.nextTick(() => {
 			mockReadable.end()
@@ -46,7 +46,7 @@ describe('book', () => {
 		expect(tempFile).toEqual(filePath)
 	})
 
-	test('downloadTo throws', async () => {
+	test('downloadToTmp throws', async () => {
 		const mockReadable = new PassThrough()
 		const mockWritable = new PassThrough()
 		const url = 'https://somewhere'
@@ -56,7 +56,7 @@ describe('book', () => {
 		mocks.createWriteStream.mockReturnValueOnce(mockWritable as unknown as WriteStream)
 		mocks.tempyFile.mockReturnValueOnce(filePath)
 
-		const tempFilePromise = downloadTo(url)
+		const tempFilePromise = downloadToTmp(url)
 
 		process.nextTick(() => {
 			mockWritable.emit('error', new Error('boom'))

@@ -1,9 +1,9 @@
 import { eachLimit } from 'async'
-import { copyFile, unlink, stat } from 'fs/promises'
+import { copyFile, unlink } from 'fs/promises'
 import { cpus } from 'os'
 import path from 'path'
 import log from '../../lib/log.js'
-import { downloadTo } from '../../lib/web.js'
+import { downloadToTmp } from '../../lib/web.js'
 import { fileTypeFromFile } from 'file-type'
 import { findVolume } from './google-books.js'
 import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library.js'
@@ -18,7 +18,6 @@ import { generateDescription, generateTags } from './openai.js'
 import { ASSETS_DIRECTORY } from '../../lib/assets.js'
 import { Config } from '../../lib/config.js'
 import { merge } from 'lodash-es'
-import { FetchArgv } from '../../lib/commands/fetch.js'
 
 const BOOK_COVER_DIRECTORY = 'covers'
 
@@ -47,7 +46,7 @@ async function _getCoverData<T extends BookInsert | BookUpdate>(
 
 class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 	constructor(piecesRoot: string) {
-		super(piecesRoot, 'books', bookMdValidator, cacheDatabaseSchema)
+		super(piecesRoot, PieceTable.Books, bookMdValidator, cacheDatabaseSchema)
 	}
 
 	getCoverPath(slug: string): string {
@@ -129,49 +128,6 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		}
 	}
 
-	async downloadCover(slug: string, file: string): Promise<boolean> {
-		const toPath = this.getCoverPath(slug)
-
-		if (/https?:\/\//i.test(file)) {
-			const tempFile = await downloadTo(file)
-			const fileType = await fileTypeFromFile(tempFile)
-
-			if (fileType?.ext === 'jpg') {
-				await copyFile(tempFile, toPath)
-				await unlink(tempFile)
-				await this.makeCoverThumbnails(slug)
-
-				log.info(`downloaded ${slug} cover at ${file}`)
-
-				return true
-			} else {
-				await unlink(tempFile)
-				log.warn(`${file} was not a jpg`)
-			}
-		} else {
-			const coverStat = await stat(file).catch(() => null)
-
-			if (coverStat && coverStat.isFile()) {
-				const fileType = await fileTypeFromFile(file)
-
-				if (fileType?.ext === 'jpg') {
-					await copyFile(file, toPath)
-					await this.makeCoverThumbnails(slug)
-
-					log.info(`copied image for ${slug}`)
-
-					return true
-				} else {
-					log.warn(`${file} was not a jpg`)
-				}
-			} else {
-				log.warn(`${file} is not a file or does not exist`)
-			}
-		}
-
-		return false
-	}
-
 	async completeOpenAI(apiKey: string, bookMd: BookMarkDown): Promise<BookMarkDown['frontmatter']> {
 		const tags = await generateTags(apiKey, bookMd)
 		const description = await generateDescription(apiKey, bookMd)
@@ -241,11 +197,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 			const pages = Number(work.number_of_pages)
 			const coverUrl = work.cover_i ? getCoverUrl(work.cover_i) : undefined
 
-			if (coverUrl) {
-				await this.downloadCover(bookSlug, coverUrl)
-			}
-
-			return {
+			const frontMatter: BookMarkDown['frontmatter'] = {
 				title,
 				author,
 				id_ol_work: workId,
@@ -258,6 +210,21 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 				...(pages && !isNaN(pages) && { pages }),
 				...(publishedYear && { year_first_published: publishedYear }),
 			}
+
+			if (coverUrl) {
+				log.info(`downloading cover (${coverUrl}) for ${bookTitle}`)
+
+				const tmpFile = await downloadToTmp(coverUrl)
+				const coverPath = await this.attachCover(tmpFile, bookSlug)
+
+				if (coverPath) {
+					frontMatter.cover_path = coverPath
+				}
+
+				await unlink(tmpFile)
+			}
+
+			return frontMatter
 		}
 
 		throw new Error(`could not find ${bookTitle} on openlibrary`)
@@ -313,29 +280,45 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		return staleSlugs
 	}
 
-	async attach(slug: string, file: string) {
-		const pieceMarkDown = await this.get(slug)
+	async attachCover(file: string, slug: string): Promise<string | null> {
+		const fileType = await fileTypeFromFile(file)
+		const toPath = this.getCoverPath(slug)
 
-		if (pieceMarkDown) {
-			await this.downloadCover(slug, file)
+		if (fileType?.ext === 'jpg') {
+			await copyFile(file, toPath)
+			await this.makeCoverThumbnails(slug)
 
-			pieceMarkDown.frontmatter.cover_path = this.getRelativeCoverPath(slug)
-
-			await this.write(pieceMarkDown)
+			log.info(`processed and copied ${file} to ${toPath}`)
 		} else {
-			throw new Error(`could not find ${slug} to attach ${file} to`)
+			log.warn(`can't attach ${file}, only jpg are supported`)
+			return null
+		}
+
+		return this.getRelativeCoverPath(slug)
+	}
+
+	async attach(file: string, markdown: BookMarkDown, field?: string): Promise<void> {
+		if (field && field !== 'cover_path') {
+			log.error(`${field} is not a valid field to attach to`)
+			return
+		}
+
+		const coverPath = await this.attachCover(file, markdown.slug)
+
+		if (coverPath) {
+			markdown.frontmatter.cover_path = coverPath
+			await this.write(markdown)
 		}
 	}
 
-	async fetch(config: Config, args: FetchArgv, markdown: BookMarkDown): Promise<BookMarkDown> {
-		const service = args.service
+	async fetch(config: Config, markdown: BookMarkDown, service?: string): Promise<BookMarkDown> {
 		const apiKeys = config.get('api_keys')
 		const googleKey = apiKeys.google
 		const openAIKey = apiKeys.openai
 		const bookMd = markdown
 		const bookProcessed = merge({}, bookMd)
 
-		if (/google|all/.test(service)) {
+		if (service && /google|all/.test(service)) {
 			if (googleKey) {
 				const googleMetadata = await this.searchGoogleBooks(
 					googleKey,
@@ -348,7 +331,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 			}
 		}
 
-		if (/openlibrary|all/.test(service)) {
+		if (service && /openlibrary|all/.test(service)) {
 			if (bookProcessed.frontmatter.id_ol_book) {
 				const openLibraryMetadata = await this.searchOpenLibrary(
 					bookProcessed.frontmatter.id_ol_book,
@@ -362,7 +345,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 			}
 		}
 
-		if (/openai|all/.test(service)) {
+		if (service && /openai|all/.test(service)) {
 			if (openAIKey) {
 				const openAIBook = await this.completeOpenAI(openAIKey, bookMd)
 				merge(bookProcessed, { frontmatter: openAIBook })

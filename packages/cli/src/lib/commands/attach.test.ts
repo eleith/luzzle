@@ -3,18 +3,22 @@ import command, { AttachArgv } from './attach.js'
 import { Arguments, Argv } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePieceCommand, parsePieceArgv } from '../pieces/index.js'
-import { makePiece } from '../pieces/piece.fixtures.js'
+import { makePieceCommand, parsePieceArgv, downloadFileOrUrlTo } from '../pieces/index.js'
+import { makeMarkdownSample, makePiece } from '../pieces/piece.fixtures.js'
+import { unlink } from 'fs/promises'
 
+vi.mock('ajv/dist/jtd')
+vi.mock('fs/promises')
 vi.mock('../pieces/index')
 vi.mock('../log')
-vi.mock('ajv/dist/jtd')
 
 const mocks = {
 	piecesParseArgs: vi.mocked(parsePieceArgv),
 	piecesCommand: vi.mocked(makePieceCommand),
 	getPieceTypes: vi.fn(),
 	getPiece: vi.fn(),
+	download: vi.mocked(downloadFileOrUrlTo),
+	unlink: vi.mocked(unlink),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -34,8 +38,11 @@ describe('lib/commands/attach', () => {
 	test('run', async () => {
 		const path = 'slug2'
 		const file = 'file2'
+		const tmpFile = 'tmpFile'
+		const field = 'field'
 		const PieceTest = makePiece()
 		const pieceType = 'piece'
+		const markdown = makeMarkdownSample()
 		const ctx = makeContext({
 			pieces: {
 				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
@@ -44,12 +51,14 @@ describe('lib/commands/attach', () => {
 		})
 
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
-		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValue(true)
+		mocks.download.mockResolvedValueOnce(tmpFile)
+		mocks.unlink.mockResolvedValueOnce(undefined)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValue(markdown)
 		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach')
 
-		await command.run(ctx, { path, file } as Arguments<AttachArgv>)
+		await command.run(ctx, { path, file, field } as Arguments<AttachArgv>)
 
-		expect(spies.pieceAttach).toHaveBeenCalledWith(path, file)
+		expect(spies.pieceAttach).toHaveBeenCalledWith(tmpFile, markdown, field)
 	})
 
 	test('run with dry-run', async () => {
@@ -57,6 +66,7 @@ describe('lib/commands/attach', () => {
 		const file = 'file2'
 		const PieceTest = makePiece()
 		const pieceType = 'piece'
+		const markdown = makeMarkdownSample()
 		const ctx = makeContext({
 			flags: { dryRun: true },
 			pieces: {
@@ -66,7 +76,7 @@ describe('lib/commands/attach', () => {
 		})
 
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
-		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValue(true)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValue(markdown)
 		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach')
 
 		await command.run(ctx, { path, file } as Arguments<AttachArgv>)
@@ -88,7 +98,7 @@ describe('lib/commands/attach', () => {
 		})
 
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
-		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValue(false)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValue(null)
 		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach')
 
 		await command.run(ctx, { path, file } as Arguments<AttachArgv>)

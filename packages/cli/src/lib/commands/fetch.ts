@@ -6,7 +6,7 @@ import { PieceArgv, PieceCommandOption, makePieceCommand, parsePieceArgv } from 
 type FetchServices = 'google' | 'openlibrary' | 'openai' | 'all'
 
 export type FetchArgv = {
-	service: FetchServices
+	service?: FetchServices
 } & PieceArgv
 
 const command: Command<FetchArgv> = {
@@ -28,8 +28,8 @@ const command: Command<FetchArgv> = {
 	run: async function (ctx, args) {
 		const { slug, piece } = parsePieceArgv(args)
 		const pieces = await ctx.pieces.getPiece(piece)
-
 		const markdown = await pieces.get(slug)
+		const service = args.service
 
 		if (!markdown) {
 			log.info(`${slug} was not found`)
@@ -37,7 +37,7 @@ const command: Command<FetchArgv> = {
 		}
 
 		if (ctx.flags.dryRun === false) {
-			const fetchedMarkdown = await pieces.fetch(ctx.config, args, markdown)
+			const fetchedMarkdown = await pieces.fetch(ctx.config, markdown, service)
 			await pieces.write(fetchedMarkdown)
 		}
 

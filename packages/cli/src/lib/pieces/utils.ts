@@ -2,6 +2,9 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { Argv } from 'yargs'
 import { PieceTables, PieceTable } from '@luzzle/kysely'
+import { temporaryFile } from 'tempy'
+import { copyFile, stat } from 'fs/promises'
+import { downloadToPath } from '../web.js'
 
 export const PieceDirectory = {
 	Root: 'root',
@@ -66,4 +69,29 @@ const makePieceCommand = function <T>(yargs: Argv<T>, alias = 'slug'): Argv<T & 
 		})
 }
 
-export { PieceType, PieceFileType, PieceCommandOption, parsePieceArgv, makePieceCommand }
+async function downloadFileOrUrlTo(file: string): Promise<string> {
+	const tempPath = temporaryFile()
+
+	if (/https?:\/\//i.test(file)) {
+		await downloadToPath(file, tempPath)
+		return tempPath
+	}
+
+	const coverStat = await stat(file)
+
+	if (coverStat.isFile()) {
+		await copyFile(file, tempPath)
+		return tempPath
+	}
+
+	throw new Error(`${file} is not a valid file`)
+}
+
+export {
+	PieceType,
+	PieceFileType,
+	PieceCommandOption,
+	parsePieceArgv,
+	makePieceCommand,
+	downloadFileOrUrlTo,
+}

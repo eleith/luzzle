@@ -1,4 +1,5 @@
-import Ajv, { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd.js'
+import { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd.js'
+import ajv from '../lib/pieces/ajv.js'
 import { readFile, writeFile, mkdir, readdir, unlink } from 'fs/promises'
 import path from 'path'
 import log from './log.js'
@@ -12,7 +13,6 @@ export type Cache<T> = {
 }
 
 export const CACHE_DIRECTORY = '.cache'
-const ajv = new Ajv.default()
 
 class CacheForType<T> {
 	private validator: ReturnType<typeof ajv.compile<Cache<T>>>
