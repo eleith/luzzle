@@ -1,8 +1,13 @@
 import { getDatabaseClient } from './database'
-import { LuzzleDatabase } from './database.schema'
 import migrate from './database.migrations'
 import type { Insertable, Updateable, Selectable } from 'kysely'
 import {
+	Link,
+	LinkInsert,
+	LinkUpdate,
+	LinksTable,
+	LinkType,
+	LinkTypes,
 	Book,
 	BookInsert,
 	BookUpdate,
@@ -18,9 +23,19 @@ import {
 	PieceTables,
 	Pieces,
 	PieceTable,
+	LuzzleTables,
+	LuzzleDatabase,
+	LuzzlePieceTypes,
+	LuzzlePieceType,
+	LuzzlePieceTable,
+	PieceCommonFields,
 } from './database.schema'
 
 export {
+	type Link,
+	type LinkInsert,
+	type LinkUpdate,
+	type LinksTable,
 	type Book,
 	type BookInsert,
 	type BookUpdate,
@@ -35,11 +50,25 @@ export {
 	type TagMapsTable,
 	type PieceTables,
 	type Pieces,
+	type LuzzleDatabase,
+	type LuzzlePieceTypes,
+	type LinkTypes,
+	type PieceCommonFields,
+	type LuzzlePieceTable,
+	type LuzzleTables,
 	PieceTable,
+	LinkType,
+	LuzzlePieceType,
+	getDatabaseClient,
+	migrate,
 }
 
-export type PieceInsertable = Insertable<Pieces>
-export type PieceUpdatable = Updateable<Pieces>
-export type PieceSelectable = Selectable<Pieces>
-
-export { getDatabaseClient, type LuzzleDatabase, migrate }
+export type PieceInsertable<
+	P extends LuzzlePieceTable<PieceTables> = LuzzlePieceTable<PieceTables>
+> = Insertable<P>
+export type PieceUpdatable<
+	P extends LuzzlePieceTable<PieceTables> = LuzzlePieceTable<PieceTables>
+> = Updateable<P>
+export type PieceSelectable<
+	P extends LuzzlePieceTable<PieceTables> = LuzzlePieceTable<PieceTables>
+> = Selectable<P>
