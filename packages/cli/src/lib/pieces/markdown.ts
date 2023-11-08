@@ -12,15 +12,36 @@ export class PieceMarkdownError<Y> extends Error {
 	}
 }
 
-export type PieceMarkDown<T extends PieceSelectable, K extends keyof T> = {
+export type PieceFrontMatterFields = Record<string, string | number | boolean | undefined>
+
+export type PieceMarkDown<
+	DataBaseFields extends PieceSelectable,
+	DataBaseOnlyFields extends keyof DataBaseFields,
+	// eslint-disable-next-line @typescript-eslint/ban-types
+	FrontMatterOnlyFields extends PieceFrontMatterFields = {}
+> = {
 	slug: string
 	markdown?: string
-	frontmatter: Omit<Pick<T, NonNullableKeys<T>> & Partial<UnNullify<Pick<T, NullableKeys<T>>>>, K>
+	frontmatter: FrontMatterOnlyFields &
+		Omit<
+			Pick<DataBaseFields, NonNullableKeys<DataBaseFields>> &
+				Partial<UnNullify<Pick<DataBaseFields, NullableKeys<DataBaseFields>>>>,
+			DataBaseOnlyFields
+		>
 }
 
 export function toValidatedMarkDown<
-	Y extends PieceMarkDown<PieceSelectable, keyof PieceSelectable>
->(slug: string, markdown: unknown, frontmatter: unknown, validator: Ajv.ValidateFunction<Y>): Y {
+	Y extends PieceMarkDown<
+		PieceSelectable,
+		keyof PieceSelectable,
+		Record<string, string | number | boolean | undefined>
+	>
+>(
+	slug: string,
+	markdown: string | undefined,
+	frontmatter: Y['frontmatter'],
+	validator: Ajv.ValidateFunction<Y>
+): Y {
 	const md = {
 		slug,
 		frontmatter,
@@ -39,8 +60,10 @@ export function toValidatedMarkDown<
 	throw pieceValidationError
 }
 
-export function toMarkDownString<T extends PieceSelectable, K extends keyof T>(
-	markdown: PieceMarkDown<T, K>
-): string {
+export function toMarkDownString<
+	T extends PieceSelectable,
+	K extends keyof T,
+	M extends Record<string, string | number | undefined>
+>(markdown: PieceMarkDown<T, K, M>): string {
 	return addFrontMatter(markdown.markdown, markdown.frontmatter)
 }

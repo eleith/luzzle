@@ -9,6 +9,7 @@ import {
 	PieceType,
 	makePieceCommand,
 	parsePieceArgv,
+	downloadFileOrUrlTo,
 } from './utils.js'
 import Pieces from './pieces.js'
 import Piece from './piece.js'
@@ -20,6 +21,7 @@ export {
 	Pieces,
 	PieceMarkdownError,
 	toValidatedMarkDown,
+	downloadFileOrUrlTo,
 	PieceCommandOption,
 	PieceFileType,
 	PieceType,

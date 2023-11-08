@@ -3,38 +3,44 @@ import { existsSync } from 'fs'
 import { readdir, stat, writeFile } from 'fs/promises'
 import log from '../log.js'
 import { extract } from '../md.js'
-import { PieceMarkDown, toValidatedMarkDown, toMarkDownString } from './markdown.js'
+import {
+	PieceMarkDown,
+	toValidatedMarkDown,
+	toMarkDownString,
+	PieceFrontMatterFields,
+} from './markdown.js'
 import { PieceCache } from './cache.js'
 import CacheForType, { Cache } from '../cache.js'
 import { Config } from '../config.js'
-import { FetchArgv } from '../commands/fetch.js'
 import { difference } from 'lodash-es'
 import { addTagsTo, keywordsToTags, removeAllTagsFrom, syncTagsFor } from '../tags/index.js'
 import {
 	LuzzleDatabase,
 	PieceInsertable,
 	PieceSelectable,
-	PieceTables,
 	PieceUpdatable,
+	LuzzlePieceTable,
+	PieceCommonFields,
+	PieceTables,
 } from '@luzzle/kysely'
 import { eachLimit, filterLimit } from 'async'
 import { cpus } from 'os'
 import path from 'path'
-import { PieceDirectories, PieceDirectory, PieceFileType, PieceTypes } from './utils.js'
+import { PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
 import { ASSETS_CACHE_DIRECTORY, ASSETS_DIRECTORY } from '../assets.js'
 
 export interface InterfacePiece<
-	P extends PieceTypes,
-	D extends PieceSelectable,
-	M extends PieceMarkDown<D, keyof D>
+	P extends PieceTables,
+	D extends PieceSelectable<LuzzlePieceTable<PieceTables>> & PieceCommonFields,
+	M extends PieceMarkDown<D, keyof D, PieceFrontMatterFields>
 > {
 	new (pieceRoot: string): Piece<P, D, M>
 }
 
 abstract class Piece<
-	P extends PieceTypes,
-	D extends PieceSelectable,
-	M extends PieceMarkDown<D, keyof D>
+	P extends PieceTables,
+	D extends PieceSelectable<LuzzlePieceTable<PieceTables>> & PieceCommonFields,
+	M extends PieceMarkDown<D, keyof D, PieceFrontMatterFields>
 > {
 	private _validator: Ajv.ValidateFunction<M>
 	private _cache: CacheForType<PieceCache<D>>
@@ -63,11 +69,15 @@ abstract class Piece<
 		this._cache = new CacheForType(cacheSchema, this._directories.root)
 	}
 
-	abstract toCreateInput(markdown: M): Promise<PieceInsertable>
-	abstract toUpdateInput(markdown: M, db: D, force: boolean): Promise<PieceUpdatable>
-	abstract attach(slug: string, file: string): Promise<void>
+	abstract toCreateInput(markdown: M): Promise<PieceInsertable<LuzzlePieceTable<P>>>
+	abstract toUpdateInput(
+		markdown: M,
+		db: D,
+		force: boolean
+	): Promise<PieceUpdatable<LuzzlePieceTable<P>>>
+	abstract attach(file: string, markdown: M, field?: string): Promise<void>
 	abstract process(slugs: string[], dryRun: boolean): Promise<void>
-	abstract fetch(config: Config, args: FetchArgv, markdown: M): Promise<M>
+	abstract fetch(config: Config, markdown: M, service?: string): Promise<M>
 	abstract create(slug: string, title: string): M
 
 	get cache() {
@@ -196,7 +206,7 @@ abstract class Piece<
 				const createInput = await this.toCreateInput(markdown)
 				const added = await db
 					.insertInto(this._pieceTable as PieceTables)
-					.values(createInput)
+					.values(createInput as PieceInsertable<LuzzlePieceTable<PieceTables>>)
 					.returningAll()
 					.executeTakeFirstOrThrow()
 
@@ -276,18 +286,27 @@ abstract class Piece<
 	}
 
 	async toMarkDown(data: D): Promise<M> {
-		const frontmatter: Partial<D> = {}
+		const frontmatter: Partial<M['frontmatter']> = {}
 		const schema = this._validator.schema as M
-		const fields = Object.keys({ ...schema.frontmatter }) as (keyof D)[]
+		const frontMatterKeys = Object.keys({ ...schema.frontmatter }) as (keyof M['frontmatter'])[]
 
-		fields.forEach((key) => {
-			const attribute = data[key]
+		frontMatterKeys.forEach((key) => {
+			const attribute = data[key as keyof D] as M['frontmatter'][keyof M['frontmatter']]
 			if (attribute !== null && attribute !== undefined) {
 				frontmatter[key] = attribute
 			}
 		})
 
-		return toValidatedMarkDown(data.slug, data.note?.toString(), frontmatter, this._validator)
+		// TODO: pieces can implement a data to frontmatter method
+		// because this assumes there is a 1:1 translation between them
+		// however, that is like rarely true
+
+		return toValidatedMarkDown(
+			data.slug,
+			data.note?.toString(),
+			frontmatter as unknown as M['frontmatter'],
+			this._validator
+		)
 	}
 
 	async dump(db: LuzzleDatabase, dryRun = false) {

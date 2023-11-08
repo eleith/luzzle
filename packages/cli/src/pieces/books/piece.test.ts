@@ -1,4 +1,4 @@
-import { Stats, existsSync } from 'fs'
+import { existsSync } from 'fs'
 import { copyFile, stat, unlink, writeFile } from 'fs/promises'
 import sharp, { Metadata, Sharp } from 'sharp'
 import * as bookFixtures from './book.fixtures.js'
@@ -9,15 +9,14 @@ import { generateTags, generateDescription } from './openai.js'
 import log from '../../lib/log.js'
 import { addFrontMatter, extract } from '../../lib/md.js'
 import { findWork, getBook, getCoverUrl } from './open-library.js'
-import { downloadTo } from '../../lib/web.js'
-import { FileTypeResult, fileTypeFromFile } from 'file-type'
+import { downloadToTmp } from '../../lib/web.js'
+import { fileTypeFromFile, FileTypeResult } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
 import BookPiece from './piece.js'
 import { Piece, PieceDirectories, toValidatedMarkDown } from '../../lib/pieces/index.js'
 import { ASSETS_DIRECTORY } from '../../lib/assets.js'
 import { mockConfig } from '../../lib/config.mock.js'
-import { FetchArgv } from '../../lib/commands/fetch.js'
 
 vi.mock('file-type')
 vi.mock('fs')
@@ -39,7 +38,7 @@ const mocks = {
 	copyFile: vi.mocked(copyFile),
 	unlink: vi.mocked(unlink),
 	stat: vi.mocked(stat),
-	downloadTo: vi.mocked(downloadTo),
+	downloadTo: vi.mocked(downloadToTmp),
 	findVolume: vi.mocked(findVolume),
 	getCoverUrl: vi.mocked(getCoverUrl),
 	getBook: vi.mocked(getBook),
@@ -58,6 +57,7 @@ const mocks = {
 	BookPieceCache: vi.spyOn(BookPiece.prototype, 'cache', 'get'),
 	PieceCleanUpCache: vi.spyOn(Piece.prototype, 'cleanUpCache'),
 	toMarkDown: vi.mocked(toValidatedMarkDown),
+	fileTypeFromFile: vi.mocked(fileTypeFromFile),
 }
 
 const spies: Record<string, SpyInstance> = {}
@@ -183,119 +183,6 @@ describe('lib/books/piece', () => {
 		expect(mocks.BookPieceDirectories).toHaveBeenCalledTimes(9)
 	})
 
-	test('downloadCover url', async () => {
-		const cover = 'https://somewhere/online'
-		const temp = 'somewhere/else/cover.jpg'
-		const slug = 'else'
-		const assetsDir = 'assets'
-
-		spies.sharpToFile = vi.fn()
-		spies.sharpResize = vi.fn(() => ({ toFile: spies.sharpToFile }))
-		mocks.BookPieceDirectories.mockReturnValue({
-			assets: assetsDir,
-			'assets.cache': assetsDir,
-		} as PieceDirectories)
-		mocks.downloadTo.mockResolvedValueOnce(temp)
-		mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
-		mocks.sharp.mockReturnValue({ resize: spies.sharpResize } as unknown as Sharp)
-
-		const succeeded = await new BookPiece('root').downloadCover(slug, cover)
-
-		expect(mocks.downloadTo).toHaveBeenCalledWith(cover)
-		expect(mocks.copyFile).toHaveBeenCalledOnce()
-		expect(mocks.unlink).toHaveBeenCalledWith(temp)
-		expect(succeeded).toBe(true)
-	})
-
-	test('downloadCover url rejects .png', async () => {
-		const cover = 'https://somewhere/online'
-		const slug = 'else'
-		const assetsDir = 'assets'
-		const temp = 'somewhere/else/cover.png'
-
-		spies.sharpToFile = vi.fn()
-		spies.sharpResize = vi.fn(() => ({ toFile: spies.sharpToFile }))
-		mocks.BookPieceDirectories.mockReturnValue({
-			assets: assetsDir,
-			'assets.cache': assetsDir,
-		} as PieceDirectories)
-		mocks.downloadTo.mockResolvedValueOnce(temp)
-		mocks.fromFile.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
-		mocks.sharp.mockReturnValue({ resize: spies.sharpResize } as unknown as Sharp)
-
-		const succeeded = await new BookPiece('root').downloadCover(slug, cover)
-
-		expect(mocks.downloadTo).toHaveBeenCalledWith(cover)
-		expect(mocks.copyFile).not.toHaveBeenCalled()
-		expect(succeeded).toBe(false)
-	})
-
-	test('downloadCover file', async () => {
-		const cover = '../somewhere/here/cover.jpg'
-		const slug = 'else'
-		const assetsDir = 'assets'
-
-		spies.sharpToFile = vi.fn()
-		spies.sharpResize = vi.fn(() => ({ toFile: spies.sharpToFile }))
-		mocks.BookPieceDirectories.mockReturnValue({
-			assets: assetsDir,
-			'assets.cache': assetsDir,
-		} as PieceDirectories)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
-		mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
-		mocks.sharp.mockReturnValue({ resize: spies.sharpResize } as unknown as Sharp)
-
-		const succeeded = await new BookPiece('root').downloadCover(slug, cover)
-
-		expect(mocks.stat).toHaveBeenCalledWith(cover)
-		expect(mocks.copyFile).toHaveBeenCalled()
-		expect(succeeded).toBe(true)
-	})
-
-	test('downloadCover file rejects .png', async () => {
-		const cover = '../somewhere/here/cover.jpg'
-		const slug = 'else'
-		const assetsDir = 'assets'
-
-		spies.sharpToFile = vi.fn()
-		spies.sharpResize = vi.fn(() => ({ toFile: spies.sharpToFile }))
-		mocks.BookPieceDirectories.mockReturnValue({
-			assets: assetsDir,
-			'assets.cache': assetsDir,
-		} as PieceDirectories)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
-		mocks.fromFile.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
-		mocks.sharp.mockReturnValue({ resize: spies.sharpResize } as unknown as Sharp)
-
-		const succeeded = await new BookPiece('root').downloadCover(slug, cover)
-
-		expect(mocks.stat).toHaveBeenCalledWith(cover)
-		expect(mocks.copyFile).not.toHaveBeenCalled()
-		expect(succeeded).toBe(false)
-	})
-
-	test('downloadCover rejects missing file', async () => {
-		const cover = '../somewhere/here/cover.jpg'
-		const slug = 'else'
-		const assetsDir = 'assets'
-
-		spies.sharpToFile = vi.fn()
-		spies.sharpResize = vi.fn(() => ({ toFile: spies.sharpToFile }))
-		mocks.BookPieceDirectories.mockReturnValue({
-			assets: assetsDir,
-			'assets.cache': assetsDir,
-		} as PieceDirectories)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => false } as Stats)
-		mocks.fromFile.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
-		mocks.sharp.mockReturnValue({ resize: spies.sharpResize } as unknown as Sharp)
-
-		const succeeded = await new BookPiece('root').downloadCover(slug, cover)
-
-		expect(mocks.stat).toHaveBeenCalledWith(cover)
-		expect(mocks.copyFile).not.toHaveBeenCalled()
-		expect(succeeded).toBe(false)
-	})
-
 	test('searchOpenLibrary', async () => {
 		const workId = 'work-id'
 		const bookId = 'book-id'
@@ -346,16 +233,19 @@ describe('lib/books/piece', () => {
 		})
 		const coverUrl = 'https://somewhere'
 		const bookMd = bookFixtures.makeBookMarkDown({ frontmatter: { id_ol_book: bookId } })
+		const coverPath = 'path/to/file'
+		const tmpFile = 'tmp/file'
 
 		mocks.getBook.mockResolvedValueOnce(book)
 		mocks.findWork.mockResolvedValueOnce(work)
 		mocks.getCoverUrl.mockReturnValue(coverUrl)
 		mocks.BookPieceDirectories.mockReturnValue({ assets: 'assets' } as PieceDirectories)
+		mocks.downloadTo.mockResolvedValue(tmpFile)
+		mocks.unlink.mockResolvedValue()
 
 		const bookPiece = new BookPiece('root')
 
-		spies.getPathForCover = vi.spyOn(bookPiece, 'getRelativeCoverPath').mockReturnValue(coverUrl)
-		spies.downloadCover = vi.spyOn(bookPiece, 'downloadCover').mockResolvedValue(true)
+		spies.attachCover = vi.spyOn(bookPiece, 'attachCover').mockResolvedValueOnce(coverPath)
 
 		const bookMetadata = await bookPiece.searchOpenLibrary(
 			bookId,
@@ -367,8 +257,9 @@ describe('lib/books/piece', () => {
 		expect(mocks.getBook).toHaveBeenCalledWith(bookId)
 		expect(mocks.findWork).toHaveBeenCalledWith(workId)
 		expect(mocks.getCoverUrl).toHaveBeenCalledWith(work.cover_i)
-		expect(spies.downloadCover).toHaveBeenCalledWith(slug, coverUrl)
-		expect(spies.getPathForCover).toHaveBeenCalledWith(slug)
+		expect(mocks.unlink).toHaveBeenCalledWith(tmpFile)
+		expect(mocks.downloadTo).toHaveBeenCalledWith(coverUrl)
+		expect(spies.attachCover).toHaveBeenCalledWith(tmpFile, slug)
 		expect(bookMetadata).toEqual({
 			title: work.title,
 			author: work.author_name[0],
@@ -564,51 +455,109 @@ describe('lib/books/piece', () => {
 		expect(bookInput).toEqual(input)
 	})
 
+	test('attachCover', async () => {
+		const filePath = 'path/to/file'
+		const slug = 'slug'
+		const coverPath = 'path/to/cover.jpg'
+		const ext = 'jpg'
+
+		mocks.fileTypeFromFile.mockResolvedValueOnce({ ext } as FileTypeResult)
+		mocks.copyFile.mockResolvedValueOnce()
+
+		const bookPiece = new BookPiece('root')
+
+		spies.makeCoverThumbnails = vi.spyOn(bookPiece, 'makeCoverThumbnails').mockResolvedValue()
+		spies.getCoverPath = vi.spyOn(bookPiece, 'getCoverPath').mockReturnValue(coverPath)
+		spies.getRelativeCoverPath = vi
+			.spyOn(bookPiece, 'getRelativeCoverPath')
+			.mockReturnValue(coverPath)
+
+		const relativePath = await bookPiece.attachCover(filePath, slug)
+
+		expect(spies.makeCoverThumbnails).toHaveBeenCalledWith(slug)
+		expect(mocks.copyFile).toHaveBeenCalledWith(filePath, coverPath)
+		expect(relativePath).toEqual(coverPath)
+	})
+
+	test('attachCover unsupported extension', async () => {
+		const filePath = 'path/to/file'
+		const slug = 'slug'
+		const coverPath = 'path/to/cover.png'
+		const ext = 'png'
+
+		mocks.fileTypeFromFile.mockResolvedValueOnce({ ext } as FileTypeResult)
+		mocks.copyFile.mockResolvedValueOnce()
+
+		const bookPiece = new BookPiece('root')
+
+		spies.makeCoverThumbnails = vi.spyOn(bookPiece, 'makeCoverThumbnails').mockResolvedValue()
+		spies.getCoverPath = vi.spyOn(bookPiece, 'getCoverPath').mockReturnValue(coverPath)
+
+		const relativePath = await bookPiece.attachCover(filePath, slug)
+
+		expect(spies.makeCoverThumbnails).not.toHaveBeenCalled()
+		expect(mocks.copyFile).not.toHaveBeenCalled()
+		expect(relativePath).toEqual(null)
+	})
+
 	test('attach', async () => {
-		const slug = 'b'
-		const coverUrl = 'https://somewhere'
 		const coverPath = '.assets/cover/slug.jpg'
+		const tmpPath = 'path/to/file'
 		const bookMd = bookFixtures.makeBookMarkDown()
 
 		mocks.BookPieceDirectories.mockReturnValue({ assets: '/path/to/.assets' } as PieceDirectories)
 
 		const bookPiece = new BookPiece('root')
 
-		spies.getPathForCover = vi.spyOn(bookPiece, 'getRelativeCoverPath').mockReturnValue(coverPath)
-		spies.downloadCover = vi.spyOn(bookPiece, 'downloadCover').mockResolvedValue(true)
-		spies.get = vi.spyOn(bookPiece, 'get').mockResolvedValue(bookMd)
+		spies.attachCover = vi.spyOn(bookPiece, 'attachCover').mockResolvedValue(coverPath)
 		spies.write = vi.spyOn(bookPiece, 'write').mockResolvedValue()
 
-		await bookPiece.attach(slug, coverUrl)
+		await bookPiece.attach(tmpPath, bookMd)
 
-		expect(spies.downloadCover).toHaveBeenCalledWith(slug, coverUrl)
+		expect(spies.attachCover).toHaveBeenCalledWith(tmpPath, bookMd.slug)
 		expect(spies.write).toHaveBeenCalledWith({
 			...bookMd,
 			frontmatter: { ...bookMd.frontmatter, cover_path: coverPath },
 		})
 	})
 
-	test('attach throws', async () => {
-		const slug = 'b'
-		const coverUrl = 'https://somewhere'
+	test('attach rejects bad field', async () => {
 		const coverPath = '.assets/cover/slug.jpg'
+		const tmpPath = 'path/to/file'
+		const bookMd = bookFixtures.makeBookMarkDown()
 
 		mocks.BookPieceDirectories.mockReturnValue({ assets: '/path/to/.assets' } as PieceDirectories)
 
 		const bookPiece = new BookPiece('root')
 
-		spies.getPathForCover = vi.spyOn(bookPiece, 'getCoverPath').mockReturnValue(coverPath)
-		spies.downloadCover = vi.spyOn(bookPiece, 'downloadCover').mockResolvedValue(true)
-		spies.get = vi.spyOn(bookPiece, 'get').mockResolvedValue(null)
+		spies.attachCover = vi.spyOn(bookPiece, 'attachCover').mockResolvedValue(coverPath)
+		spies.write = vi.spyOn(bookPiece, 'write').mockResolvedValue()
 
-		const attaching = bookPiece.attach(slug, coverUrl)
+		await bookPiece.attach(tmpPath, bookMd, 'bad_field')
 
-		expect(attaching).rejects.toThrowError()
+		expect(spies.attachCover).not.toHaveBeenCalled()
+		expect(spies.write).not.toHaveBeenCalled()
+	})
+
+	test('attach skips writing', async () => {
+		const tmpPath = 'path/to/file'
+		const bookMd = bookFixtures.makeBookMarkDown()
+
+		mocks.BookPieceDirectories.mockReturnValue({ assets: '/path/to/.assets' } as PieceDirectories)
+
+		const bookPiece = new BookPiece('root')
+
+		spies.attachCover = vi.spyOn(bookPiece, 'attachCover').mockResolvedValue(null)
+		spies.write = vi.spyOn(bookPiece, 'write').mockResolvedValue()
+
+		await bookPiece.attach(tmpPath, bookMd)
+
+		expect(spies.attachCover).toHaveBeenCalled()
+		expect(spies.write).not.toHaveBeenCalled()
 	})
 
 	test('fetch all', async () => {
 		const configMock = mockConfig()
-		const args = { service: 'all' } as FetchArgv
 		const markdown = bookFixtures.makeBookMarkDown()
 
 		const bookPiece = new BookPiece('root')
@@ -618,7 +567,7 @@ describe('lib/books/piece', () => {
 		spies.completeOpenAI = vi.spyOn(bookPiece, 'completeOpenAI')
 		spies.searchOpenLibrary = vi.spyOn(bookPiece, 'searchOpenLibrary')
 
-		const fetched = await bookPiece.fetch(configMock, args, markdown)
+		const fetched = await bookPiece.fetch(configMock, markdown, 'all')
 
 		expect(spies.searchGoogleBooks).not.toHaveBeenCalled()
 		expect(spies.completeOpenAI).not.toHaveBeenCalled()
@@ -628,7 +577,6 @@ describe('lib/books/piece', () => {
 
 	test('fetch google', async () => {
 		const configMock = mockConfig()
-		const args = { service: 'google' } as FetchArgv
 		const googleKey = 'abc'
 		const markdown = bookFixtures.makeBookMarkDown()
 		const googleMarkdown = bookFixtures.makeBookMarkDown({
@@ -642,7 +590,7 @@ describe('lib/books/piece', () => {
 			.spyOn(bookPiece, 'searchGoogleBooks')
 			.mockResolvedValueOnce(googleMarkdown.frontmatter)
 
-		const fetched = await bookPiece.fetch(configMock, args, markdown)
+		const fetched = await bookPiece.fetch(configMock, markdown, 'google')
 
 		expect(spies.searchGoogleBooks).toHaveBeenCalledWith(
 			googleKey,
@@ -654,7 +602,6 @@ describe('lib/books/piece', () => {
 
 	test('fetch openai', async () => {
 		const configMock = mockConfig()
-		const args = { service: 'openai' } as FetchArgv
 		const openaiKey = 'abc'
 		const markdown = bookFixtures.makeBookMarkDown()
 		const openaiMarkdown = bookFixtures.makeBookMarkDown({
@@ -668,7 +615,7 @@ describe('lib/books/piece', () => {
 			.spyOn(bookPiece, 'completeOpenAI')
 			.mockResolvedValueOnce(openaiMarkdown.frontmatter)
 
-		const fetched = await bookPiece.fetch(configMock, args, markdown)
+		const fetched = await bookPiece.fetch(configMock, markdown, 'openai')
 
 		expect(spies.completeOpenAI).toHaveBeenCalledWith(openaiKey, markdown)
 		expect(fetched.frontmatter.description).toBe(openaiMarkdown.frontmatter.description)
@@ -676,7 +623,6 @@ describe('lib/books/piece', () => {
 
 	test('run with openlibrary', async () => {
 		const configMock = mockConfig()
-		const args = { service: 'openlibrary' } as FetchArgv
 		const markdown = bookFixtures.makeBookMarkDown({ frontmatter: { id_ol_book: 'book-id' } })
 		const libraryMarkdown = bookFixtures.makeBookMarkDown({
 			frontmatter: { description: 'a tiny desc' },
@@ -689,7 +635,7 @@ describe('lib/books/piece', () => {
 			.spyOn(bookPiece, 'searchOpenLibrary')
 			.mockResolvedValueOnce(libraryMarkdown.frontmatter)
 
-		const fetched = await bookPiece.fetch(configMock, args, markdown)
+		const fetched = await bookPiece.fetch(configMock, markdown, 'openlibrary')
 
 		expect(spies.searchOpenLibrary).toHaveBeenCalledWith(
 			markdown.frontmatter.id_ol_book,

@@ -5,7 +5,7 @@ import { PieceSelectable, PieceInsertable, PieceUpdatable, PieceTables } from '@
 import Piece from '../pieces/piece.js'
 import CacheForType from '../cache.js'
 
-type PieceMarkdownSample = PieceMarkDown<PieceSelectable, 'cover_path'>
+type PieceMarkdownSample = PieceMarkDown<PieceSelectable, 'author'>
 type PieceValidator = Ajv.ValidateFunction<PieceMarkdownSample>
 type PieceCacheSchema = JTDSchemaType<PieceCache<PieceSelectable>>
 
