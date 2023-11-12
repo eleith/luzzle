@@ -140,7 +140,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 						<br />
 						<Box>
 							<Text className={styles.bookNote}>
-								{(book.note || '---').split('\n').map((p, i) => (
+								{(book.note || '---').split('\n\n').map((p, i) => (
 									<p key={i}>{p}</p>
 								))}
 							</Text>
