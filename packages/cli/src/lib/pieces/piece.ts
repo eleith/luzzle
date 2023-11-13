@@ -1,6 +1,7 @@
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
+import ajv from '../ajv.js'
 import { existsSync } from 'fs'
-import { readdir, stat, writeFile } from 'fs/promises'
+import { copyFile, readdir, stat, writeFile } from 'fs/promises'
 import log from '../log.js'
 import { extract } from '../md.js'
 import {
@@ -28,10 +29,11 @@ import { cpus } from 'os'
 import path from 'path'
 import { PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
 import { ASSETS_CACHE_DIRECTORY, ASSETS_DIRECTORY } from '../assets.js'
+import { fileTypeFromFile } from 'file-type'
 
 export interface InterfacePiece<
 	P extends PieceTables,
-	D extends PieceSelectable<LuzzlePieceTable<PieceTables>> & PieceCommonFields,
+	D extends PieceSelectable & PieceCommonFields,
 	M extends PieceMarkDown<D, keyof D, PieceFrontMatterFields>
 > {
 	new (pieceRoot: string): Piece<P, D, M>
@@ -39,22 +41,25 @@ export interface InterfacePiece<
 
 abstract class Piece<
 	P extends PieceTables,
-	D extends PieceSelectable<LuzzlePieceTable<PieceTables>> & PieceCommonFields,
+	D extends PieceSelectable & PieceCommonFields,
 	M extends PieceMarkDown<D, keyof D, PieceFrontMatterFields>
 > {
 	private _validator: Ajv.ValidateFunction<M>
 	private _cache: CacheForType<PieceCache<D>>
+	private _schema: JTDSchemaType<M>
 	private _pieceRoot: string
 	private _directories: PieceDirectories
 	private _pieceTable: P
+	private _attachable?: {
+		[field in keyof M['frontmatter']]?: { type?: string[]; default: boolean }
+	}
 
 	constructor(
 		pieceRoot: string,
 		table: P,
-		validator: Ajv.ValidateFunction<M>,
+		schema: JTDSchemaType<M>,
 		cacheSchema: JTDSchemaType<PieceCache<D>>
 	) {
-		this._validator = validator
 		this._pieceRoot = pieceRoot
 		this._pieceTable = table
 		this._directories = {
@@ -67,6 +72,11 @@ abstract class Piece<
 			),
 		}
 		this._cache = new CacheForType(cacheSchema, this._directories.root)
+		this._attachable = undefined
+		this._schema = schema
+
+		this._validator = ajv.compile(this._schema)
+		this._findAttachables()
 	}
 
 	abstract toCreateInput(markdown: M): Promise<PieceInsertable<LuzzlePieceTable<P>>>
@@ -75,13 +85,31 @@ abstract class Piece<
 		db: D,
 		force: boolean
 	): Promise<PieceUpdatable<LuzzlePieceTable<P>>>
-	abstract attach(file: string, markdown: M, field?: string): Promise<void>
 	abstract process(slugs: string[], dryRun: boolean): Promise<void>
 	abstract fetch(config: Config, markdown: M, service?: string): Promise<M>
 	abstract create(slug: string, title: string): M
 
-	get cache() {
-		return this._cache
+	private _findAttachables() {
+		const schema = this._schema as JTDSchemaType<{
+			frontmatter: {
+				x: unknown
+			}
+		}>
+		const frontmatter = schema.properties.frontmatter
+		const fields = { ...frontmatter.properties, ...frontmatter.optionalProperties }
+
+		Object.keys(fields).forEach((_field) => {
+			const field = _field as keyof typeof fields
+			const x = fields[field]
+
+			if (x.metadata?.luzzleFormat === 'attachment') {
+				this._attachable = this._attachable || {}
+				this._attachable[field as keyof M['frontmatter']] = {
+					type: x.metadata?.luzzleAttachmentType as string[] | undefined,
+					default: false,
+				}
+			}
+		})
 	}
 
 	get table() {
@@ -286,12 +314,16 @@ abstract class Piece<
 	}
 
 	async toMarkDown(data: D): Promise<M> {
+		const schema = this._schema as JTDSchemaType<{ frontmatter: { x: unknown } }>
+		const schemaFrontmatter = {
+			...schema.properties.frontmatter.properties,
+			...schema.properties.frontmatter.optionalProperties,
+		}
+		const frontMatterKeys = Object.keys({ ...schemaFrontmatter }) as (keyof M['frontmatter'])[]
 		const frontmatter: Partial<M['frontmatter']> = {}
-		const schema = this._validator.schema as M
-		const frontMatterKeys = Object.keys({ ...schema.frontmatter }) as (keyof M['frontmatter'])[]
 
 		frontMatterKeys.forEach((key) => {
-			const attribute = data[key as keyof D] as M['frontmatter'][keyof M['frontmatter']]
+			const attribute = data[key as keyof D] as unknown as M['frontmatter'][keyof M['frontmatter']]
 			if (attribute !== null && attribute !== undefined) {
 				frontmatter[key] = attribute
 			}
@@ -307,6 +339,51 @@ abstract class Piece<
 			frontmatter as unknown as M['frontmatter'],
 			this._validator
 		)
+	}
+
+	async attach(file: string, markdown: M, _field?: string, _name?: string): Promise<void> {
+		const attachable = this._attachable
+
+		if (!attachable) {
+			log.error(`this type does not allow attachments`)
+			return
+		}
+
+		const fields = Object.keys(attachable) as (keyof M['frontmatter'])[]
+		const defaultField = fields.find((key) => attachable[key]?.default) || fields[0]
+		const field = (_field || defaultField) as keyof M['frontmatter']
+		const allowedTypes = attachable[field]?.type
+
+		if (!allowedTypes) {
+			log.error(`${_field} is not a valid field to attach to`)
+			return
+		}
+
+		const fileType = await fileTypeFromFile(file)
+		const type = fileType?.ext
+
+		if (!type || !allowedTypes.includes(type)) {
+			log.error(`${_field} is not a valid file type, only: ${allowedTypes.join(',')} are allowed`)
+			return
+		}
+
+		const name = _name || markdown.slug
+		const filename = `${name}.${fileType.ext}`
+		const toPath = path.join(this._directories.assets, field as string, filename)
+		const relPath = path.join(path.basename(this._directories.assets), field as string, filename)
+
+		await copyFile(file, toPath)
+
+		log.info(`processed and copied ${file} to ${toPath}`)
+
+		const writeMarkdown = toValidatedMarkDown(
+			markdown.slug,
+			markdown.markdown,
+			{ ...markdown.frontmatter, [field]: relPath },
+			this._validator
+		)
+
+		await this.write(writeMarkdown)
 	}
 
 	async dump(db: LuzzleDatabase, dryRun = false) {

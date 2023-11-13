@@ -54,7 +54,6 @@ const mocks = {
 	generateDescription: vi.mocked(generateDescription),
 	BookPieceDirectories: vi.spyOn(BookPiece.prototype, 'directories', 'get'),
 	BookPieceGetFileName: vi.spyOn(BookPiece.prototype, 'getFileName'),
-	BookPieceCache: vi.spyOn(BookPiece.prototype, 'cache', 'get'),
 	PieceCleanUpCache: vi.spyOn(Piece.prototype, 'cleanUpCache'),
 	toMarkDown: vi.mocked(toValidatedMarkDown),
 	fileTypeFromFile: vi.mocked(fileTypeFromFile),
@@ -519,24 +518,6 @@ describe('lib/books/piece', () => {
 			...bookMd,
 			frontmatter: { ...bookMd.frontmatter, cover_path: coverPath },
 		})
-	})
-
-	test('attach rejects bad field', async () => {
-		const coverPath = '.assets/cover/slug.jpg'
-		const tmpPath = 'path/to/file'
-		const bookMd = bookFixtures.makeBookMarkDown()
-
-		mocks.BookPieceDirectories.mockReturnValue({ assets: '/path/to/.assets' } as PieceDirectories)
-
-		const bookPiece = new BookPiece('root')
-
-		spies.attachCover = vi.spyOn(bookPiece, 'attachCover').mockResolvedValue(coverPath)
-		spies.write = vi.spyOn(bookPiece, 'write').mockResolvedValue()
-
-		await bookPiece.attach(tmpPath, bookMd, 'bad_field')
-
-		expect(spies.attachCover).not.toHaveBeenCalled()
-		expect(spies.write).not.toHaveBeenCalled()
 	})
 
 	test('attach skips writing', async () => {

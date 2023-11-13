@@ -10,7 +10,7 @@ import {
 } from '../pieces/index.js'
 import { unlink } from 'fs/promises'
 
-export type AttachArgv = { file: string; field?: string } & PieceArgv
+export type AttachArgv = { file: string; name?: string; field?: string } & PieceArgv
 
 const command: Command<AttachArgv> = {
 	name: 'attach',
@@ -31,12 +31,15 @@ const command: Command<AttachArgv> = {
 				type: 'string',
 				description: 'field to attach file to',
 			})
+			.option('name', {
+				type: 'string',
+				description: 'rename file to this name, defaults to [slug]',
+			})
 	},
 
 	run: async function (ctx, args) {
 		const { slug, piece } = parsePieceArgv(args)
-		const file = args.file
-		const field = args.field
+		const { file, field, name } = args
 		const pieces = await ctx.pieces.getPiece(piece)
 		const markdown = await pieces.get(slug)
 
@@ -47,7 +50,7 @@ const command: Command<AttachArgv> = {
 
 		if (ctx.flags.dryRun === false) {
 			const tempPath = await downloadFileOrUrlTo(file)
-			await pieces.attach(tempPath, markdown, field)
+			await pieces.attach(tempPath, markdown, field, name)
 			await unlink(tempPath)
 		}
 

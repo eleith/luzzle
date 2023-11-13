@@ -42,7 +42,6 @@ const mocks = {
 	existSync: vi.mocked(existsSync),
 	LinkPieceDirectories: vi.spyOn(LinkPiece.prototype, 'directories', 'get'),
 	LinkPieceGetFileName: vi.spyOn(LinkPiece.prototype, 'getFileName'),
-	LinkPieceCache: vi.spyOn(LinkPiece.prototype, 'cache', 'get'),
 	PieceCleanUpCache: vi.spyOn(Piece.prototype, 'cleanUpCache'),
 	toMarkDown: vi.mocked(toValidatedMarkDown),
 }

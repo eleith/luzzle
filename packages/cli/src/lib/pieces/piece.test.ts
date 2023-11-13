@@ -1,7 +1,8 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import { readdir, stat, writeFile } from 'fs/promises'
+import { readdir, stat, writeFile, copyFile } from 'fs/promises'
 import { Dirent, existsSync, mkdirSync, Stats } from 'fs'
 import {
+	makeSchema,
 	makeCacheSchema,
 	makeMarkdownSample,
 	makeSample,
@@ -15,7 +16,9 @@ import { removeAllTagsFrom, addTagsTo, keywordsToTags, syncTagsFor } from '../ta
 import log from '../log.js'
 import { CpuInfo, cpus } from 'os'
 import CacheForType from '../cache.js'
+import ajv from '../ajv.js'
 import { PieceTables } from '@luzzle/kysely'
+import { fileTypeFromFile, FileTypeResult } from 'file-type'
 
 vi.mock('fs')
 vi.mock('fs/promises')
@@ -25,7 +28,8 @@ vi.mock('./markdown')
 vi.mock('../tags/index')
 vi.mock('../cache')
 vi.mock('os')
-vi.mock('ajv/dist/jtd')
+vi.mock('../ajv')
+vi.mock('file-type')
 
 const mocks = {
 	existsSync: vi.mocked(existsSync),
@@ -46,6 +50,9 @@ const mocks = {
 	CacheUpdate: vi.spyOn(CacheForType.prototype, 'update'),
 	CacheGetAllFiles: vi.spyOn(CacheForType.prototype, 'getAllFiles'),
 	CacheRemove: vi.spyOn(CacheForType.prototype, 'remove'),
+	compile: vi.spyOn(ajv, 'compile'),
+	copy: vi.mocked(copyFile),
+	fileType: vi.mocked(fileTypeFromFile),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -64,14 +71,17 @@ describe('lib/pieces/piece', () => {
 
 	test('constructor', () => {
 		const pieceValidator = makeValidator()
-		const pieceSchema = makeCacheSchema()
+		const pieceCacheSchema = makeCacheSchema()
+		const pieceSchema = makeSchema()
 		const PieceTest = makePiece()
 		const pieceTable = 'table' as PieceTables
 		const pieceRoot = 'piece-root'
 
-		const pieceTest = new PieceTest(pieceRoot, pieceTable, pieceValidator, pieceSchema)
+		mocks.compile.mockReturnValueOnce(pieceValidator)
 
-		expect(pieceTest.cache).toBeInstanceOf(CacheForType)
+		const pieceTest = new PieceTest(pieceRoot, pieceTable, pieceSchema, pieceCacheSchema)
+
+		// expect(pieceTest.cache).toBeInstanceOf(CacheForType)
 		expect(pieceTest.validator).toBe(pieceValidator)
 		expect(pieceTest.directories).contains({
 			root: `${pieceRoot}/${pieceTable}`,
@@ -117,8 +127,8 @@ describe('lib/pieces/piece', () => {
 	})
 
 	test('filterSlugsBy', async () => {
-		const pieceValidator = makeValidator()
-		const pieceSchema = makeCacheSchema()
+		const pieceSchema = makeSchema()
+		const pieceCacheSchema = makeCacheSchema()
 		const type = 'lastProcessed'
 		const PieceTest = makePiece()
 		const slugs = ['a', 'b', 'c']
@@ -131,7 +141,7 @@ describe('lib/pieces/piece', () => {
 		mocks.stat.mockResolvedValue({ mtime: fileUpdated } as Stats)
 		mocks.CacheGet.mockResolvedValue({ lastProcessed: cacheUpdated.toUTCString() })
 
-		const pieceTest = new PieceTest(pieceDir, pieceTable, pieceValidator, pieceSchema)
+		const pieceTest = new PieceTest(pieceDir, pieceTable, pieceSchema, pieceCacheSchema)
 
 		spies.getPath = vi.spyOn(pieceTest, 'getPath').mockReturnValue('somewhere/slug')
 
@@ -141,8 +151,8 @@ describe('lib/pieces/piece', () => {
 	})
 
 	test('filterSlugsBy filters untouched files', async () => {
-		const pieceValidator = makeValidator()
-		const pieceSchema = makeCacheSchema()
+		const pieceSchema = makeSchema()
+		const pieceCacheSchema = makeCacheSchema()
 		const type = 'lastProcessed'
 		const PieceTest = makePiece()
 		const slugs = ['a', 'b', 'c']
@@ -155,7 +165,7 @@ describe('lib/pieces/piece', () => {
 		mocks.stat.mockResolvedValue({ mtime: fileUpdated } as Stats)
 		mocks.CacheGet.mockResolvedValue({ lastProcessed: cacheUpdated.toUTCString() })
 
-		const pieceTest = new PieceTest(pieceDir, pieceTable, pieceValidator, pieceSchema)
+		const pieceTest = new PieceTest(pieceDir, pieceTable, pieceSchema, pieceCacheSchema)
 
 		spies.getPath = vi.spyOn(pieceTest, 'getPath').mockReturnValue('somewhere/slug')
 
@@ -534,10 +544,9 @@ describe('lib/pieces/piece', () => {
 		const PieceTest = makePiece()
 
 		mocks.toValidateMarkDown.mockReturnValueOnce(pieceMarkdown)
+		mocks.compile.mockReturnValueOnce(pieceValidator)
 
-		const markdown = await new PieceTest('dir', 'table' as PieceTables, pieceValidator).toMarkDown(
-			pieceSample
-		)
+		const markdown = await new PieceTest('dir', 'table' as PieceTables).toMarkDown(pieceSample)
 
 		expect(mocks.toValidateMarkDown).toHaveBeenCalledWith(
 			pieceMarkdown.slug,
@@ -573,6 +582,125 @@ describe('lib/pieces/piece', () => {
 		expect(spies.syncMarkDown).toHaveBeenCalledOnce()
 		expect(spies.syncMarkDown).toHaveBeenCalledWith(dbMocks.db, markdown, false)
 		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
+
+	test('attach', async () => {
+		const PieceTest = makePiece()
+		const markdown = makeMarkdownSample()
+		const file = 'path/to/somewhere.jpg'
+		const field = 'cover'
+		const root = 'root'
+		const table = 'table' as PieceTables
+		const relPath = `.assets/${field}/${markdown.slug}.jpg`
+		const toPath = `${root}/${table}/${relPath}`
+		const schema = makeSchema({
+			cover: {
+				type: 'string',
+				metadata: { luzzleFormat: 'attachment', luzzleAttachmentType: ['jpg'] },
+			},
+		})
+		const updatedMarkdown = makeMarkdownSample({ ...markdown.frontmatter, [field]: relPath })
+
+		const pieceTest = new PieceTest(root, table, schema)
+
+		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
+		mocks.copy.mockResolvedValueOnce()
+		mocks.toValidateMarkDown.mockReturnValueOnce(updatedMarkdown)
+
+		spies.write = vi.spyOn(pieceTest, 'write').mockResolvedValueOnce()
+
+		await pieceTest.attach(file, markdown, field)
+
+		expect(mocks.copy).toHaveBeenCalledWith(file, toPath)
+		expect(spies.write).toHaveBeenCalledWith(updatedMarkdown)
+	})
+
+	test('attach supports default field', async () => {
+		const PieceTest = makePiece()
+		const markdown = makeMarkdownSample()
+		const file = 'path/to/somewhere.jpg'
+		const field = 'cover'
+		const root = 'root'
+		const table = 'table' as PieceTables
+		const relPath = `.assets/${field}/${markdown.slug}.jpg`
+		const toPath = `${root}/${table}/${relPath}`
+		const schema = makeSchema({
+			cover: {
+				type: 'string',
+				metadata: { luzzleFormat: 'attachment', luzzleAttachmentType: ['jpg'] },
+			},
+		})
+		const updatedMarkdown = makeMarkdownSample({ ...markdown.frontmatter, [field]: relPath })
+
+		const pieceTest = new PieceTest(root, table, schema)
+
+		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
+		mocks.copy.mockResolvedValueOnce()
+		mocks.toValidateMarkDown.mockReturnValueOnce(updatedMarkdown)
+
+		spies.write = vi.spyOn(pieceTest, 'write').mockResolvedValueOnce()
+
+		await pieceTest.attach(file, markdown)
+
+		expect(mocks.copy).toHaveBeenCalledWith(file, toPath)
+		expect(spies.write).toHaveBeenCalledWith(updatedMarkdown)
+	})
+
+	test('attach logs error if filetype is not supported', async () => {
+		const PieceTest = makePiece()
+		const markdown = makeMarkdownSample()
+		const file = 'path/to/somewhere.jpg'
+		const field = 'cover'
+		const root = 'root'
+		const table = 'table' as PieceTables
+		const schema = makeSchema({
+			cover: {
+				type: 'string',
+				metadata: { luzzleFormat: 'attachment', luzzleAttachmentType: ['png'] },
+			},
+		})
+
+		const pieceTest = new PieceTest(root, table, schema)
+
+		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
+
+		await pieceTest.attach(file, markdown, field)
+
+		expect(mocks.logError).toHaveBeenCalled()
+	})
+
+	test('attach logs error if field does not support attachments', async () => {
+		const PieceTest = makePiece()
+		const markdown = makeMarkdownSample()
+		const file = 'path/to/somewhere.jpg'
+		const root = 'root'
+		const table = 'table' as PieceTables
+		const schema = makeSchema({
+			cover: {
+				type: 'string',
+				metadata: { luzzleFormat: 'attachment', luzzleAttachmentType: ['png'] },
+			},
+		})
+
+		const pieceTest = new PieceTest(root, table, schema)
+
+		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
+
+		await pieceTest.attach(file, markdown, 'thumbnail')
+
+		expect(mocks.logError).toHaveBeenCalled()
+	})
+
+	test('attach logs error if no attachables', async () => {
+		const PieceTest = makePiece()
+		const markdown = makeMarkdownSample()
+		const file = 'path/to/somewhere.jpg'
+		const field = 'cover'
+
+		const pieceTest = new PieceTest()
+		await pieceTest.attach(file, markdown, field)
+
+		expect(mocks.logError).toHaveBeenCalled()
 	})
 
 	test('dump', async () => {

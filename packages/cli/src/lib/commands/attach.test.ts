@@ -58,7 +58,7 @@ describe('lib/commands/attach', () => {
 
 		await command.run(ctx, { path, file, field } as Arguments<AttachArgv>)
 
-		expect(spies.pieceAttach).toHaveBeenCalledWith(tmpFile, markdown, field)
+		expect(spies.pieceAttach).toHaveBeenCalledWith(tmpFile, markdown, field, undefined)
 	})
 
 	test('run with dry-run', async () => {
