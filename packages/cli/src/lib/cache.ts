@@ -1,5 +1,5 @@
 import { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd.js'
-import ajv from '../lib/pieces/ajv.js'
+import ajv from '../lib/ajv.js'
 import { readFile, writeFile, mkdir, readdir, unlink } from 'fs/promises'
 import path from 'path'
 import log from './log.js'

@@ -1,5 +1,5 @@
 import { JTDSchemaType } from 'ajv/dist/jtd.js'
-import pieceAjv from '../../lib/pieces/ajv.js'
+import pieceAjv from '../../lib/ajv.js'
 import { Link, LinkType } from '@luzzle/kysely'
 import { PieceMarkDown } from '../../lib/pieces/markdown.js'
 import { PieceCache } from '../../lib/pieces/cache.js'
@@ -40,8 +40,8 @@ const linkMdSchema: LinkSchema = {
 				screenshot_path: { type: 'string' },
 				archive_url: { type: 'string' },
 				archive_path: { type: 'string' },
-				accessed_on: { type: 'string', metadata: { format: 'date-string' } },
-				published_on: { type: 'string', metadata: { format: 'date-string' } },
+				accessed_on: { type: 'string', metadata: { luzzleFormat: 'date-string' } },
+				published_on: { type: 'string', metadata: { luzzleFormat: 'date-string' } },
 			},
 		},
 	},

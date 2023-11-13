@@ -14,39 +14,33 @@ export class PieceMarkdownError<Y> extends Error {
 
 export type PieceFrontMatterFields = Record<string, string | number | boolean | undefined>
 
+type NullToPartials<T> = Pick<T, NonNullableKeys<T>> & Partial<UnNullify<Pick<T, NullableKeys<T>>>>
+type OmitIfExists<K, T extends void | keyof K> = T extends keyof K ? Omit<K, T> : K
+type IncludeIfExists<K, T> = T extends void ? K : T & K
+
 export type PieceMarkDown<
 	DataBaseFields extends PieceSelectable,
-	DataBaseOnlyFields extends keyof DataBaseFields,
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	FrontMatterOnlyFields extends PieceFrontMatterFields = {}
+	DataBaseOnlyFields extends void | keyof DataBaseFields = void,
+	FrontMatterOnlyFields extends void | PieceFrontMatterFields = void
 > = {
 	slug: string
 	markdown?: string
-	frontmatter: FrontMatterOnlyFields &
-		Omit<
-			Pick<DataBaseFields, NonNullableKeys<DataBaseFields>> &
-				Partial<UnNullify<Pick<DataBaseFields, NullableKeys<DataBaseFields>>>>,
-			DataBaseOnlyFields
-		>
+	frontmatter: NullToPartials<
+		IncludeIfExists<OmitIfExists<DataBaseFields, DataBaseOnlyFields>, FrontMatterOnlyFields>
+	>
 }
 
-export function toValidatedMarkDown<
-	Y extends PieceMarkDown<
-		PieceSelectable,
-		keyof PieceSelectable,
-		Record<string, string | number | boolean | undefined>
-	>
->(
+export function toValidatedMarkDown<M>(
 	slug: string,
 	markdown: string | undefined,
-	frontmatter: Y['frontmatter'],
-	validator: Ajv.ValidateFunction<Y>
-): Y {
+	frontmatter: Record<string, unknown>,
+	validator: Ajv.ValidateFunction<M>
+): M {
 	const md = {
 		slug,
 		frontmatter,
 		markdown,
-	} as Y
+	}
 
 	if (validator(md)) {
 		return md
@@ -60,10 +54,8 @@ export function toValidatedMarkDown<
 	throw pieceValidationError
 }
 
-export function toMarkDownString<
-	T extends PieceSelectable,
-	K extends keyof T,
-	M extends Record<string, string | number | undefined>
->(markdown: PieceMarkDown<T, K, M>): string {
+export function toMarkDownString<T extends PieceSelectable>(
+	markdown: PieceMarkDown<T, keyof T>
+): string {
 	return addFrontMatter(markdown.markdown, markdown.frontmatter)
 }

@@ -1,7 +1,7 @@
 import Ajv from 'ajv/dist/jtd.js'
 
 const formatKeyword: Ajv.FuncKeywordDefinition = {
-	keyword: 'format',
+	keyword: 'luzzleFormat',
 	type: 'string',
 	validate: function validate(schema: string, data: string) {
 		const validation = validate as unknown as { errors: unknown[] }
@@ -23,9 +23,13 @@ const formatKeyword: Ajv.FuncKeywordDefinition = {
 	errors: true,
 }
 
-const pieceAjv = new Ajv.default({
-	keywords: [formatKeyword],
+const attachmentTypeKeyword: Ajv.FuncKeywordDefinition = {
+	keyword: 'luzzleAttachmentType',
+	type: 'array',
+}
+
+export default new Ajv.default({
+	keywords: [formatKeyword, attachmentTypeKeyword],
 })
 
-export default pieceAjv
-export { formatKeyword }
+export { formatKeyword, attachmentTypeKeyword }

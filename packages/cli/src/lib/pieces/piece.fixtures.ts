@@ -5,9 +5,13 @@ import { PieceSelectable, PieceInsertable, PieceUpdatable, PieceTables } from '@
 import Piece from '../pieces/piece.js'
 import CacheForType from '../cache.js'
 
-type PieceMarkdownSample = PieceMarkDown<PieceSelectable, 'author'>
+type PieceMarkdownSample = PieceMarkDown<
+	PieceSelectable,
+	'note' | 'slug' | 'date_updated' | 'date_added' | 'id' | 'author' | 'coauthors' | 'subtitle'
+>
 type PieceValidator = Ajv.ValidateFunction<PieceMarkdownSample>
 type PieceCacheSchema = JTDSchemaType<PieceCache<PieceSelectable>>
+type PieceSchema = JTDSchemaType<PieceMarkdownSample>
 
 const sample = {
 	slug: 'sampleSlug',
@@ -17,18 +21,35 @@ const sample = {
 
 export function makeValidator(): PieceValidator {
 	const validate = () => true
-	validate.schema = {
-		markdown: 'string',
-		slug: 'string',
-		frontmatter: {
-			title: 'string',
-		},
-	}
 	return validate as unknown as PieceValidator
 }
 
 export function makeCacheSchema(): PieceCacheSchema {
 	return {} as PieceCacheSchema
+}
+
+export function makeSchema(
+	propertyOverrides: Record<string, unknown> = {},
+	optionalPropertyOverrides: Record<string, unknown> = {}
+): PieceSchema {
+	return {
+		properties: {
+			slug: { type: 'string' },
+			frontmatter: {
+				properties: {
+					title: { type: 'string' },
+					...propertyOverrides,
+				},
+				optionalProperties: {
+					keywords: { type: 'string' },
+					...optionalPropertyOverrides,
+				},
+			},
+		},
+		optionalProperties: {
+			markdown: { type: 'string' },
+		},
+	} as PieceSchema
 }
 
 export function makeCache(
@@ -40,7 +61,7 @@ export function makeCache(
 }
 
 export function makeMarkdownSample(
-	frontmatter = { title: sample.title } as Partial<PieceMarkdownSample['frontmatter']>
+	frontmatter: Record<string, unknown> = { title: sample.title }
 ): PieceMarkdownSample {
 	return {
 		slug: sample.slug,
@@ -55,18 +76,14 @@ export function makeSample(): PieceSelectable {
 	} as PieceSelectable
 }
 
-class PieceExample extends Piece<
-	PieceTables,
-	PieceSelectable,
-	PieceMarkDown<PieceSelectable, keyof PieceSelectable>
-> {
+class PieceExample extends Piece<PieceTables, PieceSelectable, PieceMarkdownSample> {
 	constructor(
 		pieceRoot = 'pieces-root',
 		table: PieceTables = 'table' as PieceTables,
-		validator: PieceValidator = {} as PieceValidator,
-		schema: PieceCacheSchema = {} as PieceCacheSchema
+		schema: JTDSchemaType<PieceMarkdownSample> = makeSchema(),
+		cacheSchema: PieceCacheSchema = makeCacheSchema()
 	) {
-		super(pieceRoot, table, validator, schema)
+		super(pieceRoot, table, schema, cacheSchema)
 	}
 
 	async toCreateInput(): Promise<PieceInsertable> {
@@ -77,20 +94,16 @@ class PieceExample extends Piece<
 		return {} as PieceUpdatable
 	}
 
-	async attach(): Promise<void> {
-		return
-	}
-
 	async process(): Promise<void> {
 		return
 	}
 
-	create(): PieceMarkDown<PieceSelectable, keyof PieceSelectable> {
-		return {} as PieceMarkDown<PieceSelectable, keyof PieceSelectable>
+	create(): PieceMarkdownSample {
+		return {} as PieceMarkdownSample
 	}
 
-	async fetch(): Promise<PieceMarkDown<PieceSelectable, keyof PieceSelectable>> {
-		return {} as PieceMarkDown<PieceSelectable, keyof PieceSelectable>
+	async fetch(): Promise<PieceMarkdownSample> {
+		return {} as PieceMarkdownSample
 	}
 }
 

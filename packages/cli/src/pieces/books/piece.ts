@@ -10,7 +10,7 @@ import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-lib
 import sharp from 'sharp'
 import crypto from 'crypto'
 import { existsSync } from 'fs'
-import { BookMarkDown, bookMdValidator, cacheDatabaseSchema } from './book.schemas.js'
+import { BookMarkDown, bookMdSchema, cacheDatabaseSchema } from './book.schemas.js'
 import { Piece, toValidatedMarkDown } from '../../lib/pieces/index.js'
 import { createId } from '@paralleldrive/cuid2'
 import { Book, BookInsert, BookUpdate, PieceTable } from '@luzzle/kysely'
@@ -46,7 +46,7 @@ async function _getCoverData<T extends BookInsert | BookUpdate>(
 
 class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 	constructor(piecesRoot: string) {
-		super(piecesRoot, PieceTable.Books, bookMdValidator, cacheDatabaseSchema)
+		super(piecesRoot, PieceTable.Books, bookMdSchema, cacheDatabaseSchema)
 	}
 
 	getCoverPath(slug: string): string {
@@ -297,12 +297,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		return this.getRelativeCoverPath(slug)
 	}
 
-	async attach(file: string, markdown: BookMarkDown, field?: string): Promise<void> {
-		if (field && field !== 'cover_path') {
-			log.error(`${field} is not a valid field to attach to`)
-			return
-		}
-
+	async attach(file: string, markdown: BookMarkDown): Promise<void> {
 		const coverPath = await this.attachCover(file, markdown.slug)
 
 		if (coverPath) {

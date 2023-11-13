@@ -1,5 +1,5 @@
 import log from '../../lib/log.js'
-import { LinkMarkDown, linkMdValidator, cacheDatabaseSchema } from './link.schemas.js'
+import { LinkMarkDown, cacheDatabaseSchema, linkMdSchema } from './link.schemas.js'
 import { Piece, toValidatedMarkDown } from '../../lib/pieces/index.js'
 import { createId } from '@paralleldrive/cuid2'
 import { Link, LinkInsert, LinkUpdate, PieceTable } from '@luzzle/kysely'
@@ -7,7 +7,7 @@ import { Config } from '../../lib/config.js'
 
 class LinkPiece extends Piece<typeof PieceTable.Links, Link, LinkMarkDown> {
 	constructor(piecesRoot: string) {
-		super(piecesRoot, PieceTable.Links, linkMdValidator, cacheDatabaseSchema)
+		super(piecesRoot, PieceTable.Links, linkMdSchema, cacheDatabaseSchema)
 	}
 
 	async toCreateInput(markdown: LinkMarkDown): Promise<LinkInsert> {

@@ -1,10 +1,10 @@
 import { JTDSchemaType } from 'ajv/dist/jtd.js'
-import Ajv from 'ajv/dist/jtd.js'
 import { Book } from '@luzzle/kysely'
 import { PieceMarkDown } from '../../lib/pieces/markdown.js'
 import { PieceCache } from '../../lib/pieces/cache.js'
+import pieceAjv from '../../lib/ajv.js'
 
-export type BookDatabaseOnlyFields =
+type BookDatabaseOnlyFields =
 	| 'id'
 	| 'date_added'
 	| 'date_updated'
@@ -39,7 +39,10 @@ const bookMdSchema: BookSchema = {
 				month_read: { type: 'uint32' },
 				year_first_published: { type: 'uint32' },
 				keywords: { type: 'string' },
-				cover_path: { type: 'string' },
+				cover_path: {
+					type: 'string',
+					metadata: { luzzleFormat: 'attachment', luzzleAttachmentType: ['png', 'jpg'] },
+				},
 			},
 		},
 	},
@@ -77,6 +80,6 @@ const cacheDatabaseSchema: BookCacheSchema = {
 	},
 }
 
-const bookMdValidator = new Ajv.default().compile<BookMarkDown>(bookMdSchema)
+const bookMdValidator = pieceAjv.compile<BookMarkDown>(bookMdSchema)
 
 export { bookMdSchema, cacheDatabaseSchema, bookMdValidator }
