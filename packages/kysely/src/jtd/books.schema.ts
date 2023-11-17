@@ -1,0 +1,77 @@
+import { BookSelectable } from '../tables/books.schema.js'
+import { PieceMarkdown, PieceMarkdownJtdSchema, PieceDatabaseJtdSchema } from './piece.js'
+
+type BookDatabaseOnlyFields =
+	| 'id'
+	| 'date_added'
+	| 'date_updated'
+	| 'slug'
+	| 'read_order'
+	| 'note'
+	| 'cover_width'
+	| 'cover_height'
+
+type BookMarkdown = PieceMarkdown<BookSelectable, BookDatabaseOnlyFields>
+
+const bookDatabaseJtdSchema: PieceDatabaseJtdSchema<BookSelectable> = {
+	properties: {
+		id: { type: 'string' },
+		date_added: { type: 'float64' },
+		slug: { type: 'string' },
+		title: { type: 'string' },
+		author: { type: 'string' },
+		read_order: { type: 'string' },
+	},
+	optionalProperties: {
+		cover_width: { type: 'uint32' },
+		cover_height: { type: 'uint32' },
+		id_ol_book: { type: 'string' },
+		id_ol_work: { type: 'string' },
+		isbn: { type: 'string' },
+		subtitle: { type: 'string' },
+		coauthors: { type: 'string' },
+		description: { type: 'string' },
+		pages: { type: 'uint32' },
+		year_read: { type: 'uint32' },
+		month_read: { type: 'uint32' },
+		year_first_published: { type: 'uint32' },
+		keywords: { type: 'string' },
+		cover_path: { type: 'string' },
+		note: { type: 'string' },
+		date_updated: { type: 'float64' },
+	},
+}
+
+const bookMarkdownJtdSchema: PieceMarkdownJtdSchema<BookMarkdown> = {
+	properties: {
+		slug: { type: 'string' },
+		frontmatter: {
+			properties: {
+				title: { type: 'string' },
+				author: { type: 'string' },
+			},
+			optionalProperties: {
+				id_ol_book: { type: 'string' },
+				id_ol_work: { type: 'string' },
+				isbn: { type: 'string' },
+				subtitle: { type: 'string' },
+				coauthors: { type: 'string' },
+				description: { type: 'string' },
+				pages: { type: 'uint32' },
+				year_read: { type: 'uint32' },
+				month_read: { type: 'uint32' },
+				year_first_published: { type: 'uint32' },
+				keywords: { type: 'string' },
+				cover_path: {
+					type: 'string',
+					metadata: { luzzleFormat: 'attachment', luzzleAttachmentType: ['png', 'jpg'] },
+				},
+			},
+		},
+	},
+	optionalProperties: {
+		markdown: { type: 'string' },
+	},
+}
+
+export { bookDatabaseJtdSchema, bookMarkdownJtdSchema, type BookMarkdown }

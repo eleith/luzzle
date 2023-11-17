@@ -20,8 +20,8 @@ type BooksTable = {
 	read_order: string
 } & PieceCommonFields
 
-type Book = Selectable<BooksTable>
-type BookInsert = Insertable<BooksTable>
-type BookUpdate = Updateable<BooksTable>
+type BookSelectable = Selectable<BooksTable>
+type BookInsertable = Insertable<BooksTable>
+type BookUpdateable = Updateable<BooksTable>
 
-export { type BooksTable, type Book, type BookInsert, type BookUpdate }
+export { type BooksTable, type BookSelectable, type BookInsertable, type BookUpdateable }
