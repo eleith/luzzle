@@ -14,7 +14,10 @@
     "strict": true,
     "strictNullChecks": true,
     "typeRoots": ["./src/@types"],
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext"
   },
   "include": ["vite.config.ts", "src/**/*.ts"]
 }

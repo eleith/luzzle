@@ -24,8 +24,15 @@ type LinksTable = {
 	type: LinkTypes
 } & PieceCommonFields
 
-type Link = Selectable<LinksTable>
-type LinkInsert = Insertable<LinksTable>
-type LinkUpdate = Updateable<LinksTable>
+type LinkSelectable = Selectable<LinksTable>
+type LinkInsertable = Insertable<LinksTable>
+type LinkUpdateable = Updateable<LinksTable>
 
-export { LinkType, type LinkTypes, type LinksTable, type Link, type LinkInsert, type LinkUpdate }
+export {
+	LinkType,
+	type LinkTypes,
+	type LinksTable,
+	type LinkSelectable,
+	type LinkInsertable,
+	type LinkUpdateable,
+}
