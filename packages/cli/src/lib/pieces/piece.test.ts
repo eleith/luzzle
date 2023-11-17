@@ -16,9 +16,8 @@ import { removeAllTagsFrom, addTagsTo, keywordsToTags, syncTagsFor } from '../ta
 import log from '../log.js'
 import { CpuInfo, cpus } from 'os'
 import CacheForType from '../cache.js'
-import ajv from '../ajv.js'
-import { PieceTables } from '@luzzle/kysely'
 import { fileTypeFromFile, FileTypeResult } from 'file-type'
+import { Pieces, ajv } from '@luzzle/kysely'
 
 vi.mock('fs')
 vi.mock('fs/promises')
@@ -28,8 +27,8 @@ vi.mock('./markdown')
 vi.mock('../tags/index')
 vi.mock('../cache')
 vi.mock('os')
-vi.mock('../ajv')
 vi.mock('file-type')
+vi.mock('@luzzle/kysely')
 
 const mocks = {
 	existsSync: vi.mocked(existsSync),
@@ -50,7 +49,7 @@ const mocks = {
 	CacheUpdate: vi.spyOn(CacheForType.prototype, 'update'),
 	CacheGetAllFiles: vi.spyOn(CacheForType.prototype, 'getAllFiles'),
 	CacheRemove: vi.spyOn(CacheForType.prototype, 'remove'),
-	compile: vi.spyOn(ajv, 'compile'),
+	compile: vi.mocked(ajv),
 	copy: vi.mocked(copyFile),
 	fileType: vi.mocked(fileTypeFromFile),
 }
@@ -66,27 +65,6 @@ describe('lib/pieces/piece', () => {
 		Object.keys(spies).forEach((key) => {
 			spies[key].mockRestore()
 			delete spies[key]
-		})
-	})
-
-	test('constructor', () => {
-		const pieceValidator = makeValidator()
-		const pieceCacheSchema = makeCacheSchema()
-		const pieceSchema = makeSchema()
-		const PieceTest = makePiece()
-		const pieceTable = 'table' as PieceTables
-		const pieceRoot = 'piece-root'
-
-		mocks.compile.mockReturnValueOnce(pieceValidator)
-
-		const pieceTest = new PieceTest(pieceRoot, pieceTable, pieceSchema, pieceCacheSchema)
-
-		// expect(pieceTest.cache).toBeInstanceOf(CacheForType)
-		expect(pieceTest.validator).toBe(pieceValidator)
-		expect(pieceTest.directories).contains({
-			root: `${pieceRoot}/${pieceTable}`,
-			assets: `${pieceRoot}/${pieceTable}/.assets`,
-			'assets.cache': `${pieceRoot}/${pieceTable}/.assets.cache`,
 		})
 	})
 
@@ -135,7 +113,7 @@ describe('lib/pieces/piece', () => {
 		const fileUpdated = new Date('2201-11-11')
 		const cacheUpdated = new Date('2101-11-11')
 		const pieceDir = 'piece-dir'
-		const pieceTable = 'table' as PieceTables
+		const pieceTable = 'table' as Pieces
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.stat.mockResolvedValue({ mtime: fileUpdated } as Stats)
@@ -159,7 +137,7 @@ describe('lib/pieces/piece', () => {
 		const fileUpdated = new Date('2001-11-11')
 		const cacheUpdated = new Date('2101-11-11')
 		const pieceDir = 'piece-dir'
-		const pieceTable = 'table' as PieceTables
+		const pieceTable = 'table' as Pieces
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.stat.mockResolvedValue({ mtime: fileUpdated } as Stats)
@@ -546,7 +524,7 @@ describe('lib/pieces/piece', () => {
 		mocks.toValidateMarkDown.mockReturnValueOnce(pieceMarkdown)
 		mocks.compile.mockReturnValueOnce(pieceValidator)
 
-		const markdown = await new PieceTest('dir', 'table' as PieceTables).toMarkDown(pieceSample)
+		const markdown = await new PieceTest('dir', 'table' as Pieces).toMarkDown(pieceSample)
 
 		expect(mocks.toValidateMarkDown).toHaveBeenCalledWith(
 			pieceMarkdown.slug,
@@ -590,7 +568,7 @@ describe('lib/pieces/piece', () => {
 		const file = 'path/to/somewhere.jpg'
 		const field = 'cover'
 		const root = 'root'
-		const table = 'table' as PieceTables
+		const table = 'table' as Pieces
 		const relPath = `.assets/${field}/${markdown.slug}.jpg`
 		const toPath = `${root}/${table}/${relPath}`
 		const schema = makeSchema({
@@ -621,7 +599,7 @@ describe('lib/pieces/piece', () => {
 		const file = 'path/to/somewhere.jpg'
 		const field = 'cover'
 		const root = 'root'
-		const table = 'table' as PieceTables
+		const table = 'table' as Pieces
 		const relPath = `.assets/${field}/${markdown.slug}.jpg`
 		const toPath = `${root}/${table}/${relPath}`
 		const schema = makeSchema({
@@ -652,7 +630,7 @@ describe('lib/pieces/piece', () => {
 		const file = 'path/to/somewhere.jpg'
 		const field = 'cover'
 		const root = 'root'
-		const table = 'table' as PieceTables
+		const table = 'table' as Pieces
 		const schema = makeSchema({
 			cover: {
 				type: 'string',
@@ -674,7 +652,7 @@ describe('lib/pieces/piece', () => {
 		const markdown = makeMarkdownSample()
 		const file = 'path/to/somewhere.jpg'
 		const root = 'root'
-		const table = 'table' as PieceTables
+		const table = 'table' as Pieces
 		const schema = makeSchema({
 			cover: {
 				type: 'string',

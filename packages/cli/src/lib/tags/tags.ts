@@ -1,7 +1,7 @@
 import { differenceWith } from 'lodash-es'
 import slugify from '@sindresorhus/slugify'
 import { createId } from '@paralleldrive/cuid2'
-import { LuzzleDatabase, PieceTables } from '@luzzle/kysely'
+import { LuzzleDatabase, Pieces } from '@luzzle/kysely'
 
 function keywordsToTags(keywords: string): string[] {
 	const tags = keywords
@@ -15,7 +15,7 @@ async function syncTagsFor(
 	db: LuzzleDatabase,
 	tags: string[],
 	id: string,
-	type: PieceTables
+	type: Pieces
 ): Promise<void> {
 	const foundTags = await db
 		.selectFrom(['tags', 'tag_maps'])
@@ -41,7 +41,7 @@ async function addTagsTo(
 	db: LuzzleDatabase,
 	tags: string[],
 	id: string,
-	type: PieceTables
+	type: Pieces
 ): Promise<void> {
 	for (const tag of tags) {
 		const slug = slugify(tag)
@@ -61,7 +61,7 @@ async function removeTagsFrom(
 	db: LuzzleDatabase,
 	tagSlugs: string[],
 	id: string,
-	type: PieceTables
+	type: Pieces
 ): Promise<void> {
 	const findTags = await db.selectFrom('tags').select('id').where('slug', 'in', tagSlugs).execute()
 
@@ -97,11 +97,7 @@ async function removeTagsFrom(
 		.execute()
 }
 
-async function removeAllTagsFrom(
-	db: LuzzleDatabase,
-	ids: string[],
-	type: PieceTables
-): Promise<void> {
+async function removeAllTagsFrom(db: LuzzleDatabase, ids: string[], type: Pieces): Promise<void> {
 	await db.deleteFrom('tag_maps').where('id_item', 'in', ids).where('type', '=', type).execute()
 
 	const tagCounts = await db

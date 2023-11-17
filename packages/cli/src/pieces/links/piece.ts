@@ -1,16 +1,23 @@
 import log from '../../lib/log.js'
-import { LinkMarkDown, cacheDatabaseSchema, linkMdSchema } from './link.schemas.js'
-import { Piece, toValidatedMarkDown } from '../../lib/pieces/index.js'
+import { Piece, toValidatedMarkDown, PieceType } from '../../lib/pieces/index.js'
 import { createId } from '@paralleldrive/cuid2'
-import { Link, LinkInsert, LinkUpdate, PieceTable } from '@luzzle/kysely'
 import { Config } from '../../lib/config.js'
+import {
+	LinkMarkdown,
+	LinkType,
+	LinkSelectable,
+	LinkUpdateable,
+	LinkInsertable,
+	linkDatabaseJtdSchema,
+	linkMarkdownJtdSchema,
+} from './schema.js'
 
-class LinkPiece extends Piece<typeof PieceTable.Links, Link, LinkMarkDown> {
+class LinkPiece extends Piece<LinkType, LinkSelectable, LinkMarkdown> {
 	constructor(piecesRoot: string) {
-		super(piecesRoot, PieceTable.Links, linkMdSchema, cacheDatabaseSchema)
+		super(piecesRoot, PieceType.Link, linkMarkdownJtdSchema, linkDatabaseJtdSchema)
 	}
 
-	async toCreateInput(markdown: LinkMarkDown): Promise<LinkInsert> {
+	async toCreateInput(markdown: LinkMarkdown): Promise<LinkInsertable> {
 		const accessedOn = markdown.frontmatter.accessed_on || new Date().getTime()
 		const linkInput = {
 			...markdown.frontmatter,
@@ -18,18 +25,22 @@ class LinkPiece extends Piece<typeof PieceTable.Links, Link, LinkMarkDown> {
 			slug: markdown.slug,
 			note: markdown.markdown,
 			date_accessed: new Date(accessedOn).getTime(),
-		} as LinkInsert
+		} as LinkInsertable
 
 		return linkInput
 	}
 
-	async toUpdateInput(linkMd: LinkMarkDown, link: Link, force = false): Promise<LinkUpdate> {
+	async toUpdateInput(
+		linkMd: LinkMarkdown,
+		link: LinkSelectable,
+		force = false
+	): Promise<LinkUpdateable> {
 		const linkUpdateInput = {
 			...linkMd.frontmatter,
 			slug: linkMd.slug,
 			note: linkMd.markdown,
 			date_updated: new Date().getTime(),
-		} as LinkUpdate
+		} as LinkUpdateable
 
 		const linkKeys = Object.keys(linkUpdateInput) as Array<keyof typeof linkUpdateInput>
 
@@ -43,18 +54,18 @@ class LinkPiece extends Piece<typeof PieceTable.Links, Link, LinkMarkDown> {
 		return linkUpdateInput
 	}
 
-	async attach(file: string, markdown: LinkMarkDown, field?: string): Promise<void> {
+	async attach(file: string, markdown: LinkMarkdown, field?: string): Promise<void> {
 		const slug = markdown.slug
 		log.info(`attaching ${file} to ${slug} to field ${field}`)
 		return
 	}
 
-	async fetch(_config: Config, markdown: LinkMarkDown, service?: string): Promise<LinkMarkDown> {
+	async fetch(_config: Config, markdown: LinkMarkdown, service?: string): Promise<LinkMarkdown> {
 		log.info(`fetching ${markdown.slug} with service ${service}`)
 		return markdown
 	}
 
-	create(slug: string, title: string): LinkMarkDown {
+	create(slug: string, title: string): LinkMarkdown {
 		const now = new Date()
 		const month = now.toLocaleString('default', { month: 'long' })
 		const year = now.getFullYear()

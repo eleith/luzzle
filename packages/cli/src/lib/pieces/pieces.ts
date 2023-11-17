@@ -1,14 +1,18 @@
 import { existsSync, mkdirSync } from 'fs'
 import log from '../log.js'
-import { PieceSelectable, PieceTable, PieceTables } from '@luzzle/kysely'
-import { PieceFrontMatterFields, PieceMarkDown } from './markdown.js'
-import { PieceType, PieceTypes, PieceDirectory } from './utils.js'
+import {
+	PieceSelectable,
+	Pieces as PieceTypes,
+	Piece as PieceType,
+	PieceMarkdown,
+	PieceFrontMatterFields,
+} from '@luzzle/kysely'
 import Piece, { InterfacePiece } from './piece.js'
 
 type LuzzlePiece = InterfacePiece<
 	PieceTypes,
 	PieceSelectable,
-	PieceMarkDown<PieceSelectable, keyof PieceSelectable, PieceFrontMatterFields>
+	PieceMarkdown<PieceSelectable, keyof PieceSelectable, PieceFrontMatterFields>
 >
 
 class Pieces {
@@ -25,7 +29,7 @@ class Pieces {
 	register<
 		P extends PieceTypes,
 		T extends PieceSelectable,
-		M extends PieceMarkDown<T, keyof T, PieceFrontMatterFields>
+		M extends PieceMarkdown<T, keyof T, PieceFrontMatterFields>
 	>(PieceInterface: InterfacePiece<P, T, M>): Piece<P, T, M> {
 		const pieceType = new PieceInterface(this._directory)
 
@@ -34,24 +38,18 @@ class Pieces {
 			log.info(`created luzzle directory ${this._directory}`)
 		}
 
-		Object.values(PieceDirectory).forEach((key) => {
-			const dir = pieceType.directories[key]
-			if (!existsSync(dir)) {
-				mkdirSync(dir, { recursive: true })
-				log.info(`created luzzle ${pieceType.table} ${key} directory: ${dir}`)
-			}
-		})
+		pieceType.initialize()
 
 		return pieceType
 	}
 
 	/* c8 ignore next 3 */
-	getPieceTypes(): PieceTables[] {
+	getPieceTypes(): PieceTypes[] {
 		return Object.values(PieceType)
 	}
 
 	async getPiece(pieceType: PieceTypes): Promise<InstanceType<typeof Piece>> {
-		const pieceTypes = Object.values(PieceTable)
+		const pieceTypes = Object.values(PieceType)
 		if (pieceTypes.includes(pieceType)) {
 			const LuzzePiecePath = `../../pieces/${pieceType}/piece.js`
 			const LuzzlePiece = (await import(LuzzePiecePath)).default as LuzzlePiece

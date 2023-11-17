@@ -1,4 +1,4 @@
 import BookPiece from './piece.js'
-import { BookMarkDown } from './book.schemas.js'
+import { BookMarkdown } from './schema.js'
 
-export { BookPiece, type BookMarkDown }
+export { BookPiece, type BookMarkdown }
