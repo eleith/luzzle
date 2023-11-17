@@ -2,15 +2,13 @@ import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import * as pieceMarkdown from './markdown.js'
 import Ajv from 'ajv/dist/jtd.js'
 import { addFrontMatter } from '../md.js'
-import { PieceSelectable } from '@luzzle/kysely'
+import { PieceSelectable, PieceMarkdown } from '@luzzle/kysely'
 
 vi.mock('../md')
 vi.mock('ajv/dist/jtd.js')
 vi.mock('./piece')
 
-type TestValidator = Ajv.ValidateFunction<
-	pieceMarkdown.PieceMarkDown<PieceSelectable, keyof PieceSelectable>
->
+type TestValidator = Ajv.ValidateFunction<PieceMarkdown<PieceSelectable, keyof PieceSelectable>>
 
 const mocks = {
 	addFrontMatter: vi.mocked(addFrontMatter),
@@ -70,7 +68,7 @@ describe('lib/pieces/markdown', () => {
 
 	test('toMarkDownString', () => {
 		pieceMarkdown.toMarkDownString(
-			{} as unknown as pieceMarkdown.PieceMarkDown<PieceSelectable, keyof PieceSelectable>
+			{} as unknown as PieceMarkdown<PieceSelectable, keyof PieceSelectable>
 		)
 		expect(mocks.addFrontMatter).toHaveBeenCalled()
 	})

@@ -5,9 +5,9 @@ import Pieces from './pieces.js'
 import path from 'path'
 import yargs, { Argv } from 'yargs'
 import { makePiece } from './piece.fixtures.js'
-import { makePieceCommand, parsePieceArgv, PieceArgv, PieceTypes } from './utils.js'
+import { makePieceCommand, parsePieceArgv, PieceArgv } from './utils.js'
 import Piece from './piece.js'
-import { PieceTable } from '@luzzle/kysely'
+import { Piece as PieceType, Pieces as PieceTypes } from '@luzzle/kysely'
 
 vi.mock('../../pieces/books/index', () => makePiece())
 vi.mock('fs')
@@ -150,7 +150,7 @@ describe('lib/pieces/pieces', () => {
 			.spyOn(pieces, 'register')
 			.mockReturnValueOnce(Piece as unknown as InstanceType<typeof Piece>)
 
-		const piece = await pieces.getPiece(PieceTable.Books)
+		const piece = await pieces.getPiece(PieceType.Book)
 
 		expect(piece).toEqual(Piece)
 		expect(spies.register).toHaveBeenCalled()

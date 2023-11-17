@@ -1,6 +1,5 @@
 import { existsSync } from 'fs'
 import { copyFile, stat, unlink, writeFile } from 'fs/promises'
-import sharp from 'sharp'
 import * as linkFixtures from './link.fixtures.js'
 import log from '../../lib/log.js'
 import { addFrontMatter, extract } from '../../lib/md.js'
@@ -9,13 +8,13 @@ import { fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
 import LinkPiece from './piece.js'
-import { Piece, PieceDirectories, toValidatedMarkDown } from '../../lib/pieces/index.js'
+import { toValidatedMarkDown } from '../../lib/pieces/markdown.js'
 import { mockConfig } from '../../lib/config.mock.js'
+import Piece from '../../lib/pieces/piece.js'
 
 vi.mock('file-type')
 vi.mock('fs')
 vi.mock('fs/promises')
-vi.mock('sharp')
 vi.mock('../../lib/web')
 vi.mock('./open-library')
 vi.mock('./google-links')
@@ -23,7 +22,8 @@ vi.mock('./openai')
 vi.mock('../../lib/md')
 vi.mock('os')
 vi.mock('../../lib/log')
-vi.mock('../../lib/pieces/index')
+vi.mock('../../lib/pieces/markdown.js')
+vi.mock('@luzzle/kysely')
 
 const mocks = {
 	cpus: vi.mocked(cpus),
@@ -36,11 +36,9 @@ const mocks = {
 	logError: vi.mocked(log.error),
 	logWarn: vi.mocked(log.warn),
 	logInfo: vi.mocked(log.info),
-	sharp: vi.mocked(sharp),
 	fromFile: vi.mocked(fileTypeFromFile),
 	writeFile: vi.mocked(writeFile),
 	existSync: vi.mocked(existsSync),
-	LinkPieceDirectories: vi.spyOn(LinkPiece.prototype, 'directories', 'get'),
 	LinkPieceGetFileName: vi.spyOn(LinkPiece.prototype, 'getFileName'),
 	PieceCleanUpCache: vi.spyOn(Piece.prototype, 'cleanUpCache'),
 	toMarkDown: vi.mocked(toValidatedMarkDown),
@@ -48,7 +46,7 @@ const mocks = {
 
 const spies: Record<string, SpyInstance> = {}
 
-describe('lib/links/piece', () => {
+describe('pieces/books/piece', () => {
 	beforeEach(() => {
 		vi.useFakeTimers()
 	})
@@ -71,7 +69,7 @@ describe('lib/links/piece', () => {
 	})
 
 	test('toCreateInput', async () => {
-		const linkMarkdown = linkFixtures.makeLinkMarkDown()
+		const linkMarkdown = linkFixtures.makeLinkMarkdown()
 
 		const linkPiece = new LinkPiece('root')
 		const input = await linkPiece.toCreateInput(linkMarkdown)
@@ -81,7 +79,7 @@ describe('lib/links/piece', () => {
 
 	test('toUpdateInput', async () => {
 		const link = linkFixtures.makeLink({ active: false })
-		const linkMarkdown = linkFixtures.makeLinkMarkDown({ frontmatter: { active: true } })
+		const linkMarkdown = linkFixtures.makeLinkMarkdown({ frontmatter: { active: true } })
 
 		const linkPiece = new LinkPiece('root')
 		const update = await linkPiece.toUpdateInput(linkMarkdown, link)
@@ -93,7 +91,7 @@ describe('lib/links/piece', () => {
 
 	test('toUpdateInput only updates timestamp', async () => {
 		const link = linkFixtures.makeLink()
-		const linkMarkdown = linkFixtures.makeLinkMarkDown()
+		const linkMarkdown = linkFixtures.makeLinkMarkdown()
 
 		const linkPiece = new LinkPiece('root')
 		const update = await linkPiece.toUpdateInput(linkMarkdown, link)
@@ -103,15 +101,10 @@ describe('lib/links/piece', () => {
 
 	test('processCleanUp with no cache', async () => {
 		const slugs = ['slug1']
-		const assetDir = 'assets'
 
 		mocks.unlink.mockResolvedValue()
 		mocks.existSync.mockReturnValue(false)
 		mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-		mocks.LinkPieceDirectories.mockReturnValue({
-			assets: assetDir,
-			'assets.cache': assetDir,
-		} as PieceDirectories)
 		mocks.PieceCleanUpCache.mockResolvedValueOnce(slugs)
 
 		await new LinkPiece('root').cleanUpCache(slugs)
@@ -120,7 +113,7 @@ describe('lib/links/piece', () => {
 	})
 
 	test('attach', async () => {
-		const markdown = linkFixtures.makeLinkMarkDown()
+		const markdown = linkFixtures.makeLinkMarkdown()
 
 		const linkPiece = new LinkPiece('root')
 
@@ -139,7 +132,7 @@ describe('lib/links/piece', () => {
 
 	test('fetch', async () => {
 		const configMock = mockConfig()
-		const markdown = linkFixtures.makeLinkMarkDown()
+		const markdown = linkFixtures.makeLinkMarkdown()
 
 		const fetched = await new LinkPiece('root').fetch(configMock, markdown)
 
@@ -149,7 +142,7 @@ describe('lib/links/piece', () => {
 	test('create', () => {
 		const slug = 'slug'
 		const title = 'title'
-		const markdown = linkFixtures.makeLinkMarkDown()
+		const markdown = linkFixtures.makeLinkMarkdown()
 
 		mocks.toMarkDown.mockReturnValueOnce(markdown)
 

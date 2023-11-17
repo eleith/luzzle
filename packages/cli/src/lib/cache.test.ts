@@ -3,8 +3,9 @@ import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import CacheFor, { Cache } from './cache.js'
 import { mkdir, readdir, readFile, unlink, writeFile } from 'fs/promises'
 import { Dirent, existsSync, mkdirSync } from 'fs'
-import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
+import { JTDSchemaType } from 'ajv/dist/jtd.js'
 import { AnyValidateFunction } from 'ajv/dist/core.js'
+import { ajv } from '@luzzle/kysely'
 
 vi.mock('./log')
 vi.mock('../book')
@@ -12,6 +13,7 @@ vi.mock('fs/promises')
 vi.mock('fs')
 vi.mock('ajv/dist/jtd')
 vi.mock('ajv/dist/core')
+vi.mock('@luzzle/kysely')
 
 type TestCache = {
 	id: string
@@ -40,7 +42,7 @@ const mocks = {
 	unlink: vi.mocked(unlink),
 	existsSync: vi.mocked(existsSync),
 	mkdirSync: vi.mocked(mkdirSync),
-	compile: vi.spyOn(Ajv.default.prototype, 'compile'),
+	compile: vi.mocked(ajv),
 }
 
 const spies: SpyInstance[] = []

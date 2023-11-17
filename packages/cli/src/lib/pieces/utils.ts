@@ -1,7 +1,7 @@
 import { existsSync } from 'fs'
 import path from 'path'
 import { Argv } from 'yargs'
-import { PieceTables, PieceTable } from '@luzzle/kysely'
+import { Pieces, Piece } from '@luzzle/kysely'
 import { temporaryFile } from 'tempy'
 import { copyFile, stat } from 'fs/promises'
 import { downloadToPath } from '../web.js'
@@ -21,14 +21,11 @@ export type PieceArgv = {
 	piece?: string
 }
 
-export type PieceTypes = PieceTables
-
-const PieceType = PieceTable
 const PieceFileType = 'md'
 const PieceCommandOption = '<slug|path>'
 
-const parsePieceArgv = function (args: PieceArgv): { slug: string; piece: PieceTables } {
-	const piece = args.piece as PieceTables
+const parsePieceArgv = function (args: PieceArgv): { slug: string; piece: Pieces } {
+	const piece = args.piece as Pieces
 	const slug = args.path
 	const pathParsed = path.parse(slug)
 	const isMarkdown = pathParsed.ext === `.${PieceFileType}`
@@ -40,7 +37,7 @@ const parsePieceArgv = function (args: PieceArgv): { slug: string; piece: PieceT
 
 		return {
 			slug: pathParsed.name,
-			piece: path.parse(dir).name as PieceTables,
+			piece: path.parse(dir).name as Pieces,
 		}
 	}
 
@@ -59,7 +56,7 @@ const makePieceCommand = function <T>(yargs: Argv<T>, alias = 'slug'): Argv<T & 
 			type: 'string',
 			alias: 'p',
 			description: `piece type, required if using <${alias}>`,
-			choices: Object.values(PieceTable),
+			choices: Object.values(Piece),
 		})
 		.positional('path', {
 			type: 'string',
@@ -88,10 +85,11 @@ async function downloadFileOrUrlTo(file: string): Promise<string> {
 }
 
 export {
-	PieceType,
 	PieceFileType,
 	PieceCommandOption,
 	parsePieceArgv,
 	makePieceCommand,
 	downloadFileOrUrlTo,
+	Piece,
+	type Pieces,
 }

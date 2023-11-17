@@ -1,6 +1,5 @@
 import { merge } from 'lodash-es'
-import { LinkMarkDown } from './link.schemas.js'
-import { Link, LinkInsert, LinkUpdate } from '@luzzle/kysely'
+import { LinkMarkdown, LinkInsertable, LinkUpdateable, LinkSelectable } from './schema.js'
 
 const id = 'link-id'
 const title = 'title of the link'
@@ -11,7 +10,7 @@ const active = true
 const date_accessed = new Date('2201-12-11').getTime()
 const url = 'https://example.com'
 
-function makeLinkMarkDown(overrides: DeepPartial<LinkMarkDown> = {}): LinkMarkDown {
+function makeLinkMarkdown(overrides: DeepPartial<LinkMarkdown> = {}): LinkMarkdown {
 	return merge(
 		{
 			slug,
@@ -24,11 +23,11 @@ function makeLinkMarkDown(overrides: DeepPartial<LinkMarkDown> = {}): LinkMarkDo
 			},
 			markdown: note,
 		},
-		overrides as LinkMarkDown
+		overrides as LinkMarkdown
 	)
 }
 
-function makeLink(overrides: Partial<Link> = {}): Link {
+function makeLink(overrides: Partial<LinkSelectable> = {}): LinkSelectable {
 	return {
 		id: 'link-id',
 		title,
@@ -53,7 +52,7 @@ function makeLink(overrides: Partial<Link> = {}): Link {
 	}
 }
 
-function makeLinkInsert(overrides: Partial<LinkInsert> = {}): LinkInsert {
+function makeLinkInsert(overrides: Partial<LinkInsertable> = {}): LinkInsertable {
 	return {
 		id: 'link-id',
 		title,
@@ -70,14 +69,14 @@ function makeLinkInsert(overrides: Partial<LinkInsert> = {}): LinkInsert {
 	}
 }
 
-function makeLinkUpdateInput(overrides: Partial<LinkUpdate> = {}): LinkUpdate {
+function makeLinkUpdateInput(overrides: Partial<LinkUpdateable> = {}): LinkUpdateable {
 	return {
 		id: 'link-id',
 		...overrides,
 	}
 }
 
-function makeLinkCreateInput(overrides: Partial<LinkInsert> = {}): LinkInsert {
+function makeLinkCreateInput(overrides: Partial<LinkInsertable> = {}): LinkInsertable {
 	return {
 		id,
 		title,
@@ -89,4 +88,4 @@ function makeLinkCreateInput(overrides: Partial<LinkInsert> = {}): LinkInsert {
 	}
 }
 
-export { makeLinkMarkDown, makeLink, makeLinkInsert, makeLinkUpdateInput, makeLinkCreateInput }
+export { makeLinkMarkdown, makeLink, makeLinkInsert, makeLinkUpdateInput, makeLinkCreateInput }

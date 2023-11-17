@@ -14,9 +14,10 @@ import { fileTypeFromFile, FileTypeResult } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
 import BookPiece from './piece.js'
-import { Piece, PieceDirectories, toValidatedMarkDown } from '../../lib/pieces/index.js'
+import { toValidatedMarkDown } from '../../lib/pieces/markdown.js'
 import { ASSETS_DIRECTORY } from '../../lib/assets.js'
 import { mockConfig } from '../../lib/config.mock.js'
+import Piece from '../../lib/pieces/piece.js'
 
 vi.mock('file-type')
 vi.mock('fs')
@@ -29,7 +30,8 @@ vi.mock('./openai')
 vi.mock('../../lib/md')
 vi.mock('os')
 vi.mock('../../lib/log')
-vi.mock('../../lib/pieces/index')
+vi.mock('../../lib/pieces/markdown.js')
+vi.mock('@luzzle/kysely')
 
 const mocks = {
 	cpus: vi.mocked(cpus),
@@ -52,7 +54,6 @@ const mocks = {
 	existSync: vi.mocked(existsSync),
 	generateTags: vi.mocked(generateTags),
 	generateDescription: vi.mocked(generateDescription),
-	BookPieceDirectories: vi.spyOn(BookPiece.prototype, 'directories', 'get'),
 	BookPieceGetFileName: vi.spyOn(BookPiece.prototype, 'getFileName'),
 	PieceCleanUpCache: vi.spyOn(Piece.prototype, 'cleanUpCache'),
 	toMarkDown: vi.mocked(toValidatedMarkDown),
@@ -61,7 +62,7 @@ const mocks = {
 
 const spies: Record<string, SpyInstance> = {}
 
-describe('lib/books/piece', () => {
+describe('pieces/books/piece', () => {
 	beforeEach(() => {
 		vi.useFakeTimers()
 	})
@@ -83,7 +84,7 @@ describe('lib/books/piece', () => {
 		new BookPiece('root')
 	})
 
-	test('getCoverPath', () => {
+	test('getRelativeCoverPath', () => {
 		const slug = 'slug'
 
 		const coverPath = new BookPiece('root').getRelativeCoverPath(slug)
@@ -91,15 +92,11 @@ describe('lib/books/piece', () => {
 		expect(coverPath).toMatch(new RegExp(`^${ASSETS_DIRECTORY}.+\\.jpg$`))
 	})
 
-	test('getRelativeCoverPath', () => {
+	test('getCoverPath', () => {
 		const slug = 'slug'
-		const assetsDir = 'assets'
+		const path = new BookPiece('root').getCoverPath(slug)
 
-		mocks.BookPieceDirectories.mockReturnValueOnce({ assets: assetsDir } as PieceDirectories)
-
-		new BookPiece('root').getCoverPath(slug)
-
-		expect(mocks.BookPieceDirectories).toHaveBeenCalledOnce()
+		expect(path).toContain(ASSETS_DIRECTORY)
 	})
 
 	test('toCreateInput', async () => {
@@ -165,21 +162,15 @@ describe('lib/books/piece', () => {
 
 	test('makeCoverThumbnails', async () => {
 		const slug = 'slug'
-		const assetsDir = 'assets'
 
 		spies.sharpToFile = vi.fn()
 		spies.sharpResize = vi.fn(() => ({ toFile: spies.sharpToFile }))
 
-		mocks.BookPieceDirectories.mockReturnValue({
-			assets: assetsDir,
-			'assets.cache': assetsDir,
-		} as PieceDirectories)
 		mocks.sharp.mockReturnValue({ resize: spies.sharpResize } as unknown as Sharp)
 
 		await new BookPiece('root').makeCoverThumbnails(slug)
 
 		expect(spies.sharpToFile).toHaveBeenCalledTimes(8)
-		expect(mocks.BookPieceDirectories).toHaveBeenCalledTimes(9)
 	})
 
 	test('searchOpenLibrary', async () => {
@@ -192,7 +183,6 @@ describe('lib/books/piece', () => {
 
 		mocks.getBook.mockResolvedValueOnce(book)
 		mocks.findWork.mockResolvedValueOnce(work)
-		mocks.BookPieceDirectories.mockReturnValue({ assets: 'assets' } as PieceDirectories)
 
 		const bookPiece = new BookPiece('root')
 
@@ -238,7 +228,6 @@ describe('lib/books/piece', () => {
 		mocks.getBook.mockResolvedValueOnce(book)
 		mocks.findWork.mockResolvedValueOnce(work)
 		mocks.getCoverUrl.mockReturnValue(coverUrl)
-		mocks.BookPieceDirectories.mockReturnValue({ assets: 'assets' } as PieceDirectories)
 		mocks.downloadTo.mockResolvedValue(tmpFile)
 		mocks.unlink.mockResolvedValue()
 
@@ -380,15 +369,10 @@ describe('lib/books/piece', () => {
 
 	test('cleanUpCache', async () => {
 		const slugs = ['slug1']
-		const assetDir = 'assets'
 
 		mocks.unlink.mockResolvedValue()
 		mocks.existSync.mockReturnValue(true)
 		mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-		mocks.BookPieceDirectories.mockReturnValue({
-			assets: assetDir,
-			'assets.cache': assetDir,
-		} as PieceDirectories)
 		mocks.PieceCleanUpCache.mockResolvedValueOnce(slugs)
 
 		await new BookPiece('root').cleanUpCache(slugs)
@@ -398,15 +382,10 @@ describe('lib/books/piece', () => {
 
 	test('processCleanUp with no cache', async () => {
 		const slugs = ['slug1']
-		const assetDir = 'assets'
 
 		mocks.unlink.mockResolvedValue()
 		mocks.existSync.mockReturnValue(false)
 		mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-		mocks.BookPieceDirectories.mockReturnValue({
-			assets: assetDir,
-			'assets.cache': assetDir,
-		} as PieceDirectories)
 		mocks.PieceCleanUpCache.mockResolvedValueOnce(slugs)
 
 		await new BookPiece('root').cleanUpCache(slugs)
@@ -415,7 +394,6 @@ describe('lib/books/piece', () => {
 	})
 
 	test('maybeGetCoverData', async () => {
-		const assetDir = 'assets'
 		const markdown = bookFixtures.makeBookMarkDown({ frontmatter: { cover_path: 'cover.jpg' } })
 		const input = bookFixtures.makeBookInsert()
 		const width = 10
@@ -431,9 +409,6 @@ describe('lib/books/piece', () => {
 						} as Metadata),
 				} as Sharp)
 		)
-		mocks.BookPieceDirectories.mockReturnValue({
-			assets: assetDir,
-		} as PieceDirectories)
 
 		const bookInput = await new BookPiece('root').maybeGetCoverData(markdown, input)
 
@@ -441,13 +416,8 @@ describe('lib/books/piece', () => {
 	})
 
 	test('maybeGetCoverData skips', async () => {
-		const assetDir = 'assets'
 		const markdown = bookFixtures.makeBookMarkDown()
 		const input = bookFixtures.makeBookInsert()
-
-		mocks.BookPieceDirectories.mockReturnValue({
-			assets: assetDir,
-		} as PieceDirectories)
 
 		const bookInput = await new BookPiece('root').maybeGetCoverData(markdown, input)
 
@@ -504,8 +474,6 @@ describe('lib/books/piece', () => {
 		const tmpPath = 'path/to/file'
 		const bookMd = bookFixtures.makeBookMarkDown()
 
-		mocks.BookPieceDirectories.mockReturnValue({ assets: '/path/to/.assets' } as PieceDirectories)
-
 		const bookPiece = new BookPiece('root')
 
 		spies.attachCover = vi.spyOn(bookPiece, 'attachCover').mockResolvedValue(coverPath)
@@ -523,8 +491,6 @@ describe('lib/books/piece', () => {
 	test('attach skips writing', async () => {
 		const tmpPath = 'path/to/file'
 		const bookMd = bookFixtures.makeBookMarkDown()
-
-		mocks.BookPieceDirectories.mockReturnValue({ assets: '/path/to/.assets' } as PieceDirectories)
 
 		const bookPiece = new BookPiece('root')
 
@@ -642,7 +608,9 @@ describe('lib/books/piece', () => {
 
 		mocks.toMarkDown.mockReturnValueOnce(markdown)
 
-		new BookPiece('root').create(slug, title)
+		const bookPiece = new BookPiece('root')
+
+		bookPiece.create(slug, title)
 
 		expect(mocks.toMarkDown).toHaveBeenCalledOnce()
 	})

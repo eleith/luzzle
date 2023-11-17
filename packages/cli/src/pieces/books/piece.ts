@@ -10,14 +10,21 @@ import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-lib
 import sharp from 'sharp'
 import crypto from 'crypto'
 import { existsSync } from 'fs'
-import { BookMarkDown, bookMdSchema, cacheDatabaseSchema } from './book.schemas.js'
-import { Piece, toValidatedMarkDown } from '../../lib/pieces/index.js'
+import { Piece, toValidatedMarkDown, PieceType } from '../../lib/pieces/index.js'
 import { createId } from '@paralleldrive/cuid2'
-import { Book, BookInsert, BookUpdate, PieceTable } from '@luzzle/kysely'
 import { generateDescription, generateTags } from './openai.js'
 import { ASSETS_DIRECTORY } from '../../lib/assets.js'
 import { Config } from '../../lib/config.js'
 import { merge } from 'lodash-es'
+import {
+	BookInsertable,
+	BookUpdateable,
+	BookType,
+	BookSelectable,
+	BookMarkdown,
+	bookDatabaseJtdSchema,
+	bookMarkdownJtdSchema,
+} from './schema.js'
 
 const BOOK_COVER_DIRECTORY = 'covers'
 
@@ -31,7 +38,7 @@ function _getReadOrder(
 	return `${timeStamp}-${rand}`
 }
 
-async function _getCoverData<T extends BookInsert | BookUpdate>(
+async function _getCoverData<T extends BookInsertable | BookUpdateable>(
 	coverPath: string
 ): Promise<Pick<T, 'cover_width' | 'cover_height'>> {
 	const coverImage = await sharp(coverPath).metadata()
@@ -44,9 +51,9 @@ async function _getCoverData<T extends BookInsert | BookUpdate>(
 	}
 }
 
-class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
+class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 	constructor(piecesRoot: string) {
-		super(piecesRoot, PieceTable.Books, bookMdSchema, cacheDatabaseSchema)
+		super(piecesRoot, PieceType.Book, bookMarkdownJtdSchema, bookDatabaseJtdSchema)
 	}
 
 	getCoverPath(slug: string): string {
@@ -67,7 +74,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		return path.join(assetCacheDirectory, BOOK_COVER_DIRECTORY, `${slug}.w${widthSize}.${type}`)
 	}
 
-	async toCreateInput(markdown: BookMarkDown): Promise<BookInsert> {
+	async toCreateInput(markdown: BookMarkdown): Promise<BookInsertable> {
 		const bookInput = {
 			...markdown.frontmatter,
 			id: createId(),
@@ -76,16 +83,20 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 			read_order: _getReadOrder(markdown.frontmatter.year_read, markdown.frontmatter.month_read),
 		}
 
-		return await this.maybeGetCoverData<BookInsert>(markdown, bookInput)
+		return await this.maybeGetCoverData<BookInsertable>(markdown, bookInput)
 	}
 
-	async toUpdateInput(bookMd: BookMarkDown, book: Book, force = false): Promise<BookUpdate> {
+	async toUpdateInput(
+		bookMd: BookMarkdown,
+		book: BookSelectable,
+		force = false
+	): Promise<BookUpdateable> {
 		const bookUpdateInput = {
 			...bookMd.frontmatter,
 			slug: bookMd.slug,
 			note: bookMd.markdown,
 			date_updated: new Date().getTime(),
-		} as BookUpdate
+		} as BookUpdateable
 
 		const bookKeys = Object.keys(bookUpdateInput) as Array<keyof typeof bookUpdateInput>
 
@@ -128,7 +139,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		}
 	}
 
-	async completeOpenAI(apiKey: string, bookMd: BookMarkDown): Promise<BookMarkDown['frontmatter']> {
+	async completeOpenAI(apiKey: string, bookMd: BookMarkdown): Promise<BookMarkdown['frontmatter']> {
 		const tags = await generateTags(apiKey, bookMd)
 		const description = await generateDescription(apiKey, bookMd)
 
@@ -144,7 +155,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		apiKey: string,
 		bookTitle: string,
 		bookAuthor: string
-	): Promise<BookMarkDown['frontmatter']> {
+	): Promise<BookMarkdown['frontmatter']> {
 		const volume = await findVolume(apiKey, bookTitle, bookAuthor)
 		const googleBook = volume?.volumeInfo
 
@@ -180,7 +191,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		bookSlug: string,
 		bookTitle: string,
 		bookAuthor: string
-	): Promise<BookMarkDown['frontmatter']> {
+	): Promise<BookMarkdown['frontmatter']> {
 		const book = await getOpenLibraryBook(openLibraryBookId)
 		const workId = book?.works?.[0].key.replace(/\/works\//, '')
 		const work = workId ? await findWork(workId) : null
@@ -197,7 +208,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 			const pages = Number(work.number_of_pages)
 			const coverUrl = work.cover_i ? getCoverUrl(work.cover_i) : undefined
 
-			const frontMatter: BookMarkDown['frontmatter'] = {
+			const frontMatter: BookMarkdown['frontmatter'] = {
 				title,
 				author,
 				id_ol_work: workId,
@@ -230,13 +241,11 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		throw new Error(`could not find ${bookTitle} on openlibrary`)
 	}
 
-	async maybeGetCoverData<T extends BookInsert | BookUpdate>(
-		bookMd: BookMarkDown,
+	async maybeGetCoverData<T extends BookInsertable | BookUpdateable>(
+		bookMd: BookMarkdown,
 		bookInput: T
 	): Promise<T> {
 		const coverPath = this.getCoverPath(bookMd.slug)
-
-		console.log(coverPath)
 
 		if (bookMd.frontmatter.cover_path) {
 			const coverData = await _getCoverData<T>(coverPath)
@@ -297,7 +306,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		return this.getRelativeCoverPath(slug)
 	}
 
-	async attach(file: string, markdown: BookMarkDown): Promise<void> {
+	async attach(file: string, markdown: BookMarkdown): Promise<void> {
 		const coverPath = await this.attachCover(file, markdown.slug)
 
 		if (coverPath) {
@@ -306,7 +315,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		}
 	}
 
-	async fetch(config: Config, markdown: BookMarkDown, service?: string): Promise<BookMarkDown> {
+	async fetch(config: Config, markdown: BookMarkdown, service?: string): Promise<BookMarkdown> {
 		const apiKeys = config.get('api_keys')
 		const googleKey = apiKeys.google
 		const openAIKey = apiKeys.openai
@@ -352,7 +361,7 @@ class BookPiece extends Piece<typeof PieceTable.Books, Book, BookMarkDown> {
 		return bookProcessed
 	}
 
-	create(slug: string, title: string): BookMarkDown {
+	create(slug: string, title: string): BookMarkdown {
 		return toValidatedMarkDown(
 			slug,
 			'notes',

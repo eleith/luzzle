@@ -7,7 +7,6 @@ import { makePieceCommand, parsePieceArgv, downloadFileOrUrlTo } from '../pieces
 import { makeMarkdownSample, makePiece } from '../pieces/piece.fixtures.js'
 import { unlink } from 'fs/promises'
 
-vi.mock('ajv/dist/jtd')
 vi.mock('fs/promises')
 vi.mock('../pieces/index')
 vi.mock('../log')

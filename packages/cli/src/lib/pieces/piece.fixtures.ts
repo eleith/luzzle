@@ -1,11 +1,16 @@
 import { PieceCache } from './cache.js'
-import { PieceMarkDown } from './markdown.js'
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
-import { PieceSelectable, PieceInsertable, PieceUpdatable, PieceTables } from '@luzzle/kysely'
+import {
+	PieceSelectable,
+	PieceInsertable,
+	PieceUpdatable,
+	Pieces,
+	PieceMarkdown,
+} from '@luzzle/kysely'
 import Piece from '../pieces/piece.js'
 import CacheForType from '../cache.js'
 
-type PieceMarkdownSample = PieceMarkDown<
+type PieceMarkdownSample = PieceMarkdown<
 	PieceSelectable,
 	'note' | 'slug' | 'date_updated' | 'date_added' | 'id' | 'author' | 'coauthors' | 'subtitle'
 >
@@ -76,10 +81,10 @@ export function makeSample(): PieceSelectable {
 	} as PieceSelectable
 }
 
-class PieceExample extends Piece<PieceTables, PieceSelectable, PieceMarkdownSample> {
+class PieceExample extends Piece<Pieces, PieceSelectable, PieceMarkdownSample> {
 	constructor(
 		pieceRoot = 'pieces-root',
-		table: PieceTables = 'table' as PieceTables,
+		table: Pieces = 'table' as Pieces,
 		schema: JTDSchemaType<PieceMarkdownSample> = makeSchema(),
 		cacheSchema: PieceCacheSchema = makeCacheSchema()
 	) {

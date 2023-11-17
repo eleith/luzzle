@@ -1,5 +1,5 @@
 import { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd.js'
-import ajv from '../lib/ajv.js'
+import { ajv } from '@luzzle/kysely'
 import { readFile, writeFile, mkdir, readdir, unlink } from 'fs/promises'
 import path from 'path'
 import log from './log.js'
@@ -15,15 +15,16 @@ export type Cache<T> = {
 export const CACHE_DIRECTORY = '.cache'
 
 class CacheForType<T> {
-	private validator: ReturnType<typeof ajv.compile<Cache<T>>>
-	private rootDir: string
+	private _validator?: ReturnType<typeof ajv<Cache<T>>>
+	private _rootDir: string
+	private _schema: JTDSchemaType<Cache<T>>
 
 	private getFilePath(slug: string): string {
-		return path.join(this.rootDir, `${slug}.json`)
+		return path.join(this._rootDir, `${slug}.json`)
 	}
 
 	constructor(database: JTDSchemaType<T>, dir: string) {
-		const schema: SomeJTDSchemaType = {
+		const schema = {
 			properties: {},
 			optionalProperties: {
 				lastProcessed: {
@@ -34,10 +35,15 @@ class CacheForType<T> {
 				},
 				database,
 			},
-		}
+		} as SomeJTDSchemaType as JTDSchemaType<Cache<T>>
 
-		this.validator = ajv.compile<Cache<T>>(schema)
-		this.rootDir = path.join(dir, CACHE_DIRECTORY)
+		this._schema = schema
+		this._rootDir = path.join(dir, CACHE_DIRECTORY)
+	}
+
+	private get validator(): ReturnType<typeof ajv<Cache<T>>> {
+		this._validator = this._validator || ajv<Cache<T>>(this._schema)
+		return this._validator
 	}
 
 	async get(slug: string): Promise<Cache<T>> {
@@ -79,7 +85,7 @@ class CacheForType<T> {
 	}
 
 	async getAllFiles(): Promise<string[]> {
-		return await readdir(this.rootDir).catch(() => [])
+		return await readdir(this._rootDir).catch(() => [])
 	}
 
 	async remove(slug: string): Promise<void> {

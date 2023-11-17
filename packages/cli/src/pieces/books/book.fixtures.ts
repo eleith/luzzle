@@ -1,6 +1,5 @@
 import { merge } from 'lodash-es'
-import { BookMarkDown } from './book.schemas.js'
-import { Book, BookInsert, BookUpdate } from '@luzzle/kysely'
+import { BookMarkdown, BookInsertable, BookUpdateable, BookSelectable } from './schema.js'
 
 const id = 'book-id'
 const title = 'title of the book'
@@ -9,7 +8,7 @@ const note = 'a note about the book'
 const slug = 'slugified-title'
 const read_order = '19700101-y47d'
 
-function makeBookMarkDown(overrides: DeepPartial<BookMarkDown> = {}): BookMarkDown {
+function makeBookMarkDown(overrides: DeepPartial<BookMarkdown> = {}): BookMarkdown {
 	return merge(
 		{
 			slug,
@@ -19,11 +18,11 @@ function makeBookMarkDown(overrides: DeepPartial<BookMarkDown> = {}): BookMarkDo
 			},
 			markdown: note,
 		},
-		overrides as BookMarkDown
+		overrides as BookMarkdown
 	)
 }
 
-function makeBook(overrides: Partial<Book> = {}): Book {
+function makeBook(overrides: Partial<BookSelectable> = {}): BookSelectable {
 	return {
 		id: 'book-id',
 		id_ol_book: null,
@@ -51,7 +50,7 @@ function makeBook(overrides: Partial<Book> = {}): Book {
 	}
 }
 
-function makeBookInsert(overrides: Partial<BookInsert> = {}): BookInsert {
+function makeBookInsert(overrides: Partial<BookInsertable> = {}): BookInsertable {
 	return {
 		id: 'book-id',
 		id_ol_book: null,
@@ -77,14 +76,14 @@ function makeBookInsert(overrides: Partial<BookInsert> = {}): BookInsert {
 	}
 }
 
-function makeBookUpdateInput(overrides: Partial<BookUpdate> = {}): BookUpdate {
+function makeBookUpdateInput(overrides: Partial<BookUpdateable> = {}): BookUpdateable {
 	return {
 		id: 'book-id',
 		...overrides,
 	}
 }
 
-function makeBookCreateInput(overrides: Partial<BookInsert> = {}): BookInsert {
+function makeBookCreateInput(overrides: Partial<BookInsertable> = {}): BookInsertable {
 	return {
 		id,
 		title,

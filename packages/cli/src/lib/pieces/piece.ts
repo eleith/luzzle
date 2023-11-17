@@ -1,16 +1,9 @@
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
-import ajv from '../ajv.js'
-import { existsSync } from 'fs'
+import { existsSync, mkdirSync } from 'fs'
 import { copyFile, readdir, stat, writeFile } from 'fs/promises'
 import log from '../log.js'
 import { extract } from '../md.js'
-import {
-	PieceMarkDown,
-	toValidatedMarkDown,
-	toMarkDownString,
-	PieceFrontMatterFields,
-} from './markdown.js'
-import { PieceCache } from './cache.js'
+import { toValidatedMarkDown, toMarkDownString } from './markdown.js'
 import CacheForType, { Cache } from '../cache.js'
 import { Config } from '../config.js'
 import { difference } from 'lodash-es'
@@ -20,9 +13,11 @@ import {
 	PieceInsertable,
 	PieceSelectable,
 	PieceUpdatable,
-	LuzzlePieceTable,
-	PieceCommonFields,
-	PieceTables,
+	Pieces,
+	PieceMarkdown,
+	PieceType,
+	PieceFrontMatterFields,
+	ajv,
 } from '@luzzle/kysely'
 import { eachLimit, filterLimit } from 'async'
 import { cpus } from 'os'
@@ -32,20 +27,20 @@ import { ASSETS_CACHE_DIRECTORY, ASSETS_DIRECTORY } from '../assets.js'
 import { fileTypeFromFile } from 'file-type'
 
 export interface InterfacePiece<
-	P extends PieceTables,
-	D extends PieceSelectable & PieceCommonFields,
-	M extends PieceMarkDown<D, keyof D, PieceFrontMatterFields>
+	P extends Pieces,
+	D extends PieceSelectable,
+	M extends PieceMarkdown<D, keyof D, PieceFrontMatterFields>
 > {
 	new (pieceRoot: string): Piece<P, D, M>
 }
 
 abstract class Piece<
-	P extends PieceTables,
-	D extends PieceSelectable & PieceCommonFields,
-	M extends PieceMarkDown<D, keyof D, PieceFrontMatterFields>
+	P extends Pieces,
+	D extends PieceSelectable,
+	M extends PieceMarkdown<D, keyof D, PieceFrontMatterFields>
 > {
-	private _validator: Ajv.ValidateFunction<M>
-	private _cache: CacheForType<PieceCache<D>>
+	private _validator?: Ajv.ValidateFunction<M>
+	private _cache: CacheForType<PieceType<D>>
 	private _schema: JTDSchemaType<M>
 	private _pieceRoot: string
 	private _directories: PieceDirectories
@@ -58,7 +53,7 @@ abstract class Piece<
 		pieceRoot: string,
 		table: P,
 		schema: JTDSchemaType<M>,
-		cacheSchema: JTDSchemaType<PieceCache<D>>
+		cacheSchema: JTDSchemaType<PieceType<D>>
 	) {
 		this._pieceRoot = pieceRoot
 		this._pieceTable = table
@@ -75,16 +70,11 @@ abstract class Piece<
 		this._attachable = undefined
 		this._schema = schema
 
-		this._validator = ajv.compile(this._schema)
 		this._findAttachables()
 	}
 
-	abstract toCreateInput(markdown: M): Promise<PieceInsertable<LuzzlePieceTable<P>>>
-	abstract toUpdateInput(
-		markdown: M,
-		db: D,
-		force: boolean
-	): Promise<PieceUpdatable<LuzzlePieceTable<P>>>
+	abstract toCreateInput(markdown: M): Promise<PieceInsertable<P>>
+	abstract toUpdateInput(markdown: M, db: D, force: boolean): Promise<PieceUpdatable<P>>
 	abstract process(slugs: string[], dryRun: boolean): Promise<void>
 	abstract fetch(config: Config, markdown: M, service?: string): Promise<M>
 	abstract create(slug: string, title: string): M
@@ -112,16 +102,29 @@ abstract class Piece<
 		})
 	}
 
-	get table() {
+	protected get table() {
 		return this._pieceTable
 	}
 
-	get directories() {
+	protected get directories() {
 		return this._directories
 	}
 
-	get validator() {
+	protected get validator() {
+		this._validator = this._validator || ajv(this._schema)
+
 		return this._validator
+	}
+
+	initialize() {
+		Object.values(this._directories).forEach((key) => {
+			const dir = this._directories[key as keyof PieceDirectories]
+
+			if (!existsSync(dir)) {
+				mkdirSync(dir, { recursive: true })
+				log.info(`created luzzle ${this.table} ${key} directory: ${dir}`)
+			}
+		})
 	}
 
 	getFileName(slug: string): string {
@@ -167,7 +170,7 @@ abstract class Piece<
 		if (this.exists(slug)) {
 			const filepath = this.getPath(slug)
 			const data = (await extract(filepath)) as M
-			return toValidatedMarkDown(slug, data.markdown, data.frontmatter, this._validator)
+			return toValidatedMarkDown(slug, data.markdown, data.frontmatter, this.validator)
 		} else {
 			return null
 		}
@@ -233,8 +236,8 @@ abstract class Piece<
 			if (dryRun === false) {
 				const createInput = await this.toCreateInput(markdown)
 				const added = await db
-					.insertInto(this._pieceTable as PieceTables)
-					.values(createInput as PieceInsertable<LuzzlePieceTable<PieceTables>>)
+					.insertInto(this._pieceTable as Pieces)
+					.values(createInput as PieceInsertable<Pieces>)
 					.returningAll()
 					.executeTakeFirstOrThrow()
 
@@ -252,7 +255,7 @@ abstract class Piece<
 
 	async syncMarkDown(db: LuzzleDatabase, markdown: M, dryRun = false): Promise<void> {
 		const dbPiece = await db
-			.selectFrom(this._pieceTable as PieceTables)
+			.selectFrom(this._pieceTable as Pieces)
 			.selectAll()
 			.where('slug', '=', markdown.slug)
 			.executeTakeFirst()
@@ -269,7 +272,7 @@ abstract class Piece<
 		try {
 			if (dryRun === false) {
 				const update = await db
-					.updateTable(this._pieceTable as PieceTables)
+					.updateTable(this._pieceTable as Pieces)
 					.set(updateInput)
 					.where('id', '=', data.id)
 					.returningAll()
@@ -286,13 +289,13 @@ abstract class Piece<
 	}
 
 	async markAsSynced(data: D): Promise<void> {
-		const dbCache: Partial<PieceCache<D>> = {}
-		const dbFields = Object.keys(data) as (keyof PieceCache<D>)[]
+		const dbCache: Partial<PieceType<D>> = {}
+		const dbFields = Object.keys(data) as (keyof D)[]
 
 		dbFields.forEach((key) => {
-			const attribute = data[key as keyof D]
+			const attribute = data[key] as PieceType<D>[keyof PieceType<D>] | undefined | null
 			if (attribute !== null && attribute !== undefined) {
-				dbCache[key] = attribute as PieceCache<D>[keyof PieceCache<D>]
+				dbCache[key as keyof PieceType<D>] = attribute
 			}
 		})
 
@@ -337,7 +340,7 @@ abstract class Piece<
 			data.slug,
 			data.note?.toString(),
 			frontmatter as unknown as M['frontmatter'],
-			this._validator
+			this.validator
 		)
 	}
 
@@ -380,7 +383,7 @@ abstract class Piece<
 			markdown.slug,
 			markdown.markdown,
 			{ ...markdown.frontmatter, [field]: relPath },
-			this._validator
+			this.validator
 		)
 
 		await this.write(writeMarkdown)
