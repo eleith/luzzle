@@ -1,15 +1,16 @@
 {
   "name": "@luzzle/web",
-  "version": "0.0.28",
+  "version": "0.0.29",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "build:graphql": "VERBOSE=1 DEBUG=1 NODE_OPTIONS='--loader ts-node/esm -r tsconfig-paths/register --experimental-specifier-resolution=node' graphql-codegen --verbose --debug",
+    "build:graphql": "VERBOSE=1 DEBUG=1 NODE_OPTIONS='--loader ts-node/esm -r tsconfig-paths/register' graphql-codegen --verbose --debug",
+		"build:rss": "NODE_OPTIONS='--loader ts-node/esm -r tsconfig-paths/register' node ./scripts/generate-rss.ts",
     "lint": "next lint",
     "compile": "tsc --noEmit",
-    "prebuild": "npm run build:graphql",
+    "prebuild": "npm run build:graphql && npm run build:rss",
     "predev": "npm run build:graphql",
     "clean:graphql": "find . -path \\*/_gql_/*.ts -delete"
   },

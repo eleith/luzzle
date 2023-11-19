@@ -3,7 +3,6 @@
 node_modules
 data
 tools/**.js
-packages/web/prisma
 generated
 build
 public/images/covers
