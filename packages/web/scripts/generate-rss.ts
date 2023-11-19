@@ -1,14 +1,14 @@
 import { Feed, Item } from 'feed'
-import fs from 'fs'
+import { writeFile, mkdir } from 'fs/promises'
 import { loadEnvConfig } from '@next/env'
-import { getDatabaseClient } from '@luzzle/kysely'
+import { getDatabaseClient, Book } from '@luzzle/kysely'
 
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== 'production')
 
-function generateRss(items: Item[], type: string) {
+async function generateRss(books: Book[], type: string) {
 	const feed = new Feed({
-		title: process.env.SITE_TITLE || '',
-		description: process.env.SITE_DESCRIPTION,
+		title: process.env.TITLE || '',
+		description: process.env.DESCRIPTION,
 		id: `${process.env.NEXT_PUBLIC_HOST}/${type}`,
 		link: process.env.NEXT_PUBLIC_HOST,
 		ttl: 60 * 24,
@@ -29,13 +29,28 @@ function generateRss(items: Item[], type: string) {
 		// },
 	})
 
+	const items = books?.map((book) => {
+		return {
+			title: book.title,
+			author: [{ name: book.author }],
+			link: `${process.env.NEXT_PUBLIC_HOST}/books/${book.slug}`,
+			image: book.cover_width
+				? `${process.env.NEXT_PUBLIC_HOST_STATIC}/images/covers-thumbs/${book.slug}.w500.jpg`
+				: undefined,
+			description: book.description || '',
+			content: book.description || '',
+			date: new Date(`${book.year_read || 2000}-${book.month_read || 1}`),
+		} as Item
+	})
+
 	items.forEach((item) => {
 		feed.addItem(item)
 	})
 
-	fs.mkdirSync(`./public/rss/${type}`, { recursive: true })
+	await mkdir(`./public/rss/${type}`, { recursive: true })
+
 	// https://github.com/jpmonette/feed/issues/140
-	fs.writeFileSync(
+	await writeFile(
 		`./public/rss/${type}/feed.xml`,
 		feed
 			.rss2()
@@ -44,7 +59,8 @@ function generateRss(items: Item[], type: string) {
 				'<?xml version="1.0" encoding="utf-8"?>\n<?xml-stylesheet type="text/xsl" href="/rss/feed.xslt"?>'
 			)
 	)
-	fs.writeFileSync(`./public/rss/${type}/feed.json`, feed.json1())
+
+	await writeFile(`./public/rss/${type}/feed.json`, feed.json1())
 }
 
 async function main() {
@@ -56,21 +72,7 @@ async function main() {
 		.selectAll()
 		.execute()
 
-	const booksFeed = books?.map((book) => {
-		return {
-			title: book.title,
-			author: [{ name: book.author }],
-			link: `${process.env.NEXT_PUBLIC_HOST}/books/${book.slug}`,
-			image: book.cover_width
-				? `${process.env.NEXT_PUBLIC_HOST_STATIC}/images/covers-thumbs/${book.slug}.w500.jpg`
-				: undefined,
-			description: book.description || '',
-			content: book.description || '',
-			date: new Date(`${book.year_read || 2000}-${book.month_read || 1}`),
-		}
-	})
-
-	generateRss(booksFeed, 'books')
+	generateRss(books, 'books')
 }
 
 main()
