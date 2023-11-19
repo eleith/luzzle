@@ -51,8 +51,8 @@ async function main() {
 	const db = getDatabaseClient(process.env.DATABASE_URL as string)
 	const books = await db
 		.selectFrom('books')
-		.where('date_added', '>=', Date.now())
 		.limit(50)
+		.orderBy('date_added', 'desc')
 		.selectAll()
 		.execute()
 
