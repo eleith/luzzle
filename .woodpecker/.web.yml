@@ -1,7 +1,7 @@
 workspace:
   base: /workspace
   path: src
-pipeline:
+steps:
   build:
     image: node:18
     commands:
