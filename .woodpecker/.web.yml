@@ -87,14 +87,6 @@ pipeline:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   notify:
     image: deblan/woodpecker-email:1.0.1-wp
-    secrets:
-      [
-        smtp_notification_from,
-        smtp_notification_host,
-        smtp_notification_password,
-        smtp_notification_from,
-        smtp_notification_recipient,
-      ]
     settings:
       from:
         from_secret: smtp_notification_from

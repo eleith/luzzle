@@ -25,6 +25,7 @@ COPY packages ./packages
 
 # disable nextjs telemetry during build
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV production
 
 RUN npm run build -w @luzzle/web
 
@@ -32,9 +33,9 @@ RUN npm run build -w @luzzle/web
 FROM node:18-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
 # disable nextjs telemetry in production
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV production
 
 RUN addgroup --gid 1001 --system nodejs
 RUN adduser --system nextjs --uid 1001
