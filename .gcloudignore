@@ -8,5 +8,5 @@
 .dockerignore
 
 vite.config.ts
-public/images/covers/
-public/images/og
+packages/web/public/images/covers/
+packages/web/public/images/og
