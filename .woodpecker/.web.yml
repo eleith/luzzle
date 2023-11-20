@@ -33,13 +33,14 @@ steps:
     commands:
       - mkdir /workspace/data
       - mkdir packages/web/public/images
+      - mkdir packages/web/public/images/og
       - mkdir packages/web/data
       - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - rclone copy --progress $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
-      - rclone copy --progress :gcs:eleith-io-site/images/og public/images/og
-      - cp -R /workspace/data/books/.assets/covers public/images/covers
-      - cp -R /workspace/data/books/.assets.cache/covers public/images/covers-thumbs
+      - rclone copy --progress :gcs:eleith-io-site/images/og packages/web/public/images/og
+      - cp -R /workspace/data/books/.assets/covers packages/web/public/images/covers
+      - cp -R /workspace/data/books/.assets.cache/covers packages/web/public/images/covers-thumbs
       - cp /workspace/data/luzzle.sqlite packages/web/data
     secrets:
       [
