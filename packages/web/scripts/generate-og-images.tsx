@@ -188,6 +188,7 @@ async function getLastRun(defaultDate = new Date(0)) {
 		const lastRunDate = new Date(lastRun)
 
 		if (!isNaN(lastRunDate as unknown as number)) {
+			console.log(`last run: ${lastRunDate.toISOString()}`)
 			return lastRunDate.getTime()
 		}
 
