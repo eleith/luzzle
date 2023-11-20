@@ -12,6 +12,7 @@ import { CaretLeft, CaretRight, LinkSimple } from 'phosphor-react'
 import DiscussionForm from '@app/common/components/pages/book/DiscussionForm'
 import { useState } from 'react'
 import { ResultOneOf, ResultSuccessOf } from '@app/@types/utilities'
+import config from '@app/common/config'
 
 const partialBooksQuery = gql<
 	typeof GetPartialBooksDocument
@@ -187,7 +188,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 		<PageFull
 			meta={{
 				title: book.title,
-				image: `/api/books/og:image?slug=${book.slug}`,
+				image: `${config.public.HOST_STATIC}/images/og/books/${book.slug}.png`,
 				description: book.note || book.description || '',
 			}}
 			invert

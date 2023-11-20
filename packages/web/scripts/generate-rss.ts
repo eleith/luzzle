@@ -64,7 +64,7 @@ async function generateRss(books: Book[], type: string) {
 }
 
 async function main() {
-	const db = getDatabaseClient(process.env.DATABASE_URL as string)
+	const db = getDatabaseClient(`${process.env.LUZZLE_FOLDER}/luzzle.sqlite`)
 	const books = await db
 		.selectFrom('books')
 		.limit(50)

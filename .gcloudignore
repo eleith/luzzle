@@ -8,5 +8,5 @@
 .dockerignore
 
 vite.config.ts
-prisma/migrate
 public/images/covers/
+public/images/og
