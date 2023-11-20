@@ -34,8 +34,8 @@ steps:
       - mkdir /workspace/data
       - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
-      - rclone copy $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
-      - rclone copy :gcs:eleith-io-site/images/og public/images/og
+      - rclone copy --progress $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
+      - rclone copy --progress :gcs:eleith-io-site/images/og public/images/og
     secrets:
       [
         rclone_webdav_url,
