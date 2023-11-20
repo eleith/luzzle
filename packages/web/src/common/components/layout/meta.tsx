@@ -67,7 +67,7 @@ const Meta = ({ title, name, description, image, children = [] }: MetaProps): JS
 			rel="alternate"
 			type="application/rss+xml"
 			title="rss feed for books"
-			href={`${config.public.HOST}/rss/books/feed.xml`}
+			href={`${config.public.HOST_STATIC}/rss/books/feed.xml`}
 		/>
 		{children}
 	</Head>

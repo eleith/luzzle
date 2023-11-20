@@ -50,13 +50,20 @@ steps:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   build-content:
     image: node:18
+    environment:
+      - ENV_LOCAL_FILE=.env.local
+      - NODE_ENV=production
     commands:
+      - printf '%s\n' "$NEXTJS_ENV_LOCAL" > ./packages/web/$ENV_LOCAL_FILE
       - cd packages/web
       - mkdir public/images
       - mkdir data
       - cp -R /workspace/data/books/.assets/covers public/images/covers
       - cp -R /workspace/data/books/.assets.cache/covers public/images/covers-thumbs
       - cp /workspace/data/luzzle.sqlite data
+      - npm run build:og:images
+      - npm run build:rss
+    secrets: [nextjs_env_local]
     when:
       branch: [main]
       path:
@@ -67,20 +74,18 @@ steps:
       - LOG_DIR=gs://eleith-cloud-builds/logs
       - STAGING_DIR=gs://eleith-cloud-builds/eleith-io-site
       - RUN_KEY_FILE=/tmp/secrets/service-account-key.json
-      - ENV_LOCAL_FILE=.env.local
       - GCR_IMAGE=gcr.io/eleith-cloud/eleith-io-site
       - GCS_PROJECT=eleith-cloud
       - GCS_REGION=us-central1
     commands:
       - mkdir /tmp/secrets
-      - printf '%s\n' "$NEXTJS_ENV_LOCAL" > ./packages/web/$ENV_LOCAL_FILE
       - echo $${CLOUD_RUN_SERVICE_KEY_JSON} > $RUN_KEY_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RUN_KEY_FILE
       - gcloud auth activate-service-account --key-file $RUN_KEY_FILE
       - gsutil -m rsync -d -r ./packages/web/public gs://eleith-io-site
       - gcloud builds submit --gcs-source-staging-dir $STAGING_DIR --gcs-log-dir $LOG_DIR --tag $GCR_IMAGE --project=$GCS_PROJECT
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
-    secrets: [cloud_run_service_key_json, nextjs_env_local]
+    secrets: [cloud_run_service_key_json]
     when:
       branch: [main]
       path:

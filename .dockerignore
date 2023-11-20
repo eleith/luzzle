@@ -9,3 +9,5 @@
 
 Dockerfile
 node_modules
+public/images/covers/
+public/images/og

@@ -5,6 +5,7 @@ node_modules
 data
 generated
 build
+public/images/og
 public/images/covers
 public/images/covers-thumbs
 public/rss/books
