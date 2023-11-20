@@ -56,7 +56,7 @@ async function generateRss(books: Book[], type: string) {
 			.rss2()
 			.replace(
 				'<?xml version="1.0" encoding="utf-8"?>',
-				'<?xml version="1.0" encoding="utf-8"?>\n<?xml-stylesheet type="text/xsl" href="/rss/feed.xslt"?>'
+				`<?xml version="1.0" encoding="utf-8"?>\n<?xml-stylesheet type="text/xsl" href="${process.env.NEXT_PUBLIC_HOST_STATIC}/rss/feed.xslt"?>`
 			)
 	)
 
