@@ -72,7 +72,7 @@ function getSize(pages?: number | null, scale = 1): typeof sizes[keyof typeof Bo
 
 function getCoverUrl(slug: string, size = 125, type: 'webp' | 'avif' | 'jpg' = 'jpg'): string {
 	const width = size <= 125 ? 125 : size <= 250 ? 250 : size <= 500 ? 500 : 1000
-	return `${config.public.HOST_STATIC}/images/covers-thumbs/${slug}.w${width}.${type}`
+	return `${config.public.HOST_STATIC}/images/variants/books/covers/${slug}.w${width}.${type}`
 }
 
 function BookCoverFor({

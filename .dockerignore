@@ -9,5 +9,5 @@
 
 Dockerfile
 node_modules
-packages/web/public/images/covers/
+packages/web/public/images/variants
 packages/web/public/images/og

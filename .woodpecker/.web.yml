@@ -39,8 +39,7 @@ steps:
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - rclone copy $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
       - rclone copy :gcs:eleith-io-site/images/og packages/web/public/images/og
-      - cp -R /workspace/data/books/.assets/covers packages/web/public/images/covers
-      - cp -R /workspace/data/books/.assets.cache/covers packages/web/public/images/covers-thumbs
+      - rclone copy :gcs:eleith-io-site/images/variants packages/web/public/images/variants
       - cp /workspace/data/luzzle.sqlite packages/web/data
     secrets:
       [
@@ -63,6 +62,7 @@ steps:
     commands:
       - printf '%s\n' "$NEXTJS_ENV_LOCAL" > ./packages/web/$ENV_LOCAL_FILE
       - cd packages/web
+      - npm run build:variant:images
       - npm run build:og:images
       - npm run build:rss
     secrets: [nextjs_env_local]

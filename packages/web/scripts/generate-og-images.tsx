@@ -49,9 +49,7 @@ function getColor(slug: string): typeof BookColors[number] {
 }
 
 function getImageBase64(slug: string): string {
-	const image = readFileSync(
-		`${process.env.LUZZLE_FOLDER}/books/.assets.cache/covers/${slug}.w500.jpg`
-	)
+	const image = readFileSync(`./public/images/variants/books/covers/${slug}.w500.jpg`)
 	const base64 = image.toString('base64')
 	return `data:image/jpeg;base64,${base64}`
 }
