@@ -1,6 +1,5 @@
 import { existsSync } from 'fs'
 import { copyFile, stat, unlink, writeFile } from 'fs/promises'
-import sharp, { Metadata, Sharp } from 'sharp'
 import * as bookFixtures from './book.fixtures.js'
 import * as openLibraryFixtures from './open-library.fixtures.js'
 import * as googleBooksFixtures from './google-books.fixtures.js'
@@ -22,7 +21,6 @@ import Piece from '../../lib/pieces/piece.js'
 vi.mock('file-type')
 vi.mock('fs')
 vi.mock('fs/promises')
-vi.mock('sharp')
 vi.mock('../../lib/web')
 vi.mock('./open-library')
 vi.mock('./google-books')
@@ -48,7 +46,6 @@ const mocks = {
 	logError: vi.mocked(log.error),
 	logWarn: vi.mocked(log.warn),
 	logInfo: vi.mocked(log.info),
-	sharp: vi.mocked(sharp),
 	fromFile: vi.mocked(fileTypeFromFile),
 	writeFile: vi.mocked(writeFile),
 	existSync: vi.mocked(existsSync),
@@ -100,50 +97,37 @@ describe('pieces/books/piece', () => {
 	})
 
 	test('toCreateInput', async () => {
-		const bookInsert = bookFixtures.makeBookInsert()
 		const bookMarkdown = bookFixtures.makeBookMarkDown()
 
 		const bookPiece = new BookPiece('root')
-
-		spies.maybeGetCoverData = vi.spyOn(bookPiece, 'maybeGetCoverData').mockResolvedValue(bookInsert)
-
 		const input = await bookPiece.toCreateInput(bookMarkdown)
 
-		expect(spies.maybeGetCoverData).toHaveBeenCalledOnce()
-		expect(input).toEqual(bookInsert)
+		expect(input).toEqual(
+			expect.objectContaining({ id: expect.any(String), read_order: expect.any(String) })
+		)
 	})
 
 	test('toUpdateInput', async () => {
-		const bookUpdate = bookFixtures.makeBookUpdateInput()
 		const book = bookFixtures.makeBook()
 		const bookMarkdown = bookFixtures.makeBookMarkDown()
 
 		const bookPiece = new BookPiece('root')
 
-		spies.maybeGetCoverData = vi.spyOn(bookPiece, 'maybeGetCoverData').mockResolvedValue(bookUpdate)
-
 		const update = await bookPiece.toUpdateInput(bookMarkdown, book)
 
-		expect(spies.maybeGetCoverData).toHaveBeenCalledOnce()
-		expect(update).toEqual(bookUpdate)
+		expect(update).toEqual(expect.objectContaining({ date_updated: expect.any(Number) }))
 	})
 
 	test('toUpdateInput calculates read order', async () => {
 		const readMetadata = { year_read: 2020, month_read: 1 }
-		const bookUpdate = bookFixtures.makeBookUpdateInput(readMetadata)
 		const book = bookFixtures.makeBook()
 		const bookMarkdown = bookFixtures.makeBookMarkDown({ frontmatter: readMetadata })
 
 		const bookPiece = new BookPiece('root')
 
-		spies.maybeGetCoverData = vi.spyOn(bookPiece, 'maybeGetCoverData').mockResolvedValue(bookUpdate)
+		const update = await bookPiece.toUpdateInput(bookMarkdown, book)
 
-		await bookPiece.toUpdateInput(bookMarkdown, book)
-
-		expect(spies.maybeGetCoverData).toHaveBeenCalledWith(
-			bookMarkdown,
-			expect.objectContaining({ read_order: expect.any(String) })
-		)
+		expect(update).toEqual(expect.objectContaining({ read_order: expect.any(String) }))
 	})
 
 	test('toUpdateInput only updates timestamp', async () => {
@@ -153,24 +137,9 @@ describe('pieces/books/piece', () => {
 
 		const bookPiece = new BookPiece('root')
 
-		spies.maybeGetCoverData = vi.spyOn(bookPiece, 'maybeGetCoverData').mockResolvedValue({})
-
 		const update = await bookPiece.toUpdateInput(bookMarkdown, book)
 
 		expect(update).toEqual(expect.objectContaining({ date_updated: expect.any(Number) }))
-	})
-
-	test('makeCoverThumbnails', async () => {
-		const slug = 'slug'
-
-		spies.sharpToFile = vi.fn()
-		spies.sharpResize = vi.fn(() => ({ toFile: spies.sharpToFile }))
-
-		mocks.sharp.mockReturnValue({ resize: spies.sharpResize } as unknown as Sharp)
-
-		await new BookPiece('root').makeCoverThumbnails(slug)
-
-		expect(spies.sharpToFile).toHaveBeenCalledTimes(8)
 	})
 
 	test('searchOpenLibrary', async () => {
@@ -393,37 +362,6 @@ describe('pieces/books/piece', () => {
 		expect(mocks.unlink).toHaveBeenCalledTimes(0)
 	})
 
-	test('maybeGetCoverData', async () => {
-		const markdown = bookFixtures.makeBookMarkDown({ frontmatter: { cover_path: 'cover.jpg' } })
-		const input = bookFixtures.makeBookInsert()
-		const width = 10
-		const height = 15
-
-		mocks.sharp.mockImplementation(
-			() =>
-				({
-					metadata: async () =>
-						({
-							width,
-							height,
-						} as Metadata),
-				} as Sharp)
-		)
-
-		const bookInput = await new BookPiece('root').maybeGetCoverData(markdown, input)
-
-		expect(bookInput).toEqual({ ...input, cover_width: width, cover_height: height })
-	})
-
-	test('maybeGetCoverData skips', async () => {
-		const markdown = bookFixtures.makeBookMarkDown()
-		const input = bookFixtures.makeBookInsert()
-
-		const bookInput = await new BookPiece('root').maybeGetCoverData(markdown, input)
-
-		expect(bookInput).toEqual(input)
-	})
-
 	test('attachCover', async () => {
 		const filePath = 'path/to/file'
 		const slug = 'slug'
@@ -435,7 +373,6 @@ describe('pieces/books/piece', () => {
 
 		const bookPiece = new BookPiece('root')
 
-		spies.makeCoverThumbnails = vi.spyOn(bookPiece, 'makeCoverThumbnails').mockResolvedValue()
 		spies.getCoverPath = vi.spyOn(bookPiece, 'getCoverPath').mockReturnValue(coverPath)
 		spies.getRelativeCoverPath = vi
 			.spyOn(bookPiece, 'getRelativeCoverPath')
@@ -443,7 +380,6 @@ describe('pieces/books/piece', () => {
 
 		const relativePath = await bookPiece.attachCover(filePath, slug)
 
-		expect(spies.makeCoverThumbnails).toHaveBeenCalledWith(slug)
 		expect(mocks.copyFile).toHaveBeenCalledWith(filePath, coverPath)
 		expect(relativePath).toEqual(coverPath)
 	})
@@ -459,12 +395,10 @@ describe('pieces/books/piece', () => {
 
 		const bookPiece = new BookPiece('root')
 
-		spies.makeCoverThumbnails = vi.spyOn(bookPiece, 'makeCoverThumbnails').mockResolvedValue()
 		spies.getCoverPath = vi.spyOn(bookPiece, 'getCoverPath').mockReturnValue(coverPath)
 
 		const relativePath = await bookPiece.attachCover(filePath, slug)
 
-		expect(spies.makeCoverThumbnails).not.toHaveBeenCalled()
 		expect(mocks.copyFile).not.toHaveBeenCalled()
 		expect(relativePath).toEqual(null)
 	})
