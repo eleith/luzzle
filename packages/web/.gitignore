@@ -6,8 +6,7 @@ data
 generated
 build
 public/images/og
-public/images/covers
-public/images/covers-thumbs
+public/images/variants
 public/rss/books
 **/_gql_
 src/@types/graphql.d.ts

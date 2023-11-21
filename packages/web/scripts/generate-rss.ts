@@ -35,7 +35,7 @@ async function generateRss(books: Book[], type: string) {
 			author: [{ name: book.author }],
 			link: `${process.env.NEXT_PUBLIC_HOST}/books/${book.slug}`,
 			image: book.cover_width
-				? `${process.env.NEXT_PUBLIC_HOST_STATIC}/images/covers-thumbs/${book.slug}.w500.jpg`
+				? `${process.env.NEXT_PUBLIC_HOST_STATIC}/images/variants/books/covers/${book.slug}.w500.jpg`
 				: undefined,
 			description: book.description || '',
 			content: book.description || '',
