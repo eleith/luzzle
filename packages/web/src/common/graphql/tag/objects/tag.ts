@@ -1,7 +1,7 @@
 import builder from '@app/lib/graphql/builder'
-import { Tag } from '@luzzle/kysely'
+import { LuzzleSelectable } from '@luzzle/kysely'
 
-const TagBuilder = builder.objectRef<Tag>('Tag')
+const TagBuilder = builder.objectRef<LuzzleSelectable<'tags'>>('Tag')
 
 export default TagBuilder // avoid circular issues
 

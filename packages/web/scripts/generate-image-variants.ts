@@ -1,13 +1,13 @@
 import { readFileSync, mkdirSync, writeFileSync } from 'fs'
 import { loadEnvConfig } from '@next/env'
-import { getDatabaseClient, Book } from '@luzzle/kysely'
+import { getDatabaseClient, PieceSelectable } from '@luzzle/kysely'
 import sharp from 'sharp'
 
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== 'production')
 
 const VariantsFolder = './public/images/variants/books/covers'
 
-async function makeCoverVariants(book: Book): Promise<void> {
+async function makeCoverVariants(book: PieceSelectable<'books'>): Promise<void> {
 	const toPath = `${process.env.LUZZLE_FOLDER}/books/${book.cover_path}`
 	const coverSharp = sharp(toPath)
 	const sizes = [125, 250, 500, 1000] as Array<125 | 250 | 500 | 1000>
@@ -23,7 +23,7 @@ async function makeCoverVariants(book: Book): Promise<void> {
 	}
 }
 
-async function handler(book: Book) {
+async function handler(book: PieceSelectable<'books'>) {
 	await makeCoverVariants(book)
 }
 
