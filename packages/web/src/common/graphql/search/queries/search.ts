@@ -1,10 +1,10 @@
 import builder from '@app/lib/graphql/builder'
 import BookObject from '../../book/objects/book'
 import Fuse from 'fuse.js'
-import { Book } from '@luzzle/kysely'
+import { PieceSelectable } from '@luzzle/kysely'
 
 const MAX_RESULTS = 10
-let allBooks: Array<Book> = []
+let allBooks: Array<PieceSelectable<'books'>> = []
 
 builder.queryFields((t) => ({
 	search: t.field({

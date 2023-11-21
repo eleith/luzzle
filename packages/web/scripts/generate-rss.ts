@@ -1,11 +1,11 @@
 import { Feed, Item } from 'feed'
 import { writeFile, mkdir } from 'fs/promises'
 import { loadEnvConfig } from '@next/env'
-import { getDatabaseClient, Book } from '@luzzle/kysely'
+import { getDatabaseClient, PieceSelectable } from '@luzzle/kysely'
 
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== 'production')
 
-async function generateRss(books: Book[], type: string) {
+async function generateRss(books: PieceSelectable<'books'>[], type: string) {
 	const feed = new Feed({
 		title: process.env.TITLE || '',
 		description: process.env.DESCRIPTION,

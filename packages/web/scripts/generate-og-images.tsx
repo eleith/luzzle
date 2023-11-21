@@ -3,7 +3,7 @@ import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
 import ReactDomServer from 'react-dom/server'
 import { loadEnvConfig } from '@next/env'
-import { getDatabaseClient, Book } from '@luzzle/kysely'
+import { getDatabaseClient, PieceSelectable } from '@luzzle/kysely'
 import { Writable } from 'stream'
 import { createHash } from 'crypto'
 
@@ -71,7 +71,7 @@ function getSize(pages?: number | null, scale = 1): typeof sizes[keyof typeof Bo
 }
 
 /* eslint-disable @next/next/no-img-element */
-function openGraphImageHtml(book: Book) {
+function openGraphImageHtml(book: PieceSelectable<'books'>) {
 	const color = getColor(book.slug)
 	const size = getSize(book.pages, 1.5)
 	const url = getImageBase64(book.slug)
@@ -165,7 +165,7 @@ function ouputHtml(res: Writable, html: JSX.Element) {
 	res.end()
 }
 
-async function handler(book: Book, output: 'svg' | 'png' | 'html') {
+async function handler(book: PieceSelectable<'books'>, output: 'svg' | 'png' | 'html') {
 	const html = openGraphImageHtml(book)
 	const file = createWriteStream(`${OpenGraphBooksFolder}/${book.slug}.${output}`)
 

@@ -1,9 +1,9 @@
 import builder from '@app/lib/graphql/builder'
-import { Book } from '@luzzle/kysely'
+import { PieceSelectable } from '@luzzle/kysely'
 import BookSiblings from './bookSiblings'
 import { Tag } from '../../tag'
 
-const BookBuilder = builder.objectRef<Book>('Book')
+const BookBuilder = builder.objectRef<PieceSelectable<'books'>>('Book')
 
 export default BookBuilder // avoid circular issues
 
