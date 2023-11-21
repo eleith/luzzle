@@ -7,7 +7,6 @@ import { downloadToTmp } from '../../lib/web.js'
 import { fileTypeFromFile } from 'file-type'
 import { findVolume } from './google-books.js'
 import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library.js'
-import sharp from 'sharp'
 import crypto from 'crypto'
 import { existsSync } from 'fs'
 import { Piece, toValidatedMarkDown, PieceType } from '../../lib/pieces/index.js'
@@ -36,19 +35,6 @@ function _getReadOrder(
 	const timeStamp = `${year}${String(month).padStart(2, '0')}0100`
 
 	return `${timeStamp}-${rand}`
-}
-
-async function _getCoverData<T extends BookInsertable | BookUpdateable>(
-	coverPath: string
-): Promise<Pick<T, 'cover_width' | 'cover_height'>> {
-	const coverImage = await sharp(coverPath).metadata()
-	const coverWidth = coverImage.width
-	const coverHeight = coverImage.height
-
-	return {
-		cover_width: coverWidth,
-		cover_height: coverHeight,
-	}
 }
 
 class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
@@ -83,7 +69,7 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 			read_order: _getReadOrder(markdown.frontmatter.year_read, markdown.frontmatter.month_read),
 		}
 
-		return await this.maybeGetCoverData<BookInsertable>(markdown, bookInput)
+		return bookInput
 	}
 
 	async toUpdateInput(
@@ -114,29 +100,9 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 			bookUpdateInput.read_order = order
 		}
 
-		const update = await this.maybeGetCoverData(bookMd, bookUpdateInput)
+		const update = bookUpdateInput
 
 		return Object.keys(update).length > 0 ? update : { date_updated: new Date().getTime() }
-	}
-
-	async makeCoverThumbnails(slug: string): Promise<void> {
-		const toPath = this.getCoverPath(slug)
-		const coverSharp = sharp(toPath)
-		const sizes = [125, 250, 500, 1000] as Array<125 | 250 | 500 | 1000>
-		const types = ['jpg', 'avif'] as Array<'jpg' | 'avif'>
-
-		// possible optimizations
-		//   - don't generate if thumbnail exists AND is newer than cover
-		//   -- requires getting mtime of each thumbnail and comparing to cover
-		//   -- OR try and do this with json cache data
-
-		for (const size of sizes) {
-			for (const type of types) {
-				const thumbnailPath = this.getCoverVariantPath(slug, size, type)
-				await coverSharp.resize({ width: size }).toFile(thumbnailPath)
-				log.info(`generated w${size} ${type} thumbnail for ${slug}`)
-			}
-		}
 	}
 
 	async completeOpenAI(apiKey: string, bookMd: BookMarkdown): Promise<BookMarkdown['frontmatter']> {
@@ -241,24 +207,6 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 		throw new Error(`could not find ${bookTitle} on openlibrary`)
 	}
 
-	async maybeGetCoverData<T extends BookInsertable | BookUpdateable>(
-		bookMd: BookMarkdown,
-		bookInput: T
-	): Promise<T> {
-		const coverPath = this.getCoverPath(bookMd.slug)
-
-		if (bookMd.frontmatter.cover_path) {
-			const coverData = await _getCoverData<T>(coverPath)
-
-			return {
-				...bookInput,
-				...coverData,
-			}
-		}
-
-		return bookInput
-	}
-
 	async cleanUpCache(slugs: string[]): Promise<string[]> {
 		const staleSlugs = await super.cleanUpCache(slugs)
 
@@ -295,7 +243,6 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 
 		if (fileType?.ext === 'jpg') {
 			await copyFile(file, toPath)
-			await this.makeCoverThumbnails(slug)
 
 			log.info(`processed and copied ${file} to ${toPath}`)
 		} else {
