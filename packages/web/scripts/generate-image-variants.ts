@@ -17,7 +17,7 @@ async function makeCoverVariants(book: Book): Promise<void> {
 		for (const type of types) {
 			const variantPath = `${VariantsFolder}/${book.slug}.w${size}.${type}`
 			await coverSharp
-				.resize({ width: size, height: Math.round((size * 2) / 3) })
+				.resize({ width: size, height: Math.round((size * 3) / 2) })
 				.toFile(variantPath)
 		}
 	}
