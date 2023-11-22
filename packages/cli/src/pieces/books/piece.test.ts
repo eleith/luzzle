@@ -9,14 +9,13 @@ import log from '../../lib/log.js'
 import { addFrontMatter, extract } from '../../lib/md.js'
 import { findWork, getBook, getCoverUrl } from './open-library.js'
 import { downloadToTmp } from '../../lib/web.js'
-import { fileTypeFromFile, FileTypeResult } from 'file-type'
+import { fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
-import { CpuInfo, cpus } from 'os'
+import { cpus } from 'os'
 import BookPiece from './piece.js'
 import { toValidatedMarkDown } from '../../lib/pieces/markdown.js'
 import { ASSETS_DIRECTORY } from '../../lib/assets.js'
 import { mockConfig } from '../../lib/config.mock.js'
-import Piece from '../../lib/pieces/piece.js'
 
 vi.mock('file-type')
 vi.mock('fs')
@@ -52,7 +51,6 @@ const mocks = {
 	generateTags: vi.mocked(generateTags),
 	generateDescription: vi.mocked(generateDescription),
 	BookPieceGetFileName: vi.spyOn(BookPiece.prototype, 'getFileName'),
-	PieceCleanUpCache: vi.spyOn(Piece.prototype, 'cleanUpCache'),
 	toMarkDown: vi.mocked(toValidatedMarkDown),
 	fileTypeFromFile: vi.mocked(fileTypeFromFile),
 }
@@ -190,8 +188,9 @@ describe('pieces/books/piece', () => {
 			title: 'book title',
 		})
 		const coverUrl = 'https://somewhere'
-		const bookMd = bookFixtures.makeBookMarkDown({ frontmatter: { id_ol_book: bookId } })
-		const coverPath = 'path/to/file'
+		const bookMd = bookFixtures.makeBookMarkDown({
+			frontmatter: { id_ol_book: bookId },
+		})
 		const tmpFile = 'tmp/file'
 
 		mocks.getBook.mockResolvedValueOnce(book)
@@ -202,9 +201,9 @@ describe('pieces/books/piece', () => {
 
 		const bookPiece = new BookPiece('root')
 
-		spies.attachCover = vi.spyOn(bookPiece, 'attachCover').mockResolvedValueOnce(coverPath)
+		spies.attach = vi.spyOn(bookPiece, 'attach').mockResolvedValueOnce(bookMd)
 
-		const bookMetadata = await bookPiece.searchOpenLibrary(
+		await bookPiece.searchOpenLibrary(
 			bookId,
 			slug,
 			bookMd.frontmatter.title,
@@ -216,18 +215,24 @@ describe('pieces/books/piece', () => {
 		expect(mocks.getCoverUrl).toHaveBeenCalledWith(work.cover_i)
 		expect(mocks.unlink).toHaveBeenCalledWith(tmpFile)
 		expect(mocks.downloadTo).toHaveBeenCalledWith(coverUrl)
-		expect(spies.attachCover).toHaveBeenCalledWith(tmpFile, slug)
-		expect(bookMetadata).toEqual({
-			title: work.title,
-			author: work.author_name[0],
-			coauthors: work.author_name[1],
-			id_ol_work: workId,
-			isbn: work.isbn?.[0],
-			subtitle: book.subtitle,
-			pages: Number(work.number_of_pages),
-			year_first_published: work.first_publish_year,
-			cover_path: expect.any(String),
-		})
+		expect(spies.attach).toHaveBeenCalledWith(
+			tmpFile,
+			{
+				slug,
+				frontmatter: {
+					title: work.title,
+					author: work.author_name[0],
+					coauthors: work.author_name[1],
+					id_ol_work: workId,
+					isbn: work.isbn?.[0],
+					subtitle: book.subtitle,
+					pages: Number(work.number_of_pages),
+					year_first_published: work.first_publish_year,
+					cover_path: expect.any(String),
+				},
+			},
+			'cover_path'
+		)
 	})
 
 	test('searchOpenLibrary throws', async () => {
@@ -334,107 +339,6 @@ describe('pieces/books/piece', () => {
 
 		expect(bookCall).rejects.toThrowError()
 		expect(mocks.findVolume).toHaveBeenCalledWith(apiKey, title, author)
-	})
-
-	test('cleanUpCache', async () => {
-		const slugs = ['slug1']
-
-		mocks.unlink.mockResolvedValue()
-		mocks.existSync.mockReturnValue(true)
-		mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-		mocks.PieceCleanUpCache.mockResolvedValueOnce(slugs)
-
-		await new BookPiece('root').cleanUpCache(slugs)
-
-		expect(mocks.unlink).toHaveBeenCalledTimes(8 + 1)
-	})
-
-	test('processCleanUp with no cache', async () => {
-		const slugs = ['slug1']
-
-		mocks.unlink.mockResolvedValue()
-		mocks.existSync.mockReturnValue(false)
-		mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
-		mocks.PieceCleanUpCache.mockResolvedValueOnce(slugs)
-
-		await new BookPiece('root').cleanUpCache(slugs)
-
-		expect(mocks.unlink).toHaveBeenCalledTimes(0)
-	})
-
-	test('attachCover', async () => {
-		const filePath = 'path/to/file'
-		const slug = 'slug'
-		const coverPath = 'path/to/cover.jpg'
-		const ext = 'jpg'
-
-		mocks.fileTypeFromFile.mockResolvedValueOnce({ ext } as FileTypeResult)
-		mocks.copyFile.mockResolvedValueOnce()
-
-		const bookPiece = new BookPiece('root')
-
-		spies.getCoverPath = vi.spyOn(bookPiece, 'getCoverPath').mockReturnValue(coverPath)
-		spies.getRelativeCoverPath = vi
-			.spyOn(bookPiece, 'getRelativeCoverPath')
-			.mockReturnValue(coverPath)
-
-		const relativePath = await bookPiece.attachCover(filePath, slug)
-
-		expect(mocks.copyFile).toHaveBeenCalledWith(filePath, coverPath)
-		expect(relativePath).toEqual(coverPath)
-	})
-
-	test('attachCover unsupported extension', async () => {
-		const filePath = 'path/to/file'
-		const slug = 'slug'
-		const coverPath = 'path/to/cover.png'
-		const ext = 'png'
-
-		mocks.fileTypeFromFile.mockResolvedValueOnce({ ext } as FileTypeResult)
-		mocks.copyFile.mockResolvedValueOnce()
-
-		const bookPiece = new BookPiece('root')
-
-		spies.getCoverPath = vi.spyOn(bookPiece, 'getCoverPath').mockReturnValue(coverPath)
-
-		const relativePath = await bookPiece.attachCover(filePath, slug)
-
-		expect(mocks.copyFile).not.toHaveBeenCalled()
-		expect(relativePath).toEqual(null)
-	})
-
-	test('attach', async () => {
-		const coverPath = '.assets/cover/slug.jpg'
-		const tmpPath = 'path/to/file'
-		const bookMd = bookFixtures.makeBookMarkDown()
-
-		const bookPiece = new BookPiece('root')
-
-		spies.attachCover = vi.spyOn(bookPiece, 'attachCover').mockResolvedValue(coverPath)
-		spies.write = vi.spyOn(bookPiece, 'write').mockResolvedValue()
-
-		await bookPiece.attach(tmpPath, bookMd)
-
-		expect(spies.attachCover).toHaveBeenCalledWith(tmpPath, bookMd.slug)
-		expect(spies.write).toHaveBeenCalledWith({
-			...bookMd,
-			frontmatter: { ...bookMd.frontmatter, cover_path: coverPath },
-		})
-	})
-
-	test('attach skips writing', async () => {
-		const tmpPath = 'path/to/file'
-		const bookMd = bookFixtures.makeBookMarkDown()
-
-		const bookPiece = new BookPiece('root')
-
-		spies.attachCover = vi.spyOn(bookPiece, 'attachCover').mockResolvedValue(null)
-		spies.write = vi.spyOn(bookPiece, 'write').mockResolvedValue()
-
-		await bookPiece.attach(tmpPath, bookMd)
-
-		expect(spies.attachCover).toHaveBeenCalled()
-		expect(spies.write).not.toHaveBeenCalled()
 	})
 
 	test('fetch all', async () => {

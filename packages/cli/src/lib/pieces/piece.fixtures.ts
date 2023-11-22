@@ -8,7 +8,6 @@ import {
 	PieceMarkdown,
 } from '@luzzle/kysely'
 import Piece from '../pieces/piece.js'
-import CacheForType from '../cache.js'
 
 type PieceMarkdownSample = PieceMarkdown<
 	PieceSelectable,
@@ -55,14 +54,6 @@ export function makeSchema(
 			markdown: { type: 'string' },
 		},
 	} as PieceSchema
-}
-
-export function makeCache(
-	obj: Partial<Record<keyof CacheForType<PieceCache<PieceSelectable>>, unknown>> = {} as Partial<
-		Record<keyof CacheForType<PieceCache<PieceSelectable>>, unknown>
-	>
-): CacheForType<PieceCache<PieceSelectable>> {
-	return obj as unknown as CacheForType<PieceCache<PieceSelectable>>
 }
 
 export function makeMarkdownSample(

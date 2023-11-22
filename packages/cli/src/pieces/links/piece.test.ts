@@ -46,7 +46,7 @@ const mocks = {
 
 const spies: Record<string, SpyInstance> = {}
 
-describe('pieces/books/piece', () => {
+describe('pieces/links/piece', () => {
 	beforeEach(() => {
 		vi.useFakeTimers()
 	})
@@ -110,16 +110,6 @@ describe('pieces/books/piece', () => {
 		await new LinkPiece('root').cleanUpCache(slugs)
 
 		expect(mocks.unlink).toHaveBeenCalledTimes(0)
-	})
-
-	test('attach', async () => {
-		const markdown = linkFixtures.makeLinkMarkdown()
-
-		const linkPiece = new LinkPiece('root')
-
-		await linkPiece.attach('file', markdown)
-
-		expect(mocks.logInfo).toHaveBeenCalledOnce()
 	})
 
 	test('process', async () => {

@@ -54,12 +54,6 @@ class LinkPiece extends Piece<LinkType, LinkSelectable, LinkMarkdown> {
 		return linkUpdateInput
 	}
 
-	async attach(file: string, markdown: LinkMarkdown, field?: string): Promise<void> {
-		const slug = markdown.slug
-		log.info(`attaching ${file} to ${slug} to field ${field}`)
-		return
-	}
-
 	async fetch(_config: Config, markdown: LinkMarkdown, service?: string): Promise<LinkMarkdown> {
 		log.info(`fetching ${markdown.slug} with service ${service}`)
 		return markdown

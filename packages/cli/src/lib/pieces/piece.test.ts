@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import { readdir, stat, writeFile, copyFile } from 'fs/promises'
+import { readdir, stat, writeFile, copyFile, unlink } from 'fs/promises'
 import { Dirent, existsSync, mkdirSync, Stats } from 'fs'
 import {
 	makeSchema,
@@ -52,6 +52,7 @@ const mocks = {
 	compile: vi.mocked(ajv),
 	copy: vi.mocked(copyFile),
 	fileType: vi.mocked(fileTypeFromFile),
+	unlink: vi.mocked(unlink),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -271,19 +272,45 @@ describe('lib/pieces/piece', () => {
 		expect(mocks.CacheRemove).toHaveBeenCalledTimes(slugs.length)
 	})
 
-	test('cleanUpCache', async () => {
-		const slugs = ['a', 'b', 'c']
+	test('cleanUpCache removes attachments', async () => {
+		const slugs = ['a']
 		const PieceTest = makePiece()
+		const schema = makeSchema({
+			cover: { type: 'string', metadata: { luzzleFormat: 'attachment' } },
+		})
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.CacheGetAllFiles.mockResolvedValue(slugs)
-		mocks.CacheRemove.mockRejectedValueOnce(new Error('oof'))
+		mocks.CacheGet.mockResolvedValueOnce({ database: { cover: 'path/to/cover.jpg' } })
+		mocks.unlink.mockResolvedValueOnce()
 
-		const pieceTest = new PieceTest()
+		const pieceTest = new PieceTest('root', 'table' as Pieces, schema)
 
 		const removed = await pieceTest.cleanUpCache([])
 
-		expect(removed).toEqual([])
+		expect(removed).toEqual(slugs)
+		expect(mocks.CacheRemove).toHaveBeenCalledTimes(slugs.length)
+		expect(mocks.unlink).toHaveBeenCalledOnce()
+		expect(mocks.CacheGet).toHaveBeenCalledOnce()
+	})
+
+	test('cleanUpCache fails removing attachments', async () => {
+		const slugs = ['a']
+		const PieceTest = makePiece()
+		const schema = makeSchema({
+			cover: { type: 'string', metadata: { luzzleFormat: 'attachment' } },
+		})
+
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		mocks.CacheGetAllFiles.mockResolvedValue(slugs)
+		mocks.CacheGet.mockResolvedValueOnce({ database: { cover: 'path/to/cover.jpg' } })
+		mocks.unlink.mockRejectedValueOnce(new Error('oof'))
+
+		const pieceTest = new PieceTest('root', 'table' as Pieces, schema)
+
+		const removed = await pieceTest.cleanUpCache([])
+
+		expect(removed).toEqual(slugs)
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
@@ -585,12 +612,10 @@ describe('lib/pieces/piece', () => {
 		mocks.copy.mockResolvedValueOnce()
 		mocks.toValidateMarkDown.mockReturnValueOnce(updatedMarkdown)
 
-		spies.write = vi.spyOn(pieceTest, 'write').mockResolvedValueOnce()
-
-		await pieceTest.attach(file, markdown, field)
+		const attached = await pieceTest.attach(file, markdown, field)
 
 		expect(mocks.copy).toHaveBeenCalledWith(file, toPath)
-		expect(spies.write).toHaveBeenCalledWith(updatedMarkdown)
+		expect(attached).toEqual(updatedMarkdown)
 	})
 
 	test('attach supports default field', async () => {
@@ -616,12 +641,10 @@ describe('lib/pieces/piece', () => {
 		mocks.copy.mockResolvedValueOnce()
 		mocks.toValidateMarkDown.mockReturnValueOnce(updatedMarkdown)
 
-		spies.write = vi.spyOn(pieceTest, 'write').mockResolvedValueOnce()
-
-		await pieceTest.attach(file, markdown)
+		const attached = await pieceTest.attach(file, markdown)
 
 		expect(mocks.copy).toHaveBeenCalledWith(file, toPath)
-		expect(spies.write).toHaveBeenCalledWith(updatedMarkdown)
+		expect(attached).toEqual(updatedMarkdown)
 	})
 
 	test('attach logs error if filetype is not supported', async () => {
@@ -642,9 +665,9 @@ describe('lib/pieces/piece', () => {
 
 		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 
-		await pieceTest.attach(file, markdown, field)
+		const attaching = pieceTest.attach(file, markdown, field)
 
-		expect(mocks.logError).toHaveBeenCalled()
+		expect(attaching).rejects.toThrowError()
 	})
 
 	test('attach logs error if field does not support attachments', async () => {
@@ -664,9 +687,9 @@ describe('lib/pieces/piece', () => {
 
 		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 
-		await pieceTest.attach(file, markdown, 'thumbnail')
+		const attaching = pieceTest.attach(file, markdown, 'thumbnail')
 
-		expect(mocks.logError).toHaveBeenCalled()
+		expect(attaching).rejects.toThrowError()
 	})
 
 	test('attach logs error if no attachables', async () => {
@@ -676,9 +699,9 @@ describe('lib/pieces/piece', () => {
 		const field = 'cover'
 
 		const pieceTest = new PieceTest()
-		await pieceTest.attach(file, markdown, field)
+		const attaching = pieceTest.attach(file, markdown, field)
 
-		expect(mocks.logError).toHaveBeenCalled()
+		expect(attaching).rejects.toThrowError()
 	})
 
 	test('dump', async () => {

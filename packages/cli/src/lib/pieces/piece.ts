@@ -1,6 +1,6 @@
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
 import { existsSync, mkdirSync } from 'fs'
-import { copyFile, readdir, stat, writeFile } from 'fs/promises'
+import { copyFile, readdir, stat, unlink, writeFile } from 'fs/promises'
 import log from '../log.js'
 import { extract } from '../md.js'
 import { toValidatedMarkDown, toMarkDownString } from './markdown.js'
@@ -190,22 +190,30 @@ abstract class Piece<
 	}
 
 	async cleanUpCache(slugs: string[]): Promise<string[]> {
-		try {
-			const caches = await this._cache.getAllFiles()
-			const staleSlugs = difference(
-				caches.map((cacheFile: string) => path.basename(cacheFile, '.json')),
-				slugs
-			)
+		const attachable = this._attachable
+		const caches = await this._cache.getAllFiles()
+		const attachFields = Object.keys(attachable || []) as (keyof M['frontmatter'])[]
+		const staleSlugs = difference(
+			caches.map((cacheFile: string) => path.basename(cacheFile, '.json')),
+			slugs
+		)
 
-			await eachLimit(staleSlugs, cpus().length, async (slug) => {
-				await this._cache.remove(slug)
+		await eachLimit(staleSlugs, cpus().length, async (slug) => {
+			const db = await this._cache.get(slug)
+			const removeAll = attachFields
+				.map((field) => db['database']?.[field as unknown as keyof PieceType<D>])
+				.filter((attachment) => attachment)
+				.map((attachment) => path.join(this._directories.assets, attachment as string))
+				.map(unlink)
+
+			await Promise.all(removeAll).catch((err) => {
+				log.error(`could not remove all attachments for ${slug}: ${err}`)
 			})
 
-			return staleSlugs
-		} catch (err) {
-			log.error(err)
-			return []
-		}
+			await this._cache.remove(slug)
+		})
+
+		return staleSlugs
 	}
 
 	async cleanUpSlugs(db: LuzzleDatabase, slugs: string[], dryRun = false) {
@@ -344,12 +352,11 @@ abstract class Piece<
 		)
 	}
 
-	async attach(file: string, markdown: M, _field?: string, _name?: string): Promise<void> {
+	async attach(file: string, markdown: M, _field?: string, _name?: string): Promise<M> {
 		const attachable = this._attachable
 
 		if (!attachable) {
-			log.error(`this type does not allow attachments`)
-			return
+			throw new Error(`this type does not allow attachments`)
 		}
 
 		const fields = Object.keys(attachable) as (keyof M['frontmatter'])[]
@@ -358,16 +365,16 @@ abstract class Piece<
 		const allowedTypes = attachable[field]?.type
 
 		if (!allowedTypes) {
-			log.error(`${_field} is not a valid field to attach to`)
-			return
+			throw new Error(`${_field} is not a valid field to attach to`)
 		}
 
 		const fileType = await fileTypeFromFile(file)
 		const type = fileType?.ext
 
 		if (!type || !allowedTypes.includes(type)) {
-			log.error(`${_field} is not a valid file type, only: ${allowedTypes.join(',')} are allowed`)
-			return
+			throw new Error(
+				`${_field} is not a valid file type, only: ${allowedTypes.join(',')} are allowed`
+			)
 		}
 
 		const name = _name || markdown.slug
@@ -386,7 +393,7 @@ abstract class Piece<
 			this.validator
 		)
 
-		await this.write(writeMarkdown)
+		return writeMarkdown
 	}
 
 	async dump(db: LuzzleDatabase, dryRun = false) {

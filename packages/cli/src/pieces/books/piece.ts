@@ -1,14 +1,10 @@
-import { eachLimit } from 'async'
-import { copyFile, unlink } from 'fs/promises'
-import { cpus } from 'os'
+import { unlink } from 'fs/promises'
 import path from 'path'
 import log from '../../lib/log.js'
 import { downloadToTmp } from '../../lib/web.js'
-import { fileTypeFromFile } from 'file-type'
 import { findVolume } from './google-books.js'
 import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library.js'
 import crypto from 'crypto'
-import { existsSync } from 'fs'
 import { Piece, toValidatedMarkDown, PieceType } from '../../lib/pieces/index.js'
 import { createId } from '@paralleldrive/cuid2'
 import { generateDescription, generateTags } from './openai.js'
@@ -51,15 +47,6 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 		return path.join(ASSETS_DIRECTORY, BOOK_COVER_DIRECTORY, `${slug}.jpg`)
 	}
 
-	getCoverVariantPath(
-		slug: string,
-		widthSize: 125 | 250 | 500 | 1000,
-		type: 'jpg' | 'avif' = 'jpg'
-	): string {
-		const assetCacheDirectory = this.directories['assets.cache']
-		return path.join(assetCacheDirectory, BOOK_COVER_DIRECTORY, `${slug}.w${widthSize}.${type}`)
-	}
-
 	async toCreateInput(markdown: BookMarkdown): Promise<BookInsertable> {
 		const bookInput = {
 			...markdown.frontmatter,
@@ -100,9 +87,7 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 			bookUpdateInput.read_order = order
 		}
 
-		const update = bookUpdateInput
-
-		return Object.keys(update).length > 0 ? update : { date_updated: new Date().getTime() }
+		return { ...bookUpdateInput, date_updated: new Date().getTime() }
 	}
 
 	async completeOpenAI(apiKey: string, bookMd: BookMarkdown): Promise<BookMarkdown['frontmatter']> {
@@ -192,74 +177,20 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 				log.info(`downloading cover (${coverUrl}) for ${bookTitle}`)
 
 				const tmpFile = await downloadToTmp(coverUrl)
-				const coverPath = await this.attachCover(tmpFile, bookSlug)
-
-				if (coverPath) {
-					frontMatter.cover_path = coverPath
-				}
+				const fetchedMarkdown = await this.attach(
+					tmpFile,
+					{ slug: bookSlug, frontmatter: frontMatter },
+					'cover_path'
+				)
 
 				await unlink(tmpFile)
+				return fetchedMarkdown.frontmatter
 			}
 
 			return frontMatter
 		}
 
 		throw new Error(`could not find ${bookTitle} on openlibrary`)
-	}
-
-	async cleanUpCache(slugs: string[]): Promise<string[]> {
-		const staleSlugs = await super.cleanUpCache(slugs)
-
-		await eachLimit(staleSlugs, cpus().length, async (slug) => {
-			const assets = this.getCoverPath(slug)
-			const sizes = [125, 250, 500, 1000] as Array<125 | 250 | 500 | 1000>
-			const imgTypes = ['jpg', 'avif'] as Array<'jpg' | 'avif'>
-			const unlinks = []
-
-			sizes.forEach((size) => {
-				imgTypes.forEach((type) => {
-					const cacheAssets = this.getCoverVariantPath(slug, size, type)
-					if (existsSync(cacheAssets)) {
-						unlinks.push(unlink(cacheAssets))
-						log.info(`deleted stale cover for ${slug}`)
-					}
-				})
-			})
-
-			if (existsSync(assets)) {
-				unlinks.push(unlink(assets))
-				log.info(`deleted stale cover for ${slug}`)
-			}
-
-			await Promise.all(unlinks)
-		})
-
-		return staleSlugs
-	}
-
-	async attachCover(file: string, slug: string): Promise<string | null> {
-		const fileType = await fileTypeFromFile(file)
-		const toPath = this.getCoverPath(slug)
-
-		if (fileType?.ext === 'jpg') {
-			await copyFile(file, toPath)
-
-			log.info(`processed and copied ${file} to ${toPath}`)
-		} else {
-			log.warn(`can't attach ${file}, only jpg are supported`)
-			return null
-		}
-
-		return this.getRelativeCoverPath(slug)
-	}
-
-	async attach(file: string, markdown: BookMarkdown): Promise<void> {
-		const coverPath = await this.attachCover(file, markdown.slug)
-
-		if (coverPath) {
-			markdown.frontmatter.cover_path = coverPath
-			await this.write(markdown)
-		}
 	}
 
 	async fetch(config: Config, markdown: BookMarkdown, service?: string): Promise<BookMarkdown> {

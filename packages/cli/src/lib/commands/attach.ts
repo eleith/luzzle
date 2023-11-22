@@ -50,8 +50,14 @@ const command: Command<AttachArgv> = {
 
 		if (ctx.flags.dryRun === false) {
 			const tempPath = await downloadFileOrUrlTo(file)
-			await pieces.attach(tempPath, markdown, field, name)
-			await unlink(tempPath)
+			try {
+				const attachedMarkdown = await pieces.attach(tempPath, markdown, field, name)
+				await pieces.write(attachedMarkdown)
+			} catch (err) {
+				log.error(err)
+			} finally {
+				await unlink(tempPath)
+			}
 		}
 
 		log.info(`uploaded ${file} to ${pieces.getFileName(slug)}`)
