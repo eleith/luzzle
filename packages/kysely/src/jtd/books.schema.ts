@@ -36,7 +36,10 @@ const bookDatabaseJtdSchema: PieceDatabaseJtdSchema<BookSelectable> = {
 		month_read: { type: 'uint32' },
 		year_first_published: { type: 'uint32' },
 		keywords: { type: 'string' },
-		cover_path: { type: 'string' },
+		cover_path: {
+			type: 'string',
+			metadata: { luzzleFormat: 'attachment', luzzleAttachmentType: ['jpg', 'png', 'svg', 'avif'] },
+		},
 		note: { type: 'string' },
 		date_updated: { type: 'float64' },
 	},
