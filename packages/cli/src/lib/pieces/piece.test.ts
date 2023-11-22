@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import { readdir, stat, writeFile, copyFile, unlink } from 'fs/promises'
+import { readdir, stat, writeFile, copyFile, unlink, mkdir } from 'fs/promises'
 import { Dirent, existsSync, mkdirSync, Stats } from 'fs'
 import {
 	makeSchema,
@@ -33,6 +33,7 @@ vi.mock('@luzzle/kysely')
 const mocks = {
 	existsSync: vi.mocked(existsSync),
 	mkdirSync: vi.mocked(mkdirSync),
+	mkdir: vi.mocked(mkdir),
 	readdir: vi.mocked(readdir),
 	writeFile: vi.mocked(writeFile),
 	toValidateMarkDown: vi.mocked(toValidatedMarkDown),
@@ -67,6 +68,19 @@ describe('lib/pieces/piece', () => {
 			spies[key].mockRestore()
 			delete spies[key]
 		})
+	})
+
+	test('initialize', () => {
+		const PieceType = makePiece()
+
+		mocks.mkdirSync.mockReturnValue(undefined)
+		mocks.existsSync.mockReturnValueOnce(true)
+		mocks.existsSync.mockReturnValue(false)
+
+		const piece = new PieceType()
+		piece.initialize()
+
+		expect(mocks.mkdirSync).toHaveBeenCalledTimes(2)
 	})
 
 	test('getFileName', () => {
@@ -611,10 +625,12 @@ describe('lib/pieces/piece', () => {
 		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 		mocks.copy.mockResolvedValueOnce()
 		mocks.toValidateMarkDown.mockReturnValueOnce(updatedMarkdown)
+		mocks.mkdir.mockResolvedValueOnce(undefined)
 
 		const attached = await pieceTest.attach(file, markdown, field)
 
 		expect(mocks.copy).toHaveBeenCalledWith(file, toPath)
+		expect(mocks.mkdir).toHaveBeenCalledOnce()
 		expect(attached).toEqual(updatedMarkdown)
 	})
 

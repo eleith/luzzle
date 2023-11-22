@@ -1,6 +1,6 @@
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
 import { existsSync, mkdirSync } from 'fs'
-import { copyFile, readdir, stat, unlink, writeFile } from 'fs/promises'
+import { copyFile, mkdir, readdir, stat, unlink, writeFile } from 'fs/promises'
 import log from '../log.js'
 import { extract } from '../md.js'
 import { toValidatedMarkDown, toMarkDownString } from './markdown.js'
@@ -116,15 +116,15 @@ abstract class Piece<
 		return this._validator
 	}
 
-	initialize() {
-		Object.values(this._directories).forEach((key) => {
-			const dir = this._directories[key as keyof PieceDirectories]
-
+	initialize(): Piece<P, D, M> {
+		Object.entries(this._directories).forEach(([key, dir]) => {
 			if (!existsSync(dir)) {
 				mkdirSync(dir, { recursive: true })
 				log.info(`created luzzle ${this.table} ${key} directory: ${dir}`)
 			}
 		})
+
+		return this
 	}
 
 	getFileName(slug: string): string {
@@ -380,8 +380,10 @@ abstract class Piece<
 		const name = _name || markdown.slug
 		const filename = `${name}.${fileType.ext}`
 		const toPath = path.join(this._directories.assets, field as string, filename)
-		const relPath = path.join(path.basename(this._directories.assets), field as string, filename)
+		const attachDir = path.join(this._directories.assets, field as string)
+		const relPath = path.join(attachDir, filename)
 
+		await mkdir(attachDir, { recursive: true })
 		await copyFile(file, toPath)
 
 		log.info(`processed and copied ${file} to ${toPath}`)
