@@ -14,9 +14,7 @@ type BooksTable = {
 	year_read: number | null
 	month_read: number | null
 	year_first_published: number | null
-	cover_width: number | null
-	cover_height: number | null
-	cover_path: string | null
+	cover: string | null
 	read_order: string
 } & PieceCommonFields
 
