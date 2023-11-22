@@ -38,9 +38,7 @@ class Pieces {
 			log.info(`created luzzle directory ${this._directory}`)
 		}
 
-		pieceType.initialize()
-
-		return pieceType
+		return pieceType.initialize()
 	}
 
 	/* c8 ignore next 3 */
