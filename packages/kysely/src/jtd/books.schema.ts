@@ -1,15 +1,7 @@
 import { BookSelectable } from '../tables/books.schema.js'
 import { PieceMarkdown, PieceMarkdownJtdSchema, PieceDatabaseJtdSchema } from './piece.js'
 
-type BookDatabaseOnlyFields =
-	| 'id'
-	| 'date_added'
-	| 'date_updated'
-	| 'slug'
-	| 'read_order'
-	| 'note'
-	| 'cover_width'
-	| 'cover_height'
+type BookDatabaseOnlyFields = 'id' | 'date_added' | 'date_updated' | 'slug' | 'read_order' | 'note'
 
 type BookMarkdown = PieceMarkdown<BookSelectable, BookDatabaseOnlyFields>
 
@@ -23,8 +15,6 @@ const bookDatabaseJtdSchema: PieceDatabaseJtdSchema<BookSelectable> = {
 		read_order: { type: 'string' },
 	},
 	optionalProperties: {
-		cover_width: { type: 'uint32' },
-		cover_height: { type: 'uint32' },
 		id_ol_book: { type: 'string' },
 		id_ol_work: { type: 'string' },
 		isbn: { type: 'string' },
@@ -36,7 +26,7 @@ const bookDatabaseJtdSchema: PieceDatabaseJtdSchema<BookSelectable> = {
 		month_read: { type: 'uint32' },
 		year_first_published: { type: 'uint32' },
 		keywords: { type: 'string' },
-		cover_path: {
+		cover: {
 			type: 'string',
 			metadata: { luzzleFormat: 'attachment', luzzleAttachmentType: ['jpg', 'png', 'svg', 'avif'] },
 		},
@@ -65,7 +55,7 @@ const bookMarkdownJtdSchema: PieceMarkdownJtdSchema<BookMarkdown> = {
 				month_read: { type: 'uint32' },
 				year_first_published: { type: 'uint32' },
 				keywords: { type: 'string' },
-				cover_path: {
+				cover: {
 					type: 'string',
 					metadata: { luzzleFormat: 'attachment', luzzleAttachmentType: ['png', 'jpg'] },
 				},
