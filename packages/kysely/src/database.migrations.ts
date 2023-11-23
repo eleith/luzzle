@@ -1,4 +1,4 @@
-import { MigrationProvider, Migrator } from 'kysely'
+import { MigrationProvider, MigrationResultSet, Migrator } from 'kysely'
 import { LuzzleDatabase } from './database.schema'
 import * as migration1 from './migrations/2023-05-26T15:04:19.094Z'
 import * as migration2 from './migrations/2023-10-30T23:24:40Z'
@@ -14,9 +14,10 @@ class LuzzleMigrationProvider implements MigrationProvider {
 	}
 }
 
-export default async function (db: LuzzleDatabase) {
+export default async function (db: LuzzleDatabase): Promise<MigrationResultSet> {
 	const luzzleMigrationProvider = new LuzzleMigrationProvider()
 	const migrator = new Migrator({ db, provider: luzzleMigrationProvider })
+	const results = await migrator.migrateToLatest()
 
-	await migrator.migrateToLatest()
+	return results
 }
