@@ -1,4 +1,4 @@
-import { Kysely, sql } from 'kysely'
+import { Kysely } from 'kysely'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function up(db: Kysely<any>): Promise<void> {
@@ -9,9 +9,6 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.dropColumn('cover_width')
 		.dropColumn('cover_height')
 		.execute()
-
-	// update the cover column with the directory change
-	await sql`update books set cover = replace(cover, 'covers/', 'cover/')`.execute(db)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
