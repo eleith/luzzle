@@ -31,11 +31,12 @@ export async function up(db: Kysely<any>): Promise<void> {
 			col
 				.notNull()
 				.defaultTo('bookmark')
-				.check(sql`type IN ("bookmark", "article")`)
+				.check(sql`type IN ('bookmark', 'article')`)
 		)
 		.execute()
 }
 
-export async function down(): Promise<void> {
-	// nothing to do
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function down(db: Kysely<any>): Promise<void> {
+	await db.schema.dropTable('links').execute()
 }

@@ -18,7 +18,7 @@ type LinksTable = {
 	date_published: number | null
 	archive_path: string | null
 	url: string
-	active: boolean
+	active: number
 	archive_url: string | null
 	screenshot_path: string | null
 	type: LinkTypes

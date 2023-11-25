@@ -9,7 +9,10 @@ type BookMarkdownOnlyFields = {
 	cover_path?: string
 }
 
-type BookMarkdown = PieceMarkdown<BookSelectable, BookDatabaseOnlyFields, BookMarkdownOnlyFields>
+type BookMarkdown = PieceMarkdown<
+	Omit<BookSelectable, BookDatabaseOnlyFields>,
+	BookMarkdownOnlyFields
+>
 
 const bookDatabaseJtdSchema: PieceDatabaseJtdSchema<BookSelectable> = {
 	properties: {
