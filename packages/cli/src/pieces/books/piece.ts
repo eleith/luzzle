@@ -1,4 +1,4 @@
-import { copyFile, mkdir, unlink } from 'fs/promises'
+import { unlink } from 'fs/promises'
 import path from 'path'
 import log from '../../lib/log.js'
 import { downloadToTmp } from '../../lib/web.js'
@@ -258,31 +258,8 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 		)
 	}
 
-	/* c8 ignore next 17 */
-	async process(slugs: string[], dryRun = false) {
-		log.info(`processing ${slugs} with dryRun: ${dryRun}`)
-
-		await mkdir(path.join(this.directories.assets, 'cover'), { recursive: true })
-
-		for (const slug of slugs) {
-			const markdown = await this.get(slug)
-
-			if (markdown && markdown.frontmatter.cover_path) {
-				markdown.frontmatter.cover = path.join(ASSETS_DIRECTORY, 'cover', `${slug}.jpg`)
-
-				await copyFile(
-					path.join(this.directories.assets, BOOK_COVER_DIRECTORY, `${slug}.jpg`),
-					path.join(this.directories.assets, 'cover', `${slug}.jpg`)
-				)
-
-				await unlink(path.join(this.directories.assets, BOOK_COVER_DIRECTORY, `${slug}.jpg`))
-
-				delete markdown.frontmatter.cover_path
-
-				await this.write(markdown)
-			}
-		}
-
+	/* c8 ignore next 3 */
+	async process() {
 		return
 	}
 }

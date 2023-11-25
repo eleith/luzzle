@@ -48,7 +48,7 @@
     "@fast-csv/format": "^4.3.5",
     "@fast-csv/parse": "^4.3.6",
     "@googleapis/books": "^0.3.1",
-    "@luzzle/kysely": "0.0.12",
+    "@luzzle/kysely": "0.0.13",
     "@paralleldrive/cuid2": "2.2.0",
     "@sindresorhus/slugify": "2.2.0",
     "@types/lodash-es": "4.17.7",
