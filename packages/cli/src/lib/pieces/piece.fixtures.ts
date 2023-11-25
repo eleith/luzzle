@@ -10,8 +10,10 @@ import {
 import Piece from '../pieces/piece.js'
 
 type PieceMarkdownSample = PieceMarkdown<
-	PieceSelectable,
-	'note' | 'slug' | 'date_updated' | 'date_added' | 'id' | 'author' | 'coauthors' | 'subtitle'
+	Omit<
+		PieceSelectable,
+		'note' | 'slug' | 'date_updated' | 'date_added' | 'id' | 'author' | 'coauthors' | 'subtitle'
+	>
 >
 type PieceValidator = Ajv.ValidateFunction<PieceMarkdownSample>
 type PieceCacheSchema = JTDSchemaType<PieceCache<PieceSelectable>>

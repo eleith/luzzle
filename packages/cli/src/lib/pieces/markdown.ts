@@ -36,8 +36,6 @@ export function toValidatedMarkDown<M>(
 	throw pieceValidationError
 }
 
-export function toMarkDownString<T extends PieceSelectable>(
-	markdown: PieceMarkdown<T, keyof T>
-): string {
+export function toMarkDownString<T extends PieceSelectable>(markdown: PieceMarkdown<T>): string {
 	return addFrontMatter(markdown.markdown, markdown.frontmatter)
 }

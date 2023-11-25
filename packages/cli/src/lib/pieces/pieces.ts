@@ -12,7 +12,7 @@ import Piece, { InterfacePiece } from './piece.js'
 type LuzzlePiece = InterfacePiece<
 	PieceTypes,
 	PieceSelectable,
-	PieceMarkdown<PieceSelectable, keyof PieceSelectable, PieceFrontMatterFields>
+	PieceMarkdown<PieceSelectable, PieceFrontMatterFields>
 >
 
 class Pieces {
@@ -29,7 +29,7 @@ class Pieces {
 	register<
 		P extends PieceTypes,
 		T extends PieceSelectable,
-		M extends PieceMarkdown<T, keyof T, PieceFrontMatterFields>
+		M extends PieceMarkdown<T, PieceFrontMatterFields>
 	>(PieceInterface: InterfacePiece<P, T, M>): Piece<P, T, M> {
 		const pieceType = new PieceInterface(this._directory)
 

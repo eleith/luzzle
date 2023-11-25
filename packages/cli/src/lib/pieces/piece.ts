@@ -29,7 +29,7 @@ import { fileTypeFromFile } from 'file-type'
 export interface InterfacePiece<
 	P extends Pieces,
 	D extends PieceSelectable,
-	M extends PieceMarkdown<D, keyof D, PieceFrontMatterFields>
+	M extends PieceMarkdown<D, PieceFrontMatterFields>
 > {
 	new (pieceRoot: string): Piece<P, D, M>
 }
@@ -37,7 +37,7 @@ export interface InterfacePiece<
 abstract class Piece<
 	P extends Pieces,
 	D extends PieceSelectable,
-	M extends PieceMarkdown<D, keyof D, PieceFrontMatterFields>
+	M extends PieceMarkdown<D, PieceFrontMatterFields>
 > {
 	private _validator?: Ajv.ValidateFunction<M>
 	private _cache: CacheForType<PieceType<D>>

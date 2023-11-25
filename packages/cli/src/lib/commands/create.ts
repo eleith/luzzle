@@ -35,7 +35,7 @@ const command: Command<CreateArgv> = {
 		const slug = slugify(title)
 
 		if (pieces.exists(slug)) {
-			log.error(`book already exists at ${pieces.getFileName(slug)}`)
+			log.error(`${piece} already exists at ${pieces.getFileName(slug)}`)
 			return
 		}
 
