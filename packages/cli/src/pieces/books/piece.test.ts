@@ -431,14 +431,6 @@ describe('pieces/books/piece', () => {
 		expect(fetched.frontmatter.description).toBe(libraryMarkdown.frontmatter.description)
 	})
 
-	test('process', async () => {
-		const slugs = ['slug']
-
-		await new BookPiece('root').process(slugs)
-
-		expect(mocks.logInfo).toHaveBeenCalledOnce()
-	})
-
 	test('create', () => {
 		const slug = 'slug'
 		const title = 'title'

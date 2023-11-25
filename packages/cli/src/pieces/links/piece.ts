@@ -11,6 +11,7 @@ import {
 	linkDatabaseJtdSchema,
 	linkMarkdownJtdSchema,
 } from './schema.js'
+import { omit } from 'lodash-es'
 
 class LinkPiece extends Piece<LinkType, LinkSelectable, LinkMarkdown> {
 	constructor(piecesRoot: string) {
@@ -18,29 +19,45 @@ class LinkPiece extends Piece<LinkType, LinkSelectable, LinkMarkdown> {
 	}
 
 	async toCreateInput(markdown: LinkMarkdown): Promise<LinkInsertable> {
-		const accessedOn = markdown.frontmatter.accessed_on || new Date().getTime()
 		const linkInput = {
-			...markdown.frontmatter,
+			...omit(markdown.frontmatter, ['accessed_on', 'published_on']),
 			id: createId(),
 			slug: markdown.slug,
 			note: markdown.markdown,
-			date_accessed: new Date(accessedOn).getTime(),
+			active: markdown.frontmatter.active ? 1 : 0,
 		} as LinkInsertable
+
+		if (markdown.frontmatter.accessed_on) {
+			linkInput.date_accessed = new Date(markdown.frontmatter.accessed_on).getTime()
+		}
+
+		if (markdown.frontmatter.published_on) {
+			linkInput.date_published = new Date(markdown.frontmatter.published_on).getTime()
+		}
 
 		return linkInput
 	}
 
 	async toUpdateInput(
-		linkMd: LinkMarkdown,
+		markdown: LinkMarkdown,
 		link: LinkSelectable,
 		force = false
 	): Promise<LinkUpdateable> {
 		const linkUpdateInput = {
-			...linkMd.frontmatter,
-			slug: linkMd.slug,
-			note: linkMd.markdown,
+			...omit(markdown.frontmatter, ['accessed_on', 'published_on']),
+			slug: markdown.slug,
+			note: markdown.markdown,
+			active: markdown.frontmatter.active ? 1 : 0,
 			date_updated: new Date().getTime(),
 		} as LinkUpdateable
+
+		if (markdown.frontmatter.accessed_on) {
+			linkUpdateInput.date_accessed = new Date(markdown.frontmatter.accessed_on).getTime()
+		}
+
+		if (markdown.frontmatter.published_on) {
+			linkUpdateInput.date_published = new Date(markdown.frontmatter.published_on).getTime()
+		}
 
 		const linkKeys = Object.keys(linkUpdateInput) as Array<keyof typeof linkUpdateInput>
 

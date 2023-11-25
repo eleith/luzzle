@@ -77,15 +77,53 @@ describe('pieces/links/piece', () => {
 		expect(input).toEqual(expect.objectContaining({ id: expect.any(String) }))
 	})
 
+	test('toCreateInput date handling', async () => {
+		const linkMarkdown = linkFixtures.makeLinkMarkdown({
+			frontmatter: { accessed_on: '2021-01-01', published_on: '2021-01-01', active: false },
+		})
+
+		const linkPiece = new LinkPiece('root')
+		const input = await linkPiece.toCreateInput(linkMarkdown)
+
+		expect(input).toEqual(
+			expect.objectContaining({
+				id: expect.any(String),
+				active: 0,
+				date_accessed: new Date(linkMarkdown.frontmatter.accessed_on || '').getTime(),
+				date_published: new Date(linkMarkdown.frontmatter.published_on || '').getTime(),
+			})
+		)
+	})
+
 	test('toUpdateInput', async () => {
-		const link = linkFixtures.makeLink({ active: false })
-		const linkMarkdown = linkFixtures.makeLinkMarkdown({ frontmatter: { active: true } })
+		const link = linkFixtures.makeLink({ active: 1 })
+		const linkMarkdown = linkFixtures.makeLinkMarkdown({ frontmatter: { active: false } })
+
+		const linkPiece = new LinkPiece('root')
+		const update = await linkPiece.toUpdateInput(linkMarkdown, link)
+
+		expect(update).toEqual(expect.objectContaining({ date_updated: expect.any(Number), active: 0 }))
+	})
+
+	test('toUpdateInput date handling', async () => {
+		const link = linkFixtures.makeLink({
+			active: 0,
+			date_accessed: new Date('2021-01-02').getTime(),
+			date_published: new Date('2021-01-02').getTime(),
+		})
+		const linkMarkdown = linkFixtures.makeLinkMarkdown({
+			frontmatter: { accessed_on: '2021-01-01', published_on: '2021-01-01', active: true },
+		})
 
 		const linkPiece = new LinkPiece('root')
 		const update = await linkPiece.toUpdateInput(linkMarkdown, link)
 
 		expect(update).toEqual(
-			expect.objectContaining({ date_updated: expect.any(Number), active: true })
+			expect.objectContaining({
+				active: 1,
+				date_accessed: new Date(linkMarkdown.frontmatter.accessed_on || '').getTime(),
+				date_published: new Date(linkMarkdown.frontmatter.published_on || '').getTime(),
+			})
 		)
 	})
 

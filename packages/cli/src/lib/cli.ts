@@ -1,4 +1,4 @@
-import { getDatabaseClient, LuzzleDatabase } from '@luzzle/kysely'
+import { getDatabaseClient, LuzzleDatabase, migrate } from '@luzzle/kysely'
 import { getDirectoryFromConfig, getConfig } from './config.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
@@ -6,7 +6,6 @@ import log from './log.js'
 import path from 'path'
 import commands, { Context } from './commands/index.js'
 import { DATABASE_PATH } from './assets.js'
-import { migrate } from '@luzzle/kysely'
 import VERSION from '../version.js'
 import { Pieces } from './pieces/index.js'
 
@@ -102,13 +101,17 @@ async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<v
 		},
 	}
 
-	await migrate(ctx.db)
+	const migrationStatus = await migrate(ctx.db)
 
-	log.info(`using config at ${config.path}`)
+	if (!migrationStatus.error) {
+		log.info(`using config at ${config.path}`)
 
-	await Object.values(commands)
-		.find((c) => c.name === command.name)
-		?.run(ctx, command.options)
+		await Object.values(commands)
+			.find((c) => c.name === command.name)
+			?.run(ctx, command.options)
+	} else {
+		log.error(migrationStatus.error)
+	}
 
 	await cleanup(ctx)
 }

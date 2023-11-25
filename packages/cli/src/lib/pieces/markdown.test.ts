@@ -8,7 +8,7 @@ vi.mock('../md')
 vi.mock('ajv/dist/jtd.js')
 vi.mock('./piece')
 
-type TestValidator = Ajv.ValidateFunction<PieceMarkdown<PieceSelectable, keyof PieceSelectable>>
+type TestValidator = Ajv.ValidateFunction<PieceMarkdown<PieceSelectable>>
 
 const mocks = {
 	addFrontMatter: vi.mocked(addFrontMatter),
@@ -67,9 +67,7 @@ describe('lib/pieces/markdown', () => {
 	})
 
 	test('toMarkDownString', () => {
-		pieceMarkdown.toMarkDownString(
-			{} as unknown as PieceMarkdown<PieceSelectable, keyof PieceSelectable>
-		)
+		pieceMarkdown.toMarkDownString({} as unknown as PieceMarkdown<PieceSelectable>)
 		expect(mocks.addFrontMatter).toHaveBeenCalled()
 	})
 })
