@@ -3,8 +3,7 @@ import gql from 'graphql-tag'
 const tag = gql(`fragment BookFullDetails on Book {
     id
     slug
-    coverWidth
-    coverHeight
+    cover
     title
     coauthors
     description

@@ -32,7 +32,7 @@ function makeBookCardLink(book: Book, index = 0): JSX.Element {
 				<Box>
 					<BookCoverFor
 						book={book}
-						hasCover={!!book.coverWidth}
+						hasCover={!!book.cover}
 						scale={0.5}
 						rotateInteract={{ x: 0, y: -35 }}
 						imgLoading={index < 10 ? 'eager' : 'lazy'}

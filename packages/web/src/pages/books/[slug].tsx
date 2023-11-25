@@ -91,7 +91,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 					<Box>
 						<BookCoverFor
 							book={book}
-							hasCover={!!book.coverWidth}
+							hasCover={!!book.cover}
 							rotateInteract={{ x: 0, y: -45 }}
 							scale={1.35}
 						/>

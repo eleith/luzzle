@@ -30,9 +30,8 @@ BookBuilder.implement({
 		dateAdded: t.field({ type: 'Date', resolve: (x) => new Date(x.date_added), nullable: false }),
 		yearRead: t.exposeInt('year_read'),
 		monthRead: t.exposeInt('month_read'),
-		coverWidth: t.exposeInt('cover_width'),
-		coverHeight: t.exposeInt('cover_height'),
 		readOrder: t.exposeString('read_order', { nullable: false }),
+		cover: t.exposeString('cover'),
 		tags: t.field({
 			type: [Tag],
 			resolve: async (parent, _, ctx) => {

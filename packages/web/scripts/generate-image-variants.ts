@@ -8,7 +8,7 @@ loadEnvConfig(process.cwd(), process.env.NODE_ENV !== 'production')
 const VariantsFolder = './public/images/variants/books/covers'
 
 async function makeCoverVariants(book: PieceSelectable<'books'>): Promise<void> {
-	const toPath = `${process.env.LUZZLE_FOLDER}/books/${book.cover_path}`
+	const toPath = `${process.env.LUZZLE_FOLDER}/books/${book.cover}`
 	const coverSharp = sharp(toPath)
 	const sizes = [125, 250, 500, 1000] as Array<125 | 250 | 500 | 1000>
 	const types = ['jpg', 'avif'] as Array<'jpg' | 'avif'>
@@ -64,7 +64,7 @@ async function main() {
 		.execute()
 
 	for (const book of books) {
-		if (book.cover_path) {
+		if (book.cover) {
 			await handler(book)
 			console.log(`generated variants for: ${book.slug}`)
 		}
