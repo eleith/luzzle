@@ -3,16 +3,7 @@ import { PieceMarkdown, PieceMarkdownJtdSchema, PieceDatabaseJtdSchema } from '.
 
 type BookDatabaseOnlyFields = 'id' | 'date_added' | 'date_updated' | 'slug' | 'read_order' | 'note'
 
-type BookMarkdownOnlyFields = {
-	cover_width?: number
-	cover_height?: number
-	cover_path?: string
-}
-
-type BookMarkdown = PieceMarkdown<
-	Omit<BookSelectable, BookDatabaseOnlyFields>,
-	BookMarkdownOnlyFields
->
+type BookMarkdown = PieceMarkdown<Omit<BookSelectable, BookDatabaseOnlyFields>>
 
 const bookDatabaseJtdSchema: PieceDatabaseJtdSchema<BookSelectable> = {
 	properties: {
@@ -68,9 +59,6 @@ const bookMarkdownJtdSchema: PieceMarkdownJtdSchema<BookMarkdown> = {
 					type: 'string',
 					metadata: { luzzleFormat: 'attachment', luzzleAttachmentType: ['png', 'jpg'] },
 				},
-				cover_path: { type: 'string' },
-				cover_width: { type: 'uint32' },
-				cover_height: { type: 'uint32' },
 			},
 		},
 	},
