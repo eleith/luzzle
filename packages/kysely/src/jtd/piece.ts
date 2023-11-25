@@ -14,8 +14,7 @@ type UnNullify<T> = {
 }
 
 type NullToPartials<T> = Pick<T, NonNullableKeys<T>> & Partial<UnNullify<Pick<T, NullableKeys<T>>>>
-type OmitIfExists<K, T extends void | keyof K> = T extends keyof K ? Omit<K, T> : K
-type IncludeIfExists<K, T> = T extends void ? K : T & K
+type IncludeIfExists<A, B> = B extends void ? A : A & B
 
 type PieceFrontMatterFields = Record<string, string | number | boolean | undefined>
 
@@ -24,23 +23,16 @@ type PieceType<T> = NullToPartials<T>
 type PieceDatabaseJtdSchema<T extends PieceSelectable> = JTDSchemaType<PieceType<T>>
 
 type PieceMarkdown<
-	DataBaseFields extends PieceSelectable,
-	DataBaseOnlyFields extends void | keyof DataBaseFields = void,
-	FrontMatterOnlyFields extends void | PieceFrontMatterFields = void
+	DataBaseFields extends Partial<PieceSelectable>,
+	FrontMatterOnlyFields extends PieceFrontMatterFields | void = void
 > = {
 	slug: string
 	markdown?: string
-	frontmatter: PieceType<
-		IncludeIfExists<OmitIfExists<DataBaseFields, DataBaseOnlyFields>, FrontMatterOnlyFields>
-	>
+	frontmatter: PieceType<IncludeIfExists<DataBaseFields, FrontMatterOnlyFields>>
 }
 
 type PieceMarkdownJtdSchema<
-	M extends PieceMarkdown<
-		PieceSelectable,
-		keyof PieceSelectable | void,
-		void | PieceFrontMatterFields
-	>
+	M extends PieceMarkdown<Partial<PieceSelectable>, void | PieceFrontMatterFields>
 > = JTDSchemaType<M>
 
 export {

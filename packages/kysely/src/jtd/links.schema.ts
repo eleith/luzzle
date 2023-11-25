@@ -9,13 +9,18 @@ export type LinkDatabaseOnlyFields =
 	| 'note'
 	| 'date_accessed'
 	| 'date_published'
+	| 'active'
 
 type LinkFrontMatterOnlyFields = {
 	published_on?: string
 	accessed_on?: string
+	active: boolean
 }
 
-type LinkMarkdown = PieceMarkdown<LinkSelectable, LinkDatabaseOnlyFields, LinkFrontMatterOnlyFields>
+type LinkMarkdown = PieceMarkdown<
+	Omit<LinkSelectable, LinkDatabaseOnlyFields>,
+	LinkFrontMatterOnlyFields
+>
 
 const linkDatabaseJtdSchema: PieceDatabaseJtdSchema<LinkSelectable> = {
 	properties: {
@@ -24,7 +29,7 @@ const linkDatabaseJtdSchema: PieceDatabaseJtdSchema<LinkSelectable> = {
 		slug: { type: 'string' },
 		title: { type: 'string' },
 		url: { type: 'string' },
-		active: { type: 'boolean' },
+		active: { type: 'uint8' },
 		type: { enum: [LinkType.Article, LinkType.Bookmark] },
 	},
 	optionalProperties: {
