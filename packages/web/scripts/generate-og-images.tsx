@@ -217,7 +217,7 @@ async function main() {
 		.execute()
 
 	for (const book of books) {
-		if (book.cover_path) {
+		if (book.cover) {
 			await handler(book, 'png')
 			console.log(`generated: ${book.slug}.png`)
 		}
