@@ -1,7 +1,7 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
 import Ajv from 'ajv/dist/jtd.js'
 import { FuncKeywordDefinition, SchemaValidateFunction } from 'ajv/dist/types/index.js'
-import ajv, { formatKeyword } from './ajv.js'
+import ajv, { luzzleFormatKeyword } from './ajv.js'
 
 vi.mock('ajv/dist/jtd.js')
 vi.mock('@luzzle/kysely')
@@ -30,7 +30,7 @@ describe('lib/pieces/ajv', () => {
 	})
 
 	test('validate date-string', () => {
-		const keyword = formatKeyword as FuncKeywordDefinition
+		const keyword = luzzleFormatKeyword as FuncKeywordDefinition
 		const validate = keyword.validate as SchemaValidateFunction
 
 		const passTrue = validate('date-string', '2021-01-01')
@@ -45,7 +45,7 @@ describe('lib/pieces/ajv', () => {
 	})
 
 	test('validate invalid schema', () => {
-		const keyword = formatKeyword as FuncKeywordDefinition
+		const keyword = luzzleFormatKeyword as FuncKeywordDefinition
 		const validate = keyword.validate as SchemaValidateFunction
 
 		const passFalse = validate('email', 'oops')

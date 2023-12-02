@@ -1,5 +1,5 @@
 import { LinkSelectable, LinkType } from '../tables/links.schema.js'
-import { PieceMarkdownJtdSchema, PieceDatabaseJtdSchema, PieceMarkdown } from './piece.js'
+import { PieceFrontmatterJtdSchema, PieceDatabaseJtdSchema, PieceFrontmatter } from './piece.js'
 
 export type LinkDatabaseOnlyFields =
 	| 'id'
@@ -9,15 +9,17 @@ export type LinkDatabaseOnlyFields =
 	| 'note'
 	| 'date_accessed'
 	| 'date_published'
-	| 'active'
+	| 'is_active'
+	| 'is_paywall'
 
 type LinkFrontMatterOnlyFields = {
-	published_on?: string
-	accessed_on?: string
-	active: boolean
+	date_accessed?: string
+	date_published?: string
+	is_active: boolean
+	is_paywall: boolean
 }
 
-type LinkMarkdown = PieceMarkdown<
+type LinkFrontmatter = PieceFrontmatter<
 	Omit<LinkSelectable, LinkDatabaseOnlyFields>,
 	LinkFrontMatterOnlyFields
 >
@@ -29,7 +31,8 @@ const linkDatabaseJtdSchema: PieceDatabaseJtdSchema<LinkSelectable> = {
 		slug: { type: 'string' },
 		title: { type: 'string' },
 		url: { type: 'string' },
-		active: { type: 'uint8' },
+		is_active: { type: 'uint8' },
+		is_paywall: { type: 'uint8' },
 		type: { enum: [LinkType.Article, LinkType.Bookmark] },
 	},
 	optionalProperties: {
@@ -48,33 +51,26 @@ const linkDatabaseJtdSchema: PieceDatabaseJtdSchema<LinkSelectable> = {
 	},
 }
 
-const linkMarkdownJtdSchema: PieceMarkdownJtdSchema<LinkMarkdown> = {
+const linkFrontmatterJtdSchema: PieceFrontmatterJtdSchema<LinkFrontmatter> = {
 	properties: {
-		slug: { type: 'string' },
-		frontmatter: {
-			properties: {
-				title: { type: 'string' },
-				url: { type: 'string' },
-				active: { type: 'boolean' },
-				type: { enum: [LinkType.Article, LinkType.Bookmark] },
-			},
-			optionalProperties: {
-				author: { type: 'string' },
-				subtitle: { type: 'string' },
-				coauthors: { type: 'string' },
-				summary: { type: 'string' },
-				keywords: { type: 'string' },
-				screenshot_path: { type: 'string' },
-				archive_url: { type: 'string' },
-				archive_path: { type: 'string' },
-				accessed_on: { type: 'string', metadata: { luzzleFormat: 'date-string' } },
-				published_on: { type: 'string', metadata: { luzzleFormat: 'date-string' } },
-			},
-		},
+		title: { type: 'string' },
+		url: { type: 'string' },
+		is_active: { type: 'boolean', metadata: { luzzleFormat: 'boolean-int' } },
+		is_paywall: { type: 'boolean', metadata: { luzzleFormat: 'boolean-int' } },
+		type: { enum: [LinkType.Article, LinkType.Bookmark] },
 	},
 	optionalProperties: {
-		markdown: { type: 'string' },
+		author: { type: 'string' },
+		subtitle: { type: 'string' },
+		coauthors: { type: 'string' },
+		summary: { type: 'string' },
+		keywords: { type: 'string' },
+		screenshot_path: { type: 'string' },
+		archive_url: { type: 'string' },
+		archive_path: { type: 'string' },
+		date_published: { type: 'string', metadata: { luzzleFormat: 'date-string' } },
+		date_accessed: { type: 'string', metadata: { luzzleFormat: 'date-string' } },
 	},
 }
 
-export { linkMarkdownJtdSchema, linkDatabaseJtdSchema, type LinkMarkdown }
+export { linkFrontmatterJtdSchema, linkDatabaseJtdSchema, type LinkFrontmatter }

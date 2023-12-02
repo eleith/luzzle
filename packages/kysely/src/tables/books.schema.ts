@@ -11,11 +11,9 @@ type BooksTable = {
 	coauthors: string | null
 	description: string | null
 	pages: number | null
-	year_read: number | null
-	month_read: number | null
 	year_first_published: number | null
+	date_read: number | null
 	cover: string | null
-	read_order: string
 } & PieceCommonFields
 
 type BookSelectable = Selectable<BooksTable>

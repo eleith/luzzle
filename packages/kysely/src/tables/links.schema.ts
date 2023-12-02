@@ -18,7 +18,8 @@ type LinksTable = {
 	date_published: number | null
 	archive_path: string | null
 	url: string
-	active: number
+	is_active: number
+	is_paywall: number
 	archive_url: string | null
 	screenshot_path: string | null
 	type: LinkTypes
