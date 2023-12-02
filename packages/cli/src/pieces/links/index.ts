@@ -1,4 +1,4 @@
 import LinkPiece from './piece.js'
-import { LinkMarkdown } from './schema.js'
+import { LinkFrontmatter } from './schema.js'
 
-export { LinkPiece, type LinkMarkdown }
+export { LinkPiece, type LinkFrontmatter }

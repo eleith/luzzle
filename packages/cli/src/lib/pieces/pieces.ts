@@ -4,15 +4,15 @@ import {
 	PieceSelectable,
 	Pieces as PieceTypes,
 	Piece as PieceType,
-	PieceMarkdown,
-	PieceFrontMatterFields,
+	PieceFrontmatterFields,
+	PieceFrontmatter,
 } from '@luzzle/kysely'
 import Piece, { InterfacePiece } from './piece.js'
 
 type LuzzlePiece = InterfacePiece<
 	PieceTypes,
 	PieceSelectable,
-	PieceMarkdown<PieceSelectable, PieceFrontMatterFields>
+	PieceFrontmatter<Omit<PieceSelectable, keyof PieceSelectable>, void | PieceFrontmatterFields>
 >
 
 class Pieces {
@@ -29,8 +29,8 @@ class Pieces {
 	register<
 		P extends PieceTypes,
 		T extends PieceSelectable,
-		M extends PieceMarkdown<T, PieceFrontMatterFields>
-	>(PieceInterface: InterfacePiece<P, T, M>): Piece<P, T, M> {
+		F extends PieceFrontmatter<Omit<T, keyof T>, void | PieceFrontmatterFields>
+	>(PieceInterface: InterfacePiece<P, T, F>): Piece<P, T, F> {
 		const pieceType = new PieceInterface(this._directory)
 
 		if (!existsSync(this._directory)) {

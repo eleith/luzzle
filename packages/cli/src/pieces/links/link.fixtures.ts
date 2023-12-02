@@ -1,29 +1,32 @@
 import { merge } from 'lodash-es'
-import { LinkMarkdown, LinkInsertable, LinkUpdateable, LinkSelectable } from './schema.js'
+import { PieceMarkdown } from '../../lib/pieces/index.js'
+import { LinkFrontmatter, LinkInsertable, LinkUpdateable, LinkSelectable } from './schema.js'
 
 const id = 'link-id'
 const title = 'title of the link'
 const note = 'a note about the link'
 const slug = 'slugified-title'
 const type = 'article'
-const active = true
+const is_active = true
 const date_accessed = new Date('2201-12-11').getTime()
 const url = 'https://example.com'
 
-function makeLinkMarkdown(overrides: DeepPartial<LinkMarkdown> = {}): LinkMarkdown {
+function makeLinkMarkdown(
+	overrides: DeepPartial<PieceMarkdown<LinkFrontmatter>> = {}
+): PieceMarkdown<LinkFrontmatter> {
 	return merge(
 		{
 			slug,
 			frontmatter: {
 				title,
-				active,
+				is_active,
 				date_accessed,
 				type,
 				url,
 			},
 			markdown: note,
 		},
-		overrides as LinkMarkdown
+		overrides as PieceMarkdown<LinkFrontmatter>
 	)
 }
 
@@ -45,7 +48,8 @@ function makeLink(overrides: Partial<LinkSelectable> = {}): LinkSelectable {
 		screenshot_path: null,
 		type,
 		url,
-		active: 1,
+		is_active: 1,
+		is_paywall: 0,
 		slug,
 		note,
 		...overrides,
@@ -61,7 +65,8 @@ function makeLinkInsert(overrides: Partial<LinkInsertable> = {}): LinkInsertable
 		summary: null,
 		keywords: null,
 		type,
-		active: 1,
+		is_active: 1,
+		is_paywall: 0,
 		url,
 		slug,
 		note,
@@ -80,7 +85,8 @@ function makeLinkCreateInput(overrides: Partial<LinkInsertable> = {}): LinkInser
 	return {
 		id,
 		title,
-		active: 1,
+		is_active: 1,
+		is_paywall: 0,
 		type: 'article',
 		url: 'https://www.example.com',
 		slug,

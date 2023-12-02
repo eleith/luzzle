@@ -1,11 +1,11 @@
 import {
 	bookDatabaseJtdSchema,
-	bookMarkdownJtdSchema,
+	bookFrontmatterJtdSchema,
 	PieceSelectable,
 	Piece,
 	PieceUpdatable,
 	PieceInsertable,
-	type BookMarkdown,
+	type BookFrontmatter,
 } from '@luzzle/kysely'
 
 type BookType = typeof Piece.Book
@@ -14,11 +14,11 @@ type BookUpdateable = PieceUpdatable<BookType>
 type BookInsertable = PieceInsertable<BookType>
 
 export {
-	bookMarkdownJtdSchema,
+	bookFrontmatterJtdSchema,
 	bookDatabaseJtdSchema,
 	type BookType,
 	type BookSelectable,
 	type BookInsertable,
 	type BookUpdateable,
-	type BookMarkdown,
+	type BookFrontmatter,
 }

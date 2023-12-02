@@ -1,14 +1,16 @@
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
-import * as pieceMarkdown from './markdown.js'
+import { PieceMarkdown, toMarkdownString, toValidatedMarkdown } from './markdown.js'
 import Ajv from 'ajv/dist/jtd.js'
 import { addFrontMatter } from '../md.js'
-import { PieceSelectable, PieceMarkdown } from '@luzzle/kysely'
+import { PieceFrontmatter, PieceSelectable } from '@luzzle/kysely'
 
 vi.mock('../md')
 vi.mock('ajv/dist/jtd.js')
 vi.mock('./piece')
 
-type TestValidator = Ajv.ValidateFunction<PieceMarkdown<PieceSelectable>>
+type TestValidator = Ajv.ValidateFunction<
+	PieceFrontmatter<Omit<PieceSelectable, keyof PieceSelectable>>
+>
 
 const mocks = {
 	addFrontMatter: vi.mocked(addFrontMatter),
@@ -30,21 +32,16 @@ describe('lib/pieces/markdown', () => {
 
 	test('toValidatedMarkDown', async () => {
 		const slug = 'path/to/some-piece.md'
-		const markdown = 'a tale of two mark downs'
+		const note = 'a tale of two mark downs'
 		const frontmatter = { title: 'two', metadata: 'three' }
 		const validator = () => true
 
-		const md = pieceMarkdown.toValidatedMarkDown(
-			slug,
-			markdown,
-			frontmatter,
-			validator as unknown as TestValidator
-		)
+		const md = toValidatedMarkdown(slug, note, frontmatter, validator as unknown as TestValidator)
 
 		expect(md).toEqual({
 			slug,
 			frontmatter,
-			markdown,
+			note,
 		})
 	})
 
@@ -57,17 +54,12 @@ describe('lib/pieces/markdown', () => {
 		validator.errors = [{ message: 'some error' }]
 
 		expect(() =>
-			pieceMarkdown.toValidatedMarkDown(
-				slug,
-				markdown,
-				frontmatter,
-				validator as unknown as TestValidator
-			)
+			toValidatedMarkdown(slug, markdown, frontmatter, validator as unknown as TestValidator)
 		).toThrowError()
 	})
 
-	test('toMarkDownString', () => {
-		pieceMarkdown.toMarkDownString({} as unknown as PieceMarkdown<PieceSelectable>)
+	test('toMarkdownString', () => {
+		toMarkdownString({} as unknown as PieceMarkdown<Omit<PieceSelectable, keyof PieceSelectable>>)
 		expect(mocks.addFrontMatter).toHaveBeenCalled()
 	})
 })

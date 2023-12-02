@@ -1,87 +1,35 @@
 import log from '../../lib/log.js'
-import { Piece, toValidatedMarkDown, PieceType } from '../../lib/pieces/index.js'
-import { createId } from '@paralleldrive/cuid2'
+import { Piece, toValidatedMarkdown, PieceType } from '../../lib/pieces/index.js'
 import { Config } from '../../lib/config.js'
 import {
-	LinkMarkdown,
+	LinkFrontmatter,
 	LinkType,
 	LinkSelectable,
-	LinkUpdateable,
-	LinkInsertable,
 	linkDatabaseJtdSchema,
-	linkMarkdownJtdSchema,
+	linkFrontmatterJtdSchema,
 } from './schema.js'
-import { omit } from 'lodash-es'
+import { PieceMarkdown } from 'src/lib/pieces/markdown.js'
 
-class LinkPiece extends Piece<LinkType, LinkSelectable, LinkMarkdown> {
+class LinkPiece extends Piece<LinkType, LinkSelectable, LinkFrontmatter> {
 	constructor(piecesRoot: string) {
-		super(piecesRoot, PieceType.Link, linkMarkdownJtdSchema, linkDatabaseJtdSchema)
+		super(piecesRoot, PieceType.Link, linkFrontmatterJtdSchema, linkDatabaseJtdSchema)
 	}
 
-	async toCreateInput(markdown: LinkMarkdown): Promise<LinkInsertable> {
-		const linkInput = {
-			...omit(markdown.frontmatter, ['accessed_on', 'published_on']),
-			id: createId(),
-			slug: markdown.slug,
-			note: markdown.markdown,
-			active: markdown.frontmatter.active ? 1 : 0,
-		} as LinkInsertable
-
-		if (markdown.frontmatter.accessed_on) {
-			linkInput.date_accessed = new Date(markdown.frontmatter.accessed_on).getTime()
-		}
-
-		if (markdown.frontmatter.published_on) {
-			linkInput.date_published = new Date(markdown.frontmatter.published_on).getTime()
-		}
-
-		return linkInput
-	}
-
-	async toUpdateInput(
-		markdown: LinkMarkdown,
-		link: LinkSelectable,
-		force = false
-	): Promise<LinkUpdateable> {
-		const linkUpdateInput = {
-			...omit(markdown.frontmatter, ['accessed_on', 'published_on']),
-			slug: markdown.slug,
-			note: markdown.markdown,
-			active: markdown.frontmatter.active ? 1 : 0,
-			date_updated: new Date().getTime(),
-		} as LinkUpdateable
-
-		if (markdown.frontmatter.accessed_on) {
-			linkUpdateInput.date_accessed = new Date(markdown.frontmatter.accessed_on).getTime()
-		}
-
-		if (markdown.frontmatter.published_on) {
-			linkUpdateInput.date_published = new Date(markdown.frontmatter.published_on).getTime()
-		}
-
-		const linkKeys = Object.keys(linkUpdateInput) as Array<keyof typeof linkUpdateInput>
-
-		// restrict updates to only fields that have changed between the md and db data
-		linkKeys.forEach((field) => {
-			if (!force && linkUpdateInput[field] === link[field]) {
-				delete linkUpdateInput[field]
-			}
-		})
-
-		return linkUpdateInput
-	}
-
-	async fetch(_config: Config, markdown: LinkMarkdown, service?: string): Promise<LinkMarkdown> {
+	async fetch(
+		_config: Config,
+		markdown: PieceMarkdown<LinkFrontmatter>,
+		service?: string
+	): Promise<PieceMarkdown<LinkFrontmatter>> {
 		log.info(`fetching ${markdown.slug} with service ${service}`)
 		return markdown
 	}
 
-	create(slug: string, title: string): LinkMarkdown {
+	create(slug: string, title: string): PieceMarkdown<LinkFrontmatter> {
 		const now = new Date()
 		const month = now.toLocaleString('default', { month: 'long' })
 		const year = now.getFullYear()
 
-		return toValidatedMarkDown(
+		return toValidatedMarkdown(
 			slug,
 			'notes',
 			{

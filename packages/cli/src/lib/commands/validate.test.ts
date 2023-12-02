@@ -55,25 +55,6 @@ describe('lib/commands/validate', () => {
 		expect(mocks.logInfo).toHaveBeenCalledOnce()
 	})
 
-	test('run with non existant slug', async () => {
-		const path = 'slug2'
-		const fullPath = `/home/user/${path}.md`
-		const PieceTest = makePiece()
-		const ctx = makeContext({
-			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
-			},
-		})
-
-		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(false)
-		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
-
-		await command.run(ctx, { path } as Arguments<ValidateArgv>)
-
-		expect(mocks.logError).toHaveBeenCalledOnce()
-	})
-
 	test('run with an invalid piece', async () => {
 		const path = 'slug2'
 		const fullPath = `/home/user/${path}.md`
@@ -89,6 +70,28 @@ describe('lib/commands/validate', () => {
 		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
 		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockRejectedValueOnce(pieceError)
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+
+		await command.run(ctx, { path } as Arguments<ValidateArgv>)
+
+		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
+
+	test('run hits unknown error', async () => {
+		const path = 'slug2'
+		const fullPath = `/home/user/${path}.md`
+		const PieceTest = makePiece()
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
+		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
+		spies.pieceGet = vi
+			.spyOn(PieceTest.prototype, 'get')
+			.mockRejectedValueOnce(new Error('unknown error'))
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
 		await command.run(ctx, { path } as Arguments<ValidateArgv>)

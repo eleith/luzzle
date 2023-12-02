@@ -1,11 +1,11 @@
 import {
 	linkDatabaseJtdSchema,
-	linkMarkdownJtdSchema,
+	linkFrontmatterJtdSchema,
 	PieceSelectable,
 	Piece,
 	PieceUpdatable,
 	PieceInsertable,
-	type LinkMarkdown,
+	type LinkFrontmatter,
 } from '@luzzle/kysely'
 
 type LinkType = typeof Piece.Link
@@ -14,11 +14,11 @@ type LinkUpdateable = PieceUpdatable<LinkType>
 type LinkInsertable = PieceInsertable<LinkType>
 
 export {
-	linkMarkdownJtdSchema,
+	linkFrontmatterJtdSchema,
 	linkDatabaseJtdSchema,
 	type LinkType,
 	type LinkSelectable,
 	type LinkInsertable,
 	type LinkUpdateable,
-	type LinkMarkdown,
+	type LinkFrontmatter,
 }

@@ -26,15 +26,9 @@ const command: Command<ValidateArgv> = {
 		const { slug, piece } = parsePieceArgv(args)
 		const pieces = await ctx.pieces.getPiece(piece)
 
-		if (!pieces.exists(slug)) {
-			log.error(`${slug} was not found`)
-			return
-		}
-
 		try {
 			await pieces.get(slug)
 			log.info(`${slug} is valid`)
-			return
 		} catch (e) {
 			if (e instanceof PieceMarkdownError) {
 				const errorMessage = [`${slug} has ${e.validationErrors?.length} error(s)\n`]
@@ -45,7 +39,8 @@ const command: Command<ValidateArgv> = {
 				})
 
 				log.error(errorMessage.join('\n'))
-				return
+			} else {
+				log.error(e)
 			}
 		}
 	},

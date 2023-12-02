@@ -9,9 +9,12 @@ import { visit, EXIT } from 'unist-util-visit'
 import { filter } from 'unist-util-filter'
 import { toMarkdown } from 'mdast-util-to-markdown'
 
-function addFrontMatter(markdown = '', metadata: { [key: string]: unknown } = {}): string {
+function addFrontMatter(
+	markdown?: string | null,
+	metadata: { [key: string]: unknown } = {}
+): string {
 	const yamlString = YAML.stringify(metadata)
-	const content = markdown.trim()
+	const content = markdown?.trim() || ''
 
 	return `---\n${yamlString}---\n${content}\n`
 }

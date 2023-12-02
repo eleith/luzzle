@@ -21,11 +21,17 @@ export type PieceArgv = {
 	piece?: string
 }
 
+export type PieceOptionalArgv = {
+	path?: string
+	piece?: string
+}
+
 const PieceFileType = 'md'
 const PieceCommandOption = '<slug|path>'
+const PieceOptionalCommandOption = '[slug|path]'
 
 const parsePieceArgv = function (args: PieceArgv): { slug: string; piece: Pieces } {
-	const piece = args.piece as Pieces
+	const piece = args.piece as Pieces | undefined
 	const slug = args.path
 	const pathParsed = path.parse(slug)
 	const isMarkdown = pathParsed.ext === `.${PieceFileType}`
@@ -50,6 +56,21 @@ const parsePieceArgv = function (args: PieceArgv): { slug: string; piece: Pieces
 	}
 }
 
+const parseOptionalPieceArgv = function (args: PieceOptionalArgv): {
+	slug: string
+	piece: Pieces
+} | null {
+	const { path, piece } = args
+
+	if (path) {
+		return parsePieceArgv({ path, piece })
+	} else if (piece) {
+		throw new Error(`slug is required, learn more with --help`)
+	}
+
+	return null
+}
+
 const makePieceCommand = function <T>(yargs: Argv<T>, alias = 'slug'): Argv<T & PieceArgv> {
 	return yargs
 		.option('piece', {
@@ -60,9 +81,28 @@ const makePieceCommand = function <T>(yargs: Argv<T>, alias = 'slug'): Argv<T & 
 		})
 		.positional('path', {
 			type: 'string',
-			alias,
+			alias: alias,
 			description: `<path|${alias}> of piece`,
 			demandOption: `<path|${alias}> is required`,
+		})
+}
+
+const makeOptionalPieceCommand = function <T>(
+	yargs: Argv<T>,
+	alias = 'slug'
+): Argv<T & PieceOptionalArgv> {
+	return yargs
+		.option('piece', {
+			type: 'string',
+			alias: 'p',
+			description: `piece type, required if using <${alias}>`,
+			choices: Object.values(Piece),
+		})
+		.positional('path', {
+			type: 'string',
+			alias: alias,
+			description: `<path|${alias}> of piece`,
+			demandOption: false,
 		})
 }
 
@@ -87,8 +127,11 @@ async function downloadFileOrUrlTo(file: string): Promise<string> {
 export {
 	PieceFileType,
 	PieceCommandOption,
+	PieceOptionalCommandOption,
 	parsePieceArgv,
+	parseOptionalPieceArgv,
 	makePieceCommand,
+	makeOptionalPieceCommand,
 	downloadFileOrUrlTo,
 	Piece,
 	type Pieces,

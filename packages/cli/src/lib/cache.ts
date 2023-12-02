@@ -1,4 +1,4 @@
-import { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd.js'
+import { AnySchema, JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd.js'
 import { ajv } from '@luzzle/kysely'
 import { readFile, writeFile, mkdir, readdir, unlink } from 'fs/promises'
 import path from 'path'
@@ -23,7 +23,7 @@ class CacheForType<T> {
 		return path.join(this._rootDir, `${slug}.json`)
 	}
 
-	constructor(database: JTDSchemaType<T>, dir: string) {
+	constructor(database: AnySchema, dir: string) {
 		const schema = {
 			properties: {},
 			optionalProperties: {
@@ -55,7 +55,7 @@ class CacheForType<T> {
 
 			if (cache) {
 				if (this.validator(cache)) {
-					return cache
+					return cache as Cache<T>
 				}
 				log.warn(`${cachePath} is corrupted and will be rebuilt`)
 			}

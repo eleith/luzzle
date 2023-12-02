@@ -22,11 +22,6 @@ const command: Command<EditArgv> = {
 		const { slug, piece } = parsePieceArgv(args)
 		const pieces = await ctx.pieces.getPiece(piece)
 
-		if (!pieces.exists(slug)) {
-			log.error(`${slug} was not found`)
-			return
-		}
-
 		if (!process.env.EDITOR) {
 			log.error('could not find an editor')
 			return
