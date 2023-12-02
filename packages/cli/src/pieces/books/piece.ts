@@ -1,112 +1,47 @@
 import { unlink } from 'fs/promises'
-import path from 'path'
 import log from '../../lib/log.js'
 import { downloadToTmp } from '../../lib/web.js'
 import { findVolume } from './google-books.js'
 import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library.js'
-import crypto from 'crypto'
-import { Piece, toValidatedMarkDown, PieceType } from '../../lib/pieces/index.js'
-import { createId } from '@paralleldrive/cuid2'
+import { Piece, toValidatedMarkdown, PieceType } from '../../lib/pieces/index.js'
 import { generateDescription, generateTags } from './openai.js'
-import { ASSETS_DIRECTORY } from '../../lib/assets.js'
 import { Config } from '../../lib/config.js'
 import { merge } from 'lodash-es'
 import {
-	BookInsertable,
-	BookUpdateable,
 	BookType,
 	BookSelectable,
-	BookMarkdown,
+	BookFrontmatter,
 	bookDatabaseJtdSchema,
-	bookMarkdownJtdSchema,
+	bookFrontmatterJtdSchema,
 } from './schema.js'
+import { PieceMarkdown } from 'src/lib/pieces/markdown.js'
 
-const BOOK_COVER_DIRECTORY = 'covers'
-
-function _getReadOrder(
-	year: number = new Date(1970).getFullYear(),
-	month: number = new Date(1970, 1).getMonth() + 1
-): string {
-	const rand = crypto.randomBytes(2).toString('hex')
-	const timeStamp = `${year}${String(month).padStart(2, '0')}0100`
-
-	return `${timeStamp}-${rand}`
-}
-
-class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
+class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 	constructor(piecesRoot: string) {
-		super(piecesRoot, PieceType.Book, bookMarkdownJtdSchema, bookDatabaseJtdSchema)
+		super(piecesRoot, PieceType.Book, bookFrontmatterJtdSchema, bookDatabaseJtdSchema)
 	}
 
-	getCoverPath(slug: string): string {
-		const assetDirectory = this.directories.assets
-		return path.join(assetDirectory, BOOK_COVER_DIRECTORY, `${slug}.jpg`)
-	}
+	async completeOpenAI(
+		apiKey: string,
+		markdown: PieceMarkdown<BookFrontmatter>
+	): Promise<BookFrontmatter> {
+		const tags = await generateTags(apiKey, markdown)
+		const description = await generateDescription(apiKey, markdown)
+		const frontmatter = { ...markdown.frontmatter }
 
-	getRelativeCoverPath(slug: string): string {
-		return path.join(ASSETS_DIRECTORY, BOOK_COVER_DIRECTORY, `${slug}.jpg`)
-	}
+		log.info(`generating openAI description for ${markdown.slug}`)
 
-	async toCreateInput(markdown: BookMarkdown): Promise<BookInsertable> {
-		const bookInput = {
-			...markdown.frontmatter,
-			id: createId(),
-			slug: markdown.slug,
-			note: markdown.markdown,
-			read_order: _getReadOrder(markdown.frontmatter.year_read, markdown.frontmatter.month_read),
-		}
+		frontmatter.keywords = tags.join(',')
+		frontmatter.description = description
 
-		return bookInput
-	}
-
-	async toUpdateInput(
-		bookMd: BookMarkdown,
-		book: BookSelectable,
-		force = false
-	): Promise<BookUpdateable> {
-		const bookUpdateInput = {
-			...bookMd.frontmatter,
-			slug: bookMd.slug,
-			note: bookMd.markdown,
-			date_updated: new Date().getTime(),
-		} as BookUpdateable
-
-		const bookKeys = Object.keys(bookUpdateInput) as Array<keyof typeof bookUpdateInput>
-
-		// restrict updates to only fields that have changed between the md and db data
-		bookKeys.forEach((field) => {
-			if (!force && bookUpdateInput[field] === book[field]) {
-				delete bookUpdateInput[field]
-			}
-		})
-
-		if (bookUpdateInput.year_read || bookUpdateInput.month_read) {
-			const year = bookMd.frontmatter.year_read
-			const month = bookMd.frontmatter.month_read
-			const order = _getReadOrder(year, month)
-			bookUpdateInput.read_order = order
-		}
-
-		return { ...bookUpdateInput, date_updated: new Date().getTime() }
-	}
-
-	async completeOpenAI(apiKey: string, bookMd: BookMarkdown): Promise<BookMarkdown['frontmatter']> {
-		const tags = await generateTags(apiKey, bookMd)
-		const description = await generateDescription(apiKey, bookMd)
-
-		log.info(`generating openAI description for ${bookMd.slug}`)
-
-		bookMd.frontmatter.keywords = tags.join(',')
-		bookMd.frontmatter.description = description
-
-		return bookMd.frontmatter
+		return frontmatter
 	}
 
 	async searchGoogleBooks(
 		apiKey: string,
 		bookTitle: string,
 		bookAuthor: string
-	): Promise<BookMarkdown['frontmatter']> {
+	): Promise<BookFrontmatter> {
 		const volume = await findVolume(apiKey, bookTitle, bookAuthor)
 		const googleBook = volume?.volumeInfo
 
@@ -142,7 +77,7 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 		bookSlug: string,
 		bookTitle: string,
 		bookAuthor: string
-	): Promise<BookMarkdown['frontmatter']> {
+	): Promise<BookFrontmatter> {
 		const book = await getOpenLibraryBook(openLibraryBookId)
 		const workId = book?.works?.[0].key.replace(/\/works\//, '')
 		const work = workId ? await findWork(workId) : null
@@ -159,13 +94,10 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 			const pages = Number(work.number_of_pages)
 			const coverUrl = work.cover_i ? getCoverUrl(work.cover_i) : undefined
 
-			const frontMatter: BookMarkdown['frontmatter'] = {
+			const frontMatter: BookFrontmatter = {
 				title,
 				author,
 				id_ol_work: workId,
-				...(coverUrl && {
-					cover_path: this.getRelativeCoverPath(bookSlug),
-				}),
 				...(subtitle && { subtitle }),
 				...(isbn && { isbn }),
 				...(coauthors && { coauthors }),
@@ -177,14 +109,14 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 				log.info(`downloading cover (${coverUrl}) for ${bookTitle}`)
 
 				const tmpFile = await downloadToTmp(coverUrl)
-				const fetchedMarkdown = await this.attach(
+				const fetchedFrontmatter = await this.attach(
 					tmpFile,
-					{ slug: bookSlug, frontmatter: frontMatter },
-					'cover_path'
+					{ slug: bookSlug, frontmatter: frontMatter, note: '' },
+					'cover'
 				)
 
 				await unlink(tmpFile)
-				return fetchedMarkdown.frontmatter
+				return fetchedFrontmatter.frontmatter
 			}
 
 			return frontMatter
@@ -193,7 +125,11 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 		throw new Error(`could not find ${bookTitle} on openlibrary`)
 	}
 
-	async fetch(config: Config, markdown: BookMarkdown, service?: string): Promise<BookMarkdown> {
+	async fetch(
+		config: Config,
+		markdown: PieceMarkdown<BookFrontmatter>,
+		service?: string
+	): Promise<PieceMarkdown<BookFrontmatter>> {
 		const apiKeys = config.get('api_keys')
 		const googleKey = apiKeys.google
 		const openAIKey = apiKeys.openai
@@ -239,8 +175,8 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 		return bookProcessed
 	}
 
-	create(slug: string, title: string): BookMarkdown {
-		return toValidatedMarkDown(
+	create(slug: string, title: string): PieceMarkdown<BookFrontmatter> {
+		return toValidatedMarkdown(
 			slug,
 			'notes',
 			{
@@ -258,9 +194,30 @@ class BookPiece extends Piece<BookType, BookSelectable, BookMarkdown> {
 		)
 	}
 
-	/* c8 ignore next 3 */
-	async process() {
-		return
+	/* c8 ignore next 24 */
+	async process(slugs: string[]): Promise<void> {
+		for (const slug of slugs) {
+			const markdown = await this.get(slug, false)
+
+			if (markdown) {
+				const frontmatter = markdown.frontmatter
+				const oldFrontmatter = frontmatter as unknown as typeof frontmatter & {
+					year_read?: number
+					month_read?: number
+				}
+				const year = oldFrontmatter.year_read
+				const month = oldFrontmatter.month_read
+
+				if (month !== undefined && year !== undefined) {
+					markdown.frontmatter.date_read = `${month}-01-${year}`
+				}
+
+				delete oldFrontmatter.year_read
+				delete oldFrontmatter.month_read
+
+				await this.write(markdown)
+			}
+		}
 	}
 }
 

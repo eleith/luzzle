@@ -90,32 +90,6 @@ describe('lib/commands/edit', () => {
 		expect(mocks.spawn).not.toHaveBeenCalled()
 	})
 
-	test('run with non existant slug', async () => {
-		const path = 'slug2'
-		const fullPath = `/home/user/${path}.md`
-		const PieceTest = makePiece()
-		const pieceType = 'piece'
-		const ctx = makeContext({
-			flags: { dryRun: true },
-			pieces: {
-				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
-			},
-		})
-
-		process.env.EDITOR = 'vi'
-		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(false)
-		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
-
-		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
-
-		await command.run(ctx, { path } as Arguments<EditArgv>)
-
-		expect(mocks.spawn).not.toHaveBeenCalled()
-		expect(mocks.logError).toHaveBeenCalledOnce()
-	})
-
 	test('run with no editor', async () => {
 		const path = 'slug2'
 		const fullPath = `/home/user/${path}.md`

@@ -28,6 +28,17 @@ describe('md', () => {
 		expect(combined).toBe(together)
 	})
 
+	test('addFrontMatter with no markdown', () => {
+		const metadata = {
+			a: 'awesome',
+			b: 'banana',
+		}
+		const together = '---\na: awesome\nb: banana\n---\n\n'
+
+		const combined = md.addFrontMatter(null, metadata)
+		expect(combined).toBe(together)
+	})
+
 	test('extract markdown and frontmatter', async () => {
 		const path = 'path/to/file.md'
 		const markdownWithFront = '---\na: awesome\nb: banana\n---\nthis is markdown'

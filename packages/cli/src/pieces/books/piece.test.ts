@@ -13,8 +13,7 @@ import { fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { cpus } from 'os'
 import BookPiece from './piece.js'
-import { toValidatedMarkDown } from '../../lib/pieces/markdown.js'
-import { ASSETS_DIRECTORY } from '../../lib/assets.js'
+import { toValidatedMarkdown } from '../../lib/pieces/index.js'
 import { mockConfig } from '../../lib/config.mock.js'
 
 vi.mock('file-type')
@@ -27,7 +26,7 @@ vi.mock('./openai')
 vi.mock('../../lib/md')
 vi.mock('os')
 vi.mock('../../lib/log')
-vi.mock('../../lib/pieces/markdown.js')
+vi.mock('../../lib/pieces/index.js')
 vi.mock('@luzzle/kysely')
 
 const mocks = {
@@ -51,7 +50,7 @@ const mocks = {
 	generateTags: vi.mocked(generateTags),
 	generateDescription: vi.mocked(generateDescription),
 	BookPieceGetFileName: vi.spyOn(BookPiece.prototype, 'getFileName'),
-	toMarkDown: vi.mocked(toValidatedMarkDown),
+	toMarkdown: vi.mocked(toValidatedMarkdown),
 	fileTypeFromFile: vi.mocked(fileTypeFromFile),
 }
 
@@ -77,67 +76,6 @@ describe('pieces/books/piece', () => {
 
 	test('constructor', () => {
 		new BookPiece('root')
-	})
-
-	test('getRelativeCoverPath', () => {
-		const slug = 'slug'
-
-		const coverPath = new BookPiece('root').getRelativeCoverPath(slug)
-
-		expect(coverPath).toMatch(new RegExp(`^${ASSETS_DIRECTORY}.+\\.jpg$`))
-	})
-
-	test('getCoverPath', () => {
-		const slug = 'slug'
-		const path = new BookPiece('root').getCoverPath(slug)
-
-		expect(path).toContain(ASSETS_DIRECTORY)
-	})
-
-	test('toCreateInput', async () => {
-		const bookMarkdown = bookFixtures.makeBookMarkDown()
-
-		const bookPiece = new BookPiece('root')
-		const input = await bookPiece.toCreateInput(bookMarkdown)
-
-		expect(input).toEqual(
-			expect.objectContaining({ id: expect.any(String), read_order: expect.any(String) })
-		)
-	})
-
-	test('toUpdateInput', async () => {
-		const book = bookFixtures.makeBook()
-		const bookMarkdown = bookFixtures.makeBookMarkDown()
-
-		const bookPiece = new BookPiece('root')
-
-		const update = await bookPiece.toUpdateInput(bookMarkdown, book)
-
-		expect(update).toEqual(expect.objectContaining({ date_updated: expect.any(Number) }))
-	})
-
-	test('toUpdateInput calculates read order', async () => {
-		const readMetadata = { year_read: 2020, month_read: 1 }
-		const book = bookFixtures.makeBook()
-		const bookMarkdown = bookFixtures.makeBookMarkDown({ frontmatter: readMetadata })
-
-		const bookPiece = new BookPiece('root')
-
-		const update = await bookPiece.toUpdateInput(bookMarkdown, book)
-
-		expect(update).toEqual(expect.objectContaining({ read_order: expect.any(String) }))
-	})
-
-	test('toUpdateInput only updates timestamp', async () => {
-		const readMetadata = { year_read: 2020, month_read: 1 }
-		const book = bookFixtures.makeBook()
-		const bookMarkdown = bookFixtures.makeBookMarkDown({ frontmatter: readMetadata })
-
-		const bookPiece = new BookPiece('root')
-
-		const update = await bookPiece.toUpdateInput(bookMarkdown, book)
-
-		expect(update).toEqual(expect.objectContaining({ date_updated: expect.any(Number) }))
 	})
 
 	test('searchOpenLibrary', async () => {
@@ -219,6 +157,7 @@ describe('pieces/books/piece', () => {
 			tmpFile,
 			{
 				slug,
+				note: '',
 				frontmatter: {
 					title: work.title,
 					author: work.author_name[0],
@@ -228,10 +167,9 @@ describe('pieces/books/piece', () => {
 					subtitle: book.subtitle,
 					pages: Number(work.number_of_pages),
 					year_first_published: work.first_publish_year,
-					cover_path: expect.any(String),
 				},
 			},
-			'cover_path'
+			'cover'
 		)
 	})
 
@@ -260,14 +198,14 @@ describe('pieces/books/piece', () => {
 
 	test('completeOpenAI', async () => {
 		const openAIKey = 'key'
-		const bookMd = bookFixtures.makeBookMarkDown()
+		const markdown = bookFixtures.makeBookMarkDown()
 		const tags = ['tag1', 'tag2']
 		const description = 'a tiny description'
 
 		mocks.generateDescription.mockResolvedValueOnce(description)
 		mocks.generateTags.mockResolvedValueOnce(tags)
 
-		const details = await new BookPiece('root').completeOpenAI(openAIKey, bookMd)
+		const details = await new BookPiece('root').completeOpenAI(openAIKey, markdown)
 
 		expect(mocks.generateDescription).toHaveBeenCalledOnce()
 		expect(mocks.generateTags).toHaveBeenCalledOnce()
@@ -436,12 +374,12 @@ describe('pieces/books/piece', () => {
 		const title = 'title'
 		const markdown = bookFixtures.makeBookMarkDown()
 
-		mocks.toMarkDown.mockReturnValueOnce(markdown)
+		mocks.toMarkdown.mockReturnValueOnce(markdown)
 
 		const bookPiece = new BookPiece('root')
 
 		bookPiece.create(slug, title)
 
-		expect(mocks.toMarkDown).toHaveBeenCalledOnce()
+		expect(mocks.toMarkdown).toHaveBeenCalledOnce()
 	})
 })

@@ -1,14 +1,16 @@
 import { merge } from 'lodash-es'
-import { BookMarkdown, BookInsertable, BookUpdateable, BookSelectable } from './schema.js'
+import { PieceMarkdown } from '../../lib/pieces/index.js'
+import { BookFrontmatter, BookInsertable, BookUpdateable, BookSelectable } from './schema.js'
 
 const id = 'book-id'
 const title = 'title of the book'
 const author = 'author of the book'
 const note = 'a note about the book'
 const slug = 'slugified-title'
-const read_order = '19700101-y47d'
 
-function makeBookMarkDown(overrides: DeepPartial<BookMarkdown> = {}): BookMarkdown {
+function makeBookMarkDown(
+	overrides: DeepPartial<PieceMarkdown<BookFrontmatter>> = {}
+): PieceMarkdown<BookFrontmatter> {
 	return merge(
 		{
 			slug,
@@ -16,9 +18,9 @@ function makeBookMarkDown(overrides: DeepPartial<BookMarkdown> = {}): BookMarkdo
 				title,
 				author,
 			},
-			markdown: note,
+			note,
 		},
-		overrides as BookMarkdown
+		overrides as PieceMarkdown<BookFrontmatter>
 	)
 }
 
@@ -34,8 +36,6 @@ function makeBook(overrides: Partial<BookSelectable> = {}): BookSelectable {
 		coauthors: null,
 		description: null,
 		pages: null,
-		year_read: null,
-		month_read: null,
 		year_first_published: null,
 		date_added: new Date('2201-11-11').getTime(),
 		date_updated: new Date('2201-11-11').getTime(),
@@ -43,7 +43,7 @@ function makeBook(overrides: Partial<BookSelectable> = {}): BookSelectable {
 		cover: null,
 		slug,
 		note,
-		read_order,
+		date_read: null,
 		...overrides,
 	}
 }
@@ -60,14 +60,12 @@ function makeBookInsert(overrides: Partial<BookInsertable> = {}): BookInsertable
 		coauthors: null,
 		description: null,
 		pages: null,
-		year_read: null,
-		month_read: null,
 		year_first_published: null,
 		keywords: null,
 		cover: null,
 		slug,
 		note,
-		read_order,
+		date_read: null,
 		...overrides,
 	}
 }
@@ -85,7 +83,6 @@ function makeBookCreateInput(overrides: Partial<BookInsertable> = {}): BookInser
 		title,
 		author,
 		slug,
-		read_order,
 		...overrides,
 	}
 }

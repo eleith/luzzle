@@ -3,12 +3,17 @@ import command, { SyncArgv } from './sync.js'
 import yargs, { Arguments } from 'yargs'
 import { makeContext } from './context.fixtures.js'
 import { makePiece } from '../pieces/piece.fixtures.js'
+import { makeOptionalPieceCommand, parseOptionalPieceArgv } from '../pieces/index.js'
+import { Pieces } from '@luzzle/kysely'
 
 vi.mock('ajv/dist/jtd')
+vi.mock('../pieces/index.js')
 
 const mocks = {
 	getPieceTypes: vi.fn(),
 	getPiece: vi.fn(),
+	parseOptionalPieceArgv: vi.mocked(parseOptionalPieceArgv),
+	makeOptionalPieceCommand: vi.mocked(makeOptionalPieceCommand),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -37,6 +42,7 @@ describe('lib/commands/sync', () => {
 		const slugs = ['a', 'b', 'c']
 		const slugsUpdated = ['a', 'b']
 
+		mocks.parseOptionalPieceArgv.mockReturnValue(null)
 		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
 		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncCleanUp').mockResolvedValue()
 		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
@@ -48,7 +54,7 @@ describe('lib/commands/sync', () => {
 
 		expect(mocks.getPiece).toHaveBeenCalledWith(pieceType)
 		expect(spies.pieceFilterSlugsBy).toHaveBeenCalledOnce()
-		expect(spies.pieceSync).toHaveBeenCalledOnce()
+		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, slugsUpdated, false)
 		expect(spies.pieceSyncCleanUp).toHaveBeenCalledOnce()
 	})
 
@@ -64,6 +70,7 @@ describe('lib/commands/sync', () => {
 		const slugs = ['a', 'b']
 		const slugsUpdated = ['a', 'b']
 
+		mocks.parseOptionalPieceArgv.mockReturnValue(null)
 		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
 		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncCleanUp').mockResolvedValue()
 		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
@@ -75,18 +82,42 @@ describe('lib/commands/sync', () => {
 		await command.run(ctx, { force: true } as Arguments<SyncArgv>)
 
 		expect(mocks.getPiece).toHaveBeenCalledOnce()
-		expect(spies.pieceFilterSlugsBy).not.toHaveBeenCalledOnce()
+		expect(spies.pieceFilterSlugsBy).toHaveBeenCalledOnce()
 		expect(spies.pieceGetSlugs).toHaveBeenCalledOnce()
-		expect(spies.pieceSync).toHaveBeenCalledOnce()
+		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, slugs, false)
 		expect(spies.pieceSyncCleanUp).toHaveBeenCalledOnce()
+	})
+
+	test('run with one piece', async () => {
+		const PieceTest = makePiece()
+		const piece = 'piece' as Pieces
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
+		const slug = 'slug'
+
+		mocks.parseOptionalPieceArgv.mockReturnValue({ piece, slug })
+		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
+		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncCleanUp').mockResolvedValue()
+		mocks.getPiece.mockResolvedValue(new PieceTest())
+
+		await command.run(ctx, {} as Arguments<SyncArgv>)
+
+		expect(mocks.getPiece).toHaveBeenCalledOnce()
+		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, [slug], false)
+		expect(spies.pieceSyncCleanUp).not.toHaveBeenCalledOnce()
 	})
 
 	test('builder', async () => {
 		const args = yargs()
 
+		mocks.makeOptionalPieceCommand.mockReturnValue(args)
 		spies.options = vi.spyOn(args, 'options')
 		command.builder?.(args)
 
 		expect(spies.options).toHaveBeenCalledOnce()
+		expect(mocks.makeOptionalPieceCommand).toHaveBeenCalledOnce()
 	})
 })

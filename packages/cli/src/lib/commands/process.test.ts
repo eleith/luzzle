@@ -4,12 +4,17 @@ import { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
 import { makePiece } from '../pieces/piece.fixtures.js'
+import { makeOptionalPieceCommand, parseOptionalPieceArgv } from '../pieces/index.js'
+import { Pieces } from '@luzzle/kysely'
 
 vi.mock('ajv/dist/jtd')
+vi.mock('../pieces/index.js')
 
 const mocks = {
 	getPieceTypes: vi.fn(),
 	getPiece: vi.fn(),
+	parseOptionalPieceArgv: vi.mocked(parseOptionalPieceArgv),
+	makeOptionalPieceCommand: vi.mocked(makeOptionalPieceCommand),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -38,6 +43,7 @@ describe('lib/commands/process', () => {
 			},
 		})
 
+		mocks.parseOptionalPieceArgv.mockReturnValue(null)
 		spies.pieceProcess = vi.spyOn(PieceTest.prototype, 'process').mockResolvedValue()
 		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
 		spies.pieceFilterSlugs = vi
@@ -46,8 +52,7 @@ describe('lib/commands/process', () => {
 
 		await command.run(ctx, {} as Arguments<ProcessArgv>)
 
-		expect(spies.pieceProcess).toHaveBeenCalledOnce()
-		expect(spies.pieceFilterSlugs).toHaveBeenCalledOnce()
+		expect(spies.pieceProcess).toHaveBeenCalledWith(slugsUpdated, false)
 	})
 
 	test('run with force flag', async () => {
@@ -62,6 +67,7 @@ describe('lib/commands/process', () => {
 			},
 		})
 
+		mocks.parseOptionalPieceArgv.mockReturnValue(null)
 		spies.pieceProcess = vi.spyOn(PieceTest.prototype, 'process').mockResolvedValue()
 		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
 		spies.pieceFilterSlugs = vi
@@ -70,16 +76,36 @@ describe('lib/commands/process', () => {
 
 		await command.run(ctx, { force: true } as Arguments<ProcessArgv>)
 
-		expect(spies.pieceProcess).toHaveBeenCalledOnce()
-		expect(spies.pieceFilterSlugs).not.toHaveBeenCalledOnce()
+		expect(spies.pieceProcess).toHaveBeenCalledWith(slugs, false)
+	})
+
+	test('run with one piece', async () => {
+		const slug = 'slug'
+		const PieceTest = makePiece()
+		const piece = 'piece' as Pieces
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
+
+		mocks.parseOptionalPieceArgv.mockReturnValue({ piece, slug })
+		spies.pieceProcess = vi.spyOn(PieceTest.prototype, 'process').mockResolvedValue()
+
+		await command.run(ctx, {} as Arguments<ProcessArgv>)
+
+		expect(spies.pieceProcess).toHaveBeenCalledWith([slug], false)
+		expect(mocks.getPiece).toHaveBeenCalledWith(piece)
 	})
 
 	test('builder', async () => {
 		const args = yargs()
 
+		mocks.makeOptionalPieceCommand.mockReturnValue(args)
 		spies.options = vi.spyOn(args, 'options')
 		command.builder?.(args)
 
 		expect(spies.options).toHaveBeenCalledOnce()
+		expect(mocks.makeOptionalPieceCommand).toHaveBeenCalledOnce()
 	})
 })

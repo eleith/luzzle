@@ -8,7 +8,7 @@ import { fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
 import LinkPiece from './piece.js'
-import { toValidatedMarkDown } from '../../lib/pieces/markdown.js'
+import { toValidatedMarkdown } from '../../lib/pieces/markdown.js'
 import { mockConfig } from '../../lib/config.mock.js'
 import Piece from '../../lib/pieces/piece.js'
 
@@ -41,7 +41,7 @@ const mocks = {
 	existSync: vi.mocked(existsSync),
 	LinkPieceGetFileName: vi.spyOn(LinkPiece.prototype, 'getFileName'),
 	PieceCleanUpCache: vi.spyOn(Piece.prototype, 'cleanUpCache'),
-	toMarkDown: vi.mocked(toValidatedMarkDown),
+	toMarkdown: vi.mocked(toValidatedMarkdown),
 }
 
 const spies: Record<string, SpyInstance> = {}
@@ -66,75 +66,6 @@ describe('pieces/links/piece', () => {
 
 	test('constructor', () => {
 		new LinkPiece('root')
-	})
-
-	test('toCreateInput', async () => {
-		const linkMarkdown = linkFixtures.makeLinkMarkdown()
-
-		const linkPiece = new LinkPiece('root')
-		const input = await linkPiece.toCreateInput(linkMarkdown)
-
-		expect(input).toEqual(expect.objectContaining({ id: expect.any(String) }))
-	})
-
-	test('toCreateInput date handling', async () => {
-		const linkMarkdown = linkFixtures.makeLinkMarkdown({
-			frontmatter: { accessed_on: '2021-01-01', published_on: '2021-01-01', active: false },
-		})
-
-		const linkPiece = new LinkPiece('root')
-		const input = await linkPiece.toCreateInput(linkMarkdown)
-
-		expect(input).toEqual(
-			expect.objectContaining({
-				id: expect.any(String),
-				active: 0,
-				date_accessed: new Date(linkMarkdown.frontmatter.accessed_on || '').getTime(),
-				date_published: new Date(linkMarkdown.frontmatter.published_on || '').getTime(),
-			})
-		)
-	})
-
-	test('toUpdateInput', async () => {
-		const link = linkFixtures.makeLink({ active: 1 })
-		const linkMarkdown = linkFixtures.makeLinkMarkdown({ frontmatter: { active: false } })
-
-		const linkPiece = new LinkPiece('root')
-		const update = await linkPiece.toUpdateInput(linkMarkdown, link)
-
-		expect(update).toEqual(expect.objectContaining({ date_updated: expect.any(Number), active: 0 }))
-	})
-
-	test('toUpdateInput date handling', async () => {
-		const link = linkFixtures.makeLink({
-			active: 0,
-			date_accessed: new Date('2021-01-02').getTime(),
-			date_published: new Date('2021-01-02').getTime(),
-		})
-		const linkMarkdown = linkFixtures.makeLinkMarkdown({
-			frontmatter: { accessed_on: '2021-01-01', published_on: '2021-01-01', active: true },
-		})
-
-		const linkPiece = new LinkPiece('root')
-		const update = await linkPiece.toUpdateInput(linkMarkdown, link)
-
-		expect(update).toEqual(
-			expect.objectContaining({
-				active: 1,
-				date_accessed: new Date(linkMarkdown.frontmatter.accessed_on || '').getTime(),
-				date_published: new Date(linkMarkdown.frontmatter.published_on || '').getTime(),
-			})
-		)
-	})
-
-	test('toUpdateInput only updates timestamp', async () => {
-		const link = linkFixtures.makeLink()
-		const linkMarkdown = linkFixtures.makeLinkMarkdown()
-
-		const linkPiece = new LinkPiece('root')
-		const update = await linkPiece.toUpdateInput(linkMarkdown, link)
-
-		expect(update).toEqual(expect.objectContaining({ date_updated: expect.any(Number) }))
 	})
 
 	test('processCleanUp with no cache', async () => {
@@ -172,10 +103,10 @@ describe('pieces/links/piece', () => {
 		const title = 'title'
 		const markdown = linkFixtures.makeLinkMarkdown()
 
-		mocks.toMarkDown.mockReturnValueOnce(markdown)
+		mocks.toMarkdown.mockReturnValueOnce(markdown)
 
 		new LinkPiece('root').create(slug, title)
 
-		expect(mocks.toMarkDown).toHaveBeenCalledOnce()
+		expect(mocks.toMarkdown).toHaveBeenCalledOnce()
 	})
 })

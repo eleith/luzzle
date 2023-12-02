@@ -1,23 +1,19 @@
 import { PieceCache } from './cache.js'
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
-import {
-	PieceSelectable,
-	PieceInsertable,
-	PieceUpdatable,
-	Pieces,
-	PieceMarkdown,
-} from '@luzzle/kysely'
-import Piece from '../pieces/piece.js'
+import { PieceSelectable, Pieces, PieceFrontmatter } from '@luzzle/kysely'
+import Piece from './piece.js'
+import { PieceMarkdown } from './markdown.js'
 
-type PieceMarkdownSample = PieceMarkdown<
+type PieceFrontmatterSample = PieceFrontmatter<
 	Omit<
 		PieceSelectable,
 		'note' | 'slug' | 'date_updated' | 'date_added' | 'id' | 'author' | 'coauthors' | 'subtitle'
 	>
 >
-type PieceValidator = Ajv.ValidateFunction<PieceMarkdownSample>
+type PieceValidator = Ajv.ValidateFunction<PieceFrontmatterSample>
 type PieceCacheSchema = JTDSchemaType<PieceCache<PieceSelectable>>
-type PieceSchema = JTDSchemaType<PieceMarkdownSample>
+type PieceSchema = JTDSchemaType<PieceFrontmatterSample>
+type PieceMarkdownSample = PieceMarkdown<PieceFrontmatterSample>
 
 const sample = {
 	slug: 'sampleSlug',
@@ -40,30 +36,30 @@ export function makeSchema(
 ): PieceSchema {
 	return {
 		properties: {
-			slug: { type: 'string' },
-			frontmatter: {
-				properties: {
-					title: { type: 'string' },
-					...propertyOverrides,
-				},
-				optionalProperties: {
-					keywords: { type: 'string' },
-					...optionalPropertyOverrides,
-				},
-			},
+			title: { type: 'string' },
+			...propertyOverrides,
 		},
 		optionalProperties: {
-			markdown: { type: 'string' },
+			keywords: { type: 'string' },
+			...optionalPropertyOverrides,
 		},
-	} as PieceSchema
+	}
+}
+
+export function makeFrontmatterSample(
+	frontmatter: Record<string, unknown> = { title: sample.title }
+): PieceFrontmatterSample {
+	return frontmatter as PieceFrontmatterSample
 }
 
 export function makeMarkdownSample(
+	slug = sample.slug,
+	note: string | null | undefined = sample.note,
 	frontmatter: Record<string, unknown> = { title: sample.title }
 ): PieceMarkdownSample {
 	return {
-		slug: sample.slug,
-		markdown: sample.note,
+		slug,
+		note,
 		frontmatter,
 	} as PieceMarkdownSample
 }
@@ -74,22 +70,14 @@ export function makeSample(): PieceSelectable {
 	} as PieceSelectable
 }
 
-class PieceExample extends Piece<Pieces, PieceSelectable, PieceMarkdownSample> {
+class PieceExample extends Piece<Pieces, PieceSelectable, PieceFrontmatterSample> {
 	constructor(
 		pieceRoot = 'pieces-root',
 		table: Pieces = 'table' as Pieces,
-		schema: JTDSchemaType<PieceMarkdownSample> = makeSchema(),
+		schema: JTDSchemaType<PieceFrontmatterSample> = makeSchema(),
 		cacheSchema: PieceCacheSchema = makeCacheSchema()
 	) {
 		super(pieceRoot, table, schema, cacheSchema)
-	}
-
-	async toCreateInput(): Promise<PieceInsertable> {
-		return {} as PieceInsertable
-	}
-
-	async toUpdateInput(): Promise<PieceUpdatable> {
-		return {} as PieceUpdatable
 	}
 
 	async process(): Promise<void> {

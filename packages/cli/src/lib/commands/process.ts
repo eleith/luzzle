@@ -1,18 +1,24 @@
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
 import { eachLimit } from 'async'
+import {
+	PieceOptionalArgv,
+	makeOptionalPieceCommand,
+	parseOptionalPieceArgv,
+	PieceOptionalCommandOption,
+} from '../pieces/index.js'
 
-export type ProcessArgv = { force: boolean }
+export type ProcessArgv = { force: boolean } & PieceOptionalArgv
 
 const command: Command<ProcessArgv> = {
 	name: 'process',
 
-	command: 'process',
+	command: `process ${PieceOptionalCommandOption}`,
 
 	describe: 'process files',
 
 	builder: <T>(yargs: Argv<T>) => {
-		return yargs.options('force', {
+		return makeOptionalPieceCommand(yargs).options('force', {
 			type: 'boolean',
 			alias: 'f',
 			description: 'force updates on all items',
@@ -23,13 +29,24 @@ const command: Command<ProcessArgv> = {
 	run: async function (ctx, args) {
 		const force = args.force
 		const dryRun = ctx.flags.dryRun
-		const pieceTypes = ctx.pieces.getPieceTypes()
+		const optionalPiece = parseOptionalPieceArgv(args)
+		const pieceTypes = optionalPiece ? [optionalPiece.piece] : ctx.pieces.getPieceTypes()
 
 		await eachLimit(pieceTypes, 1, async (pieceType) => {
 			const pieces = await ctx.pieces.getPiece(pieceType)
-			const slugs = await pieces.getSlugs()
-			const updatedSlugs = force ? slugs : await pieces.filterSlugsBy(slugs, 'lastProcessed')
-			await pieces.process(updatedSlugs, dryRun)
+			const slugs = []
+
+			if (optionalPiece) {
+				slugs.push(optionalPiece.slug)
+			} else {
+				const allSlugs = await pieces.getSlugs()
+				const updatedSlugs = await pieces.filterSlugsBy(allSlugs, 'lastProcessed')
+				const processSlugs = force ? allSlugs : updatedSlugs
+
+				slugs.push(...processSlugs)
+			}
+
+			await pieces.process(slugs, dryRun)
 		})
 	},
 }
