@@ -1,6 +1,6 @@
 import Ajv, { FuncKeywordDefinition, JTDSchemaType, ValidateFunction } from 'ajv/dist/jtd.js'
 
-const formatKeyword: FuncKeywordDefinition = {
+const luzzleFormatKeyword: FuncKeywordDefinition = {
 	keyword: 'luzzleFormat',
 	type: 'string',
 	validate: function validate(schema: string, data: string) {
@@ -23,15 +23,20 @@ const formatKeyword: FuncKeywordDefinition = {
 	errors: true,
 }
 
-const attachmentTypeKeyword: FuncKeywordDefinition = {
-	keyword: 'luzzleAttachmentType',
+const luzzleEnumKeyword: FuncKeywordDefinition = {
+	keyword: 'luzzleEnum',
 	type: 'array',
+}
+
+const luzzlePatternKeyword: FuncKeywordDefinition = {
+	keyword: 'luzzlePattern',
+	type: 'string',
 }
 
 export default function <T>(schema: JTDSchemaType<T>): ValidateFunction<T> {
 	return new Ajv({
-		keywords: [formatKeyword, attachmentTypeKeyword],
+		keywords: [luzzlePatternKeyword, luzzleFormatKeyword, luzzleEnumKeyword],
 	}).compile(schema)
 }
 
-export { formatKeyword, attachmentTypeKeyword }
+export { luzzleFormatKeyword, luzzleEnumKeyword, luzzlePatternKeyword }
