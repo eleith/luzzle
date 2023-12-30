@@ -133,15 +133,14 @@ class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 		const apiKeys = config.get('api_keys')
 		const googleKey = apiKeys.google
 		const openAIKey = apiKeys.openai
-		const bookMd = markdown
-		const bookProcessed = merge({}, bookMd)
+		const bookProcessed = merge({}, markdown)
 
 		if (service && /google|all/.test(service)) {
 			if (googleKey) {
 				const googleMetadata = await this.searchGoogleBooks(
 					googleKey,
-					bookMd.frontmatter.title,
-					bookMd.frontmatter.author
+					markdown.frontmatter.title,
+					markdown.frontmatter.author
 				)
 				merge(bookProcessed, { frontmatter: googleMetadata })
 			} else {
@@ -165,7 +164,7 @@ class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 
 		if (service && /openai|all/.test(service)) {
 			if (openAIKey) {
-				const openAIBook = await this.completeOpenAI(openAIKey, bookMd)
+				const openAIBook = await this.completeOpenAI(openAIKey, markdown)
 				merge(bookProcessed, { frontmatter: openAIBook })
 			} else {
 				log.warn('openai key is not set, tags and description will not be generated')
