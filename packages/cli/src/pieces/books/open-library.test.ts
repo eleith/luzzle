@@ -14,7 +14,7 @@ const mocks = {
 	gotGet: vi.spyOn(got, 'get'),
 }
 
-describe('lib/books/open-library', () => {
+describe('pieces/books/open-library', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()

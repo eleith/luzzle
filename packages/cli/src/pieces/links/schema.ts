@@ -6,6 +6,7 @@ import {
 	PieceUpdatable,
 	PieceInsertable,
 	type LinkFrontmatter,
+	LuzzleLinkType,
 } from '@luzzle/kysely'
 
 type LinkType = typeof Piece.Link
@@ -16,6 +17,7 @@ type LinkInsertable = PieceInsertable<LinkType>
 export {
 	linkFrontmatterJtdSchema,
 	linkDatabaseJtdSchema,
+	LuzzleLinkType,
 	type LinkType,
 	type LinkSelectable,
 	type LinkInsertable,
