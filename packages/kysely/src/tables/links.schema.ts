@@ -23,6 +23,7 @@ type LinksTable = {
 	archive_url: string | null
 	screenshot_path: string | null
 	type: LinkTypes
+	word_count: number | null
 } & PieceCommonFields
 
 type LinkSelectable = Selectable<LinksTable>

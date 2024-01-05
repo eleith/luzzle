@@ -48,6 +48,7 @@ const linkDatabaseJtdSchema: PieceDatabaseJtdSchema<LinkSelectable> = {
 		date_updated: { type: 'float64' },
 		date_accessed: { type: 'float64' },
 		date_published: { type: 'float64' },
+		word_count: { type: 'uint32' },
 	},
 }
 
@@ -65,11 +66,15 @@ const linkFrontmatterJtdSchema: PieceFrontmatterJtdSchema<LinkFrontmatter> = {
 		coauthors: { type: 'string' },
 		summary: { type: 'string' },
 		keywords: { type: 'string' },
-		screenshot_path: { type: 'string' },
+		screenshot_path: {
+			type: 'string',
+			metadata: { luzzleFormat: 'attachment', luzzleEnum: ['jpg', 'png', 'svg', 'avif'] },
+		},
 		archive_url: { type: 'string' },
 		archive_path: { type: 'string' },
 		date_published: { type: 'string', metadata: { luzzleFormat: 'date-string' } },
 		date_accessed: { type: 'string', metadata: { luzzleFormat: 'date-string' } },
+		word_count: { type: 'uint32' },
 	},
 }
 
