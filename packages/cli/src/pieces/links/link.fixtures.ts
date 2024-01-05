@@ -10,6 +10,7 @@ const type = 'article'
 const is_active = true
 const date_accessed = new Date('2201-12-11').getTime()
 const url = 'https://example.com'
+const word_count = 300
 
 function makeLinkMarkdown(
 	overrides: DeepPartial<PieceMarkdown<LinkFrontmatter>> = {}
@@ -52,6 +53,7 @@ function makeLink(overrides: Partial<LinkSelectable> = {}): LinkSelectable {
 		is_paywall: 0,
 		slug,
 		note,
+		word_count,
 		...overrides,
 	}
 }
