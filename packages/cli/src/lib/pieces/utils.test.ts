@@ -160,7 +160,9 @@ describe('lib/pieces/utils', () => {
 	})
 
 	test('parseOptionalPieceArgv piece without slug', () => {
-		expect(() => parseOptionalPieceArgv({ piece: 'piece' })).toThrow()
+		const result = parseOptionalPieceArgv({ piece: 'piece' })
+
+		expect(result).toEqual({ piece: 'piece' })
 	})
 
 	test('parseOptionalPieceArgv calls parsePieceArgv', () => {

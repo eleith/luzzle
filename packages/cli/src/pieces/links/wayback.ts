@@ -4,7 +4,7 @@ import log from '../../lib/log.js'
 type WaybackAvailability = {
 	url: string
 	archived_snapshots: {
-		closest: {
+		closest?: {
 			available: boolean
 			status: string
 			timestamp: string

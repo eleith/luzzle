@@ -27,6 +27,8 @@ import {
 	databaseToFrontmatterValue,
 	PieceInsertable,
 } from '@luzzle/kysely'
+import { downloadFileOrUrlTo } from './utils.js'
+import { ASSETS_DIRECTORY } from '../assets.js'
 
 vi.mock('fs')
 vi.mock('fs/promises')
@@ -38,6 +40,7 @@ vi.mock('../cache')
 vi.mock('os')
 vi.mock('file-type')
 vi.mock('@luzzle/kysely')
+vi.mock('./utils')
 
 const mocks = {
 	existsSync: vi.mocked(existsSync),
@@ -68,6 +71,7 @@ const mocks = {
 	getDatabaseFieldSchemas: vi.mocked(getDatabaseFieldSchemas),
 	frontmatterToDatabaseValue: vi.mocked(frontmatterToDatabaseValue),
 	databaseToFrontmatterValue: vi.mocked(databaseToFrontmatterValue),
+	downloadFileOrUrlTo: vi.mocked(downloadFileOrUrlTo),
 }
 
 const spies: { [key: string]: SpyInstance } = {}
@@ -400,6 +404,23 @@ describe('lib/pieces/piece', () => {
 		expect(get).toEqual(null)
 	})
 
+	test('get catches error', async () => {
+		const slug = 'slug'
+		const path = '/path/to/slug.md'
+		const PieceTest = makePiece()
+
+		mocks.extract.mockRejectedValueOnce(new Error('oof'))
+
+		const pieceTest = new PieceTest()
+		spies.getPath = vi.spyOn(pieceTest, 'getPath').mockReturnValue(path)
+		spies.exists = vi.spyOn(pieceTest, 'exists').mockReturnValue(true)
+
+		const get = await pieceTest.get(slug)
+
+		expect(mocks.logError).toHaveBeenCalledOnce()
+		expect(get).toEqual(null)
+	})
+
 	test('write', async () => {
 		const sample = makeMarkdownSample()
 		const PieceTest = makePiece()
@@ -715,6 +736,43 @@ describe('lib/pieces/piece', () => {
 		await pieceTest.syncUpdate(dbMocks.db, markdown, pieceData, true)
 
 		expect(spies.markAsSynced).not.toHaveBeenCalled()
+	})
+
+	test('internalizeAssetPathFor', async () => {
+		const PieceTest = makePiece()
+		const markdown = makeMarkdownSample('slug', 'note', { image: 'a' })
+		const markdownAttach = { ...markdown, frontmatter: { ...markdown.frontmatter, image: 'x' } }
+		const tmpFile = 'tmp/file'
+
+		const pieceTest = new PieceTest()
+		spies.attach = vi.spyOn(pieceTest, 'attach').mockResolvedValueOnce(markdownAttach)
+		mocks.unlink.mockResolvedValueOnce()
+		mocks.downloadFileOrUrlTo.mockResolvedValueOnce(tmpFile)
+
+		const markdownUpdated = await pieceTest.internalizeAssetPathFor(
+			markdown,
+			'image' as keyof typeof markdown.frontmatter
+		)
+
+		expect(spies.attach).toHaveBeenCalledWith(tmpFile, markdown, 'image')
+		expect(mocks.unlink).toHaveBeenCalledWith(tmpFile)
+		expect(markdownUpdated).toEqual(markdownAttach)
+	})
+
+	test('internalizeAssetPathFor does no work', async () => {
+		const PieceTest = makePiece()
+		const markdown = makeMarkdownSample('slug', 'note', {
+			image: `${ASSETS_DIRECTORY}/image/j.jpg`,
+		})
+		const pieceTest = new PieceTest()
+
+		const markdownUpdated = await pieceTest.internalizeAssetPathFor(
+			markdown,
+			'image' as keyof typeof markdown.frontmatter
+		)
+
+		expect(mocks.downloadFileOrUrlTo).not.toHaveBeenCalled()
+		expect(markdownUpdated).toEqual(markdown)
 	})
 
 	test('toMarkdown', () => {

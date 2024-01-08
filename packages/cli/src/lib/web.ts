@@ -2,23 +2,29 @@ import { createWriteStream } from 'fs'
 import got from 'got'
 import { temporaryFile } from 'tempy'
 
-async function downloadToTmp(url: string): Promise<string> {
+async function downloadToTmp(url: string): Promise<string | null> {
 	const filePath = temporaryFile()
-	await downloadToPath(url, filePath)
+	const downloaded = await downloadToPath(url, filePath)
 
-	return filePath
+	return downloaded ? filePath : null
 }
 
 async function downloadToPath(url: string, path: string): Promise<boolean> {
-	const response = got.stream(url)
+	const response = got.stream(url, { timeout: { request: 10000 } })
 	const writer = createWriteStream(path)
 
 	response.pipe(writer)
 
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
+		const resolveLogError = () => {
+			console.error(`failed to download ${url} to ${path}`)
+			// console.error(error)
+			resolve(false)
+		}
+
 		writer.on('finish', () => resolve(true))
-		writer.on('error', reject)
-		response.on('error', reject)
+		writer.on('error', resolveLogError)
+		response.on('error', resolveLogError)
 	})
 }
 

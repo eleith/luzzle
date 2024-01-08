@@ -36,7 +36,7 @@ const command: Command<SyncArgv> = {
 			const pieces = await ctx.pieces.getPiece(pieceType)
 			const slugs = []
 
-			if (optionalPiece) {
+			if (optionalPiece?.slug) {
 				slugs.push(optionalPiece.slug)
 			} else {
 				const allSlugs = await pieces.getSlugs()

@@ -27,7 +27,7 @@ import {
 import { eachLimit, filterLimit } from 'async'
 import { cpus } from 'os'
 import path from 'path'
-import { PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
+import { downloadFileOrUrlTo, PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
 import { ASSETS_CACHE_DIRECTORY, ASSETS_DIRECTORY } from '../assets.js'
 import { fileTypeFromFile } from 'file-type'
 import { createId } from '@paralleldrive/cuid2'
@@ -74,7 +74,7 @@ abstract class Piece<
 		this._schema = schema
 	}
 
-	abstract process(slugs: string[], dryRun: boolean): Promise<void>
+	abstract process(config: Config, slugs: string[], dryRun: boolean): Promise<void>
 	abstract fetch(
 		config: Config,
 		markdown: PieceMarkdown<F>,
@@ -203,16 +203,21 @@ abstract class Piece<
 	async get(slug: string, validate = true): Promise<PieceMarkdown<F> | null> {
 		if (this.exists(slug)) {
 			const filepath = this.getPath(slug)
-			const data = await extract(filepath)
 
-			if (validate) {
-				return toValidatedMarkdown(slug, data.markdown, data.frontmatter, this.validator)
-			} else {
-				return toMarkdown(slug, data.markdown, data.frontmatter as F)
+			try {
+				const data = await extract(filepath)
+
+				if (validate) {
+					return toValidatedMarkdown(slug, data.markdown, data.frontmatter, this.validator)
+				} else {
+					return toMarkdown(slug, data.markdown, data.frontmatter as F)
+				}
+			} catch (err) {
+				log.error(`could not extract ${filepath}: ${err}`)
 			}
-		} else {
-			return null
 		}
+
+		return null
 	}
 
 	async write(markdown: PieceMarkdown<F>): Promise<void> {
@@ -241,7 +246,7 @@ abstract class Piece<
 				.filter((x) => x.format === 'attachment')
 				.map((field) => db['database']?.[field.name as unknown as keyof D])
 				.filter((attachment) => attachment)
-				.map((attachment) => path.join(this._directories.assets, attachment as string))
+				.map((attachment) => path.join(this._directories.root, attachment as string))
 				.map(unlink)
 
 			await Promise.all(removeAll).catch((err) => {
@@ -373,6 +378,25 @@ abstract class Piece<
 		})
 	}
 
+	async internalizeAssetPathFor(
+		markdown: PieceMarkdown<F>,
+		field: keyof PieceMarkdown<F>['frontmatter']
+	): Promise<PieceMarkdown<F>> {
+		const cover = markdown.frontmatter[field] as string | undefined | null
+		const relPath = path.join(path.basename(this._directories.assets), field as string)
+
+		if (cover && !cover.startsWith(relPath)) {
+			console.log(cover, !cover.startsWith(relPath))
+			const tmpFile = await downloadFileOrUrlTo(cover)
+			const attached = await this.attach(tmpFile, markdown, field as string)
+			await unlink(tmpFile)
+
+			return attached
+		}
+
+		return markdown
+	}
+
 	toMarkdown(data: D): PieceMarkdown<F> {
 		const frontmatter: Record<string, unknown> = {}
 		const frontmatterSchema = getFrontmatterFieldSchemas(this._schema)
@@ -415,7 +439,7 @@ abstract class Piece<
 
 		if (allowedTypes.length && (!type || !allowedTypes.includes(type))) {
 			throw new Error(
-				`${file} is not a valid file type, only: ${allowedTypes.join(',')} are allowed`
+				`${file} (${type}) is not a valid file, only: ${allowedTypes.join(',')} are allowed`
 			)
 		}
 
@@ -423,7 +447,7 @@ abstract class Piece<
 		const filename = `${name}.${type}`
 		const toPath = path.join(this._directories.assets, field.name, filename)
 		const attachDir = path.join(this._directories.assets, field.name)
-		const relPath = path.join(attachDir, filename)
+		const relPath = path.join(path.basename(this._directories.assets), field.name, filename)
 
 		await mkdir(attachDir, { recursive: true })
 		await copyFile(file, toPath)

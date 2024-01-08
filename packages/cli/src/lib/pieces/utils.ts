@@ -57,7 +57,7 @@ const parsePieceArgv = function (args: PieceArgv): { slug: string; piece: Pieces
 }
 
 const parseOptionalPieceArgv = function (args: PieceOptionalArgv): {
-	slug: string
+	slug?: string
 	piece: Pieces
 } | null {
 	const { path, piece } = args
@@ -65,7 +65,7 @@ const parseOptionalPieceArgv = function (args: PieceOptionalArgv): {
 	if (path) {
 		return parsePieceArgv({ path, piece })
 	} else if (piece) {
-		throw new Error(`slug is required, learn more with --help`)
+		return { piece: piece as Pieces }
 	}
 
 	return null

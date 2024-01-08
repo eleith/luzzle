@@ -46,7 +46,7 @@ function makeLink(overrides: Partial<LinkSelectable> = {}): LinkSelectable {
 		keywords: null,
 		archive_path: null,
 		archive_url: null,
-		screenshot_path: null,
+		representative_image: null,
 		type,
 		url,
 		is_active: 1,

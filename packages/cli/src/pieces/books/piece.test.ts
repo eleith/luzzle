@@ -8,7 +8,6 @@ import { generateTags, generateDescription } from './openai.js'
 import log from '../../lib/log.js'
 import { addFrontMatter, extract } from '../../lib/md.js'
 import { findWork, getBook, getCoverUrl } from './open-library.js'
-import { downloadToTmp } from '../../lib/web.js'
 import { fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
 import { cpus } from 'os'
@@ -36,7 +35,6 @@ const mocks = {
 	copyFile: vi.mocked(copyFile),
 	unlink: vi.mocked(unlink),
 	stat: vi.mocked(stat),
-	downloadTo: vi.mocked(downloadToTmp),
 	findVolume: vi.mocked(findVolume),
 	getCoverUrl: vi.mocked(getCoverUrl),
 	getBook: vi.mocked(getBook),
@@ -49,7 +47,6 @@ const mocks = {
 	existSync: vi.mocked(existsSync),
 	generateTags: vi.mocked(generateTags),
 	generateDescription: vi.mocked(generateDescription),
-	BookPieceGetFileName: vi.spyOn(BookPiece.prototype, 'getFileName'),
 	toMarkdown: vi.mocked(toValidatedMarkdown),
 	fileTypeFromFile: vi.mocked(fileTypeFromFile),
 }
@@ -81,7 +78,6 @@ describe('pieces/books/piece', () => {
 	test('searchOpenLibrary', async () => {
 		const workId = 'work-id'
 		const bookId = 'book-id'
-		const slug = 'b'
 		const book = openLibraryFixtures.makeOpenLibraryBook({ works: [{ key: `/works/${workId}` }] })
 		const work = openLibraryFixtures.makeOpenLibrarySearchWork({ cover_i: undefined })
 		const bookMd = bookFixtures.makeBookMarkDown({ frontmatter: { id_ol_book: bookId } })
@@ -93,7 +89,6 @@ describe('pieces/books/piece', () => {
 
 		const bookMetadata = await bookPiece.searchOpenLibrary(
 			bookId,
-			slug,
 			bookMd.frontmatter.title,
 			bookMd.frontmatter.author
 		)
@@ -112,7 +107,6 @@ describe('pieces/books/piece', () => {
 	test('searchOpenLibrary full metadata', async () => {
 		const workId = 'work-id'
 		const bookId = 'book-id'
-		const slug = 'b'
 		const book = openLibraryFixtures.makeOpenLibraryBook({
 			works: [{ key: `/works/${workId}` }],
 		})
@@ -126,51 +120,36 @@ describe('pieces/books/piece', () => {
 			title: 'book title',
 		})
 		const coverUrl = 'https://somewhere'
-		const bookMd = bookFixtures.makeBookMarkDown({
+		const markdown = bookFixtures.makeBookMarkDown({
 			frontmatter: { id_ol_book: bookId },
 		})
-		const tmpFile = 'tmp/file'
 
 		mocks.getBook.mockResolvedValueOnce(book)
 		mocks.findWork.mockResolvedValueOnce(work)
 		mocks.getCoverUrl.mockReturnValue(coverUrl)
-		mocks.downloadTo.mockResolvedValue(tmpFile)
-		mocks.unlink.mockResolvedValue()
 
 		const bookPiece = new BookPiece('root')
 
-		spies.attach = vi.spyOn(bookPiece, 'attach').mockResolvedValueOnce(bookMd)
-
-		await bookPiece.searchOpenLibrary(
+		const searchUpdate = await bookPiece.searchOpenLibrary(
 			bookId,
-			slug,
-			bookMd.frontmatter.title,
-			bookMd.frontmatter.author
+			markdown.frontmatter.title,
+			markdown.frontmatter.author
 		)
 
 		expect(mocks.getBook).toHaveBeenCalledWith(bookId)
 		expect(mocks.findWork).toHaveBeenCalledWith(workId)
 		expect(mocks.getCoverUrl).toHaveBeenCalledWith(work.cover_i)
-		expect(mocks.unlink).toHaveBeenCalledWith(tmpFile)
-		expect(mocks.downloadTo).toHaveBeenCalledWith(coverUrl)
-		expect(spies.attach).toHaveBeenCalledWith(
-			tmpFile,
-			{
-				slug,
-				note: '',
-				frontmatter: {
-					title: work.title,
-					author: work.author_name[0],
-					coauthors: work.author_name[1],
-					id_ol_work: workId,
-					isbn: work.isbn?.[0],
-					subtitle: book.subtitle,
-					pages: Number(work.number_of_pages),
-					year_first_published: work.first_publish_year,
-				},
-			},
-			'cover'
-		)
+		expect(searchUpdate).toEqual({
+			author: work.author_name[0],
+			subtitle: book.subtitle,
+			coauthors: work.author_name[1],
+			cover: coverUrl,
+			id_ol_work: workId,
+			isbn: work.isbn?.[0],
+			pages: Number(work.number_of_pages),
+			year_first_published: work.first_publish_year,
+			title: work.title,
+		})
 	})
 
 	test('searchOpenLibrary throws', async () => {
@@ -178,7 +157,6 @@ describe('pieces/books/piece', () => {
 		const work = openLibraryFixtures.makeOpenLibrarySearchWork()
 		const coverUrl = 'https://somewhere'
 		const bookMd = bookFixtures.makeBookMarkDown({ frontmatter: { id_ol_book: bookId } })
-		const slug = 'b'
 
 		mocks.getBook.mockResolvedValueOnce(null)
 		mocks.findWork.mockResolvedValueOnce(work)
@@ -186,7 +164,6 @@ describe('pieces/books/piece', () => {
 
 		const searchCall = new BookPiece('root').searchOpenLibrary(
 			bookId,
-			slug,
 			bookMd.frontmatter.title,
 			bookMd.frontmatter.author
 		)
@@ -289,12 +266,16 @@ describe('pieces/books/piece', () => {
 		spies.searchGoogleBooks = vi.spyOn(bookPiece, 'searchGoogleBooks')
 		spies.completeOpenAI = vi.spyOn(bookPiece, 'completeOpenAI')
 		spies.searchOpenLibrary = vi.spyOn(bookPiece, 'searchOpenLibrary')
+		spies.internalize = vi
+			.spyOn(bookPiece, 'internalizeAssetPathFor')
+			.mockResolvedValueOnce(markdown)
 
 		const fetched = await bookPiece.fetch(configMock, markdown, 'all')
 
 		expect(spies.searchGoogleBooks).not.toHaveBeenCalled()
 		expect(spies.completeOpenAI).not.toHaveBeenCalled()
 		expect(spies.searchOpenLibrary).not.toHaveBeenCalled()
+		expect(spies.internalize).toHaveBeenCalledOnce()
 		expect(fetched).toEqual(markdown)
 	})
 
@@ -312,6 +293,10 @@ describe('pieces/books/piece', () => {
 		spies.searchGoogleBooks = vi
 			.spyOn(bookPiece, 'searchGoogleBooks')
 			.mockResolvedValueOnce(googleMarkdown.frontmatter)
+		spies.internalize = vi.spyOn(bookPiece, 'internalizeAssetPathFor').mockResolvedValueOnce({
+			...markdown,
+			frontmatter: { ...markdown.frontmatter, ...googleMarkdown.frontmatter },
+		})
 
 		const fetched = await bookPiece.fetch(configMock, markdown, 'google')
 
@@ -321,6 +306,7 @@ describe('pieces/books/piece', () => {
 			markdown.frontmatter.author
 		)
 		expect(fetched.frontmatter.description).toBe(googleMarkdown.frontmatter.description)
+		expect(spies.internalize).toHaveBeenCalledOnce()
 	})
 
 	test('fetch openai', async () => {
@@ -337,9 +323,14 @@ describe('pieces/books/piece', () => {
 		spies.completeOpenAI = vi
 			.spyOn(bookPiece, 'completeOpenAI')
 			.mockResolvedValueOnce(openaiMarkdown.frontmatter)
+		spies.internalize = vi.spyOn(bookPiece, 'internalizeAssetPathFor').mockResolvedValueOnce({
+			...markdown,
+			frontmatter: { ...markdown.frontmatter, ...openaiMarkdown.frontmatter },
+		})
 
 		const fetched = await bookPiece.fetch(configMock, markdown, 'openai')
 
+		expect(spies.internalize).toHaveBeenCalledOnce()
 		expect(spies.completeOpenAI).toHaveBeenCalledWith(openaiKey, markdown)
 		expect(fetched.frontmatter.description).toBe(openaiMarkdown.frontmatter.description)
 	})
@@ -357,15 +348,19 @@ describe('pieces/books/piece', () => {
 		spies.searchOpenLibrary = vi
 			.spyOn(bookPiece, 'searchOpenLibrary')
 			.mockResolvedValueOnce(libraryMarkdown.frontmatter)
+		spies.internalize = vi.spyOn(bookPiece, 'internalizeAssetPathFor').mockResolvedValueOnce({
+			...markdown,
+			frontmatter: { ...markdown.frontmatter, ...libraryMarkdown.frontmatter },
+		})
 
 		const fetched = await bookPiece.fetch(configMock, markdown, 'openlibrary')
 
 		expect(spies.searchOpenLibrary).toHaveBeenCalledWith(
 			markdown.frontmatter.id_ol_book,
-			markdown.slug,
 			markdown.frontmatter.title,
 			markdown.frontmatter.author
 		)
+		expect(spies.internalize).toHaveBeenCalledOnce()
 		expect(fetched.frontmatter.description).toBe(libraryMarkdown.frontmatter.description)
 	})
 
