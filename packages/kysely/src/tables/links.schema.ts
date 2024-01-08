@@ -21,7 +21,7 @@ type LinksTable = {
 	is_active: number
 	is_paywall: number
 	archive_url: string | null
-	screenshot_path: string | null
+	representative_image: string | null
 	type: LinkTypes
 	word_count: number | null
 } & PieceCommonFields
