@@ -52,7 +52,7 @@ describe('lib/commands/process', () => {
 
 		await command.run(ctx, {} as Arguments<ProcessArgv>)
 
-		expect(spies.pieceProcess).toHaveBeenCalledWith(slugsUpdated, false)
+		expect(spies.pieceProcess).toHaveBeenCalledWith(ctx.config, slugsUpdated, false)
 	})
 
 	test('run with force flag', async () => {
@@ -76,7 +76,7 @@ describe('lib/commands/process', () => {
 
 		await command.run(ctx, { force: true } as Arguments<ProcessArgv>)
 
-		expect(spies.pieceProcess).toHaveBeenCalledWith(slugs, false)
+		expect(spies.pieceProcess).toHaveBeenCalledWith(ctx.config, slugs, false)
 	})
 
 	test('run with one piece', async () => {
@@ -94,7 +94,7 @@ describe('lib/commands/process', () => {
 
 		await command.run(ctx, {} as Arguments<ProcessArgv>)
 
-		expect(spies.pieceProcess).toHaveBeenCalledWith([slug], false)
+		expect(spies.pieceProcess).toHaveBeenCalledWith(ctx.config, [slug], false)
 		expect(mocks.getPiece).toHaveBeenCalledWith(piece)
 	})
 

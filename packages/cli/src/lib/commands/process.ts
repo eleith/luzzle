@@ -36,7 +36,7 @@ const command: Command<ProcessArgv> = {
 			const pieces = await ctx.pieces.getPiece(pieceType)
 			const slugs = []
 
-			if (optionalPiece) {
+			if (optionalPiece?.slug) {
 				slugs.push(optionalPiece.slug)
 			} else {
 				const allSlugs = await pieces.getSlugs()
@@ -46,7 +46,7 @@ const command: Command<ProcessArgv> = {
 				slugs.push(...processSlugs)
 			}
 
-			await pieces.process(slugs, dryRun)
+			await pieces.process(ctx.config, slugs, dryRun)
 		})
 	},
 }

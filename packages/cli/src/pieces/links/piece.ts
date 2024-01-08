@@ -1,5 +1,5 @@
 import log from '../../lib/log.js'
-import { Piece, toValidatedMarkdown, PieceType } from '../../lib/pieces/index.js'
+import { Piece, toValidatedMarkdown, PieceType, PieceMarkdown } from '../../lib/pieces/index.js'
 import { Config } from '../../lib/config.js'
 import {
 	LinkFrontmatter,
@@ -9,7 +9,6 @@ import {
 	linkDatabaseJtdSchema,
 	linkFrontmatterJtdSchema,
 } from './schema.js'
-import { PieceMarkdown } from 'src/lib/pieces/markdown.js'
 import { merge } from 'lodash-es'
 import { availability } from './wayback.js'
 import { generateTags, generateSummary, generateClassification } from './openai.js'
@@ -30,11 +29,11 @@ class LinkPiece extends Piece<LinkType, LinkSelectable, LinkFrontmatter> {
 
 		if (service && /openai|all/.test(service)) {
 			if (openAIKey) {
+				log.info(`generating openAI summary for ${markdown.slug}`)
+
 				const tags = await generateTags(openAIKey, markdown)
 				const summary = await generateSummary(openAIKey, markdown)
 				const classification = await generateClassification(openAIKey, markdown)
-
-				log.info(`generating openAI summary for ${markdown.frontmatter.url}`)
 
 				linkProcessed.frontmatter.keywords = tags.join(', ')
 				linkProcessed.frontmatter.summary = summary
@@ -48,16 +47,19 @@ class LinkPiece extends Piece<LinkType, LinkSelectable, LinkFrontmatter> {
 		}
 
 		if (service && /wayback|all/.test(service)) {
+			log.info(`generating wayback availability for ${markdown.slug}`)
+
 			const waybackAvailability = await availability(markdown.frontmatter.url)
+
 			if (waybackAvailability) {
 				const closest = waybackAvailability.archived_snapshots.closest
-				if (closest.available) {
+				if (closest && closest.available) {
 					linkProcessed.frontmatter.archive_url = closest.url
 				}
 			}
 		}
 
-		return linkProcessed
+		return this.internalizeAssetPathFor(markdown, 'representative_image')
 	}
 
 	create(slug: string, title: string): PieceMarkdown<LinkFrontmatter> {
@@ -81,9 +83,8 @@ class LinkPiece extends Piece<LinkType, LinkSelectable, LinkFrontmatter> {
 		)
 	}
 
-	async process(slugs: string[], dryRun = false) {
-		log.info(`processing ${slugs} with dryRun: ${dryRun}`)
-		return
+	async process(_: Config, slugs: string[], dryRun = false) {
+		log.info(`processing ${slugs.length} links with dryRun: ${dryRun}`)
 	}
 }
 

@@ -1,6 +1,4 @@
-import { unlink } from 'fs/promises'
 import log from '../../lib/log.js'
-import { downloadToTmp } from '../../lib/web.js'
 import { findVolume } from './google-books.js'
 import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library.js'
 import { Piece, toValidatedMarkdown, PieceType } from '../../lib/pieces/index.js'
@@ -74,7 +72,6 @@ class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 
 	async searchOpenLibrary(
 		openLibraryBookId: string,
-		bookSlug: string,
 		bookTitle: string,
 		bookAuthor: string
 	): Promise<BookFrontmatter> {
@@ -92,31 +89,18 @@ class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 			const isbn = work.isbn?.[0]
 			const publishedYear = work.first_publish_year
 			const pages = Number(work.number_of_pages)
-			const coverUrl = work.cover_i ? getCoverUrl(work.cover_i) : undefined
+			const cover = work.cover_i ? getCoverUrl(work.cover_i) : undefined
 
 			const frontMatter: BookFrontmatter = {
 				title,
 				author,
 				id_ol_work: workId,
+				...(cover && { cover }),
 				...(subtitle && { subtitle }),
 				...(isbn && { isbn }),
 				...(coauthors && { coauthors }),
 				...(pages && !isNaN(pages) && { pages }),
 				...(publishedYear && { year_first_published: publishedYear }),
-			}
-
-			if (coverUrl) {
-				log.info(`downloading cover (${coverUrl}) for ${bookTitle}`)
-
-				const tmpFile = await downloadToTmp(coverUrl)
-				const fetchedFrontmatter = await this.attach(
-					tmpFile,
-					{ slug: bookSlug, frontmatter: frontMatter, note: '' },
-					'cover'
-				)
-
-				await unlink(tmpFile)
-				return fetchedFrontmatter.frontmatter
 			}
 
 			return frontMatter
@@ -152,7 +136,6 @@ class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 			if (bookProcessed.frontmatter.id_ol_book) {
 				const openLibraryMetadata = await this.searchOpenLibrary(
 					bookProcessed.frontmatter.id_ol_book,
-					bookProcessed.slug,
 					bookProcessed.frontmatter.title,
 					bookProcessed.frontmatter.author
 				)
@@ -171,7 +154,7 @@ class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 			}
 		}
 
-		return bookProcessed
+		return this.internalizeAssetPathFor(markdown, 'cover')
 	}
 
 	create(slug: string, title: string): PieceMarkdown<BookFrontmatter> {
@@ -194,7 +177,7 @@ class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 	}
 
 	/* c8 ignore next 24 */
-	async process(slugs: string[]): Promise<void> {
+	async process(_: Config, slugs: string[]): Promise<void> {
 		for (const slug of slugs) {
 			const markdown = await this.get(slug, false)
 

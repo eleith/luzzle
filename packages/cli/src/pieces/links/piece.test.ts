@@ -14,6 +14,7 @@ import Piece from '../../lib/pieces/piece.js'
 import { generateTags, generateSummary, generateClassification } from './openai.js'
 import { LuzzleLinkType } from '@luzzle/kysely'
 import { availability } from './wayback.js'
+import { Config } from 'src/lib/config.js'
 
 vi.mock('file-type')
 vi.mock('fs')
@@ -92,7 +93,7 @@ describe('pieces/links/piece', () => {
 	test('process', async () => {
 		const slugs = ['slug']
 
-		await new LinkPiece('root').process(slugs)
+		await new LinkPiece('root').process({} as Config, slugs)
 
 		expect(mocks.logInfo).toHaveBeenCalledOnce()
 	})
@@ -121,11 +122,23 @@ describe('pieces/links/piece', () => {
 		const linkPiece = new LinkPiece('root')
 
 		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
+		spies.interalize = vi.spyOn(linkPiece, 'internalizeAssetPathFor').mockResolvedValueOnce({
+			...markdown,
+			frontmatter: {
+				...markdown.frontmatter,
+				keywords: tags.join(', '),
+				summary,
+				type: 'article',
+				is_paywall: classification.is_paywall,
+			},
+		})
 		mocks.generateTags.mockResolvedValueOnce(tags)
 		mocks.generateSummary.mockResolvedValueOnce(summary)
 		mocks.generateClassification.mockResolvedValueOnce(classification)
+
 		const fetched = await linkPiece.fetch(configMock, markdown, 'openai')
 
+		expect(spies.interalize).toHaveBeenCalledOnce()
 		expect(fetched).toEqual({
 			...markdown,
 			frontmatter: {
@@ -149,11 +162,23 @@ describe('pieces/links/piece', () => {
 		const linkPiece = new LinkPiece('root')
 
 		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
+		spies.interalize = vi.spyOn(linkPiece, 'internalizeAssetPathFor').mockResolvedValueOnce({
+			...markdown,
+			frontmatter: {
+				...markdown.frontmatter,
+				keywords: tags.join(', '),
+				summary,
+				type: 'bookmark',
+				is_paywall: classification.is_paywall,
+			},
+		})
+
 		mocks.generateTags.mockResolvedValueOnce(tags)
 		mocks.generateSummary.mockResolvedValueOnce(summary)
 		mocks.generateClassification.mockResolvedValueOnce(classification)
 		const fetched = await linkPiece.fetch(configMock, markdown, 'openai')
 
+		expect(spies.interalize).toHaveBeenCalledOnce()
 		expect(fetched).toEqual({
 			...markdown,
 			frontmatter: {
@@ -188,6 +213,13 @@ describe('pieces/links/piece', () => {
 		const linkPiece = new LinkPiece('root')
 
 		spies.configGet = configMock.get.mockReturnValueOnce({})
+		spies.interalize = vi.spyOn(linkPiece, 'internalizeAssetPathFor').mockResolvedValueOnce({
+			...markdown,
+			frontmatter: {
+				...markdown.frontmatter,
+				archive_url: archiveUrl,
+			},
+		})
 		mocks.availability.mockResolvedValueOnce({
 			archived_snapshots: {
 				closest: { available: true, url: archiveUrl, timestamp: '', status: '' },
@@ -197,6 +229,7 @@ describe('pieces/links/piece', () => {
 
 		const fetched = await linkPiece.fetch(configMock, markdown, 'wayback')
 
+		expect(spies.interalize).toHaveBeenCalledOnce()
 		expect(fetched).toEqual({
 			...markdown,
 			frontmatter: {

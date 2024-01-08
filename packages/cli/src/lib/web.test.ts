@@ -41,12 +41,12 @@ describe('book', () => {
 
 		const tempFile = await tempFilePromise
 
-		expect(mocks.gotStream).toHaveBeenCalledWith(url)
+		expect(mocks.gotStream).toHaveBeenCalledWith(url, expect.any(Object))
 		expect(mocks.createWriteStream).toHaveBeenCalledWith(filePath)
 		expect(tempFile).toEqual(filePath)
 	})
 
-	test('downloadToTmp throws', async () => {
+	test('downloadToTmp returns null', async () => {
 		const mockReadable = new PassThrough()
 		const mockWritable = new PassThrough()
 		const url = 'https://somewhere'
@@ -62,8 +62,10 @@ describe('book', () => {
 			mockWritable.emit('error', new Error('boom'))
 		})
 
-		await expect(tempFilePromise).rejects.toThrow()
-		expect(mocks.gotStream).toHaveBeenCalledWith(url)
+		const tempFile = await tempFilePromise
+
+		expect(tempFile).toBeNull()
+		expect(mocks.gotStream).toHaveBeenCalledWith(url, expect.any(Object))
 		expect(mocks.createWriteStream).toHaveBeenCalledWith(filePath)
 	})
 })
