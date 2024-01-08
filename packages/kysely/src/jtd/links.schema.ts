@@ -41,7 +41,7 @@ const linkDatabaseJtdSchema: PieceDatabaseJtdSchema<LinkSelectable> = {
 		coauthors: { type: 'string' },
 		summary: { type: 'string' },
 		keywords: { type: 'string' },
-		screenshot_path: { type: 'string' },
+		representative_image: { type: 'string' },
 		archive_url: { type: 'string' },
 		archive_path: { type: 'string' },
 		note: { type: 'string' },
@@ -66,7 +66,7 @@ const linkFrontmatterJtdSchema: PieceFrontmatterJtdSchema<LinkFrontmatter> = {
 		coauthors: { type: 'string' },
 		summary: { type: 'string' },
 		keywords: { type: 'string' },
-		screenshot_path: {
+		representative_image: {
 			type: 'string',
 			metadata: { luzzleFormat: 'attachment', luzzleEnum: ['jpg', 'png', 'svg', 'avif'] },
 		},
