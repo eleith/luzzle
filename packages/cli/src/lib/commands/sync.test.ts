@@ -53,7 +53,7 @@ describe('lib/commands/sync', () => {
 		await command.run(ctx, {} as Arguments<SyncArgv>)
 
 		expect(mocks.getPiece).toHaveBeenCalledWith(pieceType)
-		expect(spies.pieceFilterSlugsBy).toHaveBeenCalledOnce()
+		expect(spies.pieceFilterSlugsBy).toHaveBeenCalledWith(slugs, 'lastSynced')
 		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, slugsUpdated, false)
 		expect(spies.pieceSyncCleanUp).toHaveBeenCalledOnce()
 	})
