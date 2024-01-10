@@ -12,8 +12,8 @@ import Link from 'next/link'
 import * as styles from './index.css'
 
 const getBooksQuery = gql<typeof GetBooksDocument>(
-	`query GetBooks($take: Int, $after: String) {
-  books(take: $take, after: $after) {
+	`query GetBooks($take: Int, $page: Int) {
+  books(take: $take, page: $page) {
     ...BookFullDetails
   }
 }
@@ -62,13 +62,15 @@ export default function Books({ books }: BooksProps): JSX.Element {
 	const totalBooks: Book[] = []
 	const [shouldFetch, setFetch] = useState(false)
 	const { data, size, setSize } = useGraphSWRInfinite(
-		(_, previousData: GetBooksQuery | null) => {
+		(page, previousData: GetBooksQuery | null) => {
 			const lastData = previousData?.books || books
 			if (shouldFetch && lastData.length === TAKE) {
-				const lastBook = lastData?.[TAKE - 1]
 				return {
 					gql: getBooksQuery,
-					variables: { take: TAKE, after: lastBook.readOrder },
+					variables: {
+						take: TAKE,
+						page: page + 1,
+					},
 				}
 			} else {
 				return null
@@ -79,9 +81,6 @@ export default function Books({ books }: BooksProps): JSX.Element {
 			revalidateOnFocus: false,
 		}
 	)
-
-	// large tables will perform poorly
-	// consider react-virtual when window support lands in v3
 
 	const lastPage = data?.[data.length - 1]?.books || []
 	const isEnd = size !== 1 && (lastPage.length === 0 || lastPage.length < TAKE)

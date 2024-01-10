@@ -29,6 +29,6 @@
 			"jsx": "react-jsx"
 		}
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mdx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mdx", "codegen.ts"],
   "exclude": ["node_modules", "build"]
 }

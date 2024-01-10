@@ -9,11 +9,11 @@ builder.queryFields((t) => ({
 		type: [BookObject],
 		args: {
 			take: t.arg({ type: 'Int', defaultValue: TAKE_DEFAULT }),
-			after: t.arg({ type: 'String' }),
+			page: t.arg({ type: 'Int' }),
 			tag: t.arg({ type: 'String' }),
 		},
 		resolve: async (_, args, ctx) => {
-			const { take, after, tag } = args
+			const { take, page, tag } = args
 			const takeValidated = Math.min(take && take > 0 ? take : TAKE_DEFAULT, TAKE_MAX)
 
 			if (tag) {
@@ -30,7 +30,7 @@ builder.queryFields((t) => ({
 						.where('id_tag', '=', oneTag.id)
 						.execute()
 
-					if (after) {
+					if (page) {
 						return ctx.db
 							.selectFrom('books')
 							.selectAll()
@@ -39,9 +39,9 @@ builder.queryFields((t) => ({
 								'in',
 								tagMap.map((x) => x.id_item)
 							)
-							.orderBy('read_order', 'desc')
-							.where('read_order', '<', after)
+							.orderBy('date_read', 'desc')
 							.limit(takeValidated)
+							.offset(takeValidated * page)
 							.execute()
 					} else {
 						return ctx.db
@@ -57,19 +57,19 @@ builder.queryFields((t) => ({
 				}
 			}
 
-			if (after) {
+			if (page) {
 				return ctx.db
 					.selectFrom('books')
 					.selectAll()
-					.orderBy('read_order', 'desc')
-					.where('read_order', '<', after)
+					.orderBy('date_read', 'desc')
 					.limit(takeValidated)
+					.offset(takeValidated * page)
 					.execute()
 			} else {
 				return ctx.db
 					.selectFrom('books')
 					.selectAll()
-					.orderBy('read_order', 'desc')
+					.orderBy('date_read', 'desc')
 					.limit(takeValidated)
 					.execute()
 			}

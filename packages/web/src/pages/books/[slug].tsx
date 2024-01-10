@@ -16,10 +16,10 @@ import config from '@app/common/config'
 
 const partialBooksQuery = gql<
 	typeof GetPartialBooksDocument
->(`query GetPartialBooks($take: Int, $after: String) {
-  books(take: $take, after: $after) {
+>(`query GetPartialBooks($take: Int, $page: Int) {
+  books(take: $take, page: $page) {
     slug
-    readOrder
+		dateRead
   }
 }`)
 
@@ -58,8 +58,9 @@ type BookPageStaticParams = { params: BookOrderPartial }
 type BookPageProps = { book: Book }
 
 function makeBookDateString(book?: Book): string {
-	const month = book && typeof book.monthRead === 'number' ? book.monthRead : '?'
-	const year = book && typeof book.yearRead === 'number' ? book.yearRead : '?'
+	const month = book && typeof book.dateRead === 'number' ? new Date(book.dateRead).getMonth() : '?'
+	const year =
+		book && typeof book.dateRead === 'number' ? new Date(book.dateRead).getFullYear() : '?'
 
 	return `${month} / ${year}`
 }
@@ -198,13 +199,13 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 	)
 }
 
-async function getBooksForPage(take: number, after?: string): Promise<BookOrderPartial[]> {
+async function getBooksForPage(take: number, page?: number): Promise<BookOrderPartial[]> {
 	const response = await staticClient.query({
 		query: partialBooksQuery,
-		variables: { take, after },
+		variables: { take, page },
 	})
 	const books = response.data.books?.filter(Boolean) || []
-	const partialBooks = books.map((book) => ({ slug: book.slug, readOrder: book.readOrder }))
+	const partialBooks = books.map((book) => ({ slug: book.slug, dateRead: book.dateRead }))
 
 	return partialBooks
 }
@@ -214,12 +215,13 @@ async function getAllBookSlugs(): Promise<string[]> {
 	const slugs: string[] = []
 
 	let partialBooks = await getBooksForPage(take)
+	let page = 0
 	slugs.push(...partialBooks.map((book) => book.slug))
 
 	while (partialBooks.length === take) {
-		const lastBook = partialBooks[partialBooks.length - 1].readOrder
-		partialBooks = await getBooksForPage(take, lastBook)
+		partialBooks = await getBooksForPage(take, page)
 		slugs.push(...partialBooks.map((book) => book.slug))
+		page += 1
 	}
 
 	return slugs
