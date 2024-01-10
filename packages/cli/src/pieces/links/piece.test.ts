@@ -118,28 +118,7 @@ describe('pieces/links/piece', () => {
 		const tags = ['tag1', 'tag2']
 		const summary = 'summary'
 		const classification = { is_article: true, is_paywall: false }
-
-		const linkPiece = new LinkPiece('root')
-
-		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
-		spies.interalize = vi.spyOn(linkPiece, 'internalizeAssetPathFor').mockResolvedValueOnce({
-			...markdown,
-			frontmatter: {
-				...markdown.frontmatter,
-				keywords: tags.join(', '),
-				summary,
-				type: 'article',
-				is_paywall: classification.is_paywall,
-			},
-		})
-		mocks.generateTags.mockResolvedValueOnce(tags)
-		mocks.generateSummary.mockResolvedValueOnce(summary)
-		mocks.generateClassification.mockResolvedValueOnce(classification)
-
-		const fetched = await linkPiece.fetch(configMock, markdown, 'openai')
-
-		expect(spies.interalize).toHaveBeenCalledOnce()
-		expect(fetched).toEqual({
+		const updatedMarkdown = {
 			...markdown,
 			frontmatter: {
 				...markdown.frontmatter,
@@ -148,7 +127,21 @@ describe('pieces/links/piece', () => {
 				type: LuzzleLinkType.Article,
 				is_paywall: classification.is_paywall,
 			},
-		})
+		}
+		const linkPiece = new LinkPiece('root')
+
+		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
+		spies.interalize = vi
+			.spyOn(linkPiece, 'internalizeAssetPathFor')
+			.mockResolvedValueOnce(updatedMarkdown)
+		mocks.generateTags.mockResolvedValueOnce(tags)
+		mocks.generateSummary.mockResolvedValueOnce(summary)
+		mocks.generateClassification.mockResolvedValueOnce(classification)
+
+		const fetched = await linkPiece.fetch(configMock, markdown, 'openai')
+
+		expect(spies.interalize).toHaveBeenCalledWith(updatedMarkdown, 'representative_image')
+		expect(fetched).toEqual(updatedMarkdown)
 	})
 
 	test('fetch openai bookmark', async () => {
@@ -158,37 +151,31 @@ describe('pieces/links/piece', () => {
 		const tags = ['tag1', 'tag2']
 		const summary = 'summary'
 		const classification = { is_article: false, is_paywall: false }
-
-		const linkPiece = new LinkPiece('root')
-
-		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
-		spies.interalize = vi.spyOn(linkPiece, 'internalizeAssetPathFor').mockResolvedValueOnce({
+		const updatedMarkdown = {
 			...markdown,
 			frontmatter: {
 				...markdown.frontmatter,
 				keywords: tags.join(', '),
 				summary,
-				type: 'bookmark',
+				type: LuzzleLinkType.Bookmark,
 				is_paywall: classification.is_paywall,
 			},
-		})
+		}
+
+		const linkPiece = new LinkPiece('root')
+
+		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
+		spies.interalize = vi
+			.spyOn(linkPiece, 'internalizeAssetPathFor')
+			.mockResolvedValueOnce(updatedMarkdown)
 
 		mocks.generateTags.mockResolvedValueOnce(tags)
 		mocks.generateSummary.mockResolvedValueOnce(summary)
 		mocks.generateClassification.mockResolvedValueOnce(classification)
 		const fetched = await linkPiece.fetch(configMock, markdown, 'openai')
 
-		expect(spies.interalize).toHaveBeenCalledOnce()
-		expect(fetched).toEqual({
-			...markdown,
-			frontmatter: {
-				...markdown.frontmatter,
-				keywords: tags.join(', '),
-				summary: summary,
-				type: LuzzleLinkType.Bookmark,
-				is_paywall: classification.is_paywall,
-			},
-		})
+		expect(spies.interalize).toHaveBeenCalledWith(updatedMarkdown, 'representative_image')
+		expect(fetched).toEqual(updatedMarkdown)
 	})
 
 	test('fetch openai without key', async () => {
@@ -209,17 +196,20 @@ describe('pieces/links/piece', () => {
 		const configMock = mockConfig()
 		const markdown = linkFixtures.makeLinkMarkdown()
 		const archiveUrl = 'archiveUrl'
-
-		const linkPiece = new LinkPiece('root')
-
-		spies.configGet = configMock.get.mockReturnValueOnce({})
-		spies.interalize = vi.spyOn(linkPiece, 'internalizeAssetPathFor').mockResolvedValueOnce({
+		const updatedMarkdown = {
 			...markdown,
 			frontmatter: {
 				...markdown.frontmatter,
 				archive_url: archiveUrl,
 			},
-		})
+		}
+
+		const linkPiece = new LinkPiece('root')
+
+		spies.configGet = configMock.get.mockReturnValueOnce({})
+		spies.interalize = vi
+			.spyOn(linkPiece, 'internalizeAssetPathFor')
+			.mockResolvedValueOnce(updatedMarkdown)
 		mocks.availability.mockResolvedValueOnce({
 			archived_snapshots: {
 				closest: { available: true, url: archiveUrl, timestamp: '', status: '' },
@@ -229,14 +219,8 @@ describe('pieces/links/piece', () => {
 
 		const fetched = await linkPiece.fetch(configMock, markdown, 'wayback')
 
-		expect(spies.interalize).toHaveBeenCalledOnce()
-		expect(fetched).toEqual({
-			...markdown,
-			frontmatter: {
-				...markdown.frontmatter,
-				archive_url: archiveUrl,
-			},
-		})
+		expect(spies.interalize).toHaveBeenCalledWith(updatedMarkdown, 'representative_image')
+		expect(fetched).toEqual(updatedMarkdown)
 	})
 
 	test('create', () => {
