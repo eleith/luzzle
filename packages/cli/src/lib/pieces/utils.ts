@@ -13,7 +13,7 @@ export const PieceDirectory = {
 } as const
 
 export type PieceDirectories = {
-	[key in typeof PieceDirectory[keyof typeof PieceDirectory]]: string
+	[key in (typeof PieceDirectory)[keyof typeof PieceDirectory]]: string
 }
 
 export type PieceArgv = {
