@@ -46,7 +46,7 @@ const sizes = {
 	},
 }
 
-function getColor(slug: string): typeof BookColors[number] {
+function getColor(slug: string): (typeof BookColors)[number] {
 	const numColors = BookColors.length
 	const hex = createHash('sha256').update(slug).digest('hex')
 	const random = parseInt(hex, 16) % numColors
@@ -54,7 +54,7 @@ function getColor(slug: string): typeof BookColors[number] {
 	return BookColors[random]
 }
 
-function getSize(pages?: number | null, scale = 1): typeof sizes[keyof typeof BookCoverSize] {
+function getSize(pages?: number | null, scale = 1): (typeof sizes)[keyof typeof BookCoverSize] {
 	let size = sizes.SMALL
 	if (pages) {
 		if (pages >= 700) {

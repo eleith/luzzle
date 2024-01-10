@@ -11,8 +11,8 @@ import * as styles from './index.css'
 import { useRouter } from 'next/router'
 
 const getByTagQuery = gql<typeof GetByTagDocument>(
-	`query GetByTag($take: Int, $after: String, $tag: String) {
-  books(take: $take, after: $after, tag: $tag) {
+	`query GetByTag($take: Int, $page: Int, $tag: String) {
+  books(take: $take, page: $page, tag: $tag) {
     ...BookFullDetails
   }
 }
@@ -48,14 +48,18 @@ export default function Books(): JSX.Element {
 	const slug = router.query.slug as string
 	const totalBooks: Book[] = []
 	const { data, size, setSize } = useGraphSWRInfinite(
-		(_, previousData: GetByTagQuery | null) => {
+		(page, previousData: GetByTagQuery | null) => {
 			const lastData = previousData?.books
 			if (!lastData || lastData.length === TAKE) {
 				const lastBook = lastData?.[TAKE - 1]
 				return {
 					gql: getByTagQuery,
 					variables: lastBook
-						? { take: TAKE, after: lastBook.readOrder, tag: slug }
+						? {
+								take: TAKE,
+								page: page + 1,
+								tag: slug,
+						  }
 						: { take: TAKE, tag: slug },
 				}
 			} else {

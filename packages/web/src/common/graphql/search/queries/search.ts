@@ -20,7 +20,7 @@ builder.queryFields((t) => ({
 				allBooks = await ctx.db
 					.selectFrom('books')
 					.selectAll()
-					.orderBy('read_order', 'desc')
+					.orderBy('date_read', 'desc')
 					.execute()
 			}
 

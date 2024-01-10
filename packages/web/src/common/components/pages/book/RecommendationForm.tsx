@@ -68,7 +68,7 @@ export default function DiscussionForm({ onClose, title = 'recommend' }: Props):
 		}
 	})
 
-	function getTouchedError<T>(form: FormState<T>, name: keyof T): string | undefined {
+	function getTouchedError<T>(form: FormState, name: keyof T): string | undefined {
 		const touched = form.getFieldTouched(name as string)
 		const error = form.getError(name as string)
 

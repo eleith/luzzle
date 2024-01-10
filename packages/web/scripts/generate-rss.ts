@@ -39,7 +39,7 @@ async function generateRss(books: PieceSelectable<'books'>[], type: string) {
 				: undefined,
 			description: book.description || '',
 			content: book.description || '',
-			date: new Date(`${book.year_read || 2000}-${book.month_read || 1}`),
+			date: new Date(book.date_read ?? book.date_added),
 		} as Item
 	})
 

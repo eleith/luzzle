@@ -1,9 +1,19 @@
 import builder from '@app/lib/graphql/builder'
 import { PieceSelectable } from '@luzzle/kysely'
-import BookSiblings from './bookSiblings'
 import { Tag } from '../../tag'
 
 const BookBuilder = builder.objectRef<PieceSelectable<'books'>>('Book')
+const BookSiblings = builder
+	.objectRef<{
+		next?: PieceSelectable<'books'> | null
+		previous?: PieceSelectable<'books'> | null
+	}>('BookSiblings')
+	.implement({
+		fields: (t) => ({
+			next: t.field({ type: BookBuilder, resolve: (x) => x.next }),
+			previous: t.field({ type: BookBuilder, resolve: (x) => x.previous }),
+		}),
+	})
 
 export default BookBuilder // avoid circular issues
 
@@ -23,14 +33,9 @@ BookBuilder.implement({
 		note: t.exposeString('note'),
 		pages: t.exposeInt('pages'),
 		yearFirstPublished: t.exposeInt('year_first_published'),
-		dateUpdated: t.field({
-			type: 'Date',
-			resolve: (x) => (x.date_updated ? new Date(x.date_updated) : null),
-		}),
-		dateAdded: t.field({ type: 'Date', resolve: (x) => new Date(x.date_added), nullable: false }),
-		yearRead: t.exposeInt('year_read'),
-		monthRead: t.exposeInt('month_read'),
-		readOrder: t.exposeString('read_order', { nullable: false }),
+		dateUpdated: t.exposeFloat('date_updated'),
+		dateAdded: t.exposeFloat('date_added', { nullable: false }),
+		dateRead: t.exposeFloat('date_read'),
 		cover: t.exposeString('cover'),
 		tags: t.field({
 			type: [Tag],
@@ -56,21 +61,31 @@ BookBuilder.implement({
 		siblings: t.field({
 			type: BookSiblings,
 			resolve: async (parent, _, ctx) => {
-				const before = await ctx.db
+				const all = await ctx.db
 					.selectFrom('books')
-					.selectAll()
-					.where('read_order', '>', parent.read_order)
-					.orderBy('read_order', 'asc')
-					.limit(1)
-					.executeTakeFirst()
+					.select('slug')
+					.orderBy('date_read', 'desc')
+					.execute()
 
-				const after = await ctx.db
-					.selectFrom('books')
-					.selectAll()
-					.where('read_order', '<', parent.read_order)
-					.orderBy('read_order', 'desc')
-					.limit(1)
-					.executeTakeFirst()
+				const find = all.findIndex((x) => x.slug === parent.slug)
+				const beforeSlug = all[find - 1]?.slug
+				const afterSlug = all[find + 1]?.slug
+
+				const before = beforeSlug
+					? await ctx.db
+							.selectFrom('books')
+							.selectAll()
+							.where('slug', '=', beforeSlug)
+							.executeTakeFirst()
+					: null
+
+				const after = afterSlug
+					? await ctx.db
+							.selectFrom('books')
+							.selectAll()
+							.where('slug', '=', afterSlug)
+							.executeTakeFirst()
+					: null
 
 				return {
 					previous: before,
