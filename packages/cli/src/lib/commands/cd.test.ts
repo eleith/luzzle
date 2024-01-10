@@ -7,7 +7,6 @@ import { Arguments } from 'yargs'
 import { makeContext } from './context.fixtures.js'
 
 vi.mock('child_process')
-vi.mock('../books')
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
@@ -19,7 +18,7 @@ const mocks = {
 
 const spies: { [key: string]: SpyInstance } = {}
 
-describe('tools/lib/commands/edit', () => {
+describe('tools/lib/commands/cd', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
