@@ -63,24 +63,18 @@ class LinkPiece extends Piece<LinkType, LinkSelectable, LinkFrontmatter> {
 	}
 
 	create(slug: string, title: string): PieceMarkdown<LinkFrontmatter> {
-		const now = new Date()
-		const month = now.toLocaleString('default', { month: 'long' })
-		const year = now.getFullYear()
+		const markdown: LinkFrontmatter = {
+			title,
+			summary: 'summary',
+			url: 'https://example.com',
+			is_active: true,
+			is_paywall: false,
+			type: LuzzleLinkType.Article,
+			date_accessed: new Date().toLocaleDateString(),
+			date_published: new Date().toLocaleDateString(),
+		}
 
-		return toValidatedMarkdown(
-			slug,
-			'notes',
-			{
-				title,
-				summary: 'summary',
-				url: 'https://example.com',
-				active: true,
-				type: LuzzleLinkType.Article,
-				accessed_on: `${month} ${year}`,
-				published_on: `${month} ${year}`,
-			},
-			this.validator
-		)
+		return toValidatedMarkdown(slug, 'notes', markdown, this.validator)
 	}
 
 	async process(_: Config, slugs: string[], dryRun = false) {

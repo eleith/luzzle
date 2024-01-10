@@ -34,6 +34,7 @@ describe('tools/lib/commands/cd', () => {
 		const ctx = makeContext()
 
 		process.env.SHELL = 'fish'
+
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
 
 		await command.run(ctx, {} as Arguments)

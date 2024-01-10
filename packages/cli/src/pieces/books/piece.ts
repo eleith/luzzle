@@ -158,22 +158,18 @@ class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 	}
 
 	create(slug: string, title: string): PieceMarkdown<BookFrontmatter> {
-		return toValidatedMarkdown(
-			slug,
-			'notes',
-			{
-				title,
-				author: 'author',
-				isbn: '1234',
-				description: 'description',
-				id_ol_book: 'id1234',
-				id_ol_work: 'id5678',
-				coauthors: 'coauthors',
-				year_read: new Date().getFullYear(),
-				month_read: new Date().getMonth() + 1,
-			},
-			this.validator
-		)
+		const markdown: BookFrontmatter = {
+			title,
+			author: 'author',
+			isbn: '1234',
+			description: 'description',
+			id_ol_book: 'id1234',
+			id_ol_work: 'id5678',
+			coauthors: 'coauthors',
+			date_read: new Date().toLocaleDateString(),
+		}
+
+		return toValidatedMarkdown(slug, 'notes', markdown, this.validator)
 	}
 
 	/* c8 ignore next 24 */
