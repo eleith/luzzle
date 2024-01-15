@@ -61,35 +61,51 @@ BookBuilder.implement({
 		siblings: t.field({
 			type: BookSiblings,
 			resolve: async (parent, _, ctx) => {
-				const all = await ctx.db
+				const after = await ctx.db
 					.selectFrom('books')
 					.select('slug')
 					.orderBy('date_read', 'desc')
-					.execute()
+					.orderBy('slug', 'asc')
+					.where(({ and, or, cmpr }) => {
+						return or([
+							cmpr('date_read', '<', parent.date_read),
+							and([cmpr('date_read', '=', parent.date_read), cmpr('slug', '>', parent.slug)]),
+						])
+					})
+					.executeTakeFirst()
 
-				const find = all.findIndex((x) => x.slug === parent.slug)
-				const beforeSlug = all[find - 1]?.slug
-				const afterSlug = all[find + 1]?.slug
+				const before = await ctx.db
+					.selectFrom('books')
+					.select('slug')
+					.orderBy('date_read', 'asc')
+					.orderBy('slug', 'desc')
+					.where(({ and, or, cmpr }) => {
+						return or([
+							cmpr('date_read', '>', parent.date_read),
+							and([cmpr('date_read', '=', parent.date_read), cmpr('slug', '<', parent.slug)]),
+						])
+					})
+					.executeTakeFirst()
 
-				const before = beforeSlug
+				const previous = before
 					? await ctx.db
 							.selectFrom('books')
 							.selectAll()
-							.where('slug', '=', beforeSlug)
+							.where('slug', '=', before.slug)
 							.executeTakeFirst()
 					: null
 
-				const after = afterSlug
+				const next = after
 					? await ctx.db
 							.selectFrom('books')
 							.selectAll()
-							.where('slug', '=', afterSlug)
+							.where('slug', '=', after.slug)
 							.executeTakeFirst()
 					: null
 
 				return {
-					previous: before,
-					next: after,
+					previous,
+					next,
 				}
 			},
 		}),
