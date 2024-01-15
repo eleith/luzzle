@@ -40,6 +40,7 @@ builder.queryFields((t) => ({
 								tagMap.map((x) => x.id_item)
 							)
 							.orderBy('date_read', 'desc')
+							.orderBy('slug', 'asc')
 							.limit(takeValidated)
 							.offset(takeValidated * page)
 							.execute()
@@ -62,6 +63,7 @@ builder.queryFields((t) => ({
 					.selectFrom('books')
 					.selectAll()
 					.orderBy('date_read', 'desc')
+					.orderBy('slug', 'asc')
 					.limit(takeValidated)
 					.offset(takeValidated * page)
 					.execute()
@@ -70,6 +72,7 @@ builder.queryFields((t) => ({
 					.selectFrom('books')
 					.selectAll()
 					.orderBy('date_read', 'desc')
+					.orderBy('slug', 'asc')
 					.limit(takeValidated)
 					.execute()
 			}
