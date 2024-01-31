@@ -8,6 +8,7 @@ steps:
       - npm ci -w @luzzle/kysely
       - npm run lint -w @luzzle/kysely
       - npm run build -w @luzzle/kysely
+    secrets: [npm_token, npm_owner]
     when:
       event: [push]
       branch: [main]

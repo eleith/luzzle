@@ -7,7 +7,7 @@ const Piece = {
 	Link: 'links',
 } as const
 
-type Pieces = typeof Piece[keyof typeof Piece]
+type Pieces = (typeof Piece)[keyof typeof Piece]
 
 type PieceTables = {
 	[Piece.Book]: BooksTable

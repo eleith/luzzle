@@ -16,7 +16,7 @@ type LuzzleTables = {
 } & PieceTables
 
 type LuzzleDatabase = Kysely<LuzzleTables>
-type LuzzleTableNames = typeof LuzzleTableName[keyof typeof LuzzleTableName]
+type LuzzleTableNames = (typeof LuzzleTableName)[keyof typeof LuzzleTableName]
 type LuzzleTable<T extends LuzzleTableNames> = LuzzleTables[T]
 
 type LuzzleInsertable<T extends LuzzleTableNames> = Insertable<LuzzleTable<T>>
