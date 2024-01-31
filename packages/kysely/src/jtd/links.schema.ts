@@ -68,7 +68,7 @@ const linkFrontmatterJtdSchema: PieceFrontmatterJtdSchema<LinkFrontmatter> = {
 		keywords: { type: 'string' },
 		representative_image: {
 			type: 'string',
-			metadata: { luzzleFormat: 'attachment', luzzleEnum: ['jpg', 'png', 'svg', 'avif'] },
+			metadata: { luzzleFormat: 'attachment', luzzleEnum: ['jpg', 'png', 'svg', 'avif', 'webp'] },
 		},
 		archive_url: { type: 'string' },
 		archive_path: { type: 'string' },

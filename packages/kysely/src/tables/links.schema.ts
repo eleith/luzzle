@@ -6,7 +6,7 @@ const LinkType = {
 	Article: 'article',
 } as const
 
-type LinkTypes = typeof LinkType[keyof typeof LinkType]
+type LinkTypes = (typeof LinkType)[keyof typeof LinkType]
 
 type LinksTable = {
 	title: string

@@ -52,7 +52,7 @@ const bookFrontmatterJtdSchema: PieceFrontmatterJtdSchema<BookFrontmatter> = {
 		keywords: { type: 'string' },
 		cover: {
 			type: 'string',
-			metadata: { luzzleFormat: 'attachment', luzzleEnum: ['jpg', 'png', 'svg', 'avif'] },
+			metadata: { luzzleFormat: 'attachment', luzzleEnum: ['jpg', 'png', 'svg', 'avif', 'webp'] },
 		},
 		date_read: {
 			type: 'string',
