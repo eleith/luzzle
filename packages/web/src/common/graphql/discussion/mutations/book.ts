@@ -6,6 +6,7 @@ const DiscussionInput = builder.inputType('DiscussionInput', {
 		slug: t.string({ required: true }),
 		email: t.string({ required: true, validate: { email: true } }),
 		discussion: t.string({ required: true, validate: { maxLength: 1024 } }),
+		type: t.string({ required: true, validate: { schema: zod.enum(['links', 'books']) } }),
 		topic: t.string({
 			required: true,
 			validate: {
@@ -23,7 +24,7 @@ const RecommendationInput = builder.inputType('RecommendationInput', {
 })
 
 builder.mutationFields((t) => ({
-	createBookDiscussion: t.boolean({
+	createDiscussion: t.boolean({
 		errors: {
 			types: [ZodError, Error],
 		},
@@ -31,11 +32,12 @@ builder.mutationFields((t) => ({
 			input: t.arg({ type: DiscussionInput, required: true }),
 		},
 		resolve: async (_, args, ctx) => {
-			const { slug, email, discussion, topic } = args.input
+			const { slug, email, discussion, topic, type } = args.input
+			const table = type == 'links' ? 'links' : 'books'
 
 			try {
-				const book = await ctx.db
-					.selectFrom('books')
+				const item = await ctx.db
+					.selectFrom(table)
 					.select('title')
 					.where('slug', '=', slug)
 					.executeTakeFirstOrThrow()
@@ -45,13 +47,13 @@ builder.mutationFields((t) => ({
 					'reply-to': email,
 					from: 'online-hi-eleith-com@eleith.com',
 					to: 'online-hi-eleith-com@eleith.com',
-					subject: `discussion on ${book.title}`,
+					subject: `discussion on ${item.title}`,
 				})
 
 				return true
 			} catch (error) {
 				if (error instanceof Error && error?.name === 'NotFoundError') {
-					throw new Error(`book ${slug} not found`)
+					throw new Error(`${table} ${slug} not found`)
 				} else {
 					console.error(error)
 					throw new Error('internal error. could send discussion')

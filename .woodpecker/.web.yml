@@ -28,8 +28,8 @@ steps:
       - RCLONE_GCS_BUCKET_POLICY_ONLY=true
       - RCLONE_GCS_LOCATION=us-central-1
       - RCLONE_GCS_SERVICE_ACCOUNT_FILE=/tmp/rclone-service-key.json
-      - RCLONE_DAV_BOOK_SOURCE=:webdav:documents/eleith/notes-md/personal/records
-      - RCLONE_DAV_BOOK_DESTINATION=/workspace/data
+      - RCLONE_DAV_SOURCE=:webdav:documents/eleith/notes-md/personal/records
+      - RCLONE_DAV_DESTINATION=/workspace/data
     commands:
       - mkdir /workspace/data
       - mkdir packages/web/public/images
@@ -37,7 +37,7 @@ steps:
       - mkdir packages/web/data
       - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
-      - rclone copy $RCLONE_DAV_BOOK_SOURCE $RCLONE_DAV_BOOK_DESTINATION
+      - rclone copy $RCLONE_DAV_SOURCE $RCLONE_DAV_DESTINATION
       - rclone copy :gcs:eleith-io-site/images/og packages/web/public/images/og
       - rclone copy :gcs:eleith-io-site/images/variants packages/web/public/images/variants
       - cp /workspace/data/luzzle.sqlite packages/web/data

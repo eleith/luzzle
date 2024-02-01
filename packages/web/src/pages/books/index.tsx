@@ -33,7 +33,7 @@ const TAKE = 50
 function makeBookCardLink(book: Book, index = 0): JSX.Element {
 	return (
 		<Link href={`/books/${book.slug}`} key={book.id}>
-			<a target="_blank">
+			<a>
 				<Box>
 					<BookCoverFor
 						book={book}
