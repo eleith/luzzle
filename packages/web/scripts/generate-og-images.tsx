@@ -16,7 +16,8 @@ const BookCoverSize = {
 } as const
 
 const fontNotoSans = readFileSync('./public/fonts/NotoSans-Regular.ttf')
-const OpenGraphBooksFolder = './public/images/og/books'
+const LastRunFile = '.generate-last-run'
+const OpenGraphFolder = './public/images/og'
 const OpenGraphImageWidth = 1200
 const OpenGraphImageHeight = 600
 
@@ -40,7 +41,7 @@ const sizes = {
 	},
 }
 
-function getColor(slug: string): typeof BookColors[number] {
+function getColor(slug: string): (typeof BookColors)[number] {
 	const numColors = BookColors.length
 	const hex = createHash('sha256').update(slug).digest('hex')
 	const random = parseInt(hex, 16) % numColors
@@ -54,7 +55,7 @@ function getImageBase64(slug: string): string {
 	return `data:image/jpeg;base64,${base64}`
 }
 
-function getSize(pages?: number | null, scale = 1): typeof sizes[keyof typeof BookCoverSize] {
+function getSize(pages?: number | null, scale = 1): (typeof sizes)[keyof typeof BookCoverSize] {
 	let size = sizes.SMALL
 	if (pages) {
 		if (pages >= 700) {
@@ -167,7 +168,7 @@ function ouputHtml(res: Writable, html: JSX.Element) {
 
 async function handler(book: PieceSelectable<'books'>, output: 'svg' | 'png' | 'html') {
 	const html = openGraphImageHtml(book)
-	const file = createWriteStream(`${OpenGraphBooksFolder}/${book.slug}.${output}`)
+	const file = createWriteStream(`${OpenGraphFolder}/books/${book.slug}.${output}`)
 
 	switch (output) {
 		case 'svg':
@@ -182,7 +183,7 @@ async function handler(book: PieceSelectable<'books'>, output: 'svg' | 'png' | '
 
 async function getLastRun(defaultDate = new Date(0)) {
 	try {
-		const lastRun = readFileSync(`${OpenGraphBooksFolder}/.generate-last-run`, 'utf-8')
+		const lastRun = readFileSync(`${OpenGraphFolder}/${LastRunFile}`, 'utf-8')
 		const lastRunDate = new Date(lastRun)
 
 		if (!isNaN(lastRunDate as unknown as number)) {
@@ -197,11 +198,11 @@ async function getLastRun(defaultDate = new Date(0)) {
 }
 
 async function storeLastRun(date: Date) {
-	writeFileSync(`${OpenGraphBooksFolder}/.generate-last-run`, date.toISOString())
+	writeFileSync(`${OpenGraphFolder}/${LastRunFile}`, date.toISOString())
 }
 
 async function main() {
-	mkdirSync(OpenGraphBooksFolder, { recursive: true })
+	mkdirSync(`${OpenGraphFolder}/books`, { recursive: true })
 
 	const lastRun = await getLastRun(new Date(0))
 	const db = getDatabaseClient(`${process.env.LUZZLE_FOLDER}/luzzle.sqlite`)

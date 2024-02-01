@@ -9,7 +9,7 @@ import staticClient from '@app/common/graphql/staticClient'
 import { Box, Text, Anchor, Button, Divider } from '@luzzle/ui/components'
 import * as styles from './[slug].css'
 import { CaretLeft, CaretRight, LinkSimple } from 'phosphor-react'
-import DiscussionForm from '@app/common/components/pages/book/DiscussionForm'
+import DiscussionForm from '@app/common/components/discussions/DiscussionForm'
 import { useState } from 'react'
 import { ResultOneOf, ResultSuccessOf } from '@app/@types/utilities'
 import config from '@app/common/config'
@@ -82,7 +82,9 @@ function makeSiblingLink(image: JSX.Element, slug?: string): JSX.Element {
 export default function BookPage({ book }: BookPageProps): JSX.Element {
 	const [showForm, setShowForm] = useState(false)
 
-	const discussionForm = <DiscussionForm slug={book.slug} onClose={() => setShowForm(false)} />
+	const discussionForm = (
+		<DiscussionForm type="books" slug={book.slug} onClose={() => setShowForm(false)} />
+	)
 
 	const bookPage = (
 		<Box>

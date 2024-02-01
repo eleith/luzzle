@@ -1,5 +1,5 @@
 import gql from '@app/lib/graphql/tag'
-import { CreateBookDiscussionDocument } from './_gql_/DiscussionForm'
+import { CreateDiscussionDocument } from './_gql_/DiscussionForm'
 import {
 	Box,
 	Button,
@@ -15,10 +15,10 @@ import { Form, FormState, useFormState } from 'ariakit/form'
 import gqlFetch from '@app/common/graphql/fetch'
 import { PageProgress, useProgressPageState } from '@luzzle/ui/components'
 
-const bookDiscussionMutation = gql<
-	typeof CreateBookDiscussionDocument
->(`mutation CreateBookDiscussion($input: DiscussionInput!) {
-  createBookDiscussion(input: $input) {
+const discussionMutation = gql<
+	typeof CreateDiscussionDocument
+>(`mutation CreateDiscussion($input: DiscussionInput!) {
+  createDiscussion(input: $input) {
     __typename
     ... on Error {
       message
@@ -29,7 +29,7 @@ const bookDiscussionMutation = gql<
         path
       }
     }
-    ... on MutationCreateBookDiscussionSuccess {
+    ... on MutationCreateDiscussionSuccess {
       data
     }
   }
@@ -39,9 +39,15 @@ type Props = {
 	slug: string
 	onClose?: () => void
 	title?: string
+	type: 'books' | 'links'
 }
 
-export default function DiscussionForm({ slug, onClose, title = 'discuss' }: Props): JSX.Element {
+export default function DiscussionForm({
+	slug,
+	onClose,
+	title = 'discuss',
+	type,
+}: Props): JSX.Element {
 	const notifications = useNotificationQueue()
 	const pageProgressState = useProgressPageState({ imitate: true, progress: 0 })
 	const formState = useFormState({
@@ -50,26 +56,27 @@ export default function DiscussionForm({ slug, onClose, title = 'discuss' }: Pro
 
 	formState.useSubmit(async () => {
 		pageProgressState.setProgress(Math.random() * 35)
-		const { createBookDiscussion } = await gqlFetch(bookDiscussionMutation, {
+		const { createDiscussion } = await gqlFetch(discussionMutation, {
 			input: {
 				discussion: formState.values.discussion,
 				email: formState.values.email,
 				topic: formState.values.topic,
+				type,
 				slug,
 			},
 		})
 		pageProgressState.setProgress(100)
-		if (createBookDiscussion) {
-			const type = createBookDiscussion.__typename
-			if (type === 'MutationCreateBookDiscussionSuccess') {
+		if (createDiscussion) {
+			const type = createDiscussion.__typename
+			if (type === 'MutationCreateDiscussionSuccess') {
 				notifications.add({ item: 'thank you!' })
 				formState.reset()
 				onClose?.()
 			} else if (type === 'Error') {
-				console.error(createBookDiscussion)
+				console.error(createDiscussion)
 				notifications.add({ item: 'your message was not sent, try again' })
 			} else if (type === 'ValidationError') {
-				const fieldErrors = createBookDiscussion.fieldErrors
+				const fieldErrors = createDiscussion.fieldErrors
 				fieldErrors?.forEach((fieldError) => {
 					const field = fieldError.path?.split('.').pop() || ''
 					if (formState.names[field as keyof typeof formState.values]) {
@@ -116,13 +123,13 @@ export default function DiscussionForm({ slug, onClose, title = 'discuss' }: Pro
 						>
 							<SelectItem value={''}>select a topic</SelectItem>
 							<SelectItem value={'recommendation'} display={'recommendation'}>
-								a related book recommendation
+								a related recommendation
 							</SelectItem>
 							<SelectItem value={'reflection'} display={'positive reflection'}>
-								positive reflections about this book
+								positive reflections
 							</SelectItem>
 							<SelectItem value={'reflection-critical'} display={'critical reflection'}>
-								critical reflections about this book
+								critical reflections
 							</SelectItem>
 						</Select>
 						<br />
