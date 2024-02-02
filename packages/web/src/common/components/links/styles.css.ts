@@ -77,7 +77,7 @@ export const articleBlockContainerStyles = style({
 	display: 'flex',
 	flexDirection: 'column',
 	justifyItems: 'right',
-	alignItems: 'right',
+	alignItems: 'end',
 	padding: '10px',
 	overflow: 'hidden',
 })
