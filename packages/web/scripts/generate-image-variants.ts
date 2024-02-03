@@ -52,12 +52,13 @@ async function makeManyVariants(
 }
 
 async function main() {
-	const { lastRun, db } = await initialize(VariantsFolder)
+	const { lastRun, db, luzzleFolder } = await initialize(VariantsFolder)
 
 	const books = await getItems(db, lastRun, 'books')
+
 	const bookCovers = books
 		.filter((book) => book.cover)
-		.map((book) => ({ slug: book.slug, image: `${VariantsFolder}/books/covers/${book.cover}` }))
+		.map((book) => ({ slug: book.slug, image: `${luzzleFolder}/books/${book.cover}` }))
 	await makeManyVariants(`${VariantsFolder}/books/covers`, bookCovers, {
 		sizes: [125, 250, 500, 1000],
 		dimensions: [{ width: 1, height: 3 / 2, label: 'w' }],
@@ -68,7 +69,7 @@ async function main() {
 		.filter((link) => link.representative_image)
 		.map((link) => ({
 			slug: link.slug,
-			image: `${VariantsFolder}/links/represenative_image/${link.representative_image}`,
+			image: `${luzzleFolder}/links/${link.representative_image}`,
 		}))
 	await makeManyVariants(`${VariantsFolder}/links/representative_image`, linkImages, {
 		sizes: [125, 250, 500, 1000],

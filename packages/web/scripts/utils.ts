@@ -50,8 +50,9 @@ async function initialize(folder: string) {
 
 	const lastRun = await getLastRun(folder, new Date(0))
 	const db = getDatabaseClient(`${process.env.LUZZLE_FOLDER}/luzzle.sqlite`)
+	const luzzleFolder = `${process.env.LUZZLE_FOLDER}`
 
-	return { lastRun, db }
+	return { lastRun, db, luzzleFolder }
 }
 
 async function finalize(folder: string, date: Date) {
