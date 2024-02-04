@@ -59,7 +59,7 @@ type LinkPageProps = { link: Link }
 
 function makeLinkDateString(link?: Link): string {
 	const month =
-		link && typeof link.dateAccessed === 'number' ? new Date(link.dateAccessed).getMonth() : '?'
+		link && typeof link.dateAccessed === 'number' ? new Date(link.dateAccessed).getMonth() + 1 : '?'
 	const year =
 		link && typeof link.dateAccessed === 'number' ? new Date(link.dateAccessed).getFullYear() : '?'
 
@@ -102,11 +102,15 @@ export default function LinkPage({ link }: LinkPageProps): JSX.Element {
 				<Box className={styles.linkContainer}>
 					<Box className={styles.linkDetails}>
 						<Box style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-							<Anchor href={link.url}>
-								<Button minimal use={'primary'} className={styles.linkDiscuss}>
-									<LinkSimple size={36} />
-								</Button>
-							</Anchor>
+							{link.archiveUrl ? (
+								<Anchor href={link.archiveUrl}>
+									<Button minimal use={'primary'} className={styles.linkDiscuss}>
+										<LinkSimple size={36} />
+									</Button>
+								</Anchor>
+							) : (
+								<Box />
+							)}
 
 							<Button
 								onClick={() => setShowForm(true)}
@@ -129,6 +133,18 @@ export default function LinkPage({ link }: LinkPageProps): JSX.Element {
 							by {link.author}
 							{link.coauthors && `, ${link.coauthors?.split(',').join(', ')}`}
 						</Text>
+						<br />
+						<Divider />
+						<br />
+						<Text as="h3" size="h3">
+							link
+						</Text>
+						<br />
+						<Box>
+							<Anchor href={link.url} hoverAction="underline">
+								{link.url}
+							</Anchor>
+						</Box>
 						<br />
 						<Divider />
 						<br />

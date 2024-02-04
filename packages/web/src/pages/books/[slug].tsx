@@ -58,7 +58,8 @@ type BookPageStaticParams = { params: BookOrderPartial }
 type BookPageProps = { book: Book }
 
 function makeBookDateString(book?: Book): string {
-	const month = book && typeof book.dateRead === 'number' ? new Date(book.dateRead).getMonth() : '?'
+	const month =
+		book && typeof book.dateRead === 'number' ? new Date(book.dateRead).getMonth() + 1 : '?'
 	const year =
 		book && typeof book.dateRead === 'number' ? new Date(book.dateRead).getFullYear() : '?'
 
