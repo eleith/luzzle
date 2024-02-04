@@ -109,7 +109,7 @@ function ArticleCover({
 	function repeatBlock(times: number): JSX.Element[] {
 		const blocks = []
 		for (let i = 1; i <= times; i++) {
-			blocks.push(<Box className={articleStyles.articleBlock} />)
+			blocks.push(<Box className={articleStyles.articleBlock} key={i} />)
 		}
 		return blocks
 	}
