@@ -13,7 +13,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.select('keywords')
 		.select('cover as media')
 		.select('date_read as date_order')
-		.select("'books' as from_piece")
+		.select('books as from_piece')
 
 	const linksQuery = db
 		.selectFrom('links')
@@ -26,7 +26,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.select('keywords')
 		.select('representative_image as media')
 		.select('date_accessed as date_order')
-		.select("'links' as from_piece")
+		.select('links as from_piece')
 
 	const unionedQuery = booksQuery.unionAll(linksQuery)
 
