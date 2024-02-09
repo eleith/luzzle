@@ -1,11 +1,10 @@
 import config from '@app/common/config'
 import ArticleCover, { ArticleCoverProps } from './ArticleCover'
 
-type Link = {
+type Piece = {
 	id: string
 	slug: string
 	title: string
-	representativeImage?: string | null
 }
 
 const ArticleCoverSize = {
@@ -16,9 +15,10 @@ const ArticleCoverSize = {
 
 type ArticleCoverForProps = {
 	asLink?: boolean
-	link: Link
+	hasMedia?: boolean
+	piece: Piece
 	size?: (typeof ArticleCoverSize)[keyof typeof ArticleCoverSize]
-}
+} & ArticleCoverProps
 
 function getDimensions(size: (typeof ArticleCoverSize)[keyof typeof ArticleCoverSize]) {
 	switch (size) {
@@ -43,22 +43,23 @@ function getCoverUrl(slug: string, size = 125, type: 'webp' | 'avif' | 'jpg' = '
 }
 
 function ArticleCoverFor({
-	link,
+	piece,
 	size = ArticleCoverSize.MEDIUM,
+	hasMedia = false,
 	...linkCoverProps
 }: ArticleCoverForProps): JSX.Element {
 	const dimensions = getDimensions(size)
 	const coverUrl = {
-		avif: getCoverUrl(link.slug, dimensions.imgHeight, 'avif'),
-		jpg: getCoverUrl(link.slug, dimensions.imgHeight, 'jpg'),
+		avif: getCoverUrl(piece.slug, dimensions.imgHeight, 'avif'),
+		jpg: getCoverUrl(piece.slug, dimensions.imgHeight, 'jpg'),
 	}
 
 	const articleCoverProps: ArticleCoverProps = {
 		...linkCoverProps,
 		width: dimensions.width,
 		height: dimensions.height,
-		imageUrl: link.representativeImage ? coverUrl : undefined,
-		imgHeight: link.representativeImage ? dimensions.imgHeight : undefined,
+		imageUrl: hasMedia ? coverUrl : undefined,
+		imgHeight: hasMedia ? dimensions.imgHeight : undefined,
 	}
 
 	return <ArticleCover {...articleCoverProps} />

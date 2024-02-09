@@ -8,9 +8,8 @@ import useGraphSWRInfinite from '@app/common/hooks/useGraphSWRInfinite'
 import { useState } from 'react'
 import { ResultOf } from '@graphql-typed-document-node/core'
 import * as styles from './index.css'
-import ArticleCoverFor from '@app/common/components/links/ArticleCoverFor'
 import Link from 'next/link'
-import { CaretRight } from 'phosphor-react'
+import PieceCard from '@app/common/components/pieces/PieceCard'
 
 const getLinksQuery = gql<typeof GetLinksDocument>(
 	`query GetLinks($take: Int, $page: Int) {
@@ -30,26 +29,6 @@ type LinksProps = {
 }
 
 const TAKE = 50
-
-function makeLinkCardLink(link: Link): JSX.Element {
-	return (
-		<Link href={`/links/${link.slug}`} key={link.id}>
-			<Anchor className={styles.linkCard}>
-				<Box style={{ display: 'flex' }}>
-					<Box style={{ flex: 1 }}>
-						<Box style={{ display: 'flex' }}>
-							<ArticleCoverFor asLink={true} link={link} size={'SMALL'} />
-							<Box style={{ alignSelf: 'center', flex: 1 }}>
-								<CaretRight size={24} style={{ margin: 'auto' }} />
-							</Box>
-						</Box>
-					</Box>
-					<Box style={{ flex: 1, alignSelf: 'center' }}>{link.title}</Box>
-				</Box>
-			</Anchor>
-		</Link>
-	)
-}
 
 export async function getStaticProps(): Promise<{ props: LinksProps }> {
 	const response = await staticClient.query({ query: getLinksQuery, variables: { take: TAKE } })
@@ -102,7 +81,18 @@ export default function Links({ links }: LinksProps): JSX.Element {
 		setSize(size + 1)
 	}
 
-	const allLinks = totalLinks.map((link) => makeLinkCardLink(link))
+	const allLinks = totalLinks.map((link, i) =>
+		PieceCard(
+			{
+				id: link.id,
+				slug: link.slug,
+				media: link.representativeImage,
+				title: link.title,
+				type: 'links',
+			},
+			i
+		)
+	)
 
 	return (
 		<PageFull meta={{ title: 'links' }}>
