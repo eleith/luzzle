@@ -11,19 +11,19 @@ const BookCoverSize = {
 	LARGE: 'LARGE',
 } as const
 
-type Book = {
+type Piece = {
 	slug: string
 	title: string
 	id: string
-	pages?: number | null
 }
 
 type BookCoverForProps = {
 	asLink?: boolean
-	book: Book
+	piece: Piece
 	hasCover?: boolean
 	size?: typeof BookCoverSize
 	scale?: number
+	pages?: number | null
 } & Omit<BookCoverProps, 'children' | 'backgroundImageUrl'>
 
 const BookColors = ['#fb4934', '#b8bb26', '#fabd2f', '#83a598', '#d3869b', '#8ec07c', '#fe8019']
@@ -76,18 +76,19 @@ function getCoverUrl(slug: string, size = 125, type: 'webp' | 'avif' | 'jpg' = '
 }
 
 function BookCoverFor({
-	book,
+	piece,
 	asLink = false,
 	hasCover = false,
+	pages = 100,
 	scale = 1,
 	...coverProps
 }: BookCoverForProps): JSX.Element {
-	const size = getSize(book.pages, scale)
+	const size = getSize(pages, scale)
 	const coverUrl = {
-		jpg: getCoverUrl(book.slug, size.width, 'jpg'),
-		avif: getCoverUrl(book.slug, size.width, 'avif'),
+		jpg: getCoverUrl(piece.slug, size.width, 'jpg'),
+		avif: getCoverUrl(piece.slug, size.width, 'avif'),
 	}
-	const color = getColor(book.slug)
+	const color = getColor(piece.slug)
 	const bookCoverProps = {
 		...size,
 		backgroundColor: color,
@@ -97,12 +98,12 @@ function BookCoverFor({
 
 	if (asLink) {
 		return (
-			<Link href={`/books/${book.slug}`}>
+			<Link href={`/books/${piece.slug}`}>
 				<a>
 					<BookCover {...bookCoverProps}>
 						<Box>
-							<Text size="label">{book.title}</Text>
-							<VisuallyHidden>{book.title}</VisuallyHidden>
+							<Text size="label">{piece.title}</Text>
+							<VisuallyHidden>{piece.title}</VisuallyHidden>
 						</Box>
 					</BookCover>
 				</a>
@@ -112,8 +113,8 @@ function BookCoverFor({
 		return (
 			<BookCover {...bookCoverProps}>
 				<Box>
-					<Text size="label">{book.title}</Text>
-					<VisuallyHidden>{book.title}</VisuallyHidden>
+					<Text size="label">{piece.title}</Text>
+					<VisuallyHidden>{piece.title}</VisuallyHidden>
 				</Box>
 			</BookCover>
 		)

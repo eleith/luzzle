@@ -8,7 +8,7 @@ export const booksContainer = style({
 	margin: 'auto',
 	marginTop: vars.space[10],
 	marginBottom: vars.space[10],
-	gridTemplateColumns: 'repeat(auto-fill, 140px)',
+	gridTemplateColumns: 'repeat(auto-fill, 280px)',
 	alignItems: 'center',
 	justifyContent: 'center',
 	gap: vars.space[5],

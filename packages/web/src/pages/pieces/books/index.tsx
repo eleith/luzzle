@@ -1,4 +1,3 @@
-import { BookCoverFor } from '@app/common/components/books'
 import PageFull from '@app/common/components/layout/PageFull'
 import gql from '@app/lib/graphql/tag'
 import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
@@ -8,8 +7,8 @@ import { Box, Anchor } from '@luzzle/ui/components'
 import useGraphSWRInfinite from '@app/common/hooks/useGraphSWRInfinite'
 import { useState } from 'react'
 import { ResultOf } from '@graphql-typed-document-node/core'
-import Link from 'next/link'
 import * as styles from './index.css'
+import PieceCard from '@app/common/components/pieces/PieceCard'
 
 const getBooksQuery = gql<typeof GetBooksDocument>(
 	`query GetBooks($take: Int, $page: Int) {
@@ -29,24 +28,6 @@ type BooksProps = {
 }
 
 const TAKE = 50
-
-function makeBookCardLink(book: Book, index = 0): JSX.Element {
-	return (
-		<Link href={`/books/${book.slug}`} key={book.id}>
-			<a>
-				<Box>
-					<BookCoverFor
-						book={book}
-						hasCover={!!book.cover}
-						scale={0.5}
-						rotateInteract={{ x: 0, y: -35 }}
-						imgLoading={index < 10 ? 'eager' : 'lazy'}
-					/>
-				</Box>
-			</a>
-		</Link>
-	)
-}
 
 export async function getStaticProps(): Promise<{ props: BooksProps }> {
 	const response = await staticClient.query({ query: getBooksQuery, variables: { take: TAKE } })
@@ -99,7 +80,12 @@ export default function Books({ books }: BooksProps): JSX.Element {
 		setSize(size + 1)
 	}
 
-	const allBooks = totalBooks.map((book, i) => makeBookCardLink(book, i))
+	const allBooks = totalBooks.map((book, i) =>
+		PieceCard(
+			{ slug: book.slug, type: 'books', title: book.title, id: book.id, media: book.cover },
+			i
+		)
+	)
 
 	return (
 		<PageFull meta={{ title: 'books' }}>

@@ -2,16 +2,16 @@ import { style } from '@vanilla-extract/css'
 import { vars } from '@luzzle/ui/css'
 import { mediaBreakpointTablet, mediaBreakpointLaptop } from '@luzzle/ui/css'
 
-export const booksContainer = style({
+export const piecesContainer = style({
 	display: 'grid',
 	width: '100%',
 	margin: 'auto',
 	marginTop: vars.space[10],
 	marginBottom: vars.space[10],
 	gridTemplateColumns: 'repeat(auto-fill, 280px)',
-	alignItems: 'center',
-	justifyContent: 'center',
 	gap: vars.space[5],
+	alignItems: 'top',
+	justifyContent: 'center',
 	selectors: {
 		'&::last-child': {
 			marginRight: 'auto',
@@ -23,7 +23,7 @@ export const booksContainer = style({
 	},
 })
 
-export const booksActions = style({
+export const piecesActions = style({
 	textAlign: 'center',
 	padding: `${vars.space[5]} 0 ${vars.space[5]} 0`,
 })
