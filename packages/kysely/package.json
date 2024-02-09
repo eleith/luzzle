@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/kysely",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
