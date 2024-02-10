@@ -7,6 +7,6 @@ generated
 build
 public/images/og
 public/images/variants
-public/rss/books
+public/rss
 **/_gql_
 src/@types/graphql.d.ts
