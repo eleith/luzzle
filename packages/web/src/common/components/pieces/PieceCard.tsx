@@ -19,6 +19,7 @@ function makePieceCard(piece: Piece, index = 0): JSX.Element {
 			<ArticleCoverFor
 				asLink={true}
 				piece={piece}
+				hasMedia={!!piece.media}
 				size={'SMALL'}
 				imgLoading={index < 10 ? 'eager' : 'lazy'}
 			/>
