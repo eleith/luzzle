@@ -1,3 +1,5 @@
+/* stylelint-disable @typescript-eslint/no-unused-vars */
+/* stylelint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from 'react'
 import { Box } from '@luzzle/ui/components'
@@ -83,13 +85,14 @@ export type BookCoverProps = {
 	rotate?: { x: number; y: number }
 	rotateInteract?: { x: number; y: number }
 	imgLoading?: 'lazy' | 'eager'
+	isActive?: boolean
 }
 
 function BookCover({
 	children,
 	backgroundImageUrl,
 	rotate = { x: 0, y: 0 },
-	rotateInteract = rotate,
+	rotateInteract = { x: rotate.x, y: rotate.y },
 	perspective = 900,
 	transitionDuration = 0.75,
 	thickness = 50,
@@ -101,13 +104,44 @@ function BookCover({
 	pagesOffset = 3,
 	loading = false,
 	imgLoading = 'eager',
-}: BookCoverProps): JSX.Element {
+	isActive = false,
+}: BookCoverProps) {
 	const hasBackgroundImage = !!backgroundImageUrl
 	const [isLoading, setLoading] = useState(hasBackgroundImage || loading)
-	const [isMoving, setMoving] = useState(false)
+	const [isMoving, setMoving] = useState(false || isActive)
 	const [rotateTo, setRotate] = useState(rotate)
 
-	// avoid objects as dependencies as they always differ
+	function needsToRotate() {
+		return rotate.x != rotateInteract.x || rotate.y != rotateInteract.y
+	}
+
+	function stop(): void {
+		if (needsToRotate()) {
+			setMoving(true)
+			setRotate(rotate)
+		}
+	}
+
+	function start(): void {
+		if (needsToRotate()) {
+			setMoving(true)
+			setRotate(rotateInteract)
+		}
+	}
+
+	function end(): void {
+		setMoving(false)
+	}
+
+	useEffect(() => {
+		if (isActive === true) {
+			setMoving(isActive)
+			setRotate({ x: rotateInteract.x, y: rotateInteract.y })
+		} else if (isMoving) {
+			setRotate({ x: rotate.x, y: rotate.y })
+		}
+	}, [isActive, rotateInteract.x, rotateInteract.y, rotate.x, rotate.y, isMoving])
+
 	useEffect(() => {
 		setMoving(true)
 		setRotate({ x: rotate.x, y: rotate.y })
@@ -156,33 +190,15 @@ function BookCover({
 		</Box>
 	)
 
-	function stop(): void {
-		if (rotate.x != rotateInteract.x || rotate.y != rotateInteract.y) {
-			setMoving(true)
-			setRotate(rotate)
-		}
-	}
-
-	function start(): void {
-		if (rotate.x != rotateInteract.x || rotate.y != rotateInteract.y) {
-			setMoving(true)
-			setRotate(rotateInteract)
-		}
-	}
-
-	function end(): void {
-		setMoving(false)
-	}
-
 	return (
 		<Box style={bookStyles.variables} className={bookStyles.container}>
 			<Box
 				className={bookStyles.book}
 				onMouseOver={start}
 				onMouseLeave={stop}
-				onTransitionEnd={end}
 				onTouchStart={start}
 				onTouchEnd={stop}
+				onTransitionEnd={end}
 			>
 				<Box className={bookStyles.bookShadow} />
 				<Box className={bookStyles.bookSpine} />

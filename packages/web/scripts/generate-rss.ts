@@ -32,7 +32,7 @@ async function generateRss(pieces: LuzzleSelectable<'pieces_view'>[], folder: st
 	const items = pieces?.map((piece) => {
 		const item: Item = {
 			title: piece.title,
-			link: `${process.env.NEXT_PUBLIC_HOST}/${piece.from_piece}/${piece.slug}`,
+			link: `${process.env.NEXT_PUBLIC_HOST}/pieces/${piece.from_piece}/${piece.slug}`,
 			image: `${process.env.NEXT_PUBLIC_HOST_STATIC}/images/og/${piece.from_piece}/${piece.slug}.png`,
 			description: piece.note || '',
 			content: piece.note || '',

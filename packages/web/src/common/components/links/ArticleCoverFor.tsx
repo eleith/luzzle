@@ -14,7 +14,6 @@ const ArticleCoverSize = {
 } as const
 
 type ArticleCoverForProps = {
-	asLink?: boolean
 	hasMedia?: boolean
 	piece: Piece
 	size?: (typeof ArticleCoverSize)[keyof typeof ArticleCoverSize]
