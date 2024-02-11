@@ -2,7 +2,6 @@
 .gitignore
 .git
 .tool-versions
-.next
 .stylelintrc.json
 .eslintrc.json
 .prettierrc.json

@@ -12,7 +12,8 @@ COPY package.json ./
 COPY package-lock.json ./
 COPY packages ./packages
 
-RUN npm ci -w @luzzle/web -w @luzzle/ui
+# RUN npm ci -w @luzzle/web -w @luzzle/ui
+RUN npm ci -w @luzzle/web
 
 # Rebuild the source code only when needed
 FROM node:18-alpine AS builder
@@ -45,12 +46,10 @@ COPY --from=builder /app/packages/web/data ./packages/web/data
 COPY --from=builder /app/packages/web/.env ./packages/web/.env
 COPY --from=builder /app/packages/web/.env.local ./packages/web/.env.local
 COPY --from=builder /app/packages/web/.env.production ./packages/web/.env.production
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages/ui ./packages/ui
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/standalone ./packages/web
+COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/standalone .
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./packages/web/.next/static
 
 USER nextjs
