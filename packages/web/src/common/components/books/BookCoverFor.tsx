@@ -1,9 +1,8 @@
 import config from '@app/common/config'
-import Link from 'next/link'
 import BookCover, { BookCoverProps } from './BookCover'
 import { VisuallyHidden } from 'ariakit'
 import { createHash } from 'crypto'
-import { Box, Text } from '@luzzle/ui/components'
+import { Box } from '@luzzle/ui/components'
 
 const BookCoverSize = {
 	SMALL: 'SMALL',
@@ -18,12 +17,12 @@ type Piece = {
 }
 
 type BookCoverForProps = {
-	asLink?: boolean
 	piece: Piece
 	hasCover?: boolean
 	size?: typeof BookCoverSize
 	scale?: number
 	pages?: number | null
+	reference?: React.RefObject<HTMLElement>
 } & Omit<BookCoverProps, 'children' | 'backgroundImageUrl'>
 
 const BookColors = ['#fb4934', '#b8bb26', '#fabd2f', '#83a598', '#d3869b', '#8ec07c', '#fe8019']
@@ -77,7 +76,6 @@ function getCoverUrl(slug: string, size = 125, type: 'webp' | 'avif' | 'jpg' = '
 
 function BookCoverFor({
 	piece,
-	asLink = false,
 	hasCover = false,
 	pages = 100,
 	scale = 1,
@@ -96,29 +94,14 @@ function BookCoverFor({
 		backgroundImageUrl: hasCover ? coverUrl : undefined,
 	} as BookCoverProps
 
-	if (asLink) {
-		return (
-			<Link href={`/books/${piece.slug}`}>
-				<a>
-					<BookCover {...bookCoverProps}>
-						<Box>
-							<Text size="label">{piece.title}</Text>
-							<VisuallyHidden>{piece.title}</VisuallyHidden>
-						</Box>
-					</BookCover>
-				</a>
-			</Link>
-		)
-	} else {
-		return (
-			<BookCover {...bookCoverProps}>
-				<Box>
-					<Text size="label">{piece.title}</Text>
-					<VisuallyHidden>{piece.title}</VisuallyHidden>
-				</Box>
-			</BookCover>
-		)
-	}
+	return (
+		<BookCover {...bookCoverProps}>
+			<Box>
+				<span>{piece.title}</span>
+				<VisuallyHidden>{piece.title}</VisuallyHidden>
+			</Box>
+		</BookCover>
+	)
 }
 
 export default BookCoverFor

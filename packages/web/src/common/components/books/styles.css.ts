@@ -180,6 +180,7 @@ export const bookBackStyles = style({
 })
 
 export const bookFrontStyles = style({
+	width: '100%',
 	padding: '3px',
 	position: 'absolute',
 	textAlign: 'center',
