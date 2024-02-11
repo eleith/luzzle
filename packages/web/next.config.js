@@ -1,4 +1,5 @@
 const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin')
+const path = require('path')
 const withVanillaExtract = createVanillaExtractPlugin()
 const withTM = require('next-transpile-modules')(['@luzzle/ui'])
 
@@ -26,6 +27,9 @@ module.exports = withTM(
 			},
 			eslint: {
 				ignoreDuringBuilds: true,
+			},
+			experimental: {
+				outputFileTracingRoot: path.join(__dirname, '../../'),
 			},
 			output: 'standalone',
 			images: {
