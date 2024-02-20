@@ -5,7 +5,7 @@ import { getDatabaseClient, LuzzleSelectable } from '@luzzle/kysely'
 
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== 'production')
 
-async function generateRss(pieces: LuzzleSelectable<'pieces_view'>[], folder: string) {
+async function generateRss(pieces: LuzzleSelectable<'pieces'>[], folder: string) {
 	const feed = new Feed({
 		title: process.env.SITE_TITLE || '',
 		description: process.env.SITE_DESCRIPTION,
@@ -32,11 +32,11 @@ async function generateRss(pieces: LuzzleSelectable<'pieces_view'>[], folder: st
 	const items = pieces?.map((piece) => {
 		const item: Item = {
 			title: piece.title,
-			link: `${process.env.NEXT_PUBLIC_HOST}/pieces/${piece.from_piece}/${piece.slug}`,
-			image: `${process.env.NEXT_PUBLIC_HOST_STATIC}/images/og/${piece.from_piece}/${piece.slug}.png`,
+			link: `${process.env.NEXT_PUBLIC_HOST}/pieces/${piece.type}/${piece.slug}`,
+			image: `${process.env.NEXT_PUBLIC_HOST_STATIC}/images/og/${piece.type}/${piece.slug}.png`,
 			description: piece.note || '',
 			content: piece.note || '',
-			date: new Date(piece.date_order ?? piece.date_added),
+			date: new Date(piece.date_consumed ?? piece.date_added),
 		}
 
 		return item
@@ -63,29 +63,29 @@ async function generateRss(pieces: LuzzleSelectable<'pieces_view'>[], folder: st
 async function main() {
 	const db = getDatabaseClient(`${process.env.LUZZLE_FOLDER}/luzzle.sqlite`)
 	const books = await db
-		.selectFrom('pieces_view')
+		.selectFrom('pieces')
 		.limit(50)
-		.where('from_piece', '=', 'books')
-		.orderBy('date_order', 'desc')
+		.where('type', '=', 'books')
+		.orderBy('date_consumed', 'desc')
 		.selectAll()
 		.execute()
 
 	generateRss(books, 'pieces/books')
 
 	const links = await db
-		.selectFrom('pieces_view')
+		.selectFrom('pieces')
 		.limit(50)
-		.where('from_piece', '=', 'links')
-		.orderBy('date_order', 'desc')
+		.where('type', '=', 'links')
+		.orderBy('date_consumed', 'desc')
 		.selectAll()
 		.execute()
 
 	generateRss(links, 'pieces/links')
 
 	const pieces = await db
-		.selectFrom('pieces_view')
+		.selectFrom('pieces')
 		.limit(50)
-		.orderBy('date_order', 'desc')
+		.orderBy('date_consumed', 'desc')
 		.selectAll()
 		.execute()
 

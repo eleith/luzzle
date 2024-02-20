@@ -33,7 +33,7 @@ builder.queryFields((t) => ({
 						.execute()
 
 					let query = ctx.db
-						.selectFrom('pieces_view')
+						.selectFrom('pieces')
 						.selectAll()
 						.where(
 							'id',
@@ -47,25 +47,25 @@ builder.queryFields((t) => ({
 					}
 
 					if (type) {
-						query = query.where('from_piece', '=', type)
+						query = query.where('type', '=', type)
 					}
 
 					return query.execute()
 				}
 			}
 
-			let query = ctx.db.selectFrom('pieces_view').selectAll()
+			let query = ctx.db.selectFrom('pieces').selectAll()
 
 			if (page) {
 				query = query.offset(takeValidated * page)
 			}
 
 			if (type) {
-				query = query.where('from_piece', '=', type)
+				query = query.where('type', '=', type)
 			}
 
 			return query
-				.orderBy('date_order', 'desc')
+				.orderBy('date_consumed', 'desc')
 				.orderBy('slug', 'asc')
 				.limit(takeValidated)
 				.execute()
