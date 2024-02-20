@@ -42,8 +42,10 @@ builder.mutationFields((t) => ({
 					.where('slug', '=', slug)
 					.executeTakeFirstOrThrow()
 
+				console.log(topic, email, discussion, type, slug, item)
+
 				await ctx.email.sendAsync({
-					text: `topic: ${topic}\nfrom: ${email}\n\ndiscussion:\n--\n\n${discussion}`,
+					text: `topic: ${topic}\r\nfrom: ${email}\r\n\r\ndiscussion:\r\n--\r\n\r\n${discussion}`,
 					'reply-to': email,
 					from: 'online-hi-eleith-com@eleith.com',
 					to: 'online-hi-eleith-com@eleith.com',
@@ -64,7 +66,7 @@ builder.mutationFields((t) => ({
 }))
 
 builder.mutationFields((t) => ({
-	createBookRecommendation: t.boolean({
+	createRecommendation: t.boolean({
 		errors: {
 			types: [ZodError, Error],
 		},

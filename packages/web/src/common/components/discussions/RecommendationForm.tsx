@@ -1,15 +1,15 @@
 import gql from '@app/lib/graphql/tag'
-import { CreateBookRecommendationDocument } from './_gql_/RecommendationForm'
+import { CreateRecommendationDocument } from './_gql_/RecommendationForm'
 import { Box, Button, Input, TextArea, useNotificationQueue, Text } from '@luzzle/ui/components'
 import { CircleNotch } from 'phosphor-react'
 import { Form, FormState, useFormState } from 'ariakit/form'
 import gqlFetch from '@app/common/graphql/fetch'
 import { PageProgress, useProgressPageState } from '@luzzle/ui/components'
 
-const bookRecommendationMutation = gql<
-	typeof CreateBookRecommendationDocument
->(`mutation CreateBookRecommendation($input: RecommendationInput!) {
-  createBookRecommendation(input: $input) {
+const recommendationMutation = gql<
+	typeof CreateRecommendationDocument
+>(`mutation CreateRecommendation($input: RecommendationInput!) {
+  createRecommendation(input: $input) {
     __typename
     ... on Error {
       message
@@ -20,7 +20,7 @@ const bookRecommendationMutation = gql<
         path
       }
     }
-    ... on MutationCreateBookRecommendationSuccess {
+    ... on MutationCreateRecommendationSuccess {
       data
     }
   }
@@ -40,24 +40,24 @@ export default function DiscussionForm({ onClose, title = 'recommend' }: Props):
 
 	formState.useSubmit(async () => {
 		pageProgressState.setProgress(Math.random() * 35)
-		const { createBookRecommendation } = await gqlFetch(bookRecommendationMutation, {
+		const { createRecommendation } = await gqlFetch(recommendationMutation, {
 			input: {
 				recommendation: formState.values.discussion,
 				email: formState.values.email,
 			},
 		})
 		pageProgressState.setProgress(100)
-		if (createBookRecommendation) {
-			const type = createBookRecommendation.__typename
-			if (type === 'MutationCreateBookRecommendationSuccess') {
+		if (createRecommendation) {
+			const type = createRecommendation.__typename
+			if (type === 'MutationCreateRecommendationSuccess') {
 				notifications.add({ item: 'thank you!' })
 				formState.reset()
 				onClose?.()
 			} else if (type === 'Error') {
-				console.error(createBookRecommendation)
+				console.error(createRecommendation)
 				notifications.add({ item: 'your message was not sent, try again' })
 			} else if (type === 'ValidationError') {
-				const fieldErrors = createBookRecommendation.fieldErrors
+				const fieldErrors = createRecommendation.fieldErrors
 				fieldErrors?.forEach((fieldError) => {
 					const field = fieldError.path?.split('.').pop() || ''
 					if (formState.names[field as keyof typeof formState.values]) {
