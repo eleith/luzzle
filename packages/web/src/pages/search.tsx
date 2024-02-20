@@ -46,7 +46,7 @@ export default function SearchPage(): JSX.Element {
 	}
 
 	const searchResults = searches.map((piece, i) => (
-		<Box key={i} style={{ marginTop: '40px' }}>
+		<Box key={i} style={{ marginTop: '40px', width: '300px' }}>
 			<PieceCard {...piece} />
 		</Box>
 	))

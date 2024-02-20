@@ -22,5 +22,7 @@ export const searchResults = style({
 	padding: vars.space[2],
 	marginLeft: 'auto',
 	marginRight: 'auto',
-	width: '50%',
+	display: 'flex',
+	flexDirection: 'column',
+	alignItems: 'center',
 })
