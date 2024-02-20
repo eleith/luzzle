@@ -1,37 +1,38 @@
 import Page from '@app/common/components/layout/Page'
-import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
 import gql from '@app/lib/graphql/tag'
-import { GetSearchPageBannerDocument } from './_gql_/search'
-import Link from 'next/link'
-import { Box, Text, Anchor, Button, Input } from '@luzzle/ui/components'
+import { GetPieceSearchDocument } from './_gql_/search'
+import { Box, Button, Input } from '@luzzle/ui/components'
 import { useState, ChangeEvent } from 'react'
 import { XCircle } from 'phosphor-react'
 import gqlFetch from '@app/common/graphql/fetch'
-import { BookFullDetailsFragment as BookSearchResult } from '@app/common/graphql/book/fragments/_gql_/bookFullDetails'
+import pieceFragment from '@app/common/graphql/piece/fragments/pieceFullDetails'
 import { useRouter } from 'next/router'
 import * as styles from './search.css'
+import PieceCard from '@app/common/components/pieces/PieceCard'
 
-const getSearchQuery = gql<typeof GetSearchPageBannerDocument>(
-	`query GetSearchPageBanner($query: String!) {
+const getPieceSearchQuery = gql<typeof GetPieceSearchDocument>(
+	`query GetPieceSearch($query: String!) {
   search(query: $query) {
     __typename
     ... on QuerySearchSuccess {
       data {
-        ...BookFullDetails
+        ...PieceFullDetails
       }
     }
   }
 }`,
-	bookFragment
+	pieceFragment
 )
 
-async function getSearchResults(query: string): Promise<BookSearchResult[]> {
-	const data = await gqlFetch(getSearchQuery, { query })
+async function getSearchResults(query: string) {
+	const data = await gqlFetch(getPieceSearchQuery, { query })
 	return data.search?.__typename === 'QuerySearchSuccess' ? data.search.data : []
 }
 
+type PieceSearchResults = Awaited<ReturnType<typeof getSearchResults>>
+
 export default function SearchPage(): JSX.Element {
-	const [searches, setSearches] = useState<BookSearchResult[]>([])
+	const [searches, setSearches] = useState<PieceSearchResults>([])
 	const router = useRouter()
 
 	async function fuzzySearchBook(e: ChangeEvent<HTMLInputElement>): Promise<void> {
@@ -44,17 +45,9 @@ export default function SearchPage(): JSX.Element {
 		}
 	}
 
-	const searchResults = searches.map((book) => (
-		<Box key={book.slug} style={{ paddingBottom: '20px' }}>
-			<Link href={`/books/${book.slug}`} passHref>
-				<Anchor hoverAction="animateUnderline">
-					<Text size="h2">{book.title}</Text>
-				</Anchor>
-			</Link>
-			<Box>
-				{book.subtitle && <Text size="caption">{book.subtitle}</Text>}
-				{book.author && <Text size="caption">{`by ${book.author} ${book.coauthors || ''}`}</Text>}
-			</Box>
+	const searchResults = searches.map((piece, i) => (
+		<Box key={i} style={{ marginTop: '40px' }}>
+			<PieceCard {...piece} />
 		</Box>
 	))
 

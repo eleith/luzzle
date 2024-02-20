@@ -2,11 +2,11 @@ import builder from '@app/lib/graphql/builder'
 import { LuzzleSelectable } from '@luzzle/kysely'
 import { Tag } from '../../tag'
 
-const PieceBuilder = builder.objectRef<LuzzleSelectable<'pieces_view'>>('Piece')
+const PieceBuilder = builder.objectRef<LuzzleSelectable<'pieces'>>('Piece')
 const PieceSiblings = builder
 	.objectRef<{
-		next?: LuzzleSelectable<'pieces_view'> | null
-		previous?: LuzzleSelectable<'pieces_view'> | null
+		next?: LuzzleSelectable<'pieces'> | null
+		previous?: LuzzleSelectable<'pieces'> | null
 	}>('PieceSiblings')
 	.implement({
 		fields: (t) => ({
@@ -25,8 +25,8 @@ PieceBuilder.implement({
 		note: t.exposeString('note'),
 		dateUpdated: t.exposeFloat('date_updated'),
 		dateAdded: t.exposeFloat('date_added', { nullable: false }),
-		dateOrder: t.exposeFloat('date_order'),
-		type: t.exposeString('from_piece', { nullable: false }),
+		dateOrder: t.exposeFloat('date_consumed'),
+		type: t.exposeString('type', { nullable: false }),
 		media: t.exposeString('media'),
 		tags: t.field({
 			type: [Tag],
@@ -53,34 +53,40 @@ PieceBuilder.implement({
 			type: PieceSiblings,
 			resolve: async (parent, _, ctx) => {
 				const after = await ctx.db
-					.selectFrom('pieces_view')
+					.selectFrom('pieces')
 					.select('slug')
-					.orderBy('date_order', 'desc')
+					.orderBy('date_consumed', 'desc')
 					.orderBy('slug', 'asc')
 					.where(({ and, or, cmpr }) => {
 						return or([
-							cmpr('date_order', '<', parent.date_order),
-							and([cmpr('date_order', '=', parent.date_order), cmpr('slug', '>', parent.slug)]),
+							cmpr('date_consumed', '<', parent.date_consumed),
+							and([
+								cmpr('date_consumed', '=', parent.date_consumed),
+								cmpr('slug', '>', parent.slug),
+							]),
 						])
 					})
 					.executeTakeFirst()
 
 				const before = await ctx.db
-					.selectFrom('pieces_view')
+					.selectFrom('pieces')
 					.select('slug')
-					.orderBy('date_order', 'asc')
+					.orderBy('date_consumed', 'asc')
 					.orderBy('slug', 'desc')
 					.where(({ and, or, cmpr }) => {
 						return or([
-							cmpr('date_order', '>', parent.date_order),
-							and([cmpr('date_order', '=', parent.date_order), cmpr('slug', '<', parent.slug)]),
+							cmpr('date_consumed', '>', parent.date_consumed),
+							and([
+								cmpr('date_consumed', '=', parent.date_consumed),
+								cmpr('slug', '<', parent.slug),
+							]),
 						])
 					})
 					.executeTakeFirst()
 
 				const previous = before
 					? await ctx.db
-							.selectFrom('pieces_view')
+							.selectFrom('pieces')
 							.selectAll()
 							.where('slug', '=', before.slug)
 							.executeTakeFirst()
@@ -88,7 +94,7 @@ PieceBuilder.implement({
 
 				const next = after
 					? await ctx.db
-							.selectFrom('pieces_view')
+							.selectFrom('pieces')
 							.selectAll()
 							.where('slug', '=', after.slug)
 							.executeTakeFirst()

@@ -17,20 +17,20 @@ builder.queryFields((t) => ({
 
 			if (slug && type) {
 				return await ctx.db
-					.selectFrom('pieces_view')
+					.selectFrom('pieces')
 					.selectAll()
 					.where('slug', '=', slug)
-					.where('from_piece', '=', type as Pieces)
+					.where('type', '=', type as Pieces)
 					.executeTakeFirstOrThrow()
 			} else {
 				const find = await ctx.db
-					.selectFrom('pieces_view')
+					.selectFrom('pieces')
 					.select(ctx.db.fn.count<number>('id').as('count'))
 					.executeTakeFirstOrThrow()
 				const skip = Math.floor(Math.random() * find.count)
 
 				return await ctx.db
-					.selectFrom('pieces_view')
+					.selectFrom('pieces')
 					.selectAll()
 					.limit(1)
 					.offset(skip)

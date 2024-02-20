@@ -20,4 +20,7 @@ export const searchButton = style({
 
 export const searchResults = style({
 	padding: vars.space[2],
+	marginLeft: 'auto',
+	marginRight: 'auto',
+	width: '50%',
 })
