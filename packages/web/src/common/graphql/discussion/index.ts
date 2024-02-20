@@ -1,1 +1,1 @@
-import './mutations/book'
+import './mutations/discussion'
