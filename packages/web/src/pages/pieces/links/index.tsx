@@ -81,18 +81,17 @@ export default function Links({ links }: LinksProps): JSX.Element {
 		setSize(size + 1)
 	}
 
-	const allLinks = totalLinks.map((link, i) =>
-		PieceCard(
-			{
-				id: link.id,
-				slug: link.slug,
-				media: link.representativeImage,
-				title: link.title,
-				type: 'links',
-			},
-			i
-		)
-	)
+	const allLinks = totalLinks.map((link, i) => (
+		<PieceCard
+			id={link.id}
+			slug={link.slug}
+			media={link.representativeImage}
+			title={link.title}
+			type={'links'}
+			loading={i <= 10 ? 'eager' : 'lazy'}
+			key={i}
+		/>
+	))
 
 	return (
 		<PageFull meta={{ title: 'links' }}>

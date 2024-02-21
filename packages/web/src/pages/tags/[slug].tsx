@@ -36,11 +36,7 @@ export default function Books(): JSX.Element {
 				return {
 					gql: getByTagQuery,
 					variables: lastBook
-						? {
-								take: TAKE,
-								page: page + 1,
-								tag: slug,
-						  }
+						? { take: TAKE, page: page + 1, tag: slug, last: lastBook }
 						: { take: TAKE, tag: slug },
 				}
 			} else {
@@ -68,7 +64,9 @@ export default function Books(): JSX.Element {
 		setSize(size + 1)
 	}
 
-	const allBooks = totalPieces.map((piece, i) => <PieceCard key={i} {...piece} />)
+	const allBooks = totalPieces.map((piece, i) => (
+		<PieceCard key={i} {...piece} loading={i >= 10 ? 'eager' : 'lazy'} />
+	))
 
 	return (
 		<PageFull meta={{ title: 'books' }}>
