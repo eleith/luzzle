@@ -68,7 +68,7 @@ export default function Books(): JSX.Element {
 		setSize(size + 1)
 	}
 
-	const allBooks = totalPieces.map((piece, i) => PieceCard(piece, i))
+	const allBooks = totalPieces.map((piece, i) => <PieceCard key={i} {...piece} />)
 
 	return (
 		<PageFull meta={{ title: 'books' }}>
