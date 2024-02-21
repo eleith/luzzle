@@ -80,7 +80,9 @@ export default function Pieces({ pieces }: PiecesProps): JSX.Element {
 		setSize(size + 1)
 	}
 
-	const allPieces = totalPieces.map((piece, i) => PieceCard(piece, i))
+	const allPieces = totalPieces.map((piece, i) => (
+		<PieceCard {...piece} key={i} loading={i <= 10 ? 'eager' : 'lazy'} />
+	))
 
 	return (
 		<PageFull meta={{ title: 'pieces' }}>

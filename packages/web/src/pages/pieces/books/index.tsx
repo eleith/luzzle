@@ -80,12 +80,17 @@ export default function Books({ books }: BooksProps): JSX.Element {
 		setSize(size + 1)
 	}
 
-	const allBooks = totalBooks.map((book, i) =>
-		PieceCard(
-			{ slug: book.slug, type: 'books', title: book.title, id: book.id, media: book.cover },
-			i
-		)
-	)
+	const allBooks = totalBooks.map((book, i) => (
+		<PieceCard
+			slug={book.slug}
+			type={'books'}
+			title={book.title}
+			id={book.id}
+			media={book.cover}
+			key={i}
+			loading={i <= 10 ? 'eager' : 'lazy'}
+		/>
+	))
 
 	return (
 		<PageFull meta={{ title: 'books' }}>

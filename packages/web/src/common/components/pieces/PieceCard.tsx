@@ -6,44 +6,45 @@ import { BookCoverFor } from '../books'
 import ArticleCoverFor from '../links/ArticleCoverFor'
 import * as styles from './PieceCard.css'
 
-type Piece = {
+type Props = {
 	id: string
 	title: string
 	slug: string
 	type: string
 	media?: string | null
+	loading?: 'eager' | 'lazy'
 }
 
-function makePieceCard(piece: Piece, index = 0, isActive = false): JSX.Element {
-	if (piece.type === 'links') {
+function makePieceCard(props: Props, isActive = false): JSX.Element {
+	if (props.type === 'links') {
 		return (
 			<ArticleCoverFor
-				piece={piece}
-				hasMedia={!!piece.media}
+				piece={props}
+				hasMedia={!!props.media}
 				size={'SMALL'}
-				imgLoading={index < 10 ? 'eager' : 'lazy'}
+				imgLoading={props.loading || 'lazy'}
 			/>
 		)
 	} else {
 		return (
 			<BookCoverFor
-				piece={piece}
-				hasCover={!!piece.media}
+				piece={props}
+				hasCover={!!props.media}
 				scale={0.5}
 				rotateInteract={{ x: 0, y: -35 }}
 				isActive={isActive}
-				imgLoading={index < 10 ? 'eager' : 'lazy'}
+				imgLoading={props.loading || 'lazy'}
 			/>
 		)
 	}
 }
 
-function PieceCard(piece: Piece, index = 0): JSX.Element {
+function PieceCard(props: Props): JSX.Element {
 	const [isActive, setActive] = useState(false)
-	const href = `/pieces/${piece.type}/${piece.slug}`
+	const href = `/pieces/${props.type}/${props.slug}`
 
 	return (
-		<Link href={href} key={piece.id}>
+		<Link href={href} key={props.id}>
 			<Anchor
 				href={href}
 				className={styles.pieceCard}
@@ -57,13 +58,13 @@ function PieceCard(piece: Piece, index = 0): JSX.Element {
 				<Box style={{ display: 'flex' }}>
 					<Box style={{ flex: 1 }}>
 						<Box style={{ display: 'flex' }}>
-							{makePieceCard(piece, index, isActive)}
+							{makePieceCard(props, isActive)}
 							<Box style={{ alignSelf: 'center', flex: 1 }}>
 								<CaretRight size={24} style={{ margin: 'auto' }} />
 							</Box>
 						</Box>
 					</Box>
-					<Box style={{ flex: 1, alignSelf: 'center' }}>{piece.title}</Box>
+					<Box style={{ flex: 1, alignSelf: 'center' }}>{props.title}</Box>
 				</Box>
 			</Anchor>
 		</Link>
