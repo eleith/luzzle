@@ -57,11 +57,48 @@ describe('lib/commands/attach', () => {
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValue(markdown)
 		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach').mockResolvedValue(markdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write')
+		spies.pieceSchemaGet = vi
+			.spyOn(PieceTest.prototype, 'getSchemaKeys')
+			.mockReturnValue([{ name: field, type: 'string', metadata: { format: 'attachment' } }])
 
 		await command.run(ctx, { path, file, field } as Arguments<AttachArgv>)
 
 		expect(spies.pieceAttach).toHaveBeenCalledWith(tmpFile, markdown, field, undefined)
 		expect(spies.pieceWrite).toHaveBeenCalledWith(markdown)
+		expect(spies.pieceSchemaGet).toHaveBeenCalledOnce()
+		expect(mocks.unlink).toHaveBeenCalledWith(tmpFile)
+	})
+
+	test('run with no field specified', async () => {
+		const path = 'slug2'
+		const file = 'file2'
+		const tmpFile = 'tmpFile'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const field = 'field'
+		const markdown = makeMarkdownSample()
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
+
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.download.mockResolvedValueOnce(tmpFile)
+		mocks.unlink.mockResolvedValueOnce(undefined)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValue(markdown)
+		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach').mockResolvedValue(markdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write')
+		spies.pieceSchemaGet = vi
+			.spyOn(PieceTest.prototype, 'getSchemaKeys')
+			.mockReturnValue([{ name: field, type: 'string', metadata: { format: 'attachment' } }])
+
+		await command.run(ctx, { path, file } as Arguments<AttachArgv>)
+
+		expect(spies.pieceAttach).toHaveBeenCalledWith(tmpFile, markdown, field, undefined)
+		expect(spies.pieceWrite).toHaveBeenCalledWith(markdown)
+		expect(spies.pieceSchemaGet).toHaveBeenCalledOnce()
 		expect(mocks.unlink).toHaveBeenCalledWith(tmpFile)
 	})
 
@@ -85,18 +122,82 @@ describe('lib/commands/attach', () => {
 		mocks.unlink.mockResolvedValueOnce(undefined)
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValue(markdown)
 		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach').mockRejectedValue(new Error('test'))
+		spies.pieceSchemaGet = vi
+			.spyOn(PieceTest.prototype, 'getSchemaKeys')
+			.mockReturnValue([{ name: field, type: 'string', metadata: { format: 'attachment' } }])
 
 		await command.run(ctx, { path, file, field } as Arguments<AttachArgv>)
 
 		expect(spies.pieceAttach).toHaveBeenCalledWith(tmpFile, markdown, field, undefined)
+		expect(spies.pieceSchemaGet).toHaveBeenCalledOnce()
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
+	test('run on piece with no attachables', async () => {
+		const path = 'slug2'
+		const file = 'file2'
+		const tmpFile = 'tmpFile'
+		const field = 'field'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const markdown = makeMarkdownSample()
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
+
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.download.mockResolvedValueOnce(tmpFile)
+		mocks.unlink.mockResolvedValueOnce(undefined)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValue(markdown)
+		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach').mockRejectedValue(new Error('test'))
+		spies.pieceSchemaGet = vi.spyOn(PieceTest.prototype, 'getSchemaKeys').mockReturnValue([])
+
+		await command.run(ctx, { path, file, field } as Arguments<AttachArgv>)
+
+		expect(spies.pieceAttach).not.toHaveBeenCalled()
+		expect(spies.pieceSchemaGet).toHaveBeenCalled()
+		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
+
+	test('run on field that is not an attach type', async () => {
+		const path = 'slug2'
+		const file = 'file2'
+		const tmpFile = 'tmpFile'
+		const field = 'field'
+		const PieceTest = makePiece()
+		const pieceType = 'piece'
+		const markdown = makeMarkdownSample()
+		const ctx = makeContext({
+			pieces: {
+				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
+				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+			},
+		})
+
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.download.mockResolvedValueOnce(tmpFile)
+		mocks.unlink.mockResolvedValueOnce(undefined)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValue(markdown)
+		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach').mockRejectedValue(new Error('test'))
+		spies.pieceSchemaGet = vi
+			.spyOn(PieceTest.prototype, 'getSchemaKeys')
+			.mockReturnValue([{ name: 'field2', type: 'string', metadata: { format: 'attachment' } }])
+
+		await command.run(ctx, { path, file, field } as Arguments<AttachArgv>)
+
+		expect(spies.pieceAttach).not.toHaveBeenCalled()
+		expect(spies.pieceSchemaGet).toHaveBeenCalled()
+		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
 	test('run with dry-run', async () => {
 		const path = 'slug2'
 		const file = 'file2'
 		const PieceTest = makePiece()
 		const pieceType = 'piece'
+		const field = 'field'
 		const markdown = makeMarkdownSample()
 		const ctx = makeContext({
 			flags: { dryRun: true },
@@ -109,7 +210,9 @@ describe('lib/commands/attach', () => {
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValue(markdown)
 		spies.pieceAttach = vi.spyOn(PieceTest.prototype, 'attach')
-
+		spies.pieceSchemaGet = vi
+			.spyOn(PieceTest.prototype, 'getSchemaKeys')
+			.mockReturnValue([{ name: field, type: 'string', metadata: { format: 'attachment' } }])
 		await command.run(ctx, { path, file } as Arguments<AttachArgv>)
 
 		expect(spies.pieceAttach).not.toHaveBeenCalled()

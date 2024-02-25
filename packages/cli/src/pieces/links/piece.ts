@@ -59,7 +59,7 @@ class LinkPiece extends Piece<LinkType, LinkSelectable, LinkFrontmatter> {
 			}
 		}
 
-		return this.internalizeAssetPathFor(linkProcessed, 'representative_image')
+		return linkProcessed
 	}
 
 	create(slug: string, title: string): PieceMarkdown<LinkFrontmatter> {

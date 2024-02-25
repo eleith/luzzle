@@ -44,14 +44,29 @@ const command: Command<AttachArgv> = {
 		const markdown = await pieces.get(slug)
 
 		if (!markdown) {
-			log.info(`${slug} was not found`)
+			log.error(`${slug} was not found`)
+			return
+		}
+
+		const attachables = pieces.getSchemaKeys().filter((f) => f.metadata?.format === 'attachment')
+		const attachableField = field
+			? attachables.find((f) => f.name === field)?.name
+			: attachables.find((f) => f.collection === undefined)?.name
+
+		if (attachables.length === 0) {
+			log.error(`this piece does not allow attachments`)
+			return
+		}
+
+		if (!attachableField) {
+			log.error(`please specify an attachable field such as: ${attachables.join(', ')}`)
 			return
 		}
 
 		if (ctx.flags.dryRun === false) {
 			const tempPath = await downloadFileOrUrlTo(file)
 			try {
-				const attachedMarkdown = await pieces.attach(tempPath, markdown, field, name)
+				const attachedMarkdown = await pieces.attach(tempPath, markdown, attachableField, name)
 				await pieces.write(attachedMarkdown)
 			} catch (err) {
 				log.error(err)

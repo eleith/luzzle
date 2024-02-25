@@ -131,16 +131,12 @@ describe('pieces/links/piece', () => {
 		const linkPiece = new LinkPiece('root')
 
 		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
-		spies.interalize = vi
-			.spyOn(linkPiece, 'internalizeAssetPathFor')
-			.mockResolvedValueOnce(updatedMarkdown)
 		mocks.generateTags.mockResolvedValueOnce(tags)
 		mocks.generateSummary.mockResolvedValueOnce(summary)
 		mocks.generateClassification.mockResolvedValueOnce(classification)
 
 		const fetched = await linkPiece.fetch(configMock, markdown, 'openai')
 
-		expect(spies.interalize).toHaveBeenCalledWith(updatedMarkdown, 'representative_image')
 		expect(fetched).toEqual(updatedMarkdown)
 	})
 
@@ -165,16 +161,11 @@ describe('pieces/links/piece', () => {
 		const linkPiece = new LinkPiece('root')
 
 		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
-		spies.interalize = vi
-			.spyOn(linkPiece, 'internalizeAssetPathFor')
-			.mockResolvedValueOnce(updatedMarkdown)
-
 		mocks.generateTags.mockResolvedValueOnce(tags)
 		mocks.generateSummary.mockResolvedValueOnce(summary)
 		mocks.generateClassification.mockResolvedValueOnce(classification)
 		const fetched = await linkPiece.fetch(configMock, markdown, 'openai')
 
-		expect(spies.interalize).toHaveBeenCalledWith(updatedMarkdown, 'representative_image')
 		expect(fetched).toEqual(updatedMarkdown)
 	})
 
@@ -207,9 +198,6 @@ describe('pieces/links/piece', () => {
 		const linkPiece = new LinkPiece('root')
 
 		spies.configGet = configMock.get.mockReturnValueOnce({})
-		spies.interalize = vi
-			.spyOn(linkPiece, 'internalizeAssetPathFor')
-			.mockResolvedValueOnce(updatedMarkdown)
 		mocks.availability.mockResolvedValueOnce({
 			archived_snapshots: {
 				closest: { available: true, url: archiveUrl, timestamp: '', status: '' },
@@ -219,7 +207,6 @@ describe('pieces/links/piece', () => {
 
 		const fetched = await linkPiece.fetch(configMock, markdown, 'wayback')
 
-		expect(spies.interalize).toHaveBeenCalledWith(updatedMarkdown, 'representative_image')
 		expect(fetched).toEqual(updatedMarkdown)
 	})
 

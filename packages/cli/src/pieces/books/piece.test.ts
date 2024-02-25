@@ -266,16 +266,12 @@ describe('pieces/books/piece', () => {
 		spies.searchGoogleBooks = vi.spyOn(bookPiece, 'searchGoogleBooks')
 		spies.completeOpenAI = vi.spyOn(bookPiece, 'completeOpenAI')
 		spies.searchOpenLibrary = vi.spyOn(bookPiece, 'searchOpenLibrary')
-		spies.internalize = vi
-			.spyOn(bookPiece, 'internalizeAssetPathFor')
-			.mockResolvedValueOnce(markdown)
 
 		const fetched = await bookPiece.fetch(configMock, markdown, 'all')
 
 		expect(spies.searchGoogleBooks).not.toHaveBeenCalled()
 		expect(spies.completeOpenAI).not.toHaveBeenCalled()
 		expect(spies.searchOpenLibrary).not.toHaveBeenCalled()
-		expect(spies.internalize).toHaveBeenCalledOnce()
 		expect(fetched).toEqual(markdown)
 	})
 
@@ -286,10 +282,6 @@ describe('pieces/books/piece', () => {
 		const googleMarkdown = bookFixtures.makeBookMarkDown({
 			frontmatter: { description: 'a tiny desc' },
 		})
-		const updatedMarkdown = {
-			...markdown,
-			frontmatter: { ...markdown.frontmatter, ...googleMarkdown.frontmatter },
-		}
 
 		const bookPiece = new BookPiece('root')
 
@@ -297,9 +289,6 @@ describe('pieces/books/piece', () => {
 		spies.searchGoogleBooks = vi
 			.spyOn(bookPiece, 'searchGoogleBooks')
 			.mockResolvedValueOnce(googleMarkdown.frontmatter)
-		spies.internalize = vi
-			.spyOn(bookPiece, 'internalizeAssetPathFor')
-			.mockResolvedValueOnce(updatedMarkdown)
 
 		const fetched = await bookPiece.fetch(configMock, markdown, 'google')
 
@@ -309,7 +298,6 @@ describe('pieces/books/piece', () => {
 			markdown.frontmatter.author
 		)
 		expect(fetched.frontmatter.description).toBe(googleMarkdown.frontmatter.description)
-		expect(spies.internalize).toHaveBeenCalledWith(updatedMarkdown, 'cover')
 	})
 
 	test('fetch openai', async () => {
@@ -319,10 +307,6 @@ describe('pieces/books/piece', () => {
 		const openaiMarkdown = bookFixtures.makeBookMarkDown({
 			frontmatter: { description: 'a tiny desc' },
 		})
-		const updatedMarkdown = {
-			...markdown,
-			frontmatter: { ...markdown.frontmatter, ...openaiMarkdown.frontmatter },
-		}
 
 		const bookPiece = new BookPiece('root')
 
@@ -330,13 +314,9 @@ describe('pieces/books/piece', () => {
 		spies.completeOpenAI = vi
 			.spyOn(bookPiece, 'completeOpenAI')
 			.mockResolvedValueOnce(openaiMarkdown.frontmatter)
-		spies.internalize = vi
-			.spyOn(bookPiece, 'internalizeAssetPathFor')
-			.mockResolvedValueOnce(updatedMarkdown)
 
 		const fetched = await bookPiece.fetch(configMock, markdown, 'openai')
 
-		expect(spies.internalize).toHaveBeenCalledWith(updatedMarkdown, 'cover')
 		expect(spies.completeOpenAI).toHaveBeenCalledWith(openaiKey, markdown)
 		expect(fetched.frontmatter.description).toBe(openaiMarkdown.frontmatter.description)
 	})
@@ -347,10 +327,6 @@ describe('pieces/books/piece', () => {
 		const libraryMarkdown = bookFixtures.makeBookMarkDown({
 			frontmatter: { description: 'a tiny desc' },
 		})
-		const updatedMarkdown = {
-			...markdown,
-			frontmatter: { ...markdown.frontmatter, ...libraryMarkdown.frontmatter },
-		}
 
 		const bookPiece = new BookPiece('root')
 
@@ -358,9 +334,6 @@ describe('pieces/books/piece', () => {
 		spies.searchOpenLibrary = vi
 			.spyOn(bookPiece, 'searchOpenLibrary')
 			.mockResolvedValueOnce(libraryMarkdown.frontmatter)
-		spies.internalize = vi
-			.spyOn(bookPiece, 'internalizeAssetPathFor')
-			.mockResolvedValueOnce(updatedMarkdown)
 
 		const fetched = await bookPiece.fetch(configMock, markdown, 'openlibrary')
 
@@ -369,7 +342,6 @@ describe('pieces/books/piece', () => {
 			markdown.frontmatter.title,
 			markdown.frontmatter.author
 		)
-		expect(spies.internalize).toHaveBeenCalledWith(updatedMarkdown, 'cover')
 		expect(fetched.frontmatter.description).toBe(libraryMarkdown.frontmatter.description)
 	})
 
