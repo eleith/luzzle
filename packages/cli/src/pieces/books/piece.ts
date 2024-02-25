@@ -154,7 +154,7 @@ class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 			}
 		}
 
-		return this.internalizeAssetPathFor(bookProcessed, 'cover')
+		return bookProcessed
 	}
 
 	create(slug: string, title: string): PieceMarkdown<BookFrontmatter> {

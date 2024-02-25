@@ -19,15 +19,14 @@ import {
 	ajv,
 	PieceFrontmatterJtdSchema,
 	PieceDatabaseJtdSchema,
-	getDatabaseFieldSchemas,
-	getFrontmatterFieldSchemas,
+	getPieceSchemaKeys,
 	databaseToFrontmatterValue,
 	frontmatterToDatabaseValue,
 } from '@luzzle/kysely'
 import { eachLimit, filterLimit } from 'async'
 import { cpus } from 'os'
 import path from 'path'
-import { downloadFileOrUrlTo, PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
+import { PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
 import { ASSETS_CACHE_DIRECTORY, ASSETS_DIRECTORY } from '../assets.js'
 import { fileTypeFromFile } from 'file-type'
 import { createId } from '@paralleldrive/cuid2'
@@ -115,6 +114,10 @@ abstract class Piece<
 		return path.join(this._directories.root, this.getFileName(slug))
 	}
 
+	getSchemaKeys() {
+		return getPieceSchemaKeys(this._schema)
+	}
+
 	toCreateInput(markdown: PieceMarkdown<F>): PieceInsertable<P> {
 		const input = {
 			id: createId(),
@@ -122,16 +125,18 @@ abstract class Piece<
 			note: markdown.note,
 		} as Record<string, unknown>
 
-		const frontmatterSchema = getFrontmatterFieldSchemas(this._schema)
+		const frontmatterSchema = getPieceSchemaKeys(this._schema)
 		const frontmatterKeys = Object.keys(markdown.frontmatter) as (keyof F)[]
-		const databaseKeys = getDatabaseFieldSchemas(this._dbSchema).map((f) => f.name)
+		const databaseKeys = getPieceSchemaKeys(this._dbSchema).map((f) => f.name)
 		const inputKeys = frontmatterKeys.filter((key) => databaseKeys.includes(key as string))
 
 		inputKeys.forEach((key) => {
 			const value = markdown.frontmatter[key]
-			const format = frontmatterSchema.find((f) => f.name === key)?.format
+			const format = frontmatterSchema.find((f) => f.name === key)?.metadata?.format
 
-			input[key as string] = frontmatterToDatabaseValue(value, format)
+			input[key as string] = Array.isArray(value)
+				? JSON.stringify(value.map((v) => frontmatterToDatabaseValue(v, format)))
+				: frontmatterToDatabaseValue(value, format)
 		})
 
 		return input as PieceInsertable<P>
@@ -142,16 +147,18 @@ abstract class Piece<
 			date_updated: new Date().getTime(),
 		} as Record<string, unknown>
 
-		const frontmatterSchema = getFrontmatterFieldSchemas(this._schema)
+		const frontmatterSchema = getPieceSchemaKeys(this._schema)
 		const frontmatterKeys = Object.keys(markdown.frontmatter) as (keyof F)[]
-		const databaseKeys = getDatabaseFieldSchemas(this._dbSchema).map((f) => f.name)
+		const databaseKeys = getPieceSchemaKeys(this._dbSchema).map((f) => f.name)
 		const updateKeys = frontmatterKeys.filter((key) => databaseKeys.includes(key as string))
 
 		updateKeys.forEach((key) => {
-			const frontmatterValue = markdown.frontmatter[key]
-			const format = frontmatterSchema.find((f) => f.name === key)?.format
+			const value = markdown.frontmatter[key]
+			const format = frontmatterSchema.find((f) => f.name === key)?.metadata?.format
 			const dataValue = data[key as keyof D] as unknown
-			const updateValue = frontmatterToDatabaseValue(frontmatterValue, format)
+			const updateValue = Array.isArray(value)
+				? JSON.stringify(value.map((v) => frontmatterToDatabaseValue(v, format)))
+				: frontmatterToDatabaseValue(value, format)
 
 			if (force || dataValue !== updateValue) {
 				update[key as string] = updateValue
@@ -201,23 +208,24 @@ abstract class Piece<
 	}
 
 	async get(slug: string, validate = true): Promise<PieceMarkdown<F> | null> {
-		if (this.exists(slug)) {
-			const filepath = this.getPath(slug)
-
-			try {
-				const data = await extract(filepath)
-
-				if (validate) {
-					return toValidatedMarkdown(slug, data.markdown, data.frontmatter, this.validator)
-				} else {
-					return toMarkdown(slug, data.markdown, data.frontmatter as F)
-				}
-			} catch (err) {
-				log.error(`could not extract ${filepath}: ${err}`)
-			}
+		if (!this.exists(slug)) {
+			return null
 		}
 
-		return null
+		const filepath = this.getPath(slug)
+
+		try {
+			const data = await extract(filepath)
+
+			if (validate) {
+				return toValidatedMarkdown(slug, data.markdown, data.frontmatter, this.validator)
+			} else {
+				return toMarkdown(slug, data.markdown, data.frontmatter as F)
+			}
+		} catch (err) {
+			log.error(`could not extract ${filepath}: ${err}`)
+			return null
+		}
 	}
 
 	async write(markdown: PieceMarkdown<F>): Promise<void> {
@@ -242,12 +250,27 @@ abstract class Piece<
 
 		await eachLimit(staleSlugs, cpus().length, async (slug) => {
 			const db = await this.cache.get(slug)
-			const removeAll = getFrontmatterFieldSchemas(this._schema)
-				.filter((x) => x.format === 'attachment')
+			const schemaKeys = this.getSchemaKeys()
+			const removeAll = schemaKeys
+				.filter((x) => x.metadata?.format === 'attachment' && x.collection === undefined)
 				.map((field) => db['database']?.[field.name as unknown as keyof D])
 				.filter((attachment) => attachment)
 				.map((attachment) => path.join(this._directories.root, attachment as string))
 				.map(unlink)
+
+			const removeAllMulti = schemaKeys
+				.filter((x) => x.metadata?.format === 'attachment' && x.collection === 'array')
+				.map((field) => db['database']?.[field.name as unknown as keyof D])
+				.filter((attachment) => attachment)
+				.map((attachment) => JSON.parse(attachment as string))
+				.filter((attachment) => Array.isArray(attachment))
+				.flatMap((attachment) => attachment)
+				.map((attachment) => path.join(this._directories.root, attachment as string))
+				.map(unlink)
+
+			await Promise.all(removeAllMulti).catch((err) => {
+				log.error(`could not remove all attachments for ${slug}: ${err}`)
+			})
 
 			await Promise.all(removeAll).catch((err) => {
 				log.error(`could not remove all attachments for ${slug}: ${err}`)
@@ -378,36 +401,23 @@ abstract class Piece<
 		})
 	}
 
-	async internalizeAssetPathFor(
-		markdown: PieceMarkdown<F>,
-		field: keyof PieceMarkdown<F>['frontmatter']
-	): Promise<PieceMarkdown<F>> {
-		const cover = markdown.frontmatter[field] as string | undefined | null
-		const relPath = path.join(path.basename(this._directories.assets), field as string)
-
-		if (cover && !cover.startsWith(relPath)) {
-			console.log(cover, !cover.startsWith(relPath))
-			const tmpFile = await downloadFileOrUrlTo(cover)
-			const attached = await this.attach(tmpFile, markdown, field as string)
-			await unlink(tmpFile)
-
-			return attached
-		}
-
-		return markdown
-	}
-
 	toMarkdown(data: D): PieceMarkdown<F> {
 		const frontmatter: Record<string, unknown> = {}
-		const frontmatterSchema = getFrontmatterFieldSchemas(this._schema)
+		const frontmatterSchema = this.getSchemaKeys()
 		const dataKeys = Object.keys(data)
 		const frontmatterKeys = dataKeys.filter((key) => frontmatterSchema.find((f) => f.name === key))
 
 		frontmatterKeys.forEach((key) => {
-			const value = data[key as keyof D]
-			const format = frontmatterSchema.find((f) => f.name === key)?.format
+			const field = frontmatterSchema.find((f) => f.name === key)
+			const format = field?.metadata?.format
+			const value =
+				field?.collection === 'array'
+					? (JSON.parse(data[key as keyof D] as string) as Array<string>)
+					: data[key as keyof D]
 
-			frontmatter[key] = databaseToFrontmatterValue(value, format)
+			frontmatter[key] = Array.isArray(value)
+				? value.map((v) => databaseToFrontmatterValue(v, format))
+				: databaseToFrontmatterValue(value, format)
 		})
 
 		return toValidatedMarkdown(data.slug, data.note, frontmatter as F, this.validator)
@@ -416,24 +426,20 @@ abstract class Piece<
 	async attach(
 		file: string,
 		markdown: PieceMarkdown<F>,
-		_field?: string,
+		field: string,
 		_name?: string
 	): Promise<PieceMarkdown<F>> {
-		const attachables = getFrontmatterFieldSchemas(this._schema).filter(
-			(f) => f.format === 'attachment'
-		)
-		const field = _field ? attachables.find((f) => f.name === _field) : attachables[0]
+		const attachableField = this.getSchemaKeys()
+			.filter((f) => f.metadata?.format === 'attachment')
+			.find((f) => f.name === field)
 
-		if (attachables.length === 0) {
-			throw new Error(`this piece does not allow attachments`)
+		if (!attachableField) {
+			throw new Error(
+				`${field} is not an attachable field for ${this._pieceTable} ${markdown.slug}`
+			)
 		}
 
-		if (!field) {
-			const possibleFields = attachables.map((f) => f.name).join(', ')
-			throw new Error(`this piece only allows attachments on: ${possibleFields}`)
-		}
-
-		const allowedTypes = field.enum || []
+		const allowedTypes = attachableField.metadata?.enum || []
 		const fileType = await fileTypeFromFile(file)
 		const type = fileType?.ext
 
@@ -443,25 +449,28 @@ abstract class Piece<
 			)
 		}
 
-		const name = _name || markdown.slug
-		const filename = `${name}.${type}`
-		const toPath = path.join(this._directories.assets, field.name, filename)
-		const attachDir = path.join(this._directories.assets, field.name)
-		const relPath = path.join(path.basename(this._directories.assets), field.name, filename)
+		const attachDir = path.join(this._directories.assets, field)
+		const oldMedia = markdown.frontmatter[field as keyof F] as string | string[] | undefined
+		const parts = [markdown.slug, _name, Array.isArray(oldMedia) ? oldMedia.length : 0]
+		const filename = `${parts.filter((x) => x).join('-')}.${type}`
+		const toPath = path.join(this._directories.assets, field, filename)
+		const relPath = path.join(path.basename(this._directories.assets), field, filename)
+		const isArray = attachableField.collection === 'array'
 
 		await mkdir(attachDir, { recursive: true })
 		await copyFile(file, toPath)
 
 		log.info(`processed and copied ${file} to ${toPath}`)
 
-		const writeMarkdown = toValidatedMarkdown(
+		return toValidatedMarkdown(
 			markdown.slug,
 			markdown.note,
-			{ ...markdown.frontmatter, [field.name]: relPath },
+			{
+				...markdown.frontmatter,
+				[field]: isArray ? [relPath].concat(oldMedia || []) : relPath,
+			},
 			this.validator
 		)
-
-		return writeMarkdown
 	}
 
 	async dump(db: LuzzleDatabase, dryRun = false) {
