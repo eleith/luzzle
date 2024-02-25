@@ -16,7 +16,7 @@ type UnNullify<T> = {
 type NullToPartials<T> = Pick<T, NonNullableKeys<T>> & Partial<UnNullify<Pick<T, NullableKeys<T>>>>
 type IncludeIfExists<A, B> = B extends void ? A : A & B
 
-type PieceFrontmatterFields = Record<string, string | number | boolean | undefined>
+type PieceFrontmatterFields = Record<string, string | string[] | number | boolean | undefined>
 
 type PieceDatabaseJtdSchema<T extends PieceSelectable> = JTDSchemaType<NullToPartials<T>>
 
@@ -25,30 +25,22 @@ type PieceFrontmatter<
 	FrontmatterOnlyFields extends PieceFrontmatterFields | void = void
 > = NullToPartials<IncludeIfExists<DataBaseFields, FrontmatterOnlyFields>>
 
-type PieceFrontmatterFrontMatterFieldFormats = 'date-string' | 'attachment' | 'boolean-int'
-type PieceFieldSchemaTypes =
-	| 'float32'
-	| 'float64'
-	| 'int8'
-	| 'uint8'
-	| 'int16'
-	| 'uint16'
-	| 'int32'
-	| 'uint32'
-	| 'string'
-	| 'timestamp'
-	| 'boolean'
-
-type PieceDatabaseSchemaField = {
-	name: string
-	type: PieceFieldSchemaTypes
-}
+type PieceFrontmatterFieldFormats = 'date-string' | 'attachment' | 'boolean-int'
 
 type PieceFrontmatterSchemaField = {
-	format?: PieceFrontmatterFrontMatterFieldFormats
-	pattern?: string
-	enum?: string[]
-} & PieceDatabaseSchemaField
+	name: string
+	collection?: 'array' | 'object'
+	type?:
+		| JTDSchemaType<string, Record<string, never>>['type']
+		| JTDSchemaType<number, Record<string, never>>['type']
+		| JTDSchemaType<boolean, Record<string, never>>['type']
+	metadata?: {
+		format: PieceFrontmatterFieldFormats
+		pattern?: string
+		enum?: string[]
+	}
+	nullable?: boolean
+}
 
 type PieceFrontmatterJtdSchema<
 	M extends PieceFrontmatter<
@@ -57,49 +49,53 @@ type PieceFrontmatterJtdSchema<
 	>
 > = JTDSchemaType<M>
 
-function getDatabaseFieldSchemas(schema: SomeJTDSchemaType): Array<PieceDatabaseSchemaField> {
+function getPieceSchemaKeys<M>(schema: JTDSchemaType<M>): Array<PieceFrontmatterSchemaField> {
 	const x = {
-		...(schema as JTDSchemaType<{ _: string }>).properties,
-		...(schema as JTDSchemaType<{ _: string }>).optionalProperties,
-	}
-
-	const fields: Array<PieceDatabaseSchemaField> = []
-
-	for (const [k, v] of Object.entries(x)) {
-		fields.push({
-			name: k,
-			type: v.type,
-		})
-	}
-
-	return fields
-}
-
-function getFrontmatterFieldSchemas(schema: SomeJTDSchemaType): Array<PieceFrontmatterSchemaField> {
-	const x = {
-		...(schema as JTDSchemaType<{ _: string }>).properties,
-		...(schema as JTDSchemaType<{ _: string }>).optionalProperties,
-	}
+		...('properties' in schema ? schema.properties : {}),
+		...('optionalProperties' in schema ? schema.optionalProperties : {}),
+	} as { [key: string]: SomeJTDSchemaType }
 
 	const fields: Array<PieceFrontmatterSchemaField> = []
 
-	for (const [k, v] of Object.entries(x)) {
-		fields.push({
-			name: k,
-			type: v.type,
-			format: v.metadata?.luzzleFormat as PieceFrontmatterFrontMatterFieldFormats | undefined,
-			pattern: v.metadata?.luzzlePattern as string | undefined,
-			enum: v.metadata?.luzzleEnum as string[] | undefined,
-		})
+	for (const [key, value] of Object.entries(x)) {
+		if ('elements' in value && 'type' in value.elements) {
+			fields.push({
+				name: key,
+				type: value.elements.type,
+				collection: 'array',
+				metadata: {
+					format: value.elements.metadata?.luzzleFormat,
+					pattern: value.elements.metadata?.luzzlePattern,
+					enum: value.elements.metadata?.luzzleEnum,
+				} as PieceFrontmatterSchemaField['metadata'],
+				nullable: value.elements.nullable,
+			})
+		} else if ('properties' in value) {
+			fields.push({
+				name: key,
+				collection: 'object',
+				nullable: value.nullable,
+			})
+		} else if ('type' in value) {
+			fields.push({
+				name: key,
+				type: value.type,
+				metadata: {
+					format: value.metadata?.luzzleFormat,
+					pattern: value.metadata?.luzzlePattern,
+					enum: value.metadata?.luzzleEnum,
+				} as PieceFrontmatterSchemaField['metadata'],
+				nullable: value.nullable,
+			})
+		} else {
+			throw new Error(`invalid schema at key ${key}`)
+		}
 	}
 
 	return fields
 }
 
-function frontmatterToDatabaseValue(
-	value: unknown,
-	format?: PieceFrontmatterFrontMatterFieldFormats
-) {
+function frontmatterToDatabaseValue(value: unknown, format?: PieceFrontmatterFieldFormats) {
 	if (format === 'date-string') {
 		return new Date(value as string).getTime()
 	} else if (format === 'boolean-int') {
@@ -109,10 +105,7 @@ function frontmatterToDatabaseValue(
 	return value
 }
 
-function databaseToFrontmatterValue(
-	value: unknown,
-	format?: PieceFrontmatterFrontMatterFieldFormats
-) {
+function databaseToFrontmatterValue(value: unknown, format?: PieceFrontmatterFieldFormats) {
 	if (format === 'date-string') {
 		return new Date(value as number).toISOString()
 	} else if (format === 'boolean-int') {
@@ -127,11 +120,9 @@ export {
 	type PieceDatabaseJtdSchema,
 	type PieceFrontmatter,
 	type PieceFrontmatterFields,
-	type PieceFrontmatterFrontMatterFieldFormats,
+	type PieceFrontmatterFieldFormats,
 	type PieceFrontmatterSchemaField,
-	type PieceDatabaseSchemaField,
-	getDatabaseFieldSchemas,
-	getFrontmatterFieldSchemas,
+	getPieceSchemaKeys,
 	frontmatterToDatabaseValue,
 	databaseToFrontmatterValue,
 }

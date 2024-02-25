@@ -2,9 +2,11 @@ import { BookSelectable } from '../tables/books.schema.js'
 import { PieceFrontmatter, PieceFrontmatterJtdSchema, PieceDatabaseJtdSchema } from './piece.js'
 
 type BookDatabaseOnlyFields = 'id' | 'date_added' | 'date_updated' | 'slug' | 'note' | 'date_read'
+
 type BookFrontmatterOnlyFields = {
 	date_read?: string
 }
+
 type BookFrontmatter = PieceFrontmatter<
 	Omit<BookSelectable, BookDatabaseOnlyFields>,
 	BookFrontmatterOnlyFields
