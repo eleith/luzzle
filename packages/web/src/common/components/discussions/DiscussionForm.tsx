@@ -14,6 +14,7 @@ import { CircleNotch } from 'phosphor-react'
 import { Form, FormState, useFormState } from 'ariakit/form'
 import gqlFetch from '@app/common/graphql/fetch'
 import { PageProgress, useProgressPageState } from '@luzzle/ui/components'
+import { Pieces } from '@luzzle/kysely'
 
 const discussionMutation = gql<
 	typeof CreateDiscussionDocument
@@ -39,7 +40,7 @@ type Props = {
 	slug: string
 	onClose?: () => void
 	title?: string
-	type: 'books' | 'links'
+	type: Pieces
 }
 
 export default function DiscussionForm({

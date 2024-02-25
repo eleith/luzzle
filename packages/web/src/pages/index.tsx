@@ -22,6 +22,7 @@ type Piece = NonNullable<ResultOf<typeof getPiecesQuery>['pieces']>[number]
 type HomePageProps = {
 	book: Piece
 	link: Piece
+	text: Piece
 }
 
 function makeNextLink(text: string, href: string) {
@@ -41,21 +42,26 @@ export async function getStaticProps(): Promise<{ props: HomePageProps }> {
 		query: getPiecesQuery,
 		variables: { take: 1, type: 'links' },
 	})
+	const responseTexts = await staticClient.query({
+		query: getPiecesQuery,
+		variables: { take: 1, type: 'texts' },
+	})
 
 	const books = responseBooks.data?.pieces
 	const links = responseLinks.data?.pieces
-	const nonExistantBook = { title: 'a title', id: 'add-more-books' } as Piece
-	const nonExistantLink = { title: 'a title', id: 'add-more-links' } as Piece
+	const texts = responseTexts.data?.pieces
+	const nonExistant = { title: 'a title', id: 'add-more-books' } as Piece
 
 	return {
 		props: {
-			book: books?.[0] || nonExistantBook,
-			link: links?.[0] || nonExistantLink,
+			book: books?.[0] || nonExistant,
+			link: links?.[0] || nonExistant,
+			text: texts?.[0] || nonExistant,
 		},
 	}
 }
 
-export default function Home({ book, link }: HomePageProps): JSX.Element {
+export default function Home({ book, link, text }: HomePageProps): JSX.Element {
 	return (
 		<PageFull meta={{ title: 'books' }} isHome>
 			<Box className={styles.page}>
@@ -66,7 +72,8 @@ export default function Home({ book, link }: HomePageProps): JSX.Element {
 					<br />
 					<Text as="h2" size={'h1'}>
 						this site allows me to recall and share {makeNextLink('things', '/pieces')} like{' '}
-						{makeNextLink('books', '/pieces/books')} and {makeNextLink('links', '/pieces/links')}
+						{makeNextLink('books', '/pieces/books')} and {makeNextLink('links', '/pieces/links')}{' '}
+						and {makeNextLink('texts', '/pieces/texts')}
 					</Text>
 					<br />
 					<Text as="h3" size={'h1'}>
@@ -79,6 +86,12 @@ export default function Home({ book, link }: HomePageProps): JSX.Element {
 						a recent link
 						<br />
 						{makeNextLink(link.title, `/pieces/links/${link.slug}`)}
+					</Text>
+					<br />
+					<Text as="h3" size={'h1'}>
+						a recent text
+						<br />
+						{makeNextLink(text.title, `/pieces/texts/${text.slug}`)}
 					</Text>
 				</Box>
 			</Box>
