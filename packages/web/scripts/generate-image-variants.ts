@@ -76,6 +76,18 @@ async function main() {
 		dimensions: [{ width: 3 / 2, height: 1, label: 'h' }],
 	})
 
+	const texts = await getItems(db, lastRun, 'texts')
+	const textImages = texts
+		.filter((text) => text.representative_image)
+		.map((text) => ({
+			slug: text.slug,
+			image: `${luzzleFolder}/links/${text.representative_image}`,
+		}))
+	await makeManyVariants(`${VariantsFolder}/texts/representative_image`, textImages, {
+		sizes: [125, 250, 500, 1000],
+		dimensions: [{ width: 3 / 2, height: 1, label: 'h' }],
+	})
+
 	await finalize(VariantsFolder, new Date())
 }
 

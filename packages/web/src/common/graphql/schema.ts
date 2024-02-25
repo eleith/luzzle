@@ -4,6 +4,7 @@ import './error/index'
 import './book/index'
 import './link/index'
 import './piece/index'
+import './texts/index'
 import './discussion/index'
 import './search/index'
 

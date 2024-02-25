@@ -5,6 +5,7 @@ import { finalize, getItems, initialize } from './utils'
 import { bookToHtml } from './og/books'
 import { linkToHtml } from './og/links'
 import { image, ouputHtml, ouputPng, ouputSvg } from './og/template'
+import { textToHtml } from './og/texts'
 
 const OpenGraphFolder = './public/images/og'
 
@@ -58,6 +59,14 @@ async function main() {
 		file: `${OpenGraphFolder}/links/${link.slug}.${output}`,
 	}))
 	makeManyOgImages(`${OpenGraphFolder}/links`, linkItems, output)
+
+	const texts = await getItems(db, lastRun, 'texts')
+	const textItems = texts.map((text) => ({
+		slug: text.slug,
+		html: textToHtml(text),
+		file: `${OpenGraphFolder}/texts/${text.slug}.${output}`,
+	}))
+	makeManyOgImages(`${OpenGraphFolder}/texts`, textItems, output)
 
 	await finalize(OpenGraphFolder, new Date())
 }

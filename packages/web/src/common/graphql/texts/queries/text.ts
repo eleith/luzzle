@@ -1,38 +1,40 @@
 import builder from '@app/lib/graphql/builder'
-import { Pieces, Piece } from '@luzzle/kysely'
-import PieceObject from '../objects/piece'
-
-const PieceTypeRegExp = new RegExp(Object.values(Piece).join('|'))
+import TextObject from '../objects/text'
 
 builder.queryFields((t) => ({
-	piece: t.field({
+	text: t.field({
 		errors: {
 			types: [Error],
 		},
-		type: PieceObject,
+		type: TextObject,
 		args: {
+			id: t.arg({ type: 'String' }),
 			slug: t.arg({ type: 'String' }),
-			type: t.arg({ type: 'String', validate: (x) => PieceTypeRegExp.test(x) }),
 		},
 		resolve: async (_, args, ctx) => {
-			const { slug, type } = args
+			const { slug, id } = args
 
-			if (slug && type) {
+			if (slug) {
 				return await ctx.db
-					.selectFrom('pieces')
+					.selectFrom('texts')
 					.selectAll()
 					.where('slug', '=', slug)
-					.where('type', '=', type as Pieces)
+					.executeTakeFirstOrThrow()
+			} else if (id) {
+				return await ctx.db
+					.selectFrom('texts')
+					.selectAll()
+					.where('id', '=', id)
 					.executeTakeFirstOrThrow()
 			} else {
 				const find = await ctx.db
-					.selectFrom('pieces')
+					.selectFrom('texts')
 					.select(ctx.db.fn.count<number>('id').as('count'))
 					.executeTakeFirstOrThrow()
 				const skip = Math.floor(Math.random() * find.count)
 
 				return await ctx.db
-					.selectFrom('pieces')
+					.selectFrom('texts')
 					.selectAll()
 					.limit(1)
 					.offset(skip)

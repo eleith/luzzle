@@ -82,6 +82,16 @@ async function main() {
 
 	generateRss(links, 'pieces/links')
 
+	const texts = await db
+		.selectFrom('pieces')
+		.limit(50)
+		.where('type', '=', 'texts')
+		.orderBy('date_consumed', 'desc')
+		.selectAll()
+		.execute()
+
+	generateRss(texts, 'pieces/texts')
+
 	const pieces = await db
 		.selectFrom('pieces')
 		.limit(50)

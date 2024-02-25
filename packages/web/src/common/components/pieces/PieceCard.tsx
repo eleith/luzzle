@@ -16,7 +16,7 @@ type Props = {
 }
 
 function makePieceCard(props: Props, isActive = false): JSX.Element {
-	if (props.type === 'links') {
+	if (props.type === 'links' || props.type === 'texts') {
 		return (
 			<ArticleCoverFor
 				piece={props}
