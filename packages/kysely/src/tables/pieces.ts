@@ -1,11 +1,13 @@
 import { Insertable, Updateable, Selectable } from 'kysely'
 import { BooksTable } from './books.schema.js'
 import { LinksTable } from './links.schema.js'
+import { TextsTable } from './texts.schema.js'
 import type { PieceCommonFields } from '../database.utils.js'
 
 const Piece = {
 	Book: 'books',
 	Link: 'links',
+	Text: 'texts',
 } as const
 
 type Pieces = (typeof Piece)[keyof typeof Piece]
@@ -13,6 +15,7 @@ type Pieces = (typeof Piece)[keyof typeof Piece]
 type PieceTables = {
 	[Piece.Book]: BooksTable
 	[Piece.Link]: LinksTable
+	[Piece.Text]: TextsTable
 }
 
 type PiecesCommonTable = PieceCommonFields & {
