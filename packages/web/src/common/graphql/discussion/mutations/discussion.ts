@@ -1,17 +1,18 @@
 import builder from '@app/lib/graphql/builder'
-import zod, { ZodError } from 'zod'
+import { Piece, Pieces } from '@luzzle/kysely'
+import { ZodError } from 'zod'
+
+const PieceTypeRegExp = new RegExp(Object.values(Piece).join('|'))
 
 const DiscussionInput = builder.inputType('DiscussionInput', {
 	fields: (t) => ({
 		slug: t.string({ required: true }),
 		email: t.string({ required: true, validate: { email: true } }),
 		discussion: t.string({ required: true, validate: { maxLength: 1024 } }),
-		type: t.string({ required: true, validate: { schema: zod.enum(['links', 'books']) } }),
+		type: t.string({ required: true, validate: (x) => PieceTypeRegExp.test(x) }),
 		topic: t.string({
 			required: true,
-			validate: {
-				schema: zod.enum(['reflection', 'recommendation', 'reflection-critical']),
-			},
+			validate: (x) => /reflection|recommendation|reflection-critical/.test(x),
 		}),
 	}),
 })
@@ -33,11 +34,10 @@ builder.mutationFields((t) => ({
 		},
 		resolve: async (_, args, ctx) => {
 			const { slug, email, discussion, topic, type } = args.input
-			const table = type == 'links' ? 'links' : 'books'
 
 			try {
 				const item = await ctx.db
-					.selectFrom(table)
+					.selectFrom(type as Pieces)
 					.select('title')
 					.where('slug', '=', slug)
 					.executeTakeFirstOrThrow()
@@ -55,10 +55,10 @@ builder.mutationFields((t) => ({
 				return true
 			} catch (error) {
 				if (error instanceof Error && error?.name === 'NotFoundError') {
-					throw new Error(`${table} ${slug} not found`)
+					throw new Error(`${type} ${slug} not found`)
 				} else {
 					console.error(error)
-					throw new Error('internal error. could send discussion')
+					throw new Error('internal error. could not send discussion')
 				}
 			}
 		},
