@@ -63,7 +63,7 @@ export async function getStaticProps(): Promise<{ props: HomePageProps }> {
 
 export default function Home({ book, link, text }: HomePageProps): JSX.Element {
 	return (
-		<PageFull meta={{ title: 'books' }} isHome>
+		<PageFull meta={{ title: 'this is a title' }} isHome>
 			<Box className={styles.page}>
 				<Box>
 					<Text as="h1" size={'title'}>
