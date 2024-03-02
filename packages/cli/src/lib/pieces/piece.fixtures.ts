@@ -1,8 +1,8 @@
-import { PieceCache } from './cache.js'
 import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
-import { PieceSelectable, Pieces, PieceFrontmatter } from '@luzzle/kysely'
+import { PieceSelectable, Pieces, PieceFrontmatter, LuzzleDatabase } from '@luzzle/kysely'
 import Piece from './piece.js'
 import { PieceMarkdown } from './markdown.js'
+import { mockDatabase } from '../database.mock.js'
 
 type PieceFrontmatterSample = PieceFrontmatter<
 	Omit<
@@ -11,7 +11,6 @@ type PieceFrontmatterSample = PieceFrontmatter<
 	>
 >
 type PieceValidator = Ajv.ValidateFunction<PieceFrontmatterSample>
-type PieceCacheSchema = JTDSchemaType<PieceCache<PieceSelectable>>
 type PieceSchema = JTDSchemaType<PieceFrontmatterSample>
 type PieceMarkdownSample = PieceMarkdown<PieceFrontmatterSample>
 
@@ -24,10 +23,6 @@ const sample = {
 export function makeValidator(): PieceValidator {
 	const validate = () => true
 	return validate as unknown as PieceValidator
-}
-
-export function makeCacheSchema(): PieceCacheSchema {
-	return {} as PieceCacheSchema
 }
 
 export function makeSchema(
@@ -70,14 +65,23 @@ export function makeSample(): PieceSelectable {
 	} as PieceSelectable
 }
 
-class PieceExample extends Piece<Pieces, PieceSelectable, PieceFrontmatterSample> {
+class PieceOverridable extends Piece<Pieces, PieceSelectable, PieceFrontmatterSample> {
 	constructor(
-		pieceRoot = 'pieces-root',
-		table: Pieces = 'table' as Pieces,
-		schema: JTDSchemaType<PieceFrontmatterSample> = makeSchema(),
-		cacheSchema: PieceCacheSchema = makeCacheSchema()
+		overrides: {
+			pieceRoot?: string
+			table?: Pieces
+			schema?: JTDSchemaType<PieceFrontmatterSample>
+			db?: LuzzleDatabase
+		} = {}
 	) {
-		super(pieceRoot, table, schema, cacheSchema)
+		const options = {
+			pieceRoot: 'pieces-root',
+			table: 'table' as Pieces,
+			schema: makeSchema(),
+			db: mockDatabase().db,
+			...overrides,
+		}
+		super(options.pieceRoot, options.table, options.schema, options.db)
 	}
 
 	async process(): Promise<void> {
@@ -94,5 +98,5 @@ class PieceExample extends Piece<Pieces, PieceSelectable, PieceFrontmatterSample
 }
 
 export function makePiece() {
-	return PieceExample
+	return PieceOverridable
 }

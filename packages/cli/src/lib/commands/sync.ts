@@ -40,16 +40,16 @@ const command: Command<SyncArgv> = {
 				slugs.push(optionalPiece.slug)
 			} else {
 				const allSlugs = await pieces.getSlugs()
-				const updatedSlugs = await pieces.filterSlugsBy(allSlugs, 'lastSynced')
+				const updatedSlugs = await pieces.getSlugsOutdated()
 				const processSlugs = force ? allSlugs : updatedSlugs
 
 				slugs.push(...processSlugs)
 			}
 
-			await pieces.sync(ctx.db, slugs, dryRun)
+			await pieces.sync(slugs, dryRun)
 
 			if (!optionalPiece) {
-				await pieces.syncCleanUp(ctx.db, dryRun)
+				await pieces.syncCleanUp(dryRun)
 			}
 		})
 	},

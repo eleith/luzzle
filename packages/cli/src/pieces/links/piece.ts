@@ -6,16 +6,16 @@ import {
 	LinkType,
 	LinkSelectable,
 	LuzzleLinkType,
-	linkDatabaseJtdSchema,
 	linkFrontmatterJtdSchema,
 } from './schema.js'
 import { merge } from 'lodash-es'
 import { availability } from './wayback.js'
 import { generateTags, generateSummary, generateClassification } from './openai.js'
+import { LuzzleDatabase } from '@luzzle/kysely'
 
 class LinkPiece extends Piece<LinkType, LinkSelectable, LinkFrontmatter> {
-	constructor(piecesRoot: string) {
-		super(piecesRoot, PieceType.Link, linkFrontmatterJtdSchema, linkDatabaseJtdSchema)
+	constructor(piecesRoot: string, db: LuzzleDatabase) {
+		super(piecesRoot, PieceType.Link, linkFrontmatterJtdSchema, db)
 	}
 
 	async fetch(

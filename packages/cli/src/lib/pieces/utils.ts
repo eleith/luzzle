@@ -1,10 +1,11 @@
-import { existsSync } from 'fs'
+import { createReadStream, existsSync } from 'fs'
 import path from 'path'
 import { Argv } from 'yargs'
 import { Pieces, Piece } from '@luzzle/kysely'
 import { temporaryFile } from 'tempy'
 import { copyFile, stat } from 'fs/promises'
 import { downloadToPath } from '../web.js'
+import { createHash } from 'crypto'
 
 export const PieceDirectory = {
 	Root: 'root',
@@ -124,6 +125,19 @@ async function downloadFileOrUrlTo(file: string): Promise<string> {
 	throw new Error(`${file} is not a valid file`)
 }
 
+function calculateHashFromFile(file: string): Promise<string> {
+	const stream = createReadStream(file)
+	const hash = createHash('md5')
+
+	return new Promise((resolve, reject) => {
+		stream.on('error', (err) => {
+			reject(err)
+		})
+		stream.on('data', (data) => hash.update(data))
+		stream.on('end', () => resolve(hash.digest('hex')))
+	})
+}
+
 export {
 	PieceFileType,
 	PieceCommandOption,
@@ -133,6 +147,7 @@ export {
 	makePieceCommand,
 	makeOptionalPieceCommand,
 	downloadFileOrUrlTo,
+	calculateHashFromFile,
 	Piece,
 	type Pieces,
 }

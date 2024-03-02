@@ -1,17 +1,12 @@
 import log from '../../lib/log.js'
 import { Piece, toValidatedMarkdown, PieceType, PieceMarkdown } from '../../lib/pieces/index.js'
 import { Config } from '../../lib/config.js'
-import {
-	TextFrontmatter,
-	TextType,
-	TextSelectable,
-	textDatabaseJtdSchema,
-	textFrontmatterJtdSchema,
-} from './schema.js'
+import { TextFrontmatter, TextType, TextSelectable, textFrontmatterJtdSchema } from './schema.js'
+import { LuzzleDatabase } from '@luzzle/kysely'
 
 class TextPiece extends Piece<TextType, TextSelectable, TextFrontmatter> {
-	constructor(piecesRoot: string) {
-		super(piecesRoot, PieceType.Text, textFrontmatterJtdSchema, textDatabaseJtdSchema)
+	constructor(piecesRoot: string, db: LuzzleDatabase) {
+		super(piecesRoot, PieceType.Text, textFrontmatterJtdSchema, db)
 	}
 
 	async fetch(

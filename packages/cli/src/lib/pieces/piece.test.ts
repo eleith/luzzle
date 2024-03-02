@@ -1,9 +1,7 @@
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { readdir, stat, writeFile, copyFile, unlink, mkdir } from 'fs/promises'
 import { Dirent, existsSync, mkdirSync, Stats } from 'fs'
 import {
-	makeSchema,
-	makeCacheSchema,
 	makeMarkdownSample,
 	makeSample,
 	makeValidator,
@@ -14,9 +12,9 @@ import { toMarkdown, toValidatedMarkdown, toMarkdownString } from './markdown.js
 import { extract } from '../md.js'
 import { mockDatabase } from '../database.mock.js'
 import { removeAllTagsFrom, addTagsTo, keywordsToTags, syncTagsFor } from '../tags/index.js'
+import { addCache, removeCache, updateCache, getCache, getCacheAll } from './cache.js'
 import log from '../log.js'
 import { CpuInfo, cpus } from 'os'
-import CacheForType from '../cache.js'
 import { fileTypeFromFile, FileTypeResult } from 'file-type'
 import {
 	Pieces,
@@ -27,18 +25,19 @@ import {
 	PieceInsertable,
 } from '@luzzle/kysely'
 import { downloadFileOrUrlTo } from './utils.js'
+import { makeCache } from './cache.fixtures.js'
 
 vi.mock('fs')
 vi.mock('fs/promises')
-vi.mock('../log')
-vi.mock('../md')
-vi.mock('./markdown')
-vi.mock('../tags/index')
-vi.mock('../cache')
+vi.mock('../log.js')
+vi.mock('../md.js')
+vi.mock('./markdown.js')
+vi.mock('../tags/index.js')
+vi.mock('./cache.js')
 vi.mock('os')
 vi.mock('file-type')
 vi.mock('@luzzle/kysely')
-vi.mock('./utils')
+vi.mock('./utils.js')
 
 const mocks = {
 	existsSync: vi.mocked(existsSync),
@@ -54,13 +53,14 @@ const mocks = {
 	keywordsToTags: vi.mocked(keywordsToTags),
 	syncTagsFor: vi.mocked(syncTagsFor),
 	extract: vi.mocked(extract),
-	logError: vi.mocked(log.error),
+	logError: vi.spyOn(log, 'error'),
 	stat: vi.mocked(stat),
 	cpus: vi.mocked(cpus),
-	CacheGet: vi.spyOn(CacheForType.prototype, 'get'),
-	CacheUpdate: vi.spyOn(CacheForType.prototype, 'update'),
-	CacheGetAllFiles: vi.spyOn(CacheForType.prototype, 'getAllFiles'),
-	CacheRemove: vi.spyOn(CacheForType.prototype, 'remove'),
+	addCache: vi.mocked(addCache),
+	removeCache: vi.mocked(removeCache),
+	updateCache: vi.mocked(updateCache),
+	getCache: vi.mocked(getCache),
+	getCacheAll: vi.mocked(getCacheAll),
 	compile: vi.mocked(ajv),
 	copy: vi.mocked(copyFile),
 	fileType: vi.mocked(fileTypeFromFile),
@@ -71,7 +71,7 @@ const mocks = {
 	downloadFileOrUrlTo: vi.mocked(downloadFileOrUrlTo),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
 describe('lib/pieces/piece', () => {
 	afterEach(() => {
@@ -125,25 +125,43 @@ describe('lib/pieces/piece', () => {
 		const PieceType = makePiece()
 		const slug = 'slug'
 		const note = 'note'
+		const date = new Date()
 		const frontmatter = {
-			title: 'title',
-			author: 'author',
-			hidden: 'hidden',
-			stuff: ['a', 'b'],
+			date: date.toISOString(),
 		}
 		const markdown = makeMarkdownSample(slug, note, frontmatter)
 		const pieceTest = new PieceType()
 
 		mocks.getPieceSchemaKeys.mockReturnValueOnce([
-			{ name: 'title', type: 'string' },
-			{ name: 'author', type: 'string' },
-			{ name: 'hidden', type: 'string' },
-			{ name: 'stuff', type: 'string', collection: 'array' },
+			{ name: 'date', type: 'string', metadata: { format: 'date-string' } },
 		])
+		mocks.frontmatterToDatabaseValue.mockImplementation((value) => new Date(value as string))
+
+		const input = pieceTest.toCreateInput(markdown)
+
+		expect(mocks.frontmatterToDatabaseValue).toHaveBeenCalledWith(frontmatter.date, 'date-string')
+		expect(input).toEqual({
+			id: expect.any(String),
+			slug: markdown.slug,
+			note: markdown.note,
+			date: date,
+		})
+	})
+
+	test('toCreateInput handles arrays', () => {
+		const PieceType = makePiece()
+		const slug = 'slug'
+		const note = 'note'
+		const frontmatter = {
+			stuff: ['a', 'b'],
+			badstuff: 'a',
+		}
+		const markdown = makeMarkdownSample(slug, note, frontmatter)
+		const pieceTest = new PieceType()
+
 		mocks.getPieceSchemaKeys.mockReturnValueOnce([
-			{ name: 'title', type: 'string' },
-			{ name: 'author', type: 'string' },
-			{ name: 'stuff', type: 'string' },
+			{ name: 'stuff', type: 'string', collection: 'array' },
+			{ name: 'badstuff', type: 'string', collection: 'array' },
 		])
 		mocks.frontmatterToDatabaseValue.mockImplementation((value) => value)
 
@@ -153,8 +171,6 @@ describe('lib/pieces/piece', () => {
 			id: expect.any(String),
 			slug: markdown.slug,
 			note: markdown.note,
-			title: frontmatter.title,
-			author: frontmatter.author,
 			stuff: JSON.stringify(frontmatter.stuff),
 		})
 	})
@@ -162,37 +178,65 @@ describe('lib/pieces/piece', () => {
 	test('toUpdateInput', () => {
 		const PieceType = makePiece()
 		const data = makeSample()
-		const slug = 'slug2'
-		const note = 'note2'
+		const slug = 'slug'
+		const note = 'note'
 		const frontmatter = {
-			...data,
-			id: undefined,
-			slug: undefined,
-			note: undefined,
 			stuff: ['a', 'b'],
+			title: 'title',
+			hidden: 'hidden',
+			date: new Date().toISOString(),
+			subtitle: 'subtitle',
 		}
 		const markdown = makeMarkdownSample(slug, note, frontmatter)
 		const pieceTest = new PieceType()
 
+		data.subtitle = 'no subtitle'
+		data.title = frontmatter.title
+		data.slug = slug
+		data.note = note
+
 		mocks.getPieceSchemaKeys.mockReturnValueOnce([
 			{ name: 'title', type: 'string' },
-			{ name: 'author', type: 'string' },
+			{ name: 'subtitle', type: 'string' },
 			{ name: 'stuff', type: 'string', collection: 'array' },
-		])
-		mocks.getPieceSchemaKeys.mockReturnValueOnce([
-			{ name: 'title', type: 'string' },
-			{ name: 'author', type: 'string' },
-			{ name: 'stuff', type: 'string' },
+			{ name: 'date', type: 'string', metadata: { format: 'date-string' } },
 		])
 		mocks.frontmatterToDatabaseValue.mockImplementation((value) => value)
 
 		const input = pieceTest.toUpdateInput(markdown, data)
 
 		expect(input).toEqual({
-			slug,
-			note,
 			date_updated: expect.any(Number),
 			stuff: JSON.stringify(frontmatter.stuff),
+			date: frontmatter.date,
+			subtitle: frontmatter.subtitle,
+		})
+	})
+
+	test('toUpdateInput updates note and slug', () => {
+		const PieceType = makePiece()
+		const data = makeSample()
+		const slug = 'slug'
+		const note = 'note'
+		const frontmatter = {
+			title: 'title',
+		}
+		const markdown = makeMarkdownSample(slug, note, frontmatter)
+		const pieceTest = new PieceType()
+
+		data.title = frontmatter.title
+		data.slug = 'old slug'
+		data.note = 'old note'
+
+		mocks.getPieceSchemaKeys.mockReturnValueOnce([{ name: 'title', type: 'string' }])
+		mocks.frontmatterToDatabaseValue.mockImplementation((value) => value)
+
+		const input = pieceTest.toUpdateInput(markdown, data)
+
+		expect(input).toEqual({
+			date_updated: expect.any(Number),
+			note,
+			slug,
 		})
 	})
 
@@ -209,88 +253,72 @@ describe('lib/pieces/piece', () => {
 		expect(foundSlugs).toEqual(slugs)
 	})
 
-	test('filterSlugsBy', async () => {
-		const pieceSchema = makeSchema()
-		const pieceCacheSchema = makeCacheSchema()
-		const type = 'lastProcessed'
+	test('getSlugsOutdated', async () => {
 		const PieceTest = makePiece()
 		const slugs = ['a', 'b', 'c']
 		const fileUpdated = new Date('2201-11-11')
 		const cacheUpdated = new Date('2101-11-11')
-		const pieceDir = 'piece-dir'
-		const pieceTable = 'table' as Pieces
 
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.stat.mockResolvedValue({ mtime: fileUpdated } as Stats)
-		mocks.CacheGet.mockResolvedValue({ lastProcessed: cacheUpdated.toUTCString() })
+		mocks.getCache.mockResolvedValue(
+			makeCache({
+				date_updated: cacheUpdated.getTime(),
+			})
+		)
+		mocks.getCache.mockResolvedValueOnce(
+			makeCache({
+				date_added: cacheUpdated.getTime(),
+				date_updated: null,
+			})
+		)
+		mocks.getCache.mockResolvedValueOnce(null)
 
-		const pieceTest = new PieceTest(pieceDir, pieceTable, pieceSchema, pieceCacheSchema)
+		const pieceTest = new PieceTest()
 
+		spies.getSlugs = vi.spyOn(pieceTest, 'getSlugs').mockResolvedValueOnce(slugs)
 		spies.getPath = vi.spyOn(pieceTest, 'getPath').mockReturnValue('somewhere/slug')
 
-		const updatedSlugs = await pieceTest.filterSlugsBy(slugs, type)
+		const updatedSlugs = await pieceTest.getSlugsOutdated()
 
 		expect(updatedSlugs).toEqual(slugs)
 	})
 
-	test('filterSlugsBy filters untouched files', async () => {
-		const pieceSchema = makeSchema()
-		const pieceCacheSchema = makeCacheSchema()
-		const type = 'lastProcessed'
+	test('getSlugsOutdated finds none', async () => {
 		const PieceTest = makePiece()
 		const slugs = ['a', 'b', 'c']
-		const fileUpdated = new Date('2001-11-11')
-		const cacheUpdated = new Date('2101-11-11')
-		const pieceDir = 'piece-dir'
-		const pieceTable = 'table' as Pieces
+		const fileUpdated = new Date('2201-11-11')
+		const cacheUpdated = new Date('2301-11-11')
 
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.stat.mockResolvedValue({ mtime: fileUpdated } as Stats)
-		mocks.CacheGet.mockResolvedValue({ lastProcessed: cacheUpdated.toUTCString() })
+		mocks.getCache.mockResolvedValue(
+			makeCache({
+				date_updated: cacheUpdated.getTime(),
+			})
+		)
 
-		const pieceTest = new PieceTest(pieceDir, pieceTable, pieceSchema, pieceCacheSchema)
+		const pieceTest = new PieceTest()
 
+		spies.getSlugs = vi.spyOn(pieceTest, 'getSlugs').mockResolvedValueOnce(slugs)
 		spies.getPath = vi.spyOn(pieceTest, 'getPath').mockReturnValue('somewhere/slug')
 
-		const updatedSlugs = await pieceTest.filterSlugsBy(slugs, type)
+		const updatedSlugs = await pieceTest.getSlugsOutdated()
 
 		expect(updatedSlugs).toEqual([])
 	})
 
-	test('filterSlugsBy filters in new files', async () => {
-		const slugs = ['a', 'b', 'c']
-		const fileUpdated = new Date('2001-11-11')
-		const type = 'lastProcessed'
+	test('getSlugsOutdated logs error', async () => {
 		const PieceTest = makePiece()
-
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.stat.mockResolvedValue({ mtime: fileUpdated } as Stats)
-		mocks.CacheGet.mockResolvedValue({})
+		const slugs = ['a']
 
 		const pieceTest = new PieceTest()
 
+		mocks.stat.mockRejectedValueOnce(new Error('oof'))
+		spies.getSlugs = vi.spyOn(pieceTest, 'getSlugs').mockResolvedValueOnce(slugs)
 		spies.getPath = vi.spyOn(pieceTest, 'getPath').mockReturnValue('somewhere/slug')
 
-		const updatedSlugs = await pieceTest.filterSlugsBy(slugs, type)
+		const updatedSlugs = await pieceTest.getSlugsOutdated()
 
-		expect(updatedSlugs).toEqual(slugs)
-	})
-
-	test('filterSlugsBy filters non-existant files', async () => {
-		const slugs = ['a', 'b', 'c']
-		const type = 'lastProcessed'
-		const PieceTest = makePiece()
-
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.stat.mockRejectedValue(new Error('no file'))
-		mocks.CacheGet.mockResolvedValue({})
-
-		const pieceTest = new PieceTest()
-
-		spies.getPath = vi.spyOn(pieceTest, 'getPath').mockReturnValue('somewhere/slug')
-
-		const updatedSlugs = await pieceTest.filterSlugsBy(slugs, type)
-
+		expect(mocks.logError).toHaveBeenCalledOnce()
 		expect(updatedSlugs).toEqual([])
 	})
 
@@ -398,14 +426,12 @@ describe('lib/pieces/piece', () => {
 		const sample = makeMarkdownSample()
 		const PieceTest = makePiece()
 
-		spies.cacheUpdate = vi.fn(async () => '')
 		mocks.toMarkdownString.mockReturnValueOnce('')
 		mocks.writeFile.mockResolvedValueOnce(undefined)
 
 		await new PieceTest().write(sample)
 
 		expect(mocks.writeFile).toHaveBeenCalledOnce()
-		expect(mocks.CacheUpdate).toHaveBeenCalledOnce()
 	})
 
 	test('cleanUpCache', async () => {
@@ -413,123 +439,68 @@ describe('lib/pieces/piece', () => {
 		const PieceTest = makePiece()
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.CacheGetAllFiles.mockResolvedValue(slugs)
 		mocks.getPieceSchemaKeys.mockReturnValue([])
+		mocks.removeCache.mockResolvedValue(undefined)
+		mocks.getCacheAll.mockResolvedValue(slugs.map((slug) => makeCache({ slug })))
 
 		const pieceTest = new PieceTest()
 
 		const removed = await pieceTest.cleanUpCache([])
 
 		expect(removed).toEqual(slugs)
-		expect(mocks.CacheRemove).toHaveBeenCalledTimes(slugs.length)
+		expect(mocks.removeCache).toHaveBeenCalledTimes(slugs.length)
 	})
 
 	test('cleanUpCache removes attachments', async () => {
-		const slugs = ['a']
+		const slug = 'slug'
 		const PieceTest = makePiece()
-		const mediaFolder = 'cover'
+		const file = `${slug}.jpg`
+		const file2 = `${slug}-2.png`
+		const slugs = [slug]
 
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.CacheGetAllFiles.mockResolvedValue(slugs)
-		mocks.CacheGet.mockResolvedValueOnce({ database: { [mediaFolder]: 'path/to/cover.jpg' } })
 		mocks.getPieceSchemaKeys.mockReturnValueOnce([
-			{ name: mediaFolder, type: 'string', metadata: { format: 'attachment' } },
+			{ name: 'cover', type: 'string', metadata: { format: 'attachment' } },
 		])
-		mocks.unlink.mockResolvedValueOnce()
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		mocks.removeCache.mockResolvedValue(undefined)
+		mocks.getCacheAll.mockResolvedValue(slugs.map((slug) => makeCache({ slug })))
+		mocks.readdir.mockResolvedValueOnce([file, file2] as unknown as Dirent[])
+		mocks.unlink.mockResolvedValue(undefined)
 
-		const pieceTest = new PieceTest('root', 'table' as Pieces)
+		const pieceTest = new PieceTest()
 
 		const removed = await pieceTest.cleanUpCache([])
 
 		expect(removed).toEqual(slugs)
-		expect(mocks.CacheRemove).toHaveBeenCalledTimes(slugs.length)
-		expect(mocks.unlink).toHaveBeenCalledOnce()
-		expect(mocks.CacheGet).toHaveBeenCalledOnce()
+		expect(mocks.readdir).toHaveBeenCalledOnce()
+		expect(mocks.unlink).toHaveBeenCalledTimes(2)
+		expect(mocks.removeCache).toHaveBeenCalledTimes(slugs.length)
 	})
 
-	test('cleanUpCache removes attachment arrays', async () => {
-		const slugs = ['a']
+	test('cleanUpCache catches remove failure', async () => {
+		const slug = 'slug'
 		const PieceTest = makePiece()
-		const mediaFolder = 'cover'
+		const file = `${slug}.jpg`
+		const slugs = [slug]
 
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.CacheGetAllFiles.mockResolvedValue(slugs)
-		mocks.CacheGet.mockResolvedValueOnce({
-			database: { [mediaFolder]: JSON.stringify(['path/to/cover.jpg']) },
-		})
 		mocks.getPieceSchemaKeys.mockReturnValueOnce([
-			{
-				name: mediaFolder,
-				type: 'string',
-				metadata: { format: 'attachment' },
-				collection: 'array',
-			},
+			{ name: 'cover', type: 'string', metadata: { format: 'attachment' } },
 		])
-		mocks.unlink.mockResolvedValueOnce()
-
-		const pieceTest = new PieceTest('root', 'table' as Pieces)
-
-		const removed = await pieceTest.cleanUpCache([])
-
-		expect(removed).toEqual(slugs)
-		expect(mocks.CacheRemove).toHaveBeenCalledTimes(slugs.length)
-		expect(mocks.unlink).toHaveBeenCalledOnce()
-		expect(mocks.CacheGet).toHaveBeenCalledOnce()
-	})
-
-	test('cleanUpCache fails removing attachments', async () => {
-		const slugs = ['a']
-		const PieceTest = makePiece()
-		const mediaFolder = 'cover'
-		const schema = makeSchema({
-			cover: { type: 'string', metadata: { luzzleFormat: 'attachment' } },
-		})
-
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.CacheGetAllFiles.mockResolvedValue(slugs)
-		mocks.CacheGet.mockResolvedValueOnce({ database: { [mediaFolder]: 'path/to/cover.jpg' } })
-		mocks.getPieceSchemaKeys.mockReturnValue([
-			{ name: mediaFolder, type: 'string', metadata: { format: 'attachment' } },
-		])
+		mocks.removeCache.mockResolvedValue(undefined)
+		mocks.getCacheAll.mockResolvedValue(slugs.map((slug) => makeCache({ slug })))
+		mocks.readdir.mockResolvedValueOnce([file] as unknown as Dirent[])
 		mocks.unlink.mockRejectedValueOnce(new Error('oof'))
 
-		const pieceTest = new PieceTest('root', 'table' as Pieces, schema)
+		const pieceTest = new PieceTest()
 
 		const removed = await pieceTest.cleanUpCache([])
 
 		expect(removed).toEqual(slugs)
+		expect(mocks.readdir).toHaveBeenCalledOnce()
+		expect(mocks.unlink).toHaveBeenCalledTimes(1)
 		expect(mocks.logError).toHaveBeenCalledOnce()
-	})
-
-	test('cleanUpCache fails removing attachment arrays', async () => {
-		const slugs = ['a']
-		const PieceTest = makePiece()
-		const mediaFolder = 'cover'
-		const schema = makeSchema({
-			cover: { type: 'string', metadata: { luzzleFormat: 'attachment' } },
-		})
-
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.CacheGetAllFiles.mockResolvedValue(slugs)
-		mocks.CacheGet.mockResolvedValueOnce({
-			database: { [mediaFolder]: JSON.stringify(['path/to/cover.jpg']) },
-		})
-		mocks.getPieceSchemaKeys.mockReturnValue([
-			{
-				name: mediaFolder,
-				type: 'string',
-				metadata: { format: 'attachment' },
-				collection: 'array',
-			},
-		])
-		mocks.unlink.mockRejectedValueOnce(new Error('oof'))
-
-		const pieceTest = new PieceTest('root', 'table' as Pieces, schema)
-
-		const removed = await pieceTest.cleanUpCache([])
-
-		expect(removed).toEqual(slugs)
-		expect(mocks.logError).toHaveBeenCalledOnce()
+		expect(mocks.removeCache).toHaveBeenCalledTimes(slugs.length)
 	})
 
 	test('cleanUpSlugs', async () => {
@@ -540,7 +511,7 @@ describe('lib/pieces/piece', () => {
 
 		dbMocks.queries.execute.mockResolvedValueOnce(slugs.map((slug, id) => ({ id, slug })))
 
-		await new PieceTest().cleanUpSlugs(dbMocks.db, slugsOnDisk)
+		await new PieceTest({ db: dbMocks.db }).cleanUpSlugs(slugsOnDisk)
 
 		expect(mocks.removeAllTagsFrom).toHaveBeenCalledWith(dbMocks.db, [2], expect.any(String))
 	})
@@ -553,7 +524,7 @@ describe('lib/pieces/piece', () => {
 
 		dbMocks.queries.execute.mockResolvedValueOnce(slugs.map((slug, id) => ({ id, slug })))
 
-		await new PieceTest().cleanUpSlugs(dbMocks.db, slugsOnDisk, true)
+		await new PieceTest({ db: dbMocks.db }).cleanUpSlugs(slugsOnDisk, true)
 
 		expect(dbMocks.queries.execute).toHaveBeenCalledOnce()
 		expect(mocks.removeAllTagsFrom).not.toHaveBeenCalled()
@@ -567,14 +538,13 @@ describe('lib/pieces/piece', () => {
 		dbMocks.queries.execute.mockResolvedValueOnce(slugsOnDisk)
 		dbMocks.queries.execute.mockRejectedValueOnce(new Error('oof'))
 
-		await new PieceTest().cleanUpSlugs(dbMocks.db, slugsOnDisk)
+		await new PieceTest({ db: dbMocks.db }).cleanUpSlugs(slugsOnDisk)
 
 		expect(mocks.removeAllTagsFrom).not.toHaveBeenCalled()
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
 	test('syncCleanUp', async () => {
-		const dbMocks = mockDatabase()
 		const slugs = ['a', 'b', 'c']
 		const PieceTest = makePiece()
 
@@ -583,7 +553,7 @@ describe('lib/pieces/piece', () => {
 		spies.cleanUpSlugs = vi.spyOn(pieceTest, 'cleanUpSlugs').mockResolvedValueOnce()
 		spies.getSlugs = vi.spyOn(pieceTest, 'getSlugs').mockResolvedValueOnce(slugs)
 
-		await pieceTest.syncCleanUp(dbMocks.db)
+		await pieceTest.syncCleanUp()
 
 		expect(spies.cleanUpCache).toHaveBeenCalledOnce()
 		expect(spies.cleanUpSlugs).toHaveBeenCalledOnce()
@@ -595,17 +565,15 @@ describe('lib/pieces/piece', () => {
 		const markdown = makeMarkdownSample()
 		const added = { ...markdown.frontmatter, id: 1 }
 
-		const pieceTest = new PieceTest()
-		spies.markAsSynced = vi.spyOn(pieceTest, 'markAsSynced').mockResolvedValueOnce()
+		const pieceTest = new PieceTest({ db: dbMocks.db })
 		spies.createInput = vi
 			.spyOn(pieceTest, 'toCreateInput')
 			.mockReturnValueOnce({} as PieceInsertable)
 		dbMocks.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(added)
 
-		await pieceTest.syncAdd(dbMocks.db, markdown)
+		await pieceTest.syncAdd(markdown)
 
 		expect(dbMocks.queries.executeTakeFirstOrThrow).toHaveBeenCalledOnce()
-		expect(spies.markAsSynced).toHaveBeenCalledWith(added)
 		expect(mocks.addTagsTo).not.toHaveBeenCalled()
 	})
 
@@ -616,18 +584,16 @@ describe('lib/pieces/piece', () => {
 		const markdown = makeMarkdownSample('slug', 'note', { keywords: keywords.join(',') })
 		const added = { ...markdown.frontmatter, id: 1 }
 
-		const pieceTest = new PieceTest()
-		spies.markAsSynced = vi.spyOn(pieceTest, 'markAsSynced').mockResolvedValueOnce()
+		const pieceTest = new PieceTest({ db: dbMocks.db })
 		spies.createInput = vi
 			.spyOn(pieceTest, 'toCreateInput')
 			.mockReturnValueOnce({} as PieceInsertable)
 		dbMocks.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(added)
 		mocks.keywordsToTags.mockReturnValueOnce(keywords)
 
-		await pieceTest.syncAdd(dbMocks.db, markdown)
+		await pieceTest.syncAdd(markdown)
 
 		expect(dbMocks.queries.executeTakeFirstOrThrow).toHaveBeenCalledOnce()
-		expect(spies.markAsSynced).toHaveBeenCalledWith(added)
 		expect(mocks.addTagsTo).toHaveBeenCalledWith(dbMocks.db, keywords, added.id, expect.any(String))
 	})
 
@@ -637,13 +603,11 @@ describe('lib/pieces/piece', () => {
 		const keywords = 'a,b'.split(',')
 		const markdown = makeMarkdownSample('slug', 'note', { keywords: keywords.join(',') })
 
-		const pieceTest = new PieceTest()
-		spies.markAsSynced = vi.spyOn(pieceTest, 'markAsSynced').mockResolvedValueOnce()
+		const pieceTest = new PieceTest({ db: dbMocks.db })
 
-		await pieceTest.syncAdd(dbMocks.db, markdown, true)
+		await pieceTest.syncAdd(markdown, true)
 
 		expect(dbMocks.queries.executeTakeFirstOrThrow).not.toHaveBeenCalled()
-		expect(spies.markAsSynced).not.toHaveBeenCalled()
 		expect(mocks.addTagsTo).not.toHaveBeenCalled()
 	})
 
@@ -655,7 +619,7 @@ describe('lib/pieces/piece', () => {
 		dbMocks.queries.executeTakeFirstOrThrow.mockRejectedValueOnce(new Error('oof'))
 
 		const pieceTest = new PieceTest()
-		await pieceTest.syncAdd(dbMocks.db, markdown)
+		await pieceTest.syncAdd(markdown)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -668,12 +632,12 @@ describe('lib/pieces/piece', () => {
 
 		dbMocks.queries.executeTakeFirst.mockResolvedValueOnce(dbData)
 
-		const pieceTest = new PieceTest()
+		const pieceTest = new PieceTest({ db: dbMocks.db })
 		spies.syncUpdate = vi.spyOn(pieceTest, 'syncUpdate').mockResolvedValueOnce()
 
-		await pieceTest.syncMarkdown(dbMocks.db, markdown)
+		await pieceTest.syncMarkdown(markdown)
 
-		expect(spies.syncUpdate).toHaveBeenCalledWith(dbMocks.db, markdown, dbData, false)
+		expect(spies.syncUpdate).toHaveBeenCalledWith(markdown, dbData, false)
 	})
 
 	test('syncMarkdown add', async () => {
@@ -683,12 +647,12 @@ describe('lib/pieces/piece', () => {
 
 		dbMocks.queries.executeTakeFirst.mockResolvedValueOnce(null)
 
-		const pieceTest = new PieceTest()
+		const pieceTest = new PieceTest({ db: dbMocks.db })
 		spies.syncAdd = vi.spyOn(pieceTest, 'syncAdd').mockResolvedValueOnce()
 
-		await pieceTest.syncMarkdown(dbMocks.db, markdown)
+		await pieceTest.syncMarkdown(markdown)
 
-		expect(spies.syncAdd).toHaveBeenCalledWith(dbMocks.db, markdown, false)
+		expect(spies.syncAdd).toHaveBeenCalledWith(markdown, false)
 	})
 
 	test('syncUpdate', async () => {
@@ -698,16 +662,14 @@ describe('lib/pieces/piece', () => {
 		const updated = { ...markdown.frontmatter, id: 'asdf' }
 		const pieceData = makeSample()
 
-		const pieceTest = new PieceTest()
-		spies.markAsSynced = vi.spyOn(pieceTest, 'markAsSynced').mockResolvedValueOnce()
+		const pieceTest = new PieceTest({ db: dbMocks.db })
 		spies.toUpdateInput = vi.spyOn(pieceTest, 'toUpdateInput').mockResolvedValueOnce(updated)
 		dbMocks.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(updated)
 		mocks.keywordsToTags.mockReturnValueOnce([])
 
-		await pieceTest.syncUpdate(dbMocks.db, markdown, pieceData)
+		await pieceTest.syncUpdate(markdown, pieceData)
 
 		expect(dbMocks.queries.executeTakeFirstOrThrow).toHaveBeenCalledOnce()
-		expect(spies.markAsSynced).toHaveBeenCalledWith(updated)
 		expect(mocks.syncTagsFor).toHaveBeenCalledWith(dbMocks.db, [], updated.id, expect.any(String))
 	})
 
@@ -720,16 +682,14 @@ describe('lib/pieces/piece', () => {
 		const updated = { ...markdown.frontmatter, keywords: 'a' }
 		const dbUpdate = { ...updated, id: 1 }
 
-		const pieceTest = new PieceTest()
-		spies.markAsSynced = vi.spyOn(pieceTest, 'markAsSynced').mockResolvedValueOnce()
+		const pieceTest = new PieceTest({ db: dbMocks.db })
 		spies.toUpdateInput = vi.spyOn(pieceTest, 'toUpdateInput').mockResolvedValueOnce(updated)
 		dbMocks.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(dbUpdate)
 		mocks.keywordsToTags.mockReturnValueOnce(keywords)
 
-		await pieceTest.syncUpdate(dbMocks.db, markdown, pieceData)
+		await pieceTest.syncUpdate(markdown, pieceData)
 
 		expect(dbMocks.queries.executeTakeFirstOrThrow).toHaveBeenCalledOnce()
-		expect(spies.markAsSynced).toHaveBeenCalledWith(dbUpdate)
 		expect(mocks.syncTagsFor).toHaveBeenCalledWith(
 			dbMocks.db,
 			keywords,
@@ -746,18 +706,15 @@ describe('lib/pieces/piece', () => {
 		const updated = { ...markdown.frontmatter, keywords: 'a' }
 
 		const pieceTest = new PieceTest()
-		spies.markAsSynced = vi.spyOn(pieceTest, 'markAsSynced').mockResolvedValueOnce()
 		spies.toUpdateInput = vi.spyOn(pieceTest, 'toUpdateInput').mockResolvedValueOnce(updated)
 		dbMocks.queries.executeTakeFirstOrThrow.mockRejectedValueOnce(new Error('oof'))
 
-		await pieceTest.syncUpdate(dbMocks.db, markdown, pieceData)
+		await pieceTest.syncUpdate(markdown, pieceData)
 
-		expect(spies.markAsSynced).not.toHaveBeenCalled()
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
 	test('syncUpdate supports dryRun', async () => {
-		const dbMocks = mockDatabase()
 		const PieceTest = makePiece()
 		const markdown = makeMarkdownSample()
 		const pieceData = makeSample()
@@ -765,11 +722,8 @@ describe('lib/pieces/piece', () => {
 
 		const pieceTest = new PieceTest()
 		spies.toUpdateInput = vi.spyOn(pieceTest, 'toUpdateInput').mockResolvedValueOnce(updated)
-		spies.markAsSynced = vi.spyOn(pieceTest, 'markAsSynced').mockResolvedValueOnce()
 
-		await pieceTest.syncUpdate(dbMocks.db, markdown, pieceData, true)
-
-		expect(spies.markAsSynced).not.toHaveBeenCalled()
+		await pieceTest.syncUpdate(markdown, pieceData, true)
 	})
 
 	test('toMarkdown', () => {
@@ -779,11 +733,13 @@ describe('lib/pieces/piece', () => {
 		const PieceTest = makePiece()
 
 		mocks.toValidateMarkdown.mockReturnValueOnce(pieceMarkdown)
-		mocks.getPieceSchemaKeys.mockReturnValueOnce([{ name: 'title', type: 'string' }])
+		mocks.getPieceSchemaKeys.mockReturnValueOnce([
+			{ name: 'title', type: 'string', metadata: { format: 'date-string' } },
+		])
 		mocks.databaseToFrontmatterValue.mockReturnValueOnce(pieceMarkdown.frontmatter.title)
 		mocks.compile.mockReturnValueOnce(pieceValidator)
 
-		const markdown = new PieceTest('dir', 'table' as Pieces).toMarkdown(pieceSample)
+		const markdown = new PieceTest().toMarkdown(pieceSample)
 
 		expect(mocks.toValidateMarkdown).toHaveBeenCalledWith(
 			pieceMarkdown.slug,
@@ -809,7 +765,7 @@ describe('lib/pieces/piece', () => {
 		mocks.databaseToFrontmatterValue.mockReturnValueOnce(title[1])
 		mocks.compile.mockReturnValueOnce(pieceValidator)
 
-		const markdown = new PieceTest('dir', 'table' as Pieces).toMarkdown({
+		const markdown = new PieceTest().toMarkdown({
 			...pieceSample,
 			title: JSON.stringify(['a', 'b']),
 		})
@@ -822,14 +778,6 @@ describe('lib/pieces/piece', () => {
 		)
 		expect(markdown).toEqual(pieceMarkdown)
 	})
-	test('markAsSynced', async () => {
-		const pieceSample = makeSample()
-		const PieceTest = makePiece()
-
-		await new PieceTest().markAsSynced(pieceSample)
-
-		expect(mocks.CacheUpdate).toHaveBeenCalledOnce()
-	})
 
 	test('sync', async () => {
 		const dbMocks = mockDatabase()
@@ -837,15 +785,15 @@ describe('lib/pieces/piece', () => {
 		const PieceTest = makePiece()
 		const markdown = makeMarkdownSample()
 
-		const pieceTest = new PieceTest()
+		const pieceTest = new PieceTest({ db: dbMocks.db })
 		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValueOnce(markdown)
 		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValueOnce(null)
 		spies.syncMarkdown = vi.spyOn(pieceTest, 'syncMarkdown').mockResolvedValue()
 
-		await pieceTest.sync(dbMocks.db, slugs)
+		await pieceTest.sync(slugs)
 
 		expect(spies.syncMarkdown).toHaveBeenCalledOnce()
-		expect(spies.syncMarkdown).toHaveBeenCalledWith(dbMocks.db, markdown, false)
+		expect(spies.syncMarkdown).toHaveBeenCalledWith(markdown, false)
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
@@ -863,13 +811,90 @@ describe('lib/pieces/piece', () => {
 			[mediaField]: relPath,
 		})
 
-		const pieceTest = new PieceTest(root, table)
+		const pieceTest = new PieceTest({ pieceRoot: root, table })
 
 		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 		mocks.copy.mockResolvedValueOnce()
 		mocks.toValidateMarkdown.mockReturnValueOnce(updatedMarkdown)
 		mocks.getPieceSchemaKeys.mockReturnValueOnce([
 			{ name: mediaField, type: 'string', metadata: { format: 'attachment' } },
+		])
+		mocks.mkdir.mockResolvedValueOnce(undefined)
+
+		const attached = await pieceTest.attach(file, markdown, mediaField)
+
+		expect(mocks.copy).toHaveBeenCalledWith(file, toPath)
+		expect(mocks.mkdir).toHaveBeenCalledOnce()
+		expect(attached).toEqual(updatedMarkdown)
+	})
+
+	test('attach to a new collection', async () => {
+		const PieceTest = makePiece()
+		const slug = 'slug'
+		const note = 'note'
+		const file = 'path/to/somewhere.jpg'
+		const mediaField = 'covers'
+		const root = 'root'
+		const table = 'table' as Pieces
+		const relPath = `.assets/${mediaField}/${slug}-1.jpg`
+		const toPath = `${root}/${table}/${relPath}`
+		const markdown = makeMarkdownSample(slug, note)
+		const updatedMarkdown = makeMarkdownSample(slug, note, {
+			...markdown.frontmatter,
+			[mediaField]: [relPath],
+		})
+
+		const pieceTest = new PieceTest({ pieceRoot: root, table })
+
+		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
+		mocks.copy.mockResolvedValueOnce()
+		mocks.toValidateMarkdown.mockReturnValueOnce(updatedMarkdown)
+		mocks.getPieceSchemaKeys.mockReturnValueOnce([
+			{
+				name: mediaField,
+				type: 'string',
+				collection: 'array',
+				metadata: { format: 'attachment' },
+			},
+		])
+		mocks.mkdir.mockResolvedValueOnce(undefined)
+
+		const attached = await pieceTest.attach(file, markdown, mediaField)
+
+		expect(mocks.copy).toHaveBeenCalledWith(file, toPath)
+		expect(mocks.mkdir).toHaveBeenCalledOnce()
+		expect(attached).toEqual(updatedMarkdown)
+	})
+
+	test('attach to an existing collection', async () => {
+		const PieceTest = makePiece()
+		const slug = 'slug'
+		const note = 'note'
+		const file = 'path/to/somewhere.jpg'
+		const mediaField = 'covers'
+		const root = 'root'
+		const table = 'table' as Pieces
+		const oldRelPath = `.assets/${mediaField}/${slug}-1.jpg`
+		const relPath = `.assets/${mediaField}/${slug}-2.jpg`
+		const toPath = `${root}/${table}/${relPath}`
+		const markdown = makeMarkdownSample(slug, note, { [mediaField]: [oldRelPath] })
+		const updatedMarkdown = makeMarkdownSample(slug, note, {
+			...markdown.frontmatter,
+			[mediaField]: [oldRelPath, relPath],
+		})
+
+		const pieceTest = new PieceTest({ pieceRoot: root, table })
+
+		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
+		mocks.copy.mockResolvedValueOnce()
+		mocks.toValidateMarkdown.mockReturnValueOnce(updatedMarkdown)
+		mocks.getPieceSchemaKeys.mockReturnValueOnce([
+			{
+				name: mediaField,
+				type: 'string',
+				collection: 'array',
+				metadata: { format: 'attachment' },
+			},
 		])
 		mocks.mkdir.mockResolvedValueOnce(undefined)
 
@@ -893,7 +918,7 @@ describe('lib/pieces/piece', () => {
 			[mediaField]: relPath,
 		})
 
-		const pieceTest = new PieceTest(root, table)
+		const pieceTest = new PieceTest({ pieceRoot: root, table })
 
 		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 		mocks.copy.mockResolvedValueOnce()
@@ -919,7 +944,7 @@ describe('lib/pieces/piece', () => {
 			[mediaField]: relPath,
 		})
 
-		const pieceTest = new PieceTest(root, table)
+		const pieceTest = new PieceTest({ pieceRoot: root, table })
 
 		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
 		mocks.copy.mockResolvedValueOnce()
@@ -947,7 +972,7 @@ describe('lib/pieces/piece', () => {
 			[mediaField]: relPath,
 		})
 
-		const pieceTest = new PieceTest(root, table)
+		const pieceTest = new PieceTest({ pieceRoot: root, table })
 
 		mocks.fileType.mockResolvedValueOnce({ ext: 'png' } as FileTypeResult)
 		mocks.copy.mockResolvedValueOnce()

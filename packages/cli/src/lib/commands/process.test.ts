@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { ProcessArgv } from './process.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
@@ -17,7 +17,7 @@ const mocks = {
 	makeOptionalPieceCommand: vi.mocked(makeOptionalPieceCommand),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
 describe('lib/commands/process', () => {
 	afterEach(() => {
@@ -47,7 +47,7 @@ describe('lib/commands/process', () => {
 		spies.pieceProcess = vi.spyOn(PieceTest.prototype, 'process').mockResolvedValue()
 		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
 		spies.pieceFilterSlugs = vi
-			.spyOn(PieceTest.prototype, 'filterSlugsBy')
+			.spyOn(PieceTest.prototype, 'getSlugsOutdated')
 			.mockResolvedValue(slugsUpdated)
 
 		await command.run(ctx, {} as Arguments<ProcessArgv>)
@@ -71,7 +71,7 @@ describe('lib/commands/process', () => {
 		spies.pieceProcess = vi.spyOn(PieceTest.prototype, 'process').mockResolvedValue()
 		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
 		spies.pieceFilterSlugs = vi
-			.spyOn(PieceTest.prototype, 'filterSlugsBy')
+			.spyOn(PieceTest.prototype, 'getSlugsOutdated')
 			.mockResolvedValue(slugsUpdated)
 
 		await command.run(ctx, { force: true } as Arguments<ProcessArgv>)
