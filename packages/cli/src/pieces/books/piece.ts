@@ -5,18 +5,13 @@ import { Piece, toValidatedMarkdown, PieceType } from '../../lib/pieces/index.js
 import { generateDescription, generateTags } from './openai.js'
 import { Config } from '../../lib/config.js'
 import { merge } from 'lodash-es'
-import {
-	BookType,
-	BookSelectable,
-	BookFrontmatter,
-	bookDatabaseJtdSchema,
-	bookFrontmatterJtdSchema,
-} from './schema.js'
+import { BookType, BookSelectable, BookFrontmatter, bookFrontmatterJtdSchema } from './schema.js'
 import { PieceMarkdown } from 'src/lib/pieces/markdown.js'
+import { LuzzleDatabase } from '@luzzle/kysely'
 
 class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
-	constructor(piecesRoot: string) {
-		super(piecesRoot, PieceType.Book, bookFrontmatterJtdSchema, bookDatabaseJtdSchema)
+	constructor(piecesRoot: string, db: LuzzleDatabase) {
+		super(piecesRoot, PieceType.Book, bookFrontmatterJtdSchema, db)
 	}
 
 	async completeOpenAI(

@@ -1,5 +1,4 @@
 import { toValidatedMarkdown, PieceMarkdownError, PieceMarkdown } from './markdown.js'
-import { PieceCache } from './cache.js'
 import { Piece as PieceType, Pieces as PieceTypes } from '@luzzle/kysely'
 import {
 	PieceArgv,
@@ -21,7 +20,6 @@ export {
 	type PieceArgv,
 	type PieceOptionalArgv,
 	type PieceDirectories,
-	type PieceCache,
 	type PieceTypes,
 	type PieceMarkdown,
 	Piece,

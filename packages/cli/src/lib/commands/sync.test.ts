@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { SyncArgv } from './sync.js'
 import yargs, { Arguments } from 'yargs'
 import { makeContext } from './context.fixtures.js'
@@ -16,7 +16,7 @@ const mocks = {
 	makeOptionalPieceCommand: vi.mocked(makeOptionalPieceCommand),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
 describe('lib/commands/sync', () => {
 	afterEach(() => {
@@ -47,14 +47,14 @@ describe('lib/commands/sync', () => {
 		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncCleanUp').mockResolvedValue()
 		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
 		spies.pieceFilterSlugsBy = vi
-			.spyOn(PieceTest.prototype, 'filterSlugsBy')
+			.spyOn(PieceTest.prototype, 'getSlugsOutdated')
 			.mockResolvedValue(slugsUpdated)
 
 		await command.run(ctx, {} as Arguments<SyncArgv>)
 
 		expect(mocks.getPiece).toHaveBeenCalledWith(pieceType)
-		expect(spies.pieceFilterSlugsBy).toHaveBeenCalledWith(slugs, 'lastSynced')
-		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, slugsUpdated, false)
+		expect(spies.pieceFilterSlugsBy).toHaveBeenCalledOnce()
+		expect(spies.pieceSync).toHaveBeenCalledWith(slugsUpdated, false)
 		expect(spies.pieceSyncCleanUp).toHaveBeenCalledOnce()
 	})
 
@@ -75,7 +75,7 @@ describe('lib/commands/sync', () => {
 		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncCleanUp').mockResolvedValue()
 		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
 		spies.pieceFilterSlugsBy = vi
-			.spyOn(PieceTest.prototype, 'filterSlugsBy')
+			.spyOn(PieceTest.prototype, 'getSlugsOutdated')
 			.mockResolvedValue(slugsUpdated)
 		mocks.getPiece.mockResolvedValue(new PieceTest())
 
@@ -84,7 +84,7 @@ describe('lib/commands/sync', () => {
 		expect(mocks.getPiece).toHaveBeenCalledOnce()
 		expect(spies.pieceFilterSlugsBy).toHaveBeenCalledOnce()
 		expect(spies.pieceGetSlugs).toHaveBeenCalledOnce()
-		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, slugs, false)
+		expect(spies.pieceSync).toHaveBeenCalledWith(slugs, false)
 		expect(spies.pieceSyncCleanUp).toHaveBeenCalledOnce()
 	})
 
@@ -106,7 +106,7 @@ describe('lib/commands/sync', () => {
 		await command.run(ctx, {} as Arguments<SyncArgv>)
 
 		expect(mocks.getPiece).toHaveBeenCalledOnce()
-		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, [slug], false)
+		expect(spies.pieceSync).toHaveBeenCalledWith([slug], false)
 		expect(spies.pieceSyncCleanUp).not.toHaveBeenCalledOnce()
 	})
 

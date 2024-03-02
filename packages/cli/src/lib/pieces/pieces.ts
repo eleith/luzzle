@@ -6,6 +6,7 @@ import {
 	Piece as PieceType,
 	PieceFrontmatterFields,
 	PieceFrontmatter,
+	LuzzleDatabase,
 } from '@luzzle/kysely'
 import Piece, { InterfacePiece } from './piece.js'
 
@@ -17,9 +18,11 @@ type LuzzlePiece = InterfacePiece<
 
 class Pieces {
 	private _directory: string
+	private _db: LuzzleDatabase
 
-	constructor(dir: string) {
+	constructor(dir: string, db: LuzzleDatabase) {
 		this._directory = dir
+		this._db = db
 	}
 
 	get directory() {
@@ -31,7 +34,7 @@ class Pieces {
 		T extends PieceSelectable,
 		F extends PieceFrontmatter<Omit<T, keyof T>, void | PieceFrontmatterFields>
 	>(PieceInterface: InterfacePiece<P, T, F>): Piece<P, T, F> {
-		const pieceType = new PieceInterface(this._directory)
+		const pieceType = new PieceInterface(this._directory, this._db)
 
 		if (!existsSync(this._directory)) {
 			mkdirSync(this._directory, { recursive: true })

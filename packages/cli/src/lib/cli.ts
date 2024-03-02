@@ -74,10 +74,11 @@ async function cleanup(ctx: Context): Promise<void> {
 
 async function initialize(command: Awaited<ReturnType<typeof parseArgs>>): Promise<void> {
 	const config = getConfig(command.options.config)
+	const db = {} as LuzzleDatabase
 	const ctx: Context = {
-		db: {} as LuzzleDatabase,
+		db,
 		log,
-		pieces: new Pieces(command.options.dir),
+		pieces: new Pieces(command.options.dir, db),
 		directory: command.options.dir,
 		config,
 		flags: {
@@ -90,10 +91,11 @@ async function initialize(command: Awaited<ReturnType<typeof parseArgs>>): Promi
 async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<void> {
 	const config = getConfig(command.options.config)
 	const directory = getDirectoryFromConfig(config)
+	const db = getDatabaseClient(path.join(directory, DATABASE_PATH))
 	const ctx: Context = {
-		db: getDatabaseClient(path.join(directory, DATABASE_PATH)),
+		db,
 		log,
-		pieces: new Pieces(directory),
+		pieces: new Pieces(directory, db),
 		directory,
 		config,
 		flags: {

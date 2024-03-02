@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { readdir, stat } from 'fs/promises'
 import { existsSync, mkdirSync } from 'fs'
 import Pieces from './pieces.js'
@@ -6,8 +6,14 @@ import path from 'path'
 import yargs, { Argv } from 'yargs'
 import { makePiece } from './piece.fixtures.js'
 import { makePieceCommand, parsePieceArgv, PieceArgv } from './utils.js'
-import Piece from './piece.js'
-import { Piece as PieceType, Pieces as PieceTypes } from '@luzzle/kysely'
+import Piece, { InterfacePiece } from './piece.js'
+import {
+	Piece as PieceType,
+	PieceFrontmatter,
+	Pieces as PieceTypes,
+	PieceSelectable,
+} from '@luzzle/kysely'
+import { mockDatabase } from '../database.mock.js'
 
 vi.mock('../../pieces/books/index', () => makePiece())
 vi.mock('fs')
@@ -26,7 +32,8 @@ const mocks = {
 }
 
 const directory = 'luzzle-pieces'
-const spies: { [key: string]: SpyInstance } = {}
+const { db } = mockDatabase()
+const spies: { [key: string]: MockInstance } = {}
 
 describe('lib/pieces/pieces', () => {
 	afterEach(() => {
@@ -41,32 +48,39 @@ describe('lib/pieces/pieces', () => {
 	})
 
 	test('constructor', () => {
-		const pieces = new Pieces(directory)
+		const pieces = new Pieces(directory, db)
 
 		expect(pieces.directory).toEqual('luzzle-pieces')
 	})
 
 	test('register', () => {
-		const PieceType = makePiece()
-
 		mocks.existsSync.mockReturnValueOnce(false)
 		mocks.existsSync.mockReturnValue(true)
 
-		const pieces = new Pieces(directory)
-		pieces.register(PieceType)
+		const pieces = new Pieces(directory, db)
+		pieces.register(
+			makePiece() as unknown as InterfacePiece<
+				PieceTypes,
+				PieceSelectable,
+				PieceFrontmatter<Omit<PieceSelectable, 'note'>>
+			>
+		)
 
 		expect(mocks.mkdirSync).toHaveBeenCalledWith(pieces.directory, { recursive: true })
 		expect(mocks.existsSync).toHaveBeenCalledTimes(4)
 	})
 
 	test('register makes directories', () => {
-		const PieceType = makePiece()
-
 		mocks.existsSync.mockReturnValue(false)
 
-		const pieces = new Pieces(directory)
-		pieces.register(PieceType)
-
+		const pieces = new Pieces(directory, db)
+		pieces.register(
+			makePiece() as unknown as InterfacePiece<
+				PieceTypes,
+				PieceSelectable,
+				PieceFrontmatter<Omit<PieceSelectable, 'note'>>
+			>
+		)
 		expect(mocks.mkdirSync).toHaveBeenCalledTimes(4)
 	})
 
@@ -145,7 +159,7 @@ describe('lib/pieces/pieces', () => {
 	})
 
 	test('getPiece', async () => {
-		const pieces = new Pieces(directory)
+		const pieces = new Pieces(directory, db)
 		spies.register = vi
 			.spyOn(pieces, 'register')
 			.mockReturnValueOnce(Piece as unknown as InstanceType<typeof Piece>)
@@ -157,7 +171,7 @@ describe('lib/pieces/pieces', () => {
 	})
 
 	test('getPiece throws', async () => {
-		const pieces = new Pieces(directory)
+		const pieces = new Pieces(directory, db)
 		expect(() => pieces.getPiece('fake' as unknown as PieceTypes)).rejects.toThrow()
 	})
 })

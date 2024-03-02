@@ -9,11 +9,12 @@ import log from '../../lib/log.js'
 import { addFrontMatter, extract } from '../../lib/md.js'
 import { findWork, getBook, getCoverUrl } from './open-library.js'
 import { fileTypeFromFile } from 'file-type'
-import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, beforeEach, MockInstance } from 'vitest'
 import { cpus } from 'os'
 import BookPiece from './piece.js'
 import { toValidatedMarkdown } from '../../lib/pieces/index.js'
 import { mockConfig } from '../../lib/config.mock.js'
+import { mockDatabase } from '../../lib/database.mock.js'
 
 vi.mock('file-type')
 vi.mock('fs')
@@ -51,7 +52,8 @@ const mocks = {
 	fileTypeFromFile: vi.mocked(fileTypeFromFile),
 }
 
-const spies: Record<string, SpyInstance> = {}
+const spies: Record<string, MockInstance> = {}
+const { db } = mockDatabase()
 
 describe('pieces/books/piece', () => {
 	beforeEach(() => {
@@ -72,7 +74,7 @@ describe('pieces/books/piece', () => {
 	})
 
 	test('constructor', () => {
-		new BookPiece('root')
+		new BookPiece('root', db)
 	})
 
 	test('searchOpenLibrary', async () => {
@@ -85,7 +87,7 @@ describe('pieces/books/piece', () => {
 		mocks.getBook.mockResolvedValueOnce(book)
 		mocks.findWork.mockResolvedValueOnce(work)
 
-		const bookPiece = new BookPiece('root')
+		const bookPiece = new BookPiece('root', db)
 
 		const bookMetadata = await bookPiece.searchOpenLibrary(
 			bookId,
@@ -128,7 +130,7 @@ describe('pieces/books/piece', () => {
 		mocks.findWork.mockResolvedValueOnce(work)
 		mocks.getCoverUrl.mockReturnValue(coverUrl)
 
-		const bookPiece = new BookPiece('root')
+		const bookPiece = new BookPiece('root', db)
 
 		const searchUpdate = await bookPiece.searchOpenLibrary(
 			bookId,
@@ -162,7 +164,7 @@ describe('pieces/books/piece', () => {
 		mocks.findWork.mockResolvedValueOnce(work)
 		mocks.getCoverUrl.mockReturnValue(coverUrl)
 
-		const searchCall = new BookPiece('root').searchOpenLibrary(
+		const searchCall = new BookPiece('root', db).searchOpenLibrary(
 			bookId,
 			bookMd.frontmatter.title,
 			bookMd.frontmatter.author
@@ -182,11 +184,11 @@ describe('pieces/books/piece', () => {
 		mocks.generateDescription.mockResolvedValueOnce(description)
 		mocks.generateTags.mockResolvedValueOnce(tags)
 
-		const details = await new BookPiece('root').completeOpenAI(openAIKey, markdown)
+		const details = await new BookPiece('root', db).completeOpenAI(openAIKey, markdown)
 
 		expect(mocks.generateDescription).toHaveBeenCalledOnce()
 		expect(mocks.generateTags).toHaveBeenCalledOnce()
-		expect(details).toContain({
+		expect(details).toMatchObject({
 			keywords: tags.join(','),
 			description,
 		})
@@ -200,7 +202,7 @@ describe('pieces/books/piece', () => {
 
 		mocks.findVolume.mockResolvedValueOnce(volume)
 
-		const details = await new BookPiece('root').searchGoogleBooks(apiKey, title, author)
+		const details = await new BookPiece('root', db).searchGoogleBooks(apiKey, title, author)
 
 		expect(mocks.findVolume).toHaveBeenCalledWith(apiKey, title, author)
 		expect(details).toEqual({
@@ -229,7 +231,7 @@ describe('pieces/books/piece', () => {
 
 		mocks.findVolume.mockResolvedValueOnce(volume)
 
-		const details = await new BookPiece('root').searchGoogleBooks(apiKey, title, author)
+		const details = await new BookPiece('root', db).searchGoogleBooks(apiKey, title, author)
 
 		expect(mocks.findVolume).toHaveBeenCalledWith(apiKey, title, author)
 		expect(details).toEqual({
@@ -250,7 +252,7 @@ describe('pieces/books/piece', () => {
 
 		mocks.findVolume.mockResolvedValueOnce(null)
 
-		const bookCall = new BookPiece('root').searchGoogleBooks(apiKey, title, author)
+		const bookCall = new BookPiece('root', db).searchGoogleBooks(apiKey, title, author)
 
 		expect(bookCall).rejects.toThrowError()
 		expect(mocks.findVolume).toHaveBeenCalledWith(apiKey, title, author)
@@ -260,7 +262,7 @@ describe('pieces/books/piece', () => {
 		const configMock = mockConfig()
 		const markdown = bookFixtures.makeBookMarkDown()
 
-		const bookPiece = new BookPiece('root')
+		const bookPiece = new BookPiece('root', db)
 
 		spies.configGet = configMock.get.mockReturnValue({})
 		spies.searchGoogleBooks = vi.spyOn(bookPiece, 'searchGoogleBooks')
@@ -283,7 +285,7 @@ describe('pieces/books/piece', () => {
 			frontmatter: { description: 'a tiny desc' },
 		})
 
-		const bookPiece = new BookPiece('root')
+		const bookPiece = new BookPiece('root', db)
 
 		spies.configGet = configMock.get.mockReturnValue({ google: googleKey })
 		spies.searchGoogleBooks = vi
@@ -308,7 +310,7 @@ describe('pieces/books/piece', () => {
 			frontmatter: { description: 'a tiny desc' },
 		})
 
-		const bookPiece = new BookPiece('root')
+		const bookPiece = new BookPiece('root', db)
 
 		spies.configGet = configMock.get.mockReturnValue({ openai: openaiKey })
 		spies.completeOpenAI = vi
@@ -328,7 +330,7 @@ describe('pieces/books/piece', () => {
 			frontmatter: { description: 'a tiny desc' },
 		})
 
-		const bookPiece = new BookPiece('root')
+		const bookPiece = new BookPiece('root', db)
 
 		spies.configGet = configMock.get.mockReturnValue({})
 		spies.searchOpenLibrary = vi
@@ -352,7 +354,7 @@ describe('pieces/books/piece', () => {
 
 		mocks.toMarkdown.mockReturnValueOnce(markdown)
 
-		const bookPiece = new BookPiece('root')
+		const bookPiece = new BookPiece('root', db)
 
 		bookPiece.create(slug, title)
 

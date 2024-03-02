@@ -5,7 +5,7 @@ import log from '../../lib/log.js'
 import { addFrontMatter, extract } from '../../lib/md.js'
 import { downloadToTmp } from '../../lib/web.js'
 import { fileTypeFromFile } from 'file-type'
-import { describe, expect, test, vi, afterEach, beforeEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, beforeEach, MockInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
 import LinkPiece from './piece.js'
 import { toValidatedMarkdown } from '../../lib/pieces/markdown.js'
@@ -14,7 +14,8 @@ import Piece from '../../lib/pieces/piece.js'
 import { generateTags, generateSummary, generateClassification } from './openai.js'
 import { LuzzleLinkType } from '@luzzle/kysely'
 import { availability } from './wayback.js'
-import { Config } from 'src/lib/config.js'
+import { Config } from '../../lib/config.js'
+import { mockDatabase } from '../../lib/database.mock.js'
 
 vi.mock('file-type')
 vi.mock('fs')
@@ -53,7 +54,8 @@ const mocks = {
 	availability: vi.mocked(availability),
 }
 
-const spies: Record<string, SpyInstance> = {}
+const spies: Record<string, MockInstance> = {}
+const { db } = mockDatabase()
 
 describe('pieces/links/piece', () => {
 	beforeEach(() => {
@@ -74,7 +76,7 @@ describe('pieces/links/piece', () => {
 	})
 
 	test('constructor', () => {
-		new LinkPiece('root')
+		new LinkPiece('root', db)
 	})
 
 	test('processCleanUp with no cache', async () => {
@@ -85,7 +87,7 @@ describe('pieces/links/piece', () => {
 		mocks.cpus.mockReturnValueOnce([{} as CpuInfo])
 		mocks.PieceCleanUpCache.mockResolvedValueOnce(slugs)
 
-		await new LinkPiece('root').cleanUpCache(slugs)
+		await new LinkPiece('root', db).cleanUpCache(slugs)
 
 		expect(mocks.unlink).toHaveBeenCalledTimes(0)
 	})
@@ -93,7 +95,7 @@ describe('pieces/links/piece', () => {
 	test('process', async () => {
 		const slugs = ['slug']
 
-		await new LinkPiece('root').process({} as Config, slugs)
+		await new LinkPiece('root', db).process({} as Config, slugs)
 
 		expect(mocks.logInfo).toHaveBeenCalledOnce()
 	})
@@ -102,7 +104,7 @@ describe('pieces/links/piece', () => {
 		const configMock = mockConfig()
 		const markdown = linkFixtures.makeLinkMarkdown()
 
-		const linkPiece = new LinkPiece('root')
+		const linkPiece = new LinkPiece('root', db)
 
 		spies.configGet = configMock.get.mockReturnValueOnce({})
 
@@ -128,7 +130,7 @@ describe('pieces/links/piece', () => {
 				is_paywall: classification.is_paywall,
 			},
 		}
-		const linkPiece = new LinkPiece('root')
+		const linkPiece = new LinkPiece('root', db)
 
 		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
 		mocks.generateTags.mockResolvedValueOnce(tags)
@@ -158,7 +160,7 @@ describe('pieces/links/piece', () => {
 			},
 		}
 
-		const linkPiece = new LinkPiece('root')
+		const linkPiece = new LinkPiece('root', db)
 
 		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
 		mocks.generateTags.mockResolvedValueOnce(tags)
@@ -173,7 +175,7 @@ describe('pieces/links/piece', () => {
 		const configMock = mockConfig()
 		const markdown = linkFixtures.makeLinkMarkdown()
 
-		const linkPiece = new LinkPiece('root')
+		const linkPiece = new LinkPiece('root', db)
 
 		spies.configGet = configMock.get.mockReturnValueOnce({})
 
@@ -195,7 +197,7 @@ describe('pieces/links/piece', () => {
 			},
 		}
 
-		const linkPiece = new LinkPiece('root')
+		const linkPiece = new LinkPiece('root', db)
 
 		spies.configGet = configMock.get.mockReturnValueOnce({})
 		mocks.availability.mockResolvedValueOnce({
@@ -217,7 +219,7 @@ describe('pieces/links/piece', () => {
 
 		mocks.toMarkdown.mockReturnValueOnce(markdown)
 
-		new LinkPiece('root').create(slug, title)
+		new LinkPiece('root', db).create(slug, title)
 
 		expect(mocks.toMarkdown).toHaveBeenCalledOnce()
 	})

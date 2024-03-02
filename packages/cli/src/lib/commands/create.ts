@@ -41,7 +41,7 @@ const command: Command<CreateArgv> = {
 
 		if (ctx.flags.dryRun === false) {
 			const markdown = pieces.create(slug, title)
-			pieces.write(markdown)
+			await pieces.write(markdown)
 			log.info(`created new ${piece} at ${pieces.getFileName(slug)}`)
 		} else {
 			log.info(`created new ${piece} at ${slugify(title)}.md`)

@@ -40,7 +40,7 @@ const command: Command<ProcessArgv> = {
 				slugs.push(optionalPiece.slug)
 			} else {
 				const allSlugs = await pieces.getSlugs()
-				const updatedSlugs = await pieces.filterSlugsBy(allSlugs, 'lastProcessed')
+				const updatedSlugs = await pieces.getSlugsOutdated()
 				const processSlugs = force ? allSlugs : updatedSlugs
 
 				slugs.push(...processSlugs)

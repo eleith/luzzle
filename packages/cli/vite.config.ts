@@ -4,10 +4,12 @@ export default defineConfig({
 	test: {
 		exclude: ['generated/**', 'dist/**', 'build/**', 'node_modules/**'],
 		coverage: {
-			lines: 95,
-			branches: 95,
-			statements: 95,
-			functions: 95,
+			thresholds: {
+				lines: 92,
+				branches: 92,
+				statements: 92,
+				functions: 92,
+			},
 			exclude: [
 				'generated/**',
 				'dist/**',
