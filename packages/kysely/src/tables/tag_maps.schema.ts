@@ -1,6 +1,6 @@
 import type { Insertable, Updateable, Selectable } from 'kysely'
 import { cuid, date_added, date_updated } from '../database.utils.js'
-import { Pieces } from './pieces.js'
+import { Pieces } from './pieces.schema.js'
 
 interface TagMapsTable {
 	id_tag: cuid

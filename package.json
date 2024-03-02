@@ -4,8 +4,5 @@
   "scripts": {},
   "workspaces": [
     "packages/*"
-  ],
-  "devDependencies": {
-    "@vitest/coverage-v8": "^0.34.4"
-  }
+  ]
 }

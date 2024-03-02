@@ -1,5 +1,5 @@
 import { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/core.js'
-import { PieceSelectable } from '../tables/pieces.js'
+import { PieceSelectable } from '../tables/pieces.schema.js'
 
 type NonNullableKeys<T> = {
 	[K in keyof T]-?: null extends T[K] ? never : K
@@ -87,8 +87,16 @@ function getPieceSchemaKeys<M>(schema: JTDSchemaType<M>): Array<PieceFrontmatter
 				} as PieceFrontmatterSchemaField['metadata'],
 				nullable: value.nullable,
 			})
+		} else if ('enum' in value) {
+			fields.push({
+				name: key,
+				nullable: value.nullable,
+				metadata: {
+					enum: value.enum,
+				} as PieceFrontmatterSchemaField['metadata'],
+			})
 		} else {
-			throw new Error(`invalid schema at key ${key}`)
+			throw new Error(`invalid schema at key ${key} of ${value}`)
 		}
 	}
 
