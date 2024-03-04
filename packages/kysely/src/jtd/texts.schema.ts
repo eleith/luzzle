@@ -1,43 +1,12 @@
 import { TextSelectable } from '../tables/texts.schema.js'
-import { PieceFrontmatterJtdSchema, PieceDatabaseJtdSchema, PieceFrontmatter } from './piece.js'
-
-export type TextDatabaseOnlyFields =
-	| 'id'
-	| 'date_added'
-	| 'date_updated'
-	| 'slug'
-	| 'note'
-	| 'date_published'
-	| 'attachments'
+import { PieceFrontmatterJtdSchema, PieceFrontmatter } from '../pieces/frontmatter.js'
 
 type TextFrontMatterOnlyFields = {
 	date_published?: string
 	attachments?: string[]
 }
 
-type TextFrontmatter = PieceFrontmatter<
-	Omit<TextSelectable, TextDatabaseOnlyFields>,
-	TextFrontMatterOnlyFields
->
-
-const textDatabaseJtdSchema: PieceDatabaseJtdSchema<TextSelectable> = {
-	properties: {
-		id: { type: 'string' },
-		date_added: { type: 'float64' },
-		slug: { type: 'string' },
-		title: { type: 'string' },
-	},
-	optionalProperties: {
-		subtitle: { type: 'string' },
-		summary: { type: 'string' },
-		keywords: { type: 'string' },
-		representative_image: { type: 'string' },
-		attachments: { type: 'string' },
-		note: { type: 'string' },
-		date_updated: { type: 'float64' },
-		date_published: { type: 'float64' },
-	},
-}
+type TextFrontmatter = PieceFrontmatter<TextSelectable, TextFrontMatterOnlyFields>
 
 const textFrontmatterJtdSchema: PieceFrontmatterJtdSchema<TextFrontmatter> = {
 	properties: {
@@ -56,4 +25,4 @@ const textFrontmatterJtdSchema: PieceFrontmatterJtdSchema<TextFrontmatter> = {
 	},
 }
 
-export { textFrontmatterJtdSchema, textDatabaseJtdSchema, type TextFrontmatter }
+export { textFrontmatterJtdSchema, type TextFrontmatter }

@@ -1,7 +1,7 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import SqliteDatabase from 'better-sqlite3'
 import { Kysely, SqliteDialect } from 'kysely'
-import { getDatabaseClient } from './database'
+import { getDatabaseClient } from './index.js'
 
 vi.mock('better-sqlite3')
 vi.mock('kysely')

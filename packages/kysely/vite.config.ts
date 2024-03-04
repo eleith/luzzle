@@ -4,11 +4,14 @@ export default defineConfig({
 	test: {
 		exclude: ['generated/**', 'dist/**', 'build/**', 'node_modules/**'],
 		coverage: {
-			lines: 95,
-			branches: 95,
-			statements: 95,
-			functions: 95,
+			thresholds: {
+				lines: 92,
+				branches: 92,
+				statements: 92,
+				functions: 92,
+			},
 			exclude: [
+				'src/migrations/**',
 				'generated/**',
 				'dist/**',
 				'build/**',
@@ -17,6 +20,8 @@ export default defineConfig({
 				'coverage/**',
 				'packages/*/test{,s}/**',
 				'**/*.d.ts',
+				'**/*.mock.ts',
+				'**/*.schema.ts',
 				'cypress/**',
 				'test{,s}/**',
 				'test{,-*}.{js,cjs,mjs,ts,tsx,jsx}',

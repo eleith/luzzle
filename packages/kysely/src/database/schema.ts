@@ -1,9 +1,9 @@
 import { Kysely, Insertable, Updateable, Selectable } from 'kysely'
-import { TagsTable } from './tables/tags.schema.js'
-import { TagMapsTable } from './tables/tag_maps.schema.js'
-import { PieceTables, Piece, PiecesCommonTable } from './tables/pieces.schema.js'
-import { LinkType as LuzzleLinkType, LinkTypes as LuzzleLinkTypes } from './tables/links.schema.js'
-import { CacheTable } from './tables/pieces_cache.schema.js'
+import { TagsTable } from '../tables/tags.schema.js'
+import { TagMapsTable } from '../tables/tag_maps.schema.js'
+import { PieceTables, Piece, PiecesCommonTable } from '../tables/pieces.schema.js'
+import { LinkType as LuzzleLinkType, LinkTypes as LuzzleLinkTypes } from '../tables/links.schema.js'
+import { CacheTable } from '../tables/pieces_cache.schema.js'
 
 const LuzzleTableName = {
 	Cache: 'pieces_cache',

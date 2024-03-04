@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import Ajv from 'ajv/dist/jtd.js'
 import { FuncKeywordDefinition, SchemaValidateFunction } from 'ajv/dist/types/index.js'
 import ajv, { luzzleFormatKeyword } from './ajv.js'
@@ -10,11 +10,13 @@ const mocks = {
 	ajv: vi.mocked(Ajv),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
-describe('lib/pieces/ajv', () => {
+describe('src/jtd/ajv.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
 			mock.mockReset()
 		})
 

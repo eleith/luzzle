@@ -1,5 +1,5 @@
 import type { Insertable, Updateable, Selectable } from 'kysely'
-import { cuid, date_added, date_updated } from '../database.utils.js'
+import { cuid, date_added, date_updated } from '../database/utils.js'
 
 interface TagsTable {
 	id: cuid

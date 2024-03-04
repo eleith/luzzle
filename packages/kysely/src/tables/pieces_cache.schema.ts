@@ -1,5 +1,5 @@
 import type { Insertable, Updateable, Selectable, ColumnType } from 'kysely'
-import { cuid, date_added, date_updated } from '../database.utils.js'
+import { cuid, date_added, date_updated } from '../database/utils.js'
 import { Pieces } from './pieces.schema.js'
 
 interface CacheTable {

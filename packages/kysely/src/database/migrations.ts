@@ -1,5 +1,5 @@
 import { FileMigrationProvider, MigrationResultSet, Migrator } from 'kysely'
-import { LuzzleDatabase } from './database.schema'
+import { LuzzleDatabase } from './schema.js'
 import { promises as fs } from 'fs'
 import path from 'path'
 

@@ -1,5 +1,5 @@
 import type { Insertable, Updateable, Selectable } from 'kysely'
-import type { PieceCommonFields } from '../database.utils.js'
+import type { PieceCommonFields } from '../tables/pieces.schema.js'
 
 const LinkType = {
 	Bookmark: 'bookmark',
