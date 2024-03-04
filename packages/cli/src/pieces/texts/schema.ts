@@ -1,5 +1,4 @@
 import {
-	textDatabaseJtdSchema,
 	textFrontmatterJtdSchema,
 	PieceSelectable,
 	Piece,
@@ -14,7 +13,6 @@ type TextUpdateable = PieceUpdatable<TextType>
 type TextInsertable = PieceInsertable<TextType>
 
 export {
-	textDatabaseJtdSchema,
 	textFrontmatterJtdSchema,
 	type TextType,
 	type TextSelectable,

@@ -1,5 +1,9 @@
-import { toValidatedMarkdown, PieceMarkdownError, PieceMarkdown } from './markdown.js'
-import { Piece as PieceType, Pieces as PieceTypes } from '@luzzle/kysely'
+import {
+	Piece as PieceType,
+	Pieces as PieceTypes,
+	PieceMarkdown,
+	PieceMarkdownError,
+} from '@luzzle/kysely'
 import {
 	PieceArgv,
 	PieceDirectories,
@@ -25,7 +29,6 @@ export {
 	Piece,
 	Pieces,
 	PieceMarkdownError,
-	toValidatedMarkdown,
 	downloadFileOrUrlTo,
 	PieceCommandOption,
 	PieceOptionalCommandOption,

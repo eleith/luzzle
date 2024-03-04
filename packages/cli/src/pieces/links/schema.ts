@@ -1,5 +1,4 @@
 import {
-	linkDatabaseJtdSchema,
 	linkFrontmatterJtdSchema,
 	PieceSelectable,
 	Piece,
@@ -16,7 +15,6 @@ type LinkInsertable = PieceInsertable<LinkType>
 
 export {
 	linkFrontmatterJtdSchema,
-	linkDatabaseJtdSchema,
 	LuzzleLinkType,
 	type LinkType,
 	type LinkSelectable,

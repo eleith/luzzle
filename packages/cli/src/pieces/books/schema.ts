@@ -1,5 +1,4 @@
 import {
-	bookDatabaseJtdSchema,
 	bookFrontmatterJtdSchema,
 	PieceSelectable,
 	Piece,
@@ -15,7 +14,6 @@ type BookInsertable = PieceInsertable<BookType>
 
 export {
 	bookFrontmatterJtdSchema,
-	bookDatabaseJtdSchema,
 	type BookType,
 	type BookSelectable,
 	type BookInsertable,

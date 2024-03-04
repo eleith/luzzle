@@ -2,8 +2,6 @@ import Ajv from 'ajv/dist/jtd.js'
 import { existsSync, mkdirSync } from 'fs'
 import { copyFile, mkdir, readdir, stat, unlink, writeFile } from 'fs/promises'
 import log from '../log.js'
-import { extract } from '../md.js'
-import { toValidatedMarkdown, toMarkdownString, PieceMarkdown, toMarkdown } from './markdown.js'
 import { updateCache, addCache, removeCache, getCache, getCacheAll } from './cache.js'
 import { Config } from '../config.js'
 import { difference } from 'lodash-es'
@@ -12,15 +10,19 @@ import {
 	LuzzleDatabase,
 	PieceInsertable,
 	PieceSelectable,
-	PieceUpdatable,
+	PieceMarkdown,
 	Pieces,
 	PieceFrontmatter,
-	PieceFrontmatterFields,
 	ajv,
 	PieceFrontmatterJtdSchema,
-	getPieceSchemaKeys,
-	databaseToFrontmatterValue,
-	frontmatterToDatabaseValue,
+	makePieceInsertable,
+	makePieceUpdatable,
+	getPieceFrontmatterKeysFromSchema,
+	extractFullMarkdown,
+	makePieceMarkdown,
+	makePieceMarkdownOrThrow,
+	makePieceMarkdownString,
+	formatPieceFrontmatterValue,
 } from '@luzzle/kysely'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
@@ -28,21 +30,16 @@ import path from 'path'
 import { PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
 import { ASSETS_CACHE_DIRECTORY, ASSETS_DIRECTORY } from '../assets.js'
 import { fileTypeFromFile } from 'file-type'
-import { createId } from '@paralleldrive/cuid2'
 
 export interface InterfacePiece<
 	P extends Pieces,
 	D extends PieceSelectable,
-	F extends PieceFrontmatter<Omit<D, keyof D>, void | PieceFrontmatterFields>
+	F extends PieceFrontmatter
 > {
 	new (pieceRoot: string, db: LuzzleDatabase): Piece<P, D, F>
 }
 
-abstract class Piece<
-	P extends Pieces,
-	D extends PieceSelectable,
-	F extends PieceFrontmatter<Omit<D, keyof D>, void | PieceFrontmatterFields>
-> {
+abstract class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmatter> {
 	private _validator?: Ajv.ValidateFunction<F>
 	private _schema: PieceFrontmatterJtdSchema<F>
 	private _pieceRoot: string
@@ -108,84 +105,7 @@ abstract class Piece<
 	}
 
 	getSchemaKeys() {
-		return getPieceSchemaKeys(this._schema)
-	}
-
-	toCreateInput(markdown: PieceMarkdown<F>): PieceInsertable<P> {
-		const input = {
-			id: createId(),
-			slug: markdown.slug,
-			note: markdown.note,
-		} as Record<string, unknown>
-
-		const frontmatterSchema = getPieceSchemaKeys(this._schema)
-		const frontmatterKeys = Object.keys(markdown.frontmatter) as (keyof F)[]
-		const inputKeys = frontmatterKeys.filter(
-			(key) => !['id', 'slug', 'date_added', 'date_updated'].includes(key as string)
-		)
-
-		inputKeys.forEach((key) => {
-			const value = markdown.frontmatter[key]
-			const schemaKey = frontmatterSchema.find((f) => f.name === key)
-
-			if (schemaKey) {
-				const format = schemaKey.metadata?.format
-				const isArray = schemaKey.collection === 'array'
-
-				if (isArray) {
-					if (Array.isArray(value)) {
-						input[key as string] = JSON.stringify(
-							value.map((v) => frontmatterToDatabaseValue(v, format))
-						)
-					}
-				} else {
-					input[key as string] = frontmatterToDatabaseValue(value, format)
-				}
-			}
-		})
-
-		return input as PieceInsertable<P>
-	}
-
-	toUpdateInput(markdown: PieceMarkdown<F>, data: D, force = false): PieceUpdatable<P> {
-		const update = {
-			date_updated: new Date().getTime(),
-		} as Record<string, unknown>
-
-		const frontmatterSchema = getPieceSchemaKeys(this._schema)
-		const frontmatterKeys = Object.keys(markdown.frontmatter) as (keyof F)[]
-		const updateKeys = frontmatterKeys.filter(
-			(key) => !['id', 'slug', 'date_added', 'date_updated'].includes(key as string)
-		)
-
-		updateKeys.forEach((key) => {
-			const value = markdown.frontmatter[key]
-			const schemaKey = frontmatterSchema.find((f) => f.name === key)
-
-			if (schemaKey) {
-				const format = schemaKey.metadata?.format
-				const isArray = schemaKey.collection === 'array'
-				const dataValue = data[key as keyof D] as unknown
-				const updateValue =
-					isArray && Array.isArray(value)
-						? JSON.stringify(value.map((v) => frontmatterToDatabaseValue(v, format)))
-						: frontmatterToDatabaseValue(value, format)
-
-				if (force || dataValue !== updateValue) {
-					update[key as string] = updateValue
-				}
-			}
-		})
-
-		if (force || markdown.note !== data.note) {
-			update['note'] = markdown.note
-		}
-
-		if (force || markdown.slug !== data.slug) {
-			update['slug'] = markdown.slug
-		}
-
-		return update as PieceUpdatable<P>
+		return getPieceFrontmatterKeysFromSchema(this._schema)
 	}
 
 	async getSlugs(): Promise<string[]> {
@@ -230,12 +150,12 @@ abstract class Piece<
 		const filepath = this.getPath(slug)
 
 		try {
-			const data = await extract(filepath)
+			const data = await extractFullMarkdown(filepath)
 
 			if (validate) {
-				return toValidatedMarkdown(slug, data.markdown, data.frontmatter, this.validator)
+				return makePieceMarkdownOrThrow(slug, data.markdown, data.frontmatter, this.validator)
 			} else {
-				return toMarkdown(slug, data.markdown, data.frontmatter as F)
+				return makePieceMarkdown(slug, data.markdown, data.frontmatter as F)
 			}
 		} catch (err) {
 			log.error(`could not extract ${filepath}: ${err}`)
@@ -244,7 +164,7 @@ abstract class Piece<
 	}
 
 	async write(markdown: PieceMarkdown<F>): Promise<void> {
-		const markdownString = toMarkdownString(markdown)
+		const markdownString = makePieceMarkdownString(markdown)
 		const markdownPath = this.getPath(markdown.slug)
 
 		await writeFile(markdownPath, markdownString)
@@ -314,7 +234,7 @@ abstract class Piece<
 	async syncAdd(markdown: PieceMarkdown<F>, dryRun = false): Promise<void> {
 		try {
 			if (dryRun === false) {
-				const createInput = this.toCreateInput(markdown)
+				const createInput = makePieceInsertable(markdown, this._schema)
 				const piecePath = this.getPath(markdown.slug)
 				const added = await this._db
 					.insertInto(this._pieceTable as Pieces)
@@ -349,7 +269,7 @@ abstract class Piece<
 	}
 
 	async syncUpdate(markdown: PieceMarkdown<F>, data: D, dryRun = false): Promise<void> {
-		const updateInput = this.toUpdateInput(markdown, data as D, false)
+		const updateInput = makePieceUpdatable(markdown, this._schema, data, false)
 		try {
 			if (dryRun === false) {
 				const update = await this._db
@@ -388,7 +308,7 @@ abstract class Piece<
 
 	toMarkdown(data: D): PieceMarkdown<F> {
 		const frontmatter: Record<string, unknown> = {}
-		const frontmatterSchema = getPieceSchemaKeys(this._schema)
+		const frontmatterSchema = getPieceFrontmatterKeysFromSchema(this._schema)
 		const dataKeys = Object.keys(data)
 		const fields = frontmatterSchema.filter((f) => dataKeys.includes(f.name))
 
@@ -401,11 +321,11 @@ abstract class Piece<
 					: data[key as keyof D]
 
 			frontmatter[key] = Array.isArray(value)
-				? value.map((v) => databaseToFrontmatterValue(v, format))
-				: databaseToFrontmatterValue(value, format)
+				? value.map((v) => formatPieceFrontmatterValue(v, format))
+				: formatPieceFrontmatterValue(value, format)
 		})
 
-		return toValidatedMarkdown(data.slug, data.note, frontmatter as F, this.validator)
+		return makePieceMarkdownOrThrow(data.slug, data.note, frontmatter as F, this.validator)
 	}
 
 	async attach(
@@ -414,7 +334,7 @@ abstract class Piece<
 		field: string,
 		_name?: string
 	): Promise<PieceMarkdown<F>> {
-		const attachableField = this.getSchemaKeys()
+		const attachableField = getPieceFrontmatterKeysFromSchema(this._schema)
 			.filter((f) => f.metadata?.format === 'attachment')
 			.find((f) => f.name === field)
 
@@ -449,7 +369,7 @@ abstract class Piece<
 
 			log.info(`processed and copied ${file} to ${toPath}`)
 
-			return toValidatedMarkdown(
+			return makePieceMarkdownOrThrow(
 				markdown.slug,
 				markdown.note,
 				{
@@ -469,7 +389,7 @@ abstract class Piece<
 
 			log.info(`processed and copied ${file} to ${toPath}`)
 
-			return toValidatedMarkdown(
+			return makePieceMarkdownOrThrow(
 				markdown.slug,
 				markdown.note,
 				{

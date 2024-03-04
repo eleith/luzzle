@@ -1,15 +1,15 @@
-import Ajv, { JTDSchemaType } from 'ajv/dist/jtd.js'
-import { PieceSelectable, Pieces, PieceFrontmatter, LuzzleDatabase } from '@luzzle/kysely'
+import Ajv, { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd.js'
+import {
+	PieceSelectable,
+	Pieces,
+	PieceFrontmatter,
+	LuzzleDatabase,
+	PieceMarkdown,
+} from '@luzzle/kysely'
 import Piece from './piece.js'
-import { PieceMarkdown } from './markdown.js'
 import { mockDatabase } from '../database.mock.js'
 
-type PieceFrontmatterSample = PieceFrontmatter<
-	Omit<
-		PieceSelectable,
-		'note' | 'slug' | 'date_updated' | 'date_added' | 'id' | 'author' | 'coauthors' | 'subtitle'
-	>
->
+type PieceFrontmatterSample = PieceFrontmatter<PieceSelectable>
 type PieceValidator = Ajv.ValidateFunction<PieceFrontmatterSample>
 type PieceSchema = JTDSchemaType<PieceFrontmatterSample>
 type PieceMarkdownSample = PieceMarkdown<PieceFrontmatterSample>
@@ -26,8 +26,8 @@ export function makeValidator(): PieceValidator {
 }
 
 export function makeSchema(
-	propertyOverrides: Record<string, unknown> = {},
-	optionalPropertyOverrides: Record<string, unknown> = {}
+	propertyOverrides: Record<string, SomeJTDSchemaType> = {},
+	optionalPropertyOverrides: Record<string, SomeJTDSchemaType> = {}
 ): PieceSchema {
 	return {
 		properties: {
@@ -36,6 +36,7 @@ export function makeSchema(
 		},
 		optionalProperties: {
 			keywords: { type: 'string' },
+			subtitle: { type: 'string' },
 			...optionalPropertyOverrides,
 		},
 	}

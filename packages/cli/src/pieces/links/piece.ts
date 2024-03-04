@@ -1,5 +1,5 @@
 import log from '../../lib/log.js'
-import { Piece, toValidatedMarkdown, PieceType, PieceMarkdown } from '../../lib/pieces/index.js'
+import { Piece, PieceType, PieceMarkdown } from '../../lib/pieces/index.js'
 import { Config } from '../../lib/config.js'
 import {
 	LinkFrontmatter,
@@ -11,7 +11,7 @@ import {
 import { merge } from 'lodash-es'
 import { availability } from './wayback.js'
 import { generateTags, generateSummary, generateClassification } from './openai.js'
-import { LuzzleDatabase } from '@luzzle/kysely'
+import { LuzzleDatabase, makePieceMarkdownOrThrow } from '@luzzle/kysely'
 
 class LinkPiece extends Piece<LinkType, LinkSelectable, LinkFrontmatter> {
 	constructor(piecesRoot: string, db: LuzzleDatabase) {
@@ -74,7 +74,7 @@ class LinkPiece extends Piece<LinkType, LinkSelectable, LinkFrontmatter> {
 			date_published: new Date().toLocaleDateString(),
 		}
 
-		return toValidatedMarkdown(slug, 'notes', markdown, this.validator)
+		return makePieceMarkdownOrThrow(slug, 'notes', markdown, this.validator)
 	}
 
 	async process(_: Config, slugs: string[], dryRun = false) {

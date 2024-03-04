@@ -2,13 +2,11 @@ import { existsSync } from 'fs'
 import { copyFile, stat, unlink, writeFile } from 'fs/promises'
 import * as linkFixtures from './link.fixtures.js'
 import log from '../../lib/log.js'
-import { addFrontMatter, extract } from '../../lib/md.js'
 import { downloadToTmp } from '../../lib/web.js'
 import { fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, MockInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
 import LinkPiece from './piece.js'
-import { toValidatedMarkdown } from '../../lib/pieces/markdown.js'
 import { mockConfig } from '../../lib/config.mock.js'
 import Piece from '../../lib/pieces/piece.js'
 import { generateTags, generateSummary, generateClassification } from './openai.js'
@@ -16,6 +14,7 @@ import { LuzzleLinkType } from '@luzzle/kysely'
 import { availability } from './wayback.js'
 import { Config } from '../../lib/config.js'
 import { mockDatabase } from '../../lib/database.mock.js'
+import { makePieceMarkdownOrThrow } from '@luzzle/kysely'
 
 vi.mock('file-type')
 vi.mock('fs')
@@ -33,8 +32,6 @@ vi.mock('@luzzle/kysely')
 
 const mocks = {
 	cpus: vi.mocked(cpus),
-	addFrontMatter: vi.mocked(addFrontMatter),
-	extract: vi.mocked(extract),
 	copyFile: vi.mocked(copyFile),
 	unlink: vi.mocked(unlink),
 	stat: vi.mocked(stat),
@@ -47,7 +44,7 @@ const mocks = {
 	existSync: vi.mocked(existsSync),
 	LinkPieceGetFileName: vi.spyOn(LinkPiece.prototype, 'getFileName'),
 	PieceCleanUpCache: vi.spyOn(Piece.prototype, 'cleanUpCache'),
-	toMarkdown: vi.mocked(toValidatedMarkdown),
+	toMarkdown: vi.mocked(makePieceMarkdownOrThrow),
 	generateTags: vi.mocked(generateTags),
 	generateSummary: vi.mocked(generateSummary),
 	generateClassification: vi.mocked(generateClassification),

@@ -6,15 +6,14 @@ import * as googleBooksFixtures from './google-books.fixtures.js'
 import { findVolume } from './google-books.js'
 import { generateTags, generateDescription } from './openai.js'
 import log from '../../lib/log.js'
-import { addFrontMatter, extract } from '../../lib/md.js'
 import { findWork, getBook, getCoverUrl } from './open-library.js'
 import { fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, MockInstance } from 'vitest'
 import { cpus } from 'os'
 import BookPiece from './piece.js'
-import { toValidatedMarkdown } from '../../lib/pieces/index.js'
 import { mockConfig } from '../../lib/config.mock.js'
 import { mockDatabase } from '../../lib/database.mock.js'
+import { makePieceMarkdownOrThrow } from '@luzzle/kysely'
 
 vi.mock('file-type')
 vi.mock('fs')
@@ -31,8 +30,6 @@ vi.mock('@luzzle/kysely')
 
 const mocks = {
 	cpus: vi.mocked(cpus),
-	addFrontMatter: vi.mocked(addFrontMatter),
-	extract: vi.mocked(extract),
 	copyFile: vi.mocked(copyFile),
 	unlink: vi.mocked(unlink),
 	stat: vi.mocked(stat),
@@ -48,7 +45,7 @@ const mocks = {
 	existSync: vi.mocked(existsSync),
 	generateTags: vi.mocked(generateTags),
 	generateDescription: vi.mocked(generateDescription),
-	toMarkdown: vi.mocked(toValidatedMarkdown),
+	toMarkdown: vi.mocked(makePieceMarkdownOrThrow),
 	fileTypeFromFile: vi.mocked(fileTypeFromFile),
 }
 
