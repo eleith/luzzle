@@ -2,7 +2,7 @@ import { Insertable, Updateable, Selectable } from 'kysely'
 import { BooksTable } from './books.schema.js'
 import { LinksTable } from './links.schema.js'
 import { TextsTable } from './texts.schema.js'
-import type { PieceCommonFields } from '../database.utils.js'
+import { date_added, date_updated } from '../database/utils.js'
 
 const Piece = {
 	Book: 'books',
@@ -16,6 +16,17 @@ type PieceTables = {
 	[Piece.Book]: BooksTable
 	[Piece.Link]: LinksTable
 	[Piece.Text]: TextsTable
+}
+
+type PieceDatabaseOnlyFields = 'id' | 'date_added' | 'date_updated' | 'slug' | 'note'
+
+type PieceCommonFields = {
+	note: string | null
+	id: string
+	slug: string
+	keywords: string | null
+	date_added: date_added
+	date_updated: date_updated
 }
 
 type PiecesCommonTable = PieceCommonFields & {
@@ -42,5 +53,7 @@ export {
 	type Pieces,
 	type PiecesCommonTable,
 	type PiecesCommonSelectable,
+	type PieceDatabaseOnlyFields,
+	type PieceCommonFields,
 	Piece,
 }

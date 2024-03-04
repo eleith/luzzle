@@ -1,6 +1,6 @@
 import { Kysely, SqliteDialect } from 'kysely'
 import SqliteDatabase from 'better-sqlite3'
-import { LuzzleTables } from './database.schema.js'
+import { LuzzleTables } from './schema.js'
 
 function getDatabaseClient(pathToDb: string, debug = false) {
 	return new Kysely<LuzzleTables>({

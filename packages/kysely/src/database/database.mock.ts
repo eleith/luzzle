@@ -1,5 +1,5 @@
 import { vi, Mocked } from 'vitest'
-import { LuzzleDatabase } from './database.schema'
+import { LuzzleDatabase } from './schema.js'
 
 function mockKysely() {
 	const queries = {

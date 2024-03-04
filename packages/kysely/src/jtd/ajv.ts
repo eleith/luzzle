@@ -34,6 +34,9 @@ const luzzlePatternKeyword: FuncKeywordDefinition = {
 }
 
 export default function <T>(schema: JTDSchemaType<T>): ValidateFunction<T> {
+	// https://github.com/ajv-validator/ajv/issues/2381
+	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+	// @ts-ignore
 	return new Ajv({
 		keywords: [luzzlePatternKeyword, luzzleFormatKeyword, luzzleEnumKeyword],
 	}).compile(schema)

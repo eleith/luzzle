@@ -1,5 +1,5 @@
 import { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/core.js'
-import { PieceSelectable } from '../tables/pieces.schema.js'
+import { PieceSelectable, PieceDatabaseOnlyFields } from '../tables/pieces.schema.js'
 
 type NonNullableKeys<T> = {
 	[K in keyof T]-?: null extends T[K] ? never : K
@@ -15,15 +15,14 @@ type UnNullify<T> = {
 
 type NullToPartials<T> = Pick<T, NonNullableKeys<T>> & Partial<UnNullify<Pick<T, NullableKeys<T>>>>
 type IncludeIfExists<A, B> = B extends void ? A : A & B
+type OmitIfExists<A, B> = B extends void ? A : Omit<A, keyof B>
 
 type PieceFrontmatterFields = Record<string, string | string[] | number | boolean | undefined>
 
-type PieceDatabaseJtdSchema<T extends PieceSelectable> = JTDSchemaType<NullToPartials<T>>
-
 type PieceFrontmatter<
-	DataBaseFields extends Omit<PieceSelectable, keyof PieceSelectable>,
-	FrontmatterOnlyFields extends PieceFrontmatterFields | void = void
-> = NullToPartials<IncludeIfExists<DataBaseFields, FrontmatterOnlyFields>>
+	T extends PieceSelectable = PieceSelectable,
+	F extends PieceFrontmatterFields | void = void
+> = NullToPartials<IncludeIfExists<OmitIfExists<Omit<T, PieceDatabaseOnlyFields>, F>, F>>
 
 type PieceFrontmatterFieldFormats = 'date-string' | 'attachment' | 'boolean-int'
 
@@ -43,13 +42,13 @@ type PieceFrontmatterSchemaField = {
 }
 
 type PieceFrontmatterJtdSchema<
-	M extends PieceFrontmatter<
-		Omit<PieceSelectable, keyof PieceSelectable>,
-		void | PieceFrontmatterFields
-	>
+	M extends PieceFrontmatter<PieceSelectable, void | PieceFrontmatterFields>
 > = JTDSchemaType<M>
 
-function getPieceSchemaKeys<M>(schema: JTDSchemaType<M>): Array<PieceFrontmatterSchemaField> {
+function getPieceFrontmatterKeysFromSchema<M>(
+	schema: JTDSchemaType<M>
+): Array<PieceFrontmatterSchemaField> {
+	/* v8 ignore next 4 */
 	const x = {
 		...('properties' in schema ? schema.properties : {}),
 		...('optionalProperties' in schema ? schema.optionalProperties : {}),
@@ -103,7 +102,7 @@ function getPieceSchemaKeys<M>(schema: JTDSchemaType<M>): Array<PieceFrontmatter
 	return fields
 }
 
-function frontmatterToDatabaseValue(value: unknown, format?: PieceFrontmatterFieldFormats) {
+function unformatPieceFrontmatterValue(value: unknown, format?: PieceFrontmatterFieldFormats) {
 	if (format === 'date-string') {
 		return new Date(value as string).getTime()
 	} else if (format === 'boolean-int') {
@@ -113,9 +112,9 @@ function frontmatterToDatabaseValue(value: unknown, format?: PieceFrontmatterFie
 	return value
 }
 
-function databaseToFrontmatterValue(value: unknown, format?: PieceFrontmatterFieldFormats) {
+function formatPieceFrontmatterValue(value: unknown, format?: PieceFrontmatterFieldFormats) {
 	if (format === 'date-string') {
-		return new Date(value as number).toISOString()
+		return new Date(value as number).toLocaleDateString()
 	} else if (format === 'boolean-int') {
 		return value ? true : false
 	}
@@ -125,12 +124,11 @@ function databaseToFrontmatterValue(value: unknown, format?: PieceFrontmatterFie
 
 export {
 	type PieceFrontmatterJtdSchema,
-	type PieceDatabaseJtdSchema,
 	type PieceFrontmatter,
 	type PieceFrontmatterFields,
 	type PieceFrontmatterFieldFormats,
 	type PieceFrontmatterSchemaField,
-	getPieceSchemaKeys,
-	frontmatterToDatabaseValue,
-	databaseToFrontmatterValue,
+	getPieceFrontmatterKeysFromSchema,
+	formatPieceFrontmatterValue,
+	unformatPieceFrontmatterValue,
 }
