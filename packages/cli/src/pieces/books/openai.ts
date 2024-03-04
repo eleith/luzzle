@@ -1,5 +1,5 @@
 import { Configuration, OpenAIApi } from 'openai'
-import { PieceMarkdown } from 'src/lib/pieces/markdown.js'
+import { PieceMarkdown } from '@luzzle/kysely'
 import { BookFrontmatter } from './schema.js'
 
 const OPENAI_SYSTEM_TAGS_PROMPT =

@@ -1,13 +1,12 @@
 import log from '../../lib/log.js'
 import { findVolume } from './google-books.js'
 import { findWork, getBook as getOpenLibraryBook, getCoverUrl } from './open-library.js'
-import { Piece, toValidatedMarkdown, PieceType } from '../../lib/pieces/index.js'
+import { Piece, PieceType } from '../../lib/pieces/index.js'
 import { generateDescription, generateTags } from './openai.js'
 import { Config } from '../../lib/config.js'
 import { merge } from 'lodash-es'
 import { BookType, BookSelectable, BookFrontmatter, bookFrontmatterJtdSchema } from './schema.js'
-import { PieceMarkdown } from 'src/lib/pieces/markdown.js'
-import { LuzzleDatabase } from '@luzzle/kysely'
+import { LuzzleDatabase, makePieceMarkdownOrThrow, PieceMarkdown } from '@luzzle/kysely'
 
 class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 	constructor(piecesRoot: string, db: LuzzleDatabase) {
@@ -164,7 +163,7 @@ class BookPiece extends Piece<BookType, BookSelectable, BookFrontmatter> {
 			date_read: new Date().toLocaleDateString(),
 		}
 
-		return toValidatedMarkdown(slug, 'notes', markdown, this.validator)
+		return makePieceMarkdownOrThrow(slug, 'notes', markdown, this.validator)
 	}
 
 	/* c8 ignore next 24 */

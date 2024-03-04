@@ -1,8 +1,8 @@
 import log from '../../lib/log.js'
-import { Piece, toValidatedMarkdown, PieceType, PieceMarkdown } from '../../lib/pieces/index.js'
+import { Piece, PieceType, PieceMarkdown } from '../../lib/pieces/index.js'
 import { Config } from '../../lib/config.js'
 import { TextFrontmatter, TextType, TextSelectable, textFrontmatterJtdSchema } from './schema.js'
-import { LuzzleDatabase } from '@luzzle/kysely'
+import { LuzzleDatabase, makePieceMarkdownOrThrow } from '@luzzle/kysely'
 
 class TextPiece extends Piece<TextType, TextSelectable, TextFrontmatter> {
 	constructor(piecesRoot: string, db: LuzzleDatabase) {
@@ -23,7 +23,7 @@ class TextPiece extends Piece<TextType, TextSelectable, TextFrontmatter> {
 			date_published: new Date().toLocaleDateString(),
 		}
 
-		return toValidatedMarkdown(slug, 'notes', markdown, this.validator)
+		return makePieceMarkdownOrThrow(slug, 'notes', markdown, this.validator)
 	}
 
 	async process(_: Config, slugs: string[], dryRun = false) {

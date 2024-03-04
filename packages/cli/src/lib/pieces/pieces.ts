@@ -4,19 +4,12 @@ import {
 	PieceSelectable,
 	Pieces as PieceTypes,
 	Piece as PieceType,
-	PieceFrontmatterFields,
 	PieceFrontmatter,
 	LuzzleDatabase,
 } from '@luzzle/kysely'
 import Piece, { InterfacePiece } from './piece.js'
 
-type LuzzlePiece = InterfacePiece<
-	PieceTypes,
-	PieceSelectable,
-	PieceFrontmatter<Omit<PieceSelectable, keyof PieceSelectable>, void | PieceFrontmatterFields>
->
-
-class Pieces {
+class Pieces<P extends PieceTypes, S extends PieceSelectable, F extends PieceFrontmatter> {
 	private _directory: string
 	private _db: LuzzleDatabase
 
@@ -29,11 +22,7 @@ class Pieces {
 		return this._directory
 	}
 
-	register<
-		P extends PieceTypes,
-		T extends PieceSelectable,
-		F extends PieceFrontmatter<Omit<T, keyof T>, void | PieceFrontmatterFields>
-	>(PieceInterface: InterfacePiece<P, T, F>): Piece<P, T, F> {
+	register(PieceInterface: InterfacePiece<P, S, F>): Piece<P, S, F> {
 		const pieceType = new PieceInterface(this._directory, this._db)
 
 		if (!existsSync(this._directory)) {
@@ -49,11 +38,12 @@ class Pieces {
 		return Object.values(PieceType)
 	}
 
-	async getPiece(pieceType: PieceTypes): Promise<InstanceType<typeof Piece>> {
+	async getPiece(pieceType: PieceTypes): Promise<Piece<P, S, F>> {
 		const pieceTypes = Object.values(PieceType)
 		if (pieceTypes.includes(pieceType)) {
 			const LuzzePiecePath = `../../pieces/${pieceType}/piece.js`
-			const LuzzlePiece = (await import(LuzzePiecePath)).default as LuzzlePiece
+			const LuzzlePiece = (await import(LuzzePiecePath)).default as InterfacePiece<P, S, F>
+
 			return this.register(LuzzlePiece)
 		}
 

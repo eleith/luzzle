@@ -8,8 +8,6 @@ import {
 	makePiece,
 	makeFrontmatterSample,
 } from './piece.fixtures.js'
-import { toMarkdown, toValidatedMarkdown, toMarkdownString } from './markdown.js'
-import { extract } from '../md.js'
 import { mockDatabase } from '../database.mock.js'
 import { removeAllTagsFrom, addTagsTo, keywordsToTags, syncTagsFor } from '../tags/index.js'
 import { addCache, removeCache, updateCache, getCache, getCacheAll } from './cache.js'
@@ -19,10 +17,15 @@ import { fileTypeFromFile, FileTypeResult } from 'file-type'
 import {
 	Pieces,
 	ajv,
-	getPieceSchemaKeys,
-	frontmatterToDatabaseValue,
-	databaseToFrontmatterValue,
 	PieceInsertable,
+	getPieceFrontmatterKeysFromSchema,
+	formatPieceFrontmatterValue,
+	makePieceMarkdownOrThrow,
+	makePieceMarkdown,
+	makePieceMarkdownString,
+	makePieceInsertable,
+	makePieceUpdatable,
+	extractFullMarkdown,
 } from '@luzzle/kysely'
 import { downloadFileOrUrlTo } from './utils.js'
 import { makeCache } from './cache.fixtures.js'
@@ -45,14 +48,14 @@ const mocks = {
 	mkdir: vi.mocked(mkdir),
 	readdir: vi.mocked(readdir),
 	writeFile: vi.mocked(writeFile),
-	toValidateMarkdown: vi.mocked(toValidatedMarkdown),
-	toMarkdown: vi.mocked(toMarkdown),
-	toMarkdownString: vi.mocked(toMarkdownString),
+	toValidateMarkdown: vi.mocked(makePieceMarkdownOrThrow),
+	toMarkdown: vi.mocked(makePieceMarkdown),
+	toMarkdownString: vi.mocked(makePieceMarkdownString),
 	removeAllTagsFrom: vi.mocked(removeAllTagsFrom),
 	addTagsTo: vi.mocked(addTagsTo),
 	keywordsToTags: vi.mocked(keywordsToTags),
 	syncTagsFor: vi.mocked(syncTagsFor),
-	extract: vi.mocked(extract),
+	extract: vi.mocked(extractFullMarkdown),
 	logError: vi.spyOn(log, 'error'),
 	stat: vi.mocked(stat),
 	cpus: vi.mocked(cpus),
@@ -65,10 +68,11 @@ const mocks = {
 	copy: vi.mocked(copyFile),
 	fileType: vi.mocked(fileTypeFromFile),
 	unlink: vi.mocked(unlink),
-	getPieceSchemaKeys: vi.mocked(getPieceSchemaKeys),
-	frontmatterToDatabaseValue: vi.mocked(frontmatterToDatabaseValue),
-	databaseToFrontmatterValue: vi.mocked(databaseToFrontmatterValue),
+	getPieceSchemaKeys: vi.mocked(getPieceFrontmatterKeysFromSchema),
+	frontmatterToDatabaseValue: vi.mocked(formatPieceFrontmatterValue),
 	downloadFileOrUrlTo: vi.mocked(downloadFileOrUrlTo),
+	makeInsertable: vi.mocked(makePieceInsertable),
+	makeUpdatable: vi.mocked(makePieceUpdatable),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -119,125 +123,6 @@ describe('lib/pieces/piece', () => {
 
 		expect(getPath).toMatch(new RegExp(`${filename}$`))
 		expect(spies.getFileName).toHaveBeenCalledWith(slug)
-	})
-
-	test('toCreateInput', () => {
-		const PieceType = makePiece()
-		const slug = 'slug'
-		const note = 'note'
-		const date = new Date()
-		const frontmatter = {
-			date: date.toISOString(),
-		}
-		const markdown = makeMarkdownSample(slug, note, frontmatter)
-		const pieceTest = new PieceType()
-
-		mocks.getPieceSchemaKeys.mockReturnValueOnce([
-			{ name: 'date', type: 'string', metadata: { format: 'date-string' } },
-		])
-		mocks.frontmatterToDatabaseValue.mockImplementation((value) => new Date(value as string))
-
-		const input = pieceTest.toCreateInput(markdown)
-
-		expect(mocks.frontmatterToDatabaseValue).toHaveBeenCalledWith(frontmatter.date, 'date-string')
-		expect(input).toEqual({
-			id: expect.any(String),
-			slug: markdown.slug,
-			note: markdown.note,
-			date: date,
-		})
-	})
-
-	test('toCreateInput handles arrays', () => {
-		const PieceType = makePiece()
-		const slug = 'slug'
-		const note = 'note'
-		const frontmatter = {
-			stuff: ['a', 'b'],
-			badstuff: 'a',
-		}
-		const markdown = makeMarkdownSample(slug, note, frontmatter)
-		const pieceTest = new PieceType()
-
-		mocks.getPieceSchemaKeys.mockReturnValueOnce([
-			{ name: 'stuff', type: 'string', collection: 'array' },
-			{ name: 'badstuff', type: 'string', collection: 'array' },
-		])
-		mocks.frontmatterToDatabaseValue.mockImplementation((value) => value)
-
-		const input = pieceTest.toCreateInput(markdown)
-
-		expect(input).toEqual({
-			id: expect.any(String),
-			slug: markdown.slug,
-			note: markdown.note,
-			stuff: JSON.stringify(frontmatter.stuff),
-		})
-	})
-
-	test('toUpdateInput', () => {
-		const PieceType = makePiece()
-		const data = makeSample()
-		const slug = 'slug'
-		const note = 'note'
-		const frontmatter = {
-			stuff: ['a', 'b'],
-			title: 'title',
-			hidden: 'hidden',
-			date: new Date().toISOString(),
-			subtitle: 'subtitle',
-		}
-		const markdown = makeMarkdownSample(slug, note, frontmatter)
-		const pieceTest = new PieceType()
-
-		data.subtitle = 'no subtitle'
-		data.title = frontmatter.title
-		data.slug = slug
-		data.note = note
-
-		mocks.getPieceSchemaKeys.mockReturnValueOnce([
-			{ name: 'title', type: 'string' },
-			{ name: 'subtitle', type: 'string' },
-			{ name: 'stuff', type: 'string', collection: 'array' },
-			{ name: 'date', type: 'string', metadata: { format: 'date-string' } },
-		])
-		mocks.frontmatterToDatabaseValue.mockImplementation((value) => value)
-
-		const input = pieceTest.toUpdateInput(markdown, data)
-
-		expect(input).toEqual({
-			date_updated: expect.any(Number),
-			stuff: JSON.stringify(frontmatter.stuff),
-			date: frontmatter.date,
-			subtitle: frontmatter.subtitle,
-		})
-	})
-
-	test('toUpdateInput updates note and slug', () => {
-		const PieceType = makePiece()
-		const data = makeSample()
-		const slug = 'slug'
-		const note = 'note'
-		const frontmatter = {
-			title: 'title',
-		}
-		const markdown = makeMarkdownSample(slug, note, frontmatter)
-		const pieceTest = new PieceType()
-
-		data.title = frontmatter.title
-		data.slug = 'old slug'
-		data.note = 'old note'
-
-		mocks.getPieceSchemaKeys.mockReturnValueOnce([{ name: 'title', type: 'string' }])
-		mocks.frontmatterToDatabaseValue.mockImplementation((value) => value)
-
-		const input = pieceTest.toUpdateInput(markdown, data)
-
-		expect(input).toEqual({
-			date_updated: expect.any(Number),
-			note,
-			slug,
-		})
 	})
 
 	test('getSlugs', async () => {
@@ -347,7 +232,9 @@ describe('lib/pieces/piece', () => {
 		const markdown = makeMarkdownSample(slug, note, frontmatter)
 		const PieceTest = makePiece()
 
-		mocks.extract.mockResolvedValueOnce(extracted as Awaited<ReturnType<typeof extract>>)
+		mocks.extract.mockResolvedValueOnce(
+			extracted as Awaited<ReturnType<typeof extractFullMarkdown>>
+		)
 		mocks.toValidateMarkdown.mockReturnValueOnce(markdown)
 
 		const pieceTest = new PieceTest()
@@ -356,7 +243,7 @@ describe('lib/pieces/piece', () => {
 
 		const get = await pieceTest.get(slug)
 
-		expect(extract).toHaveBeenCalledWith(path)
+		expect(mocks.extract).toHaveBeenCalledWith(path)
 		expect(mocks.toValidateMarkdown).toHaveBeenCalledOnce()
 		expect(get).toEqual(markdown)
 	})
@@ -370,7 +257,9 @@ describe('lib/pieces/piece', () => {
 		const markdown = makeMarkdownSample(slug, note, frontmatter)
 		const PieceTest = makePiece()
 
-		mocks.extract.mockResolvedValueOnce(extracted as Awaited<ReturnType<typeof extract>>)
+		mocks.extract.mockResolvedValueOnce(
+			extracted as Awaited<ReturnType<typeof extractFullMarkdown>>
+		)
 		mocks.toMarkdown.mockReturnValueOnce(markdown)
 
 		const pieceTest = new PieceTest()
@@ -379,7 +268,7 @@ describe('lib/pieces/piece', () => {
 
 		const get = await pieceTest.get(slug, false)
 
-		expect(extract).toHaveBeenCalledWith(path)
+		expect(mocks.extract).toHaveBeenCalledWith(path)
 		expect(mocks.toMarkdown).toHaveBeenCalledOnce()
 		expect(get).toEqual(markdown)
 	})
@@ -393,7 +282,9 @@ describe('lib/pieces/piece', () => {
 		const markdown = makeMarkdownSample(slug, note, frontmatter)
 		const PieceTest = makePiece()
 
-		mocks.extract.mockResolvedValueOnce(extracted as Awaited<ReturnType<typeof extract>>)
+		mocks.extract.mockResolvedValueOnce(
+			extracted as Awaited<ReturnType<typeof extractFullMarkdown>>
+		)
 		mocks.toValidateMarkdown.mockReturnValueOnce(markdown)
 
 		const pieceTest = new PieceTest()
@@ -566,9 +457,7 @@ describe('lib/pieces/piece', () => {
 		const added = { ...markdown.frontmatter, id: 1 }
 
 		const pieceTest = new PieceTest({ db: dbMocks.db })
-		spies.createInput = vi
-			.spyOn(pieceTest, 'toCreateInput')
-			.mockReturnValueOnce({} as PieceInsertable)
+		mocks.makeInsertable.mockReturnValueOnce({} as PieceInsertable)
 		dbMocks.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(added)
 
 		await pieceTest.syncAdd(markdown)
@@ -585,9 +474,7 @@ describe('lib/pieces/piece', () => {
 		const added = { ...markdown.frontmatter, id: 1 }
 
 		const pieceTest = new PieceTest({ db: dbMocks.db })
-		spies.createInput = vi
-			.spyOn(pieceTest, 'toCreateInput')
-			.mockReturnValueOnce({} as PieceInsertable)
+		mocks.makeInsertable.mockReturnValueOnce({} as PieceInsertable)
 		dbMocks.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(added)
 		mocks.keywordsToTags.mockReturnValueOnce(keywords)
 
@@ -663,7 +550,7 @@ describe('lib/pieces/piece', () => {
 		const pieceData = makeSample()
 
 		const pieceTest = new PieceTest({ db: dbMocks.db })
-		spies.toUpdateInput = vi.spyOn(pieceTest, 'toUpdateInput').mockResolvedValueOnce(updated)
+		mocks.makeUpdatable.mockReturnValueOnce(updated)
 		dbMocks.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(updated)
 		mocks.keywordsToTags.mockReturnValueOnce([])
 
@@ -683,7 +570,7 @@ describe('lib/pieces/piece', () => {
 		const dbUpdate = { ...updated, id: 1 }
 
 		const pieceTest = new PieceTest({ db: dbMocks.db })
-		spies.toUpdateInput = vi.spyOn(pieceTest, 'toUpdateInput').mockResolvedValueOnce(updated)
+		mocks.makeUpdatable.mockReturnValueOnce(updated)
 		dbMocks.queries.executeTakeFirstOrThrow.mockResolvedValueOnce(dbUpdate)
 		mocks.keywordsToTags.mockReturnValueOnce(keywords)
 
@@ -706,7 +593,7 @@ describe('lib/pieces/piece', () => {
 		const updated = { ...markdown.frontmatter, keywords: 'a' }
 
 		const pieceTest = new PieceTest()
-		spies.toUpdateInput = vi.spyOn(pieceTest, 'toUpdateInput').mockResolvedValueOnce(updated)
+		mocks.makeUpdatable.mockReturnValueOnce(updated)
 		dbMocks.queries.executeTakeFirstOrThrow.mockRejectedValueOnce(new Error('oof'))
 
 		await pieceTest.syncUpdate(markdown, pieceData)
@@ -721,7 +608,7 @@ describe('lib/pieces/piece', () => {
 		const updated = { ...markdown.frontmatter, keywords: 'a' }
 
 		const pieceTest = new PieceTest()
-		spies.toUpdateInput = vi.spyOn(pieceTest, 'toUpdateInput').mockResolvedValueOnce(updated)
+		mocks.makeUpdatable.mockReturnValueOnce(updated)
 
 		await pieceTest.syncUpdate(markdown, pieceData, true)
 	})
@@ -736,7 +623,7 @@ describe('lib/pieces/piece', () => {
 		mocks.getPieceSchemaKeys.mockReturnValueOnce([
 			{ name: 'title', type: 'string', metadata: { format: 'date-string' } },
 		])
-		mocks.databaseToFrontmatterValue.mockReturnValueOnce(pieceMarkdown.frontmatter.title)
+		mocks.frontmatterToDatabaseValue.mockReturnValueOnce(pieceMarkdown.frontmatter.title)
 		mocks.compile.mockReturnValueOnce(pieceValidator)
 
 		const markdown = new PieceTest().toMarkdown(pieceSample)
@@ -761,8 +648,8 @@ describe('lib/pieces/piece', () => {
 		mocks.getPieceSchemaKeys.mockReturnValueOnce([
 			{ name: 'title', type: 'string', collection: 'array' },
 		])
-		mocks.databaseToFrontmatterValue.mockReturnValueOnce(title[0])
-		mocks.databaseToFrontmatterValue.mockReturnValueOnce(title[1])
+		mocks.frontmatterToDatabaseValue.mockReturnValueOnce(title[0])
+		mocks.frontmatterToDatabaseValue.mockReturnValueOnce(title[1])
 		mocks.compile.mockReturnValueOnce(pieceValidator)
 
 		const markdown = new PieceTest().toMarkdown({

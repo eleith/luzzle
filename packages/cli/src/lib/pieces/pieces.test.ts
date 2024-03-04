@@ -59,11 +59,7 @@ describe('lib/pieces/pieces', () => {
 
 		const pieces = new Pieces(directory, db)
 		pieces.register(
-			makePiece() as unknown as InterfacePiece<
-				PieceTypes,
-				PieceSelectable,
-				PieceFrontmatter<Omit<PieceSelectable, 'note'>>
-			>
+			makePiece() as unknown as InterfacePiece<PieceTypes, PieceSelectable, PieceFrontmatter>
 		)
 
 		expect(mocks.mkdirSync).toHaveBeenCalledWith(pieces.directory, { recursive: true })
@@ -75,11 +71,7 @@ describe('lib/pieces/pieces', () => {
 
 		const pieces = new Pieces(directory, db)
 		pieces.register(
-			makePiece() as unknown as InterfacePiece<
-				PieceTypes,
-				PieceSelectable,
-				PieceFrontmatter<Omit<PieceSelectable, 'note'>>
-			>
+			makePiece() as unknown as InterfacePiece<PieceTypes, PieceSelectable, PieceFrontmatter>
 		)
 		expect(mocks.mkdirSync).toHaveBeenCalledTimes(4)
 	})
