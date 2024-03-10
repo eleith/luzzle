@@ -12,10 +12,10 @@ type LinkFrontmatter = PieceFrontmatter<LinkSelectable, LinkFrontMatterOnlyField
 
 const linkFrontmatterJtdSchema: PieceFrontmatterJtdSchema<LinkFrontmatter> = {
 	properties: {
-		title: { type: 'string' },
-		url: { type: 'string' },
-		is_active: { type: 'boolean', metadata: { luzzleFormat: 'boolean-int' } },
-		is_paywall: { type: 'boolean', metadata: { luzzleFormat: 'boolean-int' } },
+		title: { type: 'string', nullable: false },
+		url: { type: 'string', nullable: false },
+		is_active: { type: 'boolean', nullable: false, metadata: { luzzleFormat: 'boolean-int' } },
+		is_paywall: { type: 'boolean', nullable: false, metadata: { luzzleFormat: 'boolean-int' } },
 		type: { enum: [LinkType.Article, LinkType.Bookmark] },
 	},
 	optionalProperties: {
