@@ -1,6 +1,6 @@
 import edit from './edit.js'
 import editConfig from './editConfig.js'
-import attach from './attach.js'
+import field from './field.js'
 import process from './process.js'
 import create from './create.js'
 import fetch from './fetch.js'
@@ -16,7 +16,7 @@ export type { Command, Context } from './utils/types.js'
 export default {
 	edit,
 	editConfig,
-	attach,
+	field,
 	process,
 	create,
 	fetch,

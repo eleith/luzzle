@@ -23,13 +23,15 @@ import {
 	makePieceMarkdownOrThrow,
 	makePieceMarkdownString,
 	formatPieceFrontmatterValue,
+	PieceFrontmatterSchemaField,
 } from '@luzzle/kysely'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
 import path from 'path'
-import { PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
-import { ASSETS_CACHE_DIRECTORY, ASSETS_DIRECTORY } from '../assets.js'
+import { downloadFileOrUrlTo, PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
+import { ASSETS_DIRECTORY } from '../assets.js'
 import { fileTypeFromFile } from 'file-type'
+import { randomBytes } from 'crypto'
 
 export interface InterfacePiece<
 	P extends Pieces,
@@ -46,6 +48,7 @@ abstract class Piece<P extends Pieces, D extends PieceSelectable, F extends Piec
 	private _directories: PieceDirectories
 	private _pieceTable: P
 	private _db: LuzzleDatabase
+	private _fields?: PieceFrontmatterSchemaField[]
 
 	constructor(
 		pieceRoot: string,
@@ -58,11 +61,6 @@ abstract class Piece<P extends Pieces, D extends PieceSelectable, F extends Piec
 		this._directories = {
 			[PieceDirectory.Root]: path.join(this._pieceRoot, this._pieceTable),
 			[PieceDirectory.Assets]: path.join(this._pieceRoot, this._pieceTable, ASSETS_DIRECTORY),
-			[PieceDirectory.AssetsCache]: path.join(
-				this._pieceRoot,
-				this._pieceTable,
-				ASSETS_CACHE_DIRECTORY
-			),
 		}
 		this._db = db
 		this._schema = schema
@@ -85,6 +83,11 @@ abstract class Piece<P extends Pieces, D extends PieceSelectable, F extends Piec
 		return this._validator
 	}
 
+	get fields() {
+		this._fields = this._fields || getPieceFrontmatterKeysFromSchema(this._schema)
+		return this._fields
+	}
+
 	initialize(): Piece<P, D, F> {
 		Object.entries(this._directories).forEach(([key, dir]) => {
 			if (!existsSync(dir)) {
@@ -102,10 +105,6 @@ abstract class Piece<P extends Pieces, D extends PieceSelectable, F extends Piec
 
 	getPath(slug: string): string {
 		return path.join(this._directories.root, this.getFileName(slug))
-	}
-
-	getSchemaKeys() {
-		return getPieceFrontmatterKeysFromSchema(this._schema)
 	}
 
 	async getSlugs(): Promise<string[]> {
@@ -172,7 +171,7 @@ abstract class Piece<P extends Pieces, D extends PieceSelectable, F extends Piec
 
 	async cleanUpCache(slugs: string[]): Promise<string[]> {
 		const caches = await getCacheAll(this._db, this._pieceTable)
-		const schemaKeys = this.getSchemaKeys()
+		const schemaKeys = this.fields
 		const staleSlugs = difference(
 			caches.map((cache) => cache.slug),
 			slugs
@@ -328,77 +327,92 @@ abstract class Piece<P extends Pieces, D extends PieceSelectable, F extends Piec
 		return makePieceMarkdownOrThrow(data.slug, data.note, frontmatter as F, this.validator)
 	}
 
-	async attach(
-		file: string,
-		markdown: PieceMarkdown<F>,
-		field: string,
+	private async makeAttachmentField(
+		slug: string,
+		field: PieceFrontmatterSchemaField,
+		fileOrUrl: string,
 		_name?: string
-	): Promise<PieceMarkdown<F>> {
-		const attachableField = getPieceFrontmatterKeysFromSchema(this._schema)
-			.filter((f) => f.metadata?.format === 'attachment')
-			.find((f) => f.name === field)
-
-		if (!attachableField) {
-			throw new Error(
-				`${field} is not an attachable field for ${this._pieceTable} ${markdown.slug}`
-			)
+	): Promise<string> {
+		/* c8 ignore next 3 */
+		if (field.metadata?.format !== 'attachment') {
+			throw new Error(`${field} is not an attachable field for ${this._pieceTable} ${slug}`)
 		}
 
-		const allowedTypes = attachableField.metadata?.enum || []
-		const fileType = await fileTypeFromFile(file)
+		const tmpPath = await downloadFileOrUrlTo(fileOrUrl)
+		const allowedTypes = field.metadata?.enum || []
+		const fileType = await fileTypeFromFile(tmpPath)
 		const type = fileType?.ext
 
 		if (allowedTypes.length && (!type || !allowedTypes.includes(type))) {
+			await unlink(tmpPath)
 			throw new Error(
-				`${file} (${type}) is not a valid file, only: ${allowedTypes.join(',')} are allowed`
+				`${fileOrUrl} (${type}) is not a valid file, only: ${allowedTypes.join(',')} are allowed`
 			)
 		}
 
-		const attachDir = path.join(this._directories.assets, field)
-		const oldMedia = markdown.frontmatter[field as keyof F] as string | string[] | undefined
+		const attachDir = path.join(this._directories.assets, field.name)
+		const random = randomBytes(4).toString('hex')
+		const parts = [slug, _name, random]
+		const filename = `${parts.filter((x) => x).join('-')}.${type}`
+		const toPath = path.join(this._directories.assets, field.name, filename)
+		const relPath = path.join(path.basename(this._directories.assets), field.name, filename)
 
-		if (attachableField.collection === 'array') {
-			const oldMediaArray = Array.isArray(oldMedia) ? oldMedia : []
-			const parts = [markdown.slug, _name, oldMediaArray.length + 1]
-			const filename = `${parts.filter((x) => x).join('-')}.${type}`
-			const toPath = path.join(this._directories.assets, field, filename)
-			const relPath = path.join(path.basename(this._directories.assets), field, filename)
+		await mkdir(attachDir, { recursive: true })
+		await copyFile(tmpPath, toPath)
+		await unlink(tmpPath)
 
-			await mkdir(attachDir, { recursive: true })
-			await copyFile(file, toPath)
+		return relPath
+	}
 
-			log.info(`processed and copied ${file} to ${toPath}`)
+	async editField<V>(
+		markdown: PieceMarkdown<F>,
+		field: string,
+		_value: V
+	): Promise<PieceMarkdown<F>> {
+		const pieceField = this.fields.find((f) => f.name === field)
+		let value = _value
 
-			return makePieceMarkdownOrThrow(
-				markdown.slug,
-				markdown.note,
-				{
-					...markdown.frontmatter,
-					[field]: oldMediaArray.concat(relPath),
-				},
-				this.validator
-			)
-		} else {
-			const parts = [markdown.slug, _name]
-			const filename = `${parts.filter((x) => x).join('-')}.${type}`
-			const toPath = path.join(this._directories.assets, field, filename)
-			const relPath = path.join(path.basename(this._directories.assets), field, filename)
-
-			await mkdir(attachDir, { recursive: true })
-			await copyFile(file, toPath)
-
-			log.info(`processed and copied ${file} to ${toPath}`)
-
-			return makePieceMarkdownOrThrow(
-				markdown.slug,
-				markdown.note,
-				{
-					...markdown.frontmatter,
-					[field]: relPath,
-				},
-				this.validator
-			)
+		if (!pieceField) {
+			throw new Error(`${field} is not a field in ${this._pieceTable} ${markdown.slug}`)
 		}
+
+		if (pieceField.metadata?.format === 'attachment') {
+			value = (await this.makeAttachmentField(markdown.slug, pieceField, _value as string)) as V
+		}
+
+		const fieldName = pieceField.name as keyof F
+		const oldValue = markdown.frontmatter[fieldName] as V | V[] | undefined
+		const isArray = pieceField.collection === 'array'
+		const newValue = isArray ? ((oldValue || []) as V[]).concat(value) : value
+
+		return makePieceMarkdownOrThrow(
+			markdown.slug,
+			markdown.note,
+			{
+				...markdown.frontmatter,
+				[field]: newValue,
+			},
+			this.validator
+		)
+	}
+
+	async removeField(markdown: PieceMarkdown<F>, field: string): Promise<PieceMarkdown<F>> {
+		const pieceField = this.fields.find((f) => f.name === field)
+
+		if (!pieceField) {
+			throw new Error(`${field} is not a field in ${this._pieceTable} ${markdown.slug}`)
+		}
+
+		if (pieceField.required) {
+			throw new Error(`${field} is a required field in ${this._pieceTable} ${markdown.slug}`)
+		}
+
+		const fieldname = pieceField.name as keyof PieceMarkdown<F>['frontmatter']
+
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const { [fieldname]: _, ...frontmatter } = markdown.frontmatter
+
+		return makePieceMarkdownOrThrow(markdown.slug, markdown.note, frontmatter, this.validator)
 	}
 
 	async dump(db: LuzzleDatabase, dryRun = false) {

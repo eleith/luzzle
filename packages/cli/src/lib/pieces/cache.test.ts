@@ -1,4 +1,3 @@
-import log from '../log.js'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import * as cache from './cache.js'
 import { Pieces } from '@luzzle/kysely'
@@ -7,27 +6,18 @@ import { makeCache } from './cache.fixtures.js'
 import { createId } from '@paralleldrive/cuid2'
 import { calculateHashFromFile } from './utils.js'
 
-vi.mock('../log')
-vi.mock('../book')
-vi.mock('fs/promises')
-vi.mock('fs')
-vi.mock('ajv/dist/jtd')
-vi.mock('ajv/dist/core')
 vi.mock('@luzzle/kysely')
 vi.mock('@paralleldrive/cuid2')
 vi.mock('./utils.js')
 
 const mocks = {
-	logInfo: vi.spyOn(log, 'info'),
-	logError: vi.spyOn(log, 'error'),
-	logWarn: vi.spyOn(log, 'warn'),
 	createId: vi.mocked(createId),
 	calculateHashFromFile: vi.mocked(calculateHashFromFile),
 }
 
 const spies: MockInstance[] = []
 
-describe('lib/pieces/cache', () => {
+describe('lib/pieces/cache.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()

@@ -1,7 +1,7 @@
-import { existsSync, Stats } from 'fs'
+import { createReadStream, existsSync, ReadStream, Stats } from 'fs'
 import { copyFile, stat } from 'fs/promises'
 import { temporaryFile } from 'tempy'
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import yargs from 'yargs'
 import { downloadToPath } from '../web.js'
 import {
@@ -10,12 +10,16 @@ import {
 	makePieceCommand,
 	parseOptionalPieceArgv,
 	parsePieceArgv,
+	calculateHashFromFile,
 } from './utils.js'
+import { createHash } from 'crypto'
+import { PassThrough } from 'stream'
 
 vi.mock('fs')
 vi.mock('tempy')
 vi.mock('fs/promises')
 vi.mock('../web.js')
+vi.mock('crypto')
 
 const mocks = {
 	tempyFile: vi.mocked(temporaryFile),
@@ -23,11 +27,13 @@ const mocks = {
 	stat: vi.mocked(stat),
 	downloadToPath: vi.mocked(downloadToPath),
 	existsSync: vi.mocked(existsSync),
+	createReadStream: vi.mocked(createReadStream),
+	createHash: vi.mocked(createHash),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
-describe('lib/pieces/utils', () => {
+describe('lib/pieces/utils.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -175,5 +181,52 @@ describe('lib/pieces/utils', () => {
 		const result = parseOptionalPieceArgv({ path })
 
 		expect(result).toEqual({ piece, slug })
+	})
+
+	test('calculateHashFromFile', async () => {
+		const file = 'path/to/file'
+		const data = 'data'
+
+		const mockUpdate = vi.fn()
+		const mockDigest = vi.fn().mockReturnValue(data)
+		const mockReadStream = new PassThrough() as unknown as ReadStream
+
+		mocks.createReadStream.mockReturnValueOnce(mockReadStream)
+		mocks.createHash.mockReturnValueOnce({
+			update: mockUpdate,
+			digest: mockDigest,
+		} as unknown as ReturnType<typeof createHash>)
+
+		const hashPromise = calculateHashFromFile(file)
+
+		mockReadStream.emit('data', data)
+		mockReadStream.emit('end')
+
+		const hash = await hashPromise
+
+		expect(mockUpdate).toHaveBeenCalled()
+		expect(mockDigest).toHaveBeenCalledWith('hex')
+		expect(hash).toEqual(data)
+	})
+
+	test('calculateHashFromFile error', async () => {
+		const file = 'path/to/file'
+		const data = 'data'
+
+		const mockUpdate = vi.fn()
+		const mockDigest = vi.fn().mockReturnValue(data)
+		const mockReadStream = new PassThrough() as unknown as ReadStream
+
+		mocks.createReadStream.mockReturnValueOnce(mockReadStream)
+		mocks.createHash.mockReturnValueOnce({
+			update: mockUpdate,
+			digest: mockDigest,
+		} as unknown as ReturnType<typeof createHash>)
+
+		const hashPromise = calculateHashFromFile(file)
+
+		mockReadStream.emit('error', new Error('error'))
+
+		expect(hashPromise).rejects.toThrowError()
 	})
 })

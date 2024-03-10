@@ -63,7 +63,7 @@ describe('lib/pieces/pieces', () => {
 		)
 
 		expect(mocks.mkdirSync).toHaveBeenCalledWith(pieces.directory, { recursive: true })
-		expect(mocks.existsSync).toHaveBeenCalledTimes(4)
+		expect(mocks.existsSync).toHaveBeenCalledTimes(3)
 	})
 
 	test('register makes directories', () => {
@@ -73,7 +73,7 @@ describe('lib/pieces/pieces', () => {
 		pieces.register(
 			makePiece() as unknown as InterfacePiece<PieceTypes, PieceSelectable, PieceFrontmatter>
 		)
-		expect(mocks.mkdirSync).toHaveBeenCalledTimes(4)
+		expect(mocks.mkdirSync).toHaveBeenCalledTimes(3)
 	})
 
 	test('parseArgv', () => {
