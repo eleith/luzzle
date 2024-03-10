@@ -1,5 +1,5 @@
 import log from '../log.js'
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { CreateArgv } from './create.js'
 import { Arguments } from 'yargs'
 import { makeBookMarkDown } from '../../pieces/books/book.fixtures.js'
@@ -7,15 +7,13 @@ import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
 import { makePiece } from '../pieces/piece.fixtures.js'
 
-vi.mock('ajv/dist/jtd')
-
 const mocks = {
 	logError: vi.spyOn(log, 'error'),
 	getPieceTypes: vi.fn(),
 	getPiece: vi.fn(),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
 describe('lib/commands/create', () => {
 	afterEach(() => {

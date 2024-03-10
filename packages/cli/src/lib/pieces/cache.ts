@@ -34,8 +34,12 @@ async function addCache(
 			content_hash: hash,
 			id,
 		})
+		/* c8 ignore next 6 */
 		.onConflict((oc) =>
-			oc.columns(['slug', 'type']).doUpdateSet({ content_hash: hash, date_updated: date })
+			oc.columns(['slug', 'type']).doUpdateSet({
+				content_hash: hash,
+				date_updated: date,
+			})
 		)
 		.execute()
 }

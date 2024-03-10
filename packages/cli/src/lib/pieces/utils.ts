@@ -10,7 +10,6 @@ import { createHash } from 'crypto'
 export const PieceDirectory = {
 	Root: 'root',
 	Assets: 'assets',
-	AssetsCache: 'assets.cache',
 } as const
 
 export type PieceDirectories = {

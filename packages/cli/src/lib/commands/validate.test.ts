@@ -1,5 +1,5 @@
 import log from '../log.js'
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { ValidateArgv } from './validate.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
@@ -20,9 +20,9 @@ const mocks = {
 	getPiece: vi.fn(),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
-describe('lib/commands/validate', () => {
+describe('lib/commands/validate.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
