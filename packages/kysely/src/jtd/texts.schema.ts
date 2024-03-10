@@ -10,7 +10,7 @@ type TextFrontmatter = PieceFrontmatter<TextSelectable, TextFrontMatterOnlyField
 
 const textFrontmatterJtdSchema: PieceFrontmatterJtdSchema<TextFrontmatter> = {
 	properties: {
-		title: { type: 'string' },
+		title: { type: 'string', nullable: false },
 	},
 	optionalProperties: {
 		subtitle: { type: 'string' },

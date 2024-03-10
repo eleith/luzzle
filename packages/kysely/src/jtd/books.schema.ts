@@ -9,8 +9,8 @@ type BookFrontmatter = PieceFrontmatter<BookSelectable, BookFrontmatterOnlyField
 
 const bookFrontmatterJtdSchema: PieceFrontmatterJtdSchema<BookFrontmatter> = {
 	properties: {
-		title: { type: 'string' },
-		author: { type: 'string' },
+		title: { type: 'string', nullable: false },
+		author: { type: 'string', nullable: false },
 	},
 	optionalProperties: {
 		id_ol_book: { type: 'string' },

@@ -7,22 +7,60 @@ describe('src/pieces/frontmatter.ts', () => {
 		vi.resetAllMocks()
 	})
 
-	test('getPieceFrontmatterKeysFromSchema', () => {
+	test('getPieceFrontmatterKeysFromSchema sets required', () => {
+		const schema = makeSchema({ field: { type: 'string' } }, { field2: { type: 'string' } })
+		const keys = frontmatter.getPieceFrontmatterKeysFromSchema(schema)
+
+		expect(keys.find(({ name }) => name === 'field')).toMatchObject({
+			name: 'field',
+			type: 'string',
+			required: true,
+		})
+
+		expect(keys.find(({ name }) => name === 'field')).toMatchObject({
+			name: 'field',
+			type: 'string',
+		})
+	})
+
+	test('getPieceFrontmatterKeysFromSchema sets nullable', () => {
 		const schema = makeSchema({
-			fieldLuzzle: {
-				type: 'string',
-				metadata: { luzzleFormat: 'f', luzzlePattern: 'x', luzzleEnum: ['a'] },
-			},
 			field: {
 				type: 'string',
+				nullable: false,
 			},
 			fieldEnum: {
 				enum: ['a', 'b'],
+				nullable: false,
 			},
 			fieldProperties: {
 				properties: {
 					subfield: { type: 'string' },
 				},
+				nullable: false,
+			},
+			fieldElements: {
+				elements: {
+					type: 'string',
+					nullable: false,
+				},
+			},
+		})
+		const keys = frontmatter.getPieceFrontmatterKeysFromSchema(schema)
+		const fieldNames = ['field', 'fieldEnum', 'fieldProperties', 'fieldElements']
+
+		fieldNames.forEach((fieldName) => {
+			expect(keys.find(({ name }) => name === fieldName)).toMatchObject({
+				nullable: false,
+			})
+		})
+	})
+
+	test('getPieceFrontmatterKeysFromSchema sets metadata', () => {
+		const schema = makeSchema({
+			field: {
+				type: 'string',
+				metadata: { luzzleFormat: 'f', luzzlePattern: 'x', luzzleEnum: ['a'] },
 			},
 			fieldElements: {
 				elements: {
@@ -34,32 +72,14 @@ describe('src/pieces/frontmatter.ts', () => {
 
 		const keys = frontmatter.getPieceFrontmatterKeysFromSchema(schema)
 
-		expect(keys.find(({ name }) => name === 'fieldLuzzle')).toMatchObject({
-			name: 'fieldLuzzle',
-			type: 'string',
+		expect(keys.find(({ name }) => name === 'field')).toMatchObject({
 			metadata: { format: 'f', pattern: 'x', enum: ['a'] },
-		})
-
-		expect(keys.find(({ name }) => name === 'fieldEnum')).toMatchObject({
-			name: 'fieldEnum',
-			metadata: { enum: ['a', 'b'] },
-		})
-
-		expect(keys.find(({ name }) => name === 'fieldProperties')).toMatchObject({
-			name: 'fieldProperties',
-			collection: 'object',
 		})
 
 		expect(keys.find(({ name }) => name === 'fieldElements')).toMatchObject({
 			name: 'fieldElements',
-			type: 'string',
 			collection: 'array',
 			metadata: { format: 'f', pattern: 'x', enum: ['a'] },
-		})
-
-		expect(keys.find(({ name }) => name === 'field')).toMatchObject({
-			name: 'field',
-			type: 'string',
 		})
 	})
 
