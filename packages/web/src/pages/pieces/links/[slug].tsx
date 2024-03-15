@@ -93,7 +93,16 @@ export default function LinkPage({ link }: LinkPageProps): JSX.Element {
 				<Box className={styles.linkCard}>
 					<Box>{makeSiblingLink(<CaretLeft size={45} />, link.siblings?.previous?.slug)}</Box>
 					<Box style={{ marginBottom: '-200px' }}>
-						<ArticleCoverFor piece={link} hasMedia={!!link.representativeImage} size={'LARGE'} />
+						<ArticleCoverFor
+							piece={{
+								title: link.title,
+								media: link.representativeImage,
+								slug: link.slug,
+								id: link.id,
+							}}
+							hasMedia={!!link.representativeImage}
+							size={'LARGE'}
+						/>
 					</Box>
 					<Box>{makeSiblingLink(<CaretRight size={45} />, link.siblings?.next?.slug)}</Box>
 				</Box>

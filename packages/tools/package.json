@@ -43,13 +43,14 @@
   "dependencies": {
     "@googleapis/books": "^0.3.1",
     "@luzzle/kysely": "0.0.29",
+    "@resvg/resvg-js": "2.4.1",
+    "feed": "4.2.2",
     "got": "12.5.1",
     "openai": "3.2.1",
-    "yargs": "17.6.0",
-    "feed": "4.2.2",
-    "@resvg/resvg-js": "2.4.1",
+    "react": "^18",
     "satori": "0.10.0",
-    "sharp": "0.33.1"
+    "sharp": "0.33.1",
+    "yargs": "17.6.0"
   },
   "type": "module"
 }

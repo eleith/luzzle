@@ -5,6 +5,7 @@ type Piece = {
 	id: string
 	slug: string
 	title: string
+	media?: string | null
 }
 
 const ArticleCoverSize = {
@@ -36,9 +37,9 @@ function getDimensions(size: (typeof ArticleCoverSize)[keyof typeof ArticleCover
 	}
 }
 
-function getCoverUrl(slug: string, size = 125, type: 'webp' | 'avif' | 'jpg' = 'jpg'): string {
+function getCoverUrl(piece: Piece, size = 125, type: 'webp' | 'avif' | 'jpg' = 'jpg'): string {
 	const height = size <= 125 ? 125 : size <= 250 ? 250 : size <= 500 ? 500 : 1000
-	return `${config.public.HOST_STATIC}/images/variants/links/representative_image/${slug}.h${height}.${type}`
+	return `${config.public.HOST_STATIC}/images/variants/links/${piece.media}.h${height}.${type}`
 }
 
 function ArticleCoverFor({
@@ -49,8 +50,8 @@ function ArticleCoverFor({
 }: ArticleCoverForProps): JSX.Element {
 	const dimensions = getDimensions(size)
 	const coverUrl = {
-		avif: getCoverUrl(piece.slug, dimensions.imgHeight, 'avif'),
-		jpg: getCoverUrl(piece.slug, dimensions.imgHeight, 'jpg'),
+		avif: getCoverUrl(piece, dimensions.imgHeight, 'avif'),
+		jpg: getCoverUrl(piece, dimensions.imgHeight, 'jpg'),
 	}
 
 	const articleCoverProps: ArticleCoverProps = {
