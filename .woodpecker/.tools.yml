@@ -1,0 +1,60 @@
+workspace:
+  base: /workspace
+  path: src
+steps:
+  build:
+    image: node:18
+    commands:
+      - npm ci -w @luzzle/kysely
+      - npm run build -w @luzzle/kysely
+      - npm ci -w @luzzle/tools
+      - npm run build -w @luzzle/tools
+    when:
+      event: [push]
+      branch: [main]
+      path:
+        include: [".woodpecker/.tools.yml", "packages/tools/**"]
+  test:
+    image: node:18
+    commands:
+      - npm run lint -w @luzzle/tools
+    when:
+      event: [push]
+      branch: [main]
+      path:
+        include: [".woodpecker/.tools.yml", "packages/tools/**"]
+  publish:
+    image: node:18
+    commands:
+      - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
+      - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
+      - cd packages/tools
+      - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
+      - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
+      - cd ../..
+      - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/tools; fi
+    secrets: [npm_owner, npm_token]
+    when:
+      event: [push]
+      branch: [main]
+      path:
+        include: [".woodpecker/.tools.yml", "packages/tools/**"]
+  notify:
+    image: deblan/woodpecker-email:1.0.1-wp
+    settings:
+      from:
+        from_secret: smtp_notification_from
+      host:
+        from_secret: smtp_notification_host
+      password:
+        from_secret: smtp_notification_password
+      username:
+        from_secret: smtp_notification_username
+      recipients:
+        from_secret: smtp_notification_recipient
+    when:
+      event: [push]
+      status: [failure, success]
+      branch: [main]
+      path:
+        include: [".woodpecker/.tools.yml", "packages/tools/**"]

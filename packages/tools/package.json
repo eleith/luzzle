@@ -1,0 +1,55 @@
+{
+  "name": "@luzzle/tools",
+  "version": "0.0.1",
+  "author": "eleith",
+  "scripts": {
+    "lint": "eslint src",
+    "compile": "tsc --noEmit",
+    "build": "tsc",
+    "postbuild": "chmod +x dist/**/index.js && cp src/generate-img-og/NotoSans-Regular.ttf dist/generate-img-og/NotoSans-Regular.ttf"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+		"luzzle-fetch-book": "dist/fetch-book/index.js",
+		"luzzle-fetch-link": "dist/fetch-link/index.js",
+		"luzzle-generate-img-og": "dist/generate-img-og/index.js",
+		"luzzle-generate-img-variants": "dist/generate-img-variants/index.js",
+		"luzzle-generate-rss": "dist/generate-rss/index.js"
+	},
+  "files": [
+    "dist/*",
+    "package.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://git.eleith.com/eleith/eleith.git"
+  },
+  "homepage": "https://git.eleith.com/eleith/eleith.git",
+  "description": "misc scripts for working with luzzle related files and projects",
+  "devDependencies": {
+    "@types/node": "20.11.25",
+		"@types/yargs": "17.0.13",
+    "@types/react": "^18",
+    "@typescript-eslint/eslint-plugin": "5.39.0",
+    "@typescript-eslint/parser": "5.39.0",
+    "eslint": "8.25.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.7.1",
+    "typescript": "4.8.4"
+  },
+  "dependencies": {
+    "@googleapis/books": "^0.3.1",
+    "@luzzle/kysely": "0.0.29",
+    "got": "12.5.1",
+    "openai": "3.2.1",
+    "yargs": "17.6.0",
+    "feed": "4.2.2",
+    "@resvg/resvg-js": "2.4.1",
+    "satori": "0.10.0",
+    "sharp": "0.33.1"
+  },
+  "type": "module"
+}
