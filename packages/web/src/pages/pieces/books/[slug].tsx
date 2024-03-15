@@ -94,7 +94,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 					<Box>{makeSiblingLink(<CaretLeft size={45} />, book.siblings?.previous?.slug)}</Box>
 					<Box>
 						<BookCoverFor
-							piece={book}
+							piece={{ title: book.title, slug: book.slug, media: book.cover, id: book.id }}
 							hasCover={!!book.cover}
 							rotateInteract={{ x: 0, y: -45 }}
 							scale={1.35}

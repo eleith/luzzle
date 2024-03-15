@@ -14,6 +14,7 @@ type Piece = {
 	slug: string
 	title: string
 	id: string
+	media?: string | null
 }
 
 type BookCoverForProps = {
@@ -69,9 +70,9 @@ function getSize(pages?: number | null, scale = 1): (typeof sizes)[keyof typeof 
 	}
 }
 
-function getCoverUrl(slug: string, size = 125, type: 'webp' | 'avif' | 'jpg' = 'jpg'): string {
+function getCoverUrl(piece: Piece, size = 125, type: 'webp' | 'avif' | 'jpg' = 'jpg'): string {
 	const width = size <= 125 ? 125 : size <= 250 ? 250 : size <= 500 ? 500 : 1000
-	return `${config.public.HOST_STATIC}/images/variants/books/covers/${slug}.w${width}.${type}`
+	return `${config.public.HOST_STATIC}/images/variants/books/${piece.media}.w${width}.${type}`
 }
 
 function BookCoverFor({
@@ -83,8 +84,8 @@ function BookCoverFor({
 }: BookCoverForProps): JSX.Element {
 	const size = getSize(pages, scale)
 	const coverUrl = {
-		jpg: getCoverUrl(piece.slug, size.width, 'jpg'),
-		avif: getCoverUrl(piece.slug, size.width, 'avif'),
+		jpg: getCoverUrl(piece, size.width, 'jpg'),
+		avif: getCoverUrl(piece, size.width, 'avif'),
 	}
 	const color = getColor(piece.slug)
 	const bookCoverProps = {

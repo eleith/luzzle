@@ -5,8 +5,8 @@ steps:
   build:
     image: node:18.19.0
     commands:
-      - npm ci -w @luzzle/web -w @luzzle/ui -w @luzzle/kysely
-      - npm run build -w @luzzle/kysely
+      - npm ci -w @luzzle/web -w @luzzle/ui -w @luzzle/kysely -w @luzzle/tools
+      - npm run build -w @luzzle/kysely -w @luzzle/tools
       - npm run build:graphql -w @luzzle/web
       - npm run compile -w @luzzle/web
     when:
@@ -62,9 +62,16 @@ steps:
     commands:
       - printf '%s\n' "$NEXTJS_ENV_LOCAL" > ./packages/web/$ENV_LOCAL_FILE
       - cd packages/web
-      - npm run build:variant:images
-      - npm run build:og:images
-      - npm run build:rss
+      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/books --output public/images/variants/books --type books --variant width
+      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/links --output public/images/variants/links --type links --variant height
+      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/texts --output public/images/variants/texts --type texts --variant height
+      - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/books --output public/images/og/books --type books
+      - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/links --output public/images/og/links --type links
+      - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/texts --output public/images/og/texts --type texts
+      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces' --output public/rss
+      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (books)' --output public/rss --type books
+      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (links)' --output public/rss --type links
+      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (texts)' --output public/rss --type texts
     secrets: [nextjs_env_local]
     when:
       branch: [main]
