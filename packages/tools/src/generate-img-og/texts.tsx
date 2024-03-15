@@ -21,7 +21,7 @@ function repeatBlock(times: number): JSX.Element[] {
 }
 
 function textToHtml(text: PieceSelectable<'texts'>, folder: string) {
-	const url = imageAsBase64(`${folder}/${text.slug}.h125.jpg`)
+	const url = imageAsBase64(`${folder}/${text.representative_image}.h125.jpg`)
 
 	const size = {
 		width: 200,

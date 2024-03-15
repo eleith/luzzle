@@ -55,7 +55,7 @@ function getSize(pages?: number | null, scale = 1): (typeof sizes)[keyof typeof 
 function bookToHtml(book: PieceSelectable<'books'>, assets: string) {
 	const color = getColor(book.slug)
 	const size = getSize(book.pages, 1.5)
-	const url = imageAsBase64(`${assets}/${book.slug}.w500.jpg`)
+	const url = imageAsBase64(`${assets}/${book.cover}.w500.jpg`)
 
 	const cover = url ? (
 		<img
