@@ -21,7 +21,7 @@ function repeatBlock(times: number): JSX.Element[] {
 }
 
 function linkToHtml(link: PieceSelectable<'links'>, folder: string) {
-	const url = imageAsBase64(`${folder}/${link.slug}.h125.jpg`)
+	const url = imageAsBase64(`${folder}/${link.representative_image}.h125.jpg`)
 
 	const size = {
 		width: 200,
