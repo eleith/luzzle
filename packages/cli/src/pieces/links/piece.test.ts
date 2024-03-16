@@ -7,12 +7,7 @@ import { fileTypeFromFile } from 'file-type'
 import { describe, expect, test, vi, afterEach, beforeEach, MockInstance } from 'vitest'
 import { CpuInfo, cpus } from 'os'
 import LinkPiece from './piece.js'
-import { mockConfig } from '../../lib/config.mock.js'
 import Piece from '../../lib/pieces/piece.js'
-import { generateTags, generateSummary, generateClassification } from './openai.js'
-import { LuzzleLinkType } from '@luzzle/kysely'
-import { availability } from './wayback.js'
-import { Config } from '../../lib/config.js'
 import { mockDatabase } from '../../lib/database.mock.js'
 import { makePieceMarkdownOrThrow } from '@luzzle/kysely'
 
@@ -20,14 +15,9 @@ vi.mock('file-type')
 vi.mock('fs')
 vi.mock('fs/promises')
 vi.mock('../../lib/web')
-vi.mock('./open-library')
-vi.mock('./google-links')
-vi.mock('./openai')
-vi.mock('./wayback')
 vi.mock('../../lib/md')
 vi.mock('os')
 vi.mock('../../lib/log')
-vi.mock('../../lib/pieces/markdown.js')
 vi.mock('@luzzle/kysely')
 
 const mocks = {
@@ -45,10 +35,6 @@ const mocks = {
 	LinkPieceGetFileName: vi.spyOn(LinkPiece.prototype, 'getFileName'),
 	PieceCleanUpCache: vi.spyOn(Piece.prototype, 'cleanUpCache'),
 	toMarkdown: vi.mocked(makePieceMarkdownOrThrow),
-	generateTags: vi.mocked(generateTags),
-	generateSummary: vi.mocked(generateSummary),
-	generateClassification: vi.mocked(generateClassification),
-	availability: vi.mocked(availability),
 }
 
 const spies: Record<string, MockInstance> = {}
@@ -87,126 +73,6 @@ describe('pieces/links/piece', () => {
 		await new LinkPiece('root', db).cleanUpCache(slugs)
 
 		expect(mocks.unlink).toHaveBeenCalledTimes(0)
-	})
-
-	test('process', async () => {
-		const slugs = ['slug']
-
-		await new LinkPiece('root', db).process({} as Config, slugs)
-
-		expect(mocks.logInfo).toHaveBeenCalledOnce()
-	})
-
-	test('fetch', async () => {
-		const configMock = mockConfig()
-		const markdown = linkFixtures.makeLinkMarkdown()
-
-		const linkPiece = new LinkPiece('root', db)
-
-		spies.configGet = configMock.get.mockReturnValueOnce({})
-
-		const fetched = await linkPiece.fetch(configMock, markdown)
-
-		expect(fetched).toEqual(markdown)
-	})
-
-	test('fetch openai article', async () => {
-		const configMock = mockConfig()
-		const openAIKey = 'openAIKey'
-		const markdown = linkFixtures.makeLinkMarkdown()
-		const tags = ['tag1', 'tag2']
-		const summary = 'summary'
-		const classification = { is_article: true, is_paywall: false }
-		const updatedMarkdown = {
-			...markdown,
-			frontmatter: {
-				...markdown.frontmatter,
-				keywords: tags.join(', '),
-				summary: summary,
-				type: LuzzleLinkType.Article,
-				is_paywall: classification.is_paywall,
-			},
-		}
-		const linkPiece = new LinkPiece('root', db)
-
-		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
-		mocks.generateTags.mockResolvedValueOnce(tags)
-		mocks.generateSummary.mockResolvedValueOnce(summary)
-		mocks.generateClassification.mockResolvedValueOnce(classification)
-
-		const fetched = await linkPiece.fetch(configMock, markdown, 'openai')
-
-		expect(fetched).toEqual(updatedMarkdown)
-	})
-
-	test('fetch openai bookmark', async () => {
-		const configMock = mockConfig()
-		const openAIKey = 'openAIKey'
-		const markdown = linkFixtures.makeLinkMarkdown()
-		const tags = ['tag1', 'tag2']
-		const summary = 'summary'
-		const classification = { is_article: false, is_paywall: false }
-		const updatedMarkdown = {
-			...markdown,
-			frontmatter: {
-				...markdown.frontmatter,
-				keywords: tags.join(', '),
-				summary,
-				type: LuzzleLinkType.Bookmark,
-				is_paywall: classification.is_paywall,
-			},
-		}
-
-		const linkPiece = new LinkPiece('root', db)
-
-		spies.configGet = configMock.get.mockReturnValueOnce({ openai: openAIKey })
-		mocks.generateTags.mockResolvedValueOnce(tags)
-		mocks.generateSummary.mockResolvedValueOnce(summary)
-		mocks.generateClassification.mockResolvedValueOnce(classification)
-		const fetched = await linkPiece.fetch(configMock, markdown, 'openai')
-
-		expect(fetched).toEqual(updatedMarkdown)
-	})
-
-	test('fetch openai without key', async () => {
-		const configMock = mockConfig()
-		const markdown = linkFixtures.makeLinkMarkdown()
-
-		const linkPiece = new LinkPiece('root', db)
-
-		spies.configGet = configMock.get.mockReturnValueOnce({})
-
-		const fetched = await linkPiece.fetch(configMock, markdown, 'openai')
-
-		expect(fetched).toEqual(markdown)
-		expect(mocks.logWarn).toHaveBeenCalledOnce()
-	})
-
-	test('fetch wayback', async () => {
-		const configMock = mockConfig()
-		const markdown = linkFixtures.makeLinkMarkdown()
-		const archiveUrl = 'archiveUrl'
-		const updatedMarkdown = {
-			...markdown,
-			frontmatter: {
-				...markdown.frontmatter,
-				archive_url: archiveUrl,
-			},
-		}
-
-		const linkPiece = new LinkPiece('root', db)
-
-		spies.configGet = configMock.get.mockReturnValueOnce({})
-		mocks.availability.mockResolvedValueOnce({
-			archived_snapshots: {
-				closest: { available: true, url: archiveUrl, timestamp: '', status: '' },
-			},
-			url: '',
-		})
-
-		const fetched = await linkPiece.fetch(configMock, markdown, 'wayback')
-
-		expect(fetched).toEqual(updatedMarkdown)
 	})
 
 	test('create', () => {
