@@ -28,14 +28,8 @@ async function parseArgs(_args: string[]) {
 			commands.field.builder?.(yargs)
 		)
 		.command(commands.editConfig.command, commands.editConfig.describe)
-		.command(commands.process.command, commands.process.describe, (yargs) =>
-			commands.process.builder?.(yargs)
-		)
 		.command(commands.create.command, commands.create.describe, (yargs) =>
 			commands.create.builder?.(yargs)
-		)
-		.command(commands.fetch.command, commands.fetch.describe, (yargs) =>
-			commands.fetch.builder?.(yargs)
 		)
 		.command(commands.init.command, commands.init.describe, (yargs) =>
 			commands.init.builder?.(yargs)

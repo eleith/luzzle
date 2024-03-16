@@ -3,7 +3,6 @@ import { existsSync, mkdirSync } from 'fs'
 import { copyFile, mkdir, readdir, stat, unlink, writeFile } from 'fs/promises'
 import log from '../log.js'
 import { updateCache, addCache, removeCache, getCache, getCacheAll } from './cache.js'
-import { Config } from '../config.js'
 import { difference } from 'lodash-es'
 import { addTagsTo, keywordsToTags, removeAllTagsFrom, syncTagsFor } from '../tags/index.js'
 import {
@@ -66,12 +65,6 @@ abstract class Piece<P extends Pieces, D extends PieceSelectable, F extends Piec
 		this._schema = schema
 	}
 
-	abstract process(config: Config, slugs: string[], dryRun: boolean): Promise<void>
-	abstract fetch(
-		config: Config,
-		markdown: PieceMarkdown<F>,
-		service?: string
-	): Promise<PieceMarkdown<F>>
 	abstract create(slug: string, title: string): PieceMarkdown<F>
 
 	get type() {
