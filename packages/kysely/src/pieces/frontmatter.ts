@@ -23,6 +23,8 @@ type PieceFrontmatter<
 	F extends PieceFrontmatterFields | void = void
 > = NullToPartials<IncludeIfExists<OmitIfExists<Omit<T, PieceDatabaseOnlyFields>, F>, F>>
 
+type FrontMatterValue = string | number | boolean | string[] | number[] | boolean[]
+
 type PieceFrontmatterLuzzleMetadata = {
 	luzzleFormat: 'date-string' | 'attachment' | 'boolean-int'
 	luzzlePattern?: string
@@ -159,6 +161,39 @@ function formatPieceFrontmatterValue(
 	return value
 }
 
+function initializePieceFrontMatter<M>(schema: JTDSchemaType<M>): M {
+	const frontmatter: { [key: string]: FrontMatterValue | FrontMatterValue[] } = {}
+	const requiredFields = getPieceFrontmatterKeysFromSchema(schema).filter((f) => f.required)
+
+	for (const field of requiredFields) {
+		const key = field.name
+		const isArray = field.collection === 'array'
+		const type = field.type
+		let value: FrontMatterValue = 0
+
+		switch (type) {
+			case 'string':
+				value = ''
+				break
+			case 'boolean':
+				value = false
+				break
+		}
+
+		if (field.metadata?.enum?.length) {
+			frontmatter[key] = field.metadata.enum[0]
+		} else if (field.metadata?.format === 'date-string') {
+			frontmatter[key] = isArray
+				? [new Date().toLocaleDateString()]
+				: new Date().toLocaleDateString()
+		} else {
+			frontmatter[key] = isArray ? [value] : value
+		}
+	}
+
+	return frontmatter as M
+}
+
 export {
 	type PieceFrontmatterJtdSchema,
 	type PieceFrontmatter,
@@ -169,4 +204,5 @@ export {
 	formatPieceFrontmatterValue,
 	unformatPieceFrontmatterValue,
 	extractFrontmatterSchemaField,
+	initializePieceFrontMatter,
 }
