@@ -120,4 +120,30 @@ describe('src/pieces/frontmatter.ts', () => {
 		expect(zero).toBe(false)
 		expect(any).toBe('any')
 	})
+
+	test('initializePieceFrontMatter', () => {
+		const schema = makeSchema(
+			{
+				fieldString: { type: 'string' },
+				fieldBoolean: { type: 'boolean' },
+				fieldNumber: { type: 'uint32' },
+				fieldArrayString: { elements: { type: 'string' } },
+				fieldEnum: { enum: ['a', 'b'] },
+				fieldDate: { type: 'string', metadata: { luzzleFormat: 'date-string' } },
+				fieldDateArray: { elements: { type: 'string', metadata: { luzzleFormat: 'date-string' } } },
+			},
+			{ fieldOptional: { type: 'string' } }
+		)
+		const front = frontmatter.initializePieceFrontMatter(schema)
+
+		expect(front).toMatchObject({
+			fieldString: '',
+			fieldBoolean: false,
+			fieldNumber: 0,
+			fieldArrayString: [''],
+			fieldEnum: 'a',
+			fieldDate: expect.any(String),
+			fieldDateArray: [expect.any(String)],
+		})
+	})
 })
