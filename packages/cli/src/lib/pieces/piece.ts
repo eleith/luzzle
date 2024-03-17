@@ -23,6 +23,7 @@ import {
 	makePieceMarkdownString,
 	formatPieceFrontmatterValue,
 	PieceFrontmatterSchemaField,
+	initializePieceFrontMatter,
 } from '@luzzle/kysely'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
@@ -40,7 +41,7 @@ export interface InterfacePiece<
 	new (pieceRoot: string, db: LuzzleDatabase): Piece<P, D, F>
 }
 
-abstract class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmatter> {
+class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmatter> {
 	private _validator?: Ajv.ValidateFunction<F>
 	private _schema: PieceFrontmatterJtdSchema<F>
 	private _pieceRoot: string
@@ -65,7 +66,10 @@ abstract class Piece<P extends Pieces, D extends PieceSelectable, F extends Piec
 		this._schema = schema
 	}
 
-	abstract create(slug: string, title: string): PieceMarkdown<F>
+	create(slug: string, title: string): PieceMarkdown<F> {
+		const frontmatter = initializePieceFrontMatter(this._schema) as F
+		return makePieceMarkdownOrThrow(slug, '', { ...frontmatter, title }, this.validator)
+	}
 
 	get type() {
 		return this._pieceTable

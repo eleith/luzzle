@@ -31,7 +31,7 @@ const command: Command<CreateArgv> = {
 
 	run: async function (ctx, args) {
 		const { title, piece } = args
-		const pieces = await ctx.pieces.getPiece(piece)
+		const pieces = ctx.pieces.getPiece(piece)
 		const slug = slugify(title)
 
 		if (pieces.exists(slug)) {

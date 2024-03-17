@@ -20,7 +20,7 @@ const command: Command<EditArgv> = {
 	run: async function (ctx, args) {
 		const dir = ctx.directory
 		const { slug, piece } = parsePieceArgv(args)
-		const pieces = await ctx.pieces.getPiece(piece)
+		const pieces = ctx.pieces.getPiece(piece)
 
 		if (!process.env.EDITOR) {
 			log.error('could not find an editor')

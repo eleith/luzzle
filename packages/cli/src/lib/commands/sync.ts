@@ -33,7 +33,7 @@ const command: Command<SyncArgv> = {
 		const pieceTypes = optionalPiece ? [optionalPiece.piece] : ctx.pieces.getPieceTypes()
 
 		await eachLimit(pieceTypes, 1, async (pieceType) => {
-			const pieces = await ctx.pieces.getPiece(pieceType)
+			const pieces = ctx.pieces.getPiece(pieceType)
 			const slugs = []
 
 			if (optionalPiece?.slug) {

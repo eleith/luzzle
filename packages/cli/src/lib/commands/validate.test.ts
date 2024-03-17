@@ -41,7 +41,7 @@ describe('lib/commands/validate.ts', () => {
 		const pieceMarkdown = makeMarkdownSample()
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -62,7 +62,7 @@ describe('lib/commands/validate.ts', () => {
 		const pieceError = new PieceMarkdownError('', [])
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 		pieceError.validationErrors = [{ instancePath: '', message: '' }] as ValidateFunction['errors']
@@ -83,7 +83,7 @@ describe('lib/commands/validate.ts', () => {
 		const PieceTest = makePiece()
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
