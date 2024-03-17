@@ -13,7 +13,7 @@ const command: Command = {
 		const pieceTypes = ctx.pieces.getPieceTypes()
 
 		await eachLimit(pieceTypes, 1, async (pieceType) => {
-			const pieces = await ctx.pieces.getPiece(pieceType)
+			const pieces = ctx.pieces.getPiece(pieceType)
 			await pieces.dump(ctx.db, dryRun)
 		})
 	},

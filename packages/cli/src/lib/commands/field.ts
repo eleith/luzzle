@@ -37,7 +37,7 @@ const command: Command<AttachArgv> = {
 	run: async function (ctx, args) {
 		const { slug, piece } = parsePieceArgv(args)
 		const { fieldname, value, remove } = args
-		const pieces = await ctx.pieces.getPiece(piece)
+		const pieces = ctx.pieces.getPiece(piece)
 		const markdown = await pieces.get(slug)
 
 		if (!markdown) {

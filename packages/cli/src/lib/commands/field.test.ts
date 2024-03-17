@@ -41,7 +41,7 @@ describe('lib/commands/field.ts', () => {
 		const schema: PieceFrontmatterSchemaField = { name: 'title', type: 'string' }
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -64,7 +64,7 @@ describe('lib/commands/field.ts', () => {
 		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -88,7 +88,7 @@ describe('lib/commands/field.ts', () => {
 		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -114,7 +114,7 @@ describe('lib/commands/field.ts', () => {
 		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -138,7 +138,7 @@ describe('lib/commands/field.ts', () => {
 		const fieldname = 'title'
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -158,7 +158,7 @@ describe('lib/commands/field.ts', () => {
 		const schema: PieceFrontmatterSchemaField = { name: 'title2', type: 'string' }
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -180,7 +180,7 @@ describe('lib/commands/field.ts', () => {
 		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 

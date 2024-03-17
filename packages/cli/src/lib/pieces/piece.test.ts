@@ -25,6 +25,7 @@ import {
 	makePieceInsertable,
 	makePieceUpdatable,
 	extractFullMarkdown,
+	initializePieceFrontMatter,
 	PieceFrontmatterSchemaField,
 	Pieces,
 } from '@luzzle/kysely'
@@ -75,6 +76,7 @@ const mocks = {
 	downloadFileOrUrlTo: vi.mocked(downloadFileOrUrlTo),
 	makeInsertable: vi.mocked(makePieceInsertable),
 	makeUpdatable: vi.mocked(makePieceUpdatable),
+	initializePieceFrontMatter: vi.mocked(initializePieceFrontMatter),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -89,6 +91,21 @@ describe('lib/pieces/piece', () => {
 			spies[key].mockRestore()
 			delete spies[key]
 		})
+	})
+
+	test('create', () => {
+		const PieceType = makePiece()
+		const markdown = makeMarkdownSample()
+		const title = markdown.frontmatter.title
+		const slug = markdown.slug
+
+		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
+		mocks.makePieceMarkdownOrThrow.mockReturnValueOnce(markdown)
+
+		const piece = new PieceType()
+		const pieceMarkdown = piece.create(slug, title)
+
+		expect(pieceMarkdown).toEqual(markdown)
 	})
 
 	test('initialize', () => {

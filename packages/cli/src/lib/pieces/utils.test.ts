@@ -14,6 +14,7 @@ import {
 } from './utils.js'
 import { createHash } from 'crypto'
 import { PassThrough } from 'stream'
+import path from 'path'
 
 vi.mock('fs')
 vi.mock('tempy')
@@ -126,6 +127,21 @@ describe('lib/pieces/utils.ts', () => {
 		mocks.existsSync.mockReturnValueOnce(true)
 
 		const result = parsePieceArgv({ path })
+
+		expect(result).toEqual({
+			piece,
+			slug,
+		})
+	})
+
+	test('parsePieceArgv with path without a dir', () => {
+		const piece = 'piece'
+		const slug = 'slug'
+
+		spies.resolve = vi.spyOn(path, 'resolve').mockReturnValueOnce('/piece/slug')
+		mocks.existsSync.mockReturnValueOnce(true)
+
+		const result = parsePieceArgv({ path: 'slug.md' })
 
 		expect(result).toEqual({
 			piece,

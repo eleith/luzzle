@@ -1,6 +1,6 @@
 import { ChildProcess, spawn } from 'child_process'
 import log from '../log.js'
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { EventEmitter } from 'stream'
 import command, { EditArgv } from './edit.js'
 import { Arguments } from 'yargs'
@@ -12,7 +12,6 @@ import { makePiece } from '../pieces/piece.fixtures.js'
 vi.mock('child_process')
 vi.mock('../pieces/index')
 vi.mock('../log.js')
-vi.mock('ajv/dist/jtd')
 
 const mocks = {
 	logError: vi.spyOn(log, 'error'),
@@ -23,9 +22,9 @@ const mocks = {
 	getPiece: vi.fn(),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
-describe('lib/commands/edit', () => {
+describe('lib/commands/edit.js', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -45,7 +44,7 @@ describe('lib/commands/edit', () => {
 		const ctx = makeContext({
 			pieces: {
 				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -74,7 +73,7 @@ describe('lib/commands/edit', () => {
 			flags: { dryRun: true },
 			pieces: {
 				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -99,7 +98,7 @@ describe('lib/commands/edit', () => {
 			flags: { dryRun: true },
 			pieces: {
 				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 

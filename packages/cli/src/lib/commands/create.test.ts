@@ -2,10 +2,9 @@ import log from '../log.js'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { CreateArgv } from './create.js'
 import { Arguments } from 'yargs'
-import { makeBookMarkDown } from '../../pieces/books/book.fixtures.js'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePiece } from '../pieces/piece.fixtures.js'
+import { makeMarkdownSample, makePiece } from '../pieces/piece.fixtures.js'
 
 const mocks = {
 	logError: vi.spyOn(log, 'error'),
@@ -28,7 +27,7 @@ describe('lib/commands/create', () => {
 	})
 
 	test('run', async () => {
-		const book = makeBookMarkDown()
+		const book = makeMarkdownSample()
 		const title = 'slug2'
 		const piece = 'books'
 		const PieceTest = makePiece()
@@ -36,7 +35,7 @@ describe('lib/commands/create', () => {
 		const ctx = makeContext({
 			pieces: {
 				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -51,7 +50,7 @@ describe('lib/commands/create', () => {
 	})
 
 	test('run errors on existing piece', async () => {
-		const book = makeBookMarkDown()
+		const book = makeMarkdownSample()
 		const title = 'slug2'
 		const piece = 'books'
 		const PieceTest = makePiece()
@@ -59,7 +58,7 @@ describe('lib/commands/create', () => {
 		const ctx = makeContext({
 			pieces: {
 				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
@@ -76,7 +75,7 @@ describe('lib/commands/create', () => {
 	})
 
 	test('run with dry-run', async () => {
-		const book = makeBookMarkDown()
+		const book = makeMarkdownSample()
 		const title = 'slug2'
 		const piece = 'books'
 		const PieceTest = makePiece()
@@ -85,7 +84,7 @@ describe('lib/commands/create', () => {
 			flags: { dryRun: true },
 			pieces: {
 				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 

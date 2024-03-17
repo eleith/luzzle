@@ -36,7 +36,7 @@ describe('lib/commands/sync', () => {
 		const ctx = makeContext({
 			pieces: {
 				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 		const slugs = ['a', 'b', 'c']
@@ -64,7 +64,7 @@ describe('lib/commands/sync', () => {
 		const ctx = makeContext({
 			pieces: {
 				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 		const slugs = ['a', 'b']
@@ -77,7 +77,7 @@ describe('lib/commands/sync', () => {
 		spies.pieceFilterSlugsBy = vi
 			.spyOn(PieceTest.prototype, 'getSlugsOutdated')
 			.mockResolvedValue(slugsUpdated)
-		mocks.getPiece.mockResolvedValue(new PieceTest())
+		mocks.getPiece.mockReturnValue(new PieceTest())
 
 		await command.run(ctx, { force: true } as Arguments<SyncArgv>)
 
@@ -93,7 +93,7 @@ describe('lib/commands/sync', () => {
 		const piece = 'piece' as Pieces
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 		const slug = 'slug'
@@ -101,7 +101,7 @@ describe('lib/commands/sync', () => {
 		mocks.parseOptionalPieceArgv.mockReturnValue({ piece, slug })
 		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
 		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncCleanUp').mockResolvedValue()
-		mocks.getPiece.mockResolvedValue(new PieceTest())
+		mocks.getPiece.mockReturnValue(new PieceTest())
 
 		await command.run(ctx, {} as Arguments<SyncArgv>)
 

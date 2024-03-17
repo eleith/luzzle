@@ -84,18 +84,6 @@ class PieceOverridable extends Piece<Pieces, PieceSelectable, PieceFrontmatterSa
 		}
 		super(options.pieceRoot, options.table, options.schema, options.db)
 	}
-
-	async process(): Promise<void> {
-		return
-	}
-
-	create(): PieceMarkdownSample {
-		return {} as PieceMarkdownSample
-	}
-
-	async fetch(): Promise<PieceMarkdownSample> {
-		return {} as PieceMarkdownSample
-	}
 }
 
 export function makePiece() {

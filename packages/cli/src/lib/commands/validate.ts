@@ -24,7 +24,7 @@ const command: Command<ValidateArgv> = {
 
 	run: async function (ctx, args) {
 		const { slug, piece } = parsePieceArgv(args)
-		const pieces = await ctx.pieces.getPiece(piece)
+		const pieces = ctx.pieces.getPiece(piece)
 
 		try {
 			await pieces.get(slug)
