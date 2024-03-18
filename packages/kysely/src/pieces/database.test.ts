@@ -97,14 +97,18 @@ describe('src/pieces/database.ts', () => {
 		data.title = frontmatter.title
 		data.slug = slug
 		data.note = note
+		data.keywords = 'keys'
 
 		mocks.getPieceFrontmatterKeysFromSchema.mockReturnValueOnce([
 			{ name: 'title', type: 'string' },
 			{ name: 'subtitle', type: 'string' },
 			{ name: 'stuff', type: 'string', collection: 'array' },
 			{ name: 'date', type: 'string', metadata: { format: 'date-string' } },
+			{ name: 'keywords', type: 'string' },
 		])
-		mocks.unformatPieceFrontmatterValue.mockImplementation((value) => value)
+		mocks.unformatPieceFrontmatterValue.mockImplementation((value) =>
+			value !== undefined ? value : null
+		)
 
 		const update = database.makePieceUpdatable(markdown, schema, data)
 
@@ -113,6 +117,7 @@ describe('src/pieces/database.ts', () => {
 			stuff: JSON.stringify(frontmatter.stuff),
 			date: frontmatter.date,
 			subtitle: frontmatter.subtitle,
+			keywords: null,
 		})
 	})
 

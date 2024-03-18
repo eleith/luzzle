@@ -139,13 +139,17 @@ function unformatPieceFrontmatterValue(
 	value: unknown,
 	format?: PieceFrontmatterLuzzleMetadata['luzzleFormat']
 ) {
+	if (value === undefined) {
+		return null
+	}
+
 	if (format === 'date-string') {
 		return new Date(value as string).getTime()
 	} else if (format === 'boolean-int') {
 		return value ? 1 : 0
 	}
 
-	return value
+	return value as unknown
 }
 
 function formatPieceFrontmatterValue(
