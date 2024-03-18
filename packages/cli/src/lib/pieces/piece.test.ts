@@ -81,7 +81,7 @@ const mocks = {
 
 const spies: { [key: string]: MockInstance } = {}
 
-describe('lib/pieces/piece', () => {
+describe('lib/pieces/piece.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -758,7 +758,7 @@ describe('lib/pieces/piece', () => {
 		expect(mocks.logError).toHaveBeenCalled()
 	})
 
-	test('editField', async () => {
+	test('setField', async () => {
 		const markdown = makeMarkdownSample()
 		const field = 'title'
 		const value = 'new title'
@@ -774,12 +774,12 @@ describe('lib/pieces/piece', () => {
 			frontmatter,
 		}))
 
-		const updated = await pieceTest.editField(markdown, field, value)
+		const updated = await pieceTest.setField(markdown, field, value)
 
 		expect(updated.frontmatter[field]).toEqual(value)
 	})
 
-	test('editField throws on bad field', async () => {
+	test('setField throws on bad field', async () => {
 		const markdown = makeMarkdownSample()
 		const field = 'title'
 		const value = 'new title'
@@ -795,12 +795,12 @@ describe('lib/pieces/piece', () => {
 			frontmatter,
 		}))
 
-		const updating = pieceTest.editField(markdown, field, value)
+		const updating = pieceTest.setField(markdown, field, value)
 
 		expect(updating).rejects.toThrowError()
 	})
 
-	test('editField on arrays', async () => {
+	test('setField on arrays', async () => {
 		const slug = 'slug'
 		const note = 'note'
 		const tags = ['tag1', 'tag2']
@@ -819,12 +819,59 @@ describe('lib/pieces/piece', () => {
 			frontmatter,
 		}))
 
-		const updated = await pieceTest.editField(markdown, field, value)
+		const updated = await pieceTest.setField(markdown, field, value)
 
 		expect(updated.frontmatter[field as keyof typeof updated.frontmatter]).toEqual([...tags, value])
 	})
 
-	test('editField on uninitialized arrays', async () => {
+	test('setField on booleans', async () => {
+		const slug = 'slug'
+		const note = 'note'
+		const tags = ['tag1', 'tag2']
+		const markdown = makeMarkdownSample(slug, note, { tags })
+		const field = 'tags'
+		const value = 'true'
+		const schema: PieceFrontmatterSchemaField = { name: field, type: 'boolean' }
+		const PieceTest = makePiece()
+
+		const pieceTest = new PieceTest()
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce([schema])
+		mocks.makePieceMarkdownOrThrow.mockImplementation((slug, note, frontmatter) => ({
+			slug,
+			note,
+			frontmatter,
+		}))
+
+		const updated = await pieceTest.setField(markdown, field, value)
+
+		expect(updated.frontmatter[field as keyof typeof updated.frontmatter]).toEqual(true)
+	})
+
+	test('setField on numbers', async () => {
+		const slug = 'slug'
+		const note = 'note'
+		const tags = ['tag1', 'tag2']
+		const markdown = makeMarkdownSample(slug, note, { tags })
+		const field = 'tags'
+		const value = '500'
+		const schema: PieceFrontmatterSchemaField = { name: field, type: 'uint32' }
+		const PieceTest = makePiece()
+
+		const pieceTest = new PieceTest()
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce([schema])
+		mocks.makePieceMarkdownOrThrow.mockImplementation((slug, note, frontmatter) => ({
+			slug,
+			note,
+			frontmatter,
+		}))
+
+		const updated = await pieceTest.setField(markdown, field, value)
+
+		expect(updated.frontmatter[field as keyof typeof updated.frontmatter]).toEqual(500)
+	})
+	test('setField on uninitialized arrays', async () => {
 		const slug = 'slug'
 		const note = 'note'
 		const tags = undefined
@@ -843,12 +890,12 @@ describe('lib/pieces/piece', () => {
 			frontmatter,
 		}))
 
-		const updated = await pieceTest.editField(markdown, field, value)
+		const updated = await pieceTest.setField(markdown, field, value)
 
 		expect(updated.frontmatter[field as keyof typeof updated.frontmatter]).toEqual([value])
 	})
 
-	test('editField on attachments', async () => {
+	test('setField on attachments', async () => {
 		const markdown = makeMarkdownSample()
 		const field = 'cover'
 		const value = 'new-cover.jpg'
@@ -875,14 +922,14 @@ describe('lib/pieces/piece', () => {
 		mocks.mkdir.mockResolvedValueOnce(undefined)
 		mocks.copy.mockResolvedValueOnce(undefined)
 
-		const updated = await pieceTest.editField(markdown, field, value)
+		const updated = await pieceTest.setField(markdown, field, value)
 
 		expect(updated.frontmatter[field as keyof typeof updated.frontmatter]).matches(
 			new RegExp(`${ASSETS_DIRECTORY}/${field}/${markdown.slug}-.*.jpg`)
 		)
 	})
 
-	test('editField on attachments fails on wrong type', async () => {
+	test('setField on attachments fails on wrong type', async () => {
 		const markdown = makeMarkdownSample()
 		const field = 'cover'
 		const value = 'new-cover.jpg'
@@ -909,7 +956,7 @@ describe('lib/pieces/piece', () => {
 		mocks.mkdir.mockResolvedValueOnce(undefined)
 		mocks.copy.mockResolvedValueOnce(undefined)
 
-		const updating = pieceTest.editField(markdown, field, value)
+		const updating = pieceTest.setField(markdown, field, value)
 
 		expect(updating).rejects.toThrowError()
 	})
@@ -933,6 +980,62 @@ describe('lib/pieces/piece', () => {
 
 		expect(updated.frontmatter).not.toMatchObject(markdown.frontmatter)
 		expect(updated.frontmatter[field]).toEqual(undefined)
+	})
+
+	test('removeField removes attachment assets', async () => {
+		const cover = 'a'
+		const markdown = makeMarkdownSample('slug', '', { cover })
+		const field = 'cover'
+		const schema: PieceFrontmatterSchemaField = {
+			name: field,
+			type: 'string',
+			metadata: { format: 'attachment' },
+		}
+		const PieceTest = makePiece()
+
+		const pieceTest = new PieceTest()
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce([schema])
+		mocks.unlink.mockResolvedValue(undefined)
+		mocks.makePieceMarkdownOrThrow.mockImplementation((slug, note, frontmatter) => ({
+			slug,
+			note,
+			frontmatter,
+		}))
+
+		const updated = await pieceTest.removeField(markdown, field)
+
+		expect(mocks.unlink).toHaveBeenCalledOnce()
+		expect(updated.frontmatter).not.toMatchObject(markdown.frontmatter)
+		expect(updated.frontmatter[field as keyof typeof markdown.frontmatter]).toEqual(undefined)
+	})
+
+	test('removeField removes attachment array assets', async () => {
+		const cover = ['a', 'b']
+		const markdown = makeMarkdownSample('slug', '', { cover })
+		const field = 'cover'
+		const schema: PieceFrontmatterSchemaField = {
+			name: field,
+			type: 'string',
+			metadata: { format: 'attachment' },
+		}
+		const PieceTest = makePiece()
+
+		const pieceTest = new PieceTest()
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce([schema])
+		mocks.unlink.mockResolvedValue(undefined)
+		mocks.makePieceMarkdownOrThrow.mockImplementation((slug, note, frontmatter) => ({
+			slug,
+			note,
+			frontmatter,
+		}))
+
+		const updated = await pieceTest.removeField(markdown, field)
+
+		expect(mocks.unlink).toHaveBeenCalledTimes(cover.length)
+		expect(updated.frontmatter).not.toMatchObject(markdown.frontmatter)
+		expect(updated.frontmatter[field as keyof typeof markdown.frontmatter]).toEqual(undefined)
 	})
 
 	test('removeField throws on bad field', async () => {

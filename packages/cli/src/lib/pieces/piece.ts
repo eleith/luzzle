@@ -178,7 +178,7 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 			const toRemove: string[] = []
 			const attachmentFolders = schemaKeys
 				.filter((x) => x.metadata?.format === 'attachment')
-				.map((field) => path.join(this._directories.root, field.name as string))
+				.map((field) => path.join(this._directories.root, ASSETS_DIRECTORY, field.name as string))
 
 			for (const folder of attachmentFolders) {
 				const files = await readdir(folder)
@@ -361,26 +361,33 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		return relPath
 	}
 
-	async editField<V>(
+	async setField<V>(
 		markdown: PieceMarkdown<F>,
 		field: string,
-		_value: V
+		value: unknown
 	): Promise<PieceMarkdown<F>> {
 		const pieceField = this.fields.find((f) => f.name === field)
-		let value = _value
+		let setValue: V
 
 		if (!pieceField) {
 			throw new Error(`${field} is not a field in ${this._pieceTable} ${markdown.slug}`)
 		}
 
 		if (pieceField.metadata?.format === 'attachment') {
-			value = (await this.makeAttachmentField(markdown.slug, pieceField, _value as string)) as V
+			const fieldValue = await this.makeAttachmentField(markdown.slug, pieceField, value as string)
+			setValue = fieldValue as V
+		} else if (pieceField.type === 'boolean') {
+			setValue = /1|true|yes/.test(value as string) as V
+		} else if (pieceField.type === 'string') {
+			setValue = value as V
+		} else {
+			setValue = parseInt(value as string) as V
 		}
 
 		const fieldName = pieceField.name as keyof F
 		const oldValue = markdown.frontmatter[fieldName] as V | V[] | undefined
 		const isArray = pieceField.collection === 'array'
-		const newValue = isArray ? ((oldValue || []) as V[]).concat(value) : value
+		const newValue = isArray ? ((oldValue || []) as V[]).concat(setValue) : setValue
 
 		return makePieceMarkdownOrThrow(
 			markdown.slug,
@@ -408,6 +415,17 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { [fieldname]: _, ...frontmatter } = markdown.frontmatter
+
+		if (pieceField.metadata?.format === 'attachment') {
+			const value = markdown.frontmatter[fieldname]
+			const valueArray = Array.isArray(value) ? value : [value]
+
+			for (const one of valueArray) {
+				const attachmentPath = path.join(this._directories.root, one as string)
+				await unlink(attachmentPath)
+				log.info(`removed attachment at ${attachmentPath}`)
+			}
+		}
 
 		return makePieceMarkdownOrThrow(markdown.slug, markdown.note, frontmatter, this.validator)
 	}
