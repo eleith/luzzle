@@ -93,19 +93,21 @@ describe('src/pieces/frontmatter.ts', () => {
 		expect(() => frontmatter.getPieceFrontmatterKeysFromSchema(schema)).toThrow()
 	})
 
-	test('unformatPieceFrontmatterValue boolean-int', () => {
+	test('unformatPieceFrontmatterValue', () => {
 		const date = frontmatter.unformatPieceFrontmatterValue('2021-01-01', 'date-string')
 		const one = frontmatter.unformatPieceFrontmatterValue(true, 'boolean-int')
 		const zero = frontmatter.unformatPieceFrontmatterValue(false, 'boolean-int')
 		const any = frontmatter.unformatPieceFrontmatterValue('any')
+		const nil = frontmatter.unformatPieceFrontmatterValue(undefined)
 
 		expect(date).toBeTypeOf('number')
 		expect(one).toBe(1)
 		expect(zero).toBe(0)
 		expect(any).toBe('any')
+		expect(nil).toBe(null)
 	})
 
-	test('formatPieceFrontmatterValue boolean-int', () => {
+	test('formatPieceFrontmatterValue', () => {
 		const dateString = '12/31/2021'
 		const date = frontmatter.formatPieceFrontmatterValue(
 			new Date(dateString).getTime(),

@@ -68,27 +68,20 @@ function makePieceUpdatable<
 	} as Record<string, unknown>
 
 	const frontmatterSchema = getPieceFrontmatterKeysFromSchema(schema)
-	const frontmatterKeys = Object.keys(markdown.frontmatter) as (keyof F)[]
-	const updateKeys = frontmatterKeys.filter(
-		(key) => !['id', 'slug', 'date_added', 'date_updated'].includes(key as string)
-	)
 
-	updateKeys.forEach((key) => {
-		const value = markdown.frontmatter[key]
-		const schemaKey = frontmatterSchema.find((f) => f.name === key)
+	frontmatterSchema.forEach((schema) => {
+		const fieldName = schema.name
+		const value = markdown.frontmatter[fieldName as keyof F]
+		const format = schema.metadata?.format
+		const isArray = schema.collection === 'array'
+		const dataValue = data[fieldName as keyof D] as unknown
+		const updateValue =
+			isArray && Array.isArray(value)
+				? JSON.stringify(value.map((v) => unformatPieceFrontmatterValue(v, format)))
+				: unformatPieceFrontmatterValue(value, format)
 
-		if (schemaKey) {
-			const format = schemaKey.metadata?.format
-			const isArray = schemaKey.collection === 'array'
-			const dataValue = data[key as keyof D] as unknown
-			const updateValue =
-				isArray && Array.isArray(value)
-					? JSON.stringify(value.map((v) => unformatPieceFrontmatterValue(v, format)))
-					: unformatPieceFrontmatterValue(value, format)
-
-			if (force || dataValue !== updateValue) {
-				update[key as string] = updateValue
-			}
+		if (force || dataValue !== updateValue) {
+			update[fieldName] = updateValue
 		}
 	})
 
