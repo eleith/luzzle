@@ -79,7 +79,7 @@ describe('lib/commands/field.ts', () => {
 		expect(mocks.consoleLog).toHaveBeenCalledOnce()
 	})
 
-	test('run edit a field', async () => {
+	test('run setfield', async () => {
 		const path = 'slug'
 		const PieceTest = makePiece()
 		const pieceMarkdown = makeMarkdownSample()
@@ -94,15 +94,15 @@ describe('lib/commands/field.ts', () => {
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
-		spies.pieceEditField = vi
-			.spyOn(PieceTest.prototype, 'editField')
+		spies.pieceSetField = vi
+			.spyOn(PieceTest.prototype, 'setField')
 			.mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
-		await command.run(ctx, { path, fieldname, value } as Arguments<AttachArgv>)
+		await command.run(ctx, { path, fieldname, value, set: true } as Arguments<AttachArgv>)
 
-		expect(spies.pieceEditField).toHaveBeenCalledWith(pieceMarkdown, fieldname, value)
+		expect(spies.pieceSetField).toHaveBeenCalledWith(pieceMarkdown, fieldname, value)
 		expect(spies.pieceWrite).toHaveBeenCalledWith(pieceMarkdown)
 	})
 
@@ -171,7 +171,7 @@ describe('lib/commands/field.ts', () => {
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
-	test('run disallows simultaneous editing and removing', async () => {
+	test('run disallows simultaneous setting and removing', async () => {
 		const path = 'slug'
 		const PieceTest = makePiece()
 		const pieceMarkdown = makeMarkdownSample()
@@ -189,7 +189,132 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
-		await command.run(ctx, { path, fieldname, value, remove: true } as Arguments<AttachArgv>)
+		await command.run(ctx, {
+			path,
+			fieldname,
+			value,
+			remove: true,
+			set: true,
+		} as Arguments<AttachArgv>)
+
+		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
+
+	test('run disallows setting without fieldname', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+
+		await command.run(ctx, {
+			path,
+			set: true,
+		} as Arguments<AttachArgv>)
+
+		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
+
+	test('run disallows removing without fieldname', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+
+		await command.run(ctx, {
+			path,
+			remove: true,
+		} as Arguments<AttachArgv>)
+
+		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
+
+	test('run allows getting valid fieldnames', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+
+		await command.run(ctx, {
+			path,
+		} as Arguments<AttachArgv>)
+
+		expect(mocks.logError).not.toHaveBeenCalledOnce()
+	})
+
+	test('run disallows setting without a value', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const fieldname = 'title'
+		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+
+		await command.run(ctx, {
+			path,
+			set: true,
+			fieldname,
+		} as Arguments<AttachArgv>)
+
+		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
+
+	test('run disallows removing with an extra value', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const fieldname = 'title'
+		const value = 'new title'
+		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+
+		await command.run(ctx, {
+			path,
+			remove: true,
+			value,
+			fieldname,
+		} as Arguments<AttachArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -204,7 +329,7 @@ describe('lib/commands/field.ts', () => {
 		command.builder?.(args)
 
 		expect(spies.positional).toHaveBeenCalledTimes(2)
-		expect(spies.option).toHaveBeenCalledOnce()
+		expect(spies.option).toHaveBeenCalledTimes(2)
 		expect(mocks.piecesCommand).toHaveBeenCalledOnce()
 	})
 })

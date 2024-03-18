@@ -7,6 +7,7 @@ export type AttachArgv = {
 	fieldname?: string
 	value?: string
 	remove?: boolean
+	set?: boolean
 } & PieceArgv
 
 const command: Command<AttachArgv> = {
@@ -24,6 +25,12 @@ const command: Command<AttachArgv> = {
 				default: false,
 				description: 'remove the field',
 			})
+			.option('set', {
+				alias: 's',
+				type: 'boolean',
+				default: false,
+				description: 'set the field to the value',
+			})
 			.positional('fieldname', {
 				type: 'string',
 				description: 'name of field to edit',
@@ -36,50 +43,67 @@ const command: Command<AttachArgv> = {
 
 	run: async function (ctx, args) {
 		const { slug, piece } = parsePieceArgv(args)
-		const { fieldname, value, remove } = args
+		const { fieldname, value, remove, set } = args
 		const pieces = ctx.pieces.getPiece(piece)
+
+		if (!fieldname) {
+			if (set) {
+				log.error('must provide a fieldname to set a field')
+				return
+			} else if (remove) {
+				log.error('must provide a fieldname to remove a field')
+				return
+			} else {
+				const fields = pieces.fields.map((f) => f.name).join(', ')
+				console.log(`valid fields for ${piece} are: ${fields}`)
+				return
+			}
+		}
+
 		const markdown = await pieces.get(slug)
+		const pieceField = pieces.fields.find((pf) => pf.name === fieldname)
+
+		if (!pieceField) {
+			log.error(`'${fieldname}' is not a valid field for ${piece} types`)
+			return
+		}
 
 		if (!markdown) {
 			log.error(`${slug} was not found`)
 			return
 		}
 
-		const pieceField = pieces.fields.find((pf) => pf.name === fieldname)
 		const field = fieldname as keyof (typeof markdown)['frontmatter']
 
-		if (!fieldname) {
-			const fields = pieces.fields.map((f) => f.name).join(', ')
-			console.log(`valid fields for ${piece} are: ${fields}`)
+		if (set && remove) {
+			log.error('cannot set and remove a field at the same time')
 			return
-		}
+		} else if (set) {
+			if (value !== undefined) {
+				const updated = await pieces.setField(markdown, field, value)
 
-		if (!pieceField) {
-			log.error(`'${field}' is not a valid field for ${piece} types`)
-			return
-		}
+				if (!ctx.flags.dryRun) {
+					await pieces.write(updated)
+				}
 
-		if (remove && value !== undefined) {
-			log.error('cannot set a field while removing it')
-			return
-		}
-
-		if (remove) {
-			const updated = await pieces.removeField(markdown, field)
-
-			if (!ctx.flags.dryRun) {
-				await pieces.write(updated)
+				log.info(`${field} is now ${value}`)
+			} else {
+				log.error('must provide a value to set a field')
+				return
 			}
+		} else if (remove) {
+			if (value === undefined) {
+				const updated = await pieces.removeField(markdown, field)
 
-			log.info(`removed ${field} in ${slug}`)
-		} else if (value !== undefined) {
-			const updated = await pieces.editField(markdown, field, value)
+				if (!ctx.flags.dryRun) {
+					await pieces.write(updated)
+				}
 
-			if (!ctx.flags.dryRun) {
-				await pieces.write(updated)
+				log.info(`removed ${field} in ${slug}`)
+			} else {
+				log.error('cannot remove a field while tryign to set it')
+				return
 			}
-
-			log.info(`${field} is now ${value}`)
 		} else {
 			console.log(markdown.frontmatter[field])
 		}
