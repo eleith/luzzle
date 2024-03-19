@@ -1,5 +1,5 @@
 import builder from '@app/lib/graphql/builder'
-import { PieceSelectable } from '@luzzle/kysely'
+import { PieceSelectable } from '@luzzle/core'
 import { Tag } from '../../tag'
 
 const LinkBuilder = builder.objectRef<PieceSelectable<'links'>>('Link')

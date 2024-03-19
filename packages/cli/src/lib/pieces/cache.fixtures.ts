@@ -1,4 +1,4 @@
-import { LuzzleSelectable, Pieces } from '@luzzle/kysely'
+import { LuzzleSelectable, Pieces } from '@luzzle/core'
 
 function makeCache(
 	override: Partial<LuzzleSelectable<'pieces_cache'>> = {}

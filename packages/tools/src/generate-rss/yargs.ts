@@ -1,4 +1,4 @@
-import { Piece } from '@luzzle/kysely'
+import { Piece } from '@luzzle/core'
 import yargs from 'yargs'
 
 async function parseArgs(args: string[]) {

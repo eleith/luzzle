@@ -1,0 +1,55 @@
+{
+  "name": "@luzzle/core",
+  "version": "0.0.2",
+  "author": "eleith",
+  "scripts": {
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.prod.json",
+    "test": "vitest run --coverage --silent",
+		"migration:add": "TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ'); cp ./src/migrations/template.txt ./src/migrations/$TIMESTAMP.ts && echo \"created ./src/migrations/$TIMESTAMP.ts\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://git.eleith.com/eleith/eleith.git"
+  },
+  "files": [
+    "dist/*",
+    "package.json"
+  ],
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "homepage": "https://git.eleith.com/eleith/eleith.git",
+  "description": "luzzle's core",
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.4",
+    "@typescript-eslint/eslint-plugin": "5.39.0",
+    "@typescript-eslint/parser": "5.39.0",
+    "@vitest/coverage-v8": "1.3.1",
+    "@vitest/ui": "1.3.1",
+    "esbuild": "^0.15.7",
+    "eslint": "8.25.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.7.1",
+    "typescript": "4.8.4",
+    "vite": "^4.1.4",
+    "vitest": "1.3.1"
+  },
+  "dependencies": {
+    "@paralleldrive/cuid2": "2.2.0",
+    "ajv": "8.12.0",
+    "better-sqlite3": "8.4.0",
+    "mdast-util-to-markdown": "2.1.0",
+    "kysely": "0.25.0",
+    "remark": "15.0.1",
+    "remark-frontmatter": "5.0.0",
+    "unified": "11.0.4",
+    "unist-util-filter": "5.0.1",
+    "unist-util-visit": "5.0.0",
+    "yaml": "2.1.3"
+  },
+	"type": "module"
+}

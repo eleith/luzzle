@@ -3,7 +3,7 @@ import {
 	Pieces as PieceTypes,
 	PieceMarkdown,
 	PieceMarkdownError,
-} from '@luzzle/kysely'
+} from '@luzzle/core'
 import {
 	PieceArgv,
 	PieceDirectories,

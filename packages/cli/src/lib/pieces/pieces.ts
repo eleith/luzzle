@@ -3,7 +3,7 @@ import {
 	Piece as PieceType,
 	LuzzleDatabase,
 	getPieceSchema,
-} from '@luzzle/kysely'
+} from '@luzzle/core'
 import Piece from './piece.js'
 
 class Pieces {

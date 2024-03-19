@@ -6,11 +6,11 @@ import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
 import { stat } from 'fs/promises'
 import { existsSync, Stats } from 'fs'
-import { getDatabaseClient, migrate } from '@luzzle/kysely'
+import { getDatabaseClient, migrate } from '@luzzle/core'
 import { mockConfig } from '../config.mock.js'
 
 vi.mock('fs/promises')
-vi.mock('@luzzle/kysely')
+vi.mock('@luzzle/core')
 vi.mock('fs')
 vi.mock('../log')
 

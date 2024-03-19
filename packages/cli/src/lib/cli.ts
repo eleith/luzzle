@@ -1,4 +1,4 @@
-import { getDatabaseClient, LuzzleDatabase, migrate } from '@luzzle/kysely'
+import { getDatabaseClient, LuzzleDatabase, migrate } from '@luzzle/core'
 import { getDirectoryFromConfig, getConfig } from './config.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'

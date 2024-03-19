@@ -6,7 +6,7 @@ import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
 import { makePieceCommand, parsePieceArgv } from '../pieces/index.js'
 import { makeMarkdownSample, makePiece } from '../pieces/piece.fixtures.js'
-import { PieceFrontmatterSchemaField } from '@luzzle/kysely'
+import { PieceFrontmatterSchemaField } from '@luzzle/core'
 
 vi.mock('../pieces/index')
 vi.mock('../log.js')

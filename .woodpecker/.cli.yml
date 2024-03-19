@@ -5,8 +5,8 @@ steps:
   build:
     image: node:18
     commands:
-      - npm ci -w @luzzle/cli -w @luzzle/kysely
-      - npm run build -w @luzzle/kysely
+      - npm ci -w @luzzle/cli -w @luzzle/core
+      - npm run build -w @luzzle/core
       - npm run compile -w @luzzle/cli
       - npm run build -w @luzzle/cli
     when:

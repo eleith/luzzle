@@ -1,5 +1,5 @@
 import builder from '@app/lib/graphql/builder'
-import { Piece, Pieces } from '@luzzle/kysely'
+import { Piece, Pieces } from '@luzzle/core'
 import { ZodError } from 'zod'
 
 const PieceTypeRegExp = new RegExp(Object.values(Piece).join('|'))

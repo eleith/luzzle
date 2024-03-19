@@ -1,7 +1,7 @@
 import { Logger } from 'pino'
 import { Argv, Arguments } from 'yargs'
 import { Config } from '../../config.js'
-import { LuzzleDatabase } from '@luzzle/kysely'
+import { LuzzleDatabase } from '@luzzle/core'
 import { Pieces } from '../../pieces/index.js'
 
 export type Context = {

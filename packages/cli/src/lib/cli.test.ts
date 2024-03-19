@@ -1,5 +1,5 @@
 import { stat } from 'fs/promises'
-import { getDatabaseClient, migrate } from '@luzzle/kysely'
+import { getDatabaseClient, migrate } from '@luzzle/core'
 import log from './log.js'
 import cli from './cli.js'
 import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
@@ -9,7 +9,7 @@ import { mockDatabase } from './database.mock.js'
 
 vi.mock('os')
 vi.mock('fs/promises')
-vi.mock('@luzzle/kysely')
+vi.mock('@luzzle/core')
 vi.mock('./config')
 vi.mock('./commands/index')
 vi.mock('./pieces/index')

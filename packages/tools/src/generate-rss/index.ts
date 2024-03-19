@@ -2,7 +2,7 @@
 
 import { Feed, Item } from 'feed'
 import { writeFile, mkdir } from 'fs/promises'
-import { getDatabaseClient, LuzzleSelectable, Pieces } from '@luzzle/kysely'
+import { getDatabaseClient, LuzzleSelectable, Pieces } from '@luzzle/core'
 import { hideBin } from 'yargs/helpers'
 import parseArgs from './yargs.js'
 

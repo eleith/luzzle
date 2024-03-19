@@ -1,4 +1,4 @@
-import { getDatabaseClient, Pieces, PieceSelectable } from '@luzzle/kysely'
+import { getDatabaseClient, Pieces, PieceSelectable } from '@luzzle/core'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 
 const LastRunFile = '.generate-last-run'

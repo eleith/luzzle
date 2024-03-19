@@ -5,7 +5,7 @@ import sharp from 'sharp'
 import { hideBin } from 'yargs/helpers'
 import parseArgs from './yargs.js'
 import { getItems, getLastRun, storeLastRun } from './utils.js'
-import { getDatabaseClient, Pieces, PieceSelectable } from '@luzzle/kysely'
+import { getDatabaseClient, Pieces, PieceSelectable } from '@luzzle/core'
 import { dirname } from 'path'
 
 type ImageVariants = {

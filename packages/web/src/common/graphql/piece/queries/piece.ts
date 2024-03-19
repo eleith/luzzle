@@ -1,5 +1,5 @@
 import builder from '@app/lib/graphql/builder'
-import { Pieces, Piece } from '@luzzle/kysely'
+import { Pieces, Piece } from '@luzzle/core'
 import PieceObject from '../objects/piece'
 
 const PieceTypeRegExp = new RegExp(Object.values(Piece).join('|'))

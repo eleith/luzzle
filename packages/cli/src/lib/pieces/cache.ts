@@ -1,4 +1,4 @@
-import { LuzzleDatabase, Pieces } from '@luzzle/kysely'
+import { LuzzleDatabase, Pieces } from '@luzzle/core'
 import { createId } from '@paralleldrive/cuid2'
 import { calculateHashFromFile } from './utils.js'
 

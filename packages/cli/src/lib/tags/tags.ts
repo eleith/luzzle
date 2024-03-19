@@ -1,7 +1,7 @@
 import { differenceWith } from 'lodash-es'
 import slugify from '@sindresorhus/slugify'
 import { createId } from '@paralleldrive/cuid2'
-import { LuzzleDatabase, Pieces } from '@luzzle/kysely'
+import { LuzzleDatabase, Pieces } from '@luzzle/core'
 
 function keywordsToTags(keywords: string): string[] {
 	const tags = keywords
