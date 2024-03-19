@@ -14,7 +14,7 @@ import { CircleNotch } from 'phosphor-react'
 import { Form, FormState, useFormState } from 'ariakit/form'
 import gqlFetch from '@app/common/graphql/fetch'
 import { PageProgress, useProgressPageState } from '@luzzle/ui/components'
-import { Pieces } from '@luzzle/kysely'
+import { Pieces } from '@luzzle/core'
 
 const discussionMutation = gql<
 	typeof CreateDiscussionDocument

@@ -28,7 +28,7 @@ import {
 	initializePieceFrontMatter,
 	PieceFrontmatterSchemaField,
 	Pieces,
-} from '@luzzle/kysely'
+} from '@luzzle/core'
 import { downloadFileOrUrlTo } from './utils.js'
 import { makeCache } from './cache.fixtures.js'
 import { ASSETS_DIRECTORY } from '../assets.js'
@@ -42,7 +42,7 @@ vi.mock('../tags/index.js')
 vi.mock('./cache.js')
 vi.mock('os')
 vi.mock('file-type')
-vi.mock('@luzzle/kysely')
+vi.mock('@luzzle/core')
 vi.mock('./utils.js')
 
 const mocks = {

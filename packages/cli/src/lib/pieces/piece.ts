@@ -24,7 +24,7 @@ import {
 	formatPieceFrontmatterValue,
 	PieceFrontmatterSchemaField,
 	initializePieceFrontMatter,
-} from '@luzzle/kysely'
+} from '@luzzle/core'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
 import path from 'path'

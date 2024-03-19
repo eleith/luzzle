@@ -1,7 +1,7 @@
 import { createReadStream, existsSync } from 'fs'
 import path from 'path'
 import { Argv } from 'yargs'
-import { Pieces, Piece } from '@luzzle/kysely'
+import { Pieces, Piece } from '@luzzle/core'
 import { temporaryFile } from 'tempy'
 import { copyFile, stat } from 'fs/promises'
 import { downloadToPath } from '../web.js'

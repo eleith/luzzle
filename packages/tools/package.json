@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/tools",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@googleapis/books": "^0.3.1",
-    "@luzzle/kysely": "0.0.29",
+    "@luzzle/core": "0.0.2",
     "@resvg/resvg-js": "2.4.1",
     "feed": "4.2.2",
     "got": "12.5.1",

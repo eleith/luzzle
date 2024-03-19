@@ -9,7 +9,7 @@ import { image, outputPng, outputSvg } from './template.js'
 import { textToHtml } from './texts.js'
 import parseArgs from './yargs.js'
 import { hideBin } from 'yargs/helpers'
-import { getDatabaseClient, Pieces, PieceSelectable } from '@luzzle/kysely'
+import { getDatabaseClient, Pieces, PieceSelectable } from '@luzzle/core'
 
 async function makeOgImage(html: JSX.Element, writeStream: WriteStream, output: 'svg' | 'png') {
 	switch (output) {

@@ -1,5 +1,5 @@
 import builder from '@app/lib/graphql/builder'
-import { LuzzleSelectable } from '@luzzle/kysely'
+import { LuzzleSelectable } from '@luzzle/core'
 
 const TagBuilder = builder.objectRef<LuzzleSelectable<'tags'>>('Tag')
 

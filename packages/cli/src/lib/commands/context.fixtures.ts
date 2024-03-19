@@ -1,4 +1,4 @@
-import { LuzzleDatabase } from '@luzzle/kysely'
+import { LuzzleDatabase } from '@luzzle/core'
 import { merge, omit } from 'lodash-es'
 import { Context } from './index.js'
 import { Config } from '../config.js'

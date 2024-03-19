@@ -1,4 +1,4 @@
-import { PieceSelectable } from '@luzzle/kysely'
+import { PieceSelectable } from '@luzzle/core'
 import { html, imageAsBase64 } from './template.js'
 
 function repeatBlock(times: number): JSX.Element[] {

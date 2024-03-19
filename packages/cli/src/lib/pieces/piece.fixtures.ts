@@ -5,7 +5,7 @@ import {
 	PieceFrontmatter,
 	LuzzleDatabase,
 	PieceMarkdown,
-} from '@luzzle/kysely'
+} from '@luzzle/core'
 import Piece from './piece.js'
 import { mockDatabase } from '../database.mock.js'
 

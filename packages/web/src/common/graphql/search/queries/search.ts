@@ -1,6 +1,6 @@
 import builder from '@app/lib/graphql/builder'
 import PieceObject from '../../piece/objects/piece'
-import { sql } from '@luzzle/kysely'
+import { sql } from '@luzzle/core'
 
 const MAX_RESULTS = 10
 

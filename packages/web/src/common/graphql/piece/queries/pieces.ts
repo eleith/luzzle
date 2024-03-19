@@ -1,6 +1,6 @@
 import builder from '@app/lib/graphql/builder'
 import PieceObject from '../objects/piece'
-import { Piece, type Pieces } from '@luzzle/kysely'
+import { Piece, type Pieces } from '@luzzle/core'
 
 const TAKE_DEFAULT = 100
 const TAKE_MAX = 500

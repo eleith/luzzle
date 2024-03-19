@@ -1,12 +1,12 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import * as cache from './cache.js'
-import { Pieces } from '@luzzle/kysely'
+import { Pieces } from '@luzzle/core'
 import { mockDatabase } from '../database.mock.js'
 import { makeCache } from './cache.fixtures.js'
 import { createId } from '@paralleldrive/cuid2'
 import { calculateHashFromFile } from './utils.js'
 
-vi.mock('@luzzle/kysely')
+vi.mock('@luzzle/core')
 vi.mock('@paralleldrive/cuid2')
 vi.mock('./utils.js')
 
