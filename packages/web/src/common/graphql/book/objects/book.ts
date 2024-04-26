@@ -27,7 +27,7 @@ BookBuilder.implement({
 		idOlBook: t.exposeString('id_ol_book'),
 		idOlWork: t.exposeString('id_ol_work'),
 		isbn: t.exposeString('isbn'),
-		coauthors: t.exposeString('coauthors'),
+		coauthors: t.exposeString('author'), // this should be co-authors ...
 		description: t.exposeString('description'),
 		keywords: t.exposeString('keywords'),
 		note: t.exposeString('note'),
@@ -66,10 +66,10 @@ BookBuilder.implement({
 					.select('slug')
 					.orderBy('date_read', 'desc')
 					.orderBy('slug', 'asc')
-					.where(({ and, or, cmpr }) => {
+					.where(({ and, or, eb }) => {
 						return or([
-							cmpr('date_read', '<', parent.date_read),
-							and([cmpr('date_read', '=', parent.date_read), cmpr('slug', '>', parent.slug)]),
+							eb('date_read', '<', parent.date_read),
+							and([eb('date_read', '=', parent.date_read), eb('slug', '>', parent.slug)]),
 						])
 					})
 					.executeTakeFirst()
@@ -79,10 +79,10 @@ BookBuilder.implement({
 					.select('slug')
 					.orderBy('date_read', 'asc')
 					.orderBy('slug', 'desc')
-					.where(({ and, or, cmpr }) => {
+					.where(({ and, or, eb }) => {
 						return or([
-							cmpr('date_read', '>', parent.date_read),
-							and([cmpr('date_read', '=', parent.date_read), cmpr('slug', '<', parent.slug)]),
+							eb('date_read', '>', parent.date_read),
+							and([eb('date_read', '=', parent.date_read), eb('slug', '<', parent.slug)]),
 						])
 					})
 					.executeTakeFirst()

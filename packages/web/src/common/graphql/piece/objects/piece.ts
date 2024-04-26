@@ -57,13 +57,10 @@ PieceBuilder.implement({
 					.select('slug')
 					.orderBy('date_consumed', 'desc')
 					.orderBy('slug', 'asc')
-					.where(({ and, or, cmpr }) => {
+					.where(({ and, or, eb }) => {
 						return or([
-							cmpr('date_consumed', '<', parent.date_consumed),
-							and([
-								cmpr('date_consumed', '=', parent.date_consumed),
-								cmpr('slug', '>', parent.slug),
-							]),
+							eb('date_consumed', '<', parent.date_consumed),
+							and([eb('date_consumed', '=', parent.date_consumed), eb('slug', '>', parent.slug)]),
 						])
 					})
 					.executeTakeFirst()
@@ -73,13 +70,10 @@ PieceBuilder.implement({
 					.select('slug')
 					.orderBy('date_consumed', 'asc')
 					.orderBy('slug', 'desc')
-					.where(({ and, or, cmpr }) => {
+					.where(({ and, or, eb }) => {
 						return or([
-							cmpr('date_consumed', '>', parent.date_consumed),
-							and([
-								cmpr('date_consumed', '=', parent.date_consumed),
-								cmpr('slug', '<', parent.slug),
-							]),
+							eb('date_consumed', '>', parent.date_consumed),
+							and([eb('date_consumed', '=', parent.date_consumed), eb('slug', '<', parent.slug)]),
 						])
 					})
 					.executeTakeFirst()
