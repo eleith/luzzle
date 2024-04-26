@@ -3,7 +3,7 @@ workspace:
   path: src
 steps:
   build:
-    image: node:18.19.0
+    image: node:20
     commands:
       - npm ci -w @luzzle/web -w @luzzle/ui -w @luzzle/core -w @luzzle/tools
       - npm run build -w @luzzle/core -w @luzzle/tools
@@ -14,7 +14,7 @@ steps:
       path:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   test:
-    image: node:18.19.0
+    image: node:20
     commands:
       - npm run lint -w @luzzle/web
     when:
@@ -53,7 +53,7 @@ steps:
       path:
         include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   build-content:
-    image: node:18.19.0
+    image: node:20
     environment:
       - ENV_LOCAL_FILE=.env.local
       - NODE_ENV=production

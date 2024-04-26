@@ -3,7 +3,7 @@ workspace:
   path: src
 steps:
   build:
-    image: node:18
+    image: node:20
     commands:
       - npm ci -w @luzzle/cli -w @luzzle/core
       - npm run build -w @luzzle/core
@@ -15,7 +15,7 @@ steps:
       path:
         include: [".woodpecker/.cli.yml", "packages/cli/**"]
   test:
-    image: node:18
+    image: node:20
     commands:
       - npm run lint -w @luzzle/cli
       - npm run test -w @luzzle/cli
@@ -25,7 +25,7 @@ steps:
       path:
         include: [".woodpecker/.cli.yml", "packages/cli/**"]
   publish:
-    image: node:18
+    image: node:20
     commands:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
