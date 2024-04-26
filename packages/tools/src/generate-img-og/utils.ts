@@ -12,8 +12,8 @@ async function getItems<T extends Pieces>(
 		.selectFrom(table as Pieces)
 		.where((eb) =>
 			eb.or([
-				eb.and([eb.bxp('date_added', '>=', lastRun), eb.bxp('date_updated', 'is', null)]),
-				eb.and([eb.bxp('date_updated', 'is not', null), eb.bxp('date_updated', '>=', lastRun)]),
+				eb.and([eb('date_added', '>=', lastRun), eb('date_updated', 'is', null)]),
+				eb.and([eb('date_updated', 'is not', null), eb('date_updated', '>=', lastRun)]),
 			])
 		)
 		.selectAll()
