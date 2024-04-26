@@ -66,13 +66,10 @@ LinkBuilder.implement({
 					.select('slug')
 					.orderBy('date_accessed', 'desc')
 					.orderBy('slug', 'asc')
-					.where(({ and, or, cmpr }) => {
+					.where(({ and, or, eb }) => {
 						return or([
-							cmpr('date_accessed', '<', parent.date_accessed),
-							and([
-								cmpr('date_accessed', '=', parent.date_accessed),
-								cmpr('slug', '>', parent.slug),
-							]),
+							eb('date_accessed', '<', parent.date_accessed),
+							and([eb('date_accessed', '=', parent.date_accessed), eb('slug', '>', parent.slug)]),
 						])
 					})
 					.executeTakeFirst()
@@ -82,13 +79,10 @@ LinkBuilder.implement({
 					.select('slug')
 					.orderBy('date_accessed', 'asc')
 					.orderBy('slug', 'desc')
-					.where(({ and, or, cmpr }) => {
+					.where(({ and, or, eb }) => {
 						return or([
-							cmpr('date_accessed', '>', parent.date_accessed),
-							and([
-								cmpr('date_accessed', '=', parent.date_accessed),
-								cmpr('slug', '<', parent.slug),
-							]),
+							eb('date_accessed', '>', parent.date_accessed),
+							and([eb('date_accessed', '=', parent.date_accessed), eb('slug', '<', parent.slug)]),
 						])
 					})
 					.executeTakeFirst()

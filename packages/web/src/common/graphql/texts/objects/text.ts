@@ -58,13 +58,10 @@ TextBuilder.implement({
 					.select('slug')
 					.orderBy('date_published', 'desc')
 					.orderBy('slug', 'asc')
-					.where(({ and, or, cmpr }) => {
+					.where(({ and, or, eb }) => {
 						return or([
-							cmpr('date_published', '<', parent.date_published),
-							and([
-								cmpr('date_published', '=', parent.date_published),
-								cmpr('slug', '>', parent.slug),
-							]),
+							eb('date_published', '<', parent.date_published),
+							and([eb('date_published', '=', parent.date_published), eb('slug', '>', parent.slug)]),
 						])
 					})
 					.executeTakeFirst()
@@ -74,13 +71,10 @@ TextBuilder.implement({
 					.select('slug')
 					.orderBy('date_published', 'asc')
 					.orderBy('slug', 'desc')
-					.where(({ and, or, cmpr }) => {
+					.where(({ and, or, eb }) => {
 						return or([
-							cmpr('date_published', '>', parent.date_published),
-							and([
-								cmpr('date_published', '=', parent.date_published),
-								cmpr('slug', '<', parent.slug),
-							]),
+							eb('date_published', '>', parent.date_published),
+							and([eb('date_published', '=', parent.date_published), eb('slug', '<', parent.slug)]),
 						])
 					})
 					.executeTakeFirst()
