@@ -19,10 +19,10 @@ export type WithImportant<T extends string> = T | `${T} !important`
 export type WithImportantArrays<T> = T extends string
   ? WithImportant<T>
   : T extends Array<infer R>
-  ? R extends string
-    ? WithImportant<R>[]
+    ? R extends string
+      ? WithImportant<R>[]
+      : T
     : T
-  : T
 
 export type ImportantCSS<T> = {
   [Property in keyof T]: WithImportantArrays<T[Property]>
