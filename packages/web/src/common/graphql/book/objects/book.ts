@@ -27,7 +27,7 @@ BookBuilder.implement({
 		idOlBook: t.exposeString('id_ol_book'),
 		idOlWork: t.exposeString('id_ol_work'),
 		isbn: t.exposeString('isbn'),
-		coauthors: t.exposeString('author'), // this should be co-authors ...
+		coauthors: t.exposeString('coauthors'),
 		description: t.exposeString('description'),
 		keywords: t.exposeString('keywords'),
 		note: t.exposeString('note'),

@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.71",
+  "version": "0.0.72",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -43,7 +43,7 @@
     "vitest": "1.5.2"
   },
   "dependencies": {
-    "@luzzle/core": "0.0.3",
+    "@luzzle/core": "0.0.4",
     "@paralleldrive/cuid2": "2.2.0",
     "@sindresorhus/slugify": "2.2.0",
     "@types/lodash-es": "4.17.7",
