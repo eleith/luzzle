@@ -4,7 +4,7 @@ import fetch from '@app/common/graphql/fetch'
 
 export default function useGraphSWR<
 	X extends TypedDocumentNode<ResultOf<X>, VariablesOf<X>>,
-	E extends Error
+	E extends Error,
 >(
 	gql: X | null,
 	variables?: VariablesOf<X>,
