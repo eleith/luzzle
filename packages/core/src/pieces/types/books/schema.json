@@ -8,6 +8,9 @@
     "author": {
       "type": "string"
     },
+    "coauthors": {
+      "type": "string"
+    },
     "id_ol_book": {
       "type": "string"
     },
