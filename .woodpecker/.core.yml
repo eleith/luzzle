@@ -10,19 +10,19 @@ steps:
       - npm run build -w @luzzle/core
     secrets: [npm_token, npm_owner]
     when:
-      event: [push]
-      branch: [main]
-      path:
-        include: [".woodpecker/.core.yml", "packages/core/**"]
+      - event: [push]
+        branch: [main]
+        path:
+          include: [".woodpecker/.core.yml", "packages/core/**"]
   test:
     image: node:20
     commands:
       - npm run test -w @luzzle/core
     when:
-      event: [push]
-      branch: [main]
-      path:
-        include: [".woodpecker/.core.yml", "packages/core/**"]
+      - event: [push]
+        branch: [main]
+        path:
+          include: [".woodpecker/.core.yml", "packages/core/**"]
   publish:
     image: node:20
     commands:
@@ -35,10 +35,10 @@ steps:
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/core; fi
     secrets: [npm_token, npm_owner]
     when:
-      event: [push]
-      branch: [main]
-      path:
-        include: [".woodpecker/.core.yml", "packages/core/**"]
+      - event: [push]
+        branch: [main]
+        path:
+          include: [".woodpecker/.core.yml", "packages/core/**"]
   notify:
     image: deblan/woodpecker-email:1.0.1-wp
     settings:
@@ -53,8 +53,8 @@ steps:
       recipients:
         from_secret: smtp_notification_recipient
     when:
-      event: [push]
-      status: [failure, success]
-      branch: [main]
-      path:
-        include: [".woodpecker/.core.yml", "packages/core/**"]
+      - event: [push]
+        status: [failure, success]
+        branch: [main]
+        path:
+          include: [".woodpecker/.core.yml", "packages/core/**"]

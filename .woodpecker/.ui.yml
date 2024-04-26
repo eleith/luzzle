@@ -8,19 +8,19 @@ steps:
       - npm ci -w @luzzle/ui
       - npm run compile -w @luzzle/ui
     when:
-      event: [push]
-      branch: [main]
-      path:
-        include: [".woodpecker/.ui.yml", "packages/ui/**"]
+      - event: [push]
+        branch: [main]
+        path:
+          include: [".woodpecker/.ui.yml", "packages/ui/**"]
   test:
     image: node:16
     commands:
       - npm run lint -w @luzzle/ui
     when:
-      event: [push]
-      branch: [main]
-      path:
-        include: [".woodpecker/.ui.yml", "packages/ui/**"]
+      - event: [push]
+        branch: [main]
+        path:
+          include: [".woodpecker/.ui.yml", "packages/ui/**"]
   publish:
     image: node:16
     commands:
@@ -33,10 +33,10 @@ steps:
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/ui; fi
     secrets: [npm_owner, npm_token]
     when:
-      event: [push]
-      branch: [main]
-      path:
-        include: [".woodpecker/.ui.yml", "packages/ui/**"]
+      - event: [push]
+        branch: [main]
+        path:
+          include: [".woodpecker/.ui.yml", "packages/ui/**"]
   notify:
     image: deblan/woodpecker-email:1.0.1-wp
     secrets:
@@ -59,8 +59,8 @@ steps:
       recipients:
         from_secret: smtp_notification_recipient
     when:
-      event: [push]
-      status: [failure, success]
-      branch: [main]
-      path:
-        include: [".woodpecker/.ui.yml", "packages/ui/**"]
+      - event: [push]
+        status: [failure, success]
+        branch: [main]
+        path:
+          include: [".woodpecker/.ui.yml", "packages/ui/**"]
