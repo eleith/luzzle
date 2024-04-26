@@ -1,4 +1,3 @@
-import Ajv from 'ajv/dist/jtd.js'
 import { existsSync, mkdirSync } from 'fs'
 import { copyFile, mkdir, readdir, stat, unlink, writeFile } from 'fs/promises'
 import log from '../log.js'
@@ -12,18 +11,19 @@ import {
 	PieceMarkdown,
 	Pieces,
 	PieceFrontmatter,
-	ajv,
-	PieceFrontmatterJtdSchema,
-	makePieceInsertable,
-	makePieceUpdatable,
-	getPieceFrontmatterKeysFromSchema,
 	extractFullMarkdown,
 	makePieceMarkdown,
 	makePieceMarkdownOrThrow,
 	makePieceMarkdownString,
-	formatPieceFrontmatterValue,
-	PieceFrontmatterSchemaField,
+	compile,
+	PieceFrontmatterSchema,
 	initializePieceFrontMatter,
+	getPieceFrontmatterSchemaFields,
+	PieceFrontmatterSchemaField,
+	makePieceInsertable,
+	makePieceUpdatable,
+	databaseValueToPieceFrontmatterValue,
+	PieceMarkdownError,
 } from '@luzzle/core'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
@@ -36,26 +36,21 @@ import { randomBytes } from 'crypto'
 export interface InterfacePiece<
 	P extends Pieces,
 	D extends PieceSelectable,
-	F extends PieceFrontmatter
+	F extends PieceFrontmatter,
 > {
 	new (pieceRoot: string, db: LuzzleDatabase): Piece<P, D, F>
 }
 
 class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmatter> {
-	private _validator?: Ajv.ValidateFunction<F>
-	private _schema: PieceFrontmatterJtdSchema<F>
+	private _validator?: ReturnType<typeof compile<F>>
+	private _schema: PieceFrontmatterSchema<F>
 	private _pieceRoot: string
 	private _directories: PieceDirectories
 	private _pieceTable: P
 	private _db: LuzzleDatabase
-	private _fields?: PieceFrontmatterSchemaField[]
+	private _fields?: Array<PieceFrontmatterSchemaField>
 
-	constructor(
-		pieceRoot: string,
-		table: P,
-		schema: PieceFrontmatterJtdSchema<F>,
-		db: LuzzleDatabase
-	) {
+	constructor(pieceRoot: string, table: P, schema: PieceFrontmatterSchema<F>, db: LuzzleDatabase) {
 		this._pieceRoot = pieceRoot
 		this._pieceTable = table
 		this._directories = {
@@ -76,12 +71,12 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 	}
 
 	protected get validator() {
-		this._validator = this._validator || ajv(this._schema)
+		this._validator = this._validator || compile<F>(this._schema)
 		return this._validator
 	}
 
 	get fields() {
-		this._fields = this._fields || getPieceFrontmatterKeysFromSchema(this._schema)
+		this._fields = this._fields || getPieceFrontmatterSchemaFields(this._schema)
 		return this._fields
 	}
 
@@ -153,8 +148,14 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 			} else {
 				return makePieceMarkdown(slug, data.markdown, data.frontmatter as F)
 			}
-		} catch (err) {
-			log.error(`could not extract ${filepath}: ${err}`)
+		} catch (e) {
+			/* c8 ignore next 7 */
+			if (e instanceof PieceMarkdownError) {
+				const errors = this.getErrors(e)
+				log.error(`${slug} has ${e.validationErrors?.length} error(s): ${errors.join('\n')}`)
+			} else {
+				log.error(`could not extract ${filepath}: ${e}`)
+			}
 			return null
 		}
 	}
@@ -177,8 +178,8 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		await eachLimit(staleSlugs, cpus().length, async (slug) => {
 			const toRemove: string[] = []
 			const attachmentFolders = schemaKeys
-				.filter((x) => x.metadata?.format === 'attachment')
-				.map((field) => path.join(this._directories.root, ASSETS_DIRECTORY, field.name as string))
+				.filter((field) => field.format === 'asset')
+				.map((field) => path.join(this._directories.root, ASSETS_DIRECTORY, field.name))
 
 			for (const folder of attachmentFolders) {
 				const files = await readdir(folder)
@@ -304,21 +305,16 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 
 	toMarkdown(data: D): PieceMarkdown<F> {
 		const frontmatter: Record<string, unknown> = {}
-		const frontmatterSchema = getPieceFrontmatterKeysFromSchema(this._schema)
 		const dataKeys = Object.keys(data)
-		const fields = frontmatterSchema.filter((f) => dataKeys.includes(f.name))
+		const fields = getPieceFrontmatterSchemaFields(this._schema).filter((f) =>
+			dataKeys.includes(f.name)
+		)
 
 		fields.forEach((field) => {
-			const format = field.metadata?.format
-			const key = field.name
-			const value =
-				field?.collection === 'array'
-					? (JSON.parse(data[key as keyof D] as string) as Array<string>)
-					: data[key as keyof D]
+			const name = field.name
+			const value = data[field.name]
 
-			frontmatter[key] = Array.isArray(value)
-				? value.map((v) => formatPieceFrontmatterValue(v, format))
-				: formatPieceFrontmatterValue(value, format)
+			frontmatter[name] = databaseValueToPieceFrontmatterValue(value, field)
 		})
 
 		return makePieceMarkdownOrThrow(data.slug, data.note, frontmatter as F, this.validator)
@@ -330,23 +326,16 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		fileOrUrl: string,
 		_name?: string
 	): Promise<string> {
+		const format = field.type === 'array' ? field.items.format : field.format
+
 		/* c8 ignore next 3 */
-		if (field.metadata?.format !== 'attachment') {
+		if (format !== 'asset') {
 			throw new Error(`${field} is not an attachable field for ${this._pieceTable} ${slug}`)
 		}
 
 		const tmpPath = await downloadFileOrUrlTo(fileOrUrl)
-		const allowedTypes = field.metadata?.enum || []
 		const fileType = await fileTypeFromFile(tmpPath)
 		const type = fileType?.ext
-
-		if (allowedTypes.length && (!type || !allowedTypes.includes(type))) {
-			await unlink(tmpPath)
-			throw new Error(
-				`${fileOrUrl} (${type}) is not a valid file, only: ${allowedTypes.join(',')} are allowed`
-			)
-		}
-
 		const attachDir = path.join(this._directories.assets, field.name)
 		const random = randomBytes(4).toString('hex')
 		const parts = [slug, _name, random]
@@ -367,26 +356,32 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		value: unknown
 	): Promise<PieceMarkdown<F>> {
 		const pieceField = this.fields.find((f) => f.name === field)
-		let setValue: V
 
 		if (!pieceField) {
 			throw new Error(`${field} is not a field in ${this._pieceTable} ${markdown.slug}`)
 		}
 
-		if (pieceField.metadata?.format === 'attachment') {
+		const isArray = pieceField.type === 'array'
+		const format = isArray ? pieceField.items.format : pieceField.format
+		const type = isArray ? pieceField.items.type : pieceField.type
+
+		let setValue: V = undefined as V
+
+		if (format === 'asset') {
+			// for array asset fields, we only allow appending
+			// for non-array asset fields, we replace, but do not remove the asset!
 			const fieldValue = await this.makeAttachmentField(markdown.slug, pieceField, value as string)
 			setValue = fieldValue as V
-		} else if (pieceField.type === 'boolean') {
+		} else if (type === 'boolean') {
 			setValue = /1|true|yes/.test(value as string) as V
-		} else if (pieceField.type === 'string') {
+		} else if (type === 'string') {
 			setValue = value as V
-		} else {
+		} else if (type === 'integer') {
 			setValue = parseInt(value as string) as V
 		}
 
 		const fieldName = pieceField.name as keyof F
 		const oldValue = markdown.frontmatter[fieldName] as V | V[] | undefined
-		const isArray = pieceField.collection === 'array'
 		const newValue = isArray ? ((oldValue || []) as V[]).concat(setValue) : setValue
 
 		return makePieceMarkdownOrThrow(
@@ -407,16 +402,18 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 			throw new Error(`${field} is not a field in ${this._pieceTable} ${markdown.slug}`)
 		}
 
-		if (pieceField.required) {
+		if (pieceField.nullable !== true) {
 			throw new Error(`${field} is a required field in ${this._pieceTable} ${markdown.slug}`)
 		}
 
 		const fieldname = pieceField.name as keyof PieceMarkdown<F>['frontmatter']
+		const isArray = pieceField.type === 'array'
+		const format = isArray ? pieceField.items.format : pieceField.format
 
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { [fieldname]: _, ...frontmatter } = markdown.frontmatter
 
-		if (pieceField.metadata?.format === 'attachment') {
+		if (format === 'asset') {
 			const value = markdown.frontmatter[fieldname]
 			const valueArray = Array.isArray(value) ? value : [value]
 
@@ -445,6 +442,17 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 				log.error(`error saving ${this._pieceTable} for ${data.slug}`)
 			}
 		})
+	}
+
+	getErrors<F>(e: PieceMarkdownError<ReturnType<typeof compile<F>>>) {
+		const errorMessage: Array<string> = []
+
+		e.validationErrors?.map((error) => {
+			const path = error.instancePath.replace('/frontmatter/', '')
+			errorMessage.push(`${path}: ${error.message}`)
+		})
+
+		return errorMessage
 	}
 }
 

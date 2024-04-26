@@ -1,18 +1,17 @@
-import Ajv, { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd.js'
 import {
 	PieceSelectable,
 	Pieces,
 	PieceFrontmatter,
 	LuzzleDatabase,
 	PieceMarkdown,
+	compile,
+	PieceFrontmatterSchema,
 } from '@luzzle/core'
 import Piece from './piece.js'
 import { mockDatabase } from '../database.mock.js'
+import { Mocked } from 'vitest'
 
-type PieceFrontmatterSample = PieceFrontmatter<PieceSelectable>
-type PieceValidator = Ajv.ValidateFunction<PieceFrontmatterSample>
-type PieceSchema = JTDSchemaType<PieceFrontmatterSample>
-type PieceMarkdownSample = PieceMarkdown<PieceFrontmatterSample>
+type PieceValidator = ReturnType<typeof compile<PieceFrontmatter>>
 
 const sample = {
 	slug: 'sampleSlug',
@@ -25,39 +24,45 @@ export function makeValidator(): PieceValidator {
 	return validate as unknown as PieceValidator
 }
 
-export function makeSchema(
-	propertyOverrides: Record<string, SomeJTDSchemaType> = {},
-	optionalPropertyOverrides: Record<string, SomeJTDSchemaType> = {}
-): PieceSchema {
+export function makeSchema(properties?: {
+	[key: string]: {
+		type?: string
+		nullable?: boolean
+		items?: object
+		format?: string
+		pattern?: string
+		enum?: string[] | number[]
+	}
+}): PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }> {
 	return {
+		type: 'object',
 		properties: {
 			title: { type: 'string' },
-			...propertyOverrides,
+			keywords: { type: 'string', nullable: true },
+			subtitle: { type: 'string', nullable: true },
+			...properties,
 		},
-		optionalProperties: {
-			keywords: { type: 'string' },
-			subtitle: { type: 'string' },
-			...optionalPropertyOverrides,
-		},
+		required: ['title'],
+		additionalProperties: true,
 	}
 }
 
 export function makeFrontmatterSample(
 	frontmatter: Record<string, unknown> = { title: sample.title }
-): PieceFrontmatterSample {
-	return frontmatter as PieceFrontmatterSample
+): PieceFrontmatter {
+	return frontmatter as PieceFrontmatter
 }
 
-export function makeMarkdownSample(
+export function makeMarkdownSample<F extends PieceFrontmatter>(
 	slug = sample.slug,
 	note: string | null | undefined = sample.note,
-	frontmatter: Record<string, unknown> = { title: sample.title }
-): PieceMarkdownSample {
+	frontmatter?: F
+): PieceMarkdown<F> {
 	return {
 		slug,
 		note,
-		frontmatter,
-	} as PieceMarkdownSample
+		frontmatter: frontmatter || makeFrontmatterSample(),
+	} as PieceMarkdown<F>
 }
 
 export function makeSample(): PieceSelectable {
@@ -66,23 +71,21 @@ export function makeSample(): PieceSelectable {
 	} as PieceSelectable
 }
 
-class PieceOverridable extends Piece<Pieces, PieceSelectable, PieceFrontmatterSample> {
+class PieceOverridable extends Piece<Pieces, PieceSelectable, PieceFrontmatter> {
 	constructor(
 		overrides: {
 			pieceRoot?: string
 			table?: Pieces
-			schema?: JTDSchemaType<PieceFrontmatterSample>
-			db?: LuzzleDatabase
+			schema?: PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }>
+			db?: Mocked<LuzzleDatabase>
 		} = {}
 	) {
-		const options = {
-			pieceRoot: 'pieces-root',
-			table: 'table' as Pieces,
-			schema: makeSchema(),
-			db: mockDatabase().db,
-			...overrides,
-		}
-		super(options.pieceRoot, options.table, options.schema, options.db)
+		const db = overrides.db || mockDatabase().db
+		const root = overrides.pieceRoot || 'pieces-root'
+		const table = overrides.table || ('table' as Pieces)
+		const schema = overrides.schema || makeSchema()
+
+		super(root, table, schema, db as unknown as LuzzleDatabase)
 	}
 }
 

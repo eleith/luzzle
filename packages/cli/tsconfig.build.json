@@ -1,6 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": {
-  },
   "exclude": ["vite.config.ts", "src/**/*.test.ts", "src/**/*.fixtures.ts", "src/**/*.mock.ts"]
 }

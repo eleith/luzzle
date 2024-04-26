@@ -6,7 +6,7 @@ const command: Command = {
 
 	command: 'cd',
 
-	describe: 'change direction to the book directory',
+	describe: 'change direction to the luzzle directory',
 
 	run: async function (ctx) {
 		if (process.env.LUZZLE === 'true') {

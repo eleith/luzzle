@@ -24,12 +24,12 @@ function mockDatabase() {
 		deleteFrom: vi.fn().mockImplementation(() => queries),
 		insertInto: vi.fn().mockImplementation(() => queries),
 		updateTable: vi.fn().mockImplementation(() => queries),
-		destroy: vi.fn(),
 		fn: {
 			count: vi.fn(() => ({
 				as: queries.as,
 			})),
 		},
+		destroy: vi.fn(),
 	} as unknown as Mocked<LuzzleDatabase>
 
 	return { db, queries }

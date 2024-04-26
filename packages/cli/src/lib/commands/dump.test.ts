@@ -4,8 +4,6 @@ import { Arguments } from 'yargs'
 import { makeContext } from './context.fixtures.js'
 import { makePiece } from '../pieces/piece.fixtures.js'
 
-vi.mock('ajv/dist/jtd')
-
 const mocks = {
 	getPieceTypes: vi.fn(),
 	getPiece: vi.fn(),

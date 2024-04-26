@@ -20,8 +20,8 @@ const command: Command<InitArgv> = {
 	builder: <T>(yargs: Argv<T>) => {
 		return yargs.positional('dir', {
 			type: 'string',
-			description: 'directory for the book entries',
-			demandOption: 'a directory containing book entries must be provided',
+			description: 'directory for luzzle',
+			demandOption: 'a directory containing luzzle is required',
 		})
 	},
 
