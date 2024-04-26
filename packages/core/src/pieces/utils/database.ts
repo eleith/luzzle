@@ -2,47 +2,32 @@ import { createId } from '@paralleldrive/cuid2'
 import { PieceSelectable, PieceInsertable, PieceUpdatable, Pieces } from '../tables.schema.js'
 import { PieceMarkdown } from './markdown.js'
 import {
-	getPieceFrontmatterKeysFromSchema,
 	PieceFrontmatter,
-	PieceFrontmatterFields,
-	PieceFrontmatterJtdSchema,
-	unformatPieceFrontmatterValue,
+	PieceFrontmatterSchema,
+	pieceFrontmatterValueToDatabaseValue,
+	getPieceFrontmatterSchemaFields,
 } from './frontmatter.js'
+import { PieceCommonDatabaseFieldNames } from '../types/common.js'
 
-function makePieceInsertable<
-	P extends Pieces,
-	F extends PieceFrontmatter<PieceSelectable, PieceFrontmatterFields | void>
->(markdown: PieceMarkdown<F>, schema: PieceFrontmatterJtdSchema<F>): PieceInsertable<P> {
+function makePieceInsertable<P extends Pieces, F extends PieceFrontmatter>(
+	markdown: PieceMarkdown<F>,
+	schema: PieceFrontmatterSchema<F>
+): PieceInsertable<P> {
 	const input = {
 		id: createId(),
 		slug: markdown.slug,
 		note: markdown.note,
 	} as Record<string, unknown>
 
-	const frontmatterSchema = getPieceFrontmatterKeysFromSchema(schema)
-	const frontmatterKeys = Object.keys(markdown.frontmatter) as (keyof F)[]
-	const inputKeys = frontmatterKeys.filter(
-		(key) => !['id', 'slug', 'date_added', 'date_updated'].includes(key as string)
+	const frontmatterFields = getPieceFrontmatterSchemaFields(schema)
+	const inputFields = frontmatterFields.filter(
+		(field) => !PieceCommonDatabaseFieldNames.includes(field.name)
 	)
 
-	inputKeys.forEach((key) => {
-		const value = markdown.frontmatter[key]
-		const schemaKey = frontmatterSchema.find((f) => f.name === key)
-
-		if (schemaKey) {
-			const format = schemaKey.metadata?.format
-			const isArray = schemaKey.collection === 'array'
-
-			if (isArray) {
-				if (Array.isArray(value)) {
-					input[key as string] = JSON.stringify(
-						value.map((v) => unformatPieceFrontmatterValue(v, format))
-					)
-				}
-			} else {
-				input[key as string] = unformatPieceFrontmatterValue(value, format)
-			}
-		}
+	inputFields.forEach((field) => {
+		const name = field.name
+		const value = markdown.frontmatter[name]
+		input[name] = pieceFrontmatterValueToDatabaseValue(value, field)
 	})
 
 	return input as PieceInsertable<P>
@@ -50,11 +35,11 @@ function makePieceInsertable<
 
 function makePieceUpdatable<
 	P extends Pieces,
-	F extends PieceFrontmatter<PieceSelectable, PieceFrontmatterFields | void>,
-	D extends PieceSelectable
+	F extends PieceFrontmatter,
+	D extends PieceSelectable,
 >(
 	markdown: PieceMarkdown<F>,
-	schema: PieceFrontmatterJtdSchema<F>,
+	schema: PieceFrontmatterSchema<F>,
 	data: D,
 	force = false
 ): PieceUpdatable<P> {
@@ -62,21 +47,16 @@ function makePieceUpdatable<
 		date_updated: new Date().getTime(),
 	} as Record<string, unknown>
 
-	const frontmatterSchema = getPieceFrontmatterKeysFromSchema(schema)
+	const fields = getPieceFrontmatterSchemaFields(schema)
 
-	frontmatterSchema.forEach((schema) => {
-		const fieldName = schema.name
-		const value = markdown.frontmatter[fieldName as keyof F]
-		const format = schema.metadata?.format
-		const isArray = schema.collection === 'array'
-		const dataValue = data[fieldName as keyof D] as unknown
-		const updateValue =
-			isArray && Array.isArray(value)
-				? JSON.stringify(value.map((v) => unformatPieceFrontmatterValue(v, format)))
-				: unformatPieceFrontmatterValue(value, format)
+	fields.forEach((field) => {
+		const name = field.name
+		const value = markdown.frontmatter[name as keyof F]
+		const dataValue = data[name as keyof D] as unknown
+		const updateValue = pieceFrontmatterValueToDatabaseValue(value, field)
 
 		if (force || dataValue !== updateValue) {
-			update[fieldName] = updateValue
+			update[name] = updateValue
 		}
 	})
 

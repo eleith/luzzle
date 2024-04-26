@@ -1,21 +1,21 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import Ajv from 'ajv/dist/jtd.js'
-import { FuncKeywordDefinition, SchemaValidateFunction } from 'ajv/dist/types/index.js'
-import ajv, { luzzleFormatKeyword } from './ajv.js'
+import { makeSchema } from '../pieces/utils/piece.fixtures.js'
+import Ajv from 'ajv'
+import ajv, { luzzleAssetFormatValidator, luzzleDateFormatValidator } from './ajv.js'
 
-vi.mock('ajv/dist/jtd.js')
+vi.mock('ajv')
 
 const mocks = {
-	ajv: vi.mocked(Ajv),
+	Ajv: vi.mocked(Ajv.default),
+	compile: vi.mocked(Ajv.default.prototype.compile),
+	addFormat: vi.mocked(Ajv.default.prototype.addFormat),
 }
 
 const spies: { [key: string]: MockInstance } = {}
 
-describe('src/jtd/ajv.ts', () => {
+describe('src/lib/ajv.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
-			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-			// @ts-ignore
 			mock.mockReset()
 		})
 
@@ -26,31 +26,22 @@ describe('src/jtd/ajv.ts', () => {
 	})
 
 	test('ajv', () => {
-		ajv({})
-		expect(mocks.ajv).toHaveBeenCalledTimes(1)
+		const schema = makeSchema()
+
+		ajv(schema)
+
+		expect(mocks.Ajv).toHaveBeenCalledTimes(1)
+		expect(mocks.addFormat).toHaveBeenCalledTimes(2)
+		expect(mocks.compile).toHaveBeenCalledWith(schema)
 	})
 
-	test('validate date-string', () => {
-		const keyword = luzzleFormatKeyword as FuncKeywordDefinition
-		const validate = keyword.validate as SchemaValidateFunction
-
-		const passTrue = validate('date-string', '2021-01-01')
-
-		expect(passTrue).toBe(true)
-		expect(validate.errors).toHaveLength(0)
-
-		const passFalse = validate('date-string', 'oops')
-
-		expect(passFalse).toBe(false)
-		expect(validate.errors).toHaveLength(1)
+	test('luzzleDateFormatValidator', () => {
+		expect(luzzleDateFormatValidator('2020-01-01')).toBe(true)
+		expect(luzzleDateFormatValidator('2020-01-32')).toBe(false)
 	})
 
-	test('validate invalid schema', () => {
-		const keyword = luzzleFormatKeyword as FuncKeywordDefinition
-		const validate = keyword.validate as SchemaValidateFunction
-
-		const passFalse = validate('email', 'oops')
-
-		expect(passFalse).toBe(false)
+	test('luzzleAssetFormatValidtor', () => {
+		expect(luzzleAssetFormatValidator('.assets/1/2/3')).toBe(true)
+		expect(luzzleAssetFormatValidator('./home/to/nowhere/5.jpg')).toBe(false)
 	})
 })

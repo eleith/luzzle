@@ -1,212 +1,111 @@
-import { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/core.js'
-import { PieceSelectable, PieceDatabaseOnlyFields } from '../tables.schema.js'
+import { JSONSchemaType } from 'ajv'
 
-type NonNullableKeys<T> = {
-	[K in keyof T]-?: null extends T[K] ? never : K
-}[keyof T]
-
-type NullableKeys<T> = {
-	[K in keyof T]-?: T[K] extends NonNullable<T[K]> ? never : K
-}[keyof T]
-
-type UnNullify<T> = {
-	[key in keyof T]: null extends T[key] ? Exclude<T[key], null> : T[key]
+type PieceFrontMatterValue = string | number | boolean | string[] | number[] | boolean[]
+type PieceFrontmatter = {
+	[key: string]: PieceFrontMatterValue
 }
-
-type NullToPartials<T> = Pick<T, NonNullableKeys<T>> & Partial<UnNullify<Pick<T, NullableKeys<T>>>>
-type IncludeIfExists<A, B> = B extends void ? A : A & B
-type OmitIfExists<A, B> = B extends void ? A : Omit<A, keyof B>
-type PieceFrontmatterFields = Record<string, string | string[] | number | boolean | undefined>
-
-type PieceFrontmatter<
-	T extends PieceSelectable = PieceSelectable,
-	F extends PieceFrontmatterFields | void = void
-> = NullToPartials<IncludeIfExists<OmitIfExists<Omit<T, PieceDatabaseOnlyFields>, F>, F>>
-
-type FrontMatterValue = string | number | boolean | string[] | number[] | boolean[]
-
-type PieceFrontmatterLuzzleMetadata = {
-	luzzleFormat: 'date-string' | 'attachment' | 'boolean-int'
-	luzzlePattern?: string
-	luzzleEnum?: string[]
-}
-
-type PieceFrontmatterSchemaField = {
+type PieceFrontmatterSchema<M extends PieceFrontmatter> = JSONSchemaType<M>
+type PieceFrontmatterSchemaFieldScalar = {
 	name: string
-	collection?: 'array' | 'object'
-	type?:
-		| JTDSchemaType<string, Record<string, never>>['type']
-		| JTDSchemaType<number, Record<string, never>>['type']
-		| JTDSchemaType<boolean, Record<string, never>>['type']
-	metadata?: {
-		format: PieceFrontmatterLuzzleMetadata['luzzleFormat']
-		pattern?: PieceFrontmatterLuzzleMetadata['luzzlePattern']
-		enum?: PieceFrontmatterLuzzleMetadata['luzzleEnum']
-	}
+	type: 'string' | 'boolean' | 'integer'
+	format?: 'asset' | 'date'
 	nullable?: boolean
-	required?: boolean
+	pattern?: string
+	enum?: string[] | number[]
+}
+type PieceFrontmatterSchemaFieldList = {
+	name: string
+	type: 'array'
+	format?: undefined
+	pattern?: undefined
+	nullable?: boolean
+	enum?: string[] | number[]
+	items: Omit<PieceFrontmatterSchemaField, 'name'>
 }
 
-type PieceFrontmatterJtdSchema<
-	M extends PieceFrontmatter<PieceSelectable, void | PieceFrontmatterFields>
-> = JTDSchemaType<M>
+type PieceFrontmatterSchemaField =
+	| PieceFrontmatterSchemaFieldScalar
+	| PieceFrontmatterSchemaFieldList
 
-function extractFrontmatterSchemaField(
-	key: string,
-	value: SomeJTDSchemaType
-): PieceFrontmatterSchemaField {
-	const schemaField: PieceFrontmatterSchemaField = {
-		name: key,
-	}
-
-	if ('elements' in value && 'type' in value.elements) {
-		const metadata = value.elements.metadata as PieceFrontmatterLuzzleMetadata | undefined
-
-		schemaField.type = value.elements.type
-		schemaField.collection = 'array'
-
-		if (metadata?.luzzleFormat !== undefined) {
-			schemaField.metadata = {
-				format: metadata.luzzleFormat,
-				...(metadata.luzzlePattern !== undefined && { pattern: metadata.luzzlePattern }),
-				...(metadata.luzzleEnum !== undefined && { enum: metadata.luzzleEnum }),
-			}
-		}
-
-		if (value.elements.nullable !== undefined) {
-			schemaField.nullable = value.elements.nullable
-		}
-	} else if ('properties' in value) {
-		schemaField.collection = 'object'
-		if (value.nullable !== undefined) {
-			schemaField.nullable = value.nullable
-		}
-	} else if ('type' in value) {
-		const metadata = value.metadata as PieceFrontmatterLuzzleMetadata | undefined
-
-		schemaField.type = value.type
-
-		if (metadata?.luzzleFormat !== undefined) {
-			schemaField.metadata = {
-				format: metadata.luzzleFormat,
-				...(metadata.luzzlePattern !== undefined && { pattern: metadata.luzzlePattern }),
-				...(metadata.luzzleEnum !== undefined && { enum: metadata.luzzleEnum }),
-			}
-		}
-
-		if (value.nullable !== undefined) {
-			schemaField.nullable = value.nullable
-		}
-	} else if ('enum' in value) {
-		schemaField.metadata = {
-			enum: value.enum,
-		} as PieceFrontmatterSchemaField['metadata']
-		if (value.nullable !== undefined) {
-			schemaField.nullable = value.nullable
-		}
-	} else {
-		throw new Error(`invalid schema at key ${key} of ${value}`)
-	}
-
-	return schemaField
-}
-
-function getPieceFrontmatterKeysFromSchema<M>(
-	schema: JTDSchemaType<M>
+function getPieceFrontmatterSchemaFields<M extends PieceFrontmatter>(
+	schema: PieceFrontmatterSchema<M>
 ): Array<PieceFrontmatterSchemaField> {
-	const fields: Array<PieceFrontmatterSchemaField> = []
-
-	if ('properties' in schema) {
-		const requiredProperties = schema.properties as { [key: string]: SomeJTDSchemaType }
-		for (const [key, value] of Object.entries(requiredProperties)) {
-			const schemaField = extractFrontmatterSchemaField(key, value)
-			fields.push({ ...schemaField, required: true })
-		}
-	}
-
-	if ('optionalProperties' in schema) {
-		const optionalProperties = schema.optionalProperties as { [key: string]: SomeJTDSchemaType }
-		for (const [key, value] of Object.entries(optionalProperties)) {
-			const schemaField = extractFrontmatterSchemaField(key, value)
-			fields.push({ ...schemaField })
-		}
-	}
-
-	return fields
+	return Object.keys(schema.properties).map((key) => {
+		return { name: key, ...schema.properties[key] } as PieceFrontmatterSchemaField
+	})
 }
 
-function unformatPieceFrontmatterValue(
-	value: unknown,
-	format?: PieceFrontmatterLuzzleMetadata['luzzleFormat']
-) {
+function pieceFrontmatterValueToDatabaseValue(value: unknown, field: PieceFrontmatterSchemaField) {
 	if (value === undefined) {
 		return null
 	}
 
-	if (format === 'date-string') {
+	if (field.format === 'date') {
 		return new Date(value as string).getTime()
-	} else if (format === 'boolean-int') {
+	} else if (field.type === 'boolean') {
 		return value ? 1 : 0
+	} else if (field.type === 'array') {
+		return (value as string[]).join(',')
 	}
 
 	return value as unknown
 }
 
-function formatPieceFrontmatterValue(
+function databaseValueToPieceFrontmatterValue(
 	value: unknown,
-	format?: PieceFrontmatterLuzzleMetadata['luzzleFormat']
-) {
-	if (format === 'date-string') {
+	field: PieceFrontmatterSchemaField
+): unknown {
+	if (field.format === 'date') {
 		return new Date(value as number).toLocaleDateString()
-	} else if (format === 'boolean-int') {
+	} else if (field.type === 'boolean') {
 		return value ? true : false
+	} else if (field.type === 'array') {
+		const values = (value as string).split(',')
+		return values.map((v) =>
+			databaseValueToPieceFrontmatterValue(v, field.items as PieceFrontmatterSchemaField)
+		)
 	}
 
 	return value
 }
 
-function initializePieceFrontMatter<M>(schema: JTDSchemaType<M>): M {
-	const frontmatter: { [key: string]: FrontMatterValue | FrontMatterValue[] } = {}
-	const requiredFields = getPieceFrontmatterKeysFromSchema(schema).filter((f) => f.required)
+function initializePieceFrontMatter<M extends PieceFrontmatter>(
+	schema: PieceFrontmatterSchema<M>
+): M {
+	const frontmatter: { [key: string]: PieceFrontMatterValue | PieceFrontMatterValue[] } = {}
+	const fields = getPieceFrontmatterSchemaFields(schema).filter((field) => !field.nullable)
 
-	for (const field of requiredFields) {
-		const key = field.name
-		const isArray = field.collection === 'array'
-		const type = field.type
-		let value: FrontMatterValue = 0
+	for (const field of fields) {
+		const isArray = field.type === 'array'
+		const type = isArray ? field.items?.type : field.type
+		const format = isArray ? field.items?.format : field.format
+		const enumValues = isArray ? field.items?.enum : field.enum
+		let value: PieceFrontMatterValue = 0
 
-		switch (type) {
-			case 'string':
-				value = ''
-				break
-			case 'boolean':
-				value = false
-				break
+		if (enumValues && enumValues.length > 0) {
+			value = enumValues[0]
+		} else if (format === 'date') {
+			value = new Date().toLocaleDateString()
+		} else if (type === 'string') {
+			value = ''
+		} else if (type === 'integer') {
+			value = 0
+		} else if (type === 'boolean') {
+			value = false
 		}
 
-		if (field.metadata?.enum?.length) {
-			frontmatter[key] = field.metadata.enum[0]
-		} else if (field.metadata?.format === 'date-string') {
-			frontmatter[key] = isArray
-				? [new Date().toLocaleDateString()]
-				: new Date().toLocaleDateString()
-		} else {
-			frontmatter[key] = isArray ? [value] : value
-		}
+		frontmatter[field.name] = isArray ? [value] : value
 	}
 
 	return frontmatter as M
 }
 
 export {
-	type PieceFrontmatterJtdSchema,
 	type PieceFrontmatter,
-	type PieceFrontmatterFields,
-	type PieceFrontmatterLuzzleMetadata,
+	type PieceFrontmatterSchema,
 	type PieceFrontmatterSchemaField,
-	getPieceFrontmatterKeysFromSchema,
-	formatPieceFrontmatterValue,
-	unformatPieceFrontmatterValue,
-	extractFrontmatterSchemaField,
+	getPieceFrontmatterSchemaFields,
+	pieceFrontmatterValueToDatabaseValue,
+	databaseValueToPieceFrontmatterValue,
 	initializePieceFrontMatter,
 }

@@ -1,12 +1,9 @@
-import Ajv, { JTDSchemaType, SomeJTDSchemaType } from 'ajv/dist/jtd.js'
+import Ajv from 'ajv'
 import { PieceMarkdown } from './markdown.js'
-import { PieceFrontmatter } from './frontmatter.js'
+import { PieceFrontmatter, PieceFrontmatterSchema } from './frontmatter.js'
 import { PieceSelectable } from '../tables.schema.js'
 
-type PieceFrontmatterSample = PieceFrontmatter<PieceSelectable>
-type PieceValidator = Ajv.ValidateFunction<PieceFrontmatterSample>
-type PieceSchema = JTDSchemaType<PieceFrontmatterSample>
-type PieceMarkdownSample = PieceMarkdown<PieceFrontmatterSample>
+type PieceValidator = Ajv.ValidateFunction<PieceFrontmatter>
 
 const sample = {
 	slug: 'sampleSlug',
@@ -19,39 +16,45 @@ export function makeValidator(): PieceValidator {
 	return validate as unknown as PieceValidator
 }
 
-export function makeSchema(
-	propertyOverrides: Record<string, SomeJTDSchemaType> = {},
-	optionalPropertyOverrides: Record<string, SomeJTDSchemaType> = {}
-): PieceSchema {
+export function makeSchema(properties?: {
+	[key: string]: {
+		type?: string
+		nullable?: boolean
+		items?: object
+		format?: string
+		pattern?: string
+		enum?: string[] | number[]
+	}
+}): PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }> {
 	return {
+		type: 'object',
 		properties: {
 			title: { type: 'string' },
-			...propertyOverrides,
+			keywords: { type: 'string', nullable: true },
+			subtitle: { type: 'string', nullable: true },
+			...properties,
 		},
-		optionalProperties: {
-			keywords: { type: 'string' },
-			subtitle: { type: 'string' },
-			...optionalPropertyOverrides,
-		},
+		required: ['title'],
+		additionalProperties: true,
 	}
 }
 
 export function makeFrontmatterSample(
 	frontmatter: Record<string, unknown> = { title: sample.title }
-): PieceFrontmatterSample {
-	return frontmatter as PieceFrontmatterSample
+): PieceFrontmatter {
+	return frontmatter as PieceFrontmatter
 }
 
-export function makeMarkdownSample(
+export function makeMarkdownSample<F extends PieceFrontmatter>(
 	slug = sample.slug,
 	note: string | null | undefined = sample.note,
-	frontmatter: Record<string, unknown> = { title: sample.title }
-): PieceMarkdownSample {
+	frontmatter: F
+): PieceMarkdown<F> {
 	return {
 		slug,
 		note,
 		frontmatter,
-	} as PieceMarkdownSample
+	} as PieceMarkdown<F>
 }
 
 export function makeSample(): PieceSelectable {

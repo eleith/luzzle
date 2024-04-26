@@ -1,0 +1,30 @@
+{
+  "title": "Link",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "keywords": {
+      "type": "string"
+    },
+    "representative_image": {
+      "format": "asset"
+    },
+    "attachments": {
+      "format": "asset"
+    },
+    "date_published": {
+      "format": "date"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

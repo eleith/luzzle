@@ -1,9 +1,8 @@
-import Ajv, { ValidateFunction } from 'ajv/dist/jtd.js'
+import Ajv, { ValidateFunction } from 'ajv'
 import { addFrontMatter } from '../../lib/frontmatter.js'
-import { PieceFrontmatter, PieceFrontmatterFields } from './frontmatter.js'
-import { PieceSelectable } from '../tables.schema.js'
+import { PieceFrontmatter } from './frontmatter.js'
 
-type PieceMarkdown<F extends PieceFrontmatter<PieceSelectable, void | PieceFrontmatterFields>> = {
+type PieceMarkdown<F extends PieceFrontmatter> = {
 	slug: string
 	note?: string | null
 	frontmatter: F
@@ -19,9 +18,7 @@ class PieceMarkdownError<Y> extends Error {
 	}
 }
 
-function makePieceMarkdownOrThrow<
-	F extends PieceFrontmatter<PieceSelectable, void | PieceFrontmatterFields>
->(
+function makePieceMarkdownOrThrow<F extends PieceFrontmatter>(
 	slug: string,
 	markdown: string | undefined | null,
 	frontmatter: Record<string, unknown>,
@@ -39,15 +36,15 @@ function makePieceMarkdownOrThrow<
 	throw pieceValidationError
 }
 
-function makePieceMarkdown<
-	F extends PieceFrontmatter<PieceSelectable, void | PieceFrontmatterFields>
->(slug: string, markdown: string | undefined | null, frontmatter: F): PieceMarkdown<F> {
+function makePieceMarkdown<F extends PieceFrontmatter>(
+	slug: string,
+	markdown: string | undefined | null,
+	frontmatter: F
+): PieceMarkdown<F> {
 	return { slug, frontmatter, note: markdown }
 }
 
-function makePieceMarkdownString<
-	T extends PieceFrontmatter<PieceSelectable, void | PieceFrontmatterFields>
->(markdown: PieceMarkdown<T>): string {
+function makePieceMarkdownString<T extends PieceFrontmatter>(markdown: PieceMarkdown<T>): string {
 	return addFrontMatter(markdown.note, markdown.frontmatter)
 }
 

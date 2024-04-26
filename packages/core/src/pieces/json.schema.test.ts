@@ -1,16 +1,11 @@
 import { describe, expect, test, afterEach, MockInstance } from 'vitest'
 import { Piece, Pieces } from './tables.schema.js'
-import { getPieceSchema } from './jtd.schema.js'
+import { getPieceSchema } from './json.schema.js'
 
-// const mocks = {}
 const spies: { [key: string]: MockInstance } = {}
 
 describe('pieces/jtd.schema.test.ts', () => {
 	afterEach(() => {
-		// Object.values(mocks).forEach((mock) => {
-		// 	mock.mockReset()
-		// })
-
 		Object.keys(spies).forEach((key) => {
 			spies[key].mockRestore()
 			delete spies[key]
