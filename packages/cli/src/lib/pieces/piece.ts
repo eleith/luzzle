@@ -312,7 +312,7 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 
 		fields.forEach((field) => {
 			const name = field.name
-			const value = data[field.name]
+			const value = data[field.name as keyof D]
 
 			frontmatter[name] = databaseValueToPieceFrontmatterValue(value, field)
 		})
