@@ -10,17 +10,19 @@ steps:
       - npm run build:graphql -w @luzzle/web
       - npm run compile -w @luzzle/web
     when:
-      branch: [main]
-      path:
-        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
+      - event: [push, manual]
+        branch: [main]
+        path:
+          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   test:
     image: node:20
     commands:
       - npm run lint -w @luzzle/web
     when:
-      branch: [main]
-      path:
-        include: [".woodpecker/.web.yml", "packages/web/**"]
+      - event: [push, manual]
+        branch: [main]
+        path:
+          include: [".woodpecker/.web.yml", "packages/web/**"]
   gather:
     image: rclone/rclone:1.57
     environment:
@@ -49,9 +51,10 @@ steps:
         rclone_gcs_project_number,
       ]
     when:
-      branch: [main]
-      path:
-        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
+      - event: [push, manual]
+        branch: [main]
+        path:
+          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   build-content:
     image: node:20
     environment:
@@ -72,9 +75,10 @@ steps:
       - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (texts)' --output public/rss --type texts
     secrets: [nextjs_env_local]
     when:
-      branch: [main]
-      path:
-        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
+      - event: [push, manual]
+        branch: [main]
+        path:
+          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   cache:
     image: rclone/rclone:1.57
     environment:
@@ -97,9 +101,10 @@ steps:
         rclone_gcs_project_number,
       ]
     when:
-      branch: [main]
-      path:
-        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
+      - event: [push, manual]
+        branch: [main]
+        path:
+          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   deploy:
     image: git.eleith.com/eleith/gcs-web-deploy:3.0.0
     environment:
@@ -118,9 +123,10 @@ steps:
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
     secrets: [cloud_run_service_key_json]
     when:
-      branch: [main]
-      path:
-        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
+      - event: [push, manual]
+        branch: [main]
+        path:
+          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   notify:
     image: deblan/woodpecker-email:1.0.1-wp
     settings:
@@ -135,8 +141,8 @@ steps:
       recipients:
         from_secret: smtp_notification_recipient
     when:
-      event: [push]
-      status: [failure, success]
-      branch: [main]
-      path:
-        include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
+      - event: [push, manual]
+        status: [failure, success]
+        branch: [main]
+        path:
+          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]

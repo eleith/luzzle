@@ -10,20 +10,20 @@ steps:
       - npm run compile -w @luzzle/cli
       - npm run build -w @luzzle/cli
     when:
-      event: [push]
-      branch: [main]
-      path:
-        include: [".woodpecker/.cli.yml", "packages/cli/**"]
+      - event: [push]
+        branch: [main]
+        path:
+          include: [".woodpecker/.cli.yml", "packages/cli/**"]
   test:
     image: node:20
     commands:
       - npm run lint -w @luzzle/cli
       - npm run test -w @luzzle/cli
     when:
-      event: [push]
-      branch: [main]
-      path:
-        include: [".woodpecker/.cli.yml", "packages/cli/**"]
+      - event: [push]
+        branch: [main]
+        path:
+          include: [".woodpecker/.cli.yml", "packages/cli/**"]
   publish:
     image: node:20
     commands:
@@ -36,10 +36,10 @@ steps:
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/cli; fi
     secrets: [npm_owner, npm_token]
     when:
-      event: [push]
-      branch: [main]
-      path:
-        include: [".woodpecker/.cli.yml", "packages/cli/**"]
+      - event: [push]
+        branch: [main]
+        path:
+          include: [".woodpecker/.cli.yml", "packages/cli/**"]
   notify:
     image: deblan/woodpecker-email:1.0.1-wp
     settings:
@@ -54,8 +54,8 @@ steps:
       recipients:
         from_secret: smtp_notification_recipient
     when:
-      event: [push]
-      status: [failure, success]
-      branch: [main]
-      path:
-        include: [".woodpecker/.cli.yml", "packages/cli/**"]
+      - event: [push]
+        status: [failure, success]
+        branch: [main]
+        path:
+          include: [".woodpecker/.cli.yml", "packages/cli/**"]
