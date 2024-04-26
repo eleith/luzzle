@@ -11,6 +11,10 @@ const FrontmatterJSONSchema: JSONSchemaType<Frontmatter> = {
 		author: {
 			type: 'string',
 		},
+		coauthors: {
+			type: 'string',
+			nullable: true,
+		},
 		id_ol_book: {
 			type: 'string',
 			nullable: true,
