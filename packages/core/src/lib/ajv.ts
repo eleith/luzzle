@@ -1,45 +1,18 @@
-import Ajv, { FuncKeywordDefinition, JTDSchemaType, ValidateFunction } from 'ajv/dist/jtd.js'
+import Ajv, { ValidateFunction, JSONSchemaType } from 'ajv'
 
-const luzzleFormatKeyword: FuncKeywordDefinition = {
-	keyword: 'luzzleFormat',
-	type: 'string',
-	validate: function validate(schema: string, data: string) {
-		const validation = validate as unknown as { errors: unknown[] }
-		validation.errors = []
-
-		if (schema === 'date-string') {
-			const valid = !isNaN(new Date(data) as unknown as number)
-
-			if (!valid) {
-				validation.errors.push({ message: `'${data}' is not a valid date string` })
-				return false
-			}
-
-			return true
-		}
-
-		return false
-	},
-	errors: true,
+export function luzzleDateFormatValidator(data: string) {
+	return !isNaN(Date.parse(data))
 }
 
-const luzzleEnumKeyword: FuncKeywordDefinition = {
-	keyword: 'luzzleEnum',
-	type: 'array',
+export function luzzleAssetFormatValidator(data: string) {
+	return /^\.assets\/.+\/.+/.test(data)
 }
 
-const luzzlePatternKeyword: FuncKeywordDefinition = {
-	keyword: 'luzzlePattern',
-	type: 'string',
-}
+export default function <T>(schema: JSONSchemaType<T>): ValidateFunction<T> {
+	const ajv = new Ajv.default()
 
-export default function <T>(schema: JTDSchemaType<T>): ValidateFunction<T> {
-	// https://github.com/ajv-validator/ajv/issues/2381
-	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-	// @ts-ignore
-	return new Ajv({
-		keywords: [luzzlePatternKeyword, luzzleFormatKeyword, luzzleEnumKeyword],
-	}).compile(schema)
-}
+	ajv.addFormat('date', { type: 'string', validate: luzzleDateFormatValidator })
+	ajv.addFormat('asset', { type: 'string', validate: luzzleAssetFormatValidator })
 
-export { luzzleFormatKeyword, luzzleEnumKeyword, luzzlePatternKeyword }
+	return ajv.compile(schema)
+}

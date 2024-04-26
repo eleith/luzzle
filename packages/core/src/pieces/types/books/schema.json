@@ -1,0 +1,47 @@
+{
+  "title": "Book",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "id_ol_book": {
+      "type": "string"
+    },
+    "id_ol_work": {
+      "type": "string"
+    },
+    "isbn": {
+      "type": "string",
+      "pattern": "((?:[\\dX]{13})|(?:[\\d\\-X]{17})|(?:[\\dX]{10})|(?:[\\d\\-X]{13}))"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "pages": {
+      "type": "integer"
+    },
+    "year_first_published": {
+      "type": "integer"
+    },
+    "cover": {
+      "format": "asset"
+    },
+    "keywords": {
+      "type": "string"
+    },
+    "date_read": {
+      "format": "date"
+    }
+  },
+  "required": [
+    "title",
+    "author"
+  ]
+}

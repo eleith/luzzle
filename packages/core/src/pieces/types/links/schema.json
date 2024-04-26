@@ -1,0 +1,68 @@
+{
+  "title": "Link",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^(http|https)://"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "is_paywall": {
+      "type": "boolean"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["article", "bookmark"]
+    },
+    "author": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "coauthors": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "keywords": {
+      "type": "string"
+    },
+    "representative_image": {
+      "type": "string",
+      "format": "asset"
+    },
+    "archive_url": {
+      "type": "string",
+      "pattern": "^(http|https)://"
+    },
+    "archive_path": {
+      "type": "string",
+      "format": "asset"
+    },
+    "date_published": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_accessed": {
+      "type": "string",
+      "format": "date"
+    },
+    "word_count": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "title",
+    "url",
+    "is_active",
+    "is_paywall",
+    "type"
+  ]
+}

@@ -13,11 +13,11 @@
     "sourceMap": true,
     "strict": true,
     "strictNullChecks": true,
-    "typeRoots": ["./src/@types"],
+    "typeRoots": ["./src/@types", "./node_modules", "../../node_modules"],
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "module": "nodenext",
     "moduleResolution": "nodenext"
   },
-  "include": ["vite.config.ts", "src/**/*.ts"]
+  "include": ["vite.config.ts", "src/**/*.ts", "src/**/*.json"]
 }

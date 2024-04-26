@@ -1,8 +1,9 @@
 import { Insertable, Updateable, Selectable } from 'kysely'
-import { BooksTable } from './types/books/table.schema.js'
-import { LinksTable } from './types/links/table.schema.js'
-import { TextsTable } from './types/texts/table.schema.js'
-import { date_added, date_updated } from '../database/utils.js'
+import { BookFrontmatter } from './types/books/index.js'
+import { LinkFrontmatter } from './types/links/index.js'
+import { TextFrontmatter } from './types/texts/index.js'
+import { PieceCommonDatabaseFields } from './types/common.js'
+import { SchemaDateStringToDatabaseNumber } from '../database/utils.js'
 
 const Piece = {
 	Book: 'books',
@@ -13,30 +14,19 @@ const Piece = {
 type Pieces = (typeof Piece)[keyof typeof Piece]
 
 type PieceTables = {
-	[Piece.Book]: BooksTable
-	[Piece.Link]: LinksTable
-	[Piece.Text]: TextsTable
+	[Piece.Book]: SchemaDateStringToDatabaseNumber<BookFrontmatter> & PieceCommonDatabaseFields
+	[Piece.Link]: SchemaDateStringToDatabaseNumber<LinkFrontmatter> & PieceCommonDatabaseFields
+	[Piece.Text]: SchemaDateStringToDatabaseNumber<TextFrontmatter> & PieceCommonDatabaseFields
 }
 
-type PieceDatabaseOnlyFields = 'id' | 'date_added' | 'date_updated' | 'slug' | 'note'
-
-type PieceCommonFields = {
-	note: string | null
-	id: string
-	slug: string
-	keywords: string | null
-	date_added: date_added
-	date_updated: date_updated
-}
-
-type PiecesCommonTable = PieceCommonFields & {
+type PiecesCommonTable = {
 	type: Pieces
 	title: string
 	summary: string | null
 	media: string | null
 	json_metadata: string | null
 	date_consumed: number | null
-}
+} & PieceCommonDatabaseFields
 
 type PieceTable<P extends Pieces> = PieceTables[P]
 type PieceInsertable<P extends Pieces = Pieces> = Insertable<PieceTable<P>>
@@ -53,7 +43,6 @@ export {
 	type Pieces,
 	type PiecesCommonTable,
 	type PiecesCommonSelectable,
-	type PieceDatabaseOnlyFields,
-	type PieceCommonFields,
+	type PieceCommonDatabaseFields,
 	Piece,
 }

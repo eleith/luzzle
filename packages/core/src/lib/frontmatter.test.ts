@@ -1,14 +1,14 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import * as frontmatter from './frontmatter.js'
-import { readFile } from 'fs/promises'
+import { stringify } from 'yaml'
 
-vi.mock('fs/promises')
+vi.mock('yaml')
 
 const mocks = {
-	readFile: vi.mocked(readFile),
+	stringify: vi.mocked(stringify),
 }
 
-describe('src/markdown/frontmatter.ts', () => {
+describe('src/lib/frontmatter.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -22,10 +22,12 @@ describe('src/markdown/frontmatter.ts', () => {
 			a: 'awesome',
 			b: 'banana',
 		}
-		const together = '---\na: awesome\nb: banana\n---\nthis is markdown\n'
+		const yamlstring = 'yaml-front-matter'
+
+		mocks.stringify.mockReturnValueOnce(yamlstring)
 
 		const combined = frontmatter.addFrontMatter(markdown, metadata)
-		expect(combined).toBe(together)
+		expect(combined).toBe(`---\n${yamlstring}---\n${markdown}\n`)
 	})
 
 	test('addFrontMatter with no markdown', () => {
@@ -33,9 +35,11 @@ describe('src/markdown/frontmatter.ts', () => {
 			a: 'awesome',
 			b: 'banana',
 		}
-		const together = '---\na: awesome\nb: banana\n---\n\n'
+		const yamlstring = 'yaml-front-matter'
+
+		mocks.stringify.mockReturnValueOnce(yamlstring)
 
 		const combined = frontmatter.addFrontMatter(null, metadata)
-		expect(combined).toBe(together)
+		expect(combined).toBe(`---\n${yamlstring}---\n\n`)
 	})
 })
