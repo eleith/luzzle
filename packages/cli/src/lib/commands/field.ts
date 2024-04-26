@@ -1,7 +1,13 @@
 import log from '../log.js'
 import { Argv } from 'yargs'
 import { Command } from './utils/types.js'
-import { PieceArgv, PieceCommandOption, makePieceCommand, parsePieceArgv } from '../pieces/index.js'
+import {
+	PieceArgv,
+	PieceCommandOption,
+	PieceMarkdownError,
+	makePieceCommand,
+	parsePieceArgv,
+} from '../pieces/index.js'
 
 export type AttachArgv = {
 	fieldname?: string
@@ -73,39 +79,49 @@ const command: Command<AttachArgv> = {
 			return
 		}
 
-		const field = fieldname as keyof (typeof markdown)['frontmatter']
-
 		if (set && remove) {
 			log.error('cannot set and remove a field at the same time')
 			return
 		} else if (set) {
 			if (value !== undefined) {
-				const updated = await pieces.setField(markdown, field, value)
+				try {
+					const updated = await pieces.setField(markdown, fieldname, value)
 
-				if (!ctx.flags.dryRun) {
-					await pieces.write(updated)
+					if (!ctx.flags.dryRun) {
+						await pieces.write(updated)
+					}
+
+					log.info(`${fieldname} is now: ${updated.frontmatter[fieldname]}`)
+				} catch (e) {
+					/* c8 ignore next 2 */
+					const errors = e instanceof PieceMarkdownError ? pieces.getErrors(e) : [e]
+					log.error(`error setting field: ${errors.join(', ')}`)
 				}
-
-				log.info(`${field} is now ${value}`)
 			} else {
 				log.error('must provide a value to set a field')
 				return
 			}
 		} else if (remove) {
 			if (value === undefined) {
-				const updated = await pieces.removeField(markdown, field)
+				try {
+					const updated = await pieces.removeField(markdown, fieldname)
 
-				if (!ctx.flags.dryRun) {
-					await pieces.write(updated)
+					if (!ctx.flags.dryRun) {
+						await pieces.write(updated)
+					}
+
+					log.info(`removed ${fieldname} in ${slug}`)
+				} catch (e) {
+					/* c8 ignore next 2 */
+					const errors = e instanceof PieceMarkdownError ? pieces.getErrors(e) : [e]
+					log.error(`error setting field: ${errors.join(', ')}`)
 				}
-
-				log.info(`removed ${field} in ${slug}`)
 			} else {
-				log.error('cannot remove a field while tryign to set it')
+				log.error('cannot remove a field while trying to set it')
 				return
 			}
 		} else {
-			console.log(markdown.frontmatter[field])
+			console.log(markdown.frontmatter[fieldname])
 		}
 	},
 }

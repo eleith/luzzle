@@ -6,11 +6,9 @@ import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
 import { makePieceCommand, parsePieceArgv, PieceMarkdownError } from '../pieces/index.js'
 import { makeMarkdownSample, makePiece } from '../pieces/piece.fixtures.js'
-import { ValidateFunction } from 'ajv/dist/jtd.js'
 
 vi.mock('../pieces/index')
 vi.mock('../log.js')
-vi.mock('ajv/dist/jtd')
 
 const mocks = {
 	logError: vi.spyOn(log, 'error'),
@@ -65,7 +63,8 @@ describe('lib/commands/validate.ts', () => {
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
-		pieceError.validationErrors = [{ instancePath: '', message: '' }] as ValidateFunction['errors']
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		pieceError.validationErrors = [{ instancePath: '', message: '' }] as any
 
 		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
 		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)

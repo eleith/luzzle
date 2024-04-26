@@ -31,14 +31,8 @@ const command: Command<ValidateArgv> = {
 			log.info(`${slug} is valid`)
 		} catch (e) {
 			if (e instanceof PieceMarkdownError) {
-				const errorMessage = [`${slug} has ${e.validationErrors?.length} error(s)\n`]
-
-				e.validationErrors?.map((error) => {
-					const path = error.instancePath.replace('/frontmatter/', '')
-					errorMessage.push(`${path}: ${error.message}`)
-				})
-
-				log.error(errorMessage.join('\n'))
+				const errors = pieces.getErrors(e)
+				log.error(`${slug} has ${errors.length} error(s): ${errors.join(', ')}`)
 			} else {
 				log.error(e)
 			}

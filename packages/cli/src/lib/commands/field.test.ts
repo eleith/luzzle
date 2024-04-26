@@ -38,7 +38,7 @@ describe('lib/commands/field.ts', () => {
 		const path = 'slug'
 		const PieceTest = makePiece()
 		const pieceMarkdown = makeMarkdownSample()
-		const schema: PieceFrontmatterSchemaField = { name: 'title', type: 'string' }
+		const fields = [{ name: 'title', type: 'string' }] as Array<PieceFrontmatterSchemaField>
 		const ctx = makeContext({
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
@@ -46,7 +46,7 @@ describe('lib/commands/field.ts', () => {
 		})
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
-		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
@@ -61,7 +61,7 @@ describe('lib/commands/field.ts', () => {
 		const PieceTest = makePiece()
 		const pieceMarkdown = makeMarkdownSample()
 		const fieldname = 'title'
-		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
 		const ctx = makeContext({
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
@@ -69,7 +69,7 @@ describe('lib/commands/field.ts', () => {
 		})
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
-		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
@@ -85,7 +85,7 @@ describe('lib/commands/field.ts', () => {
 		const pieceMarkdown = makeMarkdownSample()
 		const fieldname = 'title'
 		const value = 'new title'
-		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
 		const ctx = makeContext({
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
@@ -93,7 +93,7 @@ describe('lib/commands/field.ts', () => {
 		})
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
-		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		spies.pieceSetField = vi
 			.spyOn(PieceTest.prototype, 'setField')
 			.mockResolvedValueOnce(pieceMarkdown)
@@ -106,12 +106,13 @@ describe('lib/commands/field.ts', () => {
 		expect(spies.pieceWrite).toHaveBeenCalledWith(pieceMarkdown)
 	})
 
-	test('run remove a field', async () => {
+	test('run setfield skips write on catch', async () => {
 		const path = 'slug'
 		const PieceTest = makePiece()
 		const pieceMarkdown = makeMarkdownSample()
 		const fieldname = 'title'
-		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
+		const value = 'new title'
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
 		const ctx = makeContext({
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
@@ -119,7 +120,32 @@ describe('lib/commands/field.ts', () => {
 		})
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
-		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
+		spies.pieceSetField = vi
+			.spyOn(PieceTest.prototype, 'setField')
+			.mockRejectedValueOnce(new Error('error'))
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+
+		await command.run(ctx, { path, fieldname, value, set: true } as Arguments<AttachArgv>)
+
+		expect(spies.pieceWrite).not.toHaveBeenCalled()
+	})
+
+	test('run remove a field', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const fieldname = 'title'
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		spies.pieceRemoveField = vi
 			.spyOn(PieceTest.prototype, 'removeField')
 			.mockResolvedValueOnce(pieceMarkdown)
@@ -130,6 +156,31 @@ describe('lib/commands/field.ts', () => {
 
 		expect(spies.pieceRemoveField).toHaveBeenCalledWith(pieceMarkdown, fieldname)
 		expect(spies.pieceWrite).toHaveBeenCalledWith(pieceMarkdown)
+	})
+
+	test('run remove a field skips write on catch', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const fieldname = 'title'
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
+		spies.pieceRemoveField = vi
+			.spyOn(PieceTest.prototype, 'removeField')
+			.mockRejectedValueOnce(new Error('error'))
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+
+		await command.run(ctx, { path, fieldname, remove: true } as Arguments<AttachArgv>)
+
+		expect(spies.pieceWrite).toHaveBeenCalledTimes(0)
 	})
 
 	test('run fails to find slug', async () => {
@@ -155,7 +206,7 @@ describe('lib/commands/field.ts', () => {
 		const PieceTest = makePiece()
 		const pieceMarkdown = makeMarkdownSample()
 		const fieldname = 'title'
-		const schema: PieceFrontmatterSchemaField = { name: 'title2', type: 'string' }
+		const fields = [{ name: 'title2', type: 'string' }] as Array<PieceFrontmatterSchemaField>
 		const ctx = makeContext({
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
@@ -163,7 +214,7 @@ describe('lib/commands/field.ts', () => {
 		})
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
-		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
 		await command.run(ctx, { path, fieldname } as Arguments<AttachArgv>)
@@ -177,7 +228,7 @@ describe('lib/commands/field.ts', () => {
 		const pieceMarkdown = makeMarkdownSample()
 		const fieldname = 'title'
 		const value = 'new title'
-		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
 		const ctx = makeContext({
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
@@ -185,7 +236,7 @@ describe('lib/commands/field.ts', () => {
 		})
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
-		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
 
@@ -270,14 +321,14 @@ describe('lib/commands/field.ts', () => {
 		const PieceTest = makePiece()
 		const pieceMarkdown = makeMarkdownSample()
 		const fieldname = 'title'
-		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
 		const ctx = makeContext({
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
-		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
@@ -297,14 +348,14 @@ describe('lib/commands/field.ts', () => {
 		const pieceMarkdown = makeMarkdownSample()
 		const fieldname = 'title'
 		const value = 'new title'
-		const schema: PieceFrontmatterSchemaField = { name: fieldname, type: 'string' }
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
 		const ctx = makeContext({
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
-		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue([schema])
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })

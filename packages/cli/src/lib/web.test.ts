@@ -16,7 +16,7 @@ const mocks = {
 	tempyFile: vi.mocked(temporaryFile),
 }
 
-describe('book', () => {
+describe('src/lib/web', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()

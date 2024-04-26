@@ -6,7 +6,6 @@ import { makePiece } from '../pieces/piece.fixtures.js'
 import { makeOptionalPieceCommand, parseOptionalPieceArgv } from '../pieces/index.js'
 import { Pieces } from '@luzzle/core'
 
-vi.mock('ajv/dist/jtd')
 vi.mock('../pieces/index.js')
 
 const mocks = {
