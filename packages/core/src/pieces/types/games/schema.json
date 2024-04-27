@@ -1,0 +1,78 @@
+{
+  "title": "Game",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^(http|https)://"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "video",
+        "board"
+      ]
+    },
+    "publisher": {
+      "type": "string"
+    },
+    "developer": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "keywords": {
+      "type": "string"
+    },
+    "representative_image": {
+      "type": "string",
+      "format": "asset"
+    },
+    "archive_url": {
+      "type": "string",
+      "pattern": "^(http|https)://"
+    },
+    "date_published": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_played": {
+      "type": "string",
+      "format": "date"
+    },
+    "play_time": {
+      "type": "integer"
+    },
+    "number_of_players": {
+      "type": "integer"
+    },
+    "played_on": {
+      "type": "string",
+      "enum": [
+        "xbox 360",
+        "switch",
+        "android",
+        "nes",
+        "snes",
+        "gamecube",
+        "wii",
+        "switch",
+        "gameboy",
+        "gameboy advance sp",
+        "ds",
+        "steam deck",
+        "pc",
+        "playstation 5",
+        "irl"
+      ]
+    }
+  },
+  "required": [
+    "title",
+    "type"
+  ]
+}
