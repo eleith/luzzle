@@ -69,7 +69,7 @@ function makeBookDateString(book?: Book): string {
 function makeSiblingLink(image: JSX.Element, slug?: string): JSX.Element {
 	if (slug) {
 		return (
-			<Link href={`/books/${slug}`} passHref>
+			<Link href={`/pieces/books/${slug}`} passHref>
 				<Anchor color={'inherit'} className={styles.navigation}>
 					{image}
 				</Anchor>

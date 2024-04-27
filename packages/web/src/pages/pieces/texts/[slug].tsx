@@ -61,7 +61,7 @@ type TextPageProps = { text: TextPiece }
 function makeSiblingLink(image: JSX.Element, slug?: string): JSX.Element {
 	if (slug) {
 		return (
-			<NextLink href={`/texts/${slug}`} passHref>
+			<NextLink href={`/pieces/texts/${slug}`} passHref>
 				<Anchor color={'inherit'} className={styles.navigation}>
 					{image}
 				</Anchor>
