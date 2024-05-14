@@ -87,14 +87,14 @@ export default function Texts({ texts }: TextsProps): JSX.Element {
 			slug={text.slug}
 			media={text.representativeImage}
 			title={text.title}
-			type={'links'}
+			type={'texts'}
 			loading={i <= 10 ? 'eager' : 'lazy'}
 			key={i}
 		/>
 	))
 
 	return (
-		<PageFull meta={{ title: 'links' }}>
+		<PageFull meta={{ title: 'texts' }}>
 			<Box>
 				<Box className={styles.textsContainer}>{allTexts}</Box>
 				{!isEnd && (
