@@ -70,7 +70,7 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		return this._pieceTable
 	}
 
-	protected get validator() {
+	protected get validator(): ReturnType<typeof compile<F>> {
 		this._validator = this._validator || compile<F>(this._schema)
 		return this._validator
 	}
@@ -348,6 +348,29 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		await unlink(tmpPath)
 
 		return relPath
+	}
+
+	async setFields<V>(
+		markdown: PieceMarkdown<F>,
+		fields: Record<string, unknown>
+	): Promise<PieceMarkdown<F>> {
+		let updatedMarkdown = markdown
+
+		for (const [field, value] of Object.entries(fields)) {
+			updatedMarkdown = await this.setField<V>(markdown, field, value)
+		}
+
+		return updatedMarkdown
+	}
+
+	async removeFields(markdown: PieceMarkdown<F>, fields: string[]): Promise<PieceMarkdown<F>> {
+		let updatedMarkdown = markdown
+
+		for (const field of fields) {
+			updatedMarkdown = await this.removeField(markdown, field)
+		}
+
+		return updatedMarkdown
 	}
 
 	async setField<V>(

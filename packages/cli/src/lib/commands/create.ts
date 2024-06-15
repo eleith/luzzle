@@ -4,12 +4,16 @@ import { Argv } from 'yargs'
 import { PieceType, PieceTypes } from '../pieces/index.js'
 import slugify from '@sindresorhus/slugify'
 
-export type CreateArgv = { piece: PieceTypes; title: string }
+export type CreateArgv = {
+	piece: PieceTypes
+	title: string
+	fields?: string[]
+}
 
 const command: Command<CreateArgv> = {
 	name: 'create',
 
-	command: `create <title>`,
+	command: `create <title> [fields..]`,
 
 	describe: 'create a new piece',
 
@@ -26,13 +30,26 @@ const command: Command<CreateArgv> = {
 				type: 'string',
 				description: `title of piece`,
 				demandOption: `title is required`,
+			})
+			.positional('fields', {
+				type: 'string',
+				array: true,
+				description: 'pairs of field=value to optionally set',
 			}) as Argv<T & CreateArgv>
 	},
 
 	run: async function (ctx, args) {
-		const { title, piece } = args
+		const { title, piece, fields } = args
 		const pieces = ctx.pieces.getPiece(piece)
 		const slug = slugify(title)
+		const fieldMaps = fields?.reduce(
+			(fields, field) => {
+				const [fieldname, value] = field.split('=')
+				fields[fieldname] = value
+				return fields
+			},
+			{} as Record<string, unknown>
+		)
 
 		if (pieces.exists(slug)) {
 			log.error(`${piece} already exists at ${pieces.getFileName(slug)}`)
@@ -41,7 +58,14 @@ const command: Command<CreateArgv> = {
 
 		if (ctx.flags.dryRun === false) {
 			const markdown = pieces.create(slug, title)
-			await pieces.write(markdown)
+
+			if (fieldMaps) {
+				const updatedMarkdown = await pieces.setFields(markdown, fieldMaps)
+				await pieces.write(updatedMarkdown)
+			} else {
+				await pieces.write(markdown)
+			}
+
 			log.info(`created new ${piece} at ${pieces.getFileName(slug)}`)
 		} else {
 			log.info(`created new ${piece} at ${slugify(title)}.md`)
