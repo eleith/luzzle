@@ -10,16 +10,15 @@ import {
 } from '../pieces/index.js'
 
 export type AttachArgv = {
-	fieldname?: string
-	value?: string
 	remove?: boolean
 	set?: boolean
+	fields?: string[]
 } & PieceArgv
 
 const command: Command<AttachArgv> = {
 	name: 'field',
 
-	command: `field ${PieceCommandOption} [fieldname] [value]`,
+	command: `field ${PieceCommandOption} [fields..]`,
 
 	describe: 'get, edit or remove a field',
 
@@ -37,22 +36,29 @@ const command: Command<AttachArgv> = {
 				default: false,
 				description: 'set the field to the value',
 			})
-			.positional('fieldname', {
+			.positional('fields', {
 				type: 'string',
-				description: 'name of field to edit',
-			})
-			.positional('value', {
-				type: 'string',
-				description: 'value to set corresponding to field to',
+				array: true,
+				description: 'pairs of field=value to optionally set or list of fields to remove',
 			})
 	},
 
 	run: async function (ctx, args) {
 		const { slug, piece } = parsePieceArgv(args)
-		const { fieldname, value, remove, set } = args
+		const { fields, remove, set } = args
 		const pieces = ctx.pieces.getPiece(piece)
+		const pieceFields = pieces.fields.map((f) => f.name)
+		const fieldMaps = fields?.reduce(
+			(fields, field) => {
+				const [fieldname, value] = field.split('=')
+				fields[fieldname] = value
+				return fields
+			},
+			{} as Record<string, unknown>
+		)
+		const fieldnames = fieldMaps ? Object.keys(fieldMaps) : []
 
-		if (!fieldname) {
+		if (!fieldMaps || !fieldnames.length) {
 			if (set) {
 				log.error('must provide a fieldname to set a field')
 				return
@@ -60,17 +66,16 @@ const command: Command<AttachArgv> = {
 				log.error('must provide a fieldname to remove a field')
 				return
 			} else {
-				const fields = pieces.fields.map((f) => f.name).join(', ')
-				console.log(`valid fields for ${piece} are: ${fields}`)
+				console.log(`valid fields for ${piece} are: ${pieceFields.join(', ')}`)
 				return
 			}
 		}
 
 		const markdown = await pieces.get(slug)
-		const pieceField = pieces.fields.find((pf) => pf.name === fieldname)
+		const pieceField = fieldnames.find((f) => !pieceFields.includes(f))
 
-		if (!pieceField) {
-			log.error(`'${fieldname}' is not a valid field for ${piece} types`)
+		if (pieceField) {
+			log.error(`'${pieceField}' is not a valid field for ${piece} types`)
 			return
 		}
 
@@ -83,45 +88,37 @@ const command: Command<AttachArgv> = {
 			log.error('cannot set and remove a field at the same time')
 			return
 		} else if (set) {
-			if (value !== undefined) {
-				try {
-					const updated = await pieces.setField(markdown, fieldname, value)
+			try {
+				const updated = await pieces.setFields(markdown, fieldMaps)
 
-					if (!ctx.flags.dryRun) {
-						await pieces.write(updated)
-					}
-
-					log.info(`${fieldname} is now: ${updated.frontmatter[fieldname]}`)
-				} catch (e) {
-					/* c8 ignore next 2 */
-					const errors = e instanceof PieceMarkdownError ? pieces.getErrors(e) : [e]
-					log.error(`error setting field: ${errors.join(', ')}`)
+				if (!ctx.flags.dryRun) {
+					await pieces.write(updated)
 				}
-			} else {
-				log.error('must provide a value to set a field')
-				return
+
+				log.info(`saved: ${fields}`)
+			} catch (e) {
+				/* c8 ignore next 2 */
+				const errors = e instanceof PieceMarkdownError ? pieces.getErrors(e) : [e]
+				log.error(`error setting field: ${errors.join(', ')}`)
 			}
 		} else if (remove) {
-			if (value === undefined) {
-				try {
-					const updated = await pieces.removeField(markdown, fieldname)
+			try {
+				const fieldnames = Object.keys(fieldMaps)
+				const updated = await pieces.removeFields(markdown, fieldnames)
 
-					if (!ctx.flags.dryRun) {
-						await pieces.write(updated)
-					}
-
-					log.info(`removed ${fieldname} in ${slug}`)
-				} catch (e) {
-					/* c8 ignore next 2 */
-					const errors = e instanceof PieceMarkdownError ? pieces.getErrors(e) : [e]
-					log.error(`error setting field: ${errors.join(', ')}`)
+				if (!ctx.flags.dryRun) {
+					await pieces.write(updated)
 				}
-			} else {
-				log.error('cannot remove a field while trying to set it')
-				return
+
+				log.info(`removed: ${fieldnames.join(', ')}`)
+			} catch (e) {
+				/* c8 ignore next 2 */
+				const errors = e instanceof PieceMarkdownError ? pieces.getErrors(e) : [e]
+				log.error(`error setting field: ${errors.join(', ')}`)
 			}
 		} else {
-			console.log(markdown.frontmatter[fieldname])
+			const fieldnames = Object.keys(fieldMaps)
+			console.log(`fields: ${fieldnames.map((f) => `${f}=${markdown.frontmatter[f]}`).join('\n')}`)
 		}
 	},
 }

@@ -759,6 +759,29 @@ describe('lib/pieces/piece.ts', () => {
 		expect(mocks.logError).toHaveBeenCalled()
 	})
 
+	test('setFields', async () => {
+		const markdown = makeMarkdownSample()
+		const field = 'title'
+		const value = 'new title'
+		const fields = [{ name: field, type: 'string' }] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePiece()
+
+		const pieceTest = new PieceTest()
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		mocks.makePieceMarkdownOrThrow.mockImplementation((slug, note, frontmatter) => {
+			return { slug, note, frontmatter } as {
+				slug: string
+				note: string
+				frontmatter: PieceFrontmatter
+			}
+		})
+
+		const updated = await pieceTest.setFields(markdown, { [field]: value })
+
+		expect(updated.frontmatter[field]).toEqual(value)
+	})
+
 	test('setField', async () => {
 		const markdown = makeMarkdownSample()
 		const field = 'title'
