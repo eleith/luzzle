@@ -356,8 +356,8 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 	): Promise<PieceMarkdown<F>> {
 		let updatedMarkdown = markdown
 
-		for (const [field, value] of Object.entries(fields)) {
-			updatedMarkdown = await this.setField<V>(markdown, field, value)
+		for (const fieldname in fields) {
+			updatedMarkdown = await this.setField<V>(updatedMarkdown, fieldname, fields[fieldname])
 		}
 
 		return updatedMarkdown

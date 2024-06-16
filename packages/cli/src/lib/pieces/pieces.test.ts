@@ -41,9 +41,9 @@ describe('lib/pieces/pieces.ts', () => {
 		} as PieceFrontmatterSchema<{ title: string }>
 
 		mocks.getPieceSchema.mockReturnValueOnce(schema)
-		const piece = pieces.getPiece(PieceType.Book)
+		const piece = pieces.getPiece(PieceType.books)
 
 		expect(piece).toBeInstanceOf(Piece)
-		expect(mocks.getPieceSchema).toHaveBeenCalledWith(PieceType.Book)
+		expect(mocks.getPieceSchema).toHaveBeenCalledWith(PieceType.books)
 	})
 })
