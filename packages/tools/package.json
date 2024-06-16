@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/tools",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -12,12 +12,12 @@
     "node": ">=18"
   },
   "bin": {
-		"luzzle-fetch-book": "dist/fetch-book/index.js",
-		"luzzle-fetch-link": "dist/fetch-link/index.js",
-		"luzzle-generate-img-og": "dist/generate-img-og/index.js",
-		"luzzle-generate-img-variants": "dist/generate-img-variants/index.js",
-		"luzzle-generate-rss": "dist/generate-rss/index.js"
-	},
+    "luzzle-fetch-book": "dist/fetch-book/index.js",
+    "luzzle-fetch-link": "dist/fetch-link/index.js",
+    "luzzle-generate-img-og": "dist/generate-img-og/index.js",
+    "luzzle-generate-img-variants": "dist/generate-img-variants/index.js",
+    "luzzle-generate-rss": "dist/generate-rss/index.js"
+  },
   "files": [
     "dist/*",
     "package.json"
@@ -29,9 +29,10 @@
   "homepage": "https://git.eleith.com/eleith/eleith.git",
   "description": "misc scripts for working with luzzle related files and projects",
   "devDependencies": {
+    "@types/igdb-api-node": "5.0.3",
     "@types/node": "20.11.25",
-		"@types/yargs": "17.0.13",
     "@types/react": "^18",
+    "@types/yargs": "17.0.13",
     "@typescript-eslint/eslint-plugin": "7.7.1",
     "@typescript-eslint/parser": "7.7.1",
     "eslint": "8.57.0",
@@ -41,15 +42,18 @@
     "typescript": "5.4.5"
   },
   "dependencies": {
+    "@google/generative-ai": "0.12.0",
     "@googleapis/books": "^0.3.1",
-    "@luzzle/core": "0.0.4",
+    "@luzzle/core": "0.0.6",
     "@resvg/resvg-js": "2.4.1",
     "feed": "4.2.2",
     "got": "12.5.1",
+    "igdb-api-node": "5.0.2",
     "openai": "3.2.1",
     "react": "^18",
     "satori": "0.10.0",
     "sharp": "0.33.1",
+    "yaml": "2.4.2",
     "yargs": "17.6.0"
   },
   "type": "module"
