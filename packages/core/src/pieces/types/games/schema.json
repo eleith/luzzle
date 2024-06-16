@@ -32,10 +32,6 @@
       "type": "string",
       "format": "asset"
     },
-    "archive_url": {
-      "type": "string",
-      "pattern": "^(http|https)://"
-    },
     "date_published": {
       "type": "string",
       "format": "date"
@@ -60,14 +56,16 @@
         "snes",
         "gamecube",
         "wii",
-        "switch",
         "gameboy",
         "gameboy advance sp",
         "ds",
-        "steam deck",
+        "steam",
+        "n64",
         "pc",
         "playstation 5",
-        "irl"
+        "irl",
+        "web",
+        "stadia"
       ]
     }
   },

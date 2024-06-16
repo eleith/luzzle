@@ -2,7 +2,6 @@ export default interface Frontmatter {
 	title: string
 	type: 'video' | 'board'
 	url?: string
-	archive_url?: string
 	publisher?: string
 	developer?: string
 	description?: string
@@ -14,18 +13,20 @@ export default interface Frontmatter {
 	number_of_players?: number
 	played_on?:
 		| 'xbox 360'
-		| 'switch'
 		| 'android'
 		| 'nes'
 		| 'snes'
+		| 'n64'
 		| 'gamecube'
 		| 'wii'
 		| 'switch'
 		| 'gameboy'
 		| 'gameboy advance sp'
 		| 'ds'
-		| 'steam deck'
+		| 'steam'
 		| 'pc'
 		| 'playstation 5'
 		| 'irl'
+		| 'web'
+		| 'stadia'
 }

@@ -1,12 +1,12 @@
 {
   "name": "@luzzle/core",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
     "build": "tsc -p tsconfig.prod.json",
     "test": "vitest run --coverage --silent",
-    "migration:add": "TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ'); cp ./src/migrations/template.txt ./src/migrations/$TIMESTAMP.ts && echo \"created ./src/migrations/$TIMESTAMP.ts\""
+    "migration:add": "bash ./src/database/migrations.sh"
   },
   "engines": {
     "node": ">=18"
