@@ -4,6 +4,7 @@ import { CaretRight } from 'phosphor-react'
 import { useState } from 'react'
 import { BookCoverFor } from '../books'
 import ArticleCoverFor from '../links/ArticleCoverFor'
+import GameCoverFor from '../games/GameCoverFor'
 import * as styles from './PieceCard.css'
 
 type Props = {
@@ -19,6 +20,15 @@ function makePieceCard(props: Props, isActive = false): JSX.Element {
 	if (props.type === 'links' || props.type === 'texts') {
 		return (
 			<ArticleCoverFor
+				piece={props}
+				hasMedia={!!props.media}
+				size={'SMALL'}
+				imgLoading={props.loading || 'lazy'}
+			/>
+		)
+	} else if (props.type === 'games') {
+		return (
+			<GameCoverFor
 				piece={props}
 				hasMedia={!!props.media}
 				size={'SMALL'}

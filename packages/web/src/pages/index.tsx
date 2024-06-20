@@ -23,6 +23,7 @@ type HomePageProps = {
 	book: Piece
 	link: Piece
 	text: Piece
+	game: Piece
 }
 
 function makeNextLink(text: string, href: string) {
@@ -46,22 +47,28 @@ export async function getStaticProps(): Promise<{ props: HomePageProps }> {
 		query: getPiecesQuery,
 		variables: { take: 1, type: 'texts' },
 	})
+	const responseGames = await staticClient.query({
+		query: getPiecesQuery,
+		variables: { take: 1, type: 'games' },
+	})
 
 	const books = responseBooks.data?.pieces
 	const links = responseLinks.data?.pieces
 	const texts = responseTexts.data?.pieces
-	const nonExistant = { title: 'a title', id: 'add-more-books' } as Piece
+	const games = responseGames.data?.pieces
+	const nonExistant = { title: 'a title should be here', id: 'add-more-pieces' } as Piece
 
 	return {
 		props: {
 			book: books?.[0] || nonExistant,
 			link: links?.[0] || nonExistant,
 			text: texts?.[0] || nonExistant,
+			game: games?.[0] || nonExistant,
 		},
 	}
 }
 
-export default function Home({ book, link, text }: HomePageProps): JSX.Element {
+export default function Home({ book, link, text, game }: HomePageProps): JSX.Element {
 	return (
 		<PageFull meta={{ title: 'this is a title' }} isHome>
 			<Box className={styles.page}>
@@ -73,7 +80,8 @@ export default function Home({ book, link, text }: HomePageProps): JSX.Element {
 					<Text as="h2" size={'h1'}>
 						this site allows me to recall and share {makeNextLink('things', '/pieces')} like{' '}
 						{makeNextLink('books', '/pieces/books')} and {makeNextLink('links', '/pieces/links')}{' '}
-						and {makeNextLink('texts', '/pieces/texts')}
+						and {makeNextLink('texts', '/pieces/texts')} and{' '}
+						{makeNextLink('games', '/pieces/games')}
 					</Text>
 					<br />
 					<Text as="h3" size={'h1'}>
@@ -92,6 +100,12 @@ export default function Home({ book, link, text }: HomePageProps): JSX.Element {
 						a recent text
 						<br />
 						{makeNextLink(text.title, `/pieces/texts/${text.slug}`)}
+					</Text>
+					<br />
+					<Text as="h3" size={'h1'}>
+						a recent game
+						<br />
+						{makeNextLink(game.title, `/pieces/games/${game.slug}`)}
 					</Text>
 				</Box>
 			</Box>
