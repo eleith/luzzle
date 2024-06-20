@@ -89,6 +89,13 @@ async function getItemsWithImages<T extends Pieces>(
 					slug: item.slug,
 					image: item.representative_image as string,
 				}))
+		case 'games':
+			return (items as PieceSelectable<'games'>[])
+				.filter((item) => item.representative_image)
+				.map((item) => ({
+					slug: item.slug,
+					image: item.representative_image as string,
+				}))
 	}
 
 	return []
