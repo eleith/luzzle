@@ -7,6 +7,7 @@ import { bookToHtml } from './books.js'
 import { linkToHtml } from './links.js'
 import { image, outputPng, outputSvg } from './template.js'
 import { textToHtml } from './texts.js'
+import { gameToHtml } from './games.js'
 import parseArgs from './yargs.js'
 import { hideBin } from 'yargs/helpers'
 import { getDatabaseClient, Pieces, PieceSelectable } from '@luzzle/core'
@@ -44,6 +45,8 @@ function itemToHtml<T extends Pieces>(item: PieceSelectable<T>, type: T, folder:
 			return bookToHtml(item as PieceSelectable<'books'>, folder)
 		case 'links':
 			return linkToHtml(item as PieceSelectable<'links'>, folder)
+		case 'games':
+			return gameToHtml(item as PieceSelectable<'games'>, folder)
 		case 'texts':
 		default:
 			return textToHtml(item as PieceSelectable<'texts'>, folder)
