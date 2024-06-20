@@ -67,7 +67,7 @@ steps:
       - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/books --output public/images/variants/books --type books --variant width
       - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/links --output public/images/variants/links --type links --variant height
       - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/texts --output public/images/variants/texts --type texts --variant height
-      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/games --output public/images/variants/games --type games --variant height
+      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/games --output public/images/variants/games --type games --variant width
 
       - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/books --output public/images/og/books --type books
       - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/links --output public/images/og/links --type links
