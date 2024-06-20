@@ -5,6 +5,7 @@ import './book/index'
 import './link/index'
 import './piece/index'
 import './texts/index'
+import './games/index'
 import './discussion/index'
 import './search/index'
 
