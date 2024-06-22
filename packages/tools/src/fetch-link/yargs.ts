@@ -10,9 +10,28 @@ async function parseArgs(args: string[]) {
 				description: 'link url',
 				demandOption: true,
 			},
-			openaiApiKey: {
+			googleApiKey: {
 				type: 'string',
-				description: 'openai api key',
+				description: 'google api key',
+			},
+			pocketConsumerKey: {
+				type: 'string',
+				description: 'pocket consumer key',
+			},
+			pocketAccessToken: {
+				type: 'string',
+				description: 'pokcet access token',
+			},
+			type: {
+				description: 'type of content',
+				choices: ['article', 'website'],
+				default: 'article',
+			},
+			output: {
+				type: 'string',
+				description: 'output file',
+				default: 'luzzle',
+				choices: ['json', 'yaml', 'luzzle'],
 			},
 		})
 		.help()
