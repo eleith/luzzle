@@ -10,17 +10,13 @@ async function parseArgs(args: string[]) {
 				description: 'link url',
 				demandOption: true,
 			},
+			html: {
+				type: 'string',
+				description: 'path to an html file',
+			},
 			googleApiKey: {
 				type: 'string',
 				description: 'google api key',
-			},
-			pocketConsumerKey: {
-				type: 'string',
-				description: 'pocket consumer key',
-			},
-			pocketAccessToken: {
-				type: 'string',
-				description: 'pokcet access token',
 			},
 			type: {
 				description: 'type of content',

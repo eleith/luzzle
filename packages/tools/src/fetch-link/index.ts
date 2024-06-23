@@ -3,16 +3,8 @@
 import { hideBin } from 'yargs/helpers'
 import parseArgs from './yargs.js'
 import { availability } from './wayback.js'
-import { generateDescription, generateTags } from './google-ai.js'
+import { generateMetadataForHtml, generateMetadataForUrl } from './google-ai.js'
 import yaml from 'yaml'
-import { getItemByUrl } from './pocket.js'
-
-async function prompt(apiKey: string, type: 'article' | 'website', url: string) {
-	const tags = await generateTags(apiKey, type, url)
-	const description = await generateDescription(apiKey, type, url)
-
-	return { keywords: tags.join(', '), description }
-}
 
 async function getWaybackAvailability(url: string) {
 	const waybackAvailability = await availability(url)
@@ -33,24 +25,22 @@ async function run(): Promise<void> {
 		const type = command.type as 'article' | 'website'
 		const results: Record<string, string | number | boolean> = {}
 
-		if (command.googleApiKey) {
-			const openaiResults = await prompt(command.googleApiKey, type, command.url)
+		if (command.googleApiKey && !command.html) {
+			const geminiResults = await generateMetadataForUrl(command.googleApiKey, type, command.url)
 
-			Object.entries(openaiResults).forEach(([key, value]) => {
+			Object.entries(geminiResults).forEach(([key, value]) => {
 				results[key] = value
 			})
 		}
 
-		if (command.pocketAccessToken && command.pocketConsumerKey && command.type === 'article') {
-			const pocketClient = {
-				key: command.pocketConsumerKey,
-				token: command.pocketAccessToken,
-			}
-			const pocketResults = await getItemByUrl(pocketClient, command.url)
+		if (command.googleApiKey && command.html) {
+			const geminiResults = await generateMetadataForHtml(command.googleApiKey, type, command.html)
 
-			Object.entries(pocketResults).forEach(([key, value]) => {
+			Object.entries(geminiResults).forEach(([key, value]) => {
 				results[key] = value
 			})
+
+			results.archive_path = command.html
 		}
 
 		const archiveUrl = await getWaybackAvailability(command.url)
