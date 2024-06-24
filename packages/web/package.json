@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/web",
-  "version": "0.0.37",
+  "version": "0.0.38",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -46,7 +46,7 @@
   "dependencies": {
     "@apollo/client": "^3.6.9",
     "@graphql-codegen/client-preset": "4.1.0",
-    "@luzzle/core": "0.0.6",
+    "@luzzle/core": "0.0.7",
     "@luzzle/ui": "0.0.25",
     "@pothos/core": "3.40.1",
     "@pothos/plugin-errors": "3.11.1",
