@@ -64,5 +64,6 @@
     "is_active",
     "is_paywall",
     "type"
-  ]
+  ],
+  "additionalProperties": true
 }

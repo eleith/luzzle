@@ -73,7 +73,7 @@ const FrontmatterJSONSchema: JSONSchemaType<Frontmatter> = {
 		},
 	},
 	required: ['title', 'url', 'is_active', 'is_paywall', 'type'],
-	additionalProperties: false,
+	additionalProperties: true,
 }
 
 export default FrontmatterJSONSchema

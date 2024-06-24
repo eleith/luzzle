@@ -15,12 +15,9 @@ const FrontmatterJSONSchema: JSONSchemaType<Frontmatter> = {
 			type: 'string',
 			nullable: true,
 		},
-		id_ol_book: {
+		url: {
 			type: 'string',
-			nullable: true,
-		},
-		id_ol_work: {
-			type: 'string',
+			pattern: '^(http|https)://',
 			nullable: true,
 		},
 		isbn: {
@@ -60,7 +57,7 @@ const FrontmatterJSONSchema: JSONSchemaType<Frontmatter> = {
 		},
 	},
 	required: ['title', 'author'],
-	additionalProperties: false,
+	additionalProperties: true,
 }
 
 export default FrontmatterJSONSchema
