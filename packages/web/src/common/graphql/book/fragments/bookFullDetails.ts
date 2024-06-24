@@ -13,8 +13,7 @@ const tag = gql(`fragment BookFullDetails on Book {
     yearFirstPublished
     pages
 		dateRead
-    idOlWork
-    idOlBook
+		url
     note
 }`)
 

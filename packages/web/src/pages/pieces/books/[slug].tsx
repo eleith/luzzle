@@ -107,8 +107,8 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 				<Box className={styles.bookContainer}>
 					<Box className={styles.bookDetails}>
 						<Box style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-							{book.idOlWork && (
-								<Anchor href={`https://openlibrary.org/works/${book.idOlWork}`}>
+							{book.url && (
+								<Anchor href={book.url}>
 									<Button minimal use={'primary'} className={styles.bookDiscuss}>
 										<LinkSimple size={36} />
 									</Button>
