@@ -81,7 +81,7 @@ const FrontmatterJSONSchema: JSONSchemaType<Frontmatter> = {
 		},
 	},
 	required: ['title', 'type'],
-	additionalProperties: false,
+	additionalProperties: true,
 }
 
 export default FrontmatterJSONSchema
