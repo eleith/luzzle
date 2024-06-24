@@ -5,30 +5,14 @@ async function parseArgs(args: string[]) {
 		.strict()
 		.env('LUZZLE_TOOLS')
 		.options({
-			title: {
+			prompt: {
 				type: 'string',
-				description: 'game title',
+				description: 'title, year or other words to describe the game',
 				demandOption: true,
-			},
-			url: {
-				type: 'string',
-				description: 'game url',
 			},
 			googleApiKey: {
 				type: 'string',
 				description: 'google api key',
-			},
-			igdbClientId: {
-				type: 'string',
-				description: 'igdb client id',
-			},
-			igdbSecret: {
-				type: 'string',
-				description: 'igdb secret',
-			},
-			igdbId: {
-				type: 'string',
-				description: 'igdb game id',
 			},
 			output: {
 				type: 'string',
