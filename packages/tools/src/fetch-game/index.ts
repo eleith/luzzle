@@ -10,7 +10,7 @@ async function run(): Promise<void> {
 		const command = await parseArgs(hideBin(process.argv))
 		const results: Record<string, string | number> = {}
 
-		if (command.googleApiKey && command.prompt) {
+		if (command.googleApiKey) {
 			const aiResults = await generateMetadataFromPrompt(command.googleApiKey, command.prompt)
 
 			Object.entries(aiResults).forEach(([key, value]) => {
