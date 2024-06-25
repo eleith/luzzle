@@ -5,31 +5,20 @@ async function parseArgs(args: string[]) {
 		.strict()
 		.env('LUZZLE_TOOLS')
 		.options({
-			title: {
+			prompt: {
 				type: 'string',
-				description: 'book title',
+				description: 'title, year or other words to describe the game',
 				demandOption: true,
-			},
-			author: {
-				type: 'string',
-				description: 'book author',
-				demandOption: true,
-			},
-			'openlibrary-book-id': {
-				type: 'string',
-				description: 'open library book id',
-			},
-			isbn: {
-				type: 'string',
-				description: 'isbn number',
-			},
-			openaiApiKey: {
-				type: 'string',
-				description: 'openai api key',
 			},
 			googleApiKey: {
 				type: 'string',
 				description: 'google api key',
+			},
+			output: {
+				type: 'string',
+				description: 'output file',
+				default: 'luzzle',
+				choices: ['json', 'yaml', 'luzzle'],
 			},
 		})
 		.help()
