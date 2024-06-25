@@ -5,23 +5,18 @@ async function parseArgs(args: string[]) {
 		.strict()
 		.env('LUZZLE_TOOLS')
 		.options({
-			url: {
+			prompt: {
 				type: 'string',
-				description: 'link url',
+				description: 'url and title to describe the article or website',
 				demandOption: true,
 			},
-			html: {
+			file: {
 				type: 'string',
-				description: 'path to an html file',
+				description: 'path to a pdf or html file containing the article or website',
 			},
 			googleApiKey: {
 				type: 'string',
 				description: 'google api key',
-			},
-			type: {
-				description: 'type of content',
-				choices: ['article', 'website'],
-				default: 'article',
 			},
 			output: {
 				type: 'string',

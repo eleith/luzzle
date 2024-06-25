@@ -73,7 +73,7 @@ const bookSchema = {
 			type: 'integer',
 		},
 		cover: {
-			description: 'The cover image of the book',
+			description: 'The path to the cover image of the book',
 			format: 'asset',
 		},
 		keywords: {
@@ -104,8 +104,10 @@ async function generateMetadataFromPrompt(apiKey: string, prompt: string) {
 	const genAI = getClient(apiKey)
 
 	const instruction = `you will generate metadata a single book using the following JSON schema:
+
 		${JSON.stringify(bookSchema, null, 2)}
-	`
+
+	attempt to generate as many field values as possible for the schema`
 
 	const examplePrompt: Content = {
 		role: 'user',
