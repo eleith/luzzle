@@ -3,7 +3,7 @@
 import { hideBin } from 'yargs/helpers'
 import parseArgs from './yargs.js'
 import { availability } from './wayback.js'
-import { generateMetadataForHtml, generateMetadataForUrl } from './google-ai.js'
+import { generateMetadataFromPrompt } from './google-ai.js'
 import yaml from 'yaml'
 
 async function getWaybackAvailability(url: string) {
@@ -22,31 +22,24 @@ async function getWaybackAvailability(url: string) {
 async function run(): Promise<void> {
 	try {
 		const command = await parseArgs(hideBin(process.argv))
-		const type = command.type as 'article' | 'website'
 		const results: Record<string, string | number | boolean> = {}
 
-		if (command.googleApiKey && !command.html) {
-			const geminiResults = await generateMetadataForUrl(command.googleApiKey, type, command.url)
+		if (command.googleApiKey) {
+			const geminiResults = await generateMetadataFromPrompt(
+				command.googleApiKey,
+				command.prompt,
+				command.file
+			)
 
 			Object.entries(geminiResults).forEach(([key, value]) => {
 				results[key] = value
 			})
-		}
 
-		if (command.googleApiKey && command.html) {
-			const geminiResults = await generateMetadataForHtml(command.googleApiKey, type, command.html)
+			const archiveUrl = await getWaybackAvailability(geminiResults.url)
 
-			Object.entries(geminiResults).forEach(([key, value]) => {
-				results[key] = value
-			})
-
-			results.archive_path = command.html
-		}
-
-		const archiveUrl = await getWaybackAvailability(command.url)
-
-		if (archiveUrl) {
-			results.archive_url = archiveUrl
+			if (archiveUrl) {
+				results.archive_url = archiveUrl
+			}
 		}
 
 		switch (command.output) {

@@ -3,58 +3,74 @@
   "type": "object",
   "properties": {
     "title": {
+      "description": "The title of the website or article",
       "type": "string"
     },
     "url": {
+      "description": "The URL of the website or article",
       "type": "string",
       "pattern": "^(http|https)://"
     },
     "is_active": {
+      "description": "Whether the link is active or not",
       "type": "boolean"
     },
     "is_paywall": {
+      "description": "Whether the link is behind a paywall or not",
       "type": "boolean"
     },
     "type": {
+      "description": "the type of link, either an article or a bookmark",
       "type": "string",
       "enum": ["article", "bookmark"]
     },
     "author": {
+      "description": "The author of the article",
       "type": "string"
     },
     "subtitle": {
+      "description": "The subtitle of the article",
       "type": "string"
     },
     "coauthors": {
+      "description": "a comma separated list of the coauthors of the article",
       "type": "string"
     },
     "summary": {
+      "description": "A summary of the article",
       "type": "string"
     },
     "keywords": {
+      "description": "A comma separated list of keywords",
       "type": "string"
     },
     "representative_image": {
+      "description": "The path to main image of the article",
       "type": "string",
       "format": "asset"
     },
     "archive_url": {
+      "description": "The URL of the internet archive of the article",
       "type": "string",
       "pattern": "^(http|https)://"
     },
     "archive_path": {
+      "description": "The path of the offline archive of the article",
       "type": "string",
       "format": "asset"
     },
     "date_published": {
+      "description": "The date the article was published",
       "type": "string",
       "format": "date"
     },
     "date_accessed": {
+      "description": "The date the link was accessed",
       "type": "string",
       "format": "date"
     },
     "word_count": {
+      "description": "The word count of the article",
       "type": "integer"
     }
   },
