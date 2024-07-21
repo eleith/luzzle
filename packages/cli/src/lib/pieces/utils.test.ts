@@ -15,6 +15,7 @@ import {
 import { createHash } from 'crypto'
 import { PassThrough } from 'stream'
 import path from 'path'
+import { makeContext } from '../commands/context.fixtures.js'
 
 vi.mock('fs')
 vi.mock('tempy')
@@ -108,95 +109,119 @@ describe('lib/pieces/utils.ts', () => {
 		expect(spies.positional).toHaveBeenCalledOnce()
 	})
 
-	test('parsePieceArgv', () => {
-		const piece = 'piece'
+	test('parsePieceArgv', async () => {
+		const name = 'piece'
 		const slug = 'slug'
-		const result = parsePieceArgv({ piece, path: slug })
+		const context = makeContext()
+
+		spies.findPieceNames = vi.spyOn(context.pieces, 'findPieceNames').mockResolvedValueOnce([name])
+
+		const result = await parsePieceArgv(context, { piece: name, path: slug })
 
 		expect(result).toEqual({
-			piece,
+			name,
 			slug,
 		})
 	})
 
-	test('parsePieceArgv with direct path', () => {
-		const piece = 'piece'
+	test('parsePieceArgv piece does not exist', async () => {
+		const name = 'piece'
 		const slug = 'slug'
-		const path = `./path/${piece}/${slug}.md`
+		const context = makeContext()
+
+		spies.findPieceNames = vi.spyOn(context.pieces, 'findPieceNames').mockResolvedValueOnce([name])
+
+		const parsing = parsePieceArgv(context, { piece: 'fake piece', path: slug })
+
+		expect(parsing).rejects.toThrow()
+	})
+
+	test('parsePieceArgv with direct path', async () => {
+		const name = 'piece'
+		const slug = 'slug'
+		const context = makeContext()
+		const path = `./path/${name}/${slug}.md`
 
 		mocks.existsSync.mockReturnValueOnce(true)
 
-		const result = parsePieceArgv({ path })
+		const result = await parsePieceArgv(context, { path })
 
 		expect(result).toEqual({
-			piece,
+			name,
 			slug,
 		})
 	})
 
-	test('parsePieceArgv with path without a dir', () => {
-		const piece = 'piece'
+	test('parsePieceArgv with path without a dir', async () => {
+		const name = 'piece'
 		const slug = 'slug'
+		const context = makeContext()
 
 		spies.resolve = vi.spyOn(path, 'resolve').mockReturnValueOnce('/piece/slug')
 		mocks.existsSync.mockReturnValueOnce(true)
 
-		const result = parsePieceArgv({ path: 'slug.md' })
+		const result = await parsePieceArgv(context, { path: 'slug.md' })
 
 		expect(result).toEqual({
-			piece,
+			name,
 			slug,
 		})
 	})
 
-	test('parsePieceArgv file does not exist', () => {
+	test('parsePieceArgv file does not exist', async () => {
 		const piece = 'piece'
 		const slug = 'slug'
 		const path = `./path/${piece}/${slug}.md`
+		const context = makeContext()
 
 		mocks.existsSync.mockReturnValueOnce(false)
 
-		expect(() => parsePieceArgv({ path })).toThrow()
+		expect(() => parsePieceArgv(context, { path })).rejects.toThrow()
 	})
 
-	test('parsePieceArgv slug without a piece', () => {
+	test('parsePieceArgv slug without a piece', async () => {
 		const slug = 'slug'
+		const context = makeContext()
 
 		mocks.existsSync.mockReturnValueOnce(false)
 
-		expect(() => parsePieceArgv({ path: slug })).toThrow()
+		expect(() => parsePieceArgv(context, { path: slug })).rejects.toThrow()
 	})
 
-	test('parsePieceArgv invalid piece', () => {
+	test('parsePieceArgv invalid piece', async () => {
 		const path = 'path/to/non-slug.png'
+		const context = makeContext()
 
 		mocks.existsSync.mockReturnValueOnce(false)
 
-		expect(() => parsePieceArgv({ path })).toThrow()
+		expect(() => parsePieceArgv(context, { path })).rejects.toThrow()
 	})
 
-	test('parseOptionalPieceArgv with direct path', () => {
-		const result = parseOptionalPieceArgv({})
+	test('parseOptionalPieceArgv with direct path', async () => {
+		const context = makeContext()
+		const result = await parseOptionalPieceArgv(context, {})
 
 		expect(result).toBeNull()
 	})
 
-	test('parseOptionalPieceArgv piece without slug', () => {
-		const result = parseOptionalPieceArgv({ piece: 'piece' })
+	test('parseOptionalPieceArgv piece without slug', async () => {
+		const context = makeContext()
+		const result = await parseOptionalPieceArgv(context, { piece: 'piece' })
 
-		expect(result).toEqual({ piece: 'piece' })
+		expect(result).toEqual({ name: 'piece' })
 	})
 
-	test('parseOptionalPieceArgv calls parsePieceArgv', () => {
-		const piece = 'piece'
+	test('parseOptionalPieceArgv calls parsePieceArgv', async () => {
+		const name = 'piece'
 		const slug = 'slug'
-		const path = `path/to/${piece}/${slug}.md`
+		const path = `path/to/${name}/${slug}.md`
+		const context = makeContext()
 
 		mocks.existsSync.mockReturnValueOnce(true)
 
-		const result = parseOptionalPieceArgv({ path })
+		const result = await parseOptionalPieceArgv(context, { path })
 
-		expect(result).toEqual({ piece, slug })
+		expect(result).toEqual({ name, slug })
 	})
 
 	test('calculateHashFromFile', async () => {

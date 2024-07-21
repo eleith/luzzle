@@ -1,5 +1,4 @@
 import { Command } from './utils/types.js'
-import { eachLimit } from 'async'
 
 const command: Command = {
 	name: 'dump',
@@ -10,12 +9,12 @@ const command: Command = {
 
 	run: async function (ctx) {
 		const dryRun = ctx.flags.dryRun
-		const pieceTypes = ctx.pieces.getPieceTypes()
+		const pieceNames = await ctx.pieces.findPieceNames()
 
-		await eachLimit(pieceTypes, 1, async (pieceType) => {
-			const pieces = ctx.pieces.getPiece(pieceType)
+		for (const name of pieceNames) {
+			const pieces = await ctx.pieces.getPiece(name)
 			await pieces.dump(ctx.db, dryRun)
-		})
+		}
 	},
 }
 

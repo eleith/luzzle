@@ -40,10 +40,8 @@ describe('lib/commands/edit.js', () => {
 		const path = 'slug2'
 		const fullPath = `/home/user/${path}.md`
 		const PieceTest = makePiece()
-		const pieceType = 'piece'
 		const ctx = makeContext({
 			pieces: {
-				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
@@ -53,7 +51,7 @@ describe('lib/commands/edit.js', () => {
 		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
 		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path } as Arguments<EditArgv>)
 
@@ -68,11 +66,9 @@ describe('lib/commands/edit.js', () => {
 		const path = 'slug2'
 		const fullPath = `/home/user/${path}.md`
 		const PieceTest = makePiece()
-		const pieceType = 'piece'
 		const ctx = makeContext({
 			flags: { dryRun: true },
 			pieces: {
-				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
@@ -82,7 +78,7 @@ describe('lib/commands/edit.js', () => {
 		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
 
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path } as Arguments<EditArgv>)
 
@@ -93,11 +89,9 @@ describe('lib/commands/edit.js', () => {
 		const path = 'slug2'
 		const fullPath = `/home/user/${path}.md`
 		const PieceTest = makePiece()
-		const pieceType = 'piece'
 		const ctx = makeContext({
 			flags: { dryRun: true },
 			pieces: {
-				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
@@ -107,7 +101,7 @@ describe('lib/commands/edit.js', () => {
 		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
 
 		mocks.spawn.mockReturnValueOnce(new EventEmitter() as unknown as ChildProcess)
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path } as Arguments<EditArgv>)
 

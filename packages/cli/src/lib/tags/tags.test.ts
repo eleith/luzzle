@@ -1,9 +1,8 @@
 import log from '../log.js'
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { makeContext } from '../commands/context.fixtures.js'
 import * as tagLibrary from './tags.js'
 import { mockDatabase } from '../database.mock.js'
-import { PieceTypes } from '../pieces/index.js'
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
@@ -13,7 +12,7 @@ const mocks = {
 	removeTagsFrom: vi.spyOn(tagLibrary._private, 'removeTagsFrom'),
 }
 
-const spies: SpyInstance[] = []
+const spies: MockInstance[] = []
 
 describe('lib/tags/tags.ts', () => {
 	afterEach(() => {
@@ -32,7 +31,7 @@ describe('lib/tags/tags.ts', () => {
 		const tags = ['one', 'two', 'three']
 		const id = 'id1'
 		const tagId = 'tagId1'
-		const type = 'test' as PieceTypes
+		const type = 'test'
 
 		kysely.queries.executeTakeFirstOrThrow.mockResolvedValue({ id: tagId })
 
@@ -53,7 +52,7 @@ describe('lib/tags/tags.ts', () => {
 			item_count: i,
 		}))
 		const id = 'id1'
-		const type = 'test' as PieceTypes
+		const type = 'test'
 
 		kysely.queries.execute.mockResolvedValueOnce(tags)
 		kysely.queries.execute.mockResolvedValueOnce(null)
@@ -75,7 +74,7 @@ describe('lib/tags/tags.ts', () => {
 			item_count: i,
 		}))
 		const id = 'id1'
-		const type = 'test' as PieceTypes
+		const type = 'test'
 
 		kysely.queries.execute.mockResolvedValueOnce(null)
 		kysely.queries.execute.mockResolvedValueOnce(tagCounts)
@@ -93,7 +92,7 @@ describe('lib/tags/tags.ts', () => {
 		const tagNames = ['one', 'two', 'three']
 		const tags = ['one', 'two', 'found'].map((slug) => ({ slug, id: 'id' }))
 		const id = 'id1'
-		const type = 'test' as PieceTypes
+		const type = 'test'
 
 		kysely.queries.execute.mockResolvedValueOnce(tags)
 

@@ -44,10 +44,10 @@ const command: Command<AttachArgv> = {
 	},
 
 	run: async function (ctx, args) {
-		const { slug, piece } = parsePieceArgv(args)
 		const { fields, remove, set } = args
-		const pieces = ctx.pieces.getPiece(piece)
-		const pieceFields = pieces.fields.map((f) => f.name)
+		const { slug, name } = await parsePieceArgv(ctx, args)
+		const piece = await ctx.pieces.getPiece(name)
+		const pieceFields = piece.fields.map((f) => f.name)
 		const fieldMaps = fields?.reduce(
 			(fields, field) => {
 				const [fieldname, value] = field.split('=')
@@ -66,12 +66,12 @@ const command: Command<AttachArgv> = {
 				log.error('must provide a fieldname to remove a field')
 				return
 			} else {
-				console.log(`valid fields for ${piece} are: ${pieceFields.join(', ')}`)
+				console.log(`valid fields for ${name} are: ${pieceFields.join(', ')}`)
 				return
 			}
 		}
 
-		const markdown = await pieces.get(slug)
+		const markdown = await piece.get(slug)
 		const pieceField = fieldnames.find((f) => !pieceFields.includes(f))
 
 		if (pieceField) {
@@ -89,31 +89,31 @@ const command: Command<AttachArgv> = {
 			return
 		} else if (set) {
 			try {
-				const updated = await pieces.setFields(markdown, fieldMaps)
+				const updated = await piece.setFields(markdown, fieldMaps)
 
 				if (!ctx.flags.dryRun) {
-					await pieces.write(updated)
+					await piece.write(updated)
 				}
 
 				log.info(`saved: ${fields}`)
 			} catch (e) {
 				/* c8 ignore next 2 */
-				const errors = e instanceof PieceMarkdownError ? pieces.getErrors(e) : [e]
+				const errors = e instanceof PieceMarkdownError ? piece.getErrors(e) : [e]
 				log.error(`error setting field: ${errors.join(', ')}`)
 			}
 		} else if (remove) {
 			try {
 				const fieldnames = Object.keys(fieldMaps)
-				const updated = await pieces.removeFields(markdown, fieldnames)
+				const updated = await piece.removeFields(markdown, fieldnames)
 
 				if (!ctx.flags.dryRun) {
-					await pieces.write(updated)
+					await piece.write(updated)
 				}
 
 				log.info(`removed: ${fieldnames.join(', ')}`)
 			} catch (e) {
 				/* c8 ignore next 2 */
-				const errors = e instanceof PieceMarkdownError ? pieces.getErrors(e) : [e]
+				const errors = e instanceof PieceMarkdownError ? piece.getErrors(e) : [e]
 				log.error(`error setting field: ${errors.join(', ')}`)
 			}
 		} else {

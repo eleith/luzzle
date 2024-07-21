@@ -9,6 +9,7 @@ import { temporaryFile } from 'tempy'
 vi.mock('fs')
 vi.mock('file-type')
 vi.mock('tempy')
+vi.mock('../log')
 
 const mocks = {
 	gotStream: vi.spyOn(got, 'stream'),

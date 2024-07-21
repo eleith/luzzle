@@ -1,9 +1,4 @@
-import {
-	Piece as PieceType,
-	Pieces as PieceTypes,
-	PieceMarkdown,
-	PieceMarkdownError,
-} from '@luzzle/core'
+import { PieceMarkdown, PieceMarkdownError } from '@luzzle/core'
 import {
 	PieceArgv,
 	PieceDirectories,
@@ -24,7 +19,6 @@ export {
 	type PieceArgv,
 	type PieceOptionalArgv,
 	type PieceDirectories,
-	type PieceTypes,
 	type PieceMarkdown,
 	Piece,
 	Pieces,
@@ -37,5 +31,4 @@ export {
 	makeOptionalPieceCommand,
 	parsePieceArgv,
 	parseOptionalPieceArgv,
-	PieceType,
 }

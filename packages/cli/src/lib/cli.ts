@@ -72,7 +72,7 @@ async function initialize(command: Awaited<ReturnType<typeof parseArgs>>): Promi
 	const ctx: Context = {
 		db,
 		log,
-		pieces: new Pieces(command.options.dir, db),
+		pieces: new Pieces(command.options.dir),
 		directory: command.options.dir,
 		config,
 		flags: {
@@ -89,7 +89,7 @@ async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<v
 	const ctx: Context = {
 		db,
 		log,
-		pieces: new Pieces(directory, db),
+		pieces: new Pieces(directory),
 		directory,
 		config,
 		flags: {

@@ -1,11 +1,10 @@
 import log from '../log.js'
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
-import { PieceType, PieceTypes } from '../pieces/index.js'
 import slugify from '@sindresorhus/slugify'
 
 export type CreateArgv = {
-	piece: PieceTypes
+	piece: string
 	title: string
 	fields?: string[]
 }
@@ -23,7 +22,6 @@ const command: Command<CreateArgv> = {
 				type: 'string',
 				alias: 'p',
 				description: `piece type`,
-				choices: Object.values(PieceType),
 				demandOption: `piece is required`,
 			})
 			.positional('title', {
@@ -40,7 +38,7 @@ const command: Command<CreateArgv> = {
 
 	run: async function (ctx, args) {
 		const { title, piece, fields } = args
-		const pieces = ctx.pieces.getPiece(piece)
+		const pieces = await ctx.pieces.getPiece(args.piece)
 		const slug = slugify(title)
 		const fieldMaps = fields?.reduce(
 			(fields, field) => {

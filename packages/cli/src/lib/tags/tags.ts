@@ -1,7 +1,7 @@
 import { differenceWith } from 'lodash-es'
 import slugify from '@sindresorhus/slugify'
 import { createId } from '@paralleldrive/cuid2'
-import { LuzzleDatabase, Pieces } from '@luzzle/core'
+import { LuzzleDatabase } from '@luzzle/core'
 
 function keywordsToTags(keywords: string): string[] {
 	const tags = keywords
@@ -15,7 +15,7 @@ async function syncTagsFor(
 	db: LuzzleDatabase,
 	tags: string[],
 	id: string,
-	type: Pieces
+	pieceName: string
 ): Promise<void> {
 	const foundTags = await db
 		.selectFrom(['tags', 'tag_maps'])
@@ -29,11 +29,11 @@ async function syncTagsFor(
 	const removeTagSlugs = differenceWith(existingSlugs, tags, (slug, tag) => slug === slugify(tag))
 
 	if (addTags.length) {
-		await _private.addTagsTo(db, addTags, id, type)
+		await _private.addTagsTo(db, addTags, id, pieceName)
 	}
 
 	if (removeTagSlugs.length) {
-		await _private.removeTagsFrom(db, removeTagSlugs, id, type)
+		await _private.removeTagsFrom(db, removeTagSlugs, id, pieceName)
 	}
 }
 
@@ -41,7 +41,7 @@ async function addTagsTo(
 	db: LuzzleDatabase,
 	tags: string[],
 	id: string,
-	type: Pieces
+	pieceName: string
 ): Promise<void> {
 	for (const tag of tags) {
 		const slug = slugify(tag)
@@ -53,7 +53,10 @@ async function addTagsTo(
 			.returning('id')
 			.executeTakeFirstOrThrow()
 
-		await db.insertInto('tag_maps').values({ id_item: id, id_tag: tagDb.id, type }).execute()
+		await db
+			.insertInto('tag_maps')
+			.values({ id_item: id, id_tag: tagDb.id, type: pieceName })
+			.execute()
 	}
 }
 
@@ -61,14 +64,14 @@ async function removeTagsFrom(
 	db: LuzzleDatabase,
 	tagSlugs: string[],
 	id: string,
-	type: Pieces
+	pieceName: string
 ): Promise<void> {
 	const findTags = await db.selectFrom('tags').select('id').where('slug', 'in', tagSlugs).execute()
 
 	await db
 		.deleteFrom('tag_maps')
 		.where('id_item', '=', id)
-		.where('type', '=', type)
+		.where('type', '=', pieceName)
 		.where(
 			'id_tag',
 			'in',
@@ -97,8 +100,16 @@ async function removeTagsFrom(
 		.execute()
 }
 
-async function removeAllTagsFrom(db: LuzzleDatabase, ids: string[], type: Pieces): Promise<void> {
-	await db.deleteFrom('tag_maps').where('id_item', 'in', ids).where('type', '=', type).execute()
+async function removeAllTagsFrom(
+	db: LuzzleDatabase,
+	ids: string[],
+	pieceName: string
+): Promise<void> {
+	await db
+		.deleteFrom('tag_maps')
+		.where('id_item', 'in', ids)
+		.where('type', '=', pieceName)
+		.execute()
 
 	const tagCounts = await db
 		.selectFrom('tag_maps')

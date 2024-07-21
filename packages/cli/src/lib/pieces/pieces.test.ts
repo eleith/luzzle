@@ -1,18 +1,17 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import Pieces from './pieces.js'
 import Piece from './piece.js'
-import { Piece as PieceType, getPieceSchema, PieceFrontmatterSchema } from '@luzzle/core'
-import { mockDatabase } from '../database.mock.js'
+import { readdir } from 'fs/promises'
+import { Dirent } from 'fs'
 
 vi.mock('@luzzle/core')
 vi.mock('./piece.js')
+vi.mock('fs/promises')
 
 const mocks = {
-	getPieceSchema: vi.mocked(getPieceSchema),
+	readdir: vi.mocked(readdir),
 }
-
 const directory = 'luzzle-pieces'
-const { db } = mockDatabase()
 const spies: { [key: string]: MockInstance } = {}
 
 describe('lib/pieces/pieces.ts', () => {
@@ -28,22 +27,30 @@ describe('lib/pieces/pieces.ts', () => {
 	})
 
 	test('constructor', () => {
-		const pieces = new Pieces(directory, db)
+		const pieces = new Pieces(directory)
 
 		expect(pieces.directory).toEqual('luzzle-pieces')
 	})
 
 	test('getPiece', async () => {
-		const pieces = new Pieces(directory, db)
-		const schema = {
-			type: 'object',
-			properties: { title: { type: 'string' } },
-		} as PieceFrontmatterSchema<{ title: string }>
-
-		mocks.getPieceSchema.mockReturnValueOnce(schema)
-		const piece = pieces.getPiece(PieceType.books)
+		const pieces = new Pieces(directory)
+		const piece = await pieces.getPiece('books')
 
 		expect(piece).toBeInstanceOf(Piece)
-		expect(mocks.getPieceSchema).toHaveBeenCalledWith(PieceType.books)
+	})
+
+	test('findPieceNames', async () => {
+		const pieces = new Pieces(directory)
+		const dirs = [
+			{ isDirectory: () => true, name: 'one' },
+			{ isDirectory: () => false, name: 'two' },
+			{ isDirectory: () => true, name: '.three' },
+		] as Dirent[]
+
+		mocks.readdir.mockResolvedValueOnce(dirs)
+
+		const pieceNames = await pieces.findPieceNames()
+
+		expect(pieceNames).toEqual(['one'])
 	})
 })

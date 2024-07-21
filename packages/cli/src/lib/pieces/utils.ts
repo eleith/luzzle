@@ -1,11 +1,11 @@
 import { createReadStream, existsSync } from 'fs'
 import path from 'path'
 import { Argv } from 'yargs'
-import { Pieces, Piece } from '@luzzle/core'
 import { temporaryFile } from 'tempy'
 import { copyFile, stat } from 'fs/promises'
 import { downloadToPath } from '../web.js'
 import { createHash } from 'crypto'
+import { Context } from '../commands/index.js'
 
 export const PieceDirectory = {
 	Root: 'root',
@@ -30,20 +30,29 @@ const PieceFileType = 'md'
 const PieceCommandOption = '<slug|path>'
 const PieceOptionalCommandOption = '[slug|path]'
 
-const parsePieceArgv = function (args: PieceArgv): { slug: string; piece: Pieces } {
-	const piece = args.piece as Pieces | undefined
+async function parsePieceArgv(
+	ctx: Context,
+	args: PieceArgv
+): Promise<{ slug: string; name: string }> {
+	const piece = args.piece
 	const slug = args.path
 	const pathParsed = path.parse(slug)
-	const isMarkdown = pathParsed.ext === `.${PieceFileType}`
+	const isMarkdown = slug && pathParsed.ext === `.${PieceFileType}`
 
 	if (piece) {
-		return { slug, piece }
+		const pieceNames = await ctx.pieces.findPieceNames()
+
+		if (pieceNames.includes(piece)) {
+			return { slug, name: piece }
+		}
+
+		throw new Error(`'${piece}' is not a valid piece`)
 	} else if (isMarkdown && existsSync(slug)) {
 		const dir = /^\.?$/.test(pathParsed.dir) ? path.parse(path.resolve(slug)).dir : pathParsed.dir
 
 		return {
 			slug: pathParsed.name,
-			piece: path.parse(dir).name as Pieces,
+			name: path.parse(dir).name,
 		}
 	}
 
@@ -56,16 +65,19 @@ const parsePieceArgv = function (args: PieceArgv): { slug: string; piece: Pieces
 	}
 }
 
-const parseOptionalPieceArgv = function (args: PieceOptionalArgv): {
+async function parseOptionalPieceArgv(
+	ctx: Context,
+	args: PieceOptionalArgv
+): Promise<{
 	slug?: string
-	piece: Pieces
-} | null {
+	name: string
+} | null> {
 	const { path, piece } = args
 
 	if (path) {
-		return parsePieceArgv({ path, piece })
+		return parsePieceArgv(ctx, { path, piece })
 	} else if (piece) {
-		return { piece: piece as Pieces }
+		return { name: piece }
 	}
 
 	return null
@@ -77,7 +89,6 @@ const makePieceCommand = function <T>(yargs: Argv<T>, alias = 'slug'): Argv<T & 
 			type: 'string',
 			alias: 'p',
 			description: `piece type, required if using <${alias}>`,
-			choices: Object.values(Piece),
 		})
 		.positional('path', {
 			type: 'string',
@@ -96,7 +107,6 @@ const makeOptionalPieceCommand = function <T>(
 			type: 'string',
 			alias: 'p',
 			description: `piece type, required if using <${alias}>`,
-			choices: Object.values(Piece),
 		})
 		.positional('path', {
 			type: 'string',
@@ -147,6 +157,4 @@ export {
 	makeOptionalPieceCommand,
 	downloadFileOrUrlTo,
 	calculateHashFromFile,
-	Piece,
-	type Pieces,
 }

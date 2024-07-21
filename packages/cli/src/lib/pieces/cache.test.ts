@@ -1,6 +1,5 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import * as cache from './cache.js'
-import { Pieces } from '@luzzle/core'
 import { mockDatabase } from '../database.mock.js'
 import { makeCache } from './cache.fixtures.js'
 import { createId } from '@paralleldrive/cuid2'
@@ -31,7 +30,7 @@ describe('lib/pieces/cache.ts', () => {
 	test('getCache', async () => {
 		const { db, queries } = mockDatabase()
 		const slug = 'slug'
-		const piece = 'piece' as Pieces
+		const piece = 'piece'
 		const dbCache = makeCache()
 
 		queries.executeTakeFirst.mockReturnValueOnce(dbCache)
@@ -46,7 +45,7 @@ describe('lib/pieces/cache.ts', () => {
 	test('getCache returns null', async () => {
 		const { db, queries } = mockDatabase()
 		const slug = 'slug'
-		const piece = 'piece' as Pieces
+		const piece = 'piece'
 
 		queries.executeTakeFirst.mockReturnValueOnce(undefined)
 
@@ -57,7 +56,7 @@ describe('lib/pieces/cache.ts', () => {
 
 	test('getCacheAll', async () => {
 		const { db, queries } = mockDatabase()
-		const piece = 'piece' as Pieces
+		const piece = 'piece'
 		const dbCache = makeCache()
 
 		queries.execute.mockReturnValueOnce([dbCache])
@@ -71,7 +70,7 @@ describe('lib/pieces/cache.ts', () => {
 	test('addCache', async () => {
 		const { db, queries } = mockDatabase()
 		const slug = 'slug'
-		const piece = 'piece' as Pieces
+		const piece = 'piece'
 		const file = '/path/to/piece'
 		const id = 'id'
 		const hash = 'hash'
@@ -89,7 +88,7 @@ describe('lib/pieces/cache.ts', () => {
 	test('updateCache', async () => {
 		const { db, queries } = mockDatabase()
 		const slug = 'slug'
-		const piece = 'piece' as Pieces
+		const piece = 'piece'
 		const file = '/path/to/piece'
 		const hash = 'hash'
 
@@ -106,7 +105,7 @@ describe('lib/pieces/cache.ts', () => {
 	test('updateCache inserts', async () => {
 		const { db, queries } = mockDatabase()
 		const slug = 'slug'
-		const piece = 'piece' as Pieces
+		const piece = 'piece'
 		const file = '/path/to/piece'
 		const hash = 'hash'
 		const id = 'id'
@@ -129,7 +128,7 @@ describe('lib/pieces/cache.ts', () => {
 	test('removeCache', async () => {
 		const { db } = mockDatabase()
 		const slug = 'slug'
-		const piece = 'piece' as Pieces
+		const piece = 'piece'
 
 		await cache.removeCache(db, slug, piece)
 

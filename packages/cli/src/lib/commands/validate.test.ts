@@ -46,7 +46,7 @@ describe('lib/commands/validate.ts', () => {
 		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
 		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path } as Arguments<ValidateArgv>)
 
@@ -69,7 +69,7 @@ describe('lib/commands/validate.ts', () => {
 		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
 		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockRejectedValueOnce(pieceError)
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path } as Arguments<ValidateArgv>)
 
@@ -91,7 +91,7 @@ describe('lib/commands/validate.ts', () => {
 		spies.pieceGet = vi
 			.spyOn(PieceTest.prototype, 'get')
 			.mockRejectedValueOnce(new Error('unknown error'))
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path } as Arguments<ValidateArgv>)
 

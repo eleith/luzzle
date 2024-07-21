@@ -23,15 +23,15 @@ const command: Command<ValidateArgv> = {
 	},
 
 	run: async function (ctx, args) {
-		const { slug, piece } = parsePieceArgv(args)
-		const pieces = ctx.pieces.getPiece(piece)
+		const { slug, name } = await parsePieceArgv(ctx, args)
+		const piece = await ctx.pieces.getPiece(name)
 
 		try {
-			await pieces.get(slug)
+			await piece.get(slug)
 			log.info(`${slug} is valid`)
 		} catch (e) {
 			if (e instanceof PieceMarkdownError) {
-				const errors = pieces.getErrors(e)
+				const errors = piece.getErrors(e)
 				log.error(`${slug} has ${errors.length} error(s): ${errors.join(', ')}`)
 			} else {
 				log.error(e)

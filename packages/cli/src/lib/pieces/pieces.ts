@@ -1,32 +1,26 @@
-import {
-	Pieces as PieceTypes,
-	Piece as PieceType,
-	LuzzleDatabase,
-	getPieceSchema,
-} from '@luzzle/core'
 import Piece from './piece.js'
+import { readdir } from 'fs/promises'
 
 class Pieces {
 	private _directory: string
-	private _db: LuzzleDatabase
 
-	constructor(dir: string, db: LuzzleDatabase) {
+	constructor(dir: string) {
 		this._directory = dir
-		this._db = db
 	}
 
 	get directory() {
 		return this._directory
 	}
 
-	/* c8 ignore next 3 */
-	getPieceTypes(): PieceTypes[] {
-		return Object.values(PieceType)
+	async getPiece(name: string) {
+		return new Piece(this._directory, name)
 	}
 
-	getPiece(pieceType: PieceTypes) {
-		const schema = getPieceSchema(pieceType)
-		return new Piece(this._directory, pieceType, schema, this._db)
+	async findPieceNames() {
+		const dirs = await readdir(this._directory, { withFileTypes: true })
+		return dirs
+			.filter((dir) => dir.isDirectory() && !dir.name.startsWith('.'))
+			.map((dir) => dir.name)
 	}
 }
 
