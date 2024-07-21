@@ -19,11 +19,20 @@ function mockKysely() {
 		returningAll: vi.fn().mockReturnThis(),
 	}
 
+	const schema = {
+		ifExists: vi.fn().mockReturnThis(),
+		execute: vi.fn(),
+	}
+
 	const db = {
 		selectFrom: vi.fn().mockImplementation(() => queries),
 		deleteFrom: vi.fn().mockImplementation(() => queries),
 		insertInto: vi.fn().mockImplementation(() => queries),
 		updateTable: vi.fn().mockImplementation(() => queries),
+		schema: {
+			createTable: vi.fn().mockImplementation(() => schema),
+			dropTable: vi.fn().mockImplementation(() => schema),
+		},
 		fn: {
 			count: vi.fn(() => ({
 				as: queries.as,
