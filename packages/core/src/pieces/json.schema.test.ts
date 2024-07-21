@@ -1,28 +1,37 @@
-import { describe, expect, test, afterEach, MockInstance } from 'vitest'
-import { Piece, Pieces } from './tables.schema.js'
-import { getPieceSchema } from './json.schema.js'
+import { describe, afterEach, test, vi, expect, MockInstance } from 'vitest'
+import { getPieceSchemaFromFile } from './json.schema.js'
+import { existsSync, readFileSync } from 'fs'
+
+vi.mock('fs')
 
 const spies: { [key: string]: MockInstance } = {}
 
+const mocks = {
+	existsSync: vi.mocked(existsSync),
+	readFileSync: vi.mocked(readFileSync),
+}
+
 describe('pieces/jtd.schema.test.ts', () => {
 	afterEach(() => {
+		Object.values(mocks).forEach((mock) => {
+			mock.mockReset()
+		})
+
 		Object.keys(spies).forEach((key) => {
 			spies[key].mockRestore()
 			delete spies[key]
 		})
 	})
 
-	test('getPieceSchema', async () => {
-		const pieces = Object.values(Piece)
+	test('getPieceSchemaFromFile', () => {
+		const file = 'file.json'
+		const schemaJson = { type: 'object' }
 
-		for (const piece of pieces) {
-			const plugin = getPieceSchema(piece)
-			expect(plugin).toBeDefined()
-		}
-	})
+		mocks.existsSync.mockReturnValue(true)
+		mocks.readFileSync.mockReturnValue(JSON.stringify(schemaJson))
 
-	test('getPieceSchema throws', async () => {
-		const get = () => getPieceSchema('fake' as Pieces)
-		expect(get).toThrow()
+		const schema = getPieceSchemaFromFile(file)
+
+		expect(schema).toEqual(schemaJson)
 	})
 })

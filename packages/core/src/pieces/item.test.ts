@@ -3,11 +3,11 @@ import {
 	getPieceFrontmatterSchemaFields,
 	PieceFrontmatterSchemaField,
 	pieceFrontmatterValueToDatabaseValue,
-} from './frontmatter.js'
-import { makeMarkdownSample, makeSample, makeSchema } from './piece.fixtures.js'
-import * as database from './database.js'
+} from './utils/frontmatter.js'
+import { makeMarkdownSample, makeSample, makeSchema } from './utils/piece.fixtures.js'
+import * as database from './item.js'
 
-vi.mock('./frontmatter.js')
+vi.mock('./utils/frontmatter.js')
 
 const mocks = {
 	getPieceFrontmatterSchemaFields: vi.mocked(getPieceFrontmatterSchemaFields),
@@ -16,7 +16,7 @@ const mocks = {
 
 const spies: { [key: string]: MockInstance } = {}
 
-describe('src/pieces/utils/database.ts', () => {
+describe('src/pieces/item.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -28,7 +28,7 @@ describe('src/pieces/utils/database.ts', () => {
 		})
 	})
 
-	test('makePieceInsertable', () => {
+	test('makePieceItemInsertable', () => {
 		const slug = 'slug'
 		const note = 'note'
 		const frontmatter = {
@@ -47,7 +47,7 @@ describe('src/pieces/utils/database.ts', () => {
 		mocks.getPieceFrontmatterSchemaFields.mockReturnValueOnce(fields)
 		mocks.pieceFrontmatterValueToDatabaseValue.mockImplementation((value) => value)
 
-		const input = database.makePieceInsertable(markdown, schema)
+		const input = database.makePieceItemInsertable(markdown, schema)
 
 		expect(mocks.pieceFrontmatterValueToDatabaseValue).toHaveBeenCalledTimes(
 			Object.keys(frontmatter).length
@@ -60,7 +60,7 @@ describe('src/pieces/utils/database.ts', () => {
 		})
 	})
 
-	test('makePieceUpdatable', () => {
+	test('makePieceItemUpdatable', () => {
 		const data = makeSample()
 		const slug = 'slug'
 		const note = 'note'
@@ -77,22 +77,57 @@ describe('src/pieces/utils/database.ts', () => {
 			{ name: 'subtitle', type: 'string' },
 		] as Array<PieceFrontmatterSchemaField>
 
-		data.subtitle = 'no subtitle'
 		data.title = frontmatter.title
 		data.keywords = frontmatter.keywords
+		data.subtitle = frontmatter.subtitle
 		data.note = 'old note'
 		data.slug = 'old slug'
 
 		mocks.getPieceFrontmatterSchemaFields.mockReturnValueOnce(fields)
 		mocks.pieceFrontmatterValueToDatabaseValue.mockImplementation((value) => value)
 
-		const update = database.makePieceUpdatable(markdown, schema, data)
+		const update = database.makePieceItemUpdatable(markdown, schema, data)
 
 		expect(update).toEqual({
 			date_updated: expect.any(Number),
-			subtitle: frontmatter.subtitle,
 			note,
 			slug,
+		})
+	})
+
+	test('makePieceItemUpdatable force', () => {
+		const data = makeSample()
+		const slug = 'slug'
+		const note = 'note'
+		const frontmatter = {
+			title: 'title',
+			keywords: 'keys',
+			subtitle: 'subtitle',
+		}
+		const markdown = makeMarkdownSample(slug, note, frontmatter)
+		const schema = makeSchema()
+		const fields = [
+			{ name: 'title', type: 'string' },
+			{ name: 'keywords', type: 'string' },
+			{ name: 'subtitle', type: 'string' },
+		] as Array<PieceFrontmatterSchemaField>
+
+		data.title = frontmatter.title
+		data.keywords = frontmatter.keywords
+		data.subtitle = frontmatter.subtitle
+		data.note = 'old note'
+		data.slug = 'old slug'
+
+		mocks.getPieceFrontmatterSchemaFields.mockReturnValueOnce(fields)
+		mocks.pieceFrontmatterValueToDatabaseValue.mockImplementation((value) => value)
+
+		const update = database.makePieceItemUpdatable(markdown, schema, data, true)
+
+		expect(update).toEqual({
+			date_updated: expect.any(Number),
+			note,
+			slug,
+			...frontmatter,
 		})
 	})
 })

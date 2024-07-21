@@ -1,18 +1,22 @@
 import { createId } from '@paralleldrive/cuid2'
-import { PieceSelectable, PieceInsertable, PieceUpdatable, Pieces } from '../tables.schema.js'
-import { PieceMarkdown } from './markdown.js'
+import {
+	PiecesItemsInsertable,
+	PiecesItemsSelectable,
+	PiecesItemsUpdateable,
+} from './tables.schema.js'
+import { PieceMarkdown } from './utils/markdown.js'
 import {
 	PieceFrontmatter,
 	PieceFrontmatterSchema,
 	pieceFrontmatterValueToDatabaseValue,
 	getPieceFrontmatterSchemaFields,
-} from './frontmatter.js'
-import { PieceCommonDatabaseFieldNames } from '../types/common.js'
+} from './utils/frontmatter.js'
+import { PieceCommonDatabaseFieldNames } from './types/common.js'
 
-function makePieceInsertable<P extends Pieces, F extends PieceFrontmatter>(
+function makePieceItemInsertable<F extends PieceFrontmatter>(
 	markdown: PieceMarkdown<F>,
 	schema: PieceFrontmatterSchema<F>
-): PieceInsertable<P> {
+): PiecesItemsInsertable {
 	const input = {
 		id: createId(),
 		slug: markdown.slug,
@@ -30,19 +34,15 @@ function makePieceInsertable<P extends Pieces, F extends PieceFrontmatter>(
 		input[name] = pieceFrontmatterValueToDatabaseValue(value, field)
 	})
 
-	return input as PieceInsertable<P>
+	return input as PiecesItemsInsertable
 }
 
-function makePieceUpdatable<
-	P extends Pieces,
-	F extends PieceFrontmatter,
-	D extends PieceSelectable,
->(
+function makePieceItemUpdatable<F extends PieceFrontmatter, D extends PiecesItemsSelectable>(
 	markdown: PieceMarkdown<F>,
 	schema: PieceFrontmatterSchema<F>,
 	data: D,
 	force = false
-): PieceUpdatable<P> {
+): PiecesItemsUpdateable {
 	const update = {
 		date_updated: new Date().getTime(),
 	} as Record<string, unknown>
@@ -68,7 +68,7 @@ function makePieceUpdatable<
 		update['slug'] = markdown.slug
 	}
 
-	return update as PieceUpdatable<P>
+	return update as PiecesItemsUpdateable
 }
 
-export { makePieceInsertable, makePieceUpdatable }
+export { makePieceItemInsertable, makePieceItemUpdatable }

@@ -1,7 +1,7 @@
 import Ajv from 'ajv'
 import { PieceMarkdown } from './markdown.js'
 import { PieceFrontmatter, PieceFrontmatterSchema } from './frontmatter.js'
-import { PieceSelectable } from '../tables.schema.js'
+import { PiecesItemsSelectable } from '../tables.schema.js'
 
 type PieceValidator = Ajv.ValidateFunction<PieceFrontmatter>
 
@@ -57,8 +57,8 @@ export function makeMarkdownSample<F extends PieceFrontmatter>(
 	} as PieceMarkdown<F>
 }
 
-export function makeSample(): PieceSelectable {
+export function makeSample(): PiecesItemsSelectable {
 	return {
 		...sample,
-	} as PieceSelectable
+	} as PiecesItemsSelectable
 }
