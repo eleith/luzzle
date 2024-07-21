@@ -6,10 +6,7 @@ import { difference } from 'lodash-es'
 import { addTagsTo, keywordsToTags, removeAllTagsFrom, syncTagsFor } from '../tags/index.js'
 import {
 	LuzzleDatabase,
-	PieceInsertable,
-	PieceSelectable,
 	PieceMarkdown,
-	Pieces,
 	PieceFrontmatter,
 	extractFullMarkdown,
 	makePieceMarkdown,
@@ -20,45 +17,56 @@ import {
 	initializePieceFrontMatter,
 	getPieceFrontmatterSchemaFields,
 	PieceFrontmatterSchemaField,
-	makePieceInsertable,
-	makePieceUpdatable,
+	makePieceItemInsertable,
+	makePieceItemUpdatable,
 	databaseValueToPieceFrontmatterValue,
 	PieceMarkdownError,
+	deleteItems,
+	selectItems,
+	selectItem,
+	updateItem,
+	PiecesItemsSelectable,
+	insertItem,
+	getPieceSchemaFromFile,
+	getPiece,
+	addPiece,
+	updatePiece,
 } from '@luzzle/core'
 import { eachLimit } from 'async'
 import { cpus } from 'os'
 import path from 'path'
 import { downloadFileOrUrlTo, PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
-import { ASSETS_DIRECTORY } from '../assets.js'
+import { ASSETS_DIRECTORY, LUZZLE_SCHEMA_FILE_PATH } from '../assets.js'
 import { fileTypeFromFile } from 'file-type'
 import { randomBytes } from 'crypto'
+import { JSONSchemaType } from 'ajv/dist/core.js'
 
-export interface InterfacePiece<
-	P extends Pieces,
-	D extends PieceSelectable,
-	F extends PieceFrontmatter,
-> {
-	new (pieceRoot: string, db: LuzzleDatabase): Piece<P, D, F>
+export interface InterfacePiece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
+	new (pieceRoot: string, pieceName: string): Piece<D, F>
 }
 
-class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmatter> {
+class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 	private _validator?: ReturnType<typeof compile<F>>
 	private _schema: PieceFrontmatterSchema<F>
+	private _schemaPath: string
 	private _pieceRoot: string
 	private _directories: PieceDirectories
-	private _pieceTable: P
-	private _db: LuzzleDatabase
+	private _pieceName: string
 	private _fields?: Array<PieceFrontmatterSchemaField>
 
-	constructor(pieceRoot: string, table: P, schema: PieceFrontmatterSchema<F>, db: LuzzleDatabase) {
+	constructor(pieceRoot: string, pieceName: string, schema?: PieceFrontmatterSchema<F>) {
 		this._pieceRoot = pieceRoot
-		this._pieceTable = table
 		this._directories = {
-			[PieceDirectory.Root]: path.join(this._pieceRoot, this._pieceTable),
-			[PieceDirectory.Assets]: path.join(this._pieceRoot, this._pieceTable, ASSETS_DIRECTORY),
+			[PieceDirectory.Root]: path.join(this._pieceRoot, pieceName),
+			[PieceDirectory.Assets]: path.join(this._pieceRoot, pieceName, ASSETS_DIRECTORY),
 		}
-		this._db = db
-		this._schema = schema
+		this._schemaPath = path.join(this._directories.root, LUZZLE_SCHEMA_FILE_PATH)
+		this._schema = schema || getPieceSchemaFromFile(this._schemaPath)
+		this._pieceName = pieceName
+
+		if (this._pieceName !== this._schema.title) {
+			throw new Error(`${pieceName} does not match the schema title in ${this._schemaPath}`)
+		}
 	}
 
 	create(slug: string, title: string): PieceMarkdown<F> {
@@ -67,7 +75,11 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 	}
 
 	get type() {
-		return this._pieceTable
+		return this._pieceName
+	}
+
+	get schema() {
+		return this._schema
 	}
 
 	protected get validator(): ReturnType<typeof compile<F>> {
@@ -80,7 +92,7 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		return this._fields
 	}
 
-	initialize(): Piece<P, D, F> {
+	initialize(): Piece<D, F> {
 		Object.entries(this._directories).forEach(([key, dir]) => {
 			if (!existsSync(dir)) {
 				mkdirSync(dir, { recursive: true })
@@ -106,7 +118,7 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 			.map((dirent) => path.basename(dirent.name, `.${PieceFileType}`))
 	}
 
-	async getSlugsOutdated(): Promise<string[]> {
+	async getSlugsOutdated(db: LuzzleDatabase): Promise<string[]> {
 		const slugs = await this.getSlugs()
 		const outdated: string[] = []
 
@@ -115,7 +127,7 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 			const fileStat = await stat(piecePath).catch(() => null)
 
 			if (fileStat) {
-				const cache = await getCache(this._db, slug, this._pieceTable)
+				const cache = await getCache(db, slug, this._pieceName)
 				const cachedDate = cache?.date_updated || cache?.date_added
 
 				if (!cachedDate || fileStat.mtime > new Date(cachedDate)) {
@@ -167,8 +179,8 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		await writeFile(markdownPath, markdownString)
 	}
 
-	async cleanUpCache(slugs: string[]): Promise<string[]> {
-		const caches = await getCacheAll(this._db, this._pieceTable)
+	async cleanUpCache(db: LuzzleDatabase, slugs: string[]): Promise<string[]> {
+		const caches = await getCacheAll(db, this._pieceName)
 		const schemaKeys = this.fields
 		const staleSlugs = difference(
 			caches.map((cache) => cache.slug),
@@ -197,53 +209,60 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 				log.error(`could not remove all attachments for ${slug}: ${err}`)
 			})
 
-			await removeCache(this._db, slug, this._pieceTable)
+			await removeCache(db, slug, this._pieceName)
 		})
 
 		return staleSlugs
 	}
 
-	async cleanUpSlugs(slugs: string[], dryRun = false) {
-		const dbPieces = await this._db.selectFrom(this._pieceTable).select(['slug', 'id']).execute()
+	async cleanUpSlugs(db: LuzzleDatabase, slugs: string[], dryRun = false) {
+		const dbPieces = await selectItems(db, this._pieceName, ['slug', 'id'])
 		const dbSlugs = dbPieces.map(({ slug }) => slug as string)
 		const slugDiffs = difference(dbSlugs, slugs)
-		const idsToRemove = dbPieces.filter(({ slug }) => slugDiffs.includes(slug)).map(({ id }) => id)
+		const idsToRemove = dbPieces
+			.filter(({ slug }) => slugDiffs.includes(slug as string))
+			.map(({ id }) => id as string)
 
 		try {
 			if (idsToRemove.length && dryRun === false) {
-				await this._db.deleteFrom(this._pieceTable).where('id', 'in', idsToRemove).execute()
-				await removeAllTagsFrom(this._db, idsToRemove, this._pieceTable)
+				await deleteItems(db, this._pieceName, idsToRemove)
+				await removeAllTagsFrom(db, idsToRemove, this._pieceName)
 			}
 
-			log.info(`cleaned ${idsToRemove.length} ${this._pieceTable}`)
+			log.info(`cleaned ${idsToRemove.length} ${this._pieceName}`)
 		} catch (err) {
 			log.error(`could not clean: ${err}`)
 		}
 	}
 
-	async syncCleanUp(dryRun = false) {
+	async syncItemsCleanUp(db: LuzzleDatabase, dryRun = false) {
 		const slugs = await this.getSlugs()
 
-		await this.cleanUpSlugs(slugs, dryRun)
-		await this.cleanUpCache(slugs)
+		await this.cleanUpSlugs(db, slugs, dryRun)
+		await this.cleanUpCache(db, slugs)
 	}
 
-	async syncAdd(markdown: PieceMarkdown<F>, dryRun = false): Promise<void> {
+	async syncMarkdownAdd(
+		db: LuzzleDatabase,
+		markdown: PieceMarkdown<F>,
+		dryRun = false
+	): Promise<void> {
 		try {
 			if (dryRun === false) {
-				const createInput = makePieceInsertable(markdown, this._schema)
+				const createInput = makePieceItemInsertable(markdown, this._schema)
 				const piecePath = this.getPath(markdown.slug)
-				const added = await this._db
-					.insertInto(this._pieceTable as Pieces)
-					.values(createInput as PieceInsertable<Pieces>)
-					.returningAll()
-					.executeTakeFirstOrThrow()
+				const added = await insertItem(db, this._pieceName, createInput)
 
-				if (added.keywords) {
-					await addTagsTo(this._db, keywordsToTags(added.keywords), added.id, this._pieceTable)
+				if (added.keywords && added.id) {
+					await addTagsTo(
+						db,
+						keywordsToTags(added.keywords as string),
+						added.id as string,
+						this._pieceName
+					)
 				}
 
-				await addCache(this._db, markdown.slug, this._pieceTable, piecePath)
+				await addCache(db, markdown.slug, this._pieceName, piecePath)
 			}
 			log.info(`added ${markdown.slug}`)
 		} catch (err) {
@@ -251,39 +270,39 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		}
 	}
 
-	async syncMarkdown(markdown: PieceMarkdown<F>, dryRun = false): Promise<void> {
-		const dbPiece = await this._db
-			.selectFrom(this._pieceTable as Pieces)
-			.selectAll()
-			.where('slug', '=', markdown.slug)
-			.executeTakeFirst()
+	async syncMarkdown(
+		db: LuzzleDatabase,
+		markdown: PieceMarkdown<F>,
+		dryRun = false
+	): Promise<void> {
+		const dbPiece = await selectItem(db, this._pieceName, markdown.slug)
 
 		if (dbPiece) {
-			await this.syncUpdate(markdown, dbPiece as D, dryRun)
+			await this.syncMarkdownUpdate(db, markdown, dbPiece as D, dryRun)
 		} else {
-			await this.syncAdd(markdown, dryRun)
+			await this.syncMarkdownAdd(db, markdown, dryRun)
 		}
 	}
 
-	async syncUpdate(markdown: PieceMarkdown<F>, data: D, dryRun = false): Promise<void> {
-		const updateInput = makePieceUpdatable(markdown, this._schema, data, false)
+	async syncMarkdownUpdate(
+		db: LuzzleDatabase,
+		markdown: PieceMarkdown<F>,
+		data: D,
+		dryRun = false
+	): Promise<void> {
+		const updateInput = makePieceItemUpdatable(markdown, this._schema, data, false)
 		try {
 			if (dryRun === false) {
-				const update = await this._db
-					.updateTable(this._pieceTable as Pieces)
-					.set(updateInput)
-					.where('id', '=', data.id)
-					.returningAll()
-					.executeTakeFirstOrThrow()
-				const piecePath = this.getPath(update.slug)
+				await updateItem(db, this._pieceName, data.id as string, updateInput)
+				const piecePath = this.getPath(data.slug as string)
 
 				await syncTagsFor(
-					this._db,
-					keywordsToTags(update?.keywords || ''),
-					update.id,
-					this._pieceTable
+					db,
+					keywordsToTags((data?.keywords || '') as string),
+					data.id as string,
+					this._pieceName
 				)
-				await updateCache(this._db, update.slug, this._pieceTable, piecePath)
+				await updateCache(db, data.slug as string, this._pieceName, piecePath)
 			}
 
 			log.info(`updated ${markdown.slug}`)
@@ -292,15 +311,41 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		}
 	}
 
-	async sync(slugs: string[], dryRun = false) {
+	async syncItems(db: LuzzleDatabase, slugs: string[], dryRun = false) {
 		await eachLimit(slugs, 1, async (slug) => {
 			const markdown = await this.get(slug)
 			if (markdown) {
-				await this.syncMarkdown(markdown, dryRun)
+				await this.syncMarkdown(db, markdown, dryRun)
 			} else {
 				log.error(`could not find ${slug}`)
 			}
 		})
+	}
+
+	async sync(db: LuzzleDatabase, dryRun: boolean) {
+		const fileStat = await stat(this._schemaPath).catch(() => null)
+
+		if (!fileStat) {
+			throw new Error(`${this._schemaPath} does not exist`)
+		}
+
+		const piece = await getPiece(db, this._pieceName)
+
+		if (!piece) {
+			if (!dryRun) {
+				await addPiece(db, this._pieceName, this._schema as JSONSchemaType<PieceFrontmatter>)
+			}
+			log.info(`Added piece ${this._pieceName} from schema at ${this._schemaPath}`)
+		} else {
+			const pieceDate = piece.date_updated || piece.date_added
+
+			if (fileStat.mtime > new Date(pieceDate)) {
+				if (!dryRun) {
+					await updatePiece(db, this._pieceName, this._schema as JSONSchemaType<PieceFrontmatter>)
+				}
+				log.info(`Updated piece ${this._pieceName} from schema at ${this._schemaPath}`)
+			}
+		}
 	}
 
 	toMarkdown(data: D): PieceMarkdown<F> {
@@ -317,7 +362,12 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 			frontmatter[name] = databaseValueToPieceFrontmatterValue(value, field)
 		})
 
-		return makePieceMarkdownOrThrow(data.slug, data.note, frontmatter as F, this.validator)
+		return makePieceMarkdownOrThrow(
+			data.slug as string,
+			data.note as string | null | undefined,
+			frontmatter as F,
+			this.validator
+		)
 	}
 
 	private async makeAttachmentField(
@@ -330,7 +380,7 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 
 		/* c8 ignore next 3 */
 		if (format !== 'asset') {
-			throw new Error(`${field} is not an attachable field for ${this._pieceTable} ${slug}`)
+			throw new Error(`${field} is not an attachable field for ${this._pieceName} ${slug}`)
 		}
 
 		const tmpPath = await downloadFileOrUrlTo(fileOrUrl)
@@ -381,7 +431,7 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		const pieceField = this.fields.find((f) => f.name === field)
 
 		if (!pieceField) {
-			throw new Error(`${field} is not a field in ${this._pieceTable} ${markdown.slug}`)
+			throw new Error(`${field} is not a field in ${this._pieceName} ${markdown.slug}`)
 		}
 
 		const isArray = pieceField.type === 'array'
@@ -422,11 +472,11 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 		const pieceField = this.fields.find((f) => f.name === field)
 
 		if (!pieceField) {
-			throw new Error(`${field} is not a field in ${this._pieceTable} ${markdown.slug}`)
+			throw new Error(`${field} is not a field in ${this._pieceName} ${markdown.slug}`)
 		}
 
 		if (pieceField.nullable !== true) {
-			throw new Error(`${field} is a required field in ${this._pieceTable} ${markdown.slug}`)
+			throw new Error(`${field} is a required field in ${this._pieceName} ${markdown.slug}`)
 		}
 
 		const fieldname = pieceField.name as keyof PieceMarkdown<F>['frontmatter']
@@ -451,18 +501,18 @@ class Piece<P extends Pieces, D extends PieceSelectable, F extends PieceFrontmat
 	}
 
 	async dump(db: LuzzleDatabase, dryRun = false) {
-		const pieceData: D[] = (await db.selectFrom(this._pieceTable).selectAll().execute()) as D[]
+		const pieceData = await selectItems(db, this._pieceName)
 		const numCpus = cpus().length
 
 		await eachLimit(pieceData, numCpus, async (data) => {
 			try {
 				if (dryRun === false) {
-					const markdown = this.toMarkdown(data)
+					const markdown = this.toMarkdown(data as D)
 					await this.write(markdown)
 				}
-				log.info(`saving ${this._pieceTable} for ${data.slug} to markdown`)
+				log.info(`saving ${this._pieceName} for ${data.slug} to markdown`)
 			} catch (e) {
-				log.error(`error saving ${this._pieceTable} for ${data.slug}`)
+				log.error(`error saving ${this._pieceName} for ${data.slug}`)
 			}
 		})
 	}

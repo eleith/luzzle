@@ -1,15 +1,18 @@
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command from './dump.js'
 import { Arguments } from 'yargs'
 import { makeContext } from './context.fixtures.js'
 import { makePiece } from '../pieces/piece.fixtures.js'
 
+vi.mock('@luzzle/core')
+
 const mocks = {
 	getPieceTypes: vi.fn(),
 	getPiece: vi.fn(),
+	findPieceNames: vi.fn(),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
 describe('lib/commands/dump', () => {
 	afterEach(() => {
@@ -25,20 +28,19 @@ describe('lib/commands/dump', () => {
 
 	test('dump', async () => {
 		const PieceTest = makePiece()
-		const pieceType = 'piece'
 		const ctx = makeContext({
 			pieces: {
-				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
 				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
+				findPieceNames: mocks.findPieceNames.mockResolvedValue(['test']),
 			},
 		})
 
 		spies.pieceDump = vi.spyOn(PieceTest.prototype, 'dump').mockResolvedValue()
-		mocks.getPiece.mockReturnValue(new PieceTest())
 
 		await command.run(ctx, {} as Arguments)
 
 		expect(mocks.getPiece).toHaveBeenCalledOnce()
+		expect(mocks.findPieceNames).toHaveBeenCalledOnce()
 		expect(spies.pieceDump).toHaveBeenCalledOnce()
 	})
 })

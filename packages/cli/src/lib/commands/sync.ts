@@ -1,57 +1,61 @@
+import { deletePiece, getPieces } from '@luzzle/core'
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
-import { eachLimit } from 'async'
-import {
-	makeOptionalPieceCommand,
-	parseOptionalPieceArgv,
-	PieceOptionalArgv,
-	PieceOptionalCommandOption,
-} from '../pieces/index.js'
+import log from '../log.js'
 
-export type SyncArgv = { force: boolean } & PieceOptionalArgv
+export type SyncArgv = { force?: boolean; piece?: string }
 
 const command: Command<SyncArgv> = {
 	name: 'sync',
 
-	command: `sync ${PieceOptionalCommandOption}`,
+	command: `sync`,
 
 	describe: 'sync directory to local database',
 
 	builder: <T>(yargs: Argv<T>) => {
-		return makeOptionalPieceCommand(yargs).options('force', {
-			type: 'boolean',
-			alias: 'f',
-			description: 'force updates on all items',
-			default: false,
-		})
+		return yargs
+			.options('piece', {
+				type: 'string',
+				alias: 'p',
+				description: `specific piece name to sync`,
+			})
+			.options('force', {
+				type: 'boolean',
+				alias: 'f',
+				description: 'force updates on all items',
+				default: false,
+			})
 	},
 
 	run: async function (ctx, args) {
 		const force = args.force
 		const dryRun = ctx.flags.dryRun
-		const optionalPiece = parseOptionalPieceArgv(args)
-		const pieceTypes = optionalPiece ? [optionalPiece.piece] : ctx.pieces.getPieceTypes()
+		const diskPieceNames = await ctx.pieces.findPieceNames()
+		const pieceNames = args.piece ? [args.piece] : diskPieceNames
 
-		await eachLimit(pieceTypes, 1, async (pieceType) => {
-			const pieces = ctx.pieces.getPiece(pieceType)
+		for (const name of pieceNames) {
+			const piece = await ctx.pieces.getPiece(name)
 			const slugs = []
 
-			if (optionalPiece?.slug) {
-				slugs.push(optionalPiece.slug)
-			} else {
-				const allSlugs = await pieces.getSlugs()
-				const updatedSlugs = await pieces.getSlugsOutdated()
-				const processSlugs = force ? allSlugs : updatedSlugs
+			const allSlugs = await piece.getSlugs()
+			const updatedSlugs = await piece.getSlugsOutdated(ctx.db)
+			const processSlugs = force ? allSlugs : updatedSlugs
 
-				slugs.push(...processSlugs)
-			}
+			slugs.push(...processSlugs)
 
-			await pieces.sync(slugs, dryRun)
+			await piece.sync(ctx.db, dryRun)
+			await piece.syncItems(ctx.db, slugs, dryRun)
+			await piece.syncItemsCleanUp(ctx.db, dryRun)
+		}
 
-			if (!optionalPiece) {
-				await pieces.syncCleanUp(dryRun)
-			}
-		})
+		const registeredPieces = await getPieces(ctx.db)
+		const registeredPieceNames = registeredPieces.map((piece) => piece.name)
+		const missingPieceNames = registeredPieceNames.filter((name) => !diskPieceNames.includes(name))
+
+		for (const name of missingPieceNames) {
+			await deletePiece(ctx.db, name)
+			log.info(`Deleted piece ${name} from the database`)
+		}
 	},
 }
 

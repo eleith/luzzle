@@ -8,7 +8,6 @@ import { makeMarkdownSample, makePiece } from '../pieces/piece.fixtures.js'
 
 const mocks = {
 	logError: vi.spyOn(log, 'error'),
-	getPieceTypes: vi.fn(),
 	getPiece: vi.fn(),
 }
 
@@ -27,21 +26,16 @@ describe('lib/commands/create', () => {
 	})
 
 	test('run', async () => {
-		const book = makeMarkdownSample()
 		const title = 'slug2'
 		const piece = 'books'
 		const PieceTest = makePiece()
-		const pieceType = 'piece'
 		const ctx = makeContext({
 			pieces: {
-				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
 
-		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockResolvedValueOnce(book)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(false)
 
 		await command.run(ctx, { title, piece } as Arguments<CreateArgv>)
 
@@ -54,10 +48,8 @@ describe('lib/commands/create', () => {
 		const title = 'slug2'
 		const piece = 'books'
 		const PieceTest = makePiece()
-		const pieceType = 'piece'
 		const ctx = makeContext({
 			pieces: {
-				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
@@ -81,10 +73,8 @@ describe('lib/commands/create', () => {
 		const title = 'slug2'
 		const piece = 'books'
 		const PieceTest = makePiece()
-		const pieceType = 'piece'
 		const ctx = makeContext({
 			pieces: {
-				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})
@@ -106,11 +96,9 @@ describe('lib/commands/create', () => {
 		const title = 'slug2'
 		const piece = 'books'
 		const PieceTest = makePiece()
-		const pieceType = 'piece'
 		const ctx = makeContext({
 			flags: { dryRun: true },
 			pieces: {
-				getPieceTypes: mocks.getPieceTypes.mockReturnValue([pieceType]),
 				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
 			},
 		})

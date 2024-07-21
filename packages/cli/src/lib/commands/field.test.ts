@@ -48,7 +48,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path } as Arguments<AttachArgv>)
 
@@ -71,7 +71,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path, fields: [fieldname] } as Arguments<AttachArgv>)
 
@@ -98,7 +98,7 @@ describe('lib/commands/field.ts', () => {
 			.spyOn(PieceTest.prototype, 'setFields')
 			.mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, {
 			path,
@@ -128,7 +128,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceSetFields = vi
 			.spyOn(PieceTest.prototype, 'setFields')
 			.mockRejectedValueOnce(new Error('error'))
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 
 		await command.run(ctx, {
@@ -158,7 +158,7 @@ describe('lib/commands/field.ts', () => {
 			.spyOn(PieceTest.prototype, 'removeField')
 			.mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path, fields: [fieldname], remove: true } as Arguments<AttachArgv>)
 
@@ -184,7 +184,7 @@ describe('lib/commands/field.ts', () => {
 			.spyOn(PieceTest.prototype, 'removeField')
 			.mockRejectedValueOnce(new Error('error'))
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path, fields: [fieldname], remove: true } as Arguments<AttachArgv>)
 
@@ -202,7 +202,7 @@ describe('lib/commands/field.ts', () => {
 		})
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(null)
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path, fields: [fieldname] } as Arguments<AttachArgv>)
 
@@ -223,7 +223,7 @@ describe('lib/commands/field.ts', () => {
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, { path, fields: [fieldname] } as Arguments<AttachArgv>)
 
@@ -246,7 +246,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, {
 			path,
@@ -270,7 +270,7 @@ describe('lib/commands/field.ts', () => {
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, {
 			path,
@@ -292,7 +292,7 @@ describe('lib/commands/field.ts', () => {
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, {
 			path,
@@ -314,7 +314,7 @@ describe('lib/commands/field.ts', () => {
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, {
 			path,
@@ -338,7 +338,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, {
 			path,
@@ -365,7 +365,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockReturnValueOnce({ piece: 'books', slug: path })
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
 		await command.run(ctx, {
 			path,

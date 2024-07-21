@@ -19,15 +19,15 @@ const command: Command<EditArgv> = {
 
 	run: async function (ctx, args) {
 		const dir = ctx.directory
-		const { slug, piece } = parsePieceArgv(args)
-		const pieces = ctx.pieces.getPiece(piece)
+		const { slug, name } = await parsePieceArgv(ctx, args)
+		const piece = await ctx.pieces.getPiece(name)
 
 		if (!process.env.EDITOR) {
 			log.error('could not find an editor')
 			return
 		}
 
-		const piecePath = pieces.getPath(slug)
+		const piecePath = piece.getPath(slug)
 
 		if (ctx.flags.dryRun === false) {
 			spawn(process.env.EDITOR, [piecePath], {

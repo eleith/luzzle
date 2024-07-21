@@ -1,6 +1,7 @@
 import { createWriteStream } from 'fs'
 import got from 'got'
 import { temporaryFile } from 'tempy'
+import log from './log.js'
 
 async function downloadToTmp(url: string): Promise<string | null> {
 	const filePath = temporaryFile()
@@ -17,8 +18,7 @@ async function downloadToPath(url: string, path: string): Promise<boolean> {
 
 	return new Promise((resolve) => {
 		const resolveLogError = () => {
-			console.error(`failed to download ${url} to ${path}`)
-			// console.error(error)
+			log.error(`failed to download ${url} to ${path}`)
 			resolve(false)
 		}
 

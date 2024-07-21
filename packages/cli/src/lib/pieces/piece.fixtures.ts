@@ -1,15 +1,12 @@
 import {
-	PieceSelectable,
-	Pieces,
+	PiecesItemsSelectable,
 	PieceFrontmatter,
-	LuzzleDatabase,
 	PieceMarkdown,
 	compile,
 	PieceFrontmatterSchema,
 } from '@luzzle/core'
 import Piece from './piece.js'
-import { mockDatabase } from '../database.mock.js'
-import { Mocked } from 'vitest'
+import { PieceManagerSelect } from '@luzzle/core/dist/src/database/tables/pieces_manager.schema.js'
 
 type PieceValidator = ReturnType<typeof compile<PieceFrontmatter>>
 
@@ -24,18 +21,22 @@ export function makeValidator(): PieceValidator {
 	return validate as unknown as PieceValidator
 }
 
-export function makeSchema(properties?: {
-	[key: string]: {
-		type?: string
-		nullable?: boolean
-		items?: object
-		format?: string
-		pattern?: string
-		enum?: string[] | number[]
+export function makeSchema(
+	name: string,
+	properties?: {
+		[key: string]: {
+			type?: string
+			nullable?: boolean
+			items?: object
+			format?: string
+			pattern?: string
+			enum?: string[] | number[]
+		}
 	}
-}): PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }> {
+): PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }> {
 	return {
 		type: 'object',
+		title: name,
 		properties: {
 			title: { type: 'string' },
 			keywords: { type: 'string', nullable: true },
@@ -65,30 +66,39 @@ export function makeMarkdownSample<F extends PieceFrontmatter>(
 	} as PieceMarkdown<F>
 }
 
-export function makeSample(): PieceSelectable {
+export function makeSample(): PiecesItemsSelectable {
 	return {
 		...sample,
-	} as PieceSelectable
+	} as PiecesItemsSelectable
 }
 
-class PieceOverridable extends Piece<Pieces, PieceSelectable, PieceFrontmatter> {
+class PieceOverridable extends Piece<PiecesItemsSelectable, PieceFrontmatter> {
 	constructor(
 		overrides: {
-			pieceRoot?: string
-			table?: Pieces
-			schema?: PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }>
-			db?: Mocked<LuzzleDatabase>
+			root?: string
+			name?: string
+			schema?: PieceFrontmatterSchema<PieceFrontmatter> | null
 		} = {}
 	) {
-		const db = overrides.db || mockDatabase().db
-		const root = overrides.pieceRoot || 'pieces-root'
-		const table = overrides.table || ('table' as Pieces)
-		const schema = overrides.schema || makeSchema()
+		const root = overrides.root || 'pieces-root'
+		const name = overrides.name || 'table'
+		const schema = overrides.schema === null ? undefined : overrides.schema || makeSchema(name)
 
-		super(root, table, schema, db as unknown as LuzzleDatabase)
+		super(root, name, schema)
 	}
 }
 
 export function makePiece() {
 	return PieceOverridable
+}
+
+export function makeRegisteredPiece(overrides?: Partial<PieceManagerSelect>): PieceManagerSelect {
+	return {
+		id: `123lk12j3lj12k3${Math.random()}`,
+		date_added: new Date().getTime(),
+		date_updated: new Date().getTime(),
+		name: 'asdf',
+		schema: 'asdf',
+		...overrides,
+	}
 }
