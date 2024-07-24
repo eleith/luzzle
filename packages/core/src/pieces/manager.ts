@@ -1,5 +1,5 @@
 import { Kysely } from 'kysely'
-import { LuzzleTables } from 'src/database/tables/index.js'
+import { LuzzleTables } from '../database/tables/index.js'
 import { JSONSchemaType } from 'ajv'
 import { PieceFrontmatter } from './utils/frontmatter.js'
 import cuid2 from '@paralleldrive/cuid2'
