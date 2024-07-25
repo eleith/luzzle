@@ -2,7 +2,14 @@
 
 import { createWriteStream, mkdirSync, WriteStream } from 'fs'
 import { Resvg } from '@resvg/resvg-js'
-import { getItems, getLastRun, storeLastRun } from './utils.js'
+import {
+	getItemsSince,
+	getLastRun,
+	WebPieceType,
+	WebPieces,
+	getDatabase,
+	setLastRun,
+} from '../lib/web.js'
 import { bookToHtml } from './books.js'
 import { linkToHtml } from './links.js'
 import { image, outputPng, outputSvg } from './template.js'
@@ -10,7 +17,6 @@ import { textToHtml } from './texts.js'
 import { gameToHtml } from './games.js'
 import parseArgs from './yargs.js'
 import { hideBin } from 'yargs/helpers'
-import { getDatabaseClient, Pieces, PieceSelectable } from '@luzzle/core'
 
 async function makeOgImage(html: JSX.Element, writeStream: WriteStream, output: 'svg' | 'png') {
 	switch (output) {
@@ -39,17 +45,17 @@ async function makeManyOgImages(
 	}
 }
 
-function itemToHtml<T extends Pieces>(item: PieceSelectable<T>, type: T, folder: string) {
+function itemToHtml(item: WebPieces, type: WebPieceType, folder: string) {
 	switch (type) {
 		case 'books':
-			return bookToHtml(item as PieceSelectable<'books'>, folder)
+			return bookToHtml(item, folder)
 		case 'links':
-			return linkToHtml(item as PieceSelectable<'links'>, folder)
+			return linkToHtml(item, folder)
 		case 'games':
-			return gameToHtml(item as PieceSelectable<'games'>, folder)
+			return gameToHtml(item, folder)
 		case 'texts':
 		default:
-			return textToHtml(item as PieceSelectable<'texts'>, folder)
+			return textToHtml(item, folder)
 	}
 }
 
@@ -58,10 +64,10 @@ async function run(): Promise<void> {
 		const command = await parseArgs(hideBin(process.argv))
 		const folder = command.output
 		const lastRun = await getLastRun(folder)
-		const db = getDatabaseClient(command.database)
+		const db = getDatabase(command.database)
 		const output = 'png'
-		const type = command.type as Pieces
-		const items = await getItems(db, lastRun, type)
+		const type = command.type as WebPieceType
+		const items = await getItemsSince(db, lastRun, type)
 		const ogItems = items.map((item) => ({
 			slug: item.slug,
 			html: itemToHtml(item, type, command.input),
@@ -69,7 +75,7 @@ async function run(): Promise<void> {
 		}))
 
 		await makeManyOgImages(folder, ogItems, output)
-		await storeLastRun(folder, new Date())
+		await setLastRun(folder, new Date())
 	} catch (err) {
 		console.error(err)
 	}

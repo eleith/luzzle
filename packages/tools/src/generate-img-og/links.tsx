@@ -1,5 +1,5 @@
-import { PieceSelectable } from '@luzzle/core'
 import { html, imageAsBase64 } from './template.js'
+import { WebPieces, getItemMetadata } from '../lib/web.js'
 
 function repeatBlock(times: number): JSX.Element[] {
 	const blocks = []
@@ -20,8 +20,9 @@ function repeatBlock(times: number): JSX.Element[] {
 	return blocks
 }
 
-function linkToHtml(link: PieceSelectable<'links'>, folder: string) {
-	const url = imageAsBase64(`${folder}/${link.representative_image}.h125.jpg`)
+function linkToHtml(link: WebPieces, folder: string) {
+	const url = imageAsBase64(`${folder}/${link.media}.h125.jpg`)
+	const metadata = getItemMetadata<{ subtitle?: string }>(link)
 
 	const size = {
 		width: 200,
@@ -126,7 +127,7 @@ function linkToHtml(link: PieceSelectable<'links'>, folder: string) {
 
 	return html(article, {
 		title: link.title,
-		subtitle: link.subtitle ?? '',
+		subtitle: metadata.subtitle ?? '',
 	})
 }
 

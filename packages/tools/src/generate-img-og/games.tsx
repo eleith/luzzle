@@ -1,5 +1,5 @@
-import { PieceSelectable } from '@luzzle/core'
 import { html, imageAsBase64 } from './template.js'
+import { WebPieces, getItemMetadata } from '../lib/web.js'
 
 function cartridge(url?: string | null) {
 	return (
@@ -109,12 +109,13 @@ function cartridge(url?: string | null) {
 	)
 }
 
-function gameToHtml(game: PieceSelectable<'games'>, folder: string) {
-	const url = imageAsBase64(`${folder}/${game.representative_image}.w125.jpg`)
+function gameToHtml(game: WebPieces, folder: string) {
+	const url = imageAsBase64(`${folder}/${game.media}.w125.jpg`)
+	const metadata = getItemMetadata<{ played_on?: number }>(game)
 
 	return html(cartridge(url), {
 		title: game.title,
-		subtitle: game.played_on ?? '',
+		subtitle: metadata.played_on ? new Date(metadata.played_on).toLocaleDateString() : '',
 	})
 }
 

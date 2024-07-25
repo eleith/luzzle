@@ -1,4 +1,4 @@
-import { Piece } from '@luzzle/core'
+import { WebPieceTypes } from '../lib/web.js'
 import yargs from 'yargs'
 
 async function parseArgs(args: string[]) {
@@ -14,7 +14,7 @@ async function parseArgs(args: string[]) {
 			type: {
 				type: 'string',
 				description: 'type of piece',
-				enum: Object.values(Piece),
+				enum: WebPieceTypes,
 			},
 			url: {
 				type: 'string',
