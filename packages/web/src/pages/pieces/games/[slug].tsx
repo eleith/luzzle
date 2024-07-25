@@ -1,9 +1,9 @@
 import PageFull from '@app/common/components/layout/PageFull'
-import gameFragment from '@app/common/graphql/games/fragments/gameFullDetails'
+import pieceFragment from '@app/common/graphql/piece/fragments/pieceFullDetails'
 import { GetStaticPathsResult } from 'next'
 import NextLink from 'next/link'
 import gql from '@app/lib/graphql/tag'
-import { GetPartialGamesDocument, GetGameBySlugDocument } from './_gql_/[slug]'
+import { GetPartialGamePiecesDocument, GetGamePieceBySlugDocument } from './_gql_/[slug]'
 import staticClient from '@app/common/graphql/staticClient'
 import { Box, Text, Anchor, Button, Divider } from '@luzzle/ui/components'
 import * as styles from './[slug].css'
@@ -16,24 +16,25 @@ import GameCoverFor from '@app/common/components/games/GameCoverFor'
 import Markdown from 'react-markdown'
 
 const partialGamesQuery = gql<
-	typeof GetPartialGamesDocument
->(`query GetPartialGames($take: Int, $page: Int) {
-  games(take: $take, page: $page) {
+	typeof GetPartialGamePiecesDocument
+>(`query GetPartialGamePieces($take: Int, $page: Int, $type: String) {
+  pieces(take: $take, page: $page, type: $type) {
     slug
-		datePlayed
+		dateOrder
   }
 }`)
 
-const gameQuery = gql<typeof GetGameBySlugDocument>(
-	`query GetGameBySlug($slug: String!) {
-  game(slug: $slug) {
+const gameQuery = gql<typeof GetGamePieceBySlugDocument>(
+	`query GetGamePieceBySlug($slug: String!, $type: String) {
+  piece(slug: $slug, type: $type) {
     __typename
     ... on Error {
       message
     }
-    ... on QueryGameSuccess {
+    ... on QueryPieceSuccess {
       data {
-        ...GameFullDetails
+        ...PieceFullDetails
+				metadata
         tags {
           name
           slug
@@ -50,11 +51,11 @@ const gameQuery = gql<typeof GetGameBySlugDocument>(
     }
   }
 }`,
-	gameFragment
+	pieceFragment
 )
 
-type GamePiece = ResultSuccessOf<typeof gameQuery, 'game'>
-type GameOrderPartial = ResultOneOf<typeof partialGamesQuery, 'games'>
+type GamePiece = ResultSuccessOf<typeof gameQuery, 'piece'>
+type GameOrderPartial = ResultOneOf<typeof partialGamesQuery, 'pieces'>
 type GamePageStaticParams = { params: GameOrderPartial }
 type GamePageProps = { game: GamePiece }
 
@@ -89,11 +90,11 @@ export default function GamePage({ game }: GamePageProps): JSX.Element {
 							piece={{
 								title: game.title,
 								slug: game.slug,
-								media: game.representativeImage,
+								media: game.media,
 								id: game.id,
 							}}
 							title={game.title}
-							hasMedia={!!game.representativeImage}
+							hasMedia={!!game.media}
 							size={'LARGE'}
 						/>
 					</Box>
@@ -121,8 +122,8 @@ export default function GamePage({ game }: GamePageProps): JSX.Element {
 						<Text as="h1" size="title">
 							{game.title}
 						</Text>
-						{game.datePlayed && (
-							<Text size="caption">played on {new Date(game.datePlayed).toLocaleDateString()}</Text>
+						{game.dateOrder && (
+							<Text size="caption">played on {new Date(game.dateOrder).toLocaleDateString()}</Text>
 						)}
 						<br />
 						<Text as="h3" size="h3">
@@ -141,7 +142,7 @@ export default function GamePage({ game }: GamePageProps): JSX.Element {
 						<br />
 						<Box>
 							<Text className={styles.gameNote}>
-								{(game.description || '---').split('\n').map((p, i) => (
+								{(game.summary || '---').split('\n').map((p, i) => (
 									<p key={i}>{p}</p>
 								))}
 							</Text>
@@ -170,7 +171,7 @@ export default function GamePage({ game }: GamePageProps): JSX.Element {
 			meta={{
 				title: game.title,
 				image: `${config.public.HOST_STATIC}/images/og/games/${game.slug}.png`,
-				description: game.description || '',
+				description: game.summary || '',
 			}}
 			invert
 		>
@@ -182,10 +183,10 @@ export default function GamePage({ game }: GamePageProps): JSX.Element {
 async function getGamesForPage(take: number, page?: number): Promise<GameOrderPartial[]> {
 	const response = await staticClient.query({
 		query: partialGamesQuery,
-		variables: { take, page },
+		variables: { take, page, type: 'games' },
 	})
-	const games = response.data.games?.filter(Boolean) || []
-	const partialLinks = games.map((game) => ({ slug: game.slug, datePlayed: game.datePlayed }))
+	const games = response.data.pieces?.filter(Boolean) || []
+	const partialLinks = games.map((game) => ({ slug: game.slug, dateOrder: game.dateOrder }))
 
 	return partialLinks
 }
@@ -225,11 +226,11 @@ export async function getStaticProps({
 }: GamePageStaticParams): Promise<{ props: GamePageProps } | { notFound: true }> {
 	const graphQlresponse = await staticClient.query({
 		query: gameQuery,
-		variables: { slug: params.slug },
+		variables: { slug: params.slug, type: 'games' },
 	})
-	const response = graphQlresponse.data.game
+	const response = graphQlresponse.data.piece
 
-	if (response?.__typename === 'QueryGameSuccess') {
+	if (response?.__typename === 'QueryPieceSuccess') {
 		return {
 			props: {
 				game: response.data,

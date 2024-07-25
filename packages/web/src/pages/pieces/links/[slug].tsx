@@ -1,9 +1,9 @@
 import PageFull from '@app/common/components/layout/PageFull'
-import linkFragment from '@app/common/graphql/link/fragments/linkFullDetails'
+import pieceFragment from '@app/common/graphql/piece/fragments/pieceFullDetails'
 import { GetStaticPathsResult } from 'next'
 import NextLink from 'next/link'
 import gql from '@app/lib/graphql/tag'
-import { GetPartialLinksDocument, GetLinkBySlugDocument } from './_gql_/[slug]'
+import { GetPartialLinkPiecesDocument, GetLinkPieceBySlugDocument } from './_gql_/[slug]'
 import staticClient from '@app/common/graphql/staticClient'
 import { Box, Text, Anchor, Button, Divider } from '@luzzle/ui/components'
 import * as styles from './[slug].css'
@@ -15,24 +15,25 @@ import config from '@app/common/config'
 import ArticleCoverFor from '@app/common/components/links/ArticleCoverFor'
 
 const partialLinksQuery = gql<
-	typeof GetPartialLinksDocument
->(`query GetPartialLinks($take: Int, $page: Int) {
-  links(take: $take, page: $page) {
+	typeof GetPartialLinkPiecesDocument
+>(`query GetPartialLinkPieces($take: Int, $page: Int, $type: String) {
+  pieces(take: $take, page: $page, type: $type) {
     slug
-		dateAccessed
+		dateOrder
   }
 }`)
 
-const linkQuery = gql<typeof GetLinkBySlugDocument>(
-	`query GetLinkBySlug($slug: String!) {
-  link(slug: $slug) {
+const linkQuery = gql<typeof GetLinkPieceBySlugDocument>(
+	`query GetLinkPieceBySlug($slug: String!, $type: String) {
+  piece(slug: $slug, type: $type) {
     __typename
     ... on Error {
       message
     }
-    ... on QueryLinkSuccess {
+    ... on QueryPieceSuccess {
       data {
-        ...LinkFullDetails
+        ...PieceFullDetails
+				metadata
         tags {
           name
           slug
@@ -49,19 +50,26 @@ const linkQuery = gql<typeof GetLinkBySlugDocument>(
     }
   }
 }`,
-	linkFragment
+	pieceFragment
 )
 
-type Link = ResultSuccessOf<typeof linkQuery, 'link'>
-type LinkOrderPartial = ResultOneOf<typeof partialLinksQuery, 'links'>
+type Link = ResultSuccessOf<typeof linkQuery, 'piece'>
+type LinkOrderPartial = ResultOneOf<typeof partialLinksQuery, 'pieces'>
 type LinkPageStaticParams = { params: LinkOrderPartial }
 type LinkPageProps = { link: Link }
+type LinkMetadata = {
+	url: string
+	archiveUrl: string
+	subtitle: string
+	author: string
+	coauthors: string
+}
 
 function makeLinkDateString(link?: Link): string {
 	const month =
-		link && typeof link.dateAccessed === 'number' ? new Date(link.dateAccessed).getMonth() + 1 : '?'
+		link && typeof link.dateOrder === 'number' ? new Date(link.dateOrder).getMonth() + 1 : '?'
 	const year =
-		link && typeof link.dateAccessed === 'number' ? new Date(link.dateAccessed).getFullYear() : '?'
+		link && typeof link.dateOrder === 'number' ? new Date(link.dateOrder).getFullYear() : '?'
 
 	return `${month} / ${year}`
 }
@@ -86,6 +94,7 @@ export default function LinkPage({ link }: LinkPageProps): JSX.Element {
 	const discussionForm = (
 		<DiscussionForm type="links" slug={link.slug} onClose={() => setShowForm(false)} />
 	)
+	const metadata: LinkMetadata = link.metadata ? JSON.parse(link.metadata) : {}
 
 	const linkPage = (
 		<Box>
@@ -96,11 +105,11 @@ export default function LinkPage({ link }: LinkPageProps): JSX.Element {
 						<ArticleCoverFor
 							piece={{
 								title: link.title,
-								media: link.representativeImage,
+								media: link.media,
 								slug: link.slug,
 								id: link.id,
 							}}
-							hasMedia={!!link.representativeImage}
+							hasMedia={!!link.media}
 							size={'LARGE'}
 						/>
 					</Box>
@@ -111,8 +120,8 @@ export default function LinkPage({ link }: LinkPageProps): JSX.Element {
 				<Box className={styles.linkContainer}>
 					<Box className={styles.linkDetails}>
 						<Box style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-							{link.archiveUrl ? (
-								<Anchor href={link.archiveUrl}>
+							{metadata.archiveUrl ? (
+								<Anchor href={metadata.archiveUrl}>
 									<Button minimal use={'primary'} className={styles.linkDiscuss}>
 										<LinkSimple size={36} />
 									</Button>
@@ -133,14 +142,14 @@ export default function LinkPage({ link }: LinkPageProps): JSX.Element {
 						<Text as="h1" size="title">
 							{link.title}
 						</Text>
-						{link.subtitle && (
+						{metadata.subtitle && (
 							<Text as="h2" size="h3">
-								{link.subtitle}
+								{metadata.subtitle}
 							</Text>
 						)}
 						<Text>
-							by {link.author}
-							{link.coauthors && `, ${link.coauthors?.split(',').join(', ')}`}
+							by {metadata.author}
+							{metadata.coauthors && `, ${metadata.coauthors?.split(',').join(', ')}`}
 						</Text>
 						<br />
 						<Divider />
@@ -150,8 +159,8 @@ export default function LinkPage({ link }: LinkPageProps): JSX.Element {
 						</Text>
 						<br />
 						<Box>
-							<Anchor href={link.url} hoverAction="underline">
-								{link.url}
+							<Anchor href={metadata.url} hoverAction="underline">
+								{metadata.url}
 							</Anchor>
 						</Box>
 						<br />
@@ -223,12 +232,10 @@ export default function LinkPage({ link }: LinkPageProps): JSX.Element {
 async function getLinksForPage(take: number, page?: number): Promise<LinkOrderPartial[]> {
 	const response = await staticClient.query({
 		query: partialLinksQuery,
-		variables: { take, page },
+		variables: { take, page, type: 'links' },
 	})
-	const links = response.data.links?.filter(Boolean) || []
-	const partialLinks = links.map((link) => ({ slug: link.slug, dateAccessed: link.dateAccessed }))
-
-	return partialLinks
+	const links = response.data.pieces?.filter(Boolean) || []
+	return links.map((link) => ({ slug: link.slug, dateOrder: link.dateOrder }))
 }
 
 async function getAllLinkSlugs(): Promise<string[]> {
@@ -237,6 +244,7 @@ async function getAllLinkSlugs(): Promise<string[]> {
 
 	let partialLinks = await getLinksForPage(take)
 	let page = 0
+
 	slugs.push(...partialLinks.map((link) => link.slug))
 
 	while (partialLinks.length === take) {
@@ -266,11 +274,11 @@ export async function getStaticProps({
 }: LinkPageStaticParams): Promise<{ props: LinkPageProps } | { notFound: true }> {
 	const graphQlresponse = await staticClient.query({
 		query: linkQuery,
-		variables: { slug: params.slug },
+		variables: { slug: params.slug, type: 'links' },
 	})
-	const response = graphQlresponse.data.link
+	const response = graphQlresponse.data.piece
 
-	if (response?.__typename === 'QueryLinkSuccess') {
+	if (response?.__typename === 'QueryPieceSuccess') {
 		return {
 			props: {
 				link: response.data,

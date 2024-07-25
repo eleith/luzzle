@@ -1,10 +1,8 @@
 import builder from '@app/lib/graphql/builder'
-import PieceObject from '../objects/piece'
-import { Piece, type Pieces } from '@luzzle/core'
+import PieceObject, { WebPieceTypesRegExp, WebPieces } from '../objects/piece'
 
 const TAKE_DEFAULT = 100
 const TAKE_MAX = 500
-const PieceTypeRegExp = new RegExp(Object.values(Piece).join('|'))
 
 builder.queryFields((t) => ({
 	pieces: t.field({
@@ -13,11 +11,11 @@ builder.queryFields((t) => ({
 			take: t.arg({ type: 'Int', defaultValue: TAKE_DEFAULT }),
 			page: t.arg({ type: 'Int' }),
 			tag: t.arg({ type: 'String' }),
-			type: t.arg({ type: 'String', validate: (x) => PieceTypeRegExp.test(x) }),
+			type: t.arg({ type: 'String', validate: (x) => WebPieceTypesRegExp.test(x) }),
 		},
 		resolve: async (_, args, ctx) => {
 			const { take, page, tag } = args
-			const type = args.type as Pieces | undefined
+			const type = args.type as WebPieces['type'] | undefined
 			const takeValidated = Math.min(take && take > 0 ? take : TAKE_DEFAULT, TAKE_MAX)
 
 			if (tag) {
@@ -35,7 +33,7 @@ builder.queryFields((t) => ({
 						.execute()
 
 					let query = ctx.db
-						.selectFrom('pieces')
+						.selectFrom('web_pieces')
 						.selectAll()
 						.where(
 							'id',
@@ -56,7 +54,7 @@ builder.queryFields((t) => ({
 				}
 			}
 
-			let query = ctx.db.selectFrom('pieces').selectAll()
+			let query = ctx.db.selectFrom('web_pieces').selectAll()
 
 			if (page) {
 				query = query.offset(takeValidated * page)

@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "build:graphql": "VERBOSE=1 DEBUG=1 NODE_OPTIONS='-r tsconfig-paths/register' graphql-codegen --verbose --debug",
+    "build:graphql": "graphql-codegen --require tsconfig-paths/register",
     "lint": "next lint",
     "compile": "tsc --noEmit",
     "prebuild": "npm run build:graphql",
@@ -14,7 +14,7 @@
     "clean:graphql": "find . -path \\*/_gql_/*.ts -delete"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "5.0.0",
+    "@graphql-codegen/cli": "5.0.2",
     "@graphql-codegen/near-operation-file-preset": "3.0.0",
     "@graphql-codegen/schema-ast": "4.0.0",
     "@graphql-codegen/typed-document-node": "5.0.1",
@@ -46,7 +46,7 @@
   "dependencies": {
     "@apollo/client": "^3.6.9",
     "@graphql-codegen/client-preset": "4.1.0",
-    "@luzzle/core": "0.0.7",
+    "@luzzle/core": "0.0.9",
     "@luzzle/ui": "0.0.25",
     "@pothos/core": "3.40.1",
     "@pothos/plugin-errors": "3.11.1",
