@@ -4,9 +4,8 @@ import { mkdirSync } from 'fs'
 import sharp from 'sharp'
 import { hideBin } from 'yargs/helpers'
 import parseArgs from './yargs.js'
-import { getItems, getLastRun, storeLastRun } from './utils.js'
-import { getDatabaseClient, Pieces, PieceSelectable } from '@luzzle/core'
 import { dirname } from 'path'
+import { WebPieceType, getDatabase, getItemsSince, getLastRun, setLastRun } from '../lib/web.js'
 
 type ImageVariants = {
 	sizes: Array<100 | 125 | 200 | 250 | 500 | 1000>
@@ -60,45 +59,19 @@ async function makeManyVariants(
 	}
 }
 
-async function getItemsWithImages<T extends Pieces>(
-	db: ReturnType<typeof getDatabaseClient>,
+async function getItemsWithImages(
+	db: ReturnType<typeof getDatabase>,
 	lastRun: number,
-	table: T
+	type: WebPieceType
 ) {
-	const items = await getItems(db, lastRun, table)
+	const items = await getItemsSince(db, lastRun, type)
 
-	switch (table) {
-		case 'books':
-			return (items as PieceSelectable<'books'>[])
-				.filter((item) => item.cover)
-				.map((item) => ({
-					slug: item.slug,
-					image: item.cover as string,
-				}))
-		case 'links':
-			return (items as PieceSelectable<'links'>[])
-				.filter((item) => item.representative_image)
-				.map((item) => ({
-					slug: item.slug,
-					image: item.representative_image as string,
-				}))
-		case 'texts':
-			return (items as PieceSelectable<'texts'>[])
-				.filter((item) => item.representative_image)
-				.map((item) => ({
-					slug: item.slug,
-					image: item.representative_image as string,
-				}))
-		case 'games':
-			return (items as PieceSelectable<'games'>[])
-				.filter((item) => item.representative_image)
-				.map((item) => ({
-					slug: item.slug,
-					image: item.representative_image as string,
-				}))
-	}
-
-	return []
+	return items
+		.filter((item) => item.media)
+		.map((item) => ({
+			slug: item.slug,
+			image: item.media as string,
+		}))
 }
 
 async function run() {
@@ -106,8 +79,8 @@ async function run() {
 		const command = await parseArgs(hideBin(process.argv))
 		const outputFolder = command.output
 		const lastRun = await getLastRun(outputFolder)
-		const db = getDatabaseClient(command.database)
-		const type = command.type as Pieces
+		const db = getDatabase(command.database)
+		const type = command.type as WebPieceType
 		const itemsWithImages = await getItemsWithImages(db, lastRun, type)
 
 		await makeManyVariants(outputFolder, command.input, itemsWithImages, {
@@ -118,7 +91,7 @@ async function run() {
 					: [{ width: 3 / 2, height: 1, label: 'h' }],
 		})
 
-		await storeLastRun(outputFolder, new Date())
+		await setLastRun(outputFolder, new Date())
 	} catch (err) {
 		console.error(err)
 	}

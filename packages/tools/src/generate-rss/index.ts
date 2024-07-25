@@ -2,12 +2,12 @@
 
 import { Feed, Item } from 'feed'
 import { writeFile, mkdir } from 'fs/promises'
-import { getDatabaseClient, LuzzleSelectable, Pieces } from '@luzzle/core'
 import { hideBin } from 'yargs/helpers'
 import parseArgs from './yargs.js'
+import { WebPieceType, WebPieces, getDatabase } from '../lib/web.js'
 
 async function generateRss(
-	pieces: LuzzleSelectable<'pieces'>[],
+	pieces: WebPieces[],
 	site: { title: string; description: string; url: string; folder: string },
 	output: string
 ) {
@@ -67,8 +67,8 @@ async function generateRss(
 	)
 }
 
-async function getItems(type: Pieces, db: ReturnType<typeof getDatabaseClient>) {
-	let piecesQuery = db.selectFrom('pieces').limit(50)
+async function getItems(type: WebPieceType, db: ReturnType<typeof getDatabase>) {
+	let piecesQuery = db.selectFrom('web_pieces').limit(50)
 
 	if (type) {
 		piecesQuery = piecesQuery.where('type', '=', type)
@@ -80,9 +80,9 @@ async function getItems(type: Pieces, db: ReturnType<typeof getDatabaseClient>) 
 async function run(): Promise<void> {
 	try {
 		const command = await parseArgs(hideBin(process.argv))
-		const db = getDatabaseClient(command.database)
-		const type = command.type
-		const pieces = await getItems(type as Pieces, db)
+		const db = getDatabase(command.database)
+		const type = command.type as WebPieceType
+		const pieces = await getItems(type, db)
 
 		generateRss(
 			pieces,

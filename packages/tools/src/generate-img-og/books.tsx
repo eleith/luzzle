@@ -1,6 +1,6 @@
-import { PieceSelectable } from '@luzzle/core'
 import { createHash } from 'crypto'
 import { html, imageAsBase64 } from './template.js'
+import { WebPieces, getItemMetadata } from '../lib/web.js'
 
 const BookCoverSize = {
 	SMALL: 'SMALL',
@@ -52,10 +52,11 @@ function getSize(pages?: number | null, scale = 1): (typeof sizes)[keyof typeof 
 	}
 }
 
-function bookToHtml(book: PieceSelectable<'books'>, assets: string) {
+function bookToHtml(book: WebPieces, assets: string) {
+	const metadata = getItemMetadata<{ pages?: number; subtitle?: string }>(book)
 	const color = getColor(book.slug)
-	const size = getSize(book.pages, 1.5)
-	const url = imageAsBase64(`${assets}/${book.cover}.w500.jpg`)
+	const size = getSize(metadata.pages, 1.5)
+	const url = imageAsBase64(`${assets}/${book.media}.w500.jpg`)
 
 	const cover = url ? (
 		<img
@@ -82,7 +83,7 @@ function bookToHtml(book: PieceSelectable<'books'>, assets: string) {
 		/>
 	)
 
-	return html(cover, { title: book.title, subtitle: book.subtitle ?? '' })
+	return html(cover, { title: book.title, subtitle: metadata.subtitle ?? '' })
 }
 
 export { bookToHtml }
