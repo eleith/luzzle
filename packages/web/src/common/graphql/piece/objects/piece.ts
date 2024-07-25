@@ -1,12 +1,42 @@
 import builder from '@app/lib/graphql/builder'
-import { LuzzleSelectable } from '@luzzle/core'
 import { Tag } from '../../tag'
 
-const PieceBuilder = builder.objectRef<LuzzleSelectable<'pieces'>>('Piece')
+export const WebPieceTypes = ['books', 'links', 'texts', 'games'] as const
+export const WebPieceTypesRegExp = RegExp(WebPieceTypes.join('|'))
+
+export interface WebPieces {
+	id: string
+	title: string
+	slug: string
+	note: string
+	date_updated: number
+	date_added: number
+	date_consumed: number
+	type: [typeof WebPieceTypes][number][number]
+	media: string
+	json_metadata: string
+	summary: string
+}
+
+export interface WebPiecesFTS5 {
+	id: string
+	title: string
+	slug: string
+	note: string
+	date_updated: number
+	date_added: number
+	date_consumed: number
+	type: [typeof WebPieceTypes][number][number]
+	media: string
+	json_metadata: string
+	summary: string
+}
+
+const PieceBuilder = builder.objectRef<WebPieces>('Piece')
 const PieceSiblings = builder
 	.objectRef<{
-		next?: LuzzleSelectable<'pieces'> | null
-		previous?: LuzzleSelectable<'pieces'> | null
+		next?: WebPieces | null
+		previous?: WebPieces | null
 	}>('PieceSiblings')
 	.implement({
 		fields: (t) => ({
@@ -28,6 +58,8 @@ PieceBuilder.implement({
 		dateOrder: t.exposeFloat('date_consumed'),
 		type: t.exposeString('type', { nullable: false }),
 		media: t.exposeString('media'),
+		metadata: t.exposeString('json_metadata'),
+		summary: t.exposeString('summary'),
 		tags: t.field({
 			type: [Tag],
 			resolve: async (parent, _, ctx) => {
@@ -53,7 +85,7 @@ PieceBuilder.implement({
 			type: PieceSiblings,
 			resolve: async (parent, _, ctx) => {
 				const after = await ctx.db
-					.selectFrom('pieces')
+					.selectFrom('web_pieces')
 					.select('slug')
 					.orderBy('date_consumed', 'desc')
 					.orderBy('slug', 'asc')
@@ -66,7 +98,7 @@ PieceBuilder.implement({
 					.executeTakeFirst()
 
 				const before = await ctx.db
-					.selectFrom('pieces')
+					.selectFrom('web_pieces')
 					.select('slug')
 					.orderBy('date_consumed', 'asc')
 					.orderBy('slug', 'desc')
@@ -80,7 +112,7 @@ PieceBuilder.implement({
 
 				const previous = before
 					? await ctx.db
-							.selectFrom('pieces')
+							.selectFrom('web_pieces')
 							.selectAll()
 							.where('slug', '=', before.slug)
 							.executeTakeFirst()
@@ -88,7 +120,7 @@ PieceBuilder.implement({
 
 				const next = after
 					? await ctx.db
-							.selectFrom('pieces')
+							.selectFrom('web_pieces')
 							.selectAll()
 							.where('slug', '=', after.slug)
 							.executeTakeFirst()

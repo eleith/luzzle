@@ -1,7 +1,7 @@
 import PageFull from '@app/common/components/layout/PageFull'
 import gql from '@app/lib/graphql/tag'
-import gameFragment from '@app/common/graphql/games/fragments/gameFullDetails'
-import { GetGamesDocument } from './_gql_/index'
+import pieceFragment from '@app/common/graphql/piece/fragments/pieceFullDetails'
+import { GetGamePiecesDocument } from './_gql_/index'
 import staticClient from '@app/common/graphql/staticClient'
 import { Box, Anchor } from '@luzzle/ui/components'
 import useGraphSWRInfinite from '@app/common/hooks/useGraphSWRInfinite'
@@ -11,18 +11,18 @@ import * as styles from './index.css'
 import Game from 'next/link'
 import PieceCard from '@app/common/components/pieces/PieceCard'
 
-const getGamesQuery = gql<typeof GetGamesDocument>(
-	`query GetGames($take: Int, $page: Int) {
-  games(take: $take, page: $page) {
-    ...GameFullDetails
+const getGamesQuery = gql<typeof GetGamePiecesDocument>(
+	`query GetGamePieces($take: Int, $page: Int, $type: String) {
+  pieces(take: $take, page: $page, type: $type) {
+    ...PieceFullDetails
   }
 }
 `,
-	gameFragment
+	pieceFragment
 )
 
 type GetGamesQuery = ResultOf<typeof getGamesQuery>
-type Game = NonNullable<GetGamesQuery['games']>[number]
+type Game = NonNullable<GetGamesQuery['pieces']>[number]
 
 type GamesProps = {
 	games: Game[]
@@ -31,11 +31,14 @@ type GamesProps = {
 const TAKE = 50
 
 export async function getStaticProps(): Promise<{ props: GamesProps }> {
-	const response = await staticClient.query({ query: getGamesQuery, variables: { take: TAKE } })
+	const response = await staticClient.query({
+		query: getGamesQuery,
+		variables: { take: TAKE, type: 'games' },
+	})
 
 	return {
 		props: {
-			games: response.data?.games || [],
+			games: response.data?.pieces || [],
 		},
 	}
 }
@@ -45,13 +48,14 @@ export default function Games({ games }: GamesProps): JSX.Element {
 	const [shouldFetch, setFetch] = useState(false)
 	const { data, size, setSize } = useGraphSWRInfinite(
 		(page, previousData: GetGamesQuery | null) => {
-			const lastData = previousData?.games || games
+			const lastData = previousData?.pieces || games
 			if (shouldFetch && lastData.length === TAKE) {
 				return {
 					gql: getGamesQuery,
 					variables: {
 						take: TAKE,
 						page: page + 1,
+						type: 'games',
 					},
 				}
 			} else {
@@ -64,11 +68,11 @@ export default function Games({ games }: GamesProps): JSX.Element {
 		}
 	)
 
-	const lastPage = data?.[data.length - 1]?.games || []
+	const lastPage = data?.[data.length - 1]?.pieces || []
 	const isEnd = size !== 1 && (lastPage.length === 0 || lastPage.length < TAKE)
 
 	if (data) {
-		const pages = data.reduce((total, query) => [...total, ...(query.games || [])], [] as Game[])
+		const pages = data.reduce((total, query) => [...total, ...(query.pieces || [])], [] as Game[])
 		totalGames.push(...games, ...pages)
 	} else {
 		totalGames.push(...games)
@@ -85,7 +89,7 @@ export default function Games({ games }: GamesProps): JSX.Element {
 		<PieceCard
 			id={game.id}
 			slug={game.slug}
-			media={game.representativeImage}
+			media={game.media}
 			title={game.title}
 			type={'games'}
 			loading={i <= 10 ? 'eager' : 'lazy'}

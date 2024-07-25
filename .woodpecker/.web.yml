@@ -64,6 +64,8 @@ steps:
       - printf '%s\n' "$NEXTJS_ENV_LOCAL" > ./packages/web/$ENV_LOCAL_FILE
       - cd packages/web
 
+      - ../tools/dist/generate-common-tables/index.js --database data/luzzle.sqlite
+
       - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/books --output public/images/variants/books --type books --variant width
       - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/links --output public/images/variants/links --type links --variant height
       - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/texts --output public/images/variants/texts --type texts --variant height

@@ -15,10 +15,10 @@ builder.queryFields((t) => ({
 		},
 		resolve: async (_, args, ctx) => {
 			return ctx.db
-				.selectFrom('pieces_fts5')
+				.selectFrom('web_pieces_fts5')
 				.selectAll()
 				.limit(MAX_RESULTS)
-				.where(sql`pieces_fts5`, sql`match`, args.query)
+				.where(sql`web_pieces_fts5`, sql`match`, args.query)
 				.orderBy(sql`bm25(pieces_fts5, 1, 1, 1, 10, 3, 2, 1, 3, 3, 1, 1, 1)`)
 				.execute()
 		},

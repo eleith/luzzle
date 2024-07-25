@@ -1,9 +1,9 @@
 import PageFull from '@app/common/components/layout/PageFull'
-import bookFragment from '@app/common/graphql/book/fragments/bookFullDetails'
+import pieceFragment from '@app/common/graphql/piece/fragments/pieceFullDetails'
 import { GetStaticPathsResult } from 'next'
 import Link from 'next/link'
 import gql from '@app/lib/graphql/tag'
-import { GetPartialBooksDocument, GetBookBySlugDocument } from './_gql_/[slug]'
+import { GetPartialBookPiecesDocument, GetBookPieceBySlugDocument } from './_gql_/[slug]'
 import { BookCoverFor } from '@app/common/components/books'
 import staticClient from '@app/common/graphql/staticClient'
 import { Box, Text, Anchor, Button, Divider } from '@luzzle/ui/components'
@@ -15,24 +15,25 @@ import { ResultOneOf, ResultSuccessOf } from '@app/@types/utilities'
 import config from '@app/common/config'
 
 const partialBooksQuery = gql<
-	typeof GetPartialBooksDocument
->(`query GetPartialBooks($take: Int, $page: Int) {
-  books(take: $take, page: $page) {
+	typeof GetPartialBookPiecesDocument
+>(`query GetPartialBookPieces($take: Int, $page: Int, $type: String) {
+  pieces(take: $take, page: $page, type: $type) {
     slug
-		dateRead
+		dateOrder
   }
 }`)
 
-const bookQuery = gql<typeof GetBookBySlugDocument>(
-	`query GetBookBySlug($slug: String!) {
-  book(slug: $slug) {
+const bookQuery = gql<typeof GetBookPieceBySlugDocument>(
+	`query GetBookPieceBySlug($slug: String!, $type: String) {
+  piece(slug: $slug, type: $type) {
     __typename
     ... on Error {
       message
     }
-    ... on QueryBookSuccess {
+    ... on QueryPieceSuccess {
       data {
-        ...BookFullDetails
+        ...PieceFullDetails
+				metadata
         tags {
           name
           slug
@@ -49,19 +50,25 @@ const bookQuery = gql<typeof GetBookBySlugDocument>(
     }
   }
 }`,
-	bookFragment
+	pieceFragment
 )
 
-type Book = ResultSuccessOf<typeof bookQuery, 'book'>
-type BookOrderPartial = ResultOneOf<typeof partialBooksQuery, 'books'>
+type Book = ResultSuccessOf<typeof bookQuery, 'piece'>
+type BookOrderPartial = ResultOneOf<typeof partialBooksQuery, 'pieces'>
 type BookPageStaticParams = { params: BookOrderPartial }
 type BookPageProps = { book: Book }
+type BookMetdata = {
+	url?: string
+	subtitle?: string
+	author: string
+	coauthors?: string
+}
 
 function makeBookDateString(book?: Book): string {
 	const month =
-		book && typeof book.dateRead === 'number' ? new Date(book.dateRead).getMonth() + 1 : '?'
+		book && typeof book.dateOrder === 'number' ? new Date(book.dateOrder).getMonth() + 1 : '?'
 	const year =
-		book && typeof book.dateRead === 'number' ? new Date(book.dateRead).getFullYear() : '?'
+		book && typeof book.dateOrder === 'number' ? new Date(book.dateOrder).getFullYear() : '?'
 
 	return `${month} / ${year}`
 }
@@ -87,6 +94,8 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 		<DiscussionForm type="books" slug={book.slug} onClose={() => setShowForm(false)} />
 	)
 
+	const metadata = (book.metadata ? JSON.parse(book.metadata) : {}) as BookMetdata
+
 	const bookPage = (
 		<Box>
 			<Box>
@@ -94,8 +103,8 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 					<Box>{makeSiblingLink(<CaretLeft size={45} />, book.siblings?.previous?.slug)}</Box>
 					<Box>
 						<BookCoverFor
-							piece={{ title: book.title, slug: book.slug, media: book.cover, id: book.id }}
-							hasCover={!!book.cover}
+							piece={{ title: book.title, slug: book.slug, media: book.media, id: book.id }}
+							hasCover={!!book.media}
 							rotateInteract={{ x: 0, y: -45 }}
 							scale={1.35}
 						/>
@@ -107,8 +116,8 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 				<Box className={styles.bookContainer}>
 					<Box className={styles.bookDetails}>
 						<Box style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-							{book.url && (
-								<Anchor href={book.url}>
+							{metadata.url && (
+								<Anchor href={metadata.url}>
 									<Button minimal use={'primary'} className={styles.bookDiscuss}>
 										<LinkSimple size={36} />
 									</Button>
@@ -127,14 +136,14 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 						<Text as="h1" size="title">
 							{book.title}
 						</Text>
-						{book.subtitle && (
+						{metadata.subtitle && (
 							<Text as="h2" size="h3">
-								{book.subtitle}
+								{metadata.subtitle}
 							</Text>
 						)}
 						<Text>
-							by {book.author}
-							{book.coauthors && `, ${book.coauthors?.split(',').join(', ')}`}
+							by {metadata.author}
+							{metadata.coauthors && `, ${metadata.coauthors?.split(',').join(', ')}`}
 						</Text>
 						<br />
 						<Divider />
@@ -164,7 +173,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 						<br />
 						<Box>
 							<Text className={styles.bookNote}>
-								{(book.description || '---').split('\n').map((p, i) => (
+								{(book.summary || '---').split('\n').map((p, i) => (
 									<p key={i}>{p}</p>
 								))}
 							</Text>
@@ -193,7 +202,7 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 			meta={{
 				title: book.title,
 				image: `${config.public.HOST_STATIC}/images/og/books/${book.slug}.png`,
-				description: book.note || book.description || '',
+				description: book.note || book.summary || '',
 			}}
 			invert
 		>
@@ -205,12 +214,10 @@ export default function BookPage({ book }: BookPageProps): JSX.Element {
 async function getBooksForPage(take: number, page?: number): Promise<BookOrderPartial[]> {
 	const response = await staticClient.query({
 		query: partialBooksQuery,
-		variables: { take, page },
+		variables: { take, page, type: 'books' },
 	})
-	const books = response.data.books?.filter(Boolean) || []
-	const partialBooks = books.map((book) => ({ slug: book.slug, dateRead: book.dateRead }))
-
-	return partialBooks
+	const books = response.data.pieces?.filter(Boolean) || []
+	return books.map((book) => ({ slug: book.slug, dateOrder: book.dateOrder }))
 }
 
 async function getAllBookSlugs(): Promise<string[]> {
@@ -248,11 +255,11 @@ export async function getStaticProps({
 }: BookPageStaticParams): Promise<{ props: BookPageProps } | { notFound: true }> {
 	const graphQlresponse = await staticClient.query({
 		query: bookQuery,
-		variables: { slug: params.slug },
+		variables: { slug: params.slug, type: 'books' },
 	})
-	const response = graphQlresponse.data.book
+	const response = graphQlresponse.data.piece
 
-	if (response?.__typename === 'QueryBookSuccess') {
+	if (response?.__typename === 'QueryPieceSuccess') {
 		return {
 			props: {
 				book: response.data,

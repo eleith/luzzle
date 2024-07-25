@@ -1,9 +1,9 @@
 import PageFull from '@app/common/components/layout/PageFull'
-import textFragment from '@app/common/graphql/texts/fragments/textFullDetails'
+import pieceFragment from '@app/common/graphql/piece/fragments/pieceFullDetails'
 import { GetStaticPathsResult } from 'next'
 import NextLink from 'next/link'
 import gql from '@app/lib/graphql/tag'
-import { GetPartialTextsDocument, GetTextBySlugDocument } from './_gql_/[slug]'
+import { GetPartialTextPiecesDocument, GetTextPieceBySlugDocument } from './_gql_/[slug]'
 import staticClient from '@app/common/graphql/staticClient'
 import { Box, Text, Anchor, Button } from '@luzzle/ui/components'
 import * as styles from './[slug].css'
@@ -16,24 +16,25 @@ import ArticleCoverFor from '@app/common/components/links/ArticleCoverFor'
 import Markdown from 'react-markdown'
 
 const partialTextsQuery = gql<
-	typeof GetPartialTextsDocument
->(`query GetPartialTexts($take: Int, $page: Int) {
-  texts(take: $take, page: $page) {
+	typeof GetPartialTextPiecesDocument
+>(`query GetPartialTextPieces($take: Int, $page: Int, $type: String) {
+  pieces(take: $take, page: $page, type: $type) {
     slug
-		datePublished
+		dateOrder
   }
 }`)
 
-const textQuery = gql<typeof GetTextBySlugDocument>(
-	`query GetTextBySlug($slug: String!) {
-  text(slug: $slug) {
+const textQuery = gql<typeof GetTextPieceBySlugDocument>(
+	`query GetTextPieceBySlug($slug: String!, $type: String) {
+  piece(slug: $slug, type: $type) {
     __typename
     ... on Error {
       message
     }
-    ... on QueryTextSuccess {
+    ... on QueryPieceSuccess {
       data {
-        ...TextFullDetails
+        ...PieceFullDetails
+				metadata
         tags {
           name
           slug
@@ -50,13 +51,14 @@ const textQuery = gql<typeof GetTextBySlugDocument>(
     }
   }
 }`,
-	textFragment
+	pieceFragment
 )
 
-type TextPiece = ResultSuccessOf<typeof textQuery, 'text'>
-type TextOrderPartial = ResultOneOf<typeof partialTextsQuery, 'texts'>
+type TextPiece = ResultSuccessOf<typeof textQuery, 'piece'>
+type TextOrderPartial = ResultOneOf<typeof partialTextsQuery, 'pieces'>
 type TextPageStaticParams = { params: TextOrderPartial }
 type TextPageProps = { text: TextPiece }
+type TextMetadata = { subtitle: string }
 
 function makeSiblingLink(image: JSX.Element, slug?: string): JSX.Element {
 	if (slug) {
@@ -78,6 +80,7 @@ export default function TextPage({ text }: TextPageProps): JSX.Element {
 	const discussionForm = (
 		<DiscussionForm type="texts" slug={text.slug} onClose={() => setShowForm(false)} />
 	)
+	const metadata: TextMetadata = text.metadata ? JSON.parse(text.metadata) : {}
 
 	const textPage = (
 		<Box>
@@ -85,7 +88,7 @@ export default function TextPage({ text }: TextPageProps): JSX.Element {
 				<Box className={styles.textCard}>
 					<Box>{makeSiblingLink(<CaretLeft size={45} />, text.siblings?.previous?.slug)}</Box>
 					<Box style={{ marginBottom: '-200px' }}>
-						<ArticleCoverFor piece={text} hasMedia={!!text.representativeImage} size={'LARGE'} />
+						<ArticleCoverFor piece={text} hasMedia={!!text.media} size={'LARGE'} />
 					</Box>
 					<Box>{makeSiblingLink(<CaretRight size={45} />, text.siblings?.next?.slug)}</Box>
 				</Box>
@@ -106,14 +109,14 @@ export default function TextPage({ text }: TextPageProps): JSX.Element {
 						<Text as="h1" size="title">
 							{text.title}
 						</Text>
-						{text.subtitle && (
+						{metadata.subtitle && (
 							<Text as="h2" size="h3">
-								{text.subtitle}
+								{metadata.subtitle}
 							</Text>
 						)}
-						{text.datePublished && (
+						{text.dateOrder && (
 							<Text size="caption">
-								published on {new Date(text.datePublished).toLocaleDateString()}
+								published on {new Date(text.dateOrder).toLocaleDateString()}
 							</Text>
 						)}
 						<br />
@@ -157,10 +160,10 @@ export default function TextPage({ text }: TextPageProps): JSX.Element {
 async function getTextsForPage(take: number, page?: number): Promise<TextOrderPartial[]> {
 	const response = await staticClient.query({
 		query: partialTextsQuery,
-		variables: { take, page },
+		variables: { take, page, type: 'texts' },
 	})
-	const texts = response.data.texts?.filter(Boolean) || []
-	const partialLinks = texts.map((text) => ({ slug: text.slug, datePublished: text.datePublished }))
+	const texts = response.data.pieces?.filter(Boolean) || []
+	const partialLinks = texts.map((text) => ({ slug: text.slug, dateOrder: text.dateOrder }))
 
 	return partialLinks
 }
@@ -200,11 +203,11 @@ export async function getStaticProps({
 }: TextPageStaticParams): Promise<{ props: TextPageProps } | { notFound: true }> {
 	const graphQlresponse = await staticClient.query({
 		query: textQuery,
-		variables: { slug: params.slug },
+		variables: { slug: params.slug, type: 'texts' },
 	})
-	const response = graphQlresponse.data.text
+	const response = graphQlresponse.data.piece
 
-	if (response?.__typename === 'QueryTextSuccess') {
+	if (response?.__typename === 'QueryPieceSuccess') {
 		return {
 			props: {
 				text: response.data,

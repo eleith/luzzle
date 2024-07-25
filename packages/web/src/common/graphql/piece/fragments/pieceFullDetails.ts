@@ -4,6 +4,7 @@ const tag = gql(`fragment PieceFullDetails on Piece {
     id
     slug
 		media
+		summary
     title
 		type
 		dateOrder
