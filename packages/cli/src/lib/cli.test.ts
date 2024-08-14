@@ -2,7 +2,7 @@ import { stat } from 'fs/promises'
 import { getDatabaseClient, migrate } from '@luzzle/core'
 import log from './log.js'
 import cli from './cli.js'
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { getDirectoryFromConfig, getConfig, Config } from './config.js'
 import commands from './commands/index.js'
 import { mockDatabase } from './database.mock.js'
@@ -26,7 +26,7 @@ const mocks = {
 	migrate: vi.mocked(migrate),
 }
 
-const spies: SpyInstance[] = []
+const spies: MockInstance[] = []
 
 describe('lib/cli', () => {
 	afterEach(() => {

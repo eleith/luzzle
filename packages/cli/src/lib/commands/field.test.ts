@@ -1,12 +1,13 @@
 import log from '../log.js'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import command, { AttachArgv } from './field.js'
+import command, { FieldArgv } from './field.js'
 import { Arguments, Argv } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
 import { makePieceCommand, parsePieceArgv } from '../pieces/index.js'
 import { makeMarkdownSample, makePiece } from '../pieces/piece.fixtures.js'
 import { PieceFrontmatterSchemaField } from '@luzzle/core'
+import yaml from 'yaml'
 
 vi.mock('../pieces/index')
 vi.mock('../log.js')
@@ -50,7 +51,7 @@ describe('lib/commands/field.ts', () => {
 
 		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
-		await command.run(ctx, { path } as Arguments<AttachArgv>)
+		await command.run(ctx, { path } as Arguments<FieldArgv>)
 
 		expect(mocks.logError).not.toHaveBeenCalledOnce()
 		expect(mocks.consoleLog).toHaveBeenCalledOnce()
@@ -73,7 +74,7 @@ describe('lib/commands/field.ts', () => {
 
 		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
-		await command.run(ctx, { path, fields: [fieldname] } as Arguments<AttachArgv>)
+		await command.run(ctx, { path, fields: [fieldname], input: 'csv' } as Arguments<FieldArgv>)
 
 		expect(mocks.logError).not.toHaveBeenCalledOnce()
 		expect(mocks.consoleLog).toHaveBeenCalledOnce()
@@ -104,10 +105,106 @@ describe('lib/commands/field.ts', () => {
 			path,
 			fields: [`${fieldname}=${value}`],
 			set: true,
-		} as Arguments<AttachArgv>)
+			input: 'csv',
+		} as Arguments<FieldArgv>)
 
 		expect(spies.pieceSetFields).toHaveBeenCalledWith(pieceMarkdown, { [fieldname]: value })
 		expect(spies.pieceWrite).toHaveBeenCalledWith(pieceMarkdown)
+	})
+
+	test('run field set with json input', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const fieldname = 'title'
+		const value = 'new title'
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
+		spies.pieceSetFields = vi
+			.spyOn(PieceTest.prototype, 'setFields')
+			.mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+
+		await command.run(ctx, {
+			path,
+			fields: [JSON.stringify({ [fieldname]: value })],
+			set: true,
+			input: 'json',
+		} as Arguments<FieldArgv>)
+
+		expect(spies.pieceSetFields).toHaveBeenCalledWith(pieceMarkdown, { [fieldname]: value })
+		expect(spies.pieceWrite).toHaveBeenCalledWith(pieceMarkdown)
+	})
+
+	test('run field set with yaml input', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const fieldname = 'title'
+		const value = 'new title'
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
+		spies.pieceSetFields = vi
+			.spyOn(PieceTest.prototype, 'setFields')
+			.mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+
+		await command.run(ctx, {
+			path,
+			fields: [yaml.stringify({ [fieldname]: value })],
+			set: true,
+			input: 'yaml',
+		} as Arguments<FieldArgv>)
+
+		expect(spies.pieceSetFields).toHaveBeenCalledWith(pieceMarkdown, { [fieldname]: value })
+		expect(spies.pieceWrite).toHaveBeenCalledWith(pieceMarkdown)
+	})
+
+	test('run field set with invalid input', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const fieldname = 'title'
+		const value = 'new title'
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
+		spies.pieceSetFields = vi
+			.spyOn(PieceTest.prototype, 'setFields')
+			.mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+
+		const run = command.run(ctx, {
+			path,
+			fields: [yaml.stringify({ [fieldname]: value })],
+			set: true,
+			input: 'invalid',
+		} as Arguments<FieldArgv>)
+
+		expect(run).rejects.toThrow()
 	})
 
 	test('run field set skips write on catch', async () => {
@@ -135,7 +232,8 @@ describe('lib/commands/field.ts', () => {
 			path,
 			fields: [`${fieldname}=${value}`],
 			set: true,
-		} as Arguments<AttachArgv>)
+			input: 'csv',
+		} as Arguments<FieldArgv>)
 
 		expect(spies.pieceWrite).not.toHaveBeenCalled()
 	})
@@ -160,7 +258,12 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
-		await command.run(ctx, { path, fields: [fieldname], remove: true } as Arguments<AttachArgv>)
+		await command.run(ctx, {
+			path,
+			fields: [fieldname],
+			remove: true,
+			input: 'csv',
+		} as Arguments<FieldArgv>)
 
 		expect(spies.pieceRemoveField).toHaveBeenCalledWith(pieceMarkdown, fieldname)
 		expect(spies.pieceWrite).toHaveBeenCalledWith(pieceMarkdown)
@@ -186,7 +289,12 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
-		await command.run(ctx, { path, fields: [fieldname], remove: true } as Arguments<AttachArgv>)
+		await command.run(ctx, {
+			path,
+			fields: [fieldname],
+			remove: true,
+			input: 'csv',
+		} as Arguments<FieldArgv>)
 
 		expect(spies.pieceWrite).toHaveBeenCalledTimes(0)
 	})
@@ -204,7 +312,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(null)
 		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
-		await command.run(ctx, { path, fields: [fieldname] } as Arguments<AttachArgv>)
+		await command.run(ctx, { path, fields: [fieldname], input: 'csv' } as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -225,7 +333,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
-		await command.run(ctx, { path, fields: [fieldname] } as Arguments<AttachArgv>)
+		await command.run(ctx, { path, fields: [fieldname], input: 'csv' } as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -253,7 +361,8 @@ describe('lib/commands/field.ts', () => {
 			fields: [`${fieldname}=${value}`],
 			remove: true,
 			set: true,
-		} as Arguments<AttachArgv>)
+			input: 'csv',
+		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -275,7 +384,7 @@ describe('lib/commands/field.ts', () => {
 		await command.run(ctx, {
 			path,
 			set: true,
-		} as Arguments<AttachArgv>)
+		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -297,7 +406,7 @@ describe('lib/commands/field.ts', () => {
 		await command.run(ctx, {
 			path,
 			remove: true,
-		} as Arguments<AttachArgv>)
+		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -318,7 +427,7 @@ describe('lib/commands/field.ts', () => {
 
 		await command.run(ctx, {
 			path,
-		} as Arguments<AttachArgv>)
+		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).not.toHaveBeenCalledOnce()
 	})
@@ -344,7 +453,8 @@ describe('lib/commands/field.ts', () => {
 			path,
 			set: true,
 			fields: [fieldname],
-		} as Arguments<AttachArgv>)
+			input: 'csv',
+		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -371,7 +481,8 @@ describe('lib/commands/field.ts', () => {
 			path,
 			remove: true,
 			fields: [`${fieldname}=${value}`],
-		} as Arguments<AttachArgv>)
+			input: 'csv',
+		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -379,14 +490,14 @@ describe('lib/commands/field.ts', () => {
 	test('builder', async () => {
 		const args = yargs()
 
-		mocks.piecesCommand.mockReturnValueOnce(args as Argv<AttachArgv>)
+		mocks.piecesCommand.mockReturnValueOnce(args as Argv<FieldArgv>)
 		spies.positional = vi.spyOn(args, 'positional').mockReturnValue(args)
 		spies.option = vi.spyOn(args, 'option').mockReturnValue(args)
 
 		command.builder?.(args)
 
 		expect(spies.positional).toHaveBeenCalledTimes(1)
-		expect(spies.option).toHaveBeenCalledTimes(2)
+		expect(spies.option).toHaveBeenCalledTimes(3)
 		expect(mocks.piecesCommand).toHaveBeenCalledOnce()
 	})
 })

@@ -8,14 +8,43 @@ import {
 	makePieceCommand,
 	parsePieceArgv,
 } from '../pieces/index.js'
+import yaml from 'yaml'
 
-export type AttachArgv = {
+export type FieldArgv = {
 	remove?: boolean
 	set?: boolean
 	fields?: string[]
+	input: string
 } & PieceArgv
 
-const command: Command<AttachArgv> = {
+function parseFields(fields: string[], input: string): Record<string, unknown> {
+	if (!fields.length) {
+		return {}
+	}
+
+	switch (input) {
+		case 'csv':
+			return fields
+				.join('')
+				.split(',')
+				.reduce(
+					(fields, field) => {
+						const [fieldname, value] = field.split('=').map((f) => f.trim())
+						fields[fieldname] = value
+						return fields
+					},
+					{} as Record<string, unknown>
+				)
+		case 'json':
+			return JSON.parse(fields[0])
+		case 'yaml':
+			return yaml.parse(fields[0])
+		default:
+			throw new Error(`invalid input format: ${input}`)
+	}
+}
+
+const command: Command<FieldArgv> = {
 	name: 'field',
 
 	command: `field ${PieceCommandOption} [fields..]`,
@@ -36,29 +65,29 @@ const command: Command<AttachArgv> = {
 				default: false,
 				description: 'set the field to the value',
 			})
+			.option('input', {
+				alias: 'i',
+				type: 'string',
+				choices: ['csv', 'json', 'yaml'],
+				default: 'csv',
+				description: 'input format of the fields positional',
+			})
 			.positional('fields', {
 				type: 'string',
 				array: true,
-				description: 'pairs of field=value to optionally set or list of fields to remove',
+				description: 'field(s) or field(s) and value(s)',
 			})
 	},
 
 	run: async function (ctx, args) {
-		const { fields, remove, set } = args
+		const { fields, remove, set, input } = args
 		const { slug, name } = await parsePieceArgv(ctx, args)
 		const piece = await ctx.pieces.getPiece(name)
 		const pieceFields = piece.fields.map((f) => f.name)
-		const fieldMaps = fields?.reduce(
-			(fields, field) => {
-				const [fieldname, value] = field.split('=')
-				fields[fieldname] = value
-				return fields
-			},
-			{} as Record<string, unknown>
-		)
-		const fieldnames = fieldMaps ? Object.keys(fieldMaps) : []
+		const fieldMaps = parseFields(fields || [], input)
+		const fieldnames = Object.keys(fieldMaps)
 
-		if (!fieldMaps || !fieldnames.length) {
+		if (!fieldnames.length) {
 			if (set) {
 				log.error('must provide a fieldname to set a field')
 				return
@@ -103,7 +132,6 @@ const command: Command<AttachArgv> = {
 			}
 		} else if (remove) {
 			try {
-				const fieldnames = Object.keys(fieldMaps)
 				const updated = await piece.removeFields(markdown, fieldnames)
 
 				if (!ctx.flags.dryRun) {
@@ -117,7 +145,6 @@ const command: Command<AttachArgv> = {
 				log.error(`error setting field: ${errors.join(', ')}`)
 			}
 		} else {
-			const fieldnames = Object.keys(fieldMaps)
 			console.log(`fields: ${fieldnames.map((f) => `${f}=${markdown.frontmatter[f]}`).join('\n')}`)
 		}
 	},

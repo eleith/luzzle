@@ -1,5 +1,5 @@
 import log from '../log.js'
-import { describe, expect, test, vi, afterEach, SpyInstance, MockedObject } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance, MockedObject } from 'vitest'
 import command from './deploy.js'
 import { Arguments } from 'yargs'
 import { makeContext } from './context.fixtures.js'
@@ -17,7 +17,7 @@ const mocks = {
 	gotPost: vi.mocked(got.post),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
 describe('lib/commands/deploy', () => {
 	afterEach(() => {
