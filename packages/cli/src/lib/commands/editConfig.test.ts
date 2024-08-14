@@ -1,6 +1,6 @@
 import { ChildProcess, spawn } from 'child_process'
 import log from '../log.js'
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { EventEmitter } from 'stream'
 import command from './editConfig.js'
 import { Arguments } from 'yargs'
@@ -16,7 +16,7 @@ const mocks = {
 	spawn: vi.mocked(spawn),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
 describe('lib/commands/editConfig', () => {
 	afterEach(() => {

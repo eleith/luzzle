@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.76",
+  "version": "0.0.77",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -32,15 +32,15 @@
     "@types/yargs": "17.0.13",
     "@typescript-eslint/eslint-plugin": "7.7.1",
     "@typescript-eslint/parser": "7.7.1",
-    "@vitest/coverage-v8": "1.5.2",
-    "@vitest/ui": "1.5.2",
+    "@vitest/coverage-v8": "2.0.5",
+    "@vitest/ui": "2.0.5",
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-prettier": "5.1.3",
     "prettier": "3.2.5",
     "typescript": "5.4.5",
     "vite": "^4.1.4",
-    "vitest": "1.5.2"
+    "vitest": "2.0.5"
   },
   "dependencies": {
     "@luzzle/core": "0.0.9",

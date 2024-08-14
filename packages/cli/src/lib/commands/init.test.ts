@@ -1,5 +1,5 @@
 import log from '../log.js'
-import { describe, expect, test, vi, afterEach, SpyInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { InitArgv } from './init.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
@@ -22,7 +22,7 @@ const mocks = {
 	migrate: vi.mocked(migrate),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
 describe('tools/lib/commands/init', () => {
 	afterEach(() => {

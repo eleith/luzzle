@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, afterEach, SpyInstance, MockedClass } from 'vitest'
+import { describe, expect, test, vi, afterEach, MockInstance, MockedClass } from 'vitest'
 import Conf from 'conf'
 import { existsSync } from 'fs'
 import { getConfig, getDirectoryFromConfig, SchemaConfig } from './config.js'
@@ -18,7 +18,7 @@ const mocks = {
 	existsSync: vi.mocked(existsSync),
 }
 
-const spies: { [key: string]: SpyInstance } = {}
+const spies: { [key: string]: MockInstance } = {}
 
 describe('tools/lib/config', () => {
 	afterEach(() => {
