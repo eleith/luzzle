@@ -2,11 +2,35 @@ import log from '../log.js'
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
 import slugify from '@sindresorhus/slugify'
+import yaml from 'yaml'
 
 export type CreateArgv = {
 	piece: string
 	title: string
 	fields?: string[]
+	input: string
+}
+
+function parseFields(fields: string[], input: string): Record<string, unknown> {
+	switch (input) {
+		case 'json':
+			return JSON.parse(fields[0])
+		case 'yaml':
+			return yaml.parse(fields[0])
+		case 'csv':
+		default:
+			return fields
+				.join('')
+				.split(',')
+				.reduce(
+					(fields, field) => {
+						const [fieldname, value] = field.split('=').map((f) => f.trim())
+						fields[fieldname] = value
+						return fields
+					},
+					{} as Record<string, unknown>
+				)
+	}
 }
 
 const command: Command<CreateArgv> = {
@@ -29,25 +53,25 @@ const command: Command<CreateArgv> = {
 				description: `title of piece`,
 				demandOption: `title is required`,
 			})
+			.option('input', {
+				alias: 'i',
+				type: 'string',
+				choices: ['csv', 'json', 'yaml'],
+				default: 'csv',
+				description: 'input format of the fields positional',
+			})
 			.positional('fields', {
 				type: 'string',
 				array: true,
-				description: 'pairs of field=value to optionally set',
+				description: 'field(s) or field(s) and value(s)',
 			}) as Argv<T & CreateArgv>
 	},
 
 	run: async function (ctx, args) {
-		const { title, piece, fields } = args
+		const { title, piece, fields, input } = args
 		const pieces = await ctx.pieces.getPiece(args.piece)
 		const slug = slugify(title)
-		const fieldMaps = fields?.reduce(
-			(fields, field) => {
-				const [fieldname, value] = field.split('=')
-				fields[fieldname] = value
-				return fields
-			},
-			{} as Record<string, unknown>
-		)
+		const fieldMaps = fields?.length && parseFields(fields, input)
 
 		if (pieces.exists(slug)) {
 			log.error(`${piece} already exists at ${pieces.getFileName(slug)}`)
