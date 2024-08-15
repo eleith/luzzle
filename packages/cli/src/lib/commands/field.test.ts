@@ -176,37 +176,6 @@ describe('lib/commands/field.ts', () => {
 		expect(spies.pieceWrite).toHaveBeenCalledWith(pieceMarkdown)
 	})
 
-	test('run field set with invalid input', async () => {
-		const path = 'slug'
-		const PieceTest = makePiece()
-		const pieceMarkdown = makeMarkdownSample()
-		const fieldname = 'title'
-		const value = 'new title'
-		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
-		const ctx = makeContext({
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
-			},
-		})
-
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
-		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
-		spies.pieceSetFields = vi
-			.spyOn(PieceTest.prototype, 'setFields')
-			.mockResolvedValueOnce(pieceMarkdown)
-		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
-
-		const run = command.run(ctx, {
-			path,
-			fields: [yaml.stringify({ [fieldname]: value })],
-			set: true,
-			input: 'invalid',
-		} as Arguments<FieldArgv>)
-
-		expect(run).rejects.toThrow()
-	})
-
 	test('run field set skips write on catch', async () => {
 		const path = 'slug'
 		const PieceTest = makePiece()

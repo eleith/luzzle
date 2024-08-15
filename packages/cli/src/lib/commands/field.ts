@@ -18,12 +18,13 @@ export type FieldArgv = {
 } & PieceArgv
 
 function parseFields(fields: string[], input: string): Record<string, unknown> {
-	if (!fields.length) {
-		return {}
-	}
-
 	switch (input) {
+		case 'json':
+			return JSON.parse(fields[0])
+		case 'yaml':
+			return yaml.parse(fields[0])
 		case 'csv':
+		default:
 			return fields
 				.join('')
 				.split(',')
@@ -35,12 +36,6 @@ function parseFields(fields: string[], input: string): Record<string, unknown> {
 					},
 					{} as Record<string, unknown>
 				)
-		case 'json':
-			return JSON.parse(fields[0])
-		case 'yaml':
-			return yaml.parse(fields[0])
-		default:
-			throw new Error(`invalid input format: ${input}`)
 	}
 }
 
@@ -84,10 +79,10 @@ const command: Command<FieldArgv> = {
 		const { slug, name } = await parsePieceArgv(ctx, args)
 		const piece = await ctx.pieces.getPiece(name)
 		const pieceFields = piece.fields.map((f) => f.name)
-		const fieldMaps = parseFields(fields || [], input)
-		const fieldnames = Object.keys(fieldMaps)
+		const fieldMaps = fields?.length && parseFields(fields, input)
+		const fieldnames = Object.keys(fieldMaps || {})
 
-		if (!fieldnames.length) {
+		if (!fieldMaps) {
 			if (set) {
 				log.error('must provide a fieldname to set a field')
 				return
