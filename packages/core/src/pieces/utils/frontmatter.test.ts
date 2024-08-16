@@ -101,7 +101,28 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 
 		const front = frontmatter.initializePieceFrontMatter(schema)
 
-		expect(front).toMatchObject({
+		expect(front).toEqual({
+			title: 'title',
+			keywords: 'keyword1',
+			subtitle: 'subtitle',
+		})
+	})
+
+	test('initializePieceFrontMatter with minimal examples', () => {
+		const schema = {
+			type: 'object',
+			properties: {
+				title: { type: 'string', examples: ['title'] },
+				keywords: { type: 'string', examples: ['keyword1'], nullable: true },
+				subtitle: { type: 'string', examples: ['subtitle'], nullable: true },
+			},
+			required: ['title'],
+			additionalProperties: true,
+		} as frontmatter.PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }>
+
+		const front = frontmatter.initializePieceFrontMatter(schema, true)
+
+		expect(front).toEqual({
 			title: 'title',
 		})
 	})

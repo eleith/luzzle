@@ -74,26 +74,31 @@ function databaseValueToPieceFrontmatterValue(
 }
 
 function initializePieceFrontMatter<M extends PieceFrontmatter>(
-	schema: PieceFrontmatterSchema<M>
+	schema: PieceFrontmatterSchema<M>,
+	minimal: boolean = false
 ): M {
 	const frontmatter: { [key: string]: PieceFrontMatterValue | PieceFrontMatterValue[] } = {}
-	const fields = getPieceFrontmatterSchemaFields(schema).filter((field) => !field.nullable)
+	const fields = getPieceFrontmatterSchemaFields(schema)
 
 	for (const field of fields) {
-		const isArray = field.type === 'array'
 		const name = field.name
+		const required = schema.required?.includes(name)
+		const isArray = field.type === 'array'
 		const examples = isArray ? field.items?.examples : field.examples
 		const def = isArray ? field.items?.default : field.default
-		const required = schema.required?.includes(name)
 		const example = examples?.[0]
-		const initialValue = def !== undefined ? def : example
+		const hasInitialValue = def !== undefined || example !== undefined
 
-		if (initialValue !== undefined) {
-			frontmatter[name] = isArray ? [initialValue] : initialValue
-		} else if (required) {
-			throw new Error(
-				`can not initialize ${schema.title} field "${name}" as it is required but there are no examples or a default value`
-			)
+		if (required || (!minimal && hasInitialValue)) {
+			const initialValue = def !== undefined ? def : example
+
+			if (initialValue !== undefined) {
+				frontmatter[name] = isArray ? [initialValue] : initialValue
+			} else if (required) {
+				throw new Error(
+					`can not initialize ${schema.title} field "${name}" as it is required but there are no examples or a default value`
+				)
+			}
 		}
 	}
 
