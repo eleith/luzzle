@@ -43,7 +43,7 @@
     "vitest": "2.0.5"
   },
   "dependencies": {
-    "@luzzle/core": "0.0.9",
+    "@luzzle/core": "0.0.11",
     "@paralleldrive/cuid2": "2.2.0",
     "@sindresorhus/slugify": "2.2.0",
     "@types/lodash-es": "4.17.7",

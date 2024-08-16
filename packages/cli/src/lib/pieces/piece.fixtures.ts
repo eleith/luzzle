@@ -38,7 +38,7 @@ export function makeSchema(
 		type: 'object',
 		title: name,
 		properties: {
-			title: { type: 'string' },
+			title: { type: 'string', examples: ['title'] },
 			keywords: { type: 'string', nullable: true },
 			subtitle: { type: 'string', nullable: true },
 			...properties,
