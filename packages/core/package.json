@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/core",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -24,6 +24,7 @@
   "homepage": "https://git.eleith.com/eleith/eleith.git",
   "description": "luzzle's core",
   "devDependencies": {
+    "@faker-js/faker": "8.4.1",
     "@types/better-sqlite3": "7.6.4",
     "@types/node": "20.14.9",
     "@typescript-eslint/eslint-plugin": "7.7.1",

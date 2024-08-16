@@ -88,29 +88,34 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 	})
 
 	test('initializePieceFrontMatter', () => {
-		const schema = makeSchema({
-			fieldString: { type: 'string' },
-			fieldBoolean: { type: 'boolean' },
-			fieldNumber: { type: 'integer' },
-			fieldArrayString: { type: 'array', items: { type: 'string' } },
-			fieldEnum: { type: 'string', enum: ['a', 'b'] },
-			fieldDate: { type: 'string', format: 'date' },
-			fieldDateArray: {
-				type: 'array',
-				items: { type: 'string', format: 'date' },
+		const schema = {
+			type: 'object',
+			properties: {
+				title: { type: 'string', examples: ['title'] },
+				keywords: { type: 'string', examples: ['keyword1'], nullable: true },
+				subtitle: { type: 'string', examples: ['subtitle'], nullable: true },
 			},
-			fieldOptional: { type: 'string', nullable: true },
-		})
+			required: ['title'],
+			additionalProperties: true,
+		} as frontmatter.PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }>
+
 		const front = frontmatter.initializePieceFrontMatter(schema)
 
 		expect(front).toMatchObject({
-			fieldString: '',
-			fieldBoolean: false,
-			fieldNumber: 0,
-			fieldArrayString: [''],
-			fieldEnum: 'a',
-			fieldDate: expect.any(String),
-			fieldDateArray: [expect.any(String)],
+			title: 'title',
 		})
+	})
+
+	test('initializePieceFrontMatter fails on required field with no examples', () => {
+		const schema = {
+			type: 'object',
+			properties: {
+				title: { type: 'string' },
+			},
+			required: ['title'],
+			additionalProperties: true,
+		} as frontmatter.PieceFrontmatterSchema<{ title: string }>
+
+		expect(() => frontmatter.initializePieceFrontMatter(schema)).toThrow()
 	})
 })
