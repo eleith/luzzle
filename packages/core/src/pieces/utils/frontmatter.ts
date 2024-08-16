@@ -12,12 +12,16 @@ type PieceFrontmatterSchemaFieldScalar = {
 	nullable?: boolean
 	pattern?: string
 	enum?: string[] | number[]
+	examples?: Array<string | number | boolean>
+	default?: string | number | boolean
 }
 type PieceFrontmatterSchemaFieldList = {
 	name: string
 	type: 'array'
 	format?: undefined
 	pattern?: undefined
+	examples?: undefined
+	default?: undefined
 	nullable?: boolean
 	enum?: string[] | number[]
 	items: Omit<PieceFrontmatterSchemaField, 'name'>
@@ -77,24 +81,20 @@ function initializePieceFrontMatter<M extends PieceFrontmatter>(
 
 	for (const field of fields) {
 		const isArray = field.type === 'array'
-		const type = isArray ? field.items?.type : field.type
-		const format = isArray ? field.items?.format : field.format
-		const enumValues = isArray ? field.items?.enum : field.enum
-		let value: PieceFrontMatterValue = 0
+		const name = field.name
+		const examples = isArray ? field.items?.examples : field.examples
+		const def = isArray ? field.items?.default : field.default
+		const required = schema.required?.includes(name)
+		const example = examples?.[0]
+		const initialValue = def !== undefined ? def : example
 
-		if (enumValues && enumValues.length > 0) {
-			value = enumValues[0]
-		} else if (format === 'date') {
-			value = new Date().toLocaleDateString()
-		} else if (type === 'string') {
-			value = ''
-		} else if (type === 'integer') {
-			value = 0
-		} else if (type === 'boolean') {
-			value = false
+		if (initialValue !== undefined) {
+			frontmatter[name] = isArray ? [initialValue] : initialValue
+		} else if (required) {
+			throw new Error(
+				`can not initialize ${schema.title} field "${name}" as it is required but there are no examples or a default value`
+			)
 		}
-
-		frontmatter[field.name] = isArray ? [value] : value
 	}
 
 	return frontmatter as M

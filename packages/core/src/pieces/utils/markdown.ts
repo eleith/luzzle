@@ -12,7 +12,9 @@ class PieceMarkdownError<Y> extends Error {
 	validationErrors: ValidateFunction<Y>['errors']
 
 	constructor(message: string, errors: ValidateFunction<Y>['errors']) {
-		super(message)
+		const validationMessages = errors?.map((e) => `\t${e.instancePath} ${e.message}`).join('\n')
+		const errorMessage = validationMessages ? `${message}\n\n${validationMessages}` : message
+		super(errorMessage)
 		this.name = 'PieceMarkdownError'
 		this.validationErrors = errors
 	}

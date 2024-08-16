@@ -29,9 +29,9 @@ export function makeSchema(properties?: {
 	return {
 		type: 'object',
 		properties: {
-			title: { type: 'string' },
-			keywords: { type: 'string', nullable: true },
-			subtitle: { type: 'string', nullable: true },
+			title: { type: 'string', examples: ['title'] },
+			keywords: { type: 'string', examples: ['keyword1'], nullable: true },
+			subtitle: { type: 'string', examples: ['subtitle'], nullable: true },
 			...properties,
 		},
 		required: ['title'],
