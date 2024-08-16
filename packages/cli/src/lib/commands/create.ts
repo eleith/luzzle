@@ -9,6 +9,7 @@ export type CreateArgv = {
 	title: string
 	fields?: string[]
 	input: string
+	minimal?: boolean
 }
 
 function parseFields(fields: string[], input: string): Record<string, unknown> {
@@ -48,6 +49,12 @@ const command: Command<CreateArgv> = {
 				description: `piece type`,
 				demandOption: `piece is required`,
 			})
+			.option('minimal', {
+				type: 'boolean',
+				alias: 'm',
+				description: `create a minimal piece with only required pieces`,
+				default: false,
+			})
 			.positional('title', {
 				type: 'string',
 				description: `title of piece`,
@@ -68,10 +75,9 @@ const command: Command<CreateArgv> = {
 	},
 
 	run: async function (ctx, args) {
-		const { title, piece, fields, input } = args
+		const { title, piece, fields, input, minimal } = args
 		const pieces = await ctx.pieces.getPiece(args.piece)
 		const slug = slugify(title)
-		const fieldMaps = fields?.length && parseFields(fields, input)
 
 		if (pieces.exists(slug)) {
 			log.error(`${piece} already exists at ${pieces.getFileName(slug)}`)
@@ -79,9 +85,10 @@ const command: Command<CreateArgv> = {
 		}
 
 		if (ctx.flags.dryRun === false) {
-			const markdown = pieces.create(slug, title)
+			const markdown = pieces.create(slug, title, minimal)
 
-			if (fieldMaps) {
+			if (fields?.length) {
+				const fieldMaps = parseFields(fields, input)
 				const updatedMarkdown = await pieces.setFields(markdown, fieldMaps)
 				await pieces.write(updatedMarkdown)
 			} else {

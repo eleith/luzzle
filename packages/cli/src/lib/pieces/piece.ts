@@ -69,8 +69,8 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 		}
 	}
 
-	create(slug: string, title: string): PieceMarkdown<F> {
-		const frontmatter = initializePieceFrontMatter(this._schema) as F
+	create(slug: string, title: string, empty: boolean = false): PieceMarkdown<F> {
+		const frontmatter = initializePieceFrontMatter(this._schema, empty) as F
 		return makePieceMarkdownOrThrow(slug, '', { ...frontmatter, title }, this.validator)
 	}
 
