@@ -64,23 +64,27 @@ steps:
       - printf '%s\n' "$NEXTJS_ENV_LOCAL" > ./packages/web/$ENV_LOCAL_FILE
       - cd packages/web
 
+      - ../tools/dist/generate-common-tables/index.js --database data/luzzle.sqlite --clean
       - ../tools/dist/generate-common-tables/index.js --database data/luzzle.sqlite
 
       - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/books --output public/images/variants/books --type books --variant width
       - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/links --output public/images/variants/links --type links --variant height
       - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/texts --output public/images/variants/texts --type texts --variant height
       - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/games --output public/images/variants/games --type games --variant width
+      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/films --output public/images/variants/films --type films --variant width
 
       - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/books --output public/images/og/books --type books
       - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/links --output public/images/og/links --type links
       - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/texts --output public/images/og/texts --type texts
       - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/games --output public/images/og/games --type games
+      - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/films --output public/images/og/films --type films
 
       - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces' --output public/rss
       - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (books)' --output public/rss --type books
       - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (links)' --output public/rss --type links
       - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (texts)' --output public/rss --type texts
       - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (games)' --output public/rss --type games
+      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (films)' --output public/rss --type films
 
     secrets: [nextjs_env_local]
     when:
