@@ -37,7 +37,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		db
 	)
 
-	await sql`INSERT INTO web_pieces (id, slug, type, title, summary, note, media, keywords, date_added, date_updated, date_consumed, json_metadata) SELECT id as id, slug as slug, 'films' as type, title as title, summary as summary, note as note, poster as media, keywords as keywords, date_added as date_added, date_updated as date_updated, date_viewed as date_consumed, json_object('subtitle', subtitle, 'language', language, 'runtime', runtime, 'date_released', date_released, 'backdrop', backdrop, 'homepage', homepage, 'url', url, 'type', type) as json_metadata FROM pieces_items_films`.execute(
+	await sql`INSERT INTO web_pieces (id, slug, type, title, summary, note, media, keywords, date_added, date_updated, date_consumed, json_metadata) SELECT id as id, slug as slug, 'films' as type, title as title, summary as summary, note as note, poster as media, keywords as keywords, date_added as date_added, date_updated as date_updated, date_viewed as date_consumed, json_object('subtitle', subtitle, 'language', language, 'runtime', runtime, 'date_released', date_released, 'backdrop', backdrop, 'homepage', homepage, 'url', url, 'type', type, 'people', people) as json_metadata FROM pieces_items_films`.execute(
 		db
 	)
 
