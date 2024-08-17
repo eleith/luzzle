@@ -134,4 +134,13 @@ describe('lib/pieces/cache.ts', () => {
 
 		expect(db.deleteFrom).toHaveBeenCalledOnce()
 	})
+
+	test('removeCache', async () => {
+		const { db } = mockDatabase()
+		const piece = 'piece'
+
+		await cache.clearCache(db, piece)
+
+		expect(db.deleteFrom).toHaveBeenCalledOnce()
+	})
 })

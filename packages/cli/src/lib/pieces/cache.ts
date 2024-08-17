@@ -70,4 +70,16 @@ async function removeCache(db: LuzzleDatabase, slug: string, name: string): Prom
 	await db.deleteFrom('pieces_cache').where('slug', '=', slug).where('type', '=', name).execute()
 }
 
-export { calculateHashFromFile, getCacheAll, getCache, addCache, updateCache, removeCache }
+async function clearCache(db: LuzzleDatabase, name: string): Promise<void> {
+	await db.deleteFrom('pieces_cache').where('type', '=', name).execute()
+}
+
+export {
+	calculateHashFromFile,
+	getCacheAll,
+	getCache,
+	addCache,
+	updateCache,
+	removeCache,
+	clearCache,
+}
