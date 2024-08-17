@@ -12,6 +12,7 @@ import {
 } from '../lib/web.js'
 import { bookToHtml } from './books.js'
 import { linkToHtml } from './links.js'
+import { filmToHtml } from './films.js'
 import { image, outputPng, outputSvg } from './template.js'
 import { textToHtml } from './texts.js'
 import { gameToHtml } from './games.js'
@@ -53,6 +54,8 @@ function itemToHtml(item: WebPieces, type: WebPieceType, folder: string) {
 			return linkToHtml(item, folder)
 		case 'games':
 			return gameToHtml(item, folder)
+		case 'films':
+			return filmToHtml(item, folder)
 		case 'texts':
 		default:
 			return textToHtml(item, folder)
