@@ -19,7 +19,7 @@ builder.queryFields((t) => ({
 				.selectAll()
 				.limit(MAX_RESULTS)
 				.where(sql`web_pieces_fts5`, sql`match`, args.query)
-				.orderBy(sql`bm25(pieces_fts5, 1, 1, 1, 10, 3, 2, 1, 3, 3, 1, 1, 1)`)
+				.orderBy(sql`bm25(web_pieces_fts5, 1, 1, 1, 10, 3, 2, 1, 3, 3, 1, 1, 1)`)
 				.execute()
 		},
 	}),
