@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs'
 
 const LastRunFile = '.generate-last-run'
 
-const WebPieceTypes = ['books', 'links', 'texts', 'games'] as const
+const WebPieceTypes = ['books', 'links', 'texts', 'games', 'films'] as const
 const WebPieceTypesRegExp = RegExp(WebPieceTypes.join('|'))
 
 type WebPieceType = (typeof WebPieceTypes)[number]
