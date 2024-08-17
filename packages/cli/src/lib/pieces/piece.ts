@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from 'fs'
 import { copyFile, mkdir, readdir, stat, unlink, writeFile } from 'fs/promises'
 import log from '../log.js'
-import { updateCache, addCache, removeCache, getCache, getCacheAll } from './cache.js'
+import { updateCache, addCache, removeCache, getCache, getCacheAll, clearCache } from './cache.js'
 import { difference } from 'lodash-es'
 import { addTagsTo, keywordsToTags, removeAllTagsFrom, syncTagsFor } from '../tags/index.js'
 import {
@@ -342,6 +342,7 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 			if (fileStat.mtime > new Date(pieceDate)) {
 				if (!dryRun) {
 					await updatePiece(db, this._pieceName, this._schema as JSONSchemaType<PieceFrontmatter>)
+					await clearCache(db, this._pieceName)
 				}
 				log.info(`Updated piece ${this._pieceName} from schema at ${this._schemaPath}`)
 			}
