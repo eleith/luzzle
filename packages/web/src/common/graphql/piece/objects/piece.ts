@@ -1,7 +1,7 @@
 import builder from '@app/lib/graphql/builder'
 import { Tag } from '../../tag'
 
-export const WebPieceTypes = ['books', 'links', 'texts', 'games'] as const
+export const WebPieceTypes = ['books', 'links', 'texts', 'games', 'films'] as const
 export const WebPieceTypesRegExp = RegExp(WebPieceTypes.join('|'))
 
 export interface WebPieces {

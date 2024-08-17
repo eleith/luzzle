@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { BookCoverFor } from '../books'
 import ArticleCoverFor from '../links/ArticleCoverFor'
 import GameCoverFor from '../games/GameCoverFor'
+import FilmCoverFor from '../films/FilmCoverFor'
 import * as styles from './PieceCard.css'
 
 type Props = {
@@ -33,6 +34,17 @@ function makePieceCard(props: Props, isActive = false): JSX.Element {
 				hasMedia={!!props.media}
 				size={'SMALL'}
 				imgLoading={props.loading || 'lazy'}
+				title={props.title}
+			/>
+		)
+	} else if (props.type === 'films') {
+		return (
+			<FilmCoverFor
+				piece={props}
+				hasMedia={!!props.media}
+				size={'SMALL'}
+				imgLoading={props.loading || 'lazy'}
+				title={props.title}
 			/>
 		)
 	} else {
