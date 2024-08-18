@@ -101,6 +101,6 @@ describe('src/pieces/items.ts', () => {
 		await items.deleteItems(kysely.db, 'test', slugs)
 
 		expect(kysely.db.deleteFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('id', 'IN', slugs)
+		expect(kysely.queries.where).toHaveBeenCalledWith('id', 'in', slugs)
 	})
 })

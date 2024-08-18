@@ -88,7 +88,7 @@ async function deleteItems<K>(db: Kysely<K>, name: string, ids: string[]) {
 
 	await db
 		.deleteFrom(tableName)
-		.where('id' as never, 'IN' as never, ids as never)
+		.where('id' as never, 'in', ids as never)
 		.execute()
 }
 
