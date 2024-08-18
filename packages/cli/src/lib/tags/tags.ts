@@ -67,37 +67,27 @@ async function removeTagsFrom(
 	pieceName: string
 ): Promise<void> {
 	const findTags = await db.selectFrom('tags').select('id').where('slug', 'in', tagSlugs).execute()
+	const findTagIds = findTags.map((tag) => tag.id)
 
 	await db
 		.deleteFrom('tag_maps')
 		.where('id_item', '=', id)
 		.where('type', '=', pieceName)
-		.where(
-			'id_tag',
-			'in',
-			findTags.map((tag) => tag.id)
-		)
+		.where('id_tag', 'in', findTagIds)
 		.execute()
 
 	const tagCounts = await db
 		.selectFrom('tag_maps')
 		.select([db.fn.count<number>('id_item').as('item_count'), 'id_tag'])
 		.groupBy('id_tag')
-		.where(
-			'id_tag',
-			'in',
-			findTags.map((tag) => tag.id)
-		)
+		.where('id_tag', 'in', findTagIds)
 		.execute()
 
-	await db
-		.deleteFrom('tags')
-		.where(
-			'id',
-			'in',
-			tagCounts.filter((tag) => tag.item_count === 0).map((tag) => tag.id_tag)
-		)
-		.execute()
+	const tagIds = tagCounts.filter((tag) => tag.item_count === 0).map((tag) => tag.id_tag)
+
+	if (tagIds.length) {
+		await db.deleteFrom('tags').where('id', 'in', tagIds).execute()
+	}
 }
 
 async function removeAllTagsFrom(
@@ -118,14 +108,11 @@ async function removeAllTagsFrom(
 		.where('id_item', 'in', ids)
 		.execute()
 
-	await db
-		.deleteFrom('tags')
-		.where(
-			'id',
-			'in',
-			tagCounts.filter((tag) => tag.item_count === 0).map((tag) => tag.id_tag)
-		)
-		.execute()
+	const tagIds = tagCounts.filter((tag) => tag.item_count === 0).map((tag) => tag.id_tag)
+
+	if (tagIds.length) {
+		await db.deleteFrom('tags').where('id', 'in', tagIds).execute()
+	}
 }
 
 const _private = {
