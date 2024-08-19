@@ -385,12 +385,13 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 		}
 
 		const tmpPath = await downloadFileOrUrlTo(fileOrUrl)
+		const extension = path.extname(tmpPath) || ''
 		const fileType = await fileTypeFromFile(tmpPath)
-		const type = fileType?.ext
+		const type = fileType?.ext.replace(/^/, '.') || extension
 		const attachDir = path.join(this._directories.assets, field.name)
 		const random = randomBytes(4).toString('hex')
 		const parts = [slug, _name, random]
-		const filename = `${parts.filter((x) => x).join('-')}.${type}`
+		const filename = `${parts.filter((x) => x).join('-')}${type}`
 		const toPath = path.join(this._directories.assets, field.name, filename)
 		const relPath = path.join(path.basename(this._directories.assets), field.name, filename)
 

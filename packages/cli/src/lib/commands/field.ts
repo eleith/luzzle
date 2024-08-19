@@ -9,6 +9,8 @@ import {
 	parsePieceArgv,
 } from '../pieces/index.js'
 import yaml from 'yaml'
+import { parseString } from '@fast-csv/parse'
+import { EOL } from 'os'
 
 export type FieldArgv = {
 	remove?: boolean
@@ -17,7 +19,28 @@ export type FieldArgv = {
 	input: string
 } & PieceArgv
 
-function parseFields(fields: string[], input: string): Record<string, unknown> {
+async function parseCsvFields(csvString: string): Promise<Record<string, unknown>> {
+	return new Promise((resolve, reject) => {
+		const result: Record<string, unknown> = {}
+
+		parseString([csvString].join(EOL))
+			.on('error', reject)
+			.on('data', (row: string[]) => {
+				row.forEach((item) => {
+					const signIndex = item.indexOf('=')
+					const hasEqual = signIndex !== -1
+					const end = hasEqual ? signIndex : item.length
+					const value = hasEqual ? item.substring(signIndex + 1) : undefined
+					const field = item.substring(0, end)
+
+					result[field] = value
+				})
+			})
+			.on('end', () => resolve(result))
+	})
+}
+
+async function parseFields(fields: string[], input: string): Promise<Record<string, unknown>> {
 	switch (input) {
 		case 'json':
 			return JSON.parse(fields[0])
@@ -25,17 +48,7 @@ function parseFields(fields: string[], input: string): Record<string, unknown> {
 			return yaml.parse(fields[0])
 		case 'csv':
 		default:
-			return fields
-				.join('')
-				.split(',')
-				.reduce(
-					(fields, field) => {
-						const [fieldname, value] = field.split('=').map((f) => f.trim())
-						fields[fieldname] = value
-						return fields
-					},
-					{} as Record<string, unknown>
-				)
+			return await parseCsvFields(fields.join(''))
 	}
 }
 
@@ -79,7 +92,7 @@ const command: Command<FieldArgv> = {
 		const { slug, name } = await parsePieceArgv(ctx, args)
 		const piece = await ctx.pieces.getPiece(name)
 		const pieceFields = piece.fields.map((f) => f.name)
-		const fieldMaps = fields?.length && parseFields(fields, input)
+		const fieldMaps = fields?.length ? await parseFields(fields, input) : undefined
 		const fieldnames = Object.keys(fieldMaps || {})
 
 		if (!fieldMaps) {
