@@ -996,7 +996,75 @@ describe('lib/pieces/piece.ts', () => {
 		expect(updated.frontmatter[field as keyof typeof updated.frontmatter]).toEqual([value])
 	})
 
-	test('setField on attachments', async () => {
+	test('setField on unknown attachments', async () => {
+		const markdown = makeMarkdownSample()
+		const field = 'cover'
+		const value = 'file'
+		const pieceRoot = '/luzzle'
+		const table = 'table'
+		const fields = [
+			{ name: field, type: 'string', format: 'asset' },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePiece()
+
+		const pieceTest = new PieceTest({ root: pieceRoot, name: table })
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		mocks.makePieceMarkdownOrThrow.mockImplementation((slug, note, frontmatter) => {
+			return { slug, note, frontmatter } as {
+				slug: string
+				note: string
+				frontmatter: PieceFrontmatter
+			}
+		})
+		mocks.downloadFileOrUrlTo.mockResolvedValueOnce(value)
+		mocks.unlink.mockResolvedValue(undefined)
+		mocks.fileType.mockResolvedValueOnce(undefined)
+		mocks.mkdir.mockResolvedValueOnce(undefined)
+		mocks.copy.mockResolvedValueOnce(undefined)
+
+		const updated = await pieceTest.setField(markdown, field, value)
+
+		expect(updated.frontmatter[field as keyof typeof updated.frontmatter]).matches(
+			new RegExp(`${ASSETS_DIRECTORY}/${field}/${markdown.slug}-[^.]*`)
+		)
+	})
+
+	test('setField on text attachments', async () => {
+		const markdown = makeMarkdownSample()
+		const field = 'cover'
+		const value = 'file.html'
+		const pieceRoot = '/luzzle'
+		const table = 'table'
+		const fields = [
+			{ name: field, type: 'string', format: 'asset' },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePiece()
+
+		const pieceTest = new PieceTest({ root: pieceRoot, name: table })
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		mocks.makePieceMarkdownOrThrow.mockImplementation((slug, note, frontmatter) => {
+			return { slug, note, frontmatter } as {
+				slug: string
+				note: string
+				frontmatter: PieceFrontmatter
+			}
+		})
+		mocks.downloadFileOrUrlTo.mockResolvedValueOnce(value)
+		mocks.unlink.mockResolvedValue(undefined)
+		mocks.fileType.mockResolvedValueOnce(undefined)
+		mocks.mkdir.mockResolvedValueOnce(undefined)
+		mocks.copy.mockResolvedValueOnce(undefined)
+
+		const updated = await pieceTest.setField(markdown, field, value)
+
+		expect(updated.frontmatter[field as keyof typeof updated.frontmatter]).matches(
+			new RegExp(`${ASSETS_DIRECTORY}/${field}/${markdown.slug}-.*.html`)
+		)
+	})
+
+	test('setField on binary attachments', async () => {
 		const markdown = makeMarkdownSample()
 		const field = 'cover'
 		const value = 'new-cover.jpg'

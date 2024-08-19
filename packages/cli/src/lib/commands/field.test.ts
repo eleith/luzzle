@@ -336,7 +336,7 @@ describe('lib/commands/field.ts', () => {
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
-	test('run disallows setting without fieldname', async () => {
+	test('run setting disallowed fields', async () => {
 		const path = 'slug'
 		const PieceTest = makePiece()
 		const pieceMarkdown = makeMarkdownSample()
@@ -353,12 +353,13 @@ describe('lib/commands/field.ts', () => {
 		await command.run(ctx, {
 			path,
 			set: true,
+			fields: ['title-bad'],
 		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
-	test('run disallows removing without fieldname', async () => {
+	test('run disallows removing required fields', async () => {
 		const path = 'slug'
 		const PieceTest = makePiece()
 		const pieceMarkdown = makeMarkdownSample()
@@ -375,6 +376,7 @@ describe('lib/commands/field.ts', () => {
 		await command.run(ctx, {
 			path,
 			remove: true,
+			fields: ['title'],
 		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
@@ -422,6 +424,60 @@ describe('lib/commands/field.ts', () => {
 			path,
 			set: true,
 			fields: [fieldname],
+			input: 'csv',
+		} as Arguments<FieldArgv>)
+
+		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
+
+	test('run disallows setting without a field', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const fieldname = 'title'
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+
+		await command.run(ctx, {
+			path,
+			set: true,
+			fields: [] as string[],
+			input: 'csv',
+		} as Arguments<FieldArgv>)
+
+		expect(mocks.logError).toHaveBeenCalledOnce()
+	})
+
+	test('run disallows removing without a field', async () => {
+		const path = 'slug'
+		const PieceTest = makePiece()
+		const pieceMarkdown = makeMarkdownSample()
+		const fieldname = 'title'
+		const fields = [{ name: fieldname, type: 'string' }] as Array<PieceFrontmatterSchemaField>
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+			},
+		})
+
+		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+
+		await command.run(ctx, {
+			path,
+			remove: true,
+			fields: [] as string[],
 			input: 'csv',
 		} as Arguments<FieldArgv>)
 
