@@ -1,0 +1,31 @@
+<script lang="ts">
+	import type { WebPieces } from '$lib/pieces/types'
+	import type { HTMLImgAttributes } from 'svelte/elements'
+	import { PUBLIC_ASSETS_CDN_URL } from '$env/static/public'
+
+	type Props = {
+		piece: WebPieces
+		size?: 'small' | 'medium' | 'large' | 'xlarge'
+	} & HTMLImgAttributes
+
+	let { size = 'small', piece, ...props }: Props = $props()
+	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
+	const match = piece.media?.match(/([^/\\]+)\.[^/.]+$/)
+
+	let media = match ? match[1] : null
+</script>
+
+{#if media}
+	<picture>
+		<source
+			srcset="{PUBLIC_ASSETS_CDN_URL}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.avif"
+			type="image/avif"
+		/>
+		<img
+			src="{PUBLIC_ASSETS_CDN_URL}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.jpg"
+			{width}
+			decoding="async"
+			{...props}
+		/>
+	</picture>
+{/if}

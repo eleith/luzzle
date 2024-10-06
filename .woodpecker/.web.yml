@@ -2,117 +2,58 @@ workspace:
   base: /workspace
   path: src
 steps:
-  build:
+  install:
     image: node:20
     commands:
-      - npm ci -w @luzzle/web -w @luzzle/ui -w @luzzle/core -w @luzzle/tools
-      - npm run build -w @luzzle/core -w @luzzle/tools
-      - npm run build:graphql -w @luzzle/web
-      - npm run compile -w @luzzle/web
+      - npm ci -w @luzzle/web -w @luzzle/core
+      - npm run build -w @luzzle/core
     when:
       - event: [push, manual]
         branch: [main]
         path:
           include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
-  test:
+  check:
     image: node:20
     commands:
+      - printf '%s\n' "$SVELTEKIT_ENV_LOCAL" > ./packages/web/.env.local
+      - npm run check -w @luzzle/web
       - npm run lint -w @luzzle/web
+    secrets:
+      [
+        sveltekit_env_local
+      ]
     when:
       - event: [push, manual]
         branch: [main]
         path:
-          include: [".woodpecker/.web.yml", "packages/web/**"]
+          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
   gather:
     image: rclone/rclone:1.57
-    environment:
-      - RCLONE_GCS_STORAGE_CLASS=REGIONAL
-      - RCLONE_GCS_BUCKET_POLICY_ONLY=true
-      - RCLONE_GCS_LOCATION=us-central-1
-      - RCLONE_GCS_SERVICE_ACCOUNT_FILE=/tmp/rclone-service-key.json
     commands:
-      - mkdir /workspace/data
-      - mkdir packages/web/public/images
-      - mkdir packages/web/public/images/og
+      - mkdir packages/web/luzzle
+      - mkdir packages/web/luzzle-images
       - mkdir packages/web/data
-      - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
-      - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
-      - rclone copy :webdav:documents/eleith/notes-md/personal/records /workspace/data
-      - rclone copy :webdav:tomato/eleith.io/images/og packages/web/public/images/og
-      - rclone copy :webdav:tomato/eleith.io/images/variants packages/web/public/images/variants
-      - mv /workspace/data/luzzle.sqlite packages/web/data
+      - rclone copy :webdav:documents/eleith/notes-md/personal/records packages/web/luzzle
+      - rclone copy :webdav:tomato/eleith.io/luzzle-images packages/web/luzzle-images
+      - cp packages/web/luzzle/luzzle.sqlite packages/web/data
     secrets:
       [
+        sveltekit_env_local,
         rclone_webdav_url,
         rclone_webdav_vendor,
         rclone_webdav_user,
         rclone_webdav_pass,
-        rclone_service_key_json,
-        rclone_gcs_project_number,
       ]
     when:
       - event: [push, manual]
         branch: [main]
         path:
           include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
-  build-content:
+  prebuild:
     image: node:20
-    environment:
-      - ENV_LOCAL_FILE=.env.local
-      - NODE_ENV=production
     commands:
-      - printf '%s\n' "$NEXTJS_ENV_LOCAL" > ./packages/web/$ENV_LOCAL_FILE
       - cd packages/web
-
-      - ../tools/dist/generate-common-tables/index.js --database data/luzzle.sqlite --clean
-      - ../tools/dist/generate-common-tables/index.js --database data/luzzle.sqlite
-
-      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/books --output public/images/variants/books --type books --variant width
-      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/links --output public/images/variants/links --type links --variant height
-      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/texts --output public/images/variants/texts --type texts --variant height
-      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/games --output public/images/variants/games --type games --variant width
-      - ../tools/dist/generate-img-variants/index.js --database data/luzzle.sqlite --input /workspace/data/films --output public/images/variants/films --type films --variant width
-
-      - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/books --output public/images/og/books --type books
-      - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/links --output public/images/og/links --type links
-      - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/texts --output public/images/og/texts --type texts
-      - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/games --output public/images/og/games --type games
-      - ../tools/dist/generate-img-og/index.js --database data/luzzle.sqlite --input public/images/variants/films --output public/images/og/films --type films
-
-      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces' --output public/rss
-      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (books)' --output public/rss --type books
-      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (links)' --output public/rss --type links
-      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (texts)' --output public/rss --type texts
-      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (games)' --output public/rss --type games
-      - ../tools/dist/generate-rss/index.js --database data/luzzle.sqlite --url hi.eleith.com --title 'hi eleith' --description 'pieces (films)' --output public/rss --type films
-
-    secrets: [nextjs_env_local]
-    when:
-      - event: [push, manual]
-        branch: [main]
-        path:
-          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
-  cache:
-    image: rclone/rclone:1.57
-    environment:
-      - RCLONE_GCS_STORAGE_CLASS=REGIONAL
-      - RCLONE_GCS_BUCKET_POLICY_ONLY=true
-      - RCLONE_GCS_LOCATION=us-central-1
-      - RCLONE_GCS_SERVICE_ACCOUNT_FILE=/tmp/rclone-service-key.json
-    commands:
-      - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
-      - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
-      - rclone copy ./packages/web/public :gcs:eleith-io-site
-      - rclone sync ./packages/web/public :webdav:tomato/eleith.io
-    secrets:
-      [
-        rclone_webdav_url,
-        rclone_webdav_vendor,
-        rclone_webdav_user,
-        rclone_webdav_pass,
-        rclone_service_key_json,
-        rclone_gcs_project_number,
-      ]
+      - npx vite-node tools/luzzle/index.ts
     when:
       - event: [push, manual]
         branch: [main]
@@ -121,20 +62,49 @@ steps:
   deploy:
     image: git.eleith.com/eleith/gcs-web-deploy:3.0.0
     environment:
-      - LOG_DIR=gs://eleith-cloud-builds/logs
-      - STAGING_DIR=gs://eleith-cloud-builds/eleith-io-site
-      - RUN_KEY_FILE=/tmp/secrets/service-account-key.json
-      - GCR_IMAGE=gcr.io/eleith-cloud/eleith-io-site
-      - GCS_PROJECT=eleith-cloud
-      - GCS_REGION=us-central1
+      LOG_DIR: gs://eleith-cloud-builds/logs
+      STAGING_DIR: gs://eleith-cloud-builds/eleith-io-site
+      RUN_KEY_FILE: /tmp/secrets/service-account-key.json
+      GCR_IMAGE_URL: gcr.io/eleith-cloud/eleith-io-site
+      GCS_PROJECT: eleith-cloud
+      GCS_REGION: us-central1
     commands:
       - mkdir /tmp/secrets
       - echo $${CLOUD_RUN_SERVICE_KEY_JSON} > $RUN_KEY_FILE
       - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RUN_KEY_FILE
       - gcloud auth activate-service-account --key-file $RUN_KEY_FILE
-      - gcloud builds submit --gcs-source-staging-dir $STAGING_DIR --gcs-log-dir $LOG_DIR --tag $GCR_IMAGE --project=$GCS_PROJECT
+      - gcloud builds submit --gcs-source-staging-dir $STAGING_DIR --gcs-log-dir $LOG_DIR --tag $GCR_IMAGE_URL --project=$GCS_PROJECT
       - gcloud run deploy eleith-io-site --image $GCR_IMAGE --platform managed --region $GCS_REGION --project=$GCS_PROJECT
     secrets: [cloud_run_service_key_json]
+    when:
+      - event: [push, manual]
+        branch: [main]
+        path:
+          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
+  cache:
+    image: rclone/rclone:1.57
+    environment:
+      RCLONE_GCS_STORAGE_CLASS: REGIONAL
+      RCLONE_GCS_BUCKET_POLICY_ONLY: true
+      RCLONE_GCS_LOCATION: us-central-1
+      RCLONE_GCS_SERVICE_ACCOUNT_FILE: /tmp/rclone-service-key.json
+    commands:
+      - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
+      - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
+      - rclone copy ./packages/web/build/client :gcs:eleith-io-site
+      - rclone copy ./packages/web/luzzle-images :gcs:eleith-io-site/images/pieces
+      - rclone sync ./packages/web/luzzle-images :webdav:tomato/eleith.io/luzzle-images
+      - rclone sync ./packages/web/build :webdav:tomato/eleith.io/build
+      - rclone sync ./packages/web/data :webdav:tomato/eleith.io/data
+    secrets:
+      [
+        rclone_webdav_url,
+        rclone_webdav_vendor,
+        rclone_webdav_user,
+        rclone_webdav_pass,
+        rclone_service_key_json,
+        rclone_gcs_project_number,
+      ]
     when:
       - event: [push, manual]
         branch: [main]
@@ -154,8 +124,7 @@ steps:
       recipients:
         from_secret: smtp_notification_recipient
     when:
-      - event: [push, manual]
-        status: [failure, success]
+      - status: [failure, success]
         branch: [main]
         path:
           include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]

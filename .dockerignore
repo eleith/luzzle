@@ -8,5 +8,9 @@
 
 Dockerfile
 node_modules
-packages/web/public/images/variants
-packages/web/public/images/og
+packages/core/node_modules
+packages/web/node_modules
+packages/web/luzzle-images
+packages/web/luzzle
+packages/web/public/images/pieces
+packages/web/tools
