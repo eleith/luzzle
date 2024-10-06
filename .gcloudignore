@@ -1,12 +1,18 @@
 .gcloudignore
 .git
 .gitignore
-.stylelintrc.json
-.eslintrc.json
-.prettierrc.json
 .tool-versions
 .dockerignore
+.editorconfig
 
-vite.config.ts
-/packages/web/public/images/variants
-/packages/web/public/images/og
+.stylelintrc.json
+.eslintrc.json
+.prettierrc
+eslint.config.js
+
+packages/core/node_modules
+packages/web/node_modules
+packages/web/luzzle-images
+packages/web/luzzle
+packages/web/public/images/pieces
+packages/web/tools
