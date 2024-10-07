@@ -10,7 +10,7 @@ RUN apk add --no-cache libc6-compat
 #RUN --mount=type=secret,id=npmrc cp /run/secrets/npmrc /root/.npmrc
 
 RUN npm ci -w @luzzle/web -w @luzzle/core
-RUN npm run build -w @luzzle/core
+#RUN npm run build -w @luzzle/core
 RUN npm run build -w @luzzle/web
 RUN npm prune --production
 

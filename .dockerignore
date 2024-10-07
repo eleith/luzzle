@@ -12,5 +12,5 @@ packages/core/node_modules
 packages/web/node_modules
 packages/web/luzzle-images
 packages/web/luzzle
-packages/web/public/images/pieces
+packages/web/static/images/pieces
 packages/web/tools
