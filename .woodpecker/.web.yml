@@ -95,7 +95,7 @@ steps:
       - rclone copy ./packages/web/build/client :gcs:eleith-io-site
       - rclone copy ./packages/web/luzzle-images :gcs:eleith-io-site/images/pieces
       - rclone sync ./packages/web/luzzle-images :webdav:tomato/eleith.io/luzzle-images
-      - rclone sync ./packages/web/build :webdav:tomato/eleith.io/build
+      # - rclone sync ./packages/web/build :webdav:tomato/eleith.io/build
       - rclone sync ./packages/web/data :webdav:tomato/eleith.io/data
     secrets:
       [
