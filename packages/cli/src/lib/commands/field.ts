@@ -153,7 +153,8 @@ const command: Command<FieldArgv> = {
 				log.error(`error setting field: ${errors.join(', ')}`)
 			}
 		} else {
-			console.log(`fields: ${fieldnames.map((f) => `${f}=${markdown.frontmatter[f]}`).join('\n')}`)
+			//console.log(`fields: ${fieldnames.map((f) => `${f}=${markdown.frontmatter[f]}`).join('\n')}`)
+			console.log(`${fieldnames.map((f) => `${markdown.frontmatter[f]}`).join('\n')}`)
 		}
 	},
 }

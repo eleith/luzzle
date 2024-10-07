@@ -1167,6 +1167,7 @@ describe('lib/pieces/piece.ts', () => {
 		const pieceTest = new PieceTest()
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		mocks.existsSync.mockReturnValueOnce(true)
 		mocks.unlink.mockResolvedValue(undefined)
 		mocks.makePieceMarkdownOrThrow.mockImplementation((slug, note, frontmatter) => {
 			return { slug, note, frontmatter } as {
@@ -1196,6 +1197,7 @@ describe('lib/pieces/piece.ts', () => {
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
 		mocks.unlink.mockResolvedValue(undefined)
+		mocks.existsSync.mockReturnValue(true)
 		mocks.makePieceMarkdownOrThrow.mockImplementation((slug, note, frontmatter) => {
 			return { slug, note, frontmatter } as {
 				slug: string

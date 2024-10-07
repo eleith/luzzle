@@ -494,8 +494,12 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 
 			for (const one of valueArray) {
 				const attachmentPath = path.join(this._directories.root, one as string)
-				await unlink(attachmentPath)
-				log.info(`removed attachment at ${attachmentPath}`)
+				if (existsSync(attachmentPath)) {
+					await unlink(attachmentPath)
+					log.info(`removed attachment at ${attachmentPath}`)
+				} else {
+					log.info(`no attachment to remove at ${attachmentPath}`)
+				}
 			}
 		}
 
