@@ -1,12 +1,6 @@
 import { preprocessMeltUI, sequence } from '@melt-ui/pp'
 import adapter from '@sveltejs/adapter-node'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
-import dotenv from 'dotenv'
-
-dotenv.config({ path: '.env.local', override: true })
-
-const production = process.env.NODE_ENV === 'production'
-const cdn = process.env.PUBLIC_ASSETS_CDN_URL || ''
 
 /** @type {import('@sveltejs/kit').Config}*/
 const config = {
@@ -21,9 +15,6 @@ const config = {
 		prerender: {
 			concurrency: 4,
 			handleHttpError: 'warn'
-		},
-		paths: {
-			assets: production ? cdn : ''
 		}
 	}
 }
