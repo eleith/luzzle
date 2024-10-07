@@ -2,11 +2,10 @@ workspace:
   base: /workspace
   path: src
 steps:
-  install:
+  packages:
     image: node:20
     commands:
       - npm ci -w @luzzle/web -w @luzzle/core
-      - npm run build -w @luzzle/core
     when:
       - event: [push, manual]
         branch: [main]
@@ -16,6 +15,7 @@ steps:
     image: node:20
     commands:
       - printf '%s\n' "$SVELTEKIT_ENV_LOCAL" > ./packages/web/.env.local
+      - npm run build -w @luzzle/core
       - npm run check -w @luzzle/web
       - npm run lint -w @luzzle/web
     secrets:
@@ -49,11 +49,12 @@ steps:
         branch: [main]
         path:
           include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
-  prebuild:
+  build:
     image: node:20
     commands:
       - cd packages/web
       - npx vite-node tools/luzzle/index.ts
+      - npm run build
     when:
       - event: [push, manual]
         branch: [main]
