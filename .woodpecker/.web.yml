@@ -53,7 +53,7 @@ steps:
     image: node:20
     commands:
       - cd packages/web
-      - npx vite-node tools/luzzle/index.ts
+      - npm run build:luzzle
       - npm run build
     when:
       - event: [push, manual]
