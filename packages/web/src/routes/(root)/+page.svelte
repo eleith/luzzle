@@ -7,7 +7,7 @@
 	const pieces = data.pieces
 </script>
 
-<main>
+<section class="intro">
 	<h1>hello</h1>
 	<p>
 		this site allows me to recall and share
@@ -20,7 +20,7 @@
 		{/each}
 		other <a href="/pieces">things</a>
 	</p>
-</main>
+</section>
 
 <section>
 	{#each pieces as piece}
@@ -53,13 +53,13 @@
 				}}
 			>
 				<div style="flex: 1;">
-					<div style="position: relative; bottom: -80px;">
+					<div class="icon">
 						{#key activePieceId === piece.id}
 							<PieceIcon {piece} size="small" active={activePieceId === piece.id} />
 						{/key}
 					</div>
 				</div>
-				<div style="flex: 2; align-self: end;">
+				<div style="flex: 1; align-self: center; padding-top: 45px;">
 					{piece.title}
 				</div>
 			</a>
@@ -67,19 +67,13 @@
 	{/each}
 </section>
 
-<footer></footer>
-
 <style>
-	main,
-	footer {
+	section.intro {
 		margin: var(--space-4);
 		margin-bottom: var(--space-8);
 		margin-left: auto;
 		margin-right: auto;
-	}
-
-	footer {
-		text-align: right;
+		width: 66.666%;
 	}
 
 	section.piece {
@@ -89,6 +83,18 @@
 
 	section.piece:nth-child(even) > a {
 		flex-direction: row-reverse;
+		text-align: right;
+	}
+
+	section.piece div.icon {
+		position: relative;
+		bottom: -80px;
+		display: flex;
+		justify-content: right;
+	}
+
+	section.piece:nth-child(even) div.icon {
+		justify-content: left;
 	}
 
 	section.piece > a {
@@ -100,11 +106,9 @@
 		padding-top: 0px;
 		width: 100%;
 		box-shadow: inset 0 11px 8px -10px var(--colors-shadow);
-	}
-
-	section.piece > a {
+		width: 66.666%;
 		display: flex;
-		gap: var(--space-3);
+		gap: var(--space-10);
 		align-items: baseline;
 		color: var(--colors-on-surface);
 	}
@@ -113,19 +117,13 @@
 		color: var(--colors-primary);
 	}
 
-	@media screen and (min-width: 768px) {
-		main,
-		footer,
-		section.piece > a {
-			width: 66.66666%;
-		}
-	}
-
-	@media screen and (min-width: 1024px) {
-		main,
-		footer,
+	@media screen and (max-width: 768px) {
+		section.intro,
 		section.piece > a {
 			width: 50%;
+			min-width: 550px;
+			padding-left: 20px;
+			padding-right: 20px;
 		}
 	}
 </style>
