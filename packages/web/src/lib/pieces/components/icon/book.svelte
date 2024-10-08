@@ -11,9 +11,10 @@
 		active?: boolean
 		transform?: { active?: string; initial?: string }
 		size?: 'small' | 'medium' | 'large' | 'xlarge'
+		lazy?: boolean
 	}
 
-	let { size = 'small', piece, active, transform }: Props = $props()
+	let { size = 'small', piece, active, transform, lazy }: Props = $props()
 	let initialTransform = transform?.initial || 'none'
 	let activeTransform = transform?.active || 'none'
 	let divBook: HTMLDivElement
@@ -95,8 +96,8 @@
 			<Picture
 				{piece}
 				{size}
+				{lazy}
 				alt=""
-				loading="lazy"
 				onerror={() => {
 					isLoading = false
 				}}

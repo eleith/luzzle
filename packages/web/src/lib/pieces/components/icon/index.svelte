@@ -9,17 +9,18 @@
 		piece: WebPieces
 		size?: 'small' | 'medium' | 'large'
 		active?: boolean
+		lazy?: boolean
 	}
 
-	let { piece, size, active }: Props = $props()
+	let { piece, size, active, lazy }: Props = $props()
 </script>
 
 {#if piece.type === 'games'}
-	<Cartridge {piece} {active} {size} />
+	<Cartridge {piece} {active} {size} {lazy} />
 {:else if piece.type === 'links' || piece.type === 'texts'}
-	<Article {piece} {size} {active} />
+	<Article {piece} {size} {active} {lazy} />
 {:else if piece.type === 'books'}
-	<Book {piece} {active} {size} transform={{ active: 'rotateX(10deg) rotateY(-45deg)' }} />
+	<Book {piece} {active} {size} {lazy} transform={{ active: 'rotateX(10deg) rotateY(-45deg)' }} />
 {:else}
-	<Poster {piece} {active} {size} />
+	<Poster {piece} {active} {size} {lazy} />
 {/if}

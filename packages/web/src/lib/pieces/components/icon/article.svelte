@@ -6,9 +6,10 @@
 		piece: WebPieces
 		active?: boolean
 		size?: 'small' | 'medium' | 'large'
+		lazy?: boolean
 	}
 
-	let { piece, active, size = 'small' }: Props = $props()
+	let { piece, active, size = 'small', lazy = true }: Props = $props()
 	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
 </script>
 
@@ -22,7 +23,7 @@
 					<img src="/luzzle/{piece.type}/{piece.media}" alt="" width="100%" />
 				</picture>
         -->
-				<Picture {piece} {size} loading="lazy" decoding="async" alt="" />
+				<Picture {piece} {size} {lazy} decoding="async" alt="" />
 			</div>
 		{:else}
 			<div class="articleHeader"></div>
