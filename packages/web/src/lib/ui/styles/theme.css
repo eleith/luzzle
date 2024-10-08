@@ -84,47 +84,43 @@ body[data-theme='rainbow'] {
 }
 
 body[data-theme='forest'] {
-	/* Surface and Containers - Greens */
-	--colors-surface: #c7d8b9; /* Light, fresh green */
-	--colors-surface-dim: #b0c29e; /* Slightly darker for subtle variation */
-	--colors-surface-bright: #d4e5c6; /* A bit brighter for highlights */
+	--colors-surface: #c7d8b9;
+	--colors-surface-dim: #b0c29e;
+	--colors-surface-bright: #d4e5c6;
 
 	--colors-surface-container-lowest: #a3b88d;
 	--colors-surface-container-low: #90a57a;
 	--colors-surface-container: #7d9267;
 	--colors-surface-container-high: #6a7f54;
-	--colors-surface-container-highest: #576c41; /* Deepest for strong contrast */
+	--colors-surface-container-highest: #576c41;
 
-	/* Accents - Earthy tones and pops */
-	--colors-primary: #996633; /* Rich brown, like tree bark */
-	--colors-on-primary: #ffeeee; /* Off-white for legibility */
+	--colors-primary: #996633;
+	--colors-on-primary: #ffeeee;
 	--colors-primary-container: #734d26;
 	--colors-on-primary-container: #ffffff;
 
-	--colors-secondary: #d4b05f; /* Golden yellow, like sunlight filtering through leaves */
+	--colors-secondary: #d4b05f;
 	--colors-on-secondary: #332200;
 	--colors-secondary-container: #b59346;
-	--colors-on-secondary-container: #ffffff; /* White for clear contrast */
+	--colors-on-secondary-container: #ffffff;
 
-	--colors-tertiary: #603319; /* Darker brown, like fertile soil */
-	--colors-on-tertiary: #ffeeee; /* Off-white for legibility */
+	--colors-tertiary: #603319;
+	--colors-on-tertiary: #ffeeee;
 	--colors-tertiary-container: #4d2913;
 	--colors-on-tertiary-container: #ffffff;
 
-	/* Error Colors */
 	--colors-error: #ff5449;
 	--colors-on-error: #370001;
 	--colors-error-container: #a30b00;
 	--colors-on-error-container: #f6fcfd;
 
-	/* Other Colors */
-	--colors-shadow: hsla(0, 0%, 100%, 0.075); /* You can adjust this if needed */
+	--colors-shadow: hsla(0, 0%, 100%, 0.075);
 
-	--colors-on-surface: #0a4a08; /* Dark brown for text on light green */
+	--colors-on-surface: #0a4a08;
 	--colors-on-surface-variant: #ffffff;
-	--colors-on-surface-inverse: #ffffff; /* White on the darkest container */
+	--colors-on-surface-inverse: #ffffff;
 
-	--colors-outline: #aaa292; /* You might want to adjust this to fit the theme better */
+	--colors-outline: #aaa292;
 	--colors-outline-variant: #898373;
 	--colors-surface-inverse: #adadad;
 }
@@ -227,7 +223,7 @@ body {
 	--font-sizes-large: 1.825rem;
 	--font-sizes-xl: 2rem;
 	--font-sizes-xxl: 3rem;
-	--font-sizes-mobile-responsive-factor: 3/5;
+	--font-sizes-mobile-responsive-factor: 4/5;
 	--font-sizes-root: 22px;
 	--font-weights-light: 300;
 	--font-weights-normal: 400;

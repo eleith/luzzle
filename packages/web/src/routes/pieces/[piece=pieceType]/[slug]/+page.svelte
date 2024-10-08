@@ -6,6 +6,7 @@
 	import { PUBLIC_ASSETS_CDN_URL } from '$env/static/public'
 
 	let { data } = $props()
+	const metadata = JSON.parse(data.piece.json_metadata) || {}
 	const imagesDir = `${PUBLIC_ASSETS_CDN_URL}/images/pieces`
 </script>
 
@@ -65,8 +66,15 @@
 		</div>
 	{/if}
 
+	{#if metadata.url}
+		<h3 style="margin-top: var(--space-5);">link</h3>
+		<div style="font-size:var(--font-sizes-small);">
+			<a href={metadata.url}>{metadata.url}</a>
+		</div>
+	{/if}
+
 	{#if data.piece.summary}
-		<h4 style="margin-top: var(--space-5);">summary</h4>
+		<h3 style="margin-top: var(--space-5);">summary</h3>
 		<div>
 			{#each data.piece.summary.split('\n') as paragraph}
 				<p>{paragraph}</p>
