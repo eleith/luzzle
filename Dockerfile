@@ -29,4 +29,4 @@ ENV PORT 3000
 ENV NODE_ENV production
 
 WORKDIR /app/packages/web
-CMD [ "node", "build" ]
+CMD [ "node", "--env-file=.env.local", "build" ]
