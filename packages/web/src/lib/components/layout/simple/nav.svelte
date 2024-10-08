@@ -15,7 +15,7 @@
 	import { fly } from 'svelte/transition'
 	import { createDialog, melt } from '@melt-ui/svelte'
 	import type { Snippet } from 'svelte'
-	import { PUBLIC_SITE_TITLE } from '$env/static/public'
+	import { PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_TITLE } from '$env/static/public'
 
 	type Props = {
 		background?: string
@@ -77,6 +77,7 @@
 
 <svelte:head>
 	<title>{PUBLIC_SITE_TITLE}</title>
+	<meta name="description" content={PUBLIC_SITE_DESCRIPTION} />
 </svelte:head>
 
 {#if $open}
@@ -91,7 +92,7 @@
 						name="query"
 						class="input"
 					/>
-					<button type="submit" class="button">
+					<button type="submit" class="button" aria-label="submit search">
 						<ArrowRightIcon style="font-size: 1.75em;" />
 					</button>
 				</form>
@@ -104,20 +105,20 @@
 <nav class="banner" style:--banner-background-color={background || 'transparent'}>
 	<div class="left">
 		{#if $page.url.pathname !== '/'}
-			<a href="/"><AtIcon style="font-size: 1em;" /></a>
+			<a href="/" aria-label="main page"><AtIcon style="font-size: 1em;" /></a>
 		{/if}
 		{#if items?.left}
 			{@render items.left()}
 		{/if}
 	</div>
 	<div class="right">
-		<a href="/search" onclick={clickSearch} use:melt={$trigger}>
+		<a href="/search" onclick={clickSearch} use:melt={$trigger} aria-label="search">
 			<SearchIcon style="font-size: 1em;" />
 		</a>
 		{#if items?.right}
 			{@render items.right()}
 		{/if}
-		<button onclick={clickTheme}>
+		<button onclick={clickTheme} aria-label="change theme">
 			{#if currentTheme === null}
 				<PaletteIcon style="font-size: 1em;visibility: hidden;" />
 			{:else if currentTheme === 'dark'}
