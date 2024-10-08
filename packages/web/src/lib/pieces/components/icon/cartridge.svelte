@@ -6,9 +6,10 @@
 		piece: WebPieces
 		active?: boolean
 		size?: 'small' | 'medium' | 'large' | 'xlarge'
+		lazy?: boolean
 	}
 
-	let { size = 'small', piece, active }: Props = $props()
+	let { size = 'small', piece, active, lazy }: Props = $props()
 	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
 </script>
 
@@ -26,7 +27,7 @@
 		<div class="cartridgeLabelContainer">
 			<div class="cartridgeGap">
 				<div class="cartridgeImageContainer">
-					<Picture {piece} {size} loading="lazy" decoding="async" alt="" />
+					<Picture {piece} {size} {lazy} decoding="async" alt="" />
 				</div>
 			</div>
 			<div class="arrowDown"></div>

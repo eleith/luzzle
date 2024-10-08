@@ -6,15 +6,16 @@
 		piece: WebPieces
 		active?: boolean
 		size?: 'small' | 'medium' | 'large'
+		lazy?: boolean
 	}
 
-	let { piece, active, size = 'small' }: Props = $props()
+	let { piece, active, size = 'small', lazy }: Props = $props()
 	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
 </script>
 
 <div class="poster" class:posterActive={active} style:--piece-icon-width="{width}px">
 	{#if piece.media}
-		<Picture {piece} {size} loading="lazy" decoding="async" alt="" />
+		<Picture {piece} {size} {lazy} decoding="async" alt="" />
 	{:else}
 		<div>{piece.title}</div>
 	{/if}

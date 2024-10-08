@@ -36,7 +36,7 @@
 		<CaretLeftIcon style="font-size: 4em; color: var(--colors-surface-dim);" />
 	{/if}
 	{#key data.piece.id}
-		<PieceIcon piece={data.piece} size="large" />
+		<PieceIcon piece={data.piece} size="large" lazy={false} />
 	{/key}
 	{#if data.next}
 		<a href="/pieces/{data.next.type}/{data.next.slug}">

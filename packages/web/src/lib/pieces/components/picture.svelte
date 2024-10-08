@@ -6,9 +6,10 @@
 	type Props = {
 		piece: WebPieces
 		size?: 'small' | 'medium' | 'large' | 'xlarge'
+		lazy?: boolean
 	} & HTMLImgAttributes
 
-	let { size = 'small', piece, ...props }: Props = $props()
+	let { size = 'small', piece, lazy = true, ...props }: Props = $props()
 	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
 	const match = piece.media?.match(/([^/\\]+)\.[^/.]+$/)
 
@@ -23,6 +24,7 @@
 		/>
 		<img
 			src="{PUBLIC_ASSETS_CDN_URL}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.jpg"
+			loading={lazy ? 'lazy' : 'eager'}
 			{width}
 			decoding="async"
 			{...props}

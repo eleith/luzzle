@@ -55,7 +55,7 @@
 				<div style="flex: 1;">
 					<div class="icon">
 						{#key activePieceId === piece.id}
-							<PieceIcon {piece} size="small" active={activePieceId === piece.id} />
+							<PieceIcon {piece} size="small" active={activePieceId === piece.id} lazy={false} />
 						{/key}
 					</div>
 				</div>
