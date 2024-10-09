@@ -12,7 +12,7 @@
 	import TreeIcon from 'virtual:icons/ph/tree'
 	import themes, { type Theme } from '$lib/ui/styles/themes'
 	import { page } from '$app/stores'
-	import { fly } from 'svelte/transition'
+	import { fly, fade } from 'svelte/transition'
 	import { createDialog, melt } from '@melt-ui/svelte'
 	import type { Snippet } from 'svelte'
 	import { PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_TITLE } from '$env/static/public'
@@ -30,11 +30,9 @@
 	let currentTheme = $state<Theme | null>(initialTheme || null)
 
 	const {
-		elements: { content, trigger, portalled },
+		elements: { content, trigger, portalled, overlay },
 		states: { open }
-	} = createDialog({
-		forceVisible: true
-	})
+	} = createDialog({})
 
 	function clickSearch(event: MouseEvent) {
 		event.preventDefault()
@@ -82,7 +80,12 @@
 
 {#if $open}
 	<div use:melt={$portalled}>
-		<div class="search" transition:fly={{ y: -500, opacity: 100 }} use:melt={$content}>
+		<div use:melt={$overlay} class="searchOverlay" transition:fade={{ duration: 50 }}></div>
+		<div
+			class="search"
+			transition:fly={{ y: -500, opacity: 100, duration: 100 }}
+			use:melt={$content}
+		>
 			<div>
 				<form method="GET" action="/search" style="display:flex;gap:10px;">
 					<input
@@ -188,5 +191,12 @@
 		background: var(--colors-surface-container-high);
 		height: 150px;
 		clip-path: polygon(0 0, 100% 0, 100% 80%, 0 15%);
+	}
+
+	.searchOverlay {
+		position: fixed;
+		inset: 0;
+		opacity: 0.5;
+		background: var(--colors-surface-inverse);
 	}
 </style>
