@@ -117,7 +117,8 @@ steps:
       dsn:
         from_secret: woodpecker_email_dsn
       from:
-        from_secret: smtp_notification_from
+        address:
+          from_secret: smtp_notification_from
       recipients:
         from_secret: smtp_notification_recipient
     when:
