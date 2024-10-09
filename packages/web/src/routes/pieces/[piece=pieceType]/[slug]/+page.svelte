@@ -54,7 +54,7 @@
 
 	{#if data.piece.date_consumed}
 		<div style="font-size:var(--font-sizes-small);">
-			date: {new Date(data.piece.date_consumed).toLocaleDateString()}
+			{new Date(data.piece.date_consumed).toLocaleDateString()}
 		</div>
 	{/if}
 
@@ -83,6 +83,7 @@
 	{/if}
 
 	{#if data.tags.length}
+		<h3 style="margin-top: var(--space-5);">tags</h3>
 		<div style="margin-top: var(--space-5);font-size:var(--font-sizes-small);">
 			{#each data.tags as tag, i}
 				<a href="/tags/{tag.slug}">{tag.name}</a>
