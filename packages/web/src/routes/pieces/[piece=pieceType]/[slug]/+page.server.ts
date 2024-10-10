@@ -40,23 +40,43 @@ export const load: PageServerLoad = async (page) => {
 		.orderBy('date_consumed', 'desc')
 		.orderBy('slug', 'asc')
 		.where(({ and, or, eb }) => {
-			return or([
-				eb('date_consumed', '<', piece.date_consumed),
-				and([eb('date_consumed', '=', piece.date_consumed), eb('slug', '>', piece.slug)])
-			])
+			if (piece.date_consumed === null) {
+				return and([eb('date_consumed', 'is', null), eb('slug', '>', piece.slug)])
+			} else {
+				return or([
+					eb('date_consumed', '<', piece.date_consumed),
+					eb('date_consumed', 'is', null),
+					and([eb('date_consumed', '=', piece.date_consumed), eb('slug', '>', piece.slug)])
+				])
+			}
 		})
 		.executeTakeFirst()
+
+	console.log('after', after, piece)
 
 	const before = await db
 		.selectFrom('web_pieces')
 		.select('slug')
 		.orderBy('date_consumed', 'asc')
 		.orderBy('slug', 'desc')
-		.where(({ and, or, eb }) => {
-			return or([
-				eb('date_consumed', '>', piece.date_consumed),
-				and([eb('date_consumed', '=', piece.date_consumed), eb('slug', '<', piece.slug)])
-			])
+		.where(({ and, or, eb, selectFrom }) => {
+			if (piece.date_consumed === null) {
+				return or([
+					and([eb('date_consumed', 'is', null), eb('slug', '<', piece.slug)]),
+					eb(
+						'date_consumed',
+						'=',
+						selectFrom('web_pieces')
+							.select(({ fn }) => [fn.min('date_consumed').as('date_consumed')])
+							.limit(1)
+					)
+				])
+			} else {
+				return or([
+					eb('date_consumed', '>', piece.date_consumed),
+					and([eb('date_consumed', '=', piece.date_consumed), eb('slug', '<', piece.slug)])
+				])
+			}
 		})
 		.executeTakeFirst()
 

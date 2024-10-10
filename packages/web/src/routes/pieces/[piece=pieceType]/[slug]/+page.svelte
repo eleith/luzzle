@@ -43,7 +43,7 @@
 			<CaretRightIcon style="font-size: 4em;" />
 		</a>
 	{:else}
-		<CaretLeftIcon style="font-size: 4em; color: var(--colors-surface-dim);" />
+		<CaretRightIcon style="font-size: 4em; color: var(--colors-surface-dim);" />
 	{/if}
 </section>
 
