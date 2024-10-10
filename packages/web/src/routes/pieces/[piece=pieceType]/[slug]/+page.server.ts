@@ -71,6 +71,7 @@ export const load: PageServerLoad = async (page) => {
 						'=',
 						selectFrom('web_pieces')
 							.select(({ fn }) => [fn.min('date_consumed').as('date_consumed')])
+							.where('type', '=', type)
 							.limit(1)
 					)
 				])
