@@ -9,13 +9,21 @@
 	let activePieceId = $state<string | null>(null)
 	let nextPage = $state<number | null>(data.nextPage)
 
-	async function getPage(page: number) {
-		const res = await fetch(`/api/pieces`, {
-			method: 'POST',
+	async function getNextPage(page: number) {
+		const params = new URLSearchParams()
+
+		if (page) {
+			params.append('page', page.toString())
+		}
+
+		if ($pageStore.params.piece) {
+			params.append('type', $pageStore.params.piece)
+		}
+
+		const res = await fetch(`/api/pieces?${params}`, {
 			headers: {
 				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ page, type: $pageStore.params.piece })
+			}
 		})
 
 		if (res.ok) {
@@ -83,7 +91,7 @@
 {#if nextPage}
 	<section class="action">
 		{#if nextPage}
-			<button onclick={() => getPage(nextPage as number)}>more</button>
+			<button onclick={() => getNextPage(nextPage as number)}>more</button>
 		{/if}
 	</section>
 {/if}

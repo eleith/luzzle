@@ -4,16 +4,18 @@ import type { PageServerLoad } from './$types'
 export const load: PageServerLoad = async () => {
 	const db = getDatabase()
 
-	const pieces = await db
+	const types = await db.selectFrom('web_pieces').select('type').groupBy('type').execute()
+
+	const latest = await db
 		.selectFrom('web_pieces')
 		.selectAll()
-		.select(db.fn.max('date_consumed').as('date_consumed'))
 		.orderBy('date_consumed', 'desc')
-		.groupBy('type')
+		.limit(4)
 		.execute()
 
 	return {
-		pieces
+		types,
+		latest
 	}
 }
 

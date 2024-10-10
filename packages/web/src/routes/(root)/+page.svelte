@@ -1,18 +1,45 @@
 <script lang="ts">
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
+	import type { WebPieces } from '$lib/pieces/types.js'
+	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
+	import DiceFiveIcon from 'virtual:icons/ph/dice-five'
+	import DiceTwoIcon from 'virtual:icons/ph/dice-two'
 
 	let { data } = $props()
 	let activePieceId = $state<string | null>(null)
+	let random: WebPieces[] = $state([])
 
-	const pieces = data.pieces
+	const { types, latest } = data
+
+	async function getRandom() {
+		const params = new URLSearchParams()
+		params.append('order', 'random')
+		params.append('take', '2')
+
+		const res = await fetch(`/api/pieces?${params}`, {
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		})
+
+		if (res.ok) {
+			const json = (await res.json()) as { pieces: WebPieces[] }
+			random = json.pieces
+		}
+	}
+
+	$effect.pre(() => {
+		getRandom()
+	})
 </script>
 
 <section class="intro">
 	<h1>hello</h1>
+
 	<p>
 		this site allows me to recall and share
-		{#each pieces as piece, i}
-			{#if i !== pieces.length - 1}
+		{#each types as piece, i}
+			{#if i !== types.length - 1}
 				<a href="/pieces/{piece.type}">{piece.type}</a>,&nbsp;
 			{:else}
 				<a href="/pieces/{piece.type}">{piece.type}</a>
@@ -20,11 +47,11 @@
 		{/each}
 		other <a href="/pieces">things</a>
 	</p>
-</section>
 
-<section>
-	{#each pieces as piece}
-		<section class="piece">
+	<h2>latest</h2>
+
+	<section class="pieces">
+		{#each latest as piece}
 			<a
 				href="/pieces/{piece.type}/{piece.slug}"
 				onmouseenter={() => {
@@ -52,19 +79,85 @@
 					}
 				}}
 			>
-				<div style="flex: 1;">
-					<div class="icon">
-						{#key activePieceId === piece.id}
-							<PieceIcon {piece} size="small" active={activePieceId === piece.id} lazy={false} />
-						{/key}
+				<div style="display: flex; align-items: flex-start;">
+					<div style="flex: 1 1 0%;">
+						<div style="display: flex;">
+							<div style="align-self: baseline;">
+								{#key activePieceId === piece.id}
+									<PieceIcon {piece} size="small" active={activePieceId === piece.id} />
+								{/key}
+							</div>
+							<div style="align-self: center;">
+								<CaretRightIcon style="margin: auto; font-size: 2em; max-width:unset;" />
+							</div>
+						</div>
+					</div>
+					<div style="flex: 1 1 0%; align-self: center; max-height: 160px; overflow: hidden;">
+						{piece.title}
 					</div>
 				</div>
-				<div style="flex: 1; align-self: center; padding-top: 45px;">
-					{piece.title}
-				</div>
 			</a>
+		{/each}
+	</section>
+
+	<h2>random</h2>
+
+	{#if random.length === 0}
+		<section style="display: flex; justify-content: center; padding: var(--space-10);">
+			<DiceFiveIcon style="font-size: 2em; margin: auto;" />
+			<DiceTwoIcon style="font-size: 2em; margin: auto;" />
 		</section>
-	{/each}
+	{:else}
+		<section class="pieces">
+			{#each random as piece}
+				<a
+					href="/pieces/{piece.type}/{piece.slug}"
+					onmouseenter={() => {
+						activePieceId = piece.id
+					}}
+					onmouseleave={() => {
+						if (activePieceId) {
+							activePieceId = null
+						}
+					}}
+					onfocus={() => {
+						activePieceId = piece.id
+					}}
+					onblur={() => {
+						if (activePieceId) {
+							activePieceId = null
+						}
+					}}
+					ontouchstart={() => {
+						activePieceId = piece.id
+					}}
+					ontouchend={() => {
+						if (activePieceId) {
+							activePieceId = null
+						}
+					}}
+				>
+					<div style="display: flex; align-items: flex-start;">
+						<div style="flex: 1 1 0%;">
+							<div style="display: flex;">
+								<div style="align-self: baseline;">
+									{#key activePieceId === piece.id}
+										<PieceIcon {piece} size="small" active={activePieceId === piece.id} />
+									{/key}
+								</div>
+								<div style="align-self: center;">
+									<CaretRightIcon style="margin: auto; font-size: 2em; max-width:unset;" />
+								</div>
+							</div>
+						</div>
+						<div style="flex: 1 1 0%; align-self: center; max-height: 160px; overflow: hidden;">
+							{piece.title}
+						</div>
+					</div>
+				</a>
+			{/each}
+		</section>
+	{/if}
 </section>
 
 <style>
@@ -74,52 +167,35 @@
 		margin-left: auto;
 		margin-right: auto;
 		width: 66.666%;
-	}
-
-	section.piece {
-		overflow: hidden;
-		height: 200px;
-	}
-
-	section.piece:nth-child(even) > a {
-		flex-direction: row-reverse;
-		text-align: right;
-	}
-
-	section.piece div.icon {
-		position: relative;
-		bottom: -80px;
 		display: flex;
-		justify-content: right;
+		flex-direction: column;
+		gap: var(--space-4);
 	}
 
-	section.piece:nth-child(even) div.icon {
-		justify-content: left;
-	}
-
-	section.piece > a {
-		margin-left: auto;
-		margin-right: auto;
-		display: flex;
-		justify-content: flex-start;
-		padding: var(--space-8);
-		padding-top: 0px;
+	section.pieces {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, 280px);
+		gap: 20px;
 		width: 100%;
-		box-shadow: inset 0 11px 8px -10px var(--colors-shadow);
-		width: 66.666%;
-		display: flex;
-		gap: var(--space-10);
-		align-items: baseline;
-		color: var(--colors-on-surface);
+		margin: auto;
+		align-items: start;
+		justify-content: center;
 	}
 
-	section.piece > a:hover {
+	section.pieces > a {
+		color: var(--colors-on-surface);
+		cursor: pointer;
+		text-decoration: none;
+		min-height: 200px;
+	}
+
+	section.pieces > a:hover {
+		text-decoration: underline;
 		color: var(--colors-primary);
 	}
 
 	@media screen and (max-width: 768px) {
-		section.intro,
-		section.piece > a {
+		section.intro {
 			width: 50%;
 			min-width: 550px;
 			padding-left: 20px;
