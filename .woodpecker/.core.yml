@@ -40,20 +40,19 @@ steps:
         path:
           include: [".woodpecker/.core.yml", "packages/core/**"]
   notify:
-    image: deblan/woodpecker-email:1.0.1-wp
+    image: deblan/woodpecker-email:2.0.4
     settings:
+      dsn:
+        from_secret: woodpecker_email_dsn
       from:
-        from_secret: smtp_notification_from
-      host:
-        from_secret: smtp_notification_host
-      password:
-        from_secret: smtp_notification_password
-      username:
-        from_secret: smtp_notification_username
+        address:
+          from_secret: woodpecker_email_from_address
+        name:
+          from_secret: woodpecker_email_from_name
       recipients:
-        from_secret: smtp_notification_recipient
+        from_secret: woodpecker_email_recipient
     when:
-      - event: [push]
+      - event: [push, manual]
         status: [failure, success]
         branch: [main]
         path:

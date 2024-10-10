@@ -118,9 +118,11 @@ steps:
         from_secret: woodpecker_email_dsn
       from:
         address:
-          from_secret: smtp_notification_from
+          from_secret: woodpecker_email_from_address
+        name:
+          from_secret: woodpecker_email_from_name
       recipients:
-        from_secret: smtp_notification_recipient
+        from_secret: woodpecker_email_recipient
     when:
       - event: [push, manual]
         status: [failure, success]
