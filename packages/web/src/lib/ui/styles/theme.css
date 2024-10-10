@@ -277,13 +277,19 @@ body {
 	font-size: calc(var(--font-sizes-root) * var(--font-sizes-mobile-responsive-factor));
 }
 
-a {
-	color: var(--colors-primary);
-	text-decoration: none;
+h1 {
+	font-size: calc(var(--font-sizes-xxl) * var(--font-sizes-mobile-responsive-factor));
+	font-weight: var(--font-weights-bold);
 }
 
-a:hover {
-	text-decoration: underline;
+h2 {
+	font-size: calc(var(--font-sizes-xl) * var(--font-sizes-mobile-responsive-factor));
+	font-weight: var(--font-weights-bold);
+}
+
+h3 {
+	font-size: calc(var(--font-sizes-large) * var(--font-sizes-mobile-responsive-factor));
+	font-weight: var(--font-weights-semibold);
 }
 
 @media screen and (min-width: 768px) {
@@ -291,4 +297,25 @@ a:hover {
 	body {
 		font-size: var(--font-sizes-root);
 	}
+
+	h1 {
+		font-size: var(--font-sizes-xxl);
+	}
+
+	h2 {
+		font-size: var(--font-sizes-xl);
+	}
+
+	h3 {
+		font-size: var(--font-sizes-large);
+	}
+}
+
+a {
+	color: var(--colors-primary);
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
 }

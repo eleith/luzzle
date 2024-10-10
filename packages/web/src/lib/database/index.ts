@@ -1,5 +1,5 @@
 import { PRIVATE_DATABASE_URL } from '$env/static/private'
-import { getDatabaseClient } from '@luzzle/core'
+import { getDatabaseClient, sql } from '@luzzle/core'
 import type { WebPieces } from '$lib/pieces/types'
 
 let db: ReturnType<typeof initalizeLuzzleDatabase>
@@ -11,12 +11,14 @@ function initalizeLuzzleDatabase() {
 	}>()
 }
 
-export async function initializeDatabase() {
+async function initializeDatabase() {
 	if (!db) {
 		db = initalizeLuzzleDatabase()
 	}
 }
 
-export function getDatabase() {
+function getDatabase() {
 	return db
 }
+
+export { sql, getDatabase, initializeDatabase }
