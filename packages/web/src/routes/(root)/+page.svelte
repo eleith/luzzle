@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_TITLE } from '$env/static/public'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import type { WebPieces } from '$lib/pieces/types.js'
 	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
@@ -32,6 +33,20 @@
 		getRandom()
 	})
 </script>
+
+<svelte:head>
+	<title>{PUBLIC_SITE_TITLE}</title>
+	<meta name="description" content={PUBLIC_SITE_DESCRIPTION} />
+	<meta property="og:title" content={PUBLIC_SITE_TITLE} />
+	<meta property="og:description" content={PUBLIC_SITE_DESCRIPTION} />
+	<meta property="og:image" content="/images/opengraph.jpg" />
+	<meta property="og:type" content="article" />
+	<!--
+  <meta property="og:site_name" content="" />
+  <meta property="og:url" content="{window.location.href}" />
+  -->
+	<meta property="og:locale" content="en_US" />
+</svelte:head>
 
 <section class="intro">
 	<h1>hello</h1>

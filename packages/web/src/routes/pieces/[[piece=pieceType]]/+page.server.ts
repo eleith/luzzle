@@ -14,6 +14,7 @@ export const load: PageServerLoad = async (page) => {
 
 	const pieces = await piecesQuery
 		.orderBy('date_consumed', 'desc')
+		.orderBy('date_added', 'desc')
 		.limit(TAKE_DEFAULT + 1)
 		.execute()
 
@@ -23,8 +24,7 @@ export const load: PageServerLoad = async (page) => {
 
 	return {
 		pieces,
-		nextPage: pieces.length === TAKE_DEFAULT ? 2 : null,
-		prevPage: null
+		nextPage: pieces.length === TAKE_DEFAULT ? 2 : null
 	}
 }
 

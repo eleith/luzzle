@@ -39,30 +39,33 @@ export const load: PageServerLoad = async (page) => {
 		.select('slug')
 		.orderBy('date_consumed', 'desc')
 		.orderBy('slug', 'asc')
+		.where('type', '=', type)
 		.where(({ and, or, eb }) => {
 			if (piece.date_consumed === null) {
-				return and([eb('date_consumed', 'is', null), eb('slug', '>', piece.slug)])
+				return and([eb('date_consumed', 'is', null), eb('date_added', '>', piece.date_added)])
 			} else {
 				return or([
 					eb('date_consumed', '<', piece.date_consumed),
 					eb('date_consumed', 'is', null),
-					and([eb('date_consumed', '=', piece.date_consumed), eb('slug', '>', piece.slug)])
+					and([
+						eb('date_consumed', '=', piece.date_consumed),
+						eb('date_added', '>', piece.date_added)
+					])
 				])
 			}
 		})
 		.executeTakeFirst()
-
-	console.log('after', after, piece)
 
 	const before = await db
 		.selectFrom('web_pieces')
 		.select('slug')
 		.orderBy('date_consumed', 'asc')
 		.orderBy('slug', 'desc')
+		.where('type', '=', type)
 		.where(({ and, or, eb, selectFrom }) => {
 			if (piece.date_consumed === null) {
 				return or([
-					and([eb('date_consumed', 'is', null), eb('slug', '<', piece.slug)]),
+					and([eb('date_consumed', 'is', null), eb('date_added', '<', piece.date_added)]),
 					eb(
 						'date_consumed',
 						'=',
@@ -74,7 +77,10 @@ export const load: PageServerLoad = async (page) => {
 			} else {
 				return or([
 					eb('date_consumed', '>', piece.date_consumed),
-					and([eb('date_consumed', '=', piece.date_consumed), eb('slug', '<', piece.slug)])
+					and([
+						eb('date_consumed', '=', piece.date_consumed),
+						eb('date_added', '<', piece.date_added)
+					])
 				])
 			}
 		})
