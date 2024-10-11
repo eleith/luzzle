@@ -62,7 +62,7 @@
 		<h2 style="margin-top: var(--space-5);">notes</h2>
 		<div>
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-			{@html marked(data.piece.note)}
+			{@html marked(data.piece.note, { breaks: true })}
 		</div>
 	{/if}
 
@@ -76,9 +76,8 @@
 	{#if data.piece.summary}
 		<h3 style="margin-top: var(--space-5);">summary</h3>
 		<div>
-			{#each data.piece.summary.split('\n') as paragraph}
-				<p>{paragraph}</p>
-			{/each}
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+			{@html marked(data.piece.summary, { breaks: true })}
 		</div>
 	{/if}
 
