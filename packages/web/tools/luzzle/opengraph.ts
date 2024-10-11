@@ -4,7 +4,6 @@ import path from 'path'
 import { type WebPieces } from '../../src/lib/pieces/types'
 import { getLastRunFor, setLastRunFor } from './lastRun'
 import { mkdir, readFile, stat, writeFile } from 'fs/promises'
-//import { PRIVATE_LUZZLE_IMAGES_DIR } from '$env/static/private'
 import dotenv from 'dotenv'
 
 dotenv.config({ path: '../../.env.local' })
