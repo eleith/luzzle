@@ -13,7 +13,7 @@
 	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
 </script>
 
-<div class:cartridgeActive={active} style:--piece-icon-width="{width}px">
+<div class="cartridge" class:cartridgeActive={active} style:--piece-icon-width="{width}px">
 	<div class="cartridgeTop"></div>
 	<div class="cartridgeHeader">
 		<div class="cartridgeHeaderOverlay">
@@ -39,6 +39,10 @@
 <style>
 	.cartridgeActive {
 		--piece-icon-color: var(--colors-primary);
+	}
+
+	.cartridge {
+		box-shadow: -8px 8px 8px var(--colors-shadow);
 	}
 
 	.cartridgeTop {

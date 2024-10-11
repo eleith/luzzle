@@ -9,7 +9,7 @@
 		lazy?: boolean
 	}
 
-	let { piece, active, size = 'small', lazy = true }: Props = $props()
+	let { piece, active, size = 'small', lazy }: Props = $props()
 	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
 </script>
 
@@ -56,15 +56,7 @@
 		height: calc(var(--piece-icon-width, 400px) * 1.5);
 		border-top-right-radius: var(--piece-icon-border-radius, 7px);
 		border-bottom-right-radius: var(--piece-icon-border-radius, 7px);
-		box-shadow: -11px 11px 15px black;
-	}
-
-	:global(html[data-theme='light']) .articleShadow {
-		box-shadow: -11px 11px 15px rgba(0, 0, 0, 0.35);
-	}
-
-	:global(html[data-theme='dark']) .articleShadow {
-		box-shadow: -11px 11px 15px black;
+		box-shadow: -8px 8px 8px var(--colors-shadow);
 	}
 
 	.articleImage {
@@ -91,19 +83,6 @@
 		}
 	}
 
-	/*
-	.articleImageBackground {
-		position: absolute;
-		top: 0px;
-		left: 0px;
-		right: 0px;
-		bottom: 0px;
-		filter: blur(2px);
-		opacity: 0.3;
-		transform: scale(1.1);
-	}
-  */
-
 	.articleImage > :global(picture > img) {
 		position: relative;
 		height: calc(var(--piece-icon-width, 400px) * 1.5 / 4);
@@ -125,6 +104,7 @@
 
 	.articleContainer {
 		height: calc(var(--piece-icon-width, 400px) * 1.5);
+		width: var(--piece-icon-width, 400px);
 		overflow: hidden;
 		background-color: var(--piece-icon-color, white);
 		color: var(--piece-icon-text-color, black);
