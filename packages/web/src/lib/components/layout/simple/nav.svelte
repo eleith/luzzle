@@ -42,6 +42,10 @@
 		input.focus()
 	}
 
+	function submitSearch() {
+		$open = false
+	}
+
 	function setTheme(theme: Theme) {
 		const oneWeek = 7 * 24 * 60 * 60
 
@@ -83,11 +87,11 @@
 		<div use:melt={$overlay} class="searchOverlay" transition:fade={{ duration: 50 }}></div>
 		<div
 			class="search"
-			transition:fly={{ y: -500, opacity: 100, duration: 100 }}
+			transition:fly={{ y: -500, opacity: 100, duration: 500 }}
 			use:melt={$content}
 		>
 			<div>
-				<form method="GET" action="/search" style="display:flex;gap:10px;">
+				<form method="GET" action="/search" style="display:flex;gap:10px;" onsubmit={submitSearch}>
 					<input
 						type="search"
 						placeholder="the electric state ..."
