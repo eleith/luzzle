@@ -80,6 +80,7 @@ export const GET: RequestHandler = async ({ request }) => {
 		const pieces = await piecesQuery
 			.offset(takeNumber * (pageNumber - 1))
 			.orderBy('date_consumed', 'desc')
+			.orderBy('date_added', 'desc')
 			.limit(takeNumber + 1)
 			.execute()
 

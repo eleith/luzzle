@@ -38,49 +38,44 @@ export const load: PageServerLoad = async (page) => {
 		.selectFrom('web_pieces')
 		.select('slug')
 		.orderBy('date_consumed', 'desc')
-		.orderBy('slug', 'asc')
+		.orderBy('date_added', 'desc')
 		.where('type', '=', type)
-		.where(({ and, or, eb }) => {
+		.where('id', '!=', piece.id)
+		.where(({ eb, or, and }) => {
 			if (piece.date_consumed === null) {
-				return and([eb('date_consumed', 'is', null), eb('date_added', '>', piece.date_added)])
+				return and([eb('date_consumed', 'is', null), eb('date_added', '<', piece.date_added)])
 			} else {
 				return or([
-					eb('date_consumed', '<', piece.date_consumed),
-					eb('date_consumed', 'is', null),
+					and([eb('date_consumed', 'is not', null), eb('date_consumed', '<', piece.date_consumed)]),
 					and([
 						eb('date_consumed', '=', piece.date_consumed),
-						eb('date_added', '>', piece.date_added)
-					])
+						eb('date_added', '<', piece.date_added)
+					]),
+					and([eb('date_consumed', 'is', null)])
 				])
 			}
 		})
+		.limit(1)
 		.executeTakeFirst()
 
 	const before = await db
 		.selectFrom('web_pieces')
 		.select('slug')
 		.orderBy('date_consumed', 'asc')
-		.orderBy('slug', 'desc')
+		.orderBy('date_added', 'asc')
 		.where('type', '=', type)
-		.where(({ and, or, eb, selectFrom }) => {
+		.where(({ eb, or, and }) => {
 			if (piece.date_consumed === null) {
 				return or([
-					and([eb('date_consumed', 'is', null), eb('date_added', '<', piece.date_added)]),
-					eb(
-						'date_consumed',
-						'=',
-						selectFrom('web_pieces')
-							.select(({ fn }) => [fn.min('date_consumed').as('date_consumed')])
-							.where('type', '=', type)
-							.limit(1)
-					)
+					and([eb('date_consumed', 'is', null), eb('date_added', '>', piece.date_added)]),
+					and([eb('date_consumed', 'is not', null)])
 				])
 			} else {
 				return or([
-					eb('date_consumed', '>', piece.date_consumed),
+					and([eb('date_consumed', 'is not', null), eb('date_consumed', '>', piece.date_consumed)]),
 					and([
 						eb('date_consumed', '=', piece.date_consumed),
-						eb('date_added', '<', piece.date_added)
+						eb('date_added', '>', piece.date_added)
 					])
 				])
 			}
