@@ -39,3 +39,9 @@
 	background: var(--colors-surface-inverse);
 	color: var(--colors-on-surface-inverse);
 }
+
+p {
+	margin: 0;
+	margin-top: var(--space-3);
+	margin-bottom: var(--space-3);
+}
