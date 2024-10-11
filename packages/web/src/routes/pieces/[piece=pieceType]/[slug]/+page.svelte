@@ -102,7 +102,7 @@
 		gap: var(--space-5);
 		justify-content: space-between;
 		line-height: 1.5;
-		width: 66%;
+		width: 85%;
 		padding-right: var(--space-2-5);
 		padding-left: var(--space-2-5);
 	}

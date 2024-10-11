@@ -147,6 +147,7 @@
 		transform-style: flat;
 		transition: var(--piece-icon-transition, transform 0.75s ease);
 		transform: var(--piece-icon-transform-start, 'none');
+		box-shadow: -8px 8px 8px var(--colors-shadow);
 	}
 
 	.bookTransformed {

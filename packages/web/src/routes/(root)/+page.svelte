@@ -60,7 +60,7 @@
 				<a href="/pieces/{piece.type}">{piece.type}</a>
 			{/if}
 		{/each}
-		other <a href="/pieces">things</a>
+		other <a href="/pieces">pieces</a>
 	</p>
 
 	<h2>latest</h2>
