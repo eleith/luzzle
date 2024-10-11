@@ -87,6 +87,7 @@ export const load: PageServerLoad = async (page) => {
 				.selectFrom('web_pieces')
 				.selectAll()
 				.where('slug', '=', before.slug)
+				.where('type', '=', type)
 				.executeTakeFirst()
 		: null
 
@@ -95,6 +96,7 @@ export const load: PageServerLoad = async (page) => {
 				.selectFrom('web_pieces')
 				.selectAll()
 				.where('slug', '=', after.slug)
+				.where('type', '=', type)
 				.executeTakeFirst()
 		: null
 
