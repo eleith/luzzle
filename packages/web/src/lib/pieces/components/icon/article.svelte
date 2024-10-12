@@ -35,7 +35,6 @@
 			{/each}
 		</div>
 	</div>
-	<div class="articleShadow"></div>
 </div>
 
 <style>
@@ -46,17 +45,6 @@
 
 	.articlePageActive {
 		--piece-icon-color: var(--colors-primary);
-	}
-
-	.articleShadow {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: var(--piece-icon-width, 400px);
-		height: calc(var(--piece-icon-width, 400px) * 1.5);
-		border-top-right-radius: var(--piece-icon-border-radius, 7px);
-		border-bottom-right-radius: var(--piece-icon-border-radius, 7px);
-		box-shadow: -8px 8px 8px var(--colors-shadow);
 	}
 
 	.articleImage {
@@ -110,6 +98,7 @@
 		color: var(--piece-icon-text-color, black);
 		border-radius: var(--piece-icon-border-radius, 7px);
 		font-size: var(--piece-icon-font-size, 10px);
+		box-shadow: -8px 8px 8px var(--colors-shadow);
 	}
 
 	.articleBlock {
