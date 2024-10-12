@@ -14,13 +14,11 @@
 </script>
 
 <div class="poster" class:posterActive={active} style:--piece-icon-width="{width}px">
-	<div style="width: var(--piece-icon-width, 400px);">
-		{#if piece.media}
-			<Picture {piece} {size} {lazy} decoding="async" alt="" />
-		{:else}
-			<div>{piece.title}</div>
-		{/if}
-	</div>
+	{#if piece.media}
+		<Picture {piece} {size} {lazy} decoding="async" alt="" />
+	{:else}
+		<div>{piece.title}</div>
+	{/if}
 </div>
 
 <style>
@@ -29,19 +27,20 @@
 	}
 
 	.poster {
-		width: var(--piece-icon-width, 400px);
-		height: calc(var(--piece-icon-width, 400px) * 3 / 2);
 		box-shadow: -8px 8px 8px var(--colors-shadow);
 		border-radius: var(--piece-icon-border-radius, 5px);
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		text-align: center;
 		background-color: var(--piece-icon-color, white);
+		padding: var(--space-2);
 	}
 
-	.poster > :global(picture > img) {
-		height: calc(var(--piece-icon-width, 400px) * 3 / 2 * 0.92);
-		width: calc(var(--piece-icon-width, 400px) * 0.92);
+	.poster > :global(picture) {
+		width: var(--piece-icon-width, 400px);
+		height: calc(var(--piece-icon-width, 400px) * 3 / 2);
+		max-width: var(--piece-icon-width, 400px);
 		object-fit: cover;
 		object-position: top;
 	}

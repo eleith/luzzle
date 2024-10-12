@@ -38,11 +38,15 @@
 
 <style>
 	.cartridgeActive {
-		--piece-icon-color: var(--colors-primary);
+		--piece-icon-color-light: #d4bf79;
+		--piece-icon-color: #d4af37;
+		--piece-icon-color-dark: #daa520;
+		--piece-icon-color-darker: #a28834;
 	}
 
 	.cartridge {
 		box-shadow: -8px 8px 8px var(--colors-shadow);
+		border-radius: 0 0 var(--piece-icon-border-radius, 7px) var(--piece-icon-border-radius, 7px);
 	}
 
 	.cartridgeTop {
@@ -50,7 +54,7 @@
 		height: calc(var(--piece-icon-width, 300px) * 1.25 * 0.02);
 		background: var(--piece-icon-color, #8c8c8c);
 		border-radius: var(--piece-icon-border-radius, 7px) var(--piece-icon-border-radius, 7px) 0 0;
-		box-shadow: 0px -2px 0px #aaa;
+		box-shadow: 0px -2px 0px var(--piece-icon-color-light, #aaa);
 	}
 
 	.cartridgeBody {
@@ -60,7 +64,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-end;
-		background-image: linear-gradient(transparent, #666);
+		background-image: linear-gradient(transparent, var(--piece-icon-color-dark, #666));
 	}
 
 	.cartridgeLabelContainer {
@@ -72,7 +76,7 @@
 	.cartridgeEnd {
 		width: 5%;
 		height: calc(var(--piece-icon-width, 300px) * 1.25 * 0.35);
-		background: #5d5d5d;
+		background: var(--piece-icon-color-darker, #5d5d5d);
 		border-top: 3px solid #444;
 	}
 
@@ -87,19 +91,22 @@
 	.cartridgeGap {
 		width: calc(var(--piece-icon-width, 300px) * 0.74);
 		height: calc(var(--piece-icon-width, 300px) * 0.74);
-		background: #666;
-		background-image: linear-gradient(#666, #555);
+		background: var(--piece-icon-color-darker, #666);
+		background-image: linear-gradient(
+			var(--piece-icon-color-darker, #666),
+			var(--piece-icon-color-dark, #555)
+		);
 		border-radius: var(--piece-icon-border-radius, 7px);
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		border-top: 2px solid #444;
-		border-bottom: 2px solid #aaa;
+		border-top: 2px solid var(--piece-icon-color-light, #444);
+		border-bottom: 2px solid var(--piece-icon-color-light, #aaa);
 		overflow: hidden;
 	}
 
 	.arrowDown {
-		border-top: 1px solid #555;
+		border-top: 1px solid var(--piece-icon-color-darker, #555);
 		border-left: 1px solid transparent;
 		border-right: 1px solid transparent;
 		border-width: calc(var(--piece-icon-width, 300px) * 0.1);
