@@ -1,0 +1,89 @@
+{
+  "title": "films",
+  "type": "object",
+  "properties": {
+    "title": {
+      "description": "The title of the film",
+      "type": "string",
+      "examples": ["film title"]
+    },
+    "url": {
+      "description": "The URL to the film",
+      "type": "string",
+      "pattern": "^(http|https)://",
+      "examples": ["http://www.example.com"]
+    },
+   "homepage": {
+      "description": "The homepage of the film itself",
+      "type": "string",
+      "pattern": "^(http|https)://",
+      "examples": ["http://www.example.com"]
+    },
+    "type": {
+      "description": "the type of film",
+      "type": "string",
+      "enum": ["movie", "tv", "video"],
+      "examples": ["movie"]
+    },
+    "people": {
+      "description": "A comma separated list of people involved in the film",
+      "type": "string",
+      "examples": ["person1, person2"]
+    },
+    "subtitle": {
+      "description": "The subtitle of the film",
+      "type": "string",
+      "examples": ["film subtitle"]
+    },
+    "summary": {
+      "description": "A summary of the film",
+      "type": "string",
+      "examples": ["film summary"]
+    },
+    "keywords": {
+      "description": "A comma separated list of keywords",
+      "type": "string",
+      "examples": ["keyword1, keyword2"]
+    },
+    "poster": {
+      "description": "The path to main poster of the film",
+      "type": "string",
+      "format": "asset",
+      "examples": [".assets/path/to/poster.jpg"],
+      "nullable": true
+    },
+    "backdrop": {
+      "description": "The path to a backdrop of the film",
+      "type": "string",
+      "format": "asset",
+      "examples": [".assets/path/to/backdrop.jpg"]
+    },
+    "date_released": {
+      "description": "The date the film was released",
+      "type": "string",
+      "format": "date",
+      "examples": ["2019-01-01"]
+    },
+    "date_viewed": {
+      "description": "The date the film was viewed",
+      "type": "string",
+      "format": "date",
+      "examples": ["2019-01-01"]
+    },
+    "runtime": {
+      "description": "The runtime of the film",
+      "type": "integer",
+      "examples": [120]
+    },
+		"language": {
+			"description": "The language of the film",
+			"type": "string",
+      "examples": ["en"]
+		}
+  },
+  "required": [
+    "title",
+    "type"
+  ],
+  "additionalProperties": true
+}

@@ -1,0 +1,44 @@
+{
+  "title": "texts",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "examples": ["text title"]
+    },
+    "subtitle": {
+      "type": "string",
+      "examples": ["text subtitle"]
+    },
+    "summary": {
+      "type": "string",
+      "examples": ["text summary"]
+    },
+    "keywords": {
+      "type": "string",
+      "examples": ["text keywords"]
+    },
+    "representative_image": {
+      "type": "string",
+      "format": "asset",
+      "examples": [".assets/path/to/image.jpg"]
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "asset",
+        "examples": [".assets/path/to/attachment.pdf"]
+      }
+    },
+    "date_published": {
+      "type": "string",
+      "format": "date",
+      "examples": ["2020-01-01"]
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "additionalProperties": true
+}

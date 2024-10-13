@@ -1,0 +1,103 @@
+{
+  "title": "games",
+  "type": "object",
+  "properties": {
+    "title": {
+      "description": "The title of the game",
+      "type": "string",
+      "examples": ["game title"]
+    },
+    "url": {
+      "description": "The URL of the game",
+      "type": "string",
+      "pattern": "^(http|https)://",
+      "examples": ["https://example.com"]
+    },
+    "type": {
+      "description": "The type of game",
+      "type": "string",
+      "enum": [
+        "video",
+        "board"
+      ],
+      "examples": ["video"]
+    },
+    "publisher": {
+      "description": "The publisher of the game",
+      "type": "string",
+      "examples": ["game publisher"]
+    },
+    "developer": {
+      "description": "The developer of the game",
+      "type": "string",
+      "examples": ["game developer"]
+    },
+    "description": {
+      "description": "A description of the game",
+      "type": "string",
+      "examples": ["game description"]
+    },
+    "keywords": {
+      "description": "A comma separated list of 5 to 20 keywords that reference a wide variety of topics related to this video game like theme, genre, setting, characters, gameplay mechanics, and other keywords that could be used to link to games with similar keywords",
+      "type": "string",
+      "examples": ["keyword1, keyword2, keyword3"]
+    },
+    "representative_image": {
+      "description": "The path to the cover image of the game",
+      "type": "string",
+      "format": "asset",
+      "examples": [".assets/path/to/image.jpg"]
+    },
+    "date_published": {
+      "description": "The date the game was published",
+      "type": "string",
+      "format": "date",
+      "examples": ["2021-01-01"]
+    },
+    "date_played": {
+      "description": "The date the game was played",
+      "type": "string",
+      "format": "date",
+      "examples": ["2021-01-01"]
+    },
+    "play_time": {
+      "description": "number of hours the game was played",
+      "type": "integer",
+      "examples": [1]
+    },
+    "number_of_players": {
+      "description": "The number of simultaneously players the game supports",
+      "type": "integer",
+      "examples": [1]
+    },
+    "played_on": {
+      "description": "The platform the game was played on",
+      "type": "string",
+      "enum": [
+        "xbox 360",
+        "switch",
+        "android",
+        "nes",
+        "snes",
+        "gamecube",
+        "wii",
+        "gameboy",
+        "gameboy advance sp",
+        "ds",
+        "steam",
+        "n64",
+        "pc",
+        "playstation 5",
+        "irl",
+        "web",
+        "stadia"
+      ],
+      "examples": ["switch"]
+    }
+  },
+  "required": [
+    "title",
+    "type"
+  ],
+  "additionalProperties": true
+}
