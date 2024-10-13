@@ -1,0 +1,102 @@
+{
+  "title": "links",
+  "type": "object",
+  "properties": {
+    "title": {
+      "description": "The title of the website or article",
+      "type": "string",
+      "examples": ["article title"]
+    },
+    "url": {
+      "description": "The URL of the website or article",
+      "type": "string",
+      "pattern": "^(http|https)://",
+      "examples": ["https://example.com"]
+    },
+    "is_active": {
+      "description": "Whether the link is active or not",
+      "type": "boolean",
+      "examples": [true]
+    },
+    "is_paywall": {
+      "description": "Whether the link is behind a paywall or not",
+      "type": "boolean",
+      "examples": [false]
+    },
+    "type": {
+      "description": "the type of link, either an article or a bookmark",
+      "type": "string",
+      "enum": ["article", "bookmark"],
+      "examples": ["article"]
+    },
+    "author": {
+      "description": "The author of the article",
+      "type": "string",
+      "examples": ["author name"]
+    },
+    "subtitle": {
+      "description": "The subtitle of the article",
+      "type": "string",
+      "examples": ["subtitle"]
+    },
+    "coauthors": {
+      "description": "a comma separated list of the coauthors of the article",
+      "type": "string",
+      "examples": ["coauthor1, coauthor2"]
+    },
+    "summary": {
+      "description": "A summary of the article",
+      "type": "string",
+      "examples": ["summary of the article"]
+    },
+    "keywords": {
+      "description": "A comma separated list of keywords",
+      "type": "string",
+      "examples": ["keyword1, keyword2"]
+    },
+    "representative_image": {
+      "description": "The path to main image of the article",
+      "type": "string",
+      "format": "asset",
+      "examples": [".assets/path/to/image"],
+      "nullable": true
+    },
+    "archive_url": {
+      "description": "The URL of the internet archive of the article",
+      "type": "string",
+      "pattern": "^(http|https)://",
+      "examples": ["https://example.com"]
+    },
+    "archive_path": {
+      "description": "The path of the offline archive of the article",
+      "type": "string",
+      "format": "asset",
+      "examples": [".assets/path/to/archive"]
+    },
+    "date_published": {
+      "description": "The date the article was published",
+      "type": "string",
+      "format": "date",
+      "examples": ["2020-01-01"]
+    },
+    "date_accessed": {
+      "description": "The date the link was accessed",
+      "type": "string",
+      "format": "date",
+      "examples": ["2020-01-01"]
+    },
+    "word_count": {
+      "description": "The word count of the article",
+      "type": "integer",
+      "examples": [1000]
+    }
+  },
+  "required": [
+    "title",
+    "url",
+    "is_active",
+    "is_paywall",
+    "type"
+  ],
+  "additionalProperties": true
+}

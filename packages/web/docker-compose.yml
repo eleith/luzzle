@@ -1,0 +1,18 @@
+services:
+  luzzle:
+    build:
+      secrets:
+        - npmrc
+      context: .
+    ports:
+      - "3000:3000"
+    #volumes:
+      #- ./luzzle:/app/luzzle
+      #- ./luzzle-images:/app/static/images/pieces
+      #- ./.env.sample:/app/.env.local
+      #- ./data:/app/data
+    command: npm run build:luzzle && npm run build && node --env-file=.env.local build
+
+secrets:
+  npmrc:
+    file: $HOME/.npmrc

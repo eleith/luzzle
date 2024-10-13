@@ -2,115 +2,23 @@ workspace:
   base: /workspace
   path: src
 steps:
-  packages:
-    image: node:20
-    commands:
-      - npm ci -w @luzzle/web -w @luzzle/core
+  build_docker:
+    image: woodpeckerci/plugin-docker-buildx:5.0.0
+    settings:
+      repo: git.eleith.com/eleith/eleith
+      username: eleith
+      dockerfile: packages/web/Dockerfile
+      context: packages/web
+      registry: https://git.eleith.com
+      secrets:
+        from_secret: npm_token
+      auto_tag: true
+      password:
+        from_secret: gitea_docker_registry
     when:
       - event: [push, manual]
-        branch: [main]
-        path:
-          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
-  check:
-    image: node:20
-    commands:
-      - printf '%s\n' "$SVELTEKIT_ENV_LOCAL" > ./packages/web/.env.local
-      - npm run build -w @luzzle/core
-      - npm run check -w @luzzle/web
-      - npm run lint -w @luzzle/web
-    secrets:
-      [
-        sveltekit_env_local
-      ]
-    when:
-      - event: [push, manual]
-        branch: [main]
-        path:
-          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
-  gather:
-    image: rclone/rclone:1.57
-    commands:
-      - mkdir packages/web/luzzle
-      - mkdir packages/web/luzzle-images
-      - mkdir packages/web/data
-      - rclone copy :webdav:documents/eleith/notes-md/personal/records packages/web/luzzle
-      - rclone copy :webdav:tomato/eleith.io/luzzle-images packages/web/luzzle-images
-      - cp packages/web/luzzle/luzzle.sqlite packages/web/data
-    secrets:
-      [
-        sveltekit_env_local,
-        rclone_webdav_url,
-        rclone_webdav_vendor,
-        rclone_webdav_user,
-        rclone_webdav_pass,
-      ]
-    when:
-      - event: [push, manual]
-        branch: [main]
-        path:
-          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
-  build:
-    image: node:20
-    commands:
-      - cd packages/web
-      - npm run build:luzzle
-      - npm run build
-    when:
-      - event: [push, manual]
-        branch: [main]
-        path:
-          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
-  cache:
-    image: rclone/rclone:1.57
-    environment:
-      RCLONE_GCS_STORAGE_CLASS: REGIONAL
-      RCLONE_GCS_BUCKET_POLICY_ONLY: true
-      RCLONE_GCS_LOCATION: us-central-1
-      RCLONE_GCS_SERVICE_ACCOUNT_FILE: /tmp/rclone-service-key.json
-    commands:
-      - echo $${RCLONE_SERVICE_KEY_JSON} > $RCLONE_GCS_SERVICE_ACCOUNT_FILE
-      - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RCLONE_GCS_SERVICE_ACCOUNT_FILE
-      - rclone copy ./packages/web/build/client :gcs:eleith-io-site
-      - rclone copy ./packages/web/luzzle-images :gcs:eleith-io-site/images/pieces
-      - rclone sync ./packages/web/luzzle-images :webdav:tomato/eleith.io/luzzle-images
-      # - rclone sync ./packages/web/build :webdav:tomato/eleith.io/build
-      - rclone sync ./packages/web/data :webdav:tomato/eleith.io/data
-    secrets:
-      [
-        rclone_webdav_url,
-        rclone_webdav_vendor,
-        rclone_webdav_user,
-        rclone_webdav_pass,
-        rclone_service_key_json,
-        rclone_gcs_project_number,
-      ]
-    when:
-      - event: [push, manual]
-        branch: [main]
-        path:
-          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
-  deploy:
-    image: git.eleith.com/eleith/gcs-web-deploy:3.0.0
-    environment:
-      LOG_DIR: gs://eleith-cloud-builds/logs
-      STAGING_DIR: gs://eleith-cloud-builds/eleith-io-site
-      RUN_KEY_FILE: /tmp/secrets/service-account-key.json
-      GCR_IMAGE_URL: gcr.io/eleith-cloud/eleith-io-site
-      GCS_PROJECT: eleith-cloud
-      GCS_REGION: us-central1
-    commands:
-      - mkdir /tmp/secrets
-      - echo $${CLOUD_RUN_SERVICE_KEY_JSON} > $RUN_KEY_FILE
-      - sed -i ':a;N;$!ba;s/\n/\\\n/g' $RUN_KEY_FILE
-      - gcloud auth activate-service-account --key-file $RUN_KEY_FILE
-      - gcloud builds submit --gcs-source-staging-dir $STAGING_DIR --gcs-log-dir $LOG_DIR --tag $GCR_IMAGE_URL --project=$GCS_PROJECT
-      - gcloud run deploy eleith-io-site --image $GCR_IMAGE_URL --platform managed --region $GCS_REGION --project=$GCS_PROJECT
-    secrets: [cloud_run_service_key_json]
-    when:
-      - event: [push, manual]
-        branch: [main]
-        path:
-          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
+        status: [failure, success]
+        branch: [never_main]
   notify:
     image: deblan/woodpecker-email:2.0.4
     settings:
@@ -126,6 +34,6 @@ steps:
     when:
       - event: [push, manual]
         status: [failure, success]
-        branch: [main]
+        branch: [never_main]
         path:
-          include: ["Dockerfile", ".woodpecker/.web.yml", "packages/web/**"]
+          include: [".woodpecker/.web.yml", "packages/web/**"]
