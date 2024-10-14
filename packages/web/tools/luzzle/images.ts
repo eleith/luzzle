@@ -1,3 +1,5 @@
+import { generateVariantsForPieces } from './variants'
+import { generateOpenGraphsForPieces } from './opengraph'
 import { initialize } from './database'
 
 import dotenv from 'dotenv'
@@ -19,8 +21,8 @@ async function prebuildLuzzle() {
 
 	console.log(pieces.length, PRIVATE_DATABASE_URL)
 
-	//await generateVariantsForPieces(pieces)
-	//await generateOpenGraphsForPieces(pieces)
+	await generateVariantsForPieces(pieces)
+	await generateOpenGraphsForPieces(pieces)
 
 	console.log('[done] prebuilding luzzle')
 }
