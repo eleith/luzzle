@@ -1,7 +1,7 @@
 import { type WebPieces } from '$lib/pieces/types'
 import type { RequestHandler } from './$types'
 import { Feed, type Item } from 'feed'
-import { PUBLIC_SITE_TITLE, PUBLIC_SITE_DESCRIPTION } from '$env/static/public'
+import { PUBLIC_SITE_TITLE, PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_URL } from '$env/static/public'
 import { getDatabase } from '$lib/database'
 
 const MAX_ITEM_LIMIT = 50
@@ -72,7 +72,7 @@ export const GET: RequestHandler = async (a) => {
 
 	const rss = generateRss(pieces, {
 		folder: type ? `pieces/${type}` : 'pieces',
-		url: 'https://example.com',
+		url: PUBLIC_SITE_URL,
 		title: PUBLIC_SITE_TITLE,
 		description: PUBLIC_SITE_DESCRIPTION
 	})
