@@ -48,13 +48,10 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 
 export async function initialize(databasePath: string) {
 	const db = getDatabaseClient(databasePath)
-	const tables = await db.introspection.getTables()
-	const hasWebTable = tables.some((table) => table.name === 'web_pieces')
-	const hasSearchTable = tables.some((table) => table.name === 'web_pieces_fts5')
 
-	if (!hasWebTable || !hasSearchTable) {
-		await createWebTables(db)
-	}
+	await db.schema.dropTable('web_pieces_fts5').ifExists().execute()
+	await db.schema.dropTable('web_pieces').ifExists().execute()
+	await createWebTables(db)
 
 	return db.withTables<{
 		web_pieces: WebPieces

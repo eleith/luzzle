@@ -9,53 +9,35 @@ import {
 	parsePieceArgv,
 } from '../pieces/index.js'
 import yaml from 'yaml'
-import { parseString } from '@fast-csv/parse'
-import { EOL } from 'os'
 
 export type FieldArgv = {
 	remove?: boolean
 	set?: boolean
-	fields?: string[]
+	fields?: string
 	input: string
 } & PieceArgv
 
-async function parseCsvFields(csvString: string): Promise<Record<string, unknown>> {
-	return new Promise((resolve, reject) => {
-		const result: Record<string, unknown> = {}
-
-		parseString([csvString].join(EOL))
-			.on('error', reject)
-			.on('data', (row: string[]) => {
-				row.forEach((item) => {
-					const signIndex = item.indexOf('=')
-					const hasEqual = signIndex !== -1
-					const end = hasEqual ? signIndex : item.length
-					const value = hasEqual ? item.substring(signIndex + 1) : undefined
-					const field = item.substring(0, end)
-
-					result[field] = value
-				})
-			})
-			.on('end', () => resolve(result))
-	})
+function parseSimpleField(field: string): Record<string, unknown> {
+	const parts = field.split('=')
+	return { [parts[0]]: parts[1] }
 }
 
-async function parseFields(fields: string[], input: string): Promise<Record<string, unknown>> {
+async function parseFields(fields: string, input: string): Promise<Record<string, unknown>> {
 	switch (input) {
 		case 'json':
-			return JSON.parse(fields[0])
+			return JSON.parse(fields)
 		case 'yaml':
-			return yaml.parse(fields[0])
-		case 'csv':
+			return yaml.parse(fields)
+		case 'simple':
 		default:
-			return await parseCsvFields(fields.join(''))
+			return parseSimpleField(fields)
 	}
 }
 
 const command: Command<FieldArgv> = {
 	name: 'field',
 
-	command: `field ${PieceCommandOption} [fields..]`,
+	command: `field ${PieceCommandOption} [fields]`,
 
 	describe: 'get, edit or remove a field',
 
@@ -76,14 +58,13 @@ const command: Command<FieldArgv> = {
 			.option('input', {
 				alias: 'i',
 				type: 'string',
-				choices: ['csv', 'json', 'yaml'],
-				default: 'csv',
+				choices: ['simple', 'json', 'yaml'],
+				default: 'simple',
 				description: 'input format of the fields positional',
 			})
 			.positional('fields', {
 				type: 'string',
-				array: true,
-				description: 'field(s) or field(s) and value(s)',
+				description: 'field to set or remove',
 			})
 	},
 

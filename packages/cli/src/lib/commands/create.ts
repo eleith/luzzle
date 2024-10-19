@@ -17,27 +17,15 @@ function parseFields(fields: string[], input: string): Record<string, unknown> {
 		case 'json':
 			return JSON.parse(fields[0])
 		case 'yaml':
-			return yaml.parse(fields[0])
-		case 'csv':
 		default:
-			return fields
-				.join('')
-				.split(',')
-				.reduce(
-					(fields, field) => {
-						const [fieldname, value] = field.split('=').map((f) => f.trim())
-						fields[fieldname] = value
-						return fields
-					},
-					{} as Record<string, unknown>
-				)
+			return yaml.parse(fields[0])
 	}
 }
 
 const command: Command<CreateArgv> = {
 	name: 'create',
 
-	command: `create <title> [fields..]`,
+	command: `create <title> [fields]`,
 
 	describe: 'create a new piece',
 
@@ -63,14 +51,13 @@ const command: Command<CreateArgv> = {
 			.option('input', {
 				alias: 'i',
 				type: 'string',
-				choices: ['csv', 'json', 'yaml'],
-				default: 'csv',
+				choices: ['json', 'yaml'],
+				default: 'yaml',
 				description: 'input format of the fields positional',
 			})
 			.positional('fields', {
 				type: 'string',
-				array: true,
-				description: 'field(s) or field(s) and value(s)',
+				description: 'fields',
 			}) as Argv<T & CreateArgv>
 	},
 
