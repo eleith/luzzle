@@ -19,9 +19,6 @@ async function prebuildLuzzle() {
 
 	console.log(pieces.length, PRIVATE_DATABASE_URL)
 
-	//await generateVariantsForPieces(pieces)
-	//await generateOpenGraphsForPieces(pieces)
-
 	console.log('[done] prebuilding luzzle')
 }
 

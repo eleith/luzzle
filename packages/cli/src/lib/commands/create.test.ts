@@ -44,36 +44,6 @@ describe('lib/commands/create', () => {
 		expect(spies.pieceWrite).toHaveBeenCalledOnce()
 	})
 
-	test('run and set fields', async () => {
-		const book = makeMarkdownSample()
-		const title = 'slug2'
-		const piece = 'books'
-		const PieceTest = makePiece()
-		const ctx = makeContext({
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
-			},
-		})
-		const field = 'title'
-		const value = 'value'
-
-		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockReturnValueOnce(book)
-		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(false)
-		spies.pieceSetFields = vi.spyOn(PieceTest.prototype, 'setFields').mockResolvedValueOnce(book)
-
-		await command.run(ctx, {
-			title,
-			piece,
-			input: 'csv',
-			fields: [`${field}=${value}`],
-		} as Arguments<CreateArgv>)
-
-		expect(mocks.getPiece).toHaveBeenCalledWith(piece)
-		expect(spies.pieceWrite).toHaveBeenCalledOnce()
-		expect(spies.pieceSetFields).toHaveBeenCalledWith(book, { [field]: value })
-	})
-
 	test('run and set fields with json', async () => {
 		const book = makeMarkdownSample()
 		const title = 'slug2'

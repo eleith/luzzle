@@ -74,7 +74,7 @@ describe('lib/commands/field.ts', () => {
 
 		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
-		await command.run(ctx, { path, fields: [fieldname], input: 'csv' } as Arguments<FieldArgv>)
+		await command.run(ctx, { path, fields: fieldname, input: 'simple' } as Arguments<FieldArgv>)
 
 		expect(mocks.logError).not.toHaveBeenCalledOnce()
 		expect(mocks.consoleLog).toHaveBeenCalledOnce()
@@ -103,9 +103,9 @@ describe('lib/commands/field.ts', () => {
 
 		await command.run(ctx, {
 			path,
-			fields: [`${fieldname}=${value}`],
+			fields: `${fieldname}=${value}`,
 			set: true,
-			input: 'csv',
+			input: 'simple',
 		} as Arguments<FieldArgv>)
 
 		expect(spies.pieceSetFields).toHaveBeenCalledWith(pieceMarkdown, { [fieldname]: value })
@@ -135,7 +135,7 @@ describe('lib/commands/field.ts', () => {
 
 		await command.run(ctx, {
 			path,
-			fields: [JSON.stringify({ [fieldname]: value })],
+			fields: JSON.stringify({ [fieldname]: value }),
 			set: true,
 			input: 'json',
 		} as Arguments<FieldArgv>)
@@ -167,7 +167,7 @@ describe('lib/commands/field.ts', () => {
 
 		await command.run(ctx, {
 			path,
-			fields: [yaml.stringify({ [fieldname]: value })],
+			fields: yaml.stringify({ [fieldname]: value }),
 			set: true,
 			input: 'yaml',
 		} as Arguments<FieldArgv>)
@@ -199,9 +199,9 @@ describe('lib/commands/field.ts', () => {
 
 		await command.run(ctx, {
 			path,
-			fields: [`${fieldname}=${value}`],
+			fields: `${fieldname}=${value}`,
 			set: true,
-			input: 'csv',
+			input: 'simple',
 		} as Arguments<FieldArgv>)
 
 		expect(spies.pieceWrite).not.toHaveBeenCalled()
@@ -229,9 +229,9 @@ describe('lib/commands/field.ts', () => {
 
 		await command.run(ctx, {
 			path,
-			fields: [fieldname],
+			fields: fieldname,
 			remove: true,
-			input: 'csv',
+			input: 'simple',
 		} as Arguments<FieldArgv>)
 
 		expect(spies.pieceRemoveField).toHaveBeenCalledWith(pieceMarkdown, fieldname)
@@ -260,9 +260,9 @@ describe('lib/commands/field.ts', () => {
 
 		await command.run(ctx, {
 			path,
-			fields: [fieldname],
+			fields: fieldname,
 			remove: true,
-			input: 'csv',
+			input: 'simple',
 		} as Arguments<FieldArgv>)
 
 		expect(spies.pieceWrite).toHaveBeenCalledTimes(0)
@@ -281,7 +281,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(null)
 		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
-		await command.run(ctx, { path, fields: [fieldname], input: 'csv' } as Arguments<FieldArgv>)
+		await command.run(ctx, { path, fields: fieldname, input: 'simple' } as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -302,7 +302,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceFields = vi.spyOn(PieceTest.prototype, 'fields', 'get').mockReturnValue(fields)
 		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
 
-		await command.run(ctx, { path, fields: [fieldname], input: 'csv' } as Arguments<FieldArgv>)
+		await command.run(ctx, { path, fields: fieldname, input: 'simple' } as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
@@ -327,10 +327,10 @@ describe('lib/commands/field.ts', () => {
 
 		await command.run(ctx, {
 			path,
-			fields: [`${fieldname}=${value}`],
+			fields: `${fieldname}=${value}`,
 			remove: true,
 			set: true,
-			input: 'csv',
+			input: 'simple',
 		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
@@ -353,7 +353,7 @@ describe('lib/commands/field.ts', () => {
 		await command.run(ctx, {
 			path,
 			set: true,
-			fields: ['title-bad'],
+			fields: 'title-bad',
 		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
@@ -376,7 +376,7 @@ describe('lib/commands/field.ts', () => {
 		await command.run(ctx, {
 			path,
 			remove: true,
-			fields: ['title'],
+			fields: 'title',
 		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
@@ -423,8 +423,8 @@ describe('lib/commands/field.ts', () => {
 		await command.run(ctx, {
 			path,
 			set: true,
-			fields: [fieldname],
-			input: 'csv',
+			fields: fieldname,
+			input: 'simple',
 		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
@@ -450,8 +450,8 @@ describe('lib/commands/field.ts', () => {
 		await command.run(ctx, {
 			path,
 			set: true,
-			fields: [] as string[],
-			input: 'csv',
+			fields: '',
+			input: 'simple',
 		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
@@ -477,8 +477,8 @@ describe('lib/commands/field.ts', () => {
 		await command.run(ctx, {
 			path,
 			remove: true,
-			fields: [] as string[],
-			input: 'csv',
+			fields: '',
+			input: 'simple',
 		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
@@ -505,8 +505,8 @@ describe('lib/commands/field.ts', () => {
 		await command.run(ctx, {
 			path,
 			remove: true,
-			fields: [`${fieldname}=${value}`],
-			input: 'csv',
+			fields: `${fieldname}=${value}`,
+			input: 'simple',
 		} as Arguments<FieldArgv>)
 
 		expect(mocks.logError).toHaveBeenCalledOnce()
