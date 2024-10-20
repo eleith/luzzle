@@ -3,13 +3,19 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { makeContext } from '../commands/context.fixtures.js'
 import * as tagLibrary from './tags.js'
 import { mockDatabase } from '../database.mock.js'
+import slugify from '@sindresorhus/slugify'
+
+vi.mock('../log')
+vi.mock('@sindresorhus/slugify')
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
+	logWarn: vi.spyOn(log, 'warn'),
 	logError: vi.spyOn(log, 'error'),
 	logChild: vi.spyOn(log, 'child'),
 	addTagsTo: vi.spyOn(tagLibrary._private, 'addTagsTo'),
 	removeTagsFrom: vi.spyOn(tagLibrary._private, 'removeTagsFrom'),
+	slugify: vi.mocked(slugify),
 }
 
 const spies: MockInstance[] = []
@@ -33,12 +39,31 @@ describe('lib/tags/tags.ts', () => {
 		const tagId = 'tagId1'
 		const type = 'test'
 
+		mocks.slugify.mockImplementation((tag) => tag)
 		kysely.queries.executeTakeFirstOrThrow.mockResolvedValue({ id: tagId })
 
 		await tagLibrary.addTagsTo(ctx.db, tags, id, type)
 
 		expect(kysely.queries.values).toHaveBeenCalledTimes(tags.length * 2)
 		expect(kysely.queries.execute).toHaveBeenCalledTimes(tags.length)
+	})
+
+	test('addTagsTo empty', async () => {
+		const kysely = mockDatabase()
+		const ctx = makeContext({ db: kysely.db })
+		const tags = ['one']
+		const id = 'id1'
+		const tagId = 'tagId1'
+		const type = 'test'
+
+		mocks.slugify.mockImplementation(() => '')
+		kysely.queries.executeTakeFirstOrThrow.mockResolvedValue({ id: tagId })
+
+		await tagLibrary.addTagsTo(ctx.db, tags, id, type)
+
+		expect(kysely.queries.values).toHaveBeenCalledTimes(0)
+		expect(kysely.queries.execute).toHaveBeenCalledTimes(0)
+		expect(mocks.logWarn).toHaveBeenCalledOnce()
 	})
 
 	test('removeTagsFrom', async () => {

@@ -2,6 +2,7 @@ import { differenceWith } from 'lodash-es'
 import slugify from '@sindresorhus/slugify'
 import { createId } from '@paralleldrive/cuid2'
 import { LuzzleDatabase } from '@luzzle/core'
+import log from '../log.js'
 
 function keywordsToTags(keywords: string): string[] {
 	const tags = keywords
@@ -45,6 +46,11 @@ async function addTagsTo(
 ): Promise<void> {
 	for (const tag of tags) {
 		const slug = slugify(tag)
+
+		if (!slug) {
+			log.warn(`could not create slug for tag: ${tag}`)
+			continue
+		}
 
 		const tagDb = await db
 			.insertInto('tags')
