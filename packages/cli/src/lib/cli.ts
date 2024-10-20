@@ -13,7 +13,6 @@ async function parseArgs(_args: string[]) {
 	const command = await yargs(_args)
 		.strict()
 		.command(commands.dump.command, commands.dump.describe)
-		.command(commands.deploy.command, commands.deploy.describe)
 		.command(commands.cd.command, commands.cd.describe)
 		.command(commands.sync.command, commands.sync.describe, (yargs) =>
 			commands.sync.builder?.(yargs)
