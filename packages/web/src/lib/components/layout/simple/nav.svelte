@@ -27,7 +27,7 @@
 	}
 	const { background, items, theme: initialTheme }: Props = $props()
 
-	let currentTheme = $state<Theme | null>(initialTheme || null)
+	let currentTheme = $state<Theme | 'system' | null>(initialTheme || null)
 
 	const {
 		elements: { content, trigger, portalled, overlay },
@@ -46,13 +46,29 @@
 		$open = false
 	}
 
-	function setTheme(theme: Theme) {
-		const oneWeek = 7 * 24 * 60 * 60
+	function setTheme(theme: Theme | 'system') {
+		const oneYear = 7 * 24 * 60 * 60 * 52
 
 		currentTheme = theme
 		window.localStorage.setItem('theme', theme)
-		document.cookie = `theme=${theme}; max-age=${oneWeek}; path=/; SameSite=Strict`
+		document.cookie = `theme=${theme}; max-age=${oneYear}; path=/; SameSite=Strict`
 		document.body.setAttribute('data-theme', currentTheme)
+	}
+
+	function getTheme(): Theme | null | 'system' {
+		const local = window.localStorage.getItem('theme') as Theme | null | 'system'
+		const cookie = document.cookie
+			.split('; ')
+			.find((cookie) => cookie.startsWith('theme='))
+			?.split('=')[1] as Theme | null | 'system'
+
+		if (local && local !== cookie) {
+			setTheme(local)
+		} else if (cookie && cookie !== local) {
+			setTheme(cookie)
+		}
+
+		return local || cookie || 'system'
 	}
 
 	function clickTheme(event: MouseEvent) {
@@ -65,11 +81,11 @@
 	}
 
 	$effect.pre(() => {
-		const theme = window.localStorage.getItem('theme') as Theme | null | 'system'
-
+		const theme = getTheme()
 		if (!theme || theme === 'system') {
 			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
 			currentTheme = prefersDark ? 'dark' : 'light'
+			setTheme(currentTheme)
 		} else if (theme && themes.includes(theme) && theme !== currentTheme) {
 			currentTheme = theme
 			document.body.setAttribute('data-theme', currentTheme)
