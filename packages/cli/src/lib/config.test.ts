@@ -2,12 +2,16 @@ import { describe, expect, test, vi, afterEach, MockInstance, MockedClass } from
 import Conf from 'conf'
 import { existsSync } from 'fs'
 import { getConfig, getDirectoryFromConfig, SchemaConfig } from './config.js'
+import log from './log.js'
+import path from 'path'
 
 vi.mock('fs')
+vi.mock('./log.js')
 vi.mock('conf', () => {
 	const ConfMock = vi.fn()
 	ConfMock.prototype.get = vi.fn()
 	ConfMock.prototype.set = vi.fn()
+	ConfMock.prototype.path = '/some/path'
 	return { default: ConfMock }
 })
 
@@ -16,11 +20,12 @@ const mocks = {
 	ConfGet: vi.spyOn(Conf.prototype, 'get'),
 	ConfSet: vi.spyOn(Conf.prototype, 'set'),
 	existsSync: vi.mocked(existsSync),
+	logWarn: vi.spyOn(log, 'warn'),
 }
 
 const spies: { [key: string]: MockInstance } = {}
 
-describe('tools/lib/config', () => {
+describe('lib/config', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -56,6 +61,18 @@ describe('tools/lib/config', () => {
 
 		expect(mocks.ConfGet).toHaveBeenCalledWith('directory')
 		expect(directory).toBe(dirPath)
+	})
+
+	test('getDirectoryFromConfig when directory is not set', async () => {
+		const config = new Conf<SchemaConfig>()
+
+		mocks.ConfGet.mockReturnValue(null)
+
+		const directory = getDirectoryFromConfig(config)
+
+		expect(mocks.ConfGet).toHaveBeenCalledWith('directory')
+		expect(directory).toBe(path.dirname(config.path))
+		expect(mocks.logWarn).toHaveBeenCalledOnce()
 	})
 
 	test('getDirectoryFromConfig fails with a non existant directory', async () => {
