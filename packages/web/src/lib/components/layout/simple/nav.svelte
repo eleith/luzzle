@@ -8,7 +8,6 @@
 	import MoonIcon from 'virtual:icons/ph/moon'
 	import RainbowIcon from 'virtual:icons/ph/rainbow'
 	import ArrowRightIcon from 'virtual:icons/ph/caret-double-right'
-	import PaletteIcon from 'virtual:icons/ph/palette'
 	import TreeIcon from 'virtual:icons/ph/tree'
 	import themes, { type Theme } from '$lib/ui/styles/themes'
 	import { page } from '$app/stores'
@@ -46,6 +45,10 @@
 		$open = false
 	}
 
+	function getTheme(): Theme | 'system' {
+		return window.localStorage.getItem('theme') as Theme | 'system'
+	}
+
 	function setTheme(theme: Theme | 'system') {
 		const oneYear = 7 * 24 * 60 * 60 * 52
 
@@ -55,42 +58,15 @@
 		document.body.setAttribute('data-theme', currentTheme)
 	}
 
-	function getTheme(): Theme | null | 'system' {
-		const local = window.localStorage.getItem('theme') as Theme | null | 'system'
-		const cookie = document.cookie
-			.split('; ')
-			.find((cookie) => cookie.startsWith('theme='))
-			?.split('=')[1] as Theme | null | 'system'
-
-		if (local && local !== cookie) {
-			setTheme(local)
-		} else if (cookie && cookie !== local) {
-			setTheme(cookie)
-		}
-
-		return local || cookie || 'system'
-	}
-
 	function clickTheme(event: MouseEvent) {
 		event.preventDefault()
+		const currentTheme = getTheme()
 		const themeIndex = themes.indexOf(currentTheme as Theme)
 		const nextThemeIndex = (themeIndex + 1) % themes.length
 		const nextTheme = themes[nextThemeIndex]
 
 		setTheme(nextTheme)
 	}
-
-	$effect.pre(() => {
-		const theme = getTheme()
-		if (!theme || theme === 'system') {
-			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-			currentTheme = prefersDark ? 'dark' : 'light'
-			setTheme(currentTheme)
-		} else if (theme && themes.includes(theme) && theme !== currentTheme) {
-			currentTheme = theme
-			document.body.setAttribute('data-theme', currentTheme)
-		}
-	})
 </script>
 
 <svelte:head>
@@ -142,17 +118,10 @@
 			{@render items.right()}
 		{/if}
 		<button onclick={clickTheme} aria-label="change theme">
-			{#if currentTheme === null}
-				<PaletteIcon style="font-size: 1em;visibility: hidden;" />
-			{:else if currentTheme === 'dark'}
-				<SunIcon style="font-size: 1em;" />
-			{:else if currentTheme === 'light'}
-				<RainbowIcon style="font-size: 1em;" />
-			{:else if currentTheme === 'rainbow'}
-				<TreeIcon style="font-size: 1em;" />
-			{:else}
-				<MoonIcon style="font-size: 1em;" />
-			{/if}
+			<SunIcon class="themeIcons themeIconsSun" />
+			<RainbowIcon class="themeIcons themeIconsRainbow"/>
+			<TreeIcon class="themeIcons themeIconsTree" />
+			<MoonIcon class="themeIcons themeIconsMoon" />
 		</button>
 	</div>
 </nav>
@@ -218,5 +187,26 @@
 		inset: 0;
 		opacity: 0.5;
 		background: var(--colors-surface-inverse);
+	}
+
+	:global(.themeIcons) {
+		font-size: 1em;
+		display: none;
+	}
+
+	:global(body[data-theme='dark'] .themeIconsSun) {
+		display: inline-block;
+	}
+
+	:global(body[data-theme='light'] .themeIconsRainbow) {
+		display: inline-block;
+	}
+
+	:global(body[data-theme='rainbow'] .themeIconsTree) {
+		display: inline-block;
+	}
+
+	:global(body[data-theme='forest'] .themeIconsMoon) {
+		display: inline-block;
 	}
 </style>
