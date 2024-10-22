@@ -1,5 +1,5 @@
 /* body[data-theme="dark"] */
-body {
+html {
 	--colors-primary: #fabd2f;
 	--colors-on-primary: #1d1600;
 	--colors-primary-container: #efa906;
@@ -41,7 +41,7 @@ body {
 	--colors-outline-variant: #898373;
 }
 
-body[data-theme='rainbow'] {
+html[data-theme='rainbow'] {
 	--colors-primary: #ffffff;
 	--colors-on-primary: #2e2a9e;
 	--colors-primary-container: #ffcc80;
@@ -83,7 +83,7 @@ body[data-theme='rainbow'] {
 	--colors-outline-variant: #6c757d;
 }
 
-body[data-theme='forest'] {
+html[data-theme='forest'] {
 	--colors-surface: #c7d8b9;
 	--colors-surface-dim: #b0c29e;
 	--colors-surface-bright: #d4e5c6;
@@ -125,7 +125,7 @@ body[data-theme='forest'] {
 	--colors-surface-inverse: #adadad;
 }
 
-body[data-theme='light'] {
+html[data-theme='light'] {
 	--colors-primary: #007bff;
 	--colors-on-primary: #ffffff;
 	--colors-primary-container: #d0e4ff;
@@ -168,7 +168,7 @@ body[data-theme='light'] {
 }
 
 @media (prefers-color-scheme: light) {
-	body {
+	html {
 		--colors-primary: #007bff;
 		--colors-on-primary: #ffffff;
 		--colors-primary-container: #d0e4ff;
@@ -211,7 +211,7 @@ body[data-theme='light'] {
 	}
 }
 
-body {
+html {
 	--shadows-raised: 0px 3px 1px -2px rgba(251 241 199 / 20%),
 		0px 2px 2px 0px rgba(251 241 199 / 14%), 0px 1px 5px 0px rgba(0 0 0 / 12%);
 	--fonts-mono: monaco, monospace;
@@ -269,8 +269,7 @@ body {
 	font-display: swap;
 }
 
-html,
-body {
+html {
 	background-color: var(--colors-surface);
 	color: var(--colors-on-surface);
 	font-family: var(--fonts-sans);
@@ -293,8 +292,7 @@ h3 {
 }
 
 @media screen and (min-width: 768px) {
-	html,
-	body {
+	html {
 		font-size: var(--font-sizes-root);
 	}
 
