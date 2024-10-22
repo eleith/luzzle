@@ -55,7 +55,7 @@
 		currentTheme = theme
 		window.localStorage.setItem('theme', theme)
 		document.cookie = `theme=${theme}; max-age=${oneYear}; path=/; SameSite=Strict`
-		document.body.setAttribute('data-theme', currentTheme)
+		document.documentElement.setAttribute('data-theme', currentTheme)
 	}
 
 	function clickTheme(event: MouseEvent) {
@@ -72,6 +72,29 @@
 <svelte:head>
 	<title>{PUBLIC_SITE_TITLE}</title>
 	<meta name="description" content={PUBLIC_SITE_DESCRIPTION} />
+	<style>
+		@font-face {
+			font-family: 'Noto Sans';
+			font-optical-sizing: auto;
+			font-weight: 300 600;
+			font-style: normal;
+			font-variation-settings: 'wdth' 300;
+			src: url('/fonts/noto-sans.woff2') format('woff2');
+			font-display: swap;
+		}
+
+		html,
+		body {
+			font-family: 'Noto Sans', sans-serif;
+		}
+	</style>
+	<script>
+		const localTheme = window.localStorage.getItem('theme')
+		const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+		const theme = localTheme ?? (prefersDark ? 'dark' : 'light')
+
+		document.documentElement.setAttribute('data-theme', theme)
+	</script>
 </svelte:head>
 
 {#if $open}
@@ -119,7 +142,7 @@
 		{/if}
 		<button onclick={clickTheme} aria-label="change theme">
 			<SunIcon class="themeIcons themeIconsSun" />
-			<RainbowIcon class="themeIcons themeIconsRainbow"/>
+			<RainbowIcon class="themeIcons themeIconsRainbow" />
 			<TreeIcon class="themeIcons themeIconsTree" />
 			<MoonIcon class="themeIcons themeIconsMoon" />
 		</button>
@@ -194,19 +217,19 @@
 		display: none;
 	}
 
-	:global(body[data-theme='dark'] .themeIconsSun) {
+	:global(html[data-theme='dark'] .themeIconsSun) {
 		display: inline-block;
 	}
 
-	:global(body[data-theme='light'] .themeIconsRainbow) {
+	:global(html[data-theme='light'] .themeIconsRainbow) {
 		display: inline-block;
 	}
 
-	:global(body[data-theme='rainbow'] .themeIconsTree) {
+	:global(html[data-theme='rainbow'] .themeIconsTree) {
 		display: inline-block;
 	}
 
-	:global(body[data-theme='forest'] .themeIconsMoon) {
+	:global(html[data-theme='forest'] .themeIconsMoon) {
 		display: inline-block;
 	}
 </style>
