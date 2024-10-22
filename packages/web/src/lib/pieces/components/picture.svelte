@@ -26,6 +26,7 @@
 			src="{PUBLIC_ASSETS_CDN_URL}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.jpg"
 			loading={lazy ? 'lazy' : 'eager'}
 			{width}
+			height="{3/2*width}"
 			decoding="async"
 			{...props}
 		/>
