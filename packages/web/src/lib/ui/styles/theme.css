@@ -266,7 +266,7 @@ body {
 	font-style: normal;
 	font-variation-settings: 'wdth' 300;
 	src: url('/fonts/noto-sans.woff2') format('woff2');
-	font-display: optional;
+	font-display: swap;
 }
 
 html,
