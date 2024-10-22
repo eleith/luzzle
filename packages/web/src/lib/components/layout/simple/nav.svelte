@@ -83,9 +83,14 @@
 			font-display: swap;
 		}
 
-		html,
-		body {
-			font-family: 'Noto Sans', sans-serif;
+		@font-face {
+			font-family: 'Adjusted Sans';
+			src: local(Dejavu Sans), local(Verdana), sans-serif;
+			size-adjust: 92%;
+		}
+
+		html {
+			font-family: 'Noto Sans', 'Adjusted Sans';
 		}
 	</style>
 	<script>
