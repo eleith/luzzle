@@ -33,6 +33,9 @@ async function parseArgs(_args: string[]) {
 		.command(commands.init.command, commands.init.describe, (yargs) =>
 			commands.init.builder?.(yargs)
 		)
+		.command(commands.assistant.command, commands.assistant.describe, (yargs) =>
+			commands.assistant.builder?.(yargs)
+		)
 		.options({
 			'dry-run': {
 				type: 'boolean',
