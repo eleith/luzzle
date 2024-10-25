@@ -7,6 +7,7 @@ import sync from './sync.js'
 import cd from './cd.js'
 import dump from './dump.js'
 import validate from './validate.js'
+import assistant from './assistant.js'
 
 export type { Command, Context } from './utils/types.js'
 
@@ -20,4 +21,5 @@ export default {
 	cd,
 	dump,
 	validate,
+	assistant,
 }
