@@ -25,6 +25,7 @@
   <meta property="og:url" content="{window.location.href}" />
   -->
 	<meta property="og:locale" content="en_US" />
+	<link rel="prefetch" href="/pieces/{data.piece.type}/{data.piece.slug}.md" />
 </svelte:head>
 
 <section class="header">
