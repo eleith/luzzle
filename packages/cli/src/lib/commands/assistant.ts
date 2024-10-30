@@ -64,7 +64,9 @@ const command: Command<AssistantArgv> = {
 		)
 
 		if (write) {
-			await piece.write(Object.assign(markdown, metadataNonEmpty))
+			const markdownCopy = Object.assign({}, markdown)
+			Object.assign(markdownCopy.frontmatter, metadataNonEmpty)
+			await piece.write(markdown)
 		}
 
 		if (output === 'json') {

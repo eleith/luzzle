@@ -168,7 +168,7 @@ describe('lib/commands/assistant.ts', () => {
 
 		await command.run(ctx, { prompt, write: true } as Arguments<AssistantArgv>)
 
-		expect(spies.pieceWrite).toHaveBeenCalledOnce()
+		expect(spies.pieceWrite).toHaveBeenCalledWith({ ...pieceMarkdown, frontmatter })
 	})
 
 	test('run fails to find piece', async () => {
