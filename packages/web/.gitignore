@@ -1,4 +1,6 @@
+# npm
 node_modules
+.npmrc
 
 # Output
 .output
