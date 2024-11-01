@@ -13,6 +13,7 @@ COPY tools ./tools
 COPY tsconfig.json ./tsconfig.json
 COPY svelte.config.js ./svelte.config.js
 COPY vite.config.ts ./vite.config.ts
+
 COPY .env.sample ./.env.local
 
 RUN npm ci

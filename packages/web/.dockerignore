@@ -5,6 +5,7 @@
 .stylelintrc.json
 .eslintrc.json
 .prettierrc.json
+.npmrc
 
 Dockerfile
 node_modules

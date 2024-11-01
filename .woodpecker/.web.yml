@@ -2,23 +2,32 @@ workspace:
   base: /workspace
   path: src
 steps:
+  prepare:
+    image: node:14
+    commands:
+      - echo $LUZZLE_NPMRC >> .npmrc
+    secrets: [luzzle_npmrc]
+    when:
+      - event: [push, manual]
+        status: [failure, success]
+        branch: [main]
   build_docker:
-    image: woodpeckerci/plugin-docker-buildx:5.0.0
+    image: woodpeckerci/plugin-docker-buildx:pull_186
     settings:
-      repo: git.eleith.com/eleith/eleith
+      repo: git.eleith.com/eleith/luzzle
       username: eleith
       dockerfile: packages/web/Dockerfile
       context: packages/web
       registry: https://git.eleith.com
       secrets:
-        from_secret: npm_token
+        - id=npmrc\\,src=.npmrc
       auto_tag: true
       password:
         from_secret: gitea_docker_registry
     when:
       - event: [push, manual]
         status: [failure, success]
-        branch: [never_main]
+        branch: [main]
   notify:
     image: deblan/woodpecker-email:2.0.4
     settings:
@@ -34,6 +43,6 @@ steps:
     when:
       - event: [push, manual]
         status: [failure, success]
-        branch: [never_main]
+        branch: [main]
         path:
           include: [".woodpecker/.web.yml", "packages/web/**"]
