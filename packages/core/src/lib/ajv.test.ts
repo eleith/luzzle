@@ -31,7 +31,7 @@ describe('src/lib/ajv.ts', () => {
 		ajv(schema)
 
 		expect(mocks.Ajv).toHaveBeenCalledTimes(1)
-		expect(mocks.addFormat).toHaveBeenCalledTimes(2)
+		expect(mocks.addFormat).toHaveBeenCalledTimes(3)
 		expect(mocks.compile).toHaveBeenCalledWith(schema)
 	})
 

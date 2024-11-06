@@ -51,6 +51,11 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 			name: 'something',
 			type: 'integer',
 		})
+		const csv = frontmatter.pieceFrontmatterValueToDatabaseValue('one,two,three', {
+			name: 'tags',
+			type: 'string',
+			format: 'comma-separated',
+		})
 
 		expect(date).toBeTypeOf('number')
 		expect(one).toBe(1)
@@ -58,6 +63,7 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 		expect(list).toBe('a,b')
 		expect(nil).toBe(null)
 		expect(ten).toBe(10)
+		expect(csv).toBe('["one","two","three"]')
 	})
 
 	test('databaseValueToPieceFrontMatterValue', () => {
@@ -75,6 +81,11 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 			type: 'boolean',
 			name: 'bool',
 		})
+		const csv = frontmatter.databaseValueToPieceFrontmatterValue('["one", "two", "three"]', {
+			type: 'string',
+			format: 'comma-separated',
+			name: 'tags',
+		})
 		const list = frontmatter.databaseValueToPieceFrontmatterValue('a,b', {
 			type: 'array',
 			name: 'list',
@@ -85,6 +96,7 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 		expect(one).toBe(true)
 		expect(zero).toBe(false)
 		expect(list).toEqual(['a', 'b'])
+		expect(csv).toBe('one,two,three')
 	})
 
 	test('initializePieceFrontMatter', () => {
