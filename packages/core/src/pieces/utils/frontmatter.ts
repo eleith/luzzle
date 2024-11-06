@@ -8,7 +8,7 @@ type PieceFrontmatterSchema<M extends PieceFrontmatter> = JSONSchemaType<M>
 type PieceFrontmatterSchemaFieldScalar = {
 	name: string
 	type: 'string' | 'boolean' | 'integer'
-	format?: 'asset' | 'date'
+	format?: 'asset' | 'date' | 'comma-separated'
 	nullable?: boolean
 	pattern?: string
 	enum?: string[] | number[]
@@ -46,6 +46,8 @@ function pieceFrontmatterValueToDatabaseValue(value: unknown, field: PieceFrontm
 
 	if (field.format === 'date') {
 		return new Date(value as string).getTime()
+	} else if (field.format === 'comma-separated') {
+		return JSON.stringify((value as string).split(','))
 	} else if (field.type === 'boolean') {
 		return value ? 1 : 0
 	} else if (field.type === 'array') {
@@ -61,6 +63,8 @@ function databaseValueToPieceFrontmatterValue(
 ): unknown {
 	if (field.format === 'date') {
 		return new Date(value as number).toLocaleDateString()
+	} else if (field.format === 'comma-separated') {
+		return JSON.parse(value as string).join(',')
 	} else if (field.type === 'boolean') {
 		return value ? true : false
 	} else if (field.type === 'array') {

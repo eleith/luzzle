@@ -1,19 +1,13 @@
 import { Kysely, Insertable, Updateable, Selectable } from 'kysely'
-import { TagsTable } from './tags.schema.js'
-import { TagMapsTable } from './tag_maps.schema.js'
 import { CacheTable } from './pieces_cache.schema.js'
 import { PieceManager } from './pieces_manager.schema.js'
 
 const LuzzleTableName = {
 	Cache: 'pieces_cache',
-	Tags: 'tags',
-	TagMaps: 'tag_maps',
 	PieceManager: 'pieces_manager',
 } as const
 
 type LuzzleTables = {
-	[LuzzleTableName.TagMaps]: TagMapsTable
-	[LuzzleTableName.Tags]: TagsTable
 	[LuzzleTableName.Cache]: CacheTable
 	[LuzzleTableName.PieceManager]: PieceManager
 }
