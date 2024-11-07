@@ -1,7 +1,33 @@
-import { type LuzzleDatabase, getDatabaseClient, sql } from '@luzzle/core'
-import { type WebPieces } from '../../src/lib/pieces/types'
+import { type LuzzleDatabase, getDatabaseClient, sql, LuzzleTables } from '@luzzle/core'
+import { WebPieceTags, type WebPieces } from '../../src/lib/pieces/types'
+import slugify from '@sindresorhus/slugify'
+import { Kysely } from 'kysely'
+
+type WebLuzzleDatabase = Kysely<LuzzleTables & {
+	web_pieces: WebPieces
+	web_pieces_fts5: WebPieces
+	web_pieces_tags: WebPieceTags
+}>
+
+function batchArray<T>(array: T[], batchSize: number): T[][] {
+	const batches: T[][] = []
+	for (let i = 0; i < array.length; i += batchSize) {
+		batches.push(array.slice(i, i + batchSize))
+	}
+	return batches
+}
 
 async function createWebTables(db: LuzzleDatabase): Promise<void> {
+	await db.schema
+		.createTable('web_pieces_tags')
+		.ifNotExists()
+		.addColumn('piece_type', 'text', (col) => col.notNull())
+		.addColumn('piece_slug', 'text', (col) => col.notNull())
+		.addColumn('piece_id', 'text', (col) => col.notNull())
+		.addColumn('tag', 'text', (col) => col.notNull())
+		.addColumn('slug', 'text', (col) => col.notNull())
+		.execute()
+
 	await db.schema
 		.createTable('web_pieces')
 		.ifNotExists()
@@ -18,7 +44,9 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addColumn('date_updated', 'datetime')
 		.addColumn('date_consumed', 'datetime')
 		.execute()
+}
 
+async function populateWebPieceTables(db: LuzzleDatabase): Promise<void> {
 	const tables = await db.introspection.getTables()
 	const webColumns = [
 		'id',
@@ -152,15 +180,54 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 	await sql`INSERT INTO web_pieces_fts5(web_pieces_fts5) VALUES('rebuild')`.execute(db)
 }
 
+async function populateWebPieceTagsTable(db: WebLuzzleDatabase): Promise<void> {
+	const tags = await sql<{
+		slug: string
+		type: WebPieces['type']
+		tag: string
+		id: string
+	}>`SELECT web_pieces.slug, web_pieces.id, web_pieces.type, json_each.value as tag FROM web_pieces, json_each(web_pieces.keywords)`.execute(
+		db
+	)
+
+	const values: Array<WebPieceTags> = []
+
+	tags.rows.forEach((tag) => {
+		if (tag) {
+			values.push({
+				piece_slug: tag.slug,
+				piece_type: tag.type,
+				tag: tag.tag,
+				slug: slugify(tag.tag),
+				piece_id: tag.id
+			})
+		}
+	})
+
+	if (values.length) {
+		const batches = batchArray(values, 1000)
+		for (const batch of batches) {
+			await db.insertInto('web_pieces_tags').values(batch).execute()
+		}
+	}
+
+}
+
 export async function initialize(databasePath: string) {
 	const db = getDatabaseClient(databasePath)
-
-	await db.schema.dropTable('web_pieces_fts5').ifExists().execute()
-	await db.schema.dropTable('web_pieces').ifExists().execute()
-	await createWebTables(db)
-
-	return db.withTables<{
+	const webDb = db.withTables<{
 		web_pieces: WebPieces
 		web_pieces_fts5: WebPieces
+		web_pieces_tags: WebPieceTags
 	}>()
+
+	await webDb.schema.dropTable('web_pieces_fts5').ifExists().execute()
+	await webDb.schema.dropTable('web_pieces').ifExists().execute()
+	await webDb.schema.dropTable('web_pieces_tags').ifExists().execute()
+
+	await createWebTables(db)
+	await populateWebPieceTables(db)
+	await populateWebPieceTagsTable(webDb)
+
+	return webDb
 }

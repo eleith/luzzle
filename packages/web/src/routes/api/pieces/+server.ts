@@ -36,23 +36,17 @@ export const GET: RequestHandler = async ({ request }) => {
 	}
 
 	if (tag) {
-		const oneTag = await db
-			.selectFrom('tags')
+		const pieceTags = await db
+			.selectFrom('web_pieces_tags')
 			.selectAll()
 			.where('slug', '=', tag)
-			.executeTakeFirstOrThrow()
+			.execute()
 
-		if (oneTag) {
-			const tagMap = await db
-				.selectFrom('tag_maps')
-				.selectAll()
-				.where('id_tag', '=', oneTag.id)
-				.execute()
-
+		if (pieceTags) {
 			piecesQuery = piecesQuery.where(
 				'id',
 				'in',
-				tagMap.map((x) => x.id_item)
+				pieceTags.map((x) => x.piece_id)
 			)
 		} else {
 			return new Response('tag not found', { status: 404 })

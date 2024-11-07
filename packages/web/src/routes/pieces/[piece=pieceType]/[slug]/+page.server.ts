@@ -18,20 +18,10 @@ export const load: PageServerLoad = async (page) => {
 		return error(404, `piece does not exist`)
 	}
 
-	const tagMaps = await db
-		.selectFrom('tag_maps')
-		.selectAll()
-		.where('id_item', '=', piece.id)
-		.execute()
-
 	const tags = await db
-		.selectFrom('tags')
+		.selectFrom('web_pieces_tags')
 		.selectAll()
-		.where(
-			'id',
-			'in',
-			tagMaps.map((x) => x.id_tag)
-		)
+		.where('piece_id', '=', piece.id)
 		.execute()
 
 	const after = await db

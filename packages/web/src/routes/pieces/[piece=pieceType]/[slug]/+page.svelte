@@ -86,7 +86,7 @@
 		<h3 style="margin-top: var(--space-5);">tags</h3>
 		<div style="margin-top: var(--space-5);font-size:var(--font-sizes-small);">
 			{#each data.tags as tag, i}
-				<a href="/tags/{tag.slug}">{tag.name}</a>
+				<a href="/tags/{tag.slug}">{tag.tag}</a>
 				{#if i < data.tags.length - 1}
 					ꞏ&nbsp;
 				{/if}
