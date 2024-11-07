@@ -3,7 +3,6 @@ import { copyFile, mkdir, readdir, stat, unlink, writeFile } from 'fs/promises'
 import log from '../log.js'
 import { updateCache, addCache, removeCache, getCache, getCacheAll, clearCache } from './cache.js'
 import { difference } from 'lodash-es'
-import { addTagsTo, keywordsToTags, removeAllTagsFrom, syncTagsFor } from '../tags/index.js'
 import {
 	LuzzleDatabase,
 	PieceMarkdown,
@@ -32,7 +31,7 @@ import {
 	addPiece,
 	updatePiece,
 } from '@luzzle/core'
-import { eachLimit } from 'async'
+import { eachLimit, queue } from 'async'
 import { cpus } from 'os'
 import path from 'path'
 import { downloadFileOrUrlTo, PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
@@ -226,7 +225,6 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 		try {
 			if (idsToRemove.length && dryRun === false) {
 				await deleteItems(db, this._pieceName, idsToRemove)
-				await removeAllTagsFrom(db, idsToRemove, this._pieceName)
 			}
 
 			log.info(`cleaned ${idsToRemove.length} ${this._pieceName}`)
@@ -251,17 +249,8 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 			if (dryRun === false) {
 				const createInput = makePieceItemInsertable(markdown, this._schema)
 				const piecePath = this.getPath(markdown.slug)
-				const added = await insertItem(db, this._pieceName, createInput)
 
-				if (added.keywords && added.id) {
-					await addTagsTo(
-						db,
-						keywordsToTags(added.keywords as string),
-						added.id as string,
-						this._pieceName
-					)
-				}
-
+				await insertItem(db, this._pieceName, createInput)
 				await addCache(db, markdown.slug, this._pieceName, piecePath)
 			}
 			log.info(`added ${markdown.slug}`)
@@ -296,12 +285,6 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 				await updateItem(db, this._pieceName, data.id as string, updateInput)
 				const piecePath = this.getPath(data.slug as string)
 
-				await syncTagsFor(
-					db,
-					keywordsToTags((data?.keywords || '') as string),
-					data.id as string,
-					this._pieceName
-				)
 				await updateCache(db, data.slug as string, this._pieceName, piecePath)
 			}
 
@@ -312,14 +295,18 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 	}
 
 	async syncItems(db: LuzzleDatabase, slugs: string[], dryRun = false) {
-		await eachLimit(slugs, 1, async (slug) => {
-			const markdown = await this.get(slug)
+		const q = queue(async (slug) => {
+			const markdown = await this.get(slug as string)
 			if (markdown) {
 				await this.syncMarkdown(db, markdown, dryRun)
 			} else {
 				log.error(`could not find ${slug}`)
 			}
-		})
+		}, cpus().length)
+
+		q.push(slugs)
+
+		await q.drain()
 	}
 
 	async sync(db: LuzzleDatabase, dryRun: boolean) {

@@ -11,7 +11,6 @@ import {
 	makeRegisteredPiece,
 } from './piece.fixtures.js'
 import { mockDatabase } from '../database.mock.js'
-import { removeAllTagsFrom, addTagsTo, keywordsToTags, syncTagsFor } from '../tags/index.js'
 import { addCache, removeCache, updateCache, getCache, getCacheAll } from './cache.js'
 import log from '../log.js'
 import { CpuInfo, cpus } from 'os'
@@ -31,6 +30,7 @@ import {
 	makePieceItemUpdatable,
 	PiecesItemsInsertable,
 	selectItems,
+	deleteItems,
 	selectItem,
 	insertItem,
 	updateItem,
@@ -64,10 +64,6 @@ const mocks = {
 	makePieceMarkdownOrThrow: vi.mocked(makePieceMarkdownOrThrow),
 	toMarkdown: vi.mocked(makePieceMarkdown),
 	toMarkdownString: vi.mocked(makePieceMarkdownString),
-	removeAllTagsFrom: vi.mocked(removeAllTagsFrom),
-	addTagsTo: vi.mocked(addTagsTo),
-	keywordsToTags: vi.mocked(keywordsToTags),
-	syncTagsFor: vi.mocked(syncTagsFor),
 	extract: vi.mocked(extractFullMarkdown),
 	logError: vi.spyOn(log, 'error'),
 	stat: vi.mocked(stat),
@@ -88,6 +84,7 @@ const mocks = {
 	makeUpdatable: vi.mocked(makePieceItemUpdatable),
 	initializePieceFrontMatter: vi.mocked(initializePieceFrontMatter),
 	selectItems: vi.mocked(selectItems),
+	deleteItems: vi.mocked(deleteItems),
 	insertItem: vi.mocked(insertItem),
 	updateItem: vi.mocked(updateItem),
 	selectItem: vi.mocked(selectItem),
@@ -488,7 +485,6 @@ describe('lib/pieces/piece.ts', () => {
 		await new PieceTest().cleanUpSlugs(dbMocks.db, slugsOnDisk)
 
 		expect(mocks.selectItems).toHaveBeenCalledOnce()
-		expect(mocks.removeAllTagsFrom).toHaveBeenCalledWith(dbMocks.db, [2], expect.any(String))
 	})
 
 	test('cleanUpSlugs supports dryRun', async () => {
@@ -502,7 +498,6 @@ describe('lib/pieces/piece.ts', () => {
 		await new PieceTest().cleanUpSlugs(dbMocks.db, slugsOnDisk, true)
 
 		expect(mocks.selectItems).toHaveBeenCalledOnce()
-		expect(mocks.removeAllTagsFrom).not.toHaveBeenCalled()
 	})
 
 	test('cleanUpSlugs catches error', async () => {
@@ -512,7 +507,7 @@ describe('lib/pieces/piece.ts', () => {
 		const PieceTest = makePiece()
 
 		mocks.selectItems.mockResolvedValueOnce(slugs.map((slug, id) => ({ id, slug })))
-		mocks.removeAllTagsFrom.mockRejectedValueOnce(new Error('oof'))
+		mocks.deleteItems.mockRejectedValueOnce(new Error('oof'))
 
 		await new PieceTest().cleanUpSlugs(dbMocks.db, slugsOnDisk)
 
@@ -548,25 +543,6 @@ describe('lib/pieces/piece.ts', () => {
 		await pieceTest.syncMarkdownAdd(dbMocks.db, markdown)
 
 		expect(mocks.insertItem).toHaveBeenCalledOnce()
-		expect(mocks.addTagsTo).not.toHaveBeenCalled()
-	})
-
-	test('syncMarkdownAdd with keywords', async () => {
-		const dbMocks = mockDatabase()
-		const PieceTest = makePiece()
-		const keywords = 'a,b'.split(',')
-		const markdown = makeMarkdownSample('slug', 'note', { keywords: keywords.join(',') })
-		const added = { ...markdown.frontmatter, id: 1 }
-
-		const pieceTest = new PieceTest()
-		mocks.makeInsertable.mockReturnValueOnce({} as PiecesItemsInsertable)
-		mocks.insertItem.mockResolvedValueOnce(added)
-		mocks.keywordsToTags.mockReturnValueOnce(keywords)
-
-		await pieceTest.syncMarkdownAdd(dbMocks.db, markdown)
-
-		expect(mocks.insertItem).toHaveBeenCalledOnce()
-		expect(mocks.addTagsTo).toHaveBeenCalledWith(dbMocks.db, keywords, added.id, expect.any(String))
 	})
 
 	test('syncMarkdownAdd supports dryRun', async () => {
@@ -580,7 +556,6 @@ describe('lib/pieces/piece.ts', () => {
 		await pieceTest.syncMarkdownAdd(dbMocks.db, markdown, true)
 
 		expect(dbMocks.queries.executeTakeFirstOrThrow).not.toHaveBeenCalled()
-		expect(mocks.addTagsTo).not.toHaveBeenCalled()
 	})
 
 	test('syncMarkdownAdd catches error', async () => {
@@ -588,7 +563,7 @@ describe('lib/pieces/piece.ts', () => {
 		const PieceTest = makePiece()
 		const markdown = makeMarkdownSample()
 
-		dbMocks.queries.executeTakeFirstOrThrow.mockRejectedValueOnce(new Error('oof'))
+		mocks.insertItem.mockRejectedValueOnce(new Error('oof'))
 
 		const pieceTest = new PieceTest()
 		await pieceTest.syncMarkdownAdd(dbMocks.db, markdown)
@@ -634,13 +609,11 @@ describe('lib/pieces/piece.ts', () => {
 
 		const pieceTest = new PieceTest()
 		mocks.makeUpdatable.mockReturnValueOnce(updated)
-		mocks.keywordsToTags.mockReturnValueOnce([])
 		mocks.updateItem.mockResolvedValueOnce()
 
 		await pieceTest.syncMarkdownUpdate(dbMocks.db, markdown, pieceData)
 
 		expect(mocks.updateItem).toHaveBeenCalledOnce()
-		expect(mocks.syncTagsFor).toHaveBeenCalledWith(dbMocks.db, [], updated.id, expect.any(String))
 	})
 
 	test('syncMarkdownUpdate with keywords', async () => {
@@ -650,22 +623,14 @@ describe('lib/pieces/piece.ts', () => {
 		const markdown = makeMarkdownSample('slug', 'note', { keywords: keywords.join(',') })
 		const pieceData = { id: 1, ...makeSample() }
 		const updated = { ...markdown.frontmatter, keywords: 'a' }
-		const dbUpdate = { ...updated, id: 1 }
 
 		const pieceTest = new PieceTest()
 		mocks.makeUpdatable.mockReturnValueOnce(updated)
-		mocks.keywordsToTags.mockReturnValueOnce(keywords)
 		mocks.updateItem.mockResolvedValueOnce()
 
 		await pieceTest.syncMarkdownUpdate(dbMocks.db, markdown, pieceData)
 
 		expect(mocks.updateItem).toHaveBeenCalledOnce()
-		expect(mocks.syncTagsFor).toHaveBeenCalledWith(
-			dbMocks.db,
-			keywords,
-			dbUpdate.id,
-			expect.any(String)
-		)
 	})
 
 	test('syncMarkdownUpdate catches error', async () => {
@@ -756,6 +721,8 @@ describe('lib/pieces/piece.ts', () => {
 		const markdown = makeMarkdownSample()
 
 		const pieceTest = new PieceTest()
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+
 		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValueOnce(markdown)
 		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValueOnce(null)
 		spies.syncMarkdown = vi.spyOn(pieceTest, 'syncMarkdown').mockResolvedValue()
