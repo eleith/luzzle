@@ -3,15 +3,12 @@ import { LuzzleTables } from '../database/tables/index.js'
 import { JSONSchemaType } from 'ajv'
 import { PieceFrontmatter } from './utils/frontmatter.js'
 import cuid2 from '@paralleldrive/cuid2'
-import { dropPieceItemsTable, createPieceItemsTable } from './items.js'
 
 async function addPiece(
 	db: Kysely<LuzzleTables>,
 	name: string,
 	schema: JSONSchemaType<PieceFrontmatter>
 ) {
-	await createPieceItemsTable(db, name, schema)
-
 	await db
 		.insertInto('pieces_manager')
 		.values({
@@ -27,9 +24,6 @@ async function updatePiece(
 	name: string,
 	schema: JSONSchemaType<PieceFrontmatter>
 ) {
-	await dropPieceItemsTable(db, name)
-	await createPieceItemsTable(db, name, schema)
-
 	await db
 		.updateTable('pieces_manager')
 		.set({
@@ -63,7 +57,6 @@ async function getPieces(db: Kysely<LuzzleTables>) {
 }
 
 async function deletePiece(db: Kysely<LuzzleTables>, name: string) {
-	await dropPieceItemsTable(db, name)
 	await db.deleteFrom('pieces_manager').where('name', '=', name).execute()
 }
 

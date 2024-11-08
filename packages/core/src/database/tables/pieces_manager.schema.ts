@@ -1,7 +1,7 @@
 import type { Insertable, Updateable, Selectable } from 'kysely'
 import { cuid, date_added, date_updated } from '../utils.js'
 
-interface PieceManager {
+interface PieceManagerTable {
 	id: cuid
 	date_added: date_added
 	date_updated?: date_updated
@@ -9,12 +9,12 @@ interface PieceManager {
 	schema: string
 }
 
-type PieceManagerSelect = Selectable<PieceManager>
-type PieceManagerInsert = Insertable<PieceManager>
-type PieceManagerUpdate = Updateable<PieceManager>
+type PieceManagerSelect = Selectable<PieceManagerTable>
+type PieceManagerInsert = Insertable<PieceManagerTable>
+type PieceManagerUpdate = Updateable<PieceManagerTable>
 
 export {
-	type PieceManager,
+	type PieceManagerTable,
 	type PieceManagerSelect,
 	type PieceManagerInsert,
 	type PieceManagerUpdate,

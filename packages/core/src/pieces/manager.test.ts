@@ -1,14 +1,12 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { mockKysely } from '../database/database.mock.js'
-import { createPieceItemsTable, dropPieceItemsTable } from './items.js'
 import * as manager from './manager.js'
 import { makeSchema } from './utils/piece.fixtures.js'
 
 vi.mock('./items.js')
 
 const mocks = {
-	dropPieceItemsTable: vi.mocked(dropPieceItemsTable),
-	createPieceItemsTable: vi.mocked(createPieceItemsTable),
+	empty: vi.fn(),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -29,11 +27,8 @@ describe('src/pieces/manager.ts', () => {
 		const kysely = mockKysely()
 		const schema = makeSchema()
 
-		mocks.createPieceItemsTable.mockResolvedValueOnce()
-
 		await manager.addPiece(kysely.db, 'name', schema)
 
-		expect(mocks.createPieceItemsTable).toHaveBeenCalled()
 		expect(kysely.db.insertInto).toHaveBeenCalled()
 	})
 
@@ -42,13 +37,8 @@ describe('src/pieces/manager.ts', () => {
 		const schema = makeSchema()
 		const name = 'name'
 
-		mocks.createPieceItemsTable.mockResolvedValueOnce()
-		mocks.dropPieceItemsTable.mockResolvedValueOnce()
-
 		await manager.updatePiece(kysely.db, name, schema)
 
-		expect(mocks.createPieceItemsTable).toHaveBeenCalled()
-		expect(mocks.dropPieceItemsTable).toHaveBeenCalled()
 		expect(kysely.db.updateTable).toHaveBeenCalled()
 		expect(kysely.queries.where).toHaveBeenCalledWith('name', '=', name)
 	})
@@ -99,11 +89,8 @@ describe('src/pieces/manager.ts', () => {
 		const kysely = mockKysely()
 		const name = 'name'
 
-		mocks.dropPieceItemsTable.mockResolvedValueOnce()
-
 		await manager.deletePiece(kysely.db, name)
 
-		expect(mocks.dropPieceItemsTable).toHaveBeenCalled()
 		expect(kysely.db.deleteFrom).toHaveBeenCalled()
 		expect(kysely.queries.where).toHaveBeenCalledWith('name', '=', name)
 	})

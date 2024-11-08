@@ -1,14 +1,18 @@
 import Ajv from 'ajv'
 import { PieceMarkdown } from './markdown.js'
 import { PieceFrontmatter, PieceFrontmatterSchema } from './frontmatter.js'
-import { PiecesItemsSelectable } from '../tables.schema.js'
+import { PiecesItemsSelectable } from '../../database/tables/pieces_items.schema.js'
 
 type PieceValidator = Ajv.ValidateFunction<PieceFrontmatter>
 
 const sample = {
+	id: '1',
 	slug: 'sampleSlug',
-	title: 'title',
-	note: 'note',
+	note_markdown: 'note',
+	type: 'books',
+	date_added: new Date().getTime(),
+	date_updated: new Date().getTime(),
+	frontmatter_json: JSON.stringify({ title: 'title' }),
 }
 
 export function makeValidator(): PieceValidator {
@@ -39,26 +43,18 @@ export function makeSchema(properties?: {
 	}
 }
 
-export function makeFrontmatterSample(
-	frontmatter: Record<string, unknown> = { title: sample.title }
-): PieceFrontmatter {
-	return frontmatter as PieceFrontmatter
-}
-
 export function makeMarkdownSample<F extends PieceFrontmatter>(
 	slug = sample.slug,
-	note: string | null | undefined = sample.note,
+	note: string | null | undefined = sample.note_markdown,
 	frontmatter: F
 ): PieceMarkdown<F> {
 	return {
 		slug,
 		note,
 		frontmatter,
-	} as PieceMarkdown<F>
+	}
 }
 
 export function makeSample(): PiecesItemsSelectable {
-	return {
-		...sample,
-	} as PiecesItemsSelectable
+	return sample
 }

@@ -2,7 +2,7 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { mockKysely } from '../database/database.mock.js'
 import * as items from './items.js'
 import { addColumnsFromPieceSchema } from './json.schema.js'
-import { makeSchema } from './utils/piece.fixtures.js'
+import { PiecesItemsTable } from 'src/database/tables/pieces_items.schema.js'
 
 vi.mock('./json.schema.ts')
 
@@ -24,26 +24,6 @@ describe('src/pieces/items.ts', () => {
 		})
 	})
 
-	test('dropPieceItemsTable', async () => {
-		const kysely = mockKysely()
-
-		await items.dropPieceItemsTable(kysely.db, 'test')
-
-		expect(kysely.db.schema.dropTable).toHaveBeenCalled()
-	})
-
-	test('createPieceItemsTable', async () => {
-		const kysely = mockKysely()
-		const schema = makeSchema()
-
-		mocks.addColumnsFromPieceSchema.mockImplementation((tableBuilder) => tableBuilder)
-
-		await items.createPieceItemsTable(kysely.db, 'test', schema)
-
-		expect(kysely.db.schema.createTable).toHaveBeenCalled()
-		expect(mocks.addColumnsFromPieceSchema).toHaveBeenCalledWith(expect.any(Object), schema)
-	})
-
 	test('selectItem', async () => {
 		const kysely = mockKysely()
 		const slug = 'slug'
@@ -54,12 +34,12 @@ describe('src/pieces/items.ts', () => {
 		expect(kysely.queries.where).toHaveBeenCalledWith('slug', '=', slug)
 	})
 
-	test('updateItem', async () => {
+	test('updateItemById', async () => {
 		const kysely = mockKysely()
 		const id = 'one'
 		const data = { slug: 'slug', title: 'title' }
 
-		await items.updateItem(kysely.db, 'test', id, data)
+		await items.updateItemById(kysely.db, 'test', id, data)
 
 		expect(kysely.db.updateTable).toHaveBeenCalled()
 		expect(kysely.queries.where).toHaveBeenCalledWith('id', '=', id)
@@ -67,9 +47,9 @@ describe('src/pieces/items.ts', () => {
 
 	test('insertItem', async () => {
 		const kysely = mockKysely()
-		const data = { slug: 'slug', title: 'title' }
+		const data = { slug: 'slug', type: 'books', id: 'one', frontmatter_json: '', note_markdown: '' }
 
-		await items.insertItem(kysely.db, 'test', data)
+		await items.insertItem(kysely.db, data)
 
 		expect(kysely.db.insertInto).toHaveBeenCalled()
 		expect(kysely.queries.values).toHaveBeenCalledWith(data)
@@ -86,7 +66,7 @@ describe('src/pieces/items.ts', () => {
 
 	test('selectItems with columns', async () => {
 		const kysely = mockKysely()
-		const columns = ['column1', 'column2']
+		const columns = ['slug', 'frontmatter_json'] as Array<keyof PiecesItemsTable>
 
 		await items.selectItems(kysely.db, 'test', columns)
 
@@ -94,13 +74,13 @@ describe('src/pieces/items.ts', () => {
 		expect(kysely.queries.select).toHaveBeenCalledWith(columns)
 	})
 
-	test('deleteItems', async () => {
+	test('deleteItemsById', async () => {
 		const kysely = mockKysely()
-		const slugs = ['slug1', 'slug2']
+		const ids = ['slug1', 'slug2']
 
-		await items.deleteItems(kysely.db, 'test', slugs)
+		await items.deleteItemsByIds(kysely.db, ids)
 
 		expect(kysely.db.deleteFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('id', 'in', slugs)
+		expect(kysely.queries.where).toHaveBeenCalledWith('id', 'in', ids)
 	})
 })
