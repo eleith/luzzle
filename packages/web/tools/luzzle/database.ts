@@ -1,13 +1,6 @@
-import { type LuzzleDatabase, getDatabaseClient, sql, LuzzleTables } from '@luzzle/core'
+import { type LuzzleDatabase, getDatabaseClient, sql } from '@luzzle/core'
 import { WebPieceTags, type WebPieces } from '../../src/lib/pieces/types'
 import slugify from '@sindresorhus/slugify'
-import { Kysely } from 'kysely'
-
-type WebLuzzleDatabase = Kysely<LuzzleTables & {
-	web_pieces: WebPieces
-	web_pieces_fts5: WebPieces
-	web_pieces_tags: WebPieceTags
-}>
 
 function batchArray<T>(array: T[], batchSize: number): T[][] {
 	const batches: T[][] = []
@@ -44,143 +37,137 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addColumn('date_updated', 'datetime')
 		.addColumn('date_consumed', 'datetime')
 		.execute()
-}
-
-async function populateWebPieceTables(db: LuzzleDatabase): Promise<void> {
-	const tables = await db.introspection.getTables()
-	const webColumns = [
-		'id',
-		'slug',
-		'title',
-		'type',
-		'summary',
-		'note',
-		'media',
-		'keywords',
-		'date_added',
-		'date_updated',
-		'date_consumed',
-		'json_metadata'
-	] as Array<keyof WebPieces>
-
-	const bookTable = 'pieces_items_books'
-	const books = tables.find((table) => table.name === bookTable)
-	const bookColumns = books?.columns.map((column) => column.name) || []
-	const bookColumnsJsonInsert = bookColumns.map((column) => `'${column}', ${column}`).join(', ')
-	const bookColumnsWebInsert = [
-		'id',
-		'slug',
-		'title',
-		"'books'",
-		'description',
-		'note',
-		'cover',
-		'keywords',
-		'date_added',
-		'date_updated',
-		'date_read',
-		'json_object(' + bookColumnsJsonInsert + ')'
-	].join(', ')
-
-	const gameTable = 'pieces_items_games'
-	const games = tables.find((table) => table.name === gameTable)
-	const gameColumns = games?.columns.map((column) => column.name) || []
-	const gameColumnsJsonInsert = gameColumns.map((column) => `'${column}', ${column}`).join(', ')
-	const gameColumnsWebInsert = [
-		'id',
-		'slug',
-		'title',
-		"'games'",
-		'description',
-		'note',
-		'representative_image',
-		'keywords',
-		'date_added',
-		'date_updated',
-		'date_played',
-		'json_object(' + gameColumnsJsonInsert + ')'
-	].join(', ')
-
-	const linkTable = 'pieces_items_links'
-	const links = tables.find((table) => table.name === linkTable)
-	const linkColumns = links?.columns.map((column) => column.name) || []
-	const linkColumnsJsonInsert = linkColumns.map((column) => `'${column}', ${column}`).join(', ')
-	const linkColumnsWebInsert = [
-		'id',
-		'slug',
-		'title',
-		"'links'",
-		'summary',
-		'note',
-		'representative_image',
-		'keywords',
-		'date_added',
-		'date_updated',
-		'date_accessed',
-		'json_object(' + linkColumnsJsonInsert + ')'
-	].join(', ')
-
-	const textTable = 'pieces_items_texts'
-	const texts = tables.find((table) => table.name === textTable)
-	const textColumns = texts?.columns.map((column) => column.name) || []
-	const textColumnsJsonInsert = textColumns.map((column) => `'${column}', ${column}`).join(', ')
-	const textColumnsWebInsert = [
-		'id',
-		'slug',
-		'title',
-		"'texts'",
-		'summary',
-		'note',
-		'representative_image',
-		'keywords',
-		'date_added',
-		'date_updated',
-		'date_published',
-		'json_object(' + textColumnsJsonInsert + ')'
-	].join(', ')
-
-	const filmTable = 'pieces_items_films'
-	const films = tables.find((table) => table.name === filmTable)
-	const filmColumns = films?.columns.map((column) => column.name) || []
-	const filmColumnsJsonInsert = filmColumns.map((column) => `'${column}', ${column}`).join(', ')
-	const filmColumnsWebInsert = [
-		'id',
-		'slug',
-		'title',
-		"'films'",
-		'summary',
-		'note',
-		'poster',
-		'keywords',
-		'date_added',
-		'date_updated',
-		'date_viewed',
-		'json_object(' + filmColumnsJsonInsert + ')'
-	].join(', ')
-
-	await sql`INSERT INTO web_pieces (${sql.raw(webColumns.join(', '))}) SELECT ${sql.raw(
-		bookColumnsWebInsert
-	)} FROM ${sql.raw(bookTable)}`.execute(db)
-	await sql`INSERT INTO web_pieces (${sql.raw(webColumns.join(', '))}) SELECT ${sql.raw(
-		gameColumnsWebInsert
-	)} FROM ${sql.raw(gameTable)}`.execute(db)
-	await sql`INSERT INTO web_pieces (${sql.raw(webColumns.join(', '))}) SELECT ${sql.raw(
-		linkColumnsWebInsert
-	)} FROM ${sql.raw(linkTable)}`.execute(db)
-	await sql`INSERT INTO web_pieces (${sql.raw(webColumns.join(', '))}) SELECT ${sql.raw(
-		textColumnsWebInsert
-	)} FROM ${sql.raw(textTable)}`.execute(db)
-	await sql`INSERT INTO web_pieces (${sql.raw(webColumns.join(', '))}) SELECT ${sql.raw(
-		filmColumnsWebInsert
-	)} FROM ${sql.raw(filmTable)}`.execute(db)
 
 	await sql`CREATE VIRTUAL TABLE IF NOT EXISTS "web_pieces_fts5" USING fts5(id UNINDEXED, slug, type UNINDEXED, title, summary, note, media UNINDEXED, keywords, json_metadata, date_added UNINDEXED, date_updated UNINDEXED, date_consumed UNINDEXED, tokenize = 'porter ascii', prefix='3 4 5', content = 'web_pieces', content_rowid="rowid")`.execute(
 		db
 	)
+}
+
+async function populateWebPieceBooks(db: LuzzleDatabase): Promise<void> {
+	const bookToWebPieceMap: Record<keyof WebPieces, string> = {
+		id: 'id',
+		slug: 'slug',
+		title: `json_extract(frontmatter_json, '$.title')`,
+		type: "'books'",
+		summary: `json_extract(frontmatter_json, '$.description')`,
+		note: 'note_markdown',
+		media: `json_extract(frontmatter_json, '$.cover')`,
+		keywords: `json_extract(frontmatter_json, '$.keywords')`,
+		date_added: 'date_added',
+		date_updated: 'date_updated',
+		date_consumed: `json_extract(frontmatter_json, '$.date_read')`,
+		json_metadata: 'frontmatter_json'
+	}
+
+	const webColumns = Object.keys(bookToWebPieceMap).join(', ')
+	const bookColumns = Object.values(bookToWebPieceMap).join(', ')
+
+	await sql`INSERT INTO web_pieces (${sql.raw(webColumns)}) SELECT ${sql.raw(
+		bookColumns
+	)} FROM pieces_items WHERE type='books'`.execute(db)
+}
+
+async function populateWebPieceFilms(db: LuzzleDatabase): Promise<void> {
+	const filmToWebPieceMap: Record<keyof WebPieces, string> = {
+		id: 'id',
+		slug: 'slug',
+		title: `json_extract(frontmatter_json, '$.title')`,
+		type: "'films'",
+		summary: `json_extract(frontmatter_json, '$.summary')`,
+		note: 'note_markdown',
+		media: `json_extract(frontmatter_json, '$.poster')`,
+		keywords: `json_extract(frontmatter_json, '$.keywords')`,
+		date_added: 'date_added',
+		date_updated: 'date_updated',
+		date_consumed: `json_extract(frontmatter_json, '$.date_viewed')`,
+		json_metadata: 'frontmatter_json'
+	}
+
+	const webColumns = Object.keys(filmToWebPieceMap).join(', ')
+	const filmColumns = Object.values(filmToWebPieceMap).join(', ')
+
+	await sql`INSERT INTO web_pieces (${sql.raw(webColumns)}) SELECT ${sql.raw(
+		filmColumns
+	)} FROM pieces_items WHERE type='films'`.execute(db)
+}
+
+async function populateWebPieceGames(db: LuzzleDatabase): Promise<void> {
+	const gameToWebPieceMap: Record<keyof WebPieces, string> = {
+		id: 'id',
+		slug: 'slug',
+		title: `json_extract(frontmatter_json, '$.title')`,
+		type: "'games'",
+		summary: `json_extract(frontmatter_json, '$.description')`,
+		note: 'note_markdown',
+		media: `json_extract(frontmatter_json, '$.representative_image')`,
+		keywords: `json_extract(frontmatter_json, '$.keywords')`,
+		date_added: 'date_added',
+		date_updated: 'date_updated',
+		date_consumed: `json_extract(frontmatter_json, '$.date_played')`,
+		json_metadata: 'frontmatter_json'
+	}
+
+	const webColumns = Object.keys(gameToWebPieceMap).join(', ')
+	const gameColumns = Object.values(gameToWebPieceMap).join(', ')
+
+	await sql`INSERT INTO web_pieces (${sql.raw(webColumns)}) SELECT ${sql.raw(
+		gameColumns
+	)} FROM pieces_items WHERE type='games'`.execute(db)
+}
+
+async function populateWebPieceLinks(db: LuzzleDatabase): Promise<void> {
+	const linkToWebPieceMap: Record<keyof WebPieces, string> = {
+		id: 'id',
+		slug: 'slug',
+		title: `json_extract(frontmatter_json, '$.title')`,
+		type: "'links'",
+		summary: `json_extract(frontmatter_json, '$.summary')`,
+		note: 'note_markdown',
+		media: `json_extract(frontmatter_json, '$.representative_image')`,
+		keywords: `json_extract(frontmatter_json, '$.keywords')`,
+		date_added: 'date_added',
+		date_updated: 'date_updated',
+		date_consumed: `json_extract(frontmatter_json, '$.date_accessed')`,
+		json_metadata: 'frontmatter_json'
+	}
+
+	const webColumns = Object.keys(linkToWebPieceMap).join(', ')
+	const linkColumns = Object.values(linkToWebPieceMap).join(', ')
+
+	await sql`INSERT INTO web_pieces (${sql.raw(webColumns)}) SELECT ${sql.raw(
+		linkColumns
+	)} FROM pieces_items WHERE type='links'`.execute(db)
+}
+
+async function populateWebPieceTexts(db: LuzzleDatabase): Promise<void> {
+	const textToWebPieceMap: Record<keyof WebPieces, string> = {
+		id: 'id',
+		slug: 'slug',
+		title: `json_extract(frontmatter_json, '$.title')`,
+		type: "'texts'",
+		summary: `json_extract(frontmatter_json, '$.summary')`,
+		note: 'note_markdown',
+		media: `json_extract(frontmatter_json, '$.representative_image')`,
+		keywords: `json_extract(frontmatter_json, '$.keywords')`,
+		date_added: 'date_added',
+		date_updated: 'date_updated',
+		date_consumed: `json_extract(frontmatter_json, '$.date_published')`,
+		json_metadata: 'frontmatter_json'
+	}
+
+	const webColumns = Object.keys(textToWebPieceMap).join(', ')
+	const textColumns = Object.values(textToWebPieceMap).join(', ')
+
+	await sql`INSERT INTO web_pieces (${sql.raw(webColumns)}) SELECT ${sql.raw(
+		textColumns
+	)} FROM pieces_items WHERE type='texts'`.execute(db)
+}
+
+async function populateWebPieceSearch(db: LuzzleDatabase): Promise<void> {
 	await sql`INSERT INTO web_pieces_fts5(web_pieces_fts5) VALUES('rebuild')`.execute(db)
 }
 
-async function populateWebPieceTagsTable(db: WebLuzzleDatabase): Promise<void> {
+async function populateWebPieceTagsTable(db: LuzzleDatabase): Promise<void> {
 	const tags = await sql<{
 		slug: string
 		type: WebPieces['type']
@@ -189,7 +176,7 @@ async function populateWebPieceTagsTable(db: WebLuzzleDatabase): Promise<void> {
 	}>`SELECT web_pieces.slug, web_pieces.id, web_pieces.type, json_each.value as tag FROM web_pieces, json_each(web_pieces.keywords)`.execute(
 		db
 	)
-
+	const webDb = db.withTables<{ web_pieces_tags: WebPieceTags }>()
 	const values: Array<WebPieceTags> = []
 
 	tags.rows.forEach((tag) => {
@@ -197,8 +184,8 @@ async function populateWebPieceTagsTable(db: WebLuzzleDatabase): Promise<void> {
 			values.push({
 				piece_slug: tag.slug,
 				piece_type: tag.type,
-				tag: tag.tag,
-				slug: slugify(tag.tag),
+				tag: tag.tag.trim(),
+				slug: slugify(tag.tag.trim()),
 				piece_id: tag.id
 			})
 		}
@@ -207,27 +194,30 @@ async function populateWebPieceTagsTable(db: WebLuzzleDatabase): Promise<void> {
 	if (values.length) {
 		const batches = batchArray(values, 1000)
 		for (const batch of batches) {
-			await db.insertInto('web_pieces_tags').values(batch).execute()
+			await webDb.insertInto('web_pieces_tags').values(batch).execute()
 		}
 	}
-
 }
 
 export async function initialize(databasePath: string) {
 	const db = getDatabaseClient(databasePath)
-	const webDb = db.withTables<{
+
+	await db.schema.dropTable('web_pieces_fts5').ifExists().execute()
+	await db.schema.dropTable('web_pieces').ifExists().execute()
+	await db.schema.dropTable('web_pieces_tags').ifExists().execute()
+
+	await createWebTables(db)
+	await populateWebPieceBooks(db)
+	await populateWebPieceFilms(db)
+	await populateWebPieceGames(db)
+	await populateWebPieceLinks(db)
+	await populateWebPieceTexts(db)
+	await populateWebPieceSearch(db)
+	await populateWebPieceTagsTable(db)
+
+	return db.withTables<{
 		web_pieces: WebPieces
 		web_pieces_fts5: WebPieces
 		web_pieces_tags: WebPieceTags
 	}>()
-
-	await webDb.schema.dropTable('web_pieces_fts5').ifExists().execute()
-	await webDb.schema.dropTable('web_pieces').ifExists().execute()
-	await webDb.schema.dropTable('web_pieces_tags').ifExists().execute()
-
-	await createWebTables(db)
-	await populateWebPieceTables(db)
-	await populateWebPieceTagsTable(webDb)
-
-	return webDb
 }
