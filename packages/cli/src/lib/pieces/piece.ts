@@ -20,11 +20,11 @@ import {
 	makePieceItemUpdatable,
 	databaseValueToPieceFrontmatterValue,
 	PieceMarkdownError,
-	deleteItems,
+	deleteItemsByIds,
 	selectItems,
 	selectItem,
-	updateItem,
-	PiecesItemsSelectable,
+	updateItemById,
+	LuzzleSelectable,
 	insertItem,
 	getPieceSchemaFromFile,
 	getPiece,
@@ -40,11 +40,11 @@ import { fileTypeFromFile } from 'file-type'
 import { randomBytes } from 'crypto'
 import { JSONSchemaType } from 'ajv/dist/core.js'
 
-export interface InterfacePiece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
-	new (pieceRoot: string, pieceName: string): Piece<D, F>
+export interface InterfacePiece<F extends PieceFrontmatter> {
+	new (pieceRoot: string, pieceName: string): Piece<F>
 }
 
-class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
+class Piece<F extends PieceFrontmatter> {
 	private _validator?: ReturnType<typeof compile<F>>
 	private _schema: PieceFrontmatterSchema<F>
 	private _schemaPath: string
@@ -91,7 +91,7 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 		return this._fields
 	}
 
-	initialize(): Piece<D, F> {
+	initialize(): Piece<F> {
 		Object.entries(this._directories).forEach(([key, dir]) => {
 			if (!existsSync(dir)) {
 				mkdirSync(dir, { recursive: true })
@@ -224,7 +224,7 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 
 		try {
 			if (idsToRemove.length && dryRun === false) {
-				await deleteItems(db, this._pieceName, idsToRemove)
+				await deleteItemsByIds(db, idsToRemove)
 			}
 
 			log.info(`cleaned ${idsToRemove.length} ${this._pieceName}`)
@@ -247,10 +247,10 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 	): Promise<void> {
 		try {
 			if (dryRun === false) {
-				const createInput = makePieceItemInsertable(markdown, this._schema)
+				const createInput = makePieceItemInsertable(this._pieceName, markdown, this._schema)
 				const piecePath = this.getPath(markdown.slug)
 
-				await insertItem(db, this._pieceName, createInput)
+				await insertItem(db, createInput)
 				await addCache(db, markdown.slug, this._pieceName, piecePath)
 			}
 			log.info(`added ${markdown.slug}`)
@@ -267,7 +267,7 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 		const dbPiece = await selectItem(db, this._pieceName, markdown.slug)
 
 		if (dbPiece) {
-			await this.syncMarkdownUpdate(db, markdown, dbPiece as D, dryRun)
+			await this.syncMarkdownUpdate(db, markdown, dbPiece, dryRun)
 		} else {
 			await this.syncMarkdownAdd(db, markdown, dryRun)
 		}
@@ -276,13 +276,13 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 	async syncMarkdownUpdate(
 		db: LuzzleDatabase,
 		markdown: PieceMarkdown<F>,
-		data: D,
+		data: LuzzleSelectable<'pieces_items'>,
 		dryRun = false
 	): Promise<void> {
 		const updateInput = makePieceItemUpdatable(markdown, this._schema, data, false)
 		try {
 			if (dryRun === false) {
-				await updateItem(db, this._pieceName, data.id as string, updateInput)
+				await updateItemById(db, this._pieceName, data.id, updateInput)
 				const piecePath = this.getPath(data.slug as string)
 
 				await updateCache(db, data.slug as string, this._pieceName, piecePath)
@@ -336,24 +336,25 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 		}
 	}
 
-	toMarkdown(data: D): PieceMarkdown<F> {
-		const frontmatter: Record<string, unknown> = {}
-		const dataKeys = Object.keys(data)
+	toMarkdown(data: LuzzleSelectable<'pieces_items'>): PieceMarkdown<F> {
+		const frontmatter = JSON.parse(data.frontmatter_json)
+		const frontmatterJson: Record<string, unknown> = {}
+		const dataKeys = Object.keys(frontmatter)
 		const fields = getPieceFrontmatterSchemaFields(this._schema).filter((f) =>
 			dataKeys.includes(f.name)
 		)
 
 		fields.forEach((field) => {
 			const name = field.name
-			const value = data[field.name as keyof D]
+			const value = frontmatter[field.name]
 
-			frontmatter[name] = databaseValueToPieceFrontmatterValue(value, field)
+			frontmatterJson[name] = databaseValueToPieceFrontmatterValue(value, field)
 		})
 
 		return makePieceMarkdownOrThrow(
-			data.slug as string,
-			data.note as string | null | undefined,
-			frontmatter as F,
+			data.slug,
+			data.note_markdown,
+			frontmatterJson as F,
 			this.validator
 		)
 	}
@@ -500,7 +501,7 @@ class Piece<D extends PiecesItemsSelectable, F extends PieceFrontmatter> {
 		await eachLimit(pieceData, numCpus, async (data) => {
 			try {
 				if (dryRun === false) {
-					const markdown = this.toMarkdown(data as D)
+					const markdown = this.toMarkdown(data)
 					await this.write(markdown)
 				}
 				log.info(`saving ${this._pieceName} for ${data.slug} to markdown`)
