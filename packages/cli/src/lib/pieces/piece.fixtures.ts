@@ -1,5 +1,5 @@
 import {
-	PiecesItemsSelectable,
+	LuzzleSelectable,
 	PieceFrontmatter,
 	PieceMarkdown,
 	compile,
@@ -12,9 +12,12 @@ type PieceValidator = ReturnType<typeof compile<PieceFrontmatter>>
 
 const sample = {
 	slug: 'sampleSlug',
-	title: 'title',
-	note: 'note',
-}
+	note_markdown: 'sampleNote',
+	id: 'sampleId',
+	date_added: new Date().getTime(),
+	date_updated: new Date().getTime(),
+	frontmatter_json: JSON.stringify({ title: 'sampleTitle' }),
+} as LuzzleSelectable<'pieces_items'>
 
 export function makeValidator(): PieceValidator {
 	const validate = () => true
@@ -49,14 +52,14 @@ export function makeSchema(
 }
 
 export function makeFrontmatterSample(
-	frontmatter: Record<string, unknown> = { title: sample.title }
+	frontmatter: Record<string, unknown> = { title: JSON.parse(sample.frontmatter_json).title }
 ): PieceFrontmatter {
 	return frontmatter as PieceFrontmatter
 }
 
 export function makeMarkdownSample<F extends PieceFrontmatter>(
 	slug = sample.slug,
-	note: string | null | undefined = sample.note,
+	note: string | null | undefined = sample.note_markdown,
 	frontmatter?: F
 ): PieceMarkdown<F> {
 	return {
@@ -66,13 +69,13 @@ export function makeMarkdownSample<F extends PieceFrontmatter>(
 	} as PieceMarkdown<F>
 }
 
-export function makeSample(): PiecesItemsSelectable {
+export function makeSample(): LuzzleSelectable<'pieces_items'> {
 	return {
 		...sample,
-	} as PiecesItemsSelectable
+	}
 }
 
-class PieceOverridable extends Piece<PiecesItemsSelectable, PieceFrontmatter> {
+class PieceOverridable extends Piece<PieceFrontmatter> {
 	constructor(
 		overrides: {
 			root?: string

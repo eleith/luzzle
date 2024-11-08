@@ -28,16 +28,17 @@ import {
 	compile,
 	makePieceItemInsertable,
 	makePieceItemUpdatable,
-	PiecesItemsInsertable,
 	selectItems,
-	deleteItems,
+	deleteItemsByIds,
 	selectItem,
 	insertItem,
-	updateItem,
+	updateItemById,
 	addPiece,
 	updatePiece,
 	getPiece,
 	getPieceSchemaFromFile,
+	LuzzleSelectable,
+	LuzzleInsertable,
 } from '@luzzle/core'
 import { downloadFileOrUrlTo } from './utils.js'
 import { makeCache } from './cache.fixtures.js'
@@ -84,9 +85,9 @@ const mocks = {
 	makeUpdatable: vi.mocked(makePieceItemUpdatable),
 	initializePieceFrontMatter: vi.mocked(initializePieceFrontMatter),
 	selectItems: vi.mocked(selectItems),
-	deleteItems: vi.mocked(deleteItems),
+	deleteItems: vi.mocked(deleteItemsByIds),
 	insertItem: vi.mocked(insertItem),
-	updateItem: vi.mocked(updateItem),
+	updateItem: vi.mocked(updateItemById),
 	selectItem: vi.mocked(selectItem),
 	addPiece: vi.mocked(addPiece),
 	updatePiece: vi.mocked(updatePiece),
@@ -480,7 +481,9 @@ describe('lib/pieces/piece.ts', () => {
 		const slugsOnDisk = ['a', 'b']
 		const PieceTest = makePiece()
 
-		mocks.selectItems.mockResolvedValueOnce(slugs.map((slug, id) => ({ id, slug })))
+		mocks.selectItems.mockResolvedValueOnce(
+			slugs.map((slug, id) => ({ id, slug })) as unknown as LuzzleSelectable<'pieces_items'>[]
+		)
 
 		await new PieceTest().cleanUpSlugs(dbMocks.db, slugsOnDisk)
 
@@ -493,7 +496,9 @@ describe('lib/pieces/piece.ts', () => {
 		const slugsOnDisk = ['a', 'b']
 		const PieceTest = makePiece()
 
-		mocks.selectItems.mockResolvedValueOnce(slugs.map((slug, id) => ({ id, slug })))
+		mocks.selectItems.mockResolvedValueOnce(
+			slugs.map((slug, id) => ({ id, slug })) as unknown as LuzzleSelectable<'pieces_items'>[]
+		)
 
 		await new PieceTest().cleanUpSlugs(dbMocks.db, slugsOnDisk, true)
 
@@ -506,7 +511,9 @@ describe('lib/pieces/piece.ts', () => {
 		const slugsOnDisk = ['a', 'b']
 		const PieceTest = makePiece()
 
-		mocks.selectItems.mockResolvedValueOnce(slugs.map((slug, id) => ({ id, slug })))
+		mocks.selectItems.mockResolvedValueOnce(
+			slugs.map((slug, id) => ({ id, slug })) as unknown as LuzzleSelectable<'pieces_items'>[]
+		)
 		mocks.deleteItems.mockRejectedValueOnce(new Error('oof'))
 
 		await new PieceTest().cleanUpSlugs(dbMocks.db, slugsOnDisk)
@@ -534,11 +541,10 @@ describe('lib/pieces/piece.ts', () => {
 		const dbMocks = mockDatabase()
 		const PieceTest = makePiece()
 		const markdown = makeMarkdownSample()
-		const added = { ...markdown.frontmatter, id: 1 }
 
 		const pieceTest = new PieceTest()
-		mocks.makeInsertable.mockReturnValueOnce({} as PiecesItemsInsertable)
-		mocks.insertItem.mockResolvedValueOnce(added)
+		mocks.makeInsertable.mockReturnValueOnce({} as LuzzleInsertable<'pieces_items'>)
+		mocks.insertItem.mockResolvedValueOnce({} as LuzzleSelectable<'pieces_items'>)
 
 		await pieceTest.syncMarkdownAdd(dbMocks.db, markdown)
 
@@ -578,7 +584,7 @@ describe('lib/pieces/piece.ts', () => {
 		const markdown = makeMarkdownSample()
 		const pieceTest = new PieceTest()
 
-		mocks.selectItem.mockResolvedValueOnce(dbData)
+		mocks.selectItem.mockResolvedValueOnce(dbData as unknown as LuzzleSelectable<'pieces_items'>)
 		spies.syncUpdate = vi.spyOn(pieceTest, 'syncMarkdownUpdate').mockResolvedValueOnce()
 
 		await pieceTest.syncMarkdown(dbMocks.db, markdown)
@@ -592,7 +598,7 @@ describe('lib/pieces/piece.ts', () => {
 		const markdown = makeMarkdownSample()
 		const pieceTest = new PieceTest()
 
-		mocks.selectItem.mockResolvedValueOnce(null)
+		mocks.selectItem.mockResolvedValueOnce(undefined)
 		spies.syncAdd = vi.spyOn(pieceTest, 'syncMarkdownAdd').mockResolvedValueOnce()
 
 		await pieceTest.syncMarkdown(dbMocks.db, markdown)
@@ -604,8 +610,8 @@ describe('lib/pieces/piece.ts', () => {
 		const dbMocks = mockDatabase()
 		const PieceTest = makePiece()
 		const markdown = makeMarkdownSample()
-		const updated = { ...markdown.frontmatter, id: 1 }
-		const pieceData = { id: 1, ...makeSample() }
+		const updated = { frontmatter_json: JSON.stringify(markdown.frontmatter), id: '1' }
+		const pieceData = { ...makeSample() }
 
 		const pieceTest = new PieceTest()
 		mocks.makeUpdatable.mockReturnValueOnce(updated)
@@ -621,8 +627,8 @@ describe('lib/pieces/piece.ts', () => {
 		const PieceTest = makePiece()
 		const keywords = 'a,b'.split(',')
 		const markdown = makeMarkdownSample('slug', 'note', { keywords: keywords.join(',') })
-		const pieceData = { id: 1, ...makeSample() }
-		const updated = { ...markdown.frontmatter, keywords: 'a' }
+		const pieceData = { ...makeSample() }
+		const updated = { frontmatter_json: JSON.stringify(markdown.frontmatter) }
 
 		const pieceTest = new PieceTest()
 		mocks.makeUpdatable.mockReturnValueOnce(updated)
@@ -638,7 +644,7 @@ describe('lib/pieces/piece.ts', () => {
 		const PieceTest = makePiece()
 		const markdown = makeMarkdownSample()
 		const pieceData = makeSample()
-		const updated = { ...markdown.frontmatter, keywords: 'a' }
+		const updated = { frontmatter_json: JSON.stringify(markdown.frontmatter) }
 
 		const pieceTest = new PieceTest()
 		mocks.makeUpdatable.mockReturnValueOnce(updated)
@@ -654,7 +660,7 @@ describe('lib/pieces/piece.ts', () => {
 		const markdown = makeMarkdownSample()
 		const pieceData = makeSample()
 		const db = mockDatabase().db
-		const updated = { ...markdown.frontmatter, keywords: 'a' }
+		const updated = { frontmatter_json: JSON.stringify(markdown.frontmatter) }
 
 		const pieceTest = new PieceTest()
 		mocks.makeUpdatable.mockReturnValueOnce(updated)
@@ -693,6 +699,9 @@ describe('lib/pieces/piece.ts', () => {
 		const PieceTest = makePiece()
 		const title = ['a', 'b']
 
+		pieceSample.frontmatter_json = JSON.stringify({ title })
+		pieceMarkdown.frontmatter = JSON.parse(pieceSample.frontmatter_json)
+
 		mocks.makePieceMarkdownOrThrow.mockReturnValueOnce(pieceMarkdown)
 		mocks.getPieceSchemaFields.mockReturnValueOnce([
 			{ name: 'title', type: 'array', items: { type: 'string' } },
@@ -700,15 +709,12 @@ describe('lib/pieces/piece.ts', () => {
 		mocks.databaseValueToFrontmatterValue.mockReturnValueOnce(title)
 		mocks.compile.mockReturnValueOnce(pieceValidator)
 
-		const markdown = new PieceTest().toMarkdown({
-			...pieceSample,
-			title: JSON.stringify(['a', 'b']),
-		})
+		const markdown = new PieceTest().toMarkdown(pieceSample)
 
 		expect(mocks.makePieceMarkdownOrThrow).toHaveBeenCalledWith(
 			pieceMarkdown.slug,
 			pieceMarkdown.note,
-			{ ...pieceMarkdown.frontmatter, title },
+			pieceMarkdown.frontmatter,
 			pieceValidator
 		)
 		expect(markdown).toEqual(pieceMarkdown)
