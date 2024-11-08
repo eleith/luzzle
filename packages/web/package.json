@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
-		"build:lock": "npm i --package-lock-only --workspaces=false && cp package-lock.json web.package-lock.json",
+		"build:lock": "npm i --package-lock-only --workspaces=false && mv package-lock.json web.package-lock.json",
 		"build": "vite build",
 		"preview": "vite preview",
 		"build:luzzle:db": "vite-node tools/luzzle/index.ts",
@@ -48,7 +48,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@luzzle/core": "0.0.13",
+		"@luzzle/core": "0.0.14",
 		"@resvg/resvg-js": "2.6.2",
 		"@sindresorhus/slugify": "2.2.0",
 		"better-sqlite3": "8.4.0",
