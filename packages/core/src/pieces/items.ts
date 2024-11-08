@@ -1,104 +1,60 @@
-import { JSONSchemaType } from 'ajv'
 import { Kysely } from 'kysely'
-import { PieceFrontmatter } from './utils/frontmatter.js'
-import { addColumnsFromPieceSchema } from './json.schema.js'
-import { PiecesItemsInsertable, PiecesItemsSelectable } from './tables.schema.js'
+import { PiecesItemsInsertable } from '../database/tables/pieces_items.schema.js'
+import { LuzzleTables } from 'src/database/tables/index.js'
 
-function getPieceItemsTable<K>(name: string) {
-	return `pieces_items_${name}` as keyof K & string
-}
-
-function dropPieceItemsTable<K>(db: Kysely<K>, name: string) {
-	const tableName = getPieceItemsTable(name)
-	return db.schema.dropTable(tableName).ifExists().execute()
-}
-
-async function createPieceItemsTable<K>(
-	db: Kysely<K>,
-	name: string,
-	schema: JSONSchemaType<PieceFrontmatter>
-) {
-	const tableName = getPieceItemsTable(name)
-	const tableBuilder = db.schema.createTable(tableName)
-	const tableBuilderWithColumns = addColumnsFromPieceSchema(tableBuilder, schema)
-
-	await tableBuilderWithColumns.execute()
-}
-
-async function selectItem<K>(db: Kysely<K>, pieceName: string, slug: string) {
-	const tableName = getPieceItemsTable<K>(pieceName)
+async function selectItem(db: Kysely<LuzzleTables>, pieceName: string, slug: string) {
 	const query = await db
-		.selectFrom(tableName)
+		.selectFrom('pieces_items')
 		.selectAll()
-		.where('slug' as never, '=', slug as never)
+		.where('slug', '=', slug)
+		.where('type', '=', pieceName)
 		.executeTakeFirst()
 
-	return (query || null) as unknown as PiecesItemsSelectable | null
+	return query
 }
 
-async function updateItem<K>(
-	db: Kysely<K>,
+async function updateItemById(
+	db: Kysely<LuzzleTables>,
 	pieceName: string,
 	id: string,
 	data: { [key: string]: unknown }
 ) {
-	const tableName = getPieceItemsTable(pieceName)
 	await db
-		.updateTable(tableName)
+		.updateTable('pieces_items')
 		.set(data as never)
-		.where('id' as never, '=', id as never)
+		.where('id', '=', id)
+		.where('type', '=', pieceName)
 		.execute()
 }
 
-async function insertItem<K, P extends PiecesItemsInsertable>(
-	db: Kysely<K>,
-	pieceName: string,
-	data: P
-) {
-	const tableName = getPieceItemsTable(pieceName)
-
+async function insertItem(db: Kysely<LuzzleTables>, data: PiecesItemsInsertable) {
 	const insert = await db
-		.insertInto(tableName)
+		.insertInto('pieces_items')
 		.values(data as never)
 		.returningAll()
 		.executeTakeFirst()
 
-	return insert as unknown as P
+	return insert
 }
 
-async function selectItems<P extends PiecesItemsSelectable, K>(
-	db: Kysely<K>,
-	name: string,
-	columns?: Array<keyof P>
+async function selectItems(
+	db: Kysely<LuzzleTables>,
+	pieceName: string,
+	columns?: Array<keyof PiecesItemsInsertable>
 ) {
-	const tableName = getPieceItemsTable(name)
-	const query = db.selectFrom(tableName)
+	const query = db.selectFrom('pieces_items').where('type', '=', pieceName)
 
 	if (columns) {
-		const results = await query.select(columns as never).execute()
-		return results as unknown as P[]
+		const results = await query.select(columns).execute()
+		return results
 	} else {
 		const results = await query.selectAll().execute()
-		return results as unknown as P[]
+		return results
 	}
 }
 
-async function deleteItems<K>(db: Kysely<K>, name: string, ids: string[]) {
-	const tableName = getPieceItemsTable(name)
-
-	await db
-		.deleteFrom(tableName)
-		.where('id' as never, 'in', ids as never)
-		.execute()
+async function deleteItemsByIds(db: Kysely<LuzzleTables>, ids: string[]) {
+	await db.deleteFrom('pieces_items').where('id', 'in', ids).execute()
 }
 
-export {
-	getPieceItemsTable,
-	dropPieceItemsTable,
-	createPieceItemsTable,
-	selectItems,
-	deleteItems,
-	selectItem,
-	updateItem,
-	insertItem,
-}
+export { selectItems, deleteItemsByIds, selectItem, updateItemById, insertItem }

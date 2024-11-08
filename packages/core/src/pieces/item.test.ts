@@ -31,6 +31,7 @@ describe('src/pieces/item.ts', () => {
 	test('makePieceItemInsertable', () => {
 		const slug = 'slug'
 		const note = 'note'
+		const piece = 'books'
 		const frontmatter = {
 			title: 'title',
 			keywords: 'keys',
@@ -47,7 +48,7 @@ describe('src/pieces/item.ts', () => {
 		mocks.getPieceFrontmatterSchemaFields.mockReturnValueOnce(fields)
 		mocks.pieceFrontmatterValueToDatabaseValue.mockImplementation((value) => value)
 
-		const input = database.makePieceItemInsertable(markdown, schema)
+		const input = database.makePieceItemInsertable(piece, markdown, schema)
 
 		expect(mocks.pieceFrontmatterValueToDatabaseValue).toHaveBeenCalledTimes(
 			Object.keys(frontmatter).length
@@ -55,8 +56,9 @@ describe('src/pieces/item.ts', () => {
 		expect(input).toEqual({
 			id: expect.any(String),
 			slug: markdown.slug,
-			note: markdown.note,
-			...frontmatter,
+			note_markdown: markdown.note,
+			frontmatter_json: JSON.stringify(frontmatter),
+			type: piece,
 		})
 	})
 
@@ -77,10 +79,7 @@ describe('src/pieces/item.ts', () => {
 			{ name: 'subtitle', type: 'string' },
 		] as Array<PieceFrontmatterSchemaField>
 
-		data.title = frontmatter.title
-		data.keywords = frontmatter.keywords
-		data.subtitle = frontmatter.subtitle
-		data.note = 'old note'
+		data.note_markdown = 'old note'
 		data.slug = 'old slug'
 
 		mocks.getPieceFrontmatterSchemaFields.mockReturnValueOnce(fields)
@@ -90,7 +89,9 @@ describe('src/pieces/item.ts', () => {
 
 		expect(update).toEqual({
 			date_updated: expect.any(Number),
-			note,
+			id: data.id,
+			note_markdown: note,
+			frontmatter_json: JSON.stringify(frontmatter),
 			slug,
 		})
 	})
@@ -112,11 +113,9 @@ describe('src/pieces/item.ts', () => {
 			{ name: 'subtitle', type: 'string' },
 		] as Array<PieceFrontmatterSchemaField>
 
-		data.title = frontmatter.title
-		data.keywords = frontmatter.keywords
-		data.subtitle = frontmatter.subtitle
-		data.note = 'old note'
+		data.note_markdown = 'old note'
 		data.slug = 'old slug'
+		data.frontmatter_json = JSON.stringify(frontmatter)
 
 		mocks.getPieceFrontmatterSchemaFields.mockReturnValueOnce(fields)
 		mocks.pieceFrontmatterValueToDatabaseValue.mockImplementation((value) => value)
@@ -124,10 +123,11 @@ describe('src/pieces/item.ts', () => {
 		const update = database.makePieceItemUpdatable(markdown, schema, data, true)
 
 		expect(update).toEqual({
+			id: data.id,
 			date_updated: expect.any(Number),
-			note,
+			note_markdown: note,
 			slug,
-			...frontmatter,
+			frontmatter_json: JSON.stringify(frontmatter),
 		})
 	})
 })

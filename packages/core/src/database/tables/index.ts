@@ -1,15 +1,18 @@
 import { Kysely, Insertable, Updateable, Selectable } from 'kysely'
 import { CacheTable } from './pieces_cache.schema.js'
-import { PieceManager } from './pieces_manager.schema.js'
+import { PieceManagerTable } from './pieces_manager.schema.js'
+import { PiecesItemsTable } from './pieces_items.schema.js'
 
 const LuzzleTableName = {
 	Cache: 'pieces_cache',
 	PieceManager: 'pieces_manager',
+	PieceItems: 'pieces_items',
 } as const
 
 type LuzzleTables = {
 	[LuzzleTableName.Cache]: CacheTable
-	[LuzzleTableName.PieceManager]: PieceManager
+	[LuzzleTableName.PieceManager]: PieceManagerTable
+	[LuzzleTableName.PieceItems]: PiecesItemsTable
 }
 
 type LuzzleDatabase = Kysely<LuzzleTables>
