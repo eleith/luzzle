@@ -11,6 +11,8 @@ steps:
       - event: [push, manual]
         status: [failure, success]
         branch: [main]
+        path:
+          include: [".woodpecker/.web.yml", "packages/web/**"]
   build_docker:
     image: woodpeckerci/plugin-docker-buildx:pull_186
     settings:
@@ -28,6 +30,8 @@ steps:
       - event: [push, manual]
         status: [failure, success]
         branch: [main]
+        path:
+          include: [".woodpecker/.web.yml", "packages/web/**"]
   notify:
     image: deblan/woodpecker-email:2.0.4
     settings:
