@@ -1,9 +1,9 @@
 import { preprocessMeltUI, sequence } from '@melt-ui/pp'
 import adapter from '@sveltejs/adapter-node'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
-import dotenv from 'dotenv'
+import dotenv from '@dotenvx/dotenvx'
 
-dotenv.config()
+dotenv.config({ path: '.env.local' })
 
 /** @type {import('@sveltejs/kit').Config}*/
 const config = {
@@ -17,7 +17,7 @@ const config = {
 		prerender: {
 			concurrency: 4,
 			handleHttpError: 'warn'
-		},
+		}
 	}
 }
 
