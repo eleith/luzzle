@@ -180,12 +180,13 @@ async function populateWebPieceTagsTable(db: LuzzleDatabase): Promise<void> {
 	const values: Array<WebPieceTags> = []
 
 	tags.rows.forEach((tag) => {
-		if (tag) {
+		const name = tag.tag.trim()
+		if (name) {
 			values.push({
 				piece_slug: tag.slug,
 				piece_type: tag.type,
-				tag: tag.tag.trim(),
-				slug: slugify(tag.tag.trim()),
+				tag: name,
+				slug: slugify(name),
 				piece_id: tag.id
 			})
 		}
