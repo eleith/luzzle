@@ -14,7 +14,7 @@
 	import { fly, fade } from 'svelte/transition'
 	import { createDialog, melt } from '@melt-ui/svelte'
 	import type { Snippet } from 'svelte'
-	import { PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_TITLE } from '$env/static/public'
+	import { PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_TITLE, PUBLIC_ASSETS_CDN_URL, PUBLIC_ASSETS_CDN_URL } from '$env/static/public'
 
 	type Props = {
 		background?: string
@@ -79,7 +79,7 @@
 			font-weight: 300 600;
 			font-style: normal;
 			font-variation-settings: 'wdth' 300;
-			src: url('/fonts/noto-sans.woff2') format('woff2');
+			src: url(`${PUBLIC_ASSETS_CDN_URL}/fonts/noto-sans.woff2`) format('woff2');
 			font-display: swap;
 		}
 
