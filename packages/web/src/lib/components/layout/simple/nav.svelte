@@ -14,7 +14,7 @@
 	import { fly, fade } from 'svelte/transition'
 	import { createDialog, melt } from '@melt-ui/svelte'
 	import type { Snippet } from 'svelte'
-	import { PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_TITLE, PUBLIC_ASSETS_CDN_URL, PUBLIC_ASSETS_CDN_URL } from '$env/static/public'
+	import { PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_TITLE } from '$env/static/public'
 
 	type Props = {
 		background?: string
