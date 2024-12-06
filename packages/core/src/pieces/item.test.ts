@@ -1,11 +1,13 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import {
 	getPieceFrontmatterSchemaFields,
+	PieceFrontmatter,
 	PieceFrontmatterSchemaField,
 	pieceFrontmatterValueToDatabaseValue,
 } from './utils/frontmatter.js'
 import { makeMarkdownSample, makeSample, makeSchema } from './utils/piece.fixtures.js'
 import * as database from './item.js'
+import Ajv from 'ajv'
 
 vi.mock('./utils/frontmatter.js')
 
@@ -29,15 +31,15 @@ describe('src/pieces/item.ts', () => {
 	})
 
 	test('makePieceItemInsertable', () => {
-		const slug = 'slug'
 		const note = 'note'
 		const piece = 'books'
+		const path = 'path'
 		const frontmatter = {
 			title: 'title',
 			keywords: 'keys',
 			subtitle: 'subtitle',
 		}
-		const markdown = makeMarkdownSample(slug, note, frontmatter)
+		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
 		const schema = makeSchema()
 		const fields = [
 			{ name: 'title', type: 'string' },
@@ -55,7 +57,7 @@ describe('src/pieces/item.ts', () => {
 		)
 		expect(input).toEqual({
 			id: expect.any(String),
-			slug: markdown.slug,
+			file_path: path,
 			note_markdown: markdown.note,
 			frontmatter_json: JSON.stringify(frontmatter),
 			type: piece,
@@ -64,14 +66,15 @@ describe('src/pieces/item.ts', () => {
 
 	test('makePieceItemUpdatable', () => {
 		const data = makeSample()
-		const slug = 'slug'
 		const note = 'note'
+		const path = 'path'
+		const piece = 'books'
 		const frontmatter = {
 			title: 'title',
 			keywords: 'keys',
 			subtitle: 'subtitle',
 		}
-		const markdown = makeMarkdownSample(slug, note, frontmatter)
+		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
 		const schema = makeSchema()
 		const fields = [
 			{ name: 'title', type: 'string' },
@@ -80,7 +83,6 @@ describe('src/pieces/item.ts', () => {
 		] as Array<PieceFrontmatterSchemaField>
 
 		data.note_markdown = 'old note'
-		data.slug = 'old slug'
 
 		mocks.getPieceFrontmatterSchemaFields.mockReturnValueOnce(fields)
 		mocks.pieceFrontmatterValueToDatabaseValue.mockImplementation((value) => value)
@@ -89,23 +91,23 @@ describe('src/pieces/item.ts', () => {
 
 		expect(update).toEqual({
 			date_updated: expect.any(Number),
-			id: data.id,
+			file_path: path,
 			note_markdown: note,
 			frontmatter_json: JSON.stringify(frontmatter),
-			slug,
 		})
 	})
 
 	test('makePieceItemUpdatable force', () => {
 		const data = makeSample()
-		const slug = 'slug'
 		const note = 'note'
+		const path = 'path'
+		const piece = 'books'
 		const frontmatter = {
 			title: 'title',
 			keywords: 'keys',
 			subtitle: 'subtitle',
 		}
-		const markdown = makeMarkdownSample(slug, note, frontmatter)
+		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
 		const schema = makeSchema()
 		const fields = [
 			{ name: 'title', type: 'string' },
@@ -114,7 +116,6 @@ describe('src/pieces/item.ts', () => {
 		] as Array<PieceFrontmatterSchemaField>
 
 		data.note_markdown = 'old note'
-		data.slug = 'old slug'
 		data.frontmatter_json = JSON.stringify(frontmatter)
 
 		mocks.getPieceFrontmatterSchemaFields.mockReturnValueOnce(fields)
@@ -123,11 +124,61 @@ describe('src/pieces/item.ts', () => {
 		const update = database.makePieceItemUpdatable(markdown, schema, data, true)
 
 		expect(update).toEqual({
-			id: data.id,
+			file_path: path,
 			date_updated: expect.any(Number),
 			note_markdown: note,
-			slug,
 			frontmatter_json: JSON.stringify(frontmatter),
 		})
+	})
+
+	test('validatePieceItem', () => {
+		const note = 'note'
+		const piece = 'books'
+		const path = 'path'
+		const frontmatter = {
+			title: 'title',
+			keywords: 'keys',
+			subtitle: 'subtitle',
+		}
+		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
+		const validator = vi.fn(() => true) as unknown as Ajv.ValidateFunction<typeof frontmatter>
+
+		const valid = database.validatePieceItem(markdown, validator)
+
+		expect(valid).toBe(true)
+		expect(validator).toHaveBeenCalledOnce()
+	})
+
+	test('validatePieceItem fails', () => {
+		const note = 'note'
+		const piece = 'books'
+		const path = 'path'
+		const frontmatter = {
+			title: 'title',
+			keywords: 'keys',
+			subtitle: 'subtitle',
+		}
+		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
+		const validator = vi.fn(() => false) as unknown as Ajv.ValidateFunction<typeof frontmatter>
+
+		const valid = database.validatePieceItem(markdown, validator)
+
+		expect(valid).toBe(false)
+		expect(validator).toHaveBeenCalledOnce()
+	})
+
+	test('getValidatePieceItemErrors', () => {
+		const errors = ['errors', 'errors', 'errors']
+		const validator = { errors } as unknown as Ajv.ValidateFunction<PieceFrontmatter>
+		const getErrors = database.getValidatePieceItemErrors(validator)
+
+		expect(getErrors).length(errors.length)
+	})
+
+	test('getValidatePieceItemErrors but on valid validator', () => {
+		const validator = { errors: undefined } as unknown as Ajv.ValidateFunction<PieceFrontmatter>
+		const getErrors = database.getValidatePieceItemErrors(validator)
+
+		expect(getErrors).length(0)
 	})
 })

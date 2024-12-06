@@ -7,7 +7,7 @@ type PieceValidator = Ajv.ValidateFunction<PieceFrontmatter>
 
 const sample = {
 	id: '1',
-	slug: 'sampleSlug',
+	file_path: 'samplePath',
 	note_markdown: 'note',
 	type: 'books',
 	date_added: new Date().getTime(),
@@ -44,12 +44,14 @@ export function makeSchema(properties?: {
 }
 
 export function makeMarkdownSample<F extends PieceFrontmatter>(
-	slug = sample.slug,
-	note: string | null | undefined = sample.note_markdown,
+	filePath = sample.file_path,
+	piece = sample.type,
+	note: string | undefined = sample.note_markdown,
 	frontmatter: F
 ): PieceMarkdown<F> {
 	return {
-		slug,
+		filePath,
+		piece,
 		note,
 		frontmatter,
 	}

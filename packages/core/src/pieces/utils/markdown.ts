@@ -1,59 +1,24 @@
-import Ajv, { ValidateFunction } from 'ajv'
 import { addFrontMatter } from '../../lib/frontmatter.js'
 import { PieceFrontmatter } from './frontmatter.js'
 
 type PieceMarkdown<F extends PieceFrontmatter> = {
-	slug: string
-	note?: string | null
+	filePath: string
+	piece: string
+	note?: string
 	frontmatter: F
-}
-
-class PieceMarkdownError<Y> extends Error {
-	validationErrors: ValidateFunction<Y>['errors']
-
-	constructor(message: string, errors: ValidateFunction<Y>['errors']) {
-		const validationMessages = errors?.map((e) => `\t${e.instancePath} ${e.message}`).join('\n')
-		const errorMessage = validationMessages ? `${message}\n\n${validationMessages}` : message
-		super(errorMessage)
-		this.name = 'PieceMarkdownError'
-		this.validationErrors = errors
-	}
-}
-
-function makePieceMarkdownOrThrow<F extends PieceFrontmatter>(
-	slug: string,
-	markdown: string | undefined | null,
-	frontmatter: Record<string, unknown>,
-	validator: Ajv.ValidateFunction<F>
-): PieceMarkdown<F> {
-	if (validator(frontmatter)) {
-		return makePieceMarkdown(slug, markdown, frontmatter)
-	}
-
-	const pieceValidationError = new PieceMarkdownError(
-		`${slug} is not a valid piece`,
-		validator.errors
-	)
-
-	throw pieceValidationError
 }
 
 function makePieceMarkdown<F extends PieceFrontmatter>(
-	slug: string,
-	markdown: string | undefined | null,
+	filePath: string,
+	piece: string,
+	note: string | undefined,
 	frontmatter: F
 ): PieceMarkdown<F> {
-	return { slug, frontmatter, note: markdown }
+	return { filePath, piece, frontmatter, note }
 }
 
 function makePieceMarkdownString<T extends PieceFrontmatter>(markdown: PieceMarkdown<T>): string {
 	return addFrontMatter(markdown.note, markdown.frontmatter)
 }
 
-export {
-	type PieceMarkdown,
-	PieceMarkdownError,
-	makePieceMarkdownOrThrow,
-	makePieceMarkdown,
-	makePieceMarkdownString,
-}
+export { type PieceMarkdown, makePieceMarkdown, makePieceMarkdownString }

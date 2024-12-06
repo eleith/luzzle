@@ -1,7 +1,11 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { makeSchema } from '../pieces/utils/piece.fixtures.js'
 import Ajv from 'ajv'
-import ajv, { luzzleAssetFormatValidator, luzzleDateFormatValidator } from './ajv.js'
+import ajv, {
+	luzzleAssetFormatValidator,
+	luzzleDateFormatValidator,
+	luzzleCommaSeparatedFormatValidator,
+} from './ajv.js'
 
 vi.mock('ajv')
 
@@ -33,6 +37,10 @@ describe('src/lib/ajv.ts', () => {
 		expect(mocks.Ajv).toHaveBeenCalledTimes(1)
 		expect(mocks.addFormat).toHaveBeenCalledTimes(3)
 		expect(mocks.compile).toHaveBeenCalledWith(schema)
+	})
+
+	test('luzzleCommaSeparatedFormatValidator', () => {
+		expect(luzzleCommaSeparatedFormatValidator('a,b,c')).toBe(true)
 	})
 
 	test('luzzleDateFormatValidator', () => {
