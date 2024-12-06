@@ -26,28 +26,36 @@ describe('src/pieces/items.ts', () => {
 
 	test('selectItem', async () => {
 		const kysely = mockKysely()
-		const slug = 'slug'
+		const pieceName = 'test'
+		const file = 'file'
 
-		await items.selectItem(kysely.db, 'test', slug)
+		await items.selectItem(kysely.db, pieceName, file)
 
 		expect(kysely.db.selectFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('slug', '=', slug)
+		expect(kysely.queries.where).toHaveBeenCalledWith('file_path', '=', file)
+		expect(kysely.queries.where).toHaveBeenCalledWith('type', '=', pieceName)
 	})
 
-	test('updateItemById', async () => {
+	test('updateItem', async () => {
 		const kysely = mockKysely()
-		const id = 'one'
-		const data = { slug: 'slug', title: 'title' }
+		const file = 'file'
+		const data = { id: 'id', title: 'title' }
 
-		await items.updateItemById(kysely.db, 'test', id, data)
+		await items.updateItem(kysely.db, file, data)
 
 		expect(kysely.db.updateTable).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('id', '=', id)
+		expect(kysely.queries.where).toHaveBeenCalledWith('file_path', '=', file)
 	})
 
 	test('insertItem', async () => {
 		const kysely = mockKysely()
-		const data = { slug: 'slug', type: 'books', id: 'one', frontmatter_json: '', note_markdown: '' }
+		const data = {
+			file_path: 'path',
+			type: 'books',
+			id: 'one',
+			frontmatter_json: '',
+			note_markdown: '',
+		}
 
 		await items.insertItem(kysely.db, data)
 
@@ -66,7 +74,7 @@ describe('src/pieces/items.ts', () => {
 
 	test('selectItems with columns', async () => {
 		const kysely = mockKysely()
-		const columns = ['slug', 'frontmatter_json'] as Array<keyof PiecesItemsTable>
+		const columns = ['id', 'frontmatter_json'] as Array<keyof PiecesItemsTable>
 
 		await items.selectItems(kysely.db, 'test', columns)
 
@@ -76,7 +84,7 @@ describe('src/pieces/items.ts', () => {
 
 	test('deleteItemsById', async () => {
 		const kysely = mockKysely()
-		const ids = ['slug1', 'slug2']
+		const ids = ['id1', 'id2']
 
 		await items.deleteItemsByIds(kysely.db, ids)
 

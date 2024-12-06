@@ -3,8 +3,8 @@ import { cuid, date_added, date_updated } from '../utils.js'
 
 interface PiecesItemsTable {
 	id: cuid
+	file_path: string
 	type: string
-	slug: string
 	date_added: date_added
 	date_updated: date_updated
 	note_markdown: string

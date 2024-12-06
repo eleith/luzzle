@@ -1,10 +1,9 @@
-import type { Insertable, Updateable, Selectable, ColumnType } from 'kysely'
+import type { Insertable, Updateable, Selectable } from 'kysely'
 import { cuid, date_added, date_updated } from '../utils.js'
 
 interface CacheTable {
 	id: cuid
-	type: string
-	slug: ColumnType<string, string, never>
+	file_path: string
 	content_hash: string
 	date_added: date_added
 	date_updated: date_updated

@@ -1,30 +1,23 @@
 import { Kysely } from 'kysely'
-import { PiecesItemsInsertable } from '../database/tables/pieces_items.schema.js'
+import {
+	PiecesItemsInsertable,
+	PiecesItemsUpdateable,
+} from '../database/tables/pieces_items.schema.js'
 import { LuzzleTables } from 'src/database/tables/index.js'
 
-async function selectItem(db: Kysely<LuzzleTables>, pieceName: string, slug: string) {
+async function selectItem(db: Kysely<LuzzleTables>, pieceName: string, file: string) {
 	const query = await db
 		.selectFrom('pieces_items')
 		.selectAll()
-		.where('slug', '=', slug)
+		.where('file_path', '=', file)
 		.where('type', '=', pieceName)
 		.executeTakeFirst()
 
 	return query
 }
 
-async function updateItemById(
-	db: Kysely<LuzzleTables>,
-	pieceName: string,
-	id: string,
-	data: { [key: string]: unknown }
-) {
-	await db
-		.updateTable('pieces_items')
-		.set(data as never)
-		.where('id', '=', id)
-		.where('type', '=', pieceName)
-		.execute()
+async function updateItem(db: Kysely<LuzzleTables>, file: string, data: PiecesItemsUpdateable) {
+	await db.updateTable('pieces_items').set(data).where('file_path', '=', file).execute()
 }
 
 async function insertItem(db: Kysely<LuzzleTables>, data: PiecesItemsInsertable) {
@@ -57,4 +50,4 @@ async function deleteItemsByIds(db: Kysely<LuzzleTables>, ids: string[]) {
 	await db.deleteFrom('pieces_items').where('id', 'in', ids).execute()
 }
 
-export { selectItems, deleteItemsByIds, selectItem, updateItemById, insertItem }
+export { selectItems, deleteItemsByIds, selectItem, updateItem, insertItem }
