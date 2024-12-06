@@ -1,6 +1,7 @@
 import { type LuzzleDatabase, getDatabaseClient, sql } from '@luzzle/core'
 import { WebPieceTags, type WebPieces } from '../../src/lib/pieces/types'
 import slugify from '@sindresorhus/slugify'
+import path from 'path'
 
 function batchArray<T>(array: T[], batchSize: number): T[][] {
 	const batches: T[][] = []
@@ -36,6 +37,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addColumn('date_added', 'datetime')
 		.addColumn('date_updated', 'datetime')
 		.addColumn('date_consumed', 'datetime')
+		.addUniqueConstraint('slug-type', ['slug', 'type'])
 		.execute()
 
 	await sql`CREATE VIRTUAL TABLE IF NOT EXISTS "web_pieces_fts5" USING fts5(id UNINDEXED, slug, type UNINDEXED, title, summary, note, media UNINDEXED, keywords, json_metadata, date_added UNINDEXED, date_updated UNINDEXED, date_consumed UNINDEXED, tokenize = 'porter ascii', prefix='3 4 5', content = 'web_pieces', content_rowid="rowid")`.execute(
@@ -43,131 +45,64 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 	)
 }
 
-async function populateWebPieceBooks(db: LuzzleDatabase): Promise<void> {
-	const bookToWebPieceMap: Record<keyof WebPieces, string> = {
-		id: 'id',
-		slug: 'slug',
-		title: `json_extract(frontmatter_json, '$.title')`,
-		type: "'books'",
-		summary: `json_extract(frontmatter_json, '$.description')`,
-		note: 'note_markdown',
-		media: `json_extract(frontmatter_json, '$.cover')`,
-		keywords: `json_extract(frontmatter_json, '$.keywords')`,
-		date_added: 'date_added',
-		date_updated: 'date_updated',
-		date_consumed: `json_extract(frontmatter_json, '$.date_read')`,
-		json_metadata: 'frontmatter_json'
-	}
+async function populatePieceItems(db: LuzzleDatabase): Promise<void> {
+	const webDb = db.withTables<{ web_pieces: WebPieces }>()
+	const items = await db
+		.selectFrom('pieces_items')
+		.selectAll()
+		.execute()
+	const values: Array<WebPieces> = []
+	const typeSlugs = new Set<string>()
 
-	const webColumns = Object.keys(bookToWebPieceMap).join(', ')
-	const bookColumns = Object.values(bookToWebPieceMap).join(', ')
+	items.forEach((item) => {
+		const frontmatter = JSON.parse(item.frontmatter_json)
+		const filename = path.basename(item.file_path, '.md').split('.')[0]
+		const type = item.type as WebPieces['type']
+		const slug = slugify(filename)
+		let finalSlug = slug
+		let count = 0
 
-	await sql`INSERT INTO web_pieces (${sql.raw(webColumns)}) SELECT ${sql.raw(
-		bookColumns
-	)} FROM pieces_items WHERE type='books'`.execute(db)
-}
+		if (typeSlugs.has(`${type}-${slug}-${count}`)) {
+			count = 1
+			while (typeSlugs.has(`${type}-${slug}-${count}`)) {
+				count++
+			}
+			finalSlug = `${slug}--${count}`
+		}
 
-async function populateWebPieceFilms(db: LuzzleDatabase): Promise<void> {
-	const filmToWebPieceMap: Record<keyof WebPieces, string> = {
-		id: 'id',
-		slug: 'slug',
-		title: `json_extract(frontmatter_json, '$.title')`,
-		type: "'films'",
-		summary: `json_extract(frontmatter_json, '$.summary')`,
-		note: 'note_markdown',
-		media: `json_extract(frontmatter_json, '$.poster')`,
-		keywords: `json_extract(frontmatter_json, '$.keywords')`,
-		date_added: 'date_added',
-		date_updated: 'date_updated',
-		date_consumed: `json_extract(frontmatter_json, '$.date_viewed')`,
-		json_metadata: 'frontmatter_json'
-	}
+		typeSlugs.add(`${type}-${slug}-${count}`)
 
-	const webColumns = Object.keys(filmToWebPieceMap).join(', ')
-	const filmColumns = Object.values(filmToWebPieceMap).join(', ')
+		values.push({
+			slug: finalSlug,
+			type: item.type as WebPieces['type'],
+			id: item.id,
+			title: frontmatter.title,
+			summary: frontmatter.description || frontmatter.summary,
+			note: item.note_markdown,
+			media: frontmatter.cover || frontmatter.poster || frontmatter.representative_image,
+			keywords: frontmatter.keywords,
+			date_added: item.date_added,
+			date_consumed: frontmatter.date_read || frontmatter.date_viewed || frontmatter.date_played || frontmatter.date_accessed || frontmatter.date_published,
+			json_metadata: item.frontmatter_json,
+			... (item.date_updated && { date_updated: item.date_updated }),
+		})
+	})
 
-	await sql`INSERT INTO web_pieces (${sql.raw(webColumns)}) SELECT ${sql.raw(
-		filmColumns
-	)} FROM pieces_items WHERE type='films'`.execute(db)
-}
-
-async function populateWebPieceGames(db: LuzzleDatabase): Promise<void> {
-	const gameToWebPieceMap: Record<keyof WebPieces, string> = {
-		id: 'id',
-		slug: 'slug',
-		title: `json_extract(frontmatter_json, '$.title')`,
-		type: "'games'",
-		summary: `json_extract(frontmatter_json, '$.description')`,
-		note: 'note_markdown',
-		media: `json_extract(frontmatter_json, '$.representative_image')`,
-		keywords: `json_extract(frontmatter_json, '$.keywords')`,
-		date_added: 'date_added',
-		date_updated: 'date_updated',
-		date_consumed: `json_extract(frontmatter_json, '$.date_played')`,
-		json_metadata: 'frontmatter_json'
-	}
-
-	const webColumns = Object.keys(gameToWebPieceMap).join(', ')
-	const gameColumns = Object.values(gameToWebPieceMap).join(', ')
-
-	await sql`INSERT INTO web_pieces (${sql.raw(webColumns)}) SELECT ${sql.raw(
-		gameColumns
-	)} FROM pieces_items WHERE type='games'`.execute(db)
-}
-
-async function populateWebPieceLinks(db: LuzzleDatabase): Promise<void> {
-	const linkToWebPieceMap: Record<keyof WebPieces, string> = {
-		id: 'id',
-		slug: 'slug',
-		title: `json_extract(frontmatter_json, '$.title')`,
-		type: "'links'",
-		summary: `json_extract(frontmatter_json, '$.summary')`,
-		note: 'note_markdown',
-		media: `json_extract(frontmatter_json, '$.representative_image')`,
-		keywords: `json_extract(frontmatter_json, '$.keywords')`,
-		date_added: 'date_added',
-		date_updated: 'date_updated',
-		date_consumed: `json_extract(frontmatter_json, '$.date_accessed')`,
-		json_metadata: 'frontmatter_json'
-	}
-
-	const webColumns = Object.keys(linkToWebPieceMap).join(', ')
-	const linkColumns = Object.values(linkToWebPieceMap).join(', ')
-
-	await sql`INSERT INTO web_pieces (${sql.raw(webColumns)}) SELECT ${sql.raw(
-		linkColumns
-	)} FROM pieces_items WHERE type='links'`.execute(db)
-}
-
-async function populateWebPieceTexts(db: LuzzleDatabase): Promise<void> {
-	const textToWebPieceMap: Record<keyof WebPieces, string> = {
-		id: 'id',
-		slug: 'slug',
-		title: `json_extract(frontmatter_json, '$.title')`,
-		type: "'texts'",
-		summary: `json_extract(frontmatter_json, '$.summary')`,
-		note: 'note_markdown',
-		media: `json_extract(frontmatter_json, '$.representative_image')`,
-		keywords: `json_extract(frontmatter_json, '$.keywords')`,
-		date_added: 'date_added',
-		date_updated: 'date_updated',
-		date_consumed: `json_extract(frontmatter_json, '$.date_published')`,
-		json_metadata: 'frontmatter_json'
-	}
-
-	const webColumns = Object.keys(textToWebPieceMap).join(', ')
-	const textColumns = Object.values(textToWebPieceMap).join(', ')
-
-	await sql`INSERT INTO web_pieces (${sql.raw(webColumns)}) SELECT ${sql.raw(
-		textColumns
-	)} FROM pieces_items WHERE type='texts'`.execute(db)
+	await webDb.transaction().execute(async (tx) => {
+		if (values.length) {
+			const batches = batchArray(values, 1000)
+			for (const batch of batches) {
+				await tx.insertInto('web_pieces').values(batch).execute()
+			}
+		}
+	})
 }
 
 async function populateWebPieceSearch(db: LuzzleDatabase): Promise<void> {
 	await sql`INSERT INTO web_pieces_fts5(web_pieces_fts5) VALUES('rebuild')`.execute(db)
 }
 
-async function populateWebPieceTagsTable(db: LuzzleDatabase): Promise<void> {
+async function populateWebPieceTags(db: LuzzleDatabase): Promise<void> {
 	const tags = await sql<{
 		slug: string
 		type: WebPieces['type']
@@ -192,12 +127,14 @@ async function populateWebPieceTagsTable(db: LuzzleDatabase): Promise<void> {
 		}
 	})
 
-	if (values.length) {
-		const batches = batchArray(values, 1000)
-		for (const batch of batches) {
-			await webDb.insertInto('web_pieces_tags').values(batch).execute()
+	await webDb.transaction().execute(async (tx) => {
+		if (values.length) {
+			const batches = batchArray(values, 1000)
+			for (const batch of batches) {
+				await tx.insertInto('web_pieces_tags').values(batch).execute()
+			}
 		}
-	}
+	})
 }
 
 export async function initialize(databasePath: string) {
@@ -208,13 +145,9 @@ export async function initialize(databasePath: string) {
 	await db.schema.dropTable('web_pieces_tags').ifExists().execute()
 
 	await createWebTables(db)
-	await populateWebPieceBooks(db)
-	await populateWebPieceFilms(db)
-	await populateWebPieceGames(db)
-	await populateWebPieceLinks(db)
-	await populateWebPieceTexts(db)
+	await populatePieceItems(db)
 	await populateWebPieceSearch(db)
-	await populateWebPieceTagsTable(db)
+	await populateWebPieceTags(db)
 
 	return db.withTables<{
 		web_pieces: WebPieces

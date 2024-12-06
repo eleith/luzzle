@@ -8,7 +8,7 @@ export interface WebPieces {
 	title: string
 	slug: string
 	note?: string
-	date_updated: number
+	date_updated?: number
 	date_added: number
 	date_consumed?: number
 	type: WebPieceType
