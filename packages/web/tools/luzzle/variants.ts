@@ -40,7 +40,7 @@ async function resize(image: Buffer, toPath: string) {
 
 async function generateVariantsForPiece(piece: WebPieces, lastRun: Date) {
 	const pieceModifiedTime = new Date(piece.date_updated || piece.date_added)
-	const mediaPath = `${PRIVATE_LUZZLE_DIR}/${piece.type}/${piece.media}`
+	const mediaPath = `${PRIVATE_LUZZLE_DIR}/${piece.media}`
 	const mediaStat = await stat(mediaPath).catch(() => null)
 	const mediaFileName = path.basename(mediaPath)
 	const mediaFileBaseName = path.basename(mediaPath, path.extname(mediaPath))

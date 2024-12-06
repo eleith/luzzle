@@ -6,7 +6,9 @@ steps:
     image: node:14
     commands:
       - echo $LUZZLE_NPMRC >> .npmrc
-    secrets: [luzzle_npmrc]
+    environment:
+      LUZZLE_NPMRC:
+        from_secret: luzzle_npmrc
     when:
       - event: [push, manual]
         status: [failure, success]

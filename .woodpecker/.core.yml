@@ -8,7 +8,11 @@ steps:
       - npm ci -w @luzzle/core
       - npm run lint -w @luzzle/core
       - npm run build -w @luzzle/core
-    secrets: [npm_token, npm_owner]
+    environment:
+      NPM_OWNER:
+        from_secret: npm_owner
+      NPM_TOKEN:
+        from_secret: npm_token
     when:
       - event: [push]
         branch: [main]
@@ -33,7 +37,11 @@ steps:
       - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
       - cd ../..
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/core; fi
-    secrets: [npm_token, npm_owner]
+    environment:
+      NPM_OWNER:
+        from_secret: npm_owner
+      NPM_TOKEN:
+        from_secret: npm_token
     when:
       - event: [push]
         branch: [main]
