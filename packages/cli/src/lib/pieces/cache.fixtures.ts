@@ -5,8 +5,7 @@ function makeCache(
 ): LuzzleSelectable<'pieces_cache'> {
 	return {
 		id: '1',
-		slug: 'slug',
-		type: 'table',
+		file_path: 'file',
 		date_added: new Date().getTime(),
 		date_updated: new Date().getTime(),
 		content_hash: 'content',

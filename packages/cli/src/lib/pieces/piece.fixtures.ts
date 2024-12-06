@@ -11,9 +11,10 @@ import { PieceManagerSelect } from '@luzzle/core/dist/src/database/tables/pieces
 type PieceValidator = ReturnType<typeof compile<PieceFrontmatter>>
 
 const sample = {
-	slug: 'sampleSlug',
 	note_markdown: 'sampleNote',
+	file_path: 'samplePath',
 	id: 'sampleId',
+	type: 'sampleType',
 	date_added: new Date().getTime(),
 	date_updated: new Date().getTime(),
 	frontmatter_json: JSON.stringify({ title: 'sampleTitle' }),
@@ -58,15 +59,15 @@ export function makeFrontmatterSample(
 }
 
 export function makeMarkdownSample<F extends PieceFrontmatter>(
-	slug = sample.slug,
-	note: string | null | undefined = sample.note_markdown,
-	frontmatter?: F
+	initial = {} as Partial<PieceMarkdown<F>>
 ): PieceMarkdown<F> {
 	return {
-		slug,
-		note,
-		frontmatter: frontmatter || makeFrontmatterSample(),
-	} as PieceMarkdown<F>
+		note: sample.note_markdown,
+		filePath: sample.file_path,
+		piece: sample.type,
+		frontmatter: makeFrontmatterSample() as F,
+		...initial,
+	}
 }
 
 export function makeSample(): LuzzleSelectable<'pieces_items'> {
@@ -77,21 +78,19 @@ export function makeSample(): LuzzleSelectable<'pieces_items'> {
 
 class PieceOverridable extends Piece<PieceFrontmatter> {
 	constructor(
-		overrides: {
-			root?: string
-			name?: string
-			schema?: PieceFrontmatterSchema<PieceFrontmatter> | null
-		} = {}
+		root: string = 'pieces-root',
+		name: string = 'table',
+		schema: PieceFrontmatterSchema<PieceFrontmatter> | null = makeSchema('table')
 	) {
-		const root = overrides.root || 'pieces-root'
-		const name = overrides.name || 'table'
-		const schema = overrides.schema === null ? undefined : overrides.schema || makeSchema(name)
-
-		super(root, name, schema)
+		if (!schema) {
+			super(root, name)
+		} else {
+			super(root, name, schema)
+		}
 	}
 }
 
-export function makePiece() {
+export function makePieceMock() {
 	return PieceOverridable
 }
 

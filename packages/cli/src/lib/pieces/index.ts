@@ -1,15 +1,13 @@
-import { PieceMarkdown, PieceMarkdownError } from '@luzzle/core'
+import { PieceMarkdown } from '@luzzle/core'
 import {
 	PieceArgv,
+	PiecePositional,
 	PieceDirectories,
-	PieceCommandOption,
-	PieceOptionalCommandOption,
-	PieceOptionalArgv,
 	PieceFileType,
-	makePieceCommand,
-	makeOptionalPieceCommand,
-	parsePieceArgv,
-	parseOptionalPieceArgv,
+	makePieceOption,
+	makePiecePathPositional,
+	parsePieceOptionArgv,
+	parsePiecePathPositionalArgv,
 	downloadFileOrUrlTo,
 } from './utils.js'
 import Pieces from './pieces.js'
@@ -17,18 +15,15 @@ import Piece from './piece.js'
 
 export {
 	type PieceArgv,
-	type PieceOptionalArgv,
 	type PieceDirectories,
 	type PieceMarkdown,
 	Piece,
 	Pieces,
-	PieceMarkdownError,
+	PiecePositional,
 	downloadFileOrUrlTo,
-	PieceCommandOption,
-	PieceOptionalCommandOption,
 	PieceFileType,
-	makePieceCommand,
-	makeOptionalPieceCommand,
-	parsePieceArgv,
-	parseOptionalPieceArgv,
+	makePiecePathPositional,
+	makePieceOption,
+	parsePieceOptionArgv,
+	parsePiecePathPositionalArgv,
 }

@@ -1,8 +1,12 @@
-import log from '../log.js'
 import { Argv } from 'yargs'
 import { Command } from './utils/types.js'
 import yaml from 'yaml'
-import { PieceArgv, PieceCommandOption, makePieceCommand, parsePieceArgv } from '../pieces/index.js'
+import {
+	PieceArgv,
+	PiecePositional,
+	makePiecePathPositional,
+	parsePiecePathPositionalArgv,
+} from '../pieces/index.js'
 import { generatePieceFrontmatter } from '../llm/google.js'
 
 export type AssistantArgv = {
@@ -15,12 +19,12 @@ export type AssistantArgv = {
 const command: Command<AssistantArgv> = {
 	name: 'assistant',
 
-	command: `assistant ${PieceCommandOption}`,
+	command: `assistant ${PiecePositional}`,
 
 	describe: 'prompt an assistant to generate a piece',
 
 	builder: function <T>(yargs: Argv<T>) {
-		return makePieceCommand(yargs)
+		return makePiecePathPositional(yargs)
 			.option('output', {
 				alias: 'o',
 				type: 'string',
@@ -48,15 +52,7 @@ const command: Command<AssistantArgv> = {
 
 	run: async function (ctx, args) {
 		const { output, prompt, file, write } = args
-		const { slug, name } = await parsePieceArgv(ctx, args)
-		const piece = await ctx.pieces.getPiece(name)
-		const markdown = await piece.get(slug)
-
-		if (!markdown) {
-			log.error(`${slug} was not found`)
-			return
-		}
-
+		const { markdown, piece } = await parsePiecePathPositionalArgv(ctx, args)
 		const apiKey = ctx.config.get('api_keys.google') as string
 		const metadata = await generatePieceFrontmatter(apiKey, piece.schema, prompt, file)
 		const metadataNonEmpty = Object.fromEntries(

@@ -4,18 +4,12 @@ import { temporaryFile } from 'tempy'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import yargs from 'yargs'
 import { downloadToPath } from '../web.js'
-import {
-	downloadFileOrUrlTo,
-	makeOptionalPieceCommand,
-	makePieceCommand,
-	parseOptionalPieceArgv,
-	parsePieceArgv,
-	calculateHashFromFile,
-} from './utils.js'
 import { createHash } from 'crypto'
 import { PassThrough } from 'stream'
-import path from 'path'
 import { makeContext } from '../commands/context.fixtures.js'
+import * as util from './utils.js'
+import Piece from './piece.js'
+import { makeMarkdownSample, makePieceMock } from './piece.fixtures.js'
 
 vi.mock('fs')
 vi.mock('tempy')
@@ -54,7 +48,7 @@ describe('lib/pieces/utils.ts', () => {
 		mocks.tempyFile.mockReturnValueOnce(tmpPath)
 		mocks.downloadToPath.mockResolvedValueOnce(true)
 
-		const file = await downloadFileOrUrlTo(url)
+		const file = await util.downloadFileOrUrlTo(url)
 
 		expect(file).toEqual(tmpPath)
 		expect(mocks.downloadToPath).toHaveBeenCalledWith(url, tmpPath)
@@ -67,7 +61,7 @@ describe('lib/pieces/utils.ts', () => {
 		mocks.tempyFile.mockReturnValueOnce(tmpPath)
 		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
 
-		const file = await downloadFileOrUrlTo(filePath)
+		const file = await util.downloadFileOrUrlTo(filePath)
 
 		expect(file).toEqual(tmpPath)
 		expect(mocks.copyFile).toHaveBeenCalledWith(filePath, tmpPath)
@@ -80,148 +74,123 @@ describe('lib/pieces/utils.ts', () => {
 		mocks.tempyFile.mockReturnValueOnce(tmpPath)
 		mocks.stat.mockResolvedValueOnce({ isFile: () => false } as Stats)
 
-		const download = downloadFileOrUrlTo(filePath)
+		const download = util.downloadFileOrUrlTo(filePath)
 
 		expect(download).rejects.toThrowError()
 	})
 
-	test('makePieceCommand', async () => {
+	test('makePieceOption', async () => {
 		const args = yargs()
 
 		spies.option = vi.spyOn(args, 'option')
 		spies.positional = vi.spyOn(args, 'positional')
 
-		makePieceCommand(args)
+		util.makePieceOption(args)
 
-		expect(spies.option).toHaveBeenCalledTimes(2)
-		expect(spies.positional).toHaveBeenCalledOnce()
+		expect(spies.option).toHaveBeenCalledOnce()
 	})
 
-	test('makeOptionalPieceCommand', async () => {
+	test('makePiecePathPositional', async () => {
 		const args = yargs()
 
 		spies.option = vi.spyOn(args, 'option')
 		spies.positional = vi.spyOn(args, 'positional')
 
-		makeOptionalPieceCommand(args)
+		util.makePiecePathPositional(args)
 
-		expect(spies.option).toHaveBeenCalledTimes(2)
 		expect(spies.positional).toHaveBeenCalledOnce()
 	})
 
-	test('parsePieceArgv', async () => {
-		const name = 'piece'
-		const slug = 'slug'
+	test('parsePieceOptionArgv', async () => {
+		const name = 'books'
 		const context = makeContext()
+		const MockPiece = makePieceMock()
+		const piece = new MockPiece()
 
-		spies.findPieceNames = vi.spyOn(context.pieces, 'findPieceNames').mockResolvedValueOnce([name])
+		spies.getTypes = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce([name])
+		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockReturnValueOnce(piece)
 
-		const result = await parsePieceArgv(context, { piece: name, path: slug })
+		const result = await util.parsePieceOptionArgv(context, { piece: name })
 
-		expect(result).toEqual({
-			name,
-			slug,
-		})
+		expect(result.piece).toBeInstanceOf(Piece)
 	})
 
-	test('parsePieceArgv piece does not exist', async () => {
-		const name = 'piece'
-		const slug = 'slug'
+	test('parsePieceOptionArgv throws', async () => {
+		const name = 'links'
 		const context = makeContext()
 
-		spies.findPieceNames = vi.spyOn(context.pieces, 'findPieceNames').mockResolvedValueOnce([name])
+		spies.getTypes = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce(['books'])
 
-		const parsing = parsePieceArgv(context, { piece: 'fake piece', path: slug })
+		const parsing = util.parsePieceOptionArgv(context, { piece: name })
 
 		expect(parsing).rejects.toThrow()
 	})
 
-	test('parsePieceArgv with direct path', async () => {
-		const name = 'piece'
-		const slug = 'slug'
+	test('parsePiecePathPositionalArgv', async () => {
+		const name = 'books'
 		const context = makeContext()
-		const path = `./path/${name}/${slug}.md`
+		const MockPiece = makePieceMock()
+		const path = `./path/file.${name}.md`
+		const piece = new MockPiece()
+		const markdown = makeMarkdownSample()
 
-		mocks.existsSync.mockReturnValueOnce(true)
+		spies.findPieceNames = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce(['books'])
+		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockReturnValueOnce(piece)
+		spies.get = vi.spyOn(piece, 'get').mockResolvedValueOnce(markdown)
 
-		const result = await parsePieceArgv(context, { path })
+		const result = await util.parsePiecePathPositionalArgv(context, { piece: path })
 
-		expect(result).toEqual({
-			name,
-			slug,
-		})
+		expect(result.markdown).toEqual(markdown)
+		expect(result.piece).toEqual(piece)
+		expect(result.file).toEqual(path)
 	})
 
-	test('parsePieceArgv with path without a dir', async () => {
-		const name = 'piece'
-		const slug = 'slug'
+	test('parsePiecePathPositionalArgv needs at least one piece', async () => {
+		const name = 'books'
 		const context = makeContext()
+		const MockPiece = makePieceMock()
+		const path = `./path/file.${name}.md`
+		const piece = new MockPiece()
+		const markdown = makeMarkdownSample()
 
-		spies.resolve = vi.spyOn(path, 'resolve').mockReturnValueOnce('/piece/slug')
-		mocks.existsSync.mockReturnValueOnce(true)
+		spies.findPieceNames = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce([])
+		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockReturnValueOnce(piece)
+		spies.get = vi.spyOn(piece, 'get').mockResolvedValueOnce(markdown)
 
-		const result = await parsePieceArgv(context, { path: 'slug.md' })
+		const parsing = util.parsePiecePathPositionalArgv(context, { piece: path })
 
-		expect(result).toEqual({
-			name,
-			slug,
-		})
+		expect(parsing).rejects.toThrow()
 	})
 
-	test('parsePieceArgv file does not exist', async () => {
-		const piece = 'piece'
-		const slug = 'slug'
-		const path = `./path/${piece}/${slug}.md`
+	test('parsePiecePathPositionalArgv does not exist', async () => {
+		const name = 'books'
 		const context = makeContext()
+		const MockPiece = makePieceMock()
+		const path = `./path/file.${name}.md`
+		const piece = new MockPiece()
 
-		mocks.existsSync.mockReturnValueOnce(false)
+		spies.findPieceNames = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce(['books'])
+		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockReturnValueOnce(piece)
+		spies.get = vi.spyOn(piece, 'get').mockRejectedValueOnce(new Error('error'))
 
-		expect(() => parsePieceArgv(context, { path })).rejects.toThrow()
+		const resulting = util.parsePiecePathPositionalArgv(context, { piece: path })
+
+		expect(resulting).rejects.toThrow()
 	})
 
-	test('parsePieceArgv slug without a piece', async () => {
-		const slug = 'slug'
+	test('parsePiecePathPositionalArgv invalid piece type', async () => {
+		const name = 'books'
 		const context = makeContext()
+		const MockPiece = makePieceMock()
+		const path = `./path/file.${name}-2.md`
+		const piece = new MockPiece()
 
-		mocks.existsSync.mockReturnValueOnce(false)
+		spies.findPieceNames = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce(['books'])
+		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockReturnValueOnce(piece)
 
-		expect(() => parsePieceArgv(context, { path: slug })).rejects.toThrow()
-	})
+		const resulting = util.parsePiecePathPositionalArgv(context, { piece: path })
 
-	test('parsePieceArgv invalid piece', async () => {
-		const path = 'path/to/non-slug.png'
-		const context = makeContext()
-
-		mocks.existsSync.mockReturnValueOnce(false)
-
-		expect(() => parsePieceArgv(context, { path })).rejects.toThrow()
-	})
-
-	test('parseOptionalPieceArgv with direct path', async () => {
-		const context = makeContext()
-		const result = await parseOptionalPieceArgv(context, {})
-
-		expect(result).toBeNull()
-	})
-
-	test('parseOptionalPieceArgv piece without slug', async () => {
-		const context = makeContext()
-		const result = await parseOptionalPieceArgv(context, { piece: 'piece' })
-
-		expect(result).toEqual({ name: 'piece' })
-	})
-
-	test('parseOptionalPieceArgv calls parsePieceArgv', async () => {
-		const name = 'piece'
-		const slug = 'slug'
-		const path = `path/to/${name}/${slug}.md`
-		const context = makeContext()
-
-		mocks.existsSync.mockReturnValueOnce(true)
-
-		const result = await parseOptionalPieceArgv(context, { path })
-
-		expect(result).toEqual({ name, slug })
+		expect(resulting).rejects.toThrow()
 	})
 
 	test('calculateHashFromFile', async () => {
@@ -238,7 +207,7 @@ describe('lib/pieces/utils.ts', () => {
 			digest: mockDigest,
 		} as unknown as ReturnType<typeof createHash>)
 
-		const hashPromise = calculateHashFromFile(file)
+		const hashPromise = util.calculateHashFromFile(file)
 
 		mockReadStream.emit('data', data)
 		mockReadStream.emit('end')
@@ -264,7 +233,7 @@ describe('lib/pieces/utils.ts', () => {
 			digest: mockDigest,
 		} as unknown as ReturnType<typeof createHash>)
 
-		const hashPromise = calculateHashFromFile(file)
+		const hashPromise = util.calculateHashFromFile(file)
 
 		mockReadStream.emit('error', new Error('error'))
 

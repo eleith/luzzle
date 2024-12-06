@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync } from 'fs'
-import { copyFile, mkdir, readdir, stat, unlink, writeFile } from 'fs/promises'
+import { existsSync } from 'fs'
+import { copyFile, mkdir, stat, unlink, writeFile } from 'fs/promises'
 import log from '../log.js'
-import { updateCache, addCache, removeCache, getCache, getCacheAll, clearCache } from './cache.js'
+import { updateCache, addCache, getCache } from './cache.js'
 import { difference } from 'lodash-es'
 import {
 	LuzzleDatabase,
@@ -9,7 +9,7 @@ import {
 	PieceFrontmatter,
 	extractFullMarkdown,
 	makePieceMarkdown,
-	makePieceMarkdownOrThrow,
+	validatePieceItem,
 	makePieceMarkdownString,
 	compile,
 	PieceFrontmatterSchema,
@@ -19,48 +19,48 @@ import {
 	makePieceItemInsertable,
 	makePieceItemUpdatable,
 	databaseValueToPieceFrontmatterValue,
-	PieceMarkdownError,
 	deleteItemsByIds,
 	selectItems,
 	selectItem,
-	updateItemById,
+	updateItem,
 	LuzzleSelectable,
 	insertItem,
 	getPieceSchemaFromFile,
 	getPiece,
 	addPiece,
 	updatePiece,
+	getValidatePieceItemErrors,
 } from '@luzzle/core'
 import { eachLimit, queue } from 'async'
 import { cpus } from 'os'
 import path from 'path'
-import { downloadFileOrUrlTo, PieceDirectories, PieceDirectory, PieceFileType } from './utils.js'
-import { ASSETS_DIRECTORY, LUZZLE_SCHEMA_FILE_PATH } from '../assets.js'
+import { calculateHashFromFile, downloadFileOrUrlTo } from './utils.js'
+import { ASSETS_DIRECTORY, LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY } from '../assets.js'
 import { fileTypeFromFile } from 'file-type'
 import { randomBytes } from 'crypto'
 import { JSONSchemaType } from 'ajv/dist/core.js'
 
 export interface InterfacePiece<F extends PieceFrontmatter> {
-	new (pieceRoot: string, pieceName: string): Piece<F>
+	new (directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
 }
 
 class Piece<F extends PieceFrontmatter> {
 	private _validator?: ReturnType<typeof compile<F>>
 	private _schema: PieceFrontmatterSchema<F>
 	private _schemaPath: string
-	private _pieceRoot: string
-	private _directories: PieceDirectories
+	private _directory: string
 	private _pieceName: string
 	private _fields?: Array<PieceFrontmatterSchemaField>
 
-	constructor(pieceRoot: string, pieceName: string, schema?: PieceFrontmatterSchema<F>) {
-		this._pieceRoot = pieceRoot
-		this._directories = {
-			[PieceDirectory.Root]: path.join(this._pieceRoot, pieceName),
-			[PieceDirectory.Assets]: path.join(this._pieceRoot, pieceName, ASSETS_DIRECTORY),
-		}
-		this._schemaPath = path.join(this._directories.root, LUZZLE_SCHEMA_FILE_PATH)
-		this._schema = schema || getPieceSchemaFromFile(this._schemaPath)
+	constructor(directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>) {
+		this._directory = directory
+		this._schemaPath = path.join(
+			this._directory,
+			LUZZLE_DIRECTORY,
+			LUZZLE_SCHEMAS_DIRECTORY,
+			`${pieceName}.json`
+		)
+		this._schema = schemaOverride || getPieceSchemaFromFile(this._schemaPath)
 		this._pieceName = pieceName
 
 		if (this._pieceName !== this._schema.title) {
@@ -68,9 +68,9 @@ class Piece<F extends PieceFrontmatter> {
 		}
 	}
 
-	create(slug: string, title: string, empty: boolean = false): PieceMarkdown<F> {
+	create(file: string, title: string, empty: boolean = false): PieceMarkdown<F> {
 		const frontmatter = initializePieceFrontMatter(this._schema, empty) as F
-		return makePieceMarkdownOrThrow(slug, '', { ...frontmatter, title }, this.validator)
+		return makePieceMarkdown(file, this._pieceName, undefined, { ...frontmatter, title })
 	}
 
 	get type() {
@@ -91,136 +91,71 @@ class Piece<F extends PieceFrontmatter> {
 		return this._fields
 	}
 
-	initialize(): Piece<F> {
-		Object.entries(this._directories).forEach(([key, dir]) => {
-			if (!existsSync(dir)) {
-				mkdirSync(dir, { recursive: true })
-				log.info(`created luzzle ${this.type} ${key} directory: ${dir}`)
-			}
-		})
-
-		return this
+	getBaseName(file: string): string {
+		return path.basename(file).split('.')[0]
 	}
 
-	getFileName(slug: string): string {
-		return `${slug}.${PieceFileType}`
+	async isOutdated(file: string, db: LuzzleDatabase): Promise<boolean> {
+		const fullPath = path.join(this._directory, file)
+		const fileStat = await stat(fullPath).catch(() => null)
+
+		if (fileStat) {
+			const cache = await getCache(db, file)
+			const cachedDate = cache?.date_updated || cache?.date_added
+
+			return !cachedDate || fileStat.mtime.getTime() > cachedDate
+		}
+
+		throw new Error(`${file} does not exist`)
 	}
 
-	getPath(slug: string): string {
-		return path.join(this._directories.root, this.getFileName(slug))
+	validate(markdown: PieceMarkdown<F>): { isValid: true } | { isValid: false; errors: string[] } {
+		const valid = validatePieceItem(markdown, this.validator)
+
+		if (valid) {
+			return { isValid: true }
+		} else {
+			const errors = getValidatePieceItemErrors(this.validator)
+			return { isValid: false, errors }
+		}
 	}
 
-	async getSlugs(): Promise<string[]> {
-		const files = await readdir(this._directories.root, { withFileTypes: true })
-		return files
-			.filter((dirent) => dirent.isFile() && path.extname(dirent.name) === `.${PieceFileType}`)
-			.map((dirent) => path.basename(dirent.name, `.${PieceFileType}`))
-	}
+	async get(file: string): Promise<PieceMarkdown<F>> {
+		const fullPath = path.join(this._directory, file)
 
-	async getSlugsOutdated(db: LuzzleDatabase): Promise<string[]> {
-		const slugs = await this.getSlugs()
-		const outdated: string[] = []
+		if (existsSync(fullPath)) {
+			const data = await extractFullMarkdown(fullPath)
 
-		for (const slug of slugs) {
-			const piecePath = this.getPath(slug)
-			const fileStat = await stat(piecePath).catch(() => null)
-
-			if (fileStat) {
-				const cache = await getCache(db, slug, this._pieceName)
-				const cachedDate = cache?.date_updated || cache?.date_added
-
-				if (!cachedDate || fileStat.mtime > new Date(cachedDate)) {
-					outdated.push(slug)
-				}
-			} else {
-				log.error(`${piecePath} does not exist`)
+			if (!/^\//.test(file)) {
+				return makePieceMarkdown(file, this._pieceName, data.markdown, data.frontmatter as F)
 			}
 		}
 
-		return outdated
-	}
-
-	exists(slug: string): boolean {
-		return existsSync(this.getPath(slug))
-	}
-
-	async get(slug: string, validate = true): Promise<PieceMarkdown<F> | null> {
-		if (!this.exists(slug)) {
-			return null
-		}
-
-		const filepath = this.getPath(slug)
-
-		try {
-			const data = await extractFullMarkdown(filepath)
-
-			if (validate) {
-				return makePieceMarkdownOrThrow(slug, data.markdown, data.frontmatter, this.validator)
-			} else {
-				return makePieceMarkdown(slug, data.markdown, data.frontmatter as F)
-			}
-		} catch (e) {
-			/* c8 ignore next 7 */
-			if (e instanceof PieceMarkdownError) {
-				const errors = this.getErrors(e)
-				log.error(`${slug} has ${e.validationErrors?.length} error(s): ${errors.join('\n')}`)
-			} else {
-				log.error(`could not extract ${filepath}: ${e}`)
-			}
-			return null
-		}
+		throw new Error(`${file} does not exist`)
 	}
 
 	async write(markdown: PieceMarkdown<F>): Promise<void> {
-		const markdownString = makePieceMarkdownString(markdown)
-		const markdownPath = this.getPath(markdown.slug)
+		const validated = this.validate(markdown)
+		const filePath = path.join(this._directory, markdown.filePath)
 
-		await writeFile(markdownPath, markdownString)
+		if (validated.isValid) {
+			const markdownString = makePieceMarkdownString(markdown)
+			await writeFile(filePath, markdownString)
+		} else {
+			throw new Error(
+				`Could not write ${markdown.filePath} due to\n\n: ${validated.errors.join('\n')}`
+			)
+		}
 	}
 
-	async cleanUpCache(db: LuzzleDatabase, slugs: string[]): Promise<string[]> {
-		const caches = await getCacheAll(db, this._pieceName)
-		const schemaKeys = this.fields
-		const staleSlugs = difference(
-			caches.map((cache) => cache.slug),
-			slugs
-		)
-
-		await eachLimit(staleSlugs, cpus().length, async (slug) => {
-			const toRemove: string[] = []
-			const attachmentFolders = schemaKeys
-				.filter((field) => field.format === 'asset')
-				.map((field) => path.join(this._directories.root, ASSETS_DIRECTORY, field.name))
-
-			for (const folder of attachmentFolders) {
-				const files = await readdir(folder)
-				const slugRegExp = new RegExp(`^${slug}(-.+)?$`)
-				const matches = files
-					.filter((file) => {
-						return slugRegExp.test(path.parse(file).name)
-					})
-					.map((file) => path.join(folder, file))
-
-				toRemove.push(...matches)
-			}
-
-			await Promise.all(toRemove.map(unlink)).catch((err) => {
-				log.error(`could not remove all attachments for ${slug}: ${err}`)
-			})
-
-			await removeCache(db, slug, this._pieceName)
-		})
-
-		return staleSlugs
-	}
-
-	async cleanUpSlugs(db: LuzzleDatabase, slugs: string[], dryRun = false) {
-		const dbPieces = await selectItems(db, this._pieceName, ['slug', 'id'])
-		const dbSlugs = dbPieces.map(({ slug }) => slug as string)
-		const slugDiffs = difference(dbSlugs, slugs)
+	async syncItemsCleanUp(db: LuzzleDatabase, files: string[], dryRun = false) {
+		const dbPieces = await selectItems(db, this._pieceName, ['file_path', 'id'])
+		const dbPaths = dbPieces.map((piece) => piece.file_path)
+		const diskPaths = files
+		const pathDiffs = difference(dbPaths, diskPaths)
 		const idsToRemove = dbPieces
-			.filter(({ slug }) => slugDiffs.includes(slug as string))
-			.map(({ id }) => id as string)
+			.filter((piece) => pathDiffs.includes(piece.file_path))
+			.map((piece) => piece.id)
 
 		try {
 			if (idsToRemove.length && dryRun === false) {
@@ -233,13 +168,6 @@ class Piece<F extends PieceFrontmatter> {
 		}
 	}
 
-	async syncItemsCleanUp(db: LuzzleDatabase, dryRun = false) {
-		const slugs = await this.getSlugs()
-
-		await this.cleanUpSlugs(db, slugs, dryRun)
-		await this.cleanUpCache(db, slugs)
-	}
-
 	async syncMarkdownAdd(
 		db: LuzzleDatabase,
 		markdown: PieceMarkdown<F>,
@@ -248,12 +176,13 @@ class Piece<F extends PieceFrontmatter> {
 		try {
 			if (dryRun === false) {
 				const createInput = makePieceItemInsertable(this._pieceName, markdown, this._schema)
-				const piecePath = this.getPath(markdown.slug)
+				const piecePath = path.join(this._directory, markdown.filePath)
+				const hash = await calculateHashFromFile(piecePath)
 
 				await insertItem(db, createInput)
-				await addCache(db, markdown.slug, this._pieceName, piecePath)
+				await addCache(db, markdown.filePath, hash)
 			}
-			log.info(`added ${markdown.slug}`)
+			log.info(`added ${markdown.filePath}`)
 		} catch (err) {
 			log.error(err as string)
 		}
@@ -264,7 +193,7 @@ class Piece<F extends PieceFrontmatter> {
 		markdown: PieceMarkdown<F>,
 		dryRun = false
 	): Promise<void> {
-		const dbPiece = await selectItem(db, this._pieceName, markdown.slug)
+		const dbPiece = await selectItem(db, this._pieceName, markdown.filePath)
 
 		if (dbPiece) {
 			await this.syncMarkdownUpdate(db, markdown, dbPiece, dryRun)
@@ -282,29 +211,26 @@ class Piece<F extends PieceFrontmatter> {
 		const updateInput = makePieceItemUpdatable(markdown, this._schema, data, false)
 		try {
 			if (dryRun === false) {
-				await updateItemById(db, this._pieceName, data.id, updateInput)
-				const piecePath = this.getPath(data.slug as string)
+				await updateItem(db, markdown.filePath, updateInput)
+				const piecePath = path.join(this._directory, markdown.filePath)
+				const hash = await calculateHashFromFile(piecePath)
 
-				await updateCache(db, data.slug as string, this._pieceName, piecePath)
+				await updateCache(db, data.file_path, hash)
 			}
 
-			log.info(`updated ${markdown.slug}`)
+			log.info(`updated ${markdown.filePath}`)
 		} catch (err) {
-			log.error(`${markdown.slug} could not be updated: ${err}`)
+			log.error(`${markdown.filePath} could not be updated: ${err}`)
 		}
 	}
 
-	async syncItems(db: LuzzleDatabase, slugs: string[], dryRun = false) {
-		const q = queue(async (slug) => {
-			const markdown = await this.get(slug as string)
-			if (markdown) {
-				await this.syncMarkdown(db, markdown, dryRun)
-			} else {
-				log.error(`could not find ${slug}`)
-			}
+	async syncItems(db: LuzzleDatabase, files: string[], dryRun = false) {
+		const q = queue<string>(async (file) => {
+			const markdown = await this.get(file)
+			await this.syncMarkdown(db, markdown, dryRun)
 		}, cpus().length)
 
-		q.push(slugs)
+		q.push(files)
 
 		await q.drain()
 	}
@@ -329,7 +255,6 @@ class Piece<F extends PieceFrontmatter> {
 			if (fileStat.mtime > new Date(pieceDate)) {
 				if (!dryRun) {
 					await updatePiece(db, this._pieceName, this._schema as JSONSchemaType<PieceFrontmatter>)
-					await clearCache(db, this._pieceName)
 				}
 				log.info(`Updated piece ${this._pieceName} from schema at ${this._schemaPath}`)
 			}
@@ -351,16 +276,11 @@ class Piece<F extends PieceFrontmatter> {
 			frontmatterJson[name] = databaseValueToPieceFrontmatterValue(value, field)
 		})
 
-		return makePieceMarkdownOrThrow(
-			data.slug,
-			data.note_markdown,
-			frontmatterJson as F,
-			this.validator
-		)
+		return makePieceMarkdown(data.file_path, data.type, data.note_markdown, frontmatterJson as F)
 	}
 
 	private async makeAttachmentField(
-		slug: string,
+		file: string,
 		field: PieceFrontmatterSchemaField,
 		fileOrUrl: string,
 		_name?: string
@@ -369,19 +289,21 @@ class Piece<F extends PieceFrontmatter> {
 
 		/* c8 ignore next 3 */
 		if (format !== 'asset') {
-			throw new Error(`${field} is not an attachable field for ${this._pieceName} ${slug}`)
+			throw new Error(`${field} is not an attachable field for ${this._pieceName} ${file}`)
 		}
 
 		const tmpPath = await downloadFileOrUrlTo(fileOrUrl)
 		const extension = path.extname(tmpPath) || ''
 		const fileType = await fileTypeFromFile(tmpPath)
 		const type = fileType?.ext.replace(/^/, '.') || extension
-		const attachDir = path.join(this._directories.assets, field.name)
+		const fileDir = path.dirname(file)
+		const attachDir = path.join(this._directory, ASSETS_DIRECTORY, fileDir, field.name)
 		const random = randomBytes(4).toString('hex')
-		const parts = [slug, _name, random]
+		const baseName = this.getBaseName(file)
+		const parts = [baseName, _name, random]
 		const filename = `${parts.filter((x) => x).join('-')}${type}`
-		const toPath = path.join(this._directories.assets, field.name, filename)
-		const relPath = path.join(path.basename(this._directories.assets), field.name, filename)
+		const relPath = path.join(ASSETS_DIRECTORY, fileDir, field.name, filename)
+		const toPath = path.join(this._directory, relPath)
 
 		await mkdir(attachDir, { recursive: true })
 		await copyFile(tmpPath, toPath)
@@ -403,8 +325,11 @@ class Piece<F extends PieceFrontmatter> {
 		return updatedMarkdown
 	}
 
-	async removeFields(markdown: PieceMarkdown<F>, fields: string[]): Promise<PieceMarkdown<F>> {
-		let updatedMarkdown = markdown
+	async removeFields(
+		markdown: PieceMarkdown<F>,
+		fields: string[]
+	): Promise<PieceMarkdown<Omit<F, keyof F>>> {
+		let updatedMarkdown = markdown as PieceMarkdown<Omit<F, keyof F>>
 
 		for (const field of fields) {
 			updatedMarkdown = await this.removeField(markdown, field)
@@ -421,7 +346,7 @@ class Piece<F extends PieceFrontmatter> {
 		const pieceField = this.fields.find((f) => f.name === field)
 
 		if (!pieceField) {
-			throw new Error(`${field} is not a field in ${this._pieceName} ${markdown.slug}`)
+			throw new Error(`${field} is not a field in ${this._pieceName} ${markdown.filePath}`)
 		}
 
 		const isArray = pieceField.type === 'array'
@@ -433,7 +358,11 @@ class Piece<F extends PieceFrontmatter> {
 		if (format === 'asset') {
 			// for array asset fields, we only allow appending
 			// for non-array asset fields, we replace, but do not remove the asset!
-			const fieldValue = await this.makeAttachmentField(markdown.slug, pieceField, value as string)
+			const fieldValue = await this.makeAttachmentField(
+				markdown.filePath,
+				pieceField,
+				value as string
+			)
 			setValue = fieldValue as V
 		} else if (type === 'boolean') {
 			setValue = /1|true|yes/.test(value as string) as V
@@ -447,51 +376,33 @@ class Piece<F extends PieceFrontmatter> {
 		const oldValue = markdown.frontmatter[fieldName] as V | V[] | undefined
 		const newValue = isArray ? ((oldValue || []) as V[]).concat(setValue) : setValue
 
-		return makePieceMarkdownOrThrow(
-			markdown.slug,
-			markdown.note,
-			{
-				...markdown.frontmatter,
-				[field]: newValue,
-			},
-			this.validator
-		)
+		return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, {
+			...markdown.frontmatter,
+			[field]: newValue,
+		})
 	}
 
 	async removeField(markdown: PieceMarkdown<F>, field: string): Promise<PieceMarkdown<F>> {
 		const pieceField = this.fields.find((f) => f.name === field)
 
 		if (!pieceField) {
-			throw new Error(`${field} is not a field in ${this._pieceName} ${markdown.slug}`)
+			throw new Error(`${field} is not a field in ${this._pieceName} ${markdown.filePath}`)
 		}
 
 		if (pieceField.nullable !== true) {
-			throw new Error(`${field} is a required field in ${this._pieceName} ${markdown.slug}`)
+			throw new Error(`${field} is a required field in ${this._pieceName} ${markdown.filePath}`)
 		}
 
 		const fieldname = pieceField.name as keyof PieceMarkdown<F>['frontmatter']
-		const isArray = pieceField.type === 'array'
-		const format = isArray ? pieceField.items.format : pieceField.format
-
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { [fieldname]: _, ...frontmatter } = markdown.frontmatter
 
-		if (format === 'asset') {
-			const value = markdown.frontmatter[fieldname]
-			const valueArray = Array.isArray(value) ? value : [value]
-
-			for (const one of valueArray) {
-				const attachmentPath = path.join(this._directories.root, one as string)
-				if (existsSync(attachmentPath)) {
-					await unlink(attachmentPath)
-					log.info(`removed attachment at ${attachmentPath}`)
-				} else {
-					log.info(`no attachment to remove at ${attachmentPath}`)
-				}
-			}
-		}
-
-		return makePieceMarkdownOrThrow(markdown.slug, markdown.note, frontmatter, this.validator)
+		return makePieceMarkdown(
+			markdown.filePath,
+			markdown.piece,
+			markdown.note,
+			frontmatter
+		) as PieceMarkdown<F>
 	}
 
 	async dump(db: LuzzleDatabase, dryRun = false) {
@@ -504,22 +415,11 @@ class Piece<F extends PieceFrontmatter> {
 					const markdown = this.toMarkdown(data)
 					await this.write(markdown)
 				}
-				log.info(`saving ${this._pieceName} for ${data.slug} to markdown`)
+				log.info(`saving ${this._pieceName} for ${data.file_path} to markdown`)
 			} catch (e) {
-				log.error(`error saving ${this._pieceName} for ${data.slug}`)
+				log.error(`error saving ${this._pieceName} for ${data.file_path}`)
 			}
 		})
-	}
-
-	getErrors<F>(e: PieceMarkdownError<ReturnType<typeof compile<F>>>) {
-		const errorMessage: Array<string> = []
-
-		e.validationErrors?.map((error) => {
-			const path = error.instancePath.replace('/frontmatter/', '')
-			errorMessage.push(`${path}: ${error.message}`)
-		})
-
-		return errorMessage
 	}
 }
 
