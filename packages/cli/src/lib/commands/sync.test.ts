@@ -2,7 +2,7 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { SyncArgv } from './sync.js'
 import yargs, { Arguments } from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePiece, makeRegisteredPiece } from '../pieces/piece.fixtures.js'
+import { makePieceMock, makeRegisteredPiece } from '../pieces/piece.fixtures.js'
 import { getPieces } from '@luzzle/core'
 
 vi.mock('../pieces/index.js')
@@ -29,96 +29,63 @@ describe('lib/commands/sync', () => {
 		})
 	})
 
-	test('run with one piece', async () => {
-		const PieceTest = makePiece()
-		const pieceType = 'piece'
-		const registeredPiece = makeRegisteredPiece()
-		const ctx = makeContext({
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValueOnce(new PieceTest()),
-				findPieceNames: mocks.findPieceNames.mockResolvedValueOnce([pieceType]),
-			},
-		})
-		const slugs = ['a', 'b', 'c']
-		const slugsUpdated = ['a', 'b']
-
-		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
-		spies.pieceSyncItems = vi.spyOn(PieceTest.prototype, 'syncItems').mockResolvedValueOnce()
-		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncItemsCleanUp').mockResolvedValue()
-		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
-		spies.pieceFilterSlugsBy = vi
-			.spyOn(PieceTest.prototype, 'getSlugsOutdated')
-			.mockResolvedValue(slugsUpdated)
-		mocks.getPieces.mockResolvedValueOnce([registeredPiece])
-
-		await command.run(ctx, { piece: pieceType } as Arguments<SyncArgv>)
-
-		expect(mocks.getPiece).toHaveBeenCalledWith(pieceType)
-		expect(spies.pieceFilterSlugsBy).toHaveBeenCalledOnce()
-		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, false)
-		expect(spies.pieceSyncItems).toHaveBeenCalledWith(ctx.db, slugsUpdated, false)
-		expect(spies.pieceSyncCleanUp).toHaveBeenCalledOnce()
-	})
-
 	test('run', async () => {
-		const PieceTest = makePiece()
-		const registeredPieces = [makeRegisteredPiece(), makeRegisteredPiece(), makeRegisteredPiece()]
+		const files = ['a', 'b', 'c']
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const registeredPieces = [makeRegisteredPiece()]
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
-				findPieceNames: mocks.findPieceNames.mockResolvedValueOnce(registeredPieces),
+				getPiece: mocks.getPiece.mockReturnValue(piece),
+				getTypes: mocks.findPieceNames.mockResolvedValueOnce([piece.type]),
+				getFiles: mocks.getPieceTypes.mockResolvedValueOnce(files),
+				getTypeFromFile: mocks.getPieceTypes.mockReturnValue(piece.type),
 			},
 		})
-		const slugs = ['a', 'b', 'c']
-		const slugsUpdated = ['a', 'b']
 
 		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
 		spies.pieceSyncItems = vi.spyOn(PieceTest.prototype, 'syncItems').mockResolvedValue()
 		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncItemsCleanUp').mockResolvedValue()
-		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
-		spies.pieceFilterSlugsBy = vi
-			.spyOn(PieceTest.prototype, 'getSlugsOutdated')
-			.mockResolvedValue(slugsUpdated)
+		spies.pieceFilterSlugsBy = vi.spyOn(PieceTest.prototype, 'isOutdated')
+
+		spies.pieceFilterSlugsBy.mockResolvedValueOnce(false)
+		spies.pieceFilterSlugsBy.mockResolvedValueOnce(true)
+		spies.pieceFilterSlugsBy.mockResolvedValueOnce(false)
+
 		mocks.getPieces.mockResolvedValue(registeredPieces)
 
 		await command.run(ctx, {} as Arguments<SyncArgv>)
 
-		expect(mocks.getPiece).toHaveBeenCalledTimes(registeredPieces.length)
-		expect(spies.pieceSync).toHaveBeenCalledTimes(registeredPieces.length)
-		expect(spies.pieceSyncItems).toHaveBeenCalledTimes(registeredPieces.length)
-		expect(spies.pieceSyncCleanUp).toHaveBeenCalledTimes(registeredPieces.length)
+		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, ctx.flags.dryRun)
+		expect(spies.pieceSyncItems).toHaveBeenCalledWith(ctx.db, [files[1]], ctx.flags.dryRun)
+		expect(spies.pieceSyncCleanUp).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
 	})
 
 	test('run with force', async () => {
-		const PieceTest = makePiece()
+		const files = ['a', 'b', 'c']
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const registeredPieces = [makeRegisteredPiece()]
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
-				findPieceNames: mocks.findPieceNames.mockResolvedValueOnce(['table']),
+				getPiece: mocks.getPiece.mockReturnValue(piece),
+				getTypes: mocks.findPieceNames.mockResolvedValueOnce([piece.type]),
+				getFiles: mocks.getPieceTypes.mockResolvedValueOnce(files),
+				getTypeFromFile: mocks.getPieceTypes.mockReturnValue(piece.type),
 			},
 		})
-		const slugs = ['a', 'b']
-		const slugsUpdated = ['a', 'b']
-		const registeredPiece = makeRegisteredPiece()
 
 		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
-		spies.pieceSyncItems = vi.spyOn(PieceTest.prototype, 'syncItems').mockResolvedValueOnce()
+		spies.pieceSyncItems = vi.spyOn(PieceTest.prototype, 'syncItems').mockResolvedValue()
 		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncItemsCleanUp').mockResolvedValue()
-		spies.pieceGetSlugs = vi.spyOn(PieceTest.prototype, 'getSlugs').mockResolvedValue(slugs)
-		spies.pieceFilterSlugsBy = vi
-			.spyOn(PieceTest.prototype, 'getSlugsOutdated')
-			.mockResolvedValue(slugsUpdated)
-		mocks.getPiece.mockReturnValue(new PieceTest())
-		mocks.getPieces.mockResolvedValueOnce([registeredPiece])
+		spies.pieceFilterSlugsBy = vi.spyOn(PieceTest.prototype, 'isOutdated').mockResolvedValue(false)
+		mocks.getPieces.mockResolvedValue(registeredPieces)
 
 		await command.run(ctx, { force: true } as Arguments<SyncArgv>)
 
-		expect(mocks.getPiece).toHaveBeenCalledOnce()
-		expect(spies.pieceFilterSlugsBy).toHaveBeenCalledOnce()
-		expect(spies.pieceGetSlugs).toHaveBeenCalledOnce()
-		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, false)
-		expect(spies.pieceSyncItems).toHaveBeenCalledWith(ctx.db, slugsUpdated, false)
-		expect(spies.pieceSyncCleanUp).toHaveBeenCalledOnce()
+		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, ctx.flags.dryRun)
+		expect(spies.pieceSyncItems).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
+		expect(spies.pieceSyncCleanUp).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
 	})
 
 	test('builder', async () => {
@@ -127,6 +94,6 @@ describe('lib/commands/sync', () => {
 		spies.options = vi.spyOn(args, 'options')
 		command.builder?.(args)
 
-		expect(spies.options).toHaveBeenCalledTimes(2)
+		expect(spies.options).toHaveBeenCalledTimes(1)
 	})
 })

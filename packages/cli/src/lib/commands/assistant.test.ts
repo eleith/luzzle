@@ -4,12 +4,11 @@ import command, { AssistantArgv } from './assistant.js'
 import { Arguments, Argv } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePieceCommand, parsePieceArgv } from '../pieces/index.js'
+import { makePiecePathPositional, parsePiecePathPositionalArgv } from '../pieces/index.js'
 import {
 	makeFrontmatterSample,
 	makeMarkdownSample,
-	makePiece,
-	makeSchema,
+	makePieceMock,
 } from '../pieces/piece.fixtures.js'
 import yaml from 'yaml'
 import { generatePieceFrontmatter } from '../llm/google.js'
@@ -22,8 +21,8 @@ vi.mock('yaml')
 const mocks = {
 	logError: vi.spyOn(log, 'error'),
 	logInfo: vi.spyOn(log, 'info'),
-	piecesParseArgs: vi.mocked(parsePieceArgv),
-	piecesCommand: vi.mocked(makePieceCommand),
+	parseArgs: vi.mocked(parsePiecePathPositionalArgv),
+	makePositional: vi.mocked(makePiecePathPositional),
 	generatePieceFrontmatter: vi.mocked(generatePieceFrontmatter),
 	getPiece: vi.fn(),
 	consoleLog: vi.spyOn(console, 'log'),
@@ -45,59 +44,53 @@ describe('lib/commands/assistant.ts', () => {
 	})
 
 	test('run', async () => {
-		const path = 'slug'
+		const file = 'slug'
 		const apiKeys = 'api_key'
-		const pieceType = 'books'
-		const PieceTest = makePiece()
-		const schema = makeSchema(pieceType)
-		const pieceMarkdown = makeMarkdownSample()
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const markdown = makeMarkdownSample()
 		const frontmatter = makeFrontmatterSample()
 		const prompt = 'prompt'
-		const file = 'file'
 		const ctx = makeContext({
 			config: {
 				get: vi.fn().mockReturnValueOnce(apiKeys),
 			},
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest({ name: pieceType })),
-			},
 		})
 
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
-
-		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+		mocks.parseArgs.mockResolvedValueOnce({ markdown, piece, file })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
 			frontmatter as unknown as Record<string, string | number | boolean>
 		)
 
-		await command.run(ctx, { prompt, file } as Arguments<AssistantArgv>)
+		await command.run(ctx, { prompt } as Arguments<AssistantArgv>)
 
-		expect(mocks.logError).not.toHaveBeenCalledOnce()
 		expect(mocks.yamlStringify).toHaveBeenCalledOnce()
 		expect(mocks.consoleLog).toHaveBeenCalledOnce()
-		expect(mocks.generatePieceFrontmatter).toHaveBeenCalledWith(apiKeys, schema, prompt, file)
+		expect(mocks.generatePieceFrontmatter).toHaveBeenCalledWith(
+			apiKeys,
+			piece.schema,
+			prompt,
+			undefined
+		)
 	})
 
 	test('strips empty output fields', async () => {
-		const path = 'slug'
+		const file = 'slug'
 		const apiKeys = 'api_key'
-		const pieceType = 'books'
-		const PieceTest = makePiece()
-		const pieceMarkdown = makeMarkdownSample()
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const markdown = makeMarkdownSample()
 		const frontmatter = makeFrontmatterSample({ oof: null, title: 'title' })
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
 				get: vi.fn().mockReturnValueOnce(apiKeys),
 			},
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest({ name: pieceType })),
-			},
 		})
 
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(markdown)
 
-		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+		mocks.parseArgs.mockResolvedValueOnce({ markdown, piece, file })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
 			frontmatter as unknown as Record<string, string | number | boolean>
 		)
@@ -108,99 +101,70 @@ describe('lib/commands/assistant.ts', () => {
 	})
 
 	test('json output', async () => {
-		const path = 'slug'
+		const file = 'slug'
 		const apiKeys = 'api_key'
-		const pieceType = 'books'
-		const PieceTest = makePiece()
-		const schema = makeSchema(pieceType)
-		const pieceMarkdown = makeMarkdownSample()
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const markdown = makeMarkdownSample()
 		const frontmatter = makeFrontmatterSample()
 		const prompt = 'prompt'
-		const file = 'file'
+		const attachment = 'file'
 		const ctx = makeContext({
 			config: {
 				get: vi.fn().mockReturnValueOnce(apiKeys),
 			},
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest({ name: pieceType })),
-			},
 		})
 
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(markdown)
 
-		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+		mocks.parseArgs.mockResolvedValueOnce({ markdown, piece, file })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
 			frontmatter as unknown as Record<string, string | number | boolean>
 		)
 
-		await command.run(ctx, { prompt, file, output: 'json' } as Arguments<AssistantArgv>)
+		await command.run(ctx, { prompt, file: attachment, output: 'json' } as Arguments<AssistantArgv>)
 
-		expect(mocks.logError).not.toHaveBeenCalledOnce()
 		expect(mocks.yamlStringify).not.toHaveBeenCalledOnce()
 		expect(mocks.consoleLog).toHaveBeenCalledOnce()
-		expect(mocks.generatePieceFrontmatter).toHaveBeenCalledWith(apiKeys, schema, prompt, file)
+		expect(mocks.generatePieceFrontmatter).toHaveBeenCalledWith(
+			apiKeys,
+			piece.schema,
+			prompt,
+			attachment
+		)
 	})
 
 	test('writes output to piece', async () => {
-		const path = 'slug'
+		const file = 'slug'
 		const apiKeys = 'api_key'
-		const pieceType = 'books'
-		const PieceTest = makePiece()
-		const pieceMarkdown = makeMarkdownSample()
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const markdown = makeMarkdownSample()
 		const frontmatter = makeFrontmatterSample()
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
 				get: vi.fn().mockReturnValueOnce(apiKeys),
 			},
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest({ name: pieceType })),
-			},
 		})
 
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
+		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(markdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 
-		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+		mocks.parseArgs.mockResolvedValueOnce({ markdown, piece, file })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
 			frontmatter as unknown as Record<string, string | number | boolean>
 		)
 
 		await command.run(ctx, { prompt, write: true } as Arguments<AssistantArgv>)
 
-		expect(spies.pieceWrite).toHaveBeenCalledWith({ ...pieceMarkdown, frontmatter })
-	})
-
-	test('run fails to find piece', async () => {
-		const path = 'slug'
-		const apiKeys = 'api_key'
-		const pieceType = 'books'
-		const PieceTest = makePiece()
-		const prompt = 'prompt'
-		const file = 'file'
-		const ctx = makeContext({
-			config: {
-				get: vi.fn().mockReturnValueOnce(apiKeys),
-			},
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest({ name: pieceType })),
-			},
-		})
-
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(null)
-
-		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
-
-		await command.run(ctx, { prompt, file } as Arguments<AssistantArgv>)
-
-		expect(mocks.logError).toHaveBeenCalledOnce()
-		expect(mocks.consoleLog).not.toHaveBeenCalledOnce()
+		expect(spies.pieceWrite).toHaveBeenCalledWith({ ...markdown, frontmatter })
 	})
 
 	test('builder', async () => {
 		const args = yargs()
 
-		mocks.piecesCommand.mockReturnValueOnce(args as Argv<AssistantArgv>)
+		mocks.makePositional.mockReturnValueOnce(args as Argv<AssistantArgv>)
 		spies.positional = vi.spyOn(args, 'positional').mockReturnValue(args)
 		spies.option = vi.spyOn(args, 'option').mockReturnValue(args)
 
@@ -208,6 +172,6 @@ describe('lib/commands/assistant.ts', () => {
 
 		expect(spies.positional).toHaveBeenCalledTimes(0)
 		expect(spies.option).toHaveBeenCalledTimes(4)
-		expect(mocks.piecesCommand).toHaveBeenCalledOnce()
+		expect(mocks.makePositional).toHaveBeenCalledOnce()
 	})
 })

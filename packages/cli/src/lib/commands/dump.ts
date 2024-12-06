@@ -9,11 +9,11 @@ const command: Command = {
 
 	run: async function (ctx) {
 		const dryRun = ctx.flags.dryRun
-		const pieceNames = await ctx.pieces.findPieceNames()
+		const pieceNames = await ctx.pieces.getTypes()
 
 		for (const name of pieceNames) {
-			const pieces = await ctx.pieces.getPiece(name)
-			await pieces.dump(ctx.db, dryRun)
+			const piece = ctx.pieces.getPiece(name)
+			await piece.dump(ctx.db, dryRun)
 		}
 	},
 }

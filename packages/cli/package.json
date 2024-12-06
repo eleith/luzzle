@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.89",
+  "version": "0.0.90",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -44,12 +44,13 @@
   },
   "dependencies": {
     "@google/generative-ai": "0.21.0",
-    "@luzzle/core": "0.0.14",
+    "@luzzle/core": "0.0.15",
     "@paralleldrive/cuid2": "2.2.0",
     "@sindresorhus/slugify": "2.2.0",
     "@types/lodash-es": "4.17.7",
     "async": "^3.2.4",
     "conf": "11.0.1",
+    "fdir": "6.4.2",
     "file-type": "^18.0.0",
     "got": "12.5.1",
     "lodash-es": "4.17.21",

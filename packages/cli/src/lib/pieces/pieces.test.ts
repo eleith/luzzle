@@ -1,15 +1,23 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import Pieces from './pieces.js'
 import Piece from './piece.js'
-import { readdir } from 'fs/promises'
-import { Dirent } from 'fs'
+import { fdir } from 'fdir'
 
-vi.mock('@luzzle/core')
 vi.mock('./piece.js')
-vi.mock('fs/promises')
+vi.mock('fdir', () => {
+	const fdir = vi.fn()
+	fdir.prototype = {
+		withRelativePaths: vi.fn().mockReturnThis(),
+		withDirs: vi.fn().mockReturnThis(),
+		crawl: vi.fn().mockImplementation(() => ({
+			sync: vi.fn().mockReturnValue([]),
+		})),
+	}
+	return { fdir }
+})
 
 const mocks = {
-	readdir: vi.mocked(readdir),
+	test: vi.fn(),
 }
 const directory = 'luzzle-pieces'
 const spies: { [key: string]: MockInstance } = {}
@@ -34,23 +42,56 @@ describe('lib/pieces/pieces.ts', () => {
 
 	test('getPiece', async () => {
 		const pieces = new Pieces(directory)
-		const piece = await pieces.getPiece('books')
+		const piece = pieces.getPiece('books')
 
 		expect(piece).toBeInstanceOf(Piece)
 	})
 
-	test('findPieceNames', async () => {
+	test('getTypeFromFile', () => {
 		const pieces = new Pieces(directory)
-		const dirs = [
-			{ isDirectory: () => true, name: 'one' },
-			{ isDirectory: () => false, name: 'two' },
-			{ isDirectory: () => true, name: '.three' },
-		] as Dirent[]
+		const type = 'books'
+		const file = `/path/to/slug.${type}.md`
 
-		mocks.readdir.mockResolvedValueOnce(dirs)
+		const result = pieces.getTypeFromFile(file)
 
-		const pieceNames = await pieces.findPieceNames()
+		expect(result).toEqual(type)
+	})
 
-		expect(pieceNames).toEqual(['one'])
+	test('getTypeFromFile returns null', () => {
+		const pieces = new Pieces(directory)
+		const file = `/path/to/slug.md`
+
+		const result = pieces.getTypeFromFile(file)
+
+		expect(result).toEqual('path/to')
+	})
+
+	test('getTypes', async () => {
+		const type = 'books'
+		const pieces = new Pieces(directory)
+
+		spies.crawl = vi.spyOn(fdir.prototype, 'crawl').mockReturnValue({
+			sync: () => [`/path/to/${type}.json`],
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		} as any)
+
+		const types = await pieces.getTypes()
+
+		expect(types).toEqual([type])
+	})
+
+	test('getFiles', async () => {
+		const pieces = new Pieces(directory)
+		const onDisk = ['/path/to/hi.books.md', '/path/to/bye.books.md']
+
+		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce(['books'])
+		spies.crawl = vi.spyOn(fdir.prototype, 'crawl').mockReturnValueOnce({
+			sync: () => onDisk,
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		} as any)
+
+		const items = await pieces.getFiles()
+
+		expect(items).toEqual(onDisk)
 	})
 })

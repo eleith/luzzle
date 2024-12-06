@@ -1,9 +1,7 @@
-import { deletePiece, getPieces } from '@luzzle/core'
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
-import log from '../log.js'
 
-export type SyncArgv = { force?: boolean; piece?: string }
+export type SyncArgv = { force?: boolean }
 
 const command: Command<SyncArgv> = {
 	name: 'sync',
@@ -13,48 +11,30 @@ const command: Command<SyncArgv> = {
 	describe: 'sync directory to local database',
 
 	builder: <T>(yargs: Argv<T>) => {
-		return yargs
-			.options('piece', {
-				type: 'string',
-				alias: 'p',
-				description: `specific piece name to sync`,
-			})
-			.options('force', {
-				type: 'boolean',
-				alias: 'f',
-				description: 'force updates on all items',
-				default: false,
-			})
+		return yargs.options('force', {
+			type: 'boolean',
+			alias: 'f',
+			description: 'force updates on all items',
+			default: false,
+		})
 	},
 
 	run: async function (ctx, args) {
 		const force = args.force
 		const dryRun = ctx.flags.dryRun
-		const diskPieceNames = await ctx.pieces.findPieceNames()
-		const pieceNames = args.piece ? [args.piece] : diskPieceNames
+		const pieceNames = await ctx.pieces.getTypes()
+		const allFiles = await ctx.pieces.getFiles()
 
 		for (const name of pieceNames) {
-			const piece = await ctx.pieces.getPiece(name)
-			const slugs = []
-
-			const allSlugs = await piece.getSlugs()
-			const updatedSlugs = await piece.getSlugsOutdated(ctx.db)
-			const processSlugs = force ? allSlugs : updatedSlugs
-
-			slugs.push(...processSlugs)
+			const piece = ctx.pieces.getPiece(name)
+			const allPieces = allFiles.filter((file) => ctx.pieces.getTypeFromFile(file) === name)
+			const isOutdated = await Promise.all(allPieces.map((file) => piece.isOutdated(file, ctx.db)))
+			const areOutdated = allPieces.filter((_, i) => isOutdated[i])
+			const processFiles = force ? allPieces : areOutdated
 
 			await piece.sync(ctx.db, dryRun)
-			await piece.syncItems(ctx.db, slugs, dryRun)
-			await piece.syncItemsCleanUp(ctx.db, dryRun)
-		}
-
-		const registeredPieces = await getPieces(ctx.db)
-		const registeredPieceNames = registeredPieces.map((piece) => piece.name)
-		const missingPieceNames = registeredPieceNames.filter((name) => !diskPieceNames.includes(name))
-
-		for (const name of missingPieceNames) {
-			await deletePiece(ctx.db, name)
-			log.info(`Deleted piece ${name} from the database`)
+			await piece.syncItems(ctx.db, processFiles, dryRun)
+			await piece.syncItemsCleanUp(ctx.db, allPieces, dryRun)
 		}
 	},
 }

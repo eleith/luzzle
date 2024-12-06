@@ -1,15 +1,18 @@
-import { createReadStream, existsSync } from 'fs'
-import path from 'path'
+import { createReadStream } from 'fs'
 import { Argv } from 'yargs'
 import { temporaryFile } from 'tempy'
 import { copyFile, stat } from 'fs/promises'
 import { downloadToPath } from '../web.js'
 import { createHash } from 'crypto'
 import { Context } from '../commands/index.js'
+import Piece from './piece.js'
+import { PieceFrontmatter, PieceMarkdown } from '@luzzle/core'
+import path from 'path'
 
 export const PieceDirectory = {
 	Root: 'root',
 	Assets: 'assets',
+	Luzzle: 'luzzle',
 } as const
 
 export type PieceDirectories = {
@@ -17,103 +20,73 @@ export type PieceDirectories = {
 }
 
 export type PieceArgv = {
-	path: string
-	piece?: string
-}
-
-export type PieceOptionalArgv = {
-	path?: string
-	piece?: string
+	piece: string
 }
 
 const PieceFileType = 'md'
-const PieceCommandOption = '<slug|path>'
-const PieceOptionalCommandOption = '[slug|path]'
+const PiecePositional = `[piece]`
 
-async function parsePieceArgv(
+async function parsePieceOptionArgv(
 	ctx: Context,
 	args: PieceArgv
-): Promise<{ slug: string; name: string }> {
+): Promise<{ piece: Piece<PieceFrontmatter> }> {
 	const piece = args.piece
-	const slug = args.path
-	const pathParsed = path.parse(slug)
-	const isMarkdown = slug && pathParsed.ext === `.${PieceFileType}`
+	const pieceNames = await ctx.pieces.getTypes()
 
-	if (piece) {
-		const pieceNames = await ctx.pieces.findPieceNames()
-
-		if (pieceNames.includes(piece)) {
-			return { slug, name: piece }
-		}
-
-		throw new Error(`'${piece}' is not a valid piece`)
-	} else if (isMarkdown && existsSync(slug)) {
-		const dir = /^\.?$/.test(pathParsed.dir) ? path.parse(path.resolve(slug)).dir : pathParsed.dir
-
-		return {
-			slug: pathParsed.name,
-			name: path.parse(dir).name,
-		}
+	if (pieceNames.includes(piece)) {
+		return { piece: ctx.pieces.getPiece(piece) }
 	}
 
-	if (isMarkdown) {
-		throw new Error(`${slug} does not exist`)
-	} else if (pathParsed.dir === '') {
-		throw new Error(`piece option is required, learn more with --help`)
-	} else {
-		throw new Error(`${slug} is not a valid piece`)
-	}
+	throw new Error(`piece [${piece}] does not exist`)
 }
 
-async function parseOptionalPieceArgv(
+async function parsePiecePathPositionalArgv(
 	ctx: Context,
-	args: PieceOptionalArgv
+	args: PieceArgv
 ): Promise<{
-	slug?: string
-	name: string
-} | null> {
-	const { path, piece } = args
+	file: string
+	piece: Piece<PieceFrontmatter>
+	markdown: PieceMarkdown<PieceFrontmatter>
+}> {
+	const file = args.piece
+	const fullPath = path.resolve(file)
+	const pieceNames = await ctx.pieces.getTypes()
+	const pieceName = ctx.pieces.getTypeFromFile(file)
 
-	if (path) {
-		return parsePieceArgv(ctx, { path, piece })
-	} else if (piece) {
-		return { name: piece }
+	if (pieceNames.length === 0) {
+		throw new Error(`no piece types were found. please add some schemas`)
 	}
 
-	return null
+	if (pieceName && pieceNames.includes(pieceName)) {
+		const piece = ctx.pieces.getPiece(pieceName)
+		const relativePath = path.relative(ctx.pieces.directory, fullPath)
+
+		try {
+			const markdown = await piece.get(relativePath)
+			return { file, piece, markdown }
+		} catch (err) {
+			throw new Error(`piece [${file}] does not exist`)
+		}
+	}
+
+	throw new Error(`file [${file}] is not a valid piece like: ${pieceNames.join(', ')}`)
 }
 
-const makePieceCommand = function <T>(yargs: Argv<T>, alias = 'slug'): Argv<T & PieceArgv> {
-	return yargs
-		.option('piece', {
-			type: 'string',
-			alias: 'p',
-			description: `piece type, required if using <${alias}>`,
-		})
-		.positional('path', {
-			type: 'string',
-			alias: alias,
-			description: `<path|${alias}> of piece`,
-			demandOption: `<path|${alias}> is required`,
-		})
+const makePieceOption = function <T>(yargs: Argv<T>): Argv<T & PieceArgv> {
+	return yargs.option('piece', {
+		type: 'string',
+		alias: 'p',
+		description: `piece type`,
+		demandOption: `piece type is required`,
+	})
 }
 
-const makeOptionalPieceCommand = function <T>(
-	yargs: Argv<T>,
-	alias = 'slug'
-): Argv<T & PieceOptionalArgv> {
-	return yargs
-		.option('piece', {
-			type: 'string',
-			alias: 'p',
-			description: `piece type, required if using <${alias}>`,
-		})
-		.positional('path', {
-			type: 'string',
-			alias: alias,
-			description: `<path|${alias}> of piece`,
-			demandOption: false,
-		})
+const makePiecePathPositional = function <T>(yargs: Argv<T>): Argv<T & PieceArgv> {
+	return yargs.positional('piece', {
+		type: 'string',
+		description: `path to the piece`,
+		demandOption: `path to the piece is required`,
+	})
 }
 
 async function downloadFileOrUrlTo(file: string): Promise<string> {
@@ -149,12 +122,11 @@ function calculateHashFromFile(file: string): Promise<string> {
 
 export {
 	PieceFileType,
-	PieceCommandOption,
-	PieceOptionalCommandOption,
-	parsePieceArgv,
-	parseOptionalPieceArgv,
-	makePieceCommand,
-	makeOptionalPieceCommand,
+	PiecePositional,
+	parsePieceOptionArgv,
+	parsePiecePathPositionalArgv,
 	downloadFileOrUrlTo,
 	calculateHashFromFile,
+	makePieceOption,
+	makePiecePathPositional,
 }

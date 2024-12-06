@@ -3,14 +3,17 @@ import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
 import slugify from '@sindresorhus/slugify'
 import yaml from 'yaml'
+import path from 'path'
+import { PieceArgv, PieceFileType, makePieceOption, parsePieceOptionArgv } from '../pieces/index.js'
+import { existsSync } from 'fs'
 
 export type CreateArgv = {
-	piece: string
 	title: string
 	fields?: string[]
 	input: string
 	minimal?: boolean
-}
+	directory: string
+} & PieceArgv
 
 function parseFields(fields: string[], input: string): Record<string, unknown> {
 	switch (input) {
@@ -30,13 +33,7 @@ const command: Command<CreateArgv> = {
 	describe: 'create a new piece',
 
 	builder: <T>(yargs: Argv<T>) => {
-		return yargs
-			.option('piece', {
-				type: 'string',
-				alias: 'p',
-				description: `piece type`,
-				demandOption: `piece is required`,
-			})
+		return makePieceOption(yargs)
 			.option('minimal', {
 				type: 'boolean',
 				alias: 'm',
@@ -47,6 +44,12 @@ const command: Command<CreateArgv> = {
 				type: 'string',
 				description: `title of piece`,
 				demandOption: `title is required`,
+			})
+			.option('directory', {
+				alias: 'd',
+				type: 'string',
+				description: 'dir to where to make the piece',
+				demandOption: true,
 			})
 			.option('input', {
 				alias: 'i',
@@ -62,29 +65,32 @@ const command: Command<CreateArgv> = {
 	},
 
 	run: async function (ctx, args) {
-		const { title, piece, fields, input, minimal } = args
-		const pieces = await ctx.pieces.getPiece(args.piece)
+		const { title, fields, input, minimal, directory } = args
+		const { piece } = await parsePieceOptionArgv(ctx, args)
 		const slug = slugify(title)
+		const dir = path.resolve(directory)
+		const filePath = path.join(dir, `${slug}.${PieceFileType}`)
+		const file = path.relative(ctx.directory, filePath)
 
-		if (pieces.exists(slug)) {
-			log.error(`${piece} already exists at ${pieces.getFileName(slug)}`)
+		if (existsSync(filePath)) {
+			log.error(`file already exists at ${filePath}`)
 			return
 		}
 
 		if (ctx.flags.dryRun === false) {
-			const markdown = pieces.create(slug, title, minimal)
+			const markdown = piece.create(file, title, minimal)
 
 			if (fields?.length) {
 				const fieldMaps = parseFields(fields, input)
-				const updatedMarkdown = await pieces.setFields(markdown, fieldMaps)
-				await pieces.write(updatedMarkdown)
+				const updatedMarkdown = await piece.setFields(markdown, fieldMaps)
+				await piece.write(updatedMarkdown)
 			} else {
-				await pieces.write(markdown)
+				await piece.write(markdown)
 			}
 
-			log.info(`created new ${piece} at ${pieces.getFileName(slug)}`)
+			log.info(`created new ${piece} at ${filePath}`)
 		} else {
-			log.info(`created new ${piece} at ${slugify(title)}.md`)
+			log.info(`created new ${piece} at ${filePath}`)
 		}
 	},
 }

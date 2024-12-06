@@ -2,7 +2,7 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command from './dump.js'
 import { Arguments } from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePiece } from '../pieces/piece.fixtures.js'
+import { makePieceMock } from '../pieces/piece.fixtures.js'
 
 vi.mock('@luzzle/core')
 
@@ -27,11 +27,12 @@ describe('lib/commands/dump', () => {
 	})
 
 	test('dump', async () => {
-		const PieceTest = makePiece()
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockResolvedValue(new PieceTest()),
-				findPieceNames: mocks.findPieceNames.mockResolvedValue(['test']),
+				getPiece: mocks.getPiece.mockReturnValue(piece),
+				getTypes: mocks.findPieceNames.mockResolvedValue([piece.type]),
 			},
 		})
 

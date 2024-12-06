@@ -4,8 +4,8 @@ import command, { ValidateArgv } from './validate.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePieceCommand, parsePieceArgv, PieceMarkdownError } from '../pieces/index.js'
-import { makeMarkdownSample, makePiece } from '../pieces/piece.fixtures.js'
+import { makePiecePathPositional, parsePiecePathPositionalArgv } from '../pieces/index.js'
+import { makeMarkdownSample, makePieceMock } from '../pieces/piece.fixtures.js'
 
 vi.mock('../pieces/index')
 vi.mock('../log.js')
@@ -13,8 +13,8 @@ vi.mock('../log.js')
 const mocks = {
 	logError: vi.spyOn(log, 'error'),
 	logInfo: vi.spyOn(log, 'info'),
-	piecesParseArgs: vi.mocked(parsePieceArgv),
-	piecesCommand: vi.mocked(makePieceCommand),
+	parseArgs: vi.mocked(parsePiecePathPositionalArgv),
+	makeCommand: vi.mocked(makePiecePathPositional),
 	getPiece: vi.fn(),
 }
 
@@ -33,69 +33,39 @@ describe('lib/commands/validate.ts', () => {
 	})
 
 	test('run', async () => {
-		const path = 'slug2'
-		const fullPath = `/home/user/${path}.md`
-		const PieceTest = makePiece()
-		const pieceMarkdown = makeMarkdownSample()
-		const ctx = makeContext({
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
-			},
-		})
+		const file = `/home/user/file.md`
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const markdown = makeMarkdownSample()
+		const ctx = makeContext()
 
-		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
-		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(pieceMarkdown)
-		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+		spies.validate = vi
+			.spyOn(PieceTest.prototype, 'validate')
+			.mockReturnValueOnce({ isValid: true })
+		mocks.parseArgs.mockResolvedValueOnce({ file, markdown, piece })
 
-		await command.run(ctx, { path } as Arguments<ValidateArgv>)
+		await command.run(ctx, { piece: file } as Arguments<ValidateArgv>)
 
-		expect(mocks.logInfo).toHaveBeenCalledOnce()
+		expect(mocks.logError).not.toHaveBeenCalled()
 	})
 
-	test('run with an invalid piece', async () => {
-		const path = 'slug2'
-		const fullPath = `/home/user/${path}.md`
-		const PieceTest = makePiece()
-		const pieceError = new PieceMarkdownError('', [])
-		const ctx = makeContext({
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
-			},
-		})
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		pieceError.validationErrors = [{ instancePath: '', message: '' }] as any
+	test('run on invalid piece', async () => {
+		const file = `/home/user/file.md`
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const markdown = makeMarkdownSample()
+		const ctx = makeContext()
+		const errors = ['error1', 'error2']
 
-		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
-		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockRejectedValueOnce(pieceError)
-		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
+		spies.validate = vi
+			.spyOn(PieceTest.prototype, 'validate')
+			.mockReturnValueOnce({ isValid: false, errors })
+		mocks.parseArgs.mockResolvedValueOnce({ file, markdown, piece })
 
-		await command.run(ctx, { path } as Arguments<ValidateArgv>)
+		await command.run(ctx, { piece: file } as Arguments<ValidateArgv>)
 
-		expect(mocks.logError).toHaveBeenCalledOnce()
-	})
-
-	test('run hits unknown error', async () => {
-		const path = 'slug2'
-		const fullPath = `/home/user/${path}.md`
-		const PieceTest = makePiece()
-		const ctx = makeContext({
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
-			},
-		})
-
-		spies.pieceExists = vi.spyOn(PieceTest.prototype, 'exists').mockReturnValueOnce(true)
-		spies.pieceGetPath = vi.spyOn(PieceTest.prototype, 'getPath').mockReturnValueOnce(fullPath)
-		spies.pieceGet = vi
-			.spyOn(PieceTest.prototype, 'get')
-			.mockRejectedValueOnce(new Error('unknown error'))
-		mocks.piecesParseArgs.mockResolvedValueOnce({ name: 'books', slug: path })
-
-		await command.run(ctx, { path } as Arguments<ValidateArgv>)
-
-		expect(mocks.logError).toHaveBeenCalledOnce()
+		expect(spies.validate).toHaveBeenCalledOnce()
+		expect(mocks.logError).toHaveBeenCalled()
 	})
 
 	test('builder', async () => {
@@ -103,6 +73,6 @@ describe('lib/commands/validate.ts', () => {
 
 		command.builder?.(args)
 
-		expect(mocks.piecesCommand).toHaveBeenCalledOnce()
+		expect(mocks.makeCommand).toHaveBeenCalledOnce()
 	})
 })

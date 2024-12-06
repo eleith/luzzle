@@ -3,10 +3,9 @@ import { Argv } from 'yargs'
 import { Command } from './utils/types.js'
 import {
 	PieceArgv,
-	PieceCommandOption,
-	PieceMarkdownError,
-	makePieceCommand,
-	parsePieceArgv,
+	makePiecePathPositional,
+	PiecePositional,
+	parsePiecePathPositionalArgv,
 } from '../pieces/index.js'
 import yaml from 'yaml'
 
@@ -37,12 +36,12 @@ async function parseFields(fields: string, input: string): Promise<Record<string
 const command: Command<FieldArgv> = {
 	name: 'field',
 
-	command: `field ${PieceCommandOption} [fields]`,
+	command: `field ${PiecePositional} [fields]`,
 
 	describe: 'get, edit or remove a field',
 
 	builder: function <T>(yargs: Argv<T>) {
-		return makePieceCommand(yargs)
+		return makePiecePathPositional(yargs)
 			.option('remove', {
 				alias: 'r',
 				type: 'boolean',
@@ -70,8 +69,7 @@ const command: Command<FieldArgv> = {
 
 	run: async function (ctx, args) {
 		const { fields, remove, set, input } = args
-		const { slug, name } = await parsePieceArgv(ctx, args)
-		const piece = await ctx.pieces.getPiece(name)
+		const { piece, markdown } = await parsePiecePathPositionalArgv(ctx, args)
 		const pieceFields = piece.fields.map((f) => f.name)
 		const fieldMaps = fields?.length ? await parseFields(fields, input) : undefined
 		const fieldnames = Object.keys(fieldMaps || {})
@@ -84,12 +82,11 @@ const command: Command<FieldArgv> = {
 				log.error('must provide a fieldname to remove a field')
 				return
 			} else {
-				console.log(`valid fields for ${name} are: ${pieceFields.join(', ')}`)
+				console.log(`valid fields for ${piece.type} are: ${pieceFields.join(', ')}`)
 				return
 			}
 		}
 
-		const markdown = await piece.get(slug)
 		const pieceField = fieldnames.find((f) => !pieceFields.includes(f))
 
 		if (pieceField) {
@@ -97,41 +94,24 @@ const command: Command<FieldArgv> = {
 			return
 		}
 
-		if (!markdown) {
-			log.error(`${slug} was not found`)
-			return
-		}
-
 		if (set && remove) {
 			log.error('cannot set and remove a field at the same time')
 			return
-		} else if (set) {
-			try {
-				const updated = await piece.setFields(markdown, fieldMaps)
+		} else if (set || remove) {
+			const updated = set
+				? await piece.setFields(markdown, fieldMaps)
+				: await piece.removeFields(markdown, fieldnames)
 
-				if (!ctx.flags.dryRun) {
-					await piece.write(updated)
+			if (!ctx.flags.dryRun) {
+				await piece.write(updated)
+				log.info(`modified: ${fields}`)
+			} else {
+				const validate = piece.validate(updated)
+				if (!validate.isValid) {
+					log.error(`field errors:\n${validate.errors}`)
+				} else {
+					log.info(`modified: ${fields}`)
 				}
-
-				log.info(`saved: ${fields}`)
-			} catch (e) {
-				/* c8 ignore next 2 */
-				const errors = e instanceof PieceMarkdownError ? piece.getErrors(e) : [e]
-				log.error(`error setting field: ${errors.join(', ')}`)
-			}
-		} else if (remove) {
-			try {
-				const updated = await piece.removeFields(markdown, fieldnames)
-
-				if (!ctx.flags.dryRun) {
-					await piece.write(updated)
-				}
-
-				log.info(`removed: ${fieldnames.join(', ')}`)
-			} catch (e) {
-				/* c8 ignore next 2 */
-				const errors = e instanceof PieceMarkdownError ? piece.getErrors(e) : [e]
-				log.error(`error setting field: ${errors.join(', ')}`)
 			}
 		} else {
 			//console.log(`fields: ${fieldnames.map((f) => `${f}=${markdown.frontmatter[f]}`).join('\n')}`)
