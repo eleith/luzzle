@@ -33,7 +33,11 @@ steps:
       - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
       - cd ../..
       - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/tools; fi
-    secrets: [npm_owner, npm_token]
+    environment:
+      NPM_OWNER:
+        from_secret: npm_owner
+      NPM_TOKEN:
+        from_secret: npm_token
     when:
       - event: [push]
         branch: [main]
