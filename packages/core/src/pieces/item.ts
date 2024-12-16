@@ -20,20 +20,37 @@ function makePieceItemInsertable<F extends PieceFrontmatter>(
 ): PiecesItemsInsertable {
 	const frontmatterJson = {} as Record<string, unknown>
 	const fields = getPieceFrontmatterSchemaFields(schema)
+	const assets: string[] = []
 
 	fields.forEach((field) => {
 		const name = field.name
 		const value = markdown.frontmatter[name]
-		frontmatterJson[name] = pieceFrontmatterValueToDatabaseValue(value, field)
+		const jsonValue = pieceFrontmatterValueToDatabaseValue(value, field)
+
+		if (field.type === 'array') {
+			if (field.format === 'asset') {
+				assets.push(...(value as string[]))
+			}
+		} else if (field.format === 'asset') {
+			assets.push(value as string)
+		}
+
+		frontmatterJson[name] = jsonValue
 	})
 
-	return {
+	const insertable: PiecesItemsInsertable = {
 		id: createId(),
 		file_path: markdown.filePath,
 		note_markdown: markdown.note as string,
 		frontmatter_json: JSON.stringify(frontmatterJson),
 		type: piece,
 	}
+
+	if (assets.length) {
+		insertable.assets_json_array = JSON.stringify(assets)
+	}
+
+	return insertable
 }
 
 function makePieceItemUpdatable<F extends PieceFrontmatter>(
@@ -45,16 +62,26 @@ function makePieceItemUpdatable<F extends PieceFrontmatter>(
 	const frontmatter = {} as Record<string, unknown>
 	const fields = getPieceFrontmatterSchemaFields(schema)
 	const update: PiecesItemsUpdateable = { date_updated: new Date().getTime() }
+	const assets: string[] = []
 
 	fields.forEach((field) => {
 		const name = field.name
 		const value = markdown.frontmatter[name as keyof F]
 		const updateValue = pieceFrontmatterValueToDatabaseValue(value, field)
 
+		if (field.type === 'array') {
+			if (field.format === 'asset') {
+				assets.push(...(value as string[]))
+			}
+		} else if (field.format === 'asset') {
+			assets.push(value as string)
+		}
+
 		frontmatter[name] = updateValue
 	})
 
 	const frontmatterJson = JSON.stringify(frontmatter)
+	const assetString = JSON.stringify(assets)
 
 	if (force || frontmatterJson !== data.frontmatter_json) {
 		update.frontmatter_json = JSON.stringify(frontmatter)
@@ -66,6 +93,10 @@ function makePieceItemUpdatable<F extends PieceFrontmatter>(
 
 	if (force || markdown.filePath !== data.file_path) {
 		update.file_path = markdown.filePath
+	}
+
+	if (force || data.assets_json_array !== assetString) {
+		update.assets_json_array = assetString !== '[]' ? assetString : undefined
 	}
 
 	return update

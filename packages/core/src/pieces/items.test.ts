@@ -2,12 +2,14 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { mockKysely } from '../database/database.mock.js'
 import * as items from './items.js'
 import { addColumnsFromPieceSchema } from './json.schema.js'
-import { PiecesItemsTable } from 'src/database/tables/pieces_items.schema.js'
+import { RawBuilder, sql } from 'kysely'
 
 vi.mock('./json.schema.ts')
+vi.mock('kysely')
 
 const mocks = {
 	addColumnsFromPieceSchema: vi.mocked(addColumnsFromPieceSchema),
+	sql: vi.mocked(sql),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -26,14 +28,12 @@ describe('src/pieces/items.ts', () => {
 
 	test('selectItem', async () => {
 		const kysely = mockKysely()
-		const pieceName = 'test'
 		const file = 'file'
 
-		await items.selectItem(kysely.db, pieceName, file)
+		await items.selectItem(kysely.db, file)
 
 		expect(kysely.db.selectFrom).toHaveBeenCalled()
 		expect(kysely.queries.where).toHaveBeenCalledWith('file_path', '=', file)
-		expect(kysely.queries.where).toHaveBeenCalledWith('type', '=', pieceName)
 	})
 
 	test('updateItem', async () => {
@@ -65,30 +65,59 @@ describe('src/pieces/items.ts', () => {
 
 	test('selectItems', async () => {
 		const kysely = mockKysely()
-
-		await items.selectItems(kysely.db, 'test')
-
-		expect(kysely.db.selectFrom).toHaveBeenCalled()
-		expect(kysely.queries.selectAll).toHaveBeenCalled()
-	})
-
-	test('selectItems with columns', async () => {
-		const kysely = mockKysely()
-		const columns = ['id', 'frontmatter_json'] as Array<keyof PiecesItemsTable>
-
-		await items.selectItems(kysely.db, 'test', columns)
+		await items.selectItems(kysely.db)
 
 		expect(kysely.db.selectFrom).toHaveBeenCalled()
-		expect(kysely.queries.select).toHaveBeenCalledWith(columns)
+		expect(kysely.queries.where).not.toHaveBeenCalled()
+		expect(kysely.queries.select).toHaveBeenCalledOnce()
 	})
 
-	test('deleteItemsById', async () => {
+	test('selectItems with type', async () => {
 		const kysely = mockKysely()
-		const ids = ['id1', 'id2']
+		const type = 'books'
+		await items.selectItems(kysely.db, { type })
 
-		await items.deleteItemsByIds(kysely.db, ids)
+		expect(kysely.db.selectFrom).toHaveBeenCalled()
+		expect(kysely.queries.where).toHaveBeenCalledWith('type', '=', type)
+		expect(kysely.queries.select).toHaveBeenCalledOnce()
+	})
+
+	test('selectItems with asset', async () => {
+		const kysely = mockKysely()
+		const asset = 'file1'
+		await items.selectItems(kysely.db, { asset })
+
+		expect(kysely.db.selectFrom).toHaveBeenCalled()
+		expect(kysely.queries.where).toHaveBeenCalledWith(
+			'assets_json_array',
+			'like',
+			expect.any(String)
+		)
+		expect(kysely.queries.select).toHaveBeenCalledOnce()
+	})
+
+	test('selectItemAssets', async () => {
+		const kysely = mockKysely()
+		const asset = 'file1'
+
+		mocks.sql.mockReturnValueOnce({ compile: vi.fn() } as unknown as RawBuilder<unknown>)
+		spies.executeQuery = vi
+			.spyOn(kysely.db, 'executeQuery')
+			.mockResolvedValue({ rows: [{ asset }] })
+
+		const assets = await items.selectItemAssets(kysely.db)
+
+		expect(kysely.db.executeQuery).toHaveBeenCalled()
+		expect(assets).toEqual([asset])
+	})
+
+	test('deleteItems', async () => {
+		const kysely = mockKysely()
+		const files = ['file1', 'file2']
+
+		await items.deleteItems(kysely.db, files)
 
 		expect(kysely.db.deleteFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('id', 'in', ids)
+		expect(kysely.queries.where).toHaveBeenCalledWith('file_path', 'in', files)
 	})
 })

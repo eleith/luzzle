@@ -5,7 +5,7 @@ import { PiecesItemsSelectable } from '../../database/tables/pieces_items.schema
 
 type PieceValidator = Ajv.ValidateFunction<PieceFrontmatter>
 
-const sample = {
+const sample: PiecesItemsSelectable = {
 	id: '1',
 	file_path: 'samplePath',
 	note_markdown: 'note',
@@ -13,6 +13,7 @@ const sample = {
 	date_added: new Date().getTime(),
 	date_updated: new Date().getTime(),
 	frontmatter_json: JSON.stringify({ title: 'title' }),
+	assets_json_array: JSON.stringify([]),
 }
 
 export function makeValidator(): PieceValidator {

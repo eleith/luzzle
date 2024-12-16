@@ -52,8 +52,7 @@ async function getPiece(db: Kysely<LuzzleTables>, name: string) {
 }
 
 async function getPieces(db: Kysely<LuzzleTables>) {
-	const pieces = await db.selectFrom('pieces_manager').selectAll().execute()
-	return pieces
+	return await db.selectFrom('pieces_manager').selectAll().execute()
 }
 
 async function deletePiece(db: Kysely<LuzzleTables>, name: string) {

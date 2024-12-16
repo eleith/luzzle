@@ -9,6 +9,7 @@ interface PiecesItemsTable {
 	date_updated: date_updated
 	note_markdown: string
 	frontmatter_json: string
+	assets_json_array?: string
 }
 
 type PiecesItemsSelectable = Selectable<PiecesItemsTable>
