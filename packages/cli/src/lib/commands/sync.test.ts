@@ -2,17 +2,24 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { SyncArgv } from './sync.js'
 import yargs, { Arguments } from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePieceMock, makeRegisteredPiece } from '../pieces/piece.fixtures.js'
-import { getPieces } from '@luzzle/core'
+import { makePieceMock } from '../pieces/piece.fixtures.js'
+import { getPieces, selectItemAssets } from '@luzzle/core'
+import { unlink } from 'fs/promises'
 
 vi.mock('../pieces/index.js')
 vi.mock('@luzzle/core')
+vi.mock('fs/promises')
+vi.mock('path')
 
 const mocks = {
-	getPieceTypes: vi.fn(),
+	sync: vi.fn(),
+	prune: vi.fn(),
+	getFiles: vi.fn(),
 	getPiece: vi.fn(),
 	findPieceNames: vi.fn(),
 	getPieces: vi.mocked(getPieces),
+	selectItemAssets: vi.mocked(selectItemAssets),
+	unlink: vi.mocked(unlink),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -33,67 +40,135 @@ describe('lib/commands/sync', () => {
 		const files = ['a', 'b', 'c']
 		const PieceTest = makePieceMock()
 		const piece = new PieceTest()
-		const registeredPieces = [makeRegisteredPiece()]
+		const type = piece.type
 		const ctx = makeContext({
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(piece),
-				getTypes: mocks.findPieceNames.mockResolvedValueOnce([piece.type]),
-				getFiles: mocks.getPieceTypes.mockResolvedValueOnce(files),
-				getTypeFromFile: mocks.getPieceTypes.mockReturnValue(piece.type),
+				sync: mocks.sync.mockResolvedValueOnce([piece.type]),
+				getFiles: mocks.getFiles.mockResolvedValueOnce({ pieces: { [type]: files }, assets: [] }),
+				prune: mocks.prune.mockResolvedValue(null),
 			},
 		})
 
 		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
-		spies.pieceSyncItems = vi.spyOn(PieceTest.prototype, 'syncItems').mockResolvedValue()
-		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncItemsCleanUp').mockResolvedValue()
-		spies.pieceFilterSlugsBy = vi.spyOn(PieceTest.prototype, 'isOutdated')
+		spies.piecePrune = vi.spyOn(PieceTest.prototype, 'prune').mockResolvedValue()
+		spies.pieceIsOutdated = vi.spyOn(PieceTest.prototype, 'isOutdated')
 
-		spies.pieceFilterSlugsBy.mockResolvedValueOnce(false)
-		spies.pieceFilterSlugsBy.mockResolvedValueOnce(true)
-		spies.pieceFilterSlugsBy.mockResolvedValueOnce(false)
-
-		mocks.getPieces.mockResolvedValue(registeredPieces)
+		spies.pieceIsOutdated.mockResolvedValueOnce(false)
+		spies.pieceIsOutdated.mockResolvedValueOnce(true)
+		spies.pieceIsOutdated.mockResolvedValueOnce(false)
 
 		await command.run(ctx, {} as Arguments<SyncArgv>)
 
-		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, ctx.flags.dryRun)
-		expect(spies.pieceSyncItems).toHaveBeenCalledWith(ctx.db, [files[1]], ctx.flags.dryRun)
-		expect(spies.pieceSyncCleanUp).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
+		expect(mocks.sync).toHaveBeenCalledOnce()
+		expect(mocks.prune).toHaveBeenCalledOnce()
+		expect(mocks.selectItemAssets).not.toHaveBeenCalled()
+		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, [files[1]], ctx.flags.dryRun)
+		expect(spies.piecePrune).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
+		expect(spies.pieceIsOutdated).toHaveBeenCalledTimes(files.length)
 	})
 
 	test('run with force', async () => {
 		const files = ['a', 'b', 'c']
 		const PieceTest = makePieceMock()
 		const piece = new PieceTest()
-		const registeredPieces = [makeRegisteredPiece()]
+		const type = piece.type
 		const ctx = makeContext({
 			pieces: {
+				sync: mocks.sync.mockResolvedValueOnce([piece.type]),
 				getPiece: mocks.getPiece.mockReturnValue(piece),
-				getTypes: mocks.findPieceNames.mockResolvedValueOnce([piece.type]),
-				getFiles: mocks.getPieceTypes.mockResolvedValueOnce(files),
-				getTypeFromFile: mocks.getPieceTypes.mockReturnValue(piece.type),
+				getFiles: mocks.getFiles.mockResolvedValueOnce({ pieces: { [type]: files }, assets: [] }),
+				prune: mocks.prune.mockResolvedValue(null),
 			},
 		})
 
 		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
-		spies.pieceSyncItems = vi.spyOn(PieceTest.prototype, 'syncItems').mockResolvedValue()
-		spies.pieceSyncCleanUp = vi.spyOn(PieceTest.prototype, 'syncItemsCleanUp').mockResolvedValue()
-		spies.pieceFilterSlugsBy = vi.spyOn(PieceTest.prototype, 'isOutdated').mockResolvedValue(false)
-		mocks.getPieces.mockResolvedValue(registeredPieces)
+		spies.piecePrune = vi.spyOn(PieceTest.prototype, 'prune').mockResolvedValue()
+		spies.pieceIsOutdated = vi.spyOn(PieceTest.prototype, 'isOutdated').mockResolvedValue(false)
 
 		await command.run(ctx, { force: true } as Arguments<SyncArgv>)
 
-		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, ctx.flags.dryRun)
-		expect(spies.pieceSyncItems).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
-		expect(spies.pieceSyncCleanUp).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
+		expect(mocks.sync).toHaveBeenCalledOnce()
+		expect(mocks.prune).toHaveBeenCalledOnce()
+		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
+		expect(spies.piecePrune).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
+		expect(mocks.selectItemAssets).not.toHaveBeenCalled()
 	})
 
+	test('run with prune', async () => {
+		const files: string[] = []
+		const dbAssets = ['a', 'b', 'c']
+		const diskAssets = [...dbAssets, 'd', 'e']
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const type = piece.type
+		const ctx = makeContext({
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(piece),
+				sync: mocks.sync.mockResolvedValueOnce([piece.type]),
+				getFiles: mocks.getFiles.mockResolvedValueOnce({
+					pieces: { [type]: files },
+					assets: diskAssets,
+				}),
+				prune: mocks.prune.mockResolvedValue(null),
+			},
+		})
+
+		mocks.selectItemAssets.mockResolvedValueOnce(dbAssets)
+		mocks.unlink.mockResolvedValue()
+
+		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
+		spies.piecePrune = vi.spyOn(PieceTest.prototype, 'prune').mockResolvedValue()
+		spies.pieceIsOutdated = vi.spyOn(PieceTest.prototype, 'isOutdated')
+
+		spies.pieceIsOutdated.mockResolvedValueOnce(false)
+
+		await command.run(ctx, { prune: true } as Arguments<SyncArgv>)
+
+		expect(mocks.selectItemAssets).toHaveBeenCalled()
+		expect(mocks.unlink).toHaveBeenCalledTimes(2)
+	})
+
+	test('run with prune and dry-run', async () => {
+		const files: string[] = []
+		const dbAssets = ['a', 'b', 'c']
+		const diskAssets = [...dbAssets, 'd', 'e']
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const type = piece.type
+		const ctx = makeContext({
+			flags: { dryRun: true },
+			pieces: {
+				getPiece: mocks.getPiece.mockReturnValue(piece),
+				sync: mocks.sync.mockResolvedValueOnce([piece.type]),
+				getFiles: mocks.getFiles.mockResolvedValueOnce({
+					pieces: { [type]: files },
+					assets: diskAssets,
+				}),
+				prune: mocks.prune.mockResolvedValue(null),
+			},
+		})
+
+		mocks.selectItemAssets.mockResolvedValueOnce(dbAssets)
+		mocks.unlink.mockResolvedValue()
+
+		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
+		spies.piecePrune = vi.spyOn(PieceTest.prototype, 'prune').mockResolvedValue()
+		spies.pieceIsOutdated = vi.spyOn(PieceTest.prototype, 'isOutdated')
+
+		spies.pieceIsOutdated.mockResolvedValueOnce(false)
+
+		await command.run(ctx, { prune: true } as Arguments<SyncArgv>)
+
+		expect(mocks.selectItemAssets).toHaveBeenCalled()
+		expect(mocks.unlink).not.toHaveBeenCalled()
+	})
 	test('builder', async () => {
 		const args = yargs()
 
-		spies.options = vi.spyOn(args, 'options')
+		spies.option = vi.spyOn(args, 'option')
 		command.builder?.(args)
 
-		expect(spies.options).toHaveBeenCalledTimes(1)
+		expect(spies.option).toHaveBeenCalledTimes(2)
 	})
 })

@@ -5,7 +5,6 @@ import create from './create.js'
 import init from './init.js'
 import sync from './sync.js'
 import cd from './cd.js'
-import dump from './dump.js'
 import validate from './validate.js'
 import assistant from './assistant.js'
 
@@ -19,7 +18,6 @@ export default {
 	init,
 	sync,
 	cd,
-	dump,
 	validate,
 	assistant,
 }
