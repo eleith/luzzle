@@ -2,7 +2,6 @@ import { existsSync } from 'fs'
 import { copyFile, mkdir, stat, unlink, writeFile } from 'fs/promises'
 import log from '../log.js'
 import { updateCache, addCache, getCache } from './cache.js'
-import { difference } from 'lodash-es'
 import {
 	LuzzleDatabase,
 	PieceMarkdown,
@@ -19,26 +18,22 @@ import {
 	makePieceItemInsertable,
 	makePieceItemUpdatable,
 	databaseValueToPieceFrontmatterValue,
-	deleteItemsByIds,
-	selectItems,
+	deleteItems,
 	selectItem,
+	selectItems,
 	updateItem,
 	LuzzleSelectable,
 	insertItem,
 	getPieceSchemaFromFile,
-	getPiece,
-	addPiece,
-	updatePiece,
 	getValidatePieceItemErrors,
 } from '@luzzle/core'
-import { eachLimit, queue } from 'async'
+import { queue } from 'async'
 import { cpus } from 'os'
 import path from 'path'
 import { calculateHashFromFile, downloadFileOrUrlTo } from './utils.js'
 import { ASSETS_DIRECTORY, LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY } from '../assets.js'
 import { fileTypeFromFile } from 'file-type'
 import { randomBytes } from 'crypto'
-import { JSONSchemaType } from 'ajv/dist/core.js'
 
 export interface InterfacePiece<F extends PieceFrontmatter> {
 	new (directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
@@ -148,23 +143,17 @@ class Piece<F extends PieceFrontmatter> {
 		}
 	}
 
-	async syncItemsCleanUp(db: LuzzleDatabase, files: string[], dryRun = false) {
-		const dbPieces = await selectItems(db, this._pieceName, ['file_path', 'id'])
-		const dbPaths = dbPieces.map((piece) => piece.file_path)
-		const diskPaths = files
-		const pathDiffs = difference(dbPaths, diskPaths)
-		const idsToRemove = dbPieces
-			.filter((piece) => pathDiffs.includes(piece.file_path))
-			.map((piece) => piece.id)
+	async prune(db: LuzzleDatabase, files: string[], dryRun = false) {
+		const dbPieces = await selectItems(db, { type: this._pieceName })
+		const diskPiecesSet = new Set<string>(files)
+		const missingPieces = dbPieces.filter((piece) => !diskPiecesSet.has(piece.file_path))
+		const missingFiles = missingPieces.map((piece) => piece.file_path)
 
-		try {
-			if (idsToRemove.length && dryRun === false) {
-				await deleteItemsByIds(db, idsToRemove)
+		if (missingFiles.length > 0) {
+			if (!dryRun) {
+				await deleteItems(db, missingFiles)
 			}
-
-			log.info(`cleaned ${idsToRemove.length} ${this._pieceName}`)
-		} catch (err) {
-			log.error(`could not clean: ${err}`)
+			missingFiles.forEach((file) => log.info(`pruned piece (db): ${file}`))
 		}
 	}
 
@@ -193,7 +182,7 @@ class Piece<F extends PieceFrontmatter> {
 		markdown: PieceMarkdown<F>,
 		dryRun = false
 	): Promise<void> {
-		const dbPiece = await selectItem(db, this._pieceName, markdown.filePath)
+		const dbPiece = await selectItem(db, markdown.filePath)
 
 		if (dbPiece) {
 			await this.syncMarkdownUpdate(db, markdown, dbPiece, dryRun)
@@ -224,7 +213,7 @@ class Piece<F extends PieceFrontmatter> {
 		}
 	}
 
-	async syncItems(db: LuzzleDatabase, files: string[], dryRun = false) {
+	async sync(db: LuzzleDatabase, files: string[], dryRun = false) {
 		const q = queue<string>(async (file) => {
 			const markdown = await this.get(file)
 			await this.syncMarkdown(db, markdown, dryRun)
@@ -233,32 +222,6 @@ class Piece<F extends PieceFrontmatter> {
 		q.push(files)
 
 		await q.drain()
-	}
-
-	async sync(db: LuzzleDatabase, dryRun: boolean) {
-		const fileStat = await stat(this._schemaPath).catch(() => null)
-
-		if (!fileStat) {
-			throw new Error(`${this._schemaPath} does not exist`)
-		}
-
-		const piece = await getPiece(db, this._pieceName)
-
-		if (!piece) {
-			if (!dryRun) {
-				await addPiece(db, this._pieceName, this._schema as JSONSchemaType<PieceFrontmatter>)
-			}
-			log.info(`Added piece ${this._pieceName} from schema at ${this._schemaPath}`)
-		} else {
-			const pieceDate = piece.date_updated || piece.date_added
-
-			if (fileStat.mtime > new Date(pieceDate)) {
-				if (!dryRun) {
-					await updatePiece(db, this._pieceName, this._schema as JSONSchemaType<PieceFrontmatter>)
-				}
-				log.info(`Updated piece ${this._pieceName} from schema at ${this._schemaPath}`)
-			}
-		}
 	}
 
 	toMarkdown(data: LuzzleSelectable<'pieces_items'>): PieceMarkdown<F> {
@@ -403,23 +366,6 @@ class Piece<F extends PieceFrontmatter> {
 			markdown.note,
 			frontmatter
 		) as PieceMarkdown<F>
-	}
-
-	async dump(db: LuzzleDatabase, dryRun = false) {
-		const pieceData = await selectItems(db, this._pieceName)
-		const numCpus = cpus().length
-
-		await eachLimit(pieceData, numCpus, async (data) => {
-			try {
-				if (dryRun === false) {
-					const markdown = this.toMarkdown(data)
-					await this.write(markdown)
-				}
-				log.info(`saving ${this._pieceName} for ${data.file_path} to markdown`)
-			} catch (e) {
-				log.error(`error saving ${this._pieceName} for ${data.file_path}`)
-			}
-		})
 	}
 }
 

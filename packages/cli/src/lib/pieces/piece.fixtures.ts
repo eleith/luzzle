@@ -70,9 +70,12 @@ export function makeMarkdownSample<F extends PieceFrontmatter>(
 	}
 }
 
-export function makeSample(): LuzzleSelectable<'pieces_items'> {
+export function makePieceItemSelectable(
+	overrides?: Partial<LuzzleSelectable<'pieces_items'>>
+): LuzzleSelectable<'pieces_items'> {
 	return {
 		...sample,
+		...overrides,
 	}
 }
 
@@ -94,13 +97,14 @@ export function makePieceMock() {
 	return PieceOverridable
 }
 
-export function makeRegisteredPiece(overrides?: Partial<PieceManagerSelect>): PieceManagerSelect {
+export function makeRegisteredPiece(overrides?: Partial<PieceManagerSelect>) {
+	const { schema, ...rest } = overrides || {}
 	return {
 		id: `123lk12j3lj12k3${Math.random()}`,
 		date_added: new Date().getTime(),
-		date_updated: new Date().getTime(),
+		date_updated: null,
 		name: 'asdf',
-		schema: 'asdf',
-		...overrides,
+		schema: makeSchema(schema || 'asdf'),
+		...rest,
 	}
 }
