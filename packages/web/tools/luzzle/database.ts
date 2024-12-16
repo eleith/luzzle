@@ -47,10 +47,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 
 async function populatePieceItems(db: LuzzleDatabase): Promise<void> {
 	const webDb = db.withTables<{ web_pieces: WebPieces }>()
-	const items = await db
-		.selectFrom('pieces_items')
-		.selectAll()
-		.execute()
+	const items = await db.selectFrom('pieces_items').selectAll().execute()
 	const values: Array<WebPieces> = []
 	const typeSlugs = new Set<string>()
 
@@ -82,9 +79,14 @@ async function populatePieceItems(db: LuzzleDatabase): Promise<void> {
 			media: frontmatter.cover || frontmatter.poster || frontmatter.representative_image,
 			keywords: frontmatter.keywords,
 			date_added: item.date_added,
-			date_consumed: frontmatter.date_read || frontmatter.date_viewed || frontmatter.date_played || frontmatter.date_accessed || frontmatter.date_published,
+			date_consumed:
+				frontmatter.date_read ||
+				frontmatter.date_viewed ||
+				frontmatter.date_played ||
+				frontmatter.date_accessed ||
+				frontmatter.date_published,
 			json_metadata: item.frontmatter_json,
-			... (item.date_updated && { date_updated: item.date_updated }),
+			...(item.date_updated && { date_updated: item.date_updated })
 		})
 	})
 

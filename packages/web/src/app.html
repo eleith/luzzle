@@ -4,8 +4,14 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/images/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<style>
+			:root {
+				--font-url-noto-sans: url('%sveltekit.assets%/fonts/noto-sans.woff2');
+			}
+		</style>
 		%sveltekit.head%
 	</head>
+
 	<body data-sveltekit-preload-data="hover" data-theme="system">
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
