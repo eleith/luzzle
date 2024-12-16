@@ -79,7 +79,7 @@
 			font-weight: 300 600;
 			font-style: normal;
 			font-variation-settings: 'wdth' 300;
-			src: url(`${PUBLIC_ASSETS_CDN_URL}/fonts/noto-sans.woff2`) format('woff2');
+			src: var(--font-url-noto-sans) format('woff2');
 			font-display: swap;
 		}
 
