@@ -28,6 +28,7 @@ function mockKysely() {
 		selectFrom: vi.fn().mockImplementation(() => queries),
 		deleteFrom: vi.fn().mockImplementation(() => queries),
 		insertInto: vi.fn().mockImplementation(() => queries),
+		executeQuery: vi.fn(),
 		updateTable: vi.fn().mockImplementation(() => queries),
 		schema: {
 			createTable: vi.fn().mockImplementation(() => schema),

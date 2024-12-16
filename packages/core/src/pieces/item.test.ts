@@ -64,6 +64,45 @@ describe('src/pieces/item.ts', () => {
 		})
 	})
 
+	test('makePieceItemInsertable with assets', () => {
+		const note = 'note'
+		const piece = 'books'
+		const path = 'path'
+		const frontmatter = {
+			title: 'title',
+			keywords: 'keys',
+			subtitle: 'subtitle',
+			poster: 'poster.jpg',
+			images: ['image1.jpg', 'image2.jpg'],
+		}
+		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
+		const schema = makeSchema()
+		const fields = [
+			{ name: 'title', type: 'string' },
+			{ name: 'keywords', type: 'string' },
+			{ name: 'subtitle', type: 'string' },
+			{ name: 'poster', format: 'asset' },
+			{ name: 'images', type: 'array', format: 'asset' },
+		] as Array<PieceFrontmatterSchemaField>
+
+		mocks.getPieceFrontmatterSchemaFields.mockReturnValueOnce(fields)
+		mocks.pieceFrontmatterValueToDatabaseValue.mockImplementation((value) => value)
+
+		const input = database.makePieceItemInsertable(piece, markdown, schema)
+
+		expect(mocks.pieceFrontmatterValueToDatabaseValue).toHaveBeenCalledTimes(
+			Object.keys(frontmatter).length
+		)
+		expect(input).toEqual({
+			id: expect.any(String),
+			file_path: path,
+			note_markdown: markdown.note,
+			frontmatter_json: JSON.stringify(frontmatter),
+			type: piece,
+			assets_json_array: JSON.stringify([frontmatter.poster, ...frontmatter.images]),
+		})
+	})
+
 	test('makePieceItemUpdatable', () => {
 		const data = makeSample()
 		const note = 'note'
@@ -94,6 +133,44 @@ describe('src/pieces/item.ts', () => {
 			file_path: path,
 			note_markdown: note,
 			frontmatter_json: JSON.stringify(frontmatter),
+		})
+	})
+
+	test('makePieceItemUpdatable with assets', () => {
+		const data = makeSample()
+		const note = 'note'
+		const path = 'path'
+		const piece = 'books'
+		const frontmatter = {
+			title: 'title',
+			keywords: 'keys',
+			subtitle: 'subtitle',
+			poster: 'poster.jpg',
+			images: ['image1.jpg', 'image2.jpg'],
+		}
+		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
+		const schema = makeSchema()
+		const fields = [
+			{ name: 'title', type: 'string' },
+			{ name: 'keywords', type: 'string' },
+			{ name: 'subtitle', type: 'string' },
+			{ name: 'poster', format: 'asset' },
+			{ name: 'images', type: 'array', format: 'asset' },
+		] as Array<PieceFrontmatterSchemaField>
+
+		data.note_markdown = 'old note'
+
+		mocks.getPieceFrontmatterSchemaFields.mockReturnValueOnce(fields)
+		mocks.pieceFrontmatterValueToDatabaseValue.mockImplementation((value) => value)
+
+		const update = database.makePieceItemUpdatable(markdown, schema, data)
+
+		expect(update).toEqual({
+			date_updated: expect.any(Number),
+			file_path: path,
+			note_markdown: note,
+			frontmatter_json: JSON.stringify(frontmatter),
+			assets_json_array: JSON.stringify([frontmatter.poster, ...frontmatter.images]),
 		})
 	})
 
@@ -128,6 +205,7 @@ describe('src/pieces/item.ts', () => {
 			date_updated: expect.any(Number),
 			note_markdown: note,
 			frontmatter_json: JSON.stringify(frontmatter),
+			assets_json_array: undefined,
 		})
 	})
 
