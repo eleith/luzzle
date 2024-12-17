@@ -92,7 +92,9 @@
 	<div class="bookBack"></div>
 	<div>
 		<div class="bookCover" class:bookCoverLoading={isLoading}>
-			<div class="bookCoverFront">{piece.title}</div>
+			<div class="bookCoverFront" class:bookCoverFrontTitle={piece.media && !isLoading}>
+				{piece.title}
+			</div>
 			<Picture
 				{piece}
 				{size}
@@ -307,6 +309,10 @@
 		overflow: hidden;
 		display: flex;
 		align-items: center;
+	}
+
+	.bookCoverFrontTitle {
+		display: none;
 	}
 
 	.bookShadow {

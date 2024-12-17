@@ -299,7 +299,6 @@ h3 {
 
 a {
 	color: var(--colors-primary);
-	text-decoration: none;
 }
 
 a:hover {
