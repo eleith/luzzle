@@ -11,8 +11,8 @@ function generateRss(
 	site: { title: string; description: string; url: string; folder: string }
 ) {
 	const feed = new Feed({
-		title: site.title,
-		description: site.description,
+		title: site.folder,
+		description: '', // site.description,
 		id: `https://${site.url}/${site.folder}`,
 		link: `https://${site.url}`,
 		ttl: 60 * 24,
