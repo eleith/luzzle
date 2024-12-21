@@ -6,7 +6,6 @@
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import SunIcon from 'virtual:icons/ph/sun-dim'
 	import MoonIcon from 'virtual:icons/ph/moon'
-	import RainbowIcon from 'virtual:icons/ph/rainbow'
 	import ArrowRightIcon from 'virtual:icons/ph/caret-double-right'
 	import TreeIcon from 'virtual:icons/ph/tree'
 	import themes, { type Theme } from '$lib/ui/styles/themes'
@@ -147,7 +146,6 @@
 		{/if}
 		<button onclick={clickTheme} aria-label="change theme">
 			<SunIcon class="themeIcons themeIconsSun" />
-			<RainbowIcon class="themeIcons themeIconsRainbow" />
 			<TreeIcon class="themeIcons themeIconsTree" />
 			<MoonIcon class="themeIcons themeIconsMoon" />
 		</button>
@@ -226,11 +224,7 @@
 		display: inline-block;
 	}
 
-	:global(html[data-theme='light'] .themeIconsRainbow) {
-		display: inline-block;
-	}
-
-	:global(html[data-theme='rainbow'] .themeIconsTree) {
+	:global(html[data-theme='light'] .themeIconsTree) {
 		display: inline-block;
 	}
 

@@ -41,48 +41,6 @@ html {
 	--colors-outline-variant: #898373;
 }
 
-html[data-theme='rainbow'] {
-	--colors-primary: #ffffff;
-	--colors-on-primary: #2e2a9e;
-	--colors-primary-container: #ffcc80;
-	--colors-on-primary-container: #873e00;
-
-	--colors-secondary: #ffc107;
-	--colors-on-secondary: #212529;
-	--colors-secondary-container: #fff3cd;
-	--colors-on-secondary-container: #795500;
-
-	--colors-tertiary: #28a745;
-	--colors-on-tertiary: #ffffff;
-	--colors-tertiary-container: #c3e6cb;
-	--colors-on-tertiary-container: #043b11;
-
-	--colors-error: #dc3545;
-	--colors-on-error: #ffffff;
-	--colors-error-container: #f5c6cb;
-	--colors-on-error-container: #721c24;
-
-	--colors-surface: #90caf9;
-	--colors-surface-dim: #bbdefb;
-	--colors-surface-bright: #b3e5fc;
-	--colors-surface-inverse: #343a40;
-
-	--colors-on-surface: #1a237e;
-	--colors-on-surface-variant: #303f9f;
-	--colors-on-surface-inverse: #e3f2fd;
-
-	--colors-surface-container-lowest: #cceeff;
-	--colors-surface-container-low: #90caf9;
-	--colors-surface-container: #64b5f6;
-	--colors-surface-container-high: #42a5f5;
-	--colors-surface-container-highest: #2196f3;
-
-	--colors-shadow: hsla(0, 0%, 0%, 0.6);
-
-	--colors-outline: #adb5bd;
-	--colors-outline-variant: #6c757d;
-}
-
 html[data-theme='forest'] {
 	--colors-surface: #c7d8b9;
 	--colors-surface-dim: #b0c29e;
@@ -94,7 +52,7 @@ html[data-theme='forest'] {
 	--colors-surface-container-high: #6a7f54;
 	--colors-surface-container-highest: #576c41;
 
-	--colors-primary: #996633;
+	--colors-primary: #600000;
 	--colors-on-primary: #ffeeee;
 	--colors-primary-container: #734d26;
 	--colors-on-primary-container: #ffffff;
@@ -116,7 +74,7 @@ html[data-theme='forest'] {
 
 	--colors-shadow: hsla(0, 0%, 0%, 0.6);
 
-	--colors-on-surface: #0a4a08;
+	--colors-on-surface: #143113;
 	--colors-on-surface-variant: #ffffff;
 	--colors-on-surface-inverse: #ffffff;
 
@@ -126,7 +84,7 @@ html[data-theme='forest'] {
 }
 
 html[data-theme='light'] {
-	--colors-primary: #007bff;
+	--colors-primary: #00539F;
 	--colors-on-primary: #ffffff;
 	--colors-primary-container: #d0e4ff;
 	--colors-on-primary-container: #002752;
