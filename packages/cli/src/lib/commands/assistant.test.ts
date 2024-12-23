@@ -150,6 +150,9 @@ describe('lib/commands/assistant.ts', () => {
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(markdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		spies.pieceSetFields = vi
+			.spyOn(PieceTest.prototype, 'setFields')
+			.mockResolvedValueOnce(markdown)
 
 		mocks.parseArgs.mockResolvedValueOnce({ markdown, piece, file })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
@@ -159,6 +162,7 @@ describe('lib/commands/assistant.ts', () => {
 		await command.run(ctx, { prompt, write: true } as Arguments<AssistantArgv>)
 
 		expect(spies.pieceWrite).toHaveBeenCalledWith({ ...markdown, frontmatter })
+		expect(spies.pieceSetFields).toHaveBeenCalledWith(markdown, frontmatter)
 	})
 
 	test('builder', async () => {
