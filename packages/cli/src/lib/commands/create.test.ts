@@ -4,7 +4,7 @@ import command, { CreateArgv } from './create.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makeMarkdownSample, makePieceMock } from '../pieces/piece.fixtures.js'
+import { makeMarkdownSample, makePieceMock, makeSchema } from '../pieces/piece.fixtures.js'
 import yaml from 'yaml'
 import slugify from '@sindresorhus/slugify'
 import { existsSync } from 'fs'
@@ -39,9 +39,11 @@ describe('lib/commands/create', () => {
 		const piece = 'books'
 		const directory = '.'
 		const PieceTest = makePieceMock()
+		const schema = makeSchema(piece)
+		const markdown = makeMarkdownSample()
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest(directory, piece, schema)),
 				getTypes: mocks.getTypes.mockReturnValue([piece]),
 			},
 		})
@@ -49,11 +51,17 @@ describe('lib/commands/create', () => {
 		mocks.slugify.mockReturnValueOnce(title)
 		mocks.existsSync.mockReturnValueOnce(false)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockReturnValueOnce(markdown)
 
-		await command.run(ctx, { title, piece, directory } as Arguments<CreateArgv>)
+		await command.run(ctx, { title, piece, directory, minimal: false } as Arguments<CreateArgv>)
 
 		expect(mocks.getPiece).toHaveBeenCalledWith(piece)
 		expect(spies.pieceWrite).toHaveBeenCalledOnce()
+		expect(spies.pieceCreate).toHaveBeenCalledWith(
+			expect.stringMatching(new RegExp(`${title}.${piece}.md$`)),
+			title,
+			false
+		)
 	})
 
 	test('run fails with existing piece', async () => {

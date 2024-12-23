@@ -69,7 +69,7 @@ const command: Command<CreateArgv> = {
 		const { piece } = await parsePieceOptionArgv(ctx, args)
 		const slug = slugify(title)
 		const dir = path.resolve(directory)
-		const filePath = path.join(dir, `${slug}.${PieceFileType}`)
+		const filePath = path.join(dir, `${slug}.${piece.type}.${PieceFileType}`)
 		const file = path.relative(ctx.directory, filePath)
 
 		if (existsSync(filePath)) {
