@@ -4,7 +4,7 @@ import command, { AssistantArgv } from './assistant.js'
 import { Arguments, Argv } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePiecePathPositional, parsePiecePathPositionalArgv } from '../pieces/index.js'
+import { makePieceOption, parsePieceOptionArgv } from '../pieces/index.js'
 import {
 	makeFrontmatterSample,
 	makeMarkdownSample,
@@ -21,8 +21,8 @@ vi.mock('yaml')
 const mocks = {
 	logError: vi.spyOn(log, 'error'),
 	logInfo: vi.spyOn(log, 'info'),
-	parseArgs: vi.mocked(parsePiecePathPositionalArgv),
-	makePositional: vi.mocked(makePiecePathPositional),
+	parseArgs: vi.mocked(parsePieceOptionArgv),
+	makeOption: vi.mocked(makePieceOption),
 	generatePieceFrontmatter: vi.mocked(generatePieceFrontmatter),
 	getPiece: vi.fn(),
 	consoleLog: vi.spyOn(console, 'log'),
@@ -44,11 +44,9 @@ describe('lib/commands/assistant.ts', () => {
 	})
 
 	test('run', async () => {
-		const file = 'slug'
 		const apiKeys = 'api_key'
 		const PieceTest = makePieceMock()
 		const piece = new PieceTest()
-		const markdown = makeMarkdownSample()
 		const frontmatter = makeFrontmatterSample()
 		const prompt = 'prompt'
 		const ctx = makeContext({
@@ -57,7 +55,7 @@ describe('lib/commands/assistant.ts', () => {
 			},
 		})
 
-		mocks.parseArgs.mockResolvedValueOnce({ markdown, piece, file })
+		mocks.parseArgs.mockResolvedValueOnce({ piece })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
 			frontmatter as unknown as Record<string, string | number | boolean>
 		)
@@ -75,7 +73,6 @@ describe('lib/commands/assistant.ts', () => {
 	})
 
 	test('strips empty output fields', async () => {
-		const file = 'slug'
 		const apiKeys = 'api_key'
 		const PieceTest = makePieceMock()
 		const piece = new PieceTest()
@@ -90,7 +87,7 @@ describe('lib/commands/assistant.ts', () => {
 
 		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(markdown)
 
-		mocks.parseArgs.mockResolvedValueOnce({ markdown, piece, file })
+		mocks.parseArgs.mockResolvedValueOnce({ piece })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
 			frontmatter as unknown as Record<string, string | number | boolean>
 		)
@@ -100,42 +97,56 @@ describe('lib/commands/assistant.ts', () => {
 		expect(mocks.yamlStringify).toHaveBeenCalledWith({ title: 'title' })
 	})
 
-	test('json output', async () => {
-		const file = 'slug'
+	test('must use update and create exclusively', async () => {
+		const update = 'path/to/piece'
+		const directory = 'path/to/folder'
 		const apiKeys = 'api_key'
 		const PieceTest = makePieceMock()
 		const piece = new PieceTest()
-		const markdown = makeMarkdownSample()
 		const frontmatter = makeFrontmatterSample()
 		const prompt = 'prompt'
-		const attachment = 'file'
 		const ctx = makeContext({
 			config: {
 				get: vi.fn().mockReturnValueOnce(apiKeys),
 			},
 		})
 
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(markdown)
-
-		mocks.parseArgs.mockResolvedValueOnce({ markdown, piece, file })
+		mocks.parseArgs.mockResolvedValueOnce({ piece })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
 			frontmatter as unknown as Record<string, string | number | boolean>
 		)
 
-		await command.run(ctx, { prompt, file: attachment, output: 'json' } as Arguments<AssistantArgv>)
+		const creating = command.run(ctx, { prompt, update, directory } as Arguments<AssistantArgv>)
 
-		expect(mocks.yamlStringify).not.toHaveBeenCalledOnce()
-		expect(mocks.consoleLog).toHaveBeenCalledOnce()
-		expect(mocks.generatePieceFrontmatter).toHaveBeenCalledWith(
-			apiKeys,
-			piece.schema,
-			prompt,
-			attachment
-		)
+		expect(creating).rejects.toThrow()
 	})
 
-	test('writes output to piece', async () => {
-		const file = 'slug'
+	test('must use update and title exclusively', async () => {
+		const update = 'path/to/piece'
+		const title = 'title'
+		const apiKeys = 'api_key'
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const frontmatter = makeFrontmatterSample()
+		const prompt = 'prompt'
+		const ctx = makeContext({
+			config: {
+				get: vi.fn().mockReturnValueOnce(apiKeys),
+			},
+		})
+
+		mocks.parseArgs.mockResolvedValueOnce({ piece })
+		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
+			frontmatter as unknown as Record<string, string | number | boolean>
+		)
+
+		const creating = command.run(ctx, { prompt, update, title } as Arguments<AssistantArgv>)
+
+		expect(creating).rejects.toThrow()
+	})
+
+	test('updates a piece', async () => {
+		const update = 'path/to/piece'
 		const apiKeys = 'api_key'
 		const PieceTest = makePieceMock()
 		const piece = new PieceTest()
@@ -154,13 +165,70 @@ describe('lib/commands/assistant.ts', () => {
 			.spyOn(PieceTest.prototype, 'setFields')
 			.mockResolvedValueOnce(markdown)
 
-		mocks.parseArgs.mockResolvedValueOnce({ markdown, piece, file })
+		mocks.parseArgs.mockResolvedValueOnce({ piece })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
 			frontmatter as unknown as Record<string, string | number | boolean>
 		)
 
-		await command.run(ctx, { prompt, write: true } as Arguments<AssistantArgv>)
+		await command.run(ctx, { prompt, update } as Arguments<AssistantArgv>)
 
+		expect(spies.pieceGet).toHaveBeenCalledWith(update)
+		expect(spies.pieceWrite).toHaveBeenCalledWith({ ...markdown, frontmatter })
+		expect(spies.pieceSetFields).toHaveBeenCalledWith(markdown, frontmatter)
+	})
+
+	test('must have a title when creating', async () => {
+		const directory = 'path/to/folder'
+		const apiKeys = 'api_key'
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const frontmatter = makeFrontmatterSample()
+		const prompt = 'prompt'
+		const ctx = makeContext({
+			config: {
+				get: vi.fn().mockReturnValueOnce(apiKeys),
+			},
+		})
+
+		mocks.parseArgs.mockResolvedValueOnce({ piece })
+		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
+			frontmatter as unknown as Record<string, string | number | boolean>
+		)
+
+		const creating = command.run(ctx, { prompt, directory } as Arguments<AssistantArgv>)
+
+		expect(creating).rejects.toThrow()
+	})
+
+	test('creates a new piece', async () => {
+		const directory = 'path/to/folder'
+		const title = 'title'
+		const apiKeys = 'api_key'
+		const PieceTest = makePieceMock()
+		const piece = new PieceTest()
+		const markdown = makeMarkdownSample()
+		const frontmatter = makeFrontmatterSample()
+		const prompt = 'prompt'
+		const ctx = makeContext({
+			config: {
+				get: vi.fn().mockReturnValueOnce(apiKeys),
+			},
+		})
+
+		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockReturnValueOnce(markdown)
+		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		spies.pieceSetFields = vi
+			.spyOn(PieceTest.prototype, 'setFields')
+			.mockResolvedValueOnce(markdown)
+
+		mocks.parseArgs.mockResolvedValueOnce({ piece })
+		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
+			frontmatter as unknown as Record<string, string | number | boolean>
+		)
+
+		await command.run(ctx, { prompt, directory, title } as Arguments<AssistantArgv>)
+
+		expect(spies.pieceCreate).toHaveBeenCalledWith(directory, title)
 		expect(spies.pieceWrite).toHaveBeenCalledWith({ ...markdown, frontmatter })
 		expect(spies.pieceSetFields).toHaveBeenCalledWith(markdown, frontmatter)
 	})
@@ -168,14 +236,14 @@ describe('lib/commands/assistant.ts', () => {
 	test('builder', async () => {
 		const args = yargs()
 
-		mocks.makePositional.mockReturnValueOnce(args as Argv<AssistantArgv>)
+		mocks.makeOption.mockReturnValueOnce(args as Argv<AssistantArgv>)
 		spies.positional = vi.spyOn(args, 'positional').mockReturnValue(args)
 		spies.option = vi.spyOn(args, 'option').mockReturnValue(args)
 
 		command.builder?.(args)
 
 		expect(spies.positional).toHaveBeenCalledTimes(0)
-		expect(spies.option).toHaveBeenCalledTimes(4)
-		expect(mocks.makePositional).toHaveBeenCalledOnce()
+		expect(spies.option).toHaveBeenCalledTimes(5)
+		expect(mocks.makeOption).toHaveBeenCalledOnce()
 	})
 })

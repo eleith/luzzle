@@ -41,6 +41,7 @@ import {
 import { downloadFileOrUrlTo, calculateHashFromFile } from './utils.js'
 import { ASSETS_DIRECTORY } from '../assets.js'
 import { makeCache } from './cache.fixtures.js'
+import slugify from '@sindresorhus/slugify'
 
 vi.mock('fs')
 vi.mock('fs/promises')
@@ -53,6 +54,7 @@ vi.mock('os')
 vi.mock('file-type')
 vi.mock('@luzzle/core')
 vi.mock('./utils.js')
+vi.mock('@sindresorhus/slugify')
 
 const mocks = {
 	existsSync: vi.mocked(existsSync),
@@ -93,6 +95,7 @@ const mocks = {
 	getPieceSchemaFromFile: vi.mocked(getPieceSchemaFromFile),
 	validatePieceItem: vi.mocked(validatePieceItem),
 	getValidatePieceItemErrors: vi.mocked(getValidatePieceItemErrors),
+	slugify: vi.mocked(slugify),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -141,13 +144,31 @@ describe('lib/pieces/piece.ts', () => {
 		const title = markdown.frontmatter.title as string
 		const file = markdown.filePath
 
+		mocks.slugify.mockReturnValueOnce(title)
 		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.existsSync.mockReturnValueOnce(false)
 
 		const piece = new PieceType()
 		const pieceMarkdown = piece.create(file, title)
 
 		expect(pieceMarkdown).toEqual(markdown)
+	})
+
+	test('create throws on existing piece', () => {
+		const PieceType = makePieceMock()
+		const markdown = makeMarkdownSample()
+		const title = markdown.frontmatter.title as string
+		const file = markdown.filePath
+
+		mocks.slugify.mockReturnValueOnce(title)
+		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
+		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.existsSync.mockReturnValueOnce(true)
+
+		const piece = new PieceType()
+
+		expect(() => piece.create(file, title)).toThrow()
 	})
 
 	test('get schema', () => {

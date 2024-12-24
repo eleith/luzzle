@@ -30,10 +30,11 @@ import {
 import { queue } from 'async'
 import { cpus } from 'os'
 import path from 'path'
-import { calculateHashFromFile, downloadFileOrUrlTo } from './utils.js'
+import { PieceFileType, calculateHashFromFile, downloadFileOrUrlTo } from './utils.js'
 import { ASSETS_DIRECTORY, LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY } from '../assets.js'
 import { fileTypeFromFile } from 'file-type'
 import { randomBytes } from 'crypto'
+import slugify from '@sindresorhus/slugify'
 
 export interface InterfacePiece<F extends PieceFrontmatter> {
 	new (directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
@@ -63,9 +64,20 @@ class Piece<F extends PieceFrontmatter> {
 		}
 	}
 
-	create(file: string, title: string, empty: boolean = false): PieceMarkdown<F> {
-		const frontmatter = initializePieceFrontMatter(this._schema, empty) as F
-		return makePieceMarkdown(file, this._pieceName, undefined, { ...frontmatter, title })
+	create(directory: string, name: string): PieceMarkdown<F> {
+		const slug = slugify(name)
+		const filename = `${slug}.${this.type}.${PieceFileType}`
+		const fullPathDirectory = path.resolve(directory)
+		const relativeDirectory = path.relative(this._directory, fullPathDirectory)
+		const fullPathFile = path.join(fullPathDirectory, filename)
+		const file = path.join(relativeDirectory, filename)
+
+		if (existsSync(fullPathFile)) {
+			throw new Error(`file already exists: ${fullPathFile}`)
+		}
+
+		const frontmatter = initializePieceFrontMatter(this._schema, true) as F
+		return makePieceMarkdown(file, this._pieceName, undefined, frontmatter)
 	}
 
 	get type() {

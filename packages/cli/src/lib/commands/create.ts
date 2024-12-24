@@ -1,17 +1,13 @@
 import log from '../log.js'
 import { Command } from './utils/types.js'
 import { Argv } from 'yargs'
-import slugify from '@sindresorhus/slugify'
 import yaml from 'yaml'
-import path from 'path'
-import { PieceArgv, PieceFileType, makePieceOption, parsePieceOptionArgv } from '../pieces/index.js'
-import { existsSync } from 'fs'
+import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../pieces/index.js'
 
 export type CreateArgv = {
 	title: string
 	fields?: string[]
 	input: string
-	minimal?: boolean
 	directory: string
 } & PieceArgv
 
@@ -34,12 +30,6 @@ const command: Command<CreateArgv> = {
 
 	builder: <T>(yargs: Argv<T>) => {
 		return makePieceOption(yargs)
-			.option('minimal', {
-				type: 'boolean',
-				alias: 'm',
-				description: `create a minimal piece with only required pieces`,
-				default: false,
-			})
 			.positional('title', {
 				type: 'string',
 				description: `title of piece`,
@@ -48,7 +38,7 @@ const command: Command<CreateArgv> = {
 			.option('directory', {
 				alias: 'd',
 				type: 'string',
-				description: 'dir to where to make the piece',
+				description: 'dir to where to create the piece',
 				demandOption: true,
 			})
 			.option('input', {
@@ -65,21 +55,11 @@ const command: Command<CreateArgv> = {
 	},
 
 	run: async function (ctx, args) {
-		const { title, fields, input, minimal, directory } = args
+		const { title, fields, input, directory } = args
 		const { piece } = await parsePieceOptionArgv(ctx, args)
-		const slug = slugify(title)
-		const dir = path.resolve(directory)
-		const filePath = path.join(dir, `${slug}.${piece.type}.${PieceFileType}`)
-		const file = path.relative(ctx.directory, filePath)
-
-		if (existsSync(filePath)) {
-			log.error(`file already exists at ${filePath}`)
-			return
-		}
+		const markdown = piece.create(directory, title)
 
 		if (ctx.flags.dryRun === false) {
-			const markdown = piece.create(file, title, minimal)
-
 			if (fields?.length) {
 				const fieldMaps = parseFields(fields, input)
 				const updatedMarkdown = await piece.setFields(markdown, fieldMaps)
@@ -88,9 +68,9 @@ const command: Command<CreateArgv> = {
 				await piece.write(markdown)
 			}
 
-			log.info(`created new ${piece} at ${filePath}`)
+			log.info(`created new ${piece} at ${markdown.filePath}`)
 		} else {
-			log.info(`created new ${piece} at ${filePath}`)
+			log.info(`created new ${piece} at ${markdown.filePath}`)
 		}
 	},
 }

@@ -1,42 +1,39 @@
 import { Argv } from 'yargs'
 import { Command } from './utils/types.js'
 import yaml from 'yaml'
-import {
-	PieceArgv,
-	PiecePositional,
-	makePiecePathPositional,
-	parsePiecePathPositionalArgv,
-} from '../pieces/index.js'
+import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../pieces/index.js'
 import { generatePieceFrontmatter } from '../llm/google.js'
 
 export type AssistantArgv = {
-	output: string
-	write?: boolean
+	update?: string
+	directory?: string
 	prompt: string
 	file?: string
+	title?: string
 } & PieceArgv
 
 const command: Command<AssistantArgv> = {
 	name: 'assistant',
 
-	command: `assistant ${PiecePositional}`,
+	command: `assistant`,
 
 	describe: 'prompt an assistant to generate a piece',
 
 	builder: function <T>(yargs: Argv<T>) {
-		return makePiecePathPositional(yargs)
-			.option('output', {
-				alias: 'o',
+		return makePieceOption(yargs)
+			.option('update', {
+				alias: 'u',
 				type: 'string',
-				choices: ['json', 'yaml'],
-				default: 'yaml',
-				description: 'output format',
+				description: 'file path to an existing piece',
 			})
-			.option('write', {
-				alias: 'w',
-				type: 'boolean',
-				description: 'write the generated piece to the existing piece',
-				default: false,
+			.option('directory', {
+				alias: 'd',
+				type: 'string',
+				description: 'dir to where you want to create the piece',
+			})
+			.option('title', {
+				type: 'string',
+				description: 'title of the piece you want to create',
 			})
 			.option('prompt', {
 				type: 'string',
@@ -51,24 +48,37 @@ const command: Command<AssistantArgv> = {
 	},
 
 	run: async function (ctx, args) {
-		const { output, prompt, file, write } = args
-		const { markdown, piece } = await parsePiecePathPositionalArgv(ctx, args)
+		const { prompt, file, update, directory, title } = args
+		const { piece } = await parsePieceOptionArgv(ctx, args)
 		const apiKey = ctx.config.get('api_keys.google') as string
 		const metadata = await generatePieceFrontmatter(apiKey, piece.schema, prompt, file)
 		const metadataNonEmpty = Object.fromEntries(
 			Object.entries(metadata).filter(([, value]) => value !== null || value === '')
 		)
 
-		if (write) {
-			const markdownCopy = await piece.setFields(markdown, metadataNonEmpty)
-			await piece.write(markdownCopy)
+		if (update && directory) {
+			throw new Error(`update and directory are mutually exclusive`)
 		}
 
-		if (output === 'json') {
-			console.log(JSON.stringify(metadataNonEmpty, null, 2))
-		} else {
-			console.log(yaml.stringify(metadataNonEmpty))
+		if (update && title) {
+			throw new Error(`title is only to be used when creating a new piece`)
 		}
+
+		if (directory && !title) {
+			throw new Error(`title is required when creating a new piece`)
+		}
+
+		if (update) {
+			const markdown = await piece.get(update)
+			const markdownUpdate = await piece.setFields(markdown, metadataNonEmpty)
+			await piece.write(markdownUpdate)
+		} else if (directory && title) {
+			const markdown = piece.create(directory, title)
+			const markdownUpdate = await piece.setFields(markdown, metadataNonEmpty)
+			await piece.write(markdownUpdate)
+		}
+
+		console.log(yaml.stringify(metadataNonEmpty))
 	},
 }
 
