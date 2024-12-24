@@ -6,18 +6,13 @@ import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
 import { makeMarkdownSample, makePieceMock, makeSchema } from '../pieces/piece.fixtures.js'
 import yaml from 'yaml'
-import slugify from '@sindresorhus/slugify'
-import { existsSync } from 'fs'
 
-vi.mock('@sindresorhus/slugify')
 vi.mock('fs')
 
 const mocks = {
 	logError: vi.spyOn(log, 'error'),
 	getPiece: vi.fn(),
 	getTypes: vi.fn(),
-	slugify: vi.mocked(slugify),
-	existsSync: vi.mocked(existsSync),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -48,42 +43,15 @@ describe('lib/commands/create', () => {
 			},
 		})
 
-		mocks.slugify.mockReturnValueOnce(title)
-		mocks.existsSync.mockReturnValueOnce(false)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockReturnValueOnce(markdown)
-
-		await command.run(ctx, { title, piece, directory, minimal: false } as Arguments<CreateArgv>)
-
-		expect(mocks.getPiece).toHaveBeenCalledWith(piece)
-		expect(spies.pieceWrite).toHaveBeenCalledOnce()
-		expect(spies.pieceCreate).toHaveBeenCalledWith(
-			expect.stringMatching(new RegExp(`${title}.${piece}.md$`)),
-			title,
-			false
-		)
-	})
-
-	test('run fails with existing piece', async () => {
-		const title = 'title'
-		const piece = 'books'
-		const directory = '.'
-		const PieceTest = makePieceMock()
-		const ctx = makeContext({
-			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest()),
-				getTypes: mocks.getTypes.mockReturnValue([piece]),
-			},
-		})
-
-		mocks.slugify.mockReturnValueOnce(title)
-		mocks.existsSync.mockReturnValueOnce(true)
-		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		spies.setFields = vi.spyOn(PieceTest.prototype, 'setFields').mockResolvedValueOnce(markdown)
 
 		await command.run(ctx, { title, piece, directory } as Arguments<CreateArgv>)
 
-		expect(spies.pieceWrite).not.toHaveBeenCalledOnce()
-		expect(mocks.logError).toHaveBeenCalledOnce()
+		expect(spies.pieceWrite).toHaveBeenCalledOnce()
+		expect(spies.pieceCreate).toHaveBeenCalledWith(directory, title)
+		expect(spies.setFields).not.toHaveBeenCalled()
 	})
 
 	test('run and set fields with json', async () => {
@@ -101,7 +69,6 @@ describe('lib/commands/create', () => {
 		const field = 'title'
 		const value = 'value'
 
-		mocks.existsSync.mockReturnValueOnce(false)
 		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockReturnValueOnce(book)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		spies.pieceSetFields = vi.spyOn(PieceTest.prototype, 'setFields').mockResolvedValueOnce(book)
@@ -134,7 +101,6 @@ describe('lib/commands/create', () => {
 		const field = 'title'
 		const value = 'value'
 
-		mocks.existsSync.mockReturnValueOnce(false)
 		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockReturnValueOnce(book)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		spies.pieceSetFields = vi.spyOn(PieceTest.prototype, 'setFields').mockResolvedValueOnce(book)
@@ -166,13 +132,12 @@ describe('lib/commands/create', () => {
 			},
 		})
 
-		mocks.existsSync.mockReturnValueOnce(false)
 		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockResolvedValueOnce(book)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 
 		await command.run(ctx, { title, piece, directory } as Arguments<CreateArgv>)
 
-		expect(spies.pieceCreate).not.toHaveBeenCalledOnce()
+		expect(spies.pieceCreate).toHaveBeenCalledOnce()
 		expect(spies.pieceWrite).not.toHaveBeenCalledOnce()
 	})
 
