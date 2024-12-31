@@ -84,7 +84,7 @@ html[data-theme='forest'] {
 }
 
 html[data-theme='light'] {
-	--colors-primary: #00539F;
+	--colors-primary: #00539f;
 	--colors-on-primary: #ffffff;
 	--colors-primary-container: #d0e4ff;
 	--colors-on-primary-container: #002752;

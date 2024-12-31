@@ -4,6 +4,7 @@
 	import Poster from './poster.svelte'
 	import Article from './article.svelte'
 	import Book from './book.svelte'
+	import PlayingCard from './playing-card.svelte'
 
 	type Props = {
 		piece: WebPieces
@@ -13,10 +14,15 @@
 	}
 
 	let { piece, size, active, lazy }: Props = $props()
+	const metadata = piece.json_metadata ? JSON.parse(piece.json_metadata) : {}
 </script>
 
 {#if piece.type === 'games'}
-	<Cartridge {piece} {active} {size} {lazy} />
+	{#if metadata.type === 'video'}
+		<Cartridge {piece} {active} {size} {lazy} />
+	{:else}
+		<PlayingCard {piece} {active} {size} {lazy} />
+	{/if}
 {:else if piece.type === 'links' || piece.type === 'texts'}
 	<Article {piece} {size} {active} {lazy} />
 {:else if piece.type === 'books'}
