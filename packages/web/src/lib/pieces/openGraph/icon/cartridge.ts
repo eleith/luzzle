@@ -3,7 +3,7 @@ import { imageToBase64 } from '$lib/openGraph/image'
 
 const CARTRIDGE_WIDTH = 300
 
-function cartidgeImage(url: string) {
+function cartridgeImage(url: string) {
 	return `<img
 						style="
 							width:${CARTRIDGE_WIDTH * 0.67}px;
@@ -128,7 +128,7 @@ async function html(piece: WebPieces, media?: Buffer) {
 
 	if (media) {
 		const base64 = await imageToBase64(media)
-		imgOrText = cartidgeImage(base64)
+		imgOrText = cartridgeImage(base64)
 	}
 
 	return {

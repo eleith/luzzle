@@ -3,6 +3,7 @@ import bookToParts from './book'
 import posterToParts from './poster'
 import cartridgeToParts from './cartridge'
 import articleToParts from './article'
+import playingCardToParts from './playing-card'
 
 type IconParts = {
 	icon: string
@@ -11,10 +12,16 @@ type IconParts = {
 }
 
 async function iconToParts(piece: WebPieces, media?: Buffer): Promise<IconParts> {
+	const metadata = piece.json_metadata ? JSON.parse(piece.json_metadata) : {}
+
 	if (piece.type === 'books') {
 		return await bookToParts(piece, media)
 	} else if (piece.type === 'games') {
-		return await cartridgeToParts(piece, media)
+		if (metadata.type === 'video') {
+			return await cartridgeToParts(piece, media)
+		} else {
+			return await playingCardToParts(piece, media)
+		}
 	} else if (piece.type === 'links' || piece.type === 'texts') {
 		return await articleToParts(piece, media)
 	} else {
