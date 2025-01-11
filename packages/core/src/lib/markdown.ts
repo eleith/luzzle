@@ -7,7 +7,7 @@ import remarkFrontMatter from 'remark-frontmatter'
 import { visit, EXIT } from 'unist-util-visit'
 import { filter } from 'unist-util-filter'
 import { toMarkdown } from 'mdast-util-to-markdown'
-import { Nodes } from 'node_modules/mdast-util-to-markdown/lib/types.js'
+import { Nodes } from 'mdast'
 
 async function extractFullMarkdown(
 	path: string

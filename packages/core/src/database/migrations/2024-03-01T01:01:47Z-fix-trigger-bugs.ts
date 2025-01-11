@@ -44,7 +44,6 @@ DELETE FROM pieces WHERE id = old.id;
 END;`.execute(db)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function down(): Promise<void> {
 	//
 }

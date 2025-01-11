@@ -11,6 +11,7 @@ export default defineConfig({
 				functions: 92,
 			},
 			exclude: [
+				'eslint.config.js',
 				'src/database/migrations/**',
 				'generated/**',
 				'dist/**',
