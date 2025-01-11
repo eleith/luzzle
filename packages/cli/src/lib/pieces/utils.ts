@@ -65,7 +65,7 @@ async function parsePiecePathPositionalArgv(
 			const markdown = await piece.get(relativePath)
 			return { file, piece, markdown }
 		} catch (err) {
-			throw new Error(`piece [${file}] does not exist`)
+			throw new Error(`piece [${file}] does not exist: ${err}`)
 		}
 	}
 

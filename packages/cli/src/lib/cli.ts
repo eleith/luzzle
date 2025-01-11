@@ -69,18 +69,20 @@ async function cleanup(ctx: Context): Promise<void> {
 
 async function initialize(command: Awaited<ReturnType<typeof parseArgs>>): Promise<void> {
 	const config = getConfig(command.options.config)
+	const directory = getDirectoryFromConfig(config)
 	const db = {} as LuzzleDatabase
 	const ctx: Context = {
 		db,
 		log,
-		pieces: new Pieces(command.options.dir),
-		directory: command.options.dir,
+		pieces: new Pieces(directory),
+		directory,
 		config,
 		flags: {
 			dryRun: command.options.dryRun,
 		},
 	}
-	await commands.init.run(ctx, command.options)
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	await commands.init.run(ctx, command.options as any)
 }
 
 async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<void> {
@@ -105,7 +107,8 @@ async function handle(command: Awaited<ReturnType<typeof parseArgs>>): Promise<v
 
 		await Object.values(commands)
 			.find((c) => c.name === command.name)
-			?.run(ctx, command.options)
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			?.run(ctx, command.options as any)
 	} else {
 		log.error(migrationStatus.error)
 	}

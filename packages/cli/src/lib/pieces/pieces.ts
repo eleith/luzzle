@@ -92,11 +92,7 @@ class Pieces {
 		const name = path.basename(file)
 		const parts = name.split('.')
 
-		const fullPath = path.join(this._directory, file)
-		const relPath = path.relative(this._directory, fullPath)
-		const dir = path.dirname(relPath)
-
-		return parts.length === 3 ? parts[1] : null || dir
+		return parts.length === 3 ? parts[1] : null
 	}
 
 	async getSchemas() {
