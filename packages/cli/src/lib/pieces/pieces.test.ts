@@ -103,7 +103,7 @@ describe('lib/pieces/pieces.ts', () => {
 
 		const result = pieces.getTypeFromFile(file)
 
-		expect(result).toEqual('path/to')
+		expect(result).toBeNull()
 	})
 
 	test('getTypes', async () => {

@@ -2,7 +2,7 @@ import { pino } from 'pino'
 import pretty from 'pino-pretty'
 
 const log = pino(
-	pretty.default({
+	pretty({
 		levelFirst: true,
 		colorize: true,
 		ignore: 'time,hostname,pid',
