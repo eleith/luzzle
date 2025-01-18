@@ -134,7 +134,6 @@ async function run(): Promise<void> {
 		}
 	} catch (err) {
 		if (err instanceof Error) {
-			log.info(err?.message)
 			log.error(err?.stack)
 		} else {
 			log.error(err)

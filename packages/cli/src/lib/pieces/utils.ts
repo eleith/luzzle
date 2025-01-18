@@ -61,15 +61,11 @@ async function parsePiecePathPositionalArgv(
 		const piece = ctx.pieces.getPiece(pieceName)
 		const relativePath = path.relative(ctx.pieces.directory, fullPath)
 
-		try {
-			const markdown = await piece.get(relativePath)
-			return { file, piece, markdown }
-		} catch (err) {
-			throw new Error(`piece [${file}] does not exist: ${err}`)
-		}
+		const markdown = await piece.get(relativePath)
+		return { file, piece, markdown }
 	}
 
-	throw new Error(`file [${file}] is not a valid piece like: ${pieceNames.join(', ')}`)
+	throw new Error(`file [${file}] is not a valid piece, use: ${pieceNames.join(', ')}`)
 }
 
 const makePieceOption = function <T>(yargs: Argv<T>): Argv<T & PieceArgv> {
