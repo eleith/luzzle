@@ -1,4 +1,3 @@
-import { readFile } from 'fs/promises'
 import { Transformer } from 'unified'
 import { VisitorResult } from 'unist-util-visit'
 import YAML from 'yaml'
@@ -10,7 +9,7 @@ import { toMarkdown } from 'mdast-util-to-markdown'
 import { Nodes } from 'mdast'
 
 async function extractFullMarkdown(
-	path: string
+	contents: string | Buffer
 ): Promise<{ frontmatter: { [key: string]: unknown }; markdown: string }> {
 	function extractFrontMatter(): Transformer {
 		const transformer: Transformer = (tree, vfile) => {
@@ -31,8 +30,6 @@ async function extractFullMarkdown(
 		}
 		return plugin
 	}
-
-	const contents = await readFile(path, 'utf-8')
 
 	const { data } = await remark()
 		.use(remarkFrontMatter)
