@@ -1,29 +1,26 @@
-import { stat } from 'fs/promises'
 import { getDatabaseClient, migrate } from '@luzzle/core'
 import log from './log.js'
 import cli from './cli.js'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import { getDirectoryFromConfig, getConfig, Config } from './config.js'
-import commands from './commands/index.js'
+import { getDatabasePath, getConfig, Config } from './config.js'
+import getCommands from './commands/index.js'
 import { mockDatabase } from './database.mock.js'
 
-vi.mock('os')
-vi.mock('fs/promises')
 vi.mock('@luzzle/core')
-vi.mock('./config')
-vi.mock('./commands/index')
-vi.mock('./pieces/index')
+vi.mock('./config.js')
+vi.mock('./pieces/index.js')
+vi.mock('./commands/index.js', () => { return { default: vi.fn() } })
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
 	logError: vi.spyOn(log, 'error'),
 	logChild: vi.spyOn(log, 'child'),
 	logLevelSet: vi.spyOn(log, 'level', 'set'),
-	stat: vi.mocked(stat),
 	getDatabaseClient: vi.mocked(getDatabaseClient),
-	getDirectoryConfig: vi.mocked(getDirectoryFromConfig),
+	getDatabasePath: vi.mocked(getDatabasePath),
 	getConfig: vi.mocked(getConfig),
 	migrate: vi.mocked(migrate),
+	getCommands: vi.mocked(getCommands),
 }
 
 const spies: MockInstance[] = []
@@ -41,124 +38,200 @@ describe('lib/cli', () => {
 
 	test(`run init`, async () => {
 		const config = {} as Config
+		const run = vi.fn()
+		const name = 'init'
 
 		mocks.getConfig.mockReturnValueOnce(config)
-		mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+		mocks.getDatabasePath.mockReturnValueOnce('somewhere')
+		mocks.getCommands.mockResolvedValueOnce({
+			init: {
+				run,
+				name,
+				command: 'init [directory]',
+				describe: 'init description',
+				builder: vi.fn()
+			},
+		})
 
-		const spyRun = vi.spyOn(commands.init, 'run')
-		spyRun.mockResolvedValueOnce(undefined)
-
-		process.argv = ['node', 'cli', commands.init.name, 'test']
+		process.argv = ['node', 'cli', name, 'test']
 
 		await cli()
 
 		expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
-		expect(spyRun).toHaveBeenCalledOnce()
+		expect(run).toHaveBeenCalledOnce()
 	})
 
 	test(`run init with dryRun`, async () => {
 		const config = {} as Config
+		const run = vi.fn()
+		const name = 'init'
 
 		mocks.getConfig.mockReturnValueOnce(config)
-		mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+		mocks.getDatabasePath.mockReturnValueOnce('somewhere')
+		mocks.getCommands.mockResolvedValueOnce({
+			init: {
+				run,
+				name,
+				command: 'init [directory]',
+				describe: 'init description',
+				builder: vi.fn()
+			},
+		})
 
-		const spyRun = vi.spyOn(commands.init, 'run')
-		spyRun.mockResolvedValueOnce(undefined)
 
-		process.argv = ['node', 'cli', commands.init.name, '--dry-run', 'test']
+		process.argv = ['node', 'cli', name, '--dry-run', 'test']
 
 		await cli()
 
 		expect(mocks.logChild).toHaveBeenCalledWith({ dryRun: true }, { level: 'info' })
-		expect(spyRun).toHaveBeenCalledOnce()
+		expect(run).toHaveBeenCalledOnce()
 	})
 
-	test(`run edit-config`, async () => {
+	test(`run test command`, async () => {
 		const config = {} as Config
 		const kysely = mockDatabase()
+		const run = vi.fn()
+		const name = 'command1'
 
 		mocks.getConfig.mockReturnValueOnce(config)
-		mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+		mocks.getDatabasePath.mockReturnValueOnce('somewhere')
 		mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
 		mocks.migrate.mockResolvedValueOnce({})
+		mocks.getCommands.mockResolvedValueOnce({
+			command1: {
+				run,
+				name,
+				command: 'command1',
+				describe: 'command1 description',
+				builder: vi.fn()
+			},
+		})
 
-		const spyRun = vi.spyOn(commands.editConfig, 'run')
-		spyRun.mockResolvedValueOnce(undefined)
-
-		process.argv = ['node', 'cli', commands.editConfig.name]
+		process.argv = ['node', 'cli', name]
 
 		await cli()
 
 		expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
-		expect(spyRun).toHaveBeenCalledOnce()
+		expect(run).toHaveBeenCalledOnce()
 		expect(kysely.db.destroy).toHaveBeenCalledOnce()
 	})
 
-	test(`run fails migration`, async () => {
+	test(`run test command with verbose`, async () => {
 		const config = {} as Config
 		const kysely = mockDatabase()
+		const run = vi.fn()
+		const name = 'command1'
 
 		mocks.getConfig.mockReturnValueOnce(config)
-		mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+		mocks.getDatabasePath.mockReturnValueOnce('somewhere')
+		mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
+		mocks.migrate.mockResolvedValueOnce({})
+		mocks.getCommands.mockResolvedValueOnce({
+			command1: {
+				run,
+				name,
+				command: 'command1',
+				describe: 'command1 description',
+				builder: vi.fn()
+			},
+		})
+
+		process.argv = ['node', 'cli', name, '--verbose']
+
+		await cli()
+
+		expect(mocks.logLevelSet).toHaveBeenCalledWith('info')
+		expect(run).toHaveBeenCalledOnce()
+		expect(kysely.db.destroy).toHaveBeenCalledOnce()
+	})
+
+	test(`run fails migration on test command`, async () => {
+		const config = {} as Config
+		const kysely = mockDatabase()
+		const run = vi.fn()
+		const name = 'command1'
+
+		mocks.getConfig.mockReturnValueOnce(config)
+		mocks.getDatabasePath.mockReturnValueOnce('somewhere')
 		mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
 		mocks.migrate.mockResolvedValueOnce({ error: 'some error' })
+		mocks.getCommands.mockResolvedValueOnce({
+			command1: {
+				run,
+				name,
+				command: 'command1',
+				describe: 'command1 description',
+				builder: vi.fn()
+			},
+		})
 
-		const spyRun = vi.spyOn(commands.editConfig, 'run')
-		spyRun.mockRejectedValueOnce(new Error('some error'))
-
-		process.argv = ['node', 'cli', commands.editConfig.name]
+		process.argv = ['node', 'cli', name]
 
 		await cli()
 
 		expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
 		expect(mocks.logError).toHaveBeenCalledOnce()
-		expect(spyRun).not.toHaveBeenCalled()
+		expect(run).not.toHaveBeenCalled()
 		expect(kysely.db.destroy).toHaveBeenCalledOnce()
 	})
 
 	test(`run catches an error`, async () => {
 		const config = {} as Config
 		const kysely = mockDatabase()
+		const run = vi.fn()
+		const name = 'command1'
 
 		mocks.getConfig.mockReturnValueOnce(config)
-		mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+		mocks.getDatabasePath.mockReturnValueOnce('somewhere')
 		mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
 		mocks.migrate.mockResolvedValueOnce({})
+		mocks.getCommands.mockResolvedValueOnce({
+			command1: {
+				run,
+				name,
+				command: 'command1',
+				describe: 'command1 description',
+				builder: vi.fn()
+			},
+		})
+		run.mockRejectedValueOnce(new Error('oops'))
 
-		const spyRun = vi.spyOn(commands.editConfig, 'run')
-		spyRun.mockRejectedValueOnce(new Error('some error'))
-
-		spies.push(spyRun)
-
-		process.argv = ['node', 'cli', commands.editConfig.name]
+		process.argv = ['node', 'cli', name]
 
 		await cli()
 
 		expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
-		expect(spyRun).toHaveBeenCalledOnce()
+		expect(run).toHaveBeenCalledOnce()
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 
 	test(`run catches a rejection`, async () => {
 		const config = {} as Config
 		const kysely = mockDatabase()
+		const run = vi.fn()
+		const name = 'command1'
 
 		mocks.getConfig.mockReturnValueOnce(config)
-		mocks.getDirectoryConfig.mockReturnValueOnce('somewhere')
+		mocks.getDatabasePath.mockReturnValueOnce('somewhere')
 		mocks.getDatabaseClient.mockReturnValueOnce(kysely.db)
 		mocks.migrate.mockResolvedValueOnce({})
+		mocks.getCommands.mockResolvedValueOnce({
+			command1: {
+				run,
+				name,
+				command: 'command1',
+				describe: 'command1 description',
+				builder: vi.fn()
+			},
+		})
+		run.mockRejectedValueOnce('oops')
 
-		const spyRun = vi.spyOn(commands.editConfig, 'run')
-		spyRun.mockRejectedValueOnce('')
-
-		spies.push(spyRun)
-
-		process.argv = ['node', 'cli', commands.editConfig.name]
+		process.argv = ['node', 'cli', name]
 
 		await cli()
 
 		expect(mocks.logLevelSet).toHaveBeenCalledWith('warn')
-		expect(spyRun).toHaveBeenCalledOnce()
+		expect(run).toHaveBeenCalledOnce()
 		expect(mocks.logError).toHaveBeenCalledOnce()
 	})
 })

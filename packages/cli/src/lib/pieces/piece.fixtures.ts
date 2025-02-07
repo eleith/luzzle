@@ -7,6 +7,8 @@ import {
 } from '@luzzle/core'
 import Piece from './piece.js'
 import { PieceManagerSelect } from '@luzzle/core/dist/src/database/tables/pieces_manager.schema.js'
+import Storage from '../storage/fs.js'
+import { mockStorage } from '../storage/storage.mock.js'
 
 type PieceValidator = ReturnType<typeof compile<PieceFrontmatter>>
 
@@ -52,6 +54,10 @@ export function makeSchema(
 	}
 }
 
+export function makeStorage(root: string) {
+	return mockStorage(root)
+}
+
 export function makeFrontmatterSample(
 	frontmatter: Record<string, unknown> = { title: JSON.parse(sample.frontmatter_json).title }
 ): PieceFrontmatter {
@@ -81,15 +87,11 @@ export function makePieceItemSelectable(
 
 class PieceOverridable extends Piece<PieceFrontmatter> {
 	constructor(
-		root: string = 'pieces-root',
 		name: string = 'table',
-		schema: PieceFrontmatterSchema<PieceFrontmatter> | null = makeSchema('table')
+		storage: Storage = makeStorage('root'),
+		schema: PieceFrontmatterSchema<PieceFrontmatter> = makeSchema(name)
 	) {
-		if (!schema) {
-			super(root, name)
-		} else {
-			super(root, name, schema)
-		}
+		super(name, storage, schema)
 	}
 }
 

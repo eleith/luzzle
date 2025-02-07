@@ -1,8 +1,6 @@
 import { selectItemAssets } from '@luzzle/core'
-import { Command } from './utils/types.js'
+import { Command } from '../utils/types.js'
 import { Argv } from 'yargs'
-import path from 'path'
-import { unlink } from 'fs/promises'
 
 export type SyncArgv = { force?: boolean; prune?: boolean }
 
@@ -39,7 +37,7 @@ const command: Command<SyncArgv> = {
 		await ctx.pieces.prune(ctx.db, dryRun)
 
 		for (const name of pieceNames) {
-			const piece = ctx.pieces.getPiece(name)
+			const piece = await ctx.pieces.getPiece(name)
 			const pieces = files.pieces[name]
 			const isOutdated = await Promise.all(pieces.map((file) => piece.isOutdated(file, ctx.db)))
 			const areOutdated = pieces.filter((_, i) => isOutdated[i])
@@ -58,8 +56,7 @@ const command: Command<SyncArgv> = {
 
 			for (const asset of missingAssets) {
 				if (!dryRun) {
-					const assetPath = path.join(ctx.pieces.directory, asset)
-					await unlink(assetPath)
+					await ctx.storage.delete(asset)
 				}
 				ctx.log.info(`pruned asset (disk): ${asset}`)
 			}

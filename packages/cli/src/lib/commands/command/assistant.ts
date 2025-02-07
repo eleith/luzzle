@@ -1,8 +1,8 @@
 import { Argv } from 'yargs'
-import { Command } from './utils/types.js'
+import { Command } from '../utils/types.js'
 import yaml from 'yaml'
-import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../pieces/index.js'
-import { generatePieceFrontmatter } from '../llm/google.js'
+import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../../pieces/index.js'
+import { generatePieceFrontmatter } from '../../llm/google.js'
 
 export type AssistantArgv = {
 	update?: string
@@ -50,7 +50,7 @@ const command: Command<AssistantArgv> = {
 	run: async function (ctx, args) {
 		const { prompt, file, update, directory, title } = args
 		const { piece } = await parsePieceOptionArgv(ctx, args)
-		const apiKey = ctx.config.get('api_keys.google') as string
+		const apiKey = ctx.config.get('api_keys.google', '')
 		const metadata = await generatePieceFrontmatter(apiKey, piece.schema, prompt, file)
 		const metadataNonEmpty = Object.fromEntries(
 			Object.entries(metadata).filter(([, value]) => value !== null || value === '')
@@ -73,7 +73,7 @@ const command: Command<AssistantArgv> = {
 			const markdownUpdate = await piece.setFields(markdown, metadataNonEmpty)
 			await piece.write(markdownUpdate)
 		} else if (directory && title) {
-			const markdown = piece.create(directory, title)
+			const markdown = await piece.create(directory, title)
 			const markdownUpdate = await piece.setFields(markdown, metadataNonEmpty)
 			await piece.write(markdownUpdate)
 		}

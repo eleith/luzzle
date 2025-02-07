@@ -1,5 +1,3 @@
-import { existsSync } from 'fs'
-import { copyFile, mkdir, stat, unlink, writeFile } from 'fs/promises'
 import log from '../log.js'
 import { updateCache, addCache, getCache } from './cache.js'
 import {
@@ -24,17 +22,18 @@ import {
 	updateItem,
 	LuzzleSelectable,
 	insertItem,
-	getPieceSchemaFromFile,
 	getValidatePieceItemErrors,
 } from '@luzzle/core'
 import { queue } from 'async'
 import { cpus } from 'os'
 import path from 'path'
-import { PieceFileType, calculateHashFromFile, downloadFileOrUrlTo } from './utils.js'
-import { ASSETS_DIRECTORY, LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY } from '../assets.js'
-import { fileTypeFromFile } from 'file-type'
+import { PieceFileType, calculateHashFromFile, downloadFileOrUrlToStream } from './utils.js'
+import { ASSETS_DIRECTORY } from '../assets.js'
 import { randomBytes } from 'crypto'
 import slugify from '@sindresorhus/slugify'
+import { Storage } from '../storage/index.js'
+import { pipeline } from 'stream/promises'
+import { fileTypeStream } from 'file-type'
 
 export interface InterfacePiece<F extends PieceFrontmatter> {
 	new (directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
@@ -43,37 +42,28 @@ export interface InterfacePiece<F extends PieceFrontmatter> {
 class Piece<F extends PieceFrontmatter> {
 	private _validator?: ReturnType<typeof compile<F>>
 	private _schema: PieceFrontmatterSchema<F>
-	private _schemaPath: string
-	private _directory: string
+	private _storage: Storage
 	private _pieceName: string
 	private _fields?: Array<PieceFrontmatterSchemaField>
 
-	constructor(directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>) {
-		this._directory = directory
-		this._schemaPath = path.join(
-			this._directory,
-			LUZZLE_DIRECTORY,
-			LUZZLE_SCHEMAS_DIRECTORY,
-			`${pieceName}.json`
-		)
-		this._schema = schemaOverride || getPieceSchemaFromFile(this._schemaPath)
+	constructor(pieceName: string, storage: Storage, schema: PieceFrontmatterSchema<F>) {
+		this._storage = storage
+		this._schema = schema
 		this._pieceName = pieceName
 
 		if (this._pieceName !== this._schema.title) {
-			throw new Error(`${pieceName} does not match the schema title in ${this._schemaPath}`)
+			throw new Error(`${pieceName} does not match the schema title: ${this._schema.title}`)
 		}
 	}
 
-	create(directory: string, name: string): PieceMarkdown<F> {
+	async create(directory: string, name: string): Promise<PieceMarkdown<F>> {
 		const slug = slugify(name)
 		const filename = `${slug}.${this.type}.${PieceFileType}`
-		const fullPathDirectory = path.resolve(directory)
-		const relativeDirectory = path.relative(this._directory, fullPathDirectory)
-		const fullPathFile = path.join(fullPathDirectory, filename)
-		const file = path.join(relativeDirectory, filename)
+		const file = path.join(directory, filename)
+		const exists = await this._storage.exists(file)
 
-		if (existsSync(fullPathFile)) {
-			throw new Error(`file already exists: ${fullPathFile}`)
+		if (exists) {
+			throw new Error(`file already exists: ${file}`)
 		}
 
 		const frontmatter = initializePieceFrontMatter(this._schema, true) as F
@@ -103,14 +93,13 @@ class Piece<F extends PieceFrontmatter> {
 	}
 
 	async isOutdated(file: string, db: LuzzleDatabase): Promise<boolean> {
-		const fullPath = path.join(this._directory, file)
-		const fileStat = await stat(fullPath).catch(() => null)
+		const fileStat = await this._storage.stat(file).catch(() => null)
 
 		if (fileStat) {
 			const cache = await getCache(db, file)
 			const cachedDate = cache?.date_updated || cache?.date_added
 
-			return !cachedDate || fileStat.mtime.getTime() > cachedDate
+			return !cachedDate || fileStat.last_modified.getTime() > cachedDate
 		}
 
 		throw new Error(`${file} does not exist`)
@@ -128,10 +117,11 @@ class Piece<F extends PieceFrontmatter> {
 	}
 
 	async get(file: string): Promise<PieceMarkdown<F>> {
-		const fullPath = path.join(this._directory, file)
+		const exists = await this._storage.exists(file)
 
-		if (existsSync(fullPath)) {
-			const data = await extractFullMarkdown(fullPath)
+		if (exists) {
+			const contents = await this._storage.readFile(file, 'text')
+			const data = await extractFullMarkdown(contents)
 
 			if (!/^\//.test(file)) {
 				return makePieceMarkdown(file, this._pieceName, data.markdown, data.frontmatter as F)
@@ -143,11 +133,10 @@ class Piece<F extends PieceFrontmatter> {
 
 	async write(markdown: PieceMarkdown<F>): Promise<void> {
 		const validated = this.validate(markdown)
-		const filePath = path.join(this._directory, markdown.filePath)
 
 		if (validated.isValid) {
 			const markdownString = makePieceMarkdownString(markdown)
-			await writeFile(filePath, markdownString)
+			await this._storage.writeFile(markdown.filePath, markdownString)
 		} else {
 			throw new Error(
 				`Could not write ${markdown.filePath} due to\n\n: ${validated.errors.join('\n')}`
@@ -164,6 +153,10 @@ class Piece<F extends PieceFrontmatter> {
 		if (missingFiles.length > 0) {
 			if (!dryRun) {
 				await deleteItems(db, missingFiles)
+
+				for (const file of missingFiles) {
+					await this._storage.delete(file)
+				}
 			}
 			missingFiles.forEach((file) => log.info(`pruned piece (db): ${file}`))
 		}
@@ -177,8 +170,8 @@ class Piece<F extends PieceFrontmatter> {
 		try {
 			if (dryRun === false) {
 				const createInput = makePieceItemInsertable(this._pieceName, markdown, this._schema)
-				const piecePath = path.join(this._directory, markdown.filePath)
-				const hash = await calculateHashFromFile(piecePath)
+				const readStream = await this._storage.createReadStream(markdown.filePath)
+				const hash = await calculateHashFromFile(readStream)
 
 				await insertItem(db, createInput)
 				await addCache(db, markdown.filePath, hash)
@@ -213,8 +206,8 @@ class Piece<F extends PieceFrontmatter> {
 		try {
 			if (dryRun === false) {
 				await updateItem(db, markdown.filePath, updateInput)
-				const piecePath = path.join(this._directory, markdown.filePath)
-				const hash = await calculateHashFromFile(piecePath)
+				const readStream = await this._storage.createReadStream(markdown.filePath)
+				const hash = await calculateHashFromFile(readStream)
 
 				await updateCache(db, data.file_path, hash)
 			}
@@ -261,28 +254,28 @@ class Piece<F extends PieceFrontmatter> {
 		_name?: string
 	): Promise<string> {
 		const format = field.type === 'array' ? field.items.format : field.format
+		const fileDir = path.dirname(file)
+		const extension = path.extname(fileOrUrl) || ''
+		const random = randomBytes(4).toString('hex')
+		const baseName = this.getBaseName(file)
+		const parts = [baseName, _name, random]
+		const attachDir = path.join(ASSETS_DIRECTORY, fileDir, field.name)
 
 		/* c8 ignore next 3 */
 		if (format !== 'asset') {
 			throw new Error(`${field} is not an attachable field for ${this._pieceName} ${file}`)
 		}
 
-		const tmpPath = await downloadFileOrUrlTo(fileOrUrl)
-		const extension = path.extname(tmpPath) || ''
-		const fileType = await fileTypeFromFile(tmpPath)
-		const type = fileType?.ext.replace(/^/, '.') || extension
-		const fileDir = path.dirname(file)
-		const attachDir = path.join(this._directory, ASSETS_DIRECTORY, fileDir, field.name)
-		const random = randomBytes(4).toString('hex')
-		const baseName = this.getBaseName(file)
-		const parts = [baseName, _name, random]
+		await this._storage.makeDirectory(attachDir)
+
+		const stream = await downloadFileOrUrlToStream(fileOrUrl)
+		const streamWithFileType = await fileTypeStream(stream)
+		const type = streamWithFileType?.fileType?.ext.replace(/^/, '.') || extension
 		const filename = `${parts.filter((x) => x).join('-')}${type}`
 		const relPath = path.join(ASSETS_DIRECTORY, fileDir, field.name, filename)
-		const toPath = path.join(this._directory, relPath)
+		const writeStream = await this._storage.createWriteStream(relPath)
 
-		await mkdir(attachDir, { recursive: true })
-		await copyFile(tmpPath, toPath)
-		await unlink(tmpPath)
+		await pipeline(streamWithFileType, writeStream)
 
 		return relPath
 	}

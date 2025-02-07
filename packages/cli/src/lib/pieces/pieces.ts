@@ -1,4 +1,3 @@
-import { fdir } from 'fdir'
 import Piece from './piece.js'
 import path from 'path'
 import { PieceFileType } from './utils.js'
@@ -8,35 +7,34 @@ import {
 	addPiece,
 	deletePiece,
 	getPiece,
-	getPieceSchemaFromFile,
 	getPieces,
+	jsonToPieceSchema,
 	updatePiece,
 } from '@luzzle/core'
 import log from '../log.js'
 import { stat } from 'fs/promises'
+import { Storage } from '../storage/index.js'
 
 class Pieces {
-	private _directory: string
+	private _storage: Storage
 
-	constructor(dir: string) {
-		this._directory = dir
+	constructor(storage: Storage) {
+		this._storage = storage
 	}
 
-	get directory() {
-		return this._directory
-	}
-
-	getPiece(name: string) {
-		return new Piece(this._directory, name)
+	async getPiece(name: string) {
+		const schema = await this.getSchema(name)
+		return new Piece(name, this._storage, schema)
 	}
 
 	getSchemaPath(name: string) {
-		return path.join(this._directory, LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY, `${name}.json`)
+		return path.join(LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY, `${name}.json`)
 	}
 
-	getSchema(name: string) {
+	async getSchema(name: string) {
 		const schemaPath = this.getSchemaPath(name)
-		return getPieceSchemaFromFile(schemaPath)
+		const schemaJson = await this._storage.readFile(schemaPath, 'text')
+		return jsonToPieceSchema(schemaJson)
 	}
 
 	async sync(db: LuzzleDatabase, dryRun: boolean) {
@@ -44,7 +42,7 @@ class Pieces {
 
 		for (const name of names) {
 			const piece = await getPiece(db, name)
-			const schema = this.getSchema(name)
+			const schema = await this.getSchema(name)
 			const schemaPath = this.getSchemaPath(name)
 			const fileStat = await stat(schemaPath).catch(() => null)
 
@@ -96,10 +94,10 @@ class Pieces {
 	}
 
 	async getSchemas() {
-		const schemaDir = path.join(this._directory, LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY)
-		const crawler = new fdir().withRelativePaths().crawl(schemaDir).sync()
+		const schemaDir = path.join(LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY)
+		const readDir = await this._storage.readdir(schemaDir)
 
-		return crawler.filter((file) => path.extname(file) === `.json`)
+		return readDir.filter((file) => path.extname(file) === `.json`)
 	}
 
 	async getTypes() {
@@ -110,7 +108,7 @@ class Pieces {
 
 	async getFiles() {
 		const types = await this.getTypes()
-		const crawler = new fdir().withRelativePaths().crawl(this._directory).sync()
+		const readdir = await this._storage.readdir('.')
 		const files: { pieces: { [key: string]: string[] }; assets: string[] } = {
 			pieces: {},
 			assets: [],
@@ -120,7 +118,7 @@ class Pieces {
 			files.pieces[type] = []
 		})
 
-		crawler.reduce((files, file) => {
+		readdir.reduce((files, file) => {
 			const extension = path.extname(file)
 			const isAsset = file.startsWith(ASSETS_DIRECTORY)
 			const isHidden = file.startsWith('.')

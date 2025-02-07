@@ -28,4 +28,8 @@ async function downloadToPath(url: string, path: string): Promise<boolean> {
 	})
 }
 
-export { downloadToTmp, downloadToPath }
+function downloadToStream(url: string) {
+	return got.stream(url)
+}
+
+export { downloadToTmp, downloadToPath, downloadToStream }

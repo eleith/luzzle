@@ -98,6 +98,6 @@ describe('lib/llm/google.ts', () => {
 
 		const generate = generatePieceFrontmatter(apiKey, schema, prompt, file)
 
-		expect(generate).rejects.toThrow()
+		await expect(generate).rejects.toThrow()
 	})
 })

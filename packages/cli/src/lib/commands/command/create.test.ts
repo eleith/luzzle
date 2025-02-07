@@ -1,10 +1,10 @@
-import log from '../log.js'
+import log from '../../log.js'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { CreateArgv } from './create.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makeMarkdownSample, makePieceMock, makeSchema } from '../pieces/piece.fixtures.js'
+import { makeMarkdownSample, makePieceMock, makeSchema, makeStorage } from '../../pieces/piece.fixtures.js'
 import yaml from 'yaml'
 
 vi.mock('fs')
@@ -32,19 +32,20 @@ describe('lib/commands/create', () => {
 	test('run', async () => {
 		const title = 'title'
 		const piece = 'books'
-		const directory = '.'
+		const directory = 'dir'
+		const storage = makeStorage('root')
 		const PieceTest = makePieceMock()
 		const schema = makeSchema(piece)
 		const markdown = makeMarkdownSample()
 		const ctx = makeContext({
 			pieces: {
-				getPiece: mocks.getPiece.mockReturnValue(new PieceTest(directory, piece, schema)),
+				getPiece: mocks.getPiece.mockReturnValue(new PieceTest(piece, storage, schema)),
 				getTypes: mocks.getTypes.mockReturnValue([piece]),
 			},
 		})
 
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
-		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockReturnValueOnce(markdown)
+		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockResolvedValueOnce(markdown)
 		spies.setFields = vi.spyOn(PieceTest.prototype, 'setFields').mockResolvedValueOnce(markdown)
 
 		await command.run(ctx, { title, piece, directory } as Arguments<CreateArgv>)
@@ -58,7 +59,7 @@ describe('lib/commands/create', () => {
 		const book = makeMarkdownSample()
 		const title = 'slug2'
 		const piece = 'books'
-		const directory = '.'
+		const directory = 'dir'
 		const PieceTest = makePieceMock()
 		const ctx = makeContext({
 			pieces: {
@@ -69,7 +70,7 @@ describe('lib/commands/create', () => {
 		const field = 'title'
 		const value = 'value'
 
-		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockReturnValueOnce(book)
+		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockResolvedValueOnce(book)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		spies.pieceSetFields = vi.spyOn(PieceTest.prototype, 'setFields').mockResolvedValueOnce(book)
 
@@ -101,7 +102,7 @@ describe('lib/commands/create', () => {
 		const field = 'title'
 		const value = 'value'
 
-		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockReturnValueOnce(book)
+		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockResolvedValueOnce(book)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		spies.pieceSetFields = vi.spyOn(PieceTest.prototype, 'setFields').mockResolvedValueOnce(book)
 

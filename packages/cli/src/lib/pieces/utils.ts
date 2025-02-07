@@ -1,13 +1,13 @@
-import { createReadStream } from 'fs'
 import { Argv } from 'yargs'
 import { temporaryFile } from 'tempy'
 import { copyFile, stat } from 'fs/promises'
-import { downloadToPath } from '../web.js'
+import { downloadToPath, downloadToStream } from '../web.js'
 import { createHash } from 'crypto'
 import { Context } from '../commands/index.js'
 import Piece from './piece.js'
 import { PieceFrontmatter, PieceMarkdown } from '@luzzle/core'
-import path from 'path'
+import { Readable } from 'stream'
+import { createReadStream } from 'fs'
 
 export const PieceDirectory = {
 	Root: 'root',
@@ -34,7 +34,7 @@ async function parsePieceOptionArgv(
 	const pieceNames = await ctx.pieces.getTypes()
 
 	if (pieceNames.includes(piece)) {
-		return { piece: ctx.pieces.getPiece(piece) }
+		return { piece: await ctx.pieces.getPiece(piece) }
 	}
 
 	throw new Error(`piece [${piece}] does not exist`)
@@ -49,7 +49,6 @@ async function parsePiecePathPositionalArgv(
 	markdown: PieceMarkdown<PieceFrontmatter>
 }> {
 	const file = args.piece
-	const fullPath = path.resolve(file)
 	const pieceNames = await ctx.pieces.getTypes()
 	const pieceName = ctx.pieces.getTypeFromFile(file)
 
@@ -58,10 +57,9 @@ async function parsePiecePathPositionalArgv(
 	}
 
 	if (pieceName && pieceNames.includes(pieceName)) {
-		const piece = ctx.pieces.getPiece(pieceName)
-		const relativePath = path.relative(ctx.pieces.directory, fullPath)
-
-		const markdown = await piece.get(relativePath)
+		const piece = await ctx.pieces.getPiece(pieceName)
+		const filePath = await ctx.storage.parseArgPath(file)
+		const markdown = await piece.get(filePath)
 		return { file, piece, markdown }
 	}
 
@@ -103,8 +101,21 @@ async function downloadFileOrUrlTo(file: string): Promise<string> {
 	throw new Error(`${file} is not a valid file`)
 }
 
-function calculateHashFromFile(file: string): Promise<string> {
-	const stream = createReadStream(file)
+async function downloadFileOrUrlToStream(file: string) {
+	if (/https?:\/\//i.test(file)) {
+		return downloadToStream(file)
+	}
+
+	const coverStat = await stat(file).catch(() => null)
+
+	if (coverStat && coverStat.isFile()) {
+		return createReadStream(file)
+	}
+
+	throw new Error(`${file} is not a valid file`)
+}
+
+function calculateHashFromFile(stream: Readable): Promise<string> {
 	const hash = createHash('md5')
 
 	return new Promise((resolve, reject) => {
@@ -122,6 +133,7 @@ export {
 	parsePieceOptionArgv,
 	parsePiecePathPositionalArgv,
 	downloadFileOrUrlTo,
+	downloadFileOrUrlToStream,
 	calculateHashFromFile,
 	makePieceOption,
 	makePiecePathPositional,

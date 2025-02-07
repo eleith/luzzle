@@ -3,13 +3,14 @@ import { copyFile, stat } from 'fs/promises'
 import { temporaryFile } from 'tempy'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import yargs from 'yargs'
-import { downloadToPath } from '../web.js'
+import { downloadToPath, downloadToStream } from '../web.js'
 import { createHash } from 'crypto'
 import { PassThrough } from 'stream'
-import { makeContext } from '../commands/context.fixtures.js'
+import { makeContext } from '../commands/command/context.fixtures.js'
 import * as util from './utils.js'
 import Piece from './piece.js'
 import { makeMarkdownSample, makePieceMock } from './piece.fixtures.js'
+import { Request } from 'got'
 
 vi.mock('fs')
 vi.mock('tempy')
@@ -22,6 +23,7 @@ const mocks = {
 	copyFile: vi.mocked(copyFile),
 	stat: vi.mocked(stat),
 	downloadToPath: vi.mocked(downloadToPath),
+	downloadToStream: vi.mocked(downloadToStream),
 	existsSync: vi.mocked(existsSync),
 	createReadStream: vi.mocked(createReadStream),
 	createHash: vi.mocked(createHash),
@@ -76,7 +78,7 @@ describe('lib/pieces/utils.ts', () => {
 
 		const download = util.downloadFileOrUrlTo(filePath)
 
-		expect(download).rejects.toThrowError()
+		await expect(download).rejects.toThrowError()
 	})
 
 	test('makePieceOption', async () => {
@@ -108,7 +110,7 @@ describe('lib/pieces/utils.ts', () => {
 		const piece = new MockPiece()
 
 		spies.getTypes = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce([name])
-		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockReturnValueOnce(piece)
+		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockResolvedValueOnce(piece)
 
 		const result = await util.parsePieceOptionArgv(context, { piece: name })
 
@@ -123,7 +125,7 @@ describe('lib/pieces/utils.ts', () => {
 
 		const parsing = util.parsePieceOptionArgv(context, { piece: name })
 
-		expect(parsing).rejects.toThrow()
+		await expect(parsing).rejects.toThrow()
 	})
 
 	test('parsePiecePathPositionalArgv', async () => {
@@ -135,7 +137,7 @@ describe('lib/pieces/utils.ts', () => {
 		const markdown = makeMarkdownSample()
 
 		spies.findPieceNames = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce(['books'])
-		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockReturnValueOnce(piece)
+		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockResolvedValueOnce(piece)
 		spies.get = vi.spyOn(piece, 'get').mockResolvedValueOnce(markdown)
 
 		const result = await util.parsePiecePathPositionalArgv(context, { piece: path })
@@ -154,12 +156,12 @@ describe('lib/pieces/utils.ts', () => {
 		const markdown = makeMarkdownSample()
 
 		spies.findPieceNames = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce([])
-		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockReturnValueOnce(piece)
+		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockResolvedValueOnce(piece)
 		spies.get = vi.spyOn(piece, 'get').mockResolvedValueOnce(markdown)
 
 		const parsing = util.parsePiecePathPositionalArgv(context, { piece: path })
 
-		expect(parsing).rejects.toThrow()
+		await expect(parsing).rejects.toThrow()
 	})
 
 	test('parsePiecePathPositionalArgv does not exist', async () => {
@@ -170,12 +172,12 @@ describe('lib/pieces/utils.ts', () => {
 		const piece = new MockPiece()
 
 		spies.findPieceNames = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce(['books'])
-		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockReturnValueOnce(piece)
+		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockResolvedValueOnce(piece)
 		spies.get = vi.spyOn(piece, 'get').mockRejectedValueOnce(new Error('error'))
 
 		const resulting = util.parsePiecePathPositionalArgv(context, { piece: path })
 
-		expect(resulting).rejects.toThrow()
+		await expect(resulting).rejects.toThrow()
 	})
 
 	test('parsePiecePathPositionalArgv invalid piece type', async () => {
@@ -186,15 +188,49 @@ describe('lib/pieces/utils.ts', () => {
 		const piece = new MockPiece()
 
 		spies.findPieceNames = vi.spyOn(context.pieces, 'getTypes').mockResolvedValueOnce(['books'])
-		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockReturnValueOnce(piece)
+		spies.getPiece = vi.spyOn(context.pieces, 'getPiece').mockResolvedValueOnce(piece)
 
 		const resulting = util.parsePiecePathPositionalArgv(context, { piece: path })
 
-		expect(resulting).rejects.toThrow()
+		await expect(resulting).rejects.toThrow()
+	})
+
+	test('downloadFileOrUrlToStream handles files', async () => {
+		const file = 'path/to/file'
+		const readable = new PassThrough() as unknown as ReadStream
+
+		mocks.createReadStream.mockReturnValueOnce(readable)
+		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
+
+		const stream = await util.downloadFileOrUrlToStream(file)
+
+		expect(stream).toEqual(readable)
+	})
+
+	test('downloadFileOrUrlToStream rejects bad files', async () => {
+		const file = 'path/to/file'
+		const readable = new PassThrough() as unknown as ReadStream
+
+		mocks.createReadStream.mockReturnValueOnce(readable)
+		mocks.stat.mockResolvedValueOnce({ isFile: () => false } as Stats)
+
+		const streaming = util.downloadFileOrUrlToStream(file)
+
+		await expect(streaming).rejects.toThrowError()
+	})
+
+	test('downloadFileOrUrlToStream handles url', async () => {
+		const url = 'https://example.com/path/to/file'
+		const readable = new PassThrough() as unknown as Request
+
+		mocks.downloadToStream.mockResolvedValueOnce(readable)
+
+		const stream = await util.downloadFileOrUrlToStream(url)
+
+		expect(stream).toEqual(readable)
 	})
 
 	test('calculateHashFromFile', async () => {
-		const file = 'path/to/file'
 		const data = 'data'
 
 		const mockUpdate = vi.fn()
@@ -207,7 +243,7 @@ describe('lib/pieces/utils.ts', () => {
 			digest: mockDigest,
 		} as unknown as ReturnType<typeof createHash>)
 
-		const hashPromise = util.calculateHashFromFile(file)
+		const hashPromise = util.calculateHashFromFile(mockReadStream)
 
 		mockReadStream.emit('data', data)
 		mockReadStream.emit('end')
@@ -220,7 +256,6 @@ describe('lib/pieces/utils.ts', () => {
 	})
 
 	test('calculateHashFromFile error', async () => {
-		const file = 'path/to/file'
 		const data = 'data'
 
 		const mockUpdate = vi.fn()
@@ -233,10 +268,10 @@ describe('lib/pieces/utils.ts', () => {
 			digest: mockDigest,
 		} as unknown as ReturnType<typeof createHash>)
 
-		const hashPromise = util.calculateHashFromFile(file)
+		const hashPromise = util.calculateHashFromFile(mockReadStream)
 
 		mockReadStream.emit('error', new Error('error'))
 
-		expect(hashPromise).rejects.toThrowError()
+		await expect(hashPromise).rejects.toThrowError()
 	})
 })

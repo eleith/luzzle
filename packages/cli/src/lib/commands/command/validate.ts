@@ -1,12 +1,12 @@
-import log from '../log.js'
-import { Command } from './utils/types.js'
+import log from '../../log.js'
+import { Command } from '../utils/types.js'
 import { Argv } from 'yargs'
 import {
 	PieceArgv,
 	PiecePositional,
 	makePiecePathPositional,
 	parsePiecePathPositionalArgv,
-} from '../pieces/index.js'
+} from '../../pieces/index.js'
 
 export type ValidateArgv = PieceArgv
 

@@ -3,7 +3,7 @@ import got from 'got'
 import { createWriteStream, WriteStream } from 'fs'
 import { PassThrough } from 'stream'
 import { Request } from 'got'
-import { downloadToTmp } from './web.js'
+import { downloadToStream, downloadToTmp } from './web.js'
 import { temporaryFile } from 'tempy'
 
 vi.mock('fs')
@@ -17,7 +17,7 @@ const mocks = {
 	tempyFile: vi.mocked(temporaryFile),
 }
 
-describe('src/lib/web', () => {
+describe('lib/web', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -68,5 +68,17 @@ describe('src/lib/web', () => {
 		expect(tempFile).toBeNull()
 		expect(mocks.gotStream).toHaveBeenCalledWith(url, expect.any(Object))
 		expect(mocks.createWriteStream).toHaveBeenCalledWith(filePath)
+	})
+
+	test('downloadToStream', () => {
+		const mockReadable = new PassThrough()
+		const url = 'url'
+
+		mocks.gotStream.mockReturnValueOnce(mockReadable as unknown as Request)
+
+		const stream = downloadToStream(url)
+
+		expect(stream).toBe(mockReadable)
+		expect(mocks.gotStream).toHaveBeenCalledWith(url)
 	})
 })

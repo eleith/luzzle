@@ -1,18 +1,17 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import { readdir, stat, writeFile, copyFile, unlink, mkdir } from 'fs/promises'
-import { existsSync, mkdirSync, Stats } from 'fs'
 import {
 	makeMarkdownSample,
 	makePieceItemSelectable,
 	makePieceMock,
 	makeFrontmatterSample,
 	makeSchema,
+	makeStorage,
 } from './piece.fixtures.js'
 import { mockDatabase } from '../database.mock.js'
 import { addCache, removeCache, updateCache, getCache } from './cache.js'
 import log from '../log.js'
 import { CpuInfo, cpus } from 'os'
-import { fileTypeFromFile, FileTypeResult } from 'file-type'
+import { fileTypeStream, AnyWebReadableByteStreamWithFileType } from 'file-type'
 import {
 	getPieceFrontmatterSchemaFields,
 	databaseValueToPieceFrontmatterValue,
@@ -32,19 +31,22 @@ import {
 	addPiece,
 	updatePiece,
 	getPiece,
-	getPieceSchemaFromFile,
 	validatePieceItem,
 	getValidatePieceItemErrors,
 	LuzzleSelectable,
 	LuzzleInsertable,
 } from '@luzzle/core'
-import { downloadFileOrUrlTo, calculateHashFromFile } from './utils.js'
+import { downloadFileOrUrlToStream, calculateHashFromFile } from './utils.js'
 import { ASSETS_DIRECTORY } from '../assets.js'
 import { makeCache } from './cache.fixtures.js'
 import slugify from '@sindresorhus/slugify'
+import { mockStorage } from '../storage/storage.mock.js'
+import { StorageStat } from '../storage/storage.js'
+import { PassThrough } from 'stream'
+import { Request } from 'got'
+import { WriteStream } from 'fs'
+import { pipeline } from 'stream/promises'
 
-vi.mock('fs')
-vi.mock('fs/promises')
 vi.mock('../log.js')
 vi.mock('../md.js')
 vi.mock('./markdown.js')
@@ -55,31 +57,24 @@ vi.mock('file-type')
 vi.mock('@luzzle/core')
 vi.mock('./utils.js')
 vi.mock('@sindresorhus/slugify')
+vi.mock('stream/promises')
 
 const mocks = {
-	existsSync: vi.mocked(existsSync),
-	mkdirSync: vi.mocked(mkdirSync),
-	mkdir: vi.mocked(mkdir),
-	readdir: vi.mocked(readdir),
-	writeFile: vi.mocked(writeFile),
 	makePieceMarkdown: vi.mocked(makePieceMarkdown),
 	toMarkdown: vi.mocked(makePieceMarkdown),
 	toMarkdownString: vi.mocked(makePieceMarkdownString),
 	extract: vi.mocked(extractFullMarkdown),
 	logError: vi.spyOn(log, 'error'),
-	stat: vi.mocked(stat),
 	cpus: vi.mocked(cpus),
 	addCache: vi.mocked(addCache),
 	removeCache: vi.mocked(removeCache),
 	updateCache: vi.mocked(updateCache),
 	getCache: vi.mocked(getCache),
-	copy: vi.mocked(copyFile),
-	fileType: vi.mocked(fileTypeFromFile),
-	unlink: vi.mocked(unlink),
+	fileType: vi.mocked(fileTypeStream),
 	compile: vi.mocked(compile),
 	getPieceSchemaFields: vi.mocked(getPieceFrontmatterSchemaFields),
 	databaseValueToFrontmatterValue: vi.mocked(databaseValueToPieceFrontmatterValue),
-	downloadFileOrUrlTo: vi.mocked(downloadFileOrUrlTo),
+	downloadFileOrUrlToStream: vi.mocked(downloadFileOrUrlToStream),
 	calculateHashFromFile: vi.mocked(calculateHashFromFile),
 	makeInsertable: vi.mocked(makePieceItemInsertable),
 	makeUpdatable: vi.mocked(makePieceItemUpdatable),
@@ -92,10 +87,10 @@ const mocks = {
 	addPiece: vi.mocked(addPiece),
 	updatePiece: vi.mocked(updatePiece),
 	getPiece: vi.mocked(getPiece),
-	getPieceSchemaFromFile: vi.mocked(getPieceSchemaFromFile),
 	validatePieceItem: vi.mocked(validatePieceItem),
 	getValidatePieceItemErrors: vi.mocked(getValidatePieceItemErrors),
 	slugify: vi.mocked(slugify),
+	pipeline: vi.mocked(pipeline),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -116,59 +111,48 @@ describe('lib/pieces/piece.ts', () => {
 		const schema = makeSchema('not-title')
 		const PieceType = makePieceMock()
 		const markdown = makeMarkdownSample()
+		const storage = mockStorage('root')
 
 		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
 
-		expect(() => new PieceType('root', 'title', schema)).toThrow()
+		expect(() => new PieceType('books', storage, schema)).toThrow()
 	})
 
-	test('constructor get schema', () => {
+	test('create', async () => {
 		const PieceType = makePieceMock()
 		const markdown = makeMarkdownSample()
-		const type = 'table'
-		const schema = makeSchema(type)
-
-		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-		mocks.getPieceSchemaFromFile.mockReturnValueOnce(schema)
-
-		new PieceType('root', type, null)
-
-		expect(mocks.getPieceSchemaFromFile).toHaveBeenCalledOnce()
-	})
-
-	test('create', () => {
-		const PieceType = makePieceMock()
-		const markdown = makeMarkdownSample()
+		const storage = makeStorage('root')
 		const title = markdown.frontmatter.title as string
 		const file = markdown.filePath
 
 		mocks.slugify.mockReturnValueOnce(title)
 		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-		mocks.existsSync.mockReturnValueOnce(false)
+		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValueOnce(false)
 
-		const piece = new PieceType()
-		const pieceMarkdown = piece.create(file, title)
+		const piece = new PieceType('books', storage)
+		const pieceMarkdown = await piece.create(file, title)
 
 		expect(pieceMarkdown).toEqual(markdown)
 	})
 
-	test('create throws on existing piece', () => {
+	test('create throws on existing piece', async () => {
 		const PieceType = makePieceMock()
 		const markdown = makeMarkdownSample()
+		const storage = makeStorage('root')
 		const title = markdown.frontmatter.title as string
 		const file = markdown.filePath
 
 		mocks.slugify.mockReturnValueOnce(title)
 		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-		mocks.existsSync.mockReturnValueOnce(true)
+		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValueOnce(true)
 
-		const piece = new PieceType()
+		const piece = new PieceType('books', storage)
+		const creating = piece.create(file, title)
 
-		expect(() => piece.create(file, title)).toThrow()
+		await expect(creating).rejects.toThrowError()
 	})
 
 	test('get schema', () => {
@@ -176,11 +160,12 @@ describe('lib/pieces/piece.ts', () => {
 		const type = 'table'
 		const schema = makeSchema(type)
 		const markdown = makeMarkdownSample()
+		const storage = mockStorage('root')
 
 		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
 
-		const piece = new PieceType('root', type, schema)
+		const piece = new PieceType(type, storage, schema)
 
 		expect(piece.schema).toEqual(schema)
 	})
@@ -199,13 +184,16 @@ describe('lib/pieces/piece.ts', () => {
 		const filename = '/path/to/slug.books.md'
 		const db = mockDatabase().db
 		const PieceType = makePieceMock()
-		const pieceTest = new PieceType()
 		const cacheDate = new Date('11-11-2000').getTime()
 		const fileDate = new Date('11-11-2001')
 		const mockCache = makeCache({ date_updated: cacheDate })
+		const storage = makeStorage('root')
+		const pieceTest = new PieceType('books', storage)
 
-		mocks.stat.mockResolvedValueOnce({ mtime: fileDate } as Stats)
 		mocks.getCache.mockResolvedValueOnce(mockCache)
+		spies.stat = vi
+			.spyOn(storage, 'stat')
+			.mockResolvedValueOnce({ last_modified: fileDate } as StorageStat)
 
 		const isOutdated = await pieceTest.isOutdated(filename, db)
 
@@ -216,13 +204,16 @@ describe('lib/pieces/piece.ts', () => {
 		const filename = '/path/to/slug.books.md'
 		const db = mockDatabase().db
 		const PieceType = makePieceMock()
-		const pieceTest = new PieceType()
 		const cacheDate = new Date('11-11-2000').getTime()
 		const fileDate = new Date('11-11-2001')
 		const mockCache = makeCache({ date_added: cacheDate, date_updated: undefined })
+		const storage = makeStorage('root')
+		const pieceTest = new PieceType('books', storage)
 
-		mocks.stat.mockResolvedValueOnce({ mtime: fileDate } as Stats)
 		mocks.getCache.mockResolvedValueOnce(mockCache)
+		spies.stat = vi
+			.spyOn(storage, 'stat')
+			.mockResolvedValueOnce({ last_modified: fileDate } as StorageStat)
 
 		const isOutdated = await pieceTest.isOutdated(filename, db)
 
@@ -233,13 +224,16 @@ describe('lib/pieces/piece.ts', () => {
 		const filename = '/path/to/slug.books.md'
 		const db = mockDatabase().db
 		const PieceType = makePieceMock()
-		const pieceTest = new PieceType()
 		const cacheDate = new Date('11-11-2000').getTime()
 		const fileDate = new Date('11-11-2000')
 		const mockCache = makeCache({ date_updated: cacheDate })
+		const storage = makeStorage('root')
+		const pieceTest = new PieceType('books', storage)
 
-		mocks.stat.mockResolvedValueOnce({ mtime: fileDate } as Stats)
 		mocks.getCache.mockResolvedValueOnce(mockCache)
+		spies.stat = vi
+			.spyOn(storage, 'stat')
+			.mockResolvedValueOnce({ last_modified: fileDate } as StorageStat)
 
 		const isOutdated = await pieceTest.isOutdated(filename, db)
 
@@ -250,13 +244,14 @@ describe('lib/pieces/piece.ts', () => {
 		const filename = '/path/to/slug.books.md'
 		const db = mockDatabase().db
 		const PieceType = makePieceMock()
-		const pieceTest = new PieceType()
+		const storage = makeStorage('root')
+		const pieceTest = new PieceType('books', storage)
 
-		mocks.stat.mockRejectedValueOnce(new Error('oof'))
+		spies.stat = vi.spyOn(storage, 'stat').mockRejectedValueOnce(new Error('oof'))
 
 		const isOutdating = pieceTest.isOutdated(filename, db)
 
-		expect(isOutdating).rejects.toThrow()
+		await expect(isOutdating).rejects.toThrow()
 	})
 
 	test('validate', () => {
@@ -291,20 +286,20 @@ describe('lib/pieces/piece.ts', () => {
 		const path = 'path/to/slug.md'
 		const extracted = { markdown: note, frontmatter }
 		const markdown = makeMarkdownSample({ note, frontmatter })
+		const storage = makeStorage('root')
 		const PieceTest = makePieceMock()
-		const root = 'root'
-		const pieceTest = new PieceTest(root)
-		const fullPath = `${root}/${path}`
+		const pieceTest = new PieceTest('books', storage)
 
 		mocks.extract.mockResolvedValueOnce(
 			extracted as Awaited<ReturnType<typeof extractFullMarkdown>>
 		)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-		mocks.existsSync.mockReturnValueOnce(true)
+		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValueOnce(true)
+		spies.readFile = vi.spyOn(storage, 'readFile').mockResolvedValueOnce(note)
 
 		const get = await pieceTest.get(path)
 
-		expect(mocks.extract).toHaveBeenCalledWith(fullPath)
+		expect(mocks.extract).toHaveBeenCalledWith(note)
 		expect(mocks.makePieceMarkdown).toHaveBeenCalledOnce()
 		expect(get).toEqual(markdown)
 	})
@@ -315,45 +310,51 @@ describe('lib/pieces/piece.ts', () => {
 		const path = '/path/to/slug.md'
 		const extracted = { markdown: note, frontmatter }
 		const markdown = makeMarkdownSample({ note, frontmatter })
+		const storage = makeStorage('root')
 		const PieceTest = makePieceMock()
-		const pieceTest = new PieceTest()
+		const pieceTest = new PieceTest('books', storage)
 
 		mocks.extract.mockResolvedValueOnce(
 			extracted as Awaited<ReturnType<typeof extractFullMarkdown>>
 		)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-		mocks.existsSync.mockReturnValueOnce(false)
+		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValueOnce(false)
 
 		const getting = pieceTest.get(path)
 
-		expect(getting).rejects.toThrowError()
+		await expect(getting).rejects.toThrowError()
 	})
 
 	test('write', async () => {
 		const sample = makeMarkdownSample()
+		const contents = JSON.stringify(sample.frontmatter)
+		const storage = makeStorage('root')
 		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
 
 		mocks.validatePieceItem.mockReturnValueOnce(true)
-		mocks.toMarkdownString.mockReturnValueOnce('')
-		mocks.writeFile.mockResolvedValueOnce(undefined)
+		mocks.toMarkdownString.mockReturnValueOnce(contents)
+		spies.write = vi.spyOn(storage, 'writeFile').mockResolvedValueOnce(undefined)
 
-		await new PieceTest().write(sample)
+		await pieceTest.write(sample)
 
-		expect(mocks.writeFile).toHaveBeenCalledOnce()
+		expect(spies.write).toHaveBeenCalledWith(sample.filePath, contents)
 	})
 
 	test('write fails', async () => {
 		const sample = makeMarkdownSample()
+		const contents = JSON.stringify(sample.frontmatter)
+		const storage = makeStorage('root')
 		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
 
 		mocks.validatePieceItem.mockReturnValueOnce(false)
 		mocks.getValidatePieceItemErrors.mockReturnValueOnce(['error'])
-		mocks.toMarkdownString.mockReturnValueOnce('')
-		mocks.writeFile.mockResolvedValueOnce(undefined)
+		mocks.toMarkdownString.mockReturnValueOnce(contents)
 
-		const writing = new PieceTest().write(sample)
+		const writing = pieceTest.write(sample)
 
-		expect(writing).rejects.toThrowError()
+		await expect(writing).rejects.toThrowError()
 	})
 
 	test('prune', async () => {
@@ -362,14 +363,14 @@ describe('lib/pieces/piece.ts', () => {
 			makePieceItemSelectable({ file_path: 'b' }),
 			makePieceItemSelectable({ file_path: 'c' }),
 		]
-		const PieceTest = makePieceMock()
 		const db = mockDatabase().db
-
-		const pieceTest = new PieceTest()
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
 
 		mocks.selectItems.mockResolvedValueOnce(dbPieces)
 		mocks.deleteItems.mockResolvedValueOnce()
-		mocks.unlink.mockResolvedValueOnce()
+		spies.delete = vi.spyOn(storage, 'delete').mockResolvedValue()
 
 		await pieceTest.prune(db, [])
 
@@ -378,6 +379,7 @@ describe('lib/pieces/piece.ts', () => {
 			db,
 			dbPieces.map((piece) => piece.file_path)
 		)
+		expect(spies.delete).toHaveBeenCalledTimes(dbPieces.length)
 	})
 
 	test('prune no-op', async () => {
@@ -655,7 +657,7 @@ describe('lib/pieces/piece.ts', () => {
 
 		const updating = pieceTest.setField(markdown, field, value)
 
-		expect(updating).rejects.toThrowError()
+		await expect(updating).rejects.toThrowError()
 	})
 
 	test('setField on arrays', async () => {
@@ -755,25 +757,28 @@ describe('lib/pieces/piece.ts', () => {
 	})
 
 	test('setField on unknown attachments', async () => {
+		const mockRequest = new PassThrough() as unknown as Request
+		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
+		const mockWritable = new PassThrough() as unknown as WriteStream
 		const markdown = makeMarkdownSample()
 		const field = 'cover'
 		const value = 'file'
-		const pieceRoot = 'luzzle-root'
-		const table = 'table'
 		const fields = [
 			{ name: field, type: 'string', format: 'asset' },
 		] as Array<PieceFrontmatterSchemaField>
 		const PieceTest = makePieceMock()
-
-		const pieceTest = new PieceTest(pieceRoot, table)
+		const storage = makeStorage('root')
+		const pieceTest = new PieceTest('books', storage)
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.downloadFileOrUrlTo.mockResolvedValueOnce(value)
-		mocks.unlink.mockResolvedValue(undefined)
-		mocks.fileType.mockResolvedValueOnce(undefined)
-		mocks.mkdir.mockResolvedValueOnce(undefined)
-		mocks.copy.mockResolvedValueOnce(undefined)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockResolvedValueOnce(mockWritable)
+		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce(mockRequest)
+		mocks.fileType.mockResolvedValueOnce(mockReadable)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.pipeline.mockResolvedValueOnce(undefined)
 
 		await pieceTest.setField(markdown, field, value)
 
@@ -791,24 +796,27 @@ describe('lib/pieces/piece.ts', () => {
 	})
 
 	test('setField on text attachments', async () => {
+		const mockRequest = new PassThrough() as unknown as Request
+		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
+		const mockWritable = new PassThrough() as unknown as WriteStream
 		const markdown = makeMarkdownSample()
 		const field = 'cover'
 		const value = 'file.html'
-		const pieceRoot = '/luzzle'
-		const table = 'table'
 		const fields = [
 			{ name: field, type: 'string', format: 'asset' },
 		] as Array<PieceFrontmatterSchemaField>
 		const PieceTest = makePieceMock()
-
-		const pieceTest = new PieceTest(pieceRoot, table)
+		const storage = makeStorage('root')
+		const pieceTest = new PieceTest('books', storage)
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.downloadFileOrUrlTo.mockResolvedValueOnce(value)
-		mocks.unlink.mockResolvedValue(undefined)
-		mocks.fileType.mockResolvedValueOnce(undefined)
-		mocks.mkdir.mockResolvedValueOnce(undefined)
-		mocks.copy.mockResolvedValueOnce(undefined)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockResolvedValueOnce(mockWritable)
+		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce(mockRequest)
+		mocks.fileType.mockResolvedValueOnce(mockReadable)
+
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
 
 		await pieceTest.setField(markdown, field, value)
@@ -826,25 +834,31 @@ describe('lib/pieces/piece.ts', () => {
 		)
 	})
 
-	test('setField on binary attachments', async () => {
+	test('setField on detected file type attachment', async () => {
+		const mockRequest = new PassThrough() as unknown as Request
+		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
+		const mockWritable = new PassThrough() as unknown as WriteStream
 		const markdown = makeMarkdownSample()
 		const field = 'cover'
-		const value = 'new-cover.jpg'
-		const pieceRoot = '/luzzle'
-		const table = 'table'
+		const value = 'new-cover-image'
 		const fields = [
 			{ name: field, type: 'string', format: 'asset' },
 		] as Array<PieceFrontmatterSchemaField>
 		const PieceTest = makePieceMock()
-
-		const pieceTest = new PieceTest(pieceRoot, table)
+		const storage = makeStorage('root')
+		const pieceTest = new PieceTest('books', storage)
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.downloadFileOrUrlTo.mockResolvedValueOnce(value)
-		mocks.unlink.mockResolvedValue(undefined)
-		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
-		mocks.mkdir.mockResolvedValueOnce(undefined)
-		mocks.copy.mockResolvedValueOnce(undefined)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockResolvedValueOnce(mockWritable)
+		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce(mockRequest)
+		mocks.fileType.mockResolvedValueOnce({
+			...mockReadable,
+			fileType: { ext: 'jpg', mime: 'image/jpeg' },
+		})
+
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
 
 		await pieceTest.setField(markdown, field, value)
@@ -863,24 +877,25 @@ describe('lib/pieces/piece.ts', () => {
 	})
 
 	test('setField on array attachments', async () => {
+		const mockRequest = new PassThrough() as unknown as Request
+		const mockWritable = new PassThrough() as unknown as WriteStream
+
 		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', cover: ['a', 'b'] } })
 		const field = 'cover'
 		const value = 'new-cover.jpg'
-		const pieceRoot = '/luzzle'
-		const table = 'table'
 		const fields = [
 			{ name: field, type: 'array', items: { type: 'string', format: 'asset' } },
 		] as Array<PieceFrontmatterSchemaField>
 		const PieceTest = makePieceMock()
-
-		const pieceTest = new PieceTest(pieceRoot, table)
+		const storage = makeStorage('root')
+		const pieceTest = new PieceTest('books', storage)
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.downloadFileOrUrlTo.mockResolvedValueOnce(value)
-		mocks.unlink.mockResolvedValue(undefined)
-		mocks.fileType.mockResolvedValueOnce({ ext: 'jpg' } as FileTypeResult)
-		mocks.mkdir.mockResolvedValueOnce(undefined)
-		mocks.copy.mockResolvedValueOnce(undefined)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockResolvedValueOnce(mockWritable)
+		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce(mockRequest)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
 
 		await pieceTest.setField(markdown, field, value)
@@ -934,7 +949,6 @@ describe('lib/pieces/piece.ts', () => {
 		const pieceTest = new PieceTest()
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.existsSync.mockReturnValueOnce(true)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
 
 		await pieceTest.removeField(markdown, field)
@@ -962,7 +976,6 @@ describe('lib/pieces/piece.ts', () => {
 		const pieceTest = new PieceTest()
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.existsSync.mockReturnValue(true)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
 
 		await pieceTest.removeField(markdown, field)
@@ -990,7 +1003,7 @@ describe('lib/pieces/piece.ts', () => {
 
 		const updating = pieceTest.removeField(markdown, field)
 
-		expect(updating).rejects.toThrowError()
+		await expect(updating).rejects.toThrowError()
 	})
 
 	test('removeField throws on required field', async () => {
@@ -1005,6 +1018,6 @@ describe('lib/pieces/piece.ts', () => {
 
 		const updating = pieceTest.removeField(markdown, field)
 
-		expect(updating).rejects.toThrowError()
+		await expect(updating).rejects.toThrowError()
 	})
 })
