@@ -2,7 +2,6 @@ import { PieceFrontmatter } from './utils/frontmatter.js'
 import { JSONSchemaType } from 'ajv'
 import { PropertiesSchema } from 'ajv/dist/types/json-schema.js'
 import { CreateTableBuilder, sql } from 'kysely'
-import { existsSync, readFileSync } from 'fs'
 
 function pieceSchemaFieldTypeToColumnType(type: string) {
 	switch (type) {
@@ -17,16 +16,11 @@ function pieceSchemaFieldTypeToColumnType(type: string) {
 	}
 }
 
-function getPieceSchemaFromFile(file: string): JSONSchemaType<PieceFrontmatter> {
-	if (!existsSync(file)) {
-		throw new Error(`piece schema file not found at ${file}`)
-	}
-
+function jsonToPieceSchema(json: string): JSONSchemaType<PieceFrontmatter> {
 	try {
-		const json = readFileSync(file, 'utf-8')
 		return JSON.parse(json) as JSONSchemaType<PieceFrontmatter>
 	} catch (error) {
-		throw new Error(`Error parsing piece schema: ${file}, ${error}`)
+		throw new Error(`Error parsing schema: ${error}`)
 	}
 }
 
@@ -79,4 +73,4 @@ function addColumnsFromPieceSchema<T>(
 	return tableBuilder
 }
 
-export { getPieceSchemaFromFile, addColumnsFromPieceSchema }
+export { jsonToPieceSchema, addColumnsFromPieceSchema }

@@ -1,5 +1,5 @@
 import { describe, afterEach, test, vi, expect, MockInstance } from 'vitest'
-import { getPieceSchemaFromFile } from './json.schema.js'
+import { jsonToPieceSchema } from './json.schema.js'
 import { existsSync, readFileSync } from 'fs'
 
 vi.mock('fs')
@@ -11,7 +11,7 @@ const mocks = {
 	readFileSync: vi.mocked(readFileSync),
 }
 
-describe('pieces/jtd.schema.test.ts', () => {
+describe('./pieces/json.schema.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -23,15 +23,12 @@ describe('pieces/jtd.schema.test.ts', () => {
 		})
 	})
 
-	test('getPieceSchemaFromFile', () => {
-		const file = 'file.json'
-		const schemaJson = { type: 'object' }
+	test('jsonToPieceSchema', () => {
+		const jsonObj = { type: 'object' }
+		const json = JSON.stringify(jsonObj)
 
-		mocks.existsSync.mockReturnValue(true)
-		mocks.readFileSync.mockReturnValue(JSON.stringify(schemaJson))
+		const schema = jsonToPieceSchema(json)
 
-		const schema = getPieceSchemaFromFile(file)
-
-		expect(schema).toEqual(schemaJson)
+		expect(schema).toEqual(jsonObj)
 	})
 })
