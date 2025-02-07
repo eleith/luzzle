@@ -2,11 +2,10 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { SyncArgv } from './sync.js'
 import yargs, { Arguments } from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePieceMock } from '../pieces/piece.fixtures.js'
+import { makePieceMock } from '../../pieces/piece.fixtures.js'
 import { getPieces, selectItemAssets } from '@luzzle/core'
-import { unlink } from 'fs/promises'
 
-vi.mock('../pieces/index.js')
+vi.mock('../../pieces/index.js')
 vi.mock('@luzzle/core')
 vi.mock('fs/promises')
 vi.mock('path')
@@ -19,7 +18,6 @@ const mocks = {
 	findPieceNames: vi.fn(),
 	getPieces: vi.mocked(getPieces),
 	selectItemAssets: vi.mocked(selectItemAssets),
-	unlink: vi.mocked(unlink),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -114,19 +112,19 @@ describe('lib/commands/sync', () => {
 			},
 		})
 
-		mocks.selectItemAssets.mockResolvedValueOnce(dbAssets)
-		mocks.unlink.mockResolvedValue()
-
 		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
 		spies.piecePrune = vi.spyOn(PieceTest.prototype, 'prune').mockResolvedValue()
 		spies.pieceIsOutdated = vi.spyOn(PieceTest.prototype, 'isOutdated')
+		spies.delete = vi.spyOn(ctx.storage, 'delete')
 
+		mocks.selectItemAssets.mockResolvedValueOnce(dbAssets)
 		spies.pieceIsOutdated.mockResolvedValueOnce(false)
+		spies.delete.mockResolvedValue(undefined)
 
 		await command.run(ctx, { prune: true } as Arguments<SyncArgv>)
 
 		expect(mocks.selectItemAssets).toHaveBeenCalled()
-		expect(mocks.unlink).toHaveBeenCalledTimes(2)
+		expect(spies.delete).toHaveBeenCalledTimes(2)
 	})
 
 	test('run with prune and dry-run', async () => {
@@ -149,19 +147,19 @@ describe('lib/commands/sync', () => {
 			},
 		})
 
-		mocks.selectItemAssets.mockResolvedValueOnce(dbAssets)
-		mocks.unlink.mockResolvedValue()
-
 		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
 		spies.piecePrune = vi.spyOn(PieceTest.prototype, 'prune').mockResolvedValue()
 		spies.pieceIsOutdated = vi.spyOn(PieceTest.prototype, 'isOutdated')
+		spies.delete = vi.spyOn(ctx.storage, 'delete')
 
+		mocks.selectItemAssets.mockResolvedValueOnce(dbAssets)
 		spies.pieceIsOutdated.mockResolvedValueOnce(false)
+		spies.delete.mockReturnValue(undefined)
 
 		await command.run(ctx, { prune: true } as Arguments<SyncArgv>)
 
 		expect(mocks.selectItemAssets).toHaveBeenCalled()
-		expect(mocks.unlink).not.toHaveBeenCalled()
+		expect(spies.delete).not.toHaveBeenCalled()
 	})
 	test('builder', async () => {
 		const args = yargs()

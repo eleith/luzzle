@@ -1,14 +1,14 @@
-import log from '../log.js'
+import log from '../../log.js'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { ValidateArgv } from './validate.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePiecePathPositional, parsePiecePathPositionalArgv } from '../pieces/index.js'
-import { makeMarkdownSample, makePieceMock } from '../pieces/piece.fixtures.js'
+import { makePiecePathPositional, parsePiecePathPositionalArgv } from '../../pieces/index.js'
+import { makeMarkdownSample, makePieceMock } from '../../pieces/piece.fixtures.js'
 
-vi.mock('../pieces/index')
-vi.mock('../log.js')
+vi.mock('../../pieces/index')
+vi.mock('../../log.js')
 
 const mocks = {
 	logError: vi.spyOn(log, 'error'),

@@ -1,4 +1,4 @@
-import log from '../log.js'
+import log from '../../log.js'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { InitArgv } from './init.js'
 import { Arguments } from 'yargs'
@@ -7,12 +7,15 @@ import { makeContext } from './context.fixtures.js'
 import { stat } from 'fs/promises'
 import { existsSync, Stats } from 'fs'
 import { getDatabaseClient, migrate } from '@luzzle/core'
-import { mockConfig } from '../config.mock.js'
+import { mockConfig } from '../../config.mock.js'
+import { getDatabasePath } from '../../config.js'
 
 vi.mock('fs/promises')
 vi.mock('@luzzle/core')
+vi.mock('fs/promises')
 vi.mock('fs')
-vi.mock('../log')
+vi.mock('../../log.js')
+vi.mock('../../config.js')
 
 const mocks = {
 	logWarn: vi.spyOn(log, 'warn'),
@@ -20,6 +23,7 @@ const mocks = {
 	stat: vi.mocked(stat),
 	getDatabaseClient: vi.mocked(getDatabaseClient),
 	migrate: vi.mocked(migrate),
+	getDatabasePath: vi.mocked(getDatabasePath)
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -41,8 +45,9 @@ describe('tools/lib/commands/init', () => {
 		const ctx = makeContext({ config })
 		const dir = 'luzzle-dir'
 
+		mocks.getDatabasePath.mockReturnValueOnce(dir)
 		mocks.stat.mockResolvedValueOnce({ isDirectory: () => true } as Stats)
-		mocks.existsSync.mockReturnValueOnce(false)
+		mocks.stat.mockResolvedValueOnce({} as Stats)
 
 		await command.run(ctx, { dir } as Arguments<InitArgv>)
 
@@ -55,8 +60,9 @@ describe('tools/lib/commands/init', () => {
 		const ctx = makeContext({ config })
 		const dir = 'luzzle-dir'
 
+		mocks.getDatabasePath.mockReturnValueOnce(dir)
 		mocks.stat.mockResolvedValueOnce({ isDirectory: () => true } as Stats)
-		mocks.existsSync.mockReturnValueOnce(true)
+		mocks.stat.mockRejectedValueOnce(new Error('nope'))
 
 		await command.run(ctx, { dir } as Arguments<InitArgv>)
 
@@ -69,8 +75,9 @@ describe('tools/lib/commands/init', () => {
 		const ctx = makeContext({ flags: { dryRun: true } })
 		const dir = 'luzzle-dir'
 
+		mocks.getDatabasePath.mockReturnValueOnce(dir)
 		mocks.stat.mockResolvedValueOnce({ isDirectory: () => true } as Stats)
-		mocks.existsSync.mockReturnValueOnce(false)
+		mocks.stat.mockResolvedValueOnce({} as Stats)
 
 		await command.run(ctx, { dir } as Arguments<InitArgv>)
 
@@ -82,11 +89,12 @@ describe('tools/lib/commands/init', () => {
 		const ctx = makeContext()
 		const dir = 'luzzle-dir'
 
+		mocks.getDatabasePath.mockReturnValueOnce(dir)
 		mocks.stat.mockResolvedValueOnce({ isDirectory: () => false } as Stats)
 
 		const run = command.run(ctx, { dir } as Arguments<InitArgv>)
 
-		expect(run).rejects.toThrow()
+		await expect(run).rejects.toThrow()
 	})
 
 	test('builder', async () => {

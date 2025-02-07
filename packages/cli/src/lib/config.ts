@@ -1,28 +1,76 @@
 import YAML from 'yaml'
 import Conf, { Options } from 'conf'
-import { fileURLToPath } from 'url'
-import { existsSync } from 'fs'
-import log from './log.js'
+import { Storage, StorageFileSystem, StorageWebDAV } from './storage/index.js'
 import path from 'path'
 
-export type SchemaConfig = {
-	directory: string
-	api_keys: {
-		google: string
+type SchemaConfig = {
+	api_keys?: {
+		google?: string
+	}
+	database?: {
+		type?: 'sqlite'
+		path?: string
+	}
+	storage?: {
+		type?: 'filesystem' | 'webdav'
+		root?: string
+		options?: Record<string, string>
 	}
 }
+type Config = Conf<SchemaConfig>
 
-const defaultOptions: Options<SchemaConfig> = {
+const configOptions: Options<SchemaConfig> = {
 	fileExtension: 'yaml',
 	serialize: YAML.stringify,
 	deserialize: YAML.parse,
 	projectSuffix: '',
 	projectName: '@luzzle/cli',
 	schema: {
-		directory: {
-			type: 'string',
-			format: 'uri',
-			description: 'directory of luzzle files',
+		storage: {
+			type: 'object',
+			properties: {
+				type: {
+					type: 'string',
+					enum: ['filesystem', 'webdav'],
+					description: 'storage type',
+				},
+				root: {
+					type: 'string',
+					description: 'root directory for luzzle files',
+				},
+				options: {
+					type: 'object',
+					description: 'options for webdav storage',
+					properties: {
+						url: {
+							type: 'string',
+							description: 'url for webdav',
+						},
+						username: {
+							type: 'string',
+							description: 'username for webdav',
+						},
+						password: {
+							type: 'string',
+							description: 'password for webdav',
+						},
+					},
+				},
+			},
+		},
+		database: {
+			type: 'object',
+			properties: {
+				path: {
+					type: 'string',
+					description: 'path to database file',
+				},
+				type: {
+					type: 'string',
+					enum: ['sqlite'],
+					description: 'database type',
+				},
+			},
 		},
 		api_keys: {
 			type: 'object',
@@ -36,32 +84,80 @@ const defaultOptions: Options<SchemaConfig> = {
 	},
 }
 
-export function getConfig(path?: string) {
-	if (path) {
+function getConfig(_path?: string) {
+	if (_path) {
+		const configDir = path.resolve(_path)
 		return new Conf<SchemaConfig>({
-			...defaultOptions,
-			cwd: path,
+			...configOptions,
+			cwd: configDir,
 		})
 	} else {
-		return new Conf<SchemaConfig>(defaultOptions)
+		return new Conf<SchemaConfig>(configOptions)
 	}
 }
 
-export function getDirectoryFromConfig(config: Conf<SchemaConfig>): string | never {
-	const dirUrlPath = config.get('directory')
+function withDefaults(config: Conf<SchemaConfig>) {
+	const store = config.store
+	const configDir = path.dirname(path.resolve(config.path))
+	const defaults = {
+		storage: {
+			root: configDir,
+			type: 'filesystem',
+			options: undefined,
+		},
+		database: {
+			type: 'sqlite',
+			path: path.join(configDir, 'luzzle.sqlite'),
+		},
+		api_keys: {
+			google: undefined,
+		},
+	}
 
-	if (dirUrlPath) {
-		const dirPath = fileURLToPath(dirUrlPath)
-
-		if (existsSync(dirPath)) {
-			return dirPath
-		}
-
-		throw new Error(`config doesn't exist: ${config.path}`)
-	} else {
-		log.warn('directory not set in config, using config directory instead')
-		return path.dirname(config.path)
+	return {
+		storage: {
+			...defaults.storage,
+			...store.storage,
+		},
+		database: {
+			...defaults.database,
+			...store.database,
+		},
+		api_keys: {
+			...defaults.api_keys,
+			...store.api_keys,
+		},
 	}
 }
 
-export type Config = Conf<SchemaConfig>
+function getDatabasePath(config: Conf<SchemaConfig>) {
+	const defaults = withDefaults(config)
+	const databasePath = config.get('database.path', defaults.database.path)
+	const databaseType = config.get('database.type', defaults.database.type)
+
+	if (databaseType == 'sqlite') {
+		return databasePath
+	}
+
+	throw new Error(`unknown database type: ${databaseType}`)
+}
+
+function getStorage(config: Conf<SchemaConfig>): Storage {
+	const defaults = withDefaults(config)
+	const storageRoot = config.get('storage.root', defaults.storage.root)
+	const storageType = config.get('storage.type', defaults.storage.type)
+	const storageOptions = config.get('storage.options', defaults.storage.options)
+
+	if (storageType == 'filesystem') {
+		return new StorageFileSystem(storageRoot)
+	} else if (storageType == 'webdav' && storageOptions?.url) {
+		const url = storageOptions.url
+		const username = storageOptions.username
+		const password = storageOptions.password
+		return new StorageWebDAV(url, storageRoot, { username, password })
+	}
+
+	throw new Error(`unknown storage type: ${storageType}`)
+}
+
+export { getConfig, getStorage, getDatabasePath, withDefaults, type Config, type SchemaConfig }

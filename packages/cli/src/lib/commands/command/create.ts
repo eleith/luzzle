@@ -1,8 +1,8 @@
-import log from '../log.js'
-import { Command } from './utils/types.js'
+import log from '../../log.js'
+import { Command } from '../utils/types.js'
 import { Argv } from 'yargs'
 import yaml from 'yaml'
-import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../pieces/index.js'
+import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../../pieces/index.js'
 
 export type CreateArgv = {
 	title: string
@@ -57,7 +57,7 @@ const command: Command<CreateArgv> = {
 	run: async function (ctx, args) {
 		const { title, fields, input, directory } = args
 		const { piece } = await parsePieceOptionArgv(ctx, args)
-		const markdown = piece.create(directory, title)
+		const markdown = await piece.create(directory, title)
 
 		if (ctx.flags.dryRun === false) {
 			if (fields?.length) {
@@ -68,9 +68,9 @@ const command: Command<CreateArgv> = {
 				await piece.write(markdown)
 			}
 
-			log.info(`created new ${piece} at ${markdown.filePath}`)
+			log.info(`created new ${piece.type} at ${markdown.filePath}`)
 		} else {
-			log.info(`created new ${piece} at ${markdown.filePath}`)
+			log.info(`created new ${piece.type} at ${markdown.filePath}`)
 		}
 	},
 }

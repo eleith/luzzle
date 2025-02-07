@@ -1,12 +1,11 @@
-import log from '../log.js'
-import { Command } from './utils/types.js'
+import log from '../../log.js'
+import { Command } from '../utils/types.js'
 import { Argv } from 'yargs'
 import { stat } from 'fs/promises'
 import { getDatabaseClient, migrate } from '@luzzle/core'
 import path from 'path'
-import { DATABASE_PATH } from '../assets.js'
-import { existsSync } from 'fs'
 import { pathToFileURL } from 'url'
+import { getDatabasePath } from '../../config.js'
 
 export type InitArgv = { dir: string }
 
@@ -30,15 +29,16 @@ const command: Command<InitArgv> = {
 		const dirStat = await stat(args.dir).catch(() => null)
 
 		if (args.dir && !dirStat?.isDirectory()) {
-			throw new Error(`${args.dir} exists and is not a folder`)
+			throw new Error(`${args.dir} is not a folder`)
 		}
 
 		if (ctx.flags.dryRun === false) {
-			const dbPath = path.join(dir, DATABASE_PATH)
+			const dbPath = getDatabasePath(ctx.config)
 			const dirUri = pathToFileURL(path.resolve(dir))
+			const configPath = await stat(ctx.config.path).catch(() => null)
 
-			if (existsSync(ctx.config.path)) {
-				ctx.log.warn(`config file already exists at ${ctx.config.path}`)
+			if (configPath === null) {
+				log.warn(`config file already exists at ${ctx.config.path}`)
 			}
 
 			ctx.config.set('directory', dirUri.href)

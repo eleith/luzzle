@@ -1,23 +1,46 @@
-import edit from './edit.js'
-import editConfig from './editConfig.js'
-import field from './field.js'
-import create from './create.js'
-import init from './init.js'
-import sync from './sync.js'
-import cd from './cd.js'
-import validate from './validate.js'
-import assistant from './assistant.js'
+import path from 'path'
+import { Command, Context } from './utils/types.js'
+import { readdir } from 'fs/promises'
 
-export type { Command, Context } from './utils/types.js'
+async function getCommands() {
+	const commandPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'command')
+	const files = await readdir(commandPath)
+	const commands: { [key: string]: Command } = {}
 
-export default {
-	edit,
-	editConfig,
-	field,
-	create,
-	init,
-	sync,
-	cd,
-	validate,
-	assistant,
+	for (const file of files) {
+		if (file.endsWith('.js')) {
+			const name = file.replace(/\..+$/, '')
+			/* c8 ignore next 3 */
+			const ext = process.env.NODE_ENV === 'test' ? 'ts' : 'js'
+			const command = await import(`./command/${name}.${ext}`)
+			commands[name] = command.default as Command
+		}
+	}
+
+	return commands
 }
+
+/*
+import assistant from './command/assistant.js'
+import field from './command/field.js'
+import config from './command/config.js'
+import validate from './command/validate.js'
+import create from './command/create.js'
+import sync from './command/sync.js'
+import init from './command/init.js'
+
+async function getCommands() {
+	return {
+		assistant,
+		field,
+		config,
+		validate,
+		create,
+		sync,
+		init
+	} as unknown as { [key: string]: Command }
+}
+*/
+
+export { type Command, type Context }
+export default getCommands

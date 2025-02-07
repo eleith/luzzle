@@ -1,16 +1,20 @@
 import { describe, expect, test, vi, afterEach, MockInstance, MockedClass } from 'vitest'
 import Conf from 'conf'
-import { existsSync } from 'fs'
-import { getConfig, getDirectoryFromConfig, SchemaConfig } from './config.js'
+import { getConfig, getDatabasePath, getStorage } from './config.js'
 import log from './log.js'
 import path from 'path'
+import StorageFileSystem from './storage/fs.js'
+import StorageWebDAV from './storage/webdav.js'
 
-vi.mock('fs')
 vi.mock('./log.js')
+vi.mock('path')
+vi.mock('./storage/fs.js')
+vi.mock('./storage/webdav.js')
 vi.mock('conf', () => {
 	const ConfMock = vi.fn()
 	ConfMock.prototype.get = vi.fn()
 	ConfMock.prototype.set = vi.fn()
+	ConfMock.prototype.store = {}
 	ConfMock.prototype.path = '/some/path'
 	return { default: ConfMock }
 })
@@ -19,8 +23,9 @@ const mocks = {
 	Conf: Conf as MockedClass<typeof Conf>,
 	ConfGet: vi.spyOn(Conf.prototype, 'get'),
 	ConfSet: vi.spyOn(Conf.prototype, 'set'),
-	existsSync: vi.mocked(existsSync),
 	logWarn: vi.spyOn(log, 'warn'),
+	pathResolve: vi.spyOn(path, 'resolve'),
+	pathDirname: vi.spyOn(path, 'dirname'),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -39,50 +44,85 @@ describe('lib/config', () => {
 
 	test('getConfig', async () => {
 		getConfig()
+
 		expect(mocks.Conf).toHaveBeenCalledOnce()
 		expect(mocks.Conf).not.toHaveBeenCalledWith(expect.objectContaining({ cwd: expect.anything() }))
 	})
 
 	test('getConfig with path', async () => {
+		mocks.pathResolve.mockReturnValueOnce('special-path')
+
 		getConfig('special-path')
+
 		expect(mocks.Conf).toHaveBeenCalledOnce()
 		expect(mocks.Conf).toHaveBeenCalledWith(expect.objectContaining({ cwd: 'special-path' }))
 	})
 
-	test('getDirectoryFromConfig', async () => {
-		const config = new Conf<SchemaConfig>()
-		const dirPath = '/some/dir'
-		const dirUrlPath = `file://${dirPath}`
+	test('getDatabasePath', async () => {
+		const config = getConfig('some-path')
+		const dbPath = '/db/path/to/here'
+		const dbType = 'sqlite'
 
-		mocks.ConfGet.mockReturnValue(dirUrlPath)
-		mocks.existsSync.mockReturnValue(true)
+		mocks.ConfGet.mockReturnValueOnce(dbPath)
+		mocks.ConfGet.mockReturnValueOnce(dbType)
 
-		const directory = getDirectoryFromConfig(config)
+		const databasePath = getDatabasePath(config)
 
-		expect(mocks.ConfGet).toHaveBeenCalledWith('directory')
-		expect(directory).toBe(dirPath)
+		expect(databasePath).toBe(dbPath)
 	})
 
-	test('getDirectoryFromConfig when directory is not set', async () => {
-		const config = new Conf<SchemaConfig>()
+	test('getDatabasePath throws', async () => {
+		const config = getConfig('some-path')
+		const dbPath = '/db/path/to/here'
+		const dbType = 'postgres'
 
-		mocks.ConfGet.mockReturnValue(null)
+		mocks.ConfGet.mockReturnValueOnce(dbPath)
+		mocks.ConfGet.mockReturnValueOnce(dbType)
 
-		const directory = getDirectoryFromConfig(config)
-
-		expect(mocks.ConfGet).toHaveBeenCalledWith('directory')
-		expect(directory).toBe(path.dirname(config.path))
-		expect(mocks.logWarn).toHaveBeenCalledOnce()
+		expect(() => getDatabasePath(config)).toThrow()
 	})
 
-	test('getDirectoryFromConfig fails with a non existant directory', async () => {
-		const config = new Conf<SchemaConfig>()
-		const dirPath = '/some/dir'
-		const dirUrlPath = `file://${dirPath}`
+	test('getStorage type filesystem', async () => {
+		const config = getConfig('some-path')
+		const root = 'root'
+		const type = 'filesystem'
+		const options = undefined
 
-		mocks.ConfGet.mockReturnValue(dirUrlPath)
-		mocks.existsSync.mockReturnValue(false)
+		mocks.ConfGet.mockReturnValueOnce(root)
+		mocks.ConfGet.mockReturnValueOnce(type)
+		mocks.ConfGet.mockReturnValueOnce(options)
 
-		expect(() => getDirectoryFromConfig(config)).toThrow()
+		const storage = getStorage(config)
+
+		expect(storage).toBeInstanceOf(StorageFileSystem)
 	})
+
+	test('getStorage type webdav', async () => {
+		const config = getConfig('some-path')
+		const root = 'root'
+		const type = 'webdav'
+		const options =  { username: 'a', password: 'p', url: 'u' }
+
+		mocks.ConfGet.mockReturnValueOnce(root)
+		mocks.ConfGet.mockReturnValueOnce(type)
+		mocks.ConfGet.mockReturnValueOnce(options)
+
+		const storage = getStorage(config)
+
+		expect(storage).toBeInstanceOf(StorageWebDAV)
+	})
+
+	test('getStorage invalid type', async () => {
+		const config = getConfig('some-path')
+		const root = 'root'
+		const type = 'webdax'
+		const options =  { username: 'a', password: 'p', url: 'u' }
+
+		mocks.ConfGet.mockReturnValueOnce(root)
+		mocks.ConfGet.mockReturnValueOnce(type)
+		mocks.ConfGet.mockReturnValueOnce(options)
+
+		expect(() => getStorage(config)).toThrowError()
+	})
+
 })

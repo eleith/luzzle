@@ -8,7 +8,6 @@ import {
 	makePiecePathPositional,
 	parsePieceOptionArgv,
 	parsePiecePathPositionalArgv,
-	downloadFileOrUrlTo,
 } from './utils.js'
 import Pieces from './pieces.js'
 import Piece from './piece.js'
@@ -20,7 +19,6 @@ export {
 	Piece,
 	Pieces,
 	PiecePositional,
-	downloadFileOrUrlTo,
 	PieceFileType,
 	makePiecePathPositional,
 	makePieceOption,

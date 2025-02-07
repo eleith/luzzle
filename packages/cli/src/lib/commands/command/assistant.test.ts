@@ -1,21 +1,21 @@
-import log from '../log.js'
+import log from '../../log.js'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { AssistantArgv } from './assistant.js'
 import { Arguments, Argv } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from './context.fixtures.js'
-import { makePieceOption, parsePieceOptionArgv } from '../pieces/index.js'
+import { makePieceOption, parsePieceOptionArgv } from '../../pieces/index.js'
 import {
 	makeFrontmatterSample,
 	makeMarkdownSample,
 	makePieceMock,
-} from '../pieces/piece.fixtures.js'
+} from '../../pieces/piece.fixtures.js'
 import yaml from 'yaml'
-import { generatePieceFrontmatter } from '../llm/google.js'
+import { generatePieceFrontmatter } from '../../llm/google.js'
 
-vi.mock('../pieces/index')
-vi.mock('../log.js')
-vi.mock('../llm/google.js')
+vi.mock('../../pieces/index')
+vi.mock('../../log.js')
+vi.mock('../../llm/google.js')
 vi.mock('yaml')
 
 const mocks = {
@@ -118,7 +118,7 @@ describe('lib/commands/assistant.ts', () => {
 
 		const creating = command.run(ctx, { prompt, update, directory } as Arguments<AssistantArgv>)
 
-		expect(creating).rejects.toThrow()
+		await expect(creating).rejects.toThrow()
 	})
 
 	test('must use update and title exclusively', async () => {
@@ -142,7 +142,7 @@ describe('lib/commands/assistant.ts', () => {
 
 		const creating = command.run(ctx, { prompt, update, title } as Arguments<AssistantArgv>)
 
-		expect(creating).rejects.toThrow()
+		await expect(creating).rejects.toThrow()
 	})
 
 	test('updates a piece', async () => {
@@ -197,7 +197,7 @@ describe('lib/commands/assistant.ts', () => {
 
 		const creating = command.run(ctx, { prompt, directory } as Arguments<AssistantArgv>)
 
-		expect(creating).rejects.toThrow()
+		await expect(creating).rejects.toThrow()
 	})
 
 	test('creates a new piece', async () => {
@@ -215,7 +215,7 @@ describe('lib/commands/assistant.ts', () => {
 			},
 		})
 
-		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockReturnValueOnce(markdown)
+		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockResolvedValueOnce(markdown)
 		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
 		spies.pieceSetFields = vi
 			.spyOn(PieceTest.prototype, 'setFields')
