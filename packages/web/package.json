@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build:lock": "npm i --package-lock-only --workspaces=false && mv package-lock.json web.package-lock.json",
-		"build": "vite build",
+		"build": "dotenvx run -f .env.local -- vite build",
 		"preview": "vite preview",
 		"build:luzzle:db": "vite-node tools/luzzle/index.ts",
 		"build:luzzle:images": "vite-node tools/luzzle/images.ts",
