@@ -34,8 +34,8 @@ steps:
         branch: [main]
         path:
           include: [".woodpecker/.web.yml", "packages/web/**"]
-  notify:
-    image: deblan/woodpecker-email:2.0.4
+  notify-success:
+    image: deblan/woodpecker-email:3.2.0
     settings:
       dsn:
         from_secret: woodpecker_email_dsn
@@ -46,9 +46,29 @@ steps:
           from_secret: woodpecker_email_from_name
       recipients:
         from_secret: woodpecker_email_recipient
+      level: success
     when:
       - event: [push, manual]
-        status: [failure, success]
+        status: [success]
+        branch: [main]
+        path:
+          include: [".woodpecker/.web.yml", "packages/web/**"]
+  notify-failure:
+    image: deblan/woodpecker-email:3.2.0
+    settings:
+      dsn:
+        from_secret: woodpecker_email_dsn
+      from:
+        address:
+          from_secret: woodpecker_email_from_address
+        name:
+          from_secret: woodpecker_email_from_name
+      recipients:
+        from_secret: woodpecker_email_recipient
+      level: failure
+    when:
+      - event: [push, manual]
+        status: [failure]
         branch: [main]
         path:
           include: [".woodpecker/.web.yml", "packages/web/**"]
