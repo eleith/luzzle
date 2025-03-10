@@ -1,9 +1,5 @@
 import { initialize } from './database'
 
-import dotenv from 'dotenv'
-
-dotenv.config({ path: '../../.env.local' })
-
 const PRIVATE_DATABASE_URL = process.env.PRIVATE_DATABASE_URL as string
 
 async function prebuildLuzzle() {
