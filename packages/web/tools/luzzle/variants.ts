@@ -4,9 +4,6 @@ import { copyFile, mkdir, readFile, stat } from 'fs/promises'
 import path from 'path'
 import { getLastRunFor, setLastRunFor } from './lastRun'
 
-import dotenv from 'dotenv'
-
-dotenv.config({ path: '../../.env.local' })
 const PRIVATE_LUZZLE_IMAGES_DIR = process.env.PRIVATE_LUZZLE_IMAGES_DIR as string
 const PRIVATE_LUZZLE_DIR = process.env.PRIVATE_LUZZLE_DIR as string
 

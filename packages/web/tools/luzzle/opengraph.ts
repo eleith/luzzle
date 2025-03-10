@@ -4,9 +4,7 @@ import path from 'path'
 import { type WebPieces } from '../../src/lib/pieces/types'
 import { getLastRunFor, setLastRunFor } from './lastRun'
 import { mkdir, readFile, stat, writeFile } from 'fs/promises'
-import dotenv from 'dotenv'
 
-dotenv.config({ path: '../../.env.local' })
 const PRIVATE_LUZZLE_IMAGES_DIR = process.env.PRIVATE_LUZZLE_IMAGES_DIR as string
 
 async function generateOpenGraphForPiece(piece: WebPieces, fonts: Array<Font>, lastRun: Date) {
