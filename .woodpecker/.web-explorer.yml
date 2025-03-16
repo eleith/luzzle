@@ -14,14 +14,14 @@ steps:
         status: [failure, success]
         branch: [main]
         path:
-          include: [".woodpecker/.web.yml", "packages/web/**"]
+          include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
   build_docker:
     image: woodpeckerci/plugin-docker-buildx:pull_186
     settings:
       repo: git.eleith.com/eleith/luzzle
       username: eleith
-      dockerfile: packages/web/Dockerfile
-      context: packages/web
+      dockerfile: packages/web/explorer/Dockerfile
+      context: packages/web/explorer
       registry: https://git.eleith.com
       secrets:
         - id=npmrc\\,src=.npmrc
@@ -33,7 +33,7 @@ steps:
         status: [failure, success]
         branch: [main]
         path:
-          include: [".woodpecker/.web.yml", "packages/web/**"]
+          include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
   notify-success:
     image: deblan/woodpecker-email:3.2.0
     settings:
@@ -52,7 +52,7 @@ steps:
         status: [success]
         branch: [main]
         path:
-          include: [".woodpecker/.web.yml", "packages/web/**"]
+          include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
   notify-failure:
     image: deblan/woodpecker-email:3.2.0
     settings:
@@ -71,4 +71,4 @@ steps:
         status: [failure]
         branch: [main]
         path:
-          include: [".woodpecker/.web.yml", "packages/web/**"]
+          include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]

@@ -3,6 +3,9 @@
   "private": true,
   "scripts": {},
   "workspaces": [
-    "packages/*"
+    "packages/cli",
+    "packages/tools",
+    "packages/core",
+    "packages/web/explorer"
   ]
 }
