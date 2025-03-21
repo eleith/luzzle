@@ -43,7 +43,12 @@ describe('lib/commands/sync', () => {
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(piece),
 				sync: mocks.sync.mockResolvedValueOnce([piece.type]),
-				getFiles: mocks.getFiles.mockResolvedValueOnce({ pieces: { [type]: files }, assets: [] }),
+				parseFilename: vi.fn().mockReturnValue({ type }),
+				getFilesIn: mocks.getFiles.mockResolvedValueOnce({
+					pieces: files,
+					assets: [],
+					types: [type],
+				}),
 				prune: mocks.prune.mockResolvedValue(null),
 			},
 		})
@@ -75,7 +80,12 @@ describe('lib/commands/sync', () => {
 			pieces: {
 				sync: mocks.sync.mockResolvedValueOnce([piece.type]),
 				getPiece: mocks.getPiece.mockReturnValue(piece),
-				getFiles: mocks.getFiles.mockResolvedValueOnce({ pieces: { [type]: files }, assets: [] }),
+				parseFilename: vi.fn().mockReturnValue({ type }),
+				getFilesIn: mocks.getFiles.mockResolvedValueOnce({
+					pieces: files,
+					assets: [],
+					types: [type],
+				}),
 				prune: mocks.prune.mockResolvedValue(null),
 			},
 		})
@@ -104,9 +114,11 @@ describe('lib/commands/sync', () => {
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(piece),
 				sync: mocks.sync.mockResolvedValueOnce([piece.type]),
-				getFiles: mocks.getFiles.mockResolvedValueOnce({
-					pieces: { [type]: files },
+				parseFilename: vi.fn().mockReturnValue({ type }),
+				getFilesIn: mocks.getFiles.mockResolvedValueOnce({
+					pieces: files,
 					assets: diskAssets,
+					types: [type],
 				}),
 				prune: mocks.prune.mockResolvedValue(null),
 			},
@@ -139,9 +151,11 @@ describe('lib/commands/sync', () => {
 			pieces: {
 				getPiece: mocks.getPiece.mockReturnValue(piece),
 				sync: mocks.sync.mockResolvedValueOnce([piece.type]),
-				getFiles: mocks.getFiles.mockResolvedValueOnce({
-					pieces: { [type]: files },
+				parseFilename: vi.fn().mockReturnValue({ type }),
+				getFilesIn: mocks.getFiles.mockResolvedValueOnce({
+					pieces: files,
 					assets: diskAssets,
+					types: [type],
 				}),
 				prune: mocks.prune.mockResolvedValue(null),
 			},

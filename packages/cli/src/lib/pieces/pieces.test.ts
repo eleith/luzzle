@@ -11,8 +11,7 @@ import {
 } from '@luzzle/core'
 import { makeRegisteredPiece, makeSchema, makeStorage } from './piece.fixtures.js'
 import { makeContext } from '../commands/command/context.fixtures.js'
-import { stat } from 'fs/promises'
-import { Stats } from 'fs'
+import { StorageStat } from '../storage/storage.js'
 
 vi.mock('./piece.js')
 vi.mock('@luzzle/core')
@@ -22,7 +21,6 @@ const spies: { [key: string]: MockInstance } = {}
 const mocks = {
 	getPiece: vi.mocked(getPiece),
 	getPieces: vi.mocked(getPieces),
-	stat: vi.mocked(stat),
 	addPiece: vi.mocked(addPiece),
 	updatePiece: vi.mocked(updatePiece),
 	deletePiece: vi.mocked(deletePiece),
@@ -52,9 +50,12 @@ describe('lib/pieces/pieces.ts', () => {
 	test('getSchemas', async () => {
 		const storage = makeStorage('root')
 		const pieces = new Pieces(storage)
-		const schemaPaths = ['path/to/books.json', 'path/to/authors.json']
+		const schemaPaths = [
+			'path/to/books.json',
+			'path/to/authors.json'
+		]
 
-		spies.readdir = vi.spyOn(storage, 'readdir').mockResolvedValueOnce(schemaPaths)
+		spies.readdir = vi.spyOn(storage, 'getFilesIn').mockResolvedValueOnce(schemaPaths)
 
 		const schemas = await pieces.getSchemas()
 
@@ -74,32 +75,32 @@ describe('lib/pieces/pieces.ts', () => {
 		expect(getSchema).toEqual(schema)
 	})
 
-	test('getTypeFromFile', () => {
+	test('parseFilename', () => {
 		const storage = makeStorage('root')
 		const pieces = new Pieces(storage)
 		const type = 'books'
 		const file = `/path/to/slug.${type}.md`
 
-		const result = pieces.getTypeFromFile(file)
+		const result = pieces.parseFilename(file)
 
-		expect(result).toEqual(type)
+		expect(result.type).toEqual(type)
 	})
 
-	test('getTypeFromFile returns null', () => {
+	test('parseFilename returns null', () => {
 		const storage = makeStorage('root')
 		const pieces = new Pieces(storage)
 		const file = `/path/to/slug.md`
 
-		const result = pieces.getTypeFromFile(file)
+		const result = pieces.parseFilename(file)
 
-		expect(result).toBeNull()
+		expect(result.type).toBeNull()
 	})
 
 	test('getTypes', async () => {
 		const storage = makeStorage('root')
 		const schemaNames = ['one', 'two']
 		const pieces = new Pieces(storage)
-		const schemas = schemaNames.map(x => `path/to/${x}.json`)
+		const schemas = schemaNames.map((x) => `path/to/${x}.json`)
 
 		spies.getSchemas = vi.spyOn(pieces, 'getSchemas').mockResolvedValueOnce(schemas)
 
@@ -108,7 +109,7 @@ describe('lib/pieces/pieces.ts', () => {
 		expect(types).toEqual(schemaNames)
 	})
 
-	test('getFiles', async () => {
+	test('getFilesIn', async () => {
 		const storage = makeStorage('root')
 		const pieces = new Pieces(storage)
 		const type = 'books'
@@ -117,17 +118,19 @@ describe('lib/pieces/pieces.ts', () => {
 			'/path/to/bye.books.md',
 			'.assets/hi.jpg',
 			'.hidden/books.md',
+			'/path/dir/',
 		]
 
-		spies.readdir = vi.spyOn(storage, 'readdir').mockResolvedValueOnce(onDisk)
-		spies.getTypeFromFile = vi.spyOn(pieces, 'getTypeFromFile').mockReturnValue(type)
+		spies.readdir = vi.spyOn(storage, 'getFilesIn').mockResolvedValueOnce(onDisk)
 		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([type])
-		
-		const items = await pieces.getFiles()
+
+		const items = await pieces.getFilesIn('.')
 
 		expect(items).toEqual({
-			pieces: { [type]: [onDisk[0], onDisk[1]] },
+			pieces: [onDisk[0], onDisk[1]],
 			assets: [onDisk[2]],
+			types: [type],
+			directories: [onDisk[4]],
 		})
 	})
 
@@ -141,12 +144,12 @@ describe('lib/pieces/pieces.ts', () => {
 		const { db } = makeContext()
 
 		mocks.getPiece.mockResolvedValueOnce(null)
-		mocks.stat.mockResolvedValueOnce({ mtime: dateModified } as Stats)
 		mocks.updatePiece.mockResolvedValueOnce()
 
 		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([type])
 		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValueOnce(piece.schema)
 		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValueOnce('schemaPath')
+		spies.stat = vi.spyOn(storage, 'stat').mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
 
 		await pieces.sync(db, false)
 
@@ -164,12 +167,12 @@ describe('lib/pieces/pieces.ts', () => {
 		const { db } = makeContext()
 
 		mocks.getPiece.mockResolvedValueOnce(null)
-		mocks.stat.mockResolvedValueOnce({ mtime: dateModified } as Stats)
 		mocks.updatePiece.mockResolvedValueOnce()
 
 		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([type])
 		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValueOnce(piece.schema)
 		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValueOnce('schemaPath')
+		spies.stat = vi.spyOn(storage, 'stat').mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
 
 		await pieces.sync(db, true)
 
@@ -187,12 +190,12 @@ describe('lib/pieces/pieces.ts', () => {
 		const { db } = makeContext()
 
 		mocks.getPiece.mockResolvedValueOnce(piece)
-		mocks.stat.mockResolvedValueOnce({ mtime: dateModified } as Stats)
 		mocks.updatePiece.mockResolvedValueOnce()
 
 		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([type])
 		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValueOnce(piece.schema)
 		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValueOnce('schemaPath')
+		spies.stat = vi.spyOn(storage, 'stat').mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
 
 		await pieces.sync(db, false)
 
@@ -210,12 +213,12 @@ describe('lib/pieces/pieces.ts', () => {
 		const { db } = makeContext()
 
 		mocks.getPiece.mockResolvedValueOnce(piece)
-		mocks.stat.mockResolvedValueOnce({ mtime: dateModified } as Stats)
 		mocks.updatePiece.mockResolvedValueOnce()
 
 		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([type])
 		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValueOnce(piece.schema)
 		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValueOnce('schemaPath')
+		spies.stat = vi.spyOn(storage, 'stat').mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
 
 		await pieces.sync(db, true)
 
@@ -232,12 +235,12 @@ describe('lib/pieces/pieces.ts', () => {
 		const { db } = makeContext()
 
 		mocks.getPiece.mockResolvedValueOnce(piece)
-		mocks.stat.mockRejectedValueOnce(new Error('file not found'))
 		mocks.updatePiece.mockResolvedValueOnce()
 
 		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([type])
 		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValueOnce(piece.schema)
 		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValueOnce('schemaPath')
+		spies.stat = vi.spyOn(storage, 'stat').mockRejectedValueOnce(new Error('Error'))
 
 		const syncing = pieces.sync(db, true)
 

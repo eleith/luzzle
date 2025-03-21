@@ -12,7 +12,6 @@ import {
 	updatePiece,
 } from '@luzzle/core'
 import log from '../log.js'
-import { stat } from 'fs/promises'
 import { Storage } from '../storage/index.js'
 
 class Pieces {
@@ -42,13 +41,14 @@ class Pieces {
 
 		for (const name of names) {
 			const piece = await getPiece(db, name)
-			const schema = await this.getSchema(name)
 			const schemaPath = this.getSchemaPath(name)
-			const fileStat = await stat(schemaPath).catch(() => null)
+			const fileStat = await this._storage.stat(schemaPath).catch(() => null)
 
 			if (!fileStat) {
 				throw new Error(`schema file ${schemaPath} not found`)
 			}
+
+			const schema = await this.getSchema(name)
 
 			if (!piece) {
 				if (!dryRun) {
@@ -58,7 +58,7 @@ class Pieces {
 			} else {
 				const pieceDate = piece.date_updated || piece.date_added
 
-				if (fileStat.mtime > new Date(pieceDate)) {
+				if (fileStat.last_modified > new Date(pieceDate)) {
 					if (!dryRun) {
 						await updatePiece(db, name, schema)
 					}
@@ -66,8 +66,6 @@ class Pieces {
 				}
 			}
 		}
-
-		return names
 	}
 
 	async prune(db: LuzzleDatabase, dryRun = false) {
@@ -86,16 +84,18 @@ class Pieces {
 		}
 	}
 
-	getTypeFromFile(file: string) {
-		const name = path.basename(file)
-		const parts = name.split('.')
-
-		return parts.length === 3 ? parts[1] : null
+	parseFilename(file: string) {
+		return {
+			file,
+			type: file.match(/\.([^.]+)\.[^.]+$/)?.[1] ?? null,
+			format: path.extname(file),
+			slug: file.replace(/\.[^.]+\.[^.]+$/, ''),
+		}
 	}
 
 	async getSchemas() {
 		const schemaDir = path.join(LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY)
-		const readDir = await this._storage.readdir(schemaDir)
+		const readDir = await this._storage.getFilesIn(schemaDir)
 
 		return readDir.filter((file) => path.extname(file) === `.json`)
 	}
@@ -106,38 +106,44 @@ class Pieces {
 		return schemas.map((schema) => path.basename(schema, '.json'))
 	}
 
-	async getFiles() {
+	async getFilesIn(dir: string, options?: { deep?: boolean }) {
 		const types = await this.getTypes()
-		const readdir = await this._storage.readdir('.')
-		const files: { pieces: { [key: string]: string[] }; assets: string[] } = {
-			pieces: {},
+		const readdir = await this._storage.getFilesIn(dir, options)
+		const result: {
+			types: string[]
+			pieces: string[]
+			assets: string[]
+			directories: string[]
+		} = {
+			pieces: [],
 			assets: [],
+			directories: [],
+			types,
 		}
 
-		types.forEach((type) => {
-			files.pieces[type] = []
-		})
-
-		readdir.reduce((files, file) => {
+		return readdir.reduce((files, file) => {
 			const extension = path.extname(file)
 			const isAsset = file.startsWith(ASSETS_DIRECTORY)
 			const isHidden = file.startsWith('.')
+			const isDirectory = file.endsWith('/')
 
-			if (isAsset) {
+			if (isAsset && !isDirectory) {
 				files.assets.push(file)
 			} else if (!isHidden) {
-				const type = this.getTypeFromFile(file)
-				const isMarkdown = extension === `.${PieceFileType}`
+				if (isDirectory) {
+					files.directories.push(file)
+				} else {
+					const type = this.parseFilename(file).type
+					const isMarkdown = extension === `.${PieceFileType}`
 
-				if (type && types.includes(type) && isMarkdown) {
-					files.pieces[type].push(file)
+					if (type && types.includes(type) && isMarkdown) {
+						files.pieces.push(file)
+					}
 				}
 			}
 
 			return files
-		}, files)
-
-		return files
+		}, result)
 	}
 }
 

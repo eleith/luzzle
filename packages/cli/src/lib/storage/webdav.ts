@@ -1,11 +1,6 @@
 import { Readable } from 'stream'
 import Storage, { StorageStat, type StorageType } from './storage.js'
-import {
-	createClient,
-	WebDAVClient,
-	WebDAVClientOptions,
-	FileStat,
-} from 'webdav'
+import { createClient, WebDAVClient, WebDAVClientOptions, FileStat } from 'webdav'
 import path from 'path'
 
 class StorageWebDAV extends Storage {
@@ -38,11 +33,17 @@ class StorageWebDAV extends Storage {
 		this._webdavClient.putFileContents(fullPath, contents)
 	}
 
-	async readdir(path: string) {
-		const fullPath = this.buildPath(path)
+	async getFilesIn(dir: string, options?: { deep?: boolean }) {
+		const fullPath = this.buildPath(dir)
+
 		return this._webdavClient
-			.getDirectoryContents(fullPath)
-			.then((contents) => (contents as FileStat[]).map((content) => content.filename))
+			.getDirectoryContents(fullPath, options)
+			.then((contents) =>
+				(contents as FileStat[]).map(
+					(content) =>
+						`${path.relative(fullPath, content.filename)}${content.type === 'file' ? '' : '/'}`
+				)
+			)
 	}
 
 	async exists(path: string) {
@@ -57,7 +58,7 @@ class StorageWebDAV extends Storage {
 
 	async stat(path: string) {
 		const fullPath = this.buildPath(path)
-		const stats = await this._webdavClient.stat(fullPath) as FileStat
+		const stats = (await this._webdavClient.stat(fullPath)) as FileStat
 		const storageStat: StorageStat = {
 			size: stats.size,
 			last_modified: new Date(stats.lastmod),

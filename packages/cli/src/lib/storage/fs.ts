@@ -1,4 +1,4 @@
-import { readFile, writeFile, stat, unlink, mkdir } from 'fs/promises'
+import { readFile, writeFile, stat, unlink, mkdir, readdir } from 'fs/promises'
 import { fdir } from 'fdir'
 import { createReadStream, createWriteStream, existsSync } from 'fs'
 import Storage, { StorageStat, type StorageType } from './storage.js'
@@ -41,9 +41,15 @@ class StorageFileSystem extends Storage {
 		}
 	}
 
-	async readdir(path: string) {
-		const resolvedPath = this.resolvePath(path)
-		return new fdir().withRelativePaths().crawl(resolvedPath).sync()
+	async getFilesIn(dir: string, options?: { deep?: boolean }) {
+		const resolvedPath = this.resolvePath(dir)
+
+		if (options?.deep) {
+			return new fdir().withRelativePaths().crawl(resolvedPath).withPromise()
+		} else {
+			const files = await readdir(resolvedPath, { withFileTypes: true })
+			return files.map((file) => (file.isFile() ? file.name : file.name + '/'))
+		}
 	}
 
 	async exists(path: string) {

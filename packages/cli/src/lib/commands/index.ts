@@ -20,27 +20,5 @@ async function getCommands() {
 	return commands
 }
 
-/*
-import assistant from './command/assistant.js'
-import field from './command/field.js'
-import config from './command/config.js'
-import validate from './command/validate.js'
-import create from './command/create.js'
-import sync from './command/sync.js'
-import init from './command/init.js'
-
-async function getCommands() {
-	return {
-		assistant,
-		field,
-		config,
-		validate,
-		create,
-		sync,
-		init
-	} as unknown as { [key: string]: Command }
-}
-*/
-
 export { type Command, type Context }
 export default getCommands

@@ -116,20 +116,44 @@ describe('lib/storage/webdav.ts', () => {
 		expect(spies.putFileContents).toHaveBeenCalledWith(expect.any(String), fileContents)
 	})
 
-	test('readdir', async () => {
+	test('getFilesIn recursive', async () => {
 		const filePath = './path'
 		const client = mockDavClient
-		const directoryContents = [{ filename: 'file' } as FileStat]
+		const directoryContents = [
+			{ filename: './home/path/file', type: 'file' },
+			{ filename: './home/path/dir', type: 'directory' },
+		] as FileStat[]
 
 		mocks.createClient.mockReturnValueOnce(client)
 		spies.getDirectoryContents = vi
 			.spyOn(client, 'getDirectoryContents')
 			.mockResolvedValueOnce(directoryContents)
 
-		const storage = new StorageWebDAV('url', 'root', {})
-		const contents = await storage.readdir(filePath)
+		const storage = new StorageWebDAV('url', 'home', {})
+		const contents = await storage.getFilesIn(filePath, { deep: true })
 
-		expect(contents).toEqual(directoryContents.map((f) => f.filename))
+		expect(spies.getDirectoryContents).toHaveBeenCalledWith('home/path', { deep: true })
+		expect(contents).toEqual(['file', 'dir/'])
+	})
+
+	test('getFilesIn', async () => {
+		const filePath = './path'
+		const client = mockDavClient
+		const directoryContents = [
+			{ filename: './home/path/file', type: 'file' },
+			{ filename: './home/path/dir', type: 'directory' },
+		] as FileStat[]
+
+		mocks.createClient.mockReturnValueOnce(client)
+		spies.getDirectoryContents = vi
+			.spyOn(client, 'getDirectoryContents')
+			.mockResolvedValueOnce(directoryContents)
+
+		const storage = new StorageWebDAV('url', 'home', {})
+		const contents = await storage.getFilesIn(filePath)
+
+		expect(spies.getDirectoryContents).toHaveBeenCalledWith('home/path', undefined)
+		expect(contents).toEqual(['file', 'dir/'])
 	})
 
 	test('exists', async () => {
@@ -171,9 +195,7 @@ describe('lib/storage/webdav.ts', () => {
 		} as FileStat
 
 		mocks.createClient.mockReturnValueOnce(client)
-		spies.stat = vi
-			.spyOn(client, 'stat')
-			.mockResolvedValueOnce(storageStat)
+		spies.stat = vi.spyOn(client, 'stat').mockResolvedValueOnce(storageStat)
 
 		const storage = new StorageWebDAV('url', 'root', {})
 		const stat = await storage.stat(filePath)
@@ -191,9 +213,7 @@ describe('lib/storage/webdav.ts', () => {
 		const readStream = new PassThrough() as unknown as ReadStream
 
 		mocks.createClient.mockReturnValueOnce(client)
-		spies.createReadStream = vi
-			.spyOn(client, 'createReadStream')
-			.mockReturnValueOnce(readStream)
+		spies.createReadStream = vi.spyOn(client, 'createReadStream').mockReturnValueOnce(readStream)
 
 		const storage = new StorageWebDAV('url', 'root', {})
 		const stream = storage.createReadStream(filePath)
@@ -207,9 +227,7 @@ describe('lib/storage/webdav.ts', () => {
 		const writeStream = new PassThrough() as unknown as WriteStream
 
 		mocks.createClient.mockReturnValueOnce(client)
-		spies.createReadStream = vi
-			.spyOn(client, 'createWriteStream')
-			.mockReturnValueOnce(writeStream)
+		spies.createReadStream = vi.spyOn(client, 'createWriteStream').mockReturnValueOnce(writeStream)
 
 		const storage = new StorageWebDAV('url', 'root', {})
 		const stream = storage.createWriteStream(filePath)
@@ -222,9 +240,7 @@ describe('lib/storage/webdav.ts', () => {
 		const client = mockDavClient
 
 		mocks.createClient.mockReturnValueOnce(client)
-		spies.createDirectory = vi
-			.spyOn(client, 'createDirectory')
-			.mockResolvedValueOnce()
+		spies.createDirectory = vi.spyOn(client, 'createDirectory').mockResolvedValueOnce()
 
 		const storage = new StorageWebDAV('url', 'root', {})
 		await storage.makeDirectory(filePath)
