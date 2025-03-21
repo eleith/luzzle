@@ -50,15 +50,15 @@ async function parsePiecePathPositionalArgv(
 }> {
 	const file = args.piece
 	const pieceNames = await ctx.pieces.getTypes()
-	const pieceName = ctx.pieces.getTypeFromFile(file)
+	const pieceType = ctx.pieces.parseFilename(file).type
 
 	if (pieceNames.length === 0) {
 		throw new Error(`no piece types were found. please add some schemas`)
 	}
 
-	if (pieceName && pieceNames.includes(pieceName)) {
-		const piece = await ctx.pieces.getPiece(pieceName)
-		const filePath = await ctx.storage.parseArgPath(file)
+	if (pieceType && pieceNames.includes(pieceType)) {
+		const piece = await ctx.pieces.getPiece(pieceType)
+		const filePath = ctx.storage.parseArgPath(file)
 		const markdown = await piece.get(filePath)
 		return { file, piece, markdown }
 	}

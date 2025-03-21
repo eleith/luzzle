@@ -30,15 +30,15 @@ const command: Command<SyncArgv> = {
 	run: async function (ctx, args) {
 		const { force, prune } = args
 		const dryRun = ctx.flags.dryRun
-		const files = await ctx.pieces.getFiles()
+		const files = await ctx.pieces.getFilesIn('.', { deep: true })
 
 		// sync new/removed types with db
-		const pieceNames = await ctx.pieces.sync(ctx.db, dryRun)
+		await ctx.pieces.sync(ctx.db, dryRun)
 		await ctx.pieces.prune(ctx.db, dryRun)
 
-		for (const name of pieceNames) {
+		for (const name of files.types) {
 			const piece = await ctx.pieces.getPiece(name)
-			const pieces = files.pieces[name]
+			const pieces = files.pieces.filter(one => ctx.pieces.parseFilename(one).type === name)
 			const isOutdated = await Promise.all(pieces.map((file) => piece.isOutdated(file, ctx.db)))
 			const areOutdated = pieces.filter((_, i) => isOutdated[i])
 			const processFiles = force ? pieces : areOutdated

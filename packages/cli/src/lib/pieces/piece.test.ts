@@ -170,16 +170,6 @@ describe('lib/pieces/piece.ts', () => {
 		expect(piece.schema).toEqual(schema)
 	})
 
-	test('getBaseName', () => {
-		const filename = '/path/to/slug.books.md'
-		const PieceType = makePieceMock()
-
-		const pieceTest = new PieceType()
-		const getPath = pieceTest.getBaseName(filename)
-
-		expect(getPath).toMatch('slug')
-	})
-
 	test('isOutdated', async () => {
 		const filename = '/path/to/slug.books.md'
 		const db = mockDatabase().db

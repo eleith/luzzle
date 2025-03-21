@@ -88,10 +88,6 @@ class Piece<F extends PieceFrontmatter> {
 		return this._fields
 	}
 
-	getBaseName(file: string): string {
-		return path.basename(file).split('.')[0]
-	}
-
 	async isOutdated(file: string, db: LuzzleDatabase): Promise<boolean> {
 		const fileStat = await this._storage.stat(file).catch(() => null)
 
@@ -170,7 +166,7 @@ class Piece<F extends PieceFrontmatter> {
 		try {
 			if (dryRun === false) {
 				const createInput = makePieceItemInsertable(this._pieceName, markdown, this._schema)
-				const readStream = await this._storage.createReadStream(markdown.filePath)
+				const readStream = this._storage.createReadStream(markdown.filePath)
 				const hash = await calculateHashFromFile(readStream)
 
 				await insertItem(db, createInput)
@@ -206,7 +202,7 @@ class Piece<F extends PieceFrontmatter> {
 		try {
 			if (dryRun === false) {
 				await updateItem(db, markdown.filePath, updateInput)
-				const readStream = await this._storage.createReadStream(markdown.filePath)
+				const readStream = this._storage.createReadStream(markdown.filePath)
 				const hash = await calculateHashFromFile(readStream)
 
 				await updateCache(db, data.file_path, hash)
@@ -257,7 +253,7 @@ class Piece<F extends PieceFrontmatter> {
 		const fileDir = path.dirname(file)
 		const extension = path.extname(fileOrUrl) || ''
 		const random = randomBytes(4).toString('hex')
-		const baseName = this.getBaseName(file)
+		const baseName = file.replace(/\.[^.]+$/, '')
 		const parts = [baseName, _name, random]
 		const attachDir = path.join(ASSETS_DIRECTORY, fileDir, field.name)
 
@@ -273,7 +269,7 @@ class Piece<F extends PieceFrontmatter> {
 		const type = streamWithFileType?.fileType?.ext.replace(/^/, '.') || extension
 		const filename = `${parts.filter((x) => x).join('-')}${type}`
 		const relPath = path.join(ASSETS_DIRECTORY, fileDir, field.name, filename)
-		const writeStream = await this._storage.createWriteStream(relPath)
+		const writeStream = this._storage.createWriteStream(relPath)
 
 		await pipeline(streamWithFileType, writeStream)
 

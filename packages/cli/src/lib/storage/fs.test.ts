@@ -1,7 +1,15 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import { readFile, writeFile, stat, unlink, mkdir } from 'fs/promises'
+import { readFile, writeFile, stat, unlink, mkdir, readdir } from 'fs/promises'
 import { fdir } from 'fdir'
-import { createReadStream, createWriteStream, existsSync, ReadStream, Stats, WriteStream } from 'fs'
+import {
+	createReadStream,
+	createWriteStream,
+	Dirent,
+	existsSync,
+	ReadStream,
+	Stats,
+	WriteStream,
+} from 'fs'
 import StorageFileSystem from './fs.js'
 import { relative, resolve } from 'path'
 import { APIBuilder } from 'fdir/dist/builder/api-builder.js'
@@ -30,6 +38,7 @@ const mocks = {
 	unlink: vi.mocked(unlink),
 	mkdir: vi.mocked(mkdir),
 	fdir: vi.mocked(fdir),
+	readdir: vi.mocked(readdir),
 	createReadStream: vi.mocked(createReadStream),
 	createWriteStream: vi.mocked(createWriteStream),
 	existsSync: vi.mocked(existsSync),
@@ -142,25 +151,41 @@ describe('lib/storage/fs.ts', () => {
 		expect(mocks.writeFile).toHaveBeenCalledWith(resolve, contents, 'utf8')
 	})
 
-	test('readdir', async () => {
+	test('getFilesIn recursive', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
 		const dirs = ['dir1', 'dir2']
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
-		mocks.writeFile.mockResolvedValueOnce(undefined)
 		spies.fdirSync = vi.spyOn(fdir.prototype, 'crawl').mockImplementation(
 			() =>
 				({
-					sync: vi.fn().mockReturnValue(dirs),
+					withPromise: vi.fn().mockResolvedValueOnce(dirs),
+					withRelativePaths: vi.fn().mockReturnThis(),
 				}) as unknown as APIBuilder<string[]>
 		)
 
 		const storage = new StorageFileSystem(root)
-		const results = await storage.readdir('./path')
+		const results = await storage.getFilesIn('./path', { deep: true })
 
+		expect(spies.fdirSync).toHaveBeenCalled()
 		expect(results).toEqual(dirs)
+	})
+
+	test('getFilesIn', async () => {
+		const root = '/root/dir'
+		const dirs = [
+			{ name: 'dir1', isFile: () => false },
+			{ name: 'file1', isFile: () => true },
+		] as Dirent[]
+
+		mocks.existsSync.mockReturnValueOnce(true)
+		mocks.readdir.mockResolvedValueOnce(dirs)
+
+		const storage = new StorageFileSystem(root)
+		const results = await storage.getFilesIn('./path')
+
+		expect(mocks.readdir).toHaveBeenCalled()
+		expect(results).toEqual(['dir1/', 'file1'])
 	})
 
 	test('exists', async () => {
