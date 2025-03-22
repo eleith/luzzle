@@ -10,7 +10,11 @@
 		{#each data.schema as field}
 			<div class="field">{field.name}</div>
 			{#if data.fields[field.name]}
-				<div>{data.fields[field.name]}</div>
+				{#if field.format === 'asset'}
+					<div><a href="/asset/{data.fields[field.name]}">{data.fields[field.name]}</a></div>
+				{:else}
+					<div>{data.fields[field.name]}</div>
+				{/if}
 			{:else}
 				<div><em>empty</em></div>
 			{/if}
