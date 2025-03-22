@@ -2,6 +2,7 @@ import { Readable } from 'stream'
 import Storage, { StorageStat, type StorageType } from './storage.js'
 import { createClient, WebDAVClient, WebDAVClientOptions, FileStat } from 'webdav'
 import path from 'path'
+import { ReadStream, WriteStream } from 'fs'
 
 class StorageWebDAV extends Storage {
 	private _webdavClient: WebDAVClient
@@ -69,12 +70,12 @@ class StorageWebDAV extends Storage {
 
 	createReadStream(path: string) {
 		const fullPath = this.buildPath(path)
-		return this._webdavClient.createReadStream(fullPath)
+		return this._webdavClient.createReadStream(fullPath) as ReadStream
 	}
 
 	createWriteStream(path: string) {
 		const fullPath = this.buildPath(path)
-		return this._webdavClient.createWriteStream(fullPath)
+		return this._webdavClient.createWriteStream(fullPath) as WriteStream
 	}
 
 	async makeDirectory(path: string) {
