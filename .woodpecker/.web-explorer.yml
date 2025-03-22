@@ -3,7 +3,7 @@ workspace:
   path: src
 steps:
   prepare:
-    image: node:14
+    image: node:20
     commands:
       - echo $LUZZLE_NPMRC >> .npmrc
     environment:
@@ -47,6 +47,7 @@ steps:
       recipients:
         from_secret: woodpecker_email_recipient
       level: success
+      recipients_only: true
     when:
       - event: [push, manual]
         status: [success]
@@ -66,6 +67,7 @@ steps:
       recipients:
         from_secret: woodpecker_email_recipient
       level: failure
+      recipients_only: true
     when:
       - event: [push, manual]
         status: [failure]
