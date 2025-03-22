@@ -6,6 +6,7 @@
     "packages/cli",
     "packages/tools",
     "packages/core",
-    "packages/web/explorer"
+    "packages/web/explorer",
+		"packages/web/editor"
   ]
 }
