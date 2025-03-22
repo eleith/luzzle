@@ -1,6 +1,13 @@
 workspace:
   base: /workspace
   path: src
+
+when:
+  - event: [push, manual]
+    branch: main
+    path:
+          include: [".woodpecker/.cli.yml", "packages/cli/**"]
+
 steps:
   build:
     image: node:20
@@ -9,21 +16,11 @@ steps:
       - npm run build -w @luzzle/core
       - npm run compile -w @luzzle/cli
       - npm run build -w @luzzle/cli
-    when:
-      - event: [push]
-        branch: [main]
-        path:
-          include: [".woodpecker/.cli.yml", "packages/cli/**"]
   test:
     image: node:20
     commands:
       - npm run lint -w @luzzle/cli
       - npm run test -w @luzzle/cli
-    when:
-      - event: [push]
-        branch: [main]
-        path:
-          include: [".woodpecker/.cli.yml", "packages/cli/**"]
   publish:
     image: node:20
     commands:
@@ -39,11 +36,6 @@ steps:
         from_secret: npm_owner
       NPM_TOKEN:
         from_secret: npm_token
-    when:
-      - event: [push]
-        branch: [main]
-        path:
-          include: [".woodpecker/.cli.yml", "packages/cli/**"]
   notify-success:
     image: deblan/woodpecker-email:3.2.0
     settings:
@@ -59,11 +51,7 @@ steps:
       level: success
       recipients_only: true
     when:
-      - event: [push, manual]
-        status: [success]
-        branch: [main]
-        path:
-          include: [".woodpecker/.cli.yml", "packages/cli/**"]
+      - status: [success]
   notify-failure:
     image: deblan/woodpecker-email:3.2.0
     settings:
@@ -79,8 +67,4 @@ steps:
       level: failure
       recipients_only: true
     when:
-      - event: [push, manual]
-        status: [failure]
-        branch: [main]
-        path:
-          include: [".woodpecker/.cli.yml", "packages/cli/**"]
+      - status: [failure]
