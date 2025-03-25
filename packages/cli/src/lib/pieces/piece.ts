@@ -34,9 +34,12 @@ import slugify from '@sindresorhus/slugify'
 import { Storage } from '../storage/index.js'
 import { pipeline } from 'stream/promises'
 import { fileTypeStream } from 'file-type'
+import { Readable } from 'stream'
+import { ReadStream } from 'fs'
+import { Request } from 'got'
 
 export interface InterfacePiece<F extends PieceFrontmatter> {
-	new (directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
+	new(directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
 }
 
 class Piece<F extends PieceFrontmatter> {
@@ -246,27 +249,28 @@ class Piece<F extends PieceFrontmatter> {
 	private async makeAttachmentField(
 		file: string,
 		field: PieceFrontmatterSchemaField,
-		fileOrUrl: string,
-		_name?: string
+		stream: Readable | ReadStream | Request
 	): Promise<string> {
 		const format = field.type === 'array' ? field.items.format : field.format
 		const fileDir = path.dirname(file)
-		const extension = path.extname(fileOrUrl) || ''
 		const random = randomBytes(4).toString('hex')
-		const baseName = file.replace(/\.[^.]+$/, '')
-		const parts = [baseName, _name, random]
+		const baseName = path.basename(file).replace(/\.[^.]+$/, '')
+		const parts = [baseName, random]
 		const attachDir = path.join(ASSETS_DIRECTORY, fileDir, field.name)
+		const exists = await this._storage.exists(attachDir)
 
 		/* c8 ignore next 3 */
 		if (format !== 'asset') {
 			throw new Error(`${field} is not an attachable field for ${this._pieceName} ${file}`)
 		}
 
-		await this._storage.makeDirectory(attachDir)
+		if (!exists) {
+			await this._storage.makeDirectory(attachDir)
+		}
 
-		const stream = await downloadFileOrUrlToStream(fileOrUrl)
+		const ext = (stream as Request).requestUrl?.pathname || (stream as ReadStream).path?.toString() || ''
 		const streamWithFileType = await fileTypeStream(stream)
-		const type = streamWithFileType?.fileType?.ext.replace(/^/, '.') || extension
+		const type = streamWithFileType?.fileType?.ext.replace(/^/, '.') || path.extname(ext)
 		const filename = `${parts.filter((x) => x).join('-')}${type}`
 		const relPath = path.join(ASSETS_DIRECTORY, fileDir, field.name, filename)
 		const writeStream = this._storage.createWriteStream(relPath)
@@ -320,12 +324,20 @@ class Piece<F extends PieceFrontmatter> {
 		let setValue: V = undefined as V
 
 		if (format === 'asset') {
-			// for array asset fields, we only allow appending
-			// for non-array asset fields, we replace, but do not remove the asset!
+			let stream: Readable | ReadStream | Request
+
+			if (typeof value === 'string') {
+				stream = await downloadFileOrUrlToStream(value as string)
+			} else if (value instanceof Readable) {
+				stream = value
+			} else {
+				throw new Error(`${field} must be a string or stream`)
+			}
+
 			const fieldValue = await this.makeAttachmentField(
 				markdown.filePath,
 				pieceField,
-				value as string
+				stream,
 			)
 			setValue = fieldValue as V
 		} else if (type === 'boolean') {
