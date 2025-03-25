@@ -1,33 +1,13 @@
 <script lang="ts">
+	import FieldDislay from '$lib/components/pieces/fields/display.svelte'
+	import FieldEdit from '$lib/components/pieces/fields/edit.svelte'
+
 	let { data } = $props()
 	let mode: 'edit' | 'preview' = $state('preview')
 	let formElement = $state<HTMLFormElement>()
 
 	function submit() {
 		formElement?.submit()
-	}
-
-	function formatDateStringForInput(dateString: string): string | null {
-		if (!dateString) {
-			return null
-		}
-
-		try {
-			const date = new Date(dateString)
-
-			if (isNaN(date.getTime())) {
-				return null // Invalid date
-			}
-
-			const year = date.getUTCFullYear()
-			const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-			const day = String(date.getUTCDate()).padStart(2, '0')
-
-			return `${year}-${month}-${day}`
-		} catch (error) {
-			console.log(error)
-			return null
-		}
 	}
 </script>
 
@@ -46,15 +26,9 @@
 		<div class="piece-container">
 			{#each data.schema as field}
 				<div class="field">{field.name}</div>
-				{#if data.fields[field.name]}
-					{#if field.format === 'asset'}
-						<div><a href="/asset/{data.fields[field.name]}">{data.fields[field.name]}</a></div>
-					{:else}
-						<div>{data.fields[field.name]}</div>
-					{/if}
-				{:else}
-					<div><em>empty</em></div>
-				{/if}
+				<div>
+					<FieldDislay field={field} value={data.fields[field.name]} />
+				</div>
 			{/each}
 			<div class="field">note</div>
 			<div>{data.note}</div>
@@ -66,51 +40,9 @@
 			<div class="piece-container">
 				{#each data.schema as field}
 					<div class="field">{field.name}</div>
-					{#if field.format === 'asset'}
-						<div>
-							<input type="file" name="upload.{field.name}" />
-							<input
-								type="hidden"
-								name="frontmatter.{field.name}"
-								value={data.fields[field.name]}
-							/>
-						</div>
-					{:else if field.format === 'date'}
-						<div>
-							<input
-								type="date"
-								name="frontmatter.{field.name}"
-								value={formatDateStringForInput(data.fields[field.name] as string) || ''}
-							/>
-						</div>
-					{:else if field.type === 'integer'}
-						<div>
-							<input
-								type="number"
-								name="frontmatter.{field.name}"
-								value={data.fields[field.name]}
-							/>
-						</div>
-					{:else if field.type === 'boolean'}
-						<div>
-							<select name="frontmatter.{field.name}" value={data.fields[field.name] ? 1 : 0}>
-								<option value="1">true</option>
-								<option value="0">false</option>
-							</select>
-						</div>
-					{:else if field.enum}
-						<div>
-							<select name="frontmatter.{field.name}" value={data.fields[field.name]}>
-								{#each field.enum as option}
-									<option value={option}>{option}</option>
-								{/each}
-							</select>
-						</div>
-					{:else}
-						<div>
-							<input type="text" name="frontmatter.{field.name}" value={data.fields[field.name]} />
-						</div>
-					{/if}
+					<div>
+						<FieldEdit field={field} value={data.fields[field.name]} />
+					</div>
 				{/each}
 				<div class="field">note</div>
 				<div>
