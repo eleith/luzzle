@@ -42,9 +42,9 @@ import { makeCache } from './cache.fixtures.js'
 import slugify from '@sindresorhus/slugify'
 import { mockStorage } from '../storage/storage.mock.js'
 import { StorageStat } from '../storage/storage.js'
-import { PassThrough } from 'stream'
+import { PassThrough, Readable } from 'stream'
 import { Request } from 'got'
-import { WriteStream } from 'fs'
+import { ReadStream, WriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
 
 vi.mock('../log.js')
@@ -785,7 +785,7 @@ describe('lib/pieces/piece.ts', () => {
 		)
 	})
 
-	test('setField on text attachments', async () => {
+	test('setField on Request attachment', async () => {
 		const mockRequest = new PassThrough() as unknown as Request
 		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
 		const mockWritable = new PassThrough() as unknown as WriteStream
@@ -804,7 +804,46 @@ describe('lib/pieces/piece.ts', () => {
 		spies.createWriteStream = vi
 			.spyOn(storage, 'createWriteStream')
 			.mockResolvedValueOnce(mockWritable)
-		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce(mockRequest)
+		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce({ ...mockRequest, requestUrl: { pathname: value } } as Request)
+		mocks.fileType.mockResolvedValueOnce(mockReadable)
+
+		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+
+		await pieceTest.setField(markdown, field, value)
+
+		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
+			markdown.filePath,
+			markdown.piece,
+			markdown.note,
+			{
+				...markdown.frontmatter,
+				[field]: expect.stringMatching(
+					new RegExp(`${ASSETS_DIRECTORY}/${field}/${markdown.filePath}-[^.]*\\.html`)
+				),
+			}
+		)
+	})
+
+	test('setField on ReadStream attachment', async () => {
+		const mockReadStream = new PassThrough() as unknown as ReadStream
+		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
+		const mockWritable = new PassThrough() as unknown as WriteStream
+		const markdown = makeMarkdownSample()
+		const field = 'cover'
+		const value = 'file.html'
+		const fields = [
+			{ name: field, type: 'string', format: 'asset' },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePieceMock()
+		const storage = makeStorage('root')
+		const pieceTest = new PieceTest('books', storage)
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockResolvedValueOnce(mockWritable)
+		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce({ ...mockReadStream, path: value } as ReadStream)
 		mocks.fileType.mockResolvedValueOnce(mockReadable)
 
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
@@ -864,6 +903,78 @@ describe('lib/pieces/piece.ts', () => {
 				),
 			}
 		)
+	})
+
+	test('setField on Readable stream attachment', async () => {
+		const mockStream = new PassThrough() as unknown as Readable
+		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
+		const mockWritable = new PassThrough() as unknown as WriteStream
+		const markdown = makeMarkdownSample()
+		const field = 'cover'
+		const value = mockStream 
+		const fields = [
+			{ name: field, type: 'string', format: 'asset' },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePieceMock()
+		const storage = makeStorage('root')
+		const pieceTest = new PieceTest('books', storage)
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockResolvedValueOnce(mockWritable)
+		mocks.fileType.mockResolvedValueOnce({
+			...mockReadable,
+			fileType: { ext: 'jpg', mime: 'image/jpeg' },
+		})
+
+		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+
+		await pieceTest.setField(markdown, field, value)
+
+		expect(mocks.downloadFileOrUrlToStream).not.toHaveBeenCalled()
+		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
+			markdown.filePath,
+			markdown.piece,
+			markdown.note,
+			{
+				...markdown.frontmatter,
+				[field]: expect.stringMatching(
+					new RegExp(`${ASSETS_DIRECTORY}/${field}/${markdown.filePath}-[^.]*\\.jpg`)
+				),
+			}
+		)
+	})
+
+	test('setField on non Readable stream attachment fails', async () => {
+		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
+		const mockWritable = new PassThrough() as unknown as WriteStream
+		const markdown = makeMarkdownSample()
+		const field = 'cover'
+		const value = 55
+		const fields = [
+			{ name: field, type: 'string', format: 'asset' },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePieceMock()
+		const storage = makeStorage('root')
+		const pieceTest = new PieceTest('books', storage)
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockResolvedValueOnce(mockWritable)
+		mocks.fileType.mockResolvedValueOnce({
+			...mockReadable,
+			fileType: { ext: 'jpg', mime: 'image/jpeg' },
+		})
+
+		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+
+		const setting = pieceTest.setField(markdown, field, value)
+
+		expect(setting).rejects.toThrow()
 	})
 
 	test('setField on array attachments', async () => {
