@@ -27,16 +27,10 @@ import {
 import { queue } from 'async'
 import { cpus } from 'os'
 import path from 'path'
-import { PieceFileType, calculateHashFromFile, downloadFileOrUrlToStream } from './utils.js'
-import { ASSETS_DIRECTORY } from '../assets.js'
-import { randomBytes } from 'crypto'
+import { PieceFileType, calculateHashFromFile, makePieceAttachment, makePieceValue } from './utils.js'
 import slugify from '@sindresorhus/slugify'
 import { Storage } from '../storage/index.js'
-import { pipeline } from 'stream/promises'
-import { fileTypeStream } from 'file-type'
 import { Readable } from 'stream'
-import { ReadStream } from 'fs'
-import { Request } from 'got'
 
 export interface InterfacePiece<F extends PieceFrontmatter> {
 	new(directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
@@ -246,48 +240,14 @@ class Piece<F extends PieceFrontmatter> {
 		return makePieceMarkdown(data.file_path, data.type, data.note_markdown, frontmatterJson as F)
 	}
 
-	private async makeAttachmentField(
-		file: string,
-		field: PieceFrontmatterSchemaField,
-		stream: Readable | ReadStream | Request
-	): Promise<string> {
-		const format = field.type === 'array' ? field.items.format : field.format
-		const fileDir = path.dirname(file)
-		const random = randomBytes(4).toString('hex')
-		const baseName = path.basename(file).replace(/\.[^.]+$/, '')
-		const parts = [baseName, random]
-		const attachDir = path.join(ASSETS_DIRECTORY, fileDir, field.name)
-		const exists = await this._storage.exists(attachDir)
-
-		/* c8 ignore next 3 */
-		if (format !== 'asset') {
-			throw new Error(`${field} is not an attachable field for ${this._pieceName} ${file}`)
-		}
-
-		if (!exists) {
-			await this._storage.makeDirectory(attachDir)
-		}
-
-		const ext = (stream as Request).requestUrl?.pathname || (stream as ReadStream).path?.toString() || ''
-		const streamWithFileType = await fileTypeStream(stream)
-		const type = streamWithFileType?.fileType?.ext.replace(/^/, '.') || path.extname(ext)
-		const filename = `${parts.filter((x) => x).join('-')}${type}`
-		const relPath = path.join(ASSETS_DIRECTORY, fileDir, field.name, filename)
-		const writeStream = this._storage.createWriteStream(relPath)
-
-		await pipeline(streamWithFileType, writeStream)
-
-		return relPath
-	}
-
-	async setFields<V>(
+	async setFields(
 		markdown: PieceMarkdown<F>,
 		fields: Record<string, unknown>
 	): Promise<PieceMarkdown<F>> {
 		let updatedMarkdown = markdown
 
 		for (const fieldname in fields) {
-			updatedMarkdown = await this.setField<V>(updatedMarkdown, fieldname, fields[fieldname])
+			updatedMarkdown = await this.setField(updatedMarkdown, fieldname, fields[fieldname])
 		}
 
 		return updatedMarkdown
@@ -306,7 +266,7 @@ class Piece<F extends PieceFrontmatter> {
 		return updatedMarkdown
 	}
 
-	async setField<V>(
+	async setField(
 		markdown: PieceMarkdown<F>,
 		field: string,
 		value: unknown
@@ -318,47 +278,30 @@ class Piece<F extends PieceFrontmatter> {
 		}
 
 		const isArray = pieceField.type === 'array'
-		const format = isArray ? pieceField.items.format : pieceField.format
-		const type = isArray ? pieceField.items.type : pieceField.type
+		const values = Array.isArray(value) ? value : [value]
+		const set = []
 
-		let setValue: V = undefined as V
+		for (const one of values) {
+			const pieceValue = await makePieceValue(pieceField, one)
 
-		if (format === 'asset') {
-			let stream: Readable | ReadStream | Request
+			if (pieceValue instanceof Readable) {
+				const file = markdown.filePath
+				const storage = this._storage
+				const asset = await makePieceAttachment(file, pieceField, pieceValue, storage)
 
-			if (typeof value === 'string') {
-				stream = await downloadFileOrUrlToStream(value as string)
-			} else if (value instanceof Readable) {
-				stream = value
+				set.push(asset)
 			} else {
-				throw new Error(`${field} must be a string or stream`)
+				set.push(pieceValue)
 			}
-
-			const fieldValue = await this.makeAttachmentField(
-				markdown.filePath,
-				pieceField,
-				stream,
-			)
-			setValue = fieldValue as V
-		} else if (type === 'boolean') {
-			setValue = /1|true|yes/.test(value as string) as V
-		} else if (type === 'string') {
-			setValue = value as V
-		} else if (type === 'integer') {
-			setValue = parseInt(value as string) as V
 		}
-
-		const fieldName = pieceField.name as keyof F
-		const oldValue = markdown.frontmatter[fieldName] as V | V[] | undefined
-		const newValue = isArray ? ((oldValue || []) as V[]).concat(setValue) : setValue
 
 		return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, {
 			...markdown.frontmatter,
-			[field]: newValue,
+			[field]: isArray ? set : set.pop(),
 		})
 	}
 
-	async removeField(markdown: PieceMarkdown<F>, field: string): Promise<PieceMarkdown<F>> {
+	async removeField(markdown: PieceMarkdown<F>, field: string, value?: unknown): Promise<PieceMarkdown<F>> {
 		const pieceField = this.fields.find((f) => f.name === field)
 
 		if (!pieceField) {
@@ -369,16 +312,39 @@ class Piece<F extends PieceFrontmatter> {
 			throw new Error(`${field} is a required field in ${this._pieceName} ${markdown.filePath}`)
 		}
 
-		const fieldname = pieceField.name as keyof PieceMarkdown<F>['frontmatter']
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { [fieldname]: _, ...frontmatter } = markdown.frontmatter
+		const isArray = pieceField.type === 'array'
+		const { [field]: fieldValue, ...frontmatter } = markdown.frontmatter
+		const pieceValue = await makePieceValue(pieceField, value)
 
-		return makePieceMarkdown(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			frontmatter
-		) as PieceMarkdown<F>
+		if (value === undefined || fieldValue === pieceValue) {
+			return makePieceMarkdown(
+				markdown.filePath,
+				markdown.piece,
+				markdown.note,
+				frontmatter as F
+			)
+		}
+
+		if (isArray) {
+			const pieceValues = fieldValue as unknown[]
+			const findValue = pieceValues.indexOf(pieceValue)
+
+			if (findValue !== -1) {
+				pieceValues.splice(findValue, 1)
+
+				return makePieceMarkdown<F>(
+					markdown.filePath,
+					markdown.piece,
+					markdown.note,
+					{
+						...frontmatter,
+						[field]: pieceValues
+					} as F
+				)
+			}
+		}
+
+		throw new Error(`${field} doesn't have any '${value}' to remove`)
 	}
 }
 

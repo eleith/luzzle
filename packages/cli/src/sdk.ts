@@ -1,7 +1,6 @@
-/* c8 ignore start */
+/* c8 ignore next 3 */
 import { Storage, StorageFileSystem, StorageWebDAV } from './lib/storage/index.js'
 import { Piece, Pieces } from './lib/pieces/index.js'
-/* c8 ignore end */
 
 export {
 	Storage,

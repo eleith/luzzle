@@ -11,7 +11,6 @@ import { mockDatabase } from '../database.mock.js'
 import { addCache, removeCache, updateCache, getCache } from './cache.js'
 import log from '../log.js'
 import { CpuInfo, cpus } from 'os'
-import { fileTypeStream, AnyWebReadableByteStreamWithFileType } from 'file-type'
 import {
 	getPieceFrontmatterSchemaFields,
 	databaseValueToPieceFrontmatterValue,
@@ -36,16 +35,16 @@ import {
 	LuzzleSelectable,
 	LuzzleInsertable,
 } from '@luzzle/core'
-import { downloadFileOrUrlToStream, calculateHashFromFile } from './utils.js'
-import { ASSETS_DIRECTORY } from '../assets.js'
+import {
+	calculateHashFromFile,
+	makePieceValue,
+	makePieceAttachment,
+} from './utils.js'
 import { makeCache } from './cache.fixtures.js'
 import slugify from '@sindresorhus/slugify'
 import { mockStorage } from '../storage/storage.mock.js'
 import { StorageStat } from '../storage/storage.js'
 import { PassThrough, Readable } from 'stream'
-import { Request } from 'got'
-import { ReadStream, WriteStream } from 'fs'
-import { pipeline } from 'stream/promises'
 
 vi.mock('../log.js')
 vi.mock('../md.js')
@@ -53,11 +52,9 @@ vi.mock('./markdown.js')
 vi.mock('../tags/index.js')
 vi.mock('./cache.js')
 vi.mock('os')
-vi.mock('file-type')
 vi.mock('@luzzle/core')
 vi.mock('./utils.js')
 vi.mock('@sindresorhus/slugify')
-vi.mock('stream/promises')
 
 const mocks = {
 	makePieceMarkdown: vi.mocked(makePieceMarkdown),
@@ -70,11 +67,9 @@ const mocks = {
 	removeCache: vi.mocked(removeCache),
 	updateCache: vi.mocked(updateCache),
 	getCache: vi.mocked(getCache),
-	fileType: vi.mocked(fileTypeStream),
 	compile: vi.mocked(compile),
 	getPieceSchemaFields: vi.mocked(getPieceFrontmatterSchemaFields),
 	databaseValueToFrontmatterValue: vi.mocked(databaseValueToPieceFrontmatterValue),
-	downloadFileOrUrlToStream: vi.mocked(downloadFileOrUrlToStream),
 	calculateHashFromFile: vi.mocked(calculateHashFromFile),
 	makeInsertable: vi.mocked(makePieceItemInsertable),
 	makeUpdatable: vi.mocked(makePieceItemUpdatable),
@@ -90,7 +85,8 @@ const mocks = {
 	validatePieceItem: vi.mocked(validatePieceItem),
 	getValidatePieceItemErrors: vi.mocked(getValidatePieceItemErrors),
 	slugify: vi.mocked(slugify),
-	pipeline: vi.mocked(pipeline),
+	makePieceValue: vi.mocked(makePieceValue),
+	makePieceAttachment: vi.mocked(makePieceAttachment),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -602,6 +598,7 @@ describe('lib/pieces/piece.ts', () => {
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementation(async (_, value) => value as string)
 
 		await pieceTest.setFields(markdown, { [field]: value })
 
@@ -624,6 +621,7 @@ describe('lib/pieces/piece.ts', () => {
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementation(async (_, value) => value as string)
 
 		await pieceTest.setField(markdown, field, value)
 		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
@@ -650,7 +648,7 @@ describe('lib/pieces/piece.ts', () => {
 		await expect(updating).rejects.toThrowError()
 	})
 
-	test('setField on arrays', async () => {
+	test('setField resets array types with scalar', async () => {
 		const tags = ['tag1', 'tag2']
 		const markdown = makeMarkdownSample({ frontmatter: { tags } })
 		const field = 'tags'
@@ -664,77 +662,7 @@ describe('lib/pieces/piece.ts', () => {
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-
-		await pieceTest.setField(markdown, field, value)
-
-		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			{ ...markdown.frontmatter, [field]: [...tags, value] }
-		)
-	})
-
-	test('setField on booleans', async () => {
-		const tags = ['tag1', 'tag2']
-		const markdown = makeMarkdownSample({ frontmatter: { tags } })
-		const field = 'tags'
-		const value = 'true'
-		const fields = [{ name: field, type: 'boolean' }] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-
-		const pieceTest = new PieceTest()
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-
-		await pieceTest.setField(markdown, field, value)
-
-		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			{ ...markdown.frontmatter, [field]: true }
-		)
-	})
-
-	test('setField on numbers', async () => {
-		const tags = ['tag1', 'tag2']
-		const markdown = makeMarkdownSample({ frontmatter: { tags } })
-		const field = 'tags'
-		const value = '500'
-		const fields = [{ name: field, type: 'integer' }] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-
-		const pieceTest = new PieceTest()
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-
-		await pieceTest.setField(markdown, field, value)
-
-		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			{ ...markdown.frontmatter, [field]: 500 }
-		)
-	})
-
-	test('setField on uninitialized arrays', async () => {
-		const note = 'note'
-		const markdown = makeMarkdownSample({ note })
-		const field = 'tags'
-		const value = 'another-tag'
-		const fields = [
-			{ name: field, type: 'array', items: { type: 'string' } },
-		] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-
-		const pieceTest = new PieceTest()
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementation(async (_, value) => value as string)
 
 		await pieceTest.setField(markdown, field, value)
 
@@ -746,13 +674,38 @@ describe('lib/pieces/piece.ts', () => {
 		)
 	})
 
-	test('setField on unknown attachments', async () => {
-		const mockRequest = new PassThrough() as unknown as Request
-		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
-		const mockWritable = new PassThrough() as unknown as WriteStream
+	test('setField resets array types with another array', async () => {
+		const tags = ['tag1', 'tag2']
+		const markdown = makeMarkdownSample({ frontmatter: { tags } })
+		const field = 'tags'
+		const value = 'another-tag'
+		const fields = [
+			{ name: field, type: 'array', items: { type: 'string' } },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePieceMock()
+
+		const pieceTest = new PieceTest()
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementation(async (_, value) => value as string)
+
+		await pieceTest.setField(markdown, field, [...tags, value])
+
+		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
+			markdown.filePath,
+			markdown.piece,
+			markdown.note,
+			{ ...markdown.frontmatter, [field]: [...tags, value] }
+		)
+	})
+
+	test('setField with attachment', async () => {
+		const mockReadable = new PassThrough() as unknown as Readable
 		const markdown = makeMarkdownSample()
 		const field = 'cover'
 		const value = 'file'
+		const finalValue = 'path/to/file.jpg'
 		const fields = [
 			{ name: field, type: 'string', format: 'asset' },
 		] as Array<PieceFrontmatterSchemaField>
@@ -761,55 +714,39 @@ describe('lib/pieces/piece.ts', () => {
 		const pieceTest = new PieceTest('books', storage)
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
-		spies.createWriteStream = vi
-			.spyOn(storage, 'createWriteStream')
-			.mockResolvedValueOnce(mockWritable)
-		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce(mockRequest)
-		mocks.fileType.mockResolvedValueOnce(mockReadable)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-		mocks.pipeline.mockResolvedValueOnce(undefined)
+		mocks.makePieceValue.mockImplementationOnce(async () => mockReadable)
+		mocks.makePieceAttachment.mockResolvedValueOnce(finalValue)
 
 		await pieceTest.setField(markdown, field, value)
 
+		expect(mocks.makePieceAttachment).toHaveBeenCalledOnce()
 		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
 			markdown.filePath,
 			markdown.piece,
 			markdown.note,
 			{
 				...markdown.frontmatter,
-				[field]: expect.stringMatching(
-					new RegExp(`${ASSETS_DIRECTORY}/${field}/${markdown.filePath}-[^.]*`)
-				),
+				[field]: finalValue,
 			}
 		)
 	})
 
-	test('setField on Request attachment', async () => {
-		const mockRequest = new PassThrough() as unknown as Request
-		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
-		const mockWritable = new PassThrough() as unknown as WriteStream
-		const markdown = makeMarkdownSample()
-		const field = 'cover'
-		const value = 'file.html'
+	test('removeFields', async () => {
+		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', subtitle: 'sub' } })
+		const field = 'subtitle'
 		const fields = [
-			{ name: field, type: 'string', format: 'asset' },
+			{ name: field, type: 'string', nullable: true },
 		] as Array<PieceFrontmatterSchemaField>
 		const PieceTest = makePieceMock()
-		const storage = makeStorage('root')
-		const pieceTest = new PieceTest('books', storage)
+
+		const pieceTest = new PieceTest()
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
-		spies.createWriteStream = vi
-			.spyOn(storage, 'createWriteStream')
-			.mockResolvedValueOnce(mockWritable)
-		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce({ ...mockRequest, requestUrl: { pathname: value } } as Request)
-		mocks.fileType.mockResolvedValueOnce(mockReadable)
-
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementationOnce(async (_, value) => value as string)
 
-		await pieceTest.setField(markdown, field, value)
+		await pieceTest.removeFields(markdown, [field])
 
 		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
 			markdown.filePath,
@@ -817,197 +754,7 @@ describe('lib/pieces/piece.ts', () => {
 			markdown.note,
 			{
 				...markdown.frontmatter,
-				[field]: expect.stringMatching(
-					new RegExp(`${ASSETS_DIRECTORY}/${field}/${markdown.filePath}-[^.]*\\.html`)
-				),
-			}
-		)
-	})
-
-	test('setField on ReadStream attachment', async () => {
-		const mockReadStream = new PassThrough() as unknown as ReadStream
-		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
-		const mockWritable = new PassThrough() as unknown as WriteStream
-		const markdown = makeMarkdownSample()
-		const field = 'cover'
-		const value = 'file.html'
-		const fields = [
-			{ name: field, type: 'string', format: 'asset' },
-		] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-		const storage = makeStorage('root')
-		const pieceTest = new PieceTest('books', storage)
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
-		spies.createWriteStream = vi
-			.spyOn(storage, 'createWriteStream')
-			.mockResolvedValueOnce(mockWritable)
-		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce({ ...mockReadStream, path: value } as ReadStream)
-		mocks.fileType.mockResolvedValueOnce(mockReadable)
-
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-
-		await pieceTest.setField(markdown, field, value)
-
-		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			{
-				...markdown.frontmatter,
-				[field]: expect.stringMatching(
-					new RegExp(`${ASSETS_DIRECTORY}/${field}/${markdown.filePath}-[^.]*\\.html`)
-				),
-			}
-		)
-	})
-
-	test('setField on detected file type attachment', async () => {
-		const mockRequest = new PassThrough() as unknown as Request
-		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
-		const mockWritable = new PassThrough() as unknown as WriteStream
-		const markdown = makeMarkdownSample()
-		const field = 'cover'
-		const value = 'new-cover-image'
-		const fields = [
-			{ name: field, type: 'string', format: 'asset' },
-		] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-		const storage = makeStorage('root')
-		const pieceTest = new PieceTest('books', storage)
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
-		spies.createWriteStream = vi
-			.spyOn(storage, 'createWriteStream')
-			.mockResolvedValueOnce(mockWritable)
-		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce(mockRequest)
-		mocks.fileType.mockResolvedValueOnce({
-			...mockReadable,
-			fileType: { ext: 'jpg', mime: 'image/jpeg' },
-		})
-
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-
-		await pieceTest.setField(markdown, field, value)
-
-		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			{
-				...markdown.frontmatter,
-				[field]: expect.stringMatching(
-					new RegExp(`${ASSETS_DIRECTORY}/${field}/${markdown.filePath}-[^.]*\\.jpg`)
-				),
-			}
-		)
-	})
-
-	test('setField on Readable stream attachment', async () => {
-		const mockStream = new PassThrough() as unknown as Readable
-		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
-		const mockWritable = new PassThrough() as unknown as WriteStream
-		const markdown = makeMarkdownSample()
-		const field = 'cover'
-		const value = mockStream 
-		const fields = [
-			{ name: field, type: 'string', format: 'asset' },
-		] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-		const storage = makeStorage('root')
-		const pieceTest = new PieceTest('books', storage)
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
-		spies.createWriteStream = vi
-			.spyOn(storage, 'createWriteStream')
-			.mockResolvedValueOnce(mockWritable)
-		mocks.fileType.mockResolvedValueOnce({
-			...mockReadable,
-			fileType: { ext: 'jpg', mime: 'image/jpeg' },
-		})
-
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-
-		await pieceTest.setField(markdown, field, value)
-
-		expect(mocks.downloadFileOrUrlToStream).not.toHaveBeenCalled()
-		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			{
-				...markdown.frontmatter,
-				[field]: expect.stringMatching(
-					new RegExp(`${ASSETS_DIRECTORY}/${field}/${markdown.filePath}-[^.]*\\.jpg`)
-				),
-			}
-		)
-	})
-
-	test('setField on non Readable stream attachment fails', async () => {
-		const mockReadable = new PassThrough() as unknown as AnyWebReadableByteStreamWithFileType
-		const mockWritable = new PassThrough() as unknown as WriteStream
-		const markdown = makeMarkdownSample()
-		const field = 'cover'
-		const value = 55
-		const fields = [
-			{ name: field, type: 'string', format: 'asset' },
-		] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-		const storage = makeStorage('root')
-		const pieceTest = new PieceTest('books', storage)
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
-		spies.createWriteStream = vi
-			.spyOn(storage, 'createWriteStream')
-			.mockResolvedValueOnce(mockWritable)
-		mocks.fileType.mockResolvedValueOnce({
-			...mockReadable,
-			fileType: { ext: 'jpg', mime: 'image/jpeg' },
-		})
-
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-
-		const setting = pieceTest.setField(markdown, field, value)
-
-		expect(setting).rejects.toThrow()
-	})
-
-	test('setField on array attachments', async () => {
-		const mockRequest = new PassThrough() as unknown as Request
-		const mockWritable = new PassThrough() as unknown as WriteStream
-
-		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', cover: ['a', 'b'] } })
-		const field = 'cover'
-		const value = 'new-cover.jpg'
-		const fields = [
-			{ name: field, type: 'array', items: { type: 'string', format: 'asset' } },
-		] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-		const storage = makeStorage('root')
-		const pieceTest = new PieceTest('books', storage)
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValueOnce(undefined)
-		spies.createWriteStream = vi
-			.spyOn(storage, 'createWriteStream')
-			.mockResolvedValueOnce(mockWritable)
-		mocks.downloadFileOrUrlToStream.mockResolvedValueOnce(mockRequest)
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-
-		await pieceTest.setField(markdown, field, value)
-
-		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			{
-				...markdown.frontmatter,
-				[field]: expect.arrayContaining(Array(3).fill(expect.any(String))),
+				[field]: undefined,
 			}
 		)
 	})
@@ -1024,60 +771,7 @@ describe('lib/pieces/piece.ts', () => {
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-
-		await pieceTest.removeField(markdown, field)
-
-		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			{
-				...markdown.frontmatter,
-				[field]: undefined,
-			}
-		)
-	})
-
-	test('removeField removes attachment assets', async () => {
-		const cover = 'a'
-		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', cover } })
-		const field = 'cover'
-		const fields = [
-			{ name: field, type: 'array', items: { format: 'asset', type: 'string' }, nullable: true },
-		] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-
-		const pieceTest = new PieceTest()
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-
-		await pieceTest.removeField(markdown, field)
-
-		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			{
-				...markdown.frontmatter,
-				[field]: undefined,
-			}
-		)
-	})
-
-	test('removeField removes attachment array assets', async () => {
-		const cover = ['a', 'b']
-		const markdown = makeMarkdownSample({ frontmatter: { cover } })
-		const field = 'cover'
-		const fields = [
-			{ name: field, type: 'array', items: { type: 'string', format: 'asset' }, nullable: true },
-		] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-
-		const pieceTest = new PieceTest()
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementationOnce(async (_, value) => value as string)
 
 		await pieceTest.removeField(markdown, field)
 
@@ -1120,5 +814,101 @@ describe('lib/pieces/piece.ts', () => {
 		const updating = pieceTest.removeField(markdown, field)
 
 		await expect(updating).rejects.toThrowError()
+	})
+
+	test('removeField with desired value', async () => {
+		const value = 'sub'
+		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', subtitle: value } })
+		const field = 'subtitle'
+		const fields = [
+			{ name: field, type: 'string', nullable: true },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePieceMock()
+
+		const pieceTest = new PieceTest()
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementationOnce(async (_, value) => value as string)
+
+		await pieceTest.removeField(markdown, field, value)
+
+		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
+			markdown.filePath,
+			markdown.piece,
+			markdown.note,
+			{
+				...markdown.frontmatter,
+				[field]: undefined,
+			}
+		)
+	})
+
+	test('removeField with desired value fails', async () => {
+		const value = 'sub'
+		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', subtitle: value } })
+		const field = 'subtitle'
+		const fields = [
+			{ name: field, type: 'string', nullable: true },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePieceMock()
+
+		const pieceTest = new PieceTest()
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementationOnce(async (_, value) => value as string)
+
+		const removing = pieceTest.removeField(markdown, field, 'sub2')
+
+		expect(removing).rejects.toThrowError()
+	})
+
+	test('removeField one value from array field', async () => {
+		const value = ['one', 'two', 'three']
+		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', subtitle: value } })
+		const field = 'subtitle'
+		const fields = [
+			{ name: field, type: 'array', nullable: true, items: { type: 'string' } },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePieceMock()
+
+		const pieceTest = new PieceTest()
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementationOnce(async (_, value) => value as string)
+
+		await pieceTest.removeField(markdown, field, 'two')
+
+		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
+			markdown.filePath,
+			markdown.piece,
+			markdown.note,
+			{
+				...markdown.frontmatter,
+				[field]: ['one', 'three'],
+			}
+		)
+	})
+
+	test('removeField one value from array field fails', async () => {
+		const value = ['one', 'two', 'three']
+		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', subtitle: value } })
+		const field = 'subtitle'
+		const fields = [
+			{ name: field, type: 'array', nullable: true, items: { type: 'string' } },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePieceMock()
+
+		const pieceTest = new PieceTest()
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementationOnce(async (_, value) => value as string)
+
+		const removing = pieceTest.removeField(markdown, field, 'sevent')
+
+		expect(removing).rejects.toThrowError()
 	})
 })
