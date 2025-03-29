@@ -13,6 +13,7 @@ export type FieldArgv = {
 	remove?: boolean
 	field?: string
 	value?: string
+	append?: boolean
 } & PieceArgv
 
 const command: Command<FieldArgv> = {
@@ -30,6 +31,12 @@ const command: Command<FieldArgv> = {
 				default: false,
 				description: 'remove the field',
 			})
+			.option('append', {
+				alias: 'a',
+				type: 'boolean',
+				default: false,
+				description: 'append to the field',
+			})
 			.positional('field', {
 				type: 'string',
 				description: 'field to set or remove',
@@ -40,8 +47,8 @@ const command: Command<FieldArgv> = {
 			})
 	},
 
-	run: async function (ctx, args) {
-		const { field, remove, value } = args
+	run: async function(ctx, args) {
+		const { field, remove, value, append } = args
 		const { piece, markdown } = await parsePiecePathPositionalArgv(ctx, args)
 		const pieceFields = piece.fields.map((f) => f.name)
 
@@ -65,11 +72,8 @@ const command: Command<FieldArgv> = {
 			return
 		}
 
-		if (value && remove) {
-			log.error('cannot set and remove a field at the same time')
-			return
-		} else if (remove) {
-			const updated = await piece.removeFields(markdown, [field])
+		if (remove) {
+			const updated = await piece.removeField(markdown, field, value)
 
 			if (!ctx.flags.dryRun) {
 				await piece.write(updated)
@@ -84,7 +88,8 @@ const command: Command<FieldArgv> = {
 				}
 			}
 		} else if (value) {
-			const updated = await piece.setFields(markdown, { [field]: value })
+			const current = markdown.frontmatter[field]
+			const updated = await piece.setField(markdown, field, append && Array.isArray(current) ? [...current, value] : value)
 
 			if (!ctx.flags.dryRun) {
 				await piece.write(updated)
