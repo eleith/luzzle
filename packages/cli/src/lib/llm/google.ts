@@ -1,7 +1,7 @@
 import { Content, GenerationConfig, GoogleGenerativeAI } from '@google/generative-ai'
 import { GoogleAIFileManager } from '@google/generative-ai/server'
-import path from 'path'
 import { PieceFrontmatter, PieceFrontmatterSchema } from '@luzzle/core'
+import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 
 const MODEL_NAME = 'gemini-1.5-flash'
 
@@ -17,26 +17,11 @@ function getClient(apiKey: string) {
 	return new GoogleGenerativeAI(apiKey)
 }
 
-function getFileMimeType(file: string) {
-	const extension = path.extname(file)
-	const supported = {
-		'.txt': 'text/plain',
-		'.html': 'text/html',
-		'.tml': 'text/html',
-		'.css': 'text/css',
-		'.xml': 'text/xml',
-		'.md': 'text/markdown',
-		'.pdf': 'application/pdf',
-	}
-
-	return supported[extension as keyof typeof supported] || null
-}
-
-async function generatePieceFrontmatter(
+async function generatePromptToPieceFrontmatter(
 	apiKey: string,
 	schema: PieceFrontmatterSchema<PieceFrontmatter>,
 	prompt: string,
-	file?: string
+	file?: string | Buffer
 ) {
 	const genAI = getClient(apiKey)
 	const schemaString = JSON.stringify(schema, null, 2)
@@ -61,15 +46,15 @@ if you are provided a URL or a file, please prioritze values that are directly s
 
 	if (file) {
 		const fileManager = new GoogleAIFileManager(apiKey)
-		const extension = path.extname(file)
-		const fileName = path.basename(file)
-		const mimeType = getFileMimeType(file)
+		const isBuffer = Buffer.isBuffer(file)
+		const fileType = isBuffer ? await fileTypeFromBuffer(file) : await fileTypeFromFile(file)
+		const mimeType = fileType?.mime
 
 		if (!mimeType) {
-			throw new Error(`unsupported file type: ${extension}`)
+			throw new Error(`unsupported file or buffer`)
 		}
 
-		const uploadResponse = await fileManager.uploadFile(file, { mimeType, displayName: fileName })
+		const uploadResponse = await fileManager.uploadFile(file, { mimeType })
 		userPrompt.parts = [
 			{
 				fileData: {
@@ -101,4 +86,4 @@ if you are provided a URL or a file, please prioritze values that are directly s
 	return JSON.parse(metadata) as Record<string, string | number | boolean>
 }
 
-export { generatePieceFrontmatter }
+export { generatePromptToPieceFrontmatter }

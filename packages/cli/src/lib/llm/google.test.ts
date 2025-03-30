@@ -1,10 +1,12 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import { generatePieceFrontmatter } from './google.js'
+import { generatePromptToPieceFrontmatter } from './google.js'
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai'
 import { GoogleAIFileManager, UploadFileResponse } from '@google/generative-ai/server'
 import { makeSchema } from '../pieces/piece.fixtures.js'
+import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 
 vi.mock('@luzzle/core')
+vi.mock('file-type')
 vi.mock('@google/generative-ai', () => {
 	const Gemini = vi.fn()
 	Gemini.prototype.getGenerativeModel = vi.fn()
@@ -19,6 +21,8 @@ vi.mock('@google/generative-ai/server', () => {
 const mocks = {
 	getGenerativeModel: vi.mocked(GoogleGenerativeAI.prototype.getGenerativeModel),
 	uploadFile: vi.mocked(GoogleAIFileManager.prototype.uploadFile),
+	fileTypeFromFile: vi.mocked(fileTypeFromFile),
+	fileTypeFromBuffer: vi.mocked(fileTypeFromBuffer),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -47,7 +51,7 @@ describe('lib/llm/google.ts', () => {
 			generateContent: spies.generateContent,
 		} as unknown as GenerativeModel)
 
-		const generatedFrontmatter = await generatePieceFrontmatter(apiKey, schema, prompt)
+		const generatedFrontmatter = await generatePromptToPieceFrontmatter(apiKey, schema, prompt)
 
 		expect(mocks.getGenerativeModel).toHaveBeenCalledTimes(1)
 		expect(spies.generateContent).toHaveBeenCalledWith({
@@ -72,11 +76,42 @@ describe('lib/llm/google.ts', () => {
 			generateContent: spies.generateContent,
 		} as unknown as GenerativeModel)
 		mocks.uploadFile.mockResolvedValue({ file: { uri, mimeType } } as UploadFileResponse)
+		mocks.fileTypeFromFile.mockResolvedValueOnce({ mime: mimeType, ext: 'pdf' })
 
-		const generatedFrontmatter = await generatePieceFrontmatter(apiKey, schema, prompt, file)
+		const generatedFrontmatter = await generatePromptToPieceFrontmatter(apiKey, schema, prompt, file)
 
 		expect(mocks.getGenerativeModel).toHaveBeenCalledTimes(1)
-		expect(mocks.uploadFile).toHaveBeenCalledWith(file, { mimeType, displayName: 'file.pdf' })
+		expect(mocks.uploadFile).toHaveBeenCalledWith(file, { mimeType })
+		expect(spies.generateContent).toHaveBeenCalledWith({
+			contents: expect.arrayContaining([
+				{ role: 'user', parts: [{ fileData: { fileUri: uri, mimeType } }, { text: prompt }] },
+			]),
+			generationConfig: expect.any(Object),
+		})
+		expect(generatedFrontmatter).toEqual(frontmatter)
+	})
+
+	test('generatePieceFrontmatter with a Buffer', async () => {
+		const apiKey = 'apiKey'
+		const schema = makeSchema('books')
+		const prompt = 'prompt'
+		const uri = 'gs://another/path/to/file.pdf'
+		const mimeType = 'application/pdf'
+		const frontmatter = { field: 'value' }
+		const responseText = JSON.stringify(frontmatter)
+		const buffer = Buffer.from('buffer data')
+
+		spies.generateContent = vi.fn().mockResolvedValue({ response: { text: () => responseText } })
+		mocks.getGenerativeModel.mockReturnValue({
+			generateContent: spies.generateContent,
+		} as unknown as GenerativeModel)
+		mocks.uploadFile.mockResolvedValue({ file: { uri, mimeType } } as UploadFileResponse)
+		mocks.fileTypeFromBuffer.mockResolvedValueOnce({ mime: mimeType, ext: 'pdf' })
+
+		const generatedFrontmatter = await generatePromptToPieceFrontmatter(apiKey, schema, prompt, buffer)
+
+		expect(mocks.getGenerativeModel).toHaveBeenCalledTimes(1)
+		expect(mocks.uploadFile).toHaveBeenCalledWith(buffer, { mimeType })
 		expect(spies.generateContent).toHaveBeenCalledWith({
 			contents: expect.arrayContaining([
 				{ role: 'user', parts: [{ fileData: { fileUri: uri, mimeType } }, { text: prompt }] },
@@ -96,7 +131,7 @@ describe('lib/llm/google.ts', () => {
 			generateContent: spies.generateContent,
 		} as unknown as GenerativeModel)
 
-		const generate = generatePieceFrontmatter(apiKey, schema, prompt, file)
+		const generate = generatePromptToPieceFrontmatter(apiKey, schema, prompt, file)
 
 		await expect(generate).rejects.toThrow()
 	})
