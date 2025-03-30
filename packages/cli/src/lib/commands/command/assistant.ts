@@ -2,7 +2,7 @@ import { Argv } from 'yargs'
 import { Command } from '../utils/types.js'
 import yaml from 'yaml'
 import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../../pieces/index.js'
-import { generatePieceFrontmatter } from '../../llm/google.js'
+import { generatePromptToPieceFrontmatter } from '../../llm/google.js'
 
 export type AssistantArgv = {
 	update?: string
@@ -51,7 +51,7 @@ const command: Command<AssistantArgv> = {
 		const { prompt, file, update, directory, title } = args
 		const { piece } = await parsePieceOptionArgv(ctx, args)
 		const apiKey = ctx.config.get('api_keys.google', '')
-		const metadata = await generatePieceFrontmatter(apiKey, piece.schema, prompt, file)
+		const metadata = await generatePromptToPieceFrontmatter(apiKey, piece.schema, prompt, file)
 		const metadataNonEmpty = Object.fromEntries(
 			Object.entries(metadata).filter(([, value]) => value !== null || value === '')
 		)

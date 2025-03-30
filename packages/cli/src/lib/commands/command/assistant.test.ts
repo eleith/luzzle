@@ -11,7 +11,7 @@ import {
 	makePieceMock,
 } from '../../pieces/piece.fixtures.js'
 import yaml from 'yaml'
-import { generatePieceFrontmatter } from '../../llm/google.js'
+import { generatePromptToPieceFrontmatter } from '../../llm/google.js'
 
 vi.mock('../../pieces/index')
 vi.mock('../../log.js')
@@ -23,7 +23,7 @@ const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
 	parseArgs: vi.mocked(parsePieceOptionArgv),
 	makeOption: vi.mocked(makePieceOption),
-	generatePieceFrontmatter: vi.mocked(generatePieceFrontmatter),
+	generatePieceFrontmatter: vi.mocked(generatePromptToPieceFrontmatter),
 	getPiece: vi.fn(),
 	consoleLog: vi.spyOn(console, 'log'),
 	yamlStringify: vi.mocked(yaml.stringify),
