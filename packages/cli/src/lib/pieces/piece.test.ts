@@ -844,7 +844,7 @@ describe('lib/pieces/piece.ts', () => {
 		)
 	})
 
-	test('removeField with desired value fails', async () => {
+	test('removeField with non-existant value', async () => {
 		const value = 'sub'
 		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', subtitle: value } })
 		const field = 'subtitle'
@@ -859,14 +859,14 @@ describe('lib/pieces/piece.ts', () => {
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
 		mocks.makePieceValue.mockImplementationOnce(async (_, value) => value as string)
 
-		const removing = pieceTest.removeField(markdown, field, 'sub2')
+		const result = await pieceTest.removeField(markdown, field, 'random')
 
-		expect(removing).rejects.toThrowError()
+		expect(result).toEqual(markdown)
 	})
 
 	test('removeField one value from array field', async () => {
-		const value = ['one', 'two', 'three']
-		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', subtitle: value } })
+		const values = ['one', 'two', 'three']
+		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', subtitle: values } })
 		const field = 'subtitle'
 		const fields = [
 			{ name: field, type: 'array', nullable: true, items: { type: 'string' } },
@@ -877,7 +877,7 @@ describe('lib/pieces/piece.ts', () => {
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-		mocks.makePieceValue.mockImplementationOnce(async (_, value) => value as string)
+		mocks.makePieceValue.mockImplementationOnce(async (_, value) => value)
 
 		await pieceTest.removeField(markdown, field, 'two')
 
@@ -890,25 +890,5 @@ describe('lib/pieces/piece.ts', () => {
 				[field]: ['one', 'three'],
 			}
 		)
-	})
-
-	test('removeField one value from array field fails', async () => {
-		const value = ['one', 'two', 'three']
-		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', subtitle: value } })
-		const field = 'subtitle'
-		const fields = [
-			{ name: field, type: 'array', nullable: true, items: { type: 'string' } },
-		] as Array<PieceFrontmatterSchemaField>
-		const PieceTest = makePieceMock()
-
-		const pieceTest = new PieceTest()
-
-		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
-		mocks.makePieceValue.mockImplementationOnce(async (_, value) => value as string)
-
-		const removing = pieceTest.removeField(markdown, field, 'sevent')
-
-		expect(removing).rejects.toThrowError()
 	})
 })

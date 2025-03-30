@@ -168,7 +168,7 @@ async function makePieceAttachment(
 	return relPath
 }
 
-async function makePieceValue(field: PieceFrontmatterSchemaField, value: unknown) {
+async function makePieceValue(field: PieceFrontmatterSchemaField, value: number | string | boolean | Readable) {
 	const isArray = field.type === 'array'
 	const format = isArray ? field.items.format : field.format
 	const type = isArray ? field.items.type : field.type
