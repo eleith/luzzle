@@ -301,8 +301,9 @@ class Piece<F extends PieceFrontmatter> {
 		})
 	}
 
-	async removeField(markdown: PieceMarkdown<F>, field: string, value?: unknown): Promise<PieceMarkdown<F>> {
+	async removeField(markdown: PieceMarkdown<F>, field: string, value?: number | string | boolean): Promise<PieceMarkdown<F>> {
 		const pieceField = this.fields.find((f) => f.name === field)
+		const { [field]: fieldValue, ...frontmatter } = markdown.frontmatter
 
 		if (!pieceField) {
 			throw new Error(`${field} is not a field in ${this._pieceName} ${markdown.filePath}`)
@@ -312,11 +313,7 @@ class Piece<F extends PieceFrontmatter> {
 			throw new Error(`${field} is a required field in ${this._pieceName} ${markdown.filePath}`)
 		}
 
-		const isArray = pieceField.type === 'array'
-		const { [field]: fieldValue, ...frontmatter } = markdown.frontmatter
-		const pieceValue = await makePieceValue(pieceField, value)
-
-		if (value === undefined || fieldValue === pieceValue) {
+		if (value === undefined || fieldValue === undefined) {
 			return makePieceMarkdown(
 				markdown.filePath,
 				markdown.piece,
@@ -325,26 +322,28 @@ class Piece<F extends PieceFrontmatter> {
 			)
 		}
 
-		if (isArray) {
-			const pieceValues = fieldValue as unknown[]
-			const findValue = pieceValues.indexOf(pieceValue)
+		const pieceValue = await makePieceValue(pieceField, value)
 
-			if (findValue !== -1) {
-				pieceValues.splice(findValue, 1)
+		if (Array.isArray(fieldValue)) {
+			return makePieceMarkdown<F>(
+				markdown.filePath,
+				markdown.piece,
+				markdown.note,
+				{
+					...frontmatter,
+					[field]: fieldValue.filter((v) => v !== pieceValue)
+				} as F
+			)
+		} else if (fieldValue === pieceValue) {
+			return makePieceMarkdown(
+				markdown.filePath,
+				markdown.piece,
+				markdown.note,
+				frontmatter as F
+			)
+		} 
 
-				return makePieceMarkdown<F>(
-					markdown.filePath,
-					markdown.piece,
-					markdown.note,
-					{
-						...frontmatter,
-						[field]: pieceValues
-					} as F
-				)
-			}
-		}
-
-		throw new Error(`${field} doesn't have any '${value}' to remove`)
+		return markdown
 	}
 }
 
