@@ -27,7 +27,12 @@ import {
 import { queue } from 'async'
 import { cpus } from 'os'
 import path from 'path'
-import { PieceFileType, calculateHashFromFile, makePieceAttachment, makePieceValue } from './utils.js'
+import {
+	PieceFileType,
+	calculateHashFromFile,
+	makePieceAttachment,
+	makePieceValue,
+} from './utils.js'
 import slugify from '@sindresorhus/slugify'
 import { Storage } from '../storage/index.js'
 import { Readable } from 'stream'
@@ -287,9 +292,13 @@ class Piece<F extends PieceFrontmatter> {
 			if (pieceValue instanceof Readable) {
 				const file = markdown.filePath
 				const storage = this._storage
-				const asset = await makePieceAttachment(file, pieceField, pieceValue, storage)
 
-				set.push(asset)
+				try {
+					const asset = await makePieceAttachment(file, pieceField, pieceValue, storage)
+					set.push(asset)
+				} catch (e) {
+					log.error(`could not create asset for ${file}: ${e}`)
+				}
 			} else {
 				set.push(pieceValue)
 			}
@@ -301,7 +310,11 @@ class Piece<F extends PieceFrontmatter> {
 		})
 	}
 
-	async removeField(markdown: PieceMarkdown<F>, field: string, value?: number | string | boolean): Promise<PieceMarkdown<F>> {
+	async removeField(
+		markdown: PieceMarkdown<F>,
+		field: string,
+		value?: number | string | boolean
+	): Promise<PieceMarkdown<F>> {
 		const pieceField = this.fields.find((f) => f.name === field)
 		const { [field]: fieldValue, ...frontmatter } = markdown.frontmatter
 
@@ -314,34 +327,19 @@ class Piece<F extends PieceFrontmatter> {
 		}
 
 		if (value === undefined || fieldValue === undefined) {
-			return makePieceMarkdown(
-				markdown.filePath,
-				markdown.piece,
-				markdown.note,
-				frontmatter as F
-			)
+			return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, frontmatter as F)
 		}
 
 		const pieceValue = await makePieceValue(pieceField, value)
 
 		if (Array.isArray(fieldValue)) {
-			return makePieceMarkdown<F>(
-				markdown.filePath,
-				markdown.piece,
-				markdown.note,
-				{
-					...frontmatter,
-					[field]: fieldValue.filter((v) => v !== pieceValue)
-				} as F
-			)
+			return makePieceMarkdown<F>(markdown.filePath, markdown.piece, markdown.note, {
+				...frontmatter,
+				[field]: fieldValue.filter((v) => v !== pieceValue),
+			} as F)
 		} else if (fieldValue === pieceValue) {
-			return makePieceMarkdown(
-				markdown.filePath,
-				markdown.piece,
-				markdown.note,
-				frontmatter as F
-			)
-		} 
+			return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, frontmatter as F)
+		}
 
 		return markdown
 	}

@@ -732,6 +732,34 @@ describe('lib/pieces/piece.ts', () => {
 		)
 	})
 
+	test('setField with bad attachment', async () => {
+		const mockReadable = new PassThrough() as unknown as Readable
+		const markdown = makeMarkdownSample()
+		const field = 'cover'
+		const value = 'file'
+		const fields = [
+			{ name: field, type: 'string', format: 'asset' },
+		] as Array<PieceFrontmatterSchemaField>
+		const PieceTest = makePieceMock()
+		const storage = makeStorage('root')
+		const pieceTest = new PieceTest('books', storage)
+
+		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
+		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
+		mocks.makePieceValue.mockImplementationOnce(async () => mockReadable)
+		mocks.makePieceAttachment.mockRejectedValueOnce(new Error('oof'))
+
+		await pieceTest.setField(markdown, field, value)
+
+		expect(mocks.makePieceAttachment).toHaveBeenCalledOnce()
+		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
+			markdown.filePath,
+			markdown.piece,
+			markdown.note,
+			markdown.frontmatter
+		)
+	})
+
 	test('removeFields', async () => {
 		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', subtitle: 'sub' } })
 		const field = 'subtitle'

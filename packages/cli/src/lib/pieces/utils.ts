@@ -1,7 +1,5 @@
 import { Argv } from 'yargs'
-import { temporaryFile } from 'tempy'
-import { copyFile, stat } from 'fs/promises'
-import { downloadToPath, downloadToStream } from '../web.js'
+import { stat } from 'fs/promises'
 import { createHash, randomBytes } from 'crypto'
 import { Context } from '../commands/index.js'
 import Piece from './piece.js'
@@ -13,7 +11,7 @@ import { ASSETS_DIRECTORY } from '../assets.js'
 import { Storage } from '../storage/index.js'
 import { fileTypeStream } from 'file-type'
 import { pipeline } from 'stream/promises'
-import { Request } from 'got'
+import got, { Request } from 'got'
 
 export const PieceDirectory = {
 	Root: 'root',
@@ -89,36 +87,18 @@ const makePiecePathPositional = function <T>(yargs: Argv<T>): Argv<T & PieceArgv
 	})
 }
 
-async function downloadFileOrUrlTo(file: string): Promise<string> {
-	const tempPath = temporaryFile()
-
-	if (/https?:\/\//i.test(file)) {
-		await downloadToPath(file, tempPath)
-		return tempPath
+async function downloadToStream(fileOrUrl: string) {
+	if (/https?:\/\//i.test(fileOrUrl)) {
+		return got.stream(fileOrUrl)
 	}
 
-	const coverStat = await stat(file)
-
-	if (coverStat.isFile()) {
-		await copyFile(file, tempPath)
-		return tempPath
-	}
-
-	throw new Error(`${file} is not a valid file`)
-}
-
-async function downloadFileOrUrlToStream(file: string) {
-	if (/https?:\/\//i.test(file)) {
-		return downloadToStream(file)
-	}
-
-	const coverStat = await stat(file).catch(() => null)
+	const coverStat = await stat(fileOrUrl).catch(() => null)
 
 	if (coverStat && coverStat.isFile()) {
-		return createReadStream(file)
+		return createReadStream(fileOrUrl)
 	}
 
-	throw new Error(`${file} is not a valid file`)
+	throw new Error(`${fileOrUrl} is not a valid file`)
 }
 
 function calculateHashFromFile(stream: Readable): Promise<string> {
@@ -156,7 +136,8 @@ async function makePieceAttachment(
 		await storage.makeDirectory(attachDir)
 	}
 
-	const ext = (stream as Request).requestUrl?.pathname || (stream as ReadStream).path?.toString() || ''
+	const ext =
+		(stream as Request).requestUrl?.pathname || (stream as ReadStream).path?.toString() || ''
 	const streamWithFileType = await fileTypeStream(stream)
 	const type = streamWithFileType?.fileType?.ext.replace(/^/, '.') || path.extname(ext)
 	const filename = `${parts.filter((x) => x).join('-')}${type}`
@@ -168,7 +149,10 @@ async function makePieceAttachment(
 	return relPath
 }
 
-async function makePieceValue(field: PieceFrontmatterSchemaField, value: number | string | boolean | Readable) {
+async function makePieceValue(
+	field: PieceFrontmatterSchemaField,
+	value: number | string | boolean | Readable
+) {
 	const isArray = field.type === 'array'
 	const format = isArray ? field.items.format : field.format
 	const type = isArray ? field.items.type : field.type
@@ -178,7 +162,7 @@ async function makePieceValue(field: PieceFrontmatterSchemaField, value: number 
 			if (value.startsWith(ASSETS_DIRECTORY)) {
 				return value
 			}
-			return await downloadFileOrUrlToStream(value as string) as Readable
+			return downloadToStream(value) as Promise<Readable>
 		} else if (value instanceof Readable) {
 			return value
 		} else {
@@ -190,7 +174,7 @@ async function makePieceValue(field: PieceFrontmatterSchemaField, value: number 
 		return parseInt(value as string)
 	}
 
-	return value as string
+	return value.toString()
 }
 
 export {
@@ -198,8 +182,6 @@ export {
 	PiecePositional,
 	parsePieceOptionArgv,
 	parsePiecePathPositionalArgv,
-	downloadFileOrUrlTo,
-	downloadFileOrUrlToStream,
 	calculateHashFromFile,
 	makePieceOption,
 	makePiecePathPositional,

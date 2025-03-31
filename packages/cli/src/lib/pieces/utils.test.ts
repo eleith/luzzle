@@ -3,14 +3,13 @@ import { copyFile, stat } from 'fs/promises'
 import { temporaryFile } from 'tempy'
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import yargs from 'yargs'
-import { downloadToPath, downloadToStream } from '../web.js'
 import { createHash, randomBytes } from 'crypto'
 import { PassThrough } from 'stream'
 import { makeContext } from '../commands/command/context.fixtures.js'
 import * as util from './utils.js'
 import Piece from './piece.js'
 import { makeMarkdownSample, makePieceMock, makeStorage } from './piece.fixtures.js'
-import { Request } from 'got'
+import got, { Request } from 'got'
 import { PieceFrontmatterSchemaField } from '@luzzle/core'
 import { ASSETS_DIRECTORY } from '../assets.js'
 import { AnyWebReadableByteStreamWithFileType, fileTypeStream } from 'file-type'
@@ -23,19 +22,19 @@ vi.mock('../web.js')
 vi.mock('crypto')
 vi.mock('file-type')
 vi.mock('stream/promises')
+vi.mock('got')
 
 const mocks = {
 	tempyFile: vi.mocked(temporaryFile),
 	copyFile: vi.mocked(copyFile),
 	stat: vi.mocked(stat),
-	downloadToPath: vi.mocked(downloadToPath),
-	downloadToStream: vi.mocked(downloadToStream),
 	existsSync: vi.mocked(existsSync),
 	createReadStream: vi.mocked(createReadStream),
 	createHash: vi.mocked(createHash),
 	fileType: vi.mocked(fileTypeStream),
 	pipeline: vi.mocked(pipeline),
 	randomBytes: vi.mocked(randomBytes),
+	gotStream: vi.mocked(got.stream),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -50,44 +49,6 @@ describe('lib/pieces/utils.ts', () => {
 			spies[key].mockRestore()
 			delete spies[key]
 		})
-	})
-
-	test('downloadFileOrUrlTo with url', async () => {
-		const url = 'https://somewhere'
-		const tmpPath = '/tmp/somewhere.jpg'
-
-		mocks.tempyFile.mockReturnValueOnce(tmpPath)
-		mocks.downloadToPath.mockResolvedValueOnce(true)
-
-		const file = await util.downloadFileOrUrlTo(url)
-
-		expect(file).toEqual(tmpPath)
-		expect(mocks.downloadToPath).toHaveBeenCalledWith(url, tmpPath)
-	})
-
-	test('downloadFileOrUrlTo with file', async () => {
-		const filePath = 'path/to/file'
-		const tmpPath = '/tmp/somewhere.jpg'
-
-		mocks.tempyFile.mockReturnValueOnce(tmpPath)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
-
-		const file = await util.downloadFileOrUrlTo(filePath)
-
-		expect(file).toEqual(tmpPath)
-		expect(mocks.copyFile).toHaveBeenCalledWith(filePath, tmpPath)
-	})
-
-	test('downloadFileOrUrlTo with directory', async () => {
-		const filePath = 'path/to/file'
-		const tmpPath = '/tmp/somewhere.jpg'
-
-		mocks.tempyFile.mockReturnValueOnce(tmpPath)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => false } as Stats)
-
-		const download = util.downloadFileOrUrlTo(filePath)
-
-		await expect(download).rejects.toThrowError()
 	})
 
 	test('makePieceOption', async () => {
@@ -204,41 +165,6 @@ describe('lib/pieces/utils.ts', () => {
 		await expect(resulting).rejects.toThrow()
 	})
 
-	test('downloadFileOrUrlToStream handles files', async () => {
-		const file = 'path/to/file'
-		const readable = new PassThrough() as unknown as ReadStream
-
-		mocks.createReadStream.mockReturnValueOnce(readable)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
-
-		const stream = await util.downloadFileOrUrlToStream(file)
-
-		expect(stream).toEqual(readable)
-	})
-
-	test('downloadFileOrUrlToStream rejects bad files', async () => {
-		const file = 'path/to/file'
-		const readable = new PassThrough() as unknown as ReadStream
-
-		mocks.createReadStream.mockReturnValueOnce(readable)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => false } as Stats)
-
-		const streaming = util.downloadFileOrUrlToStream(file)
-
-		await expect(streaming).rejects.toThrowError()
-	})
-
-	test('downloadFileOrUrlToStream handles url', async () => {
-		const url = 'https://example.com/path/to/file'
-		const readable = new PassThrough() as unknown as Request
-
-		mocks.downloadToStream.mockResolvedValueOnce(readable)
-
-		const stream = await util.downloadFileOrUrlToStream(url)
-
-		expect(stream).toEqual(readable)
-	})
-
 	test('calculateHashFromFile', async () => {
 		const data = 'data'
 
@@ -337,6 +263,19 @@ describe('lib/pieces/utils.ts', () => {
 		expect(pieceValue).toEqual(readable)
 	})
 
+	test('makePieceValue url asset', async () => {
+		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
+		const asset = 'https://path/to/asset'
+		const readable = new PassThrough() as unknown as Request
+
+		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
+		mocks.gotStream.mockReturnValueOnce(readable)
+
+		const pieceValue = await util.makePieceValue(field, asset)
+
+		expect(pieceValue).toEqual(readable)
+	})
+
 	test('makePieceValue existing asset', async () => {
 		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
 		const asset = `${ASSETS_DIRECTORY}/path/to/asset`
@@ -348,6 +287,19 @@ describe('lib/pieces/utils.ts', () => {
 		const pieceValue = await util.makePieceValue(field, asset)
 
 		expect(pieceValue).toEqual(asset)
+	})
+
+	test('makePieceValue not-existant path', async () => {
+		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
+		const asset = `path/to/asset`
+		const readable = new PassThrough() as unknown as ReadStream
+
+		mocks.createReadStream.mockReturnValueOnce(readable)
+		mocks.stat.mockResolvedValueOnce({ isFile: () => false } as Stats)
+
+		const waiting = util.makePieceValue(field, asset)
+
+		expect(waiting).rejects.toThrowError()
 	})
 
 	test('makePieceValue with stream', async () => {

@@ -11,7 +11,7 @@ import {
 	makePieceMock,
 } from '../../pieces/piece.fixtures.js'
 import yaml from 'yaml'
-import { generatePromptToPieceFrontmatter } from '../../llm/google.js'
+import { pieceFrontMatterFromPrompt } from '../../llm/google.js'
 
 vi.mock('../../pieces/index')
 vi.mock('../../log.js')
@@ -23,7 +23,7 @@ const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
 	parseArgs: vi.mocked(parsePieceOptionArgv),
 	makeOption: vi.mocked(makePieceOption),
-	generatePieceFrontmatter: vi.mocked(generatePromptToPieceFrontmatter),
+	generatePieceFrontmatter: vi.mocked(pieceFrontMatterFromPrompt),
 	getPiece: vi.fn(),
 	consoleLog: vi.spyOn(console, 'log'),
 	yamlStringify: vi.mocked(yaml.stringify),
@@ -70,31 +70,6 @@ describe('lib/commands/assistant.ts', () => {
 			prompt,
 			undefined
 		)
-	})
-
-	test('strips empty output fields', async () => {
-		const apiKeys = 'api_key'
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
-		const markdown = makeMarkdownSample()
-		const frontmatter = makeFrontmatterSample({ oof: null, title: 'title' })
-		const prompt = 'prompt'
-		const ctx = makeContext({
-			config: {
-				get: vi.fn().mockReturnValueOnce(apiKeys),
-			},
-		})
-
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(markdown)
-
-		mocks.parseArgs.mockResolvedValueOnce({ piece })
-		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
-			frontmatter as unknown as Record<string, string | number | boolean>
-		)
-
-		await command.run(ctx, { prompt } as Arguments<AssistantArgv>)
-
-		expect(mocks.yamlStringify).toHaveBeenCalledWith({ title: 'title' })
 	})
 
 	test('must use update and create exclusively', async () => {

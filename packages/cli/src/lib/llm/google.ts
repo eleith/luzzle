@@ -17,7 +17,7 @@ function getClient(apiKey: string) {
 	return new GoogleGenerativeAI(apiKey)
 }
 
-async function generatePromptToPieceFrontmatter(
+async function pieceFrontMatterFromPrompt(
 	apiKey: string,
 	schema: PieceFrontmatterSchema<PieceFrontmatter>,
 	prompt: string,
@@ -25,15 +25,15 @@ async function generatePromptToPieceFrontmatter(
 ) {
 	const genAI = getClient(apiKey)
 	const schemaString = JSON.stringify(schema, null, 2)
-	const instruction = `please respond with JSON that conforms to the following JSON schema:
+	const instruction = `please respond with a JSON output that conforms to the following JSON schema:
 
-${schemaString}
+\`${schemaString}\`
 	
-your goal is to help generate metadata for a piece someone is adding to their collection. the above schema fields may have descriptions, formats patterns and examples that should guide the values you determine are best.
+your goal is to help generate accurate metadata for a record that will be added to a collection. the JSON schema fields may have descriptions, formats, patterns and examples that can guide expectations.
 
-for schema fields of the format "asset", do not hallucinate, only respond with valid http URLs that if tested, could be downloaded successfully.
+avoid hallucinations, especially for URL and 'asset' fields. any URL should be pre-existing and i should be able to download them successfully.
 
-if you are provided a URL or a file, please prioritze values that are directly sourced from the content itself.`
+if you are provided an attachment, please attempt to extract values from this attachment and prioritze them.`
 
 	const userPrompt: Content = {
 		role: 'user',
@@ -82,8 +82,11 @@ if you are provided a URL or a file, please prioritze values that are directly s
 	})
 
 	const metadata = result.response.text()
+	const frontmatter = JSON.parse(metadata) as PieceFrontmatter
 
-	return JSON.parse(metadata) as Record<string, string | number | boolean>
+	return Object.fromEntries(
+		Object.entries(frontmatter).filter(([, value]) => value !== null || value === '')
+	)
 }
 
-export { generatePromptToPieceFrontmatter }
+export { pieceFrontMatterFromPrompt }
