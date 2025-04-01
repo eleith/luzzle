@@ -72,6 +72,17 @@ class Piece<F extends PieceFrontmatter> {
 		return makePieceMarkdown(file, this._pieceName, undefined, frontmatter)
 	}
 
+	async delete(file: string) {
+		const exists = await this._storage.exists(file)
+
+		if (exists) {
+			await this._storage.delete(file)
+			return
+		}
+
+		throw new Error(`${file} does not exist`)
+	}
+
 	get type() {
 		return this._pieceName
 	}

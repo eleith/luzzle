@@ -151,6 +151,34 @@ describe('lib/pieces/piece.ts', () => {
 		await expect(creating).rejects.toThrowError()
 	})
 
+	test('delete', async () => {
+		const path = 'path/to/slug.md'
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
+
+		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValueOnce(true)
+		spies.delete = vi.spyOn(storage, 'delete').mockResolvedValueOnce()
+
+		await pieceTest.delete(path)
+
+		expect(spies.delete).toHaveBeenCalledOnce()
+	})
+
+	test('delete fails', async () => {
+		const path = 'path/to/slug.md'
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
+
+		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValueOnce(false)
+		spies.delete = vi.spyOn(storage, 'delete').mockResolvedValueOnce()
+
+		const deleting = pieceTest.delete(path)
+
+		expect(deleting).rejects.toThrowError()
+	})
+
 	test('get schema', () => {
 		const PieceType = makePieceMock()
 		const type = 'table'
