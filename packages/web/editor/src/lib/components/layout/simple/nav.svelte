@@ -9,7 +9,7 @@
 	import ArrowRightIcon from 'virtual:icons/ph/caret-double-right'
 	import TreeIcon from 'virtual:icons/ph/tree'
 	import themes, { type Theme } from '$lib/ui/styles/themes'
-	import { page } from '$app/stores'
+	import { page } from '$app/state'
 	import { fly, fade } from 'svelte/transition'
 	import { createDialog, melt } from '@melt-ui/svelte'
 	import type { Snippet } from 'svelte'
@@ -130,7 +130,7 @@
 
 <nav class="banner" style:--banner-background-color={background || 'transparent'}>
 	<div class="left">
-		{#if $page.url.pathname !== '/'}
+		{#if page.url.pathname !== '/'}
 			<a href="/" aria-label="main page"><AtIcon style="font-size: 1em;" /></a>
 		{/if}
 		{#if items?.left}

@@ -1,19 +1,23 @@
 <script lang="ts">
 	import { type PieceFrontmatterSchemaField } from '@luzzle/core'
+	import EditAsset from './editAsset.svelte'
+	import type { AssetField, EnumField } from './types.js'
 
 	type Props = {
 		field: PieceFrontmatterSchemaField
 		value: unknown
-		prefix?: {
-			upload: string
-			input: string
-		}
-		inputPrefix?: string
-		uploadPrefix?: string
 	}
 
-	let { field, value, prefix = { upload: 'upload', input: 'frontmatter' } }: Props = $props()
-	const type = field.type
+	let { field, value }: Props = $props()
+	const prefix = 'frontmatter'
+
+	function isEnum(field: PieceFrontmatterSchemaField): field is EnumField {
+		return field.enum !== undefined
+	}
+
+	function isAsset(field: PieceFrontmatterSchemaField): field is AssetField {
+		return field.format === 'asset' || (field.type === 'array' && field.items.format === 'asset')
+	}
 
 	function formatDateStringForInput(dateString: string): string | null {
 		if (!dateString) {
@@ -39,46 +43,53 @@
 	}
 </script>
 
-{#snippet oneField(value: unknown, field: PieceFrontmatterSchemaField)}
-	{#if field.format === 'asset'}
-		<input type="file" name="{prefix.upload}.{field.name}" />
-		<input type="hidden" name="{prefix.input}.{field.name}" {value} />
-	{:else if field.format === 'date'}
-		<input
-			type="date"
-			name="{prefix.input}.{field.name}"
-			value={formatDateStringForInput(value as string) || ''}
-		/>
-	{:else if field.type === 'integer'}
-		<input type="number" name="{prefix.input}.{field.name}" {value} />
-	{:else if field.type === 'boolean'}
-		<select name="{prefix.input}.{field.name}" value={value ? 1 : 0}>
-			<option value="1">true</option>
-			<option value="0">false</option>
-		</select>
-	{:else if field.enum}
-		<select name="{prefix.input}.{field.name}" {value}>
+{#snippet fieldBooleanSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
+	<select name="{prefix}.{field.name}" value={value ? 1 : 0} required={field.nullable} >
+		<option value="1">true</option>
+		<option value="0">false</option>
+	</select>
+{/snippet}
+
+{#snippet fieldDateSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
+	<input
+		type="date"
+		name="{prefix}.{field.name}"
+		value={formatDateStringForInput(value as string) || ''}
+required={field.nullable} 
+	/>
+{/snippet}
+
+{#snippet fieldIntegerSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
+	<input type="number" name="{prefix}.{field.name}" {value} required={field.nullable} />
+{/snippet}
+
+{#snippet fieldTextSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
+	<input type="text" name="{prefix}.{field.name}" {value} required={field.nullable} />
+{/snippet}
+
+{#snippet fieldEnumSnippet(value: unknown, field: EnumField)}
+	<select name="{prefix}.{field.name}" {value} required={field.nullable}>
+		{#if field.enum}
 			{#each field.enum as option}
 				<option value={option}>{option}</option>
 			{/each}
-		</select>
-	{:else}
-		<input type="text" name="{prefix.input}.{field.name}" {value} />
-	{/if}
+		{/if}
+	</select>
 {/snippet}
 
 <div>
-	{#if type === 'array'}
-		{#each value as unknown[] as one, i}
-			{#if field.items.type !== 'array'}
-				{@render oneField(one, {
-					...field.items,
-					name: `${field.name}[${i}]`
-				} as PieceFrontmatterSchemaField)}
-			{/if}
-		{/each}
-	{:else if type === 'string' || type === 'integer' || type === 'boolean'}
-		{@render oneField(value, field)}
+	{#if isAsset(field)}
+		<EditAsset {field} {value} />
+	{:else if field.format === 'date'}
+		{@render fieldDateSnippet(value, field)}
+	{:else if field.type === 'integer'}
+		{@render fieldIntegerSnippet(value, field)}
+	{:else if field.type === 'boolean'}
+		{@render fieldBooleanSnippet(value, field)}
+	{:else if isEnum(field)}
+		{@render fieldEnumSnippet(value, field)}
+	{:else}
+		{@render fieldTextSnippet(value, field)}
 	{/if}
 </div>
 

@@ -2,17 +2,21 @@ import {
 	PRIVATE_LUZZLE_STORAGE_PASSWORD,
 	PRIVATE_LUZZLE_STORAGE_ROOT,
 	PRIVATE_LUZZLE_STORAGE_URL,
-	PRIVATE_LUZZLE_STORAGE_USERNAME
+	PRIVATE_LUZZLE_STORAGE_USERNAME,
+	PRIVATE_LUZZLE_GOOGLE_AI_API_KEY
 } from '$env/static/private'
-import { StorageWebDAV, Pieces, Storage } from '@luzzle/cli'
+import { StorageWebDAV, Pieces, Storage, pieceFrontMatterFromPrompt } from '@luzzle/cli'
+import type { PieceFrontmatter, PieceFrontmatterSchema } from '@luzzle/core'
 
 const url = PRIVATE_LUZZLE_STORAGE_URL
 const root = PRIVATE_LUZZLE_STORAGE_ROOT
 const username = PRIVATE_LUZZLE_STORAGE_USERNAME
 const password = PRIVATE_LUZZLE_STORAGE_PASSWORD
+const apiKey = PRIVATE_LUZZLE_GOOGLE_AI_API_KEY
 
 let pieces: Pieces
 let storage: Storage
+let types: string[] = []
 
 function getStorage() {
 	if (!storage) {
@@ -31,4 +35,20 @@ function getPieces() {
 	return pieces
 }
 
-export { getPieces, getStorage }
+async function getTypes() {
+	if (!types.length && !pieces) {
+		types = await getPieces().getTypes()
+	}
+
+	return types
+}
+
+async function promptToPiece(
+	schema: PieceFrontmatterSchema<PieceFrontmatter>,
+	prompt: string,
+	file?: Buffer
+) {
+	return pieceFrontMatterFromPrompt(apiKey, schema, prompt, file)
+}
+
+export { getPieces, getStorage, promptToPiece, getTypes }
