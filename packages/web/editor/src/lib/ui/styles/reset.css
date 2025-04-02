@@ -8,6 +8,10 @@
 	margin: 0;
 }
 
+dialog {
+	margin: auto;
+}
+
 html,
 body {
 	height: 100%;

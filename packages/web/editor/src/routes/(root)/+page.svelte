@@ -8,7 +8,7 @@
 		<p>
 			pieces: <br />
 			{#each files.pieces as piece}
-				<a href="/pieces/{piece.type}/{piece.file}">{piece.slug}</a> <br />
+				<a href="/pieces/list/{piece.type}/{piece.file}">{piece.slug}</a> <br />
 			{/each}
 		</p>
 	{/if}
@@ -17,7 +17,7 @@
 		<p>
 			directories <br />
 			{#each files.directories as directory}
-				<a href="/directory/{directory}">{directory}</a> <br />
+				<a href="/directory/list/{directory}">{directory}</a> <br />
 			{/each}
 		</p>
 	{/if}
