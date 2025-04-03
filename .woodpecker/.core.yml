@@ -1,6 +1,13 @@
 workspace:
   base: /workspace
   path: src
+
+when:
+  - event: [push, manual]
+    branch: main
+    path:
+      include: [".woodpecker/.core.yml", "packages/core/**"]
+
 steps:
   build:
     image: node:20
@@ -13,20 +20,10 @@ steps:
         from_secret: npm_owner
       NPM_TOKEN:
         from_secret: npm_token
-    when:
-      - event: [push]
-        branch: [main]
-        path:
-          include: [".woodpecker/.core.yml", "packages/core/**"]
   test:
     image: node:20
     commands:
       - npm run test -w @luzzle/core
-    when:
-      - event: [push]
-        branch: [main]
-        path:
-          include: [".woodpecker/.core.yml", "packages/core/**"]
   publish:
     image: node:20
     commands:
@@ -42,13 +39,8 @@ steps:
         from_secret: npm_owner
       NPM_TOKEN:
         from_secret: npm_token
-    when:
-      - event: [push]
-        branch: [main]
-        path:
-          include: [".woodpecker/.core.yml", "packages/core/**"]
-  notify:
-    image: deblan/woodpecker-email:2.0.4
+  notify-success:
+    image: deblan/woodpecker-email:3.2.0
     settings:
       dsn:
         from_secret: woodpecker_email_dsn
@@ -59,9 +51,23 @@ steps:
           from_secret: woodpecker_email_from_name
       recipients:
         from_secret: woodpecker_email_recipient
+      level: success
+      recipients_only: true
     when:
-      - event: [push, manual]
-        status: [failure, success]
-        branch: [main]
-        path:
-          include: [".woodpecker/.core.yml", "packages/core/**"]
+      - status: [success]
+  notify-failure:
+    image: deblan/woodpecker-email:3.2.0
+    settings:
+      dsn:
+        from_secret: woodpecker_email_dsn
+      from:
+        address:
+          from_secret: woodpecker_email_from_address
+        name:
+          from_secret: woodpecker_email_from_name
+      recipients:
+        from_secret: woodpecker_email_recipient
+      level: failure
+      recipients_only: true
+    when:
+      - status: [failure]
