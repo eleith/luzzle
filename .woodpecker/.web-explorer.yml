@@ -1,6 +1,13 @@
 workspace:
   base: /workspace
   path: src
+
+  when:
+    - event: [push, manual]
+      branch: [main]
+      path:
+        include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
+
 steps:
   prepare:
     image: node:20
@@ -9,12 +16,6 @@ steps:
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
-    when:
-      - event: [push, manual]
-        status: [failure, success]
-        branch: [main]
-        path:
-          include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
   build_docker:
     image: woodpeckerci/plugin-docker-buildx:pull_186
     settings:
@@ -28,12 +29,6 @@ steps:
       auto_tag: true
       password:
         from_secret: gitea_docker_registry
-    when:
-      - event: [push, manual]
-        status: [failure, success]
-        branch: [main]
-        path:
-          include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
   notify-success:
     image: deblan/woodpecker-email:3.2.0
     settings:
@@ -49,11 +44,7 @@ steps:
       level: success
       recipients_only: true
     when:
-      - event: [push, manual]
-        status: [success]
-        branch: [main]
-        path:
-          include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
+      - status: [success]
   notify-failure:
     image: deblan/woodpecker-email:3.2.0
     settings:
@@ -69,8 +60,4 @@ steps:
       level: failure
       recipients_only: true
     when:
-      - event: [push, manual]
-        status: [failure]
-        branch: [main]
-        path:
-          include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
+      - status: [failure]
