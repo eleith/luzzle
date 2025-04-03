@@ -1,0 +1,21 @@
+services:
+  luzzle:
+    build:
+      secrets:
+        - npmrc
+      context: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./.env.local:/app/.env.local
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        npm run build 
+        node --env-file=.env.local build
+
+secrets:
+  npmrc:
+    file: $HOME/.npmrc
