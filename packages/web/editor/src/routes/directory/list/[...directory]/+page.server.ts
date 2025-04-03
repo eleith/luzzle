@@ -1,5 +1,5 @@
 import path from 'path'
-import { getPieces } from '$lib/storage'
+import { getPieces } from '$lib/pieces'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ params }) => {

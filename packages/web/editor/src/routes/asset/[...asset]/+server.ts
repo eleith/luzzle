@@ -1,8 +1,8 @@
-import path from "path";
-import type { RequestHandler } from "./$types";
-import { getStorage } from "$lib/storage";
-import mime from "mime/lite"
-import { Readable } from "stream";
+import path from 'path'
+import type { RequestHandler } from './$types'
+import { getStorage } from '$lib/pieces'
+import mime from 'mime-types'
+import { Readable } from 'stream'
 
 export const GET: RequestHandler = async ({ params }) => {
 	const assetPath = path.normalize(params.asset)
@@ -10,18 +10,17 @@ export const GET: RequestHandler = async ({ params }) => {
 
 	try {
 		const stream = storage.createReadStream(assetPath)
-		const type = path.extname(assetPath).substring(1)
-		const responseType = type ? mime.getType(type) : null
+		const responseType = mime.lookup(assetPath)
 		const defaultType = 'application/octet-stream'
 		const webStream = Readable.toWeb(stream) as ReadableStream
 
 		return new Response(webStream, {
 			headers: {
-				'Content-Type': responseType ?? defaultType,
+				'Content-Type': responseType ? responseType : defaultType
 			}
 		})
 	} catch (error) {
 		console.error(error)
-		return new Response("asset not found", { status: 404 });
+		return new Response('asset not found', { status: 404 })
 	}
 }

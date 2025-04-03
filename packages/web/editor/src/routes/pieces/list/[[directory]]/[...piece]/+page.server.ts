@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
-import { getPieces } from '$lib/storage'
+import { getPieces } from '$lib/pieces'
 import { Readable } from 'stream'
 import { ReadableStream } from 'stream/web'
 import type { BufferLike } from 'webdav'

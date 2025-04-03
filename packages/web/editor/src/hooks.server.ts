@@ -1,3 +1,3 @@
-import { getPieces } from '$lib/storage'
+import { getPieces } from '$lib/pieces'
 
 getPieces()

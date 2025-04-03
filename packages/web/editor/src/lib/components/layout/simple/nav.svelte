@@ -7,7 +7,6 @@
 	import SunIcon from 'virtual:icons/ph/sun-dim'
 	import MoonIcon from 'virtual:icons/ph/moon'
 	import ArrowRightIcon from 'virtual:icons/ph/caret-double-right'
-	import TreeIcon from 'virtual:icons/ph/tree'
 	import themes, { type Theme } from '$lib/ui/styles/themes'
 	import { page } from '$app/state'
 	import { fly, fade } from 'svelte/transition'
@@ -139,14 +138,13 @@
 	</div>
 	<div class="right">
 		<a href="/search" onclick={clickSearch} use:melt={$trigger} aria-label="search">
-			<SearchIcon style="font-size: 1em;" />
+			<SearchIcon style="font-size: 1em; display: none;" />
 		</a>
 		{#if items?.right}
 			{@render items.right()}
 		{/if}
 		<button onclick={clickTheme} aria-label="change theme">
 			<SunIcon class="themeIcons themeIconsSun" />
-			<TreeIcon class="themeIcons themeIconsTree" />
 			<MoonIcon class="themeIcons themeIconsMoon" />
 		</button>
 	</div>
@@ -224,11 +222,7 @@
 		display: inline-block;
 	}
 
-	:global(html[data-theme='light'] .themeIconsTree) {
-		display: inline-block;
-	}
-
-	:global(html[data-theme='forest'] .themeIconsMoon) {
+	:global(html[data-theme='light'] .themeIconsMoon) {
 		display: inline-block;
 	}
 </style>
