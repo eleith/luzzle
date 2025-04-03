@@ -2,11 +2,11 @@ workspace:
   base: /workspace
   path: src
 
-  when:
-    - event: [push, manual]
-      branch: [main]
-      path:
-        include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
+when:
+  - event: [push, manual]
+    branch: [main]
+    path:
+      include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
 
 steps:
   prepare:
