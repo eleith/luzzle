@@ -2,7 +2,7 @@ FROM node:20.18.0-alpine
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
-RUN --mount=type=secret,id=npmrc cp /run/secrets/npmrc /root/.npmrc
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc
 
 COPY package.json ./package.json
 COPY web.package-lock.json ./package-lock.json
