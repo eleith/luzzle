@@ -1,0 +1,63 @@
+workspace:
+  base: /workspace
+  path: src
+
+when:
+  - event: [push, manual]
+    branch: [main]
+    path:
+      include: [".woodpecker/.web-editor.yml", "packages/web/editor/**"]
+
+steps:
+  prepare:
+    image: node:20
+    commands:
+      - echo $LUZZLE_NPMRC >> .npmrc
+    environment:
+      LUZZLE_NPMRC:
+        from_secret: luzzle_npmrc
+  build_docker:
+    image: woodpeckerci/plugin-docker-buildx:5.2.2
+    settings:
+      repo: git.eleith.com/eleith/luzzle-editor
+      username: eleith
+      dockerfile: packages/web/editor/Dockerfile
+      context: packages/web/editor
+      registry: https://git.eleith.com
+      build_args:
+        secret: id=npmrc,src=.npmrc
+      auto_tag: true
+      password:
+        from_secret: gitea_docker_registry
+  notify-success:
+    image: deblan/woodpecker-email:3.2.0
+    settings:
+      dsn:
+        from_secret: woodpecker_email_dsn
+      from:
+        address:
+          from_secret: woodpecker_email_from_address
+        name:
+          from_secret: woodpecker_email_from_name
+      recipients:
+        from_secret: woodpecker_email_recipient
+      level: success
+      recipients_only: true
+    when:
+      - status: [success]
+  notify-failure:
+    image: deblan/woodpecker-email:3.2.0
+    settings:
+      dsn:
+        from_secret: woodpecker_email_dsn
+      from:
+        address:
+          from_secret: woodpecker_email_from_address
+        name:
+          from_secret: woodpecker_email_from_name
+      recipients:
+        from_secret: woodpecker_email_recipient
+      level: failure
+      recipients_only: true
+    when:
+      - status: [failure]
