@@ -35,7 +35,10 @@ function getPieceFrontmatterSchemaFields<M extends PieceFrontmatter>(
 	schema: PieceFrontmatterSchema<M>
 ): Array<PieceFrontmatterSchemaField> {
 	return Object.keys(schema.properties).map((key) => {
-		return { name: key, ...schema.properties[key] } as PieceFrontmatterSchemaField
+		const required = Array.isArray(schema.required) ? schema.required : []
+		const nullable = required.some(f => f === key) || schema.properties[key]?.nullable
+
+		return { name: key, ...schema.properties[key], nullable } as PieceFrontmatterSchemaField
 	})
 }
 
