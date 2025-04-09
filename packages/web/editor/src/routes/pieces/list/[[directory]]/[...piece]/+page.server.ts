@@ -80,13 +80,13 @@ export const actions = {
 			const key = field.name
 			const isArray = field.type === 'array'
 
-			if (data.has(`upload.${key}`)) {
+			if (data.has(`frontmatter.upload.${key}`)) {
 				const files = data.getAll(`frontmatter.upload.${key}`) as File[]
 
 				// html spec returns an empty file by design!
-				const streams = files.filter((f) => f.size > 0).map((file) =>
-					Readable.fromWeb(file.stream() as ReadableStream<BufferLike>)
-				)
+				const streams = files
+					.filter((f) => f.size > 0)
+					.map((file) => Readable.fromWeb(file.stream() as ReadableStream<BufferLike>))
 
 				if (streams.length) {
 					if (isArray) {

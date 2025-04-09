@@ -13,9 +13,14 @@ steps:
     image: node:20
     commands:
       - echo $LUZZLE_NPMRC >> .npmrc
+      - npm ci -w @luzzle/core -w @luzzle/cli -w @luzzle/web-editor
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
+  lint:
+    image: node:20
+    commands:
+      - npm run -w @luzzle/web-editor lint
   build_docker:
     image: woodpeckerci/plugin-docker-buildx:5.2.2
     settings:

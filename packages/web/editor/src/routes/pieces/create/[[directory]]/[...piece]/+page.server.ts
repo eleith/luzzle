@@ -58,7 +58,7 @@ export const actions = {
 				directory,
 				name,
 				fields: piece.fields,
-				markdown,
+				markdown
 			}
 		} catch (e) {
 			return fail(400, { error: { message: `failed to create piece: ${e}` } })
@@ -92,9 +92,9 @@ export const actions = {
 					const files = formData.getAll(`frontmatter.upload.${key}`) as File[]
 
 					// html spec returns an empty file by design!
-					const streams = files.filter((f) => f.size > 0).map((file) =>
-						Readable.fromWeb(file.stream() as ReadableStream<BufferLike>)
-					)
+					const streams = files
+						.filter((f) => f.size > 0)
+						.map((file) => Readable.fromWeb(file.stream() as ReadableStream<BufferLike>))
 
 					if (streams.length) {
 						if (isArray) {
@@ -117,8 +117,7 @@ export const actions = {
 					}
 				}
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			return fail(400, { error: { message: `failed to create piece: ${e}` } })
 		}
 

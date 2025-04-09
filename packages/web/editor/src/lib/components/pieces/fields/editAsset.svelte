@@ -60,7 +60,7 @@
 				bind:files={toUpload}
 				onchange={onChangeUpload}
 				name="{prefix}.upload.{field.name}"
-				required={field.nullable}
+				required={!field.nullable}
 			/>
 			{#if toUpload?.length}
 				<button onclick={() => clickToRemoveUpload()}>cancel</button>
