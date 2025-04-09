@@ -1,6 +1,5 @@
 import { PieceFrontmatter } from './utils/frontmatter.js'
-import { JSONSchemaType } from 'ajv'
-import { PropertiesSchema } from 'ajv/dist/types/json-schema.js'
+import { PropertiesSchema, JSONSchemaType } from 'ajv/dist/types/json-schema.js'
 import { CreateTableBuilder, sql } from 'kysely'
 
 function pieceSchemaFieldTypeToColumnType(type: string) {
