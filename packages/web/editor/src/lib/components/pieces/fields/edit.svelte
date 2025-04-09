@@ -44,7 +44,7 @@
 </script>
 
 {#snippet fieldBooleanSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
-	<select name="{prefix}.{field.name}" value={value ? 1 : 0} required={field.nullable} >
+	<select name="{prefix}.{field.name}" value={value ? '1' : '0'} required={!field.nullable}>
 		<option value="1">true</option>
 		<option value="0">false</option>
 	</select>
@@ -55,20 +55,20 @@
 		type="date"
 		name="{prefix}.{field.name}"
 		value={formatDateStringForInput(value as string) || ''}
-required={field.nullable} 
+		required={!field.nullable}
 	/>
 {/snippet}
 
 {#snippet fieldIntegerSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
-	<input type="number" name="{prefix}.{field.name}" {value} required={field.nullable} />
+	<input type="number" name="{prefix}.{field.name}" {value} required={!field.nullable} />
 {/snippet}
 
 {#snippet fieldTextSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
-	<input type="text" name="{prefix}.{field.name}" {value} required={field.nullable} />
+	<input type="text" name="{prefix}.{field.name}" {value} required={!field.nullable} />
 {/snippet}
 
 {#snippet fieldEnumSnippet(value: unknown, field: EnumField)}
-	<select name="{prefix}.{field.name}" {value} required={field.nullable}>
+	<select name="{prefix}.{field.name}" {value} required={!field.nullable}>
 		{#if field.enum}
 			{#each field.enum as option}
 				<option value={option}>{option}</option>

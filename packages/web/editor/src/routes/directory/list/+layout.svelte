@@ -8,7 +8,9 @@
 </script>
 
 {#snippet createIcon()}
-	<a href="/pieces/create/{page.params.directory}" aria-label="rss feed"><CreateIcon style="font-size: 1em;" /></a>
+	<a href="/pieces/create/{page.params.directory}" aria-label="rss feed"
+		><CreateIcon style="font-size: 1em;" /></a
+	>
 {/snippet}
 
 <main>
