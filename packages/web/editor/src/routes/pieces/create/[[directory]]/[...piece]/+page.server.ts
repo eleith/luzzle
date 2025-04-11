@@ -88,7 +88,7 @@ export const actions = {
 				const key = field.name
 				const isArray = field.type === 'array'
 
-				if (formData.has(`upload.${key}`)) {
+				if (formData.has(`frontmatter.upload.${key}`)) {
 					const files = formData.getAll(`frontmatter.upload.${key}`) as File[]
 
 					// html spec returns an empty file by design!
