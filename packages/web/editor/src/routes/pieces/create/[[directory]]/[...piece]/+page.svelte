@@ -1,5 +1,5 @@
 <script lang="ts">
-	import FieldEdit from '$lib/components/pieces/fields/edit.svelte'
+	import FieldEdit from '$lib/pieces/components/fields/edit.svelte'
 
 	let { data, form } = $props()
 </script>

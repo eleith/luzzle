@@ -1,6 +1,6 @@
 <script lang="ts">
-	import FieldDislay from '$lib/components/pieces/fields/display.svelte'
-	import FieldEdit from '$lib/components/pieces/fields/edit.svelte'
+	import FieldDislay from '$lib/pieces/components/fields/display.svelte'
+	import FieldEdit from '$lib/pieces/components/fields/edit.svelte'
 
 	let { data } = $props()
 	let mode: 'edit' | 'preview' | 'prompt-delete' = $state('preview')

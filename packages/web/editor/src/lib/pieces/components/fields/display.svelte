@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type PieceFrontmatterSchemaField } from '@luzzle/core'
+	import { type PieceFrontmatterSchemaField } from '@luzzle/cli'
 
 	type Props = {
 		field: PieceFrontmatterSchemaField

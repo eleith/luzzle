@@ -1,12 +1,9 @@
-import path from 'path'
 import { getPieces } from '$lib/pieces'
 import type { PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async ({ url }) => {
-	const dir = url.searchParams.get('dir') || ''
-	const canonicalDir = path.normalize(`/${dir}`)
+export const load: PageServerLoad = async () => {
 	const pieces = getPieces()
-	const files = await pieces.getFilesIn(canonicalDir)
+	const files = await pieces.getFilesIn('.')
 
 	return {
 		files: {

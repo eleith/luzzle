@@ -1,10 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces, promptToPiece } from '$lib/pieces'
-import { Readable } from 'stream'
-import type { ReadableStream } from 'stream/web'
-import type { BufferLike } from 'webdav'
-import type { PieceFrontmatter, PieceMarkdown } from '@luzzle/core'
+import { extractFrontmatterFromFormData } from '$lib/pieces/formData'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const directory = params.directory || ''
@@ -70,53 +67,20 @@ export const actions = {
 		const name = formData.get('name')?.toString()
 		const type = formData.get('type')?.toString()
 		const directory = event.params.directory || ''
-		const note = formData.get('note')
+		const note = formData.get('note') || ''
 		const types = await pieces.getTypes()
-		let markdown: PieceMarkdown<PieceFrontmatter>
 
 		if (!type || !types.includes(type)) {
 			return error(404, `piece type does not exist`)
 		}
 
 		const piece = await pieces.getPiece(type)
+		const markdown = await piece.create(directory, name as string)
 
 		try {
-			markdown = await piece.create(directory, name as string)
-			markdown.note = (note as string) || ''
-
-			for (const field of piece.fields) {
-				const key = field.name
-				const isArray = field.type === 'array'
-
-				if (formData.has(`frontmatter.upload.${key}`)) {
-					const files = formData.getAll(`frontmatter.upload.${key}`) as File[]
-
-					// html spec returns an empty file by design!
-					const streams = files
-						.filter((f) => f.size > 0)
-						.map((file) => Readable.fromWeb(file.stream() as ReadableStream<BufferLike>))
-
-					if (streams.length) {
-						if (isArray) {
-							markdown = await piece.setField(markdown, key, streams)
-						} else {
-							markdown = await piece.setField(markdown, key, streams[0])
-						}
-					}
-				}
-
-				if (formData.has(`frontmatter.${key}`)) {
-					const inputs = formData.getAll(`frontmatter.${key}`).filter((input) => input !== '')
-
-					if (inputs.length) {
-						if (isArray) {
-							markdown = await piece.setField(markdown, key, inputs)
-						} else {
-							markdown = await piece.setField(markdown, key, inputs[0])
-						}
-					}
-				}
-			}
+			const frontmatter = await extractFrontmatterFromFormData(piece, formData)
+			markdown.frontmatter = { ...markdown.frontmatter, ...frontmatter }
+			markdown.note = note as string
 		} catch (e) {
 			return fail(400, { error: { message: `failed to create piece: ${e}` } })
 		}
