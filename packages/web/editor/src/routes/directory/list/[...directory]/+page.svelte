@@ -4,16 +4,6 @@
 </script>
 
 <section class="intro">
-	{#if directory.parent === '.'}
-		<p>
-			<a href="/">home</a>
-		</p>
-	{:else}
-		<p>
-			back to <a href="/directory/list/{directory.parent}">{directory.parent}</a>
-		</p>
-	{/if}
-
 	{#if files.pieces.length}
 		<p>
 			pieces: <br />
