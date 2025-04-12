@@ -8,7 +8,7 @@ type PieceFrontmatterSchema<M extends PieceFrontmatter> = JSONSchemaType<M>
 type PieceFrontmatterSchemaFieldScalar = {
 	name: string
 	type: 'string' | 'boolean' | 'integer'
-	format?: 'asset' | 'date' | 'comma-separated'
+	format?: 'asset' | 'date' | 'comma-separated' | 'paragraph'
 	nullable?: boolean
 	pattern?: string
 	enum?: string[] | number[]
