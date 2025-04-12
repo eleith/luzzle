@@ -161,6 +161,7 @@
 		padding: var(--space-5);
 		display: flex;
 		align-items: left;
+		gap: var(--space-2);
 	}
 
 	.right {

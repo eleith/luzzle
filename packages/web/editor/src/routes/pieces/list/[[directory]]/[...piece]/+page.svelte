@@ -1,5 +1,5 @@
 <script lang="ts">
-	import FieldDislay from '$lib/pieces/components/fields/display.svelte'
+	import FieldDisplay from '$lib/pieces/components/fields/display.svelte'
 	import FieldEdit from '$lib/pieces/components/fields/edit.svelte'
 
 	let { data } = $props()
@@ -25,18 +25,22 @@
 		<button onclick={() => (mode = 'preview')}>cancel</button>
 		<button onclick={() => (mode = 'prompt-delete')} style="background-color:red;">delete</button>
 	{/if}
-	<div><a href="/directory/list/{data.directory}">{data.directory}</a></div>
 </section>
 
 {#if mode === 'preview'}
 	<section class="preview">
 		<div class="piece-container">
 			{#each data.schema as field}
-				<div>
-					<FieldDislay {field} value={data.fields[field.name]} />
+				<div style="padding-bottom: 10px;">
+					<div style="font-size: 80%;">
+						{field.name}
+					</div>
+					<div>
+						<FieldDisplay {field} value={data.fields[field.name]} />
+					</div>
 				</div>
 			{/each}
-			<div class="field">note</div>
+			<div style="font-size: 80%;">note</div>
 			<div>{data.note}</div>
 		</div>
 	</section>
