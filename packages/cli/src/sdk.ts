@@ -2,6 +2,7 @@
 import { Storage, StorageFileSystem, StorageWebDAV } from './lib/storage/index.js'
 import { Piece, Pieces } from './lib/pieces/index.js'
 import { pieceFrontMatterFromPrompt } from './lib/llm/google.js'
+import type { PieceFrontmatter, PieceFrontmatterSchema, PieceFrontmatterSchemaField, PieceMarkdown } from '@luzzle/core'
 
 export {
 	Storage,
@@ -9,5 +10,9 @@ export {
 	StorageWebDAV,
 	Piece,
 	Pieces,
-	pieceFrontMatterFromPrompt
+	pieceFrontMatterFromPrompt,
+	PieceFrontmatter,
+	PieceFrontmatterSchema,
+	PieceFrontmatterSchemaField,
+	PieceMarkdown,
 }
