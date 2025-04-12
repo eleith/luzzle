@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type PieceFrontmatterSchemaField } from '@luzzle/core'
+	import { type PieceFrontmatterSchemaField } from '@luzzle/cli'
 	import EditAsset from './editAsset.svelte'
 	import type { AssetField, EnumField } from './types.js'
 
@@ -67,6 +67,10 @@
 	<input type="text" name="{prefix}.{field.name}" {value} required={!field.nullable} />
 {/snippet}
 
+{#snippet fieldParagraphSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
+	<textarea name="{prefix}.{field.name}" required={!field.nullable}>{value}</textarea>
+{/snippet}
+
 {#snippet fieldEnumSnippet(value: unknown, field: EnumField)}
 	<select name="{prefix}.{field.name}" {value} required={!field.nullable}>
 		{#if field.enum}
@@ -88,6 +92,8 @@
 		{@render fieldBooleanSnippet(value, field)}
 	{:else if isEnum(field)}
 		{@render fieldEnumSnippet(value, field)}
+	{:else if field.format === 'paragraph'}
+		{@render fieldParagraphSnippet(value, field)}
 	{:else}
 		{@render fieldTextSnippet(value, field)}
 	{/if}

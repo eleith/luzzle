@@ -1,9 +1,7 @@
-import { error, redirect } from '@sveltejs/kit'
+import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces } from '$lib/pieces'
-import { Readable } from 'stream'
-import { ReadableStream } from 'stream/web'
-import type { BufferLike } from 'webdav'
+import { extractFrontmatterFromFormData } from '$lib/pieces/formData'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const directory = params.directory || ''
@@ -57,71 +55,26 @@ export const actions = {
 		const file = `${directory}/${event.params.piece}`
 		const pieces = getPieces()
 		const type = pieces.parseFilename(file).type
-		const data = await event.request.formData()
+		const formData = await event.request.formData()
+		const note = formData.get('note') || ''
 
 		if (!type) {
 			return error(404, `piece type does not exist`)
 		}
 
 		const piece = await pieces.getPiece(type)
-		let markdown = await piece.get(file)
+		const markdown = await piece.get(file)
 
 		if (!markdown) {
 			return error(404, `piece does not exist`)
 		}
 
-		const note = data.get('note')
-
-		if (note !== markdown.note) {
-			markdown.note = (note as string) || ''
-		}
-
-		for (const field of piece.fields) {
-			const key = field.name
-			const isArray = field.type === 'array'
-
-			if (data.has(`frontmatter.upload.${key}`)) {
-				const files = data.getAll(`frontmatter.upload.${key}`) as File[]
-
-				// html spec returns an empty file by design!
-				const streams = files
-					.filter((f) => f.size > 0)
-					.map((file) => Readable.fromWeb(file.stream() as ReadableStream<BufferLike>))
-
-				if (streams.length) {
-					if (isArray) {
-						markdown = await piece.setField(markdown, key, streams)
-					} else {
-						markdown = await piece.setField(markdown, key, streams[0])
-					}
-				}
-			}
-
-			if (data.has(`frontmatter.${key}`)) {
-				const inputs = data.getAll(`frontmatter.${key}`).filter((input) => input !== '')
-
-				if (inputs.length) {
-					if (isArray) {
-						markdown = await piece.setField(markdown, key, inputs)
-					} else {
-						markdown = await piece.setField(markdown, key, inputs[0])
-					}
-				}
-			}
-
-			if (data.has(`remove.${key}`)) {
-				const removes = data.getAll(`remove.${key}`).filter((remove) => remove !== '')
-
-				if (removes.length) {
-					if (isArray) {
-						for (const remove of removes) {
-							markdown = await piece.removeField(markdown, key, remove as string)
-						}
-					} else {
-						markdown = await piece.removeField(markdown, key)
-					}
-				}
-			}
+		try {
+			const frontmatter = await extractFrontmatterFromFormData(piece, formData)
+			markdown.frontmatter = { ...markdown.frontmatter, ...frontmatter }
+			markdown.note = note as string
+		} catch (e) {
+			return fail(400, { error: { message: `failed to create piece: ${e}` } })
 		}
 
 		await piece.write(markdown)

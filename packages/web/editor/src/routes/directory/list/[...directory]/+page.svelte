@@ -4,9 +4,13 @@
 </script>
 
 <section class="intro">
-	{#if directory.parent !== directory.current}
+	{#if directory.parent === '.'}
 		<p>
-			back to <a href="/directory/list{directory.parent}">{directory.parent}</a>
+			<a href="/">home</a>
+		</p>
+	{:else}
+		<p>
+			back to <a href="/directory/list/{directory.parent}">{directory.parent}</a>
 		</p>
 	{/if}
 
@@ -14,7 +18,7 @@
 		<p>
 			pieces: <br />
 			{#each files.pieces as piece}
-				<a href="/pieces/list{directory.current}/{piece.file}">{piece.slug}</a> <br />
+				<a href="/pieces/list/{directory.current}/{piece.file}">{piece.slug}</a> <br />
 			{/each}
 		</p>
 	{/if}
