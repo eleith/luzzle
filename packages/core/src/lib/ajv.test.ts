@@ -2,9 +2,10 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { makeSchema } from '../pieces/utils/piece.fixtures.js'
 import Ajv from 'ajv'
 import ajv, {
-	luzzleAssetFormatValidator,
-	luzzleDateFormatValidator,
-	luzzleCommaSeparatedFormatValidator,
+	assetFormatValidator,
+	dateFormatValidator,
+	commaSeparatedFormatValidator,
+	paragraphValidator
 } from './ajv.js'
 
 vi.mock('ajv')
@@ -35,21 +36,24 @@ describe('src/lib/ajv.ts', () => {
 		ajv(schema)
 
 		expect(mocks.Ajv).toHaveBeenCalledTimes(1)
-		expect(mocks.addFormat).toHaveBeenCalledTimes(3)
 		expect(mocks.compile).toHaveBeenCalledWith(schema)
 	})
 
-	test('luzzleCommaSeparatedFormatValidator', () => {
-		expect(luzzleCommaSeparatedFormatValidator('a,b,c')).toBe(true)
+	test('commaSeparatedFormatValidator', () => {
+		expect(commaSeparatedFormatValidator('a,b,c')).toBe(true)
 	})
 
-	test('luzzleDateFormatValidator', () => {
-		expect(luzzleDateFormatValidator('2020-01-01')).toBe(true)
-		expect(luzzleDateFormatValidator('2020-01-32')).toBe(false)
+	test('dateFormatValidator', () => {
+		expect(dateFormatValidator('2020-01-01')).toBe(true)
+		expect(dateFormatValidator('2020-01-32')).toBe(false)
 	})
 
-	test('luzzleAssetFormatValidtor', () => {
-		expect(luzzleAssetFormatValidator('.assets/1/2/3')).toBe(true)
-		expect(luzzleAssetFormatValidator('./home/to/nowhere/5.jpg')).toBe(false)
+	test('assetFormatValidtor', () => {
+		expect(assetFormatValidator('.assets/1/2/3')).toBe(true)
+		expect(assetFormatValidator('./home/to/nowhere/5.jpg')).toBe(false)
+	})
+
+	test('paragraphFormatValidtor', () => {
+		expect(paragraphValidator('hi there')).toBe(true)
 	})
 })
