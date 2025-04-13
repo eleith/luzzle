@@ -80,6 +80,6 @@ export const actions = {
 		}
 
 		await piece.write(markdown)
-		redirect(303, `/pieces/list/${markdown.filePath}`)
+		redirect(303, `/pieces/list/${file}`)
 	}
 } satisfies Actions
