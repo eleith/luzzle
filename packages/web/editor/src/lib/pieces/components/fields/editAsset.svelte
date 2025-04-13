@@ -45,7 +45,7 @@
 	{#if retainAssets.length > 0}
 		{#each retainAssets as asset}
 			<div>
-				<span><a href="/asset/{asset}">{asset}</a></span>
+				<span><a href="/asset/{asset}" target="_blank">{asset}</a></span>
 				<button onclick={() => clickToRemove(asset)}>remove</button>
 			</div>
 		{/each}

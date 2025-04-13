@@ -21,7 +21,7 @@
 	{#if value === undefined}
 		<em>{undefinedValue}</em>
 	{:else if format === 'asset'}
-		<a href="/asset/{value}">{value}</a>
+		<a href="/asset/{value}" target="_blank">{value}</a>
 	{:else if type === 'boolean'}
 		<span>{value ? 'true' : 'false'}</span>
 	{:else}
