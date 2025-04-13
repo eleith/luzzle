@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces, promptToPiece } from '$lib/pieces'
-import { extractFrontmatterFromFormData } from '$lib/pieces/formData'
+import { extractFrontmatterFromFormData, extractNoteFromFormData } from '$lib/pieces/formData'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const directory = params.directory || ''
@@ -68,7 +68,6 @@ export const actions = {
 		const name = formData.get('name')?.toString()
 		const type = formData.get('type')?.toString()
 		const directory = event.params.directory || ''
-		const note = formData.get('note') || ''
 		const types = await pieces.getTypes()
 
 		if (!type || !types.includes(type)) {
@@ -80,9 +79,10 @@ export const actions = {
 
 		try {
 			const frontmatter = await extractFrontmatterFromFormData(piece, markdown, formData)
+			const note = await extractNoteFromFormData(formData)
 
 			markdown.frontmatter = frontmatter
-			markdown.note = note as string
+			markdown.note = note
 		} catch (e) {
 			return fail(400, { error: { message: `failed to create piece: ${e}` } })
 		}
