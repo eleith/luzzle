@@ -29,15 +29,20 @@
 			</div>
 			<div style="display: flex; justify-content: space-between;">
 				<button type="submit">save</button>
-				<button
-					type="button"
-					onclick={() => {
-						dialog.showModal()
-					}}
-					style="background-color:red;"
-				>
-					delete
-				</button>
+				<div>
+					<button type="button" style="background-color:blue;">
+						<a href="/pieces/list/{data.file}">cancel</a>
+					</button>
+					<button
+						type="button"
+						onclick={() => {
+							dialog.showModal()
+						}}
+						style="background-color:red;"
+					>
+						delete
+					</button>
+				</div>
 			</div>
 		</div>
 	</form>

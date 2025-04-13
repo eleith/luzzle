@@ -18,6 +18,19 @@ async function extractFrontmatterFromFormData<T extends PieceFrontmatter>(
 			markdown = await piece.removeField(markdown, key)
 		}
 
+		if (formData.has(`frontmatter.download.${key}`)) {
+			const downloads = formData.getAll(`frontmatter.download.${key}`) as string[]
+			const urls = downloads.filter((url) => url.length)
+
+			if (urls.length) {
+				if (isArray) {
+					markdown = await piece.setField(markdown, key, urls)
+				} else {
+					markdown = await piece.setField(markdown, key, urls[0])
+				}
+			}
+		}
+
 		if (formData.has(`frontmatter.upload.${key}`)) {
 			const files = formData.getAll(`frontmatter.upload.${key}`) as File[]
 
