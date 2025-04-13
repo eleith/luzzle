@@ -64,4 +64,10 @@ async function extractFrontmatterFromFormData<T extends PieceFrontmatter>(
 	return markdown.frontmatter
 }
 
-export { extractFrontmatterFromFormData }
+async function extractNoteFromFormData(formData: FormData) {
+	const note = formData.get('note') || ''
+
+	return note.toString().replace(/\r\n/g, '\n')
+}
+
+export { extractFrontmatterFromFormData, extractNoteFromFormData }

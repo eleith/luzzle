@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces } from '$lib/pieces'
-import { extractFrontmatterFromFormData } from '$lib/pieces/formData'
+import { extractFrontmatterFromFormData, extractNoteFromFormData } from '$lib/pieces/formData'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const directory = params.directory || ''
@@ -57,7 +57,6 @@ export const actions = {
 		const pieces = getPieces()
 		const type = pieces.parseFilename(file).type
 		const formData = await event.request.formData()
-		const note = formData.get('note') || ''
 
 		if (!type) {
 			return error(404, `piece type does not exist`)
@@ -72,9 +71,10 @@ export const actions = {
 
 		try {
 			const frontmatter = await extractFrontmatterFromFormData(piece, markdown, formData)
+			const note = await extractNoteFromFormData(formData)
 
 			markdown.frontmatter = frontmatter
-			markdown.note = note as string
+			markdown.note = note
 		} catch (e) {
 			return fail(400, { error: { message: `failed to create piece: ${e}` } })
 		}
