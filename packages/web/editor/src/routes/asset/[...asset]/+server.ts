@@ -10,6 +10,7 @@ export const GET: RequestHandler = async ({ params }) => {
 
 	try {
 		const stream = storage.createReadStream(assetPath)
+
 		const responseType = mime.lookup(assetPath)
 		const defaultType = 'application/octet-stream'
 		const webStream = Readable.toWeb(stream) as ReadableStream

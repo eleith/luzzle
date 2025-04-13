@@ -4,16 +4,12 @@
 	let { data, form } = $props()
 </script>
 
-<section class="toolbar">
-	<div><a href="/directory/list/{data.directory}">cancel</a></div>
-</section>
-
 {#if form && !form.error}
 	<section class="edit">
 		<form method="post" enctype="multipart/form-data" action="?/create">
 			<div class="piece-container">
 				<div class="field">directory</div>
-				<div>
+				<div class="field-edit">
 					{form.directory}
 					<input type="hidden" name="directory" value={form.directory} />
 				</div>
@@ -34,11 +30,14 @@
 					</div>
 				{/each}
 				<div class="field">note</div>
-				<div>
-					<textarea name="note">{form.markdown.note}</textarea>
+				<div class="field-edit">
+					<textarea name="note" style="width: 100%;height:300px;"></textarea>
 				</div>
-				<div>
+				<div style="display:flex;justify-content:space-between;">
 					<button type="submit">create</button>
+					<button style="background-color:blue;"
+						><a href="/directory/list/{data.directory}">cancel</a></button
+					>
 				</div>
 			</div>
 		</form>
@@ -53,29 +52,29 @@
 					</div>
 				{/if}
 				<div class="field">directory</div>
-				<div>{data.directory}</div>
+				<div class="field-edit">{data.directory}</div>
 				<div class="field">name</div>
-				<div>
-					<input type="text" name="name" required />
+				<div class="field-edit">
+					<input type="text" name="name" required style="width:100%;" />
 				</div>
 				<div class="field">type</div>
-				<div>
+				<div class="field-edit">
 					<select name="type" required>
 						{#each data.types as type}
 							<option value={type}>{type}</option>
 						{/each}
 					</select>
-					<div class="field">prompt</div>
-					<div>
-						<textarea name="prompt"></textarea>
-					</div>
-					<div class="field">file</div>
-					<div>
-						<input type="file" name="file" accept=".pdf" />
-					</div>
-					<div>
-						<button type="submit">prompt</button>
-					</div>
+				</div>
+				<div class="field">prompt</div>
+				<div class="field-edit">
+					<textarea name="prompt" style="width:100%;height:300px;"></textarea>
+				</div>
+				<div class="field">file</div>
+				<div class="field-edit">
+					<input type="file" name="file" accept=".pdf" />
+				</div>
+				<div>
+					<button type="submit">prompt</button>
 				</div>
 			</div>
 		</form>
@@ -83,6 +82,14 @@
 {/if}
 
 <style>
+	div.field {
+		font-size: 80%;
+	}
+
+	div.field-edit {
+		padding-bottom: 10px;
+	}
+
 	section.edit,
 	section.create {
 		margin: var(--space-4);
@@ -95,21 +102,9 @@
 		gap: var(--space-4);
 	}
 
-	section.toolbar {
-		margin: var(--space-4);
-		margin-bottom: var(--space-8);
-		margin-left: auto;
-		margin-right: auto;
-		width: 85%;
-		display: flex;
-		flex-direction: row;
-		gap: var(--space-4);
-	}
-
 	@media screen and (min-width: 768px) {
 		section.edit,
-		section.create,
-		section.toolbar {
+		section.create {
 			width: clamp(500px, 66.6666%, 1000px);
 		}
 	}

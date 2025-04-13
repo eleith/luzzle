@@ -100,4 +100,11 @@
 </div>
 
 <style>
+	input[type='text'] {
+		width: 100%;
+	}
+
+	textarea {
+		width: 100%;
+	}
 </style>

@@ -5,13 +5,18 @@ import { Piece, type PieceFrontmatter, type PieceMarkdown } from '@luzzle/cli'
 
 async function extractFrontmatterFromFormData<T extends PieceFrontmatter>(
 	piece: Piece<T>,
+	_markdown: PieceMarkdown<T>,
 	formData: FormData
 ) {
-	let markdown: PieceMarkdown<T> = { frontmatter: {} as T, filePath: '.', piece: piece.type }
+	let markdown = { ..._markdown }
 
 	for (const field of piece.fields) {
 		const key = field.name
 		const isArray = field.type === 'array'
+
+		if (formData.has(`frontmatter.remove.${key}`)) {
+			markdown = await piece.removeField(markdown, key)
+		}
 
 		if (formData.has(`frontmatter.upload.${key}`)) {
 			const files = formData.getAll(`frontmatter.upload.${key}`) as File[]

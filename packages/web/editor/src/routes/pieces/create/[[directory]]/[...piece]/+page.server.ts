@@ -10,7 +10,8 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	return {
 		types,
-		directory
+		directory,
+		mode: 'create'
 	}
 }
 
@@ -78,8 +79,9 @@ export const actions = {
 		const markdown = await piece.create(directory, name as string)
 
 		try {
-			const frontmatter = await extractFrontmatterFromFormData(piece, formData)
-			markdown.frontmatter = { ...markdown.frontmatter, ...frontmatter }
+			const frontmatter = await extractFrontmatterFromFormData(piece, markdown, formData)
+
+			markdown.frontmatter = frontmatter
 			markdown.note = note as string
 		} catch (e) {
 			return fail(400, { error: { message: `failed to create piece: ${e}` } })
