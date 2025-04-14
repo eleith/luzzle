@@ -47,6 +47,7 @@
 		{#each retainAssets as asset}
 			<div>
 				<span><a href="/asset/{asset}" target="_blank">{asset}</a></span>
+				<input type="hidden" name="{prefix}.{field.name}" value={asset} />
 				<button onclick={() => clickToRemove(asset)}>remove</button>
 			</div>
 		{/each}
