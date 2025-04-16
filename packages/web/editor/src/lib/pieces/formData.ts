@@ -22,29 +22,41 @@ async function extractFrontmatterFromFormData<T extends PieceFrontmatter>(
 			const downloads = formData.getAll(`frontmatter.download.${key}`) as string[]
 			const urls = downloads.filter((url) => url.length)
 
-			if (urls.length) {
-				if (isArray) {
-					markdown = await piece.setField(markdown, key, urls)
-				} else {
-					markdown = await piece.setField(markdown, key, urls[0])
+			try {
+				if (urls.length) {
+					if (isArray) {
+						markdown = await piece.setField(markdown, key, urls)
+					} else {
+						markdown = await piece.setField(markdown, key, urls[0])
+					}
 				}
+			} catch (error) {
+				const message = error instanceof Error ? error.message : 'Unknown error'
+				console.error(`Error downloading file: ${urls.join(', ')} with error: ${message}`)
 			}
 		}
 
 		if (formData.has(`frontmatter.upload.${key}`)) {
 			const files = formData.getAll(`frontmatter.upload.${key}`) as File[]
 
-			// html spec returns an empty file by design!
-			const streams = files
-				.filter((f) => f.size > 0)
-				.map((file) => Readable.fromWeb(file.stream() as ReadableStream<BufferLike>))
+			try {
+				// html spec returns an empty file by design!
+				const streams = files
+					.filter((f) => f.size > 0)
+					.map((file) => Readable.fromWeb(file.stream() as ReadableStream<BufferLike>))
 
-			if (streams.length) {
-				if (isArray) {
-					markdown = await piece.setField(markdown, key, streams)
-				} else {
-					markdown = await piece.setField(markdown, key, streams[0])
+				if (streams.length) {
+					if (isArray) {
+						markdown = await piece.setField(markdown, key, streams)
+					} else {
+						markdown = await piece.setField(markdown, key, streams[0])
+					}
 				}
+			} catch (error) {
+				const message = error instanceof Error ? error.message : 'Unknown error'
+				console.error(
+					`Error uploading file: ${files.map((f) => f.name).join(', ')} with error: ${message}`
+				)
 			}
 		}
 
