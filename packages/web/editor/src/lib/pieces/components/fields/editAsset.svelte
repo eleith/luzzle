@@ -14,8 +14,8 @@
 	const prefix = 'frontmatter'
 
 	let toRemove = $state<string[]>([])
-	let toUpload = $state<FileList | null>()
-	let toDownload = $state<string>()
+	let toUpload = $state<FileList | null>(null)
+	let toDownload = $state<string | null>(null)
 	let retainAssets = $state<string[]>(values)
 	let fileInput = $state<HTMLInputElement>()
 
@@ -26,7 +26,7 @@
 	}
 
 	function clickToRemoveUpload() {
-		toUpload = undefined
+		toUpload = null
 
 		if (fileInput) {
 			fileInput.value = ''
@@ -70,7 +70,7 @@
 					<button onclick={() => clickToRemoveUpload()}>cancel</button>
 				{/if}
 			</div>
-			{#if !(toUpload || toDownload)}
+			{#if !(toUpload?.length || toDownload)}
 				<div>or</div>
 			{/if}
 			<div>
@@ -79,7 +79,7 @@
 					style="width: 100%"
 					name="{prefix}.download.{field.name}"
 					bind:value={toDownload}
-					class={toUpload ? 'hide' : ''}
+					class={toUpload?.length ? 'hide' : ''}
 					placeholder="url to download"
 				/>
 			</div>
