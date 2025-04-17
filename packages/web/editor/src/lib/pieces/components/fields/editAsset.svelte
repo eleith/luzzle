@@ -40,6 +40,10 @@
 			toUpload = files
 		}
 	}
+
+	export function focus() {
+		fileInput?.focus()
+	}
 </script>
 
 <div>

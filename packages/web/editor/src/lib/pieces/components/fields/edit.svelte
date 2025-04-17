@@ -9,6 +9,9 @@
 	}
 
 	let { field, value }: Props = $props()
+	let inputElement: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | EditAsset | null =
+		$state(null)
+
 	const prefix = 'frontmatter'
 
 	function isEnum(field: PieceFrontmatterSchemaField): field is EnumField {
@@ -41,6 +44,12 @@
 			return null
 		}
 	}
+
+	export function focus() {
+		if (inputElement) {
+			inputElement.focus()
+		}
+	}
 </script>
 
 {#snippet fieldBooleanSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
@@ -56,23 +65,38 @@
 		name="{prefix}.{field.name}"
 		value={formatDateStringForInput(value as string) || ''}
 		required={!field.nullable}
+		bind:this={inputElement}
 	/>
 {/snippet}
 
 {#snippet fieldIntegerSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
-	<input type="number" name="{prefix}.{field.name}" {value} required={!field.nullable} />
+	<input
+		type="number"
+		name="{prefix}.{field.name}"
+		{value}
+		required={!field.nullable}
+		bind:this={inputElement}
+	/>
 {/snippet}
 
 {#snippet fieldTextSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
-	<input type="text" name="{prefix}.{field.name}" {value} required={!field.nullable} />
+	<input
+		type="text"
+		name="{prefix}.{field.name}"
+		{value}
+		required={!field.nullable}
+		bind:this={inputElement}
+	/>
 {/snippet}
 
 {#snippet fieldParagraphSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
-	<textarea name="{prefix}.{field.name}" required={!field.nullable}>{value}</textarea>
+	<textarea name="{prefix}.{field.name}" required={!field.nullable} bind:this={inputElement}
+		>{value}</textarea
+	>
 {/snippet}
 
 {#snippet fieldEnumSnippet(value: unknown, field: EnumField)}
-	<select name="{prefix}.{field.name}" {value} required={!field.nullable}>
+	<select name="{prefix}.{field.name}" {value} required={!field.nullable} bind:this={inputElement}>
 		{#if field.enum}
 			{#each field.enum as option}
 				<option value={option}>{option}</option>

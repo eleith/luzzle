@@ -2,6 +2,16 @@
 	import FieldEdit from '$lib/pieces/components/fields/edit.svelte'
 
 	let { data, form } = $props()
+	let selectType: HTMLSelectElement | null = $state(null)
+	let editFields: FieldEdit[] = $state([])
+
+	$effect(() => {
+		if (selectType && (!form || form.error)) {
+			selectType.focus()
+		} else if (editFields && editFields.length) {
+			editFields[0].focus()
+		}
+	})
 </script>
 
 {#if form && !form.error}
@@ -23,28 +33,32 @@
 					{form.type}
 					<input type="hidden" name="type" value={form.type} required />
 				</div>
-				{#each form.fields || [] as field}
+				{#each form.fields || [] as field, i}
 					<div class="field">{field.name}</div>
 					<div>
-						<FieldEdit {field} value={form.markdown.frontmatter[field.name]} />
+						<FieldEdit
+							{field}
+							value={form.markdown.frontmatter[field.name]}
+							bind:this={editFields[i]}
+						/>
 					</div>
 				{/each}
 				<div class="field">note</div>
 				<div class="field-edit">
-					<textarea name="note" style="width: 100%;height:300px;"></textarea>
+					<textarea name="note" style="width: 100%;height:300px;">{form.markdown.note}</textarea>
 				</div>
 				<div style="display:flex;justify-content:space-between;">
 					<button type="submit">create</button>
-					<button style="background-color:blue;"
-						><a href="/directory/list/{data.directory}">cancel</a></button
-					>
+					<button>
+						<a href="/directory/list/{data.directory}">cancel</a>
+					</button>
 				</div>
 			</div>
 		</form>
 	</section>
 {:else}
 	<section class="create">
-		<form method="post" enctype="multipart/form-data" action="?/prompt">
+		<form method="post" enctype="multipart/form-data" action="?/generate">
 			<div class="piece-container">
 				{#if form?.error}
 					<div class="error">
@@ -53,28 +67,32 @@
 				{/if}
 				<div class="field">directory</div>
 				<div class="field-edit">{data.directory}</div>
-				<div class="field">name</div>
-				<div class="field-edit">
-					<input type="text" name="name" required style="width:100%;" />
-				</div>
 				<div class="field">type</div>
 				<div class="field-edit">
-					<select name="type" required>
+					<select name="type" required value={data.type} bind:this={selectType}>
 						{#each data.types as type}
 							<option value={type}>{type}</option>
 						{/each}
 					</select>
 				</div>
+				<div class="field">name</div>
+				<div class="field-edit">
+					<input type="text" name="name" required style="width:100%;" />
+				</div>
 				<div class="field">prompt</div>
 				<div class="field-edit">
-					<textarea name="prompt" style="width:100%;height:300px;"></textarea>
+					<textarea name="prompt" style="width:100%;height:150px;"></textarea>
 				</div>
 				<div class="field">file</div>
 				<div class="field-edit">
 					<input type="file" name="file" accept=".pdf" />
 				</div>
+				<div class="field">note</div>
+				<div class="field-edit">
+					<textarea name="note" style="width: 100%;height:150px;"></textarea>
+				</div>
 				<div>
-					<button type="submit">prompt</button>
+					<button type="submit">generate</button>
 				</div>
 			</div>
 		</form>

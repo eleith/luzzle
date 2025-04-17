@@ -17,6 +17,13 @@
 			</div>
 		{/each}
 		<div style="font-size: 80%;">note</div>
+		<div>
+			{#each data.note.split('\n') as paragraph}
+				<p>
+					{paragraph}
+				</p>
+			{/each}
+		</div>
 		<div>{data.note}</div>
 	</div>
 </section>

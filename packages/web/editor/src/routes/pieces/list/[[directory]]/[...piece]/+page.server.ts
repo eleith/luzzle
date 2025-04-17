@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	return {
 		type: pieceMarkdown.piece,
-		note: pieceMarkdown.note,
+		note: pieceMarkdown.note || '',
 		fields: pieceMarkdown.frontmatter,
 		schema: piece.fields,
 		file: pieceMarkdown.filePath,

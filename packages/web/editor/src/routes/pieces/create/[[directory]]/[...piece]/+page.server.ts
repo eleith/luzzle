@@ -3,20 +3,22 @@ import type { Actions, PageServerLoad } from './$types'
 import { getPieces, promptToPiece } from '$lib/pieces'
 import { extractFrontmatterFromFormData, extractNoteFromFormData } from '$lib/pieces/formData'
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, url }) => {
+	const type = url.searchParams.get('type')
 	const directory = params.directory || ''
 	const pieces = getPieces()
 	const types = await pieces.getTypes()
 
 	return {
 		types,
+		type: type && types.includes(type) ? type : types[0],
 		directory,
 		mode: 'create'
 	}
 }
 
 export const actions = {
-	prompt: async (event) => {
+	generate: async (event) => {
 		const formData = await event.request.formData()
 		const types = await getPieces().getTypes()
 		const directory = event.params.directory || ''
@@ -24,6 +26,7 @@ export const actions = {
 		const prompt = formData.get('prompt')?.toString()
 		const file = formData.get('file') as File
 		const name = formData.get('name')?.toString()
+		const note = formData.get('note')?.toString()
 
 		let buffer: Buffer | undefined = undefined
 
@@ -50,6 +53,8 @@ export const actions = {
 				const metadata = await promptToPiece(piece.schema, prompt as string, buffer)
 				markdown = await piece.setFields(markdown, metadata)
 			}
+
+			markdown.note = note || ''
 
 			return {
 				type,
