@@ -1,28 +1,35 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { pieceFrontMatterFromPrompt } from './google.js'
-import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai'
-import { GoogleAIFileManager, UploadFileResponse } from '@google/generative-ai/server'
+import { createPartFromUri, FileState, GenerateContentResponse, GoogleGenAI, Part } from '@google/genai'
 import { makeSchema } from '../pieces/piece.fixtures.js'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 
 vi.mock('@luzzle/core')
 vi.mock('file-type')
-vi.mock('@google/generative-ai', () => {
+vi.mock('@google/genai', () => {
 	const Gemini = vi.fn()
-	Gemini.prototype.getGenerativeModel = vi.fn()
-	return { GoogleGenerativeAI: Gemini }
-})
-vi.mock('@google/generative-ai/server', () => {
-	const FileManager = vi.fn()
-	FileManager.prototype.uploadFile = vi.fn()
-	return { GoogleAIFileManager: FileManager }
+
+	Gemini.prototype.models = vi.fn()
+	Gemini.prototype.files = vi.fn()
+	Gemini.prototype.models.generateContent = vi.fn()
+	Gemini.prototype.files.upload = vi.fn()
+	Gemini.prototype.files.get = vi.fn()
+
+	return {
+		GoogleGenAI: Gemini,
+		HarmCategory: {},
+		HarmBlockThreshold: {},
+		createPartFromUri: vi.fn(),
+	}
 })
 
 const mocks = {
-	getGenerativeModel: vi.mocked(GoogleGenerativeAI.prototype.getGenerativeModel),
-	uploadFile: vi.mocked(GoogleAIFileManager.prototype.uploadFile),
+	generateContent: vi.mocked(GoogleGenAI.prototype.models.generateContent),
+	uploadFile: vi.mocked(GoogleGenAI.prototype.files.upload),
+	getFile: vi.mocked(GoogleGenAI.prototype.files.get),
 	fileTypeFromFile: vi.mocked(fileTypeFromFile),
 	fileTypeFromBuffer: vi.mocked(fileTypeFromBuffer),
+	createPartFromUri: vi.mocked(createPartFromUri),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -46,17 +53,17 @@ describe('lib/llm/google.ts', () => {
 		const frontmatter = { field: 'value' }
 		const responseText = JSON.stringify(frontmatter)
 
-		spies.generateContent = vi.fn().mockResolvedValue({ response: { text: () => responseText } })
-		mocks.getGenerativeModel.mockReturnValue({
-			generateContent: spies.generateContent,
-		} as unknown as GenerativeModel)
+		mocks.generateContent.mockResolvedValueOnce({
+			text: responseText,
+		} as GenerateContentResponse)
 
 		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt)
 
-		expect(mocks.getGenerativeModel).toHaveBeenCalledTimes(1)
-		expect(spies.generateContent).toHaveBeenCalledWith({
-			contents: expect.arrayContaining([{ role: 'user', parts: [{ text: prompt }] }]),
-			generationConfig: expect.any(Object),
+		expect(mocks.generateContent).toHaveBeenCalledTimes(1)
+		expect(mocks.generateContent).toHaveBeenCalledWith({
+			contents: expect.arrayContaining([prompt]),
+			config: expect.any(Object),
+			model: expect.any(String),
 		})
 		expect(generatedFrontmatter).toEqual(frontmatter)
 	})
@@ -68,20 +75,42 @@ describe('lib/llm/google.ts', () => {
 		const frontmatter = { field: 'value', field2: null, field3: undefined }
 		const responseText = JSON.stringify(frontmatter)
 
-		spies.generateContent = vi.fn().mockResolvedValue({ response: { text: () => responseText } })
-		mocks.getGenerativeModel.mockReturnValue({
-			generateContent: spies.generateContent,
-		} as unknown as GenerativeModel)
+		mocks.generateContent.mockResolvedValueOnce({
+			text: responseText,
+		} as GenerateContentResponse)
 
 		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt)
 
-		expect(mocks.getGenerativeModel).toHaveBeenCalledTimes(1)
-		expect(spies.generateContent).toHaveBeenCalledWith({
-			contents: expect.arrayContaining([{ role: 'user', parts: [{ text: prompt }] }]),
-			generationConfig: expect.any(Object),
+		expect(mocks.generateContent).toHaveBeenCalledTimes(1)
+		expect(mocks.generateContent).toHaveBeenCalledWith({
+			contents: expect.arrayContaining([prompt]),
+			config: expect.any(Object),
+			model: expect.any(String),
 		})
 		expect(generatedFrontmatter).toEqual({ field: 'value' })
 	})
+
+	test('pieceFrontMatterFromPrompt returns on empty result', async () => {
+		const apiKey = 'apiKey'
+		const schema = makeSchema('books')
+		const prompt = 'prompt'
+		const responseText = undefined
+
+		mocks.generateContent.mockResolvedValueOnce({
+			text: responseText,
+		} as GenerateContentResponse)
+
+		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt)
+
+		expect(mocks.generateContent).toHaveBeenCalledTimes(1)
+		expect(mocks.generateContent).toHaveBeenCalledWith({
+			contents: expect.arrayContaining([prompt]),
+			config: expect.any(Object),
+			model: expect.any(String),
+		})
+		expect(generatedFrontmatter).toEqual({})
+	})
+
 
 	test('generatePieceFrontmatter with a file', async () => {
 		const apiKey = 'apiKey'
@@ -89,72 +118,95 @@ describe('lib/llm/google.ts', () => {
 		const prompt = 'prompt'
 		const file = '/path/to/file.pdf'
 		const uri = 'gs://another/path/to/file.pdf'
+		const name = 'file.pdf'
 		const mimeType = 'application/pdf'
 		const frontmatter = { field: 'value' }
 		const responseText = JSON.stringify(frontmatter)
+		const fileContent = 'fileContent' as Part
 
-		spies.generateContent = vi.fn().mockResolvedValue({ response: { text: () => responseText } })
-		mocks.getGenerativeModel.mockReturnValue({
-			generateContent: spies.generateContent,
-		} as unknown as GenerativeModel)
-		mocks.uploadFile.mockResolvedValue({ file: { uri, mimeType } } as UploadFileResponse)
+		vi.useFakeTimers()
+
+		mocks.generateContent.mockResolvedValueOnce({
+			text: responseText,
+		} as GenerateContentResponse)
+		mocks.uploadFile.mockResolvedValue({ name, uri, mimeType })
+		mocks.getFile.mockResolvedValueOnce({ state: 'PROCESSING' as FileState })
+		mocks.getFile.mockResolvedValueOnce({ uri, mimeType, state: 'ACTIVE' as FileState })
 		mocks.fileTypeFromFile.mockResolvedValueOnce({ mime: mimeType, ext: 'pdf' })
+		mocks.createPartFromUri.mockReturnValue(fileContent)
+
+		vi.runAllTimersAsync()
 
 		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt, file)
 
-		expect(mocks.getGenerativeModel).toHaveBeenCalledTimes(1)
-		expect(mocks.uploadFile).toHaveBeenCalledWith(file, { mimeType })
-		expect(spies.generateContent).toHaveBeenCalledWith({
-			contents: expect.arrayContaining([
-				{ role: 'user', parts: [{ fileData: { fileUri: uri, mimeType } }, { text: prompt }] },
-			]),
-			generationConfig: expect.any(Object),
+		expect(mocks.uploadFile).toHaveBeenCalledWith({ file, config: { mimeType } })
+		expect(mocks.getFile).toHaveBeenCalledWith({ name })
+		expect(mocks.createPartFromUri).toHaveBeenCalledTimes(1)
+		expect(mocks.generateContent).toHaveBeenCalledTimes(1)
+		expect(mocks.generateContent).toHaveBeenCalledWith({
+			contents: expect.arrayContaining([prompt, fileContent]),
+			config: expect.any(Object),
+			model: expect.any(String),
 		})
 		expect(generatedFrontmatter).toEqual(frontmatter)
+
+		vi.useRealTimers()
 	})
 
 	test('generatePieceFrontmatter with a Buffer', async () => {
 		const apiKey = 'apiKey'
 		const schema = makeSchema('books')
 		const prompt = 'prompt'
+		const name = 'file.pdf'
 		const uri = 'gs://another/path/to/file.pdf'
 		const mimeType = 'application/pdf'
 		const frontmatter = { field: 'value' }
 		const responseText = JSON.stringify(frontmatter)
 		const buffer = Buffer.from('buffer data')
+		const blob = new Blob([buffer])
+		const fileContent = 'fileContent' as Part
 
-		spies.generateContent = vi.fn().mockResolvedValue({ response: { text: () => responseText } })
-		mocks.getGenerativeModel.mockReturnValue({
-			generateContent: spies.generateContent,
-		} as unknown as GenerativeModel)
-		mocks.uploadFile.mockResolvedValue({ file: { uri, mimeType } } as UploadFileResponse)
+		mocks.generateContent.mockResolvedValueOnce({
+			text: responseText,
+		} as GenerateContentResponse)
+		mocks.uploadFile.mockResolvedValue({ name, uri, mimeType })
+		mocks.getFile.mockResolvedValue({ uri, mimeType, state: 'ACTIVE' as FileState })
 		mocks.fileTypeFromBuffer.mockResolvedValueOnce({ mime: mimeType, ext: 'pdf' })
+		mocks.createPartFromUri.mockReturnValue(fileContent)
 
 		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt, buffer)
 
-		expect(mocks.getGenerativeModel).toHaveBeenCalledTimes(1)
-		expect(mocks.uploadFile).toHaveBeenCalledWith(buffer, { mimeType })
-		expect(spies.generateContent).toHaveBeenCalledWith({
-			contents: expect.arrayContaining([
-				{ role: 'user', parts: [{ fileData: { fileUri: uri, mimeType } }, { text: prompt }] },
-			]),
-			generationConfig: expect.any(Object),
+		expect(mocks.uploadFile).toHaveBeenCalledWith({ file: blob, config: { mimeType } })
+		expect(mocks.getFile).toHaveBeenCalledWith({ name })
+		expect(mocks.generateContent).toHaveBeenCalledTimes(1)
+		expect(mocks.generateContent).toHaveBeenCalledWith({
+			contents: expect.arrayContaining([prompt, fileContent]),
+			config: expect.any(Object),
+			model: expect.any(String),
 		})
+
 		expect(generatedFrontmatter).toEqual(frontmatter)
 	})
 
-	test('generatePieceFrontmatter fails with unsupported file', async () => {
+	test('generatePieceFrontmatter file fails to process', async () => {
 		const apiKey = 'apiKey'
 		const schema = makeSchema('books')
 		const prompt = 'prompt'
-		const file = '/path/to/file.zip'
+		const file = '/path/to/file.pdf'
+		const name = 'file.pdf'
+		const mimeType = 'application/pdf'
+		const frontmatter = { field: 'value' }
+		const responseText = JSON.stringify(frontmatter)
 
-		mocks.getGenerativeModel.mockReturnValue({
-			generateContent: spies.generateContent,
-		} as unknown as GenerativeModel)
+		mocks.generateContent.mockResolvedValueOnce({
+			text: responseText,
+		} as GenerateContentResponse)
+		mocks.uploadFile.mockResolvedValue({ name, state: 'FAILED' as FileState })
+		mocks.getFile.mockResolvedValue({})
+		mocks.fileTypeFromFile.mockResolvedValueOnce({ mime: mimeType, ext: 'pdf' })
 
-		const generate = pieceFrontMatterFromPrompt(apiKey, schema, prompt, file)
+		const generating = pieceFrontMatterFromPrompt(apiKey, schema, prompt, file)
 
-		await expect(generate).rejects.toThrow()
+		expect(generating).rejects.toThrowError()
 	})
 })
