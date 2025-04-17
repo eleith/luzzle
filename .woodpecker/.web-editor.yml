@@ -12,7 +12,7 @@ steps:
   prepare:
     image: node:20
     commands:
-      - echo $LUZZLE_NPMRC >> .npmrc
+      - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> /root/.npmrc
       - npm ci -w @luzzle/core -w @luzzle/cli -w @luzzle/web-editor
     environment:
       LUZZLE_NPMRC:
