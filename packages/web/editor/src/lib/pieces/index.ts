@@ -59,7 +59,7 @@ async function getTypes() {
 async function promptToPiece(
 	schema: PieceFrontmatterSchema<PieceFrontmatter>,
 	prompt: string,
-	file?: Buffer
+	file?: Buffer[]
 ) {
 	return pieceFrontMatterFromPrompt(apiKey, schema, prompt, file)
 }
