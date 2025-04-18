@@ -1,11 +1,19 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { pieceFrontMatterFromPrompt } from './google.js'
-import { createPartFromUri, FileState, GenerateContentResponse, GoogleGenAI, Part } from '@google/genai'
+import {
+	createPartFromUri,
+	FileState,
+	GenerateContentResponse,
+	GoogleGenAI,
+	Part,
+} from '@google/genai'
 import { makeSchema } from '../pieces/piece.fixtures.js'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
+import { readFile } from 'fs/promises'
 
 vi.mock('@luzzle/core')
 vi.mock('file-type')
+vi.mock('fs/promises')
 vi.mock('@google/genai', () => {
 	const Gemini = vi.fn()
 
@@ -30,6 +38,7 @@ const mocks = {
 	fileTypeFromFile: vi.mocked(fileTypeFromFile),
 	fileTypeFromBuffer: vi.mocked(fileTypeFromBuffer),
 	createPartFromUri: vi.mocked(createPartFromUri),
+	readFile: vi.mocked(readFile),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -111,8 +120,7 @@ describe('lib/llm/google.ts', () => {
 		expect(generatedFrontmatter).toEqual({})
 	})
 
-
-	test('generatePieceFrontmatter with a file', async () => {
+	test('generatePieceFrontmatter with a binary file', async () => {
 		const apiKey = 'apiKey'
 		const schema = makeSchema('books')
 		const prompt = 'prompt'
@@ -137,7 +145,7 @@ describe('lib/llm/google.ts', () => {
 
 		vi.runAllTimersAsync()
 
-		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt, file)
+		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt, [file])
 
 		expect(mocks.uploadFile).toHaveBeenCalledWith({ file, config: { mimeType } })
 		expect(mocks.getFile).toHaveBeenCalledWith({ name })
@@ -153,7 +161,60 @@ describe('lib/llm/google.ts', () => {
 		vi.useRealTimers()
 	})
 
-	test('generatePieceFrontmatter with a Buffer', async () => {
+	test('generatePieceFrontmatter with a text file', async () => {
+		const apiKey = 'apiKey'
+		const schema = makeSchema('books')
+		const prompt = 'prompt'
+		const file = '/path/to/file.html'
+		const frontmatter = { field: 'value' }
+		const responseText = JSON.stringify(frontmatter)
+		const fileContent = 'fileContent'
+
+		mocks.generateContent.mockResolvedValueOnce({
+			text: responseText,
+		} as GenerateContentResponse)
+		mocks.fileTypeFromFile.mockResolvedValueOnce(undefined)
+		mocks.readFile.mockResolvedValueOnce(fileContent)
+
+		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt, [file])
+
+		expect(mocks.generateContent).toHaveBeenCalledTimes(1)
+		expect(mocks.generateContent).toHaveBeenCalledWith({
+			contents: expect.arrayContaining([prompt, expect.stringContaining(fileContent)]),
+			config: expect.any(Object),
+			model: expect.any(String),
+		})
+		expect(generatedFrontmatter).toEqual(frontmatter)
+
+		vi.useRealTimers()
+	})
+
+	test('generatePieceFrontmatter with a text Buffer', async () => {
+		const apiKey = 'apiKey'
+		const schema = makeSchema('books')
+		const prompt = 'prompt'
+		const frontmatter = { field: 'value' }
+		const responseText = JSON.stringify(frontmatter)
+		const buffer = Buffer.from('buffer data')
+
+		mocks.generateContent.mockResolvedValueOnce({
+			text: responseText,
+		} as GenerateContentResponse)
+		mocks.fileTypeFromBuffer.mockResolvedValueOnce(undefined)
+
+		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt, [buffer])
+
+		expect(mocks.generateContent).toHaveBeenCalledTimes(1)
+		expect(mocks.generateContent).toHaveBeenCalledWith({
+			contents: expect.arrayContaining([prompt, expect.stringContaining(buffer.toString())]),
+			config: expect.any(Object),
+			model: expect.any(String),
+		})
+
+		expect(generatedFrontmatter).toEqual(frontmatter)
+	})
+
+	test('generatePieceFrontmatter with a binary Buffer', async () => {
 		const apiKey = 'apiKey'
 		const schema = makeSchema('books')
 		const prompt = 'prompt'
@@ -174,7 +235,7 @@ describe('lib/llm/google.ts', () => {
 		mocks.fileTypeFromBuffer.mockResolvedValueOnce({ mime: mimeType, ext: 'pdf' })
 		mocks.createPartFromUri.mockReturnValue(fileContent)
 
-		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt, buffer)
+		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt, [buffer])
 
 		expect(mocks.uploadFile).toHaveBeenCalledWith({ file: blob, config: { mimeType } })
 		expect(mocks.getFile).toHaveBeenCalledWith({ name })
@@ -188,7 +249,7 @@ describe('lib/llm/google.ts', () => {
 		expect(generatedFrontmatter).toEqual(frontmatter)
 	})
 
-	test('generatePieceFrontmatter file fails to process', async () => {
+	test('generatePieceFrontmatter binary file fails to process upload', async () => {
 		const apiKey = 'apiKey'
 		const schema = makeSchema('books')
 		const prompt = 'prompt'
@@ -205,7 +266,29 @@ describe('lib/llm/google.ts', () => {
 		mocks.getFile.mockResolvedValue({})
 		mocks.fileTypeFromFile.mockResolvedValueOnce({ mime: mimeType, ext: 'pdf' })
 
-		const generating = pieceFrontMatterFromPrompt(apiKey, schema, prompt, file)
+		const generating = pieceFrontMatterFromPrompt(apiKey, schema, prompt, [file])
+
+		expect(generating).rejects.toThrowError()
+	})
+
+	test('generatePieceFrontmatter file fails to extract', async () => {
+		const apiKey = 'apiKey'
+		const schema = makeSchema('books')
+		const prompt = 'prompt'
+		const file = '/path/to/file.pdf'
+		const name = 'file.pdf'
+		const mimeType = 'application/pdf'
+		const frontmatter = { field: 'value' }
+		const responseText = JSON.stringify(frontmatter)
+
+		mocks.generateContent.mockResolvedValueOnce({
+			text: responseText,
+		} as GenerateContentResponse)
+		mocks.uploadFile.mockResolvedValue({ name, uri: undefined })
+		mocks.getFile.mockResolvedValue({})
+		mocks.fileTypeFromFile.mockResolvedValueOnce({ mime: mimeType, ext: 'pdf' })
+
+		const generating = pieceFrontMatterFromPrompt(apiKey, schema, prompt, [file])
 
 		expect(generating).rejects.toThrowError()
 	})

@@ -8,6 +8,8 @@ import {
 	HarmBlockThreshold,
 	SafetySetting,
 } from '@google/genai'
+import { readFile } from 'fs/promises'
+import path from 'path'
 
 const MODEL_NAME = 'gemini-2.0-flash'
 
@@ -30,21 +32,23 @@ function getClient(apiKey: string) {
 	return new GoogleGenAI({ apiKey })
 }
 
-async function pieceFrontMatterFromPrompt(
-	apiKey: string,
-	schema: PieceFrontmatterSchema<PieceFrontmatter>,
-	prompt: string,
-	file?: string | Buffer
-) {
-	const genAI = getClient(apiKey)
+async function extractPartFromFile(file: string | Buffer, genAI: GoogleGenAI) {
+	const isBuffer = Buffer.isBuffer(file)
+	const fileType = isBuffer ? await fileTypeFromBuffer(file) : await fileTypeFromFile(file)
+	const mimeType = fileType?.mime
 
-	const content: ContentListUnion = [prompt]
+	// assume it's non binary
+	if (!mimeType) {
+		const fileContent = isBuffer ? file.toString() : await readFile(file, 'utf-8')
+		const fileName = isBuffer ? 'string buffer of downloaded file' : path.basename(file)
+		const data = [
+			`---[start] embedding ${fileName}---`,
+			fileContent,
+			`---[end] embedding of ${fileName}---`,
+		]
 
-	if (file) {
-		const isBuffer = Buffer.isBuffer(file)
-		const fileType = isBuffer ? await fileTypeFromBuffer(file) : await fileTypeFromFile(file)
-		const mimeType = fileType?.mime
-
+		return data.join('\n')
+	} else {
 		const uploadedFile = await genAI.files.upload({
 			file: isBuffer ? new Blob([file]) : file,
 			config: {
@@ -69,7 +73,27 @@ async function pieceFrontMatterFromPrompt(
 
 		if (uploadedFile.uri && uploadedFile.mimeType) {
 			const fileContent = createPartFromUri(uploadedFile.uri, uploadedFile.mimeType)
-			content.push(fileContent)
+			return fileContent
+		}
+	}
+
+	throw new Error('File processing failed.')
+}
+
+async function pieceFrontMatterFromPrompt(
+	apiKey: string,
+	schema: PieceFrontmatterSchema<PieceFrontmatter>,
+	prompt: string,
+	files?: Array<string | Buffer>
+) {
+	const genAI = getClient(apiKey)
+
+	const content: ContentListUnion = [prompt]
+
+	if (files) {
+		for (const file of files) {
+			const part = await extractPartFromFile(file, genAI)
+			content.push(part)
 		}
 	}
 
@@ -81,7 +105,7 @@ async function pieceFrontMatterFromPrompt(
 		config: {
 			responseMimeType: 'application/json',
 			safetySettings: safetySettings,
-			systemInstruction: `you are an assistant that helps generate accurate JSON metadata for a record that will be added to a collection. if you are provided an attachment, please attempt to extract values from this attachment and prioritize them. avoid hallucinations, especially for URL and 'asset' fields. any URL should be pre-existing and i should be able to download them successfully.
+			systemInstruction: `you are an assistant that helps generate JSON metadata for a record that will be added to a collection. if you are provided attachments or supporting files, please use all them together to extract the best values for each metadata field.
 
 			the JSON schema to format your response is as follows:
 
@@ -89,8 +113,8 @@ async function pieceFrontMatterFromPrompt(
 			${schemaString}
 			\`\`\`
 
-			the properties object may contain a description field and an examples field (amongth others). please use these fields as additional prompts to guide expectations for how to generate them.
-			`
+			please use the description and examples in the schema as additional prompts to guide expectations for how to generate each specific field on the metadata.
+			`,
 		},
 	})
 
