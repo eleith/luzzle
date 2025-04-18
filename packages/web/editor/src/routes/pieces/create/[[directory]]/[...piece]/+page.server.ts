@@ -24,11 +24,10 @@ export const actions = {
 		const directory = event.params.directory || ''
 		const type = formData.get('type')?.toString()
 		const prompt = formData.get('prompt')?.toString()
-		const file = formData.get('file') as File
+		const files = formData.getAll('files') as File[]
 		const name = formData.get('name')?.toString()
 		const note = formData.get('note')?.toString()
-
-		let buffer: Buffer | undefined = undefined
+		const buffers: Buffer[] = []
 
 		if (!type || !types.includes(type)) {
 			return fail(404, { error: { message: 'type does not exist' } })
@@ -41,16 +40,16 @@ export const actions = {
 		const pieces = getPieces()
 		const piece = await pieces.getPiece(type)
 
-		if (file && file.size > 0) {
+		for (const file of files.filter((f) => f.size > 0)) {
 			const fileArrayBuffer = await file.arrayBuffer()
-			buffer = Buffer.from(fileArrayBuffer)
+			buffers.push(Buffer.from(fileArrayBuffer))
 		}
 
 		try {
 			let markdown = await piece.create(directory, name)
 
 			if (prompt) {
-				const metadata = await promptToPiece(piece.schema, prompt as string, buffer)
+				const metadata = await promptToPiece(piece.schema, prompt as string, buffers)
 				markdown = await piece.setFields(markdown, metadata)
 			}
 

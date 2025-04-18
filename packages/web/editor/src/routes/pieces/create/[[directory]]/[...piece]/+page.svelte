@@ -61,7 +61,7 @@
 		<form method="post" enctype="multipart/form-data" action="?/generate">
 			<div class="piece-container">
 				{#if form?.error}
-					<div class="error">
+					<div class="error" style="color:red;">
 						{form.error.message}
 					</div>
 				{/if}
@@ -85,7 +85,12 @@
 				</div>
 				<div class="field">file</div>
 				<div class="field-edit">
-					<input type="file" name="file" accept=".pdf" />
+					<input
+						type="file"
+						name="files"
+						accept="application/pdf, application/json, text/html, .txt, image/png, image/jpeg, .csv"
+						multiple
+					/>
 				</div>
 				<div class="field">note</div>
 				<div class="field-edit">
