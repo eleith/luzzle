@@ -1,9 +1,17 @@
 <script lang="ts">
-	let { data } = $props()
+	let { data, form } = $props()
 	const { files } = $derived(data)
 </script>
 
 <section class="main">
+	<form action="?/deploy" method="post">
+		{#if form && form.success}
+			<p class="success">successfully deployed</p>
+		{/if}
+		<p>
+			<button type="submit">deploy</button>
+		</p>
+	</form>
 	{#if files.pieces.length}
 		<p>
 			pieces: <br />
