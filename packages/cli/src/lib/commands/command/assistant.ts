@@ -8,7 +8,7 @@ export type AssistantArgv = {
 	update?: string
 	directory?: string
 	prompt: string
-	file?: string
+	file?: Array<string>
 	title?: string
 } & PieceArgv
 
@@ -43,7 +43,8 @@ const command: Command<AssistantArgv> = {
 			})
 			.option('file', {
 				type: 'string',
-				description: 'path to a pdf or html file associated with the piece',
+				array: true,
+				description: 'path to a file (pdf,txt,html,json,png,jpeg) associated with the piece, can specify multiple times',
 			})
 	},
 
