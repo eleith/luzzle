@@ -12,7 +12,7 @@ const config = {
 			assets: process.env.PUBLIC_ASSETS_CDN_URL
 		},
 		prerender: {
-			concurrency: 4,
+			concurrency: 8,
 			handleHttpError: 'warn'
 		}
 	}
