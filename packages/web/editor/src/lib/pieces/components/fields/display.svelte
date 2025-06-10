@@ -31,7 +31,7 @@
 
 <div>
 	{#if type === 'array'}
-		{#each value as unknown[] as one}
+		{#each value as unknown[] as one, index (index)}
 			{#if field.items.type !== 'array'}
 				{@render oneField(one, field.items.type, field.items.format)}
 			{/if}

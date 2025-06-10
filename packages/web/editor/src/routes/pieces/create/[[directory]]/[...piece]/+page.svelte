@@ -33,13 +33,13 @@
 					{form.type}
 					<input type="hidden" name="type" value={form.type} required />
 				</div>
-				{#each form.fields || [] as field, i}
+				{#each form.fields || [] as field, index (index)}
 					<div class="field">{field.name}</div>
 					<div>
 						<FieldEdit
 							{field}
 							value={form.markdown.frontmatter[field.name]}
-							bind:this={editFields[i]}
+							bind:this={editFields[index]}
 						/>
 					</div>
 				{/each}
@@ -70,7 +70,7 @@
 				<div class="field">type</div>
 				<div class="field-edit">
 					<select name="type" required value={data.type} bind:this={selectType}>
-						{#each data.types as type}
+						{#each data.types as type, index (index)}
 							<option value={type}>{type}</option>
 						{/each}
 					</select>

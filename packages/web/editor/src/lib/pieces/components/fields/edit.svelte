@@ -98,7 +98,7 @@
 {#snippet fieldEnumSnippet(value: unknown, field: EnumField)}
 	<select name="{prefix}.{field.name}" {value} required={!field.nullable} bind:this={inputElement}>
 		{#if field.enum}
-			{#each field.enum as option}
+			{#each field.enum as option, index (index)}
 				<option value={option}>{option}</option>
 			{/each}
 		{/if}

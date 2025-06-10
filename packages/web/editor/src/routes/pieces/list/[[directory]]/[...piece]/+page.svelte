@@ -6,7 +6,7 @@
 
 <section class="preview">
 	<div class="piece-container">
-		{#each data.schema as field}
+		{#each data.schema as field, index (index)}
 			<div style="padding-bottom: 10px;">
 				<div style="font-size: 80%;">
 					{field.name}
@@ -18,13 +18,12 @@
 		{/each}
 		<div style="font-size: 80%;">note</div>
 		<div>
-			{#each data.note.split('\n') as paragraph}
+			{#each data.note.split('\n') as paragraph, index (index)}
 				<p>
 					{paragraph}
 				</p>
 			{/each}
 		</div>
-		<div>{data.note}</div>
 	</div>
 </section>
 
