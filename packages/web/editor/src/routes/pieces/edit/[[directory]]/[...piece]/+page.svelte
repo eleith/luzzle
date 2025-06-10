@@ -17,7 +17,7 @@
 <section class="edit">
 	<form method="post" enctype="multipart/form-data" action="?/edit">
 		<div class="piece-container">
-			{#each data.schema as field}
+			{#each data.schema as field, index (index)}
 				<div class="field">{field.name}</div>
 				<div class="field-edit">
 					<FieldEdit {field} value={data.fields[field.name]} />

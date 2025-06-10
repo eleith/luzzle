@@ -48,7 +48,7 @@
 
 <div>
 	{#if retainAssets.length > 0}
-		{#each retainAssets as asset}
+		{#each retainAssets as asset, index (index)}
 			<div>
 				<span><a href="/asset/{asset}" target="_blank">{asset}</a></span>
 				<input type="hidden" name="{prefix}.{field.name}" value={asset} />
@@ -89,7 +89,7 @@
 			</div>
 		</div>
 	{/if}
-	{#each toRemove as asset}
+	{#each toRemove as asset, index (index)}
 		<input type="hidden" name="{prefix}.remove.{field.name}" value={asset} />
 	{/each}
 </div>

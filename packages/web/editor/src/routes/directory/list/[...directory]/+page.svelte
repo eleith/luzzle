@@ -5,21 +5,25 @@
 
 <section class="intro">
 	{#if files.pieces.length}
-		<p>
-			pieces: <br />
-			{#each files.pieces as piece}
-				<a href="/pieces/list/{directory.current}/{piece.file}">{piece.slug}</a> <br />
-			{/each}
-		</p>
+		<div>
+			<p>pieces:</p>
+			<p style="display: grid; gap: 5px;">
+				{#each files.pieces as piece (piece.slug)}
+					<a href="/pieces/list/{directory.current}/{piece.file}">{piece.slug}</a>
+				{/each}
+			</p>
+		</div>
 	{/if}
 
 	{#if files.directories.length}
-		<p>
-			directories <br />
-			{#each files.directories as directory}
-				<a href="/directory/list/{directory}">{directory}</a> <br />
-			{/each}
-		</p>
+		<div>
+			<p>directories</p>
+			<p style="display: grid; gap: 5px;">
+				{#each files.directories as directory (directory)}
+					<a href="/directory/list/{directory}">{directory}</a>
+				{/each}
+			</p>
+		</div>
 	{/if}
 </section>
 
