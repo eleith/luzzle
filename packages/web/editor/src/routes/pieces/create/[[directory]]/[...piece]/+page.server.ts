@@ -25,16 +25,11 @@ export const actions = {
 		const type = formData.get('type')?.toString()
 		const prompt = formData.get('prompt')?.toString()
 		const files = formData.getAll('files') as File[]
-		const name = formData.get('name')?.toString()
 		const note = formData.get('note')?.toString()
 		const buffers: Buffer[] = []
 
 		if (!type || !types.includes(type)) {
 			return fail(404, { error: { message: 'type does not exist' } })
-		}
-
-		if (!name) {
-			return fail(404, { error: { message: 'piece needs a name' } })
 		}
 
 		const pieces = getPieces()
@@ -46,11 +41,13 @@ export const actions = {
 		}
 
 		try {
+			let name = `a ${type} generated on ${new Date().toISOString()}`
 			let markdown = await piece.create(directory, name)
 
 			if (prompt) {
 				const metadata = await promptToPiece(piece.schema, prompt as string, buffers)
 				markdown = await piece.setFields(markdown, metadata)
+				name = ((metadata.title || metadata.name) as string) || name
 			}
 
 			markdown.note = note || ''
