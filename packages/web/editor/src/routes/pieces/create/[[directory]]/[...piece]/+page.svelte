@@ -3,13 +3,19 @@
 
 	let { data, form } = $props()
 	let selectType: HTMLSelectElement | null = $state(null)
-	let editFields: FieldEdit[] = $state([])
+	let editSlug: HTMLInputElement | null = $state(null)
+	let pieceType = $state<string>(data.type)
+	let initialPrompt = $derived<string>(
+		`please generate a json piece of type ${pieceType} for the date ${new Date().toLocaleDateString()}.\n\nuse any attached files and/or text below as
+priority sources to extract the desired fields from.`
+	)
 
 	$effect(() => {
 		if (selectType && (!form || form.error)) {
 			selectType.focus()
-		} else if (editFields && editFields.length) {
-			editFields[0].focus()
+		} else if (editSlug) {
+			editSlug.focus()
+			editSlug.select()
 		}
 	})
 </script>
@@ -23,24 +29,22 @@
 					{form.directory}
 					<input type="hidden" name="directory" value={form.directory} />
 				</div>
-				<div class="field">slug</div>
-				<div>
-					{form.name}
-					<input type="hidden" name="name" value={form.name} required />
-				</div>
-				<div class="field">type</div>
-				<div>
-					{form.type}
+				<div class="field">filename ({form.type})</div>
+				<div class="field-edit">
 					<input type="hidden" name="type" value={form.type} required />
+					<input
+						type="text"
+						name="name"
+						value={form.name}
+						required
+						bind:this={editSlug}
+						style="width:100%;"
+					/>
 				</div>
 				{#each form.fields || [] as field, index (index)}
 					<div class="field">{field.name}</div>
-					<div>
-						<FieldEdit
-							{field}
-							value={form.markdown.frontmatter[field.name]}
-							bind:this={editFields[index]}
-						/>
+					<div class="field-edit">
+						<FieldEdit {field} value={form.markdown.frontmatter[field.name]} />
 					</div>
 				{/each}
 				<div class="field">note</div>
@@ -69,21 +73,19 @@
 				<div class="field-edit">{data.directory}</div>
 				<div class="field">type</div>
 				<div class="field-edit">
-					<select name="type" required value={data.type} bind:this={selectType}>
+					<select
+						name="type"
+						required
+						value={data.type}
+						bind:this={selectType}
+						onchange={(e) => (pieceType = e.currentTarget.value)}
+					>
 						{#each data.types as type, index (index)}
 							<option value={type}>{type}</option>
 						{/each}
 					</select>
 				</div>
-				<div class="field">name</div>
-				<div class="field-edit">
-					<input type="text" name="name" required style="width:100%;" />
-				</div>
-				<div class="field">prompt</div>
-				<div class="field-edit">
-					<textarea name="prompt" style="width:100%;height:150px;"></textarea>
-				</div>
-				<div class="field">file</div>
+				<div class="field">file (optional)</div>
 				<div class="field-edit">
 					<input
 						type="file"
@@ -92,9 +94,11 @@
 						multiple
 					/>
 				</div>
-				<div class="field">note</div>
+				<div class="field">prompt (optional)</div>
 				<div class="field-edit">
-					<textarea name="note" style="width: 100%;height:150px;"></textarea>
+					<textarea name="prompt" style="width:100%;height:200px;" bind:value={initialPrompt}
+					></textarea>
+					>
 				</div>
 				<div>
 					<button type="submit">generate</button>
@@ -107,6 +111,7 @@
 <style>
 	div.field {
 		font-size: 80%;
+		padding-bottom: 5px;
 	}
 
 	div.field-edit {
