@@ -17,7 +17,7 @@ steps:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
   build_docker:
-    image: woodpeckerci/plugin-docker-buildx:pull_186
+    image: woodpeckerci/plugin-docker-buildx:6.0.1
     settings:
       repo: git.eleith.com/eleith/luzzle
       username: eleith
