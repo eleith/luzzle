@@ -13,6 +13,8 @@ steps:
     image: node:20
     commands:
       - echo $LUZZLE_NPMRC >> .npmrc
+      - cd packages/web/explorer
+      - npm run build:tag
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
@@ -27,6 +29,7 @@ steps:
       secrets:
         - id=npmrc\\,src=.npmrc
       auto_tag: true
+      tags_file: packages/web/explorer/.tags
       password:
         from_secret: gitea_docker_registry
   notify-success:
