@@ -12,7 +12,7 @@ steps:
   prepare:
     image: node:20
     commands:
-      - echo $LUZZLE_NPMRC >> .npmrc
+      - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> /root/.npmrc
       - cd packages/web/explorer
       - npm run build:tag
     environment:
@@ -26,8 +26,8 @@ steps:
       dockerfile: packages/web/explorer/Dockerfile
       context: packages/web/explorer
       registry: https://git.eleith.com
-      secrets:
-        - id=npmrc\\,src=.npmrc
+      build_args:
+        secret: id=npmrc,src=.npmrc
       auto_tag: true
       tags_file: packages/web/explorer/.tags
       password:
