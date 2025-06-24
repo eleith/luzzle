@@ -18,5 +18,3 @@ export const load: PageServerLoad = async () => {
 		latest
 	}
 }
-
-export const prerender = true

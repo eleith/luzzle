@@ -97,5 +97,3 @@ export const load: PageServerLoad = async (page) => {
 		tags
 	}
 }
-
-export const prerender = true

@@ -36,7 +36,7 @@
 
 <section>
 	<div class="container">
-		{#each pieces as piece}
+		{#each pieces as piece (piece.id)}
 			<a
 				href="/pieces/{piece.type}/{piece.slug}"
 				onmouseenter={() => {

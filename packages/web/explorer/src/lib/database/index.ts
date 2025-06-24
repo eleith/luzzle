@@ -16,6 +16,8 @@ async function initializeDatabase() {
 	if (!db) {
 		db = initalizeLuzzleDatabase()
 	}
+
+	return db
 }
 
 function getDatabase() {

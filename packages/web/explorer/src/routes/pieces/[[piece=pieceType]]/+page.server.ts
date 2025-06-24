@@ -27,5 +27,3 @@ export const load: PageServerLoad = async (page) => {
 		nextPage: pieces.length === TAKE_DEFAULT ? 2 : null
 	}
 }
-
-export const prerender = true
