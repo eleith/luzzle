@@ -30,7 +30,7 @@
 		{/if}
 		<div class="articleBlockContainer">
 			<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
-			{#each Array.from({ length: 20 }) as _}
+			{#each Array.from({ length: 20 })}
 				<div class="articleBlock"></div>
 			{/each}
 		</div>

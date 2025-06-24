@@ -53,7 +53,7 @@
 
 	<p>
 		this site allows me to recall and share
-		{#each types as piece, i}
+		{#each types as piece, i (i)}
 			{#if i !== types.length - 1}
 				<a href="/pieces/{piece.type}">{piece.type}</a>,&nbsp;
 			{:else}
@@ -66,7 +66,7 @@
 	<h2>latest</h2>
 
 	<section class="pieces">
-		{#each latest as piece}
+		{#each latest as piece (piece.id)}
 			<a
 				href="/pieces/{piece.type}/{piece.slug}"
 				onmouseenter={() => {
@@ -124,7 +124,7 @@
 		</section>
 	{:else}
 		<section class="pieces">
-			{#each random as piece}
+			{#each random as piece (piece.id)}
 				<a
 					href="/pieces/{piece.type}/{piece.slug}"
 					onmouseenter={() => {

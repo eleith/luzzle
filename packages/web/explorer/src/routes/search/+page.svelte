@@ -13,7 +13,7 @@
 </script>
 
 <section class="container">
-	{#each data.pieces as piece, i}
+	{#each data.pieces as piece, i (piece.id)}
 		<a
 			use:actionPiece={i === 0}
 			href="/pieces/{piece.type}/{piece.slug}"

@@ -13,7 +13,8 @@ const config = {
 		},
 		prerender: {
 			concurrency: 8,
-			handleHttpError: 'warn'
+			handleHttpError: 'warn',
+			crawl: false
 		}
 	}
 }

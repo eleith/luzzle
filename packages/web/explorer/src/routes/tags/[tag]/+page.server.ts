@@ -41,5 +41,3 @@ export const load: PageServerLoad = async (page) => {
 		prevPage: null
 	}
 }
-
-export const prerender = false

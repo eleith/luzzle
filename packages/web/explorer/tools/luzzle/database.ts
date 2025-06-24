@@ -1,6 +1,5 @@
 import { type LuzzleDatabase, getDatabaseClient, sql } from '@luzzle/core'
 import { WebPieceTags, type WebPieces } from '../../src/lib/pieces/types'
-import slugify from '@sindresorhus/slugify'
 import path from 'path'
 
 function batchArray<T>(array: T[], batchSize: number): T[][] {
@@ -9,6 +8,18 @@ function batchArray<T>(array: T[], batchSize: number): T[][] {
 		batches.push(array.slice(i, i + batchSize))
 	}
 	return batches
+}
+
+function slugify(text: string): string {
+	return text
+		.toString()
+		.normalize('NFD') // Efficiently handle accented characters
+		.replace(/[\u0300-\u036f]/g, '')
+		.toLowerCase()
+		.trim()
+		.replace(/\s+/g, '-')
+		.replace(/[^\w-]+/g, '')
+		.replace(/--+/g, '-')
 }
 
 async function createWebTables(db: LuzzleDatabase): Promise<void> {
@@ -43,9 +54,29 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 	await sql`CREATE VIRTUAL TABLE IF NOT EXISTS "web_pieces_fts5" USING fts5(id UNINDEXED, slug, type UNINDEXED, title, summary, note, media UNINDEXED, keywords, json_metadata, date_added UNINDEXED, date_updated UNINDEXED, date_consumed UNINDEXED, tokenize = 'porter ascii', prefix='3 4 5', content = 'web_pieces', content_rowid="rowid")`.execute(
 		db
 	)
+
+	await sql`CREATE TRIGGER IF NOT EXISTS web_pieces_after_insert AFTER INSERT ON web_pieces		BEGIN 
+		INSERT INTO web_pieces_fts5(rowid, slug, type, title, summary, note, media, keywords, json_metadata, date_added, date_updated, date_consumed) 
+		VALUES(new.rowid, new.slug, new.type, new.title, new.summary, new.note, new.media, new.keywords, new.json_metadata, new.date_added, new.date_updated, new.date_consumed); 
+	END;`.execute(db)
+
+	await sql`CREATE TRIGGER web_pieces_after_delete AFTER DELETE ON web_pieces 
+	BEGIN 
+		INSERT INTO web_pieces_fts5(web_pieces_fts5, rowid, slug, title, summary, note, keywords, json_metadata)  
+		VALUES('delete', old.rowid, old.slug, old.title, old.summary, old.note, old.keywords, old.json_metadata); 
+	END;`.execute(db)
+
+	await sql`CREATE TRIGGER web_pieces_after_update AFTER UPDATE ON web_pieces 
+	BEGIN
+		INSERT INTO web_pieces_fts5(web_pieces_fts5, rowid, slug, title, summary, note, keywords, json_metadata) 
+		VALUES('delete', old.rowid, old.slug, old.title, old.summary, old.note, old.keywords, old.json_metadata);
+  
+		INSERT INTO web_pieces_fts5(rowid, slug, title, summary, note, keywords, json_metadata) 
+		VALUES (new.rowid, new.slug, new.title, new.summary, new.note, new.keywords, new.json_metadata);
+	END;`.execute(db)
 }
 
-async function populatePieceItems(db: LuzzleDatabase): Promise<void> {
+async function populateWebPieceItems(db: LuzzleDatabase): Promise<void> {
 	const webDb = db.withTables<{ web_pieces: WebPieces }>()
 	const items = await db.selectFrom('pieces_items').selectAll().execute()
 	const values: Array<WebPieces> = []
@@ -147,7 +178,7 @@ export async function initialize(databasePath: string) {
 	await db.schema.dropTable('web_pieces_tags').ifExists().execute()
 
 	await createWebTables(db)
-	await populatePieceItems(db)
+	await populateWebPieceItems(db)
 	await populateWebPieceSearch(db)
 	await populateWebPieceTags(db)
 

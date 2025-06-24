@@ -32,5 +32,3 @@ export const GET: RequestHandler = async (a) => {
 
 	return new Response(body, { headers: { 'content-type': contentType } })
 }
-
-export const prerender = true

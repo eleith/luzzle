@@ -6,15 +6,11 @@ async function prebuildLuzzle() {
 	console.log('[start] prebuilding luzzle...')
 	const db = await initialize(PRIVATE_DATABASE_URL)
 
-	const pieces = await db
-		.selectFrom('web_pieces')
-		.selectAll()
-		.orderBy('date_consumed', 'desc')
-		.orderBy('type', 'asc')
-		.execute()
+	const pieces = await db.selectFrom('web_pieces').selectAll().execute()
 
-	console.log(pieces.length, PRIVATE_DATABASE_URL)
+	const tags = await db.selectFrom('web_pieces_tags').selectAll().execute()
 
+	console.log(`${PRIVATE_DATABASE_URL} has ${pieces.length} pieces and ${tags.length} tags`)
 	console.log('[done] prebuilding luzzle')
 }
 
