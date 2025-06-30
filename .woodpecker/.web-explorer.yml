@@ -14,7 +14,6 @@ steps:
     commands:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> /root/.npmrc
       - cd packages/web/explorer
-      - npm run build:tag
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
@@ -29,7 +28,6 @@ steps:
       build_args:
         secret: id=npmrc,src=.npmrc
       auto_tag: true
-      tags_file: packages/web/explorer/.tags
       password:
         from_secret: gitea_docker_registry
   notify-success:

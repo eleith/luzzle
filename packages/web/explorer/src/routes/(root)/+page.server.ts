@@ -10,7 +10,7 @@ export const load: PageServerLoad = async () => {
 		.selectFrom('web_pieces')
 		.selectAll()
 		.orderBy('date_consumed', 'desc')
-		.limit(4)
+		.limit(2)
 		.execute()
 
 	return {
