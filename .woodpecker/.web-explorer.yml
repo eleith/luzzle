@@ -3,7 +3,7 @@ workspace:
   path: src
 
 when:
-  - event: [push, manual]
+  - event: [push, manual, tag]
     branch: [main]
     path:
       include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
