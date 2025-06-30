@@ -9,7 +9,7 @@ const config = {
 		adapter: adapter(),
 		inlineStyleThreshold: 3072,
 		paths: {
-			assets: process.env.PUBLIC_ASSETS_CDN_URL
+			assets: process.env.PUBLIC_CLIENT_APP_URL
 		},
 		prerender: {
 			concurrency: 8,

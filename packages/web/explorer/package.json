@@ -1,12 +1,11 @@
 {
 	"name": "@luzzle/web",
-	"version": "0.0.49",
+	"version": "0.0.50",
 	"private": true,
 	"scripts": {
 		"dev": "dotenvx run -f .env.local -- vite dev",
 		"build": "dotenvx run -f .env.local -- vite build",
 		"build:lock": "npm i --package-lock-only --workspaces=false && mv package-lock.json web.package-lock.json",
-		"build:tag": "(npm pkg get version --workspaces=false) | tr -d '\"' > .tags",
 		"preview": "dotenvx run -f .env.local -- vite preview",
 		"build:luzzle:db": "dotenvx run -f .env.local -- vite-node tools/luzzle/index.ts",
 		"build:luzzle:images": "dotenvx run -f .env.local -- vite-node tools/luzzle/images.ts",
