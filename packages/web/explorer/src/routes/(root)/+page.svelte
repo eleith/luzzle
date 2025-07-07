@@ -5,6 +5,7 @@
 	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
 	import CaretDownIcon from 'virtual:icons/ph/caret-down-thin'
 	import CaretUpIcon from 'virtual:icons/ph/caret-up-thin'
+	import CheckIcon from 'virtual:icons/ph/check'
 	import DiceFiveIcon from 'virtual:icons/ph/dice-five'
 	import ShuffleIcon from 'virtual:icons/ph/shuffle'
 	import { createSelect, melt } from '@melt-ui/svelte'
@@ -30,7 +31,8 @@
 		defaultSelected: {
 			value: latestPiece?.type || types[0].type,
 			label: latestPiece?.type || types[0].type
-		}
+		},
+		loop: true
 	})
 
 	async function getLatest(type: string | null = null) {
@@ -121,8 +123,18 @@
 			<div use:melt={$menu} class="select-menu">
 				{#each types as one, i (i)}
 					{#if $isSelected(one.type)}
-						<div use:melt={$option({ value: one.type, label: one.type })} class="checked">
-							{one.type}
+						<div use:melt={$option({ value: one.type, label: one.type })}>
+							<div
+								style="display: flex; align-items: center; gap: 0.5em;
+							justify-content: space-between;"
+							>
+								<div>
+									{one.type}
+								</div>
+								<div style="justify-self: end;">
+									<CheckIcon style="margin: auto; font-size: 0.5em;" />
+								</div>
+							</div>
 						</div>
 					{:else}
 						<div
@@ -187,6 +199,7 @@
 		random
 		<button
 			class="plain"
+			title="fetch random piece"
 			onclick={() => {
 				getRandom()
 			}}
@@ -299,12 +312,7 @@
 		padding: var(--space-2);
 	}
 
-	.select-menu > div:hover {
-		background: var(--colors-surface-container);
-		color: var(--colors-on-primary-container);
-	}
-
-	.select-menu > .checked {
+	.select-menu > div[data-highlighted] {
 		background: var(--colors-primary-container);
 		color: var(--colors-on-primary-container);
 	}
