@@ -3,19 +3,43 @@
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import type { WebPieces } from '$lib/pieces/types.js'
 	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
+	import CaretDownIcon from 'virtual:icons/ph/caret-down-thin'
+	import CaretUpIcon from 'virtual:icons/ph/caret-up-thin'
 	import DiceFiveIcon from 'virtual:icons/ph/dice-five'
-	import DiceTwoIcon from 'virtual:icons/ph/dice-two'
+	import ShuffleIcon from 'virtual:icons/ph/shuffle'
+	import { createSelect, melt } from '@melt-ui/svelte'
 
 	let { data } = $props()
+	const { types, latestPiece } = data
+
 	let activePieceId = $state<string | null>(null)
-	let random: WebPieces[] = $state([])
+	let latestPieceType = $state<WebPieces | null>(latestPiece)
+	let random = $state<WebPieces | null>(null)
 
-	const { types, latest } = data
+	const {
+		elements: { trigger, menu, option, label },
+		states: { selectedLabel, open },
+		helpers: { isSelected }
+	} = createSelect<WebPieces['type']>({
+		onSelectedChange: ({ next }) => {
+			if (next) {
+				getLatest(next.value)
+			}
+			return next
+		},
+		defaultSelected: {
+			value: latestPiece?.type || types[0].type,
+			label: latestPiece?.type || types[0].type
+		}
+	})
 
-	async function getRandom() {
+	async function getLatest(type: string | null = null) {
 		const params = new URLSearchParams()
-		params.append('order', 'random')
-		params.append('take', '2')
+		params.append('take', '1')
+
+		if (type) {
+			params.append('type', type)
+		}
 
 		const res = await fetch(`/api/pieces?${params}`, {
 			headers: {
@@ -25,7 +49,25 @@
 
 		if (res.ok) {
 			const json = (await res.json()) as { pieces: WebPieces[] }
-			random = json.pieces
+			latestPieceType = json.pieces[0] || null
+		}
+	}
+
+	async function getRandom() {
+		const params = new URLSearchParams()
+		params.append('order', 'random')
+		params.append('take', '1')
+		params.append('random', Math.random().toString())
+
+		const res = await fetch(`/api/pieces?${params}`, {
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		})
+
+		if (res.ok) {
+			const json = (await res.json()) as { pieces: WebPieces[] }
+			random = json.pieces[0] || null
 		}
 	}
 
@@ -53,54 +95,80 @@
 
 	<p>
 		this site allows me to recall and share
-		{#each types as piece, i (i)}
+		{#each types as one, i (i)}
 			{#if i !== types.length - 1}
-				<a href="/pieces/{piece.type}">{piece.type}</a>,&nbsp;
+				<a href="/pieces/{one.type}">{one.type}</a>,&nbsp;
 			{:else}
-				<a href="/pieces/{piece.type}">{piece.type}</a>
+				<a href="/pieces/{one.type}">{one.type}</a>
 			{/if}
 		{/each}
 		other <a href="/pieces">pieces</a>
 	</p>
 
-	<h2>latest</h2>
+	{#if latestPieceType}
+		<h2>
+			<label use:melt={$label}>latest</label>
+			<button use:melt={$trigger} class="plain">
+				{($selectedLabel || latestPieceType.type).replace(/s$/, '')}
+				{#if $open}
+					<CaretUpIcon style="margin: auto; font-size: 0.5em;" />
+				{:else}
+					<CaretDownIcon style="margin: auto; font-size: 0.5em;" />
+				{/if}
+			</button>
+		</h2>
+		{#if $open}
+			<div use:melt={$menu} class="select-menu">
+				{#each types as one, i (i)}
+					{#if $isSelected(one.type)}
+						<div use:melt={$option({ value: one.type, label: one.type })} class="checked">
+							{one.type}
+						</div>
+					{:else}
+						<div
+							use:melt={$option({ value: one.type, label: one.type })}
+							onclick={() => {
+								getLatest(one.type)
+							}}
+						>
+							{one.type}
+						</div>
+					{/if}
+				{/each}
+			</div>
+		{/if}
 
-	<section class="pieces">
-		{#each latest as piece (piece.id)}
+		<section class="pieces">
 			<a
-				href="/pieces/{piece.type}/{piece.slug}"
+				href="/pieces/{latestPieceType.type}/{latestPieceType.slug}"
 				onmouseenter={() => {
-					activePieceId = piece.id
+					activePieceId = latestPieceType ? latestPieceType.id : null
 				}}
 				onmouseleave={() => {
-					if (activePieceId) {
-						activePieceId = null
-					}
+					activePieceId = null
 				}}
 				onfocus={() => {
-					activePieceId = piece.id
+					activePieceId = latestPieceType ? latestPieceType.id : null
 				}}
 				onblur={() => {
-					if (activePieceId) {
-						activePieceId = null
-					}
+					activePieceId = null
 				}}
 				ontouchstart={() => {
-					activePieceId = piece.id
+					activePieceId = latestPieceType ? latestPieceType.id : null
 				}}
 				ontouchend={() => {
-					if (activePieceId) {
-						activePieceId = null
-					}
+					activePieceId = null
 				}}
 			>
 				<div style="display: flex; align-items: flex-start;">
 					<div style="flex: 1 1 0%;">
 						<div style="display: flex;">
 							<div style="align-self: baseline;">
-								{#key activePieceId === piece.id}
-									<PieceIcon {piece} size="small" active={activePieceId === piece.id} />
-								{/key}
+								<PieceIcon
+									piece={latestPieceType}
+									size="small"
+									active={activePieceId === latestPieceType.id}
+								/>
 							</div>
 							<div style="align-self: center;">
 								<CaretRightIcon style="margin: auto; font-size: 2em; max-width:unset;" />
@@ -108,69 +176,68 @@
 						</div>
 					</div>
 					<div style="flex: 1 1 0%; align-self: center; max-height: 160px; overflow: hidden;">
-						{piece.title}
+						{latestPieceType.title}
 					</div>
 				</div>
 			</a>
-		{/each}
-	</section>
-
-	<h2>random</h2>
-
-	{#if random.length === 0}
-		<section style="display: flex; justify-content: center; padding: var(--space-10);">
-			<DiceFiveIcon style="font-size: 2em; margin: auto;" />
-			<DiceTwoIcon style="font-size: 2em; margin: auto;" />
 		</section>
-	{:else}
+	{/if}
+
+	<h2>
+		random
+		<button
+			class="plain"
+			onclick={() => {
+				getRandom()
+			}}
+		>
+			<ShuffleIcon style="margin: auto; font-size: 0.5em;" />
+		</button>
+	</h2>
+
+	{#if random}
 		<section class="pieces">
-			{#each random as piece (piece.id)}
-				<a
-					href="/pieces/{piece.type}/{piece.slug}"
-					onmouseenter={() => {
-						activePieceId = piece.id
-					}}
-					onmouseleave={() => {
-						if (activePieceId) {
-							activePieceId = null
-						}
-					}}
-					onfocus={() => {
-						activePieceId = piece.id
-					}}
-					onblur={() => {
-						if (activePieceId) {
-							activePieceId = null
-						}
-					}}
-					ontouchstart={() => {
-						activePieceId = piece.id
-					}}
-					ontouchend={() => {
-						if (activePieceId) {
-							activePieceId = null
-						}
-					}}
-				>
-					<div style="display: flex; align-items: flex-start;">
-						<div style="flex: 1 1 0%;">
-							<div style="display: flex;">
-								<div style="align-self: baseline;">
-									{#key activePieceId === piece.id}
-										<PieceIcon {piece} size="small" active={activePieceId === piece.id} />
-									{/key}
-								</div>
-								<div style="align-self: center;">
-									<CaretRightIcon style="margin: auto; font-size: 2em; max-width:unset;" />
-								</div>
+			<a
+				href="/pieces/{random.type}/{random.slug}"
+				onmouseenter={() => {
+					activePieceId = random ? random.id : null
+				}}
+				onmouseleave={() => {
+					activePieceId = null
+				}}
+				onfocus={() => {
+					activePieceId = random ? random.id : null
+				}}
+				onblur={() => {
+					activePieceId = null
+				}}
+				ontouchstart={() => {
+					activePieceId = random ? random.id : null
+				}}
+				ontouchend={() => {
+					activePieceId = null
+				}}
+			>
+				<div style="display: flex; align-items: flex-start;">
+					<div style="flex: 1 1 0%;">
+						<div style="display: flex;">
+							<div style="align-self: baseline;">
+								<PieceIcon piece={random} size="small" active={activePieceId === random.id} />
+							</div>
+							<div style="align-self: center;">
+								<CaretRightIcon style="margin: auto; font-size: 2em; max-width:unset;" />
 							</div>
 						</div>
-						<div style="flex: 1 1 0%; align-self: center; max-height: 160px; overflow: hidden;">
-							{piece.title}
-						</div>
 					</div>
-				</a>
-			{/each}
+					<div style="flex: 1 1 0%; align-self: center; max-height: 160px; overflow: hidden;">
+						{random.title}
+					</div>
+				</div>
+			</a>
+		</section>
+	{:else}
+		<section style="display: flex; justify-content: center; padding: var(--space-10);">
+			<DiceFiveIcon style="font-size: 2em; margin: auto;" />
 		</section>
 	{/if}
 </section>
@@ -207,6 +274,39 @@
 	section.pieces > a:hover {
 		text-decoration: underline;
 		color: var(--colors-primary);
+	}
+
+	button.plain {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--colors-on-surface);
+	}
+
+	button.plain:hover {
+		color: var(--colors-primary);
+	}
+
+	.select-menu {
+		background: var(--colors-surface-bright);
+		border-radius: var(--radius-2);
+		box-shadow: var(--shadow-1);
+		border: 1px solid var(--colors-outline);
+	}
+
+	.select-menu > div {
+		cursor: pointer;
+		padding: var(--space-2);
+	}
+
+	.select-menu > div:hover {
+		background: var(--colors-surface-container);
+		color: var(--colors-on-primary-container);
+	}
+
+	.select-menu > .checked {
+		background: var(--colors-primary-container);
+		color: var(--colors-on-primary-container);
 	}
 
 	@media screen and (min-width: 768px) {
