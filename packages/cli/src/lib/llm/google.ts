@@ -11,7 +11,7 @@ import {
 import { readFile } from 'fs/promises'
 import path from 'path'
 
-const MODEL_NAME = 'gemini-2.0-flash'
+const MODEL_NAME = 'gemini-2.5-pro'
 
 const safetySettings: SafetySetting[] = [
 	{
@@ -97,24 +97,18 @@ async function pieceFrontMatterFromPrompt(
 		}
 	}
 
-	const schemaString = JSON.stringify(schema, null, 2)
-
 	const result = await genAI.models.generateContent({
 		model: MODEL_NAME,
 		contents: content,
 		config: {
 			responseMimeType: 'application/json',
 			safetySettings: safetySettings,
-			systemInstruction: `you are an assistant that helps generate JSON metadata for a record that will be added to a collection. if you are provided attachments or supporting files, please use all them together to extract the best values for each metadata field.
+			responseJsonSchema: schema,
+			systemInstruction: `you are an assistant that helps generate JSON metadata for a record that will be added to a collection of similar records. 
 
-			the JSON schema to format your response is as follows:
+if you are provided pdf attachments, images or other text based files, please prioritize them as inputs for generating metadata for the record. 
 
-			\`\`\`
-			${schemaString}
-			\`\`\`
-
-			please use the description and examples in the schema as additional prompts to guide expectations for how to generate each specific field on the metadata.
-			`,
+you are also given a responseJsonSchema to guide your output. each field in the schema has a description and examples to help guide what the intention of each field is and what values to expect.`,
 		},
 	})
 
