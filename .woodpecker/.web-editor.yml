@@ -22,7 +22,7 @@ steps:
     commands:
       - npm run -w @luzzle/web-editor lint
   build_docker:
-    image: woodpeckerci/plugin-docker-buildx:5.2.2
+    image: woodpeckerci/plugin-docker-buildx:6.0.1
     settings:
       repo: git.eleith.com/eleith/luzzle-editor
       username: eleith
