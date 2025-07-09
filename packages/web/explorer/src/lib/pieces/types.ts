@@ -7,6 +7,7 @@ export interface WebPieces {
 	id: string
 	title: string
 	slug: string
+	file_path: string
 	note?: string
 	date_updated?: number
 	date_added: number

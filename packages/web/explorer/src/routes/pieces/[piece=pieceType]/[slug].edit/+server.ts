@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types'
 import { getDatabase } from '$lib/database'
-import { addFrontMatter } from '@luzzle/core'
+import { PRIVATE_LUZZLE_EDITOR_URL } from '$env/static/private'
 
 export const GET: RequestHandler = async (a) => {
 	const db = getDatabase()
@@ -18,17 +18,7 @@ export const GET: RequestHandler = async (a) => {
 			headers: { 'content-type': contentType },
 			status: 404
 		})
+	} else {
+		return Response.redirect(`${PRIVATE_LUZZLE_EDITOR_URL}/${piece.file_path}`, 302)
 	}
-
-	const metadata = JSON.parse(piece.json_metadata)
-	const nonMetadata = ['slug', 'id', 'note', 'date_added', 'date_updated']
-	const metadataValid = Object.fromEntries(
-		Object.entries(metadata).filter(
-			([key, value]) => (value !== null || value === '') && !nonMetadata.includes(key)
-		)
-	)
-
-	const body = addFrontMatter(piece.note, metadataValid)
-
-	return new Response(body, { headers: { 'content-type': contentType } })
 }
