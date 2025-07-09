@@ -39,6 +39,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addColumn('id', 'text', (col) => col.primaryKey().notNull())
 		.addColumn('slug', 'text', (col) => col.notNull())
 		.addColumn('type', 'text', (col) => col.notNull())
+		.addColumn('file_path', 'text', (col) => col.notNull())
 		.addColumn('title', 'text')
 		.addColumn('summary', 'text')
 		.addColumn('note', 'text')
@@ -51,7 +52,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addUniqueConstraint('slug-type', ['slug', 'type'])
 		.execute()
 
-	await sql`CREATE VIRTUAL TABLE IF NOT EXISTS "web_pieces_fts5" USING fts5(id UNINDEXED, slug, type UNINDEXED, title, summary, note, media UNINDEXED, keywords, json_metadata, date_added UNINDEXED, date_updated UNINDEXED, date_consumed UNINDEXED, tokenize = 'porter ascii', prefix='3 4 5', content = 'web_pieces', content_rowid="rowid")`.execute(
+	await sql`CREATE VIRTUAL TABLE IF NOT EXISTS "web_pieces_fts5" USING fts5(id UNINDEXED, slug, type UNINDEXED, title, summary, note, media UNINDEXED, keywords, json_metadata, date_added UNINDEXED, date_updated UNINDEXED, date_consumed UNINDEXED, file_path UNINDEXED, tokenize = 'porter ascii', prefix='3 4 5', content = 'web_pieces', content_rowid="rowid")`.execute(
 		db
 	)
 
@@ -104,6 +105,7 @@ async function populateWebPieceItems(db: LuzzleDatabase): Promise<void> {
 			slug: finalSlug,
 			type: item.type as WebPieces['type'],
 			id: item.id,
+			file_path: item.file_path,
 			title: frontmatter.title,
 			summary: frontmatter.description || frontmatter.summary,
 			note: item.note_markdown,
