@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/tools",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -11,8 +11,8 @@
     "node": ">=20"
   },
   "bin": {
-    "luzzle-generate-web-sqlite": "dist/generate-web-sqlite/index.js",
-    "luzzle-generate-images": "dist/generate-web-images/index.js"
+    "luzzle-generate-web-sqlite": "./dist/src/generate-web-sqlite/index.js",
+    "luzzle-generate-images": "./dist/src/generate-web-images/index.js"
   },
   "files": [
     "dist/*",
