@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_TITLE } from '$env/static/public'
+	import {
+		PUBLIC_CLIENT_APP_URL,
+		PUBLIC_SITE_DESCRIPTION,
+		PUBLIC_SITE_TITLE
+	} from '$env/static/public'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import type { WebPieces } from '$lib/pieces/types.js'
 	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
@@ -83,7 +87,7 @@
 	<meta name="description" content={PUBLIC_SITE_DESCRIPTION} />
 	<meta property="og:title" content={PUBLIC_SITE_TITLE} />
 	<meta property="og:description" content={PUBLIC_SITE_DESCRIPTION} />
-	<meta property="og:image" content="/images/opengraph.jpg" />
+	<meta property="og:image" content="{PUBLIC_CLIENT_APP_URL}/images/opengraph.jpg" />
 	<meta property="og:type" content="article" />
 	<!--
   <meta property="og:site_name" content="" />
