@@ -8,7 +8,6 @@ COPY web.package-lock.json ./package-lock.json
 COPY src ./src
 COPY static ./static
 COPY sample ./sample
-COPY tools ./tools
 COPY tsconfig.json ./tsconfig.json
 COPY svelte.config.js ./svelte.config.js
 COPY vite.config.ts ./vite.config.ts
