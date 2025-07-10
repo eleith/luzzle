@@ -3,12 +3,12 @@ import yargs from 'yargs'
 async function parseArgs(args: string[]) {
 	return yargs(args)
 		.strict()
-		.env('LUZZLE_TOOLS')
 		.options({
-			url: {
+			db: {
 				type: 'string',
-				description: 'url to find archive url for',
+				description: 'path to luzzle sqlite',
 				demandOption: true,
+				alias: 'sqlite',
 			},
 		})
 		.help()
