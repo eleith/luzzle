@@ -3,7 +3,7 @@ import {
 	PiecesItemsInsertable,
 	PiecesItemsUpdateable,
 } from '../database/tables/pieces_items.schema.js'
-import { LuzzleTables } from 'src/database/tables/index.js'
+import { LuzzleTables } from '../database/tables/index.js'
 
 async function updateItem(db: Kysely<LuzzleTables>, file: string, data: PiecesItemsUpdateable) {
 	await db.updateTable('pieces_items').set(data).where('file_path', '=', file).execute()
