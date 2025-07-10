@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
     "outDir": "dist",
@@ -15,8 +16,6 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "incremental": true,
-    "jsx": "react-jsx",
-		"target": "es2020",
     "module": "nodenext",
     "moduleResolution": "nodenext"
   },
