@@ -1,14 +1,12 @@
 {
 	"name": "@luzzle/web",
-	"version": "0.0.54",
+	"version": "0.0.55",
 	"private": true,
 	"scripts": {
 		"dev": "dotenvx run -f .env.local -- vite dev",
 		"build": "dotenvx run -f .env.local -- vite build",
 		"build:lock": "npm i --package-lock-only --workspaces=false && mv package-lock.json web.package-lock.json",
 		"preview": "dotenvx run -f .env.local -- vite preview",
-		"build:luzzle:db": "dotenvx run -f .env.local -- vite-node tools/luzzle/index.ts",
-		"build:luzzle:images": "dotenvx run -f .env.local -- vite-node tools/luzzle/images.ts",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
