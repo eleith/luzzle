@@ -1,7 +1,5 @@
-FROM node:20.18.0-alpine
+FROM node:20.18.0-slim
 WORKDIR /app
-
-RUN apk add --no-cache libc6-compat
 
 COPY package.json ./package.json
 COPY web.package-lock.json ./package-lock.json
