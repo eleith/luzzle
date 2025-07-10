@@ -17,6 +17,7 @@
     "typeRoots": ["./src/@types", "./node_modules", "../../node_modules"],
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "incremental": true,
     "module": "nodenext",
     "moduleResolution": "nodenext"
   },
