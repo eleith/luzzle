@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web",
-	"version": "0.0.56",
+	"version": "0.0.57",
 	"private": true,
 	"scripts": {
 		"dev": "dotenvx run -f .env.local -- vite dev",
@@ -10,7 +10,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"tag": "node ./tools/tag.js"
 	},
 	"engines": {
 		"node": ">=20"
