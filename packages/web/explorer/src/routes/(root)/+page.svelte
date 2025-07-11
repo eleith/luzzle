@@ -87,7 +87,7 @@
 	<meta name="description" content={PUBLIC_SITE_DESCRIPTION} />
 	<meta property="og:title" content={PUBLIC_SITE_TITLE} />
 	<meta property="og:description" content={PUBLIC_SITE_DESCRIPTION} />
-	<meta property="og:image" content="{PUBLIC_CLIENT_APP_URL}/images/opengraph.jpg" />
+	<meta property="og:image" content="{PUBLIC_CLIENT_APP_URL}/images/opengraph.png" />
 	<meta property="og:type" content="article" />
 	<!--
   <meta property="og:site_name" content="" />
