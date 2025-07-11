@@ -25,7 +25,14 @@
   <meta property="og:url" content="{window.location.href}" />
   -->
 	<meta property="og:locale" content="en_US" />
-	<link rel="prefetch" href="/pieces/{data.piece.type}/{data.piece.slug}.md" />
+
+	{#if data.previous}
+	<link rel="prefetch" href="/pieces/{data.previous.type}/{data.previous.slug}" />
+	{/if}
+
+	{#if data.next}
+	<link rel="prefetch" href="/pieces/{data.next.type}/{data.next.slug}" />
+	{/if}
 </svelte:head>
 
 <section class="header">
