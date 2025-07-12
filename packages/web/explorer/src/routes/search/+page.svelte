@@ -1,9 +1,34 @@
 <script lang="ts">
+	import { page as pageStore } from '$app/stores'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
 
 	let activePieceId = $state<string | null>(null)
 	let { data } = $props()
+	let nextPage = $state<number | null>(2)
+	let pieces = $state(data.pieces)
+
+	async function getNextPage(page: number) {
+		const params = new URLSearchParams()
+		const query = $pageStore.url.searchParams.get('query') || ''
+
+		params.append('page', page.toString())
+		params.append('query', query)
+
+		const res = await fetch(`/api/search?${params}`, {
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		})
+
+		if (res.ok) {
+			const json = (await res.json()) as Omit<typeof data, 'type'>
+			pieces = pieces.concat(json.pieces)
+			nextPage = page + 1
+		} else {
+			nextPage = null
+		}
+	}
 
 	function actionPiece(node: HTMLAnchorElement, focus: boolean) {
 		if (focus) {
@@ -13,9 +38,9 @@
 </script>
 
 <section class="container">
-	{#each data.pieces as piece, i (piece.id)}
+	{#each pieces as piece (piece.id)}
 		<a
-			use:actionPiece={i === 0}
+			use:actionPiece={pieces[0].id === piece.id}
 			href="/pieces/{piece.type}/{piece.slug}"
 			onmouseenter={() => {
 				activePieceId = piece.id
@@ -69,6 +94,14 @@
 	{/each}
 </section>
 
+{#if nextPage}
+	<section class="action">
+		{#if nextPage}
+			<button onclick={() => getNextPage(nextPage as number)}>more</button>
+		{/if}
+	</section>
+{/if}
+
 <style>
 	.container {
 		display: grid;
@@ -96,5 +129,22 @@
 	.container > a:hover {
 		text-decoration: underline;
 		color: var(--colors-primary);
+	}
+
+	.action {
+		text-align: center;
+		padding: var(--space-5) 0 var(--space-5) 0;
+	}
+
+	.action > button {
+		background: transparent;
+		color: var(--colors-primary);
+		padding: none;
+		border: none;
+		cursor: pointer;
+	}
+
+	.action > button:hover {
+		text-decoration: underline;
 	}
 </style>
