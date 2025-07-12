@@ -27,11 +27,11 @@
 	<meta property="og:locale" content="en_US" />
 
 	{#if data.previous}
-	<link rel="prefetch" href="/pieces/{data.previous.type}/{data.previous.slug}" />
+		<link rel="prefetch" href="/pieces/{data.previous.type}/{data.previous.slug}" />
 	{/if}
 
 	{#if data.next}
-	<link rel="prefetch" href="/pieces/{data.next.type}/{data.next.slug}" />
+		<link rel="prefetch" href="/pieces/{data.next.type}/{data.next.slug}" />
 	{/if}
 </svelte:head>
 
