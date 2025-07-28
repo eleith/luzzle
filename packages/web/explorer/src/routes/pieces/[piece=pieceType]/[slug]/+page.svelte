@@ -3,7 +3,7 @@
 	import CaretLeftIcon from 'virtual:icons/ph/caret-left-thin'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import { marked } from 'marked'
-	import { PUBLIC_IMAGES_URL } from '$env/static/public'
+	import { PUBLIC_IMAGES_URL, PUBLIC_SITE_URL } from '$env/static/public'
 
 	let { data } = $props()
 	const metadata = JSON.parse(data.piece.json_metadata) || {}
