@@ -21,6 +21,7 @@ export const load: PageServerLoad = async (event) => {
 		.execute()
 
 	return {
-		pieces
+		pieces,
+		query
 	}
 }
