@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web",
-	"version": "0.0.59",
+	"version": "0.0.60",
 	"private": true,
 	"scripts": {
 		"dev": "dotenvx run -f .env.local -- vite dev",

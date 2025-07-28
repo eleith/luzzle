@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page as pageStore } from '$app/stores'
+	import { PUBLIC_SITE_URL } from '$env/static/public'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
 
@@ -33,6 +34,12 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	{#if pieces.length === 1}
+		<link rel="canonical" href="{PUBLIC_SITE_URL}/pieces/{pieces[0].type}/{pieces[0].slug}" />
+	{/if}
+</svelte:head>
 
 <section>
 	<div class="container">
