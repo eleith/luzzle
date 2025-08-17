@@ -38,7 +38,7 @@ import { Storage } from '../storage/index.js'
 import { Readable } from 'stream'
 
 export interface InterfacePiece<F extends PieceFrontmatter> {
-	new(directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
+	new (directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
 }
 
 class Piece<F extends PieceFrontmatter> {
@@ -298,20 +298,19 @@ class Piece<F extends PieceFrontmatter> {
 		const set = []
 
 		for (const one of values) {
-			const pieceValue = await makePieceValue(pieceField, one)
+			try {
+				const pieceValue = await makePieceValue(pieceField, one)
 
-			if (pieceValue instanceof Readable) {
-				const file = markdown.filePath
-				const storage = this._storage
-
-				try {
+				if (pieceValue instanceof Readable) {
+					const file = markdown.filePath
+					const storage = this._storage
 					const asset = await makePieceAttachment(file, pieceField, pieceValue, storage)
 					set.push(asset)
-				} catch (e) {
-					log.error(`could not create asset for ${file}: ${e}`)
+				} else {
+					set.push(pieceValue)
 				}
-			} else {
-				set.push(pieceValue)
+			} catch (e) {
+				log.error(`could not create asset for ${one}: ${e}`)
 			}
 		}
 
