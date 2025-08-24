@@ -7,6 +7,41 @@ const config = {
 	preprocess: sequence([vitePreprocess(), preprocessMeltUI()]),
 	kit: {
 		adapter: adapter(),
+		csp: {
+			mode: 'auto',
+			/*
+			directives: {
+				'default-src': ['self'],
+				'script-src': ['self', process.env.PUBLIC_CLIENT_APP_URL],
+				'style-src': [
+					'self',
+					'unsafe-inline',
+					process.env.PUBLIC_CLIENT_APP_URL
+				],
+				'img-src': ['self', 'data:', process.env.PUBLIC_IMAGES_URL],
+				'connect-src': ['self'],
+				'font-src': ['self', process.env.PUBLIC_CLIENT_APP_URL],
+				'object-src': ['none'],
+				'base-uri': ['self'],
+				'frame-ancestors': ['none']
+			},
+			*/
+			reportOnly: {
+				'default-src': ['self'],
+				'script-src': ['self', process.env.PUBLIC_CLIENT_APP_URL],
+				'style-src': [
+					'self',
+					'unsafe-inline',
+					process.env.PUBLIC_CLIENT_APP_URL
+				],
+				'img-src': ['self', 'data:', process.env.PUBLIC_IMAGES_URL],
+				'connect-src': ['self'],
+				'font-src': ['self', process.env.PUBLIC_CLIENT_APP_URL],
+				'object-src': ['none'],
+				'base-uri': ['self'],
+				'frame-ancestors': ['none']
+			}
+		},
 		inlineStyleThreshold: 3072,
 		paths: {
 			assets: process.env.PUBLIC_CLIENT_APP_URL
