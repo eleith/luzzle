@@ -6,7 +6,6 @@
 	} from '$env/static/public'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import type { WebPieces } from '$lib/pieces/types.js'
-	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
 	import CaretDownIcon from 'virtual:icons/ph/caret-down-thin'
 	import CaretUpIcon from 'virtual:icons/ph/caret-up-thin'
 	import CheckIcon from 'virtual:icons/ph/check'
@@ -186,12 +185,9 @@
 									active={activePieceId === latestPieceType.id}
 								/>
 							</div>
-							<div style="align-self: center;">
-								<CaretRightIcon style="margin: auto; font-size: 2em; max-width:unset;" />
-							</div>
 						</div>
 					</div>
-					<div style="flex: 1 1 0%; align-self: center; max-height: 160px; overflow: hidden;">
+					<div class="piece-text">
 						{latestPieceType.title}
 					</div>
 				</div>
@@ -241,12 +237,9 @@
 							<div style="align-self: baseline;">
 								<PieceIcon piece={random} size="small" active={activePieceId === random.id} />
 							</div>
-							<div style="align-self: center;">
-								<CaretRightIcon style="margin: auto; font-size: 2em; max-width:unset;" />
-							</div>
 						</div>
 					</div>
-					<div style="flex: 1 1 0%; align-self: center; max-height: 160px; overflow: hidden;">
+					<div class="piece-text">
 						{random.title}
 					</div>
 				</div>
@@ -325,5 +318,14 @@
 		section.intro {
 			width: clamp(500px, 66.6666%, 1000px);
 		}
+	}
+
+	.piece-text {
+		flex: 1 1 0%;
+		align-self: center;
+		max-height: 160px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		margin-left: var(--space-2);
 	}
 </style>

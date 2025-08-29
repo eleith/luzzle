@@ -3,11 +3,16 @@
 	import CaretLeftIcon from 'virtual:icons/ph/caret-left-thin'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import { marked } from 'marked'
-	import { PUBLIC_IMAGES_URL, PUBLIC_SITE_URL } from '$env/static/public'
+	import { PUBLIC_IMAGES_URL } from '$env/static/public'
 
 	let { data } = $props()
 	const metadata = JSON.parse(data.piece.json_metadata) || {}
 	const imagesDir = `${PUBLIC_IMAGES_URL}/images/pieces`
+	let showFullHeader = $state(false)
+
+	function toggleHeader() {
+		showFullHeader = !showFullHeader
+	}
 </script>
 
 <svelte:head>
@@ -35,23 +40,29 @@
 	{/if}
 </svelte:head>
 
-<section class="header">
+<section class="header" class:header-reveal={showFullHeader}>
 	{#if data.previous}
-		<a href="/pieces/{data.previous.type}/{data.previous.slug}">
-			<CaretLeftIcon style="font-size: 4em;" />
+		<a href="/pieces/{data.previous.type}/{data.previous.slug}" class="navigation-list">
+			<CaretLeftIcon />
 		</a>
 	{:else}
-		<CaretLeftIcon style="font-size: 4em; color: var(--colors-surface-dim);" />
+		<div class="navigation-list">
+			<CaretLeftIcon style="color: var(--colors-surface-dim);"/>
+		</div>	
 	{/if}
 	{#key data.piece.id}
-		<PieceIcon piece={data.piece} size="large" lazy={false} />
+		<button class="piece-icon" onclick={toggleHeader} title="toggle full size">
+			<PieceIcon piece={data.piece} size="large" lazy={false} />
+		</button>
 	{/key}
 	{#if data.next}
-		<a href="/pieces/{data.next.type}/{data.next.slug}">
-			<CaretRightIcon style="font-size: 4em;" />
+		<a href="/pieces/{data.next.type}/{data.next.slug}" class="navigation-list">
+			<CaretRightIcon />
 		</a>
 	{:else}
-		<CaretRightIcon style="font-size: 4em; color: var(--colors-surface-dim);" />
+		<div class="navigation-list">
+			<CaretRightIcon style="color: var(--colors-surface-dim);"/>
+		</div>
 	{/if}
 </section>
 
@@ -115,9 +126,18 @@
 		padding-left: var(--space-2-5);
 	}
 
+	section.header .navigation-list {
+		display: none;
+		font-size: 4em;
+	}
+
 	@media screen and (min-width: 768px) {
 		section.details {
 			width: clamp(500px, 66.6666%, 1000px);
+		}
+
+		section.header .navigation-list {
+			display: block;
 		}
 	}
 
@@ -125,10 +145,16 @@
 		display: flex;
 		justify-content: space-around;
 		align-items: center;
-		padding-top: var(--space-10);
 		background: var(--colors-surface-container-lowest);
-		clip-path: polygon(0 0, 100% 0, 100% 80%, 0 65%);
-		margin-bottom: -20px;
+		max-height: 225px;
+		padding-bottom: var(--space-5);
+		overflow: hidden;
+		border-bottom: 2px solid var(--colors-outline);
+		transition: max-height 0.5s ease-in-out;
+	}
+
+	section.header-reveal {
+		max-height: 500px;
 	}
 
 	section.header > a {
@@ -137,5 +163,12 @@
 
 	section.header > a:hover {
 		color: var(--colors-primary);
+	}
+
+	.piece-icon {
+		align-self: baseline;
+		cursor: pointer;
+		background: none;
+		border: none;
 	}
 </style>
