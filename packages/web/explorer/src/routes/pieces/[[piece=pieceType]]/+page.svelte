@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { page as pageStore } from '$app/stores'
+	import { page as pageState } from '$app/state'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
-	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
 
 	let { data } = $props()
 
@@ -16,8 +15,8 @@
 			params.append('page', page.toString())
 		}
 
-		if ($pageStore.params.piece) {
-			params.append('type', $pageStore.params.piece)
+		if (pageState.params.piece) {
+			params.append('type', pageState.params.piece)
 		}
 
 		const res = await fetch(`/api/pieces?${params}`, {
@@ -74,12 +73,9 @@
 									<PieceIcon {piece} size="small" active={activePieceId === piece.id} />
 								{/key}
 							</div>
-							<div style="align-self: center;">
-								<CaretRightIcon style="margin: auto; font-size: 2em; max-width:unset;" />
-							</div>
 						</div>
 					</div>
-					<div style="flex: 1 1 0%; align-self: center; max-height: 160px; overflow: hidden;">
+					<div class="piece-text">
 						{piece.title}
 					</div>
 				</div>
@@ -140,5 +136,14 @@
 
 	.action > button:hover {
 		text-decoration: underline;
+	}
+
+	.piece-text {
+		flex: 1 1 0%;
+		align-self: center;
+		max-height: 160px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		margin-left: var(--space-2);
 	}
 </style>

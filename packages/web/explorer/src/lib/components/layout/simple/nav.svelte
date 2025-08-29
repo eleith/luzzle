@@ -2,14 +2,15 @@
 	import '$lib/ui/styles/reset.css'
 	import '$lib/ui/styles/theme.css'
 	import '$lib/ui/styles/elements.css'
-	import AtIcon from 'virtual:icons/ph/at'
+	import NavigationIcon from 'virtual:icons/ph/navigation-arrow'
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import SunIcon from 'virtual:icons/ph/sun-dim'
 	import MoonIcon from 'virtual:icons/ph/moon'
 	import ArrowRightIcon from 'virtual:icons/ph/caret-double-right'
 	import TreeIcon from 'virtual:icons/ph/tree'
 	import themes, { type Theme } from '$lib/ui/styles/themes'
-	import { page } from '$app/stores'
+	import { browser } from '$app/environment'
+	import { page } from '$app/state'
 	import { fly, fade } from 'svelte/transition'
 	import { createDialog, melt } from '@melt-ui/svelte'
 	import type { Snippet } from 'svelte'
@@ -92,13 +93,15 @@
 			font-family: 'Noto Sans', 'Adjusted Sans';
 		}
 	</style>
-	<script>
-		const localTheme = window.localStorage.getItem('theme')
-		const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-		const theme = localTheme ?? (prefersDark ? 'dark' : 'light')
+	{#if !browser}
+		<script>
+			const localTheme = window.localStorage.getItem('theme')
+			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+			const theme = localTheme ?? (prefersDark ? 'dark' : 'light')
 
-		document.documentElement.setAttribute('data-theme', theme)
-	</script>
+			document.documentElement.setAttribute('data-theme', theme)
+		</script>
+	{/if}
 </svelte:head>
 
 {#if $open}
@@ -130,8 +133,8 @@
 
 <nav class="banner" style:--banner-background-color={background || 'transparent'}>
 	<div class="left">
-		{#if $page.url.pathname !== '/'}
-			<a href="/" aria-label="main page"><AtIcon style="font-size: 1em;" /></a>
+		{#if page.url.pathname !== '/'}
+			<a href="/" aria-label="main page"><NavigationIcon style="font-size: 1em;" /></a>
 		{/if}
 		{#if items?.left}
 			{@render items.left()}
@@ -204,8 +207,7 @@
 
 	.search > div:nth-child(2) {
 		background: var(--colors-surface-container-high);
-		height: 150px;
-		clip-path: polygon(0 0, 100% 0, 100% 80%, 0 15%);
+		border-bottom: 2px solid var(--colors-outline);
 	}
 
 	.searchOverlay {

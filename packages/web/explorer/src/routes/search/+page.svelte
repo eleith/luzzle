@@ -1,6 +1,5 @@
 <script lang="ts">
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
-	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
 
 	let activePieceId = $state<string | null>(null)
 	let { data } = $props()
@@ -85,12 +84,9 @@
 									<PieceIcon {piece} size="small" active={activePieceId === piece.id} />
 								{/key}
 							</div>
-							<div style="align-self: center;">
-								<CaretRightIcon style="margin: auto; font-size: 2em; max-width:unset;" />
-							</div>
 						</div>
 					</div>
-					<div style="flex: 1 1 0%; align-self: center; max-height: 160px; overflow: hidden;">
+					<div class="piece-text">
 						{piece.title}
 					</div>
 				</div></a
@@ -150,5 +146,14 @@
 
 	.action > button:hover {
 		text-decoration: underline;
+	}
+
+	.piece-text {
+		flex: 1 1 0%;
+		align-self: center;
+		max-height: 160px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		margin-left: var(--space-2);
 	}
 </style>
