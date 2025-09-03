@@ -11,7 +11,7 @@ import {
 import { readFile } from 'fs/promises'
 import path from 'path'
 
-const MODEL_NAME = 'gemini-2.5-pro'
+const MODEL_NAME = 'gemini-2.5-flash'
 
 const safetySettings: SafetySetting[] = [
 	{
