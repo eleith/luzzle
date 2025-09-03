@@ -17,7 +17,7 @@ const config = {
 					'unsafe-inline',
 					`${process.env.PUBLIC_CLIENT_APP_URL}/`
 				],
-				'img-src': ['self', 'data:', `${process.env.PUBLIC_IMAGES_URL}/`],
+				'img-src': ['self', 'data:', `${process.env.PUBLIC_CLIENT_APP_URL}/`, `${process.env.PUBLIC_IMAGES_URL}/`],
 				'connect-src': ['self'],
 				'font-src': ['self', `${process.env.PUBLIC_CLIENT_APP_URL}/`],
 				'object-src': ['none'],
