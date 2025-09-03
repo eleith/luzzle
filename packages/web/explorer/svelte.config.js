@@ -11,15 +11,15 @@ const config = {
 			mode: 'auto',
 			directives: {
 				'default-src': ['self'],
-				'script-src': ['self', 'unsafe-hashes', 'sha256-7dQwUgLau1NFCCGjfn9FsYptB6ZtWxJin6VohGIu20I=', 'sha256-xn22ltVON/Snvkt10s93XAovWcCOYzs+b4VC4GwZ+/o=', process.env.PUBLIC_CLIENT_APP_URL || ""],
+				'script-src': ['self', 'unsafe-hashes', 'sha256-7dQwUgLau1NFCCGjfn9FsYptB6ZtWxJin6VohGIu20I=', 'sha256-xn22ltVON/Snvkt10s93XAovWcCOYzs+b4VC4GwZ+/o=', `${process.env.PUBLIC_CLIENT_APP_URL}/`],
 				'style-src': [
 					'self',
 					'unsafe-inline',
-					process.env.PUBLIC_CLIENT_APP_URL || ""
+					`${process.env.PUBLIC_CLIENT_APP_URL}/`
 				],
-				'img-src': ['self', 'data:', process.env.PUBLIC_IMAGES_URL || ""],
+				'img-src': ['self', 'data:', `${process.env.PUBLIC_IMAGES_URL}/`],
 				'connect-src': ['self'],
-				'font-src': ['self', process.env.PUBLIC_CLIENT_APP_URL || ""],
+				'font-src': ['self', `${process.env.PUBLIC_CLIENT_APP_URL}/`],
 				'object-src': ['none'],
 				'base-uri': ['self'],
 				'frame-ancestors': ['none']
