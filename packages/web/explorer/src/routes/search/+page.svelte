@@ -3,7 +3,7 @@
 
 	let activePieceId = $state<string | null>(null)
 	let { data } = $props()
-	let nextPage = $state<number | null>(2)
+	let nextPage = $state<number | null>(data.nextPage)
 	let pieces = $derived(data.pieces);
 	let query = $derived(data.query);
 
@@ -22,7 +22,7 @@
 		if (res.ok) {
 			const json = (await res.json()) as Omit<typeof data, 'type'>
 			pieces = pieces.concat(json.pieces)
-			nextPage = page + 1
+			nextPage = json.nextPage
 		} else {
 			nextPage = null
 		}
@@ -47,31 +47,25 @@
 				href="/pieces/{piece.type}/{piece.slug}"
 				onmouseenter={() => {
 					activePieceId = piece.id
-					//pieceIcons[activePieceId].active(true)
 				}}
 				onmouseleave={() => {
 					if (activePieceId) {
-						//pieceIcons[activePieceId].active(false)
 						activePieceId = null
 					}
 				}}
 				onfocus={() => {
 					activePieceId = piece.id
-					//pieceIcons[activePieceId].active(true)
 				}}
 				onblur={() => {
 					if (activePieceId) {
-						//pieceIcons[activePieceId].active(false)
 						activePieceId = null
 					}
 				}}
 				ontouchstart={() => {
 					activePieceId = piece.id
-					//pieceIcons[activePieceId].active(true)
 				}}
 				ontouchend={() => {
 					if (activePieceId) {
-						//pieceIcons[activePieceId].active(false)
 						activePieceId = null
 					}
 				}}
@@ -93,6 +87,7 @@
 			>
 		{/each}
 	</section>
+
 	{#if nextPage}
 		<section class="action">
 			{#if nextPage && query !== null}
