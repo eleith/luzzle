@@ -17,11 +17,16 @@ export const load: PageServerLoad = async (event) => {
 
 	const pieces = await select
 		.orderBy(sql`bm25(web_pieces_fts5, 1, 1, 1, 10, 3, 2, 1, 3, 3, 1, 1, 1)`)
-		.limit(MAX_RESULTS)
+		.limit(MAX_RESULTS + 1)
 		.execute()
+
+	if (pieces.length === MAX_RESULTS + 1) {
+		pieces.pop()
+	}
 
 	return {
 		pieces,
-		query
+		query,
+		nextPage: pieces.length === MAX_RESULTS ? 2 : null,
 	}
 }
