@@ -268,10 +268,10 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fill, 280px);
 		gap: 20px;
-		width: 100%;
-		margin: auto;
+		padding-left: var(--space-5);
+		padding-right: var(--space-5);
 		align-items: start;
-		justify-content: center;
+		justify-content: start;
 	}
 
 	section.pieces > a {

@@ -102,12 +102,12 @@
 		display: grid;
 		width: 100%;
 		margin: auto;
-		margin-top: var(--space-10);
-		margin-bottom: var(--space-10);
+		padding-left: var(--space-5);
+		padding-bottom: var(--space-5);
+		padding-right: var(--space-5);
 		grid-template-columns: repeat(auto-fill, 280px);
 		gap: var(--space-5);
-		align-items: start;
-		justify-content: center;
+		justify-content: space-around;
 	}
 
 	.container:last-child {
