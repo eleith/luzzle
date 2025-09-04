@@ -27,6 +27,6 @@ export const load: PageServerLoad = async (event) => {
 	return {
 		pieces,
 		query,
-		nextPage: pieces.length === MAX_RESULTS ? 2 : null,
+		nextPage: pieces.length === MAX_RESULTS ? 2 : null
 	}
 }

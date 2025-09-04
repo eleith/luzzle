@@ -47,8 +47,8 @@
 		</a>
 	{:else}
 		<div class="navigation-list">
-			<CaretLeftIcon style="color: var(--colors-surface-dim);"/>
-		</div>	
+			<CaretLeftIcon style="color: var(--colors-surface-dim);" />
+		</div>
 	{/if}
 	{#key data.piece.id}
 		<button class="piece-icon" onclick={toggleHeader} title="toggle full size">
@@ -61,7 +61,7 @@
 		</a>
 	{:else}
 		<div class="navigation-list">
-			<CaretRightIcon style="color: var(--colors-surface-dim);"/>
+			<CaretRightIcon style="color: var(--colors-surface-dim);" />
 		</div>
 	{/if}
 </section>

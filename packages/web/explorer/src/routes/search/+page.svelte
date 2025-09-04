@@ -4,8 +4,8 @@
 	let activePieceId = $state<string | null>(null)
 	let { data } = $props()
 	let nextPage = $state<number | null>(data.nextPage)
-	let pieces = $derived(data.pieces);
-	let query = $derived(data.query);
+	let pieces = $derived(data.pieces)
+	let query = $derived(data.query)
 
 	async function getNextPage(page: number) {
 		const params = new URLSearchParams()
