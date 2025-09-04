@@ -2,7 +2,7 @@
 	import '$lib/ui/styles/reset.css'
 	import '$lib/ui/styles/theme.css'
 	import '$lib/ui/styles/elements.css'
-	import NavigationIcon from 'virtual:icons/ph/navigation-arrow'
+	import NavigationIcon from 'virtual:icons/ph/arrow-up-left'
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import SunIcon from 'virtual:icons/ph/sun-dim'
 	import MoonIcon from 'virtual:icons/ph/moon'
