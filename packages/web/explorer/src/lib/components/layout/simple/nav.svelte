@@ -6,7 +6,6 @@
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import SunIcon from 'virtual:icons/ph/sun-dim'
 	import MoonIcon from 'virtual:icons/ph/moon'
-	import ArrowRightIcon from 'virtual:icons/ph/caret-double-right'
 	import TreeIcon from 'virtual:icons/ph/tree'
 	import themes, { type Theme } from '$lib/ui/styles/themes'
 	import { browser } from '$app/environment'
@@ -121,9 +120,7 @@
 						name="query"
 						class="input"
 					/>
-					<button type="submit" class="button" aria-label="submit search">
-						<ArrowRightIcon style="font-size: 1.75em;" />
-					</button>
+					<button type="submit" class="button" aria-label="submit search">search</button>
 				</form>
 			</div>
 			<div></div>
