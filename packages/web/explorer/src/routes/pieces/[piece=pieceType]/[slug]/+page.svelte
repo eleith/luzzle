@@ -40,7 +40,7 @@
 	{/if}
 </svelte:head>
 
-<section class="header" class:header-reveal={showFullHeader}>
+<section class="header">
 	{#if data.previous}
 		<a href="/pieces/{data.previous.type}/{data.previous.slug}" class="navigation-list">
 			<CaretLeftIcon />
@@ -51,7 +51,8 @@
 		</div>
 	{/if}
 	{#key data.piece.id}
-		<button class="piece-icon" onclick={toggleHeader} title="toggle full size">
+		<button class="piece-icon" onclick={toggleHeader} title="toggle full size"
+			class:piece-icon-open={showFullHeader}>
 			<PieceIcon piece={data.piece} size="large" lazy={false} />
 		</button>
 	{/key}
@@ -124,6 +125,8 @@
 		width: 85%;
 		padding-right: var(--space-2-5);
 		padding-left: var(--space-2-5);
+		border-top: solid 1px var(--colors-outline);
+		padding-bottom: var(--space-5);
 	}
 
 	section.header .navigation-list {
@@ -145,16 +148,13 @@
 		display: flex;
 		justify-content: space-around;
 		align-items: center;
-		background: var(--colors-surface-container-lowest);
-		max-height: 225px;
+		background-image: linear-gradient(
+			to bottom,
+			var(--colors-surface-container-lowest),
+			transparent 225px
+		);
 		padding-bottom: var(--space-5);
 		overflow: hidden;
-		border-bottom: 2px solid var(--colors-outline);
-		transition: max-height 0.5s ease-in-out;
-	}
-
-	section.header-reveal {
-		max-height: 500px;
 	}
 
 	section.header > a {
@@ -165,10 +165,16 @@
 		color: var(--colors-primary);
 	}
 
-	.piece-icon {
+	button.piece-icon {
 		align-self: baseline;
 		cursor: pointer;
 		background: none;
 		border: none;
+		max-height: 225px;
+		transition: max-height 0.5s ease-in-out;
+	}
+
+	button.piece-icon-open {
+		max-height: 500px;
 	}
 </style>
