@@ -9,7 +9,7 @@ import { imageToBase64 } from './utils/imageToBase64.js'
 import pieceToHtml from './utils/html.js'
 
 const OpenGraphImageWidth = 1200
-const OpenGraphImageHeight = 600
+const OpenGraphImageHeight = 600 // should be 630
 
 async function reactElementToSvg(html: string, fonts: Array<Font>) {
 	const reactElementObject = toReactElement(html)

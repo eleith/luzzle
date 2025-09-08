@@ -4,34 +4,39 @@ async function parseArgs(args: string[]) {
 	return yargs(args)
 		.strict()
 		.options({
-			db: {
+			luzzle: {
 				type: 'string',
-				description: 'path to luzzle sqlite',
+				description: 'path to the luzzle root',
 				demandOption: true,
-				alias: 'sqlite',
-			},
-			in: {
-				type: 'string',
-				description: 'path to luzzle directory',
-				demandOption: true,
-				alias: 'luzzle',
 			},
 			out: {
 				type: 'string',
 				description: 'path to luzzle images directory',
-				demandOption: true,
 				alias: 'images',
 			},
 			piece: {
 				type: 'string',
-				description: 'generate variants for a specific piece (slug)',
+				description: 'slug of the piece to generate images for',
 				alias: 'p',
 			},
 			force: {
 				type: 'boolean',
-				description: 'force regeneration of variants',
+				description: 'force regeneration of images',
 				default: false,
 				alias: 'f',
+			},
+			format: {
+				type: 'string',
+				description: 'output file type',
+				alias: 'o',
+				default: 'html',
+				choices: ['png', 'svg', 'html'],
+			},
+			templates: {
+				type: 'string',
+				description: 'path to templates folder',
+				alias: 't',
+				demandOption: true,
 			},
 		})
 		.help()
