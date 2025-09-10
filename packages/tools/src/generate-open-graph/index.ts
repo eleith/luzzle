@@ -2,11 +2,14 @@
 
 import { hideBin } from 'yargs/helpers'
 import parseArgs from './yargs.js'
-import { generateOpenGraphForPiece } from './opengraph.js'
+import { generatePng } from './png.js'
 import { exec } from 'child_process'
-import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { temporaryWrite } from 'tempy'
 import { getBrowser, shutdownBrowser } from './browser.js'
+import { generateHtml } from './html.js'
+import { readFile } from 'fs/promises'
+import { extractFullMarkdown, makePieceMarkdown } from '@luzzle/core'
+import { PieceFrontmatter } from '@luzzle/cli'
 
 async function openBuffer(
 	buffer: Buffer | string | Uint8Array<ArrayBufferLike>,
@@ -28,26 +31,31 @@ async function run() {
 
 	try {
 		const command = await parseArgs(hideBin(process.argv))
-		const templates = command.templates
+		const template = command.template
 		const luzzle = command.luzzle
 		const file = command.file
-		const format = file ? (command.format as 'html' | 'png' | 'svg') : 'png'
+		const format = file ? (command.format as 'html' | 'png') : 'png'
 
-		const storage = new StorageFileSystem(luzzle)
-		const pieces = new Pieces(storage)
-		const pieceInfo = pieces.parseFilename(file)
+		// const storage = new StorageFileSystem(luzzle)
+		// const pieces = new Pieces(storage)
+		// const piece = pieces.parseFilename(file)
+		const contents = await readFile(file)
+		const markdown = await extractFullMarkdown(contents)
+		const pieceMarkdown = makePieceMarkdown(
+			file,
+			'book',
+			markdown.markdown,
+			markdown.frontmatter as PieceFrontmatter
+		)
 
-		if (pieceInfo.type) {
-			const piece = await pieces.getPiece(pieceInfo.type)
-			const pieceMarkdown = await piece.get(pieceInfo.file)
-			const og = await generateOpenGraphForPiece(pieceMarkdown, templates, format, luzzle, browser)
+		const ogHtml = await generateHtml(pieceMarkdown, luzzle, template)
+		const ogPng = await generatePng(ogHtml, browser)
 
-			await openBuffer(og, format)
-		}
+		await openBuffer(ogPng, format)
 	} catch (error) {
 		throw new Error(`Generation failed ${error}`)
 	} finally {
-		shutdownBrowser(browser)
+		await shutdownBrowser(browser)
 	}
 }
 
