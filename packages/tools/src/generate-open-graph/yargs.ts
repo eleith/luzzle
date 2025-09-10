@@ -11,18 +11,18 @@ async function parseArgs(args: string[]) {
 			},
 			file: {
 				type: 'string',
-				description: 'file of one piece to test open graph generation for',
+				description: 'file of piece to test open graph generation for',
 				demandOption: true,
 			},
 			format: {
 				type: 'string',
 				description: 'output format when testing open graph generation',
 				default: 'html',
-				choices: ['png', 'svg', 'html'],
+				choices: ['png', 'html'],
 			},
-			templates: {
+			template: {
 				type: 'string',
-				description: 'path to templates folder',
+				description: 'path to template for open graph generation',
 				alias: 't',
 				demandOption: true,
 			},
