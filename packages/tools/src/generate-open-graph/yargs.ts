@@ -9,26 +9,14 @@ async function parseArgs(args: string[]) {
 				description: 'path to the luzzle root',
 				demandOption: true,
 			},
-			out: {
+			file: {
 				type: 'string',
-				description: 'path to luzzle images directory',
-				alias: 'images',
-			},
-			piece: {
-				type: 'string',
-				description: 'slug of the piece to generate images for',
-				alias: 'p',
-			},
-			force: {
-				type: 'boolean',
-				description: 'force regeneration of images',
-				default: false,
-				alias: 'f',
+				description: 'file of one piece to test open graph generation for',
+				demandOption: true,
 			},
 			format: {
 				type: 'string',
-				description: 'output file type',
-				alias: 'o',
+				description: 'output format when testing open graph generation',
 				default: 'html',
 				choices: ['png', 'svg', 'html'],
 			},

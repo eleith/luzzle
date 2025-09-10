@@ -26,7 +26,7 @@
 
 <body>
 	<section class="container">
-			<%~ it.body %>
+			[%~ it.body %]
 	</section>
 </body>
 
