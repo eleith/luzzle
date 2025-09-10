@@ -101,7 +101,7 @@ describe('lib/storage/fs.ts', () => {
 
 		const file = await storage.readFile('./path', 'text')
 
-		expect(mocks.readFile).toHaveBeenCalledWith(resolve, 'utf8')
+		expect(mocks.readFile).toHaveBeenCalledWith(resolve, 'utf-8')
 		expect(file).toEqual(contents)
 	})
 
@@ -115,9 +115,9 @@ describe('lib/storage/fs.ts', () => {
 		mocks.readFile.mockResolvedValueOnce(contents)
 		const storage = new StorageFileSystem(root)
 
-		const file = await storage.readFile('./path', 'binary')
+		const file = await storage.readFile('./path')
 
-		expect(mocks.readFile).toHaveBeenCalledWith(resolve, 'binary')
+		expect(mocks.readFile).toHaveBeenCalledWith(resolve)
 		expect(file).toEqual(contents)
 	})
 

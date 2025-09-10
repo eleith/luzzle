@@ -26,9 +26,14 @@ class StorageFileSystem extends Storage {
 		return path.relative(this.root, argPath)
 	}
 
-	async readFile(path: string, format: 'text' | 'binary' = 'text') {
+	async readFile(path: string, format?: 'text'): Promise<string | Buffer> {
 		const resolvedPath = this.resolvePath(path)
-		return readFile(resolvedPath, format === 'text' ? 'utf8' : 'binary')
+
+		if (format === 'text') {
+			return readFile(resolvedPath, 'utf-8')
+		} else {
+			return readFile(resolvedPath)
+		}
 	}
 
 	async writeFile(path: string, contents: string | Buffer | Readable): Promise<void> {

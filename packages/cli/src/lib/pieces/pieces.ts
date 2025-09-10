@@ -26,6 +26,22 @@ class Pieces {
 		return new Piece(name, this._storage, schema)
 	}
 
+	async getPieceMarkdown(file: string, type?: string) {
+		const parts = this.parseFilename(file)
+		const pieceName = parts.type || type
+
+		if (pieceName) {
+			const piece = await this.getPiece(pieceName)
+			return await piece.get(file)
+		}
+
+		throw new Error(`invalid piece, can't determine piece type: ${file}`)
+	}
+
+	async getPieceAsset(file: string) {
+		return await this._storage.readFile(file) as Buffer
+	}
+
 	getSchemaPath(name: string) {
 		return path.join(LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY, `${name}.json`)
 	}
@@ -33,7 +49,7 @@ class Pieces {
 	async getSchema(name: string) {
 		const schemaPath = this.getSchemaPath(name)
 		const schemaJson = await this._storage.readFile(schemaPath, 'text')
-		return jsonToPieceSchema(schemaJson)
+		return jsonToPieceSchema(schemaJson as string)
 	}
 
 	async sync(db: LuzzleDatabase, dryRun: boolean) {
