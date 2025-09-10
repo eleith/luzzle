@@ -11,7 +11,7 @@ abstract class Storage {
 	abstract type: StorageType
 	abstract root: string
 	abstract parseArgPath(path: string): string
-	abstract readFile(path: string, format: 'text' | 'binary'): Promise<string>
+	abstract readFile(path: string, format?: 'text'): Promise<string | Buffer>
 	abstract writeFile(path: string, contents: string | Buffer | ReadStream): Promise<void>
 	abstract getFilesIn(path: string, options?: { deep?: boolean }): Promise<string[]>
 	abstract exists(path: string): Promise<boolean>
