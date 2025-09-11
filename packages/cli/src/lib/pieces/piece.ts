@@ -298,21 +298,21 @@ class Piece<F extends PieceFrontmatter> {
 		const set = []
 
 		for (const one of values) {
-			const pieceValue = await makePieceValue(pieceField, one)
+			try {
+				const pieceValue = await makePieceValue(pieceField, one)
 
-			if (pieceValue instanceof Readable) {
-				const file = markdown.filePath
-				const storage = this._storage
-
-				try {
+				if (pieceValue instanceof Readable) {
+					const file = markdown.filePath
+					const storage = this._storage
 					const asset = await makePieceAttachment(file, pieceField, pieceValue, storage)
+
 					set.push(asset)
-				} catch (e) {
-					const error = e as Error
-					log.error(`could not create asset for ${one}: ${error.message}`)
+				} else {
+					set.push(pieceValue)
 				}
-			} else {
-				set.push(pieceValue)
+			} catch (e) {
+				const error = e as Error
+				log.error(`could not set field ${field} for ${one}: ${error.message}`)
 			}
 		}
 
