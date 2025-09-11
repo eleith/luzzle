@@ -32,15 +32,15 @@ async function resize(image: Buffer, toPath: string) {
 	})
 }
 
-async function generateVariantsForPiece(piece: WebPieces, lastRun: Date, inDir: string, outDir: string) {
-	const pieceModifiedTime = new Date(piece.date_updated || piece.date_added)
+async function generateVariantsForPiece(piece: WebPieces, inDir: string, outDir: string) {
 	const mediaPath = `${inDir}/${piece.media}`
 	const mediaStat = await stat(mediaPath).catch(() => null)
 	const mediaFileName = path.basename(mediaPath)
 	const mediaFileBaseName = path.basename(mediaPath, path.extname(mediaPath))
 	const variantDir = `${outDir}/${piece.type}/${piece.slug}`
 
-	if (!mediaStat || !mediaStat.isFile() || pieceModifiedTime < lastRun) {
+	if (!mediaStat || !mediaStat.isFile()) {
+		console.warn(`[skipping] media file not found for ${piece.type}/${piece.slug} at ${mediaPath}`)
 		return
 	}
 
@@ -62,7 +62,11 @@ export async function generateVariantsForPieces(pieces: WebPieces[], inDir: stri
 	const piecesWithMedia = pieces.filter((p) => p.media)
 
 	for (const piece of piecesWithMedia) {
-		await generateVariantsForPiece(piece, lastRun, inDir, outDir)
+		const pieceModifiedTime = new Date(piece.date_updated || piece.date_added)
+
+		if (pieceModifiedTime > lastRun || force) {
+			await generateVariantsForPiece(piece, inDir, outDir)
+		}
 	}
 
 	if (!force) {
