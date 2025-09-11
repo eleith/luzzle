@@ -36,9 +36,6 @@ export const actions = {
 			})
 
 			if (response.ok) {
-				console.log(response)
-				console.log(await response.text())
-
 				return { success: true }
 			}
 

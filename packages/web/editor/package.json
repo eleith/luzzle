@@ -21,7 +21,7 @@
 	},
 	"devDependencies": {
 		"@iconify-json/ph": "1.2.2",
-		"@luzzle/cli": "0.0.113",
+		"@luzzle/cli": "0.0.116",
 		"@melt-ui/pp": "0.3.2",
 		"@melt-ui/svelte": "0.86.6",
 		"@sveltejs/adapter-node": "5.2.12",

@@ -2,7 +2,7 @@
 	import '$lib/ui/styles/reset.css'
 	import '$lib/ui/styles/theme.css'
 	import '$lib/ui/styles/elements.css'
-	import AtIcon from 'virtual:icons/ph/at'
+	import NavigationIcon from 'virtual:icons/ph/arrow-up-left'
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import SunIcon from 'virtual:icons/ph/sun-dim'
 	import MoonIcon from 'virtual:icons/ph/moon'
@@ -130,7 +130,7 @@
 <nav class="banner" style:--banner-background-color={background || 'transparent'}>
 	<div class="left">
 		{#if page.url.pathname !== '/'}
-			<a href="/" aria-label="main page"><AtIcon style="font-size: 1em;" /></a>
+			<a href="/" aria-label="main page"><NavigationIcon style="font-size: 1em;" /></a>
 		{/if}
 		{#if items?.left}
 			{@render items.left()}

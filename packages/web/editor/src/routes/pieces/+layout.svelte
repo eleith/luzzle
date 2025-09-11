@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '$lib/components/layout/simple/theme.svelte'
 	import Nav from '$lib/components/layout/simple/nav.svelte'
-	import KeyReturnIcon from 'virtual:icons/ph/key-return'
+	import FolderIcon from 'virtual:icons/ph/folder'
 	import PenIcon from 'virtual:icons/ph/pen'
 	import { page } from '$app/state'
 
@@ -11,11 +11,11 @@
 {#snippet upIcon()}
 	{#if page.data.directory !== '.'}
 		<a href="/directory/list/{page.data.directory}" aria-label="up">
-			<KeyReturnIcon style="font-size: 1em;" />
+			<FolderIcon style="font-size: 1em;" />
 		</a>
 	{:else}
 		<a href="/" aria-label="rss feed">
-			<KeyReturnIcon style="font-size: 1em;" />
+			<FolderIcon style="font-size: 1em;" />
 		</a>
 	{/if}
 {/snippet}
