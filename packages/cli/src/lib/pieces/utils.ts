@@ -12,6 +12,7 @@ import { Storage } from '../storage/index.js'
 import { fileTypeStream } from 'file-type'
 import { pipeline } from 'stream/promises'
 import got, { Request } from 'got'
+import log from '../log.js'
 
 export const PieceDirectory = {
 	Root: 'root',
@@ -89,7 +90,13 @@ const makePiecePathPositional = function <T>(yargs: Argv<T>): Argv<T & PieceArgv
 
 async function downloadToStream(fileOrUrl: string) {
 	if (/https?:\/\//i.test(fileOrUrl)) {
-		return got.stream(fileOrUrl)
+		const download = got.stream(fileOrUrl, {throwHttpErrors: false})
+
+		download.on("error", err => {
+			log.error(`Error downloading file from URL: ${err.message}`)
+		})
+
+		return download
 	}
 
 	const coverStat = await stat(fileOrUrl).catch(() => null)

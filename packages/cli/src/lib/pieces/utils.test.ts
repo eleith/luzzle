@@ -14,6 +14,7 @@ import { PieceFrontmatterSchemaField } from '@luzzle/core'
 import { ASSETS_DIRECTORY } from '../assets.js'
 import { AnyWebReadableByteStreamWithFileType, fileTypeStream } from 'file-type'
 import { pipeline } from 'stream/promises'
+import log from '../log.js'
 
 vi.mock('fs')
 vi.mock('tempy')
@@ -23,6 +24,7 @@ vi.mock('crypto')
 vi.mock('file-type')
 vi.mock('stream/promises')
 vi.mock('got')
+vi.mock('../log.js')
 
 const mocks = {
 	tempyFile: vi.mocked(temporaryFile),
@@ -35,6 +37,7 @@ const mocks = {
 	pipeline: vi.mocked(pipeline),
 	randomBytes: vi.mocked(randomBytes),
 	gotStream: vi.mocked(got.stream),
+	logError: vi.mocked(log.error),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -274,6 +277,20 @@ describe('lib/pieces/utils.ts', () => {
 		const pieceValue = await util.makePieceValue(field, asset)
 
 		expect(pieceValue).toEqual(readable)
+	})
+
+	test('makePieceValue bad url asset', async () => {
+		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
+		const asset = 'https://path/to/asset'
+		const readable = new PassThrough() as unknown as Request
+
+		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
+		mocks.gotStream.mockReturnValueOnce(readable)
+
+		await util.makePieceValue(field, asset)
+		readable.emit('error', new Error('error'))
+
+		expect(mocks.logError).toHaveBeenCalled()
 	})
 
 	test('makePieceValue existing asset', async () => {
