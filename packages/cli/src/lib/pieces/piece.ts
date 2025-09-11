@@ -310,7 +310,8 @@ class Piece<F extends PieceFrontmatter> {
 					set.push(pieceValue)
 				}
 			} catch (e) {
-				log.error(`could not create asset for ${one}: ${e}`)
+				const error = e as Error
+				log.error(`could not create asset for ${one}: ${error.message}`)
 			}
 		}
 
