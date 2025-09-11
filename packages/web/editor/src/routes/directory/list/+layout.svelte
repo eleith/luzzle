@@ -2,7 +2,7 @@
 	import '$lib/components/layout/simple/theme.svelte'
 	import Nav from '$lib/components/layout/simple/nav.svelte'
 	import CreateIcon from 'virtual:icons/ph/file-plus'
-	import KeyReturnIcon from 'virtual:icons/ph/key-return'
+	import FolderIcon from 'virtual:icons/ph/folder'
 	import { page } from '$app/state'
 
 	const { children } = $props()
@@ -11,11 +11,11 @@
 {#snippet upIcon()}
 	{#if page.data.directory.parent !== '.'}
 		<a href="/directory/list/{page.data.directory.parent}" aria-label="rss feed">
-			<KeyReturnIcon style="font-size: 1em;" />
+			<FolderIcon style="font-size: 1em;" />
 		</a>
 	{:else}
 		<a href="/" aria-label="rss feed">
-			<KeyReturnIcon style="font-size: 1em;" />
+			<FolderIcon style="font-size: 1em;" />
 		</a>
 	{/if}
 {/snippet}
