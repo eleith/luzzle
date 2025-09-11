@@ -13,10 +13,3 @@ export interface WebPieces {
 	summary?: string
 	keywords?: string
 }
-
-export type Font = {
-	name: string
-	weight?: number
-	style: string
-	data:  Buffer<ArrayBufferLike>
-}

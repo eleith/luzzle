@@ -22,10 +22,10 @@ async function parseArgs(args: string[]) {
 				demandOption: true,
 				alias: 'images',
 			},
-			piece: {
+			templates: {
 				type: 'string',
-				description: 'generate variants for a specific piece (slug)',
-				alias: 'p',
+				description: 'template folder of eta templates for open graph generation',
+				demandOption: true,
 			},
 			force: {
 				type: 'boolean',

@@ -2,13 +2,6 @@ import puppeteer, { Browser } from 'puppeteer'
 
 let browserSingleton: Browser | null
 
-async function getBrowser(): Promise<Browser> {
-	if (!browserSingleton || !browserSingleton.connected) {
-		browserSingleton = await initializeBrowser()
-	}
-	return browserSingleton
-}
-
 async function initializeBrowser(): Promise<Browser> {
 	const launchArgs = [
 		'--no-sandbox',
@@ -24,8 +17,11 @@ async function initializeBrowser(): Promise<Browser> {
 	})
 }
 
-async function shutdownBrowser(browser: Browser) {
-	await browser.close()
+async function getBrowser(): Promise<Browser> {
+	if (!browserSingleton || !browserSingleton.connected) {
+		browserSingleton = await initializeBrowser()
+	}
+	return browserSingleton
 }
 
-export { initializeBrowser, shutdownBrowser, getBrowser }
+export { getBrowser }

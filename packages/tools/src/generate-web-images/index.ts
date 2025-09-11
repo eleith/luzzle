@@ -5,6 +5,7 @@ import parseArgs from './yargs.js'
 import { generateVariantsForPieces } from './variants.js'
 import { getDatabaseClient } from '@luzzle/core'
 import { type WebPieces } from './utils/types.js'
+import { generateOpenGraphsForPieces } from './opengraph.js'
 
 async function run() {
 	console.log('[start] generating image variants...')
@@ -14,8 +15,8 @@ async function run() {
 		const db = getDatabaseClient(command.db)
 		const outDir = command.out
 		const inDir = command.in
-		const piece = command.piece
 		const force = command.force
+		const templates = command.templates
 
 		const webPieces = await db
 			.withTables<{ web_pieces: WebPieces }>()
@@ -25,11 +26,10 @@ async function run() {
 			.orderBy('type', 'asc')
 			.execute()
 
-		const pieces = piece ? webPieces.filter(p => p.slug === piece) : webPieces
-
-		await generateVariantsForPieces(pieces, inDir, outDir, force)
+		await generateVariantsForPieces(webPieces, inDir, outDir, force)
+		await generateOpenGraphsForPieces(webPieces, inDir, outDir, templates, force)
 	} catch (error) {
-		console.error('Error during variant generation:', error)
+		console.error('Error during web image generation:', error)
 	}
 
 	console.log('[done] generated image variants')

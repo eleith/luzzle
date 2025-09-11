@@ -17,8 +17,6 @@ async function generatePng(
 			type: 'png',
 		})
 
-		await page.close()
-
 		return imageBuffer
 	} catch (error) {
 		throw new Error(`Failed to generate image with Puppeteer: ${error}`)
