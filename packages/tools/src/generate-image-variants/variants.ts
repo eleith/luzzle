@@ -1,54 +1,44 @@
 import Sharp from 'sharp'
 import { PieceFrontmatter, PieceMarkdown, Pieces } from '@luzzle/cli'
+import path from 'path'
 
-const SIZES = {
-	small: 125,
-	medium: 250,
-	large: 500,
-	xl: 1000,
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif']
+
+function generateVariantSharpJob(sharp: Sharp.Sharp, width: number, format: 'avif' | 'jpg') {
+		return sharp.clone().resize({ width }).toFormat(format)
 }
 
-async function generateVariantForImage(
-	sharpImage: Sharp.Sharp,
-	format: 'avif' | 'jpg',
-	size: 'small' | 'medium' | 'large' | 'xl'
-) {
-	return sharpImage.clone().resize({ width: SIZES[size] }).toFormat(format).toBuffer()
-}
-
-async function generateVariantsForPiece(
-	markdown: PieceMarkdown<PieceFrontmatter>,
+async function generateVariantJobs(
+	asset: string,
 	pieces: Pieces,
-	field: string,
-	format: Array<'avif' | 'jpg'>,
-	size: Array<'small' | 'medium' | 'large' | 'xl'>
+	sizes: Array<number>,
+	formats: Array<'avif' | 'jpg'>,
 ) {
-	const asset = markdown.frontmatter[field]
+	const jobs: {
+		size: (typeof sizes)[number]
+		format: (typeof formats)[number]
+		sharp: Sharp.Sharp
+	}[] = []
 
-	if (!asset) {
-		throw new Error(`No asset found for field ${field} in piece ${markdown.piece}`)
-	}
-
-	const image = await pieces.getPieceAsset(markdown.frontmatter[field] as string)
+	const image = await pieces.getPieceAsset(asset)
 	const sharpImage = Sharp(image)
-	const promises: Array<Promise<Buffer>> = []
 
-	for (const f of format) {
-		for (const s of size) {
-			const buffer = generateVariantForImage(sharpImage, f, s)
-			promises.push(buffer)
+	for (const format of formats) {
+		for (const size of sizes) {
+			const sharp = generateVariantSharpJob(sharpImage, size, format)
+			jobs.push({ size, format, sharp })
 		}
 	}
 
-	return promises
+	return jobs
 }
 
-async function generateVariantForPiece(
+async function generateVariantForFieldAsset(
 	markdown: PieceMarkdown<PieceFrontmatter>,
 	pieces: Pieces,
 	field: string,
+	size: number,
 	format: 'avif' | 'jpg',
-	size: 'small' | 'medium' | 'large' | 'xl'
 ) {
 	const asset = markdown.frontmatter[field] as string | undefined
 
@@ -56,10 +46,13 @@ async function generateVariantForPiece(
 		throw new Error(`No asset found for field ${field} in piece ${markdown.piece}`)
 	}
 
-	const image = await pieces.getPieceAsset(markdown.frontmatter[field] as string)
-	const sharpImage = Sharp(image)
+	if (IMAGE_EXTENSIONS.indexOf(path.extname(asset).toLowerCase()) === -1) {
+		throw new Error(`${asset} is not an image`)
+	}
 
-	return generateVariantForImage(sharpImage, format, size)
+	const assetBuffer = await pieces.getPieceAsset(asset)
+	const sharp = Sharp(assetBuffer)
+	return generateVariantSharpJob(sharp, size, format).toBuffer()
 }
 
-export { generateVariantsForPiece, generateVariantForPiece }
+export { generateVariantForFieldAsset, generateVariantJobs }

@@ -1,71 +1,86 @@
-import Sharp from 'sharp'
-import { copyFile, mkdir, readFile, stat } from 'fs/promises'
+import { copyFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { getLastRunFor, setLastRunFor } from './utils/lastRun.js'
 import { type WebPieces } from './utils/types.js'
+import { PieceFrontmatter, PieceMarkdown, Pieces, StorageFileSystem } from '@luzzle/cli'
+import { generateVariantJobs } from 'src/generate-image-variants/variants.js'
 
-async function resize(image: Buffer, toPath: string) {
-	const sharpStream = Sharp(image)
-	const promises: Array<Promise<Sharp.OutputInfo>> = []
-
-	for (const format of ['avif', 'jpg'] as const) {
-		for (const size of ['small', 'medium', 'large', 'xl'] as const) {
-			const lengths = {
-				small: 125,
-				medium: 250,
-				large: 500,
-				xl: 1000
-			}
-
-			promises.push(
-				sharpStream
-					.clone()
-					.resize({ width: lengths[size] })
-					.toFormat(format)
-					.toFile(`${toPath}.${size}.${format}`)
-			)
-		}
-	}
-
-	await Promise.all(promises).catch((error) => {
-		console.error(error)
-	})
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif']
+const SIZES = {
+	small: 125,
+	medium: 250,
+	large: 500,
+	xl: 1000,
 }
 
-async function generateVariantsForPiece(piece: WebPieces, inDir: string, outDir: string) {
-	const mediaPath = `${inDir}/${piece.media}`
-	const mediaStat = await stat(mediaPath).catch(() => null)
-	const mediaFileName = path.basename(mediaPath)
-	const mediaFileBaseName = path.basename(mediaPath, path.extname(mediaPath))
-	const variantDir = `${outDir}/${piece.type}/${piece.slug}`
+function isImageAsset(filename: string) {
+	return IMAGE_EXTENSIONS.indexOf(path.extname(filename).toLowerCase()) !== -1
+}
 
-	if (!mediaStat || !mediaStat.isFile()) {
-		console.warn(`[skipping] media file not found for ${piece.type}/${piece.slug} at ${mediaPath}`)
-		return
-	}
+async function getImageAssetFields(
+	markdown: PieceMarkdown<PieceFrontmatter>, 
+	pieces: Pieces
+): Promise<Array<{ name: string; asset: string }>> {
+	const piece = await pieces.getPiece(markdown.piece)
+
+	const fields = piece.fields.filter((f) => f.format === 'asset')
+	const assets = fields.map((f) => ({
+		name: f.name,
+		asset: markdown.frontmatter[f.name] as string,
+	}))
+
+	return assets.filter((f) => f.asset && isImageAsset(f.asset))
+}
+
+async function generateVariantsForAssetField(
+	asset: string,
+	name: string,
+	pieces: Pieces,
+	variantDir: string
+) {
+	const baseName = path.basename(asset, path.extname(asset))
+	const sizes = [SIZES.small, SIZES.medium, SIZES.large, SIZES.xl]
+	const formats: Array<'avif' | 'jpg'> = ['avif', 'jpg']
 
 	try {
-		const mediaBuffer = await readFile(mediaPath)
-
-		console.log(`generating variants for ${piece.type}/${piece.slug}`)
-		await mkdir(variantDir, { recursive: true })
-		await copyFile(mediaPath, `${variantDir}/${mediaFileName}`)
-		await resize(mediaBuffer, `${variantDir}/${mediaFileBaseName}`)
-	} catch {
-		console.error(`error generating variants for ${piece.type}/${piece.slug} from ${piece.media}`)
+		const jobs = await generateVariantJobs(asset, pieces, sizes, formats)
+		const toFileJobs = jobs.map((job) =>
+			job.sharp.toFile(`${variantDir}/${baseName}.${job.size}.${job.format}`)
+		)
+		await Promise.all(toFileJobs)
+	} catch (error) {
+		console.error(`error generating variants for field ${name} at ${asset}: ${error}`)
 	}
 }
 
-export async function generateVariantsForPieces(pieces: WebPieces[], inDir: string, outDir: string, force: boolean = false) {
+export async function generateVariantsForPieces(
+	webPieces: WebPieces[],
+	luzzle: string,
+	outDir: string,
+	force: boolean = false
+) {
 	const operation = 'generate-variants'
 	const lastRun = force ? new Date(0) : await getLastRunFor(outDir, operation)
-	const piecesWithMedia = pieces.filter((p) => p.media)
+	const storage = new StorageFileSystem(luzzle)
+	const pieces = new Pieces(storage)
 
-	for (const piece of piecesWithMedia) {
-		const pieceModifiedTime = new Date(piece.date_updated || piece.date_added)
+	for (const webPiece of webPieces) {
+		const pieceModifiedTime = new Date(webPiece.date_updated || webPiece.date_added)
 
 		if (pieceModifiedTime > lastRun || force) {
-			await generateVariantsForPiece(piece, inDir, outDir)
+			const markdown = await pieces.getPieceMarkdown(webPiece.file_path)
+			const fields = await getImageAssetFields(markdown, pieces)
+			const variantDir = `${outDir}/${webPiece.type}/${webPiece.slug}`
+
+			await mkdir(variantDir, { recursive: true })
+
+			console.log(`generating variants for ${webPiece.type}/${webPiece.slug}`)
+
+			for (const field of fields) {
+				const fieldAsset = await pieces.getPieceAsset(field.asset)
+				await copyFile(fieldAsset, `${variantDir}/${path.basename(field.asset)}`)
+				await generateVariantsForAssetField(field.asset, field.name, pieces, variantDir)
+			}
 		}
 	}
 

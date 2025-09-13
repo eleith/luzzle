@@ -21,18 +21,23 @@ async function parseArgs(args: string[]) {
 				choices: ['avif', 'jpg'],
 			},
 			size: {
-				type: 'string',
-				description: 'image sizes to create',
-				default: 'medium',
-				choices: ['small', 'medium', 'large', 'xl'],
+				type: 'number',
+				description: 'width to resize to',
+				default: 350,
 			},
 			field: {
 				type: 'string',
 				description: 'piece field to create the variant image for',
 				demandOption: true,
-			}
+			},
 		})
 		.help()
+		.check((argv) => {
+			if (argv.size <= 0 || isNaN(argv.size) || argv.size > 4000) {
+				throw new Error('size must be a positive number')
+			}
+			return true
+		})
 		.showHelpOnFail(false)
 		.parseSync()
 }
