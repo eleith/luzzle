@@ -5,7 +5,7 @@ import parseArgs from './yargs.js'
 import { exec } from 'child_process'
 import { temporaryWrite } from 'tempy'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
-import { generateVariantForPiece } from './variants.js'
+import { generateVariantForFieldAsset } from './variants.js'
 
 async function openBuffer(
 	buffer: Buffer,
@@ -27,7 +27,7 @@ async function run() {
 	const luzzle = command.luzzle
 	const file = command.file
 	const format = command.format as 'jpg' | 'avif'
-	const size = command.size as 'small' | 'medium' | 'large' | 'xl'
+	const size = command.size
 	const field = command.field
 
 	const storage = new StorageFileSystem(luzzle)
@@ -35,8 +35,8 @@ async function run() {
 	const markdown = await pieces.getPieceMarkdown(file)
 
 	try {
-		const buffer = await generateVariantForPiece(markdown, pieces, field, format, size)
-		await openBuffer(buffer, format)
+		const sharp = await generateVariantForFieldAsset(markdown, pieces, field, size, format)
+		await openBuffer(sharp, format)
 	} catch (e) {
 		console.error(e)
 	}
