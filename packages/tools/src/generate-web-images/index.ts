@@ -17,6 +17,7 @@ async function run() {
 		const inDir = command.in
 		const force = command.force
 		const templates = command.templates
+		const limit = command.limit
 
 		const webPieces = await db
 			.withTables<{ web_pieces: WebPieces }>()
@@ -26,8 +27,8 @@ async function run() {
 			.orderBy('type', 'asc')
 			.execute()
 
-		await generateVariantsForPieces(webPieces, inDir, outDir, force)
-		await generateOpenGraphsForPieces(webPieces, inDir, outDir, templates, force)
+		await generateVariantsForPieces(webPieces, inDir, outDir, { force, limit })
+		await generateOpenGraphsForPieces(webPieces, inDir, outDir, templates, { force, limit })
 	} catch (error) {
 		console.error('Error during web image generation:', error)
 	}

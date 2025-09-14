@@ -6,7 +6,7 @@ async function parseArgs(args: string[]) {
 		.options({
 			db: {
 				type: 'string',
-				description: 'path to luzzle sqlite',
+				description: 'path to luzzle web sqlite',
 				demandOption: true,
 				alias: 'sqlite',
 			},
@@ -18,18 +18,23 @@ async function parseArgs(args: string[]) {
 			},
 			out: {
 				type: 'string',
-				description: 'path to luzzle images directory',
+				description: 'path to web images directory',
 				demandOption: true,
 				alias: 'images',
 			},
+			limit: {
+				type: 'number',
+				description: 'maximum number of images to process, used for testing',
+				default: Infinity,
+			},
 			templates: {
 				type: 'string',
-				description: 'template folder of eta templates for open graph generation',
+				description: 'template folder for open graph generation',
 				demandOption: true,
 			},
 			force: {
 				type: 'boolean',
-				description: 'force regeneration of variants',
+				description: 'force processing of all images, irrespective of last modiified times',
 				default: false,
 				alias: 'f',
 			},
