@@ -1,9 +1,9 @@
-import { copyFile, mkdir } from 'fs/promises'
+import { mkdir, writeFile } from 'fs/promises'
 import path from 'path'
 import { getLastRunFor, setLastRunFor } from './utils/lastRun.js'
 import { type WebPieces } from './utils/types.js'
 import { PieceFrontmatter, PieceMarkdown, Pieces, StorageFileSystem } from '@luzzle/cli'
-import { generateVariantJobs } from 'src/generate-image-variants/variants.js'
+import { generateVariantJobs } from '../generate-image-variants/variants.js'
 
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif']
 const SIZES = {
@@ -57,14 +57,17 @@ export async function generateVariantsForPieces(
 	webPieces: WebPieces[],
 	luzzle: string,
 	outDir: string,
-	force: boolean = false
+	options: { force?: boolean, limit?: number }
 ) {
+	const force = options.force || false
+	const limit = options.limit || Infinity
 	const operation = 'generate-variants'
 	const lastRun = force ? new Date(0) : await getLastRunFor(outDir, operation)
 	const storage = new StorageFileSystem(luzzle)
 	const pieces = new Pieces(storage)
+	const piecesToProcess = limit === Infinity ? webPieces : webPieces.slice(0, limit) 
 
-	for (const webPiece of webPieces) {
+	for (const webPiece of piecesToProcess) {
 		const pieceModifiedTime = new Date(webPiece.date_updated || webPiece.date_added)
 
 		if (pieceModifiedTime > lastRun || force) {
@@ -72,13 +75,12 @@ export async function generateVariantsForPieces(
 			const fields = await getImageAssetFields(markdown, pieces)
 			const variantDir = `${outDir}/${webPiece.type}/${webPiece.slug}`
 
-			await mkdir(variantDir, { recursive: true })
-
 			console.log(`generating variants for ${webPiece.type}/${webPiece.slug}`)
+			await mkdir(variantDir, { recursive: true })
 
 			for (const field of fields) {
 				const fieldAsset = await pieces.getPieceAsset(field.asset)
-				await copyFile(fieldAsset, `${variantDir}/${path.basename(field.asset)}`)
+				await writeFile(`${variantDir}/${path.basename(field.asset)}`, fieldAsset)
 				await generateVariantsForAssetField(field.asset, field.name, pieces, variantDir)
 			}
 		}

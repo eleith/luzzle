@@ -1,9 +1,9 @@
 import { getLastRunFor, setLastRunFor } from './utils/lastRun.js'
 import { mkdir, stat, writeFile } from 'fs/promises'
 import { WebPieces } from './utils/types.js'
-import { generateHtml } from 'src/generate-open-graph/html.js'
-import { generatePng } from 'src/generate-open-graph/png.js'
-import { getBrowser } from 'src/generate-open-graph/browser.js'
+import { generateHtml } from '../generate-open-graph/html.js'
+import { generatePng } from '../generate-open-graph/png.js'
+import { getBrowser } from '../generate-open-graph/browser.js'
 import { Browser } from 'puppeteer'
 import { PieceFrontmatter, PieceMarkdown, Pieces, StorageFileSystem } from '@luzzle/cli'
 import path from 'path'
@@ -34,15 +34,19 @@ export async function generateOpenGraphsForPieces(
 	luzzle: string,
 	outputDir: string,
 	templateDir: string,
-	force: boolean = false
+	options: { force?: boolean, limit?: number }
 ) {
+	const force = options.force || false
+	const limit = options.limit || Infinity
 	const operation = 'generate-open-graph'
 	const lastRun = force ? new Date(0) : await getLastRunFor(outputDir, operation)
+	const piecesToProcess = limit === Infinity ? webPieces : webPieces.slice(0, limit)
+
 	const browser = await getBrowser()
 	const storage = new StorageFileSystem(luzzle)
 	const pieces = new Pieces(storage)
 
-	for (const webPiece of webPieces) {
+	for (const webPiece of piecesToProcess) {
 		const pieceModifiedTime = new Date(webPiece.date_updated || webPiece.date_added)
 
 		if (pieceModifiedTime > lastRun || force) {
