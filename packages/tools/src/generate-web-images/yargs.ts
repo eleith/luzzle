@@ -27,9 +27,9 @@ async function parseArgs(args: string[]) {
 				description: 'maximum number of images to process, used for testing',
 				default: Infinity,
 			},
-			templates: {
+			template: {
 				type: 'string',
-				description: 'template folder for open graph generation',
+				description: 'eta template for open graph generation',
 				demandOption: true,
 			},
 			force: {

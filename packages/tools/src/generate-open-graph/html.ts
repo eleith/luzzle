@@ -29,12 +29,11 @@ async function fontToBase64(fontPath: string) {
 	return bufferToBase64(fontBuffer, 'font', ext)
 }
 
-async function extractImage(image: Buffer, width: number, height: number) {
-	const jpgBuffer = await Sharp(image)
-		.clone()
-		.resize({ width, height })
-		.toFormat('jpg')
-		.toBuffer()
+async function extractImage(image: Buffer, resize?: { width?: number; height?: number }) {
+	const width = resize?.width
+	const height = resize?.height
+	const sharpResize = width || height ? { width, height } : undefined
+	const jpgBuffer = await Sharp(image).clone().resize(sharpResize).toFormat('jpg').toBuffer()
 	const palette = await new Vibrant(jpgBuffer).getPalette()
 	return {
 		base64: bufferToBase64(jpgBuffer, 'image', 'jpeg'),
@@ -43,7 +42,7 @@ async function extractImage(image: Buffer, width: number, height: number) {
 }
 
 async function generateHtml(
-	pieceMarkdown: PieceMarkdown<PieceFrontmatter>,
+	markdown: PieceMarkdown<PieceFrontmatter>,
 	pieces: Pieces,
 	template: string
 ): Promise<string> {
@@ -58,17 +57,17 @@ async function generateHtml(
 			const templatePath = path.join(templateDir, font)
 			return fontToBase64(templatePath)
 		},
-		pieceExtractImage: async (image: string, w: number, h: number) => {
+		pieceExtractImage: async (image: string, resize?: { width: number; height: number }) => {
 			const buffer = await pieces.getPieceAsset(image)
-			return extractImage(buffer, w, h)
-		}
+			return extractImage(buffer, resize)
+		},
 	}
 
 	const eta = new Eta({ views: templateDir, tags: ['[%', '%]'] })
 
 	eta.loadTemplate('@html', htmlTemplate.toString(), { async: true })
 
-	return await eta.renderStringAsync(pieceTemplateBuffer.toString(), { piece: pieceMarkdown, size, helpers })
+	return await eta.renderStringAsync(pieceTemplateBuffer.toString(), { markdown, size, helpers })
 }
 
 export { generateHtml }
