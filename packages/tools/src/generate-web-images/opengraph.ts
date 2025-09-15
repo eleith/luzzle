@@ -1,5 +1,5 @@
 import { getLastRunFor, setLastRunFor } from './utils/lastRun.js'
-import { mkdir, stat, writeFile } from 'fs/promises'
+import { mkdir, writeFile } from 'fs/promises'
 import { WebPieces } from './utils/types.js'
 import { generateHtml } from '../generate-open-graph/html.js'
 import { generatePng } from '../generate-open-graph/png.js'
@@ -33,7 +33,7 @@ export async function generateOpenGraphsForPieces(
 	webPieces: WebPieces[],
 	luzzle: string,
 	outputDir: string,
-	templateDir: string,
+	template: string,
 	options: { force?: boolean, limit?: number }
 ) {
 	const force = options.force || false
@@ -54,16 +54,7 @@ export async function generateOpenGraphsForPieces(
 			const pieceType = webPiece.type
 			const pieceSlug = webPiece.slug
 			const markdown = await pieces.getPieceMarkdown(filePath)
-
-
 			const output = `${outputDir}/${pieceType}/${pieceSlug}/opengraph.png`
-			const template = path.join(templateDir, `${pieceType}.eta`)
-			const exists = await stat(template).catch(() => false)
-
-			if (!exists) {
-				console.warn(`[skipping] open graph template not found for ${filePath} of type ${pieceType} at ${template}`)
-				continue
-			}
 
 			await generateOpenGraphForMarkdown(markdown, pieces, browser, output, template)
 		}
