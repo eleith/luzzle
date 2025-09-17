@@ -60,7 +60,7 @@ export async function generateOpenGraphsForPieces(
 		}
 	}
 
-	if (!force) {
+	if (!force && (limit === Infinity || !limit)) {
 		await setLastRunFor(outputDir, operation, new Date())
 	}
 
