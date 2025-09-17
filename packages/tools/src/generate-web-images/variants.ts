@@ -86,7 +86,7 @@ export async function generateVariantsForPieces(
 		}
 	}
 
-	if (!force) {
+	if (!force && (limit === Infinity || !limit)) {
 		await setLastRunFor(outDir, operation, new Date())
 	}
 }

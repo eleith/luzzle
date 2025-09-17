@@ -3,24 +3,26 @@ import yargs from 'yargs'
 async function parseArgs(args: string[]) {
 	return yargs(args)
 		.strict()
+		.command('variants', 'generate web image variants')
+		.command('opengraph', 'generate open graph images')
 		.options({
-			db: {
+			sqlite: {
 				type: 'string',
 				description: 'path to luzzle web sqlite',
 				demandOption: true,
-				alias: 'sqlite',
+				alias: 'db',
 			},
-			in: {
+			luzzle: {
 				type: 'string',
 				description: 'path to luzzle directory',
 				demandOption: true,
-				alias: 'luzzle',
+				alias: 'in',
 			},
 			out: {
 				type: 'string',
 				description: 'path to web images directory',
 				demandOption: true,
-				alias: 'images',
+				alias: 'o',
 			},
 			limit: {
 				type: 'number',
@@ -30,7 +32,6 @@ async function parseArgs(args: string[]) {
 			template: {
 				type: 'string',
 				description: 'eta template for open graph generation',
-				demandOption: true,
 			},
 			force: {
 				type: 'boolean',
@@ -38,6 +39,13 @@ async function parseArgs(args: string[]) {
 				default: false,
 				alias: 'f',
 			},
+		})
+		.demandCommand(1, 'You need to specify variants or opengraph')
+		.check((argv) => {
+			if (argv._[0] === 'opengraph' && !argv.template) {
+				throw new Error('The --template option is required for the opengraph command')
+			}
+			return true
 		})
 		.help()
 		.showHelpOnFail(false)
