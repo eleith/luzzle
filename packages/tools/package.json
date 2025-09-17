@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/tools",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -13,7 +13,9 @@
   },
   "bin": {
     "luzzle-generate-web-sqlite": "./dist/src/generate-web-sqlite/index.js",
-    "luzzle-generate-images": "./dist/src/generate-web-images/index.js"
+    "luzzle-generate-images": "./dist/src/generate-web-images/index.js",
+		"luzzle-generate-open-graph": "./dist/src/generate-open-graph/index.js",
+		"luzzle-generate-image-variant": "./dist/src/generate-image-variants/index.js"
   },
   "files": [
     "dist/*",
