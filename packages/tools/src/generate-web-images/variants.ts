@@ -18,7 +18,7 @@ function isImageAsset(filename: string) {
 }
 
 async function getImageAssetFields(
-	markdown: PieceMarkdown<PieceFrontmatter>, 
+	markdown: PieceMarkdown<PieceFrontmatter>,
 	pieces: Pieces
 ): Promise<Array<{ name: string; asset: string }>> {
 	const piece = await pieces.getPiece(markdown.piece)
@@ -40,12 +40,17 @@ async function generateVariantsForAssetField(
 ) {
 	const baseName = path.basename(asset, path.extname(asset))
 	const sizes = [SIZES.small, SIZES.medium, SIZES.large, SIZES.xl]
+	const sizeKeys = Object.keys(SIZES)
 	const formats: Array<'avif' | 'jpg'> = ['avif', 'jpg']
 
 	try {
 		const jobs = await generateVariantJobs(asset, pieces, sizes, formats)
-		const toFileJobs = jobs.map((job) =>
-			job.sharp.toFile(`${variantDir}/${baseName}.${job.size}.${job.format}`)
+		const toFileJobs = jobs.map((job) => {
+			const sizeName = sizeKeys[sizes.indexOf(job.size)]
+			return job.sharp.toFile(
+				`${variantDir}/${baseName}.${sizeName}.${job.format}`
+			)
+		}
 		)
 		await Promise.all(toFileJobs)
 	} catch (error) {
@@ -57,7 +62,7 @@ export async function generateVariantsForPieces(
 	webPieces: WebPieces[],
 	luzzle: string,
 	outDir: string,
-	options: { force?: boolean, limit?: number }
+	options: { force?: boolean; limit?: number }
 ) {
 	const force = options.force || false
 	const limit = options.limit || Infinity
@@ -65,7 +70,7 @@ export async function generateVariantsForPieces(
 	const lastRun = force ? new Date(0) : await getLastRunFor(outDir, operation)
 	const storage = new StorageFileSystem(luzzle)
 	const pieces = new Pieces(storage)
-	const piecesToProcess = limit === Infinity ? webPieces : webPieces.slice(0, limit) 
+	const piecesToProcess = limit === Infinity ? webPieces : webPieces.slice(0, limit)
 
 	for (const webPiece of piecesToProcess) {
 		const pieceModifiedTime = new Date(webPiece.date_updated || webPiece.date_added)
