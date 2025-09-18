@@ -6,12 +6,8 @@
 	} from '$env/static/public'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import type { WebPieces } from '$lib/pieces/types.js'
-	import CaretDownIcon from 'virtual:icons/ph/caret-down-thin'
-	import CaretUpIcon from 'virtual:icons/ph/caret-up-thin'
-	import CheckIcon from 'virtual:icons/ph/check'
 	import DiceFiveIcon from 'virtual:icons/ph/dice-five'
 	import ShuffleIcon from 'virtual:icons/ph/shuffle'
-	import { createSelect, melt } from '@melt-ui/svelte'
 
 	let { data } = $props()
 	const { types, latestPiece } = data
@@ -19,24 +15,6 @@
 	let activePieceId = $state<string | null>(null)
 	let latestPieceType = $state<WebPieces | null>(latestPiece)
 	let random = $state<WebPieces | null>(null)
-
-	const {
-		elements: { trigger, menu, option, label },
-		states: { selectedLabel, open },
-		helpers: { isSelected }
-	} = createSelect<WebPieces['type']>({
-		onSelectedChange: ({ next }) => {
-			if (next) {
-				getLatest(next.value)
-			}
-			return next
-		},
-		defaultSelected: {
-			value: latestPiece?.type || types[0].type,
-			label: latestPiece?.type || types[0].type
-		},
-		loop: true
-	})
 
 	async function getLatest(type: string | null = null) {
 		const params = new URLSearchParams()
@@ -76,6 +54,14 @@
 		}
 	}
 
+	async function getNextLatest() {
+		const currentType = latestPieceType ? latestPieceType.type : types[0].type
+		const nextTypeIndex = types.findIndex((one) => one.type === currentType) + 1
+		const nextType = types[nextTypeIndex] ? types[nextTypeIndex].type : types[0].type
+
+		getLatest(nextType)
+	}
+
 	$effect.pre(() => {
 		getRandom()
 	})
@@ -112,46 +98,11 @@
 
 	{#if latestPieceType}
 		<h2>
-			<label use:melt={$label}>latest</label>
-			<button use:melt={$trigger} class="plain">
-				{($selectedLabel || latestPieceType.type).replace(/s$/, '')}
-				{#if $open}
-					<CaretUpIcon style="margin: auto; font-size: 0.5em;" />
-				{:else}
-					<CaretDownIcon style="margin: auto; font-size: 0.5em;" />
-				{/if}
+			latest
+			<button class="plain" onclick={() => getNextLatest()}>
+				<ShuffleIcon style="margin: auto; font-size: 0.5em;" />
 			</button>
 		</h2>
-		{#if $open}
-			<div use:melt={$menu} class="select-menu">
-				{#each types as one, i (i)}
-					{#if $isSelected(one.type)}
-						<div use:melt={$option({ value: one.type, label: one.type })}>
-							<div
-								style="display: flex; align-items: center; gap: 0.5em;
-							justify-content: space-between;"
-							>
-								<div>
-									{one.type}
-								</div>
-								<div style="justify-self: end;">
-									<CheckIcon style="margin: auto; font-size: 0.5em;" />
-								</div>
-							</div>
-						</div>
-					{:else}
-						<div
-							use:melt={$option({ value: one.type, label: one.type })}
-							onclick={() => {
-								getLatest(one.type)
-							}}
-						>
-							{one.type}
-						</div>
-					{/if}
-				{/each}
-			</div>
-		{/if}
 
 		<section class="pieces">
 			<a
@@ -291,28 +242,12 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		color: var(--colors-on-surface);
+		color: var(--colors-primary);
 	}
 
 	button.plain:hover {
 		color: var(--colors-primary);
-	}
-
-	.select-menu {
-		background: var(--colors-surface-bright);
-		border-radius: var(--radius-2);
-		box-shadow: var(--shadow-1);
-		border: 1px solid var(--colors-outline);
-	}
-
-	.select-menu > div {
-		cursor: pointer;
-		padding: var(--space-2);
-	}
-
-	.select-menu > div[data-highlighted] {
-		background: var(--colors-primary-container);
-		color: var(--colors-on-primary-container);
+		border-bottom: 1px solid var(--colors-primary);
 	}
 
 	@media screen and (min-width: 768px) {
