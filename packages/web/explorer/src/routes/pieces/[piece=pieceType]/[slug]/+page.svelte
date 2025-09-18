@@ -7,6 +7,7 @@
 
 	let { data } = $props()
 	const metadata = JSON.parse(data.piece.json_metadata) || {}
+	const hasMedia = $derived(!!data.piece.media)
 	const imagesDir = `${PUBLIC_IMAGES_URL}/images/pieces`
 	let showFullHeader = $state(false)
 
@@ -40,78 +41,84 @@
 	{/if}
 </svelte:head>
 
-<section class="header">
-	{#if data.previous}
-		<a href="/pieces/{data.previous.type}/{data.previous.slug}" class="navigation-list">
-			<CaretLeftIcon />
-		</a>
-	{:else}
-		<div class="navigation-list">
-			<CaretLeftIcon style="color: var(--colors-surface-dim);" />
-		</div>
-	{/if}
-	{#key data.piece.id}
-		<button class="piece-icon" onclick={toggleHeader} title="toggle full size"
-			class:piece-icon-open={showFullHeader}>
-			<PieceIcon piece={data.piece} size="large" lazy={false} />
-		</button>
-	{/key}
-	{#if data.next}
-		<a href="/pieces/{data.next.type}/{data.next.slug}" class="navigation-list">
-			<CaretRightIcon />
-		</a>
-	{:else}
-		<div class="navigation-list">
-			<CaretRightIcon style="color: var(--colors-surface-dim);" />
-		</div>
-	{/if}
-</section>
+<section class="piece">
+	<section class="header" class:header-media={hasMedia}>
+		{#if data.previous}
+			<a href="/pieces/{data.previous.type}/{data.previous.slug}" class="navigation-list">
+				<CaretLeftIcon />
+			</a>
+		{:else}
+			<div class="navigation-list">
+				<CaretLeftIcon style="color: var(--colors-surface-dim);" />
+			</div>
+		{/if}
+		{#key data.piece.id}
+			<button
+				class="piece-icon"
+				onclick={toggleHeader}
+				title="toggle full size"
+				class:piece-icon-open={showFullHeader}
+			>
+				<PieceIcon piece={data.piece} size="large" lazy={false} />
+			</button>
+		{/key}
+		{#if data.next}
+			<a href="/pieces/{data.next.type}/{data.next.slug}" class="navigation-list">
+				<CaretRightIcon />
+			</a>
+		{:else}
+			<div class="navigation-list">
+				<CaretRightIcon style="color: var(--colors-surface-dim);" />
+			</div>
+		{/if}
+	</section>
 
-<section class="details">
-	<h1>
-		{data.piece.title}
-	</h1>
+	<section class="details" class:details-media={hasMedia}>
+		<h1>
+			{data.piece.title}
+		</h1>
 
-	{#if data.piece.date_consumed}
-		<div style="font-size:var(--font-sizes-small);">
-			{new Date(data.piece.date_consumed).toLocaleDateString()}
-		</div>
-	{/if}
+		{#if data.piece.date_consumed}
+			<div style="font-size:var(--font-sizes-small);">
+				{new Date(data.piece.date_consumed).toLocaleDateString()}
+			</div>
+		{/if}
 
-	{#if data.piece.note}
-		<h2 style="margin-top: var(--space-5);">notes</h2>
-		<div>
-			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-			{@html marked(data.piece.note)}
-		</div>
-	{/if}
+		{#if data.piece.note}
+			<h2 style="margin-top: var(--space-5);">notes</h2>
+			<div>
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html marked(data.piece.note)}
+			</div>
+		{/if}
 
-	{#if metadata.url}
-		<h3 style="margin-top: var(--space-5);">link</h3>
-		<div style="font-size:var(--font-sizes-small);">
-			<a href={metadata.url}>{metadata.url}</a>
-		</div>
-	{/if}
+		{#if metadata.url}
+			<h3 style="margin-top: var(--space-5);">link</h3>
+			<div style="font-size:var(--font-sizes-small);">
+				<a href={metadata.url}>{metadata.url}</a>
+			</div>
+		{/if}
 
-	{#if data.piece.summary}
-		<h3 style="margin-top: var(--space-5);">summary</h3>
-		<div>
-			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-			{@html marked(data.piece.summary)}
-		</div>
-	{/if}
+		{#if data.piece.summary}
+			<h3 style="margin-top: var(--space-5);">summary</h3>
+			<div>
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html marked(data.piece.summary)}
+			</div>
+		{/if}
 
-	{#if data.tags.length}
-		<h3 style="margin-top: var(--space-5);">tags</h3>
-		<div style="margin-top: var(--space-5);font-size:var(--font-sizes-small);">
-			{#each data.tags as tag, i (tag.slug)}
-				<a href="/tags/{tag.slug}">{tag.tag}</a>
-				{#if i < data.tags.length - 1}
-					ꞏ&nbsp;
-				{/if}
-			{/each}
-		</div>
-	{/if}
+		{#if data.tags.length}
+			<h3 style="margin-top: var(--space-5);">tags</h3>
+			<div style="margin-top: var(--space-5);font-size:var(--font-sizes-small);">
+				{#each data.tags as tag, i (tag.slug)}
+					<a href="/tags/{tag.slug}">{tag.tag}</a>
+					{#if i < data.tags.length - 1}
+						ꞏ&nbsp;
+					{/if}
+				{/each}
+			</div>
+		{/if}
+	</section>
 </section>
 
 <style>
@@ -125,8 +132,14 @@
 		width: 85%;
 		padding-right: var(--space-2-5);
 		padding-left: var(--space-2-5);
-		border-top: solid 1px var(--colors-outline);
 		padding-bottom: var(--space-5);
+	}
+
+	section.details-media::before {
+		content: '';
+		border-top: solid 3px var(--colors-surface-container-highest);
+		margin: auto;
+		width: 75%;
 	}
 
 	section.header .navigation-list {
@@ -146,15 +159,36 @@
 
 	section.header {
 		display: flex;
-		justify-content: space-around;
+		justify-content: space-between;
 		align-items: center;
+		padding-top: var(--space-10);
+		position: absolute;
+		width: 100%;
+	}
+
+	section.header button {
+		display: none;
+	}
+
+	section.header-media {
+		justify-content: space-around;
+		overflow: hidden;
+		position: relative;
+		width: auto;
+		padding-top: 0px;
+		padding-bottom: var(--space-5);
+	}
+
+	section.header-media button {
+		display: block;
+	}
+
+	section.piece {
 		background-image: linear-gradient(
 			to bottom,
 			var(--colors-surface-container-lowest),
 			transparent 225px
 		);
-		padding-bottom: var(--space-5);
-		overflow: hidden;
 	}
 
 	section.header > a {
@@ -165,16 +199,16 @@
 		color: var(--colors-primary);
 	}
 
-	button.piece-icon {
+	section.header button.piece-icon {
 		align-self: baseline;
 		cursor: pointer;
 		background: none;
 		border: none;
-		max-height: 225px;
+		max-height: 175px;
 		transition: max-height 0.5s ease-in-out;
 	}
 
-	button.piece-icon-open {
+	section.header button.piece-icon-open {
 		max-height: 500px;
 	}
 </style>
