@@ -1,43 +1,20 @@
 <script lang="ts">
-	import { page as pageState } from '$app/state'
+	import { afterNavigate } from '$app/navigation'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 
 	let { data } = $props()
-
-	let pieces = $state(data.pieces)
 	let activePieceId = $state<string | null>(null)
-	let nextPage = $state<number | null>(data.nextPage)
 
-	async function getNextPage(page: number) {
-		const params = new URLSearchParams()
-
-		if (page) {
-			params.append('page', page.toString())
+	afterNavigate(({ type }) => {
+		if (type === 'link' || type === 'popstate') {
+			window.scrollTo({ top: 0, behavior: 'smooth' })
 		}
-
-		if (pageState.params.piece) {
-			params.append('type', pageState.params.piece)
-		}
-
-		const res = await fetch(`/api/pieces?${params}`, {
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		})
-
-		if (res.ok) {
-			const json = (await res.json()) as Omit<typeof data, 'type'>
-			pieces = pieces.concat(json.pieces)
-			nextPage = json.nextPage
-		} else {
-			nextPage = null
-		}
-	}
+	})
 </script>
 
 <section>
 	<div class="container">
-		{#each pieces as piece (piece.id)}
+		{#each data.pieces as piece (piece.id)}
 			<a
 				href="/pieces/{piece.type}/{piece.slug}"
 				onmouseenter={() => {
@@ -84,10 +61,10 @@
 	</div>
 </section>
 
-{#if nextPage}
+{#if data.nextPage}
 	<section class="action">
-		{#if nextPage}
-			<button onclick={() => getNextPage(nextPage as number)}>more</button>
+		{#if data.nextPage}
+			<a href="?page={data.nextPage}">more</a>
 		{/if}
 	</section>
 {/if}
@@ -123,18 +100,6 @@
 	.container > a:hover {
 		text-decoration: underline;
 		color: var(--colors-primary);
-	}
-
-	.action > button {
-		background: transparent;
-		color: var(--colors-primary);
-		padding: none;
-		border: none;
-		cursor: pointer;
-	}
-
-	.action > button:hover {
-		text-decoration: underline;
 	}
 
 	.piece-text {
