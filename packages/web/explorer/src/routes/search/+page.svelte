@@ -1,49 +1,32 @@
 <script lang="ts">
+	import { afterNavigate } from '$app/navigation'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 
 	let activePieceId = $state<string | null>(null)
 	let { data } = $props()
-	let nextPage = $state<number | null>(data.nextPage)
-	let pieces = $derived(data.pieces)
-	let query = $derived(data.query)
-
-	async function getNextPage(page: number) {
-		const params = new URLSearchParams()
-
-		params.append('page', page.toString())
-		params.append('query', query || '')
-
-		const res = await fetch(`/api/search?${params}`, {
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		})
-
-		if (res.ok) {
-			const json = (await res.json()) as Omit<typeof data, 'type'>
-			pieces = pieces.concat(json.pieces)
-			nextPage = json.nextPage
-		} else {
-			nextPage = null
-		}
-	}
 
 	function actionPiece(node: HTMLAnchorElement, focus: boolean) {
 		if (focus) {
 			node.focus()
 		}
 	}
+
+	afterNavigate(({ type }) => {
+		if (type === 'link' || type === 'popstate') {
+			window.scrollTo({ top: 0, behavior: 'smooth' })
+		}
+	})
 </script>
 
-{#if pieces.length === 0}
+{#if data.pieces.length === 0}
 	<section class="action">
-		<span>No results found for <em>{query}</em>.</span>
+		<span>No results found for <em>{data.query}</em>.</span>
 	</section>
 {:else}
 	<section class="container">
-		{#each pieces as piece (piece.id)}
+		{#each data.pieces as piece (piece.id)}
 			<a
-				use:actionPiece={pieces[0].id === piece.id}
+				use:actionPiece={data.pieces[0].id === piece.id}
 				href="/pieces/{piece.type}/{piece.slug}"
 				onmouseenter={() => {
 					activePieceId = piece.id
@@ -88,10 +71,10 @@
 		{/each}
 	</section>
 
-	{#if nextPage}
+	{#if data.nextPage}
 		<section class="action">
-			{#if nextPage && query !== null}
-				<button onclick={() => getNextPage(nextPage as number)}>more</button>
+			{#if data.nextPage && data.query !== null}
+				<a href="?query={data.query}&page={data.nextPage}">more</a>
 			{/if}
 		</section>
 	{/if}
@@ -129,18 +112,6 @@
 	.action {
 		text-align: center;
 		padding: var(--space-5) 0 var(--space-5) 0;
-	}
-
-	.action > button {
-		background: transparent;
-		color: var(--colors-primary);
-		padding: none;
-		border: none;
-		cursor: pointer;
-	}
-
-	.action > button:hover {
-		text-decoration: underline;
 	}
 
 	.piece-text {
