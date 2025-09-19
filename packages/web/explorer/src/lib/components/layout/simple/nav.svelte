@@ -115,10 +115,13 @@
 				<form method="GET" action="/search" style="display:flex;gap:10px;" onsubmit={submitSearch}>
 					<input
 						type="search"
-						placeholder="the electric state ..."
+						placeholder="the electric stAte ..."
 						use:focusSearch
 						name="query"
 						class="input"
+						onblur={() => {
+							$open = false
+						}}
 					/>
 					<button type="submit" class="button" aria-label="submit search">search</button>
 				</form>
