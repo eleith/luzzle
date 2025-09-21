@@ -13,7 +13,7 @@
 			><BellIcon style="font-size: 1em;" /></a
 		>
 	{:else}
-		<a href="/rss/pieces/feed.xml" aria-label="rss feed"><BellIcon style="font-size: 1em;" /></a>
+		<a href="/rss/pieces/feed.html" aria-label="rss feed"><BellIcon style="font-size: 1em;" /></a>
 	{/if}
 {/snippet}
 
