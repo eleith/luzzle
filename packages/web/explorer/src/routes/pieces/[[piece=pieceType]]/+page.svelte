@@ -6,7 +6,7 @@
 	let activePieceId = $state<string | null>(null)
 
 	afterNavigate(({ type }) => {
-		if (type === 'link' || type === 'popstate') {
+		if (type === 'link') {
 			window.scrollTo({ top: 0, behavior: 'smooth' })
 		}
 	})
