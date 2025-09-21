@@ -14,7 +14,7 @@
 	}
 
 	let { piece, size, active, lazy }: Props = $props()
-	const metadata = piece.json_metadata ? JSON.parse(piece.json_metadata) : {}
+	let metadata = $derived(piece.json_metadata ? JSON.parse(piece.json_metadata) : {})
 </script>
 
 {#if piece.type === 'games'}
