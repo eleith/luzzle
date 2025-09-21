@@ -119,8 +119,10 @@
 						use:focusSearch
 						name="query"
 						class="input"
-						onblur={() => {
-							$open = false
+						onkeydown={(e) => {
+							if (e.key === "escape") {
+								$open = false
+							}
 						}}
 					/>
 					<button type="submit" class="button" aria-label="submit search">search</button>
