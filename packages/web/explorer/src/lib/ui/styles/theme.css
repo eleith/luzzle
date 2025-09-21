@@ -173,7 +173,8 @@ html {
 	--shadows-raised: 0px 3px 1px -2px rgba(251 241 199 / 20%),
 		0px 2px 2px 0px rgba(251 241 199 / 14%), 0px 1px 5px 0px rgba(0 0 0 / 12%);
 	--fonts-mono: monaco, monospace;
-	--font-sizes-xs: 0.875rem;
+	--font-sizes-xxs: 0.7rem;
+	--font-sizes-xs: 0.825rem;
 	--font-sizes-small: 1rem;
 	--font-sizes-normal: 1.25rem;
 	--font-sizes-medium: 1.5rem;
