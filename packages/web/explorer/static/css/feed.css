@@ -1,0 +1,239 @@
+/*
+  Gruvbox-themed styles for raw RSS feed view, with light/dark mode support.
+*/
+
+/* 1. Define color palettes on the root XML element, <rss> */
+rss {
+	/* Gruvbox Light (Default) */
+	--bg-color: #fbf1c7;
+	--fg-color: #3c3836;
+	--xml-tag-color: #076678;
+	--banner-bg: #ebdbb2;
+	--banner-fg: #3c3836;
+	--border-color: #d5c4a1;
+}
+
+@media (prefers-color-scheme: dark) {
+	rss {
+		/* Gruvbox Dark */
+		--bg-color: #282828;
+		--fg-color: #ebdbb2;
+		--xml-tag-color: #83a598;
+		--banner-bg: #3c3836;
+		--banner-fg: #ebdbb2;
+		--border-color: #504945;
+	}
+}
+
+/* 2. Apply variables to styles */
+rss {
+	display: block;
+	font-family: monospace;
+	font-size: 1.5em;
+	line-height: 1.5;
+	background-color: var(--bg-color);
+	color: var(--fg-color);
+	min-height: 100vh;
+}
+
+/* The informational banner */
+rss::before {
+	display: block;
+	width: 100%;
+	white-space: pre-wrap;
+	padding: 1em;
+	background-color: var(--banner-bg);
+	border-bottom: 1px solid var(--border-color);
+	content: "This is an RSS (Really Simple Syndication) file. \00000a\00000a This file is intended for feed readers to fetch once or twice a day. \00000a\00000aFor a more human-friendly experience, please edit the URL from `feed.xml` to `feed.html`";
+	font-family: sans-serif;
+	color: var(--banner-fg);
+	margin-bottom: 2em;
+}
+
+/* Make all elements display as block for structure */
+channel,
+title,
+link,
+description,
+pubDate,
+lastBuildDate,
+generator,
+language,
+ttl,
+item,
+image,
+url,
+textInput,
+name {
+	display: block;
+}
+
+/* Indentation for nesting */
+channel {
+	padding-left: 1em;
+}
+
+item,
+image,
+textInput {
+	padding-left: 2em;
+}
+
+title,
+link,
+description,
+pubDate,
+url,
+name,
+lastBuildDate,
+generator,
+language,
+ttl {
+	padding-left: 3em;
+}
+
+
+/* Generic tag styling using variables */
+channel::before,
+channel::after,
+item::before,
+item::after,
+title::before,
+title::after,
+link::before,
+link::after,
+description::before,
+description::after,
+pubDate::before,
+pubDate::after,
+lastBuildDate::before,
+lastBuildDate::after,
+generator::before,
+generator::after,
+language::before,
+language::after,
+ttl::before,
+ttl::after,
+image::before,
+image::after,
+url::before,
+url::after,
+textInput::before,
+textInput::after,
+name::before,
+name::after {
+	color: var(--xml-tag-color);
+}
+
+/* Specific tag content */
+channel::before {
+	content: '<channel>';
+}
+
+channel::after {
+	content: '</channel>';
+}
+
+item::before {
+	content: '<item>';
+}
+
+item::after {
+	content: '</item>';
+}
+
+title::before {
+	content: '<title>';
+}
+
+title::after {
+	content: '</title>';
+}
+
+link::before {
+	content: '<link>';
+}
+
+link::after {
+	content: '</link>';
+}
+
+description::before {
+	content: '<description>';
+}
+
+description::after {
+	content: '</description>';
+}
+
+pubDate::before {
+	content: '<pubDate>';
+}
+
+pubDate::after {
+	content: '</pubDate>';
+}
+
+lastBuildDate::before {
+	content: '<lastBuildDate>';
+}
+
+lastBuildDate::after {
+	content: '</lastBuildDate>';
+}
+
+generator::before {
+	content: '<generator>';
+}
+
+generator::after {
+	content: '</generator>';
+}
+
+language::before {
+	content: '<language>';
+}
+
+language::after {
+	content: '</language>';
+}
+
+ttl::before {
+	content: '<ttl>';
+}
+
+ttl::after {
+	content: '</ttl>';
+}
+
+image::before {
+	content: '<image>';
+}
+
+image::after {
+	content: '</image>';
+}
+
+url::before {
+	content: '<url>';
+}
+
+url::after {
+	content: '</url>';
+}
+
+textInput::before {
+	content: '<textInput>';
+}
+
+textInput::after {
+	content: '</textInput>';
+}
+
+name::before {
+	content: '<name>';
+}
+
+name::after {
+	content: '</name>';
+}

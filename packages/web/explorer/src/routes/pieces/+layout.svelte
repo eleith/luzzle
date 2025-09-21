@@ -9,7 +9,7 @@
 
 {#snippet rssIcon()}
 	{#if page.params.piece}
-		<a href="/rss/pieces/{page.params.piece}/feed.xml" aria-label="rss feed"
+		<a href="/rss/pieces/{page.params.piece}/feed.html" aria-label="rss feed"
 			><BellIcon style="font-size: 1em;" /></a
 		>
 	{:else}
