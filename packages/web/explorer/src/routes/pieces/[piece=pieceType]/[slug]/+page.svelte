@@ -85,36 +85,33 @@
 		{/if}
 
 		{#if data.piece.note}
-			<h2 style="margin-top: var(--space-5);">notes</h2>
+			<h2>notes</h2>
 			<div>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html marked(data.piece.note)}
+				{@html marked.parseInline(data.piece.note)}
 			</div>
 		{/if}
 
 		{#if metadata.url}
-			<h3 style="margin-top: var(--space-5);">link</h3>
+			<h3>link</h3>
 			<div style="font-size:var(--font-sizes-small);">
 				<a href={metadata.url}>{metadata.url}</a>
 			</div>
 		{/if}
 
 		{#if data.piece.summary}
-			<h3 style="margin-top: var(--space-5);">summary</h3>
+			<h3>summary</h3>
 			<div>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html marked(data.piece.summary)}
+				{@html marked.parseInline(data.piece.summary)}
 			</div>
 		{/if}
 
 		{#if data.tags.length}
-			<h3 style="margin-top: var(--space-5);">tags</h3>
-			<div style="margin-top: var(--space-5);font-size:var(--font-sizes-small);">
-				{#each data.tags as tag, i (tag.slug)}
-					<a href="/tags/{tag.slug}">{tag.tag}</a>
-					{#if i < data.tags.length - 1}
-						ꞏ&nbsp;
-					{/if}
+			<h3>tags</h3>
+			<div class="tags-container">
+				{#each data.tags as tag (tag.slug)}
+					<a href="/tags/{tag.slug}" class="tag">{tag.tag}</a>
 				{/each}
 			</div>
 		{/if}
@@ -210,5 +207,29 @@
 
 	section.header button.piece-icon-open {
 		max-height: 500px;
+	}
+
+	.tags-container {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-1);
+		font-size: var(--font-sizes-xxs);
+	}
+
+	.tags-container .tag {
+		text-decoration: none;
+		color: var(--colors-on-surface);
+		opacity: 0.6;
+		padding: var(--space-1);
+		border-radius: 5px;
+		border: 1px solid var(--colors-surface-container-lowest);
+		transition: all 0.1s ease-in-out;
+	}
+
+	.tags-container .tag:hover {
+		color: var(--colors-primary);
+		border-color: var(--colors-primary);
+		background-color: var(--colors-surface-container-lowest);
+		opacity: 1;
 	}
 </style>
