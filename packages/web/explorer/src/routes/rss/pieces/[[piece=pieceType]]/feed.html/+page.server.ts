@@ -1,12 +1,10 @@
 import { PUBLIC_SITE_URL } from '$env/static/public';
-import { getPiecesForFeed, rememberHasSeenHtmlFeed,  } from '$lib/feeds/utils'
+import { getPiecesForFeed } from '$lib/feeds/utils'
 import type { PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async ({ params, cookies, url }) => {
+export const load: PageServerLoad = async ({ params, url }) => {
 	const { piece: type } = params;
 	const pieces = await getPiecesForFeed(type);
-
-	rememberHasSeenHtmlFeed(cookies);
 
 	return {
 		pieces,

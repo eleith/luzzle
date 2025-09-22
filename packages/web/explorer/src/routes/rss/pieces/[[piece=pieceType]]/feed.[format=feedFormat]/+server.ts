@@ -7,7 +7,7 @@ import {
 	PUBLIC_IMAGES_URL
 } from '$env/static/public'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
-import { getPiecesForFeed, mightWantHtmlFeed } from '$lib/feeds/utils'
+import { getPiecesForFeed } from '$lib/feeds/utils'
 
 type FeedRss = RssFeed<Date>
 type FeedJson = JsonFeed<Date>
@@ -76,7 +76,7 @@ function getJsonFeedFromPieces(
 }
 
 export const GET: RequestHandler = async (event) => {
-	const { url, params, request, cookies } = event
+	const { params } = event
 	const { piece: type, format } = params
 	const pieces = await getPiecesForFeed(type)
 
@@ -94,17 +94,6 @@ export const GET: RequestHandler = async (event) => {
 	}
 
 	if (format === 'xml') {
-		if (mightWantHtmlFeed(request, cookies)) {
-			const newPath = url.pathname.replace(/\.xml$/, '.html')
-
-			return new Response(null, {
-				status: 302,
-				headers: {
-					Location: newPath
-				}
-			})
-		}
-
 		const rss = getRssFeedFromPieces(pieces, {
 			folder: type ? `pieces/${type}` : 'pieces',
 			url: PUBLIC_SITE_URL,
