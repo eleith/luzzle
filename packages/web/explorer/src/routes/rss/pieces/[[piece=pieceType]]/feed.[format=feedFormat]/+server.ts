@@ -8,6 +8,7 @@ import {
 } from '$env/static/public'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
 import { getPiecesForFeed } from '$lib/feeds/utils'
+import YAML from 'yaml'
 
 type FeedRss = RssFeed<Date>
 type FeedJson = JsonFeed<Date>
@@ -75,6 +76,42 @@ function getJsonFeedFromPieces(
 	return feed
 }
 
+function getMarkdownFeedFromPieces(
+	pieces: WebPieces[],
+	site: { title: string; description: string; url: string; folder: string },
+	type: string | undefined
+) {
+	const frontmatter = YAML.stringify({
+		title: site.folder,
+		description: site.description,
+		link: `https://${site.url}`,
+		language: 'en',
+		lastBuildDate: new Date(),
+		generator: 'luzzle'
+	})
+
+	const title = type ? `RSS feed for ${type}` : 'RSS feed for all pieces'
+
+	const body = pieces
+		.map((piece) => {
+			const date = new Date(piece.date_consumed ?? piece.date_added).toLocaleDateString('en-US', {
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric'
+			})
+			const note = piece.note ? `
+
+> ${piece.note}` : ''
+			return `## [${piece.title}](${`https://${site.url}/pieces/${piece.type}/${
+				piece.slug
+			}`})
+*${date}*${note}`
+		})
+		.join('\n\n---\n\n')
+
+	return `---\n${frontmatter}---\n\n# ${title}\n\n${body}`
+}
+
 export const GET: RequestHandler = async (event) => {
 	const { params } = event
 	const { piece: type, format } = params
@@ -104,6 +141,20 @@ export const GET: RequestHandler = async (event) => {
 		const stylesheets = [{ type: 'text/css', href: '/css/feed.css' }]
 		const body = generateRssFeed(rss as RssFeed<Date>, { stylesheets })
 		return new Response(body, { headers: { 'content-type': 'application/xml' } })
+	}
+
+	if (format === 'md') {
+		const body = getMarkdownFeedFromPieces(
+			pieces,
+			{
+				folder: type ? `pieces/${type}` : 'pieces',
+				url: PUBLIC_SITE_URL,
+				title: PUBLIC_SITE_TITLE,
+				description: PUBLIC_SITE_DESCRIPTION
+			},
+			type
+		)
+		return new Response(body, { headers: { 'content-type': 'text/markdown' } })
 	}
 
 	return new Response('Not Found', { status: 404 })

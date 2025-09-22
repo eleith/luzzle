@@ -4,27 +4,44 @@
 
 	let { data } = $props()
 	let isCopied = $state<boolean>(false)
+	let inputElement: HTMLInputElement
 
 	async function copyToClipboard() {
+		if (!inputElement) return
+
 		await navigator.clipboard.writeText(data.rssUrl)
 		isCopied = true
 
+		inputElement.select()
+
 		setTimeout(() => {
 			isCopied = false
+			inputElement.blur()
 		}, 2000)
 	}
 </script>
 
 <svelte:head>
 	<title>{data.type ? `RSS feed for ${data.type}` : 'RSS feed'}</title>
-	<meta name="description" content={`An RSS feed for ${data.type ? data.type : 'all pieces'} from ${PUBLIC_SITE_TITLE}.`} />
+	<meta
+		name="description"
+		content={`An RSS feed for ${data.type ? data.type : 'all pieces'} from ${PUBLIC_SITE_TITLE}.`}
+	/>
 
 	<!-- RSS Discovery Link -->
-	<link rel="alternate" type="application/rss+xml" title={data.type ? `RSS feed for ${data.type}` : 'RSS feed'} href={data.rssUrl} />
+	<link
+		rel="alternate"
+		type="application/rss+xml"
+		title={data.type ? `RSS feed for ${data.type}` : 'RSS feed'}
+		href={data.rssUrl}
+	/>
 
 	<!-- OpenGraph Tags -->
 	<meta property="og:title" content={data.type ? `RSS feed for ${data.type}` : 'RSS feed'} />
-	<meta property="og:description" content={`An RSS feed for ${data.type ? data.type : 'all pieces'} from ${PUBLIC_SITE_TITLE}.`} />
+	<meta
+		property="og:description"
+		content={`An RSS feed for ${data.type ? data.type : 'all pieces'} from ${PUBLIC_SITE_TITLE}.`}
+	/>
 	<meta property="og:image" content="{PUBLIC_CLIENT_APP_URL}/images/opengraph.png" />
 	<meta property="og:type" content="website" />
 	<meta property="og:locale" content="en_US" />
@@ -40,19 +57,24 @@
 				Syndication) is a standard way to get updates from websites without having to visit them.
 			</p>
 			<div>
-				To subscribe, <button onclick={copyToClipboard} class="button"
-					>{isCopied ? 'copied' : 'copy'}</button
-				>
-				the link below and paste it into your favorite feed reader:
-				<br />
+				To subscribe, copy the link below and paste it into your favorite feed reader:
 				<div class="copy-container">
-					<a href={data.rssUrl}>{data.rssUrl}</a>
+					<input
+						bind:this={inputElement}
+						type="text"
+						readonly
+						value={data.rssUrl}
+						onclick={copyToClipboard}
+						class="input"
+					/>
+					<button onclick={copyToClipboard} class="button">{isCopied ? 'copied' : 'copy'}</button>
 				</div>
 			</div>
 			<p class="raw-links">
 				Or, view the raw data files:
 				<a href="feed.xml">XML</a> |
-				<a href="feed.json">JSON</a>
+				<a href="feed.json">JSON</a> |
+				<a href="feed.md">Markdown</a>
 			</p>
 		</aside>
 
@@ -68,8 +90,8 @@
 
 		<main class="pieces-list">
 			{#each data.pieces as piece (piece.id)}
-				<div class="item-card">
-					<a href="/pieces/{piece.type}/{piece.slug}" class="item-link">
+				<a href="/pieces/{piece.type}/{piece.slug}" class="item-card">
+					<div class="item-link">
 						<span class="item-date">
 							{new Date(piece.date_consumed || piece.date_added).toLocaleDateString('en-US', {
 								year: 'numeric',
@@ -78,13 +100,13 @@
 							})}
 						</span>
 						<span class="item-title">{piece.title}</span>
-					</a>
+					</div>
 					{#if piece.note}
 						<div class="item-note">
 							{piece.note}
 						</div>
 					{/if}
-				</div>
+				</a>
 			{/each}
 		</main>
 	</section>
@@ -101,20 +123,37 @@
 		max-width: clamp(500px, 66.6666%, 1000px);
 	}
 
-	.callout {
+	aside.callout {
 		background: var(--colors-surface-container-low);
 		border: 1px solid var(--colors-surface-container-high);
 		padding: 1em 1.5em;
 		border-radius: var(--radii-medium);
 	}
-	.callout a {
+
+	aside.callout a {
 		word-break: break-all;
 	}
+
 	.copy-container {
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
 		margin-top: var(--space-1);
+	}
+
+	.copy-container input {
+		flex-grow: 1;
+		padding: var(--space-2);
+		border-radius: var(--radii-medium);
+		border: 1px solid var(--colors-surface-container-high);
+		background-color: var(--colors-surface-container);
+		color: var(--colors-on-surface);
+		cursor: pointer;
+		transition: all 0.2s ease-in-out;
+	}
+
+	.copy-container input:hover {
+		border-color: var(--colors-outline);
 	}
 
 	.raw-links {
@@ -138,6 +177,8 @@
 		border: 1px solid var(--colors-surface-container-high);
 		padding: var(--space-4);
 		transition: all 0.2s ease-in-out;
+		display: block;
+		text-decoration: none;
 	}
 
 	.item-card:hover {
@@ -159,7 +200,7 @@
 		color: var(--colors-on-surface);
 	}
 
-	.item-link:hover .item-title {
+	.item-card:hover .item-title {
 		color: var(--colors-primary);
 	}
 
@@ -173,6 +214,6 @@
 		margin-top: var(--space-3);
 		line-height: 1.6;
 		font-size: 0.95em;
-		color: var(--colors-outline);
+		color: var(--colors-on-surface-variant);
 	}
 </style>
