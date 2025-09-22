@@ -12,4 +12,7 @@ COPY vite.config.ts ./vite.config.ts
 
 COPY .env.sample ./.env.local
 
+COPY scripts/build.sh ./build.sh
+RUN chmod +x ./build.sh
+
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm ci
