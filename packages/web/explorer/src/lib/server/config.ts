@@ -74,7 +74,7 @@ function initializeConfig(): AppConfig {
 	if (!validate(mergedConfig)) {
 		throw new Error(`Configuration validation failed: ${ajv.errorsText(validate.errors)}`)
 	}
-	
+
 	return mergedConfig
 }
 

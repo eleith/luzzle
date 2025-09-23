@@ -67,7 +67,7 @@ ${page.data.config.text.title}.`}
 						bind:this={inputElement}
 						type="text"
 						readonly
-						value="{page.data.config.url.app}/rss/pieces{data.type ? `/${data.type}` : ""}/feed.xml"
+						value="{page.data.config.url.app}/rss/pieces{data.type ? `/${data.type}` : ''}/feed.xml"
 						onclick={copyToClipboard}
 						class="input"
 					/>
