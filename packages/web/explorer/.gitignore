@@ -28,6 +28,7 @@ vite.config.ts.timestamp-*
 /luzzle-images
 /data
 /static/images/pieces
+/config/config.yaml
 .tags
 
 # gemini

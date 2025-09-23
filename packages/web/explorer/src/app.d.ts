@@ -1,10 +1,14 @@
+import { type AppConfigPublic } from '$lib/server/config'
+
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
 declare global {
 	namespace App {
 		// interface Error {}
 		// interface Locals {}
-		// interface PageData {}
+		interface PageData {
+			config: AppConfigPublic
+		}
 		// interface PageState {}
 		// interface Platform {}
 	}

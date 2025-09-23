@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
 import { WebPieceTypesRegExp, type WebPieces } from '$lib/pieces/types'
-import { getDatabase, sql } from '$lib/database'
+import { db, sql } from '$lib/server/database'
 
 const TAKE_DEFAULT = 50
 
@@ -15,7 +15,6 @@ export const GET: RequestHandler = async ({ request }) => {
 	const pageParseInt = parseInt(page)
 	const pageNumber = isNaN(pageParseInt) ? 1 : pageParseInt
 	const takeNumber = isNaN(takeParseInt) ? TAKE_DEFAULT : takeParseInt
-	const db = getDatabase()
 
 	if (pageNumber < 1) {
 		return new Response('no pieces for this page', { status: 404 })

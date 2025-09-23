@@ -1,0 +1,26 @@
+# Default configuration for Luzzle Web Explorer.
+# These values can be overridden by a user-provided config.yaml
+# or by environment variables.
+
+# Defines the key URLs required for the application to function correctly.
+url:
+  # The primary, public-facing URL of this Luzzle Explorer instance.
+  app: ''
+
+  # The base URL for _app assets hosted on a separate CDN or file server.
+  app_assets: ''
+
+  # The base URL for assets hosted on a separate CDN or file server.
+  luzzle_assets: ''
+
+  # The URL for the Luzzle Editor instance, used for edit links.
+  editor: 'http://editor.localhost'
+
+# general app text strings
+text:
+  title: 'Luzzle Explorer'
+  description: 'A Luzzle Explorer instance'
+
+paths:
+  # The connection URL for the database.
+  database: './data/luzzle.sqlite'

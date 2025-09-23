@@ -1,15 +1,17 @@
 <script lang="ts">
-	import { PUBLIC_SITE_TITLE, PUBLIC_CLIENT_APP_URL } from '$env/static/public'
 	import Nav from '$lib/components/layout/simple/nav.svelte'
+	import { page } from '$app/state'
 
 	let { data } = $props()
 	let isCopied = $state<boolean>(false)
 	let inputElement: HTMLInputElement
+	let typeFolder = data.type ? `/${data.type}` : ''
+	let rssUrl = `${page.data.config.url.app}/rss/pieces${typeFolder}/feed.xml`
 
 	async function copyToClipboard() {
 		if (!inputElement) return
 
-		await navigator.clipboard.writeText(data.rssUrl)
+		await navigator.clipboard.writeText(rssUrl)
 		isCopied = true
 
 		inputElement.select()
@@ -25,7 +27,8 @@
 	<title>{data.type ? `RSS feed for ${data.type}` : 'RSS feed'}</title>
 	<meta
 		name="description"
-		content={`An RSS feed for ${data.type ? data.type : 'all pieces'} from ${PUBLIC_SITE_TITLE}.`}
+		content={`An RSS feed for ${data.type ? data.type : 'all pieces'} from
+${page.data.config.text.title}.`}
 	/>
 
 	<!-- RSS Discovery Link -->
@@ -33,16 +36,17 @@
 		rel="alternate"
 		type="application/rss+xml"
 		title={data.type ? `RSS feed for ${data.type}` : 'RSS feed'}
-		href={data.rssUrl}
+		href={rssUrl}
 	/>
 
 	<!-- OpenGraph Tags -->
 	<meta property="og:title" content={data.type ? `RSS feed for ${data.type}` : 'RSS feed'} />
 	<meta
 		property="og:description"
-		content={`An RSS feed for ${data.type ? data.type : 'all pieces'} from ${PUBLIC_SITE_TITLE}.`}
+		content={`An RSS feed for ${data.type ? data.type : 'all pieces'} from
+${page.data.config.text.title}.`}
 	/>
-	<meta property="og:image" content="{PUBLIC_CLIENT_APP_URL}/images/opengraph.png" />
+	<meta property="og:image" content="{page.data.config.url.luzzle_assets}/images/opengraph.png" />
 	<meta property="og:type" content="website" />
 	<meta property="og:locale" content="en_US" />
 </svelte:head>
@@ -63,7 +67,7 @@
 						bind:this={inputElement}
 						type="text"
 						readonly
-						value={data.rssUrl}
+						value="{page.data.config.url.app}/rss/pieces{data.type ? `/${data.type}` : ""}/feed.xml"
 						onclick={copyToClipboard}
 						class="input"
 					/>

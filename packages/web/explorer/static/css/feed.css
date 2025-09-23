@@ -44,7 +44,7 @@ rss::before {
 	padding: 1em;
 	background-color: var(--banner-bg);
 	border-bottom: 1px solid var(--border-color);
-	content: "This is an RSS (Really Simple Syndication) file. \00000a\00000a This file is intended for feed readers to fetch once or twice a day. \00000a\00000aFor a more human-friendly experience, please edit the URL from `feed.xml` to `feed.html`";
+	content: 'This is an RSS (Really Simple Syndication) file. \00000a\00000a This file is intended for feed readers to fetch once or twice a day. \00000a\00000aFor a more human-friendly experience, please edit the URL from `feed.xml` to `feed.html`';
 	font-family: sans-serif;
 	color: var(--banner-fg);
 	margin-bottom: 2em;
@@ -91,7 +91,6 @@ language,
 ttl {
 	padding-left: 3em;
 }
-
 
 /* Generic tag styling using variables */
 channel::before,

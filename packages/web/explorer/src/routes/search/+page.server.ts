@@ -1,7 +1,6 @@
-import { getDatabase } from '$lib/database'
+import { db, sql } from '$lib/server/database'
 import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { sql } from '@luzzle/core'
 
 const MAX_RESULTS = 20
 
@@ -9,7 +8,6 @@ export const load: PageServerLoad = async ({ url }) => {
 	const query = url.searchParams.get('query')
 	const pageParam = url.searchParams.get('page') || '1'
 	const pageNumber = parseInt(pageParam) || null
-	const db = getDatabase()
 
 	let select = db.selectFrom('web_pieces_fts5').selectAll()
 

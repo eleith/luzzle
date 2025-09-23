@@ -1,22 +1,20 @@
 <script lang="ts">
-	import { page as pageState } from '$app/state'
-	import { PUBLIC_SITE_URL } from '$env/static/public'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
+	import { page } from '$app/state'
 
 	let { data } = $props()
-
 	let pieces = $state(data.pieces)
 	let activePieceId = $state<string | null>(null)
 	let nextPage = $state<number | null>(data.nextPage)
 
-	async function getNextPage(page: number) {
+	async function getNextPage(tagPage: number) {
 		const params = new URLSearchParams()
 
-		if (page) {
-			params.append('page', page.toString())
+		if (tagPage) {
+			params.append('page', tagPage.toString())
 		}
 
-		params.append('tag', pageState.params.tag)
+		params.append('tag', data.tag)
 
 		const res = await fetch(`/api/pieces?${params}`, {
 			headers: {
@@ -36,7 +34,10 @@
 
 <svelte:head>
 	{#if pieces.length === 1}
-		<link rel="canonical" href="{PUBLIC_SITE_URL}/pieces/{pieces[0].type}/{pieces[0].slug}" />
+		<link
+			rel="canonical"
+			href="{page.data.config.url.app}/pieces/{pieces[0].type}/{pieces[0].slug}"
+		/>
 	{/if}
 </svelte:head>
 

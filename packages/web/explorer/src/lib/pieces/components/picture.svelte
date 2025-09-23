@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { page } from '$app/state'
 	import type { WebPieces } from '$lib/pieces/types'
 	import type { HTMLImgAttributes } from 'svelte/elements'
-	import { PUBLIC_IMAGES_URL } from '$env/static/public'
 
 	type Props = {
 		piece: WebPieces
@@ -19,11 +19,11 @@
 {#if media}
 	<picture>
 		<source
-			srcset="{PUBLIC_IMAGES_URL}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.avif"
+			srcset="{page.data.config.url.luzzle_assets}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.avif"
 			type="image/avif"
 		/>
 		<img
-			src="{PUBLIC_IMAGES_URL}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.jpg"
+			src="{page.data.config.url.luzzle_assets}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.jpg"
 			loading={lazy ? 'lazy' : 'eager'}
 			{width}
 			height={(3 / 2) * width}

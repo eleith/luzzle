@@ -1,19 +1,13 @@
 <script lang="ts">
-	import {
-		PUBLIC_CLIENT_APP_URL,
-		PUBLIC_SITE_DESCRIPTION,
-		PUBLIC_SITE_TITLE
-	} from '$env/static/public'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import type { WebPieces } from '$lib/pieces/types.js'
 	import DiceFiveIcon from 'virtual:icons/ph/dice-five'
 	import ShuffleIcon from 'virtual:icons/ph/shuffle'
+	import { page } from '$app/state'
 
 	let { data } = $props()
-	const { types, latestPiece } = data
-
 	let activePieceId = $state<string | null>(null)
-	let latestPieceType = $state<WebPieces | null>(latestPiece)
+	let latestPieceType = $state<WebPieces | null>(data.latestPiece)
 	let random = $state<WebPieces | null>(null)
 
 	async function getLatest(type: string | null = null) {
@@ -55,9 +49,9 @@
 	}
 
 	async function getNextLatest() {
-		const currentType = latestPieceType ? latestPieceType.type : types[0].type
-		const nextTypeIndex = types.findIndex((one) => one.type === currentType) + 1
-		const nextType = types[nextTypeIndex] ? types[nextTypeIndex].type : types[0].type
+		const currentType = latestPieceType ? latestPieceType.type : data.types[0].type
+		const nextTypeIndex = data.types.findIndex((one) => one.type === currentType) + 1
+		const nextType = data.types[nextTypeIndex] ? data.types[nextTypeIndex].type : data.types[0].type
 
 		getLatest(nextType)
 	}
@@ -68,11 +62,11 @@
 </script>
 
 <svelte:head>
-	<title>{PUBLIC_SITE_TITLE}</title>
-	<meta name="description" content={PUBLIC_SITE_DESCRIPTION} />
-	<meta property="og:title" content={PUBLIC_SITE_TITLE} />
-	<meta property="og:description" content={PUBLIC_SITE_DESCRIPTION} />
-	<meta property="og:image" content="{PUBLIC_CLIENT_APP_URL}/images/opengraph.png" />
+	<title>{page.data.config.text.title}</title>
+	<meta name="description" content={page.data.config.text.description} />
+	<meta property="og:title" content={page.data.config.text.title} />
+	<meta property="og:description" content={page.data.config.text.description} />
+	<meta property="og:image" content="{page.data.config.url.luzzle_assets}/images/opengraph.png" />
 	<meta property="og:type" content="article" />
 	<!--
   <meta property="og:site_name" content="" />
@@ -86,8 +80,8 @@
 
 	<p>
 		this site allows me to recall and share
-		{#each types as one, i (i)}
-			{#if i !== types.length - 1}
+		{#each data.types as one, i (i)}
+			{#if i !== data.types.length - 1}
 				<a href="/pieces/{one.type}">{one.type}</a>,&nbsp;
 			{:else}
 				<a href="/pieces/{one.type}">{one.type}</a>

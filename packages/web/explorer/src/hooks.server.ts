@@ -1,3 +1,2 @@
-import { initializeDatabase } from '$lib/database'
-
-await initializeDatabase()
+import '$lib/server/config'
+import '$lib/server/database'

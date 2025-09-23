@@ -1,11 +1,6 @@
 import { type WebPieces } from '$lib/pieces/types'
 import type { RequestHandler } from './$types'
-import {
-	PUBLIC_SITE_TITLE,
-	PUBLIC_SITE_DESCRIPTION,
-	PUBLIC_SITE_URL,
-	PUBLIC_IMAGES_URL
-} from '$env/static/public'
+import { config } from '$lib/server/config'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
 import { getPiecesForFeed } from '$lib/feeds/utils'
 import YAML from 'yaml'
@@ -16,34 +11,31 @@ type FeedItem<T extends FeedRss | FeedJson> = Exclude<T['items'], undefined>[num
 type FeedRssItem = FeedItem<FeedRss>
 type FeedJsonItem = FeedItem<FeedJson>
 
-function getRssFeedFromPieces(
-	pieces: WebPieces[],
-	site: { title: string; description: string; url: string; folder: string; assets: string }
-) {
+function getRssFeedFromPieces(pieces: WebPieces[], folder?: string) {
 	const feed: FeedRss = {
-		title: site.folder,
-		description: site.description,
-		link: `https://${site.url}`,
+		title: folder ? config.text.title : `${config.text.title} | ${folder}`,
+		description: config.text.description,
+		link: config.url.app,
 		ttl: 60 * 24,
 		language: 'en',
 		lastBuildDate: new Date(),
 		generator: 'feedsmith',
 		textInput: {
-			title: site.title,
-			description: `search ${site.description}`,
-			name: site.title,
-			link: `https://${site.url}/search`
+			title: config.text.title,
+			description: `search ${config.text.description}`,
+			name: config.text.title,
+			link: `${config.url.app}/search`
 		},
 		image: {
-			url: `${site.assets}/images/opengraph.png`,
-			description: site.title,
-			title: site.title,
-			link: `${site.assets}/images/opengraph.png`
+			url: `${config.url.app_assets}/images/opengraph.png`,
+			description: config.text.title,
+			title: config.text.title,
+			link: `${config.url.app_assets}/images/opengraph.png`
 		},
 		items: pieces.map(
 			(piece): FeedRssItem => ({
 				title: piece.title,
-				link: `https://${site.url}/pieces/${piece.type}/${piece.slug}`,
+				link: `${config.url.app}/pieces/${piece.type}/${piece.slug}`,
 				description: piece.note || '',
 				pubDate: new Date(piece.date_consumed ?? piece.date_added)
 			})
@@ -53,20 +45,17 @@ function getRssFeedFromPieces(
 	return feed
 }
 
-function getJsonFeedFromPieces(
-	pieces: WebPieces[],
-	site: { title: string; description: string; url: string; folder: string; assets: string }
-) {
+function getJsonFeedFromPieces(pieces: WebPieces[], folder?: string) {
 	const feed: FeedJson = {
-		title: site.folder,
-		description: site.description,
-		home_page_url: `https://${site.url}`,
+		title: folder ? config.text.title : `${config.text.title} | ${folder}`,
+		description: config.text.description,
+		home_page_url: config.url.app,
 		language: 'en',
 		items: pieces.map(
 			(piece): FeedJsonItem => ({
 				id: piece.id,
 				title: piece.title,
-				url: `https://${site.url}/pieces/${piece.type}/${piece.slug}`,
+				url: `${config.url.app}/pieces/${piece.type}/${piece.slug}`,
 				content_text: piece.note || '',
 				date_published: new Date(piece.date_consumed ?? piece.date_added)
 			})
@@ -76,22 +65,17 @@ function getJsonFeedFromPieces(
 	return feed
 }
 
-function getMarkdownFeedFromPieces(
-	pieces: WebPieces[],
-	site: { title: string; description: string; url: string; folder: string },
-	type: string | undefined
-) {
+function getMarkdownFeedFromPieces(pieces: WebPieces[], folder?: string) {
 	const frontmatter = YAML.stringify({
-		title: site.folder,
-		description: site.description,
-		link: `https://${site.url}`,
+		title: folder ? config.text.title : `${config.text.title} | ${folder}`,
+		description: config.text.description,
+		link: config.url.app,
 		language: 'en',
 		lastBuildDate: new Date(),
 		generator: 'luzzle'
 	})
 
-	const title = type ? `RSS feed for ${type}` : 'RSS feed for all pieces'
-
+	const title = folder ? `RSS feed for ${folder}` : 'RSS feed for all pieces'
 	const body = pieces
 		.map((piece) => {
 			const date = new Date(piece.date_consumed ?? piece.date_added).toLocaleDateString('en-US', {
@@ -99,13 +83,12 @@ function getMarkdownFeedFromPieces(
 				month: 'short',
 				day: 'numeric'
 			})
-			const note = piece.note ? `
+			const note = piece.note
+				? `
 
-> ${piece.note}` : ''
-			return `## [${piece.title}](${`https://${site.url}/pieces/${piece.type}/${
-				piece.slug
-			}`})
-*${date}*${note}`
+> ${piece.note}`
+				: ''
+			return `## [${piece.title}](${`${config.url.app}/pieces/${piece.type}/${piece.slug}`})\n*${date}*${note}`
 		})
 		.join('\n\n---\n\n')
 
@@ -118,42 +101,20 @@ export const GET: RequestHandler = async (event) => {
 	const pieces = await getPiecesForFeed(type)
 
 	if (format === 'json') {
-		const rss = getJsonFeedFromPieces(pieces, {
-			folder: type ? `pieces/${type}` : 'pieces',
-			url: PUBLIC_SITE_URL,
-			title: PUBLIC_SITE_TITLE,
-			description: PUBLIC_SITE_DESCRIPTION,
-			assets: PUBLIC_IMAGES_URL
-		})
-
+		const rss = getJsonFeedFromPieces(pieces, type ? `pieces/${type}` : 'pieces')
 		const body = generateJsonFeed(rss)
 		return new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } })
 	}
 
 	if (format === 'xml') {
-		const rss = getRssFeedFromPieces(pieces, {
-			folder: type ? `pieces/${type}` : 'pieces',
-			url: PUBLIC_SITE_URL,
-			title: PUBLIC_SITE_TITLE,
-			description: PUBLIC_SITE_DESCRIPTION,
-			assets: PUBLIC_IMAGES_URL
-		})
+		const rss = getRssFeedFromPieces(pieces, type ? `pieces/${type}` : 'pieces')
 		const stylesheets = [{ type: 'text/css', href: '/css/feed.css' }]
 		const body = generateRssFeed(rss as RssFeed<Date>, { stylesheets })
 		return new Response(body, { headers: { 'content-type': 'application/xml' } })
 	}
 
 	if (format === 'md') {
-		const body = getMarkdownFeedFromPieces(
-			pieces,
-			{
-				folder: type ? `pieces/${type}` : 'pieces',
-				url: PUBLIC_SITE_URL,
-				title: PUBLIC_SITE_TITLE,
-				description: PUBLIC_SITE_DESCRIPTION
-			},
-			type
-		)
+		const body = getMarkdownFeedFromPieces(pieces, type ? `pieces/${type}` : 'pieces')
 		return new Response(body, { headers: { 'content-type': 'text/markdown' } })
 	}
 

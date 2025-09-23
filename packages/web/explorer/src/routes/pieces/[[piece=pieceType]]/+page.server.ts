@@ -1,11 +1,10 @@
-import { getDatabase } from '$lib/database'
+import { db } from '$lib/server/database'
 import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 
 const TAKE_DEFAULT = 50
 
 export const load: PageServerLoad = async ({ params, url }) => {
-	const db = getDatabase()
 	const type = params.piece
 	const pageParam = url.searchParams.get('page') || '1'
 	const pageNumber = parseInt(pageParam) || null

@@ -1,12 +1,11 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { getDatabase } from '$lib/database'
+import { db } from '$lib/server/database'
 
 const TAKE_DEFAULT = 50
 
 export const load: PageServerLoad = async (page) => {
 	const tag = page.params.tag
-	const db = getDatabase()
 
 	let piecesQuery = db.selectFrom('web_pieces').selectAll()
 
@@ -38,6 +37,7 @@ export const load: PageServerLoad = async (page) => {
 	return {
 		pieces,
 		nextPage: pieces.length === TAKE_DEFAULT ? 2 : null,
-		prevPage: null
+		prevPage: null,
+		tag
 	}
 }

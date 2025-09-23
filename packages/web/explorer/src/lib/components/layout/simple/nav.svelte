@@ -13,13 +13,12 @@
 	import { fly, fade } from 'svelte/transition'
 	import { createDialog, melt } from '@melt-ui/svelte'
 	import type { Snippet } from 'svelte'
-	import { PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_TITLE } from '$env/static/public'
 
 	type Props = {
 		background?: string
 		items?: {
-			left?: Snippet
-			right?: Snippet
+			left?: Snippet<[]>
+			right?: Snippet<[]>
 		}
 		theme?: Theme
 	}
@@ -69,8 +68,8 @@
 </script>
 
 <svelte:head>
-	<title>{PUBLIC_SITE_TITLE}</title>
-	<meta name="description" content={PUBLIC_SITE_DESCRIPTION} />
+	<title>{page.data.config.text.title}</title>
+	<meta name="description" content={page.data.config.text.description} />
 	<style>
 		@font-face {
 			font-family: 'Noto Sans';
@@ -120,7 +119,7 @@
 						name="query"
 						class="input"
 						onkeydown={(e) => {
-							if (e.key === "escape") {
+							if (e.key === 'escape') {
 								$open = false
 							}
 						}}

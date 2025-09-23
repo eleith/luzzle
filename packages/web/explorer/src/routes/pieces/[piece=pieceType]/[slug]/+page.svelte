@@ -3,12 +3,11 @@
 	import CaretLeftIcon from 'virtual:icons/ph/caret-left-thin'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import { marked } from 'marked'
-	import { PUBLIC_IMAGES_URL } from '$env/static/public'
+	import { page } from '$app/state'
 
 	let { data } = $props()
 	const metadata = JSON.parse(data.piece.json_metadata) || {}
 	const hasMedia = $derived(!!data.piece.media)
-	const imagesDir = `${PUBLIC_IMAGES_URL}/images/pieces`
 	let showFullHeader = $state(false)
 
 	function toggleHeader() {
@@ -23,7 +22,7 @@
 	<meta property="og:description" content={data.piece.summary} />
 	<meta
 		property="og:image"
-		content="{imagesDir}/{data.piece.type}/{data.piece.slug}/opengraph.png"
+		content="{page.data.config.url.luzzle_assets}images/pieces/{data.piece.type}/{data.piece.slug}/opengraph.png"
 	/>
 	<meta property="og:type" content="article" />
 	<!--

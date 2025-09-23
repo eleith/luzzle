@@ -1,9 +1,8 @@
 import type { RequestHandler } from './$types'
-import { getDatabase } from '$lib/database'
-import { PRIVATE_LUZZLE_EDITOR_URL } from '$env/static/private'
+import { db } from '$lib/server/database'
+import { config } from '$lib/server/config'
 
 export const GET: RequestHandler = async (a) => {
-	const db = getDatabase()
 	const contentType = 'text/markdown'
 
 	const piece = await db
@@ -19,6 +18,6 @@ export const GET: RequestHandler = async (a) => {
 			status: 404
 		})
 	} else {
-		return Response.redirect(`${PRIVATE_LUZZLE_EDITOR_URL}/${piece.file_path}`, 302)
+		return Response.redirect(`${config.url.editor}/${piece.file_path}`, 302)
 	}
 }
