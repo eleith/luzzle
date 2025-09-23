@@ -1,9 +1,10 @@
 import { preprocessMeltUI, sequence } from '@melt-ui/pp'
 import adapter from '@sveltejs/adapter-node'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
+import config from './config/svelte.loader.js'
 
 /** @type {import('@sveltejs/kit').Config}*/
-const config = {
+const svelteConfig = {
 	preprocess: sequence([vitePreprocess(), preprocessMeltUI()]),
 	kit: {
 		adapter: adapter(),
@@ -16,17 +17,14 @@ const config = {
 					'unsafe-hashes',
 					'sha256-7dQwUgLau1NFCCGjfn9FsYptB6ZtWxJin6VohGIu20I=',
 					'sha256-xn22ltVON/Snvkt10s93XAovWcCOYzs+b4VC4GwZ+/o=',
-					`${process.env.PUBLIC_CLIENT_APP_URL}/`
-				],
-				'style-src': ['self', 'unsafe-inline', `${process.env.PUBLIC_CLIENT_APP_URL}/`],
-				'img-src': [
-					'self',
-					'data:',
-					`${process.env.PUBLIC_CLIENT_APP_URL}/`,
-					`${process.env.PUBLIC_IMAGES_URL}/`
-				],
+					`${config.urls.app}/`
+				].filter((src) => src !== '/'),
+				'style-src': ['self', 'unsafe-inline', `${config.urls.app}/`].filter((src) => src !== '/'),
+				'img-src': ['self', 'data:', `${config.urls.app}/`, `${config.urls.assets}/`].filter(
+					(src) => src !== '/'
+				),
 				'connect-src': ['self'],
-				'font-src': ['self', `${process.env.PUBLIC_CLIENT_APP_URL}/`],
+				'font-src': ['self', `${config.urls.app}/`].filter((src) => src !== '/'),
 				'object-src': ['none'],
 				'base-uri': ['self'],
 				'frame-ancestors': ['none']
@@ -34,7 +32,7 @@ const config = {
 		},
 		inlineStyleThreshold: 3072,
 		paths: {
-			assets: process.env.PUBLIC_CLIENT_APP_URL
+			assets: config.urls.app
 		},
 		prerender: {
 			concurrency: 8,
@@ -44,4 +42,4 @@ const config = {
 	}
 }
 
-export default config
+export default svelteConfig

@@ -1,0 +1,63 @@
+{
+	"type": "object",
+	"properties": {
+		"url": {
+			"type": "object",
+			"properties": {
+				"app": {
+					"type": "string"
+				},
+				"app_assets": {
+					"type": "string"
+				},
+				"luzzle_assets": {
+					"type": "string"
+				},
+				"editor": {
+					"type": "string"
+				}
+			},
+			"required": [
+				"app",
+				"app_assets",
+				"luzzle_assets",
+				"editor"
+			],
+			"additionalProperties": false
+		},
+		"text": {
+			"type": "object",
+			"properties": {
+				"title": {
+					"type": "string"
+				},
+				"description": {
+					"type": "string"
+				}
+			},
+			"required": [
+				"title",
+				"description"
+			],
+			"additionalProperties": false
+		},
+		"paths": {
+			"type": "object",
+			"properties": {
+				"database": {
+					"type": "string"
+				}
+			},
+			"required": [
+				"database"
+			],
+			"additionalProperties": false
+		}
+	},
+	"required": [
+		"url",
+		"text",
+		"paths"
+	],
+	"additionalProperties": false
+}

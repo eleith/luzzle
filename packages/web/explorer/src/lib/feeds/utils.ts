@@ -1,11 +1,9 @@
 import { type WebPieces } from '$lib/pieces/types'
-import { getDatabase } from '$lib/database'
+import { db } from '$lib/server/database'
 
 const MAX_FEED_ITEMS = 50
 
 async function getPiecesForFeed(type: WebPieces['type'] | undefined) {
-	const db = getDatabase()
-
 	let pieceQuery = db
 		.selectFrom('web_pieces')
 		.selectAll()

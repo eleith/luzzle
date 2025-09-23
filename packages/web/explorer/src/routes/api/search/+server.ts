@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { getDatabase, sql } from '$lib/database'
+import { db, sql } from '$lib/server/database'
 
 const MAX_RESULTS = 20
 
@@ -9,7 +9,6 @@ export const GET: RequestHandler = async ({ request }) => {
 	const query = url.searchParams.get('query')
 	const pageParseInt = parseInt(page)
 	const pageNumber = isNaN(pageParseInt) ? 1 : pageParseInt
-	const db = getDatabase()
 
 	if (pageNumber < 1) {
 		return new Response('no pieces for this page', { status: 404 })
