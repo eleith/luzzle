@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"build:lock": "npm i --package-lock-only --workspaces=false && mv package-lock.json web.package-lock.json",
+		"build:lock": "npm i --package-lock-only --workspaces=false",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -35,7 +35,7 @@
 		"eslint": "9.18.0",
 		"eslint-config-prettier": "9.1.0",
 		"eslint-plugin-svelte": "3.9.3",
-		"feed": "4.2.2",
+		"feedsmith": "2.1.0",
 		"globals": "15.14.0",
 		"marked": "15.0.6",
 		"prettier": "3.4.2",
@@ -52,7 +52,6 @@
 	"dependencies": {
 		"@luzzle/core": "0.0.22",
 		"better-sqlite3": "11.7.2",
-		"feedsmith": "2.1.0",
 		"kysely": "0.27.5"
 	}
 }

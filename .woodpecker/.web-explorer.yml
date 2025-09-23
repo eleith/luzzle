@@ -13,17 +13,20 @@ steps:
     image: node:20
     commands:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> /root/.npmrc
-      - npm ci -w @luzzle/core -w @luzzle/cli -w @luzzle/web
-      - npm run -w @luzzle/web --silent tag > packages/web/explorer/.tags
+      - cd packages/web/explorer
+      - npm run build:lock
+      - npm ci --workspaces=false
+      - npm run --silent tag > .tags
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
   lint:
     image: node:20
     commands:
-      - npm run -w @luzzle/web lint
-      - npm run -w @luzzle/web check:config
-      - npm run -w @luzzle/web check
+      - cd packages/web/explorer
+      - npm run lint
+      - npm run check:config
+      - npm run check
   build_docker:
     image: woodpeckerci/plugin-docker-buildx:6.0.1
     settings:
