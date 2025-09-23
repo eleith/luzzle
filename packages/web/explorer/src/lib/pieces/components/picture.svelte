@@ -19,11 +19,13 @@
 {#if media}
 	<picture>
 		<source
-			srcset="{page.data.config.url.luzzle_assets}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.avif"
+			srcset="{page.data.config.url
+				.luzzle_assets}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.avif"
 			type="image/avif"
 		/>
 		<img
-			src="{page.data.config.url.luzzle_assets}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.jpg"
+			src="{page.data.config.url
+				.luzzle_assets}/images/pieces/{piece.type}/{piece.slug}/{media}.{size}.jpg"
 			loading={lazy ? 'lazy' : 'eager'}
 			{width}
 			height={(3 / 2) * width}
