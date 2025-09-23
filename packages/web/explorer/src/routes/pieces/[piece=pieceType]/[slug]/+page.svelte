@@ -22,7 +22,7 @@
 	<meta property="og:description" content={data.piece.summary} />
 	<meta
 		property="og:image"
-		content="{page.data.config.url.luzzle_assets}images/pieces/{data.piece.type}/{data.piece
+		content="{page.data.config.url.luzzle_assets}/images/pieces/{data.piece.type}/{data.piece
 			.slug}/opengraph.png"
 	/>
 	<meta property="og:type" content="article" />
