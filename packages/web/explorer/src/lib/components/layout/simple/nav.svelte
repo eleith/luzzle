@@ -1,18 +1,16 @@
 <script lang="ts">
-	import '$lib/ui/styles/reset.css'
-	import '$lib/ui/styles/theme.css'
-	import '$lib/ui/styles/elements.css'
 	import NavigationIcon from 'virtual:icons/ph/arrow-up-left'
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import SunIcon from 'virtual:icons/ph/sun-dim'
 	import MoonIcon from 'virtual:icons/ph/moon'
-	import TreeIcon from 'virtual:icons/ph/tree'
+	import FaderIcon from 'virtual:icons/ph/faders'
 	import themes, { type Theme } from '$lib/ui/styles/themes'
 	import { browser } from '$app/environment'
 	import { page } from '$app/state'
 	import { fly, fade } from 'svelte/transition'
 	import { createDialog, melt } from '@melt-ui/svelte'
 	import type { Snippet } from 'svelte'
+	import { onMount } from 'svelte'
 
 	type Props = {
 		background?: string
@@ -20,12 +18,8 @@
 			left?: Snippet<[]>
 			right?: Snippet<[]>
 		}
-		theme?: Theme
 	}
-	const { background, items, theme: initialTheme }: Props = $props()
-
-	let currentTheme = $state<Theme | 'system' | null>(initialTheme || null)
-
+	const { background, items }: Props = $props()
 	const {
 		elements: { content, trigger, portalled, overlay },
 		states: { open }
@@ -43,26 +37,50 @@
 		$open = false
 	}
 
-	function getTheme(): Theme | 'system' {
-		return window.localStorage.getItem('theme') as Theme | 'system'
+	function getThemePreference(): Theme {
+		return (window.localStorage.getItem('theme') || 'system') as Theme
 	}
 
-	function setTheme(theme: Theme | 'system') {
+	function applyTheme(preference: Theme) {
+		const themeToApply =
+			preference === 'system'
+				? window.matchMedia('(prefers-color-scheme: dark)').matches
+					? 'dark'
+					: 'light'
+				: preference
+		document.documentElement.setAttribute('data-theme', themeToApply)
+	}
+
+	function setTheme(preference: Theme) {
 		const oneYear = 7 * 24 * 60 * 60 * 52
-
-		currentTheme = theme
-		window.localStorage.setItem('theme', theme)
-		document.cookie = `theme=${theme}; max-age=${oneYear}; path=/; SameSite=Strict`
-		document.documentElement.setAttribute('data-theme', currentTheme)
+		window.localStorage.setItem('theme', preference)
+		document.cookie = `theme=${preference}; max-age=${oneYear}; path=/; SameSite=Strict`
+		document.documentElement.setAttribute('data-theme-preference', preference)
+		applyTheme(preference)
 	}
+
+	onMount(() => {
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
+		const handleChange = () => {
+			if (getThemePreference() === 'system') {
+				applyTheme('system')
+			}
+		}
+
+		mediaQuery.addEventListener('change', handleChange)
+
+		return () => {
+			mediaQuery.removeEventListener('change', handleChange)
+		}
+	})
 
 	function clickTheme(event: MouseEvent) {
 		event.preventDefault()
-		const currentTheme = getTheme()
-		const themeIndex = themes.indexOf(currentTheme as Theme)
+		const current = getThemePreference()
+		const themeIndex = themes.indexOf(current as Theme)
 		const nextThemeIndex = (themeIndex + 1) % themes.length
 		const nextTheme = themes[nextThemeIndex]
-
 		setTheme(nextTheme)
 	}
 </script>
@@ -93,11 +111,19 @@
 	</style>
 	{#if !browser}
 		<script>
-			const localTheme = window.localStorage.getItem('theme')
-			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-			const theme = localTheme ?? (prefersDark ? 'dark' : 'light')
+			;(function () {
+				let preference = window.localStorage.getItem('theme') || 'system'
+				document.documentElement.setAttribute('data-theme-preference', preference)
 
-			document.documentElement.setAttribute('data-theme', theme)
+				let appliedTheme = preference
+				if (preference === 'system') {
+					appliedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light'
+				}
+
+				document.documentElement.setAttribute('data-theme', appliedTheme)
+			})()
 		</script>
 	{/if}
 </svelte:head>
@@ -149,9 +175,9 @@
 			{@render items.right()}
 		{/if}
 		<button onclick={clickTheme} aria-label="change theme">
-			<SunIcon class="themeIcons themeIconsSun" />
-			<TreeIcon class="themeIcons themeIconsTree" />
-			<MoonIcon class="themeIcons themeIconsMoon" />
+			<SunIcon class="themeIcons themeIconsLight" />
+			<FaderIcon class="themeIcons themeIconsSystem" />
+			<MoonIcon class="themeIcons themeIconsDark" />
 		</button>
 	</div>
 </nav>
@@ -223,15 +249,15 @@
 		display: none;
 	}
 
-	:global(html[data-theme='dark'] .themeIconsSun) {
+	:global(html[data-theme-preference='dark'] .themeIconsLight) {
 		display: inline-block;
 	}
 
-	:global(html[data-theme='light'] .themeIconsTree) {
+	:global(html[data-theme-preference='light'] .themeIconsSystem) {
 		display: inline-block;
 	}
 
-	:global(html[data-theme='forest'] .themeIconsMoon) {
+	:global(html[data-theme-preference='system'] .themeIconsDark) {
 		display: inline-block;
 	}
 </style>

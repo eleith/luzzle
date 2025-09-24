@@ -9,10 +9,9 @@
 				--font-url-noto-sans: url('%sveltekit.assets%/fonts/noto-sans.woff2');
 			}
 		</style>
-		%sveltekit.head%
+		%luzzle.theme.style.tag% %sveltekit.head%
 	</head>
-
-	<body data-sveltekit-preload-data="hover" data-theme="system">
+	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>
