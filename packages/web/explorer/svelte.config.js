@@ -16,7 +16,7 @@ const svelteConfig = {
 					'self',
 					'unsafe-hashes',
 					'sha256-7dQwUgLau1NFCCGjfn9FsYptB6ZtWxJin6VohGIu20I=',
-					'sha256-xn22ltVON/Snvkt10s93XAovWcCOYzs+b4VC4GwZ+/o=',
+					'sha256-IkSJz6bJHlgEJX/qrZfLQujPiGpWsHJXQZ7PqTVra1Y=',
 					`${config.urls.app}/`
 				].filter((src) => src !== '/'),
 				'style-src': ['self', 'unsafe-inline', `${config.urls.app}/`].filter((src) => src !== '/'),
