@@ -8,9 +8,8 @@ services:
       - "3000:3000"
     volumes:
       - ./static/images/pieces:/app/static/images/pieces
-      - ./.env.local:/app/.env.local
+      - ./config:/app/config
       - ./data:/app/data
-    command: bash -c "npm run build && node --env-file=.env.local build"
 
 secrets:
   npmrc:
