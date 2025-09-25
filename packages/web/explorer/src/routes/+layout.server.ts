@@ -13,9 +13,9 @@ export const load = async () => {
 				luzzle_assets: config.url.luzzle_assets
 			}
 		} as AppConfigPublic,
-		meta: { 
-			title: config.text.title, 
-			description: config.text.description 
+		meta: {
+			title: config.text.title,
+			description: config.text.description
 		}
 	}
 }
