@@ -88,7 +88,12 @@
 	{#if latestPieceType}
 		<h2>
 			latest
-			<button class="plain" onclick={() => getNextLatest()}>
+			<button
+				class="plain"
+				onclick={() => getNextLatest()}
+				title="get a latest piece"
+				aria-label="get a latest piece"
+			>
 				<ShuffleIcon style="margin: auto; font-size: 0.5em;" />
 			</button>
 		</h2>
@@ -139,7 +144,8 @@
 		random
 		<button
 			class="plain"
-			title="fetch random piece"
+			title="get a random piece"
+			aria-label="get random piece"
 			onclick={() => {
 				getRandom()
 			}}
