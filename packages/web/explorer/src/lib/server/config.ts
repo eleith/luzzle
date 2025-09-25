@@ -22,7 +22,6 @@ export type AppConfig = {
 		globals: Record<string, string>
 		light: Record<string, string>
 		dark: Record<string, string>
-		forest: Record<string, string>
 	}
 }
 

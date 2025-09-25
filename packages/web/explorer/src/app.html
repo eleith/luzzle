@@ -1,14 +1,10 @@
 <!doctype html>
 <html lang="en">
 	<head>
+		%luzzle.theme.style.tag%
 		<meta charset="utf-8" />
+		%sveltekit.head%
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<style>
-			:root {
-				--font-url-noto-sans: url('%sveltekit.assets%/fonts/noto-sans.woff2');
-			}
-		</style>
-		%luzzle.theme.style.tag% %sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>

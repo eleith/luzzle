@@ -113,28 +113,6 @@
 	<meta property="og:url" content={page.url.href} />
 	<meta property="og:locale" content="en_US" />
 	<link rel="icon" href="{page.data.config.url.app_assets}/images/favicon.png" />
-
-	<style>
-		@font-face {
-			font-family: 'Noto Sans';
-			font-optical-sizing: auto;
-			font-weight: 300 600;
-			font-style: normal;
-			font-variation-settings: 'wdth' 300;
-			src: var(--font-url-noto-sans) format('woff2');
-			font-display: swap;
-		}
-
-		@font-face {
-			font-family: 'Adjusted Sans';
-			src: local(Dejavu Sans), local(Verdana), sans-serif;
-			size-adjust: 92%;
-		}
-
-		html {
-			font-family: 'Noto Sans', 'Adjusted Sans';
-		}
-	</style>
 	{#if !browser}
 		<script>
 			;(function () {
