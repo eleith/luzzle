@@ -1,9 +1,9 @@
 <script lang="ts">
+	import { page } from '$app/state'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import type { WebPieces } from '$lib/pieces/types.js'
 	import DiceFiveIcon from 'virtual:icons/ph/dice-five'
 	import ShuffleIcon from 'virtual:icons/ph/shuffle'
-	import { page } from '$app/state'
 
 	let { data } = $props()
 	let activePieceId = $state<string | null>(null)
@@ -62,13 +62,12 @@
 </script>
 
 <svelte:head>
-	<title>{page.data.config.text.title}</title>
-	<meta name="description" content={page.data.config.text.description} />
-	<meta property="og:title" content={page.data.config.text.title} />
-	<meta property="og:description" content={page.data.config.text.description} />
-	<meta property="og:image" content="{page.data.config.url.app_assets}/images/opengraph.png" />
-	<meta property="og:type" content="article" />
-	<meta property="og:locale" content="en_US" />
+	<link
+		rel="alternate"
+		type="application/rss+xml"
+		title="RSS feed | all"
+		href={`${page.data.config.url.app}/rss/pieces/feed.xml`}
+	/>
 </svelte:head>
 
 <section class="intro">

@@ -3,7 +3,6 @@
 	import CaretLeftIcon from 'virtual:icons/ph/caret-left-thin'
 	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
 	import { marked } from 'marked'
-	import { page } from '$app/state'
 
 	let { data } = $props()
 	const metadata = JSON.parse(data.piece.json_metadata) || {}
@@ -16,22 +15,6 @@
 </script>
 
 <svelte:head>
-	<title>{data.piece.title}</title>
-	<meta name="description" content={data.piece.summary} />
-	<meta property="og:title" content={data.piece.title} />
-	<meta property="og:description" content={data.piece.note || data.piece.summary} />
-	<meta
-		property="og:image"
-		content="{page.data.config.url.luzzle_assets}/images/pieces/{data.piece.type}/{data.piece
-			.slug}/opengraph.png"
-	/>
-	<meta property="og:type" content="article" />
-	<!--
-  <meta property="og:site_name" content="" />
-  <meta property="og:url" content="{window.location.href}" />
-  -->
-	<meta property="og:locale" content="en_US" />
-
 	{#if data.previous}
 		<link rel="prefetch" href="/pieces/{data.previous.type}/{data.previous.slug}" />
 	{/if}

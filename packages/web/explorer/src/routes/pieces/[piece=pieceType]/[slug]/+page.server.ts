@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { db } from '$lib/server/database'
+import { config } from '$lib/server/config'
 
 export const load: PageServerLoad = async (page) => {
 	const type = page.params.piece
@@ -73,26 +74,34 @@ export const load: PageServerLoad = async (page) => {
 
 	const previous = before
 		? await db
-				.selectFrom('web_pieces')
-				.selectAll()
-				.where('slug', '=', before.slug)
-				.where('type', '=', type)
-				.executeTakeFirst()
+			.selectFrom('web_pieces')
+			.selectAll()
+			.where('slug', '=', before.slug)
+			.where('type', '=', type)
+			.executeTakeFirst()
 		: null
 
 	const next = after
 		? await db
-				.selectFrom('web_pieces')
-				.selectAll()
-				.where('slug', '=', after.slug)
-				.where('type', '=', type)
-				.executeTakeFirst()
+			.selectFrom('web_pieces')
+			.selectAll()
+			.where('slug', '=', after.slug)
+			.where('type', '=', type)
+			.executeTakeFirst()
 		: null
 
 	return {
 		piece,
 		previous,
 		next,
-		tags
+		tags,
+		meta: {
+			title: piece.title,
+			type: piece.type,
+			description: piece.note || piece.summary,
+			image: piece.media
+				? `${config.url.luzzle_assets}/images/pieces/${piece.type}/${piece.slug}/opengraph.png`
+				: undefined
+		}
 	}
 }
