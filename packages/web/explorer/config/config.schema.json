@@ -134,7 +134,10 @@
 					"type": "object",
 					"properties": {
 						"shadows-raised": { "type": "string" },
-						"fonts-mono": { "type": "string" },
+						"font-mono": { "type": "string" },
+						"font-sans": { "type": "string" },
+						"font-sans-url": { "type": "string" },
+						"font-sans-weight": { "type": "string" },
 						"font-sizes-xxs": { "type": "string" },
 						"font-sizes-xs": { "type": "string" },
 						"font-sizes-small": { "type": "string" },
