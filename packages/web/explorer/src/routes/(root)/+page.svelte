@@ -66,12 +66,8 @@
 	<meta name="description" content={page.data.config.text.description} />
 	<meta property="og:title" content={page.data.config.text.title} />
 	<meta property="og:description" content={page.data.config.text.description} />
-	<meta property="og:image" content="{page.data.config.url.luzzle_assets}/images/opengraph.png" />
+	<meta property="og:image" content="{page.data.config.url.app_assets}/images/opengraph.png" />
 	<meta property="og:type" content="article" />
-	<!--
-  <meta property="og:site_name" content="" />
-  <meta property="og:url" content="{window.location.href}" />
-  -->
 	<meta property="og:locale" content="en_US" />
 </svelte:head>
 
