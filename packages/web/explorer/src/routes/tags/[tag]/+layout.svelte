@@ -7,11 +7,7 @@
 </script>
 
 {#snippet rssIcon()}
-	{#if page.params.piece}
-		<a href="/rss/pieces/{page.params.piece}/feed.html"><BellIcon style="font-size: 1em;" /></a>
-	{:else}
-		<a href="/rss/pieces/feed.html"><BellIcon style="font-size: 1em;" /></a>
-	{/if}
+	<a href="/rss/tags/{page.params.tag}/feed.html"><BellIcon style="font-size: 1em;" /></a>
 {/snippet}
 
 <main>

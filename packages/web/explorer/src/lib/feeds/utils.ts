@@ -17,4 +17,30 @@ async function getPiecesForFeed(type: WebPieces['type'] | undefined) {
 	return pieceQuery.execute()
 }
 
-export { getPiecesForFeed }
+async function getPiecesForTagFeed(tag: string) {
+	const pieceTags = await db
+		.selectFrom('web_pieces_tags')
+		.select('piece_id')
+		.where('slug', '=', tag)
+		.execute()
+
+	if (!pieceTags || pieceTags.length === 0) {
+		return []
+	}
+
+	const pieces = await db
+		.selectFrom('web_pieces')
+		.selectAll()
+		.where(
+			'id',
+			'in',
+			pieceTags.map((x) => x.piece_id)
+		)
+		.orderBy('date_consumed', 'desc')
+		.limit(MAX_FEED_ITEMS)
+		.execute()
+
+	return pieces
+}
+
+export { getPiecesForFeed, getPiecesForTagFeed }
