@@ -88,6 +88,7 @@
 <svelte:head>
 	<title>{page.data.config.text.title}</title>
 	<meta name="description" content={page.data.config.text.description} />
+	<link rel="icon" href="{page.data.config.url.app_assets}/images/favicon.png" />
 	<style>
 		@font-face {
 			font-family: 'Noto Sans';
