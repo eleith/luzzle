@@ -74,20 +74,20 @@ export const load: PageServerLoad = async (page) => {
 
 	const previous = before
 		? await db
-			.selectFrom('web_pieces')
-			.selectAll()
-			.where('slug', '=', before.slug)
-			.where('type', '=', type)
-			.executeTakeFirst()
+				.selectFrom('web_pieces')
+				.selectAll()
+				.where('slug', '=', before.slug)
+				.where('type', '=', type)
+				.executeTakeFirst()
 		: null
 
 	const next = after
 		? await db
-			.selectFrom('web_pieces')
-			.selectAll()
-			.where('slug', '=', after.slug)
-			.where('type', '=', type)
-			.executeTakeFirst()
+				.selectFrom('web_pieces')
+				.selectAll()
+				.where('slug', '=', after.slug)
+				.where('type', '=', type)
+				.executeTakeFirst()
 		: null
 
 	return {

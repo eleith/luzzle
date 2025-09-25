@@ -7,12 +7,12 @@ declare global {
 		// interface Error {}
 		// interface Locals {}
 		interface PageData {
-			config: AppConfigPublic,
+			config: AppConfigPublic
 			meta: {
-				title?: string,
-				description?: string,
-				image?: string,
-				type?: string,
+				title?: string
+				description?: string
+				image?: string
+				type?: string
 				canonical?: string
 				locale?: string
 			}
