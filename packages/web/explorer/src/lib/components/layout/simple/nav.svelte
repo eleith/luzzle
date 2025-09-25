@@ -86,9 +86,34 @@
 </script>
 
 <svelte:head>
-	<title>{page.data.config.text.title}</title>
-	<meta name="description" content={page.data.config.text.description} />
+	{#if page.data.meta.title}
+		<title>{page.data.meta.title}</title>
+		<meta property="og:title" content={page.data.meta.title} />
+	{:else}
+		<title>{page.data.config.text.title}</title>
+		<meta property="og:title" content={page.data.config.text.title} />
+	{/if}
+	{#if page.data.meta.description}
+		<meta name="description" content={page.data.meta.description} />
+		<meta property="og:description" content={page.data.meta.description} />
+	{:else}
+		<meta name="description" content={page.data.config.text.description} />
+		<meta property="og:description" content={page.data.config.text.description} />
+	{/if}
+	{#if page.data.meta.image}
+		<meta property="og:image" content={page.data.meta.image} />
+	{:else}
+		<meta property="og:image" content="{page.data.config.url.app_assets}/images/opengraph.png" />
+	{/if}
+	{#if page.data.meta.type}
+		<meta property="og:type" content={page.data.meta.type} />
+	{:else}
+		<meta property="og:type" content="website" />
+	{/if}
+	<meta property="og:url" content={page.url.href} />
+	<meta property="og:locale" content="en_US" />
 	<link rel="icon" href="{page.data.config.url.app_assets}/images/favicon.png" />
+
 	<style>
 		@font-face {
 			font-family: 'Noto Sans';

@@ -7,6 +7,10 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	return {
 		pieces,
-		type
+		type,
+		meta: {
+			title: type ? `RSS feed | ${type}` : 'RSS feed | all',
+			description: type ? `an RSS feed for ${type}` : 'RSS feed for all pieces'
+		}
 	}
 }

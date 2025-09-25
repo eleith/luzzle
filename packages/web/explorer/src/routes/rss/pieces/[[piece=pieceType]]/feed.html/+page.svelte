@@ -24,31 +24,12 @@
 </script>
 
 <svelte:head>
-	<title>{data.type ? `RSS feed for ${data.type}` : 'RSS feed'}</title>
-	<meta
-		name="description"
-		content={`An RSS feed for ${data.type ? data.type : 'all pieces'} from
-${page.data.config.text.title}.`}
-	/>
-
-	<!-- RSS Discovery Link -->
 	<link
 		rel="alternate"
 		type="application/rss+xml"
 		title={data.type ? `RSS feed for ${data.type}` : 'RSS feed'}
 		href={rssUrl}
 	/>
-
-	<!-- OpenGraph Tags -->
-	<meta property="og:title" content={data.type ? `RSS feed for ${data.type}` : 'RSS feed'} />
-	<meta
-		property="og:description"
-		content={`An RSS feed for ${data.type ? data.type : 'all pieces'} from
-${page.data.config.text.title}.`}
-	/>
-	<meta property="og:image" content="{page.data.config.url.luzzle_assets}/images/opengraph.png" />
-	<meta property="og:type" content="website" />
-	<meta property="og:locale" content="en_US" />
 </svelte:head>
 
 <main>
