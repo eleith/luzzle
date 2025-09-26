@@ -18,7 +18,12 @@ function minifyCss(css: string): string {
 
 const createCssVariableBlock = (variables: Record<string, string>): string => {
 	return Object.entries(variables)
-		.map(([key, value]) => `	--${key}: ${value};`)
+		.map(([key, value]) => {
+			if (/font.*name/.test(key) || /url/.test(key)) {
+				return `	--${key}: "${value}";`
+			}
+			return `	--${key}: ${value};`
+		})
 		.join('\n')
 }
 
@@ -42,9 +47,9 @@ ${darkBlock}
 }
 
 @font-face {
-	font-family: var(--font-sans);
+	font-family: "${config.theme.globals['font-sans-name']}";
 	font-optical-sizing: auto;
-	font-weight: var(--font-sans-weight);
+	font-weight: ${config.theme.globals['font-sans-weight']};
 	font-style: normal;
 	font-variation-settings: 'wdth' 300;
 	src: url("${config.theme.globals['font-sans-url']}") format('woff2');
@@ -58,7 +63,7 @@ ${darkBlock}
 }
 
 html {
-	font-family: var(--font-sans), 'Adjusted Sans';
+	font-family: var(--font-sans-name), 'Adjusted Sans';
 }
 
 @media (prefers-color-scheme: dark) {
