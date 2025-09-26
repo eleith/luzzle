@@ -76,9 +76,9 @@ ${darkBlock}
 `
 }
 
-const themeVersion = config.theme.version;
-const outputDir = path.resolve(process.cwd(), 'static/css');
-const outputPath = path.join(outputDir, `theme.${themeVersion}.css`);
+const themeVersion = config.theme.version
+const outputDir = path.resolve(process.cwd(), 'static/css')
+const outputPath = path.join(outputDir, `theme.${themeVersion}.css`)
 
 fs.mkdirSync(outputDir, { recursive: true })
 
