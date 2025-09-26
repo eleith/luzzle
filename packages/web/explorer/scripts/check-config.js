@@ -3,30 +3,7 @@ import path from 'path'
 import YAML from 'yaml'
 import Ajv from 'ajv'
 import schema from '../config/config.schema.json' with { type: 'json' }
-
-// This deepMerge function is duplicated from src/lib/server/config.ts
-function deepMerge(target, source) {
-	const output = { ...target }
-
-	for (const key in source) {
-		if (Object.prototype.hasOwnProperty.call(source, key)) {
-			const targetValue = output[key]
-			const sourceValue = source[key]
-
-			if (
-				sourceValue instanceof Object &&
-				!Array.isArray(sourceValue) &&
-				targetValue instanceof Object &&
-				!Array.isArray(targetValue)
-			) {
-				output[key] = deepMerge(targetValue, sourceValue)
-			} else {
-				output[key] = sourceValue
-			}
-		}
-	}
-	return output
-}
+import { deepMerge } from './deep-merge.js'
 
 function loadYamlFile(filePath) {
 	if (!fs.existsSync(filePath)) {

@@ -1,17 +1,19 @@
 {
 	"name": "@luzzle/web",
-	"version": "0.0.77",
+	"version": "0.0.78",
 	"private": true,
 	"scripts": {
-		"dev": "npm run build:theme && vite dev",
+		"dev": "npm run build:theme:dev && vite dev",
 		"build": "vite build",
-		"prebuild": "npm run build:theme -- --minify",
+		"prebuild": "npm run build:theme:production",
 		"build:lock": "npm i --package-lock-only --workspaces=false",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"check:config": "node scripts/check-config.js",
 		"build:theme": "node scripts/generate-theme-css.js",
+		"build:theme:dev": "npm run build:theme -- --output static/css",
+		"build:theme:production": "npm run build:theme -- --minify --output build/client/css",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"tag": "node ./scripts/tag.js"
