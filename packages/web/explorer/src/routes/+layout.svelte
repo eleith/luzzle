@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<link rel="stylesheet" href="/css/theme.{data.config.theme.version}.css" />
+	<link rel="stylesheet" href="{data.config.url.app_assets}/css/theme.{data.config.theme.version}.css" />
 </svelte:head>
 
 {@render children()}
