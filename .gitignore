@@ -1,4 +1,5 @@
 .env.*local
+.gemini
 
 node_modules
 data
