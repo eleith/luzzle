@@ -77,20 +77,3 @@ Styling is handled with global CSS files located in `src/lib/ui/styles`:
 When adding new styles, please adhere to the existing theme structure and use
 the defined CSS variables
 
-## Keeping this Document Updated
-
-This document is a living document. As the project evolves, it's important to
-keep this file up-to-date. All agents are encouraged to update this file as they
-make changes to the codebase.
-
-When making changes, please consider the following:
-
-- **Is the change significant enough to be reflected in this document?** Small
-  bug fixes or minor refactors probably don't need to be mentioned here, but new
-  features, architectural changes, or changes to the development process should
-  be.
-- **Is the change reflected in the right place?** This document is for
-  high-level guidance. Implementation details should remain in the code.
-- **Is the change easy to understand?** The goal of this document is to help
-  new agents get up to speed quickly. Please write in a clear and concise
-  way.
