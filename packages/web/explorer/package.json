@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev": "npm run build:theme && vite dev",
 		"build": "vite build",
-		"prebuild": "npm run build:theme",
+		"prebuild": "npm run build:theme -- --minify",
 		"build:lock": "npm i --package-lock-only --workspaces=false",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
