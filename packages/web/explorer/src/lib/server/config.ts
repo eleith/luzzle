@@ -19,6 +19,7 @@ export type AppConfig = {
 		database: string
 	}
 	theme: {
+		version: string
 		globals: Record<string, string>
 		light: Record<string, string>
 		dark: Record<string, string>
@@ -28,6 +29,7 @@ export type AppConfig = {
 export type AppConfigPublic = {
 	url: Pick<AppConfig['url'], 'app' | 'luzzle_assets' | 'app_assets'>
 	text: AppConfig['text']
+	theme: Pick<AppConfig['theme'], 'version'>
 }
 
 function deepMerge<T extends object, U extends object>(target: T, source: U): T & U {

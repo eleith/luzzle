@@ -2,11 +2,11 @@
 	import '$lib/ui/styles/reset.css'
 	import '$lib/ui/styles/base.css'
 
-	const { children } = $props()
+	const { children, data } = $props()
 </script>
 
 <svelte:head>
-	<link rel="stylesheet" href="/css/theme.css" />
+	<link rel="stylesheet" href="/css/theme.{data.config.theme.version}.css" />
 </svelte:head>
 
 {@render children()}

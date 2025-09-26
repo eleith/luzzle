@@ -31,6 +31,7 @@ vite.config.ts.timestamp-*
 /static/images/pieces
 /config/config.yaml
 .tags
+/static/css/theme.*.css
 
 # gemini
 /.gemini
