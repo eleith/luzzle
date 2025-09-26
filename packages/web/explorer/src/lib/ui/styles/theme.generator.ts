@@ -1,27 +1,34 @@
-import { config } from '$lib/server/config';
+import { config } from '$lib/server/config'
+import { transform } from 'lightningcss'
+import { Buffer } from 'buffer'
 
-export function minifyCss(css: string): string {
-  return css
-    .replace(/\/\*[^*]*\*+([^/][^*]*\*+)*\//g, '') // remove comments
-    .replace(/\s*([{:;])\s*/g, '$1') // remove space around separators
-    .replace(/\s\s+/g, ' ')         // collapse multiple spaces
-    .replace(/\n/g, '')             // remove newlines
-    .trim();
+function minifyCss(css: string): string {
+	try {
+		const { code } = transform({
+			filename: 'theme.css', // A nominal filename is required
+			code: Buffer.from(css),
+			minify: true
+		})
+		return code.toString()
+	} catch (error) {
+		console.error('Error minifying CSS with Lightning CSS:', error)
+		return css
+	}
 }
 
 const createCssVariableBlock = (variables: Record<string, string>): string => {
 	return Object.entries(variables)
-		.map(([key, value]) => `\t--${key}: ${value};`)
-		.join('\n');
-};
+		.map(([key, value]) => `	--${key}: ${value};`)
+		.join('\n')
+}
 
-export const generateThemeCss = (): string => {
-	const themeConfig = config.theme || {};
+const generateThemeCss = (): string => {
+	const themeConfig = config.theme || {}
 
-	const globalsBlock = createCssVariableBlock(themeConfig.globals || {});
-	const lightBlock = createCssVariableBlock(themeConfig.light || {});
-	const darkBlock = createCssVariableBlock(themeConfig.dark || {});
-	const cssTemplate = `
+	const globalsBlock = createCssVariableBlock(themeConfig.globals || {})
+	const lightBlock = createCssVariableBlock(themeConfig.light || {})
+	const darkBlock = createCssVariableBlock(themeConfig.dark || {})
+	return `
 html {
 ${globalsBlock}
 }
@@ -59,7 +66,7 @@ html {
 ${darkBlock}
 	}
 }
-`;
+`
+}
 
-	return cssTemplate;
-};
+export { minifyCss, generateThemeCss }
