@@ -52,6 +52,7 @@
 	"dependencies": {
 		"@luzzle/core": "0.0.22",
 		"better-sqlite3": "11.7.2",
-		"kysely": "0.27.5"
+		"kysely": "0.27.5",
+		"lightningcss": "1.30.1"
 	}
 }
