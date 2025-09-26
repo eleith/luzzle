@@ -76,4 +76,3 @@ Styling is handled with global CSS files located in `src/lib/ui/styles`:
 
 When adding new styles, please adhere to the existing theme structure and use
 the defined CSS variables
-
