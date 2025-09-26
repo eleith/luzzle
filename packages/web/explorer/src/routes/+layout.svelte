@@ -5,4 +5,8 @@
 	const { children } = $props()
 </script>
 
+<svelte:head>
+	<link rel="stylesheet" href="/css/theme.css" />
+</svelte:head>
+
 {@render children()}
