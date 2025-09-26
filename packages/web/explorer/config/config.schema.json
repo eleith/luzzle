@@ -56,6 +56,9 @@
 		"theme": {
 			"type": "object",
 			"properties": {
+				"version": {
+					"type": "string"
+				},
 				"light": {
 					"type": "object",
 					"properties": {
