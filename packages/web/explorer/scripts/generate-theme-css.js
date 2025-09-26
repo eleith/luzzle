@@ -77,16 +77,18 @@ ${darkBlock}
 }
 
 const themeVersion = config.theme.version
-const outputDir = path.resolve(process.cwd(), 'static/css')
-const outputPath = path.join(outputDir, `theme.${themeVersion}.css`)
-
-fs.mkdirSync(outputDir, { recursive: true })
-
+const outputArgIndex = process.argv.indexOf('--output')
 const shouldMinify = process.argv.includes('--minify')
 
 const rawCss = generateThemeCss()
 const themeCss = shouldMinify ? minifyCss(rawCss) : rawCss
 
-fs.writeFileSync(outputPath, themeCss)
-
-console.log(`Theme CSS generated at: ${outputPath}`)
+if (outputArgIndex > -1 && process.argv[outputArgIndex + 1]) {
+	const outputDir = path.resolve(process.cwd(), process.argv[outputArgIndex + 1])
+	const outputPath = path.join(outputDir, `theme.${themeVersion}.css`)
+	fs.mkdirSync(outputDir, { recursive: true })
+	fs.writeFileSync(outputPath, themeCss)
+	console.log(`Theme CSS generated at: ${outputPath}`)
+} else {
+	console.log(themeCss)
+}
