@@ -18,6 +18,12 @@ export type AppConfig = {
 	paths: {
 		database: string
 	}
+	content: {
+		block: {
+			root: string
+			feed: string
+		}
+	}
 	theme: {
 		version: string
 		globals: Record<string, string>

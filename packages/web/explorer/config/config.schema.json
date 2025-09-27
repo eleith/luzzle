@@ -53,6 +53,26 @@
 			],
 			"additionalProperties": false
 		},
+		"content": {
+			"type": "object",
+			"properties": {
+				"block": {
+					"type": "object",
+					"properties": {
+						"root": {
+							"type": "string"
+						},
+						"feed": {
+							"type": "string"
+						}
+					},
+					"required": ["root", "feed"],
+					"additionalProperties": false
+				}
+			},
+			"required": ["block"],
+			"additionalProperties": false
+		},
 		"theme": {
 			"type": "object",
 			"properties": {
