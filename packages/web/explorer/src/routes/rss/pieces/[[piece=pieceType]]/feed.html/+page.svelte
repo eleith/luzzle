@@ -36,31 +36,21 @@
 	<Nav />
 	<section class="content-wrapper">
 		<aside class="callout">
-			<h2>What is this?</h2>
-			<p>
-				This is a human-readable HTML page that represents an RSS feed. RSS (Really Simple
-				Syndication) is a standard way to get updates from websites without having to visit them.
-			</p>
-			<div>
-				To subscribe, copy the link below and paste it into your favorite feed reader:
-				<div class="copy-container">
-					<input
-						bind:this={inputElement}
-						type="text"
-						readonly
-						value="{page.data.config.url.app}/rss/pieces{data.type ? `/${data.type}` : ''}/feed.xml"
-						onclick={copyToClipboard}
-						class="input"
-					/>
-					<button onclick={copyToClipboard} class="button">{isCopied ? 'copied' : 'copy'}</button>
-				</div>
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+			{@html data.block}
+			<hr />
+			<p>Copy the link and paste it into an RSS reader</p>
+			<div class="copy-container">
+				<input
+					bind:this={inputElement}
+					type="text"
+					readonly
+					value={rssUrl}
+					onclick={copyToClipboard}
+					class="input"
+				/>
+				<button onclick={copyToClipboard} class="button">{isCopied ? 'copied' : 'copy'}</button>
 			</div>
-			<p class="raw-links">
-				Or, view the raw data files:
-				<a href="feed.xml">XML</a> |
-				<a href="feed.json">JSON</a> |
-				<a href="feed.md">Markdown</a>
-			</p>
 		</aside>
 
 		<header>
@@ -109,14 +99,10 @@
 	}
 
 	aside.callout {
-		background: var(--colors-surface-container-low);
-		border: 1px solid var(--colors-surface-container-high);
+		background: var(--colors-surface-container-high);
+		border: 1px solid var(--colors-surface-container-highest);
 		padding: 1em 1.5em;
 		border-radius: var(--radii-medium);
-	}
-
-	aside.callout a {
-		word-break: break-all;
 	}
 
 	.copy-container {
@@ -141,13 +127,8 @@
 		border-color: var(--colors-outline);
 	}
 
-	.raw-links {
-		margin-top: var(--space-3);
-		font-size: 0.9em;
-	}
-
-	header {
-		margin-bottom: var(--space-2);
+	h1 {
+		font-size: var(--font-sizes-large);
 	}
 
 	.pieces-list {
@@ -157,7 +138,7 @@
 	}
 
 	.item-card {
-		background-color: var(--colors-surface-container);
+		background-color: var(--colors-surface-container-low);
 		border-radius: var(--radii-large);
 		border: 1px solid var(--colors-surface-container-high);
 		padding: var(--space-4);

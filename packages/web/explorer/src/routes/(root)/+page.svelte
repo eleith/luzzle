@@ -71,19 +71,8 @@
 </svelte:head>
 
 <section class="intro">
-	<h1>hello</h1>
-
-	<p>
-		this site allows me to recall and share
-		{#each data.types as one, i (i)}
-			{#if i !== data.types.length - 1}
-				<a href="/pieces/{one.type}">{one.type}</a>,&nbsp;
-			{:else}
-				<a href="/pieces/{one.type}">{one.type}</a>
-			{/if}
-		{/each}
-		other <a href="/pieces">pieces</a>
-	</p>
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html data.root_html}
 
 	{#if latestPieceType}
 		<h2>

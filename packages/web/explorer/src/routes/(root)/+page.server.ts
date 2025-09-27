@@ -1,11 +1,9 @@
 import { db } from '$lib/server/database'
-import type { WebPieces } from '$lib/pieces/types'
+import { loadBlock } from '$lib/server/content'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async () => {
-	const types = await db.selectFrom('web_pieces').select('type').groupBy('type').execute()
-
-	const latestPiece: WebPieces | null =
+	const latestPiece =
 		(await db
 			.selectFrom('web_pieces')
 			.selectAll()
@@ -14,8 +12,16 @@ export const load: PageServerLoad = async () => {
 			.limit(1)
 			.executeTakeFirst()) || null
 
+	const types = await db
+		.selectFrom('web_pieces')
+		.select('type')
+		.distinct()
+		.orderBy('type', 'asc')
+		.execute()
+
 	return {
-		types,
-		latestPiece: latestPiece
+		root_html: await loadBlock('root'),
+		latestPiece,
+		types
 	}
 }
