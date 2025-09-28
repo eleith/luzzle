@@ -20,6 +20,7 @@ steps:
     image: node:20
     commands:
       - npm run lint -w @luzzle/tools
+      - npm run test -w @luzzle/tools
   publish:
     image: node:20
     commands:
