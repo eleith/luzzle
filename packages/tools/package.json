@@ -1,11 +1,11 @@
 {
   "name": "@luzzle/tools",
-  "version": "0.0.27",
+  "version": "0.0.29",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
     "compile": "tsc --noEmit",
-		"copy-assets": "cp -r ./src/generate-open-graph/templates/ ./dist/src/generate-open-graph",
+		"copy-assets": "cp -r ./src/generate-open-graph/templates/ ./dist/src/generate-open-graph && cp -r ./src/lib/config ./dist/src/lib",
     "build": "tsc && npm run copy-assets"
   },
   "engines": {
@@ -15,7 +15,9 @@
     "luzzle-generate-web-sqlite": "./dist/src/generate-web-sqlite/index.js",
     "luzzle-generate-images": "./dist/src/generate-web-images/index.js",
 		"luzzle-generate-open-graph": "./dist/src/generate-open-graph/index.js",
-		"luzzle-generate-image-variant": "./dist/src/generate-image-variants/index.js"
+		"luzzle-generate-image-variant": "./dist/src/generate-image-variants/index.js",
+		"luzzle-generate-theme": "./dist/src/generate-theme/index.js",
+		"luzzle-check-config": "./dist/src/check-config/index.js"
   },
   "files": [
     "dist/*",
@@ -26,6 +28,8 @@
     "url": "git+https://git.eleith.com/eleith/luzzle.git"
   },
   "homepage": "https://git.eleith.com/eleith/luzzle.git",
+  "main": "./dist/src/sdk.js",
+  "types": "./dist/src/sdk.d.ts",
   "description": "misc scripts for working with luzzle related files and projects",
   "devDependencies": {
     "@types/eslint": "9.6.1",
