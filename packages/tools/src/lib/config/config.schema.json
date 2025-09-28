@@ -204,17 +204,18 @@
 						"space-2-5": { "type": "string" },
 						"space-3-5": { "type": "string" }
 					},
-					"additionalProperties": false
-				}
-			},
-			"additionalProperties": false
-		}
+					               "additionalProperties": false
+            }
+         },
+         "required": ["globals", "light", "dark"],
+         "additionalProperties": false
+      }
 	},
 	"required": [
 		"url",
 		"text",
-		"paths",
-		"theme"
-	],
-	"additionalProperties": false
-}
+		      "paths",
+		      "theme",
+		      "content"
+		   ],
+		   "additionalProperties": false}

@@ -12,11 +12,7 @@ try {
     loadConfig({ userConfigPath: args.config });
 
     console.log('✅ Configuration is valid.');
-    if (!args.config) {
-        console.log(
-			'\nℹ️ To check a specific user configuration, run: luzzle-check-config --config <path/to/config.yaml>'
-		);
-    }
+    
     process.exit(0);
 } catch (error) {
     console.error('❌ Configuration check failed:');
