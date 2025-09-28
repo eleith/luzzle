@@ -17,9 +17,9 @@ export function deepMerge<T extends object, U extends object>(target: T, source:
 					sourceValue as object
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				) as any
-			} else if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
+			} else if (Array.isArray(sourceValue)) {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				output[key as keyof (T & U)] = [...targetValue, ...sourceValue] as any
+				output[key as keyof (T & U)] = sourceValue as any
 			} else {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				output[key as keyof (T & U)] = sourceValue as any
