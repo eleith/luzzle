@@ -1,12 +1,13 @@
 {
   "name": "@luzzle/tools",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
-    "compile": "tsc --noEmit",
-		"copy-assets": "cp -r ./src/generate-open-graph/templates/ ./dist/src/generate-open-graph && cp -r ./src/lib/config ./dist/src/lib",
-    "build": "tsc && npm run copy-assets"
+        "compile": "tsc --noEmit",
+        "copy-assets": "cp -r ./src/generate-open-graph/templates/ ./dist/src/generate-open-graph && cp -r ./src/lib/config ./dist/src/lib",
+        "generate:config-type": "json2ts --input src/lib/config/config.schema.json --output src/lib/config/config.schema.ts",
+        "prebuild": "npm run generate:config-type",    "build": "tsc && npm run copy-assets"
   },
   "engines": {
     "node": ">=20"
@@ -14,10 +15,10 @@
   "bin": {
     "luzzle-generate-web-sqlite": "./dist/src/generate-web-sqlite/index.js",
     "luzzle-generate-images": "./dist/src/generate-web-images/index.js",
-		"luzzle-generate-open-graph": "./dist/src/generate-open-graph/index.js",
-		"luzzle-generate-image-variant": "./dist/src/generate-image-variants/index.js",
-		"luzzle-generate-theme": "./dist/src/generate-theme/index.js",
-		"luzzle-check-config": "./dist/src/check-config/index.js"
+    "luzzle-generate-open-graph": "./dist/src/generate-open-graph/index.js",
+    "luzzle-generate-image-variant": "./dist/src/generate-image-variants/index.js",
+    "luzzle-generate-theme": "./dist/src/generate-theme/index.js",
+    "luzzle-check-config": "./dist/src/check-config/index.js"
   },
   "files": [
     "dist/*",
@@ -39,6 +40,7 @@
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-prettier": "5.2.1",
     "globals": "16.0.0",
+    "json-schema-to-typescript": "15.0.4",
     "prettier": "3.2.5",
     "typescript": "5.7.3",
     "typescript-eslint": "8.19.1"

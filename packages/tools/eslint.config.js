@@ -5,6 +5,9 @@ import globals from 'globals'
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+	{
+		ignores: ["src/lib/config/config.schema.ts"]
+	},
 	js.configs.recommended,
 	...ts.configs.recommended,
 	prettier,
