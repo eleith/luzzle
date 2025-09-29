@@ -9,6 +9,7 @@ describe('generate-theme/theme', () => {
 			text: { title: '', description: '' },
 			paths: { database: '' },
 			content: { block: { root: '', feed: '' } },
+			pieces: [{ type: 'test', fields: { title: 'test', date_consumed: 'test' } }],
 			theme: {
 				version: '1.0.0',
 				globals: {

@@ -1,5 +1,7 @@
 import { type LuzzleDatabase, getDatabaseClient, sql } from '@luzzle/core'
 import path from 'path'
+import { ConfigSchema } from '../lib/config/config.schema.js'
+import { PiecesItemsSelectable } from '@luzzle/core/dist/src/database/tables/pieces_items.schema.js'
 
 interface WebPieces {
 	id: string
@@ -106,51 +108,63 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 	END;`.execute(db)
 }
 
-async function populateWebPieceItems(db: LuzzleDatabase): Promise<void> {
+async function mapPieceItemToWebPiece(
+	item: PiecesItemsSelectable,
+	pieceConfig: ConfigSchema['pieces'][number],
+	slug: string
+) {
+	const frontmatter = JSON.parse(item.frontmatter_json)
+	const title = frontmatter[pieceConfig.fields.title]
+	const dateConsumed = frontmatter[pieceConfig.fields.date_consumed]
+
+	return {
+		slug,
+		type: item.type as WebPieces['type'],
+		id: item.id,
+		file_path: item.file_path,
+		title: title,
+		summary: pieceConfig.fields.summary ? frontmatter[pieceConfig.fields.summary] : undefined,
+		note: item.note_markdown,
+		media: pieceConfig.fields.media ? frontmatter[pieceConfig.fields.media] : undefined,
+		keywords: pieceConfig.fields.tags ? frontmatter[pieceConfig.fields.tags] : undefined,
+		date_added: item.date_added,
+		date_consumed: dateConsumed,
+		json_metadata: item.frontmatter_json,
+		...(item.date_updated && { date_updated: item.date_updated }),
+	}
+}
+
+function getUniqueSlug(existingSlugs: Set<string>, filename: string, type: string): string {
+	const slug = slugify(filename)
+	let finalSlug = slug
+	let count = 0
+
+	while (existingSlugs.has(`${type}-${slug}-${count}`)) {
+		count++
+		finalSlug = `${slug}--${count}`
+	}
+
+	existingSlugs.add(`${type}-${slug}-${count}`)
+
+	return finalSlug
+}
+
+async function populateWebPieceItems(db: LuzzleDatabase, config: ConfigSchema): Promise<void> {
 	const webDb = db.withTables<{ web_pieces: WebPieces }>()
 	const items = await db.selectFrom('pieces_items').selectAll().execute()
 	const values: Array<WebPieces> = []
 	const typeSlugs = new Set<string>()
 
-	items.forEach((item) => {
-		const frontmatter = JSON.parse(item.frontmatter_json)
-		const filename = path.basename(item.file_path, '.md').split('.')[0]
-		const type = item.type as WebPieces['type']
-		const slug = slugify(filename)
-		let finalSlug = slug
-		let count = 0
+	for (const item of items) {
+		const pieceConfig = config.pieces.find((p) => p.type === item.type)
 
-		if (typeSlugs.has(`${type}-${slug}-${count}`)) {
-			count = 1
-			while (typeSlugs.has(`${type}-${slug}-${count}`)) {
-				count++
-			}
-			finalSlug = `${slug}--${count}`
+		if (pieceConfig) {
+			const filename = path.basename(item.file_path, '.md').split('.')[0]
+			const slug = getUniqueSlug(typeSlugs, filename, item.type)
+			const mapping = await mapPieceItemToWebPiece(item, pieceConfig, slug)
+			values.push(mapping)
 		}
-
-		typeSlugs.add(`${type}-${slug}-${count}`)
-
-		values.push({
-			slug: finalSlug,
-			type: item.type as WebPieces['type'],
-			id: item.id,
-			file_path: item.file_path,
-			title: frontmatter.title,
-			summary: frontmatter.description || frontmatter.summary,
-			note: item.note_markdown,
-			media: frontmatter.cover || frontmatter.poster || frontmatter.representative_image,
-			keywords: frontmatter.keywords,
-			date_added: item.date_added,
-			date_consumed:
-				frontmatter.date_read ||
-				frontmatter.date_viewed ||
-				frontmatter.date_played ||
-				frontmatter.date_accessed ||
-				frontmatter.date_published,
-			json_metadata: item.frontmatter_json,
-			...(item.date_updated && { date_updated: item.date_updated }),
-		})
-	})
+	}
 
 	await webDb.transaction().execute(async (tx) => {
 		if (values.length) {
@@ -201,13 +215,13 @@ async function populateWebPieceTags(db: LuzzleDatabase): Promise<void> {
 	})
 }
 
-export async function generateWebSqlite(databasePath: string) {
-	const db = getDatabaseClient(databasePath)
+export async function generateWebSqlite(config: ConfigSchema) {
+	const db = getDatabaseClient(config.paths.database)
 
 	await dropWebTables(db)
 	await createWebTables(db)
 
-	await populateWebPieceItems(db)
+	await populateWebPieceItems(db, config)
 	await populateWebPieceTags(db)
 	await populateWebPieceSearch(db)
 
@@ -223,5 +237,5 @@ export async function generateWebSqlite(databasePath: string) {
 		.selectAll()
 		.execute()
 
-	console.log(`${databasePath} has ${pieces.length} pieces and ${tags.length} tags`)
+	console.log(`${config.paths.database} has ${pieces.length} pieces and ${tags.length} tags`)
 }

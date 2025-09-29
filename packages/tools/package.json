@@ -1,71 +1,72 @@
 {
-  "name": "@luzzle/tools",
-  "version": "0.0.30",
-  "author": "eleith",
-  "scripts": {
-    "lint": "eslint src",
-        "compile": "tsc --noEmit",
-        "copy-assets": "cp -r ./src/generate-open-graph/templates/ ./dist/src/generate-open-graph && cp -r ./src/lib/config ./dist/src/lib",
-        "generate:config-type": "json2ts --input src/lib/config/config.schema.json --output src/lib/config/config.schema.ts",
-        "prebuild": "npm run generate:config-type",    "build": "tsc && npm run copy-assets",
-    "test": "vitest run --silent --coverage"
-  },
-  "engines": {
-    "node": ">=20"
-  },
-  "bin": {
-    "luzzle-generate-web-sqlite": "./dist/src/generate-web-sqlite/index.js",
-    "luzzle-generate-images": "./dist/src/generate-web-images/index.js",
-    "luzzle-generate-open-graph": "./dist/src/generate-open-graph/index.js",
-    "luzzle-generate-image-variant": "./dist/src/generate-image-variants/index.js",
-    "luzzle-generate-theme": "./dist/src/generate-theme/index.js",
-    "luzzle-check-config": "./dist/src/check-config/index.js"
-  },
-  "files": [
-    "dist/*",
-    "package.json"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://git.eleith.com/eleith/luzzle.git"
-  },
-  "homepage": "https://git.eleith.com/eleith/luzzle.git",
-  "main": "./dist/src/sdk.js",
-  "types": "./dist/src/sdk.d.ts",
-  "description": "misc scripts for working with luzzle related files and projects",
-  "devDependencies": {
-    "@types/eslint": "9.6.1",
-    "@types/node": "22.12.0",
-    "@types/yargs": "17.0.13",
-    "eslint": "9.22.0",
-    "eslint-config-prettier": "9.1.0",
-    "eslint-plugin-prettier": "5.2.1",
-    "globals": "16.0.0",
-    "json-schema-to-typescript": "15.0.4",
-    "prettier": "3.2.5",
-    "typescript": "5.7.3",
-    "typescript-eslint": "8.19.1",
-    "vite": "7.1.7",
-    "vitest": "3.2.4",
-    "@vitest/coverage-v8": "3.2.4"
-  },
-  "dependencies": {
-    "@iconify-json/ph": "1.2.2",
-    "@iconify/types": "2.0.0",
-    "@iconify/utils": "2.3.0",
-    "@luzzle/cli": "0.0.118",
-    "@luzzle/core": "0.0.22",
-    "@resvg/resvg-js": "2.6.2",
-    "@types/react": "19.1",
-    "estree-walker": "3.0.3",
-    "eta": "3.5.0",
-    "node-vibrant": "4.0.3",
-    "puppeteer": "24.19.0",
-    "satori": "0.18.2",
-    "sharp": "0.33.5",
-    "svelte": "5.38.7",
-    "tempy": "3.1.0",
-    "yargs": "17.6.0"
-  },
-  "type": "module"
+	"name": "@luzzle/tools",
+	"version": "0.0.30",
+	"author": "eleith",
+	"scripts": {
+		"lint": "eslint src",
+		"compile": "tsc --noEmit",
+		"build:assets": "cp -r ./src/generate-open-graph/templates/ ./dist/src/generate-open-graph && cp -r ./src/lib/config ./dist/src/lib",
+		"build:types": "json2ts --input src/lib/config/config.schema.json --output src/lib/config/config.schema.ts",
+		"prebuild": "npm run build:types",
+		"build": "tsc && npm run build:assets",
+		"test": "vitest run --silent --coverage"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"bin": {
+		"luzzle-generate-web-sqlite": "./dist/src/generate-web-sqlite/index.js",
+		"luzzle-generate-images": "./dist/src/generate-web-images/index.js",
+		"luzzle-generate-open-graph": "./dist/src/generate-open-graph/index.js",
+		"luzzle-generate-image-variant": "./dist/src/generate-image-variants/index.js",
+		"luzzle-generate-theme": "./dist/src/generate-theme/index.js",
+		"luzzle-check-config": "./dist/src/check-config/index.js"
+	},
+	"files": [
+		"dist/*",
+		"package.json"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://git.eleith.com/eleith/luzzle.git"
+	},
+	"homepage": "https://git.eleith.com/eleith/luzzle.git",
+	"main": "./dist/src/sdk.js",
+	"types": "./dist/src/sdk.d.ts",
+	"description": "misc scripts for working with luzzle related files and projects",
+	"devDependencies": {
+		"@types/eslint": "9.6.1",
+		"@types/node": "22.12.0",
+		"@types/yargs": "17.0.13",
+		"eslint": "9.22.0",
+		"eslint-config-prettier": "9.1.0",
+		"eslint-plugin-prettier": "5.2.1",
+		"globals": "16.0.0",
+		"json-schema-to-typescript": "15.0.4",
+		"prettier": "3.2.5",
+		"typescript": "5.7.3",
+		"typescript-eslint": "8.19.1",
+		"vite": "7.1.7",
+		"vitest": "3.2.4",
+		"@vitest/coverage-v8": "3.2.4"
+	},
+	"dependencies": {
+		"@iconify-json/ph": "1.2.2",
+		"@iconify/types": "2.0.0",
+		"@iconify/utils": "2.3.0",
+		"@luzzle/cli": "0.0.118",
+		"@luzzle/core": "0.0.22",
+		"@resvg/resvg-js": "2.6.2",
+		"@types/react": "19.1",
+		"estree-walker": "3.0.3",
+		"eta": "3.5.0",
+		"node-vibrant": "4.0.3",
+		"puppeteer": "24.19.0",
+		"satori": "0.18.2",
+		"sharp": "0.33.5",
+		"svelte": "5.38.7",
+		"tempy": "3.1.0",
+		"yargs": "17.6.0"
+	},
+	"type": "module"
 }

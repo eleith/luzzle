@@ -1,14 +1,13 @@
+/* v8 ignore start */
 import yargs from 'yargs'
 
 async function parseArgs(args: string[]) {
 	return yargs(args)
 		.strict()
 		.options({
-			db: {
+			config: {
 				type: 'string',
-				description: 'path to luzzle sqlite',
-				demandOption: true,
-				alias: 'sqlite',
+				description: 'Path to a custom user config file to check',
 			},
 		})
 		.help()
@@ -17,3 +16,4 @@ async function parseArgs(args: string[]) {
 }
 
 export default parseArgs
+/* v8 ignore stop */

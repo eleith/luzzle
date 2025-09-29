@@ -66,12 +66,58 @@
 							"type": "string"
 						}
 					},
-					"required": ["root", "feed"],
+					"required": [
+						"root",
+						"feed"
+					],
 					"additionalProperties": false
 				}
 			},
-			"required": ["block"],
+			"required": [
+				"block"
+			],
 			"additionalProperties": false
+		},
+		"pieces": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string"
+					},
+					"fields": {
+						"type": "object",
+						"properties": {
+							"media": {
+								"type": "string"
+							},
+							"title": {
+								"type": "string"
+							},
+							"summary": {
+								"type": "string"
+							},
+							"date_consumed": {
+								"type": "string"
+							},
+							"tags": {
+								"type": "string"
+							}
+						},
+						"additionalProperties": false,
+						"required": [
+							"title",
+							"date_consumed"
+						]
+					}
+				},
+				"additionalProperties": false,
+				"required": [
+					"type",
+					"fields"
+				]
+			}
 		},
 		"theme": {
 			"type": "object",
@@ -82,140 +128,364 @@
 				"light": {
 					"type": "object",
 					"properties": {
-						"colors-primary": { "type": "string" },
-						"colors-on-primary": { "type": "string" },
-						"colors-primary-container": { "type": "string" },
-						"colors-on-primary-container": { "type": "string" },
-						"colors-secondary": { "type": "string" },
-						"colors-on-secondary": { "type": "string" },
-						"colors-secondary-container": { "type": "string" },
-						"colors-on-secondary-container": { "type": "string" },
-						"colors-tertiary": { "type": "string" },
-						"colors-on-tertiary": { "type": "string" },
-						"colors-tertiary-container": { "type": "string" },
-						"colors-on-tertiary-container": { "type": "string" },
-						"colors-error": { "type": "string" },
-						"colors-on-error": { "type": "string" },
-						"colors-error-container": { "type": "string" },
-						"colors-on-error-container": { "type": "string" },
-						"colors-surface": { "type": "string" },
-						"colors-surface-dim": { "type": "string" },
-						"colors-surface-bright": { "type": "string" },
-						"colors-surface-inverse": { "type": "string" },
-						"colors-on-surface": { "type": "string" },
-						"colors-on-surface-variant": { "type": "string" },
-						"colors-on-surface-inverse": { "type": "string" },
-						"colors-surface-container-lowest": { "type": "string" },
-						"colors-surface-container-low": { "type": "string" },
-						"colors-surface-container": { "type": "string" },
-						"colors-surface-container-high": { "type": "string" },
-						"colors-surface-container-highest": { "type": "string" },
-						"colors-shadow": { "type": "string" },
-						"colors-outline": { "type": "string" },
-						"colors-outline-variant": { "type": "string" }
+						"colors-primary": {
+							"type": "string"
+						},
+						"colors-on-primary": {
+							"type": "string"
+						},
+						"colors-primary-container": {
+							"type": "string"
+						},
+						"colors-on-primary-container": {
+							"type": "string"
+						},
+						"colors-secondary": {
+							"type": "string"
+						},
+						"colors-on-secondary": {
+							"type": "string"
+						},
+						"colors-secondary-container": {
+							"type": "string"
+						},
+						"colors-on-secondary-container": {
+							"type": "string"
+						},
+						"colors-tertiary": {
+							"type": "string"
+						},
+						"colors-on-tertiary": {
+							"type": "string"
+						},
+						"colors-tertiary-container": {
+							"type": "string"
+						},
+						"colors-on-tertiary-container": {
+							"type": "string"
+						},
+						"colors-error": {
+							"type": "string"
+						},
+						"colors-on-error": {
+							"type": "string"
+						},
+						"colors-error-container": {
+							"type": "string"
+						},
+						"colors-on-error-container": {
+							"type": "string"
+						},
+						"colors-surface": {
+							"type": "string"
+						},
+						"colors-surface-dim": {
+							"type": "string"
+						},
+						"colors-surface-bright": {
+							"type": "string"
+						},
+						"colors-surface-inverse": {
+							"type": "string"
+						},
+						"colors-on-surface": {
+							"type": "string"
+						},
+						"colors-on-surface-variant": {
+							"type": "string"
+						},
+						"colors-on-surface-inverse": {
+							"type": "string"
+						},
+						"colors-surface-container-lowest": {
+							"type": "string"
+						},
+						"colors-surface-container-low": {
+							"type": "string"
+						},
+						"colors-surface-container": {
+							"type": "string"
+						},
+						"colors-surface-container-high": {
+							"type": "string"
+						},
+						"colors-surface-container-highest": {
+							"type": "string"
+						},
+						"colors-shadow": {
+							"type": "string"
+						},
+						"colors-outline": {
+							"type": "string"
+						},
+						"colors-outline-variant": {
+							"type": "string"
+						}
 					},
 					"additionalProperties": false
 				},
 				"dark": {
 					"type": "object",
 					"properties": {
-						"colors-primary": { "type": "string" },
-						"colors-on-primary": { "type": "string" },
-						"colors-primary-container": { "type": "string" },
-						"colors-on-primary-container": { "type": "string" },
-						"colors-secondary": { "type": "string" },
-						"colors-on-secondary": { "type": "string" },
-						"colors-secondary-container": { "type": "string" },
-						"colors-on-secondary-container": { "type": "string" },
-						"colors-tertiary": { "type": "string" },
-						"colors-on-tertiary": { "type": "string" },
-						"colors-tertiary-container": { "type": "string" },
-						"colors-on-tertiary-container": { "type": "string" },
-						"colors-error": { "type": "string" },
-						"colors-on-error": { "type": "string" },
-						"colors-error-container": { "type": "string" },
-						"colors-on-error-container": { "type": "string" },
-						"colors-surface": { "type": "string" },
-						"colors-surface-dim": { "type": "string" },
-						"colors-surface-bright": { "type": "string" },
-						"colors-surface-inverse": { "type": "string" },
-						"colors-on-surface": { "type": "string" },
-						"colors-on-surface-variant": { "type": "string" },
-						"colors-on-surface-inverse": { "type": "string" },
-						"colors-surface-container-lowest": { "type": "string" },
-						"colors-surface-container-low": { "type": "string" },
-						"colors-surface-container": { "type": "string" },
-						"colors-surface-container-high": { "type": "string" },
-						"colors-surface-container-highest": { "type": "string" },
-						"colors-shadow": { "type": "string" },
-						"colors-outline": { "type": "string" },
-						"colors-outline-variant": { "type": "string" }
+						"colors-primary": {
+							"type": "string"
+						},
+						"colors-on-primary": {
+							"type": "string"
+						},
+						"colors-primary-container": {
+							"type": "string"
+						},
+						"colors-on-primary-container": {
+							"type": "string"
+						},
+						"colors-secondary": {
+							"type": "string"
+						},
+						"colors-on-secondary": {
+							"type": "string"
+						},
+						"colors-secondary-container": {
+							"type": "string"
+						},
+						"colors-on-secondary-container": {
+							"type": "string"
+						},
+						"colors-tertiary": {
+							"type": "string"
+						},
+						"colors-on-tertiary": {
+							"type": "string"
+						},
+						"colors-tertiary-container": {
+							"type": "string"
+						},
+						"colors-on-tertiary-container": {
+							"type": "string"
+						},
+						"colors-error": {
+							"type": "string"
+						},
+						"colors-on-error": {
+							"type": "string"
+						},
+						"colors-error-container": {
+							"type": "string"
+						},
+						"colors-on-error-container": {
+							"type": "string"
+						},
+						"colors-surface": {
+							"type": "string"
+						},
+						"colors-surface-dim": {
+							"type": "string"
+						},
+						"colors-surface-bright": {
+							"type": "string"
+						},
+						"colors-surface-inverse": {
+							"type": "string"
+						},
+						"colors-on-surface": {
+							"type": "string"
+						},
+						"colors-on-surface-variant": {
+							"type": "string"
+						},
+						"colors-on-surface-inverse": {
+							"type": "string"
+						},
+						"colors-surface-container-lowest": {
+							"type": "string"
+						},
+						"colors-surface-container-low": {
+							"type": "string"
+						},
+						"colors-surface-container": {
+							"type": "string"
+						},
+						"colors-surface-container-high": {
+							"type": "string"
+						},
+						"colors-surface-container-highest": {
+							"type": "string"
+						},
+						"colors-shadow": {
+							"type": "string"
+						},
+						"colors-outline": {
+							"type": "string"
+						},
+						"colors-outline-variant": {
+							"type": "string"
+						}
 					},
 					"additionalProperties": false
 				},
 				"globals": {
 					"type": "object",
 					"properties": {
-						"shadows-raised": { "type": "string" },
-						"font-mono-name": { "type": "string" },
-						"font-sans-name": { "type": "string" },
-						"font-sans-url": { "type": "string" },
-						"font-sans-weight": { "type": "string" },
-						"font-sizes-xxs": { "type": "string" },
-						"font-sizes-xs": { "type": "string" },
-						"font-sizes-small": { "type": "string" },
-						"font-sizes-normal": { "type": "string" },
-						"font-sizes-medium": { "type": "string" },
-						"font-sizes-large": { "type": "string" },
-						"font-sizes-xl": { "type": "string" },
-						"font-sizes-xxl": { "type": "string" },
-						"font-sizes-mobile-responsive-factor": { "type": "string" },
-						"font-sizes-root": { "type": "string" },
-						"font-weights-light": { "type": "string" },
-						"font-weights-normal": { "type": "string" },
-						"font-weights-medium": { "type": "string" },
-						"font-weights-semibold": { "type": "string" },
-						"font-weights-bold": { "type": "string" },
-						"radii-none": { "type": "string" },
-						"radii-small": { "type": "string" },
-						"radii-medium": { "type": "string" },
-						"radii-large": { "type": "string" },
-						"radii-xl": { "type": "string" },
-						"radii-x2l": { "type": "string" },
-						"radii-x3l": { "type": "string" },
-						"radii-x4l": { "type": "string" },
-						"radii-full": { "type": "string" },
-						"breakpoints-phone": { "type": "string" },
-						"breakpoints-tablet": { "type": "string" },
-						"breakpoints-laptop": { "type": "string" },
-						"breakpoints-desktop": { "type": "string" },
-						"space-1": { "type": "string" },
-						"space-2": { "type": "string" },
-						"space-3": { "type": "string" },
-						"space-4": { "type": "string" },
-						"space-5": { "type": "string" },
-						"space-6": { "type": "string" },
-						"space-7": { "type": "string" },
-						"space-8": { "type": "string" },
-						"space-9": { "type": "string" },
-						"space-10": { "type": "string" },
-						"space-0-5": { "type": "string" },
-						"space-1-5": { "type": "string" },
-						"space-2-5": { "type": "string" },
-						"space-3-5": { "type": "string" }
+						"shadows-raised": {
+							"type": "string"
+						},
+						"font-mono-name": {
+							"type": "string"
+						},
+						"font-sans-name": {
+							"type": "string"
+						},
+						"font-sans-url": {
+							"type": "string"
+						},
+						"font-sans-weight": {
+							"type": "string"
+						},
+						"font-sizes-xxs": {
+							"type": "string"
+						},
+						"font-sizes-xs": {
+							"type": "string"
+						},
+						"font-sizes-small": {
+							"type": "string"
+						},
+						"font-sizes-normal": {
+							"type": "string"
+						},
+						"font-sizes-medium": {
+							"type": "string"
+						},
+						"font-sizes-large": {
+							"type": "string"
+						},
+						"font-sizes-xl": {
+							"type": "string"
+						},
+						"font-sizes-xxl": {
+							"type": "string"
+						},
+						"font-sizes-mobile-responsive-factor": {
+							"type": "string"
+						},
+						"font-sizes-root": {
+							"type": "string"
+						},
+						"font-weights-light": {
+							"type": "string"
+						},
+						"font-weights-normal": {
+							"type": "string"
+						},
+						"font-weights-medium": {
+							"type": "string"
+						},
+						"font-weights-semibold": {
+							"type": "string"
+						},
+						"font-weights-bold": {
+							"type": "string"
+						},
+						"radii-none": {
+							"type": "string"
+						},
+						"radii-small": {
+							"type": "string"
+						},
+						"radii-medium": {
+							"type": "string"
+						},
+						"radii-large": {
+							"type": "string"
+						},
+						"radii-xl": {
+							"type": "string"
+						},
+						"radii-x2l": {
+							"type": "string"
+						},
+						"radii-x3l": {
+							"type": "string"
+						},
+						"radii-x4l": {
+							"type": "string"
+						},
+						"radii-full": {
+							"type": "string"
+						},
+						"breakpoints-phone": {
+							"type": "string"
+						},
+						"breakpoints-tablet": {
+							"type": "string"
+						},
+						"breakpoints-laptop": {
+							"type": "string"
+						},
+						"breakpoints-desktop": {
+							"type": "string"
+						},
+						"space-1": {
+							"type": "string"
+						},
+						"space-2": {
+							"type": "string"
+						},
+						"space-3": {
+							"type": "string"
+						},
+						"space-4": {
+							"type": "string"
+						},
+						"space-5": {
+							"type": "string"
+						},
+						"space-6": {
+							"type": "string"
+						},
+						"space-7": {
+							"type": "string"
+						},
+						"space-8": {
+							"type": "string"
+						},
+						"space-9": {
+							"type": "string"
+						},
+						"space-10": {
+							"type": "string"
+						},
+						"space-0-5": {
+							"type": "string"
+						},
+						"space-1-5": {
+							"type": "string"
+						},
+						"space-2-5": {
+							"type": "string"
+						},
+						"space-3-5": {
+							"type": "string"
+						}
 					},
-					               "additionalProperties": false
-            }
-         },
-         "required": ["globals", "light", "dark"],
-         "additionalProperties": false
-      }
+					"additionalProperties": false
+				}
+			},
+			"required": [
+				"globals",
+				"light",
+				"dark"
+			],
+			"additionalProperties": false
+		}
 	},
 	"required": [
 		"url",
 		"text",
-		      "paths",
-		      "theme",
-		      "content"
-		   ],
-		   "additionalProperties": false}
+		"paths",
+		"theme",
+		"content",
+		"pieces"
+	],
+	"additionalProperties": false
+}

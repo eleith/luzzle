@@ -33,7 +33,6 @@ export default defineConfig({
 				'**/vitest.{workspace,projects}.[jt]s?(on)',
 				'**/.{eslint,mocha,prettier}rc.{?(c|m)js,yml}',
 				'src/generate-web-images/**',
-				'src/generate-web-sqlite/**',
 			],
 		},
 	},
