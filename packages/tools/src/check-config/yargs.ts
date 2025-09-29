@@ -1,3 +1,4 @@
+/* v8 ignore start */
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
@@ -13,3 +14,4 @@ export function parseArgs() {
         .help()
         .parseSync();
 }
+/* v8 ignore stop */

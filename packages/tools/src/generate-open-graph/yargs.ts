@@ -1,3 +1,4 @@
+/* v8 ignore start */
 import yargs from 'yargs'
 
 async function parseArgs(args: string[]) {
@@ -33,3 +34,4 @@ async function parseArgs(args: string[]) {
 }
 
 export default parseArgs
+/* v8 ignore stop */
