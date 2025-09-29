@@ -30,6 +30,8 @@ content:
     root: './content/block/root.md'
     feed: './content/block/feed.md'
 
+pieces: []
+
 theme:
   version: '1'
   globals:

@@ -6,7 +6,9 @@ import globals from 'globals'
 /** @type {import('eslint').Linter.Config[]} */
 export default [
 	{
-		ignores: ["src/lib/config/config.schema.ts"]
+		linterOptions: {
+			reportUnusedDisableDirectives: "off",
+		}
 	},
 	js.configs.recommended,
 	...ts.configs.recommended,

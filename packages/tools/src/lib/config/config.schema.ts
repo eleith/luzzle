@@ -25,6 +25,16 @@ export interface ConfigSchema {
       feed: string;
     };
   };
+  pieces: {
+    type: string;
+    fields: {
+      media?: string;
+      title: string;
+      summary?: string;
+      date_consumed: string;
+      tags?: string;
+    };
+  }[];
   theme: {
     version?: string;
     light: {
