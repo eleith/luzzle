@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* v8 ignore start */
 import { loadConfig } from '../lib/config-loader.js';
 import { parseArgs } from './yargs.js';
 
@@ -23,4 +24,4 @@ try {
     }
     process.exit(1);
 }
-
+/* v8 ignore stop */

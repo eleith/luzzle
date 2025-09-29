@@ -1,5 +1,5 @@
-#! /usr/bin/env node
-
+#!/usr/bin/env node
+/* v8 ignore start */
 import { hideBin } from 'yargs/helpers'
 import parseArgs from './yargs.js'
 import { exec } from 'child_process'
@@ -43,3 +43,4 @@ async function run() {
 }
 
 run()
+/* v8 ignore stop */

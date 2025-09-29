@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'fs/promises'
 import path from 'path'
-import { getLastRunFor, setLastRunFor } from './utils/lastRun.js'
+import { getLastRunFor, setLastRunFor } from '../lib/lastRun.js'
 import { type WebPieces } from './utils/types.js'
 import { PieceFrontmatter, PieceMarkdown, Pieces, StorageFileSystem } from '@luzzle/cli'
 import { generateVariantJobs } from '../generate-image-variants/variants.js'

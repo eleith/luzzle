@@ -20,6 +20,7 @@ async function generatePng(
 		return imageBuffer
 	} catch (error) {
 		throw new Error(`Failed to generate image with Puppeteer: ${error}`)
+	/* v8 ignore next line */
 	} finally {
 		await page.close()
 	}

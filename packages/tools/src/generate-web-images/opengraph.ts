@@ -1,4 +1,4 @@
-import { getLastRunFor, setLastRunFor } from './utils/lastRun.js'
+import { getLastRunFor, setLastRunFor } from '../lib/lastRun.js'
 import { mkdir, writeFile } from 'fs/promises'
 import { WebPieces } from './utils/types.js'
 import { generateHtml } from '../generate-open-graph/html.js'
