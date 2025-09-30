@@ -4,17 +4,24 @@ import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { AppConfig, loadConfig } from '../../lib/config-loader.js'
 import { getDatabaseClient } from '@luzzle/core'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
-import { generateVariantJobs } from '../variants/variants.js'
-import { mkdir, writeFile } from 'fs/promises'
 import { mockKysely } from '../sqlite/database.mock.js'
+import { mkdir, writeFile } from 'fs/promises'
+import { getVariantPath, generateVariantJobs } from '../variants/variants.js'
 import { Sharp } from 'sharp'
 
 vi.mock('../../lib/lastRun.js')
 vi.mock('../../lib/config-loader.js')
 vi.mock('@luzzle/core')
 vi.mock('@luzzle/cli')
-vi.mock('../variants/variants.js')
 vi.mock('fs/promises')
+vi.mock('../variants/variants.js', async () => {
+	const actual = await vi.importActual('../variants/variants.js')
+	return {
+		...actual,
+		generateVariantJobs: vi.fn(),
+		getVariantPath: vi.fn(),
+	}
+})
 
 const mocks = {
 	getLastRunFor: vi.mocked(getLastRunFor),
@@ -24,6 +31,7 @@ const mocks = {
 	Pieces: vi.mocked(Pieces),
 	StorageFileSystem: vi.mocked(StorageFileSystem),
 	generateVariantJobs: vi.mocked(generateVariantJobs),
+	getVariantPath: vi.mocked(getVariantPath),
 	mkdir: vi.mocked(mkdir),
 	writeFile: vi.mocked(writeFile),
 }
@@ -60,6 +68,8 @@ describe('generateVariants', () => {
 
 		mocks.StorageFileSystem.mockReturnValue(mockStorage)
 		mocks.Pieces.mockReturnValue(mockPieces)
+
+		mocks.getVariantPath.mockReturnValue('books/1/image.jpg')
 
 		// Mock generateVariantJobs
 		mocks.generateVariantJobs.mockResolvedValue([
@@ -110,10 +120,12 @@ describe('generateVariants', () => {
 		mocks.StorageFileSystem.mockReturnValue(mockStorage)
 		mocks.Pieces.mockReturnValue(mockPieces)
 
+		mocks.getVariantPath.mockReturnValue('books/1/image.jpg')
+
 		// Mock generateVariantJobs to throw an error
 		mocks.generateVariantJobs.mockRejectedValue(new Error('test error'))
 
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
 		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
@@ -162,12 +174,16 @@ describe('generateVariants', () => {
 		mocks.StorageFileSystem.mockReturnValue(mockStorage)
 		mocks.Pieces.mockReturnValue(mockPieces)
 
+		mocks.getVariantPath.mockReturnValue('books/1/image.jpg')
+
 		// Mock generateVariantJobs
 		mocks.generateVariantJobs.mockResolvedValue([
 			{ sharp: { toFile: vi.fn() } as unknown as Sharp, size: 125, format: 'jpg' },
 		])
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', { force: true })
+		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {
+			force: true,
+		})
 
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 	})
@@ -207,6 +223,8 @@ describe('generateVariants', () => {
 		mocks.StorageFileSystem.mockReturnValue(mockStorage)
 		mocks.Pieces.mockReturnValue(mockPieces)
 
+		mocks.getVariantPath.mockReturnValue('books/1/image.jpg')
+
 		// Mock generateVariantJobs
 		mocks.generateVariantJobs.mockResolvedValue([
 			{ sharp: { toFile: vi.fn() } as unknown as Sharp, size: 125, format: 'jpg' },
@@ -214,31 +232,31 @@ describe('generateVariants', () => {
 
 		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', { limit: 1 })
 
-		        expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
-		    })
-		    test('should handle items with no assets', async () => {
-		        mocks.loadConfig.mockReturnValue({
-		            paths: { database: '/path/to/db.sqlite' }
-		        } as unknown as AppConfig)
-		        const mockDb = mockKysely()
-		
-		        vi.spyOn(mockDb.queries, 'execute').mockResolvedValueOnce([
-		            {
-		                id: '1',
-		                type: 'books',
-		                date_updated: 100,
-		                date_added: 50,
-		                assets_json_array: null,
-		                file_path: 'book.md'
-		            }
-		        ])
-		        mocks.getDatabaseClient.mockReturnValue(mockDb.db)
-		
-		        // Mock lastRun
-		        mocks.getLastRunFor.mockResolvedValue(new Date(0))
-		
-		        await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
-		
-		        expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
-		    })
-		})
+		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
+	})
+	test('should handle items with no assets', async () => {
+		mocks.loadConfig.mockReturnValue({
+			paths: { database: '/path/to/db.sqlite' },
+		} as unknown as AppConfig)
+		const mockDb = mockKysely()
+
+		vi.spyOn(mockDb.queries, 'execute').mockResolvedValueOnce([
+			{
+				id: '1',
+				type: 'books',
+				date_updated: 100,
+				date_added: 50,
+				assets_json_array: null,
+				file_path: 'book.md',
+			},
+		])
+		mocks.getDatabaseClient.mockReturnValue(mockDb.db)
+
+		// Mock lastRun
+		mocks.getLastRunFor.mockResolvedValue(new Date(0))
+
+		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+
+		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
+	})
+})

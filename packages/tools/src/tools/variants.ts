@@ -2,37 +2,25 @@ import { mkdir, writeFile } from 'fs/promises'
 import path from 'path'
 import { getLastRunFor, setLastRunFor } from '../lib/lastRun.js'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
-import { generateVariantJobs } from './variants/variants.js'
-import { getDatabaseClient } from '@luzzle/core'
+import { getVariantPath, generateVariantJobs } from './variants/variants.js'
+import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
 import { loadConfig } from '../lib/config-loader.js'
 
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif']
-const SIZES = {
-	small: 125,
-	medium: 250,
-	large: 500,
-	xl: 1000,
-}
+const SIZES = [125, 250, 500, 1000]
 
 function isImageAsset(filename: string) {
 	return IMAGE_EXTENSIONS.indexOf(path.extname(filename).toLowerCase()) !== -1
 }
 
-async function generateVariantsForAssetField(
-	asset: string,
-	pieces: Pieces,
-	variantDir: string
-) {
-	const baseName = path.basename(asset, path.extname(asset))
-	const sizes = [SIZES.small, SIZES.medium, SIZES.large, SIZES.xl]
-	const sizeKeys = Object.keys(SIZES)
+async function generateVariantsForAssetField(item: LuzzleSelectable<'pieces_items'>, asset: string, pieces: Pieces, outDir: string) {
 	const formats: Array<'avif' | 'jpg'> = ['avif', 'jpg']
 
 	try {
-		const jobs = await generateVariantJobs(asset, pieces, sizes, formats)
+		const jobs = await generateVariantJobs(asset, pieces, SIZES, formats)
 		const toFileJobs = jobs.map((job) => {
-			const sizeName = sizeKeys[sizes.indexOf(job.size)]
-			return job.sharp.toFile(`${variantDir}/${baseName}.${sizeName}.${job.format}`)
+			const assetPath = getVariantPath(item.type, item.id, asset, job.format, job.size)
+			return job.sharp.toFile(`${outDir}/${assetPath}`)
 		})
 		await Promise.all(toFileJobs)
 	} catch (error) {
@@ -67,17 +55,19 @@ export async function generateVariants(
 		const pieceModifiedTime = new Date(item.date_updated || item.date_added)
 
 		if (pieceModifiedTime > lastRun || force) {
-			const fields = item.assets_json_array ? JSON.parse(item.assets_json_array) as string[] : []
-			const imageFields = fields.filter(isImageAsset)
-			const variantDir = `${outDir}/${item.type}/${item.id}`
+			const assets = item.assets_json_array ? (JSON.parse(item.assets_json_array) as string[]) : []
+			const imageAssets = assets.filter(isImageAsset)
 
 			console.log(`generating variants for ${item.file_path}`)
-			await mkdir(variantDir, { recursive: true })
 
-			for (const field of imageFields) {
-				const fieldAsset = await pieces.getPieceAsset(field)
-				await writeFile(`${variantDir}/${path.basename(field)}`, fieldAsset)
-				await generateVariantsForAssetField(field, pieces, variantDir)
+			for (const asset of imageAssets) {
+				const assetBuffer = await pieces.getPieceAsset(asset)
+				const assetPath = getVariantPath(item.type, item.id, asset)
+				const assetDir = path.dirname(assetPath)
+
+				await mkdir(`${outDir}/${assetDir}`, { recursive: true })
+				await writeFile(`${outDir}/${assetPath}`, assetBuffer)
+				await generateVariantsForAssetField(item, asset, pieces, outDir)
 			}
 		}
 	}

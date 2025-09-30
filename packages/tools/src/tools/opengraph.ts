@@ -9,28 +9,32 @@ import path from 'path'
 import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
 import { loadConfig } from '../lib/config-loader.js'
 
-async function generateOpenGraphForMarkdown(
+function getOpenGraphPath(type: string, id: string) {
+	return `${type}/${id}/opengraph.png`
+}
+
+async function generateOpenGraph(
 	item: LuzzleSelectable<'pieces_items'>,
 	pieces: Pieces,
 	browser: Browser,
-	output: string,
-	template: string,
+	template: string
 ) {
 	try {
-		console.log(`generating opengraph for ${output}`)
+		console.log(`generating opengraph for ${item.file_path} (${item.id})`)
 
 		const html = await generateHtml(item, pieces, template)
 		const png = await generatePng(html, browser)
+		const output = getOpenGraphPath(item.type, item.id)
 		const ogDir = path.dirname(output)
 
 		await mkdir(ogDir, { recursive: true })
 		await writeFile(output, png)
 	} catch (e) {
-		console.error(`Error generating Open Graph for ${output}: ${e}`)
+		console.error(`Error generating Open Graph for ${item.file_path} (${item.id}): ${e}`)
 	}
 }
 
-export async function generateOpenGraphs(
+async function generateOpenGraphs(
 	configPath: string,
 	luzzle: string,
 	outputDir: string,
@@ -60,11 +64,7 @@ export async function generateOpenGraphs(
 		const pieceModifiedTime = new Date(item.date_updated || item.date_added)
 
 		if (pieceModifiedTime > lastRun || force) {
-			const pieceType = item.type
-			const pieceId = item.id
-			const output = `${outputDir}/${pieceType}/${pieceId}/opengraph.png`
-
-			await generateOpenGraphForMarkdown(item, pieces, browser, output, template)
+			await generateOpenGraph(item, pieces, browser, template)
 		}
 	}
 
@@ -74,3 +74,5 @@ export async function generateOpenGraphs(
 
 	await browser.close()
 }
+
+export { generateOpenGraphs, getOpenGraphPath }
