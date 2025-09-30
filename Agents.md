@@ -54,6 +54,5 @@ following markdown styling conventions:
 readability.
 * **Headings:** Use `#` for titles and `##` for sections. Ensure a single space
 follows the `#` characters.
-* **Lists:** Use `*` for unordered lists.
-* **Inline Code:** Use backticks to enclose inline code, such as file paths,
-package names, or commands.
+* **Lists:** Use `*` for unordered lists, and ensure there is a single space after the `*`.
+* **Code Blocks:** Use backticks for inline code, and triple backticks for code blocks.
