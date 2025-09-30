@@ -1,4 +1,4 @@
-import { loadConfig } from 'src/sdk.js'
+import { loadConfig } from '../sdk.js'
 import { generateThemeCss, minifyCss } from './theme/theme.js'
 import path from 'path'
 import { mkdir, writeFile } from 'fs/promises'
