@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { generateWebSqlite } from './database.js'
 import { getDatabaseClient, sql } from '@luzzle/core'
-import { ConfigSchema } from '../lib/config/config.schema.js'
+import { ConfigSchema } from '../../lib/config/config.schema.js'
 import { mockKysely } from './database.mock.js'
 
 vi.mock('@luzzle/core')
@@ -48,9 +48,8 @@ describe('generate-web-sqlite', () => {
 			],
 		}
 
-		await generateWebSqlite(config)
+		await generateWebSqlite(db, config)
 
-		expect(mocks.getDatabaseClient).toHaveBeenCalledWith('/tmp/test.db')
 		expect(db.schema.dropTable).toHaveBeenCalledWith('web_pieces_tags')
 		expect(db.schema.dropTable).toHaveBeenCalledWith('web_pieces')
 		expect(db.schema.dropTable).toHaveBeenCalledWith('web_pieces_fts5')
@@ -143,7 +142,7 @@ describe('generate-web-sqlite', () => {
 			],
 		}
 
-		await generateWebSqlite(config)
+		await generateWebSqlite(db, config)
 
 		expect(queries.insertInto).toHaveBeenCalledWith('web_pieces')
 		expect(queries.values).toHaveBeenCalledWith([
@@ -233,7 +232,7 @@ describe('generate-web-sqlite', () => {
 			],
 		}
 
-		await generateWebSqlite(config)
+		await generateWebSqlite(db, config)
 
 		expect(queries.insertInto).toHaveBeenCalledWith('web_pieces')
 		expect(queries.values).toHaveBeenCalledWith([

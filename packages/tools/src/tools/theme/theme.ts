@@ -1,4 +1,6 @@
-import { type AppConfig } from '../lib/config-loader.js';
+import { type AppConfig } from '../../lib/config-loader.js'
+import { transform } from 'lightningcss'
+import { Buffer } from 'buffer'
 
 const createCssVariableBlock = (variables: Record<string, string>) => {
 	return Object.entries(variables)
@@ -11,7 +13,21 @@ const createCssVariableBlock = (variables: Record<string, string>) => {
 		.join('\n')
 }
 
-export const generateThemeCss = (config: AppConfig) => {
+function minifyCss(css: string): string {
+	try {
+		const { code } = transform({
+			filename: 'theme.css',
+			code: Buffer.from(css),
+			minify: true,
+		})
+		return code.toString()
+	} catch (error) {
+		console.error('Error minifying CSS with Lightning CSS:', error)
+		return css
+	}
+}
+
+const generateThemeCss = (config: AppConfig) => {
 	const themeConfig = config.theme
 	const globalsBlock = createCssVariableBlock(themeConfig.globals)
 	const lightBlock = createCssVariableBlock(themeConfig.light)
@@ -56,3 +72,5 @@ ${darkBlock}
 }
 `
 }
+
+export { generateThemeCss, minifyCss }

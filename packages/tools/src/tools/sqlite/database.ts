@@ -1,31 +1,7 @@
-import { type LuzzleDatabase, getDatabaseClient, sql } from '@luzzle/core'
+import { type LuzzleDatabase, sql, LuzzleSelectable } from '@luzzle/core'
 import path from 'path'
-import { ConfigSchema } from '../lib/config/config.schema.js'
-import { PiecesItemsSelectable } from '@luzzle/core/dist/src/database/tables/pieces_items.schema.js'
-
-interface WebPieces {
-	id: string
-	title: string
-	slug: string
-	file_path: string
-	note?: string
-	date_updated?: number
-	date_added: number
-	date_consumed?: number
-	type: string
-	media?: string
-	json_metadata: string
-	summary?: string
-	keywords?: string
-}
-
-interface WebPieceTags {
-	piece_slug: string
-	piece_type: string
-	piece_id: string
-	tag: string
-	slug: string
-}
+import { ConfigSchema } from '../../lib/config/config.schema.js'
+import { WebPieces, WebPieceTags } from '../utils/types.js'
 
 function batchArray<T>(array: T[], batchSize: number): T[][] {
 	const batches: T[][] = []
@@ -109,7 +85,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 }
 
 async function mapPieceItemToWebPiece(
-	item: PiecesItemsSelectable,
+	item: LuzzleSelectable<'pieces_items'>,
 	pieceConfig: ConfigSchema['pieces'][number],
 	slug: string
 ) {
@@ -215,9 +191,7 @@ async function populateWebPieceTags(db: LuzzleDatabase): Promise<void> {
 	})
 }
 
-export async function generateWebSqlite(config: ConfigSchema) {
-	const db = getDatabaseClient(config.paths.database)
-
+async function generateWebSqlite(db: LuzzleDatabase, config: ConfigSchema) {
 	await dropWebTables(db)
 	await createWebTables(db)
 
@@ -238,4 +212,13 @@ export async function generateWebSqlite(config: ConfigSchema) {
 		.execute()
 
 	console.log(`${config.paths.database} has ${pieces.length} pieces and ${tags.length} tags`)
+}
+
+export {
+	dropWebTables,
+	createWebTables,
+	populateWebPieceItems,
+	populateWebPieceTags,
+	populateWebPieceSearch,
+	generateWebSqlite,
 }
