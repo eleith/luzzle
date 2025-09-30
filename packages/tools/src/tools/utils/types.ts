@@ -13,3 +13,11 @@ export interface WebPieces {
 	summary?: string
 	keywords?: string
 }
+
+export interface WebPieceTags {
+	piece_slug: string
+	piece_type: string
+	piece_id: string
+	tag: string
+	slug: string
+}

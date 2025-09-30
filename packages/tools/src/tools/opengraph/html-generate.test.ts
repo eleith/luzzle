@@ -1,10 +1,11 @@
 import { describe, test, vi, afterEach, expect } from 'vitest';
 import { generateHtml } from './html.js';
-import { Pieces, PieceMarkdown, PieceFrontmatter, Storage } from '@luzzle/cli';
+import { Pieces, Storage } from '@luzzle/cli';
 import { Eta } from 'eta';
 import { readFile } from 'fs/promises';
 import Sharp from 'sharp';
 import { Vibrant } from 'node-vibrant/node';
+import { LuzzleSelectable } from '@luzzle/core';
 
 vi.mock('fs/promises');
 vi.mock('eta');
@@ -23,7 +24,7 @@ vi.mock('sharp', () => {
 });
 vi.mock('node-vibrant/node');
 
-describe('generate-open-graph/html-generate', () => {
+describe('src/tools/opengraph/html-generate', () => {
 	const mocks = {
 		readFile: vi.mocked(readFile),
 		Eta: vi.mocked(Eta),
@@ -45,11 +46,20 @@ describe('generate-open-graph/html-generate', () => {
 		};
 		mocks.Eta.mockReturnValue(mockEta as unknown as Eta);
 
-		const markdown = {} as PieceMarkdown<PieceFrontmatter>;
+		const item: LuzzleSelectable<'pieces_items'> = {
+			id: 'item1',
+			file_path: 'path/to/item1.md',
+			type: 'books',
+			date_added: 124,
+			date_updated: 125,
+			note_markdown: '',
+			frontmatter_json: '{}',
+			assets_json_array: '[]',
+		}
 		const pieces = new Pieces({} as unknown as Storage);
 		const template = 'template.eta';
 
-		const html = await generateHtml(markdown, pieces, template);
+		const html = await generateHtml(item, pieces, template);
 
 		expect(html).toBe('html');
 	});
@@ -67,12 +77,21 @@ describe('generate-open-graph/html-generate', () => {
 		};
 		mocks.Eta.mockReturnValue(mockEta as unknown as Eta);
 
-		const markdown = {} as PieceMarkdown<PieceFrontmatter>;
+		const item: LuzzleSelectable<'pieces_items'> = {
+			id: 'item1',
+			file_path: 'path/to/item1.md',
+			type: 'books',
+			date_added: 124,
+			date_updated: 125,
+			note_markdown: '',
+			frontmatter_json: '{}',
+			assets_json_array: '[]',
+		}
 		const pieces = new Pieces({} as unknown as Storage);
 		vi.spyOn(pieces, 'getPieceAsset').mockResolvedValue(Buffer.from('test'));
 		const template = 'template.eta';
 
-		const html = await generateHtml(markdown, pieces, template);
+		const html = await generateHtml(item, pieces, template);
 
 		expect(html).toBe('html');
 	});
@@ -93,12 +112,21 @@ describe('generate-open-graph/html-generate', () => {
 		};
 		mocks.Vibrant.mockReturnValue(mockVibrant as unknown as Vibrant);
 
-		const markdown = {} as PieceMarkdown<PieceFrontmatter>;
+		const item: LuzzleSelectable<'pieces_items'> = {
+			id: 'item1',
+			file_path: 'path/to/item1.md',
+			type: 'books',
+			date_added: 124,
+			date_updated: 125,
+			note_markdown: '',
+			frontmatter_json: '{}',
+			assets_json_array: '[]',
+		}
 		const pieces = new Pieces({} as unknown as Storage);
 		vi.spyOn(pieces, 'getPieceAsset').mockResolvedValue(Buffer.from('test'));
 		const template = 'template.eta';
 
-		await generateHtml(markdown, pieces, template);
+		await generateHtml(item, pieces, template);
 
 		expect(mockVibrant.getPalette).toHaveBeenCalledOnce();
 	});

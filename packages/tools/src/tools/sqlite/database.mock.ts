@@ -18,6 +18,7 @@ function mockKysely() {
 		groupBy: vi.fn().mockReturnThis(),
 		returningAll: vi.fn().mockReturnThis(),
 		insertInto: vi.fn().mockReturnThis(),
+		orderBy: vi.fn().mockReturnThis(),
 	}
 
 	const schemaChain = {

@@ -1,9 +1,10 @@
 import { Eta } from 'eta'
 import path from 'path'
-import { PieceFrontmatter, PieceMarkdown, Pieces } from '@luzzle/cli'
+import { Pieces } from '@luzzle/cli'
 import Sharp from 'sharp'
 import { Vibrant } from 'node-vibrant/node'
 import { readFile } from 'fs/promises'
+import { LuzzleSelectable } from '@luzzle/core'
 
 const OpenGraphImageWidth = 1200
 const OpenGraphImageHeight = 630
@@ -14,9 +15,9 @@ export function bufferToBase64(buffer: Buffer, type: string, format: string) {
 }
 
 export const countWords = (text: string): number => {
-  const withoutHtml = text.replace(/<[^>]*>/g, ' ');
-  const words = withoutHtml.match(/[a-zA-Z0-9]+/g);
-  return words ? words.length : 0;
+	const withoutHtml = text.replace(/<[^>]*>/g, ' ')
+	const words = withoutHtml.match(/[a-zA-Z0-9]+/g)
+	return words ? words.length : 0
 }
 
 export function getDynamicFontSize(title: string, baseSize: number, lineLength: number) {
@@ -45,7 +46,10 @@ export async function fontToBase64(fontPath: string) {
 	return bufferToBase64(fontBuffer, 'font', ext)
 }
 
-export async function extractImage(image: Buffer, options?: { width?: number; height?: number, format: 'jpeg' | 'png' }) {
+export async function extractImage(
+	image: Buffer,
+	options?: { width?: number; height?: number; format: 'jpeg' | 'png' }
+) {
 	const width = options?.width
 	const height = options?.height
 	const sharpFormat: 'jpeg' | 'png' = options?.format || 'jpeg'
@@ -59,7 +63,7 @@ export async function extractImage(image: Buffer, options?: { width?: number; he
 }
 
 async function generateHtml(
-	markdown: PieceMarkdown<PieceFrontmatter>,
+	item: LuzzleSelectable<'pieces_items'>,
 	pieces: Pieces,
 	template: string
 ): Promise<string> {
@@ -70,7 +74,10 @@ async function generateHtml(
 	const templateDir = path.dirname(template)
 	const helpers = {
 		countWords,
-		extractImage: async (image: string, resize?: { width: number; height: number, format: 'jpeg' | 'png' }) => {
+		extractImage: async (
+			image: string,
+			resize?: { width: number; height: number; format: 'jpeg' | 'png' }
+		) => {
 			const buffer = await readFile(path.join(templateDir, image))
 			return extractImage(buffer, resize)
 		},
@@ -80,17 +87,25 @@ async function generateHtml(
 		},
 		getDynamicFontSize,
 		getHashIndexFor,
-		pieceExtractImage: async (image: string, resize?: { width: number; height: number, format: 'jpeg' | 'png' }) => {
+		pieceExtractImage: async (
+			image: string,
+			resize?: { width: number; height: number; format: 'jpeg' | 'png' }
+		) => {
 			const buffer = await pieces.getPieceAsset(image)
 			return extractImage(buffer, resize)
 		},
 	}
 
 	const eta = new Eta({ views: templateDir, tags: ['[%', '%]'] })
+	const frontmatter = JSON.parse(item.frontmatter_json)
 
 	eta.loadTemplate('@html', htmlTemplate.toString(), { async: true })
 
-	return await eta.renderStringAsync(pieceTemplateBuffer.toString(), { markdown, size, helpers })
+	return await eta.renderStringAsync(pieceTemplateBuffer.toString(), {
+		item: { ...item, frontmatter },
+		size,
+		helpers,
+	})
 }
 
 export { generateHtml }

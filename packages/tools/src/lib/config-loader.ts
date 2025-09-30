@@ -14,13 +14,10 @@ type AppConfigPublic = {
 
 function loadConfig(options?: { userConfigPath?: string }): AppConfig {
 	const __dirname = path.dirname(new URL(import.meta.url).pathname)
-
 	const schemaPath = path.resolve(__dirname, 'config/config.schema.json')
 	const schema = JSON.parse(readFileSync(schemaPath, 'utf8'))
-
 	const ajv = new Ajv.default()
 	const validate = ajv.compile(schema)
-
 	const defaultPath = path.resolve(__dirname, 'config/config.defaults.yaml')
 	const defaultConfig = yamlParse(readFileSync(defaultPath, 'utf8')) as Partial<AppConfig>
 

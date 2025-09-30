@@ -40,3 +40,31 @@ This package includes the following tools:
 2.  Install dependencies from the root of the monorepo: `npm install`
 3.  You can run each tool directly using `node`, for example: `node
     packages/tools/dist/generate-image-variants/index.js --help`
+
+### Testing
+
+When writing tests for the `@luzzle/tools` package, please adhere to the following standards:
+
+*   **Mocking and Spying**: Use `vi.mock` to mock modules and `vi.spyOn` to spy on functions. This allows you to isolate the code you are testing and control its dependencies.
+*   **Resetting Mocks and Spies**: It is crucial to reset mocks and spies after each test to ensure that tests are independent and do not interfere with each other. The following `afterEach` block should be used in all test files:
+
+	```typescript
+	afterEach(() => {
+		Object.values(mocks).forEach((mock) => {
+			mock.mockReset()
+		})
+
+		Object.keys(spies).forEach((key) => {
+			spies[key].mockRestore()
+			delete spies[key]
+		})
+	})
+	```
+
+*   **Testing Un-exported Functions**: To test functions that are not exported, you can copy the function into the test file. This allows you to test the function directly without having to export it from the module.
+*   **Testing Error Cases**: It is important to test error cases to ensure that your code handles errors gracefully. You can use `mockRejectedValue` to simulate errors and `expect(...).rejects.toThrowError()` to assert that the correct error is thrown.
+*   **Run Tests After Every Change**: To ensure that you are not breaking anything, it is important to run the tests after every change. You can run the tests for the `@luzzle/tools` package with the following command:
+
+	```bash
+	npm run test -w @luzzle/tools
+	```
