@@ -20,7 +20,7 @@ async function run() {
 		const command = args._[0]
 		const config = args.config
 
-		if (command === 'check') {
+		if (command === 'validate') {
 			checkConfig(config)
 		} else if (command === 'sqlite') {
 			generateWebSqlite(config)
