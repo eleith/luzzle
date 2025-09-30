@@ -8,6 +8,7 @@ async function parseArgs(args: string[]) {
 		.command('opengraph', 'generate open graph images')
 		.command('sqlite', 'generate web db tables')
 		.command('theme', 'generate web db tables')
+		.command('validate', 'validate user config')
 		.options({
 			config: {
 				type: 'string',
@@ -45,7 +46,7 @@ async function parseArgs(args: string[]) {
 				alias: 'f',
 			},
 		})
-		.demandCommand(1, 'You need to specify a command [variants, opengraph, sqlite]')
+		.demandCommand(1, 'You need to specify a command [variants, opengraph, sqlite, validate, theme]')
 		.check((argv) => {
 			const command = argv._[0]
 
