@@ -1,10 +1,10 @@
 import { describe, test, vi, afterEach, expect, MockInstance } from 'vitest';
 import { generateTheme } from './theme.js';
-import { AppConfig, loadConfig } from 'src/sdk.js';
+import { AppConfig, loadConfig } from '../sdk.js';
 import { generateThemeCss, minifyCss } from './theme/theme.js';
 import { mkdir, writeFile } from 'fs/promises';
 
-vi.mock('src/sdk.js');
+vi.mock('../sdk.js');
 vi.mock('fs/promises');
 vi.mock('./theme/theme.js');
 
