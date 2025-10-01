@@ -38,7 +38,7 @@ describe('generateVariants', () => {
 
 	test('should generate variants for image assets', async () => {
 		mocks.loadConfig.mockReturnValue({
-			paths: { database: '/path/to/db.sqlite' },
+			paths: { database: 'db.sqlite' },
 		} as unknown as Config)
 		const mockDb = mockKysely()
 
@@ -86,7 +86,7 @@ describe('generateVariants', () => {
 	})
 	test('should handle errors during variant generation', async () => {
 		mocks.loadConfig.mockReturnValue({
-			paths: { database: '/path/to/db.sqlite' },
+			paths: { database: 'db.sqlite' },
 		} as unknown as Config)
 		const mockDb = mockKysely()
 
@@ -124,7 +124,7 @@ describe('generateVariants', () => {
 	})
 	test('should do nothing if there are no items to process', async () => {
 		mocks.loadConfig.mockReturnValue({
-			paths: { database: '/path/to/db.sqlite' },
+			paths: { database: 'db.sqlite' },
 		} as unknown as Config)
 		const mockDb = mockKysely()
 
@@ -138,7 +138,7 @@ describe('generateVariants', () => {
 	})
 	test('should force variant generation', async () => {
 		mocks.loadConfig.mockReturnValue({
-			paths: { database: '/path/to/db.sqlite' },
+			paths: { database: 'db.sqlite' },
 		} as unknown as Config)
 		const mockDb = mockKysely()
 
@@ -176,7 +176,7 @@ describe('generateVariants', () => {
 	})
 	test('should limit variant generation', async () => {
 		mocks.loadConfig.mockReturnValue({
-			paths: { database: '/path/to/db.sqlite' },
+			paths: { database: 'db.sqlite' },
 		} as unknown as Config)
 		const mockDb = mockKysely()
 
@@ -217,7 +217,7 @@ describe('generateVariants', () => {
 	})
 	test('should handle items with no assets', async () => {
 		mocks.loadConfig.mockReturnValue({
-			paths: { database: '/path/to/db.sqlite' },
+			paths: { database: 'db.sqlite' },
 		} as unknown as Config)
 		const mockDb = mockKysely()
 

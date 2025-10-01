@@ -7,6 +7,7 @@ import {
 	populateWebPieceSearch,
 } from './database.js'
 import { loadConfig } from '../../lib/config/config.js'
+import path from 'path'
 
 export interface WebPieces {
 	id: string
@@ -34,7 +35,8 @@ export interface WebPieceTags {
 
 export default async function generateWebSqlite(configPath: string) {
 	const config = loadConfig(configPath)
-	const db = getDatabaseClient(config.paths.database)
+	const dbPath = path.join(path.dirname(configPath), config.paths.database)
+	const db = getDatabaseClient(dbPath)
 
 	await dropWebTables(db)
 	await createWebTables(db)
