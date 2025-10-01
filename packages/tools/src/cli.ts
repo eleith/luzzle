@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 /* v8 ignore start */
 import yargs from 'yargs'
 import variantCommand from './commands/variants/command.js'
@@ -20,7 +21,7 @@ async function parseArgs(args: string[]) {
 		)
 		.help()
 		.showHelpOnFail(true)
-		.parseSync()
+		.parseAsync()
 }
 
 await parseArgs(hideBin(process.argv))

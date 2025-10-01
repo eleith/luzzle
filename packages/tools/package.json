@@ -7,8 +7,10 @@
 		"compile": "tsc --noEmit",
 		"build:assets": "cp -r ./src/commands/opengraph/templates/ ./dist/src/commands/opengraph && cp -r ./src/lib/config ./dist/src/lib",
 		"build:types": "json2ts --input src/lib/config/schema.json --output src/lib/config/schema.ts",
+		"build:executable": "chmod +x ./dist/src/cli.js",
 		"prebuild": "npm run build:types",
-		"build": "tsc && npm run build:assets",
+		"postbuild": "npm run build:assets && npm run build:executable",
+		"build": "tsc",
 		"test": "vitest run --silent --coverage"
 	},
 	"engines": {

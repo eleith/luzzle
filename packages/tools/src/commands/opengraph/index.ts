@@ -39,7 +39,8 @@ export default async function generateOpenGraphs(
 	options: { force?: boolean; limit?: number }
 ) {
 	const config = loadConfig(configPath)
-	const db = getDatabaseClient(config.paths.database)
+	const dbPath = path.join(path.dirname(configPath), config.paths.database)
+	const db = getDatabaseClient(dbPath)
 	const items = await db
 		.selectFrom('pieces_items')
 		.selectAll()
