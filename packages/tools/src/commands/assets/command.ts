@@ -1,10 +1,10 @@
 import { Argv } from 'yargs'
-import generateVariants from './index.js'
+import generateAssets from './index.js'
 
 export default function command(cli: Argv) {
 	return cli.command(
-		'variants',
-		'generate web image variants',
+		'assets',
+		'copy piece assets and generate image variants',
 		function(yargs) {
 			const options = yargs.options({
 				config: {
@@ -39,7 +39,7 @@ export default function command(cli: Argv) {
 			return options
 		},
 		async function(argv) {
-			await generateVariants(argv.config, argv.luzzle, argv.out, {
+			await generateAssets(argv.config, argv.luzzle, argv.out, {
 				limit: argv.limit,
 				force: argv.force,
 			})

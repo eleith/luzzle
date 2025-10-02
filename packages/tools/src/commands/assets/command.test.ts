@@ -1,20 +1,20 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import command from './command.js'
-import generateVariants from './index.js'
+import generateAssets from './index.js'
 import { Argv } from 'yargs'
 
 vi.mock('./index.js')
 
 const mocks = {
-	generateVariants: vi.mocked(generateVariants),
+	generateAssets: vi.mocked(generateAssets),
 }
 
-describe('variants command', () => {
+describe('assets command', () => {
 	afterEach(() => {
 		vi.clearAllMocks()
 	})
 
-	test('should configure the command and call generateVariants', async () => {
+	test('should configure the command and call generateAssets', async () => {
 		const handler = vi.fn()
 		const builder = vi.fn()
 		const cli = {
@@ -28,8 +28,8 @@ describe('variants command', () => {
 		command(cli as unknown as Argv)
 
 		expect(cli.command).toHaveBeenCalledWith(
-			'variants',
-			'generate web image variants',
+			'assets',
+			'copy piece assets and generate image variants',
 			expect.any(Function),
 			expect.any(Function)
 		)
@@ -78,7 +78,7 @@ describe('variants command', () => {
 		}
 		await handler(argv)
 
-		expect(mocks.generateVariants).toHaveBeenCalledWith(
+		expect(mocks.generateAssets).toHaveBeenCalledWith(
 			'/path/to/config.yaml',
 			'/path/to/luzzle',
 			'/path/to/out',

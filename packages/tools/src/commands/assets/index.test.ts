@@ -5,9 +5,9 @@ import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { mockKysely } from '../sqlite/database.mock.js'
 import { copyFile, mkdir } from 'fs/promises'
-import { generateVariantJobs } from '../variants/variants.js'
+import { generateVariantJobs } from './variants.js'
 import { getAssetDir, getAssetPath, isImage } from './utils.js'
-import generateVariants from './index.js'
+import generateAssets from './index.js'
 import { Sharp } from 'sharp'
 
 vi.mock('../../lib/lastRun.js')
@@ -54,7 +54,7 @@ const setupDefaultMocks = (
 	mocks.Pieces.mockReturnValue(mockPieces)
 }
 
-describe('generateVariants', () => {
+describe('generateAssets', () => {
 	afterEach(() => {
 		vi.clearAllMocks()
 	})
@@ -92,7 +92,7 @@ describe('generateVariants', () => {
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
 		expect(mocks.copyFile).toHaveBeenCalledWith(
@@ -134,7 +134,7 @@ describe('generateVariants', () => {
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
 		expect(mocks.copyFile).toHaveBeenCalledWith(
@@ -175,7 +175,7 @@ describe('generateVariants', () => {
 
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(consoleErrorSpy).toHaveBeenCalledOnce()
 
@@ -193,7 +193,7 @@ describe('generateVariants', () => {
 			]
 		)
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(mocks.copyFile).not.toHaveBeenCalled()
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
@@ -223,7 +223,7 @@ describe('generateVariants', () => {
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.isImage.mockReturnValue(true)
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {
 			force: true,
 		})
 
@@ -264,7 +264,7 @@ describe('generateVariants', () => {
 		)
 		mocks.isImage.mockReturnValue(true)
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', { limit: 1 })
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', { limit: 1 })
 
 		expect(mocks.copyFile).toHaveBeenCalledOnce()
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
@@ -292,7 +292,7 @@ describe('generateVariants', () => {
 			]
 		)
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(mocks.copyFile).not.toHaveBeenCalled()
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
@@ -307,7 +307,7 @@ describe('generateVariants', () => {
 					date_updated: 100,
 					date_added: 50,
 					frontmatter_json: '{"image": "/path/to/image.jpg"}',
-					file_path: 'book.md',
+					file_path: 'book..md',
 					note_markdown: '',
 					assets_json_array: '[]',
 				},
@@ -332,7 +332,7 @@ describe('generateVariants', () => {
 
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(consoleErrorSpy).toHaveBeenCalledOnce()
 
@@ -367,7 +367,7 @@ describe('generateVariants', () => {
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(mocks.copyFile).toHaveBeenCalledOnce()
 	})
@@ -401,7 +401,7 @@ describe('generateVariants', () => {
 		)
 		mocks.generateVariantJobs.mockResolvedValue([])
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(mocks.copyFile).toHaveBeenCalledOnce()
 	})
@@ -434,7 +434,7 @@ describe('generateVariants', () => {
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(mocks.copyFile).toHaveBeenCalledOnce()
 	})
@@ -456,7 +456,7 @@ describe('generateVariants', () => {
 			[] // No pieces in config
 		)
 
-		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(mocks.copyFile).not.toHaveBeenCalled()
 	})

@@ -33,7 +33,7 @@ async function generateVariantsForAssetField(
 	}
 }
 
-export default async function generateVariants(
+export default async function generateAssets(
 	configPath: string,
 	luzzle: string,
 	outDir: string,
