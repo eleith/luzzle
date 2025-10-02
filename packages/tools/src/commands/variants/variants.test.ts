@@ -1,14 +1,14 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { Config, loadConfig } from '../../lib/config/config.js'
-import { getDatabaseClient } from '@luzzle/core'
+import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { mockKysely } from '../sqlite/database.mock.js'
-import { mkdir, writeFile } from 'fs/promises'
+import { copyFile, mkdir } from 'fs/promises'
 import { generateVariantJobs } from '../variants/variants.js'
-import { Sharp } from 'sharp'
-import { getVariantPath } from './utils.js'
+import { getAssetDir, getAssetPath, isImage } from './utils.js'
 import generateVariants from './index.js'
+import { Sharp } from 'sharp'
 
 vi.mock('../../lib/lastRun.js')
 vi.mock('../../lib/config/config.js')
@@ -26,9 +26,32 @@ const mocks = {
 	Pieces: vi.mocked(Pieces),
 	StorageFileSystem: vi.mocked(StorageFileSystem),
 	generateVariantJobs: vi.mocked(generateVariantJobs),
-	getVariantPath: vi.mocked(getVariantPath),
+	getAssetPath: vi.mocked(getAssetPath),
+	getAssetDir: vi.mocked(getAssetDir),
+	isImage: vi.mocked(isImage),
 	mkdir: vi.mocked(mkdir),
-	writeFile: vi.mocked(writeFile),
+	copyFile: vi.mocked(copyFile),
+}
+
+const setupDefaultMocks = (
+	items: LuzzleSelectable<'pieces_items'>[] = [],
+	pieces: Config['pieces'] = []
+) => {
+	mocks.loadConfig.mockReturnValue({
+		paths: { database: 'db.sqlite' },
+		pieces: pieces,
+	} as unknown as Config)
+
+	const mockDb = mockKysely()
+	vi.spyOn(mockDb.queries, 'execute').mockResolvedValue(items)
+	mocks.getDatabaseClient.mockReturnValue(mockDb.db)
+
+	mocks.getLastRunFor.mockResolvedValue(new Date(0))
+
+	const mockStorage = { readFileSync: vi.fn() } as unknown as StorageFileSystem
+	const mockPieces = { getPieceAsset: vi.fn(() => 'asset_content') } as unknown as Pieces
+	mocks.StorageFileSystem.mockReturnValue(mockStorage)
+	mocks.Pieces.mockReturnValue(mockPieces)
 }
 
 describe('generateVariants', () => {
@@ -36,91 +59,118 @@ describe('generateVariants', () => {
 		vi.clearAllMocks()
 	})
 
-	test('should generate variants for image assets', async () => {
-		mocks.loadConfig.mockReturnValue({
-			paths: { database: 'db.sqlite' },
-		} as unknown as Config)
-		const mockDb = mockKysely()
+	test('should copy assets and generate variants for image assets', async () => {
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image.jpg", "document": "/path/to/document.pdf"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: {
+						media: 'image',
+						assets: ['document'],
+						title: 'title',
+						date_consumed: 'date_consumed',
+					},
+				},
+			]
+		)
 
-		vi.spyOn(mockDb.queries, 'execute').mockResolvedValueOnce([
-			{
-				id: '1',
-				type: 'books',
-				date_updated: 100,
-				date_added: 50,
-				assets_json_array: '["image.jpg"]',
-				file_path: 'book.md',
-			},
-		])
-		mocks.getDatabaseClient.mockReturnValue(mockDb.db)
-
-		// Mock lastRun
-		mocks.getLastRunFor.mockResolvedValue(new Date(0))
-
-		// Mock StorageFileSystem and Pieces
-		const mockStorage = { readFileSync: vi.fn() } as unknown as StorageFileSystem
-		const mockPieces = { getPieceAsset: vi.fn(() => 'asset_content') } as unknown as Pieces
-
-		mocks.StorageFileSystem.mockReturnValue(mockStorage)
-		mocks.Pieces.mockReturnValue(mockPieces)
-		mocks.getVariantPath.mockReturnValue('books/1/image.jpg')
-		const toFileMock = vi.fn().mockResolvedValue(undefined)
-		mocks.generateVariantJobs.mockResolvedValue([
-			{ sharp: { toFile: toFileMock } as unknown as Sharp, size: 125, format: 'jpg' },
-		])
+		mocks.isImage.mockImplementation((asset) => asset.endsWith('.jpg'))
+		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetPath.mockImplementation(
+			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
+		)
 
 		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
-		expect(mocks.loadConfig).toHaveBeenCalledWith('/path/to/config.yaml')
-		expect(mocks.getDatabaseClient).toHaveBeenCalledWith('/path/to/db.sqlite')
-		expect(mocks.getLastRunFor).toHaveBeenCalledWith('/path/to/out', 'generate-variants')
-		expect(mocks.StorageFileSystem).toHaveBeenCalledWith('/path/to/luzzle')
-		expect(mocks.Pieces).toHaveBeenCalledWith(mockStorage)
 		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
-		expect(toFileMock).toHaveBeenCalledWith('/path/to/out/books/1/image.jpg')
-		expect(mocks.generateVariantJobs).toHaveBeenCalledWith(
-			{
-				id: '1',
-				type: 'books',
-				date_updated: 100,
-				date_added: 50,
-				assets_json_array: '["image.jpg"]',
-				file_path: 'book.md',
-			},
-			'image.jpg',
-			mockPieces,
-			[125, 250, 500, 1000],
-			['avif', 'jpg']
+		expect(mocks.copyFile).toHaveBeenCalledWith(
+			'/path/to/image.jpg',
+			'/path/to/out/books/1/image.jpg'
 		)
+		expect(mocks.copyFile).toHaveBeenCalledWith(
+			'/path/to/document.pdf',
+			'/path/to/out/books/1/document.pdf'
+		)
+		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 	})
+
+	test('should only copy assets if they are not images', async () => {
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"document": "/path/to/document.pdf"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { assets: ['document'], title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
+
+		mocks.isImage.mockReturnValue(false)
+		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetPath.mockImplementation(
+			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
+		)
+
+		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+
+		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
+		expect(mocks.copyFile).toHaveBeenCalledWith(
+			'/path/to/document.pdf',
+			'/path/to/out/books/1/document.pdf'
+		)
+		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
+	})
+
 	test('should handle errors during variant generation', async () => {
-		mocks.loadConfig.mockReturnValue({
-			paths: { database: 'db.sqlite' },
-		} as unknown as Config)
-		const mockDb = mockKysely()
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image.jpg"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { media: 'image', title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
 
-		vi.spyOn(mockDb.queries, 'execute').mockResolvedValueOnce([
-			{
-				id: '1',
-				type: 'books',
-				date_updated: 100,
-				date_added: 50,
-				assets_json_array: '["image.jpg"]',
-				file_path: 'book.md',
-			},
-		])
-		mocks.getDatabaseClient.mockReturnValue(mockDb.db)
-
-		// Mock lastRun
-		mocks.getLastRunFor.mockResolvedValue(new Date(0))
-
-		// Mock StorageFileSystem and Pieces
-		const mockStorage = { readFileSync: vi.fn() } as unknown as StorageFileSystem
-		const mockPieces = { getPieceAsset: vi.fn(() => 'asset_content') } as unknown as Pieces
-
-		mocks.StorageFileSystem.mockReturnValue(mockStorage)
-		mocks.Pieces.mockReturnValue(mockPieces)
-		mocks.getVariantPath.mockReturnValue('books/1/image.jpg')
+		mocks.isImage.mockReturnValue(true)
+		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetPath.mockImplementation(
+			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
+		)
 		mocks.generateVariantJobs.mockRejectedValue(new Error('test error'))
 
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
@@ -131,121 +181,283 @@ describe('generateVariants', () => {
 
 		consoleErrorSpy.mockRestore()
 	})
-	test('should do nothing if there are no items to process', async () => {
-		mocks.loadConfig.mockReturnValue({
-			paths: { database: 'db.sqlite' },
-		} as unknown as Config)
-		const mockDb = mockKysely()
 
-		vi.spyOn(mockDb.queries, 'execute').mockResolvedValueOnce([])
-		mocks.getDatabaseClient.mockReturnValue(mockDb.db)
-		mocks.generateVariantJobs.mockResolvedValue([])
+	test('should do nothing if there are no items to process', async () => {
+		setupDefaultMocks(
+			[],
+			[
+				{
+					type: 'books',
+					fields: { media: 'image', title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
 
 		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
+		expect(mocks.copyFile).not.toHaveBeenCalled()
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
 	})
+
 	test('should force variant generation', async () => {
-		mocks.loadConfig.mockReturnValue({
-			paths: { database: 'db.sqlite' },
-		} as unknown as Config)
-		const mockDb = mockKysely()
-
-		vi.spyOn(mockDb.queries, 'execute').mockResolvedValueOnce([
-			{
-				id: '1',
-				type: 'books',
-				date_updated: 0,
-				date_added: 0,
-				assets_json_array: '["image.jpg"]',
-				file_path: 'book.md',
-			},
-		])
-		mocks.getDatabaseClient.mockReturnValue(mockDb.db)
-
-		// Mock lastRun
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 0,
+					date_added: 0,
+					frontmatter_json: '{"image": "/path/to/image.jpg"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { media: 'image', title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
 		mocks.getLastRunFor.mockResolvedValue(new Date())
-
-		// Mock StorageFileSystem and Pieces
-		const mockStorage = { readFileSync: vi.fn() } as unknown as StorageFileSystem
-		const mockPieces = { getPieceAsset: vi.fn(() => 'asset_content') } as unknown as Pieces
-
-		mocks.StorageFileSystem.mockReturnValue(mockStorage)
-		mocks.Pieces.mockReturnValue(mockPieces)
-		mocks.getVariantPath.mockReturnValue('books/1/image.jpg')
-		mocks.generateVariantJobs.mockResolvedValue([
-			{ sharp: { toFile: vi.fn() } as unknown as Sharp, size: 125, format: 'jpg' },
-		])
+		mocks.isImage.mockReturnValue(true)
 
 		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {
 			force: true,
 		})
 
+		expect(mocks.copyFile).toHaveBeenCalledOnce()
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 	})
+
 	test('should limit variant generation', async () => {
-		mocks.loadConfig.mockReturnValue({
-			paths: { database: 'db.sqlite' },
-		} as unknown as Config)
-		const mockDb = mockKysely()
-
-		vi.spyOn(mockDb.queries, 'execute').mockResolvedValueOnce([
-			{
-				id: '1',
-				type: 'books',
-				date_updated: 100,
-				date_added: 50,
-				assets_json_array: '["image.jpg"]',
-				file_path: 'book.md',
-			},
-			{
-				id: '2',
-				type: 'books',
-				date_updated: 100,
-				date_added: 50,
-				assets_json_array: '["image.jpg"]',
-				file_path: 'book2.md',
-			},
-		])
-		mocks.getDatabaseClient.mockReturnValue(mockDb.db)
-		mocks.getLastRunFor.mockResolvedValue(new Date(0))
-
-		const mockStorage = { readFileSync: vi.fn() } as unknown as StorageFileSystem
-		const mockPieces = { getPieceAsset: vi.fn(() => 'asset_content') } as unknown as Pieces
-
-		mocks.StorageFileSystem.mockReturnValue(mockStorage)
-		mocks.Pieces.mockReturnValue(mockPieces)
-		mocks.getVariantPath.mockReturnValue('books/1/image.jpg')
-		mocks.generateVariantJobs.mockResolvedValue([
-			{ sharp: { toFile: vi.fn() } as unknown as Sharp, size: 125, format: 'jpg' },
-		])
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image.jpg"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+				{
+					id: '2',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image2.jpg"}',
+					file_path: 'book2.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { media: 'image', title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
+		mocks.isImage.mockReturnValue(true)
 
 		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', { limit: 1 })
 
+		expect(mocks.copyFile).toHaveBeenCalledOnce()
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 	})
-	test('should handle items with no assets', async () => {
-		mocks.loadConfig.mockReturnValue({
-			paths: { database: 'db.sqlite' },
-		} as unknown as Config)
-		const mockDb = mockKysely()
 
-		vi.spyOn(mockDb.queries, 'execute').mockResolvedValueOnce([
-			{
-				id: '1',
-				type: 'books',
-				date_updated: 100,
-				date_added: 50,
-				assets_json_array: null,
-				file_path: 'book.md',
-			},
+	test('should handle items with no assets', async () => {
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { media: 'image', title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
+
+		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+
+		expect(mocks.copyFile).not.toHaveBeenCalled()
+		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
+	})
+
+	test('should handle errors during toFile', async () => {
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image.jpg"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { media: 'image', title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
+
+		mocks.isImage.mockReturnValue(true)
+		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetPath.mockImplementation(
+			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
+		)
+		const toFileMock = vi.fn().mockRejectedValue(new Error('toFile error'))
+		mocks.generateVariantJobs.mockResolvedValue([
+			{ sharp: { toFile: toFileMock } as unknown as Sharp, size: 125, format: 'jpg' },
 		])
-		mocks.getDatabaseClient.mockReturnValue(mockDb.db)
-		mocks.getLastRunFor.mockResolvedValue(new Date(0))
+
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
+
+		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+
+		expect(consoleErrorSpy).toHaveBeenCalledOnce()
+
+		consoleErrorSpy.mockRestore()
+	})
+
+	test('should handle piece with no assets field', async () => {
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image.jpg"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { media: 'image', title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
+
+		mocks.isImage.mockReturnValue(true)
+		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetPath.mockImplementation(
+			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
+		)
+
+		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+
+		expect(mocks.copyFile).toHaveBeenCalledOnce()
+	})
+
+	test('should handle no variant jobs', async () => {
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image.jpg"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { media: 'image', title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
+
+		mocks.isImage.mockReturnValue(true)
+		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetPath.mockImplementation(
+			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
+		)
 		mocks.generateVariantJobs.mockResolvedValue([])
 
 		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
-		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
+		expect(mocks.copyFile).toHaveBeenCalledOnce()
+	})
+
+	test('should handle piece with no media field', async () => {
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"images": ["/path/to/image.jpg"]}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { assets: ['images'], title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
+
+		mocks.isImage.mockReturnValue(true)
+		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetPath.mockImplementation(
+			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
+		)
+
+		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+
+		expect(mocks.copyFile).toHaveBeenCalledOnce()
+	})
+
+	test('should do nothing if there are no pieces in config', async () => {
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image.jpg"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[] // No pieces in config
+		)
+
+		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+
+		expect(mocks.copyFile).not.toHaveBeenCalled()
 	})
 })

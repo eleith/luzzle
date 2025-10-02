@@ -56,11 +56,11 @@ describe('generateVariantJobs', () => {
 
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('image.jpg')
 		expect(Sharp).toHaveBeenCalledWith('asset_content')
-		expect(mockSharp.clone).toHaveBeenCalledTimes(5)
+		expect(mockSharp.clone).toHaveBeenCalledTimes(4)
 		expect(mockSharp.resize).toHaveBeenCalledWith({ width: 100 })
 		expect(mockSharp.resize).toHaveBeenCalledWith({ width: 200 })
 		expect(mockSharp.toFormat).toHaveBeenCalledWith('avif')
 		expect(mockSharp.toFormat).toHaveBeenCalledWith('jpg')
-		expect(jobs).toHaveLength(5)
+		expect(jobs).toHaveLength(4)
 	})
 })

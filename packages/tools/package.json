@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/tools",
-	"version": "0.0.31",
+	"version": "0.0.32",
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
@@ -28,9 +28,17 @@
 		"url": "git+https://git.eleith.com/eleith/luzzle.git"
 	},
 	"homepage": "https://git.eleith.com/eleith/luzzle.git",
-	"main": "./dist/src/sdk.js",
-	"types": "./dist/src/sdk.d.ts",
 	"description": "misc scripts for working with luzzle related files and projects",
+	  "exports": {
+    ".": {
+      "types": "./dist/src/sdk.d.ts",
+      "import": "./dist/src/sdk.js"
+    },
+    "./browser": {
+      "types": "./dist/src/browser.d.ts",
+      "import": "./dist/src/browser.js"
+    }
+  },
 	"devDependencies": {
 		"@types/eslint": "9.6.1",
 		"@types/node": "22.12.0",

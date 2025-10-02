@@ -1,19 +1,32 @@
-import path from 'path'
+const IMAGE_MATCHER = /\.(jpg|jpeg|png|webp|avif|gif)$/i
+const PATH_MATCHER = /^(?:.*[\\/])?(([^/\\]+?)(?:\.([^.]+))?)$/
 
-function getVariantPath(
+function isImage(asset: string) {
+	const match = asset.match(PATH_MATCHER)
+	const filename = match ? match[1] : asset
+	return IMAGE_MATCHER.test(filename)
+}
+
+function getAssetDir(type: string, id: string) {
+	return `${type}/${id}`
+}
+
+function getAssetPath(
 	type: string,
 	id: string,
 	asset: string,
-	format?: 'jpg' | 'avif',
-	size?: number
+	options?: { format?: 'jpg' | 'avif'; width?: number }
 ) {
-	const dir = `${type}/${id}`
-	if (size && format) {
-		const baseName = path.basename(asset, path.extname(asset))
-		return `${dir}/${baseName}.w${size}.${format}`
+	const match = asset.match(PATH_MATCHER)
+	const filename = match ? match[1] : asset
+	const basename = match ? match[2] : filename
+	const dir = getAssetDir(type, id)
+
+	if (options?.width && options?.format && isImage(asset)) {
+		return `${dir}/${basename}.w${options.width}.${options.format}`
 	} else {
-		return `${dir}/${path.basename(asset)}`
+		return `${dir}/${filename}`
 	}
 }
 
-export { getVariantPath }
+export { getAssetPath, isImage, getAssetDir }
