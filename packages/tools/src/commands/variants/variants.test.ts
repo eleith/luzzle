@@ -64,8 +64,9 @@ describe('generateVariants', () => {
 		mocks.StorageFileSystem.mockReturnValue(mockStorage)
 		mocks.Pieces.mockReturnValue(mockPieces)
 		mocks.getVariantPath.mockReturnValue('books/1/image.jpg')
+		const toFileMock = vi.fn().mockResolvedValue(undefined)
 		mocks.generateVariantJobs.mockResolvedValue([
-			{ sharp: { toFile: vi.fn() } as unknown as Sharp, size: 125, format: 'jpg' },
+			{ sharp: { toFile: toFileMock } as unknown as Sharp, size: 125, format: 'jpg' },
 		])
 
 		await generateVariants('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
@@ -76,8 +77,16 @@ describe('generateVariants', () => {
 		expect(mocks.StorageFileSystem).toHaveBeenCalledWith('/path/to/luzzle')
 		expect(mocks.Pieces).toHaveBeenCalledWith(mockStorage)
 		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
-		expect(mocks.writeFile).toHaveBeenCalledWith('/path/to/out/books/1/image.jpg', 'asset_content')
+		expect(toFileMock).toHaveBeenCalledWith('/path/to/out/books/1/image.jpg')
 		expect(mocks.generateVariantJobs).toHaveBeenCalledWith(
+			{
+				id: '1',
+				type: 'books',
+				date_updated: 100,
+				date_added: 50,
+				assets_json_array: '["image.jpg"]',
+				file_path: 'book.md',
+			},
 			'image.jpg',
 			mockPieces,
 			[125, 250, 500, 1000],
