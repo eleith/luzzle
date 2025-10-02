@@ -2,12 +2,8 @@ import Sharp from 'sharp'
 import { Pieces } from '@luzzle/cli'
 import { LuzzleSelectable } from '@luzzle/core'
 
-function generateVariantSharpJob(sharp: Sharp.Sharp, width?: number, format?: 'avif' | 'jpg') {
-	if (width && format) {
-		return sharp.clone().resize({ width }).toFormat(format)
-	} else {
-		return sharp.clone()
-	}
+function generateVariantSharpJob(sharp: Sharp.Sharp, width: number, format: 'avif' | 'jpg') {
+	return sharp.clone().resize({ width }).toFormat(format)
 }
 
 async function generateVariantJobs(
@@ -34,7 +30,7 @@ async function generateVariantJobs(
 			}
 		}
 
-		jobs.push({ sharp: sharpImage })
+		jobs.push({ sharp: sharpImage.clone() })
 	} catch (error) {
 		console.error(`error generating variant jobs for ${item.file_path} asset at ${asset}: ${error}`)
 	}

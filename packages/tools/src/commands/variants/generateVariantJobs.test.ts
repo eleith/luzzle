@@ -11,7 +11,7 @@ describe('generateVariantJobs', () => {
 		vi.clearAllMocks()
 	})
 
-	test('should throw an error if getPieceAsset fails', async () => {
+	test('should return an empty array if getPieceAsset fails', async () => {
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockRejectedValue(new Error('test error')),
 		} as unknown as Pieces
@@ -21,9 +21,14 @@ describe('generateVariantJobs', () => {
 			file_path: 'path/to/file.jpg',
 		} as unknown as LuzzleSelectable<'pieces_items'>
 
-		await expect(
-			generateVariantJobs(mockItem, 'image.jpg', mockPieces, [100], ['avif', 'jpg'])
-		).rejects.toThrowError('test error')
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const jobs = await generateVariantJobs(mockItem, 'image.jpg', mockPieces, [100], ['avif', 'jpg'])
+
+		expect(jobs).toEqual([])
+		expect(consoleErrorSpy).toHaveBeenCalledOnce()
+
+		consoleErrorSpy.mockRestore()
 	})
 
 	test('should generate variant jobs for an image asset', async () => {
@@ -51,11 +56,11 @@ describe('generateVariantJobs', () => {
 
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('image.jpg')
 		expect(Sharp).toHaveBeenCalledWith('asset_content')
-		expect(mockSharp.clone).toHaveBeenCalledTimes(4)
+		expect(mockSharp.clone).toHaveBeenCalledTimes(5)
 		expect(mockSharp.resize).toHaveBeenCalledWith({ width: 100 })
 		expect(mockSharp.resize).toHaveBeenCalledWith({ width: 200 })
 		expect(mockSharp.toFormat).toHaveBeenCalledWith('avif')
 		expect(mockSharp.toFormat).toHaveBeenCalledWith('jpg')
-		expect(jobs).toHaveLength(4)
+		expect(jobs).toHaveLength(5)
 	})
 })
