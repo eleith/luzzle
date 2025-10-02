@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'fs/promises'
+import { mkdir } from 'fs/promises'
 import path from 'path'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
@@ -23,7 +23,12 @@ async function generateVariantsForAssetField(
 	const formats: Array<'avif' | 'jpg'> = ['avif', 'jpg']
 
 	try {
-		const jobs = await generateVariantJobs(asset, pieces, SIZES, formats)
+		const jobs = await generateVariantJobs(item, asset, pieces, SIZES, formats)
+		const assetPath = getVariantPath(item.type, item.id, asset)
+		const assetDir = path.dirname(assetPath)
+
+		await mkdir(`${outDir}/${assetDir}`, { recursive: true })
+
 		const toFileJobs = jobs.map((job) => {
 			const assetPath = getVariantPath(item.type, item.id, asset, job.format, job.size)
 			return job.sharp.toFile(`${outDir}/${assetPath}`)
@@ -63,18 +68,14 @@ export default async function generateVariants(
 
 		if (pieceModifiedTime > lastRun || force) {
 			const assets = item.assets_json_array ? (JSON.parse(item.assets_json_array) as string[]) : []
-			const imageAssets = assets.filter(isImageAsset)
+			const imageAssets = assets.filter(Boolean).filter(isImageAsset)
 
-			console.log(`generating variants for ${item.file_path}`)
+			if (imageAssets.length) {
+				console.log(`generating variants for ${item.file_path}`)
 
-			for (const asset of imageAssets) {
-				const assetBuffer = await pieces.getPieceAsset(asset)
-				const assetPath = getVariantPath(item.type, item.id, asset)
-				const assetDir = path.dirname(assetPath)
-
-				await mkdir(`${outDir}/${assetDir}`, { recursive: true })
-				await writeFile(`${outDir}/${assetPath}`, assetBuffer)
-				await generateVariantsForAssetField(item, asset, pieces, outDir)
+				for (const asset of imageAssets) {
+					await generateVariantsForAssetField(item, asset, pieces, outDir)
+				}
 			}
 		}
 	}

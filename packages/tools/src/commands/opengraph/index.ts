@@ -13,6 +13,7 @@ import { getOpenGraphPath } from './utils.js'
 async function generateOpenGraph(
 	item: LuzzleSelectable<'pieces_items'>,
 	pieces: Pieces,
+	outputDir: string,
 	browser: Browser,
 	template: string
 ) {
@@ -21,11 +22,12 @@ async function generateOpenGraph(
 
 		const html = await generateHtml(item, pieces, template)
 		const png = await generatePng(html, browser)
-		const output = getOpenGraphPath(item.type, item.id)
-		const ogDir = path.dirname(output)
+		const ogPath = getOpenGraphPath(item.type, item.id)
+		const outputPath = path.join(outputDir, ogPath)
+		const ogDir = path.dirname(outputPath)
 
 		await mkdir(ogDir, { recursive: true })
-		await writeFile(output, png)
+		await writeFile(outputPath, png)
 	} catch (e) {
 		console.error(`Error generating Open Graph for ${item.file_path} (${item.id}): ${e}`)
 	}
@@ -62,7 +64,7 @@ export default async function generateOpenGraphs(
 		const pieceModifiedTime = new Date(item.date_updated || item.date_added)
 
 		if (pieceModifiedTime > lastRun || force) {
-			await generateOpenGraph(item, pieces, browser, template)
+			await generateOpenGraph(item, pieces, outputDir, browser, template)
 		}
 	}
 

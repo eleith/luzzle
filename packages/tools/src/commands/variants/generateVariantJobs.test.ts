@@ -2,6 +2,7 @@ import { describe, test, expect, vi, afterEach } from 'vitest'
 import { generateVariantJobs } from './variants.js'
 import { Pieces } from '@luzzle/cli'
 import Sharp from 'sharp'
+import { LuzzleSelectable } from '@luzzle/core'
 
 vi.mock('sharp')
 
@@ -11,17 +12,42 @@ describe('generateVariantJobs', () => {
 	})
 
 	test('should throw an error if getPieceAsset fails', async () => {
-		const mockPieces = { getPieceAsset: vi.fn().mockRejectedValue(new Error('test error')) } as unknown as Pieces
+		const mockPieces = {
+			getPieceAsset: vi.fn().mockRejectedValue(new Error('test error')),
+		} as unknown as Pieces
+		const mockItem = {
+			id: '1',
+			type: 'test',
+			file_path: 'path/to/file.jpg',
+		} as unknown as LuzzleSelectable<'pieces_items'>
 
-		await expect(generateVariantJobs('image.jpg', mockPieces, [100], ['avif', 'jpg'])).rejects.toThrowError('test error')
+		await expect(
+			generateVariantJobs(mockItem, 'image.jpg', mockPieces, [100], ['avif', 'jpg'])
+		).rejects.toThrowError('test error')
 	})
 
 	test('should generate variant jobs for an image asset', async () => {
 		const mockPieces = { getPieceAsset: vi.fn(() => 'asset_content') } as unknown as Pieces
-		const mockSharp = { clone: vi.fn().mockReturnThis(), resize: vi.fn().mockReturnThis(), toFormat: vi.fn().mockReturnThis() }
+		const mockItem = {
+			id: '1',
+			type: 'test',
+			file_path: 'path/to/file.jpg',
+		} as unknown as LuzzleSelectable<'pieces_items'>
+
+		const mockSharp = {
+			clone: vi.fn().mockReturnThis(),
+			resize: vi.fn().mockReturnThis(),
+			toFormat: vi.fn().mockReturnThis(),
+		}
 		vi.mocked(Sharp).mockReturnValue(mockSharp as unknown as Sharp.Sharp)
 
-		const jobs = await generateVariantJobs('image.jpg', mockPieces, [100, 200], ['avif', 'jpg'])
+		const jobs = await generateVariantJobs(
+			mockItem,
+			'image.jpg',
+			mockPieces,
+			[100, 200],
+			['avif', 'jpg']
+		)
 
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('image.jpg')
 		expect(Sharp).toHaveBeenCalledWith('asset_content')
