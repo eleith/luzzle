@@ -29,8 +29,6 @@ async function generateVariantJobs(
 				jobs.push({ size, format, sharp })
 			}
 		}
-
-		jobs.push({ sharp: sharpImage.clone() })
 	} catch (error) {
 		console.error(`error generating variant jobs for ${item.file_path} asset at ${asset}: ${error}`)
 	}

@@ -103,6 +103,12 @@
 							},
 							"tags": {
 								"type": "string"
+							},
+							"assets": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
 							}
 						},
 						"additionalProperties": false,

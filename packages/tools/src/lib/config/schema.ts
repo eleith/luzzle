@@ -33,6 +33,7 @@ export interface Schema {
       summary?: string;
       date_consumed: string;
       tags?: string;
+      assets?: string[];
     };
   }[];
   theme: {
