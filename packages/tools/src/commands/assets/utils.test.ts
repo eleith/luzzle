@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { getAssetPath, isImage, getAssetDir } from './utils.js'
 
-describe('src/commands/variants/utils', () => {
+describe('src/commands/assets/utils', () => {
 	test('should return the path to the asset directory', () => {
 		const path = getAssetDir('books', '1')
 		expect(path).toBe('books/1')
