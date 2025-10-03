@@ -23,7 +23,7 @@ describe('generateVariantJobs', () => {
 
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-		const jobs = await generateVariantJobs(mockItem, 'image.jpg', mockPieces, [100], ['avif', 'jpg'])
+		const jobs = await generateVariantJobs(mockItem, 'image.jpg', mockPieces, {s: 100}, ['avif', 'jpg'])
 
 		expect(jobs).toEqual([])
 		expect(consoleErrorSpy).toHaveBeenCalledOnce()
@@ -50,7 +50,7 @@ describe('generateVariantJobs', () => {
 			mockItem,
 			'image.jpg',
 			mockPieces,
-			[100, 200],
+			{s:100, m:200},
 			['avif', 'jpg']
 		)
 

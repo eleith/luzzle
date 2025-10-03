@@ -1,13 +1,11 @@
-import { copyFile, mkdir } from 'fs/promises'
+import { mkdir, writeFile } from 'fs/promises'
 import path from 'path'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { generateVariantJobs } from './variants.js'
 import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
 import { loadConfig } from '../../lib/config/config.js'
-import { getAssetDir, getAssetPath, isImage } from './utils.js'
-
-const SIZES = [125, 250, 500, 1000]
+import { getAssetDir, getAssetPath, isImage, ASSET_SIZES } from './utils.js'
 
 async function generateVariantsForAssetField(
 	item: LuzzleSelectable<'pieces_items'>,
@@ -18,12 +16,12 @@ async function generateVariantsForAssetField(
 	const formats: Array<'avif' | 'jpg'> = ['avif', 'jpg']
 
 	try {
-		const jobs = await generateVariantJobs(item, asset, pieces, SIZES, formats)
+		const jobs = await generateVariantJobs(item, asset, pieces, ASSET_SIZES, formats)
 
 		const toFileJobs = jobs.map((job) => {
 			const assetPath = getAssetPath(item.type, item.id, asset, {
 				format: job.format,
-				width: job.size,
+				size: job.size.name as keyof typeof ASSET_SIZES,
 			})
 			return job.sharp.toFile(`${outDir}/${assetPath}`)
 		})
@@ -85,7 +83,8 @@ export default async function generateAssets(
 
 				for (const asset of assets) {
 					const assetPath = getAssetPath(item.type, item.id, asset)
-					await copyFile(asset, `${outDir}/${assetPath}`)
+					const assetBuffer = await pieces.getPieceAsset(asset)
+					await writeFile(`${outDir}/${assetPath}`, assetBuffer)
 				}
 
 				if (imageAssets.length) {

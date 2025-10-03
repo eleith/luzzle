@@ -4,7 +4,7 @@ import { Config, loadConfig } from '../../lib/config/config.js'
 import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { mockKysely } from '../sqlite/database.mock.js'
-import { copyFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir } from 'fs/promises'
 import { generateVariantJobs } from './variants.js'
 import { getAssetDir, getAssetPath, isImage } from './utils.js'
 import generateAssets from './index.js'
@@ -30,7 +30,7 @@ const mocks = {
 	getAssetDir: vi.mocked(getAssetDir),
 	isImage: vi.mocked(isImage),
 	mkdir: vi.mocked(mkdir),
-	copyFile: vi.mocked(copyFile),
+	writeFile: vi.mocked(writeFile),
 }
 
 const setupDefaultMocks = (
@@ -49,9 +49,10 @@ const setupDefaultMocks = (
 	mocks.getLastRunFor.mockResolvedValue(new Date(0))
 
 	const mockStorage = { readFileSync: vi.fn() } as unknown as StorageFileSystem
-	const mockPieces = { getPieceAsset: vi.fn(() => 'asset_content') } as unknown as Pieces
+	const mockPieces = { getPieceAsset: vi.fn(() => Promise.resolve(Buffer.from('asset_content'))) } as unknown as Pieces
 	mocks.StorageFileSystem.mockReturnValue(mockStorage)
 	mocks.Pieces.mockReturnValue(mockPieces)
+	return { mockPieces }
 }
 
 describe('generateAssets', () => {
@@ -60,7 +61,7 @@ describe('generateAssets', () => {
 	})
 
 	test('should copy assets and generate variants for image assets', async () => {
-		setupDefaultMocks(
+		const { mockPieces } = setupDefaultMocks(
 			[
 				{
 					id: '1',
@@ -95,19 +96,21 @@ describe('generateAssets', () => {
 		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
-		expect(mocks.copyFile).toHaveBeenCalledWith(
-			'/path/to/image.jpg',
-			'/path/to/out/books/1/image.jpg'
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/image.jpg')
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/document.pdf')
+		expect(mocks.writeFile).toHaveBeenCalledWith(
+			'/path/to/out/books/1/image.jpg',
+			Buffer.from('asset_content')
 		)
-		expect(mocks.copyFile).toHaveBeenCalledWith(
-			'/path/to/document.pdf',
-			'/path/to/out/books/1/document.pdf'
+		expect(mocks.writeFile).toHaveBeenCalledWith(
+			'/path/to/out/books/1/document.pdf',
+			Buffer.from('asset_content')
 		)
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 	})
 
 	test('should only copy assets if they are not images', async () => {
-		setupDefaultMocks(
+		const { mockPieces } = setupDefaultMocks(
 			[
 				{
 					id: '1',
@@ -137,9 +140,10 @@ describe('generateAssets', () => {
 		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
-		expect(mocks.copyFile).toHaveBeenCalledWith(
-			'/path/to/document.pdf',
-			'/path/to/out/books/1/document.pdf'
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/document.pdf')
+		expect(mocks.writeFile).toHaveBeenCalledWith(
+			'/path/to/out/books/1/document.pdf',
+			Buffer.from('asset_content')
 		)
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
 	})
@@ -195,12 +199,12 @@ describe('generateAssets', () => {
 
 		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
-		expect(mocks.copyFile).not.toHaveBeenCalled()
+		expect(mocks.writeFile).not.toHaveBeenCalled()
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
 	})
 
 	test('should force variant generation', async () => {
-		setupDefaultMocks(
+		const { mockPieces } = setupDefaultMocks(
 			[
 				{
 					id: '1',
@@ -227,12 +231,13 @@ describe('generateAssets', () => {
 			force: true,
 		})
 
-		expect(mocks.copyFile).toHaveBeenCalledOnce()
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
+		expect(mocks.writeFile).toHaveBeenCalledOnce()
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 	})
 
 	test('should limit variant generation', async () => {
-		setupDefaultMocks(
+		const { mockPieces } = setupDefaultMocks(
 			[
 				{
 					id: '1',
@@ -266,7 +271,8 @@ describe('generateAssets', () => {
 
 		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', { limit: 1 })
 
-		expect(mocks.copyFile).toHaveBeenCalledOnce()
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
+		expect(mocks.writeFile).toHaveBeenCalledOnce()
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 	})
 
@@ -294,7 +300,7 @@ describe('generateAssets', () => {
 
 		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
-		expect(mocks.copyFile).not.toHaveBeenCalled()
+		expect(mocks.writeFile).not.toHaveBeenCalled()
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
 	})
 
@@ -327,7 +333,11 @@ describe('generateAssets', () => {
 		)
 		const toFileMock = vi.fn().mockRejectedValue(new Error('toFile error'))
 		mocks.generateVariantJobs.mockResolvedValue([
-			{ sharp: { toFile: toFileMock } as unknown as Sharp, size: 125, format: 'jpg' },
+			{
+				sharp: { toFile: toFileMock } as unknown as Sharp,
+				size: { name: 's', width: 125 },
+				format: 'jpg',
+			},
 		])
 
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
@@ -340,7 +350,7 @@ describe('generateAssets', () => {
 	})
 
 	test('should handle piece with no assets field', async () => {
-		setupDefaultMocks(
+		const { mockPieces } = setupDefaultMocks(
 			[
 				{
 					id: '1',
@@ -369,11 +379,12 @@ describe('generateAssets', () => {
 
 		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
-		expect(mocks.copyFile).toHaveBeenCalledOnce()
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
+		expect(mocks.writeFile).toHaveBeenCalledOnce()
 	})
 
 	test('should handle no variant jobs', async () => {
-		setupDefaultMocks(
+		const { mockPieces } = setupDefaultMocks(
 			[
 				{
 					id: '1',
@@ -403,11 +414,12 @@ describe('generateAssets', () => {
 
 		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
-		expect(mocks.copyFile).toHaveBeenCalledOnce()
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
+		expect(mocks.writeFile).toHaveBeenCalledOnce()
 	})
 
 	test('should handle piece with no media field', async () => {
-		setupDefaultMocks(
+		const { mockPieces } = setupDefaultMocks(
 			[
 				{
 					id: '1',
@@ -436,7 +448,8 @@ describe('generateAssets', () => {
 
 		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
-		expect(mocks.copyFile).toHaveBeenCalledOnce()
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
+		expect(mocks.writeFile).toHaveBeenCalledOnce()
 	})
 
 	test('should do nothing if there are no pieces in config', async () => {
@@ -458,6 +471,6 @@ describe('generateAssets', () => {
 
 		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
-		expect(mocks.copyFile).not.toHaveBeenCalled()
+		expect(mocks.writeFile).not.toHaveBeenCalled()
 	})
 })
