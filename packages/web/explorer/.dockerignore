@@ -11,5 +11,5 @@ Dockerfile
 node_modules
 luzzle-images
 luzzle
-static/images/pieces
+static/pieces
 config/config.yaml

@@ -24,7 +24,6 @@
 		"url": "git+https://git.eleith.com/eleith/eleith.git"
 	},
 	"devDependencies": {
-		"@luzzle/tools": "0.0.34",
 		"@iconify-json/ph": "1.2.2",
 		"@melt-ui/pp": "0.3.2",
 		"@melt-ui/svelte": "0.86.2",
@@ -54,6 +53,7 @@
 	"type": "module",
 	"dependencies": {
 		"@luzzle/core": "0.0.22",
+		"@luzzle/tools": "0.0.37",
 		"better-sqlite3": "11.7.2",
 		"kysely": "0.27.5"
 	}
