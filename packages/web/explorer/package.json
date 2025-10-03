@@ -24,7 +24,7 @@
 		"url": "git+https://git.eleith.com/eleith/eleith.git"
 	},
 	"devDependencies": {
-		"@luzzle/tools": "0.0.33",
+		"@luzzle/tools": "0.0.34",
 		"@iconify-json/ph": "1.2.2",
 		"@melt-ui/pp": "0.3.2",
 		"@melt-ui/svelte": "0.86.2",

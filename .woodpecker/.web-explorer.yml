@@ -25,7 +25,6 @@ steps:
     commands:
       - cd packages/web/explorer
       - npm run lint
-      - npm run check:config
       - npm run check
   build_docker:
     image: woodpeckerci/plugin-docker-buildx:6.0.1
