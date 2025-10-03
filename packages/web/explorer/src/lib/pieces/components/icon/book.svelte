@@ -10,17 +10,17 @@
 		piece: WebPieces
 		active?: boolean
 		transform?: { active?: string; initial?: string }
-		size?: 'small' | 'medium' | 'large' | 'xlarge'
+		size?: 's' | 'm' | 'l' | 'xl'
 		lazy?: boolean
 	}
 
-	let { size = 'small', piece, active, transform, lazy }: Props = $props()
+	let { size = 's', piece, active, transform, lazy }: Props = $props()
 	let initialTransform = transform?.initial || 'none'
 	let activeTransform = transform?.active || 'none'
 	let divBook: HTMLDivElement
 	let key = `1`
 	let canTransform = initialTransform !== activeTransform || activeTransform !== 'none'
-	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
+	let width = size === 's' ? 120 : size === 'm' ? 200 : size === 'l' ? 300 : 400
 
 	function transformToActive() {
 		if (startingStateTransform !== activeTransform) {

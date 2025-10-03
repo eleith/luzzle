@@ -1,94 +1,31 @@
-import { readFileSync, existsSync } from 'fs'
+import { loadConfig, type Config, type ConfigPublic } from '@luzzle/tools'
 import * as path from 'path'
-import { parse as yamlParse } from 'yaml'
-import Ajv from 'ajv'
-import schema from '../../../config/config.schema.json' with { type: 'json' }
+import { existsSync } from 'fs'
 
-export type AppConfig = {
-	url: {
-		app: string
-		app_assets: string
-		luzzle_assets: string
-		editor: string
-	}
-	text: {
-		title: string
-		description: string
-	}
-	paths: {
-		database: string
-	}
-	content: {
-		block: {
-			root: string
-			feed: string
-		}
-	}
-	theme: {
-		version: string
-		globals: Record<string, string>
-		light: Record<string, string>
-		dark: Record<string, string>
-	}
-}
+export type AppConfig = Config
+export type AppConfigPublic = ConfigPublic
 
-export type AppConfigPublic = {
-	url: Pick<AppConfig['url'], 'app' | 'luzzle_assets' | 'app_assets'>
-	text: AppConfig['text']
-	theme: Pick<AppConfig['theme'], 'version'>
-}
+let cachedConfig: AppConfig | null = null
 
-function deepMerge<T extends object, U extends object>(target: T, source: U): T & U {
-	const output = { ...target } as T & U
+function findUserConfigPath(): string | undefined {
+	const configPath = path.join(import.meta.dirname, '../../../config.yaml')
 
-	for (const key in source) {
-		if (Object.prototype.hasOwnProperty.call(source, key)) {
-			const targetValue = output[key as keyof (T & U)]
-			const sourceValue = source[key as keyof U]
-
-			if (
-				sourceValue instanceof Object &&
-				!Array.isArray(sourceValue) &&
-				targetValue instanceof Object &&
-				!Array.isArray(targetValue)
-			) {
-				output[key as keyof (T & U)] = deepMerge(
-					targetValue as object,
-					sourceValue as object
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				) as any
-			} else if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				output[key as keyof (T & U)] = [...targetValue, ...sourceValue] as any
-			} else {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				output[key as keyof (T & U)] = sourceValue as any
-			}
-		}
+	if (existsSync(configPath)) {
+		return configPath
 	}
-	return output
+
+	return undefined
 }
 
 function initializeConfig(): AppConfig {
-	const ajv = new Ajv()
-	const validate = ajv.compile(schema)
-	const userPathEnv = process.env.LUZZLE_CONFIG_PATH
-	const defaultPath = path.resolve(process.cwd(), './config/config.defaults.yaml')
-	const userPath = userPathEnv || path.resolve(process.cwd(), './config/config.yaml')
-	const defaultConfig = yamlParse(readFileSync(defaultPath, 'utf8')) as Partial<AppConfig>
-
-	let userConfig: Partial<AppConfig> = {}
-	if (existsSync(userPath)) {
-		userConfig = yamlParse(readFileSync(userPath, 'utf8')) as Partial<AppConfig>
+	if (cachedConfig) {
+		return cachedConfig
 	}
 
-	const mergedConfig = deepMerge(defaultConfig, userConfig) as AppConfig
+	const userConfigPath = findUserConfigPath()
+	cachedConfig = loadConfig(userConfigPath)
 
-	if (!validate(mergedConfig)) {
-		throw new Error(`Configuration validation failed: ${ajv.errorsText(validate.errors)}`)
-	}
-
-	return mergedConfig
+	return cachedConfig
 }
 
 export const config = initializeConfig()

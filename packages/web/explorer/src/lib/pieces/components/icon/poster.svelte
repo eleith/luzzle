@@ -5,12 +5,12 @@
 	type Props = {
 		piece: WebPieces
 		active?: boolean
-		size?: 'small' | 'medium' | 'large'
+		size?: 's' | 'm' | 'l' | 'xl'
 		lazy?: boolean
 	}
 
-	let { piece, active, size = 'small', lazy }: Props = $props()
-	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
+	let { piece, active, size = 's', lazy }: Props = $props()
+	let width = size === 's' ? 120 : size === 'm' ? 200 : size === 'l' ? 300 : 400
 </script>
 
 <div class="poster" class:posterActive={active} style:--piece-icon-width="{width}px">

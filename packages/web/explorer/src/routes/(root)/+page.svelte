@@ -115,7 +115,7 @@
 							<div style="align-self: baseline;">
 								<PieceIcon
 									piece={latestPieceType}
-									size="small"
+									size="s"
 									active={activePieceId === latestPieceType.id}
 								/>
 							</div>
@@ -170,7 +170,7 @@
 					<div style="flex: 1 1 0%;">
 						<div style="display: flex;">
 							<div style="align-self: baseline;">
-								<PieceIcon piece={random} size="small" active={activePieceId === random.id} />
+								<PieceIcon piece={random} size="s" active={activePieceId === random.id} />
 							</div>
 						</div>
 					</div>

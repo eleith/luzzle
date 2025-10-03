@@ -5,12 +5,12 @@
 	type Props = {
 		piece: WebPieces
 		active?: boolean
-		size?: 'small' | 'medium' | 'large' | 'xlarge'
+		size?: 's' | 'm' | 'l' | 'xl'
 		lazy?: boolean
 	}
 
-	let { size = 'small', piece, active, lazy }: Props = $props()
-	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
+	let { size = 's', piece, active, lazy }: Props = $props()
+	let width = size === 's' ? 120 : size === 'm' ? 200 : size === 'l' ? 300 : 400
 </script>
 
 <div class="cartridge" class:cartridgeActive={active} style:--piece-icon-width="{width}px">
