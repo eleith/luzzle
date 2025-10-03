@@ -1,10 +1,10 @@
 #!/bin/sh
 set -e
 
-# Use the centralized Node.js script to get config values.
-# This is much more robust than parsing YAML with shell commands.
-APP_ASSETS_URL=$(node /app/scripts/get-config-value.js url.app_assets)
-LUZZLE_ASSETS_URL=$(node /app/scripts/get-config-value.js url.luzzle_assets)
+# # Use the centralized Node.js script to get config values.
+# # This is much more robust than parsing YAML with shell commands.
+APP_ASSETS_URL=$(npx luzzle-tools config --config /app/config.yaml get url.app_assets)
+LUZZLE_ASSETS_URL=$(npx luzzle-tools config --config /app/config.yaml get url.luzzle_assets)
 
 # If a value is not found, the script will return an empty string, which is safe.
 echo "--- Patching built files with runtime configuration ---"

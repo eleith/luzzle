@@ -7,12 +7,15 @@ COPY src ./src
 COPY static ./static
 COPY sample ./sample
 COPY scripts ./scripts
+COPY content ./content
 COPY tsconfig.json ./tsconfig.json
 COPY svelte.config.js ./svelte.config.js
 COPY vite.config.ts ./vite.config.ts
 
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm ci
-RUN node /app/scripts/patch-config-for-build.js
+RUN touch /app/config.yaml
+RUN npx luzzle-tools config --config /app/config.yaml set url.app_assets "https://luzzle-app-assets.localhost"
+RUN npx luzzle-tools config --config /app/config.yaml set url.luzzle_assets "https://luzzle-assets.localhost"
 RUN npm run build
 RUN npm prune --omit=dev
 

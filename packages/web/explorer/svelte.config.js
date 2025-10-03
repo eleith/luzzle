@@ -8,7 +8,6 @@ import { existsSync } from 'fs'
 // Use import.meta.url to get the current module's URL, then find the path on disk
 const configPath = path.resolve(import.meta.dirname, 'config.yaml')
 const userConfigPath = existsSync(configPath) ? configPath : undefined
-
 const config = loadConfig(userConfigPath)
 
 /** @type {import('@sveltejs/kit').Config}*/
