@@ -6,7 +6,6 @@ COPY package-lock.json ./package-lock.json
 COPY src ./src
 COPY static ./static
 COPY sample ./sample
-COPY config ./config
 COPY scripts ./scripts
 COPY tsconfig.json ./tsconfig.json
 COPY svelte.config.js ./svelte.config.js
