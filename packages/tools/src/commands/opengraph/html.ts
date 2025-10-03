@@ -1,5 +1,6 @@
 import { Eta } from 'eta'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import { Pieces } from '@luzzle/cli'
 import Sharp from 'sharp'
 import { Vibrant } from 'node-vibrant/node'
@@ -67,7 +68,8 @@ async function generateHtml(
 	pieces: Pieces,
 	template: string
 ): Promise<string> {
-	const internalTemplateDir = path.join(import.meta.dirname, './templates')
+	const __dirname = path.dirname(fileURLToPath(import.meta.url))
+	const internalTemplateDir = path.join(__dirname, './templates')
 	const htmlTemplate = await readFile(path.join(internalTemplateDir, 'html.eta'))
 	const pieceTemplateBuffer = await readFile(template)
 	const size = { width: OpenGraphImageWidth, height: OpenGraphImageHeight }
