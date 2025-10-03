@@ -17,7 +17,8 @@ command-line argument parsing and can be used programmatically via the API.
 
 This package includes the following tools:
 
-* **`validate`**: A tool to validate the Luzzle configuration.
+* **`config`**: A tool to validate, get, and set values in the Luzzle
+  configuration.
 * **`theme`**: A tool to generate a CSS theme file from the configuration.
 * **`assets`**: A tool to generate web-optimized variants for all images.
 * **`opengraph`**: A tool to generate Open Graph images for all relevant pieces.
@@ -30,6 +31,22 @@ Luzzle database.
 
 1. Install Node.js (version >=20) and npm.
 2. Install dependencies from the root of the monorepo: `npm install`
+
+### Building
+
+To build the package for production, use the following command:
+
+```bash
+npm run build -w @luzzle/tools
+```
+
+### Linting
+
+To run the linter and check for code quality issues, use the following command:
+
+```bash
+npm run lint -w @luzzle/tools
+```
 
 ### Testing
 

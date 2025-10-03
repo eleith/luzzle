@@ -46,4 +46,27 @@ function loadConfig(userConfigPath?: string): Config {
 	}
 }
 
-export { loadConfig, type Config, type ConfigPublic }
+function getConfigValue(obj: Config, path: string): unknown {
+	return path.split('.').reduce((acc, key) => {
+		if (acc && typeof acc === 'object' && key in acc) {
+			return acc[key] as Record<string, unknown>
+		}
+		return undefined
+	}, obj as unknown as undefined | Record<string, unknown>)
+}
+
+function setConfigValue(obj: Config, path: string, value: unknown): void {
+  const keys = path.split('.')
+  const lastKey = keys.pop()!
+  let current: Record<string, unknown> = obj as unknown as Record<string, unknown>
+
+  for (const key of keys) {
+    if (typeof current[key] !== 'object' || current[key] === null) {
+      current[key] = {}
+    }
+    current = current[key] as Record<string, unknown>
+  }
+  current[lastKey] = value
+}
+
+export { loadConfig, getConfigValue, setConfigValue, type Config, type ConfigPublic }
