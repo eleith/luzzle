@@ -5,22 +5,21 @@ This document provides guidance for developers and AI assistants working on the
 
 ## Guiding Principles
 
-The `@luzzle/tools` package provides a cli and sdk to perform preparation of
-luzzle web assets needed to run @luzzle/web
+The `@luzzle/tools` package provides a cli and an api (client and browser) to
+provide utilities for the luzzle web explorer
 
 ## Architecture
 
-This package provides an SDK and a CLI to prepare Luzzle web assets for the
-`@luzzle/web` package. The tools are built with `yargs` for command-line
-argument parsing and can be used programmatically via the SDK.
+This package provides an API and a CLI. The tools are built with `yargs` for
+command-line argument parsing and can be used programmatically via the API.
 
 ## Key Concepts
 
 This package includes the following tools:
 
-* **`check-config`**: A tool to validate the Luzzle configuration.
+* **`validate`**: A tool to validate the Luzzle configuration.
 * **`theme`**: A tool to generate a CSS theme file from the configuration.
-* **`variants`**: A tool to generate web-optimized variants for all images.
+* **`assets`**: A tool to generate web-optimized variants for all images.
 * **`opengraph`**: A tool to generate Open Graph images for all relevant pieces.
 * **`sqlite`**: A tool to create a web-ready SQLite database from the main
 Luzzle database.
@@ -35,8 +34,8 @@ Luzzle database.
 ### Testing
 
 When writing tests for the `@luzzle/tools` package, please adhere to the
-standards demonstrated in the existing tests. For a good example of the testing
-pattern, see `packages/tools/src/tools/config-check.test.ts`.
+standards demonstrated in the existing tests. pattern, see
+`packages/tools/src/commands/assets/index.test.ts`.
 
 To run the tests, use the following command:
 
