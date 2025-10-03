@@ -25,13 +25,11 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # luzzle
-/luzzle
-/luzzle-images
 /data
-/static/images/pieces
-/config/config.yaml
+/static/pieces
+/config.yaml
 .tags
-/static/css/theme.*.css
+/static/css/theme*.css
 
 # gemini
 /.gemini

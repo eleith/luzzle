@@ -13,7 +13,7 @@
 	type Props = {
 		piece: WebPieces
 		active?: boolean
-		size?: 'small' | 'medium' | 'large'
+		size?: 's' | 'm' | 'l' | 'xl'
 		lazy?: boolean
 	}
 
@@ -21,8 +21,8 @@
 	const colorThemeText = ['white', 'black', 'black', 'black', 'white', 'black', 'white', 'black']
 	const icons = [Shield, Dice, Trophy, MoonStars, Crown, Sword, Coins, Bomb]
 
-	let { piece, active, size = 'small', lazy }: Props = $props()
-	let width = size === 'small' ? 120 : size === 'medium' ? 200 : size === 'large' ? 300 : 400
+	let { piece, active, size = 's', lazy }: Props = $props()
+	let width = size === 's' ? 120 : size === 'm' ? 200 : size === 'l' ? 300 : 400
 	const text = piece.keywords
 		? (JSON.parse(piece.keywords) as string[])
 		: piece.summary?.split(' ') || []

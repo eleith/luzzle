@@ -42,7 +42,7 @@
 				title="toggle full size"
 				class:piece-icon-open={showFullHeader}
 			>
-				<PieceIcon piece={data.piece} size="large" lazy={false} />
+				<PieceIcon piece={data.piece} size="l" lazy={false} />
 			</button>
 		{/key}
 		{#if data.next}

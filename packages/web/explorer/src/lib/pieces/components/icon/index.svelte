@@ -8,7 +8,7 @@
 
 	type Props = {
 		piece: WebPieces
-		size?: 'small' | 'medium' | 'large'
+		size?: 's' | 'm' | 'l'
 		active?: boolean
 		lazy?: boolean
 	}

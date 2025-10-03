@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { db } from '$lib/server/database'
+import { getOpenGraphPath } from '@luzzle/tools/browser'
 import { config } from '$lib/server/config'
 
 export const load: PageServerLoad = async (page) => {
@@ -99,9 +100,7 @@ export const load: PageServerLoad = async (page) => {
 			title: piece.title,
 			type: piece.type,
 			description: piece.note || piece.summary,
-			image: piece.media
-				? `${config.url.luzzle_assets}/images/pieces/${piece.type}/${piece.slug}/opengraph.png`
-				: undefined
+			image: `${config.url.luzzle_assets}/pieces/assets/${getOpenGraphPath(piece.type, piece.id)}`
 		}
 	}
 }
