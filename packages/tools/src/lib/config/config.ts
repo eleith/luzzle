@@ -1,10 +1,10 @@
 import { readFileSync, existsSync } from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
 import { parse as yamlParse } from 'yaml'
 import { Ajv } from 'ajv'
 import { deepMerge } from '../deep-merge.js'
 import { type Schema as Config } from './schema.js'
+import defaults from './defaults.json' with { type: 'json' }
+import schemaJson from './schema.json' with { type: 'json' }
 
 type ConfigPublic = {
 	url: Pick<Config['url'], 'app' | 'luzzle_assets' | 'app_assets'>
@@ -13,13 +13,8 @@ type ConfigPublic = {
 }
 
 function loadConfig(userConfigPath?: string): Config {
-	const __dirname = path.dirname(fileURLToPath(import.meta.url))
-	const configPath = path.resolve(__dirname, 'defaults.yaml')
-	const schemaPath = path.resolve(__dirname, 'schema.json')
-	const schemaContent = readFileSync(schemaPath, 'utf-8')
-	const configContent = readFileSync(configPath, 'utf-8')
-	const schema = JSON.parse(schemaContent)
-	const config = yamlParse(configContent) as Config
+	const schema = schemaJson
+	const config = defaults as Config
 
 	const ajv = new Ajv()
 	const validate = ajv.compile(schema)
