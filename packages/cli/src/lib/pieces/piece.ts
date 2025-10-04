@@ -297,8 +297,8 @@ class Piece<F extends PieceFrontmatter> {
 		const values = Array.isArray(value) ? value : [value]
 		const set = []
 
-		for (const one of values) {
-			try {
+		try {
+			for (const one of values) {
 				const pieceValue = await makePieceValue(pieceField, one)
 
 				if (pieceValue instanceof Readable) {
@@ -310,10 +310,11 @@ class Piece<F extends PieceFrontmatter> {
 				} else {
 					set.push(pieceValue)
 				}
-			} catch (e) {
-				const error = e as Error
-				log.error(`could not set field ${field} for ${one}: ${error.message}`)
 			}
+		} catch (e) {
+			const error = e as Error
+			log.error(`could not set field ${field}: ${error.message}`)
+			return markdown // On error, return the original markdown, preserving the old value
 		}
 
 		return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, {

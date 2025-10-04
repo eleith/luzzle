@@ -90,19 +90,36 @@ const makePiecePathPositional = function <T>(yargs: Argv<T>): Argv<T & PieceArgv
 
 async function downloadToStream(fileOrUrl: string) {
 	if (/https?:\/\//i.test(fileOrUrl)) {
-		const download = got.stream(fileOrUrl, {throwHttpErrors: false})
-
-		download.on("error", err => {
-			log.error(`Error downloading file from URL: ${err.message}`)
+		return new Promise((resolve, reject) => {
+			const download = got.stream(fileOrUrl, { throwHttpErrors: false })
+			download.on('error', (err) => {
+				log.error(`Error downloading file from ${fileOrUrl}: ${err.message}`)
+				reject(err)
+			})
+			download.on('response', (response) => {
+				if (response.statusCode >= 400) {
+					log.error(`Error downloading file from ${fileOrUrl}: http ${response.statusCode}`)
+					reject(new Error(`HTTP Error: ${response.statusCode}`))
+				} else {
+					resolve(download)
+				}
+			})
 		})
-
-		return download
 	}
 
 	const coverStat = await stat(fileOrUrl).catch(() => null)
 
 	if (coverStat && coverStat.isFile()) {
-		return createReadStream(fileOrUrl)
+		return new Promise((resolve, reject) => {
+			const stream = createReadStream(fileOrUrl)
+			stream.on('error', (err) => {
+				log.error(`Error reading file from path: ${err.message}`)
+				reject(err)
+			})
+			stream.on('open', () => {
+				resolve(stream)
+			})
+		})
 	}
 
 	throw new Error(`${fileOrUrl} is not a valid file`)
