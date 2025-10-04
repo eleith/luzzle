@@ -73,23 +73,24 @@ export default async function generateAssets(
 		if (fields.length && (pieceModifiedTime > lastRun || force)) {
 			const frontmatter = JSON.parse(item.frontmatter_json)
 			const assets = fields.flatMap((field) => frontmatter[field]).filter(Boolean) as string[]
-			const imageAssets = assets.filter(isImage)
-			const assetDir = getAssetDir(item.type, item.id)
-
-			await mkdir(`${outDir}/${assetDir}`, { recursive: true })
 
 			if (assets.length) {
+				const assetDir = getAssetDir(item.type, item.id)
+				await mkdir(`${outDir}/${assetDir}`, { recursive: true })
+
 				console.log(`copying assets for ${item.file_path}`)
 
 				for (const asset of assets) {
-					const assetPath = getAssetPath(item.type, item.id, asset)
-					const assetBuffer = await pieces.getPieceAsset(asset)
-					await writeFile(`${outDir}/${assetPath}`, assetBuffer)
-				}
+					try {
+						const assetPath = getAssetPath(item.type, item.id, asset)
+						const assetBuffer = await pieces.getPieceAsset(asset)
+						await writeFile(`${outDir}/${assetPath}`, assetBuffer)
 
-				if (imageAssets.length) {
-					for (const asset of imageAssets) {
-						await generateVariantsForAssetField(item, asset, pieces, outDir)
+						if (isImage(asset)) {
+							await generateVariantsForAssetField(item, asset, pieces, outDir)
+						}
+					} catch (error) {
+						console.error(`error processing asset ${asset} for ${item.file_path}: ${error}`)
 					}
 				}
 			}
