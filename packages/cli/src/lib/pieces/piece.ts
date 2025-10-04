@@ -162,10 +162,6 @@ class Piece<F extends PieceFrontmatter> {
 		if (missingFiles.length > 0) {
 			if (!dryRun) {
 				await deleteItems(db, missingFiles)
-
-				for (const file of missingFiles) {
-					await this._storage.delete(file)
-				}
 			}
 			missingFiles.forEach((file) => log.info(`pruned piece (db): ${file}`))
 		}
