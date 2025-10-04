@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web",
-	"version": "0.0.80",
+	"version": "0.0.81",
 	"private": true,
 	"scripts": {
 		"dev": "npm run build:theme && vite dev",
