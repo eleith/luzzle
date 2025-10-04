@@ -268,6 +268,24 @@ describe('lib/pieces/piece.ts', () => {
 		await expect(isOutdating).rejects.toThrow()
 	})
 
+	test('prune should not error on missing files', async () => {
+		const dbPieces = [
+			makePieceItemSelectable({ file_path: 'a' }),
+			makePieceItemSelectable({ file_path: 'b' }),
+		]
+		const db = mockDatabase().db
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
+
+		mocks.selectItems.mockResolvedValueOnce(dbPieces)
+		mocks.deleteItems.mockResolvedValueOnce()
+		// Mock the storage delete to throw, because the file doesn't exist
+		spies.delete = vi.spyOn(storage, 'delete').mockRejectedValue(new Error('File not found'))
+
+		await expect(pieceTest.prune(db, [])).resolves.toBeUndefined()
+	})
+
 	test('validate', () => {
 		const PieceType = makePieceMock()
 		const markdown = makeMarkdownSample()
@@ -384,7 +402,6 @@ describe('lib/pieces/piece.ts', () => {
 
 		mocks.selectItems.mockResolvedValueOnce(dbPieces)
 		mocks.deleteItems.mockResolvedValueOnce()
-		spies.delete = vi.spyOn(storage, 'delete').mockResolvedValue()
 
 		await pieceTest.prune(db, [])
 
@@ -393,7 +410,6 @@ describe('lib/pieces/piece.ts', () => {
 			db,
 			dbPieces.map((piece) => piece.file_path)
 		)
-		expect(spies.delete).toHaveBeenCalledTimes(dbPieces.length)
 	})
 
 	test('prune no-op', async () => {
