@@ -148,6 +148,45 @@ describe('generateAssets', () => {
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
 	})
 
+	test('should handle errors when copying assets', async () => {
+		setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image.jpg"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { media: 'image', title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
+
+		mocks.writeFile.mockRejectedValueOnce(new Error('Write error'))
+		mocks.isImage.mockReturnValue(false)
+		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetPath.mockImplementation(
+			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
+		)
+
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+
+		expect(consoleErrorSpy).toHaveBeenCalledOnce()
+		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
+
+		consoleErrorSpy.mockRestore()
+	})
+
 	test('should handle errors during variant generation', async () => {
 		setupDefaultMocks(
 			[
