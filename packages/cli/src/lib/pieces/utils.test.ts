@@ -261,7 +261,13 @@ describe('lib/pieces/utils.ts', () => {
 		mocks.createReadStream.mockReturnValueOnce(readable)
 		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
 
-		const pieceValue = await util.makePieceValue(field, asset)
+		const pieceValuePromise = util.makePieceValue(field, asset)
+
+		process.nextTick(() => {
+			readable.emit('open')
+		})
+
+		const pieceValue = await pieceValuePromise
 
 		expect(pieceValue).toEqual(readable)
 	})
@@ -274,9 +280,32 @@ describe('lib/pieces/utils.ts', () => {
 		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
 		mocks.gotStream.mockReturnValueOnce(readable)
 
-		const pieceValue = await util.makePieceValue(field, asset)
+		const pieceValuePromise = util.makePieceValue(field, asset)
+
+		process.nextTick(() => {
+			readable.emit('response', { statusCode: 200 })
+		})
+
+		const pieceValue = await pieceValuePromise
 
 		expect(pieceValue).toEqual(readable)
+	})
+
+	test('makePieceValue url asset bad status Code', async () => {
+		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
+		const asset = 'https://path/to/asset'
+		const readable = new PassThrough() as unknown as Request
+
+		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
+		mocks.gotStream.mockReturnValueOnce(readable)
+
+		const pieceValuePromise = util.makePieceValue(field, asset)
+
+		process.nextTick(() => {
+			readable.emit('response', { statusCode: 500 })
+		})
+
+		await expect(pieceValuePromise).rejects.toThrow()
 	})
 
 	test('makePieceValue bad url asset', async () => {
@@ -287,10 +316,31 @@ describe('lib/pieces/utils.ts', () => {
 		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
 		mocks.gotStream.mockReturnValueOnce(readable)
 
-		await util.makePieceValue(field, asset)
-		readable.emit('error', new Error('error'))
+		const pieceValuePromise = util.makePieceValue(field, asset)
 
-		expect(mocks.logError).toHaveBeenCalled()
+		process.nextTick(() => {
+			readable.emit('error', new Error('test error'))
+		})
+
+		await expect(pieceValuePromise).rejects.toThrow('test error')
+	})
+
+	test('makePieceValue bad file asset', async () => {
+		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
+		const asset = '/path/to/bad/file.jpg'
+		const readable = new PassThrough() as unknown as ReadStream
+
+		mocks.createReadStream.mockReturnValueOnce(readable)
+		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
+
+		const pieceValuePromise = util.makePieceValue(field, asset)
+
+		process.nextTick(() => {
+			readable.emit('error', new Error('test file error'))
+		})
+
+		await expect(pieceValuePromise).rejects.toThrow('test file error')
+		expect(mocks.logError).toHaveBeenCalledWith('Error reading file from path: test file error')
 	})
 
 	test('makePieceValue existing asset', async () => {
@@ -316,7 +366,7 @@ describe('lib/pieces/utils.ts', () => {
 
 		const waiting = util.makePieceValue(field, asset)
 
-		expect(waiting).rejects.toThrowError()
+		await expect(waiting).rejects.toThrowError()
 	})
 
 	test('makePieceValue with stream', async () => {
@@ -332,7 +382,7 @@ describe('lib/pieces/utils.ts', () => {
 		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
 		const making = util.makePieceValue(field, 55)
 
-		expect(making).rejects.toThrowError()
+		await expect(making).rejects.toThrowError()
 	})
 
 	test('makePieceAttachment with request', async () => {

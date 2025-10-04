@@ -773,19 +773,16 @@ describe('lib/pieces/piece.ts', () => {
 		const pieceTest = new PieceTest('books', storage)
 
 		spies.pieceFields = vi.spyOn(pieceTest, 'fields', 'get').mockReturnValueOnce(fields)
-		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
 		mocks.makePieceValue.mockImplementationOnce(async () => mockReadable)
 		mocks.makePieceAttachment.mockRejectedValueOnce(new Error('oof'))
 
-		await pieceTest.setField(markdown, field, value)
+		const newMarkdown = await pieceTest.setField(markdown, field, value)
 
 		expect(mocks.makePieceAttachment).toHaveBeenCalledOnce()
-		expect(mocks.makePieceMarkdown).toHaveBeenCalledWith(
-			markdown.filePath,
-			markdown.piece,
-			markdown.note,
-			markdown.frontmatter
-		)
+		// Assert that the original markdown is returned and makePieceMarkdown is NOT called to create a new one.
+		expect(newMarkdown).toEqual(markdown)
+		expect(mocks.makePieceMarkdown).not.toHaveBeenCalled()
+		expect(mocks.logError).toHaveBeenCalledWith('could not set field cover: oof')
 	})
 
 	test('removeFields', async () => {
