@@ -71,7 +71,7 @@
 			<h2>notes</h2>
 			<div>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html marked.parseInline(data.piece.note)}
+				{@html marked.parseInline(data.piece.note, { breaks: true })}
 			</div>
 		{/if}
 
@@ -86,7 +86,7 @@
 			<h3>summary</h3>
 			<div>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html marked.parseInline(data.piece.summary)}
+				{@html marked.parseInline(data.piece.summary, { breaks: true })}
 			</div>
 		{/if}
 
