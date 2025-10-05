@@ -86,10 +86,17 @@ const configOptions: Options<SchemaConfig> = {
 
 function getConfig(_path?: string) {
 	if (_path) {
-		const configDir = path.resolve(_path)
+		const resolvedPath = path.resolve(_path)
+		const configDir = path.dirname(resolvedPath)
+		const extension = path.extname(resolvedPath)
+		const configName = path.basename(resolvedPath, extension)
+
 		return new Conf<SchemaConfig>({
 			...configOptions,
 			cwd: configDir,
+			configName: configName,
+			fileExtension: extension.replace(/^\./, ''),
+			projectName: '',
 		})
 	} else {
 		return new Conf<SchemaConfig>(configOptions)

@@ -26,7 +26,7 @@ async function parseArgs<T>(
 			config: {
 				alias: 'c',
 				type: 'string',
-				description: 'custom directory to store config',
+				description: 'Path to config file',
 			},
 		})
 		.demandCommand(1, `[error] please specify a command`)

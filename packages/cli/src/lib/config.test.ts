@@ -26,6 +26,8 @@ const mocks = {
 	logWarn: vi.spyOn(log, 'warn'),
 	pathResolve: vi.spyOn(path, 'resolve'),
 	pathDirname: vi.spyOn(path, 'dirname'),
+	pathBasename: vi.spyOn(path, 'basename'),
+	pathExtname: vi.spyOn(path, 'extname'),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -50,15 +52,30 @@ describe('lib/config', () => {
 	})
 
 	test('getConfig with path', async () => {
-		mocks.pathResolve.mockReturnValueOnce('special-path')
+		const configPath = '/test/dir/config.yaml'
+		mocks.pathResolve.mockReturnValueOnce(configPath)
+		mocks.pathDirname.mockReturnValueOnce('/test/dir')
+		mocks.pathBasename.mockReturnValueOnce('config')
+		mocks.pathExtname.mockReturnValueOnce('.yaml')
 
-		getConfig('special-path')
+		getConfig(configPath)
 
 		expect(mocks.Conf).toHaveBeenCalledOnce()
-		expect(mocks.Conf).toHaveBeenCalledWith(expect.objectContaining({ cwd: 'special-path' }))
+		expect(mocks.Conf).toHaveBeenCalledWith(
+			expect.objectContaining({
+				cwd: '/test/dir',
+				configName: 'config',
+				fileExtension: 'yaml',
+				projectName: '',
+			}),
+		)
 	})
 
-	test('getDatabasePath', async () => {
+		test('getDatabasePath', async () => {
+		mocks.pathResolve.mockReturnValueOnce('/test/dir/some-path.yaml')
+		mocks.pathDirname.mockReturnValueOnce('/test/dir')
+		mocks.pathBasename.mockReturnValueOnce('some-path')
+		mocks.pathExtname.mockReturnValueOnce('.yaml')
 		const config = getConfig('some-path')
 		const dbPath = '/db/path/to/here'
 		const dbType = 'sqlite'
@@ -72,6 +89,10 @@ describe('lib/config', () => {
 	})
 
 	test('getDatabasePath throws', async () => {
+		mocks.pathResolve.mockReturnValueOnce('/test/dir/some-path.yaml')
+		mocks.pathDirname.mockReturnValueOnce('/test/dir')
+		mocks.pathBasename.mockReturnValueOnce('some-path')
+		mocks.pathExtname.mockReturnValueOnce('.yaml')
 		const config = getConfig('some-path')
 		const dbPath = '/db/path/to/here'
 		const dbType = 'postgres'
@@ -83,6 +104,10 @@ describe('lib/config', () => {
 	})
 
 	test('getStorage type filesystem', async () => {
+		mocks.pathResolve.mockReturnValueOnce('/test/dir/some-path.yaml')
+		mocks.pathDirname.mockReturnValueOnce('/test/dir')
+		mocks.pathBasename.mockReturnValueOnce('some-path')
+		mocks.pathExtname.mockReturnValueOnce('.yaml')
 		const config = getConfig('some-path')
 		const root = 'root'
 		const type = 'filesystem'
@@ -98,10 +123,14 @@ describe('lib/config', () => {
 	})
 
 	test('getStorage type webdav', async () => {
+		mocks.pathResolve.mockReturnValueOnce('/test/dir/some-path.yaml')
+		mocks.pathDirname.mockReturnValueOnce('/test/dir')
+		mocks.pathBasename.mockReturnValueOnce('some-path')
+		mocks.pathExtname.mockReturnValueOnce('.yaml')
 		const config = getConfig('some-path')
 		const root = 'root'
 		const type = 'webdav'
-		const options =  { username: 'a', password: 'p', url: 'u' }
+		const options = { username: 'a', password: 'p', url: 'u' }
 
 		mocks.ConfGet.mockReturnValueOnce(root)
 		mocks.ConfGet.mockReturnValueOnce(type)
@@ -113,10 +142,14 @@ describe('lib/config', () => {
 	})
 
 	test('getStorage invalid type', async () => {
+		mocks.pathResolve.mockReturnValueOnce('/test/dir/some-path.yaml')
+		mocks.pathDirname.mockReturnValueOnce('/test/dir')
+		mocks.pathBasename.mockReturnValueOnce('some-path')
+		mocks.pathExtname.mockReturnValueOnce('.yaml')
 		const config = getConfig('some-path')
 		const root = 'root'
 		const type = 'webdax'
-		const options =  { username: 'a', password: 'p', url: 'u' }
+		const options = { username: 'a', password: 'p', url: 'u' }
 
 		mocks.ConfGet.mockReturnValueOnce(root)
 		mocks.ConfGet.mockReturnValueOnce(type)
@@ -124,5 +157,4 @@ describe('lib/config', () => {
 
 		expect(() => getStorage(config)).toThrowError()
 	})
-
 })
