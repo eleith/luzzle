@@ -15,19 +15,19 @@ synchronization.
 This package is a SvelteKit application configured with `@sveltejs/adapter-node`
 for server-side rendering. It uses the MeltUI library for UI components.
 
-*   **Framework:** SvelteKit
-*   **UI:** MeltUI
-*   **Adapter:** Node.js adapter for server-side rendering.
+- **Framework:** SvelteKit
+- **UI:** MeltUI
+- **Adapter:** Node.js adapter for server-side rendering.
 
 ## Key Concepts
 
-*   **WebDAV:** The editor uses the WebDAV protocol to interact with the file
-    system, allowing users to edit their Luzzle markdown files directly.
-*   **Routes:** The application is structured around the following main routes:
-    *   `/`: The main dashboard or entry point.
-    *   `/pieces`: A view for listing and managing Luzzle pieces.
-    *   `/directory`: A view for browsing the directory structure.
-    *   `/asset`: A view for managing assets.
+- **WebDAV:** The editor uses the WebDAV protocol to interact with the file
+  system, allowing users to edit their Luzzle markdown files directly.
+- **Routes:** The application is structured around the following main routes:
+  - `/`: The main dashboard or entry point.
+  - `/pieces`: A view for listing and managing Luzzle pieces.
+  - `/directory`: A view for browsing the directory structure.
+  - `/asset`: A view for managing assets.
 
 ## Development
 
