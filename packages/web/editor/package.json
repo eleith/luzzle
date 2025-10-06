@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev": "dotenvx run -f .env.local -- vite dev",
 		"build": "dotenvx run -f .env.local -- vite build",
-		"build:lock": "npm i --package-lock-only --workspaces=false && mv package-lock.json web.package-lock.json",
+		"build:lock": "npm i --package-lock-only --workspaces=false",
 		"preview": "dotenvx run -f .env.local -- vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

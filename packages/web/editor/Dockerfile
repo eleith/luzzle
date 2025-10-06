@@ -4,7 +4,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 
 COPY package.json ./package.json
-COPY web.package-lock.json ./package-lock.json
+COPY package-lock.json ./package-lock.json
 COPY src ./src
 COPY static ./static
 COPY tsconfig.json ./tsconfig.json
