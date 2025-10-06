@@ -3,7 +3,7 @@ workspace:
   path: src
 
 when:
-  - event: [push, manual]
+  - event: [push]
     branch: main
     path:
           include: [".woodpecker/.cli.yml", "packages/cli/**"]

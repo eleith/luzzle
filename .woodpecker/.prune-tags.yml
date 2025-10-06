@@ -1,0 +1,25 @@
+when:
+  event: [cron, manual]
+  cron: prune-tags
+
+steps:
+  prune_tags:
+    image: alpine/git
+    commands:
+      - apk add --no-cache openssh-client
+      - mkdir -p ~/.ssh
+      - echo "$GIT_SSH_KEY" > ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id_rsa
+      - ssh-keyscan $GIT_SSH_HOST >> ~/.ssh/known_hosts
+
+      - git config --global user.email "woodpecker-ci@example.com"
+      - git config --global user.name "Woodpecker CI"
+
+      - git fetch --prune origin --tags
+      - git tag --sort=-creatordate | tail -n +13 | xargs -r git tag -d
+      - git tag --sort=-creatordate | tail -n +13 | xargs -r git push --delete origin
+    environment:
+      GIT_SSH_KEY:
+        from_secret: GIT_SSH_KEY
+      GIT_SSH_HOST:
+        from_secret: GIT_SSH_HOST
