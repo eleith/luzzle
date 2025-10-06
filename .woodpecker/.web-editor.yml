@@ -13,14 +13,19 @@ steps:
     image: node:20
     commands:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> /root/.npmrc
-      - npm ci -w @luzzle/core -w @luzzle/cli -w @luzzle/web-editor
+      - cd packages/web/editor
+      - npm run build:lock
+      - npm ci --workspaces=false
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
   lint:
     image: node:20
     commands:
-      - npm run -w @luzzle/web-editor lint
+      - cd packages/web/editor
+      - cp .env.sample .env.local
+      - npm run lint
+      - npm run check
   build_docker:
     image: woodpeckerci/plugin-docker-buildx:6.0.1
     settings:
