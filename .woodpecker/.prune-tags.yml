@@ -10,16 +10,18 @@ steps:
       - mkdir -p ~/.ssh
       - echo "$GIT_SSH_KEY" > ~/.ssh/id_rsa
       - chmod 600 ~/.ssh/id_rsa
-      - ssh-keyscan $GIT_SSH_HOST >> ~/.ssh/known_hosts
+      - CI_REPO_HOST=$(echo "$CI_FORGE_URL" | sed -e 's#https://##')
+      - ssh-keyscan "$CI_REPO_HOST" >> ~/.ssh/known_hosts
 
-      - git config --global user.email "woodpecker-ci@example.com"
-      - git config --global user.name "Woodpecker CI"
+      - git config --global user.email "woodpecker@ci.eleith.com"
+      - git config --global user.name "woodpecker"
+      - git remote set-url origin "$CI_REPO_CLONE_SSH_URL"
 
       - git fetch --prune origin --tags
-      - git tag --sort=-creatordate | tail -n +13 | xargs -r git tag -d
-      - git tag --sort=-creatordate | tail -n +13 | xargs -r git push --delete origin
+      - git tag --sort=-creatordate | grep -v '^v' | tail -n +13 > tags2prune.txt
+      - cat tags2prune.txt
+
+      - cat tags2prune.txt | xargs -r git push --delete origin
     environment:
       GIT_SSH_KEY:
         from_secret: GIT_SSH_KEY
-      GIT_SSH_HOST:
-        from_secret: GIT_SSH_HOST
