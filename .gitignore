@@ -1,5 +1,6 @@
 .env.*local
 .gemini
+PROJECT.md
 
 node_modules
 data
