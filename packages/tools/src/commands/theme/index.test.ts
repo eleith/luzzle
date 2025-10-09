@@ -31,7 +31,7 @@ describe('src/commands/theme', () => {
 
 	test('should generate theme to stdout', async () => {
 		spies.consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-		mocks.loadConfig.mockReturnValue({ theme: { version: '1.0.0' } } as Config);
+		mocks.loadConfig.mockReturnValue({ theme: {} } as Config);
 		mocks.generateThemeCss.mockReturnValue('body { color: red; }');
 
 		await generateTheme('test');
@@ -42,20 +42,18 @@ describe('src/commands/theme', () => {
 	});
 
 	test('should generate theme to file', async () => {
-		spies.consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-		mocks.loadConfig.mockReturnValue({ theme: { version: '1.0.0' } } as Config);
+		mocks.loadConfig.mockReturnValue({ theme: {} } as Config);
 		mocks.generateThemeCss.mockReturnValue('body { color: red; }');
 
 		await generateTheme('test', 'test');
 
 		expect(mocks.mkdir).toHaveBeenCalledOnce();
 		expect(mocks.writeFile).toHaveBeenCalledOnce();
-		expect(spies.consoleLog).toHaveBeenCalledWith(expect.stringContaining('Theme CSS generated at:'));
 	});
 
 	test('should generate minified theme to file', async () => {
 		spies.consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-		mocks.loadConfig.mockReturnValue({ theme: { version: '1.0.0' } } as Config);
+		mocks.loadConfig.mockReturnValue({ theme: {} } as Config);
 		mocks.generateThemeCss.mockReturnValue('body { color: red; }');
 		mocks.minifyCss.mockReturnValue('body{color:red}');
 

@@ -18,6 +18,9 @@ export interface Schema {
   };
   paths: {
     database: string;
+    css?: {
+      theme?: string;
+    };
   };
   content: {
     block: {
@@ -35,9 +38,12 @@ export interface Schema {
       tags?: string;
       assets?: string[];
     };
+    template?: {
+      icon?: string;
+      opengraph?: string;
+    };
   }[];
   theme: {
-    version?: string;
     light: {
       "colors-primary"?: string;
       "colors-on-primary"?: string;
