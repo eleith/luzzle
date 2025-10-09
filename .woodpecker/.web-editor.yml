@@ -10,7 +10,7 @@ when:
 
 steps:
   prepare:
-    image: node:20
+    image: node:22
     commands:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> /root/.npmrc
       - cd packages/web/editor
@@ -20,7 +20,7 @@ steps:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
   lint:
-    image: node:20
+    image: node:22
     commands:
       - cd packages/web/editor
       - cp .env.sample .env.local
