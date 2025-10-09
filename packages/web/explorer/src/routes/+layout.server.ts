@@ -12,8 +12,8 @@ export const load = async () => {
 				app_assets: config.url.app_assets,
 				luzzle_assets: config.url.luzzle_assets
 			},
-			theme: {
-				version: config.theme.version
+			paths: {
+				css: config.paths?.css
 			}
 		} as AppConfigPublic,
 		meta: {
