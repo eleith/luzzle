@@ -6,12 +6,11 @@ import { type Schema as Config } from './schema.js'
 import defaults from './defaults.json' with { type: 'json' }
 import schemaJson from './schema.json' with { type: 'json' }
 
-type ConfigPublic = {
+export type ConfigPublic = {
 	url: Pick<Config['url'], 'app' | 'luzzle_assets' | 'app_assets'>
 	text: Config['text']
-	theme: Pick<Config['theme'], 'version'>
+	paths: Pick<Config['paths'], 'css'>
 }
-
 function loadConfig(userConfigPath?: string): Config {
 	const schema = schemaJson
 	const config = defaults as Config
@@ -66,4 +65,4 @@ function setConfigValue(obj: Config, path: string, value: unknown): void {
   current[lastKey] = value
 }
 
-export { loadConfig, getConfigValue, setConfigValue, type Config, type ConfigPublic }
+export { loadConfig, getConfigValue, setConfigValue, type Config }

@@ -42,16 +42,25 @@
 			"additionalProperties": false
 		},
 		"paths": {
-			"type": "object",
-			"properties": {
-				"database": {
-					"type": "string"
-				}
-			},
-			"required": [
-				"database"
-			],
-			"additionalProperties": false
+      "type": "object",
+      "properties": {
+        "database": {
+          "type": "string"
+        },
+        "css": {
+          "type": "object",
+          "properties": {
+            "theme": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "database"
+      ],
+      "additionalProperties": false
 		},
 		"content": {
 			"type": "object",
@@ -116,6 +125,18 @@
 							"title",
 							"date_consumed"
 						]
+					},
+					"template": {
+						"type": "object",
+						"properties": {
+							"icon": {
+								"type": "string"
+							},
+							"opengraph": {
+								"type": "string"
+							}
+						},
+						"additionalProperties": false
 					}
 				},
 				"additionalProperties": false,
@@ -128,9 +149,6 @@
 		"theme": {
 			"type": "object",
 			"properties": {
-				"version": {
-					"type": "string"
-				},
 				"light": {
 					"type": "object",
 					"properties": {

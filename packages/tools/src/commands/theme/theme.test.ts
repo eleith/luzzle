@@ -18,7 +18,6 @@ describe('generate-theme/theme', () => {
 			content: { block: { root: '', feed: '' } },
 			pieces: [{ type: 'test', fields: { title: 'test', date_consumed: 'test' } }],
 			theme: {
-				version: '1.0.0',
 				globals: {
 					'font-sans-name': 'Test Sans',
 					'font-sans-weight': '400',
