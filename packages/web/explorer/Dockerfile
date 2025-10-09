@@ -1,5 +1,7 @@
-FROM node:20.19.5-slim AS builder
+FROM node:22-slim AS builder
 WORKDIR /app
+
+ENV NODE_ENV=production
 
 COPY package.json ./package.json
 COPY package-lock.json ./package-lock.json
@@ -14,27 +16,5 @@ COPY vite.config.ts ./vite.config.ts
 
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm ci
 RUN touch /app/config.yaml
-RUN npx luzzle-tools config --config /app/config.yaml set url.app_assets "https://luzzle-app-assets.localhost"
-RUN npx luzzle-tools config --config /app/config.yaml set url.luzzle_assets "https://luzzle-assets.localhost"
-RUN npm run build
-RUN npm prune --omit=dev
 
-FROM node:20.19.5-slim
 
-WORKDIR /app
-
-ENV NODE_ENV=production
-
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/content ./content
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/scripts /app/scripts
-
-RUN touch /app/config.yaml
-RUN chmod +x /app/scripts/entrypoint.sh
-
-EXPOSE 3000
-ENV PORT=3000
-
-ENTRYPOINT ["/app/scripts/entrypoint.sh"]
