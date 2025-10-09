@@ -10,7 +10,7 @@ when:
 
 steps:
   build:
-    image: node:20
+    image: node:22
     commands:
       - npm ci -w @luzzle/core -w @luzzle/cli
       - npm run lint -w @luzzle/core
@@ -21,11 +21,11 @@ steps:
       NPM_TOKEN:
         from_secret: npm_token
   test:
-    image: node:20
+    image: node:22
     commands:
       - npm run test -w @luzzle/core
   publish:
-    image: node:20
+    image: node:22
     commands:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
