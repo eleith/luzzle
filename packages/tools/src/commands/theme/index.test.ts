@@ -41,25 +41,15 @@ describe('src/commands/theme', () => {
 		expect(spies.consoleLog).toHaveBeenCalledWith('body { color: red; }');
 	});
 
-	test('should generate theme to file', async () => {
-		mocks.loadConfig.mockReturnValue({ theme: {} } as Config);
-		mocks.generateThemeCss.mockReturnValue('body { color: red; }');
-
-		await generateTheme('test', 'test');
-
-		expect(mocks.mkdir).toHaveBeenCalledOnce();
-		expect(mocks.writeFile).toHaveBeenCalledOnce();
-	});
-
-	test('should generate minified theme to file', async () => {
+	test('should generate minified theme to stdout', async () => {
 		spies.consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 		mocks.loadConfig.mockReturnValue({ theme: {} } as Config);
 		mocks.generateThemeCss.mockReturnValue('body { color: red; }');
 		mocks.minifyCss.mockReturnValue('body{color:red}');
 
-		await generateTheme('test', 'test', true);
+		await generateTheme('test', true);
 
 		expect(mocks.minifyCss).toHaveBeenCalledOnce();
-		expect(mocks.writeFile).toHaveBeenCalledWith(expect.any(String), 'body{color:red}');
+		expect(spies.consoleLog).toHaveBeenCalledWith('body{color:red}');
 	});
 });

@@ -18,9 +18,6 @@ export interface Schema {
   };
   paths: {
     database: string;
-    css?: {
-      theme?: string;
-    };
   };
   content: {
     block: {
