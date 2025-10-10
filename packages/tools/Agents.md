@@ -10,8 +10,8 @@ provide utilities for the luzzle web explorer
 
 ## Architecture
 
-This package provides an API and a CLI. The tools are built with `yargs` for
-command-line argument parsing and can be used programmatically via the API.
+The tools are built with `yargs` for command-line argument parsing and can be
+used programmatically via the API.
 
 ## Key Concepts
 
