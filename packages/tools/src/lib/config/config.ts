@@ -20,7 +20,7 @@ function loadConfig(userConfigPath?: string): Config {
 
 	if (userConfigPath) {
 		if (!existsSync(userConfigPath)) {
-			throw new Error(`User config file not found at: ${userConfigPath}`)
+			console.warn(`User config file not found at: ${userConfigPath}`)
 		}
 
 		const userConfig = yamlParse(readFileSync(userConfigPath, 'utf8')) as Partial<Config>
