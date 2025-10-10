@@ -2,11 +2,8 @@ import { preprocessMeltUI, sequence } from '@melt-ui/pp'
 import adapter from '@sveltejs/adapter-node'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 import { loadConfig } from '@luzzle/tools'
-import { existsSync } from 'fs'
 
-const configPath = 'config.yaml'
-const userConfigPath = existsSync(configPath) ? configPath : undefined
-const config = loadConfig(userConfigPath)
+const config = loadConfig('./config.yaml')
 
 /** @type {import('@sveltejs/kit').Config}*/
 const svelteConfig = {
