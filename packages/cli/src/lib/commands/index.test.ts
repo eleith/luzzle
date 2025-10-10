@@ -26,7 +26,7 @@ describe('lib/web', () => {
 	})
 
 	test('getCommands no js files', async () => {
-		mocks.readdir.mockResolvedValue(['command1.json'] as unknown as Dirent<Buffer<ArrayBufferLike>>[])
+		mocks.readdir.mockResolvedValue(['command1.json'] as unknown as Dirent[])
 
 		const commands = await getCommands()
 
@@ -34,7 +34,7 @@ describe('lib/web', () => {
 	})
 
 	test('getCommands returns field.js command', async () => {
-		mocks.readdir.mockResolvedValue(['field.js'] as unknown as Dirent<Buffer<ArrayBufferLike>>[])
+		mocks.readdir.mockResolvedValue(['field.js'] as unknown as Dirent[])
 
 		const commands = await getCommands()
 

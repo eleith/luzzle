@@ -176,7 +176,7 @@ describe('lib/storage/fs.ts', () => {
 		const dirs = [
 			{ name: 'dir1', isFile: () => false },
 			{ name: 'file1', isFile: () => true },
-		] as unknown as Dirent<Buffer<ArrayBufferLike>>[]
+		] as unknown as Dirent[]
 
 		mocks.existsSync.mockReturnValueOnce(true)
 		mocks.readdir.mockResolvedValueOnce(dirs)
