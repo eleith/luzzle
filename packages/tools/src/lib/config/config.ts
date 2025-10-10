@@ -18,50 +18,55 @@ function loadConfig(userConfigPath?: string): Config {
 	const validate = ajv.compile(schema)
 
 	if (userConfigPath) {
-		if (!existsSync(userConfigPath)) {
+		if (existsSync(userConfigPath)) {
+			const userConfig = yamlParse(readFileSync(userConfigPath, 'utf8')) as Partial<Config>
+			const mergedConfig = deepMerge(config, userConfig) as Config
+
+			if (!validate(mergedConfig)) {
+				throw new Error(`Configuration validation failed: ${ajv.errorsText(validate.errors)}`)
+			}
+
+			return mergedConfig
+		} else {
+			/* v8 ignore start */
 			console.warn(`User config file not found at: ${userConfigPath}`)
+			/* v8 ignore stop */
 		}
-
-		const userConfig = yamlParse(readFileSync(userConfigPath, 'utf8')) as Partial<Config>
-		const mergedConfig = deepMerge(config, userConfig) as Config
-
-		if (!validate(mergedConfig)) {
-			throw new Error(`Configuration validation failed: ${ajv.errorsText(validate.errors)}`)
-		}
-
-		return mergedConfig
-	} else {
-		/* v8 ignore start */
-		if (!validate(config)) {
-			throw new Error(`Configuration validation failed: ${ajv.errorsText(validate.errors)}`)
-		}
-		/* v8 ignore stop */
-
-		return config
 	}
+
+	/* v8 ignore start */
+	if (!validate(config)) {
+		throw new Error(`Configuration validation failed: ${ajv.errorsText(validate.errors)}`)
+	}
+	/* v8 ignore stop */
+
+	return config
 }
 
 function getConfigValue(obj: Config, path: string): unknown {
-	return path.split('.').reduce((acc, key) => {
-		if (acc && typeof acc === 'object' && key in acc) {
-			return acc[key] as Record<string, unknown>
-		}
-		return undefined
-	}, obj as unknown as undefined | Record<string, unknown>)
+	return path.split('.').reduce(
+		(acc, key) => {
+			if (acc && typeof acc === 'object' && key in acc) {
+				return acc[key] as Record<string, unknown>
+			}
+			return undefined
+		},
+		obj as unknown as undefined | Record<string, unknown>
+	)
 }
 
 function setConfigValue(obj: Config, path: string, value: unknown): void {
-  const keys = path.split('.')
-  const lastKey = keys.pop()!
-  let current: Record<string, unknown> = obj as unknown as Record<string, unknown>
+	const keys = path.split('.')
+	const lastKey = keys.pop()!
+	let current: Record<string, unknown> = obj as unknown as Record<string, unknown>
 
-  for (const key of keys) {
-    if (typeof current[key] !== 'object' || current[key] === null) {
-      current[key] = {}
-    }
-    current = current[key] as Record<string, unknown>
-  }
-  current[lastKey] = value
+	for (const key of keys) {
+		if (typeof current[key] !== 'object' || current[key] === null) {
+			current[key] = {}
+		}
+		current = current[key] as Record<string, unknown>
+	}
+	current[lastKey] = value
 }
 
 export { loadConfig, getConfigValue, setConfigValue, type Config }
