@@ -10,6 +10,7 @@ vi.mock('@luzzle/core')
 vi.mock('./config.js')
 vi.mock('./pieces/index.js')
 vi.mock('./commands/index.js', () => { return { default: vi.fn() } })
+vi.mock('./log.js')
 
 const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
