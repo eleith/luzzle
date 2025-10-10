@@ -5,6 +5,7 @@
 	"scripts": {
 		"dev": "npm run build:theme && vite dev",
 		"build": "vite build",
+		"build:production": "npm run build && npm prune --omit=dev",
 		"prebuild": "npm run build:theme",
 		"build:lock": "npm i --package-lock-only --workspaces=false",
 		"preview": "vite preview",
