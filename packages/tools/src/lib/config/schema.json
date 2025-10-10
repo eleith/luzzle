@@ -46,15 +46,6 @@
       "properties": {
         "database": {
           "type": "string"
-        },
-        "css": {
-          "type": "object",
-          "properties": {
-            "theme": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
         }
       },
       "required": [
