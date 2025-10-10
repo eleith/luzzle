@@ -57,7 +57,7 @@
 		"vitest": "3.2.4"
 	},
 	"dependencies": {
-		"@luzzle/cli": "0.0.118",
+		"@luzzle/cli": "0.0.120",
 		"@luzzle/core": "0.0.22",
 		"eta": "3.5.0",
 		"lightningcss": "^1.30.2",

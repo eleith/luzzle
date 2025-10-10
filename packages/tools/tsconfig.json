@@ -16,8 +16,10 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "incremental": true,
+    "typeRoots": ["./src/@types", "./node_modules", "../../node_modules"],
     "module": "nodenext",
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
+    "types": ["vitest/globals"]
   },
   "include": ["src/**/*.ts", "src/**/*.json"]
 }
