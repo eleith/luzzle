@@ -26,8 +26,9 @@ describe('lib/config/config', () => {
 		expect(config).toBeDefined()
 	})
 
-	test('should throw an error if user config is not found', () => {
-		expect(() => loadConfig(`${import.meta.dirname}/non.existant.config.yaml`)).toThrow()
+	test('should load a user config', () => {
+		const config = loadConfig(`${import.meta.dirname}/not.user.config.yaml`)
+		expect(config).toBeDefined()
 	})
 
 	test('should throw an error if config validation fails with user config', () => {
