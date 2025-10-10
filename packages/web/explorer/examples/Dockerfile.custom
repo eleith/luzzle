@@ -1,0 +1,23 @@
+# This Dockerfile is an example for users to build a custom Luzzle Web Explorer image.
+ARG VERSION="latest"
+
+# Start from the official Luzzle Web Explorer base image.
+FROM git.eleith.com/eleith/luzzle-explorer:${VERSION}
+
+# Set the working directory inside the container.
+WORKDIR /app
+
+# Customize 
+COPY config.yaml ./config.yaml
+COPY contents ./contents
+
+# Build optimize Svelte application
+RUN npm run build
+RUN npm prune --omit=dev
+
+EXPOSE 3000
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Define the command to run the application when the container starts.
+ENTRYPOINT ["node", "build/index.js"]

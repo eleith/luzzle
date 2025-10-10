@@ -1,0 +1,11 @@
+services:
+  app:
+    container_name: luzzle
+    build:
+      context: .
+      dockerfile: Dockerfile.custom
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data/luzzle.sqlite:/app/data/luzzle.sqlite
+    restart: always
