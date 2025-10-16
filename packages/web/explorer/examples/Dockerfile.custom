@@ -2,19 +2,20 @@
 
 # --- 1. Build Stage ---
 # Use the official Luzzle Web Explorer image as our builder environment.
-ARG VERSION="latest"
-FROM git.eleith.com/eleith/luzzle-explorer:${VERSION} AS builder
+#ARG VERSION="latest"
+#FROM git.eleith.com/eleith/luzzle-explorer:${VERSION} AS builder
+FROM explorer-luzzle AS builder
 
 WORKDIR /app
 
-# user provided files
-COPY config.yaml ./config.yaml
-COPY contents ./contents
+# Provide your configuration
+# COPY config.yaml ./config.yaml
+# COPY contents ./contents
 
+RUN ls -la ./node_modules
 # Run the build process. This creates the /app/build directory
 # and prunes devDependencies from /app/node_modules.
 RUN npm run build:production
-
 
 # --- 2. Production Stage ---
 # Start from a lightweight, production-ready Node.js image.
@@ -30,8 +31,8 @@ ENV PORT=3000
 # Note: We no longer need to copy the 'contents' or theme source,
 # as they are now bundled into the 'build' output.
 COPY --from=builder /app/build ./build
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/config.yaml ./config.yaml
 
 # Expose the port the app runs on.
