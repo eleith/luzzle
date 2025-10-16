@@ -5,16 +5,16 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"predev": "npm run build:theme && npm run sync:content",
 		"prebuild": "npm run build:theme && npm run sync:content",
 		"build:production": "npm run build && npm prune --omit=dev",
 		"build:lock": "npm i --package-lock-only --workspaces=false",
-		"build:theme": "npx luzzle-tools theme --config ./config.yaml --minify > src/lib/ui/styles/theme.css",
+		"build:theme": "npx --no-workspaces luzzle-tools theme --config ./config.yaml --minify > src/lib/ui/styles/theme.build.css",
+		"build:icons": "npx --no-workspaces luzzle-tools icons --config ./config.yaml > src/lib/pieces/icon/templates.build.js",
 		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "npm run prebuild && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"check:config": "npx luzzle-tools validate --config ./config.yaml",
-		"sync:content": "node ./scripts/sync-content.js",
+		"check:config": "npx --no-workspaces luzzle-tools validate --config ./config.yaml",
+		"sync:content": "node ./scripts/sync-content.js && node ./scripts/sync-icon-components.js",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"tag": "node ./scripts/tag.js"
@@ -55,7 +55,7 @@
 	"type": "module",
 	"dependencies": {
 		"@luzzle/core": "0.0.22",
-		"@luzzle/tools": "0.0.41",
+		"@luzzle/tools": "0.0.42",
 		"better-sqlite3": "11.7.2",
 		"kysely": "0.27.5"
 	}

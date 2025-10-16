@@ -1,7 +1,7 @@
 <script lang="ts">
 	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
 	import CaretLeftIcon from 'virtual:icons/ph/caret-left-thin'
-	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
+	import PieceIcon from '$lib/pieces/components/icon.svelte'
 	import { marked } from 'marked'
 
 	let { data } = $props()
@@ -56,52 +56,60 @@
 		{/if}
 	</section>
 
-	<section class="details" class:details-media={hasMedia}>
-		<h1>
-			{data.piece.title}
-		</h1>
+	<section class="content">
+		<section class="details" class:details-media={hasMedia}>
+			<h1>
+				{data.piece.title}
+			</h1>
 
-		{#if data.piece.date_consumed}
-			<div style="font-size:var(--font-sizes-small);">
-				{new Date(data.piece.date_consumed).toLocaleDateString()}
-			</div>
-		{/if}
+			{#if data.piece.date_consumed}
+				<div style="font-size:var(--font-sizes-small);">
+					{new Date(data.piece.date_consumed).toLocaleDateString()}
+				</div>
+			{/if}
 
-		{#if data.piece.note}
-			<h2>notes</h2>
-			<div>
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html marked.parseInline(data.piece.note, { breaks: true })}
-			</div>
-		{/if}
+			{#if data.piece.note}
+				<h2>notes</h2>
+				<div>
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html marked.parseInline(data.piece.note, { breaks: true })}
+				</div>
+			{/if}
 
-		{#if metadata.url}
-			<h3>link</h3>
-			<div style="font-size:var(--font-sizes-small);">
-				<a href={metadata.url}>{metadata.url}</a>
-			</div>
-		{/if}
+			{#if metadata.url}
+				<h3>link</h3>
+				<div style="font-size:var(--font-sizes-small);">
+					<a href={metadata.url}>{metadata.url}</a>
+				</div>
+			{/if}
 
-		{#if data.piece.summary}
-			<h3>summary</h3>
-			<div>
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html marked.parseInline(data.piece.summary, { breaks: true })}
-			</div>
-		{/if}
+			{#if data.piece.summary}
+				<h3>summary</h3>
+				<div>
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html marked.parseInline(data.piece.summary, { breaks: true })}
+				</div>
+			{/if}
 
-		{#if data.tags.length}
-			<h3>tags</h3>
-			<div class="tags-container">
-				{#each data.tags as tag (tag.slug)}
-					<a href="/tags/{tag.slug}" class="tag">{tag.tag}</a>
-				{/each}
-			</div>
-		{/if}
+			{#if data.tags.length}
+				<h3>tags</h3>
+				<div class="tags-container">
+					{#each data.tags as tag (tag.slug)}
+						<a href="/tags/{tag.slug}" class="tag">{tag.tag}</a>
+					{/each}
+				</div>
+			{/if}
+		</section>
 	</section>
 </section>
 
 <style>
+	section.content {
+		width: 100%;
+		background: var(--colors-surface);
+		position: relative;
+	}
+
 	section.details {
 		display: flex;
 		flex-direction: column;
@@ -119,7 +127,7 @@
 		content: '';
 		border-top: solid 3px var(--colors-surface-container-highest);
 		margin: auto;
-		width: 75%;
+		width: 100%;
 	}
 
 	section.header .navigation-list {
@@ -152,7 +160,6 @@
 
 	section.header-media {
 		justify-content: space-around;
-		overflow: hidden;
 		position: relative;
 		width: auto;
 		padding-top: 0px;
@@ -189,7 +196,7 @@
 	}
 
 	section.header button.piece-icon-open {
-		max-height: 500px;
+		max-height: 620px;
 	}
 
 	.tags-container {

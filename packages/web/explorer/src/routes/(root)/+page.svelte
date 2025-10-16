@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state'
-	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
+	import PieceIcon from '$lib/pieces/components/icon.svelte'
 	import type { WebPieces } from '$lib/pieces/types.js'
 	import DiceFiveIcon from 'virtual:icons/ph/dice-five'
 	import ShuffleIcon from 'virtual:icons/ph/shuffle'
