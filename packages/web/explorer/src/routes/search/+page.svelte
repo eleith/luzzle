@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation'
-	import PieceIcon from '$lib/pieces/components/icon/index.svelte'
+	import PieceIcon from '$lib/pieces/components/icon.svelte'
 
 	let activePieceId = $state<string | null>(null)
 	let { data } = $props()
