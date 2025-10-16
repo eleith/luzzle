@@ -35,7 +35,7 @@ export interface Schema {
       tags?: string;
       assets?: string[];
     };
-    template?: {
+    components?: {
       icon?: string;
       opengraph?: string;
     };
