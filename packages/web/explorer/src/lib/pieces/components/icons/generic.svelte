@@ -59,7 +59,7 @@
 			</div>
 		</div>
 		<div class="browser-content-area">
-			<div class="browser-content-inner">
+			<div class="browser-content-inner" aria-hidden="true">
 				{#if piece.media}
 					<picture>
 						<source srcset={helpers.getImageUrl(piece.media, 'avif')} type="image/avif" />
