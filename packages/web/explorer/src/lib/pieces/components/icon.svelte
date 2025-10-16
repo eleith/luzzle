@@ -15,6 +15,14 @@
 		{ eager: true }
 	)
 
+	const iconComponentMap = new Map<string, { default: Component }>()
+	for (const path in iconComponents) {
+		const type = path.split('/').at(-2)
+		if (type) {
+			iconComponentMap.set(type, iconComponents[path])
+		}
+	}
+
 	type Props = {
 		piece: WebPieces
 		size?: WebPieceIconSizeName
@@ -24,18 +32,10 @@
 
 	let { piece, size = 's', active = false, lazy = false }: Props = $props()
 
-	const icons: Record<string, { default: Component }> = {}
-
-	for (const key in iconComponents) {
-		if (key.endsWith(`${piece.type}/icon.svelte`)) {
-			icons[piece.type] = iconComponents[key]
-		}
-	}
-
 	const config = page.data.config
-	const frontmatter = JSON.parse(piece.json_metadata || '{}') || {}
-	const tags = JSON.parse(piece.keywords || '[]') || []
-	const Icon = icons[piece.type]
+	const frontmatter = $derived(JSON.parse(piece.json_metadata || '{}') || {})
+	const tags = $derived(JSON.parse(piece.keywords || '[]') || [])
+	const Icon = $derived(iconComponentMap.get(piece.type))
 	const helpers: WebPieceIconProps['helpers'] = {
 		getPieceUrl: function () {
 			return `${config.url.app}/pieces/${piece.type}/${piece.slug}`
