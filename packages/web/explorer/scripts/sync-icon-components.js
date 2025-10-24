@@ -7,16 +7,10 @@ async function syncContent() {
 
 	const userConfigPath = './config.yaml'
 	const config = loadConfig(userConfigPath)
-
-	if (!config.content || !config.content.block) {
-		console.log('No icon components found in config. Nothing to sync.')
-		return
-	}
-
-	const outDir = path.resolve(process.cwd(), 'src/lib/pieces/components/icons')
+	const outDir = path.resolve(process.cwd(), 'src/lib/pieces/components/custom')
 	await mkdir(outDir, { recursive: true })
 
-	const syncPromises = Object.entries(config.pieces).map(async ([, piece]) => {
+	const syncIconPromises = Object.entries(config.pieces).map(async ([, piece]) => {
 		const sourcePath = piece.components?.icon
 		const name = piece.type
 
@@ -36,7 +30,27 @@ async function syncContent() {
 		}
 	})
 
-	await Promise.all(syncPromises)
+	const syncOpengraphPromises = Object.entries(config.pieces).map(async ([, piece]) => {
+		const sourcePath = piece.components?.opengraph
+		const name = piece.type
+
+		if (sourcePath) {
+			const source = path.resolve(process.cwd(), sourcePath)
+			const destinationDir = path.resolve(outDir, `${name}`)
+			const destination = path.join(destinationDir, 'opengraph.svelte')
+
+			try {
+				await mkdir(destinationDir, { recursive: true })
+				await copyFile(source, destination)
+				console.log(`Synced ${sourcePath} -> ${destination}`)
+			} catch (error) {
+				console.error(`Error syncing ${sourcePath}:`, error)
+				throw error
+			}
+		}
+	})
+
+	await Promise.all([...syncIconPromises, ...syncOpengraphPromises])
 	console.log('Icon component sync complete.')
 }
 

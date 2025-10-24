@@ -1,4 +1,4 @@
-import { type WebPieces } from '$lib/pieces/types'
+import { type WebPieces } from '@luzzle/tools/types'
 import { db } from '$lib/server/database'
 
 const MAX_FEED_ITEMS = 50

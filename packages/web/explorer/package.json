@@ -9,7 +9,6 @@
 		"build:production": "npm run build && npm prune --omit=dev",
 		"build:lock": "npm i --package-lock-only --workspaces=false",
 		"build:theme": "npx --no-workspaces luzzle-tools theme --config ./config.yaml --minify > src/lib/ui/styles/theme.build.css",
-		"build:icons": "npx --no-workspaces luzzle-tools icons --config ./config.yaml > src/lib/pieces/icon/templates.build.js",
 		"preview": "vite preview",
 		"check": "npm run prebuild && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -55,7 +54,7 @@
 	"type": "module",
 	"dependencies": {
 		"@luzzle/core": "0.0.22",
-		"@luzzle/tools": "0.0.42",
+		"@luzzle/tools": "0.0.44",
 		"better-sqlite3": "11.7.2",
 		"kysely": "0.27.5"
 	}

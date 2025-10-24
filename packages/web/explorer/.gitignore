@@ -9,8 +9,8 @@ node_modules
 /build
 /package-lock.json
 /src/lib/ui/styles/theme.build.css
-/src/lib/content/block/*.md
-/src/lib/pieces/components/icons/*/icon.svelte
+/src/lib/pieces/components/custom
+/content
 
 # OS
 .DS_Store

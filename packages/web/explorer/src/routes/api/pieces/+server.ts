@@ -1,6 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { WebPieceTypesRegExp, type WebPieces } from '$lib/pieces/types'
+import { type WebPieces } from '@luzzle/tools/types'
 import { db, sql } from '$lib/server/database'
+import { config } from '$lib/server/config'
 
 const TAKE_DEFAULT = 50
 
@@ -20,7 +21,7 @@ export const GET: RequestHandler = async ({ request }) => {
 		return new Response('no pieces for this page', { status: 404 })
 	}
 
-	if (type && !WebPieceTypesRegExp.test(type)) {
+	if (type && config.pieces.map((x) => x.type).indexOf(type) !== -1) {
 		return new Response('invalid type', { status: 400 })
 	}
 
