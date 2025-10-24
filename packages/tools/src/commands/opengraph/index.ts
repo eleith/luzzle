@@ -28,18 +28,19 @@ export default async function generateOpenGraphs(
 		.execute()
 
 	const force = options.force || false
+	const id = options.id || null
 	const operation = 'generate-open-graph'
 	const lastRun = force ? new Date(0) : await getLastRunFor(outputDir, operation)
 
 	const browser = await getBrowser()
 	const storage = new StorageFileSystem(luzzle)
 	const pieces = new Pieces(storage)
-	const piecesToProcess = options.id ? items.filter((item) => item.id === options.id) : items
+	const piecesToProcess = id ? items.filter((item) => item.id === id) : items
 
 	for (const item of piecesToProcess) {
 		const pieceModifiedTime = new Date(item.date_updated || item.date_added)
 
-		if (pieceModifiedTime > lastRun || force || options.id) {
+		if (pieceModifiedTime > lastRun || force || id) {
 			try {
 				const ogPath = getOpenGraphPath(item.type, item.id)
 				const outputPath = path.join(outputDir, ogPath)
@@ -56,7 +57,7 @@ export default async function generateOpenGraphs(
 		}
 	}
 
-	if (!options.id) {
+	if (!id) {
 		await setLastRunFor(outputDir, operation, new Date())
 	}
 

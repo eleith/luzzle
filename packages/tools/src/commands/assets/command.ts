@@ -24,10 +24,9 @@ export default function command(cli: Argv) {
 					alias: 'o',
 					demandOption: true,
 				},
-				limit: {
-					type: 'number',
-					description: 'maximum number of items to process, used for testing',
-					default: Infinity,
+				id: {
+					type: 'string',
+					description: 'id of just one item to process',
 				},
 				force: {
 					type: 'boolean',
@@ -40,7 +39,7 @@ export default function command(cli: Argv) {
 		},
 		async function(argv) {
 			await generateAssets(argv.config, argv.luzzle, argv.out, {
-				limit: argv.limit,
+				id: argv.id,
 				force: argv.force,
 			})
 		}

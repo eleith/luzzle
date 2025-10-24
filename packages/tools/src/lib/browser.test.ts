@@ -33,14 +33,14 @@ describe('src/commands/assets/utils', () => {
 		expect(path).toBe('books/1/image.xl.jpg')
 	})
 
+	test('should return the path to the variant for size xl when width is larger than 1000', () => {
+		const path = getImageAssetPath('books', '1', 'image.jpg', 1200, 'jpg')
+		expect(path).toBe('books/1/image.xl.jpg')
+	})
+
 	test('should return the path to the variant with avif format', () => {
 		const path = getImageAssetPath('books', '1', 'image.jpg', 350, 'avif')
 		expect(path).toBe('books/1/image.l.avif')
-	})
-
-	test('should return the path to the original asset if the asset is not an image', () => {
-		const path = getAssetPath('books', '1', 'document.pdf')
-		expect(path).toBe('books/1/document.pdf')
 	})
 
 	test('should return false if the asset is not an image', () => {
@@ -77,5 +77,10 @@ describe('src/commands/assets/utils', () => {
 			const path = getOpenGraphPath('post', '123')
 			expect(path).toBe('post/123/opengraph.png')
 		})
+	})
+
+	test('getAssetPath should handle asset with matching path', () => {
+		const path = getAssetPath('books', '1', '/path/to/asset.jpg')
+		expect(path).toBe('books/1/asset.jpg')
 	})
 })
