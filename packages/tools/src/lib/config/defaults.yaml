@@ -25,11 +25,6 @@ paths:
   # The connection URL for the database.
   database: './data/luzzle.sqlite'
 
-content:
-  block:
-    root: './content/block/root.md'
-    feed: './content/block/feed.md'
-
 pieces: []
 
 theme:
