@@ -1,98 +1,98 @@
-import { describe, test, expect, vi, afterEach } from 'vitest'
-import {
-	bufferToBase64,
-	countWords,
-	getDynamicFontSize,
-	getHashIndexFor,
-	extractImage,
-} from './html.js'
-import Sharp from 'sharp'
-import { Vibrant } from 'node-vibrant/node'
+import { describe, test, expect, vi, afterEach, MockInstance } from 'vitest'
+import { generateHtml } from './html.js'
+import { Pieces, Storage } from '@luzzle/cli'
+import { WebPieces } from '../sqlite/index.js'
+import { Config } from '../../lib/config/config.js'
+import { getIconComponentForType, getOpengraphComponentForType } from './svelte.js'
+import { findAndReplaceLuzzleUrls, getProps} from './utils.js'
+import { render } from 'svelte/server'
+import { Component } from 'svelte'
+import { OpengraphProps } from 'src/types.js'
 
-vi.mock('sharp', () => {
-	const mockSharp = {
-		clone: vi.fn().mockReturnThis(),
-		resize: vi.fn().mockReturnThis(),
-		toFormat: vi.fn().mockReturnThis(),
-		toBuffer: vi.fn().mockResolvedValue(Buffer.from('test')),
-	}
-	return {
-		__esModule: true,
-		default: vi.fn(() => mockSharp),
-	}
-})
-vi.mock('node-vibrant/node')
+vi.mock('@luzzle/cli')
+vi.mock('./svelte.js')
+vi.mock('./utils.js')
+vi.mock('svelte/server')
 
-describe('generate-open-graph/html', () => {
-	const mocks = {
-		Sharp: vi.mocked(Sharp),
-		Vibrant: vi.mocked(Vibrant),
-	}
+const mocks = {
+	findAndReplaceLuzzleUrls: vi.mocked(findAndReplaceLuzzleUrls),
+	getOpengraphComponentForType: vi.mocked(getOpengraphComponentForType),
+	getIconComponentForType: vi.mocked(getIconComponentForType),
+	getProps: vi.mocked(getProps),
+	render: vi.mocked(render),
+}
 
+const spies: { [key: string]: MockInstance } = {}
+
+const mockPieces = new Pieces({} as unknown as Storage)
+const mockConfig = {
+	paths: { database: 'test.db', config: 'test' },
+	url: { app: 'test', luzzle_assets: 'test', app_assets: 'test' },
+	text: { title: 'test', description: 'test' },
+} as unknown as Config
+
+describe('src/commands/opengraph/html', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
 		})
+		Object.values(spies).forEach((spy) => {
+			spy.mockRestore()
+		})
 	})
 
-	test('should convert a buffer to a base64 string', () => {
-		const buffer = Buffer.from('test')
-		const result = bufferToBase64(buffer, 'text', 'plain')
-		expect(result).toBe('data:text/plain;base64,dGVzdA==')
+	test('generateHtml should correctly generate HTML for an item', async () => {
+		const item = {
+			type: 'book',
+			id: '1',
+			file_path: 'test',
+			date_added: 'test',
+		} as unknown as WebPieces
+		const mockOpenGraphComponent = { render: vi.fn() } as unknown as Component
+		const mockIconComponent = { render: vi.fn() } as unknown as Component
+		const mockProps = { some: 'props' } as unknown as OpengraphProps
+		const mockRenderResult = { head: '<meta name="test" />', body: '<h1>Hello</h1>', html: '--' }
+
+		mocks.getOpengraphComponentForType.mockResolvedValue(mockOpenGraphComponent )
+		mocks.getIconComponentForType.mockResolvedValue(mockIconComponent)
+		mocks.getProps.mockResolvedValue(mockProps)
+		mocks.render.mockResolvedValue(mockRenderResult)
+		mocks.findAndReplaceLuzzleUrls.mockResolvedValue(mockRenderResult.body)
+
+		const result = await generateHtml(item, mockPieces, mockConfig)
+
+		expect(mocks.render).toHaveBeenCalledOnce()
+		expect(result).toContain(mockRenderResult.head)
+		expect(result).toContain(mockRenderResult.body)
 	})
 
-	test('should count the words in a string', () => {
-		const text = 'this is a test'
-		const result = countWords(text)
-		expect(result).toBe(4)
+	test('generateHtml should skip html generation', async () => {
+		const item = {
+			type: 'book',
+			id: '1',
+			file_path: 'test',
+			date_added: 'test',
+		} as unknown as WebPieces
+
+		mocks.getOpengraphComponentForType.mockResolvedValue(null)
+
+		const html = await generateHtml(item, mockPieces, mockConfig)
+
+		expect(html).toBeNull()
 	})
 
-	test('should count the words in a string even if empty', () => {
-		const text = ''
-		const result = countWords(text)
-		expect(result).toBe(0)
-	})
+	test('generateHtml should handle errors during HTML generation', async () => {
+		const item = {
+			type: 'book',
+			id: '1',
+			file_path: 'test',
+			date_added: 'test',
+		} as unknown as WebPieces
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
-	test('should calculate the dynamic font size', () => {
-		const title = 'a long title that should be smaller'
-		const result = getDynamicFontSize(title, 20, 10)
-		expect(result).toBe(12)
-	})
+		mocks.getOpengraphComponentForType.mockRejectedValue(new Error('Test Error'))
 
-	test('should get a hash index for a word', () => {
-		const word = 'test'
-		const result = getHashIndexFor(word, 10)
-		expect(result).toBe(8)
-	})
-
-	test('should extract image and palette', async () => {
-		const buffer = Buffer.from('image data')
-		const mockVibrant = {
-			getPalette: vi.fn().mockResolvedValue({}),
-		}
-		mocks.Vibrant.mockReturnValue(mockVibrant as unknown as Vibrant)
-
-		const result = await extractImage(buffer)
-
-		expect(result.base64).toBe('data:image/jpeg;base64,dGVzdA==')
-		expect(result.palette).toBeDefined()
-		expect(mocks.Sharp).toHaveBeenCalledWith(buffer)
-		expect(mockVibrant.getPalette).toHaveBeenCalledOnce()
-	})
-
-	test('should extract image and palette with options', async () => {
-		const buffer = Buffer.from('image data')
-		const mockVibrant = {
-			getPalette: vi.fn().mockResolvedValue({}),
-		}
-		const options = { width: 100, height: 100, format: 'png' as const }
-		mocks.Vibrant.mockReturnValue(mockVibrant as unknown as Vibrant)
-
-		const result = await extractImage(buffer, options)
-
-		expect(result.base64).toBe('data:image/png;base64,dGVzdA==')
-		expect(result.palette).toBeDefined()
-		expect(mocks.Sharp).toHaveBeenCalledWith(buffer)
-		expect(mockVibrant.getPalette).toHaveBeenCalledOnce()
+		await expect(generateHtml(item, mockPieces, mockConfig)).rejects.toThrowError()
+		expect(consoleErrorSpy).not.toHaveBeenCalled()
 	})
 })

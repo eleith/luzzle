@@ -10,14 +10,11 @@ async function generateVariantJobs(
 	item: LuzzleSelectable<'pieces_items'>,
 	asset: string,
 	pieces: Pieces,
-	sizes: Record<string, number>,
+	widths: number[],
 	formats: Array<'avif' | 'jpg'>
 ) {
 	const jobs: {
-		size: {
-			name: string,
-			width: number
-		},
+		width: number
 		format: (typeof formats)[number]
 		sharp: Sharp.Sharp
 	}[] = []
@@ -25,14 +22,11 @@ async function generateVariantJobs(
 	try {
 		const image = await pieces.getPieceAsset(asset)
 		const sharpImage = Sharp(image)
-		const sizeEntries = Object.entries(sizes)
 
 		for (const format of formats) {
-			for (const size of sizeEntries) {
-				const name = size[0]
-				const width = size[1]
+			for (const width of widths) {
 				const sharp = generateVariantSharpJob(sharpImage, width, format)
-				jobs.push({ size: { name, width }, format, sharp })
+				jobs.push({ width, format, sharp })
 			}
 		}
 	} catch (error) {

@@ -6,7 +6,7 @@ import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { mockKysely } from '../sqlite/database.mock.js'
 import { writeFile, mkdir } from 'fs/promises'
 import { generateVariantJobs } from './variants.js'
-import { getAssetDir, getAssetPath, isImage } from './utils.js'
+import { getAssetDir, getAssetPath, isImage } from '../../lib/browser.js'
 import generateAssets from './index.js'
 import { Sharp } from 'sharp'
 
@@ -16,7 +16,7 @@ vi.mock('@luzzle/core')
 vi.mock('@luzzle/cli')
 vi.mock('fs/promises')
 vi.mock('./variants.js')
-vi.mock('./utils.js')
+vi.mock('../../lib/browser.js')
 
 const mocks = {
 	getLastRunFor: vi.mocked(getLastRunFor),
@@ -374,7 +374,7 @@ describe('generateAssets', () => {
 		mocks.generateVariantJobs.mockResolvedValue([
 			{
 				sharp: { toFile: toFileMock } as unknown as Sharp,
-				size: { name: 's', width: 125 },
+				width: 125,
 				format: 'jpg',
 			},
 		])

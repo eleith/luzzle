@@ -46,7 +46,10 @@
       "properties": {
         "database": {
           "type": "string"
-        }
+        },
+				"config": {
+					"type": "string"
+				}
       },
       "required": [
         "database"

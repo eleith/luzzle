@@ -1,4 +1,5 @@
-/* v8 ignore start */
-export type { Config, ConfigPublic } from './lib/config/config.js'
-export { loadConfig } from './lib/config/config.js'
-/* v8 ignore stop */
+import type { Config, ConfigPublic } from './lib/config/config.js'
+import { loadConfig } from './lib/config/config.js'
+import { getPalette } from './lib/vibrant.js'
+
+export { getPalette, type Config, type ConfigPublic, loadConfig }

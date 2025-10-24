@@ -3,6 +3,7 @@ import { Browser } from 'puppeteer'
 async function generatePng(
 	html: string,
 	browser: Browser,
+	outputFilePath: string,
 ) {
 	const page = await browser.newPage()
 
@@ -11,13 +12,11 @@ async function generatePng(
 			width: 1200,
 			height: 630,
 		})
-		await page.setContent(html, { waitUntil: 'networkidle0' })
+		await page.setContent(html)
 
-		const imageBuffer = await page.screenshot({
-			type: 'png',
+		return await page.screenshot({
+			path: `${outputFilePath.replace(/\.png$/, '')}.png`,
 		})
-
-		return imageBuffer
 	} catch (error) {
 		throw new Error(`Failed to generate image with Puppeteer: ${error}`)
 	/* v8 ignore next line */

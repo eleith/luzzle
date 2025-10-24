@@ -1,4 +1,3 @@
-/* v8 ignore start */
 import type { Argv } from 'yargs'
 import { validateHandler, getHandler, setHandler } from './index.js'
 
@@ -57,5 +56,4 @@ export default function configCommand(cli: Argv) {
 			.demandCommand(1, 'You need to specify a subcommand [validate, get, set]')
 	})
 }
-/* v8 ignore stop */
 

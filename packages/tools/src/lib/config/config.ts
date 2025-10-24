@@ -10,12 +10,14 @@ export type ConfigPublic = {
 	url: Pick<Config['url'], 'app' | 'luzzle_assets' | 'app_assets'>
 	text: Config['text']
 }
+
 function loadConfig(userConfigPath?: string): Config {
 	const schema = schemaJson
 	const config = defaults as Config
-
 	const ajv = new Ajv()
 	const validate = ajv.compile(schema)
+
+	config.paths.config = userConfigPath
 
 	if (userConfigPath) {
 		if (existsSync(userConfigPath)) {

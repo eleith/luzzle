@@ -1,11 +1,11 @@
 {
 	"name": "@luzzle/tools",
-	"version": "0.0.42",
+	"version": "0.0.43",
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
 		"compile": "tsc --noEmit",
-		"build:assets": "cp -r ./src/commands/opengraph/templates/ ./dist/src/commands/opengraph && cp -r ./src/lib/config ./dist/src/lib",
+		"build:assets": "cp -r ./src/commands/opengraph/components/ ./dist/src/commands/opengraph && cp -r ./src/lib/config ./dist/src/lib",
 		"build:types": "json2ts --input src/lib/config/schema.json --output src/lib/config/schema.ts",
 		"build:executable": "chmod +x ./dist/src/cli.js",
 		"build:config-defaults": "npx yaml --json --indent 2 --single < ./src/lib/config/defaults.yaml > ./src/lib/config/defaults.json",
@@ -38,6 +38,10 @@
 		"./browser": {
 			"types": "./dist/src/browser.d.ts",
 			"import": "./dist/src/browser.js"
+		},
+		"./types": {
+			"types": "./dist/src/types.d.ts",
+			"import": "./dist/src/types.js"
 		}
 	},
 	"devDependencies": {
@@ -59,11 +63,13 @@
 	"dependencies": {
 		"@luzzle/cli": "0.0.120",
 		"@luzzle/core": "0.0.22",
+		"cheerio": "1.1.2",
 		"eta": "^4.0.1",
 		"lightningcss": "^1.30.2",
 		"node-vibrant": "4.0.3",
 		"puppeteer": "24.19.0",
 		"sharp": "0.33.5",
+		"svelte": "5.39.4",
 		"yaml": "^2.7.0",
 		"yargs": "17.6.0"
 	},

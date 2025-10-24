@@ -24,19 +24,13 @@ export default function command(cli: Argv) {
 					alias: 'o',
 					demandOption: true,
 				},
-				limit: {
-					type: 'number',
-					description: 'maximum number of items to process, used for testing',
-					default: Infinity,
-				},
-				template: {
+				id: {
 					type: 'string',
-					description: 'eta template for open graph generation',
-					demandOption: true,
+					description: 'id of just one item to process',
 				},
 				force: {
 					type: 'boolean',
-					description: 'force processing of all items, irrespective of last modiified times',
+					description: 'force processing of all items, irrespective of last modified times',
 					default: false,
 					alias: 'f',
 				},
@@ -44,8 +38,8 @@ export default function command(cli: Argv) {
 			return options
 		},
 		async function(argv) {
-			await generateOpenGraphs(argv.config, argv.luzzle, argv.out, argv.template, {
-				limit: argv.limit,
+			await generateOpenGraphs(argv.config, argv.luzzle, argv.out, {
+				id: argv.id,
 				force: argv.force,
 			})
 		}

@@ -5,7 +5,7 @@ import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { generateVariantJobs } from './variants.js'
 import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
 import { loadConfig } from '../../lib/config/config.js'
-import { getAssetDir, getAssetPath, isImage, ASSET_SIZES } from './utils.js'
+import { getAssetDir, getAssetPath, isImage, ASSET_SIZES, getImageAssetPath } from '../../lib/browser.js'
 
 async function generateVariantsForAssetField(
 	item: LuzzleSelectable<'pieces_items'>,
@@ -16,13 +16,17 @@ async function generateVariantsForAssetField(
 	const formats: Array<'avif' | 'jpg'> = ['avif', 'jpg']
 
 	try {
-		const jobs = await generateVariantJobs(item, asset, pieces, ASSET_SIZES, formats)
+		const widths = Object.values(ASSET_SIZES)
+		const jobs = await generateVariantJobs(item, asset, pieces, widths, formats)
 
 		const toFileJobs = jobs.map((job) => {
-			const assetPath = getAssetPath(item.type, item.id, asset, {
-				format: job.format,
-				size: job.size.name as keyof typeof ASSET_SIZES,
-			})
+			const assetPath = getImageAssetPath(
+				item.type,
+				item.id,
+				asset,
+				job.width,
+				job.format
+			)
 			return job.sharp.toFile(`${outDir}/${assetPath}`)
 		})
 		await Promise.all(toFileJobs)
@@ -57,14 +61,17 @@ export default async function generateAssets(
 	const pieces = new Pieces(storage)
 	const itemsToProcess = limit === Infinity ? items : items.slice(0, limit)
 
-	const pieceFields = config.pieces.reduce((acc, piece) => {
-		const mediaField = piece.fields.media
-		const assetFields = piece.fields.assets || []
-		const type = piece.type
-		acc[type] = [mediaField, ...assetFields].filter(Boolean) as string[]
+	const pieceFields = config.pieces.reduce(
+		(acc, piece) => {
+			const mediaField = piece.fields.media
+			const assetFields = piece.fields.assets || []
+			const type = piece.type
+			acc[type] = [mediaField, ...assetFields].filter(Boolean) as string[]
 
-	 	return acc
-	}, {} as Record<string, string[]>)
+			return acc
+		},
+		{} as Record<string, string[]>
+	)
 
 	for (const item of itemsToProcess) {
 		const pieceModifiedTime = new Date(item.date_updated || item.date_added)
