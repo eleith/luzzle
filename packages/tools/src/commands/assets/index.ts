@@ -39,7 +39,7 @@ export default async function generateAssets(
 	configPath: string,
 	luzzle: string,
 	outDir: string,
-	options: { force?: boolean; limit?: number }
+	options: { force?: boolean; id?: string }
 ) {
 	const config = loadConfig(configPath)
 	const dbPath = path.join(path.dirname(configPath), config.paths.database)
@@ -54,12 +54,13 @@ export default async function generateAssets(
 		.execute()
 
 	const force = options.force || false
-	const limit = options.limit || Infinity
+	const id = options.id || null
 	const operation = 'copy-assets'
 	const lastRun = force ? new Date(0) : await getLastRunFor(outDir, operation)
+
 	const storage = new StorageFileSystem(luzzle)
 	const pieces = new Pieces(storage)
-	const itemsToProcess = limit === Infinity ? items : items.slice(0, limit)
+	const itemsToProcess = id ? items.filter((item) => item.id === id) : items
 
 	const pieceFields = config.pieces.reduce(
 		(acc, piece) => {
@@ -77,7 +78,7 @@ export default async function generateAssets(
 		const pieceModifiedTime = new Date(item.date_updated || item.date_added)
 		const fields = pieceFields[item.type] || []
 
-		if (fields.length && (pieceModifiedTime > lastRun || force)) {
+		if (fields.length && (pieceModifiedTime > lastRun || force || id)) {
 			const frontmatter = JSON.parse(item.frontmatter_json)
 			const assets = fields.flatMap((field) => frontmatter[field]).filter(Boolean) as string[]
 
@@ -91,6 +92,7 @@ export default async function generateAssets(
 					try {
 						const assetPath = getAssetPath(item.type, item.id, asset)
 						const assetBuffer = await pieces.getPieceAsset(asset)
+
 						await writeFile(`${outDir}/${assetPath}`, assetBuffer)
 
 						if (isImage(asset)) {
@@ -104,7 +106,7 @@ export default async function generateAssets(
 		}
 	}
 
-	if (!force && (limit === Infinity || !limit)) {
+	if (!id) {
 		await setLastRunFor(outDir, operation, new Date())
 	}
 }

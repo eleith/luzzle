@@ -275,26 +275,16 @@ describe('generateAssets', () => {
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 	})
 
-	test('should limit variant generation', async () => {
+	test('should force variant generation for one id', async () => {
 		const { mockPieces } = setupDefaultMocks(
 			[
 				{
 					id: '1',
 					type: 'books',
-					date_updated: 100,
-					date_added: 50,
+					date_updated: 0,
+					date_added: 0,
 					frontmatter_json: '{"image": "/path/to/image.jpg"}',
 					file_path: 'book.md',
-					note_markdown: '',
-					assets_json_array: '[]',
-				},
-				{
-					id: '2',
-					type: 'books',
-					date_updated: 100,
-					date_added: 50,
-					frontmatter_json: '{"image": "/path/to/image2.jpg"}',
-					file_path: 'book2.md',
 					note_markdown: '',
 					assets_json_array: '[]',
 				},
@@ -306,14 +296,18 @@ describe('generateAssets', () => {
 				},
 			]
 		)
+		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.isImage.mockReturnValue(true)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', { limit: 1 })
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {
+			id: '1',
+		})
 
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
 		expect(mocks.writeFile).toHaveBeenCalledOnce()
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 	})
+
 
 	test('should handle items with no assets', async () => {
 		setupDefaultMocks(
@@ -420,6 +414,52 @@ describe('generateAssets', () => {
 
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
 		expect(mocks.writeFile).toHaveBeenCalledOnce()
+	})
+
+	test('should filter items by id', async () => {
+		const { mockPieces } = setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image.jpg"}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+				{
+					id: '2',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{"image": "/path/to/image2.jpg"}',
+					file_path: 'book2.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { media: 'image', title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
+
+		mocks.isImage.mockReturnValue(true)
+		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetPath.mockImplementation(
+			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
+		)
+
+		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', { id: '1' })
+
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
+		expect(mocks.writeFile).toHaveBeenCalledOnce()
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/image.jpg')
+		expect(mocks.setLastRunFor).not.toHaveBeenCalled()
 	})
 
 	test('should handle no variant jobs', async () => {

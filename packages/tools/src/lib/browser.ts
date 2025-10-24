@@ -56,7 +56,11 @@ function getImageAssetPath(
 
 function getAssetPath(type: string, id: string, asset: string) {
 	const dir = getAssetDir(type, id)
-	return `${dir}/${asset}`
+	const match = asset.match(ASSET_PATH_MATCHER)
+	/* v8 ignore next */
+	const filename = match ? match[1] : asset
+
+	return `${dir}/${filename}`
 }
 
 type IconProps = {
