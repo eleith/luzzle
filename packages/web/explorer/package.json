@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web",
-	"version": "0.0.85",
+	"version": "0.0.86",
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
@@ -56,6 +56,7 @@
 		"@luzzle/core": "0.0.22",
 		"@luzzle/tools": "0.0.44",
 		"better-sqlite3": "11.7.2",
-		"kysely": "0.27.5"
+		"kysely": "0.27.5",
+		"sharp": "0.33.5"
 	}
 }
