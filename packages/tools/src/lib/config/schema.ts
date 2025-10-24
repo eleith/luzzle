@@ -20,10 +20,10 @@ export interface Schema {
     database: string;
     config?: string;
   };
-  content: {
-    block: {
-      root: string;
-      feed: string;
+  content?: {
+    block?: {
+      root?: string;
+      feed?: string;
     };
   };
   pieces: {
