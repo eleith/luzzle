@@ -23,7 +23,8 @@ export const load: PageServerLoad = async (page) => {
 	const mediaPath = piece.media
 		? getImageAssetPath(piece.type, piece.id, piece.media, 500, 'jpg')
 		: null
-	const mediaUrl = mediaPath ? `${config.url.app}/pieces/assets/${mediaPath}` : null
+	const baseUrl = config.url.luzzle_assets || config.url.app
+	const mediaUrl = mediaPath ? `${baseUrl}/pieces/assets/${mediaPath}` : null
 	const palette = mediaUrl ? await getPalette(mediaUrl) : undefined
 
 	return {
