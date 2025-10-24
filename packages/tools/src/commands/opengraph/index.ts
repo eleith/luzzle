@@ -1,74 +1,62 @@
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
-import { mkdir, writeFile } from 'fs/promises'
 import { generateHtml } from './html.js'
 import { generatePng } from './png.js'
 import { getBrowser } from './browser.js'
-import { Browser } from 'puppeteer'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import path from 'path'
-import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
+import { getDatabaseClient } from '@luzzle/core'
 import { loadConfig } from '../../lib/config/config.js'
-import { getOpenGraphPath } from './utils.js'
-
-async function generateOpenGraph(
-	item: LuzzleSelectable<'pieces_items'>,
-	pieces: Pieces,
-	outputDir: string,
-	browser: Browser,
-	template: string
-) {
-	try {
-		console.log(`generating opengraph for ${item.file_path} (${item.id})`)
-
-		const html = await generateHtml(item, pieces, template)
-		const png = await generatePng(html, browser)
-		const ogPath = getOpenGraphPath(item.type, item.id)
-		const outputPath = path.join(outputDir, ogPath)
-		const ogDir = path.dirname(outputPath)
-
-		await mkdir(ogDir, { recursive: true })
-		await writeFile(outputPath, png)
-	} catch (e) {
-		console.error(`Error generating Open Graph for ${item.file_path} (${item.id}): ${e}`)
-	}
-}
+import { getOpenGraphPath } from '../../lib/browser.js'
+import { WebPieces } from '../sqlite/index.js'
 
 export default async function generateOpenGraphs(
 	configPath: string,
 	luzzle: string,
 	outputDir: string,
-	template: string,
-	options: { force?: boolean; limit?: number }
+	options: { force?: boolean; id?: string }
 ) {
 	const config = loadConfig(configPath)
-	const dbPath = path.join(path.dirname(configPath), config.paths.database)
+	const configDir = path.dirname(configPath)
+	const dbPath = path.join(configDir, config.paths.database)
 	const db = getDatabaseClient(dbPath)
 	const items = await db
-		.selectFrom('pieces_items')
+		.withTables<{ web_pieces: WebPieces }>()
+		.selectFrom('web_pieces')
 		.selectAll()
 		.orderBy('date_updated', 'desc')
 		.orderBy('type', 'asc')
 		.execute()
 
 	const force = options.force || false
-	const limit = options.limit || Infinity
 	const operation = 'generate-open-graph'
 	const lastRun = force ? new Date(0) : await getLastRunFor(outputDir, operation)
-	const piecesToProcess = limit === Infinity ? items : items.slice(0, limit)
 
 	const browser = await getBrowser()
 	const storage = new StorageFileSystem(luzzle)
 	const pieces = new Pieces(storage)
+	const piecesToProcess = options.id ? items.filter((item) => item.id === options.id) : items
 
 	for (const item of piecesToProcess) {
 		const pieceModifiedTime = new Date(item.date_updated || item.date_added)
 
-		if (pieceModifiedTime > lastRun || force) {
-			await generateOpenGraph(item, pieces, outputDir, browser, template)
+		if (pieceModifiedTime > lastRun || force || options.id) {
+			try {
+				const ogPath = getOpenGraphPath(item.type, item.id)
+				const outputPath = path.join(outputDir, ogPath)
+				const html = await generateHtml(item, pieces, config)
+
+				if (html) {
+					await generatePng(html, browser, outputPath)
+				} else {
+					console.warn(`Skipped making opengraph for ${item.file_path} (${item.id}): no opengraph svelte component found.`)
+				}
+			} catch (e) {
+				console.error(`Error making opengraph for ${item.file_path} (${item.id}): ${e}`)
+			}
 		}
 	}
 
-	if (!force && (limit === Infinity || !limit)) {
+	if (!options.id) {
 		await setLastRunFor(outputDir, operation, new Date())
 	}
 

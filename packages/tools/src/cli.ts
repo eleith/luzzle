@@ -1,5 +1,4 @@
 #! /usr/bin/env node
-/* v8 ignore start */
 import yargs from 'yargs'
 import assetCommand from './commands/assets/command.js'
 import openGraphCommand from './commands/opengraph/command.js'
@@ -24,4 +23,3 @@ async function parseArgs(args: string[]) {
 }
 
 await parseArgs(hideBin(process.argv))
-/* v8 ignore stop */

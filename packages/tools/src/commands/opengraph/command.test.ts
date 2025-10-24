@@ -54,45 +54,29 @@ describe('opengraph command', () => {
 				alias: 'o',
 				demandOption: true,
 			},
-			limit: {
-				type: 'number',
-				description: 'maximum number of items to process, used for testing',
-				default: Infinity,
-			},
-			template: {
+			id: {
 				type: 'string',
-				description: 'eta template for open graph generation',
-				demandOption: true,
+				description: 'id of just one item to process',
 			},
 			force: {
 				type: 'boolean',
-				description: 'force processing of all items, irrespective of last modiified times',
+				description: 'force processing of all items, irrespective of last modified times',
 				default: false,
 				alias: 'f',
 			},
 		})
 
-		const argv = {
-			config: '/path/to/config.yaml',
-			luzzle: '/path/to/luzzle',
-			out: '/path/to/out',
-			limit: 10,
+		await handler({
+			config: 'test',
+			luzzle: 'test',
+			out: 'test',
+			id: 'test-id',
 			force: true,
-			template: 'template.eta',
-			$0: '',
-			_: [],
-		}
-		await handler(argv)
+		})
 
-		expect(mocks.generateOpenGraphs).toHaveBeenCalledWith(
-			'/path/to/config.yaml',
-			'/path/to/luzzle',
-			'/path/to/out',
-			'template.eta',
-			{
-				limit: 10,
-				force: true,
-			}
-		)
+		expect(mocks.generateOpenGraphs).toHaveBeenCalledWith('test', 'test', 'test', {
+			id: 'test-id',
+			force: true,
+		})
 	})
 })

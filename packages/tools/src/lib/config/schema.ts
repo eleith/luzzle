@@ -18,6 +18,7 @@ export interface Schema {
   };
   paths: {
     database: string;
+    config?: string;
   };
   content: {
     block: {

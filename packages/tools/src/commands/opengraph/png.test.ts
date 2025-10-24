@@ -30,7 +30,7 @@ describe('generate-open-graph/png', () => {
 			}),
 		} as unknown as Browser;
 
-		const imageBuffer = await generatePng('<html></html>', browser);
+		const imageBuffer = await generatePng('<html></html>', browser, '');
 
 		expect(imageBuffer).toBeDefined();
 		expect(mocks.newPage).toHaveBeenCalledOnce();
@@ -51,7 +51,7 @@ describe('generate-open-graph/png', () => {
 			}),
 		} as unknown as Browser;
 
-		await expect(generatePng('<html></html>', browser)).rejects.toThrowError()
+		await expect(generatePng('<html></html>', browser, '')).rejects.toThrowError()
 		expect(mocks.close).toHaveBeenCalledOnce();
 	});
 });
