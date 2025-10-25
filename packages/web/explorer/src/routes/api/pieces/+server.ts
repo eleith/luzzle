@@ -21,7 +21,7 @@ export const GET: RequestHandler = async ({ request }) => {
 		return new Response('no pieces for this page', { status: 404 })
 	}
 
-	if (type && config.pieces.map((x) => x.type).indexOf(type) !== -1) {
+	if (type && config.pieces.map((x) => x.type).indexOf(type) === -1) {
 		return new Response('invalid type', { status: 400 })
 	}
 
