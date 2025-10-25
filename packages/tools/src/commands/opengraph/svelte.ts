@@ -1,8 +1,7 @@
-import { readFile, writeFile } from 'fs/promises'
+import { readFile } from 'fs/promises'
 import { Component } from 'svelte'
 import { compile } from 'svelte/compiler'
 import path from 'path'
-import { fileURLToPath } from 'url'
 import { WebPieces } from '../sqlite/index.js'
 import { Config } from '../../lib/config/config.js'
 import { createHash } from 'crypto'
@@ -11,14 +10,47 @@ import { IconProps, OpengraphProps } from '../../types.js'
 
 const CompiledStore: Record<string, Component> = {}
 
+async function embedFontsInCompiledCode(code: string, sveltePath: string) {
+	const fontRegExp = /src:\s*url\((.*\.woff2?)\)/g
+	const codeWithFonts = await replaceAsync(code, fontRegExp, async (_, fontPath) => {
+		const fullFontPath = path.join(path.dirname(sveltePath), fontPath)
+		const fontBuffer = await readFile(fullFontPath)
+		const fontExt = path.extname(fullFontPath).slice(1)
+		const base64Font = bufferToBase64(fontBuffer, 'font', fontExt)
+
+		return `src: url(data:font/${fontExt};base64,${base64Font})`
+	})
+	return codeWithFonts
+}
+
+async function replaceImportsInCompiledCode(code: string) {
+	const importRegex = /(from|import)\s+(['"])([^'"]+)\2/g
+	const finalCompiledCode = await replaceAsync(
+		code,
+		importRegex,
+		async (match, keyword, quote, specifier) => {
+			if (specifier.startsWith('.') || specifier.startsWith('/')) {
+				return match
+			}
+
+			try {
+				const resolvedPath = import.meta.resolve(specifier).toString()
+				return `${keyword} ${quote}${resolvedPath}${quote}`
+			} catch (err) {
+				console.error(`Could not resolve module: ${specifier}`, err)
+				return match
+			}
+		}
+	)
+	return finalCompiledCode
+}
+
 async function getSvelteComponent(sveltePath: string): Promise<(typeof CompiledStore)[string]> {
 	const svelteHash = createHash('md5').update(sveltePath).digest('hex').slice(0, 8)
 	const svelteId = `${path.basename(sveltePath)}-${svelteHash}`
-	const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 	if (!CompiledStore[svelteId]) {
 		const svelteCode = await readFile(sveltePath, 'utf-8')
-		const svelteModulePath = path.join(__dirname, 'components', `${svelteId}.js`)
 		const svelteCompiled = compile(svelteCode, {
 			generate: 'server',
 			filename: svelteId,
@@ -28,22 +60,10 @@ async function getSvelteComponent(sveltePath: string): Promise<(typeof CompiledS
 			},
 		})
 
-		const fontRegExp = /src:\s*url\((.*\.woff2?)\)/g
-		const compiledCode = await replaceAsync(
-			svelteCompiled.js.code,
-			fontRegExp,
-			async (_, fontPath) => {
-				const fullFontPath = path.join(path.dirname(sveltePath), fontPath)
-				const fontBuffer = await readFile(fullFontPath)
-				const fontExt = path.extname(fullFontPath).slice(1)
-				const base64Font = bufferToBase64(fontBuffer, 'font', fontExt)
-
-				return `src: url(data:font/${fontExt};base64,${base64Font})`
-			}
-		)
-
-		await writeFile(svelteModulePath, compiledCode)
-		const opengraphModule = await import(svelteModulePath)
+		const compiledCodeWithFonts = await embedFontsInCompiledCode(svelteCompiled.js.code, sveltePath)
+		const finalCompiledCode = await replaceImportsInCompiledCode(compiledCodeWithFonts)
+		const encodedCode = encodeURIComponent(finalCompiledCode)
+		const opengraphModule = await import(`data:text/javascript,${encodedCode}`)
 		CompiledStore[svelteId] = opengraphModule.default as Component
 	}
 
@@ -57,7 +77,7 @@ async function getOpengraphComponentForType(item: WebPieces, config: Config) {
 		const ogPath = path.join(path.dirname(config.paths.config), ogComponentPath)
 		return getSvelteComponent(ogPath) as Promise<Component<OpengraphProps>>
 	} else {
-		return null	
+		return null
 	}
 }
 
