@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, afterEach, MockInstance } from 'vitest'
+import { describe, test, expect, vi, afterEach, MockInstance, beforeEach } from 'vitest'
 import {
 	getSvelteComponent,
 	getOpengraphComponentForType,
@@ -13,17 +13,18 @@ import { WebPieces } from '../sqlite/index.js'
 
 vi.mock('fs/promises')
 vi.mock('svelte/compiler')
-vi.mock('path')
+
+const mockedImportMetaResolve = vi.fn()
+vi.mock('import.meta', () => {
+	return {
+		resolve: mockedImportMetaResolve,
+	}
+})
 
 const mocks = {
 	readFile: vi.mocked(readFile),
 	writeFile: vi.mocked(writeFile),
 	compile: vi.mocked(compile),
-	pathJoin: vi.spyOn(path, 'join'),
-	pathDirname: vi.spyOn(path, 'dirname'),
-	pathExtname: vi.spyOn(path, 'extname'),
-	bufferToBase64: vi.spyOn(utils, 'bufferToBase64'),
-	replaceAsync: vi.spyOn(utils, 'replaceAsync'),
 }
 
 const spies: { [key: string]: MockInstance } = {}
@@ -65,179 +66,186 @@ const mockConfig = {
 } as Config
 
 describe('src/commands/opengraph/svelte', () => {
+	beforeEach(() => {
+		// Reset mocks before each test
+		Object.values(mocks).forEach((mock) => mock.mockReset())
+		// Restore spies before each test
+		Object.values(spies).forEach((spy) => spy.mockRestore())
+
+		spies.pathBasename = vi.spyOn(path, 'basename')
+		spies.pathDirname = vi.spyOn(path, 'dirname')
+		spies.pathJoin = vi.spyOn(path, 'join')
+		spies.pathExtname = vi.spyOn(path, 'extname')
+		spies.bufferToBase64 = vi.spyOn(utils, 'bufferToBase64')
+		spies.consoleError = vi.spyOn(console, 'error').mockImplementation(() => { })
+	})
+
 	afterEach(() => {
-		Object.values(mocks).forEach((mock) => {
-			mock.mockReset()
-		})
-		Object.keys(spies).forEach((key) => {
-			spies[key].mockRestore()
-			delete spies[key]
-		})
+		// Clear all mocks after each test
+		vi.clearAllMocks()
 	})
 
 	test('getSvelteComponent should compile and store a svelte component', async () => {
 		const sveltePath = './components/test1.svelte'
-		const svelteModulePath = './components/test.svelte-hash.js'
-		const code = ''
+		const code = '<p>Hello</p>'
+		const compiledCode = 'export default { test: "component" }'
 
-		mocks.pathDirname.mockReturnValue('./tools/src/commands/opengraph')
-		mocks.pathJoin.mockReturnValueOnce(svelteModulePath)
+		spies.pathBasename.mockReturnValue('test1.svelte')
 		mocks.readFile.mockResolvedValue(code)
-		mocks.compile.mockReturnValue({ js: { code } } as ReturnType<typeof mocks.compile>)
-		mocks.writeFile.mockResolvedValue(undefined)
+		mocks.compile.mockReturnValue({ js: { code: compiledCode } } as ReturnType<
+			typeof mocks.compile
+		>)
 
 		const component = await getSvelteComponent(sveltePath)
 
 		expect(mocks.readFile).toHaveBeenCalledOnce()
 		expect(mocks.compile).toHaveBeenCalledOnce()
-		expect(mocks.writeFile).toHaveBeenCalledOnce()
-		expect(component).toBeDefined()
+		expect(mocks.writeFile).not.toHaveBeenCalled()
+		expect(component).toEqual({ test: 'component' })
 	})
 
 	test('getSvelteComponent should return cached component if already compiled', async () => {
 		const sveltePath = './components/test2.svelte'
-		const svelteModulePath = './components/test.svelte-hash.js'
-		const code = ''
+		const code = '<p>Hello</p>'
+		const compiledCode = 'export default { test: "component2" }'
 
-		mocks.pathDirname.mockReturnValue('./tools/src/commands/opengraph')
-		mocks.pathJoin.mockReturnValue(svelteModulePath)
+		spies.pathBasename.mockReturnValue('test2.svelte')
 		mocks.readFile.mockResolvedValue(code)
-		mocks.compile.mockReturnValue({ js: { code } } as ReturnType<typeof mocks.compile>)
-		mocks.writeFile.mockResolvedValue(undefined)
+		mocks.compile.mockReturnValue({ js: { code: compiledCode } } as ReturnType<
+			typeof mocks.compile
+		>)
 
 		await getSvelteComponent(sveltePath)
 		await getSvelteComponent(sveltePath)
 
 		expect(mocks.readFile).toHaveBeenCalledOnce()
 		expect(mocks.compile).toHaveBeenCalledOnce()
-		expect(mocks.writeFile).toHaveBeenCalledOnce()
 	})
 
 	test('getSvelteComponent should handle font-face urls', async () => {
 		const sveltePath = './components/test3.svelte'
-		const svelteModulePath = './components/test.svelte-hash.js'
-		const font = Buffer.from('asldbfkjs')
-		const code = `
-			<style>
-				@font-face {
-					font-family: 'TestFont';
-					src: url(fonts/test-font.woff2) format('woff2');
-				}
-			</style>
-		`
+		const fontPath = './components/fonts/test-font.woff2'
+		const fontBuffer = Buffer.from('fontdata')
+		const svelteCodeWithFont = `<style>@font-face { src: url(fonts/test-font.woff2); }</style>`
+		const compiledCode = `const css = "src: url(fonts/test-font.woff2)";\nexport default {};`
 
-		mocks.pathDirname.mockReturnValue('./tools/src/commands/opengraph')
-		mocks.pathJoin.mockReturnValue(svelteModulePath)
-		mocks.pathJoin.mockReturnValueOnce('./components/fonts/test-font.woff2')
-		mocks.pathExtname.mockReturnValueOnce('.woff2')
-		mocks.readFile.mockResolvedValue(code)
-		mocks.readFile.mockResolvedValueOnce(font)
-		mocks.compile.mockReturnValue({ js: { code } } as ReturnType<typeof mocks.compile>)
-		mocks.writeFile.mockResolvedValue(undefined)
-		mocks.bufferToBase64.mockResolvedValue('Zm9udGRhdGE=')
+		spies.pathBasename.mockReturnValue('test3.svelte')
+		spies.pathDirname.mockReturnValue('./components')
+		spies.pathJoin.mockReturnValue(fontPath)
+		spies.pathExtname.mockReturnValue('.woff2')
+		spies.bufferToBase64.mockReturnValue('Zm9udGRhdGE=')
 
+		mocks.readFile.mockResolvedValueOnce(svelteCodeWithFont)
+		mocks.readFile.mockResolvedValueOnce(fontBuffer)
+		mocks.compile.mockReturnValue({ js: { code: compiledCode } } as ReturnType<
+			typeof mocks.compile
+		>)
+
+		spies.encodeURIComponent = vi.spyOn(global, 'encodeURIComponent')
 		await getSvelteComponent(sveltePath)
 
-		expect(mocks.bufferToBase64).toHaveBeenCalledOnce()
-		expect(mocks.replaceAsync).toHaveBeenCalledOnce()
 		expect(mocks.readFile).toHaveBeenCalledTimes(2)
-		expect(mocks.writeFile).toHaveBeenCalledOnce()
+		const finalCode = decodeURIComponent(spies.encodeURIComponent.mock.calls[0][0])
+		expect(finalCode).toContain('src: url(data:font/woff2;base64,Zm9udGRhdGE=)')
+	})
+
+	test('replaceImportsInCompiledCode should ignore relative paths', async () => {
+		const sveltePath = './components/test5.svelte'
+		const code = `<script>import './local.js';</script>`
+		const compiledCode = `import './local.js';\nexport default {};`
+
+		spies.pathBasename.mockReturnValue('test5.svelte')
+		mocks.readFile.mockResolvedValue(code)
+		mocks.compile.mockReturnValue({ js: { code: compiledCode } } as ReturnType<
+			typeof mocks.compile
+		>)
+
+		spies.encodeURIComponent = vi
+			.spyOn(global, 'encodeURIComponent')
+			.mockImplementation((str: string | number | boolean): string => {
+				expect(str).toContain(`import './local.js'`)
+				throw new Error('Stop execution')
+			})
+
+		await expect(getSvelteComponent(sveltePath)).rejects.toThrow('Stop execution')
+		expect(mockedImportMetaResolve).not.toHaveBeenCalled()
+	})
+
+	test('replaceImportsInCompiledCode should handle resolution errors', async () => {
+		const sveltePath = './components/test-bad-module.svelte'
+		const code = `<script>import 'bad-module';</script>`
+		const compiledCode = `import 'bad-module';\nexport default {};`
+
+		spies.pathBasename.mockReturnValue('test-bad-module.svelte')
+		mocks.readFile.mockResolvedValue(code)
+		mocks.compile.mockReturnValue({ js: { code: compiledCode } } as ReturnType<
+			typeof mocks.compile
+		>)
+
+		spies.encodeURIComponent = vi
+			.spyOn(global, 'encodeURIComponent')
+			.mockImplementation((str: string | number | boolean): string => {
+				expect(str).toContain(`import 'bad-module'`)
+				throw new Error('Stop execution')
+			})
+
+		await expect(getSvelteComponent(sveltePath)).rejects.toThrow('Stop execution')
+
+		expect(spies.consoleError).toHaveBeenCalledWith(
+			'Could not resolve module: bad-module',
+			expect.any(Error)
+		)
 	})
 
 	test('getOpengraphComponentForType should return the correct opengraph component', async () => {
-		const sveltePath = './components/test4.svelte'
-		const svelteModulePath = './components/test.svelte-hash.js'
-		const item = {
-			type: 'book',
-			id: '1',
-			file_path: 'test',
-			date_added: 'test',
-		} as unknown as WebPieces
-		const code = ''
+		const item = { type: 'book' } as WebPieces
+		const sveltePath = '/path/to/components/BookOg.svelte'
+		const compiledCode = 'export default { isOg: true }'
 
-		mocks.pathDirname.mockReturnValue('/path/to')
-		mocks.pathJoin.mockReturnValueOnce(sveltePath)
-		mocks.pathJoin.mockReturnValueOnce(svelteModulePath)
-		mocks.readFile.mockResolvedValue(code)
-		mocks.compile.mockReturnValue({ js: { code } } as ReturnType<typeof mocks.compile>)
-		mocks.writeFile.mockResolvedValue(undefined)
+		spies.pathDirname.mockReturnValue('/path/to')
+		spies.pathJoin.mockReturnValue(sveltePath)
+		spies.pathBasename.mockReturnValue('BookOg.svelte')
+		mocks.readFile.mockResolvedValue('')
+		mocks.compile.mockReturnValue({ js: { code: compiledCode } } as ReturnType<
+			typeof mocks.compile
+		>)
 
 		const component = await getOpengraphComponentForType(item, mockConfig)
 
-		expect(mocks.readFile).toHaveBeenCalledOnce()
-		expect(component).toBeDefined()
+		expect(spies.pathJoin).toHaveBeenCalledWith('/path/to', './components/BookOg.svelte')
+		expect(mocks.readFile).toHaveBeenCalledWith(sveltePath, 'utf-8')
+		expect(component).toEqual({ isOg: true })
 	})
 
 	test('getOpengraphComponentForType should return null if not found in config', async () => {
-		const sveltePath = './components/test5.svelte'
-		const svelteModulePath = './components/test.svelte-hash.js'
-
-		const item = {
-			type: 'movie',
-			id: '1',
-			file_path: 'test',
-			date_added: 'test',
-		} as unknown as WebPieces
-		const code = ''
-
-		mocks.pathDirname.mockReturnValue('/mock/path/to')
-		mocks.pathJoin.mockReturnValueOnce(sveltePath)
-		mocks.pathJoin.mockReturnValueOnce(svelteModulePath)
-		mocks.readFile.mockResolvedValue(code)
-		mocks.compile.mockReturnValue({ js: { code } } as unknown as ReturnType<typeof mocks.compile>)
-		mocks.writeFile.mockResolvedValue(undefined)
-
+		const item = { type: 'movie' } as unknown as WebPieces
 		const component = await getOpengraphComponentForType(item, mockConfig)
-
 		expect(component).toBeNull()
 	})
 
 	test('getIconComponentForType should return the correct icon component', async () => {
-		const item = {
-			type: 'book',
-			id: '1',
-			file_path: 'test',
-			date_added: 'test',
-		} as unknown as WebPieces
-		const sveltePath = './components/test.svelte'
-		const svelteModulePath = './components/test.svelte-hash.js'
-		const code = ''
+		const item = { type: 'book' } as WebPieces
+		const sveltePath = '/path/to/components/BookIcon.svelte'
+		const compiledCode = 'export default { isIcon: true }'
 
-		mocks.pathDirname.mockReturnValue(
-			'/home/eleith/dev/luzzle/packages/tools/src/commands/opengraph'
-		)
-		mocks.pathJoin.mockReturnValueOnce(sveltePath)
-		mocks.pathJoin.mockReturnValueOnce(svelteModulePath)
-		mocks.readFile.mockResolvedValue(code)
-		mocks.compile.mockReturnValue({ js: { code } } as ReturnType<typeof mocks.compile>)
+		spies.pathDirname.mockReturnValue('/path/to')
+		spies.pathJoin.mockReturnValue(sveltePath)
+		spies.pathBasename.mockReturnValue('BookIcon.svelte')
+		mocks.readFile.mockResolvedValue('')
+		mocks.compile.mockReturnValue({ js: { code: compiledCode } } as ReturnType<
+			typeof mocks.compile
+		>)
 
 		const component = await getIconComponentForType(item, mockConfig)
 
+		expect(spies.pathJoin).toHaveBeenCalledWith('/path/to', './components/BookIcon.svelte')
 		expect(mocks.readFile).toHaveBeenCalledWith(sveltePath, 'utf-8')
-		expect(mocks.writeFile).toHaveBeenCalledOnce()
-		expect(component).toBeDefined()
+		expect(component).toEqual({ isIcon: true })
 	})
 
 	test('getIconComponentForType should return null if icon component not found in config', async () => {
-		const item = {
-			type: 'article',
-			id: '1',
-			file_path: 'test',
-			date_added: 'test',
-		} as unknown as WebPieces
-		const sveltePath = './components/test.svelte'
-		const svelteModulePath = './components/test.svelte-hash.js'
-		const code = ''
-
-		mocks.pathDirname.mockReturnValue('/mock/path/to')
-		mocks.pathJoin.mockReturnValueOnce(sveltePath)
-		mocks.pathJoin.mockReturnValueOnce(svelteModulePath)
-		mocks.readFile.mockResolvedValue(code)
-		mocks.compile.mockReturnValue({ js: { code } } as ReturnType<typeof mocks.compile>)
-		mocks.writeFile.mockResolvedValue(undefined)
-
+		const item = { type: 'article' } as unknown as WebPieces
 		const component = await getIconComponentForType(item, mockConfig)
-
 		expect(component).toBeNull()
 	})
 })
