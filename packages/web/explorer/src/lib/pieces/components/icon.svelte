@@ -30,7 +30,6 @@
 	const frontmatter = $derived(JSON.parse(piece.json_metadata || '{}'))
 	const tags = $derived(JSON.parse(piece.keywords || '[]'))
 	const width = $derived(ASSET_SIZES[size])
-	const Icon = iconComponentMap.get(piece.type)?.default
 	const helpers = {
 		getPieceUrl: function () {
 			return `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`
@@ -40,7 +39,7 @@
 			return `${page.data.config.url.luzzle_assets}/pieces/assets/${path}`
 		}
 	}
-	const IconComponent = Icon || IconDefault
+	const IconComponent = $derived(iconComponentMap.get(piece.type)?.default || IconDefault)
 </script>
 
 <IconComponent
