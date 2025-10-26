@@ -1,6 +1,4 @@
 <script lang="ts">
-	import CaretRightIcon from 'virtual:icons/ph/caret-right-thin'
-	import CaretLeftIcon from 'virtual:icons/ph/caret-left-thin'
 	import PieceIcon from '$lib/pieces/components/icon.svelte'
 	import { marked } from 'marked'
 
@@ -14,85 +12,54 @@
 	}
 </script>
 
-<svelte:head>
-	{#if data.previous}
-		<link rel="prefetch" href="/pieces/{data.previous.type}/{data.previous.slug}" />
-	{/if}
-
-	{#if data.next}
-		<link rel="prefetch" href="/pieces/{data.next.type}/{data.next.slug}" />
-	{/if}
-</svelte:head>
-
 <section class="piece">
 	<section class="header" class:header-media={hasMedia}>
-		{#if data.previous}
-			<a href="/pieces/{data.previous.type}/{data.previous.slug}" class="navigation-list">
-				<CaretLeftIcon />
-			</a>
-		{:else}
-			<div class="navigation-list">
-				<CaretLeftIcon style="color: var(--colors-surface-dim);" />
-			</div>
-		{/if}
-		{#key data.piece.id}
-			<button
-				class="piece-icon"
-				onclick={toggleHeader}
-				title="toggle full size"
-				class:piece-icon-open={showFullHeader}
-			>
-				<PieceIcon piece={data.piece} size="m" lazy={false} />
-			</button>
-		{/key}
-		{#if data.next}
-			<a href="/pieces/{data.next.type}/{data.next.slug}" class="navigation-list">
-				<CaretRightIcon />
-			</a>
-		{:else}
-			<div class="navigation-list">
-				<CaretRightIcon style="color: var(--colors-surface-dim);" />
-			</div>
-		{/if}
+		<button
+			class="piece-icon"
+			onclick={toggleHeader}
+			title="toggle full size"
+			class:piece-icon-open={showFullHeader}
+		>
+			<PieceIcon piece={data.piece} size="m" lazy={false} />
+		</button>
 	</section>
 
 	<section class="content">
 		<section class="details" class:details-media={hasMedia}>
-			<h1>
-				{data.piece.title}
-			</h1>
-
 			{#if data.piece.date_consumed}
-				<div style="font-size:var(--font-sizes-small);">
+				<div class="date">
 					{new Date(data.piece.date_consumed).toLocaleDateString()}
 				</div>
 			{/if}
 
+			<h1>
+				{data.piece.title}
+			</h1>
+
 			{#if data.piece.note}
-				<h2>notes</h2>
 				<div>
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					{@html marked.parseInline(data.piece.note, { breaks: true })}
 				</div>
 			{/if}
 
-			{#if metadata.url}
-				<h3>link</h3>
-				<div style="font-size:var(--font-sizes-small);">
-					<a href={metadata.url}>{metadata.url}</a>
-				</div>
-			{/if}
-
 			{#if data.piece.summary}
-				<h3>summary</h3>
+				<h2>summary</h2>
 				<div>
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					{@html marked.parseInline(data.piece.summary, { breaks: true })}
 				</div>
 			{/if}
 
+			{#if metadata.url}
+				<h2>link</h2>
+				<div>
+					<a href={metadata.url}>{metadata.url}</a>
+				</div>
+			{/if}
+
 			{#if data.tags.length}
-				<h3>tags</h3>
+				<h2>tags</h2>
 				<div class="tags-container">
 					{#each data.tags as tag (tag.slug)}
 						<a href="/tags/{tag.slug}" class="tag">{tag.tag}</a>
@@ -116,7 +83,6 @@
 		margin: auto;
 		gap: var(--space-5);
 		justify-content: space-between;
-		line-height: 1.5;
 		width: 85%;
 		padding-right: var(--space-2-5);
 		padding-left: var(--space-2-5);
@@ -130,18 +96,9 @@
 		width: 100%;
 	}
 
-	section.header .navigation-list {
-		display: none;
-		font-size: 4em;
-	}
-
 	@media screen and (min-width: 768px) {
 		section.details {
 			width: clamp(500px, 66.6666%, 1000px);
-		}
-
-		section.header .navigation-list {
-			display: block;
 		}
 	}
 
@@ -178,14 +135,6 @@
 		);
 	}
 
-	section.header > a {
-		color: var(--colors-on-surface);
-	}
-
-	section.header > a:hover {
-		color: var(--colors-primary);
-	}
-
 	section.header button.piece-icon {
 		align-self: baseline;
 		cursor: pointer;
@@ -197,6 +146,18 @@
 
 	section.header button.piece-icon-open {
 		max-height: 620px;
+	}
+
+	section.details h1 {
+		font-size: var(--font-sizes-xl);
+	}
+
+	section.details h2 {
+		font-size: var(--font-sizes-large);
+	}
+
+	section.details .date {
+		font-size: var(--font-sizes-xxs);
 	}
 
 	.tags-container {
