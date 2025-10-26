@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'fs'
 import { parse as yamlParse } from 'yaml'
-import { Ajv } from 'ajv'
+import Ajv from 'ajv'
 import { deepMerge } from '../deep-merge.js'
 import { type Schema as Config } from './schema.js'
 import defaults from './defaults.json' with { type: 'json' }
@@ -14,7 +14,7 @@ export type ConfigPublic = {
 function loadConfig(userConfigPath?: string): Config {
 	const schema = schemaJson
 	const config = defaults as Config
-	const ajv = new Ajv()
+	const ajv = new Ajv.Ajv()
 	const validate = ajv.compile(schema)
 
 	config.paths.config = userConfigPath
