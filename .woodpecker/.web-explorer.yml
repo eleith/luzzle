@@ -3,10 +3,14 @@ workspace:
   path: src
 
 when:
-  - event: [push, tag]
-    branch: [main]
+  - event: push
+    branch: main
     path:
       include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
+  - event: tag
+    ref:
+      include:
+        - "refs/tags/web/v*"
 
 steps:
   prepare:
