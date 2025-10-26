@@ -36,7 +36,7 @@ if (gitCommitTag) {
 
 		const tags = generateTags(pkgVersion)
 		if (tags.length > 0) {
-			console.log(tags.join(','))
+			console.log(tags.join('\n'))
 		}
 	}
 	// Silently exit if the tag does not match the prefix for this package.
