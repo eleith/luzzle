@@ -3,6 +3,7 @@ import type { PageServerLoad } from './$types'
 import { db } from '$lib/server/database'
 import { getOpenGraphPath } from '@luzzle/tools/browser'
 import { config } from '$lib/server/config'
+import { marked } from 'marked'
 
 export const load: PageServerLoad = async (page) => {
 	const type = page.params.piece
@@ -21,13 +22,22 @@ export const load: PageServerLoad = async (page) => {
 
 	const tags = await db
 		.selectFrom('web_pieces_tags')
-		.selectAll()
+		.select(['slug', 'tag'])
 		.where('piece_id', '=', piece.id)
 		.execute()
+
+	const metadata = JSON.parse(piece.json_metadata || '{}') as Record<string, unknown>
+	const note = piece.note ? marked.parseInline(piece.note, { breaks: true }) : null
+	const summary = piece.summary ? marked.parseInline(piece.summary, { breaks: true }) : null
 
 	return {
 		piece,
 		tags,
+		metadata,
+		html: {
+			note,
+			summary,
+		},
 		meta: {
 			title: piece.title,
 			type: piece.type,
