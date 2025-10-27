@@ -27,8 +27,10 @@ export const load: PageServerLoad = async (page) => {
 		.execute()
 
 	const metadata = JSON.parse(piece.json_metadata || '{}') as Record<string, unknown>
-	const note = piece.note ? marked.parseInline(piece.note, { breaks: true }) : null
-	const summary = piece.summary ? marked.parseInline(piece.summary, { breaks: true }) : null
+	const note = piece.note ? marked.parseInline(piece.note, { breaks: true, async: false }) : null
+	const summary = piece.summary
+		? marked.parseInline(piece.summary, { breaks: true, async: false })
+		: null
 
 	return {
 		piece,
@@ -36,7 +38,7 @@ export const load: PageServerLoad = async (page) => {
 		metadata,
 		html: {
 			note,
-			summary,
+			summary
 		},
 		meta: {
 			title: piece.title,
