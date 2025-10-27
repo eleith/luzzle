@@ -13,7 +13,7 @@
 		"check": "npm run prebuild && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"check:config": "npx --no-workspaces luzzle-tools validate --config ./config.yaml",
-		"sync:content": "node ./scripts/sync-content.js && node ./scripts/sync-icon-components.js",
+		"sync:content": "node ./scripts/sync-content.js && node ./scripts/sync-components.js",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"tag": "node ./scripts/tag.js"
@@ -54,7 +54,7 @@
 	"type": "module",
 	"dependencies": {
 		"@luzzle/core": "0.0.22",
-		"@luzzle/tools": "0.0.48",
+		"@luzzle/tools": "0.0.49",
 		"better-sqlite3": "11.7.2",
 		"kysely": "0.27.5",
 		"sharp": "0.33.5"

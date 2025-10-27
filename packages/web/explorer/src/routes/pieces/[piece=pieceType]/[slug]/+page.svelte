@@ -3,9 +3,10 @@
 	import { marked } from 'marked'
 
 	let { data } = $props()
+	let showFullHeader = $state(false)
+
 	const metadata = JSON.parse(data.piece.json_metadata) || {}
 	const hasMedia = $derived(!!data.piece.media)
-	let showFullHeader = $state(false)
 
 	function toggleHeader() {
 		showFullHeader = !showFullHeader
