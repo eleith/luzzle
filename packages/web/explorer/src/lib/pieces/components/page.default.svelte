@@ -16,7 +16,7 @@
 		title="toggle full size"
 		class:piece-icon-open={showFullHeader}
 	>
-		<Icon piece={piece} size="m" lazy={false} />
+		<Icon {piece} size="m" lazy={false} />
 	</button>
 </section>
 
