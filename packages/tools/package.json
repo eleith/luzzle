@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/tools",
-	"version": "0.0.48",
+	"version": "0.0.49",
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
@@ -11,6 +11,7 @@
 		"build:config-defaults": "npx yaml --json --indent 2 --single < ./src/lib/config/defaults.yaml > ./src/lib/config/defaults.json",
 		"prebuild": "npm run build:types && npm run build:config-defaults",
 		"postbuild": "npm run build:assets && npm run build:executable",
+		"check:version": "node ./scripts/check-version.js",
 		"build": "tsc",
 		"test": "vitest run --silent --coverage"
 	},

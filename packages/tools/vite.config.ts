@@ -33,6 +33,7 @@ export default defineConfig({
 				'**/vitest.{workspace,projects}.[jt]s?(on)',
 				'**/.{eslint,mocha,prettier}rc.{?(c|m)js,yml}',
 				'data',
+				'scripts',
 				'src/lib/config/schema.ts',
 				'src/browser.ts',
 				'src/cli.ts',

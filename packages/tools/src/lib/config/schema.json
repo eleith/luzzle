@@ -121,6 +121,9 @@
 							},
 							"opengraph": {
 								"type": "string"
+							},
+							"page": {
+								"type": "string"
 							}
 						},
 						"additionalProperties": false
