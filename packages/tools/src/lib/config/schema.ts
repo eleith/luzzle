@@ -39,6 +39,7 @@ export interface Schema {
     components?: {
       icon?: string;
       opengraph?: string;
+      page?: string;
     };
   }[];
   theme: {
