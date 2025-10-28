@@ -47,9 +47,18 @@ p {
 }
 
 html {
-	background-color: var(--colors-surface);
 	color: var(--colors-on-surface);
 	font-size: calc(var(--font-sizes-root) * var(--font-sizes-mobile-responsive-factor));
+}
+
+body {
+	background: linear-gradient(
+		to bottom,
+		var(--colors-surface-container-lowest) 0px,
+		var(--colors-surface) 100px
+	);
+	background-repeat: no-repeat;
+	background-attachment: fixed;
 }
 
 h1 {
