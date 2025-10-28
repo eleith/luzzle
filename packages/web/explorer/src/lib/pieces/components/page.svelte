@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { Component } from 'svelte'
-	import { type WebPieces } from '@luzzle/tools/types'
+	import { type OpengrapHelpers, type WebPieces } from '@luzzle/tools/types'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
 	import Icon from '$lib/pieces/components/icon.svelte'
+	import { page } from '$app/state'
+	import { getImageAssetPath } from '@luzzle/tools/browser'
 
 	type PageProps = {
 		piece: WebPieces
@@ -12,6 +14,7 @@
 			note: string | null
 			summary: string | null
 		}
+		helpers: OpengrapHelpers
 		Icon: typeof Icon
 	}
 
@@ -40,6 +43,15 @@
 
 	let { piece, metadata, tags, html }: Props = $props()
 	const PageComponent = $derived(pageComponentMap.get(piece.type)?.default || PageDefault)
+	const helpers: OpengrapHelpers = {
+		getPieceUrl: function () {
+			return `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`
+		},
+		getPieceImageUrl: function (asset: string, width: number, format: 'jpg' | 'avif') {
+			const path = getImageAssetPath(piece.type, piece.id, asset, width, format)
+			return `${page.data.config.url.luzzle_assets}/pieces/assets/${path}`
+		}
+	}
 </script>
 
-<PageComponent {piece} {Icon} {metadata} {tags} {html} />
+<PageComponent {piece} {Icon} {metadata} {tags} {html} {helpers} />
