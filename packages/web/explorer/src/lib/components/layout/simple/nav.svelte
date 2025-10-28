@@ -19,7 +19,7 @@
 			right?: Snippet<[]>
 		}
 	}
-	const { background, items }: Props = $props()
+	const { background = 'transparent', items }: Props = $props()
 	const {
 		elements: { content, trigger, portalled, overlay },
 		states: { open }
@@ -162,7 +162,7 @@
 	</div>
 {/if}
 
-<nav class="banner" style:--banner-background-color={background || 'transparent'}>
+<nav class="banner" style:--banner-background-color={background}>
 	<div class="left">
 		{#if page.url.pathname !== '/'}
 			<a href="/" aria-label="main page"><NavigationIcon style="font-size: 1em;" /></a>
@@ -190,7 +190,7 @@
 	.banner {
 		display: flex;
 		justify-content: space-between;
-		background-color: var(--banner-background-color, var(--colors-surface));
+		background-color: var(--banner-background-color);
 	}
 
 	.left {

@@ -68,7 +68,6 @@
 <style>
 	section.content {
 		width: 100%;
-		background: var(--colors-surface);
 		position: relative;
 	}
 
