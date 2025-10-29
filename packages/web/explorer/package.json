@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web",
-	"version": "0.0.92",
+	"version": "0.0.93",
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
@@ -13,7 +13,8 @@
 		"check": "npm run prebuild && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"check:config": "npx --no-workspaces luzzle-tools validate --config ./config.yaml",
-		"sync:content": "node ./scripts/sync-content.js && node ./scripts/sync-components.js",
+		"sync:content": "node ./scripts/set-piece-types.js && node ./scripts/sync-content.js && node ./scripts/sync-components.js",
+		"sync:types": "node ./scripts/set-piece-types.js",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"tag": "node ./scripts/tag.js"
