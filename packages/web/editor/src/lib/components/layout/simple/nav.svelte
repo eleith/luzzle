@@ -3,14 +3,10 @@
 	import '$lib/ui/styles/theme.css'
 	import '$lib/ui/styles/elements.css'
 	import NavigationIcon from 'virtual:icons/ph/arrow-up-left'
-	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import SunIcon from 'virtual:icons/ph/sun-dim'
 	import MoonIcon from 'virtual:icons/ph/moon'
-	import ArrowRightIcon from 'virtual:icons/ph/caret-double-right'
 	import themes, { type Theme } from '$lib/ui/styles/themes'
 	import { page } from '$app/state'
-	import { fly, fade } from 'svelte/transition'
-	import { createDialog, melt } from '@melt-ui/svelte'
 	import type { Snippet } from 'svelte'
 	import { PUBLIC_SITE_DESCRIPTION, PUBLIC_SITE_TITLE } from '$env/static/public'
 
@@ -25,23 +21,6 @@
 	const { background, items, theme: initialTheme }: Props = $props()
 
 	let currentTheme = $state<Theme | 'system' | null>(initialTheme || null)
-
-	const {
-		elements: { content, trigger, portalled, overlay },
-		states: { open }
-	} = createDialog({})
-
-	function clickSearch(event: MouseEvent) {
-		event.preventDefault()
-	}
-
-	function focusSearch(input: HTMLInputElement) {
-		input.focus()
-	}
-
-	function submitSearch() {
-		$open = false
-	}
 
 	function getTheme(): Theme | 'system' {
 		return window.localStorage.getItem('theme') as Theme | 'system'
@@ -100,33 +79,6 @@
 	</script>
 </svelte:head>
 
-{#if $open}
-	<div use:melt={$portalled}>
-		<div use:melt={$overlay} class="searchOverlay" transition:fade={{ duration: 50 }}></div>
-		<div
-			class="search"
-			transition:fly={{ y: -500, opacity: 100, duration: 500 }}
-			use:melt={$content}
-		>
-			<div>
-				<form method="GET" action="/search" style="display:flex;gap:10px;" onsubmit={submitSearch}>
-					<input
-						type="search"
-						placeholder="the electric state ..."
-						use:focusSearch
-						name="query"
-						class="input"
-					/>
-					<button type="submit" class="button" aria-label="submit search">
-						<ArrowRightIcon style="font-size: 1.75em;" />
-					</button>
-				</form>
-			</div>
-			<div></div>
-		</div>
-	</div>
-{/if}
-
 <nav class="banner" style:--banner-background-color={background || 'transparent'}>
 	<div class="left">
 		{#if page.url.pathname !== '/'}
@@ -137,9 +89,6 @@
 		{/if}
 	</div>
 	<div class="right">
-		<a href="/search" onclick={clickSearch} use:melt={$trigger} aria-label="search">
-			<SearchIcon style="font-size: 1em; display: none;" />
-		</a>
 		{#if items?.right}
 			{@render items.right()}
 		{/if}
@@ -183,35 +132,6 @@
 	.banner :global(a):hover,
 	.banner :global(button):hover {
 		color: var(--colors-primary);
-	}
-
-	.search {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-	}
-
-	.search > div:first-child {
-		padding: 20px;
-		background: var(--colors-surface-container-high);
-		height: 200px;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
-
-	.search > div:nth-child(2) {
-		background: var(--colors-surface-container-high);
-		height: 150px;
-		clip-path: polygon(0 0, 100% 0, 100% 80%, 0 15%);
-	}
-
-	.searchOverlay {
-		position: fixed;
-		inset: 0;
-		opacity: 0.5;
-		background: var(--colors-surface-inverse);
 	}
 
 	:global(.themeIcons) {
