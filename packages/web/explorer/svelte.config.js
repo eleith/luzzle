@@ -1,4 +1,3 @@
-import { preprocessMeltUI, sequence } from '@melt-ui/pp'
 import adapter from '@sveltejs/adapter-node'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 import { loadConfig } from '@luzzle/tools'
@@ -7,7 +6,7 @@ const config = loadConfig('./config.yaml')
 
 /** @type {import('@sveltejs/kit').Config}*/
 const svelteConfig = {
-	preprocess: sequence([vitePreprocess(), preprocessMeltUI()]),
+	preprocess: [vitePreprocess()],
 	kit: {
 		adapter: adapter(),
 		csp: {
