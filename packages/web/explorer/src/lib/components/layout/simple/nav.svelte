@@ -8,9 +8,9 @@
 	import { browser } from '$app/environment'
 	import { page } from '$app/state'
 	import { fly, fade } from 'svelte/transition'
-	import { createDialog, melt } from '@melt-ui/svelte'
 	import type { Snippet } from 'svelte'
 	import { onMount } from 'svelte'
+	import { Dialog } from 'bits-ui'
 
 	type Props = {
 		background?: string
@@ -20,21 +20,9 @@
 		}
 	}
 	const { background = 'transparent', items }: Props = $props()
-	const {
-		elements: { content, trigger, portalled, overlay },
-		states: { open }
-	} = createDialog({})
 
 	function clickSearch(event: MouseEvent) {
 		event.preventDefault()
-	}
-
-	function focusSearch(input: HTMLInputElement) {
-		input.focus()
-	}
-
-	function submitSearch() {
-		$open = false
 	}
 
 	function getThemePreference(): Theme {
@@ -132,36 +120,6 @@
 	{/if}
 </svelte:head>
 
-{#if $open}
-	<div use:melt={$portalled}>
-		<div use:melt={$overlay} class="searchOverlay" transition:fade={{ duration: 50 }}></div>
-		<div
-			class="search"
-			transition:fly={{ y: -500, opacity: 100, duration: 500 }}
-			use:melt={$content}
-		>
-			<div>
-				<form method="GET" action="/search" style="display:flex;gap:10px;" onsubmit={submitSearch}>
-					<input
-						type="search"
-						placeholder="the electric stAte ..."
-						use:focusSearch
-						name="query"
-						class="input"
-						onkeydown={(e) => {
-							if (e.key === 'escape') {
-								$open = false
-							}
-						}}
-					/>
-					<button type="submit" class="button" aria-label="submit search">search</button>
-				</form>
-			</div>
-			<div></div>
-		</div>
-	</div>
-{/if}
-
 <nav class="banner" style:--banner-background-color={background}>
 	<div class="left">
 		{#if page.url.pathname !== '/'}
@@ -172,9 +130,43 @@
 		{/if}
 	</div>
 	<div class="right">
-		<a href="/search" onclick={clickSearch} use:melt={$trigger} aria-label="search">
-			<SearchIcon style="font-size: 1em;" />
-		</a>
+		<Dialog.Root>
+			<Dialog.Trigger>
+				<a href="/search" aria-label="search" onclick={clickSearch}>
+					<SearchIcon style="font-size: 1em;" />
+				</a>
+			</Dialog.Trigger>
+			<Dialog.Portal>
+				<Dialog.Overlay forceMount>
+					{#snippet child({ props, open })}
+						{#if open}
+							<div class="searchOverlay" {...props} transition:fade={{ duration: 50 }}></div>
+						{/if}
+					{/snippet}
+				</Dialog.Overlay>
+				<Dialog.Content forceMount>
+					{#snippet child({ props, open })}
+						{#if open}
+							<div
+								class="search"
+								{...props}
+								transition:fly={{ y: -500, opacity: 100, duration: 500 }}
+							>
+								<form method="GET" action="/search" style="display:flex;gap:10px;">
+									<input
+										type="search"
+										placeholder="the electric stAte ..."
+										name="query"
+										class="input"
+									/>
+									<button type="submit" class="button" aria-label="submit search">search</button>
+								</form>
+							</div>
+						{/if}
+					{/snippet}
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
 		{#if items?.right}
 			{@render items.right()}
 		{/if}
@@ -227,17 +219,13 @@
 		right: 0;
 	}
 
-	.search > div:first-child {
+	.search {
 		padding: 20px;
 		background: var(--colors-surface-container-high);
 		height: 200px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-	}
-
-	.search > div:nth-child(2) {
-		background: var(--colors-surface-container-high);
 		border-bottom: 2px solid var(--colors-outline);
 	}
 
