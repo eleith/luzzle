@@ -31,7 +31,7 @@ steps:
   build_docker:
     image: woodpeckerci/plugin-docker-buildx:6.0.1
     settings:
-      repo: git.eleith.com/eleith/luzzle-explorer
+      repo: git.eleith.com/eleith.private/luzzle-explorer
       username: eleith
       dockerfile: packages/web/explorer/Dockerfile
       context: packages/web/explorer
