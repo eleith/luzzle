@@ -63,17 +63,17 @@ function getAssetPath(type: string, id: string, asset: string) {
 	return `${dir}/${filename}`
 }
 
-type IconProps = {
+type PieceIconProps = {
 	piece: WebPieces & { frontmatter: Record<string, unknown>; tags: string[] }
 	size: {
 		width: number
 		height: number
 	}
 	lazy?: boolean
-	helpers: OpengrapHelpers
+	helpers: PieceComponentHelpers
 }
 
-type OpengraphPalette = {
+type PieceIconPalette = {
 	accent: string
 	background: string
 	bodyText: string
@@ -81,20 +81,20 @@ type OpengraphPalette = {
 	titleText: string
 }
 
-type OpengrapHelpers = {
+type PieceComponentHelpers = {
 	getPieceUrl: () => string
 	getPieceImageUrl: (image: string, minWidth: number, format: 'jpg' | 'avif') => string
 }
 
-type OpengraphProps = {
-	Icon?: Component<IconProps>
+type PieceOpengraphProps = {
+	Icon?: Component<PieceIconProps>
 	piece: WebPieces & { frontmatter: Record<string, unknown>; tags: string[] }
 	size: {
 		width: number
 		height: number
 	}
-	palette?: OpengraphPalette
-	helpers: OpengrapHelpers
+	palette?: PieceIconPalette
+	helpers: PieceComponentHelpers
 }
 
 export {
@@ -109,8 +109,8 @@ export {
 	ASSET_PATH_MATCHER,
 	OpengraphImageWidth,
 	OpengraphImageHeight,
-	type IconProps,
-	type OpengraphProps,
-	type OpengraphPalette,
-	type OpengrapHelpers,
+	type PieceIconProps,
+	type PieceOpengraphProps,
+	type PieceIconPalette,
+	type PieceComponentHelpers,
 }

@@ -6,7 +6,7 @@ import { WebPieces } from '../sqlite/index.js'
 import { Config } from '../../lib/config/config.js'
 import { createHash } from 'crypto'
 import { bufferToBase64, replaceAsync } from './utils.js'
-import { IconProps, OpengraphProps } from '../../types.js'
+import { PieceIconProps, PieceOpengraphProps } from 'src/types.js'
 
 const CompiledStore: Record<string, Component> = {}
 
@@ -75,7 +75,7 @@ async function getOpengraphComponentForType(item: WebPieces, config: Config) {
 
 	if (ogComponentPath && config.paths.config) {
 		const ogPath = path.join(path.dirname(config.paths.config), ogComponentPath)
-		return getSvelteComponent(ogPath) as Promise<Component<OpengraphProps>>
+		return getSvelteComponent(ogPath) as Promise<Component<PieceOpengraphProps>>
 	} else {
 		return null
 	}
@@ -86,7 +86,7 @@ async function getIconComponentForType(item: WebPieces, config: Config) {
 
 	if (iconComponentPath && config.paths.config) {
 		const fullPath = path.join(path.dirname(config.paths.config), iconComponentPath)
-		return getSvelteComponent(fullPath) as Promise<Component<IconProps>>
+		return getSvelteComponent(fullPath) as Promise<Component<PieceIconProps>>
 	} else {
 		return null
 	}
