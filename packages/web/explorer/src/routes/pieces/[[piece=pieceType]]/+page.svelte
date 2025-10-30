@@ -61,10 +61,21 @@
 	</div>
 </section>
 
-{#if data.nextPage}
+{#if data.nextPage || data.page > 1}
 	<section class="action">
+		{#if data.page > 1}
+			{#if data.year}
+				<a href="?page={data.page - 1}&year={data.year}">prev</a>
+			{:else}
+				<a href="?page={data.page - 1}">prev</a>
+			{/if}
+		{/if}
 		{#if data.nextPage}
-			<a href="?page={data.nextPage}">more</a>
+			{#if data.year}
+				<a href="?page={data.nextPage}&year={data.year}">next</a>
+			{:else}
+				<a href="?page={data.nextPage}">next</a>
+			{/if}
 		{/if}
 	</section>
 {/if}
