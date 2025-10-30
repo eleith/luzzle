@@ -39,7 +39,6 @@
 		"eslint-plugin-svelte": "3.9.3",
 		"feedsmith": "2.1.0",
 		"globals": "15.14.0",
-		"marked": "15.0.6",
 		"prettier": "3.4.2",
 		"prettier-plugin-svelte": "3.3.2",
 		"svelte": "5.39.4",
@@ -57,6 +56,11 @@
 		"better-sqlite3": "11.7.2",
 		"bits-ui": "2.14.1",
 		"kysely": "0.27.5",
-		"sharp": "0.33.5"
+		"rehype-stringify": "^10.0.1",
+		"remark": "^15.0.1",
+		"remark-parse": "^11.0.0",
+		"remark-rehype": "^11.1.2",
+		"sharp": "0.33.5",
+		"unified": "^11.0.5"
 	}
 }

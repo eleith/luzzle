@@ -7,6 +7,6 @@
     "packages/tools",
     "packages/core",
     "packages/web/explorer",
-		"packages/web/editor"
+    "packages/web/editor"
   ]
 }

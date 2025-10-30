@@ -34,7 +34,6 @@
 		"eslint-plugin-svelte": "3.9.2",
 		"feed": "4.2.2",
 		"globals": "15.14.0",
-		"marked": "15.0.6",
 		"mime-types": "3.0.1",
 		"prettier": "3.4.2",
 		"prettier-plugin-svelte": "3.4.0",

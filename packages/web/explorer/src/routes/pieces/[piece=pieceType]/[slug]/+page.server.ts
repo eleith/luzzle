@@ -3,7 +3,10 @@ import type { PageServerLoad } from './$types'
 import { db } from '$lib/server/database'
 import { getOpenGraphPath } from '@luzzle/tools/browser'
 import { config } from '$lib/server/config'
-import { marked } from 'marked'
+import { unified } from 'unified'
+import remarkParse from 'remark-parse'
+import remarkRehype from 'remark-rehype'
+import rehypeStringify from 'rehype-stringify'
 
 export const load: PageServerLoad = async (page) => {
 	const type = page.params.piece
@@ -27,9 +30,23 @@ export const load: PageServerLoad = async (page) => {
 		.execute()
 
 	const metadata = JSON.parse(piece.json_metadata || '{}') as Record<string, unknown>
-	const note = piece.note ? marked.parseInline(piece.note, { breaks: true, async: false }) : null
+	const note = piece.note
+		? String(
+				await unified()
+					.use(remarkParse)
+					.use(remarkRehype)
+					.use(rehypeStringify)
+					.process(piece.note)
+		  )
+		: null
 	const summary = piece.summary
-		? marked.parseInline(piece.summary, { breaks: true, async: false })
+		? String(
+				await unified()
+					.use(remarkParse)
+					.use(remarkRehype)
+					.use(rehypeStringify)
+					.process(piece.summary)
+		  )
 		: null
 
 	return {
