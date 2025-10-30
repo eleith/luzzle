@@ -28,7 +28,11 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		.limit(TAKE_DEFAULT + 1)
 
 	if (yearNumber) {
-		piecesQuery = piecesQuery.where(sql`strftime('%Y', datetime(web_pieces.date_consumed/1000, 'unixepoch'))`, '=', yearNumber.toString())
+		piecesQuery = piecesQuery.where(
+			sql`strftime('%Y', datetime(web_pieces.date_consumed/1000, 'unixepoch'))`,
+			'=',
+			yearNumber.toString()
+		)
 	}
 
 	const pieces = await piecesQuery.execute()

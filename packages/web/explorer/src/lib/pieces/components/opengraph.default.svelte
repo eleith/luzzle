@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { type OpengraphProps } from '@luzzle/tools/types'
-	const { Icon, palette, piece, helpers }: OpengraphProps = $props()
+	import { type PieceOpengraphProps } from '@luzzle/tools/types'
+	const { Icon, palette, piece, helpers }: PieceOpengraphProps = $props()
 </script>
 
 <section

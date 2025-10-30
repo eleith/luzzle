@@ -2,9 +2,9 @@
 	import { page } from '$app/state'
 	import type { Component } from 'svelte'
 	import {
-		type IconProps,
-		type OpengrapHelpers,
-		type OpengraphProps,
+		type PieceComponentHelpers,
+		type PieceIconProps,
+		type PieceOpengraphProps,
 		type WebPieces
 	} from '@luzzle/tools/types'
 	import {
@@ -14,8 +14,8 @@
 	} from '@luzzle/tools/browser'
 	import OpengraphDefault from '$lib/pieces/components/opengraph.default.svelte'
 
-	const customOpengraphMap = new Map<string, { default: Component<OpengraphProps> }>()
-	const customIconMap = new Map<string, { default: Component<IconProps> }>()
+	const customOpengraphMap = new Map<string, { default: Component<PieceOpengraphProps> }>()
+	const customIconMap = new Map<string, { default: Component<PieceIconProps> }>()
 	const customComponents: Record<string, { default: Component }> = import.meta.glob(
 		'$lib/pieces/components/custom/*/*.svelte',
 		{ eager: true }
@@ -38,14 +38,14 @@
 
 	type Props = {
 		piece: WebPieces
-		palette?: OpengraphProps['palette']
+		palette?: PieceOpengraphProps['palette']
 	}
 
 	let { piece, palette }: Props = $props()
 
 	const frontmatter = JSON.parse(piece.json_metadata || '{}') || {}
 	const tags = JSON.parse(piece.keywords || '[]') || []
-	const helpers: OpengrapHelpers = {
+	const helpers: PieceComponentHelpers = {
 		getPieceUrl: function () {
 			return `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`
 		},
