@@ -4,15 +4,15 @@ import { Config } from '../../lib/config/config.js'
 import { Component } from 'svelte'
 import path from 'path'
 import * as cheerio from 'cheerio'
-import { IconProps, OpengrapHelpers, OpengraphImageHeight, OpengraphImageWidth, OpengraphProps } from '../../lib/browser.js'
+import { OpengraphImageHeight, OpengraphImageWidth, PieceOpengraphProps, PieceComponentHelpers, PieceIconProps } from '../../lib/browser.js'
 import { getPalette } from '../../lib/vibrant.js'
 
 async function getProps(
 	item: WebPieces,
-	Icon: Component<IconProps> | null,
+	Icon: Component<PieceIconProps> | null,
 	pieces: Pieces,
 	config: Config
-): Promise<OpengraphProps> {
+): Promise<PieceOpengraphProps> {
 	const props = {
 		Icon: Icon || undefined,
 		piece: {
@@ -167,7 +167,7 @@ function bufferToBase64(buffer: Buffer, type: string, format: string) {
 	return `data:${type}/${format};base64,${base64}`
 }
 
-function getHelpers(item: WebPieces, config: Config): OpengrapHelpers {
+function getHelpers(item: WebPieces, config: Config): PieceComponentHelpers {
 	return {
 		getPieceUrl: function() {
 			return `${config.url.app}/pieces/${item.type}/${item.slug}`

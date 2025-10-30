@@ -7,7 +7,7 @@ import { getIconComponentForType, getOpengraphComponentForType } from './svelte.
 import { findAndReplaceLuzzleUrls, getProps} from './utils.js'
 import { render } from 'svelte/server'
 import { Component } from 'svelte'
-import { OpengraphProps } from 'src/types.js'
+import { PieceOpengraphProps } from 'src/types.js'
 
 vi.mock('@luzzle/cli')
 vi.mock('./svelte.js')
@@ -50,7 +50,7 @@ describe('src/commands/opengraph/html', () => {
 		} as unknown as WebPieces
 		const mockOpenGraphComponent = { render: vi.fn() } as unknown as Component
 		const mockIconComponent = { render: vi.fn() } as unknown as Component
-		const mockProps = { some: 'props' } as unknown as OpengraphProps
+		const mockProps = { some: 'props' } as unknown as PieceOpengraphProps
 		const mockRenderResult = { head: '<meta name="test" />', body: '<h1>Hello</h1>', html: '--' }
 
 		mocks.getOpengraphComponentForType.mockResolvedValue(mockOpenGraphComponent )
