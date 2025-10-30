@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Component } from 'svelte'
-	import { type OpengrapHelpers, type WebPieces } from '@luzzle/tools/types'
+	import { type PieceComponentHelpers, type WebPieces } from '@luzzle/tools/types'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
 	import Icon from '$lib/pieces/components/icon.svelte'
 	import { page } from '$app/state'
@@ -14,7 +14,7 @@
 			note: string | null
 			summary: string | null
 		}
-		helpers: OpengrapHelpers
+		helpers: PieceComponentHelpers
 		Icon: typeof Icon
 	}
 
@@ -43,7 +43,7 @@
 
 	let { piece, metadata, tags, html }: Props = $props()
 	const PageComponent = $derived(pageComponentMap.get(piece.type)?.default || PageDefault)
-	const helpers: OpengrapHelpers = {
+	const helpers: PieceComponentHelpers = {
 		getPieceUrl: function () {
 			return `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`
 		},

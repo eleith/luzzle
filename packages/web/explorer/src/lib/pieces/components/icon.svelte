@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state'
 	import type { Component } from 'svelte'
-	import { type IconProps, type WebPieces } from '@luzzle/tools/types'
+	import { type PieceIconProps, type WebPieces } from '@luzzle/tools/types'
 	import { getImageAssetPath, ASSET_SIZES } from '@luzzle/tools/browser'
 	import IconDefault from '$lib/pieces/components/icon.default.svelte'
 
-	const iconComponentMap = new Map<string, { default: Component<IconProps> }>()
+	const iconComponentMap = new Map<string, { default: Component<PieceIconProps> }>()
 	const iconComponents: Record<string, { default: Component }> = import.meta.glob(
 		'$lib/pieces/components/custom/*/icon.svelte',
 		{ eager: true }
