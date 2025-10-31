@@ -35,8 +35,8 @@ describe('generate-web-sqlite', () => {
 				globals: {},
 				markdown: {
 					code: {
-						light: '',
-						dark: '',
+						light: 'github-dark',
+						dark: 'github-light',
 					},
 				},
 			},
@@ -128,8 +128,8 @@ describe('generate-web-sqlite', () => {
 				globals: {},
 				markdown: {
 					code: {
-						light: '',
-						dark: '',
+						light: 'github-light',
+						dark: 'github-dark',
 					},
 				},
 			},
@@ -231,8 +231,8 @@ describe('generate-web-sqlite', () => {
 				globals: {},
 				markdown: {
 					code: {
-						light: '',
-						dark: '',
+						light: 'github-light',
+						dark: 'github-dark',
 					},
 				},
 			},
