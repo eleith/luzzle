@@ -1,12 +1,13 @@
 {
   "name": "@luzzle/core",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
     "build": "tsc -p tsconfig.prod.json",
     "test": "vitest run --coverage --silent",
-    "migration:add": "bash ./src/database/migrations.sh"
+    "migration:add": "bash ./src/database/migrations.sh",
+		"check:version": "node ./scripts/check-version.js"
   },
   "engines": {
     "node": ">=20"
@@ -44,11 +45,9 @@
     "better-sqlite3": "11.7.2",
     "json-schema-to-typescript": "15.0.3",
     "kysely": "0.27.5",
-    "mdast-util-to-markdown": "2.1.2",
+    "mdast": "2.3.2",
     "remark": "15.0.1",
     "remark-frontmatter": "5.0.0",
-    "unified": "11.0.5",
-    "unist-util-filter": "5.0.1",
     "unist-util-visit": "5.0.0",
     "yaml": "2.7.0"
   },

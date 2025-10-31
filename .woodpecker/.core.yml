@@ -7,6 +7,8 @@ when:
     branch: main
     path:
       include: [".woodpecker/.core.yml", "packages/core/**"]
+  - event: tag
+    ref: "refs/tags/core/v*"
 
 steps:
   build:
@@ -29,11 +31,10 @@ steps:
     commands:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
-      - cd packages/core
-      - NPM_CURRENT_VERSION="$(npm pkg get version --workspaces=false)"
-      - NPM_LATEST_VERSION="$(npm show . version --workspaces=false)"
-      - cd ../..
-      - if test $NPM_CURRENT_VERSION != \"$NPM_LATEST_VERSION\" ; then npm publish -w @luzzle/core; fi
+      - npm run check:version -w @luzzle/core
+      - npm publish -w @luzzle/core
+    when:
+      - event: tag
     environment:
       NPM_OWNER:
         from_secret: npm_owner
