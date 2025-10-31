@@ -28,16 +28,12 @@ export const load: PageServerLoad = async (page) => {
 
 	const metadata = JSON.parse(piece.json_metadata || '{}') as Record<string, unknown>
 	const note = piece.note ? await processMarkdown(piece.note) : null
-	const summary = piece.summary ? await processMarkdown(piece.summary) : null
 
 	return {
 		piece,
 		tags,
 		metadata,
-		html: {
-			note,
-			summary
-		},
+		html_note: note,
 		meta: {
 			title: piece.title,
 			type: piece.type,

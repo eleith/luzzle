@@ -4,4 +4,9 @@
 	let { data } = $props()
 </script>
 
-<PiecePage piece={data.piece} tags={data.tags} metadata={data.metadata} html={data.html} />
+<PiecePage
+	piece={data.piece}
+	tags={data.tags}
+	metadata={data.metadata}
+	html_note={data.html_note}
+/>

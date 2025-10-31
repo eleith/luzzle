@@ -10,10 +10,7 @@
 		piece: WebPieces
 		tags: Array<{ slug: string; tag: string }>
 		metadata: Record<string, unknown>
-		html: {
-			note: string | null
-			summary: string | null
-		}
+		html_note: string | null
 		helpers: PieceComponentHelpers
 		Icon: typeof Icon
 	}
@@ -35,13 +32,10 @@
 		piece: WebPieces
 		metadata: Record<string, unknown>
 		tags: Array<{ slug: string; tag: string }>
-		html: {
-			note: string | null
-			summary: string | null
-		}
+		html_note: string | null
 	}
 
-	let { piece, metadata, tags, html }: Props = $props()
+	let { piece, metadata, tags, html_note }: Props = $props()
 	const PageComponent = $derived(pageComponentMap.get(piece.type)?.default || PageDefault)
 	const helpers: PieceComponentHelpers = {
 		getPieceUrl: function () {
@@ -54,4 +48,4 @@
 	}
 </script>
 
-<PageComponent {piece} {Icon} {metadata} {tags} {html} {helpers} />
+<PageComponent {piece} {Icon} {metadata} {tags} {html_note} {helpers} />
