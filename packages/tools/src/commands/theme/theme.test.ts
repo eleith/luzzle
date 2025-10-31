@@ -29,27 +29,36 @@ describe('generate-theme/theme', () => {
 				dark: {
 					'colors-primary': '#ffffff',
 				},
+				markdown: {
+					code: {
+						light: 'github-light',
+						dark: 'github-dark',
+					},
+				},
 			},
-		};
+		}
 
-		const css = generateThemeCss(config);
+		const css = generateThemeCss(config)
 
-		expect(css).toContain('--font-sans-name: "Test Sans";');
-		expect(css).toContain('--colors-primary: #000000;');
-		expect(css).toContain('--colors-primary: #ffffff;');
-	});
+		expect(css).toContain('--font-sans-name: "Test Sans";')
+		expect(css).toContain('--colors-primary: #000000;')
+		expect(css).toContain('--colors-primary: #ffffff;')
+	})
 
 	test('should handle errors during CSS minification', () => {
 		const originalCss = 'body { color: red; }'
 		mocks.transform.mockImplementation(() => {
 			throw new Error('Minification failed')
 		})
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
 		const minifiedCss = minifyCss(originalCss)
 
 		expect(minifiedCss).toEqual(originalCss)
-		expect(consoleErrorSpy).toHaveBeenCalledWith('Error minifying CSS with Lightning CSS:', expect.any(Error))
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			'Error minifying CSS with Lightning CSS:',
+			expect.any(Error)
+		)
 		consoleErrorSpy.mockRestore()
 	})
 })

@@ -33,6 +33,12 @@ describe('generate-web-sqlite', () => {
 				light: {},
 				dark: {},
 				globals: {},
+				markdown: {
+					code: {
+						light: '',
+						dark: '',
+					},
+				},
 			},
 			pieces: [
 				{
@@ -120,6 +126,12 @@ describe('generate-web-sqlite', () => {
 				light: {},
 				dark: {},
 				globals: {},
+				markdown: {
+					code: {
+						light: '',
+						dark: '',
+					},
+				},
 			},
 			pieces: [
 				{
@@ -217,6 +229,12 @@ describe('generate-web-sqlite', () => {
 				light: {},
 				dark: {},
 				globals: {},
+				markdown: {
+					code: {
+						light: '',
+						dark: '',
+					},
+				},
 			},
 			pieces: [
 				{
