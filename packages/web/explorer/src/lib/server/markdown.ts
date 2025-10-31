@@ -8,7 +8,7 @@ import rehypeSlug from 'rehype-slug'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypePrettyCode from 'rehype-pretty-code'
 import rehypeStringify from 'rehype-stringify'
-import { config } from '../config.js'
+import { config } from '$lib/server/config.js'
 
 const processor = unified()
 	.use(remarkParse)
@@ -18,7 +18,12 @@ const processor = unified()
 	.use(rehypeRaw)
 	.use(rehypeSlug)
 	.use(rehypeAutolinkHeadings)
-	.use(rehypePrettyCode, { theme: { light: config.theme.markdown.code.light, dark: config.theme.markdown.code.dark } })
+	.use(rehypePrettyCode, {
+		theme: {
+			light: config.theme.markdown.code.light,
+			dark: config.theme.markdown.code.dark
+		}
+	})
 	.use(rehypeStringify)
 
 export async function processMarkdown(markdown: string) {
