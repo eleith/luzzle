@@ -483,6 +483,22 @@
 						}
 					},
 					"additionalProperties": false
+				},
+				"markdown": {
+					"type": "object",
+					"properties": {
+						"code": {
+							"type": "object",
+							"properties": {
+								"light": { "type": "string" },
+								"dark": { "type": "string" }
+							},
+							"required": ["light", "dark"],
+							"additionalProperties": false
+						}
+					},
+					"required": ["code"],
+					"additionalProperties": false
 				}
 			},
 			"required": [
