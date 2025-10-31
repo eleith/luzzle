@@ -1,5 +1,5 @@
 <script lang="ts">
-	const { piece, tags, Icon, metadata, html } = $props()
+	const { piece, tags, Icon, metadata, html_note } = $props()
 	let showFullHeader = $state(false)
 
 	const hasMedia = $derived(!!piece.media)
@@ -35,7 +35,7 @@
 		{#if piece.note}
 			<div>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html html.note}
+				{@html html_note}
 			</div>
 		{/if}
 
@@ -43,7 +43,7 @@
 			<h2>summary</h2>
 			<div>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html html.summary}
+				{piece.summary}
 			</div>
 		{/if}
 
