@@ -504,7 +504,8 @@
 			"required": [
 				"globals",
 				"light",
-				"dark"
+				"dark",
+				"markdown"
 			],
 			"additionalProperties": false
 		}
