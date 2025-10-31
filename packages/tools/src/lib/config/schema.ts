@@ -158,5 +158,11 @@ export interface Schema {
       "space-2-5"?: string;
       "space-3-5"?: string;
     };
+    markdown?: {
+      code: {
+        light: string;
+        dark: string;
+      };
+    };
   };
 }

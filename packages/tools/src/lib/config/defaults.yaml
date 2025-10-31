@@ -140,3 +140,7 @@ theme:
     colors-shadow: 'hsla(0, 0%, 0%, 0.15)'
     colors-outline: '#6c757d'
     colors-outline-variant: '#ced4da'
+  markdown:
+    code:
+      light: 'github-light'
+      dark: 'github-dark'
