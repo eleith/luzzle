@@ -1,0 +1,18 @@
+/* Shiki Theme CSS */
+pre {
+	background-color: var(--shiki-light-bg);
+}
+code[data-theme*=' '],
+code[data-theme*=' '] span {
+	color: var(--shiki-light);
+	background-color: var(--shiki-light-bg);
+}
+
+html[data-theme='dark'] pre {
+	background-color: var(--shiki-dark-bg);
+}
+html[data-theme='dark'] code[data-theme*=' '],
+html[data-theme='dark'] code[data-theme*=' '] span {
+	color: var(--shiki-dark);
+	background-color: var(--shiki-dark-bg);
+}
