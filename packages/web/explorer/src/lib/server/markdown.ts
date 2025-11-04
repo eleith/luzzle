@@ -1,7 +1,9 @@
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
-import remarkGfm from 'remark-gfm'
+import remarkGfm from './remark-gfm.js'
+import { remarkSidenote, remarkSidenotesUnified, sidenoteHandler } from './remark-sidenotes.js'
 import remarkGemoji from 'remark-gemoji'
+import remarkDirective from 'remark-directive'
 import remarkRehype from 'remark-rehype'
 import rehypeRaw from 'rehype-raw'
 import rehypeSlug from 'rehype-slug'
@@ -11,10 +13,18 @@ import rehypeStringify from 'rehype-stringify'
 import { config } from '$lib/server/config.js'
 
 const processor = unified()
+	.use(remarkGfm, { plugins: { footnote: false } })
+	.use(remarkSidenote)
 	.use(remarkParse)
-	.use(remarkGfm)
+	.use(remarkSidenotesUnified)
 	.use(remarkGemoji)
-	.use(remarkRehype, { allowDangerousHtml: true })
+	.use(remarkDirective)
+	.use(remarkRehype, {
+		allowDangerousHtml: true,
+		handlers: {
+			sidenote: sidenoteHandler
+		}
+	})
 	.use(rehypeRaw)
 	.use(rehypeSlug)
 	.use(rehypeAutolinkHeadings)
@@ -24,7 +34,7 @@ const processor = unified()
 			dark: config.theme.markdown.code.dark
 		}
 	})
-	.use(rehypeStringify)
+	.use(rehypeStringify, { allowDangerousHtml: true })
 
 export async function processMarkdown(markdown: string) {
 	const file = await processor.process(markdown)

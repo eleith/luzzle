@@ -48,50 +48,43 @@ p {
 
 html {
 	color: var(--colors-on-surface);
-	font-size: calc(var(--font-sizes-root) * var(--font-sizes-mobile-responsive-factor));
 }
 
 body {
-	background: linear-gradient(
-		to bottom,
-		var(--colors-surface-container-lowest) 0px,
-		var(--colors-surface) 100px
-	);
+	background: linear-gradient(to bottom,
+			var(--colors-surface-container-lowest) 0px,
+			var(--colors-surface) 100px);
 	background-repeat: no-repeat;
 	background-attachment: fixed;
 }
 
+html {
+  --font-size-min-num: calc(var(--font-sizes-root) * var(--font-sizes-mobile-responsive-factor));
+  --slope: calc(
+    (var(--font-sizes-root) - var(--font-size-min-num)) /
+    (var(--breakpoints-tablet) - var(--breakpoints-phone))
+  );
+  --base-num: calc(
+    var(--font-size-min-num) - (var(--slope) * var(--breakpoints-phone))
+  );
+  font-size: clamp(
+    calc(var(--font-size-min-num) * 1px),
+    calc((var(--base-num) * 1px) + (var(--slope) * 100vw)),
+    calc(var(--font-sizes-root) * 1px)
+  );
+}
+
 h1 {
-	font-size: calc(var(--font-sizes-xxl) * var(--font-sizes-mobile-responsive-factor));
-	font-weight: var(--font-weights-bold);
+	font-size: var(--font-sizes-xxl);
 }
 
 h2 {
-	font-size: calc(var(--font-sizes-xl) * var(--font-sizes-mobile-responsive-factor));
-	font-weight: var(--font-weights-bold);
+	font-size: var(--font-sizes-xl);
+
 }
 
 h3 {
-	font-size: calc(var(--font-sizes-large) * var(--font-sizes-mobile-responsive-factor));
-	font-weight: var(--font-weights-semibold);
-}
-
-@media screen and (min-width: 768px) {
-	html {
-		font-size: var(--font-sizes-root);
-	}
-
-	h1 {
-		font-size: var(--font-sizes-xxl);
-	}
-
-	h2 {
-		font-size: var(--font-sizes-xl);
-	}
-
-	h3 {
-		font-size: var(--font-sizes-large);
-	}
+	font-size: var(--font-sizes-large);
 }
 
 a {

@@ -42,7 +42,6 @@
 		{#if piece.summary}
 			<h2>summary</h2>
 			<div>
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 				{piece.summary}
 			</div>
 		{/if}
@@ -74,13 +73,13 @@
 	section.details {
 		display: flex;
 		flex-direction: column;
-		margin: auto;
 		gap: var(--space-5);
 		justify-content: space-between;
-		width: 85%;
-		padding-right: var(--space-2-5);
-		padding-left: var(--space-2-5);
-		padding-bottom: var(--space-5);
+		max-width: 65ch;
+		width: 100%;
+		margin: 0 auto;
+		padding: 0 var(--space-2-5) var(--space-5);
+		position: relative;
 	}
 
 	section.details-media::before {
@@ -92,7 +91,7 @@
 
 	@media screen and (min-width: 768px) {
 		section.details {
-			width: clamp(500px, 66.6666%, 1000px);
+			padding: 0 0 var(--space-5);
 		}
 	}
 
