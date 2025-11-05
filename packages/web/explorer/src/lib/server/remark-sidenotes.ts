@@ -509,31 +509,27 @@ export const remarkSidenotesUnified = () => {
 			(child) => !nodesToRemove.includes(child as SidenoteDefinition)
 		)
 
-		visit(
-			tree,
-			'sidenoteReference',
-			(node, index, parent) => {
-				if (!parent || typeof index !== 'number') return
+		visit(tree, 'sidenoteReference', (node, index, parent) => {
+			if (!parent || typeof index !== 'number') return
 
-				const id = node.identifier
-				if (definitions.has(id)) {
-					const definitionChildren = definitions.get(id)
-					if (!definitionChildren) return
+			const id = node.identifier
+			if (definitions.has(id)) {
+				const definitionChildren = definitions.get(id)
+				if (!definitionChildren) return
 
-					const content =
-						definitionChildren.length === 1 && definitionChildren[0].type === 'paragraph'
-							? definitionChildren[0].children
-							: definitionChildren
+				const content =
+					definitionChildren.length === 1 && definitionChildren[0].type === 'paragraph'
+						? definitionChildren[0].children
+						: definitionChildren
 
-					parent.children.splice(index, 1, {
-						type: 'sidenote',
-						data: { noteId: id },
-						children: content
-					} as Sidenote)
-					return [SKIP, index]
-				}
+				parent.children.splice(index, 1, {
+					type: 'sidenote',
+					data: { noteId: id },
+					children: content
+				} as Sidenote)
+				return [SKIP, index]
 			}
-		)
+		})
 	}
 }
 
