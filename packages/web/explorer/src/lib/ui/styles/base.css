@@ -51,27 +51,27 @@ html {
 }
 
 body {
-	background: linear-gradient(to bottom,
-			var(--colors-surface-container-lowest) 0px,
-			var(--colors-surface) 100px);
+	background: linear-gradient(
+		to bottom,
+		var(--colors-surface-container-lowest) 0px,
+		var(--colors-surface) 100px
+	);
 	background-repeat: no-repeat;
 	background-attachment: fixed;
 }
 
 html {
-  --font-size-min-num: calc(var(--font-sizes-root) * var(--font-sizes-mobile-responsive-factor));
-  --slope: calc(
-    (var(--font-sizes-root) - var(--font-size-min-num)) /
-    (var(--breakpoints-tablet) - var(--breakpoints-phone))
-  );
-  --base-num: calc(
-    var(--font-size-min-num) - (var(--slope) * var(--breakpoints-phone))
-  );
-  font-size: clamp(
-    calc(var(--font-size-min-num) * 1px),
-    calc((var(--base-num) * 1px) + (var(--slope) * 100vw)),
-    calc(var(--font-sizes-root) * 1px)
-  );
+	--font-size-min-num: calc(var(--font-sizes-root) * var(--font-sizes-mobile-responsive-factor));
+	--slope: calc(
+		(var(--font-sizes-root) - var(--font-size-min-num)) /
+			(var(--breakpoints-tablet) - var(--breakpoints-phone))
+	);
+	--base-num: calc(var(--font-size-min-num) - (var(--slope) * var(--breakpoints-phone)));
+	font-size: clamp(
+		calc(var(--font-size-min-num) * 1px),
+		calc((var(--base-num) * 1px) + (var(--slope) * 100vw)),
+		calc(var(--font-sizes-root) * 1px)
+	);
 }
 
 h1 {
@@ -80,7 +80,6 @@ h1 {
 
 h2 {
 	font-size: var(--font-sizes-xl);
-
 }
 
 h3 {
