@@ -211,7 +211,7 @@
 	}
 
 	section.pieces > a {
-		color: var(--colors-on-surface);
+		color: var(--color-on-surface);
 		cursor: pointer;
 		text-decoration: none;
 		min-height: 200px;
@@ -219,19 +219,19 @@
 
 	section.pieces > a:hover {
 		text-decoration: underline;
-		color: var(--colors-primary);
+		color: var(--color-primary);
 	}
 
 	button.plain {
 		background: none;
 		border: none;
 		cursor: pointer;
-		color: var(--colors-primary);
+		color: var(--color-primary);
 	}
 
 	button.plain:hover {
-		color: var(--colors-primary);
-		border-bottom: 1px solid var(--colors-primary);
+		color: var(--color-primary);
+		border-bottom: 1px solid var(--color-primary);
 	}
 
 	@media screen and (min-width: 768px) {

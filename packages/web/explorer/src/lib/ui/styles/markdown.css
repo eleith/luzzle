@@ -28,40 +28,43 @@ html[data-theme='dark'] code[data-theme*=' '] span {
 	padding-right: 0.2rem;
 }
 
-
 .sidenote__button sup::before {
-	content: "[ "
+	content: var(--sidenote-callout-before-content);
 }
 
 .sidenote__button sup::after {
-	content: " ]"
+	content: var(--sidenote-callout-after-content);
 }
 
 .sidenote__button sup {
 	text-decoration: underline;
-	color: var(--colors-primary);
+	color: var(--color-primary);
 	cursor: help;
 }
 
 @media screen and (max-width: 1279px) {
-	.sidenote__checkbox~.sidenote__content {
+	.sidenote__checkbox ~ .sidenote__content {
 		display: none;
 	}
 
-	.sidenote__checkbox:checked~.sidenote__content {
+	.sidenote__checkbox:checked ~ .sidenote__content {
 		position: relative;
 		display: block;
 		min-width: 100%;
 		margin: 0.8rem 0;
 		padding: 0.8rem 1.6rem;
-		background: var(--colors-surface-container-lowest);
-		border-left: solid var(--colors-on-surface) 1px;
+		background: var(--color-surface-container-lowest);
+		border-left: solid var(--color-on-surface) 1px;
 		border-radius: 3px;
-		box-shadow: 0 2px 4px var(--colors-shadow);
+		box-shadow: 0 2px 4px var(--color-shadow);
 	}
 
 	.sidenote__id::after {
-		content: ":"
+		content: var(--sidenote-citation-after-content);
+	}
+
+	.sidenote__id::before {
+		content: var(--sidenote-citation-before-content);
 	}
 
 	.sidenote__id {
@@ -84,7 +87,7 @@ html[data-theme='dark'] code[data-theme*=' '] span {
 		bottom: 0;
 		left: 0;
 		width: 1px;
-		background: var(--colors-on-primary-container);
+		background: var(--color-on-primary-container);
 		filter: opacity(0.3);
 		margin-top: 0.5rem;
 		margin-bottom: 0.5rem;
@@ -103,22 +106,22 @@ html[data-theme='dark'] code[data-theme*=' '] span {
 		margin-bottom: 3ch;
 	}
 
-	.sidenote__button:hover~.sidenote__content::before {
+	.sidenote__button:hover ~ .sidenote__content::before {
 		margin-top: 0;
 		margin-bottom: 0;
 	}
 
-	.sidenote__button:hover~.sidenote__content {
-		background: var(--colors-surface-container-lowest);
-		color: var(--colors-on-surface);
+	.sidenote__button:hover ~ .sidenote__content {
+		background: var(--color-surface-container-lowest);
+		color: var(--color-on-surface);
 	}
 
 	.sidenote__id::before {
-		content: "[ "
+		content: var(--sidenote-callout-before-content);
 	}
 
 	.sidenote__id::after {
-		content: " ]"
+		content: var(--sidenote-callout-after-content);
 	}
 
 	.sidenote__id {

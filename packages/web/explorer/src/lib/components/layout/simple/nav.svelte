@@ -202,14 +202,14 @@
 	.banner :global(button) {
 		display: block-inline;
 		cursor: pointer;
-		color: var(--colors-on-surface);
+		color: var(--color-on-surface);
 		background: transparent;
 		border: none;
 	}
 
 	.banner :global(a):hover,
 	.banner :global(button):hover {
-		color: var(--colors-primary);
+		color: var(--color-primary);
 	}
 
 	.search {
@@ -221,19 +221,19 @@
 
 	.search {
 		padding: 20px;
-		background: var(--colors-surface-container-high);
+		background: var(--color-surface-container-high);
 		height: 200px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		border-bottom: 2px solid var(--colors-outline);
+		border-bottom: 2px solid var(--color-outline);
 	}
 
 	.searchOverlay {
 		position: fixed;
 		inset: 0;
 		opacity: 0.5;
-		background: var(--colors-surface-inverse);
+		background: var(--color-surface-inverse);
 	}
 
 	:global(.themeIcons) {
