@@ -28,6 +28,15 @@ html[data-theme='dark'] code[data-theme*=' '] span {
 	padding-right: 0.2rem;
 }
 
+
+.sidenote__button sup::before {
+	content: "[ "
+}
+
+.sidenote__button sup::after {
+	content: " ]"
+}
+
 .sidenote__button sup {
 	text-decoration: underline;
 	color: var(--colors-primary);
@@ -35,11 +44,11 @@ html[data-theme='dark'] code[data-theme*=' '] span {
 }
 
 @media screen and (max-width: 1279px) {
-	.sidenote__checkbox ~ .sidenote__content {
+	.sidenote__checkbox~.sidenote__content {
 		display: none;
 	}
 
-	.sidenote__checkbox:checked ~ .sidenote__content {
+	.sidenote__checkbox:checked~.sidenote__content {
 		position: relative;
 		display: block;
 		min-width: 100%;
@@ -49,6 +58,14 @@ html[data-theme='dark'] code[data-theme*=' '] span {
 		border-left: solid var(--colors-on-surface) 1px;
 		border-radius: 3px;
 		box-shadow: 0 2px 4px var(--colors-shadow);
+	}
+
+	.sidenote__id::after {
+		content: ":"
+	}
+
+	.sidenote__id {
+		margin-right: 1ch;
 	}
 }
 
@@ -86,13 +103,25 @@ html[data-theme='dark'] code[data-theme*=' '] span {
 		margin-bottom: 3ch;
 	}
 
-	.sidenote__button:hover ~ .sidenote__content::before {
+	.sidenote__button:hover~.sidenote__content::before {
 		margin-top: 0;
 		margin-bottom: 0;
 	}
 
-	.sidenote__button:hover ~ .sidenote__content {
+	.sidenote__button:hover~.sidenote__content {
 		background: var(--colors-surface-container-lowest);
 		color: var(--colors-on-surface);
+	}
+
+	.sidenote__id::before {
+		content: "[ "
+	}
+
+	.sidenote__id::after {
+		content: " ]"
+	}
+
+	.sidenote__id {
+		margin-right: 1ch;
 	}
 }
