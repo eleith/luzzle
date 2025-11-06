@@ -11,7 +11,7 @@ const mocks = {
 
 describe('generate-theme/theme', () => {
 	test('should generate theme CSS', () => {
-		const config: Config = {
+		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
 			text: { title: '', description: '' },
 			paths: { database: '' },
@@ -34,9 +34,11 @@ describe('generate-theme/theme', () => {
 						light: 'github-light',
 						dark: 'github-dark',
 					},
+					sidenote: {
+					}
 				},
 			},
-		}
+		} as Config
 
 		const css = generateThemeCss(config)
 

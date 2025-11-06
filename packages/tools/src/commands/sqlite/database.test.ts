@@ -24,22 +24,11 @@ describe('generate-web-sqlite', () => {
 		} as unknown as ReturnType<typeof sql>)
 		vi.spyOn(queries, 'execute').mockResolvedValue([])
 
-		const config: Config = {
+		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
 			text: { title: '', description: '' },
 			paths: { database: '/tmp/test.db' },
 			content: { block: { root: '', feed: '' } },
-			theme: {
-				light: {},
-				dark: {},
-				globals: {},
-				markdown: {
-					code: {
-						light: 'github-dark',
-						dark: 'github-light',
-					},
-				},
-			},
 			pieces: [
 				{
 					type: 'books',
@@ -52,7 +41,7 @@ describe('generate-web-sqlite', () => {
 					},
 				},
 			],
-		}
+		} as Config
 
 		await generateWebSqlite(db, config)
 
@@ -117,22 +106,11 @@ describe('generate-web-sqlite', () => {
 			.mockResolvedValueOnce([]) // generateWebSqlite (final pieces count)
 			.mockResolvedValueOnce([]) // generateWebSqlite (final tags count)
 
-		const config: Config = {
+		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
 			text: { title: '', description: '' },
 			paths: { database: '/tmp/test.db' },
 			content: { block: { root: '', feed: '' } },
-			theme: {
-				light: {},
-				dark: {},
-				globals: {},
-				markdown: {
-					code: {
-						light: 'github-light',
-						dark: 'github-dark',
-					},
-				},
-			},
 			pieces: [
 				{
 					type: 'books',
@@ -152,7 +130,7 @@ describe('generate-web-sqlite', () => {
 					},
 				},
 			],
-		}
+		} as Config
 
 		await generateWebSqlite(db, config)
 
@@ -220,22 +198,11 @@ describe('generate-web-sqlite', () => {
 			.mockResolvedValueOnce([]) // generateWebSqlite (final pieces count)
 			.mockResolvedValueOnce([]) // generateWebSqlite (final tags count)
 
-		const config: Config = {
+		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
 			text: { title: '', description: '' },
 			paths: { database: '/tmp/test.db' },
 			content: { block: { root: '', feed: '' } },
-			theme: {
-				light: {},
-				dark: {},
-				globals: {},
-				markdown: {
-					code: {
-						light: 'github-light',
-						dark: 'github-dark',
-					},
-				},
-			},
 			pieces: [
 				{
 					type: 'books',
@@ -248,7 +215,7 @@ describe('generate-web-sqlite', () => {
 					},
 				},
 			],
-		}
+		} as Config
 
 		await generateWebSqlite(db, config)
 

@@ -2,7 +2,7 @@ import { type Config } from '../../lib/config/config.js'
 import { transform } from 'lightningcss'
 import { Buffer } from 'buffer'
 
-const createCssVariableBlock = (variables: Record<string, string>) => {
+const createCssVariableBlock = (variables: Record<string, unknown>) => {
 	return Object.entries(variables)
 		.map(([key, value]) => {
 			if (/font.*name/.test(key) || /url/.test(key)) {
@@ -32,9 +32,11 @@ const generateThemeCss = (config: Config) => {
 	const globalsBlock = createCssVariableBlock(themeConfig.globals)
 	const lightBlock = createCssVariableBlock(themeConfig.light)
 	const darkBlock = createCssVariableBlock(themeConfig.dark)
+	const markdownBlock = createCssVariableBlock(themeConfig.markdown)
 	return `
 html {
 ${globalsBlock}
+${markdownBlock}
 }
 
 html[data-theme='light'] {
