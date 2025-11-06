@@ -30,9 +30,9 @@ pieces: []
 theme:
   globals:
     shadow-raised: '0px 3px 1px -2px rgba(251 241 199 / 20%), 0px 2px 2px 0px rgba(251 241 199 / 14%), 0px 1px 5px 0px rgba(0 0 0 / 12%)'
-    font-sans-name: 'Noto Sans'
-    font-mono-name: 'monaco, monospace'
-    font-sans-url: '/fonts/noto-sans.woff2'
+    font-sans-name: '"Noto Sans"'
+    font-mono-name: '"monaco, monospace"'
+    font-sans-url: '"/fonts/noto-sans.woff2"'
     font-sans-weight: '300 600'
     font-size-xxs: '0.7rem'
     font-size-xs: '0.825rem'
@@ -145,7 +145,7 @@ theme:
       light: 'github-light'
       dark: 'github-dark'
     sidenote:
-      sidenote-callout-before-content: "[ "
-      sidenote-callout-after-content: " ]"
-      sidenote-citation-before-content: ""
-      sidenote-citation-after-content: ":"
+      sidenote-callout-before-content: '"[ "'
+      sidenote-callout-after-content: '" ]"'
+      sidenote-citation-before-content: '""'
+      sidenote-citation-after-content: '":"'
