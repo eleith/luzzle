@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/tools",
-	"version": "0.0.54",
+	"version": "0.0.55",
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
@@ -8,8 +8,8 @@
 		"build:assets": "cp -r ./src/lib/config ./dist/src/lib",
 		"build:types": "json2ts --input src/lib/config/schema.json --output src/lib/config/schema.ts",
 		"build:executable": "chmod +x ./dist/src/cli.js",
-		"build:config-defaults": "npx yaml --json --indent 2 --single < ./src/lib/config/defaults.yaml > ./src/lib/config/defaults.json",
-		"prebuild": "npm run build:types && npm run build:config-defaults",
+		"build:config": "npx yaml --json --indent 2 --single < ./src/lib/config/defaults.yaml > ./src/lib/config/defaults.json",
+		"prebuild": "npm run build:types && npm run build:config",
 		"postbuild": "npm run build:assets && npm run build:executable",
 		"check:version": "node ./scripts/check-version.js",
 		"build": "tsc",
