@@ -7,8 +7,8 @@
 	style="
 		--piece-icon-scale: {(Math.round((size.width / 375) * 100) / 100).toFixed(2)};
 		--piece-icon-border-color: #999;
-		--piece-icon-background-color: var(--colors-secondary-container);
-		--piece-icon-text-color: var(--colors-on-secondary-container);
+		--piece-icon-background-color: var(--color-secondary-container);
+		--piece-icon-text-color: var(--color-on-secondary-container);
 		--piece-icon-height: {(size.width * 3) / 2}px;
 		--piece-icon-width: {size.width}px;
 		"

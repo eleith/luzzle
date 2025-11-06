@@ -55,7 +55,7 @@
 	"type": "module",
 	"dependencies": {
 		"@luzzle/core": "0.0.23",
-		"@luzzle/tools": "0.0.54",
+		"@luzzle/tools": "0.0.55",
 		"better-sqlite3": "11.7.2",
 		"bits-ui": "2.14.1",
 		"devlop": "1.1.0",

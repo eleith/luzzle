@@ -94,10 +94,10 @@
 	}
 
 	aside.callout {
-		background: var(--colors-surface-container-high);
-		border: 1px solid var(--colors-surface-container-highest);
+		background: var(--color-surface-container-high);
+		border: 1px solid var(--color-surface-container-highest);
 		padding: 1em 1.5em;
-		border-radius: var(--radii-medium);
+		border-radius: var(--radius-medium);
 	}
 
 	.copy-container {
@@ -110,20 +110,20 @@
 	.copy-container input {
 		flex-grow: 1;
 		padding: var(--space-2);
-		border-radius: var(--radii-medium);
-		border: 1px solid var(--colors-surface-container-high);
-		background-color: var(--colors-surface-container);
-		color: var(--colors-on-surface);
+		border-radius: var(--radius-medium);
+		border: 1px solid var(--color-surface-container-high);
+		background-color: var(--color-surface-container);
+		color: var(--color-on-surface);
 		cursor: pointer;
 		transition: all 0.2s ease-in-out;
 	}
 
 	.copy-container input:hover {
-		border-color: var(--colors-outline);
+		border-color: var(--color-outline);
 	}
 
 	h1 {
-		font-size: var(--font-sizes-large);
+		font-size: var(--font-size-large);
 	}
 
 	.pieces-list {
@@ -133,9 +133,9 @@
 	}
 
 	.item-card {
-		background-color: var(--colors-surface-container-low);
-		border-radius: var(--radii-large);
-		border: 1px solid var(--colors-surface-container-high);
+		background-color: var(--color-surface-container-low);
+		border-radius: var(--radius-large);
+		border: 1px solid var(--color-surface-container-high);
 		padding: var(--space-4);
 		transition: all 0.2s ease-in-out;
 		display: block;
@@ -144,29 +144,29 @@
 
 	.item-card:hover {
 		transform: translateY(-2px);
-		box-shadow: var(--shadows-raised);
-		border-color: var(--colors-outline);
+		box-shadow: var(--shadow-raised);
+		border-color: var(--color-outline);
 	}
 
 	.item-link {
 		display: flex;
 		flex-direction: column;
 		text-decoration: none;
-		color: var(--colors-on-surface);
+		color: var(--color-on-surface);
 	}
 
 	.item-title {
 		font-size: 1.2em;
 		font-weight: 500;
-		color: var(--colors-on-surface);
+		color: var(--color-on-surface);
 	}
 
 	.item-card:hover .item-title {
-		color: var(--colors-primary);
+		color: var(--color-primary);
 	}
 
 	.item-date {
-		color: var(--colors-outline);
+		color: var(--color-outline);
 		font-size: 0.9em;
 		margin-bottom: var(--space-1);
 	}
@@ -175,6 +175,6 @@
 		margin-top: var(--space-3);
 		line-height: 1.6;
 		font-size: 0.95em;
-		color: var(--colors-on-surface-variant);
+		color: var(--color-on-surface-variant);
 	}
 </style>
