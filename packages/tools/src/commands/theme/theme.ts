@@ -3,14 +3,14 @@ import { transform } from 'lightningcss'
 import { Buffer } from 'buffer'
 
 const createCssVariableBlock = (variables: Record<string, unknown>) => {
-	return Object.entries(variables)
-		.map(([key, value]) => {
-			if (/font.*name/.test(key) || /url/.test(key)) {
-				return `	--${key}: "${value}";`
-			}
+	return Object.keys(variables).map((key): string | string[] => {
+		const value = variables[key]
+		if (typeof value === 'object') {
+			return createCssVariableBlock(value as Record<string, unknown>).join('\n')
+		} else {
 			return `	--${key}: ${value};`
-		})
-		.join('\n')
+		}
+	})
 }
 
 function minifyCss(css: string): string {
@@ -29,10 +29,11 @@ function minifyCss(css: string): string {
 
 const generateThemeCss = (config: Config) => {
 	const themeConfig = config.theme
-	const globalsBlock = createCssVariableBlock(themeConfig.globals)
-	const lightBlock = createCssVariableBlock(themeConfig.light)
-	const darkBlock = createCssVariableBlock(themeConfig.dark)
-	const markdownBlock = createCssVariableBlock(themeConfig.markdown)
+
+	const globalsBlock = createCssVariableBlock(themeConfig.globals).join('\n')
+	const lightBlock = createCssVariableBlock(themeConfig.light).join('\n')
+	const darkBlock = createCssVariableBlock(themeConfig.dark).join('\n')
+	const markdownBlock = createCssVariableBlock(themeConfig.markdown).join('\n')
 	return `
 html {
 ${globalsBlock}

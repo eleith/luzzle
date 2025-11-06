@@ -19,9 +19,9 @@ describe('generate-theme/theme', () => {
 			pieces: [{ type: 'test', fields: { title: 'test', date_consumed: 'test' } }],
 			theme: {
 				globals: {
-					'font-sans-name': 'Test Sans',
-					'font-sans-weight': '400',
-					'font-sans-url': '/test.woff2',
+					'font-sans-name': '"Test Sans"',
+					'font-sans-weight': '300 600',
+					'font-sans-url': '"/test.woff2"',
 				},
 				light: {
 					'colors-primary': '#000000',
