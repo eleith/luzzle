@@ -8,7 +8,8 @@
 		"prebuild": "npm run build:theme && npm run sync:content",
 		"build:production": "npm run build && npm prune --omit=dev",
 		"build:lock": "npm i --package-lock-only --workspaces=false",
-		"build:theme": "npx --no-workspaces luzzle-tools theme --config ./config.yaml --minify > src/lib/ui/styles/theme.build.css",
+		"build:theme": "npx --no-workspaces luzzle-tools theme --config ./config.yaml > src/lib/ui/styles/theme.build.css",
+		"build:theme:minify": "npx --no-workspaces luzzle-tools theme --config ./config.yaml --minify > src/lib/ui/styles/theme.build.css",
 		"preview": "vite preview",
 		"check": "npm run prebuild && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -55,7 +56,7 @@
 	"type": "module",
 	"dependencies": {
 		"@luzzle/core": "0.0.23",
-		"@luzzle/tools": "0.0.55",
+		"@luzzle/tools": "0.0.56",
 		"better-sqlite3": "11.7.2",
 		"bits-ui": "2.14.1",
 		"devlop": "1.1.0",
