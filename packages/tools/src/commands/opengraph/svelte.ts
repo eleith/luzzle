@@ -6,7 +6,7 @@ import { WebPieces } from '../sqlite/index.js'
 import { Config } from '../../lib/config/config.js'
 import { createHash } from 'crypto'
 import { bufferToBase64, replaceAsync } from './utils.js'
-import { PieceIconProps, PieceOpengraphProps } from 'src/types.js'
+import { PieceIconProps, PieceOpengraphProps } from '../../types.js'
 
 const CompiledStore: Record<string, Component> = {}
 
