@@ -21,7 +21,6 @@ html[data-theme='dark'] .markdown code[data-theme*=' '] span {
 }
 
 .markdown {
-
 	pre {
 		padding: var(--space-3);
 		border: 1px solid var(--color-outline);
@@ -96,11 +95,11 @@ html[data-theme='dark'] .markdown code[data-theme*=' '] span {
 	}
 
 	@media screen and (max-width: 1279px) {
-		.sidenote__checkbox~.sidenote__content {
+		.sidenote__checkbox ~ .sidenote__content {
 			display: none;
 		}
 
-		.sidenote__checkbox:checked~.sidenote__content {
+		.sidenote__checkbox:checked ~ .sidenote__content {
 			position: relative;
 			display: block;
 			min-width: 100%;
@@ -159,12 +158,12 @@ html[data-theme='dark'] .markdown code[data-theme*=' '] span {
 			margin-bottom: 3ch;
 		}
 
-		.sidenote__button:hover~.sidenote__content::before {
+		.sidenote__button:hover ~ .sidenote__content::before {
 			margin-top: 0;
 			margin-bottom: 0;
 		}
 
-		.sidenote__button:hover~.sidenote__content {
+		.sidenote__button:hover ~ .sidenote__content {
 			background: var(--color-surface-container-lowest);
 			color: var(--color-on-surface);
 		}
