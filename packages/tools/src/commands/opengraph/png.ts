@@ -1,3 +1,5 @@
+import { mkdir } from 'fs/promises'
+import path from 'path'
 import { Browser } from 'puppeteer'
 
 async function generatePng(
@@ -6,6 +8,7 @@ async function generatePng(
 	outputFilePath: string,
 ) {
 	const page = await browser.newPage()
+	const directory = path.dirname(outputFilePath)
 
 	try {
 		await page.setViewport({
@@ -13,6 +16,7 @@ async function generatePng(
 			height: 630,
 		})
 		await page.setContent(html)
+	  await mkdir(directory, { recursive: true })
 
 		return await page.screenshot({
 			path: `${outputFilePath.replace(/\.png$/, '')}.png`,
