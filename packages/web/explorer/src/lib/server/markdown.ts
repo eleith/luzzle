@@ -38,5 +38,7 @@ const processor = unified()
 
 export async function processMarkdown(markdown: string) {
 	const file = await processor.process(markdown)
-	return String(file)
+	const html = String(file)
+
+	return `<section class="markdown">${html}<section>`
 }
