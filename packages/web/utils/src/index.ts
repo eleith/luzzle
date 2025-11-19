@@ -9,6 +9,8 @@ import {
 	OpengraphImageWidth,
 	OpengraphImageHeight,
 } from './lib/assets.js'
+import { WebPieces, WebPieceTags } from './lib/sqlite.js'
+import type { Config, ConfigPublic } from './lib/config/config.js'
 
 export {
 	getOpenGraphPath,
@@ -20,4 +22,8 @@ export {
 	ASSET_IMAGE_MATCHER,
 	OpengraphImageWidth,
 	OpengraphImageHeight,
+	type WebPieceTags,
+	type WebPieces,
+	type Config,
+	type ConfigPublic,
 }
