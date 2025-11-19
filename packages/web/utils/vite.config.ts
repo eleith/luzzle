@@ -37,6 +37,7 @@ export default defineConfig({
 				'src/lib/config/schema.ts',
 				'src/server.ts',
 				'src/lib/sqlite.ts',
+				'src/lib/types.ts',
 			],
 		},
 	},

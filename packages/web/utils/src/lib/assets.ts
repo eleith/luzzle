@@ -1,6 +1,3 @@
-import { WebPieces } from "./sqlite.js"
-import { Component } from "svelte"
-
 const ASSET_IMAGE_MATCHER = /\.(jpg|jpeg|png|webp|avif|gif)$/i
 const ASSET_PATH_MATCHER = /^(?:.*[\\/])?(([^/\\]+?)(?:\.([^.]+))?)$/
 const OpengraphImageWidth = 1200
@@ -63,40 +60,6 @@ function getAssetPath(type: string, id: string, asset: string) {
 	return `${dir}/${filename}`
 }
 
-type PieceIconProps = {
-	piece: WebPieces & { frontmatter: Record<string, unknown>; tags: string[] }
-	size: {
-		width: number
-		height?: number
-	}
-	lazy?: boolean
-	helpers: PieceComponentHelpers
-}
-
-type PieceIconPalette = {
-	accent: string
-	background: string
-	bodyText: string
-	muted: string
-	titleText: string
-}
-
-type PieceComponentHelpers = {
-	getPieceUrl: () => string
-	getPieceImageUrl: (image: string, minWidth: number, format: 'jpg' | 'avif') => string
-}
-
-type PieceOpengraphProps = {
-	Icon?: Component<PieceIconProps>
-	piece: WebPieces & { frontmatter: Record<string, unknown>; tags: string[] }
-	size: {
-		width: number
-		height: number
-	}
-	palette?: PieceIconPalette
-	helpers: PieceComponentHelpers
-}
-
 export {
 	getOpenGraphPath,
 	isImage,
@@ -109,8 +72,4 @@ export {
 	ASSET_PATH_MATCHER,
 	OpengraphImageWidth,
 	OpengraphImageHeight,
-	type PieceIconProps,
-	type PieceOpengraphProps,
-	type PieceIconPalette,
-	type PieceComponentHelpers,
 }

@@ -8,13 +8,16 @@ import {
 	ASSET_IMAGE_MATCHER,
 	OpengraphImageWidth,
 	OpengraphImageHeight,
-	type PieceIconProps,
-	type PieceIconPalette,
-	type PieceOpengraphProps,
-	type PieceComponentHelpers,
 } from "./lib/assets.js";
 import { WebPieces, WebPieceTags } from "./lib/sqlite.js";
 import type { Config, ConfigPublic } from "./lib/config/config.js";
+import type {
+	PiecePageProps,
+	PieceIconProps,
+	PieceComponentHelpers,
+	PieceOpengraphProps,
+	PieceIconPalette,
+} from "./lib/types.js";
 
 export {
 	getOpenGraphPath,
@@ -31,8 +34,8 @@ export {
 	type Config,
 	type ConfigPublic,
 	type PieceIconProps,
+	type PiecePageProps,
 	type PieceIconPalette,
 	type PieceOpengraphProps,
 	type PieceComponentHelpers,
 };
-
