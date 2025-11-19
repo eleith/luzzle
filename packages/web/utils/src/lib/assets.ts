@@ -67,7 +67,7 @@ type PieceIconProps = {
 	piece: WebPieces & { frontmatter: Record<string, unknown>; tags: string[] }
 	size: {
 		width: number
-		height: number
+		height?: number
 	}
 	lazy?: boolean
 	helpers: PieceComponentHelpers
