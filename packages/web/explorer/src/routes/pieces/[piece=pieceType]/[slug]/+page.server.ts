@@ -35,9 +35,9 @@ export const load: PageServerLoad = async (page) => {
 		metadata,
 		html_note: note,
 		meta: {
-			title: piece.title,
+			title: `${piece.title} | ${config.text.title}`,
 			type: piece.type,
-			description: piece.note || piece.summary,
+			description: piece.summary,
 			image: `${config.url.luzzle_assets}/pieces/assets/${getOpenGraphPath(piece.type, piece.id)}`
 		}
 	}
