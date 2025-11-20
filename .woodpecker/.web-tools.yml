@@ -14,8 +14,8 @@ steps:
   build:
     image: node:22
     commands:
-      - npm ci -w @luzzle/core -w @luzzle/cli
-      - npm run build -w @luzzle/core -w @luzzle/cli
+      - npm ci -w @luzzle/core -w @luzzle/cli -w @luzzle/web.utils
+      - npm run build -w @luzzle/core -w @luzzle/cli  -w @luzzle/web.utils
       - npm ci -w @luzzle/web.tools
       - npm run build -w @luzzle/web.tools
 
