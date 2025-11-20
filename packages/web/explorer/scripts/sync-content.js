@@ -1,4 +1,4 @@
-import { loadConfig } from '@luzzle/tools'
+import { loadConfig } from '@luzzle/web.utils/server'
 import { copyFile } from 'fs/promises'
 import path from 'path'
 
