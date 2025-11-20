@@ -1,6 +1,7 @@
 import { Vibrant } from 'node-vibrant/node'
 import { ImageBase, ImageSource } from '@vibrant/image'
 import sharp from 'sharp'
+import { PieceIconPalette } from './types.js'
 
 class SharpImage extends ImageBase {
 	private _image: ImageData = {
@@ -69,7 +70,7 @@ class SharpImage extends ImageBase {
 	remove(): void { }
 }
 
-async function getPalette(image: string | Buffer) {
+async function getPalette(image: string | Buffer): Promise<PieceIconPalette> {
 	const palette = await new Vibrant(image, { ImageClass: SharpImage }).getPalette()
 
 	return {
