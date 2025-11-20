@@ -1,5 +1,6 @@
 <script lang="ts">
-	const { size, piece, lazy, helpers } = $props()
+	import { type PieceIconProps } from '@luzzle/web.utils'
+	const { size, piece, lazy, helpers }: PieceIconProps = $props()
 </script>
 
 <div

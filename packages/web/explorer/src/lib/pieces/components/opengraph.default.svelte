@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { type PieceOpengraphProps } from '@luzzle/tools/types'
-	const { Icon, palette, piece, helpers }: PieceOpengraphProps = $props()
+	import { type PieceOpengraphProps } from '@luzzle/web.utils'
+	const { Icon, palette, piece, helpers, metadata, tags }: PieceOpengraphProps = $props()
 </script>
 
 <section
@@ -16,7 +16,7 @@
 	<div class="opengraph" class:no-icon={!Icon}>
 		<div class="left-panel">
 			{#if Icon}
-				<Icon {piece} {helpers} size={{ width: 350, height: 525 }} />
+				<Icon {piece} {helpers} size={{ width: 350, height: 525 }} {metadata} {tags} />
 			{:else if piece.media}
 				<picture>
 					<source srcset={helpers.getPieceImageUrl(piece.media, 400, 'avif')} type="image/avif" />

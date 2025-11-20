@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { db } from '$lib/server/database'
-import { getOpenGraphPath } from '@luzzle/tools/browser'
+import { getOpenGraphPath } from '@luzzle/web.utils'
 import { config } from '$lib/server/config'
 import { processMarkdown } from '$lib/server/markdown'
 

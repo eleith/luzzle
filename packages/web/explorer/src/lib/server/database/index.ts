@@ -1,7 +1,7 @@
 import { building } from '$app/environment'
 import { config } from '$lib/server/config'
 import { getDatabaseClient, sql } from '@luzzle/core'
-import type { WebPieceTags, WebPieces } from '@luzzle/tools/types'
+import type { WebPieceTags, WebPieces } from '@luzzle/web.utils'
 
 function initializeDatabase() {
 	const dbPath = building ? ':memory:' : config.paths.database

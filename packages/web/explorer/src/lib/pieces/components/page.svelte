@@ -1,30 +1,35 @@
 <script lang="ts">
 	import type { Component } from 'svelte'
-	import { type PieceComponentHelpers, type WebPieces } from '@luzzle/tools/types'
+	import {
+		getImageAssetPath,
+		type PieceComponentHelpers,
+		type WebPieces,
+		type PieceIconProps,
+		type PiecePageProps
+	} from '@luzzle/web.utils'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
-	import Icon from '$lib/pieces/components/icon.svelte'
+	import IconDefault from '$lib/pieces/components/icon.default.svelte'
 	import { page } from '$app/state'
-	import { getImageAssetPath } from '@luzzle/tools/browser'
 
-	type PageProps = {
-		piece: WebPieces
-		tags: Array<{ slug: string; tag: string }>
-		metadata: Record<string, unknown>
-		html_note: string | null
-		helpers: PieceComponentHelpers
-		Icon: typeof Icon
-	}
-
-	const pageComponentMap = new Map<string, { default: Component<PageProps> }>()
-	const pageComponents: Record<string, { default: Component }> = import.meta.glob(
-		'$lib/pieces/components/custom/*/page.svelte',
+	const customPageMap = new Map<string, { default: Component<PiecePageProps> }>()
+	const customIconMap = new Map<string, { default: Component<PieceIconProps> }>()
+	const customComponents: Record<string, { default: Component }> = import.meta.glob(
+		'$lib/pieces/components/custom/*/*.svelte',
 		{ eager: true }
 	)
 
-	for (const path in pageComponents) {
-		const type = path.split('/').at(-2)
+	for (const customPath in customComponents) {
+		const parts = customPath.split('/')
+		const type = parts.at(-2)
+
 		if (type) {
-			pageComponentMap.set(type, pageComponents[path])
+			const componentType = parts.at(-1)
+
+			if (componentType === 'opengraph.svelte') {
+				customPageMap.set(type, customComponents[customPath])
+			} else if (componentType === 'icon.svelte') {
+				customIconMap.set(type, customComponents[customPath])
+			}
 		}
 	}
 
@@ -36,7 +41,8 @@
 	}
 
 	let { piece, metadata, tags, html_note }: Props = $props()
-	const PageComponent = $derived(pageComponentMap.get(piece.type)?.default || PageDefault)
+	const Page = $derived(customPageMap.get(piece.type)?.default || PageDefault)
+	const Icon = $derived(customIconMap.get(piece.type)?.default || IconDefault)
 	const helpers: PieceComponentHelpers = {
 		getPieceUrl: function () {
 			return `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`
@@ -48,4 +54,4 @@
 	}
 </script>
 
-<PageComponent {piece} {Icon} {metadata} {tags} {html_note} {helpers} />
+<Page {piece} {Icon} {metadata} {tags} {html_note} {helpers} />

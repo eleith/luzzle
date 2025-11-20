@@ -1,7 +1,8 @@
 <script lang="ts">
-	const { piece, tags, Icon, metadata, html_note } = $props()
-	let showFullHeader = $state(false)
+	import { type PiecePageProps } from '@luzzle/web.utils'
+	const { piece, tags, Icon, metadata, html_note, helpers }: PiecePageProps = $props()
 
+	let showFullHeader = $state(false)
 	const hasMedia = $derived(!!piece.media)
 
 	function toggleHeader() {
@@ -16,7 +17,14 @@
 		title="toggle full size"
 		class:piece-icon-open={showFullHeader}
 	>
-		<Icon {piece} size="m" lazy={false} />
+		<Icon
+			{piece}
+			size={{ width: 125 }}
+			{metadata}
+			tags={tags.map((x) => x.tag as string)}
+			lazy={false}
+			{helpers}
+		/>
 	</button>
 </section>
 
@@ -49,7 +57,7 @@
 		{#if metadata.url}
 			<h2>link</h2>
 			<div>
-				<a href={metadata.url}>{metadata.url}</a>
+				<a href={metadata.url as string}>{metadata.url}</a>
 			</div>
 		{/if}
 
