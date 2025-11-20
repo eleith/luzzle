@@ -1,10 +1,11 @@
 import { describe, test, vi, afterEach, expect, MockInstance } from 'vitest'
 import { getHandler, setHandler, validateHandler } from './index.js'
-import { getConfigValue, setConfigValue, loadConfig, Config } from '../../lib/config/config.js'
+import { getConfigValue, setConfigValue, loadConfig } from '@luzzle/web.utils/server'
+import { type Config } from '@luzzle/web.utils'
 import { writeFileSync } from 'fs'
 import yaml from 'yaml'
 
-vi.mock('../../lib/config/config.js')
+vi.mock('@luzzle/web.utils/server')
 vi.mock('fs')
 vi.mock('yaml')
 

@@ -6,7 +6,8 @@ import { generatePng } from './png.js'
 import { getBrowser } from './browser.js'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { getDatabaseClient } from '@luzzle/core'
-import { Config, loadConfig } from '../../lib/config/config.js'
+import { type Config } from '@luzzle/web.utils'
+import { loadConfig } from '@luzzle/web.utils/server'
 import { mockKysely } from '../sqlite/database.mock.js'
 import { Browser } from 'puppeteer'
 
@@ -16,7 +17,7 @@ vi.mock('./png.js')
 vi.mock('./browser.js')
 vi.mock('@luzzle/cli')
 vi.mock('@luzzle/core')
-vi.mock('../../lib/config/config.js')
+vi.mock('@luzzle/web.utils/server')
 
 const mocks = {
 	getLastRunFor: vi.mocked(getLastRunFor),
@@ -190,4 +191,3 @@ describe('tools/opengraph', () => {
 		expect(mocks.setLastRunFor).not.toHaveBeenCalled()
 	})
 })
-

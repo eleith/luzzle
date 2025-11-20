@@ -1,8 +1,6 @@
 import { type LuzzleDatabase, sql, LuzzleSelectable } from '@luzzle/core'
 import path from 'path'
-import { WebPieces, WebPieceTags } from './index.js'
-import { Config } from '../../lib/config/config.js'
-
+import { type WebPieces, type WebPieceTags, type Config } from '@luzzle/web.utils'
 
 function batchArray<T>(array: T[], batchSize: number): T[][] {
 	const batches: T[][] = []

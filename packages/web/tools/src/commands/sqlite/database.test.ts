@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { generateWebSqlite } from './database.js'
 import { getDatabaseClient, sql } from '@luzzle/core'
-import { Config } from '../../lib/config/config.js'
+import { type Config } from '@luzzle/web.utils'
 import { mockKysely } from './database.mock.js'
 
 vi.mock('@luzzle/core')

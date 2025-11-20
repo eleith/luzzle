@@ -5,9 +5,8 @@ import { getBrowser } from './browser.js'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import path from 'path'
 import { getDatabaseClient } from '@luzzle/core'
-import { loadConfig } from '../../lib/config/config.js'
-import { getOpenGraphPath } from '../../lib/browser.js'
-import { WebPieces } from '../sqlite/index.js'
+import { loadConfig } from '@luzzle/web.utils/server'
+import { type WebPieces, getOpenGraphPath } from '@luzzle/web.utils'
 
 export default async function generateOpenGraphs(
 	configPath: string,

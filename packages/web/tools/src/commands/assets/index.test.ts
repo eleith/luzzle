@@ -1,22 +1,22 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
-import { Config, loadConfig } from '../../lib/config/config.js'
+import { loadConfig } from '@luzzle/web.utils/server'
 import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { mockKysely } from '../sqlite/database.mock.js'
 import { writeFile, mkdir } from 'fs/promises'
 import { generateVariantJobs } from './variants.js'
-import { getAssetDir, getAssetPath, isImage } from '../../lib/browser.js'
+import { getAssetDir, getAssetPath, isImage, type Config } from '@luzzle/web.utils'
 import generateAssets from './index.js'
 import { Sharp } from 'sharp'
 
 vi.mock('../../lib/lastRun.js')
-vi.mock('../../lib/config/config.js')
+vi.mock('@luzzle/web.utils/server')
 vi.mock('@luzzle/core')
 vi.mock('@luzzle/cli')
 vi.mock('fs/promises')
 vi.mock('./variants.js')
-vi.mock('../../lib/browser.js')
+vi.mock('@luzzle/web.utils')
 
 const mocks = {
 	getLastRunFor: vi.mocked(getLastRunFor),

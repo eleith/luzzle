@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from 'vitest'
 import { generateThemeCss, minifyCss } from './theme.js'
-import { Config } from '../../lib/config/config.js'
+import { type Config } from '@luzzle/web.utils'
 import { transform } from 'lightningcss'
 
 vi.mock('lightningcss')
