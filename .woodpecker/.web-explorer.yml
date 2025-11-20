@@ -46,7 +46,7 @@ steps:
       - event: tag
 
   extract-semver-tags:
-    image: alpine/git:latest # A small image with git and shell tools
+    image: alpine/git:latest
     commands:
       - |
         VERSION_FULL="${CI_COMMIT_TAG#web/v}"
@@ -57,8 +57,9 @@ steps:
         SEMVER_MAJOR_MINOR="$VERSION_MAJOR.$VERSION_MINOR"
         SEMVER_MAJOR="$VERSION_MAJOR"
 
-        echo "Extracted versions: Full=$SEMVER_FULL, Major=$SEMVER_MAJOR, Minor=$SEMVER_MINOR"
-        echo -e "$SEMVER_FULL\n$SEMVER_MAJOR\n$SEMVER_MINOR" >> .tags
+        echo "Extracted versions: $SEMVER_FULL, $SEMVER_MAJOR_MINOR, $SEMVER_MAJOR, "
+        echo -e "$SEMVER_FULL\n$SEMVER_MAJOR\n$SEMVER_MAJOR_MINOR" >> .tags
+        cat .tags
     when:
       - event: tag
 
