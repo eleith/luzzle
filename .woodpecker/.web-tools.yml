@@ -6,9 +6,9 @@ when:
   - event: [push]
     branch: main
     path:
-      include: [".woodpecker/.tools.yml", "packages/tools/**"]
+      include: [".woodpecker/.tools.yml", "packages/web/tools/**"]
   - event: tag
-    ref: "refs/tags/tools/v*"
+    ref: "refs/tags/web.tools/v*"
 
 steps:
   build:
@@ -16,20 +16,38 @@ steps:
     commands:
       - npm ci -w @luzzle/core -w @luzzle/cli
       - npm run build -w @luzzle/core -w @luzzle/cli
-      - npm ci -w @luzzle/tools
-      - npm run build -w @luzzle/tools
+      - npm ci -w @luzzle/web.tools
+      - npm run build -w @luzzle/web.tools
+
   test:
     image: node:22
     commands:
-      - npm run lint -w @luzzle/tools
-      - npm run test -w @luzzle/tools
+      - npm run lint -w @luzzle/web.tools
+      - npm run test -w @luzzle/web.tools
+
+  check-version:
+    image: node:22
+    commands:
+      - cd packages/web/tools
+      - |
+        VERSION_FROM_PKG=$(npm pkg get version --workspaces=false)
+
+        if [ "\"$VERSION_FROM_TAG\"" != "$VERSION_FROM_PKG" ]; then
+          echo "Version mismatch: Git tag version "$VERSION_FROM_TAG" does not match package.json version: $VERSION_FROM_PKG"
+          exit 1
+        fi
+    environment:
+     VERSION_FROM_TAG: ${CI_COMMIT_TAG#web.tools/v}
+    when:
+      - event: tag
+
   publish:
     image: node:22
     commands:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
-      - npm run check:version -w @luzzle/tools
-      - npm publish -w @luzzle/tools
+      - npm run check:version -w @luzzle/web.tools
+      - npm publish -w @luzzle/web.tools
     when:
       - event: tag
     environment:
@@ -37,6 +55,7 @@ steps:
         from_secret: npm_owner
       NPM_TOKEN:
         from_secret: npm_token
+
   notify-success:
     image: deblan/woodpecker-email:3.2.0
     settings:
@@ -53,6 +72,7 @@ steps:
       recipients_only: true
     when:
       - status: [success]
+
   notify-failure:
     image: deblan/woodpecker-email:3.2.0
     settings:

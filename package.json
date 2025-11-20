@@ -4,7 +4,7 @@
   "scripts": {},
   "workspaces": [
     "packages/cli",
-    "packages/tools",
+    "packages/web/tools",
     "packages/core",
     "packages/web/explorer",
     "packages/web/editor",
