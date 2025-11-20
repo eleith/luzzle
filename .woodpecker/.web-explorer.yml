@@ -54,10 +54,10 @@ steps:
         VERSION_MINOR=$(echo "$VERSION_FULL" | cut -d. -f2)
 
         SEMVER_FULL="$VERSION_FULL"
-        SEMVER_MAJOR_MINOR="${VERSION_MAJOR}.${VERSION_MINOR}"
+        SEMVER_MAJOR_MINOR="$VERSION_MAJOR.$VERSION_MINOR"
         SEMVER_MAJOR="$VERSION_MAJOR"
 
-        echo "Extracted versions: Full=$VERSION_FULL, Major=$VERSION_MAJOR, Minor=$VERSION_MINOR"
+        echo "Extracted versions: Full=$SEMVER_FULL, Major=$SEMVER_MAJOR, Minor=$SEMVER_MINOR"
         echo -e "$SEMVER_FULL\n$SEMVER_MAJOR\n$SEMVER_MINOR" >> .tags
     when:
       - event: tag
