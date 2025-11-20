@@ -9,11 +9,12 @@ import {
 	populateWebPieceItems,
 	populateWebPieceSearch,
 } from './database.js';
-import { Config, loadConfig } from '../../lib/config/config.js';
+import { type Config } from '@luzzle/web.utils';
+import { loadConfig } from '@luzzle/web.utils/server';
 
 vi.mock('@luzzle/core');
 vi.mock('./database.js');
-vi.mock('../../lib/config/config.js');
+vi.mock('@luzzle/web.utils/server');
 
 const mocks = {
 	getDatabaseClient: vi.mocked(getDatabaseClient),

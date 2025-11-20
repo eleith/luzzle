@@ -2,17 +2,16 @@ import { describe, test, expect, vi, afterEach } from 'vitest'
 import { getProps, findAndReplaceLuzzleUrls, bufferToBase64, replaceAsync } from './utils.js'
 import { Pieces } from '@luzzle/cli'
 import { Vibrant } from 'node-vibrant/node'
-import { WebPieces } from '../sqlite/index.js'
-import { Config } from '../../lib/config/config.js'
+import { type WebPieces, type Config } from '@luzzle/web.utils'
 import Sharp from 'sharp'
 import path from 'path'
 import * as cheerio from 'cheerio'
 import { Component } from 'svelte'
-import { getPalette } from 'src/sdk.js'
+import { getPalette } from '@luzzle/web.utils/server'
 
 vi.mock('@luzzle/cli')
 vi.mock('path')
-vi.mock('../../lib/vibrant')
+vi.mock('@luzzle/web.utils/server')
 
 const mocks = {
 	Pieces: vi.mocked(Pieces),
@@ -44,8 +43,8 @@ describe('src/commands/opengraph/utils', () => {
 			const props = await getProps(mockItem, mockIcon, mockPieces, mockConfig)
 
 			expect(props.Icon).toBe(mockIcon)
-			expect(props.piece.frontmatter).toEqual({ title: 'Test Title' })
-			expect(props.piece.tags).toEqual(['tag1', 'tag2'])
+			expect(props.metadata).toEqual({ title: 'Test Title' })
+			expect(props.tags).toEqual(['tag1', 'tag2'])
 			expect(props.size).toEqual({ width: 1200, height: 630 })
 			expect(props.helpers.getPieceUrl()).toBe('http://localhost/pieces/book/test-book')
 			expect(props.helpers.getPieceImageUrl('image.jpg', 100, 'jpg')).toBe('luzzle://image.jpg')
@@ -65,8 +64,8 @@ describe('src/commands/opengraph/utils', () => {
 			const props = await getProps(mockItem, mockIcon, mockPieces, mockConfig)
 
 			expect(props.Icon).toBe(mockIcon)
-			expect(props.piece.frontmatter).toEqual({})
-			expect(props.piece.tags).toEqual([])
+			expect(props.metadata).toEqual({})
+			expect(props.tags).toEqual([])
 			expect(props.size).toEqual({ width: 1200, height: 630 })
 			expect(props.helpers.getPieceUrl()).toBe('http://localhost/pieces/book/test-book')
 			expect(props.helpers.getPieceImageUrl('image.jpg', 100, 'jpg')).toBe('luzzle://image.jpg')
@@ -92,8 +91,8 @@ describe('src/commands/opengraph/utils', () => {
 			const props = await getProps(mockItem, mockIcon, mockPieces, mockConfig)
 
 			expect(props.Icon).toBe(mockIcon)
-			expect(props.piece.frontmatter).toEqual({})
-			expect(props.piece.tags).toEqual([])
+			expect(props.metadata).toEqual({})
+			expect(props.tags).toEqual([])
 			expect(props.palette).toBe(mockPalette)
 			expect(props.size).toEqual({ width: 1200, height: 630 })
 			expect(props.helpers.getPieceUrl()).toBe('http://localhost/pieces/book/test-book')

@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs'
 import yaml from 'yaml'
-import { getConfigValue, setConfigValue, loadConfig } from '../../lib/config/config.js'
+import { getConfigValue, setConfigValue, loadConfig } from '@luzzle/web.utils/server'
 
 export function validateHandler(config: string) {
   try {

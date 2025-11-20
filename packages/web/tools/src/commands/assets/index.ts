@@ -4,8 +4,14 @@ import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { generateVariantJobs } from './variants.js'
 import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
-import { loadConfig } from '../../lib/config/config.js'
-import { getAssetDir, getAssetPath, isImage, ASSET_SIZES, getImageAssetPath } from '../../lib/browser.js'
+import { loadConfig } from '@luzzle/web.utils/server'
+import {
+	getAssetDir,
+	getAssetPath,
+	isImage,
+	ASSET_SIZES,
+	getImageAssetPath,
+} from '@luzzle/web.utils'
 
 async function generateVariantsForAssetField(
 	item: LuzzleSelectable<'pieces_items'>,
@@ -20,13 +26,7 @@ async function generateVariantsForAssetField(
 		const jobs = await generateVariantJobs(item, asset, pieces, widths, formats)
 
 		const toFileJobs = jobs.map((job) => {
-			const assetPath = getImageAssetPath(
-				item.type,
-				item.id,
-				asset,
-				job.width,
-				job.format
-			)
+			const assetPath = getImageAssetPath(item.type, item.id, asset, job.width, job.format)
 			return job.sharp.toFile(`${outDir}/${assetPath}`)
 		})
 		await Promise.all(toFileJobs)

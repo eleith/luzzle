@@ -1,4 +1,4 @@
-import { loadConfig } from '../../lib/config/config.js'
+import { loadConfig } from '@luzzle/web.utils/server'
 import { generateThemeCss, minifyCss } from './theme.js'
 
 export default async function generateTheme(

@@ -1,13 +1,11 @@
 import { describe, test, expect, vi, afterEach, MockInstance } from 'vitest'
 import { generateHtml } from './html.js'
 import { Pieces, Storage } from '@luzzle/cli'
-import { WebPieces } from '../sqlite/index.js'
-import { Config } from '../../lib/config/config.js'
+import { type WebPieces, type Config, type PieceOpengraphProps } from '@luzzle/web.utils'
 import { getIconComponentForType, getOpengraphComponentForType } from './svelte.js'
-import { findAndReplaceLuzzleUrls, getProps} from './utils.js'
+import { findAndReplaceLuzzleUrls, getProps } from './utils.js'
 import { render } from 'svelte/server'
 import { Component } from 'svelte'
-import { PieceOpengraphProps } from 'src/types.js'
 
 vi.mock('@luzzle/cli')
 vi.mock('./svelte.js')
@@ -53,7 +51,7 @@ describe('src/commands/opengraph/html', () => {
 		const mockProps = { some: 'props' } as unknown as PieceOpengraphProps
 		const mockRenderResult = { head: '<meta name="test" />', body: '<h1>Hello</h1>', html: '--' }
 
-		mocks.getOpengraphComponentForType.mockResolvedValue(mockOpenGraphComponent )
+		mocks.getOpengraphComponentForType.mockResolvedValue(mockOpenGraphComponent)
 		mocks.getIconComponentForType.mockResolvedValue(mockIconComponent)
 		mocks.getProps.mockResolvedValue(mockProps)
 		mocks.render.mockResolvedValue(mockRenderResult)

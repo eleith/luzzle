@@ -1,35 +1,40 @@
 import { Pieces } from '@luzzle/cli'
-import { WebPieces } from '../sqlite/index.js'
-import { Config } from '../../lib/config/config.js'
 import { Component } from 'svelte'
 import path from 'path'
 import * as cheerio from 'cheerio'
-import { OpengraphImageHeight, OpengraphImageWidth, PieceOpengraphProps, PieceComponentHelpers, PieceIconProps } from '../../lib/browser.js'
-import { getPalette } from '../../lib/vibrant.js'
+import {
+	OpengraphImageHeight,
+	OpengraphImageWidth,
+	type PieceOpengraphProps,
+	type PieceComponentHelpers,
+	type PieceIconProps,
+	type WebPieces,
+	type Config,
+	PieceIconPalette,
+} from '@luzzle/web.utils'
+import { getPalette } from '@luzzle/web.utils/server'
 
 async function getProps(
-	item: WebPieces,
+	piece: WebPieces,
 	Icon: Component<PieceIconProps> | null,
 	pieces: Pieces,
 	config: Config
 ): Promise<PieceOpengraphProps> {
 	const props = {
 		Icon: Icon || undefined,
-		piece: {
-			frontmatter: JSON.parse(item.json_metadata || '{}'),
-			tags: JSON.parse(item.keywords || '[]'),
-			...item,
-		},
+		piece: piece,
+		metadata: JSON.parse(piece.json_metadata || '{}') as Record<string, unknown>,
+		tags: JSON.parse(piece.keywords || '[]') as string[],
 		size: {
 			width: OpengraphImageWidth,
 			height: OpengraphImageHeight,
 		},
-		helpers: getHelpers(item, config),
+		helpers: getHelpers(piece, config),
 	}
 
-	if (item.media) {
-		const imageBuffer = await pieces.getPieceAsset(item.media)
-		const palette = await getPalette(imageBuffer)
+	if (piece.media) {
+		const imageBuffer = await pieces.getPieceAsset(piece.media)
+		const palette = (await getPalette(imageBuffer)) as PieceIconPalette
 
 		return {
 			...props,
@@ -184,9 +189,4 @@ function getHelpers(item: WebPieces, config: Config): PieceComponentHelpers {
 	}
 }
 
-export {
-	getProps,
-	findAndReplaceLuzzleUrls,
-	bufferToBase64,
-	replaceAsync,
-}
+export { getProps, findAndReplaceLuzzleUrls, bufferToBase64, replaceAsync }

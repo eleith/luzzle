@@ -1,10 +1,13 @@
 import { Pieces } from '@luzzle/cli'
-import { WebPieces } from '../sqlite/index.js'
+import {
+	type WebPieces,
+	type Config,
+	OpengraphImageWidth,
+	OpengraphImageHeight,
+} from '@luzzle/web.utils'
 import { getIconComponentForType, getOpengraphComponentForType } from './svelte.js'
-import { Config } from '../../lib/config/config.js'
 import { render } from 'svelte/server'
 import { findAndReplaceLuzzleUrls, getProps } from './utils.js'
-import { OpengraphImageHeight, OpengraphImageWidth } from '../../lib/browser.js'
 
 async function buildHtmlDoc(head: string, body: string, pieces: Pieces) {
 	const html = await findAndReplaceLuzzleUrls(body, pieces)

@@ -2,11 +2,14 @@ import { readFile } from 'fs/promises'
 import { Component } from 'svelte'
 import { compile } from 'svelte/compiler'
 import path from 'path'
-import { WebPieces } from '../sqlite/index.js'
-import { Config } from '../../lib/config/config.js'
+import {
+	type WebPieces,
+	type Config,
+	type PieceIconProps,
+	type PieceOpengraphProps,
+} from '@luzzle/web.utils'
 import { createHash } from 'crypto'
 import { bufferToBase64, replaceAsync } from './utils.js'
-import { PieceIconProps, PieceOpengraphProps } from '../../types.js'
 
 const CompiledStore: Record<string, Component> = {}
 

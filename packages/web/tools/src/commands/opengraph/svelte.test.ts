@@ -7,9 +7,8 @@ import {
 import { readFile, writeFile } from 'fs/promises'
 import { compile } from 'svelte/compiler'
 import path from 'path'
-import { Config } from '../../lib/config/config.js'
+import { type Config, type WebPieces } from '@luzzle/web.utils'
 import * as utils from './utils.js'
-import { WebPieces } from '../sqlite/index.js'
 
 vi.mock('fs/promises')
 vi.mock('svelte/compiler')
