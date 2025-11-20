@@ -1,6 +1,6 @@
 import adapter from '@sveltejs/adapter-node'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
-import { loadConfig } from '@luzzle/tools'
+import { loadConfig } from '@luzzle/web.utils/server'
 
 const config = loadConfig('./config.yaml')
 

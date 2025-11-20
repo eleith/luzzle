@@ -28,7 +28,7 @@
 	},
 	"devDependencies": {
 		"@iconify-json/ph": "1.2.2",
-		"@luzzle/tools": "0.0.57",
+		"@luzzle/web.tools": "0.0.59",
 		"@sveltejs/adapter-node": "5.3.2",
 		"@sveltejs/enhanced-img": "0.8.1",
 		"@sveltejs/kit": "2.43.0",
@@ -56,7 +56,7 @@
 	"type": "module",
 	"dependencies": {
 		"@luzzle/core": "0.0.23",
-		"@luzzle/web.utils": "0.0.7",
+		"@luzzle/web.utils": "0.0.9",
 		"better-sqlite3": "11.7.2",
 		"bits-ui": "2.14.1",
 		"devlop": "1.1.0",
