@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { type PiecePageProps } from '@luzzle/web.utils'
-	const { piece, tags, Icon, metadata, html_note, helpers }: PiecePageProps = $props()
+	import Icon from '$lib/pieces/components/icon.svelte'
+
+	const { piece, tags, metadata, html_note }: PiecePageProps = $props()
 
 	let showFullHeader = $state(false)
 	const hasMedia = $derived(!!piece.media)
@@ -17,14 +19,7 @@
 		title="toggle full size"
 		class:piece-icon-open={showFullHeader}
 	>
-		<Icon
-			{piece}
-			size={{ width: 125 }}
-			{metadata}
-			tags={tags.map((x) => x.tag as string)}
-			lazy={false}
-			{helpers}
-		/>
+		<Icon {piece} size="s" lazy={false} />
 	</button>
 </section>
 
