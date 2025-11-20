@@ -25,7 +25,7 @@
 		if (type) {
 			const componentType = parts.at(-1)
 
-			if (componentType === 'opengraph.svelte') {
+			if (componentType === 'page.svelte') {
 				customPageMap.set(type, customComponents[customPath])
 			} else if (componentType === 'icon.svelte') {
 				customIconMap.set(type, customComponents[customPath])
