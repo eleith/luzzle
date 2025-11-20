@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
     "outDir": "dist",
@@ -16,10 +16,8 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "incremental": true,
-    "typeRoots": ["./src/@types", "./node_modules", "../../node_modules"],
     "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "types": ["vitest/globals"]
+    "moduleResolution": "nodenext"
   },
   "include": ["src/**/*.ts", "src/**/*.json"]
 }
