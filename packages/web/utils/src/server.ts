@@ -1,4 +1,9 @@
-import { getPalette } from './lib/vibrant.js'
-import { loadConfig } from './lib/config/config.js'
+import { getPalette } from "./lib/vibrant.js";
+import {
+	loadConfig,
+	getConfigValue,
+	setConfigValue,
+} from "./lib/config/config.js";
 
-export { getPalette, loadConfig }
+export { getPalette, loadConfig, getConfigValue, setConfigValue };
+

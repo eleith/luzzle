@@ -14,11 +14,11 @@ type PieceIconProps = {
 }
 
 type PieceIconPalette = {
-	accent: string
-	background: string
-	bodyText: string
-	muted: string
-	titleText: string
+	accent?: string
+	background?: string
+	bodyText?: string
+	muted?: string
+	titleText?: string
 }
 
 type PieceComponentHelpers = {
@@ -27,7 +27,7 @@ type PieceComponentHelpers = {
 }
 
 type PieceOpengraphProps = {
-	Icon: Component<PieceIconProps>
+	Icon?: Component<PieceIconProps>
 	metadata: Record<string, unknown>
 	tags: string[]
 	piece: WebPieces
@@ -45,7 +45,7 @@ type PiecePageProps = {
 	tags: Partial<WebPieceTags>[]
 	html_note: string | null
 	helpers: PieceComponentHelpers
-	Icon: Component<PieceIconProps>
+	Icon?: Component<PieceIconProps>
 }
 
 export {
