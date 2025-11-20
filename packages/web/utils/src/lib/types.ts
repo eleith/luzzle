@@ -1,5 +1,4 @@
 import type { WebPieces, WebPieceTags } from "./sqlite.js"
-import type { Component } from "svelte"
 
 type PieceIconProps = {
 	piece: WebPieces
@@ -27,7 +26,6 @@ type PieceComponentHelpers = {
 }
 
 type PieceOpengraphProps = {
-	Icon?: Component<PieceIconProps>
 	metadata: Record<string, unknown>
 	tags: string[]
 	piece: WebPieces
@@ -45,7 +43,6 @@ type PiecePageProps = {
 	tags: Partial<WebPieceTags>[]
 	html_note: string | null
 	helpers: PieceComponentHelpers
-	Icon?: Component<PieceIconProps>
 }
 
 export {
