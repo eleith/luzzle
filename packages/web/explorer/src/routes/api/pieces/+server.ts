@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { type WebPieces } from '@luzzle/tools/types'
+import { type WebPieces } from '@luzzle/web.utils'
 import { db, sql } from '$lib/server/database'
 import { config } from '$lib/server/config'
 

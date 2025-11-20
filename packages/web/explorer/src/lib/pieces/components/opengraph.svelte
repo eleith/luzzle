@@ -5,14 +5,13 @@
 		type PieceComponentHelpers,
 		type PieceIconProps,
 		type PieceOpengraphProps,
-		type WebPieces
-	} from '@luzzle/tools/types'
-	import {
+		type WebPieces,
 		getImageAssetPath,
 		OpengraphImageHeight,
 		OpengraphImageWidth
-	} from '@luzzle/tools/browser'
+	} from '@luzzle/web.utils'
 	import OpengraphDefault from '$lib/pieces/components/opengraph.default.svelte'
+	import IconDefault from '$lib/pieces/components/icon.default.svelte'
 
 	const customOpengraphMap = new Map<string, { default: Component<PieceOpengraphProps> }>()
 	const customIconMap = new Map<string, { default: Component<PieceIconProps> }>()
@@ -43,8 +42,8 @@
 
 	let { piece, palette }: Props = $props()
 
-	const frontmatter = JSON.parse(piece.json_metadata || '{}') || {}
-	const tags = JSON.parse(piece.keywords || '[]') || []
+	const metadata = $derived(JSON.parse(piece.json_metadata || '{}')) as Record<string, unknown>
+	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
 	const helpers: PieceComponentHelpers = {
 		getPieceUrl: function () {
 			return `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`
@@ -55,15 +54,16 @@
 		}
 	}
 
-	const Opengraph = customOpengraphMap.get(piece.type)?.default
-	const Icon = customIconMap.get(piece.type)?.default
-	const OpengraphComponent = Opengraph || OpengraphDefault
+	const Opengraph = $derived(customOpengraphMap.get(piece.type)?.default || OpengraphDefault)
+	const Icon = $derived(customIconMap.get(piece.type)?.default || IconDefault)
 </script>
 
 <section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
-	<OpengraphComponent
+	<Opengraph
 		{Icon}
-		piece={{ ...piece, frontmatter, tags }}
+		{piece}
+		{metadata}
+		{tags}
 		size={{ width: OpengraphImageWidth, height: OpengraphImageHeight }}
 		{helpers}
 		{palette}

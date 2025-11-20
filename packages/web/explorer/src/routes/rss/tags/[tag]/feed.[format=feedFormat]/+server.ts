@@ -1,4 +1,4 @@
-import { type WebPieces } from '@luzzle/tools/types'
+import { type WebPieces } from '@luzzle/web.utils'
 import type { RequestHandler } from './$types'
 import { config } from '$lib/server/config'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'

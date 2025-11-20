@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { db } from '$lib/server/database'
-import { getPalette } from '@luzzle/tools'
+import { getPalette } from '@luzzle/web.utils/server'
 import { config } from '$lib/server/config'
-import { getImageAssetPath } from '@luzzle/tools/browser'
+import { getImageAssetPath, type PieceIconPalette } from '@luzzle/web.utils'
 
 export const load: PageServerLoad = async (page) => {
 	const type = page.params.piece
@@ -25,7 +25,7 @@ export const load: PageServerLoad = async (page) => {
 		: null
 	const baseUrl = config.url.luzzle_assets || config.url.app
 	const mediaUrl = mediaPath ? `${baseUrl}/pieces/assets/${mediaPath}` : null
-	const palette = mediaUrl ? await getPalette(mediaUrl) : undefined
+	const palette = mediaUrl ? ((await getPalette(mediaUrl)) as PieceIconPalette) : undefined
 
 	return {
 		piece,

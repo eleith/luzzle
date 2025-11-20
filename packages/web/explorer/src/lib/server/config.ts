@@ -1,4 +1,5 @@
-import { loadConfig, type Config, type ConfigPublic } from '@luzzle/tools'
+import { type Config, type ConfigPublic } from '@luzzle/web.utils'
+import { loadConfig } from '@luzzle/web.utils/server'
 import * as path from 'path'
 import { existsSync } from 'fs'
 
