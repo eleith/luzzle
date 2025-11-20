@@ -3,7 +3,6 @@
 	import type { Component } from 'svelte'
 	import {
 		type PieceComponentHelpers,
-		type PieceIconProps,
 		type PieceOpengraphProps,
 		type WebPieces,
 		getImageAssetPath,
@@ -11,12 +10,10 @@
 		OpengraphImageWidth
 	} from '@luzzle/web.utils'
 	import OpengraphDefault from '$lib/pieces/components/opengraph.default.svelte'
-	import IconDefault from '$lib/pieces/components/icon.default.svelte'
 
 	const customOpengraphMap = new Map<string, { default: Component<PieceOpengraphProps> }>()
-	const customIconMap = new Map<string, { default: Component<PieceIconProps> }>()
 	const customComponents: Record<string, { default: Component }> = import.meta.glob(
-		'$lib/pieces/components/custom/*/*.svelte',
+		'$lib/pieces/components/custom/*/opengraph.svelte',
 		{ eager: true }
 	)
 
@@ -25,13 +22,7 @@
 		const type = parts.at(-2)
 
 		if (type) {
-			const componentType = parts.at(-1)
-
-			if (componentType === 'opengraph.svelte') {
-				customOpengraphMap.set(type, customComponents[customPath])
-			} else if (componentType === 'icon.svelte') {
-				customIconMap.set(type, customComponents[customPath])
-			}
+			customOpengraphMap.set(type, customComponents[customPath])
 		}
 	}
 
@@ -55,12 +46,10 @@
 	}
 
 	const Opengraph = $derived(customOpengraphMap.get(piece.type)?.default || OpengraphDefault)
-	const Icon = $derived(customIconMap.get(piece.type)?.default || IconDefault)
 </script>
 
 <section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
 	<Opengraph
-		{Icon}
 		{piece}
 		{metadata}
 		{tags}

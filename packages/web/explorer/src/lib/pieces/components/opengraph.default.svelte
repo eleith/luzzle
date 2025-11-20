@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { type PieceOpengraphProps } from '@luzzle/web.utils'
-	const { Icon, palette, piece, helpers, metadata, tags }: PieceOpengraphProps = $props()
+	import Icon from '$lib/pieces/components/icon.svelte'
+
+	const { palette, piece }: PieceOpengraphProps = $props()
 </script>
 
 <section
@@ -13,16 +15,9 @@
 			--color-main-text: {palette?.bodyText || '#000'};
 			--color-title-text: {palette?.titleText || '#000'};"
 >
-	<div class="opengraph" class:no-icon={!Icon}>
+	<div class="opengraph">
 		<div class="left-panel">
-			{#if Icon}
-				<Icon {piece} {helpers} size={{ width: 350, height: 525 }} {metadata} {tags} />
-			{:else if piece.media}
-				<picture>
-					<source srcset={helpers.getPieceImageUrl(piece.media, 400, 'avif')} type="image/avif" />
-					<img src={helpers.getPieceImageUrl(piece.media, 400, 'jpg')} alt="" />
-				</picture>
-			{/if}
+			<Icon {piece} size={{ width: 350 }} />
 		</div>
 		<div class="right-panel">
 			<h1 style="--font-size:{piece.title.length < 25 ? 5 : 3}rem">
@@ -83,33 +78,6 @@
 		padding-left: 0px;
 		color: var(--color-main-text);
 		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-	}
-
-	.no-icon .left-panel {
-		flex: 0 0 35%;
-		clip-path: polygon(0 0, 77.78% 0, 100% 100%, 0 100%);
-	}
-
-	.no-icon .left-panel::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: var(--color-accent);
-		clip-path: polygon(74.78% 0, 77.78% 0, 100% 100%, 97% 100%);
-	}
-
-	.no-icon .right-panel {
-		flex: 1;
-		padding-left: 20px;
-	}
-
-	.no-icon img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
 	}
 
 	.right-panel h1 {
