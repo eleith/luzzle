@@ -1,10 +1,10 @@
 {
   "name": "@luzzle/core",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
-    "build": "tsc -p tsconfig.prod.json",
+    "build": "tsc",
     "test": "vitest run --coverage --silent",
     "migration:add": "bash ./src/database/migrations.sh",
 		"check:version": "node ./scripts/check-version.js"
