@@ -27,6 +27,8 @@ steps:
     commands:
       - cd packages/web/explorer
       - npm run lint
+      - ls -la ./node_modules
+      - ls -la ./node_modules/.bin
       - npm run check
 
   check-version:
