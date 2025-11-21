@@ -1,9 +1,9 @@
-import Ajv from 'ajv'
+import { ValidateFunction } from 'ajv'
 import { PieceMarkdown } from './markdown.js'
 import { PieceFrontmatter, PieceFrontmatterSchema } from './frontmatter.js'
 import { PiecesItemsSelectable } from '../../database/tables/pieces_items.schema.js'
 
-type PieceValidator = Ajv.ValidateFunction<PieceFrontmatter>
+type PieceValidator = ValidateFunction<PieceFrontmatter>
 
 const sample: PiecesItemsSelectable = {
 	id: '1',

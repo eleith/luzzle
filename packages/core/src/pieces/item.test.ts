@@ -7,7 +7,7 @@ import {
 } from './utils/frontmatter.js'
 import { makeMarkdownSample, makeSample, makeSchema } from './utils/piece.fixtures.js'
 import * as database from './item.js'
-import Ajv from 'ajv'
+import { ValidateFunction } from 'ajv'
 
 vi.mock('./utils/frontmatter.js')
 
@@ -219,7 +219,7 @@ describe('src/pieces/item.ts', () => {
 			subtitle: 'subtitle',
 		}
 		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
-		const validator = vi.fn(() => true) as unknown as Ajv.ValidateFunction<typeof frontmatter>
+		const validator = vi.fn(() => true) as unknown as ValidateFunction<typeof frontmatter>
 
 		const valid = database.validatePieceItem(markdown, validator)
 
@@ -237,7 +237,7 @@ describe('src/pieces/item.ts', () => {
 			subtitle: 'subtitle',
 		}
 		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
-		const validator = vi.fn(() => false) as unknown as Ajv.ValidateFunction<typeof frontmatter>
+		const validator = vi.fn(() => false) as unknown as ValidateFunction<typeof frontmatter>
 
 		const valid = database.validatePieceItem(markdown, validator)
 
@@ -247,14 +247,14 @@ describe('src/pieces/item.ts', () => {
 
 	test('getValidatePieceItemErrors', () => {
 		const errors = ['errors', 'errors', 'errors']
-		const validator = { errors } as unknown as Ajv.ValidateFunction<PieceFrontmatter>
+		const validator = { errors } as unknown as ValidateFunction<PieceFrontmatter>
 		const getErrors = database.getValidatePieceItemErrors(validator)
 
 		expect(getErrors).length(errors.length)
 	})
 
 	test('getValidatePieceItemErrors but on valid validator', () => {
-		const validator = { errors: undefined } as unknown as Ajv.ValidateFunction<PieceFrontmatter>
+		const validator = { errors: undefined } as unknown as ValidateFunction<PieceFrontmatter>
 		const getErrors = database.getValidatePieceItemErrors(validator)
 
 		expect(getErrors).length(0)

@@ -1,6 +1,6 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { makeSchema } from '../pieces/utils/piece.fixtures.js'
-import Ajv from 'ajv'
+import { Ajv } from 'ajv'
 import ajv, {
 	assetFormatValidator,
 	dateFormatValidator,
@@ -11,9 +11,9 @@ import ajv, {
 vi.mock('ajv')
 
 const mocks = {
-	Ajv: vi.mocked(Ajv.default),
-	compile: vi.mocked(Ajv.default.prototype.compile),
-	addFormat: vi.mocked(Ajv.default.prototype.addFormat),
+	Ajv: vi.mocked(Ajv),
+	compile: vi.mocked(Ajv.prototype.compile),
+	addFormat: vi.mocked(Ajv.prototype.addFormat),
 }
 
 const spies: { [key: string]: MockInstance } = {}

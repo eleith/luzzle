@@ -22,16 +22,33 @@ steps:
         from_secret: npm_owner
       NPM_TOKEN:
         from_secret: npm_token
+
   test:
     image: node:22
     commands:
       - npm run test -w @luzzle/core
+
+  check-version:
+    image: node:22
+    commands:
+      - cd packages/core
+      - |
+        VERSION_FROM_PKG=$(npm pkg get version --workspaces=false)
+
+        if [ "\"$VERSION_FROM_TAG\"" != "$VERSION_FROM_PKG" ]; then
+          echo "Version mismatch: Git tag version "$VERSION_FROM_TAG" does not match package.json version: $VERSION_FROM_PKG"
+          exit 1
+        fi
+    environment:
+     VERSION_FROM_TAG: ${CI_COMMIT_TAG#core/v}
+    when:
+      - event: tag
+
   publish:
     image: node:22
     commands:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
-      - npm run check:version -w @luzzle/core
       - npm publish -w @luzzle/core
     when:
       - event: tag
@@ -40,6 +57,7 @@ steps:
         from_secret: npm_owner
       NPM_TOKEN:
         from_secret: npm_token
+
   notify-success:
     image: deblan/woodpecker-email:3.2.0
     settings:
@@ -56,6 +74,7 @@ steps:
       recipients_only: true
     when:
       - status: [success]
+
   notify-failure:
     image: deblan/woodpecker-email:3.2.0
     settings:

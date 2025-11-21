@@ -11,7 +11,7 @@ import {
 	pieceFrontmatterValueToDatabaseValue,
 	getPieceFrontmatterSchemaFields,
 } from './utils/frontmatter.js'
-import Ajv from 'ajv'
+import { ValidateFunction } from 'ajv'
 
 function makePieceItemInsertable<F extends PieceFrontmatter>(
 	piece: string,
@@ -104,7 +104,7 @@ function makePieceItemUpdatable<F extends PieceFrontmatter>(
 
 function validatePieceItem<F extends PieceFrontmatter>(
 	markdown: PieceMarkdown<F>,
-	validator: Ajv.ValidateFunction<F>
+	validator: ValidateFunction<F>
 ) {
 	if (validator(markdown.frontmatter)) {
 		return true
@@ -114,7 +114,7 @@ function validatePieceItem<F extends PieceFrontmatter>(
 }
 
 function getValidatePieceItemErrors<F extends PieceFrontmatter>(
-	validator: Ajv.ValidateFunction<F>
+	validator: ValidateFunction<F>
 ) {
 	const errors = validator.errors || []
 	return errors.map((e) => `\t${e.instancePath} ${e.message}`)
