@@ -42,7 +42,6 @@ describe('src/commands/opengraph/utils', () => {
 
 			const props = await getProps(mockItem, mockIcon, mockPieces, mockConfig)
 
-			expect(props.Icon).toBe(mockIcon)
 			expect(props.metadata).toEqual({ title: 'Test Title' })
 			expect(props.tags).toEqual(['tag1', 'tag2'])
 			expect(props.size).toEqual({ width: 1200, height: 630 })
@@ -63,7 +62,6 @@ describe('src/commands/opengraph/utils', () => {
 
 			const props = await getProps(mockItem, mockIcon, mockPieces, mockConfig)
 
-			expect(props.Icon).toBe(mockIcon)
 			expect(props.metadata).toEqual({})
 			expect(props.tags).toEqual([])
 			expect(props.size).toEqual({ width: 1200, height: 630 })
@@ -90,36 +88,12 @@ describe('src/commands/opengraph/utils', () => {
 			mocks.getPalette.mockResolvedValue(mockPalette)
 			const props = await getProps(mockItem, mockIcon, mockPieces, mockConfig)
 
-			expect(props.Icon).toBe(mockIcon)
 			expect(props.metadata).toEqual({})
 			expect(props.tags).toEqual([])
 			expect(props.palette).toBe(mockPalette)
 			expect(props.size).toEqual({ width: 1200, height: 630 })
 			expect(props.helpers.getPieceUrl()).toBe('http://localhost/pieces/book/test-book')
 			expect(props.helpers.getPieceImageUrl('image.jpg', 100, 'jpg')).toBe('luzzle://image.jpg')
-		})
-
-		test('should handle missing Icon component', async () => {
-			const mockItem = {
-				json_metadata: '{"title": "Test Title"}',
-				keywords: '["tag1", "tag2"]',
-				type: 'book',
-				slug: 'test-book',
-			} as WebPieces
-			const mockPieces = {} as unknown as Pieces
-			const mockConfig = {
-				url: { app: 'http://localhost' },
-			} as Config
-			const mockPalette = { VIBRANT: { hex: '#FFFFFF' } } as unknown as Awaited<
-				ReturnType<typeof Vibrant.prototype.getPalette>
-			>
-
-			vi.spyOn(Vibrant.prototype, 'getPalette').mockResolvedValue(mockPalette)
-			vi.spyOn(Sharp.prototype, 'toBuffer').mockResolvedValue(Buffer.from('blank_image_data'))
-
-			const props = await getProps(mockItem, null, mockPieces, mockConfig)
-
-			expect(props.Icon).toBeUndefined()
 		})
 	})
 
