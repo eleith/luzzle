@@ -10,6 +10,7 @@
 		"build:lock": "npm i --package-lock-only --workspaces=false",
 		"build:theme": "luzzle-tools theme --config ./config.yaml > src/lib/ui/styles/theme.build.css",
 		"build:theme:minify": "luzzle-tools theme --config ./config.yaml --minify > src/lib/ui/styles/theme.build.css",
+		"build:og": "node ./scripts/generate-og-image.js",
 		"preview": "vite preview",
 		"check": "npm run prebuild && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
