@@ -33,9 +33,7 @@ async function generateAllOpenGraphs(database, assets) {
 				'--luzzle',
 				database,
 				'--out',
-				assets,
-				'--id',
-				'as3khxq5yqi3yi08oyf9dq98'
+				assets
 			],
 			{
 				stdio: 'inherit',
