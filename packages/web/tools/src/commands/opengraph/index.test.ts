@@ -1,8 +1,7 @@
 import { describe, test, vi, afterEach, expect } from 'vitest'
 import generateOpenGraphs from './index.js'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
-import { generateHtml } from './html.js'
-import { generatePng } from './png.js'
+import { generatePngFromUrl } from './png.js'
 import { getBrowser } from './browser.js'
 import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { getDatabaseClient } from '@luzzle/core'
@@ -22,8 +21,7 @@ vi.mock('@luzzle/web.utils/server')
 const mocks = {
 	getLastRunFor: vi.mocked(getLastRunFor),
 	setLastRunFor: vi.mocked(setLastRunFor),
-	generateHtml: vi.mocked(generateHtml),
-	generatePng: vi.mocked(generatePng),
+	generatePngFromUrl: vi.mocked(generatePngFromUrl),
 	getBrowser: vi.mocked(getBrowser),
 	getDatabaseClient: vi.mocked(getDatabaseClient),
 	loadConfig: vi.mocked(loadConfig),
@@ -31,7 +29,7 @@ const mocks = {
 	Pieces: vi.mocked(Pieces),
 }
 
-describe('tools/opengraph', () => {
+describe('commands/opengraph/index.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -42,7 +40,9 @@ describe('tools/opengraph', () => {
 	test('should generate an opengraph image for a single item', async () => {
 		const { db, queries } = mockKysely()
 		const browser = { close: vi.fn() }
-		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' } } as Config)
+		const url = 'http://localhost'
+
+		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' }, url: { app: url } } as Config)
 		mocks.getDatabaseClient.mockReturnValue(db)
 		vi.spyOn(queries, 'execute').mockResolvedValue([
 			{
@@ -54,8 +54,7 @@ describe('tools/opengraph', () => {
 		])
 		mocks.getLastRunFor.mockResolvedValue(new Date(0))
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
-		mocks.generateHtml.mockResolvedValue('<html></html>')
-		mocks.generatePng.mockResolvedValue(Buffer.from('test'))
+		mocks.generatePngFromUrl.mockResolvedValue(Buffer.from('test'))
 
 		await generateOpenGraphs('test', 'test', 'test', {})
 
@@ -63,9 +62,8 @@ describe('tools/opengraph', () => {
 		expect(mocks.getDatabaseClient).toHaveBeenCalledOnce()
 		expect(mocks.getLastRunFor).toHaveBeenCalledOnce()
 		expect(mocks.getBrowser).toHaveBeenCalledOnce()
-		expect(mocks.generateHtml).toHaveBeenCalledOnce()
-		expect(mocks.generatePng).toHaveBeenCalledWith(
-			'<html></html>',
+		expect(mocks.generatePngFromUrl).toHaveBeenCalledWith(
+			expect.any(String),
 			browser,
 			'test/test/1/opengraph.png'
 		)
@@ -76,7 +74,9 @@ describe('tools/opengraph', () => {
 	test('should not generate if item is not updated', async () => {
 		const { db, queries } = mockKysely()
 		const browser = { close: vi.fn() }
-		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' } } as Config)
+		const url = 'http://localhost'
+
+		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' }, url: { app: url } } as Config)
 		mocks.getDatabaseClient.mockReturnValue(db)
 		vi.spyOn(queries, 'execute').mockResolvedValue([
 			{
@@ -91,17 +91,19 @@ describe('tools/opengraph', () => {
 
 		await generateOpenGraphs('test', 'test', 'test', {})
 
-		expect(mocks.generateHtml).not.toHaveBeenCalled()
-		expect(mocks.generatePng).not.toHaveBeenCalled()
+		expect(mocks.generatePngFromUrl).not.toHaveBeenCalled()
 		expect(mocks.setLastRunFor).toHaveBeenCalledOnce()
 	})
 
 	test('should force generation', async () => {
 		const { db, queries } = mockKysely()
 		const browser = { close: vi.fn() }
-		const html = 'html'
+		const url = 'http://localhost'
 
-		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' } } as Config)
+		mocks.loadConfig.mockReturnValue({
+			paths: { database: 'test' },
+			url: { app: url },
+		} as Config)
 		mocks.getDatabaseClient.mockReturnValue(db)
 		vi.spyOn(queries, 'execute').mockResolvedValue([
 			{
@@ -113,12 +115,10 @@ describe('tools/opengraph', () => {
 		])
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
-		mocks.generateHtml.mockResolvedValue(html)
 
 		await generateOpenGraphs('test', 'test', 'test', { force: true })
 
-		expect(mocks.generateHtml).toHaveBeenCalledOnce()
-		expect(mocks.generatePng).toHaveBeenCalledOnce()
+		expect(mocks.generatePngFromUrl).toHaveBeenCalledOnce()
 		expect(mocks.setLastRunFor).toHaveBeenCalledOnce()
 	})
 
@@ -126,7 +126,9 @@ describe('tools/opengraph', () => {
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 		const { db, queries } = mockKysely()
 		const browser = { close: vi.fn() }
-		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' } } as Config)
+		const url = 'http://localhost'
+
+		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' }, url: { app: url } } as Config)
 		mocks.getDatabaseClient.mockReturnValue(db)
 		vi.spyOn(queries, 'execute').mockResolvedValue([
 			{
@@ -138,7 +140,7 @@ describe('tools/opengraph', () => {
 		])
 		mocks.getLastRunFor.mockResolvedValue(new Date(0))
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
-		mocks.generateHtml.mockRejectedValue(new Error('test error'))
+		mocks.generatePngFromUrl.mockRejectedValue(new Error('Test error'))
 
 		await generateOpenGraphs('test', 'test', 'test', {})
 
@@ -149,8 +151,9 @@ describe('tools/opengraph', () => {
 	test('should use date_added if date_updated is null', async () => {
 		const { db, queries } = mockKysely()
 		const browser = { close: vi.fn() }
-		const html = 'html'
-		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' } } as Config)
+		const url = 'http://localhost'
+
+		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' }, url: { app: url } } as Config)
 		mocks.getDatabaseClient.mockReturnValue(db)
 		vi.spyOn(queries, 'execute').mockResolvedValue([
 			{
@@ -162,18 +165,18 @@ describe('tools/opengraph', () => {
 		])
 		mocks.getLastRunFor.mockResolvedValue(new Date(0))
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
-		mocks.generateHtml.mockResolvedValue(html)
 
 		await generateOpenGraphs('test', 'test', 'test', {})
 
-		expect(mocks.generateHtml).toHaveBeenCalledOnce()
-		expect(mocks.generatePng).toHaveBeenCalledOnce()
+		expect(mocks.generatePngFromUrl).toHaveBeenCalledOnce()
 	})
 
 	test('should not call setLastRunFor when id is provided', async () => {
 		const { db, queries } = mockKysely()
 		const browser = { close: vi.fn() }
-		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' } } as Config)
+		const url = 'http://localhost'
+
+		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' }, url: { app: url } } as Config)
 		mocks.getDatabaseClient.mockReturnValue(db)
 		vi.spyOn(queries, 'execute').mockResolvedValue([
 			{
