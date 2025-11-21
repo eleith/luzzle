@@ -1,6 +1,6 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { makeSchema } from '../pieces/utils/piece.fixtures.js'
-import { Ajv } from 'ajv'
+import Ajv from 'ajv'
 import ajv, {
 	assetFormatValidator,
 	dateFormatValidator,

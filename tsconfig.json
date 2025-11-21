@@ -5,12 +5,12 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
-    "module": "commonjs",
+    "module": "esnext",
     "forceConsistentCasingInFileNames": true,
     "noEmit": false,
     "composite": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "incremental": true,
@@ -22,8 +22,5 @@
     "noUnusedParameters": true,
     "sourceMap": true,
     "strictNullChecks": true
-  },
-  "ts-node": {
-    "transpileOnly": true
   }
 }
