@@ -1,5 +1,5 @@
 import { describe, test, vi, afterEach, expect } from 'vitest';
-import { generatePng } from './png.js';
+import { generatePngFromUrl } from './png.js';
 import { Browser } from 'puppeteer';
 
 vi.mock('puppeteer');
@@ -9,6 +9,7 @@ describe('generate-open-graph/png', () => {
 		newPage: vi.fn(),
 		setViewport: vi.fn(),
 		setContent: vi.fn(),
+		goto: vi.fn(),
 		screenshot: vi.fn(),
 		close: vi.fn(),
 	};
@@ -24,18 +25,18 @@ describe('generate-open-graph/png', () => {
 		const browser = {
 			newPage: mocks.newPage.mockResolvedValue({
 				setViewport: mocks.setViewport,
-				setContent: mocks.setContent,
+				goto: mocks.goto,
 				screenshot: mocks.screenshot,
 				close: mocks.close,
 			}),
 		} as unknown as Browser;
 
-		const imageBuffer = await generatePng('<html></html>', browser, '');
+		const imageBuffer = await generatePngFromUrl('http://localhost', browser, '');
 
 		expect(imageBuffer).toBeDefined();
 		expect(mocks.newPage).toHaveBeenCalledOnce();
 		expect(mocks.setViewport).toHaveBeenCalledOnce();
-		expect(mocks.setContent).toHaveBeenCalledOnce();
+		expect(mocks.goto).toHaveBeenCalledOnce();
 		expect(mocks.screenshot).toHaveBeenCalledOnce();
 		expect(mocks.close).toHaveBeenCalledOnce();
 	});
@@ -45,13 +46,13 @@ describe('generate-open-graph/png', () => {
 		const browser = {
 			newPage: mocks.newPage.mockResolvedValue({
 				setViewport: mocks.setViewport,
-				setContent: mocks.setContent,
+				goto: mocks.goto,
 				screenshot: mocks.screenshot,
 				close: mocks.close,
 			}),
 		} as unknown as Browser;
 
-		await expect(generatePng('<html></html>', browser, '')).rejects.toThrowError()
+		await expect(generatePngFromUrl('http://localhost', browser, '')).rejects.toThrowError()
 		expect(mocks.close).toHaveBeenCalledOnce();
 	});
 });

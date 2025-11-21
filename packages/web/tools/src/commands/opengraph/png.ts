@@ -2,8 +2,8 @@ import { mkdir } from 'fs/promises'
 import path from 'path'
 import { Browser } from 'puppeteer'
 
-async function generatePng(
-	html: string,
+async function generatePngFromUrl(
+	url: string,
 	browser: Browser,
 	outputFilePath: string,
 ) {
@@ -15,7 +15,7 @@ async function generatePng(
 			width: 1200,
 			height: 630,
 		})
-		await page.setContent(html)
+		await page.goto(url, { waitUntil: 'networkidle0' })
 	  await mkdir(directory, { recursive: true })
 
 		return await page.screenshot({
@@ -29,4 +29,4 @@ async function generatePng(
 	}
 }
 
-export { generatePng }
+export { generatePngFromUrl }

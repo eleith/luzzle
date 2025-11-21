@@ -1,8 +1,6 @@
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
-import { generateHtml } from './html.js'
-import { generatePng } from './png.js'
+import { generatePngFromUrl } from './png.js'
 import { getBrowser } from './browser.js'
-import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import path from 'path'
 import { getDatabaseClient } from '@luzzle/core'
 import { loadConfig } from '@luzzle/web.utils/server'
@@ -32,8 +30,6 @@ export default async function generateOpenGraphs(
 	const lastRun = force ? new Date(0) : await getLastRunFor(outputDir, operation)
 
 	const browser = await getBrowser()
-	const storage = new StorageFileSystem(luzzle)
-	const pieces = new Pieces(storage)
 	const piecesToProcess = id ? items.filter((item) => item.id === id) : items
 
 	for (const item of piecesToProcess) {
@@ -43,14 +39,10 @@ export default async function generateOpenGraphs(
 			try {
 				const ogPath = getOpenGraphPath(item.type, item.id)
 				const outputPath = path.join(outputDir, ogPath)
-				const html = await generateHtml(item, pieces, config)
-
-				if (html) {
-					await generatePng(html, browser, outputPath)
-				} else {
-					console.warn(`Skipped making opengraph for ${item.file_path} (${item.id}): no opengraph svelte component found.`)
-				}
+				const url = `${config.url.app}/api/pieces/${item.type}/${item.slug}/opengraph`
+				await generatePngFromUrl(url, browser, outputPath)
 			} catch (e) {
+				console.log(luzzle)
 				console.error(`Error making opengraph for ${item.file_path} (${item.id}): ${e}`)
 			}
 		}
