@@ -4,7 +4,6 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-// https://nodejs.org/api/esm.html#importmeta
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
