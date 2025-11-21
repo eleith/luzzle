@@ -25,16 +25,8 @@ async function generateAllOpenGraphs(database, assets) {
 		console.log('📸 Starting OpenGraphs generation...')
 
 		const ogProcess = spawn(
-			'npx luzzle-tools',
-			[
-				'opengraph',
-				'--config',
-				'config.yaml',
-				'--luzzle',
-				database,
-				'--out',
-				assets
-			],
+			'./node_modules/.bin/luzzle-tools',
+			['opengraph', '--config', 'config.yaml', '--luzzle', database, '--out', assets],
 			{
 				stdio: 'inherit',
 				shell: true
