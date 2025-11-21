@@ -7,9 +7,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ../../tools/data/luzzle-assets:/app/build/client/pieces/assets
+      - ../tools/data/luzzle-assets:/app/build/client/pieces/assets
       - ./config.yaml:/app/config.yaml
-      - ../../tools/data/luzzle/luzzle.sqlite:/app/data/luzzle.sqlite
+      - ./data/luzzle.sqlite:/app/data/luzzle.sqlite
 
 secrets:
   npmrc:
