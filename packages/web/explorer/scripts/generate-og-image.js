@@ -4,7 +4,7 @@ import { spawn } from 'child_process'
 const CONFIG_PATH = './config.yaml'
 const LUZZLE_ASSETS_FOLDER = process.argv[2] || './static/pieces/assets'
 
-async function waitForServer(url, timeout = 10000) {
+async function waitForServer(url, timeout = 20000) {
 	const startTime = Date.now()
 	while (Date.now() - startTime < timeout) {
 		try {
@@ -15,7 +15,7 @@ async function waitForServer(url, timeout = 10000) {
 				console.log('spinning')
 			}
 		}
-		await new Promise((resolve) => setTimeout(resolve, 500))
+		await new Promise((resolve) => setTimeout(resolve, 1000))
 	}
 	throw new Error(`Server did not start at ${url} within ${timeout}ms`)
 }
@@ -25,7 +25,7 @@ async function generateAllOpenGraphs(database, assets) {
 		console.log('📸 Starting OpenGraphs generation...')
 
 		const ogProcess = spawn(
-			'./node_modules/.bin/luzzle-tools',
+			'npx luzzle-tools',
 			['opengraph', '--config', 'config.yaml', '--luzzle', database, '--out', assets],
 			{
 				stdio: 'inherit',
