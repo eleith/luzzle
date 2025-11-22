@@ -41,9 +41,11 @@ export default async function generateOpenGraphs(
 				const outputPath = path.join(outputDir, ogPath)
 				const url = `${config.url.app}/api/pieces/${item.type}/${item.slug}/opengraph`
 				await generatePngFromUrl(url, browser, outputPath)
+
+				console.log(`generated opengraph for ${item.file_path} (${item.id})`)
 			} catch (e) {
 				console.log(luzzle)
-				console.error(`Error making opengraph for ${item.file_path} (${item.id}): ${e}`)
+				console.error(`error making opengraph for ${item.file_path} (${item.id}): ${e}`)
 			}
 		}
 	}
