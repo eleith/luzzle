@@ -49,12 +49,12 @@ ${darkBlock}
 }
 
 @font-face {
-	font-family: "${config.theme.globals['font-sans-name']}";
+	font-family: ${config.theme.globals['font-sans-name']};
 	font-optical-sizing: auto;
 	font-weight: ${config.theme.globals['font-sans-weight']};
 	font-style: normal;
 	font-variation-settings: 'wdth' 300;
-	src: url("${config.theme.globals['font-sans-url']}") format('woff2');
+	src: url(${config.theme.globals['font-sans-url']}) format('woff2');
 	font-display: swap;
 }
 
