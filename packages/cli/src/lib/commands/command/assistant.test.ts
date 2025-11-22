@@ -11,11 +11,11 @@ import {
 	makePieceMock,
 } from '../../pieces/piece.fixtures.js'
 import yaml from 'yaml'
-import { pieceFrontMatterFromPrompt } from '../../llm/google.js'
+import { pieceFrontMatterFromPrompt } from '@luzzle/core'
 
+vi.mock('@luzzle/core')
 vi.mock('../../pieces/index')
 vi.mock('../../log.js')
-vi.mock('../../llm/google.js')
 vi.mock('yaml')
 
 const mocks = {

@@ -2,7 +2,7 @@ import { Argv } from 'yargs'
 import { Command } from '../utils/types.js'
 import yaml from 'yaml'
 import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../../pieces/index.js'
-import { pieceFrontMatterFromPrompt } from '../../llm/google.js'
+import { pieceFrontMatterFromPrompt } from '@luzzle/core'
 
 export type AssistantArgv = {
 	update?: string
