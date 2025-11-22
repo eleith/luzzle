@@ -7,4 +7,5 @@ import { addFrontMatter } from './lib/frontmatter.js'
 
 export * from './database/tables/index.js'
 export * from './pieces/index.js'
+export * from './llm/google.js'
 export { getDatabaseClient, migrate, sql, compile, extractFullMarkdown, addFrontMatter }

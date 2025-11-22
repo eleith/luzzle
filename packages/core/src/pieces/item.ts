@@ -7,16 +7,15 @@ import {
 import { PieceMarkdown } from './utils/markdown.js'
 import {
 	PieceFrontmatter,
-	PieceFrontmatterSchema,
 	pieceFrontmatterValueToDatabaseValue,
 	getPieceFrontmatterSchemaFields,
 } from './utils/frontmatter.js'
-import { ValidateFunction } from 'ajv'
+import { JSONSchemaType, ValidateFunction } from 'ajv'
 
 function makePieceItemInsertable<F extends PieceFrontmatter>(
 	piece: string,
 	markdown: PieceMarkdown<F>,
-	schema: PieceFrontmatterSchema<F>
+	schema: JSONSchemaType<F>
 ): PiecesItemsInsertable {
 	const frontmatterJson = {} as Record<string, unknown>
 	const fields = getPieceFrontmatterSchemaFields(schema)
@@ -55,7 +54,7 @@ function makePieceItemInsertable<F extends PieceFrontmatter>(
 
 function makePieceItemUpdatable<F extends PieceFrontmatter>(
 	markdown: PieceMarkdown<F>,
-	schema: PieceFrontmatterSchema<F>,
+	schema: JSONSchemaType<F>,
 	data: PiecesItemsSelectable,
 	force = false
 ): PiecesItemsUpdateable {

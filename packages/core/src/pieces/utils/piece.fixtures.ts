@@ -1,6 +1,6 @@
-import { ValidateFunction } from 'ajv'
+import { JSONSchemaType, ValidateFunction } from 'ajv'
 import { PieceMarkdown } from './markdown.js'
-import { PieceFrontmatter, PieceFrontmatterSchema } from './frontmatter.js'
+import { PieceFrontmatter } from './frontmatter.js'
 import { PiecesItemsSelectable } from '../../database/tables/pieces_items.schema.js'
 
 type PieceValidator = ValidateFunction<PieceFrontmatter>
@@ -30,7 +30,7 @@ export function makeSchema(properties?: {
 		pattern?: string
 		enum?: string[] | number[]
 	}
-}): PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }> {
+}): JSONSchemaType<{ title: string; keywords?: string; subtitle?: string }> {
 	return {
 		type: 'object',
 		properties: {
