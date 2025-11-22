@@ -26,7 +26,17 @@ async function generateAllOpenGraphs(database, assets) {
 
 		const ogProcess = spawn(
 			'npx luzzle-tools',
-			['opengraph', '--config', 'config.yaml', '--luzzle', database, '--out', assets],
+			[
+				'opengraph',
+				'--config',
+				'config.yaml',
+				'--luzzle',
+				database,
+				'--out',
+				assets,
+				'--id',
+				'asdf'
+			],
 			{
 				stdio: 'inherit',
 				shell: true
@@ -58,7 +68,7 @@ async function main() {
 	try {
 		console.log('🚀 Starting SvelteKit server...')
 
-		serverProcess = spawn('npm', ['run', 'preview'], {
+		serverProcess = spawn('npm', ['run', 'preview', '--', '--host'], {
 			stdio: ['ignore', 'inherit', 'inherit'],
 			shell: true,
 			detached: true
