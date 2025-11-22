@@ -22,11 +22,17 @@ Here are the packages in this monorepo:
 * `packages/web/editor`: The Luzzle web editor.
 * `packages/web/explorer`: The Luzzle web explorer.
 
+## Getting Started
+
+1. Install Node.js (version >= 20) and npm.
+2. Install dependencies from the root of the monorepo: `npm install`
+
 ## General Instructions
 
-* Use `npm install` at the root to install all dependencies.
 * Use `npm run <script> -w <package-name>` to run scripts for a specific
-package. For example, `npm run test -w @luzzle/cli`.
+package. For example, `npm run test -w @luzzle/core`.
+* Run linting for the entire monorepo: `[TODO: add command]`
+* Run tests for the entire monorepo: `[TODO: add command]`
 
 ## Keeping this Document Updated
 

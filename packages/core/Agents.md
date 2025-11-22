@@ -39,8 +39,4 @@ for database interaction, data validation, and content manipulation.
 
 ## Development
 
-### Getting Started
-
-1.  Install Node.js (version >=20) and npm.
-2.  Install dependencies from the root of the monorepo: `npm install`
-3.  Run this package's tests: `npm test -w @luzzle/core`
+Run this package's tests: `npm test -w @luzzle/core`

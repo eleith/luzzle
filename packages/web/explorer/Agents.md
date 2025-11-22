@@ -56,11 +56,7 @@ The application's data comes from a SQLite database, accessed via the
 
 ## Development
 
-### Getting Started
-
-1. Install Node.js (version >=20) and npm.
-2. Install dependencies: `npm install`
-3. Run the development server: `npm run dev`
+Run the development server: `npm run dev`
 
 ### UI and Styling
 
