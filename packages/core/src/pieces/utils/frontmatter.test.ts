@@ -1,6 +1,7 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import * as frontmatter from './frontmatter.js'
 import { makeSchema } from './piece.fixtures.js'
+import { JSONSchemaType } from 'ajv'
 
 describe('src/pieces/utils/frontmatter.ts', () => {
 	afterEach(() => {
@@ -109,7 +110,7 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 			},
 			required: ['title'],
 			additionalProperties: true,
-		} as frontmatter.PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }>
+		} as JSONSchemaType<{ title: string; keywords?: string; subtitle?: string }>
 
 		const front = frontmatter.initializePieceFrontMatter(schema)
 
@@ -130,7 +131,7 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 			},
 			required: ['title'],
 			additionalProperties: true,
-		} as frontmatter.PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }>
+		} as JSONSchemaType<{ title: string; keywords?: string; subtitle?: string }>
 
 		const front = frontmatter.initializePieceFrontMatter(schema, true)
 
@@ -147,7 +148,7 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 			},
 			required: ['title'],
 			additionalProperties: true,
-		} as frontmatter.PieceFrontmatterSchema<{ title: string }>
+		} as JSONSchemaType<{ title: string }>
 
 		expect(() => frontmatter.initializePieceFrontMatter(schema)).toThrow()
 	})

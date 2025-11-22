@@ -1,10 +1,9 @@
-import { JSONSchemaType } from 'ajv'
+import { JSONSchemaType } from "ajv"
 
 type PieceFrontMatterValue = string | number | boolean | string[] | number[] | boolean[]
 type PieceFrontmatter = {
 	[key: string]: PieceFrontMatterValue
 }
-type PieceFrontmatterSchema<M extends PieceFrontmatter> = JSONSchemaType<M>
 type PieceFrontmatterSchemaFieldScalar = {
 	name: string
 	type: 'string' | 'boolean' | 'integer'
@@ -32,7 +31,7 @@ type PieceFrontmatterSchemaField =
 	| PieceFrontmatterSchemaFieldList
 
 function getPieceFrontmatterSchemaFields<M extends PieceFrontmatter>(
-	schema: PieceFrontmatterSchema<M>
+	schema: JSONSchemaType<M>
 ): Array<PieceFrontmatterSchemaField> {
 	return Object.keys(schema.properties).map((key) => {
 		const required = Array.isArray(schema.required) ? schema.required : []
@@ -81,7 +80,7 @@ function databaseValueToPieceFrontmatterValue(
 }
 
 function initializePieceFrontMatter<M extends PieceFrontmatter>(
-	schema: PieceFrontmatterSchema<M>,
+	schema: JSONSchemaType<M>,
 	minimal: boolean = false
 ): M {
 	const frontmatter: { [key: string]: PieceFrontMatterValue | PieceFrontMatterValue[] } = {}
@@ -114,7 +113,6 @@ function initializePieceFrontMatter<M extends PieceFrontmatter>(
 
 export {
 	type PieceFrontmatter,
-	type PieceFrontmatterSchema,
 	type PieceFrontmatterSchemaField,
 	getPieceFrontmatterSchemaFields,
 	pieceFrontmatterValueToDatabaseValue,
