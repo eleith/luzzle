@@ -27,11 +27,6 @@ Luzzle database.
 
 ## Development
 
-### Getting Started
-
-1. Install Node.js (version >=20) and npm.
-2. Install dependencies from the root of the monorepo: `npm install`
-
 ### Building
 
 To build the package for production, use the following command:
