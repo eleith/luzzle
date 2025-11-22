@@ -33,7 +33,7 @@
 <style>
 	@font-face {
 		font-family: 'Noto Sans', sans-serif;
-		src: url(noto-sans.woff2) format('woff2');
+		src: url(/fonts/noto-sans.woff2) format('woff2');
 		font-weight: 100 900;
 		font-style: normal;
 		font-variation-settings: 'wdth' 100;
