@@ -30,7 +30,7 @@ export function makeSchema(properties?: {
 		pattern?: string
 		enum?: string[] | number[]
 	}
-}): JSONSchemaType<{ title: string; keywords?: string; subtitle?: string }> {
+}): JSONSchemaType<PieceFrontmatter> {
 	return {
 		type: 'object',
 		properties: {
@@ -41,7 +41,7 @@ export function makeSchema(properties?: {
 		},
 		required: ['title'],
 		additionalProperties: true,
-	}
+	} as unknown as JSONSchemaType<PieceFrontmatter>
 }
 
 export function makeMarkdownSample<F extends PieceFrontmatter>(

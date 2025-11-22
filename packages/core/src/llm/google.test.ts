@@ -10,11 +10,12 @@ import {
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { readFile } from 'fs/promises'
 import { JSONSchemaType } from 'ajv'
+import { PieceFrontmatter } from 'pieces/index.js'
 
 // Mock schema created locally to remove dependency on piece.fixtures.ts
 const makeSchema = (
 	name: string
-): JSONSchemaType<{ title: string; keywords?: string }> => {
+): JSONSchemaType<PieceFrontmatter> => {
 	return {
 		type: 'object',
 		title: name,
@@ -24,7 +25,7 @@ const makeSchema = (
 		},
 		required: ['title'],
 		additionalProperties: false,
-	}
+	} as unknown as JSONSchemaType<PieceFrontmatter>
 }
 
 vi.mock('@luzzle/core')
