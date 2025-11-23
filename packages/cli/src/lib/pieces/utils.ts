@@ -8,7 +8,7 @@ import { Readable } from 'stream'
 import { createReadStream, ReadStream } from 'fs'
 import path from 'path'
 import { ASSETS_DIRECTORY } from '../assets.js'
-import { Storage } from '../storage/index.js'
+import { LuzzleStorage } from '@luzzle/core'
 import { fileTypeStream } from 'file-type'
 import { pipeline } from 'stream/promises'
 import got, { Request } from 'got'
@@ -141,7 +141,7 @@ async function makePieceAttachment(
 	file: string,
 	field: PieceFrontmatterSchemaField,
 	stream: Readable | ReadStream | Request,
-	storage: Storage
+	storage: LuzzleStorage
 ): Promise<string> {
 	const format = field.type === 'array' ? field.items.format : field.format
 	const fileDir = path.dirname(file)

@@ -34,7 +34,7 @@ import {
 	makePieceValue,
 } from './utils.js'
 import slugify from '@sindresorhus/slugify'
-import { Storage } from '../storage/index.js'
+import { LuzzleStorage } from '@luzzle/core'
 import { Readable } from 'stream'
 
 export interface InterfacePiece<F extends PieceFrontmatter> {
@@ -44,11 +44,11 @@ export interface InterfacePiece<F extends PieceFrontmatter> {
 class Piece<F extends PieceFrontmatter> {
 	private _validator?: ReturnType<typeof compile<F>>
 	private _schema: PieceFrontmatterSchema<F>
-	private _storage: Storage
+	private _storage: LuzzleStorage
 	private _pieceName: string
 	private _fields?: Array<PieceFrontmatterSchemaField>
 
-	constructor(pieceName: string, storage: Storage, schema: PieceFrontmatterSchema<F>) {
+	constructor(pieceName: string, storage: LuzzleStorage, schema: PieceFrontmatterSchema<F>) {
 		this._storage = storage
 		this._schema = schema
 		this._pieceName = pieceName

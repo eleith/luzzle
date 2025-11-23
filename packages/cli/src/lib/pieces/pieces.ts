@@ -12,12 +12,12 @@ import {
 	updatePiece,
 } from '@luzzle/core'
 import log from '../log.js'
-import { Storage } from '../storage/index.js'
+import { LuzzleStorage } from '@luzzle/core'
 
 class Pieces {
-	private _storage: Storage
+	private _storage: LuzzleStorage
 
-	constructor(storage: Storage) {
+	constructor(storage: LuzzleStorage) {
 		this._storage = storage
 	}
 

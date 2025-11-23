@@ -42,8 +42,7 @@ import {
 } from './utils.js'
 import { makeCache } from './cache.fixtures.js'
 import slugify from '@sindresorhus/slugify'
-import { mockStorage } from '../storage/storage.mock.js'
-import { StorageStat } from '../storage/storage.js'
+import { StorageStat } from '@luzzle/core'
 import { PassThrough, Readable } from 'stream'
 
 vi.mock('../log.js')
@@ -107,7 +106,7 @@ describe('lib/pieces/piece.ts', () => {
 		const schema = makeSchema('not-title')
 		const PieceType = makePieceMock()
 		const markdown = makeMarkdownSample()
-		const storage = mockStorage('root')
+		const storage = makeStorage('root')
 
 		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
@@ -184,7 +183,7 @@ describe('lib/pieces/piece.ts', () => {
 		const type = 'table'
 		const schema = makeSchema(type)
 		const markdown = makeMarkdownSample()
-		const storage = mockStorage('root')
+		const storage = makeStorage('root')
 
 		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
