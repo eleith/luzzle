@@ -13,7 +13,7 @@ import {
 } from '@luzzle/core'
 import { makePieceMock, makeRegisteredPiece, makeSchema, makeStorage } from './piece.fixtures.js'
 import { makeContext } from '../commands/command/context.fixtures.js'
-import { StorageStat } from '../storage/storage.js'
+import { StorageStat } from '@luzzle/core'
 
 vi.mock('./piece.js')
 vi.mock('@luzzle/core')
