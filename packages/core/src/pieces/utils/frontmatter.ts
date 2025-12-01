@@ -4,6 +4,7 @@ type PieceFrontMatterValue = string | number | boolean | string[] | number[] | b
 type PieceFrontmatter = {
 	[key: string]: PieceFrontMatterValue
 }
+type PieceFrontmatterSchema<M extends PieceFrontmatter> = JSONSchemaType<M>
 type PieceFrontmatterSchemaFieldScalar = {
 	name: string
 	type: 'string' | 'boolean' | 'integer'
@@ -31,7 +32,7 @@ type PieceFrontmatterSchemaField =
 	| PieceFrontmatterSchemaFieldList
 
 function getPieceFrontmatterSchemaFields<M extends PieceFrontmatter>(
-	schema: JSONSchemaType<M>
+	schema: PieceFrontmatterSchema<M>
 ): Array<PieceFrontmatterSchemaField> {
 	return Object.keys(schema.properties).map((key) => {
 		const required = Array.isArray(schema.required) ? schema.required : []
@@ -74,13 +75,15 @@ function databaseValueToPieceFrontmatterValue(
 		return values.map((v) =>
 			databaseValueToPieceFrontmatterValue(v, field.items as PieceFrontmatterSchemaField)
 		)
+	} else if (field.type === 'integer') {
+		return Number(value)
 	}
 
 	return value
 }
 
 function initializePieceFrontMatter<M extends PieceFrontmatter>(
-	schema: JSONSchemaType<M>,
+	schema: PieceFrontmatterSchema<M>,
 	minimal: boolean = false
 ): M {
 	const frontmatter: { [key: string]: PieceFrontMatterValue | PieceFrontMatterValue[] } = {}
@@ -114,6 +117,7 @@ function initializePieceFrontMatter<M extends PieceFrontmatter>(
 export {
 	type PieceFrontmatter,
 	type PieceFrontmatterSchemaField,
+	type PieceFrontmatterSchema,
 	getPieceFrontmatterSchemaFields,
 	pieceFrontmatterValueToDatabaseValue,
 	databaseValueToPieceFrontmatterValue,

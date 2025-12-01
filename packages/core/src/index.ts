@@ -9,4 +9,6 @@ export * from './database/tables/index.js'
 export * from './pieces/index.js'
 export * from './llm/google.js'
 export * from './storage/index.js'
+export { default as Piece } from './pieces/Piece.js'
+export { default as Pieces } from './pieces/Pieces.js'
 export { getDatabaseClient, migrate, sql, compile, extractFullMarkdown, addFrontMatter }

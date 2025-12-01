@@ -9,13 +9,14 @@ import {
 	PieceFrontmatter,
 	pieceFrontmatterValueToDatabaseValue,
 	getPieceFrontmatterSchemaFields,
+    PieceFrontmatterSchema,
 } from './utils/frontmatter.js'
-import { JSONSchemaType, ValidateFunction } from 'ajv'
+import { ValidateFunction } from 'ajv'
 
 function makePieceItemInsertable<F extends PieceFrontmatter>(
 	piece: string,
 	markdown: PieceMarkdown<F>,
-	schema: JSONSchemaType<F>
+	schema: PieceFrontmatterSchema<F>
 ): PiecesItemsInsertable {
 	const frontmatterJson = {} as Record<string, unknown>
 	const fields = getPieceFrontmatterSchemaFields(schema)
@@ -54,7 +55,7 @@ function makePieceItemInsertable<F extends PieceFrontmatter>(
 
 function makePieceItemUpdatable<F extends PieceFrontmatter>(
 	markdown: PieceMarkdown<F>,
-	schema: JSONSchemaType<F>,
+	schema: PieceFrontmatterSchema<F>,
 	data: PiecesItemsSelectable,
 	force = false
 ): PiecesItemsUpdateable {

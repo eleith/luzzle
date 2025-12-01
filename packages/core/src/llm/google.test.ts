@@ -10,7 +10,7 @@ import {
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { readFile } from 'fs/promises'
 import { JSONSchemaType } from 'ajv'
-import { PieceFrontmatter } from 'pieces/index.js'
+import { PieceFrontmatter } from '../pieces/index.js'
 
 // Mock schema created locally to remove dependency on piece.fixtures.ts
 const makeSchema = (

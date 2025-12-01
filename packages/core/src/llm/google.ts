@@ -1,4 +1,3 @@
-import { PieceFrontmatter } from 'pieces/utils/frontmatter.js'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import {
 	ContentListUnion,
@@ -11,6 +10,7 @@ import {
 import { readFile } from 'fs/promises'
 import path from 'path'
 import { JSONSchemaType } from 'ajv'
+import { type PieceFrontmatter } from '../pieces/index.js'
 
 const MODEL_NAME = 'gemini-2.5-flash'
 
