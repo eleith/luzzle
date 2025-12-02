@@ -1,8 +1,7 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { loadConfig } from '@luzzle/web.utils/server'
-import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
-import { Pieces, StorageFileSystem } from '@luzzle/cli'
+import { getDatabaseClient, LuzzleSelectable, Pieces, StorageFileSystem } from '@luzzle/core'
 import { mockKysely } from '../sqlite/database.mock.js'
 import { writeFile, mkdir } from 'fs/promises'
 import { generateVariantJobs } from './variants.js'
@@ -13,7 +12,6 @@ import { Sharp } from 'sharp'
 vi.mock('../../lib/lastRun.js')
 vi.mock('@luzzle/web.utils/server')
 vi.mock('@luzzle/core')
-vi.mock('@luzzle/cli')
 vi.mock('fs/promises')
 vi.mock('./variants.js')
 vi.mock('@luzzle/web.utils')
@@ -49,7 +47,9 @@ const setupDefaultMocks = (
 	mocks.getLastRunFor.mockResolvedValue(new Date(0))
 
 	const mockStorage = { readFileSync: vi.fn() } as unknown as StorageFileSystem
-	const mockPieces = { getPieceAsset: vi.fn(() => Promise.resolve(Buffer.from('asset_content'))) } as unknown as Pieces
+	const mockPieces = {
+		getPieceAsset: vi.fn(() => Promise.resolve(Buffer.from('asset_content'))),
+	} as unknown as Pieces
 	mocks.StorageFileSystem.mockReturnValue(mockStorage)
 	mocks.Pieces.mockReturnValue(mockPieces)
 	return { mockPieces }
@@ -177,7 +177,7 @@ describe('generateAssets', () => {
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
 
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
 		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
 
@@ -307,7 +307,6 @@ describe('generateAssets', () => {
 		expect(mocks.writeFile).toHaveBeenCalledOnce()
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 	})
-
 
 	test('should handle items with no assets', async () => {
 		setupDefaultMocks(
