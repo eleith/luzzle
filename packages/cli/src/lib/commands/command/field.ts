@@ -1,4 +1,4 @@
-import log from '../../log.js'
+import log from '../../../lib/log.js'
 import { Argv } from 'yargs'
 import { Command } from '../utils/types.js'
 import {
@@ -6,7 +6,7 @@ import {
 	makePiecePathPositional,
 	PiecePositional,
 	parsePiecePathPositionalArgv,
-} from '../../pieces/index.js'
+} from '../utils/pieces.js'
 import yaml from 'yaml'
 
 export type FieldArgv = {

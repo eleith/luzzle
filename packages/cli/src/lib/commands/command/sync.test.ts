@@ -1,8 +1,7 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { SyncArgv } from './sync.js'
 import yargs, { Arguments } from 'yargs'
-import { makeContext } from './context.fixtures.js'
-import { makePieceMock } from '../../pieces/piece.fixtures.js'
+import { makeContext, makePieceMock } from '../utils/context.fixtures.js'
 import { getPieces, selectItemAssets } from '@luzzle/core'
 
 vi.mock('../../pieces/index.js')
@@ -36,8 +35,7 @@ describe('lib/commands/sync', () => {
 
 	test('run', async () => {
 		const files = ['a', 'b', 'c']
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
+		const piece = makePieceMock()
 		const type = piece.type
 		const ctx = makeContext({
 			pieces: {
@@ -53,9 +51,9 @@ describe('lib/commands/sync', () => {
 			},
 		})
 
-		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
-		spies.piecePrune = vi.spyOn(PieceTest.prototype, 'prune').mockResolvedValue()
-		spies.pieceIsOutdated = vi.spyOn(PieceTest.prototype, 'isOutdated')
+		spies.pieceSync = vi.spyOn(piece, 'sync').mockResolvedValue()
+		spies.piecePrune = vi.spyOn(piece, 'prune').mockResolvedValue([])
+		spies.pieceIsOutdated = vi.spyOn(piece, 'isOutdated')
 
 		spies.pieceIsOutdated.mockResolvedValueOnce(false)
 		spies.pieceIsOutdated.mockResolvedValueOnce(true)
@@ -66,15 +64,14 @@ describe('lib/commands/sync', () => {
 		expect(mocks.sync).toHaveBeenCalledOnce()
 		expect(mocks.prune).toHaveBeenCalledOnce()
 		expect(mocks.selectItemAssets).not.toHaveBeenCalled()
-		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, [files[1]], ctx.flags.dryRun)
-		expect(spies.piecePrune).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
+		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, [files[1]])
+		expect(spies.piecePrune).toHaveBeenCalledWith(ctx.db, files)
 		expect(spies.pieceIsOutdated).toHaveBeenCalledTimes(files.length)
 	})
 
 	test('run with force', async () => {
 		const files = ['a', 'b', 'c']
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
+		const piece = makePieceMock()
 		const type = piece.type
 		const ctx = makeContext({
 			pieces: {
@@ -90,16 +87,16 @@ describe('lib/commands/sync', () => {
 			},
 		})
 
-		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
-		spies.piecePrune = vi.spyOn(PieceTest.prototype, 'prune').mockResolvedValue()
-		spies.pieceIsOutdated = vi.spyOn(PieceTest.prototype, 'isOutdated').mockResolvedValue(false)
+		spies.pieceSync = vi.spyOn(piece, 'sync').mockResolvedValue()
+		spies.piecePrune = vi.spyOn(piece, 'prune').mockResolvedValue([])
+		spies.pieceIsOutdated = vi.spyOn(piece, 'isOutdated').mockResolvedValue(false)
 
 		await command.run(ctx, { force: true } as Arguments<SyncArgv>)
 
 		expect(mocks.sync).toHaveBeenCalledOnce()
 		expect(mocks.prune).toHaveBeenCalledOnce()
-		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
-		expect(spies.piecePrune).toHaveBeenCalledWith(ctx.db, files, ctx.flags.dryRun)
+		expect(spies.pieceSync).toHaveBeenCalledWith(ctx.db, files)
+		expect(spies.piecePrune).toHaveBeenCalledWith(ctx.db, files)
 		expect(mocks.selectItemAssets).not.toHaveBeenCalled()
 	})
 
@@ -107,8 +104,7 @@ describe('lib/commands/sync', () => {
 		const files: string[] = []
 		const dbAssets = ['a', 'b', 'c']
 		const diskAssets = [...dbAssets, 'd', 'e']
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
+		const piece = makePieceMock()
 		const type = piece.type
 		const ctx = makeContext({
 			pieces: {
@@ -124,9 +120,9 @@ describe('lib/commands/sync', () => {
 			},
 		})
 
-		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
-		spies.piecePrune = vi.spyOn(PieceTest.prototype, 'prune').mockResolvedValue()
-		spies.pieceIsOutdated = vi.spyOn(PieceTest.prototype, 'isOutdated')
+		spies.pieceSync = vi.spyOn(piece, 'sync').mockResolvedValue()
+		spies.piecePrune = vi.spyOn(piece, 'prune').mockResolvedValue([])
+		spies.pieceIsOutdated = vi.spyOn(piece, 'isOutdated')
 		spies.delete = vi.spyOn(ctx.storage, 'delete')
 
 		mocks.selectItemAssets.mockResolvedValueOnce(dbAssets)
@@ -143,8 +139,7 @@ describe('lib/commands/sync', () => {
 		const files: string[] = []
 		const dbAssets = ['a', 'b', 'c']
 		const diskAssets = [...dbAssets, 'd', 'e']
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
+		const piece = makePieceMock()
 		const type = piece.type
 		const ctx = makeContext({
 			flags: { dryRun: true },
@@ -161,9 +156,9 @@ describe('lib/commands/sync', () => {
 			},
 		})
 
-		spies.pieceSync = vi.spyOn(PieceTest.prototype, 'sync').mockResolvedValue()
-		spies.piecePrune = vi.spyOn(PieceTest.prototype, 'prune').mockResolvedValue()
-		spies.pieceIsOutdated = vi.spyOn(PieceTest.prototype, 'isOutdated')
+		spies.pieceSync = vi.spyOn(piece, 'sync').mockResolvedValue()
+		spies.piecePrune = vi.spyOn(piece, 'prune').mockResolvedValue([])
+		spies.pieceIsOutdated = vi.spyOn(piece, 'isOutdated')
 		spies.delete = vi.spyOn(ctx.storage, 'delete')
 
 		mocks.selectItemAssets.mockResolvedValueOnce(dbAssets)

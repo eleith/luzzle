@@ -1,7 +1,7 @@
 import { Argv } from 'yargs'
 import { Command } from '../utils/types.js'
 import yaml from 'yaml'
-import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../../pieces/index.js'
+import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../utils/pieces.js'
 import { pieceFrontMatterFromPrompt } from '@luzzle/core'
 
 export type AssistantArgv = {
@@ -44,11 +44,12 @@ const command: Command<AssistantArgv> = {
 			.option('file', {
 				type: 'string',
 				array: true,
-				description: 'path to a file (pdf,txt,html,json,png,jpeg) associated with the piece, can specify multiple times',
+				description:
+					'path to a file (pdf,txt,html,json,png,jpeg) associated with the piece, can specify multiple times',
 			})
 	},
 
-	run: async function (ctx, args) {
+	run: async function(ctx, args) {
 		const { prompt, file, update, directory, title } = args
 		const { piece } = await parsePieceOptionArgv(ctx, args)
 		const apiKey = ctx.config.get('api_keys.google', '')
@@ -70,7 +71,7 @@ const command: Command<AssistantArgv> = {
 			const markdown = await piece.get(update)
 			const markdownUpdate = await piece.setFields(markdown, metadata)
 			await piece.write(markdownUpdate)
-		
+
 			console.log(yaml.stringify(markdownUpdate.frontmatter))
 		} else if (directory && title) {
 			const markdown = await piece.create(directory, title)

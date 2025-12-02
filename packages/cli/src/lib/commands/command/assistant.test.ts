@@ -3,18 +3,13 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { AssistantArgv } from './assistant.js'
 import { Arguments, Argv } from 'yargs'
 import yargs from 'yargs'
-import { makeContext } from './context.fixtures.js'
-import { makePieceOption, parsePieceOptionArgv } from '../../pieces/index.js'
-import {
-	makeFrontmatterSample,
-	makeMarkdownSample,
-	makePieceMock,
-} from '../../pieces/piece.fixtures.js'
+import { makeContext, makeMarkdownSample, makePieceMock } from '../utils/context.fixtures.js'
+import { makePieceOption, parsePieceOptionArgv } from '../utils/pieces.js'
 import yaml from 'yaml'
 import { pieceFrontMatterFromPrompt } from '@luzzle/core'
 
 vi.mock('@luzzle/core')
-vi.mock('../../pieces/index')
+vi.mock('../utils/pieces.js')
 vi.mock('../../log.js')
 vi.mock('yaml')
 
@@ -45,9 +40,8 @@ describe('lib/commands/assistant.ts', () => {
 
 	test('run', async () => {
 		const apiKeys = 'api_key'
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
-		const frontmatter = makeFrontmatterSample()
+		const piece = makePieceMock()
+		const frontmatter = makeMarkdownSample().frontmatter
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
@@ -76,9 +70,8 @@ describe('lib/commands/assistant.ts', () => {
 		const update = 'path/to/piece'
 		const directory = 'path/to/folder'
 		const apiKeys = 'api_key'
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
-		const frontmatter = makeFrontmatterSample()
+		const piece = makePieceMock()
+		const frontmatter = makeMarkdownSample().frontmatter
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
@@ -100,9 +93,8 @@ describe('lib/commands/assistant.ts', () => {
 		const update = 'path/to/piece'
 		const title = 'title'
 		const apiKeys = 'api_key'
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
-		const frontmatter = makeFrontmatterSample()
+		const piece = makePieceMock()
+		const frontmatter = makeMarkdownSample().frontmatter
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
@@ -123,10 +115,9 @@ describe('lib/commands/assistant.ts', () => {
 	test('updates a piece', async () => {
 		const update = 'path/to/piece'
 		const apiKeys = 'api_key'
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
+		const piece = makePieceMock()
 		const markdown = makeMarkdownSample()
-		const frontmatter = makeFrontmatterSample()
+		const frontmatter = markdown.frontmatter
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
@@ -134,10 +125,10 @@ describe('lib/commands/assistant.ts', () => {
 			},
 		})
 
-		spies.pieceGet = vi.spyOn(PieceTest.prototype, 'get').mockResolvedValueOnce(markdown)
-		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		spies.pieceGet = vi.spyOn(piece, 'get').mockResolvedValueOnce(markdown)
+		spies.pieceWrite = vi.spyOn(piece, 'write').mockResolvedValueOnce()
 		spies.pieceSetFields = vi
-			.spyOn(PieceTest.prototype, 'setFields')
+			.spyOn(piece, 'setFields')
 			.mockResolvedValueOnce(markdown)
 
 		mocks.parseArgs.mockResolvedValueOnce({ piece })
@@ -155,9 +146,8 @@ describe('lib/commands/assistant.ts', () => {
 	test('must have a title when creating', async () => {
 		const directory = 'path/to/folder'
 		const apiKeys = 'api_key'
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
-		const frontmatter = makeFrontmatterSample()
+		const piece = makePieceMock()
+		const frontmatter = makeMarkdownSample().frontmatter
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
@@ -179,10 +169,9 @@ describe('lib/commands/assistant.ts', () => {
 		const directory = 'path/to/folder'
 		const title = 'title'
 		const apiKeys = 'api_key'
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
+		const piece = makePieceMock()
 		const markdown = makeMarkdownSample()
-		const frontmatter = makeFrontmatterSample()
+		const frontmatter = markdown.frontmatter
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
@@ -190,10 +179,10 @@ describe('lib/commands/assistant.ts', () => {
 			},
 		})
 
-		spies.pieceCreate = vi.spyOn(PieceTest.prototype, 'create').mockResolvedValueOnce(markdown)
-		spies.pieceWrite = vi.spyOn(PieceTest.prototype, 'write').mockResolvedValueOnce()
+		spies.pieceCreate = vi.spyOn(piece, 'create').mockResolvedValueOnce(markdown)
+		spies.pieceWrite = vi.spyOn(piece, 'write').mockResolvedValueOnce()
 		spies.pieceSetFields = vi
-			.spyOn(PieceTest.prototype, 'setFields')
+			.spyOn(piece, 'setFields')
 			.mockResolvedValueOnce(markdown)
 
 		mocks.parseArgs.mockResolvedValueOnce({ piece })
