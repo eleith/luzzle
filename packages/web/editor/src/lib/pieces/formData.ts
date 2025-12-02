@@ -1,7 +1,7 @@
 import { Readable } from 'stream'
 import type { ReadableStream } from 'stream/web'
 import type { BufferLike } from 'webdav'
-import { Piece, type PieceFrontmatter, type PieceMarkdown } from '@luzzle/cli'
+import { Piece, type PieceFrontmatter, type PieceMarkdown } from '@luzzle/core'
 
 async function extractFrontmatterFromFormData<T extends PieceFrontmatter>(
 	piece: Piece<T>,
