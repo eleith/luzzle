@@ -1,15 +1,32 @@
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
+import { describe, expect, vi, afterEach, test, MockInstance } from 'vitest'
 import { pieceFrontMatterFromPrompt } from './google.js'
 import {
-	createPartFromUri,
-	FileState,
-	GenerateContentResponse,
 	GoogleGenAI,
 	Part,
+	createPartFromUri,
+	GenerateContentResponse,
+	FileState,
 } from '@google/genai'
-import { makeSchema } from '../pieces/piece.fixtures.js'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { readFile } from 'fs/promises'
+import { JSONSchemaType } from 'ajv'
+import { PieceFrontmatter } from '../pieces/index.js'
+
+// Mock schema created locally to remove dependency on piece.fixtures.ts
+const makeSchema = (
+	name: string
+): JSONSchemaType<PieceFrontmatter> => {
+	return {
+		type: 'object',
+		title: name,
+		properties: {
+			title: { type: 'string', examples: ['title'] },
+			keywords: { type: 'string', nullable: true },
+		},
+		required: ['title'],
+		additionalProperties: false,
+	} as unknown as JSONSchemaType<PieceFrontmatter>
+}
 
 vi.mock('@luzzle/core')
 vi.mock('file-type')

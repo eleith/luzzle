@@ -2,7 +2,7 @@ import log from '../../log.js'
 import { Command } from '../utils/types.js'
 import { Argv } from 'yargs'
 import yaml from 'yaml'
-import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../../pieces/index.js'
+import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../utils/pieces.js'
 
 export type CreateArgv = {
 	title: string

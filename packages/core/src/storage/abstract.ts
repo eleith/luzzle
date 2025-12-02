@@ -1,13 +1,7 @@
 import { ReadStream, WriteStream } from 'fs'
+import type { StorageStat, StorageType } from './types.js'
 
-export type StorageType = 'fs' | 'webdav'
-export type StorageStat = {
-	type: 'file' | 'directory'
-	size: number
-	last_modified: Date
-}
-
-abstract class Storage {
+abstract class LuzzleStorage {
 	abstract type: StorageType
 	abstract root: string
 	abstract parseArgPath(path: string): string
@@ -22,4 +16,4 @@ abstract class Storage {
 	abstract makeDirectory(path: string): Promise<void>
 }
 
-export default Storage
+export default LuzzleStorage

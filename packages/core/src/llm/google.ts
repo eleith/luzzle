@@ -1,4 +1,3 @@
-import { PieceFrontmatter, PieceFrontmatterSchema } from '@luzzle/core'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import {
 	ContentListUnion,
@@ -10,6 +9,8 @@ import {
 } from '@google/genai'
 import { readFile } from 'fs/promises'
 import path from 'path'
+import { JSONSchemaType } from 'ajv'
+import { type PieceFrontmatter } from '../pieces/index.js'
 
 const MODEL_NAME = 'gemini-2.5-flash'
 
@@ -82,7 +83,7 @@ async function extractPartFromFile(file: string | Buffer, genAI: GoogleGenAI) {
 
 async function pieceFrontMatterFromPrompt(
 	apiKey: string,
-	schema: PieceFrontmatterSchema<PieceFrontmatter>,
+	schema: JSONSchemaType<PieceFrontmatter>,
 	prompt: string,
 	files?: Array<string | Buffer>
 ) {

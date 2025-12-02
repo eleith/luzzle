@@ -3,13 +3,11 @@ import Conf from 'conf'
 import { getConfig, getDatabasePath, getStorage } from './config.js'
 import log from './log.js'
 import path from 'path'
-import StorageFileSystem from './storage/fs.js'
-import StorageWebDAV from './storage/webdav.js'
+import { StorageFileSystem, StorageWebDAV } from '@luzzle/core'
 
+vi.mock('@luzzle/core')
 vi.mock('./log.js')
 vi.mock('path')
-vi.mock('./storage/fs.js')
-vi.mock('./storage/webdav.js')
 vi.mock('conf', () => {
 	const ConfMock = vi.fn()
 	ConfMock.prototype.get = vi.fn()

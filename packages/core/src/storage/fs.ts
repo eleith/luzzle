@@ -1,11 +1,12 @@
 import { readFile, writeFile, stat, unlink, mkdir, readdir } from 'fs/promises'
 import { fdir } from 'fdir'
 import { createReadStream, createWriteStream, existsSync } from 'fs'
-import Storage, { StorageStat, type StorageType } from './storage.js'
+import type { StorageStat, StorageType } from './types.js'
 import path from 'path'
 import { Readable } from 'stream'
+import LuzzleStorage from './abstract.js'
 
-class StorageFileSystem extends Storage {
+class StorageFileSystem extends LuzzleStorage {
 	type: StorageType = 'fs'
 	root: string
 

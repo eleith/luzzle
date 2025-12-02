@@ -1,23 +1,25 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import Pieces from './pieces.js'
-import Piece from './piece.js'
+import Pieces from './Pieces.js'
+import Piece from './Piece.js'
 import {
 	addPiece,
 	deletePiece,
 	getPiece,
 	getPieces,
-	jsonToPieceSchema,
-	makePieceMarkdown,
-	PieceFrontmatter,
 	updatePiece,
-} from '@luzzle/core'
-import { makePieceMock, makeRegisteredPiece, makeSchema, makeStorage } from './piece.fixtures.js'
-import { makeContext } from '../commands/command/context.fixtures.js'
-import { StorageStat } from '../storage/storage.js'
+} from './manager.js'
+import { jsonToPieceSchema } from './json.schema.js'
+import { makePieceMarkdown } from './utils/markdown.js'
+import { type PieceFrontmatter } from './utils/frontmatter.js'
+import { makePieceMock, makeRegisteredPiece, makeSchema, makeStorage } from './Piece.fixtures.js'
+import { mockKysely } from '../database/database.mock.js'
+import { StorageStat } from '../index.js'
 
-vi.mock('./piece.js')
-vi.mock('@luzzle/core')
-vi.mock('fs/promises')
+vi.mock('./Piece.js')
+vi.mock('./manager.js')
+vi.mock('./json.schema.js')
+vi.mock('./utils/markdown.js')
+
 
 const spies: { [key: string]: MockInstance } = {}
 const mocks = {
@@ -29,7 +31,7 @@ const mocks = {
 	jsonToPieceSchema: vi.mocked(jsonToPieceSchema),
 }
 
-describe('lib/pieces/pieces.ts', () => {
+describe('pieces/Pieces.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -191,7 +193,7 @@ describe('lib/pieces/pieces.ts', () => {
 		const datePiece = new Date('2020-02-02').getTime()
 		const dateModified = new Date('2021-02-02')
 		const piece = makeRegisteredPiece({ name: type, date_added: datePiece })
-		const { db } = makeContext()
+		const { db } = mockKysely()
 
 		mocks.getPiece.mockResolvedValueOnce(null)
 		mocks.updatePiece.mockResolvedValueOnce()
@@ -203,36 +205,12 @@ describe('lib/pieces/pieces.ts', () => {
 			.spyOn(storage, 'stat')
 			.mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
 
-		await pieces.sync(db, false)
+		await pieces.sync(db)
 
 		expect(mocks.addPiece).toHaveBeenCalledOnce()
 		expect(mocks.updatePiece).not.toHaveBeenCalledOnce()
 	})
 
-	test('sync dryRun', async () => {
-		const storage = makeStorage('root')
-		const pieces = new Pieces(storage)
-		const type = 'books'
-		const datePiece = new Date('2020-02-02').getTime()
-		const dateModified = new Date('2021-02-02')
-		const piece = makeRegisteredPiece({ name: type, date_added: datePiece })
-		const { db } = makeContext()
-
-		mocks.getPiece.mockResolvedValueOnce(null)
-		mocks.updatePiece.mockResolvedValueOnce()
-
-		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([type])
-		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValueOnce(piece.schema)
-		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValueOnce('schemaPath')
-		spies.stat = vi
-			.spyOn(storage, 'stat')
-			.mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
-
-		await pieces.sync(db, true)
-
-		expect(mocks.updatePiece).not.toHaveBeenCalledOnce()
-		expect(mocks.addPiece).not.toHaveBeenCalledOnce()
-	})
 
 	test('sync update piece', async () => {
 		const storage = makeStorage('root')
@@ -241,7 +219,7 @@ describe('lib/pieces/pieces.ts', () => {
 		const datePiece = new Date('2020-02-02').getTime()
 		const dateModified = new Date('2021-02-02')
 		const piece = makeRegisteredPiece({ name: type, date_added: datePiece })
-		const { db } = makeContext()
+		const { db } = mockKysely()
 
 		mocks.getPiece.mockResolvedValueOnce(piece)
 		mocks.updatePiece.mockResolvedValueOnce()
@@ -253,36 +231,12 @@ describe('lib/pieces/pieces.ts', () => {
 			.spyOn(storage, 'stat')
 			.mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
 
-		await pieces.sync(db, false)
+		await pieces.sync(db)
 
 		expect(mocks.addPiece).not.toHaveBeenCalledOnce()
 		expect(mocks.updatePiece).toHaveBeenCalledOnce()
 	})
 
-	test('sync update piece dryRun', async () => {
-		const storage = makeStorage('root')
-		const pieces = new Pieces(storage)
-		const type = 'books'
-		const datePiece = new Date('2020-02-02').getTime()
-		const dateModified = new Date('2021-02-02')
-		const piece = makeRegisteredPiece({ name: type, date_added: datePiece })
-		const { db } = makeContext()
-
-		mocks.getPiece.mockResolvedValueOnce(piece)
-		mocks.updatePiece.mockResolvedValueOnce()
-
-		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([type])
-		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValueOnce(piece.schema)
-		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValueOnce('schemaPath')
-		spies.stat = vi
-			.spyOn(storage, 'stat')
-			.mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
-
-		await pieces.sync(db, true)
-
-		expect(mocks.updatePiece).not.toHaveBeenCalledOnce()
-		expect(mocks.addPiece).not.toHaveBeenCalledOnce()
-	})
 
 	test('sync throws error', async () => {
 		const storage = makeStorage('root')
@@ -290,7 +244,7 @@ describe('lib/pieces/pieces.ts', () => {
 		const type = 'books'
 		const datePiece = new Date('2020-02-02').getTime()
 		const piece = makeRegisteredPiece({ name: type, date_added: datePiece })
-		const { db } = makeContext()
+		const { db } = mockKysely()
 
 		mocks.getPiece.mockResolvedValueOnce(piece)
 		mocks.updatePiece.mockResolvedValueOnce()
@@ -300,9 +254,35 @@ describe('lib/pieces/pieces.ts', () => {
 		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValueOnce('schemaPath')
 		spies.stat = vi.spyOn(storage, 'stat').mockRejectedValueOnce(new Error('Error'))
 
-		const syncing = pieces.sync(db, true)
+		const syncing = pieces.sync(db)
 
 		await expect(syncing).rejects.toThrow()
+	})
+
+	test('getSyncOperations', async () => {
+		const storage = makeStorage('root')
+		const pieces = new Pieces(storage)
+		const type = 'books'
+		const datePiece = new Date('2020-02-02').getTime()
+		const dateModified = new Date('2021-02-02')
+		const piece = makeRegisteredPiece({ name: type, date_added: datePiece })
+		const { db } = mockKysely()
+
+		mocks.getPiece.mockResolvedValueOnce(null)
+
+		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([type])
+		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValueOnce(piece.schema)
+		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValueOnce('schemaPath')
+		spies.stat = vi
+			.spyOn(storage, 'stat')
+			.mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
+
+		const { toAdd, toUpdate } = await pieces.getSyncOperations(db)
+
+		expect(toAdd).toHaveLength(1)
+		expect(toUpdate).toHaveLength(0)
+		expect(mocks.addPiece).not.toHaveBeenCalled()
+		expect(mocks.updatePiece).not.toHaveBeenCalled()
 	})
 
 	test('prune', async () => {
@@ -310,32 +290,32 @@ describe('lib/pieces/pieces.ts', () => {
 		const pieces = new Pieces(storage)
 		const type = 'books'
 		const piece = makeRegisteredPiece({ name: type })
-		const { db } = makeContext()
+		const { db } = mockKysely()
 
 		mocks.getPieces.mockResolvedValueOnce([{ ...piece, schema: 'schema' }])
 		mocks.deletePiece.mockResolvedValueOnce()
 
 		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([])
 
-		await pieces.prune(db, false)
+		await pieces.prune(db)
 
 		expect(mocks.deletePiece).toHaveBeenCalledOnce()
 	})
 
-	test('prune dryRun', async () => {
+	test('getPruneOperations', async () => {
 		const storage = makeStorage('root')
 		const pieces = new Pieces(storage)
 		const type = 'books'
 		const piece = makeRegisteredPiece({ name: type })
-		const { db } = makeContext()
+		const { db } = mockKysely()
 
 		mocks.getPieces.mockResolvedValueOnce([{ ...piece, schema: 'schema' }])
-		mocks.deletePiece.mockResolvedValueOnce()
 
 		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([])
 
-		await pieces.prune(db, true)
+		const missingPieces = await pieces.getPruneOperations(db)
 
-		expect(mocks.deletePiece).not.toHaveBeenCalledOnce()
+		expect(missingPieces).toHaveLength(1)
+		expect(mocks.deletePiece).not.toHaveBeenCalled()
 	})
 })

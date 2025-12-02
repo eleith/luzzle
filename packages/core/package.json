@@ -1,13 +1,12 @@
 {
   "name": "@luzzle/core",
-  "version": "0.0.25",
+  "version": "0.0.27",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
     "build": "tsc",
     "test": "vitest run --coverage --silent",
-    "migration:add": "bash ./src/database/migrations.sh",
-		"check:version": "node ./scripts/check-version.js"
+    "migration:add": "bash ./src/database/migrations.sh"
   },
   "engines": {
     "node": ">=20"
@@ -40,15 +39,19 @@
     "vitest": "3.2.4"
   },
   "dependencies": {
+    "@google/genai": "1.30.0",
     "@paralleldrive/cuid2": "2.2.2",
     "ajv": "8.17.1",
     "better-sqlite3": "11.7.2",
+    "fdir": "6.5.0",
+    "file-type": "21.1.1",
     "json-schema-to-typescript": "15.0.3",
     "kysely": "0.27.5",
     "mdast": "2.3.2",
     "remark": "15.0.1",
     "remark-frontmatter": "5.0.0",
     "unist-util-visit": "5.0.0",
+    "webdav": "5.8.0",
     "yaml": "2.7.0"
   },
   "type": "module"

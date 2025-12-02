@@ -1,4 +1,4 @@
-import { type PieceFrontmatterSchemaField } from '@luzzle/cli'
+import { type PieceFrontmatterSchemaField } from '@luzzle/core'
 
 type AssetField = PieceFrontmatterSchemaField &
 	({ format: 'asset' } | { type: 'array'; items: { type: 'asset' } })

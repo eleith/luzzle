@@ -3,7 +3,7 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { InitArgv } from './init.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
-import { makeContext } from './context.fixtures.js'
+import { makeContext } from '../utils/context.fixtures.js'
 import { stat } from 'fs/promises'
 import { existsSync, Stats } from 'fs'
 import { getDatabaseClient, migrate } from '@luzzle/core'
@@ -28,7 +28,7 @@ const mocks = {
 
 const spies: { [key: string]: MockInstance } = {}
 
-describe('tools/lib/commands/init', () => {
+describe('lib/commands/command/init', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()

@@ -1,6 +1,5 @@
 import Sharp from 'sharp'
-import { Pieces } from '@luzzle/cli'
-import { LuzzleSelectable } from '@luzzle/core'
+import { LuzzleSelectable, Pieces } from '@luzzle/core'
 
 function generateVariantSharpJob(sharp: Sharp.Sharp, width: number, format: 'avif' | 'jpg') {
 	return sharp.clone().resize({ width }).toFormat(format)

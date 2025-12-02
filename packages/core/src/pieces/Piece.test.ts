@@ -6,63 +6,47 @@ import {
 	makeFrontmatterSample,
 	makeSchema,
 	makeStorage,
-} from './piece.fixtures.js'
-import { mockDatabase } from '../database.mock.js'
+} from './Piece.fixtures.js'
+import { mockKysely } from '../database/database.mock.js'
 import { addCache, removeCache, updateCache, getCache } from './cache.js'
-import log from '../log.js'
-import { CpuInfo, cpus } from 'os'
 import {
 	getPieceFrontmatterSchemaFields,
 	databaseValueToPieceFrontmatterValue,
-	makePieceMarkdown,
-	makePieceMarkdownString,
-	extractFullMarkdown,
 	initializePieceFrontMatter,
 	PieceFrontmatterSchemaField,
-	compile,
+} from './utils/frontmatter.js'
+import { makePieceMarkdown, makePieceMarkdownString } from './utils/markdown.js'
+import { extractFullMarkdown } from '../lib/markdown.js'
+import compile from '../lib/ajv.js'
+import {
 	makePieceItemInsertable,
 	makePieceItemUpdatable,
-	selectItems,
-	deleteItems,
-	selectItem,
-	insertItem,
-	updateItem,
-	addPiece,
-	updatePiece,
-	getPiece,
 	validatePieceItem,
 	getValidatePieceItemErrors,
-	LuzzleSelectable,
-	LuzzleInsertable,
-} from '@luzzle/core'
-import {
-	calculateHashFromFile,
-	makePieceValue,
-	makePieceAttachment,
-} from './utils.js'
+} from './item.js'
+import { selectItems, deleteItems, selectItem, insertItem, updateItem } from './items.js'
+import { calculateHashFromFile, makePieceValue, makePieceAttachment } from './utils/piece.js'
 import { makeCache } from './cache.fixtures.js'
 import slugify from '@sindresorhus/slugify'
-import { mockStorage } from '../storage/storage.mock.js'
-import { StorageStat } from '../storage/storage.js'
+import { LuzzleSelectable, LuzzleInsertable, StorageStat } from '../index.js'
 import { PassThrough, Readable } from 'stream'
+import { CpuInfo, cpus } from 'os'
 
-vi.mock('../log.js')
-vi.mock('../md.js')
-vi.mock('./markdown.js')
-vi.mock('../tags/index.js')
 vi.mock('./cache.js')
 vi.mock('os')
-vi.mock('@luzzle/core')
-vi.mock('./utils.js')
 vi.mock('@sindresorhus/slugify')
+vi.mock('./utils/frontmatter.js')
+vi.mock('../lib/ajv.js')
+vi.mock('./utils/markdown.js')
+vi.mock('../lib/markdown.js')
+vi.mock('./item.js')
+vi.mock('./items.js')
+vi.mock('./utils/piece.js')
 
 const mocks = {
 	makePieceMarkdown: vi.mocked(makePieceMarkdown),
-	toMarkdown: vi.mocked(makePieceMarkdown),
 	toMarkdownString: vi.mocked(makePieceMarkdownString),
 	extract: vi.mocked(extractFullMarkdown),
-	logError: vi.spyOn(log, 'error'),
-	cpus: vi.mocked(cpus),
 	addCache: vi.mocked(addCache),
 	removeCache: vi.mocked(removeCache),
 	updateCache: vi.mocked(updateCache),
@@ -79,19 +63,17 @@ const mocks = {
 	insertItem: vi.mocked(insertItem),
 	updateItem: vi.mocked(updateItem),
 	selectItem: vi.mocked(selectItem),
-	addPiece: vi.mocked(addPiece),
-	updatePiece: vi.mocked(updatePiece),
-	getPiece: vi.mocked(getPiece),
 	validatePieceItem: vi.mocked(validatePieceItem),
 	getValidatePieceItemErrors: vi.mocked(getValidatePieceItemErrors),
 	slugify: vi.mocked(slugify),
 	makePieceValue: vi.mocked(makePieceValue),
 	makePieceAttachment: vi.mocked(makePieceAttachment),
+	cpus: vi.mocked(cpus),
 }
 
 const spies: { [key: string]: MockInstance } = {}
 
-describe('lib/pieces/piece.ts', () => {
+describe('pieces/Piece.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -107,7 +89,7 @@ describe('lib/pieces/piece.ts', () => {
 		const schema = makeSchema('not-title')
 		const PieceType = makePieceMock()
 		const markdown = makeMarkdownSample()
-		const storage = mockStorage('root')
+		const storage = makeStorage('root')
 
 		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
@@ -184,7 +166,7 @@ describe('lib/pieces/piece.ts', () => {
 		const type = 'table'
 		const schema = makeSchema(type)
 		const markdown = makeMarkdownSample()
-		const storage = mockStorage('root')
+		const storage = makeStorage('root')
 
 		mocks.initializePieceFrontMatter.mockReturnValueOnce(markdown.frontmatter)
 		mocks.makePieceMarkdown.mockReturnValueOnce(markdown)
@@ -196,7 +178,7 @@ describe('lib/pieces/piece.ts', () => {
 
 	test('isOutdated', async () => {
 		const filename = '/path/to/slug.books.md'
-		const db = mockDatabase().db
+		const db = mockKysely().db
 		const PieceType = makePieceMock()
 		const cacheDate = new Date('11-11-2000').getTime()
 		const fileDate = new Date('11-11-2001')
@@ -216,7 +198,7 @@ describe('lib/pieces/piece.ts', () => {
 
 	test('isOutdated by date_added', async () => {
 		const filename = '/path/to/slug.books.md'
-		const db = mockDatabase().db
+		const db = mockKysely().db
 		const PieceType = makePieceMock()
 		const cacheDate = new Date('11-11-2000').getTime()
 		const fileDate = new Date('11-11-2001')
@@ -236,7 +218,7 @@ describe('lib/pieces/piece.ts', () => {
 
 	test('isOutdated returns false', async () => {
 		const filename = '/path/to/slug.books.md'
-		const db = mockDatabase().db
+		const db = mockKysely().db
 		const PieceType = makePieceMock()
 		const cacheDate = new Date('11-11-2000').getTime()
 		const fileDate = new Date('11-11-2000')
@@ -256,7 +238,7 @@ describe('lib/pieces/piece.ts', () => {
 
 	test('isOutdated throws', async () => {
 		const filename = '/path/to/slug.books.md'
-		const db = mockDatabase().db
+		const db = mockKysely().db
 		const PieceType = makePieceMock()
 		const storage = makeStorage('root')
 		const pieceTest = new PieceType('books', storage)
@@ -266,24 +248,6 @@ describe('lib/pieces/piece.ts', () => {
 		const isOutdating = pieceTest.isOutdated(filename, db)
 
 		await expect(isOutdating).rejects.toThrow()
-	})
-
-	test('prune should not error on missing files', async () => {
-		const dbPieces = [
-			makePieceItemSelectable({ file_path: 'a' }),
-			makePieceItemSelectable({ file_path: 'b' }),
-		]
-		const db = mockDatabase().db
-		const storage = makeStorage('root')
-		const PieceTest = makePieceMock()
-		const pieceTest = new PieceTest('books', storage)
-
-		mocks.selectItems.mockResolvedValueOnce(dbPieces)
-		mocks.deleteItems.mockResolvedValueOnce()
-		// Mock the storage delete to throw, because the file doesn't exist
-		spies.delete = vi.spyOn(storage, 'delete').mockRejectedValue(new Error('File not found'))
-
-		await expect(pieceTest.prune(db, [])).resolves.toBeUndefined()
 	})
 
 	test('validate', () => {
@@ -395,7 +359,7 @@ describe('lib/pieces/piece.ts', () => {
 			makePieceItemSelectable({ file_path: 'b' }),
 			makePieceItemSelectable({ file_path: 'c' }),
 		]
-		const db = mockDatabase().db
+		const db = mockKysely().db
 		const storage = makeStorage('root')
 		const PieceTest = makePieceMock()
 		const pieceTest = new PieceTest('books', storage)
@@ -403,13 +367,14 @@ describe('lib/pieces/piece.ts', () => {
 		mocks.selectItems.mockResolvedValueOnce(dbPieces)
 		mocks.deleteItems.mockResolvedValueOnce()
 
-		await pieceTest.prune(db, [])
+		const pruned = await pieceTest.prune(db, [])
 
 		expect(mocks.selectItems).toHaveBeenCalledOnce()
 		expect(mocks.deleteItems).toHaveBeenCalledWith(
 			db,
 			dbPieces.map((piece) => piece.file_path)
 		)
+		expect(pruned).toEqual(['a', 'b', 'c'])
 	})
 
 	test('prune no-op', async () => {
@@ -420,20 +385,40 @@ describe('lib/pieces/piece.ts', () => {
 		]
 		const files = dbPieces.map((piece) => piece.file_path)
 		const PieceTest = makePieceMock()
-		const db = mockDatabase().db
+		const db = mockKysely().db
 
 		const pieceTest = new PieceTest()
 		mocks.selectItems.mockResolvedValueOnce(dbPieces)
 		mocks.deleteItems.mockResolvedValueOnce()
 
-		await pieceTest.prune(db, files, true)
+		await pieceTest.prune(db, files)
 
 		expect(mocks.selectItems).toHaveBeenCalledOnce()
 		expect(mocks.deleteItems).not.toHaveBeenCalled()
 	})
 
+	test('getPruneOperations', async () => {
+		const dbMocks = mockKysely()
+		const PieceTest = makePieceMock()
+		const dbPieces = [
+			makePieceItemSelectable({ file_path: 'a' }),
+			makePieceItemSelectable({ file_path: 'b' }),
+			makePieceItemSelectable({ file_path: 'c' }),
+		]
+		const filesOnDisk = ['a', 'c', 'd'] // 'b' is missing from disk
+		const pieceTest = new PieceTest()
+
+		mocks.selectItems.mockResolvedValueOnce(dbPieces)
+
+		const prunableItems = await pieceTest.getPruneOperations(dbMocks.db, filesOnDisk)
+
+		expect(prunableItems).toHaveLength(1)
+		expect(prunableItems[0]).toEqual('b')
+		expect(mocks.deleteItems).not.toHaveBeenCalled()
+	})
+
 	test('syncMarkdownAdd', async () => {
-		const dbMocks = mockDatabase()
+		const dbMocks = mockKysely()
 		const PieceTest = makePieceMock()
 		const markdown = makeMarkdownSample()
 		const hash = 'hash'
@@ -450,33 +435,20 @@ describe('lib/pieces/piece.ts', () => {
 	})
 
 	test('syncMarkdownAdd supports dryRun', async () => {
-		const dbMocks = mockDatabase()
+		const dbMocks = mockKysely()
 		const PieceTest = makePieceMock()
 		const keywords = 'a,b'.split(',')
 		const markdown = makeMarkdownSample({ frontmatter: { keywords: keywords.join(',') } })
 
 		const pieceTest = new PieceTest()
 
-		await pieceTest.syncMarkdownAdd(dbMocks.db, markdown, true)
+		await pieceTest.syncMarkdownAdd(dbMocks.db, markdown)
 
 		expect(dbMocks.queries.executeTakeFirst).not.toHaveBeenCalled()
 	})
 
-	test('syncMarkdownAdd catches error', async () => {
-		const dbMocks = mockDatabase()
-		const PieceTest = makePieceMock()
-		const markdown = makeMarkdownSample()
-
-		mocks.insertItem.mockRejectedValueOnce(new Error('oof'))
-
-		const pieceTest = new PieceTest()
-		await pieceTest.syncMarkdownAdd(dbMocks.db, markdown)
-
-		expect(mocks.logError).toHaveBeenCalledOnce()
-	})
-
 	test('syncMarkdown update', async () => {
-		const dbMocks = mockDatabase()
+		const dbMocks = mockKysely()
 		const dbData = { id: 1, slug: 'slug' }
 		const PieceTest = makePieceMock()
 		const markdown = makeMarkdownSample()
@@ -487,11 +459,11 @@ describe('lib/pieces/piece.ts', () => {
 
 		await pieceTest.syncMarkdown(dbMocks.db, markdown)
 
-		expect(spies.syncUpdate).toHaveBeenCalledWith(dbMocks.db, markdown, dbData, false)
+		expect(spies.syncUpdate).toHaveBeenCalledWith(dbMocks.db, markdown, dbData)
 	})
 
 	test('syncMarkdown add', async () => {
-		const dbMocks = mockDatabase()
+		const dbMocks = mockKysely()
 		const PieceTest = makePieceMock()
 		const markdown = makeMarkdownSample()
 		const pieceTest = new PieceTest()
@@ -501,11 +473,11 @@ describe('lib/pieces/piece.ts', () => {
 
 		await pieceTest.syncMarkdown(dbMocks.db, markdown)
 
-		expect(spies.syncAdd).toHaveBeenCalledWith(dbMocks.db, markdown, false)
+		expect(spies.syncAdd).toHaveBeenCalledWith(dbMocks.db, markdown)
 	})
 
 	test('syncMarkdownUpdate', async () => {
-		const dbMocks = mockDatabase()
+		const dbMocks = mockKysely()
 		const PieceTest = makePieceMock()
 		const markdown = makeMarkdownSample()
 		const updated = { frontmatter_json: JSON.stringify(markdown.frontmatter), id: '1' }
@@ -521,7 +493,7 @@ describe('lib/pieces/piece.ts', () => {
 	})
 
 	test('syncMarkdownUpdate with keywords', async () => {
-		const dbMocks = mockDatabase()
+		const dbMocks = mockKysely()
 		const PieceTest = makePieceMock()
 		const keywords = 'a,b'.split(',')
 		const markdown = makeMarkdownSample({ frontmatter: { keywords: keywords.join(',') } })
@@ -537,33 +509,17 @@ describe('lib/pieces/piece.ts', () => {
 		expect(mocks.updateItem).toHaveBeenCalledOnce()
 	})
 
-	test('syncMarkdownUpdate catches error', async () => {
-		const dbMocks = mockDatabase()
-		const PieceTest = makePieceMock()
-		const markdown = makeMarkdownSample()
-		const pieceData = makePieceItemSelectable()
-		const updated = { frontmatter_json: JSON.stringify(markdown.frontmatter) }
-
-		const pieceTest = new PieceTest()
-		mocks.makeUpdatable.mockReturnValueOnce(updated)
-		mocks.updateItem.mockRejectedValueOnce(new Error('oof'))
-
-		await pieceTest.syncMarkdownUpdate(dbMocks.db, markdown, pieceData)
-
-		expect(mocks.logError).toHaveBeenCalledOnce()
-	})
-
 	test('syncMarkdownUpdate supports dryRun', async () => {
 		const PieceTest = makePieceMock()
 		const markdown = makeMarkdownSample()
 		const pieceData = makePieceItemSelectable()
-		const db = mockDatabase().db
+		const db = mockKysely().db
 		const updated = { frontmatter_json: JSON.stringify(markdown.frontmatter) }
 
 		const pieceTest = new PieceTest()
 		mocks.makeUpdatable.mockReturnValueOnce(updated)
 
-		await pieceTest.syncMarkdownUpdate(db, markdown, pieceData, true)
+		await pieceTest.syncMarkdownUpdate(db, markdown, pieceData)
 	})
 
 	test('toMarkdown', () => {
@@ -614,21 +570,37 @@ describe('lib/pieces/piece.ts', () => {
 		expect(markdown).toEqual(pieceMarkdown)
 	})
 
-	test('sync', async () => {
-		const dbMocks = mockDatabase()
+		test('sync', async () => {
+		const dbMocks = mockKysely()
 		const slugs = ['a', 'b']
-		const PieceTest = makePieceMock()
 		const markdown = makeMarkdownSample()
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
 
-		const pieceTest = new PieceTest()
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
-
-		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValueOnce(markdown)
-		spies.syncMarkdown = vi.spyOn(pieceTest, 'syncMarkdown').mockResolvedValue()
+		spies.getSyncOperations = vi
+			.spyOn(pieceTest, 'getSyncOperations')
+			.mockResolvedValueOnce({ toAdd: [markdown], toUpdate: [markdown] })
+		spies.syncMarkdownAdd = vi.spyOn(pieceTest, 'syncMarkdownAdd').mockResolvedValue()
+		spies.syncMarkdownUpdate = vi.spyOn(pieceTest, 'syncMarkdownUpdate').mockResolvedValue()
+		spies.selectItem = mocks.selectItem.mockResolvedValue({} as LuzzleSelectable<'pieces_items'>)
 
 		await pieceTest.sync(dbMocks.db, slugs)
 
-		expect(spies.syncMarkdown).toHaveBeenCalledWith(dbMocks.db, markdown, false)
+		expect(spies.syncMarkdownAdd).toHaveBeenCalledOnce()
+		expect(spies.syncMarkdownUpdate).toHaveBeenCalledOnce()
+	})
+
+	test('get fields', async () => {
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest()
+		mocks.getPieceSchemaFields.mockReturnValueOnce(pieceTest.schema.properties)
+
+		const getFields = pieceTest.fields
+		const getFields2 = pieceTest.fields
+
+		expect(getFields).toEqual(getFields2)
 	})
 
 	test('setFields', async () => {
@@ -798,7 +770,6 @@ describe('lib/pieces/piece.ts', () => {
 		// Assert that the original markdown is returned and makePieceMarkdown is NOT called to create a new one.
 		expect(newMarkdown).toEqual(markdown)
 		expect(mocks.makePieceMarkdown).not.toHaveBeenCalled()
-		expect(mocks.logError).toHaveBeenCalledWith('could not set field cover: oof')
 	})
 
 	test('removeFields', async () => {
@@ -959,5 +930,53 @@ describe('lib/pieces/piece.ts', () => {
 				[field]: ['one', 'three'],
 			}
 		)
+	})
+
+	test('getSyncOperations', async () => {
+		const dbMocks = mockKysely()
+		const PieceTest = makePieceMock()
+		const markdown = makeMarkdownSample()
+		const otherMarkdown = makeMarkdownSample({ filePath: 'other/path.md' })
+		const hash = 'hash'
+		const updatedHash = 'updatedHash'
+		const storage = makeStorage('root')
+		const pieceTest = new PieceTest('books', storage)
+
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		mocks.selectItem.mockResolvedValueOnce(undefined)
+		mocks.selectItem.mockResolvedValueOnce({
+			id: 'someid',
+			file_path: otherMarkdown.filePath,
+		} as LuzzleSelectable<'pieces_items'>)
+
+		mocks.calculateHashFromFile.mockResolvedValueOnce(updatedHash)
+		mocks.getCache.mockResolvedValue({ content_hash: hash } as LuzzleSelectable<'pieces_cache'>)
+		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValue(markdown)
+
+		const files = [markdown.filePath, otherMarkdown.filePath]
+		const { toAdd, toUpdate } = await pieceTest.getSyncOperations(dbMocks.db, files)
+
+		expect(toAdd).toHaveLength(1)
+		expect(toUpdate).toHaveLength(1)
+	})
+
+	test('getPruneOperations', async () => {
+		const dbMocks = mockKysely()
+		const PieceTest = makePieceMock()
+		const dbPieces = [
+			makePieceItemSelectable({ file_path: 'a' }),
+			makePieceItemSelectable({ file_path: 'b' }),
+			makePieceItemSelectable({ file_path: 'c' }),
+		]
+		const filesOnDisk = ['a', 'c', 'd'] // 'b' is missing from disk
+		const pieceTest = new PieceTest()
+
+		mocks.selectItems.mockResolvedValueOnce(dbPieces)
+
+		const prunableItems = await pieceTest.getPruneOperations(dbMocks.db, filesOnDisk)
+
+		expect(prunableItems).toHaveLength(1)
+		expect(prunableItems[0]).toEqual('b')
+		expect(mocks.deleteItems).not.toHaveBeenCalled()
 	})
 })

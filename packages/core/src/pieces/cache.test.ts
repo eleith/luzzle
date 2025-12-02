@@ -1,10 +1,9 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import * as cache from './cache.js'
-import { mockDatabase } from '../database.mock.js'
+import { mockKysely } from '../database/database.mock.js'
 import { makeCache } from './cache.fixtures.js'
 import { createId } from '@paralleldrive/cuid2'
 
-vi.mock('@luzzle/core')
 vi.mock('@paralleldrive/cuid2')
 
 const mocks = {
@@ -13,7 +12,7 @@ const mocks = {
 
 const spies: MockInstance[] = []
 
-describe('lib/pieces/cache.ts', () => {
+describe('pieces/cache.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -25,7 +24,7 @@ describe('lib/pieces/cache.ts', () => {
 	})
 
 	test('getCache', async () => {
-		const { db, queries } = mockDatabase()
+		const { db, queries } = mockKysely()
 		const file = 'slug'
 		const dbCache = makeCache()
 
@@ -38,7 +37,7 @@ describe('lib/pieces/cache.ts', () => {
 	})
 
 	test('getCache returns null', async () => {
-		const { db, queries } = mockDatabase()
+		const { db, queries } = mockKysely()
 		const file = 'slug'
 
 		queries.executeTakeFirst.mockReturnValueOnce(undefined)
@@ -49,7 +48,7 @@ describe('lib/pieces/cache.ts', () => {
 	})
 
 	test('getCacheAll', async () => {
-		const { db, queries } = mockDatabase()
+		const { db, queries } = mockKysely()
 		const dbCache = makeCache()
 
 		queries.execute.mockReturnValueOnce([dbCache])
@@ -60,7 +59,7 @@ describe('lib/pieces/cache.ts', () => {
 	})
 
 	test('addCache', async () => {
-		const { db, queries } = mockDatabase()
+		const { db, queries } = mockKysely()
 		const file = '/path/to/piece'
 		const id = 'id'
 		const hash = 'hash'
@@ -78,7 +77,7 @@ describe('lib/pieces/cache.ts', () => {
 	})
 
 	test('updateCache', async () => {
-		const { db, queries } = mockDatabase()
+		const { db, queries } = mockKysely()
 		const file = '/path/to/piece'
 		const hash = 'hash'
 
@@ -91,7 +90,7 @@ describe('lib/pieces/cache.ts', () => {
 	})
 
 	test('updateCache inserts', async () => {
-		const { db, queries } = mockDatabase()
+		const { db, queries } = mockKysely()
 		const file = '/path/to/piece'
 		const hash = 'hash'
 		const id = 'id'
@@ -114,7 +113,7 @@ describe('lib/pieces/cache.ts', () => {
 	})
 
 	test('removeCache', async () => {
-		const { db } = mockDatabase()
+		const { db } = mockKysely()
 		const slug = 'slug'
 
 		await cache.removeCache(db, slug)
@@ -123,7 +122,7 @@ describe('lib/pieces/cache.ts', () => {
 	})
 
 	test('removeCache', async () => {
-		const { db } = mockDatabase()
+		const { db } = mockKysely()
 
 		await cache.clearCache(db)
 

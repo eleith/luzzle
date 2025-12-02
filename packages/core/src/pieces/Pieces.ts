@@ -1,23 +1,15 @@
-import Piece from './piece.js'
+import Piece from './Piece.js'
 import path from 'path'
-import { PieceFileType } from './utils.js'
-import { ASSETS_DIRECTORY, LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY } from '../assets.js'
-import {
-	LuzzleDatabase,
-	addPiece,
-	deletePiece,
-	getPiece,
-	getPieces,
-	jsonToPieceSchema,
-	updatePiece,
-} from '@luzzle/core'
-import log from '../log.js'
-import { Storage } from '../storage/index.js'
+import LuzzleStorage from '../storage/abstract.js'
+import { jsonToPieceSchema } from './json.schema.js'
+import { LuzzleDatabase } from '../database/tables/index.js'
+import { addPiece, deletePiece, getPiece, getPieces, updatePiece } from './manager.js'
+import { LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY, ASSETS_DIRECTORY, LUZZLE_PIECE_FILE_EXTENSION } from './assets.js'
 
 class Pieces {
-	private _storage: Storage
+	private _storage: LuzzleStorage
 
-	constructor(storage: Storage) {
+	constructor(storage: LuzzleStorage) {
 		this._storage = storage
 	}
 
@@ -39,7 +31,7 @@ class Pieces {
 	}
 
 	async getPieceAsset(file: string) {
-		return await this._storage.readFile(file) as Buffer
+		return (await this._storage.readFile(file)) as Buffer
 	}
 
 	getSchemaPath(name: string) {
@@ -52,8 +44,10 @@ class Pieces {
 		return jsonToPieceSchema(schemaJson as string)
 	}
 
-	async sync(db: LuzzleDatabase, dryRun: boolean) {
+	async getSyncOperations(db: LuzzleDatabase) {
 		const names = await this.getTypes()
+		const toAdd = []
+		const toUpdate = []
 
 		for (const name of names) {
 			const piece = await getPiece(db, name)
@@ -67,36 +61,40 @@ class Pieces {
 			const schema = await this.getSchema(name)
 
 			if (!piece) {
-				if (!dryRun) {
-					await addPiece(db, name, schema)
-				}
-				log.info(`Added piece ${name} from schema at ${schemaPath}`)
+				toAdd.push({ name, schema })
 			} else {
 				const pieceDate = piece.date_updated || piece.date_added
-
 				if (fileStat.last_modified > new Date(pieceDate)) {
-					if (!dryRun) {
-						await updatePiece(db, name, schema)
-					}
-					log.info(`Updated piece ${name} from schema at ${schemaPath}`)
+					toUpdate.push({ name, schema })
 				}
 			}
 		}
+		return { toAdd, toUpdate }
 	}
 
-	async prune(db: LuzzleDatabase, dryRun = false) {
+	async sync(db: LuzzleDatabase) {
+		const { toAdd, toUpdate } = await this.getSyncOperations(db)
+		for (const { name, schema } of toAdd) {
+			await addPiece(db, name, schema)
+		}
+		for (const { name, schema } of toUpdate) {
+			await updatePiece(db, name, schema)
+		}
+	}
+
+	async getPruneOperations(db: LuzzleDatabase) {
 		const names = await this.getTypes()
 		const dbPieces = await getPieces(db)
 		const diskPiecesSet = new Set<string>(names)
-		const missingPieces = dbPieces
+		return dbPieces
 			.filter((piece) => !diskPiecesSet.has(piece.name))
 			.map((piece) => piece.name)
+	}
 
+	async prune(db: LuzzleDatabase) {
+		const missingPieces = await this.getPruneOperations(db)
 		for (const name of missingPieces) {
-			if (!dryRun) {
-				await deletePiece(db, name)
-			}
-			log.info(`pruned piece type (db): ${name}`)
+			await deletePiece(db, name)
 		}
 	}
 
@@ -150,7 +148,7 @@ class Pieces {
 					files.directories.push(file)
 				} else {
 					const type = this.parseFilename(file).type
-					const isMarkdown = extension === `.${PieceFileType}`
+					const isMarkdown = extension === `.${LUZZLE_PIECE_FILE_EXTENSION}`
 
 					if (type && types.includes(type) && isMarkdown) {
 						files.pieces.push(file)

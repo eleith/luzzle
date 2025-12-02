@@ -8,7 +8,7 @@ const mocks = {
 	stringify: vi.mocked(stringify),
 }
 
-describe('src/lib/frontmatter.ts', () => {
+describe('lib/frontmatter.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
