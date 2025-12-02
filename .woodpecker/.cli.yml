@@ -46,7 +46,6 @@ steps:
     commands:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
-      - npm run check:version -w @luzzle/cli
       - npm publish -w @luzzle/cli
     when:
       - event: tag
