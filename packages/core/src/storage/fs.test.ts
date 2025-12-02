@@ -12,7 +12,6 @@ import {
 } from 'fs'
 import StorageFileSystem from './fs.js'
 import { relative, resolve } from 'path'
-import { APIBuilder } from 'fdir/dist/builder/api-builder.js'
 import { PassThrough } from 'stream'
 
 vi.mock('fs')
@@ -161,7 +160,7 @@ describe('lib/storage/fs.ts', () => {
 				({
 					withPromise: vi.fn().mockResolvedValueOnce(dirs),
 					withRelativePaths: vi.fn().mockReturnThis(),
-				}) as unknown as APIBuilder<string[]>
+				}) as unknown as ReturnType<fdir['crawl']>,
 		)
 
 		const storage = new StorageFileSystem(root)

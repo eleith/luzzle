@@ -1,10 +1,11 @@
 import { Readable } from 'stream'
-import Storage, { StorageStat, type StorageType } from './storage.js'
+import type { StorageStat, StorageType } from './types.js'
 import { createClient, WebDAVClient, WebDAVClientOptions, FileStat } from 'webdav'
 import path from 'path'
 import { ReadStream, WriteStream } from 'fs'
+import LuzzleStorage from './abstract.js'
 
-class StorageWebDAV extends Storage {
+class StorageWebDAV extends LuzzleStorage {
 	private _webdavClient: WebDAVClient
 
 	type: StorageType = 'webdav'

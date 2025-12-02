@@ -19,6 +19,7 @@ steps:
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
+
   lint:
     image: node:22
     commands:
@@ -26,8 +27,9 @@ steps:
       - cp .env.sample .env.local
       - npm run lint
       - npm run check
+
   build_docker:
-    image: woodpeckerci/plugin-docker-buildx:6.0.1
+    image: woodpeckerci/plugin-docker-buildx:6.0.3
     settings:
       repo: git.eleith.com/eleith.private/luzzle-editor
       username: eleith
@@ -39,6 +41,7 @@ steps:
       auto_tag: true
       password:
         from_secret: gitea_docker_registry
+
   notify-success:
     image: deblan/woodpecker-email:3.2.0
     settings:
@@ -55,6 +58,7 @@ steps:
       recipients_only: true
     when:
       - status: [success]
+
   notify-failure:
     image: deblan/woodpecker-email:3.2.0
     settings:

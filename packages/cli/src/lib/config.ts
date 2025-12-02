@@ -1,6 +1,6 @@
 import YAML from 'yaml'
 import Conf, { Options } from 'conf'
-import { Storage, StorageFileSystem, StorageWebDAV } from './storage/index.js'
+import { StorageFileSystem, StorageWebDAV, LuzzleStorage } from '@luzzle/core'
 import path from 'path'
 
 type SchemaConfig = {
@@ -149,7 +149,7 @@ function getDatabasePath(config: Conf<SchemaConfig>) {
 	throw new Error(`unknown database type: ${databaseType}`)
 }
 
-function getStorage(config: Conf<SchemaConfig>): Storage {
+function getStorage(config: Conf<SchemaConfig>): LuzzleStorage {
 	const defaults = withDefaults(config)
 	const storageRoot = config.get('storage.root', defaults.storage.root)
 	const storageType = config.get('storage.type', defaults.storage.type)

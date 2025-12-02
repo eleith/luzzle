@@ -1,6 +1,5 @@
-import { LuzzleDatabase } from '@luzzle/core'
 import { createId } from '@paralleldrive/cuid2'
-import { calculateHashFromFile } from './utils.js'
+import { LuzzleDatabase } from '../database/tables'
 
 async function getCache(db: LuzzleDatabase, file: string) {
 	const cache = await db
@@ -60,7 +59,6 @@ async function clearCache(db: LuzzleDatabase): Promise<void> {
 }
 
 export {
-	calculateHashFromFile,
 	getCacheAll,
 	getCache,
 	addCache,

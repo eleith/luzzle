@@ -3,7 +3,7 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { ConfigArgv } from './config.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
-import { makeContext } from './context.fixtures.js'
+import { makeContext } from '../utils/context.fixtures.js'
 import { withDefaults } from '../../config.js'
 import yaml from 'yaml'
 

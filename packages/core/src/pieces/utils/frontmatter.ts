@@ -1,4 +1,4 @@
-import { JSONSchemaType } from 'ajv'
+import { JSONSchemaType } from "ajv"
 
 type PieceFrontMatterValue = string | number | boolean | string[] | number[] | boolean[]
 type PieceFrontmatter = {
@@ -75,6 +75,8 @@ function databaseValueToPieceFrontmatterValue(
 		return values.map((v) =>
 			databaseValueToPieceFrontmatterValue(v, field.items as PieceFrontmatterSchemaField)
 		)
+	} else if (field.type === 'integer') {
+		return Number(value)
 	}
 
 	return value
@@ -114,8 +116,8 @@ function initializePieceFrontMatter<M extends PieceFrontmatter>(
 
 export {
 	type PieceFrontmatter,
-	type PieceFrontmatterSchema,
 	type PieceFrontmatterSchemaField,
+	type PieceFrontmatterSchema,
 	getPieceFrontmatterSchemaFields,
 	pieceFrontmatterValueToDatabaseValue,
 	databaseValueToPieceFrontmatterValue,

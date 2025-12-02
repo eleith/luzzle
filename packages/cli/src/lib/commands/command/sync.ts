@@ -1,5 +1,5 @@
 import { selectItemAssets } from '@luzzle/core'
-import { Command } from '../utils/types.js'
+import { type Command } from '../utils/types.js'
 import { Argv } from 'yargs'
 
 export type SyncArgv = { force?: boolean; prune?: boolean }
@@ -27,38 +27,85 @@ const command: Command<SyncArgv> = {
 			})
 	},
 
-	run: async function (ctx, args) {
+	run: async function(ctx, args) {
 		const { force, prune } = args
-		const dryRun = ctx.flags.dryRun
+		const { dryRun } = ctx.flags
 		const files = await ctx.pieces.getFilesIn('.', { deep: true })
 
-		// sync new/removed types with db
-		await ctx.pieces.sync(ctx.db, dryRun)
-		await ctx.pieces.prune(ctx.db, dryRun)
+		if (dryRun) {
+			const schemaPlan = await ctx.pieces.getSyncOperations(ctx.db)
+			if (schemaPlan.toAdd.length > 0)
+				ctx.log.info(`Schemas to add: ${schemaPlan.toAdd.map((p) => p.name).join(', ')}`)
+			if (schemaPlan.toUpdate.length > 0)
+				ctx.log.info(`Schemas to update: ${schemaPlan.toUpdate.map((p) => p.name).join(', ')}`)
 
-		for (const name of files.types) {
-			const piece = await ctx.pieces.getPiece(name)
-			const pieces = files.pieces.filter(one => ctx.pieces.parseFilename(one).type === name)
-			const isOutdated = await Promise.all(pieces.map((file) => piece.isOutdated(file, ctx.db)))
-			const areOutdated = pieces.filter((_, i) => isOutdated[i])
-			const processFiles = force ? pieces : areOutdated
+			const prunableTypes = await ctx.pieces.getPruneOperations(ctx.db)
+			if (prunableTypes.length > 0)
+				ctx.log.info(`Piece types to prune: ${prunableTypes.join(', ')}`)
 
-			// sync new/removed pieces with db
-			await piece.sync(ctx.db, processFiles, dryRun)
-			await piece.prune(ctx.db, pieces, dryRun)
-		}
+			for (const name of files.types) {
+				const piece = await ctx.pieces.getPiece(name)
+				const piecesOnDisk = files.pieces.filter(
+					(one) => ctx.pieces.parseFilename(one).type === name
+				)
+				const isOutdated = await Promise.all(
+					piecesOnDisk.map((file) => piece.isOutdated(file, ctx.db))
+				)
+				const areOutdated = piecesOnDisk.filter((_, i) => isOutdated[i])
+				const processFiles = force ? piecesOnDisk : areOutdated
 
-		// prune unneeded assets from disk
-		if (prune) {
-			const dbAssets = await selectItemAssets(ctx.db)
-			const dbAssetsSet = new Set<string>(dbAssets)
-			const missingAssets = files.assets.filter((asset) => !dbAssetsSet.has(asset))
+				const markdownPlan = await piece.getSyncOperations(ctx.db, processFiles)
+				if (markdownPlan.toAdd.length > 0)
+					ctx.log.info(
+						`Piece '${name}': Items to add: ${markdownPlan.toAdd.map((m) => m.filePath).join(', ')}`
+					)
+				if (markdownPlan.toUpdate.length > 0)
+					ctx.log.info(
+						`Piece '${name}': Items to update: ${markdownPlan.toUpdate.map((m) => m.filePath).join(', ')}`
+					)
 
-			for (const asset of missingAssets) {
-				if (!dryRun) {
+				const prunableItems = await piece.getPruneOperations(ctx.db, piecesOnDisk)
+				if (prunableItems.length > 0)
+					ctx.log.info(`Piece '${name}': Items to prune: ${prunableItems.join(', ')}`)
+			}
+
+			if (prune) {
+				const dbAssets = await selectItemAssets(ctx.db)
+				const dbAssetsSet = new Set<string>(dbAssets)
+				const missingAssets = files.assets.filter((asset) => !dbAssetsSet.has(asset))
+				if (missingAssets.length > 0)
+					ctx.log.info(`Assets to prune from disk: ${missingAssets.join(', ')}`)
+			}
+		} else {
+			ctx.log.info('--- Starting normal run. Changes will be made. ---')
+
+			await ctx.pieces.sync(ctx.db)
+			await ctx.pieces.prune(ctx.db)
+
+			for (const name of files.types) {
+				const piece = await ctx.pieces.getPiece(name)
+				const piecesOnDisk = files.pieces.filter(
+					(one) => ctx.pieces.parseFilename(one).type === name
+				)
+				const isOutdated = await Promise.all(
+					piecesOnDisk.map((file) => piece.isOutdated(file, ctx.db))
+				)
+				const areOutdated = piecesOnDisk.filter((_, i) => isOutdated[i])
+				const processFiles = force ? piecesOnDisk : areOutdated
+
+				await piece.sync(ctx.db, processFiles)
+				await piece.prune(ctx.db, piecesOnDisk)
+			}
+
+			if (prune) {
+				const dbAssets = await selectItemAssets(ctx.db)
+				const dbAssetsSet = new Set<string>(dbAssets)
+				const missingAssets = files.assets.filter((asset) => !dbAssetsSet.has(asset))
+
+				for (const asset of missingAssets) {
 					await ctx.storage.delete(asset)
+					ctx.log.info(`pruned asset (disk): ${asset}`)
 				}
-				ctx.log.info(`pruned asset (disk): ${asset}`)
 			}
 		}
 	},

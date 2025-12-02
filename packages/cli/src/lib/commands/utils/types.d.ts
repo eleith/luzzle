@@ -1,16 +1,14 @@
 import { Logger } from 'pino'
 import { Argv, Arguments } from 'yargs'
 import { Config } from '../../config.js'
-import { LuzzleDatabase } from '@luzzle/core'
-import { Pieces } from '../../pieces/index.js'
-import { Storage } from '../../storage/index.js'
+import { LuzzleDatabase, Pieces, LuzzleStorage } from '@luzzle/core'
 
 export type Context = {
 	db: LuzzleDatabase
 	log: Logger
 	pieces: Pieces
 	config: Config
-	storage: Storage
+	storage: LuzzleStorage
 	flags: {
 		dryRun: boolean
 	}

@@ -1,41 +1,31 @@
-import log from '../log.js'
 import { updateCache, addCache, getCache } from './cache.js'
-import {
-	LuzzleDatabase,
-	PieceMarkdown,
-	PieceFrontmatter,
-	extractFullMarkdown,
-	makePieceMarkdown,
-	validatePieceItem,
-	makePieceMarkdownString,
-	compile,
-	PieceFrontmatterSchema,
-	initializePieceFrontMatter,
-	getPieceFrontmatterSchemaFields,
-	PieceFrontmatterSchemaField,
-	makePieceItemInsertable,
-	makePieceItemUpdatable,
-	databaseValueToPieceFrontmatterValue,
-	deleteItems,
-	selectItem,
-	selectItems,
-	updateItem,
-	LuzzleSelectable,
-	insertItem,
-	getValidatePieceItemErrors,
-} from '@luzzle/core'
 import { queue } from 'async'
 import { cpus } from 'os'
 import path from 'path'
-import {
-	PieceFileType,
-	calculateHashFromFile,
-	makePieceAttachment,
-	makePieceValue,
-} from './utils.js'
 import slugify from '@sindresorhus/slugify'
-import { Storage } from '../storage/index.js'
 import { Readable } from 'stream'
+import {
+	databaseValueToPieceFrontmatterValue,
+	getPieceFrontmatterSchemaFields,
+	initializePieceFrontMatter,
+	PieceFrontmatter,
+	PieceFrontmatterSchema,
+	PieceFrontmatterSchemaField,
+} from './utils/frontmatter.js'
+import LuzzleStorage from '../storage/abstract.js'
+import { makePieceMarkdown, makePieceMarkdownString, PieceMarkdown } from './utils/markdown.js'
+import { calculateHashFromFile, makePieceAttachment, makePieceValue } from './utils/piece.js'
+import { LuzzleDatabase, LuzzleSelectable } from '../database/tables/index.js'
+import compile from '../lib/ajv.js'
+import {
+	getValidatePieceItemErrors,
+	makePieceItemInsertable,
+	makePieceItemUpdatable,
+	validatePieceItem,
+} from './item.js'
+import { extractFullMarkdown } from '../lib/markdown.js'
+import { deleteItems, insertItem, selectItem, selectItems, updateItem } from './items.js'
+import { LUZZLE_PIECE_FILE_EXTENSION } from './assets.js'
 
 export interface InterfacePiece<F extends PieceFrontmatter> {
 	new(directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
@@ -44,11 +34,11 @@ export interface InterfacePiece<F extends PieceFrontmatter> {
 class Piece<F extends PieceFrontmatter> {
 	private _validator?: ReturnType<typeof compile<F>>
 	private _schema: PieceFrontmatterSchema<F>
-	private _storage: Storage
+	private _storage: LuzzleStorage
 	private _pieceName: string
 	private _fields?: Array<PieceFrontmatterSchemaField>
 
-	constructor(pieceName: string, storage: Storage, schema: PieceFrontmatterSchema<F>) {
+	constructor(pieceName: string, storage: LuzzleStorage, schema: PieceFrontmatterSchema<F>) {
 		this._storage = storage
 		this._schema = schema
 		this._pieceName = pieceName
@@ -60,7 +50,7 @@ class Piece<F extends PieceFrontmatter> {
 
 	async create(directory: string, name: string): Promise<PieceMarkdown<F>> {
 		const slug = slugify(name)
-		const filename = `${slug}.${this.type}.${PieceFileType}`
+		const filename = `${slug}.${this.type}.${LUZZLE_PIECE_FILE_EXTENSION}`
 		const file = path.join(directory, filename)
 		const exists = await this._storage.exists(file)
 
@@ -153,85 +143,107 @@ class Piece<F extends PieceFrontmatter> {
 		}
 	}
 
-	async prune(db: LuzzleDatabase, files: string[], dryRun = false) {
+	async getPruneOperations(db: LuzzleDatabase, filesOnDisk: string[]): Promise<string[]> {
 		const dbPieces = await selectItems(db, { type: this._pieceName })
-		const diskPiecesSet = new Set<string>(files)
+		const diskPiecesSet = new Set<string>(filesOnDisk)
 		const missingPieces = dbPieces.filter((piece) => !diskPiecesSet.has(piece.file_path))
-		const missingFiles = missingPieces.map((piece) => piece.file_path)
+		return missingPieces.map((piece) => piece.file_path)
+	}
 
+	async prune(db: LuzzleDatabase, files: string[]) {
+		const missingFiles = await this.getPruneOperations(db, files)
 		if (missingFiles.length > 0) {
-			if (!dryRun) {
-				await deleteItems(db, missingFiles)
-			}
-			missingFiles.forEach((file) => log.info(`pruned piece (db): ${file}`))
+			await deleteItems(db, missingFiles)
 		}
+		return missingFiles
 	}
 
-	async syncMarkdownAdd(
+	async getSyncOperations(
 		db: LuzzleDatabase,
-		markdown: PieceMarkdown<F>,
-		dryRun = false
-	): Promise<void> {
-		try {
-			if (dryRun === false) {
-				const createInput = makePieceItemInsertable(this._pieceName, markdown, this._schema)
+		files: string[]
+	): Promise<{ toAdd: PieceMarkdown<F>[]; toUpdate: PieceMarkdown<F>[] }> {
+		const toAdd: PieceMarkdown<F>[] = []
+		const toUpdate: PieceMarkdown<F>[] = []
+
+		const q = queue<string>(async (file) => {
+			const markdown = await this.get(file)
+			const dbPiece = await selectItem(db, markdown.filePath)
+
+			if (dbPiece) {
 				const readStream = this._storage.createReadStream(markdown.filePath)
-				const hash = await calculateHashFromFile(readStream)
-
-				await insertItem(db, createInput)
-				await addCache(db, markdown.filePath, hash)
+				const newHash = await calculateHashFromFile(readStream)
+				const cache = await getCache(db, markdown.filePath)
+				if (cache?.content_hash !== newHash) {
+					toUpdate.push(markdown)
+				}
+			} else {
+				toAdd.push(markdown)
 			}
-			log.info(`added ${markdown.filePath}`)
-		} catch (err) {
-			log.error(err as string)
-		}
+		}, cpus().length)
+
+		q.push(files)
+
+		await q.drain()
+
+		return { toAdd, toUpdate }
 	}
 
-	async syncMarkdown(
-		db: LuzzleDatabase,
-		markdown: PieceMarkdown<F>,
-		dryRun = false
-	): Promise<void> {
+	async sync(db: LuzzleDatabase, files: string[]) {
+		const { toAdd, toUpdate } = await this.getSyncOperations(db, files)
+
+		const qAdd = queue<PieceMarkdown<F>>(async (markdown) => {
+			await this.syncMarkdownAdd(db, markdown)
+		}, cpus().length)
+
+		const qUpdate = queue<PieceMarkdown<F>>(async (markdown) => {
+			const dbPiece = await selectItem(db, markdown.filePath)
+			if (dbPiece) {
+				await this.syncMarkdownUpdate(db, markdown, dbPiece)
+			}
+		}, cpus().length)
+
+		if (toAdd.length > 0) {
+			qAdd.push(toAdd)
+		}
+
+		if (toUpdate.length > 0) {
+			qUpdate.push(toUpdate)
+		}
+
+		await qAdd.drain()
+		await qUpdate.drain()
+	}
+
+	async syncMarkdownAdd(db: LuzzleDatabase, markdown: PieceMarkdown<F>): Promise<void> {
+		const createInput = makePieceItemInsertable(this._pieceName, markdown, this._schema)
+		const readStream = this._storage.createReadStream(markdown.filePath)
+		const hash = await calculateHashFromFile(readStream)
+
+		await insertItem(db, createInput)
+		await addCache(db, markdown.filePath, hash)
+	}
+
+	async syncMarkdown(db: LuzzleDatabase, markdown: PieceMarkdown<F>): Promise<void> {
 		const dbPiece = await selectItem(db, markdown.filePath)
 
 		if (dbPiece) {
-			await this.syncMarkdownUpdate(db, markdown, dbPiece, dryRun)
+			await this.syncMarkdownUpdate(db, markdown, dbPiece)
 		} else {
-			await this.syncMarkdownAdd(db, markdown, dryRun)
+			await this.syncMarkdownAdd(db, markdown)
 		}
 	}
 
 	async syncMarkdownUpdate(
 		db: LuzzleDatabase,
 		markdown: PieceMarkdown<F>,
-		data: LuzzleSelectable<'pieces_items'>,
-		dryRun = false
+		data: LuzzleSelectable<'pieces_items'>
 	): Promise<void> {
 		const updateInput = makePieceItemUpdatable(markdown, this._schema, data, false)
-		try {
-			if (dryRun === false) {
-				await updateItem(db, markdown.filePath, updateInput)
-				const readStream = this._storage.createReadStream(markdown.filePath)
-				const hash = await calculateHashFromFile(readStream)
+		await updateItem(db, markdown.filePath, updateInput)
+		const readStream = this._storage.createReadStream(markdown.filePath)
+		const hash = await calculateHashFromFile(readStream)
 
-				await updateCache(db, data.file_path, hash)
-			}
-
-			log.info(`updated ${markdown.filePath}`)
-		} catch (err) {
-			log.error(`${markdown.filePath} could not be updated: ${err}`)
-		}
-	}
-
-	async sync(db: LuzzleDatabase, files: string[], dryRun = false) {
-		const q = queue<string>(async (file) => {
-			const markdown = await this.get(file)
-			await this.syncMarkdown(db, markdown, dryRun)
-		}, cpus().length)
-
-		q.push(files)
-
-		await q.drain()
+		await updateCache(db, data.file_path, hash)
 	}
 
 	toMarkdown(data: LuzzleSelectable<'pieces_items'>): PieceMarkdown<F> {
@@ -309,7 +321,7 @@ class Piece<F extends PieceFrontmatter> {
 			}
 		} catch (e) {
 			const error = e as Error
-			log.error(`could not set field ${field}: ${error.message}`)
+			console.error(`could not set field ${field}: ${error.message}`)
 			return markdown // On error, return the original markdown, preserving the old value
 		}
 

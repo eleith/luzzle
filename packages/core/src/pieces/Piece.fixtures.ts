@@ -1,14 +1,11 @@
-import {
-	LuzzleSelectable,
-	PieceFrontmatter,
-	PieceMarkdown,
-	compile,
-	PieceFrontmatterSchema,
-} from '@luzzle/core'
-import Piece from './piece.js'
-import { PieceManagerSelect } from '@luzzle/core/dist/src/database/tables/pieces_manager.schema.js'
-import Storage from '../storage/fs.js'
-import { mockStorage } from '../storage/storage.mock.js'
+import { LuzzleSelectable } from '../database/tables/index.js'
+import { PieceFrontmatter, PieceFrontmatterSchema } from './utils/frontmatter.js'
+import { PieceMarkdown } from './utils/markdown.js'
+import compile from '../lib/ajv.js'
+import LuzzleStorage from '../storage/abstract.js'
+import Piece from './Piece.js'
+import { vi } from 'vitest'
+import { PieceManagerSelect } from '../database/tables/pieces_manager.schema.js'
 
 type PieceValidator = ReturnType<typeof compile<PieceFrontmatter>>
 
@@ -54,8 +51,21 @@ export function makeSchema(
 	}
 }
 
-export function makeStorage(root: string) {
-	return mockStorage(root)
+export function makeStorage(root: string): LuzzleStorage {
+	return {
+		root,
+		type: 'fs',
+		parseArgPath: vi.fn(),
+		readFile: vi.fn(),
+		writeFile: vi.fn(),
+		getFilesIn: vi.fn(),
+		exists: vi.fn(),
+		delete: vi.fn(),
+		stat: vi.fn(),
+		createReadStream: vi.fn(),
+		createWriteStream: vi.fn(),
+		makeDirectory: vi.fn(),
+	} as unknown as LuzzleStorage
 }
 
 export function makeFrontmatterSample(
@@ -88,7 +98,7 @@ export function makePieceItemSelectable(
 class PieceOverridable extends Piece<PieceFrontmatter> {
 	constructor(
 		name: string = 'table',
-		storage: Storage = makeStorage('root'),
+		storage: LuzzleStorage = makeStorage('root'),
 		schema: PieceFrontmatterSchema<PieceFrontmatter> = makeSchema(name)
 	) {
 		super(name, storage, schema)

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type PieceFrontmatterSchemaField } from '@luzzle/cli'
+	import { type PieceFrontmatterSchemaField } from '@luzzle/core'
 	import EditAsset from './editAsset.svelte'
 	import type { AssetField, EnumField } from './types.js'
 

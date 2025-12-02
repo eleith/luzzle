@@ -9,12 +9,12 @@ import {
 import {
 	StorageWebDAV,
 	Pieces,
-	Storage,
 	pieceFrontMatterFromPrompt,
 	StorageFileSystem,
 	type PieceFrontmatter,
-	type PieceFrontmatterSchema
-} from '@luzzle/cli'
+	type PieceFrontmatterSchema,
+	type LuzzleStorage
+} from '@luzzle/core'
 
 const url = PRIVATE_LUZZLE_STORAGE_URL
 const root = PRIVATE_LUZZLE_STORAGE_ROOT
@@ -24,7 +24,7 @@ const password = PRIVATE_LUZZLE_STORAGE_PASSWORD
 const apiKey = PRIVATE_LUZZLE_GOOGLE_AI_API_KEY
 
 let pieces: Pieces
-let storage: Storage
+let storage: LuzzleStorage
 let types: string[] = []
 
 function getStorage() {

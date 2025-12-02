@@ -7,9 +7,9 @@ import {
 import { PieceMarkdown } from './utils/markdown.js'
 import {
 	PieceFrontmatter,
-	PieceFrontmatterSchema,
 	pieceFrontmatterValueToDatabaseValue,
 	getPieceFrontmatterSchemaFields,
+    PieceFrontmatterSchema,
 } from './utils/frontmatter.js'
 import { ValidateFunction } from 'ajv'
 

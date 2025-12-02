@@ -1,8 +1,9 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import * as frontmatter from './frontmatter.js'
 import { makeSchema } from './piece.fixtures.js'
+import { JSONSchemaType } from 'ajv'
 
-describe('src/pieces/utils/frontmatter.ts', () => {
+describe('pieces/utils/frontmatter.ts', () => {
 	afterEach(() => {
 		vi.resetAllMocks()
 	})
@@ -22,6 +23,32 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 			pattern: 'pattern',
 			nullable: true,
 		})
+	})
+
+	test('getPieceFrontmatterSchemaFields handles required and nullable fields', () => {
+		const schema = makeSchema({
+			requiredField: { type: 'string' },
+			optionalField: { type: 'string', nullable: true },
+		})
+		schema.required = 'requiredField'
+		const fields = frontmatter.getPieceFrontmatterSchemaFields(schema)
+
+		const requiredField = fields.find(f => f.name === 'requiredField')
+		const optionalField = fields.find(f => f.name === 'optionalField')
+
+		expect(optionalField?.nullable).toBe(true)
+		expect(requiredField?.name).toBe('requiredField')
+	})
+
+	test('getPieceFrontmatterSchemaFields required as an array', () => {
+		const schema = makeSchema({
+			requiredField: { type: 'string' },
+		})
+		schema.required = ['requiredField']
+		const fields = frontmatter.getPieceFrontmatterSchemaFields(schema)
+
+		const requiredField = fields.find(f => f.name === 'requiredField')
+		expect(requiredField?.name).toBe('requiredField')
 	})
 
 	test('pieceFrontmatterValueToDatabaseValue', () => {
@@ -99,24 +126,36 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 		expect(csv).toBe('one,two,three')
 	})
 
+	test('databaseValueToPieceFrontmatterValue for array of numbers', () => {
+		const value = '1,2,3'
+		const field = {
+			type: 'array',
+			name: 'numbers',
+			items: { type: 'integer' },
+		} as frontmatter.PieceFrontmatterSchemaField
+
+		const result = frontmatter.databaseValueToPieceFrontmatterValue(value, field)
+		expect(result).toEqual([1, 2, 3])
+	})
+
 	test('initializePieceFrontMatter', () => {
 		const schema = {
 			type: 'object',
 			properties: {
 				title: { type: 'string', examples: ['title'] },
 				keywords: { type: 'string', examples: ['keyword1'], nullable: true },
-				subtitle: { type: 'string', examples: ['subtitle'], nullable: true },
+				subtitle: { type: 'string', default: 'a subtitle', nullable: true },
 			},
 			required: ['title'],
 			additionalProperties: true,
-		} as frontmatter.PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }>
+		} as JSONSchemaType<{ title: string; keywords?: string; subtitle?: string }>
 
 		const front = frontmatter.initializePieceFrontMatter(schema)
 
 		expect(front).toEqual({
 			title: 'title',
 			keywords: 'keyword1',
-			subtitle: 'subtitle',
+			subtitle: 'a subtitle',
 		})
 	})
 
@@ -130,7 +169,7 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 			},
 			required: ['title'],
 			additionalProperties: true,
-		} as frontmatter.PieceFrontmatterSchema<{ title: string; keywords?: string; subtitle?: string }>
+		} as JSONSchemaType<{ title: string; keywords?: string; subtitle?: string }>
 
 		const front = frontmatter.initializePieceFrontMatter(schema, true)
 
@@ -147,8 +186,25 @@ describe('src/pieces/utils/frontmatter.ts', () => {
 			},
 			required: ['title'],
 			additionalProperties: true,
-		} as frontmatter.PieceFrontmatterSchema<{ title: string }>
+		} as JSONSchemaType<{ title: string }>
 
 		expect(() => frontmatter.initializePieceFrontMatter(schema)).toThrow()
+	})
+
+	test('initializePieceFrontMatter with array field and item examples', () => {
+		const schema = {
+			type: 'object',
+			properties: {
+				tags: { type: 'array', items: { type: 'string', examples: ['defaultTag'] } },
+			},
+			required: ['tags'],
+			additionalProperties: true,
+		} as JSONSchemaType<{ tags: string[] }>
+
+		const front = frontmatter.initializePieceFrontMatter(schema)
+
+		expect(front).toEqual({
+			tags: ['defaultTag'],
+		})
 	})
 })

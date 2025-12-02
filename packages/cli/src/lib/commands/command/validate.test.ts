@@ -3,11 +3,10 @@ import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import command, { ValidateArgv } from './validate.js'
 import { Arguments } from 'yargs'
 import yargs from 'yargs'
-import { makeContext } from './context.fixtures.js'
-import { makePiecePathPositional, parsePiecePathPositionalArgv } from '../../pieces/index.js'
-import { makeMarkdownSample, makePieceMock } from '../../pieces/piece.fixtures.js'
+import { makeContext, makeMarkdownSample, makePieceMock } from '../utils/context.fixtures.js'
+import { makePiecePathPositional, parsePiecePathPositionalArgv } from '../utils/pieces.js'
 
-vi.mock('../../pieces/index')
+vi.mock('../utils/pieces.js')
 vi.mock('../../log.js')
 
 const mocks = {
@@ -34,13 +33,12 @@ describe('lib/commands/validate.ts', () => {
 
 	test('run', async () => {
 		const file = `/home/user/file.md`
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
+		const piece = makePieceMock()
 		const markdown = makeMarkdownSample()
 		const ctx = makeContext()
 
 		spies.validate = vi
-			.spyOn(PieceTest.prototype, 'validate')
+			.spyOn(piece, 'validate')
 			.mockReturnValueOnce({ isValid: true })
 		mocks.parseArgs.mockResolvedValueOnce({ file, markdown, piece })
 
@@ -51,14 +49,13 @@ describe('lib/commands/validate.ts', () => {
 
 	test('run on invalid piece', async () => {
 		const file = `/home/user/file.md`
-		const PieceTest = makePieceMock()
-		const piece = new PieceTest()
+		const piece = makePieceMock()
 		const markdown = makeMarkdownSample()
 		const ctx = makeContext()
 		const errors = ['error1', 'error2']
 
 		spies.validate = vi
-			.spyOn(PieceTest.prototype, 'validate')
+			.spyOn(piece, 'validate')
 			.mockReturnValueOnce({ isValid: false, errors })
 		mocks.parseArgs.mockResolvedValueOnce({ file, markdown, piece })
 
