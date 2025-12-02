@@ -44,8 +44,10 @@ class Pieces {
 		return jsonToPieceSchema(schemaJson as string)
 	}
 
-	async sync(db: LuzzleDatabase) {
+	async getSyncOperations(db: LuzzleDatabase) {
 		const names = await this.getTypes()
+		const toAdd = []
+		const toUpdate = []
 
 		for (const name of names) {
 			const piece = await getPiece(db, name)
@@ -59,25 +61,38 @@ class Pieces {
 			const schema = await this.getSchema(name)
 
 			if (!piece) {
-				await addPiece(db, name, schema)
+				toAdd.push({ name, schema })
 			} else {
 				const pieceDate = piece.date_updated || piece.date_added
-
 				if (fileStat.last_modified > new Date(pieceDate)) {
-					await updatePiece(db, name, schema)
+					toUpdate.push({ name, schema })
 				}
 			}
 		}
+		return { toAdd, toUpdate }
 	}
 
-	async prune(db: LuzzleDatabase) {
+	async sync(db: LuzzleDatabase) {
+		const { toAdd, toUpdate } = await this.getSyncOperations(db)
+		for (const { name, schema } of toAdd) {
+			await addPiece(db, name, schema)
+		}
+		for (const { name, schema } of toUpdate) {
+			await updatePiece(db, name, schema)
+		}
+	}
+
+	async getPruneOperations(db: LuzzleDatabase) {
 		const names = await this.getTypes()
 		const dbPieces = await getPieces(db)
 		const diskPiecesSet = new Set<string>(names)
-		const missingPieces = dbPieces
+		return dbPieces
 			.filter((piece) => !diskPiecesSet.has(piece.name))
 			.map((piece) => piece.name)
+	}
 
+	async prune(db: LuzzleDatabase) {
+		const missingPieces = await this.getPruneOperations(db)
 		for (const name of missingPieces) {
 			await deletePiece(db, name)
 		}

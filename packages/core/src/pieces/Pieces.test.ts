@@ -31,7 +31,7 @@ const mocks = {
 	jsonToPieceSchema: vi.mocked(jsonToPieceSchema),
 }
 
-describe('lib/pieces/pieces.ts', () => {
+describe('pieces/Pieces.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -259,6 +259,32 @@ describe('lib/pieces/pieces.ts', () => {
 		await expect(syncing).rejects.toThrow()
 	})
 
+	test('getSyncOperations', async () => {
+		const storage = makeStorage('root')
+		const pieces = new Pieces(storage)
+		const type = 'books'
+		const datePiece = new Date('2020-02-02').getTime()
+		const dateModified = new Date('2021-02-02')
+		const piece = makeRegisteredPiece({ name: type, date_added: datePiece })
+		const { db } = mockKysely()
+
+		mocks.getPiece.mockResolvedValueOnce(null)
+
+		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([type])
+		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValueOnce(piece.schema)
+		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValueOnce('schemaPath')
+		spies.stat = vi
+			.spyOn(storage, 'stat')
+			.mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
+
+		const { toAdd, toUpdate } = await pieces.getSyncOperations(db)
+
+		expect(toAdd).toHaveLength(1)
+		expect(toUpdate).toHaveLength(0)
+		expect(mocks.addPiece).not.toHaveBeenCalled()
+		expect(mocks.updatePiece).not.toHaveBeenCalled()
+	})
+
 	test('prune', async () => {
 		const storage = makeStorage('root')
 		const pieces = new Pieces(storage)
@@ -276,4 +302,20 @@ describe('lib/pieces/pieces.ts', () => {
 		expect(mocks.deletePiece).toHaveBeenCalledOnce()
 	})
 
+	test('getPruneOperations', async () => {
+		const storage = makeStorage('root')
+		const pieces = new Pieces(storage)
+		const type = 'books'
+		const piece = makeRegisteredPiece({ name: type })
+		const { db } = mockKysely()
+
+		mocks.getPieces.mockResolvedValueOnce([{ ...piece, schema: 'schema' }])
+
+		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([])
+
+		const missingPieces = await pieces.getPruneOperations(db)
+
+		expect(missingPieces).toHaveLength(1)
+		expect(mocks.deletePiece).not.toHaveBeenCalled()
+	})
 })
