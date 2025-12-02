@@ -6,8 +6,7 @@
     "lint": "eslint src",
     "build": "tsc",
     "test": "vitest run --coverage --silent",
-    "migration:add": "bash ./src/database/migrations.sh",
-    "check:version": "node ./scripts/check-version.js"
+    "migration:add": "bash ./src/database/migrations.sh"
   },
   "engines": {
     "node": ">=20"
