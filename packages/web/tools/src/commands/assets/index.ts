@@ -1,9 +1,8 @@
 import { mkdir, writeFile } from 'fs/promises'
 import path from 'path'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
-import { Pieces, StorageFileSystem } from '@luzzle/cli'
 import { generateVariantJobs } from './variants.js'
-import { getDatabaseClient, LuzzleSelectable } from '@luzzle/core'
+import { getDatabaseClient, LuzzleSelectable, Pieces, StorageFileSystem } from '@luzzle/core'
 import { loadConfig } from '@luzzle/web.utils/server'
 import {
 	getAssetDir,

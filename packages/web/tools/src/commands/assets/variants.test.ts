@@ -1,8 +1,7 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { generateVariantJobs } from './variants.js'
-import { Pieces } from '@luzzle/cli'
 import Sharp from 'sharp'
-import { LuzzleSelectable } from '@luzzle/core'
+import { LuzzleSelectable, Pieces } from '@luzzle/core'
 
 vi.mock('sharp')
 
