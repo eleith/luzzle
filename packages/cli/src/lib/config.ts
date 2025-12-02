@@ -1,6 +1,6 @@
 import YAML from 'yaml'
 import Conf, { Options } from 'conf'
-import { LuzzleStorage, StorageFileSystem, StorageWebDAV } from '@luzzle/core'
+import { StorageFileSystem, StorageWebDAV, LuzzleStorage } from '@luzzle/core'
 import path from 'path'
 
 type SchemaConfig = {

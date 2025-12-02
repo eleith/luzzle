@@ -1,5 +1,5 @@
 import { selectItemAssets } from '@luzzle/core'
-import { Command } from '../utils/types.js'
+import { type Command } from '../utils/types.js'
 import { Argv } from 'yargs'
 
 export type SyncArgv = { force?: boolean; prune?: boolean }
@@ -33,8 +33,8 @@ const command: Command<SyncArgv> = {
 		const files = await ctx.pieces.getFilesIn('.', { deep: true })
 
 		// sync new/removed types with db
-		await ctx.pieces.sync(ctx.db, dryRun)
-		await ctx.pieces.prune(ctx.db, dryRun)
+		await ctx.pieces.sync(ctx.db)
+		await ctx.pieces.prune(ctx.db)
 
 		for (const name of files.types) {
 			const piece = await ctx.pieces.getPiece(name)
@@ -44,8 +44,8 @@ const command: Command<SyncArgv> = {
 			const processFiles = force ? pieces : areOutdated
 
 			// sync new/removed pieces with db
-			await piece.sync(ctx.db, processFiles, dryRun)
-			await piece.prune(ctx.db, pieces, dryRun)
+			await piece.sync(ctx.db, processFiles)
+			await piece.prune(ctx.db, pieces)
 		}
 
 		// prune unneeded assets from disk

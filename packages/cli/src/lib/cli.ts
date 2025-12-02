@@ -5,7 +5,7 @@ import { hideBin } from 'yargs/helpers'
 import log from './log.js'
 import getCommands, { Command, Context } from './commands/index.js'
 import VERSION from '../version.js'
-import { Pieces } from './pieces/index.js'
+import { Pieces } from '@luzzle/core'
 
 async function parseArgs<T>(
 	_args: string[],
