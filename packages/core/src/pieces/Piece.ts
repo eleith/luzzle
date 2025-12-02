@@ -143,17 +143,75 @@ class Piece<F extends PieceFrontmatter> {
 		}
 	}
 
-	async prune(db: LuzzleDatabase, files: string[]) {
+	async getPruneOperations(db: LuzzleDatabase, filesOnDisk: string[]): Promise<string[]> {
 		const dbPieces = await selectItems(db, { type: this._pieceName })
-		const diskPiecesSet = new Set<string>(files)
+		const diskPiecesSet = new Set<string>(filesOnDisk)
 		const missingPieces = dbPieces.filter((piece) => !diskPiecesSet.has(piece.file_path))
-		const missingFiles = missingPieces.map((piece) => piece.file_path)
+		return missingPieces.map((piece) => piece.file_path)
+	}
 
+	async prune(db: LuzzleDatabase, files: string[]) {
+		const missingFiles = await this.getPruneOperations(db, files)
 		if (missingFiles.length > 0) {
 			await deleteItems(db, missingFiles)
 		}
-
 		return missingFiles
+	}
+
+	async getSyncOperations(
+		db: LuzzleDatabase,
+		files: string[]
+	): Promise<{ toAdd: PieceMarkdown<F>[]; toUpdate: PieceMarkdown<F>[] }> {
+		const toAdd: PieceMarkdown<F>[] = []
+		const toUpdate: PieceMarkdown<F>[] = []
+
+		const q = queue<string>(async (file) => {
+			const markdown = await this.get(file)
+			const dbPiece = await selectItem(db, markdown.filePath)
+
+			if (dbPiece) {
+				const readStream = this._storage.createReadStream(markdown.filePath)
+				const newHash = await calculateHashFromFile(readStream)
+				const cache = await getCache(db, markdown.filePath)
+				if (cache?.content_hash !== newHash) {
+					toUpdate.push(markdown)
+				}
+			} else {
+				toAdd.push(markdown)
+			}
+		}, cpus().length)
+
+		q.push(files)
+
+		await q.drain()
+
+		return { toAdd, toUpdate }
+	}
+
+	async sync(db: LuzzleDatabase, files: string[]) {
+		const { toAdd, toUpdate } = await this.getSyncOperations(db, files)
+
+		const qAdd = queue<PieceMarkdown<F>>(async (markdown) => {
+			await this.syncMarkdownAdd(db, markdown)
+		}, cpus().length)
+
+		const qUpdate = queue<PieceMarkdown<F>>(async (markdown) => {
+			const dbPiece = await selectItem(db, markdown.filePath)
+			if (dbPiece) {
+				await this.syncMarkdownUpdate(db, markdown, dbPiece)
+			}
+		}, cpus().length)
+
+		if (toAdd.length > 0) {
+			qAdd.push(toAdd)
+		}
+
+		if (toUpdate.length > 0) {
+			qUpdate.push(toUpdate)
+		}
+
+		await qAdd.drain()
+		await qUpdate.drain()
 	}
 
 	async syncMarkdownAdd(db: LuzzleDatabase, markdown: PieceMarkdown<F>): Promise<void> {
@@ -186,17 +244,6 @@ class Piece<F extends PieceFrontmatter> {
 		const hash = await calculateHashFromFile(readStream)
 
 		await updateCache(db, data.file_path, hash)
-	}
-
-	async sync(db: LuzzleDatabase, files: string[]) {
-		const q = queue<string>(async (file) => {
-			const markdown = await this.get(file)
-			await this.syncMarkdown(db, markdown)
-		}, cpus().length)
-
-		q.push(files)
-
-		await q.drain()
 	}
 
 	toMarkdown(data: LuzzleSelectable<'pieces_items'>): PieceMarkdown<F> {

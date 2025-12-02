@@ -9,7 +9,6 @@ import {
 } from './Piece.fixtures.js'
 import { mockKysely } from '../database/database.mock.js'
 import { addCache, removeCache, updateCache, getCache } from './cache.js'
-import { CpuInfo, cpus } from 'os'
 import {
 	getPieceFrontmatterSchemaFields,
 	databaseValueToPieceFrontmatterValue,
@@ -31,6 +30,7 @@ import { makeCache } from './cache.fixtures.js'
 import slugify from '@sindresorhus/slugify'
 import { LuzzleSelectable, LuzzleInsertable, StorageStat } from '../index.js'
 import { PassThrough, Readable } from 'stream'
+import { CpuInfo, cpus } from 'os'
 
 vi.mock('./cache.js')
 vi.mock('os')
@@ -47,7 +47,6 @@ const mocks = {
 	makePieceMarkdown: vi.mocked(makePieceMarkdown),
 	toMarkdownString: vi.mocked(makePieceMarkdownString),
 	extract: vi.mocked(extractFullMarkdown),
-	cpus: vi.mocked(cpus),
 	addCache: vi.mocked(addCache),
 	removeCache: vi.mocked(removeCache),
 	updateCache: vi.mocked(updateCache),
@@ -69,11 +68,12 @@ const mocks = {
 	slugify: vi.mocked(slugify),
 	makePieceValue: vi.mocked(makePieceValue),
 	makePieceAttachment: vi.mocked(makePieceAttachment),
+	cpus: vi.mocked(cpus),
 }
 
 const spies: { [key: string]: MockInstance } = {}
 
-describe('lib/pieces/Piece.ts', () => {
+describe('pieces/Piece.ts', () => {
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -397,6 +397,26 @@ describe('lib/pieces/Piece.ts', () => {
 		expect(mocks.deleteItems).not.toHaveBeenCalled()
 	})
 
+	test('getPruneOperations', async () => {
+		const dbMocks = mockKysely()
+		const PieceTest = makePieceMock()
+		const dbPieces = [
+			makePieceItemSelectable({ file_path: 'a' }),
+			makePieceItemSelectable({ file_path: 'b' }),
+			makePieceItemSelectable({ file_path: 'c' }),
+		]
+		const filesOnDisk = ['a', 'c', 'd'] // 'b' is missing from disk
+		const pieceTest = new PieceTest()
+
+		mocks.selectItems.mockResolvedValueOnce(dbPieces)
+
+		const prunableItems = await pieceTest.getPruneOperations(dbMocks.db, filesOnDisk)
+
+		expect(prunableItems).toHaveLength(1)
+		expect(prunableItems[0]).toEqual('b')
+		expect(mocks.deleteItems).not.toHaveBeenCalled()
+	})
+
 	test('syncMarkdownAdd', async () => {
 		const dbMocks = mockKysely()
 		const PieceTest = makePieceMock()
@@ -550,21 +570,26 @@ describe('lib/pieces/Piece.ts', () => {
 		expect(markdown).toEqual(pieceMarkdown)
 	})
 
-	test('sync', async () => {
+		test('sync', async () => {
 		const dbMocks = mockKysely()
 		const slugs = ['a', 'b']
-		const PieceTest = makePieceMock()
 		const markdown = makeMarkdownSample()
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
 
-		const pieceTest = new PieceTest()
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
-
-		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValueOnce(markdown)
-		spies.syncMarkdown = vi.spyOn(pieceTest, 'syncMarkdown').mockResolvedValue()
+		spies.getSyncOperations = vi
+			.spyOn(pieceTest, 'getSyncOperations')
+			.mockResolvedValueOnce({ toAdd: [markdown], toUpdate: [markdown] })
+		spies.syncMarkdownAdd = vi.spyOn(pieceTest, 'syncMarkdownAdd').mockResolvedValue()
+		spies.syncMarkdownUpdate = vi.spyOn(pieceTest, 'syncMarkdownUpdate').mockResolvedValue()
+		spies.selectItem = mocks.selectItem.mockResolvedValue({} as LuzzleSelectable<'pieces_items'>)
 
 		await pieceTest.sync(dbMocks.db, slugs)
 
-		expect(spies.syncMarkdown).toHaveBeenCalledWith(dbMocks.db, markdown)
+		expect(spies.syncMarkdownAdd).toHaveBeenCalledOnce()
+		expect(spies.syncMarkdownUpdate).toHaveBeenCalledOnce()
 	})
 
 	test('get fields', async () => {
@@ -905,5 +930,53 @@ describe('lib/pieces/Piece.ts', () => {
 				[field]: ['one', 'three'],
 			}
 		)
+	})
+
+	test('getSyncOperations', async () => {
+		const dbMocks = mockKysely()
+		const PieceTest = makePieceMock()
+		const markdown = makeMarkdownSample()
+		const otherMarkdown = makeMarkdownSample({ filePath: 'other/path.md' })
+		const hash = 'hash'
+		const updatedHash = 'updatedHash'
+		const storage = makeStorage('root')
+		const pieceTest = new PieceTest('books', storage)
+
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		mocks.selectItem.mockResolvedValueOnce(undefined)
+		mocks.selectItem.mockResolvedValueOnce({
+			id: 'someid',
+			file_path: otherMarkdown.filePath,
+		} as LuzzleSelectable<'pieces_items'>)
+
+		mocks.calculateHashFromFile.mockResolvedValueOnce(updatedHash)
+		mocks.getCache.mockResolvedValue({ content_hash: hash } as LuzzleSelectable<'pieces_cache'>)
+		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValue(markdown)
+
+		const files = [markdown.filePath, otherMarkdown.filePath]
+		const { toAdd, toUpdate } = await pieceTest.getSyncOperations(dbMocks.db, files)
+
+		expect(toAdd).toHaveLength(1)
+		expect(toUpdate).toHaveLength(1)
+	})
+
+	test('getPruneOperations', async () => {
+		const dbMocks = mockKysely()
+		const PieceTest = makePieceMock()
+		const dbPieces = [
+			makePieceItemSelectable({ file_path: 'a' }),
+			makePieceItemSelectable({ file_path: 'b' }),
+			makePieceItemSelectable({ file_path: 'c' }),
+		]
+		const filesOnDisk = ['a', 'c', 'd'] // 'b' is missing from disk
+		const pieceTest = new PieceTest()
+
+		mocks.selectItems.mockResolvedValueOnce(dbPieces)
+
+		const prunableItems = await pieceTest.getPruneOperations(dbMocks.db, filesOnDisk)
+
+		expect(prunableItems).toHaveLength(1)
+		expect(prunableItems[0]).toEqual('b')
+		expect(mocks.deleteItems).not.toHaveBeenCalled()
 	})
 })
