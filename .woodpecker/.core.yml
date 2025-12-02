@@ -14,7 +14,7 @@ steps:
   build:
     image: node:22
     commands:
-      - npm ci -w @luzzle/core -w @luzzle/cli
+      - npm ci -w @luzzle/core
       - npm run lint -w @luzzle/core
       - npm run build -w @luzzle/core
     environment:
