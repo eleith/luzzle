@@ -47,20 +47,10 @@
     "vitest": "3.2.4"
   },
   "dependencies": {
-    "@google/genai": "1.19.0",
     "@luzzle/core": "0.0.27",
-    "@paralleldrive/cuid2": "2.2.2",
-    "@sindresorhus/slugify": "2.2.1",
-    "async": "^3.2.4",
     "conf": "13.1.0",
-    "fdir": "6.4.2",
-    "file-type": "21.0.0",
-    "got": "14.4.8",
-    "mdast-util-to-markdown": "2.1.2",
     "pino": "9.6.0",
     "pino-pretty": "13.0.0",
-    "tempy": "^3.0.0",
-    "webdav": "5.7.1",
     "yaml": "2.7.0",
     "yargs": "17.7.2"
   },
