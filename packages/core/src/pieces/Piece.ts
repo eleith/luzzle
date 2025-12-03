@@ -212,6 +212,11 @@ class Piece<F extends PieceFrontmatter> {
 
 		await qAdd.drain()
 		await qUpdate.drain()
+
+		return {
+			added: toAdd,
+			updated: toUpdate
+		}
 	}
 
 	async syncMarkdownAdd(db: LuzzleDatabase, markdown: PieceMarkdown<F>): Promise<void> {
