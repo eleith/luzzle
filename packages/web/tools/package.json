@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web.tools",
-	"version": "0.0.66",
+	"version": "0.0.67",
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
@@ -14,7 +14,7 @@
 		"node": ">=20"
 	},
 	"bin": {
-		"luzzle-tools": "./dist/src/cli.js"
+		"luzzle-web-tools": "./dist/src/cli.js"
 	},
 	"files": [
 		"dist/*",
@@ -35,7 +35,6 @@
 		"eslint-config-prettier": "9.1.0",
 		"eslint-plugin-prettier": "5.2.1",
 		"globals": "16.0.0",
-		"json-schema-to-typescript": "15.0.4",
 		"prettier": "3.2.5",
 		"typescript": "5.7.3",
 		"typescript-eslint": "8.19.1",
