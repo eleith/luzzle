@@ -13,7 +13,7 @@ import {
 import { Readable } from 'stream'
 import { cpus } from 'os'
 
-type PruneResult =
+export type PiecesPruneResult =
 	| {
 		action: 'pruned'
 		name: string
@@ -25,7 +25,7 @@ type PruneResult =
 		message: string
 	}
 
-type SyncResult =
+export type PiecesSyncResult =
 	| {
 		action: 'added' | 'updated' | 'skipped'
 		name: string
@@ -79,7 +79,7 @@ class Pieces {
 		const names = await this.getTypes()
 		const stream = Readable.from(names)
 
-		return stream.map(async (name): Promise<SyncResult> => {
+		return stream.map(async (name): Promise<PiecesSyncResult> => {
 			const piece = await getPiece(db, name)
 			const schemaPath = this.getSchemaPath(name)
 			const fileStat = await this._storage.stat(schemaPath).catch(() => null)
@@ -109,7 +109,7 @@ class Pieces {
 			} else {
 				return { name, error: true, message: `schema file ${schemaPath} not found` }
 			}
-		}) as Readable & AsyncIterable<SyncResult>
+		}) as Readable & AsyncIterable<PiecesSyncResult>
 	}
 
 	async prune(db: LuzzleDatabase, options?: { dryRun: boolean }) {
@@ -122,7 +122,7 @@ class Pieces {
 		const stream = Readable.from(missingPieces)
 
 		return stream.map(
-			async (name): Promise<PruneResult> => {
+			async (name): Promise<PiecesPruneResult> => {
 				try {
 					if (!options?.dryRun) {
 						await deletePiece(db, name)
@@ -133,7 +133,7 @@ class Pieces {
 				}
 			},
 			{ concurrency: cpus().length }
-		) as Readable & AsyncIterable<PruneResult>
+		) as Readable & AsyncIterable<PiecesPruneResult>
 	}
 
 	parseFilename(file: string) {
