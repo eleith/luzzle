@@ -1,5 +1,4 @@
 import { updateCache, addCache, getCache } from './cache.js'
-import { queue } from 'async'
 import { cpus } from 'os'
 import path from 'path'
 import slugify from '@sindresorhus/slugify'
@@ -30,6 +29,30 @@ import { LUZZLE_PIECE_FILE_EXTENSION } from './assets.js'
 export interface InterfacePiece<F extends PieceFrontmatter> {
 	new(directory: string, pieceName: string, schemaOverride?: PieceFrontmatterSchema<F>): Piece<F>
 }
+
+export type PiecePruneResult =
+	| {
+		action: 'pruned'
+		file: string
+		error?: false
+	}
+	| {
+		file: string
+		error: true
+		message: string
+	}
+
+export type PieceSyncResult =
+	| {
+		action: 'added' | 'updated' | 'skipped'
+		file: string
+		error?: false
+	}
+	| {
+		file: string
+		error: true
+		message: string
+	}
 
 class Piece<F extends PieceFrontmatter> {
 	private _validator?: ReturnType<typeof compile<F>>
@@ -143,80 +166,60 @@ class Piece<F extends PieceFrontmatter> {
 		}
 	}
 
-	async getPruneOperations(db: LuzzleDatabase, filesOnDisk: string[]): Promise<string[]> {
+	async prune(db: LuzzleDatabase, files: string[], options?: { dryRun: boolean }) {
 		const dbPieces = await selectItems(db, { type: this._pieceName })
-		const diskPiecesSet = new Set<string>(filesOnDisk)
+		const diskPiecesSet = new Set<string>(files)
 		const missingPieces = dbPieces.filter((piece) => !diskPiecesSet.has(piece.file_path))
-		return missingPieces.map((piece) => piece.file_path)
-	}
+		const missingFiles = missingPieces.map((piece) => piece.file_path)
+		const stream = Readable.from(missingFiles)
 
-	async prune(db: LuzzleDatabase, files: string[]) {
-		const missingFiles = await this.getPruneOperations(db, files)
-		if (missingFiles.length > 0) {
-			await deleteItems(db, missingFiles)
-		}
-		return missingFiles
-	}
-
-	async getSyncOperations(
-		db: LuzzleDatabase,
-		files: string[]
-	): Promise<{ toAdd: PieceMarkdown<F>[]; toUpdate: PieceMarkdown<F>[] }> {
-		const toAdd: PieceMarkdown<F>[] = []
-		const toUpdate: PieceMarkdown<F>[] = []
-
-		const q = queue<string>(async (file) => {
-			const markdown = await this.get(file)
-			const dbPiece = await selectItem(db, markdown.filePath)
-
-			if (dbPiece) {
-				const readStream = this._storage.createReadStream(markdown.filePath)
-				const newHash = await calculateHashFromFile(readStream)
-				const cache = await getCache(db, markdown.filePath)
-				if (cache?.content_hash !== newHash) {
-					toUpdate.push(markdown)
+		return stream.map(
+			async (file): Promise<PiecePruneResult> => {
+				try {
+					if (!options?.dryRun) {
+						await deleteItems(db, file)
+					}
+					return { action: 'pruned', file }
+				} catch (error) {
+					return { file, error: true, message: `error pruning piece: ${error}` }
 				}
-			} else {
-				toAdd.push(markdown)
-			}
-		}, cpus().length)
-
-		q.push(files)
-
-		await q.drain()
-
-		return { toAdd, toUpdate }
+			},
+			{ concurrency: cpus().length }
+		) as Readable & AsyncIterable<PiecePruneResult>
 	}
 
-	async sync(db: LuzzleDatabase, files: string[]) {
-		const { toAdd, toUpdate } = await this.getSyncOperations(db, files)
+	async sync(db: LuzzleDatabase, files: string[], options?: { dryRun?: boolean; force?: boolean }) {
+		const stream = Readable.from(files)
 
-		const qAdd = queue<PieceMarkdown<F>>(async (markdown) => {
-			await this.syncMarkdownAdd(db, markdown)
-		}, cpus().length)
+		return stream.map(
+			async (file): Promise<PieceSyncResult> => {
+				const markdown = await this.get(file)
+				const dbPiece = await selectItem(db, markdown.filePath)
 
-		const qUpdate = queue<PieceMarkdown<F>>(async (markdown) => {
-			const dbPiece = await selectItem(db, markdown.filePath)
-			if (dbPiece) {
-				await this.syncMarkdownUpdate(db, markdown, dbPiece)
-			}
-		}, cpus().length)
-
-		if (toAdd.length > 0) {
-			qAdd.push(toAdd)
-		}
-
-		if (toUpdate.length > 0) {
-			qUpdate.push(toUpdate)
-		}
-
-		await qAdd.drain()
-		await qUpdate.drain()
-
-		return {
-			added: toAdd,
-			updated: toUpdate
-		}
+				try {
+					if (dbPiece) {
+						const readStream = this._storage.createReadStream(markdown.filePath)
+						const newHash = await calculateHashFromFile(readStream)
+						const cache = await getCache(db, markdown.filePath)
+						if (options?.force || cache?.content_hash !== newHash) {
+							if (!options?.dryRun) {
+								await this.syncMarkdownUpdate(db, markdown, dbPiece)
+							}
+							return { action: 'updated', file }
+						}
+						return { action: 'skipped', file }
+					} else {
+						if (!options?.dryRun) {
+							await this.syncMarkdownAdd(db, markdown)
+						}
+						return { action: 'added', file }
+					}
+				} catch (error) {
+					return { file, error: true, message: `error syncing piece: ${error}` }
+				}
+			},
+			{ concurrency: cpus().length }
+		) as Readable & AsyncIterable<PieceSyncResult>
 	}
 
 	async syncMarkdownAdd(db: LuzzleDatabase, markdown: PieceMarkdown<F>): Promise<void> {
