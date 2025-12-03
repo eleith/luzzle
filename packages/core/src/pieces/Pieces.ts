@@ -4,7 +4,38 @@ import LuzzleStorage from '../storage/abstract.js'
 import { jsonToPieceSchema } from './json.schema.js'
 import { LuzzleDatabase } from '../database/tables/index.js'
 import { addPiece, deletePiece, getPiece, getPieces, updatePiece } from './manager.js'
-import { LUZZLE_DIRECTORY, LUZZLE_SCHEMAS_DIRECTORY, ASSETS_DIRECTORY, LUZZLE_PIECE_FILE_EXTENSION } from './assets.js'
+import {
+	LUZZLE_DIRECTORY,
+	LUZZLE_SCHEMAS_DIRECTORY,
+	ASSETS_DIRECTORY,
+	LUZZLE_PIECE_FILE_EXTENSION,
+} from './assets.js'
+import { Readable } from 'stream'
+import { cpus } from 'os'
+
+type PruneResult =
+	| {
+		action: 'pruned'
+		name: string
+		error?: false
+	}
+	| {
+		name: string
+		error: true
+		message: string
+	}
+
+type SyncResult =
+	| {
+		action: 'added' | 'updated' | 'skipped'
+		name: string
+		error?: false
+	}
+	| {
+		name: string
+		error: true
+		message: string
+	}
 
 class Pieces {
 	private _storage: LuzzleStorage
@@ -44,64 +75,65 @@ class Pieces {
 		return jsonToPieceSchema(schemaJson as string)
 	}
 
-	async getSyncOperations(db: LuzzleDatabase) {
+	async sync(db: LuzzleDatabase, options?: { dryRun?: boolean; force?: boolean }) {
 		const names = await this.getTypes()
-		const toAdd = []
-		const toUpdate = []
+		const stream = Readable.from(names)
 
-		for (const name of names) {
+		return stream.map(async (name): Promise<SyncResult> => {
 			const piece = await getPiece(db, name)
 			const schemaPath = this.getSchemaPath(name)
 			const fileStat = await this._storage.stat(schemaPath).catch(() => null)
 
-			if (!fileStat) {
-				throw new Error(`schema file ${schemaPath} not found`)
-			}
+			if (fileStat) {
+				const schema = await this.getSchema(name)
 
-			const schema = await this.getSchema(name)
-
-			if (!piece) {
-				toAdd.push({ name, schema })
-			} else {
-				const pieceDate = piece.date_updated || piece.date_added
-				if (fileStat.last_modified > new Date(pieceDate)) {
-					toUpdate.push({ name, schema })
+				try {
+					if (!piece) {
+						if (!options?.dryRun) {
+							await addPiece(db, name, schema)
+						}
+						return { action: 'added', name }
+					} else {
+						const pieceDate = piece.date_updated || piece.date_added
+						if (options?.force || fileStat.last_modified > new Date(pieceDate)) {
+							if (!options?.dryRun) {
+								await updatePiece(db, name, schema)
+							}
+							return { action: 'updated', name }
+						}
+						return { action: 'skipped', name }
+					}
+				} catch (error) {
+					return { name, error: true, message: `error syncing piece: ${error}` }
 				}
+			} else {
+				return { name, error: true, message: `schema file ${schemaPath} not found` }
 			}
-		}
-		return { toAdd, toUpdate }
+		}) as Readable & AsyncIterable<SyncResult>
 	}
 
-	async sync(db: LuzzleDatabase) {
-		const { toAdd, toUpdate } = await this.getSyncOperations(db)
-		for (const { name, schema } of toAdd) {
-			await addPiece(db, name, schema)
-		}
-		for (const { name, schema } of toUpdate) {
-			await updatePiece(db, name, schema)
-		}
-
-		return {
-			added: toAdd.map(x => x.name),
-			updated: toUpdate.map(x => x.name)
-		}
-	}
-
-	async getPruneOperations(db: LuzzleDatabase) {
+	async prune(db: LuzzleDatabase, options?: { dryRun: boolean }) {
 		const names = await this.getTypes()
 		const dbPieces = await getPieces(db)
 		const diskPiecesSet = new Set<string>(names)
-		return dbPieces
+		const missingPieces = dbPieces
 			.filter((piece) => !diskPiecesSet.has(piece.name))
 			.map((piece) => piece.name)
-	}
+		const stream = Readable.from(missingPieces)
 
-	async prune(db: LuzzleDatabase) {
-		const missingPieces = await this.getPruneOperations(db)
-		for (const name of missingPieces) {
-			await deletePiece(db, name)
-		}
-		return missingPieces
+		return stream.map(
+			async (name): Promise<PruneResult> => {
+				try {
+					if (!options?.dryRun) {
+						await deletePiece(db, name)
+					}
+					return { action: 'pruned', name }
+				} catch (error) {
+					return { name, error: true, message: `error pruning piece: ${error}` }
+				}
+			},
+			{ concurrency: cpus().length }
+		) as Readable & AsyncIterable<PruneResult>
 	}
 
 	parseFilename(file: string) {
