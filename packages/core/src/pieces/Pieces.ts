@@ -80,6 +80,11 @@ class Pieces {
 		for (const { name, schema } of toUpdate) {
 			await updatePiece(db, name, schema)
 		}
+
+		return {
+			added: toAdd.map(x => x.name),
+			updated: toUpdate.map(x => x.name)
+		}
 	}
 
 	async getPruneOperations(db: LuzzleDatabase) {
@@ -96,6 +101,7 @@ class Pieces {
 		for (const name of missingPieces) {
 			await deletePiece(db, name)
 		}
+		return missingPieces
 	}
 
 	parseFilename(file: string) {
