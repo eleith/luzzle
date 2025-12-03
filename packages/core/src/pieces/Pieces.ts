@@ -79,37 +79,40 @@ class Pieces {
 		const names = await this.getTypes()
 		const stream = Readable.from(names)
 
-		return stream.map(async (name): Promise<PiecesSyncResult> => {
-			const piece = await getPiece(db, name)
-			const schemaPath = this.getSchemaPath(name)
-			const fileStat = await this._storage.stat(schemaPath).catch(() => null)
+		return stream.map(
+			async (name): Promise<PiecesSyncResult> => {
+				const piece = await getPiece(db, name)
+				const schemaPath = this.getSchemaPath(name)
+				const fileStat = await this._storage.stat(schemaPath).catch(() => null)
 
-			if (fileStat) {
-				const schema = await this.getSchema(name)
+				if (fileStat) {
+					const schema = await this.getSchema(name)
 
-				try {
-					if (!piece) {
-						if (!options?.dryRun) {
-							await addPiece(db, name, schema)
-						}
-						return { action: 'added', name }
-					} else {
-						const pieceDate = piece.date_updated || piece.date_added
-						if (options?.force || fileStat.last_modified > new Date(pieceDate)) {
+					try {
+						if (!piece) {
 							if (!options?.dryRun) {
-								await updatePiece(db, name, schema)
+								await addPiece(db, name, schema)
 							}
-							return { action: 'updated', name }
+							return { action: 'added', name }
+						} else {
+							const pieceDate = piece.date_updated || piece.date_added
+							if (options?.force || fileStat.last_modified > new Date(pieceDate)) {
+								if (!options?.dryRun) {
+									await updatePiece(db, name, schema)
+								}
+								return { action: 'updated', name }
+							}
+							return { action: 'skipped', name }
 						}
-						return { action: 'skipped', name }
+					} catch (error) {
+						return { name, error: true, message: `error syncing piece: ${error}` }
 					}
-				} catch (error) {
-					return { name, error: true, message: `error syncing piece: ${error}` }
+				} else {
+					return { name, error: true, message: `schema file ${schemaPath} not found` }
 				}
-			} else {
-				return { name, error: true, message: `schema file ${schemaPath} not found` }
-			}
-		}) as Readable & AsyncIterable<PiecesSyncResult>
+			},
+			{ concurrency: cpus().length }
+		) as Readable & AsyncIterable<PiecesSyncResult>
 	}
 
 	async prune(db: LuzzleDatabase, options?: { dryRun: boolean }) {

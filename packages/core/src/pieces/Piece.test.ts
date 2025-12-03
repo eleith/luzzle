@@ -364,57 +364,76 @@ describe('pieces/Piece.ts', () => {
 		const PieceTest = makePieceMock()
 		const pieceTest = new PieceTest('books', storage)
 
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.selectItems.mockResolvedValueOnce(dbPieces)
 		mocks.deleteItems.mockResolvedValueOnce()
 
-		const pruned = await pieceTest.prune(db, [])
+		const gen = await pieceTest.prune(db, [])
+		const result = []
+
+		for await (const pruned of gen) {
+			if (!pruned.error) {
+				result.push(pruned.file)
+			}
+		}
 
 		expect(mocks.selectItems).toHaveBeenCalledOnce()
-		expect(mocks.deleteItems).toHaveBeenCalledWith(
-			db,
-			dbPieces.map((piece) => piece.file_path)
-		)
-		expect(pruned).toEqual(['a', 'b', 'c'])
+		expect(mocks.deleteItems).toHaveBeenCalledTimes(3)
+		expect(result).toEqual(['a', 'b', 'c'])
 	})
 
-	test('prune no-op', async () => {
-		const dbPieces = [
-			makePieceItemSelectable(),
-			makePieceItemSelectable(),
-			makePieceItemSelectable({ file_path: 'c' }),
-		]
-		const files = dbPieces.map((piece) => piece.file_path)
-		const PieceTest = makePieceMock()
-		const db = mockKysely().db
-
-		const pieceTest = new PieceTest()
-		mocks.selectItems.mockResolvedValueOnce(dbPieces)
-		mocks.deleteItems.mockResolvedValueOnce()
-
-		await pieceTest.prune(db, files)
-
-		expect(mocks.selectItems).toHaveBeenCalledOnce()
-		expect(mocks.deleteItems).not.toHaveBeenCalled()
-	})
-
-	test('getPruneOperations', async () => {
-		const dbMocks = mockKysely()
-		const PieceTest = makePieceMock()
+	test('prune dryRun', async () => {
 		const dbPieces = [
 			makePieceItemSelectable({ file_path: 'a' }),
 			makePieceItemSelectable({ file_path: 'b' }),
 			makePieceItemSelectable({ file_path: 'c' }),
 		]
-		const filesOnDisk = ['a', 'c', 'd'] // 'b' is missing from disk
-		const pieceTest = new PieceTest()
+		const db = mockKysely().db
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
 
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.selectItems.mockResolvedValueOnce(dbPieces)
+		mocks.deleteItems.mockResolvedValueOnce()
 
-		const prunableItems = await pieceTest.getPruneOperations(dbMocks.db, filesOnDisk)
+		const gen = await pieceTest.prune(db, [], { dryRun: true })
+		const result = []
 
-		expect(prunableItems).toHaveLength(1)
-		expect(prunableItems[0]).toEqual('b')
+		for await (const pruned of gen) {
+			if (!pruned.error) {
+				result.push(pruned.file)
+			}
+		}
+
+		expect(mocks.selectItems).toHaveBeenCalledOnce()
 		expect(mocks.deleteItems).not.toHaveBeenCalled()
+		expect(result).toEqual(['a', 'b', 'c'])
+	})
+
+	test('prune error', async () => {
+		const dbPieces = [makePieceItemSelectable({ file_path: 'a' })]
+		const db = mockKysely().db
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
+
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		mocks.selectItems.mockResolvedValueOnce(dbPieces)
+		mocks.deleteItems.mockRejectedValueOnce(new Error('oof'))
+
+		const gen = await pieceTest.prune(db, [])
+		const result = []
+
+		for await (const pruned of gen) {
+			if (pruned.error) {
+				result.push(pruned.file)
+			}
+		}
+
+		expect(mocks.selectItems).toHaveBeenCalledOnce()
+		expect(mocks.deleteItems).toHaveBeenCalledOnce()
+		expect(result).toHaveLength(1)
 	})
 
 	test('syncMarkdownAdd', async () => {
@@ -570,26 +589,196 @@ describe('pieces/Piece.ts', () => {
 		expect(markdown).toEqual(pieceMarkdown)
 	})
 
-		test('sync', async () => {
+	test('sync', async () => {
 		const dbMocks = mockKysely()
-		const slugs = ['a', 'b']
+		const slugs = ['a', 'b', 'c']
 		const markdown = makeMarkdownSample()
 		const storage = makeStorage('root')
 		const PieceTest = makePieceMock()
 		const pieceTest = new PieceTest('books', storage)
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		spies.getSyncOperations = vi
-			.spyOn(pieceTest, 'getSyncOperations')
-			.mockResolvedValueOnce({ toAdd: [markdown], toUpdate: [markdown] })
+		mocks.calculateHashFromFile
+			.mockResolvedValueOnce('hash-old')
+			.mockResolvedValueOnce('hash')
+			.mockResolvedValueOnce('hash-new')
+		mocks.getCache.mockResolvedValue({
+			content_hash: 'hash',
+			id: '',
+			file_path: '',
+			date_added: 0,
+			date_updated: null,
+		})
+
 		spies.syncMarkdownAdd = vi.spyOn(pieceTest, 'syncMarkdownAdd').mockResolvedValue()
 		spies.syncMarkdownUpdate = vi.spyOn(pieceTest, 'syncMarkdownUpdate').mockResolvedValue()
-		spies.selectItem = mocks.selectItem.mockResolvedValue({} as LuzzleSelectable<'pieces_items'>)
+		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValue(markdown)
+		spies.selectItem = mocks.selectItem
+			.mockResolvedValueOnce({} as LuzzleSelectable<'pieces_items'>)
+			.mockResolvedValueOnce({} as LuzzleSelectable<'pieces_items'>)
+			.mockResolvedValueOnce(undefined)
 
-		await pieceTest.sync(dbMocks.db, slugs)
+		const gen = await pieceTest.sync(dbMocks.db, slugs)
+		const added = []
+		const skipped = []
+		const updated = []
+
+		for await (const file of gen) {
+			if (!file.error) {
+				if (file.action === 'added') {
+					added.push(file)
+				} else if (file.action === 'skipped') {
+					skipped.push(file)
+				} else if (file.action === 'updated') {
+					updated.push(file)
+				}
+			}
+		}
 
 		expect(spies.syncMarkdownAdd).toHaveBeenCalledOnce()
 		expect(spies.syncMarkdownUpdate).toHaveBeenCalledOnce()
+		expect(added).toHaveLength(1)
+		expect(skipped).toHaveLength(1)
+		expect(updated).toHaveLength(1)
+	})
+
+	test('sync dryRun', async () => {
+		const dbMocks = mockKysely()
+		const slugs = ['a', 'b', 'c']
+		const markdown = makeMarkdownSample()
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
+
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		mocks.calculateHashFromFile
+			.mockResolvedValueOnce('hash-old')
+			.mockResolvedValueOnce('hash')
+			.mockResolvedValueOnce('hash-new')
+		mocks.getCache.mockResolvedValue({
+			content_hash: 'hash',
+			id: '',
+			file_path: '',
+			date_added: 0,
+			date_updated: null,
+		})
+
+		spies.syncMarkdownAdd = vi.spyOn(pieceTest, 'syncMarkdownAdd').mockResolvedValue()
+		spies.syncMarkdownUpdate = vi.spyOn(pieceTest, 'syncMarkdownUpdate').mockResolvedValue()
+		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValue(markdown)
+		spies.selectItem = mocks.selectItem
+			.mockResolvedValueOnce({} as LuzzleSelectable<'pieces_items'>)
+			.mockResolvedValueOnce({} as LuzzleSelectable<'pieces_items'>)
+			.mockResolvedValueOnce(undefined)
+
+		const gen = await pieceTest.sync(dbMocks.db, slugs, { dryRun: true })
+		const added = []
+		const skipped = []
+		const updated = []
+
+		for await (const file of gen) {
+			if (!file.error) {
+				if (file.action === 'added') {
+					added.push(file)
+				} else if (file.action === 'skipped') {
+					skipped.push(file)
+				} else if (file.action === 'updated') {
+					updated.push(file)
+				}
+			}
+		}
+
+		expect(spies.syncMarkdownAdd).not.toHaveBeenCalledOnce()
+		expect(spies.syncMarkdownUpdate).not.toHaveBeenCalledOnce()
+		expect(added).toHaveLength(1)
+		expect(skipped).toHaveLength(1)
+		expect(updated).toHaveLength(1)
+	})
+
+	test('sync force', async () => {
+		const dbMocks = mockKysely()
+		const slugs = ['a', 'b', 'c']
+		const markdown = makeMarkdownSample()
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
+
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		mocks.calculateHashFromFile
+			.mockResolvedValueOnce('hash-old')
+			.mockResolvedValueOnce('hash')
+			.mockResolvedValueOnce('hash-new')
+		mocks.getCache.mockResolvedValue({
+			content_hash: 'hash',
+			id: '',
+			file_path: '',
+			date_added: 0,
+			date_updated: null,
+		})
+
+		spies.syncMarkdownAdd = vi.spyOn(pieceTest, 'syncMarkdownAdd').mockResolvedValue()
+		spies.syncMarkdownUpdate = vi.spyOn(pieceTest, 'syncMarkdownUpdate').mockResolvedValue()
+		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValue(markdown)
+		spies.selectItem = mocks.selectItem
+			.mockResolvedValueOnce({} as LuzzleSelectable<'pieces_items'>)
+			.mockResolvedValueOnce({} as LuzzleSelectable<'pieces_items'>)
+			.mockResolvedValueOnce(undefined)
+
+		const gen = await pieceTest.sync(dbMocks.db, slugs, { force: true })
+		const added = []
+		const updated = []
+
+		for await (const file of gen) {
+			if (!file.error) {
+				if (file.action === 'added') {
+					added.push(file)
+				} else if (file.action === 'updated') {
+					updated.push(file)
+				}
+			}
+		}
+
+		expect(spies.syncMarkdownAdd).toHaveBeenCalledOnce()
+		expect(spies.syncMarkdownUpdate).toHaveBeenCalledTimes(2)
+		expect(added).toHaveLength(1)
+		expect(updated).toHaveLength(2)
+	})
+
+	test('sync errors', async () => {
+		const dbMocks = mockKysely()
+		const slugs = ['a']
+		const markdown = makeMarkdownSample()
+		const storage = makeStorage('root')
+		const PieceTest = makePieceMock()
+		const pieceTest = new PieceTest('books', storage)
+
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		mocks.calculateHashFromFile
+			.mockResolvedValueOnce('hash-old')
+		mocks.getCache.mockResolvedValue({
+			content_hash: 'hash',
+			id: '',
+			file_path: '',
+			date_added: 0,
+			date_updated: null,
+		})
+
+		spies.syncMarkdownUpdate = vi.spyOn(pieceTest, 'syncMarkdownUpdate').mockRejectedValueOnce(new Error('oof'))
+		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValue(markdown)
+		spies.selectItem = mocks.selectItem
+			.mockResolvedValueOnce({} as LuzzleSelectable<'pieces_items'>)
+
+		const gen = await pieceTest.sync(dbMocks.db, slugs)
+		const errors = []
+
+		for await (const file of gen) {
+			if (file.error) {
+				errors.push(file)
+			}
+		}
+
+		expect(spies.syncMarkdownUpdate).toHaveBeenCalledOnce()
+		expect(errors).toHaveLength(1)
 	})
 
 	test('get fields', async () => {
@@ -930,53 +1119,5 @@ describe('pieces/Piece.ts', () => {
 				[field]: ['one', 'three'],
 			}
 		)
-	})
-
-	test('getSyncOperations', async () => {
-		const dbMocks = mockKysely()
-		const PieceTest = makePieceMock()
-		const markdown = makeMarkdownSample()
-		const otherMarkdown = makeMarkdownSample({ filePath: 'other/path.md' })
-		const hash = 'hash'
-		const updatedHash = 'updatedHash'
-		const storage = makeStorage('root')
-		const pieceTest = new PieceTest('books', storage)
-
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.selectItem.mockResolvedValueOnce(undefined)
-		mocks.selectItem.mockResolvedValueOnce({
-			id: 'someid',
-			file_path: otherMarkdown.filePath,
-		} as LuzzleSelectable<'pieces_items'>)
-
-		mocks.calculateHashFromFile.mockResolvedValueOnce(updatedHash)
-		mocks.getCache.mockResolvedValue({ content_hash: hash } as LuzzleSelectable<'pieces_cache'>)
-		spies.get = vi.spyOn(pieceTest, 'get').mockResolvedValue(markdown)
-
-		const files = [markdown.filePath, otherMarkdown.filePath]
-		const { toAdd, toUpdate } = await pieceTest.getSyncOperations(dbMocks.db, files)
-
-		expect(toAdd).toHaveLength(1)
-		expect(toUpdate).toHaveLength(1)
-	})
-
-	test('getPruneOperations', async () => {
-		const dbMocks = mockKysely()
-		const PieceTest = makePieceMock()
-		const dbPieces = [
-			makePieceItemSelectable({ file_path: 'a' }),
-			makePieceItemSelectable({ file_path: 'b' }),
-			makePieceItemSelectable({ file_path: 'c' }),
-		]
-		const filesOnDisk = ['a', 'c', 'd'] // 'b' is missing from disk
-		const pieceTest = new PieceTest()
-
-		mocks.selectItems.mockResolvedValueOnce(dbPieces)
-
-		const prunableItems = await pieceTest.getPruneOperations(dbMocks.db, filesOnDisk)
-
-		expect(prunableItems).toHaveLength(1)
-		expect(prunableItems[0]).toEqual('b')
-		expect(mocks.deleteItems).not.toHaveBeenCalled()
 	})
 })
