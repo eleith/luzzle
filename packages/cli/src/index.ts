@@ -1,4 +1,4 @@
 #! /usr/bin/env node
 
 import run from './lib/cli.js'
-await run()
+run().then()
