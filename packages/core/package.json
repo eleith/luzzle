@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/core",
-  "version": "0.0.31",
+  "version": "0.0.32",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
