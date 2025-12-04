@@ -80,7 +80,7 @@ class Pieces {
 		const stream = Readable.from(names)
 
 		return stream.map(
-			async (name): Promise<PiecesSyncResult> => {
+			async (name: string): Promise<PiecesSyncResult> => {
 				const piece = await getPiece(db, name)
 				const schemaPath = this.getSchemaPath(name)
 				const fileStat = await this._storage.stat(schemaPath).catch(() => null)
@@ -125,7 +125,7 @@ class Pieces {
 		const stream = Readable.from(missingPieces)
 
 		return stream.map(
-			async (name): Promise<PiecesPruneResult> => {
+			async (name: string): Promise<PiecesPruneResult> => {
 				try {
 					if (!options?.dryRun) {
 						await deletePiece(db, name)

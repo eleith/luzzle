@@ -23,7 +23,7 @@ import {
 	validatePieceItem,
 } from './item.js'
 import { extractFullMarkdown } from '../lib/markdown.js'
-import { deleteItems, insertItem, selectItem, selectItems, updateItem } from './items.js'
+import { deleteItem, insertItem, selectItem, selectItems, updateItem } from './items.js'
 import { LUZZLE_PIECE_FILE_EXTENSION } from './assets.js'
 
 export interface InterfacePiece<F extends PieceFrontmatter> {
@@ -174,10 +174,10 @@ class Piece<F extends PieceFrontmatter> {
 		const stream = Readable.from(missingFiles)
 
 		return stream.map(
-			async (file): Promise<PiecePruneResult> => {
+			async (file: string): Promise<PiecePruneResult> => {
 				try {
 					if (!options?.dryRun) {
-						await deleteItems(db, file)
+						await deleteItem(db, file)
 					}
 					return { action: 'pruned', file }
 				} catch (error) {
@@ -192,7 +192,7 @@ class Piece<F extends PieceFrontmatter> {
 		const stream = Readable.from(files)
 
 		return stream.map(
-			async (file): Promise<PieceSyncResult> => {
+			async (file: string): Promise<PieceSyncResult> => {
 				const markdown = await this.get(file)
 				const dbPiece = await selectItem(db, markdown.filePath)
 

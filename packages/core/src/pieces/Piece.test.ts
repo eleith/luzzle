@@ -24,7 +24,7 @@ import {
 	validatePieceItem,
 	getValidatePieceItemErrors,
 } from './item.js'
-import { selectItems, deleteItems, selectItem, insertItem, updateItem } from './items.js'
+import { selectItems, deleteItem, selectItem, insertItem, updateItem } from './items.js'
 import { calculateHashFromFile, makePieceValue, makePieceAttachment } from './utils/piece.js'
 import { makeCache } from './cache.fixtures.js'
 import slugify from '@sindresorhus/slugify'
@@ -59,7 +59,7 @@ const mocks = {
 	makeUpdatable: vi.mocked(makePieceItemUpdatable),
 	initializePieceFrontMatter: vi.mocked(initializePieceFrontMatter),
 	selectItems: vi.mocked(selectItems),
-	deleteItems: vi.mocked(deleteItems),
+	deleteItem: vi.mocked(deleteItem),
 	insertItem: vi.mocked(insertItem),
 	updateItem: vi.mocked(updateItem),
 	selectItem: vi.mocked(selectItem),
@@ -366,7 +366,7 @@ describe('pieces/Piece.ts', () => {
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.selectItems.mockResolvedValueOnce(dbPieces)
-		mocks.deleteItems.mockResolvedValueOnce()
+		mocks.deleteItem.mockResolvedValueOnce()
 
 		const gen = await pieceTest.prune(db, [])
 		const result = []
@@ -378,7 +378,7 @@ describe('pieces/Piece.ts', () => {
 		}
 
 		expect(mocks.selectItems).toHaveBeenCalledOnce()
-		expect(mocks.deleteItems).toHaveBeenCalledTimes(3)
+		expect(mocks.deleteItem).toHaveBeenCalledTimes(3)
 		expect(result).toEqual(['a', 'b', 'c'])
 	})
 
@@ -395,7 +395,7 @@ describe('pieces/Piece.ts', () => {
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.selectItems.mockResolvedValueOnce(dbPieces)
-		mocks.deleteItems.mockResolvedValueOnce()
+		mocks.deleteItem.mockResolvedValueOnce()
 
 		const gen = await pieceTest.prune(db, [], { dryRun: true })
 		const result = []
@@ -407,7 +407,7 @@ describe('pieces/Piece.ts', () => {
 		}
 
 		expect(mocks.selectItems).toHaveBeenCalledOnce()
-		expect(mocks.deleteItems).not.toHaveBeenCalled()
+		expect(mocks.deleteItem).not.toHaveBeenCalled()
 		expect(result).toEqual(['a', 'b', 'c'])
 	})
 
@@ -420,7 +420,7 @@ describe('pieces/Piece.ts', () => {
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.selectItems.mockResolvedValueOnce(dbPieces)
-		mocks.deleteItems.mockRejectedValueOnce(new Error('oof'))
+		mocks.deleteItem.mockRejectedValueOnce(new Error('oof'))
 
 		const gen = await pieceTest.prune(db, [])
 		const result = []
@@ -432,7 +432,7 @@ describe('pieces/Piece.ts', () => {
 		}
 
 		expect(mocks.selectItems).toHaveBeenCalledOnce()
-		expect(mocks.deleteItems).toHaveBeenCalledOnce()
+		expect(mocks.deleteItem).toHaveBeenCalledOnce()
 		expect(result).toHaveLength(1)
 	})
 
