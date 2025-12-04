@@ -47,7 +47,7 @@
     "vitest": "3.2.4"
   },
   "dependencies": {
-    "@luzzle/core": "0.0.28",
+    "@luzzle/core": "0.0.31",
     "conf": "13.1.0",
     "pino": "9.6.0",
     "pino-pretty": "13.0.0",

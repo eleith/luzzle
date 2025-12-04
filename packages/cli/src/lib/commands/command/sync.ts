@@ -32,80 +32,68 @@ const command: Command<SyncArgv> = {
 		const { dryRun } = ctx.flags
 		const files = await ctx.pieces.getFilesIn('.', { deep: true })
 
-		if (dryRun) {
-			const schemaPlan = await ctx.pieces.getSyncOperations(ctx.db)
-			if (schemaPlan.toAdd.length > 0)
-				ctx.log.info(`Schemas to add: ${schemaPlan.toAdd.map((p) => p.name).join(', ')}`)
-			if (schemaPlan.toUpdate.length > 0)
-				ctx.log.info(`Schemas to update: ${schemaPlan.toUpdate.map((p) => p.name).join(', ')}`)
+		const syncPiecesIterable = await ctx.pieces.sync(ctx.db, { dryRun, force })
 
-			const prunableTypes = await ctx.pieces.getPruneOperations(ctx.db)
-			if (prunableTypes.length > 0)
-				ctx.log.info(`Piece types to prune: ${prunableTypes.join(', ')}`)
-
-			for (const name of files.types) {
-				const piece = await ctx.pieces.getPiece(name)
-				const piecesOnDisk = files.pieces.filter(
-					(one) => ctx.pieces.parseFilename(one).type === name
-				)
-				const isOutdated = await Promise.all(
-					piecesOnDisk.map((file) => piece.isOutdated(file, ctx.db))
-				)
-				const areOutdated = piecesOnDisk.filter((_, i) => isOutdated[i])
-				const processFiles = force ? piecesOnDisk : areOutdated
-
-				const markdownPlan = await piece.getSyncOperations(ctx.db, processFiles)
-				if (markdownPlan.toAdd.length > 0)
-					ctx.log.info(
-						`Piece '${name}': Items to add: ${markdownPlan.toAdd.map((m) => m.filePath).join(', ')}`
-					)
-				if (markdownPlan.toUpdate.length > 0)
-					ctx.log.info(
-						`Piece '${name}': Items to update: ${markdownPlan.toUpdate.map((m) => m.filePath).join(', ')}`
-					)
-
-				const prunableItems = await piece.getPruneOperations(ctx.db, piecesOnDisk)
-				if (prunableItems.length > 0)
-					ctx.log.info(`Piece '${name}': Items to prune: ${prunableItems.join(', ')}`)
+		for await (const result of syncPiecesIterable) {
+			if (result.error) {
+				ctx.log.error(`error syncing piece ${result.name}: ${result.message}`)
+			} else if (result.action === 'added' || result.action === 'updated') {
+				ctx.log.info(`[${result.action}] piece type: ${result.name}`)
 			}
+		}
 
-			if (prune) {
-				const dbAssets = await selectItemAssets(ctx.db)
-				const dbAssetsSet = new Set<string>(dbAssets)
-				const missingAssets = files.assets.filter((asset) => !dbAssetsSet.has(asset))
-				if (missingAssets.length > 0)
-					ctx.log.info(`Assets to prune from disk: ${missingAssets.join(', ')}`)
+		const prunePiecesIterable = await ctx.pieces.prune(ctx.db, { dryRun })
+
+		for await (const result of prunePiecesIterable) {
+			if (result.error) {
+				ctx.log.error(`error pruning piece ${result.name}: ${result.message}`)
+			} else if (result.action === 'pruned') {
+				ctx.log.info(`[${result.action}] piece type: ${result.name}`)
 			}
-		} else {
-			ctx.log.info('--- Starting normal run. Changes will be made. ---')
+		}
 
-			await ctx.pieces.sync(ctx.db)
-			await ctx.pieces.prune(ctx.db)
+		for (const name of files.types) {
+			const piece = await ctx.pieces.getPiece(name)
+			const piecesOnDisk = files.pieces.filter((one) => ctx.pieces.parseFilename(one).type === name)
+			const isOutdated = await Promise.all(
+				piecesOnDisk.map((file) => piece.isOutdated(file, ctx.db))
+			)
+			const areOutdated = piecesOnDisk.filter((_, i) => isOutdated[i])
+			const processFiles = force ? piecesOnDisk : areOutdated
 
-			for (const name of files.types) {
-				const piece = await ctx.pieces.getPiece(name)
-				const piecesOnDisk = files.pieces.filter(
-					(one) => ctx.pieces.parseFilename(one).type === name
-				)
-				const isOutdated = await Promise.all(
-					piecesOnDisk.map((file) => piece.isOutdated(file, ctx.db))
-				)
-				const areOutdated = piecesOnDisk.filter((_, i) => isOutdated[i])
-				const processFiles = force ? piecesOnDisk : areOutdated
+			const syncPieceIterable = await piece.sync(ctx.db, processFiles, { dryRun, force })
 
-				await piece.sync(ctx.db, processFiles)
-				await piece.prune(ctx.db, piecesOnDisk)
-			}
-
-			if (prune) {
-				const dbAssets = await selectItemAssets(ctx.db)
-				const dbAssetsSet = new Set<string>(dbAssets)
-				const missingAssets = files.assets.filter((asset) => !dbAssetsSet.has(asset))
-
-				for (const asset of missingAssets) {
-					await ctx.storage.delete(asset)
-					ctx.log.info(`pruned asset (disk): ${asset}`)
+			for await (const result of syncPieceIterable) {
+				if (result.error) {
+					ctx.log.error(`error syncing piece ${result.file}: ${result.message}`)
+				} else if (result.action === 'added' || result.action === 'updated') {
+					ctx.log.info(`[${result.action}] piece: ${result.file}`)
+				} else if (result.action === 'skipped') {
+					ctx.log.info(`[${result.action}] piece: ${result.file}`)
 				}
+			}
+
+			const prunePieceIterable = await piece.prune(ctx.db, piecesOnDisk, { dryRun })
+
+			for await (const result of prunePieceIterable) {
+				if (result.error) {
+					ctx.log.error(`error pruning piece ${result.file}: ${result.message}`)
+				} else if (result.action === 'pruned') {
+					ctx.log.info(`[${result.action}] piece: ${result.file}`)
+				}
+			}
+		}
+
+		if (prune) {
+			const dbAssets = await selectItemAssets(ctx.db)
+			const dbAssetsSet = new Set<string>(dbAssets)
+			const missingAssets = files.assets.filter((asset) => !dbAssetsSet.has(asset))
+
+			for (const asset of missingAssets) {
+				if (!dryRun) {
+					await ctx.storage.delete(asset)
+				}
+				ctx.log.info(`pruned asset (disk): ${asset}`)
 			}
 		}
 	},
