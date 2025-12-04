@@ -1,9 +1,10 @@
 import { stat } from 'fs/promises'
 import { createHash, randomBytes } from 'crypto'
-import { Readable, Writable } from 'stream'
+import { Readable } from 'stream'
 import { createReadStream, ReadStream } from 'fs'
+import { pipeline } from 'stream/promises'
 import path from 'path'
-import { fileTypeStream } from 'file-type'
+import { fileTypeFromBuffer } from 'file-type'
 import got, { Request } from 'got'
 import { PieceFrontmatterSchemaField } from './frontmatter.js'
 import LuzzleStorage from '../../storage/abstract.js'
@@ -60,6 +61,43 @@ function calculateHashFromFile(stream: Readable): Promise<string> {
 	})
 }
 
+async function detectStreamFileType(stream: Readable, maxBytes = 4100) {
+	const iterator = stream[Symbol.asyncIterator]()
+	const chunks: Buffer[] = []
+	let length = 0
+	let done = false
+
+	while (length < maxBytes) {
+		const next = await iterator.next()
+		if (next.done) {
+			done = true
+			break
+		}
+		const chunk = Buffer.isBuffer(next.value) ? next.value : Buffer.from(next.value)
+		chunks.push(chunk)
+		length += chunk.length
+	}
+
+	const buffer = Buffer.concat(chunks)
+	const type = await fileTypeFromBuffer(buffer)
+
+	async function* gen() {
+		if (length > 0) yield buffer
+		if (done) return
+
+		let next = await iterator.next()
+		while (!next.done) {
+			yield next.value
+			next = await iterator.next()
+		}
+	}
+
+	return {
+		type,
+		stream: Readable.from(gen()),
+	}
+}
+
 async function makePieceAttachment(
 	file: string,
 	field: PieceFrontmatterSchemaField,
@@ -86,15 +124,15 @@ async function makePieceAttachment(
 	const pathName = (stream as Request).requestUrl?.pathname
 	const pathStream = (stream as ReadStream).path?.toString()
 	const pathWithType = pathName || pathStream
-	const webReadable = Readable.toWeb(stream)
-	const streamWithFileType = await fileTypeStream(webReadable)
-	const type = streamWithFileType?.fileType?.ext.replace(/^/, '.') || path.extname(pathWithType)
+
+	const { type: detectedType, stream: finalStream } = await detectStreamFileType(stream)
+
+	const type = detectedType?.ext.replace(/^/, '.') || path.extname(pathWithType || '') || path.extname(file)
 	const filename = `${parts.filter((x) => x).join('-')}${type}`
 	const relPath = path.join(ASSETS_DIRECTORY, fileDir, field.name, filename)
 	const writeStream = storage.createWriteStream(relPath)
-	const webWritable = Writable.toWeb(writeStream)
 
-	await streamWithFileType.pipeTo(webWritable)
+	await pipeline(finalStream, writeStream)
 
 	return relPath
 }
@@ -131,4 +169,5 @@ export {
 	calculateHashFromFile,
 	makePieceAttachment,
 	makePieceValue,
+	detectStreamFileType,
 }

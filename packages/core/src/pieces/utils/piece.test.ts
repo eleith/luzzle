@@ -1,22 +1,19 @@
 import { createReadStream, existsSync, ReadStream, Stats, WriteStream } from 'fs'
-import { copyFile, stat } from 'fs/promises'
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
+import { copyFile, stat } from 'fs/promises' // Direct import matching source
+import { describe, expect, test, vi, afterEach, beforeAll, MockInstance } from 'vitest'
 import { createHash, randomBytes } from 'crypto'
-import { PassThrough, Readable, Writable } from 'stream'
+import { PassThrough, Readable } from 'stream'
 import got, { Request } from 'got'
 import path from 'path'
 import { ASSETS_DIRECTORY } from '../assets.js'
-import { AnyWebReadableByteStreamWithFileType, FileTypeResult, fileTypeStream } from 'file-type'
-import { calculateHashFromFile, makePieceAttachment, makePieceValue } from './piece.js'
+import { calculateHashFromFile, makePieceAttachment, makePieceValue, detectStreamFileType } from './piece.js'
 import { PieceFrontmatterSchemaField } from './frontmatter.js'
 import { makeStorage } from '../../storage/storage.mock.js'
 import { makeMarkdownSample } from './piece.fixtures.js'
-import { ReadableStream, WritableStream } from 'stream/web'
 
 vi.mock('fs/promises')
 vi.mock('crypto')
 vi.mock('fs')
-vi.mock('file-type')
 vi.mock('got')
 
 const mocks = {
@@ -25,14 +22,21 @@ const mocks = {
 	existsSync: vi.mocked(existsSync),
 	createReadStream: vi.mocked(createReadStream),
 	createHash: vi.mocked(createHash),
-	fileTypeStream: vi.mocked(fileTypeStream),
 	randomBytes: vi.mocked(randomBytes),
 	gotStream: vi.mocked(got.stream),
 }
 
 const spies: { [key: string]: MockInstance } = {}
 
+let fullPngBuffer: Buffer
+
 describe('pieces/utils/piece.ts', () => {
+	beforeAll(async () => {
+		const { readFile } = await vi.importActual<typeof import('fs/promises')>('fs/promises')
+		const assetPath = path.resolve('test/assets/favicon.png')
+		fullPngBuffer = await readFile(assetPath)
+	})
+
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset()
@@ -92,6 +96,55 @@ describe('pieces/utils/piece.ts', () => {
 		expect(spies.consoleError).toHaveBeenCalled()
 	})
 
+	test('detectStreamFileType should correctly identify PNG from full buffer', async () => {
+		const stream = Readable.from([fullPngBuffer])
+
+		const result = await detectStreamFileType(stream)
+
+		expect(result.type).toEqual({ ext: 'png', mime: 'image/png' })
+
+		const resultChunks = []
+		for await (const chunk of result.stream) {
+			resultChunks.push(chunk)
+		}
+		const finalBuffer = Buffer.concat(resultChunks)
+
+		expect(finalBuffer.toString('hex')).toEqual(fullPngBuffer.toString('hex'))
+	})
+
+	test('detectStreamFileType with string chunks (non-Buffer)', async () => {
+		const stream = Readable.from(['hello ', 'world'])
+
+		const result = await detectStreamFileType(stream)
+		
+		expect(result.type).toBeUndefined()
+
+		const resultChunks = []
+		for await (const chunk of result.stream) {
+			resultChunks.push(chunk)
+		}
+		const finalString = Buffer.concat(resultChunks).toString()
+
+		expect(finalString).toEqual('hello world')
+	})
+
+	test('detectStreamFileType with custom maxBytes and multiple chunks', async () => {
+		const chunk1 = Buffer.from('hello ')
+		const chunk2 = Buffer.from('world')
+		const chunk3 = Buffer.from('!')
+		const stream = Readable.from([chunk1, chunk2, chunk3])
+
+		const result = await detectStreamFileType(stream, 5)
+
+		const resultChunks = []
+		for await (const chunk of result.stream) {
+			resultChunks.push(chunk)
+		}
+		const finalString = Buffer.concat(resultChunks).toString()
+
+		expect(finalString).toEqual('hello world!')
+	})
+
 	test('makePieceValue', async () => {
 		const field = { name: 'title', type: 'string' } as PieceFrontmatterSchemaField
 		const value = 'new title'
@@ -101,7 +154,7 @@ describe('pieces/utils/piece.ts', () => {
 		expect(pieceValue).toEqual(value)
 	})
 
-	test('makePieceValue', async () => {
+	test('makePieceValue array', async () => {
 		const field = {
 			name: 'title',
 			type: 'array',
@@ -138,7 +191,7 @@ describe('pieces/utils/piece.ts', () => {
 		const readable = new PassThrough() as unknown as ReadStream
 
 		mocks.createReadStream.mockReturnValueOnce(readable)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
+		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats) // Properly mock resolved value
 
 		const pieceValuePromise = makePieceValue(field, asset)
 
@@ -206,9 +259,10 @@ describe('pieces/utils/piece.ts', () => {
 
 		const pieceValuePromise = makePieceValue(field, asset)
 
-		process.nextTick(() => {
+		// Emit error synchronously or ensure the promise chain catches it
+		setTimeout(() => {
 			readable.emit('error', new Error('test file error'))
-		})
+		}, 0)
 
 		await expect(pieceValuePromise).rejects.toThrow('test file error')
 		expect(spies.consoleError).toHaveBeenCalled()
@@ -256,7 +310,7 @@ describe('pieces/utils/piece.ts', () => {
 		await expect(making).rejects.toThrowError()
 	})
 
-	test('makePieceAttachment should create an asset from a stream', async () => {
+	test('makePieceAttachment should create an asset from a stream (PNG)', async () => {
 		const field = {
 			name: 'cover',
 			type: 'string',
@@ -266,21 +320,13 @@ describe('pieces/utils/piece.ts', () => {
 		const random = 'randomhex'
 		const fieldName = 'cover'
 		const fileName = 'samplePath'
-		const mockRequest = new PassThrough() as unknown as Request
 		const markdown = makeMarkdownSample(fileName, 'books', '', { [fieldName]: 'cover.jpg' })
-		const expectedFilename = `${fileName}-${random}.jpg`
-		const readable = new ReadableStream() as AnyWebReadableByteStreamWithFileType
-		const writable = new WritableStream()
+		const expectedFilename = `${fileName}-${random}.png`
 		const mocksWriteStream = new PassThrough() as unknown as WriteStream
-		const jpgFileType = 'jpg'
-		const fileType = { ext: jpgFileType } as FileTypeResult
 
-		spies.toWebReadable = vi.spyOn(Readable, 'toWeb')
-		spies.toWebWritable = vi.spyOn(Writable, 'toWeb')
-		spies.toWebReadable.mockReturnValue(readable)
-		spies.toWebWritable.mockReturnValue(writable)
-		mocks.fileTypeStream.mockResolvedValue({...readable, fileType, pipeTo: vi.fn() })
-		mockRequest.requestUrl = { pathname: 'file.jpg' } as URL
+		const mockStream = Readable.from([fullPngBuffer]) as unknown as Request
+		mockStream.requestUrl = { pathname: 'file.jpg' } as URL
+		
 		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
 
 		spies.createWriteStream = vi
@@ -288,13 +334,12 @@ describe('pieces/utils/piece.ts', () => {
 			.mockReturnValue(mocksWriteStream)
 		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
-		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
 
-		const asset = await makePieceAttachment(markdown.filePath, field, mockRequest, storage)
+		const asset = await makePieceAttachment(markdown.filePath, field, mockStream, storage)
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`))
 	})
 
-	test('makePieceAttachment should worth with field arrays', async () => {
+	test('makePieceAttachment should work with field arrays (PNG)', async () => {
 		const field = {
 			name: 'cover',
 			type: 'array',
@@ -306,21 +351,13 @@ describe('pieces/utils/piece.ts', () => {
 		const random = 'randomhex'
 		const fieldName = 'cover'
 		const fileName = 'samplePath'
-		const mockRequest = new PassThrough() as unknown as Request
 		const markdown = makeMarkdownSample(fileName, 'books', '', { [fieldName]: 'cover.jpg' })
-		const expectedFilename = `${fileName}-${random}.jpg`
-		const readable = new ReadableStream() as AnyWebReadableByteStreamWithFileType
-		const writable = new WritableStream()
+		const expectedFilename = `${fileName}-${random}.png`
 		const mocksWriteStream = new PassThrough() as unknown as WriteStream
-		const jpgFileType = 'jpg'
-		const fileType = { ext: jpgFileType } as FileTypeResult
+		const mockStream = Readable.from([fullPngBuffer]) as unknown as Request
 
-		spies.toWebReadable = vi.spyOn(Readable, 'toWeb')
-		spies.toWebWritable = vi.spyOn(Writable, 'toWeb')
-		spies.toWebReadable.mockReturnValue(readable)
-		spies.toWebWritable.mockReturnValue(writable)
-		mocks.fileTypeStream.mockResolvedValue({...readable, fileType, pipeTo: vi.fn() })
-		mockRequest.requestUrl = { pathname: 'file.jpg' } as URL
+		mockStream.requestUrl = { pathname: 'file.jpg' } as URL
+		
 		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
 
 		spies.createWriteStream = vi
@@ -328,13 +365,12 @@ describe('pieces/utils/piece.ts', () => {
 			.mockReturnValue(mocksWriteStream)
 		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
-		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
 
-		const asset = await makePieceAttachment(markdown.filePath, field, mockRequest, storage)
+		const asset = await makePieceAttachment(markdown.filePath, field, mockStream, storage)
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`))
 	})
 
-	test('makePieceAttachment should use path and path stream for file type', async () => {
+	test('makePieceAttachment should use path and path stream for file type (fallback)', async () => {
 		const field = {
 			name: 'cover',
 			type: 'string',
@@ -344,19 +380,14 @@ describe('pieces/utils/piece.ts', () => {
 		const random = 'randomhex'
 		const fieldName = 'cover'
 		const fileName = 'samplePath'
-		const mockStream = new PassThrough() as unknown as ReadStream
 		const markdown = makeMarkdownSample(fileName, 'books', '', { [fieldName]: 'cover.jpg' })
 		const expectedFilename = `${fileName}-${random}.jpg`
-		const readable = new ReadableStream() as AnyWebReadableByteStreamWithFileType
-		const writable = new WritableStream()
 		const mocksWriteStream = new PassThrough() as unknown as WriteStream
 
-		spies.toWebReadable = vi.spyOn(Readable, 'toWeb')
-		spies.toWebWritable = vi.spyOn(Writable, 'toWeb')
-		spies.toWebReadable.mockReturnValue(readable)
-		spies.toWebWritable.mockReturnValue(writable)
-		mocks.fileTypeStream.mockResolvedValue({...readable, pipeTo: vi.fn() })
-		mockStream.path = 'file.jpg'
+		// Use Readable.from
+		const mockStream = Readable.from([Buffer.from('some data')]) as unknown as ReadStream
+		mockStream.path = Buffer.from('file.jpg')
+		
 		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
 
 		spies.createWriteStream = vi
@@ -364,9 +395,37 @@ describe('pieces/utils/piece.ts', () => {
 			.mockReturnValue(mocksWriteStream)
 		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
-		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
 
 		const asset = await makePieceAttachment(markdown.filePath, field, mockStream, storage)
+		expect(asset).toBe(path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`))
+	})
+
+	test('makePieceAttachment should use a generic readable stream with no path or url info (fallback)', async () => {
+		const field = {
+			name: 'cover',
+			type: 'string',
+			format: 'asset',
+		} as PieceFrontmatterSchemaField
+		const storage = makeStorage('root')
+		const random = 'randomhex'
+		const fieldName = 'cover'
+		const fileName = 'samplePath.md' // Must have extension for fallback to work
+		const markdown = makeMarkdownSample(fileName, 'books', '', { [fieldName]: 'cover.bin' }) 
+		const expectedFilename = `${fileName.replace('.md', '')}-${random}.md` // Fallback to markdown.filePath ext .md
+		const mocksWriteStream = new PassThrough() as unknown as WriteStream
+
+		// Use Readable.from
+		const mockGenericReadable = Readable.from([Buffer.from('some binary data')]) as unknown as Readable
+		
+		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
+
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockReturnValue(mocksWriteStream)
+		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
+
+		const asset = await makePieceAttachment(markdown.filePath, field, mockGenericReadable, storage)
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`))
 	})
 
