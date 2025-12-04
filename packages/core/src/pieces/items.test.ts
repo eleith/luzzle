@@ -111,6 +111,16 @@ describe('src/pieces/items.ts', () => {
 		expect(assets).toEqual([asset])
 	})
 
+	test('deleteItem', async () => {
+		const kysely = mockKysely()
+		const file = 'file'
+
+		await items.deleteItem(kysely.db, file)
+
+		expect(kysely.db.deleteFrom).toHaveBeenCalled()
+		expect(kysely.queries.where).toHaveBeenCalledWith('file_path', '=', file)
+	})
+
 	test('deleteItems', async () => {
 		const kysely = mockKysely()
 		const files = ['file1', 'file2']

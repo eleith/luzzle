@@ -55,8 +55,12 @@ async function selectItemAssets(db: Kysely<LuzzleTables>) {
 	return results.rows.map((row) => row.asset)
 }
 
+async function deleteItem(db: Kysely<LuzzleTables>, file: string) {
+	await db.deleteFrom('pieces_items').where('file_path', '=', file).execute()
+}
+
 async function deleteItems(db: Kysely<LuzzleTables>, files: string[]) {
 	await db.deleteFrom('pieces_items').where('file_path', 'in', files).execute()
 }
 
-export { deleteItems, selectItem, selectItems, updateItem, insertItem, selectItemAssets }
+export { deleteItem, deleteItems, selectItem, selectItems, updateItem, insertItem, selectItemAssets }
