@@ -1,56 +1,34 @@
-# Agents.md for @luzzle/tools
+# Agents.md for @luzzle/web.tools
 
 This document provides guidance for developers and AI assistants working on the
-@luzzle/tools package.
+@luzzle/web.tools package.
 
 ## Guiding Principles
 
-The `@luzzle/tools` package provides a cli and an api (client and browser) to
-provide utilities for the luzzle web explorer
+This package provides the necessary build tools and CLI utilities to support the
+Luzzle Web Explorer. It handles tasks that require heavy processing or file
+generation, keeping the main web app lightweight.
+
+The expectation is a CI/CD process uses this tool when preparing an instance of
+a luzzle explorer
 
 ## Architecture
 
-The tools are built with `yargs` for command-line argument parsing and can be
-used programmatically via the API.
+A CLI tool built with `yargs`.
+
+* **Commands:**
+  * `theme`: Generates CSS variables from `config.yaml`.
+  * `opengraph`: Generates OG images for pieces.
+  * `assets`: generates various sizes for images associated with
+pieces
+  * `sqlite`: creates a web database to be used by the explorer
 
 ## Key Concepts
 
-This package includes the following tools:
-
-* **`config`**: A tool to validate, get, and set values in the Luzzle
-  configuration.
-* **`theme`**: A tool to generate a CSS theme file from the configuration.
-* **`assets`**: A tool to generate web-optimized variants for all images.
-* **`opengraph`**: A tool to generate Open Graph images for all relevant pieces.
-* **`sqlite`**: A tool to create a web-ready SQLite database from the main
-Luzzle database.
+* **Build-Time Generation:** Most of these tools are intended to run *before*
+    the Web Explorer starts or during the Docker build process.
 
 ## Development
 
-### Building
-
-To build the package for production, use the following command:
-
-```bash
-npm run build -w @luzzle/tools
-```
-
-### Linting
-
-To run the linter and check for code quality issues, use the following command:
-
-```bash
-npm run lint -w @luzzle/tools
-```
-
-### Testing
-
-When writing tests for the `@luzzle/tools` package, please adhere to the
-standards demonstrated in the existing tests. pattern, see
-`packages/tools/src/commands/assets/index.test.ts`.
-
-To run the tests, use the following command:
-
-```bash
-npm run test -w @luzzle/tools
-```
+* **Test:** `npm test`
+* **Build:** `npm run build`

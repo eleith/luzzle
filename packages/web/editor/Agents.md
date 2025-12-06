@@ -1,34 +1,30 @@
-# Agents.md for @luzzle/web/editor
+# Agents.md for @luzzle/web-editor
 
 This document provides guidance for developers and AI assistants working on the
-@luzzle/web/editor package.
+@luzzle/web-editor package.
 
 ## Guiding Principles
 
-The `@luzzle/web/editor` package provides a web-based interface for editing
-Luzzle records. It aims to provide a user-friendly and intuitive experience for
-managing Luzzle pieces directly in the browser, using WebDAV for file
-synchronization.
+The Luzzle Web Editor provides a web graphical interface for modifying Luzzle
+archives. Unlike the CLI, it offers a rich text editing experience in the
+browser, leveraging WebDAV to sync changes back to the file system.
 
 ## Architecture
 
-This package is a SvelteKit application configured with `@sveltejs/adapter-node`
-for server-side rendering. It uses the MeltUI library for UI components.
-
-- **Framework:** SvelteKit
-- **UI:** MeltUI
-- **Adapter:** Node.js adapter for server-side rendering.
+* **Framework:** SvelteKit with `@sveltejs/adapter-node`.
+* **Storage:** Interacts with the file system via WebDAV.
 
 ## Key Concepts
 
-- **WebDAV:** The editor uses the WebDAV protocol to interact with the file
-  system, allowing users to edit their Luzzle markdown files directly.
-- **Routes:** The application is structured around the following main routes:
-  - `/`: The main dashboard or entry point.
-  - `/pieces`: A view for listing and managing Luzzle pieces.
-  - `/directory`: A view for browsing the directory structure.
-  - `/asset`: A view for managing assets.
+* **WebDAV Sync:** The editor acts as a WebDAV client, allowing it to run
+    separately from the physical location of the files (e.g., accessing a remote
+    server).
+* **Editing:** Provides a user-friendly interface for editing metadata and the
+main content of each piece.
+* **Management:** Provides a folder like interface mirroring the folder
+structure of the luzzle archive
 
 ## Development
 
-Run the development server: `npm run dev -w @luzzle/web-editor`
+* **Dev Server:** `npm run dev`
+* **Build:** `npm run build`
