@@ -19,7 +19,7 @@ npm run dev -w @luzzle/web-editor
 
 ## Key Features
 
-* **WebDAV Integration:** Connects to standard WebDAV servers to manage your
-    files.
-* **Visual Editing:** Edit frontmatter and Markdown content in a GUI.
-* **Asset Management:** Upload and attach images to your pieces.
+- **WebDAV Integration:** Connects to standard WebDAV servers to manage your
+  files.
+- **Visual Editing:** Edit frontmatter and Markdown content in a GUI.
+- **Asset Management:** Upload and attach images to your pieces.
