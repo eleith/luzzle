@@ -1,11 +1,11 @@
-# Luzzle Web Utils
+# @luzzle/web.utils
 
 Shared utilities and types for the Luzzle Web ecosystem.
 
 ## Overview
 
-`@luzzle/web.utils` is a support library that contains shared logic, types, and
-constants used by the Web Explorer and Web Tools.
+Contains shared logic, types, and constants used by the Web Explorer and Web
+Tools.
 
 ## Usage
 
@@ -15,8 +15,8 @@ Intended for internal use within the `@luzzle/web` workspace.
 import { getAssetPath } from '@luzzle/web.utils';
 ```
 
-## Key Features
+## Features
 
 * **Shared Types:** Common interfaces for Pieces and Configs.
-* **Asset Logic:** Consistent path resolution for images and attachments.
+* **Asset Logic:** Path resolution for attachments.
 * **Config Schemas:** JSON schemas for validating web configuration.

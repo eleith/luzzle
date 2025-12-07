@@ -1,25 +1,24 @@
-# Luzzle Web Editor
+# @luzzle/web-editor
 
-A web-based editor for managing your Luzzle pieces.
+A web-based editor for managing Luzzle pieces.
 
 ## Overview
 
-The Luzzle Web Editor allows you to write, edit, and organize your Luzzle
-archive from any browser. Today, it only connects to your storage via WebDAV.
+The Luzzle Web Editor enables writing, editing, and organizing Luzzle archives
+from a browser. It currently connects to storage via WebDAV.
 
 ## Usage
 
-The editor is typically deployed as a companion container to your WebDAV server
-and you must bring your own authentication (ex: proxy auth)
+Deployed as a container alongside a WebDAV server. Authentication (e.g., proxy
+auth) is handled externally.
 
 ```bash
 # Run the development server
 npm run dev -w @luzzle/web-editor
 ```
 
-## Key Features
+## Features
 
-- **WebDAV Integration:** Connects to standard WebDAV servers to manage your
-  files.
-- **Visual Editing:** Edit frontmatter and Markdown content in a GUI.
-- **Asset Management:** Upload and attach images to your pieces.
+- **WebDAV Integration:** Connects to WebDAV servers.
+- **Visual Editing:** GUI for frontmatter and Markdown content.
+- **Asset Management:** Upload and attach images.

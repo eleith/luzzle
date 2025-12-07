@@ -1,25 +1,24 @@
 # Luzzle
 
-What if your personal digital records where not the output of a 'takeout' or
-'archive export' but instead the input for all you personal applications,
-services and more?
-
-Luzzle is a lightweight specification and tool for storing digital records to
-enable archives as the source of truth, instead of the other way around.
+Luzzle is a lightweight specification and implementation for storing digital
+records that would otherwise live in a database (ex: spreadsheet, csv, sqlite)
 
 ## Making it Tangible
 
+What if your personal digital records where not the output of a 'takeout' or
+'archive export' but instead the input for all applications that depend on data
+that is central to you?
+
 Digital records could be a store of books you have read, equipment in your
-inventory, contacts in your address book, all the poems you have written or
-anything else you might have in mind that perhaps you would have stored in a
-spreadsheet at some point in time.
+inventory, contacts in your address book or your archive of poetry you have
+written.
 
-A folder for all your records is your `luzzle` archive and each text file
-representing one record is your `luzzle piece`.
+Instead of databases and spreadsheets, these digital records could all live in a
+`luzzle` folder and each `luzzle piece` would be a text file representing one
+item in the archive.
 
-You could have a contacts app manage your address book or a website for your
-bookshelf. Any changes made in the application would be synchronized to your
-luzzle archive and visa versa.
+For example, You could have a contacts app manage your address book. Any changes
+made in the application would be synchronized to or from your luzzle archive.
 
 This is not that much different than how you create, manage use your digital
 records today. Yet, with a much stronger story around data ownership,

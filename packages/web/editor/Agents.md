@@ -1,28 +1,22 @@
 # Agents.md for @luzzle/web-editor
 
-This document provides guidance for developers and AI assistants working on the
-@luzzle/web-editor package.
+Instructions for agents working on the `@luzzle/web-editor` package.
 
-## Guiding Principles
+## Scope
 
-The Luzzle Web Editor provides a web graphical interface for modifying Luzzle
-archives. Unlike the CLI, it offers a rich text editing experience in the
-browser, leveraging WebDAV to sync changes back to the file system.
+The Web Editor provides a graphical interface for modifying Luzzle archives via
+WebDAV.
 
 ## Architecture
 
 - **Framework:** SvelteKit with `@sveltejs/adapter-node`.
-- **Storage:** Interacts with the file system via WebDAV.
+- **Storage:** Interacts with the file system via WebDAV client.
 
 ## Key Concepts
 
-- **WebDAV Sync:** The editor acts as a WebDAV client, allowing it to run
-  separately from the physical location of the files (e.g., accessing a remote
-  server).
-- **Editing:** Provides a user-friendly interface for editing metadata and the
-  main content of each piece.
-- **Management:** Provides a folder like interface mirroring the folder
-  structure of the luzzle archive
+- **WebDAV Sync:** Acts as a client, allowing remote access.
+- **Editing:** User-friendly interface for metadata and content.
+- **Management:** Folder interface mirroring the archive structure.
 
 ## Development
 

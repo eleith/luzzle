@@ -8,54 +8,43 @@ interacting with the Luzzle monorepo.
 This is a monorepo managed with `npm` workspaces. The packages are located in
 the `packages/` directory.
 
-Each package has its own `Agents.md` file with specific instructions for that
-package. Please refer to the `Agents.md` file within a package's directory for
-detailed information on how to work with that package.
+Each package has its own `Agents.md` file with specific instructions. Refer to
+the package's `Agents.md` for detailed information.
 
 ## Packages
 
-Here are the packages in this monorepo:
-
-* `packages/cli`: The command-line interface for Luzzle.
-* `packages/core`: Core functionality and library for Luzzle.
-* `packages/web/editor`: The Luzzle web editor.
-* `packages/web/explorer`: The Luzzle web explorer.
-* `packages/web/tools`: Tools for preparing the web explorer.
-* `packages/web/utils`: Shared logic for web packages.
+* `packages/cli`: Command-line interface.
+* `packages/core`: Core library.
+* `packages/web/editor`: Web editor.
+* `packages/web/explorer`: Web explorer.
+* `packages/web/tools`: Build tools for web explorer.
+* `packages/web/utils`: Shared web logic.
 
 ## Guiding Principles
 
-Luzzle seeks to manage personal digital records based on the Unix
-philosophy.
+Luzzle manages personal digital records based on the Unix philosophy.
 
 * **Text is the UI:** Markdown files are the source of truth.
-* **Database as Cache:** a luzzle sqlite database is a derivative of the files,
-used for performance and querying, but can be rebuilt at any time.
-* **Interoperability:** Luzzle is a specification (file naming, schema) and an
-implementation. It plays well with other tools.
+* **Database as Cache:** A Luzzle SQLite database is a derivative of the files,
+  used for querying.
+* **Interoperability:** Luzzle is a specification and implementation that plays
+  well with other tools.
 
 ## Getting Started
 
 1. Install Node.js (version >= 20) and npm.
-2. Install dependencies from the root of the monorepo: `npm install`
+2. Install dependencies: `npm install`
 
 ## General Instructions
 
-* Avoid running scripts from the basefolder. Instead, run them directly in the
-package folder itself
+* Run scripts directly in the package folder, not from the root.
 
 ## Markdown Style Guide
 
-To maintain consistency across all `Agents.md` files, please adhere to the
-following markdown styling conventions:
+Adhere to the following conventions for all `Agents.md` files:
 
-* **Line Length:** Keep lines to a maximum of 80 characters to ensure
-    readability.
-* **Headings:** Use `#` for titles and `##` for sections. Ensure a single
-    space follows the `#` characters.
-* **Lists:** Use `*` for unordered lists, and ensure there is a single space
-    after the `*`.
-* **Code Blocks:** Use backticks for inline code, and triple backticks for
-    code blocks.
-* **Rules"" and all other markdown lint's default [rules](https://github.com/markdownlint/markdownlint/blob/main/docs/RULES.md)
-
+* **Line Length:** Maximum 80 characters.
+* **Headings:** Use `#` for titles and `##` for sections.
+* **Lists:** Use `*` for unordered lists with a single space after each bullet.
+* **Code Blocks:** Use backticks.
+* **Rules:** Follow standard markdown lint rules.

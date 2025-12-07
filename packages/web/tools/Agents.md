@@ -1,32 +1,26 @@
 # Agents.md for @luzzle/web.tools
 
-This document provides guidance for developers and AI assistants working on the
-@luzzle/web.tools package.
+Instructions for agents working on the `@luzzle/web.tools` package.
 
-## Guiding Principles
+## Scope
 
-This package provides the necessary build tools and CLI utilities to support the
-Luzzle Web Explorer. It handles tasks that require heavy processing or file
-generation, keeping the main web app lightweight.
-
-The expectation is a CI/CD process uses this tool when preparing an instance of
-a luzzle explorer
+Provides build tools and CLI utilities for the Luzzle Web Explorer. Handles
+heavy processing and file generation for CI/CD pipelines.
 
 ## Architecture
 
-A CLI tool built with `yargs`.
+CLI tool built with `yargs`.
 
 * **Commands:**
-  * `theme`: Generates CSS variables from `config.yaml`.
-  * `opengraph`: Generates OG images for pieces.
-  * `assets`: generates various sizes for images associated with
-pieces
-  * `sqlite`: creates a web database to be used by the explorer
+  * `theme`: Generates CSS variables.
+  * `opengraph`: Generates OG images.
+  * `assets`: Generates resized images.
+  * `sqlite`: Creates the web database.
 
 ## Key Concepts
 
-* **Build-Time Generation:** Most of these tools are intended to run *before*
-    the Web Explorer starts or during the Docker build process.
+* **Build-Time Generation:** Tools run before the Web Explorer starts or during
+  Docker builds.
 
 ## Development
 
