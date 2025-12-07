@@ -16,8 +16,9 @@ inventory, contacts in your address book, or your archive of poetry.
 Instead of databases and spreadsheets, these records live in a `luzzle` folder.
 Each `luzzle piece` is a text file representing one item in the archive.
 
-For example, a contacts app could manage your address book. Any changes made in
-the application are synchronized to your Luzzle archive.
+For example, a contacts app could manage your address book. Any changes either
+in your archive or in the application are synchronized with each other. Your
+archive is now alive! 🧟
 
 This isn't much different from how you manage records today, but with a much
 better story around data ownership, preservation, and ease of use.
@@ -34,7 +35,7 @@ format that has the unique combination of being the easiest to read and write—
 now and in the future.
 
 **Text is the ultimate UI.** Databases are powerful, but have you ever tried to
-`grep` a binary file? It’s not pretty. 🕵️‍♂️
+`grep` a binary file? It’s not pretty.  🕵️
 
 By adhering to this philosophy, you enable a Unix-like approach to layering
 applications on top of your records. From CLI utilities like `grep` and `cat`
@@ -58,10 +59,9 @@ A formal specification is evolving alongside the codebase. 🚧
 
 This monorepo contains the Luzzle ecosystem:
 
-* **`@luzzle/core`:** The engine room. 🚂 The core specification implementation.
-* **`@luzzle/cli`:** A trusty terminal companion for managing your archive. 🛠️
-* **`@luzzle/web`:** A beautiful SvelteKit-based web explorer. 💅
-* **`@luzzle/web-editor`:** A web-based editor (for when you don't want to use
-  `vim`). 🖱️
-* **`@luzzle/web.tools`:** The heavy lifters for preparing the web explorer. 🏋️
-* **`@luzzle/web.utils`:** The glue holding the web packages together. 🧩
+* **`@luzzle/core`:** The core specification implementation 🫚
+* **`@luzzle/cli`:** A trusty terminal companion for managing your archive 💻
+* **`@luzzle/web`:** A web explorer for any luzzle archive 🔎
+* **`@luzzle/web-editor`:** A web-based luzzle piece editor 🕸️
+* **`@luzzle/web.tools`:** tools to prepare building the web explorer 🧰
+* **`@luzzle/web.utils`:** The glue holding the web packages together 🛠️
