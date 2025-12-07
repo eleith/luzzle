@@ -1,46 +1,44 @@
 # Luzzle
 
 Luzzle is a lightweight specification and implementation for storing digital
-records that would otherwise live in a database (ex: spreadsheet, csv, sqlite)
+records that would otherwise live in a database (like spreadsheets, CSVs, or
+SQLite).
 
 ## Making it Tangible
 
-What if your personal digital records where not the output of a 'takeout' or
+What if your personal digital records were not the output of a 'takeout' or
 'archive export' but instead the input for all applications that depend on data
 that is central to you?
 
 Digital records could be a store of books you have read, equipment in your
-inventory, contacts in your address book or your archive of poetry you have
-written.
+inventory, contacts in your address book, or your archive of poetry.
 
-Instead of databases and spreadsheets, these digital records could all live in a
-`luzzle` folder and each `luzzle piece` would be a text file representing one
-item in the archive.
+Instead of databases and spreadsheets, these records live in a `luzzle` folder.
+Each `luzzle piece` is a text file representing one item in the archive.
 
-For example, You could have a contacts app manage your address book. Any changes
-made in the application would be synchronized to or from your luzzle archive.
+For example, a contacts app could manage your address book. Any changes made in
+the application are synchronized to your Luzzle archive.
 
-This is not that much different than how you create, manage use your digital
-records today. Yet, with a much stronger story around data ownership,
-preservation and ease of use.
+This isn't much different from how you manage records today, but with a much
+better story around data ownership, preservation, and ease of use.
 
-You get to bring your own editor, your own storage and much more.
+Your data, your rules. 🔒
 
 ## Philosophy
 
-Individual text files are the ultimate user interface for both long term
-preservation, ownership and ease of use.
+Individual text files are the ultimate user interface for long-term
+preservation, ownership, and ease of use.
 
-While digital records are typically found in databases (ex: spreadsheets), the
-textfile is the format that has the unique combination of being the easist to
-read, write now and in the future as technology and computation evolve.
+While digital records are typically found in databases, the text file is the
+format that has the unique combination of being the easiest to read and write—
+now and in the future.
 
-The text file is the ultimate user interface and user experience.
+**Text is the ultimate UI.** Databases are powerful, but have you ever tried to
+`grep` a binary file? It’s not pretty. 🕵️‍♂️
 
-By adhering to this philosophy, you enable a unix-like philosophy when it comes
-to layering applications and services on top of your records. From CLI utilities
-like grep, cat, pipe, to storage services like webdav, local filesystems or
-cloud storage to applications like address books or websites like bookshelves.
+By adhering to this philosophy, you enable a Unix-like approach to layering
+applications on top of your records. From CLI utilities like `grep` and `cat`
+to storage services like WebDAV and rich applications like digital bookshelves.
 
 ## The Luzzle Specification
 
@@ -48,26 +46,22 @@ Luzzle is both a specification and an implementation.
 
 * **Base Folder:** Your archive root.
 * **`.luzzle/schemas/`:** JSON Schemas defining your piece types (e.g.,
-    `book`, `film`).
+  `book`, `film`).
 * **`.assets/`:** Stores attachments (images, archives). Luzzle utilities can
-    manage file uniqueness here, or you can place files manually.
+  manage file uniqueness here, or you can place files manually.
 * **Pieces:** Markdown files named `name.piece-type.md` (e.g.,
-    `dune.book.md`). These can live in the root or any subdirectory.
+  `dune.book.md`). These can live in the root or any subdirectory.
 
-A formal specification has not yet been written as it is evolving in the
-codebase itself.
+A formal specification is evolving alongside the codebase. 🚧
 
 ## Packages
 
-This monorepo contains many supporting tools for the Luzzle ecosystem:
+This monorepo contains the Luzzle ecosystem:
 
-* **`@luzzle/core`:** the core luzzle specification implementation
-* **`@luzzle/cli`:** Helps you create luzzle pieces and manage your archive from
-the terminal.
-* **`@luzzle/web`:** A SvelteKit-based web explorer for your luzzle archive.
-* **`@luzzle/web-editor`:** A web-based editor for your luzzle pieces (only
-webdav is supported currently)
-* **`@luzzle/web.tools`:** tools needed to prepare the web database and UI customizations
-for the luzzle web explorer
-* **`@luzzle/web.utils`:** shared logic needed by both the web explorer and web
-tools
+* **`@luzzle/core`:** The engine room. 🚂 The core specification implementation.
+* **`@luzzle/cli`:** A trusty terminal companion for managing your archive. 🛠️
+* **`@luzzle/web`:** A beautiful SvelteKit-based web explorer. 💅
+* **`@luzzle/web-editor`:** A web-based editor (for when you don't want to use
+  `vim`). 🖱️
+* **`@luzzle/web.tools`:** The heavy lifters for preparing the web explorer. 🏋️
+* **`@luzzle/web.utils`:** The glue holding the web packages together. 🧩

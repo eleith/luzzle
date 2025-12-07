@@ -1,15 +1,16 @@
-# @luzzle/web.tools
+# Luzzle Web Tools
 
-CLI tools for building and optimizing Luzzle Web projects.
+The heavy lifters for Luzzle Web. 🏋️
 
 ## Overview
 
-`@luzzle/web.tools` automates database generation, theme creation, Open Graph
-images, and asset optimization for the Web Explorer.
+`@luzzle/web.tools` is the utility belt for the Web Explorer. It automates the
+generation of the web database, themes, Open Graph images, and assets. It does
+the hard work so the browser doesn't have to.
 
 ## Usage
 
-Typically used in CI/CD or via `npm scripts`.
+These tools are typically used in CI/CD pipelines.
 
 ```bash
 # Generate theme CSS
@@ -19,10 +20,9 @@ luzzle-web-tools theme --config ./config.yaml
 luzzle-web-tools opengraph
 ```
 
-## Features
+## Key Features
 
-* **Configuration:** Manages explorer configuration.
-* **Database Generator:** Creates a searchable SQLite database from the archive.
-* **Theme Generator:** Converts YAML config to CSS variables.
-* **Open Graph:** Generates sharing images for pieces.
+* **Database Generator:** Creates a searchable SQLite database. 🗄️
+* **Theme Generator:** Converts config to CSS variables.
+* **Open Graph:** Automagically creates social sharing images. 🖼️
 * **Asset Optimization:** Resizes images for the web.

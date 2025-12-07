@@ -1,19 +1,23 @@
-# @luzzle/web
+# Luzzle Web Explorer
 
-The official web viewer for Luzzle archives.
+The official web viewer for Luzzle archives. Because your data deserves to look
+good. 💅
 
 ## Overview
 
-Luzzle Web Explorer is a SvelteKit application for browsing personal archives.
-It connects to Luzzle data to display records in a rich interface.
+Luzzle Web Explorer is a beautiful, fast, and responsive web application for
+browsing your personal archive. It connects to your Luzzle data to display your
+books, films, and writings in a rich interface.
 
 ## Usage
 
-The recommended way to run the Web Explorer is via Docker.
+The recommended way to run this is via Docker. 🐳
 
 ### Quick Start (Docker)
 
-1. Create a `Dockerfile` based on `examples/Dockerfile.custom`.
+You can build a custom image that includes your configuration and content.
+
+1. Create a `Dockerfile` based on the example in `examples/Dockerfile.custom`.
 2. Build and run:
 
 ```bash
@@ -21,23 +25,21 @@ docker build -t my-luzzle-explorer .
 docker run -p 3000:3000 my-luzzle-explorer
 ```
 
-## Features
+## Key Features
 
-- **Performance:** SvelteKit-based.
-- **Rich Media:** Displays optimized images and Open Graph tags.
-- **Themable:** Configurable via `config.yaml`.
+- **Fast & Responsive:** Built on SvelteKit. ⚡
+- **Rich Media:** Displays optimized images and nice Open Graph tags.
+- **Themable:** Make it yours via `config.yaml`. 🎨
 
 ## Configuration
 
-Configured via `config.yaml`.
+The Web Explorer is configured using a `config.yaml` file.
 
 **Key Sections:**
 
-- **url:** Application URLs.
+- **url:** Where does this live on the internet?
 - **text:** Site title and description.
-- **paths:** Database and config paths.
-- **content:** Content roots and feeds.
-- **pieces:** Display settings for piece types.
-- **theme:** Colors, fonts, and styles.
+- **pieces:** Defines how different piece types are displayed.
+- **theme:** Colors, fonts, and dark mode! 🌙
 
-For advanced configuration, use `@luzzle/web.tools`.
+For advanced configuration, check out `@luzzle/web.tools`.

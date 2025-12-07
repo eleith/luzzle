@@ -1,28 +1,41 @@
 # @luzzle/core
 
-The core library for Luzzle, bridging Markdown files and a structured database.
+The engine room of Luzzle. 🚂
 
 ## Overview
 
-`@luzzle/core` parses Markdown files, validates them against JSON schemas, and
-synchronizes data into a SQLite database.
-
-This package is used by other Luzzle tools (CLI, Web Explorer)
+`@luzzle/core` bridges the gap between your text files and a structured database.
+It handles the heavy lifting of parsing Markdown, validating schemas, and
+syncing everything to SQLite.
 
 ## Philosophy
 
-This package adheres to the principle that **Text is the Source of Truth**. The
-database is treated as a derivative cache for performance, ensuring Markdown
-files remain the primary data source.
+**Text is King. 👑**
 
-## Installation
+This package strictly adheres to the Luzzle philosophy. While it provides a
+powerful database client, the database is treated as a disposable cache. Your
+Markdown files are the source of truth, forever and always.
+
+## Usage
+
+This library is primarily for other Luzzle tools, but feel free to use it for
+your own scripts!
 
 ```bash
 npm install @luzzle/core
 ```
 
+### Example: Database Access
+
+```typescript
+import { getDatabaseClient } from '@luzzle/core/database/client';
+
+const db = getDatabaseClient('/path/to/luzzle/root');
+// Execute type-safe queries with Kysely 🚀
+```
+
 ## Features
 
-* **Schema Validation:** Enforces frontmatter structure using Ajv.
-* **Synchronization:** Updates the local SQLite database from Markdown files.
-* **Querying:** Exports a Kysely client for data access.
+* **Schema Validation:** Enforces structure using Ajv. Strict but fair. ⚖️
+* **File Synchronization:** Reads Markdown, updates SQLite.
+* **Type-Safe Querying:** Because runtime errors are no fun.

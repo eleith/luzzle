@@ -1,35 +1,41 @@
 # @luzzle/cli
 
-The command-line interface for Luzzle.
+The trusty command-line companion for Luzzle. 🛠️
 
 ## Overview
 
-The Luzzle CLI aids in creating new pieces, validating data against schemas, and
-managing assets. It automates tasks that would otherwise require manual file
-manipulation.
+The Luzzle CLI handles the mundane tasks—like validating schemas and organizing
+assets—so you can focus on the fun part: hoarding data. 🗄️
+
+It streamlines the creation of new pieces and ensures everything in your archive
+is neat and tidy.
 
 ## Usage
 
-Install globally or use via `npx`:
+You can install it globally (live dangerously) or just run it via `npx`.
 
 ```bash
 npm install -g @luzzle/cli
 ```
 
+*(Installation usually takes a few seconds. Just enough time for a sip of
+water. 💧)*
+
 ### Common Commands
 
 * **Initialize:** `luzzle init`
 * **Create Piece:** `luzzle piece add book --title "The Hobbit"`
-* **Validate:** `luzzle validate /path/to/the-hobbit.book.md`
+* **Validate:** `luzzle validate`
 
 ## Features
 
-* **Schema-Aware:** Uses `.luzzle/schema/*.json` definitions for field prompting.
-* **Asset Handling:** Organizes attachments in the `.assets` directory.
+* **Schema-Aware:** Uses your `.luzzle` definitions to prompt for the right
+  fields. Smart! 🧠
+* **Asset Handling:** Automatically organizes images into `.assets`.
 
 ### Configuration
 
-Configuration is managed via `luzzle config`.
+The CLI supports a configuration file to manage settings.
 
 #### Managing Config
 
@@ -42,13 +48,6 @@ Configuration is managed via `luzzle config`.
 
 The YAML configuration supports:
 
-* **storage:**
-  * `type`: `filesystem` (default) or `webdav`.
-  * `root`: Root directory for files.
-  * `options`: Storage-specific options.
-* **database:**
-  * `type`: `sqlite` (only supported type).
-  * `path`: Path to SQLite file.
-* **api_keys:**
-  * `google`: API key for AI features.
-
+* **storage:** `filesystem` (default) or `webdav`.
+* **database:** `sqlite` (the only one you need).
+* **api_keys:** For when you need a little AI help. 🤖
