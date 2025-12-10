@@ -37,7 +37,7 @@ Luzzle manages personal digital records based on the Unix philosophy.
 
 ## General Instructions
 
-* Run scripts directly in the package folder, not from the root.
+* Run npm scripts directly in the package folder, don't use workspace flags
 
 ## Markdown Style Guide
 
