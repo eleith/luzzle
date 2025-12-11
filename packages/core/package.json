@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/core",
-  "version": "0.0.32",
+  "version": "0.0.33",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://git.eleith.com/eleith/eleith.git"
+    "url": "git+https://github.com/eleith/luzzle.git"
   },
   "files": [
     "dist/*",
@@ -21,7 +21,7 @@
   ],
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
-  "homepage": "https://git.eleith.com/eleith/eleith.git",
+  "homepage": "https://github.com/eleith/luzzle",
   "description": "luzzle's core",
   "devDependencies": {
     "@types/async": "3.2.25",

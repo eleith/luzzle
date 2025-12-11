@@ -1,4 +1,4 @@
-name: Core
+name: "@luzzle/core"
 
 on:
   push:
@@ -9,6 +9,10 @@ on:
     paths:
       - 'packages/core/**'
       - '.github/workflows/core.yml'
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   check:
@@ -37,11 +41,8 @@ jobs:
 
   publish:
     needs: check
-    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'core/v')
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,6 +53,10 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
+
+      # Ensure latest npm for trusted publishing support
+      - name: Install npm
+        run: npm install -g npm@latest
 
       - name: Install Dependencies
         run: npm ci -w @luzzle/core
@@ -70,4 +75,4 @@ jobs:
           echo "Version $VERSION_FROM_PKG matches."
 
       - name: Publish
-        run: npm publish -w @luzzle/core --access public --provenance
+        run: npm publish -w @luzzle/core
