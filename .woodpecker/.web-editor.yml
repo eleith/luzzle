@@ -31,7 +31,7 @@ steps:
   build_docker:
     image: woodpeckerci/plugin-docker-buildx:6.0.3
     settings:
-      repo: git.eleith.com/eleith.private/luzzle-editor
+      repo: git.eleith.com/eleith.private/luzzle-web-editor
       username: eleith
       dockerfile: packages/web/editor/Dockerfile
       context: packages/web/editor

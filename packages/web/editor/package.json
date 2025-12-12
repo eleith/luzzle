@@ -1,5 +1,5 @@
 {
-	"name": "@luzzle/web-editor",
+	"name": "@luzzle/web.editor",
 	"version": "0.0.14",
 	"private": true,
 	"scripts": {
@@ -17,7 +17,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://git.eleith.com/eleith/eleith.git"
+		"url": "git+https://github.com/eleith/luzzle.git"
 	},
 	"devDependencies": {
 		"@iconify-json/ph": "1.2.2",
