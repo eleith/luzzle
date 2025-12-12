@@ -27,8 +27,6 @@ steps:
     commands:
       - cd packages/web/explorer
       - npm run lint
-      - ls -la ./node_modules
-      - ls -la ./node_modules/.bin
       - npm run check
 
   check-version:
@@ -68,7 +66,7 @@ steps:
   build-docker-main:
     image: woodpeckerci/plugin-docker-buildx:6.0.3
     settings:
-      repo: git.eleith.com/eleith.private/luzzle-explorer
+      repo: git.eleith.com/eleith.private/luzzle-web
       username: eleith
       dockerfile: packages/web/explorer/Dockerfile
       context: packages/web/explorer
@@ -86,7 +84,7 @@ steps:
   build-docker-tag:
     image: woodpeckerci/plugin-docker-buildx:6.0.3
     settings:
-      repo: git.eleith.com/eleith.private/luzzle-explorer
+      repo: git.eleith.com/eleith.private/luzzle-web
       username: eleith
       dockerfile: packages/web/explorer/Dockerfile
       context: packages/web/explorer

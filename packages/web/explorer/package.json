@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web",
-	"version": "0.0.117",
+	"version": "0.0.118",
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
@@ -26,12 +26,12 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://git.eleith.com/eleith/eleith.git"
+		"url": "git+https://github.com/eleith/luzzle.git"
 	},
 	"devDependencies": {
 		"@iconify-json/ph": "1.2.2",
-		"@luzzle/cli": "0.0.126",
-		"@luzzle/web.tools": "0.0.70",
+		"@luzzle/cli": "0.0.127",
+		"@luzzle/web.tools": "0.0.71",
 		"@sveltejs/adapter-node": "5.3.2",
 		"@sveltejs/enhanced-img": "0.8.1",
 		"@sveltejs/kit": "2.43.0",
@@ -57,8 +57,8 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@luzzle/core": "0.0.33",
-		"@luzzle/web.utils": "0.0.12",
+		"@luzzle/core": "0.0.34",
+		"@luzzle/web.utils": "0.0.13",
 		"better-sqlite3": "11.7.2",
 		"bits-ui": "2.14.1",
 		"devlop": "1.1.0",
