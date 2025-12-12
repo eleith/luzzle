@@ -1,10 +1,9 @@
 {
 	"name": "@luzzle/web.tools",
-	"version": "0.0.69",
+	"version": "0.0.70",
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
-		"compile": "tsc --noEmit",
 		"build:executable": "chmod +x ./dist/src/cli.js",
 		"postbuild": "npm run build:executable",
 		"build": "tsc",
@@ -22,10 +21,10 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "git+https://git.eleith.com/eleith/luzzle.git"
+		"url": "git+https://github.com/eleith/luzzle.git"
 	},
-	"homepage": "https://git.eleith.com/eleith/luzzle.git",
-	"description": "misc scripts for working with luzzle related files and projects",
+	"homepage": "https://github.com/eleith/luzzle",
+	"description": "cli to prepare luzzle archive for the web",
 	"devDependencies": {
 		"@types/eslint": "9.6.1",
 		"@types/node": "22.12.0",
@@ -42,8 +41,8 @@
 		"vitest": "3.2.4"
 	},
 	"dependencies": {
-		"@luzzle/core": "0.0.32",
-		"@luzzle/web.utils": "0.0.11",
+		"@luzzle/core": "0.0.33",
+		"@luzzle/web.utils": "0.0.12",
 		"lightningcss": "^1.30.2",
 		"puppeteer": "24.19.0",
 		"sharp": "0.33.5",
