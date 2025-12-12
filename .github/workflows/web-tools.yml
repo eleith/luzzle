@@ -68,7 +68,7 @@ jobs:
         run: npm ci -w @luzzle/web.tools
 
       - name: Build
-        run: npm run build -w @luzzle/web.tools
+        run: npm run build -w @luzzle/core -w @luzzle/web.utils -w @luzzle/web.tools
 
       - name: Check Version
         run: |
