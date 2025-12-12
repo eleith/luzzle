@@ -16,7 +16,6 @@ steps:
     commands:
       - npm ci -w @luzzle/core -w @luzzle/cli
       - npm run build -w @luzzle/core
-      - npm run compile -w @luzzle/cli
       - npm run build -w @luzzle/cli
 
   test:
