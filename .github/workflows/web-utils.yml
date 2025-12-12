@@ -64,6 +64,9 @@ jobs:
       - name: Install Dependencies
         run: npm ci -w @luzzle/web.utils
 
+      - name: Build
+        run: npm run build -w @luzzle/web.utils
+
       - name: Check Version
         run: |
           cd packages/web/utils
