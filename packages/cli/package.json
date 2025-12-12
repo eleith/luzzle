@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.126",
+  "version": "0.0.127",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -46,7 +46,7 @@
     "vitest": "3.2.4"
   },
   "dependencies": {
-    "@luzzle/core": "0.0.33",
+    "@luzzle/core": "0.0.34",
     "conf": "13.1.0",
     "pino": "9.6.0",
     "pino-pretty": "13.0.0",
