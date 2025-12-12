@@ -15,7 +15,7 @@ permissions:
   id-token: write
 
 jobs:
-  ci:
+  check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -40,7 +40,7 @@ jobs:
         run: npm run test -w @luzzle/web.utils
 
   publish:
-    needs: ci
+    needs: check
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'web.utils/v')
     runs-on: ubuntu-latest
     permissions:

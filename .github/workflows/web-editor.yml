@@ -27,11 +27,11 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
+      - name: Build Lock
+        run: npm run build:lock
+
       - name: Install Dependencies
-        run: |
-          npm run build:lock
-          npm ci --workspaces=false
-          ls -la node_modules
+        run: npm ci --workspaces=false
 
       - name: Prepare .env
         run: cp .env.sample .env.local
@@ -65,7 +65,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghci.io/luzzle-web-editor
+          images: ghcr.io/eleith/luzzle-web-editor
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=match,pattern=web\.editor/v(\d+),group=1
@@ -85,7 +85,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: packages/web/editor
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
