@@ -8,7 +8,7 @@ import schemaJson from './schema.json' with { type: 'json' }
 
 export type ConfigPublic = {
 	url: Pick<Config['url'], 'app' | 'luzzle_assets' | 'app_assets'>
-	text: Config['text']
+	content: Config['content']
 }
 
 function loadConfig(userConfigPath?: string): Config {

@@ -12,18 +12,18 @@ export interface Schema {
     luzzle_assets: string;
     editor: string;
   };
-  text: {
-    title: string;
-    description: string;
-  };
   paths: {
     database: string;
     config?: string;
   };
-  content?: {
-    block?: {
+  content: {
+    component?: {
       root?: string;
       feed?: string;
+    };
+    text: {
+      title: string;
+      description: string;
     };
   };
   pieces: {

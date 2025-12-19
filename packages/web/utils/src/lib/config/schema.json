@@ -25,22 +25,6 @@
 			],
 			"additionalProperties": false
 		},
-		"text": {
-			"type": "object",
-			"properties": {
-				"title": {
-					"type": "string"
-				},
-				"description": {
-					"type": "string"
-				}
-			},
-			"required": [
-				"title",
-				"description"
-			],
-			"additionalProperties": false
-		},
 		"paths": {
 			"type": "object",
 			"properties": {
@@ -59,7 +43,7 @@
 		"content": {
 			"type": "object",
 			"properties": {
-				"block": {
+				"component": {
 					"type": "object",
 					"properties": {
 						"root": {
@@ -70,8 +54,27 @@
 						}
 					},
 					"additionalProperties": false
+				},
+				"text": {
+					"type": "object",
+					"properties": {
+						"title": {
+							"type": "string"
+						},
+						"description": {
+							"type": "string"
+						}
+					},
+					"required": [
+						"title",
+						"description"
+					],
+					"additionalProperties": false
 				}
 			},
+			"required": [
+				"text"
+			],
 			"additionalProperties": false
 		},
 		"pieces": {
@@ -490,10 +493,18 @@
 						"sidenote": {
 							"type": "object",
 							"properties": {
-								"sidenote-callout-before-content": { "type": "string" },
-								"sidenote-callout-after-content": { "type": "string" },
-								"sidenote-citation-before-content": { "type": "string" },
-								"sidenote-citation-after-content": { "type": "string" }
+								"sidenote-callout-before-content": {
+									"type": "string"
+								},
+								"sidenote-callout-after-content": {
+									"type": "string"
+								},
+								"sidenote-citation-before-content": {
+									"type": "string"
+								},
+								"sidenote-citation-after-content": {
+									"type": "string"
+								}
 							},
 							"additionalProperties": false
 						},
@@ -654,7 +665,7 @@
 	},
 	"required": [
 		"url",
-		"text",
+		"content",
 		"paths",
 		"theme",
 		"pieces"

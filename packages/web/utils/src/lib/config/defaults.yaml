@@ -16,10 +16,11 @@ url:
   # The URL for the Luzzle Editor instance, used for edit links.
   editor: 'http://editor.localhost'
 
-# general app text strings
-text:
-  title: 'Luzzle Explorer'
-  description: 'A Luzzle Explorer instance'
+# general app content
+content:
+  text:
+    title: 'Luzzle Explorer'
+    description: 'A Luzzle Explorer instance'
 
 paths:
   # The connection URL for the database.
