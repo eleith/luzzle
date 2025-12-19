@@ -10,6 +10,7 @@ node_modules
 /package-lock.json
 /src/lib/ui/styles/theme.build.css
 /src/lib/pieces/components/custom
+/src/lib/content/components/custom
 /content
 
 # OS

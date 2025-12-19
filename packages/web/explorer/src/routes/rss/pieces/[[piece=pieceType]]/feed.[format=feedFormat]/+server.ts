@@ -13,23 +13,23 @@ type FeedJsonItem = FeedItem<FeedJson>
 
 function getRssFeedFromPieces(pieces: WebPieces[], folder?: string) {
 	const feed: FeedRss = {
-		title: folder ? config.text.title : `${config.text.title} | ${folder}`,
-		description: config.text.description,
+		title: folder ? config.content.text.title : `${config.content.text.title} | ${folder}`,
+		description: config.content.text.description,
 		link: config.url.app,
 		ttl: 60 * 24,
 		language: 'en',
 		lastBuildDate: new Date(),
 		generator: 'feedsmith',
 		textInput: {
-			title: config.text.title,
-			description: `search ${config.text.description}`,
-			name: config.text.title,
+			title: config.content.text.title,
+			description: `search ${config.content.text.description}`,
+			name: config.content.text.title,
 			link: `${config.url.app}/search`
 		},
 		image: {
 			url: `${config.url.app_assets}/images/opengraph.png`,
-			description: config.text.title,
-			title: config.text.title,
+			description: config.content.text.title,
+			title: config.content.text.title,
 			link: `${config.url.app_assets}/images/opengraph.png`
 		},
 		items: pieces.map(
@@ -47,8 +47,8 @@ function getRssFeedFromPieces(pieces: WebPieces[], folder?: string) {
 
 function getJsonFeedFromPieces(pieces: WebPieces[], folder?: string) {
 	const feed: FeedJson = {
-		title: folder ? config.text.title : `${config.text.title} | ${folder}`,
-		description: config.text.description,
+		title: folder ? config.content.text.title : `${config.content.text.title} | ${folder}`,
+		description: config.content.text.description,
 		home_page_url: config.url.app,
 		language: 'en',
 		items: pieces.map(
@@ -67,8 +67,8 @@ function getJsonFeedFromPieces(pieces: WebPieces[], folder?: string) {
 
 function getMarkdownFeedFromPieces(pieces: WebPieces[], folder?: string) {
 	const frontmatter = YAML.stringify({
-		title: folder ? config.text.title : `${config.text.title} | ${folder}`,
-		description: config.text.description,
+		title: folder ? config.content.text.title : `${config.content.text.title} | ${folder}`,
+		description: config.content.text.description,
 		link: config.url.app,
 		language: 'en',
 		lastBuildDate: new Date(),

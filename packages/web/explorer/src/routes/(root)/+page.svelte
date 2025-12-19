@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state'
-	let { data } = $props()
+	import RootPageDefault from '$lib/content/components/root.default.svelte'
+	import loadContent from '$lib/content/load'
+
+	const glob = import.meta.glob('$lib/content/components/custom/root.svelte', { eager: true })
+
+	const RootPage = $derived(loadContent('root', RootPageDefault, glob))
 </script>
 
 <svelte:head>
@@ -12,21 +17,4 @@
 	/>
 </svelte:head>
 
-<section class="intro">
-	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-	{@html data.root_html}
-</section>
-
-<style>
-	section.intro {
-		margin: var(--space-4);
-		margin-bottom: var(--space-8);
-		margin-left: auto;
-		margin-right: auto;
-		width: 85%;
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-		padding-bottom: var(--space-5);
-	}
-</style>
+<RootPage />

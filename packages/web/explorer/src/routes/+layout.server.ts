@@ -3,9 +3,11 @@ import { config, type AppConfigPublic } from '$lib/server/config'
 export const load = async () => {
 	return {
 		config: {
-			text: {
-				title: config.text.title,
-				description: config.text.description
+			content: {
+				text: {
+					title: config.content.text.title,
+					description: config.content.text.description
+				}
 			},
 			url: {
 				app: config.url.app,
@@ -14,8 +16,8 @@ export const load = async () => {
 			}
 		} as AppConfigPublic,
 		meta: {
-			title: config.text.title,
-			description: config.text.description
+			title: config.content.text.title,
+			description: config.content.text.description
 		}
 	}
 }

@@ -1,6 +1,4 @@
 import { db } from '$lib/server/database'
-import { loadBlock } from '$lib/server/content'
-import rootMarkdown from '$lib/content/block/root.md?raw'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async () => {
@@ -21,7 +19,6 @@ export const load: PageServerLoad = async () => {
 		.execute()
 
 	return {
-		root_html: await loadBlock(rootMarkdown),
 		latestPiece,
 		types
 	}

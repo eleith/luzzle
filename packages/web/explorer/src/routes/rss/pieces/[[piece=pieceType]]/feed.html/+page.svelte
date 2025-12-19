@@ -1,6 +1,10 @@
 <script lang="ts">
 	import Nav from '$lib/components/layout/simple/nav.svelte'
+	import FeedBlockDefault from '$lib/content/components/feed.default.svelte'
 	import { page } from '$app/state'
+	import load from '$lib/content/load.js'
+
+	const glob = import.meta.glob('$lib/content/components/custom/feed.svelte', { eager: true })
 
 	let { data } = $props()
 	let isCopied = $state<boolean>(false)
@@ -21,6 +25,8 @@
 			inputElement.blur()
 		}, 2000)
 	}
+
+	const FeedBlock = $derived(load('feed', FeedBlockDefault, glob))
 </script>
 
 <svelte:head>
@@ -36,8 +42,9 @@
 	<Nav />
 	<section class="content-wrapper">
 		<aside class="callout">
-			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-			{@html data.block}
+			<p>
+				<FeedBlock />
+			</p>
 			<hr />
 			<p>Copy the link and paste it into an RSS reader</p>
 			<div class="copy-container">

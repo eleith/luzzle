@@ -12,25 +12,25 @@ type FeedRssItem = FeedItem<FeedRss>
 type FeedJsonItem = FeedItem<FeedJson>
 
 function getRssFeedFromPieces(pieces: WebPieces[], tag?: string) {
-	const feedTitle = tag ? `${config.text.title} | tag: ${tag}` : config.text.title
+	const feedTitle = tag ? `${config.content.text.title} | tag: ${tag}` : config.content.text.title
 	const feed: FeedRss = {
 		title: feedTitle,
-		description: config.text.description,
+		description: config.content.text.description,
 		link: config.url.app,
 		ttl: 60 * 24,
 		language: 'en',
 		lastBuildDate: new Date(),
 		generator: 'feedsmith',
 		textInput: {
-			title: config.text.title,
-			description: `search ${config.text.description}`,
-			name: config.text.title,
+			title: config.content.text.title,
+			description: `search ${config.content.text.description}`,
+			name: config.content.text.title,
 			link: `${config.url.app}/search`
 		},
 		image: {
 			url: `${config.url.app_assets}/images/opengraph.png`,
-			description: config.text.title,
-			title: config.text.title,
+			description: config.content.text.title,
+			title: config.content.text.title,
 			link: `${config.url.app_assets}/images/opengraph.png`
 		},
 		items: pieces.map(
@@ -47,10 +47,10 @@ function getRssFeedFromPieces(pieces: WebPieces[], tag?: string) {
 }
 
 function getJsonFeedFromPieces(pieces: WebPieces[], tag?: string) {
-	const feedTitle = tag ? `${config.text.title} | tag: ${tag}` : config.text.title
+	const feedTitle = tag ? `${config.content.text.title} | tag: ${tag}` : config.content.text.title
 	const feed: FeedJson = {
 		title: feedTitle,
-		description: config.text.description,
+		description: config.content.text.description,
 		home_page_url: config.url.app,
 		language: 'en',
 		items: pieces.map(
@@ -68,10 +68,10 @@ function getJsonFeedFromPieces(pieces: WebPieces[], tag?: string) {
 }
 
 function getMarkdownFeedFromPieces(pieces: WebPieces[], tag?: string) {
-	const feedTitle = tag ? `${config.text.title} | tag: ${tag}` : config.text.title
+	const feedTitle = tag ? `${config.content.text.title} | tag: ${tag}` : config.content.text.title
 	const frontmatter = YAML.stringify({
 		title: feedTitle,
-		description: config.text.description,
+		description: config.content.text.description,
 		link: config.url.app,
 		language: 'en',
 		lastBuildDate: new Date(),
