@@ -26,9 +26,8 @@ describe('generate-web-sqlite', () => {
 
 		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
-			text: { title: '', description: '' },
 			paths: { database: '/tmp/test.db' },
-			content: { block: { root: '', feed: '' } },
+			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
 			pieces: [
 				{
 					type: 'books',
@@ -108,9 +107,8 @@ describe('generate-web-sqlite', () => {
 
 		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
-			text: { title: '', description: '' },
 			paths: { database: '/tmp/test.db' },
-			content: { block: { root: '', feed: '' } },
+			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
 			pieces: [
 				{
 					type: 'books',
@@ -200,9 +198,8 @@ describe('generate-web-sqlite', () => {
 
 		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
-			text: { title: '', description: '' },
 			paths: { database: '/tmp/test.db' },
-			content: { block: { root: '', feed: '' } },
+			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
 			pieces: [
 				{
 					type: 'books',

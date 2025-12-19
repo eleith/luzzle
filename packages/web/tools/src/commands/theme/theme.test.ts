@@ -13,9 +13,8 @@ describe('generate-theme/theme', () => {
 	test('should generate theme CSS', () => {
 		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
-			text: { title: '', description: '' },
 			paths: { database: '' },
-			content: { block: { root: '', feed: '' } },
+			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
 			pieces: [{ type: 'test', fields: { title: 'test', date_consumed: 'test' } }],
 			theme: {
 				globals: {
