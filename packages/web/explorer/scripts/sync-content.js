@@ -1,5 +1,5 @@
 import { loadConfig } from '@luzzle/web.utils/server'
-import { copyFile } from 'fs/promises'
+import { copyFile, mkdir } from 'fs/promises'
 import path from 'path'
 
 async function syncContent() {
@@ -8,6 +8,8 @@ async function syncContent() {
 
 	const outDir = path.resolve(process.cwd(), `src/lib/content/components/custom`)
 	const contents = Object.entries(config.content?.component || {})
+
+	await mkdir(outDir, { recursive: true })
 
 	const syncPromises = contents.map(async ([name, sourcePath]) => {
 		const source = path.resolve(process.cwd(), sourcePath)
