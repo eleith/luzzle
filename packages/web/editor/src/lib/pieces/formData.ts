@@ -1,6 +1,5 @@
 import { Readable } from 'stream'
 import type { ReadableStream } from 'stream/web'
-import type { BufferLike } from 'webdav'
 import { Piece, type PieceFrontmatter, type PieceMarkdown } from '@luzzle/core'
 
 async function extractFrontmatterFromFormData<T extends PieceFrontmatter>(
@@ -43,7 +42,7 @@ async function extractFrontmatterFromFormData<T extends PieceFrontmatter>(
 				// html spec returns an empty file by design!
 				const streams = files
 					.filter((f) => f.size > 0)
-					.map((file) => Readable.fromWeb(file.stream() as ReadableStream<BufferLike>))
+					.map((file) => Readable.fromWeb(file.stream() as ReadableStream<Buffer>))
 
 				if (streams.length) {
 					if (isArray) {
