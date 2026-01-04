@@ -13,7 +13,19 @@ import { ASSETS_DIRECTORY } from '../assets.js'
 async function downloadToStream(fileOrUrl: string) {
 	if (/https?:\/\//i.test(fileOrUrl)) {
 		return new Promise((resolve, reject) => {
-			const download = got.stream(fileOrUrl, { throwHttpErrors: false })
+			const download = got.stream(fileOrUrl, { 
+				throwHttpErrors: false,
+				headers: {
+					'user-agent': 'luzzle/core (https://github.com/eleith/luzzle)'
+				},
+				retry: {
+					limit: 3,
+					methods: ['GET']
+				},
+				timeout: {
+					request: 10000,
+				},
+			})
 			download.on('error', (err) => {
 				console.error(`Error downloading file from ${fileOrUrl}: ${err.message}`)
 				reject(err)
