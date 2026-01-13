@@ -159,7 +159,9 @@
 										name="query"
 										class="input"
 									/>
-									<button type="submit" class="button" aria-label="submit search">search</button>
+									<Dialog.Close>
+										<button type="submit" class="button" aria-label="submit search">search</button>
+									</Dialog.Close>
 								</form>
 							</div>
 						{/if}
