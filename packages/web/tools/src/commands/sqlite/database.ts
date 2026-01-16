@@ -58,6 +58,14 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addUniqueConstraint('slug-type', ['slug', 'type'])
 		.execute()
 
+	await sql`CREATE INDEX IF NOT EXISTS web_pieces_date_consumed_date_added_index ON web_pieces (date_consumed DESC, date_added DESC)`.execute(
+		db
+	)
+
+	await sql`CREATE INDEX IF NOT EXISTS web_pieces_type_date_consumed_date_added_index ON web_pieces (type, date_consumed DESC, date_added DESC)`.execute(
+		db
+	)
+
 	await sql`CREATE VIRTUAL TABLE IF NOT EXISTS "web_pieces_fts5" USING fts5(id UNINDEXED, slug, type UNINDEXED, title, summary, note, media UNINDEXED, keywords, json_metadata, date_added UNINDEXED, date_updated UNINDEXED, date_consumed UNINDEXED, file_path UNINDEXED, tokenize = 'porter ascii', prefix='3 4 5', content = 'web_pieces', content_rowid="rowid")`.execute(
 		db
 	)

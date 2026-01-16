@@ -71,6 +71,8 @@ describe('generate-web-sqlite', () => {
 			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
 			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
 			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
 			.mockReturnValueOnce({
 				execute: vi.fn().mockResolvedValueOnce({
 					rows: [
