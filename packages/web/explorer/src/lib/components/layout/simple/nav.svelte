@@ -11,6 +11,7 @@
 	import type { Snippet } from 'svelte'
 	import { onMount } from 'svelte'
 	import { Dialog } from 'bits-ui'
+	import NavigationProgressBar from './NavigationProgressBar.svelte'
 
 	type Props = {
 		background?: string
@@ -119,6 +120,8 @@
 		</script>
 	{/if}
 </svelte:head>
+
+<NavigationProgressBar />
 
 <nav class="banner" style:--banner-background-color={background}>
 	<div class="left">
