@@ -6,11 +6,16 @@
 	type Props = {
 		field: PieceFrontmatterSchemaField
 		value: unknown
+		originalValue?: unknown
 	}
 
-	let { field, value }: Props = $props()
+	let { field, value = $bindable(), originalValue }: Props = $props()
 	let inputElement: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | EditAsset | null =
 		$state(null)
+
+	const isModified = $derived(
+		originalValue !== undefined && JSON.stringify(value) !== JSON.stringify(originalValue)
+	)
 
 	const prefix = 'frontmatter'
 
@@ -52,51 +57,65 @@
 	}
 </script>
 
-{#snippet fieldBooleanSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
-	<select name="{prefix}.{field.name}" value={value ? '1' : '0'} required={!field.nullable}>
+{#snippet fieldBooleanSnippet(field: PieceFrontmatterSchemaField)}
+	<select
+		name="{prefix}.{field.name}"
+		value={value ? '1' : '0'}
+		onchange={(e) => (value = e.currentTarget.value === '1')}
+		required={!field.nullable}
+	>
 		<option value="1">true</option>
 		<option value="0">false</option>
 	</select>
 {/snippet}
 
-{#snippet fieldDateSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
+{#snippet fieldDateSnippet(field: PieceFrontmatterSchemaField)}
 	<input
 		type="date"
 		name="{prefix}.{field.name}"
 		value={formatDateStringForInput(value as string) || ''}
+		onchange={(e) => (value = e.currentTarget.value)}
 		required={!field.nullable}
 		bind:this={inputElement}
 	/>
 {/snippet}
 
-{#snippet fieldIntegerSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
+{#snippet fieldIntegerSnippet(field: PieceFrontmatterSchemaField)}
 	<input
 		type="number"
 		name="{prefix}.{field.name}"
-		{value}
+		bind:value
 		required={!field.nullable}
 		bind:this={inputElement}
 	/>
 {/snippet}
 
-{#snippet fieldTextSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
+{#snippet fieldTextSnippet(field: PieceFrontmatterSchemaField)}
 	<input
 		type="text"
 		name="{prefix}.{field.name}"
-		{value}
+		bind:value
 		required={!field.nullable}
 		bind:this={inputElement}
 	/>
 {/snippet}
 
-{#snippet fieldParagraphSnippet(value: unknown, field: PieceFrontmatterSchemaField)}
-	<textarea name="{prefix}.{field.name}" required={!field.nullable} bind:this={inputElement}
-		>{value}</textarea
+{#snippet fieldParagraphSnippet(field: PieceFrontmatterSchemaField)}
+	<textarea
+		name="{prefix}.{field.name}"
+		required={!field.nullable}
+		bind:this={inputElement}
+		bind:value>{value}</textarea
 	>
 {/snippet}
 
-{#snippet fieldEnumSnippet(value: unknown, field: EnumField)}
-	<select name="{prefix}.{field.name}" {value} required={!field.nullable} bind:this={inputElement}>
+{#snippet fieldEnumSnippet(field: EnumField)}
+	<select
+		name="{prefix}.{field.name}"
+		bind:value
+		required={!field.nullable}
+		bind:this={inputElement}
+	>
 		{#if field.enum}
 			{#each field.enum as option, index (index)}
 				<option value={option}>{option}</option>
@@ -105,25 +124,40 @@
 	</select>
 {/snippet}
 
-<div>
+<div class="field" class:modified={isModified}>
+	{field.name}{isModified ? ' (edited)' : ''}
+</div>
+
+<div class="field-container">
 	{#if isAsset(field)}
-		<EditAsset {field} {value} />
+		<div>
+			<EditAsset {field} {value} />
+		</div>
 	{:else if field.format === 'date'}
-		{@render fieldDateSnippet(value, field)}
+		{@render fieldDateSnippet(field)}
 	{:else if field.type === 'integer'}
-		{@render fieldIntegerSnippet(value, field)}
+		{@render fieldIntegerSnippet(field)}
 	{:else if field.type === 'boolean'}
-		{@render fieldBooleanSnippet(value, field)}
+		{@render fieldBooleanSnippet(field)}
 	{:else if isEnum(field)}
-		{@render fieldEnumSnippet(value, field)}
+		{@render fieldEnumSnippet(field)}
 	{:else if field.format === 'paragraph'}
-		{@render fieldParagraphSnippet(value, field)}
+		{@render fieldParagraphSnippet(field)}
 	{:else}
-		{@render fieldTextSnippet(value, field)}
+		{@render fieldTextSnippet(field)}
 	{/if}
 </div>
 
 <style>
+	.field {
+		font-size: 80%;
+		padding-bottom: 5px;
+	}
+
+	.modified {
+		color: var(--colors-primary);
+	}
+
 	input[type='text'] {
 		width: 100%;
 	}

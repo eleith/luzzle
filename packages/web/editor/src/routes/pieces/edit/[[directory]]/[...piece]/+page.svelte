@@ -3,6 +3,7 @@
 
 	let { data } = $props()
 	let dialog: HTMLDialogElement
+	let fields = $state(data.fields)
 </script>
 
 <dialog bind:this={dialog}>
@@ -35,7 +36,8 @@
 <PieceForm
 	action="?/edit"
 	schema={data.schema}
-	values={data.fields}
+	values={fields}
+	originalValues={data.fields}
 	note={data.note || ''}
 	{buttons}
 />

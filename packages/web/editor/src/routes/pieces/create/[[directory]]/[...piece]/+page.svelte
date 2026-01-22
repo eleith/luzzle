@@ -54,7 +54,6 @@
 			</div>
 
 			{#each data.schema as field, index (index)}
-				<div class="field">{field.name}</div>
 				<div class="field-edit">
 					<FieldEdit {field} value={data.defaults[field.name]} />
 				</div>

@@ -7,20 +7,24 @@
 		action: string
 		schema: PieceFrontmatterSchemaField[]
 		values: Record<string, unknown>
+		originalValues?: Record<string, unknown>
 		note: string
 		buttons: Snippet
 	}
 
-	let { action, schema, values, note, buttons }: Props = $props()
+	let { action, schema, values, originalValues, note, buttons }: Props = $props()
 </script>
 
 <section class="edit">
 	<form method="post" enctype="multipart/form-data" {action}>
 		<div class="piece-container">
 			{#each schema as field, index (index)}
-				<div class="field">{field.name}</div>
 				<div class="field-edit">
-					<FieldEdit {field} value={values[field.name]} />
+					<FieldEdit
+						{field}
+						bind:value={values[field.name]}
+						originalValue={originalValues?.[field.name]}
+					/>
 				</div>
 			{/each}
 			<div class="field">note</div>

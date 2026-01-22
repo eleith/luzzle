@@ -21,7 +21,7 @@ Simplify the user experience by removing the "Generate" workflow from the creati
     - Remove "Generate" UI and toggle logic from `packages/web/editor/src/routes/pieces/create/.../+page.svelte`.
     - **Commit:** `refactor(web-editor): remove generate workflow from create route`
 
-- [ ] **Step 2: Componentize the Piece Form**
+- [x] **Step 2: Componentize the Piece Form**
     - Create `packages/web/editor/src/lib/pieces/components/PieceForm.svelte`.
     - Refactor Edit page to use this component.
     - **Commit:** `refactor(web-editor): extract PieceForm component`
