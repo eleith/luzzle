@@ -16,7 +16,12 @@
 </dialog>
 
 {#snippet buttons()}
-	<button type="submit">save</button>
+	<div style="display:flex; gap: var(--space-2);">
+		<button type="submit">save</button>
+		<button type="button" style="background-color:var(--colors-tertiary);">
+			<a href="/pieces/generate/{data.file}">generate</a>
+		</button>
+	</div>
 	<div>
 		<button type="button" style="background-color:blue;">
 			<a href="/pieces/list/{data.file}">cancel</a>

@@ -26,7 +26,7 @@ Simplify the user experience by removing the "Generate" workflow from the creati
     - Refactor Edit page to use this component.
     - **Commit:** `refactor(web-editor): extract PieceForm component`
 
-- [ ] **Step 3: Implement Visual Diff Logic**
+- [x] **Step 3: Implement Visual Diff Logic**
     - Add `originalValue` prop to `FieldEdit` and `PieceForm`.
     - Add CSS highlights for modified fields.
     - **Commit:** `feat(web-editor): add visual diff indication to form fields`
