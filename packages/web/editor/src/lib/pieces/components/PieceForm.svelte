@@ -1,0 +1,62 @@
+<script lang="ts">
+	import type { PieceFrontmatterSchemaField } from '@luzzle/core'
+	import type { Snippet } from 'svelte'
+	import FieldEdit from './fields/edit.svelte'
+
+	interface Props {
+		action: string
+		schema: PieceFrontmatterSchemaField[]
+		values: Record<string, unknown>
+		note: string
+		buttons: Snippet
+	}
+
+	let { action, schema, values, note, buttons }: Props = $props()
+</script>
+
+<section class="edit">
+	<form method="post" enctype="multipart/form-data" {action}>
+		<div class="piece-container">
+			{#each schema as field, index (index)}
+				<div class="field">{field.name}</div>
+				<div class="field-edit">
+					<FieldEdit {field} value={values[field.name]} />
+				</div>
+			{/each}
+			<div class="field">note</div>
+			<div class="field-edit">
+				<textarea name="note" style="width: 100%;height:300px;">{note}</textarea>
+			</div>
+			<div style="display: flex; justify-content: space-between;">
+				{@render buttons()}
+			</div>
+		</div>
+	</form>
+</section>
+
+<style>
+	div.field {
+		font-size: 80%;
+	}
+
+	div.field-edit {
+		padding-bottom: 10px;
+	}
+
+	section.edit {
+		margin: var(--space-4);
+		margin-bottom: var(--space-8);
+		margin-left: auto;
+		margin-right: auto;
+		width: 85%;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	@media screen and (min-width: 768px) {
+		section.edit {
+			width: clamp(500px, 66.6666%, 1000px);
+		}
+	}
+</style>

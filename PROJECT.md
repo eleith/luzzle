@@ -16,7 +16,7 @@ Simplify the user experience by removing the "Generate" workflow from the creati
 
 ### Branch: `feature/generate-flow`
 
-- [ ] **Step 1: Refactor & Cleanup "Create"**
+- [x] **Step 1: Refactor & Cleanup "Create"**
     - Remove `generate` action from `packages/web/editor/src/routes/pieces/create/.../+page.server.ts`.
     - Remove "Generate" UI and toggle logic from `packages/web/editor/src/routes/pieces/create/.../+page.svelte`.
     - **Commit:** `refactor(web-editor): remove generate workflow from create route`
