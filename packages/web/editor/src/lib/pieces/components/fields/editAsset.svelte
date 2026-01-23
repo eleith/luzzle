@@ -41,11 +41,15 @@
 	})
 
 	// Calculate modification status
-	$effect(() => {
+	const checkModified = $derived.by(() => {
 		const assetsChanged = JSON.stringify(retainAssets) !== JSON.stringify(originalValues)
 		const hasDownload = !!toDownload
 		const hasUpload = !!toUpload && toUpload.length > 0
-		isModified = assetsChanged || hasDownload || hasUpload
+		return assetsChanged || hasDownload || hasUpload
+	})
+
+	$effect(() => {
+		isModified = checkModified
 	})
 
 	function clickToRemove(asset: string) {

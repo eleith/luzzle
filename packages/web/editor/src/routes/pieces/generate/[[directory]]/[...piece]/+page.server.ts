@@ -74,8 +74,7 @@ export const actions = {
 
 		try {
 			// Append current field values to prompt for context
-			const contextPrompt = `
-You are a digital archivist tasked with correcting incorrect metadata and updating any missing data.
+			const contextPrompt = `You are a digital archivist tasked with correcting incorrect metadata and updating any missing data.
 
 Current Metadata (from disk):
 ${JSON.stringify(currentFields, null, 2)}
@@ -83,8 +82,7 @@ ${JSON.stringify(currentFields, null, 2)}
 Target Fields to Update: ${targetField === 'all' ? 'All Fields' : targetField}
 
 User Request:
-${prompt}
-`
+${prompt}`
 			const generatedFields = await promptToPiece(
 				targetSchema as PieceFrontmatterSchema<PieceFrontmatter>,
 				contextPrompt,

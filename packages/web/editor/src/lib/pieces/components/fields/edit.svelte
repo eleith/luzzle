@@ -14,11 +14,14 @@
 		$state(null)
 	let assetModified = $state(false)
 
+	function normalize(v: unknown) {
+		return v === undefined || v === null ? '' : v
+	}
+
 	const isModified = $derived(
 		isAsset(field)
 			? assetModified
-			: JSON.stringify(value === undefined || value === null ? '' : value) !==
-					JSON.stringify(originalValue === undefined || originalValue === null ? '' : originalValue)
+			: JSON.stringify(normalize(value)) !== JSON.stringify(normalize(originalValue))
 	)
 
 	const prefix = 'frontmatter'
