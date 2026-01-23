@@ -14,7 +14,8 @@
 		$state(null)
 
 	const isModified = $derived(
-		originalValue !== undefined && JSON.stringify(value) !== JSON.stringify(originalValue)
+		JSON.stringify(value === undefined || value === null ? '' : value) !==
+			JSON.stringify(originalValue === undefined || originalValue === null ? '' : originalValue)
 	)
 
 	const prefix = 'frontmatter'

@@ -6,6 +6,13 @@
 
 	let selectedField = $state<string>('all')
 	let prompt = $state(`generate all fields for this ${data.type} piece.`)
+	let generatedFields = $state(form?.fields || {})
+
+	$effect(() => {
+		if (form?.fields) {
+			generatedFields = form.fields
+		}
+	})
 
 	function onFieldChange() {
 		if (selectedField === 'all') {
@@ -28,7 +35,7 @@
 		<PieceForm
 			action="/pieces/edit/{data.file}?/edit"
 			schema={data.schema}
-			values={form.fields}
+			values={generatedFields}
 			originalValues={data.fields}
 			note={form.note || ''}
 			{buttons}

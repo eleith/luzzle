@@ -31,7 +31,7 @@ Simplify the user experience by removing the "Generate" workflow from the creati
     - Add CSS highlights for modified fields.
     - **Commit:** `feat(web-editor): add visual diff indication to form fields`
 
-- [ ] **Step 4: Scaffold "Generate" Route**
+- [x] **Step 4: Scaffold "Generate" Route**
     - Create `routes/pieces/generate/[[directory]]/[...piece]` structure.
     - Add "Generate" button to the Edit page/form.
     - **Commit:** `feat(web-editor): scaffold generate route and link from edit page`
