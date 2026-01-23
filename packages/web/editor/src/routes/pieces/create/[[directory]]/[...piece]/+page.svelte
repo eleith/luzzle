@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation'
 	import FieldEdit from '$lib/pieces/components/fields/edit.svelte'
+	import Button from '$lib/components/ui/Button.svelte'
 
 	let { data, form } = $props()
 	let editSlug: HTMLInputElement | null = $state(null)
@@ -65,10 +66,10 @@
 			</div>
 
 			<div style="display:flex;justify-content:space-between;">
-				<button type="submit">create</button>
-				<button>
-					<a href="/directory/list/{data.directory}">cancel</a>
-				</button>
+				<Button type="submit">create</Button>
+				<a href="/directory/list/{data.directory}">
+					<Button variant="outline">cancel</Button>
+				</a>
 			</div>
 		</div>
 	</form>
