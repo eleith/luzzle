@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types'
 	import PieceForm from '$lib/pieces/components/PieceForm.svelte'
+	import Button from '$lib/components/ui/Button.svelte'
 
 	let { data, form }: { data: PageData; form: ActionData } = $props()
 
@@ -26,10 +27,10 @@
 {#if form && !form.error}
 	<section class="review">
 		{#snippet buttons()}
-			<button type="submit">save</button>
-			<button type="button" style="background-color:blue;">
-				<a href="/pieces/list/{data.file}">cancel</a>
-			</button>
+			<Button type="submit">save</Button>
+			<a href="/pieces/list/{data.file}">
+				<Button variant="outline">cancel</Button>
+			</a>
 		{/snippet}
 
 		<PieceForm
@@ -83,10 +84,10 @@
 				</div>
 
 				<div style="display:flex;justify-content:space-between;">
-					<button type="submit">generate</button>
-					<button type="button" style="background-color:blue;">
-						<a href="/pieces/list/{data.file}">cancel</a>
-					</button>
+					<Button type="submit">generate</Button>
+					<a href="/pieces/list/{data.file}">
+						<Button variant="outline">cancel</Button>
+					</a>
 				</div>
 			</div>
 		</form>
