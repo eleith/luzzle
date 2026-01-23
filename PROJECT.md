@@ -36,7 +36,7 @@ Simplify the user experience by removing the "Generate" workflow from the creati
     - Add "Generate" button to the Edit page/form.
     - **Commit:** `feat(web-editor): scaffold generate route and link from edit page`
 
-- [ ] **Step 5: Implement Generation Logic**
+- [x] **Step 5: Implement Generation Logic**
     - Implement server-side LLM call with schema slicing.
     - Connect the "Review" state to the Generate page UI.
     - **Commit:** `feat(web-editor): implement generation logic and review view`

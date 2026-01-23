@@ -73,18 +73,16 @@ export const actions = {
 		}
 
 		try {
-			// Filter out the target field from current fields so the LLM treats it as missing/needs generation
-			const contextFields = { ...currentFields }
-			if (targetField && targetField !== 'all') {
-				delete contextFields[targetField]
-			}
-
 			// Append current field values to prompt for context
 			const contextPrompt = `
-Existing Data:
-${JSON.stringify(contextFields, null, 2)}
+You are a digital archivist tasked with correcting incorrect metadata and updating any missing data.
 
-Task:
+Current Metadata (from disk):
+${JSON.stringify(currentFields, null, 2)}
+
+Target Fields to Update: ${targetField === 'all' ? 'All Fields' : targetField}
+
+User Request:
 ${prompt}
 `
 			const generatedFields = await promptToPiece(

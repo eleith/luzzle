@@ -4,20 +4,49 @@
 	type Props = {
 		field: AssetField
 		value: unknown
+		originalValue?: unknown
+		isModified?: boolean
 	}
 
-	let { field, value }: Props = $props()
+	let { field, value, originalValue, isModified = $bindable(false) }: Props = $props()
 
 	const isArray = field.type === 'array'
-	const values = value === undefined ? [] : isArray ? (value as string[]) : [value as string]
-
 	const prefix = 'frontmatter'
 
 	let toRemove = $state<string[]>([])
 	let toUpload = $state<FileList | null>(null)
 	let toDownload = $state<string | null>(null)
-	let retainAssets = $state<string[]>(values)
+	let retainAssets = $state<string[]>([])
 	let fileInput = $state<HTMLInputElement>()
+
+	// Derived initial state from originalValue for comparison
+	const originalValues = $derived(
+		originalValue === undefined
+			? []
+			: isArray
+				? (originalValue as string[])
+				: [originalValue as string]
+	)
+
+	// Effect to sync from Prop (Server/LLM) to Internal State
+	$effect(() => {
+		const values = value === undefined ? [] : isArray ? (value as string[]) : [value as string]
+		const urls = values.filter((v) => /^https?:\/\//.test(v))
+		const paths = values.filter((v) => !/^https?:\/\//.test(v))
+
+		retainAssets = paths
+		if (urls.length > 0) {
+			toDownload = urls[0]
+		}
+	})
+
+	// Calculate modification status
+	$effect(() => {
+		const assetsChanged = JSON.stringify(retainAssets) !== JSON.stringify(originalValues)
+		const hasDownload = !!toDownload
+		const hasUpload = !!toUpload && toUpload.length > 0
+		isModified = assetsChanged || hasDownload || hasUpload
+	})
 
 	function clickToRemove(asset: string) {
 		const index = retainAssets.indexOf(asset)

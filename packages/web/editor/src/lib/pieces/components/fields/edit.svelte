@@ -12,10 +12,13 @@
 	let { field, value = $bindable(), originalValue }: Props = $props()
 	let inputElement: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | EditAsset | null =
 		$state(null)
+	let assetModified = $state(false)
 
 	const isModified = $derived(
-		JSON.stringify(value === undefined || value === null ? '' : value) !==
-			JSON.stringify(originalValue === undefined || originalValue === null ? '' : originalValue)
+		isAsset(field)
+			? assetModified
+			: JSON.stringify(value === undefined || value === null ? '' : value) !==
+					JSON.stringify(originalValue === undefined || originalValue === null ? '' : originalValue)
 	)
 
 	const prefix = 'frontmatter'
@@ -132,7 +135,7 @@
 <div class="field-container">
 	{#if isAsset(field)}
 		<div>
-			<EditAsset {field} {value} />
+			<EditAsset {field} {value} {originalValue} bind:isModified={assetModified} />
 		</div>
 	{:else if field.format === 'date'}
 		{@render fieldDateSnippet(field)}
