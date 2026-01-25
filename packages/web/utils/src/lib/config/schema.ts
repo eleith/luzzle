@@ -12,6 +12,25 @@ export interface Schema {
     luzzle_assets: string;
     editor: string;
   };
+  auth: {
+    enabled: boolean;
+    secret: string;
+    type: "oidc";
+    oidc: {
+      issuer: string;
+      clientId: string;
+      clientSecret: string;
+    };
+  };
+  storage: {
+    type: "webdav" | "filesystem";
+    config: {
+      url?: string;
+      root: string;
+      username?: string;
+      password?: string;
+    };
+  };
   paths: {
     database: string;
     config?: string;

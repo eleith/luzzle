@@ -11,6 +11,39 @@ export type ConfigPublic = {
 	content: Config['content']
 }
 
+function replaceEnvVars(obj: unknown): unknown {
+	if (typeof obj === 'string') {
+		if (obj.startsWith('$$')) {
+			return obj.slice(1)
+		}
+
+		const match = obj.match(/^\$\{(.+)\}$/)
+		if (match) {
+			const varName = match[1]
+			const value = process.env[varName]
+			if (!value) {
+				throw new Error(`Config error: Environment variable "${varName}" is missing.`)
+			}
+			return value
+		}
+		return obj
+	}
+
+	if (Array.isArray(obj)) {
+		return obj.map(replaceEnvVars)
+	}
+
+	if (obj !== null && typeof obj === 'object') {
+		const result: Record<string, unknown> = {}
+		for (const key in obj) {
+			result[key] = replaceEnvVars((obj as Record<string, unknown>)[key])
+		}
+		return result
+	}
+
+	return obj
+}
+
 function loadConfig(userConfigPath?: string): Config {
 	const schema = schemaJson
 	const config = defaults as Config
@@ -22,7 +55,8 @@ function loadConfig(userConfigPath?: string): Config {
 	if (userConfigPath) {
 		if (existsSync(userConfigPath)) {
 			const userConfig = yamlParse(readFileSync(userConfigPath, 'utf8')) as Partial<Config>
-			const mergedConfig = deepMerge(config, userConfig) as Config
+			let mergedConfig = deepMerge(config, userConfig) as Config
+			mergedConfig = replaceEnvVars(mergedConfig) as Config
 
 			if (!validate(mergedConfig)) {
 				throw new Error(`Configuration validation failed: ${ajv.errorsText(validate.errors)}`)

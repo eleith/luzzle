@@ -25,6 +25,84 @@
 			],
 			"additionalProperties": false
 		},
+		"auth": {
+			"type": "object",
+			"properties": {
+				"enabled": {
+					"type": "boolean"
+				},
+				"secret": {
+					"type": "string"
+				},
+				"type": {
+					"const": "oidc"
+				},
+				"oidc": {
+					"type": "object",
+					"properties": {
+						"issuer": {
+							"type": "string"
+						},
+						"clientId": {
+							"type": "string"
+						},
+						"clientSecret": {
+							"type": "string"
+						}
+					},
+					"required": [
+						"issuer",
+						"clientId",
+						"clientSecret"
+					],
+					"additionalProperties": false
+				}
+			},
+			"required": [
+				"enabled",
+				"type",
+				"secret",
+				"oidc"
+			],
+			"additionalProperties": false
+		},
+		"storage": {
+			"type": "object",
+			"properties": {
+				"type": {
+					"enum": [
+						"webdav",
+						"filesystem"
+					]
+				},
+				"config": {
+					"type": "object",
+					"properties": {
+						"url": {
+							"type": "string"
+						},
+						"root": {
+							"type": "string"
+						},
+						"username": {
+							"type": "string"
+						},
+						"password": {
+							"type": "string"
+						}
+					},
+					"required": [
+						"root"
+					],
+					"additionalProperties": false
+				}
+			},
+			"required": [
+				"type",
+				"config"
+			],
+			"additionalProperties": false
+		},
 		"paths": {
 			"type": "object",
 			"properties": {
@@ -665,6 +743,8 @@
 	},
 	"required": [
 		"url",
+		"auth",
+		"storage",
 		"content",
 		"paths",
 		"theme",
