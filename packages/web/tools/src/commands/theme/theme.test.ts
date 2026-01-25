@@ -13,6 +13,8 @@ describe('generate-theme/theme', () => {
 	test('should generate theme CSS', () => {
 		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
+			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
+			storage: { type: 'filesystem', config: { root: '' } },
 			paths: { database: '' },
 			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
 			pieces: [{ type: 'test', fields: { title: 'test', date_consumed: 'test' } }],

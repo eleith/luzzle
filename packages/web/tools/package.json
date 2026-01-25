@@ -42,7 +42,7 @@
 	},
 	"dependencies": {
 		"@luzzle/core": "0.0.36",
-		"@luzzle/web.utils": "0.0.14",
+		"@luzzle/web.utils": "0.0.15",
 		"lightningcss": "^1.30.2",
 		"puppeteer": "24.19.0",
 		"sharp": "0.33.5",

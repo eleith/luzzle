@@ -57,8 +57,10 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@auth/core": "^0.41.1",
+		"@auth/sveltekit": "^1.11.1",
 		"@luzzle/core": "0.0.35",
-		"@luzzle/web.utils": "0.0.14",
+		"@luzzle/web.utils": "0.0.15",
 		"better-sqlite3": "11.7.2",
 		"bits-ui": "2.14.1",
 		"devlop": "1.1.0",
