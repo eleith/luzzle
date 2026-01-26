@@ -3,6 +3,7 @@
 	import Button from '$lib/components/ui/Button.svelte'
 	import { DropdownMenu } from 'bits-ui'
 	import DotsThreeVertical from 'virtual:icons/ph/dots-three-vertical'
+	import { goto } from '$app/navigation'
 
 	let { data } = $props()
 	let dialog: HTMLDialogElement
@@ -40,13 +41,11 @@
 					{#if open}
 						<div {...wrapperProps} class="dropdown-content">
 							<div {...props}>
-								<!-- Generate route not ported yet
 								<DropdownMenu.Item onSelect={() => goto(`/editor/pieces/generate/${data.file}`)}>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>generate</div>
 									{/snippet}
 								</DropdownMenu.Item>
-								-->
 								<DropdownMenu.Item onSelect={() => dialog.showModal()}>
 									{#snippet child({ props })}
 										<div class="dropdown-item destructive" {...props}>delete</div>

@@ -1,5 +1,11 @@
-import { Pieces } from '@luzzle/core'
+import {
+	Pieces,
+	pieceFrontMatterFromPrompt,
+	type PieceFrontmatter,
+	type PieceFrontmatterSchema
+} from '@luzzle/core'
 import { getStorage } from './storage'
+import { config } from './config'
 
 let pieces: Pieces | null = null
 
@@ -12,4 +18,12 @@ export function getPieces(): Pieces {
 	pieces = new Pieces(storage)
 
 	return pieces
+}
+
+export async function promptToPiece(
+	schema: PieceFrontmatterSchema<PieceFrontmatter>,
+	prompt: string,
+	file?: Buffer[]
+) {
+	return pieceFrontMatterFromPrompt(config.ai.api_key, schema, prompt, file)
 }
