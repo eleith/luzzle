@@ -1,3 +1,4 @@
 .npmrc
 packages/web/editor/.env.local
 packages/web/editor/.env.local.webdav
+packages/web/explorer/config.yaml
