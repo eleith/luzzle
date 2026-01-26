@@ -31,6 +31,10 @@ export interface Schema {
       password?: string;
     };
   };
+  ai: {
+    provider: "google";
+    api_key: string;
+  };
   paths: {
     database: string;
     config?: string;

@@ -174,5 +174,18 @@ pieces:
 			expect(config.storage.config.root).toBe('val1')
 			expect(config.pieces[0].fields.title).toBe('val2')
 		})
+
+		test('should handle ai configuration substitution', () => {
+			vi.stubEnv('AI_KEY', 'google-key')
+			const yamlContent = `
+ai:
+  provider: 'google'
+  api_key: '\${AI_KEY}'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+
+			const config = loadConfig(tmpConfigPath)
+			expect(config.ai.api_key).toBe('google-key')
+		})
 	})
 })

@@ -103,6 +103,24 @@
 			],
 			"additionalProperties": false
 		},
+		"ai": {
+			"type": "object",
+			"properties": {
+				"provider": {
+					"enum": [
+						"google"
+					]
+				},
+				"api_key": {
+					"type": "string"
+				}
+			},
+			"required": [
+				"provider",
+				"api_key"
+			],
+			"additionalProperties": false
+		},
 		"paths": {
 			"type": "object",
 			"properties": {
@@ -745,6 +763,7 @@
 		"url",
 		"auth",
 		"storage",
+		"ai",
 		"content",
 		"paths",
 		"theme",
