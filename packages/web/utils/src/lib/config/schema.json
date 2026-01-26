@@ -12,16 +12,12 @@
 				},
 				"luzzle_assets": {
 					"type": "string"
-				},
-				"editor": {
-					"type": "string"
 				}
 			},
 			"required": [
 				"app",
 				"app_assets",
-				"luzzle_assets",
-				"editor"
+				"luzzle_assets"
 			],
 			"additionalProperties": false
 		},

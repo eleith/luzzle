@@ -103,6 +103,10 @@ describe('lib/config/config', () => {
 		test('should substitute environment variables', () => {
 			vi.stubEnv('TEST_VAR', 'substituted_value')
 			const yamlContent = `
+url:
+  app: ''
+  app_assets: ''
+  luzzle_assets: ''
 auth:
   enabled: true
   secret: '\${TEST_VAR}'

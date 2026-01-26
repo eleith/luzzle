@@ -10,7 +10,6 @@ export interface Schema {
     app: string;
     app_assets: string;
     luzzle_assets: string;
-    editor: string;
   };
   auth: {
     enabled: boolean;

@@ -13,9 +13,6 @@ url:
   # The base URL for assets hosted on a separate CDN or file server.
   luzzle_assets: ''
 
-  # The URL for the Luzzle Editor instance, used for edit links.
-  editor: 'http://editor.localhost'
-
 # general app content
 content:
   text:
