@@ -1,0 +1,136 @@
+<script lang="ts">
+	import type { AssetField } from './types'
+
+	type Props = {
+		field: AssetField
+		value: unknown
+		originalValue?: unknown
+		isModified?: boolean
+	}
+
+	let { field, value, originalValue, isModified = $bindable(false) }: Props = $props()
+
+	const isArray = field.type === 'array'
+	const prefix = 'frontmatter'
+
+	let toRemove = $state<string[]>([])
+	let toUpload = $state<FileList | null>(null)
+	let toDownload = $state<string | null>(null)
+	let retainAssets = $state<string[]>([])
+	let fileInput = $state<HTMLInputElement>()
+
+	// Derived initial state from originalValue for comparison
+	const originalValues = $derived(
+		originalValue === undefined
+			? []
+			: isArray
+				? (originalValue as string[])
+				: [originalValue as string]
+	)
+
+	// Effect to sync from Prop (Server/LLM) to Internal State
+	$effect(() => {
+		const values = value === undefined ? [] : isArray ? (value as string[]) : [value as string]
+		const urls = values.filter((v) => /^https?:\/\//.test(v))
+		const paths = values.filter((v) => !/^https?:\/\//.test(v))
+
+		retainAssets = paths
+		if (urls.length > 0) {
+			toDownload = urls[0]
+		}
+	})
+
+	// Calculate modification status
+	const checkModified = $derived.by(() => {
+		const assetsChanged = JSON.stringify(retainAssets) !== JSON.stringify(originalValues)
+		const hasDownload = !!toDownload
+		const hasUpload = !!toUpload && toUpload.length > 0
+		return assetsChanged || hasDownload || hasUpload
+	})
+
+	$effect(() => {
+		isModified = checkModified
+	})
+
+	function clickToRemove(asset: string) {
+		const index = retainAssets.indexOf(asset)
+		retainAssets.splice(index, 1)
+		toRemove.push(asset)
+	}
+
+	function clickToRemoveUpload() {
+		toUpload = null
+
+		if (fileInput) {
+			fileInput.value = ''
+		}
+	}
+
+	function onChangeUpload() {
+		const files = fileInput?.files
+
+		if (files) {
+			toUpload = files
+		}
+	}
+
+	export function focus() {
+		fileInput?.focus()
+	}
+</script>
+
+<div>
+	{#if retainAssets.length > 0}
+		{#each retainAssets as asset, index (index)}
+			<div>
+				<span><a href="/editor/asset/{asset}" target="_blank">{asset}</a></span>
+				<input type="hidden" name="{prefix}.{field.name}" value={asset} />
+				<button class="button" data-variant="error" onclick={() => clickToRemove(asset)}
+					>remove</button
+				>
+			</div>
+		{/each}
+	{/if}
+
+	{#if isArray || retainAssets.length === 0}
+		<div>
+			<div>
+				<input
+					type="file"
+					multiple={isArray}
+					bind:this={fileInput}
+					bind:files={toUpload}
+					onchange={onChangeUpload}
+					name="{prefix}.upload.{field.name}"
+					class={toDownload ? 'hide input' : 'input'}
+					required={!field.nullable}
+				/>
+				{#if toUpload?.length}
+					<button class="button" onclick={() => clickToRemoveUpload()}>cancel</button>
+				{/if}
+			</div>
+			{#if !(toUpload?.length || toDownload)}
+				<div>or</div>
+			{/if}
+			<div>
+				<input
+					type="text"
+					style="width: 100%"
+					name="{prefix}.download.{field.name}"
+					bind:value={toDownload}
+					class={toUpload?.length ? 'hide input' : 'input'}
+					placeholder="url to download"
+				/>
+			</div>
+		</div>
+	{/if}
+	{#each toRemove as asset, index (index)}
+		<input type="hidden" name="{prefix}.remove.{field.name}" value={asset} />
+	{/each}
+</div>
+
+<style>
+	.hide {
+		display: none;
+	}
+</style>
