@@ -28,6 +28,15 @@ describe('generate-web-sqlite', () => {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
 			paths: { database: '/tmp/test.db' },
 			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
+			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
+			storage: { type: 'filesystem', config: { root: '' } },
+			ai: { provider: 'google', api_key: '' },
+			theme: {
+				globals: {},
+				light: {},
+				dark: {},
+				markdown: { code: { light: 'github-light', dark: 'github-dark' }, sidenote: {} },
+			},
 			pieces: [
 				{
 					type: 'books',
@@ -111,6 +120,15 @@ describe('generate-web-sqlite', () => {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
 			paths: { database: '/tmp/test.db' },
 			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
+			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
+			storage: { type: 'filesystem', config: { root: '' } },
+			ai: { provider: 'google', api_key: '' },
+			theme: {
+				globals: {},
+				light: {},
+				dark: {},
+				markdown: { code: { light: 'github-light', dark: 'github-dark' }, sidenote: {} },
+			},
 			pieces: [
 				{
 					type: 'books',
@@ -202,6 +220,15 @@ describe('generate-web-sqlite', () => {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
 			paths: { database: '/tmp/test.db' },
 			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
+			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
+			storage: { type: 'filesystem', config: { root: '' } },
+			ai: { provider: 'google', api_key: '' },
+			theme: {
+				globals: {},
+				light: {},
+				dark: {},
+				markdown: { code: { light: 'github-light', dark: 'github-dark' }, sidenote: {} },
+			},
 			pieces: [
 				{
 					type: 'books',
