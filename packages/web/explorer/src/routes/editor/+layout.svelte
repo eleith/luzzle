@@ -3,7 +3,9 @@
 	import FolderIcon from 'virtual:icons/ph/folder'
 	import PenIcon from 'virtual:icons/ph/pen'
 	import PlusIcon from 'virtual:icons/ph/plus'
+	import SignOutIcon from 'virtual:icons/ph/sign-out'
 	import { page } from '$app/state'
+	import { signOut } from '@auth/sveltekit/client'
 
 	const { children } = $props()
 </script>
@@ -31,6 +33,9 @@
 			<PenIcon style="font-size: 1em;" />
 		</a>
 	{/if}
+	<button onclick={() => signOut({ callbackUrl: '/' })} aria-label="sign out">
+		<SignOutIcon style="font-size: 1em;" />
+	</button>
 {/snippet}
 
 <main>
