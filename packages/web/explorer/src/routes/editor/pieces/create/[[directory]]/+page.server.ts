@@ -46,11 +46,11 @@ export const actions = {
 
 			markdown.frontmatter = frontmatter
 			markdown.note = note
+
+			await piece.write(markdown)
 		} catch (e) {
 			return fail(400, { error: { message: `failed to create piece: ${e}` } })
 		}
-
-		await piece.write(markdown)
 
 		redirect(303, `/editor/pieces/view/${markdown.filePath}`)
 	}
