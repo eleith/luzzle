@@ -18,6 +18,6 @@ export const GET: RequestHandler = async (a) => {
 			status: 404
 		})
 	} else {
-		return Response.redirect(`${config.url.editor}/${piece.file_path}`, 302)
+		return Response.redirect(new URL(`/editor/pieces/edit/${piece.file_path}`, a.url).toString(), 302)
 	}
 }
