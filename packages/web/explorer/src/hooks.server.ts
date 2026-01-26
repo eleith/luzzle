@@ -37,4 +37,4 @@ const guardHandle: Handle = async ({ event, resolve }) => {
 	return resolve(event)
 }
 
-export const handle = sequence(authHandle.handle, guardHandle)
+export const handle = config.auth.enabled ? sequence(authHandle.handle, guardHandle) : guardHandle
