@@ -46,4 +46,3 @@ The Web Explorer is configured using a `config.yaml` file.
 - **theme:** Colors, fonts, and dark mode! 🌙
 
 For advanced configuration, check out `@luzzle/web.tools`
-
