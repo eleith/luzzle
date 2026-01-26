@@ -247,4 +247,16 @@ describe('lib/storage/webdav.ts', () => {
 
 		expect(spies.createDirectory).toHaveBeenCalled()
 	})
+
+	test('prevents traversal', async () => {
+		const root = '/root/dir'
+		const client = mockDavClient
+
+		mocks.createClient.mockReturnValueOnce(client)
+		const storage = new StorageWebDAV('url', root, {})
+
+		await expect(() => storage.readFile('../outside')).rejects.toThrow(
+			'Path traversal attempt detected',
+		)
+	})
 })

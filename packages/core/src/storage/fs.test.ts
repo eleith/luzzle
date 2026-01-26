@@ -11,11 +11,11 @@ import {
 	WriteStream,
 } from 'fs'
 import StorageFileSystem from './fs.js'
-import { relative, resolve } from 'path'
+import { resolve } from 'path'
 import { PassThrough } from 'stream'
 
 vi.mock('fs')
-vi.mock('path')
+// vi.mock('path') // Use real path module
 vi.mock('fs/promises')
 vi.mock('fdir', () => {
 	const fdir = vi.fn()
@@ -41,8 +41,8 @@ const mocks = {
 	createReadStream: vi.mocked(createReadStream),
 	createWriteStream: vi.mocked(createWriteStream),
 	existsSync: vi.mocked(existsSync),
-	relative: vi.mocked(relative),
-	resolve: vi.mocked(resolve),
+	// relative: vi.mocked(relative),
+	// resolve: vi.mocked(resolve),
 }
 
 describe('lib/storage/fs.ts', () => {
@@ -58,7 +58,7 @@ describe('lib/storage/fs.ts', () => {
 	})
 
 	test('constructor', async () => {
-		const root = 'rooot'
+		const root = '/root/dir'
 
 		mocks.existsSync.mockReturnValueOnce(true)
 
@@ -68,7 +68,7 @@ describe('lib/storage/fs.ts', () => {
 	})
 
 	test('constructor throws', async () => {
-		const root = 'rooot'
+		const root = '/root/dir'
 
 		mocks.existsSync.mockReturnValueOnce(false)
 
@@ -77,77 +77,74 @@ describe('lib/storage/fs.ts', () => {
 
 	test('parseArgPath', async () => {
 		const root = '/root/dir'
-		const relative = 'relative/path'
+		const expectedRelative = 'relative/path'
+        const inputPath = resolve(root, expectedRelative)
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.relative.mockReturnValueOnce(relative)
+		// mocks.relative.mockReturnValueOnce(relative)
 		const storage = new StorageFileSystem(root)
 
-		const parsedPath = storage.parseArgPath('./path')
+		const parsedPath = storage.parseArgPath(inputPath)
 
-		expect(parsedPath).toEqual(relative)
+		expect(parsedPath).toEqual(expectedRelative)
 	})
 
 	test('readFile as utf8', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
+		const expectedPath = resolve(root, './path')
 		const contents = 'file contents'
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.readFile.mockResolvedValueOnce(contents)
 		const storage = new StorageFileSystem(root)
 
 		const file = await storage.readFile('./path', 'text')
 
-		expect(mocks.readFile).toHaveBeenCalledWith(resolve, 'utf-8')
+		expect(mocks.readFile).toHaveBeenCalledWith(expectedPath, 'utf-8')
 		expect(file).toEqual(contents)
 	})
 
 	test('readFile as binary', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
+		const expectedPath = resolve(root, './path')
 		const contents = 'file contents'
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.readFile.mockResolvedValueOnce(contents)
 		const storage = new StorageFileSystem(root)
 
 		const file = await storage.readFile('./path')
 
-		expect(mocks.readFile).toHaveBeenCalledWith(resolve)
+		expect(mocks.readFile).toHaveBeenCalledWith(expectedPath)
 		expect(file).toEqual(contents)
 	})
 
 	test('writeFile buffer', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
+		const expectedPath = resolve(root, './path')
 		const buffer = Buffer.from('file contents')
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.writeFile.mockResolvedValueOnce(undefined)
 		const storage = new StorageFileSystem(root)
 
 		await storage.writeFile('./path', buffer)
 
-		expect(mocks.writeFile).toHaveBeenCalledWith(resolve, buffer, 'binary')
+		expect(mocks.writeFile).toHaveBeenCalledWith(expectedPath, buffer, 'binary')
 	})
 
 	test('writeFile text', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
+		const expectedPath = resolve(root, './path')
 		const contents = 'file contents'
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.writeFile.mockResolvedValueOnce(undefined)
 		const storage = new StorageFileSystem(root)
 
 		await storage.writeFile('./path', contents)
 
-		expect(mocks.writeFile).toHaveBeenCalledWith(resolve, contents, 'utf8')
+		expect(mocks.writeFile).toHaveBeenCalledWith(expectedPath, contents, 'utf8')
 	})
 
 	test('getFilesIn recursive', async () => {
@@ -189,10 +186,8 @@ describe('lib/storage/fs.ts', () => {
 
 	test('exists', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
-
+		
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.stat.mockResolvedValueOnce({} as Stats)
 
 		const storage = new StorageFileSystem(root)
@@ -203,10 +198,8 @@ describe('lib/storage/fs.ts', () => {
 
 	test('delete', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
-
+		
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.unlink.mockResolvedValueOnce(undefined)
 
 		const storage = new StorageFileSystem(root)
@@ -217,11 +210,9 @@ describe('lib/storage/fs.ts', () => {
 
 	test('stat', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
 		const stats = { size: 123, isFile: () => true, mtime: new Date() } as unknown as Stats
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.stat.mockResolvedValueOnce(stats)
 
 		const storage = new StorageFileSystem(root)
@@ -236,11 +227,9 @@ describe('lib/storage/fs.ts', () => {
 
 	test('stat on dir', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
 		const stats = { size: 123, isFile: () => false, mtime: new Date() } as unknown as Stats
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.stat.mockResolvedValueOnce(stats)
 
 		const storage = new StorageFileSystem(root)
@@ -255,11 +244,9 @@ describe('lib/storage/fs.ts', () => {
 
 	test('createReadStream', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
 		const stream = new PassThrough() as unknown as ReadStream
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.createReadStream.mockReturnValueOnce(stream)
 
 		const storage = new StorageFileSystem(root)
@@ -270,11 +257,9 @@ describe('lib/storage/fs.ts', () => {
 
 	test('createWritestream', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
 		const stream = new PassThrough() as unknown as WriteStream
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.createWriteStream.mockReturnValueOnce(stream)
 
 		const storage = new StorageFileSystem(root)
@@ -285,15 +270,22 @@ describe('lib/storage/fs.ts', () => {
 
 	test('makeDirectory', async () => {
 		const root = '/root/dir'
-		const resolve = 'relative/path'
+		const expectedPath = resolve(root, './path')
 
 		mocks.existsSync.mockReturnValueOnce(true)
-		mocks.resolve.mockReturnValueOnce(resolve)
 		mocks.mkdir.mockResolvedValueOnce('')
 
 		const storage = new StorageFileSystem(root)
-		storage.makeDirectory('./path')
+		await storage.makeDirectory('./path')
 
-		expect(mocks.mkdir).toHaveBeenCalledWith(resolve, { recursive: true })
+		expect(mocks.mkdir).toHaveBeenCalledWith(expectedPath, { recursive: true })
 	})
+
+    test('prevents traversal', async () => {
+        const root = '/root/dir'
+        mocks.existsSync.mockReturnValueOnce(true)
+        const storage = new StorageFileSystem(root)
+        
+        await expect(() => storage.readFile('../outside', 'text')).rejects.toThrow('Path traversal attempt detected')
+    })
 })

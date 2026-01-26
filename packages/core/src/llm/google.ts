@@ -1,4 +1,5 @@
-import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
+import { fileTypeFromBuffer } from 'file-type'
+import { fileTypeFromFile } from 'file-type/node'
 import {
 	ContentListUnion,
 	createPartFromUri,

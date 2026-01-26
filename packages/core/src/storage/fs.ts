@@ -20,7 +20,12 @@ class StorageFileSystem extends LuzzleStorage {
 	}
 
 	private resolvePath(_path: string) {
-		return path.resolve(this.root, _path)
+		const resolvedPath = path.resolve(this.root, _path)
+		const relativePath = path.relative(this.root, resolvedPath)
+		if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+			throw new Error(`Path traversal attempt detected: ${_path}`)
+		}
+		return resolvedPath
 	}
 
 	parseArgPath(argPath: string) {

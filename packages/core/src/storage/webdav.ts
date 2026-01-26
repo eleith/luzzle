@@ -18,7 +18,12 @@ class StorageWebDAV extends LuzzleStorage {
 	}
 
 	private buildPath(_path: string) {
-		return path.join(this.root, _path)
+		const fullPath = path.join(this.root, _path)
+		const relativePath = path.relative(this.root, fullPath)
+		if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+			throw new Error(`Path traversal attempt detected: ${_path}`)
+		}
+		return fullPath
 	}
 
 	parseArgPath(argPath: string) {

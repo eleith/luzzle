@@ -47,7 +47,7 @@
     "ajv": "8.17.1",
     "better-sqlite3": "11.7.2",
     "fdir": "6.5.0",
-    "file-type": "21.1.1",
+    "file-type": "21.3.0",
     "got": "14.6.5",
     "kysely": "0.27.5",
     "remark": "15.0.1",
