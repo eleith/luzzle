@@ -16,6 +16,7 @@ CLI tool built with `yargs`.
   * `opengraph`: Generates OG images.
   * `assets`: Generates resized images.
   * `sqlite`: Creates the web database.
+  * `validate`: Validates the `config.yaml` file.
 
 ## Key Concepts
 

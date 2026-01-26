@@ -11,7 +11,7 @@ code duplication for types and helpers.
 
 * **Exports:**
   * `lib/assets.ts`: Asset paths and types.
-  * `lib/config`: Configuration schemas.
+  * `lib/config`: Configuration schemas (including Auth, Storage, AI).
   * `lib/types.ts`: Shared TypeScript interfaces.
 
 ## Key Concepts
