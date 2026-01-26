@@ -19,7 +19,7 @@ const authHandle = SvelteKitAuth({
 				logo: `${config.url.app_assets}/images/favicon.png`
 			}
 		}
-	],
+	]
 })
 
 const guardHandle: Handle = async ({ event, resolve }) => {
