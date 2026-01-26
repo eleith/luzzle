@@ -1,0 +1,11 @@
+import { redirect } from '@sveltejs/kit'
+import type { PageServerLoad } from './$types'
+
+export const load: PageServerLoad = async ({ locals, url }) => {
+	const session = await locals.auth()
+	const redirectTo = url.searchParams.get('redirectTo') || '/editor'
+
+	if (session) {
+		throw redirect(302, redirectTo)
+	}
+}

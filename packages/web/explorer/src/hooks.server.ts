@@ -7,6 +7,9 @@ import { redirect, type Handle } from '@sveltejs/kit'
 const authHandle = SvelteKitAuth({
 	trustHost: true,
 	secret: config.auth.secret,
+	pages: {
+		signIn: '/signin'
+	},
 	providers: [
 		{
 			id: 'oidc',
@@ -30,7 +33,7 @@ const guardHandle: Handle = async ({ event, resolve }) => {
 
 		const session = await event.locals.auth()
 		if (!session) {
-			throw redirect(302, '/auth/signin')
+			throw redirect(302, `/signin?redirectTo=${event.url.pathname}`)
 		}
 	}
 
