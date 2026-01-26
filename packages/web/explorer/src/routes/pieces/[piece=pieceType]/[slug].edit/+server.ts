@@ -1,6 +1,5 @@
 import type { RequestHandler } from './$types'
 import { db } from '$lib/server/database'
-import { config } from '$lib/server/config'
 
 export const GET: RequestHandler = async (a) => {
 	const contentType = 'text/markdown'
@@ -18,6 +17,9 @@ export const GET: RequestHandler = async (a) => {
 			status: 404
 		})
 	} else {
-		return Response.redirect(new URL(`/editor/pieces/edit/${piece.file_path}`, a.url).toString(), 302)
+		return Response.redirect(
+			new URL(`/editor/pieces/edit/${piece.file_path}`, a.url).toString(),
+			302
+		)
 	}
 }

@@ -67,7 +67,7 @@ export const actions = {
 				...piece.schema,
 				required: [targetField],
 				properties: {
-					[targetField]: (piece.schema.properties as any)[targetField]
+					[targetField]: piece.schema.properties[targetField]
 				}
 			}
 		}

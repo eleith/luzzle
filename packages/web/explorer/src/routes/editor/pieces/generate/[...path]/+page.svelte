@@ -81,11 +81,7 @@
 
 				<div class="field">prompt (optional)</div>
 				<div class="field-edit">
-					<textarea
-						name="prompt"
-						class="input"
-						style="width:100%;height:200px;"
-						bind:value={prompt}
+					<textarea name="prompt" class="input" style="width:100%;height:200px;" bind:value={prompt}
 					></textarea>
 				</div>
 

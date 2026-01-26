@@ -4,7 +4,7 @@ import { getStorage } from '$lib/server/storage'
 import mime from 'mime-types'
 import { Readable } from 'stream'
 
-export const GET: RequestHandler = async ({ params, locals }) => {
+export const GET: RequestHandler = async ({ params }) => {
 	const assetPath = path.normalize(params.asset)
 	const storage = getStorage()
 
