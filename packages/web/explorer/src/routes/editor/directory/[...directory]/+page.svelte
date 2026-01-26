@@ -1,0 +1,47 @@
+<script lang="ts">
+	let { data } = $props()
+	const { files, directory } = $derived(data)
+</script>
+
+<section class="intro">
+	{#if files.pieces.length}
+		<div>
+			<p>pieces:</p>
+			<p style="display: grid; gap: 5px;">
+				{#each files.pieces as piece (piece.slug)}
+					<a href="/editor/pieces/view/{directory.current}/{piece.file}">{piece.slug}</a>
+				{/each}
+			</p>
+		</div>
+	{/if}
+
+	{#if files.directories.length}
+		<div>
+			<p>directories</p>
+			<p style="display: grid; gap: 5px;">
+				{#each files.directories as dir (dir)}
+					<a href="/editor/directory/{dir}">{dir}</a>
+				{/each}
+			</p>
+		</div>
+	{/if}
+</section>
+
+<style>
+	section.intro {
+		margin: var(--space-4);
+		margin-bottom: var(--space-8);
+		margin-left: auto;
+		margin-right: auto;
+		width: 85%;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	@media screen and (min-width: 768px) {
+		section.intro {
+			width: clamp(500px, 66.6666%, 1000px);
+		}
+	}
+</style>
