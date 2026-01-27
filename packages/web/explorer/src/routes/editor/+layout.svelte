@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Nav from '$lib/components/layout/simple/nav.svelte'
 	import FolderIcon from 'virtual:icons/ph/folder'
-	import PenIcon from 'virtual:icons/ph/pen'
 	import PlusIcon from 'virtual:icons/ph/plus'
 	import SignOutIcon from 'virtual:icons/ph/sign-out'
 	import { page } from '$app/state'
@@ -27,10 +26,6 @@
 	{#if page.data.mode === 'directory'}
 		<a href="/editor/pieces/create/{page.data.directory.current}" aria-label="create">
 			<PlusIcon style="font-size: 1em;" />
-		</a>
-	{:else if page.data.mode === 'view'}
-		<a href="/editor/pieces/edit/{page.data.file}" aria-label="edit">
-			<PenIcon style="font-size: 1em;" />
 		</a>
 	{/if}
 	<button onclick={() => signOut({ callbackUrl: '/' })} aria-label="sign out">

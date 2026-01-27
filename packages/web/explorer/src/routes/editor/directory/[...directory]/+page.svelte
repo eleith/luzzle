@@ -1,6 +1,6 @@
 <script lang="ts">
 	let { data } = $props()
-	const { files, directory } = $derived(data)
+	const { files } = $derived(data)
 </script>
 
 <section class="intro">
@@ -9,7 +9,7 @@
 			<p>pieces:</p>
 			<p style="display: grid; gap: 5px;">
 				{#each files.pieces as piece (piece.slug)}
-					<a href="/editor/pieces/view/{directory.current}/{piece.file}">{piece.slug}</a>
+					<a href="/editor/piece/{piece.file}">{piece.slug}</a>
 				{/each}
 			</p>
 		</div>

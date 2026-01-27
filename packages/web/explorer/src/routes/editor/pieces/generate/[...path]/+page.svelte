@@ -28,13 +28,13 @@
 	<section class="review">
 		{#snippet buttons()}
 			<Button type="submit">save</Button>
-			<a href="/editor/pieces/view/{data.file}">
+			<a href="/editor/piece/{data.file}">
 				<Button variant="outline">cancel</Button>
 			</a>
 		{/snippet}
 
 		<PieceForm
-			action="/editor/pieces/edit/{data.file}?/edit"
+			action="/editor/piece/{data.file}?/edit"
 			schema={data.schema}
 			values={generatedFields}
 			originalValues={data.fields}
@@ -87,7 +87,7 @@
 
 				<div style="display:flex;justify-content:space-between;">
 					<Button type="submit">generate</Button>
-					<a href="/editor/pieces/view/{data.file}">
+					<a href="/editor/piece/{data.file}">
 						<Button variant="outline">cancel</Button>
 					</a>
 				</div>

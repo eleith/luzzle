@@ -26,7 +26,7 @@
 {#snippet buttons()}
 	<div style="display:flex; gap: var(--space-2);">
 		<Button type="submit">save</Button>
-		<a href="/editor/pieces/view/{data.file}">
+		<a href={data.directory === '.' ? '/editor/directory' : `/editor/directory/${data.directory}`}>
 			<Button variant="outline">cancel</Button>
 		</a>
 	</div>
