@@ -1,7 +1,0 @@
-<script lang="ts">
-	import '$lib/components/layout/simple/theme.svelte'
-
-	const { children } = $props()
-</script>
-
-{@render children()}

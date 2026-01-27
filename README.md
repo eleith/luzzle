@@ -61,7 +61,6 @@ This monorepo contains the Luzzle ecosystem:
 
 * **`@luzzle/core`:** The core specification implementation 🫚
 * **`@luzzle/cli`:** A trusty terminal companion for managing your archive 💻
-* **`@luzzle/web`:** A web explorer for any luzzle archive 🔎
-* **`@luzzle/web-editor`:** A web-based luzzle piece editor 🕸️
-* **`@luzzle/web.tools`:** tools to prepare building the web explorer 🧰
+* **`@luzzle/web`:** A web app for any luzzle archive 🔎
+* **`@luzzle/web.tools`:** tools to build performant web archives  🧰
 * **`@luzzle/web.utils`:** The glue holding the web packages together 🛠️
