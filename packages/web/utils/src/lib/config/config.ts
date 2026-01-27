@@ -13,20 +13,18 @@ export type ConfigPublic = {
 
 function replaceEnvVars(obj: unknown): unknown {
 	if (typeof obj === 'string') {
-		if (obj.startsWith('$$')) {
-			return obj.slice(1)
-		}
+		return obj.replace(/\$\$|\$\{([^}]+)\}/g, (match, varName) => {
+			if (match === '$$') {
+				return '$'
+			}
 
-		const match = obj.match(/^\$\{(.+)\}$/)
-		if (match) {
-			const varName = match[1]
 			const value = process.env[varName]
-			if (!value) {
-				throw new Error(`Config error: Environment variable "${varName}" is missing.`)
+			if (value === undefined) {
+				console.warn(`Config warning: Environment variable "${varName}" is missing.`)
+				return match
 			}
 			return value
-		}
-		return obj
+		})
 	}
 
 	if (Array.isArray(obj)) {

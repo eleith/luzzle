@@ -98,6 +98,7 @@ describe('lib/config/config', () => {
 				// ignore if file doesn't exist
 			}
 			vi.unstubAllEnvs()
+			vi.restoreAllMocks()
 		})
 	
 		test('should substitute environment variables', () => {
@@ -121,8 +122,32 @@ auth:
 			const config = loadConfig(tmpConfigPath)
 			expect(config.auth.secret).toBe('substituted_value')
 		})
+
+		test('should substitute multiple environment variables in one string', () => {
+			vi.stubEnv('HOST', 'localhost')
+			vi.stubEnv('PORT', '8080')
+			const yamlContent = `
+url:
+  app: 'http://\${HOST}:\${PORT}'
+  app_assets: ''
+  luzzle_assets: ''
+auth:
+  enabled: false
+  secret: 'secret'
+  type: oidc
+  oidc:
+    issuer: 'https://example.com'
+    clientId: 'client'
+    clientSecret: 'secret'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+
+			const config = loadConfig(tmpConfigPath)
+			expect(config.url.app).toBe('http://localhost:8080')
+		})
 	
-		test('should throw error if environment variable is missing', () => {
+		test('should warn and preserve string if environment variable is missing', () => {
+			const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 			const yamlContent = `
 auth:
   enabled: true
@@ -135,7 +160,9 @@ auth:
 `
 			writeFileSync(tmpConfigPath, yamlContent)
 	
-			expect(() => loadConfig(tmpConfigPath)).toThrow(/Environment variable "MISSING_VAR" is missing/)
+			const config = loadConfig(tmpConfigPath)
+			expect(config.auth.secret).toBe('${MISSING_VAR}')
+			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Environment variable "MISSING_VAR" is missing'))
 		})
 	
 		test('should handle escaping with $$', () => {
@@ -155,6 +182,24 @@ auth:
 			const config = loadConfig(tmpConfigPath)
 			expect(config.auth.secret).toBe('${TEST_VAR}')
 		})
+
+		test('should handle escaping with $$ in the middle of a string', () => {
+			const yamlContent = `
+auth:
+  enabled: true
+  secret: 'Value: $\${TEST_VAR}'
+  type: oidc
+  oidc:
+    issuer: 'https://example.com'
+    clientId: 'client'
+    clientSecret: 'secret'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+
+			const config = loadConfig(tmpConfigPath)
+			expect(config.auth.secret).toBe('Value: ${TEST_VAR}')
+		})
+
 		test('should handle nested objects and arrays', () => {
 			vi.stubEnv('VAR_1', 'val1')
 			vi.stubEnv('VAR_2', 'val2')
