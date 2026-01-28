@@ -1,6 +1,10 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte'
+	import { type PieceMode } from '$lib/pieces/helpers.js'
 	import { page } from '$app/state'
+	import { setContext } from 'svelte'
+
+	setContext<PieceMode>('piece-mode', 'preview')
 
 	const { children } = $props()
 </script>
