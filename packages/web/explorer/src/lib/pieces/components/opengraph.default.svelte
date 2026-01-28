@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { type PieceOpengraphProps } from '@luzzle/web.utils'
 	import Icon from '$lib/pieces/components/icon.svelte'
+	import type { PieceOpengraphProps } from '$lib/pieces/helpers'
 
 	const { palette, piece }: PieceOpengraphProps = $props()
 </script>

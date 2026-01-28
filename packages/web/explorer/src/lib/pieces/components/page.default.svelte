@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type PiecePageProps } from '@luzzle/web.utils'
+	import type { PiecePageProps } from '$lib/pieces/helpers'
 	import Icon from '$lib/pieces/components/icon.svelte'
 
 	const { piece, tags, metadata, html_note }: PiecePageProps = $props()
