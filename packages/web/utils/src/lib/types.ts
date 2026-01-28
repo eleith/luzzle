@@ -9,7 +9,6 @@ type PieceIconProps = {
 		height?: number
 	}
 	lazy?: boolean
-	helpers: PieceComponentHelpers
 }
 
 type PieceIconPalette = {
@@ -34,7 +33,6 @@ type PieceOpengraphProps = {
 		height: number
 	}
 	palette?: PieceIconPalette
-	helpers: PieceComponentHelpers
 }
 
 type PiecePageProps = {
@@ -42,7 +40,6 @@ type PiecePageProps = {
 	metadata: Record<string, unknown>
 	tags: Partial<WebPieceTags>[]
 	html_note: string | null
-	helpers: PieceComponentHelpers
 }
 
 export {
