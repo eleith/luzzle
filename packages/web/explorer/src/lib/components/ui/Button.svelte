@@ -9,6 +9,7 @@
 		children: Snippet
 		class?: string
 		style?: string
+		disabled?: boolean
 	}
 
 	let {
@@ -17,6 +18,7 @@
 		onclick,
 		children,
 		class: className = '',
+		disabled = false,
 		style,
 		...rest
 	}: Props = $props()
@@ -27,6 +29,7 @@
 	{onclick}
 	class="button {className}"
 	data-variant={variant}
+	{disabled}
 	{style}
 	{...rest}
 >

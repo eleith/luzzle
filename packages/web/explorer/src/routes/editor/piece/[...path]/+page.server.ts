@@ -82,7 +82,6 @@ export const actions = {
 			return fail(400, { error: { message: `failed to edit piece: ${e}` } })
 		}
 
-		const directory = path.dirname(file)
-		redirect(303, `/editor/directory/${directory === '.' ? '' : directory}`)
+		redirect(303, `/editor/piece/${file}`)
 	}
 } satisfies Actions
