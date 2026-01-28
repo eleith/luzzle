@@ -9,10 +9,21 @@
 		values: Record<string, unknown>
 		originalValues?: Record<string, unknown>
 		note: string
+		originalNote?: string
 		buttons: Snippet
 	}
 
-	let { action, schema, values, originalValues, note, buttons }: Props = $props()
+	let {
+		action,
+		schema,
+		values,
+		originalValues,
+		note = $bindable(),
+		originalNote,
+		buttons
+	}: Props = $props()
+
+	const noteModified = $derived(note !== (originalNote || ''))
 </script>
 
 <section class="edit">
@@ -27,9 +38,12 @@
 					/>
 				</div>
 			{/each}
-			<div class="field">note</div>
+			<div class="field" class:modified={noteModified}>
+				note{noteModified ? ' (edited)' : ''}
+			</div>
 			<div class="field-edit">
-				<textarea class="input" name="note" style="width: 100%;height:300px;">{note}</textarea>
+				<textarea class="input" name="note" style="width: 100%;height:300px;" bind:value={note}
+				></textarea>
 			</div>
 			<div style="display: flex; justify-content: space-between;">
 				{@render buttons()}
@@ -41,6 +55,10 @@
 <style>
 	div.field {
 		font-size: 80%;
+	}
+
+	.modified {
+		color: var(--color-primary);
 	}
 
 	div.field-edit {

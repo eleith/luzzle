@@ -8,6 +8,12 @@
 	let { data } = $props()
 	let dialog: HTMLDialogElement
 	let fields = $state(data.fields)
+	let note = $state(data.note || '')
+
+	// Simple deep comparison for dirty check
+	const isDirty = $derived(
+		JSON.stringify(fields) !== JSON.stringify(data.fields) || note !== (data.note || '')
+	)
 </script>
 
 <dialog bind:this={dialog}>
@@ -41,6 +47,13 @@
 					{#if open}
 						<div {...wrapperProps} class="dropdown-content">
 							<div {...props}>
+								{#if !isDirty}
+									<DropdownMenu.Item onSelect={() => goto(`/editor/pieces/preview/${data.file}`)}>
+										{#snippet child({ props })}
+											<div class="dropdown-item" {...props}>preview</div>
+										{/snippet}
+									</DropdownMenu.Item>
+								{/if}
 								<DropdownMenu.Item onSelect={() => goto(`/editor/pieces/generate/${data.file}`)}>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>generate</div>
@@ -65,7 +78,8 @@
 	schema={data.schema}
 	values={fields}
 	originalValues={data.fields}
-	note={data.note || ''}
+	bind:note
+	originalNote={data.note}
 	{buttons}
 />
 

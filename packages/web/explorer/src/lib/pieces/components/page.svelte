@@ -1,13 +1,8 @@
 <script lang="ts">
-	import type { Component } from 'svelte'
-	import {
-		getImageAssetPath,
-		type PieceComponentHelpers,
-		type WebPieces,
-		type PiecePageProps
-	} from '@luzzle/web.utils'
+	import { getContext, type Component } from 'svelte'
+	import { type WebPieces } from '@luzzle/web.utils'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
-	import { page } from '$app/state'
+	import { getPieceHelpers, type PieceMode, type PiecePageProps } from '$lib/pieces/helpers.js'
 
 	const customPageMap = new Map<string, { default: Component<PiecePageProps> }>()
 	const customComponents: Record<string, { default: Component }> = import.meta.glob(
@@ -33,15 +28,8 @@
 
 	let { piece, metadata, tags, html_note }: Props = $props()
 	const Page = $derived(customPageMap.get(piece.type)?.default || PageDefault)
-	const helpers: PieceComponentHelpers = {
-		getPieceUrl: function () {
-			return `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`
-		},
-		getPieceImageUrl: function (asset: string, width: number, format: 'jpg' | 'avif') {
-			const path = getImageAssetPath(piece.type, piece.id, asset, width, format)
-			return `${page.data.config.url.luzzle_assets}/pieces/assets/${path}`
-		}
-	}
+	const mode = getContext<PieceMode>('mode')
+	const helpers = getPieceHelpers(piece, mode)
 </script>
 
 <Page {piece} {metadata} {tags} {html_note} {helpers} />

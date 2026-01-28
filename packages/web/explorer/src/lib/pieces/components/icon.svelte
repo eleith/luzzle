@@ -1,13 +1,9 @@
 <script lang="ts">
-	import { page } from '$app/state'
 	import type { Component } from 'svelte'
-	import {
-		type PieceIconProps,
-		type WebPieces,
-		getImageAssetPath,
-		ASSET_SIZES
-	} from '@luzzle/web.utils'
+	import { type WebPieces, ASSET_SIZES } from '@luzzle/web.utils'
 	import IconDefault from '$lib/pieces/components/icon.default.svelte'
+	import { getPieceHelpers, type PieceIconProps, type PieceMode } from '$lib/pieces/helpers.js'
+	import { getContext } from 'svelte'
 
 	const iconComponentMap = new Map<string, { default: Component<PieceIconProps> }>()
 	const iconComponents: Record<string, { default: Component }> = import.meta.glob(
@@ -35,15 +31,8 @@
 	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
 	const width = $derived(typeof size === 'string' ? ASSET_SIZES[size] : size.width)
 	const height = $derived(typeof size !== 'string' && size.height ? size.height : (width * 3) / 2)
-	const helpers = {
-		getPieceUrl: function () {
-			return `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`
-		},
-		getPieceImageUrl: function (asset: string, width: number, format: 'jpg' | 'avif') {
-			const path = getImageAssetPath(piece.type, piece.id, asset, width, format)
-			return `${page.data.config.url.luzzle_assets}/pieces/assets/${path}`
-		}
-	}
+	const mode = getContext<PieceMode>('piece-mode')
+	const helpers = getPieceHelpers(piece, mode)
 	const IconComponent = $derived(iconComponentMap.get(piece.type)?.default || IconDefault)
 </script>
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type PieceIconProps } from '@luzzle/web.utils'
+	import type { PieceIconProps } from '$lib/pieces/helpers'
 	const { size, piece, lazy, helpers }: PieceIconProps = $props()
 </script>
 
