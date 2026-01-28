@@ -13,10 +13,6 @@ import {
 import { WebPieces, WebPieceTags } from "./lib/sqlite.js";
 import type { Config, ConfigPublic } from "./lib/config/config.js";
 import type {
-	PiecePageProps,
-	PieceIconProps,
-	PieceComponentHelpers,
-	PieceOpengraphProps,
 	PieceIconPalette,
 } from "./lib/types.js";
 
@@ -35,9 +31,5 @@ export {
 	type WebPieces,
 	type Config,
 	type ConfigPublic,
-	type PieceIconProps,
-	type PiecePageProps,
 	type PieceIconPalette,
-	type PieceOpengraphProps,
-	type PieceComponentHelpers,
 };
