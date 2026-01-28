@@ -28,7 +28,7 @@
 
 	let { piece, metadata, tags, html_note }: Props = $props()
 	const Page = $derived(customPageMap.get(piece.type)?.default || PageDefault)
-	const mode = getContext<PieceMode>('mode')
+	const mode = getContext<PieceMode>('piece-mode')
 	const helpers = getPieceHelpers(piece, mode)
 </script>
 
