@@ -162,9 +162,7 @@
 										name="query"
 										class="input"
 									/>
-									<Dialog.Close>
-										<button type="submit" class="button" aria-label="submit search">search</button>
-									</Dialog.Close>
+									<Dialog.Close class="button">search</Dialog.Close>
 								</form>
 							</div>
 						{/if}
