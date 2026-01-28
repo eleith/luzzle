@@ -31,13 +31,7 @@
 	// Effect to sync from Prop (Server/LLM) to Internal State
 	$effect(() => {
 		const values = value === undefined ? [] : isArray ? (value as string[]) : [value as string]
-		const urls = values.filter((v) => /^https?:\/\//.test(v))
-		const paths = values.filter((v) => !/^https?:\/\//.test(v))
-
-		retainAssets = paths
-		if (urls.length > 0) {
-			toDownload = urls[0]
-		}
+		retainAssets = values
 	})
 
 	// Calculate modification status

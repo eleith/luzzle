@@ -2,6 +2,7 @@
 	import type { PieceFrontmatterSchemaField } from '@luzzle/core'
 	import type { Snippet } from 'svelte'
 	import FieldEdit from './fields/edit.svelte'
+	import { isFieldEqual } from '$lib/utils/comparison'
 
 	interface Props {
 		action: string
@@ -11,6 +12,7 @@
 		note: string
 		originalNote?: string
 		buttons: Snippet
+		isModified?: boolean
 	}
 
 	let {
@@ -20,10 +22,19 @@
 		originalValues,
 		note = $bindable(),
 		originalNote,
-		buttons
+		buttons,
+		isModified = $bindable(false)
 	}: Props = $props()
 
-	const noteModified = $derived(note !== (originalNote || ''))
+	let fieldStates = $state<Record<string, boolean>>(
+		Object.fromEntries(schema.map((field) => [field.name, false]))
+	)
+	const fieldsModified = $derived(Object.values(fieldStates).some((v) => v))
+	const noteModified = $derived(!isFieldEqual(note, originalNote))
+
+	$effect(() => {
+		isModified = fieldsModified || noteModified
+	})
 </script>
 
 <section class="edit">
@@ -35,6 +46,7 @@
 						{field}
 						bind:value={values[field.name]}
 						originalValue={originalValues?.[field.name]}
+						bind:isModified={fieldStates[field.name]}
 					/>
 				</div>
 			{/each}

@@ -2,27 +2,27 @@
 	import { type PieceFrontmatterSchemaField } from '@luzzle/core'
 	import EditAsset from './editAsset.svelte'
 	import type { AssetField, EnumField } from './types.js'
+	import { isFieldEqual } from '$lib/utils/comparison'
 
 	type Props = {
 		field: PieceFrontmatterSchemaField
 		value: unknown
 		originalValue?: unknown
+		isModified?: boolean
 	}
 
-	let { field, value = $bindable(), originalValue }: Props = $props()
+	let { field, value = $bindable(), originalValue, isModified = $bindable(false) }: Props = $props()
 	let inputElement: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | EditAsset | null =
 		$state(null)
 	let assetModified = $state(false)
 
-	function normalize(v: unknown) {
-		return v === undefined || v === null ? '' : v
-	}
-
-	const isModified = $derived(
-		isAsset(field)
-			? assetModified
-			: JSON.stringify(normalize(value)) !== JSON.stringify(normalize(originalValue))
+	const checkModified = $derived(
+		isAsset(field) ? assetModified : !isFieldEqual(value, originalValue)
 	)
+
+	$effect(() => {
+		isModified = checkModified
+	})
 
 	const prefix = 'frontmatter'
 
@@ -117,8 +117,8 @@
 		class="input"
 		required={!field.nullable}
 		bind:this={inputElement}
-		bind:value>{value}</textarea
-	>
+		bind:value
+	></textarea>
 {/snippet}
 
 {#snippet fieldEnumSnippet(field: EnumField)}
@@ -137,8 +137,8 @@
 	</select>
 {/snippet}
 
-<div class="field" class:modified={isModified}>
-	{field.name}{isModified ? ' (edited)' : ''}
+<div class="field" class:modified={checkModified}>
+	{field.name}{checkModified ? ' (edited)' : ''}
 </div>
 
 <div class="field-container">

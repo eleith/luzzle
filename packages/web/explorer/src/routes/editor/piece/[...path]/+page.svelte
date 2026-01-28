@@ -9,11 +9,16 @@
 	let dialog: HTMLDialogElement
 	let fields = $state(data.fields)
 	let note = $state(data.note || '')
+	let formDirty = $state(false)
+
+	$effect(() => {
+		fields = data.fields
+		note = data.note || ''
+		formDirty = false
+	})
 
 	// Simple deep comparison for dirty check
-	const isDirty = $derived(
-		JSON.stringify(fields) !== JSON.stringify(data.fields) || note !== (data.note || '')
-	)
+	const isDirty = $derived(formDirty)
 </script>
 
 <dialog bind:this={dialog}>
@@ -77,15 +82,18 @@
 	</DropdownMenu.Root>
 {/snippet}
 
-<PieceForm
-	action="?/edit"
-	schema={data.schema}
-	values={fields}
-	originalValues={data.fields}
-	bind:note
-	originalNote={data.note}
-	{buttons}
-/>
+{#key data.file}
+	<PieceForm
+		action="?/edit"
+		schema={data.schema}
+		values={fields}
+		originalValues={data.fields}
+		bind:note
+		originalNote={data.note}
+		{buttons}
+		bind:isModified={formDirty}
+	/>
+{/key}
 
 <style>
 	.dropdown-content {
