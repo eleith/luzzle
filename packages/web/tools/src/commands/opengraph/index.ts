@@ -39,7 +39,7 @@ export default async function generateOpenGraphs(
 			try {
 				const ogPath = getOpenGraphPath(item.type, item.id)
 				const outputPath = path.join(outputDir, ogPath)
-				const url = `${config.url.app}/api/pieces/${item.type}/${item.slug}/opengraph`
+				const url = `${config.url.app}/api/pieces/${item.type}/${item.slug}/opengraph?mode=local`
 				await generatePngFromUrl(url, browser, outputPath)
 
 				console.log(`generated opengraph for ${item.file_path} (${item.id})`)
