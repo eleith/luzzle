@@ -237,4 +237,50 @@ ai:
 			expect(config.ai.api_key).toBe('google-key')
 		})
 	})
+
+	describe('Builder Configuration', () => {
+		const tmpConfigPath = join(tmpdir(), `builder-config-${Date.now()}.yaml`)
+
+		afterEach(() => {
+			try {
+				unlinkSync(tmpConfigPath)
+			} catch {
+				// ignore
+			}
+		})
+
+		test('should validate valid builder config', () => {
+			const yamlContent = `
+builder:
+  url: 'https://builder.example.com'
+  method: 'POST'
+  headers:
+    Authorization: 'Bearer token'
+  body: '{}'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+			const config = loadConfig(tmpConfigPath)
+			expect(config.builder?.url).toBe('https://builder.example.com')
+			expect(config.builder?.headers?.Authorization).toBe('Bearer token')
+		})
+
+		test('should validate builder config with only url', () => {
+			const yamlContent = `
+builder:
+  url: 'https://builder.example.com'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+			const config = loadConfig(tmpConfigPath)
+			expect(config.builder?.url).toBe('https://builder.example.com')
+		})
+
+		test('should fail validation if url is missing in builder', () => {
+			const yamlContent = `
+builder:
+  method: 'POST'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+			expect(() => loadConfig(tmpConfigPath)).toThrow('Configuration validation failed')
+		})
+	})
 })

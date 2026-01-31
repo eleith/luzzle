@@ -21,6 +21,30 @@
 			],
 			"additionalProperties": false
 		},
+		"builder": {
+			"type": "object",
+			"properties": {
+				"url": {
+					"type": "string"
+				},
+				"method": {
+					"type": "string"
+				},
+				"headers": {
+					"type": "object",
+					"additionalProperties": {
+						"type": "string"
+					}
+				},
+				"body": {
+					"type": "string"
+				}
+			},
+			"required": [
+				"url"
+			],
+			"additionalProperties": false
+		},
 		"auth": {
 			"type": "object",
 			"properties": {

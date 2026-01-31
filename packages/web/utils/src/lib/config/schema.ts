@@ -11,6 +11,14 @@ export interface Schema {
     app_assets: string;
     luzzle_assets: string;
   };
+  builder?: {
+    url: string;
+    method?: string;
+    headers?: {
+      [k: string]: string;
+    };
+    body?: string;
+  };
   auth: {
     enabled: boolean;
     secret: string;
