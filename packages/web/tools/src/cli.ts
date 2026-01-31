@@ -5,11 +5,12 @@ import openGraphCommand from './commands/opengraph/command.js'
 import sqliteCommand from './commands/sqlite/command.js'
 import configCommand from './commands/config/command.js'
 import themeCommand from './commands/theme/command.js'
+import syncCommand from './commands/sync/command.js'
 
 import { hideBin } from 'yargs/helpers'
 
 async function parseArgs(args: string[]) {
-	  const commands = [assetCommand, openGraphCommand, sqliteCommand, configCommand, themeCommand]
+	  const commands = [assetCommand, openGraphCommand, sqliteCommand, configCommand, themeCommand, syncCommand]
 	  const cli = yargs(args)
 	
 	  commands
