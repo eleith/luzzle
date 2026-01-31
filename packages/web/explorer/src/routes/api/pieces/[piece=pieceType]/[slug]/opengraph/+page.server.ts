@@ -4,10 +4,12 @@ import { db } from '$lib/server/database'
 import { getPalette } from '@luzzle/web.utils/server'
 import { config } from '$lib/server/config'
 import { getImageAssetPath, type PieceIconPalette } from '@luzzle/web.utils'
+import type { PieceMode } from '$lib/pieces/helpers'
 
 export const load: PageServerLoad = async (page) => {
 	const type = page.params.piece
 	const slug = page.params.slug
+	const mode = (page.url.searchParams.get('mode') as PieceMode) || 'public'
 
 	const piece = await db
 		.selectFrom('web_pieces')
@@ -23,12 +25,13 @@ export const load: PageServerLoad = async (page) => {
 	const mediaPath = piece.media
 		? getImageAssetPath(piece.type, piece.id, piece.media, 500, 'jpg')
 		: null
-	const baseUrl = config.url.luzzle_assets || config.url.app
+	const baseUrl = mode === 'local' ? page.url.origin : config.url.luzzle_assets || config.url.app
 	const mediaUrl = mediaPath ? `${baseUrl}/pieces/assets/${mediaPath}` : null
 	const palette = mediaUrl ? ((await getPalette(mediaUrl)) as PieceIconPalette) : undefined
 
 	return {
 		piece,
-		palette
+		palette,
+		mode
 	}
 }

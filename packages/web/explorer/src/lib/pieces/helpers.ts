@@ -46,7 +46,7 @@ export type PiecePageProps = {
 	helpers: PieceComponentHelpers
 }
 
-export type PieceMode = 'public' | 'preview'
+export type PieceMode = 'public' | 'preview' | 'local'
 
 export function getPieceHelpers(
 	piece: WebPieces,
@@ -56,6 +56,16 @@ export function getPieceHelpers(
 		return {
 			getPieceUrl: () => `/editor/piece/${piece.file_path}`,
 			getPieceImageUrl: (asset: string) => `/editor/asset/${asset}`
+		}
+	}
+
+	if (mode === 'local') {
+		return {
+			getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
+			getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif') => {
+				const path = getImageAssetPath(piece.type, piece.id, asset, width, format)
+				return `/pieces/assets/${path}`
+			}
 		}
 	}
 
