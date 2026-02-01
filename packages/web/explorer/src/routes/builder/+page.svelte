@@ -4,6 +4,7 @@
 	import FolderIcon from 'virtual:icons/ph/folder'
 	import SignOutIcon from 'virtual:icons/ph/sign-out'
 	import { signOut } from '@auth/sveltekit/client'
+	import { tick } from 'svelte'
 
 	let logs = $state('')
 	let isBuilding = $state(false)
@@ -45,10 +46,17 @@
 				if (done) break
 
 				const chunk = decoder.decode(value, { stream: true })
+
+				// Check if we are at the bottom before adding new logs
+				// We allow a small 10px buffer
+				const isAtBottom = logContainer
+					? logContainer.scrollHeight - logContainer.scrollTop <= logContainer.clientHeight + 10
+					: true
+
 				logs += chunk
 
-				// Auto-scroll to bottom
-				if (logContainer) {
+				if (isAtBottom && logContainer) {
+					await tick()
 					logContainer.scrollTop = logContainer.scrollHeight
 				}
 			}
