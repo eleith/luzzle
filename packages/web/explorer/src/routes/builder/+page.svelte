@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte'
 	import Nav from '$lib/components/layout/simple/nav.svelte'
-	import HammerIcon from 'virtual:icons/ph/hammer'
+	import FolderIcon from 'virtual:icons/ph/folder'
 	import SignOutIcon from 'virtual:icons/ph/sign-out'
 	import { signOut } from '@auth/sveltekit/client'
 
@@ -64,8 +64,8 @@
 </script>
 
 {#snippet right()}
-	<a href="/builder" aria-label="rebuild">
-		<HammerIcon style="font-size: 1em;" />
+	<a href="/editor/directory" aria-label="directory">
+		<FolderIcon style="font-size: 1em;" />
 	</a>
 	<button onclick={() => signOut({ callbackUrl: '/' })} aria-label="sign out">
 		<SignOutIcon style="font-size: 1em;" />
