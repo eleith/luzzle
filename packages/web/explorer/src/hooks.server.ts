@@ -25,8 +25,12 @@ const authHandle = SvelteKitAuth({
 	]
 })
 
+const PROTECTED_PREFIXES = ['/editor', '/builder', '/api/build']
+
 const guardHandle: Handle = async ({ event, resolve }) => {
-	if (event.url.pathname.startsWith('/editor')) {
+	const isProtected = PROTECTED_PREFIXES.some((prefix) => event.url.pathname.startsWith(prefix))
+
+	if (isProtected) {
 		if (!config.auth.enabled) {
 			throw redirect(302, '/')
 		}

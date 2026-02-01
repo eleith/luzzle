@@ -2,6 +2,7 @@
 	import Nav from '$lib/components/layout/simple/nav.svelte'
 	import FolderIcon from 'virtual:icons/ph/folder'
 	import PlusIcon from 'virtual:icons/ph/plus'
+	import HammerIcon from 'virtual:icons/ph/hammer'
 	import SignOutIcon from 'virtual:icons/ph/sign-out'
 	import { page } from '$app/state'
 	import { signOut } from '@auth/sveltekit/client'
@@ -28,6 +29,9 @@
 			<PlusIcon style="font-size: 1em;" />
 		</a>
 	{/if}
+	<a href="/builder" aria-label="rebuild">
+		<HammerIcon style="font-size: 1em;" />
+	</a>
 	<button onclick={() => signOut({ callbackUrl: '/' })} aria-label="sign out">
 		<SignOutIcon style="font-size: 1em;" />
 	</button>
