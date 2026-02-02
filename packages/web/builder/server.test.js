@@ -120,7 +120,7 @@ describe('Builder Server', () => {
 		const text = await res.text();
 		expect(text).toContain('Error: Failed to start script');
 
-		// Verify we can build again (isBuilding was reset)
+		// Verify we can build again
 		mockSpawn.mockImplementation(() => {
 			const child = new EventEmitter();
 			child.stdout = new EventEmitter();
@@ -133,8 +133,7 @@ describe('Builder Server', () => {
 		expect(res2.status).toBe(200);
 	});
 
-	it('should reject concurrent builds', async () => {
-		// Override mock for this test to hang
+	it('should attach to and resume logs for concurrent requests', async () => {
 		let finishBuild;
 		const buildFinishedPromise = new Promise((resolve) => {
 			finishBuild = resolve;
@@ -145,8 +144,12 @@ describe('Builder Server', () => {
 			child.stdout = new EventEmitter();
 			child.stderr = new EventEmitter();
 
-			// Wait for manual trigger to finish
+			setTimeout(() => {
+				child.stdout.emit('data', 'initial log\n');
+			}, 20);
+
 			buildFinishedPromise.then(() => {
+				child.stdout.emit('data', 'final log\n');
 				child.emit('close', 0);
 			});
 
@@ -155,17 +158,111 @@ describe('Builder Server', () => {
 
 		const req1 = fetch(`${baseUrl}/hooks/build?token=test-token`, requestOptions);
 
-		// Wait a bit to ensure server processes first request
-		await new Promise((r) => setTimeout(r, 50));
+		// Wait for initial log to be produced and stored
+		await new Promise((r) => setTimeout(r, 100));
 
-		const req2 = await fetch(`${baseUrl}/hooks/build?token=test-token`, requestOptions);
+		const res2 = await fetch(`${baseUrl}/hooks/build?token=test-token`, requestOptions);
+		expect(res2.status).toBe(200);
 
-		expect(req2.status).toBe(429);
-		const text = await req2.text();
-		expect(text).toContain('Build already in progress');
-
-		// Finish the first build so we don't hang
+		// Finish build
 		finishBuild();
-		await req1;
+
+		const [text1, text2] = await Promise.all([
+			(await req1).text(),
+			res2.text()
+		]);
+
+		// Both should have full logs
+		expect(text1).toContain('initial log');
+		expect(text1).toContain('final log');
+		expect(text2).toContain('initial log'); // Resumed!
+		expect(text2).toContain('final log');
+	});
+
+	it('should timeout builds exceeding LUZZLE_BUILD_TIMEOUT', async () => {
+		// Set a very short timeout for testing (100ms)
+		process.env.LUZZLE_BUILD_TIMEOUT = '100'; 
+
+		const { createServer } = await import('./server.js');
+		const timeoutServer = createServer(mockSpawn);
+		await new Promise((r) => timeoutServer.listen(0, '127.0.0.1', r));
+		const tUrl = `http://127.0.0.1:${timeoutServer.address().port}`;
+
+		let killed = false;
+		mockSpawn.mockImplementation(() => {
+			const child = new EventEmitter();
+			child.stdout = new EventEmitter();
+			child.stderr = new EventEmitter();
+			child.kill = () => {
+				killed = true;
+				child.emit('close', 137);
+			};
+			return child;
+		});
+
+		const res = await fetch(`${tUrl}/hooks/build?token=test-token`, requestOptions);
+		const text = await res.text();
+
+		expect(killed).toBe(true);
+		expect(text).toContain('[TIMEOUT]');
+		expect(text).toContain('Build finished with exit code 137');
+
+		await new Promise(r => timeoutServer.close(r));
+	});
+
+	it('should handle client write errors gracefully', async () => {
+		// Reset modules to allow mocking http for this specific test
+		vi.resetModules();
+
+		const mockHttpServer = {
+			listen: vi.fn(),
+			on: vi.fn(),
+			address: vi.fn(),
+			close: vi.fn(),
+		};
+		const mockCreateServer = vi.fn().mockReturnValue(mockHttpServer);
+
+		vi.doMock('http', () => ({
+			createServer: mockCreateServer,
+			IncomingMessage: class { },
+			ServerResponse: class { }
+		}));
+
+		// Re-import to use the mocked http
+		const { createServer } = await import('./server.js');
+
+		// Create server (which uses our mock http.createServer)
+		createServer(mockSpawn);
+
+		// Get the request listener
+		const requestListener = mockCreateServer.mock.calls[0][0];
+
+		// Mock Request
+		const mockReq = new EventEmitter();
+		mockReq.url = '/hooks/build?token=test-token';
+		mockReq.method = 'POST';
+		mockReq.socket = { remoteAddress: '127.0.0.1' };
+
+		// Mock Response
+		const mockRes = new EventEmitter();
+		mockRes.writeHead = vi.fn();
+		mockRes.end = vi.fn();
+		mockRes.writableEnded = false;
+		mockRes.closed = false;
+		mockRes.write = vi.fn((data, cb) => {
+			// Simulate an error during write
+			if (cb) cb(new Error('Write failed'));
+			return true;
+		});
+
+		// Trigger the handler
+		requestListener(mockReq, mockRes);
+
+		// Wait for spawn to emit data (which triggers res.write)
+		await new Promise(r => setTimeout(r, 50));
+
+		// Assertions
+		expect(mockRes.write).toHaveBeenCalled();
+		// If the process didn't crash, we're good.
 	});
 });

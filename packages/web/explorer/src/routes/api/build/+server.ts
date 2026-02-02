@@ -55,7 +55,8 @@ export const POST: RequestHandler = async () => {
 		return new Response(stream, {
 			headers: {
 				'Content-Type': 'text/plain',
-				'Transfer-Encoding': 'chunked'
+				'Transfer-Encoding': 'chunked',
+				'X-Accel-Buffering': 'no'
 			}
 		})
 	} catch (error) {
