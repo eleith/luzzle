@@ -19,6 +19,13 @@ steps:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
 
+  test:
+    image: node:22
+    commands:
+      - npm ci -w @luzzle/web.builder
+      - npm run lint -w @luzzle/web.builder
+      - npm run test -w @luzzle/web.builder
+
   extract-semver-tags:
     image: alpine/git:latest
     commands:
