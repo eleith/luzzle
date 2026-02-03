@@ -13,7 +13,7 @@ COPY tsconfig.json ./tsconfig.json
 COPY svelte.config.js ./svelte.config.js
 COPY vite.config.ts ./vite.config.ts
 
-ENV PUPPETEER_CHROME_SKIP_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install --include=dev
 RUN touch /app/config.yaml
