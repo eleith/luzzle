@@ -6,6 +6,7 @@ import { config } from '$lib/server/config'
 import { getImageAssetPath, type PieceIconPalette } from '@luzzle/web.utils'
 import type { PieceMode } from '$lib/pieces/helpers'
 import { Buffer } from 'buffer'
+import { dev } from '$app/environment'
 
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
 	const type = params.piece
@@ -31,7 +32,10 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 
 	if (mediaPath) {
 		if (mode === 'local') {
-			const response = await fetch(`/pieces/assets/${mediaPath}`)
+			const port = process.env.PORT || (dev ? 5173 : 3000)
+			const origin = `http://localhost:${port}`
+			const response = await fetch(`${origin}/pieces/assets/${mediaPath}`)
+
 			if (response.ok) {
 				const buffer = Buffer.from(await response.arrayBuffer())
 				palette = (await getPalette(buffer)) as PieceIconPalette
