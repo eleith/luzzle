@@ -4,7 +4,7 @@ echo "Luzzle builder started at $(date)"
 bash /app/scripts/pre.build.sh
 
 echo "Syncing archive to database..."
-luzzle-web-tools sync --config /app/config.yaml
+luzzle-web-tools sync --config /app/config.yaml --in /app/archive
 
 echo "Building database web tables"
 luzzle-web-tools sqlite --config /app/config.yaml
