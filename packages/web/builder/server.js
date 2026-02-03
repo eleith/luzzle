@@ -1,6 +1,6 @@
 import { createServer as httpServer } from 'http'
 import { spawn as defaultSpawn } from 'child_process'
-import { parse } from 'url'
+import { parse, fileURLToPath } from 'url'
 
 const PORT = 9000
 const BUILD_SCRIPT = process.env.LUZZLE_BUILD_SCRIPT || '/app/scripts/build.sh'
@@ -157,7 +157,7 @@ function createServer(spawnFn = defaultSpawn) {
 const server = createServer()
 
 /* c8 ignore start */
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
 	server.listen(PORT, '0.0.0.0', () => {
 		console.log(`Builder sidecar listening on port ${PORT}`)
 		if (!BUILD_SECRET_TOKEN) {
