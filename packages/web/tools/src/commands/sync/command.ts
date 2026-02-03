@@ -13,7 +13,7 @@ export default function command(cli: Argv) {
 				},
 				in: {
 					type: 'string',
-					description: 'path to luzzle directory (overrides config storage)',
+					description: 'path to luzzle archive',
 				},
 				'dry-run': {
 					type: 'boolean',
@@ -37,7 +37,7 @@ export default function command(cli: Argv) {
 		async function (argv) {
 			await sync({
 				configPath: argv.config,
-				luzzleDir: argv.in,
+				archiveDir: argv.in,
 				dryRun: argv['dry-run'],
 				force: argv.force,
 				prune: argv.prune,

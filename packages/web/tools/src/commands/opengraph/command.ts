@@ -12,17 +12,15 @@ export default function command(cli: Argv) {
 					description: 'path to config.yaml',
 					demandOption: true,
 				},
-				luzzle: {
-					type: 'string',
-					description: 'path to luzzle directory',
-					alias: 'in',
-					demandOption: true,
-				},
 				out: {
 					type: 'string',
 					description: 'path to direct asset output',
 					alias: 'o',
 					demandOption: true,
+				},
+				host: {
+					type: 'string',
+					description: 'host to use for generating open graph images',
 				},
 				id: {
 					type: 'string',
@@ -38,7 +36,10 @@ export default function command(cli: Argv) {
 			return options
 		},
 		async function(argv) {
-			await generateOpenGraphs(argv.config, argv.luzzle, argv.out, {
+			await generateOpenGraphs({
+				configPath: argv.config,
+				outputDir: argv.out,
+				host: argv.host,
 				id: argv.id,
 				force: argv.force,
 			})

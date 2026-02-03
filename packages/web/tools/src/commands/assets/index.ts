@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'fs/promises'
 import path from 'path'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { generateVariantJobs } from './variants.js'
-import { getDatabaseClient, LuzzleSelectable, Pieces, StorageFileSystem } from '@luzzle/core'
+import { getDatabaseClient, LuzzleSelectable, Pieces } from '@luzzle/core'
 import { loadConfig } from '@luzzle/web.utils/server'
 import {
 	getAssetDir,
@@ -11,6 +11,7 @@ import {
 	ASSET_SIZES,
 	getImageAssetPath,
 } from '@luzzle/web.utils'
+import { getStorage } from 'src/lib/storage.js'
 
 async function generateVariantsForAssetField(
 	item: LuzzleSelectable<'pieces_items'>,
@@ -34,14 +35,17 @@ async function generateVariantsForAssetField(
 	}
 }
 
-export default async function generateAssets(
-	configPath: string,
-	luzzle: string,
-	outDir: string,
-	options: { force?: boolean; id?: string }
-) {
-	const config = loadConfig(configPath)
-	const dbPath = path.join(path.dirname(configPath), config.paths.database)
+type GenerateAssetsOptions = {
+	configPath: string
+	archiveDir?: string
+	outDir: string
+	force?: boolean
+	id?: string
+}
+
+export default async function generateAssets(options: GenerateAssetsOptions) {
+	const config = loadConfig(options.configPath)
+	const dbPath = path.join(path.dirname(options.configPath), config.paths.database)
 	const db = getDatabaseClient(dbPath)
 	const pieceTypes = config.pieces.map((p) => p.type)
 	const items = await db
@@ -55,9 +59,9 @@ export default async function generateAssets(
 	const force = options.force || false
 	const id = options.id || null
 	const operation = 'copy-assets'
-	const lastRun = force ? new Date(0) : await getLastRunFor(outDir, operation)
+	const lastRun = force ? new Date(0) : await getLastRunFor(options.outDir, operation)
 
-	const storage = new StorageFileSystem(luzzle)
+	const storage = getStorage(config, options.archiveDir)
 	const pieces = new Pieces(storage)
 	const itemsToProcess = id ? items.filter((item) => item.id === id) : items
 
@@ -83,7 +87,7 @@ export default async function generateAssets(
 
 			if (assets.length) {
 				const assetDir = getAssetDir(item.type, item.id)
-				await mkdir(`${outDir}/${assetDir}`, { recursive: true })
+				await mkdir(`${options.outDir}/${assetDir}`, { recursive: true })
 
 				console.log(`copying assets for ${item.file_path}`)
 
@@ -92,10 +96,10 @@ export default async function generateAssets(
 						const assetPath = getAssetPath(item.type, item.id, asset)
 						const assetBuffer = await pieces.getPieceAsset(asset)
 
-						await writeFile(`${outDir}/${assetPath}`, assetBuffer)
+						await writeFile(`${options.outDir}/${assetPath}`, assetBuffer)
 
 						if (isImage(asset)) {
-							await generateVariantsForAssetField(item, asset, pieces, outDir)
+							await generateVariantsForAssetField(item, asset, pieces, options.outDir)
 						}
 					} catch (error) {
 						console.error(`error processing asset ${asset} for ${item.file_path}: ${error}`)
@@ -106,6 +110,6 @@ export default async function generateAssets(
 	}
 
 	if (!id) {
-		await setLastRunFor(outDir, operation, new Date())
+		await setLastRunFor(options.outDir, operation, new Date())
 	}
 }

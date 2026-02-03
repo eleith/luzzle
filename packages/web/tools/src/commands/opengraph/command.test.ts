@@ -42,17 +42,15 @@ describe('opengraph command', () => {
 				description: 'path to config.yaml',
 				demandOption: true,
 			},
-			luzzle: {
-				type: 'string',
-				description: 'path to luzzle directory',
-				alias: 'in',
-				demandOption: true,
-			},
 			out: {
 				type: 'string',
 				description: 'path to direct asset output',
 				alias: 'o',
 				demandOption: true,
+			},
+			host: {
+				type: 'string',
+				description: 'host to use for generating open graph images',
 			},
 			id: {
 				type: 'string',
@@ -68,13 +66,16 @@ describe('opengraph command', () => {
 
 		await handler({
 			config: 'test',
-			luzzle: 'test',
 			out: 'test',
+			host: 'test-host',
 			id: 'test-id',
 			force: true,
 		})
 
-		expect(mocks.generateOpenGraphs).toHaveBeenCalledWith('test', 'test', 'test', {
+		expect(mocks.generateOpenGraphs).toHaveBeenCalledWith({
+			configPath: 'test',
+			outputDir: 'test',
+			host: 'test-host',
 			id: 'test-id',
 			force: true,
 		})

@@ -54,7 +54,11 @@ describe('commands/opengraph/index.ts', () => {
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 		mocks.generatePngFromUrl.mockResolvedValue(Buffer.from('test'))
 
-		await generateOpenGraphs('test', 'test', 'test', {})
+		await generateOpenGraphs({
+			configPath: 'test',
+			outputDir: 'test',
+			host: 'test',
+		})
 
 		expect(mocks.loadConfig).toHaveBeenCalledOnce()
 		expect(mocks.getDatabaseClient).toHaveBeenCalledOnce()
@@ -87,7 +91,11 @@ describe('commands/opengraph/index.ts', () => {
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 
-		await generateOpenGraphs('test', 'test', 'test', {})
+		await generateOpenGraphs({
+			configPath: 'test',
+			outputDir: 'test',
+			host: 'test',
+		})
 
 		expect(mocks.generatePngFromUrl).not.toHaveBeenCalled()
 		expect(mocks.setLastRunFor).toHaveBeenCalledOnce()
@@ -114,7 +122,12 @@ describe('commands/opengraph/index.ts', () => {
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 
-		await generateOpenGraphs('test', 'test', 'test', { force: true })
+		await generateOpenGraphs({
+			configPath: 'test',
+			outputDir: 'test',
+			host: 'test',
+			force: true,
+		})
 
 		expect(mocks.generatePngFromUrl).toHaveBeenCalledOnce()
 		expect(mocks.setLastRunFor).toHaveBeenCalledOnce()
@@ -140,7 +153,11 @@ describe('commands/opengraph/index.ts', () => {
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 		mocks.generatePngFromUrl.mockRejectedValue(new Error('Test error'))
 
-		await generateOpenGraphs('test', 'test', 'test', {})
+		await generateOpenGraphs({
+			configPath: 'test',
+			outputDir: 'test',
+			host: 'test',
+		})
 
 		expect(consoleErrorSpy).toHaveBeenCalledOnce()
 		expect(browser.close).toHaveBeenCalledOnce()
@@ -157,6 +174,7 @@ describe('commands/opengraph/index.ts', () => {
 			{
 				id: '1',
 				type: 'test',
+				slug: 'slug',
 				date_added: new Date().toISOString(),
 				date_updated: null,
 			},
@@ -164,9 +182,16 @@ describe('commands/opengraph/index.ts', () => {
 		mocks.getLastRunFor.mockResolvedValue(new Date(0))
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 
-		await generateOpenGraphs('test', 'test', 'test', {})
+		await generateOpenGraphs({
+			configPath: 'test',
+			outputDir: 'test',
+		})
 
-		expect(mocks.generatePngFromUrl).toHaveBeenCalledOnce()
+		expect(mocks.generatePngFromUrl).toHaveBeenCalledWith(
+			'http://localhost/api/pieces/test/slug/opengraph?mode=local',
+			browser,
+			expect.any(String)
+		)
 	})
 
 	test('should not call setLastRunFor when id is provided', async () => {
@@ -187,7 +212,12 @@ describe('commands/opengraph/index.ts', () => {
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 
-		await generateOpenGraphs('test', 'test', 'test', { id: '1' })
+		await generateOpenGraphs({
+			configPath: 'test',
+			outputDir: 'test',
+			host: 'test',
+			id: '1',
+		})
 
 		expect(mocks.setLastRunFor).not.toHaveBeenCalled()
 	})

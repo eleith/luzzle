@@ -93,7 +93,11 @@ describe('generateAssets', () => {
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/image.jpg')
@@ -137,7 +141,11 @@ describe('generateAssets', () => {
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/document.pdf')
@@ -179,7 +187,11 @@ describe('generateAssets', () => {
 
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(consoleErrorSpy).toHaveBeenCalledOnce()
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
@@ -218,7 +230,11 @@ describe('generateAssets', () => {
 
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(consoleErrorSpy).toHaveBeenCalledOnce()
 
@@ -236,7 +252,11 @@ describe('generateAssets', () => {
 			]
 		)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(mocks.writeFile).not.toHaveBeenCalled()
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
@@ -266,7 +286,10 @@ describe('generateAssets', () => {
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.isImage.mockReturnValue(true)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
 			force: true,
 		})
 
@@ -299,7 +322,10 @@ describe('generateAssets', () => {
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.isImage.mockReturnValue(true)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
 			id: '1',
 		})
 
@@ -330,7 +356,11 @@ describe('generateAssets', () => {
 			]
 		)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(mocks.writeFile).not.toHaveBeenCalled()
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
@@ -374,7 +404,11 @@ describe('generateAssets', () => {
 
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(consoleErrorSpy).toHaveBeenCalledOnce()
 
@@ -409,7 +443,11 @@ describe('generateAssets', () => {
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
 		expect(mocks.writeFile).toHaveBeenCalledOnce()
@@ -453,7 +491,12 @@ describe('generateAssets', () => {
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', { id: '1' })
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+			id: '1',
+		})
 
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
 		expect(mocks.writeFile).toHaveBeenCalledOnce()
@@ -490,7 +533,11 @@ describe('generateAssets', () => {
 		)
 		mocks.generateVariantJobs.mockResolvedValue([])
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
 		expect(mocks.writeFile).toHaveBeenCalledOnce()
@@ -524,7 +571,11 @@ describe('generateAssets', () => {
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
 		expect(mocks.writeFile).toHaveBeenCalledOnce()
@@ -547,7 +598,11 @@ describe('generateAssets', () => {
 			[] // No pieces in config
 		)
 
-		await generateAssets('/path/to/config.yaml', '/path/to/luzzle', '/path/to/out', {})
+		await generateAssets({
+			configPath: '/path/to/config.yaml',
+			archiveDir: '/path/to/luzzle',
+			outDir: '/path/to/out',
+		})
 
 		expect(mocks.writeFile).not.toHaveBeenCalled()
 	})

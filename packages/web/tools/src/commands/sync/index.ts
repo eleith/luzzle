@@ -5,7 +5,7 @@ import path from 'path'
 
 type SyncOptions = {
 	configPath?: string
-	luzzleDir?: string
+	archiveDir?: string
 	dryRun?: boolean
 	force?: boolean
 	prune?: boolean
@@ -13,7 +13,7 @@ type SyncOptions = {
 
 export default async function sync(options: SyncOptions) {
 	const config = loadConfig(options.configPath)
-	const storage = getStorage(config, options.luzzleDir)
+	const storage = getStorage(config, options.archiveDir)
 	const dbPath = path.resolve(
 		options.configPath ? path.dirname(options.configPath) : process.cwd(),
 		config.paths.database

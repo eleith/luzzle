@@ -51,7 +51,7 @@ describe('sync command', () => {
 
 		expect(mocks.sync).toHaveBeenCalledWith({
 			configPath: '/path/to/config.yaml',
-			luzzleDir: '/luzzle',
+			archiveDir: '/luzzle',
 			dryRun: true,
 			force: true,
 			prune: true,

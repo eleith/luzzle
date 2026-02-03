@@ -12,15 +12,13 @@ export default function command(cli: Argv) {
 					description: 'path to config.yaml',
 					demandOption: true,
 				},
-				luzzle: {
+				in: {
 					type: 'string',
-					description: 'path to luzzle directory',
-					alias: 'in',
-					demandOption: true,
+					description: 'path to luzzle archive',
 				},
 				out: {
 					type: 'string',
-					description: 'path to direct asset output',
+					description: 'path to asset output',
 					alias: 'o',
 					demandOption: true,
 				},
@@ -38,7 +36,10 @@ export default function command(cli: Argv) {
 			return options
 		},
 		async function(argv) {
-			await generateAssets(argv.config, argv.luzzle, argv.out, {
+			await generateAssets({
+				configPath: argv.config,
+				archiveDir: argv.in,
+				outDir: argv.out,
 				id: argv.id,
 				force: argv.force,
 			})

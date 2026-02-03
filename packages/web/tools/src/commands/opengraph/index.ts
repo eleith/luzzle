@@ -6,16 +6,22 @@ import { getDatabaseClient } from '@luzzle/core'
 import { loadConfig } from '@luzzle/web.utils/server'
 import { type WebPieces, getOpenGraphPath } from '@luzzle/web.utils'
 
+type GenerateOpenGraphsOptions = {
+	configPath: string
+	outputDir: string
+	force?: boolean
+	host?: string
+	id?: string
+}
+
 export default async function generateOpenGraphs(
-	configPath: string,
-	luzzle: string,
-	outputDir: string,
-	options: { force?: boolean; id?: string }
+	options: GenerateOpenGraphsOptions,
 ) {
-	const config = loadConfig(configPath)
-	const configDir = path.dirname(configPath)
+	const config = loadConfig(options.configPath)
+	const configDir = path.dirname(options.configPath)
 	const dbPath = path.join(configDir, config.paths.database)
 	const db = getDatabaseClient(dbPath)
+	const host = options.host || config.url.app
 	const items = await db
 		.withTables<{ web_pieces: WebPieces }>()
 		.selectFrom('web_pieces')
@@ -27,7 +33,7 @@ export default async function generateOpenGraphs(
 	const force = options.force || false
 	const id = options.id || null
 	const operation = 'generate-open-graph'
-	const lastRun = force ? new Date(0) : await getLastRunFor(outputDir, operation)
+	const lastRun = force ? new Date(0) : await getLastRunFor(options.outputDir, operation)
 
 	const browser = await getBrowser()
 	const piecesToProcess = id ? items.filter((item) => item.id === id) : items
@@ -38,20 +44,19 @@ export default async function generateOpenGraphs(
 		if (pieceModifiedTime > lastRun || force || id) {
 			try {
 				const ogPath = getOpenGraphPath(item.type, item.id)
-				const outputPath = path.join(outputDir, ogPath)
-				const url = `${config.url.app}/api/pieces/${item.type}/${item.slug}/opengraph?mode=local`
+				const outputPath = path.join(options.outputDir, ogPath)
+				const url = `${host}/api/pieces/${item.type}/${item.slug}/opengraph?mode=local`
 				await generatePngFromUrl(url, browser, outputPath)
 
 				console.log(`generated opengraph for ${item.file_path} (${item.id})`)
 			} catch (e) {
-				console.log(luzzle)
 				console.error(`error making opengraph for ${item.file_path} (${item.id}): ${e}`)
 			}
 		}
 	}
 
 	if (!id) {
-		await setLastRunFor(outputDir, operation, new Date())
+		await setLastRunFor(options.outputDir, operation, new Date())
 	}
 
 	await browser.close()
