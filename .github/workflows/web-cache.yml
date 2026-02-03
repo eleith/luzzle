@@ -1,0 +1,89 @@
+name: "@luzzle/web.cache"
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'web.cache/v*'
+    paths:
+      - 'packages/web/cache/**'
+      - '.github/workflows/web-cache.yml'
+
+defaults:
+  run:
+    working-directory: packages/web/cache
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # No lint/test for this package, just checking basic integrity if needed
+      # or simply acting as a dependency for the build-push job.
+      # We verify the package.json exists and parseable.
+      - name: Verify package.json
+        run: cat package.json
+
+  build-push:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Check Version
+        if: github.ref_type == 'tag'
+        run: |
+          VERSION_FROM_PKG=$(npm pkg get version --workspaces=false | tr -d '"')
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION_FROM_TAG=${TAG_NAME#web.cache/v}
+          
+          if [ "$VERSION_FROM_TAG" != "$VERSION_FROM_PKG" ]; then
+            echo "Version mismatch: Tag version $VERSION_FROM_TAG does not match package.json version $VERSION_FROM_PKG"
+            exit 1
+          fi
+          echo "Version $VERSION_FROM_PKG matches."
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/eleith/luzzle-web-cache
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=match,pattern=web.cache/v(\d+),group=1
+            type=match,pattern=web.cache/v(\d+\.\d+),group=1
+            type=match,pattern=web.cache/v(\d+\.\d+\.\d+),group=1
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: packages/web/cache
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
