@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/web.cache",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Nginx caching layer for Luzzle Web Explorer",
   "scripts": {
