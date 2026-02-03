@@ -18,15 +18,14 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install -g @luzzle/web.tools@0.0.83
 RUN mkdir -p /app/scripts /app/data /app/archive /app/assets
+RUN chown -R node:node /app
 
 USER node
 
-COPY ./server.js /app/server.js
-COPY ./scripts/build.sh /app/scripts/pre.build.sh
-COPY ./scripts/build.sh /app/scripts/build.sh
-COPY ./scripts/build.sh /app/scripts/post.build.sh
-
-RUN chown -R node:node /app
+COPY --chown=node:node ./server.js /app/server.js
+COPY --chown=node:node ./scripts/build.sh /app/scripts/pre.build.sh
+COPY --chown=node:node ./scripts/build.sh /app/scripts/build.sh
+COPY --chown=node:node ./scripts/build.sh /app/scripts/post.build.sh
 
 EXPOSE 9000
 
