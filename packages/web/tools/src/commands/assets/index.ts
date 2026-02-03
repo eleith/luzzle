@@ -11,7 +11,7 @@ import {
 	ASSET_SIZES,
 	getImageAssetPath,
 } from '@luzzle/web.utils'
-import { getStorage } from 'src/lib/storage.js'
+import { getStorage } from '../../lib/storage.js'
 
 async function generateVariantsForAssetField(
 	item: LuzzleSelectable<'pieces_items'>,
