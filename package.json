@@ -8,6 +8,7 @@
     "packages/core",
     "packages/web/explorer",
     "packages/web/utils",
-    "packages/web/builder"
+    "packages/web/builder",
+    "packages/web/cache"
   ]
 }
