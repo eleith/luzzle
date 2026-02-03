@@ -2,7 +2,7 @@
   "name": "@luzzle/web.builder",
   "version": "0.0.3",
   "private": true,
-  "description": "Luzzle Web Builder Sidecar",
+  "description": "Luzzle Web Builder",
   "scripts": {
     "test": "vitest run --silent --coverage",
     "lint": "eslint .",
