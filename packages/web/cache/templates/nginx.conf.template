@@ -27,7 +27,7 @@ http {
         keepalive 2;
     }
 
-    proxy_cache_path        /var/cache/nginx/luzzle_cache levels=1:2 keys_zone=luzzle_cache:10m inactive=365d max_size=10g;
+    proxy_cache_path        /app/cache levels=1:2 keys_zone=luzzle_cache:10m inactive=365d max_size=10g;
     proxy_buffer_size       128k;
     proxy_buffers           4 256k;
     proxy_busy_buffers_size 256k;
@@ -58,6 +58,13 @@ http {
             add_header X-Cache-Status $upstream_cache_status;
             
             proxy_pass http://luzzle-upstream;
+        }
+
+        location ^~ /pieces/assets/ {
+            alias /app/static/pieces/assets/;
+            expires 1y;
+            add_header Cache-Control "public";
+            access_log off;
         }
 
         location /pieces {

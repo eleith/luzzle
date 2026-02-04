@@ -19,5 +19,6 @@ ENV LUZZLE_EXPLORER_PORT=3000
 # Permissions for running as non-root
 RUN touch /etc/nginx/nginx.conf && \
     chmod 666 /etc/nginx/nginx.conf && \
-    mkdir -p /var/cache/nginx/luzzle_cache && \
-    chmod -R 777 /var/cache/nginx
+    mkdir -p /app/static/pieces/assets && \
+    mkdir -p /app/cache && \
+    chmod -R 777 /app/cache
