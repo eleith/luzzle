@@ -5,11 +5,10 @@ import { getPalette } from '@luzzle/web.utils/server'
 import { config } from '$lib/server/config'
 import { getImageAssetPath, type PieceIconPalette } from '@luzzle/web.utils'
 import type { PieceMode } from '$lib/pieces/helpers'
-import { Buffer } from 'buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-export const load: PageServerLoad = async ({ params, url, fetch }) => {
+export const load: PageServerLoad = async ({ params, url }) => {
 	const type = params.piece
 	const slug = params.slug
 	const mode = (url.searchParams.get('mode') as PieceMode) || 'public'
