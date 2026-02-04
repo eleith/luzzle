@@ -6,7 +6,8 @@ import { config } from '$lib/server/config'
 import { getImageAssetPath, type PieceIconPalette } from '@luzzle/web.utils'
 import type { PieceMode } from '$lib/pieces/helpers'
 import { Buffer } from 'buffer'
-import { dev } from '$app/environment'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
 	const type = params.piece
@@ -32,13 +33,13 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 
 	if (mediaPath) {
 		if (mode === 'local') {
-			const port = process.env.PORT || (dev ? 5173 : 3000)
-			const origin = `http://localhost:${port}`
-			const response = await fetch(`${origin}/pieces/assets/${mediaPath}`)
-
-			if (response.ok) {
-				const buffer = Buffer.from(await response.arrayBuffer())
+			try {
+				const assetsDir = path.resolve('static/pieces/assets')
+				const filePath = path.join(assetsDir, mediaPath)
+				const buffer = await fs.readFile(filePath)
 				palette = (await getPalette(buffer)) as PieceIconPalette
+			} catch (e) {
+				console.error(`[OpenGraph] Failed to read local asset: ${mediaPath}`, e)
 			}
 		} else {
 			const baseUrl = config.url.luzzle_assets || config.url.app
