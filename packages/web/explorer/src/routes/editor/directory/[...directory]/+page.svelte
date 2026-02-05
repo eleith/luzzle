@@ -7,22 +7,22 @@
 	{#if files.pieces.length}
 		<div>
 			<p>pieces:</p>
-			<p style="display: grid; gap: 5px;">
+			<div class="list">
 				{#each files.pieces as piece (piece.slug)}
 					<a href="/editor/piece/{directory.current}/{piece.file}">{piece.slug}</a>
 				{/each}
-			</p>
+			</div>
 		</div>
 	{/if}
 
 	{#if files.directories.length}
 		<div>
 			<p>directories</p>
-			<p style="display: grid; gap: 5px;">
+			<div class="list">
 				{#each files.directories as dir (dir)}
 					<a href="/editor/directory/{dir}">{dir}</a>
 				{/each}
-			</p>
+			</div>
 		</div>
 	{/if}
 </section>
@@ -37,6 +37,19 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-4);
+	}
+
+	.list {
+		display: grid;
+		gap: 5px;
+		justify-items: start;
+	}
+
+	.list a {
+		max-width: 100%;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	@media screen and (min-width: 768px) {
