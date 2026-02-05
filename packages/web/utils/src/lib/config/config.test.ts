@@ -273,14 +273,5 @@ builder:
 			const config = loadConfig(tmpConfigPath)
 			expect(config.builder?.url).toBe('https://builder.example.com')
 		})
-
-		test('should fail validation if url is missing in builder', () => {
-			const yamlContent = `
-builder:
-  method: 'POST'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			expect(() => loadConfig(tmpConfigPath)).toThrow('Configuration validation failed')
-		})
 	})
 })

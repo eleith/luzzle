@@ -19,8 +19,11 @@ content:
     title: 'Luzzle Explorer'
     description: 'A Luzzle Explorer instance'
 
+builder:
+  url: 'http://luzzle-builder/hooks?token=${LUZZLE_BUILDER_TOKEN}'
+  method: 'POST'
+
 paths:
-  # The connection URL for the database.
   database: './data/luzzle.sqlite'
 
 pieces: []
