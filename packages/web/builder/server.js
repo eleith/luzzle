@@ -3,139 +3,166 @@ import { spawn as defaultSpawn } from 'child_process'
 import { parse, fileURLToPath } from 'url'
 
 const PORT = 9000
-const BUILD_SCRIPT = process.env.LUZZLE_BUILD_SCRIPT || '/app/scripts/build.sh'
 const BUILD_SECRET_TOKEN = process.env.LUZZLE_BUILD_TOKEN
-const BUILD_WEBHOOK = '/hooks/build'
-const DEFAULT_TIMEOUT_MS = 3600000 // 1 hour
+const BUILD_TIMEOUT_MS = parseFloat(process.env.LUZZLE_BUILD_TIMEOUT) || 3600000 // 1 hour
+const BUILD_SCRIPT = '/app/scripts/build.sh'
+const BUILD_DEPLOY_SCRIPT = '/app/scripts/deploy.sh'
 
-class BuildManager {
+const HOOKS = {
+	BUILD: {
+		PATH: '/hooks',
+		SCRIPT: BUILD_SCRIPT,
+		ACTION: 'build',
+	},
+	DEPLOY: {
+		PATH: '/hooks',
+		SCRIPT: BUILD_DEPLOY_SCRIPT,
+		ACTION: 'deploy',
+	},
+}
+
+class ScriptRunner {
 	constructor(spawnFn, timeoutMs) {
 		this.spawnFn = spawnFn
 		this.timeoutMs = timeoutMs
-		this.currentBuild = null
+		this.activeProcess = null
 	}
 
-	hasActiveBuild() {
-		return !!this.currentBuild
+	async run(script, onData, onEnd) {
+		await this._execute(script, onData)
+		onEnd(0)
+	}
+
+	_execute(script, onData) {
+		return new Promise((resolve, reject) => {
+			onData(`\n[${new Date().toISOString()}] Executing: ${script}\n`)
+
+			const child = this.spawnFn('bash', [script])
+			this.activeProcess = child
+			let timedOut = false
+
+			const timeout = setTimeout(() => {
+				timedOut = true
+				onData(`\n[TIMEOUT] Script exceeded ${this.timeoutMs}ms. Terminating...\n`)
+				child.kill()
+				reject(new Error('Timeout'))
+			}, this.timeoutMs)
+
+			child.stdout.on('data', onData)
+			child.stderr.on('data', onData)
+
+			child.on('error', (error) => {
+				if (timedOut) return
+				clearTimeout(timeout)
+				onData(`\nError: ${error.message}\n`)
+				reject(error)
+			})
+
+			child.on('close', (code) => {
+				if (timedOut) return
+				clearTimeout(timeout)
+				this.activeProcess = null
+				if (code === 0) resolve()
+				else reject(new Error(`Exit code ${code}`))
+			})
+		})
+	}
+}
+
+class Manager {
+	constructor(spawnFn, timeoutMs) {
+		this.spawnFn = spawnFn
+		this.timeoutMs = timeoutMs
+		this.currentRun = null
+	}
+
+	hasActiveRun() {
+		return !!this.currentRun
 	}
 
 	attach(req, res) {
-		console.log(`[${new Date().toISOString()}] Client attaching to existing build...`)
-		const build = this.currentBuild
-
-		// Replay history
-		for (const chunk of build.logs) {
-			res.write(chunk)
-		}
-
-		// Subscribe
-		build.clients.add(res)
-		req.on('close', () => build.clients.delete(res))
+		console.log(`[${new Date().toISOString()}] Client attaching to active run...`)
+		const run = this.currentRun
+		for (const chunk of run.logs) res.write(chunk)
+		run.clients.add(res)
+		req.on('close', () => run.clients.delete(res))
 	}
 
-	start(req, res) {
-		console.log(`[${new Date().toISOString()}] Starting deployment...`)
-		
-		this.currentBuild = {
+	start(req, res, script) {
+		console.log(`[${new Date().toISOString()}] Starting run for ${script}`)
+
+		this.currentRun = {
 			logs: [],
 			clients: new Set([res]),
-			timeout: null,
 		}
 
-		// Handle initiator disconnect
-		req.on('close', () => this.currentBuild?.clients.delete(res))
+		req.on('close', () => this.currentRun?.clients.delete(res))
 
-		const startMsg = `Starting deployment script at ${new Date().toISOString()} (Timeout: ${this.timeoutMs}ms)...\n`
-		this.broadcast(startMsg) // Broadcast adds to logs too
+		const runner = new ScriptRunner(this.spawnFn, this.timeoutMs)
+		runner
+			.run(
+				script,
+				(data) => this.broadcast(data),
+				(code) => {
+					this.broadcast(`\nFinished with exit code ${code} at ${new Date().toISOString()}\n`)
+					this.cleanup()
+				}
+			)
+			.catch((err) => {
+				this.broadcast(`\nRun failed: ${err.message}\n`)
+				this.cleanup()
+			})
+	}
 
-		const child = this.spawnFn('bash', [BUILD_SCRIPT])
-
-		// Safety Timeout
-		this.currentBuild.timeout = setTimeout(() => {
-			const msg = `\n[TIMEOUT] Build exceeded ${this.timeoutMs}ms. Terminating process...\n`
-			console.error(`[${new Date().toISOString()}] ${msg.trim()}`)
-			this.broadcast(msg)
-			child.kill()
-		}, this.timeoutMs)
-
-		child.stdout.on('data', (data) => {
-			process.stdout.write(data)
-			this.broadcast(data)
-		})
-
-		child.stderr.on('data', (data) => {
-			process.stderr.write(data)
-			this.broadcast(data)
-		})
-
-		child.on('error', (error) => {
-			const msg = `\nError: Failed to start script: ${error.message}\n`
-			console.error(`[${new Date().toISOString()}] ${msg.trim()}`)
-			this.broadcast(msg)
-			this.cleanup()
-		})
-
-		child.on('close', (code) => {
-			const msg = `\nBuild finished with exit code ${code} at ${new Date().toISOString()}\n`
-			console.log(`[${new Date().toISOString()}] Script exited with code ${code}`)
-			this.broadcast(msg)
-			this.cleanup()
-		})
+	attachOrStart(req, res, script) {
+		if (this.hasActiveRun()) {
+			this.attach(req, res)
+		} else {
+			this.start(req, res, script)
+		}
 	}
 
 	broadcast(data) {
-		if (!this.currentBuild) return
-
-		// Store history
-		this.currentBuild.logs.push(data)
-
-		// Send to clients
-		for (const client of this.currentBuild.clients) {
+		if (!this.currentRun) return
+		this.currentRun.logs.push(data)
+		for (const client of this.currentRun.clients) {
 			if (!client.writableEnded && !client.closed) {
-				client.write(data, (err) => {
-					if (err) {
-						// Error callback (swallowed as per original logic)
-					}
-				})
+				client.write(data)
 			}
 		}
 	}
 
 	cleanup() {
-		if (!this.currentBuild) return
-
-		if (this.currentBuild.timeout) {
-			clearTimeout(this.currentBuild.timeout)
-		}
-
-		for (const client of this.currentBuild.clients) {
-			client.end()
-		}
-		this.currentBuild = null
+		if (!this.currentRun) return
+		for (const client of this.currentRun.clients) client.end()
+		this.currentRun = null
 	}
 }
 
-function createServer(spawnFn = defaultSpawn) {
-	const buildTimeoutMs = parseFloat(process.env.LUZZLE_BUILD_TIMEOUT) || DEFAULT_TIMEOUT_MS
-	const manager = new BuildManager(spawnFn, buildTimeoutMs)
+function createServer(spawnFn = defaultSpawn, timeoutMs = BUILD_TIMEOUT_MS) {
+	const buildManager = new Manager(spawnFn, timeoutMs)
+	const deployManager = new Manager(spawnFn, timeoutMs)
 
 	const server = httpServer((req, res) => {
 		const parsedUrl = parse(req.url, true)
+		const pathname = parsedUrl.pathname
+		const requestToken = parsedUrl.query.token
+		const requestAction = parsedUrl.query.action
 
-		// 1. Validation
-		if (req.method !== 'POST' || parsedUrl.pathname !== BUILD_WEBHOOK) {
+		const isBuild = pathname === HOOKS.BUILD.PATH && requestAction == HOOKS.BUILD.ACTION
+		const isDeploy = pathname === HOOKS.DEPLOY.PATH && requestAction == HOOKS.DEPLOY.ACTION
+		const isValidAction = isBuild || isDeploy
+
+		if (req.method !== 'POST' || !isValidAction) {
 			res.writeHead(404, { 'Content-Type': 'text/plain' })
 			return res.end('Not Found')
 		}
 
-		const requestToken = parsedUrl.query.token
 		if (!BUILD_SECRET_TOKEN || requestToken !== BUILD_SECRET_TOKEN) {
-			console.warn(`[${new Date().toISOString()}] Unauthorized access attempt from ${req.socket.remoteAddress}`)
 			res.writeHead(401, { 'Content-Type': 'text/plain' })
 			return res.end('Unauthorized')
 		}
 
-		// 2. Setup Headers
 		res.writeHead(200, {
 			'Content-Type': 'text/plain',
 			'Transfer-Encoding': 'chunked',
@@ -143,11 +170,10 @@ function createServer(spawnFn = defaultSpawn) {
 			'X-Accel-Buffering': 'no',
 		})
 
-		// 3. Delegate to Manager
-		if (manager.hasActiveBuild()) {
-			manager.attach(req, res)
-		} else {
-			manager.start(req, res)
+		if (isBuild) {
+			buildManager.attachOrStart(req, res, HOOKS.BUILD.SCRIPT)
+		} else if (isDeploy) {
+			deployManager.attachOrStart(req, res, HOOKS.DEPLOY.SCRIPT)
 		}
 	})
 
@@ -159,9 +185,9 @@ const server = createServer()
 /* c8 ignore start */
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
 	server.listen(PORT, '0.0.0.0', () => {
-		console.log(`Builder sidecar listening on port ${PORT}`)
+		console.log(`Luzzle Web Builder listening on port ${PORT}`)
 		if (!BUILD_SECRET_TOKEN) {
-			console.error('WARNING: BUILD_SECRET_TOKEN env var is not set! Auth will fail.')
+			console.error('WARNING: LUZZLE_BUILD_TOKEN env var is not set! Auth will fail.')
 		}
 	})
 }

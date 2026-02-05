@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Luzzle builder started at $(date)"
+echo "[build] started at $(date)"
 
 bash /app/scripts/pre.build.sh
 
@@ -17,4 +17,4 @@ luzzle-web-tools opengraph --config /app/config.yaml --out /app/assets
 
 bash /app/scripts/post.build.sh
 
-echo "Luzzle builder finished at $(date)"
+echo "[builder] finished at $(date)"

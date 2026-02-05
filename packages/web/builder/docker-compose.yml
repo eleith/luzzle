@@ -7,7 +7,7 @@ services:
       context: .
     container_name: luzzle-builder
     ports:
-      - "9000:9000"
+      - '9000:9000'
     env_file: .env
     volumes:
       - ../explorer/config.yaml:/app/config.yaml
@@ -16,7 +16,7 @@ services:
       #- ./luzzle.sqlite:/app/data/luzzle.sqlite
       #- ./pre.build.sh:/app/scripts/pre.build.sh
       #- ./post.build.sh:/app/scripts/post.build.sh
-    user: "node"
+    user: 'node'
 
 secrets:
   npmrc:
