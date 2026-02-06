@@ -1,15 +1,16 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import command from './command.js'
 import generateTheme from './index.js'
+import { getConfig } from '../../lib/config.js'
 import { Argv } from 'yargs'
+import { Config } from '@luzzle/web.utils'
 
 vi.mock('./index.js')
-vi.mock('../../lib/config/config.js')
-vi.mock('fs')
-vi.mock('yaml')
+vi.mock('../../lib/config.js')
 
 const mocks = {
 	generateTheme: vi.mocked(generateTheme),
+	getConfig: vi.mocked(getConfig),
 }
 
 describe('theme command', () => {
@@ -41,6 +42,9 @@ describe('theme command', () => {
 		builder(yargsMock)
 		expect(yargsMock.options).toHaveBeenCalled()
 
+		const config = { theme: {} } as Config
+		mocks.getConfig.mockReturnValue(config)
+
 		const argv = {
 			config: '/path/to/config.yaml',
 			minify: true,
@@ -50,7 +54,7 @@ describe('theme command', () => {
 		await handler(argv)
 
 		expect(mocks.generateTheme).toHaveBeenCalledWith(
-			'/path/to/config.yaml',
+			config,
 			true
 		)
 	})

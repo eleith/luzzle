@@ -1,18 +1,20 @@
 import { describe, test, vi, afterEach, expect, MockInstance } from 'vitest'
 import { getHandler, setHandler, validateHandler } from './index.js'
-import { getConfigValue, setConfigValue, loadConfig } from '@luzzle/web.utils/server'
+import { getConfigValue, setConfigValue } from '@luzzle/web.utils/server'
+import { getConfig } from '../../lib/config.js'
 import { type Config } from '@luzzle/web.utils'
 import { writeFileSync } from 'fs'
 import yaml from 'yaml'
 
 vi.mock('@luzzle/web.utils/server')
+vi.mock('../../lib/config.js')
 vi.mock('fs')
 vi.mock('yaml')
 
 const mocks = {
   getConfigValue: vi.mocked(getConfigValue),
   setConfigValue: vi.mocked(setConfigValue),
-  loadConfig: vi.mocked(loadConfig),
+  getConfig: vi.mocked(getConfig),
   writeFileSync: vi.mocked(writeFileSync),
   yamlStringify: vi.spyOn(yaml, 'stringify')
 }
@@ -26,20 +28,20 @@ describe('src/commands/config', () => {
 
   describe('validateHandler', () => {
     test('should log success when config is valid', () => {
-      mocks.loadConfig.mockReturnValue({} as Config)
+      mocks.getConfig.mockReturnValue({} as Config)
 
       spies.consoleLog = vi.spyOn(console, 'log').mockImplementation(() => { })
       spies.processExit = vi.spyOn(process, 'exit').mockReturnValue(0 as never)
 
       validateHandler('test')
 
-      expect(mocks.loadConfig).toHaveBeenCalledOnce()
+      expect(mocks.getConfig).toHaveBeenCalledOnce()
       expect(spies.consoleLog).toHaveBeenCalledOnce()
       expect(spies.processExit).not.toHaveBeenCalled()
     })
 
     test('should log error and exit when config is invalid', () => {
-      mocks.loadConfig.mockImplementation(() => {
+      mocks.getConfig.mockImplementation(() => {
         throw new Error('Invalid config')
       })
 
@@ -48,7 +50,7 @@ describe('src/commands/config', () => {
 
       validateHandler('test')
 
-      expect(mocks.loadConfig).toHaveBeenCalledOnce()
+      expect(mocks.getConfig).toHaveBeenCalledOnce()
       expect(spies.consoleError).toHaveBeenCalledOnce()
       expect(spies.processExit).toHaveBeenCalledWith(1)
     })
@@ -56,20 +58,20 @@ describe('src/commands/config', () => {
 
   describe('getHandler', () => {
     test('should log the value when the path is valid', () => {
-      mocks.loadConfig.mockReturnValue({} as Config)
+      mocks.getConfig.mockReturnValue({} as Config)
       mocks.getConfigValue.mockReturnValue('test-value')
 
       spies.consoleLog = vi.spyOn(console, 'log').mockImplementation(() => { })
 
       getHandler('test', 'test.path')
 
-      expect(mocks.loadConfig).toHaveBeenCalledOnce()
+      expect(mocks.getConfig).toHaveBeenCalledOnce()
       expect(mocks.getConfigValue).toHaveBeenCalledOnce()
       expect(spies.consoleLog).toHaveBeenCalledOnce()
     })
 
     test('should log error and exit when the path is invalid', () => {
-      mocks.loadConfig.mockReturnValue({} as Config)
+      mocks.getConfig.mockReturnValue({} as Config)
       mocks.getConfigValue.mockImplementation(() => {
         throw new Error('Invalid path')
       })
@@ -79,7 +81,7 @@ describe('src/commands/config', () => {
 
       getHandler('test', 'test.path')
 
-      expect(mocks.loadConfig).toHaveBeenCalledOnce()
+      expect(mocks.getConfig).toHaveBeenCalledOnce()
       expect(mocks.getConfigValue).toHaveBeenCalledOnce()
       expect(spies.consoleError).toHaveBeenCalledOnce()
       expect(spies.processExit).toHaveBeenCalledWith(1)
@@ -88,21 +90,21 @@ describe('src/commands/config', () => {
 
   describe('setHandler', () => {
     test('should write the updated config to the file', () => {
-      mocks.loadConfig.mockReturnValue({} as Config)
+      mocks.getConfig.mockReturnValue({ paths: { config: 'test' } } as Config)
       mocks.yamlStringify.mockReturnValue('test-config')
 
       spies.consoleLog = vi.spyOn(console, 'log').mockImplementation(() => { })
 
       setHandler('test', 'test.path', 'test-value')
 
-      expect(mocks.loadConfig).toHaveBeenCalledOnce()
+      expect(mocks.getConfig).toHaveBeenCalledOnce()
       expect(mocks.setConfigValue).toHaveBeenCalledOnce()
       expect(mocks.writeFileSync).toHaveBeenCalledOnce()
       expect(spies.consoleLog).toHaveBeenCalledOnce()
     })
 
     test('should log error and exit when the value cannot be set', () => {
-      mocks.loadConfig.mockReturnValue({} as Config)
+      mocks.getConfig.mockReturnValue({ paths: { config: 'test' } } as Config)
       mocks.setConfigValue.mockImplementation(() => {
         throw new Error('Invalid value')
       })
@@ -112,7 +114,7 @@ describe('src/commands/config', () => {
 
       setHandler('test', 'test.path', 'test-value')
 
-      expect(mocks.loadConfig).toHaveBeenCalledOnce()
+      expect(mocks.getConfig).toHaveBeenCalledOnce()
       expect(mocks.setConfigValue).toHaveBeenCalledOnce()
       expect(spies.consoleError).toHaveBeenCalledOnce()
       expect(spies.processExit).toHaveBeenCalledWith(1)

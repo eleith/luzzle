@@ -2,12 +2,10 @@ import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { generatePngFromUrl } from './png.js'
 import { getBrowser } from './browser.js'
 import path from 'path'
-import { getDatabaseClient } from '@luzzle/core'
-import { loadConfig } from '@luzzle/web.utils/server'
-import { type WebPieces, getOpenGraphPath } from '@luzzle/web.utils'
+import { type WebPieces, getOpenGraphPath, type Config } from '@luzzle/web.utils'
+import { getDatabase } from '../../lib/database.js'
 
 type GenerateOpenGraphsOptions = {
-	configPath: string
 	outputDir: string
 	force?: boolean
 	host?: string
@@ -16,11 +14,9 @@ type GenerateOpenGraphsOptions = {
 
 export default async function generateOpenGraphs(
 	options: GenerateOpenGraphsOptions,
+	config: Config
 ) {
-	const config = loadConfig(options.configPath)
-	const configDir = path.dirname(options.configPath)
-	const dbPath = path.join(configDir, config.paths.database)
-	const db = getDatabaseClient(dbPath)
+	const db = getDatabase(config)
 	const host = options.host || config.url.app
 	const items = await db
 		.withTables<{ web_pieces: WebPieces }>()

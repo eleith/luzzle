@@ -1,5 +1,6 @@
 import { Argv } from 'yargs'
 import generateSqlite from './index.js'
+import { getConfig } from '../../lib/config.js'
 
 export default function command(cli: Argv) {
 	return cli.command(
@@ -10,13 +11,13 @@ export default function command(cli: Argv) {
 				config: {
 					type: 'string',
 					description: 'path to config.yaml',
-					demandOption: true,
 				}
 			})
 			return options
 		},
 		async function(argv) {
-			await generateSqlite(argv.config)
+			const config = getConfig(argv.config as string | undefined)
+			await generateSqlite(config)
 		}
 	)
 }

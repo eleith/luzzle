@@ -1,9 +1,7 @@
 import { mkdir, writeFile } from 'fs/promises'
-import path from 'path'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { generateVariantJobs } from './variants.js'
-import { getDatabaseClient, LuzzleSelectable, Pieces } from '@luzzle/core'
-import { loadConfig } from '@luzzle/web.utils/server'
+import { Pieces, LuzzleSelectable } from '@luzzle/core'
 import {
 	getAssetDir,
 	getAssetPath,
@@ -12,6 +10,8 @@ import {
 	getImageAssetPath,
 } from '@luzzle/web.utils'
 import { getStorage } from '../../lib/storage.js'
+import { getDatabase } from '../../lib/database.js'
+import { type Config } from '@luzzle/web.utils'
 
 async function generateVariantsForAssetField(
 	item: LuzzleSelectable<'pieces_items'>,
@@ -36,17 +36,14 @@ async function generateVariantsForAssetField(
 }
 
 type GenerateAssetsOptions = {
-	configPath: string
 	archiveDir?: string
 	outDir: string
 	force?: boolean
 	id?: string
 }
 
-export default async function generateAssets(options: GenerateAssetsOptions) {
-	const config = loadConfig(options.configPath)
-	const dbPath = path.join(path.dirname(options.configPath), config.paths.database)
-	const db = getDatabaseClient(dbPath)
+export default async function generateAssets(options: GenerateAssetsOptions, config: Config) {
+	const db = getDatabase(config)
 	const pieceTypes = config.pieces.map((p) => p.type)
 	const items = await db
 		.selectFrom('pieces_items')

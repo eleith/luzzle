@@ -1,12 +1,16 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import command from './command.js'
 import sync from './index.js'
+import { getConfig } from '../../lib/config.js'
 import { Argv } from 'yargs'
+import { Config } from '@luzzle/web.utils'
 
 vi.mock('./index.js')
+vi.mock('../../lib/config.js')
 
 const mocks = {
 	sync: vi.mocked(sync),
+	getConfig: vi.mocked(getConfig),
 }
 
 describe('sync command', () => {
@@ -38,6 +42,9 @@ describe('sync command', () => {
 		builder(yargsMock)
 		expect(yargsMock.options).toHaveBeenCalled()
 
+		const config = { paths: { database: 'test' } } as Config
+		mocks.getConfig.mockReturnValue(config)
+
 		const argv = {
 			config: '/path/to/config.yaml',
 			in: '/luzzle',
@@ -49,12 +56,14 @@ describe('sync command', () => {
 		}
 		await handler(argv)
 
-		expect(mocks.sync).toHaveBeenCalledWith({
-			configPath: '/path/to/config.yaml',
-			archiveDir: '/luzzle',
-			dryRun: true,
-			force: true,
-			prune: true,
-		})
+		expect(mocks.sync).toHaveBeenCalledWith(
+			{
+				archiveDir: '/luzzle',
+				dryRun: true,
+				force: true,
+				prune: true,
+			},
+			config
+		)
 	})
 })

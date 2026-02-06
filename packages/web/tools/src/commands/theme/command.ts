@@ -1,5 +1,6 @@
 import { Argv } from 'yargs'
 import generateTheme from './index.js'
+import { getConfig } from '../../lib/config.js'
 
 export default function command(cli: Argv) {
 	return cli.command(
@@ -10,7 +11,6 @@ export default function command(cli: Argv) {
 				config: {
 					type: 'string',
 					description: 'path to config.yaml',
-					demandOption: true,
 				},
 				minify: {
 					type: 'boolean',
@@ -21,7 +21,8 @@ export default function command(cli: Argv) {
 			return options
 		},
 		async function (argv) {
-			await generateTheme(argv.config, argv.minify)
+			const config = getConfig(argv.config as string | undefined)
+			await generateTheme(config, argv.minify as boolean)
 		}
 	)
 }

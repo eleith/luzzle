@@ -1,18 +1,20 @@
 import { describe, test, vi, afterEach, expect } from 'vitest'
 import sync from './index.js'
-import { loadConfig } from '@luzzle/web.utils/server'
-import { getDatabaseClient, Pieces, selectItemAssets, LuzzleDatabase, LuzzleStorage, Piece, PieceFrontmatter } from '@luzzle/core'
+import { Pieces, selectItemAssets, LuzzleDatabase, LuzzleStorage, Piece, PieceFrontmatter } from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
+import { getConfig } from '../../lib/config.js'
+import { getDatabase } from '../../lib/database.js'
 import { Readable } from 'stream'
 import { Config } from '@luzzle/web.utils'
 
-vi.mock('@luzzle/web.utils/server')
+vi.mock('../../lib/config.js')
+vi.mock('../../lib/database.js')
 vi.mock('@luzzle/core')
 vi.mock('../../lib/storage.js')
 
 const mocks = {
-	loadConfig: vi.mocked(loadConfig),
-	getDatabaseClient: vi.mocked(getDatabaseClient),
+	getConfig: vi.mocked(getConfig),
+	getDatabase: vi.mocked(getDatabase),
 	Pieces: vi.mocked(Pieces),
 	getStorage: vi.mocked(getStorage),
 	selectItemAssets: vi.mocked(selectItemAssets),
@@ -27,8 +29,8 @@ describe('sync index', () => {
 		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 		vi.spyOn(console, 'error').mockImplementation(() => {})
 		const config = { paths: { database: 'db.sqlite' } }
-		mocks.loadConfig.mockReturnValue(config as unknown as Config)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as LuzzleDatabase)
+		mocks.getConfig.mockReturnValue(config as unknown as Config)
+		mocks.getDatabase.mockReturnValue({} as unknown as LuzzleDatabase)
 
 		const storage = { delete: vi.fn() }
 		mocks.getStorage.mockReturnValue(storage as unknown as LuzzleStorage)
@@ -53,15 +55,16 @@ describe('sync index', () => {
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 		mocks.selectItemAssets.mockResolvedValue(['asset1.jpg'])
 
-		await sync({
-			configPath: 'config.yaml',
-			prune: true,
-			dryRun: false,
-		})
+		await sync(
+			{
+				prune: true,
+				dryRun: false,
+			},
+			config as unknown as Config
+		)
 
-		expect(mocks.loadConfig).toHaveBeenCalledWith('config.yaml')
 		expect(mocks.getStorage).toHaveBeenCalled()
-		expect(mocks.getDatabaseClient).toHaveBeenCalled()
+		expect(mocks.getDatabase).toHaveBeenCalled()
 		expect(piecesMock.sync).toHaveBeenCalledWith(expect.any(Object), { dryRun: false, force: false })
 		expect(piecesMock.prune).toHaveBeenCalledWith(expect.any(Object), { dryRun: false })
 		expect(piecesMock.getFilesIn).toHaveBeenCalled()
@@ -79,8 +82,7 @@ describe('sync index', () => {
 	test('should handle dry run and no prune', async () => {
 		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 		const config = { paths: { database: 'db.sqlite' } }
-		mocks.loadConfig.mockReturnValue(config as unknown as Config)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as LuzzleDatabase)
+		mocks.getDatabase.mockReturnValue({} as unknown as LuzzleDatabase)
 		mocks.getStorage.mockReturnValue({} as unknown as LuzzleStorage)
 
 		const pieceMock = {
@@ -102,7 +104,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({ dryRun: true })
+		await sync({ dryRun: true }, config as unknown as Config)
 
 		expect(consoleLogSpy).toHaveBeenCalledWith('--- DRY RUN ---')
 		expect(piecesMock.sync).toHaveBeenCalledWith(expect.any(Object), { dryRun: true, force: false })
@@ -112,8 +114,7 @@ describe('sync index', () => {
 
 	test('should force sync', async () => {
 		const config = { paths: { database: 'db.sqlite' } }
-		mocks.loadConfig.mockReturnValue(config as unknown as Config)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as LuzzleDatabase)
+		mocks.getDatabase.mockReturnValue({} as unknown as LuzzleDatabase)
 		mocks.getStorage.mockReturnValue({} as unknown as LuzzleStorage)
 
 		const pieceMock = {
@@ -135,7 +136,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({ force: true })
+		await sync({ force: true }, config as unknown as Config)
 
 		expect(piecesMock.sync).toHaveBeenCalledWith(expect.any(Object), { dryRun: false, force: true })
 		expect(pieceMock.isOutdated).not.toHaveBeenCalled() // skipped optimization
@@ -145,8 +146,7 @@ describe('sync index', () => {
 	test('should log errors', async () => {
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 		const config = { paths: { database: 'db.sqlite' } }
-		mocks.loadConfig.mockReturnValue(config as unknown as Config)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as LuzzleDatabase)
+		mocks.getDatabase.mockReturnValue({} as unknown as LuzzleDatabase)
 		mocks.getStorage.mockReturnValue({} as unknown as LuzzleStorage)
 
 		const pieceMock = {
@@ -168,7 +168,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({})
+		await sync({}, config as unknown as Config)
 
 		expect(consoleErrorSpy).toHaveBeenCalledWith('[error] syncing schema s1: fail')
 		expect(consoleErrorSpy).toHaveBeenCalledWith('[error] pruning schema s2: fail')

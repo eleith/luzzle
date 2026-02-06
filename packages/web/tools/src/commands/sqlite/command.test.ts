@@ -1,12 +1,16 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import command from './command.js'
 import generateSqlite from './index.js'
+import { getConfig } from '../../lib/config.js'
 import { Argv } from 'yargs'
+import { Config } from '@luzzle/web.utils'
 
 vi.mock('./index.js')
+vi.mock('../../lib/config.js')
 
 const mocks = {
 	generateSqlite: vi.mocked(generateSqlite),
+	getConfig: vi.mocked(getConfig),
 }
 
 describe('sqlite command', () => {
@@ -40,9 +44,11 @@ describe('sqlite command', () => {
 			config: {
 				type: 'string',
 				description: 'path to config.yaml',
-				demandOption: true,
 			},
 		})
+
+		const config = { paths: { database: 'test' } } as Config
+		mocks.getConfig.mockReturnValue(config)
 
 		const argv = {
 			config: '/path/to/config.yaml',
@@ -51,6 +57,6 @@ describe('sqlite command', () => {
 		}
 		await handler(argv)
 
-		expect(mocks.generateSqlite).toHaveBeenCalledWith('/path/to/config.yaml')
+		expect(mocks.generateSqlite).toHaveBeenCalledWith(config)
 	})
 })

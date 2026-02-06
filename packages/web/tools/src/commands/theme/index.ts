@@ -1,11 +1,10 @@
-import { loadConfig } from '@luzzle/web.utils/server'
 import { generateThemeCss, minifyCss } from './theme.js'
+import { type Config } from '@luzzle/web.utils'
 
 export default async function generateTheme(
-	configPath: string,
+	config: Config,
 	minify: boolean = false
 ): Promise<void> {
-	const config = loadConfig(configPath)
 	const rawCss = generateThemeCss(config)
 	const css = minify ? minifyCss(rawCss) : rawCss
 

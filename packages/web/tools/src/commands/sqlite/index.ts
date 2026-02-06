@@ -1,4 +1,3 @@
-import { getDatabaseClient } from '@luzzle/core'
 import {
 	dropWebTables,
 	createWebTables,
@@ -6,15 +5,11 @@ import {
 	populateWebPieceItems,
 	populateWebPieceSearch,
 } from './database.js'
-import { type WebPieces } from '@luzzle/web.utils'
-import { loadConfig } from '@luzzle/web.utils/server'
-import path from 'path'
+import { Config, type WebPieces } from '@luzzle/web.utils'
+import { getDatabase } from '../../lib/database.js'
 
-export default async function generateWebSqlite(configPath: string) {
-	const config = loadConfig(configPath)
-	const dbPath = path.join(path.dirname(configPath), config.paths.database)
-	const db = getDatabaseClient(dbPath)
-
+export default async function generateWebSqlite(config: Config) {
+	const db = getDatabase(config)
 	await dropWebTables(db)
 	await createWebTables(db)
 

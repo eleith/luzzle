@@ -4,39 +4,41 @@ import { validateHandler, getHandler, setHandler } from './index.js'
 export default function configCommand(cli: Argv) {
 	return cli.command('config <subcommand>', 'Manage configuration', (yargs) => {
 		yargs
+			.options({
+				config: {
+					type: 'string',
+					description: 'path to config.yaml',
+					alias: 'c',
+				},
+			})
 			.command(
 				'validate',
 				'Validate the configuration file',
-				function(yargs) {
-					return yargs.option('config', {
-						alias: 'c',
-						type: 'string',
-						description: 'Path to the configuration file',
-						demandOption: true,
-					})
+				function (yargs) {
+					return yargs
 				},
-				function(argv) {
-					validateHandler(argv.config)
+				function (argv) {
+					validateHandler(argv.config as string | undefined)
 				}
 			)
 			.command(
 				'get <path>',
 				'Get a value from the configuration',
-				function(yargs) {
+				function (yargs) {
 					return yargs.positional('path', {
 						type: 'string',
 						description: 'Path to the value to get',
 						demandOption: true,
 					})
 				},
-				function(argv) {
-					getHandler(argv.config, argv.path)
+				function (argv) {
+					getHandler(argv.config as string | undefined, argv.path as string)
 				}
 			)
 			.command(
 				'set <path> <value>',
 				'Set a value in the configuration',
-				function(yargs) {
+				function (yargs) {
 					return yargs
 						.positional('path', {
 							type: 'string',
@@ -49,8 +51,8 @@ export default function configCommand(cli: Argv) {
 							demandOption: true,
 						})
 				},
-				function(argv) {
-					setHandler(argv.config, argv.path, argv.value)
+				function (argv) {
+					setHandler(argv.config as string | undefined, argv.path as string, argv.value)
 				}
 			)
 			.demandCommand(1, 'You need to specify a subcommand [validate, get, set]')

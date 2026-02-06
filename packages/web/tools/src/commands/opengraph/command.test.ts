@@ -1,12 +1,16 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import command from './command.js'
 import generateOpenGraphs from './index.js'
+import { getConfig } from '../../lib/config.js'
 import { Argv } from 'yargs'
+import { Config } from '@luzzle/web.utils'
 
 vi.mock('./index.js')
+vi.mock('../../lib/config.js')
 
 const mocks = {
 	generateOpenGraphs: vi.mocked(generateOpenGraphs),
+	getConfig: vi.mocked(getConfig),
 }
 
 describe('opengraph command', () => {
@@ -40,7 +44,6 @@ describe('opengraph command', () => {
 			config: {
 				type: 'string',
 				description: 'path to config.yaml',
-				demandOption: true,
 			},
 			out: {
 				type: 'string',
@@ -64,6 +67,9 @@ describe('opengraph command', () => {
 			},
 		})
 
+		const config = { url: { app: 'test-host' } } as Config
+		mocks.getConfig.mockReturnValue(config)
+
 		await handler({
 			config: 'test',
 			out: 'test',
@@ -72,12 +78,14 @@ describe('opengraph command', () => {
 			force: true,
 		})
 
-		expect(mocks.generateOpenGraphs).toHaveBeenCalledWith({
-			configPath: 'test',
-			outputDir: 'test',
-			host: 'test-host',
-			id: 'test-id',
-			force: true,
-		})
+		expect(mocks.generateOpenGraphs).toHaveBeenCalledWith(
+			{
+				outputDir: 'test',
+				host: 'test-host',
+				id: 'test-id',
+				force: true,
+			},
+			config
+		)
 	})
 })

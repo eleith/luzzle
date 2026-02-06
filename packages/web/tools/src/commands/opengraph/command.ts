@@ -1,5 +1,6 @@
 import { Argv } from 'yargs'
 import generateOpenGraphs from './index.js'
+import { getConfig } from '../../lib/config.js'
 
 export default function command(cli: Argv) {
 	return cli.command(
@@ -10,7 +11,6 @@ export default function command(cli: Argv) {
 				config: {
 					type: 'string',
 					description: 'path to config.yaml',
-					demandOption: true,
 				},
 				out: {
 					type: 'string',
@@ -36,13 +36,16 @@ export default function command(cli: Argv) {
 			return options
 		},
 		async function(argv) {
-			await generateOpenGraphs({
-				configPath: argv.config,
-				outputDir: argv.out,
-				host: argv.host,
-				id: argv.id,
-				force: argv.force,
-			})
+			const config = getConfig(argv.config as string | undefined)
+			await generateOpenGraphs(
+				{
+					outputDir: argv.out as string,
+					host: argv.host as string | undefined,
+					id: argv.id as string | undefined,
+					force: argv.force as boolean,
+				},
+				config
+			)
 		}
 	)
 }

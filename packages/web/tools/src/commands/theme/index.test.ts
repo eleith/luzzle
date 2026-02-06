@@ -1,16 +1,16 @@
 import { describe, test, vi, afterEach, expect, MockInstance } from 'vitest';
 import generateTheme from './index.js';
 import { type Config } from '@luzzle/web.utils';
-import { loadConfig } from '@luzzle/web.utils/server';
+import { getConfig } from '../../lib/config.js';
 import { generateThemeCss, minifyCss } from './theme.js';
 import { mkdir, writeFile } from 'fs/promises';
 
-vi.mock('@luzzle/web.utils/server');
+vi.mock('../../lib/config.js');
 vi.mock('fs/promises');
 vi.mock('./theme.js');
 
 const mocks = {
-	loadConfig: vi.mocked(loadConfig),
+	getConfig: vi.mocked(getConfig),
 	generateThemeCss: vi.mocked(generateThemeCss),
 	minifyCss: vi.mocked(minifyCss),
 	mkdir: vi.mocked(mkdir),
@@ -32,23 +32,24 @@ describe('src/commands/theme', () => {
 
 	test('should generate theme to stdout', async () => {
 		spies.consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-		mocks.loadConfig.mockReturnValue({ theme: {} } as Config);
+		const config = { theme: {} } as Config;
+		mocks.getConfig.mockReturnValue(config);
 		mocks.generateThemeCss.mockReturnValue('body { color: red; }');
 
-		await generateTheme('test');
+		await generateTheme(config);
 
-		expect(mocks.loadConfig).toHaveBeenCalledOnce();
 		expect(mocks.generateThemeCss).toHaveBeenCalledOnce();
 		expect(spies.consoleLog).toHaveBeenCalledWith('body { color: red; }');
 	});
 
 	test('should generate minified theme to stdout', async () => {
 		spies.consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-		mocks.loadConfig.mockReturnValue({ theme: {} } as Config);
+		const config = { theme: {} } as Config;
+		mocks.getConfig.mockReturnValue(config);
 		mocks.generateThemeCss.mockReturnValue('body { color: red; }');
 		mocks.minifyCss.mockReturnValue('body{color:red}');
 
-		await generateTheme('test', true);
+		await generateTheme(config, true);
 
 		expect(mocks.minifyCss).toHaveBeenCalledOnce();
 		expect(spies.consoleLog).toHaveBeenCalledWith('body{color:red}');

@@ -1,5 +1,6 @@
 import { Argv } from 'yargs'
 import generateAssets from './index.js'
+import { getConfig } from '../../lib/config.js'
 
 export default function command(cli: Argv) {
 	return cli.command(
@@ -10,7 +11,6 @@ export default function command(cli: Argv) {
 				config: {
 					type: 'string',
 					description: 'path to config.yaml',
-					demandOption: true,
 				},
 				in: {
 					type: 'string',
@@ -36,13 +36,16 @@ export default function command(cli: Argv) {
 			return options
 		},
 		async function(argv) {
-			await generateAssets({
-				configPath: argv.config,
-				archiveDir: argv.in,
-				outDir: argv.out,
-				id: argv.id,
-				force: argv.force,
-			})
+			const config = getConfig(argv.config as string | undefined)
+			await generateAssets(
+				{
+					archiveDir: argv.in as string | undefined,
+					outDir: argv.out as string,
+					id: argv.id as string | undefined,
+					force: argv.force as boolean,
+				},
+				config
+			)
 		}
 	)
 }

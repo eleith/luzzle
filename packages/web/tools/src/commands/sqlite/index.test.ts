@@ -1,7 +1,6 @@
 import { describe, test, vi, afterEach, expect, MockInstance } from 'vitest';
 import { mockKysely } from './database.mock.js';
 import generateWebSqlite from './index.js';
-import { getDatabaseClient } from '@luzzle/core';
 import {
 	dropWebTables,
 	createWebTables,
@@ -10,20 +9,21 @@ import {
 	populateWebPieceSearch,
 } from './database.js';
 import { type Config } from '@luzzle/web.utils';
-import { loadConfig } from '@luzzle/web.utils/server';
+import { getConfig } from '../../lib/config.js';
+import { getDatabase } from '../../lib/database.js';
 
-vi.mock('@luzzle/core');
+vi.mock('../../lib/config.js');
+vi.mock('../../lib/database.js');
 vi.mock('./database.js');
-vi.mock('@luzzle/web.utils/server');
 
 const mocks = {
-	getDatabaseClient: vi.mocked(getDatabaseClient),
+	getConfig: vi.mocked(getConfig),
+	getDatabase: vi.mocked(getDatabase),
 	dropWebTables: vi.mocked(dropWebTables),
 	createWebTables: vi.mocked(createWebTables),
 	populateWebPieceTags: vi.mocked(populateWebPieceTags),
 	populateWebPieceItems: vi.mocked(populateWebPieceItems),
 	populateWebPieceSearch: vi.mocked(populateWebPieceSearch),
-	loadConfig: vi.mocked(loadConfig),
 };
 
 const spies: { [key: string]: MockInstance } = {};
@@ -42,14 +42,14 @@ describe('tools/sqlite', () => {
 	test('should generate the web sqlite database', async () => {
 		spies.consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 		const { db, queries } = mockKysely();
-		mocks.loadConfig.mockReturnValue({ paths: { database: 'test' } } as Config);
-		mocks.getDatabaseClient.mockReturnValue(db);
+		const config = { paths: { database: 'test' } } as Config;
+		mocks.getConfig.mockReturnValue(config);
+		mocks.getDatabase.mockReturnValue(db);
 		vi.spyOn(queries, 'execute').mockResolvedValue([]);
 
-		await generateWebSqlite('test');
+		await generateWebSqlite(config);
 
-		expect(mocks.loadConfig).toHaveBeenCalledOnce();
-		expect(mocks.getDatabaseClient).toHaveBeenCalledOnce();
+		expect(mocks.getDatabase).toHaveBeenCalledOnce();
 		expect(mocks.dropWebTables).toHaveBeenCalledOnce();
 		expect(mocks.createWebTables).toHaveBeenCalledOnce();
 		expect(mocks.populateWebPieceItems).toHaveBeenCalledOnce();

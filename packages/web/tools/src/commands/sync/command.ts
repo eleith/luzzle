@@ -1,5 +1,6 @@
 import { Argv } from 'yargs'
 import sync from './index.js'
+import { getConfig } from '../../lib/config.js'
 
 export default function command(cli: Argv) {
 	return cli.command(
@@ -35,13 +36,16 @@ export default function command(cli: Argv) {
 			})
 		},
 		async function (argv) {
-			await sync({
-				configPath: argv.config,
-				archiveDir: argv.in,
-				dryRun: argv['dry-run'],
-				force: argv.force,
-				prune: argv.prune,
-			})
+			const config = getConfig(argv.config as string | undefined)
+			await sync(
+				{
+					archiveDir: argv.in as string | undefined,
+					dryRun: argv['dry-run'] as boolean,
+					force: argv.force as boolean,
+					prune: argv.prune as boolean,
+				},
+				config
+			)
 		}
 	)
 }

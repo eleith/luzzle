@@ -1,24 +1,18 @@
-import { loadConfig } from '@luzzle/web.utils/server'
-import { getDatabaseClient, Pieces, selectItemAssets } from '@luzzle/core'
+import { Pieces, selectItemAssets } from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
-import path from 'path'
+import { getDatabase } from '../../lib/database.js'
+import { Config } from '@luzzle/web.utils'
 
 type SyncOptions = {
-	configPath?: string
 	archiveDir?: string
 	dryRun?: boolean
 	force?: boolean
 	prune?: boolean
 }
 
-export default async function sync(options: SyncOptions) {
-	const config = loadConfig(options.configPath)
+export default async function sync(options: SyncOptions, config: Config) {
+	const db = getDatabase(config)
 	const storage = getStorage(config, options.archiveDir)
-	const dbPath = path.resolve(
-		options.configPath ? path.dirname(options.configPath) : process.cwd(),
-		config.paths.database
-	)
-	const db = getDatabaseClient(dbPath)
 	const pieces = new Pieces(storage)
 	const dryRun = options.dryRun || false
 	const force = options.force || false
