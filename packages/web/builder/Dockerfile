@@ -23,12 +23,12 @@ RUN chown -R node:node /app
 USER node
 
 COPY --chown=node:node ./server.js /app/server.js
-COPY --chown=node:node ./scripts/build.sh /app/scripts/pre.build.sh
+COPY --chown=node:node ./scripts/pre.build.sh /app/scripts/pre.build.sh
 COPY --chown=node:node ./scripts/build.sh /app/scripts/build.sh
-COPY --chown=node:node ./scripts/build.sh /app/scripts/post.build.sh
-COPY --chown=node:node ./scripts/build.sh /app/scripts/pre.deploy.sh
-COPY --chown=node:node ./scripts/build.sh /app/scripts/deploy.sh
-COPY --chown=node:node ./scripts/build.sh /app/scripts/post.deploy.sh
+COPY --chown=node:node ./scripts/post.build.sh /app/scripts/post.build.sh
+COPY --chown=node:node ./scripts/pre.deploy.sh /app/scripts/pre.deploy.sh
+COPY --chown=node:node ./scripts/deploy.sh /app/scripts/deploy.sh
+COPY --chown=node:node ./scripts/post.deploy.sh /app/scripts/post.deploy.sh
 
 EXPOSE 9000
 
