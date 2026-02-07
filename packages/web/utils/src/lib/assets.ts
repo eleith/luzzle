@@ -40,7 +40,7 @@ function getImageAssetPath(
 	id: string,
 	asset: string,
 	width: number,
-	format: 'jpg' | 'avif'
+	format: 'jpg' | 'avif' | 'webp' | 'png'
 ) {
 	const match = asset.match(ASSET_PATH_MATCHER)
 	const filename = match ? match[1] : asset

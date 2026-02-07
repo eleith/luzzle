@@ -22,12 +22,16 @@ export interface Schema {
   auth: {
     enabled: boolean;
     secret: string;
-    type: "oidc";
-    oidc: {
+    type: "oidc" | "credentials";
+    oidc?: {
       issuer: string;
       clientId: string;
       clientSecret: string;
     };
+    credentials?: {
+      username: string;
+      password: string;
+    }[];
   };
   storage: {
     type: "webdav" | "filesystem";

@@ -55,7 +55,10 @@
 					"type": "string"
 				},
 				"type": {
-					"const": "oidc"
+					"enum": [
+						"oidc",
+						"credentials"
+					]
 				},
 				"oidc": {
 					"type": "object",
@@ -76,13 +79,31 @@
 						"clientSecret"
 					],
 					"additionalProperties": false
+				},
+				"credentials": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"username": {
+								"type": "string"
+							},
+							"password": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"username",
+							"password"
+						],
+						"additionalProperties": false
+					}
 				}
 			},
 			"required": [
 				"enabled",
 				"type",
-				"secret",
-				"oidc"
+				"secret"
 			],
 			"additionalProperties": false
 		},
