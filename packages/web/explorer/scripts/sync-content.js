@@ -1,5 +1,5 @@
 import { loadConfig } from '@luzzle/web.utils/server'
-import { copyFile, mkdir } from 'fs/promises'
+import { readFile, writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 
 async function syncContent() {
@@ -16,7 +16,8 @@ async function syncContent() {
 		const destination = path.resolve(outDir, `${name}.svelte`)
 
 		try {
-			await copyFile(source, destination)
+			const data = await readFile(source)
+			await writeFile(destination, data)
 			console.log(`Synced ${sourcePath} -> ${destination}`)
 		} catch (error) {
 			console.error(`Error syncing ${sourcePath}:`, error)
