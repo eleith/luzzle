@@ -1,6 +1,6 @@
-# Agents.md for @luzzle/web.cache
+# Agents.md for @luzzle/web.proxy
 
-Instructions for agents working on the `@luzzle/web.cache` package.
+Instructions for agents working on the `@luzzle/web.proxy` package.
 
 ## Scope
 
@@ -10,9 +10,9 @@ load on the main application.
 
 ## Specifications
 
-*   **Base Image:** Pinned version of `nginx:alpine` (e.g., `1.27.4-alpine`).
-*   **Configuration:** Runtime configuration via environment variables using a
-    custom entrypoint script and `envsubst`.
+*   **Base Image:** `nginxinc/nginx-unprivileged:alpine` (supports rootless).
+*   **Configuration:** Runtime configuration via environment variables using the
+    official Nginx template pattern.
 *   **No Mounting:** Users should not need to mount config files for standard
     use cases.
 
@@ -23,12 +23,12 @@ load on the main application.
 
 ## Architecture
 
-*   **Template:** `templates/nginx.conf.template` contains the full Nginx
-    config with `${VAR}` placeholders.
-*   **Entrypoint:** `docker-entrypoint.d/99-custom-config.sh` handles the
-    substitution and overwrites `/etc/nginx/nginx.conf` at startup.
+*   **Template:** `templates/default.conf.template` contains the Nginx server
+    and cache config with `${VAR}` placeholders.
+*   **Loading:** Templates are automatically processed by the base image from
+    `/etc/nginx/templates/` into `/etc/nginx/conf.d/`.
 *   **Cache:** Configured to store up to 10GB of data, valid for 365 days, at
-    `/app/cache`.
+    `/tmp/cache`.
 
 ## Development
 

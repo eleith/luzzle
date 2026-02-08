@@ -1,0 +1,49 @@
+proxy_cache_path /tmp/cache levels=1:2 keys_zone=luzzle_cache:10m inactive=365d max_size=10g;
+
+upstream luzzle-upstream {
+    server ${LUZZLE_EXPLORER_HOST}:${LUZZLE_EXPLORER_PORT};
+    keepalive 2;
+}
+
+server {
+    listen 8080;
+    server_name localhost;
+
+    client_max_body_size 256M;
+    
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+
+    proxy_cache             luzzle_cache;
+    proxy_cache_revalidate  on;
+    proxy_cache_min_uses    1;
+    proxy_cache_lock        on;
+    proxy_cache_valid       200 302 365d;
+    proxy_cache_valid       404 365d;
+    proxy_cache_key         "$scheme$request_method$proxy_host$request_uri";
+
+    add_header X-Cache-Status $upstream_cache_status;
+
+    location ~* "^/(?:pieces|rss|search|$)" {
+        proxy_pass http://luzzle-upstream;
+    }
+
+    location ~* "\.(?:txt|jpg|jpeg|png|webp|avif|css)$" {
+        proxy_pass http://luzzle-upstream;
+    }
+
+    location /api/build {
+        proxy_cache     off;
+        proxy_buffering off;
+        add_header      X-Accel-Buffering "no" always;
+        proxy_pass      http://luzzle-upstream;
+    }
+
+    location / {
+        proxy_cache     off;
+        proxy_pass      http://luzzle-upstream;
+    }
+}
