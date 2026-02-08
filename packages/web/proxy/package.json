@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/web.proxy",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "private": true,
   "description": "Nginx caching layer for Luzzle Web Explorer",
   "scripts": {
