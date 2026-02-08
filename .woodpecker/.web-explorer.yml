@@ -26,7 +26,7 @@ steps:
     image: node:22
     commands:
       - cd packages/web/explorer
-      - touch config.yml
+      - touch config.yaml
       - touch .env
       - npm run lint
       - npm run check

@@ -17,8 +17,6 @@ COPY --chown=:0 vite.config.ts ./vite.config.ts
 RUN npm run build:lock
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install --include dev
 
-# Create directories for volumes and ensure they are writable by ANY user
-# We target specific paths to avoid expensive recursive operations on node_modules
 RUN mkdir -p /app/assets/pieces /app/assets/build /app/data /app/content /app/build /app/node_modules/.cache /app/.svelte-kit && \
     touch /app/config.yaml /app/.env && \
     chmod 777 /app && \
