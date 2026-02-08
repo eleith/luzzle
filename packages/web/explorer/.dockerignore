@@ -12,4 +12,5 @@ node_modules
 luzzle-images
 luzzle
 static/pieces
+assets
 config/config.yaml

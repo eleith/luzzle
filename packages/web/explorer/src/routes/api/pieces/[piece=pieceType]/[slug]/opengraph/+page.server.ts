@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	if (mediaPath) {
 		if (mode === 'local') {
 			try {
-				const assetsDir = path.resolve('static/pieces/assets')
+				const assetsDir = path.resolve('assets/pieces')
 				const filePath = path.join(assetsDir, mediaPath)
 				const buffer = await fs.readFile(filePath)
 				palette = (await getPalette(buffer)) as PieceIconPalette

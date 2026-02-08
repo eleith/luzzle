@@ -46,3 +46,8 @@ The Web Explorer is configured using a `config.yaml` file.
 - **theme:** Colors, fonts, and dark mode! 🌙
 
 For advanced configuration, check out `@luzzle/web.tools`
+
+## Future Ideas
+
+- Support for hardcoded Base32 seeds in `config.yaml` for stateless 2FA
+- UI for managing schemas in editor

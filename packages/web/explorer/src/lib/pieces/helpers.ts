@@ -3,7 +3,11 @@ import { page } from '$app/state'
 
 export type PieceComponentHelpers = {
 	getPieceUrl: () => string
-	getPieceImageUrl: (image: string, minWidth: number, format: 'jpg' | 'avif') => string
+	getPieceImageUrl: (
+		image: string,
+		minWidth: number,
+		format: 'jpg' | 'avif' | 'webp' | 'png'
+	) => string
 }
 
 export type PieceIconProps = {
@@ -62,7 +66,7 @@ export function getPieceHelpers(
 	if (mode === 'local') {
 		return {
 			getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
-			getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif') => {
+			getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif' | 'webp' | 'png') => {
 				const path = getImageAssetPath(piece.type, piece.id, asset, width, format)
 				return `/pieces/assets/${path}`
 			}
@@ -71,7 +75,7 @@ export function getPieceHelpers(
 
 	return {
 		getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
-		getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif') => {
+		getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif' | 'webp' | 'png') => {
 			const path = getImageAssetPath(piece.type, piece.id, asset, width, format)
 			return `${page.data.config.url.luzzle_assets}/pieces/assets/${path}`
 		}

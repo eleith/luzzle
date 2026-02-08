@@ -9,6 +9,13 @@ const svelteConfig = {
 	preprocess: [vitePreprocess()],
 	kit: {
 		adapter: adapter(),
+		csrf: {
+			trustedOrigins: [
+				config.url.app.replace(/\/$/, ''),
+				'http://localhost:3000',
+				'http://localhost:5173'
+			]
+		},
 		csp: {
 			mode: 'auto',
 			directives: {

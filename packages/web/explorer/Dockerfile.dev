@@ -1,0 +1,21 @@
+FROM node:22-slim
+
+WORKDIR /app
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+COPY --chown=:0 package.json ./package.json
+COPY --chown=:0 package-lock.json ./package-lock.json
+
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install --include dev
+
+# Create placeholders for directories that will be mounted or need write access
+RUN mkdir -p /app/src /app/static /app/scripts /app/assets /app/data /app/content /app/build /app/node_modules/.cache /app/.svelte-kit && 
+    touch /app/config.yaml /app/.env && 
+    chmod -R 777 /app
+
+# npm run dev defaults to 5173
+EXPOSE 5173
+
+# We run prebuild to ensure theme and content are synced before starting dev
+ENTRYPOINT ["sh", "-c", "npm run prebuild && npm run dev -- --host"]

@@ -28,6 +28,14 @@ export default [
 		}
 	},
 	{
-		ignores: ['build/', '.svelte-kit/', 'dist/', './sample/', './docker-compose.yml']
+		ignores: [
+			'build/',
+			'.svelte-kit/',
+			'sample/',
+			'docker-compose.yml',
+			'archive/',
+			'data/',
+			'assets/'
+		]
 	}
 ]

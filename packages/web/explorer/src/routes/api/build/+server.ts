@@ -1,5 +1,6 @@
 import { config } from '$lib/server/config'
 import type { RequestHandler } from './$types'
+import { triggerBuilder } from '@luzzle/web.utils/server'
 
 export const POST: RequestHandler = async () => {
 	if (!config.builder?.url) {
@@ -7,15 +8,7 @@ export const POST: RequestHandler = async () => {
 	}
 
 	try {
-		const headers: HeadersInit = {
-			...config.builder.headers
-		}
-
-		const response = await fetch(config.builder.url, {
-			method: config.builder.method || 'POST',
-			headers,
-			body: config.builder.body || '{}'
-		})
+		const response = await triggerBuilder(config.builder, 'build')
 
 		if (!response.body) {
 			return new Response('No response body from builder', { status: 502 })
@@ -28,31 +21,7 @@ export const POST: RequestHandler = async () => {
 			})
 		}
 
-		const stream = new ReadableStream({
-			start(controller) {
-				const reader = response.body?.getReader()
-
-				function push() {
-					reader
-						?.read()
-						.then(({ done, value }) => {
-							if (done) {
-								controller.close()
-								return
-							}
-							controller.enqueue(value)
-							push()
-						})
-						.catch((error) => {
-							controller.error(error)
-						})
-				}
-
-				push()
-			}
-		})
-
-		return new Response(stream, {
+		return new Response(response.body, {
 			headers: {
 				'Content-Type': 'text/plain',
 				'Transfer-Encoding': 'chunked',

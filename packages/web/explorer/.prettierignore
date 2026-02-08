@@ -6,3 +6,5 @@ yarn.lock
 **/*.json
 sample
 docker-compose.yml
+data
+archive

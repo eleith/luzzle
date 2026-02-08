@@ -1,19 +1,29 @@
-FROM node:22-slim AS builder
+FROM node:22-slim
+
+RUN apt-get update && apt-get install -y rsync && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
-
-ENV NODE_ENV=production
-
-COPY package.json ./package.json
-COPY package-lock.json ./package-lock.json
-COPY src ./src
-COPY static ./static
-COPY sample ./sample
-COPY scripts ./scripts
-COPY tsconfig.json ./tsconfig.json
-COPY svelte.config.js ./svelte.config.js
-COPY vite.config.ts ./vite.config.ts
 
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install --include=dev
-RUN touch /app/config.yaml
+COPY --chown=:0 package.json ./package.json
+COPY --chown=:0 src ./src
+COPY --chown=:0 static ./static
+COPY --chown=:0 scripts ./scripts
+COPY --chown=:0 tsconfig.json ./tsconfig.json
+COPY --chown=:0 svelte.config.js ./svelte.config.js
+COPY --chown=:0 vite.config.ts ./vite.config.ts
+
+RUN npm run build:lock
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install --include dev
+
+# Create directories for volumes and ensure they are writable by ANY user
+# We target specific paths to avoid expensive recursive operations on node_modules
+RUN mkdir -p /app/assets/pieces /app/assets/build /app/data /app/content /app/build /app/node_modules/.cache /app/.svelte-kit && \
+    touch /app/config.yaml /app/.env && \
+    chmod 777 /app && \
+    chmod -R 777 /app/src /app/scripts /app/static /app/assets /app/data /app/content /app/build /app/node_modules/.cache /app/.svelte-kit /app/config.yaml /app/.env /app/package.json /app/package-lock.json
+
+EXPOSE 3000
+
+ENTRYPOINT ["node", "scripts/manager.js"]
