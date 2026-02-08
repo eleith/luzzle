@@ -4,6 +4,13 @@ import {
 	getConfigValue,
 	setConfigValue,
 } from "./lib/config/config.js";
+import { triggerBuilder } from "./lib/builder.js";
 
-export { getPalette, loadConfig, getConfigValue, setConfigValue };
+export {
+	getPalette,
+	loadConfig,
+	getConfigValue,
+	setConfigValue,
+	triggerBuilder,
+};
 
