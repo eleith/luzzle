@@ -39,3 +39,10 @@ const db = getDatabaseClient('/path/to/luzzle/root');
 * **Schema Validation:** Enforces structure using Ajv. Strict but fair. ⚖️
 * **File Synchronization:** Reads Markdown, updates SQLite.
 * **Type-Safe Querying:** Because runtime errors are no fun.
+
+## Future Ideas
+
+* **Google Drive Storage:** Support for Google Drive as a backend storage
+  provider.
+* **Dropbox Storage:** Support for Dropbox as a backend storage provider.
+* **iCloud Storage:** Support for iCloud as a backend storage provider.
