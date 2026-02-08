@@ -6,16 +6,16 @@ when:
   - event: push
     branch: main
     path:
-      include: [".woodpecker/.web-cache.yml", "packages/web/cache/**"]
+      include: [".woodpecker/.web-proxy.yml", "packages/web/proxy/**"]
   - event: tag
-    ref: "refs/tags/web.cache/v*.*.*"
+    ref: "refs/tags/web.proxy/v*.*.*"
 
 steps:
   extract-semver-tags:
     image: alpine/git:latest
     commands:
       - |
-        VERSION_FULL="${CI_COMMIT_TAG#web.cache/v}"
+        VERSION_FULL="${CI_COMMIT_TAG#web.proxy/v}"
         VERSION_MAJOR=$(echo "$VERSION_FULL" | cut -d. -f1)
         VERSION_MINOR=$(echo "$VERSION_FULL" | cut -d. -f2)
 
@@ -32,11 +32,11 @@ steps:
   build-docker-main:
     image: woodpeckerci/plugin-docker-buildx:6.0.3
     settings:
-      repo: git.eleith.com/eleith.private/luzzle-web-cache
+      repo: git.eleith.com/eleith.private/luzzle-web-proxy
       username: eleith
-      dockerfile: packages/web/cache/Dockerfile
+      dockerfile: packages/web/proxy/Dockerfile
       registry: https://git.eleith.com
-      context: packages/web/cache
+      context: packages/web/proxy
       password:
         from_secret: gitea_docker_registry
       tags:
@@ -48,11 +48,11 @@ steps:
   build-docker-tag:
     image: woodpeckerci/plugin-docker-buildx:6.0.3
     settings:
-      repo: git.eleith.com/eleith.private/luzzle-web-cache
+      repo: git.eleith.com/eleith.private/luzzle-web-proxy
       username: eleith
-      dockerfile: packages/web/cache/Dockerfile
+      dockerfile: packages/web/proxy/Dockerfile
       registry: https://git.eleith.com
-      context: packages/web/cache
+      context: packages/web/proxy
       password:
         from_secret: gitea_docker_registry
       tags_file: .tags
