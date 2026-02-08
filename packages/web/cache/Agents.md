@@ -29,8 +29,6 @@ load on the main application.
     substitution and overwrites `/etc/nginx/nginx.conf` at startup.
 *   **Cache:** Configured to store up to 10GB of data, valid for 365 days, at
     `/app/cache`.
-*   **Assets:** Serves `/pieces/assets/` directly from `/app/static/pieces/assets`
-    to support shared volume mounting with the explorer container.
 
 ## Development
 

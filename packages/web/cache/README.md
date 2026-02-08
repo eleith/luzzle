@@ -21,7 +21,7 @@ services:
     image: ghcr.io/eleith/luzzle-web:latest
     restart: always
     volumes:
-      - ./data/assets:/app/static/pieces/assets # Ensure Explorer sees the assets
+      - ./data/assets:/app/assets/pieces # Explorer needs the assets
 
   luzzle-cache:
     image: ghcr.io/eleith/luzzle-web-cache:latest
@@ -32,26 +32,12 @@ services:
     ports:
       - "8080:8080" # Expose the cache to the outside world
     volumes:
-      - ./data/assets:/app/static/pieces/assets # Critical: Must match luzzle-web volume
       # - luzzle-cache-data:/app/cache # Optional: Persist Nginx cache
     depends_on:
       - luzzle-web
 ```
 
 ## Cache Details
-
-*   **Location:** `/app/cache`
-*   **Max Size:** 10GB
-*   **Inactive Time:** 365 days
-*   **Key:** `$scheme$request_method$proxy_host$request_uri`
-
-## Direct Asset Serving
-
-This container is configured to serve assets requested at `/pieces/assets/` directly from the filesystem at `/app/static/pieces/assets`. This improves performance and avoids unnecessary load on the upstream Node.js application.
-
-**Important:** You must mount your assets volume to `/app/static/pieces/assets` in this container for images to load.
-
-## Build
 
 ```bash
 docker build -t luzzle-web-cache .

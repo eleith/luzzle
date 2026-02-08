@@ -14,8 +14,8 @@ http {
     include       mime.types;
     default_type  application/octet-stream;
 
-    access_log  /var/log/nginx/access.log;
-    error_log   /var/log/nginx/error.log;
+    access_log  /dev/stdout;
+    error_log   /dev/stderr;
 
     sendfile            on;
     keepalive_timeout   65;
@@ -32,105 +32,53 @@ http {
     proxy_buffers           4 256k;
     proxy_busy_buffers_size 256k;
 
-    add_header Strict-Transport-Security "max-age=31536001; includeSubdomains" always;
-
     server {
         listen 8080;
         server_name localhost;
 
         client_max_body_size 256M;
         
+        # Shared Proxy & Cache Headers
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
 
-        location = / {
-            proxy_cache luzzle_cache;
-            proxy_cache_revalidate on;
-            proxy_cache_min_uses 1;
-            proxy_cache_lock on;
-            proxy_cache_valid 200 302 365d;
-            proxy_cache_valid 404 365d;
-            proxy_cache_key "$scheme$request_method$proxy_host$request_uri";
+        # Default Cache Settings (Inherited by locations)
+        proxy_cache             luzzle_cache;
+        proxy_cache_revalidate  on;
+        proxy_cache_min_uses    1;
+        proxy_cache_lock        on;
+        proxy_cache_valid       200 302 365d;
+        proxy_cache_valid       404 365d;
+        proxy_cache_key         "$scheme$request_method$proxy_host$request_uri";
 
-            add_header X-Cache-Status $upstream_cache_status;
-            
+        add_header X-Cache-Status $upstream_cache_status;
+        add_header Strict-Transport-Security "max-age=31536001; includeSubdomains" always;
+
+        # 1. Cacheable Paths (Root, Pieces, RSS, Search)
+        location ~* "^/(?:pieces|rss|search|$)" {
             proxy_pass http://luzzle-upstream;
         }
 
-        location ^~ /pieces/assets/ {
-            alias /app/static/pieces/assets/;
-            expires 1y;
-            add_header Cache-Control "public";
-            access_log off;
-        }
-
-        location /pieces {
-            proxy_cache luzzle_cache;
-            proxy_cache_revalidate on;
-            proxy_cache_min_uses 1;
-            proxy_cache_lock on;
-            proxy_cache_valid 200 302 365d;
-            proxy_cache_valid 404 365d;
-            proxy_cache_key "$scheme$request_method$proxy_host$request_uri";
-
-            add_header X-Cache-Status $upstream_cache_status;
-            
+        # 2. Cacheable Extensions (Assets)
+        location ~* "\.(?:txt|jpg|jpeg|png|webp|avif|css)$" {
             proxy_pass http://luzzle-upstream;
         }
 
-        location /rss {
-            proxy_cache luzzle_cache;
-            proxy_cache_revalidate on;
-            proxy_cache_min_uses 1;
-            proxy_cache_lock on;
-            proxy_cache_valid 200 302 365d;
-            proxy_cache_valid 404 365d;
-            proxy_cache_key "$scheme$request_method$proxy_host$request_uri";
-
-            add_header X-Cache-Status $upstream_cache_status;
-            
-            proxy_pass http://luzzle-upstream;
-        }
-
-        location /search {
-            proxy_cache luzzle_cache;
-            proxy_cache_revalidate on;
-            proxy_cache_min_uses 1;
-            proxy_cache_lock on;
-            proxy_cache_valid 200 302 365d;
-            proxy_cache_valid 404 365d;
-            proxy_cache_key "$scheme$request_method$proxy_host$request_uri";
-
-            add_header X-Cache-Status $upstream_cache_status;
-            
-            proxy_pass http://luzzle-upstream;
-        }
-
-        # Explicitly disable buffering for build logs and tell upstream (outer proxy) to do the same
+        # 3. Non-Cacheable Build API (Streaming)
         location /api/build {
+            proxy_cache     off;
             proxy_buffering off;
-            proxy_cache off;
-            add_header X-Accel-Buffering "no" always;
-            proxy_pass http://luzzle-upstream;
+            add_header      X-Accel-Buffering "no" always;
+            proxy_pass      http://luzzle-upstream;
         }
 
-        location ~* \.(jpg|jpeg|png|gif|ico|svg|webp|mp4|webm|woff|woff2|ttf|eot|avif)$ {
-            expires 1y;
-            add_header Cache-Control "public";
-            
-            proxy_cache luzzle_cache;
-            proxy_cache_valid 200 302 365d;
-            proxy_cache_key "$scheme$request_method$proxy_host$request_uri";
-            add_header X-Cache-Status $upstream_cache_status;
-
-            proxy_pass http://luzzle-upstream;
-        }
-
+        # 4. Fallback for everything else (No Cache)
         location / {
-            proxy_pass http://luzzle-upstream;
+            proxy_cache     off;
+            proxy_pass      http://luzzle-upstream;
         }
     }
 }
