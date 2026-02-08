@@ -1,8 +1,48 @@
 import { config } from '$lib/server/config'
 import '$lib/server/database'
 import { SvelteKitAuth } from '@auth/sveltekit'
+import Credentials from '@auth/core/providers/credentials'
 import { sequence } from '@sveltejs/kit/hooks'
 import { redirect, type Handle } from '@sveltejs/kit'
+import type { Provider } from '@auth/core/providers'
+
+const providers: Provider[] = []
+
+if (config.auth.type === 'oidc' && config.auth.oidc) {
+	providers.push({
+		id: 'oidc',
+		name: 'OIDC',
+		type: 'oidc',
+		issuer: config.auth.oidc.issuer,
+		clientId: config.auth.oidc.clientId,
+		clientSecret: config.auth.oidc.clientSecret,
+		style: {
+			logo: `${config.url.app_assets}/images/favicon.png`
+		}
+	})
+}
+
+if (config.auth.type === 'credentials' && config.auth.credentials) {
+	providers.push(
+		Credentials({
+			credentials: {
+				username: { label: 'Username', type: 'text' },
+				password: { label: 'Password', type: 'password' }
+			},
+			async authorize(credentials) {
+				const user = config.auth.credentials?.find(
+					(u) => u.username === credentials?.username && u.password === credentials?.password
+				)
+
+				if (user) {
+					return { id: user.username, name: user.username, email: `${user.username}@luzzle.local` }
+				}
+
+				return null
+			}
+		})
+	)
+}
 
 const authHandle = SvelteKitAuth({
 	trustHost: true,
@@ -10,19 +50,7 @@ const authHandle = SvelteKitAuth({
 	pages: {
 		signIn: '/signin'
 	},
-	providers: [
-		{
-			id: 'oidc',
-			name: 'OIDC',
-			type: 'oidc',
-			issuer: config.auth.oidc.issuer,
-			clientId: config.auth.oidc.clientId,
-			clientSecret: config.auth.oidc.clientSecret,
-			style: {
-				logo: `${config.url.app_assets}/images/favicon.png`
-			}
-		}
-	]
+	providers
 })
 
 const PROTECTED_PREFIXES = ['/editor', '/builder', '/api/build']

@@ -1,5 +1,6 @@
 import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
+import { config } from '$lib/server/config'
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const session = await locals.auth()
@@ -7,5 +8,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	if (session) {
 		throw redirect(302, redirectTo)
+	}
+
+	return {
+		authType: config.auth.type
 	}
 }
