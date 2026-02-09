@@ -200,6 +200,27 @@ auth:
 			expect(config.auth.secret).toBe('Value: ${TEST_VAR}')
 		})
 
+		test('should use default value if environment variable is missing', () => {
+			const yamlContent = `
+url:
+  app: '\${MISSING_VAR:-http://localhost:8080}'
+  app_assets: ''
+  luzzle_assets: ''
+auth:
+  enabled: false
+  secret: 'secret'
+  type: oidc
+  oidc:
+    issuer: 'https://example.com'
+    clientId: 'client'
+    clientSecret: 'secret'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+
+			const config = loadConfig(tmpConfigPath)
+			expect(config.url.app).toBe('http://localhost:8080')
+		})
+
 		test('should handle nested objects and arrays', () => {
 			vi.stubEnv('VAR_1', 'val1')
 			vi.stubEnv('VAR_2', 'val2')
@@ -234,7 +255,38 @@ ai:
 			writeFileSync(tmpConfigPath, yamlContent)
 
 			const config = loadConfig(tmpConfigPath)
-			expect(config.ai.api_key).toBe('google-key')
+			expect(config.ai?.api_key).toBe('google-key')
+		})
+
+		test('should throw error if auth is enabled but secret is empty', () => {
+			const yamlContent = `
+auth:
+  enabled: true
+  secret: '\${MISSING_SECRET:-}'
+  type: oidc
+  oidc:
+    issuer: 'https://example.com'
+    clientId: 'client'
+    clientSecret: 'secret'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+
+			expect(() => loadConfig(tmpConfigPath)).toThrow('Configuration validation failed')
+		})
+
+		test('should throw error if auth type is credentials but they are empty', () => {
+			const yamlContent = `
+auth:
+  enabled: true
+  secret: 'some-secret'
+  type: credentials
+  credentials:
+    username: '\${MISSING_USER:-}'
+    password: 'password'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+
+			expect(() => loadConfig(tmpConfigPath)).toThrow('Configuration validation failed')
 		})
 	})
 

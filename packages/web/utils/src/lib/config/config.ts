@@ -13,17 +13,22 @@ export type ConfigPublic = {
 
 function replaceEnvVars(obj: unknown): unknown {
 	if (typeof obj === 'string') {
-		return obj.replace(/\$\$|\$\{([^}]+)\}/g, (match, varName) => {
+		return obj.replace(/\$\$|\$\{([^}:]+)(?::-([^}]*))?\}/g, (match, varName, defaultValue) => {
 			if (match === '$$') {
 				return '$'
 			}
 
 			const value = process.env[varName]
-			if (value === undefined) {
-				console.warn(`Config warning: Environment variable "${varName}" is missing.`)
-				return match
+			if (value !== undefined) {
+				return value
 			}
-			return value
+
+			if (defaultValue !== undefined) {
+				return defaultValue
+			}
+
+			console.warn(`Config warning: Environment variable "${varName}" is missing.`)
+			return match
 		})
 	}
 

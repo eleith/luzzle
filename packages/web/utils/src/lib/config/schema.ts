@@ -5,7 +5,9 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface Schema {
+export type Schema = {
+  [k: string]: unknown;
+} & {
   url: {
     app: string;
     app_assets: string;
@@ -31,7 +33,7 @@ export interface Schema {
     credentials?: {
       username: string;
       password: string;
-    }[];
+    };
   };
   storage: {
     type: "webdav" | "filesystem";
@@ -42,7 +44,7 @@ export interface Schema {
       password?: string;
     };
   };
-  ai: {
+  ai?: {
     provider: "google";
     api_key: string;
   };
@@ -325,4 +327,4 @@ export interface Schema {
       };
     };
   };
-}
+};

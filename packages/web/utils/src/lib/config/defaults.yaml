@@ -5,7 +5,7 @@
 # Defines the key URLs required for the application to function correctly.
 url:
   # The primary, public-facing URL of this Luzzle Explorer instance.
-  app: ''
+  app: '${LUZZLE_APP_URL:-http://localhost:8080}'
 
   # The base URL for _app assets hosted on a separate CDN or file server.
   app_assets: ''
@@ -30,8 +30,11 @@ pieces: []
 
 auth:
   enabled: false
-  secret: ''
+  secret: '${LUZZLE_AUTH_SECRET:-}'
   type: 'oidc'
+  credentials:
+    username: '${LUZZLE_AUTH_USERNAME:-}'
+    password: '${LUZZLE_AUTH_PASSWORD:-}'
   oidc:
     issuer: ''
     clientId: ''
@@ -41,13 +44,9 @@ storage:
   type: 'filesystem'
   config:
     url: ''
-    root: ''
+    root: './archive'
     username: ''
     password: ''
-
-ai:
-  provider: 'google'
-  api_key: ''
 
 theme:
   globals:
