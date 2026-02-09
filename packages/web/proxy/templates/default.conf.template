@@ -1,4 +1,4 @@
-proxy_cache_path /tmp/cache levels=1:2 keys_zone=luzzle_cache:10m inactive=365d max_size=10g;
+proxy_cache_path /tmp/cache levels=1:2 keys_zone=luzzle:10m inactive=365d max_size=10g;
 
 upstream luzzle-upstream {
     server ${LUZZLE_EXPLORER_HOST}:${LUZZLE_EXPLORER_PORT};
@@ -30,7 +30,7 @@ server {
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
 
-    proxy_cache             luzzle_cache;
+    proxy_cache             ${LUZZLE_PROXY_CACHE};
     proxy_cache_revalidate  on;
     proxy_cache_min_uses    1;
     proxy_cache_lock        on;

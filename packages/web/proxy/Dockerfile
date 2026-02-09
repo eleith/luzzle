@@ -6,6 +6,7 @@ COPY templates/default.conf.template /etc/nginx/templates/default.conf.template
 
 ENV LUZZLE_EXPLORER_HOST=luzzle-web
 ENV LUZZLE_EXPLORER_PORT=3000
+ENV LUZZLE_PROXY_CACHE=luzzle
 
 USER root
 RUN chmod 777 /etc/nginx/conf.d
