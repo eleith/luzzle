@@ -1,66 +1,51 @@
-# Luzzle
+# Luzzle 🧩
 
-Luzzle is a lightweight specification and implementation for storing digital
-records that would otherwise live in a database (like spreadsheets, CSVs, or
-SQLite).
+Luzzle is a text-based system for managing your digital records. It turns a
+simple folder of Markdown files into a portable, personal database that you
+actually own.
 
-## Making it Tangible
+## What is a record? 📁
 
-What if your personal digital records were not the output of a 'takeout' or
-'archive export' but instead the input for all applications that depend on data
-that is central to you?
+Think of it as a personal library for everything you care about—books you've
+read, gear in your inventory, contacts in your address book, or even an archive
+of poetry. 
 
-Digital records could be a store of books you have read, equipment in your
-inventory, contacts in your address book, or your archive of poetry.
+Instead of being trapped in a spreadsheet or a proprietary app, these records
+live in your `archive` folder. Each `piece` is just a Markdown file representing
+a single item. 📝✨
 
-Instead of databases and spreadsheets, these records live in a `luzzle` folder.
-Each `luzzle piece` is a text file representing one item in the archive.
+## Why Text? 🧠
 
-For example, a contacts app could manage your address book. Any changes either
-in your archive or in the application are synchronized with each other. Your
-archive is now alive! 🧟
+We believe plain text is the best format for long-term preservation and
+ownership. It’s the original WYSIWYG interface—human-readable, machine-writable,
+and it won't hold your data hostage.
 
-This isn't much different from how you manage records today, but with a much
-better story around data ownership, preservation, and ease of use.
+By using text, we get to stand on the shoulders of giants. We don't need to
+reinvent search, syncing, or versioning when we can just use the Unix tools that
+have already solved those problems for decades.
 
-Your data, your rules. 🔒
+## The Spec 🏗️
 
-## Philosophy
+Luzzle is both a set of rules and the code to run them.
 
-Individual text files are the ultimate user interface for long-term
-preservation, ownership, and ease of use.
+* Your archive is just a root folder.
+* JSON schemas live in `.luzzle/schemas/` to define your piece types (like
+`book` or `film`). 📂
+* Attachments like images and archives stay in the `.assets/` folder. 🖼️
+* Pieces use a simple naming convention: `name.piece-type.md` (e.g.,
+`dune.book.md`).
 
-While digital records are typically found in databases, the text file is the
-format that has the unique combination of being the easiest to read and write—
-now and in the future.
+The formal specification is still evolving alongside the codebase. 🚧
 
-**Text is the ultimate UI.** Databases are powerful, but have you ever tried to
-`grep` a binary file? It’s not pretty.  🕵️
+## The Monorepo 📦
 
-By adhering to this philosophy, you enable a Unix-like approach to layering
-applications on top of your records. From CLI utilities like `grep` and `cat`
-to storage services like WebDAV and rich applications like digital bookshelves.
+This ecosystem contains everything you need to build and browse your archive:
 
-## The Luzzle Specification
+* `@luzzle/core` the specification implementation 🫀
+* `@luzzle/cli` the terminal companion for managing pieces 💻
+* `@luzzle/web` a simple web app for browsing and editing pieces 🔎
+* `@luzzle/web.builder` deploys, builds and rebuilds archives for the web 🏗️
+* `@luzzle/web.tools` CLI utilities used by the web.builder 🧰
+* `@luzzle/web.proxy` a caching layer for @luzzle/web 🚀
+* `@luzzle/web.utils` common logic used by @luzzle/web and tools 🛠️
 
-Luzzle is both a specification and an implementation.
-
-* **Base Folder:** Your archive root.
-* **`.luzzle/schemas/`:** JSON Schemas defining your piece types (e.g.,
-  `book`, `film`).
-* **`.assets/`:** Stores attachments (images, archives). Luzzle utilities can
-  manage file uniqueness here, or you can place files manually.
-* **Pieces:** Markdown files named `name.piece-type.md` (e.g.,
-  `dune.book.md`). These can live in the root or any subdirectory.
-
-A formal specification is evolving alongside the codebase. 🚧
-
-## Packages
-
-This monorepo contains the Luzzle ecosystem:
-
-* **`@luzzle/core`:** The core specification implementation 🫚
-* **`@luzzle/cli`:** A trusty terminal companion for managing your archive 💻
-* **`@luzzle/web`:** A web app for any luzzle archive 🔎
-* **`@luzzle/web.tools`:** tools to build performant web archives  🧰
-* **`@luzzle/web.utils`:** The glue holding the web packages together 🛠️
