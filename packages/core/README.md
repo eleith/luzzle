@@ -1,48 +1,14 @@
-# @luzzle/core
+# @luzzle/core 🫀
 
-The engine room of Luzzle. 🚂
+The foundational implementation of the Luzzle specification. It solves the inherent challenges of managing large-scale digital records using plain text.
 
-## Overview
+## Challenges Solved 🏗️
 
-`@luzzle/core` bridges the gap between your text files and a structured database.
-It handles the heavy lifting of parsing Markdown, validating schemas, and
-syncing everything to SQLite.
+* **Consistency**: Enforces structure across thousands of records using JSON schemas.
+* **Organization**: Standardizes where files and attachments (`.assets/`) live within an archive.
+* **Scale**: Maps thousands of text files into a high-performance SQLite index, enabling complex queries and fast searching without slow filesystem traversal.
+* **Portability**: Provides a unified Storage abstraction (Local, WebDAV) so your data remains accessible anywhere.
 
-## Philosophy
+## How it works 🚂
 
-**Text is King. 👑**
-
-This package strictly adheres to the Luzzle philosophy. While it provides a
-powerful database client, the database is treated as a disposable cache. Your
-Markdown files are the source of truth, forever and always.
-
-## Usage
-
-This library is primarily for other Luzzle tools, but feel free to use it for
-your own scripts!
-
-```bash
-npm install @luzzle/core
-```
-
-### Example: Database Access
-
-```typescript
-import { getDatabaseClient } from '@luzzle/core/database/client';
-
-const db = getDatabaseClient('/path/to/luzzle/root');
-// Execute type-safe queries with Kysely 🚀
-```
-
-## Features
-
-* **Schema Validation:** Enforces structure using Ajv. Strict but fair. ⚖️
-* **File Synchronization:** Reads Markdown, updates SQLite.
-* **Type-Safe Querying:** Because runtime errors are no fun.
-
-## Future Ideas
-
-* **Google Drive Storage:** Support for Google Drive as a backend storage
-  provider.
-* **Dropbox Storage:** Support for Dropbox as a backend storage provider.
-* **iCloud Storage:** Support for iCloud as a backend storage provider.
+Core treats your filesystem as the primary database. It parses Markdown, validates frontmatter, and maintains a derivative SQLite cache for application-layer performance.

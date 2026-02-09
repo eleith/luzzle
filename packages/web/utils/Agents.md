@@ -1,24 +1,12 @@
-# Agents.md for @luzzle/web.utils
-
-Instructions for agents working on the `@luzzle/web.utils` package.
+# Agents.md for @luzzle/web.utils 🛠️
 
 ## Scope
-
-Shared library for `@luzzle/web` (Explorer) and `@luzzle/web.tools`. Prevents
-code duplication for types and helpers.
+Shared types, configuration schemas, and utility functions for web packages.
 
 ## Architecture
+* **Config**: Defines the master JSON schema and default values for the web stack.
+* **Types**: Central source of truth for shared TypeScript interfaces.
 
-* **Exports:**
-  * `lib/assets.ts`: Asset paths and types.
-  * `lib/config`: Configuration schemas (including Auth, Storage, AI).
-  * `lib/types.ts`: Shared TypeScript interfaces.
-
-## Key Concepts
-
-* **Single Source of Truth:** Defines shared types for the web ecosystem.
-
-## Development
-
-* **Test:** `npm test`
-* **Build:** `npm run build`
+## Quality
+* Maintain 100% test coverage as defined in `vite.config.ts`.
+* Strict mode in Ajv must be maintained for all schema changes.

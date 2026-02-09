@@ -1,22 +1,7 @@
-# Luzzle Web Utils
+# @luzzle/web.utils 🛠️
 
-The glue holding luzzle web packages together. 🧩
+The connective tissue of the Luzzle Web ecosystem. 
 
-## Overview
+## Overview 🧩
 
-`@luzzle/web.utils` is a support library containing shared logic, types, and
-constants used by the explorer and tools packages. It keeps things consistent.
-
-## Usage
-
-Intended for internal use within the `@luzzle/web` workspace
-
-```typescript
-import { getAssetPath } from '@luzzle/web.utils';
-```
-
-## Key Features
-
-* **Shared Types:** Common interfaces for Pieces and Configs
-* **Asset Logic:** Consistent path resolution
-* **Config Schemas:** Validating web configuration
+This package provides shared logic and types used across the Explorer, Tools, and Builder. It ensures that configuration schemas and asset resolution remain consistent across the entire web stack.

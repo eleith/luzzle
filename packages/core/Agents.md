@@ -1,37 +1,14 @@
-# Agents.md for @luzzle/core
-
-Instructions for agents working on the `@luzzle/core` package.
+# Agents.md for @luzzle/core 🫀
 
 ## Scope
-
-`@luzzle/core` implements the Luzzle specification. It manages file parsing,
-validation, and database synchronization.
-
-## Specifications
-
-* **Schemas:** JSON schemas in `.luzzle/schemas` define record structure.
-* **Assets:** Attachments stored in `.assets`.
-* **Pieces:** Markdown files (`name.piece-type.md`) representing records.
-* **Naming:** `piece-type` corresponds to a schema (e.g., `book` -> `book.json`).
+Maintenance of the Luzzle spec: schema enforcement, asset management, and database indexing.
 
 ## Architecture
+* **Database**: `better-sqlite3` + `kysely`. The schema is defined in `src/database/tables/`.
+* **Migrations**: Mandatory for schema changes; found in `src/database/migrations/`.
+* **Pieces**: `Pieces.ts` and `Piece.ts` are the primary entry points for archive interaction.
+* **Storage**: All filesystem work must use the `Storage` abstractions in `src/storage/`.
 
-A TypeScript library for database interaction and content manipulation.
-
-* **Database (`src/database`):** `better-sqlite3` and `kysely`. Derivative of
-  the file system.
-* **Validation (`src/lib/ajv.ts`):** Validates frontmatter against schemas.
-* **Content (`src/lib`):** Utilities for parsing Markdown (`remark`) and
-  frontmatter.
-
-## Key Concepts
-
-* **Piece:** Logic for handling records resides in `src/pieces`.
-* **Database as Cache:** Mirrors Markdown state for efficient querying.
-* **Migrations:** Managed in `src/database/migrations.sh`.
-
-## Development
-
-* **Test:** `npm test`
-* **Lint:** `npm run lint`
-* **Build:** `npm run build`
+## Quality
+* Maintain coverage standards defined in `vite.config.ts`.
+* Prioritize performance in indexing logic to ensure archives scale to thousands of pieces.

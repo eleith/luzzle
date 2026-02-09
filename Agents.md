@@ -1,50 +1,22 @@
-# Luzzle Monorepo Agent Guide
+# Luzzle Monorepo Agent Guide 🧩
 
-This document provides instructions for Large Language Model (LLM) agents
-interacting with the Luzzle monorepo.
+This guide provides context and instructions for agents interacting with the Luzzle monorepo.
 
 ## Monorepo Structure
 
-This is a monorepo managed with `npm` workspaces. The packages are located in
-the `packages/` directory.
+Luzzle is a monorepo managed with `npm` workspaces.
 
-Each package has its own `Agents.md` file with specific instructions. Refer to
-the package's `Agents.md` for detailed information.
-
-## Packages
-
-* `packages/cli`: Command-line interface.
-* `packages/core`: Core library.
-* `packages/web/editor`: Web editor.
-* `packages/web/explorer`: Web explorer.
-* `packages/web/tools`: Build tools for web explorer.
-* `packages/web/utils`: Shared web logic.
+* `@luzzle/core`: The engine room (specification implementation) 🫀
+* `@luzzle/cli`: Terminal companion for manual piece management 💻
+* `@luzzle/web`: SvelteKit web explorer and editor 🔎
+* `@luzzle/web.builder`: Heavy-lifting sidecar for automated builds 🏗️
+* `@luzzle/web.tools`: Build-time utility belt used by the web stack 🧰
+* `@luzzle/web.proxy`: Snappy caching layer for web deployments 🚀
+* `@luzzle/web.utils`: Shared logic, types, and configuration schemas 🛠️
 
 ## Guiding Principles
 
-Luzzle manages personal digital records based on the Unix philosophy.
-
-* **Text is the UI:** Markdown files are the source of truth.
-* **Database as Cache:** A Luzzle SQLite database is a derivative of the files,
-  used for querying.
-* **Interoperability:** Luzzle is a specification and implementation that plays
-  well with other tools.
-
-## Getting Started
-
-1. Install Node.js (version >= 20) and npm.
-2. Install dependencies: `npm install`
-
-## General Instructions
-
-* Run npm scripts directly in the package folder, don't use workspace flags
-
-## Markdown Style Guide
-
-Adhere to the following conventions for all `Agents.md` files:
-
-* **Line Length:** Maximum 80 characters.
-* **Headings:** Use `#` for titles and `##` for sections.
-* **Lists:** Use `*` for unordered lists with a single space after each bullet.
-* **Code Blocks:** Use backticks.
-* **Rules:** Follow standard markdown lint rules.
+* **Source of Truth**: Markdown files are the source of truth; the database is a disposable cache.
+* **Consistency**: Follow existing patterns for linting, testing, and architecture.
+* **Core First**: Use `@luzzle/core` abstractions for all piece and archive operations.
+* **Quality**: Maintain test coverage levels as defined in each package's `vitest` configuration.
