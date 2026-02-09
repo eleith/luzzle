@@ -4,8 +4,9 @@
 	import { DropdownMenu } from 'bits-ui'
 	import DotsThreeVertical from 'virtual:icons/ph/dots-three-vertical'
 	import { goto } from '$app/navigation'
+	import type { PageProps } from './$types'
 
-	let { data } = $props()
+	let { data }: PageProps = $props()
 	let dialog: HTMLDialogElement
 	let fields = $state(data.fields)
 	let note = $state(data.note || '')
@@ -63,11 +64,13 @@
 										{/snippet}
 									</DropdownMenu.Item>
 								{/if}
-								<DropdownMenu.Item onSelect={() => goto(`/editor/pieces/generate/${data.file}`)}>
-									{#snippet child({ props })}
-										<div class="dropdown-item" {...props}>generate</div>
-									{/snippet}
-								</DropdownMenu.Item>
+								{#if data.canGenerate}
+									<DropdownMenu.Item onSelect={() => goto(`/editor/pieces/generate/${data.file}`)}>
+										{#snippet child({ props })}
+											<div class="dropdown-item" {...props}>generate</div>
+										{/snippet}
+									</DropdownMenu.Item>
+								{/if}
 								<DropdownMenu.Item onSelect={() => dialog.showModal()}>
 									{#snippet child({ props })}
 										<div class="dropdown-item destructive" {...props}>delete</div>

@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types'
 import { getPieces } from '$lib/server/pieces'
 import { extractFrontmatterFromFormData, extractNoteFromFormData } from '$lib/server/formData'
 import path from 'path'
+import { config } from '$lib/server/config'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -27,6 +28,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		note: pieceMarkdown.note,
 		fields: pieceMarkdown.frontmatter,
 		schema: piece.fields,
+		canGenerate: config.ai !== undefined,
 		file: pieceMarkdown.filePath,
 		mode: 'edit',
 		directory

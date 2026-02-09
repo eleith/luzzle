@@ -25,5 +25,9 @@ export async function promptToPiece(
 	prompt: string,
 	file?: Buffer[]
 ) {
+	if (!config.ai) {
+		throw new Error('AI is not configured. Please check your config.yaml')
+	}
+
 	return pieceFrontMatterFromPrompt(config.ai.api_key, schema, prompt, file)
 }

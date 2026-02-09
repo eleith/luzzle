@@ -30,11 +30,13 @@ if (config.auth.type === 'credentials' && config.auth.credentials) {
 				password: { label: 'Password', type: 'password' }
 			},
 			async authorize(credentials) {
-				const user = config.auth.credentials?.find(
-					(u) => u.username === credentials?.username && u.password === credentials?.password
-				)
+				const user = config.auth.credentials
 
-				if (user) {
+				if (
+					user &&
+					user.username === credentials?.username &&
+					user.password === credentials?.password
+				) {
 					return { id: user.username, name: user.username, email: `${user.username}@luzzle.local` }
 				}
 
