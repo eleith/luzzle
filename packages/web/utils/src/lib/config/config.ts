@@ -50,7 +50,7 @@ function replaceEnvVars(obj: unknown): unknown {
 function loadConfig(userConfigPath?: string): Config {
 	const schema = schemaJson
 	const config = defaults as Config
-	const ajv = new Ajv()
+	const ajv = new Ajv({ strict: true })
 	const validate = ajv.compile(schema)
 
 	config.paths.config = userConfigPath
