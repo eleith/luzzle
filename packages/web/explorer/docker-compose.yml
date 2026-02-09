@@ -9,6 +9,11 @@ services:
     container_name: luzzle-web
     user: "${UID:-1000}:${GID:-1000}"
     env_file: .env
+    environment:
+      - LUZZLE_APP_URL=${LUZZLE_APP_URL:-http://localhost:8080}
+      - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET}
+      - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME}
+      - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD}
     ports:
       - "3000:3000"
       # - "5173:5173"
@@ -41,6 +46,8 @@ services:
     ports:
       - '9000:9000'
     env_file: .env
+    environment:
+      - LUZZLE_BUILDER_TOKEN=${LUZZLE_BUILDER_TOKEN}
     networks:
       - luzzle
     volumes:

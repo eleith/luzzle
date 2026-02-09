@@ -1,53 +1,60 @@
-# Luzzle Web Explorer
+# Luzzle Web Explorer 🔎
 
-a web viewer and editor for Luzzle archives.
+A responsive web manager for your Luzzle archives.
 
-## Overview
+## Quick Start 🚀
 
-Luzzle Web Explorer is a beautiful, fast, and responsive web application for
-browsing and managing your personal archives.
+The fastest way to get Luzzle running is via Docker Compose. This will spin up
+the Explorer, the Builder and the Proxy.
 
-## Usage
-
-The recommended way to run this is via Docker. 🐳
-
-### Quick Start (Docker)
-
-You can build a custom image that includes your configuration and content.
-
-1. Create a `Dockerfile` based on the example in `examples/Dockerfile.custom`.
-2. Build and run:
+1: Clone & Prepare
 
 ```bash
-docker build -t my-luzzle-explorer .
-docker run -p 3000:3000 my-luzzle-explorer
+ # Copy the sample archive to get started
+ cp -r sample archive
 ```
 
-## Key Features
+2: Up
 
-- **Fast & Responsive:** Built on SvelteKit. ⚡
-- **Integrated Editor:** Edit content and upload assets directly. ✏️
-- **AI Powered:** Generate metadata for your pieces using Gemini. 🤖
-- **Rich Media:** Displays optimized images and nice Open Graph tags.
-- **Themable:** Make it yours via `config.yaml`. 🎨
+```bash
+docker-compose up
+```
 
-## Configuration
+3: Browse
 
-The Web Explorer is configured using a `config.yaml` file.
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
-**Key Sections:**
+## Features ✨
 
-- **url:** Where does this live on the internet?
-- **text:** Site title and description.
-- **auth:** OIDC configuration to enable the editor (optional).
-- **storage:** Backend storage (filesystem or WebDAV) for editing.
-- **ai:** API keys for generation features.
-- **pieces:** Defines how different piece types are displayed.
-- **theme:** Colors, fonts, and dark mode! 🌙
+- **Fast**: A modern, responsive interface for browsing your records.
+- **Integrated Editor**: Edit your pieces and manage assets directly in the
+  browser. ✏️
+- **AI Assistance**: Automatically generate metadata from your content using
+  Gemini. 🤖
+- **Zero Config**: Sensible defaults allow you to see your data immediately. 🧩
+- **Themable**: Fully customizable colors and fonts via configuration. 🎨
 
-For advanced configuration, check out `@luzzle/web.tools`
+## Configuration ⚙️
 
-## Future Ideas
+While Luzzle works out of the box with defaults, you can customize everything
+from authentication to themes in your `config.yaml`.
+
+For a full list of options, see the [Configuration Reference](docs/config.md).
+
+## Deployment 🏗️
+
+In production, you'll want to provide a few environment variables to secure your
+instance:
+
+- `LUZZLE_AUTH_SECRET`: A random string for session encryption.
+- `LUZZLE_BUILDER_TOKEN`: A secret token to authenticate the builder sidecar.
+- `LUZZLE_AUTH_USERNAME` / `LUZZLE_AUTH_PASSWORD`: If using credential-based
+  auth.
+
+Check the `docker-compose.yml` for a complete list of supported environment
+variables.
+
+## Future Ideas 🚀
 
 - Support for hardcoded Base32 seeds in `config.yaml` for stateless 2FA
 - UI for managing schemas in editor
