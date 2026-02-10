@@ -14,7 +14,7 @@
 		<div class="info">
 			<div>
 				{#if piece.date_consumed}
-					read on {new Date(piece.date_consumed).toLocaleDateString()}
+					read on {new Date(piece.date_consumed).toLocaleDateString(undefined, { timeZone: 'UTC' })}
 				{/if}
 			</div>
 			<div>

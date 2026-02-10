@@ -51,7 +51,7 @@
 		<div class="info">
 			<div>
 				{#if piece.date_consumed}
-					viewed on {new Date(piece.date_consumed).toLocaleDateString()}
+					viewed on {new Date(piece.date_consumed).toLocaleDateString(undefined, { timeZone: 'UTC' })}
 				{/if}
 			</div>
 			<div>
@@ -60,7 +60,7 @@
 				{/if}
 
 				{#if metadata.date_released}
-					released in {new Date(metadata.date_released as string).getFullYear()}
+					released in {new Date(metadata.date_released as string).getUTCFullYear()}
 				{/if}
 			</div>
 			<div>

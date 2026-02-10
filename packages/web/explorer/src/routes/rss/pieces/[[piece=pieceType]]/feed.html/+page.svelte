@@ -78,7 +78,8 @@
 							{new Date(piece.date_consumed || piece.date_added).toLocaleDateString('en-US', {
 								year: 'numeric',
 								month: 'short',
-								day: 'numeric'
+								day: 'numeric',
+								timeZone: 'UTC'
 							})}
 						</span>
 						<span class="item-title">{piece.title}</span>

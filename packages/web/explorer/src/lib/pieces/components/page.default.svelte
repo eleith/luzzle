@@ -27,7 +27,7 @@
 	<section class="details" class:details-media={hasMedia}>
 		{#if piece.date_consumed}
 			<div class="date">
-				{new Date(piece.date_consumed).toLocaleDateString()}
+				{new Date(piece.date_consumed).toLocaleDateString(undefined, { timeZone: 'UTC' })}
 			</div>
 		{/if}
 
