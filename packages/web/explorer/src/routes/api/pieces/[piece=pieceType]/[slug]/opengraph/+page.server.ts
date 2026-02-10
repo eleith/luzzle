@@ -2,7 +2,6 @@ import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { db } from '$lib/server/database'
 import { getPalette } from '@luzzle/web.utils/server'
-import { config } from '$lib/server/config'
 import { getImageAssetPath, type PieceIconPalette } from '@luzzle/web.utils'
 import type { PieceMode } from '$lib/pieces/helpers'
 import fs from 'node:fs/promises'
@@ -31,19 +30,13 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	let palette: PieceIconPalette | undefined
 
 	if (mediaPath) {
-		if (mode === 'local') {
-			try {
-				const assetsDir = path.resolve('assets/pieces')
-				const filePath = path.join(assetsDir, mediaPath)
-				const buffer = await fs.readFile(filePath)
-				palette = (await getPalette(buffer)) as PieceIconPalette
-			} catch (e) {
-				console.error(`[OpenGraph] Failed to read local asset: ${mediaPath}`, e)
-			}
-		} else {
-			const baseUrl = config.url.luzzle_assets || config.url.app
-			const mediaUrl = `${baseUrl}/pieces/assets/${mediaPath}`
-			palette = (await getPalette(mediaUrl)) as PieceIconPalette
+		try {
+			const assetsDir = path.resolve('assets/pieces')
+			const filePath = path.join(assetsDir, mediaPath)
+			const buffer = await fs.readFile(filePath)
+			palette = (await getPalette(buffer)) as PieceIconPalette
+		} catch (e) {
+			console.error(`[OpenGraph] Failed to read local asset: ${mediaPath}`, e)
 		}
 	}
 

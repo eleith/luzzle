@@ -56,10 +56,13 @@ export function getPieceHelpers(
 	piece: WebPieces,
 	mode: PieceMode = 'public'
 ): PieceComponentHelpers {
+	const config = page.data.config
+	const url = mode == 'public' ? config.url.luzzle_assets || config.url.app : config.url.app
+
 	if (mode === 'preview') {
 		return {
 			getPieceUrl: () => `/editor/piece/${piece.file_path}`,
-			getPieceImageUrl: (asset: string) => `/editor/asset/${asset}`
+			getPieceImageUrl: (asset: string) => `${url}/editor/asset/${asset}`
 		}
 	}
 
@@ -68,7 +71,7 @@ export function getPieceHelpers(
 			getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
 			getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif' | 'webp' | 'png') => {
 				const path = getImageAssetPath(piece.type, piece.id, asset, width, format)
-				return `/pieces/assets/${path}`
+				return `${url}/pieces/assets/${path}`
 			}
 		}
 	}
@@ -77,7 +80,7 @@ export function getPieceHelpers(
 		getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
 		getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif' | 'webp' | 'png') => {
 			const path = getImageAssetPath(piece.type, piece.id, asset, width, format)
-			return `${page.data.config.url.luzzle_assets}/pieces/assets/${path}`
+			return `${url}/pieces/assets/${path}`
 		}
 	}
 }
