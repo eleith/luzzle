@@ -4,14 +4,18 @@ WORKDIR /app
 
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
-COPY --chown=:0 package.json ./package.json
+COPY package.json ./
 
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install --include dev
 
-RUN mkdir -p /app/src /app/static /app/scripts /app/assets /app/data /app/content /app/build /app/node_modules/.cache /app/.svelte-kit && \
+RUN mkdir -p /app/src /app/static /app/scripts /app/assets /app/data /app/content /app/build && \
+		mkdir -p /app/node_modules/.vite /app/node_modules/.cache /app/.svelte-kit && \
     touch /app/config.yaml /app/.env && \
-    chmod -R 777 /app
+    chmod 777 /app && \
+    chmod -R 777 /app/src /app/scripts /app/static /app/assets /app/data && \
+		chmod -R 777 /app/content /app/build /app/node_modules/.cache /app/.svelte-kit && \
+		chmod -R 777 /app/config.yaml /app/.env /app/package.json /app/node_modules/.vite
 
 EXPOSE 5173
 
-ENTRYPOINT ["sh", "-c", "npm run prebuild && npm run dev -- --host"]
+ENTRYPOINT ["node", "scripts/manager.js", "--dev"]

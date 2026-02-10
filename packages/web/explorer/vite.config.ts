@@ -29,5 +29,10 @@ export default defineConfig({
 		sveltekit(),
 		Icons({ compiler: 'svelte' }),
 		contentWatcher('./content')
-	]
+	],
+	server: {
+		hmr: {
+			clientPort: process.env.LUZZLE_HMR_PORT ? Number(process.env.LUZZLE_HMR_PORT) : undefined
+		}
+	}
 })

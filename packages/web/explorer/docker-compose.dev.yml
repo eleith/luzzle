@@ -1,0 +1,88 @@
+services:
+  luzzle-dev-web:
+    build:
+      dockerfile: Dockerfile.dev
+      secrets:
+        - npmrc
+      context: .
+    container_name: luzzle-dev-web
+    user: '${UID:-1000}:${GID:-1000}'
+    env_file: .env
+    environment:
+      - LUZZLE_APP_URL=${LUZZLE_APP_URL:-http://localhost:8080}
+      - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET} # generate by `openssl rand -hex 32`
+      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN} # generate by `openssl rand -hex 32`
+      - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME:-admin}
+      - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD:-luzzle}
+      - LUZZLE_HMR_PORT=8080
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./demo/assets/pieces:/app/assets/pieces
+      - ./demo/config.yaml:/app/config.yaml
+      - ./demo/data:/app/data
+      - ./demo/content:/app/content
+      - ./demo/archive:/app/archive
+      - ./src:/app/src
+      - ./static:/app/static
+      - ./scripts:/app/scripts
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./svelte.config.js:/app/svelte.config.js
+      - ./vite.config.ts:/app/vite.config.ts
+    networks:
+      - luzzle
+    depends_on:
+      - luzzle-dev-builder
+
+  luzzle-dev-builder:
+    build:
+      dockerfile: ../builder/Dockerfile
+      secrets:
+        - npmrc
+      context: ../builder
+    container_name: luzzle-dev-builder
+    user: '${UID:-1000}:${GID:-1000}'
+    ports:
+      - '9000:9000'
+    env_file: .env
+    environment:
+      - LUZZLE_APP_URL=${LUZZLE_APP_URL:-http://luzzle-dev-web:5173}
+      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN} # generate by `openssl rand -hex 32`
+      - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME:-admin}
+      - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD:-luzzle}
+    networks:
+      - luzzle
+    volumes:
+      - ./demo/config.yaml:/app/config.yaml
+      - ./demo/assets:/app/assets
+      - ./demo/data:/app/data
+      - ./demo/archive:/app/archive
+
+  luzzle-dev-proxy:
+    build:
+      dockerfile: ../proxy/Dockerfile
+      secrets:
+        - npmrc
+      context: ../proxy
+    container_name: luzzle-dev-proxy
+    user: '${UID:-1000}:${GID:-1000}'
+    environment:
+      - LUZZLE_EXPLORER_HOST=luzzle-dev-web
+      - LUZZLE_EXPLORER_PORT=5173
+      - LUZZLE_PROXY_CACHE=off
+    ports:
+      - '8080:8080'
+    networks:
+      - luzzle
+    volumes:
+      - ./nginx:/tmp/cache
+    depends_on:
+      - luzzle-dev-web
+
+secrets:
+  npmrc:
+    file: $HOME/.npmrc
+
+networks:
+  luzzle:
+    driver: bridge

@@ -31,11 +31,10 @@ export default [
 		ignores: [
 			'build/',
 			'.svelte-kit/',
-			'sample/',
 			'docker-compose.yml',
-			'archive/',
-			'data/',
-			'assets/'
+			'demo/archive/',
+			'demo/data/',
+			'demo/assets/'
 		]
 	}
 ]

@@ -11,7 +11,8 @@ node_modules
 /src/lib/ui/styles/theme.build.css
 /src/lib/pieces/components/custom
 /src/lib/content/components/custom
-/content
+/demo/data/luzzle.sqlite
+/demo/assets
 
 # OS
 .DS_Store
@@ -23,18 +24,11 @@ Thumbs.db
 !.env.example
 !.env.test
 !.env.sample
+config.yaml
 
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-
-# luzzle
-/data
-/static/pieces
-/config.yaml
-/assets
-/nginx
-/archive
 
 # gemini
 /.gemini

@@ -10,17 +10,23 @@ const PATHS = {
 	LOG: '/app/data/build.log'
 }
 
+const isDev = process.argv.includes('--dev')
+
 class Logger {
 	static async log(message) {
 		const timestamp = new Date().toISOString()
-		const formattedMessage = `[${timestamp}] ${message}
-`
+		const formattedMessage = `[${timestamp}] ${message}`
 		console.log(message)
-		await writeFile(PATHS.LOG, formattedMessage, { flag: 'a' })
+
+		if (!isDev) {
+			await writeFile(PATHS.LOG, formattedMessage + '\n', { flag: 'a' })
+		}
 	}
 
 	static async clear() {
-		await writeFile(PATHS.LOG, '')
+		if (!isDev) {
+			await writeFile(PATHS.LOG, '')
+		}
 	}
 }
 
@@ -118,6 +124,7 @@ class ExplorerManager {
 	constructor() {
 		this.config = null
 		this.serverProcess = null
+		this.isDev = isDev
 	}
 
 	async initialize() {
@@ -129,40 +136,57 @@ class ExplorerManager {
 	async run() {
 		await this.initialize()
 
-		if (await BuildManager.hasCache()) {
-			await Logger.log('Cache found. Skipping build.')
-			await BuildManager.restoreFromCache()
+		if (this.isDev) {
+			await Logger.log('Running in development mode...')
 		} else {
-			await Logger.log('No cache found. Initiating build sequence...')
-			await BuildManager.run()
-			await BuildManager.saveToCache()
+			if (await BuildManager.hasCache()) {
+				await Logger.log('Cache found. Skipping build.')
+				await BuildManager.restoreFromCache()
+			} else {
+				await Logger.log('No cache found. Initiating build sequence...')
+				await BuildManager.run()
+				await BuildManager.saveToCache()
 
-			if (this.config.builder?.url) {
-				await HookManager.trigger(this.config.builder, 'deploy')
-				await HookManager.trigger(this.config.builder, 'build')
+				if (this.config.builder?.url) {
+					await HookManager.trigger(this.config.builder, 'deploy')
+					await HookManager.trigger(this.config.builder, 'build')
+				}
 			}
 		}
 
-		await this.startServer()
+		const serverPromise = this.startServer()
+
+		if (this.isDev && this.config.builder?.url) {
+			await HookManager.trigger(this.config.builder, 'deploy')
+			await HookManager.trigger(this.config.builder, 'build')
+		}
+
+		await serverPromise
 	}
 
 	async startServer() {
 		await Logger.log('Starting Luzzle Web Explorer ...')
-		const serverEntry = path.join(PATHS.LOCAL_BUILD, 'index.js')
 
-		this.serverProcess = spawn('node', [serverEntry], {
+		const spawnOptions = {
 			stdio: 'inherit',
-			shell: false
-		})
+			shell: this.isDev
+		}
+
+		const command = this.isDev ? 'npm' : 'node'
+		const args = this.isDev
+			? ['run', 'dev', '--', '--host']
+			: [path.join(PATHS.LOCAL_BUILD, 'index.js')]
+
+		this.serverProcess = spawn(command, args, spawnOptions)
 
 		this.setupSignalHandlers()
 
 		return new Promise((resolve, reject) => {
 			this.serverProcess.on('close', (code) => {
 				Logger.log(`Server process exited with code ${code}`)
-				if (code === 0) resolve()
+				if (code === 0 || code === null) resolve()
 				else reject(new Error(`Server exited with code ${code}`))
-				process.exit(code)
+				process.exit(code || 0)
 			})
 
 			this.serverProcess.on('error', (err) => {

@@ -24,7 +24,7 @@ keywords: Debt, History, Anthropology, Economics, Social Anthropology, Money,
   Western Civilization, World History
 date_read: 2024-08-31
 ---
-what a blueprint for david's other book [the dawn of everything](/pieces/books/dawn-of-everything)
+what a blueprint for david's other book the dawn of everything
 
 once again, the history of the state, civilization and violence are intertwined
 and easily forgotten in how we retell stories of our past in our history classes

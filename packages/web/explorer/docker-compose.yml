@@ -2,7 +2,6 @@ services:
   luzzle-web:
     build:
       dockerfile: Dockerfile
-      # dockerfile: Dockerfile.dev
       secrets:
         - npmrc
       context: .
@@ -10,26 +9,18 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
     env_file: .env
     environment:
-      - LUZZLE_APP_URL=${LUZZLE_APP_URL:-http://localhost:8080}
+      - LUZZLE_APP_URL=${LUZZLE_APP_URL}
       - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET}
       - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME}
       - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD}
     ports:
       - "3000:3000"
-      # - "5173:5173"
     volumes:
-      - ./assets/pieces:/app/assets/pieces
-      - ./assets/build:/app/assets/build
+      - ./assets:/app/assets
       - ./config.yaml:/app/config.yaml
       - ./data:/app/data
       - ./content:/app/content
       - ./archive:/app/archive
-      # - ./src:/app/src
-      # - ./static:/app/static
-      # - ./scripts:/app/scripts
-      # - ./svelte.config.js:/app/svelte.config.js
-      # - ./vite.config.ts:/app/vite.config.ts
-      # - ./tsconfig.json:/app/tsconfig.json
     networks:
       - luzzle
     depends_on:
@@ -47,7 +38,11 @@ services:
       - '9000:9000'
     env_file: .env
     environment:
-      - LUZZLE_BUILDER_TOKEN=${LUZZLE_BUILDER_TOKEN}
+      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN}
+      - LUZZLE_APP_URL=${LUZZLE_APP_URL:http://luzzle-web:3000}
+      - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET}
+      - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME}
+      - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD}
     networks:
       - luzzle
     volumes:
@@ -67,7 +62,6 @@ services:
     environment:
       - LUZZLE_EXPLORER_HOST=luzzle-web
       - LUZZLE_EXPLORER_PORT=3000
-      # - LUZZLE_EXPLORER_PORT=5173
     ports:
       - "8080:8080"
     networks:

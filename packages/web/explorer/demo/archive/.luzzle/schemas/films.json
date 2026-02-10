@@ -1,0 +1,103 @@
+{
+  "title": "films",
+  "type": "object",
+  "properties": {
+    "title": {
+      "description": "The title of the film",
+      "type": "string",
+      "examples": ["film title"]
+    },
+    "url": {
+      "description": "The URL to the film",
+      "type": "string",
+      "pattern": "^(http|https)://",
+      "examples": ["http://www.example.com"],
+			"nullable": true
+    },
+   "homepage": {
+      "description": "The homepage of the film itself",
+      "type": "string",
+      "pattern": "^(http|https)://",
+      "examples": ["http://www.example.com"],
+			"nullable": true
+    },
+    "type": {
+      "description": "the type of film",
+      "type": "string",
+      "enum": ["movie", "tv", "video"],
+      "examples": ["movie"]
+    },
+    "people": {
+      "description": "A comma separated list of people involved in the film",
+      "type": "string",
+			"format": "comma-separated",
+      "examples": ["person1, person2"],
+			"nullable": true
+    },
+    "subtitle": {
+      "description": "The subtitle of the film",
+      "type": "string",
+      "examples": ["film subtitle"],
+			"nullable": true
+    },
+    "summary": {
+      "description": "A summary of the film",
+      "type": "string",
+      "examples": ["film summary"],
+			"format": "paragraph",
+			"nullable": true
+    },
+    "keywords": {
+      "description": "relevant tags used to link films together by theme, subject, people and more",
+      "type": "string",
+			"format": "comma-separated",
+      "examples": ["keyword1, keyword2"],
+			"nullable": true
+    },
+    "poster": {
+      "description": "The path to main poster of the film",
+      "type": "string",
+      "format": "asset",
+      "examples": [".assets/path/to/poster.jpg"],
+			"nullable": true
+    },
+    "backdrop": {
+      "description": "The path to a backdrop of the film",
+      "type": "string",
+      "format": "asset",
+      "examples": [".assets/path/to/backdrop.jpg"],
+			"nullable": true
+    },
+    "date_released": {
+      "description": "The date the film was released",
+      "type": "string",
+      "format": "date",
+      "examples": ["2019-01-01"],
+			"nullable": true
+    },
+    "date_viewed": {
+      "description": "The date the film was viewed",
+      "type": "string",
+      "format": "date",
+      "examples": ["2019-01-01"],
+			"nullable": true
+    },
+    "runtime": {
+      "description": "The runtime of the film",
+      "type": "integer",
+      "examples": [120],
+			"nullable": true
+    },
+		"language": {
+			"description": "The language of the film",
+			"type": "string",
+      "examples": ["en"],
+			"nullable": true
+		}
+  },
+  "required": [
+    "title",
+    "type"
+  ],
+  "additionalProperties": true
+}

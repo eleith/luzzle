@@ -1,0 +1,87 @@
+{
+  "title": "books",
+  "type": "object",
+  "properties": {
+    "title": {
+      "description": "the title of the book",
+      "type": "string",
+      "examples": ["a book title"]
+    },
+    "author": {
+      "description": "the author of the book",
+      "type": "string",
+      "examples": ["author name"]
+    },
+    "coauthors": {
+			"description": "a command separated list of coauthors of the book",
+      "type": "string",
+      "examples": ["co-author one, co-author two"],
+			"nullable": true
+    },
+    "url": {
+      "description": "the URL of a webpage that provides more information about the book",
+      "type": "string",
+      "pattern": "^(http|https)://",
+      "examples": ["http://www.example.com"],
+			"nullable": true
+    },
+    "isbn": {
+      "description": "the ISBN of the book",
+      "type": "string",
+      "pattern": "((?:[\\dX]{13})|(?:[\\d\\-X]{17})|(?:[\\dX]{10})|(?:[\\d\\-X]{13}))",
+      "examples": ["978-3-16-148410-0"],
+			"nullable": true
+    },
+    "subtitle": {
+      "description": "the subtitle of the book",
+      "type": "string",
+      "examples": ["a book subtitle"],
+			"nullable": true
+    },
+    "description": {
+			"description": "a one or two paragraph description of the book",
+      "type": "string",
+      "examples": ["a book description"],
+			"format": "paragraph",
+			"nullable": true
+    },
+    "pages": {
+      "description": "the number of pages in the book",
+      "type": "integer",
+      "examples": [100],
+			"nullable": true
+    },
+    "year_first_published": {
+      "description": "the year the book was first published",
+      "type": "integer",
+      "examples": [2000],
+			"nullable": true
+    },
+    "cover": {
+      "description": "the path to the cover image of the book",
+      "type": "string",
+      "format": "asset",
+      "examples": [".assets/path/to/cover.jpg"],
+			"nullable": true
+    },
+    "keywords": {
+			"description":"a comma separated list of 5 to 20 keywords that reference a wide variety of topics related to this book like theme, genre, setting, characters, and other keywords that could be used to link to books with similar keywords",
+      "type": "string",
+			"format": "comma-separated",
+      "examples": ["keyword one, keyword two"],
+			"nullable": true
+    },
+    "date_read": {
+      "description": "the date the book was read",
+      "type": "string",
+      "format": "date",
+      "examples": ["2020-01-01"],
+			"nullable": true
+    }
+  },
+  "required": [
+    "title",
+    "author"
+  ],
+  "additionalProperties": true
+}
