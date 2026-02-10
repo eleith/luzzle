@@ -8,7 +8,7 @@ actually own.
 
 Think of it as a personal library for everything you care about—books you've
 read, gear in your inventory, contacts in your address book, or even an archive
-of poetry. 
+of poetry.
 
 Instead of being trapped in a spreadsheet or a proprietary app, these records
 live in your `archive` folder. Each `piece` is just a Markdown file representing
@@ -49,3 +49,14 @@ This ecosystem contains everything you need to build and browse your archive:
 * `@luzzle/web.proxy` a caching layer for @luzzle/web 🚀
 * `@luzzle/web.utils` common logic used by @luzzle/web and tools 🛠️
 
+## Future Ideas 🚀
+
+* [@luzzle/web] hardcoded Base32 seeds for stateless 2FA
+* [@luzzle/web] UI for managing schemas
+* [@luzzle/cli] improved first time experience (ex: zero conf support)
+* [@luzzle/core] google drive storage support
+* [@luzzle/core] icloud storage support
+* [@luzzle/core] dropbox support
+* [@luzzle/core] implement webdav storage sync
+* [@luzzle/core] explore tauri mobile support (ex: rewrite in rust)
+* [@luzzle/tools] add incremental sqlite update

@@ -53,8 +53,3 @@ instance:
 
 Check the `docker-compose.yml` for a complete list of supported environment
 variables.
-
-## Future Ideas 🚀
-
-- Support for hardcoded Base32 seeds in `config.yaml` for stateless 2FA
-- UI for managing schemas in editor
