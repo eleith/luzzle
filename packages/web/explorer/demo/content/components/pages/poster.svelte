@@ -51,7 +51,9 @@
 		<div class="info">
 			<div>
 				{#if piece.date_consumed}
-					viewed on {new Date(piece.date_consumed).toLocaleDateString(undefined, { timeZone: 'UTC' })}
+					viewed on {new Date(piece.date_consumed).toLocaleDateString(undefined, {
+						timeZone: 'UTC'
+					})}
 				{/if}
 			</div>
 			<div>
