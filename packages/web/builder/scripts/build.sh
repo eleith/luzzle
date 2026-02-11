@@ -10,7 +10,7 @@ echo "Building database web tables"
 luzzle-web-tools sqlite
 
 echo "Building new assets..."
-luzzle-web-tools assets --out /app/assets/pieces
+luzzle-web-tools assets --out /app/assets/pieces --in /app/archive
 
 echo "Building new opengraph images..."
 luzzle-web-tools opengraph --out /app/assets/pieces
