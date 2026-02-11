@@ -13,7 +13,7 @@ type PieceFrontmatter = {
 
 type PieceFrontmatterSchema<M extends PieceFrontmatter> = JSONSchemaType<M>
 
-type PieceFrontmatterSchemaFieldScalar = {
+export type PieceFrontmatterSchemaFieldScalar = {
 	name: string
 	type: 'string' | 'boolean' | 'integer'
 	format?: 'asset' | 'date' | 'comma-separated' | 'paragraph'
@@ -24,7 +24,7 @@ type PieceFrontmatterSchemaFieldScalar = {
 	default?: string | number | boolean
 }
 
-type PieceFrontmatterSchemaFieldList = {
+export type PieceFrontmatterSchemaFieldList = {
 	name: string
 	type: 'array'
 	format?: undefined
@@ -36,7 +36,7 @@ type PieceFrontmatterSchemaFieldList = {
 	items: Omit<PieceFrontmatterSchemaField, 'name'>
 }
 
-type PieceFrontmatterSchemaFieldObject = {
+export type PieceFrontmatterSchemaFieldObject = {
 	name: string
 	type: 'object'
 	format?: undefined

@@ -1,13 +1,10 @@
-import { PieceFrontmatter, PieceFrontMatterValue } from './frontmatter.js'
+import {
+	PieceFrontmatter,
+	PieceFrontMatterValue,
+	PieceFrontmatterSchemaField,
+	PieceFrontmatterSchemaFieldObject,
+} from './frontmatter.js'
 
-/**
- * Utility for navigating and modifying nested PieceFrontmatter using dot-notation.
- * Supports numeric indices for arrays (e.g., 'metadata.tags.0').
- */
-
-/**
- * Retrieves a value from a nested frontmatter object by path.
- */
 export function get(obj: PieceFrontmatter, path: string): PieceFrontMatterValue | undefined {
 	const parts = path.split('.')
 	let current: unknown = obj
@@ -22,9 +19,6 @@ export function get(obj: PieceFrontmatter, path: string): PieceFrontMatterValue 
 	return current as PieceFrontMatterValue
 }
 
-/**
- * Sets or appends a value in a nested frontmatter object by path.
- */
 export function set(obj: PieceFrontmatter, path: string, value: PieceFrontMatterValue): void {
 	const parts = path.split('.')
 	const lastPart = parts.pop()!
@@ -45,9 +39,6 @@ export function set(obj: PieceFrontmatter, path: string, value: PieceFrontMatter
 	}
 }
 
-/**
- * Removes a value or an array element from a nested frontmatter object by path.
- */
 export function unset(obj: PieceFrontmatter, path: string): void {
 	const parts = path.split('.')
 	const lastPart = parts.pop()!
@@ -59,7 +50,7 @@ export function unset(obj: PieceFrontmatter, path: string): void {
 			typeof current !== 'object' ||
 			!(part in (current as Record<string, unknown>))
 		) {
-			return // Path doesn't exist
+			return
 		}
 		current = (current as Record<string, unknown>)[part]
 	}
@@ -72,4 +63,54 @@ export function unset(obj: PieceFrontmatter, path: string): void {
 	} else if (current !== null && typeof current === 'object') {
 		delete (current as Record<string, unknown>)[lastPart]
 	}
+}
+
+export function findField(
+	fields: PieceFrontmatterSchemaField[],
+	path: string
+): PieceFrontmatterSchemaField | undefined {
+	const parts = path.split('.')
+	let currentFields = fields
+	let result: PieceFrontmatterSchemaField | undefined
+
+	for (let i = 0; i < parts.length; i++) {
+		const part = parts[i]
+		const isIndex = !isNaN(parseInt(part, 10))
+
+		if (isIndex) {
+			if (!result || result.type !== 'array') {
+				return undefined
+			}
+			result = { ...result.items, name: part } as PieceFrontmatterSchemaField
+		} else {
+			result = currentFields.find((f) => f.name === part)
+		}
+
+		if (!result || i === parts.length - 1) {
+			return result
+		}
+
+		if (result.type === 'object') {
+			const props = result.properties
+			currentFields = Object.keys(props).map(
+				(name) => ({ name, ...props[name] }) as PieceFrontmatterSchemaField
+			)
+		} else if (result.type === 'array') {
+			const nextPart = parts[i + 1]
+			const nextIsIndex = !isNaN(parseInt(nextPart, 10))
+
+			if (!nextIsIndex && result.items.type === 'object') {
+				const props = (result.items as PieceFrontmatterSchemaFieldObject).properties
+				currentFields = Object.keys(props).map(
+					(name) => ({ name, ...props[name] }) as PieceFrontmatterSchemaField
+				)
+			} else {
+				currentFields = []
+			}
+		} else {
+			return undefined
+		}
+	}
+
+	return result
 }

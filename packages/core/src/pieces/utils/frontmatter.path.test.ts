@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import * as paths from './frontmatter.path.js'
-import { PieceFrontmatter } from './frontmatter.js'
+import { PieceFrontmatter, PieceFrontmatterSchemaField } from './frontmatter.js'
+import { MockSchemaProperty } from './piece.fixtures.js'
 
 describe('pieces/utils/frontmatter.path.ts', () => {
 	describe('get', () => {
@@ -58,7 +59,7 @@ describe('pieces/utils/frontmatter.path.ts', () => {
 		})
 
 		test('handles existing non-object intermediate values', () => {
-			const obj: PieceFrontmatter = { meta: 'not-an-object' } as any
+			const obj = { meta: 'not-an-object' } as unknown as PieceFrontmatter
 			paths.set(obj, 'meta.author', 'Alice')
 			const meta = obj.meta as Record<string, unknown>
 			expect(meta.author).toBe('Alice')
@@ -108,6 +109,96 @@ describe('pieces/utils/frontmatter.path.ts', () => {
 			const obj = { meta: null } as unknown as PieceFrontmatter
 			paths.unset(obj, 'meta.author')
 			expect(obj.meta).toBeNull()
+		})
+	})
+
+	describe('findField', () => {
+		const mockFields: Record<string, MockSchemaProperty> = {
+			title: { type: 'string' },
+			meta: {
+				type: 'object',
+				properties: {
+					author: { type: 'string' },
+				},
+			},
+			tags: {
+				type: 'array',
+				items: { type: 'string', format: 'asset' },
+			},
+			gallery: {
+				type: 'array',
+				items: {
+					type: 'object',
+					properties: {
+						url: { type: 'string', format: 'asset' },
+					},
+				},
+			},
+			matrix: {
+				type: 'array',
+				items: {
+					type: 'array',
+					items: { type: 'string' },
+				},
+			},
+		}
+
+		const fields = Object.keys(mockFields).map(
+			(name) => ({ name, ...mockFields[name] }) as unknown as PieceFrontmatterSchemaField
+		)
+
+		test('finds top level field', () => {
+			const field = paths.findField(fields, 'title')
+			expect(field?.name).toBe('title')
+			expect(field?.type).toBe('string')
+		})
+
+		test('finds nested object field', () => {
+			const field = paths.findField(fields, 'meta.author')
+			expect(field?.name).toBe('author')
+			expect(field?.type).toBe('string')
+		})
+
+		test('finds array item field by index', () => {
+			const field = paths.findField(fields, 'tags.0')
+			expect(field?.type).toBe('string')
+			expect(field?.format).toBe('asset')
+		})
+
+		test('finds nested array item by index', () => {
+			const field = paths.findField(fields, 'matrix.0.0')
+			expect(field?.type).toBe('string')
+		})
+
+		test('finds nested property in array of objects', () => {
+			const field = paths.findField(fields, 'gallery.url')
+			expect(field?.name).toBe('url')
+			expect(field?.format).toBe('asset')
+		})
+
+		test('finds nested property in array of objects by index', () => {
+			const field = paths.findField(fields, 'gallery.0.url')
+			expect(field?.name).toBe('url')
+			expect(field?.format).toBe('asset')
+		})
+
+		test('returns undefined for missing field', () => {
+			expect(paths.findField(fields, 'missing')).toBeUndefined()
+			expect(paths.findField(fields, 'meta.missing')).toBeUndefined()
+		})
+
+		test('returns undefined for index on non-array field', () => {
+			expect(paths.findField(fields, 'title.0')).toBeUndefined()
+		})
+
+		test('returns undefined for top level index', () => {
+			expect(paths.findField(fields, '0')).toBeUndefined()
+		})
+
+		test('returns undefined for invalid traversal', () => {
+			expect(paths.findField(fields, 'title.something')).toBeUndefined()
+			expect(paths.findField(fields, 'tags.0.something')).toBeUndefined()
+			expect(paths.findField(fields, 'tags.someProp')).toBeUndefined()
 		})
 	})
 })
