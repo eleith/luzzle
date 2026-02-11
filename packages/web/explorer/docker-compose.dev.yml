@@ -1,7 +1,7 @@
 services:
   luzzle-dev-web:
     build:
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
       secrets:
         - npmrc
       context: .
@@ -15,6 +15,7 @@ services:
       - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME:-admin}
       - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD:-luzzle}
       - LUZZLE_HMR_PORT=8080
+      - LUZZLE_DEV=true
     ports:
       - '5173:5173'
     volumes:

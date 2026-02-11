@@ -10,7 +10,7 @@ const PATHS = {
 	LOG: '/app/data/build.log'
 }
 
-const isDev = process.argv.includes('--dev')
+const isDev = process.env.LUZZLE_DEV === 'true'
 
 class Logger {
 	static async log(message) {
