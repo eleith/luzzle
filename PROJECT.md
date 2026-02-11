@@ -16,12 +16,12 @@ Refactor frontmatter to use native JSON (fixing array corruption) and support ne
 **Goal:** Fix data corruption and enable the new storage format.
 - **Changes:**
     - [x] `packages/core/.../frontmatter.ts`: Update types and refactor `toDatabaseValue`/`fromDatabaseValue` to use JSON for arrays/objects.
-    - [ ] `packages/core/.../item.ts`: Implement recursive "asset walker" to find all `format: asset` fields.
-    - [ ] `packages/core/.../migrations/`: Add migration to clear `pieces_items` table.
+    - [x] `packages/core/.../item.ts`: Implement recursive "asset walker" to find all `format: asset` fields.
+    - [x] `packages/core/.../migrations/`: Add migration to clear `pieces_items` table.
 - **Tests:** 
     - [x] Convert `frontmatter.repro.test.ts` cases into permanent unit tests in `frontmatter.test.ts`.
     - [x] Delete `frontmatter.repro.test.ts` once verified.
-    - [ ] Add new integration tests in `item.test.ts` for complex structures.
+    - [x] Add new integration tests in `item.test.ts` for complex structures.
 - **Risk:** High (DB Cache). **Mitigation:** Immediate migration to clear cache upon deployment.
 
 ### Phase 2: Path Utility & Core Integration (PR #2)
