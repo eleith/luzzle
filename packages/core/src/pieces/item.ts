@@ -9,9 +9,41 @@ import {
 	PieceFrontmatter,
 	pieceFrontmatterValueToDatabaseValue,
 	getPieceFrontmatterSchemaFields,
-    PieceFrontmatterSchema,
+	PieceFrontmatterSchema,
+	PieceFrontmatterSchemaField,
 } from './utils/frontmatter.js'
 import { ValidateFunction } from 'ajv'
+
+/**
+ * Recursively collects asset paths from frontmatter values based on schema field definitions.
+ */
+function collectAssets(value: unknown, field: PieceFrontmatterSchemaField, assets: string[]) {
+	if (value === undefined || value === null) {
+		return
+	}
+
+	if (field.type === 'array') {
+		const values = value as unknown[]
+		if (field.items.format === 'asset') {
+			assets.push(...(values as string[]))
+		} else if (field.items.type === 'array' || field.items.type === 'object') {
+			values.forEach((v) =>
+				collectAssets(v, { ...field.items, name: field.name } as PieceFrontmatterSchemaField, assets)
+			)
+		}
+	} else if (field.type === 'object') {
+		const obj = value as Record<string, unknown>
+		for (const key in field.properties) {
+			collectAssets(
+				obj[key],
+				{ ...field.properties[key], name: key } as PieceFrontmatterSchemaField,
+				assets
+			)
+		}
+	} else if (field.format === 'asset') {
+		assets.push(value as string)
+	}
+}
 
 function makePieceItemInsertable<F extends PieceFrontmatter>(
 	piece: string,
@@ -27,13 +59,7 @@ function makePieceItemInsertable<F extends PieceFrontmatter>(
 		const value = markdown.frontmatter[name]
 		const jsonValue = pieceFrontmatterValueToDatabaseValue(value, field)
 
-		if (field.type === 'array') {
-			if (field.format === 'asset') {
-				assets.push(...(value as string[]))
-			}
-		} else if (field.format === 'asset') {
-			assets.push(value as string)
-		}
+		collectAssets(value, field, assets)
 
 		frontmatterJson[name] = jsonValue
 	})
@@ -69,13 +95,7 @@ function makePieceItemUpdatable<F extends PieceFrontmatter>(
 		const value = markdown.frontmatter[name as keyof F]
 		const updateValue = pieceFrontmatterValueToDatabaseValue(value, field)
 
-		if (field.type === 'array') {
-			if (field.format === 'asset') {
-				assets.push(...(value as string[]))
-			}
-		} else if (field.format === 'asset') {
-			assets.push(value as string)
-		}
+		collectAssets(value, field, assets)
 
 		frontmatter[name] = updateValue
 	})
@@ -84,7 +104,7 @@ function makePieceItemUpdatable<F extends PieceFrontmatter>(
 	const assetString = JSON.stringify(assets)
 
 	if (force || frontmatterJson !== data.frontmatter_json) {
-		update.frontmatter_json = JSON.stringify(frontmatter)
+		update.frontmatter_json = frontmatterJson
 	}
 
 	if (force || markdown.note !== data.note_markdown) {
@@ -113,9 +133,7 @@ function validatePieceItem<F extends PieceFrontmatter>(
 	return false
 }
 
-function getValidatePieceItemErrors<F extends PieceFrontmatter>(
-	validator: ValidateFunction<F>
-) {
+function getValidatePieceItemErrors<F extends PieceFrontmatter>(validator: ValidateFunction<F>) {
 	const errors = validator.errors || []
 	return errors.map((e) => `\t${e.instancePath} ${e.message}`)
 }

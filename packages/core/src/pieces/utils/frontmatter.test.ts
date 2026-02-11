@@ -56,6 +56,15 @@ describe('pieces/utils/frontmatter.ts', () => {
 			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(10, { type: 'integer', name: 'int' })).toBe(10)
 		})
 
+		test('converts comma-separated format', () => {
+			const field: frontmatter.PieceFrontmatterSchemaField = {
+				type: 'string',
+				name: 'tags',
+				format: 'comma-separated',
+			}
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('a,b', field)).toBe('["a","b"]')
+		})
+
 		test('handles null and undefined', () => {
 			const field: frontmatter.PieceFrontmatterSchemaField = { type: 'string', name: 'f' }
 			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(null, field)).toBe(null)
@@ -115,6 +124,11 @@ describe('pieces/utils/frontmatter.ts', () => {
 			).toBeTypeOf('string')
 
 			expect(frontmatter.databaseValueToPieceFrontmatterValue(1, { type: 'boolean', name: 'bool' })).toBe(true)
+		})
+
+		test('restores integers', () => {
+			const field: frontmatter.PieceFrontmatterSchemaField = { type: 'integer', name: 'int' }
+			expect(frontmatter.databaseValueToPieceFrontmatterValue('10', field)).toBe(10)
 		})
 
 		test('restores arrays from native arrays', () => {
