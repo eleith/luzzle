@@ -1,6 +1,6 @@
 import { JSONSchemaType } from "ajv"
 
-type PieceFrontMatterValue =
+export type PieceFrontMatterValue =
 	| string
 	| number
 	| boolean

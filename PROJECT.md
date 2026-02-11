@@ -27,11 +27,12 @@ Refactor frontmatter to use native JSON (fixing array corruption) and support ne
 ### Phase 2: Path Utility & Core Integration (PR #2)
 **Goal:** Enable the engine to get/set/remove values by path.
 - **Changes:**
-    - **Add** `packages/core/.../path.ts`: Utility for dot-notation (e.g., `get(obj, 'a.b.0')`).
-    - `packages/core/src/pieces/Piece.ts`: Update `setField`/`removeField` to use the path utility.
-    - **Logic:** `setField` appends to arrays by default. `removeField` handles indices.
-- **Tests:** 100% coverage for `path.ts`. Integration tests in `Piece.test.ts`.
-- **Risk:** Low. This is additive logic for the engine.
+    - [x] **Add** `packages/core/.../frontmatter.path.ts`: Utility for dot-notation (e.g., `get(obj, 'a.b.0')`).
+    - [ ] `packages/core/src/pieces/Piece.ts`: Update `setField`/`removeField` to use the path utility.
+    - [ ] **Logic:** `setField` appends to arrays by default. `removeField` handles indices.
+- **Tests:** 
+    - [x] 100% coverage for `frontmatter.path.ts`.
+    - [ ] Integration tests in `Piece.test.ts` for nested paths.
 
 ### Phase 3: CLI Implementation (PR #3)
 **Goal:** Expose dot-notation to the user.
