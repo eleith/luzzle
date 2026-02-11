@@ -21,16 +21,22 @@ export function makeValidator(): PieceValidator {
 	return validate as unknown as PieceValidator
 }
 
-export function makeSchema(properties?: {
-	[key: string]: {
-		type?: string
-		nullable?: boolean
-		items?: object
-		format?: string
-		pattern?: string
-		enum?: string[] | number[]
-	}
-}): JSONSchemaType<PieceFrontmatter> {
+export type MockSchemaProperty = {
+	type?: string
+	nullable?: boolean
+	items?: MockSchemaProperty
+	format?: string
+	pattern?: string
+	enum?: string[] | number[]
+	properties?: Record<string, MockSchemaProperty>
+	required?: string[]
+	examples?: unknown[]
+	default?: unknown
+}
+
+export function makeSchema(
+	properties?: Record<string, MockSchemaProperty>
+): JSONSchemaType<PieceFrontmatter> {
 	return {
 		type: 'object',
 		properties: {

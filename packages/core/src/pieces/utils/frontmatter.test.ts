@@ -1,6 +1,6 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import * as frontmatter from './frontmatter.js'
-import { makeSchema } from './piece.fixtures.js'
+import { makeSchema, MockSchemaProperty } from './piece.fixtures.js'
 
 describe('pieces/utils/frontmatter.ts', () => {
 	afterEach(() => {
@@ -56,19 +56,15 @@ describe('pieces/utils/frontmatter.ts', () => {
 			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(10, { type: 'integer', name: 'int' })).toBe(10)
 		})
 
-		test('converts comma-separated format', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = {
-				type: 'string',
-				name: 'tags',
-				format: 'comma-separated',
-			}
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('a,b', field)).toBe('["a","b"]')
-		})
-
 		test('handles null and undefined', () => {
 			const field: frontmatter.PieceFrontmatterSchemaField = { type: 'string', name: 'f' }
 			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(null, field)).toBe(null)
 			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(undefined, field)).toBe(null)
+		})
+
+		test('handles unknown field type', () => {
+			const field = { type: 'unknown', name: 'f' } as unknown as frontmatter.PieceFrontmatterSchemaField
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('val', field)).toBe('val')
 		})
 
 		test('handles default string type', () => {
@@ -76,9 +72,13 @@ describe('pieces/utils/frontmatter.ts', () => {
 			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('val', field)).toBe('val')
 		})
 
-		test('handles unknown field type', () => {
-			const field = { type: 'unknown', name: 'f' } as any
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('val', field)).toBe('val')
+		test('converts comma-separated format', () => {
+			const field: frontmatter.PieceFrontmatterSchemaField = {
+				type: 'string',
+				name: 'tags',
+				format: 'comma-separated',
+			}
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('a,b', field)).toBe('["a","b"]')
 		})
 
 		test('converts arrays to native arrays (not CSV)', () => {
@@ -188,8 +188,9 @@ describe('pieces/utils/frontmatter.ts', () => {
 			const field: frontmatter.PieceFrontmatterSchemaField = { type: 'string', name: 'f' }
 			expect(frontmatter.databaseValueToPieceFrontmatterValue('val', field)).toBe('val')
 		})
+
 		test('handles unknown field type', () => {
-			const field = { type: 'unknown', name: 'f' } as any
+			const field = { type: 'unknown', name: 'f' } as unknown as frontmatter.PieceFrontmatterSchemaField
 			expect(frontmatter.databaseValueToPieceFrontmatterValue('val', field)).toBe('val')
 		})
 	})
@@ -219,19 +220,16 @@ describe('pieces/utils/frontmatter.ts', () => {
 		})
 
 		test('initializes empty object if required but no subfields initialized', () => {
-			const schema = {
-				type: 'object',
-				properties: {
-					title: { type: 'string', examples: ['title'] },
-					metadata: {
-						type: 'object',
-						properties: {
-							author: { type: 'string' },
-						},
+			const properties: Record<string, MockSchemaProperty> = {
+				metadata: {
+					type: 'object',
+					properties: {
+						author: { type: 'string' },
 					},
 				},
-				required: ['title', 'metadata'],
-			} as unknown as frontmatter.PieceFrontmatterSchema<frontmatter.PieceFrontmatter>
+			}
+			const schema = makeSchema(properties)
+			schema.required = ['title', 'metadata']
 
 			const front = frontmatter.initializePieceFrontMatter(schema, true)
 			expect(front).toEqual({ title: 'title', metadata: {} })

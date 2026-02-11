@@ -1,10 +1,8 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import {
-	PieceFrontmatterSchemaField,
-} from './utils/frontmatter.js'
 import { makeMarkdownSample, makeSample, makeSchema } from './utils/piece.fixtures.js'
 import * as database from './item.js'
 import { ValidateFunction } from 'ajv'
+import { PieceFrontmatter } from './utils/frontmatter.js'
 
 describe('src/pieces/item.ts', () => {
 	afterEach(() => {
@@ -25,7 +23,7 @@ describe('src/pieces/item.ts', () => {
 			title: { type: 'string' },
 			keywords: { type: 'string' },
 			subtitle: { type: 'string' },
-		} as any)
+		})
 
 		const input = database.makePieceItemInsertable(piece, markdown, schema)
 
@@ -68,7 +66,7 @@ describe('src/pieces/item.ts', () => {
 					}
 				}
 			}
-		} as any)
+		})
 
 		const input = database.makePieceItemInsertable(piece, markdown, schema)
 
@@ -79,6 +77,32 @@ describe('src/pieces/item.ts', () => {
 		expect(assets).toContain('img2.png')
 		expect(assets).toContain('icon.svg')
 		expect(assets).toHaveLength(4)
+	})
+
+	test('makePieceItemInsertable with array of objects containing assets', () => {
+		const piece = 'books'
+		const frontmatter = {
+			title: 'title',
+			items: [
+				{ image: 'a.jpg' },
+				{ image: 'b.jpg' }
+			]
+		}
+		const markdown = makeMarkdownSample('path', piece, 'note', frontmatter)
+		const schema = makeSchema({
+			items: {
+				type: 'array',
+				items: {
+					type: 'object',
+					properties: {
+						image: { type: 'string', format: 'asset' }
+					}
+				}
+			}
+		})
+
+		const input = database.makePieceItemInsertable(piece, markdown, schema)
+		expect(input.assets_json_array).toBe(JSON.stringify(['a.jpg', 'b.jpg']))
 	})
 
 	test('makePieceItemInsertable with deep array assets', () => {
@@ -99,7 +123,7 @@ describe('src/pieces/item.ts', () => {
 					items: { type: 'string', format: 'asset' }
 				}
 			}
-		} as any)
+		})
 
 		const input = database.makePieceItemInsertable(piece, markdown, schema)
 		const assets = JSON.parse(input.assets_json_array!)
@@ -121,7 +145,7 @@ describe('src/pieces/item.ts', () => {
 			title: { type: 'string' },
 			keywords: { type: 'string' },
 			subtitle: { type: 'string' },
-		} as any)
+		})
 
 		data.note_markdown = 'old note'
 
@@ -154,11 +178,59 @@ describe('src/pieces/item.ts', () => {
 					poster: { type: 'string', format: 'asset' }
 				}
 			}
-		} as any)
+		})
 
 		const update = database.makePieceItemUpdatable(markdown, schema, data)
 
 		expect(update.assets_json_array).toBe(JSON.stringify(['new-poster.jpg']))
+	})
+
+	test('makePieceItemUpdatable with asset changes but no frontmatter change', () => {
+		const data = makeSample()
+		const note = 'note'
+		const path = data.file_path
+		const piece = 'books'
+		const frontmatter = { title: 'title', poster: 'new.jpg' }
+		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
+		const schema = makeSchema({
+			poster: { type: 'string', format: 'asset' }
+		})
+
+		data.frontmatter_json = JSON.stringify({ title: 'title' })
+		data.assets_json_array = JSON.stringify(['old.jpg'])
+
+		const update = database.makePieceItemUpdatable(markdown, schema, data)
+
+		expect(update.assets_json_array).toBe(JSON.stringify(['new.jpg']))
+		expect(update.frontmatter_json).toBeDefined()
+	})
+
+	test('makePieceItemUpdatable with force and new path', () => {
+		const data = makeSample()
+		const note = 'note'
+		const path = 'new-path'
+		const piece = 'books'
+		const frontmatter = { title: 'title' }
+		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
+		const schema = makeSchema({})
+
+		const update = database.makePieceItemUpdatable(markdown, schema, data, true)
+
+		expect(update.file_path).toBe(path)
+	})
+
+	test('makePieceItemUpdatable with same path and no force', () => {
+		const data = makeSample()
+		const note = 'note'
+		const path = data.file_path
+		const piece = 'books'
+		const frontmatter = { title: 'title' }
+		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
+		const schema = makeSchema({})
+
+		const update = database.makePieceItemUpdatable(markdown, schema, data)
+
+		expect(update.file_path).toBeUndefined()
 	})
 
 	test('validatePieceItem', () => {
@@ -169,7 +241,7 @@ describe('src/pieces/item.ts', () => {
 			title: 'title',
 		}
 		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
-		const validator = vi.fn(() => true) as unknown as ValidateFunction<typeof frontmatter>
+		const validator = vi.fn(() => true) as unknown as ValidateFunction<PieceFrontmatter>
 
 		const valid = database.validatePieceItem(markdown, validator)
 
@@ -185,7 +257,7 @@ describe('src/pieces/item.ts', () => {
 			title: 'title',
 		}
 		const markdown = makeMarkdownSample(path, piece, note, frontmatter)
-		const validator = vi.fn(() => false) as unknown as ValidateFunction<typeof frontmatter>
+		const validator = vi.fn(() => false) as unknown as ValidateFunction<PieceFrontmatter>
 
 		const valid = database.validatePieceItem(markdown, validator)
 
@@ -195,7 +267,7 @@ describe('src/pieces/item.ts', () => {
 
 	test('getValidatePieceItemErrors', () => {
 		const errors = [{ instancePath: '/title', message: 'is required' }]
-		const validator = { errors } as unknown as ValidateFunction<any>
+		const validator = { errors } as unknown as ValidateFunction<PieceFrontmatter>
 		const getErrors = database.getValidatePieceItemErrors(validator)
 
 		expect(getErrors[0]).toContain('/title is required')
