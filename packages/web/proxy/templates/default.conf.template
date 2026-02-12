@@ -15,6 +15,9 @@ server {
     listen 8080;
     server_name localhost;
 
+    access_log ${LUZZLE_PROXY_ACCESS_LOG};
+    error_log  ${LUZZLE_PROXY_ERROR_LOG};
+
     client_max_body_size 256M;
 
     proxy_buffer_size 128k;
