@@ -1,7 +1,7 @@
 import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
 import { mockKysely } from '../database/database.mock.js'
 import * as manager from './manager.js'
-import { makeSchema } from './utils/piece.fixtures.js'
+import { makeSchema } from './Piece.fixtures.js'
 
 vi.mock('./items.js')
 

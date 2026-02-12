@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import { makeMarkdownSample, makeSample, makeSchema } from './utils/piece.fixtures.js'
+import { makeMarkdownSample, makePieceItemSelectable, makeSchema } from './Piece.fixtures.js'
 import * as database from './item.js'
 import { ValidateFunction } from 'ajv'
 import { PieceFrontmatter } from './utils/frontmatter.js'
@@ -131,7 +131,7 @@ describe('src/pieces/item.ts', () => {
 	})
 
 	test('makePieceItemUpdatable', () => {
-		const data = makeSample()
+		const data = makePieceItemSelectable()
 		const note = 'note'
 		const path = 'path'
 		const piece = 'books'
@@ -160,7 +160,7 @@ describe('src/pieces/item.ts', () => {
 	})
 
 	test('makePieceItemUpdatable with recursive assets', () => {
-		const data = makeSample()
+		const data = makePieceItemSelectable()
 		const note = 'note'
 		const path = 'path'
 		const piece = 'books'
@@ -186,7 +186,7 @@ describe('src/pieces/item.ts', () => {
 	})
 
 	test('makePieceItemUpdatable with asset changes but no frontmatter change', () => {
-		const data = makeSample()
+		const data = makePieceItemSelectable()
 		const note = 'note'
 		const path = data.file_path
 		const piece = 'books'
@@ -206,7 +206,7 @@ describe('src/pieces/item.ts', () => {
 	})
 
 	test('makePieceItemUpdatable with force and new path', () => {
-		const data = makeSample()
+		const data = makePieceItemSelectable()
 		const note = 'note'
 		const path = 'new-path'
 		const piece = 'books'
@@ -220,7 +220,7 @@ describe('src/pieces/item.ts', () => {
 	})
 
 	test('makePieceItemUpdatable with same path and no force', () => {
-		const data = makeSample()
+		const data = makePieceItemSelectable()
 		const note = 'note'
 		const path = data.file_path
 		const piece = 'books'

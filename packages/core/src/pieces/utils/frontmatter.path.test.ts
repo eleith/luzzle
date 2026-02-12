@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import * as paths from './frontmatter.path.js'
 import { PieceFrontmatter, PieceFrontmatterSchemaField } from './frontmatter.js'
-import { MockSchemaProperty } from './piece.fixtures.js'
+import { MockSchemaProperty } from '../Piece.fixtures.js'
 
 describe('pieces/utils/frontmatter.path.ts', () => {
 	describe('get', () => {

@@ -1,3 +1,4 @@
+import { ValidateFunction } from 'ajv'
 import { LuzzleSelectable } from '../database/tables/index.js'
 import { PieceFrontmatter, PieceFrontmatterSchema } from './utils/frontmatter.js'
 import { PieceMarkdown } from './utils/markdown.js'
@@ -15,6 +16,13 @@ const sample = {
 	date_updated: new Date().getTime(),
 	frontmatter_json: JSON.stringify({ title: 'sampleTitle' }),
 } as LuzzleSelectable<'pieces_items'>
+
+export type PieceValidator = ValidateFunction<PieceFrontmatter>
+
+export function makeValidator(): PieceValidator {
+	const validate = () => true
+	return validate as unknown as PieceValidator
+}
 
 export type MockSchemaProperty = {
 	type?: string
@@ -40,8 +48,8 @@ export function makeSchema(
 		title: name,
 		properties: {
 			title: { type: 'string', examples: ['title'] },
-			keywords: { type: 'string', nullable: true },
-			subtitle: { type: 'string', nullable: true },
+			keywords: { type: 'string', nullable: true, examples: ['keyword1'] },
+			subtitle: { type: 'string', nullable: true, examples: ['subtitle'] },
 			...properties,
 		},
 		required: ['title'],
@@ -76,14 +84,26 @@ export function makeFrontmatterSample(
 }
 
 export function makeMarkdownSample<F extends PieceFrontmatter>(
-	initial = {} as Partial<PieceMarkdown<F>>
+	filePathOrOptions: string | Partial<PieceMarkdown<F>> = 'samplePath.md',
+	piece = 'table',
+	note = 'sampleNote',
+	frontmatter?: F
 ): PieceMarkdown<F> {
+	if (typeof filePathOrOptions === 'object') {
+		return {
+			filePath: 'samplePath.md',
+			piece: 'table',
+			note: 'sampleNote',
+			frontmatter: makeFrontmatterSample() as F,
+			...filePathOrOptions,
+		}
+	}
+
 	return {
-		note: 'sampleNote',
-		filePath: 'samplePath.md',
-		piece: 'table',
-		frontmatter: makeFrontmatterSample() as F,
-		...initial,
+		filePath: filePathOrOptions,
+		piece,
+		note,
+		frontmatter: (frontmatter || makeFrontmatterSample()) as F,
 	}
 }
 

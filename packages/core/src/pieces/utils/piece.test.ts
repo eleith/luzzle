@@ -9,7 +9,7 @@ import { ASSETS_DIRECTORY } from '../assets.js'
 import { calculateHashFromFile, makePieceAttachment, makePieceValue, detectStreamFileType } from './piece.js'
 import { PieceFrontmatterSchemaField } from './frontmatter.js'
 import { makeStorage } from '../../storage/storage.mock.js'
-import { makeMarkdownSample } from './piece.fixtures.js'
+import { makeMarkdownSample } from '../Piece.fixtures.js'
 
 vi.mock('fs/promises')
 vi.mock('crypto')

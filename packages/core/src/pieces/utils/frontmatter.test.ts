@@ -1,6 +1,6 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import * as frontmatter from './frontmatter.js'
-import { makeSchema, MockSchemaProperty } from './piece.fixtures.js'
+import { makeSchema, MockSchemaProperty } from '../Piece.fixtures.js'
 
 describe('pieces/utils/frontmatter.ts', () => {
 	afterEach(() => {
