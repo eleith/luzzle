@@ -28,7 +28,7 @@ function collectAssets(value: unknown, field: PieceFrontmatterSchemaField, asset
 			assets.push(...(values as string[]))
 		} else if (field.items.type === 'array' || field.items.type === 'object') {
 			values.forEach((v) =>
-				collectAssets(v, { ...field.items, name: field.name } as PieceFrontmatterSchemaField, assets)
+				collectAssets(v, field.items, assets)
 			)
 		}
 	} else if (field.type === 'object') {
@@ -36,7 +36,7 @@ function collectAssets(value: unknown, field: PieceFrontmatterSchemaField, asset
 		for (const key in field.properties) {
 			collectAssets(
 				obj[key],
-				{ ...field.properties[key], name: key } as PieceFrontmatterSchemaField,
+				field.properties[key],
 				assets
 			)
 		}
@@ -56,6 +56,8 @@ function makePieceItemInsertable<F extends PieceFrontmatter>(
 
 	fields.forEach((field) => {
 		const name = field.name
+		if (!name) return
+
 		const value = markdown.frontmatter[name]
 		const jsonValue = pieceFrontmatterValueToDatabaseValue(value, field)
 
@@ -92,7 +94,9 @@ function makePieceItemUpdatable<F extends PieceFrontmatter>(
 
 	fields.forEach((field) => {
 		const name = field.name
-		const value = markdown.frontmatter[name as keyof F]
+		if (!name) return
+
+		const value = (markdown.frontmatter as Record<string, unknown>)[name]
 		const updateValue = pieceFrontmatterValueToDatabaseValue(value, field)
 
 		collectAssets(value, field, assets)

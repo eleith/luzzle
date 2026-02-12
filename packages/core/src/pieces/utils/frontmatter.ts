@@ -14,7 +14,7 @@ type PieceFrontmatter = {
 type PieceFrontmatterSchema<M extends PieceFrontmatter> = JSONSchemaType<M>
 
 export type PieceFrontmatterSchemaFieldScalar = {
-	name: string
+	name?: string
 	type: 'string' | 'boolean' | 'integer'
 	format?: 'asset' | 'date' | 'comma-separated' | 'paragraph'
 	nullable?: boolean
@@ -25,7 +25,7 @@ export type PieceFrontmatterSchemaFieldScalar = {
 }
 
 export type PieceFrontmatterSchemaFieldList = {
-	name: string
+	name?: string
 	type: 'array'
 	format?: undefined
 	pattern?: undefined
@@ -33,18 +33,18 @@ export type PieceFrontmatterSchemaFieldList = {
 	default?: undefined
 	nullable?: boolean
 	enum?: string[] | number[]
-	items: Omit<PieceFrontmatterSchemaField, 'name'>
+	items: PieceFrontmatterSchemaField
 }
 
 export type PieceFrontmatterSchemaFieldObject = {
-	name: string
+	name?: string
 	type: 'object'
 	format?: undefined
 	pattern?: undefined
 	examples?: undefined
 	default?: undefined
 	nullable?: boolean
-	properties: { [key: string]: Omit<PieceFrontmatterSchemaField, 'name'> }
+	properties: { [key: string]: PieceFrontmatterSchemaField }
 	required?: string[]
 }
 
@@ -62,9 +62,13 @@ function getPieceFrontmatterSchemaFields<M extends PieceFrontmatter>(
 	return Object.keys(schema.properties).map((key) => {
 		const required = Array.isArray(schema.required) ? (schema.required as string[]) : []
 		const isRequired = required.includes(key)
-		const nullable = isRequired ? false : schema.properties[key]?.nullable ?? true
+		const nullable = isRequired ? false : (schema.properties[key] as PieceFrontmatterSchemaField).nullable ?? true
 
-		return { name: key, ...schema.properties[key], nullable } as PieceFrontmatterSchemaField
+		return { 
+			name: key, 
+			...(schema.properties[key] as PieceFrontmatterSchemaField), 
+			nullable 
+		}
 	})
 }
 
@@ -87,7 +91,7 @@ function pieceFrontmatterValueToDatabaseValue(
 			return Number(value)
 		case 'array':
 			return (value as unknown[]).map((v) =>
-				pieceFrontmatterValueToDatabaseValue(v, field.items as PieceFrontmatterSchemaField)
+				pieceFrontmatterValueToDatabaseValue(v, field.items)
 			)
 		case 'object': {
 			const obj = value as Record<string, unknown>
@@ -95,7 +99,7 @@ function pieceFrontmatterValueToDatabaseValue(
 			for (const key in field.properties) {
 				result[key] = pieceFrontmatterValueToDatabaseValue(
 					obj[key],
-					{ ...field.properties[key], name: key } as PieceFrontmatterSchemaField
+					field.properties[key]
 				)
 			}
 			return result
@@ -134,7 +138,7 @@ function databaseValueToPieceFrontmatterValue(
 			// Backwards compatibility: Handle legacy CSV strings stored in older caches
 			const values = Array.isArray(value) ? value : (value as string).split(',')
 			return values.map((v) =>
-				databaseValueToPieceFrontmatterValue(v, field.items as PieceFrontmatterSchemaField)
+				databaseValueToPieceFrontmatterValue(v, field.items)
 			)
 		}
 		case 'object': {
@@ -143,7 +147,7 @@ function databaseValueToPieceFrontmatterValue(
 			for (const key in field.properties) {
 				result[key] = databaseValueToPieceFrontmatterValue(
 					obj[key],
-					{ ...field.properties[key], name: key } as PieceFrontmatterSchemaField
+					field.properties[key]
 				)
 			}
 			return result
@@ -177,13 +181,15 @@ function initializePieceFrontMatterFromFields(
 
 	for (const field of fields) {
 		const name = field.name
+		if (!name) continue
+
 		const isRequired = requiredFields.includes(name)
 
 		// Handle nested objects
 		if (field.type === 'object') {
 			const subFields = Object.keys(field.properties).map((key) => {
-				const isRequired = field.required?.includes(key)
-				const nullable = isRequired ? false : field.properties[key].nullable ?? true
+				const isSubRequired = field.required?.includes(key)
+				const nullable = isSubRequired ? false : field.properties[key].nullable ?? true
 				return {
 					name: key,
 					...field.properties[key],
@@ -203,8 +209,8 @@ function initializePieceFrontMatterFromFields(
 
 		// Handle scalars and arrays
 		const isArray = field.type === 'array'
-		const examples = isArray ? field.items?.examples : field.examples
-		const def = isArray ? field.items?.default : field.default
+		const examples = isArray ? field.items.examples : field.examples
+		const def = isArray ? field.items.default : field.default
 		const example = examples?.[0]
 		const hasInitialValue = def !== undefined || example !== undefined
 
@@ -229,7 +235,7 @@ function initializePieceFrontMatter<M extends PieceFrontmatter>(
 	minimal: boolean = false
 ): M {
 	const fields = getPieceFrontmatterSchemaFields(schema)
-	const required = Array.isArray(schema.required) ? schema.required : []
+	const required = Array.isArray(schema.required) ? (schema.required as string[]) : []
 	return initializePieceFrontMatterFromFields(fields, required, minimal) as M
 }
 
@@ -241,4 +247,5 @@ export {
 	pieceFrontmatterValueToDatabaseValue,
 	databaseValueToPieceFrontmatterValue,
 	initializePieceFrontMatter,
+	initializePieceFrontMatterFromFields,
 }

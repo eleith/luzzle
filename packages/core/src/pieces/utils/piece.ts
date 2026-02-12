@@ -121,7 +121,8 @@ async function makePieceAttachment(
 	const random = randomBytes(4).toString('hex')
 	const baseName = path.basename(file).replace(/\.[^.]+$/, '')
 	const parts = [baseName, random]
-	const attachDir = path.join(ASSETS_DIRECTORY, fileDir, field.name)
+	const fieldName = field.name || 'unknown'
+	const attachDir = path.join(ASSETS_DIRECTORY, fileDir, fieldName)
 	const exists = await storage.exists(attachDir)
 
 	/* c8 ignore next 3 */
@@ -141,7 +142,7 @@ async function makePieceAttachment(
 
 	const type = detectedType?.ext.replace(/^/, '.') || path.extname(pathWithType || '') || path.extname(file)
 	const filename = `${parts.filter((x) => x).join('-')}${type}`
-	const relPath = path.join(ASSETS_DIRECTORY, fileDir, field.name, filename)
+	const relPath = path.join(ASSETS_DIRECTORY, fileDir, fieldName, filename)
 	const writeStream = storage.createWriteStream(relPath)
 
 	await pipeline(finalStream, writeStream)

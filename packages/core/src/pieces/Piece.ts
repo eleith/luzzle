@@ -260,13 +260,14 @@ class Piece<F extends PieceFrontmatter> {
 		const frontmatter = JSON.parse(data.frontmatter_json)
 		const frontmatterJson: Record<string, unknown> = {}
 		const dataKeys = Object.keys(frontmatter)
-		const fields = getPieceFrontmatterSchemaFields(this._schema).filter((f) =>
-			dataKeys.includes(f.name)
+		const fields = getPieceFrontmatterSchemaFields(this._schema).filter(
+			(f): f is PieceFrontmatterSchemaField & { name: string } =>
+				!!f.name && dataKeys.includes(f.name)
 		)
 
 		fields.forEach((field) => {
 			const name = field.name
-			const value = frontmatter[field.name]
+			const value = frontmatter[name]
 
 			frontmatterJson[name] = databaseValueToPieceFrontmatterValue(value, field)
 		})
@@ -316,15 +317,16 @@ class Piece<F extends PieceFrontmatter> {
 
 		const isArray = pieceField.type === 'array'
 		const itemField = isArray
-			? ({ ...pieceField.items, name: pieceField.name } as PieceFrontmatterSchemaField)
+			? { ...pieceField.items, name: pieceField.name }
 			: pieceField
 		const values = Array.isArray(value) ? value : [value]
 		const set = []
 
 		try {
+			// Process each value individually (e.g. for bulk asset uploads)
 			for (const one of values) {
 				const pieceValue = await makePieceValue(
-					itemField,
+					itemField as PieceFrontmatterSchemaField,
 					one as number | string | boolean | Readable
 				)
 

@@ -1,10 +1,28 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import * as frontmatter from './frontmatter.js'
-import { makeSchema, MockSchemaProperty } from '../Piece.fixtures.js'
+import { makeSchema, MockSchemaProperty, makeNamelessField } from '../Piece.fixtures.js'
 
 describe('pieces/utils/frontmatter.ts', () => {
 	afterEach(() => {
 		vi.resetAllMocks()
+	})
+
+	test('initializePieceFrontMatterFromFields skips nameless fields', () => {
+		const field = makeNamelessField()
+		const result = frontmatter.initializePieceFrontMatterFromFields([field])
+		expect(result).toEqual({})
+	})
+
+	test('initializePieceFrontMatterFromFields minimal nameless subfields', () => {
+		const field = {
+			name: 'obj',
+			type: 'object' as const,
+			properties: {
+				'': { type: 'string' as const }
+			}
+		}
+		const result = frontmatter.initializePieceFrontMatterFromFields([field], [], true)
+		expect(result).toEqual({})
 	})
 
 	describe('getPieceFrontmatterSchemaFields', () => {
