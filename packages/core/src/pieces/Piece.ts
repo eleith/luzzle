@@ -291,13 +291,13 @@ class Piece<F extends PieceFrontmatter> {
 		markdown: PieceMarkdown<F>,
 		fields: string[]
 	): Promise<PieceMarkdown<Omit<F, keyof F>>> {
-		let updatedMarkdown = markdown as unknown as PieceMarkdown<Omit<F, keyof F>>
+		let updatedMarkdown = markdown as PieceMarkdown<Omit<F, keyof F>>
 
 		for (const field of fields) {
 			updatedMarkdown = (await this.removeField(
-				updatedMarkdown as unknown as PieceMarkdown<F>,
+				updatedMarkdown as PieceMarkdown<F>,
 				field
-			)) as unknown as PieceMarkdown<Omit<F, keyof F>>
+			)) as PieceMarkdown<Omit<F, keyof F>>
 		}
 
 		return updatedMarkdown
