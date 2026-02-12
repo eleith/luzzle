@@ -2,10 +2,9 @@ import {
 	PieceFrontmatter,
 	PieceFrontMatterValue,
 	PieceFrontmatterSchemaField,
-	PieceFrontmatterProperty,
 } from './frontmatter.js'
 
-export function get(obj: PieceFrontmatter, path: string): PieceFrontMatterValue | undefined {
+export function getFrontmatterValue(obj: PieceFrontmatter, path: string): PieceFrontMatterValue | undefined {
 	const parts = path.split('.')
 	let current: unknown = obj
 
@@ -19,7 +18,7 @@ export function get(obj: PieceFrontmatter, path: string): PieceFrontMatterValue 
 	return current as PieceFrontMatterValue
 }
 
-export function set(obj: PieceFrontmatter, path: string, value: PieceFrontMatterValue): void {
+export function setFrontmatterValue(obj: PieceFrontmatter, path: string, value: PieceFrontMatterValue): void {
 	const parts = path.split('.')
 	const lastPart = parts.pop()!
 	let current: Record<string, unknown> = obj as Record<string, unknown>
@@ -39,7 +38,7 @@ export function set(obj: PieceFrontmatter, path: string, value: PieceFrontMatter
 	}
 }
 
-export function unset(obj: PieceFrontmatter, path: string): void {
+export function unsetFrontmatterValue(obj: PieceFrontmatter, path: string): void {
 	const parts = path.split('.')
 	const lastPart = parts.pop()!
 	let current: unknown = obj
@@ -65,7 +64,7 @@ export function unset(obj: PieceFrontmatter, path: string): void {
 	}
 }
 
-export function findField(
+export function findFrontmatterField(
 	fields: PieceFrontmatterSchemaField[],
 	path: string
 ): PieceFrontmatterSchemaField | undefined {
@@ -75,10 +74,10 @@ export function findField(
 
 	for (let i = 0; i < parts.length; i++) {
 		const part = parts[i]
-		const isIndex = !isNaN(parseInt(part, 10))
 
-		if (isIndex) {
-			if (!result || result.type !== 'array') {
+		if (result?.type === 'array') {
+			const index = parseInt(part, 10)
+			if (isNaN(index)) {
 				return undefined
 			}
 			result = { ...result.items, name: part }
@@ -86,24 +85,24 @@ export function findField(
 			result = currentFields.find((f) => f.name === part)
 		}
 
-		if (!result || i === parts.length - 1) {
+		if (!result) {
+			return undefined
+		}
+
+		if (i === parts.length - 1) {
 			return result
 		}
 
 		if (result.type === 'object') {
 			const props = result.properties
-			currentFields = Object.keys(props).map(
-				(name) => ({ ...props[name], name })
-			)
+			currentFields = Object.keys(props).map((name) => ({ ...props[name], name }))
 		} else if (result.type === 'array') {
 			const nextPart = parts[i + 1]
-			const nextIsIndex = !isNaN(parseInt(nextPart, 10))
+			const nextIsIndex = nextPart !== undefined && !isNaN(parseInt(nextPart, 10))
 
 			if (!nextIsIndex && result.items.type === 'object') {
-				const props = (result.items as PieceFrontmatterProperty & { type: 'object' }).properties
-				currentFields = Object.keys(props).map(
-					(name) => ({ ...props[name], name })
-				)
+				const props = result.items.properties
+				currentFields = Object.keys(props).map((name) => ({ ...props[name], name }))
 			} else {
 				currentFields = []
 			}

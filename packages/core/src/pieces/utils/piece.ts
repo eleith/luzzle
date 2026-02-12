@@ -121,7 +121,7 @@ async function makePieceAttachment(
 	const random = randomBytes(4).toString('hex')
 	const baseName = path.basename(file).replace(/\.[^.]+$/, '')
 	const parts = [baseName, random]
-	const fieldName = field.name || 'unknown'
+	const fieldName = field.name
 	const attachDir = path.join(ASSETS_DIRECTORY, fileDir, fieldName)
 	const exists = await storage.exists(attachDir)
 

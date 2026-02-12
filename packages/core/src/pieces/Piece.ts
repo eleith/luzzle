@@ -12,7 +12,7 @@ import {
 	PieceFrontmatterSchemaField,
 	PieceFrontMatterValue,
 } from './utils/frontmatter.js'
-import * as paths from './utils/frontmatter.path.js'
+import { findFrontmatterField, setFrontmatterValue, unsetFrontmatterValue, getFrontmatterValue } from './utils/frontmatter.path.js'
 import LuzzleStorage from '../storage/abstract.js'
 import { makePieceMarkdown, makePieceMarkdownString, PieceMarkdown } from './utils/markdown.js'
 import { calculateHashFromFile, makePieceAttachment, makePieceValue } from './utils/piece.js'
@@ -292,13 +292,13 @@ class Piece<F extends PieceFrontmatter> {
 		markdown: PieceMarkdown<F>,
 		fields: string[]
 	): Promise<PieceMarkdown<Omit<F, keyof F>>> {
-		let updatedMarkdown = markdown as PieceMarkdown<Omit<F, keyof F>>
+		let updatedMarkdown = markdown as unknown as PieceMarkdown<Omit<F, keyof F>>
 
 		for (const field of fields) {
 			updatedMarkdown = (await this.removeField(
-				updatedMarkdown as PieceMarkdown<F>,
+				updatedMarkdown as unknown as PieceMarkdown<F>,
 				field
-			)) as PieceMarkdown<Omit<F, keyof F>>
+			)) as unknown as PieceMarkdown<Omit<F, keyof F>>
 		}
 
 		return updatedMarkdown
@@ -309,7 +309,7 @@ class Piece<F extends PieceFrontmatter> {
 		fieldPath: string,
 		value: unknown
 	): Promise<PieceMarkdown<F>> {
-		const pieceField = paths.findField(this.fields, fieldPath)
+		const pieceField = findFrontmatterField(this.fields, fieldPath)
 
 		if (!pieceField) {
 			throw new Error(`${fieldPath} is not a field in ${this._pieceName} ${markdown.filePath}`)
@@ -339,7 +339,7 @@ class Piece<F extends PieceFrontmatter> {
 					)
 					: pieceValue
 
-				paths.set(updatedFrontmatter, fieldPath, val as PieceFrontMatterValue)
+				setFrontmatterValue(updatedFrontmatter, fieldPath, val as PieceFrontMatterValue)
 			}
 		} catch (e) {
 			const error = e as Error
@@ -355,7 +355,7 @@ class Piece<F extends PieceFrontmatter> {
 		fieldPath: string,
 		value?: number | string | boolean
 	): Promise<PieceMarkdown<F>> {
-		const pieceField = paths.findField(this.fields, fieldPath)
+		const pieceField = findFrontmatterField(this.fields, fieldPath)
 
 		if (!pieceField) {
 			throw new Error(`${fieldPath} is not a field in ${this._pieceName} ${markdown.filePath}`)
@@ -368,20 +368,20 @@ class Piece<F extends PieceFrontmatter> {
 		const updatedFrontmatter = { ...markdown.frontmatter }
 
 		if (value === undefined) {
-			paths.unset(updatedFrontmatter, fieldPath)
+			unsetFrontmatterValue(updatedFrontmatter, fieldPath)
 		} else {
 			const pieceValue = await makePieceValue(pieceField, value)
-			const current = paths.get(updatedFrontmatter, fieldPath)
+			const current = getFrontmatterValue(updatedFrontmatter, fieldPath)
 
 			if (Array.isArray(current) && !(pieceValue instanceof Readable)) {
 				const index = current.indexOf(pieceValue)
 				if (index !== -1) {
-					paths.unset(updatedFrontmatter, `${fieldPath}.${index}`)
+					unsetFrontmatterValue(updatedFrontmatter, `${fieldPath}.${index}`)
 				} else {
 					return markdown
 				}
 			} else if (current === pieceValue) {
-				paths.unset(updatedFrontmatter, fieldPath)
+				unsetFrontmatterValue(updatedFrontmatter, fieldPath)
 			}
 		}
 

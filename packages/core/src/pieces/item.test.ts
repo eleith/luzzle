@@ -272,4 +272,12 @@ describe('src/pieces/item.ts', () => {
 
 		expect(getErrors[0]).toContain('/title is required')
 	})
+
+	test('getValidatePieceItemErrors with no errors', () => {
+		const errors = undefined
+		const validator = { errors } as unknown as ValidateFunction<PieceFrontmatter>
+		const getErrors = database.getValidatePieceItemErrors(validator)
+
+		expect(getErrors).toStrictEqual([])
+	})
 })

@@ -11,8 +11,14 @@ describe('pieces/utils/frontmatter.ts', () => {
 		test('handles basic scalar fields', () => {
 			const schema = makeSchema({
 				field: { type: 'string' },
-				field2: { type: 'string', nullable: true, format: 'date', pattern: 'pattern' } as unknown as MockSchemaProperty,
+				field2: {
+					type: 'string',
+					nullable: true,
+					format: 'date',
+					pattern: 'pattern',
+				} as unknown as MockSchemaProperty,
 			})
+			schema.required = undefined
 			const fields = frontmatter.getPieceFrontmatterSchemaFields(schema)
 
 			expect(fields).toContainEqual({ name: 'field', type: 'string', nullable: true })
@@ -29,15 +35,18 @@ describe('pieces/utils/frontmatter.ts', () => {
 			const schema = makeSchema({
 				requiredField: { type: 'string' },
 				optionalField: { type: 'string', nullable: true },
+				defaultOptional: { type: 'string' },
 			})
 			schema.required = ['requiredField']
 			const fields = frontmatter.getPieceFrontmatterSchemaFields(schema)
 
 			const requiredField = fields.find((f) => f.name === 'requiredField')
 			const optionalField = fields.find((f) => f.name === 'optionalField')
+			const defaultOptional = fields.find((f) => f.name === 'defaultOptional')
 
 			expect(optionalField?.nullable).toBe(true)
 			expect(requiredField?.nullable).toBe(false)
+			expect(defaultOptional?.nullable).toBe(true)
 		})
 	})
 
@@ -71,6 +80,21 @@ describe('pieces/utils/frontmatter.ts', () => {
 			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('val', prop)).toBe('val')
 		})
 
+		test('handles null property in object', () => {
+			const prop: frontmatter.PieceFrontmatterProperty = {
+				type: 'object',
+				properties: {
+					field: { type: 'string' },
+				},
+			}
+			const value = { field: null }
+			const result = frontmatter.pieceFrontmatterValueToDatabaseValue(value, prop) as Record<
+				string,
+				unknown
+			>
+			expect(result.field).toBe(null)
+		})
+
 		test('converts comma-separated format', () => {
 			const prop: frontmatter.PieceFrontmatterProperty = {
 				type: 'string',
@@ -95,7 +119,10 @@ describe('pieces/utils/frontmatter.ts', () => {
 			const prop: frontmatter.PieceFrontmatterProperty = {
 				type: 'object',
 				properties: {
-					date: { type: 'string', format: 'date' } as unknown as frontmatter.PieceFrontmatterProperty,
+					date: {
+						type: 'string',
+						format: 'date',
+					} as unknown as frontmatter.PieceFrontmatterProperty,
 				},
 			}
 			const value = { date: '2023-01-01', extra: 'keep-me' }
@@ -119,6 +146,8 @@ describe('pieces/utils/frontmatter.ts', () => {
 			).toBeTypeOf('string')
 
 			expect(frontmatter.databaseValueToPieceFrontmatterValue(1, { type: 'boolean' })).toBe(true)
+			expect(frontmatter.databaseValueToPieceFrontmatterValue(0, { type: 'boolean' })).toBe(false)
+
 		})
 
 		test('restores integers', () => {
@@ -144,11 +173,32 @@ describe('pieces/utils/frontmatter.ts', () => {
 			expect(frontmatter.databaseValueToPieceFrontmatterValue(value, prop)).toEqual(['a', 'b'])
 		})
 
+		test('restores arrays recursively', () => {
+			const prop: frontmatter.PieceFrontmatterProperty = {
+				type: 'array',
+				items: {
+					type: 'object',
+					properties: {
+						date: {
+							type: 'string',
+							format: 'date',
+						} as unknown as frontmatter.PieceFrontmatterProperty,
+					},
+				},
+			}
+			const value = [{ date: 1672531200000 }]
+			const result = frontmatter.databaseValueToPieceFrontmatterValue(value, prop) as unknown[]
+			expect(typeof (result[0] as Record<string, unknown>).date).toBe('string')
+		})
+
 		test('restores objects recursively', () => {
 			const prop: frontmatter.PieceFrontmatterProperty = {
 				type: 'object',
 				properties: {
-					date: { type: 'string', format: 'date' } as unknown as frontmatter.PieceFrontmatterProperty,
+					date: {
+						type: 'string',
+						format: 'date',
+					} as unknown as frontmatter.PieceFrontmatterProperty,
 				},
 			}
 			const value = { date: 1672531200000, extra: 'prop' }
@@ -184,9 +234,38 @@ describe('pieces/utils/frontmatter.ts', () => {
 			const prop = { type: 'unknown' } as unknown as frontmatter.PieceFrontmatterProperty
 			expect(frontmatter.databaseValueToPieceFrontmatterValue('val', prop)).toBe('val')
 		})
+
+		test('handles null property in objects', () => {
+			const prop: frontmatter.PieceFrontmatterProperty = {
+				type: 'object',
+				properties: {
+					field: { type: 'string' },
+				},
+			}
+			const value = { field: null }
+			const result = frontmatter.databaseValueToPieceFrontmatterValue(value, prop) as Record<
+				string,
+				unknown
+			>
+			expect(result.field).toBe(null)
+		})
 	})
 
 	describe('initializePieceFrontMatter', () => {
+		test('initializes empty required object', () => {
+			const property: frontmatter.PieceFrontmatterProperty = {
+				type: 'object',
+				properties: {},
+			}
+			const result = frontmatter.initializePieceFrontMatterFromProperties(
+				{
+					obj: property,
+				},
+				['obj'],
+				true
+			)
+			expect(result).toEqual({ obj: {} })
+		})
 		test('initializes nested objects', () => {
 			const schema = {
 				type: 'object',
@@ -196,6 +275,7 @@ describe('pieces/utils/frontmatter.ts', () => {
 						type: 'object',
 						properties: {
 							author: { type: 'string', examples: ['Author'] },
+							tags: { type: 'array', items: { type: 'string', examples: ['b', 'a'] } }
 						},
 						required: ['author'],
 					},
@@ -206,7 +286,7 @@ describe('pieces/utils/frontmatter.ts', () => {
 			const front = frontmatter.initializePieceFrontMatter(schema)
 			expect(front).toEqual({
 				title: 'title',
-				metadata: { author: 'Author' },
+				metadata: { author: 'Author', tags: ['b'] },
 			})
 		})
 
