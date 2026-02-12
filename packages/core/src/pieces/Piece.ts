@@ -12,7 +12,12 @@ import {
 	PieceFrontmatterSchemaField,
 	PieceFrontMatterValue,
 } from './utils/frontmatter.js'
-import { findFrontmatterField, setFrontmatterValue, unsetFrontmatterValue, getFrontmatterValue } from './utils/frontmatter.path.js'
+import {
+	findFrontmatterField,
+	setFrontmatterValue,
+	unsetFrontmatterValue,
+	getFrontmatterValue,
+} from './utils/frontmatter.path.js'
 import LuzzleStorage from '../storage/abstract.js'
 import { makePieceMarkdown, makePieceMarkdownString, PieceMarkdown } from './utils/markdown.js'
 import { calculateHashFromFile, makePieceAttachment, makePieceValue } from './utils/piece.js'
@@ -275,6 +280,10 @@ class Piece<F extends PieceFrontmatter> {
 		return makePieceMarkdown(data.file_path, data.type, data.note_markdown, frontmatterJson as F)
 	}
 
+	getField(markdown: PieceMarkdown<F>, fieldPath: string): PieceFrontMatterValue | undefined {
+		return getFrontmatterValue(markdown.frontmatter, fieldPath)
+	}
+
 	async setFields(
 		markdown: PieceMarkdown<F>,
 		fields: Record<string, unknown>
@@ -316,9 +325,7 @@ class Piece<F extends PieceFrontmatter> {
 		}
 
 		const isArray = pieceField.type === 'array'
-		const itemField = isArray
-			? { ...pieceField.items, name: pieceField.name }
-			: pieceField
+		const itemField = isArray ? { ...pieceField.items, name: pieceField.name } : pieceField
 		const values = Array.isArray(value) ? value : [value]
 		const updatedFrontmatter = { ...markdown.frontmatter }
 
@@ -330,14 +337,15 @@ class Piece<F extends PieceFrontmatter> {
 					one as number | string | boolean | Readable
 				)
 
-				const val = pieceValue instanceof Readable
-					? await makePieceAttachment(
-						markdown.filePath,
-						itemField as PieceFrontmatterSchemaField,
-						pieceValue,
-						this._storage
-					)
-					: pieceValue
+				const val =
+					pieceValue instanceof Readable
+						? await makePieceAttachment(
+							markdown.filePath,
+							itemField as PieceFrontmatterSchemaField,
+							pieceValue,
+							this._storage
+						)
+						: pieceValue
 
 				setFrontmatterValue(updatedFrontmatter, fieldPath, val as PieceFrontMatterValue)
 			}

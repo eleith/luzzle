@@ -492,6 +492,21 @@ describe('pieces/Piece.ts', () => {
 		expect((result.frontmatter as Record<string, unknown>).keywords).toEqual(['a', 'b'])
 	})
 
+	test('getField', async () => {
+		const PieceType = makePieceMock()
+		const schema = makeSchema({
+			title: { type: 'string' },
+			subtitle: { type: 'string', nullable: true }
+		})
+		const piece = new PieceType('table', makeStorage(), schema)
+		const markdown = makeMarkdownSample({ frontmatter: { title: 'old', subtitle: 'old' } })
+		
+		mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
+
+		const field = piece.getField(markdown, 'subtitle')
+		expect(field).toBe('old')
+	})
+
 	test('setFields updates multiple fields', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
