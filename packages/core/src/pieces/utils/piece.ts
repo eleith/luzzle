@@ -6,7 +6,7 @@ import { pipeline } from 'stream/promises'
 import path from 'path'
 import { fileTypeFromBuffer } from 'file-type'
 import got, { Request } from 'got'
-import { PieceFrontmatterSchemaField } from './frontmatter.js'
+import { PieceFrontmatterSchemaField, PieceFrontMatterValue } from './frontmatter.js'
 import LuzzleStorage from '../../storage/abstract.js'
 import { ASSETS_DIRECTORY } from '../assets.js'
 
@@ -152,7 +152,7 @@ async function makePieceAttachment(
 
 async function makePieceValue(
 	field: PieceFrontmatterSchemaField,
-	value: number | string | boolean | Readable
+	value: PieceFrontMatterValue | Readable
 ) {
 	const isArray = field.type === 'array'
 	const format = isArray ? field.items.format : field.format
@@ -175,7 +175,7 @@ async function makePieceValue(
 		return parseInt(value as string)
 	}
 
-	return value.toString()
+	return value
 }
 
 export {

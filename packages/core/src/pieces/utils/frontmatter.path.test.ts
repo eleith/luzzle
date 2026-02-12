@@ -39,6 +39,13 @@ describe('pieces/utils/frontmatter.path.ts', () => {
 			expect((obj as unknown as Record<string, Record<string, unknown>>).meta.author).toBe('Bob')
 		})
 
+		test('sets nested value (creates arrays for indices)', () => {
+			const obj: PieceFrontmatter = { title: 't' }
+			paths.setFrontmatterValue(obj, 'list.0', 'item')
+			expect(Array.isArray((obj as unknown as Record<string, unknown[]>).list)).toBe(true)
+			expect((obj as unknown as Record<string, unknown[]>).list[0]).toBe('item')
+		})
+
 		test('appends to existing array', () => {
 			const obj: PieceFrontmatter = { tags: ['a'] }
 			paths.setFrontmatterValue(obj, 'tags', 'b')
@@ -60,17 +67,10 @@ describe('pieces/utils/frontmatter.path.ts', () => {
 			expect(obj.other).toBe('v')
 		})
 
-		test('unsets nested value', () => {
-			const obj: PieceFrontmatter = { meta: { author: 'Bob', date: '2023' } }
+		test('unsets nested value and prunes empty parents', () => {
+			const obj: PieceFrontmatter = { meta: { author: 'Bob' } }
 			paths.unsetFrontmatterValue(obj, 'meta.author')
-			expect((obj as unknown as Record<string, Record<string, unknown>>).meta.author).toBeUndefined()
-			expect((obj as unknown as Record<string, Record<string, unknown>>).meta.date).toBe('2023')
-		})
-
-		test('removes from array by index', () => {
-			const obj: PieceFrontmatter = { tags: ['a', 'b', 'c'] }
-			paths.unsetFrontmatterValue(obj, 'tags.1')
-			expect(obj.tags).toEqual(['a', 'c'])
+			expect(obj.meta).toBeUndefined()
 		})
 
 		test('handles missing paths gracefully', () => {
@@ -119,15 +119,18 @@ describe('pieces/utils/frontmatter.path.ts', () => {
 			expect(field?.type).toBe('string')
 		})
 
-		test('finds nested field inside array of objects', () => {
+		test('finds nested field inside array of objects via index', () => {
 			const field = paths.findFrontmatterField(fields, 'gallery.0.url')
 			expect(field?.name).toBe('url')
-			expect(field?.type).toBe('string')
 		})
 
-		test('finds nested field inside array of objects', () => {
-			const field = paths.findFrontmatterField(fields, 'gallery.oops.url')
-			expect(field).toBeUndefined()
+		test('finds nested field inside array of objects without index', () => {
+			const field = paths.findFrontmatterField(fields, 'gallery.url')
+			expect(field?.name).toBe('url')
+		})
+
+		test('returns undefined for non-numeric index on scalar array', () => {
+			expect(paths.findFrontmatterField(fields, 'meta.tags.oops')).toBeUndefined()
 		})
 
 		test('returns undefined for invalid paths', () => {

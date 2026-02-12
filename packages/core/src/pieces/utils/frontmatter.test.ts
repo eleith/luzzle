@@ -338,5 +338,22 @@ describe('pieces/utils/frontmatter.ts', () => {
 				'can not initialize field "title"'
 			)
 		})
+
+		test('initializes with examples when default is missing', () => {
+			const prop: Record<string, frontmatter.PieceFrontmatterProperty> = {
+				field: { type: 'string', examples: ['example'] },
+			}
+			const result = frontmatter.initializePieceFrontMatterFromProperties(prop, [], false)
+			expect(result.field).toBe('example')
+		})
+
+		test('handles schema without required property', () => {
+			const schema = {
+				type: 'object',
+				properties: { title: { type: 'string', examples: ['t'] } },
+			} as unknown as frontmatter.PieceFrontmatterSchema<frontmatter.PieceFrontmatter>
+			const result = frontmatter.initializePieceFrontMatter(schema)
+			expect(result.title).toBe('t')
+		})
 	})
 })

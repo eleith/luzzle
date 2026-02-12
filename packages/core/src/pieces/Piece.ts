@@ -327,10 +327,17 @@ class Piece<F extends PieceFrontmatter> {
 		const isArray = pieceField.type === 'array'
 		const itemField = isArray ? { ...pieceField.items, name: pieceField.name } : pieceField
 		const values = Array.isArray(value) ? value : [value]
-		const updatedFrontmatter = { ...markdown.frontmatter }
+
+		const updatedFrontmatter = structuredClone(markdown.frontmatter)
 
 		try {
-			// Process each value individually (e.g. for bulk asset uploads)
+			if (isArray) {
+				const current = getFrontmatterValue(updatedFrontmatter, fieldPath)
+				if (!Array.isArray(current)) {
+					setFrontmatterValue(updatedFrontmatter, fieldPath, [] as unknown as PieceFrontMatterValue)
+				}
+			}
+
 			for (const one of values) {
 				const pieceValue = await makePieceValue(
 					itemField as PieceFrontmatterSchemaField,
@@ -373,7 +380,7 @@ class Piece<F extends PieceFrontmatter> {
 			throw new Error(`${fieldPath} is a required field in ${this._pieceName} ${markdown.filePath}`)
 		}
 
-		const updatedFrontmatter = { ...markdown.frontmatter }
+		const updatedFrontmatter = structuredClone(markdown.frontmatter)
 
 		if (value === undefined) {
 			unsetFrontmatterValue(updatedFrontmatter, fieldPath)

@@ -541,25 +541,50 @@ describe('pieces/Piece.ts', () => {
 		expect(fm.meta.author).toBe('Bob')
 	})
 
-	test('setField appends to nested array', async () => {
-		const PieceType = makePieceMock()
-		const schema = makeSchema({
-			meta: {
-				type: 'object',
-				properties: { tags: { type: 'array', items: { type: 'string' } } }
-			}
-		})
-		const piece = new PieceType('table', makeStorage(), schema)
-		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', meta: { tags: ['a'] } } })
-
-		mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
-
-		const updated = await piece.setField(markdown, 'meta.tags', 'b')
-		const fm = updated.frontmatter as unknown as Record<string, Record<string, string[]>>
-		expect(fm.meta.tags).toEqual(['a', 'b'])
-	})
-
-	test('setField handles an array of values', async () => {
+			test('setField appends to nested array', async () => {
+				const PieceType = makePieceMock()
+				const schema = makeSchema({
+					meta: {
+						type: 'object',
+						properties: { tags: { type: 'array', items: { type: 'string' } } }
+					}
+				})
+				const piece = new PieceType('table', makeStorage(), schema)
+				const markdown = makeMarkdownSample({ frontmatter: { title: 'title', meta: { tags: ['a'] } } })
+	
+				mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
+	
+				const updated = await piece.setField(markdown, 'meta.tags', 'b')
+				const fm = updated.frontmatter as unknown as Record<string, Record<string, string[]>>
+				expect(fm.meta.tags).toEqual(['a', 'b'])
+			})
+	
+					test('setField initializes missing array field', async () => {
+	
+						const PieceType = makePieceMock()
+	
+						const schema = makeSchema({ tags: { type: 'array', items: { type: 'string' } } })
+	
+						const piece = new PieceType('table', makeStorage(), schema)
+	
+						const markdown = makeMarkdownSample({ frontmatter: { title: 't' } })
+	
+			
+	
+						mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
+	
+			
+	
+						const updated = await piece.setField(markdown, 'tags', 'tag1')
+	
+						const fm = updated.frontmatter as unknown as Record<string, string[]>
+	
+						expect(fm.tags).toEqual(['tag1'])
+	
+					})
+	
+			
+		test('setField handles an array of values', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
 			tags: { type: 'array', items: { type: 'string' } }
@@ -614,24 +639,23 @@ describe('pieces/Piece.ts', () => {
 		expect(setting).rejects.toThrow()
 	})
 
-	test('removeField unsets a nested value', async () => {
-		const PieceType = makePieceMock()
-		const schema = makeSchema({
-			meta: {
-				type: 'object',
-				nullable: true,
-				properties: { author: { type: 'string', nullable: true } }
-			}
-		})
-		const piece = new PieceType('table', makeStorage(), schema)
-		const markdown = makeMarkdownSample({ frontmatter: { title: 't', meta: { author: 'Alice' } } })
-
-		const updated = await piece.removeField(markdown, 'meta.author')
-		const fm = updated.frontmatter as unknown as Record<string, Record<string, unknown>>
-		expect(fm.meta.author).toBeUndefined()
-	})
-
-	test('removeField removes specific array index', async () => {
+			test('removeField unsets a nested value', async () => {
+				const PieceType = makePieceMock()
+				const schema = makeSchema({
+					meta: {
+						type: 'object',
+						nullable: true,
+						properties: { author: { type: 'string', nullable: true } }
+					}
+				})
+				const piece = new PieceType('table', makeStorage(), schema)
+				const markdown = makeMarkdownSample({ frontmatter: { title: 't', meta: { author: 'Alice' } } })
+	
+				const updated = await piece.removeField(markdown, 'meta.author')
+				const fm = updated.frontmatter as unknown as Record<string, Record<string, unknown>>
+				expect(fm.meta).toBeUndefined()
+			})
+		test('removeField removes specific array index', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
 			tags: { type: 'array', nullable: true, items: { type: 'string', nullable: true } }

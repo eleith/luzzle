@@ -6,7 +6,12 @@ import { PassThrough, Readable } from 'stream'
 import got, { Request } from 'got'
 import path from 'path'
 import { ASSETS_DIRECTORY } from '../assets.js'
-import { calculateHashFromFile, makePieceAttachment, makePieceValue, detectStreamFileType } from './piece.js'
+import {
+	calculateHashFromFile,
+	makePieceAttachment,
+	makePieceValue,
+	detectStreamFileType,
+} from './piece.js'
 import { PieceFrontmatterSchemaField } from './frontmatter.js'
 import { makeStorage } from '../../storage/storage.mock.js'
 import { makeMarkdownSample } from '../Piece.fixtures.js'
@@ -116,7 +121,7 @@ describe('pieces/utils/piece.ts', () => {
 		const stream = Readable.from(['hello ', 'world'])
 
 		const result = await detectStreamFileType(stream)
-		
+
 		expect(result.type).toBeUndefined()
 
 		const resultChunks = []
@@ -183,6 +188,14 @@ describe('pieces/utils/piece.ts', () => {
 		const pieceValue = await makePieceValue(field, '101')
 
 		expect(pieceValue).toEqual(101)
+	})
+
+	test('makePieceValue preserves objects', async () => {
+		const field = { name: 'meta', type: 'object' } as PieceFrontmatterSchemaField
+
+		const value = { author: 'Bob' }
+
+		expect(await makePieceValue(field, value)).toBe(value)
 	})
 
 	test('makePieceValue path asset', async () => {
@@ -326,7 +339,7 @@ describe('pieces/utils/piece.ts', () => {
 
 		const mockStream = Readable.from([fullPngBuffer]) as unknown as Request
 		mockStream.requestUrl = { pathname: 'file.jpg' } as URL
-		
+
 		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
 
 		spies.createWriteStream = vi
@@ -336,7 +349,9 @@ describe('pieces/utils/piece.ts', () => {
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
 
 		const asset = await makePieceAttachment(markdown.filePath, field, mockStream, storage)
-		expect(asset).toBe(path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`))
+		expect(asset).toBe(
+			path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`)
+		)
 	})
 
 	test('makePieceAttachment should work with field arrays (PNG)', async () => {
@@ -345,7 +360,7 @@ describe('pieces/utils/piece.ts', () => {
 			type: 'array',
 			items: {
 				format: 'asset',
-			}
+			},
 		} as PieceFrontmatterSchemaField
 		const storage = makeStorage('root')
 		const random = 'randomhex'
@@ -357,7 +372,7 @@ describe('pieces/utils/piece.ts', () => {
 		const mockStream = Readable.from([fullPngBuffer]) as unknown as Request
 
 		mockStream.requestUrl = { pathname: 'file.jpg' } as URL
-		
+
 		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
 
 		spies.createWriteStream = vi
@@ -367,7 +382,9 @@ describe('pieces/utils/piece.ts', () => {
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
 
 		const asset = await makePieceAttachment(markdown.filePath, field, mockStream, storage)
-		expect(asset).toBe(path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`))
+		expect(asset).toBe(
+			path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`)
+		)
 	})
 
 	test('makePieceAttachment should use path and path stream for file type (fallback)', async () => {
@@ -387,7 +404,7 @@ describe('pieces/utils/piece.ts', () => {
 		// Use Readable.from
 		const mockStream = Readable.from([Buffer.from('some data')]) as unknown as ReadStream
 		mockStream.path = Buffer.from('file.jpg')
-		
+
 		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
 
 		spies.createWriteStream = vi
@@ -397,7 +414,9 @@ describe('pieces/utils/piece.ts', () => {
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
 
 		const asset = await makePieceAttachment(markdown.filePath, field, mockStream, storage)
-		expect(asset).toBe(path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`))
+		expect(asset).toBe(
+			path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`)
+		)
 	})
 
 	test('makePieceAttachment should use a generic readable stream with no path or url info (fallback)', async () => {
@@ -410,13 +429,15 @@ describe('pieces/utils/piece.ts', () => {
 		const random = 'randomhex'
 		const fieldName = 'cover'
 		const fileName = 'samplePath.md' // Must have extension for fallback to work
-		const markdown = makeMarkdownSample(fileName, 'books', '', { [fieldName]: 'cover.bin' }) 
+		const markdown = makeMarkdownSample(fileName, 'books', '', { [fieldName]: 'cover.bin' })
 		const expectedFilename = `${fileName.replace('.md', '')}-${random}.md` // Fallback to markdown.filePath ext .md
 		const mocksWriteStream = new PassThrough() as unknown as WriteStream
 
 		// Use Readable.from
-		const mockGenericReadable = Readable.from([Buffer.from('some binary data')]) as unknown as Readable
-		
+		const mockGenericReadable = Readable.from([
+			Buffer.from('some binary data'),
+		]) as unknown as Readable
+
 		mocks.randomBytes.mockImplementation(() => ({ toString: () => random }) as Buffer)
 
 		spies.createWriteStream = vi
@@ -426,7 +447,9 @@ describe('pieces/utils/piece.ts', () => {
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
 
 		const asset = await makePieceAttachment(markdown.filePath, field, mockGenericReadable, storage)
-		expect(asset).toBe(path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`))
+		expect(asset).toBe(
+			path.join(ASSETS_DIRECTORY, path.dirname(markdown.filePath), fieldName, `${expectedFilename}`)
+		)
 	})
 
 	test('makePieceAttachment throws for non-asset field', async () => {
