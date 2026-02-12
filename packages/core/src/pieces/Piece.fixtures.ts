@@ -1,6 +1,6 @@
 import { ValidateFunction } from 'ajv'
 import { LuzzleSelectable } from '../database/tables/index.js'
-import { PieceFrontmatter, PieceFrontmatterSchema, PieceFrontmatterSchemaField, PieceFrontmatterSchemaFieldScalar } from './utils/frontmatter.js'
+import { PieceFrontmatter, PieceFrontmatterSchema } from './utils/frontmatter.js'
 import { PieceMarkdown } from './utils/markdown.js'
 import LuzzleStorage from '../storage/abstract.js'
 import Piece from './Piece.js'
@@ -81,12 +81,6 @@ export function makeFrontmatterSample(
 		title: 'sampleTitle',
 		...overrides,
 	}
-}
-
-export function makeNamelessField(): PieceFrontmatterSchemaField {
-	return {
-		type: 'string',
-	} as PieceFrontmatterSchemaFieldScalar
 }
 
 export function makeMarkdownSample<F extends PieceFrontmatter>(

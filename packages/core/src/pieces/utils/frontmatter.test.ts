@@ -1,35 +1,17 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import * as frontmatter from './frontmatter.js'
-import { makeSchema, MockSchemaProperty, makeNamelessField } from '../Piece.fixtures.js'
+import { makeSchema, MockSchemaProperty } from '../Piece.fixtures.js'
 
 describe('pieces/utils/frontmatter.ts', () => {
 	afterEach(() => {
 		vi.resetAllMocks()
 	})
 
-	test('initializePieceFrontMatterFromFields skips nameless fields', () => {
-		const field = makeNamelessField()
-		const result = frontmatter.initializePieceFrontMatterFromFields([field])
-		expect(result).toEqual({})
-	})
-
-	test('initializePieceFrontMatterFromFields minimal nameless subfields', () => {
-		const field = {
-			name: 'obj',
-			type: 'object' as const,
-			properties: {
-				'': { type: 'string' as const }
-			}
-		}
-		const result = frontmatter.initializePieceFrontMatterFromFields([field], [], true)
-		expect(result).toEqual({})
-	})
-
 	describe('getPieceFrontmatterSchemaFields', () => {
 		test('handles basic scalar fields', () => {
 			const schema = makeSchema({
 				field: { type: 'string' },
-				field2: { type: 'string', nullable: true, format: 'date', pattern: 'pattern' },
+				field2: { type: 'string', nullable: true, format: 'date', pattern: 'pattern' } as unknown as MockSchemaProperty,
 			})
 			const fields = frontmatter.getPieceFrontmatterSchemaFields(schema)
 
@@ -48,14 +30,14 @@ describe('pieces/utils/frontmatter.ts', () => {
 				requiredField: { type: 'string' },
 				optionalField: { type: 'string', nullable: true },
 			})
-			schema.required = 'requiredField'
+			schema.required = ['requiredField']
 			const fields = frontmatter.getPieceFrontmatterSchemaFields(schema)
 
 			const requiredField = fields.find((f) => f.name === 'requiredField')
 			const optionalField = fields.find((f) => f.name === 'optionalField')
 
 			expect(optionalField?.nullable).toBe(true)
-			expect(requiredField?.name).toBe('requiredField')
+			expect(requiredField?.nullable).toBe(false)
 		})
 	})
 
@@ -65,63 +47,59 @@ describe('pieces/utils/frontmatter.ts', () => {
 				frontmatter.pieceFrontmatterValueToDatabaseValue('2021-01-01', {
 					format: 'date',
 					type: 'string',
-					name: 'date',
-				})
+				} as unknown as frontmatter.PieceFrontmatterProperty)
 			).toBeTypeOf('number')
 
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(true, { type: 'boolean', name: 'bool' })).toBe(1)
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(false, { type: 'boolean', name: 'bool' })).toBe(0)
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(10, { type: 'integer', name: 'int' })).toBe(10)
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(true, { type: 'boolean' })).toBe(1)
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(false, { type: 'boolean' })).toBe(0)
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(10, { type: 'integer' })).toBe(10)
 		})
 
 		test('handles null and undefined', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = { type: 'string', name: 'f' }
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(null, field)).toBe(null)
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(undefined, field)).toBe(null)
+			const prop: frontmatter.PieceFrontmatterProperty = { type: 'string' }
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(null, prop)).toBe(null)
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue(undefined, prop)).toBe(null)
 		})
 
 		test('handles unknown field type', () => {
-			const field = { type: 'unknown', name: 'f' } as unknown as frontmatter.PieceFrontmatterSchemaField
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('val', field)).toBe('val')
+			const prop = { type: 'unknown' } as unknown as frontmatter.PieceFrontmatterProperty
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('val', prop)).toBe('val')
 		})
 
 		test('handles default string type', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = { type: 'string', name: 'f' }
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('val', field)).toBe('val')
+			const prop: frontmatter.PieceFrontmatterProperty = { type: 'string' }
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('val', prop)).toBe('val')
 		})
 
 		test('converts comma-separated format', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = {
+			const prop: frontmatter.PieceFrontmatterProperty = {
 				type: 'string',
-				name: 'tags',
 				format: 'comma-separated',
 			}
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('a,b', field)).toBe('["a","b"]')
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('a,b', prop)).toBe('["a","b"]')
 		})
 
 		test('converts arrays to native arrays (not CSV)', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = {
+			const prop: frontmatter.PieceFrontmatterProperty = {
 				type: 'array',
-				name: 'list',
 				items: { type: 'string' },
 			}
 			const value = ['a', 'b,withComma']
-			const result = frontmatter.pieceFrontmatterValueToDatabaseValue(value, field)
+			const result = frontmatter.pieceFrontmatterValueToDatabaseValue(value, prop)
 
 			expect(result).toEqual(['a', 'b,withComma'])
 			expect(result).not.toBe('a,b,withComma')
 		})
 
 		test('converts objects recursively', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = {
+			const prop: frontmatter.PieceFrontmatterProperty = {
 				type: 'object',
-				name: 'meta',
 				properties: {
-					date: { type: 'string', format: 'date' },
+					date: { type: 'string', format: 'date' } as unknown as frontmatter.PieceFrontmatterProperty,
 				},
 			}
 			const value = { date: '2023-01-01', extra: 'keep-me' }
-			const result = frontmatter.pieceFrontmatterValueToDatabaseValue(value, field) as Record<
+			const result = frontmatter.pieceFrontmatterValueToDatabaseValue(value, prop) as Record<
 				string,
 				unknown
 			>
@@ -137,48 +115,44 @@ describe('pieces/utils/frontmatter.ts', () => {
 				frontmatter.databaseValueToPieceFrontmatterValue(1609459200000, {
 					format: 'date',
 					type: 'string',
-					name: 'date',
-				})
+				} as unknown as frontmatter.PieceFrontmatterProperty)
 			).toBeTypeOf('string')
 
-			expect(frontmatter.databaseValueToPieceFrontmatterValue(1, { type: 'boolean', name: 'bool' })).toBe(true)
+			expect(frontmatter.databaseValueToPieceFrontmatterValue(1, { type: 'boolean' })).toBe(true)
 		})
 
 		test('restores integers', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = { type: 'integer', name: 'int' }
-			expect(frontmatter.databaseValueToPieceFrontmatterValue('10', field)).toBe(10)
+			const prop: frontmatter.PieceFrontmatterProperty = { type: 'integer' }
+			expect(frontmatter.databaseValueToPieceFrontmatterValue('10', prop)).toBe(10)
 		})
 
 		test('restores arrays from native arrays', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = {
+			const prop: frontmatter.PieceFrontmatterProperty = {
 				type: 'array',
-				name: 'list',
 				items: { type: 'string' },
 			}
 			const value = ['a', 'b,withComma']
-			expect(frontmatter.databaseValueToPieceFrontmatterValue(value, field)).toEqual(value)
+			expect(frontmatter.databaseValueToPieceFrontmatterValue(value, prop)).toEqual(value)
 		})
 
 		test('restores arrays from legacy CSV strings', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = {
+			const prop: frontmatter.PieceFrontmatterProperty = {
 				type: 'array',
-				name: 'list',
 				items: { type: 'string' },
 			}
 			const value = 'a,b'
-			expect(frontmatter.databaseValueToPieceFrontmatterValue(value, field)).toEqual(['a', 'b'])
+			expect(frontmatter.databaseValueToPieceFrontmatterValue(value, prop)).toEqual(['a', 'b'])
 		})
 
 		test('restores objects recursively', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = {
+			const prop: frontmatter.PieceFrontmatterProperty = {
 				type: 'object',
-				name: 'meta',
 				properties: {
-					date: { type: 'string', format: 'date' },
+					date: { type: 'string', format: 'date' } as unknown as frontmatter.PieceFrontmatterProperty,
 				},
 			}
 			const value = { date: 1672531200000, extra: 'prop' }
-			const result = frontmatter.databaseValueToPieceFrontmatterValue(value, field) as Record<
+			const result = frontmatter.databaseValueToPieceFrontmatterValue(value, prop) as Record<
 				string,
 				unknown
 			>
@@ -188,28 +162,27 @@ describe('pieces/utils/frontmatter.ts', () => {
 		})
 
 		test('handles null and undefined', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = { type: 'string', name: 'f' }
-			expect(frontmatter.databaseValueToPieceFrontmatterValue(null, field)).toBe(null)
-			expect(frontmatter.databaseValueToPieceFrontmatterValue(undefined, field)).toBe(null)
+			const prop: frontmatter.PieceFrontmatterProperty = { type: 'string' }
+			expect(frontmatter.databaseValueToPieceFrontmatterValue(null, prop)).toBe(null)
+			expect(frontmatter.databaseValueToPieceFrontmatterValue(undefined, prop)).toBe(null)
 		})
 
 		test('handles non-json comma-separated strings', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = {
+			const prop: frontmatter.PieceFrontmatterProperty = {
 				type: 'string',
-				name: 'f',
 				format: 'comma-separated',
 			}
-			expect(frontmatter.databaseValueToPieceFrontmatterValue('invalid', field)).toBe('invalid')
+			expect(frontmatter.databaseValueToPieceFrontmatterValue('invalid', prop)).toBe('invalid')
 		})
 
 		test('handles default string type', () => {
-			const field: frontmatter.PieceFrontmatterSchemaField = { type: 'string', name: 'f' }
-			expect(frontmatter.databaseValueToPieceFrontmatterValue('val', field)).toBe('val')
+			const prop: frontmatter.PieceFrontmatterProperty = { type: 'string' }
+			expect(frontmatter.databaseValueToPieceFrontmatterValue('val', prop)).toBe('val')
 		})
 
 		test('handles unknown field type', () => {
-			const field = { type: 'unknown', name: 'f' } as unknown as frontmatter.PieceFrontmatterSchemaField
-			expect(frontmatter.databaseValueToPieceFrontmatterValue('val', field)).toBe('val')
+			const prop = { type: 'unknown' } as unknown as frontmatter.PieceFrontmatterProperty
+			expect(frontmatter.databaseValueToPieceFrontmatterValue('val', prop)).toBe('val')
 		})
 	})
 

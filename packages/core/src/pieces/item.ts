@@ -10,37 +10,37 @@ import {
 	pieceFrontmatterValueToDatabaseValue,
 	getPieceFrontmatterSchemaFields,
 	PieceFrontmatterSchema,
-	PieceFrontmatterSchemaField,
+	PieceFrontmatterProperty,
 } from './utils/frontmatter.js'
 import { ValidateFunction } from 'ajv'
 
 /**
- * Recursively collects asset paths from frontmatter values based on schema field definitions.
+ * Recursively collects asset paths from frontmatter values based on schema property definitions.
  */
-function collectAssets(value: unknown, field: PieceFrontmatterSchemaField, assets: string[]) {
+function collectAssets(value: unknown, property: PieceFrontmatterProperty, assets: string[]) {
 	if (value === undefined || value === null) {
 		return
 	}
 
-	if (field.type === 'array') {
+	if (property.type === 'array') {
 		const values = value as unknown[]
-		if (field.items.format === 'asset') {
+		if (property.items.format === 'asset') {
 			assets.push(...(values as string[]))
-		} else if (field.items.type === 'array' || field.items.type === 'object') {
+		} else if (property.items.type === 'array' || property.items.type === 'object') {
 			values.forEach((v) =>
-				collectAssets(v, field.items, assets)
+				collectAssets(v, property.items, assets)
 			)
 		}
-	} else if (field.type === 'object') {
+	} else if (property.type === 'object') {
 		const obj = value as Record<string, unknown>
-		for (const key in field.properties) {
+		for (const key in property.properties) {
 			collectAssets(
 				obj[key],
-				field.properties[key],
+				property.properties[key],
 				assets
 			)
 		}
-	} else if (field.format === 'asset') {
+	} else if (property.format === 'asset') {
 		assets.push(value as string)
 	}
 }
@@ -56,8 +56,6 @@ function makePieceItemInsertable<F extends PieceFrontmatter>(
 
 	fields.forEach((field) => {
 		const name = field.name
-		if (!name) return
-
 		const value = markdown.frontmatter[name]
 		const jsonValue = pieceFrontmatterValueToDatabaseValue(value, field)
 
@@ -94,8 +92,6 @@ function makePieceItemUpdatable<F extends PieceFrontmatter>(
 
 	fields.forEach((field) => {
 		const name = field.name
-		if (!name) return
-
 		const value = (markdown.frontmatter as Record<string, unknown>)[name]
 		const updateValue = pieceFrontmatterValueToDatabaseValue(value, field)
 

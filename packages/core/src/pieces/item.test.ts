@@ -9,15 +9,6 @@ describe('src/pieces/item.ts', () => {
 		vi.resetAllMocks()
 	})
 
-	test('makePieceItemInsertable skips nameless fields', () => {
-		const schema = makeSchema()
-		schema.properties[''] = { type: 'string' }
-		const markdown = makeMarkdownSample()
-		const result = database.makePieceItemInsertable('piece', markdown, schema)
-		const fm = JSON.parse(result.frontmatter_json)
-		expect(fm['']).toBeUndefined()
-	})
-
 	test('makePieceItemInsertable', () => {
 		const note = 'note'
 		const piece = 'books'

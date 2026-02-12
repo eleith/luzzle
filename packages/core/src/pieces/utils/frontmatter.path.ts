@@ -2,7 +2,7 @@ import {
 	PieceFrontmatter,
 	PieceFrontMatterValue,
 	PieceFrontmatterSchemaField,
-	PieceFrontmatterSchemaFieldObject,
+	PieceFrontmatterProperty,
 } from './frontmatter.js'
 
 export function get(obj: PieceFrontmatter, path: string): PieceFrontMatterValue | undefined {
@@ -81,7 +81,7 @@ export function findField(
 			if (!result || result.type !== 'array') {
 				return undefined
 			}
-			result = { ...result.items, name: part } as PieceFrontmatterSchemaField
+			result = { ...result.items, name: part }
 		} else {
 			result = currentFields.find((f) => f.name === part)
 		}
@@ -93,16 +93,16 @@ export function findField(
 		if (result.type === 'object') {
 			const props = result.properties
 			currentFields = Object.keys(props).map(
-				(name) => ({ name, ...props[name] }) as PieceFrontmatterSchemaField
+				(name) => ({ ...props[name], name })
 			)
 		} else if (result.type === 'array') {
 			const nextPart = parts[i + 1]
 			const nextIsIndex = !isNaN(parseInt(nextPart, 10))
 
 			if (!nextIsIndex && result.items.type === 'object') {
-				const props = (result.items as PieceFrontmatterSchemaFieldObject).properties
+				const props = (result.items as PieceFrontmatterProperty & { type: 'object' }).properties
 				currentFields = Object.keys(props).map(
-					(name) => ({ name, ...props[name] }) as PieceFrontmatterSchemaField
+					(name) => ({ ...props[name], name })
 				)
 			} else {
 				currentFields = []
