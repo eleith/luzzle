@@ -10,7 +10,9 @@ import {
 	PieceFrontmatter,
 	PieceFrontmatterSchema,
 	PieceFrontmatterSchemaField,
+	PieceFrontMatterValue,
 } from './utils/frontmatter.js'
+import * as paths from './utils/frontmatter.path.js'
 import LuzzleStorage from '../storage/abstract.js'
 import { makePieceMarkdown, makePieceMarkdownString, PieceMarkdown } from './utils/markdown.js'
 import { calculateHashFromFile, makePieceAttachment, makePieceValue } from './utils/piece.js'
@@ -193,10 +195,10 @@ class Piece<F extends PieceFrontmatter> {
 
 		return stream.map(
 			async (file: string): Promise<PieceSyncResult> => {
-				const markdown = await this.get(file)
-				const dbPiece = await selectItem(db, markdown.filePath)
-
 				try {
+					const markdown = await this.get(file)
+					const dbPiece = await selectItem(db, markdown.filePath)
+
 					if (dbPiece) {
 						const readStream = this._storage.createReadStream(markdown.filePath)
 						const newHash = await calculateHashFromFile(readStream)
@@ -289,10 +291,13 @@ class Piece<F extends PieceFrontmatter> {
 		markdown: PieceMarkdown<F>,
 		fields: string[]
 	): Promise<PieceMarkdown<Omit<F, keyof F>>> {
-		let updatedMarkdown = markdown as PieceMarkdown<Omit<F, keyof F>>
+		let updatedMarkdown = markdown as unknown as PieceMarkdown<Omit<F, keyof F>>
 
 		for (const field of fields) {
-			updatedMarkdown = await this.removeField(markdown, field)
+			updatedMarkdown = (await this.removeField(
+				updatedMarkdown as unknown as PieceMarkdown<F>,
+				field
+			)) as unknown as PieceMarkdown<Omit<F, keyof F>>
 		}
 
 		return updatedMarkdown
@@ -300,28 +305,36 @@ class Piece<F extends PieceFrontmatter> {
 
 	async setField(
 		markdown: PieceMarkdown<F>,
-		field: string,
+		fieldPath: string,
 		value: unknown
 	): Promise<PieceMarkdown<F>> {
-		const pieceField = this.fields.find((f) => f.name === field)
+		const pieceField = paths.findField(this.fields, fieldPath)
 
 		if (!pieceField) {
-			throw new Error(`${field} is not a field in ${this._pieceName} ${markdown.filePath}`)
+			throw new Error(`${fieldPath} is not a field in ${this._pieceName} ${markdown.filePath}`)
 		}
 
 		const isArray = pieceField.type === 'array'
+		const itemField = isArray
+			? ({ ...pieceField.items, name: pieceField.name } as PieceFrontmatterSchemaField)
+			: pieceField
 		const values = Array.isArray(value) ? value : [value]
 		const set = []
 
 		try {
 			for (const one of values) {
-				const pieceValue = await makePieceValue(pieceField, one)
+				const pieceValue = await makePieceValue(
+					itemField,
+					one as number | string | boolean | Readable
+				)
 
 				if (pieceValue instanceof Readable) {
-					const file = markdown.filePath
-					const storage = this._storage
-					const asset = await makePieceAttachment(file, pieceField, pieceValue, storage)
-
+					const asset = await makePieceAttachment(
+						markdown.filePath,
+						itemField,
+						pieceValue,
+						this._storage
+					)
 					set.push(asset)
 				} else {
 					set.push(pieceValue)
@@ -329,48 +342,54 @@ class Piece<F extends PieceFrontmatter> {
 			}
 		} catch (e) {
 			const error = e as Error
-			console.error(`could not set field ${field}: ${error.message}`)
-			return markdown // On error, return the original markdown, preserving the old value
+			console.error(`could not set field ${fieldPath}: ${error.message}`)
+			return markdown
 		}
 
-		return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, {
-			...markdown.frontmatter,
-			[field]: isArray ? set : set.pop(),
-		})
+		const updatedFrontmatter = { ...markdown.frontmatter }
+		for (const val of set) {
+			paths.set(updatedFrontmatter, fieldPath, val as PieceFrontMatterValue)
+		}
+
+		return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, updatedFrontmatter)
 	}
 
 	async removeField(
 		markdown: PieceMarkdown<F>,
-		field: string,
+		fieldPath: string,
 		value?: number | string | boolean
 	): Promise<PieceMarkdown<F>> {
-		const pieceField = this.fields.find((f) => f.name === field)
-		const { [field]: fieldValue, ...frontmatter } = markdown.frontmatter
+		const pieceField = paths.findField(this.fields, fieldPath)
 
 		if (!pieceField) {
-			throw new Error(`${field} is not a field in ${this._pieceName} ${markdown.filePath}`)
+			throw new Error(`${fieldPath} is not a field in ${this._pieceName} ${markdown.filePath}`)
 		}
 
 		if (pieceField.nullable !== true) {
-			throw new Error(`${field} is a required field in ${this._pieceName} ${markdown.filePath}`)
+			throw new Error(`${fieldPath} is a required field in ${this._pieceName} ${markdown.filePath}`)
 		}
 
-		if (value === undefined || fieldValue === undefined) {
-			return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, frontmatter as F)
+		const updatedFrontmatter = { ...markdown.frontmatter }
+
+		if (value === undefined) {
+			paths.unset(updatedFrontmatter, fieldPath)
+		} else {
+			const pieceValue = await makePieceValue(pieceField, value)
+			const current = paths.get(updatedFrontmatter, fieldPath)
+
+			if (Array.isArray(current) && !(pieceValue instanceof Readable)) {
+				const index = current.indexOf(pieceValue)
+				if (index !== -1) {
+					paths.unset(updatedFrontmatter, `${fieldPath}.${index}`)
+				} else {
+					return markdown
+				}
+			} else if (current === pieceValue) {
+				paths.unset(updatedFrontmatter, fieldPath)
+			}
 		}
 
-		const pieceValue = await makePieceValue(pieceField, value)
-
-		if (Array.isArray(fieldValue)) {
-			return makePieceMarkdown<F>(markdown.filePath, markdown.piece, markdown.note, {
-				...frontmatter,
-				[field]: fieldValue.filter((v) => v !== pieceValue),
-			} as F)
-		} else if (fieldValue === pieceValue) {
-			return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, frontmatter as F)
-		}
-
-		return markdown
+		return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, updatedFrontmatter)
 	}
 }
 

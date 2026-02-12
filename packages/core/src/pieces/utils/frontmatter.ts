@@ -60,8 +60,9 @@ function getPieceFrontmatterSchemaFields<M extends PieceFrontmatter>(
 	schema: PieceFrontmatterSchema<M>
 ): Array<PieceFrontmatterSchemaField> {
 	return Object.keys(schema.properties).map((key) => {
-		const required = Array.isArray(schema.required) ? schema.required : []
-		const nullable = required.some((f) => f === key) || schema.properties[key]?.nullable
+		const required = Array.isArray(schema.required) ? (schema.required as string[]) : []
+		const isRequired = required.includes(key)
+		const nullable = isRequired ? false : schema.properties[key]?.nullable ?? true
 
 		return { name: key, ...schema.properties[key], nullable } as PieceFrontmatterSchemaField
 	})
@@ -180,14 +181,15 @@ function initializePieceFrontMatterFromFields(
 
 		// Handle nested objects
 		if (field.type === 'object') {
-			const subFields = Object.keys(field.properties).map(
-				(key) =>
-					({
-						name: key,
-						...field.properties[key],
-						nullable: field.required?.includes(key) || field.properties[key].nullable,
-					}) as PieceFrontmatterSchemaField
-			)
+			const subFields = Object.keys(field.properties).map((key) => {
+				const isRequired = field.required?.includes(key)
+				const nullable = isRequired ? false : field.properties[key].nullable ?? true
+				return {
+					name: key,
+					...field.properties[key],
+					nullable,
+				} as PieceFrontmatterSchemaField
+			})
 
 			const subValue = initializePieceFrontMatterFromFields(subFields, field.required || [], minimal)
 

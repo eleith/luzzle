@@ -2,6 +2,8 @@ import { JSONSchemaType, ValidateFunction } from 'ajv'
 import { PieceMarkdown } from './markdown.js'
 import { PieceFrontmatter } from './frontmatter.js'
 import { PiecesItemsSelectable } from '../../database/tables/pieces_items.schema.js'
+import { vi } from 'vitest'
+import LuzzleStorage from '../../storage/abstract.js'
 
 type PieceValidator = ValidateFunction<PieceFrontmatter>
 
@@ -35,10 +37,14 @@ export type MockSchemaProperty = {
 }
 
 export function makeSchema(
-	properties?: Record<string, MockSchemaProperty>
+	propertiesOrTitle?: string | Record<string, MockSchemaProperty>
 ): JSONSchemaType<PieceFrontmatter> {
+	const title = typeof propertiesOrTitle === 'string' ? propertiesOrTitle : 'Piece'
+	const properties = typeof propertiesOrTitle === 'object' ? propertiesOrTitle : {}
+
 	return {
 		type: 'object',
+		title,
 		properties: {
 			title: { type: 'string', examples: ['title'] },
 			keywords: { type: 'string', examples: ['keyword1'], nullable: true },
@@ -51,19 +57,63 @@ export function makeSchema(
 }
 
 export function makeMarkdownSample<F extends PieceFrontmatter>(
-	filePath = sample.file_path,
+	filePathOrOptions: string | { note?: string; frontmatter: F } = sample.file_path,
 	piece = sample.type,
-	note: string | undefined = sample.note_markdown,
-	frontmatter: F
+	note?: string,
+	frontmatter?: F
 ): PieceMarkdown<F> {
+	if (typeof filePathOrOptions === 'object') {
+		return {
+			filePath: sample.file_path,
+			piece: sample.type,
+			note: filePathOrOptions.note || sample.note_markdown,
+			frontmatter: filePathOrOptions.frontmatter,
+		}
+	}
+
 	return {
-		filePath,
+		filePath: filePathOrOptions,
 		piece,
-		note,
-		frontmatter,
+		note: note || sample.note_markdown,
+		frontmatter: frontmatter as F,
 	}
 }
 
 export function makeSample(): PiecesItemsSelectable {
 	return sample
+}
+
+export function makePieceMock() {
+	return class PieceMock {
+		constructor(
+			public type = 'books',
+			public storage = {} as LuzzleStorage,
+			public schema = makeSchema()
+		) {}
+	}
+}
+
+export function makeFrontmatterSample(): PieceFrontmatter {
+	return { title: 'sample' }
+}
+
+export function makePieceItemSelectable(data?: Partial<PiecesItemsSelectable>): PiecesItemsSelectable {
+	return { ...sample, ...data }
+}
+
+export function makeStorage(root: string): LuzzleStorage {
+	return {
+		type: 'fs',
+		root,
+		parseArgPath: vi.fn(),
+		exists: vi.fn(),
+		delete: vi.fn(),
+		readFile: vi.fn(),
+		writeFile: vi.fn(),
+		stat: vi.fn(),
+		createReadStream: vi.fn(),
+		createWriteStream: vi.fn(),
+		makeDirectory: vi.fn(),
+		getFilesIn: vi.fn(),
+	} as unknown as LuzzleStorage
 }

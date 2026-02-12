@@ -15,7 +15,7 @@ describe('pieces/utils/frontmatter.ts', () => {
 			})
 			const fields = frontmatter.getPieceFrontmatterSchemaFields(schema)
 
-			expect(fields).toContainEqual({ name: 'field', type: 'string' })
+			expect(fields).toContainEqual({ name: 'field', type: 'string', nullable: true })
 			expect(fields).toContainEqual({
 				name: 'field2',
 				type: 'string',
