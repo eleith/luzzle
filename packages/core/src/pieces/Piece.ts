@@ -320,7 +320,7 @@ class Piece<F extends PieceFrontmatter> {
 			? { ...pieceField.items, name: pieceField.name }
 			: pieceField
 		const values = Array.isArray(value) ? value : [value]
-		const set = []
+		const updatedFrontmatter = { ...markdown.frontmatter }
 
 		try {
 			// Process each value individually (e.g. for bulk asset uploads)
@@ -330,27 +330,21 @@ class Piece<F extends PieceFrontmatter> {
 					one as number | string | boolean | Readable
 				)
 
-				if (pieceValue instanceof Readable) {
-					const asset = await makePieceAttachment(
+				const val = pieceValue instanceof Readable
+					? await makePieceAttachment(
 						markdown.filePath,
-						itemField,
+						itemField as PieceFrontmatterSchemaField,
 						pieceValue,
 						this._storage
 					)
-					set.push(asset)
-				} else {
-					set.push(pieceValue)
-				}
+					: pieceValue
+
+				paths.set(updatedFrontmatter, fieldPath, val as PieceFrontMatterValue)
 			}
 		} catch (e) {
 			const error = e as Error
 			console.error(`could not set field ${fieldPath}: ${error.message}`)
 			return markdown
-		}
-
-		const updatedFrontmatter = { ...markdown.frontmatter }
-		for (const val of set) {
-			paths.set(updatedFrontmatter, fieldPath, val as PieceFrontMatterValue)
 		}
 
 		return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, updatedFrontmatter)
