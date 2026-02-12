@@ -8,6 +8,7 @@ import {
 	parsePiecePathPositionalArgv,
 } from '../utils/pieces.js'
 import yaml from 'yaml'
+import { findFrontmatterField } from '@luzzle/core'
 
 export type FieldArgv = {
 	remove?: boolean
@@ -50,24 +51,20 @@ const command: Command<FieldArgv> = {
 	run: async function(ctx, args) {
 		const { field, remove, value, append } = args
 		const { piece, markdown } = await parsePiecePathPositionalArgv(ctx, args)
-		const pieceFields = piece.fields.map((f) => f.name)
 
 		if (!field) {
 			if (remove) {
 				log.error('must provide a fieldname to remove a field')
 				return
 			} else {
-				const emptyFields = pieceFields.reduce(
-					(acc, f) => ({ ...acc, [f]: '' }),
-					{} as Record<string, string>
-				)
-				const yamlFields = yaml.stringify({ ...emptyFields, ...markdown.frontmatter })
+				const yamlFields = yaml.stringify(markdown.frontmatter)
 				console.log(yamlFields)
 				return
 			}
 		}
 
-		if (!pieceFields.includes(field)) {
+		const pieceField = findFrontmatterField(piece.fields, field)
+		if (!pieceField) {
 			log.error(`'${field}' is not a valid field for ${piece} types`)
 			return
 		}
@@ -88,23 +85,30 @@ const command: Command<FieldArgv> = {
 				}
 			}
 		} else if (value) {
-			const current = markdown.frontmatter[field]
-			const updated = await piece.setField(markdown, field, append && Array.isArray(current) ? [...current, value] : value)
+			const current = piece.getField(markdown, field)
+			const updated = await piece.setField(
+				markdown,
+				field,
+				append && Array.isArray(current) ? [...current, value] : value
+			)
 
 			if (!ctx.flags.dryRun) {
 				await piece.write(updated)
-				console.log(updated.frontmatter[field])
+				const newVal = piece.getField(updated, field)
+				console.log(typeof newVal === 'object' ? yaml.stringify(newVal) : newVal)
 			} else {
 				const validate = piece.validate(updated)
 
 				if (!validate.isValid) {
 					log.error(`field errors:\n${validate.errors}`)
 				} else {
-					console.log(updated.frontmatter[field])
+					const newVal = piece.getField(updated, field)
+					console.log(typeof newVal === 'object' ? yaml.stringify(newVal) : newVal)
 				}
 			}
 		} else {
-			console.log(markdown.frontmatter[field])
+			const val = piece.getField(markdown, field)
+			console.log(typeof val === 'object' ? yaml.stringify(val) : val)
 		}
 	},
 }

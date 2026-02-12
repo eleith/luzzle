@@ -87,7 +87,7 @@ function makePieceMock() {
 	const storage: LuzzleStorage = makeStorage('root')
 	const schema: PieceFrontmatterSchema<PieceFrontmatter> = makeSchema(name)
 
-	return new Piece(name, storage, schema)
+	return new Piece<PieceFrontmatter>(name, storage, schema)
 }
 
 function makeMarkdownSample<F extends PieceFrontmatter>(
