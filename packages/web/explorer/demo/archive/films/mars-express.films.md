@@ -24,7 +24,7 @@ people: Léa Drucker, Mathieu Amalric, Daniel Njo Lobé, Marie Bouvet, Sébastie
   Philippe Monthaye, Jérémie Périn, Laurent Sarfati, Jérémie Périn, Fred Avril,
   Mikael Robert, Arnauld Boulard, Fanny Bricoteau, Kévin Feildel, Grégory
   Vincent, Cyprien Nozières, Lila Desiles
-poster: .assets/mars-express-a7f29435.jpg
+poster: .assets/films/poster/mars-express-a7f29435.jpg
 date_viewed: 6/21/24
 ---
 

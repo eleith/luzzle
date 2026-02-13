@@ -13,6 +13,7 @@ COPY --chown=:0 scripts ./scripts
 COPY --chown=:0 tsconfig.json ./tsconfig.json
 COPY --chown=:0 svelte.config.js ./svelte.config.js
 COPY --chown=:0 vite.config.ts ./vite.config.ts
+COPY --chown=:0 eslint.config.js ./eslint.config.js
 
 RUN npm run build:lock
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install --include dev

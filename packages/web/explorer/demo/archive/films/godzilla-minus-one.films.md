@@ -59,7 +59,7 @@ people: Ryunosuke Kamiki, Minami Hamabe, Yuki Yamada, Munetaka Aoki, Hidetaka
   Masamichi Sasazaki, Naoki Sato, Naoki Sato, Keisuke Sumikawa, Atsushi
   Takahashi, Jun'ichirô Taku, Shinsuke Tomizuka, Shinpei Tsugita, Ken'ichi
   Tsujimoto, Yoshiyuki Uema, Shunji Yamaguchi, Reo Yoshida, Chikako Aho
-poster: .assets/godzilla-minus-one-40db669b.jpg
+poster: .assets/films/poster/godzilla-minus-one-40db669b.jpg
 date_viewed: 6/7/24
 ---
 

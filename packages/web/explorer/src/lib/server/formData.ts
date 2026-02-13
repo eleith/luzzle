@@ -1,84 +1,159 @@
 import { Readable } from 'stream'
 import type { ReadableStream } from 'stream/web'
-import type { Piece, PieceFrontmatter, PieceMarkdown } from '@luzzle/core'
+import {
+	type Piece,
+	type PieceFrontmatter,
+	type PieceMarkdown,
+	findFrontmatterField
+} from '@luzzle/core'
 
-async function extractFrontmatterFromFormData<T extends PieceFrontmatter>(
+type FormOperations = {
+	removes: Set<string>
+	downloads: Map<string, string[]>
+	uploads: Map<string, File[]>
+	sets: Map<string, FormDataEntryValue[]>
+	updatePaths: Set<string>
+}
+
+function parseFormData(formData: FormData): FormOperations {
+	const ops: FormOperations = {
+		removes: new Set(),
+		downloads: new Map(),
+		uploads: new Map(),
+		sets: new Map(),
+		updatePaths: new Set()
+	}
+
+	for (const [key, value] of formData.entries()) {
+		if (!key.startsWith('frontmatter.')) continue
+
+		const parts = key.split('.')
+		// parts[0] is 'frontmatter'
+		const action = parts[1] // remove, download, upload, or field name
+
+		if (action === 'remove') {
+			const path = parts.slice(2).join('.')
+			ops.removes.add(path)
+		} else if (action === 'download') {
+			const path = parts.slice(2).join('.')
+			if (typeof value === 'string' && value.length > 0) {
+				const current = ops.downloads.get(path) || []
+				current.push(value)
+				ops.downloads.set(path, current)
+				ops.updatePaths.add(path)
+			}
+		} else if (action === 'upload') {
+			const path = parts.slice(2).join('.')
+			if (value instanceof File && value.size > 0) {
+				const current = ops.uploads.get(path) || []
+				current.push(value)
+				ops.uploads.set(path, current)
+				ops.updatePaths.add(path)
+			}
+		} else {
+			// Standard Set (scalar or array item)
+			const path = parts.slice(1).join('.')
+			const current = ops.sets.get(path) || []
+			current.push(value)
+			ops.sets.set(path, current)
+			ops.updatePaths.add(path)
+		}
+	}
+
+	return ops
+}
+
+/**
+ * Applies FormData changes directly to the piece markdown using path-based operations.
+ * Implements a strict Two-Phase strategy:
+ * 1. Removals (Clear arrays/objects)
+ * 2. Updates (Set values, upload files)
+ * This ensures deterministic behavior without relying on path sorting magic.
+ */
+async function applyFormDataToPiece<T extends PieceFrontmatter>(
 	piece: Piece<T>,
-	_markdown: PieceMarkdown<T>,
+	markdown: PieceMarkdown<T>,
 	formData: FormData
-) {
-	let markdown = { ..._markdown }
+): Promise<PieceMarkdown<T>> {
+	let updatedMarkdown = markdown
+	const ops = parseFormData(formData)
 
-	for (const field of piece.fields) {
-		const key = field.name
+	// --- PHASE 1: REMOVALS ---
+	// Must happen first to clear containers (like arrays) before repopulating
+	for (const path of ops.removes) {
+		const field = findFrontmatterField(piece.fields, path)
+		if (field) {
+			updatedMarkdown = await piece.removeField(updatedMarkdown, path)
+		}
+	}
+
+	// --- PHASE 2: UPDATES ---
+	for (const path of ops.updatePaths) {
+		const field = findFrontmatterField(piece.fields, path)
+		if (!field) continue
+
 		const isArray = field.type === 'array'
 
-		if (formData.has(`frontmatter.remove.${key}`)) {
-			markdown = await piece.removeField(markdown, key)
-		}
+		// PRIORITY: Upload > Download > Set
+		// This ensures that if a user uploads a new file, it overrides the hidden "existing value" input.
 
-		if (formData.has(`frontmatter.download.${key}`)) {
-			const downloads = formData.getAll(`frontmatter.download.${key}`) as string[]
-			const urls = downloads.filter((url) => url.length)
-
+		// 2a. Handle Uploads
+		if (ops.uploads.has(path)) {
+			const files = ops.uploads.get(path)!
 			try {
-				if (urls.length) {
-					if (isArray) {
-						markdown = await piece.setField(markdown, key, urls)
-					} else {
-						markdown = await piece.setField(markdown, key, urls[0])
-					}
-				}
-			} catch (error) {
-				const message = error instanceof Error ? error.message : 'Unknown error'
-				console.error(`Error downloading file: ${urls.join(', ')} with error: ${message}`)
-			}
-		}
-
-		if (formData.has(`frontmatter.upload.${key}`)) {
-			const files = formData.getAll(`frontmatter.upload.${key}`) as File[]
-
-			try {
-				// html spec returns an empty file by design!
-				const streams = files
-					.filter((f) => f.size > 0)
-					.map((file) => Readable.fromWeb(file.stream() as ReadableStream<Buffer>))
+				const streams = files.map((file) =>
+					Readable.fromWeb(file.stream() as ReadableStream<Buffer>)
+				)
 
 				if (streams.length) {
-					if (isArray) {
-						markdown = await piece.setField(markdown, key, streams)
-					} else {
-						markdown = await piece.setField(markdown, key, streams[0])
-					}
+					const val = isArray ? streams : streams[0]
+					updatedMarkdown = await piece.setField(updatedMarkdown, path, val)
 				}
 			} catch (error) {
-				const message = error instanceof Error ? error.message : 'Unknown error'
-				console.error(
-					`Error uploading file: ${files.map((f) => f.name).join(', ')} with error: ${message}`
-				)
+				console.error(`Error uploading file for ${path}: ${error}`)
 			}
+			continue // Skip other operations for this path
 		}
 
-		if (formData.has(`frontmatter.${key}`)) {
-			const inputs = formData.getAll(`frontmatter.${key}`).filter((input) => input !== '')
-
-			if (inputs.length) {
-				if (isArray) {
-					markdown = await piece.setField(markdown, key, inputs)
-				} else {
-					markdown = await piece.setField(markdown, key, inputs[0])
+		// 2b. Handle Downloads
+		if (ops.downloads.has(path)) {
+			const urls = ops.downloads.get(path)!
+			try {
+				if (urls.length) {
+					const val = isArray ? urls : urls[0]
+					updatedMarkdown = await piece.setField(updatedMarkdown, path, val)
 				}
+			} catch (error) {
+				console.error(`Error downloading file for ${path}: ${error}`)
+			}
+			continue // Skip other operations for this path
+		}
+
+		// 2c. Handle Standard Sets
+		if (ops.sets.has(path)) {
+			const inputs = ops.sets.get(path)!
+
+			if (isArray) {
+				// Filter empty strings for bulk array updates
+				// Cast inputs to string[] is safe for text inputs
+				const validInputs = inputs.filter((i) => i !== '')
+				if (validInputs.length > 0) {
+					updatedMarkdown = await piece.setField(updatedMarkdown, path, validInputs)
+				}
+			} else {
+				// For scalars, take the last value (standard form behavior)
+				const val = inputs[inputs.length - 1]
+				updatedMarkdown = await piece.setField(updatedMarkdown, path, val)
 			}
 		}
 	}
 
-	return markdown.frontmatter
+	return updatedMarkdown
 }
 
 async function extractNoteFromFormData(formData: FormData) {
 	const note = formData.get('note') || ''
-
 	return note.toString().replace(/\r\n/g, '\n')
 }
 
-export { extractFrontmatterFromFormData, extractNoteFromFormData }
+export { applyFormDataToPiece, extractNoteFromFormData }

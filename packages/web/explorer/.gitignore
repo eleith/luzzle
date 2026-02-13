@@ -13,6 +13,8 @@ node_modules
 /src/lib/content/components/custom
 /demo/data/luzzle.sqlite
 /demo/assets
+/demo/archive/luzzle.sqlite
+nginx
 
 # OS
 .DS_Store

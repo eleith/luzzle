@@ -23,6 +23,7 @@ export const load: PageServerLoad = async (page) => {
 	const tags = await db
 		.selectFrom('web_pieces_tags')
 		.select(['slug', 'tag'])
+		.distinct()
 		.where('piece_id', '=', piece.id)
 		.execute()
 

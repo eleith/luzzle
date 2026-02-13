@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces } from '$lib/server/pieces'
-import { extractFrontmatterFromFormData, extractNoteFromFormData } from '$lib/server/formData'
+import { applyFormDataToPiece, extractNoteFromFormData } from '$lib/server/formData'
 import path from 'path'
 import { config } from '$lib/server/config'
 
@@ -66,21 +66,21 @@ export const actions = {
 		}
 
 		const piece = await pieces.getPiece(type)
-		const markdown = await piece.get(file)
+		let markdown = await piece.get(file)
 
 		if (!markdown) {
 			return error(404, `piece does not exist`)
 		}
 
 		try {
-			const frontmatter = await extractFrontmatterFromFormData(piece, markdown, formData)
+			markdown = await applyFormDataToPiece(piece, markdown, formData)
 			const note = await extractNoteFromFormData(formData)
 
-			markdown.frontmatter = frontmatter
 			markdown.note = note
 
 			await piece.write(markdown)
 		} catch (e) {
+			console.error('Edit action error:', e)
 			return fail(400, { error: { message: `failed to edit piece: ${e}` } })
 		}
 

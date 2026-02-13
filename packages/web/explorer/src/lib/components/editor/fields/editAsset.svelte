@@ -6,12 +6,19 @@
 		value: unknown
 		originalValue?: unknown
 		isModified?: boolean
+		pathPrefix?: string
 	}
 
-	let { field, value, originalValue, isModified = $bindable(false) }: Props = $props()
+	let {
+		field,
+		value,
+		originalValue,
+		isModified = $bindable(false),
+		pathPrefix = 'frontmatter'
+	}: Props = $props()
 
 	const isArray = field.type === 'array'
-	const prefix = 'frontmatter'
+	const currentPath = `${pathPrefix}.${field.name}`
 
 	let toRemove = $state<string[]>([])
 	let toUpload = $state<FileList | null>(null)
@@ -78,7 +85,7 @@
 		{#each retainAssets as asset, index (index)}
 			<div>
 				<span><a href="/editor/asset/{asset}" target="_blank">{asset}</a></span>
-				<input type="hidden" name="{prefix}.{field.name}" value={asset} />
+				<input type="hidden" name={currentPath} value={asset} />
 				<button class="button" data-variant="error" onclick={() => clickToRemove(asset)}
 					>remove</button
 				>
@@ -95,7 +102,7 @@
 					bind:this={fileInput}
 					bind:files={toUpload}
 					onchange={onChangeUpload}
-					name="{prefix}.upload.{field.name}"
+					name="frontmatter.upload.{currentPath.replace(/^frontmatter\./, '')}"
 					class={toDownload ? 'hide input' : 'input'}
 					required={!field.nullable}
 				/>
@@ -110,7 +117,7 @@
 				<input
 					type="text"
 					style="width: 100%"
-					name="{prefix}.download.{field.name}"
+					name="frontmatter.download.{currentPath.replace(/^frontmatter\./, '')}"
 					bind:value={toDownload}
 					class={toUpload?.length ? 'hide input' : 'input'}
 					placeholder="url to download"
@@ -119,7 +126,11 @@
 		</div>
 	{/if}
 	{#each toRemove as asset, index (index)}
-		<input type="hidden" name="{prefix}.remove.{field.name}" value={asset} />
+		<input
+			type="hidden"
+			name="frontmatter.remove.{currentPath.replace(/^frontmatter\./, '')}"
+			value={asset}
+		/>
 	{/each}
 </div>
 

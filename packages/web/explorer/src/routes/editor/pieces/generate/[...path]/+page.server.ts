@@ -1,7 +1,11 @@
 import { error, fail } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces, promptToPiece } from '$lib/server/pieces'
-import type { PieceFrontmatter, PieceFrontmatterSchema } from '@luzzle/core'
+import {
+	type PieceFrontmatter,
+	type PieceFrontmatterSchema,
+	findFrontmatterField
+} from '@luzzle/core'
 import path from 'path'
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -59,16 +63,14 @@ export const actions = {
 			buffers.push(Buffer.from(fileArrayBuffer))
 		}
 
-		let targetSchema = piece.schema
-
 		if (targetField && targetField !== 'all') {
-			// Create a partial schema focused on the target field
-			targetSchema = {
-				...piece.schema,
-				required: [targetField],
-				properties: {
-					[targetField]: piece.schema.properties[targetField]
-				}
+			const field = findFrontmatterField(piece.fields, targetField)
+			if (!field) {
+				return fail(400, {
+					fields: currentFields,
+					note: currentMarkdown?.note || '',
+					error: { message: `field ${targetField} does not exist in schema` }
+				})
 			}
 		}
 
@@ -82,9 +84,12 @@ ${JSON.stringify(currentFields, null, 2)}
 Target Fields to Update: ${targetField === 'all' ? 'All Fields' : targetField}
 
 User Request:
-${prompt}`
+${prompt}
+
+IMPORTANT: Please only provide values for the targeted fields. For any fields that are not being updated, please return their current values from the provided metadata.`
+
 			const generatedFields = await promptToPiece(
-				targetSchema as PieceFrontmatterSchema<PieceFrontmatter>,
+				piece.schema as PieceFrontmatterSchema<PieceFrontmatter>,
 				contextPrompt,
 				buffers
 			)

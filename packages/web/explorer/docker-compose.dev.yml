@@ -16,6 +16,7 @@ services:
       - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD:-luzzle}
       - LUZZLE_HMR_PORT=8080
       - LUZZLE_DEV=true
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     ports:
       - '5173:5173'
     volumes:
@@ -71,12 +72,15 @@ services:
       - LUZZLE_EXPLORER_HOST=luzzle-dev-web
       - LUZZLE_EXPLORER_PORT=5173
       - LUZZLE_PROXY_CACHE=off
+      - LUZZLE_PROXY_ACCESS_LOG=/tmp/logs/access.log
+      - LUZZLE_PROXY_ERROR_LOG=/tmp/logs/error.log
     ports:
       - '8080:8080'
     networks:
       - luzzle
     volumes:
-      - ./nginx:/tmp/cache
+      - ./nginx/cache:/tmp/cache
+      - ./nginx/logs:/tmp/logs
     depends_on:
       - luzzle-dev-web
 

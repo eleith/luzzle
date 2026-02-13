@@ -1,14 +1,15 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces } from '$lib/server/pieces'
-import { extractFrontmatterFromFormData, extractNoteFromFormData } from '$lib/server/formData'
+import { applyFormDataToPiece, extractNoteFromFormData } from '$lib/server/formData'
 import { initializePieceFrontMatter } from '@luzzle/core'
+import { config } from '$lib/server/config'
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const typeParam = url.searchParams.get('type')
 	const directory = params.directory || ''
 	const pieces = getPieces()
-	const types = await pieces.getTypes()
+	const types = config.pieces.map((x) => x.type)
 	const type = typeParam && types.includes(typeParam) ? typeParam : types[0]
 
 	const piece = await pieces.getPiece(type)
@@ -38,13 +39,12 @@ export const actions = {
 		}
 
 		const piece = await pieces.getPiece(type)
-		const markdown = await piece.create(directory, name as string)
+		let markdown = await piece.create(directory, name as string)
 
 		try {
-			const frontmatter = await extractFrontmatterFromFormData(piece, markdown, formData)
+			markdown = await applyFormDataToPiece(piece, markdown, formData)
 			const note = await extractNoteFromFormData(formData)
 
-			markdown.frontmatter = frontmatter
 			markdown.note = note
 
 			await piece.write(markdown)

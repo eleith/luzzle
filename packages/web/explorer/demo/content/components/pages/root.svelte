@@ -4,7 +4,7 @@
 <section>
 	<div>
 		<h1>yo</h1>
-		MAYBE this place is to share my<a href="/pieces">pieces</a>
+		MAYBE this place is to share my&nbsp;<a href="/pieces">pieces</a>
 	</div>
 </section>
 

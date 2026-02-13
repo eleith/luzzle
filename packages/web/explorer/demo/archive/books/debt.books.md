@@ -14,7 +14,6 @@ description: "For centuries, scholars have assumed that the origins of money lay
 pages: 544
 year_first_published: 2011
 isbn: "9781933633862"
-cover: .assets/debt-1af7e6b9.jpg
 keywords: Debt, History, Anthropology, Economics, Social Anthropology, Money,
   Social Control, Social Change, Barter, Hunter-gatherers, Civilization,
   Capitalism, Neoliberalism, Ancient History, Mesopotamian, Egyptian, Greek,
@@ -23,6 +22,7 @@ keywords: Debt, History, Anthropology, Economics, Social Anthropology, Money,
   Psychology, Religion, Culture, Civilization, Globalization, Globalization,
   Western Civilization, World History
 date_read: 2024-08-31
+cover: .assets/books/cover/debt.books-a41371c1.jpg
 ---
 what a blueprint for david's other book the dawn of everything
 

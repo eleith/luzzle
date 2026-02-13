@@ -2,7 +2,7 @@
 title: A Prayer for the Crown-Shy
 author: Becky Chambers
 isbn: "9781250236241"
-date_read: 2/16/2024
+date_read: 2024-02-16
 subtitle: A Monk and Robot Book
 pages: 94
 keywords: becky chambers,science
@@ -22,9 +22,10 @@ description: In a quiet corner of the universe, a small remote planet is home to
   the power of nature. 'A Prayer for the Crown-Shy' is a beautifully crafted
   tale that explores the intersection of science, spirituality, and the innate
   desire for harmony in a world filled with wonder and mystery.
-cover: .assets/a-prayer-for-the-crown-shy.jpg
+cover: .assets/books/cover/a-prayer-for-the-crown-shy.jpg
 year_first_published: 2022
 url: https://openlibrary.org/books/OL35097780M
+coauthors: ""
 ---
 reading this book was like taking a short walk in a familiar forest.
 

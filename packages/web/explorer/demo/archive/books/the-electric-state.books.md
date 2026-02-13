@@ -20,12 +20,13 @@ description: From the visionary artist behind the acclaimed "Tales from the
   fabric of reality.
 pages: 133
 year_first_published: 2018
-cover: .assets/the-electric-state-70071d00.jpg
+cover: .assets/books/cover/the-electric-state-70071d00.jpg
 keywords: sci-fi, dystopian, road trip, android, mystery, coming-of-age, robots,
   artificial intelligence, america, 1990s, alternate history
-date_read: 2024/09/24
+date_read: 2024-09-24
+coauthors: ""
+subtitle: ""
 ---
-
 i couldn't get enough. the art. the story. the questions. and yet, there was
 just enough dripped out to leave me engrossed, lost and sucker punched.
 
