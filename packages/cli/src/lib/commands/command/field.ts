@@ -14,7 +14,6 @@ export type FieldArgv = {
 	remove?: boolean
 	field?: string
 	value?: string
-	append?: boolean
 } & PieceArgv
 
 const command: Command<FieldArgv> = {
@@ -32,12 +31,6 @@ const command: Command<FieldArgv> = {
 				default: false,
 				description: 'remove the field',
 			})
-			.option('append', {
-				alias: 'a',
-				type: 'boolean',
-				default: false,
-				description: 'append to the field',
-			})
 			.positional('field', {
 				type: 'string',
 				description: 'field to set or remove',
@@ -49,7 +42,7 @@ const command: Command<FieldArgv> = {
 	},
 
 	run: async function(ctx, args) {
-		const { field, remove, value, append } = args
+		const { field, remove, value } = args
 		const { piece, markdown } = await parsePiecePathPositionalArgv(ctx, args)
 
 		if (!field) {
@@ -85,12 +78,7 @@ const command: Command<FieldArgv> = {
 				}
 			}
 		} else if (value) {
-			const current = piece.getField(markdown, field)
-			const updated = await piece.setField(
-				markdown,
-				field,
-				append && Array.isArray(current) ? [...current, value] : value
-			)
+			const updated = await piece.setField(markdown, field, value)
 
 			if (!ctx.flags.dryRun) {
 				await piece.write(updated)

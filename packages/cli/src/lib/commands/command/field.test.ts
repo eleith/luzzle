@@ -73,6 +73,8 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceFields = vi.spyOn(piece, 'fields', 'get').mockReturnValue(fields)
 		spies.pieceSetField = vi.spyOn(piece, 'setField').mockResolvedValueOnce(markdown)
 		spies.pieceWrite = vi.spyOn(piece, 'write').mockResolvedValueOnce()
+		spies.pieceGetField = vi.spyOn(piece, 'getField')
+
 		mocks.parseArgs.mockResolvedValueOnce({ file, piece, markdown })
 
 		await command.run(ctx, {
@@ -173,13 +175,12 @@ describe('lib/commands/field.ts', () => {
 		expect(spies.pieceWrite).toHaveBeenCalled()
 	})
 
-	test('run field set by append', async () => {
+	test('run field set on an array', async () => {
 		const file = 'slug'
 		const piece = makePieceMock()
-		const titles = ['old title']
-		const markdown = makeMarkdownSample({ frontmatter: { title: titles } })
-		const fieldname = 'title'
-		const value = 'new title'
+		const markdown = makeMarkdownSample()
+		const fieldname = 'tags'
+		const value = 'one'
 		const fields = [
 			{ name: fieldname, type: 'array', items: { type: 'string' } },
 		] as Array<PieceFrontmatterSchemaField>
@@ -193,7 +194,7 @@ describe('lib/commands/field.ts', () => {
 		spies.pieceFields = vi.spyOn(piece, 'fields', 'get').mockReturnValue(fields)
 		spies.pieceSetField = vi
 			.spyOn(piece, 'setField')
-			.mockResolvedValueOnce({ ...markdown, frontmatter: { title: [...titles, value] } })
+			.mockResolvedValueOnce({ ...markdown, frontmatter: { tags: [value] } })
 		spies.pieceWrite = vi.spyOn(piece, 'write').mockResolvedValueOnce()
 		mocks.parseArgs.mockResolvedValueOnce({ file, piece, markdown })
 
@@ -201,10 +202,9 @@ describe('lib/commands/field.ts', () => {
 			piece: file,
 			field: fieldname,
 			value,
-			append: true,
 		} as Arguments<FieldArgv>)
 
-		expect(spies.pieceSetField).toHaveBeenCalledWith(markdown, fieldname, [...titles, value])
+		expect(spies.pieceSetField).toHaveBeenCalledWith(markdown, fieldname, value)
 		expect(spies.pieceWrite).toHaveBeenCalled()
 	})
 
@@ -524,7 +524,7 @@ describe('lib/commands/field.ts', () => {
 		command.builder?.(args)
 
 		expect(spies.positional).toHaveBeenCalledTimes(2)
-		expect(spies.option).toHaveBeenCalledTimes(2)
+		expect(spies.option).toHaveBeenCalledTimes(1)
 		expect(mocks.makePositional).toHaveBeenCalledOnce()
 	})
 })
