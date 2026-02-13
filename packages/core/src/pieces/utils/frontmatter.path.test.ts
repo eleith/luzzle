@@ -57,6 +57,37 @@ describe('pieces/utils/frontmatter.path.ts', () => {
 			paths.setFrontmatterValue(obj, 'meta.author', 'Bob')
 			expect((obj as unknown as Record<string, Record<string, unknown>>).meta.author).toBe('Bob')
 		})
+
+		// New Tests for Safety Fixes
+		test('throws error when accessing property on array', () => {
+			const obj: PieceFrontmatter = { tags: ['a'] }
+			expect(() => paths.setFrontmatterValue(obj, 'tags.name', 'Bob')).toThrow(/Cannot access property 'name' on Array/)
+		})
+
+		test('throws error when creating sparse array (index > length)', () => {
+			const obj: PieceFrontmatter = { tags: ['a'] }
+			expect(() => paths.setFrontmatterValue(obj, 'tags.2', 'c')).toThrow(/Index 2 out of bounds/)
+		})
+
+		test('throws error when creating sparse array in nested path (index > length)', () => {
+			const obj: PieceFrontmatter = { authors: [{ name: 'A' }] }
+			// authors length is 1. index 2 is out of bounds.
+			expect(() => paths.setFrontmatterValue(obj, 'authors.2.name', 'C')).toThrow(/Index 2 out of bounds/)
+		})
+
+		test('allows creating next index (index == length)', () => {
+			const obj: PieceFrontmatter = { tags: ['a'] }
+			paths.setFrontmatterValue(obj, 'tags.1', 'b')
+			expect(obj.tags).toEqual(['a', 'b'])
+		})
+        
+        test('allows creating deeply nested next index', () => {
+            const obj: PieceFrontmatter = { authors: [{ name: 'A' }] }
+            // authors is length 1. Next index is 1.
+            paths.setFrontmatterValue(obj, 'authors.1.name', 'B')
+            // Should create object at index 1 with name 'B'
+             expect((obj.authors as unknown[])[1]).toEqual({ name: 'B' })
+        })
 	})
 
 	describe('unsetFrontmatterValue', () => {

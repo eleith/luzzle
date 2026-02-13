@@ -5,6 +5,12 @@ import {
 	PieceFrontmatterProperty,
 } from './frontmatter.js'
 
+function parseIndex(key: string): number | undefined {
+	if (!/^\d+$/.test(key)) return undefined
+	const n = parseInt(key, 10)
+	return Number.isSafeInteger(n) ? n : undefined
+}
+
 export function getFrontmatterValue(
 	obj: PieceFrontmatter,
 	path: string
@@ -34,25 +40,47 @@ export function setFrontmatterValue(
 	for (let i = 0; i < parts.length; i++) {
 		const part = parts[i]
 		const nextPart = i < parts.length - 1 ? parts[i + 1] : lastPart
-		const isNextIndex = !isNaN(parseInt(nextPart, 10))
+		const nextIndex = parseIndex(nextPart)
+		const isNextIndex = nextIndex !== undefined
 
-		if (
-			!(part in current) ||
-			current[part] === null ||
-			typeof current[part] !== 'object' ||
-			(isNextIndex && !Array.isArray(current[part])) ||
-			(!isNextIndex && Array.isArray(current[part]))
-		) {
+		if (Array.isArray(current[part]) && !isNextIndex) {
+			throw new Error(
+				`Invalid path '${path}': Cannot access property '${nextPart}' on Array at '${parts
+					.slice(0, i + 1)
+					.join('.')}'`
+			)
+		}
+
+		if (Array.isArray(current)) {
+			const index = parseIndex(part)
+			if (index !== undefined && index > current.length) {
+				throw new Error(
+					`Invalid path '${path}': Index ${index} out of bounds (length: ${current.length})`
+				)
+			}
+		}
+
+		const existing = current[part]
+		const exists = part in current && existing !== null && typeof existing === 'object'
+		const typeMismatch =
+			(isNextIndex && !Array.isArray(existing)) || (!isNextIndex && Array.isArray(existing))
+
+		if (!exists || typeMismatch) {
 			current[part] = isNextIndex ? [] : {}
 		}
 		current = current[part] as Record<string, unknown>
 	}
 
-	const isLastIndex = !isNaN(parseInt(lastPart, 10))
+	const lastIndex = parseIndex(lastPart)
+	const isLastIndex = lastIndex !== undefined
 
 	if (isLastIndex && Array.isArray(current)) {
-		const index = parseInt(lastPart, 10)
-		current[index] = value
+		if (lastIndex > current.length) {
+			throw new Error(
+				`Invalid path '${path}': Index ${lastIndex} out of bounds (length: ${current.length})`
+			)
+		}
+		current[lastIndex] = value
 	} else if (Array.isArray(current[lastPart]) && !Array.isArray(value)) {
 		current[lastPart].push(value)
 	} else {
