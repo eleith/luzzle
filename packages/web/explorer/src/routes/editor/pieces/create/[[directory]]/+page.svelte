@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation'
-	import FieldEdit from '$lib/components/editor/fields/edit.svelte'
 	import Button from '$lib/components/ui/Button.svelte'
 
 	let { data, form } = $props()
@@ -25,7 +24,7 @@
 	<form method="post" enctype="multipart/form-data" action="?/create">
 		<div class="piece-container">
 			{#if form?.error}
-				<div class="error" style="color:var(--color-error);">
+				<div class="error" style="color:var(--color-error); margin-bottom: var(--space-4);">
 					{form.error.message}
 				</div>
 			{/if}
@@ -54,12 +53,6 @@
 					style="width:100%;"
 				/>
 			</div>
-
-			{#each data.schema as field, index (index)}
-				<div class="field-edit">
-					<FieldEdit {field} value={data.defaults[field.name]} />
-				</div>
-			{/each}
 
 			<div class="field">note</div>
 			<div class="field-edit">

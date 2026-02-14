@@ -151,9 +151,72 @@ async function applyFormDataToPiece<T extends PieceFrontmatter>(
 	return updatedMarkdown
 }
 
+/**
+ * Applies a surgical update to a single field path using FormData.
+ * This is used by the Field Editor to ensure only the targeted field is modified.
+ */
+async function applyFieldUpdate<T extends PieceFrontmatter>(
+	piece: Piece<T>,
+	markdown: PieceMarkdown<T>,
+	formData: FormData,
+	targetPath: string
+): Promise<PieceMarkdown<T>> {
+	// We use the same FormData parser but only act on paths that match or are children of targetPath
+	const ops = parseFormData(formData)
+	let updatedMarkdown = markdown
+
+	const isTarget = (path: string) => path === targetPath || path.startsWith(`${targetPath}.`)
+
+	// Phase 1: Removals
+	for (const path of ops.removes) {
+		if (isTarget(path)) {
+			updatedMarkdown = await piece.removeField(updatedMarkdown, path)
+		}
+	}
+
+	// Phase 2: Updates
+	const relevantPaths = Array.from(ops.updatePaths).filter(isTarget)
+
+	for (const path of relevantPaths) {
+		const field = findFrontmatterField(piece.fields, path)
+		if (!field) continue
+
+		const isArray = field.type === 'array'
+
+		if (ops.uploads.has(path)) {
+			const files = ops.uploads.get(path)!
+			const streams = files.map((file) => Readable.fromWeb(file.stream() as ReadableStream<Buffer>))
+			if (streams.length) {
+				updatedMarkdown = await piece.setField(
+					updatedMarkdown,
+					path,
+					isArray ? streams : streams[0]
+				)
+			}
+		} else if (ops.downloads.has(path)) {
+			const urls = ops.downloads.get(path)!
+			if (urls.length) {
+				updatedMarkdown = await piece.setField(updatedMarkdown, path, isArray ? urls : urls[0])
+			}
+		} else if (ops.sets.has(path)) {
+			const inputs = ops.sets.get(path)!
+			if (isArray) {
+				const validInputs = inputs.filter((i) => i !== '')
+				if (validInputs.length > 0) {
+					updatedMarkdown = await piece.setField(updatedMarkdown, path, validInputs)
+				}
+			} else {
+				updatedMarkdown = await piece.setField(updatedMarkdown, path, inputs[inputs.length - 1])
+			}
+		}
+	}
+
+	return updatedMarkdown
+}
+
 async function extractNoteFromFormData(formData: FormData) {
 	const note = formData.get('note') || ''
 	return note.toString().replace(/\r\n/g, '\n')
 }
 
-export { applyFormDataToPiece, extractNoteFromFormData }
+export { applyFormDataToPiece, applyFieldUpdate, extractNoteFromFormData }

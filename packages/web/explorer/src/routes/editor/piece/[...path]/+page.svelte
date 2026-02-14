@@ -57,20 +57,35 @@
 					{#if open}
 						<div {...wrapperProps} class="dropdown-content">
 							<div {...props}>
-								{#if !isDirty}
-									<DropdownMenu.Item onSelect={() => goto(`/editor/pieces/preview/${data.file}`)}>
-										{#snippet child({ props })}
-											<div class="dropdown-item" {...props}>preview</div>
-										{/snippet}
-									</DropdownMenu.Item>
-								{/if}
+								<DropdownMenu.Item
+									disabled={isDirty}
+									onSelect={() => goto(`/editor/pieces/preview/${data.file}`)}
+								>
+									{#snippet child({ props })}
+										<div class="dropdown-item" {...props}>preview</div>
+									{/snippet}
+								</DropdownMenu.Item>
+
+								<DropdownMenu.Item
+									disabled={isDirty}
+									onSelect={() => goto(`/editor/pieces/field/${data.file}`)}
+								>
+									{#snippet child({ props })}
+										<div class="dropdown-item" {...props}>edit field</div>
+									{/snippet}
+								</DropdownMenu.Item>
+
 								{#if data.canGenerate}
-									<DropdownMenu.Item onSelect={() => goto(`/editor/pieces/generate/${data.file}`)}>
+									<DropdownMenu.Item
+										disabled={isDirty}
+										onSelect={() => goto(`/editor/pieces/generate/${data.file}`)}
+									>
 										{#snippet child({ props })}
 											<div class="dropdown-item" {...props}>generate</div>
 										{/snippet}
 									</DropdownMenu.Item>
 								{/if}
+
 								<DropdownMenu.Item onSelect={() => dialog.showModal()}>
 									{#snippet child({ props })}
 										<div class="dropdown-item destructive" {...props}>delete</div>
@@ -126,6 +141,11 @@
 	.dropdown-item:hover {
 		background-color: var(--color-surface-container-low);
 		outline: none;
+	}
+
+	.dropdown-item[data-disabled] {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	.destructive {

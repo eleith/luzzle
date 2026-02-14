@@ -3,8 +3,8 @@ import { getPieces } from '$lib/server/pieces'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ params }) => {
-	const directory = params.directory || '.'
-	const canonicalDir = path.normalize(`./${directory}`)
+	const directory = params.directory || ''
+	const canonicalDir = path.join('.', directory)
 	const parentDir = path.dirname(canonicalDir)
 	const pieces = getPieces()
 	const files = await pieces.getFilesIn(canonicalDir)
@@ -14,12 +14,12 @@ export const load: PageServerLoad = async ({ params }) => {
 		files: {
 			directories: files.directories,
 			pieces: files.pieces.map((piece) => ({
-				...pieces.parseFilename(piece)
+				...pieces.parseFilename(path.join(directory, piece))
 			}))
 		},
 		directory: {
 			parent: parentDir,
-			current: canonicalDir
+			current: directory || '.'
 		}
 	}
 }

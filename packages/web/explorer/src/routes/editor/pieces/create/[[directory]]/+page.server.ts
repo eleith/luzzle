@@ -1,27 +1,19 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces } from '$lib/server/pieces'
-import { applyFormDataToPiece, extractNoteFromFormData } from '$lib/server/formData'
-import { initializePieceFrontMatter } from '@luzzle/core'
+import { extractNoteFromFormData } from '$lib/server/formData'
 import { config } from '$lib/server/config'
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const typeParam = url.searchParams.get('type')
 	const directory = params.directory || ''
-	const pieces = getPieces()
 	const types = config.pieces.map((x) => x.type)
 	const type = typeParam && types.includes(typeParam) ? typeParam : types[0]
-
-	const piece = await pieces.getPiece(type)
-	const defaults = initializePieceFrontMatter(piece.schema, true)
 
 	return {
 		types,
 		type,
-		directory,
-		mode: 'create',
-		schema: piece.fields,
-		defaults
+		directory
 	}
 }
 
@@ -32,23 +24,29 @@ export const actions = {
 		const name = formData.get('name')?.toString()
 		const type = formData.get('type')?.toString()
 		const directory = event.params.directory || ''
+		const note = await extractNoteFromFormData(formData)
 		const types = await pieces.getTypes()
 
 		if (!type || !types.includes(type)) {
 			return error(404, `piece type does not exist`)
 		}
 
+		if (!name) {
+			return fail(400, { error: { message: 'filename is required' } })
+		}
+
 		const piece = await pieces.getPiece(type)
-		let markdown = await piece.create(directory, name as string)
+		let markdown
 
 		try {
-			markdown = await applyFormDataToPiece(piece, markdown, formData)
-			const note = await extractNoteFromFormData(formData)
+			markdown = await piece.create(directory, name)
 
 			markdown.note = note
-
+			// Note: piece.create already initializes required frontmatter via initializePieceFrontMatter.
+			// We just save the piece with the note.
 			await piece.write(markdown)
 		} catch (e) {
+			console.error('Piece creation error:', e)
 			return fail(400, { error: { message: `failed to create piece: ${e}` } })
 		}
 
