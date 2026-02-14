@@ -4,9 +4,13 @@ import { getPieces, promptToPiece } from '$lib/server/pieces'
 import {
 	type PieceFrontmatter,
 	type PieceFrontmatterSchema,
-	findFrontmatterField
+	findFrontmatterField,
+	makePieceMarkdown,
+	makePieceMarkdownString
 } from '@luzzle/core'
 import path from 'path'
+import { extractEditorTheme } from '$lib/server/shiki'
+import { config } from '$lib/server/config'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -25,12 +29,18 @@ export const load: PageServerLoad = async ({ params }) => {
 		return error(404, `piece does not exist`)
 	}
 
+	const editorThemes = {
+		light: await extractEditorTheme(config.theme.markdown.code.light, 'light'),
+		dark: await extractEditorTheme(config.theme.markdown.code.dark, 'dark')
+	}
+
 	return {
 		type: pieceMarkdown.piece,
 		fields: pieceMarkdown.frontmatter,
 		schema: piece.fields,
 		file: pieceMarkdown.filePath,
-		directory
+		directory,
+		editorThemes
 	}
 }
 
@@ -97,16 +107,22 @@ IMPORTANT: Please only provide values for the targeted fields. For any fields th
 			// Merge: start with current fields, overwrite with generated
 			const mergedFields = { ...currentFields, ...generatedFields }
 
+			// Create temporary markdown object to generate string
+			const mergedMarkdown = makePieceMarkdown(file, type, currentMarkdown.note, mergedFields)
+			const mergedContent = makePieceMarkdownString(mergedMarkdown)
+
 			return {
 				fields: mergedFields,
 				note: currentMarkdown?.note || '',
+				mergedContent,
 				error: undefined
 			}
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e)
 			return fail(500, {
-				fields: currentFields, // Return current fields on error so we don't wipe form
+				fields: currentFields,
 				note: currentMarkdown?.note || '',
+				mergedContent: '',
 				error: { message: `Generation failed: ${message}` }
 			})
 		}

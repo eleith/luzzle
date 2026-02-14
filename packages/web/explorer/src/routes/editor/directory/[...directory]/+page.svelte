@@ -9,7 +9,7 @@
 			<p>pieces:</p>
 			<div class="list">
 				{#each files.pieces as piece (piece.slug)}
-					<a href="/editor/piece/{piece.file}">{piece.slug}</a>
+					<a href="/editor/piece/{piece.file}/source">{piece.slug}</a>
 				{/each}
 			</div>
 		</div>

@@ -75,6 +75,7 @@ export const actions = {
 			return fail(400, { error: { message: `failed to edit field: ${e}` } })
 		}
 
-		redirect(303, `/editor/piece/${file}`)
+		const returnTo = event.url.searchParams.get('returnTo')
+		redirect(303, returnTo || `/editor/piece/${file}`)
 	}
 } satisfies Actions

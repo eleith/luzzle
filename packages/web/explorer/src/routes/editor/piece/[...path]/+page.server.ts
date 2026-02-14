@@ -4,6 +4,7 @@ import { getPieces } from '$lib/server/pieces'
 import { applyFormDataToPiece, extractNoteFromFormData } from '$lib/server/formData'
 import path from 'path'
 import { config } from '$lib/server/config'
+import { getPieceFrontmatterPaths } from '@luzzle/core'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -22,6 +23,10 @@ export const load: PageServerLoad = async ({ params }) => {
 		return error(404, `piece does not exist`)
 	}
 
+	// Detect complexity: Check if any path is deeper than 2 levels (e.g. a.b.c)
+	const paths = getPieceFrontmatterPaths(piece.schema, pieceMarkdown.frontmatter)
+	const isTooComplex = paths.some((p) => p.split('.').length > 2)
+
 	return {
 		type: pieceMarkdown.piece,
 		slug: pieces.parseFilename(file).slug,
@@ -31,7 +36,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		canGenerate: config.ai !== undefined,
 		file: pieceMarkdown.filePath,
 		mode: 'edit',
-		directory
+		directory,
+		isTooComplex
 	}
 }
 
@@ -79,11 +85,18 @@ export const actions = {
 			markdown.note = note
 
 			await piece.write(markdown)
-		} catch (e) {
-			console.error('Edit action error:', e)
-			return fail(400, { error: { message: `failed to edit piece: ${e}` } })
+		} catch (e: unknown) {
+			const error = e instanceof Error ? e : new Error(String(e))
+			console.error('Edit action error:', error)
+			return fail(400, {
+				error: { message: `failed to edit piece: ${error.message}` },
+				fields: markdown.frontmatter,
+				note: markdown.note,
+				rawContent: undefined
+			})
 		}
 
-		redirect(303, `/editor/piece/${file}`)
+		const returnTo = event.url.searchParams.get('returnTo')
+		redirect(303, returnTo || `/editor/piece/${file}`)
 	}
 } satisfies Actions

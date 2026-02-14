@@ -7,11 +7,12 @@
 	setContext<PieceMode>('piece-mode', 'preview')
 
 	const { children } = $props()
+	const backUrl = page.url.searchParams.get('returnTo') || `/editor/piece/${page.data.file}/source`
 </script>
 
 <div class="banner">
 	<div class="message">PREVIEW MODE</div>
-	<a href="/editor/piece/{page.data.file}">
+	<a href={backUrl}>
 		<Button variant="tertiary">Back to Editor</Button>
 	</a>
 </div>

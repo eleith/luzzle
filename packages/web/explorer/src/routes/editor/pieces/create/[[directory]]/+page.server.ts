@@ -50,6 +50,6 @@ export const actions = {
 			return fail(400, { error: { message: `failed to create piece: ${e}` } })
 		}
 
-		redirect(303, `/editor/piece/${markdown.filePath}`)
+		redirect(303, `/editor/piece/${markdown.filePath}/source`)
 	}
 } satisfies Actions

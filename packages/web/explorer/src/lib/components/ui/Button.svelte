@@ -5,6 +5,7 @@
 	type Props = {
 		variant?: 'primary' | 'secondary' | 'tertiary' | 'error' | 'outline'
 		type?: 'button' | 'submit' | 'reset'
+		form?: string
 		onclick?: (e: MouseEvent) => void
 		children: Snippet
 		class?: string
@@ -15,6 +16,7 @@
 	let {
 		variant = 'primary',
 		type = 'button',
+		form,
 		onclick,
 		children,
 		class: className = '',
@@ -26,6 +28,7 @@
 
 <ButtonPrimitive.Root
 	{type}
+	{form}
 	{onclick}
 	class="button {className}"
 	data-variant={variant}

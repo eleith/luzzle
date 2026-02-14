@@ -1,24 +1,28 @@
 <script lang="ts">
 	import PieceForm from '$lib/components/editor/PieceForm.svelte'
+	import PieceActions from '$lib/components/editor/PieceActions.svelte'
 	import Button from '$lib/components/ui/Button.svelte'
-	import { DropdownMenu } from 'bits-ui'
-	import DotsThreeVertical from 'virtual:icons/ph/dots-three-vertical'
 	import { goto } from '$app/navigation'
 	import type { PageProps } from './$types'
 
-	let { data }: PageProps = $props()
+	let { data, form }: PageProps = $props()
 	let dialog: HTMLDialogElement
-	let fields = $state(data.fields)
-	let note = $state(data.note || '')
-	let formDirty = $state(false)
+	let fields = $state(form?.fields || data.fields)
+	let note = $state(form?.note || data.note || '')
+	let formDirty = $state(!!form?.error)
 
 	$effect(() => {
-		fields = data.fields
-		note = data.note || ''
-		formDirty = false
+		if (form?.fields) {
+			fields = form.fields
+			note = form.note || ''
+			formDirty = true
+		} else {
+			fields = data.fields
+			note = data.note || ''
+			formDirty = false
+		}
 	})
 
-	// Simple deep comparison for dirty check
 	const isDirty = $derived(formDirty)
 </script>
 
@@ -38,7 +42,7 @@
 {#snippet buttons()}
 	<div style="display:flex; gap: var(--space-2);">
 		{#if isDirty}
-			<Button type="submit">save</Button>
+			<Button type="submit" form="piece-form">save</Button>
 		{:else}
 			<Button disabled={true}>save</Button>
 		{/if}
@@ -47,125 +51,86 @@
 		</a>
 	</div>
 
-	<DropdownMenu.Root>
-		<DropdownMenu.Trigger class="button button-variant-outline">
-			<DotsThreeVertical />
-		</DropdownMenu.Trigger>
-		<DropdownMenu.Portal>
-			<DropdownMenu.Content sideOffset={8} forceMount>
-				{#snippet child({ open, props, wrapperProps })}
-					{#if open}
-						<div {...wrapperProps} class="dropdown-content">
-							<div {...props}>
-								<DropdownMenu.Item
-									disabled={isDirty}
-									onSelect={() => goto(`/editor/pieces/preview/${data.file}`)}
-								>
-									{#snippet child({ props })}
-										<div class="dropdown-item" {...props}>preview</div>
-									{/snippet}
-								</DropdownMenu.Item>
-
-								<DropdownMenu.Item
-									disabled={isDirty}
-									onSelect={() => goto(`/editor/pieces/field/${data.file}`)}
-								>
-									{#snippet child({ props })}
-										<div class="dropdown-item" {...props}>edit field</div>
-									{/snippet}
-								</DropdownMenu.Item>
-
-								{#if data.canGenerate}
-									<DropdownMenu.Item
-										disabled={isDirty}
-										onSelect={() => goto(`/editor/pieces/generate/${data.file}`)}
-									>
-										{#snippet child({ props })}
-											<div class="dropdown-item" {...props}>generate</div>
-										{/snippet}
-									</DropdownMenu.Item>
-								{/if}
-
-								<DropdownMenu.Item onSelect={() => dialog.showModal()}>
-									{#snippet child({ props })}
-										<div class="dropdown-item destructive" {...props}>delete</div>
-									{/snippet}
-								</DropdownMenu.Item>
-							</div>
-						</div>
-					{/if}
-				{/snippet}
-			</DropdownMenu.Content>
-		</DropdownMenu.Portal>
-	</DropdownMenu.Root>
+	<PieceActions
+		file={data.file}
+		currentMode="form"
+		{isDirty}
+		canGenerate={data.canGenerate}
+		onDelete={() => dialog.showModal()}
+	/>
 {/snippet}
 
-{#key data.file}
-	<PieceForm
-		action="?/edit"
-		schema={data.schema}
-		values={fields}
-		originalValues={data.fields}
-		bind:note
-		originalNote={data.note}
-		{buttons}
-		bind:isModified={formDirty}
-	/>
-{/key}
+<div class="piece-page">
+	{#if form?.error}
+		<div class="error-banner">
+			<strong>Error:</strong>
+			{form.error.message}
+		</div>
+	{/if}
+
+	{#if data.isTooComplex}
+		<div class="warning-banner">
+			<strong>Complex Structure:</strong> This piece contains deeply nested fields that cannot be
+			edited in the simplified Form view. Please use Source Mode or the Field Editor.
+			<div style="margin-top: var(--space-2);">
+				<Button onclick={() => goto(`/editor/piece/${data.file}/source`)}>
+					Switch to Source Mode
+				</Button>
+			</div>
+		</div>
+	{:else}
+		{#key data.file}
+			<PieceForm
+				id="piece-form"
+				action="?/edit"
+				schema={data.schema}
+				values={fields}
+				originalValues={data.fields}
+				bind:note
+				originalNote={data.note}
+				{buttons}
+				bind:isModified={formDirty}
+			/>
+		{/key}
+	{/if}
+</div>
 
 <style>
-	.dropdown-content {
-		background-color: var(--color-surface-container-highest);
-		border: 1px solid var(--color-outline);
-		border-radius: var(--radius-small);
-		min-width: 160px;
-		box-shadow: var(--shadow-raised);
-		z-index: 1000;
-	}
-
-	.dropdown-item {
+	.piece-page {
+		margin: var(--space-4);
+		margin-bottom: var(--space-8);
+		margin-left: auto;
+		margin-right: auto;
+		width: 85%;
 		display: flex;
-		align-items: center;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.error-banner {
 		padding: var(--space-3);
-		cursor: pointer;
-		color: var(--color-on-surface);
-		gap: var(--space-2);
+		background-color: var(--color-error-container);
+		color: var(--color-on-error-container);
+		border: 1px solid var(--color-error);
 		border-radius: var(--radius-small);
-		width: 100%;
-		text-align: left;
-		background: none;
-		border: none;
-		text-transform: uppercase;
+		margin-bottom: var(--space-2);
 	}
 
-	.dropdown-item:hover {
-		background-color: var(--color-surface-container-low);
-		outline: none;
-	}
-
-	.dropdown-item[data-disabled] {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.destructive {
-		color: var(--color-error);
-	}
-
-	dialog {
-		position: fixed;
-		transform: translate(-50%, -50%);
-		top: 50%;
-		left: 50%;
+	.warning-banner {
+		padding: var(--space-4);
+		background-color: var(--color-surface-container-high);
 		border: 1px solid var(--color-outline);
-		background-color: var(--color-surface);
-		color: var(--color-on-surface);
-		padding: var(--space-6);
 		border-radius: var(--radius-medium);
-		box-shadow: var(--shadow-raised);
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-2);
 	}
 
-	dialog::backdrop {
-		background-color: rgba(0, 0, 0, 0.5);
+	@media screen and (min-width: 768px) {
+		.piece-page {
+			width: clamp(500px, 66.6666%, 1000px);
+		}
 	}
 </style>

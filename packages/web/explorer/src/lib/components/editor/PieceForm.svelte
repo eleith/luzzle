@@ -5,6 +5,7 @@
 	import { isFieldEqual } from '$lib/utils/comparison'
 
 	interface Props {
+		id?: string
 		action: string
 		schema: PieceFrontmatterSchemaField[]
 		values: Record<string, unknown>
@@ -16,6 +17,7 @@
 	}
 
 	let {
+		id,
 		action,
 		schema,
 		values,
@@ -38,7 +40,7 @@
 </script>
 
 <section class="edit">
-	<form method="post" enctype="multipart/form-data" {action}>
+	<form {id} method="post" enctype="multipart/form-data" {action}>
 		<div class="piece-container">
 			{#each schema as field, index (index)}
 				<div class="field-edit">

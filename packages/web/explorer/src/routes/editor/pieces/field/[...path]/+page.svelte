@@ -6,15 +6,20 @@
 	import { Select } from 'bits-ui'
 	import CaretDown from 'virtual:icons/ph/caret-down'
 	import Check from 'virtual:icons/ph/check'
+	import { page } from '$app/state'
 
 	let { data, form }: { data: PageData; form: ActionData } = $props()
 
 	let selectedPath = $state(data.targetPath || '')
 	let isModified = $state(false)
 
+	const returnTo = page.url.searchParams.get('returnTo')
+	const returnParam = returnTo ? '&returnTo=' + encodeURIComponent(returnTo) : ''
+	const backUrl = returnTo || `/editor/piece/${data.file}`
+
 	function onValueChange(value: string | string[] | undefined) {
 		if (typeof value === 'string' && value) {
-			goto(`/editor/pieces/field/${data.file}?path=${value}`)
+			goto(`/editor/pieces/field/${data.file}?path=${value}${returnParam}`)
 		}
 	}
 </script>
@@ -68,7 +73,7 @@
 
 	{#if data.targetSchema && selectedPath}
 		{#key selectedPath}
-			<form method="post" action="?path={selectedPath}" enctype="multipart/form-data">
+			<form method="post" action="?path={selectedPath}{returnParam}" enctype="multipart/form-data">
 				<div class="editor-content">
 					<Edit
 						field={data.targetSchema}
@@ -80,7 +85,7 @@
 
 					<div class="actions">
 						<Button type="submit" disabled={!isModified}>Save</Button>
-						<a href="/editor/piece/{data.file}">
+						<a href={backUrl}>
 							<Button variant="outline">Cancel</Button>
 						</a>
 					</div>
