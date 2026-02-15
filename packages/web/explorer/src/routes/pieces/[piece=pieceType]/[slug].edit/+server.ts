@@ -16,5 +16,5 @@ export const GET: RequestHandler = async (a) => {
 		})
 	}
 
-	throw redirect(302, `/editor/piece/${piece.file_path}`)
+	throw redirect(302, `/editor/piece/${piece.file_path}/source`)
 }
