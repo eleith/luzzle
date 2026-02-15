@@ -46,6 +46,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		slug,
 		type: type as WebPieces['type'],
 		id: 'preview',
+		key: 'preview',
 		file_path: pieceMarkdown.filePath,
 		title: piece.getField(pieceMarkdown, pieceConfig.fields.title) as string,
 		summary: pieceConfig.fields.summary

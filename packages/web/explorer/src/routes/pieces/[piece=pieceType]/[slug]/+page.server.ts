@@ -39,7 +39,7 @@ export const load: PageServerLoad = async (page) => {
 			title: `${piece.title} | ${config.content.text.title}`,
 			type: piece.type,
 			description: piece.summary,
-			image: `${config.url.luzzle_assets}/pieces/assets/${getOpenGraphPath(piece.type, piece.id)}`
+			image: `${config.url.luzzle_assets}/pieces/assets/${getOpenGraphPath(piece.type, piece.key)}`
 		}
 	}
 }

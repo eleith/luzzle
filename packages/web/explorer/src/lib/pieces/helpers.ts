@@ -70,7 +70,7 @@ export function getPieceHelpers(
 		return {
 			getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
 			getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif' | 'webp' | 'png') => {
-				const path = getImageAssetPath(piece.type, piece.id, asset, width, format)
+				const path = getImageAssetPath(piece.type, piece.key, asset, width, format)
 				return `${url}/pieces/assets/${path}`
 			}
 		}
@@ -79,7 +79,7 @@ export function getPieceHelpers(
 	return {
 		getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
 		getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif' | 'webp' | 'png') => {
-			const path = getImageAssetPath(piece.type, piece.id, asset, width, format)
+			const path = getImageAssetPath(piece.type, piece.key, asset, width, format)
 			return `${url}/pieces/assets/${path}`
 		}
 	}

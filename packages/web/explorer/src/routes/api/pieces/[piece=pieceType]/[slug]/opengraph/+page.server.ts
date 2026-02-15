@@ -24,7 +24,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	}
 
 	const mediaPath = piece.media
-		? getImageAssetPath(piece.type, piece.id, piece.media, 500, 'jpg')
+		? getImageAssetPath(piece.type, piece.key, piece.media, 500, 'jpg')
 		: null
 
 	let palette: PieceIconPalette | undefined
