@@ -6,6 +6,7 @@
 		"dev": "vite dev",
 		"build": "npm run sync:svelte && vite build",
 		"prebuild": "npm run build:theme && npm run sync:content",
+		"predev": "npm run build:theme && npm run sync:content",
 		"build:production": "npm run build && npm prune --omit=dev",
 		"build:lock": "npm i --package-lock-only --workspaces=false",
 		"build:theme": "luzzle-web-tools theme > src/lib/ui/styles/theme.build.css",
