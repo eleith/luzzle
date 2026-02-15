@@ -3,6 +3,7 @@ import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { generateVariantJobs } from './variants.js'
 import { Pieces, LuzzleSelectable } from '@luzzle/core'
 import {
+	generateAssetKey,
 	getAssetDir,
 	getAssetPath,
 	isImage,
@@ -17,16 +18,18 @@ async function generateVariantsForAssetField(
 	item: LuzzleSelectable<'pieces_items'>,
 	asset: string,
 	pieces: Pieces,
-	outDir: string
+	outDir: string,
+	config: Config
 ) {
 	const formats: Array<'avif' | 'jpg'> = ['avif', 'jpg']
 
 	try {
 		const widths = Object.values(ASSET_SIZES)
 		const jobs = await generateVariantJobs(item, asset, pieces, widths, formats)
+		const key = generateAssetKey(item.file_path, config.assets.salt)
 
 		const toFileJobs = jobs.map((job) => {
-			const assetPath = getImageAssetPath(item.type, item.id, asset, job.width, job.format)
+			const assetPath = getImageAssetPath(item.type, key, asset, job.width, job.format)
 			return job.sharp.toFile(`${outDir}/${assetPath}`)
 		})
 		await Promise.all(toFileJobs)
@@ -83,20 +86,21 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 			const assets = fields.flatMap((field) => frontmatter[field]).filter(Boolean) as string[]
 
 			if (assets.length) {
-				const assetDir = getAssetDir(item.type, item.id)
+				const key = generateAssetKey(item.file_path, config.assets.salt)
+				const assetDir = getAssetDir(item.type, key)
 				await mkdir(`${options.outDir}/${assetDir}`, { recursive: true })
 
 				console.log(`copying assets for ${item.file_path}`)
 
 				for (const asset of assets) {
 					try {
-						const assetPath = getAssetPath(item.type, item.id, asset)
+						const assetPath = getAssetPath(item.type, key, asset)
 						const assetBuffer = await pieces.getPieceAsset(asset)
 
 						await writeFile(`${options.outDir}/${assetPath}`, assetBuffer)
 
 						if (isImage(asset)) {
-							await generateVariantsForAssetField(item, asset, pieces, options.outDir)
+							await generateVariantsForAssetField(item, asset, pieces, options.outDir, config)
 						}
 					} catch (error) {
 						console.error(`error processing asset ${asset} for ${item.file_path}: ${error}`)

@@ -1,6 +1,11 @@
 import { type LuzzleDatabase, sql, LuzzleSelectable } from '@luzzle/core'
 import path from 'path'
-import { type WebPieces, type WebPieceTags, type Config } from '@luzzle/web.utils'
+import {
+	type WebPieces,
+	type WebPieceTags,
+	type Config,
+	generateAssetKey,
+} from '@luzzle/web.utils'
 
 function batchArray<T>(array: T[], batchSize: number): T[][] {
 	const batches: T[][] = []
@@ -43,6 +48,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.createTable('web_pieces')
 		.ifNotExists()
 		.addColumn('id', 'text', (col) => col.primaryKey().notNull())
+		.addColumn('key', 'text', (col) => col.notNull())
 		.addColumn('slug', 'text', (col) => col.notNull())
 		.addColumn('type', 'text', (col) => col.notNull())
 		.addColumn('file_path', 'text', (col) => col.notNull())
@@ -94,16 +100,19 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 async function mapPieceItemToWebPiece(
 	item: LuzzleSelectable<'pieces_items'>,
 	pieceConfig: Config['pieces'][number],
-	slug: string
+	slug: string,
+	config: Config
 ) {
 	const frontmatter = JSON.parse(item.frontmatter_json)
 	const title = frontmatter[pieceConfig.fields.title]
 	const dateConsumed = frontmatter[pieceConfig.fields.date_consumed]
+	const key = generateAssetKey(item.file_path, config.assets.salt)
 
 	return {
 		slug,
 		type: item.type as WebPieces['type'],
 		id: item.id,
+		key,
 		file_path: item.file_path,
 		title: title,
 		summary: pieceConfig.fields.summary ? frontmatter[pieceConfig.fields.summary] : undefined,
@@ -144,7 +153,7 @@ async function populateWebPieceItems(db: LuzzleDatabase, config: Config): Promis
 		if (pieceConfig) {
 			const filename = path.basename(item.file_path, '.md').split('.')[0]
 			const slug = getUniqueSlug(typeSlugs, filename, item.type)
-			const mapping = await mapPieceItemToWebPiece(item, pieceConfig, slug)
+			const mapping = await mapPieceItemToWebPiece(item, pieceConfig, slug, config)
 			values.push(mapping)
 		}
 	}

@@ -1,14 +1,16 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { generateWebSqlite } from './database.js'
 import { getDatabaseClient, sql } from '@luzzle/core'
-import { type Config } from '@luzzle/web.utils'
+import { type Config, generateAssetKey } from '@luzzle/web.utils'
 import { mockKysely } from './database.mock.js'
 
 vi.mock('@luzzle/core')
+vi.mock('@luzzle/web.utils')
 
 const mocks = {
 	getDatabaseClient: vi.mocked(getDatabaseClient),
 	sql: vi.mocked(sql),
+	generateAssetKey: vi.mocked(generateAssetKey),
 }
 
 describe('generate-web-sqlite', () => {
@@ -17,6 +19,7 @@ describe('generate-web-sqlite', () => {
 	})
 
 	test('should generate web sqlite database with no pieces', async () => {
+		mocks.generateAssetKey.mockImplementation((path) => `key-${path}`)
 		const { db, queries } = mockKysely()
 		mocks.getDatabaseClient.mockReturnValue(db)
 		mocks.sql.mockReturnValue({
@@ -31,6 +34,7 @@ describe('generate-web-sqlite', () => {
 			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
 			storage: { type: 'filesystem', config: { root: '' } },
 			ai: { provider: 'google', api_key: '' },
+			assets: { salt: 'test-salt' },
 			theme: {
 				globals: {},
 				light: {},
@@ -123,6 +127,7 @@ describe('generate-web-sqlite', () => {
 			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
 			storage: { type: 'filesystem', config: { root: '' } },
 			ai: { provider: 'google', api_key: '' },
+			assets: { salt: 'test-salt' },
 			theme: {
 				globals: {},
 				light: {},
@@ -160,6 +165,7 @@ describe('generate-web-sqlite', () => {
 				title: oneBookFrontmatter.book_title,
 				slug: 'book1',
 				date_consumed: oneBookFrontmatter.read_date,
+				key: expect.any(String),
 			}),
 			expect.objectContaining({
 				media: undefined,
@@ -167,6 +173,7 @@ describe('generate-web-sqlite', () => {
 				title: oneFilmFrontmatter.film_title,
 				slug: 'film1',
 				date_consumed: oneFilmFrontmatter.watch_date,
+				key: expect.any(String),
 			}),
 		])
 		expect(queries.insertInto).toHaveBeenCalledWith('web_pieces_tags')
@@ -223,6 +230,7 @@ describe('generate-web-sqlite', () => {
 			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
 			storage: { type: 'filesystem', config: { root: '' } },
 			ai: { provider: 'google', api_key: '' },
+			assets: { salt: 'test-salt' },
 			theme: {
 				globals: {},
 				light: {},

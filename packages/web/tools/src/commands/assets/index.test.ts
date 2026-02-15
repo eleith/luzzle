@@ -6,7 +6,13 @@ import { LuzzleSelectable, Pieces, StorageFileSystem } from '@luzzle/core'
 import { mockKysely } from '../sqlite/database.mock.js'
 import { writeFile, mkdir } from 'fs/promises'
 import { generateVariantJobs } from './variants.js'
-import { getAssetDir, getAssetPath, isImage, type Config } from '@luzzle/web.utils'
+import {
+	getAssetDir,
+	getAssetPath,
+	isImage,
+	type Config,
+	generateAssetKey,
+} from '@luzzle/web.utils'
 import generateAssets from './index.js'
 import { Sharp } from 'sharp'
 
@@ -28,6 +34,7 @@ const mocks = {
 	generateVariantJobs: vi.mocked(generateVariantJobs),
 	getAssetPath: vi.mocked(getAssetPath),
 	getAssetDir: vi.mocked(getAssetDir),
+	generateAssetKey: vi.mocked(generateAssetKey),
 	isImage: vi.mocked(isImage),
 	mkdir: vi.mocked(mkdir),
 	writeFile: vi.mocked(writeFile),
@@ -40,6 +47,7 @@ const setupDefaultMocks = (
 	const config = {
 		paths: { database: 'db.sqlite' },
 		pieces: pieces,
+		assets: { salt: 'test-salt' },
 	} as unknown as Config
 	mocks.getConfig.mockReturnValue(config)
 
@@ -48,6 +56,7 @@ const setupDefaultMocks = (
 	mocks.getDatabase.mockReturnValue(mockDb.db)
 
 	mocks.getLastRunFor.mockResolvedValue(new Date(0))
+	mocks.generateAssetKey.mockImplementation((path) => `key-${path}`)
 
 	const mockStorage = { readFileSync: vi.fn() } as unknown as StorageFileSystem
 	const mockPieces = {
@@ -91,7 +100,7 @@ describe('generateAssets', () => {
 		)
 
 		mocks.isImage.mockImplementation((asset) => asset.endsWith('.jpg'))
-		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetDir.mockImplementation((type, key) => `${type}/${key}`)
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
@@ -104,15 +113,15 @@ describe('generateAssets', () => {
 			config
 		)
 
-		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
+		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/key-book.md', { recursive: true })
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/image.jpg')
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/document.pdf')
 		expect(mocks.writeFile).toHaveBeenCalledWith(
-			'/path/to/out/books/1/image.jpg',
+			'/path/to/out/books/key-book.md/image.jpg',
 			Buffer.from('asset_content')
 		)
 		expect(mocks.writeFile).toHaveBeenCalledWith(
-			'/path/to/out/books/1/document.pdf',
+			'/path/to/out/books/key-book.md/document.pdf',
 			Buffer.from('asset_content')
 		)
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
@@ -141,7 +150,7 @@ describe('generateAssets', () => {
 		)
 
 		mocks.isImage.mockReturnValue(false)
-		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetDir.mockImplementation((type, key) => `${type}/${key}`)
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
@@ -154,10 +163,10 @@ describe('generateAssets', () => {
 			config
 		)
 
-		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/1', { recursive: true })
+		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/key-book.md', { recursive: true })
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/document.pdf')
 		expect(mocks.writeFile).toHaveBeenCalledWith(
-			'/path/to/out/books/1/document.pdf',
+			'/path/to/out/books/key-book.md/document.pdf',
 			Buffer.from('asset_content')
 		)
 		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
@@ -187,7 +196,7 @@ describe('generateAssets', () => {
 
 		mocks.writeFile.mockRejectedValueOnce(new Error('Write error'))
 		mocks.isImage.mockReturnValue(false)
-		mocks.getAssetDir.mockReturnValue('books/1')
+		mocks.getAssetDir.mockImplementation((type, key) => `${type}/${key}`)
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)

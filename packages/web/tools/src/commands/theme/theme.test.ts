@@ -16,6 +16,7 @@ describe('generate-theme/theme', () => {
 			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
 			storage: { type: 'filesystem', config: { root: '' } },
 			ai: { provider: 'google', api_key: '' },
+			assets: { salt: 'test-salt' },
 			paths: { database: '' },
 			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
 			pieces: [{ type: 'test', fields: { title: 'test', date_consumed: 'test' } }],
