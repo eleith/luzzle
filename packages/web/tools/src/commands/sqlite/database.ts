@@ -72,28 +72,28 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		db
 	)
 
-	await sql`CREATE VIRTUAL TABLE IF NOT EXISTS "web_pieces_fts5" USING fts5(id UNINDEXED, slug, type UNINDEXED, title, summary, note, media UNINDEXED, keywords, json_metadata, date_added UNINDEXED, date_updated UNINDEXED, date_consumed UNINDEXED, file_path UNINDEXED, tokenize = 'porter ascii', prefix='3 4 5', content = 'web_pieces', content_rowid="rowid")`.execute(
+	await sql`CREATE VIRTUAL TABLE IF NOT EXISTS "web_pieces_fts5" USING fts5(id UNINDEXED, key UNINDEXED, slug, type UNINDEXED, title, summary, note, media UNINDEXED, keywords, json_metadata, date_added UNINDEXED, date_updated UNINDEXED, date_consumed UNINDEXED, file_path UNINDEXED, tokenize = 'porter ascii', prefix='3 4 5', content = 'web_pieces', content_rowid="rowid")`.execute(
 		db
 	)
 
 	await sql`CREATE TRIGGER IF NOT EXISTS web_pieces_after_insert AFTER INSERT ON web_pieces		BEGIN 
-		INSERT INTO web_pieces_fts5(rowid, slug, type, title, summary, note, media, keywords, json_metadata, date_added, date_updated, date_consumed) 
-		VALUES(new.rowid, new.slug, new.type, new.title, new.summary, new.note, new.media, new.keywords, new.json_metadata, new.date_added, new.date_updated, new.date_consumed); 
+		INSERT INTO web_pieces_fts5(rowid, key, slug, type, title, summary, note, media, keywords, json_metadata, date_added, date_updated, date_consumed) 
+		VALUES(new.rowid, new.key, new.slug, new.type, new.title, new.summary, new.note, new.media, new.keywords, new.json_metadata, new.date_added, new.date_updated, new.date_consumed); 
 	END;`.execute(db)
 
 	await sql`CREATE TRIGGER web_pieces_after_delete AFTER DELETE ON web_pieces 
 	BEGIN 
-		INSERT INTO web_pieces_fts5(web_pieces_fts5, rowid, slug, title, summary, note, keywords, json_metadata)  
-		VALUES('delete', old.rowid, old.slug, old.title, old.summary, old.note, old.keywords, old.json_metadata); 
+		INSERT INTO web_pieces_fts5(web_pieces_fts5, rowid, key, slug, title, summary, note, keywords, json_metadata)  
+		VALUES('delete', old.rowid, old.key, old.slug, old.title, old.summary, old.note, old.keywords, old.json_metadata); 
 	END;`.execute(db)
 
 	await sql`CREATE TRIGGER web_pieces_after_update AFTER UPDATE ON web_pieces 
 	BEGIN
-		INSERT INTO web_pieces_fts5(web_pieces_fts5, rowid, slug, title, summary, note, keywords, json_metadata) 
-		VALUES('delete', old.rowid, old.slug, old.title, old.summary, old.note, old.keywords, old.json_metadata);
+		INSERT INTO web_pieces_fts5(web_pieces_fts5, rowid, key, slug, title, summary, note, keywords, json_metadata) 
+		VALUES('delete', old.rowid, old.key, old.slug, old.title, old.summary, old.note, old.keywords, old.json_metadata);
   
-		INSERT INTO web_pieces_fts5(rowid, slug, title, summary, note, keywords, json_metadata) 
-		VALUES (new.rowid, new.slug, new.title, new.summary, new.note, new.keywords, new.json_metadata);
+		INSERT INTO web_pieces_fts5(rowid, key, slug, title, summary, note, keywords, json_metadata) 
+		VALUES (new.rowid, new.key, new.slug, new.title, new.summary, new.note, new.keywords, new.json_metadata);
 	END;`.execute(db)
 }
 
