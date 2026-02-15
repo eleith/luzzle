@@ -1,5 +1,6 @@
 export interface WebPieces {
 	id: string
+	key: string
 	title: string
 	slug: string
 	file_path: string

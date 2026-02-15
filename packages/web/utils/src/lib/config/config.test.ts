@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import { loadConfig, getConfigValue, setConfigValue, Config } from './config.js'
+import { loadConfig, getConfigValue, setConfigValue, Config, ConfigPublic } from './config.js'
 import { writeFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
@@ -22,6 +22,23 @@ describe('lib/config/config', () => {
 				expect(e).toBeUndefined()
 			}
 		}
+	})
+
+	test('ConfigPublic should not expose sensitive fields', () => {
+		// This is a compile-time check primarily, but we can verify at runtime
+		// that the type definition excludes it.
+		const config = loadConfig()
+		const publicConfig: ConfigPublic = {
+			url: config.url,
+			content: config.content
+		}
+		
+		// @ts-expect-error - assets should not exist on ConfigPublic
+		expect(publicConfig.assets).toBeUndefined()
+		// @ts-expect-error - auth should not exist on ConfigPublic
+		expect(publicConfig.auth).toBeUndefined()
+		// @ts-expect-error - storage should not exist on ConfigPublic
+		expect(publicConfig.storage).toBeUndefined()
 	})
 
 	test('should load a user config', () => {

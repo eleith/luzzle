@@ -26,6 +26,9 @@ builder:
 paths:
   database: './data/luzzle.sqlite'
 
+assets:
+  salt: '${LUZZLE_ASSET_SALT:-}'
+
 pieces: []
 
 auth:

@@ -52,6 +52,9 @@ export type Schema = {
     database: string;
     config?: string;
   };
+  assets: {
+    salt: string;
+  };
   content: {
     component?: {
       root?: string;

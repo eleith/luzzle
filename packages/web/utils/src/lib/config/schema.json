@@ -176,6 +176,18 @@
 			],
 			"additionalProperties": false
 		},
+		"assets": {
+			"type": "object",
+			"properties": {
+				"salt": {
+					"type": "string"
+				}
+			},
+			"required": [
+				"salt"
+			],
+			"additionalProperties": false
+		},
 		"content": {
 			"type": "object",
 			"properties": {
@@ -805,6 +817,7 @@
 		"storage",
 		"content",
 		"paths",
+		"assets",
 		"theme",
 		"pieces"
 	],

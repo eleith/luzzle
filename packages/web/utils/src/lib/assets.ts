@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 const ASSET_IMAGE_MATCHER = /\.(jpg|jpeg|png|webp|avif|gif)$/i
 const ASSET_PATH_MATCHER = /^(?:.*[\\/])?(([^/\\]+?)(?:\.([^.]+))?)$/
 const OpengraphImageWidth = 1200
@@ -9,8 +11,15 @@ const ASSET_SIZES = {
 	xl: 1000,
 } as const
 
-function getOpenGraphPath(type: string, id: string) {
-	return `${type}/${id}/opengraph.png`
+function generateAssetKey(filePath: string, salt?: string) {
+	const normalizedPath = filePath.replace(/\\/g, '/')
+	return createHash('sha256')
+		.update(normalizedPath + (salt || ''))
+		.digest('hex')
+}
+
+function getOpenGraphPath(type: string, key: string) {
+	return `${type}/${key}/opengraph.png`
 }
 
 function isImage(asset: string) {
@@ -19,8 +28,8 @@ function isImage(asset: string) {
 	return ASSET_IMAGE_MATCHER.test(filename)
 }
 
-function getAssetDir(type: string, id: string) {
-	return `${type}/${id}`
+function getAssetDir(type: string, key: string) {
+	return `${type}/${key}`
 }
 
 function widthToSize(minWidth: number): keyof typeof ASSET_SIZES {
@@ -37,7 +46,7 @@ function widthToSize(minWidth: number): keyof typeof ASSET_SIZES {
 
 function getImageAssetPath(
 	type: string,
-	id: string,
+	key: string,
 	asset: string,
 	width: number,
 	format: 'jpg' | 'avif' | 'webp' | 'png'
@@ -45,14 +54,14 @@ function getImageAssetPath(
 	const match = asset.match(ASSET_PATH_MATCHER)
 	const filename = match ? match[1] : asset
 	const basename = match ? match[2] : filename
-	const dir = getAssetDir(type, id)
+	const dir = getAssetDir(type, key)
 	const size = widthToSize(width)
 
 	return `${dir}/${basename}.${size}.${format}`
 }
 
-function getAssetPath(type: string, id: string, asset: string) {
-	const dir = getAssetDir(type, id)
+function getAssetPath(type: string, key: string, asset: string) {
+	const dir = getAssetDir(type, key)
 	const match = asset.match(ASSET_PATH_MATCHER)
 	/* v8 ignore next */
 	const filename = match ? match[1] : asset
@@ -61,6 +70,7 @@ function getAssetPath(type: string, id: string, asset: string) {
 }
 
 export {
+	generateAssetKey,
 	getOpenGraphPath,
 	isImage,
 	getAssetDir,

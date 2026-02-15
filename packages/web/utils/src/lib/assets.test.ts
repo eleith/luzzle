@@ -5,42 +5,69 @@ import {
 	getAssetPath,
 	getAssetDir,
 	getOpenGraphPath,
+	generateAssetKey,
 } from './assets.js'
 
 describe('./lib/assets.ts', () => {
+	describe('generateAssetKey', () => {
+		test('should generate a deterministic key', () => {
+			const key1 = generateAssetKey('path/to/file.md', 'salt')
+			const key2 = generateAssetKey('path/to/file.md', 'salt')
+			expect(key1).toBe(key2)
+			expect(key1).toHaveLength(64) // sha256 hex length
+		})
+
+		test('should generate different keys for different salts', () => {
+			const key1 = generateAssetKey('path/to/file.md', 'salt1')
+			const key2 = generateAssetKey('path/to/file.md', 'salt2')
+			expect(key1).not.toBe(key2)
+		})
+
+		test('should normalize backslashes', () => {
+			const key1 = generateAssetKey('path/to/file.md', 'salt')
+			const key2 = generateAssetKey('path\\to\\file.md', 'salt')
+			expect(key1).toBe(key2)
+		})
+
+		test('should handle missing salt', () => {
+			const key = generateAssetKey('path/to/file.md')
+			expect(key).toHaveLength(64)
+		})
+	})
+
 	test('should return the path to the asset directory', () => {
-		const path = getAssetDir('books', '1')
-		expect(path).toBe('books/1')
+		const path = getAssetDir('books', 'my-key')
+		expect(path).toBe('books/my-key')
 	})
 
 	test('should return the path to the variant for size s', () => {
-		const path = getImageAssetPath('books', '1', 'image.jpg', 100, 'jpg')
-		expect(path).toBe('books/1/image.s.jpg')
+		const path = getImageAssetPath('books', 'my-key', 'image.jpg', 100, 'jpg')
+		expect(path).toBe('books/my-key/image.s.jpg')
 	})
 
 	test('should return the path to the variant for size m', () => {
-		const path = getImageAssetPath('books', '1', 'image.jpg', 200, 'jpg')
-		expect(path).toBe('books/1/image.m.jpg')
+		const path = getImageAssetPath('books', 'my-key', 'image.jpg', 200, 'jpg')
+		expect(path).toBe('books/my-key/image.m.jpg')
 	})
 
 	test('should return the path to the variant for size l', () => {
-		const path = getImageAssetPath('books', '1', 'image.jpg', 350, 'jpg')
-		expect(path).toBe('books/1/image.l.jpg')
+		const path = getImageAssetPath('books', 'my-key', 'image.jpg', 350, 'jpg')
+		expect(path).toBe('books/my-key/image.l.jpg')
 	})
 
 	test('should return the path to the variant for size xl', () => {
-		const path = getImageAssetPath('books', '1', 'image.jpg', 600, 'jpg')
-		expect(path).toBe('books/1/image.xl.jpg')
+		const path = getImageAssetPath('books', 'my-key', 'image.jpg', 600, 'jpg')
+		expect(path).toBe('books/my-key/image.xl.jpg')
 	})
 
 	test('should return the path to the variant for size xl when width is larger than 1000', () => {
-		const path = getImageAssetPath('books', '1', 'image.jpg', 1200, 'jpg')
-		expect(path).toBe('books/1/image.xl.jpg')
+		const path = getImageAssetPath('books', 'my-key', 'image.jpg', 1200, 'jpg')
+		expect(path).toBe('books/my-key/image.xl.jpg')
 	})
 
 	test('should return the path to the variant with avif format', () => {
-		const path = getImageAssetPath('books', '1', 'image.jpg', 350, 'avif')
-		expect(path).toBe('books/1/image.l.avif')
+		const path = getImageAssetPath('books', 'my-key', 'image.jpg', 350, 'avif')
+		expect(path).toBe('books/my-key/image.l.avif')
 	})
 
 	test('should return false if the asset is not an image', () => {
@@ -66,21 +93,21 @@ describe('./lib/assets.ts', () => {
 	})
 
 	test('getImageAssetPath should handle asset without matching path', () => {
-		const path = getImageAssetPath('books', '1', '', 350, 'jpg')
-		expect(path).toBe('books/1/.l.jpg')
-		const path2 = getImageAssetPath('books', '1', 'invalid-asset-name', 350, 'jpg')
-		expect(path2).toBe('books/1/invalid-asset-name.l.jpg')
+		const path = getImageAssetPath('books', 'my-key', '', 350, 'jpg')
+		expect(path).toBe('books/my-key/.l.jpg')
+		const path2 = getImageAssetPath('books', 'my-key', 'invalid-asset-name', 350, 'jpg')
+		expect(path2).toBe('books/my-key/invalid-asset-name.l.jpg')
 	})
 
 	describe('getOpenGraphPath', () => {
 		test('should return the correct opengraph path', () => {
-			const path = getOpenGraphPath('post', '123')
-			expect(path).toBe('post/123/opengraph.png')
+			const path = getOpenGraphPath('post', 'key123')
+			expect(path).toBe('post/key123/opengraph.png')
 		})
 	})
 
 	test('getAssetPath should handle asset with matching path', () => {
-		const path = getAssetPath('books', '1', '/path/to/asset.jpg')
-		expect(path).toBe('books/1/asset.jpg')
+		const path = getAssetPath('books', 'my-key', '/path/to/asset.jpg')
+		expect(path).toBe('books/my-key/asset.jpg')
 	})
 })
