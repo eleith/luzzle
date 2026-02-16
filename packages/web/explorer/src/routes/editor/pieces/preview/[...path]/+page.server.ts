@@ -61,8 +61,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		date_added: new Date().getTime(),
 		date_consumed: pieceConfig.fields.date_consumed
 			? new Date(
-				piece.getField(pieceMarkdown, pieceConfig.fields.date_consumed) as string
-			).getTime()
+					piece.getField(pieceMarkdown, pieceConfig.fields.date_consumed) as string
+				).getTime()
 			: undefined,
 		json_metadata: insertable.frontmatter_json
 	}
