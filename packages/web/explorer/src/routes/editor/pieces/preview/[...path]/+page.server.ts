@@ -1,9 +1,10 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { getPieces } from '$lib/server/pieces'
-import { processMarkdown } from '$lib/server/markdown'
 import { config } from '$lib/server/config'
 import type { WebPieces } from '@luzzle/web.utils'
+import { makePieceItemInsertable } from '@luzzle/core'
+import { generateAssetKey } from '@luzzle/web.utils/server'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -16,17 +17,17 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	const piece = await pieces.getPiece(type)
 	const pieceMarkdown = await piece.get(file)
+	const pieceConfig = config.pieces.find((p) => p.type === type)
 
 	if (!pieceMarkdown) {
 		return error(404, `piece does not exist`)
 	}
 
-	const pieceConfig = config.pieces.find((p) => p.type === type)
-
 	if (!pieceConfig) {
 		return error(500, `piece config for ${type} not found`)
 	}
 
+	const insertable = makePieceItemInsertable(type, pieceMarkdown, await pieces.getSchema(type))
 	const tagsValue = pieceConfig.fields.tags
 		? piece.getField(pieceMarkdown, pieceConfig.fields.tags)
 		: ''
@@ -45,8 +46,8 @@ export const load: PageServerLoad = async ({ params }) => {
 	const webPiece: WebPieces = {
 		slug,
 		type: type as WebPieces['type'],
-		id: 'preview',
-		key: 'preview',
+		id: insertable.id,
+		key: generateAssetKey(pieceMarkdown.filePath, config.assets.salt),
 		file_path: pieceMarkdown.filePath,
 		title: piece.getField(pieceMarkdown, pieceConfig.fields.title) as string,
 		summary: pieceConfig.fields.summary
@@ -60,18 +61,18 @@ export const load: PageServerLoad = async ({ params }) => {
 		date_added: new Date().getTime(),
 		date_consumed: pieceConfig.fields.date_consumed
 			? new Date(
-					piece.getField(pieceMarkdown, pieceConfig.fields.date_consumed) as string
-				).getTime()
+				piece.getField(pieceMarkdown, pieceConfig.fields.date_consumed) as string
+			).getTime()
 			: undefined,
-		json_metadata: JSON.stringify(pieceMarkdown.frontmatter)
+		json_metadata: insertable.frontmatter_json
 	}
 
-	const note = await processMarkdown(webPiece.note || '')
+	const note = insertable.note_markdown
 
 	return {
 		piece: webPiece,
 		tags: webTags,
-		metadata: pieceMarkdown.frontmatter as Record<string, unknown>,
+		metadata: JSON.parse(insertable.frontmatter_json || '{}'),
 		html_note: note,
 		file
 	}
