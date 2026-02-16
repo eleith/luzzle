@@ -1,11 +1,13 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { generateWebSqlite } from './database.js'
 import { getDatabaseClient, sql } from '@luzzle/core'
-import { type Config, generateAssetKey } from '@luzzle/web.utils'
+import { type Config } from '@luzzle/web.utils'
 import { mockKysely } from './database.mock.js'
+import { generateAssetKey } from '@luzzle/web.utils/server'
 
 vi.mock('@luzzle/core')
 vi.mock('@luzzle/web.utils')
+vi.mock('@luzzle/web.utils/server')
 
 const mocks = {
 	getDatabaseClient: vi.mocked(getDatabaseClient),

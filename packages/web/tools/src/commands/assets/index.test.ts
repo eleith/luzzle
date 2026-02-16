@@ -11,8 +11,8 @@ import {
 	getAssetPath,
 	isImage,
 	type Config,
-	generateAssetKey,
 } from '@luzzle/web.utils'
+import { generateAssetKey } from '@luzzle/web.utils/server'
 import generateAssets from './index.js'
 import { Sharp } from 'sharp'
 
@@ -23,6 +23,7 @@ vi.mock('@luzzle/core')
 vi.mock('fs/promises')
 vi.mock('./variants.js')
 vi.mock('@luzzle/web.utils')
+vi.mock('@luzzle/web.utils/server')
 
 const mocks = {
 	getLastRunFor: vi.mocked(getLastRunFor),

@@ -4,8 +4,8 @@ import {
 	type WebPieces,
 	type WebPieceTags,
 	type Config,
-	generateAssetKey,
 } from '@luzzle/web.utils'
+import { generateAssetKey } from '@luzzle/web.utils/server'
 
 function batchArray<T>(array: T[], batchSize: number): T[][] {
 	const batches: T[][] = []

@@ -3,13 +3,13 @@ import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { generateVariantJobs } from './variants.js'
 import { Pieces, LuzzleSelectable } from '@luzzle/core'
 import {
-	generateAssetKey,
 	getAssetDir,
 	getAssetPath,
 	isImage,
 	ASSET_SIZES,
 	getImageAssetPath,
 } from '@luzzle/web.utils'
+import { generateAssetKey } from '@luzzle/web.utils/server'
 import { getStorage } from '../../lib/storage.js'
 import { getDatabase } from '../../lib/database.js'
 import { type Config } from '@luzzle/web.utils'
