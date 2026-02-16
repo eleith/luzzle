@@ -6,7 +6,9 @@
 </script>
 
 {#snippet randomIcon()}
-	<a href="/random" aria-label="random"><DiceIcon style="font-size: 1em;" /></a>
+	<a href="/random" aria-label="random" data-sveltekit-reload>
+		<DiceIcon style="font-size: 1em;" />
+	</a>
 {/snippet}
 
 <main>

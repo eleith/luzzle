@@ -30,7 +30,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		.executeTakeFirst()
 
 	if (piece) {
-		throw redirect(302, `/pieces/${piece.type}/${piece.slug}`)
+		redirect(302, `/pieces/${piece.type}/${piece.slug}`)
 	}
 
 	return new Response('No pieces found', { status: 404 })
