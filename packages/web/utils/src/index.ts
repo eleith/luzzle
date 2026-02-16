@@ -1,5 +1,4 @@
 import {
-	generateAssetKey,
 	getOpenGraphPath,
 	getImageAssetPath,
 	getAssetDir,
@@ -18,7 +17,6 @@ import type {
 } from "./lib/types.js";
 
 export {
-	generateAssetKey,
 	getOpenGraphPath,
 	getImageAssetPath,
 	getAssetDir,

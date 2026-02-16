@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto'
-
 const ASSET_IMAGE_MATCHER = /\.(jpg|jpeg|png|webp|avif|gif)$/i
 const ASSET_PATH_MATCHER = /^(?:.*[\\/])?(([^/\\]+?)(?:\.([^.]+))?)$/
 const OpengraphImageWidth = 1200
@@ -10,13 +8,6 @@ const ASSET_SIZES = {
 	l: 500,
 	xl: 1000,
 } as const
-
-function generateAssetKey(filePath: string, salt?: string) {
-	const normalizedPath = filePath.replace(/\\/g, '/')
-	return createHash('sha256')
-		.update(normalizedPath + (salt || ''))
-		.digest('hex')
-}
 
 function getOpenGraphPath(type: string, key: string) {
 	return `${type}/${key}/opengraph.png`
@@ -70,7 +61,6 @@ function getAssetPath(type: string, key: string, asset: string) {
 }
 
 export {
-	generateAssetKey,
 	getOpenGraphPath,
 	isImage,
 	getAssetDir,
