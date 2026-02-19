@@ -39,14 +39,14 @@ export default async function generateOpenGraphs(
 
 		if (pieceModifiedTime > lastRun || force || id) {
 			try {
-				const ogPath = getOpenGraphPath(item.type, item.id)
+				const ogPath = getOpenGraphPath(item.type, item.key)
 				const outputPath = path.join(options.outputDir, ogPath)
 				const url = `${host}/api/pieces/${item.type}/${item.slug}/opengraph?mode=local`
 				await generatePngFromUrl(url, browser, outputPath)
 
-				console.log(`generated opengraph for ${item.file_path} (${item.id})`)
+				console.log(`generated opengraph for ${item.file_path} (${item.key})`)
 			} catch (e) {
-				console.error(`error making opengraph for ${item.file_path} (${item.id}): ${e}`)
+				console.error(`error making opengraph for ${item.file_path} (${item.key}): ${e}`)
 			}
 		}
 	}

@@ -48,6 +48,7 @@ describe('commands/opengraph/index.ts', () => {
 		vi.spyOn(queries, 'execute').mockResolvedValue([
 			{
 				id: '1',
+				key: 'aa',
 				type: 'test',
 				date_added: new Date(0).toISOString(),
 				date_updated: new Date().toISOString(),
@@ -71,7 +72,7 @@ describe('commands/opengraph/index.ts', () => {
 		expect(mocks.generatePngFromUrl).toHaveBeenCalledWith(
 			expect.any(String),
 			browser,
-			'test/test/1/opengraph.png'
+			'test/test/aa/opengraph.png'
 		)
 		expect(mocks.setLastRunFor).toHaveBeenCalledOnce()
 		expect(browser.close).toHaveBeenCalledOnce()
