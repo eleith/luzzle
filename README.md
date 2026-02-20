@@ -60,3 +60,4 @@ This ecosystem contains everything you need to build and browse your archive:
 * [@luzzle/core] implement webdav storage sync
 * [@luzzle/core] explore tauri mobile support (ex: rewrite in rust)
 * [@luzzle/tools] add incremental sqlite update
+* [@luzzle/builder] add build one piece job
