@@ -1,6 +1,7 @@
 import { CompletionContext, type Completion, type CompletionResult } from '@codemirror/autocomplete'
 import { parseDocument, isMap, isPair, isScalar } from 'yaml'
 import { syntaxTree } from '@codemirror/language'
+import { getFrontmatterInfo } from './utils'
 
 export function createFrontmatterAutocomplete(schema: Record<string, unknown>) {
 	return (context: CompletionContext): CompletionResult | null => {
@@ -8,44 +9,27 @@ export function createFrontmatterAutocomplete(schema: Record<string, unknown>) {
 		const pos = context.pos
 		const tree = syntaxTree(context.state)
 
-		// 1. Detect Frontmatter Block (Syntax Tree)
-		let inFrontmatter = false
-		let frontmatterNode: { from: number; to: number } | null = null
+		const info = getFrontmatterInfo(context.state)
 
-		const topNode = tree.topNode
-		const firstChild = topNode.firstChild
-
-		if (firstChild && firstChild.name === 'Frontmatter') {
-			if (pos >= firstChild.from && pos <= firstChild.to) {
-				inFrontmatter = true
-				frontmatterNode = firstChild
-			}
-		}
-
-		if (!inFrontmatter || !frontmatterNode) {
+		if (!info.exists || pos < info.from || pos > info.to) {
 			return null
 		}
 
-		// 2. Resolve AST Node at Cursor
 		const node = tree.resolveInner(pos, -1)
 
-		// If inside a comment, do nothing
 		if (node.name === 'Comment') {
 			return null
 		}
 
-		// 3. Determine Context using Syntax Tree
 		let isKeyContext = false
 		let isValueContext = false
 		let currentKey = ''
 
-		// Detect context based on Lezer YAML grammar node names
 		if (node.name === 'PropertyName' || node.name === 'Key') {
 			isKeyContext = true
 			currentKey = doc.sliceString(node.from, pos)
 		} else if (node.name === 'String' || node.name === 'Literal' || node.name === 'Quote') {
 			isValueContext = true
-			// To get the key, traverse up to the Pair
 			if (node.parent && node.parent.name === 'Pair') {
 				const keyNode = node.parent.firstChild
 				if (keyNode && (keyNode.name === 'PropertyName' || keyNode.name === 'Key')) {
@@ -55,9 +39,12 @@ export function createFrontmatterAutocomplete(schema: Record<string, unknown>) {
 		} else if (
 			node.name === 'BlockMapping' ||
 			node.name === 'Frontmatter' ||
-			node.name === 'Pair'
+			node.name === 'Pair' ||
+			node.name === 'Document' ||
+			node.name === 'Stream' ||
+			node.name === '⚠' ||
+			node.type.isError
 		) {
-			// Fallback: Use simple text analysis for empty lines or new keys
 			const line = doc.lineAt(pos)
 			const textBefore = line.text.slice(0, pos - line.from)
 
@@ -69,13 +56,15 @@ export function createFrontmatterAutocomplete(schema: Record<string, unknown>) {
 				isKeyContext = true
 				currentKey = textBefore.trim()
 			}
+		} else if (context.explicit) {
+			isKeyContext = true
+			const line = doc.lineAt(pos)
+			currentKey = line.text.slice(0, pos - line.from).trim()
 		}
 
-		// 4. Generate Completions
 		const options: Completion[] = []
 		let from = pos
 
-		// Helper to adjust 'from' based on current word
 		const adjustFrom = () => {
 			const wordMatch = doc.sliceString(0, pos).match(/[\w-]*$/)
 			if (wordMatch) from = pos - wordMatch[0].length
@@ -85,27 +74,9 @@ export function createFrontmatterAutocomplete(schema: Record<string, unknown>) {
 			adjustFrom()
 
 			if (schema.properties) {
-				// Extract Content for filtering existing keys using string slicing
-				const frontmatterBlock = doc.sliceString(frontmatterNode.from, frontmatterNode.to)
-
-				// Find start of content (after first --- line)
-				const firstNewline = frontmatterBlock.indexOf('\n')
-				let frontmatterContent = ''
-
-				if (firstNewline !== -1) {
-					frontmatterContent = frontmatterBlock.slice(firstNewline + 1)
-
-					// Find end of content (before last --- line)
-					// We look for the last newline which precedes the closing delimiter
-					const lastNewline = frontmatterContent.lastIndexOf('\n')
-					if (lastNewline !== -1) {
-						frontmatterContent = frontmatterContent.slice(0, lastNewline)
-					}
-				}
-
 				const existingKeys = new Set<string>()
 				try {
-					const yamlDoc = parseDocument(frontmatterContent)
+					const yamlDoc = parseDocument(info.content)
 					if (yamlDoc.contents && isMap(yamlDoc.contents)) {
 						for (const pair of yamlDoc.contents.items) {
 							if (isPair(pair) && isScalar(pair.key)) {

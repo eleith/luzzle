@@ -1,8 +1,8 @@
 import { linter, type Diagnostic } from '@codemirror/lint'
 import { parseDocument, isMap, isSeq, isPair, isScalar, type Node } from 'yaml'
 import type { EditorView } from 'codemirror'
-import { syntaxTree } from '@codemirror/language'
 import type { ValidationResponse } from '$lib/types/validation'
+import { getFrontmatterInfo } from './utils'
 
 function findNode(node: Node | null, path: string[]): Node | null {
 	if (!node || path.length === 0) return node
@@ -41,52 +41,17 @@ function findNode(node: Node | null, path: string[]): Node | null {
 export function createFrontmatterLinter(type: string) {
 	return linter(
 		async (view: EditorView) => {
-			const doc = view.state.doc
-			const tree = syntaxTree(view.state)
+			const info = getFrontmatterInfo(view.state)
+			if (!info.exists) return []
+
+			const yamlDoc = parseDocument(info.content)
 			const diagnostics: Diagnostic[] = []
-
-			const topNode = tree.topNode
-			const firstChild = topNode.firstChild
-			let frontmatterNode: { from: number; to: number } | null = null
-
-			if (firstChild && firstChild.name === 'Frontmatter') {
-				frontmatterNode = firstChild
-			}
-
-			if (!frontmatterNode) return []
-
-			const frontmatterBlock = doc.sliceString(frontmatterNode.from, frontmatterNode.to)
-			const innerMatch = frontmatterBlock.match(/^---\s*\n([\s\S]*?)\n---\s*$/)
-
-			let yamlContent = ''
-			let offsetStart = frontmatterNode.from
-
-			if (innerMatch) {
-				yamlContent = innerMatch[1]
-				const matchIndex = frontmatterBlock.indexOf(yamlContent)
-				if (matchIndex !== -1) {
-					offsetStart += matchIndex
-				} else {
-					offsetStart += 4
-				}
-			} else {
-				if (frontmatterBlock.startsWith('---')) {
-					yamlContent = frontmatterBlock.slice(3)
-					offsetStart += 3
-					const endIdx = yamlContent.lastIndexOf('---')
-					if (endIdx !== -1) {
-						yamlContent = yamlContent.slice(0, endIdx)
-					}
-				}
-			}
-
-			const yamlDoc = parseDocument(yamlContent)
 
 			if (yamlDoc.errors.length > 0) {
 				for (const err of yamlDoc.errors) {
 					diagnostics.push({
-						from: (err.pos?.[0] || 0) + offsetStart,
-						to: (err.pos?.[1] || 0) + offsetStart,
+						from: (err.pos?.[0] || 0) + info.contentOffset,
+						to: (err.pos?.[1] || 0) + info.contentOffset,
 						severity: 'error',
 						message: err.message,
 						source: 'yaml'
@@ -98,8 +63,12 @@ export function createFrontmatterLinter(type: string) {
 			const data = yamlDoc.toJSON()
 			const validData = data || {}
 
-			let bodyStartPos = frontmatterNode.to
+			// Extract body content: Everything after the Frontmatter node
+			let bodyStartPos = info.to
+			const doc = view.state.doc
 			const docString = doc.toString()
+
+			// Skip optional newline immediately after frontmatter
 			if (docString[bodyStartPos] === '\n') {
 				bodyStartPos += 1
 			}
@@ -124,17 +93,17 @@ export function createFrontmatterLinter(type: string) {
 							const path = (err.path || '').split('/').filter(Boolean)
 							const node = findNode(yamlDoc.contents as Node, path)
 
-							let from = offsetStart
-							let to = offsetStart + yamlContent.length
+							let from = info.contentOffset
+							let to = info.contentOffset + info.content.length
 
 							if (node && node.range) {
-								from = node.range[0] + offsetStart
-								to = node.range[1] + offsetStart
+								from = node.range[0] + info.contentOffset
+								to = node.range[1] + info.contentOffset
 							} else if (path.length > 0) {
 								const parent = findNode(yamlDoc.contents as Node, path.slice(0, -1))
 								if (parent && parent.range) {
-									from = parent.range[0] + offsetStart
-									to = parent.range[1] + offsetStart
+									from = parent.range[0] + info.contentOffset
+									to = parent.range[1] + info.contentOffset
 								}
 							}
 
