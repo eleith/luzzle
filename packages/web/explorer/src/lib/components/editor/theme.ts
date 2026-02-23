@@ -22,7 +22,7 @@ export function createEditorTheme(colors: EditorThemeColors, isDark: boolean): E
 					backgroundColor: colors.selection + '44' // Add transparency
 				},
 			'.cm-activeLine': {
-				backgroundColor: colors.activeLine
+				backgroundColor: 'transparent'
 			},
 			'.cm-gutters': {
 				backgroundColor: colors.bg,

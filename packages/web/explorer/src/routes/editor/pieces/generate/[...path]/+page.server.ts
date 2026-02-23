@@ -38,6 +38,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		type: pieceMarkdown.piece,
 		fields: pieceMarkdown.frontmatter,
 		schema: piece.fields,
+		fullSchema: piece.schema,
 		file: pieceMarkdown.filePath,
 		directory,
 		editorThemes

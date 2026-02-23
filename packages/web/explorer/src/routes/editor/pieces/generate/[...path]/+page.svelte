@@ -55,7 +55,12 @@
 				</div>
 			</div>
 			<div class="editor-container">
-				<MarkdownEditor bind:value={mergedContent} editorThemes={data.editorThemes} />
+				<MarkdownEditor
+					bind:value={mergedContent}
+					editorThemes={data.editorThemes}
+					schema={data.fullSchema}
+					type={data.type}
+				/>
 			</div>
 		{:else}
 			{#snippet buttons()}

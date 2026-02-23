@@ -1,0 +1,102 @@
+import {
+	EditorView,
+	highlightSpecialChars,
+	drawSelection,
+	dropCursor,
+	rectangularSelection,
+	crosshairCursor,
+	highlightActiveLine,
+	keymap,
+	ViewUpdate
+} from '@codemirror/view'
+import { EditorState, Compartment } from '@codemirror/state'
+import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
+import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
+import {
+	closeBrackets,
+	autocompletion,
+	closeBracketsKeymap,
+	completionKeymap
+} from '@codemirror/autocomplete'
+import { bracketMatching, indentOnInput } from '@codemirror/language'
+import { markdown } from '@codemirror/lang-markdown'
+import { yamlFrontmatter } from '@codemirror/lang-yaml'
+import { indentWithTab } from '@codemirror/commands'
+import { lintGutter, lintKeymap } from '@codemirror/lint'
+import { createFrontmatterLinter } from './linting'
+import { createFrontmatterAutocomplete } from './autocomplete'
+
+export interface EditorConfigOptions {
+	schema?: Record<string, unknown>
+	type?: string
+	linterConfig: Compartment
+	themeConfig: Compartment
+	onUpdate?: (update: ViewUpdate) => void
+}
+
+export function createEditorExtensions({
+	schema,
+	type,
+	linterConfig,
+	themeConfig,
+	onUpdate
+}: EditorConfigOptions) {
+	const extensions = [
+		highlightSpecialChars(),
+		history(),
+		drawSelection(),
+		dropCursor(),
+		EditorState.allowMultipleSelections.of(true),
+		indentOnInput(),
+		bracketMatching(),
+		closeBrackets(),
+
+		autocompletion({
+			selectOnOpen: false,
+			override: schema ? [createFrontmatterAutocomplete(schema)] : undefined
+		}),
+
+		rectangularSelection(),
+		crosshairCursor(),
+		highlightActiveLine(),
+		highlightSelectionMatches(),
+
+		keymap.of([
+			indentWithTab,
+			...closeBracketsKeymap,
+			...defaultKeymap,
+			...searchKeymap,
+			...historyKeymap,
+			...completionKeymap,
+			...lintKeymap
+		]),
+
+		EditorView.lineWrapping,
+		yamlFrontmatter({
+			content: markdown()
+		}),
+
+		themeConfig.of([]),
+		lintGutter(),
+
+		EditorView.theme({
+			'&': {
+				height: '100%',
+				fontSize: 'var(--font-size-xs)'
+			},
+			'.cm-content': {
+				padding: 'var(--space-4)'
+			}
+		})
+	]
+
+	if (onUpdate) {
+		extensions.push(EditorView.updateListener.of(onUpdate))
+	}
+
+	if (type) {
+		extensions.push(linterConfig.of(createFrontmatterLinter(type)))
+	}
+
+	return extensions
+}

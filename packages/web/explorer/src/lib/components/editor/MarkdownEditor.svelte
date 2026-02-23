@@ -1,25 +1,25 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte'
-	import { EditorView, basicSetup } from 'codemirror'
+	import { EditorView } from 'codemirror'
 	import { EditorState, Compartment } from '@codemirror/state'
-	import { markdown } from '@codemirror/lang-markdown'
-	import { yamlFrontmatter } from '@codemirror/lang-yaml'
-	import { keymap } from '@codemirror/view'
-	import { indentWithTab } from '@codemirror/commands'
 	import type { EditorThemeColors } from '$lib/server/shiki'
 	import { createEditorTheme } from './theme'
+	import { createEditorExtensions } from './config'
 
 	type Props = {
 		value: string
 		onchange?: (value: string) => void
 		editorThemes: { light: EditorThemeColors; dark: EditorThemeColors }
+		schema?: Record<string, unknown>
+		type?: string
 	}
 
-	let { value = $bindable(), onchange, editorThemes }: Props = $props()
+	let { value = $bindable(), onchange, editorThemes, schema, type }: Props = $props()
 
 	let editorContainer: HTMLDivElement
 	let view: EditorView
 	const themeConfig = new Compartment()
+	const linterConfig = new Compartment()
 
 	function updateTheme() {
 		const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
@@ -36,33 +36,22 @@
 	}
 
 	onMount(() => {
+		const extensions = createEditorExtensions({
+			schema,
+			type,
+			linterConfig,
+			themeConfig,
+			onUpdate: (update) => {
+				if (update.docChanged) {
+					value = update.state.doc.toString()
+					onchange?.(value)
+				}
+			}
+		})
+
 		const startState = EditorState.create({
 			doc: value,
-			extensions: [
-				basicSetup,
-				EditorView.lineWrapping,
-				yamlFrontmatter({
-					content: markdown()
-				}),
-				keymap.of([indentWithTab]),
-				themeConfig.of([]), // Start empty
-				EditorView.updateListener.of((update) => {
-					if (update.docChanged) {
-						value = update.state.doc.toString()
-						onchange?.(value)
-					}
-				}),
-				EditorView.theme({
-					'&': {
-						height: '100%',
-						fontSize: 'var(--font-size-xs)'
-					},
-					'.cm-content': {
-						padding: 'var(--space-4)'
-					},
-					'.cm-gutters': { display: 'none' }
-				})
-			]
+			extensions
 		})
 
 		view = new EditorView({

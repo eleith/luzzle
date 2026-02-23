@@ -35,8 +35,10 @@ export const load: PageServerLoad = async ({ params }) => {
 	return {
 		file: pieceMarkdown.filePath,
 		directory,
+		type,
 		rawContent,
 		editorThemes,
+		schema: piece.schema,
 		canGenerate: config.ai !== undefined
 	}
 }
@@ -79,8 +81,6 @@ export const actions = {
 			})
 		}
 
-		// No redirect needed; successful save stays on the page (PRG)
-		// Or we can return success: true to show a toast
 		return { success: true }
 	}
 } satisfies Actions
