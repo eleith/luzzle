@@ -8,6 +8,7 @@ export function createFrontmatterAutocomplete(schema: Record<string, unknown>) {
 		const pos = context.pos
 		const tree = syntaxTree(context.state)
 
+		// 1. Detect Frontmatter Block (Syntax Tree)
 		let inFrontmatter = false
 		let frontmatterNode: { from: number; to: number } | null = null
 
@@ -25,74 +26,83 @@ export function createFrontmatterAutocomplete(schema: Record<string, unknown>) {
 			return null
 		}
 
-		const frontmatterBlock = doc.sliceString(frontmatterNode.from, frontmatterNode.to)
-		const innerMatch = frontmatterBlock.match(/^---\s*\n([\s\S]*?)\n---\s*$/)
-		let frontmatterContent = ''
+		// 2. Resolve AST Node at Cursor
+		const node = tree.resolveInner(pos, -1)
 
-		if (innerMatch) {
-			frontmatterContent = innerMatch[1]
-		} else {
-			if (frontmatterBlock.startsWith('---')) {
-				frontmatterContent = frontmatterBlock.slice(3)
-				const endIdx = frontmatterContent.lastIndexOf('---')
-				if (endIdx !== -1) {
-					frontmatterContent = frontmatterContent.slice(0, endIdx)
+		// If inside a comment, do nothing
+		if (node.name === 'Comment') {
+			return null
+		}
+
+		// 3. Determine Context using Syntax Tree
+		let isKeyContext = false
+		let isValueContext = false
+		let currentKey = ''
+
+		// Detect context based on Lezer YAML grammar node names
+		if (node.name === 'PropertyName' || node.name === 'Key') {
+			isKeyContext = true
+			currentKey = doc.sliceString(node.from, pos)
+		} else if (node.name === 'String' || node.name === 'Literal' || node.name === 'Quote') {
+			isValueContext = true
+			// To get the key, traverse up to the Pair
+			if (node.parent && node.parent.name === 'Pair') {
+				const keyNode = node.parent.firstChild
+				if (keyNode && (keyNode.name === 'PropertyName' || keyNode.name === 'Key')) {
+					currentKey = doc.sliceString(keyNode.from, keyNode.to)
 				}
+			}
+		} else if (
+			node.name === 'BlockMapping' ||
+			node.name === 'Frontmatter' ||
+			node.name === 'Pair'
+		) {
+			// Fallback: Use simple text analysis for empty lines or new keys
+			const line = doc.lineAt(pos)
+			const textBefore = line.text.slice(0, pos - line.from)
+
+			if (/:\s*$/.test(textBefore)) {
+				isValueContext = true
+				const keyMatch = textBefore.match(/^\s*([\w-]+):/)
+				if (keyMatch) currentKey = keyMatch[1]
+			} else {
+				isKeyContext = true
+				currentKey = textBefore.trim()
 			}
 		}
 
-		const line = doc.lineAt(pos)
-		const lineText = line.text
-		const col = pos - line.from
-		const textBeforeCursor = lineText.slice(0, col)
-
-		const keyMatch = textBeforeCursor.match(/^\s*([\w-]*)$/)
-		const valueMatch = textBeforeCursor.match(/^\s*([\w-]+):\s*([\w-]*)$/)
-
+		// 4. Generate Completions
 		const options: Completion[] = []
 		let from = pos
 
-		if (context.explicit && !keyMatch && !valueMatch) {
-			if (/^\s*$/.test(textBeforeCursor)) {
-				if (schema.properties) {
-					const existingKeys = new Set<string>()
-					try {
-						const yamlDoc = parseDocument(frontmatterContent)
-						if (yamlDoc.contents && isMap(yamlDoc.contents)) {
-							for (const pair of yamlDoc.contents.items) {
-								if (isPair(pair) && isScalar(pair.key)) {
-									existingKeys.add(String(pair.key.value))
-								}
-							}
-						}
-					} catch {
-						// Ignore parse errors during autocomplete
-					}
-
-					for (const key of Object.keys(schema.properties)) {
-						if (existingKeys.has(key)) continue
-
-						const properties = schema.properties as Record<
-							string,
-							{ type?: string; description?: string }
-						>
-						const prop = properties[key]
-						options.push({
-							label: key,
-							type: 'property',
-							detail: prop.type
-							// info: prop.description // Removed per preference
-						})
-					}
-				}
-			}
+		// Helper to adjust 'from' based on current word
+		const adjustFrom = () => {
+			const wordMatch = doc.sliceString(0, pos).match(/[\w-]*$/)
+			if (wordMatch) from = pos - wordMatch[0].length
 		}
 
-		if (keyMatch) {
-			const currentKey = keyMatch[1] || ''
-			from = pos - currentKey.length
+		if (isKeyContext) {
+			adjustFrom()
 
 			if (schema.properties) {
+				// Extract Content for filtering existing keys using string slicing
+				const frontmatterBlock = doc.sliceString(frontmatterNode.from, frontmatterNode.to)
+
+				// Find start of content (after first --- line)
+				const firstNewline = frontmatterBlock.indexOf('\n')
+				let frontmatterContent = ''
+
+				if (firstNewline !== -1) {
+					frontmatterContent = frontmatterBlock.slice(firstNewline + 1)
+
+					// Find end of content (before last --- line)
+					// We look for the last newline which precedes the closing delimiter
+					const lastNewline = frontmatterContent.lastIndexOf('\n')
+					if (lastNewline !== -1) {
+						frontmatterContent = frontmatterContent.slice(0, lastNewline)
+					}
+				}
+
 				const existingKeys = new Set<string>()
 				try {
 					const yamlDoc = parseDocument(frontmatterContent)
@@ -120,16 +130,14 @@ export function createFrontmatterAutocomplete(schema: Record<string, unknown>) {
 					})
 				}
 			}
-		} else if (valueMatch) {
-			const key = valueMatch[1]
-			const currentValue = valueMatch[2] || ''
-			from = pos - currentValue.length
+		} else if (isValueContext) {
+			adjustFrom()
 
 			const properties = schema.properties as Record<
 				string,
 				{ type?: string; enum?: unknown[]; examples?: unknown[] }
 			>
-			const prop = properties[key]
+			const prop = properties[currentKey]
 
 			if (prop) {
 				if (prop.type === 'boolean') {
