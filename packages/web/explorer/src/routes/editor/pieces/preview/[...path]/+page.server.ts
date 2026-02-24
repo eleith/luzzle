@@ -5,6 +5,7 @@ import { config } from '$lib/server/config'
 import type { WebPieces } from '@luzzle/web.utils'
 import { makePieceItemInsertable } from '@luzzle/core'
 import { generateAssetKey } from '@luzzle/web.utils/server'
+import { processMarkdown } from '$lib/server/markdown'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -67,7 +68,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		json_metadata: insertable.frontmatter_json
 	}
 
-	const note = insertable.note_markdown
+	const note = await processMarkdown(insertable.note_markdown)
 
 	return {
 		piece: webPiece,

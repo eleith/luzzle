@@ -25,15 +25,15 @@ const processor = unified()
 			sidenote: sidenoteHandler
 		}
 	})
-	.use(rehypeRaw)
-	.use(rehypeSlug)
-	.use(rehypeAutolinkHeadings)
 	.use(rehypePrettyCode, {
 		theme: {
 			light: config.theme.markdown.code.light,
 			dark: config.theme.markdown.code.dark
 		}
 	})
+	.use(rehypeRaw)
+	.use(rehypeSlug)
+	.use(rehypeAutolinkHeadings)
 	.use(rehypeStringify, { allowDangerousHtml: true })
 
 export async function processMarkdown(markdown: string) {
