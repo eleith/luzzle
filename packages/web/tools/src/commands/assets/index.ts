@@ -16,17 +16,6 @@ import { getDatabase } from '../../lib/database.js'
 import { type Config } from '@luzzle/web.utils'
 import mime from 'mime-types'
 
-const MAX_TEXT_CONTENT_SIZE = 50000
-
-function isTextBased(mimeType: string): boolean {
-	return (
-		mimeType.startsWith('text/') ||
-		mimeType === 'application/json' ||
-		mimeType === 'application/xml' ||
-		mimeType === 'application/javascript'
-	)
-}
-
 async function upsertAssetRecord(
 	db: ReturnType<typeof getDatabase>,
 	record: WebPiecesAsset
@@ -153,8 +142,6 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 
 						const size = assetBuffer.length
 						const mimeType = mime.lookup(asset) || 'application/octet-stream'
-						const isText = isTextBased(mimeType)
-						const isEmbedded = isText && size < MAX_TEXT_CONTENT_SIZE
 
 						await upsertAssetRecord(db, {
 							piece_file_path: item.file_path,
@@ -164,8 +151,8 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 							asset_path: assetPath,
 							size,
 							mime_type: mimeType,
-							is_embedded: isEmbedded,
-							cached_content: isEmbedded ? assetBuffer.toString('utf-8') : null,
+							is_embedded: false,
+							cached_content: null,
 						})
 
 						if (isImage(asset)) {
