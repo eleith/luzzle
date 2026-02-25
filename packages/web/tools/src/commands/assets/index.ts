@@ -18,8 +18,7 @@ import mime from 'mime-types'
 
 const MAX_TEXT_CONTENT_SIZE = 50000
 
-function isTextBased(mimeType: string | false): boolean {
-	if (!mimeType) return false
+function isTextBased(mimeType: string): boolean {
 	return (
 		mimeType.startsWith('text/') ||
 		mimeType === 'application/json' ||
@@ -53,7 +52,8 @@ async function generateVariantsForAssetField(
 	asset: string,
 	pieces: Pieces,
 	outDir: string,
-	config: Config
+	config: Config,
+	db: ReturnType<typeof getDatabase>
 ) {
 	const formats: Array<'avif' | 'jpg'> = ['avif', 'jpg']
 
@@ -62,9 +62,27 @@ async function generateVariantsForAssetField(
 		const jobs = await generateVariantJobs(item, asset, pieces, widths, formats)
 		const key = generateAssetKey(item.file_path, config.assets.salt)
 
-		const toFileJobs = jobs.map((job) => {
+		const sizeCategoryMap = Object.entries(ASSET_SIZES).reduce((acc, [category, width]) => {
+			acc[width] = category
+			return acc
+		}, {} as Record<number, string>)
+
+		const toFileJobs = jobs.map(async (job) => {
 			const assetPath = getImageAssetPath(item.type, key, asset, job.width, job.format)
-			return job.sharp.toFile(`${outDir}/${assetPath}`)
+			const info = await job.sharp.toFile(`${outDir}/${assetPath}`)
+			const sizeCategory = sizeCategoryMap[job.width]
+
+			await upsertAssetRecord(db, {
+				piece_file_path: item.file_path,
+				piece_key: key,
+				asset_name: asset,
+				transformation: `image.${sizeCategory}.${job.format}`,
+				asset_path: assetPath,
+				size: info.size,
+				mime_type: `image/${job.format === 'jpg' ? 'jpeg' : job.format}`,
+				is_embedded: false,
+				cached_content: null,
+			})
 		})
 		await Promise.all(toFileJobs)
 	} catch (error) {
@@ -151,7 +169,7 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 						})
 
 						if (isImage(asset)) {
-							await generateVariantsForAssetField(item, asset, pieces, options.outDir, config)
+							await generateVariantsForAssetField(item, asset, pieces, options.outDir, config, db)
 						}
 					} catch (error) {
 						console.error(`error processing asset ${asset} for ${item.file_path}: ${error}`)

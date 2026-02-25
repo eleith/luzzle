@@ -81,7 +81,7 @@ describe('generateAssets', () => {
 					type: 'books',
 					date_updated: 100,
 					date_added: 50,
-					frontmatter_json: '{"image": "/path/to/image.jpg", "document": "/path/to/document.pdf"}',
+					frontmatter_json: '{"image": "/path/to/image.jpg", "document": "/path/to/document.pdf", "text": "/path/to/file.txt", "unknown": "/path/to/file.unknown"}',
 					file_path: 'book.md',
 					note_markdown: '',
 					assets_json_array: '[]',
@@ -92,7 +92,7 @@ describe('generateAssets', () => {
 					type: 'books',
 					fields: {
 						media: 'image',
-						assets: ['document'],
+						assets: ['document', 'text', 'unknown'],
 						title: 'title',
 						date_consumed: 'date_consumed',
 					},
@@ -105,6 +105,19 @@ describe('generateAssets', () => {
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
 		)
+
+		mocks.generateVariantJobs.mockResolvedValue([
+			{
+				sharp: { toFile: vi.fn().mockResolvedValue({ size: 100 }) } as unknown as Sharp,
+				width: 125,
+				format: 'jpg',
+			},
+			{
+				sharp: { toFile: vi.fn().mockResolvedValue({ size: 200 }) } as unknown as Sharp,
+				width: 250,
+				format: 'avif',
+			},
+		])
 
 		await generateAssets(
 			{
@@ -308,6 +321,13 @@ describe('generateAssets', () => {
 		)
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.isImage.mockReturnValue(true)
+		mocks.generateVariantJobs.mockResolvedValue([
+			{
+				sharp: { toFile: vi.fn().mockResolvedValue({ size: 100 }) } as unknown as Sharp,
+				width: 125,
+				format: 'jpg',
+			}
+		])
 
 		await generateAssets(
 			{
@@ -346,6 +366,13 @@ describe('generateAssets', () => {
 		)
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.isImage.mockReturnValue(true)
+		mocks.generateVariantJobs.mockResolvedValue([
+			{
+				sharp: { toFile: vi.fn().mockResolvedValue({ size: 100 }) } as unknown as Sharp,
+				width: 125,
+				format: 'jpg',
+			}
+		])
 
 		await generateAssets(
 			{
