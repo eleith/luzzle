@@ -9,6 +9,7 @@ import { getConfig } from '../../lib/config.js'
 import { getDatabase } from '../../lib/database.js'
 import { mockKysely } from '../sqlite/database.mock.js'
 import { Browser } from 'puppeteer'
+import { stat } from 'fs/promises'
 
 vi.mock('../../lib/lastRun.js')
 vi.mock('./html.js')
@@ -17,6 +18,7 @@ vi.mock('./browser.js')
 vi.mock('@luzzle/core')
 vi.mock('../../lib/config.js')
 vi.mock('../../lib/database.js')
+vi.mock('fs/promises')
 
 const mocks = {
 	getLastRunFor: vi.mocked(getLastRunFor),
@@ -27,6 +29,7 @@ const mocks = {
 	getConfig: vi.mocked(getConfig),
 	StorageFileSystem: vi.mocked(StorageFileSystem),
 	Pieces: vi.mocked(Pieces),
+	stat: vi.mocked(stat),
 }
 
 describe('commands/opengraph/index.ts', () => {
@@ -50,6 +53,7 @@ describe('commands/opengraph/index.ts', () => {
 				id: '1',
 				key: 'aa',
 				type: 'test',
+				file_path: '/path/to/test.md',
 				date_added: new Date(0).toISOString(),
 				date_updated: new Date().toISOString(),
 			},
@@ -57,6 +61,7 @@ describe('commands/opengraph/index.ts', () => {
 		mocks.getLastRunFor.mockResolvedValue(new Date(0))
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 		mocks.generatePngFromUrl.mockResolvedValue(Buffer.from('test'))
+		mocks.stat.mockResolvedValue({ size: 1024 } as any)
 
 		await generateOpenGraphs(
 			{
@@ -73,6 +78,19 @@ describe('commands/opengraph/index.ts', () => {
 			expect.any(String),
 			browser,
 			'test/test/aa/opengraph.png'
+		)
+		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
+		expect(queries.values).toHaveBeenCalledWith(
+			expect.objectContaining({
+				piece_file_path: '/path/to/test.md',
+				piece_key: 'aa',
+				asset_name: 'opengraph.png',
+				transformation: 'image.opengraph',
+				asset_path: 'test/aa/opengraph.png',
+				size: 1024,
+				mime_type: 'image/png',
+				is_embedded: false,
+			})
 		)
 		expect(mocks.setLastRunFor).toHaveBeenCalledOnce()
 		expect(browser.close).toHaveBeenCalledOnce()
@@ -127,6 +145,7 @@ describe('commands/opengraph/index.ts', () => {
 		])
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
+		mocks.stat.mockResolvedValue({ size: 1024 } as any)
 
 		await generateOpenGraphs(
 			{
@@ -193,6 +212,7 @@ describe('commands/opengraph/index.ts', () => {
 		])
 		mocks.getLastRunFor.mockResolvedValue(new Date(0))
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
+		mocks.stat.mockResolvedValue({ size: 1024 } as any)
 
 		await generateOpenGraphs(
 			{
@@ -226,6 +246,7 @@ describe('commands/opengraph/index.ts', () => {
 		])
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
+		mocks.stat.mockResolvedValue({ size: 1024 } as any)
 
 		await generateOpenGraphs(
 			{
