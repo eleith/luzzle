@@ -67,7 +67,7 @@ export const load: PageServerLoad = async ({ params }) => {
 			: undefined,
 		json_metadata: insertable.frontmatter_json,
 		// TODO replace this with a map of assets to /assets for previewing
-		assets: [] 
+		assets: []
 	}
 
 	const note = await processMarkdown(insertable.note_markdown)

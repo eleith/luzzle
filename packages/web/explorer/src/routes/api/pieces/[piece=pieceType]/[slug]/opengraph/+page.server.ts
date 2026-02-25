@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { db, mapRowsToWebPieces } from '$lib/server/database'
 import { getPalette } from '@luzzle/web.utils/server'
-import { getImageAssetPath, type PieceIconPalette } from '@luzzle/web.utils'
+import { type PieceIconPalette } from '@luzzle/web.utils'
 import type { PieceMode } from '$lib/pieces/helpers'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -36,9 +36,10 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		return error(404, `piece does not exist`)
 	}
 
-	const mediaPath = piece.media
-		? getImageAssetPath(piece.type, piece.key, piece.media, 500, 'jpg')
-		: null
+	const asset = piece.assets.find(
+		(a) => a.asset_name === piece.media && a.transformation === 'image.l.jpg'
+	)
+	const mediaPath = asset?.asset_path || null
 
 	let palette: PieceIconPalette | undefined
 

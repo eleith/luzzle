@@ -1,7 +1,6 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { db, mapRowsToWebPieces } from '$lib/server/database'
-import { getOpenGraphPath } from '@luzzle/web.utils'
 import { config } from '$lib/server/config'
 import { processMarkdown } from '$lib/server/markdown'
 
@@ -43,6 +42,8 @@ export const load: PageServerLoad = async (page) => {
 	const metadata = JSON.parse(piece.json_metadata || '{}') as Record<string, unknown>
 	const note = piece.note ? await processMarkdown(piece.note) : null
 
+	const ogAsset = piece.assets.find((a) => a.transformation === 'image.opengraph')
+
 	return {
 		piece,
 		tags,
@@ -52,7 +53,7 @@ export const load: PageServerLoad = async (page) => {
 			title: `${piece.title} | ${config.content.text.title}`,
 			type: piece.type,
 			description: piece.summary,
-			image: `${config.url.luzzle_assets}/pieces/assets/${getOpenGraphPath(piece.type, piece.key)}`
+			image: ogAsset ? `${config.url.luzzle_assets}/pieces/assets/${ogAsset.asset_path}` : undefined
 		}
 	}
 }

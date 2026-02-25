@@ -1,4 +1,4 @@
-import { getImageAssetPath, type WebPieces, type WebPieceTags } from '@luzzle/web.utils'
+import { widthToSize, type WebPieces, type WebPieceTags } from '@luzzle/web.utils'
 import { page } from '$app/state'
 
 export type PieceComponentHelpers = {
@@ -66,21 +66,33 @@ export function getPieceHelpers(
 		}
 	}
 
-	if (mode === 'local') {
-		return {
-			getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
-			getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif' | 'webp' | 'png') => {
-				const path = getImageAssetPath(piece.type, piece.key, asset, width, format)
-				return `${url}/pieces/assets/${path}`
-			}
-		}
-	}
-
 	return {
 		getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
-		getPieceImageUrl: (asset: string, width: number, format: 'jpg' | 'avif' | 'webp' | 'png') => {
-			const path = getImageAssetPath(piece.type, piece.key, asset, width, format)
-			return `${url}/pieces/assets/${path}`
+		getPieceImageUrl: (
+			assetName: string,
+			minWidth: number,
+			format: 'jpg' | 'avif' | 'webp' | 'png'
+		) => {
+			const size = widthToSize(minWidth)
+			const transformation = `image.${size}.${format}`
+			const found = piece.assets.find(
+				(a) => a.asset_name === assetName && a.transformation === transformation
+			)
+
+			if (found) {
+				return `${url}/pieces/assets/${found.asset_path}`
+			}
+
+			// Fallback to original if transformation not found
+			const original = piece.assets.find(
+				(a) => a.asset_name === assetName && a.transformation === 'original'
+			)
+
+			if (original) {
+				return `${url}/pieces/assets/${original.asset_path}`
+			}
+
+			return `${url}/editor/asset/${assetName}`
 		}
 	}
 }
