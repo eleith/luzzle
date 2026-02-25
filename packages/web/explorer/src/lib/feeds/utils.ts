@@ -23,15 +23,7 @@ async function getPiecesForFeed(type: WebPieces['type'] | undefined) {
 	const rows = await db
 		.selectFrom('web_pieces')
 		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
-		.selectAll('web_pieces')
-		.select([
-			'web_pieces_assets.asset_name',
-			'web_pieces_assets.transformation',
-			'web_pieces_assets.asset_path',
-			'web_pieces_assets.mime_type',
-			'web_pieces_assets.is_embedded',
-			'web_pieces_assets.cached_content'
-		])
+		.selectAll()
 		.where('web_pieces.id', 'in', ids)
 		.orderBy('date_consumed', 'desc')
 		.execute()
@@ -68,15 +60,7 @@ async function getPiecesForTagFeed(tag: string) {
 	const rows = await db
 		.selectFrom('web_pieces')
 		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
-		.selectAll('web_pieces')
-		.select([
-			'web_pieces_assets.asset_name',
-			'web_pieces_assets.transformation',
-			'web_pieces_assets.asset_path',
-			'web_pieces_assets.mime_type',
-			'web_pieces_assets.is_embedded',
-			'web_pieces_assets.cached_content'
-		])
+		.selectAll()
 		.where('web_pieces.id', 'in', pageIds)
 		.orderBy('date_consumed', 'desc')
 		.execute()
