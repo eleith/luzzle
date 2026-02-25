@@ -16,6 +16,11 @@ import { getDatabase } from '../../lib/database.js'
 import { type Config } from '@luzzle/web.utils'
 import mime from 'mime-types'
 
+function getMimeType(format: string): string {
+	const type = format === 'jpg' ? 'jpeg' : format
+	return `image/${type}`
+}
+
 async function upsertAssetRecord(
 	db: ReturnType<typeof getDatabase>,
 	record: WebPiecesAsset
@@ -27,7 +32,6 @@ async function upsertAssetRecord(
 		.onConflict((oc) =>
 			oc.columns(['piece_file_path', 'asset_name', 'transformation']).doUpdateSet({
 				asset_path: record.asset_path,
-				size: record.size,
 				mime_type: record.mime_type,
 				is_embedded: record.is_embedded,
 				cached_content: record.cached_content,
@@ -58,7 +62,7 @@ async function generateVariantsForAssetField(
 
 		const toFileJobs = jobs.map(async (job) => {
 			const assetPath = getImageAssetPath(item.type, key, asset, job.width, job.format)
-			const info = await job.sharp.toFile(`${outDir}/${assetPath}`)
+			await job.sharp.toFile(`${outDir}/${assetPath}`)
 			const sizeCategory = sizeCategoryMap[job.width]
 
 			await upsertAssetRecord(db, {
@@ -67,8 +71,7 @@ async function generateVariantsForAssetField(
 				asset_name: asset,
 				transformation: `image.${sizeCategory}.${job.format}`,
 				asset_path: assetPath,
-				size: info.size,
-				mime_type: `image/${job.format === 'jpg' ? 'jpeg' : job.format}`,
+				mime_type: getMimeType(job.format),
 				is_embedded: false,
 				cached_content: null,
 			})
@@ -140,7 +143,6 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 
 						await writeFile(`${options.outDir}/${assetPath}`, assetBuffer)
 
-						const size = assetBuffer.length
 						const mimeType = mime.lookup(asset) || 'application/octet-stream'
 
 						await upsertAssetRecord(db, {
@@ -149,7 +151,6 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 							asset_name: asset,
 							transformation: 'original',
 							asset_path: assetPath,
-							size,
 							mime_type: mimeType,
 							is_embedded: false,
 							cached_content: null,

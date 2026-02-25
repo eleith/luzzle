@@ -4,7 +4,6 @@ export interface WebPiecesAsset {
 	asset_name: string
 	transformation: string
 	asset_path: string
-	size: number
 	mime_type: string
 	is_embedded: boolean
 	cached_content: string | null

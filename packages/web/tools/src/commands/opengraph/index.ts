@@ -2,7 +2,6 @@ import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { generatePngFromUrl } from './png.js'
 import { getBrowser } from './browser.js'
 import path from 'path'
-import { stat } from 'fs/promises'
 import { type WebPieces, getOpenGraphPath, type Config, type WebPiecesAsset } from '@luzzle/web.utils'
 import { getDatabase } from '../../lib/database.js'
 
@@ -17,7 +16,6 @@ async function upsertAssetRecord(
 		.onConflict((oc) =>
 			oc.columns(['piece_file_path', 'asset_name', 'transformation']).doUpdateSet({
 				asset_path: record.asset_path,
-				size: record.size,
 				mime_type: record.mime_type,
 				is_embedded: record.is_embedded,
 				cached_content: record.cached_content,
@@ -65,15 +63,12 @@ export default async function generateOpenGraphs(
 				const url = `${host}/api/pieces/${item.type}/${item.slug}/opengraph?mode=local`
 				await generatePngFromUrl(url, browser, outputPath)
 
-				const fileStat = await stat(outputPath)
-
 				await upsertAssetRecord(db, {
 					piece_file_path: item.file_path,
 					piece_key: item.key,
 					asset_name: 'opengraph.png',
 					transformation: 'image.opengraph',
 					asset_path: ogPath,
-					size: fileStat.size,
 					mime_type: 'image/png',
 					is_embedded: false,
 					cached_content: null,
@@ -81,7 +76,6 @@ export default async function generateOpenGraphs(
 
 				console.log(`generated opengraph for ${item.file_path} (${item.key})`)
 			} catch (e) {
-				console.log(`ERROR IN TESTS: ${e}`);
 				console.error(`error making opengraph for ${item.file_path} (${item.key}): ${e}`)
 			}
 		}

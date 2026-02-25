@@ -37,7 +37,6 @@ export const GET: RequestHandler = async ({ request }) => {
 			'web_pieces_assets.asset_name',
 			'web_pieces_assets.transformation',
 			'web_pieces_assets.asset_path',
-			'web_pieces_assets.size',
 			'web_pieces_assets.mime_type',
 			'web_pieces_assets.is_embedded',
 			'web_pieces_assets.cached_content'
@@ -127,7 +126,6 @@ export const GET: RequestHandler = async ({ request }) => {
 				'web_pieces_assets.asset_name',
 				'web_pieces_assets.transformation',
 				'web_pieces_assets.asset_path',
-				'web_pieces_assets.size',
 				'web_pieces_assets.mime_type',
 				'web_pieces_assets.is_embedded',
 				'web_pieces_assets.cached_content'

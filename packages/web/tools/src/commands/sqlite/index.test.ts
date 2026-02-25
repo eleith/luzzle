@@ -37,9 +37,9 @@ describe('tools/sqlite', () => {
 		mocks.getConfig.mockReturnValue(config);
 		mocks.getDatabase.mockReturnValue(db);
 
-		await generateWebSqlite({ archiveDir: '/archive', outDir: '/out' }, config);
+		await generateWebSqlite(config);
 
 		expect(mocks.getDatabase).toHaveBeenCalledOnce();
-		expect(mocks.generateWebSqliteDb).toHaveBeenCalledWith(db, config, '/out');
+		expect(mocks.generateWebSqliteDb).toHaveBeenCalledWith(db, config);
 	});
 });

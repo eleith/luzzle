@@ -45,16 +45,6 @@ describe('sqlite command', () => {
 				type: 'string',
 				description: 'path to config.yaml',
 			},
-			in: {
-				type: 'string',
-				description: 'path to luzzle archive',
-			},
-			out: {
-				type: 'string',
-				description: 'path to asset output',
-				alias: 'o',
-				demandOption: true,
-			},
 		})
 
 		const config = { paths: { database: 'test' } } as Config
@@ -62,19 +52,11 @@ describe('sqlite command', () => {
 
 		const argv = {
 			config: '/path/to/config.yaml',
-			in: '/archive',
-			out: '/assets',
 			$0: '',
 			_: [],
 		}
 		await handler(argv)
 
-		expect(mocks.generateSqlite).toHaveBeenCalledWith(
-			{
-				archiveDir: '/archive',
-				outDir: '/assets',
-			},
-			config
-		)
+		expect(mocks.generateSqlite).toHaveBeenCalledWith(config)
 	})
 })

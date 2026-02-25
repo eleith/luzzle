@@ -19,7 +19,6 @@ type WebPiecesJoinedRow = WebPieces & {
 	asset_name: string | null
 	transformation: string | null
 	asset_path: string | null
-	size: number | null
 	mime_type: string | null
 	is_embedded: number | boolean | null
 	cached_content: string | null
@@ -58,7 +57,6 @@ export function mapRowsToWebPieces(rows: WebPiecesJoinedRow[]): WebPieces[] {
 				asset_name: row.asset_name,
 				transformation: row.transformation as string,
 				asset_path: row.asset_path as string,
-				size: row.size as number,
 				mime_type: row.mime_type as string,
 				is_embedded: !!row.is_embedded,
 				cached_content: row.cached_content

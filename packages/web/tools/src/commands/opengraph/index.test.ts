@@ -9,7 +9,6 @@ import { getConfig } from '../../lib/config.js'
 import { getDatabase } from '../../lib/database.js'
 import { mockKysely } from '../sqlite/database.mock.js'
 import { Browser } from 'puppeteer'
-import { stat } from 'fs/promises'
 
 vi.mock('../../lib/lastRun.js')
 vi.mock('./html.js')
@@ -18,7 +17,6 @@ vi.mock('./browser.js')
 vi.mock('@luzzle/core')
 vi.mock('../../lib/config.js')
 vi.mock('../../lib/database.js')
-vi.mock('fs/promises')
 
 const mocks = {
 	getLastRunFor: vi.mocked(getLastRunFor),
@@ -29,7 +27,6 @@ const mocks = {
 	getConfig: vi.mocked(getConfig),
 	StorageFileSystem: vi.mocked(StorageFileSystem),
 	Pieces: vi.mocked(Pieces),
-	stat: vi.mocked(stat),
 }
 
 describe('commands/opengraph/index.ts', () => {
@@ -61,7 +58,6 @@ describe('commands/opengraph/index.ts', () => {
 		mocks.getLastRunFor.mockResolvedValue(new Date(0))
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 		mocks.generatePngFromUrl.mockResolvedValue(Buffer.from('test'))
-		mocks.stat.mockResolvedValue({ size: 1024 } as any)
 
 		await generateOpenGraphs(
 			{
@@ -87,7 +83,6 @@ describe('commands/opengraph/index.ts', () => {
 				asset_name: 'opengraph.png',
 				transformation: 'image.opengraph',
 				asset_path: 'test/aa/opengraph.png',
-				size: 1024,
 				mime_type: 'image/png',
 				is_embedded: false,
 			})
@@ -145,7 +140,6 @@ describe('commands/opengraph/index.ts', () => {
 		])
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
-		mocks.stat.mockResolvedValue({ size: 1024 } as any)
 
 		await generateOpenGraphs(
 			{
@@ -212,7 +206,6 @@ describe('commands/opengraph/index.ts', () => {
 		])
 		mocks.getLastRunFor.mockResolvedValue(new Date(0))
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
-		mocks.stat.mockResolvedValue({ size: 1024 } as any)
 
 		await generateOpenGraphs(
 			{
@@ -246,7 +239,6 @@ describe('commands/opengraph/index.ts', () => {
 		])
 		mocks.getLastRunFor.mockResolvedValue(new Date())
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
-		mocks.stat.mockResolvedValue({ size: 1024 } as any)
 
 		await generateOpenGraphs(
 			{
