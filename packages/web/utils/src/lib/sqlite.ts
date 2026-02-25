@@ -1,3 +1,15 @@
+export interface WebPiecesAsset {
+	piece_file_path: string
+	piece_key: string
+	asset_name: string
+	transformation: string
+	asset_path: string
+	size: number
+	mime_type: string
+	is_embedded: boolean
+	cached_content: string | null
+}
+
 export interface WebPieces {
 	id: string
 	key: string

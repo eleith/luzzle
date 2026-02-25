@@ -13,7 +13,12 @@ function mockKysely() {
 		set: vi.fn().mockReturnThis(),
 		as: vi.fn(),
 		values: vi.fn().mockReturnThis(),
-		onConflict: vi.fn().mockReturnThis(),
+		onConflict: vi.fn().mockImplementation((cb) => {
+			if (cb) cb(queries)
+			return queries
+		}),
+		columns: vi.fn().mockReturnThis(),
+		doUpdateSet: vi.fn().mockReturnThis(),
 		returning: vi.fn().mockReturnThis(),
 		groupBy: vi.fn().mockReturnThis(),
 		returningAll: vi.fn().mockReturnThis(),

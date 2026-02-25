@@ -10,7 +10,7 @@ import {
 	OpengraphImageWidth,
 	OpengraphImageHeight,
 } from "./lib/assets.js";
-import { WebPieces, WebPieceTags } from "./lib/sqlite.js";
+import { WebPiecesAsset, WebPieces, WebPieceTags } from "./lib/sqlite.js";
 import type { Config, ConfigPublic } from "./lib/config/config.js";
 import type {
 	PieceIconPalette,
@@ -28,6 +28,7 @@ export {
 	OpengraphImageHeight,
 	isImage,
 	type WebPieceTags,
+	type WebPiecesAsset,
 	type WebPieces,
 	type Config,
 	type ConfigPublic,

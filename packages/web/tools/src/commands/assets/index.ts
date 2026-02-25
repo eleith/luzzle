@@ -8,11 +8,45 @@ import {
 	isImage,
 	ASSET_SIZES,
 	getImageAssetPath,
+	type WebPiecesAsset,
 } from '@luzzle/web.utils'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import { getStorage } from '../../lib/storage.js'
 import { getDatabase } from '../../lib/database.js'
 import { type Config } from '@luzzle/web.utils'
+import mime from 'mime-types'
+
+const MAX_TEXT_CONTENT_SIZE = 50000
+
+function isTextBased(mimeType: string | false): boolean {
+	if (!mimeType) return false
+	return (
+		mimeType.startsWith('text/') ||
+		mimeType === 'application/json' ||
+		mimeType === 'application/xml' ||
+		mimeType === 'application/javascript'
+	)
+}
+
+async function upsertAssetRecord(
+	db: ReturnType<typeof getDatabase>,
+	record: WebPiecesAsset
+) {
+	await db
+		.withTables<{ web_pieces_assets: WebPiecesAsset }>()
+		.insertInto('web_pieces_assets')
+		.values(record)
+		.onConflict((oc) =>
+			oc.columns(['piece_file_path', 'asset_name', 'transformation']).doUpdateSet({
+				asset_path: record.asset_path,
+				size: record.size,
+				mime_type: record.mime_type,
+				is_embedded: record.is_embedded,
+				cached_content: record.cached_content,
+			})
+		)
+		.execute()
+}
 
 async function generateVariantsForAssetField(
 	item: LuzzleSelectable<'pieces_items'>,
@@ -98,6 +132,23 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 						const assetBuffer = await pieces.getPieceAsset(asset)
 
 						await writeFile(`${options.outDir}/${assetPath}`, assetBuffer)
+
+						const size = assetBuffer.length
+						const mimeType = mime.lookup(asset) || 'application/octet-stream'
+						const isText = isTextBased(mimeType)
+						const isEmbedded = isText && size < MAX_TEXT_CONTENT_SIZE
+
+						await upsertAssetRecord(db, {
+							piece_file_path: item.file_path,
+							piece_key: key,
+							asset_name: asset,
+							transformation: 'original',
+							asset_path: assetPath,
+							size,
+							mime_type: mimeType,
+							is_embedded: isEmbedded,
+							cached_content: isEmbedded ? assetBuffer.toString('utf-8') : null,
+						})
 
 						if (isImage(asset)) {
 							await generateVariantsForAssetField(item, asset, pieces, options.outDir, config)
