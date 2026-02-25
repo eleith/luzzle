@@ -1,5 +1,6 @@
-import { widthToSize, type WebPieces, type WebPieceTags } from '@luzzle/web.utils'
+import { widthToSize, type WebPieceTags } from '@luzzle/web.utils'
 import { page } from '$app/state'
+import type { WebPiece } from './types'
 
 export type PieceComponentHelpers = {
 	getPieceUrl: () => string
@@ -11,7 +12,7 @@ export type PieceComponentHelpers = {
 }
 
 export type PieceIconProps = {
-	piece: WebPieces
+	piece: WebPiece
 	metadata: Record<string, unknown>
 	tags: string[]
 	size: {
@@ -33,7 +34,7 @@ export type PieceIconPalette = {
 export type PieceOpengraphProps = {
 	metadata: Record<string, unknown>
 	tags: string[]
-	piece: WebPieces
+	piece: WebPiece
 	size: {
 		width: number
 		height: number
@@ -43,7 +44,7 @@ export type PieceOpengraphProps = {
 }
 
 export type PiecePageProps = {
-	piece: WebPieces
+	piece: WebPiece
 	metadata: Record<string, unknown>
 	tags: Partial<WebPieceTags>[]
 	html_note: string | null
@@ -53,7 +54,7 @@ export type PiecePageProps = {
 export type PieceMode = 'public' | 'preview' | 'local'
 
 export function getPieceHelpers(
-	piece: WebPieces,
+	piece: WebPiece,
 	mode: PieceMode = 'public'
 ): PieceComponentHelpers {
 	const config = page.data.config

@@ -1,9 +1,10 @@
 import { type WebPieces } from '@luzzle/web.utils'
 import { db, mapRowsToWebPieces } from '$lib/server/database'
+import type { WebPiece } from '$lib/pieces/types'
 
 const MAX_FEED_ITEMS = 50
 
-async function getPiecesForFeed(type: WebPieces['type'] | undefined) {
+async function getPiecesForFeed(type: WebPieces['type'] | undefined): Promise<WebPiece[]> {
 	let idQuery = db
 		.selectFrom('web_pieces')
 		.select('id')
@@ -31,7 +32,7 @@ async function getPiecesForFeed(type: WebPieces['type'] | undefined) {
 	return mapRowsToWebPieces(rows)
 }
 
-async function getPiecesForTagFeed(tag: string) {
+async function getPiecesForTagFeed(tag: string): Promise<WebPiece[]> {
 	const pieceTags = await db
 		.selectFrom('web_pieces_tags')
 		.select('piece_id')

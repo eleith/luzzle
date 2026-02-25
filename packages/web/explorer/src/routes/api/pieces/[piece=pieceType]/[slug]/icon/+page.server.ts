@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { db, mapRowsToWebPieces } from '$lib/server/database'
+import type { WebPiece } from '$lib/pieces/types'
 
 import type { PieceMode } from '$lib/pieces/helpers'
 
@@ -18,7 +19,7 @@ export const load: PageServerLoad = async (page) => {
 		.execute()
 
 	const pieces = mapRowsToWebPieces(rows)
-	const piece = pieces[0]
+	const piece: WebPiece | undefined = pieces[0]
 
 	if (!piece) {
 		return error(404, `piece does not exist`)

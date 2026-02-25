@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Component } from 'svelte'
-	import { type WebPieces, ASSET_SIZES } from '@luzzle/web.utils'
+	import { ASSET_SIZES } from '@luzzle/web.utils'
+	import type { WebPiece } from '$lib/pieces/types'
 	import IconDefault from '$lib/pieces/components/icon.default.svelte'
 	import { getPieceHelpers, type PieceIconProps, type PieceMode } from '$lib/pieces/helpers.js'
 	import { getContext } from 'svelte'
@@ -21,7 +22,7 @@
 	type Props = {
 		active?: boolean
 		lazy?: boolean
-		piece: WebPieces
+		piece: WebPiece
 		size: keyof typeof ASSET_SIZES | { width: number; height?: number }
 	}
 

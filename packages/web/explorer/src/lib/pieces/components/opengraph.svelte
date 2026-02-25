@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getContext, type Component } from 'svelte'
-	import { type WebPieces, OpengraphImageHeight, OpengraphImageWidth } from '@luzzle/web.utils'
+	import { OpengraphImageHeight, OpengraphImageWidth } from '@luzzle/web.utils'
+	import type { WebPiece } from '$lib/pieces/types'
 	import OpengraphDefault from '$lib/pieces/components/opengraph.default.svelte'
 	import { getPieceHelpers, type PieceMode, type PieceOpengraphProps } from '../helpers'
 
@@ -20,7 +21,7 @@
 	}
 
 	type Props = {
-		piece: WebPieces
+		piece: WebPiece
 		palette?: PieceOpengraphProps['palette']
 	}
 

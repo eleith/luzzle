@@ -1,4 +1,4 @@
-import { type WebPieces } from '@luzzle/web.utils'
+import type { WebPiece } from '$lib/pieces/types'
 import type { RequestHandler } from './$types'
 import { config } from '$lib/server/config'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
@@ -11,7 +11,7 @@ type FeedItem<T extends FeedRss | FeedJson> = Exclude<T['items'], undefined>[num
 type FeedRssItem = FeedItem<FeedRss>
 type FeedJsonItem = FeedItem<FeedJson>
 
-function getRssFeedFromPieces(pieces: WebPieces[], tag?: string) {
+function getRssFeedFromPieces(pieces: WebPiece[], tag?: string) {
 	const feedTitle = tag ? `${config.content.text.title} | tag: ${tag}` : config.content.text.title
 	const feed: FeedRss = {
 		title: feedTitle,
@@ -46,7 +46,7 @@ function getRssFeedFromPieces(pieces: WebPieces[], tag?: string) {
 	return feed
 }
 
-function getJsonFeedFromPieces(pieces: WebPieces[], tag?: string) {
+function getJsonFeedFromPieces(pieces: WebPiece[], tag?: string) {
 	const feedTitle = tag ? `${config.content.text.title} | tag: ${tag}` : config.content.text.title
 	const feed: FeedJson = {
 		title: feedTitle,
@@ -67,7 +67,7 @@ function getJsonFeedFromPieces(pieces: WebPieces[], tag?: string) {
 	return feed
 }
 
-function getMarkdownFeedFromPieces(pieces: WebPieces[], tag?: string) {
+function getMarkdownFeedFromPieces(pieces: WebPiece[], tag?: string) {
 	const feedTitle = tag ? `${config.content.text.title} | tag: ${tag}` : config.content.text.title
 	const frontmatter = YAML.stringify({
 		title: feedTitle,

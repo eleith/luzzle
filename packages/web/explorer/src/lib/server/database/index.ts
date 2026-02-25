@@ -15,6 +15,8 @@ function initializeDatabase() {
 
 const db = initializeDatabase()
 
+import type { WebPiece } from '$lib/pieces/types'
+
 type WebPiecesJoinedRow = WebPieces & {
 	asset_name: string | null
 	transformation: string | null
@@ -24,8 +26,8 @@ type WebPiecesJoinedRow = WebPieces & {
 	cached_content: string | null
 }
 
-export function mapRowsToWebPieces(rows: WebPiecesJoinedRow[]): WebPieces[] {
-	const piecesMap = new Map<string, WebPieces>()
+export function mapRowsToWebPieces(rows: WebPiecesJoinedRow[]): WebPiece[] {
+	const piecesMap = new Map<string, WebPiece>()
 
 	for (const row of rows) {
 		let piece = piecesMap.get(row.id)

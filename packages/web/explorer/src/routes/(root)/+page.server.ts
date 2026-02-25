@@ -1,4 +1,5 @@
 import { db, mapRowsToWebPieces } from '$lib/server/database'
+import type { WebPiece } from '$lib/pieces/types'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async () => {
@@ -10,7 +11,7 @@ export const load: PageServerLoad = async () => {
 		.limit(1)
 		.executeTakeFirst()
 
-	let latestPiece = null
+	let latestPiece: WebPiece | null = null
 	if (latestPieceResult) {
 		const rows = await db
 			.selectFrom('web_pieces')
