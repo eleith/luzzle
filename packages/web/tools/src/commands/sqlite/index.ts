@@ -1,33 +1,13 @@
-import {
-	dropWebTables,
-	createWebTables,
-	populateWebPieceTags,
-	populateWebPieceItems,
-	populateWebPieceSearch,
-} from './database.js'
-import { Config, type WebPieces } from '@luzzle/web.utils'
+import { generateWebSqlite as generateWebSqliteDb } from './database.js'
+import { Config } from '@luzzle/web.utils'
 import { getDatabase } from '../../lib/database.js'
 
-export default async function generateWebSqlite(config: Config) {
+type GenerateSqliteOptions = {
+	archiveDir?: string
+	outDir: string
+}
+
+export default async function generateWebSqlite(options: GenerateSqliteOptions, config: Config) {
 	const db = getDatabase(config)
-	await dropWebTables(db)
-	await createWebTables(db)
-
-	await populateWebPieceItems(db, config)
-	await populateWebPieceTags(db)
-	await populateWebPieceSearch(db)
-
-	const pieces = await db
-		.withTables<{ web_pieces: WebPieces }>()
-		.selectFrom('web_pieces')
-		.selectAll()
-		.execute()
-
-	const tags = await db
-		.withTables<{ web_pieces_tags: WebPieces }>()
-		.selectFrom('web_pieces_tags')
-		.selectAll()
-		.execute()
-
-	console.log(`${config.paths.database} has ${pieces.length} pieces and ${tags.length} tags`)
+	await generateWebSqliteDb(db, config, options.outDir)
 }

@@ -1,18 +1,31 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { generateWebSqlite } from './database.js'
 import { getDatabaseClient, sql } from '@luzzle/core'
-import { type Config } from '@luzzle/web.utils'
+import {
+	type Config,
+	getAssetPath,
+	getImageAssetPath,
+	isImage,
+	getOpenGraphPath,
+} from '@luzzle/web.utils'
 import { mockKysely } from './database.mock.js'
 import { generateAssetKey } from '@luzzle/web.utils/server'
+import { stat } from 'fs/promises'
 
 vi.mock('@luzzle/core')
 vi.mock('@luzzle/web.utils')
 vi.mock('@luzzle/web.utils/server')
+vi.mock('fs/promises')
 
 const mocks = {
 	getDatabaseClient: vi.mocked(getDatabaseClient),
 	sql: vi.mocked(sql),
 	generateAssetKey: vi.mocked(generateAssetKey),
+	stat: vi.mocked(stat),
+	getAssetPath: vi.mocked(getAssetPath),
+	getImageAssetPath: vi.mocked(getImageAssetPath),
+	isImage: vi.mocked(isImage),
+	getOpenGraphPath: vi.mocked(getOpenGraphPath),
 }
 
 describe('generate-web-sqlite', () => {
@@ -55,7 +68,7 @@ describe('generate-web-sqlite', () => {
 					},
 				},
 			],
-		} as Config
+		} as unknown as Config
 
 		await generateWebSqlite(db, config)
 
@@ -157,7 +170,7 @@ describe('generate-web-sqlite', () => {
 					},
 				},
 			],
-		} as Config
+		} as unknown as Config
 
 		await generateWebSqlite(db, config)
 
@@ -253,7 +266,7 @@ describe('generate-web-sqlite', () => {
 					},
 				},
 			],
-		} as Config
+		} as unknown as Config
 
 		await generateWebSqlite(db, config)
 
@@ -262,5 +275,209 @@ describe('generate-web-sqlite', () => {
 			expect.objectContaining({ slug: 'item' }),
 			expect.objectContaining({ slug: 'item--1' }),
 		])
+	})
+
+	test('should populate web_pieces_assets table', async () => {
+		const { db, queries } = mockKysely()
+		const frontmatter = {
+			book_title: 'Test Book',
+			read_date: '2023-01-01',
+			book_tags: 'tag1',
+			cover_image: 'cover.jpg',
+			docs: ['doc.pdf', 'file.unknown_ext']
+		}
+		mocks.getDatabaseClient.mockReturnValue(db)
+		mocks.sql
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn().mockResolvedValueOnce({ rows: [] }) } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+
+		const itemsReturn = [
+			{
+				id: 'item1',
+				type: 'books',
+				file_path: '/path/to/book1.md',
+				frontmatter_json: JSON.stringify(frontmatter),
+				date_added: 123,
+			},
+			{
+				id: 'item2',
+				type: 'unknown_type',
+				file_path: '/path/to/unknown.md',
+				frontmatter_json: '{}',
+				date_added: 123,
+			},
+		]
+
+		vi.spyOn(queries, 'execute')
+			.mockResolvedValueOnce(itemsReturn) // populateWebPieceItems (pieces_items query)
+			.mockResolvedValueOnce([]) // populateWebPieceItems (web_pieces insert)
+			.mockResolvedValueOnce(itemsReturn) // populateWebPiecesAssets (pieces_items query)
+			.mockResolvedValueOnce([]) // populateWebPiecesAssets (web_pieces_assets insert)
+			.mockResolvedValueOnce([]) // generateWebSqlite (final pieces count)
+			.mockResolvedValueOnce([]) // generateWebSqlite (final tags count)
+
+		const config = {
+			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
+			paths: { database: '/tmp/test.db' },
+			assets: { salt: 'test-salt' },
+			pieces: [
+				{
+					type: 'books',
+					fields: {
+						title: 'book_title',
+						media: 'cover_image',
+						assets: ['docs']
+					},
+				},
+			],
+		} as unknown as Config
+
+		mocks.stat.mockResolvedValue({ size: 1000 } as any)
+		mocks.generateAssetKey.mockImplementation((path) => `key-${path}`)
+		mocks.getAssetPath.mockImplementation((type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`)
+		mocks.getImageAssetPath.mockImplementation((type, id, asset, width, format) => `${type}/${id}/${asset.split('/').pop()}.${width}.${format}`)
+		mocks.getOpenGraphPath.mockImplementation((type, id) => `${type}/${id}/opengraph.png`)
+		mocks.isImage.mockImplementation((asset) => asset.endsWith('.jpg'))
+
+		await generateWebSqlite(db, config, '/out')
+
+		expect(queries.insertInto).toHaveBeenCalledWith('web_pieces_assets')
+					expect(queries.values).toHaveBeenCalledWith([
+					expect.objectContaining({ asset_name: 'opengraph.png', transformation: 'image.opengraph' }),
+					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'original' }),
+					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.s.avif' }),
+					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.m.avif' }),
+					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.l.avif' }),
+					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.xl.avif' }),
+					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.s.jpg' }),
+					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.m.jpg' }),
+					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.l.jpg' }),
+					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.xl.jpg' }),
+					expect.objectContaining({ asset_name: 'doc.pdf', transformation: 'original' }),
+					expect.objectContaining({ asset_name: 'file.unknown_ext', transformation: 'original' }),
+					expect.objectContaining({ asset_name: 'opengraph.png', transformation: 'image.opengraph' }),
+				])	})
+
+	test('should handle missing files during populate web_pieces_assets', async () => {
+		const { db, queries } = mockKysely()
+		const frontmatter = {
+			cover_image: 'missing.jpg',
+		}
+		mocks.getDatabaseClient.mockReturnValue(db)
+		mocks.sql
+			.mockReturnValue({ execute: vi.fn().mockResolvedValue({ rows: [] }) } as unknown as ReturnType<typeof sql>)
+
+		const itemsReturn = [
+			{
+				id: 'item1',
+				type: 'books',
+				file_path: '/path/to/book1.md',
+				frontmatter_json: JSON.stringify(frontmatter),
+				date_added: 123,
+			},
+		]
+
+		vi.spyOn(queries, 'execute')
+			.mockResolvedValueOnce(itemsReturn)
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce(itemsReturn)
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+
+		const config = {
+			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
+			paths: { database: '/tmp/test.db' },
+			assets: { salt: 'test-salt' },
+			pieces: [
+				{
+					type: 'books',
+					fields: {
+						media: 'cover_image',
+					},
+				},
+			],
+		} as unknown as Config
+
+		mocks.stat.mockRejectedValue(new Error('ENOENT'))
+		mocks.generateAssetKey.mockImplementation((path) => `key-${path}`)
+		mocks.getAssetPath.mockImplementation((type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`)
+		mocks.getImageAssetPath.mockImplementation((type, id, asset, width, format) => `${type}/${id}/${asset.split('/').pop()}.${width}.${format}`)
+		mocks.getOpenGraphPath.mockImplementation((type, id) => `${type}/${id}/opengraph.png`)
+		mocks.isImage.mockImplementation((asset) => asset.endsWith('.jpg'))
+
+		await generateWebSqlite(db, config, '/out')
+
+		expect(queries.insertInto).not.toHaveBeenCalledWith('web_pieces_assets')
+	})
+
+	test('should handle missing image variants during populate web_pieces_assets', async () => {
+		const { db, queries } = mockKysely()
+		const frontmatter = {
+			cover_image: 'partial.jpg',
+		}
+		mocks.getDatabaseClient.mockReturnValue(db)
+		mocks.sql
+			.mockReturnValue({ execute: vi.fn().mockResolvedValue({ rows: [] }) } as unknown as ReturnType<typeof sql>)
+
+		const itemsReturn = [
+			{
+				id: 'item1',
+				type: 'books',
+				file_path: '/path/to/book1.md',
+				frontmatter_json: JSON.stringify(frontmatter),
+				date_added: 123,
+			},
+		]
+
+		vi.spyOn(queries, 'execute')
+			.mockResolvedValueOnce(itemsReturn)
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce(itemsReturn)
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+
+		const config = {
+			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
+			paths: { database: '/tmp/test.db' },
+			assets: { salt: 'test-salt' },
+			pieces: [
+				{
+					type: 'books',
+					fields: {
+						media: 'cover_image',
+					},
+				},
+			],
+		} as unknown as Config
+
+		mocks.stat.mockReset()
+		mocks.stat.mockImplementation((p) => {
+			if (p.toString().includes('.125.avif')) {
+				return Promise.reject(new Error('ENOENT'))
+			}
+			return Promise.resolve({ size: 1000 } as any)
+		})
+		mocks.generateAssetKey.mockImplementation((path) => `key-${path}`)
+		mocks.getAssetPath.mockImplementation((type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`)
+		mocks.getImageAssetPath.mockImplementation((type, id, asset, width, format) => `${type}/${id}/${asset.split('/').pop()}.${width}.${format}`)
+		mocks.getOpenGraphPath.mockImplementation((type, id) => `${type}/${id}/opengraph.png`)
+		mocks.isImage.mockImplementation((asset) => asset.endsWith('.jpg'))
+
+		await generateWebSqlite(db, config, '/out')
+
+		expect(queries.insertInto).toHaveBeenCalledWith('web_pieces_assets')
+		expect(queries.values).not.toHaveBeenCalledWith(
+			expect.arrayContaining([
+				expect.objectContaining({ transformation: 'image.s.avif' })
+			])
+		)
 	})
 })

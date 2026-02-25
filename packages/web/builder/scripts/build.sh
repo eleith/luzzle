@@ -7,7 +7,7 @@ echo "Syncing archive to database..."
 luzzle-web-tools sync --in /app/archive
 
 echo "Building database web tables"
-luzzle-web-tools sqlite
+luzzle-web-tools sqlite --out /app/assets/pieces --in /app/archive
 
 echo "Building new assets..."
 luzzle-web-tools assets --out /app/assets/pieces --in /app/archive

@@ -11,13 +11,29 @@ export default function command(cli: Argv) {
 				config: {
 					type: 'string',
 					description: 'path to config.yaml',
-				}
+				},
+				in: {
+					type: 'string',
+					description: 'path to luzzle archive',
+				},
+				out: {
+					type: 'string',
+					description: 'path to asset output',
+					alias: 'o',
+					demandOption: true,
+				},
 			})
 			return options
 		},
 		async function(argv) {
 			const config = getConfig(argv.config as string | undefined)
-			await generateSqlite(config)
+			await generateSqlite(
+				{
+					archiveDir: argv.in as string | undefined,
+					outDir: argv.out as string,
+				},
+				config
+			)
 		}
 	)
 }

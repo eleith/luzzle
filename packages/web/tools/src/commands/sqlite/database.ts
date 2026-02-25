@@ -4,8 +4,16 @@ import {
 	type WebPieces,
 	type WebPieceTags,
 	type Config,
+	type WebPiecesAsset,
+	getAssetPath,
+	getImageAssetPath,
+	isImage,
+	ASSET_SIZES,
+	getOpenGraphPath,
 } from '@luzzle/web.utils'
 import { generateAssetKey } from '@luzzle/web.utils/server'
+import { stat } from 'fs/promises'
+import mime from 'mime-types'
 
 function batchArray<T>(array: T[], batchSize: number): T[][] {
 	const batches: T[][] = []
@@ -223,13 +231,130 @@ async function populateWebPieceTags(db: LuzzleDatabase): Promise<void> {
 	})
 }
 
-async function generateWebSqlite(db: LuzzleDatabase, config: Config) {
+async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config, outDir: string): Promise<void> {
+	const items = await db.selectFrom('pieces_items').selectAll().execute()
+	const values: Array<WebPiecesAsset> = []
+
+	const pieceFields = config.pieces.reduce(
+		(acc, piece) => {
+			const mediaField = piece.fields.media
+			const assetFields = piece.fields.assets || []
+			const type = piece.type
+			acc[type] = [mediaField, ...assetFields].filter(Boolean) as string[]
+			return acc
+		},
+		{} as Record<string, string[]>
+	)
+
+	const sizeCategoryMap = Object.entries(ASSET_SIZES).reduce((acc, [category, width]) => {
+		acc[width] = category
+		return acc
+	}, {} as Record<number, string>)
+
+	for (const item of items) {
+		const fields = pieceFields[item.type] || []
+		const key = generateAssetKey(item.file_path, config.assets.salt)
+
+		try {
+			const ogPath = getOpenGraphPath(item.type, key)
+			const fullOgPath = path.join(outDir, ogPath)
+			const ogStat = await stat(fullOgPath)
+
+			values.push({
+				piece_file_path: item.file_path,
+				piece_key: key,
+				asset_name: 'opengraph.png',
+				transformation: 'image.opengraph',
+				asset_path: ogPath,
+				size: ogStat.size,
+				mime_type: 'image/png',
+				is_embedded: false,
+				cached_content: null,
+			})
+		} catch (e) {
+			// ignore missing
+		}
+
+		if (fields.length) {
+			const frontmatter = JSON.parse(item.frontmatter_json)
+			const assets = fields.flatMap((field) => frontmatter[field]).filter(Boolean) as string[]
+			const uniqueAssets = Array.from(new Set(assets))
+
+			for (const asset of uniqueAssets) {
+				try {
+					const assetPath = getAssetPath(item.type, key, asset)
+					const fullPath = path.join(outDir, assetPath)
+					const fileStat = await stat(fullPath)
+					const size = fileStat.size
+					const mimeType = mime.lookup(asset) || 'application/octet-stream'
+
+					values.push({
+						piece_file_path: item.file_path,
+						piece_key: key,
+						asset_name: asset,
+						transformation: 'original',
+						asset_path: assetPath,
+						size,
+						mime_type: mimeType,
+						is_embedded: false,
+						cached_content: null,
+					})
+
+					if (isImage(asset)) {
+						for (const format of ['avif', 'jpg'] as const) {
+							for (const width of Object.values(ASSET_SIZES)) {
+								try {
+									const variantPath = getImageAssetPath(item.type, key, asset, width, format)
+									const fullVariantPath = path.join(outDir, variantPath)
+									const variantStat = await stat(fullVariantPath)
+									const sizeCategory = sizeCategoryMap[width]
+
+									values.push({
+										piece_file_path: item.file_path,
+										piece_key: key,
+										asset_name: asset,
+										transformation: `image.${sizeCategory}.${format}`,
+										asset_path: variantPath,
+										size: variantStat.size,
+										mime_type: `image/${format === 'jpg' ? 'jpeg' : format}`,
+										is_embedded: false,
+										cached_content: null,
+									})
+								} catch (e) {
+									// ignore missing
+								}
+							}
+						}
+					}
+				} catch (e) {
+					// ignore missing
+				}
+			}
+		}
+	}
+
+	const webDb = db.withTables<{ web_pieces_assets: WebPiecesAsset }>()
+	await webDb.transaction().execute(async (tx) => {
+		if (values.length) {
+			const batches = batchArray(values, 1000)
+			for (const batch of batches) {
+				await tx.insertInto('web_pieces_assets').values(batch).execute()
+			}
+		}
+	})
+}
+
+async function generateWebSqlite(db: LuzzleDatabase, config: Config, outDir?: string) {
 	await dropWebTables(db)
 	await createWebTables(db)
 
 	await populateWebPieceItems(db, config)
 	await populateWebPieceTags(db)
 	await populateWebPieceSearch(db)
+
+	if (outDir) {
+		await populateWebPiecesAssets(db, config, outDir)
+	}
 
 	const pieces = await db
 		.withTables<{ web_pieces: WebPieces }>()
@@ -252,5 +377,6 @@ export {
 	populateWebPieceItems,
 	populateWebPieceTags,
 	populateWebPieceSearch,
+	populateWebPiecesAssets,
 	generateWebSqlite,
 }
