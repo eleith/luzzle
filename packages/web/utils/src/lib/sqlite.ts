@@ -25,6 +25,7 @@ export interface WebPieces {
 	json_metadata: string
 	summary?: string
 	keywords?: string
+	assets: WebPiecesAsset[]
 }
 
 export interface WebPieceTags {
