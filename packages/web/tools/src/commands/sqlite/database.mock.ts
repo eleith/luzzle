@@ -25,6 +25,7 @@ function mockKysely() {
 		ifNotExists: vi.fn().mockReturnThis(),
 		addColumn: vi.fn().mockReturnThis(),
 		addUniqueConstraint: vi.fn().mockReturnThis(),
+		addPrimaryKeyConstraint: vi.fn().mockReturnThis(),
 		execute: vi.fn(),
 	}
 

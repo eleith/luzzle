@@ -59,9 +59,11 @@ describe('generate-web-sqlite', () => {
 
 		await generateWebSqlite(db, config)
 
+		expect(db.schema.dropTable).toHaveBeenCalledWith('web_pieces_assets')
 		expect(db.schema.dropTable).toHaveBeenCalledWith('web_pieces_tags')
 		expect(db.schema.dropTable).toHaveBeenCalledWith('web_pieces')
 		expect(db.schema.dropTable).toHaveBeenCalledWith('web_pieces_fts5')
+		expect(db.schema.createTable).toHaveBeenCalledWith('web_pieces_assets')
 		expect(db.schema.createTable).toHaveBeenCalledWith('web_pieces_tags')
 		expect(db.schema.createTable).toHaveBeenCalledWith('web_pieces')
 		expect(queries.insertInto).not.toHaveBeenCalled()

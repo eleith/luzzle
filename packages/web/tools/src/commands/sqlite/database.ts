@@ -28,12 +28,28 @@ function slugify(text: string): string {
 }
 
 async function dropWebTables(db: LuzzleDatabase): Promise<void> {
+	await db.schema.dropTable('web_pieces_assets').ifExists().execute()
 	await db.schema.dropTable('web_pieces_tags').ifExists().execute()
 	await db.schema.dropTable('web_pieces').ifExists().execute()
 	await db.schema.dropTable('web_pieces_fts5').ifExists().execute()
 }
 
 async function createWebTables(db: LuzzleDatabase): Promise<void> {
+	await db.schema
+		.createTable('web_pieces_assets')
+		.ifNotExists()
+		.addColumn('piece_file_path', 'text', (col) => col.notNull())
+		.addColumn('piece_key', 'text', (col) => col.notNull())
+		.addColumn('asset_name', 'text', (col) => col.notNull())
+		.addColumn('transformation', 'text', (col) => col.notNull())
+		.addColumn('asset_path', 'text', (col) => col.notNull())
+		.addColumn('size', 'integer', (col) => col.notNull())
+		.addColumn('mime_type', 'text', (col) => col.notNull())
+		.addColumn('is_embedded', 'boolean', (col) => col.notNull())
+		.addColumn('cached_content', 'text')
+		.addPrimaryKeyConstraint('web_pieces_assets_pk', ['piece_file_path', 'asset_name', 'transformation'])
+		.execute()
+
 	await db.schema
 		.createTable('web_pieces_tags')
 		.ifNotExists()
