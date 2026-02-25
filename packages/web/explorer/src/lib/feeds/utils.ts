@@ -1,20 +1,43 @@
 import { type WebPieces } from '@luzzle/web.utils'
-import { db } from '$lib/server/database'
+import { db, mapRowsToWebPieces } from '$lib/server/database'
 
 const MAX_FEED_ITEMS = 50
 
 async function getPiecesForFeed(type: WebPieces['type'] | undefined) {
-	let pieceQuery = db
+	let idQuery = db
 		.selectFrom('web_pieces')
-		.selectAll()
+		.select('id')
 		.orderBy('date_consumed', 'desc')
 		.limit(MAX_FEED_ITEMS)
 
 	if (type) {
-		pieceQuery = pieceQuery.where('type', '=', type)
+		idQuery = idQuery.where('type', '=', type)
 	}
 
-	return pieceQuery.execute()
+	const ids = (await idQuery.execute()).map((x) => x.id)
+
+	if (ids.length === 0) {
+		return []
+	}
+
+	const rows = await db
+		.selectFrom('web_pieces')
+		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
+		.selectAll('web_pieces')
+		.select([
+			'web_pieces_assets.asset_name',
+			'web_pieces_assets.transformation',
+			'web_pieces_assets.asset_path',
+			'web_pieces_assets.size',
+			'web_pieces_assets.mime_type',
+			'web_pieces_assets.is_embedded',
+			'web_pieces_assets.cached_content'
+		])
+		.where('web_pieces.id', 'in', ids)
+		.orderBy('date_consumed', 'desc')
+		.execute()
+
+	return mapRowsToWebPieces(rows)
 }
 
 async function getPiecesForTagFeed(tag: string) {
@@ -28,19 +51,39 @@ async function getPiecesForTagFeed(tag: string) {
 		return []
 	}
 
-	const pieces = await db
+	const ids = pieceTags.map((x) => x.piece_id)
+
+	const idQuery = db
 		.selectFrom('web_pieces')
-		.selectAll()
-		.where(
-			'id',
-			'in',
-			pieceTags.map((x) => x.piece_id)
-		)
+		.select('id')
+		.where('id', 'in', ids)
 		.orderBy('date_consumed', 'desc')
 		.limit(MAX_FEED_ITEMS)
+
+	const pageIds = (await idQuery.execute()).map((x) => x.id)
+
+	if (pageIds.length === 0) {
+		return []
+	}
+
+	const rows = await db
+		.selectFrom('web_pieces')
+		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
+		.selectAll('web_pieces')
+		.select([
+			'web_pieces_assets.asset_name',
+			'web_pieces_assets.transformation',
+			'web_pieces_assets.asset_path',
+			'web_pieces_assets.size',
+			'web_pieces_assets.mime_type',
+			'web_pieces_assets.is_embedded',
+			'web_pieces_assets.cached_content'
+		])
+		.where('web_pieces.id', 'in', pageIds)
+		.orderBy('date_consumed', 'desc')
 		.execute()
 
-	return pieces
+	return mapRowsToWebPieces(rows)
 }
 
 export { getPiecesForFeed, getPiecesForTagFeed }

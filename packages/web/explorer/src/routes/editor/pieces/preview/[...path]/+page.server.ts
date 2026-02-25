@@ -65,7 +65,9 @@ export const load: PageServerLoad = async ({ params }) => {
 					piece.getField(pieceMarkdown, pieceConfig.fields.date_consumed) as string
 				).getTime()
 			: undefined,
-		json_metadata: insertable.frontmatter_json
+		json_metadata: insertable.frontmatter_json,
+		// TODO replace this with a map of assets to /assets for previewing
+		assets: [] 
 	}
 
 	const note = await processMarkdown(insertable.note_markdown)

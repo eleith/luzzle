@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { db, sql } from '$lib/server/database'
+import { db, mapRowsToWebPieces, sql } from '$lib/server/database'
 
 const MAX_RESULTS = 20
 
@@ -19,18 +19,39 @@ export const GET: RequestHandler = async ({ request }) => {
 	}
 
 	const escapedQuery = `"${query.replace(/"/g, '""')}"`
-	const pieces = await db
+
+	const idsResult = await db
 		.selectFrom('web_pieces_fts5')
-		.selectAll()
+		.select('id')
 		.where(sql`web_pieces_fts5`, sql`match`, escapedQuery)
 		.orderBy(sql`bm25(web_pieces_fts5, 1, 1, 1, 10, 3, 2, 1, 3, 3, 1, 1, 1)`)
 		.offset((pageNumber - 1) * MAX_RESULTS)
 		.limit(MAX_RESULTS)
 		.execute()
 
-	if (pieces.length === 0) {
+	if (idsResult.length === 0) {
 		return new Response('no pieces found for this query', { status: 404 })
 	}
+
+	const ids = idsResult.map((x) => x.id)
+
+	const rows = await db
+		.selectFrom('web_pieces')
+		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
+		.selectAll('web_pieces')
+		.select([
+			'web_pieces_assets.asset_name',
+			'web_pieces_assets.transformation',
+			'web_pieces_assets.asset_path',
+			'web_pieces_assets.size',
+			'web_pieces_assets.mime_type',
+			'web_pieces_assets.is_embedded',
+			'web_pieces_assets.cached_content'
+		])
+		.where('web_pieces.id', 'in', ids)
+		.execute()
+
+	const pieces = mapRowsToWebPieces(rows)
 
 	return json({
 		pieces
