@@ -3,7 +3,6 @@ import type { PageServerLoad } from './$types'
 import { getPieces } from '$lib/server/pieces'
 import { config } from '$lib/server/config'
 import type { WebPiece } from '$lib/pieces/types'
-import { type WebPieces } from '@luzzle/web.utils'
 import { makePieceItemInsertable } from '@luzzle/core'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import { processMarkdown } from '$lib/server/markdown'
@@ -47,7 +46,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	const webPiece: WebPiece = {
 		slug,
-		type: type as WebPieces['type'],
+		type: type as WebPiece['type'],
 		id: insertable.id,
 		key: generateAssetKey(pieceMarkdown.filePath, config.assets.salt),
 		file_path: pieceMarkdown.filePath,

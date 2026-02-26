@@ -1,8 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { type WebPieces } from '@luzzle/web.utils'
 import { db, sql } from '$lib/server/database'
 import { config } from '$lib/server/config'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
+import type { WebPiece } from '$lib/pieces/types'
 
 const TAKE_DEFAULT = 50
 
@@ -33,7 +33,7 @@ export const GET: RequestHandler = async ({ request }) => {
 	let piecesQuery = db.selectFrom('web_pieces').selectAll()
 
 	if (type) {
-		piecesQuery = piecesQuery.where('web_pieces.type', '=', type as WebPieces['type'])
+		piecesQuery = piecesQuery.where('web_pieces.type', '=', type as WebPiece['type'])
 	}
 
 	if (tag) {
