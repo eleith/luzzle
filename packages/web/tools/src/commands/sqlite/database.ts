@@ -50,7 +50,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addColumn('transformation', 'text', (col) => col.notNull())
 		.addColumn('asset_path', 'text', (col) => col.notNull())
 		.addColumn('mime_type', 'text', (col) => col.notNull())
-		.addColumn('is_embedded', 'boolean', (col) => col.notNull().defaultTo(0))
+		.addColumn('is_embedded', 'boolean', (col) => col.defaultTo(0))
 		.addColumn('content', 'text')
 		.addPrimaryKeyConstraint('web_pieces_assets_pk', ['piece_file_path', 'transformation'])
 		.execute()
@@ -245,11 +245,6 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 		{} as Record<string, string[]>
 	)
 
-	const sizeCategoryMap = Object.entries(ASSET_SIZES).reduce((acc, [category, width]) => {
-		acc[width] = category
-		return acc
-	}, {} as Record<number, string>)
-
 	for (const item of items) {
 		const fields = pieceFields[item.type] || []
 		const key = generateAssetKey(item.file_path, config.assets.salt)
@@ -280,23 +275,20 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 					transformation: 'original',
 					asset_path: assetPath,
 					mime_type: mimeType,
-					is_embedded: 0,
 				})
 
 				if (mimeType.startsWith('image')) {
 					for (const format of ['avif', 'jpg'] as const) {
-						for (const width of Object.values(ASSET_SIZES)) {
-							const variantPath = getImageAssetPath(item.type, key, asset, width, format)
-							const sizeCategory = sizeCategoryMap[width]
+						for (const size of Object.entries(ASSET_SIZES)) {
+							const variantPath = getImageAssetPath(item.type, key, asset, size[1], format)
 
 							values.push({
 								piece_file_path: item.file_path,
 								piece_key: key,
 								piece_asset_path: asset,
-								transformation: `image.${sizeCategory}.${format}`,
+								transformation: `image.${size[0]}.${format}`,
 								asset_path: variantPath,
 								mime_type: mime.lookup(format) as string,
-								is_embedded: 0,
 							})
 						}
 					}
