@@ -14,7 +14,7 @@ async function upsertAssetRecord(
 		.insertInto('web_pieces_assets')
 		.values(record)
 		.onConflict((oc) =>
-			oc.columns(['piece_file_path', 'piece_asset_path', 'transformation']).doUpdateSet({
+			oc.columns(['piece_file_path', 'transformation']).doUpdateSet({
 				asset_path: record.asset_path,
 				mime_type: record.mime_type,
 				is_embedded: record.is_embedded,
