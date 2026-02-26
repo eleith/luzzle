@@ -228,11 +228,6 @@ async function populateWebPieceTags(db: LuzzleDatabase): Promise<void> {
 	})
 }
 
-function getMimeType(format: string): string {
-	const type = format === 'jpg' ? 'jpeg' : format
-	return `image/${type}`
-}
-
 async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Promise<void> {
 	const items = await db.selectFrom('pieces_items').selectAll().execute()
 	const values: Array<WebPiecesAsset> = []
@@ -298,7 +293,7 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 								piece_asset_path: asset,
 								transformation: `image.${sizeCategory}.${format}`,
 								asset_path: variantPath,
-								mime_type: getMimeType(format),
+								mime_type: mime.lookup(format) as string,
 								is_embedded: false,
 							})
 						}
