@@ -1,6 +1,7 @@
 import { type WebPieces } from '@luzzle/web.utils'
-import { db, getWebPieces } from '$lib/server/database'
+import { db } from '$lib/server/database'
 import type { WebPiece } from '$lib/pieces/types'
+import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
 const MAX_FEED_ITEMS = 50
 
@@ -21,12 +22,13 @@ async function getPiecesForFeed(type: WebPieces['type'] | undefined): Promise<We
 		return []
 	}
 
-	return getWebPieces(
-		db
+	return hydrateWithAssets(
+		await db
 			.selectFrom('web_pieces')
 			.selectAll()
 			.where('web_pieces.id', 'in', ids)
 			.orderBy('date_consumed', 'desc')
+			.execute()
 	)
 }
 
@@ -56,12 +58,13 @@ async function getPiecesForTagFeed(tag: string): Promise<WebPiece[]> {
 		return []
 	}
 
-	return getWebPieces(
-		db
+	return hydrateWithAssets(
+		await db
 			.selectFrom('web_pieces')
 			.selectAll()
 			.where('web_pieces.id', 'in', pageIds)
 			.orderBy('date_consumed', 'desc')
+			.execute()
 	)
 }
 

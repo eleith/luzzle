@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { db, getWebPieces } from '$lib/server/database'
+import { db } from '$lib/server/database'
+import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
 const TAKE_DEFAULT = 50
 
@@ -19,13 +20,14 @@ export const load: PageServerLoad = async (page) => {
 
 	const ids = pieceTags.map((x) => x.piece_id)
 
-	const pieces = await getWebPieces(
-		db
+	const pieces = await hydrateWithAssets(
+		await db
 			.selectFrom('web_pieces')
 			.selectAll()
 			.where('id', 'in', ids)
 			.orderBy('date_consumed', 'desc')
 			.limit(TAKE_DEFAULT + 1)
+			.execute()
 	)
 
 	const hasMore = pieces.length === TAKE_DEFAULT + 1

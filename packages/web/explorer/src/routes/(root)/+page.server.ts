@@ -1,16 +1,7 @@
-import { db, getWebPiece } from '$lib/server/database'
+import { db } from '$lib/server/database'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async () => {
-	const latestPiece = await getWebPiece(
-		db
-			.selectFrom('web_pieces')
-			.selectAll()
-			.orderBy('date_consumed', 'desc')
-			.orderBy('date_added', 'desc')
-			.limit(1)
-	)
-
 	const types = await db
 		.selectFrom('web_pieces')
 		.select('type')
@@ -19,7 +10,6 @@ export const load: PageServerLoad = async () => {
 		.execute()
 
 	return {
-		latestPiece,
 		types
 	}
 }

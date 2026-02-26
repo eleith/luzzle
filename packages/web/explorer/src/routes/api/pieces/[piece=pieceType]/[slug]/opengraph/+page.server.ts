@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { db, getWebPiece } from '$lib/server/database'
+import { db } from '$lib/server/database'
+import { hydrateWithAssets } from '$lib/pieces/assets.server'
 import { getPalette } from '@luzzle/web.utils/server'
 import { type PieceIconPalette } from '@luzzle/web.utils'
 import type { PieceMode } from '$lib/pieces/helpers'
@@ -12,19 +13,17 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	const slug = params.slug
 	const mode = (url.searchParams.get('mode') as PieceMode) || 'public'
 
-	const piece = await getWebPiece(
-		db
-			.selectFrom('web_pieces')
-			.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
-			.selectAll()
-			.where('web_pieces.type', '=', type)
-			.where('web_pieces.slug', '=', slug)
-	)
+	const webPiece = await db
+		.selectFrom('web_pieces')
+		.selectAll()
+		.where('web_pieces.type', '=', type)
+		.where('web_pieces.slug', '=', slug)
+		.executeTakeFirst()
 
-	if (!piece) {
+	if (!webPiece) {
 		return error(404, `piece does not exist`)
 	}
-
+	const piece = await hydrateWithAssets(webPiece)
 	const asset = piece.assets.find(
 		(a) => a.asset_name === piece.media && a.transformation === 'image.l.jpg'
 	)

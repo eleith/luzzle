@@ -1,5 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { db, getWebPieces, sql } from '$lib/server/database'
+import { db, sql } from '$lib/server/database'
+import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
 const MAX_RESULTS = 20
 
@@ -35,8 +36,8 @@ export const GET: RequestHandler = async ({ request }) => {
 
 	const ids = idsResult.map((x) => x.id)
 
-	const pieces = await getWebPieces(
-		db.selectFrom('web_pieces').selectAll().where('web_pieces.id', 'in', ids)
+	const pieces = await hydrateWithAssets(
+		await db.selectFrom('web_pieces').selectAll().where('web_pieces.id', 'in', ids).execute()
 	)
 
 	return json({

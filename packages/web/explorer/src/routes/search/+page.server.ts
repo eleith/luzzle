@@ -1,6 +1,7 @@
-import { db, getWebPieces, sql } from '$lib/server/database'
+import { db, sql } from '$lib/server/database'
 import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
+import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
 const MAX_RESULTS = 20
 
@@ -39,8 +40,8 @@ export const load: PageServerLoad = async ({ url }) => {
 		ids.pop()
 	}
 
-	const pieces = await getWebPieces(
-		db.selectFrom('web_pieces').selectAll().where('web_pieces.id', 'in', ids)
+	const pieces = await hydrateWithAssets(
+		await db.selectFrom('web_pieces').selectAll().where('web_pieces.id', 'in', ids).execute()
 	)
 
 	return {

@@ -1,25 +1,26 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { db, getWebPiece } from '$lib/server/database'
+import { db } from '$lib/server/database'
 import { config } from '$lib/server/config'
 import { processMarkdown } from '$lib/server/markdown'
+import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
 export const load: PageServerLoad = async (page) => {
 	const type = page.params.piece
 	const slug = page.params.slug
 
-	const piece = await getWebPiece(
-		db
-			.selectFrom('web_pieces')
-			.selectAll()
-			.where('web_pieces.type', '=', type)
-			.where('web_pieces.slug', '=', slug)
-	)
+	const webPiece = await db
+		.selectFrom('web_pieces')
+		.selectAll()
+		.where('web_pieces.type', '=', type)
+		.where('web_pieces.slug', '=', slug)
+		.executeTakeFirst()
 
-	if (!piece) {
+	if (!webPiece) {
 		return error(404, `piece does not exist`)
 	}
 
+	const piece = await hydrateWithAssets(webPiece)
 	const tags = await db
 		.selectFrom('web_pieces_tags')
 		.select(['slug', 'tag'])

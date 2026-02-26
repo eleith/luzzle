@@ -1,7 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
 import { type WebPieces } from '@luzzle/web.utils'
-import { db, getWebPieces, sql } from '$lib/server/database'
+import { db, sql } from '$lib/server/database'
 import { config } from '$lib/server/config'
+import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
 const TAKE_DEFAULT = 50
 
@@ -54,29 +55,32 @@ export const GET: RequestHandler = async ({ request }) => {
 	}
 
 	if (orderBy === 'random') {
-		const pieces = await getWebPieces(
-			piecesQuery.where(({ eb, selectFrom }) =>
-				eb(
-					'id',
-					'in',
-					selectFrom('web_pieces')
-						.select('id')
-						.orderBy(sql`RANDOM()`)
-						.limit(takeNumber)
+		const pieces = await hydrateWithAssets(
+			await piecesQuery
+				.where(({ eb, selectFrom }) =>
+					eb(
+						'id',
+						'in',
+						selectFrom('web_pieces')
+							.select('id')
+							.orderBy(sql`RANDOM()`)
+							.limit(takeNumber)
+					)
 				)
-			)
+				.execute()
 		)
 
 		return json({
 			pieces
 		})
 	} else {
-		const pieces = await getWebPieces(
-			piecesQuery
+		const pieces = await hydrateWithAssets(
+			await piecesQuery
 				.offset(takeNumber * (pageNumber - 1))
 				.orderBy('date_consumed', 'desc')
 				.orderBy('date_added', 'desc')
 				.limit(takeNumber + 1)
+				.execute()
 		)
 
 		const hasMore = pieces.length === takeNumber + 1
