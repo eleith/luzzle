@@ -13,8 +13,8 @@ export const load: PageServerLoad = async (page) => {
 	const webPiece = await db
 		.selectFrom('web_pieces')
 		.selectAll()
-		.where('web_pieces.type', '=', type)
-		.where('web_pieces.slug', '=', slug)
+		.where('type', '=', type)
+		.where('slug', '=', slug)
 		.executeTakeFirst()
 
 	if (!webPiece) {
