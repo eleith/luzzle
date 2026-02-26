@@ -20,29 +20,25 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	const escapedQuery = `"${query.replace(/"/g, '""')}"`
 
-	const idsResult = await db
+	const webPieces = await db
 		.selectFrom('web_pieces_fts5')
-		.select('id')
+		.selectAll()
 		.where(sql`web_pieces_fts5`, sql`match`, escapedQuery)
 		.orderBy(sql`bm25(web_pieces_fts5, 1, 1, 1, 10, 3, 2, 1, 3, 3, 1, 1, 1)`)
 		.offset((pageNumber - 1) * MAX_RESULTS)
 		.limit(MAX_RESULTS + 1)
 		.execute()
 
-	const ids = idsResult.map((x) => x.id)
-
-	if (ids.length === 0 && pageNumber > 1) {
+	if (webPieces.length === 0 && pageNumber > 1) {
 		redirect(302, url.pathname)
 	}
 
-	const hasMore = ids.length === MAX_RESULTS + 1
+	const hasMore = webPieces.length === MAX_RESULTS + 1
 	if (hasMore) {
-		ids.pop()
+		webPieces.pop()
 	}
 
-	const pieces = await hydrateWithAssets(
-		await db.selectFrom('web_pieces').selectAll().where('web_pieces.id', 'in', ids).execute()
-	)
+	const pieces = await hydrateWithAssets(webPieces)
 
 	return {
 		pieces,

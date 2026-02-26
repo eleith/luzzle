@@ -21,24 +21,20 @@ export const GET: RequestHandler = async ({ request }) => {
 
 	const escapedQuery = `"${query.replace(/"/g, '""')}"`
 
-	const idsResult = await db
+	const webPieces = await db
 		.selectFrom('web_pieces_fts5')
-		.select('id')
+		.selectAll()
 		.where(sql`web_pieces_fts5`, sql`match`, escapedQuery)
 		.orderBy(sql`bm25(web_pieces_fts5, 1, 1, 1, 10, 3, 2, 1, 3, 3, 1, 1, 1)`)
 		.offset((pageNumber - 1) * MAX_RESULTS)
 		.limit(MAX_RESULTS)
 		.execute()
 
-	if (idsResult.length === 0) {
+	if (webPieces.length === 0) {
 		return new Response('no pieces found for this query', { status: 404 })
 	}
 
-	const ids = idsResult.map((x) => x.id)
-
-	const pieces = await hydrateWithAssets(
-		await db.selectFrom('web_pieces').selectAll().where('web_pieces.id', 'in', ids).execute()
-	)
+	const pieces = await hydrateWithAssets(webPieces)
 
 	return json({
 		pieces
