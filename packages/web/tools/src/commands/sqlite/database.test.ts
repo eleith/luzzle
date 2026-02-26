@@ -131,6 +131,7 @@ describe('generate-web-sqlite', () => {
 			.mockResolvedValueOnce([]) // populateWebPieceSearch
 			.mockResolvedValueOnce([]) // generateWebSqlite (final pieces count)
 			.mockResolvedValueOnce([]) // generateWebSqlite (final tags count)
+			.mockResolvedValueOnce([]) // generateWebSqlite (final assets count)
 
 		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
@@ -234,6 +235,7 @@ describe('generate-web-sqlite', () => {
 			.mockResolvedValueOnce([]) // populateWebPieceSearch
 			.mockResolvedValueOnce([]) // generateWebSqlite (final pieces count)
 			.mockResolvedValueOnce([]) // generateWebSqlite (final tags count)
+			.mockResolvedValueOnce([]) // generateWebSqlite (final assets count)
 
 		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
@@ -316,6 +318,7 @@ describe('generate-web-sqlite', () => {
 			.mockResolvedValueOnce([]) // populateWebPiecesAssets (web_pieces_assets insert)
 			.mockResolvedValueOnce([]) // generateWebSqlite (final pieces count)
 			.mockResolvedValueOnce([]) // generateWebSqlite (final tags count)
+			.mockResolvedValueOnce([]) // generateWebSqlite (final assets count)
 
 		const config = {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },

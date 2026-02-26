@@ -336,7 +336,13 @@ async function generateWebSqlite(db: LuzzleDatabase, config: Config) {
 		.selectAll()
 		.execute()
 
-	console.log(`${config.paths.database} has ${pieces.length} pieces and ${tags.length} tags`)
+	const assets = await db
+		.withTables<{ web_pieces_assets: WebPiecesAsset }>()
+		.selectFrom('web_pieces_assets')
+		.selectAll()
+		.execute()
+
+	console.log(`${config.paths.database}: ${pieces.length} pieces | ${tags.length} tags | ${assets.length} assets`)
 }
 
 export {
