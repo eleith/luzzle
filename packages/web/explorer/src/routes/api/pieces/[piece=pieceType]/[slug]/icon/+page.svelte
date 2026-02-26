@@ -6,4 +6,4 @@
 	setContext('piece-mode', data.mode)
 </script>
 
-<PieceIcon piece={data.piece} size="l" lazy={false} />
+<PieceIcon piece={data.piece} size={{ width: 500 }} lazy={false} />

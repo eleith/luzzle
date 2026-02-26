@@ -30,8 +30,7 @@ export const load: PageServerLoad = async (page) => {
 
 	const metadata = JSON.parse(piece.json_metadata || '{}') as Record<string, unknown>
 	const note = piece.note ? await processMarkdown(piece.note) : null
-
-	const ogAsset = piece.assets.find((a) => a.transformation === 'image.opengraph')
+	const ogAsset = piece.assets.find((a) => a.transformation === 'opengraph')?.piece_asset_path
 
 	return {
 		piece,
@@ -42,7 +41,7 @@ export const load: PageServerLoad = async (page) => {
 			title: `${piece.title} | ${config.content.text.title}`,
 			type: piece.type,
 			description: piece.summary,
-			image: ogAsset ? `${config.url.luzzle_assets}/pieces/assets/${ogAsset.asset_path}` : undefined
+			image: ogAsset ? `${config.url.luzzle_assets}/pieces/assets/${ogAsset}` : undefined
 		}
 	}
 }

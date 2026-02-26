@@ -19,7 +19,7 @@
 		title="toggle full size"
 		class:piece-icon-open={showFullHeader}
 	>
-		<Icon {piece} size="s" lazy={false} />
+		<Icon {piece} size={{ width: 125 }} lazy={false} />
 	</button>
 </section>
 

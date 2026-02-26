@@ -37,7 +37,7 @@
 				</picture>
 			{/if}
 			{#if piece.media}
-				<Icon {piece} size="m" lazy={false} />
+				<Icon {piece} size={{ width: 250 }} lazy={false} />
 			{/if}
 		</div>
 	</section>

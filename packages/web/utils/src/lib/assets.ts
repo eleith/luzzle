@@ -1,4 +1,3 @@
-const ASSET_IMAGE_MATCHER = /\.(jpg|jpeg|png|webp|avif|gif)$/i
 const ASSET_PATH_MATCHER = /^(?:.*[\\/])?(([^/\\]+?)(?:\.([^.]+))?)$/
 const OpengraphImageWidth = 1200
 const OpengraphImageHeight = 630
@@ -13,26 +12,8 @@ function getOpenGraphPath(type: string, key: string) {
 	return `${type}/${key}/opengraph.png`
 }
 
-function isImage(asset: string) {
-	const match = asset.match(ASSET_PATH_MATCHER)
-	const filename = match ? match[1] : asset
-	return ASSET_IMAGE_MATCHER.test(filename)
-}
-
 function getAssetDir(type: string, key: string) {
 	return `${type}/${key}`
-}
-
-function widthToSize(minWidth: number): keyof typeof ASSET_SIZES {
-	if (minWidth <= ASSET_SIZES.s) {
-		return 's'
-	} else if (minWidth <= ASSET_SIZES.m) {
-		return 'm'
-	} else if (minWidth <= ASSET_SIZES.l) {
-		return 'l'
-	} else {
-		return 'xl'
-	}
 }
 
 function getImageAssetPath(
@@ -46,7 +27,7 @@ function getImageAssetPath(
 	const filename = match ? match[1] : asset
 	const basename = match ? match[2] : filename
 	const dir = getAssetDir(type, key)
-	const size = widthToSize(width)
+	const size = width <= 125 ? ASSET_SIZES.s : width <= 250 ? ASSET_SIZES.m : width <= 500 ? ASSET_SIZES.l : ASSET_SIZES.xl
 
 	return `${dir}/${basename}.${size}.${format}`
 }
@@ -62,13 +43,10 @@ function getAssetPath(type: string, key: string, asset: string) {
 
 export {
 	getOpenGraphPath,
-	isImage,
 	getAssetDir,
-	widthToSize,
 	getImageAssetPath,
 	getAssetPath,
 	ASSET_SIZES,
-	ASSET_IMAGE_MATCHER,
 	ASSET_PATH_MATCHER,
 	OpengraphImageWidth,
 	OpengraphImageHeight,

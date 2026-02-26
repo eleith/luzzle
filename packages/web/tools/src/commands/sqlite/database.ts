@@ -7,7 +7,6 @@ import {
 	type WebPiecesAsset,
 	getAssetPath,
 	getImageAssetPath,
-	isImage,
 	ASSET_SIZES,
 	getOpenGraphPath,
 } from '@luzzle/web.utils'
@@ -52,7 +51,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addColumn('asset_path', 'text', (col) => col.notNull())
 		.addColumn('mime_type', 'text', (col) => col.notNull())
 		.addColumn('is_embedded', 'boolean', (col) => col.notNull())
-		.addColumn('cached_content', 'text')
+		.addColumn('content', 'text')
 		.addPrimaryKeyConstraint('web_pieces_assets_pk', ['piece_file_path', 'asset_name', 'transformation'])
 		.execute()
 
@@ -262,12 +261,10 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 		values.push({
 			piece_file_path: item.file_path,
 			piece_key: key,
-			asset_name: 'opengraph.png',
-			transformation: 'image.opengraph',
+			transformation: 'opengraph',
 			asset_path: ogPath,
 			mime_type: 'image/png',
 			is_embedded: false,
-			cached_content: null,
 		})
 
 		if (fields.length) {
@@ -282,15 +279,14 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 				values.push({
 					piece_file_path: item.file_path,
 					piece_key: key,
-					asset_name: asset,
+					piece_asset_path: asset,
 					transformation: 'original',
 					asset_path: assetPath,
 					mime_type: mimeType,
 					is_embedded: false,
-					cached_content: null,
 				})
 
-				if (isImage(asset)) {
+				if (mimeType.startsWith('image')) {
 					for (const format of ['avif', 'jpg'] as const) {
 						for (const width of Object.values(ASSET_SIZES)) {
 							const variantPath = getImageAssetPath(item.type, key, asset, width, format)
@@ -299,12 +295,11 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 							values.push({
 								piece_file_path: item.file_path,
 								piece_key: key,
-								asset_name: asset,
+								piece_asset_path: asset,
 								transformation: `image.${sizeCategory}.${format}`,
 								asset_path: variantPath,
 								mime_type: getMimeType(format),
 								is_embedded: false,
-								cached_content: null,
 							})
 						}
 					}

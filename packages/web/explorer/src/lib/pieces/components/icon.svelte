@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Component } from 'svelte'
-	import { ASSET_SIZES } from '@luzzle/web.utils'
 	import type { WebPiece } from '$lib/pieces/types'
 	import IconDefault from '$lib/pieces/components/icon.default.svelte'
 	import { getPieceHelpers, type PieceIconProps, type PieceMode } from '$lib/pieces/helpers.js'
@@ -23,15 +22,15 @@
 		active?: boolean
 		lazy?: boolean
 		piece: WebPiece
-		size: keyof typeof ASSET_SIZES | { width: number; height?: number }
+		size: { width: number; height?: number }
 	}
 
 	let { piece, lazy = false, size }: Props = $props()
 
 	const metadata = $derived(JSON.parse(piece.json_metadata || '{}')) as Record<string, unknown>
 	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
-	const width = $derived(typeof size === 'string' ? ASSET_SIZES[size] : size.width)
-	const height = $derived(typeof size !== 'string' && size.height ? size.height : (width * 3) / 2)
+	const width = $derived(size.width)
+	const height = $derived(size.height ? size.height : (width * 3) / 2)
 	const mode = getContext<PieceMode>('piece-mode')
 	const helpers = getPieceHelpers(piece, mode)
 	const IconComponent = $derived(iconComponentMap.get(piece.type)?.default || IconDefault)

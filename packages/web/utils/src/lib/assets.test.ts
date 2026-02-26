@@ -1,7 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import {
 	getImageAssetPath,
-	isImage,
 	getAssetPath,
 	getAssetDir,
 	getOpenGraphPath,
@@ -41,28 +40,6 @@ describe('./lib/assets.ts', () => {
 	test('should return the path to the variant with avif format', () => {
 		const path = getImageAssetPath('books', 'my-key', 'image.jpg', 350, 'avif')
 		expect(path).toBe('books/my-key/image.l.avif')
-	})
-
-	test('should return false if the asset is not an image', () => {
-		expect(isImage('document.pdf')).toBe(false)
-	})
-
-	test('should return true if the asset is an image', () => {
-		expect(isImage('image.jpg')).toBe(true)
-		expect(isImage('image.jpeg')).toBe(true)
-		expect(isImage('image.png')).toBe(true)
-		expect(isImage('image.webp')).toBe(true)
-		expect(isImage('image.avif')).toBe(true)
-		expect(isImage('image.gif')).toBe(true)
-	})
-
-	test('should return false if the asset has no extension', () => {
-		expect(isImage('image')).toBe(false)
-	})
-
-	test('isImage should handle asset without matching path', () => {
-		expect(isImage('')).toBe(false)
-		expect(isImage('invalid-asset-name')).toBe(false)
 	})
 
 	test('getImageAssetPath should handle asset without matching path', () => {

@@ -5,7 +5,6 @@ import {
 	type Config,
 	getAssetPath,
 	getImageAssetPath,
-	isImage,
 	getOpenGraphPath,
 } from '@luzzle/web.utils'
 import { mockKysely } from './database.mock.js'
@@ -21,7 +20,6 @@ const mocks = {
 	generateAssetKey: vi.mocked(generateAssetKey),
 	getAssetPath: vi.mocked(getAssetPath),
 	getImageAssetPath: vi.mocked(getImageAssetPath),
-	isImage: vi.mocked(isImage),
 	getOpenGraphPath: vi.mocked(getOpenGraphPath),
 }
 
@@ -339,25 +337,24 @@ describe('generate-web-sqlite', () => {
 		mocks.getAssetPath.mockImplementation((type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`)
 		mocks.getImageAssetPath.mockImplementation((type, id, asset, width, format) => `${type}/${id}/${asset.split('/').pop()}.${width}.${format}`)
 		mocks.getOpenGraphPath.mockImplementation((type, id) => `${type}/${id}/opengraph.png`)
-		mocks.isImage.mockImplementation((asset) => asset.endsWith('.jpg'))
 
 		await generateWebSqlite(db, config)
 
 		expect(queries.insertInto).toHaveBeenCalledWith('web_pieces_assets')
 				expect(queries.values).toHaveBeenCalledWith([
-					expect.objectContaining({ asset_name: 'opengraph.png', transformation: 'image.opengraph' }),
-					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'original' }),
-					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.s.avif' }),
-					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.m.avif' }),
-					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.l.avif' }),
-					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.xl.avif' }),
-					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.s.jpg' }),
-					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.m.jpg' }),
-					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.l.jpg' }),
-					expect.objectContaining({ asset_name: 'cover.jpg', transformation: 'image.xl.jpg' }),
-					expect.objectContaining({ asset_name: 'doc.pdf', transformation: 'original' }),
-					expect.objectContaining({ asset_name: 'file.unknown_ext', transformation: 'original' }),
-					expect.objectContaining({ asset_name: 'opengraph.png', transformation: 'image.opengraph' }),
+					expect.objectContaining({ transformation: 'opengraph' }),
+					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'original' }),
+					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.s.avif' }),
+					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.m.avif' }),
+					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.l.avif' }),
+					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.xl.avif' }),
+					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.s.jpg' }),
+					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.m.jpg' }),
+					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.l.jpg' }),
+					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.xl.jpg' }),
+					expect.objectContaining({ piece_asset_path: 'doc.pdf', transformation: 'original' }),
+					expect.objectContaining({ piece_asset_path: 'file.unknown_ext', transformation: 'original' }),
+					expect.objectContaining({ transformation: 'opengraph' }),
 				])
 			})
 		})

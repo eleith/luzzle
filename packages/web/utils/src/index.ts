@@ -3,13 +3,10 @@ import {
 	getImageAssetPath,
 	getAssetDir,
 	getAssetPath,
-	isImage,
 	ASSET_SIZES,
 	ASSET_PATH_MATCHER,
-	ASSET_IMAGE_MATCHER,
 	OpengraphImageWidth,
 	OpengraphImageHeight,
-	widthToSize,
 } from "./lib/assets.js";
 import { WebPiecesAsset, WebPieces, WebPieceTags } from "./lib/sqlite.js";
 import type { Config, ConfigPublic } from "./lib/config/config.js";
@@ -24,11 +21,8 @@ export {
 	getAssetPath,
 	ASSET_SIZES,
 	ASSET_PATH_MATCHER,
-	ASSET_IMAGE_MATCHER,
 	OpengraphImageWidth,
 	OpengraphImageHeight,
-	isImage,
-	widthToSize,
 	type WebPieceTags,
 	type WebPiecesAsset,
 	type WebPieces,

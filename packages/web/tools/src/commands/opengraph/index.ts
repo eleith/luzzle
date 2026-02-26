@@ -14,11 +14,11 @@ async function upsertAssetRecord(
 		.insertInto('web_pieces_assets')
 		.values(record)
 		.onConflict((oc) =>
-			oc.columns(['piece_file_path', 'asset_name', 'transformation']).doUpdateSet({
+			oc.columns(['piece_file_path', 'piece_asset_path', 'transformation']).doUpdateSet({
 				asset_path: record.asset_path,
 				mime_type: record.mime_type,
 				is_embedded: record.is_embedded,
-				cached_content: record.cached_content,
+				content: record.content,
 			})
 		)
 		.execute()
@@ -66,12 +66,10 @@ export default async function generateOpenGraphs(
 				await upsertAssetRecord(db, {
 					piece_file_path: item.file_path,
 					piece_key: item.key,
-					asset_name: 'opengraph.png',
-					transformation: 'image.opengraph',
+					transformation: 'opengraph',
 					asset_path: ogPath,
 					mime_type: 'image/png',
 					is_embedded: false,
-					cached_content: null,
 				})
 
 				console.log(`generated opengraph for ${item.file_path} (${item.key})`)

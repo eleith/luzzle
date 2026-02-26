@@ -5,7 +5,6 @@ import { Pieces, LuzzleSelectable } from '@luzzle/core'
 import {
 	getAssetDir,
 	getAssetPath,
-	isImage,
 	ASSET_SIZES,
 	getImageAssetPath,
 	type WebPiecesAsset,
@@ -30,11 +29,11 @@ async function upsertAssetRecord(
 		.insertInto('web_pieces_assets')
 		.values(record)
 		.onConflict((oc) =>
-			oc.columns(['piece_file_path', 'asset_name', 'transformation']).doUpdateSet({
+			oc.columns(['piece_file_path', 'piece_asset_path', 'transformation']).doUpdateSet({
 				asset_path: record.asset_path,
 				mime_type: record.mime_type,
 				is_embedded: record.is_embedded,
-				cached_content: record.cached_content,
+				content: record.content,
 			})
 		)
 		.execute()
@@ -68,12 +67,11 @@ async function generateVariantsForAssetField(
 			await upsertAssetRecord(db, {
 				piece_file_path: item.file_path,
 				piece_key: key,
-				asset_name: asset,
+				piece_asset_path: asset,
 				transformation: `image.${sizeCategory}.${job.format}`,
 				asset_path: assetPath,
 				mime_type: getMimeType(job.format),
 				is_embedded: false,
-				cached_content: null,
 			})
 		})
 		await Promise.all(toFileJobs)
@@ -148,15 +146,14 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 						await upsertAssetRecord(db, {
 							piece_file_path: item.file_path,
 							piece_key: key,
-							asset_name: asset,
+							piece_asset_path: asset,
 							transformation: 'original',
 							asset_path: assetPath,
 							mime_type: mimeType,
 							is_embedded: false,
-							cached_content: null,
 						})
 
-						if (isImage(asset)) {
+						if (mimeType.startsWith('image/')) {
 							await generateVariantsForAssetField(item, asset, pieces, options.outDir, config, db)
 						}
 					} catch (error) {

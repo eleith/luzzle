@@ -80,8 +80,7 @@ describe('commands/opengraph/index.ts', () => {
 			expect.objectContaining({
 				piece_file_path: '/path/to/test.md',
 				piece_key: 'aa',
-				asset_name: 'opengraph.png',
-				transformation: 'image.opengraph',
+				transformation: 'opengraph',
 				asset_path: 'test/aa/opengraph.png',
 				mime_type: 'image/png',
 				is_embedded: false,

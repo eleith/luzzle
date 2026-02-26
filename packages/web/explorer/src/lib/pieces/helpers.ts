@@ -1,4 +1,4 @@
-import { widthToSize, type WebPieceTags } from '@luzzle/web.utils'
+import { type WebPieceTags } from '@luzzle/web.utils'
 import { page } from '$app/state'
 import type { WebPiece } from './types'
 
@@ -74,26 +74,21 @@ export function getPieceHelpers(
 			minWidth: number,
 			format: 'jpg' | 'avif' | 'webp' | 'png'
 		) => {
-			const size = widthToSize(minWidth)
+			const size = minWidth <= 125 ? 's' : minWidth <= 250 ? 'm' : minWidth <= 500 ? 'l' : 'xl'
 			const transformation = `image.${size}.${format}`
-			const found = piece.assets.find(
-				(a) => a.asset_name === assetName && a.transformation === transformation
-			)
+			const assets = piece.assets.filter((asset) => asset.piece_asset_path === assetName)
+			const transformed = assets.find((a) => a.transformation === transformation)?.piece_asset_path
+			const original = assets.find((a) => a.transformation === 'original')?.piece_asset_path
 
-			if (found) {
-				return `${url}/pieces/assets/${found.asset_path}`
+			if (transformed) {
+				return `${url}/pieces/assets/${transformed}`
 			}
-
-			// Fallback to original if transformation not found
-			const original = piece.assets.find(
-				(a) => a.asset_name === assetName && a.transformation === 'original'
-			)
 
 			if (original) {
-				return `${url}/pieces/assets/${original.asset_path}`
+				return `${url}/pieces/assets/${original}`
 			}
 
-			return `${url}/editor/asset/${assetName}`
+			throw new Error(`Asset ${assetName} not found for piece ${piece.slug}`)
 		}
 	}
 }

@@ -24,10 +24,9 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		return error(404, `piece does not exist`)
 	}
 	const piece = await hydrateWithAssets(webPiece)
-	const asset = piece.assets.find(
-		(a) => a.asset_name === piece.media && a.transformation === 'image.l.jpg'
-	)
-	const mediaPath = asset?.asset_path || null
+	const assets = piece.assets.filter((assets) => assets.piece_asset_path === piece.media)
+	const asset = assets.find((a) => a.transformation === 'image.l.jpg')
+	const mediaPath = asset?.piece_asset_path || null
 
 	let palette: PieceIconPalette | undefined
 

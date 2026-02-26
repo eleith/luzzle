@@ -9,7 +9,6 @@ import { generateVariantJobs } from './variants.js'
 import {
 	getAssetDir,
 	getAssetPath,
-	isImage,
 	type Config,
 } from '@luzzle/web.utils'
 import { generateAssetKey } from '@luzzle/web.utils/server'
@@ -36,7 +35,6 @@ const mocks = {
 	getAssetPath: vi.mocked(getAssetPath),
 	getAssetDir: vi.mocked(getAssetDir),
 	generateAssetKey: vi.mocked(generateAssetKey),
-	isImage: vi.mocked(isImage),
 	mkdir: vi.mocked(mkdir),
 	writeFile: vi.mocked(writeFile),
 }
@@ -100,7 +98,6 @@ describe('generateAssets', () => {
 			]
 		)
 
-		mocks.isImage.mockImplementation((asset) => asset.endsWith('.jpg'))
 		mocks.getAssetDir.mockImplementation((type, key) => `${type}/${key}`)
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
@@ -163,7 +160,6 @@ describe('generateAssets', () => {
 			]
 		)
 
-		mocks.isImage.mockReturnValue(false)
 		mocks.getAssetDir.mockImplementation((type, key) => `${type}/${key}`)
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
@@ -209,7 +205,6 @@ describe('generateAssets', () => {
 		)
 
 		mocks.writeFile.mockRejectedValueOnce(new Error('Write error'))
-		mocks.isImage.mockReturnValue(false)
 		mocks.getAssetDir.mockImplementation((type, key) => `${type}/${key}`)
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
@@ -253,7 +248,6 @@ describe('generateAssets', () => {
 			]
 		)
 
-		mocks.isImage.mockReturnValue(true)
 		mocks.getAssetDir.mockReturnValue('books/1')
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
@@ -320,7 +314,6 @@ describe('generateAssets', () => {
 			]
 		)
 		mocks.getLastRunFor.mockResolvedValue(new Date())
-		mocks.isImage.mockReturnValue(true)
 		mocks.generateVariantJobs.mockResolvedValue([
 			{
 				sharp: { toFile: vi.fn().mockResolvedValue({ size: 100 }) } as unknown as Sharp,
@@ -365,7 +358,6 @@ describe('generateAssets', () => {
 			]
 		)
 		mocks.getLastRunFor.mockResolvedValue(new Date())
-		mocks.isImage.mockReturnValue(true)
 		mocks.generateVariantJobs.mockResolvedValue([
 			{
 				sharp: { toFile: vi.fn().mockResolvedValue({ size: 100 }) } as unknown as Sharp,
@@ -444,7 +436,6 @@ describe('generateAssets', () => {
 			]
 		)
 
-		mocks.isImage.mockReturnValue(true)
 		mocks.getAssetDir.mockReturnValue('books/1')
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
@@ -495,7 +486,6 @@ describe('generateAssets', () => {
 			]
 		)
 
-		mocks.isImage.mockReturnValue(true)
 		mocks.getAssetDir.mockReturnValue('books/1')
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
@@ -545,7 +535,6 @@ describe('generateAssets', () => {
 			]
 		)
 
-		mocks.isImage.mockReturnValue(true)
 		mocks.getAssetDir.mockReturnValue('books/1')
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
@@ -588,7 +577,6 @@ describe('generateAssets', () => {
 			]
 		)
 
-		mocks.isImage.mockReturnValue(true)
 		mocks.getAssetDir.mockReturnValue('books/1')
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
@@ -629,7 +617,6 @@ describe('generateAssets', () => {
 			]
 		)
 
-		mocks.isImage.mockReturnValue(true)
 		mocks.getAssetDir.mockReturnValue('books/1')
 		mocks.getAssetPath.mockImplementation(
 			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`

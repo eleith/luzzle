@@ -76,7 +76,13 @@
 						<div style="display: flex;">
 							<div style="align-self: baseline;">
 								{#key activePieceId === piece.id}
-									<PieceIcon {piece} size="s" active={activePieceId === piece.id} />
+									<PieceIcon
+										{piece}
+										active={activePieceId === piece.id}
+										size={{
+											width: 125
+										}}
+									/>
 								{/key}
 							</div>
 						</div>
