@@ -2,71 +2,65 @@ import { building } from '$app/environment'
 import { config } from '$lib/server/config'
 import { getDatabaseClient, sql } from '@luzzle/core'
 import type { WebPieceTags, WebPieces, WebPiecesAsset } from '@luzzle/web.utils'
+import type { WebPiece } from '$lib/pieces/types'
+import type { SelectQueryBuilder } from 'kysely'
+
+type WebDatabase = {
+	web_pieces: WebPieces
+	web_pieces_fts5: WebPieces
+	web_pieces_tags: WebPieceTags
+	web_pieces_assets: WebPiecesAsset
+}
 
 function initializeDatabase() {
 	const dbPath = building ? ':memory:' : config.paths.database
-	return getDatabaseClient(dbPath).withTables<{
-		web_pieces: WebPieces
-		web_pieces_fts5: WebPieces
-		web_pieces_tags: WebPieceTags
-		web_pieces_assets: WebPiecesAsset
-	}>()
+	return getDatabaseClient(dbPath).withTables<WebDatabase>()
 }
 
 const db = initializeDatabase()
 
-import type { WebPiece } from '$lib/pieces/types'
+export async function getWebPieces(
+	query: SelectQueryBuilder<WebDatabase, 'web_pieces', WebPieces>
+): Promise<WebPiece[]> {
+	const pieces = await query.execute()
+	if (pieces.length === 0) return []
 
-type WebPiecesJoinedRow = WebPieces & {
-	asset_name: string | null
-	transformation: string | null
-	asset_path: string | null
-	mime_type: string | null
-	is_embedded: number | boolean | null
-	cached_content: string | null
-}
+	const paths = pieces.map((p) => p.file_path)
+	const assets = await db
+		.selectFrom('web_pieces_assets')
+		.selectAll()
+		.where('piece_file_path', 'in', paths)
+		.execute()
 
-export function mapRowsToWebPieces(rows: WebPiecesJoinedRow[]): WebPiece[] {
-	const piecesMap = new Map<string, WebPiece>()
-
-	for (const row of rows) {
-		let piece = piecesMap.get(row.id)
-		if (!piece) {
-			piece = {
-				id: row.id,
-				key: row.key,
-				title: row.title,
-				slug: row.slug,
-				file_path: row.file_path,
-				note: row.note,
-				date_updated: row.date_updated,
-				date_added: row.date_added,
-				date_consumed: row.date_consumed,
-				type: row.type,
-				media: row.media,
-				json_metadata: row.json_metadata,
-				summary: row.summary,
-				keywords: row.keywords,
-				assets: []
-			}
-			piecesMap.set(row.id, piece)
-		}
-
-		if (row.asset_name) {
-			piece.assets.push({
-				piece_file_path: row.file_path,
-				piece_key: row.key,
-				asset_name: row.asset_name,
-				transformation: row.transformation as string,
-				asset_path: row.asset_path as string,
-				mime_type: row.mime_type as string,
-				is_embedded: !!row.is_embedded,
-				cached_content: row.cached_content
-			})
-		}
+	const assetMap = new Map<string, WebPiecesAsset[]>()
+	for (const asset of assets) {
+		const list = assetMap.get(asset.piece_file_path) || []
+		list.push(asset)
+		assetMap.set(asset.piece_file_path, list)
 	}
 
-	return Array.from(piecesMap.values())
+	return pieces.map((p) => ({
+		...p,
+		assets: assetMap.get(p.file_path) || []
+	}))
+}
+
+export async function getWebPiece(
+	query: SelectQueryBuilder<WebDatabase, 'web_pieces', WebPieces>
+): Promise<WebPiece | null> {
+	const piece = await query.executeTakeFirst()
+	if (!piece) return null
+
+	const assets = await db
+		.selectFrom('web_pieces_assets')
+		.selectAll()
+		.where('piece_file_path', '=', piece.file_path)
+		.execute()
+
+	return {
+		...piece,
+		assets
+	}
 }
 
 export { sql, db }

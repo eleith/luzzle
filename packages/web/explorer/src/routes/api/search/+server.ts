@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { db, mapRowsToWebPieces, sql } from '$lib/server/database'
+import { db, getWebPieces, sql } from '$lib/server/database'
 
 const MAX_RESULTS = 20
 
@@ -35,14 +35,9 @@ export const GET: RequestHandler = async ({ request }) => {
 
 	const ids = idsResult.map((x) => x.id)
 
-	const rows = await db
-		.selectFrom('web_pieces')
-		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
-		.selectAll()
-		.where('web_pieces.id', 'in', ids)
-		.execute()
-
-	const pieces = mapRowsToWebPieces(rows)
+	const pieces = await getWebPieces(
+		db.selectFrom('web_pieces').selectAll().where('web_pieces.id', 'in', ids)
+	)
 
 	return json({
 		pieces

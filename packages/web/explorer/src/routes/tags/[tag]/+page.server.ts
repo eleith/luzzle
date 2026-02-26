@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { db, mapRowsToWebPieces } from '$lib/server/database'
+import { db, getWebPieces } from '$lib/server/database'
 
 const TAKE_DEFAULT = 50
 
@@ -19,29 +19,19 @@ export const load: PageServerLoad = async (page) => {
 
 	const ids = pieceTags.map((x) => x.piece_id)
 
-	const idQuery = db
-		.selectFrom('web_pieces')
-		.select('id')
-		.where('id', 'in', ids)
-		.orderBy('date_consumed', 'desc')
-		.limit(TAKE_DEFAULT + 1)
+	const pieces = await getWebPieces(
+		db
+			.selectFrom('web_pieces')
+			.selectAll()
+			.where('id', 'in', ids)
+			.orderBy('date_consumed', 'desc')
+			.limit(TAKE_DEFAULT + 1)
+	)
 
-	const pageIds = (await idQuery.execute()).map((x) => x.id)
-
-	const hasMore = pageIds.length === TAKE_DEFAULT + 1
+	const hasMore = pieces.length === TAKE_DEFAULT + 1
 	if (hasMore) {
-		pageIds.pop()
+		pieces.pop()
 	}
-
-	const rows = await db
-		.selectFrom('web_pieces')
-		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
-		.selectAll()
-		.where('web_pieces.id', 'in', pageIds)
-		.orderBy('date_consumed', 'desc')
-		.execute()
-
-	const pieces = mapRowsToWebPieces(rows)
 
 	return {
 		pieces,

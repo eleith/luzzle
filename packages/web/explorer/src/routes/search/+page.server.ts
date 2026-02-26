@@ -1,4 +1,4 @@
-import { db, mapRowsToWebPieces, sql } from '$lib/server/database'
+import { db, getWebPieces, sql } from '$lib/server/database'
 import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 
@@ -39,14 +39,9 @@ export const load: PageServerLoad = async ({ url }) => {
 		ids.pop()
 	}
 
-	const rows = await db
-		.selectFrom('web_pieces')
-		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
-		.selectAll()
-		.where('web_pieces.id', 'in', ids)
-		.execute()
-
-	const pieces = mapRowsToWebPieces(rows)
+	const pieces = await getWebPieces(
+		db.selectFrom('web_pieces').selectAll().where('web_pieces.id', 'in', ids)
+	)
 
 	return {
 		pieces,

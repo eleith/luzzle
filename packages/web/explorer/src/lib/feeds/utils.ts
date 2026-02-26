@@ -1,5 +1,5 @@
 import { type WebPieces } from '@luzzle/web.utils'
-import { db, mapRowsToWebPieces } from '$lib/server/database'
+import { db, getWebPieces } from '$lib/server/database'
 import type { WebPiece } from '$lib/pieces/types'
 
 const MAX_FEED_ITEMS = 50
@@ -21,15 +21,13 @@ async function getPiecesForFeed(type: WebPieces['type'] | undefined): Promise<We
 		return []
 	}
 
-	const rows = await db
-		.selectFrom('web_pieces')
-		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
-		.selectAll()
-		.where('web_pieces.id', 'in', ids)
-		.orderBy('date_consumed', 'desc')
-		.execute()
-
-	return mapRowsToWebPieces(rows)
+	return getWebPieces(
+		db
+			.selectFrom('web_pieces')
+			.selectAll()
+			.where('web_pieces.id', 'in', ids)
+			.orderBy('date_consumed', 'desc')
+	)
 }
 
 async function getPiecesForTagFeed(tag: string): Promise<WebPiece[]> {
@@ -58,15 +56,13 @@ async function getPiecesForTagFeed(tag: string): Promise<WebPiece[]> {
 		return []
 	}
 
-	const rows = await db
-		.selectFrom('web_pieces')
-		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
-		.selectAll()
-		.where('web_pieces.id', 'in', pageIds)
-		.orderBy('date_consumed', 'desc')
-		.execute()
-
-	return mapRowsToWebPieces(rows)
+	return getWebPieces(
+		db
+			.selectFrom('web_pieces')
+			.selectAll()
+			.where('web_pieces.id', 'in', pageIds)
+			.orderBy('date_consumed', 'desc')
+	)
 }
 
 export { getPiecesForFeed, getPiecesForTagFeed }

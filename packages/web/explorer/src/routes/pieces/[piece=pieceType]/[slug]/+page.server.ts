@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { db, mapRowsToWebPieces } from '$lib/server/database'
+import { db, getWebPiece } from '$lib/server/database'
 import { config } from '$lib/server/config'
 import { processMarkdown } from '$lib/server/markdown'
 
@@ -8,16 +8,13 @@ export const load: PageServerLoad = async (page) => {
 	const type = page.params.piece
 	const slug = page.params.slug
 
-	const rows = await db
-		.selectFrom('web_pieces')
-		.leftJoin('web_pieces_assets', 'web_pieces.file_path', 'web_pieces_assets.piece_file_path')
-		.selectAll()
-		.where('web_pieces.type', '=', type)
-		.where('web_pieces.slug', '=', slug)
-		.execute()
-
-	const pieces = mapRowsToWebPieces(rows)
-	const piece = pieces[0]
+	const piece = await getWebPiece(
+		db
+			.selectFrom('web_pieces')
+			.selectAll()
+			.where('web_pieces.type', '=', type)
+			.where('web_pieces.slug', '=', slug)
+	)
 
 	if (!piece) {
 		return error(404, `piece does not exist`)
