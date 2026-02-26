@@ -83,7 +83,6 @@ describe('commands/opengraph/index.ts', () => {
 				transformation: 'opengraph',
 				asset_path: 'test/aa/opengraph.png',
 				mime_type: 'image/png',
-				is_embedded: false,
 			})
 		)
 		expect(mocks.setLastRunFor).toHaveBeenCalledOnce()

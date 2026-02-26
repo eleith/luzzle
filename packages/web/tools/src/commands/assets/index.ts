@@ -71,7 +71,6 @@ async function generateVariantsForAssetField(
 				transformation: `image.${sizeCategory}.${job.format}`,
 				asset_path: assetPath,
 				mime_type: getMimeType(job.format),
-				is_embedded: false,
 			})
 		})
 		await Promise.all(toFileJobs)
@@ -150,7 +149,6 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 							transformation: 'original',
 							asset_path: assetPath,
 							mime_type: mimeType,
-							is_embedded: false,
 						})
 
 						if (mimeType.startsWith('image/')) {

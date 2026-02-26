@@ -69,7 +69,6 @@ export default async function generateOpenGraphs(
 					transformation: 'opengraph',
 					asset_path: ogPath,
 					mime_type: 'image/png',
-					is_embedded: false,
 				})
 
 				console.log(`generated opengraph for ${item.file_path} (${item.key})`)

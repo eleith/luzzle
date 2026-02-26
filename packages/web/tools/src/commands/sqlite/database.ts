@@ -50,7 +50,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addColumn('transformation', 'text', (col) => col.notNull())
 		.addColumn('asset_path', 'text', (col) => col.notNull())
 		.addColumn('mime_type', 'text', (col) => col.notNull())
-		.addColumn('is_embedded', 'boolean', (col) => col.notNull())
+		.addColumn('is_embedded', 'boolean', (col) => col.notNull().defaultTo(0))
 		.addColumn('content', 'text')
 		.addPrimaryKeyConstraint('web_pieces_assets_pk', ['piece_file_path', 'transformation'])
 		.execute()
@@ -139,7 +139,9 @@ async function mapPieceItemToWebPiece(
 		summary: pieceConfig.fields.summary ? frontmatter[pieceConfig.fields.summary] : undefined,
 		note: item.note_markdown,
 		media: pieceConfig.fields.media ? frontmatter[pieceConfig.fields.media] : undefined,
-		keywords: pieceConfig.fields.tags ? frontmatter[pieceConfig.fields.tags] : undefined,
+		keywords: pieceConfig.fields.tags
+			? JSON.stringify(frontmatter[pieceConfig.fields.tags] || [])
+			: undefined,
 		date_added: item.date_added,
 		date_consumed: dateConsumed,
 		json_metadata: item.frontmatter_json,
@@ -259,7 +261,7 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 			transformation: 'opengraph',
 			asset_path: ogPath,
 			mime_type: 'image/png',
-			is_embedded: false,
+			is_embedded: 0,
 		})
 
 		if (fields.length) {
@@ -278,7 +280,7 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 					transformation: 'original',
 					asset_path: assetPath,
 					mime_type: mimeType,
-					is_embedded: false,
+					is_embedded: 0,
 				})
 
 				if (mimeType.startsWith('image')) {
@@ -294,7 +296,7 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 								transformation: `image.${sizeCategory}.${format}`,
 								asset_path: variantPath,
 								mime_type: mime.lookup(format) as string,
-								is_embedded: false,
+								is_embedded: 0,
 							})
 						}
 					}
