@@ -1,38 +1,25 @@
-import { type WebPieces } from '@luzzle/web.utils'
 import { db } from '$lib/server/database'
 import type { WebPiece } from '$lib/pieces/types'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
 const MAX_FEED_ITEMS = 50
 
-async function getPiecesForFeed(type: WebPieces['type'] | undefined): Promise<WebPiece[]> {
-	let idQuery = db
+async function getPiecesForFeed(type: WebPiece['type'] | undefined) {
+	let query = db
 		.selectFrom('web_pieces')
-		.select('id')
+		.selectAll()
 		.orderBy('date_consumed', 'desc')
 		.limit(MAX_FEED_ITEMS)
 
 	if (type) {
-		idQuery = idQuery.where('type', '=', type)
+		query = query.where('type', '=', type)
 	}
 
-	const ids = (await idQuery.execute()).map((x) => x.id)
-
-	if (ids.length === 0) {
-		return []
-	}
-
-	return hydrateWithAssets(
-		await db
-			.selectFrom('web_pieces')
-			.selectAll()
-			.where('web_pieces.id', 'in', ids)
-			.orderBy('date_consumed', 'desc')
-			.execute()
-	)
+	const pieces = await query.execute()
+	return hydrateWithAssets(pieces)
 }
 
-async function getPiecesForTagFeed(tag: string): Promise<WebPiece[]> {
+async function getPiecesForTagFeed(tag: string) {
 	const pieceTags = await db
 		.selectFrom('web_pieces_tags')
 		.select('piece_id')
@@ -45,27 +32,15 @@ async function getPiecesForTagFeed(tag: string): Promise<WebPiece[]> {
 
 	const ids = pieceTags.map((x) => x.piece_id)
 
-	const idQuery = db
+	const query = db
 		.selectFrom('web_pieces')
-		.select('id')
+		.selectAll()
 		.where('id', 'in', ids)
 		.orderBy('date_consumed', 'desc')
 		.limit(MAX_FEED_ITEMS)
 
-	const pageIds = (await idQuery.execute()).map((x) => x.id)
-
-	if (pageIds.length === 0) {
-		return []
-	}
-
-	return hydrateWithAssets(
-		await db
-			.selectFrom('web_pieces')
-			.selectAll()
-			.where('web_pieces.id', 'in', pageIds)
-			.orderBy('date_consumed', 'desc')
-			.execute()
-	)
+	const pieces = await query.execute()
+	return hydrateWithAssets(pieces)
 }
 
 export { getPiecesForFeed, getPiecesForTagFeed }
