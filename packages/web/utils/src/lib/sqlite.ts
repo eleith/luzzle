@@ -1,12 +1,12 @@
 export interface WebPiecesAsset {
 	piece_file_path: string
 	piece_key: string
-	piece_asset_path?: string
+	piece_asset_path?: string | null
 	transformation: string
 	asset_path: string
 	mime_type: string
-  is_embedded?: 0 | 1;
-  content?: string;
+	is_embedded?: 0 | 1
+	content?: string
 }
 
 export interface WebPieces {
