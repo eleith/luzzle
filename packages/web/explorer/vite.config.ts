@@ -31,6 +31,9 @@ export default defineConfig({
 		contentWatcher('./content')
 	],
 	server: {
+		allowedHosts: process.env.LUZZLE_WEB_HOST
+			? [process.env.LUZZLE_WEB_HOST, 'localhost']
+			: ['localhost'],
 		hmr: {
 			clientPort: process.env.LUZZLE_HMR_PORT ? Number(process.env.LUZZLE_HMR_PORT) : undefined
 		}

@@ -1,0 +1,45 @@
+FROM node:22-slim
+
+RUN apt-get update && apt-get install -y rsync && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+COPY --chown=:0 package.json ./package.json
+COPY --chown=:0 src ./src
+COPY --chown=:0 static ./static
+COPY --chown=:0 scripts ./scripts
+COPY --chown=:0 tsconfig.json ./tsconfig.json
+COPY --chown=:0 svelte.config.js ./svelte.config.js
+COPY --chown=:0 vite.config.ts ./vite.config.ts
+COPY --chown=:0 eslint.config.js ./eslint.config.js
+
+# Local Package Injection (with internal dependency setup)
+COPY --from=core . /local/core
+COPY --from=utils . /local/utils
+COPY --from=tools . /local/tools
+
+# Setup internal links for local packages (e.g. tools depends on core/utils)
+RUN cd /local/tools && \
+    npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
+    npm pkg set 'dependencies[@luzzle/web.utils]'=file:/local/utils
+
+RUN cd /local/core && rm -rf node_modules && npm install
+RUN cd /local/utils && rm -rf node_modules && npm install
+RUN cd /local/tools && rm -rf node_modules && npm install
+
+RUN npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
+    npm pkg set 'dependencies[@luzzle/web.utils]'=file:/local/utils && \
+    npm pkg set 'devDependencies[@luzzle/web.tools]'=file:/local/tools
+
+RUN rm -f package-lock.json && npm install --include dev
+
+RUN mkdir -p /app/assets/pieces /app/assets/build /app/data /app/content /app/build /app/node_modules/.cache /app/node_modules/.vite /app/.svelte-kit && \
+    touch /app/config.yaml /app/.env && \
+    chmod 777 /app && \
+    chmod -R 777 /app/src /app/scripts /app/static /app/assets /app/data /app/content /app/build /app/node_modules/.cache /app/node_modules/.vite /app/.svelte-kit /app/config.yaml /app/.env /app/package.json /app/package-lock.json
+
+EXPOSE 3000
+
+ENTRYPOINT ["node", "scripts/manager.js"]

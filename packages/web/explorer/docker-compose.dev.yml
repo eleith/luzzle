@@ -1,15 +1,18 @@
 services:
   luzzle-dev-web:
     build:
-      dockerfile: Dockerfile
-      secrets:
-        - npmrc
+      dockerfile: Dockerfile.dev
       context: .
+      additional_contexts:
+        core: ../../core
+        utils: ../utils
+        tools: ../tools
     container_name: luzzle-dev-web
     user: '${UID:-1000}:${GID:-1000}'
     env_file: .env
     environment:
       - LUZZLE_APP_URL=${LUZZLE_APP_URL:-http://localhost:8080}
+      - LUZZLE_WEB_HOST=${LUZZLE_WEB_HOST:-luzzle-dev-web}
       - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET} # generate by `openssl rand -hex 32`
       - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN} # generate by `openssl rand -hex 32`
       - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME:-admin}
@@ -38,10 +41,12 @@ services:
 
   luzzle-dev-builder:
     build:
-      dockerfile: ../builder/Dockerfile
-      secrets:
-        - npmrc
+      dockerfile: Dockerfile.dev
       context: ../builder
+      additional_contexts:
+        core: ../../core
+        utils: ../utils
+        tools: ../tools
     container_name: luzzle-dev-builder
     user: '${UID:-1000}:${GID:-1000}'
     ports:
@@ -59,12 +64,12 @@ services:
       - ./demo/assets:/app/assets
       - ./demo/data:/app/data
       - ./demo/archive:/app/archive
+      - ../builder/server.js:/app/server.js
+      - ../builder/scripts:/app/scripts
 
   luzzle-dev-proxy:
     build:
       dockerfile: ../proxy/Dockerfile
-      secrets:
-        - npmrc
       context: ../proxy
     container_name: luzzle-dev-proxy
     user: '${UID:-1000}:${GID:-1000}'
@@ -83,10 +88,6 @@ services:
       - ./nginx/logs:/tmp/logs
     depends_on:
       - luzzle-dev-web
-
-secrets:
-  npmrc:
-    file: $HOME/.npmrc
 
 networks:
   luzzle:

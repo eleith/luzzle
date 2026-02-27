@@ -58,7 +58,7 @@ export function getPieceHelpers(
 	mode: PieceMode = 'public'
 ): PieceComponentHelpers {
 	const config = page.data.config
-	const url = mode == 'public' ? config.url.luzzle_assets || config.url.app : config.url.app
+	const url = mode == 'public' ? config.url.luzzle_assets || config.url.app : ''
 
 	if (mode === 'preview') {
 		return {
@@ -77,8 +77,8 @@ export function getPieceHelpers(
 			const size = minWidth <= 125 ? 's' : minWidth <= 250 ? 'm' : minWidth <= 500 ? 'l' : 'xl'
 			const transformation = `image.${size}.${format}`
 			const assets = piece.assets.filter((asset) => asset.piece_asset_path === assetName)
-			const transformed = assets.find((a) => a.transformation === transformation)?.piece_asset_path
-			const original = assets.find((a) => a.transformation === 'original')?.piece_asset_path
+			const transformed = assets.find((a) => a.transformation === transformation)?.asset_path
+			const original = assets.find((a) => a.transformation === 'original')?.asset_path
 
 			if (transformed) {
 				return `${url}/pieces/assets/${transformed}`
