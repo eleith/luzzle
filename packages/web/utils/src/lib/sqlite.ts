@@ -5,8 +5,8 @@ export interface WebPiecesAsset {
 	transformation: string
 	asset_path: string
 	mime_type: string
-	is_embedded: boolean
-	content?: string
+  is_embedded?: 0 | 1;
+  content?: string;
 }
 
 export interface WebPieces {
