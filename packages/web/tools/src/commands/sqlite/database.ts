@@ -46,13 +46,17 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.ifNotExists()
 		.addColumn('piece_file_path', 'text', (col) => col.notNull())
 		.addColumn('piece_key', 'text', (col) => col.notNull())
-		.addColumn('piece_asset_path', 'text')
+		.addColumn('piece_asset_path', 'text', (col) => col.defaultTo(null))
 		.addColumn('transformation', 'text', (col) => col.notNull())
 		.addColumn('asset_path', 'text', (col) => col.notNull())
 		.addColumn('mime_type', 'text', (col) => col.notNull())
 		.addColumn('is_embedded', 'boolean', (col) => col.defaultTo(0))
 		.addColumn('content', 'text')
-		.addPrimaryKeyConstraint('web_pieces_assets_pk', ['piece_file_path', 'transformation'])
+		.addPrimaryKeyConstraint('web_pieces_assets_pk', [
+			'piece_file_path',
+			'transformation',
+			'piece_asset_path',
+		])
 		.execute()
 
 	await db.schema
