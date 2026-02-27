@@ -40,5 +40,5 @@ export async function processMarkdown(markdown: string) {
 	const file = await processor.process(markdown)
 	const html = String(file)
 
-	return `<section class="markdown">${html}<section>`
+	return `<section class="markdown">${html}</section>`
 }

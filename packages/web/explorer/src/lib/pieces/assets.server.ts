@@ -17,6 +17,8 @@ export async function hydrateWithAssets(
 		.selectFrom('web_pieces_assets')
 		.selectAll()
 		.where('piece_file_path', 'in', paths)
+		.orderBy('piece_asset_path')
+		.orderBy('transformation')
 		.execute()
 
 	const groupedAssets = Object.groupBy(assets, (asset) => asset.piece_file_path)
