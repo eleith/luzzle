@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web.tools",
-	"version": "0.0.104",
+	"version": "0.0.105",
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
@@ -43,7 +43,7 @@
 	},
 	"dependencies": {
 		"@luzzle/core": "0.0.44",
-		"@luzzle/web.utils": "0.0.28",
+		"@luzzle/web.utils": "0.0.29",
 		"lightningcss": "^1.30.2",
 		"mime-types": "^3.0.2",
 		"puppeteer": "24.19.0",
