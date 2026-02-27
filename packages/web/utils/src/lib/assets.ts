@@ -27,7 +27,7 @@ function getImageAssetPath(
 	const filename = match ? match[1] : asset
 	const basename = match ? match[2] : filename
 	const dir = getAssetDir(type, key)
-	const size = width <= 125 ? ASSET_SIZES.s : width <= 250 ? ASSET_SIZES.m : width <= 500 ? ASSET_SIZES.l : ASSET_SIZES.xl
+	const size = width <= 125 ? 's' : width <= 250 ? 'm' : width <= 500 ? 'l' : 'xl' 
 
 	return `${dir}/${basename}.${size}.${format}`
 }
