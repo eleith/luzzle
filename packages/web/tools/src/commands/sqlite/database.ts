@@ -1,4 +1,10 @@
-import { type LuzzleDatabase, sql, LuzzleSelectable } from '@luzzle/core'
+import {
+	type LuzzleDatabase,
+	sql,
+	LuzzleSelectable,
+	getFrontmatterValue,
+	getFrontmatterValues,
+} from '@luzzle/core'
 import path from 'path'
 import {
 	type WebPieces,
@@ -49,6 +55,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addColumn('piece_asset_path', 'text', (col) => col.defaultTo(null))
 		.addColumn('transformation', 'text', (col) => col.notNull())
 		.addColumn('asset_path', 'text', (col) => col.notNull())
+		.addColumn('piece_field', 'text')
 		.addColumn('mime_type', 'text', (col) => col.notNull())
 		.addColumn('is_embedded', 'boolean', (col) => col.defaultTo(0))
 		.addColumn('content', 'text')
@@ -80,7 +87,6 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addColumn('title', 'text')
 		.addColumn('summary', 'text')
 		.addColumn('note', 'text')
-		.addColumn('media', 'text')
 		.addColumn('keywords', 'text')
 		.addColumn('json_metadata', 'text')
 		.addColumn('date_added', 'datetime')
@@ -97,13 +103,13 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		db
 	)
 
-	await sql`CREATE VIRTUAL TABLE IF NOT EXISTS "web_pieces_fts5" USING fts5(id UNINDEXED, key UNINDEXED, slug, type UNINDEXED, title, summary, note, media UNINDEXED, keywords, json_metadata, date_added UNINDEXED, date_updated UNINDEXED, date_consumed UNINDEXED, file_path UNINDEXED, tokenize = 'porter ascii', prefix='3 4 5', content = 'web_pieces', content_rowid="rowid")`.execute(
+	await sql`CREATE VIRTUAL TABLE IF NOT EXISTS "web_pieces_fts5" USING fts5(id UNINDEXED, key UNINDEXED, slug, type UNINDEXED, title, summary, note, keywords, json_metadata, date_added UNINDEXED, date_updated UNINDEXED, date_consumed UNINDEXED, file_path UNINDEXED, tokenize = 'porter ascii', prefix='3 4 5', content = 'web_pieces', content_rowid="rowid")`.execute(
 		db
 	)
 
 	await sql`CREATE TRIGGER IF NOT EXISTS web_pieces_after_insert AFTER INSERT ON web_pieces		BEGIN 
-		INSERT INTO web_pieces_fts5(rowid, key, slug, type, title, summary, note, media, keywords, json_metadata, date_added, date_updated, date_consumed) 
-		VALUES(new.rowid, new.key, new.slug, new.type, new.title, new.summary, new.note, new.media, new.keywords, new.json_metadata, new.date_added, new.date_updated, new.date_consumed); 
+		INSERT INTO web_pieces_fts5(rowid, key, slug, type, title, summary, note, keywords, json_metadata, date_added, date_updated, date_consumed) 
+		VALUES(new.rowid, new.key, new.slug, new.type, new.title, new.summary, new.note, new.keywords, new.json_metadata, new.date_added, new.date_updated, new.date_consumed); 
 	END;`.execute(db)
 
 	await sql`CREATE TRIGGER web_pieces_after_delete AFTER DELETE ON web_pieces 
@@ -122,16 +128,27 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 	END;`.execute(db)
 }
 
-async function mapPieceItemToWebPiece(
+function mapPieceItemToWebPiece(
 	item: LuzzleSelectable<'pieces_items'>,
 	pieceConfig: Config['pieces'][number],
 	slug: string,
 	config: Config
-) {
+): WebPieces {
 	const frontmatter = JSON.parse(item.frontmatter_json)
-	const title = frontmatter[pieceConfig.fields.title]
-	const dateConsumed = frontmatter[pieceConfig.fields.date_consumed]
+	const title = getFrontmatterValue<string>(frontmatter, pieceConfig.fields.title) || ''
+	const dateConsumed = getFrontmatterValue<number>(
+		frontmatter,
+		pieceConfig.fields.date_consumed
+	) as unknown as number
 	const key = generateAssetKey(item.file_path, config.assets.salt)
+
+	const summary = pieceConfig.fields.summary
+		? getFrontmatterValue<string>(frontmatter, pieceConfig.fields.summary)
+		: undefined
+
+	const keywords = pieceConfig.fields.tags
+		? getFrontmatterValues<string>(frontmatter, pieceConfig.fields.tags).flat()
+		: undefined
 
 	return {
 		slug,
@@ -140,10 +157,9 @@ async function mapPieceItemToWebPiece(
 		key,
 		file_path: item.file_path,
 		title: title,
-		summary: pieceConfig.fields.summary ? frontmatter[pieceConfig.fields.summary] : undefined,
+		summary,
 		note: item.note_markdown,
-		media: pieceConfig.fields.media ? frontmatter[pieceConfig.fields.media] : undefined,
-		keywords: pieceConfig.fields.tags ? frontmatter[pieceConfig.fields.tags] : undefined,
+		keywords: keywords ? JSON.stringify(keywords) : undefined,
 		date_added: item.date_added,
 		date_consumed: dateConsumed,
 		json_metadata: item.frontmatter_json,
@@ -178,7 +194,7 @@ async function populateWebPieceItems(db: LuzzleDatabase, config: Config): Promis
 		if (pieceConfig) {
 			const filename = path.basename(item.file_path, '.md').split('.')[0]
 			const slug = getUniqueSlug(typeSlugs, filename, item.type)
-			const mapping = await mapPieceItemToWebPiece(item, pieceConfig, slug, config)
+			const mapping = mapPieceItemToWebPiece(item, pieceConfig, slug, config)
 			values.push(mapping)
 		}
 	}
@@ -236,19 +252,17 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 	const items = await db.selectFrom('pieces_items').selectAll().execute()
 	const values: Array<WebPiecesAsset> = []
 
-	const pieceFields = config.pieces.reduce(
-		(acc, piece) => {
-			const mediaField = piece.fields.media
-			const assetFields = piece.fields.assets || []
-			const type = piece.type
-			acc[type] = [mediaField, ...assetFields].filter(Boolean) as string[]
-			return acc
-		},
-		{} as Record<string, string[]>
-	)
-
 	for (const item of items) {
-		const fields = pieceFields[item.type] || []
+		const configHasPieceType = config.pieces.some((p) => p.type === item.type)
+		const mediaFields = config.pieces
+			.flatMap((piece) => piece.fields.media)
+			.filter((x): x is string => x !== undefined)
+		const attachmentFields = config.pieces
+			.flatMap((piece) => piece.fields.attachments)
+			.filter((x): x is string => x !== undefined)
+
+		if (!configHasPieceType) continue
+
 		const key = generateAssetKey(item.file_path, config.assets.salt)
 
 		const ogPath = getOpenGraphPath(item.type, key)
@@ -261,12 +275,60 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 			is_embedded: 0,
 		})
 
-		if (fields.length) {
-			const frontmatter = JSON.parse(item.frontmatter_json)
-			const assets = fields.flatMap((field) => frontmatter[field]).filter(Boolean) as string[]
-			const uniqueAssets = Array.from(new Set(assets))
+		const frontmatter = JSON.parse(item.frontmatter_json)
 
-			for (const asset of uniqueAssets) {
+		for (const field of mediaFields) {
+			const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
+			if (assets.length === 0) {
+				console.warn(`[Media] No assets found at path "${field}" for ${item.file_path}`)
+				continue
+			}
+
+			for (const asset of assets) {
+				const mimeType = mime.lookup(asset) || 'application/octet-stream'
+				if (!mimeType.startsWith('image/')) {
+					console.warn(
+						`[Media] Skipping non-image file "${asset}" in media field for ${item.file_path}`
+					)
+					continue
+				}
+
+				const assetPath = getAssetPath(item.type, key, asset)
+				values.push({
+					piece_file_path: item.file_path,
+					piece_key: key,
+					piece_asset_path: asset,
+					piece_field_path: field,
+					transformation: 'original',
+					asset_path: assetPath,
+					mime_type: mimeType,
+				})
+
+				for (const format of ['avif', 'jpg'] as const) {
+					for (const [category, width] of Object.entries(ASSET_SIZES)) {
+						const variantPath = getImageAssetPath(item.type, key, asset, width, format)
+						values.push({
+							piece_file_path: item.file_path,
+							piece_key: key,
+							piece_asset_path: asset,
+							piece_field_path: field,
+							transformation: `image.${category}.${format}`,
+							asset_path: variantPath,
+							mime_type: mime.lookup(format) as string,
+						})
+					}
+				}
+			}
+		}
+
+		for (const field of attachmentFields) {
+			const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
+			if (assets.length === 0) {
+				console.warn(`[Attachment] No assets found at path "${field}" for ${item.file_path}`)
+				continue
+			}
+
+			for (const asset of assets) {
 				const assetPath = getAssetPath(item.type, key, asset)
 				const mimeType = mime.lookup(asset) || 'application/octet-stream'
 
@@ -278,23 +340,6 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 					asset_path: assetPath,
 					mime_type: mimeType,
 				})
-
-				if (mimeType.startsWith('image')) {
-					for (const format of ['avif', 'jpg'] as const) {
-						for (const size of Object.entries(ASSET_SIZES)) {
-							const variantPath = getImageAssetPath(item.type, key, asset, size[1], format)
-
-							values.push({
-								piece_file_path: item.file_path,
-								piece_key: key,
-								piece_asset_path: asset,
-								transformation: `image.${size[0]}.${format}`,
-								asset_path: variantPath,
-								mime_type: mime.lookup(format) as string,
-							})
-						}
-					}
-				}
 			}
 		}
 	}

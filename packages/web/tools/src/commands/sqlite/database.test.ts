@@ -1,6 +1,6 @@
-import { describe, test, expect, vi, afterEach } from 'vitest'
+import { describe, test, expect, vi, afterEach, type Mock } from 'vitest'
 import { generateWebSqlite } from './database.js'
-import { getDatabaseClient, sql } from '@luzzle/core'
+import * as luzzleCore from '@luzzle/core'
 import {
 	type Config,
 	getAssetPath,
@@ -10,13 +10,12 @@ import {
 import { mockKysely } from './database.mock.js'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 
-vi.mock('@luzzle/core')
 vi.mock('@luzzle/web.utils')
 vi.mock('@luzzle/web.utils/server')
 
 const mocks = {
-	getDatabaseClient: vi.mocked(getDatabaseClient),
-	sql: vi.mocked(sql),
+	getDatabaseClient: vi.spyOn(luzzleCore, 'getDatabaseClient'),
+	sql: vi.spyOn(luzzleCore, 'sql'),
 	generateAssetKey: vi.mocked(generateAssetKey),
 	getAssetPath: vi.mocked(getAssetPath),
 	getImageAssetPath: vi.mocked(getImageAssetPath),
@@ -34,7 +33,7 @@ describe('generate-web-sqlite', () => {
 		mocks.getDatabaseClient.mockReturnValue(db)
 		mocks.sql.mockReturnValue({
 			execute: vi.fn(() => Promise.resolve({ rows: [] })),
-		} as unknown as ReturnType<typeof sql>)
+		} as unknown as ReturnType<typeof luzzleCore.sql>)
 		vi.spyOn(queries, 'execute').mockResolvedValue([])
 
 		const config = {
@@ -58,7 +57,7 @@ describe('generate-web-sqlite', () => {
 						title: 'book_title',
 						date_consumed: 'read_date',
 						summary: 'book_summary',
-						media: 'cover_image',
+						media: ['cover_image'],
 						tags: 'book_tags',
 					},
 				},
@@ -92,12 +91,12 @@ describe('generate-web-sqlite', () => {
 		}
 		mocks.getDatabaseClient.mockReturnValue(db)
 		mocks.sql
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
 			.mockReturnValueOnce({
 				execute: vi.fn().mockResolvedValueOnce({
 					rows: [
@@ -105,8 +104,8 @@ describe('generate-web-sqlite', () => {
 						{ slug: 'book-1', id: 'item1', type: 'books', tag: 'tag2' },
 					],
 				}),
-			} as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			} as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
 
 		vi.spyOn(queries, 'execute')
 			.mockResolvedValueOnce([
@@ -154,7 +153,7 @@ describe('generate-web-sqlite', () => {
 						title: 'book_title',
 						date_consumed: 'read_date',
 						summary: 'book_summary',
-						media: 'cover_image',
+						media: ['cover_image'],
 						tags: 'book_tags',
 					},
 				},
@@ -173,7 +172,6 @@ describe('generate-web-sqlite', () => {
 		expect(queries.insertInto).toHaveBeenCalledWith('web_pieces')
 		expect(queries.values).toHaveBeenCalledWith([
 			expect.objectContaining({
-				media: oneBookFrontmatter.cover_image,
 				summary: oneBookFrontmatter.book_summary,
 				title: oneBookFrontmatter.book_title,
 				slug: 'book1',
@@ -181,7 +179,6 @@ describe('generate-web-sqlite', () => {
 				key: expect.any(String),
 			}),
 			expect.objectContaining({
-				media: undefined,
 				summary: undefined,
 				title: oneFilmFrontmatter.film_title,
 				slug: 'film1',
@@ -189,6 +186,11 @@ describe('generate-web-sqlite', () => {
 				key: expect.any(String),
 			}),
 		])
+		// Verify media is NOT in the objects
+		const insertedValues = (queries.values as Mock).mock.calls[0][0]
+		expect(insertedValues[0].media).toBeUndefined()
+		expect(insertedValues[1].media).toBeUndefined()
+
 		expect(queries.insertInto).toHaveBeenCalledWith('web_pieces_tags')
 		expect(queries.values).toHaveBeenCalledWith([
 			expect.objectContaining({ tag: 'tag1', piece_id: 'item1', piece_type: 'books' }),
@@ -200,16 +202,16 @@ describe('generate-web-sqlite', () => {
 		const { db, queries } = mockKysely()
 		mocks.getDatabaseClient.mockReturnValue(db)
 		mocks.sql
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
 			.mockReturnValueOnce({
 				execute: vi.fn().mockResolvedValueOnce({
 					rows: [],
 				}),
-			} as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			} as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
 
 		// Mock all execute calls in sequence
 		vi.spyOn(queries, 'execute')
@@ -258,7 +260,7 @@ describe('generate-web-sqlite', () => {
 						title: 'book_title',
 						date_consumed: 'read_date',
 						summary: 'book_summary',
-						media: 'cover_image',
+						media: ['cover_image'],
 						tags: 'book_tags',
 					},
 				},
@@ -281,18 +283,19 @@ describe('generate-web-sqlite', () => {
 			read_date: '2023-01-01',
 			book_tags: 'tag1',
 			cover_image: 'cover.jpg',
-			docs: ['doc.pdf', 'file.unknown_ext']
+			unknown_media: 'unknown_media',
+			docs: ['doc.pdf', 'unknown_file']
 		}
 		mocks.getDatabaseClient.mockReturnValue(db)
 		mocks.sql
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn().mockResolvedValueOnce({ rows: [] }) } as unknown as ReturnType<typeof sql>)
-			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn().mockResolvedValueOnce({ rows: [] }) } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
 
 		const itemsReturn = [
 			{
@@ -329,8 +332,9 @@ describe('generate-web-sqlite', () => {
 					type: 'books',
 					fields: {
 						title: 'book_title',
-						media: 'cover_image',
-						assets: ['docs']
+						date_consumed: 'read_date',
+						media: ['cover_image', 'unknown_media'],
+						attachments: ['docs[*]']
 					},
 				},
 			],
@@ -344,20 +348,117 @@ describe('generate-web-sqlite', () => {
 		await generateWebSqlite(db, config)
 
 		expect(queries.insertInto).toHaveBeenCalledWith('web_pieces_assets')
-				expect(queries.values).toHaveBeenCalledWith([
-					expect.objectContaining({ transformation: 'opengraph' }),
-					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'original' }),
-					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.s.avif' }),
-					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.m.avif' }),
-					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.l.avif' }),
-					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.xl.avif' }),
-					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.s.jpg' }),
-					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.m.jpg' }),
-					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.l.jpg' }),
-					expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.xl.jpg' }),
-					expect.objectContaining({ piece_asset_path: 'doc.pdf', transformation: 'original' }),
-					expect.objectContaining({ piece_asset_path: 'file.unknown_ext', transformation: 'original' }),
-					expect.objectContaining({ transformation: 'opengraph' }),
-				])
-			})
-		})
+		expect(queries.values).toHaveBeenCalledWith([
+			expect.objectContaining({ transformation: 'opengraph' }),
+			expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'original' }),
+			expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.s.avif' }),
+			expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.m.avif' }),
+			expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.l.avif' }),
+			expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.xl.avif' }),
+			expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.s.jpg' }),
+			expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.m.jpg' }),
+			expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.l.jpg' }),
+			expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.xl.jpg' }),
+			expect.objectContaining({ piece_asset_path: 'doc.pdf', transformation: 'original' }),
+			expect.objectContaining({ piece_asset_path: 'unknown_file', transformation: 'original' }),
+		])
+	})
+
+	test('should warn if no assets found at path', async () => {
+		const { db, queries } = mockKysely()
+		mocks.getDatabaseClient.mockReturnValue(db)
+		mocks.sql.mockReturnValue({
+			execute: vi.fn(() => Promise.resolve({ rows: [] })),
+		} as unknown as ReturnType<typeof luzzleCore.sql>)
+
+		const itemsReturn = [
+			{
+				id: 'item1',
+				type: 'books',
+				file_path: '/path/to/book1.md',
+				frontmatter_json: '{}',
+				date_added: 123,
+			},
+		]
+
+		vi.spyOn(queries, 'execute')
+			.mockResolvedValueOnce(itemsReturn)
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce(itemsReturn)
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+
+		const config = {
+			assets: { salt: 'test-salt' },
+			paths: { database: 'test.db' },
+			pieces: [
+				{
+					type: 'books',
+					fields: {
+						title: 'title',
+						date_consumed: 'date',
+						media: ['missing_media'],
+						attachments: ['missing_attachment']
+					},
+				},
+			],
+		} as unknown as Config
+
+		const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { })
+		await generateWebSqlite(db, config)
+
+		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('[Media] No assets found'))
+		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('[Attachment] No assets found'))
+		consoleWarnSpy.mockRestore()
+	})
+
+	test('should skip non-image in media pass', async () => {
+		const { db, queries } = mockKysely()
+		mocks.getDatabaseClient.mockReturnValue(db)
+		mocks.sql.mockReturnValue({
+			execute: vi.fn(() => Promise.resolve({ rows: [] })),
+		} as unknown as ReturnType<typeof luzzleCore.sql>)
+
+		const itemsReturn = [
+			{
+				id: 'item1',
+				type: 'books',
+				file_path: '/path/to/book1.md',
+				frontmatter_json: JSON.stringify({ not_image: 'file.pdf' }),
+				date_added: 123,
+			},
+		]
+
+		vi.spyOn(queries, 'execute')
+			.mockResolvedValueOnce(itemsReturn)
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce(itemsReturn)
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+
+		const config = {
+			assets: { salt: 'test-salt' },
+			paths: { database: 'test.db' },
+			pieces: [
+				{
+					type: 'books',
+					fields: {
+						title: 'title',
+						date_consumed: 'date',
+						media: ['not_image'],
+					},
+				},
+			],
+		} as unknown as Config
+
+		const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { })
+		await generateWebSqlite(db, config)
+
+		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Skipping non-image file'))
+		consoleWarnSpy.mockRestore()
+	})
+})

@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'fs/promises'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { generateVariantJobs } from './variants.js'
-import { Pieces, LuzzleSelectable } from '@luzzle/core'
+import { Pieces, LuzzleSelectable, getFrontmatterValues } from '@luzzle/core'
 import {
 	getAssetDir,
 	getAssetPath,
@@ -20,10 +20,7 @@ function getMimeType(format: string): string {
 	return `image/${type}`
 }
 
-async function upsertAssetRecord(
-	db: ReturnType<typeof getDatabase>,
-	record: WebPiecesAsset
-) {
+async function upsertAssetRecord(db: ReturnType<typeof getDatabase>, record: WebPiecesAsset) {
 	await db
 		.withTables<{ web_pieces_assets: WebPiecesAsset }>()
 		.insertInto('web_pieces_assets')
@@ -32,6 +29,7 @@ async function upsertAssetRecord(
 			oc.columns(['piece_file_path', 'transformation', 'piece_asset_path']).doUpdateSet({
 				asset_path: record.asset_path,
 				mime_type: record.mime_type,
+				piece_field_path: record.piece_field_path,
 				is_embedded: record.is_embedded,
 				content: record.content,
 			})
@@ -42,6 +40,7 @@ async function upsertAssetRecord(
 async function generateVariantsForAssetField(
 	item: LuzzleSelectable<'pieces_items'>,
 	asset: string,
+	field: string,
 	pieces: Pieces,
 	outDir: string,
 	config: Config,
@@ -54,10 +53,13 @@ async function generateVariantsForAssetField(
 		const jobs = await generateVariantJobs(item, asset, pieces, widths, formats)
 		const key = generateAssetKey(item.file_path, config.assets.salt)
 
-		const sizeCategoryMap = Object.entries(ASSET_SIZES).reduce((acc, [category, width]) => {
-			acc[width] = category
-			return acc
-		}, {} as Record<number, string>)
+		const sizeCategoryMap = Object.entries(ASSET_SIZES).reduce(
+			(acc, [category, width]) => {
+				acc[width] = category
+				return acc
+			},
+			{} as Record<number, string>
+		)
 
 		const toFileJobs = jobs.map(async (job) => {
 			const assetPath = getImageAssetPath(item.type, key, asset, job.width, job.format)
@@ -68,6 +70,7 @@ async function generateVariantsForAssetField(
 				piece_file_path: item.file_path,
 				piece_key: key,
 				piece_asset_path: asset,
+				piece_field_path: field,
 				transformation: `image.${sizeCategory}.${job.format}`,
 				asset_path: assetPath,
 				mime_type: getMimeType(job.format),
@@ -105,39 +108,89 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 	const storage = getStorage(config, options.archiveDir)
 	const pieces = new Pieces(storage)
 	const itemsToProcess = id ? items.filter((item) => item.id === id) : items
-
-	const pieceFields = config.pieces.reduce(
-		(acc, piece) => {
-			const mediaField = piece.fields.media
-			const assetFields = piece.fields.assets || []
-			const type = piece.type
-			acc[type] = [mediaField, ...assetFields].filter(Boolean) as string[]
-
-			return acc
-		},
-		{} as Record<string, string[]>
-	)
+	const mediaFields = config.pieces.flatMap((piece) => piece.fields.media || [])
+	const attachmentFields = config.pieces.flatMap((piece) => piece.fields.attachments || [])
 
 	for (const item of itemsToProcess) {
 		const pieceModifiedTime = new Date(item.date_updated || item.date_added)
-		const fields = pieceFields[item.type] || []
+		const configHasPieceType = config.pieces.some((p) => p.type === item.type)
 
-		if (fields.length && (pieceModifiedTime > lastRun || force || id)) {
+		if (configHasPieceType && (pieceModifiedTime > lastRun || force || id)) {
 			const frontmatter = JSON.parse(item.frontmatter_json)
-			const assets = fields.flatMap((field) => frontmatter[field]).filter(Boolean) as string[]
+			const key = generateAssetKey(item.file_path, config.assets.salt)
+			const assetDir = getAssetDir(item.type, key)
 
-			if (assets.length) {
-				const key = generateAssetKey(item.file_path, config.assets.salt)
-				const assetDir = getAssetDir(item.type, key)
-				await mkdir(`${options.outDir}/${assetDir}`, { recursive: true })
+			let hasAssets = false
 
-				console.log(`copying assets for ${item.file_path}`)
+			for (const field of mediaFields) {
+				const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
+				if (assets.length === 0) {
+					console.warn(`[Media] No assets found at path "${field}" for ${item.file_path}`)
+					continue
+				}
 
 				for (const asset of assets) {
+					const mimeType = mime.lookup(asset) || 'application/octet-stream'
+					if (!mimeType.startsWith('image/')) {
+						console.warn(
+							`[Media] Skipping non-image file "${asset}" in media field for ${item.file_path}`
+						)
+						continue
+					}
+
+					if (!hasAssets) {
+						await mkdir(`${options.outDir}/${assetDir}`, { recursive: true })
+						console.log(`copying assets for ${item.file_path}`)
+						hasAssets = true
+					}
+
 					try {
 						const assetPath = getAssetPath(item.type, key, asset)
 						const assetBuffer = await pieces.getPieceAsset(asset)
+						await writeFile(`${options.outDir}/${assetPath}`, assetBuffer)
 
+						await upsertAssetRecord(db, {
+							piece_file_path: item.file_path,
+							piece_key: key,
+							piece_asset_path: asset,
+							piece_field_path: field,
+							transformation: 'original',
+							asset_path: assetPath,
+							mime_type: mimeType,
+						})
+
+						await generateVariantsForAssetField(
+							item,
+							asset,
+							field,
+							pieces,
+							options.outDir,
+							config,
+							db
+						)
+					} catch (error) {
+						console.error(`error processing media ${asset} for ${item.file_path}: ${error}`)
+					}
+				}
+			}
+
+			for (const field of attachmentFields) {
+				const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
+				if (assets.length === 0) {
+					console.warn(`[Attachment] No assets found at path "${field}" for ${item.file_path}`)
+					continue
+				}
+
+				for (const asset of assets) {
+					if (!hasAssets) {
+						await mkdir(`${options.outDir}/${assetDir}`, { recursive: true })
+						console.log(`copying assets for ${item.file_path}`)
+						hasAssets = true
+					}
+
+					try {
+						const assetPath = getAssetPath(item.type, key, asset)
+						const assetBuffer = await pieces.getPieceAsset(asset)
 						await writeFile(`${options.outDir}/${assetPath}`, assetBuffer)
 
 						const mimeType = mime.lookup(asset) || 'application/octet-stream'
@@ -150,12 +203,8 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 							asset_path: assetPath,
 							mime_type: mimeType,
 						})
-
-						if (mimeType.startsWith('image/')) {
-							await generateVariantsForAssetField(item, asset, pieces, options.outDir, config, db)
-						}
 					} catch (error) {
-						console.error(`error processing asset ${asset} for ${item.file_path}: ${error}`)
+						console.error(`error processing attachment ${asset} for ${item.file_path}: ${error}`)
 					}
 				}
 			}
