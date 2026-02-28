@@ -253,16 +253,12 @@ async function populateWebPiecesAssets(db: LuzzleDatabase, config: Config): Prom
 	const values: Array<WebPiecesAsset> = []
 
 	for (const item of items) {
-		const configHasPieceType = config.pieces.some((p) => p.type === item.type)
-		const mediaFields = config.pieces
-			.flatMap((piece) => piece.fields.media)
-			.filter((x): x is string => x !== undefined)
-		const attachmentFields = config.pieces
-			.flatMap((piece) => piece.fields.attachments)
-			.filter((x): x is string => x !== undefined)
+		const pieceFieldConfig = config.pieces.find((p) => p.type === item.type)
 
-		if (!configHasPieceType) continue
+		if (!pieceFieldConfig) continue
 
+		const mediaFields = pieceFieldConfig.fields.media || []
+		const attachmentFields = pieceFieldConfig.fields.attachments || []
 		const key = generateAssetKey(item.file_path, config.assets.salt)
 
 		const ogPath = getOpenGraphPath(item.type, key)

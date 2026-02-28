@@ -1,12 +1,7 @@
 import { describe, test, expect, vi, afterEach, type Mock } from 'vitest'
 import { generateWebSqlite } from './database.js'
 import * as luzzleCore from '@luzzle/core'
-import {
-	type Config,
-	getAssetPath,
-	getImageAssetPath,
-	getOpenGraphPath,
-} from '@luzzle/web.utils'
+import { type Config, getAssetPath, getImageAssetPath, getOpenGraphPath } from '@luzzle/web.utils'
 import { mockKysely } from './database.mock.js'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 
@@ -40,7 +35,12 @@ describe('generate-web-sqlite', () => {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
 			paths: { database: '/tmp/test.db' },
 			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
-			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
+			auth: {
+				enabled: false,
+				type: 'oidc',
+				secret: '',
+				oidc: { issuer: '', clientId: '', clientSecret: '' },
+			},
 			storage: { type: 'filesystem', config: { root: '' } },
 			ai: { provider: 'google', api_key: '' },
 			assets: { salt: 'test-salt' },
@@ -136,7 +136,12 @@ describe('generate-web-sqlite', () => {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
 			paths: { database: '/tmp/test.db' },
 			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
-			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
+			auth: {
+				enabled: false,
+				type: 'oidc',
+				secret: '',
+				oidc: { issuer: '', clientId: '', clientSecret: '' },
+			},
 			storage: { type: 'filesystem', config: { root: '' } },
 			ai: { provider: 'google', api_key: '' },
 			assets: { salt: 'test-salt' },
@@ -243,7 +248,12 @@ describe('generate-web-sqlite', () => {
 			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
 			paths: { database: '/tmp/test.db' },
 			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
-			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
+			auth: {
+				enabled: false,
+				type: 'oidc',
+				secret: '',
+				oidc: { issuer: '', clientId: '', clientSecret: '' },
+			},
 			storage: { type: 'filesystem', config: { root: '' } },
 			ai: { provider: 'google', api_key: '' },
 			assets: { salt: 'test-salt' },
@@ -284,7 +294,7 @@ describe('generate-web-sqlite', () => {
 			book_tags: 'tag1',
 			cover_image: 'cover.jpg',
 			unknown_media: 'unknown_media',
-			docs: ['doc.pdf', 'unknown_file']
+			docs: ['doc.pdf', 'unknown_file'],
 		}
 		mocks.getDatabaseClient.mockReturnValue(db)
 		mocks.sql
@@ -294,7 +304,9 @@ describe('generate-web-sqlite', () => {
 			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
 			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
 			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
-			.mockReturnValueOnce({ execute: vi.fn().mockResolvedValueOnce({ rows: [] }) } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({
+				execute: vi.fn().mockResolvedValueOnce({ rows: [] }),
+			} as unknown as ReturnType<typeof luzzleCore.sql>)
 			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
 
 		const itemsReturn = [
@@ -334,15 +346,20 @@ describe('generate-web-sqlite', () => {
 						title: 'book_title',
 						date_consumed: 'read_date',
 						media: ['cover_image', 'unknown_media'],
-						attachments: ['docs[*]']
+						attachments: ['docs[*]'],
 					},
 				},
 			],
 		} as unknown as Config
 
 		mocks.generateAssetKey.mockImplementation((path) => `key-${path}`)
-		mocks.getAssetPath.mockImplementation((type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`)
-		mocks.getImageAssetPath.mockImplementation((type, id, asset, width, format) => `${type}/${id}/${asset.split('/').pop()}.${width}.${format}`)
+		mocks.getAssetPath.mockImplementation(
+			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
+		)
+		mocks.getImageAssetPath.mockImplementation(
+			(type, id, asset, width, format) =>
+				`${type}/${id}/${asset.split('/').pop()}.${width}.${format}`
+		)
 		mocks.getOpenGraphPath.mockImplementation((type, id) => `${type}/${id}/opengraph.png`)
 
 		await generateWebSqlite(db, config)
@@ -361,6 +378,71 @@ describe('generate-web-sqlite', () => {
 			expect.objectContaining({ piece_asset_path: 'cover.jpg', transformation: 'image.xl.jpg' }),
 			expect.objectContaining({ piece_asset_path: 'doc.pdf', transformation: 'original' }),
 			expect.objectContaining({ piece_asset_path: 'unknown_file', transformation: 'original' }),
+		])
+	})
+
+	test('should not populate web_pieces_assets table', async () => {
+		const { db, queries } = mockKysely()
+		const frontmatter = {
+			book_title: 'Test Book',
+			read_date: '2023-01-01',
+			book_tags: 'tag1',
+		}
+		mocks.getDatabaseClient.mockReturnValue(db)
+		mocks.sql
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({
+				execute: vi.fn().mockResolvedValueOnce({ rows: [] }),
+			} as unknown as ReturnType<typeof luzzleCore.sql>)
+			.mockReturnValueOnce({ execute: vi.fn() } as unknown as ReturnType<typeof luzzleCore.sql>)
+
+		const itemsReturn = [
+			{
+				id: 'item1',
+				type: 'books',
+				file_path: '/path/to/book1.md',
+				frontmatter_json: JSON.stringify(frontmatter),
+				date_added: 123,
+			},
+		]
+
+		vi.spyOn(queries, 'execute')
+			.mockResolvedValueOnce(itemsReturn) // populateWebPieceItems (pieces_items query)
+			.mockResolvedValueOnce([]) // populateWebPieceItems (web_pieces insert)
+			.mockResolvedValueOnce(itemsReturn) // populateWebPiecesAssets (pieces_items query)
+			.mockResolvedValueOnce([]) // populateWebPiecesAssets (web_pieces_assets insert)
+			.mockResolvedValueOnce([]) // generateWebSqlite (final pieces count)
+			.mockResolvedValueOnce([]) // generateWebSqlite (final tags count)
+			.mockResolvedValueOnce([]) // generateWebSqlite (final assets count)
+
+		const config = {
+			url: { app: '', app_assets: '', luzzle_assets: '', editor: '' },
+			paths: { database: '/tmp/test.db' },
+			assets: { salt: 'test-salt' },
+			pieces: [
+				{
+					type: 'books',
+					fields: {
+						title: 'book_title',
+						date_consumed: 'read_date',
+					},
+				},
+			],
+		} as unknown as Config
+
+		mocks.generateAssetKey.mockImplementation((path) => `key-${path}`)
+		mocks.getOpenGraphPath.mockImplementation((type, id) => `${type}/${id}/opengraph.png`)
+
+		await generateWebSqlite(db, config)
+
+		expect(queries.insertInto).toHaveBeenCalledWith('web_pieces_assets')
+		expect(queries.values).toHaveBeenCalledWith([
+			expect.objectContaining({ transformation: 'opengraph' }),
 		])
 	})
 
@@ -400,7 +482,7 @@ describe('generate-web-sqlite', () => {
 						title: 'title',
 						date_consumed: 'date',
 						media: ['missing_media'],
-						attachments: ['missing_attachment']
+						attachments: ['missing_attachment'],
 					},
 				},
 			],
@@ -410,7 +492,9 @@ describe('generate-web-sqlite', () => {
 		await generateWebSqlite(db, config)
 
 		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('[Media] No assets found'))
-		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('[Attachment] No assets found'))
+		expect(consoleWarnSpy).toHaveBeenCalledWith(
+			expect.stringContaining('[Attachment] No assets found')
+		)
 		consoleWarnSpy.mockRestore()
 	})
 

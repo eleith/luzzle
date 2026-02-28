@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'fs/promises'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
 import { generateVariantJobs } from './variants.js'
-import { Pieces, LuzzleSelectable, getFrontmatterValues } from '@luzzle/core'
+import { Pieces, LuzzleSelectable, getFrontmatterValues, PieceFrontmatter } from '@luzzle/core'
 import {
 	getAssetDir,
 	getAssetPath,
@@ -108,24 +108,24 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 	const storage = getStorage(config, options.archiveDir)
 	const pieces = new Pieces(storage)
 	const itemsToProcess = id ? items.filter((item) => item.id === id) : items
-	const mediaFields = config.pieces.flatMap((piece) => piece.fields.media || [])
-	const attachmentFields = config.pieces.flatMap((piece) => piece.fields.attachments || [])
 
 	for (const item of itemsToProcess) {
 		const pieceModifiedTime = new Date(item.date_updated || item.date_added)
-		const configHasPieceType = config.pieces.some((p) => p.type === item.type)
+		const pieceFieldConfig = config.pieces.find((p) => p.type === item.type)
 
-		if (configHasPieceType && (pieceModifiedTime > lastRun || force || id)) {
-			const frontmatter = JSON.parse(item.frontmatter_json)
+		if (pieceFieldConfig && (pieceModifiedTime > lastRun || force || id)) {
+			const frontmatter = JSON.parse(item.frontmatter_json) as PieceFrontmatter
 			const key = generateAssetKey(item.file_path, config.assets.salt)
 			const assetDir = getAssetDir(item.type, key)
+			const mediaFields = pieceFieldConfig.fields.media || []
+			const attachmentFields = pieceFieldConfig.fields.attachments || []
 
 			let hasAssets = false
 
 			for (const field of mediaFields) {
 				const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
 				if (assets.length === 0) {
-					console.warn(`[Media] No assets found at path "${field}" for ${item.file_path}`)
+					console.warn(`[Media] No assets found at path "${field}" for ${item.file_path} for ${item.file_path}`)
 					continue
 				}
 
@@ -133,7 +133,7 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 					const mimeType = mime.lookup(asset) || 'application/octet-stream'
 					if (!mimeType.startsWith('image/')) {
 						console.warn(
-							`[Media] Skipping non-image file "${asset}" in media field for ${item.file_path}`
+							`[Media] Skipping non-image file "${asset}" in media field "${field}" for ${item.file_path}`
 						)
 						continue
 					}
