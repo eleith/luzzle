@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { type PieceIconProps } from '$lib/pieces/helpers'
-	let { piece, size, helpers, lazy }: PieceIconProps = $props()
+	let { piece, size, helpers, lazy, metadata }: PieceIconProps = $props()
 
 	const scale = Math.round((size.width / 375) * 100) / 100
 </script>
@@ -15,14 +15,14 @@
 	<div class="poster-title">
 		{piece.title}
 	</div>
-	{#if piece.media}
+	{#if metadata.poster}
 		<picture>
 			<source
-				srcset={helpers.getPieceImageUrl(piece.media, size.width, 'avif')}
+				srcset={helpers.getPieceImageUrl(metadata.poster, size.width, 'avif')}
 				type="image/avif"
 			/>
 			<img
-				src={helpers.getPieceImageUrl(piece.media, size.width, 'jpg')}
+				src={helpers.getPieceImageUrl(metadata.poster, size.width, 'jpg')}
 				loading={lazy ? 'lazy' : 'eager'}
 				alt=""
 			/>

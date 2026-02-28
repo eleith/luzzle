@@ -65,14 +65,14 @@
 		<div class="book-cover-front">
 			{piece.title}
 		</div>
-		{#if piece.media}
+		{#if metadata.cover}
 			<picture>
 				<source
-					srcset={helpers.getPieceImageUrl(piece.media, size.width, 'avif')}
+					srcset={helpers.getPieceImageUrl(metadata.cover, size.width, 'avif')}
 					type="image/avif"
 				/>
 				<img
-					src={helpers.getPieceImageUrl(piece.media, size.width, 'jpg')}
+					src={helpers.getPieceImageUrl(metadata.cover, size.width, 'jpg')}
 					loading={lazy ? 'lazy' : 'eager'}
 					alt=""
 				/>

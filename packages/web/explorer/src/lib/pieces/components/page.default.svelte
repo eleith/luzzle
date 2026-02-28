@@ -5,14 +5,13 @@
 	const { piece, tags, metadata, html_note }: PiecePageProps = $props()
 
 	let showFullHeader = $state(false)
-	const hasMedia = $derived(!!piece.media)
 
 	function toggleHeader() {
 		showFullHeader = !showFullHeader
 	}
 </script>
 
-<section class="header" class:header-media={hasMedia}>
+<section class="header">
 	<button
 		class="piece-icon"
 		onclick={toggleHeader}
@@ -24,7 +23,7 @@
 </section>
 
 <section class="content">
-	<section class="details" class:details-media={hasMedia}>
+	<section class="details">
 		{#if piece.date_consumed}
 			<div class="date">
 				{new Date(piece.date_consumed).toLocaleDateString(undefined, { timeZone: 'UTC' })}
@@ -85,13 +84,6 @@
 		position: relative;
 	}
 
-	section.details-media::before {
-		content: '';
-		border-top: solid 3px var(--color-surface-container-highest);
-		margin: auto;
-		width: 100%;
-	}
-
 	@media screen and (min-width: 768px) {
 		section.details {
 			padding: 0 0 var(--space-5);
@@ -109,18 +101,6 @@
 
 	section.header button {
 		display: none;
-	}
-
-	section.header-media {
-		justify-content: space-around;
-		position: relative;
-		width: auto;
-		padding-top: 0px;
-		padding-bottom: var(--space-5);
-	}
-
-	section.header-media button {
-		display: block;
 	}
 
 	section.header button.piece-icon {

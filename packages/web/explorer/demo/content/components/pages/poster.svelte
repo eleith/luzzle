@@ -5,7 +5,7 @@
 	const { piece, tags, metadata, html_note, helpers }: PiecePageProps = $props()
 </script>
 
-{#if piece.media || metadata.backdrop}
+{#if metadata.poster || metadata.backdrop}
 	<section class="header">
 		{#if metadata.backdrop}
 			<picture>
@@ -36,7 +36,7 @@
 					/>
 				</picture>
 			{/if}
-			{#if piece.media}
+			{#if metadata.poster}
 				<Icon {piece} size={{ width: 250 }} lazy={false} />
 			{/if}
 		</div>
@@ -104,7 +104,7 @@
 		{#if metadata.people}
 			<h2>People</h2>
 			<div class="people">
-				{JSON.parse(metadata.people as string).join(', ')}
+				{metadata.people.join(', ')}
 			</div>
 		{/if}
 

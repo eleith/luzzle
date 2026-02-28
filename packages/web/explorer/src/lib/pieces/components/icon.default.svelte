@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PieceIconProps } from '$lib/pieces/helpers'
-	const { size, piece, lazy, helpers }: PieceIconProps = $props()
+	const { size, piece }: PieceIconProps = $props()
 </script>
 
 <div
@@ -18,21 +18,7 @@
 		{piece.type}
 	</div>
 	<div style="position: relative;">
-		{#if piece.media}
-			<picture>
-				<source
-					srcset={helpers.getPieceImageUrl(piece.media, size.width, 'avif')}
-					type="image/avif"
-				/>
-				<img
-					src={helpers.getPieceImageUrl(piece.media, size.width, 'jpg')}
-					loading={lazy ? 'lazy' : 'eager'}
-					alt=""
-				/>
-			</picture>
-		{:else}
-			{piece.title}
-		{/if}
+		{piece.title}
 	</div>
 </div>
 
@@ -48,15 +34,6 @@
 		border: 5px solid var(--piece-icon-border-color);
 		display: flex;
 		flex-direction: column;
-	}
-
-	.piece-no-icon img {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
 	}
 
 	.piece-no-icon div:first-child {

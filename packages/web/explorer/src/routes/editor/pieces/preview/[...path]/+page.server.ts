@@ -55,9 +55,6 @@ export const load: PageServerLoad = async ({ params }) => {
 			? (piece.getField(pieceMarkdown, pieceConfig.fields.summary) as string)
 			: undefined,
 		note: pieceMarkdown.note,
-		media: pieceConfig.fields.media
-			? (piece.getField(pieceMarkdown, pieceConfig.fields.media) as string)
-			: undefined,
 		keywords: JSON.stringify(tagsArray),
 		date_added: new Date().getTime(),
 		date_consumed: pieceConfig.fields.date_consumed
@@ -66,7 +63,7 @@ export const load: PageServerLoad = async ({ params }) => {
 				).getTime()
 			: undefined,
 		json_metadata: insertable.frontmatter_json,
-		assets: [] // helper methods in "preview" mode won't use this field
+		assets: []
 	}
 
 	const note = await processMarkdown(insertable.note_markdown)
