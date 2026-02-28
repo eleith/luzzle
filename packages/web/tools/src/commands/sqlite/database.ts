@@ -143,9 +143,7 @@ async function mapPieceItemToWebPiece(
 		summary: pieceConfig.fields.summary ? frontmatter[pieceConfig.fields.summary] : undefined,
 		note: item.note_markdown,
 		media: pieceConfig.fields.media ? frontmatter[pieceConfig.fields.media] : undefined,
-		keywords: pieceConfig.fields.tags
-			? JSON.stringify(frontmatter[pieceConfig.fields.tags] || [])
-			: undefined,
+		keywords: pieceConfig.fields.tags ? frontmatter[pieceConfig.fields.tags] : undefined,
 		date_added: item.date_added,
 		date_consumed: dateConsumed,
 		json_metadata: item.frontmatter_json,
@@ -340,7 +338,9 @@ async function generateWebSqlite(db: LuzzleDatabase, config: Config) {
 		.selectAll()
 		.execute()
 
-	console.log(`${config.paths.database}: ${pieces.length} pieces | ${tags.length} tags | ${assets.length} assets`)
+	console.log(
+		`${config.paths.database}: ${pieces.length} pieces | ${tags.length} tags | ${assets.length} assets`
+	)
 }
 
 export {
