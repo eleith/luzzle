@@ -1,3 +1,4 @@
+import { query } from 'jsonpathly'
 import {
 	PieceFrontmatter,
 	PieceFrontMatterValue,
@@ -81,21 +82,37 @@ export function getPieceFrontmatterPaths(
 	return paths.sort()
 }
 
-export function getFrontmatterValue(
+export function getFrontmatterValues<T = PieceFrontMatterValue>(
 	obj: PieceFrontmatter,
 	path: string
-): PieceFrontMatterValue | undefined {
-	const parts = path.split('.')
-	let current: unknown = obj
-
-	for (const part of parts) {
-		if (current === null || typeof current !== 'object') {
-			return undefined
-		}
-		current = (current as Record<string, unknown>)[part]
+): T[] {
+	const selector = path.startsWith('$') ? path : `$.${path}`
+	const result = query(obj, selector)
+	if (result === undefined || result === null) {
+		return []
 	}
 
-	return current as PieceFrontMatterValue
+	const isCollectionQuery = path.includes('*') || path.includes('..') || path.includes('[')
+	if (isCollectionQuery && Array.isArray(result)) {
+		return result as T[]
+	}
+
+	return [result] as T[]
+}
+
+export function getFrontmatterValue<T = PieceFrontMatterValue>(
+	obj: PieceFrontmatter,
+	path: string
+): T | undefined {
+	const selector = path.startsWith('$') ? path : `$.${path}`
+	const result = query(obj, selector)
+	const isCollectionQuery = path.includes('*') || path.includes('..')
+
+	if (isCollectionQuery && Array.isArray(result)) {
+		return result[0] as T | undefined
+	}
+
+	return result as T | undefined
 }
 
 export function setFrontmatterValue(

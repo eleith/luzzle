@@ -109,7 +109,7 @@ function pieceFrontmatterValueToDatabaseValue(
 				return new Date(value as string).getTime()
 			}
 			if (property.format === 'comma-separated') {
-				return JSON.stringify((value as string).split(','))
+				return (value as string).split(',').map((s) => s.trim())
 			}
 			return value
 		default:
@@ -117,10 +117,6 @@ function pieceFrontmatterValueToDatabaseValue(
 	}
 }
 
-/**
- * Converts a database value back to a frontmatter-compatible representation.
- * Handles both new JSON structures and legacy CSV-separated strings for arrays.
- */
 function databaseValueToPieceFrontmatterValue(
 	value: unknown,
 	property: PieceFrontmatterProperty
@@ -135,7 +131,6 @@ function databaseValueToPieceFrontmatterValue(
 		case 'integer':
 			return Number(value)
 		case 'array': {
-			// Backwards compatibility: Handle legacy CSV strings stored in older caches
 			const values = Array.isArray(value) ? value : (value as string).split(',')
 			return values.map((v) =>
 				databaseValueToPieceFrontmatterValue(v, property.items)
@@ -157,11 +152,18 @@ function databaseValueToPieceFrontmatterValue(
 				return new Date(value as number).toLocaleDateString()
 			}
 			if (property.format === 'comma-separated') {
-				try {
-					return JSON.parse(value as string).join(',')
-				} catch {
-					return value
+				if (Array.isArray(value)) {
+					return value.join(', ')
 				}
+				try {
+					const parsed = JSON.parse(value as string)
+					if (Array.isArray(parsed)) {
+						return parsed.join(', ')
+					}
+				} catch {
+					// ignore
+				}
+				return value
 			}
 			return value
 		default:
@@ -169,9 +171,6 @@ function databaseValueToPieceFrontmatterValue(
 	}
 }
 
-/**
- * Recursively initializes frontmatter based on schema properties.
- */
 function initializePieceFrontMatterFromProperties(
 	properties: { [key: string]: PieceFrontmatterProperty },
 	requiredFields: string[] = [],
@@ -183,7 +182,6 @@ function initializePieceFrontMatterFromProperties(
 		const property = properties[name]
 		const isRequired = requiredFields.includes(name)
 
-		// Handle nested objects
 		if (property.type === 'object') {
 			const subValue = initializePieceFrontMatterFromProperties(
 				property.properties,
@@ -199,7 +197,6 @@ function initializePieceFrontMatterFromProperties(
 			continue
 		}
 
-		// Handle scalars and arrays
 		const isArray = property.type === 'array'
 		const examples = isArray ? property.items.examples : property.examples
 		const def = isArray ? property.items.default : property.default

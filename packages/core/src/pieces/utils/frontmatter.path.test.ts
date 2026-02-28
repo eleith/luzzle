@@ -24,6 +24,44 @@ describe('pieces/utils/frontmatter.path.ts', () => {
 			expect(paths.getFrontmatterValue(obj, 'missing')).toBeUndefined()
 			expect(paths.getFrontmatterValue(obj, 'title.sub')).toBeUndefined()
 		})
+
+		test('returns first item for collection-like queries', () => {
+			const obj: PieceFrontmatter = { gallery: [{ src: '1.jpg' }, { src: '2.jpg' }] }
+			expect(paths.getFrontmatterValue(obj, 'gallery.*.src')).toBe('1.jpg')
+			expect(paths.getFrontmatterValue(obj, '$..src')).toBe('1.jpg')
+		})
+	})
+
+	describe('getFrontmatterValues', () => {
+		const obj: PieceFrontmatter = {
+			title: 'Piece',
+			tags: ['a', 'b'],
+			gallery: [{ src: '1.jpg' }, { src: '2.jpg' }],
+		}
+
+		test('returns array for singular match', () => {
+			expect(paths.getFrontmatterValues(obj, 'title')).toEqual(['Piece'])
+		})
+
+		test('returns items for wildcard query', () => {
+			expect(paths.getFrontmatterValues(obj, 'gallery[*].src')).toEqual(['1.jpg', '2.jpg'])
+		})
+
+		test('returns items for recursive descent', () => {
+			expect(paths.getFrontmatterValues(obj, '$..src')).toEqual(['1.jpg', '2.jpg'])
+		})
+
+		test('returns empty array for missing path', () => {
+			expect(paths.getFrontmatterValues(obj, 'missing')).toEqual([])
+		})
+
+		test('returns direct array if pointed to directly with wildcard', () => {
+			expect(paths.getFrontmatterValues(obj, 'tags[*]')).toEqual(['a', 'b'])
+		})
+
+		test('returns wrapped array if pointed to directly without brackets or wildcard', () => {
+			expect(paths.getFrontmatterValues(obj, 'tags')).toEqual([['a', 'b']])
+		})
 	})
 
 	describe('setFrontmatterValue', () => {

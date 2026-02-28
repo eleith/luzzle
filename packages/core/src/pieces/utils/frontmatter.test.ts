@@ -100,7 +100,7 @@ describe('pieces/utils/frontmatter.ts', () => {
 				type: 'string',
 				format: 'comma-separated',
 			}
-			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('a,b', prop)).toBe('["a","b"]')
+			expect(frontmatter.pieceFrontmatterValueToDatabaseValue('a,b', prop)).toEqual(['a', 'b'])
 		})
 
 		test('converts arrays to native arrays (not CSV)', () => {
@@ -230,6 +230,30 @@ describe('pieces/utils/frontmatter.ts', () => {
 			expect(frontmatter.databaseValueToPieceFrontmatterValue('val', prop)).toBe('val')
 		})
 
+		test('restores comma-separated from array', () => {
+			const prop: frontmatter.PieceFrontmatterProperty = {
+				type: 'string',
+				format: 'comma-separated',
+			}
+			expect(frontmatter.databaseValueToPieceFrontmatterValue(['a', 'b'], prop)).toBe('a, b')
+		})
+
+		test('restores comma-separated from json string', () => {
+			const prop: frontmatter.PieceFrontmatterProperty = {
+				type: 'string',
+				format: 'comma-separated',
+			}
+			expect(frontmatter.databaseValueToPieceFrontmatterValue('["a","b"]', prop)).toBe('a, b')
+		})
+
+		test('restores comma-separated from non-json string', () => {
+			const prop: frontmatter.PieceFrontmatterProperty = {
+				type: 'string',
+				format: 'comma-separated',
+			}
+			expect(frontmatter.databaseValueToPieceFrontmatterValue('a,b', prop)).toBe('a,b')
+		})
+
 		test('handles unknown field type', () => {
 			const prop = { type: 'unknown' } as unknown as frontmatter.PieceFrontmatterProperty
 			expect(frontmatter.databaseValueToPieceFrontmatterValue('val', prop)).toBe('val')
@@ -336,6 +360,28 @@ describe('pieces/utils/frontmatter.ts', () => {
 
 			expect(() => frontmatter.initializePieceFrontMatter(schema)).toThrow(
 				'can not initialize field "title"'
+			)
+		})
+
+		test('initializes with default value when present', () => {
+			const prop: Record<string, frontmatter.PieceFrontmatterProperty> = {
+				field: { type: 'string', default: 'default-val' },
+			}
+			const result = frontmatter.initializePieceFrontMatterFromProperties(prop, [], false)
+			expect(result.field).toBe('default-val')
+		})
+
+		test('initializes with examples when default is missing', () => {
+			const schema = {
+				type: 'object',
+				properties: {
+					tags: { type: 'array', items: { type: 'string' } },
+				},
+				required: ['tags'],
+			} as unknown as frontmatter.PieceFrontmatterSchema<frontmatter.PieceFrontmatter>
+
+			expect(() => frontmatter.initializePieceFrontMatter(schema)).toThrow(
+				'can not initialize field "tags"'
 			)
 		})
 
