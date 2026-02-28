@@ -2,6 +2,7 @@ export interface WebPiecesAsset {
 	piece_file_path: string
 	piece_key: string
 	piece_asset_path?: string | null
+	piece_field_path?: string,
 	transformation: string
 	asset_path: string
 	mime_type: string
