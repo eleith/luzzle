@@ -55,7 +55,7 @@ async function createWebTables(db: LuzzleDatabase): Promise<void> {
 		.addColumn('piece_asset_path', 'text', (col) => col.defaultTo(null))
 		.addColumn('transformation', 'text', (col) => col.notNull())
 		.addColumn('asset_path', 'text', (col) => col.notNull())
-		.addColumn('piece_field', 'text')
+		.addColumn('piece_field_path', 'text')
 		.addColumn('mime_type', 'text', (col) => col.notNull())
 		.addColumn('is_embedded', 'boolean', (col) => col.defaultTo(0))
 		.addColumn('content', 'text')
