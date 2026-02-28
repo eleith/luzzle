@@ -20,7 +20,6 @@ export interface WebPieces {
 	date_added: number
 	date_consumed?: number
 	type: string
-	media?: string
 	json_metadata: string
 	summary?: string
 	keywords?: string

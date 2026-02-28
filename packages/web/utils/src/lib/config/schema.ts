@@ -68,12 +68,12 @@ export type Schema = {
   pieces: {
     type: string;
     fields: {
-      media?: string;
+      media?: string[];
       title: string;
       summary?: string;
       date_consumed: string;
       tags?: string;
-      assets?: string[];
+      attachments?: string[];
     };
     components?: {
       icon?: string;
