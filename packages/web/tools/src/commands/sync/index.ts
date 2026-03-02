@@ -142,16 +142,7 @@ async function pruneWebPiece(
 ): Promise<void> {
 	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags }>()
 
-	const existingWebPiece = await webDb
-		.selectFrom('web_pieces')
-		.select(['id'])
-		.where('file_path', '=', file)
-		.executeTakeFirst()
-
-	if (!existingWebPiece) return
-
 	if (!dryRun) {
-		await webDb.deleteFrom('web_pieces_tags').where('piece_id', '=', existingWebPiece.id).execute()
 		await webDb.deleteFrom('web_pieces').where('file_path', '=', file).execute()
 	}
 }

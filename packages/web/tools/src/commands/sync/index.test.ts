@@ -473,7 +473,7 @@ describe('sync index', () => {
 		expect(db.insertInto).not.toHaveBeenCalledWith('web_pieces_tags')
 	})
 
-	test('should delete web_pieces and tags when piece is pruned', async () => {
+	test('should delete web_pieces when piece is pruned', async () => {
 		const config = {
 			paths: { database: 'db.sqlite' },
 			assets: { salt: 'test-salt' },
@@ -510,7 +510,6 @@ describe('sync index', () => {
 
 		await sync({}, config as unknown as Config)
 
-		expect(db.deleteFrom).toHaveBeenCalledWith('web_pieces_tags')
 		expect(db.deleteFrom).toHaveBeenCalledWith('web_pieces')
 	})
 
