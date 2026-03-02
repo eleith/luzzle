@@ -4,7 +4,7 @@ import { getConfig } from '../../lib/config.js'
 import { getDatabase } from '../../lib/database.js'
 import * as luzzleCore from '@luzzle/core'
 import type { LuzzleSelectable } from '@luzzle/core'
-import { mockKysely } from '../sqlite/database.mock.js'
+import { mockKysely } from '../../lib/database.mock.js'
 import { writeFile, mkdir } from 'fs/promises'
 import { generateVariantJobs } from './variants.js'
 import {

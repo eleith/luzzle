@@ -70,6 +70,92 @@ function buildWebPiece(
 	}
 }
 
+async function syncWebPiece(
+	db: ReturnType<typeof getDatabase>,
+	file: string,
+	action: 'added' | 'updated',
+	config: Config,
+	usedSlugs: Set<string>,
+	slugByFilePath: Map<string, string>,
+	dryRun: boolean
+): Promise<void> {
+	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags }>()
+
+	const item = await db.selectFrom('pieces_items').selectAll().where('file_path', '=', file).executeTakeFirst()
+	if (!item) return
+
+	const pieceConfig = config.pieces.find((p) => p.type === item.type)
+	if (!pieceConfig) return
+
+	let slug: string
+	if (action === 'updated' && slugByFilePath.has(file)) {
+		slug = slugByFilePath.get(file)!
+	} else {
+		const filename = path.basename(file, '.md').split('.')[0]
+		slug = generateUniqueSlug(usedSlugs, filename)
+		slugByFilePath.set(file, slug)
+	}
+
+	const frontmatter = JSON.parse(item.frontmatter_json)
+	const keywords = pieceConfig.fields.tags
+		? getFrontmatterValues<string>(frontmatter, pieceConfig.fields.tags).flat().filter(Boolean)
+		: []
+
+	const webPiece = buildWebPiece(item, pieceConfig, slug, config.assets.salt, frontmatter, keywords)
+
+	if (!dryRun) {
+		await webDb
+			.insertInto('web_pieces')
+			.values(webPiece)
+			.onConflict((oc) =>
+				oc.column('id').doUpdateSet({
+					title: webPiece.title,
+					summary: webPiece.summary,
+					note: webPiece.note,
+					keywords: webPiece.keywords,
+					json_metadata: webPiece.json_metadata,
+					date_updated: webPiece.date_updated,
+					date_consumed: webPiece.date_consumed,
+				})
+			)
+			.execute()
+
+		await webDb.deleteFrom('web_pieces_tags').where('piece_id', '=', item.id).execute()
+
+		if (keywords.length > 0) {
+			const tags: WebPieceTags[] = keywords.map((tag) => ({
+				piece_slug: slug,
+				piece_type: item.type,
+				piece_id: item.id,
+				tag: tag.trim(),
+				slug: slugify(tag.trim()),
+			}))
+			await webDb.insertInto('web_pieces_tags').values(tags).execute()
+		}
+	}
+}
+
+async function pruneWebPiece(
+	db: ReturnType<typeof getDatabase>,
+	file: string,
+	dryRun: boolean
+): Promise<void> {
+	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags }>()
+
+	const existingWebPiece = await webDb
+		.selectFrom('web_pieces')
+		.select(['id'])
+		.where('file_path', '=', file)
+		.executeTakeFirst()
+
+	if (!existingWebPiece) return
+
+	if (!dryRun) {
+		await webDb.deleteFrom('web_pieces_tags').where('piece_id', '=', existingWebPiece.id).execute()
+		await webDb.deleteFrom('web_pieces').where('file_path', '=', file).execute()
+	}
+}
+
 async function syncSchemas(
 	db: ReturnType<typeof getDatabase>,
 	pieces: Pieces,
@@ -134,63 +220,8 @@ async function syncPieces(
 				if (result.action !== 'skipped') {
 					console.log(`[${result.action}] item: ${result.file}`)
 				}
-
-				if ((result.action === 'added' || result.action === 'updated') && !dryRun) {
-					const item = await db
-						.selectFrom('pieces_items')
-						.selectAll()
-						.where('file_path', '=', result.file)
-						.executeTakeFirst()
-
-					if (item) {
-						const pieceConfig = config.pieces.find((p) => p.type === item.type)
-						if (pieceConfig) {
-							let slug: string
-							if (result.action === 'updated' && slugByFilePath.has(result.file)) {
-								slug = slugByFilePath.get(result.file)!
-							} else {
-								const filename = path.basename(result.file, '.md').split('.')[0]
-								slug = generateUniqueSlug(usedSlugs, filename)
-								slugByFilePath.set(result.file, slug)
-							}
-
-							const frontmatter = JSON.parse(item.frontmatter_json)
-							const keywords = pieceConfig.fields.tags
-								? getFrontmatterValues<string>(frontmatter, pieceConfig.fields.tags).flat().filter(Boolean)
-								: []
-
-							const webPiece = buildWebPiece(item, pieceConfig, slug, config.assets.salt, frontmatter, keywords)
-
-							await webDb
-								.insertInto('web_pieces')
-								.values(webPiece)
-								.onConflict((oc) =>
-									oc.column('id').doUpdateSet({
-										title: webPiece.title,
-										summary: webPiece.summary,
-										note: webPiece.note,
-										keywords: webPiece.keywords,
-										json_metadata: webPiece.json_metadata,
-										date_updated: webPiece.date_updated,
-										date_consumed: webPiece.date_consumed,
-									})
-								)
-								.execute()
-
-							await webDb.deleteFrom('web_pieces_tags').where('piece_id', '=', item.id).execute()
-
-							if (keywords.length > 0) {
-								const tags: WebPieceTags[] = keywords.map((tag) => ({
-									piece_slug: slug,
-									piece_type: item.type,
-									piece_id: item.id,
-									tag: tag.trim(),
-									slug: slugify(tag.trim()),
-								}))
-								await webDb.insertInto('web_pieces_tags').values(tags).execute()
-							}
-						}
-					}
+				if (result.action === 'added' || result.action === 'updated') {
+					await syncWebPiece(db, result.file, result.action, config, usedSlugs, slugByFilePath, dryRun)
 				}
 			}
 		}
@@ -201,19 +232,7 @@ async function syncPieces(
 				console.error(`[error] pruning item ${result.file}: ${result.message}`)
 			} else if (result.action === 'pruned') {
 				console.log(`[${result.action}] item: ${result.file}`)
-
-				if (!dryRun) {
-					const existingWebPiece = await webDb
-						.selectFrom('web_pieces')
-						.select(['id'])
-						.where('file_path', '=', result.file)
-						.executeTakeFirst()
-
-					if (existingWebPiece) {
-						await webDb.deleteFrom('web_pieces_tags').where('piece_id', '=', existingWebPiece.id).execute()
-						await webDb.deleteFrom('web_pieces').where('file_path', '=', result.file).execute()
-					}
-				}
+				await pruneWebPiece(db, result.file, dryRun)
 			}
 		}
 	}

@@ -7,7 +7,7 @@ import { Pieces, StorageFileSystem } from '@luzzle/core'
 import { type Config } from '@luzzle/web.utils'
 import { getConfig } from '../../lib/config.js'
 import { getDatabase } from '../../lib/database.js'
-import { mockKysely } from '../sqlite/database.mock.js'
+import { mockKysely } from '../../lib/database.mock.js'
 import { Browser } from 'puppeteer'
 
 vi.mock('../../lib/lastRun.js')
