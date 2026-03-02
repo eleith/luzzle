@@ -1,13 +1,73 @@
-import { Pieces, selectItemAssets } from '@luzzle/core'
+import path from 'path'
+import { Pieces, selectItemAssets, getFrontmatterValue, getFrontmatterValues, LuzzleSelectable } from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
 import { getDatabase, getDatabaseAndMigrate } from '../../lib/database.js'
-import { Config } from '@luzzle/web.utils'
+import { type Config, type WebPieces, type WebPieceTags } from '@luzzle/web.utils'
+import { generateAssetKey } from '@luzzle/web.utils/server'
+import runWebMigrations from '../../database/migrations.js'
 
 type SyncOptions = {
 	archiveDir?: string
 	dryRun?: boolean
 	force?: boolean
 	prune?: boolean
+}
+
+function slugify(text: string): string {
+	return text
+		.toString()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.toLowerCase()
+		.trim()
+		.replace(/\s+/g, '-')
+		.replace(/[^\w-]+/g, '')
+		.replace(/--+/g, '-')
+}
+
+function generateUniqueSlug(usedSlugs: Set<string>, filename: string): string {
+	const base = slugify(filename)
+	let candidate = base
+	let n = 1
+	while (usedSlugs.has(candidate)) {
+		candidate = `${base}--${n}`
+		n++
+	}
+	usedSlugs.add(candidate)
+	return candidate
+}
+
+function buildWebPiece(
+	item: LuzzleSelectable<'pieces_items'>,
+	pieceConfig: Config['pieces'][number],
+	slug: string,
+	salt: string,
+	frontmatter: ReturnType<typeof JSON.parse>,
+	keywords: string[]
+): WebPieces {
+	const title = getFrontmatterValue<string>(frontmatter, pieceConfig.fields.title) || ''
+	const dateConsumed = getFrontmatterValue<number>(frontmatter, pieceConfig.fields.date_consumed) as unknown as number
+	const key = generateAssetKey(item.file_path, salt)
+
+	const summary = pieceConfig.fields.summary
+		? getFrontmatterValue<string>(frontmatter, pieceConfig.fields.summary)
+		: undefined
+
+	return {
+		slug,
+		type: item.type as WebPieces['type'],
+		id: item.id,
+		key,
+		file_path: item.file_path,
+		title,
+		summary,
+		note: item.note_markdown,
+		keywords: keywords.length > 0 ? JSON.stringify(keywords) : undefined,
+		date_added: item.date_added,
+		date_consumed: dateConsumed,
+		json_metadata: item.frontmatter_json,
+		...(item.date_updated && { date_updated: item.date_updated }),
+	}
 }
 
 async function syncSchemas(
@@ -41,9 +101,12 @@ async function syncPieces(
 	pieces: Pieces,
 	storage: ReturnType<typeof getStorage>,
 	files: Awaited<ReturnType<Pieces['getFilesIn']>>,
-	options: Pick<SyncOptions, 'dryRun' | 'force' | 'prune'>
+	options: Pick<SyncOptions, 'dryRun' | 'force' | 'prune'>,
+	config: Config
 ) {
 	const { dryRun = false, force = false, prune = false } = options
+	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags }>()
+
 	for (const name of files.types) {
 		const piece = await pieces.getPiece(name)
 		const piecesOnDisk = files.pieces.filter((one) => pieces.parseFilename(one).type === name)
@@ -54,12 +117,81 @@ async function syncPieces(
 			processFiles = piecesOnDisk.filter((_, i) => isOutdated[i])
 		}
 
+		// Preload existing web_pieces slugs for this type to ensure uniqueness
+		const existingPiecesForType = await webDb
+			.selectFrom('web_pieces')
+			.select(['slug', 'file_path', 'id'])
+			.where('type', '=', name)
+			.execute()
+		const usedSlugs = new Set<string>(existingPiecesForType.map((p) => p.slug))
+		const slugByFilePath = new Map<string, string>(existingPiecesForType.map((p) => [p.file_path, p.slug]))
+
 		const syncItems = await piece.sync(db, processFiles, { dryRun, force })
 		for await (const result of syncItems) {
 			if (result.error) {
 				console.error(`[error] syncing item ${result.file}: ${result.message}`)
-			} else if (result.action !== 'skipped') {
-				console.log(`[${result.action}] item: ${result.file}`)
+			} else {
+				if (result.action !== 'skipped') {
+					console.log(`[${result.action}] item: ${result.file}`)
+				}
+
+				if ((result.action === 'added' || result.action === 'updated') && !dryRun) {
+					const item = await db
+						.selectFrom('pieces_items')
+						.selectAll()
+						.where('file_path', '=', result.file)
+						.executeTakeFirst()
+
+					if (item) {
+						const pieceConfig = config.pieces.find((p) => p.type === item.type)
+						if (pieceConfig) {
+							let slug: string
+							if (result.action === 'updated' && slugByFilePath.has(result.file)) {
+								slug = slugByFilePath.get(result.file)!
+							} else {
+								const filename = path.basename(result.file, '.md').split('.')[0]
+								slug = generateUniqueSlug(usedSlugs, filename)
+								slugByFilePath.set(result.file, slug)
+							}
+
+							const frontmatter = JSON.parse(item.frontmatter_json)
+							const keywords = pieceConfig.fields.tags
+								? getFrontmatterValues<string>(frontmatter, pieceConfig.fields.tags).flat().filter(Boolean)
+								: []
+
+							const webPiece = buildWebPiece(item, pieceConfig, slug, config.assets.salt, frontmatter, keywords)
+
+							await webDb
+								.insertInto('web_pieces')
+								.values(webPiece)
+								.onConflict((oc) =>
+									oc.column('id').doUpdateSet({
+										title: webPiece.title,
+										summary: webPiece.summary,
+										note: webPiece.note,
+										keywords: webPiece.keywords,
+										json_metadata: webPiece.json_metadata,
+										date_updated: webPiece.date_updated,
+										date_consumed: webPiece.date_consumed,
+									})
+								)
+								.execute()
+
+							await webDb.deleteFrom('web_pieces_tags').where('piece_id', '=', item.id).execute()
+
+							if (keywords.length > 0) {
+								const tags: WebPieceTags[] = keywords.map((tag) => ({
+									piece_slug: slug,
+									piece_type: item.type,
+									piece_id: item.id,
+									tag: tag.trim(),
+									slug: slugify(tag.trim()),
+								}))
+								await webDb.insertInto('web_pieces_tags').values(tags).execute()
+							}
+						}
+					}
+				}
 			}
 		}
 
@@ -69,6 +201,19 @@ async function syncPieces(
 				console.error(`[error] pruning item ${result.file}: ${result.message}`)
 			} else if (result.action === 'pruned') {
 				console.log(`[${result.action}] item: ${result.file}`)
+
+				if (!dryRun) {
+					const existingWebPiece = await webDb
+						.selectFrom('web_pieces')
+						.select(['id'])
+						.where('file_path', '=', result.file)
+						.executeTakeFirst()
+
+					if (existingWebPiece) {
+						await webDb.deleteFrom('web_pieces_tags').where('piece_id', '=', existingWebPiece.id).execute()
+						await webDb.deleteFrom('web_pieces').where('file_path', '=', result.file).execute()
+					}
+				}
 			}
 		}
 	}
@@ -104,8 +249,13 @@ export default async function sync(options: SyncOptions, config: Config) {
 	const force = options.force || false
 	const prune = options.prune || false
 
+	const webMigrationResult = await runWebMigrations(db)
+	if (webMigrationResult.error) {
+		throw new Error(`Web migration failed: ${webMigrationResult.error}`)
+	}
+
 	const files = await pieces.getFilesIn('.', { deep: true })
 
 	await syncSchemas(db, pieces, { dryRun, force })
-	await syncPieces(db, pieces, storage, files, { dryRun, force, prune })
+	await syncPieces(db, pieces, storage, files, { dryRun, force, prune }, config)
 }

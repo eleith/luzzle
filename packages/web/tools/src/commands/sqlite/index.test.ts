@@ -1,45 +1,41 @@
-import { describe, test, vi, afterEach, expect, MockInstance } from 'vitest';
-import { mockKysely } from './database.mock.js';
-import generateWebSqlite from './index.js';
-import {
-	generateWebSqlite as generateWebSqliteDb,
-} from './database.js';
+import { describe, test, vi, afterEach, expect } from 'vitest';
+import generateWebSqliteCommand from './index.js';
+import { generateWebSqlite } from './database.js';
 import { type Config } from '@luzzle/web.utils';
-import { getConfig } from '../../lib/config.js';
 import { getDatabase } from '../../lib/database.js';
+import { LuzzleDatabase } from '@luzzle/core';
 
-vi.mock('../../lib/config.js');
 vi.mock('../../lib/database.js');
 vi.mock('./database.js');
 
 const mocks = {
-	getConfig: vi.mocked(getConfig),
 	getDatabase: vi.mocked(getDatabase),
-	generateWebSqliteDb: vi.mocked(generateWebSqliteDb),
+	generateWebSqlite: vi.mocked(generateWebSqlite),
 };
-
-const spies: { [key: string]: MockInstance } = {};
 
 describe('tools/sqlite', () => {
 	afterEach(() => {
-		Object.values(mocks).forEach((mock) => {
-			mock.mockReset();
-		});
-		Object.keys(spies).forEach((key) => {
-			spies[key].mockRestore();
-			delete spies[key];
-		});
+		vi.clearAllMocks();
 	});
 
-	test('should generate the web sqlite database', async () => {
-		const { db } = mockKysely();
+	test('should run web migrations', async () => {
+		const mockDb = {} as LuzzleDatabase;
 		const config = { paths: { database: 'test' } } as Config;
-		mocks.getConfig.mockReturnValue(config);
-		mocks.getDatabase.mockReturnValue(db);
+		mocks.getDatabase.mockReturnValue(mockDb);
+		mocks.generateWebSqlite.mockResolvedValue({ results: [], error: undefined });
 
-		await generateWebSqlite(config);
+		await generateWebSqliteCommand(config);
 
-		expect(mocks.getDatabase).toHaveBeenCalledOnce();
-		expect(mocks.generateWebSqliteDb).toHaveBeenCalledWith(db, config);
+		expect(mocks.getDatabase).toHaveBeenCalledWith(config);
+		expect(mocks.generateWebSqlite).toHaveBeenCalledWith(mockDb);
+	});
+
+	test('should throw if migration fails', async () => {
+		const mockDb = {} as LuzzleDatabase;
+		const config = { paths: { database: 'test' } } as Config;
+		mocks.getDatabase.mockReturnValue(mockDb);
+		mocks.generateWebSqlite.mockResolvedValue({ results: [], error: new Error('migration error') });
+
+		await expect(generateWebSqliteCommand(config)).rejects.toThrow('Web migration failed:');
 	});
 });
