@@ -114,6 +114,13 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 		const pieceFieldConfig = config.pieces.find((p) => p.type === item.type)
 
 		if (pieceFieldConfig && (pieceModifiedTime > lastRun || force || id)) {
+			await db
+				.withTables<{ web_pieces_assets: WebPiecesAsset }>()
+				.deleteFrom('web_pieces_assets')
+				.where('piece_file_path', '=', item.file_path)
+				.where('transformation', 'like', 'image.%')
+				.execute()
+
 			const frontmatter = JSON.parse(item.frontmatter_json) as PieceFrontmatter
 			const key = generateAssetKey(item.file_path, config.assets.salt)
 			const assetDir = getAssetDir(item.type, key)
@@ -154,7 +161,7 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 							piece_key: key,
 							piece_asset_path: asset,
 							piece_field_path: field,
-							transformation: 'original',
+							transformation: 'image.original',
 							asset_path: assetPath,
 							mime_type: mimeType,
 						})
@@ -199,7 +206,7 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 							piece_file_path: item.file_path,
 							piece_key: key,
 							piece_asset_path: asset,
-							transformation: 'original',
+							transformation: 'image.original',
 							asset_path: assetPath,
 							mime_type: mimeType,
 						})
