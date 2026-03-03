@@ -44,6 +44,7 @@
 	"dependencies": {
 		"@luzzle/core": "0.0.45",
 		"@luzzle/web.utils": "0.0.30",
+		"kysely": "0.27.5",
 		"lightningcss": "^1.30.2",
 		"mime-types": "^3.0.2",
 		"puppeteer": "24.19.0",
