@@ -3,18 +3,19 @@ import { getStorage } from '../../lib/storage.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
 import { type Config, type WebPieces } from '@luzzle/web.utils'
 import runWebMigrations from '../../database/migrations.js'
-import { transforms } from '../../lib/transforms/index.js'
+import { transforms, cleanupAllTransforms } from '../../lib/transforms/index.js'
+import { runTransformsForPiece } from '../../lib/transforms/runner.js'
 
 type TransformOptions = {
 	archiveDir?: string
 	outDir: string
-	type: string
-	file: string
+	type?: string
+	file?: string
+	dryRun?: boolean
 }
 
 export default async function runTransform(options: TransformOptions, config: Config) {
-	const transform = transforms.get(options.type)
-	if (!transform) {
+	if (options.type && !transforms.has(options.type)) {
 		const valid = [...transforms.keys()].join(', ')
 		throw new Error(`Unknown transform type "${options.type}". Valid types: ${valid}`)
 	}
@@ -28,17 +29,36 @@ export default async function runTransform(options: TransformOptions, config: Co
 		throw new Error(`Web migration failed: ${webMigrationResult.error}`)
 	}
 
-	const webPiece = await db
-		.withTables<{ web_pieces: WebPieces }>()
-		.selectFrom('web_pieces')
-		.selectAll()
-		.where('file_path', '=', options.file)
-		.executeTakeFirst()
+	if (options.file) {
+		const webPiece = await db
+			.withTables<{ web_pieces: WebPieces }>()
+			.selectFrom('web_pieces')
+			.selectAll()
+			.where('file_path', '=', options.file)
+			.executeTakeFirst()
 
-	if (!webPiece) {
-		throw new Error(`Web piece not found: ${options.file}`)
+		if (!webPiece) {
+			throw new Error(`Web piece not found: ${options.file}`)
+		}
+
+		await runTransformsForPiece(db, webPiece, config, options.outDir, pieces, {
+			typeFilter: options.type,
+			dryRun: options.dryRun,
+		})
+	} else {
+		const webPieces = await db
+			.withTables<{ web_pieces: WebPieces }>()
+			.selectFrom('web_pieces')
+			.selectAll()
+			.execute()
+
+		for (const webPiece of webPieces) {
+			await runTransformsForPiece(db, webPiece, config, options.outDir, pieces, {
+				typeFilter: options.type,
+				dryRun: options.dryRun,
+			})
+		}
 	}
 
-	await transform.run({ webPiece, config, outDir: options.outDir, pieces })
-	await transform.cleanup?.()
+	await cleanupAllTransforms()
 }

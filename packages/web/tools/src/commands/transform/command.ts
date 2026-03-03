@@ -5,7 +5,7 @@ import { getConfig } from '../../lib/config.js'
 export default function command(cli: Argv) {
 	return cli.command(
 		'transform',
-		'run a specific transform for a single piece (for development/debugging)',
+		'run a transform for one or all pieces',
 		function (yargs) {
 			return yargs.options({
 				config: {
@@ -14,14 +14,12 @@ export default function command(cli: Argv) {
 				},
 				type: {
 					type: 'string',
-					description: 'transform type to run (attachment, image, opengraph)',
-					demandOption: true,
+					description: 'transform type to run (attachment, image, palette, opengraph); omit to run all',
 					alias: 't',
 				},
 				file: {
 					type: 'string',
-					description: 'piece file_path to process',
-					demandOption: true,
+					description: 'piece file_path to process; omit to run for all pieces',
 				},
 				out: {
 					type: 'string',
@@ -33,6 +31,10 @@ export default function command(cli: Argv) {
 					type: 'string',
 					description: 'path to luzzle archive',
 				},
+				'dry-run': {
+					type: 'boolean',
+					description: 'skip all DB writes (files are still written to disk)',
+				},
 			})
 		},
 		async function (argv) {
@@ -41,8 +43,9 @@ export default function command(cli: Argv) {
 				{
 					archiveDir: argv.in as string | undefined,
 					outDir: argv.out as string,
-					type: argv.type as string,
-					file: argv.file as string,
+					type: argv.type as string | undefined,
+					file: argv.file as string | undefined,
+					dryRun: argv['dry-run'] as boolean | undefined,
 				},
 				config
 			)

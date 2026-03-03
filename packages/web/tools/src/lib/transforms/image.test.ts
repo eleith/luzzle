@@ -163,6 +163,52 @@ describe('transforms/image', () => {
 		).rejects.toThrow('read error')
 	})
 
+	test('uses format name directly for non-jpg formats (avif)', async () => {
+		const mockPieces = {
+			getPieceAsset: vi.fn().mockResolvedValue(Buffer.from('image_data')),
+		} as unknown as Pieces
+
+		mocks.getAssetDir.mockReturnValue('books/key')
+		mocks.getAssetPath.mockReturnValue('books/key/photo.jpg')
+		mocks.getImageAssetPath.mockReturnValue('books/key/photo.s.avif')
+		vi.mocked(ASSET_SIZES as unknown as Record<string, number>).s = 125
+		mocks.generateVariantJobs.mockResolvedValue([
+			{
+				sharp: { toFile: vi.fn().mockResolvedValue({ size: 80 }) } as unknown as Sharp,
+				width: 125,
+				format: 'avif',
+			},
+		])
+
+		const records = await run({
+			webPiece: makeWebPiece('{"image": "photo.jpg"}'),
+			config: makeConfig(['image']),
+			outDir: '/out',
+			pieces: mockPieces,
+		})
+
+		expect(records).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ transformation: 'image.s.avif', mime_type: 'image/avif' }),
+			])
+		)
+	})
+
+	test('falls back to application/octet-stream for unknown mime type and throws non-image', async () => {
+		const mockPieces = { getPieceAsset: vi.fn() } as unknown as Pieces
+
+		mocks.getAssetDir.mockReturnValue('books/key')
+
+		await expect(
+			run({
+				webPiece: makeWebPiece('{"image": "photo"}'),
+				config: makeConfig(['image']),
+				outDir: '/out',
+				pieces: mockPieces,
+			})
+		).rejects.toThrow('non-image file')
+	})
+
 	test('throws on variant toFile error', async () => {
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockResolvedValue(Buffer.from('image_data')),
