@@ -24,4 +24,11 @@ async function getBrowser(): Promise<Browser> {
 	return browserSingleton
 }
 
-export { getBrowser }
+async function closeBrowser(): Promise<void> {
+	if (browserSingleton?.connected) {
+		await browserSingleton.close()
+		browserSingleton = null
+	}
+}
+
+export { getBrowser, closeBrowser }

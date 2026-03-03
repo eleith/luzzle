@@ -1,12 +1,11 @@
 import path from 'path'
-import { mkdir, writeFile } from 'fs/promises'
 import { Pieces, selectItemAssets, getFrontmatterValue, getFrontmatterValues, LuzzleSelectable } from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
 import { getDatabase, getDatabaseAndMigrate } from '../../lib/database.js'
-import { type Config, type WebPieces, type WebPieceTags, type WebPiecesAsset, getAssetPath, getAssetDir } from '@luzzle/web.utils'
+import { type Config, type WebPieces, type WebPieceTags } from '@luzzle/web.utils'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import runWebMigrations from '../../database/migrations.js'
-import mime from 'mime-types'
+import { transforms, cleanupTransforms } from '../../lib/transforms/index.js'
 
 type SyncOptions = {
 	archiveDir?: string
@@ -84,7 +83,7 @@ async function syncWebPiece(
 	outDir: string,
 	pieces: Pieces
 ): Promise<void> {
-	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags; web_pieces_assets: WebPiecesAsset }>()
+	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags }>()
 
 	const item = await db.selectFrom('pieces_items').selectAll().where('file_path', '=', file).executeTakeFirst()
 	if (!item) return
@@ -138,34 +137,8 @@ async function syncWebPiece(
 			await webDb.insertInto('web_pieces_tags').values(tags).execute()
 		}
 
-		await webDb.deleteFrom('web_pieces_assets').where('piece_file_path', '=', file).where('transformation', 'like', 'attachment.%').execute()
-
-		if (pieceConfig.fields.attachments) {
-			const key = generateAssetKey(item.file_path, config.assets.salt)
-			for (const field of pieceConfig.fields.attachments) {
-				const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
-				for (const asset of assets) {
-					try {
-						const assetPath = getAssetPath(item.type, key, asset)
-						const assetDir = getAssetDir(item.type, key)
-						await mkdir(`${outDir}/${assetDir}`, { recursive: true })
-						const assetBuffer = await pieces.getPieceAsset(asset)
-						await writeFile(`${outDir}/${assetPath}`, assetBuffer)
-						const mimeType = mime.lookup(asset) || 'application/octet-stream'
-						await webDb.insertInto('web_pieces_assets').values({
-							piece_file_path: file,
-							piece_key: key,
-							piece_asset_path: asset,
-							transformation: 'attachment.original',
-							asset_path: assetPath,
-							mime_type: mimeType,
-						}).execute()
-						console.log(`[attachment] ${asset} for ${file}`)
-					} catch (error) {
-						console.error(`[error] attachment ${asset} for ${file}: ${error}`)
-					}
-				}
-			}
+		for (const transform of transforms) {
+			await transform.run({ item, config, outDir, pieces, db })
 		}
 	}
 }
@@ -266,6 +239,8 @@ async function syncPieces(
 	if (prune) {
 		await pruneAssets(db, storage, files, dryRun)
 	}
+
+	await cleanupTransforms()
 }
 
 async function pruneAssets(
