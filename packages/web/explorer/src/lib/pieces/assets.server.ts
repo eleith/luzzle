@@ -13,6 +13,7 @@ export async function hydrateWithAssets(
 	if (pieces.length === 0) return []
 
 	const paths = pieces.map((piece) => piece.file_path)
+
 	const assets = await db
 		.selectFrom('web_pieces_assets')
 		.selectAll()
@@ -22,6 +23,7 @@ export async function hydrateWithAssets(
 		.execute()
 
 	const groupedAssets = Object.groupBy(assets, (asset) => asset.piece_file_path)
+
 	const hydrated = pieces.map((piece) => ({
 		...piece,
 		assets: groupedAssets[piece.file_path] ?? []

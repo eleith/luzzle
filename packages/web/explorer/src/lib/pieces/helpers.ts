@@ -78,7 +78,7 @@ export function getPieceHelpers(
 			const transformation = `image.${size}.${format}`
 			const assets = piece.assets.filter((asset) => asset.piece_asset_path === assetName)
 			const transformed = assets.find((a) => a.transformation === transformation)?.asset_path
-			const original = assets.find((a) => a.transformation === 'original')?.asset_path
+			const original = assets.find((a) => a.transformation === 'image.original')?.asset_path
 
 			if (transformed) {
 				return `${url}/pieces/assets/${transformed}`
