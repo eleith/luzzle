@@ -33,8 +33,8 @@ describe('database/migrations', () => {
 		expect(mocks.Migrator).toHaveBeenCalledWith(
 			expect.objectContaining({
 				db,
-				migrationTableName: 'web_migrations',
-				migrationLockTableName: 'web_migrations_lock',
+				migrationTableName: 'kysely_web_migrations',
+				migrationLockTableName: 'kysely_web_migrations_lock',
 			})
 		)
 	})

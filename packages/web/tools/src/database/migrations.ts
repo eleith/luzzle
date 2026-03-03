@@ -16,8 +16,8 @@ export default async function runWebMigrations(db: LuzzleDatabase): Promise<Migr
 	const migrator = new Migrator({
 		db,
 		provider,
-		migrationTableName: 'web_migrations',
-		migrationLockTableName: 'web_migrations_lock',
+		migrationTableName: 'kysely_web_migrations',
+		migrationLockTableName: 'kysely_web_migrations_lock',
 	})
 	return migrator.migrateToLatest()
 }

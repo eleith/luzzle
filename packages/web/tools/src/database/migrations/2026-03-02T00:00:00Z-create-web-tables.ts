@@ -67,13 +67,13 @@ export async function up(db: Kysely<any>): Promise<void> {
 		VALUES(new.rowid, new.key, new.slug, new.type, new.title, new.summary, new.note, new.keywords, new.json_metadata, new.date_added, new.date_updated, new.date_consumed);
 	END;`.execute(db)
 
-	await sql`CREATE TRIGGER web_pieces_after_delete AFTER DELETE ON web_pieces
+	await sql`CREATE TRIGGER IF NOT EXISTS web_pieces_after_delete AFTER DELETE ON web_pieces
 	BEGIN
 		INSERT INTO web_pieces_fts5(web_pieces_fts5, rowid, key, slug, title, summary, note, keywords, json_metadata)
 		VALUES('delete', old.rowid, old.key, old.slug, old.title, old.summary, old.note, old.keywords, old.json_metadata);
 	END;`.execute(db)
 
-	await sql`CREATE TRIGGER web_pieces_after_update AFTER UPDATE ON web_pieces
+	await sql`CREATE TRIGGER IF NOT EXISTS web_pieces_after_update AFTER UPDATE ON web_pieces
 	BEGIN
 		INSERT INTO web_pieces_fts5(web_pieces_fts5, rowid, key, slug, title, summary, note, keywords, json_metadata)
 		VALUES('delete', old.rowid, old.key, old.slug, old.title, old.summary, old.note, old.keywords, old.json_metadata);
