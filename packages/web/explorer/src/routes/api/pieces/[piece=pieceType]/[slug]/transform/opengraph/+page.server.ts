@@ -2,10 +2,6 @@ import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { db } from '$lib/server/database'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
-import { getPalette } from '@luzzle/web.utils/server'
-import { type PieceIconPalette } from '@luzzle/web.utils'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const type = params.piece
@@ -23,24 +19,6 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	const piece = await hydrateWithAssets(webPiece)
-	const assets = piece.assets.find((assets) => assets.transformation.startsWith('image'))
-	const mediaPath = assets?.asset_path
 
-	let palette: PieceIconPalette | undefined
-
-	if (mediaPath) {
-		try {
-			const assetsDir = path.resolve('assets/pieces')
-			const filePath = path.join(assetsDir, mediaPath)
-			const buffer = await fs.readFile(filePath)
-			palette = (await getPalette(buffer)) as PieceIconPalette
-		} catch (e) {
-			console.error(`[transform.opengraph] Failed to read local asset: ${mediaPath}`, e)
-		}
-	}
-
-	return {
-		piece,
-		palette
-	}
+	return { piece }
 }

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import Icon from '$lib/pieces/components/icon.svelte'
-	import type { PieceOpengraphProps } from '$lib/pieces/helpers'
+	import { type PieceOpengraphProps } from '$lib/pieces/helpers'
 
-	const { palette, piece }: PieceOpengraphProps = $props()
+	const { piece, helpers }: PieceOpengraphProps = $props()
+	const palette = $derived(helpers.getPiecePalette())
 </script>
 
 <section

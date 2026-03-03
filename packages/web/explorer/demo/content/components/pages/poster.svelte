@@ -3,39 +3,12 @@
 	import Icon from '$lib/pieces/components/icon.svelte'
 
 	const { piece, tags, metadata, html_note, helpers }: PiecePageProps = $props()
+	const palette = helpers.getPiecePalette()
 </script>
 
-{#if metadata.poster || metadata.backdrop}
-	<section class="header">
-		{#if metadata.backdrop}
-			<picture>
-				<source
-					srcset={helpers.getPieceImageUrl(metadata.backdrop as string, 100, 'avif')}
-					type="image/avif"
-				/>
-				<img
-					class="backdrop-full"
-					src={helpers.getPieceImageUrl(metadata.backdrop as string, 100, 'jpg')}
-					loading="eager"
-					alt=""
-				/>
-			</picture>
-		{/if}
+{#if metadata.poster}
+	<section class="header" style="background: {palette.background}">
 		<div class="media">
-			{#if metadata.backdrop}
-				<picture>
-					<source
-						srcset={helpers.getPieceImageUrl(metadata.backdrop as string, 500, 'avif')}
-						type="image/avif"
-					/>
-					<img
-						class="backdrop"
-						src={helpers.getPieceImageUrl(metadata.backdrop as string, 500, 'jpg')}
-						loading="eager"
-						alt=""
-					/>
-				</picture>
-			{/if}
 			{#if metadata.poster}
 				<Icon {piece} size={{ width: 250 }} lazy={false} />
 			{/if}

@@ -2,7 +2,8 @@
 	import { type PieceOpengraphProps } from '$lib/pieces/helpers'
 	import Icon from '$lib/pieces/components/icon.svelte'
 
-	let { piece, palette, helpers, metadata }: PieceOpengraphProps = $props()
+	let { piece, helpers, metadata }: PieceOpengraphProps = $props()
+	const palette = $derived(helpers.getPiecePallete())
 
 	const backdrop = metadata.backdrop as string | undefined
 	const backdropImage = backdrop ? helpers.getPieceImageUrl(backdrop, 1200, 'jpg') : null

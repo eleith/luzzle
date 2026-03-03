@@ -6,4 +6,4 @@
 	setContext('piece-mode', 'local')
 </script>
 
-<Opengraph piece={data.piece} palette={data.palette} />
+<Opengraph piece={data.piece} />

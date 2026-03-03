@@ -9,6 +9,7 @@ export type PieceComponentHelpers = {
 		minWidth: number,
 		format: 'jpg' | 'avif' | 'webp' | 'png'
 	) => string
+	getPiecePalette: () => PieceIconPalette | undefined
 }
 
 export type PieceIconProps = {
@@ -39,7 +40,6 @@ export type PieceOpengraphProps = {
 		width: number
 		height: number
 	}
-	palette?: PieceIconPalette
 	helpers: PieceComponentHelpers
 }
 
@@ -60,10 +60,18 @@ export function getPieceHelpers(
 	const config = page.data.config
 	const url = mode == 'public' ? config.url.luzzle_assets || config.url.app : ''
 
+	const getPiecePalette = () => {
+		const paletteAsset = piece.assets.find((a) => a.transformation === 'palette')
+		return paletteAsset?.content
+			? (JSON.parse(paletteAsset.content) as PieceIconPalette)
+			: undefined
+	}
+
 	if (mode === 'preview') {
 		return {
 			getPieceUrl: () => `/editor/piece/${piece.file_path}`,
-			getPieceImageUrl: (asset: string) => `${url}/editor/asset/${asset}`
+			getPieceImageUrl: (asset: string) => `${url}/editor/asset/${asset}`,
+			getPiecePalette
 		}
 	}
 
@@ -89,6 +97,7 @@ export function getPieceHelpers(
 			}
 
 			throw new Error(`Asset ${assetName} not found for piece ${piece.slug}`)
-		}
+		},
+		getPiecePalette
 	}
 }

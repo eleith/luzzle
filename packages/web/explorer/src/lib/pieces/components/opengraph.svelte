@@ -22,10 +22,9 @@
 
 	type Props = {
 		piece: WebPiece
-		palette?: PieceOpengraphProps['palette']
 	}
 
-	let { piece, palette }: Props = $props()
+	let { piece }: Props = $props()
 
 	const metadata = $derived(JSON.parse(piece.json_metadata || '{}')) as Record<string, unknown>
 	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
@@ -40,7 +39,6 @@
 		{metadata}
 		{tags}
 		size={{ width: OpengraphImageWidth, height: OpengraphImageHeight }}
-		{palette}
 		{helpers}
 	/>
 </section>
