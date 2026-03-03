@@ -1,6 +1,6 @@
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
-import { generatePngFromUrl } from './png.js'
-import { getBrowser } from './browser.js'
+import { generatePngFromUrl } from '../../lib/utils/png.js'
+import { getBrowser } from '../../lib/utils/browser.js'
 import path from 'path'
 import { type WebPieces, getOpenGraphPath, type Config, type WebPiecesAsset } from '@luzzle/web.utils'
 import { getDatabase } from '../../lib/database.js'

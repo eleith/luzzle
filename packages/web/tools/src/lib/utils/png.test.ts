@@ -4,7 +4,7 @@ import { Browser } from 'puppeteer';
 
 vi.mock('puppeteer');
 
-describe('generate-open-graph/png', () => {
+describe('lib/utils/png', () => {
 	const mocks = {
 		newPage: vi.fn(),
 		setViewport: vi.fn(),

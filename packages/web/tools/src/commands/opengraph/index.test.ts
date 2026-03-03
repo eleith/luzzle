@@ -1,8 +1,8 @@
 import { describe, test, vi, afterEach, expect } from 'vitest'
 import generateOpenGraphs from './index.js'
 import { getLastRunFor, setLastRunFor } from '../../lib/lastRun.js'
-import { generatePngFromUrl } from './png.js'
-import { getBrowser } from './browser.js'
+import { generatePngFromUrl } from '../../lib/utils/png.js'
+import { getBrowser } from '../../lib/utils/browser.js'
 import { Pieces, StorageFileSystem } from '@luzzle/core'
 import { type Config } from '@luzzle/web.utils'
 import { getConfig } from '../../lib/config.js'
@@ -11,9 +11,8 @@ import { mockKysely } from '../../lib/database.mock.js'
 import { Browser } from 'puppeteer'
 
 vi.mock('../../lib/lastRun.js')
-vi.mock('./html.js')
-vi.mock('./png.js')
-vi.mock('./browser.js')
+vi.mock('../../lib/utils/png.js')
+vi.mock('../../lib/utils/browser.js')
 vi.mock('@luzzle/core')
 vi.mock('../../lib/config.js')
 vi.mock('../../lib/database.js')

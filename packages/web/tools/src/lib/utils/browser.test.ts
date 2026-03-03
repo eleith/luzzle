@@ -3,7 +3,7 @@ import puppeteer, { Browser } from 'puppeteer';
 
 vi.mock('puppeteer');
 
-describe('generate-open-graph/browser', () => {
+describe('lib/utils/browser', () => {
 	const mocks = {
 		launch: vi.mocked(puppeteer.launch),
 	};
