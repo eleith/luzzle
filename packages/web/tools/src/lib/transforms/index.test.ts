@@ -1,5 +1,9 @@
-import { describe, test, expect, vi, afterEach } from 'vitest'
-import { transforms, transformMap, cleanupTransforms } from './index.js'
+import { describe, test, expect, vi, afterEach, MockInstance } from 'vitest'
+import { transforms, runAllTransforms, cleanupAllTransforms } from './index.js'
+import * as attachment from './attachment.js'
+import * as image from './image.js'
+import * as opengraph from './opengraph.js'
+import { TransformInput } from './types.js'
 
 vi.mock('./attachment.js', () => ({ run: vi.fn(), cleanup: undefined }))
 vi.mock('./image.js', () => ({ run: vi.fn(), cleanup: undefined }))
@@ -9,20 +13,29 @@ afterEach(() => {
 	vi.clearAllMocks()
 })
 
+const spies: { [key: string]: MockInstance } = {}
+
 describe('transforms/index', () => {
-	test('exports three transforms', () => {
-		expect(transforms).toHaveLength(3)
-	})
-
 	test('transformMap has attachment, image, opengraph keys', () => {
-		expect(Object.keys(transformMap)).toEqual(['attachment', 'image', 'opengraph'])
+		expect(Object.keys(transforms)).toEqual(['attachment', 'image', 'opengraph'])
 	})
 
-	test('cleanupTransforms calls cleanup on transforms that have it', async () => {
-		const { cleanup } = await import('./opengraph.js')
+	test('cleanupAllTransforms calls cleanup on transforms that have it', async () => {
+		spies.openGraphCleanup = vi.spyOn(opengraph, 'cleanup').mockResolvedValue(undefined)
+		await cleanupAllTransforms()
 
-		await cleanupTransforms()
+		expect(spies.openGraphCleanup).toHaveBeenCalledOnce()
+	})
 
-		expect(vi.mocked(cleanup)).toHaveBeenCalledOnce()
+	test('runAllTransforms calls cleanup on transforms that have it', async () => {
+		spies.openGraphRun = vi.spyOn(opengraph, 'run').mockResolvedValue()
+		spies.imageRun = vi.spyOn(image, 'run').mockResolvedValue()
+		spies.attachmentRun = vi.spyOn(attachment, 'run').mockResolvedValue()
+
+		await runAllTransforms({} as TransformInput)
+
+		expect(spies.openGraphRun).toHaveBeenCalledOnce()
+		expect(spies.imageRun).toHaveBeenCalledOnce()
+		expect(spies.attachmentRun).toHaveBeenCalledOnce()
 	})
 })

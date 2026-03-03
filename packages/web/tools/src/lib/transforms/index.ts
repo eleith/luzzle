@@ -8,12 +8,16 @@ type Transform = {
 	cleanup?: () => Promise<void>
 }
 
-export const transforms: Transform[] = [attachment, image, opengraph]
+export const transforms: Record<string, Transform> = { attachment, image, opengraph }
 
-export const transformMap: Record<string, Transform> = { attachment, image, opengraph }
+export async function runAllTransforms(input: TransformInput): Promise<void> {
+	for (const transform of Object.values(transforms)) {
+		await transform.run(input)
+	}
+}
 
-export async function cleanupTransforms(): Promise<void> {
-	for (const transform of transforms) {
+export async function cleanupAllTransforms(): Promise<void> {
+	for (const transform of Object.values(transforms)) {
 		await transform.cleanup?.()
 	}
 }

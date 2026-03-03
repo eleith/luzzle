@@ -1,34 +1,27 @@
-import { describe, test, expect, vi, afterEach } from 'vitest'
+import { describe, test, expect, vi, afterEach, MockInstance } from 'vitest'
 import runTransform from './index.js'
 import { Pieces } from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
 import runWebMigrations from '../../database/migrations.js'
-import { transformMap, cleanupTransforms } from '../../lib/transforms/index.js'
 import { type Config } from '@luzzle/web.utils'
 import { mockKysely } from '../../lib/database.mock.js'
+import { transforms } from '../../lib/transforms/index.js'
 
 vi.mock('@luzzle/core')
 vi.mock('../../lib/storage.js')
 vi.mock('../../lib/database.js')
 vi.mock('../../database/migrations.js')
-vi.mock('../../lib/transforms/index.js', () => ({
-	transformMap: {
-		attachment: { run: vi.fn(), cleanup: undefined },
-		image: { run: vi.fn(), cleanup: undefined },
-		opengraph: { run: vi.fn(), cleanup: undefined },
-	},
-	cleanupTransforms: vi.fn(),
-}))
+vi.mock('../../lib/transforms/index.js')
 
 const mocks = {
 	Pieces: vi.mocked(Pieces),
 	getStorage: vi.mocked(getStorage),
 	getDatabaseAndMigrate: vi.mocked(getDatabaseAndMigrate),
 	runWebMigrations: vi.mocked(runWebMigrations),
-	transformMap: vi.mocked(transformMap),
-	cleanupTransforms: vi.mocked(cleanupTransforms),
 }
+
+const spies: { [key: string]: MockInstance } = {};
 
 const config = {
 	paths: { database: 'db.sqlite' },
@@ -55,27 +48,17 @@ describe('commands/transform/index', () => {
 		mocks.runWebMigrations.mockResolvedValue({ results: [], error: undefined })
 		mocks.getStorage.mockReturnValue({} as ReturnType<typeof getStorage>)
 		mocks.Pieces.mockReturnValue({} as Pieces)
-		vi.spyOn(queries, 'executeTakeFirst').mockResolvedValue(pieceItem)
 
-		await runTransform({ outDir: '/out', type: 'attachment', file: 'book.md' }, config)
+		spies.queries = vi.spyOn(queries, 'executeTakeFirst').mockResolvedValue(pieceItem)
+		spies.openGraphRun = vi.spyOn(transforms.opengraph, 'run').mockResolvedValue()
+		spies.openGraphCleanup = (vi.spyOn(transforms.opengraph, 'cleanup') as MockInstance<() => Promise<void>>).mockResolvedValue()
 
-		expect(mocks.transformMap.attachment.run).toHaveBeenCalledWith(
+		await runTransform({ outDir: '/out', type: 'opengraph', file: 'book.md' }, config)
+
+		expect(spies.openGraphRun).toHaveBeenCalledWith(
 			expect.objectContaining({ item: pieceItem, outDir: '/out' })
 		)
-		expect(mocks.cleanupTransforms).toHaveBeenCalledOnce()
-	})
-
-	test('runs image transform by index', async () => {
-		const { db, queries } = mockKysely()
-		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
-		mocks.runWebMigrations.mockResolvedValue({ results: [], error: undefined })
-		mocks.getStorage.mockReturnValue({} as ReturnType<typeof getStorage>)
-		mocks.Pieces.mockReturnValue({} as Pieces)
-		vi.spyOn(queries, 'executeTakeFirst').mockResolvedValue(pieceItem)
-
-		await runTransform({ outDir: '/out', type: 'image', file: 'book.md' }, config)
-
-		expect(mocks.transformMap.image.run).toHaveBeenCalledOnce()
+		expect(spies.openGraphCleanup).toHaveBeenCalledOnce()
 	})
 
 	test('throws on unknown transform type', async () => {

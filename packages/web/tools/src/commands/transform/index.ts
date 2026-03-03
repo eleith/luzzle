@@ -3,7 +3,7 @@ import { getStorage } from '../../lib/storage.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
 import { type Config } from '@luzzle/web.utils'
 import runWebMigrations from '../../database/migrations.js'
-import { transformMap, cleanupTransforms } from '../../lib/transforms/index.js'
+import { transforms } from '../../lib/transforms/index.js'
 
 type TransformOptions = {
 	archiveDir?: string
@@ -13,9 +13,9 @@ type TransformOptions = {
 }
 
 export default async function runTransform(options: TransformOptions, config: Config) {
-	const transform = transformMap[options.type]
+	const transform = transforms[options.type]
 	if (!transform) {
-		const valid = Object.keys(transformMap).join(', ')
+		const valid = Object.keys(transforms).join(', ')
 		throw new Error(`Unknown transform type "${options.type}". Valid types: ${valid}`)
 	}
 
@@ -39,5 +39,5 @@ export default async function runTransform(options: TransformOptions, config: Co
 	}
 
 	await transform.run({ item, config, outDir: options.outDir, pieces, db })
-	await cleanupTransforms()
+	await transform.cleanup?.()
 }

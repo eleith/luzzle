@@ -5,7 +5,7 @@ import { getDatabase, getDatabaseAndMigrate } from '../../lib/database.js'
 import { type Config, type WebPieces, type WebPieceTags } from '@luzzle/web.utils'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import runWebMigrations from '../../database/migrations.js'
-import { transforms, cleanupTransforms } from '../../lib/transforms/index.js'
+import { cleanupAllTransforms, runAllTransforms } from '../../lib/transforms/index.js'
 
 type SyncOptions = {
 	archiveDir?: string
@@ -137,9 +137,7 @@ async function syncWebPiece(
 			await webDb.insertInto('web_pieces_tags').values(tags).execute()
 		}
 
-		for (const transform of transforms) {
-			await transform.run({ item, config, outDir, pieces, db })
-		}
+		runAllTransforms({item, config, outDir, pieces, db})
 	}
 }
 
@@ -240,7 +238,7 @@ async function syncPieces(
 		await pruneAssets(db, storage, files, dryRun)
 	}
 
-	await cleanupTransforms()
+	await cleanupAllTransforms()
 }
 
 async function pruneAssets(
