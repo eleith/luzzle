@@ -13,9 +13,9 @@ type TransformOptions = {
 }
 
 export default async function runTransform(options: TransformOptions, config: Config) {
-	const transform = transforms[options.type]
+	const transform = transforms.get(options.type)
 	if (!transform) {
-		const valid = Object.keys(transforms).join(', ')
+		const valid = [...transforms.keys()].join(', ')
 		throw new Error(`Unknown transform type "${options.type}". Valid types: ${valid}`)
 	}
 

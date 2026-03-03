@@ -13,11 +13,11 @@ vi.mock('../../lib/storage.js')
 vi.mock('../../lib/database.js')
 vi.mock('../../database/migrations.js')
 vi.mock('../../lib/transforms/index.js', () => ({
-	transforms: {
-		attachment: { run: vi.fn().mockResolvedValue([]), cleanup: undefined },
-		image: { run: vi.fn().mockResolvedValue([]), cleanup: undefined },
-		opengraph: { run: vi.fn().mockResolvedValue([]), cleanup: vi.fn().mockResolvedValue(undefined) },
-	},
+	transforms: new Map([
+		['attachment', { run: vi.fn().mockResolvedValue([]), cleanup: undefined }],
+		['image', { run: vi.fn().mockResolvedValue([]), cleanup: undefined }],
+		['opengraph', { run: vi.fn().mockResolvedValue([]), cleanup: vi.fn().mockResolvedValue(undefined) }],
+	]),
 }))
 
 const mocks = {
@@ -25,7 +25,6 @@ const mocks = {
 	getStorage: vi.mocked(getStorage),
 	getDatabaseAndMigrate: vi.mocked(getDatabaseAndMigrate),
 	runWebMigrations: vi.mocked(runWebMigrations),
-	transforms: vi.mocked(transforms),
 }
 
 const config = {
@@ -59,7 +58,7 @@ describe('commands/transform/index', () => {
 
 		await runTransform({ outDir: '/out', type: 'attachment', file: 'book.md' }, config)
 
-		expect(mocks.transforms.attachment.run).toHaveBeenCalledWith(
+		expect(transforms.get('attachment')!.run).toHaveBeenCalledWith(
 			expect.objectContaining({ webPiece, outDir: '/out' })
 		)
 	})
@@ -74,7 +73,7 @@ describe('commands/transform/index', () => {
 
 		await runTransform({ outDir: '/out', type: 'image', file: 'book.md' }, config)
 
-		expect(mocks.transforms.image.run).toHaveBeenCalledOnce()
+		expect(transforms.get('image')!.run).toHaveBeenCalledOnce()
 	})
 
 	test('calls cleanup when transform has one', async () => {
@@ -87,7 +86,7 @@ describe('commands/transform/index', () => {
 
 		await runTransform({ outDir: '/out', type: 'opengraph', file: 'book.md' }, config)
 
-		expect(mocks.transforms.opengraph.cleanup).toHaveBeenCalledOnce()
+		expect(transforms.get('opengraph')!.cleanup).toHaveBeenCalledOnce()
 	})
 
 	test('throws on unknown transform type', async () => {

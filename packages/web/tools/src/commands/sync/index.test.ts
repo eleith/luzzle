@@ -14,11 +14,11 @@ vi.mock('../../lib/storage.js')
 vi.mock('../../database/migrations.js')
 vi.mock('@luzzle/web.utils/server', () => ({ generateAssetKey: vi.fn().mockReturnValue('key') }))
 vi.mock('../../lib/transforms/index.js', () => ({
-	transforms: {
-		attachment: { run: vi.fn().mockResolvedValue([]) },
-		image: { run: vi.fn().mockResolvedValue([]) },
-		opengraph: { run: vi.fn().mockResolvedValue([]) },
-	},
+	transforms: new Map([
+		['attachment', { run: vi.fn().mockResolvedValue([]) }],
+		['image', { run: vi.fn().mockResolvedValue([]) }],
+		['opengraph', { run: vi.fn().mockResolvedValue([]) }],
+	]),
 	cleanupAllTransforms: vi.fn(),
 }))
 
@@ -32,7 +32,6 @@ const mocks = {
 	selectItemAssets: vi.mocked(selectItemAssets),
 	runWebMigrations: vi.mocked(runWebMigrations),
 	getFrontmatterValues: vi.mocked(getFrontmatterValues),
-	transforms: vi.mocked(transforms),
 	cleanupAllTransforms: vi.mocked(cleanupAllTransforms),
 }
 
@@ -643,7 +642,7 @@ describe('sync index', () => {
 		queries.execute.mockResolvedValueOnce([])
 		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
 
-		vi.mocked(mocks.transforms.attachment.run).mockResolvedValueOnce([
+		vi.mocked(transforms.get('attachment')!.run).mockResolvedValueOnce([
 			{ transformation: 'attachment.original', asset_path: 'books/key/file.pdf', mime_type: 'application/pdf' },
 		])
 
@@ -663,7 +662,7 @@ describe('sync index', () => {
 
 		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
 
-		expect(mocks.transforms.attachment.run).toHaveBeenCalledOnce()
+		expect(transforms.get('attachment')!.run).toHaveBeenCalledOnce()
 		expect(db.deleteFrom).toHaveBeenCalledWith('web_pieces_assets')
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
 		expect(consoleLogSpy).toHaveBeenCalledWith('[transform.attachment] generated books/key/file.pdf')
@@ -694,7 +693,7 @@ describe('sync index', () => {
 		queries.execute.mockResolvedValueOnce([])
 		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
 
-		vi.mocked(mocks.transforms.attachment.run).mockRejectedValueOnce(new Error('storage error'))
+		vi.mocked(transforms.get('attachment')!.run).mockRejectedValueOnce(new Error('storage error'))
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
@@ -757,7 +756,7 @@ describe('sync index', () => {
 
 		await sync({ outDir: '/tmp/test-out', dryRun: true }, config as unknown as Config)
 
-		expect(mocks.transforms.attachment.run).not.toHaveBeenCalled()
+		expect(transforms.get('attachment')!.run).not.toHaveBeenCalled()
 		expect(db.insertInto).not.toHaveBeenCalledWith('web_pieces_assets')
 	})
 

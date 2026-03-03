@@ -156,7 +156,7 @@ async function syncWebPiece(
 			await webDb.insertInto('web_pieces_tags').values(tags).execute()
 		}
 
-		for (const [name, transform] of Object.entries(transforms)) {
+		for (const [name, transform] of transforms) {
 			await webDb
 				.deleteFrom('web_pieces_assets')
 				.where('piece_file_path', '=', webPiece.file_path)
