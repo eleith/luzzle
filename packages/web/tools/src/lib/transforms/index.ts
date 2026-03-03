@@ -1,6 +1,7 @@
 import * as attachment from './attachment.js'
 import * as image from './image.js'
 import * as palette from './palette.js'
+import * as highlight from './highlight.js'
 import * as opengraph from './opengraph.js'
 import type { TransformInput, AssetRecord } from './types.js'
 
@@ -10,11 +11,12 @@ type Transform = {
 }
 
 // Order matters: each transform may depend on assets produced by prior transforms.
-// attachment → image → opengraph (last, depends on image assets and future palette transform)
+// attachment → image → palette → highlight → opengraph (last, depends on image assets)
 export const transforms = new Map<string, Transform>([
 	['attachment', attachment],
 	['image', image],
 	['palette', palette],
+	['highlight', highlight],
 	['opengraph', opengraph],
 ])
 
