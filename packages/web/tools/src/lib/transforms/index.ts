@@ -1,5 +1,6 @@
 import * as attachment from './attachment.js'
 import * as image from './image.js'
+import * as palette from './palette.js'
 import * as opengraph from './opengraph.js'
 import type { TransformInput, AssetRecord } from './types.js'
 
@@ -13,6 +14,7 @@ type Transform = {
 export const transforms = new Map<string, Transform>([
 	['attachment', attachment],
 	['image', image],
+	['palette', palette],
 	['opengraph', opengraph],
 ])
 

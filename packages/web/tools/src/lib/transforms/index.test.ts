@@ -11,8 +11,8 @@ afterEach(() => {
 })
 
 describe('transforms/index', () => {
-	test('transforms has attachment, image, opengraph in order', () => {
-		expect([...transforms.keys()]).toEqual(['attachment', 'image', 'opengraph'])
+	test('transforms has attachment, image, palette, opengraph in order', () => {
+		expect([...transforms.keys()]).toEqual(['attachment', 'image', 'palette', 'opengraph'])
 	})
 
 	test('cleanupAllTransforms calls cleanup on transforms that have it', async () => {
