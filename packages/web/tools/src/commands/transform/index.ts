@@ -3,7 +3,7 @@ import { getStorage } from '../../lib/storage.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
 import { type Config } from '@luzzle/web.utils'
 import runWebMigrations from '../../database/migrations.js'
-import { transforms, cleanupTransforms } from '../../lib/transforms/index.js'
+import { transformMap, cleanupTransforms } from '../../lib/transforms/index.js'
 
 type TransformOptions = {
 	archiveDir?: string
@@ -12,15 +12,11 @@ type TransformOptions = {
 	file: string
 }
 
-const transformNames = transforms.map((_, i) => {
-	const names = ['attachment', 'image', 'opengraph']
-	return names[i]
-})
-
 export default async function runTransform(options: TransformOptions, config: Config) {
-	const transformIndex = transformNames.indexOf(options.type)
-	if (transformIndex === -1) {
-		throw new Error(`Unknown transform type "${options.type}". Valid types: ${transformNames.join(', ')}`)
+	const transform = transformMap[options.type]
+	if (!transform) {
+		const valid = Object.keys(transformMap).join(', ')
+		throw new Error(`Unknown transform type "${options.type}". Valid types: ${valid}`)
 	}
 
 	const storage = getStorage(config, options.archiveDir)
@@ -42,6 +38,6 @@ export default async function runTransform(options: TransformOptions, config: Co
 		throw new Error(`Piece not found: ${options.file}`)
 	}
 
-	await transforms[transformIndex].run({ item, config, outDir: options.outDir, pieces, db })
+	await transform.run({ item, config, outDir: options.outDir, pieces, db })
 	await cleanupTransforms()
 }

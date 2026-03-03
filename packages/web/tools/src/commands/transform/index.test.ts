@@ -4,7 +4,7 @@ import { Pieces } from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
 import runWebMigrations from '../../database/migrations.js'
-import { transforms, cleanupTransforms } from '../../lib/transforms/index.js'
+import { transformMap, cleanupTransforms } from '../../lib/transforms/index.js'
 import { type Config } from '@luzzle/web.utils'
 import { mockKysely } from '../../lib/database.mock.js'
 
@@ -13,11 +13,11 @@ vi.mock('../../lib/storage.js')
 vi.mock('../../lib/database.js')
 vi.mock('../../database/migrations.js')
 vi.mock('../../lib/transforms/index.js', () => ({
-	transforms: [
-		{ run: vi.fn(), cleanup: undefined },
-		{ run: vi.fn(), cleanup: undefined },
-		{ run: vi.fn(), cleanup: undefined },
-	],
+	transformMap: {
+		attachment: { run: vi.fn(), cleanup: undefined },
+		image: { run: vi.fn(), cleanup: undefined },
+		opengraph: { run: vi.fn(), cleanup: undefined },
+	},
 	cleanupTransforms: vi.fn(),
 }))
 
@@ -26,7 +26,7 @@ const mocks = {
 	getStorage: vi.mocked(getStorage),
 	getDatabaseAndMigrate: vi.mocked(getDatabaseAndMigrate),
 	runWebMigrations: vi.mocked(runWebMigrations),
-	transforms: vi.mocked(transforms),
+	transformMap: vi.mocked(transformMap),
 	cleanupTransforms: vi.mocked(cleanupTransforms),
 }
 
@@ -59,7 +59,7 @@ describe('commands/transform/index', () => {
 
 		await runTransform({ outDir: '/out', type: 'attachment', file: 'book.md' }, config)
 
-		expect(mocks.transforms[0].run).toHaveBeenCalledWith(
+		expect(mocks.transformMap.attachment.run).toHaveBeenCalledWith(
 			expect.objectContaining({ item: pieceItem, outDir: '/out' })
 		)
 		expect(mocks.cleanupTransforms).toHaveBeenCalledOnce()
@@ -75,7 +75,7 @@ describe('commands/transform/index', () => {
 
 		await runTransform({ outDir: '/out', type: 'image', file: 'book.md' }, config)
 
-		expect(mocks.transforms[1].run).toHaveBeenCalledOnce()
+		expect(mocks.transformMap.image.run).toHaveBeenCalledOnce()
 	})
 
 	test('throws on unknown transform type', async () => {

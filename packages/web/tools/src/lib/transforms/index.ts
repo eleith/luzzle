@@ -10,6 +10,8 @@ type Transform = {
 
 export const transforms: Transform[] = [attachment, image, opengraph]
 
+export const transformMap: Record<string, Transform> = { attachment, image, opengraph }
+
 export async function cleanupTransforms(): Promise<void> {
 	for (const transform of transforms) {
 		await transform.cleanup?.()
