@@ -89,6 +89,34 @@ describe('transforms/attachment', () => {
 		])
 	})
 
+	test('defaults to application/octet-stream on unknown file type', async () => {
+		const mockPieces = {
+			getPieceAsset: vi.fn().mockResolvedValue(Buffer.from('file_content')),
+		} as unknown as Pieces
+
+		mocks.getAssetDir.mockReturnValue('books/key123')
+		mocks.getAssetPath.mockReturnValue('books/key123/doc.abcxyz')
+
+		const records = await run({
+			webPiece: makeWebPiece('{"doc": "doc.abcxyz"}'),
+			config: makeConfig(['doc']),
+			outDir: '/out',
+			pieces: mockPieces,
+		})
+
+		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key123', { recursive: true })
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('doc.abcxyz')
+		expect(mocks.writeFile).toHaveBeenCalledWith('/out/books/key123/doc.abcxyz', Buffer.from('file_content'))
+		expect(records).toEqual([
+			expect.objectContaining({
+				piece_asset_path: 'doc.abcxyz',
+				transformation: 'attachment.original',
+				asset_path: 'books/key123/doc.abcxyz',
+				mime_type: 'application/octet-stream',
+			}),
+		])
+	})
+
 	test('handles errors during copy gracefully', async () => {
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockRejectedValue(new Error('storage error')),
