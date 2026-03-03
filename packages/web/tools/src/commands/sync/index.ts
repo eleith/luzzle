@@ -172,9 +172,12 @@ async function syncWebPiece(
 						.values(
 							records.map((record) => ({
 								content: record.content,
+								is_embedded: record.is_embedded,
 								transformation: record.transformation,
 								mime_type: record.mime_type,
 								asset_path: record.asset_path,
+								piece_asset_path: record.piece_asset_path,
+								piece_field_path: record.piece_field_path,
 								piece_file_path: webPiece.file_path,
 								piece_key: webPiece.key,
 							}))
