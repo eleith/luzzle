@@ -1,11 +1,8 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run } from './attachment.js'
-import { mockKysely } from '../database.mock.js'
 import { mkdir, writeFile } from 'fs/promises'
-import { getAssetPath, getAssetDir, type Config } from '@luzzle/web.utils'
-import { generateAssetKey } from '@luzzle/web.utils/server'
+import { getAssetPath, getAssetDir, type Config, type WebPieces } from '@luzzle/web.utils'
 import { Pieces } from '@luzzle/core'
-import type { LuzzleSelectable } from '@luzzle/core'
 
 vi.mock('fs/promises')
 vi.mock('@luzzle/web.utils')
@@ -16,18 +13,18 @@ const mocks = {
 	writeFile: vi.mocked(writeFile),
 	getAssetPath: vi.mocked(getAssetPath),
 	getAssetDir: vi.mocked(getAssetDir),
-	generateAssetKey: vi.mocked(generateAssetKey),
 }
 
-const makeItem = (frontmatter_json: string): LuzzleSelectable<'pieces_items'> => ({
+const makeWebPiece = (json_metadata: string): WebPieces => ({
 	id: '1',
 	type: 'books',
 	date_updated: 100,
 	date_added: 50,
-	frontmatter_json,
+	json_metadata,
 	file_path: 'book.md',
-	note_markdown: '',
-	assets_json_array: '[]',
+	key: 'key123',
+	slug: 'my-book',
+	title: 'My Book',
 })
 
 const makeConfig = (attachments?: string[]): Config =>
@@ -51,91 +48,76 @@ afterEach(() => {
 
 describe('transforms/attachment', () => {
 	test('does nothing when piece type has no attachments config', async () => {
-		const { db } = mockKysely()
 		const mockPieces = { getPieceAsset: vi.fn() } as unknown as Pieces
-		mocks.generateAssetKey.mockReturnValue('key')
 
-		await run({
-			item: makeItem('{}'),
+		const records = await run({
+			webPiece: makeWebPiece('{}'),
 			config: makeConfig(),
 			outDir: '/out',
 			pieces: mockPieces,
-			db,
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
 		expect(mocks.writeFile).not.toHaveBeenCalled()
+		expect(records).toEqual([])
 	})
 
-	test('copies attachment files and records in DB', async () => {
-		const { db, queries } = mockKysely()
+	test('copies attachment files and returns asset records', async () => {
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockResolvedValue(Buffer.from('file_content')),
 		} as unknown as Pieces
 
-		mocks.generateAssetKey.mockReturnValue('key123')
 		mocks.getAssetDir.mockReturnValue('books/key123')
 		mocks.getAssetPath.mockReturnValue('books/key123/doc.pdf')
-		vi.spyOn(queries, 'execute').mockResolvedValue([])
 
-		await run({
-			item: makeItem('{"doc": "doc.pdf"}'),
+		const records = await run({
+			webPiece: makeWebPiece('{"doc": "doc.pdf"}'),
 			config: makeConfig(['doc']),
 			outDir: '/out',
 			pieces: mockPieces,
-			db,
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key123', { recursive: true })
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('doc.pdf')
 		expect(mocks.writeFile).toHaveBeenCalledWith('/out/books/key123/doc.pdf', Buffer.from('file_content'))
-		expect(db.deleteFrom).toHaveBeenCalledWith('web_pieces_assets')
-		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
-		expect(queries.values).toHaveBeenCalledWith(
+		expect(records).toEqual([
 			expect.objectContaining({
-				piece_file_path: 'book.md',
-				piece_key: 'key123',
 				piece_asset_path: 'doc.pdf',
 				transformation: 'attachment.original',
 				asset_path: 'books/key123/doc.pdf',
-			})
-		)
+			}),
+		])
 	})
 
 	test('handles errors during copy gracefully', async () => {
-		const { db, queries } = mockKysely()
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockRejectedValue(new Error('storage error')),
 		} as unknown as Pieces
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-		mocks.generateAssetKey.mockReturnValue('key')
-		mocks.getAssetDir.mockReturnValue('books/key')
-		mocks.getAssetPath.mockReturnValue('books/key/doc.pdf')
-		vi.spyOn(queries, 'execute').mockResolvedValue([])
+		mocks.getAssetDir.mockReturnValue('books/key123')
+		mocks.getAssetPath.mockReturnValue('books/key123/doc.pdf')
 
-		await run({
-			item: makeItem('{"doc": "doc.pdf"}'),
+		const records = await run({
+			webPiece: makeWebPiece('{"doc": "doc.pdf"}'),
 			config: makeConfig(['doc']),
 			outDir: '/out',
 			pieces: mockPieces,
-			db,
 		})
 
 		expect(consoleErrorSpy).toHaveBeenCalledOnce()
-		expect(db.insertInto).not.toHaveBeenCalled()
+		expect(records).toEqual([])
 		consoleErrorSpy.mockRestore()
 	})
 
 	test('does nothing for piece type not in config', async () => {
-		const { db } = mockKysely()
 		const mockPieces = { getPieceAsset: vi.fn() } as unknown as Pieces
-
 		const config = makeConfig(['doc'])
-		const item = { ...makeItem('{"doc": "doc.pdf"}'), type: 'unknown' }
+		const webPiece = { ...makeWebPiece('{"doc": "doc.pdf"}'), type: 'unknown' }
 
-		await run({ item, config, outDir: '/out', pieces: mockPieces, db })
+		const records = await run({ webPiece, config, outDir: '/out', pieces: mockPieces })
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
+		expect(records).toEqual([])
 	})
 })

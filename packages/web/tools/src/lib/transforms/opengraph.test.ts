@@ -1,12 +1,9 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run, cleanup } from './opengraph.js'
-import { mockKysely } from '../database.mock.js'
 import { getBrowser, closeBrowser } from '../utils/browser.js'
 import { generatePngFromUrl } from '../utils/png.js'
-import { getOpenGraphPath, type Config } from '@luzzle/web.utils'
-import { generateAssetKey } from '@luzzle/web.utils/server'
+import { getOpenGraphPath, type Config, type WebPieces } from '@luzzle/web.utils'
 import { Pieces } from '@luzzle/core'
-import type { LuzzleSelectable } from '@luzzle/core'
 import { Browser } from 'puppeteer'
 
 vi.mock('../utils/browser.js', () => ({
@@ -22,18 +19,18 @@ const mocks = {
 	closeBrowser: vi.mocked(closeBrowser),
 	generatePngFromUrl: vi.mocked(generatePngFromUrl),
 	getOpenGraphPath: vi.mocked(getOpenGraphPath),
-	generateAssetKey: vi.mocked(generateAssetKey),
 }
 
-const makeItem = (): LuzzleSelectable<'pieces_items'> => ({
+const makeWebPiece = (): WebPieces => ({
 	id: '1',
 	type: 'books',
 	date_updated: 100,
 	date_added: 50,
-	frontmatter_json: '{}',
+	json_metadata: '{}',
 	file_path: 'book.md',
-	note_markdown: '',
-	assets_json_array: '[]',
+	key: 'key',
+	slug: 'my-book',
+	title: 'My Book',
 })
 
 const makeConfig = (): Config =>
@@ -48,31 +45,15 @@ afterEach(() => {
 })
 
 describe('transforms/opengraph', () => {
-	test('does nothing if web_pieces row not found', async () => {
-		const { db, queries } = mockKysely()
-		const mockPieces = {} as unknown as Pieces
-		mocks.generateAssetKey.mockReturnValue('key')
-		vi.spyOn(queries, 'executeTakeFirst').mockResolvedValue(undefined)
-
-		await run({ item: makeItem(), config: makeConfig(), outDir: '/out', pieces: mockPieces, db })
-
-		expect(mocks.getBrowser).not.toHaveBeenCalled()
-		expect(mocks.generatePngFromUrl).not.toHaveBeenCalled()
-	})
-
-	test('generates opengraph image and records in DB', async () => {
-		const { db, queries } = mockKysely()
+	test('generates opengraph image and returns asset record', async () => {
 		const mockPieces = {} as unknown as Pieces
 		const browser = { close: vi.fn() }
 
-		mocks.generateAssetKey.mockReturnValue('key')
 		mocks.getOpenGraphPath.mockReturnValue('books/key/opengraph.png')
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 		mocks.generatePngFromUrl.mockResolvedValue(Buffer.from('png'))
-		vi.spyOn(queries, 'executeTakeFirst').mockResolvedValue({ slug: 'my-book', key: 'key' })
-		vi.spyOn(queries, 'execute').mockResolvedValue([])
 
-		await run({ item: makeItem(), config: makeConfig(), outDir: '/out', pieces: mockPieces, db })
+		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces })
 
 		expect(mocks.getBrowser).toHaveBeenCalledOnce()
 		expect(mocks.generatePngFromUrl).toHaveBeenCalledWith(
@@ -80,32 +61,27 @@ describe('transforms/opengraph', () => {
 			browser,
 			'/out/books/key/opengraph.png'
 		)
-		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
-		expect(queries.values).toHaveBeenCalledWith(
+		expect(records).toEqual([
 			expect.objectContaining({
-				piece_file_path: 'book.md',
 				transformation: 'opengraph',
 				mime_type: 'image/png',
-			})
-		)
+			}),
+		])
 	})
 
-	test('handles errors gracefully without throwing', async () => {
-		const { db, queries } = mockKysely()
+	test('handles errors gracefully and returns empty records', async () => {
 		const mockPieces = {} as unknown as Pieces
 		const browser = { close: vi.fn() }
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-		mocks.generateAssetKey.mockReturnValue('key')
 		mocks.getOpenGraphPath.mockReturnValue('books/key/opengraph.png')
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 		mocks.generatePngFromUrl.mockRejectedValue(new Error('puppeteer error'))
-		vi.spyOn(queries, 'executeTakeFirst').mockResolvedValue({ slug: 'my-book', key: 'key' })
 
-		await run({ item: makeItem(), config: makeConfig(), outDir: '/out', pieces: mockPieces, db })
+		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces })
 
 		expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[error] opengraph'))
-		expect(db.insertInto).not.toHaveBeenCalled()
+		expect(records).toEqual([])
 		consoleErrorSpy.mockRestore()
 	})
 

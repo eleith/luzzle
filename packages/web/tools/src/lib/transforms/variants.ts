@@ -1,12 +1,12 @@
 import Sharp from 'sharp'
-import { LuzzleSelectable, Pieces } from '@luzzle/core'
+import { Pieces } from '@luzzle/core'
 
 function generateVariantSharpJob(sharp: Sharp.Sharp, width: number, format: 'avif' | 'jpg') {
 	return sharp.clone().resize({ width }).toFormat(format)
 }
 
 async function generateVariantJobs(
-	item: LuzzleSelectable<'pieces_items'>,
+	filePath: string,
 	asset: string,
 	pieces: Pieces,
 	widths: number[],
@@ -29,7 +29,7 @@ async function generateVariantJobs(
 			}
 		}
 	} catch (error) {
-		console.error(`error generating variant jobs for ${item.file_path} asset at ${asset}: ${error}`)
+		console.error(`error generating variant jobs for ${filePath} asset at ${asset}: ${error}`)
 	}
 
 	return jobs

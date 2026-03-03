@@ -1,7 +1,7 @@
 import { Pieces } from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
-import { type Config } from '@luzzle/web.utils'
+import { type Config, type WebPieces } from '@luzzle/web.utils'
 import runWebMigrations from '../../database/migrations.js'
 import { transforms } from '../../lib/transforms/index.js'
 
@@ -28,16 +28,17 @@ export default async function runTransform(options: TransformOptions, config: Co
 		throw new Error(`Web migration failed: ${webMigrationResult.error}`)
 	}
 
-	const item = await db
-		.selectFrom('pieces_items')
+	const webPiece = await db
+		.withTables<{ web_pieces: WebPieces }>()
+		.selectFrom('web_pieces')
 		.selectAll()
 		.where('file_path', '=', options.file)
 		.executeTakeFirst()
 
-	if (!item) {
-		throw new Error(`Piece not found: ${options.file}`)
+	if (!webPiece) {
+		throw new Error(`Web piece not found: ${options.file}`)
 	}
 
-	await transform.run({ item, config, outDir: options.outDir, pieces, db })
+	await transform.run({ webPiece, config, outDir: options.outDir, pieces })
 	await transform.cleanup?.()
 }

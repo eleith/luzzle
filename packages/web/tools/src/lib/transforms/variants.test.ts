@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { generateVariantJobs } from './variants.js'
 import Sharp from 'sharp'
-import { LuzzleSelectable, Pieces } from '@luzzle/core'
+import { Pieces } from '@luzzle/core'
 
 vi.mock('sharp')
 
@@ -14,15 +14,10 @@ describe('generateVariantJobs', () => {
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockRejectedValue(new Error('test error')),
 		} as unknown as Pieces
-		const mockItem = {
-			id: '1',
-			type: 'test',
-			file_path: 'path/to/file.jpg',
-		} as unknown as LuzzleSelectable<'pieces_items'>
 
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-		const jobs = await generateVariantJobs(mockItem, 'image.jpg', mockPieces, [100], ['avif', 'jpg'])
+		const jobs = await generateVariantJobs('path/to/file.jpg', 'image.jpg', mockPieces, [100], ['avif', 'jpg'])
 
 		expect(jobs).toEqual([])
 		expect(consoleErrorSpy).toHaveBeenCalledOnce()
@@ -32,11 +27,6 @@ describe('generateVariantJobs', () => {
 
 	test('should generate variant jobs for an image asset', async () => {
 		const mockPieces = { getPieceAsset: vi.fn(() => 'asset_content') } as unknown as Pieces
-		const mockItem = {
-			id: '1',
-			type: 'test',
-			file_path: 'path/to/file.jpg',
-		} as unknown as LuzzleSelectable<'pieces_items'>
 
 		const mockSharp = {
 			clone: vi.fn().mockReturnThis(),
@@ -46,7 +36,7 @@ describe('generateVariantJobs', () => {
 		vi.mocked(Sharp).mockReturnValue(mockSharp as unknown as Sharp.Sharp)
 
 		const jobs = await generateVariantJobs(
-			mockItem,
+			'path/to/file.jpg',
 			'image.jpg',
 			mockPieces,
 			[100, 200],

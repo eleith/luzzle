@@ -1,12 +1,9 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run } from './image.js'
-import { mockKysely } from '../database.mock.js'
 import { mkdir, writeFile } from 'fs/promises'
-import { getAssetPath, getAssetDir, getImageAssetPath, ASSET_SIZES, type Config } from '@luzzle/web.utils'
-import { generateAssetKey } from '@luzzle/web.utils/server'
+import { getAssetPath, getAssetDir, getImageAssetPath, ASSET_SIZES, type Config, type WebPieces } from '@luzzle/web.utils'
 import { generateVariantJobs } from './variants.js'
 import { Pieces } from '@luzzle/core'
-import type { LuzzleSelectable } from '@luzzle/core'
 import type { Sharp } from 'sharp'
 
 vi.mock('fs/promises')
@@ -20,19 +17,19 @@ const mocks = {
 	getAssetPath: vi.mocked(getAssetPath),
 	getAssetDir: vi.mocked(getAssetDir),
 	getImageAssetPath: vi.mocked(getImageAssetPath),
-	generateAssetKey: vi.mocked(generateAssetKey),
 	generateVariantJobs: vi.mocked(generateVariantJobs),
 }
 
-const makeItem = (frontmatter_json: string): LuzzleSelectable<'pieces_items'> => ({
+const makeWebPiece = (json_metadata: string): WebPieces => ({
 	id: '1',
 	type: 'books',
 	date_updated: 100,
 	date_added: 50,
-	frontmatter_json,
+	json_metadata,
 	file_path: 'book.md',
-	note_markdown: '',
-	assets_json_array: '[]',
+	key: 'key',
+	slug: 'my-book',
+	title: 'My Book',
 })
 
 const makeConfig = (media?: string[]): Config =>
@@ -56,85 +53,74 @@ afterEach(() => {
 
 describe('transforms/image', () => {
 	test('does nothing when no media fields configured', async () => {
-		const { db } = mockKysely()
 		const mockPieces = { getPieceAsset: vi.fn() } as unknown as Pieces
-		mocks.generateAssetKey.mockReturnValue('key')
 
-		await run({
-			item: makeItem('{}'),
+		const records = await run({
+			webPiece: makeWebPiece('{}'),
 			config: makeConfig(),
 			outDir: '/out',
 			pieces: mockPieces,
-			db,
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
 		expect(mocks.writeFile).not.toHaveBeenCalled()
+		expect(records).toEqual([])
 	})
 
 	test('does nothing for piece type not in config', async () => {
-		const { db } = mockKysely()
 		const mockPieces = { getPieceAsset: vi.fn() } as unknown as Pieces
-
 		const config = makeConfig(['image'])
-		const item = { ...makeItem('{"image": "photo.jpg"}'), type: 'unknown' }
+		const webPiece = { ...makeWebPiece('{"image": "photo.jpg"}'), type: 'unknown' }
 
-		await run({ item, config, outDir: '/out', pieces: mockPieces, db })
+		const records = await run({ webPiece, config, outDir: '/out', pieces: mockPieces })
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
+		expect(records).toEqual([])
 	})
 
 	test('warns when no assets found at field path', async () => {
-		const { db, queries } = mockKysely()
 		const mockPieces = { getPieceAsset: vi.fn() } as unknown as Pieces
 		const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-		mocks.generateAssetKey.mockReturnValue('key')
 		mocks.getAssetDir.mockReturnValue('books/key')
-		vi.spyOn(queries, 'execute').mockResolvedValue([])
 
-		await run({
-			item: makeItem('{}'),
+		const records = await run({
+			webPiece: makeWebPiece('{}'),
 			config: makeConfig(['image']),
 			outDir: '/out',
 			pieces: mockPieces,
-			db,
 		})
 
 		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('No assets found'))
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
+		expect(records).toEqual([])
 		consoleWarnSpy.mockRestore()
 	})
 
 	test('warns and skips non-image files', async () => {
-		const { db, queries } = mockKysely()
 		const mockPieces = { getPieceAsset: vi.fn() } as unknown as Pieces
 		const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-		mocks.generateAssetKey.mockReturnValue('key')
 		mocks.getAssetDir.mockReturnValue('books/key')
-		vi.spyOn(queries, 'execute').mockResolvedValue([])
 
-		await run({
-			item: makeItem('{"doc": "file.pdf"}'),
+		const records = await run({
+			webPiece: makeWebPiece('{"doc": "file.pdf"}'),
 			config: makeConfig(['doc']),
 			outDir: '/out',
 			pieces: mockPieces,
-			db,
 		})
 
 		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Skipping non-image file'))
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
+		expect(records).toEqual([])
 		consoleWarnSpy.mockRestore()
 	})
 
-	test('copies image and generates variants', async () => {
-		const { db, queries } = mockKysely()
+	test('copies image and generates variants, returns asset records', async () => {
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockResolvedValue(Buffer.from('image_data')),
 		} as unknown as Pieces
 
-		mocks.generateAssetKey.mockReturnValue('key')
 		mocks.getAssetDir.mockReturnValue('books/key')
 		mocks.getAssetPath.mockReturnValue('books/key/photo.jpg')
 		mocks.getImageAssetPath.mockReturnValue('books/key/photo.s.jpg')
@@ -146,55 +132,53 @@ describe('transforms/image', () => {
 				format: 'jpg',
 			},
 		])
-		vi.spyOn(queries, 'execute').mockResolvedValue([])
 
-		await run({
-			item: makeItem('{"image": "photo.jpg"}'),
+		const records = await run({
+			webPiece: makeWebPiece('{"image": "photo.jpg"}'),
 			config: makeConfig(['image']),
 			outDir: '/out',
 			pieces: mockPieces,
-			db,
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key', { recursive: true })
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('photo.jpg')
 		expect(mocks.writeFile).toHaveBeenCalledWith('/out/books/key/photo.jpg', Buffer.from('image_data'))
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
-		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
+		expect(records).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ transformation: 'image.original' }),
+				expect.objectContaining({ transformation: expect.stringContaining('image.') }),
+			])
+		)
 	})
 
 	test('handles errors during asset processing gracefully', async () => {
-		const { db, queries } = mockKysely()
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockRejectedValue(new Error('read error')),
 		} as unknown as Pieces
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-		mocks.generateAssetKey.mockReturnValue('key')
 		mocks.getAssetDir.mockReturnValue('books/key')
 		mocks.getAssetPath.mockReturnValue('books/key/photo.jpg')
-		vi.spyOn(queries, 'execute').mockResolvedValue([])
 
-		await run({
-			item: makeItem('{"image": "photo.jpg"}'),
+		const records = await run({
+			webPiece: makeWebPiece('{"image": "photo.jpg"}'),
 			config: makeConfig(['image']),
 			outDir: '/out',
 			pieces: mockPieces,
-			db,
 		})
 
 		expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('error processing media'))
+		expect(records).toEqual([])
 		consoleErrorSpy.mockRestore()
 	})
 
 	test('handles errors during variant toFile gracefully', async () => {
-		const { db, queries } = mockKysely()
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockResolvedValue(Buffer.from('image_data')),
 		} as unknown as Pieces
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-		mocks.generateAssetKey.mockReturnValue('key')
 		mocks.getAssetDir.mockReturnValue('books/key')
 		mocks.getAssetPath.mockReturnValue('books/key/photo.jpg')
 		mocks.getImageAssetPath.mockReturnValue('books/key/photo.s.jpg')
@@ -205,14 +189,12 @@ describe('transforms/image', () => {
 				format: 'jpg',
 			},
 		])
-		vi.spyOn(queries, 'execute').mockResolvedValue([])
 
 		await run({
-			item: makeItem('{"image": "photo.jpg"}'),
+			webPiece: makeWebPiece('{"image": "photo.jpg"}'),
 			config: makeConfig(['image']),
 			outDir: '/out',
 			pieces: mockPieces,
-			db,
 		})
 
 		expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('error processing media'))

@@ -1,11 +1,22 @@
 import path from 'path'
-import { Pieces, selectItemAssets, getFrontmatterValue, getFrontmatterValues, LuzzleSelectable } from '@luzzle/core'
+import {
+	Pieces,
+	selectItemAssets,
+	getFrontmatterValue,
+	getFrontmatterValues,
+	LuzzleSelectable,
+} from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
 import { getDatabase, getDatabaseAndMigrate } from '../../lib/database.js'
-import { type Config, type WebPieces, type WebPieceTags } from '@luzzle/web.utils'
+import {
+	type Config,
+	type WebPieces,
+	type WebPieceTags,
+	type WebPiecesAsset,
+} from '@luzzle/web.utils'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import runWebMigrations from '../../database/migrations.js'
-import { cleanupAllTransforms, runAllTransforms } from '../../lib/transforms/index.js'
+import { transforms, cleanupAllTransforms } from '../../lib/transforms/index.js'
 
 type SyncOptions = {
 	archiveDir?: string
@@ -48,7 +59,7 @@ function buildWebPiece(
 	keywords: string[]
 ): WebPieces {
 	const title = getFrontmatterValue<string>(frontmatter, pieceConfig.fields.title) || ''
-	const dateConsumed = getFrontmatterValue<number>(frontmatter, pieceConfig.fields.date_consumed) as unknown as number
+	const dateConsumed = getFrontmatterValue<number>(frontmatter, pieceConfig.fields.date_consumed)
 	const key = generateAssetKey(item.file_path, salt)
 
 	const summary = pieceConfig.fields.summary
@@ -83,9 +94,17 @@ async function syncWebPiece(
 	outDir: string,
 	pieces: Pieces
 ): Promise<void> {
-	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags }>()
+	const webDb = db.withTables<{
+		web_pieces: WebPieces
+		web_pieces_tags: WebPieceTags
+		web_pieces_assets: WebPiecesAsset
+	}>()
 
-	const item = await db.selectFrom('pieces_items').selectAll().where('file_path', '=', file).executeTakeFirst()
+	const item = await db
+		.selectFrom('pieces_items')
+		.selectAll()
+		.where('file_path', '=', file)
+		.executeTakeFirst()
 	if (!item) return
 
 	const pieceConfig = config.pieces.find((p) => p.type === item.type)
@@ -137,7 +156,31 @@ async function syncWebPiece(
 			await webDb.insertInto('web_pieces_tags').values(tags).execute()
 		}
 
-		runAllTransforms({item, config, outDir, pieces, db})
+		for (const [name, transform] of Object.entries(transforms)) {
+			await webDb
+				.deleteFrom('web_pieces_assets')
+				.where('piece_file_path', '=', webPiece.file_path)
+				.where('transformation', 'like', `${name}%`)
+				.execute()
+
+			const records = await transform.run({ webPiece, config, outDir, pieces })
+
+			if (records.length > 0) {
+				await webDb
+					.insertInto('web_pieces_assets')
+					.values(
+						records.map((record) => ({
+							content: record.content,
+							transformation: record.transformation,
+							mime_type: record.mime_type,
+							asset_path: record.asset_path,
+							piece_file_path: webPiece.file_path,
+							piece_key: webPiece.key,
+						}))
+					)
+					.execute()
+			}
+		}
 	}
 }
 
@@ -146,7 +189,11 @@ async function pruneWebPiece(
 	file: string,
 	dryRun: boolean
 ): Promise<void> {
-	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags }>()
+	const webDb = db.withTables<{
+		web_pieces: WebPieces
+		web_pieces_tags: WebPieceTags
+		web_pieces_assets: WebPiecesAsset
+	}>()
 
 	if (!dryRun) {
 		await webDb.deleteFrom('web_pieces').where('file_path', '=', file).execute()
@@ -188,7 +235,11 @@ async function syncPieces(
 	config: Config
 ) {
 	const { dryRun = false, force = false, prune = false } = options
-	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags }>()
+	const webDb = db.withTables<{
+		web_pieces: WebPieces
+		web_pieces_tags: WebPieceTags
+		web_pieces_assets: WebPiecesAsset
+	}>()
 
 	for (const name of files.types) {
 		const piece = await pieces.getPiece(name)
@@ -207,7 +258,9 @@ async function syncPieces(
 			.where('type', '=', name)
 			.execute()
 		const usedSlugs = new Set<string>(existingPiecesForType.map((p) => p.slug))
-		const slugByFilePath = new Map<string, string>(existingPiecesForType.map((p) => [p.file_path, p.slug]))
+		const slugByFilePath = new Map<string, string>(
+			existingPiecesForType.map((p) => [p.file_path, p.slug])
+		)
 
 		const syncItems = await piece.sync(db, processFiles, { dryRun, force })
 		for await (const result of syncItems) {
@@ -218,7 +271,17 @@ async function syncPieces(
 					console.log(`[${result.action}] item: ${result.file}`)
 				}
 				if (result.action === 'added' || result.action === 'updated') {
-					await syncWebPiece(db, result.file, result.action, config, usedSlugs, slugByFilePath, dryRun, options.outDir, pieces)
+					await syncWebPiece(
+						db,
+						result.file,
+						result.action,
+						config,
+						usedSlugs,
+						slugByFilePath,
+						dryRun,
+						options.outDir,
+						pieces
+					)
 				}
 			}
 		}
