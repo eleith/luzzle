@@ -7,6 +7,7 @@ import { getDatabaseAndMigrate } from '../../lib/database.js'
 import runWebMigrations from '../../database/migrations.js'
 import { Readable } from 'stream'
 import { Config } from '@luzzle/web.utils'
+import { writeFile, mkdir } from 'fs/promises'
 
 vi.mock('../../lib/config.js')
 vi.mock('../../lib/database.js')
@@ -14,6 +15,8 @@ vi.mock('@luzzle/core')
 vi.mock('../../lib/storage.js')
 vi.mock('../../database/migrations.js')
 vi.mock('@luzzle/web.utils/server', () => ({ generateAssetKey: vi.fn().mockReturnValue('key') }))
+vi.mock('fs/promises', () => ({ mkdir: vi.fn().mockResolvedValue(undefined), writeFile: vi.fn().mockResolvedValue(undefined) }))
+vi.mock('mime-types', () => ({ default: { lookup: vi.fn().mockReturnValue('application/pdf') } }))
 
 const mocks = {
 	getConfig: vi.mocked(getConfig),
@@ -23,6 +26,8 @@ const mocks = {
 	selectItemAssets: vi.mocked(selectItemAssets),
 	runWebMigrations: vi.mocked(runWebMigrations),
 	getFrontmatterValues: vi.mocked(getFrontmatterValues),
+	writeFile: vi.mocked(writeFile),
+	mkdir: vi.mocked(mkdir),
 }
 
 function makeMockDb() {
@@ -85,6 +90,7 @@ describe('sync index', () => {
 
 		await sync(
 			{
+				outDir: '/tmp/test-out',
 				prune: true,
 				dryRun: false,
 			},
@@ -134,7 +140,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({ dryRun: true }, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out', dryRun: true }, config as unknown as Config)
 
 		expect(piecesMock.sync).toHaveBeenCalledWith(db, { dryRun: true, force: false })
 		expect(pieceMock.sync).toHaveBeenCalledWith(db, [], { dryRun: true, force: false }) // Empty array because not outdated
@@ -167,7 +173,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({ force: true }, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out', force: true }, config as unknown as Config)
 
 		expect(piecesMock.sync).toHaveBeenCalledWith(db, { dryRun: false, force: true })
 		expect(pieceMock.isOutdated).not.toHaveBeenCalled() // skipped optimization
@@ -196,7 +202,7 @@ describe('sync index', () => {
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 		mocks.selectItemAssets.mockResolvedValue([])
 
-		await sync({ dryRun: true, prune: true }, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out', dryRun: true, prune: true }, config as unknown as Config)
 
 		expect(storage.delete).not.toHaveBeenCalled()
 		expect(consoleLogSpy).toHaveBeenCalledWith('[pruned] asset: asset1.jpg')
@@ -229,7 +235,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({}, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
 
 		expect(consoleErrorSpy).toHaveBeenCalledWith('[error] syncing schema s1: fail')
 		expect(consoleErrorSpy).toHaveBeenCalledWith('[error] pruning schema s2: fail')
@@ -248,7 +254,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await expect(sync({}, config as unknown as Config)).rejects.toThrow('Web migration failed:')
+		await expect(sync({ outDir: '/tmp/test-out' }, config as unknown as Config)).rejects.toThrow('Web migration failed:')
 	})
 
 	test('should upsert web_pieces and tags when piece is added', async () => {
@@ -307,7 +313,7 @@ describe('sync index', () => {
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 		mocks.getFrontmatterValues.mockReturnValue([['fiction']])
 
-		await sync({}, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
 
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces')
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_tags')
@@ -361,7 +367,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({}, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
 
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces')
 	})
@@ -414,7 +420,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({}, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
 
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces')
 	})
@@ -466,7 +472,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({}, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
 
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces')
 		// No tags inserted since pieceConfig has no tags field
@@ -508,7 +514,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({}, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
 
 		expect(db.deleteFrom).toHaveBeenCalledWith('web_pieces')
 	})
@@ -555,7 +561,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({}, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
 
 		expect(db.insertInto).not.toHaveBeenCalledWith('web_pieces')
 	})
@@ -602,9 +608,221 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({ dryRun: true }, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out', dryRun: true }, config as unknown as Config)
 
 		expect(db.insertInto).not.toHaveBeenCalledWith('web_pieces')
+	})
+
+	test('should copy attachments and record in web_pieces_assets when piece is added', async () => {
+		const config = {
+			paths: { database: 'db.sqlite' },
+			assets: { salt: 'test-salt' },
+			pieces: [
+				{
+					type: 'books',
+					fields: { title: 'book_title', date_consumed: 'read_date', attachments: ['pdf_field'] },
+				},
+			],
+		}
+		const { db, queries } = makeMockDb()
+		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
+		mocks.runWebMigrations.mockResolvedValue({ results: [], error: undefined })
+		mocks.getStorage.mockReturnValue({} as unknown as LuzzleStorage)
+
+		const pieceItem = {
+			id: 'piece-1',
+			type: 'books',
+			file_path: '/archive/book.books.md',
+			frontmatter_json: JSON.stringify({ book_title: 'My Book', pdf_field: '/docs/file.pdf' }),
+			note_markdown: '',
+			date_added: 1000,
+		}
+
+		queries.execute.mockResolvedValueOnce([])
+		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
+
+		const getPieceAsset = vi.fn().mockResolvedValue(Buffer.from('pdf content'))
+		const pieceMock = {
+			isOutdated: vi.fn().mockResolvedValue(true),
+			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			prune: vi.fn().mockResolvedValue(Readable.from([])),
+		}
+		const piecesMock = {
+			sync: vi.fn().mockResolvedValue(Readable.from([])),
+			prune: vi.fn().mockResolvedValue(Readable.from([])),
+			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['/archive/book.books.md'], assets: [], directories: [] }),
+			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
+			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
+			getPieceAsset,
+		}
+		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
+		mocks.getFrontmatterValues.mockReturnValue([['/docs/file.pdf']])
+
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
+
+		expect(db.deleteFrom).toHaveBeenCalledWith('web_pieces_assets')
+		expect(getPieceAsset).toHaveBeenCalledWith('/docs/file.pdf')
+		expect(mocks.writeFile).toHaveBeenCalled()
+		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
+	})
+
+	test('should not copy attachments in dry run', async () => {
+		const config = {
+			paths: { database: 'db.sqlite' },
+			assets: { salt: 'test-salt' },
+			pieces: [
+				{
+					type: 'books',
+					fields: { title: 'book_title', date_consumed: 'read_date', attachments: ['pdf_field'] },
+				},
+			],
+		}
+		const { db, queries } = makeMockDb()
+		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
+		mocks.runWebMigrations.mockResolvedValue({ results: [], error: undefined })
+		mocks.getStorage.mockReturnValue({} as unknown as LuzzleStorage)
+
+		const pieceItem = {
+			id: 'piece-1',
+			type: 'books',
+			file_path: '/archive/book.books.md',
+			frontmatter_json: JSON.stringify({ book_title: 'My Book', pdf_field: '/docs/file.pdf' }),
+			note_markdown: '',
+			date_added: 1000,
+		}
+
+		queries.execute.mockResolvedValueOnce([])
+		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
+
+		const getPieceAsset = vi.fn().mockResolvedValue(Buffer.from('pdf content'))
+		const pieceMock = {
+			isOutdated: vi.fn().mockResolvedValue(true),
+			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			prune: vi.fn().mockResolvedValue(Readable.from([])),
+		}
+		const piecesMock = {
+			sync: vi.fn().mockResolvedValue(Readable.from([])),
+			prune: vi.fn().mockResolvedValue(Readable.from([])),
+			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['/archive/book.books.md'], assets: [], directories: [] }),
+			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
+			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
+			getPieceAsset,
+		}
+		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
+		mocks.getFrontmatterValues.mockReturnValue([['/docs/file.pdf']])
+
+		await sync({ outDir: '/tmp/test-out', dryRun: true }, config as unknown as Config)
+
+		expect(getPieceAsset).not.toHaveBeenCalled()
+		expect(mocks.writeFile).not.toHaveBeenCalled()
+		expect(db.insertInto).not.toHaveBeenCalledWith('web_pieces_assets')
+	})
+
+	test('should use application/octet-stream when mime type is unknown', async () => {
+		const config = {
+			paths: { database: 'db.sqlite' },
+			assets: { salt: 'test-salt' },
+			pieces: [
+				{
+					type: 'books',
+					fields: { title: 'book_title', date_consumed: 'read_date', attachments: ['bin_field'] },
+				},
+			],
+		}
+		const { db, queries } = makeMockDb()
+		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
+		mocks.runWebMigrations.mockResolvedValue({ results: [], error: undefined })
+		mocks.getStorage.mockReturnValue({} as unknown as LuzzleStorage)
+
+		const pieceItem = {
+			id: 'piece-1',
+			type: 'books',
+			file_path: '/archive/book.books.md',
+			frontmatter_json: JSON.stringify({ book_title: 'My Book', bin_field: '/docs/file.unknownext' }),
+			note_markdown: '',
+			date_added: 1000,
+		}
+
+		queries.execute.mockResolvedValueOnce([])
+		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
+
+		const getPieceAsset = vi.fn().mockResolvedValue(Buffer.from('binary'))
+		const pieceMock = {
+			isOutdated: vi.fn().mockResolvedValue(true),
+			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			prune: vi.fn().mockResolvedValue(Readable.from([])),
+		}
+		const piecesMock = {
+			sync: vi.fn().mockResolvedValue(Readable.from([])),
+			prune: vi.fn().mockResolvedValue(Readable.from([])),
+			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['/archive/book.books.md'], assets: [], directories: [] }),
+			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
+			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
+			getPieceAsset,
+		}
+		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
+		mocks.getFrontmatterValues.mockReturnValue([['/docs/file.unknownext']])
+
+		// mime.lookup returns false for unknown extensions
+		const mimeMock = await import('mime-types')
+		vi.mocked(mimeMock.default.lookup).mockReturnValueOnce(false)
+
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
+
+		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
+	})
+
+	test('should log error when attachment copy fails', async () => {
+		const config = {
+			paths: { database: 'db.sqlite' },
+			assets: { salt: 'test-salt' },
+			pieces: [
+				{
+					type: 'books',
+					fields: { title: 'book_title', date_consumed: 'read_date', attachments: ['pdf_field'] },
+				},
+			],
+		}
+		const { db, queries } = makeMockDb()
+		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
+		mocks.runWebMigrations.mockResolvedValue({ results: [], error: undefined })
+		mocks.getStorage.mockReturnValue({} as unknown as LuzzleStorage)
+
+		const pieceItem = {
+			id: 'piece-1',
+			type: 'books',
+			file_path: '/archive/book.books.md',
+			frontmatter_json: JSON.stringify({ book_title: 'My Book', pdf_field: '/docs/file.pdf' }),
+			note_markdown: '',
+			date_added: 1000,
+		}
+
+		queries.execute.mockResolvedValueOnce([])
+		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
+
+		const getPieceAsset = vi.fn().mockRejectedValue(new Error('storage error'))
+		const pieceMock = {
+			isOutdated: vi.fn().mockResolvedValue(true),
+			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			prune: vi.fn().mockResolvedValue(Readable.from([])),
+		}
+		const piecesMock = {
+			sync: vi.fn().mockResolvedValue(Readable.from([])),
+			prune: vi.fn().mockResolvedValue(Readable.from([])),
+			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['/archive/book.books.md'], assets: [], directories: [] }),
+			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
+			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
+			getPieceAsset,
+		}
+		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
+		mocks.getFrontmatterValues.mockReturnValue([['/docs/file.pdf']])
+
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
+
+		expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[error] attachment'))
+		consoleErrorSpy.mockRestore()
 	})
 
 	test('should not delete web_pieces in dry run when piece is pruned', async () => {
@@ -640,7 +858,7 @@ describe('sync index', () => {
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await sync({ dryRun: true }, config as unknown as Config)
+		await sync({ outDir: '/tmp/test-out', dryRun: true }, config as unknown as Config)
 
 		expect(db.deleteFrom).not.toHaveBeenCalledWith('web_pieces')
 	})

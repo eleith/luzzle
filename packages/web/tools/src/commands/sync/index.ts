@@ -1,13 +1,16 @@
 import path from 'path'
+import { mkdir, writeFile } from 'fs/promises'
 import { Pieces, selectItemAssets, getFrontmatterValue, getFrontmatterValues, LuzzleSelectable } from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
 import { getDatabase, getDatabaseAndMigrate } from '../../lib/database.js'
-import { type Config, type WebPieces, type WebPieceTags } from '@luzzle/web.utils'
+import { type Config, type WebPieces, type WebPieceTags, type WebPiecesAsset, getAssetPath, getAssetDir } from '@luzzle/web.utils'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import runWebMigrations from '../../database/migrations.js'
+import mime from 'mime-types'
 
 type SyncOptions = {
 	archiveDir?: string
+	outDir: string
 	dryRun?: boolean
 	force?: boolean
 	prune?: boolean
@@ -77,9 +80,11 @@ async function syncWebPiece(
 	config: Config,
 	usedSlugs: Set<string>,
 	slugByFilePath: Map<string, string>,
-	dryRun: boolean
+	dryRun: boolean,
+	outDir: string,
+	pieces: Pieces
 ): Promise<void> {
-	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags }>()
+	const webDb = db.withTables<{ web_pieces: WebPieces; web_pieces_tags: WebPieceTags; web_pieces_assets: WebPiecesAsset }>()
 
 	const item = await db.selectFrom('pieces_items').selectAll().where('file_path', '=', file).executeTakeFirst()
 	if (!item) return
@@ -132,6 +137,36 @@ async function syncWebPiece(
 			}))
 			await webDb.insertInto('web_pieces_tags').values(tags).execute()
 		}
+
+		await webDb.deleteFrom('web_pieces_assets').where('piece_file_path', '=', file).where('transformation', 'like', 'attachment.%').execute()
+
+		if (pieceConfig.fields.attachments) {
+			const key = generateAssetKey(item.file_path, config.assets.salt)
+			for (const field of pieceConfig.fields.attachments) {
+				const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
+				for (const asset of assets) {
+					try {
+						const assetPath = getAssetPath(item.type, key, asset)
+						const assetDir = getAssetDir(item.type, key)
+						await mkdir(`${outDir}/${assetDir}`, { recursive: true })
+						const assetBuffer = await pieces.getPieceAsset(asset)
+						await writeFile(`${outDir}/${assetPath}`, assetBuffer)
+						const mimeType = mime.lookup(asset) || 'application/octet-stream'
+						await webDb.insertInto('web_pieces_assets').values({
+							piece_file_path: file,
+							piece_key: key,
+							piece_asset_path: asset,
+							transformation: 'attachment.original',
+							asset_path: assetPath,
+							mime_type: mimeType,
+						}).execute()
+						console.log(`[attachment] ${asset} for ${file}`)
+					} catch (error) {
+						console.error(`[error] attachment ${asset} for ${file}: ${error}`)
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -178,7 +213,7 @@ async function syncPieces(
 	pieces: Pieces,
 	storage: ReturnType<typeof getStorage>,
 	files: Awaited<ReturnType<Pieces['getFilesIn']>>,
-	options: Pick<SyncOptions, 'dryRun' | 'force' | 'prune'>,
+	options: Pick<SyncOptions, 'dryRun' | 'force' | 'prune' | 'outDir'>,
 	config: Config
 ) {
 	const { dryRun = false, force = false, prune = false } = options
@@ -212,7 +247,7 @@ async function syncPieces(
 					console.log(`[${result.action}] item: ${result.file}`)
 				}
 				if (result.action === 'added' || result.action === 'updated') {
-					await syncWebPiece(db, result.file, result.action, config, usedSlugs, slugByFilePath, dryRun)
+					await syncWebPiece(db, result.file, result.action, config, usedSlugs, slugByFilePath, dryRun, options.outDir, pieces)
 				}
 			}
 		}
@@ -258,6 +293,7 @@ export default async function sync(options: SyncOptions, config: Config) {
 	const dryRun = options.dryRun || false
 	const force = options.force || false
 	const prune = options.prune || false
+	const outDir = options.outDir
 
 	const webMigrationResult = await runWebMigrations(db)
 	if (webMigrationResult.error) {
@@ -267,5 +303,5 @@ export default async function sync(options: SyncOptions, config: Config) {
 	const files = await pieces.getFilesIn('.', { deep: true })
 
 	await syncSchemas(db, pieces, { dryRun, force })
-	await syncPieces(db, pieces, storage, files, { dryRun, force, prune }, config)
+	await syncPieces(db, pieces, storage, files, { dryRun, force, prune, outDir }, config)
 }

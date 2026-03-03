@@ -125,7 +125,6 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 			const key = generateAssetKey(item.file_path, config.assets.salt)
 			const assetDir = getAssetDir(item.type, key)
 			const mediaFields = pieceFieldConfig.fields.media || []
-			const attachmentFields = pieceFieldConfig.fields.attachments || []
 
 			let hasAssets = false
 
@@ -181,41 +180,7 @@ export default async function generateAssets(options: GenerateAssetsOptions, con
 				}
 			}
 
-			for (const field of attachmentFields) {
-				const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
-				if (assets.length === 0) {
-					console.warn(`[Attachment] No assets found at path "${field}" for ${item.file_path}`)
-					continue
-				}
-
-				for (const asset of assets) {
-					if (!hasAssets) {
-						await mkdir(`${options.outDir}/${assetDir}`, { recursive: true })
-						console.log(`copying assets for ${item.file_path}`)
-						hasAssets = true
-					}
-
-					try {
-						const assetPath = getAssetPath(item.type, key, asset)
-						const assetBuffer = await pieces.getPieceAsset(asset)
-						await writeFile(`${options.outDir}/${assetPath}`, assetBuffer)
-
-						const mimeType = mime.lookup(asset) || 'application/octet-stream'
-
-						await upsertAssetRecord(db, {
-							piece_file_path: item.file_path,
-							piece_key: key,
-							piece_asset_path: asset,
-							transformation: 'image.original',
-							asset_path: assetPath,
-							mime_type: mimeType,
-						})
-					} catch (error) {
-						console.error(`error processing attachment ${asset} for ${item.file_path}: ${error}`)
-					}
-				}
 			}
-		}
 	}
 
 	if (!id) {

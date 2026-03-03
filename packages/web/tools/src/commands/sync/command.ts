@@ -16,6 +16,11 @@ export default function command(cli: Argv) {
 					type: 'string',
 					description: 'path to luzzle archive',
 				},
+				out: {
+					type: 'string',
+					description: 'path to write asset files',
+					demandOption: true,
+				},
 				'dry-run': {
 					type: 'boolean',
 					description: 'run without making changes',
@@ -40,6 +45,7 @@ export default function command(cli: Argv) {
 			await sync(
 				{
 					archiveDir: argv.in as string | undefined,
+					outDir: argv.out as string,
 					dryRun: argv['dry-run'] as boolean,
 					force: argv.force as boolean,
 					prune: argv.prune as boolean,

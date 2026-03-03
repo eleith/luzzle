@@ -90,7 +90,6 @@ describe('generateAssets', () => {
 					type: 'books',
 					fields: {
 						media: ['image', 'unknown_media'],
-						attachments: ['document', 'text', 'unknown'],
 						title: 'title',
 						date_consumed: 'date_consumed',
 					},
@@ -126,60 +125,11 @@ describe('generateAssets', () => {
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/key-book.md', { recursive: true })
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/image.jpg')
-		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/document.pdf')
 		expect(mocks.writeFile).toHaveBeenCalledWith(
 			'/path/to/out/books/key-book.md/image.jpg',
 			Buffer.from('asset_content')
 		)
-		expect(mocks.writeFile).toHaveBeenCalledWith(
-			'/path/to/out/books/key-book.md/document.pdf',
-			Buffer.from('asset_content')
-		)
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
-	})
-
-	test('should only copy assets if they are in attachments (raw)', async () => {
-		const { mockPieces, config } = setupDefaultMocks(
-			[
-				{
-					id: '1',
-					type: 'books',
-					date_updated: 100,
-					date_added: 50,
-					frontmatter_json: '{"document": "/path/to/document.pdf"}',
-					file_path: 'book.md',
-					note_markdown: '',
-					assets_json_array: '[]',
-				},
-			],
-			[
-				{
-					type: 'books',
-					fields: { attachments: ['document'], title: 'title', date_consumed: 'date_consumed' },
-				},
-			]
-		)
-
-		mocks.getAssetDir.mockImplementation((type, key) => `${type}/${key}`)
-		mocks.getAssetPath.mockImplementation(
-			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
-		)
-
-		await generateAssets(
-			{
-				archiveDir: '/path/to/luzzle',
-				outDir: '/path/to/out',
-			},
-			config
-		)
-
-		expect(mocks.mkdir).toHaveBeenCalledWith('/path/to/out/books/key-book.md', { recursive: true })
-		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('/path/to/document.pdf')
-		expect(mocks.writeFile).toHaveBeenCalledWith(
-			'/path/to/out/books/key-book.md/document.pdf',
-			Buffer.from('asset_content')
-		)
-		expect(mocks.generateVariantJobs).not.toHaveBeenCalled()
 	})
 
 	test('should handle errors when copying assets', async () => {
@@ -474,10 +424,9 @@ describe('generateAssets', () => {
 				{
 					type: 'books',
 					fields: { 
-						media: ['missing_media'], 
-						attachments: ['missing_attachment'],
-						title: 'title', 
-						date_consumed: 'date_consumed' 
+						media: ['missing_media'],
+						title: 'title',
+						date_consumed: 'date_consumed'
 					},
 				},
 			]
@@ -494,8 +443,34 @@ describe('generateAssets', () => {
 		)
 
 		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('[Media] No assets found'))
-		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('[Attachment] No assets found'))
 		consoleWarnSpy.mockRestore()
+	})
+
+	test('should process piece with no media field defined', async () => {
+		const { mockPieces, config } = setupDefaultMocks(
+			[
+				{
+					id: '1',
+					type: 'books',
+					date_updated: 100,
+					date_added: 50,
+					frontmatter_json: '{}',
+					file_path: 'book.md',
+					note_markdown: '',
+					assets_json_array: '[]',
+				},
+			],
+			[
+				{
+					type: 'books',
+					fields: { title: 'title', date_consumed: 'date_consumed' },
+				},
+			]
+		)
+
+		await generateAssets({ archiveDir: '/path/to/luzzle', outDir: '/path/to/out' }, config)
+
+		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
 	})
 
 	test('should handle errors during toFile', async () => {
@@ -548,89 +523,7 @@ describe('generateAssets', () => {
 		consoleErrorSpy.mockRestore()
 		})
 
-		test('should handle errors when copying attachments', async () => {
-		const { config } = setupDefaultMocks(
-			[
-				{
-					id: '1',
-					type: 'books',
-					date_updated: 100,
-					date_added: 50,
-					frontmatter_json: '{"doc": "/path/to/doc.pdf"}',
-					file_path: 'book.md',
-					note_markdown: '',
-					assets_json_array: '[]',
-				},
-			],
-			[
-				{
-					type: 'books',
-					fields: { attachments: ['doc'], title: 'title', date_consumed: 'date_consumed' },
-				},
-			]
-		)
-
-		mocks.writeFile.mockRejectedValueOnce(new Error('Write error'))
-		mocks.getAssetDir.mockImplementation((type, key) => `${type}/${key}`)
-		mocks.getAssetPath.mockImplementation(
-			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
-		)
-
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
-
-		await generateAssets(
-			{
-				archiveDir: '/path/to/luzzle',
-				outDir: '/path/to/out',
-			},
-			config
-		)
-
-		expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('error processing attachment'))
-
-		consoleErrorSpy.mockRestore()
-		})
-
-		test('should handle piece with no attachments field', async () => {
-		const { mockPieces, config } = setupDefaultMocks(
-			[
-				{
-					id: '1',
-					type: 'books',
-					date_updated: 100,
-					date_added: 50,
-					frontmatter_json: '{"image": "/path/to/image.jpg"}',
-					file_path: 'book.md',
-					note_markdown: '',
-					assets_json_array: '[]',
-				},
-			],
-			[
-				{
-					type: 'books',
-					fields: { media: ['image'], title: 'title', date_consumed: 'date_consumed' },
-				},
-			]
-		)
-
-		mocks.getAssetDir.mockReturnValue('books/1')
-		mocks.getAssetPath.mockImplementation(
-			(type, id, asset) => `${type}/${id}/${asset.split('/').pop()}`
-		)
-
-		await generateAssets(
-			{
-				archiveDir: '/path/to/luzzle',
-				outDir: '/path/to/out',
-			},
-			config
-		)
-
-		expect(mockPieces.getPieceAsset).toHaveBeenCalledOnce()
-		expect(mocks.writeFile).toHaveBeenCalledOnce()
-	})
-
-	test('should filter items by id', async () => {
+		test('should filter items by id', async () => {
 		const { mockPieces, config } = setupDefaultMocks(
 			[
 				{
