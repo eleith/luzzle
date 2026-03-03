@@ -117,25 +117,22 @@ describe('transforms/attachment', () => {
 		])
 	})
 
-	test('handles errors during copy gracefully', async () => {
+	test('throws on copy error', async () => {
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockRejectedValue(new Error('storage error')),
 		} as unknown as Pieces
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		mocks.getAssetDir.mockReturnValue('books/key123')
 		mocks.getAssetPath.mockReturnValue('books/key123/doc.pdf')
 
-		const records = await run({
-			webPiece: makeWebPiece('{"doc": "doc.pdf"}'),
-			config: makeConfig(['doc']),
-			outDir: '/out',
-			pieces: mockPieces,
-		})
-
-		expect(consoleErrorSpy).toHaveBeenCalledOnce()
-		expect(records).toEqual([])
-		consoleErrorSpy.mockRestore()
+		await expect(
+			run({
+				webPiece: makeWebPiece('{"doc": "doc.pdf"}'),
+				config: makeConfig(['doc']),
+				outDir: '/out',
+				pieces: mockPieces,
+			})
+		).rejects.toThrow('storage error')
 	})
 
 	test('does nothing for piece type not in config', async () => {

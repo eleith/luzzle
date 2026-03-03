@@ -38,64 +38,52 @@ export async function run({ webPiece, config, outDir, pieces }: TransformInput):
 
 	for (const field of mediaFields) {
 		const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
-		if (assets.length === 0) {
-			console.warn(`[Media] No assets found at path "${field}" for ${webPiece.file_path}`)
-			continue
-		}
 
 		for (const asset of assets) {
 			const mimeType = mime.lookup(asset) || 'application/octet-stream'
 			if (!mimeType.startsWith('image/')) {
-				console.warn(
-					`[Media] Skipping non-image file "${asset}" in media field "${field}" for ${webPiece.file_path}`
-				)
-				continue
+				throw new Error(`non-image file "${asset}" in media field "${field}"`)
 			}
 
 			if (!hasAssets) {
 				await mkdir(`${outDir}/${assetDir}`, { recursive: true })
-				console.log(`copying assets for ${webPiece.file_path}`)
 				hasAssets = true
 			}
 
-			try {
-				const assetPath = getAssetPath(webPiece.type, webPiece.key, asset)
-				const assetBuffer = await pieces.getPieceAsset(asset)
-				await writeFile(`${outDir}/${assetPath}`, assetBuffer)
+			const assetPath = getAssetPath(webPiece.type, webPiece.key, asset)
+			const assetBuffer = await pieces.getPieceAsset(asset)
+			await writeFile(`${outDir}/${assetPath}`, assetBuffer)
 
+			records.push({
+				piece_asset_path: asset,
+				piece_field_path: field,
+				transformation: 'image.original',
+				asset_path: assetPath,
+				mime_type: mimeType,
+			})
+
+			const jobs = await generateVariantJobs(
+				webPiece.file_path,
+				asset,
+				pieces,
+				Object.values(ASSET_SIZES),
+				['avif', 'jpg']
+			)
+
+			const toFileJobs = jobs.map(async (job) => {
+				const variantPath = getImageAssetPath(webPiece.type, webPiece.key, asset, job.width, job.format)
+				await job.sharp.toFile(`${outDir}/${variantPath}`)
+				const sizeCategory = sizeCategoryMap[job.width]
 				records.push({
 					piece_asset_path: asset,
 					piece_field_path: field,
-					transformation: 'image.original',
-					asset_path: assetPath,
-					mime_type: mimeType,
+					transformation: `image.${sizeCategory}.${job.format}`,
+					asset_path: variantPath,
+					mime_type: getMimeType(job.format),
 				})
+			})
 
-				const jobs = await generateVariantJobs(
-					webPiece.file_path,
-					asset,
-					pieces,
-					Object.values(ASSET_SIZES),
-					['avif', 'jpg']
-				)
-
-				const toFileJobs = jobs.map(async (job) => {
-					const variantPath = getImageAssetPath(webPiece.type, webPiece.key, asset, job.width, job.format)
-					await job.sharp.toFile(`${outDir}/${variantPath}`)
-					const sizeCategory = sizeCategoryMap[job.width]
-					records.push({
-						piece_asset_path: asset,
-						piece_field_path: field,
-						transformation: `image.${sizeCategory}.${job.format}`,
-						asset_path: variantPath,
-						mime_type: getMimeType(job.format),
-					})
-				})
-
-				await Promise.all(toFileJobs)
-			} catch (error) {
-				console.error(`error processing media ${asset} for ${webPiece.file_path}: ${error}`)
-			}
+			await Promise.all(toFileJobs)
 		}
 	}
 

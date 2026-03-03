@@ -163,22 +163,31 @@ async function syncWebPiece(
 				.where('transformation', 'like', `${name}%`)
 				.execute()
 
-			const records = await transform.run({ webPiece, config, outDir, pieces })
+			try {
+				const records = await transform.run({ webPiece, config, outDir, pieces })
 
-			if (records.length > 0) {
-				await webDb
-					.insertInto('web_pieces_assets')
-					.values(
-						records.map((record) => ({
-							content: record.content,
-							transformation: record.transformation,
-							mime_type: record.mime_type,
-							asset_path: record.asset_path,
-							piece_file_path: webPiece.file_path,
-							piece_key: webPiece.key,
-						}))
-					)
-					.execute()
+				if (records.length > 0) {
+					await webDb
+						.insertInto('web_pieces_assets')
+						.values(
+							records.map((record) => ({
+								content: record.content,
+								transformation: record.transformation,
+								mime_type: record.mime_type,
+								asset_path: record.asset_path,
+								piece_file_path: webPiece.file_path,
+								piece_key: webPiece.key,
+							}))
+						)
+						.execute()
+				}
+
+				for (const record of records) {
+					const what = record.asset_path ?? `content of ${record.mime_type}`
+					console.log(`[transform.${name}] generated ${what}`)
+				}
+			} catch (error) {
+				console.error(`[transform.${name}] error for ${webPiece.file_path}: ${error}`)
 			}
 		}
 	}

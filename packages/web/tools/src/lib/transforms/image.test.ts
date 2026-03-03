@@ -78,9 +78,8 @@ describe('transforms/image', () => {
 		expect(records).toEqual([])
 	})
 
-	test('warns when no assets found at field path', async () => {
+	test('returns empty when no assets found at field path', async () => {
 		const mockPieces = { getPieceAsset: vi.fn() } as unknown as Pieces
-		const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
 		mocks.getAssetDir.mockReturnValue('books/key')
 
@@ -91,29 +90,23 @@ describe('transforms/image', () => {
 			pieces: mockPieces,
 		})
 
-		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('No assets found'))
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
 		expect(records).toEqual([])
-		consoleWarnSpy.mockRestore()
 	})
 
-	test('warns and skips non-image files', async () => {
+	test('throws on non-image file in media field', async () => {
 		const mockPieces = { getPieceAsset: vi.fn() } as unknown as Pieces
-		const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
 		mocks.getAssetDir.mockReturnValue('books/key')
 
-		const records = await run({
-			webPiece: makeWebPiece('{"doc": "file.pdf"}'),
-			config: makeConfig(['doc']),
-			outDir: '/out',
-			pieces: mockPieces,
-		})
-
-		expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Skipping non-image file'))
-		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
-		expect(records).toEqual([])
-		consoleWarnSpy.mockRestore()
+		await expect(
+			run({
+				webPiece: makeWebPiece('{"doc": "file.pdf"}'),
+				config: makeConfig(['doc']),
+				outDir: '/out',
+				pieces: mockPieces,
+			})
+		).rejects.toThrow('non-image file')
 	})
 
 	test('copies image and generates variants, returns asset records', async () => {
@@ -152,32 +145,28 @@ describe('transforms/image', () => {
 		)
 	})
 
-	test('handles errors during asset processing gracefully', async () => {
+	test('throws on asset read error', async () => {
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockRejectedValue(new Error('read error')),
 		} as unknown as Pieces
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		mocks.getAssetDir.mockReturnValue('books/key')
 		mocks.getAssetPath.mockReturnValue('books/key/photo.jpg')
 
-		const records = await run({
-			webPiece: makeWebPiece('{"image": "photo.jpg"}'),
-			config: makeConfig(['image']),
-			outDir: '/out',
-			pieces: mockPieces,
-		})
-
-		expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('error processing media'))
-		expect(records).toEqual([])
-		consoleErrorSpy.mockRestore()
+		await expect(
+			run({
+				webPiece: makeWebPiece('{"image": "photo.jpg"}'),
+				config: makeConfig(['image']),
+				outDir: '/out',
+				pieces: mockPieces,
+			})
+		).rejects.toThrow('read error')
 	})
 
-	test('handles errors during variant toFile gracefully', async () => {
+	test('throws on variant toFile error', async () => {
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockResolvedValue(Buffer.from('image_data')),
 		} as unknown as Pieces
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		mocks.getAssetDir.mockReturnValue('books/key')
 		mocks.getAssetPath.mockReturnValue('books/key/photo.jpg')
@@ -190,14 +179,13 @@ describe('transforms/image', () => {
 			},
 		])
 
-		await run({
-			webPiece: makeWebPiece('{"image": "photo.jpg"}'),
-			config: makeConfig(['image']),
-			outDir: '/out',
-			pieces: mockPieces,
-		})
-
-		expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('error processing media'))
-		consoleErrorSpy.mockRestore()
+		await expect(
+			run({
+				webPiece: makeWebPiece('{"image": "photo.jpg"}'),
+				config: makeConfig(['image']),
+				outDir: '/out',
+				pieces: mockPieces,
+			})
+		).rejects.toThrow('toFile error')
 	})
 })

@@ -69,20 +69,17 @@ describe('transforms/opengraph', () => {
 		])
 	})
 
-	test('handles errors gracefully and returns empty records', async () => {
+	test('throws on puppeteer error', async () => {
 		const mockPieces = {} as unknown as Pieces
 		const browser = { close: vi.fn() }
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		mocks.getOpenGraphPath.mockReturnValue('books/key/opengraph.png')
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 		mocks.generatePngFromUrl.mockRejectedValue(new Error('puppeteer error'))
 
-		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces })
-
-		expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[error] opengraph'))
-		expect(records).toEqual([])
-		consoleErrorSpy.mockRestore()
+		await expect(
+			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces })
+		).rejects.toThrow('puppeteer error')
 	})
 
 	test('cleanup calls closeBrowser', async () => {
