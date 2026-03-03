@@ -21,6 +21,6 @@ export const load: PageServerLoad = async ({ params }) => {
 	const piece = await hydrateWithAssets(webPiece)
 
 	return {
-		piece,
+		piece
 	}
 }

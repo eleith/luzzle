@@ -41,6 +41,6 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	return {
 		piece,
-		palette,
+		palette
 	}
 }
