@@ -57,7 +57,7 @@ describe('transforms/opengraph', () => {
 
 		expect(mocks.getBrowser).toHaveBeenCalledOnce()
 		expect(mocks.generatePngFromUrl).toHaveBeenCalledWith(
-			'http://localhost/api/pieces/books/my-book/opengraph?mode=local',
+			'http://localhost/api/pieces/books/my-book/transform/opengraph',
 			browser,
 			'/out/books/key/opengraph.png'
 		)
