@@ -1,5 +1,5 @@
 import { stat } from 'fs/promises'
-import { createHash, randomBytes } from 'crypto'
+import { createHash } from 'crypto'
 import { Readable } from 'stream'
 import { createReadStream, ReadStream } from 'fs'
 import { pipeline } from 'stream/promises'
@@ -13,14 +13,14 @@ import { ASSETS_DIRECTORY } from '../assets.js'
 async function downloadToStream(fileOrUrl: string) {
 	if (/https?:\/\//i.test(fileOrUrl)) {
 		return new Promise((resolve, reject) => {
-			const download = got.stream(fileOrUrl, { 
+			const download = got.stream(fileOrUrl, {
 				throwHttpErrors: false,
 				headers: {
-					'user-agent': 'luzzle/core (https://github.com/eleith/luzzle)'
+					'user-agent': 'luzzle/core (https://github.com/eleith/luzzle)',
 				},
 				retry: {
 					limit: 3,
-					methods: ['GET']
+					methods: ['GET'],
 				},
 				timeout: {
 					request: 10000,
@@ -117,35 +117,44 @@ async function makePieceAttachment(
 	storage: LuzzleStorage
 ): Promise<string> {
 	const format = field.type === 'array' ? field.items.format : field.format
-	const fileDir = path.dirname(file)
-	const random = randomBytes(4).toString('hex')
-	const baseName = path.basename(file).replace(/\.[^.]+$/, '')
-	const parts = [baseName, random]
-	const fieldName = field.name
-	const attachDir = path.join(ASSETS_DIRECTORY, fileDir, fieldName)
-	const exists = await storage.exists(attachDir)
 
 	/* c8 ignore next 3 */
 	if (format !== 'asset') {
 		throw new Error(`${field} is not an attachable field for ${file}`)
 	}
 
+	const pieceDir = file.replace(/\.[^.]+$/, '')
+	const attachDir = path.join(ASSETS_DIRECTORY, pieceDir)
+	const exists = await storage.exists(attachDir)
+	const pathName = (stream as Request).requestUrl?.pathname
+	const pathStream = (stream as ReadStream).path?.toString()
+	const sourceInfo = pathName || pathStream
+
 	if (!exists) {
 		await storage.makeDirectory(attachDir)
 	}
 
-	const pathName = (stream as Request).requestUrl?.pathname
-	const pathStream = (stream as ReadStream).path?.toString()
-	const pathWithType = pathName || pathStream
-
 	const { type: detectedType, stream: finalStream } = await detectStreamFileType(stream)
 
-	const type = detectedType?.ext.replace(/^/, '.') || path.extname(pathWithType || '') || path.extname(file)
-	const filename = `${parts.filter((x) => x).join('-')}${type}`
-	const relPath = path.join(ASSETS_DIRECTORY, fileDir, fieldName, filename)
-	const writeStream = storage.createWriteStream(relPath)
+	const sourceBasename = sourceInfo
+		? path.basename(sourceInfo, path.extname(sourceInfo))
+		: field.name
 
-	await pipeline(finalStream, writeStream)
+	const sourceExt = detectedType
+		? '.' + detectedType.ext
+		: sourceInfo
+			? path.extname(sourceInfo)
+			: ''
+
+	let relPath = path.join(attachDir, sourceBasename + sourceExt)
+	let counter = 2
+
+	while (await storage.exists(relPath)) {
+		relPath = path.join(attachDir, sourceBasename + '-' + counter + sourceExt)
+		counter++
+	}
+
+	await pipeline(finalStream, storage.createWriteStream(relPath))
 
 	return relPath
 }
@@ -178,9 +187,5 @@ async function makePieceValue(
 	return value
 }
 
-export {
-	calculateHashFromFile,
-	makePieceAttachment,
-	makePieceValue,
-	detectStreamFileType,
-}
+export { calculateHashFromFile, makePieceAttachment, makePieceValue, detectStreamFileType }
+
