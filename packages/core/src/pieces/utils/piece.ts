@@ -175,10 +175,10 @@ async function makePieceValue(
 				return value
 			}
 			return downloadToStream(value)
-		} else if (value instanceof Readable) {
-			return value
-		} else {
+		} else if (typeof value === 'number' || typeof value === 'boolean' || Array.isArray(value)) {
 			throw new Error(`${field} must be a string or stream`)
+		} else {
+			return value
 		}
 	} else if (type === 'boolean') {
 		return /1|true|yes/.test(value as string)
@@ -189,5 +189,10 @@ async function makePieceValue(
 	return value
 }
 
-export { calculateHashFromFile, makePieceAttachment, makePieceValue, detectStreamFileType, type AttachableStream }
-
+export {
+	calculateHashFromFile,
+	makePieceAttachment,
+	makePieceValue,
+	detectStreamFileType,
+	type AttachableStream,
+}
