@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web.builder",
-	"version": "0.0.33",
+	"version": "0.0.34",
 	"private": true,
 	"description": "Luzzle Web Builder",
 	"scripts": {
