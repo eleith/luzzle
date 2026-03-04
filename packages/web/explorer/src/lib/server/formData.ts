@@ -101,9 +101,10 @@ async function applyFormDataToPiece<T extends PieceFrontmatter>(
 		if (ops.uploads.has(path)) {
 			const files = ops.uploads.get(path)!
 			try {
-				const streams = files.map((file) =>
-					Readable.fromWeb(file.stream() as ReadableStream<Buffer>)
-				)
+				const streams = files.map((file) => {
+					const stream = Readable.fromWeb(file.stream() as ReadableStream<Buffer>)
+					return { ...stream, filename: file.name }
+				})
 
 				if (streams.length) {
 					const val = isArray ? streams : streams[0]
@@ -185,7 +186,10 @@ async function applyFieldUpdate<T extends PieceFrontmatter>(
 
 		if (ops.uploads.has(path)) {
 			const files = ops.uploads.get(path)!
-			const streams = files.map((file) => Readable.fromWeb(file.stream() as ReadableStream<Buffer>))
+			const streams = files.map((file) => {
+				const stream = Readable.fromWeb(file.stream() as ReadableStream<Buffer>)
+				return { ...stream, filename: file.name }
+			})
 			if (streams.length) {
 				updatedMarkdown = await piece.setField(
 					updatedMarkdown,
