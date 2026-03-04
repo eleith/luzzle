@@ -83,7 +83,7 @@ describe('transforms/attachment', () => {
 		expect(records).toEqual([
 			expect.objectContaining({
 				piece_asset_path: 'doc.pdf',
-				transformation: 'attachment.original',
+				transformation: 'attachment',
 				asset_path: 'books/key123/doc.pdf',
 			}),
 		])
@@ -110,7 +110,7 @@ describe('transforms/attachment', () => {
 		expect(records).toEqual([
 			expect.objectContaining({
 				piece_asset_path: 'doc.abcxyz',
-				transformation: 'attachment.original',
+				transformation: 'attachment',
 				asset_path: 'books/key123/doc.abcxyz',
 				mime_type: 'application/octet-stream',
 			}),

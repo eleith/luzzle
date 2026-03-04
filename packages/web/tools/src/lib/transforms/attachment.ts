@@ -22,7 +22,7 @@ export async function run({ webPiece, config, outDir, pieces }: TransformInput):
 			const mimeType = mime.lookup(asset) || 'application/octet-stream'
 			records.push({
 				piece_asset_path: asset,
-				transformation: 'attachment.original',
+				transformation: 'attachment',
 				asset_path: assetPath,
 				mime_type: mimeType,
 			})
