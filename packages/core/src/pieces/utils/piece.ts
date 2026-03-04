@@ -10,12 +10,12 @@ import { PieceFrontmatterSchemaField, PieceFrontMatterValue } from './frontmatte
 import LuzzleStorage from '../../storage/abstract.js'
 import { ASSETS_DIRECTORY } from '../assets.js'
 
-type AttachableStream = Readable & { filename?: string }
+type AttachableStream = { stream: Readable; filename?: string }
 
 async function downloadToStream(fileOrUrl: string): Promise<AttachableStream> {
 	if (/https?:\/\//i.test(fileOrUrl)) {
 		return new Promise((resolve, reject) => {
-			const download: AttachableStream = got.stream(fileOrUrl, {
+			const download = got.stream(fileOrUrl, {
 				throwHttpErrors: false,
 				headers: {
 					'user-agent': 'luzzle/core (https://github.com/eleith/luzzle)',
@@ -37,8 +37,8 @@ async function downloadToStream(fileOrUrl: string): Promise<AttachableStream> {
 					console.error(`Error downloading file from ${fileOrUrl}: http ${response.statusCode}`)
 					reject(new Error(`HTTP Error: ${response.statusCode}`))
 				} else {
-					download.filename = path.basename(new URL(fileOrUrl).pathname)
-					resolve(download)
+					const filename = path.basename(new URL(fileOrUrl).pathname)
+					resolve({ stream: download, filename })
 				}
 			})
 		})
@@ -49,14 +49,14 @@ async function downloadToStream(fileOrUrl: string): Promise<AttachableStream> {
 
 	if (fileStat && fileStat.isFile()) {
 		return new Promise((resolve, reject) => {
-			const stream: AttachableStream = createReadStream(file)
+			const stream = createReadStream(file)
 			stream.on('error', (err) => {
 				console.error(`Error reading file from path: ${err.message}`)
 				reject(err)
 			})
 			stream.on('open', () => {
-				stream.filename = path.basename(file)
-				resolve(stream)
+				const filename = path.basename(file)
+				resolve({ stream, filename })
 			})
 		})
 	}
@@ -136,7 +136,7 @@ async function makePieceAttachment(
 		await storage.makeDirectory(attachDir)
 	}
 
-	const { type: detectedType, stream: finalStream } = await detectStreamFileType(stream)
+	const { type: detectedType, stream: finalStream } = await detectStreamFileType(stream.stream)
 
 	const sourceBasename = sourceInfo
 		? path.basename(sourceInfo, path.extname(sourceInfo))
@@ -161,10 +161,19 @@ async function makePieceAttachment(
 	return relPath
 }
 
+function isAttachableStream(value: unknown): value is AttachableStream {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		'stream' in value &&
+		typeof (value as AttachableStream).stream?.pipe === 'function'
+	)
+}
+
 async function makePieceValue(
 	field: PieceFrontmatterSchemaField,
 	value: PieceFrontMatterValue | AttachableStream
-) {
+): Promise<PieceFrontMatterValue | AttachableStream> {
 	const isArray = field.type === 'array'
 	const format = isArray ? field.items.format : field.format
 	const type = isArray ? field.items.type : field.type
@@ -191,6 +200,7 @@ async function makePieceValue(
 
 export {
 	calculateHashFromFile,
+	isAttachableStream,
 	makePieceAttachment,
 	makePieceValue,
 	detectStreamFileType,

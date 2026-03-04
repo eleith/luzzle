@@ -18,7 +18,6 @@ import { CpuInfo, cpus } from 'os'
 import { makeCache } from './cache.fixtures.js'
 import { ReadStream } from 'fs'
 
-// Only mock external boundaries and environment
 vi.mock('./cache.js')
 vi.mock('./item.js')
 vi.mock('./items.js')
@@ -44,17 +43,19 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema('table')
 		const storage = makeStorage()
-		expect(() => new PieceType('mismatch', storage, schema)).toThrow('does not match the schema title')
+		expect(() => new PieceType('mismatch', storage, schema)).toThrow(
+			'does not match the schema title'
+		)
 	})
 
 	test('create generates a new markdown piece', async () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		
+
 		mocks.slugify.mockReturnValue('my-title')
 		vi.spyOn(storage, 'exists').mockResolvedValue(false)
-		
+
 		const result = await piece.create('dir', 'My Title')
 		expect(result.piece).toBe('table')
 		expect(result.frontmatter.title).toBe('title')
@@ -64,7 +65,7 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		
+
 		mocks.slugify.mockReturnValue('my-title')
 		vi.spyOn(storage, 'exists').mockResolvedValue(true)
 
@@ -75,7 +76,7 @@ describe('pieces/Piece.ts', () => {
 		const storage = makeStorage()
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table', storage)
-		
+
 		vi.spyOn(storage, 'exists').mockResolvedValue(true)
 		vi.spyOn(storage, 'delete').mockResolvedValue(undefined)
 
@@ -87,7 +88,7 @@ describe('pieces/Piece.ts', () => {
 		const storage = makeStorage()
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table', storage)
-		
+
 		vi.spyOn(storage, 'exists').mockResolvedValue(false)
 
 		await expect(piece.delete('file.md')).rejects.toThrow('does not exist')
@@ -110,9 +111,12 @@ describe('pieces/Piece.ts', () => {
 		const piece = new PieceType('table', storage)
 		const db = mockKysely().db
 
-		mocks.cache.getCache.mockResolvedValue(makeCache({ 
-			date_updated: 1000, date_added: 1000
-		}))
+		mocks.cache.getCache.mockResolvedValue(
+			makeCache({
+				date_updated: 1000,
+				date_added: 1000,
+			})
+		)
 		vi.spyOn(storage, 'stat').mockResolvedValue({ last_modified: new Date(2000) } as StorageStat)
 
 		expect(await piece.isOutdated('file.md', db)).toBe(true)
@@ -127,9 +131,15 @@ describe('pieces/Piece.ts', () => {
 		const storage = makeStorage()
 		const pieceTest = new PieceType('table', storage)
 
-		mocks.cache.getCache.mockResolvedValue(makeCache({ 
-			date_added: cacheDate, date_updated: null, id: '1', file_path: filename, content_hash: 'h' 
-		}))
+		mocks.cache.getCache.mockResolvedValue(
+			makeCache({
+				date_added: cacheDate,
+				date_updated: null,
+				id: '1',
+				file_path: filename,
+				content_hash: 'h',
+			})
+		)
 		vi.spyOn(storage, 'stat').mockResolvedValue({ last_modified: fileDate } as StorageStat)
 
 		const isOutdated = await pieceTest.isOutdated(filename, db)
@@ -142,9 +152,12 @@ describe('pieces/Piece.ts', () => {
 		const piece = new PieceType('table', storage)
 		const db = mockKysely().db
 
-		mocks.cache.getCache.mockResolvedValue(makeCache({ 
-			date_updated: 3000, date_added: 3000
-		}))
+		mocks.cache.getCache.mockResolvedValue(
+			makeCache({
+				date_updated: 3000,
+				date_added: 3000,
+			})
+		)
 		vi.spyOn(storage, 'stat').mockResolvedValue({ last_modified: new Date(2000) } as StorageStat)
 
 		expect(await piece.isOutdated('file.md', db)).toBe(false)
@@ -178,7 +191,7 @@ describe('pieces/Piece.ts', () => {
 
 		mocks.item.validatePieceItem.mockReturnValue(false)
 		mocks.item.getValidatePieceItemErrors.mockReturnValue(['error'])
-		
+
 		const result = piece.validate(markdown)
 		expect(result.isValid).toBe(false)
 		if (!result.isValid) {
@@ -191,10 +204,10 @@ describe('pieces/Piece.ts', () => {
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
 		const fm = { title: 'sample' }
-		
+
 		vi.spyOn(storage, 'exists').mockResolvedValue(true)
 		vi.spyOn(storage, 'readFile').mockResolvedValue('---\ntitle: sample\n---\nbody')
-		
+
 		const result = await piece.get('file.md')
 		expect(result.frontmatter.title).toBe(fm.title)
 		expect(result.note).toBe('body')
@@ -235,9 +248,11 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table')
 		const db = mockKysely().db
-		
+
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.items.selectItems.mockResolvedValue([makePieceItemSelectable({ file_path: 'missing.md' })])
+		mocks.items.selectItems.mockResolvedValue([
+			makePieceItemSelectable({ file_path: 'missing.md' }),
+		])
 		mocks.items.deleteItem.mockResolvedValue(undefined)
 
 		const stream = await piece.prune(db, ['exists.md'])
@@ -254,7 +269,9 @@ describe('pieces/Piece.ts', () => {
 		const piece = new PieceType('table')
 		const db = mockKysely().db
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.items.selectItems.mockResolvedValue([makePieceItemSelectable({ file_path: 'missing.md' })])
+		mocks.items.selectItems.mockResolvedValue([
+			makePieceItemSelectable({ file_path: 'missing.md' }),
+		])
 
 		const stream = await piece.prune(db, [], { dryRun: true })
 		for await (const result of stream) {
@@ -340,7 +357,7 @@ describe('pieces/Piece.ts', () => {
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
 		mocks.items.selectItem.mockResolvedValue(undefined)
-		
+
 		const syncAddSpy = vi.spyOn(piece, 'syncMarkdownAdd').mockResolvedValue(undefined)
 
 		const stream = await piece.sync(db, ['new.md'])
@@ -365,7 +382,7 @@ describe('pieces/Piece.ts', () => {
 		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('new-hash')
 		mocks.cache.getCache.mockResolvedValue(makeCache({ content_hash: 'old-hash' }))
 		vi.spyOn(storage, 'createReadStream').mockReturnValue({} as ReadStream)
-		
+
 		const syncUpdateSpy = vi.spyOn(piece, 'syncMarkdownUpdate').mockResolvedValue(undefined)
 
 		const stream = await piece.sync(db, ['u.md'])
@@ -431,7 +448,7 @@ describe('pieces/Piece.ts', () => {
 		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('new-hash')
 		mocks.cache.getCache.mockResolvedValue(makeCache({ content_hash: 'old-hash' }))
 		vi.spyOn(storage, 'createReadStream').mockReturnValue({} as ReadStream)
-		
+
 		const syncUpdateSpy = vi.spyOn(piece, 'syncMarkdownUpdate').mockResolvedValue(undefined)
 
 		const stream = await piece.sync(db, ['u.md'], { dryRun: true })
@@ -455,7 +472,7 @@ describe('pieces/Piece.ts', () => {
 		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('same-hash')
 		mocks.cache.getCache.mockResolvedValue(makeCache({ content_hash: 'same-hash' }))
 		vi.spyOn(storage, 'createReadStream').mockReturnValue({} as ReadStream)
-		
+
 		const syncUpdateSpy = vi.spyOn(piece, 'syncMarkdownUpdate').mockResolvedValue(undefined)
 
 		const stream = await piece.sync(db, ['u.md'], { force: true })
@@ -484,7 +501,7 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table')
 		const dbPiece = makePieceItemSelectable({
-			frontmatter_json: JSON.stringify({ title: 'db-title', keywords: ['a', 'b'] })
+			frontmatter_json: JSON.stringify({ title: 'db-title', keywords: ['a', 'b'] }),
 		})
 
 		const result = piece.toMarkdown(dbPiece)
@@ -496,11 +513,11 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
 			title: { type: 'string' },
-			subtitle: { type: 'string', nullable: true }
+			subtitle: { type: 'string', nullable: true },
 		})
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 'old', subtitle: 'old' } })
-		
+
 		mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
 
 		const field = piece.getField(markdown, 'subtitle')
@@ -511,11 +528,11 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
 			title: { type: 'string' },
-			subtitle: { type: 'string', nullable: true }
+			subtitle: { type: 'string', nullable: true },
 		})
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 'old', subtitle: 'old' } })
-		
+
 		mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
 
 		const updated = await piece.setFields(markdown, { title: 'new', subtitle: 'new' })
@@ -528,8 +545,8 @@ describe('pieces/Piece.ts', () => {
 		const schema = makeSchema({
 			meta: {
 				type: 'object',
-				properties: { author: { type: 'string' } }
-			}
+				properties: { author: { type: 'string' } },
+			},
 		})
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 't' } })
@@ -541,53 +558,46 @@ describe('pieces/Piece.ts', () => {
 		expect(fm.meta.author).toBe('Bob')
 	})
 
-			test('setField appends to nested array', async () => {
-				const PieceType = makePieceMock()
-				const schema = makeSchema({
-					meta: {
-						type: 'object',
-						properties: { tags: { type: 'array', items: { type: 'string' } } }
-					}
-				})
-				const piece = new PieceType('table', makeStorage(), schema)
-				const markdown = makeMarkdownSample({ frontmatter: { title: 'title', meta: { tags: ['a'] } } })
-	
-				mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
-	
-				const updated = await piece.setField(markdown, 'meta.tags', 'b')
-				const fm = updated.frontmatter as unknown as Record<string, Record<string, string[]>>
-				expect(fm.meta.tags).toEqual(['a', 'b'])
-			})
-	
-					test('setField initializes missing array field', async () => {
-	
-						const PieceType = makePieceMock()
-	
-						const schema = makeSchema({ tags: { type: 'array', items: { type: 'string' } } })
-	
-						const piece = new PieceType('table', makeStorage(), schema)
-	
-						const markdown = makeMarkdownSample({ frontmatter: { title: 't' } })
-	
-			
-	
-						mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
-	
-			
-	
-						const updated = await piece.setField(markdown, 'tags', 'tag1')
-	
-						const fm = updated.frontmatter as unknown as Record<string, string[]>
-	
-						expect(fm.tags).toEqual(['tag1'])
-	
-					})
-	
-			
-		test('setField handles an array of values', async () => {
+	test('setField appends to nested array', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
-			tags: { type: 'array', items: { type: 'string' } }
+			meta: {
+				type: 'object',
+				properties: { tags: { type: 'array', items: { type: 'string' } } },
+			},
+		})
+		const piece = new PieceType('table', makeStorage(), schema)
+		const markdown = makeMarkdownSample({ frontmatter: { title: 'title', meta: { tags: ['a'] } } })
+
+		mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
+
+		const updated = await piece.setField(markdown, 'meta.tags', 'b')
+		const fm = updated.frontmatter as unknown as Record<string, Record<string, string[]>>
+		expect(fm.meta.tags).toEqual(['a', 'b'])
+	})
+
+	test('setField initializes missing array field', async () => {
+		const PieceType = makePieceMock()
+
+		const schema = makeSchema({ tags: { type: 'array', items: { type: 'string' } } })
+
+		const piece = new PieceType('table', makeStorage(), schema)
+
+		const markdown = makeMarkdownSample({ frontmatter: { title: 't' } })
+
+		mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
+
+		const updated = await piece.setField(markdown, 'tags', 'tag1')
+
+		const fm = updated.frontmatter as unknown as Record<string, string[]>
+
+		expect(fm.tags).toEqual(['tag1'])
+	})
+
+	test('setField handles an array of values', async () => {
+		const PieceType = makePieceMock()
+		const schema = makeSchema({
+			tags: { type: 'array', items: { type: 'string' } },
 		})
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 't', tags: ['a'] } })
@@ -604,14 +614,17 @@ describe('pieces/Piece.ts', () => {
 		const schema = makeSchema({
 			meta: {
 				type: 'object',
-				properties: { cover: { type: 'string', format: 'asset' } }
-			}
+				properties: { cover: { type: 'string', format: 'asset' } },
+			},
 		})
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage, schema)
 		const markdown = makeMarkdownSample()
-		
-		mocks.pieceUtils.makePieceValue.mockResolvedValue(new PassThrough() as unknown as ReadStream)
+
+		mocks.pieceUtils.makePieceValue.mockResolvedValue({
+			stream: new PassThrough() as unknown as ReadStream,
+		})
+		mocks.pieceUtils.isAttachableStream.mockReturnValueOnce(true)
 		mocks.pieceUtils.makePieceAttachment.mockResolvedValue('assets/cover.jpg')
 
 		const updated = await piece.setField(markdown, 'meta.cover', 'upload-me')
@@ -625,7 +638,7 @@ describe('pieces/Piece.ts', () => {
 		const piece = new PieceType('table')
 		const markdown = makeMarkdownSample()
 		mocks.pieceUtils.makePieceValue.mockRejectedValue(new Error('bad'))
-		
+
 		const result = await piece.setField(markdown, 'title', 'new')
 		expect(result).toBe(markdown)
 	})
@@ -634,31 +647,31 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table')
 		const markdown = makeMarkdownSample()
-		
+
 		const setting = piece.setField(markdown, 'title2', 'new')
 		expect(setting).rejects.toThrow()
 	})
 
-			test('removeField unsets a nested value', async () => {
-				const PieceType = makePieceMock()
-				const schema = makeSchema({
-					meta: {
-						type: 'object',
-						nullable: true,
-						properties: { author: { type: 'string', nullable: true } }
-					}
-				})
-				const piece = new PieceType('table', makeStorage(), schema)
-				const markdown = makeMarkdownSample({ frontmatter: { title: 't', meta: { author: 'Alice' } } })
-	
-				const updated = await piece.removeField(markdown, 'meta.author')
-				const fm = updated.frontmatter as unknown as Record<string, Record<string, unknown>>
-				expect(fm.meta).toBeUndefined()
-			})
-		test('removeField removes specific array index', async () => {
+	test('removeField unsets a nested value', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
-			tags: { type: 'array', nullable: true, items: { type: 'string', nullable: true } }
+			meta: {
+				type: 'object',
+				nullable: true,
+				properties: { author: { type: 'string', nullable: true } },
+			},
+		})
+		const piece = new PieceType('table', makeStorage(), schema)
+		const markdown = makeMarkdownSample({ frontmatter: { title: 't', meta: { author: 'Alice' } } })
+
+		const updated = await piece.removeField(markdown, 'meta.author')
+		const fm = updated.frontmatter as unknown as Record<string, Record<string, unknown>>
+		expect(fm.meta).toBeUndefined()
+	})
+	test('removeField removes specific array index', async () => {
+		const PieceType = makePieceMock()
+		const schema = makeSchema({
+			tags: { type: 'array', nullable: true, items: { type: 'string', nullable: true } },
 		})
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 't', tags: ['a', 'b', 'c'] } })
@@ -671,7 +684,7 @@ describe('pieces/Piece.ts', () => {
 	test('removeField removes by value from array', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
-			tags: { type: 'array', nullable: true, items: { type: 'string', nullable: true } }
+			tags: { type: 'array', nullable: true, items: { type: 'string', nullable: true } },
 		})
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 't', tags: ['a', 'b'] } })
@@ -686,7 +699,7 @@ describe('pieces/Piece.ts', () => {
 	test('removeField returns markdown if array value missing', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
-			tags: { type: 'array', nullable: true, items: { type: 'string', nullable: true } }
+			tags: { type: 'array', nullable: true, items: { type: 'string', nullable: true } },
 		})
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 't', tags: ['a'] } })
@@ -712,7 +725,7 @@ describe('pieces/Piece.ts', () => {
 		const schema = makeSchema({ subtitle: { type: 'string', nullable: true } })
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 't', subtitle: 's' } })
-		
+
 		// Setup markdown so current value is 's'
 		// Our mock return value will be 'mismatch'
 		mocks.pieceUtils.makePieceValue.mockResolvedValue('mismatch')
@@ -724,7 +737,7 @@ describe('pieces/Piece.ts', () => {
 	test('removeField throws on required field', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
-			title: { type: 'string', nullable: false }
+			title: { type: 'string', nullable: false },
 		})
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 't' } })
@@ -735,7 +748,7 @@ describe('pieces/Piece.ts', () => {
 	test('removeField throws on bad field', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
-			title: { type: 'string', nullable: false }
+			title: { type: 'string', nullable: false },
 		})
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 't' } })
@@ -747,11 +760,11 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
 			s1: { type: 'string', nullable: true },
-			s2: { type: 'string', nullable: true }
+			s2: { type: 'string', nullable: true },
 		})
 		const piece = new PieceType('table', makeStorage(), schema)
 		const markdown = makeMarkdownSample({ frontmatter: { title: 't', s1: 'v', s2: 'v' } })
-		
+
 		const updated = await piece.removeFields(markdown, ['s1', 's2'])
 		const fm = updated.frontmatter as Record<string, unknown>
 		expect(fm.s1).toBeUndefined()

@@ -21,6 +21,7 @@ import {
 import LuzzleStorage from '../storage/abstract.js'
 import { makePieceMarkdown, makePieceMarkdownString, PieceMarkdown } from './utils/markdown.js'
 import {
+	isAttachableStream,
 	calculateHashFromFile,
 	makePieceAttachment,
 	makePieceValue,
@@ -345,17 +346,16 @@ class Piece<F extends PieceFrontmatter> {
 			for (const one of values) {
 				const pieceValue = await makePieceValue(itemField, one)
 
-				const val =
-					pieceValue instanceof Readable
-						? await makePieceAttachment(
-							markdown.filePath,
-							itemField as PieceFrontmatterSchemaField,
-							pieceValue,
-							this._storage
-						)
-						: pieceValue
+				const val = isAttachableStream(pieceValue)
+					? await makePieceAttachment(
+						markdown.filePath,
+						itemField as PieceFrontmatterSchemaField,
+						pieceValue,
+						this._storage
+					)
+					: (pieceValue as PieceFrontMatterValue)
 
-				setFrontmatterValue(updatedFrontmatter, fieldPath, val as PieceFrontMatterValue)
+				setFrontmatterValue(updatedFrontmatter, fieldPath, val)
 			}
 		} catch (e) {
 			const error = e as Error
@@ -389,8 +389,8 @@ class Piece<F extends PieceFrontmatter> {
 			const pieceValue = await makePieceValue(pieceField, value)
 			const current = getFrontmatterValue(updatedFrontmatter, fieldPath)
 
-			if (Array.isArray(current) && !(pieceValue instanceof Readable)) {
-				const index = current.indexOf(pieceValue)
+			if (Array.isArray(current) && !isAttachableStream(pieceValue)) {
+				const index = current.indexOf(pieceValue as PieceFrontMatterValue)
 				if (index !== -1) {
 					unsetFrontmatterValue(updatedFrontmatter, `${fieldPath}.${index}`)
 				} else {
