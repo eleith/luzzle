@@ -1,7 +1,6 @@
 import { getFrontmatterValues } from '@luzzle/core'
 import languages from './highlight/languages.json' with { type: 'json' }
 import type { TransformInput, AssetRecord } from './types.js'
-import { isString } from 'util'
 
 const extToLang = new Map<string, string>()
 for (const [id, aliases] of Object.entries(languages) as [string, string[]][]) {
