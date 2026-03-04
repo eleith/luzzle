@@ -103,7 +103,7 @@ async function applyFormDataToPiece<T extends PieceFrontmatter>(
 			try {
 				const streams = files.map((file) => {
 					const stream = Readable.fromWeb(file.stream() as ReadableStream<Buffer>)
-					return { ...stream, filename: file.name }
+					return { stream, filename: file.name }
 				})
 
 				if (streams.length) {
@@ -188,7 +188,7 @@ async function applyFieldUpdate<T extends PieceFrontmatter>(
 			const files = ops.uploads.get(path)!
 			const streams = files.map((file) => {
 				const stream = Readable.fromWeb(file.stream() as ReadableStream<Buffer>)
-				return { ...stream, filename: file.name }
+				return { stream, filename: file.name }
 			})
 			if (streams.length) {
 				updatedMarkdown = await piece.setField(
