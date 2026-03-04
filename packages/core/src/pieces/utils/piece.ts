@@ -1,19 +1,21 @@
 import { stat } from 'fs/promises'
 import { createHash } from 'crypto'
 import { Readable } from 'stream'
-import { createReadStream, ReadStream } from 'fs'
+import { createReadStream } from 'fs'
 import { pipeline } from 'stream/promises'
 import path from 'path'
 import { fileTypeFromBuffer } from 'file-type'
-import got, { Request } from 'got'
+import got from 'got'
 import { PieceFrontmatterSchemaField, PieceFrontMatterValue } from './frontmatter.js'
 import LuzzleStorage from '../../storage/abstract.js'
 import { ASSETS_DIRECTORY } from '../assets.js'
 
-async function downloadToStream(fileOrUrl: string) {
+type AttachableStream = Readable & { filename?: string }
+
+async function downloadToStream(fileOrUrl: string): Promise<AttachableStream> {
 	if (/https?:\/\//i.test(fileOrUrl)) {
 		return new Promise((resolve, reject) => {
-			const download = got.stream(fileOrUrl, {
+			const download: AttachableStream = got.stream(fileOrUrl, {
 				throwHttpErrors: false,
 				headers: {
 					'user-agent': 'luzzle/core (https://github.com/eleith/luzzle)',
@@ -35,6 +37,7 @@ async function downloadToStream(fileOrUrl: string) {
 					console.error(`Error downloading file from ${fileOrUrl}: http ${response.statusCode}`)
 					reject(new Error(`HTTP Error: ${response.statusCode}`))
 				} else {
+					download.filename = path.basename(new URL(fileOrUrl).pathname)
 					resolve(download)
 				}
 			})
@@ -46,12 +49,13 @@ async function downloadToStream(fileOrUrl: string) {
 
 	if (fileStat && fileStat.isFile()) {
 		return new Promise((resolve, reject) => {
-			const stream = createReadStream(file)
+			const stream: AttachableStream = createReadStream(file)
 			stream.on('error', (err) => {
 				console.error(`Error reading file from path: ${err.message}`)
 				reject(err)
 			})
 			stream.on('open', () => {
+				stream.filename = path.basename(file)
 				resolve(stream)
 			})
 		})
@@ -113,7 +117,7 @@ async function detectStreamFileType(stream: Readable, maxBytes = 4100) {
 async function makePieceAttachment(
 	file: string,
 	field: PieceFrontmatterSchemaField,
-	stream: Readable | ReadStream | Request,
+	stream: AttachableStream,
 	storage: LuzzleStorage
 ): Promise<string> {
 	const format = field.type === 'array' ? field.items.format : field.format
@@ -126,9 +130,7 @@ async function makePieceAttachment(
 	const pieceDir = file.replace(/\.[^.]+$/, '')
 	const attachDir = path.join(ASSETS_DIRECTORY, pieceDir)
 	const exists = await storage.exists(attachDir)
-	const pathName = (stream as Request).requestUrl?.pathname
-	const pathStream = (stream as ReadStream).path?.toString()
-	const sourceInfo = pathName || pathStream
+	const sourceInfo = stream.filename
 
 	if (!exists) {
 		await storage.makeDirectory(attachDir)
@@ -161,7 +163,7 @@ async function makePieceAttachment(
 
 async function makePieceValue(
 	field: PieceFrontmatterSchemaField,
-	value: PieceFrontMatterValue | Readable
+	value: PieceFrontMatterValue | AttachableStream
 ) {
 	const isArray = field.type === 'array'
 	const format = isArray ? field.items.format : field.format
@@ -172,7 +174,7 @@ async function makePieceValue(
 			if (value.startsWith(ASSETS_DIRECTORY)) {
 				return value
 			}
-			return downloadToStream(value) as Promise<Readable>
+			return downloadToStream(value)
 		} else if (value instanceof Readable) {
 			return value
 		} else {
@@ -187,5 +189,5 @@ async function makePieceValue(
 	return value
 }
 
-export { calculateHashFromFile, makePieceAttachment, makePieceValue, detectStreamFileType }
+export { calculateHashFromFile, makePieceAttachment, makePieceValue, detectStreamFileType, type AttachableStream }
 

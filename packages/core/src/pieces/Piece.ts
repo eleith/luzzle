@@ -20,7 +20,11 @@ import {
 } from './utils/frontmatter.path.js'
 import LuzzleStorage from '../storage/abstract.js'
 import { makePieceMarkdown, makePieceMarkdownString, PieceMarkdown } from './utils/markdown.js'
-import { calculateHashFromFile, makePieceAttachment, makePieceValue } from './utils/piece.js'
+import {
+	calculateHashFromFile,
+	makePieceAttachment,
+	makePieceValue,
+} from './utils/piece.js'
 import { LuzzleDatabase, LuzzleSelectable } from '../database/tables/index.js'
 import compile from '../lib/ajv.js'
 import {
@@ -339,10 +343,7 @@ class Piece<F extends PieceFrontmatter> {
 			}
 
 			for (const one of values) {
-				const pieceValue = await makePieceValue(
-					itemField as PieceFrontmatterSchemaField,
-					one as number | string | boolean | Readable
-				)
+				const pieceValue = await makePieceValue(itemField, one)
 
 				const val =
 					pieceValue instanceof Readable

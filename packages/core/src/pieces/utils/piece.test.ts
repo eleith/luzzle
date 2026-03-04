@@ -11,6 +11,7 @@ import {
 	makePieceAttachment,
 	makePieceValue,
 	detectStreamFileType,
+	type AttachableStream,
 } from './piece.js'
 import { PieceFrontmatterSchemaField } from './frontmatter.js'
 import { makeStorage } from '../../storage/storage.mock.js'
@@ -328,9 +329,9 @@ describe('pieces/utils/piece.ts', () => {
 		const markdown = makeMarkdownSample('samplePath', 'books', '', { cover: 'cover.jpg' })
 		const mocksWriteStream = new PassThrough() as unknown as WriteStream
 
-		// URL stream: magic bytes say PNG, source URL says .jpg — magic bytes win for ext
-		const mockStream = Readable.from([fullPngBuffer]) as unknown as Request
-		mockStream.requestUrl = { pathname: '/images/photo.jpg' } as URL
+		// URL stream: magic bytes say PNG, filename says .jpg — magic bytes win for ext
+		const mockStream: AttachableStream = Readable.from([fullPngBuffer])
+		mockStream.filename = 'photo.jpg'
 
 		spies.createWriteStream = vi.spyOn(storage, 'createWriteStream').mockReturnValue(mocksWriteStream)
 		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
@@ -351,8 +352,8 @@ describe('pieces/utils/piece.ts', () => {
 		const markdown = makeMarkdownSample('samplePath', 'books', '', { cover: 'cover.jpg' })
 		const mocksWriteStream = new PassThrough() as unknown as WriteStream
 
-		const mockStream = Readable.from([fullPngBuffer]) as unknown as Request
-		mockStream.requestUrl = { pathname: '/images/photo.jpg' } as URL
+		const mockStream: AttachableStream = Readable.from([fullPngBuffer])
+		mockStream.filename = 'photo.jpg'
 
 		spies.createWriteStream = vi.spyOn(storage, 'createWriteStream').mockReturnValue(mocksWriteStream)
 		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
@@ -363,15 +364,15 @@ describe('pieces/utils/piece.ts', () => {
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'photo.png'))
 	})
 
-	test('makePieceAttachment should use ReadStream path for name and ext (text file fallback)', async () => {
+	test('makePieceAttachment should use filename for name and ext (text file fallback)', async () => {
 		const field = { name: 'script', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
 		const storage = makeStorage('root')
 		const markdown = makeMarkdownSample('samplePath', 'books', '', { script: 'deploy.bash' })
 		const mocksWriteStream = new PassThrough() as unknown as WriteStream
 
-		// No magic bytes for a text file — falls back to source path extension
-		const mockStream = Readable.from([Buffer.from('#!/bin/bash\necho hi')]) as unknown as ReadStream
-		mockStream.path = Buffer.from('/local/path/deploy.bash')
+		// No magic bytes for a text file — falls back to filename extension
+		const mockStream: AttachableStream = Readable.from([Buffer.from('#!/bin/bash\necho hi')])
+		mockStream.filename = 'deploy.bash'
 
 		spies.createWriteStream = vi.spyOn(storage, 'createWriteStream').mockReturnValue(mocksWriteStream)
 		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
@@ -407,8 +408,8 @@ describe('pieces/utils/piece.ts', () => {
 		const markdown = makeMarkdownSample('samplePath', 'books', '', { cover: 'cover.jpg' })
 		const mocksWriteStream = new PassThrough() as unknown as WriteStream
 
-		const mockStream = Readable.from([fullPngBuffer]) as unknown as Request
-		mockStream.requestUrl = { pathname: '/images/photo.jpg' } as URL
+		const mockStream: AttachableStream = Readable.from([fullPngBuffer])
+		mockStream.filename = 'photo.jpg'
 
 		spies.createWriteStream = vi.spyOn(storage, 'createWriteStream').mockReturnValue(mocksWriteStream)
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
