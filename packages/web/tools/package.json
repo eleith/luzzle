@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web.tools",
-	"version": "0.0.111",
+	"version": "0.0.112",
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
@@ -42,7 +42,7 @@
 		"vitest": "3.2.4"
 	},
 	"dependencies": {
-		"@luzzle/core": "0.0.48",
+		"@luzzle/core": "0.0.49",
 		"@luzzle/web.utils": "0.0.30",
 		"kysely": "0.27.5",
 		"lightningcss": "^1.30.2",
