@@ -1,6 +1,7 @@
 import { getFrontmatterValues } from '@luzzle/core'
 import languages from './highlight/languages.json' with { type: 'json' }
 import type { TransformInput, AssetRecord } from './types.js'
+import { isString } from 'util'
 
 const extToLang = new Map<string, string>()
 for (const [id, aliases] of Object.entries(languages) as [string, string[]][]) {
@@ -24,7 +25,10 @@ export async function run({ webPiece, config }: TransformInput): Promise<AssetRe
 	const records: AssetRecord[] = []
 
 	for (const field of pieceConfig.fields.attachments) {
-		const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
+		const assets = getFrontmatterValues<string>(frontmatter, field)
+			.flat()
+			.filter((s) => typeof s === 'string')
+
 		for (const asset of assets) {
 			const lang = getHighlightLang(asset)
 			if (!lang) continue
