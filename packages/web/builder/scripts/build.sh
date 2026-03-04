@@ -4,7 +4,7 @@ echo "[build] started at $(date)"
 bash /app/scripts/pre.build.sh
 
 echo "Syncing archive to database..."
-luzzle-web-tools sync --in /app/archive --out /app/assets/piece
+luzzle-web-tools sync --in /app/archive --out /app/assets/pieces
 
 bash /app/scripts/post.build.sh
 
