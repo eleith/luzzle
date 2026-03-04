@@ -48,7 +48,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 	const piece = await hydrateWithAssets(webPiece)
 	const asset = piece.assets.find(
-		(a) => a.piece_asset_path === attachment && a.transformation === 'attachment.original'
+		(a) => a.piece_asset_path === attachment && a.transformation === 'attachment'
 	)
 
 	if (!asset?.asset_path) {
