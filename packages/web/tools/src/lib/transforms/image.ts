@@ -1,11 +1,6 @@
 import { mkdir, writeFile } from 'fs/promises'
 import { getFrontmatterValues } from '@luzzle/core'
-import {
-	getAssetDir,
-	getAssetPath,
-	getImageAssetPath,
-	ASSET_SIZES,
-} from '@luzzle/web.utils'
+import { getAssetDir, getAssetPath, getImageAssetPath, ASSET_SIZES } from '@luzzle/web.utils'
 import mime from 'mime-types'
 import { generateVariantJobs } from './variants.js'
 import type { TransformInput, AssetRecord } from './types.js'
@@ -15,7 +10,13 @@ function getMimeType(format: string): string {
 	return `image/${type}`
 }
 
-export async function run({ webPiece, config, outDir, pieces, assetKeyToPath }: TransformInput): Promise<AssetRecord[]> {
+export async function run({
+	webPiece,
+	config,
+	outDir,
+	pieces,
+	assetKeyToPath,
+}: TransformInput): Promise<AssetRecord[]> {
 	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
 	if (!pieceConfig) return []
 
@@ -37,10 +38,12 @@ export async function run({ webPiece, config, outDir, pieces, assetKeyToPath }: 
 	let hasAssets = false
 
 	for (const field of mediaFields) {
-		const assetKeys = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
+		const assets = getFrontmatterValues<string>(frontmatter, field)
+			.flat()
+			.map((key) => assetKeyToPath.get(key))
+			.filter((s) => typeof s === 'string')
 
-		for (const assetKey of assetKeys) {
-			const asset = assetKeyToPath.get(assetKey) ?? assetKey
+		for (const asset of assets) {
 			const mimeType = mime.lookup(asset) || 'application/octet-stream'
 			if (!mimeType.startsWith('image/')) {
 				throw new Error(`non-image file "${asset}" in media field "${field}"`)
@@ -72,7 +75,13 @@ export async function run({ webPiece, config, outDir, pieces, assetKeyToPath }: 
 			)
 
 			const toFileJobs = jobs.map(async (job) => {
-				const variantPath = getImageAssetPath(webPiece.type, webPiece.key, asset, job.width, job.format)
+				const variantPath = getImageAssetPath(
+					webPiece.type,
+					webPiece.key,
+					asset,
+					job.width,
+					job.format
+				)
 				await job.sharp.toFile(`${outDir}/${variantPath}`)
 				const sizeCategory = sizeCategoryMap[job.width]
 				records.push({

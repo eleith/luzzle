@@ -118,11 +118,11 @@ describe('transforms/image', () => {
 
 		await expect(
 			run({
-				webPiece: makeWebPiece('{"doc": "file.pdf"}'),
+				webPiece: makeWebPiece('{"doc": "key"}'),
 				config: makeConfig(['doc']),
 				outDir: '/out',
 				pieces: mockPieces,
-				assetKeyToPath: emptyMap,
+				assetKeyToPath: new Map([["key", "file.pdf"]]),
 			})
 		).rejects.toThrow('non-image file')
 	})
@@ -145,11 +145,11 @@ describe('transforms/image', () => {
 		])
 
 		const records = await run({
-			webPiece: makeWebPiece('{"image": "photo.jpg"}'),
+			webPiece: makeWebPiece('{"image": "key"}'),
 			config: makeConfig(['image']),
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: emptyMap,
+			assetKeyToPath: new Map([["key", "photo.jpg"]]),
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key', { recursive: true })
@@ -177,11 +177,11 @@ describe('transforms/image', () => {
 
 		await expect(
 			run({
-				webPiece: makeWebPiece('{"image": "photo.jpg"}'),
+				webPiece: makeWebPiece('{"image": "key"}'),
 				config: makeConfig(['image']),
 				outDir: '/out',
 				pieces: mockPieces,
-				assetKeyToPath: emptyMap,
+				assetKeyToPath: new Map([["key", "photo.jpg"]]),
 			})
 		).rejects.toThrow('read error')
 	})
@@ -204,11 +204,11 @@ describe('transforms/image', () => {
 		])
 
 		const records = await run({
-			webPiece: makeWebPiece('{"image": "photo.jpg"}'),
+			webPiece: makeWebPiece('{"image": "key"}'),
 			config: makeConfig(['image']),
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: emptyMap,
+			assetKeyToPath: new Map([["key", "photo.jpg"]]),
 		})
 
 		expect(records).toEqual(
@@ -225,11 +225,11 @@ describe('transforms/image', () => {
 
 		await expect(
 			run({
-				webPiece: makeWebPiece('{"image": "photo"}'),
+				webPiece: makeWebPiece('{"image": "key"}'),
 				config: makeConfig(['image']),
 				outDir: '/out',
 				pieces: mockPieces,
-				assetKeyToPath: emptyMap,
+				assetKeyToPath: new Map([["key", "photo"]]),
 			})
 		).rejects.toThrow('non-image file')
 	})
@@ -252,11 +252,11 @@ describe('transforms/image', () => {
 
 		await expect(
 			run({
-				webPiece: makeWebPiece('{"image": "photo.jpg"}'),
+				webPiece: makeWebPiece('{"image": "key"}'),
 				config: makeConfig(['image']),
 				outDir: '/out',
 				pieces: mockPieces,
-				assetKeyToPath: emptyMap,
+				assetKeyToPath: new Map([["key", "photo.jpg"]]),
 			})
 		).rejects.toThrow('toFile error')
 	})
