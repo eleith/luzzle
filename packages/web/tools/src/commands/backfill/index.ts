@@ -3,10 +3,7 @@ import { type Config, type WebPieces, type WebPiecesAsset } from '@luzzle/web.ut
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import runWebMigrations from '../../database/migrations.js'
 
-export function sanitizeMetadata(
-	jsonMetadata: string,
-	pathToKey: Map<string, string>
-): string {
+export function sanitizeMetadata(jsonMetadata: string, pathToKey: Map<string, string>): string {
 	if (pathToKey.size === 0) return jsonMetadata
 	return JSON.stringify(
 		JSON.parse(jsonMetadata, (_key, value) => {
@@ -47,18 +44,14 @@ export async function backfillAssetKeys(
 }
 
 export async function backfillSanitizeMetadata(
-	db: ReturnType<typeof getDatabase>,
-	config: Config
+	db: ReturnType<typeof getDatabase>
 ): Promise<number> {
 	const webDb = db.withTables<{
 		web_pieces: WebPieces
 		web_pieces_assets: WebPiecesAsset
 	}>()
 
-	const pieces = await webDb
-		.selectFrom('web_pieces')
-		.selectAll()
-		.execute()
+	const pieces = await webDb.selectFrom('web_pieces').selectAll().execute()
 
 	let updated = 0
 
@@ -104,6 +97,6 @@ export default async function backfill(config: Config) {
 	const keysBackfilled = await backfillAssetKeys(db, config)
 	console.log(`[backfill] asset_key: ${keysBackfilled} rows updated`)
 
-	const metadataUpdated = await backfillSanitizeMetadata(db, config)
+	const metadataUpdated = await backfillSanitizeMetadata(db)
 	console.log(`[backfill] sanitize metadata: ${metadataUpdated} pieces updated`)
 }

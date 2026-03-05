@@ -4,6 +4,7 @@ import { LuzzleDatabase } from '@luzzle/core'
 export function mockKysely() {
 	const queries = {
 		where: vi.fn().mockReturnThis(),
+		set: vi.fn().mockReturnThis(),
 		select: vi.fn().mockReturnThis(),
 		selectAll: vi.fn().mockReturnThis(),
 		orderBy: vi.fn().mockReturnThis(),
@@ -26,6 +27,7 @@ export function mockKysely() {
 		selectFrom: vi.fn().mockReturnValue(queries),
 		deleteFrom: vi.fn().mockReturnValue(queries),
 		insertInto: vi.fn().mockReturnValue(queries),
+		updateTable: vi.fn().mockReturnValue(queries),
 		withTables: vi.fn().mockReturnThis(),
 		schema: {
 			createTable: vi.fn().mockReturnValue(queries),

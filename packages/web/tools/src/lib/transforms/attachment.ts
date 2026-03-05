@@ -4,17 +4,27 @@ import { getAssetPath, getAssetDir } from '@luzzle/web.utils'
 import mime from 'mime-types'
 import type { TransformInput, AssetRecord } from './types.js'
 
-export async function run({ webPiece, config, outDir, pieces, assetKeyToPath }: TransformInput): Promise<AssetRecord[]> {
+export async function run({
+	webPiece,
+	config,
+	outDir,
+	pieces,
+	assetKeyToPath,
+}: TransformInput): Promise<AssetRecord[]> {
 	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
 	if (!pieceConfig?.fields.attachments) return []
 
 	const frontmatter = JSON.parse(webPiece.json_metadata)
+	const attachments = pieceConfig.fields.attachments
 	const records: AssetRecord[] = []
 
-	for (const field of pieceConfig.fields.attachments) {
-		const assetKeys = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
-		for (const assetKey of assetKeys) {
-			const asset = assetKeyToPath.get(assetKey) ?? assetKey
+	for (const field of attachments) {
+		const assets = getFrontmatterValues<string>(frontmatter, field)
+			.flat()
+			.map((key) => assetKeyToPath.get(key))
+			.filter((s) => typeof s === 'string')
+
+		for (const asset of assets) {
 			const assetPath = getAssetPath(webPiece.type, webPiece.key, asset)
 			const assetDir = getAssetDir(webPiece.type, webPiece.key)
 			await mkdir(`${outDir}/${assetDir}`, { recursive: true })

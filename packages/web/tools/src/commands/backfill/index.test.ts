@@ -2,9 +2,9 @@ import { describe, test, vi, afterEach, expect } from 'vitest'
 import backfill, { backfillAssetKeys, backfillSanitizeMetadata, sanitizeMetadata } from './index.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
 import runWebMigrations from '../../database/migrations.js'
-import { LuzzleDatabase } from '@luzzle/core'
 import { Config } from '@luzzle/web.utils'
 import { generateAssetKey } from '@luzzle/web.utils/server'
+import { mockKysely } from 'src/lib/database.mock.js'
 
 vi.mock('../../lib/database.js')
 vi.mock('../../database/migrations.js')
@@ -16,30 +16,6 @@ const mocks = {
 	getDatabaseAndMigrate: vi.mocked(getDatabaseAndMigrate),
 	runWebMigrations: vi.mocked(runWebMigrations),
 	generateAssetKey: vi.mocked(generateAssetKey),
-}
-
-function makeMockDb() {
-	const queries = {
-		where: vi.fn().mockReturnThis(),
-		select: vi.fn().mockReturnThis(),
-		selectAll: vi.fn().mockReturnThis(),
-		execute: vi.fn().mockResolvedValue([]),
-		executeTakeFirst: vi.fn().mockResolvedValue(undefined),
-		values: vi.fn().mockReturnThis(),
-		onConflict: vi.fn().mockImplementation((cb) => {
-			cb?.({ column: vi.fn().mockReturnThis(), columns: vi.fn().mockReturnThis(), doUpdateSet: vi.fn().mockReturnThis() })
-			return queries
-		}),
-		deleteFrom: vi.fn().mockReturnThis(),
-		insertInto: vi.fn().mockReturnThis(),
-	}
-	const db = {
-		selectFrom: vi.fn().mockReturnValue(queries),
-		deleteFrom: vi.fn().mockReturnValue(queries),
-		insertInto: vi.fn().mockReturnValue(queries),
-		withTables: vi.fn().mockReturnThis(),
-	} as unknown as LuzzleDatabase
-	return { db, queries }
 }
 
 afterEach(() => {
@@ -87,7 +63,7 @@ describe('sanitizeMetadata', () => {
 
 describe('backfillAssetKeys', () => {
 	test('computes asset_key from piece_asset_path when present', async () => {
-		const { db, queries } = makeMockDb()
+		const { db, queries } = mockKysely()
 		queries.execute.mockResolvedValueOnce([
 			{ piece_file_path: 'book.md', piece_key: 'pk', piece_asset_path: 'poster.jpg', transformation: 'image.original', asset_key: '', asset_path: 'books/key/poster.jpg', mime_type: 'image/jpeg' },
 		])
@@ -96,11 +72,11 @@ describe('backfillAssetKeys', () => {
 
 		expect(count).toBe(1)
 		expect(mocks.generateAssetKey).toHaveBeenCalledWith('poster.jpg', 'test-salt')
-		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
+		expect(db.updateTable).toHaveBeenCalledWith('web_pieces_assets')
 	})
 
 	test('falls back to piece_file_path when piece_asset_path is null', async () => {
-		const { db, queries } = makeMockDb()
+		const { db, queries } = mockKysely()
 		queries.execute.mockResolvedValueOnce([
 			{ piece_file_path: 'book.md', piece_key: 'pk', piece_asset_path: null, transformation: 'palette', asset_key: '', asset_path: '', mime_type: 'application/json' },
 		])
@@ -111,7 +87,7 @@ describe('backfillAssetKeys', () => {
 	})
 
 	test('skips rows where asset_key is already set (idempotent)', async () => {
-		const { db, queries } = makeMockDb()
+		const { db, queries } = mockKysely()
 		queries.execute.mockResolvedValueOnce([])
 
 		const count = await backfillAssetKeys(db, makeConfig())
@@ -123,7 +99,7 @@ describe('backfillAssetKeys', () => {
 
 describe('backfillSanitizeMetadata', () => {
 	test('replaces asset paths with keys in json_metadata', async () => {
-		const { db, queries } = makeMockDb()
+		const { db, queries } = mockKysely()
 		mocks.generateAssetKey.mockReturnValue('key_poster')
 
 		// First query: web_pieces
@@ -136,14 +112,14 @@ describe('backfillSanitizeMetadata', () => {
 				{ piece_file_path: 'book.md', piece_asset_path: 'poster.jpg', asset_key: 'key_poster', transformation: 'image.original' },
 			])
 
-		const count = await backfillSanitizeMetadata(db, makeConfig())
+		const count = await backfillSanitizeMetadata(db)
 
 		expect(count).toBe(1)
-		expect(db.insertInto).toHaveBeenCalledWith('web_pieces')
+		expect(db.updateTable).toHaveBeenCalledWith('web_pieces')
 	})
 
 	test('leaves metadata unchanged when no asset paths match (idempotent)', async () => {
-		const { db, queries } = makeMockDb()
+		const { db, queries } = mockKysely()
 
 		queries.execute
 			.mockResolvedValueOnce([
@@ -153,14 +129,14 @@ describe('backfillSanitizeMetadata', () => {
 				{ piece_file_path: 'book.md', piece_asset_path: 'poster.jpg', asset_key: 'key_poster', transformation: 'image.original' },
 			])
 
-		const count = await backfillSanitizeMetadata(db, makeConfig())
+		const count = await backfillSanitizeMetadata(db)
 
 		expect(count).toBe(0)
-		expect(db.insertInto).not.toHaveBeenCalledWith('web_pieces')
+		expect(db.updateTable).not.toHaveBeenCalledWith('web_pieces')
 	})
 
 	test('handles pieces with no assets', async () => {
-		const { db, queries } = makeMockDb()
+		const { db, queries } = mockKysely()
 
 		queries.execute
 			.mockResolvedValueOnce([
@@ -168,7 +144,7 @@ describe('backfillSanitizeMetadata', () => {
 			])
 			.mockResolvedValueOnce([])
 
-		const count = await backfillSanitizeMetadata(db, makeConfig())
+		const count = await backfillSanitizeMetadata(db)
 
 		expect(count).toBe(0)
 	})
@@ -177,7 +153,7 @@ describe('backfillSanitizeMetadata', () => {
 describe('backfill command', () => {
 	test('runs migrations and both backfill operations', async () => {
 		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-		const { db, queries } = makeMockDb()
+		const { db, queries } = mockKysely()
 		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
 		mocks.runWebMigrations.mockResolvedValue({ results: [], error: undefined })
 		queries.execute.mockResolvedValue([])
@@ -191,7 +167,7 @@ describe('backfill command', () => {
 	})
 
 	test('throws if web migrations fail', async () => {
-		const { db } = makeMockDb()
+		const { db } = mockKysely()
 		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
 		mocks.runWebMigrations.mockResolvedValue({ results: [], error: new Error('migration failed') })
 

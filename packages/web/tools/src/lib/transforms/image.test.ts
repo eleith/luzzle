@@ -1,7 +1,14 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run } from './image.js'
 import { mkdir, writeFile } from 'fs/promises'
-import { getAssetPath, getAssetDir, getImageAssetPath, ASSET_SIZES, type Config, type WebPieces } from '@luzzle/web.utils'
+import {
+	getAssetPath,
+	getAssetDir,
+	getImageAssetPath,
+	ASSET_SIZES,
+	type Config,
+	type WebPieces,
+} from '@luzzle/web.utils'
 import { generateVariantJobs } from './variants.js'
 import { Pieces } from '@luzzle/core'
 import type { Sharp } from 'sharp'
@@ -75,7 +82,13 @@ describe('transforms/image', () => {
 		const config = makeConfig(['image'])
 		const webPiece = { ...makeWebPiece('{"image": "photo.jpg"}'), type: 'unknown' }
 
-		const records = await run({ webPiece, config, outDir: '/out', pieces: mockPieces })
+		const records = await run({
+			webPiece,
+			config,
+			outDir: '/out',
+			pieces: mockPieces,
+			assetKeyToPath: new Map(),
+		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
 		expect(records).toEqual([])
@@ -141,7 +154,10 @@ describe('transforms/image', () => {
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key', { recursive: true })
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('photo.jpg')
-		expect(mocks.writeFile).toHaveBeenCalledWith('/out/books/key/photo.jpg', Buffer.from('image_data'))
+		expect(mocks.writeFile).toHaveBeenCalledWith(
+			'/out/books/key/photo.jpg',
+			Buffer.from('image_data')
+		)
 		expect(mocks.generateVariantJobs).toHaveBeenCalledOnce()
 		expect(records).toEqual(
 			expect.arrayContaining([

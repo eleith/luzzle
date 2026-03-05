@@ -66,6 +66,7 @@ describe('transforms/attachment', () => {
 	})
 
 	test('copies attachment files and returns asset records', async () => {
+		const attachment = 'doc.pdf'
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockResolvedValue(Buffer.from('file_content')),
 		} as unknown as Pieces
@@ -74,16 +75,19 @@ describe('transforms/attachment', () => {
 		mocks.getAssetPath.mockReturnValue('books/key123/doc.pdf')
 
 		const records = await run({
-			webPiece: makeWebPiece('{"doc": "doc.pdf"}'),
+			webPiece: makeWebPiece('{"doc": "key"}'),
 			config: makeConfig(['doc']),
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: emptyMap,
+			assetKeyToPath: new Map([['key', attachment]]),
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key123', { recursive: true })
-		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('doc.pdf')
-		expect(mocks.writeFile).toHaveBeenCalledWith('/out/books/key123/doc.pdf', Buffer.from('file_content'))
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith(attachment)
+		expect(mocks.writeFile).toHaveBeenCalledWith(
+			'/out/books/key123/doc.pdf',
+			Buffer.from('file_content')
+		)
 		expect(records).toEqual([
 			expect.objectContaining({
 				piece_asset_path: 'doc.pdf',
@@ -94,6 +98,7 @@ describe('transforms/attachment', () => {
 	})
 
 	test('defaults to application/octet-stream on unknown file type', async () => {
+		const attachment = 'doc.abcxyz'
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockResolvedValue(Buffer.from('file_content')),
 		} as unknown as Pieces
@@ -102,16 +107,19 @@ describe('transforms/attachment', () => {
 		mocks.getAssetPath.mockReturnValue('books/key123/doc.abcxyz')
 
 		const records = await run({
-			webPiece: makeWebPiece('{"doc": "doc.abcxyz"}'),
+			webPiece: makeWebPiece('{"doc": "key"}'),
 			config: makeConfig(['doc']),
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: emptyMap,
+			assetKeyToPath: new Map([['key', attachment]]),
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key123', { recursive: true })
-		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('doc.abcxyz')
-		expect(mocks.writeFile).toHaveBeenCalledWith('/out/books/key123/doc.abcxyz', Buffer.from('file_content'))
+		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith(attachment)
+		expect(mocks.writeFile).toHaveBeenCalledWith(
+			'/out/books/key123/doc.abcxyz',
+			Buffer.from('file_content')
+		)
 		expect(records).toEqual([
 			expect.objectContaining({
 				piece_asset_path: 'doc.abcxyz',
@@ -123,6 +131,7 @@ describe('transforms/attachment', () => {
 	})
 
 	test('throws on copy error', async () => {
+		const attachment = 'doc.pdf'
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockRejectedValue(new Error('storage error')),
 		} as unknown as Pieces
@@ -132,11 +141,11 @@ describe('transforms/attachment', () => {
 
 		await expect(
 			run({
-				webPiece: makeWebPiece('{"doc": "doc.pdf"}'),
+				webPiece: makeWebPiece('{"doc": "key"}'),
 				config: makeConfig(['doc']),
 				outDir: '/out',
 				pieces: mockPieces,
-				assetKeyToPath: emptyMap,
+				assetKeyToPath: new Map<string, string>([['key', attachment]]),
 			})
 		).rejects.toThrow('storage error')
 	})
@@ -146,7 +155,13 @@ describe('transforms/attachment', () => {
 		const config = makeConfig(['doc'])
 		const webPiece = { ...makeWebPiece('{"doc": "doc.pdf"}'), type: 'unknown' }
 
-		const records = await run({ webPiece, config, outDir: '/out', pieces: mockPieces })
+		const records = await run({
+			webPiece,
+			config,
+			outDir: '/out',
+			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
+		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
 		expect(records).toEqual([])
