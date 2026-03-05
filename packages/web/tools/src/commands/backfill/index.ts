@@ -77,7 +77,7 @@ export async function backfillSanitizeMetadata(
 		await webDb
 			.updateTable('web_pieces')
 			.set({ json_metadata: sanitized })
-			.where('id', '=', piece.id)
+			.where('key', '=', piece.key)
 			.execute()
 
 		updated++

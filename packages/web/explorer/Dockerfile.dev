@@ -25,9 +25,9 @@ RUN cd /local/tools && \
     npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
     npm pkg set 'dependencies[@luzzle/web.utils]'=file:/local/utils
 
-RUN cd /local/core && rm -rf node_modules && npm install
-RUN cd /local/utils && rm -rf node_modules && npm install
-RUN cd /local/tools && rm -rf node_modules && npm install
+RUN cd /local/core && rm -rf node_modules && npm install && npm run build
+RUN cd /local/utils && rm -rf node_modules && npm install && npm run build
+RUN cd /local/tools && rm -rf node_modules && npm install && npm run build
 
 RUN npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
     npm pkg set 'dependencies[@luzzle/web.utils]'=file:/local/utils && \

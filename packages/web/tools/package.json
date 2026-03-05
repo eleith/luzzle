@@ -7,7 +7,8 @@
 		"build:executable": "chmod +x ./dist/src/cli.js",
 		"postbuild": "npm run build:executable",
 		"build": "tsc",
-		"test": "vitest run --silent --coverage"
+		"test": "vitest run --silent --coverage",
+		"schema": "npm run build && node dist/src/database/dump-schema.js"
 	},
 	"engines": {
 		"node": ">=20"
