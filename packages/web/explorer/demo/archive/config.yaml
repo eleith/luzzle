@@ -1,0 +1,6 @@
+storage:
+  type: filesystem
+  root: .
+database:
+  type: sqlite
+  path: ./luzzle.sqlite

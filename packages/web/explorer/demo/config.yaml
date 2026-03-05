@@ -1,0 +1,188 @@
+# yaml-language-server: $schema=../../utils/src/lib/config/web.config.schema.json
+
+url:
+  app: ${LUZZLE_APP_URL}
+  app_assets: ""
+  luzzle_assets: ""
+
+auth:
+  enabled: true
+  type: credentials
+  secret: ${AUTHJS_SECRET}
+  credentials:
+    username: ${LUZZLE_AUTH_USERNAME}
+    password: ${LUZZLE_AUTH_PASSWORD}
+
+ai:
+  provider: google
+  api_key: ${GOOGLE_API_KEY}
+
+storage:
+  type: 'filesystem'
+  config:
+    root: ./archive
+
+builder:
+  url: http://luzzle-dev-builder:9000/hooks?token=${LUZZLE_BUILD_TOKEN}
+
+paths:
+  database: ./data/luzzle.sqlite
+
+content:
+  text:
+    title: example luzzle site title
+    description: an example luzzle site description
+
+  component:
+    root: ./content/components/pages/root.svelte
+
+pieces:
+  - type: projects
+    fields:
+      title: title
+      summary: status
+      date_consumed: date_started
+      tags: keywords
+  - type: books
+    components:
+      icon: ./content/components/icons/book.svelte
+      opengraph: ./content/components/opengraphs/book.svelte
+      page: ./content/components/pages/book.svelte
+    fields:
+      title: title
+      summary: description
+      date_consumed: date_read
+      tags: keywords
+      media:
+        - cover
+  - type: films
+    components:
+      icon: ./content/components/icons/poster.svelte
+      opengraph: ./content/components/opengraphs/poster.svelte
+      page: ./content/components/pages/poster.svelte
+    fields:
+      title: title
+      summary: summary
+      date_consumed: date_viewed
+      tags: keywords
+      media:
+        - poster
+
+theme:
+  globals:
+    shadow-raised: 0px 3px 1px -2px rgba(251 241 199 / 20%), 0px 2px 2px 0px
+      rgba(251 241 199 / 14%), 0px 1px 5px 0px rgba(0 0 0 / 12%)
+    font-sans-name: '"Noto Sans"'
+    font-mono-name: '"monaco, monospace"'
+    font-sans-url: '"/fonts/noto-sans.woff2"'
+    font-sans-weight: 300 600
+    font-size-xxs: 0.7rem
+    font-size-xs: 0.825rem
+    font-size-small: 1rem
+    font-size-normal: 1.25rem
+    font-size-medium: 1.5rem
+    font-size-large: 1.825rem
+    font-size-xl: 2rem
+    font-size-xxl: 3rem
+    font-size-mobile-responsive-factor: 0.8
+    font-size-root: 22
+    font-weight-light: 300
+    font-weight-normal: 400
+    font-weight-medium: 500
+    font-weight-semibold: 550
+    font-weight-bold: 600
+    radius-none: "0"
+    radius-small: 0.25rem
+    radius-medium: 0.375rem
+    radius-large: 0.5rem
+    radius-xl: 0.75rem
+    radius-x2l: 1rem
+    radius-x3l: 1.5rem
+    radius-x4l: 2.5rem
+    radius-full: 9999px
+    breakpoint-phone: 640
+    breakpoint-tablet: 768
+    breakpoint-laptop: 1024
+    breakpoint-desktop: 1280
+    space-1: 0.25rem
+    space-2: 0.5rem
+    space-3: 0.75rem
+    space-4: 1rem
+    space-5: 1.25rem
+    space-6: 1.5rem
+    space-7: 1.75rem
+    space-8: 2rem
+    space-9: 2.25rem
+    space-10: 2.5rem
+    space-0-5: 0.125rem
+    space-1-5: 0.375rem
+    space-2-5: 0.625rem
+    space-3-5: 0.875rem
+  dark:
+    color-primary: "#8ec07c"
+    color-on-primary: "#282828"
+    color-primary-container: "#5a7352"
+    color-on-primary-container: "#ebdbb2"
+    color-secondary: "#fabd2f"
+    color-on-secondary: "#282828"
+    color-secondary-container: "#9e7a1f"
+    color-on-secondary-container: "#ebdbb2"
+    color-tertiary: "#fe8019"
+    color-on-tertiary: "#282828"
+    color-tertiary-container: "#a55310"
+    color-on-tertiary-container: "#ebdbb2"
+    color-error: "#fb4934"
+    color-on-error: "#282828"
+    color-error-container: "#9d2d20"
+    color-on-error-container: "#ebdbb2"
+    color-surface: "#282828"
+    color-surface-dim: "#1d2021"
+    color-surface-bright: "#3c3836"
+    color-surface-inverse: "#ebdbb2"
+    color-on-surface: "#ebdbb2"
+    color-on-surface-variant: "#bdae93"
+    color-on-surface-inverse: "#282828"
+    color-surface-container-lowest: "#32302f"
+    color-surface-container-low: "#3c3836"
+    color-surface-container: "#504945"
+    color-surface-container-high: "#665c54"
+    color-surface-container-highest: "#7c6f64"
+    color-shadow: hsla(0, 0%, 0%, 0.6)
+    color-outline: "#a89984"
+    color-outline-variant: "#665c54"
+  light:
+    color-primary: "#2a5d2c"
+    color-on-primary: "#ffffff"
+    color-primary-container: "#c8e6c9"
+    color-on-primary-container: "#1b5e20"
+    color-secondary: "#bdae93"
+    color-on-secondary: "#3c3836"
+    color-secondary-container: "#e4dcd0"
+    color-on-secondary-container: "#3c3836"
+    color-tertiary: "#d65d0e"
+    color-on-tertiary: "#ffffff"
+    color-tertiary-container: "#ffccbc"
+    color-on-tertiary-container: "#bf360c"
+    color-error: "#cc241d"
+    color-on-error: "#ffffff"
+    color-error-container: "#ffcdd2"
+    color-on-error-container: "#b71c1c"
+    color-surface: "#f9f5d7"
+    color-surface-dim: "#f2e5bc"
+    color-surface-bright: "#fffde7"
+    color-surface-inverse: "#4a4134"
+    color-on-surface: "#4a4134"
+    color-on-surface-variant: "#6d5f4c"
+    color-on-surface-inverse: "#f9f5d7"
+    color-surface-container-lowest: "#ffffff"
+    color-surface-container-low: "#f2e5bc"
+    color-surface-container: "#ebdbb2"
+    color-surface-container-high: "#d5c4a1"
+    color-surface-container-highest: "#bdae93"
+    color-shadow: hsla(0, 0%, 0%, 0.2)
+    color-outline: "#bdae93"
+    color-outline-variant: "#928374"
+  markdown:
+    code:
+      light: 'gruvbox-light-medium'
+      dark: 'gruvbox-dark-medium'
