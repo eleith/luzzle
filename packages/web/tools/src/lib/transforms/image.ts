@@ -15,7 +15,7 @@ function getMimeType(format: string): string {
 	return `image/${type}`
 }
 
-export async function run({ webPiece, config, outDir, pieces }: TransformInput): Promise<AssetRecord[]> {
+export async function run({ webPiece, config, outDir, pieces, assetKeyToPath }: TransformInput): Promise<AssetRecord[]> {
 	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
 	if (!pieceConfig) return []
 
@@ -37,9 +37,10 @@ export async function run({ webPiece, config, outDir, pieces }: TransformInput):
 	let hasAssets = false
 
 	for (const field of mediaFields) {
-		const assets = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
+		const assetKeys = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
 
-		for (const asset of assets) {
+		for (const assetKey of assetKeys) {
+			const asset = assetKeyToPath.get(assetKey) ?? assetKey
 			const mimeType = mime.lookup(asset) || 'application/octet-stream'
 			if (!mimeType.startsWith('image/')) {
 				throw new Error(`non-image file "${asset}" in media field "${field}"`)

@@ -16,7 +16,7 @@ export function getHighlightLang(filename: string): string | null {
 	return extToLang.get(ext) ?? null
 }
 
-export async function run({ webPiece, config }: TransformInput): Promise<AssetRecord[]> {
+export async function run({ webPiece, config, assetKeyToPath }: TransformInput): Promise<AssetRecord[]> {
 	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
 	if (!pieceConfig?.fields.attachments) return []
 

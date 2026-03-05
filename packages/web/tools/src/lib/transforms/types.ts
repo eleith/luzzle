@@ -6,6 +6,7 @@ export type TransformInput = {
 	config: Config
 	outDir: string
 	pieces: Pieces
+	assetKeyToPath: Map<string, string>
 }
 
-export type AssetRecord = Omit<WebPiecesAsset, 'piece_file_path' | 'piece_key'>
+export type AssetRecord = Omit<WebPiecesAsset, 'piece_file_path' | 'piece_key' | 'asset_key'>

@@ -1,6 +1,7 @@
 import type { Pieces } from '@luzzle/core'
 import { getDatabase } from '../database.js'
 import { type Config, type WebPieces, type WebPiecesAsset } from '@luzzle/web.utils'
+import { generateAssetKey } from '@luzzle/web.utils/server'
 import { transforms } from './index.js'
 
 export async function runTransformsForPiece(
@@ -9,7 +10,8 @@ export async function runTransformsForPiece(
 	config: Config,
 	outDir: string,
 	pieces: Pieces,
-	options: { typeFilter?: string; dryRun?: boolean }
+	options: { typeFilter?: string; dryRun?: boolean },
+	assetKeyToPath: Map<string, string> = new Map()
 ): Promise<void> {
 	const { typeFilter, dryRun = false } = options
 	const webDb = db.withTables<{ web_pieces_assets: WebPiecesAsset }>()
@@ -28,7 +30,7 @@ export async function runTransformsForPiece(
 		}
 
 		try {
-			const records = await transform.run({ webPiece, config, outDir, pieces })
+			const records = await transform.run({ webPiece, config, outDir, pieces, assetKeyToPath })
 
 			if (!dryRun && records.length > 0) {
 				await webDb
@@ -44,6 +46,10 @@ export async function runTransformsForPiece(
 							piece_field_path: record.piece_field_path,
 							piece_file_path: webPiece.file_path,
 							piece_key: webPiece.key,
+							asset_key: generateAssetKey(
+								record.piece_asset_path || webPiece.file_path,
+								config.assets.salt
+							),
 						}))
 					)
 					.execute()
