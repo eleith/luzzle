@@ -78,6 +78,7 @@
 								{#key activePieceId === piece.id}
 									<PieceIcon
 										{piece}
+										metadata={piece.metadata}
 										active={activePieceId === piece.id}
 										size={{
 											width: 125

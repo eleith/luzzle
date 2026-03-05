@@ -1,10 +1,10 @@
 import { db } from '$lib/server/database'
-import type { WebPiece } from '$lib/pieces/types'
+import type { PublicWebPiece } from '$lib/pieces/types'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
 const MAX_FEED_ITEMS = 50
 
-async function getPiecesForFeed(type: WebPiece['type'] | undefined) {
+async function getPiecesForFeed(type: PublicWebPiece['type'] | undefined) {
 	let query = db
 		.selectFrom('web_pieces')
 		.selectAll()

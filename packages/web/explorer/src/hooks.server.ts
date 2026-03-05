@@ -58,7 +58,9 @@ const authHandle = SvelteKitAuth({
 const PROTECTED_PREFIXES = ['/editor', '/builder', '/api/build', '/api/editor']
 
 const guardHandle: Handle = async ({ event, resolve }) => {
-	const isProtected = PROTECTED_PREFIXES.some((prefix) => event.url.pathname.startsWith(prefix))
+	const isProtected =
+		PROTECTED_PREFIXES.some((prefix) => event.url.pathname.startsWith(prefix)) ||
+		event.url.pathname.endsWith('.edit')
 
 	if (isProtected) {
 		if (!config.auth.enabled) {

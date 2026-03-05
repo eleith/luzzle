@@ -1,10 +1,59 @@
 import { db } from '$lib/server/database'
-import type { WebPieces } from '@luzzle/web.utils'
-import type { WebPiece } from './types'
+import type { WebPieces, WebPiecesAsset } from '@luzzle/web.utils'
+import type { WebPiece, PublicWebPiece, PublicWebPieceAsset } from './types'
 
-export async function hydrateWithAssets(piece: WebPieces): Promise<WebPiece>
-export async function hydrateWithAssets(pieces: WebPieces[]): Promise<WebPiece[]>
+async function fetchAssets(paths: string[]) {
+	return db
+		.selectFrom('web_pieces_assets')
+		.selectAll()
+		.where('piece_file_path', 'in', paths)
+		.orderBy('piece_asset_path')
+		.orderBy('transformation')
+		.execute()
+}
+
+function toPublicAsset(asset: WebPiecesAsset): PublicWebPieceAsset {
+	return {
+		asset_key: asset.asset_key,
+		transformation: asset.transformation,
+		asset_path: asset.asset_path,
+		mime_type: asset.mime_type,
+		is_embedded: asset.is_embedded,
+		content: asset.content
+	}
+}
+
+function toPublicPiece(piece: WebPieces, assets: WebPiecesAsset[]): PublicWebPiece {
+	const { file_path: _file_path, json_metadata, ...rest } = piece
+	return {
+		...rest,
+		metadata: JSON.parse(json_metadata || '{}'),
+		assets: assets.map(toPublicAsset)
+	}
+}
+
+export async function hydrateWithAssets(piece: WebPieces): Promise<PublicWebPiece>
+export async function hydrateWithAssets(pieces: WebPieces[]): Promise<PublicWebPiece[]>
 export async function hydrateWithAssets(
+	pieceOrPieces: WebPieces | WebPieces[]
+): Promise<PublicWebPiece | PublicWebPiece[]> {
+	const isArray = Array.isArray(pieceOrPieces)
+	const pieces = isArray ? pieceOrPieces : [pieceOrPieces]
+
+	if (pieces.length === 0) return []
+
+	const paths = pieces.map((piece) => piece.file_path)
+	const assets = await fetchAssets(paths)
+	const groupedAssets = Object.groupBy(assets, (asset) => asset.piece_file_path)
+
+	const hydrated = pieces.map((piece) => toPublicPiece(piece, groupedAssets[piece.file_path] ?? []))
+
+	return isArray ? hydrated : hydrated[0]
+}
+
+export async function hydrateWithAssetsInternal(piece: WebPieces): Promise<WebPiece>
+export async function hydrateWithAssetsInternal(pieces: WebPieces[]): Promise<WebPiece[]>
+export async function hydrateWithAssetsInternal(
 	pieceOrPieces: WebPieces | WebPieces[]
 ): Promise<WebPiece | WebPiece[]> {
 	const isArray = Array.isArray(pieceOrPieces)
@@ -13,15 +62,7 @@ export async function hydrateWithAssets(
 	if (pieces.length === 0) return []
 
 	const paths = pieces.map((piece) => piece.file_path)
-
-	const assets = await db
-		.selectFrom('web_pieces_assets')
-		.selectAll()
-		.where('piece_file_path', 'in', paths)
-		.orderBy('piece_asset_path')
-		.orderBy('transformation')
-		.execute()
-
+	const assets = await fetchAssets(paths)
 	const groupedAssets = Object.groupBy(assets, (asset) => asset.piece_file_path)
 
 	const hydrated = pieces.map((piece) => ({

@@ -4,7 +4,7 @@
 	import { page } from '$app/state'
 	import { setContext } from 'svelte'
 
-	setContext<PieceMode>('piece-mode', 'preview')
+	setContext<PieceMode>('piece-mode', 'local')
 
 	const { children } = $props()
 	const backUrl = page.url.searchParams.get('returnTo') || `/editor/piece/${page.data.file}/source`

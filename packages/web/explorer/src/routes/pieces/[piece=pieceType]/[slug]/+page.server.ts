@@ -28,7 +28,7 @@ export const load: PageServerLoad = async (page) => {
 		.where('piece_id', '=', piece.id)
 		.execute()
 
-	const metadata = JSON.parse(piece.json_metadata || '{}') as Record<string, unknown>
+	const metadata = piece.metadata
 	const note = piece.note ? await processMarkdown(piece.note) : null
 	const ogAsset = piece.assets.find((a) => a.transformation === 'opengraph')?.asset_path
 

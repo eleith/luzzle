@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext, type Component } from 'svelte'
-	import type { WebPiece } from '$lib/pieces/types'
+	import type { WebPiece, PublicWebPiece } from '$lib/pieces/types'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
 	import { getPieceHelpers, type PieceMode, type PiecePageProps } from '$lib/pieces/helpers.js'
 
@@ -20,7 +20,7 @@
 	}
 
 	type Props = {
-		piece: WebPiece
+		piece: WebPiece | PublicWebPiece
 		metadata: Record<string, unknown>
 		tags: Array<{ slug: string; tag: string }>
 		html_note: string | null

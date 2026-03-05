@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext, type Component } from 'svelte'
 	import { OpengraphImageHeight, OpengraphImageWidth } from '@luzzle/web.utils'
-	import type { WebPiece } from '$lib/pieces/types'
+	import type { WebPiece, PublicWebPiece } from '$lib/pieces/types'
 	import OpengraphDefault from '$lib/pieces/components/opengraph.default.svelte'
 	import { getPieceHelpers, type PieceMode, type PieceOpengraphProps } from '../helpers'
 
@@ -21,12 +21,14 @@
 	}
 
 	type Props = {
-		piece: WebPiece
+		piece: WebPiece | PublicWebPiece
 	}
 
 	let { piece }: Props = $props()
 
-	const metadata = $derived(JSON.parse(piece.json_metadata || '{}')) as Record<string, unknown>
+	const metadata = $derived(
+		'metadata' in piece ? piece.metadata : JSON.parse(piece.json_metadata || '{}')
+	) as Record<string, unknown>
 	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
 	const Opengraph = $derived(customOpengraphMap.get(piece.type)?.default || OpengraphDefault)
 	const mode = getContext<PieceMode>('piece-mode')

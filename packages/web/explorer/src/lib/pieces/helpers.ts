@@ -1,6 +1,8 @@
 import { type WebPieceTags } from '@luzzle/web.utils'
 import { page } from '$app/state'
-import type { WebPiece } from './types'
+import type { WebPiece, PublicWebPiece } from './types'
+
+type AnyPiece = WebPiece | PublicWebPiece
 
 export type PieceComponentHelpers = {
 	getPieceUrl: () => string
@@ -13,7 +15,7 @@ export type PieceComponentHelpers = {
 }
 
 export type PieceIconProps = {
-	piece: WebPiece
+	piece: AnyPiece
 	metadata: Record<string, unknown>
 	tags: string[]
 	size: {
@@ -35,7 +37,7 @@ export type PieceIconPalette = {
 export type PieceOpengraphProps = {
 	metadata: Record<string, unknown>
 	tags: string[]
-	piece: WebPiece
+	piece: AnyPiece
 	size: {
 		width: number
 		height: number
@@ -44,17 +46,17 @@ export type PieceOpengraphProps = {
 }
 
 export type PiecePageProps = {
-	piece: WebPiece
+	piece: AnyPiece
 	metadata: Record<string, unknown>
 	tags: Partial<WebPieceTags>[]
 	html_note: string | null
 	helpers: PieceComponentHelpers
 }
 
-export type PieceMode = 'public' | 'preview' | 'local'
+export type PieceMode = 'public' | 'local'
 
 export function getPieceHelpers(
-	piece: WebPiece,
+	piece: AnyPiece,
 	mode: PieceMode = 'public'
 ): PieceComponentHelpers {
 	const config = page.data.config
@@ -67,24 +69,16 @@ export function getPieceHelpers(
 			: undefined
 	}
 
-	if (mode === 'preview') {
-		return {
-			getPieceUrl: () => `/editor/piece/${piece.file_path}`,
-			getPieceImageUrl: (asset: string) => `${url}/editor/asset/${asset}`,
-			getPiecePalette
-		}
-	}
-
 	return {
 		getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
 		getPieceImageUrl: (
-			assetName: string,
+			assetKey: string,
 			minWidth: number,
 			format: 'jpg' | 'avif' | 'webp' | 'png'
 		) => {
 			const size = minWidth <= 125 ? 's' : minWidth <= 250 ? 'm' : minWidth <= 500 ? 'l' : 'xl'
 			const transformation = `image.${size}.${format}`
-			const assets = piece.assets.filter((asset) => asset.piece_asset_path === assetName)
+			const assets = piece.assets.filter((asset) => asset.asset_key === assetKey)
 			const transformed = assets.find((a) => a.transformation === transformation)?.asset_path
 			const original = assets.find((a) => a.transformation === 'image.original')?.asset_path
 
@@ -96,7 +90,7 @@ export function getPieceHelpers(
 				return `${url}/pieces/assets/${original}`
 			}
 
-			throw new Error(`Asset ${assetName} not found for piece ${piece.slug}`)
+			throw new Error(`Asset ${assetKey} not found for piece ${piece.slug}`)
 		},
 		getPiecePalette
 	}

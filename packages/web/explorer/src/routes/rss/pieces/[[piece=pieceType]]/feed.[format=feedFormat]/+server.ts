@@ -1,4 +1,4 @@
-import type { WebPiece } from '$lib/pieces/types'
+import type { PublicWebPiece } from '$lib/pieces/types'
 import type { RequestHandler } from './$types'
 import { config } from '$lib/server/config'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
@@ -11,7 +11,7 @@ type FeedItem<T extends FeedRss | FeedJson> = Exclude<T['items'], undefined>[num
 type FeedRssItem = FeedItem<FeedRss>
 type FeedJsonItem = FeedItem<FeedJson>
 
-function getRssFeedFromPieces(pieces: WebPiece[], folder?: string) {
+function getRssFeedFromPieces(pieces: PublicWebPiece[], folder?: string) {
 	const feed: FeedRss = {
 		title: folder ? config.content.text.title : `${config.content.text.title} | ${folder}`,
 		description: config.content.text.description,
@@ -45,7 +45,7 @@ function getRssFeedFromPieces(pieces: WebPiece[], folder?: string) {
 	return feed
 }
 
-function getJsonFeedFromPieces(pieces: WebPiece[], folder?: string) {
+function getJsonFeedFromPieces(pieces: PublicWebPiece[], folder?: string) {
 	const feed: FeedJson = {
 		title: folder ? config.content.text.title : `${config.content.text.title} | ${folder}`,
 		description: config.content.text.description,
@@ -65,7 +65,7 @@ function getJsonFeedFromPieces(pieces: WebPiece[], folder?: string) {
 	return feed
 }
 
-function getMarkdownFeedFromPieces(pieces: WebPiece[], folder?: string) {
+function getMarkdownFeedFromPieces(pieces: PublicWebPiece[], folder?: string) {
 	const frontmatter = YAML.stringify({
 		title: folder ? config.content.text.title : `${config.content.text.title} | ${folder}`,
 		description: config.content.text.description,

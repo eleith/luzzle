@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { db } from '$lib/server/database'
-import { hydrateWithAssets } from '$lib/pieces/assets.server'
+import { hydrateWithAssetsInternal } from '$lib/pieces/assets.server'
 import { config } from '$lib/server/config'
 import { codeToHtml, bundledLanguagesInfo } from 'shiki'
 import fs from 'node:fs/promises'
@@ -30,11 +30,6 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		return error(400, 'attachment query param is required')
 	}
 
-	const lang = getLang(attachment)
-	if (!lang) {
-		return error(404, 'attachment is not a recognised code file')
-	}
-
 	const webPiece = await db
 		.selectFrom('web_pieces')
 		.selectAll()
@@ -46,13 +41,18 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		return error(404, 'piece does not exist')
 	}
 
-	const piece = await hydrateWithAssets(webPiece)
+	const piece = await hydrateWithAssetsInternal(webPiece)
 	const asset = piece.assets.find(
-		(a) => a.piece_asset_path === attachment && a.transformation === 'attachment'
+		(a) => a.asset_key === attachment && a.transformation === 'attachment'
 	)
 
-	if (!asset?.asset_path) {
+	if (!asset?.asset_path || !asset.piece_asset_path) {
 		return error(404, 'attachment not found in DB')
+	}
+
+	const lang = getLang(asset.piece_asset_path)
+	if (!lang) {
+		return error(404, 'attachment is not a recognised code file')
 	}
 
 	const assetsDir = path.resolve('assets/pieces')
