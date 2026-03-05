@@ -17,7 +17,7 @@ export async function run({ webPiece, config }: TransformInput): Promise<AssetRe
 	return [
 		{
 			transformation: 'palette',
-			asset_path: '',
+			asset_path: null,
 			mime_type: 'application/json',
 			is_embedded: 1,
 			content,

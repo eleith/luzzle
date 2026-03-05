@@ -24,15 +24,16 @@ export async function run({ webPiece, config, assetKeyToPath }: TransformInput):
 	const records: AssetRecord[] = []
 
 	for (const field of pieceConfig.fields.attachments) {
-		const assets = getFrontmatterValues<string>(frontmatter, field)
+		const assetKeys = getFrontmatterValues<string>(frontmatter, field)
 			.flat()
 			.filter((s) => typeof s === 'string')
 
-		for (const asset of assets) {
+		for (const assetKey of assetKeys) {
+			const asset = assetKeyToPath.get(assetKey) ?? assetKey
 			const lang = getHighlightLang(asset)
 			if (!lang) continue
 
-			const url = `${config.url.app}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/highlight?attachment=${encodeURIComponent(asset)}`
+			const url = `${config.url.app}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/highlight?attachment=${encodeURIComponent(assetKey)}`
 			const response = await fetch(url)
 
 			if (response.status === 404) continue
@@ -46,7 +47,7 @@ export async function run({ webPiece, config, assetKeyToPath }: TransformInput):
 			records.push({
 				transformation: 'highlight',
 				piece_asset_path: asset,
-				asset_path: '',
+				asset_path: null,
 				mime_type: 'text/html',
 				is_embedded: 1,
 				content,

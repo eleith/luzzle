@@ -18,6 +18,7 @@ import { generateAssetKey } from '@luzzle/web.utils/server'
 import runWebMigrations from '../../database/migrations.js'
 import { cleanupAllTransforms } from '../../lib/transforms/index.js'
 import { runTransformsForPiece } from '../../lib/transforms/runner.js'
+import { sanitizeMetadata } from '../backfill/index.js'
 
 type SyncOptions = {
 	archiveDir?: string
@@ -125,7 +126,17 @@ async function syncWebPiece(
 		? getFrontmatterValues<string>(frontmatter, pieceConfig.fields.tags).flat().filter(Boolean)
 		: []
 
-	const webPiece = buildWebPiece(item, pieceConfig, slug, config.assets.salt, frontmatter, keywords)
+	const assetPaths: string[] = JSON.parse(item.assets_json_array || '[]')
+	const pathToKey = new Map<string, string>()
+	const keyToPath = new Map<string, string>()
+	for (const p of assetPaths) {
+		const key = generateAssetKey(p, config.assets.salt)
+		pathToKey.set(p, key)
+		keyToPath.set(key, p)
+	}
+
+	const sanitizedItem = { ...item, frontmatter_json: sanitizeMetadata(item.frontmatter_json, pathToKey) }
+	const webPiece = buildWebPiece(sanitizedItem, pieceConfig, slug, config.assets.salt, frontmatter, keywords)
 
 	if (!dryRun) {
 		await webDb
@@ -157,7 +168,7 @@ async function syncWebPiece(
 			await webDb.insertInto('web_pieces_tags').values(tags).execute()
 		}
 
-		await runTransformsForPiece(db, webPiece, config, outDir, pieces, {})
+		await runTransformsForPiece(db, webPiece, config, outDir, pieces, {}, keyToPath)
 	}
 }
 
