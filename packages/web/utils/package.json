@@ -5,9 +5,9 @@
 	"scripts": {
 		"lint": "eslint src",
 		"build:assets": "cp -r ./src/lib/config ./dist/src/lib",
+		"build:external-schema": "node scripts/generate-external-schema.js > src/lib/config/web.config.schema.json",
 		"build:types": "json2ts --input src/lib/config/schema.json --output src/lib/config/schema.ts",
-		"build:config": "npx yaml --json --indent 2 --single < ./src/lib/config/defaults.yaml > ./src/lib/config/defaults.json",
-		"prebuild": "npm run build:types && npm run build:config",
+		"prebuild": "npm run build:external-schema && npm run build:types",
 		"postbuild": "npm run build:assets",
 		"build": "tsc",
 		"test": "vitest run --silent --coverage"

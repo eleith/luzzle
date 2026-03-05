@@ -51,8 +51,15 @@ describe('lib/config/config', () => {
 		expect(config).toBeDefined()
 	})
 
-	test('should throw an error if config validation fails with user config', () => {
-		expect(() => loadConfig(`${import.meta.dirname}/user-error.config.yaml`)).toThrow(
+	test('should handle an empty config file', () => {
+		const tmpConfigPath = join(tmpdir(), `empty-config-${Date.now()}.yaml`)
+		writeFileSync(tmpConfigPath, '')
+		const config = loadConfig(tmpConfigPath)
+		expect(config.url.app).toBe('http://localhost:8080')
+		unlinkSync(tmpConfigPath)
+	})
+
+	test('should throw an error if config validation fails with user config', () => {		expect(() => loadConfig(`${import.meta.dirname}/user-error.config.yaml`)).toThrow(
 			'Configuration validation failed'
 		)
 	})

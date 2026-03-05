@@ -1,17 +1,22 @@
 {
+	"title": "Schema",
 	"type": "object",
 	"properties": {
 		"url": {
 			"type": "object",
+			"default": {},
 			"properties": {
 				"app": {
-					"type": "string"
+					"type": "string",
+					"default": "${LUZZLE_APP_URL:-http://localhost:8080}"
 				},
 				"app_assets": {
-					"type": "string"
+					"type": "string",
+					"default": ""
 				},
 				"luzzle_assets": {
-					"type": "string"
+					"type": "string",
+					"default": ""
 				}
 			},
 			"required": [
@@ -23,21 +28,26 @@
 		},
 		"builder": {
 			"type": "object",
+			"default": {},
 			"properties": {
 				"url": {
-					"type": "string"
+					"type": "string",
+					"default": "http://luzzle-builder/hooks?token=${LUZZLE_BUILDER_TOKEN}"
 				},
 				"method": {
-					"type": "string"
+					"type": "string",
+					"default": "POST"
 				},
 				"headers": {
 					"type": "object",
+					"default": {},
 					"additionalProperties": {
 						"type": "string"
 					}
 				},
 				"body": {
-					"type": "string"
+					"type": "string",
+					"default": ""
 				}
 			},
 			"required": [
@@ -47,30 +57,38 @@
 		},
 		"auth": {
 			"type": "object",
+			"default": {},
 			"properties": {
 				"enabled": {
-					"type": "boolean"
+					"type": "boolean",
+					"default": false
 				},
 				"secret": {
-					"type": "string"
+					"type": "string",
+					"default": "${LUZZLE_AUTH_SECRET:-}"
 				},
 				"type": {
 					"enum": [
 						"oidc",
 						"credentials"
-					]
+					],
+					"default": "oidc"
 				},
 				"oidc": {
 					"type": "object",
+					"default": {},
 					"properties": {
 						"issuer": {
-							"type": "string"
+							"type": "string",
+							"default": ""
 						},
 						"clientId": {
-							"type": "string"
+							"type": "string",
+							"default": ""
 						},
 						"clientSecret": {
-							"type": "string"
+							"type": "string",
+							"default": ""
 						}
 					},
 					"required": [
@@ -82,12 +100,15 @@
 				},
 				"credentials": {
 					"type": "object",
+					"default": {},
 					"properties": {
 						"username": {
-							"type": "string"
+							"type": "string",
+							"default": "${LUZZLE_AUTH_USERNAME:-}"
 						},
 						"password": {
-							"type": "string"
+							"type": "string",
+							"default": "${LUZZLE_AUTH_PASSWORD:-}"
 						}
 					},
 					"required": [
@@ -106,28 +127,35 @@
 		},
 		"storage": {
 			"type": "object",
+			"default": {},
 			"properties": {
 				"type": {
 					"enum": [
 						"webdav",
 						"filesystem"
-					]
+					],
+					"default": "filesystem"
 				},
 				"config": {
 					"type": "object",
+					"default": {},
 					"properties": {
 						"url": {
-							"type": "string"
+							"type": "string",
+							"default": ""
 						},
 						"root": {
 							"type": "string",
-							"minLength": 1
+							"minLength": 1,
+							"default": "./archive"
 						},
 						"username": {
-							"type": "string"
+							"type": "string",
+							"default": ""
 						},
 						"password": {
-							"type": "string"
+							"type": "string",
+							"default": ""
 						}
 					},
 					"required": [
@@ -148,11 +176,13 @@
 				"provider": {
 					"enum": [
 						"google"
-					]
+					],
+					"default": "google"
 				},
 				"api_key": {
 					"type": "string",
-					"minLength": 1
+					"minLength": 1,
+					"default": ""
 				}
 			},
 			"required": [
@@ -163,9 +193,11 @@
 		},
 		"paths": {
 			"type": "object",
+			"default": {},
 			"properties": {
 				"database": {
-					"type": "string"
+					"type": "string",
+					"default": "./data/luzzle.sqlite"
 				},
 				"config": {
 					"type": "string"
@@ -178,9 +210,11 @@
 		},
 		"assets": {
 			"type": "object",
+			"default": {},
 			"properties": {
 				"salt": {
-					"type": "string"
+					"type": "string",
+					"default": "${LUZZLE_ASSET_SALT:-}"
 				}
 			},
 			"required": [
@@ -190,6 +224,7 @@
 		},
 		"content": {
 			"type": "object",
+			"default": {},
 			"properties": {
 				"component": {
 					"type": "object",
@@ -205,12 +240,15 @@
 				},
 				"text": {
 					"type": "object",
+					"default": {},
 					"properties": {
 						"title": {
-							"type": "string"
+							"type": "string",
+							"default": "Luzzle Explorer"
 						},
 						"description": {
-							"type": "string"
+							"type": "string",
+							"default": "A Luzzle Explorer instance"
 						}
 					},
 					"required": [
@@ -288,379 +326,500 @@
 					"type",
 					"fields"
 				]
-			}
+			},
+			"default": []
 		},
 		"theme": {
 			"type": "object",
+			"default": {},
 			"properties": {
 				"light": {
 					"type": "object",
+					"default": {},
 					"properties": {
 						"color-primary": {
-							"type": "string"
+							"type": "string",
+							"default": "#0d6efd"
 						},
 						"color-on-primary": {
-							"type": "string"
+							"type": "string",
+							"default": "#ffffff"
 						},
 						"color-primary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#cfe2ff"
 						},
 						"color-on-primary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#084298"
 						},
 						"color-secondary": {
-							"type": "string"
+							"type": "string",
+							"default": "#6c757d"
 						},
 						"color-on-secondary": {
-							"type": "string"
+							"type": "string",
+							"default": "#ffffff"
 						},
 						"color-secondary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#d3d3d4"
 						},
 						"color-on-secondary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#41464b"
 						},
 						"color-tertiary": {
-							"type": "string"
+							"type": "string",
+							"default": "#6c757d"
 						},
 						"color-on-tertiary": {
-							"type": "string"
+							"type": "string",
+							"default": "#ffffff"
 						},
 						"color-tertiary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#d3d3d4"
 						},
 						"color-on-tertiary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#41464b"
 						},
 						"color-error": {
-							"type": "string"
+							"type": "string",
+							"default": "#dc3545"
 						},
 						"color-on-error": {
-							"type": "string"
+							"type": "string",
+							"default": "#ffffff"
 						},
 						"color-error-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#f8d7da"
 						},
 						"color-on-error-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#842029"
 						},
 						"color-surface": {
-							"type": "string"
+							"type": "string",
+							"default": "#f8f9fa"
 						},
 						"color-surface-dim": {
-							"type": "string"
+							"type": "string",
+							"default": "#e9ecef"
 						},
 						"color-surface-bright": {
-							"type": "string"
+							"type": "string",
+							"default": "#ffffff"
 						},
 						"color-surface-inverse": {
-							"type": "string"
+							"type": "string",
+							"default": "#212529"
 						},
 						"color-on-surface": {
-							"type": "string"
+							"type": "string",
+							"default": "#212529"
 						},
 						"color-on-surface-variant": {
-							"type": "string"
+							"type": "string",
+							"default": "#495057"
 						},
 						"color-on-surface-inverse": {
-							"type": "string"
+							"type": "string",
+							"default": "#f8f9fa"
 						},
 						"color-surface-container-lowest": {
-							"type": "string"
+							"type": "string",
+							"default": "#ffffff"
 						},
 						"color-surface-container-low": {
-							"type": "string"
+							"type": "string",
+							"default": "#e9ecef"
 						},
 						"color-surface-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#dee2e6"
 						},
 						"color-surface-container-high": {
-							"type": "string"
+							"type": "string",
+							"default": "#ced4da"
 						},
 						"color-surface-container-highest": {
-							"type": "string"
+							"type": "string",
+							"default": "#adb5bd"
 						},
 						"color-shadow": {
-							"type": "string"
+							"type": "string",
+							"default": "hsla(0, 0%, 0%, 0.15)"
 						},
 						"color-outline": {
-							"type": "string"
+							"type": "string",
+							"default": "#6c757d"
 						},
 						"color-outline-variant": {
-							"type": "string"
+							"type": "string",
+							"default": "#ced4da"
 						}
 					},
 					"additionalProperties": false
 				},
 				"dark": {
 					"type": "object",
+					"default": {},
 					"properties": {
 						"color-primary": {
-							"type": "string"
+							"type": "string",
+							"default": "#3b82f6"
 						},
 						"color-on-primary": {
-							"type": "string"
+							"type": "string",
+							"default": "#ffffff"
 						},
 						"color-primary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#0d6efd"
 						},
 						"color-on-primary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#cfe2ff"
 						},
 						"color-secondary": {
-							"type": "string"
+							"type": "string",
+							"default": "#adb5bd"
 						},
 						"color-on-secondary": {
-							"type": "string"
+							"type": "string",
+							"default": "#212529"
 						},
 						"color-secondary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#495057"
 						},
 						"color-on-secondary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#d3d3d4"
 						},
 						"color-tertiary": {
-							"type": "string"
+							"type": "string",
+							"default": "#adb5bd"
 						},
 						"color-on-tertiary": {
-							"type": "string"
+							"type": "string",
+							"default": "#212529"
 						},
 						"color-tertiary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#495057"
 						},
 						"color-on-tertiary-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#d3d3d4"
 						},
 						"color-error": {
-							"type": "string"
+							"type": "string",
+							"default": "#f87171"
 						},
 						"color-on-error": {
-							"type": "string"
+							"type": "string",
+							"default": "#4f0b0b"
 						},
 						"color-error-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#dc3545"
 						},
 						"color-on-error-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#f8d7da"
 						},
 						"color-surface": {
-							"type": "string"
+							"type": "string",
+							"default": "#121212"
 						},
 						"color-surface-dim": {
-							"type": "string"
+							"type": "string",
+							"default": "#1f1f1f"
 						},
 						"color-surface-bright": {
-							"type": "string"
+							"type": "string",
+							"default": "#333333"
 						},
 						"color-surface-inverse": {
-							"type": "string"
+							"type": "string",
+							"default": "#e9ecef"
 						},
 						"color-on-surface": {
-							"type": "string"
+							"type": "string",
+							"default": "#e9ecef"
 						},
 						"color-on-surface-variant": {
-							"type": "string"
+							"type": "string",
+							"default": "#adb5bd"
 						},
 						"color-on-surface-inverse": {
-							"type": "string"
+							"type": "string",
+							"default": "#121212"
 						},
 						"color-surface-container-lowest": {
-							"type": "string"
+							"type": "string",
+							"default": "#1f1f1f"
 						},
 						"color-surface-container-low": {
-							"type": "string"
+							"type": "string",
+							"default": "#333333"
 						},
 						"color-surface-container": {
-							"type": "string"
+							"type": "string",
+							"default": "#4f4f4f"
 						},
 						"color-surface-container-high": {
-							"type": "string"
+							"type": "string",
+							"default": "#666666"
 						},
 						"color-surface-container-highest": {
-							"type": "string"
+							"type": "string",
+							"default": "#7f7f7f"
 						},
 						"color-shadow": {
-							"type": "string"
+							"type": "string",
+							"default": "hsla(0, 0%, 0%, 0.5)"
 						},
 						"color-outline": {
-							"type": "string"
+							"type": "string",
+							"default": "#6c757d"
 						},
 						"color-outline-variant": {
-							"type": "string"
+							"type": "string",
+							"default": "#495057"
 						}
 					},
 					"additionalProperties": false
 				},
 				"globals": {
 					"type": "object",
+					"default": {},
 					"properties": {
 						"shadow-raised": {
-							"type": "string"
+							"type": "string",
+							"default": "0px 3px 1px -2px rgba(251 241 199 / 20%), 0px 2px 2px 0px rgba(251 241 199 / 14%), 0px 1px 5px 0px rgba(0 0 0 / 12%)"
 						},
 						"font-mono-name": {
-							"type": "string"
+							"type": "string",
+							"default": "\"monaco, monospace\""
 						},
 						"font-sans-name": {
-							"type": "string"
+							"type": "string",
+							"default": "\"Noto Sans\""
 						},
 						"font-sans-url": {
-							"type": "string"
+							"type": "string",
+							"default": "\"/fonts/noto-sans.woff2\""
 						},
 						"font-sans-weight": {
-							"type": "string"
+							"type": "string",
+							"default": "300 600"
 						},
 						"font-size-xxs": {
-							"type": "string"
+							"type": "string",
+							"default": "0.7rem"
 						},
 						"font-size-xs": {
-							"type": "string"
+							"type": "string",
+							"default": "0.825rem"
 						},
 						"font-size-small": {
-							"type": "string"
+							"type": "string",
+							"default": "1rem"
 						},
 						"font-size-normal": {
-							"type": "string"
+							"type": "string",
+							"default": "1.25rem"
 						},
 						"font-size-medium": {
-							"type": "string"
+							"type": "string",
+							"default": "1.5rem"
 						},
 						"font-size-large": {
-							"type": "string"
+							"type": "string",
+							"default": "1.75rem"
 						},
 						"font-size-xl": {
-							"type": "string"
+							"type": "string",
+							"default": "2rem"
 						},
 						"font-size-xxl": {
-							"type": "string"
+							"type": "string",
+							"default": "2.25rem"
 						},
 						"font-size-mobile-responsive-factor": {
-							"type": "number"
+							"type": "number",
+							"default": 0.8
 						},
 						"font-size-root": {
-							"type": "number"
+							"type": "number",
+							"default": 22
 						},
 						"font-weight-light": {
-							"type": "number"
+							"type": "number",
+							"default": 300
 						},
 						"font-weight-normal": {
-							"type": "number"
+							"type": "number",
+							"default": 400
 						},
 						"font-weight-medium": {
-							"type": "number"
+							"type": "number",
+							"default": 500
 						},
 						"font-weight-semibold": {
-							"type": "number"
+							"type": "number",
+							"default": 550
 						},
 						"font-weight-bold": {
-							"type": "number"
+							"type": "number",
+							"default": 600
 						},
 						"radius-none": {
-							"type": "string"
+							"type": "string",
+							"default": "0"
 						},
 						"radius-small": {
-							"type": "string"
+							"type": "string",
+							"default": "0.25rem"
 						},
 						"radius-medium": {
-							"type": "string"
+							"type": "string",
+							"default": "0.375rem"
 						},
 						"radius-large": {
-							"type": "string"
+							"type": "string",
+							"default": "0.5rem"
 						},
 						"radius-xl": {
-							"type": "string"
+							"type": "string",
+							"default": "0.75rem"
 						},
 						"radius-x2l": {
-							"type": "string"
+							"type": "string",
+							"default": "1rem"
 						},
 						"radius-x3l": {
-							"type": "string"
+							"type": "string",
+							"default": "1.5rem"
 						},
 						"radius-x4l": {
-							"type": "string"
+							"type": "string",
+							"default": "2.5rem"
 						},
 						"radius-full": {
-							"type": "string"
+							"type": "string",
+							"default": "9999px"
 						},
 						"breakpoint-phone": {
-							"type": "number"
+							"type": "number",
+							"default": 640
 						},
 						"breakpoint-tablet": {
-							"type": "number"
+							"type": "number",
+							"default": 768
 						},
 						"breakpoint-laptop": {
-							"type": "number"
+							"type": "number",
+							"default": 1024
 						},
 						"breakpoint-desktop": {
-							"type": "number"
+							"type": "number",
+							"default": 1280
 						},
 						"space-1": {
-							"type": "string"
+							"type": "string",
+							"default": "0.25rem"
 						},
 						"space-2": {
-							"type": "string"
+							"type": "string",
+							"default": "0.5rem"
 						},
 						"space-3": {
-							"type": "string"
+							"type": "string",
+							"default": "0.75rem"
 						},
 						"space-4": {
-							"type": "string"
+							"type": "string",
+							"default": "1rem"
 						},
 						"space-5": {
-							"type": "string"
+							"type": "string",
+							"default": "1.25rem"
 						},
 						"space-6": {
-							"type": "string"
+							"type": "string",
+							"default": "1.5rem"
 						},
 						"space-7": {
-							"type": "string"
+							"type": "string",
+							"default": "1.75rem"
 						},
 						"space-8": {
-							"type": "string"
+							"type": "string",
+							"default": "2rem"
 						},
 						"space-9": {
-							"type": "string"
+							"type": "string",
+							"default": "2.25rem"
 						},
 						"space-10": {
-							"type": "string"
+							"type": "string",
+							"default": "2.5rem"
 						},
 						"space-0-5": {
-							"type": "string"
+							"type": "string",
+							"default": "0.125rem"
 						},
 						"space-1-5": {
-							"type": "string"
+							"type": "string",
+							"default": "0.375rem"
 						},
 						"space-2-5": {
-							"type": "string"
+							"type": "string",
+							"default": "0.625rem"
 						},
 						"space-3-5": {
-							"type": "string"
+							"type": "string",
+							"default": "0.875rem"
 						}
 					},
 					"additionalProperties": false
 				},
 				"markdown": {
 					"type": "object",
+					"default": {},
 					"properties": {
 						"sidenote": {
 							"type": "object",
+							"default": {},
 							"properties": {
 								"sidenote-callout-before-content": {
-									"type": "string"
+									"type": "string",
+									"default": "\"[ \""
 								},
 								"sidenote-callout-after-content": {
-									"type": "string"
+									"type": "string",
+									"default": "\" ]\""
 								},
 								"sidenote-citation-before-content": {
-									"type": "string"
+									"type": "string",
+									"default": "\"\""
 								},
 								"sidenote-citation-after-content": {
-									"type": "string"
+									"type": "string",
+									"default": "\":\""
 								}
 							},
 							"additionalProperties": false
 						},
 						"code": {
 							"type": "object",
+							"default": {},
 							"properties": {
 								"light": {
 									"enum": [
@@ -724,7 +883,8 @@
 										"vitesse-black",
 										"vitesse-dark",
 										"vitesse-light"
-									]
+									],
+									"default": "github-light"
 								},
 								"dark": {
 									"enum": [
@@ -788,7 +948,8 @@
 										"vitesse-black",
 										"vitesse-dark",
 										"vitesse-light"
-									]
+									],
+									"default": "github-dark"
 								}
 							},
 							"required": [

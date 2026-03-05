@@ -1,9 +1,7 @@
 import { readFileSync, existsSync } from 'fs'
 import { parse as yamlParse } from 'yaml'
 import Ajv from 'ajv'
-import { deepMerge } from '../deep-merge.js'
 import { type Schema as Config } from './schema.js'
-import defaults from './defaults.json' with { type: 'json' }
 import schemaJson from './schema.json' with { type: 'json' }
 
 export type ConfigPublic = {
@@ -49,37 +47,36 @@ function replaceEnvVars(obj: unknown): unknown {
 
 function loadConfig(userConfigPath?: string): Config {
 	const schema = schemaJson
-	const config = defaults as Config
-	const ajv = new Ajv({ strict: true })
+	const ajv = new Ajv({ strict: true, useDefaults: true })
 	const validate = ajv.compile(schema)
 
-	config.paths.config = userConfigPath
+	let config: Partial<Config> = {}
 
-	if (userConfigPath) {
-		if (existsSync(userConfigPath)) {
-			const userConfig = yamlParse(readFileSync(userConfigPath, 'utf8')) as Partial<Config>
-			let mergedConfig = deepMerge(config, userConfig) as Config
-			mergedConfig = replaceEnvVars(mergedConfig) as Config
-
-			if (!validate(mergedConfig)) {
-				throw new Error(`Configuration validation failed: ${ajv.errorsText(validate.errors)}`)
-			}
-
-			return mergedConfig
-		} else {
-			/* v8 ignore start */
-			console.warn(`User config file not found at: ${userConfigPath}`)
-			/* v8 ignore stop */
-		}
+	if (userConfigPath && existsSync(userConfigPath)) {
+		config = (yamlParse(readFileSync(userConfigPath, 'utf8')) as Partial<Config>) || {}
 	}
 
-	/* v8 ignore start */
+	// 1. First pass: fill defaults
 	if (!validate(config)) {
 		throw new Error(`Configuration validation failed: ${ajv.errorsText(validate.errors)}`)
 	}
-	/* v8 ignore stop */
 
-	return config
+	// 2. Second pass: replace env vars in everything (including defaults)
+	let finalConfig = replaceEnvVars(config) as Config
+
+	// 3. Third pass: validate again to catch any minLength/format errors AFTER substitution
+	// We use a fresh AJV without useDefaults for the final check
+	const ajvFinal = new Ajv({ strict: true })
+	const validateFinal = ajvFinal.compile(schema)
+	if (!validateFinal(finalConfig)) {
+		throw new Error(`Configuration validation failed: ${ajvFinal.errorsText(validateFinal.errors)}`)
+	}
+
+	if (userConfigPath) {
+		finalConfig.paths.config = userConfigPath
+	}
+
+	return finalConfig
 }
 
 function getConfigValue(obj: Config, path: string): unknown {
