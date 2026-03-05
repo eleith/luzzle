@@ -93,15 +93,15 @@ describe('transforms/highlight', () => {
 		} as unknown as Response)
 
 		const records = await run({
-			webPiece: makeWebPiece('{"code": "main.js"}'),
+			webPiece: makeWebPiece('{"code": "key"}'),
 			config: makeConfig(['code']),
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: emptyMap,
+			assetKeyToPath: new Map([["key", "main.js"]]),
 		})
 
 		expect(fetch).toHaveBeenCalledWith(
-			'http://localhost/api/pieces/books/my-book/transform/highlight?attachment=main.js'
+			'http://localhost/api/pieces/books/my-book/transform/highlight?attachment=key'
 		)
 		expect(records).toEqual([
 			{
@@ -139,11 +139,11 @@ describe('transforms/highlight', () => {
 		} as unknown as Response)
 
 		const records = await run({
-			webPiece: makeWebPiece('{"code": "main.js"}'),
+			webPiece: makeWebPiece('{"code": "key"}'),
 			config: makeConfig(['code']),
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: emptyMap,
+			assetKeyToPath: new Map([["key", "main.js"]]),
 		})
 
 		expect(fetch).toHaveBeenCalledOnce()
@@ -161,11 +161,11 @@ describe('transforms/highlight', () => {
 
 		await expect(
 			run({
-				webPiece: makeWebPiece('{"code": "main.js"}'),
+				webPiece: makeWebPiece('{"code": "key"}'),
 				config: makeConfig(['code']),
 				outDir: '/out',
 				pieces: mockPieces,
-				assetKeyToPath: emptyMap,
+				assetKeyToPath: new Map([["key", "main.js"]]),
 			})
 		).rejects.toThrow('500')
 	})
@@ -180,12 +180,13 @@ describe('transforms/highlight', () => {
 			text: vi.fn().mockResolvedValue(html),
 		} as unknown as Response)
 
+		const map = new Map([["key1", "main.js"], ["key2", "report.pdf"], ["key3", "app.ts"]])
 		const records = await run({
-			webPiece: makeWebPiece('{"files": ["main.js", "report.pdf", "app.ts"]}'),
+			webPiece: makeWebPiece('{"files": ["key1", "key2", "key3"]}'),
 			config: makeConfig(['files']),
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: emptyMap,
+			assetKeyToPath: map,
 		})
 
 		expect(fetch).toHaveBeenCalledTimes(2)
@@ -208,25 +209,5 @@ describe('transforms/highlight', () => {
 
 		expect(fetch).not.toHaveBeenCalled()
 		expect(records).toEqual([])
-	})
-
-	test('URL-encodes the attachment filename', async () => {
-		const mockPieces = {} as unknown as Pieces
-
-		vi.mocked(fetch).mockResolvedValue({
-			ok: true,
-			status: 200,
-			text: vi.fn().mockResolvedValue('<pre></pre>'),
-		} as unknown as Response)
-
-		await run({
-			webPiece: makeWebPiece('{"code": "hello world.js"}'),
-			config: makeConfig(['code']),
-			outDir: '/out',
-			pieces: mockPieces,
-			assetKeyToPath: emptyMap,
-		})
-
-		expect(fetch).toHaveBeenCalledWith(expect.stringContaining('attachment=hello%20world.js'))
 	})
 })

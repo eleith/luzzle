@@ -12,6 +12,7 @@ export function mockKysely() {
 		executeTakeFirst: vi.fn().mockResolvedValue(undefined),
 		values: vi.fn().mockReturnThis(),
 		onConflict: vi.fn().mockImplementation((cb?: (oc: unknown) => unknown) => {
+			/* v8 ignore next 5*/
 			if (cb) {
 				const oc = { columns: vi.fn().mockReturnThis(), doUpdateSet: vi.fn().mockReturnThis() }
 				cb(oc)

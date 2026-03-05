@@ -1,18 +1,27 @@
 import { describe, test, vi, afterEach, expect } from 'vitest'
 import sync from './index.js'
-import { Pieces, selectItemAssets, LuzzleDatabase, LuzzleStorage, Piece, PieceFrontmatter, getFrontmatterValues } from '@luzzle/core'
+import {
+	Pieces,
+	selectItemAssets,
+	LuzzleDatabase,
+	LuzzleStorage,
+	Piece,
+	PieceFrontmatter,
+	getFrontmatterValues,
+} from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
 import { getConfig } from '../../lib/config.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
 import runWebMigrations from '../../database/migrations.js'
 import { Readable } from 'stream'
 import { Config } from '@luzzle/web.utils'
+
 vi.mock('../../lib/config.js')
 vi.mock('../../lib/database.js')
 vi.mock('@luzzle/core')
 vi.mock('../../lib/storage.js')
 vi.mock('../../database/migrations.js')
-vi.mock('@luzzle/web.utils/server', () => ({ generateAssetKey: vi.fn().mockReturnValue('key') }))
+vi.mock('@luzzle/web.utils/server')
 vi.mock('../../lib/transforms/index.js', () => ({
 	transforms: new Map([
 		['attachment', { run: vi.fn().mockResolvedValue([]) }],
@@ -23,6 +32,7 @@ vi.mock('../../lib/transforms/index.js', () => ({
 }))
 
 import { transforms, cleanupAllTransforms } from '../../lib/transforms/index.js'
+import { generateAssetKey } from '@luzzle/web.utils/server'
 
 const mocks = {
 	getConfig: vi.mocked(getConfig),
@@ -33,6 +43,7 @@ const mocks = {
 	runWebMigrations: vi.mocked(runWebMigrations),
 	getFrontmatterValues: vi.mocked(getFrontmatterValues),
 	cleanupAllTransforms: vi.mocked(cleanupAllTransforms),
+	generateAssetKey: vi.mocked(generateAssetKey)
 }
 
 function makeMockDb() {
@@ -43,7 +54,10 @@ function makeMockDb() {
 		execute: vi.fn().mockResolvedValue([]),
 		executeTakeFirst: vi.fn().mockResolvedValue(undefined),
 		values: vi.fn().mockReturnThis(),
-		onConflict: vi.fn().mockImplementation((cb) => { cb?.({ column: vi.fn().mockReturnThis(), doUpdateSet: vi.fn().mockReturnThis() }); return queries }),
+		onConflict: vi.fn().mockImplementation((cb) => {
+			cb?.({ column: vi.fn().mockReturnThis(), doUpdateSet: vi.fn().mockReturnThis() })
+			return queries
+		}),
 		deleteFrom: vi.fn().mockReturnThis(),
 		insertInto: vi.fn().mockReturnThis(),
 	}
@@ -62,8 +76,8 @@ describe('sync index', () => {
 	})
 
 	test('should sync schemas, items and prune assets', async () => {
-		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-		vi.spyOn(console, 'error').mockImplementation(() => {})
+		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { })
+		vi.spyOn(console, 'error').mockImplementation(() => { })
 		const config = { paths: { database: 'db.sqlite' }, pieces: [], assets: { salt: '' } }
 		mocks.getConfig.mockReturnValue(config as unknown as Config)
 		const { db } = makeMockDb()
@@ -85,7 +99,7 @@ describe('sync index', () => {
 				types: ['books'],
 				pieces: ['book1.books.md'],
 				assets: ['asset1.jpg', 'asset2.jpg'],
-				directories: []
+				directories: [],
 			}),
 			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
@@ -138,7 +152,7 @@ describe('sync index', () => {
 				types: ['books'],
 				pieces: ['book1.books.md'],
 				assets: [],
-				directories: []
+				directories: [],
 			}),
 			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
@@ -171,7 +185,7 @@ describe('sync index', () => {
 				types: ['books'],
 				pieces: ['book1.books.md'],
 				assets: [],
-				directories: []
+				directories: [],
 			}),
 			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
@@ -182,11 +196,14 @@ describe('sync index', () => {
 
 		expect(piecesMock.sync).toHaveBeenCalledWith(db, { dryRun: false, force: true })
 		expect(pieceMock.isOutdated).not.toHaveBeenCalled() // skipped optimization
-		expect(pieceMock.sync).toHaveBeenCalledWith(db, ['book1.books.md'], { dryRun: false, force: true })
+		expect(pieceMock.sync).toHaveBeenCalledWith(db, ['book1.books.md'], {
+			dryRun: false,
+			force: true,
+		})
 	})
 
 	test('should handle dry run and prune', async () => {
-		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { })
 		const config = { paths: { database: 'db.sqlite' }, pieces: [], assets: { salt: '' } }
 		const { db } = makeMockDb()
 		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
@@ -201,7 +218,7 @@ describe('sync index', () => {
 				types: [],
 				pieces: [],
 				assets: ['asset1.jpg'],
-				directories: []
+				directories: [],
 			}),
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
@@ -214,7 +231,7 @@ describe('sync index', () => {
 	})
 
 	test('should log errors', async () => {
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 		const config = { paths: { database: 'db.sqlite' }, pieces: [], assets: { salt: '' } }
 		const { db } = makeMockDb()
 		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
@@ -223,17 +240,25 @@ describe('sync index', () => {
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
-			sync: vi.fn().mockResolvedValue(Readable.from([{ error: true, file: 'item1', message: 'fail' }])),
-			prune: vi.fn().mockResolvedValue(Readable.from([{ error: true, file: 'item2', message: 'fail' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ error: true, file: 'item1', message: 'fail' }])),
+			prune: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ error: true, file: 'item2', message: 'fail' }])),
 		}
 		const piecesMock = {
-			sync: vi.fn().mockResolvedValue(Readable.from([{ error: true, name: 's1', message: 'fail' }])),
-			prune: vi.fn().mockResolvedValue(Readable.from([{ error: true, name: 's2', message: 'fail' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ error: true, name: 's1', message: 'fail' }])),
+			prune: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ error: true, name: 's2', message: 'fail' }])),
 			getFilesIn: vi.fn().mockResolvedValue({
 				types: ['books'],
 				pieces: ['book1.books.md'],
 				assets: [],
-				directories: []
+				directories: [],
 			}),
 			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
@@ -252,14 +277,19 @@ describe('sync index', () => {
 		const config = { paths: { database: 'db.sqlite' }, pieces: [], assets: { salt: '' } }
 		const { db } = makeMockDb()
 		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
-		mocks.runWebMigrations.mockResolvedValue({ results: [], error: new Error('web migration failed') })
+		mocks.runWebMigrations.mockResolvedValue({
+			results: [],
+			error: new Error('web migration failed'),
+		})
 		mocks.getStorage.mockReturnValue({} as unknown as LuzzleStorage)
 		const piecesMock = {
 			getFilesIn: vi.fn().mockResolvedValue({ types: [], pieces: [], assets: [], directories: [] }),
 		}
 		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
 
-		await expect(sync({ outDir: '/tmp/test-out' }, config as unknown as Config)).rejects.toThrow('Web migration failed:')
+		await expect(sync({ outDir: '/tmp/test-out' }, config as unknown as Config)).rejects.toThrow(
+			'Web migration failed:'
+		)
 	})
 
 	test('should upsert web_pieces and tags when piece is added', async () => {
@@ -287,7 +317,11 @@ describe('sync index', () => {
 			id: 'piece-1',
 			type: 'books',
 			file_path: '/archive/book.books.md',
-			frontmatter_json: JSON.stringify({ book_title: 'My Book', book_tags: ['fiction'], book_summary: 'A summary' }),
+			frontmatter_json: JSON.stringify({
+				book_title: 'My Book',
+				book_tags: ['fiction'],
+				book_summary: 'A summary',
+			}),
 			note_markdown: '',
 			date_added: 1000,
 			date_updated: 2000,
@@ -300,7 +334,9 @@ describe('sync index', () => {
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
-			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
 		}
 		const piecesMock = {
@@ -322,6 +358,71 @@ describe('sync index', () => {
 
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces')
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_tags')
+	})
+
+	test('should generate asset keys and sanitize metadata when piece has assets', async () => {
+		const config = {
+			paths: { database: 'db.sqlite' },
+			assets: { salt: 'test-salt' },
+			pieces: [
+				{
+					type: 'books',
+					fields: { title: 'book_title' },
+				},
+			],
+		}
+		const { db, queries } = makeMockDb()
+		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
+		mocks.runWebMigrations.mockResolvedValue({ results: [], error: undefined })
+		mocks.getStorage.mockReturnValue({} as unknown as LuzzleStorage)
+
+		const pieceItem = {
+			id: 'piece-1',
+			type: 'books',
+			file_path: '/archive/book.books.md',
+			frontmatter_json: JSON.stringify({ book_title: 'My Book', cover: 'asset1.jpg' }),
+			assets_json_array: JSON.stringify(['asset1.jpg']),
+			note_markdown: '',
+			date_added: 1000,
+		}
+
+		// selectFrom web_pieces (slug preload) returns empty
+		queries.execute.mockResolvedValueOnce([])
+		// selectFrom pieces_items for the added file
+		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
+
+		const pieceMock = {
+			isOutdated: vi.fn().mockResolvedValue(true),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			prune: vi.fn().mockResolvedValue(Readable.from([])),
+		}
+		const piecesMock = {
+			sync: vi.fn().mockResolvedValue(Readable.from([])),
+			prune: vi.fn().mockResolvedValue(Readable.from([])),
+			getFilesIn: vi.fn().mockResolvedValue({
+				types: ['books'],
+				pieces: ['/archive/book.books.md'],
+				assets: [],
+				directories: [],
+			}),
+			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
+			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
+		}
+		mocks.Pieces.mockReturnValue(piecesMock as unknown as Pieces)
+		
+		mocks.generateAssetKey.mockImplementation((path) => `key-for-${path}`)
+
+		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
+
+		expect(mocks.generateAssetKey).toHaveBeenCalledWith('asset1.jpg', 'test-salt')
+		expect(db.insertInto).toHaveBeenCalledWith('web_pieces')
+		expect(queries.values).toHaveBeenCalledWith(
+			expect.objectContaining({
+				json_metadata: JSON.stringify({ book_title: 'My Book', cover: 'key-for-asset1.jpg' }),
+			})
+		)
 	})
 
 	test('should deduplicate slug when collision occurs', async () => {
@@ -350,12 +451,16 @@ describe('sync index', () => {
 		}
 
 		// Pre-existing slug 'book' belongs to a different file — causes collision
-		queries.execute.mockResolvedValueOnce([{ slug: 'book', file_path: '/archive/other.books.md', id: 'other-1' }])
+		queries.execute.mockResolvedValueOnce([
+			{ slug: 'book', file_path: '/archive/other.books.md', id: 'other-1' },
+		])
 		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
-			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
 		}
 		const piecesMock = {
@@ -403,12 +508,16 @@ describe('sync index', () => {
 		}
 
 		// Pre-existing slug for this exact file
-		queries.execute.mockResolvedValueOnce([{ slug: 'existing-slug', file_path: '/archive/book.books.md', id: 'piece-1' }])
+		queries.execute.mockResolvedValueOnce([
+			{ slug: 'existing-slug', file_path: '/archive/book.books.md', id: 'piece-1' },
+		])
 		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
-			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'updated', file: '/archive/book.books.md' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'updated', file: '/archive/book.books.md' }])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
 		}
 		const piecesMock = {
@@ -460,7 +569,9 @@ describe('sync index', () => {
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
-			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
 		}
 		const piecesMock = {
@@ -503,7 +614,9 @@ describe('sync index', () => {
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(false),
 			sync: vi.fn().mockResolvedValue(Readable.from([])),
-			prune: vi.fn().mockResolvedValue(Readable.from([{ action: 'pruned', file: '/archive/book.books.md' }])),
+			prune: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'pruned', file: '/archive/book.books.md' }])),
 		}
 		const piecesMock = {
 			sync: vi.fn().mockResolvedValue(Readable.from([])),
@@ -549,7 +662,9 @@ describe('sync index', () => {
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
-			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
 		}
 		const piecesMock = {
@@ -596,7 +711,9 @@ describe('sync index', () => {
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
-			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
 		}
 		const piecesMock = {
@@ -619,7 +736,7 @@ describe('sync index', () => {
 	})
 
 	test('should run transforms, log results, and record in web_pieces_assets when piece is added', async () => {
-		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { })
 		const config = {
 			paths: { database: 'db.sqlite' },
 			assets: { salt: 'test-salt' },
@@ -643,18 +760,31 @@ describe('sync index', () => {
 		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
 
 		vi.mocked(transforms.get('attachment')!.run).mockResolvedValueOnce([
-			{ transformation: 'attachment.original', asset_path: 'books/key/file.pdf', mime_type: 'application/pdf' },
+			{
+				transformation: 'attachment.original',
+				asset_path: 'books/key/file.pdf',
+				mime_type: 'application/pdf',
+			},
 		])
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
-			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
 		}
 		const piecesMock = {
 			sync: vi.fn().mockResolvedValue(Readable.from([])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
-			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['/archive/book.books.md'], assets: [], directories: [] }),
+			getFilesIn: vi
+				.fn()
+				.mockResolvedValue({
+					types: ['books'],
+					pieces: ['/archive/book.books.md'],
+					assets: [],
+					directories: [],
+				}),
 			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		}
@@ -665,12 +795,14 @@ describe('sync index', () => {
 		expect(transforms.get('attachment')!.run).toHaveBeenCalledOnce()
 		expect(db.deleteFrom).toHaveBeenCalledWith('web_pieces_assets')
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
-		expect(consoleLogSpy).toHaveBeenCalledWith('[transform.attachment] generated books/key/file.pdf')
+		expect(consoleLogSpy).toHaveBeenCalledWith(
+			'[transform.attachment] generated books/key/file.pdf'
+		)
 		consoleLogSpy.mockRestore()
 	})
 
 	test('should log error and continue when transform throws', async () => {
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 		const config = {
 			paths: { database: 'db.sqlite' },
 			assets: { salt: 'test-salt' },
@@ -697,13 +829,22 @@ describe('sync index', () => {
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
-			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
 		}
 		const piecesMock = {
 			sync: vi.fn().mockResolvedValue(Readable.from([])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
-			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['/archive/book.books.md'], assets: [], directories: [] }),
+			getFilesIn: vi
+				.fn()
+				.mockResolvedValue({
+					types: ['books'],
+					pieces: ['/archive/book.books.md'],
+					assets: [],
+					directories: [],
+				}),
 			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		}
@@ -742,13 +883,22 @@ describe('sync index', () => {
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
-			sync: vi.fn().mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
+			sync: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'added', file: '/archive/book.books.md' }])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
 		}
 		const piecesMock = {
 			sync: vi.fn().mockResolvedValue(Readable.from([])),
 			prune: vi.fn().mockResolvedValue(Readable.from([])),
-			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['/archive/book.books.md'], assets: [], directories: [] }),
+			getFilesIn: vi
+				.fn()
+				.mockResolvedValue({
+					types: ['books'],
+					pieces: ['/archive/book.books.md'],
+					assets: [],
+					directories: [],
+				}),
 			getPiece: vi.fn().mockResolvedValue(pieceMock as unknown as Piece<PieceFrontmatter>),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		}
@@ -777,7 +927,9 @@ describe('sync index', () => {
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(false),
 			sync: vi.fn().mockResolvedValue(Readable.from([])),
-			prune: vi.fn().mockResolvedValue(Readable.from([{ action: 'pruned', file: '/archive/book.books.md' }])),
+			prune: vi
+				.fn()
+				.mockResolvedValue(Readable.from([{ action: 'pruned', file: '/archive/book.books.md' }])),
 		}
 		const piecesMock = {
 			sync: vi.fn().mockResolvedValue(Readable.from([])),

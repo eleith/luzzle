@@ -16,24 +16,36 @@ export function getHighlightLang(filename: string): string | null {
 	return extToLang.get(ext) ?? null
 }
 
-export async function run({ webPiece, config, assetKeyToPath }: TransformInput): Promise<AssetRecord[]> {
+export async function run({
+	webPiece,
+	config,
+	assetKeyToPath,
+}: TransformInput): Promise<AssetRecord[]> {
 	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
 	if (!pieceConfig?.fields.attachments) return []
 
 	const frontmatter = JSON.parse(webPiece.json_metadata)
+	const attachments = pieceConfig.fields.attachments
 	const records: AssetRecord[] = []
 
-	for (const field of pieceConfig.fields.attachments) {
-		const assetKeys = getFrontmatterValues<string>(frontmatter, field)
+	for (const field of attachments) {
+		const assets = getFrontmatterValues<string>(frontmatter, field)
 			.flat()
-			.filter((s) => typeof s === 'string')
+			.reduce(
+				(maps, key) => {
+					const path = assetKeyToPath.get(key)
+					const lang = path ? getHighlightLang(path) : null
 
-		for (const assetKey of assetKeys) {
-			const asset = assetKeyToPath.get(assetKey) ?? assetKey
-			const lang = getHighlightLang(asset)
-			if (!lang) continue
+					if (path && lang) {
+						maps.push({ path, lang, key })
+					}
+					return maps
+				},
+				[] as { path: string; lang: string; key: string }[]
+			)
 
-			const url = `${config.url.app}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/highlight?attachment=${encodeURIComponent(assetKey)}`
+		for (const asset of assets) {
+			const url = `${config.url.app}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/highlight?attachment=${encodeURIComponent(asset.key)}`
 			const response = await fetch(url)
 
 			if (response.status === 404) continue
@@ -46,7 +58,7 @@ export async function run({ webPiece, config, assetKeyToPath }: TransformInput):
 
 			records.push({
 				transformation: 'highlight',
-				piece_asset_path: asset,
+				piece_asset_path: asset.path,
 				asset_path: null,
 				mime_type: 'text/html',
 				is_embedded: 1,

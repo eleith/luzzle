@@ -129,6 +129,7 @@ async function syncWebPiece(
 	const assetPaths: string[] = JSON.parse(item.assets_json_array || '[]')
 	const pathToKey = new Map<string, string>()
 	const keyToPath = new Map<string, string>()
+
 	for (const p of assetPaths) {
 		const key = generateAssetKey(p, config.assets.salt)
 		pathToKey.set(p, key)
