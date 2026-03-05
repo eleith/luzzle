@@ -5,6 +5,7 @@ import { hydrateWithAssetsInternal } from '$lib/pieces/assets.server'
 import { getPalette } from '@luzzle/web.utils/server'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { config } from '$lib/server/config'
 
 export const GET: RequestHandler = async ({ params }) => {
 	const type = params.piece
@@ -22,10 +23,14 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 
 	const piece = await hydrateWithAssetsInternal(webPiece)
-	const asset = piece.assets.find((a) => a.transformation === 'image.m.jpg')
+	const field = config.pieces.find((p) => p.type === piece.type)?.fields.media?.[0]
+	const assets = piece.assets
+		.filter((a) => a.transformation === 'image.m.jpg')
+		.filter((a) => a.piece_file_path === field)
+	const asset = assets[0]
 
 	if (!asset?.asset_path) {
-		return error(404, 'medium image variant not found')
+		return error(404, 'piece media not found')
 	}
 
 	const assetsDir = path.resolve('assets/pieces')
