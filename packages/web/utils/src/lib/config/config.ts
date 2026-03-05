@@ -62,7 +62,7 @@ function loadConfig(userConfigPath?: string): Config {
 	}
 
 	// 2. Second pass: replace env vars in everything (including defaults)
-	let finalConfig = replaceEnvVars(config) as Config
+	const finalConfig = replaceEnvVars(config) as Config
 
 	// 3. Third pass: validate again to catch any minLength/format errors AFTER substitution
 	// We use a fresh AJV without useDefaults for the final check
