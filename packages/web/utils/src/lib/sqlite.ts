@@ -3,8 +3,9 @@ export interface WebPiecesAsset {
 	piece_key: string
 	piece_asset_path?: string | null
 	piece_field_path?: string,
+	asset_key: string
 	transformation: string
-	asset_path: string
+	asset_path?: string | null
 	mime_type: string
 	is_embedded?: 0 | 1
 	content?: string
