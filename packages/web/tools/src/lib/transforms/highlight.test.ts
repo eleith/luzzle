@@ -5,6 +5,8 @@ import { Pieces } from '@luzzle/core'
 
 vi.stubGlobal('fetch', vi.fn())
 
+const emptyMap = new Map<string, string>()
+
 const makeWebPiece = (json_metadata = '{}'): WebPieces => ({
 	id: '1',
 	type: 'books',
@@ -73,6 +75,7 @@ describe('transforms/highlight', () => {
 			config: makeConfig(),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(fetch).not.toHaveBeenCalled()
@@ -94,6 +97,7 @@ describe('transforms/highlight', () => {
 			config: makeConfig(['code']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(fetch).toHaveBeenCalledWith(
@@ -103,7 +107,7 @@ describe('transforms/highlight', () => {
 			{
 				transformation: 'highlight',
 				piece_asset_path: 'main.js',
-				asset_path: '',
+				asset_path: null,
 				mime_type: 'text/html',
 				is_embedded: 1,
 				content: html,
@@ -119,6 +123,7 @@ describe('transforms/highlight', () => {
 			config: makeConfig(['doc']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(fetch).not.toHaveBeenCalled()
@@ -138,6 +143,7 @@ describe('transforms/highlight', () => {
 			config: makeConfig(['code']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(fetch).toHaveBeenCalledOnce()
@@ -159,6 +165,7 @@ describe('transforms/highlight', () => {
 				config: makeConfig(['code']),
 				outDir: '/out',
 				pieces: mockPieces,
+				assetKeyToPath: emptyMap,
 			})
 		).rejects.toThrow('500')
 	})
@@ -178,6 +185,7 @@ describe('transforms/highlight', () => {
 			config: makeConfig(['files']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(fetch).toHaveBeenCalledTimes(2)
@@ -195,6 +203,7 @@ describe('transforms/highlight', () => {
 			config: makeConfig(['code']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(fetch).not.toHaveBeenCalled()
@@ -215,6 +224,7 @@ describe('transforms/highlight', () => {
 			config: makeConfig(['code']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(fetch).toHaveBeenCalledWith(expect.stringContaining('attachment=hello%20world.js'))

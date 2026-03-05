@@ -53,7 +53,7 @@ describe('transforms/opengraph', () => {
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 		mocks.generatePngFromUrl.mockResolvedValue(Buffer.from('png'))
 
-		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces })
+		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
 
 		expect(mocks.getBrowser).toHaveBeenCalledOnce()
 		expect(mocks.generatePngFromUrl).toHaveBeenCalledWith(
@@ -78,7 +78,7 @@ describe('transforms/opengraph', () => {
 		mocks.generatePngFromUrl.mockRejectedValue(new Error('puppeteer error'))
 
 		await expect(
-			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces })
+			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
 		).rejects.toThrow('puppeteer error')
 	})
 

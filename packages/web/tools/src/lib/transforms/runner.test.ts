@@ -4,6 +4,8 @@ import { type Config, type WebPieces } from '@luzzle/web.utils'
 import { mockKysely } from '../database.mock.js'
 import { Pieces } from '@luzzle/core'
 
+vi.mock('@luzzle/web.utils/server', () => ({ generateAssetKey: vi.fn().mockReturnValue('asset-key') }))
+
 vi.mock('./index.js', () => ({
 	transforms: new Map([
 		['attachment', { run: vi.fn().mockResolvedValue([]), cleanup: undefined }],

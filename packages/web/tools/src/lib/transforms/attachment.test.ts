@@ -8,6 +8,8 @@ vi.mock('fs/promises')
 vi.mock('@luzzle/web.utils')
 vi.mock('@luzzle/web.utils/server')
 
+const emptyMap = new Map<string, string>()
+
 const mocks = {
 	mkdir: vi.mocked(mkdir),
 	writeFile: vi.mocked(writeFile),
@@ -55,6 +57,7 @@ describe('transforms/attachment', () => {
 			config: makeConfig(),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
@@ -75,6 +78,7 @@ describe('transforms/attachment', () => {
 			config: makeConfig(['doc']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key123', { recursive: true })
@@ -102,6 +106,7 @@ describe('transforms/attachment', () => {
 			config: makeConfig(['doc']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key123', { recursive: true })
@@ -131,6 +136,7 @@ describe('transforms/attachment', () => {
 				config: makeConfig(['doc']),
 				outDir: '/out',
 				pieces: mockPieces,
+				assetKeyToPath: emptyMap,
 			})
 		).rejects.toThrow('storage error')
 	})

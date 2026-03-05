@@ -11,6 +11,8 @@ vi.mock('@luzzle/web.utils')
 vi.mock('@luzzle/web.utils/server')
 vi.mock('./variants.js')
 
+const emptyMap = new Map<string, string>()
+
 const mocks = {
 	mkdir: vi.mocked(mkdir),
 	writeFile: vi.mocked(writeFile),
@@ -60,6 +62,7 @@ describe('transforms/image', () => {
 			config: makeConfig(),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
@@ -88,6 +91,7 @@ describe('transforms/image', () => {
 			config: makeConfig(['image']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
@@ -105,6 +109,7 @@ describe('transforms/image', () => {
 				config: makeConfig(['doc']),
 				outDir: '/out',
 				pieces: mockPieces,
+				assetKeyToPath: emptyMap,
 			})
 		).rejects.toThrow('non-image file')
 	})
@@ -131,6 +136,7 @@ describe('transforms/image', () => {
 			config: makeConfig(['image']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key', { recursive: true })
@@ -159,6 +165,7 @@ describe('transforms/image', () => {
 				config: makeConfig(['image']),
 				outDir: '/out',
 				pieces: mockPieces,
+				assetKeyToPath: emptyMap,
 			})
 		).rejects.toThrow('read error')
 	})
@@ -185,6 +192,7 @@ describe('transforms/image', () => {
 			config: makeConfig(['image']),
 			outDir: '/out',
 			pieces: mockPieces,
+			assetKeyToPath: emptyMap,
 		})
 
 		expect(records).toEqual(
@@ -205,6 +213,7 @@ describe('transforms/image', () => {
 				config: makeConfig(['image']),
 				outDir: '/out',
 				pieces: mockPieces,
+				assetKeyToPath: emptyMap,
 			})
 		).rejects.toThrow('non-image file')
 	})
@@ -231,6 +240,7 @@ describe('transforms/image', () => {
 				config: makeConfig(['image']),
 				outDir: '/out',
 				pieces: mockPieces,
+				assetKeyToPath: emptyMap,
 			})
 		).rejects.toThrow('toFile error')
 	})

@@ -37,7 +37,7 @@ describe('transforms/palette', () => {
 			text: vi.fn().mockResolvedValue(paletteJson),
 		} as unknown as Response)
 
-		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces })
+		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
 
 		expect(fetch).toHaveBeenCalledWith('http://localhost/api/pieces/books/my-book/transform/palette')
 		expect(records).toEqual([
@@ -58,7 +58,7 @@ describe('transforms/palette', () => {
 			status: 404,
 		} as unknown as Response)
 
-		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces })
+		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
 
 		expect(records).toEqual([])
 	})
@@ -73,7 +73,7 @@ describe('transforms/palette', () => {
 		} as unknown as Response)
 
 		await expect(
-			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces })
+			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
 		).rejects.toThrow('500')
 	})
 
@@ -83,7 +83,7 @@ describe('transforms/palette', () => {
 		vi.mocked(fetch).mockRejectedValue(new Error('network error'))
 
 		await expect(
-			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces })
+			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
 		).rejects.toThrow('network error')
 	})
 })
