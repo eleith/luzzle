@@ -15,7 +15,7 @@
 		--color-accent: {palette?.accent};"
 >
 	<div class="left-panel">
-		<Icon {piece} size={{ width: 350 }} lazy={false} />
+		<Icon {piece} {metadata} size={{ width: 350 }} lazy={false} />
 	</div>
 
 	<div class="right-panel">

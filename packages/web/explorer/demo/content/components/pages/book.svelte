@@ -6,7 +6,7 @@
 </script>
 
 <section class="header">
-	<Icon {piece} size={{ width: 125 }} lazy={false} />
+	<Icon {piece} {metadata} size={{ width: 125 }} lazy={false} />
 </section>
 
 <section class="content">

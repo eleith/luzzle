@@ -3,7 +3,7 @@
 	import Icon from '$lib/pieces/components/icon.svelte'
 
 	let { piece, helpers, metadata }: PieceOpengraphProps = $props()
-	const palette = $derived(helpers.getPiecePallete())
+	const palette = $derived(helpers.getPiecePalette())
 
 	const backdrop = metadata.backdrop as string | undefined
 	const backdropImage = backdrop ? helpers.getPieceImageUrl(backdrop, 1200, 'jpg') : null
@@ -22,7 +22,7 @@
 	<div class="cover"></div>
 	<div class="outer">
 		<div class="inner">
-			<Icon {piece} size={{ width: 500 }} lazy={false} />
+			<Icon {piece} {metadata} size={{ width: 500 }} lazy={false} />
 		</div>
 	</div>
 </section>

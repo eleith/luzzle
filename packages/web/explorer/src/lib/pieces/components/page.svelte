@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { getContext, type Component } from 'svelte'
-	import type { WebPiece, PublicWebPiece } from '$lib/pieces/types'
+	import type { PublicWebPiece } from '$lib/pieces/types'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
 	import { getPieceHelpers, type PieceMode, type PiecePageProps } from '$lib/pieces/helpers.js'
+	import type { PieceFrontmatter } from '@luzzle/core'
 
 	const customPageMap = new Map<string, { default: Component<PiecePageProps> }>()
 	const customComponents: Record<string, { default: Component }> = import.meta.glob(
@@ -20,8 +21,10 @@
 	}
 
 	type Props = {
-		piece: WebPiece | PublicWebPiece
-		metadata: Record<string, unknown>
+		piece: PublicWebPiece
+		// slint-disable-next-line @typescript-eslint/no-explicit-any
+		//metadata: Record<string, any>
+		metadata: PieceFrontmatter
 		tags: Array<{ slug: string; tag: string }>
 		html_note: string | null
 	}

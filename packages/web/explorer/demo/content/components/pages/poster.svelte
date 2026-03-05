@@ -7,10 +7,10 @@
 </script>
 
 {#if metadata.poster}
-	<section class="header" style="background: {palette.background}">
+	<section class="header" style="background: {palette?.background || 'transparent'}">
 		<div class="media">
 			{#if metadata.poster}
-				<Icon {piece} size={{ width: 250 }} lazy={false} />
+				<Icon {piece} {metadata} size={{ width: 250 }} lazy={false} />
 			{/if}
 		</div>
 	</section>
@@ -74,7 +74,7 @@
 			</div>
 		{/if}
 
-		{#if metadata.people}
+		{#if Array.isArray(metadata.people)}
 			<h2>People</h2>
 			<div class="people">
 				{metadata.people.join(', ')}
@@ -136,28 +136,6 @@
 		section.header .media {
 			width: clamp(500px, 100%, 800px);
 		}
-	}
-
-	.backdrop {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		object-position: top center;
-		filter: brightness(0.6);
-	}
-
-	.backdrop-full {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		object-position: top center;
-		filter: brightness(0.3);
 	}
 
 	section.details h1 {

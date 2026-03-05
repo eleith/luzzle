@@ -1,3 +1,4 @@
+import type { PieceFrontmatter } from '@luzzle/core'
 import type { WebPieces, WebPiecesAsset } from '@luzzle/web.utils'
 
 export type WebPiece = WebPieces & {
@@ -10,6 +11,6 @@ export type PublicWebPieceAsset = Pick<
 >
 
 export type PublicWebPiece = Omit<WebPieces, 'file_path' | 'json_metadata'> & {
-	metadata: Record<string, unknown>
+	metadata: PieceFrontmatter
 	assets: PublicWebPieceAsset[]
 }

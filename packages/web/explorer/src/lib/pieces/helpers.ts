@@ -1,13 +1,12 @@
 import { type WebPieceTags } from '@luzzle/web.utils'
 import { page } from '$app/state'
-import type { WebPiece, PublicWebPiece } from './types'
-
-type AnyPiece = WebPiece | PublicWebPiece
+import type { PublicWebPiece } from './types'
+import type { PieceFrontmatter, PieceFrontMatterValue } from '@luzzle/core'
 
 export type PieceComponentHelpers = {
-	getPieceUrl: () => string
+	getPieceUrl: () => PieceFrontMatterValue | string
 	getPieceImageUrl: (
-		image: string,
+		image: PieceFrontMatterValue | string,
 		minWidth: number,
 		format: 'jpg' | 'avif' | 'webp' | 'png'
 	) => string
@@ -15,8 +14,8 @@ export type PieceComponentHelpers = {
 }
 
 export type PieceIconProps = {
-	piece: AnyPiece
-	metadata: Record<string, unknown>
+	piece: PublicWebPiece
+	metadata: PieceFrontmatter
 	tags: string[]
 	size: {
 		width: number
@@ -35,9 +34,9 @@ export type PieceIconPalette = {
 }
 
 export type PieceOpengraphProps = {
-	metadata: Record<string, unknown>
+	metadata: PieceFrontmatter
 	tags: string[]
-	piece: AnyPiece
+	piece: PublicWebPiece
 	size: {
 		width: number
 		height: number
@@ -46,8 +45,8 @@ export type PieceOpengraphProps = {
 }
 
 export type PiecePageProps = {
-	piece: AnyPiece
-	metadata: Record<string, unknown>
+	piece: PublicWebPiece
+	metadata: PieceFrontmatter
 	tags: Partial<WebPieceTags>[]
 	html_note: string | null
 	helpers: PieceComponentHelpers
@@ -56,7 +55,7 @@ export type PiecePageProps = {
 export type PieceMode = 'public' | 'local'
 
 export function getPieceHelpers(
-	piece: AnyPiece,
+	piece: PublicWebPiece,
 	mode: PieceMode = 'public'
 ): PieceComponentHelpers {
 	const config = page.data.config
@@ -72,7 +71,7 @@ export function getPieceHelpers(
 	return {
 		getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
 		getPieceImageUrl: (
-			assetKey: string,
+			assetKey: PieceFrontMatterValue | string,
 			minWidth: number,
 			format: 'jpg' | 'avif' | 'webp' | 'png'
 		) => {

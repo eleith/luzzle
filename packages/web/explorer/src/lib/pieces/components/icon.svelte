@@ -1,9 +1,10 @@
 <script lang="ts">
 	import type { Component } from 'svelte'
-	import type { WebPiece, PublicWebPiece } from '$lib/pieces/types'
+	import type { PublicWebPiece } from '$lib/pieces/types'
 	import IconDefault from '$lib/pieces/components/icon.default.svelte'
 	import { getPieceHelpers, type PieceIconProps, type PieceMode } from '$lib/pieces/helpers.js'
 	import { getContext } from 'svelte'
+	import type { PieceFrontmatter } from '@luzzle/core'
 
 	const iconComponentMap = new Map<string, { default: Component<PieceIconProps> }>()
 	const iconComponents: Record<string, { default: Component }> = import.meta.glob(
@@ -21,8 +22,8 @@
 	type Props = {
 		active?: boolean
 		lazy?: boolean
-		piece: WebPiece | PublicWebPiece
-		metadata: Record<string, unknown>
+		piece: PublicWebPiece
+		metadata: PieceFrontmatter
 		size: { width: number; height?: number }
 	}
 
