@@ -35,13 +35,11 @@ export async function backfillAssetKeys(
 		const assetKey = generateAssetKey(source, config.assets.salt)
 
 		await webDb
-			.insertInto('web_pieces_assets')
-			.values({ ...row, asset_key: assetKey })
-			.onConflict((oc) =>
-				oc.columns(['piece_file_path', 'transformation', 'piece_asset_path']).doUpdateSet({
-					asset_key: assetKey,
-				})
-			)
+			.updateTable('web_pieces_assets')
+			.set({ asset_key: assetKey })
+			.where('piece_file_path', '=', row.piece_file_path)
+			.where('transformation', '=', row.transformation)
+			.where('piece_asset_path', '=', row.piece_asset_path)
 			.execute()
 	}
 
@@ -84,11 +82,9 @@ export async function backfillSanitizeMetadata(
 		if (sanitized === piece.json_metadata) continue
 
 		await webDb
-			.insertInto('web_pieces')
-			.values({ ...piece, json_metadata: sanitized })
-			.onConflict((oc) =>
-				oc.column('id').doUpdateSet({ json_metadata: sanitized })
-			)
+			.updateTable('web_pieces')
+			.set({ json_metadata: sanitized })
+			.where('id', '=', piece.id)
 			.execute()
 
 		updated++
