@@ -22,8 +22,6 @@
 
 	type Props = {
 		piece: PublicWebPiece
-		// slint-disable-next-line @typescript-eslint/no-explicit-any
-		//metadata: Record<string, any>
 		metadata: PieceFrontmatter
 		tags: Array<{ slug: string; tag: string }>
 		html_note: string | null
