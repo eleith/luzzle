@@ -51,16 +51,12 @@ export const GET: RequestHandler = async ({ params, url }) => {
 	}
 
 	const lang = getLang(asset.piece_asset_path)
-	if (!lang) {
-		return error(404, 'attachment is not a recognised code file')
-	}
-
 	const assetsDir = path.resolve('assets/pieces')
 	const filePath = path.join(assetsDir, asset.asset_path)
 	const code = await fs.readFile(filePath, 'utf-8')
 
 	const html = await codeToHtml(code, {
-		lang,
+		lang: lang || 'text',
 		themes: {
 			light: config.theme.markdown.code.light,
 			dark: config.theme.markdown.code.dark
