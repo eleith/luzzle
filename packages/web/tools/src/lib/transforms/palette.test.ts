@@ -17,9 +17,11 @@ const makeWebPiece = (): WebPieces => ({
 	title: 'My Book',
 })
 
-const makeConfig = (): Config =>
+const makeConfig = (overrides?: Partial<Config>): Config =>
 	({
 		url: { app: 'http://localhost' },
+		pieces: [{ type: 'books', fields: { media: ['cover'] } }],
+		...overrides,
 	}) as unknown as Config
 
 afterEach(() => {
@@ -50,20 +52,7 @@ describe('transforms/palette', () => {
 		])
 	})
 
-	test('returns empty on 404', async () => {
-		const mockPieces = {} as unknown as Pieces
-
-		vi.mocked(fetch).mockResolvedValue({
-			ok: false,
-			status: 404,
-		} as unknown as Response)
-
-		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
-
-		expect(records).toEqual([])
-	})
-
-	test('throws on non-404 error response', async () => {
+	test('throws on error response', async () => {
 		const mockPieces = {} as unknown as Pieces
 
 		vi.mocked(fetch).mockResolvedValue({
@@ -75,6 +64,26 @@ describe('transforms/palette', () => {
 		await expect(
 			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
 		).rejects.toThrow('500')
+	})
+
+	test('returns empty when piece type has no media fields', async () => {
+		const mockPieces = {} as unknown as Pieces
+		const configNoMedia = makeConfig({ pieces: [{ type: 'books', fields: {} }] } as unknown as Partial<Config>)
+
+		const records = await run({ webPiece: makeWebPiece(), config: configNoMedia, outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
+
+		expect(fetch).not.toHaveBeenCalled()
+		expect(records).toEqual([])
+	})
+
+	test('returns empty when piece type not found in config', async () => {
+		const mockPieces = {} as unknown as Pieces
+		const configOther = makeConfig({ pieces: [{ type: 'other', fields: { media: ['cover'] } }] } as unknown as Partial<Config>)
+
+		const records = await run({ webPiece: makeWebPiece(), config: configOther, outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
+
+		expect(fetch).not.toHaveBeenCalled()
+		expect(records).toEqual([])
 	})
 
 	test('throws on network error', async () => {

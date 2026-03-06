@@ -44,7 +44,7 @@ describe('lib/transforms/runner', () => {
 			{ transformation: 'attachment.original', asset_path: 'books/key/file.pdf', mime_type: 'application/pdf' },
 		])
 
-		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, {})
+		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, {}, new Map())
 
 		expect(db.deleteFrom).toHaveBeenCalledWith('web_pieces_assets')
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
@@ -57,7 +57,7 @@ describe('lib/transforms/runner', () => {
 	test('filters to only the specified transform when typeFilter is given', async () => {
 		const { db } = mockKysely()
 
-		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { typeFilter: 'palette' })
+		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { typeFilter: 'palette' }, new Map())
 
 		expect(transforms.get('palette')!.run).toHaveBeenCalledOnce()
 		expect(transforms.get('attachment')!.run).not.toHaveBeenCalled()
@@ -71,7 +71,7 @@ describe('lib/transforms/runner', () => {
 			{ transformation: 'attachment.original', asset_path: 'books/key/file.pdf', mime_type: 'application/pdf' },
 		])
 
-		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { dryRun: true })
+		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { dryRun: true }, new Map())
 
 		expect(transforms.get('attachment')!.run).toHaveBeenCalledOnce()
 		expect(db.deleteFrom).not.toHaveBeenCalledWith('web_pieces_assets')
@@ -81,7 +81,7 @@ describe('lib/transforms/runner', () => {
 	test('does not insert when transform returns empty records', async () => {
 		const { db } = mockKysely()
 
-		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { typeFilter: 'palette' })
+		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { typeFilter: 'palette' }, new Map())
 
 		expect(db.deleteFrom).toHaveBeenCalledWith('web_pieces_assets')
 		expect(db.insertInto).not.toHaveBeenCalledWith('web_pieces_assets')
@@ -94,7 +94,7 @@ describe('lib/transforms/runner', () => {
 			{ transformation: 'palette', asset_path: null as unknown as string, mime_type: 'application/json', content: '{}', is_embedded: 1 as const },
 		])
 
-		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { typeFilter: 'palette' })
+		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { typeFilter: 'palette' }, new Map())
 
 		expect(consoleLogSpy).toHaveBeenCalledWith('[transform.palette] generated content of application/json')
 		consoleLogSpy.mockRestore()
@@ -106,7 +106,7 @@ describe('lib/transforms/runner', () => {
 		vi.mocked(transforms.get('attachment')!.run).mockRejectedValueOnce(new Error('boom'))
 
 		await expect(
-			runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { typeFilter: 'attachment' })
+			runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { typeFilter: 'attachment' }, new Map())
 		).resolves.not.toThrow()
 
 		expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[transform.attachment] error for book.md'))
@@ -116,7 +116,7 @@ describe('lib/transforms/runner', () => {
 	test('does nothing when typeFilter matches no transform', async () => {
 		const { db } = mockKysely()
 
-		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { typeFilter: 'nonexistent' })
+		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, { typeFilter: 'nonexistent' }, new Map())
 
 		expect(db.deleteFrom).not.toHaveBeenCalled()
 		expect(transforms.get('attachment')!.run).not.toHaveBeenCalled()

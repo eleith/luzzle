@@ -18,6 +18,7 @@ import { generateAssetKey } from '@luzzle/web.utils/server'
 import runWebMigrations from '../../database/migrations.js'
 import { cleanupAllTransforms } from '../../lib/transforms/index.js'
 import { runTransformsForPiece } from '../../lib/transforms/runner.js'
+import { buildAssetMaps } from '../../lib/transforms/assets.js'
 import { sanitizeMetadata } from '../backfill/index.js'
 
 type SyncOptions = {
@@ -126,15 +127,7 @@ async function syncWebPiece(
 		? getFrontmatterValues<string>(frontmatter, pieceConfig.fields.tags).flat().filter(Boolean)
 		: []
 
-	const assetPaths: string[] = JSON.parse(item.assets_json_array || '[]')
-	const pathToKey = new Map<string, string>()
-	const keyToPath = new Map<string, string>()
-
-	for (const p of assetPaths) {
-		const key = generateAssetKey(p, config.assets.salt)
-		pathToKey.set(p, key)
-		keyToPath.set(key, p)
-	}
+	const { pathToKey, keyToPath } = buildAssetMaps(item.assets_json_array, config.assets.salt)
 
 	const sanitizedItem = { ...item, frontmatter_json: sanitizeMetadata(item.frontmatter_json, pathToKey) }
 	const webPiece = buildWebPiece(sanitizedItem, pieceConfig, slug, config.assets.salt, frontmatter, keywords)

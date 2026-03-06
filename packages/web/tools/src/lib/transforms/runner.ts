@@ -11,7 +11,7 @@ export async function runTransformsForPiece(
 	outDir: string,
 	pieces: Pieces,
 	options: { typeFilter?: string; dryRun?: boolean },
-	assetKeyToPath: Map<string, string> = new Map()
+	assetKeyToPath: Map<string, string>
 ): Promise<void> {
 	const { typeFilter, dryRun = false } = options
 	const webDb = db.withTables<{ web_pieces_assets: WebPiecesAsset }>()

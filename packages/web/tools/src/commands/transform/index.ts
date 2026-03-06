@@ -5,6 +5,7 @@ import { type Config, type WebPieces } from '@luzzle/web.utils'
 import runWebMigrations from '../../database/migrations.js'
 import { transforms, cleanupAllTransforms } from '../../lib/transforms/index.js'
 import { runTransformsForPiece } from '../../lib/transforms/runner.js'
+import { buildAssetMaps } from '../../lib/transforms/assets.js'
 
 type TransformOptions = {
 	archiveDir?: string
@@ -41,10 +42,18 @@ export default async function runTransform(options: TransformOptions, config: Co
 			throw new Error(`Web piece not found: ${options.file}`)
 		}
 
+		const item = await db
+			.selectFrom('pieces_items')
+			.select('assets_json_array')
+			.where('file_path', '=', options.file)
+			.executeTakeFirst()
+
+		const { keyToPath } = buildAssetMaps(item?.assets_json_array, config.assets.salt)
+
 		await runTransformsForPiece(db, webPiece, config, options.outDir, pieces, {
 			typeFilter: options.type,
 			dryRun: options.dryRun,
-		})
+		}, keyToPath)
 	} else {
 		const webPieces = await db
 			.withTables<{ web_pieces: WebPieces }>()
@@ -52,11 +61,23 @@ export default async function runTransform(options: TransformOptions, config: Co
 			.selectAll()
 			.execute()
 
+		const items = await db
+			.selectFrom('pieces_items')
+			.select(['file_path', 'assets_json_array'])
+			.execute()
+
+		const keyToPathByFile = new Map<string, Map<string, string>>()
+		for (const item of items) {
+			const { keyToPath } = buildAssetMaps(item.assets_json_array, config.assets.salt)
+			keyToPathByFile.set(item.file_path, keyToPath)
+		}
+
 		for (const webPiece of webPieces) {
+			const keyToPath = keyToPathByFile.get(webPiece.file_path) ?? new Map()
 			await runTransformsForPiece(db, webPiece, config, options.outDir, pieces, {
 				typeFilter: options.type,
 				dryRun: options.dryRun,
-			})
+			}, keyToPath)
 		}
 	}
 

@@ -130,27 +130,7 @@ describe('transforms/highlight', () => {
 		expect(records).toEqual([])
 	})
 
-	test('skips code file on 404 (attachment not yet in DB)', async () => {
-		const mockPieces = {} as unknown as Pieces
-
-		vi.mocked(fetch).mockResolvedValue({
-			ok: false,
-			status: 404,
-		} as unknown as Response)
-
-		const records = await run({
-			webPiece: makeWebPiece('{"code": "key"}'),
-			config: makeConfig(['code']),
-			outDir: '/out',
-			pieces: mockPieces,
-			assetKeyToPath: new Map([["key", "main.js"]]),
-		})
-
-		expect(fetch).toHaveBeenCalledOnce()
-		expect(records).toEqual([])
-	})
-
-	test('throws on non-404 error response', async () => {
+	test('throws on error response', async () => {
 		const mockPieces = {} as unknown as Pieces
 
 		vi.mocked(fetch).mockResolvedValue({

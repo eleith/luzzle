@@ -29,26 +29,24 @@ export async function run({
 	const records: AssetRecord[] = []
 
 	for (const field of attachments) {
-		const assets = getFrontmatterValues<string>(frontmatter, field)
-			.flat()
-			.reduce(
-				(maps, key) => {
-					const path = assetKeyToPath.get(key)
-					const lang = path ? getHighlightLang(path) : null
+		const values = getFrontmatterValues<string>(frontmatter, field).flat()
 
-					if (path && lang) {
-						maps.push({ path, lang, key })
-					}
-					return maps
-				},
-				[] as { path: string; lang: string; key: string }[]
-			)
+		const assets = values.reduce(
+			(maps, key) => {
+				const path = assetKeyToPath.get(key)
+				const lang = path ? getHighlightLang(path) : null
+
+				if (path && lang) {
+					maps.push({ path, lang, key })
+				}
+				return maps
+			},
+			[] as { path: string; lang: string; key: string }[]
+		)
 
 		for (const asset of assets) {
 			const url = `${config.url.app}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/highlight?attachment=${encodeURIComponent(asset.key)}`
 			const response = await fetch(url)
-
-			if (response.status === 404) continue
 
 			if (!response.ok) {
 				throw new Error(`highlight transform failed: ${response.status} ${response.statusText}`)

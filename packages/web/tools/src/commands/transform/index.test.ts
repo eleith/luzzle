@@ -70,7 +70,8 @@ describe('commands/transform/index', () => {
 			config,
 			'/out',
 			expect.anything(),
-			{ typeFilter: 'attachment', dryRun: undefined }
+			{ typeFilter: 'attachment', dryRun: undefined },
+			expect.any(Map)
 		)
 		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
 	})
@@ -91,7 +92,8 @@ describe('commands/transform/index', () => {
 			config,
 			'/out',
 			expect.anything(),
-			{ typeFilter: 'attachment', dryRun: true }
+			{ typeFilter: 'attachment', dryRun: true },
+			expect.any(Map)
 		)
 	})
 
@@ -111,7 +113,8 @@ describe('commands/transform/index', () => {
 			config,
 			'/out',
 			expect.anything(),
-			{ typeFilter: undefined, dryRun: undefined }
+			{ typeFilter: undefined, dryRun: undefined },
+			expect.any(Map)
 		)
 	})
 
@@ -129,10 +132,12 @@ describe('commands/transform/index', () => {
 
 		expect(mocks.runTransformsForPiece).toHaveBeenCalledTimes(2)
 		expect(mocks.runTransformsForPiece).toHaveBeenCalledWith(
-			db, piece1, config, '/out', expect.anything(), { typeFilter: 'attachment', dryRun: undefined }
+			db, piece1, config, '/out', expect.anything(), { typeFilter: 'attachment', dryRun: undefined },
+			expect.any(Map)
 		)
 		expect(mocks.runTransformsForPiece).toHaveBeenCalledWith(
-			db, piece2, config, '/out', expect.anything(), { typeFilter: 'attachment', dryRun: undefined }
+			db, piece2, config, '/out', expect.anything(), { typeFilter: 'attachment', dryRun: undefined },
+			expect.any(Map)
 		)
 		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
 	})
@@ -149,7 +154,8 @@ describe('commands/transform/index', () => {
 		await runTransform({ outDir: '/out' }, config)
 
 		expect(mocks.runTransformsForPiece).toHaveBeenCalledWith(
-			db, piece1, config, '/out', expect.anything(), { typeFilter: undefined, dryRun: undefined }
+			db, piece1, config, '/out', expect.anything(), { typeFilter: undefined, dryRun: undefined },
+			expect.any(Map)
 		)
 	})
 
@@ -165,8 +171,30 @@ describe('commands/transform/index', () => {
 		await runTransform({ outDir: '/out', type: 'attachment', dryRun: true }, config)
 
 		expect(mocks.runTransformsForPiece).toHaveBeenCalledWith(
-			db, piece1, config, '/out', expect.anything(), { typeFilter: 'attachment', dryRun: true }
+			db, piece1, config, '/out', expect.anything(), { typeFilter: 'attachment', dryRun: true },
+			expect.any(Map)
 		)
+	})
+
+	test('uses empty map when web piece has no matching pieces_items row', async () => {
+		const piece1 = { ...webPiece, file_path: 'book1.md' }
+		const { db, queries } = mockKysely()
+		mocks.getDatabaseAndMigrate.mockResolvedValue(db)
+		mocks.runWebMigrations.mockResolvedValue({ results: [], error: undefined })
+		mocks.getStorage.mockReturnValue({} as ReturnType<typeof getStorage>)
+		mocks.Pieces.mockReturnValue({} as Pieces)
+		vi.spyOn(queries, 'execute')
+			.mockResolvedValueOnce([piece1])
+			.mockResolvedValueOnce([])
+
+		await runTransform({ outDir: '/out', type: 'attachment' }, config)
+
+		expect(mocks.runTransformsForPiece).toHaveBeenCalledWith(
+			db, piece1, config, '/out', expect.anything(), { typeFilter: 'attachment', dryRun: undefined },
+			expect.any(Map)
+		)
+		const passedMap = mocks.runTransformsForPiece.mock.calls[0][6] as Map<string, string>
+		expect(passedMap.size).toBe(0)
 	})
 
 	test('no pieces found runs no transforms but still calls cleanup', async () => {
