@@ -207,8 +207,9 @@
 	<div class="nested-fields">
 		{#if value !== null && typeof value === 'object'}
 			<div class="field-actions">
-				<Button variant="link" onclick={() => removeItem()}
-					style="color:var(--color-error);">[ remove ]</Button>
+				<Button variant="link" onclick={() => removeItem()} style="color:var(--color-error);"
+					>[ remove ]</Button
+				>
 			</div>
 			{#each getSubFields(field) as subField (subField.name)}
 				{@const record = value as FrontmatterObject}
@@ -248,9 +249,10 @@
 				<div class="array-item">
 					<div class="array-header">
 						<span>Item {index}</span>
-						<Button variant="link" onclick={() => removeItem(index)}
-							style="color:var(--color-error);"
-							>[ remove ]</Button
+						<Button
+							variant="link"
+							onclick={() => removeItem(index)}
+							style="color:var(--color-error);">[ remove ]</Button
 						>
 					</div>
 					{#if field.type === 'array' && field.items.type === 'object'}
