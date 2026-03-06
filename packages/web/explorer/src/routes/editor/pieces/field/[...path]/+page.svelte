@@ -73,7 +73,11 @@
 
 	{#if data.targetSchema && selectedPath}
 		{#key selectedPath}
-			<form method="post" action="?path={selectedPath}{returnParam}" enctype="multipart/form-data">
+			<form
+				method="post"
+				action="?/save&path={selectedPath}{returnParam}"
+				enctype="multipart/form-data"
+			>
 				<div class="editor-content">
 					<Edit
 						field={data.targetSchema}
@@ -84,10 +88,22 @@
 					/>
 
 					<div class="actions">
-						<Button type="submit" disabled={!isModified}>Save</Button>
-						<a href={backUrl}>
-							<Button variant="outline">Cancel</Button>
-						</a>
+						{#if data.targetSchema.nullable && data.targetValue !== undefined && data.targetValue !== null}
+							<div class="actions-left">
+								<Button
+									type="submit"
+									variant="error"
+									formaction="?/delete&path={selectedPath}{returnParam}"
+									formenctype="application/x-www-form-urlencoded">Delete</Button
+								>
+							</div>
+						{/if}
+						<div class="actions-right">
+							<Button type="submit" disabled={!isModified}>Save</Button>
+							<a href={backUrl}>
+								<Button variant="outline">Cancel</Button>
+							</a>
+						</div>
 					</div>
 				</div>
 			</form>
@@ -207,9 +223,15 @@
 
 	.actions {
 		display: flex;
-		gap: var(--space-2);
+		justify-content: space-between;
+		align-items: center;
 		margin-top: var(--space-4);
-		justify-content: flex-end;
+	}
+
+	.actions-right {
+		display: flex;
+		gap: var(--space-2);
+		margin-left: auto;
 	}
 
 	@media screen and (min-width: 768px) {

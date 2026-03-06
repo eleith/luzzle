@@ -207,13 +207,8 @@
 	<div class="nested-fields">
 		{#if value !== null && typeof value === 'object'}
 			<div class="field-actions">
-				<Button
-					variant="error"
-					onclick={() => removeItem()}
-					style="font-size: 0.6rem; padding: 2px 4px; min-height: auto;"
-				>
-					remove object
-				</Button>
+				<Button variant="link" onclick={() => removeItem()}
+					style="color:var(--color-error);">remove</Button>
 			</div>
 			{#each getSubFields(field) as subField (subField.name)}
 				{@const record = value as FrontmatterObject}
@@ -233,9 +228,9 @@
 				name="frontmatter.remove.{currentPath.replace(/^frontmatter\./, '')}"
 				value="true"
 			/>
-			<Button variant="tertiary" onclick={addItem} style="font-size: 0.8rem; padding: 4px 8px;">
-				+ Add {field.name}
-			</Button>
+			<div class="array-add">
+				<Button variant="link" onclick={addItem}>+ add {field.name}</Button>
+			</div>
 		{/if}
 	</div>
 {/snippet}
@@ -243,25 +238,20 @@
 {#snippet fieldArraySnippet(field: PieceFrontmatterSchemaField)}
 	<div class="nested-fields">
 		{#if Array.isArray(value)}
-			<!-- Clear array before re-populating to handle item removals -->
 			<input
 				type="hidden"
 				name="frontmatter.remove.{currentPath.replace(/^frontmatter\./, '')}"
 				value="true"
 			/>
 
-			<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
 			{#each value as _, index (index)}
 				<div class="array-item">
 					<div class="array-header">
 						<span>Item {index}</span>
-						<Button
-							variant="error"
-							onclick={() => removeItem(index)}
-							style="font-size: 0.6rem; padding: 2px 4px; min-height: auto;"
+						<Button variant="link" onclick={() => removeItem(index)}
+							style="color:var(--color-error);"
+							>remove</Button
 						>
-							remove
-						</Button>
 					</div>
 					{#if field.type === 'array' && field.items.type === 'object'}
 						{#each Object.keys(field.items.properties) as subName (subName)}
@@ -291,9 +281,9 @@
 				</div>
 			{/each}
 		{/if}
-		<Button variant="tertiary" onclick={addItem} style="font-size: 0.8rem; padding: 4px 8px;">
-			+ Add Item to {field.name}
-		</Button>
+		<div class="array-add">
+			<Button variant="link" onclick={addItem}>+ add item</Button>
+		</div>
 	</div>
 {/snippet}
 
@@ -359,6 +349,10 @@
 
 	.field-actions {
 		margin-bottom: 0.5rem;
+	}
+
+	.array-add {
+		text-align: right;
 	}
 
 	input[type='text'] {

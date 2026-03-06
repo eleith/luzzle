@@ -2,7 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces } from '$lib/server/pieces'
 import { applyFieldUpdate } from '$lib/server/formData'
-import { findFrontmatterField, getFrontmatterValue, getPieceFrontmatterPaths } from '@luzzle/core'
+import { findFrontmatterField, getFrontmatterValue } from '@luzzle/core'
 import path from 'path'
 
 export const load: PageServerLoad = async ({ params, url }) => {
@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		return error(404, `piece does not exist`)
 	}
 
-	const validPaths = getPieceFrontmatterPaths(piece.schema, pieceMarkdown.frontmatter)
+	const validPaths = Object.keys(piece.schema.properties ?? {}).sort()
 
 	let targetSchema
 	let targetValue
@@ -45,7 +45,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 }
 
 export const actions = {
-	default: async (event) => {
+	save: async (event) => {
 		const file = event.params.path
 		const pieces = getPieces()
 		const type = pieces.parseFilename(file).type
@@ -73,6 +73,38 @@ export const actions = {
 		} catch (e) {
 			console.error('Field edit error:', e)
 			return fail(400, { error: { message: `failed to edit field: ${e}` } })
+		}
+
+		const returnTo = event.url.searchParams.get('returnTo')
+		redirect(303, returnTo || `/editor/piece/${file}`)
+	},
+	delete: async (event) => {
+		const file = event.params.path
+		const pieces = getPieces()
+		const type = pieces.parseFilename(file).type
+		const targetPath = event.url.searchParams.get('path')
+
+		if (!type) {
+			return error(404, `piece type does not exist`)
+		}
+
+		if (!targetPath) {
+			return fail(400, { error: { message: 'no field path specified' } })
+		}
+
+		const piece = await pieces.getPiece(type)
+		let markdown = await piece.get(file)
+
+		if (!markdown) {
+			return error(404, `piece does not exist`)
+		}
+
+		try {
+			markdown = await piece.removeField(markdown, targetPath)
+			await piece.write(markdown)
+		} catch (e) {
+			console.error('Field delete error:', e)
+			return fail(400, { error: { message: `failed to delete field: ${e}` } })
 		}
 
 		const returnTo = event.url.searchParams.get('returnTo')

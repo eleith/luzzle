@@ -4,7 +4,7 @@ import { getPieces } from '$lib/server/pieces'
 import { applyFormDataToPiece, extractNoteFromFormData } from '$lib/server/formData'
 import path from 'path'
 import { config } from '$lib/server/config'
-import { getPieceFrontmatterPaths } from '@luzzle/core'
+import type { PieceFrontmatterSchemaField } from '@luzzle/core'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -23,9 +23,17 @@ export const load: PageServerLoad = async ({ params }) => {
 		return error(404, `piece does not exist`)
 	}
 
-	// Detect complexity: Check if any path is deeper than 2 levels (e.g. a.b.c)
-	const paths = getPieceFrontmatterPaths(piece.schema, pieceMarkdown.frontmatter)
-	const isTooComplex = paths.some((p) => p.split('.').length > 2)
+	// Detect complexity: arrays of objects that themselves contain arrays
+	const isTooComplex = piece.fields.some((f) => hasNestedArrays(f))
+
+	function hasNestedArrays(field: PieceFrontmatterSchemaField): boolean {
+		if (field.type === 'array' && field.items.type === 'object') {
+			return Object.values(field.items.properties).some(
+				(p) => (p as PieceFrontmatterSchemaField).type === 'array'
+			)
+		}
+		return false
+	}
 
 	return {
 		type: pieceMarkdown.piece,
