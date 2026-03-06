@@ -17,8 +17,6 @@
 	const switchUrl =
 		currentMode === 'form' ? `/editor/piece/${file}/source` : `/editor/piece/${file}`
 	const label = currentMode === 'form' ? 'source mode' : 'form mode'
-
-	// Use current URL as the return destination
 	const returnParam = `?returnTo=${encodeURIComponent(page.url.pathname)}`
 </script>
 
@@ -32,15 +30,6 @@
 				{#if open}
 					<div {...wrapperProps} class="dropdown-content">
 						<div {...props}>
-							<DropdownMenu.Item
-								disabled={isDirty}
-								onSelect={() => goto(`/editor/pieces/preview/${file}${returnParam}`)}
-							>
-								{#snippet child({ props })}
-									<div class="dropdown-item" {...props}>preview</div>
-								{/snippet}
-							</DropdownMenu.Item>
-
 							<DropdownMenu.Item
 								disabled={isDirty}
 								onSelect={() => goto(`/editor/pieces/field/${file}${returnParam}`)}

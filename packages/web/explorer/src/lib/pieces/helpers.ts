@@ -1,7 +1,7 @@
 import { type WebPieceTags } from '@luzzle/web.utils'
 import { page } from '$app/state'
 import type { PublicWebPiece } from './types'
-import type { PieceFrontmatter, PieceFrontMatterValue } from '@luzzle/core'
+import type { PieceFrontMatterValue } from '@luzzle/core'
 
 export type PieceComponentHelpers = {
 	getPieceUrl: () => PieceFrontMatterValue | string
