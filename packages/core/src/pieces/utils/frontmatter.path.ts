@@ -4,82 +4,12 @@ import {
 	PieceFrontMatterValue,
 	PieceFrontmatterSchemaField,
 	PieceFrontmatterProperty,
-	PieceFrontmatterSchema,
 } from './frontmatter.js'
 
 function parseIndex(key: string): number | undefined {
 	if (!/^\d+$/.test(key)) return undefined
 	const n = parseInt(key, 10)
 	return Number.isSafeInteger(n) ? n : undefined
-}
-
-function isSimpleType(type: string): boolean {
-	return ['string', 'number', 'integer', 'boolean'].includes(type)
-}
-
-function isAssetField(field: PieceFrontmatterProperty): boolean {
-	return field.format === 'asset' || (field.type === 'array' && field.items.format === 'asset')
-}
-
-export function getPieceFrontmatterPaths(
-	schema: PieceFrontmatterSchema<PieceFrontmatter>,
-	frontmatter: PieceFrontmatter
-): string[] {
-	const paths: string[] = []
-
-	function traverse(
-		currentSchema: PieceFrontmatterProperty,
-		currentData: unknown,
-		currentPath: string
-	) {
-		if (isAssetField(currentSchema)) {
-			paths.push(currentPath)
-			return
-		}
-
-		if (isSimpleType(currentSchema.type)) {
-			paths.push(currentPath)
-			return
-		}
-
-		if (currentSchema.type === 'array') {
-			if (isSimpleType(currentSchema.items.type)) {
-				paths.push(currentPath)
-				return
-			}
-
-			const arrayData = Array.isArray(currentData) ? currentData : []
-			
-			arrayData.forEach((item, index) => {
-				traverse(currentSchema.items, item, `${currentPath}.${index}`)
-			})
-
-			if (currentSchema.items.type === 'object') {
-				const nextIndex = arrayData.length
-				traverse(currentSchema.items, undefined, `${currentPath}.${nextIndex}`)
-			}
-			return
-		}
-
-		if (currentSchema.type === 'object') {
-			const props = currentSchema.properties
-			const dataObj = (currentData as Record<string, unknown>) || {}
-
-			Object.keys(props).forEach((key) => {
-				const propPath = `${currentPath}.${key}`
-				traverse(props[key], dataObj[key], propPath)
-			})
-			return
-		}
-	}
-
-	if (schema.properties) {
-		Object.keys(schema.properties).forEach((key) => {
-			traverse(schema.properties[key], frontmatter[key], key)
-		})
-	}
-
-	return paths.sort()
 }
 
 export function getFrontmatterValues<T = PieceFrontMatterValue>(
