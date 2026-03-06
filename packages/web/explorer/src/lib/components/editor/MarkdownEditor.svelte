@@ -10,11 +10,10 @@
 		value: string
 		onchange?: (value: string) => void
 		editorThemes: { light: EditorThemeColors; dark: EditorThemeColors }
-		schema?: Record<string, unknown>
 		type?: string
 	}
 
-	let { value = $bindable(), onchange, editorThemes, schema, type }: Props = $props()
+	let { value = $bindable(), onchange, editorThemes, type }: Props = $props()
 
 	let editorContainer: HTMLDivElement
 	let view: EditorView
@@ -37,7 +36,6 @@
 
 	onMount(() => {
 		const extensions = createEditorExtensions({
-			schema,
 			type,
 			linterConfig,
 			themeConfig,

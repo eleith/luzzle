@@ -12,22 +12,15 @@ import {
 import { EditorState, Compartment } from '@codemirror/state'
 import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
-import {
-	closeBrackets,
-	autocompletion,
-	closeBracketsKeymap,
-	completionKeymap
-} from '@codemirror/autocomplete'
+import { closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
 import { bracketMatching, indentOnInput } from '@codemirror/language'
 import { markdown } from '@codemirror/lang-markdown'
 import { yamlFrontmatter } from '@codemirror/lang-yaml'
 import { indentWithTab } from '@codemirror/commands'
 import { lintGutter, lintKeymap } from '@codemirror/lint'
 import { createFrontmatterLinter } from './linting'
-import { createFrontmatterAutocomplete } from './autocomplete'
 
 export interface EditorConfigOptions {
-	schema?: Record<string, unknown>
 	type?: string
 	linterConfig: Compartment
 	themeConfig: Compartment
@@ -35,7 +28,6 @@ export interface EditorConfigOptions {
 }
 
 export function createEditorExtensions({
-	schema,
 	type,
 	linterConfig,
 	themeConfig,
@@ -50,11 +42,6 @@ export function createEditorExtensions({
 		indentOnInput(),
 		bracketMatching(),
 		closeBrackets(),
-
-		autocompletion({
-			selectOnOpen: false,
-			override: schema ? [createFrontmatterAutocomplete(schema)] : undefined
-		}),
 
 		rectangularSelection(),
 		crosshairCursor(),
