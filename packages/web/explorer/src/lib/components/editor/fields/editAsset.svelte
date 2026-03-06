@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/ui/Button.svelte'
 	import type { AssetField } from './types'
 
 	type Props = {
@@ -86,8 +87,10 @@
 			<div>
 				<span><a href="/editor/asset/{asset}" target="_blank">{asset}</a></span>
 				<input type="hidden" name={currentPath} value={asset} />
-				<button class="button" data-variant="error" onclick={() => clickToRemove(asset)}
-					>remove</button
+				<Button
+					variant="link"
+					style="color:var(--color-error);"
+					onclick={() => clickToRemove(asset)}>[ clear ]</Button
 				>
 			</div>
 		{/each}

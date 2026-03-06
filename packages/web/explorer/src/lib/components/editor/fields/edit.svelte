@@ -208,7 +208,7 @@
 		{#if value !== null && typeof value === 'object'}
 			<div class="field-actions">
 				<Button variant="link" onclick={() => removeItem()}
-					style="color:var(--color-error);">remove</Button>
+					style="color:var(--color-error);">[ remove ]</Button>
 			</div>
 			{#each getSubFields(field) as subField (subField.name)}
 				{@const record = value as FrontmatterObject}
@@ -250,7 +250,7 @@
 						<span>Item {index}</span>
 						<Button variant="link" onclick={() => removeItem(index)}
 							style="color:var(--color-error);"
-							>remove</Button
+							>[ remove ]</Button
 						>
 					</div>
 					{#if field.type === 'array' && field.items.type === 'object'}
@@ -282,7 +282,7 @@
 			{/each}
 		{/if}
 		<div class="array-add">
-			<Button variant="link" onclick={addItem}>+ add item</Button>
+			<Button variant="link" onclick={addItem}>[ add ]</Button>
 		</div>
 	</div>
 {/snippet}

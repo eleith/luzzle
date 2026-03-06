@@ -59,7 +59,7 @@
 	color: var(--color-primary);
 	height: auto;
 	padding: 0;
-	text-decoration: underline;
+	text-decoration: none;
 	text-transform: none;
 }
 
