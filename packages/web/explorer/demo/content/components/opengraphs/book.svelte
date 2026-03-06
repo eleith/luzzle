@@ -2,7 +2,7 @@
 	import { type PieceOpengraphProps } from '$lib/pieces/helpers'
 	import Icon from '$lib/pieces/components/icon.svelte'
 
-	let { piece, metadata, helpers }: PieceOpengraphProps = $props()
+	let { piece, helpers }: PieceOpengraphProps = $props()
 	const palette = $derived(helpers.getPiecePalette())
 </script>
 
@@ -15,7 +15,7 @@
 		--color-accent: {palette?.accent};"
 >
 	<div class="left-panel">
-		<Icon {piece} {metadata} size={{ width: 350 }} lazy={false} />
+		<Icon {piece} size={{ width: 350 }} lazy={false} />
 	</div>
 
 	<div class="right-panel">
@@ -23,7 +23,7 @@
 			{piece.title}
 		</h1>
 		<h2 style="--font-size:2.5rem">
-			{metadata.author as string}
+			{piece.metadata.author}
 		</h2>
 	</div>
 </section>

@@ -28,14 +28,12 @@ export const load: PageServerLoad = async (page) => {
 		.where('piece_id', '=', piece.id)
 		.execute()
 
-	const metadata = piece.metadata
 	const note = piece.note ? await processMarkdown(piece.note) : null
 	const ogAsset = piece.assets.find((a) => a.transformation === 'opengraph')?.asset_path
 
 	return {
 		piece,
 		tags,
-		metadata,
 		html_note: note,
 		meta: {
 			title: `${piece.title} | ${config.content.text.title}`,

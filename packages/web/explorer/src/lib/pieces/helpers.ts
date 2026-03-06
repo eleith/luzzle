@@ -15,7 +15,6 @@ export type PieceComponentHelpers = {
 
 export type PieceIconProps = {
 	piece: PublicWebPiece
-	metadata: PieceFrontmatter
 	tags: string[]
 	size: {
 		width: number
@@ -34,7 +33,6 @@ export type PieceIconPalette = {
 }
 
 export type PieceOpengraphProps = {
-	metadata: PieceFrontmatter
 	tags: string[]
 	piece: PublicWebPiece
 	size: {
@@ -46,7 +44,6 @@ export type PieceOpengraphProps = {
 
 export type PiecePageProps = {
 	piece: PublicWebPiece
-	metadata: PieceFrontmatter
 	tags: Partial<WebPieceTags>[]
 	html_note: string | null
 	helpers: PieceComponentHelpers

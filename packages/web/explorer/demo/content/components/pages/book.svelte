@@ -2,11 +2,11 @@
 	import { type PiecePageProps } from '$lib/pieces/helpers'
 	import Icon from '$lib/pieces/components/icon.svelte'
 
-	const { piece, tags, metadata, html_note }: PiecePageProps = $props()
+	const { piece, tags, html_note }: PiecePageProps = $props()
 </script>
 
 <section class="header">
-	<Icon {piece} {metadata} size={{ width: 125 }} lazy={false} />
+	<Icon {piece} size={{ width: 125 }} lazy={false} />
 </section>
 
 <section class="content">
@@ -18,8 +18,8 @@
 				{/if}
 			</div>
 			<div>
-				{#if metadata.pages}
-					{metadata.pages} pages
+				{#if piece.metadata.pages}
+					{piece.metadata.pages} pages
 				{/if}
 			</div>
 		</div>
@@ -29,11 +29,11 @@
 		</h1>
 		<div class="info">
 			<div>
-				{#if metadata.author}
-					by {metadata.author}
+				{#if piece.metadata.author}
+					by {piece.metadata.author}
 				{/if}
-				{#if metadata.year_first_published}
-					in {metadata.year_first_published}
+				{#if piece.metadata.year_first_published}
+					in {piece.metadata.year_first_published}
 				{/if}
 			</div>
 		</div>
@@ -46,15 +46,15 @@
 			</div>
 		{/if}
 
-		{#if metadata.url || metadata.isbn}
+		{#if piece.metadata.url || piece.metadata.isbn}
 			<h2>Link</h2>
 			<div>
-				{#if metadata.url}
-					<a class="article-link" href={metadata.url as string}>{metadata.url}</a>
-				{:else if metadata.isbn}
-					<a class="article-link" href="https://openlibrary.org/search?isbn={metadata.isbn}"
+				{#if piece.metadata.url}
+					<a class="article-link" href={piece.metadata.url as string}>{piece.metadata.url}</a>
+				{:else if piece.metadata.isbn}
+					<a class="article-link" href="https://openlibrary.org/search?isbn={piece.metadata.isbn}"
 						>isbn
-						{metadata.isbn}</a
+						{piece.metadata.isbn}</a
 					>
 				{/if}
 			</div>

@@ -3,7 +3,6 @@
 	import type { PublicWebPiece } from '$lib/pieces/types'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
 	import { getPieceHelpers, type PieceMode, type PiecePageProps } from '$lib/pieces/helpers.js'
-	import type { PieceFrontmatter } from '@luzzle/core'
 
 	const customPageMap = new Map<string, { default: Component<PiecePageProps> }>()
 	const customComponents: Record<string, { default: Component }> = import.meta.glob(
@@ -22,15 +21,14 @@
 
 	type Props = {
 		piece: PublicWebPiece
-		metadata: PieceFrontmatter
 		tags: Array<{ slug: string; tag: string }>
 		html_note: string | null
 	}
 
-	let { piece, metadata, tags, html_note }: Props = $props()
+	let { piece, tags, html_note }: Props = $props()
 	const Page = $derived(customPageMap.get(piece.type)?.default || PageDefault)
 	const mode = getContext<PieceMode>('piece-mode')
 	const helpers = getPieceHelpers(piece, mode)
 </script>
 
-<Page {piece} {metadata} {tags} {html_note} {helpers} />
+<Page {piece} {tags} {html_note} {helpers} />

@@ -26,7 +26,6 @@
 
 	let { piece }: Props = $props()
 
-	const metadata = $derived(piece.metadata)
 	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
 	const Opengraph = $derived(customOpengraphMap.get(piece.type)?.default || OpengraphDefault)
 	const mode = getContext<PieceMode>('piece-mode')
@@ -36,7 +35,6 @@
 <section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
 	<Opengraph
 		{piece}
-		{metadata}
 		{tags}
 		size={{ width: OpengraphImageWidth, height: OpengraphImageHeight }}
 		{helpers}

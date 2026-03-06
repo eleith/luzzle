@@ -2,15 +2,15 @@
 	import { type PiecePageProps } from '$lib/pieces/helpers'
 	import Icon from '$lib/pieces/components/icon.svelte'
 
-	const { piece, tags, metadata, html_note, helpers }: PiecePageProps = $props()
+	const { piece, tags, html_note, helpers }: PiecePageProps = $props()
 	const palette = helpers.getPiecePalette()
 </script>
 
-{#if metadata.poster}
+{#if piece.metadata.poster}
 	<section class="header" style="background: {palette?.background || 'transparent'}">
 		<div class="media">
-			{#if metadata.poster}
-				<Icon {piece} {metadata} size={{ width: 250 }} lazy={false} />
+			{#if piece.metadata.poster}
+				<Icon {piece} size={{ width: 250 }} lazy={false} />
 			{/if}
 		</div>
 	</section>
@@ -30,17 +30,17 @@
 				{/if}
 			</div>
 			<div>
-				{#if metadata.type}
-					{metadata.type},
+				{#if piece.metadata.type}
+					{piece.metadata.type},
 				{/if}
 
-				{#if metadata.date_released}
-					released in {new Date(metadata.date_released as string).getUTCFullYear()}
+				{#if piece.metadata.date_released}
+					released in {new Date(piece.metadata.date_released).getUTCFullYear()}
 				{/if}
 			</div>
 			<div>
-				{#if metadata.runtime}
-					{metadata.runtime} min
+				{#if piece.metadata.runtime}
+					{piece.metadata.runtime} min
 				{/if}
 			</div>
 		</div>
@@ -53,15 +53,15 @@
 			</div>
 		{/if}
 
-		{#if metadata.url || metadata.isbn}
+		{#if piece.metadata.url || piece.metadata.isbn}
 			<h2>Link</h2>
 			<div>
-				{#if metadata.url}
-					<a class="article-link" href={metadata.url as string}>{metadata.url}</a>
-				{:else if metadata.isbn}
-					<a class="article-link" href="https://openlibrary.org/search?isbn={metadata.isbn}"
+				{#if piece.metadata.url}
+					<a class="article-link" href={piece.metadata.url}>{piece.metadata.url}</a>
+				{:else if piece.metadata.isbn}
+					<a class="article-link" href="https://openlibrary.org/search?isbn={piece.metadata.isbn}"
 						>isbn
-						{metadata.isbn}</a
+						{piece.metadata.isbn}</a
 					>
 				{/if}
 			</div>
@@ -74,10 +74,10 @@
 			</div>
 		{/if}
 
-		{#if Array.isArray(metadata.people)}
+		{#if Array.isArray(piece.metadata.people)}
 			<h2>People</h2>
 			<div class="people">
-				{metadata.people.join(', ')}
+				{piece.metadata.people.join(', ')}
 			</div>
 		{/if}
 

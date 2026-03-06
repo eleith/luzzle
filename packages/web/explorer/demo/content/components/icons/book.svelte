@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { type PieceIconProps } from '$lib/pieces/helpers'
-	let { piece, size, helpers, lazy, metadata }: PieceIconProps = $props()
+	let { piece, size, helpers, lazy }: PieceIconProps = $props()
 
 	function interpolate(
 		value: number,
@@ -24,7 +24,7 @@
 	}
 
 	const scale = Math.round((size.width / 375) * 100) / 100
-	const pages = metadata.pages as number | 100
+	const pages = piece.metadata.pages as number | 100
 	const thickness = interpolate(
 		pages * scale,
 		{ min: 1, max: 650 },
@@ -50,7 +50,7 @@
 	<div class="book-spine">
 		<div class="book-spine-text">
 			<span class="book-spine-author">
-				{metadata.author}
+				{piece.metadata.author}
 			</span>
 			<span class="book-spine-title">
 				{piece.title}
@@ -65,14 +65,14 @@
 		<div class="book-cover-front">
 			{piece.title}
 		</div>
-		{#if metadata.cover}
+		{#if piece.metadata.cover}
 			<picture>
 				<source
-					srcset={helpers.getPieceImageUrl(metadata.cover, size.width, 'avif')}
+					srcset={helpers.getPieceImageUrl(piece.metadata.cover, size.width, 'avif')}
 					type="image/avif"
 				/>
 				<img
-					src={helpers.getPieceImageUrl(metadata.cover, size.width, 'jpg')}
+					src={helpers.getPieceImageUrl(piece.metadata.cover, size.width, 'jpg')}
 					loading={lazy ? 'lazy' : 'eager'}
 					alt=""
 				/>

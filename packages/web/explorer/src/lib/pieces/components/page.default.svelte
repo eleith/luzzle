@@ -2,7 +2,8 @@
 	import type { PiecePageProps } from '$lib/pieces/helpers'
 	import Icon from '$lib/pieces/components/icon.svelte'
 
-	const { piece, tags, metadata, html_note }: PiecePageProps = $props()
+	const { piece, tags, html_note }: PiecePageProps = $props()
+	const metadata = piece.metadata
 
 	let showFullHeader = $state(false)
 
@@ -18,7 +19,7 @@
 		title="toggle full size"
 		class:piece-icon-open={showFullHeader}
 	>
-		<Icon {piece} {metadata} size={{ width: 125 }} lazy={false} />
+		<Icon {piece} size={{ width: 125 }} lazy={false} />
 	</button>
 </section>
 

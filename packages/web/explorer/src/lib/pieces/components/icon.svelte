@@ -4,7 +4,6 @@
 	import IconDefault from '$lib/pieces/components/icon.default.svelte'
 	import { getPieceHelpers, type PieceIconProps, type PieceMode } from '$lib/pieces/helpers.js'
 	import { getContext } from 'svelte'
-	import type { PieceFrontmatter } from '@luzzle/core'
 
 	const iconComponentMap = new Map<string, { default: Component<PieceIconProps> }>()
 	const iconComponents: Record<string, { default: Component }> = import.meta.glob(
@@ -23,11 +22,10 @@
 		active?: boolean
 		lazy?: boolean
 		piece: PublicWebPiece
-		metadata: PieceFrontmatter
 		size: { width: number; height?: number }
 	}
 
-	let { piece, metadata, lazy = false, size }: Props = $props()
+	let { piece, lazy = false, size }: Props = $props()
 
 	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
 	const width = $derived(size.width)
@@ -37,4 +35,4 @@
 	const IconComponent = $derived(iconComponentMap.get(piece.type)?.default || IconDefault)
 </script>
 
-<IconComponent {piece} {metadata} {tags} size={{ width, height }} {lazy} {helpers} />
+<IconComponent {piece} {tags} size={{ width, height }} {lazy} {helpers} />

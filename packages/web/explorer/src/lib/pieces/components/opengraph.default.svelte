@@ -2,7 +2,7 @@
 	import Icon from '$lib/pieces/components/icon.svelte'
 	import { type PieceOpengraphProps } from '$lib/pieces/helpers'
 
-	const { piece, metadata, helpers }: PieceOpengraphProps = $props()
+	const { piece, helpers }: PieceOpengraphProps = $props()
 	const palette = $derived(helpers.getPiecePalette())
 </script>
 
@@ -18,7 +18,7 @@
 >
 	<div class="opengraph">
 		<div class="left-panel">
-			<Icon {piece} {metadata} size={{ width: 350 }} />
+			<Icon {piece} size={{ width: 350 }} />
 		</div>
 		<div class="right-panel">
 			<h1 style="--font-size:{piece.title.length < 25 ? 5 : 3}rem">
