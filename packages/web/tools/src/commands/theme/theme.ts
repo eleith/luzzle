@@ -41,7 +41,8 @@ ${markdownBlock}
 ${lightBlock}
 }
 
-html[data-theme='dark'] {
+html[data-theme='dark'],
+section[data-theme='dark'] {
 ${darkBlock}
 }
 
