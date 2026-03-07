@@ -14,8 +14,6 @@
 			''
 	)
 
-	// Mark dirty if form had an error (failed save) OR content changed
-
 	const isDirty = $derived(!!form?.error || rawContent !== data.rawContent)
 
 	$effect(() => {
@@ -71,7 +69,6 @@
 		<MarkdownEditor
 			bind:value={rawContent}
 			editorThemes={data.editorThemes}
-			schema={data.schema}
 			type={data.type}
 		/>
 	</div>
