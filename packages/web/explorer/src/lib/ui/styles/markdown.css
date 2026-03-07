@@ -1,21 +1,28 @@
 /* Shiki Theme CSS */
 
+pre.shiki,
 .markdown pre {
 	background-color: var(--shiki-light-bg);
+	padding: var(--space-3);
 }
 
-.markdown code[data-theme*=' '],
-.markdown code[data-theme*=' '] span {
+pre.shiki code,
+pre.shiki code span,
+.markdown code,
+.markdown code span {
 	color: var(--shiki-light);
 	background-color: var(--shiki-light-bg);
 }
 
-html[data-theme='dark'] .markdown pre {
+[data-theme='dark'] pre.shiki,
+html[data-them='dark'] .markdown pre {
 	background-color: var(--shiki-dark-bg);
 }
 
-html[data-theme='dark'] .markdown code[data-theme*=' '],
-html[data-theme='dark'] .markdown code[data-theme*=' '] span {
+[data-theme='dark'] pre.shiki,
+[data-theme='dark'] pre.shiki span,
+[data-theme='dark'] .markdown pre,
+[data-theme='dark'] .markdown pre span {
 	color: var(--shiki-dark);
 	background-color: var(--shiki-dark-bg);
 }
@@ -28,7 +35,7 @@ html[data-theme='dark'] .markdown code[data-theme*=' '] span {
 		margin: var(--space-4) 0;
 	}
 
-	:not(pre) > code {
+	:not(pre)>code {
 		background-color: var(--color-surface-dim);
 		padding: 0 var(--space-1);
 		font-style: italic;
@@ -40,7 +47,7 @@ html[data-theme='dark'] .markdown code[data-theme*=' '] span {
 		counter-reset: line;
 	}
 
-	code[data-line-numbers] > [data-line]::before {
+	code[data-line-numbers]>[data-line]::before {
 		counter-increment: line;
 		content: counter(line);
 		display: inline-block;
@@ -50,15 +57,15 @@ html[data-theme='dark'] .markdown code[data-theme*=' '] span {
 		color: gray;
 	}
 
-	code[data-line-numbers-max-digits='2'] > [data-line]::before {
+	code[data-line-numbers-max-digits='2']>[data-line]::before {
 		width: 1.25rem;
 	}
 
-	code[data-line-numbers-max-digits='3'] > [data-line]::before {
+	code[data-line-numbers-max-digits='3']>[data-line]::before {
 		width: 1.75rem;
 	}
 
-	code[data-line-numbers-max-digits='4'] > [data-line]::before {
+	code[data-line-numbers-max-digits='4']>[data-line]::before {
 		width: 2.25rem;
 	}
 
@@ -161,11 +168,11 @@ html[data-theme='dark'] .markdown code[data-theme*=' '] span {
 	}
 
 	@media screen and (max-width: 1279px) {
-		.sidenote__checkbox ~ .sidenote__content {
+		.sidenote__checkbox~.sidenote__content {
 			display: none;
 		}
 
-		.sidenote__checkbox:checked ~ .sidenote__content {
+		.sidenote__checkbox:checked~.sidenote__content {
 			position: relative;
 			display: block;
 			min-width: 100%;
@@ -224,12 +231,12 @@ html[data-theme='dark'] .markdown code[data-theme*=' '] span {
 			margin-bottom: 3ch;
 		}
 
-		.sidenote__button:hover ~ .sidenote__content::before {
+		.sidenote__button:hover~.sidenote__content::before {
 			margin-top: 0;
 			margin-bottom: 0;
 		}
 
-		.sidenote__button:hover ~ .sidenote__content {
+		.sidenote__button:hover~.sidenote__content {
 			background: var(--color-surface-container-lowest);
 			color: var(--color-on-surface);
 		}

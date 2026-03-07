@@ -26,15 +26,16 @@ export const GET: RequestHandler = async ({ params }) => {
 	const field = config.pieces.find((p) => p.type === piece.type)?.fields.media?.[0]
 	const assets = piece.assets
 		.filter((a) => a.transformation === 'image.m.jpg')
-		.filter((a) => a.piece_file_path === field)
-	const asset = assets[0]
+		.filter((a) => a.piece_field_path === field)
 
-	if (!asset?.asset_path) {
+	const assetPath = assets?.[0]?.asset_path
+
+	if (!assetPath) {
 		return error(404, 'piece media not found')
 	}
 
 	const assetsDir = path.resolve('assets/pieces')
-	const filePath = path.join(assetsDir, asset.asset_path)
+	const filePath = path.join(assetsDir, assetPath)
 	const buffer = await fs.readFile(filePath)
 	const palette = await getPalette(buffer)
 

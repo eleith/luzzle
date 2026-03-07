@@ -6,4 +6,4 @@
 	setContext('piece-mode', 'local')
 </script>
 
-<PieceIcon piece={data.piece} metadata={data.piece.metadata} size={{ width: 500 }} lazy={false} />
+<PieceIcon piece={data.piece} size={{ width: 500 }} lazy={false} />

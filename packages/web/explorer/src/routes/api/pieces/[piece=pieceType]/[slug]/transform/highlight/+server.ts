@@ -57,6 +57,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 	const html = await codeToHtml(code, {
 		lang: lang || 'text',
+		defaultColor: false,
 		themes: {
 			light: config.theme.markdown.code.light,
 			dark: config.theme.markdown.code.dark

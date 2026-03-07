@@ -11,6 +11,8 @@ export type PieceComponentHelpers = {
 		format: 'jpg' | 'avif' | 'webp' | 'png'
 	) => string
 	getPiecePalette: () => PieceIconPalette | undefined
+	getPieceAssetUrl: (key: string, transform: string) => string | undefined
+	getPieceAssetContent: (key: string, transform: string) => string | undefined
 }
 
 export type PieceIconProps = {
@@ -67,6 +69,18 @@ export function getPieceHelpers(
 
 	return {
 		getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
+		getPieceAssetUrl: (key: string, transform: string) => {
+			const one = piece.assets.find(
+				(asset) => asset.asset_key === key && asset.transformation === transform
+			)
+			return one ? `${url}/pieces/assets/${one.asset_path}` : undefined
+		},
+		getPieceAssetContent: (key: string, transform: string) => {
+			const one = piece.assets.find(
+				(asset) => asset.asset_key === key && asset.transformation === transform
+			)
+			return one ? one.content : undefined
+		},
 		getPieceImageUrl: (
 			assetKey: PieceFrontMatterValue | string,
 			minWidth: number,
