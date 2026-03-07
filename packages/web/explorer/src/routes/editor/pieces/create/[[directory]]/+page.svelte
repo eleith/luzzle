@@ -41,7 +41,7 @@
 					{/each}
 				</select>
 			</div>
-			<div class="field">filename</div>
+			<div class="field">name</div>
 			<div class="field-edit">
 				<input
 					type="text"

@@ -26,13 +26,14 @@ export const actions = {
 		const directory = event.params.directory || ''
 		const note = await extractNoteFromFormData(formData)
 		const types = await pieces.getTypes()
+		const titleField = config.pieces.find(p => p.type === type)?.fields.title
 
 		if (!type || !types.includes(type)) {
 			return error(404, `piece type does not exist`)
 		}
 
-		if (!name) {
-			return fail(400, { error: { message: 'filename is required' } })
+		if (!name || !titleField) {
+			return fail(400, { error: { message: 'name is required and piece needs a title field' } })
 		}
 
 		const piece = await pieces.getPiece(type)
@@ -40,10 +41,9 @@ export const actions = {
 
 		try {
 			markdown = await piece.create(directory, name)
-
+			markdown = await piece.setField(markdown, titleField, name)
 			markdown.note = note
-			// Note: piece.create already initializes required frontmatter via initializePieceFrontMatter.
-			// We just save the piece with the note.
+
 			await piece.write(markdown)
 		} catch (e) {
 			console.error('Piece creation error:', e)
