@@ -12,7 +12,12 @@
 		style?: string
 		disabled?: boolean
 		formaction?: string
-		formenctype?: "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain" | null | undefined
+		formenctype?:
+			| 'application/x-www-form-urlencoded'
+			| 'multipart/form-data'
+			| 'text/plain'
+			| null
+			| undefined
 	}
 
 	let {
