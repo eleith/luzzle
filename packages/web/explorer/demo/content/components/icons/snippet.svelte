@@ -9,7 +9,8 @@
 		: undefined
 </script>
 
-<div
+<section
+	data-theme="dark"
 	class="terminal-container"
 	style="
 	  --piece-icon-scale: {scale};
@@ -36,7 +37,7 @@
 			{/if}
 		</div>
 	</div>
-</div>
+</section>
 
 <style>
 	.terminal-container {

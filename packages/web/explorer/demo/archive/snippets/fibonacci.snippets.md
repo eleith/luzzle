@@ -6,5 +6,6 @@ files:
     name: fibonacci.rs
     type: snippet
     format: rust
+summary: three different ways to compute fibonacci in rust
 ---
-three ways!
+three ways, that's a lot
