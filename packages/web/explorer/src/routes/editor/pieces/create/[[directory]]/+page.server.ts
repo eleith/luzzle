@@ -26,7 +26,7 @@ export const actions = {
 		const directory = event.params.directory || ''
 		const note = await extractNoteFromFormData(formData)
 		const types = await pieces.getTypes()
-		const titleField = config.pieces.find(p => p.type === type)?.fields.title
+		const titleField = config.pieces.find((p) => p.type === type)?.fields.title
 
 		if (!type || !types.includes(type)) {
 			return error(404, `piece type does not exist`)
