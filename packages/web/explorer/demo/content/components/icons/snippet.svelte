@@ -42,14 +42,13 @@
 <style>
 	.terminal-container {
 		width: var(--piece-icon-width);
-		height: var(--piece-icon-height);
 	}
 
 	.terminal-mockup {
 		border: 1px solid var(--color-surface-container);
 		border-radius: calc(0.75rem * var(--piece-icon-scale));
 		box-shadow: 2.6px 5.3px 5.3px var(--color-shadow);
-		height: var(--piece-icon-height);
+		max-height: var(--piece-icon-height);
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
