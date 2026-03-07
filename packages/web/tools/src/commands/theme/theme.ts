@@ -38,9 +38,6 @@ const generateThemeCss = (config: Config) => {
 html {
 ${globalsBlock}
 ${markdownBlock}
-}
-
-html[data-theme='light'] {
 ${lightBlock}
 }
 
