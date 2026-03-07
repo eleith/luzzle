@@ -123,7 +123,7 @@
 	}
 
 	.paper .writing .summary {
-		line-height: calc(1.2px + var(--writing-font-size)); 
+		line-height: calc(1.2px + var(--writing-font-size));
 		overflow: hidden;
 	}
 
