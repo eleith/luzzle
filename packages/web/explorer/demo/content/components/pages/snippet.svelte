@@ -12,21 +12,9 @@
 
 		<div class="info">
 			<div>
-				{#if piece.summary}
-					{piece.summary}
-				{/if}
-			</div>
-			<div>
 				{#if piece.date_added}
 					<div>
 						added on {new Date(piece.date_added).toLocaleDateString(undefined, {
-							timeZone: 'UTC'
-						})}
-					</div>
-				{/if}
-				{#if piece.date_updated}
-					<div>
-						updated on {new Date(piece.date_updated).toLocaleDateString(undefined, {
 							timeZone: 'UTC'
 						})}
 					</div>
@@ -41,43 +29,45 @@
 		</div>
 
 		{#if piece.note}
-			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-			{@html html_note}
+			<section class="note">
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html html_note}
+			</section>
 		{/if}
 
 		{#if piece.metadata.files && piece.metadata.files.length > 0}
-			<div class="notes-container">
+			<div class="files-container">
 				{#each piece.metadata.files as file (file.name)}
 					{@const attachment = helpers.getPieceAssetUrl(file.file, 'attachment')}
 
 					{#if file.type === 'snippet'}
 						{@const highlight = helpers.getPieceAssetContent(file.file, 'highlight')}
-						<div class="note">
-							<div class="note-header">
-								<div class="note-filename">{file.name}</div>
-								<div class="note-controls">
-									<div class="note-format">{file.format}</div>
+						<div class="file">
+							<div class="file-header">
+								<div class="file-filename">{file.name}</div>
+								<div class="file-controls">
+									<div class="file-format">{file.format}</div>
 									{#if attachment}
-										<div class="note-download">
+										<div class="file-download">
 											<a href={attachment}><FileDownIcon style="font-size: 1rem;" /></a>
 										</div>
 									{/if}
 								</div>
 							</div>
 							{#if highlight}
-								<div class="note-content">
+								<div class="file-content">
 									{@html highlight}
 								</div>
 							{/if}
 						</div>
 					{:else}
-						<div class="note">
-							<div class="note-header">
-								<span class="note-filename">{file.file}</span>
-								<span class="note-controls">
-									<span class="note-format">{file.format}</span>
+						<div class="file">
+							<div class="file-header">
+								<span class="file-filename">{file.file}</span>
+								<span class="file-controls">
+									<span class="file-format">{file.format}</span>
 									{#if attachment}
-										<span class="note-download">
+										<span class="file-download">
 											<a href={attachment}><FileDownIcon style="font-size: 1rem;" /></a>
 										</span>
 									{/if}
@@ -86,6 +76,14 @@
 						</div>
 					{/if}
 				{/each}
+			</div>
+		{/if}
+
+		{#if piece.date_updated}
+			<div class="info">
+				last updated: {new Date(piece.date_updated).toLocaleDateString(undefined, {
+					timeZone: 'UTC'
+				})}
 			</div>
 		{/if}
 	</section>
@@ -129,43 +127,46 @@
 	}
 
 	section.details .info {
-		font-size: var(--font-size-xxs);
 		color: var(--color-on-surface-variant);
 		display: flex;
 		justify-content: space-between;
 	}
 
-	.notes-container {
+	.info {
+		font-size: var(--font-size-xxs);
+	}
+
+	.files-container {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-6);
 		margin-top: var(--space-4);
 	}
 
-	.note {
+	.file {
 		border: 1px solid var(--color-outline-variant);
 		border-radius: 8px;
 		overflow: hidden;
 	}
 
-	.note-header {
+	.file-header {
 		display: flex;
 		justify-content: space-between;
 		border-bottom: 1px solid #444;
 	}
 
-	.note-filename {
+	.file-filename {
 		padding: var(--space-2) var(--space-4);
 		font-family: var(--font-mono-name);
 		font-size: var(--font-size-xs);
 	}
 
-	.note-controls {
+	.file-controls {
 		border-left: solid var(--color-outline-variant) 1px;
 		display: flex;
 	}
 
-	.note-format {
+	.file-format {
 		display: flex;
 		align-items: center;
 		padding-left: var(--space-3);
@@ -175,14 +176,14 @@
 		border-right: solid var(--color-outline-variant) 1px;
 	}
 
-	.note-download {
+	.file-download {
 		display: flex;
 		align-items: center;
 		padding-left: var(--space-3);
 		padding-right: var(--space-3);
 	}
 
-	.note-download a {
+	.file-download a {
 		display: flex;
 		align-items: center;
 	}
@@ -214,17 +215,17 @@
 		opacity: 1;
 	}
 
-	.note-content {
+	.file-content {
 		overflow-x: auto;
 		font-size: var(--font-size-xxs);
 	}
 
-	:global(.note-content pre.shiki code) {
+	:global(.file-content pre.shiki code) {
 		counter-reset: step;
 		counter-increment: step 0;
 	}
 
-	:global(.note-content pre.shiki code .line::before) {
+	:global(.file-content pre.shiki code .line::before) {
 		content: counter(step);
 		counter-increment: step;
 		width: 1rem;

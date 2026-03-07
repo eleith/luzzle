@@ -7,5 +7,6 @@ files:
     type: snippet
     format: rust
 summary: three different ways to compute fibonacci in rust
+keywords: rust, script, fib
 ---
 three ways, that's a lot
