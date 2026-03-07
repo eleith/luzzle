@@ -4,16 +4,11 @@
 
 	let { piece, helpers, metadata }: PieceOpengraphProps = $props()
 	const palette = $derived(helpers.getPiecePalette())
-
-	const backdrop = metadata.backdrop as string | undefined
-	const backdropImage = backdrop ? helpers.getPieceImageUrl(backdrop, 1200, 'jpg') : null
 </script>
 
 <section
 	class="container"
-	class:backdrop={!!backdrop}
 	style="
-		--backdrop-image: url('{backdropImage}');
 		--color-main-text: {palette?.bodyText};
 		--color-title-text: {palette?.titleText};
 		--color-background: {palette?.background};
@@ -34,12 +29,6 @@
 		height: 100%;
 		border-bottom: 10px solid var(--color-accent);
 		position: relative;
-	}
-
-	section.container.backdrop {
-		background-image: var(--backdrop-image);
-		background-size: cover;
-		background-position: center center;
 	}
 
 	.cover {

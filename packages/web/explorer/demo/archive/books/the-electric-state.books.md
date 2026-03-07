@@ -27,10 +27,5 @@ date_read: 2024-09-24
 coauthors: ""
 subtitle: ""
 ---
-i couldn't get enough. the art. the story. the questions. and yet, there was
-just enough dripped out to leave me engrossed, lost and sucker punched.
 
-what a trip. good choice to tell this story through art and a photo-ish
-realistic style. i didn't want to be done, but it's best the way things are.
-
-i'm going to stare at the art some more.
+it was very ... electric

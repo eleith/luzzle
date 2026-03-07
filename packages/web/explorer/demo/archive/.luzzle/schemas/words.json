@@ -1,0 +1,52 @@
+{
+  "title": "words",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "examples": ["text title"]
+    },
+    "subtitle": {
+      "type": "string",
+      "examples": ["text subtitle"],
+			"nullable": true
+    },
+    "summary": {
+      "type": "string",
+      "examples": ["text summary"],
+			"format": "paragraph",
+			"nullable": true
+    },
+    "keywords": {
+      "type": "string",
+			"format": "comma-separated",
+      "examples": ["text keywords"],
+			"nullable": true
+    },
+    "representative_image": {
+      "type": "string",
+      "format": "asset",
+      "examples": [".assets/path/to/image.jpg"],
+			"nullable": true
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "asset",
+        "examples": [".assets/path/to/attachment.pdf"]
+      },
+			"nullable": true
+    },
+    "date_published": {
+      "type": "string",
+      "format": "date",
+      "examples": ["2020-01-01"],
+			"nullable": true
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "additionalProperties": true
+}

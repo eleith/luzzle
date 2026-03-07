@@ -24,15 +24,5 @@ keywords: Debt, History, Anthropology, Economics, Social Anthropology, Money,
 date_read: 2024-08-31
 cover: .assets/books/cover/debt.books-a41371c1.jpg
 ---
-what a blueprint for david's other book the dawn of everything
 
-once again, the history of the state, civilization and violence are intertwined
-and easily forgotten in how we retell stories of our past in our history classes
-(or in this case, our economics classes)
-
-i appreciate leveraging the story of a richer more real history as a way to open
-up the imagination that many futures are possible and that our societal path
-towards the present is not built on inevitability.
-
-this book will sit with me for a long time as i forever contemplate the
-relationship of society, money and happiness.
+that is a lot of ... debt

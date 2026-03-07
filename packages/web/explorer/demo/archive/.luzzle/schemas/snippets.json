@@ -1,0 +1,122 @@
+{
+	"title": "snippets",
+	"type": "object",
+	"properties": {
+		"title": {
+			"description": "The title of the gist",
+			"type": "string",
+			"examples": [
+				"Example Gist Title"
+			]
+		},
+		"summary": {
+			"description": "A short summary of what this gist contains",
+			"type": "string",
+			"format": "paragraph",
+			"examples": [
+				"This gist contains a collection of utility functions for handling dates."
+			],
+			"nullable": true
+		},
+		"keywords": {
+			"description": "Relevant keywords for categorization",
+			"type": "string",
+			"format": "comma-separated",
+			"examples": [
+				"typescript, dates, utility"
+			],
+			"nullable": true
+		},
+		"is_public": {
+			"description": "Whether this gist is public or private",
+			"type": "boolean",
+			"default": true,
+			"examples": [
+				true
+			]
+		},
+		"url": {
+			"description": "An optional external URL for the gist (e.g., GitHub Gist)",
+			"type": "string",
+			"pattern": "^(http|https)://",
+			"examples": [
+				"https://gist.github.com/example"
+			],
+			"nullable": true
+		},
+		"date_added": {
+			"description": "The date the gist was created",
+			"type": "string",
+			"format": "date",
+			"examples": [
+				"2024-01-01"
+			],
+			"nullable": true
+		},
+		"date_updated": {
+			"description": "The date the gist was last updated",
+			"type": "string",
+			"format": "date",
+			"examples": [
+				"2024-01-02"
+			],
+			"nullable": true
+		},
+		"files": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"file": {
+						"type": "string",
+						"format": "asset",
+						"examples": [
+							".assets/path/to/script.js"
+						]
+					},
+					"name": {
+						"type": "string",
+						"description": "name of file",
+						"examples": [
+							"add-two-numbers.js"
+						]
+					},
+					"type": {
+						"description": "the type of file, either a snippet or attachment",
+						"type": "string",
+						"enum": [
+							"snippet",
+							"attachment"
+						],
+						"examples": [
+							"snippet"
+						]
+					},
+					"format": {
+						"type": "string",
+						"description": "file format or language to display",
+						"examples": [
+							"javascript"
+						]
+					},
+					"description": {
+						"type": "string",
+						"description": "A short description of the file",
+						"examples": [
+							"a script that adds two numbers"
+						]
+					}
+				},
+				"required": [
+					"file"
+				]
+			},
+			"nullable": true
+		}
+	},
+	"required": [
+		"title",
+		"is_public"
+	],
+	"additionalProperties": true
+}

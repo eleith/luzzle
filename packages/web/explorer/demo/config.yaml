@@ -37,12 +37,6 @@ content:
     root: ./content/components/pages/root.svelte
 
 pieces:
-  - type: projects
-    fields:
-      title: title
-      summary: status
-      date_consumed: date_started
-      tags: keywords
   - type: books
     components:
       icon: ./content/components/icons/book.svelte
@@ -67,6 +61,32 @@ pieces:
       tags: keywords
       media:
         - poster
+  - type: snippets
+    components:
+      icon: ./content/components/icons/snippet.svelte
+      opengraph: ./content/components/opengraphs/snippet.svelte
+      page: ./content/components/pages/snippet.svelte
+    fields:
+      title: title
+      summary: summary
+      date_consumed: date_added
+      tags: keywords
+      attachments:
+        - files[*].file
+  - type: words
+    components:
+      icon: ./content/components/icons/paper.svelte
+      opengraph: ./content/components/opengraphs/paper.svelte
+      page: ./content/components/pages/paper.svelte
+    fields:
+      title: title
+      summary: summary
+      date_consumed: date_published
+      tags: keywords
+      media:
+        - representative_image
+      attachments:
+        - attachments
 
 theme:
   globals:

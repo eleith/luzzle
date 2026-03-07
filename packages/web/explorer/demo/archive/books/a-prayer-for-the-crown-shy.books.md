@@ -27,8 +27,5 @@ year_first_published: 2022
 url: https://openlibrary.org/books/OL35097780M
 coauthors: ""
 ---
-reading this book was like taking a short walk in a familiar forest.
 
-what a great follow-up to "a psalm for the wild-built". mosscap and dex are a
-simple but powerful pair to explore the ideas of purpose, responsibility and
-meaning. even if all those big words are only ever hinted at.
+have some tea
