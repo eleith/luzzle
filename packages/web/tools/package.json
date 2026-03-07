@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web.tools",
-	"version": "0.0.115",
+	"version": "0.0.116",
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
