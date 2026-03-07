@@ -5,16 +5,17 @@ import { Pieces } from '@luzzle/core'
 
 vi.stubGlobal('fetch', vi.fn())
 
-const makeWebPiece = (): WebPieces => ({
+const makeWebPiece = (overrides?: Partial<WebPieces>): WebPieces => ({
 	id: '1',
 	type: 'books',
 	date_updated: 100,
 	date_added: 50,
-	json_metadata: '{}',
+	json_metadata: JSON.stringify({ cover: 'cover.jpg' }),
 	file_path: 'book.md',
 	key: 'key',
 	slug: 'my-book',
 	title: 'My Book',
+	...overrides,
 })
 
 const makeConfig = (overrides?: Partial<Config>): Config =>
@@ -28,6 +29,8 @@ afterEach(() => {
 	vi.clearAllMocks()
 })
 
+const assetMap = new Map([['cover.jpg', 'assets/cover.jpg']])
+
 describe('transforms/palette', () => {
 	test('fetches palette and returns embedded asset record', async () => {
 		const mockPieces = {} as unknown as Pieces
@@ -39,7 +42,7 @@ describe('transforms/palette', () => {
 			text: vi.fn().mockResolvedValue(paletteJson),
 		} as unknown as Response)
 
-		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
+		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
 
 		expect(fetch).toHaveBeenCalledWith('http://localhost/api/pieces/books/my-book/transform/palette')
 		expect(records).toEqual([
@@ -62,7 +65,7 @@ describe('transforms/palette', () => {
 		} as unknown as Response)
 
 		await expect(
-			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
+			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
 		).rejects.toThrow('500')
 	})
 
@@ -70,7 +73,7 @@ describe('transforms/palette', () => {
 		const mockPieces = {} as unknown as Pieces
 		const configNoMedia = makeConfig({ pieces: [{ type: 'books', fields: {} }] } as unknown as Partial<Config>)
 
-		const records = await run({ webPiece: makeWebPiece(), config: configNoMedia, outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
+		const records = await run({ webPiece: makeWebPiece(), config: configNoMedia, outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
 
 		expect(fetch).not.toHaveBeenCalled()
 		expect(records).toEqual([])
@@ -80,7 +83,27 @@ describe('transforms/palette', () => {
 		const mockPieces = {} as unknown as Pieces
 		const configOther = makeConfig({ pieces: [{ type: 'other', fields: { media: ['cover'] } }] } as unknown as Partial<Config>)
 
-		const records = await run({ webPiece: makeWebPiece(), config: configOther, outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
+		const records = await run({ webPiece: makeWebPiece(), config: configOther, outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
+
+		expect(fetch).not.toHaveBeenCalled()
+		expect(records).toEqual([])
+	})
+
+	test('returns empty when piece has no media values in frontmatter', async () => {
+		const mockPieces = {} as unknown as Pieces
+		const webPiece = makeWebPiece({ json_metadata: '{}' })
+
+		const records = await run({ webPiece, config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
+
+		expect(fetch).not.toHaveBeenCalled()
+		expect(records).toEqual([])
+	})
+
+	test('returns empty when media values do not resolve to assets', async () => {
+		const mockPieces = {} as unknown as Pieces
+		const webPiece = makeWebPiece({ json_metadata: JSON.stringify({ cover: 'unknown.jpg' }) })
+
+		const records = await run({ webPiece, config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
 
 		expect(fetch).not.toHaveBeenCalled()
 		expect(records).toEqual([])
@@ -92,7 +115,7 @@ describe('transforms/palette', () => {
 		vi.mocked(fetch).mockRejectedValue(new Error('network error'))
 
 		await expect(
-			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
+			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
 		).rejects.toThrow('network error')
 	})
 })
