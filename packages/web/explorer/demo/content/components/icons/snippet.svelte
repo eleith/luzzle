@@ -89,7 +89,7 @@
 	.terminal-filename {
 		flex-grow: 1;
 		text-align: center;
-		color: var(--color-on-surface-container);
+		color: var(--color-on-surface);
 		font-size: calc(0.75rem * var(--piece-icon-scale));
 		font-family: var(--font-mono-name);
 		white-space: nowrap;

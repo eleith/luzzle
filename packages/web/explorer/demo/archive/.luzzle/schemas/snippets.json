@@ -27,14 +27,6 @@
 			],
 			"nullable": true
 		},
-		"is_public": {
-			"description": "Whether this gist is public or private",
-			"type": "boolean",
-			"default": true,
-			"examples": [
-				true
-			]
-		},
 		"url": {
 			"description": "An optional external URL for the gist (e.g., GitHub Gist)",
 			"type": "string",
@@ -98,13 +90,6 @@
 						"examples": [
 							"javascript"
 						]
-					},
-					"description": {
-						"type": "string",
-						"description": "A short description of the file",
-						"examples": [
-							"a script that adds two numbers"
-						]
 					}
 				},
 				"required": [
@@ -116,7 +101,7 @@
 	},
 	"required": [
 		"title",
-		"is_public"
+		"date_added"
 	],
 	"additionalProperties": true
 }

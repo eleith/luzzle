@@ -5,6 +5,10 @@
 	let { piece }: PieceOpengraphProps = $props()
 
 	const titleSize = piece.title.length < 25 ? 3.5 : 2.2
+
+	$effect(() => {
+		document.documentElement.setAttribute('data-theme', 'dark')
+	})
 </script>
 
 <section class="container" data-theme="dark">
