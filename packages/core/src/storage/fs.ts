@@ -46,9 +46,9 @@ class StorageFileSystem extends LuzzleStorage {
 		const resolvedPath = this.resolvePath(path)
 
 		if (Buffer.isBuffer(contents)) {
-			writeFile(resolvedPath, contents, 'binary')
+			await writeFile(resolvedPath, contents, 'binary')
 		} else {
-			writeFile(resolvedPath, contents, 'utf8')
+			await writeFile(resolvedPath, contents, 'utf8')
 		}
 	}
 
@@ -72,7 +72,7 @@ class StorageFileSystem extends LuzzleStorage {
 
 	async delete(path: string) {
 		const resolvedPath = this.resolvePath(path)
-		unlink(resolvedPath)
+		await unlink(resolvedPath)
 	}
 
 	async stat(path: string) {

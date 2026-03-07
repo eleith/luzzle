@@ -37,7 +37,7 @@ class StorageWebDAV extends LuzzleStorage {
 
 	async writeFile(path: string, contents: string | Buffer | Readable) {
 		const fullPath = this.buildPath(path)
-		this._webdavClient.putFileContents(fullPath, contents)
+		await this._webdavClient.putFileContents(fullPath, contents)
 	}
 
 	async getFilesIn(dir: string, options?: { deep?: boolean }) {
@@ -60,7 +60,7 @@ class StorageWebDAV extends LuzzleStorage {
 
 	async delete(path: string) {
 		const fullPath = this.buildPath(path)
-		this._webdavClient.deleteFile(fullPath)
+		await this._webdavClient.deleteFile(fullPath)
 	}
 
 	async stat(path: string) {
@@ -86,7 +86,7 @@ class StorageWebDAV extends LuzzleStorage {
 
 	async makeDirectory(path: string) {
 		const fullPath = this.buildPath(path)
-		this._webdavClient.createDirectory(fullPath, { recursive: true })
+		await this._webdavClient.createDirectory(fullPath, { recursive: true })
 	}
 }
 
