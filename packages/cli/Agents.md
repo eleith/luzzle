@@ -8,5 +8,5 @@ Command-line interface for manual archive and piece management.
 * **Logic**: Thin wrapper around `@luzzle/core`.
 
 ## Quality
-* Maintain 100% test coverage for all command logic and utilities.
+* Maintain coverage standards defined in `vite.config.ts`.
 * Ensure CLI prompts remain intuitive and handle edge cases (like missing schemas) gracefully.

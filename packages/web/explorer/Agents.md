@@ -23,13 +23,16 @@ SvelteKit application.
 
 ## Key Concepts
 
-- **Docker Deployment:** Users build custom images using
-  `examples/Dockerfile.custom` to bundle content.
+- **Docker Deployment:** Uses `Dockerfile` for production and `Dockerfile.dev`
+  for development. The `demo/` folder provides a ready-to-run example with
+  sample archive, config, content, and assets.
 - **Editor Namespace:** All editing routes live under `/editor` and are
   protected by authentication.
 - **Piece Generation:** Uses AI (Gemini) to generate metadata from content.
 - **Database:** Superset of the core database. `@luzzle/web.tools` adds tables
   for web aggregation and full-text search.
+- **Transform Routes:** Generated assets (opengraph images, syntax highlights,
+  palettes) are served via `/transform/` routes.
 
 ## Development
 

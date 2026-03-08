@@ -4,23 +4,17 @@ A responsive web manager for your Luzzle archives.
 
 ## Quick Start 🚀
 
-The fastest way to get Luzzle running is via Docker Compose. This will spin up
-the Explorer, the Builder and the Proxy.
+The fastest way to get Luzzle running is via Docker Compose. The `demo/` folder
+contains a ready-to-run example with a sample archive, config, content
+components, and pre-built assets.
 
-1: Clone & Prepare
-
-```bash
- # Copy the sample archive to get started
- cp -r sample archive
-```
-
-2: Up
+1: Up
 
 ```bash
-docker-compose up
+docker-compose -f docker-compose.dev.yml up
 ```
 
-3: Browse
+2: Browse
 
 Open [http://localhost:8080](http://localhost:8080) in your browser.
 
@@ -47,7 +41,7 @@ In production, you'll want to provide a few environment variables to secure your
 instance:
 
 - `LUZZLE_AUTH_SECRET`: A random string for session encryption.
-- `LUZZLE_BUILDER_TOKEN`: A secret token to authenticate the builder sidecar.
+- `LUZZLE_BUILD_TOKEN`: A secret token to authenticate the builder sidecar.
 - `LUZZLE_AUTH_USERNAME` / `LUZZLE_AUTH_PASSWORD`: If using credential-based
   auth.
 

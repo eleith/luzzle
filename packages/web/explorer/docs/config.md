@@ -41,28 +41,29 @@ Luzzle supports OIDC and simple Credentials.
 
 The builder settings define how the Explorer triggers background build processes.
 
-| Path             | Env Variable           | Required | Default | Description                               |
-| ---------------- | ---------------------- | -------- | ------- | ----------------------------------------- |
-| `builder.url`    | `LUZZLE_BUILDER_TOKEN` | Yes      | -       | The webhook URL to trigger a build.       |
-| `builder.method` | -                      | No       | `POST`  | The HTTP method used to call the webhook. |
+| Path             | Env Variable         | Required | Default | Description                               |
+| ---------------- | -------------------- | -------- | ------- | ----------------------------------------- |
+| `builder.url`    | `LUZZLE_BUILD_TOKEN` | Yes      | -       | The webhook URL to trigger a build.       |
+| `builder.method` | -                    | No       | `POST`  | The HTTP method used to call the webhook. |
 
 ## Content & Theme 🎨
 
-| Path                       | Required | Default                      | Description                               |
-| -------------------------- | -------- | ---------------------------- | ----------------------------------------- |
-| `content.text.title`       | Yes      | `Luzzle Explorer`            | The title displayed on your site.         |
-| `content.text.description` | Yes      | `A Luzzle Explorer instance` | The site description for SEO and OG tags. |
-| `theme.light`              | No       | (Material)                   | Custom colors for light mode.             |
-| `theme.dark`               | No       | (Material)                   | Custom colors for dark mode.              |
-| `theme.markdown.code`      | Yes      | -                            | Shiki themes for code blocks.             |
+| Path                       | Required | Default                      | Description                                                |
+| -------------------------- | -------- | ---------------------------- | ---------------------------------------------------------- |
+| `content.text.title`       | Yes      | `Luzzle Explorer`            | The title displayed on your site.                          |
+| `content.text.description` | Yes      | `A Luzzle Explorer instance` | The site description for SEO and OG tags.                  |
+| `theme.globals`            | No       | (Material)                   | Global design tokens (fonts, spacing, radii, breakpoints). |
+| `theme.light`              | No       | (Material)                   | Custom colors for light mode.                              |
+| `theme.dark`               | No       | (Material)                   | Custom colors for dark mode.                               |
+| `theme.markdown.code`      | Yes      | -                            | Shiki themes for code blocks.                              |
 
 ## AI Features 🤖
 
-| Path          | Env Variable        | Required | Default  | Description                  |
-| ------------- | ------------------- | -------- | -------- | ---------------------------- |
-| `ai.provider` | -                   | No       | `google` | Currently supports `google`. |
-| `ai.api_key`  | `LUZZLE_AI_API_KEY` | No       | -        | Your Google Gemini API key.  |
+| Path          | Env Variable     | Required | Default  | Description                  |
+| ------------- | ---------------- | -------- | -------- | ---------------------------- |
+| `ai.provider` | -                | No       | `google` | Currently supports `google`. |
+| `ai.api_key`  | `GOOGLE_API_KEY` | No       | -        | Your Google Gemini API key.  |
 
 ## Pieces 🧩
 
-The `pieces` array in `config.yaml` tells Luzzle how to handle different types of records. You can learn how to structure these by exploring the `sample/` folder in this repository.
+The `pieces` array in `config.yaml` tells Luzzle how to handle different types of records. You can learn how to structure these by exploring the `demo/` folder in this repository.

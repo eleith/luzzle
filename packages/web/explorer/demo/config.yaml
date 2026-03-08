@@ -8,7 +8,7 @@ url:
 auth:
   enabled: true
   type: credentials
-  secret: ${AUTHJS_SECRET}
+  secret: ${LUZZLE_AUTH_SECRET}
   credentials:
     username: ${LUZZLE_AUTH_USERNAME}
     password: ${LUZZLE_AUTH_PASSWORD}
