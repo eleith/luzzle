@@ -12,9 +12,9 @@
 
 		<div class="info">
 			<div>
-				{#if piece.date_added}
+				{#if piece.metadata.date_added}
 					<div>
-						added on {new Date(piece.date_added).toLocaleDateString(undefined, {
+						added on {new Date(piece.metadata.date_added).toLocaleDateString(undefined, {
 							timeZone: 'UTC'
 						})}
 					</div>
@@ -79,9 +79,9 @@
 			</div>
 		{/if}
 
-		{#if piece.date_updated}
+		{#if piece.metadata.date_updated}
 			<div class="info">
-				last updated: {new Date(piece.date_updated).toLocaleDateString(undefined, {
+				last updated: {new Date(piece.metadata.date_updated).toLocaleDateString(undefined, {
 					timeZone: 'UTC'
 				})}
 			</div>
