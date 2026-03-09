@@ -47,27 +47,6 @@ vim.lsp.config('luzzle_lsp', {
 vim.lsp.enable({ 'marksman', 'luzzle_lsp' })
 ```
 
-### nvim-lspconfig (Neovim < 0.11)
-
-```lua
-local lspconfig = require('lspconfig')
-local configs = require('lspconfig.configs')
-
-if not configs.luzzle_lsp then
-  configs.luzzle_lsp = {
-    default_config = {
-      cmd = { 'luzzle-lsp', '--stdio' },
-      filetypes = { 'markdown' },
-      root_dir = lspconfig.util.root_pattern('.luzzle'),
-      single_file_support = false,
-    },
-  }
-end
-
-lspconfig.marksman.setup({})
-lspconfig.luzzle_lsp.setup({})
-```
-
 The `.luzzle` root marker ensures the server only activates inside Luzzle
 archives — markdown files outside an archive won't trigger schema validation.
 
@@ -93,7 +72,7 @@ LUZZLE_LSP_DEBUG=1 luzzle-lsp --stdio
 
 ## CLI 💻
 
-```
+```bash
 luzzle-lsp --stdio     Start the proxy (default)
 luzzle-lsp --version   Print version
 luzzle-lsp --help      Print usage
