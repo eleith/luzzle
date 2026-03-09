@@ -66,12 +66,7 @@ export const actions = {
 			const normalized = normalizeLineEndings(content)
 			const data = await extractFullMarkdown(normalized)
 			const note = await normalizeMarkdown(data.markdown)
-			const markdown = makePieceMarkdown(
-				file,
-				type,
-				note,
-				data.frontmatter as PieceFrontmatter
-			)
+			const markdown = makePieceMarkdown(file, type, note, data.frontmatter as PieceFrontmatter)
 			await piece.write(markdown)
 		} catch (e: unknown) {
 			const error = e instanceof Error ? e : new Error(String(e))
