@@ -1,0 +1,44 @@
+{
+	"name": "@luzzle/lsp",
+	"version": "0.0.1",
+	"author": "eleith",
+	"description": "LSP proxy for YAML frontmatter validation in Luzzle markdown files",
+	"scripts": {
+		"lint": "eslint src",
+		"build:executable": "chmod +x ./dist/index.js",
+		"postbuild": "npm run build:executable",
+		"build": "tsc",
+		"test": "vitest run --coverage --silent"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"bin": {
+		"luzzle-lsp": "./dist/index.js"
+	},
+	"files": [
+		"dist/*",
+		"package.json"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/eleith/luzzle.git"
+	},
+	"homepage": "https://github.com/eleith/luzzle",
+	"devDependencies": {
+		"@types/node": "22.12.0",
+		"@vitest/coverage-v8": "3.2.4",
+		"eslint": "9.22.0",
+		"eslint-config-prettier": "9.1.0",
+		"globals": "16.0.0",
+		"prettier": "3.4.2",
+		"typescript": "5.7.3",
+		"typescript-eslint": "8.19.1",
+		"vite": "7.1.7",
+		"vitest": "3.2.4"
+	},
+	"dependencies": {
+		"vscode-jsonrpc": "^8.2.1"
+	},
+	"type": "module"
+}
