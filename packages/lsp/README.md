@@ -58,10 +58,6 @@ Each schema file maps to a piece type:
 - `.luzzle/schemas/books.json` → validates `*.books.md`
 - `.luzzle/schemas/films.json` → validates `*.films.md`
 
-Schemas are automatically transformed for compatibility with
-`yaml-language-server` (e.g., `nullable: true` is converted to JSON Schema
-Draft 7 type unions).
-
 ## Debugging 🔍
 
 Enable debug logging to stderr:
