@@ -22,13 +22,8 @@ from the Markdown body.
 ## Install 🚀
 
 ```bash
-cd packages/lsp
-npm install
-npm run build
+npm install @luzzle/lsp
 ```
-
-Then either `npm link` the package or add the `dist/` output to your `$PATH`
-so `luzzle-lsp` is available as a command.
 
 ## Neovim Setup ⚙️
 
