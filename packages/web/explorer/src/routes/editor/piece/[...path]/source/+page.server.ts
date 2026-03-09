@@ -6,6 +6,7 @@ import path from 'path'
 import { config } from '$lib/server/config'
 import { extractFullMarkdown, makePieceMarkdown, type PieceFrontmatter } from '@luzzle/core'
 import { extractEditorTheme } from '$lib/server/shiki'
+import { normalizeLineEndings, normalizeMarkdown } from '$lib/server/markdown'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -62,11 +63,13 @@ export const actions = {
 		const piece = await pieces.getPiece(type)
 
 		try {
-			const data = await extractFullMarkdown(content)
+			const normalized = normalizeLineEndings(content)
+			const data = await extractFullMarkdown(normalized)
+			const note = await normalizeMarkdown(data.markdown)
 			const markdown = makePieceMarkdown(
 				file,
 				type,
-				data.markdown,
+				note,
 				data.frontmatter as PieceFrontmatter
 			)
 			await piece.write(markdown)

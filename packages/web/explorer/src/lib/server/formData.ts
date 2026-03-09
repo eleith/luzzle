@@ -6,6 +6,7 @@ import {
 	type PieceMarkdown,
 	findFrontmatterField
 } from '@luzzle/core'
+import { normalizeMarkdown } from '$lib/server/markdown'
 
 type FormOperations = {
 	removes: Set<string>
@@ -220,7 +221,7 @@ async function applyFieldUpdate<T extends PieceFrontmatter>(
 
 async function extractNoteFromFormData(formData: FormData) {
 	const note = formData.get('note') || ''
-	return note.toString().replace(/\r\n/g, '\n')
+	return await normalizeMarkdown(note.toString())
 }
 
 export { applyFormDataToPiece, applyFieldUpdate, extractNoteFromFormData }

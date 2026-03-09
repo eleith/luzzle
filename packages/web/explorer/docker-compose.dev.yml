@@ -13,8 +13,8 @@ services:
     environment:
       - LUZZLE_APP_URL=${LUZZLE_APP_URL:-http://localhost:8080}
       - LUZZLE_WEB_HOST=${LUZZLE_WEB_HOST:-luzzle-dev-web}
-      - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET} # generate by `openssl rand -hex 32`
-      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN} # generate by `openssl rand -hex 32`
+      - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET:-l1k2j3l1k2j312lk3j21lk3jsdflkjou} # generate by `openssl rand -hex 32`
+      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN:-223lk4j23oi4u23l4jlkj2l3kj4xyewr} # generate by `openssl rand -hex 32`
       - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME:-admin}
       - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD:-luzzle}
       - LUZZLE_HMR_PORT=8080
@@ -54,7 +54,7 @@ services:
     env_file: .env
     environment:
       - LUZZLE_APP_URL=${LUZZLE_APP_URL:-http://luzzle-dev-web:5173}
-      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN} # generate by `openssl rand -hex 32`
+      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN:-223lk4j23oi4u23l4jlkj2l3kj4xyewr} # generate by `openssl rand -hex 32`
       - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME:-admin}
       - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD:-luzzle}
     networks:

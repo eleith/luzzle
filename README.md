@@ -56,7 +56,6 @@ This ecosystem contains everything you need to build and browse your archive:
 * [@luzzle/web] UI for managing schemas
 * [@luzzle/web] explore codemirror/lsp for source editor
 * [@luzzle/web] enable text attachments direct editing
-* [@luzzle/web] adopt markdown writing style (ex: no ^M and limit line length)
 * [@luzzle/cli] improved first time experience (ex: zero conf support)
 * [@luzzle/core] google drive storage support
 * [@luzzle/core] icloud storage support
