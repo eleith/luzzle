@@ -1,14 +1,3 @@
-/**
- * Masks the markdown body of a document, preserving only the YAML frontmatter.
- *
- * - Opening `---` must be on line 0.
- * - Closing `---` is the next line matching exactly `---` (with optional trailing whitespace).
- * - Everything after the closing delimiter has non-newline characters replaced with spaces.
- * - If no valid frontmatter is found, the entire document is masked.
- *
- * Line/character coordinates are preserved 1:1 because only visible characters
- * are replaced — newlines stay in place.
- */
 export function maskDocument(text: string): string {
 	const firstNewline = text.indexOf('\n')
 	const firstLine = firstNewline === -1 ? text : text.slice(0, firstNewline)

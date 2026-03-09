@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 import { spawn } from 'child_process'
-import { rmSync, readFileSync } from 'fs'
+import { readFileSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import {
@@ -74,7 +74,6 @@ function main(): void {
 
 	const ctx = createContext()
 
-	// Spawn the yaml-language-server as a child process
 	const child = spawn('yaml-language-server', ['--stdio'], {
 		stdio: ['pipe', 'pipe', 'inherit'],
 	})
@@ -84,15 +83,11 @@ function main(): void {
 		process.exit(1)
 	})
 
-	// Set up JSON-RPC readers/writers for both sides
 	const clientReader = new StreamMessageReader(process.stdin)
 	const clientWriter = new StreamMessageWriter(process.stdout)
 	const serverReader = new StreamMessageReader(child.stdout!)
 	const serverWriter = new StreamMessageWriter(child.stdin!)
 
-	// -------------------------------------------------------------------
-	// Client → Server (Neovim → yaml-language-server)
-	// -------------------------------------------------------------------
 	clientReader.listen((msg: Message) => {
 		if (Message.isRequest(msg)) {
 			if (msg.method === 'initialize') {
@@ -118,9 +113,6 @@ function main(): void {
 		}
 	})
 
-	// -------------------------------------------------------------------
-	// Server → Client (yaml-language-server → Neovim)
-	// -------------------------------------------------------------------
 	serverReader.listen((msg: Message) => {
 		if (Message.isRequest(msg)) {
 			if (msg.method === 'workspace/configuration') {
@@ -143,9 +135,6 @@ function main(): void {
 		}
 	})
 
-	// -------------------------------------------------------------------
-	// Error handling — notify Neovim if yaml-language-server dies
-	// -------------------------------------------------------------------
 	const notifyClientError = (reason: string) => {
 		error(reason)
 		try {
@@ -171,19 +160,7 @@ function main(): void {
 		debug('yaml-language-server stream closed')
 	})
 
-	// -------------------------------------------------------------------
-	// Lifecycle
-	// -------------------------------------------------------------------
-	const cleanup = () => {
-		if (ctx.tempSchemaDir) {
-			try {
-				rmSync(ctx.tempSchemaDir, { recursive: true, force: true })
-			} catch {
-				// Best effort
-			}
-			ctx.tempSchemaDir = null
-		}
-	}
+	const cleanup = () => { }
 
 	child.on('exit', (code, signal) => {
 		if (signal) {

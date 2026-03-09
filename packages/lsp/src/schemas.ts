@@ -2,10 +2,6 @@ import { existsSync, readdirSync } from 'fs'
 import { join, basename } from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
 
-/**
- * Discovers .luzzle/schemas/*.json at the workspace root and
- * returns the schema mapping.
- */
 export function discoverSchemas(rootUri: string): { mapping: Record<string, string[]>; tempDir: string | null } {
 	const mapping: Record<string, string[]> = {}
 

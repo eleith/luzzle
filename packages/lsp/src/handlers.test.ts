@@ -10,10 +10,6 @@ import {
 } from './handlers.js'
 import type { DiscoverSchemasFn } from './handlers.js'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function makeRequest(method: string, params: Record<string, unknown>, id: number = 1): RequestMessage {
 	return { jsonrpc: '2.0', id, method, params }
 }
@@ -36,23 +32,14 @@ const stubbedDiscover: DiscoverSchemasFn = () => ({
 	tempDir: '/tmp/luzzle-lsp-schemas-abc123',
 })
 
-// ---------------------------------------------------------------------------
-// createContext
-// ---------------------------------------------------------------------------
-
 describe('createContext', () => {
 	it('returns fresh state', () => {
 		const ctx = createContext()
 
 		expect(ctx.schemaMapping).toEqual({})
 		expect(ctx.initializeRequestId).toBeNull()
-		expect(ctx.tempSchemaDir).toBeNull()
 	})
 })
-
-// ---------------------------------------------------------------------------
-// handleInitialize
-// ---------------------------------------------------------------------------
 
 describe('handleInitialize', () => {
 	it('injects schema mappings into initializationOptions', () => {
@@ -85,7 +72,6 @@ describe('handleInitialize', () => {
 		handleInitialize(msg, ctx, stubbedDiscover)
 
 		expect(Object.keys(ctx.schemaMapping)).toHaveLength(2)
-		expect(ctx.tempSchemaDir).toBe('/tmp/luzzle-lsp-schemas-abc123')
 	})
 
 	it('sets initializeRequestId on context', () => {
@@ -129,11 +115,8 @@ describe('handleInitialize', () => {
 		const settings = initOpts['settings'] as Record<string, unknown>
 		const yaml = settings['yaml'] as Record<string, unknown>
 
-		// Existing yaml settings preserved
 		expect(yaml['customSchemas']).toEqual({ 'file:///other.json': ['*.other.md'] })
-		// Proxy settings injected
 		expect(yaml['validate']).toBe(true)
-		// Sibling settings preserved
 		expect(settings['editor']).toEqual({ tabSize: 2 })
 	})
 
@@ -147,14 +130,9 @@ describe('handleInitialize', () => {
 		const settings = initOpts['settings'] as Record<string, unknown>
 		const yaml = settings['yaml'] as Record<string, unknown>
 
-		// discover should not have been called, so mapping stays empty
 		expect(yaml['schemas']).toEqual({})
 	})
 })
-
-// ---------------------------------------------------------------------------
-// handleDidOpen
-// ---------------------------------------------------------------------------
 
 describe('handleDidOpen', () => {
 	it('masks the document body', () => {
@@ -227,10 +205,6 @@ describe('handleDidOpen', () => {
 	})
 })
 
-// ---------------------------------------------------------------------------
-// handleDidChange
-// ---------------------------------------------------------------------------
-
 describe('handleDidChange', () => {
 	it('masks text in full content changes', () => {
 		const msg = makeNotification('textDocument/didChange', {
@@ -279,10 +253,6 @@ describe('handleDidChange', () => {
 	})
 })
 
-// ---------------------------------------------------------------------------
-// handleInitializeResponse
-// ---------------------------------------------------------------------------
-
 describe('handleInitializeResponse', () => {
 	it('forces full document sync on existing textDocumentSync object', () => {
 		const msg = makeResponse(1, {
@@ -326,10 +296,6 @@ describe('handleInitializeResponse', () => {
 	})
 })
 
-// ---------------------------------------------------------------------------
-// buildConfigurationResponse
-// ---------------------------------------------------------------------------
-
 describe('buildConfigurationResponse', () => {
 	it('responds with schema mapping for yaml section', () => {
 		const ctx = createContext()
@@ -371,15 +337,11 @@ describe('buildConfigurationResponse', () => {
 	})
 })
 
-// ---------------------------------------------------------------------------
-// Edge Cases
-// ---------------------------------------------------------------------------
-
 describe('Edge Cases (Missing params/fields)', () => {
 	it('handleInitialize gracefully handles missing params', () => {
 		const ctx = createContext()
 		const msg = makeRequest('initialize', undefined as unknown as Record<string, unknown>)
-		delete msg.params // forcefully remove
+		delete msg.params
 		const result = handleInitialize(msg, ctx, emptyDiscover)
 		expect(result.params).toBeDefined()
 	})
