@@ -43,6 +43,7 @@ This ecosystem contains everything you need to build and browse your archive:
 
 * `@luzzle/core` the specification implementation 🫀
 * `@luzzle/cli` the terminal companion for managing pieces 💻
+* `@luzzle/lsp` auto-complete in your editor while editing pieces ✏️
 * `@luzzle/web` a simple web app for browsing and editing pieces 🔎
 * `@luzzle/web.builder` deploys, builds and rebuilds archives for the web 🏗️
 * `@luzzle/web.tools` CLI utilities used by the web.builder 🧰
@@ -53,12 +54,14 @@ This ecosystem contains everything you need to build and browse your archive:
 
 * [@luzzle/web] hardcoded Base32 seeds for stateless 2FA
 * [@luzzle/web] UI for managing schemas
+* [@luzzle/web] explore codemirror/lsp for source editor
+* [@luzzle/web] enable text attachments direct editing
+* [@luzzle/web] adopt markdown writing style (ex: no ^M and limit line length)
 * [@luzzle/cli] improved first time experience (ex: zero conf support)
 * [@luzzle/core] google drive storage support
 * [@luzzle/core] icloud storage support
 * [@luzzle/core] dropbox support
 * [@luzzle/core] implement webdav storage sync
-* [@luzzle/core] explore tauri mobile support (ex: rewrite in rust)
-* [@luzzle/tools] add incremental sqlite update
+* [@luzzle/core] explore tauri port
 * [@luzzle/tools] replace db mocks with in memory db
 * [@luzzle/builder] add build one piece job

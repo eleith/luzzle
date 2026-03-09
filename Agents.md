@@ -8,6 +8,7 @@ Luzzle is a monorepo managed with `npm` workspaces.
 
 * `@luzzle/core`: The engine room (specification implementation) 🫀
 * `@luzzle/cli`: Terminal companion for manual piece management 💻
+* `@luzzle/lsp`: Language Server Protocol proxy for IDE integrations 🗣️
 * `@luzzle/web`: SvelteKit web explorer and editor 🔎
 * `@luzzle/web.builder`: Heavy-lifting sidecar for automated builds 🏗️
 * `@luzzle/web.tools`: Build-time utility belt used by the web stack 🧰
