@@ -9,7 +9,7 @@ export type PieceComponentHelpers = {
 		image: PieceFrontMatterValue | string,
 		minWidth: number,
 		format: 'jpg' | 'avif' | 'webp' | 'png'
-	) => string
+	) => string | undefined
 	getPiecePalette: () => PieceIconPalette | undefined
 	getPieceAssetUrl: (key: string, transform: string) => string | undefined
 	getPieceAssetContent: (key: string, transform: string) => string | undefined
@@ -100,7 +100,7 @@ export function getPieceHelpers(
 				return `${url}/pieces/assets/${original}`
 			}
 
-			throw new Error(`Asset ${assetKey} not found for piece ${piece.slug}`)
+			return undefined
 		},
 		getPiecePalette
 	}
