@@ -42,8 +42,8 @@
 					}
 				}}
 			>
-				<div style="display: flex; align-items: flex-start;">
-					<div style="flex: 1 1 0%;">
+				<div class="piece-card">
+					<div class="piece-icon">
 						<div style="display: flex;">
 							<div style="align-self: baseline;">
 								{#key activePieceId === piece.id}
@@ -111,6 +111,17 @@
 	.container > a:hover {
 		text-decoration: underline;
 		color: var(--color-primary);
+	}
+
+	.piece-card {
+		display: flex;
+		align-items: flex-start;
+		height: 100%;
+	}
+
+	.piece-icon {
+		flex: 1 1 0%;
+		align-self: center;
 	}
 
 	.piece-text {
