@@ -47,7 +47,6 @@ export type PieceOpengraphProps = {
 export type PiecePageProps = {
 	piece: PublicWebPiece
 	tags: Partial<WebPieceTags>[]
-	html_note: string | null
 	helpers: PieceComponentHelpers
 }
 

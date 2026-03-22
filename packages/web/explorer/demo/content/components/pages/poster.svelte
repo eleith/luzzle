@@ -2,7 +2,8 @@
 	import { type PiecePageProps } from '$lib/pieces/helpers'
 	import Icon from '$lib/pieces/components/icon.svelte'
 
-	const { piece, tags, html_note, helpers }: PiecePageProps = $props()
+	const { piece, tags, helpers }: PiecePageProps = $props()
+	const noteHtml = piece.assets.find((a) => a.transformation === 'markdown')?.content
 	const palette = helpers.getPiecePalette()
 </script>
 
@@ -45,11 +46,11 @@
 			</div>
 		</div>
 
-		{#if piece.note}
+		{#if noteHtml}
 			<h2>Note</h2>
 			<div>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html html_note}
+				{@html noteHtml}
 			</div>
 		{/if}
 

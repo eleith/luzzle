@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { type PiecePageProps } from '$lib/pieces/helpers'
 	import FileDownIcon from 'virtual:icons/ph/file-arrow-down'
-	const { piece, tags, html_note, helpers }: PiecePageProps = $props()
+	const { piece, tags, helpers }: PiecePageProps = $props()
+	const noteHtml = piece.assets.find((a) => a.transformation === 'markdown')?.content
 </script>
 
 <section class="content">
@@ -28,10 +29,10 @@
 			</div>
 		</div>
 
-		{#if piece.note}
+		{#if noteHtml}
 			<section class="note">
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html html_note}
+				{@html noteHtml}
 			</section>
 		{/if}
 
@@ -56,6 +57,7 @@
 							</div>
 							{#if highlight}
 								<div class="file-content">
+									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 									{@html highlight}
 								</div>
 							{/if}

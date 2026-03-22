@@ -22,13 +22,12 @@
 	type Props = {
 		piece: PublicWebPiece
 		tags: Array<{ slug: string; tag: string }>
-		html_note: string | null
 	}
 
-	let { piece, tags, html_note }: Props = $props()
+	let { piece, tags }: Props = $props()
 	const Page = $derived(customPageMap.get(piece.type)?.default || PageDefault)
 	const mode = getContext<PieceMode>('piece-mode')
 	const helpers = getPieceHelpers(piece, mode)
 </script>
 
-<Page {piece} {tags} {html_note} {helpers} />
+<Page {piece} {tags} {helpers} />

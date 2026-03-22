@@ -36,7 +36,6 @@ declare module '$lib/pieces/helpers' {
 		piece: WebPieces
 		metadata: Record<string, any>
 		tags: Partial<WebPieceTags>[]
-		html_note: string | null
 		helpers: PieceComponentHelpers
 	}
 

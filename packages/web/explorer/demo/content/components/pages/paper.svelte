@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { type PiecePageProps } from '$lib/pieces/helpers'
-	const { piece, tags, html_note }: PiecePageProps = $props()
+	const { piece, tags }: PiecePageProps = $props()
+	const noteHtml = piece.assets.find((a) => a.transformation === 'markdown')?.content
 </script>
 
 <section class="content">
@@ -11,10 +12,12 @@
 			</div>
 		{/if}
 
-		<div>
-			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-			{@html html_note}
-		</div>
+		{#if noteHtml}
+			<div>
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html noteHtml}
+			</div>
+		{/if}
 	</section>
 
 	{#if tags.length}

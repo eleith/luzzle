@@ -2,7 +2,6 @@ import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { db } from '$lib/server/database'
 import { config } from '$lib/server/config'
-import { processMarkdown } from '$lib/server/markdown'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
 export const load: PageServerLoad = async (page) => {
@@ -28,13 +27,11 @@ export const load: PageServerLoad = async (page) => {
 		.where('piece_id', '=', piece.id)
 		.execute()
 
-	const note = piece.note ? await processMarkdown(piece.note) : null
 	const ogAsset = piece.assets.find((a) => a.transformation === 'opengraph')?.asset_path
 
 	return {
 		piece,
 		tags,
-		html_note: note,
 		meta: {
 			title: `${piece.title} | ${config.content.text.title}`,
 			type: piece.type,
