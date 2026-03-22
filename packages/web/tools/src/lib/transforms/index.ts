@@ -2,6 +2,7 @@ import * as attachment from './attachment.js'
 import * as image from './image.js'
 import * as palette from './palette.js'
 import * as highlight from './highlight.js'
+import * as markdown from './markdown.js'
 import * as opengraph from './opengraph.js'
 import type { TransformInput, AssetRecord } from './types.js'
 
@@ -17,6 +18,7 @@ export const transforms = new Map<string, Transform>([
 	['image', image],
 	['palette', palette],
 	['highlight', highlight],
+	['markdown', markdown],
 	['opengraph', opengraph],
 ])
 
