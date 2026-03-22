@@ -5,7 +5,6 @@ export async function run({ webPiece, config, pieces }: TransformInput): Promise
 	const records: AssetRecord[] = []
 	const baseUrl = `${config.url.app}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/markdown`
 
-	// Always render the note if it exists
 	if (webPiece.note) {
 		const response = await fetch(baseUrl)
 		if (!response.ok) {
@@ -22,14 +21,10 @@ export async function run({ webPiece, config, pieces }: TransformInput): Promise
 		})
 	}
 
-	// Discover metadata fields with format: 'markdown' from the piece schema
 	const piece = await pieces.getPiece(webPiece.type)
 	const markdownFields = piece.fields.filter(
 		(f) => f.type === 'string' && f.format === 'markdown'
 	)
-
-	if (markdownFields.length === 0) return records
-
 	const frontmatter = JSON.parse(webPiece.json_metadata || '{}')
 
 	for (const field of markdownFields) {
@@ -40,7 +35,9 @@ export async function run({ webPiece, config, pieces }: TransformInput): Promise
 		const url = `${baseUrl}?field=${encodeURIComponent(field.name)}`
 		const response = await fetch(url)
 		if (!response.ok) {
-			throw new Error(`markdown transform failed for field "${field.name}": ${response.status} ${response.statusText}`)
+			throw new Error(
+				`markdown transform failed for field "${field.name}": ${response.status} ${response.statusText}`
+			)
 		}
 
 		records.push({

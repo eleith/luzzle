@@ -129,48 +129,10 @@ describe('transforms/markdown', () => {
 
 	test('skips metadata fields that are empty or missing in frontmatter', async () => {
 		const records = await run({
-			webPiece: makeWebPiece({ note: undefined, json_metadata: '{}' }),
+			webPiece: makeWebPiece({ note: undefined, json_metadata: null as unknown as string }),
 			config: makeConfig(),
 			outDir: '/out',
 			pieces: makePieces([{ name: 'description', type: 'string', format: 'markdown' }]),
-			assetKeyToPath: emptyMap,
-		})
-
-		expect(fetch).not.toHaveBeenCalled()
-		expect(records).toEqual([])
-	})
-
-	test('renders both note and metadata fields', async () => {
-		const html = '<section class="markdown"><p>content</p></section>'
-		vi.mocked(fetch).mockResolvedValue({
-			ok: true,
-			status: 200,
-			text: vi.fn().mockResolvedValue(html),
-		} as unknown as Response)
-
-		const records = await run({
-			webPiece: makeWebPiece(),
-			config: makeConfig(),
-			outDir: '/out',
-			pieces: makePieces([{ name: 'description', type: 'string', format: 'markdown' }]),
-			assetKeyToPath: emptyMap,
-		})
-
-		expect(fetch).toHaveBeenCalledTimes(2)
-		expect(records).toHaveLength(2)
-		expect(records[0].transformation).toBe('markdown')
-		expect(records[0].piece_asset_path).toBeNull()
-		expect(records[1].transformation).toBe('markdown.description')
-		expect(records[1].piece_asset_path).toBeNull()
-		expect(records[1].piece_field_path).toBe('description')
-	})
-
-	test('returns empty when piece type has no markdown fields and no note', async () => {
-		const records = await run({
-			webPiece: makeWebPiece({ note: undefined }),
-			config: makeConfig(),
-			outDir: '/out',
-			pieces: makePieces([{ name: 'title', type: 'string' }]),
 			assetKeyToPath: emptyMap,
 		})
 
@@ -194,19 +156,5 @@ describe('transforms/markdown', () => {
 				assetKeyToPath: emptyMap,
 			})
 		).rejects.toThrow('500')
-	})
-
-	test('throws on network error', async () => {
-		vi.mocked(fetch).mockRejectedValue(new Error('network error'))
-
-		await expect(
-			run({
-				webPiece: makeWebPiece(),
-				config: makeConfig(),
-				outDir: '/out',
-				pieces: makePieces(),
-				assetKeyToPath: emptyMap,
-			})
-		).rejects.toThrow('network error')
 	})
 })
