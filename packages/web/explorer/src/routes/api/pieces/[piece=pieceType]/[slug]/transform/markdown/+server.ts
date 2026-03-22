@@ -20,7 +20,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		return error(404, 'piece does not exist')
 	}
 
-	let markdown: string | null = null
+	let markdown: string | undefined
 
 	if (!field) {
 		markdown = webPiece.note
