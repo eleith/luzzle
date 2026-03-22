@@ -15,7 +15,7 @@ type PieceFrontmatterSchema<M extends PieceFrontmatter> = JSONSchemaType<M>
 
 export type PieceFrontmatterPropertyScalar = {
 	type: 'string' | 'boolean' | 'integer'
-	format?: 'asset' | 'date' | 'comma-separated' | 'paragraph'
+	format?: 'asset' | 'date' | 'comma-separated' | 'paragraph' | 'markdown'
 	nullable?: boolean
 	pattern?: string
 	enum?: string[] | number[]
