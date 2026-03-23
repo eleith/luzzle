@@ -134,13 +134,13 @@ html {
 }
 
 body {
-	background: linear-gradient(
+	background-color: var(--color-surface);
+	background-image: linear-gradient(
 		to bottom,
 		var(--color-surface-container-lowest) 0px,
 		var(--color-surface) 100px
 	);
 	background-repeat: no-repeat;
-	background-attachment: fixed;
 }
 
 html {
