@@ -4,7 +4,7 @@ import { sql } from 'kysely'
 import { extractFullMarkdown } from './lib/markdown.js'
 import { addFrontMatter } from './lib/frontmatter.js'
 import { getDatabaseClient } from './database/client.js'
-import { findFrontmatterField, getFrontmatterValue, getFrontmatterValues, setFrontmatterValue, unsetFrontmatterValue } from './pieces/index.js'
+import { filterFrontmatterFields, findFrontmatterField, getFrontmatterValue, getFrontmatterValues, resolveFieldPaths, setFrontmatterValue, unsetFrontmatterValue } from './pieces/index.js'
 
 export * from './database/tables/index.js'
 export * from './pieces/index.js'
@@ -18,9 +18,11 @@ export {
 	compile,
 	extractFullMarkdown,
 	addFrontMatter,
+	filterFrontmatterFields,
 	findFrontmatterField,
 	getFrontmatterValue,
 	getFrontmatterValues,
+	resolveFieldPaths,
 	setFrontmatterValue,
 	unsetFrontmatterValue
 }

@@ -183,9 +183,9 @@ describe('pieces/utils/frontmatter.path.ts', () => {
 					properties: {
 						url: { type: 'string' },
 					},
-					required: ["url"]
+					required: ['url'],
 				},
-			}
+			},
 		] as unknown as PieceFrontmatterSchemaField[]
 
 		test('finds top level field', () => {
@@ -236,6 +236,147 @@ describe('pieces/utils/frontmatter.path.ts', () => {
 
 		test('returns undefined for scalar subpath', () => {
 			expect(paths.findFrontmatterField(fields, 'meta.author.deep')).toBeUndefined()
+		})
+	})
+
+	describe('filterFrontmatterFields', () => {
+		const fields: PieceFrontmatterSchemaField[] = [
+			{ name: 'title', type: 'string' },
+			{ name: 'description', type: 'string', format: 'markdown' },
+			{ name: 'sections', type: 'array', items: { type: 'string', format: 'markdown' } },
+			{
+				name: 'chapters',
+				type: 'array',
+				items: {
+					type: 'object',
+					properties: {
+						title: { type: 'string' },
+						body: { type: 'string', format: 'markdown' },
+					},
+				},
+			},
+			{
+				name: 'meta',
+				type: 'object',
+				properties: {
+					bio: { type: 'string', format: 'markdown' },
+					url: { type: 'string' },
+				},
+			},
+			{ name: 'tags', type: 'array', items: { type: 'string' } },
+		] as unknown as PieceFrontmatterSchemaField[]
+
+		const isMarkdown = (f: { type?: string; format?: string }) =>
+			f.type === 'string' && f.format === 'markdown'
+
+		test('finds scalar markdown fields', () => {
+			expect(paths.filterFrontmatterFields(fields, isMarkdown)).toContain('description')
+		})
+
+		test('finds array of markdown strings', () => {
+			expect(paths.filterFrontmatterFields(fields, isMarkdown)).toContain('sections')
+		})
+
+		test('finds markdown inside object', () => {
+			expect(paths.filterFrontmatterFields(fields, isMarkdown)).toContain('meta.bio')
+		})
+
+		test('finds markdown inside array of objects', () => {
+			expect(paths.filterFrontmatterFields(fields, isMarkdown)).toContain('chapters.body')
+		})
+
+		test('returns all markdown paths', () => {
+			expect(paths.filterFrontmatterFields(fields, isMarkdown)).toEqual([
+				'description',
+				'sections',
+				'chapters.body',
+				'meta.bio',
+			])
+		})
+
+		test('excludes non-matching fields', () => {
+			const result = paths.filterFrontmatterFields(fields, isMarkdown)
+			expect(result).not.toContain('title')
+			expect(result).not.toContain('tags')
+			expect(result).not.toContain('meta.url')
+			expect(result).not.toContain('chapters.title')
+		})
+
+		test('returns empty for no matches', () => {
+			expect(
+				paths.filterFrontmatterFields(fields, (f) => f.type === 'boolean')
+			).toEqual([])
+		})
+	})
+
+	describe('resolveFieldPaths', () => {
+		const fields: PieceFrontmatterSchemaField[] = [
+			{ name: 'description', type: 'string', format: 'markdown' },
+			{ name: 'sections', type: 'array', items: { type: 'string', format: 'markdown' } },
+			{
+				name: 'chapters',
+				type: 'array',
+				items: {
+					type: 'object',
+					properties: {
+						body: { type: 'string', format: 'markdown' },
+					},
+				},
+			},
+			{
+				name: 'meta',
+				type: 'object',
+				properties: {
+					bio: { type: 'string', format: 'markdown' },
+				},
+			},
+		] as unknown as PieceFrontmatterSchemaField[]
+
+		test('resolves scalar path', () => {
+			const data = { description: 'hello' }
+			expect(paths.resolveFieldPaths(fields, data, 'description')).toEqual(['description'])
+		})
+
+		test('resolves nested object path', () => {
+			const data = { meta: { bio: 'hello' } }
+			expect(paths.resolveFieldPaths(fields, data, 'meta.bio')).toEqual(['meta.bio'])
+		})
+
+		test('resolves array of strings', () => {
+			const data = { sections: ['first', 'second', 'third'] }
+			expect(paths.resolveFieldPaths(fields, data, 'sections')).toEqual([
+				'sections.0',
+				'sections.1',
+				'sections.2',
+			])
+		})
+
+		test('resolves array of objects with sub-path', () => {
+			const data = { chapters: [{ body: 'ch1' }, { body: 'ch2' }] }
+			expect(paths.resolveFieldPaths(fields, data, 'chapters.body')).toEqual([
+				'chapters.0.body',
+				'chapters.1.body',
+			])
+		})
+
+		test('returns empty for empty array', () => {
+			const data = { sections: [] }
+			expect(paths.resolveFieldPaths(fields, data, 'sections')).toEqual([])
+		})
+
+		test('returns empty for missing field in schema', () => {
+			const data = { unknown: 'value' }
+			expect(paths.resolveFieldPaths(fields, data, 'unknown')).toEqual([])
+		})
+
+		test('returns empty when frontmatter value is not an array', () => {
+			const data = { sections: 'not-an-array' }
+			expect(paths.resolveFieldPaths(fields, data, 'sections')).toEqual([])
+		})
+
+		test('returns empty when data is missing', () => {
+			const data = {}
+			expect(paths.resolveFieldPaths(fields, data, 'meta.bio')).toEqual([])
 		})
 	})
 })

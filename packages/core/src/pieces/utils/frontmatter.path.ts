@@ -157,6 +157,80 @@ function getSubFields(
 	})
 }
 
+function advanceFields(
+	currentFields: PieceFrontmatterSchemaField[],
+	previousField: PieceFrontmatterSchemaField | undefined
+): PieceFrontmatterSchemaField[] {
+	if (previousField?.type === 'array' && previousField.items.type === 'object') {
+		return getSubFields(previousField.items)
+	}
+	if (previousField?.type === 'object') {
+		return getSubFields(previousField)
+	}
+	return currentFields
+}
+
+export function resolveFieldPaths(
+	fields: PieceFrontmatterSchemaField[],
+	frontmatter: PieceFrontmatter,
+	schemaPath: string
+): string[] {
+	const parts = schemaPath.split('.')
+	let currentFields = fields
+	let currentField: PieceFrontmatterSchemaField | undefined
+
+	let branches: Array<{ prefix: string; data: unknown }> = [{ prefix: '', data: frontmatter }]
+
+	for (const part of parts) {
+		currentFields = advanceFields(currentFields, currentField)
+		currentField = currentFields.find((f) => f.name === part)
+		if (!currentField) return []
+
+		branches = branches.map(({ prefix, data }) => ({
+			prefix: prefix ? `${prefix}.${part}` : part,
+			data: data && typeof data === 'object' ? (data as Record<string, unknown>)[part] : undefined,
+		}))
+
+		if (currentField.type === 'array') {
+			branches = branches.flatMap(({ prefix, data }) => {
+				if (!Array.isArray(data)) return []
+				return data.map((item, i) => ({ prefix: `${prefix}.${i}`, data: item }))
+			})
+		}
+	}
+
+	return branches.filter(({ data }) => data != null).map(({ prefix }) => prefix)
+}
+
+export function filterFrontmatterFields(
+	fields: PieceFrontmatterSchemaField[],
+	predicate: (field: PieceFrontmatterProperty) => boolean
+): string[] {
+	function walk(fields: PieceFrontmatterSchemaField[], prefix: string): string[] {
+		const results: string[] = []
+
+		for (const field of fields) {
+			const path = prefix ? `${prefix}.${field.name}` : field.name
+
+			if (field.type === 'array') {
+				if (predicate(field.items)) {
+					results.push(path)
+				} else if (field.items.type === 'object') {
+					results.push(...walk(getSubFields(field.items), path))
+				}
+			} else if (field.type === 'object') {
+				results.push(...walk(getSubFields(field), path))
+			} else if (predicate(field)) {
+				results.push(path)
+			}
+		}
+
+		return results
+	}
+
+	return walk(fields, '')
+}
+
 export function findFrontmatterField(
 	fields: PieceFrontmatterSchemaField[],
 	path: string
@@ -171,16 +245,13 @@ export function findFrontmatterField(
 		if (result?.type === 'array') {
 			const index = parseInt(part, 10)
 			if (isNaN(index)) {
-				if (result.items.type === 'object') {
-					currentFields = getSubFields(result.items)
-					result = currentFields.find((f) => f.name === part)
-				} else {
-					return undefined
-				}
+				currentFields = advanceFields(currentFields, result)
+				result = currentFields.find((f) => f.name === part)
 			} else {
 				result = { ...result.items, name: part, nullable: true }
 			}
 		} else {
+			currentFields = advanceFields(currentFields, result)
 			result = currentFields.find((f) => f.name === part)
 		}
 
@@ -192,18 +263,7 @@ export function findFrontmatterField(
 			return result
 		}
 
-		if (result.type === 'object') {
-			currentFields = getSubFields(result)
-		} else if (result.type === 'array') {
-			const nextPart = parts[i + 1]
-			const nextIsIndex = nextPart !== undefined && !isNaN(parseInt(nextPart, 10))
-
-			if (!nextIsIndex && result.items.type === 'object') {
-				currentFields = getSubFields(result.items)
-			} else {
-				currentFields = []
-			}
-		} else {
+		if (result.type !== 'object' && result.type !== 'array') {
 			return undefined
 		}
 	}
