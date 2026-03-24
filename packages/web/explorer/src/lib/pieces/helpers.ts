@@ -57,7 +57,7 @@ export function getPieceHelpers(
 	mode: PieceMode = 'public'
 ): PieceComponentHelpers {
 	const config = page.data.config
-	const url = mode == 'public' ? config.url.luzzle_assets || config.url.app : config.url.app || ''
+	const url = mode == 'public' ? config.url.luzzle_assets || config.url.app : ''
 
 	const getPiecePalette = () => {
 		const paletteAsset = piece.assets.find((a) => a.transformation === 'palette')
