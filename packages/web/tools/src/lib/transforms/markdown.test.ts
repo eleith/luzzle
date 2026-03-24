@@ -25,7 +25,7 @@ const makeConfig = (): Config =>
 		pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date_consumed' } }],
 	}) as unknown as Config
 
-const makePieces = (fields: Array<{ name: string; type: string; format?: string }> = []): Pieces =>
+const makePieces = (fields: Array<Record<string, unknown>> = []): Pieces =>
 	({
 		getPiece: vi.fn().mockResolvedValue({ fields }),
 	}) as unknown as Pieces
@@ -156,5 +156,176 @@ describe('transforms/markdown', () => {
 				assetKeyToPath: emptyMap,
 			})
 		).rejects.toThrow('500')
+	})
+
+	test('renders each item in an array of markdown strings', async () => {
+		const html0 = '<section class="markdown"><p>First</p></section>'
+		const html1 = '<section class="markdown"><p>Second</p></section>'
+		vi.mocked(fetch)
+			.mockResolvedValueOnce({
+				ok: true,
+				status: 200,
+				text: vi.fn().mockResolvedValue(html0),
+			} as unknown as Response)
+			.mockResolvedValueOnce({
+				ok: true,
+				status: 200,
+				text: vi.fn().mockResolvedValue(html1),
+			} as unknown as Response)
+
+		const records = await run({
+			webPiece: makeWebPiece({
+				note: undefined,
+				json_metadata: JSON.stringify({ sections: ['# First', '# Second'] }),
+			}),
+			config: makeConfig(),
+			outDir: '/out',
+			pieces: makePieces([
+				{ name: 'sections', type: 'array', items: { type: 'string', format: 'markdown' } },
+			]),
+			assetKeyToPath: emptyMap,
+		})
+
+		expect(fetch).toHaveBeenCalledTimes(2)
+		expect(fetch).toHaveBeenCalledWith(
+			'http://localhost/api/pieces/books/my-book/transform/markdown?field=sections.0'
+		)
+		expect(fetch).toHaveBeenCalledWith(
+			'http://localhost/api/pieces/books/my-book/transform/markdown?field=sections.1'
+		)
+		expect(records).toEqual([
+			expect.objectContaining({
+				transformation: 'markdown.sections.0',
+				piece_field_path: 'sections.0',
+				content: html0,
+			}),
+			expect.objectContaining({
+				transformation: 'markdown.sections.1',
+				piece_field_path: 'sections.1',
+				content: html1,
+			}),
+		])
+	})
+
+	test('throws on error response for array item', async () => {
+		vi.mocked(fetch).mockResolvedValue({
+			ok: false,
+			status: 500,
+			statusText: 'Internal Server Error',
+		} as unknown as Response)
+
+		await expect(
+			run({
+				webPiece: makeWebPiece({
+					note: undefined,
+					json_metadata: JSON.stringify({ sections: ['# Fail'] }),
+				}),
+				config: makeConfig(),
+				outDir: '/out',
+				pieces: makePieces([
+					{ name: 'sections', type: 'array', items: { type: 'string', format: 'markdown' } },
+				]),
+				assetKeyToPath: emptyMap,
+			})
+		).rejects.toThrow('500')
+	})
+
+	test('renders markdown field nested inside an object', async () => {
+		const html = '<section class="markdown"><p>nested</p></section>'
+		vi.mocked(fetch).mockResolvedValue({
+			ok: true,
+			status: 200,
+			text: vi.fn().mockResolvedValue(html),
+		} as unknown as Response)
+
+		const records = await run({
+			webPiece: makeWebPiece({
+				note: undefined,
+				json_metadata: JSON.stringify({ meta: { bio: '**nested**' } }),
+			}),
+			config: makeConfig(),
+			outDir: '/out',
+			pieces: makePieces([
+				{
+					name: 'meta',
+					type: 'object',
+					properties: {
+						bio: { type: 'string', format: 'markdown' },
+					},
+				},
+			]),
+			assetKeyToPath: emptyMap,
+		})
+
+		expect(fetch).toHaveBeenCalledWith(
+			'http://localhost/api/pieces/books/my-book/transform/markdown?field=meta.bio'
+		)
+		expect(records).toEqual([
+			expect.objectContaining({
+				transformation: 'markdown.meta.bio',
+				piece_field_path: 'meta.bio',
+				content: html,
+			}),
+		])
+	})
+
+	test('renders markdown fields inside array of objects', async () => {
+		const html0 = '<section class="markdown"><p>first body</p></section>'
+		const html1 = '<section class="markdown"><p>second body</p></section>'
+		vi.mocked(fetch)
+			.mockResolvedValueOnce({
+				ok: true,
+				status: 200,
+				text: vi.fn().mockResolvedValue(html0),
+			} as unknown as Response)
+			.mockResolvedValueOnce({
+				ok: true,
+				status: 200,
+				text: vi.fn().mockResolvedValue(html1),
+			} as unknown as Response)
+
+		const records = await run({
+			webPiece: makeWebPiece({
+				note: undefined,
+				json_metadata: JSON.stringify({
+					chapters: [{ body: '# First' }, { body: '# Second' }],
+				}),
+			}),
+			config: makeConfig(),
+			outDir: '/out',
+			pieces: makePieces([
+				{
+					name: 'chapters',
+					type: 'array',
+					items: {
+						type: 'object',
+						properties: {
+							body: { type: 'string', format: 'markdown' },
+						},
+					},
+				},
+			]),
+			assetKeyToPath: emptyMap,
+		})
+
+		expect(fetch).toHaveBeenCalledTimes(2)
+		expect(fetch).toHaveBeenCalledWith(
+			'http://localhost/api/pieces/books/my-book/transform/markdown?field=chapters.0.body'
+		)
+		expect(fetch).toHaveBeenCalledWith(
+			'http://localhost/api/pieces/books/my-book/transform/markdown?field=chapters.1.body'
+		)
+		expect(records).toEqual([
+			expect.objectContaining({
+				transformation: 'markdown.chapters.0.body',
+				piece_field_path: 'chapters.0.body',
+				content: html0,
+			}),
+			expect.objectContaining({
+				transformation: 'markdown.chapters.1.body',
+				piece_field_path: 'chapters.1.body',
+				content: html1,
+			}),
+		])
 	})
 })

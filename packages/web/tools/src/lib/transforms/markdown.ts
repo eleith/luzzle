@@ -1,5 +1,9 @@
-import { getFrontmatterValues } from '@luzzle/core'
+import { filterFrontmatterFields, resolveFieldPaths } from '@luzzle/core'
+import type { PieceFrontmatterProperty } from '@luzzle/core'
 import type { TransformInput, AssetRecord } from './types.js'
+
+const isMarkdown = (f: PieceFrontmatterProperty) =>
+	f.type === 'string' && f.format === 'markdown'
 
 export async function run({ webPiece, config, pieces }: TransformInput): Promise<AssetRecord[]> {
 	const records: AssetRecord[] = []
@@ -22,33 +26,31 @@ export async function run({ webPiece, config, pieces }: TransformInput): Promise
 	}
 
 	const piece = await pieces.getPiece(webPiece.type)
-	const markdownFields = piece.fields.filter(
-		(f) => f.type === 'string' && f.format === 'markdown'
-	)
+	const schemaPaths = filterFrontmatterFields(piece.fields, isMarkdown)
 	const frontmatter = JSON.parse(webPiece.json_metadata || '{}')
 
-	for (const field of markdownFields) {
-		const values = getFrontmatterValues<string>(frontmatter, field.name).flat()
-		const value = values[0]
-		if (!value || typeof value !== 'string') continue
+	for (const schemaPath of schemaPaths) {
+		const dataPaths = resolveFieldPaths(piece.fields, frontmatter, schemaPath)
 
-		const url = `${baseUrl}?field=${encodeURIComponent(field.name)}`
-		const response = await fetch(url)
-		if (!response.ok) {
-			throw new Error(
-				`markdown transform failed for field "${field.name}": ${response.status} ${response.statusText}`
-			)
+		for (const fieldPath of dataPaths) {
+			const url = `${baseUrl}?field=${encodeURIComponent(fieldPath)}`
+			const response = await fetch(url)
+			if (!response.ok) {
+				throw new Error(
+					`markdown transform failed for field "${fieldPath}": ${response.status} ${response.statusText}`
+				)
+			}
+
+			records.push({
+				transformation: `markdown.${fieldPath}`,
+				piece_asset_path: null,
+				piece_field_path: fieldPath,
+				asset_path: null,
+				mime_type: 'text/html',
+				is_embedded: 1,
+				content: await response.text(),
+			})
 		}
-
-		records.push({
-			transformation: `markdown.${field.name}`,
-			piece_asset_path: null,
-			piece_field_path: field.name,
-			asset_path: null,
-			mime_type: 'text/html',
-			is_embedded: 1,
-			content: await response.text(),
-		})
 	}
 
 	return records
