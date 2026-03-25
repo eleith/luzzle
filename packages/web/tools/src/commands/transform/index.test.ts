@@ -14,11 +14,13 @@ vi.mock('../../lib/storage.js')
 vi.mock('../../lib/database.js')
 vi.mock('../../database/migrations.js')
 vi.mock('../../lib/transforms/index.js', () => ({
-	transforms: new Map([
-		['attachment', { run: vi.fn().mockResolvedValue([]), cleanup: undefined }],
-		['image', { run: vi.fn().mockResolvedValue([]), cleanup: undefined }],
-		['opengraph', { run: vi.fn().mockResolvedValue([]), cleanup: vi.fn().mockResolvedValue(undefined) }],
-	]),
+	getTransforms: vi.fn().mockReturnValue(
+		new Map([
+			['attachment', { run: vi.fn().mockResolvedValue([]), cleanup: undefined }],
+			['image', { run: vi.fn().mockResolvedValue([]), cleanup: undefined }],
+			['opengraph', { run: vi.fn().mockResolvedValue([]), cleanup: vi.fn().mockResolvedValue(undefined) }],
+		])
+	),
 	cleanupAllTransforms: vi.fn().mockResolvedValue(undefined),
 }))
 vi.mock('../../lib/transforms/runner.js', () => ({

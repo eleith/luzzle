@@ -1,25 +1,23 @@
-import { describe, test, expect, vi, afterEach, beforeEach, beforeAll } from 'vitest'
+import { describe, test, expect, vi, afterEach, beforeEach } from 'vitest'
 import { runTransformsForPiece } from './runner.js'
 import { type Config, type WebPieces } from '@luzzle/web.utils'
-import { setupTestDb, withWebTables, beginTransaction, rollbackTransaction } from '../../../test/db.js'
-import { LuzzleDatabase, Pieces } from '@luzzle/core'
+import { setupDatabase, teardownDatabase, TestDatabase } from '../../../test/db.js'
+import { Pieces } from '@luzzle/core'
 import { generateAssetKey } from '@luzzle/web.utils/server'
-import { transforms } from './index.js'
+import { getTransforms } from './index.js'
 
 vi.mock('@luzzle/web.utils/server')
-vi.mock('./index.js', () => ({
-	transforms: new Map([
-		['attachment', { run: vi.fn(), cleanup: undefined }],
-		['palette', { run: vi.fn(), cleanup: undefined }],
-		['opengraph', { run: vi.fn(), cleanup: vi.fn() }],
-	]),
-}))
+vi.mock('./index.js')
+
+const transforms = {
+	attachment: { run: vi.fn() },
+	palette: { run: vi.fn() },
+	opengraph: { run: vi.fn(), cleanup: vi.fn() },
+}
 
 const mocks = {
 	generateAssetKey: vi.mocked(generateAssetKey),
-	attachment: vi.mocked(transforms.get('attachment')!.run),
-	palette: vi.mocked(transforms.get('palette')!.run),
-	opengraph: vi.mocked(transforms.get('opengraph')!.run),
+	getTransforms: vi.mocked(getTransforms),
 }
 
 const config = {
@@ -37,34 +35,33 @@ const webPiece = {
 	date_added: 100,
 } as WebPieces
 
-let db: LuzzleDatabase
-
-beforeAll(async () => {
-	db = await setupTestDb()
-})
+let db: TestDatabase
 
 beforeEach(async () => {
-	await beginTransaction(db)
-	await withWebTables(db).insertInto('web_pieces').values(webPiece).execute()
+	db = await setupDatabase()
+	await db.insertInto('web_pieces').values(webPiece).execute()
 
 	mocks.generateAssetKey.mockReturnValue('asset-key')
-	mocks.attachment.mockResolvedValue([])
-	mocks.palette.mockResolvedValue([])
-	mocks.opengraph.mockResolvedValue([])
+	mocks.getTransforms.mockReturnValue(
+		new Map([
+			['attachment', transforms.attachment],
+			['palette', transforms.palette],
+			['opengraph', transforms.opengraph],
+		])
+	)
+	transforms.attachment.run.mockResolvedValue([])
+	transforms.palette.run.mockResolvedValue([])
+	transforms.opengraph.run.mockResolvedValue([])
 })
 
 afterEach(async () => {
-	await rollbackTransaction(db)
+	await teardownDatabase(db)
 	vi.clearAllMocks()
 })
 
-async function getAssets() {
-	return withWebTables(db).selectFrom('web_pieces_assets').selectAll().execute()
-}
-
 describe('lib/transforms/runner', () => {
 	test('runs all transforms and writes to DB by default', async () => {
-		mocks.attachment.mockResolvedValueOnce([
+		transforms.attachment.run.mockResolvedValueOnce([
 			{
 				transformation: 'attachment.original',
 				asset_path: 'books/key/file.pdf',
@@ -74,7 +71,7 @@ describe('lib/transforms/runner', () => {
 
 		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, {}, new Map())
 
-		const assets = await getAssets()
+		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
 		expect(assets).toHaveLength(1)
 		expect(assets[0]).toMatchObject({
 			transformation: 'attachment.original',
@@ -84,9 +81,9 @@ describe('lib/transforms/runner', () => {
 			piece_key: 'key123',
 			asset_key: 'asset-key',
 		})
-		expect(mocks.attachment).toHaveBeenCalledOnce()
-		expect(mocks.palette).toHaveBeenCalledOnce()
-		expect(mocks.opengraph).toHaveBeenCalledOnce()
+		expect(transforms.attachment.run).toHaveBeenCalledOnce()
+		expect(transforms.palette.run).toHaveBeenCalledOnce()
+		expect(transforms.opengraph.run).toHaveBeenCalledOnce()
 	})
 
 	test('filters to only the specified transform when typeFilter is given', async () => {
@@ -100,13 +97,13 @@ describe('lib/transforms/runner', () => {
 			new Map()
 		)
 
-		expect(mocks.palette).toHaveBeenCalledOnce()
-		expect(mocks.attachment).not.toHaveBeenCalled()
-		expect(mocks.opengraph).not.toHaveBeenCalled()
+		expect(transforms.palette.run).toHaveBeenCalledOnce()
+		expect(transforms.attachment.run).not.toHaveBeenCalled()
+		expect(transforms.opengraph.run).not.toHaveBeenCalled()
 	})
 
 	test('skips DB delete and insert when dryRun is true', async () => {
-		mocks.attachment.mockResolvedValueOnce([
+		transforms.attachment.run.mockResolvedValueOnce([
 			{
 				transformation: 'attachment.original',
 				asset_path: 'books/key/file.pdf',
@@ -124,8 +121,8 @@ describe('lib/transforms/runner', () => {
 			new Map()
 		)
 
-		expect(mocks.attachment).toHaveBeenCalledOnce()
-		const assets = await getAssets()
+		expect(transforms.attachment.run).toHaveBeenCalledOnce()
+		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
 		expect(assets).toHaveLength(0)
 	})
 
@@ -140,13 +137,13 @@ describe('lib/transforms/runner', () => {
 			new Map()
 		)
 
-		const assets = await getAssets()
+		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
 		expect(assets).toHaveLength(0)
 	})
 
 	test('logs generated asset path', async () => {
 		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-		mocks.palette.mockResolvedValueOnce([
+		transforms.palette.run.mockResolvedValueOnce([
 			{
 				transformation: 'palette',
 				asset_path: null as unknown as string,
@@ -174,7 +171,7 @@ describe('lib/transforms/runner', () => {
 
 	test('logs error and continues when transform throws', async () => {
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-		mocks.attachment.mockRejectedValueOnce(new Error('boom'))
+		transforms.attachment.run.mockRejectedValueOnce(new Error('boom'))
 
 		await expect(
 			runTransformsForPiece(
@@ -205,8 +202,8 @@ describe('lib/transforms/runner', () => {
 			new Map()
 		)
 
-		const assets = await getAssets()
+		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
 		expect(assets).toHaveLength(0)
-		expect(mocks.attachment).not.toHaveBeenCalled()
+		expect(transforms.attachment.run).not.toHaveBeenCalled()
 	})
 })

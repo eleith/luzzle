@@ -23,15 +23,17 @@ vi.mock('../../lib/storage.js')
 vi.mock('../../database/migrations.js')
 vi.mock('@luzzle/web.utils/server')
 vi.mock('../../lib/transforms/index.js', () => ({
-	transforms: new Map([
-		['attachment', { run: vi.fn().mockResolvedValue([]) }],
-		['image', { run: vi.fn().mockResolvedValue([]) }],
-		['opengraph', { run: vi.fn().mockResolvedValue([]) }],
-	]),
+	getTransforms: vi.fn().mockReturnValue(
+		new Map([
+			['attachment', { run: vi.fn().mockResolvedValue([]) }],
+			['image', { run: vi.fn().mockResolvedValue([]) }],
+			['opengraph', { run: vi.fn().mockResolvedValue([]) }],
+		])
+	),
 	cleanupAllTransforms: vi.fn(),
 }))
 
-import { transforms, cleanupAllTransforms } from '../../lib/transforms/index.js'
+import { getTransforms, cleanupAllTransforms } from '../../lib/transforms/index.js'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 
 const mocks = {
@@ -759,7 +761,7 @@ describe('sync index', () => {
 		queries.execute.mockResolvedValueOnce([])
 		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
 
-		vi.mocked(transforms.get('attachment')!.run).mockResolvedValueOnce([
+		vi.mocked(getTransforms().get('attachment')!.run).mockResolvedValueOnce([
 			{
 				transformation: 'attachment.original',
 				asset_path: 'books/key/file.pdf',
@@ -792,7 +794,7 @@ describe('sync index', () => {
 
 		await sync({ outDir: '/tmp/test-out' }, config as unknown as Config)
 
-		expect(transforms.get('attachment')!.run).toHaveBeenCalledOnce()
+		expect(getTransforms().get('attachment')!.run).toHaveBeenCalledOnce()
 		expect(db.deleteFrom).toHaveBeenCalledWith('web_pieces_assets')
 		expect(db.insertInto).toHaveBeenCalledWith('web_pieces_assets')
 		expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -825,7 +827,7 @@ describe('sync index', () => {
 		queries.execute.mockResolvedValueOnce([])
 		queries.executeTakeFirst.mockResolvedValueOnce(pieceItem)
 
-		vi.mocked(transforms.get('attachment')!.run).mockRejectedValueOnce(new Error('storage error'))
+		vi.mocked(getTransforms().get('attachment')!.run).mockRejectedValueOnce(new Error('storage error'))
 
 		const pieceMock = {
 			isOutdated: vi.fn().mockResolvedValue(true),
@@ -906,7 +908,7 @@ describe('sync index', () => {
 
 		await sync({ outDir: '/tmp/test-out', dryRun: true }, config as unknown as Config)
 
-		expect(transforms.get('attachment')!.run).not.toHaveBeenCalled()
+		expect(getTransforms().get('attachment')!.run).not.toHaveBeenCalled()
 		expect(db.insertInto).not.toHaveBeenCalledWith('web_pieces_assets')
 	})
 

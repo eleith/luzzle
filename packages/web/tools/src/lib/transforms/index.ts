@@ -13,7 +13,7 @@ type Transform = {
 
 // Order matters: each transform may depend on assets produced by prior transforms.
 // attachment → image → palette → highlight → opengraph (last, depends on image assets)
-export const transforms = new Map<string, Transform>([
+const transforms = new Map<string, Transform>([
 	['attachment', attachment],
 	['image', image],
 	['palette', palette],
@@ -21,6 +21,10 @@ export const transforms = new Map<string, Transform>([
 	['markdown', markdown],
 	['opengraph', opengraph],
 ])
+
+export function getTransforms() {
+	return transforms
+}
 
 export async function cleanupAllTransforms(): Promise<void> {
 	for (const transform of transforms.values()) {

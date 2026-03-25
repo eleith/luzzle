@@ -3,7 +3,7 @@ import { getStorage } from '../../lib/storage.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
 import { type Config, type WebPieces } from '@luzzle/web.utils'
 import runWebMigrations from '../../database/migrations.js'
-import { transforms, cleanupAllTransforms } from '../../lib/transforms/index.js'
+import { getTransforms, cleanupAllTransforms } from '../../lib/transforms/index.js'
 import { runTransformsForPiece } from '../../lib/transforms/runner.js'
 import { buildAssetMaps } from '../../lib/transforms/assets.js'
 
@@ -16,6 +16,7 @@ type TransformOptions = {
 }
 
 export default async function runTransform(options: TransformOptions, config: Config) {
+	const transforms = getTransforms()
 	if (options.type && !transforms.has(options.type)) {
 		const valid = [...transforms.keys()].join(', ')
 		throw new Error(`Unknown transform type "${options.type}". Valid types: ${valid}`)

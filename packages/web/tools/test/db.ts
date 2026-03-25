@@ -1,31 +1,34 @@
-import { getDatabaseClient, LuzzleDatabase, migrate } from '@luzzle/core'
+import { getDatabaseClient, LuzzleDatabase, LuzzleTables, migrate } from '@luzzle/core'
 import { type WebPieces, type WebPiecesAsset, type WebPieceTags } from '@luzzle/web.utils'
-import { sql } from 'kysely'
+import { Kysely, sql } from 'kysely'
 import runWebMigrations from '../src/database/migrations.js'
 
-export type WebTables = { web_pieces: WebPieces; web_pieces_assets: WebPiecesAsset; web_pieces_tags: WebPieceTags }
+type WebTables = {
+	web_pieces: WebPieces
+	web_pieces_assets: WebPiecesAsset
+	web_pieces_tags: WebPieceTags
+}
 
-export async function setupTestDb() {
-	const db = getDatabaseClient(':memory:')
-	const coreResult = await migrate(db)
-	if (coreResult.error) {
-		throw new Error(`Core migration failed: ${coreResult.error}`)
+export type TestDatabase = Kysely<LuzzleTables & WebTables>
+
+let cachedDb: LuzzleDatabase | null = null
+
+export async function setupDatabase() {
+	if (!cachedDb) {
+		cachedDb = getDatabaseClient(':memory:')
+		const coreResult = await migrate(cachedDb)
+		if (coreResult.error) {
+			throw new Error(`Core migration failed: ${coreResult.error}`)
+		}
+		const webResult = await runWebMigrations(cachedDb)
+		if (webResult.error) {
+			throw new Error(`Web migration failed: ${webResult.error}`)
+		}
 	}
-	const webResult = await runWebMigrations(db)
-	if (webResult.error) {
-		throw new Error(`Web migration failed: ${webResult.error}`)
-	}
-	return db
+	await sql`BEGIN`.execute(cachedDb)
+	return cachedDb.withTables<WebTables>()
 }
 
-export function withWebTables(db: LuzzleDatabase) {
-	return db.withTables<WebTables>()
-}
-
-export async function beginTransaction(db: LuzzleDatabase) {
-	await sql`BEGIN`.execute(db)
-}
-
-export async function rollbackTransaction(db: LuzzleDatabase) {
+export async function teardownDatabase(db: Kysely<LuzzleTables & WebTables>) {
 	await sql`ROLLBACK`.execute(db)
 }

@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
-import { transforms, cleanupAllTransforms } from './index.js'
+import { getTransforms, cleanupAllTransforms } from './index.js'
 import * as opengraph from './opengraph.js'
 
 vi.mock('./attachment.js', () => ({ run: vi.fn(), cleanup: undefined }))
@@ -14,7 +14,7 @@ afterEach(() => {
 
 describe('transforms/index', () => {
 	test('transforms has attachment, image, palette, highlight, markdown, opengraph in order', () => {
-		expect([...transforms.keys()]).toEqual(['attachment', 'image', 'palette', 'highlight', 'markdown', 'opengraph'])
+		expect([...getTransforms().keys()]).toEqual(['attachment', 'image', 'palette', 'highlight', 'markdown', 'opengraph'])
 	})
 
 	test('cleanupAllTransforms calls cleanup on transforms that have it', async () => {

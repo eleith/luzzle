@@ -1,11 +1,12 @@
-import type { Pieces } from '@luzzle/core'
-import { getDatabase } from '../database.js'
-import { type Config, type WebPieces, type WebPiecesAsset } from '@luzzle/web.utils'
+import type { LuzzleTables, Pieces } from '@luzzle/core'
+import { type Config, type WebPieces } from '@luzzle/web.utils'
 import { generateAssetKey } from '@luzzle/web.utils/server'
-import { transforms } from './index.js'
+import { getTransforms } from './index.js'
+import { Kysely } from 'kysely'
+import { WebTables } from '../database.js'
 
 export async function runTransformsForPiece(
-	db: ReturnType<typeof getDatabase>,
+	db: Kysely<LuzzleTables> | Kysely<LuzzleTables & WebTables>,
 	webPiece: WebPieces,
 	config: Config,
 	outDir: string,
@@ -14,8 +15,9 @@ export async function runTransformsForPiece(
 	assetKeyToPath: Map<string, string>
 ): Promise<void> {
 	const { typeFilter, dryRun = false } = options
-	const webDb = db.withTables<{ web_pieces_assets: WebPiecesAsset }>()
+	const webDb = db.withTables<WebTables>()
 
+	const transforms = getTransforms()
 	const selectedTransforms = typeFilter
 		? [...transforms.entries()].filter(([name]) => name === typeFilter)
 		: [...transforms.entries()]
