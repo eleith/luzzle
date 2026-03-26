@@ -1,97 +1,75 @@
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import { mockKysely } from '../database/database.mock.js'
+import { describe, expect, test, beforeEach, afterEach } from 'vitest'
 import * as manager from './manager.js'
 import { makeSchema } from './Piece.fixtures.js'
+import { setupDatabase, teardownDatabase } from '../../test/db.js'
+import { type LuzzleDatabase } from '../database/tables/index.js'
 
-vi.mock('./items.js')
+let db: LuzzleDatabase
 
-const mocks = {
-	empty: vi.fn(),
-}
+beforeEach(async () => {
+	db = await setupDatabase()
+})
 
-const spies: { [key: string]: MockInstance } = {}
+afterEach(async () => {
+	await teardownDatabase(db)
+})
 
 describe('src/pieces/manager.ts', () => {
-	afterEach(() => {
-		Object.values(mocks).forEach((mock) => {
-			mock.mockReset()
-		})
-
-		Object.keys(spies).forEach((key) => {
-			spies[key].mockRestore()
-			delete spies[key]
-		})
-	})
-
-	test('addPiece', async () => {
-		const kysely = mockKysely()
+	test('addPiece inserts a managed piece', async () => {
 		const schema = makeSchema()
 
-		await manager.addPiece(kysely.db, 'name', schema)
+		await manager.addPiece(db, 'books', schema)
 
-		expect(kysely.db.insertInto).toHaveBeenCalled()
-	})
-
-	test('updatePiece', async () => {
-		const kysely = mockKysely()
-		const schema = makeSchema()
-		const name = 'name'
-
-		await manager.updatePiece(kysely.db, name, schema)
-
-		expect(kysely.db.updateTable).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('name', '=', name)
-	})
-
-	test('getPiece', async () => {
-		const kysely = mockKysely()
-		const name = 'name'
-		const schema = makeSchema()
-		const managedPiece = {
-			name,
-			schema: JSON.stringify(schema),
-		}
-
-		kysely.queries.executeTakeFirst.mockResolvedValueOnce(managedPiece)
-
-		const piece = await manager.getPiece(kysely.db, name)
-
-		expect(piece).toEqual({
-			...managedPiece,
+		const piece = await manager.getPiece(db, 'books')
+		expect(piece).toMatchObject({
+			name: 'books',
 			schema,
 		})
 	})
 
-	test('getPiece returns null', async () => {
-		const kysely = mockKysely()
-		const name = 'name'
+	test('updatePiece updates schema for existing piece', async () => {
+		const schema = makeSchema()
+		await manager.addPiece(db, 'books', schema)
 
-		kysely.queries.executeTakeFirst.mockResolvedValueOnce(undefined)
+		const updated = makeSchema({ rating: { type: 'number', nullable: true } })
+		await manager.updatePiece(db, 'books', updated)
 
-		const piece = await manager.getPiece(kysely.db, name)
+		const piece = await manager.getPiece(db, 'books')
+		expect(piece!.schema).toEqual(updated)
+	})
+
+	test('getPiece returns piece with parsed schema', async () => {
+		const schema = makeSchema()
+		await manager.addPiece(db, 'books', schema)
+
+		const piece = await manager.getPiece(db, 'books')
+
+		expect(piece).not.toBeNull()
+		expect(piece!.name).toBe('books')
+		expect(piece!.schema).toEqual(schema)
+	})
+
+	test('getPiece returns null when not found', async () => {
+		const piece = await manager.getPiece(db, 'missing')
 
 		expect(piece).toBeNull()
 	})
 
-	test('getPieces', async () => {
-		const kysely = mockKysely()
-		const managedPieces = [{ name: 'name' }]
+	test('getPieces returns all managed pieces', async () => {
+		await manager.addPiece(db, 'books', makeSchema())
+		await manager.addPiece(db, 'films', makeSchema())
 
-		kysely.queries.execute.mockResolvedValueOnce(managedPieces)
+		const pieces = await manager.getPieces(db)
 
-		const pieces = await manager.getPieces(kysely.db)
-
-		expect(kysely.db.selectFrom).toHaveBeenCalled()
-		expect(pieces).toEqual(managedPieces)
+		expect(pieces).toHaveLength(2)
 	})
 
-	test('deletePiece', async () => {
-		const kysely = mockKysely()
-		const name = 'name'
+	test('deletePiece removes by name', async () => {
+		await manager.addPiece(db, 'books', makeSchema())
 
-		await manager.deletePiece(kysely.db, name)
+		await manager.deletePiece(db, 'books')
 
-		expect(kysely.db.deleteFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('name', '=', name)
+		const piece = await manager.getPiece(db, 'books')
+		expect(piece).toBeNull()
 	})
 })
