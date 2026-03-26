@@ -1,133 +1,138 @@
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import { mockKysely } from '../database/database.mock.js'
+import { describe, expect, test, beforeEach, afterEach } from 'vitest'
 import * as items from './items.js'
-import { addColumnsFromPieceSchema } from './json.schema.js'
-import { RawBuilder, sql } from 'kysely'
+import { setupDatabase, teardownDatabase } from '../../test/db.js'
+import { type LuzzleDatabase } from '../database/tables/index.js'
 
-vi.mock('./json.schema.ts')
-vi.mock('kysely')
+let db: LuzzleDatabase
 
-const mocks = {
-	addColumnsFromPieceSchema: vi.mocked(addColumnsFromPieceSchema),
-	sql: vi.mocked(sql),
+beforeEach(async () => {
+	db = await setupDatabase()
+})
+
+afterEach(async () => {
+	await teardownDatabase(db)
+})
+
+const itemData = {
+	file_path: 'book.md',
+	type: 'books',
+	id: 'item1',
+	frontmatter_json: '{"title":"My Book"}',
+	note_markdown: '# My Book',
 }
 
-const spies: { [key: string]: MockInstance } = {}
-
 describe('src/pieces/items.ts', () => {
-	afterEach(() => {
-		Object.values(mocks).forEach((mock) => {
-			mock.mockReset()
-		})
+	test('insertItem inserts and returns the item', async () => {
+		const result = await items.insertItem(db, itemData)
 
-		Object.keys(spies).forEach((key) => {
-			spies[key].mockRestore()
-			delete spies[key]
-		})
-	})
-
-	test('selectItem', async () => {
-		const kysely = mockKysely()
-		const file = 'file'
-
-		await items.selectItem(kysely.db, file)
-
-		expect(kysely.db.selectFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('file_path', '=', file)
-	})
-
-	test('updateItem', async () => {
-		const kysely = mockKysely()
-		const file = 'file'
-		const data = { id: 'id', title: 'title' }
-
-		await items.updateItem(kysely.db, file, data)
-
-		expect(kysely.db.updateTable).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('file_path', '=', file)
-	})
-
-	test('insertItem', async () => {
-		const kysely = mockKysely()
-		const data = {
-			file_path: 'path',
+		expect(result).toMatchObject({
+			file_path: 'book.md',
 			type: 'books',
-			id: 'one',
-			frontmatter_json: '',
-			note_markdown: '',
-		}
-
-		await items.insertItem(kysely.db, data)
-
-		expect(kysely.db.insertInto).toHaveBeenCalled()
-		expect(kysely.queries.values).toHaveBeenCalledWith(data)
+			note_markdown: '# My Book',
+		})
 	})
 
-	test('selectItems', async () => {
-		const kysely = mockKysely()
-		await items.selectItems(kysely.db)
+	test('selectItem returns item by file_path', async () => {
+		await items.insertItem(db, itemData)
 
-		expect(kysely.db.selectFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).not.toHaveBeenCalled()
-		expect(kysely.queries.select).toHaveBeenCalledOnce()
+		const result = await items.selectItem(db, 'book.md')
+
+		expect(result).toMatchObject({
+			file_path: 'book.md',
+			type: 'books',
+		})
 	})
 
-	test('selectItems with type', async () => {
-		const kysely = mockKysely()
-		const type = 'books'
-		await items.selectItems(kysely.db, { type })
+	test('selectItem returns undefined when not found', async () => {
+		const result = await items.selectItem(db, 'missing.md')
 
-		expect(kysely.db.selectFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('type', '=', type)
-		expect(kysely.queries.select).toHaveBeenCalledOnce()
+		expect(result).toBeUndefined()
 	})
 
-	test('selectItems with asset', async () => {
-		const kysely = mockKysely()
-		const asset = 'file1'
-		await items.selectItems(kysely.db, { asset })
+	test('updateItem updates by file_path', async () => {
+		await items.insertItem(db, itemData)
 
-		expect(kysely.db.selectFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith(
-			'assets_json_array',
-			'like',
-			expect.any(String)
-		)
-		expect(kysely.queries.select).toHaveBeenCalledOnce()
+		await items.updateItem(db, 'book.md', { note_markdown: '# Updated' })
+
+		const result = await items.selectItem(db, 'book.md')
+		expect(result!.note_markdown).toBe('# Updated')
 	})
 
-	test('selectItemAssets', async () => {
-		const kysely = mockKysely()
-		const asset = 'file1'
+	test('selectItems returns all items', async () => {
+		await items.insertItem(db, itemData)
+		await items.insertItem(db, { ...itemData, file_path: 'film.md', type: 'films', id: 'item2' })
 
-		mocks.sql.mockReturnValueOnce({ compile: vi.fn() } as unknown as RawBuilder<unknown>)
-		spies.executeQuery = vi
-			.spyOn(kysely.db, 'executeQuery')
-			.mockResolvedValue({ rows: [{ asset }] })
+		const result = await items.selectItems(db)
 
-		const assets = await items.selectItemAssets(kysely.db)
-
-		expect(kysely.db.executeQuery).toHaveBeenCalled()
-		expect(assets).toEqual([asset])
+		expect(result).toHaveLength(2)
 	})
 
-	test('deleteItem', async () => {
-		const kysely = mockKysely()
-		const file = 'file'
+	test('selectItems filters by type', async () => {
+		await items.insertItem(db, itemData)
+		await items.insertItem(db, { ...itemData, file_path: 'film.md', type: 'films', id: 'item2' })
 
-		await items.deleteItem(kysely.db, file)
+		const result = await items.selectItems(db, { type: 'books' })
 
-		expect(kysely.db.deleteFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('file_path', '=', file)
+		expect(result).toHaveLength(1)
+		expect(result[0].file_path).toBe('book.md')
 	})
 
-	test('deleteItems', async () => {
-		const kysely = mockKysely()
-		const files = ['file1', 'file2']
+	test('selectItems filters by asset', async () => {
+		await items.insertItem(db, {
+			...itemData,
+			assets_json_array: JSON.stringify(['poster.jpg', 'cover.png']),
+		})
+		await items.insertItem(db, { ...itemData, file_path: 'film.md', type: 'films', id: 'item2' })
 
-		await items.deleteItems(kysely.db, files)
+		const result = await items.selectItems(db, { asset: 'poster.jpg' })
 
-		expect(kysely.db.deleteFrom).toHaveBeenCalled()
-		expect(kysely.queries.where).toHaveBeenCalledWith('file_path', 'in', files)
+		expect(result).toHaveLength(1)
+		expect(result[0].file_path).toBe('book.md')
+	})
+
+	test('selectItemAssets returns distinct assets across all items', async () => {
+		await items.insertItem(db, {
+			...itemData,
+			assets_json_array: JSON.stringify(['poster.jpg', 'cover.png']),
+		})
+		await items.insertItem(db, {
+			...itemData,
+			file_path: 'film.md',
+			type: 'films',
+			id: 'item2',
+			assets_json_array: JSON.stringify(['poster.jpg', 'trailer.mp4']),
+		})
+
+		const assets = await items.selectItemAssets(db)
+
+		expect(assets).toHaveLength(3)
+		expect(assets.sort()).toEqual(['cover.png', 'poster.jpg', 'trailer.mp4'])
+	})
+
+	test('selectItemAssets returns empty when no assets', async () => {
+		await items.insertItem(db, itemData)
+
+		const assets = await items.selectItemAssets(db)
+
+		expect(assets).toHaveLength(0)
+	})
+
+	test('deleteItem removes by file_path', async () => {
+		await items.insertItem(db, itemData)
+
+		await items.deleteItem(db, 'book.md')
+
+		const result = await items.selectItem(db, 'book.md')
+		expect(result).toBeUndefined()
+	})
+
+	test('deleteItems removes multiple by file_path', async () => {
+		await items.insertItem(db, itemData)
+		await items.insertItem(db, { ...itemData, file_path: 'film.md', type: 'films', id: 'item2' })
+
+		await items.deleteItems(db, ['book.md', 'film.md'])
+
+		const result = await items.selectItems(db)
+		expect(result).toHaveLength(0)
 	})
 })
