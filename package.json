@@ -9,6 +9,7 @@
     "packages/web/explorer",
     "packages/web/utils",
     "packages/web/builder",
+    "packages/web/lsp",
     "packages/web/proxy",
     "packages/lsp"
   ]
