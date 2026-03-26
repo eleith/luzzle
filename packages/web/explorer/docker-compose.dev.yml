@@ -38,6 +38,7 @@ services:
       - luzzle
     depends_on:
       - luzzle-dev-builder
+      - luzzle-dev-lsp
 
   luzzle-dev-builder:
     build:
@@ -67,6 +68,25 @@ services:
       - ../builder/server.js:/app/server.js
       - ../builder/scripts:/app/scripts
 
+  luzzle-dev-lsp:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ../lsp
+      additional_contexts:
+        lsp: ../../lsp
+    container_name: luzzle-dev-lsp
+    user: '${UID:-1000}:${GID:-1000}'
+    ports:
+      - '9001:9001'
+    environment:
+      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN:-223lk4j23oi4u23l4jlkj2l3kj4xyewr}
+      - LUZZLE_LSP_ROOT=/app/archive
+    networks:
+      - luzzle
+    volumes:
+      - ./demo/archive:/app/archive
+      - ../lsp/server.js:/app/server.js
+
   luzzle-dev-proxy:
     build:
       dockerfile: ../proxy/Dockerfile
@@ -76,6 +96,8 @@ services:
     environment:
       - LUZZLE_EXPLORER_HOST=luzzle-dev-web
       - LUZZLE_EXPLORER_PORT=5173
+      - LUZZLE_LSP_HOST=luzzle-dev-lsp
+      - LUZZLE_LSP_PORT=9001
       - LUZZLE_PROXY_CACHE=off
       - LUZZLE_PROXY_ACCESS_LOG=/tmp/logs/access.log
       - LUZZLE_PROXY_ERROR_LOG=/tmp/logs/error.log
