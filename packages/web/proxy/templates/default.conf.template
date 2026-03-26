@@ -5,6 +5,11 @@ upstream luzzle-upstream {
     keepalive 2;
 }
 
+upstream luzzle-lsp-upstream {
+    server ${LUZZLE_LSP_HOST}:${LUZZLE_LSP_PORT};
+    keepalive 2;
+}
+
 # Determine the correct protocol to pass forward
 map $http_x_forwarded_proto $proxy_x_forwarded_proto {
     default $http_x_forwarded_proto;
@@ -56,6 +61,14 @@ server {
         proxy_buffering off;
         add_header      X-Accel-Buffering "no" always;
         proxy_pass      http://luzzle-upstream;
+    }
+
+    location /lsp {
+        proxy_cache        off;
+        proxy_buffering    off;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+        proxy_pass         http://luzzle-lsp-upstream;
     }
 
     location / {
