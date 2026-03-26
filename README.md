@@ -62,5 +62,4 @@ This ecosystem contains everything you need to build and browse your archive:
 * [@luzzle/core] dropbox support
 * [@luzzle/core] implement webdav storage sync
 * [@luzzle/core] explore tauri port
-* [@luzzle/tools] replace db mocks with in memory db
 * [@luzzle/builder] add build one piece job

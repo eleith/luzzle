@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, afterEach } from 'vitest'
+import { describe, expect, test, vi, afterEach, beforeEach } from 'vitest'
 import {
 	makeMarkdownSample,
 	makePieceItemSelectable,
@@ -6,7 +6,8 @@ import {
 	makeSchema,
 	makeStorage,
 } from './Piece.fixtures.js'
-import { mockKysely } from '../database/database.mock.js'
+import { setupDatabase, teardownDatabase } from '../../test/db.js'
+import { type LuzzleDatabase } from '../database/tables/index.js'
 import * as cache from './cache.js'
 import * as item from './item.js'
 import * as items from './items.js'
@@ -34,8 +35,15 @@ const mocks = {
 	cpus: vi.mocked(cpus),
 }
 
+let db: LuzzleDatabase
+
+beforeEach(async () => {
+	db = await setupDatabase()
+})
+
 describe('pieces/Piece.ts', () => {
-	afterEach(() => {
+	afterEach(async () => {
+		await teardownDatabase(db)
 		vi.clearAllMocks()
 	})
 
@@ -109,7 +117,6 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const db = mockKysely().db
 
 		mocks.cache.getCache.mockResolvedValue(
 			makeCache({
@@ -124,7 +131,6 @@ describe('pieces/Piece.ts', () => {
 
 	test('isOutdated by date_added', async () => {
 		const filename = '/path/to/slug.books.md'
-		const db = mockKysely().db
 		const PieceType = makePieceMock()
 		const cacheDate = new Date('11-11-2000').getTime()
 		const fileDate = new Date('11-11-2001')
@@ -150,7 +156,6 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const db = mockKysely().db
 
 		mocks.cache.getCache.mockResolvedValue(
 			makeCache({
@@ -165,7 +170,6 @@ describe('pieces/Piece.ts', () => {
 
 	test('isOutdated throws', async () => {
 		const filename = 'file.md'
-		const db = mockKysely().db
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const pieceTest = new PieceType('table', storage)
@@ -247,7 +251,6 @@ describe('pieces/Piece.ts', () => {
 	test('prune deletes missing pieces from DB', async () => {
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table')
-		const db = mockKysely().db
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.items.selectItems.mockResolvedValue([
@@ -267,7 +270,6 @@ describe('pieces/Piece.ts', () => {
 	test('prune handles dryRun', async () => {
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table')
-		const db = mockKysely().db
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.items.selectItems.mockResolvedValue([
 			makePieceItemSelectable({ file_path: 'missing.md' }),
@@ -285,7 +287,6 @@ describe('pieces/Piece.ts', () => {
 	test('prune handles error', async () => {
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table')
-		const db = mockKysely().db
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		mocks.items.selectItems.mockResolvedValue([makePieceItemSelectable({ file_path: 'm.md' })])
 		mocks.items.deleteItem.mockRejectedValue(new Error('oof'))
@@ -300,7 +301,6 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const db = mockKysely().db
 		const markdown = makeMarkdownSample()
 
 		mocks.item.makePieceItemInsertable.mockReturnValue({} as LuzzleInsertable<'pieces_items'>)
@@ -315,7 +315,6 @@ describe('pieces/Piece.ts', () => {
 	test('syncMarkdown handles update or add', async () => {
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table')
-		const db = mockKysely().db
 		const markdown = makeMarkdownSample()
 
 		const syncAddSpy = vi.spyOn(piece, 'syncMarkdownAdd').mockResolvedValue(undefined)
@@ -334,7 +333,6 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const db = mockKysely().db
 		const markdown = makeMarkdownSample()
 		const data = makePieceItemSelectable()
 
@@ -351,7 +349,6 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const db = mockKysely().db
 		const markdown = makeMarkdownSample({ filePath: 'new.md' })
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
@@ -373,7 +370,6 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const db = mockKysely().db
 		const markdown = makeMarkdownSample({ filePath: 'u.md' })
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
@@ -398,7 +394,6 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const db = mockKysely().db
 		const markdown = makeMarkdownSample({ filePath: 's.md' })
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
@@ -420,7 +415,6 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const db = mockKysely().db
 		const markdown = makeMarkdownSample({ filePath: 'new.md' })
 
 		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
@@ -440,7 +434,6 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const db = mockKysely().db
 		const markdown = makeMarkdownSample({ filePath: 'u.md' })
 
 		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
@@ -464,7 +457,6 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const db = mockKysely().db
 		const markdown = makeMarkdownSample({ filePath: 'u.md' })
 
 		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
@@ -487,7 +479,6 @@ describe('pieces/Piece.ts', () => {
 	test('sync handles errors', async () => {
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table')
-		const db = mockKysely().db
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
 		vi.spyOn(piece, 'get').mockRejectedValue(new Error('oof'))
 

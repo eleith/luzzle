@@ -1,45 +1,22 @@
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import { Migrator, FileMigrationProvider } from 'kysely'
-import migrator from './migrations.js'
-import { mockKysely } from './database.mock.js'
-
-vi.mock('kysely')
-
-const mocks = {
-	migrator: vi.mocked(Migrator),
-	fileMigrationProvider: vi.mocked(FileMigrationProvider),
-}
-
-const spies: { [key: string]: MockInstance } = {}
+import { describe, expect, test } from 'vitest'
+import { getDatabaseClient } from './client.js'
+import migrate from './migrations.js'
 
 describe('src/database/migrations.ts', () => {
-	afterEach(() => {
-		Object.values(mocks).forEach((mock) => {
-			mock.mockReset()
-		})
+	test('migrator runs without error on a fresh database', async () => {
+		const db = getDatabaseClient(':memory:')
+		const result = await migrate(db)
 
-		Object.keys(spies).forEach((key) => {
-			spies[key].mockRestore()
-			delete spies[key]
-		})
+		expect(result.error).toBeUndefined()
+		await db.destroy()
 	})
 
-	test('migrator', async () => {
-		const { db } = mockKysely()
-		const migrateToLatest = vi.fn().mockResolvedValue({})
+	test('migrator is idempotent', async () => {
+		const db = getDatabaseClient(':memory:')
+		await migrate(db)
+		const result = await migrate(db)
 
-		mocks.fileMigrationProvider.mockReturnValue({} as FileMigrationProvider)
-		mocks.migrator.mockReturnValue({
-			migrateToLatest,
-		} as unknown as Migrator)
-
-		await migrator(db)
-
-		expect(migrateToLatest).toHaveBeenCalled()
-		expect(mocks.fileMigrationProvider).toHaveBeenCalledWith({
-			fs: expect.any(Object),
-			path: expect.any(Object),
-			migrationFolder: expect.any(String),
-		})
+		expect(result.error).toBeUndefined()
+		await db.destroy()
 	})
 })

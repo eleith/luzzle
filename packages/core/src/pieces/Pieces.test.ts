@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
+import { describe, expect, test, vi, afterEach, beforeEach, MockInstance } from 'vitest'
 import Pieces from './Pieces.js'
 import Piece from './Piece.js'
 import { addPiece, deletePiece, getPiece, getPieces, updatePiece } from './manager.js'
@@ -6,7 +6,8 @@ import { jsonToPieceSchema } from './json.schema.js'
 import { makePieceMarkdown } from './utils/markdown.js'
 import { type PieceFrontmatter } from './utils/frontmatter.js'
 import { makePieceMock, makeRegisteredPiece, makeSchema, makeStorage } from './Piece.fixtures.js'
-import { mockKysely } from '../database/database.mock.js'
+import { setupDatabase, teardownDatabase } from '../../test/db.js'
+import { type LuzzleDatabase } from '../database/tables/index.js'
 import { StorageStat } from '../index.js'
 
 vi.mock('./Piece.js')
@@ -24,18 +25,26 @@ const mocks = {
 	jsonToPieceSchema: vi.mocked(jsonToPieceSchema),
 }
 
-describe('pieces/Pieces.ts', () => {
-	afterEach(() => {
-		Object.values(mocks).forEach((mock) => {
-			mock.mockReset()
-		})
+let db: LuzzleDatabase
 
-		Object.keys(spies).forEach((key) => {
-			spies[key].mockRestore()
-			delete spies[key]
-		})
+beforeEach(async () => {
+	db = await setupDatabase()
+})
+
+afterEach(async () => {
+	await teardownDatabase(db)
+
+	Object.values(mocks).forEach((mock) => {
+		mock.mockReset()
 	})
 
+	Object.keys(spies).forEach((key) => {
+		spies[key].mockRestore()
+		delete spies[key]
+	})
+})
+
+describe('pieces/Pieces.ts', () => {
 	test('getPiece', async () => {
 		const storage = makeStorage('root')
 		const pieces = new Pieces(storage)
@@ -185,7 +194,6 @@ describe('pieces/Pieces.ts', () => {
 		const dateAdded = new Date('2020-02-02')
 		const dateModified = new Date('2021-02-02')
 		const piece = makeRegisteredPiece({ name: 'books', date_added: dateAdded.getTime() })
-		const { db } = mockKysely()
 
 		mocks.getPiece
 			.mockResolvedValueOnce(piece)
@@ -235,7 +243,6 @@ describe('pieces/Pieces.ts', () => {
 		const dateAdded = new Date('2020-02-02').getTime()
 		const dateModified = new Date('2021-02-02')
 		const piece = makeRegisteredPiece({ name: 'books', date_added: dateAdded })
-		const { db } = mockKysely()
 
 		mocks.getPiece.mockResolvedValueOnce(piece).mockResolvedValueOnce(null)
 		mocks.updatePiece.mockResolvedValueOnce()
@@ -278,7 +285,6 @@ describe('pieces/Pieces.ts', () => {
 		const dateAdded = new Date('2020-02-02').getTime()
 		const dateModified = new Date('2021-02-02')
 		const piece = makeRegisteredPiece({ name: 'books', date_added: dateAdded })
-		const { db } = mockKysely()
 
 		mocks.getPiece.mockResolvedValueOnce(null)
 		mocks.addPiece.mockRejectedValueOnce(new Error('Error adding piece'))
@@ -308,7 +314,6 @@ describe('pieces/Pieces.ts', () => {
 		const pieces = new Pieces(storage)
 		const dateAdded = new Date('2020-02-02').getTime()
 		const piece = makeRegisteredPiece({ name: 'books', date_added: dateAdded })
-		const { db } = mockKysely()
 
 		mocks.getPiece.mockResolvedValueOnce(null)
 		mocks.addPiece.mockRejectedValueOnce(new Error('Error adding piece'))
@@ -336,7 +341,6 @@ describe('pieces/Pieces.ts', () => {
 		const pieces = new Pieces(storage)
 		const type = 'books'
 		const piece = makeRegisteredPiece({ name: type })
-		const { db } = mockKysely()
 
 		mocks.getPieces.mockResolvedValueOnce([{ ...piece, schema: 'schema' }])
 		mocks.deletePiece.mockResolvedValueOnce()
@@ -361,7 +365,6 @@ describe('pieces/Pieces.ts', () => {
 		const pieces = new Pieces(storage)
 		const type = 'books'
 		const piece = makeRegisteredPiece({ name: type })
-		const { db } = mockKysely()
 
 		mocks.getPieces.mockResolvedValueOnce([{ ...piece, schema: 'schema' }])
 		mocks.deletePiece.mockResolvedValueOnce()
@@ -386,7 +389,6 @@ describe('pieces/Pieces.ts', () => {
 		const pieces = new Pieces(storage)
 		const type = 'books'
 		const piece = makeRegisteredPiece({ name: type })
-		const { db } = mockKysely()
 
 		mocks.getPieces.mockResolvedValueOnce([{ ...piece, schema: 'schema' }])
 		mocks.deletePiece.mockRejectedValueOnce(new Error('Error deleting piece'))
