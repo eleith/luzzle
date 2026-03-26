@@ -5,15 +5,17 @@
 	import type { EditorThemeColors } from '$lib/server/shiki'
 	import { createEditorTheme } from './theme'
 	import { createEditorExtensions } from './config'
+	import { createLSPExtension, destroyLSPClient } from './lsp'
 
 	type Props = {
 		value: string
 		onchange?: (value: string) => void
 		editorThemes: { light: EditorThemeColors; dark: EditorThemeColors }
 		type?: string
+		file?: string
 	}
 
-	let { value = $bindable(), onchange, editorThemes, type }: Props = $props()
+	let { value = $bindable(), onchange, editorThemes, type, file }: Props = $props()
 
 	let editorContainer: HTMLDivElement
 	let view: EditorView
@@ -34,7 +36,7 @@
 		})
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		const extensions = createEditorExtensions({
 			type,
 			linterConfig,
@@ -46,6 +48,15 @@
 				}
 			}
 		})
+
+		if (file) {
+			try {
+				const lspExtension = await createLSPExtension(`file:///${file}`)
+				extensions.push(lspExtension)
+			} catch (e) {
+				console.error('[lsp] failed to create extension:', e)
+			}
+		}
 
 		const startState = EditorState.create({
 			doc: value,
@@ -77,6 +88,7 @@
 		if (view) {
 			view.destroy()
 		}
+		destroyLSPClient()
 	})
 </script>
 

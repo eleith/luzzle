@@ -1,42 +1,8 @@
 import { linter, type Diagnostic } from '@codemirror/lint'
-import { parseDocument, isMap, isSeq, isPair, isScalar, type Node } from 'yaml'
+import { parseDocument } from 'yaml'
 import type { EditorView } from 'codemirror'
 import type { ValidationResponse } from '$lib/types/validation'
 import { getFrontmatterInfo } from './utils'
-
-function findNode(node: Node | null, path: string[]): Node | null {
-	if (!node || path.length === 0) return node
-
-	const key = path[0]
-
-	if (isMap(node)) {
-		const pair = node.items.find((p) => {
-			if (isPair(p)) {
-				const k = p.key
-				if (isScalar(k)) {
-					return String(k.value) === key
-				}
-			}
-			return false
-		})
-
-		if (pair) {
-			if (path.length === 1) {
-				return (pair.value || pair.key) as Node | null
-			}
-			return findNode(pair.value as Node, path.slice(1))
-		}
-	}
-
-	if (isSeq(node)) {
-		const index = parseInt(key, 10)
-		if (!isNaN(index) && node.items[index]) {
-			return findNode(node.items[index] as Node, path.slice(1))
-		}
-	}
-
-	return null
-}
 
 export function createFrontmatterLinter(type: string) {
 	return linter(
@@ -47,16 +13,8 @@ export function createFrontmatterLinter(type: string) {
 			const yamlDoc = parseDocument(info.content)
 			const diagnostics: Diagnostic[] = []
 
+			// Skip YAML syntax errors — the LSP handles frontmatter diagnostics
 			if (yamlDoc.errors.length > 0) {
-				for (const err of yamlDoc.errors) {
-					diagnostics.push({
-						from: (err.pos?.[0] || 0) + info.contentOffset,
-						to: (err.pos?.[1] || 0) + info.contentOffset,
-						severity: 'error',
-						message: err.message,
-						source: 'yaml'
-					})
-				}
 				return diagnostics
 			}
 
@@ -89,32 +47,8 @@ export function createFrontmatterLinter(type: string) {
 
 				if (!result.valid && result.errors) {
 					for (const err of result.errors) {
-						if (err.source === 'frontmatter') {
-							const path = (err.path || '').split('/').filter(Boolean)
-							const node = findNode(yamlDoc.contents as Node, path)
-
-							let from = info.contentOffset
-							let to = info.contentOffset + info.content.length
-
-							if (node && node.range) {
-								from = node.range[0] + info.contentOffset
-								to = node.range[1] + info.contentOffset
-							} else if (path.length > 0) {
-								const parent = findNode(yamlDoc.contents as Node, path.slice(0, -1))
-								if (parent && parent.range) {
-									from = parent.range[0] + info.contentOffset
-									to = parent.range[1] + info.contentOffset
-								}
-							}
-
-							diagnostics.push({
-								from,
-								to,
-								severity: 'error',
-								message: err.message,
-								source: 'schema'
-							})
-						} else if (err.source === 'markdown' && err.line) {
+						// Frontmatter diagnostics are handled by the LSP
+						if (err.source === 'markdown' && err.line) {
 							const startLineNumber = doc.lineAt(bodyStartPos).number
 							const targetLineNumber = startLineNumber + err.line - 1
 
