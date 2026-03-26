@@ -1,131 +1,97 @@
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
+import { describe, expect, test, beforeEach, afterEach } from 'vitest'
 import * as cache from './cache.js'
-import { mockKysely } from '../database/database.mock.js'
-import { makeCache } from './cache.fixtures.js'
-import { createId } from '@paralleldrive/cuid2'
+import { setupDatabase, teardownDatabase } from '../../test/db.js'
+import { type LuzzleDatabase } from '../database/tables/index.js'
 
-vi.mock('@paralleldrive/cuid2')
+let db: LuzzleDatabase
 
-const mocks = {
-	createId: vi.mocked(createId),
-}
+beforeEach(async () => {
+	db = await setupDatabase()
+})
 
-const spies: MockInstance[] = []
+afterEach(async () => {
+	await teardownDatabase(db)
+})
 
 describe('pieces/cache.ts', () => {
-	afterEach(() => {
-		Object.values(mocks).forEach((mock) => {
-			mock.mockReset()
-		})
+	test('getCache returns cached entry by file_path', async () => {
+		await cache.addCache(db, 'book.md', 'hash1')
 
-		spies.forEach((spy) => {
-			spy.mockRestore()
-		})
-	})
+		const result = await cache.getCache(db, 'book.md')
 
-	test('getCache', async () => {
-		const { db, queries } = mockKysely()
-		const file = 'slug'
-		const dbCache = makeCache()
-
-		queries.executeTakeFirst.mockReturnValueOnce(dbCache)
-
-		const cacheGet = await cache.getCache(db, file)
-
-		expect(queries.where).toHaveBeenCalledWith('file_path', '=', file)
-		expect(cacheGet).toEqual(dbCache)
-	})
-
-	test('getCache returns null', async () => {
-		const { db, queries } = mockKysely()
-		const file = 'slug'
-
-		queries.executeTakeFirst.mockReturnValueOnce(undefined)
-
-		const cacheGet = await cache.getCache(db, file)
-
-		expect(cacheGet).toEqual(null)
-	})
-
-	test('getCacheAll', async () => {
-		const { db, queries } = mockKysely()
-		const dbCache = makeCache()
-
-		queries.execute.mockReturnValueOnce([dbCache])
-
-		const cacheGet = await cache.getCacheAll(db)
-
-		expect(cacheGet).toEqual([dbCache])
-	})
-
-	test('addCache', async () => {
-		const { db, queries } = mockKysely()
-		const file = '/path/to/piece'
-		const id = 'id'
-		const hash = 'hash'
-
-		mocks.createId.mockReturnValueOnce(id)
-
-		await cache.addCache(db, file, hash)
-
-		expect(mocks.createId).toHaveBeenCalledOnce()
-		expect(queries.values).toHaveBeenCalledWith({
-			file_path: file,
-			content_hash: hash,
-			id,
+		expect(result).toMatchObject({
+			file_path: 'book.md',
+			content_hash: 'hash1',
 		})
 	})
 
-	test('updateCache', async () => {
-		const { db, queries } = mockKysely()
-		const file = '/path/to/piece'
-		const hash = 'hash'
+	test('getCache returns null when not found', async () => {
+		const result = await cache.getCache(db, 'missing.md')
 
-		await cache.updateCache(db, file, hash)
+		expect(result).toBeNull()
+	})
 
-		expect(queries.set).toHaveBeenCalledWith({
-			content_hash: hash,
-			date_updated: expect.any(Number),
+	test('getCacheAll returns all entries', async () => {
+		await cache.addCache(db, 'a.md', 'hash_a')
+		await cache.addCache(db, 'b.md', 'hash_b')
+
+		const result = await cache.getCacheAll(db)
+
+		expect(result).toHaveLength(2)
+	})
+
+	test('addCache inserts and upserts on conflict', async () => {
+		await cache.addCache(db, 'book.md', 'hash1')
+		await cache.addCache(db, 'book.md', 'hash2')
+
+		const result = await cache.getCache(db, 'book.md')
+		expect(result).toMatchObject({
+			file_path: 'book.md',
+			content_hash: 'hash2',
+		})
+
+		const all = await cache.getCacheAll(db)
+		expect(all).toHaveLength(1)
+	})
+
+	test('updateCache updates existing entry', async () => {
+		await cache.addCache(db, 'book.md', 'hash1')
+
+		await cache.updateCache(db, 'book.md', 'hash2')
+
+		const result = await cache.getCache(db, 'book.md')
+		expect(result).toMatchObject({
+			file_path: 'book.md',
+			content_hash: 'hash2',
 		})
 	})
 
-	test('updateCache inserts', async () => {
-		const { db, queries } = mockKysely()
-		const file = '/path/to/piece'
-		const hash = 'hash'
-		const id = 'id'
+	test('updateCache inserts when entry does not exist', async () => {
+		await cache.updateCache(db, 'new.md', 'hash_new')
 
-		mocks.createId.mockReturnValueOnce(id)
-		queries.executeTakeFirst.mockReturnValueOnce(undefined)
-
-		await cache.updateCache(db, file, hash)
-
-		expect(queries.set).toHaveBeenCalledWith({
-			content_hash: hash,
-			date_updated: expect.any(Number),
+		const result = await cache.getCache(db, 'new.md')
+		expect(result).toMatchObject({
+			file_path: 'new.md',
+			content_hash: 'hash_new',
 		})
-		expect(queries.values).toHaveBeenCalledWith({
-			file_path: file,
-			content_hash: hash,
-			id,
-		})
-		expect(mocks.createId).toHaveBeenCalledOnce()
 	})
 
-	test('removeCache', async () => {
-		const { db } = mockKysely()
-		const slug = 'slug'
+	test('removeCache deletes by file_path', async () => {
+		await cache.addCache(db, 'book.md', 'hash1')
 
-		await cache.removeCache(db, slug)
+		await cache.removeCache(db, 'book.md')
 
-		expect(db.deleteFrom).toHaveBeenCalledOnce()
+		const result = await cache.getCache(db, 'book.md')
+		expect(result).toBeNull()
 	})
 
-	test('removeCache', async () => {
-		const { db } = mockKysely()
+	test('clearCache deletes all entries', async () => {
+		await cache.addCache(db, 'a.md', 'hash_a')
+		await cache.addCache(db, 'b.md', 'hash_b')
 
 		await cache.clearCache(db)
 
-		expect(db.deleteFrom).toHaveBeenCalledOnce()
+		const all = await cache.getCacheAll(db)
+		expect(all).toHaveLength(0)
 	})
 })
