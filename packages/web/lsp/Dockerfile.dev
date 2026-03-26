@@ -1,0 +1,25 @@
+FROM node:22-slim
+
+WORKDIR /app
+
+RUN npm install -g yaml-language-server
+
+COPY --from=lsp . /local/lsp
+
+RUN cd /local/lsp && rm -rf node_modules && npm install
+RUN npm install -g /local/lsp
+
+RUN mkdir -p /app/archive && \
+    chgrp 0 /app /app/archive && \
+    chmod g+w /app /app/archive
+
+COPY --chown=:0 ./server.js /app/server.js
+COPY --chown=:0 ./package.json /app/package.json
+
+RUN cd /app && npm install --omit=dev
+
+RUN chmod g+w /app/server.js
+
+EXPOSE 9001
+
+CMD ["node", "/app/server.js"]
