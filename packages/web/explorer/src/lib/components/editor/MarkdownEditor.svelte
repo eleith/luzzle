@@ -19,6 +19,7 @@
 	let editorContainer: HTMLDivElement
 	let view: EditorView
 	const themeConfig = new Compartment()
+	const lspConfig = new Compartment()
 
 	function updateTheme() {
 		const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
@@ -34,7 +35,7 @@
 		})
 	}
 
-	onMount(async () => {
+	onMount(() => {
 		const extensions = createEditorExtensions({
 			themeConfig,
 			onUpdate: (update) => {
@@ -45,14 +46,7 @@
 			}
 		})
 
-		if (file) {
-			try {
-				const lspExtension = await createLSPExtension(`file:///app/archive/${file}`)
-				extensions.push(lspExtension)
-			} catch (e) {
-				console.error('[lsp] failed to create extension:', e)
-			}
-		}
+		extensions.push(lspConfig.of([]))
 
 		const startState = EditorState.create({
 			doc: value,
@@ -63,6 +57,16 @@
 			state: startState,
 			parent: editorContainer
 		})
+
+		if (file) {
+			createLSPExtension(`file:///app/archive/${file}`)
+				.then((ext) => {
+					view.dispatch({ effects: lspConfig.reconfigure(ext) })
+				})
+				.catch((e) => {
+					console.error('[lsp] failed to create extension:', e)
+				})
+		}
 
 		updateTheme()
 
