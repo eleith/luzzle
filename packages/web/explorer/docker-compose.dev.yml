@@ -110,6 +110,7 @@ services:
       - ./nginx/logs:/tmp/logs
     depends_on:
       - luzzle-dev-web
+      - luzzle-dev-lsp
 
 networks:
   luzzle:

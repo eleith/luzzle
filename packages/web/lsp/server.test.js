@@ -12,9 +12,14 @@ describe('LSP WebSocket Server', () => {
 		process.env.LUZZLE_BUILD_TOKEN = 'test-token'
 		process.env.LUZZLE_LSP_ROOT = '/tmp/test-archive'
 
-		vi.doMock('vscode-ws-jsonrpc/server', () => ({
+		vi.doMock('vscode-ws-jsonrpc', () => ({
 			toSocket: vi.fn((ws) => ws),
-			launch: vi.fn(),
+		}))
+
+		vi.doMock('vscode-ws-jsonrpc/server', () => ({
+			createWebSocketConnection: vi.fn((ws) => ws),
+			createServerProcess: vi.fn(() => ({ reader: {}, writer: {}, dispose: vi.fn() })),
+			forward: vi.fn(),
 		}))
 
 		const { createServer } = await import('./server.js')
@@ -78,7 +83,7 @@ describe('LSP WebSocket Server', () => {
 	})
 
 	it('should accept WebSocket connection with valid token', async () => {
-		const { launch } = await import('vscode-ws-jsonrpc/server')
+		const { createServerProcess, forward } = await import('vscode-ws-jsonrpc/server')
 
 		const ws = new WebSocket(`${wsUrl}/lsp?token=test-token`)
 
@@ -87,19 +92,17 @@ describe('LSP WebSocket Server', () => {
 		})
 
 		expect(ws.readyState).toBe(WebSocket.OPEN)
-		expect(launch).toHaveBeenCalledWith(
-			expect.anything(),
+		expect(createServerProcess).toHaveBeenCalledWith(
+			'luzzle-lsp',
+			'luzzle-lsp',
+			['--stdio'],
 			expect.objectContaining({
-				serverName: 'luzzle-lsp',
-				command: 'luzzle-lsp',
-				args: ['--stdio'],
-				options: {
-					env: expect.objectContaining({
-						LUZZLE_LSP_ROOT: '/tmp/test-archive',
-					}),
-				},
+				env: expect.objectContaining({
+					LUZZLE_LSP_ROOT: '/tmp/test-archive',
+				}),
 			})
 		)
+		expect(forward).toHaveBeenCalled()
 
 		ws.close()
 		await new Promise((resolve) => ws.on('close', resolve))

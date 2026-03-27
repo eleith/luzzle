@@ -1,7 +1,8 @@
 import { createServer as httpServer } from 'http'
 import { fileURLToPath } from 'url'
 import { WebSocketServer } from 'ws'
-import { toSocket, launch } from 'vscode-ws-jsonrpc/server'
+import { toSocket } from 'vscode-ws-jsonrpc'
+import { createWebSocketConnection, createServerProcess, forward } from 'vscode-ws-jsonrpc/server'
 
 const PORT = 9001
 const BUILD_SECRET_TOKEN = process.env.LUZZLE_BUILD_TOKEN
@@ -39,14 +40,17 @@ function createServer() {
 		console.log(`[${new Date().toISOString()}] LSP client connected`)
 
 		const socket = toSocket(ws)
-		launch(socket, {
-			serverName: 'luzzle-lsp',
-			command: 'luzzle-lsp',
-			args: ['--stdio'],
-			options: {
-				env: { ...process.env, LUZZLE_LSP_ROOT: LSP_ROOT },
-			},
+		const wsConnection = createWebSocketConnection(socket)
+		const serverConnection = createServerProcess('luzzle-lsp', 'luzzle-lsp', ['--stdio'], {
+			env: { ...process.env, LUZZLE_LSP_ROOT: LSP_ROOT },
 		})
+
+		if (serverConnection) {
+			forward(wsConnection, serverConnection)
+		} else {
+			console.error(`[${new Date().toISOString()}] Failed to start luzzle-lsp`)
+			ws.close()
+		}
 
 		ws.on('close', () => {
 			console.log(`[${new Date().toISOString()}] LSP client disconnected`)
