@@ -58,7 +58,7 @@
 				<MarkdownEditor
 					bind:value={mergedContent}
 					editorThemes={data.editorThemes}
-					type={data.type}
+					file={data.file}
 				/>
 			</div>
 		{:else}
