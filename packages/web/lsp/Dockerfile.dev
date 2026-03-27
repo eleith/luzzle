@@ -6,7 +6,7 @@ RUN npm install -g yaml-language-server
 
 COPY --from=lsp . /local/lsp
 
-RUN cd /local/lsp && rm -rf node_modules && npm install
+RUN cd /local/lsp && rm -rf node_modules && npm install && npm run build
 RUN npm install -g /local/lsp
 
 RUN mkdir -p /app/archive && \
