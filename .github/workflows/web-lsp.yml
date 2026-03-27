@@ -1,0 +1,91 @@
+name: "@luzzle/web.lsp"
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'web.lsp/v*'
+    paths:
+      - 'packages/web/lsp/**'
+      - '.github/workflows/web-lsp.yml'
+
+defaults:
+  run:
+    working-directory: packages/web/lsp
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+  build-push:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Version
+        if: github.ref_type == 'tag'
+        run: |
+          VERSION_FROM_PKG=$(npm pkg get version --workspaces=false | tr -d '"')
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION_FROM_TAG=${TAG_NAME#web.lsp/v}
+          
+          if [ "$VERSION_FROM_TAG" != "$VERSION_FROM_PKG" ]; then
+            echo "Version mismatch: Tag version $VERSION_FROM_TAG does not match package.json version $VERSION_FROM_PKG"
+            exit 1
+          fi
+          echo "Version $VERSION_FROM_PKG matches."
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/eleith/luzzle-web-lsp
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=match,pattern=web.lsp/v(\d+),group=1
+            type=match,pattern=web.lsp/v(\d+\.\d+),group=1
+            type=match,pattern=web.lsp/v(\d+\.\d+\.\d+),group=1
+
+      - name: Create dummy npmrc
+        run: touch .npmrc
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: packages/web/lsp
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          secrets: |
+            "npmrc=.npmrc"
