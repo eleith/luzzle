@@ -41,7 +41,9 @@ export async function createLSPExtension(fileUri: string): Promise<Extension> {
 
 		try {
 			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-			const transport = await createWebSocketTransport(`${protocol}//${window.location.host}/editor/lsp`)
+			const transport = await createWebSocketTransport(
+				`${protocol}//${window.location.host}/editor/lsp`
+			)
 			client.connect(transport)
 		} catch (e) {
 			console.error('[lsp] failed to connect:', e)
