@@ -93,7 +93,7 @@ describe('LSP WebSocket Server', () => {
 	})
 
 	it('should handle client disconnect', async () => {
-		const ws = new WebSocket(`${wsUrl}/lsp?token=test-token`)
+		const ws = new WebSocket(`${wsUrl}/lsp`)
 
 		await new Promise((resolve) => ws.on('open', resolve))
 

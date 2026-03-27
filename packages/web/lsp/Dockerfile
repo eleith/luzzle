@@ -1,4 +1,4 @@
-FROM node:22-slim AS builder
+FROM node:22-slim
 WORKDIR /app
 
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install -g @luzzle/lsp@0.0.1
