@@ -2,11 +2,50 @@ import { createServer as httpServer } from 'http'
 import { fileURLToPath } from 'url'
 import { WebSocketServer } from 'ws'
 import { toSocket } from 'vscode-ws-jsonrpc'
-import { createWebSocketConnection, createServerProcess, forward } from 'vscode-ws-jsonrpc/server'
+import { createWebSocketConnection, createServerProcess } from 'vscode-ws-jsonrpc/server'
 
 const PORT = 9001
 const BUILD_SECRET_TOKEN = process.env.LUZZLE_BUILD_TOKEN
 const LSP_ROOT = process.env.LUZZLE_LSP_ROOT || '/app/archive'
+const ROOT_URI = `file://${LSP_ROOT}`
+
+/**
+ * Rewrite document URIs from client-relative (file:///piece.books.md)
+ * to server-absolute (file:///app/archive/piece.books.md).
+ */
+function rewriteToServer(message) {
+	if (!message.params) return message
+	const params = message.params
+
+	const textDocument = params.textDocument
+	if (textDocument?.uri && !textDocument.uri.startsWith(ROOT_URI + '/')) {
+		const filename = textDocument.uri.replace(/^file:\/\/\//, '')
+		params.textDocument = { ...textDocument, uri: `${ROOT_URI}/${filename}` }
+	}
+
+	return message
+}
+
+/**
+ * Rewrite document URIs from server-absolute back to client-relative.
+ */
+function rewriteToClient(message) {
+	if (!message.params) return message
+	const params = message.params
+	const prefix = ROOT_URI + '/'
+
+	if (typeof params.uri === 'string' && params.uri.startsWith(prefix)) {
+		params.uri = `file:///${params.uri.slice(prefix.length)}`
+	}
+
+	// other notifications may have textDocument.uri
+	const textDocument = params.textDocument
+	if (textDocument?.uri && textDocument.uri.startsWith(prefix)) {
+		params.textDocument = { ...textDocument, uri: `file:///${textDocument.uri.slice(prefix.length)}` }
+	}
+
+	return message
+}
 
 function createServer() {
 	const wss = new WebSocketServer({ noServer: true })
@@ -46,7 +85,10 @@ function createServer() {
 		})
 
 		if (serverConnection) {
-			forward(wsConnection, serverConnection)
+			wsConnection.forward(serverConnection, rewriteToServer)
+			serverConnection.forward(wsConnection, rewriteToClient)
+			wsConnection.onClose(() => serverConnection.dispose())
+			serverConnection.onClose(() => wsConnection.dispose())
 		} else {
 			console.error(`[${new Date().toISOString()}] Failed to start luzzle-lsp`)
 			ws.close()
@@ -73,4 +115,4 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 /* c8 ignore stop */
 
-export { server, createServer }
+export { server, createServer, rewriteToServer, rewriteToClient }

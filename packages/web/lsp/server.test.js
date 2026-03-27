@@ -16,10 +16,19 @@ describe('LSP WebSocket Server', () => {
 			toSocket: vi.fn((ws) => ws),
 		}))
 
+		const mockForward = vi.fn()
+		const mockOnClose = vi.fn()
 		vi.doMock('vscode-ws-jsonrpc/server', () => ({
-			createWebSocketConnection: vi.fn((ws) => ws),
-			createServerProcess: vi.fn(() => ({ reader: {}, writer: {}, dispose: vi.fn() })),
-			forward: vi.fn(),
+			createWebSocketConnection: vi.fn(() => ({
+				forward: mockForward,
+				onClose: mockOnClose,
+				dispose: vi.fn(),
+			})),
+			createServerProcess: vi.fn(() => ({
+				forward: mockForward,
+				onClose: mockOnClose,
+				dispose: vi.fn(),
+			})),
 		}))
 
 		const { createServer } = await import('./server.js')
@@ -83,7 +92,7 @@ describe('LSP WebSocket Server', () => {
 	})
 
 	it('should accept WebSocket connection with valid token', async () => {
-		const { createServerProcess, forward } = await import('vscode-ws-jsonrpc/server')
+		const { createServerProcess } = await import('vscode-ws-jsonrpc/server')
 
 		const ws = new WebSocket(`${wsUrl}/lsp?token=test-token`)
 
@@ -102,7 +111,6 @@ describe('LSP WebSocket Server', () => {
 				}),
 			})
 		)
-		expect(forward).toHaveBeenCalled()
 
 		ws.close()
 		await new Promise((resolve) => ws.on('close', resolve))
@@ -115,5 +123,149 @@ describe('LSP WebSocket Server', () => {
 
 		ws.close()
 		await new Promise((resolve) => ws.on('close', resolve))
+	})
+})
+
+describe('URI rewriting', () => {
+	let rewriteToServer
+	let rewriteToClient
+
+	beforeEach(async () => {
+		vi.resetModules()
+
+		process.env.LUZZLE_LSP_ROOT = '/app/archive'
+
+		vi.doMock('vscode-ws-jsonrpc', () => ({
+			toSocket: vi.fn(),
+		}))
+
+		vi.doMock('vscode-ws-jsonrpc/server', () => ({
+			createWebSocketConnection: vi.fn(),
+			createServerProcess: vi.fn(),
+		}))
+
+		const mod = await import('./server.js')
+		rewriteToServer = mod.rewriteToServer
+		rewriteToClient = mod.rewriteToClient
+	})
+
+	afterEach(() => {
+		delete process.env.LUZZLE_LSP_ROOT
+	})
+
+	describe('rewriteToServer', () => {
+		it('prepends root URI to textDocument.uri', () => {
+			const msg = {
+				jsonrpc: '2.0',
+				method: 'textDocument/didOpen',
+				params: {
+					textDocument: {
+						uri: 'file:///piece.books.md',
+						languageId: 'markdown',
+						version: 1,
+						text: '---\ntitle: Test\n---\n',
+					},
+				},
+			}
+
+			const result = rewriteToServer(msg)
+
+			expect(result.params.textDocument.uri).toBe('file:///app/archive/piece.books.md')
+			expect(result.params.textDocument.version).toBe(1)
+		})
+
+		it('does not rewrite URIs already under root', () => {
+			const msg = {
+				jsonrpc: '2.0',
+				method: 'textDocument/didOpen',
+				params: {
+					textDocument: {
+						uri: 'file:///app/archive/piece.books.md',
+						version: 1,
+					},
+				},
+			}
+
+			const result = rewriteToServer(msg)
+
+			expect(result.params.textDocument.uri).toBe('file:///app/archive/piece.books.md')
+		})
+
+		it('passes through messages without params', () => {
+			const msg = { jsonrpc: '2.0', method: 'initialized' }
+
+			const result = rewriteToServer(msg)
+
+			expect(result).toEqual(msg)
+		})
+
+		it('passes through messages without textDocument', () => {
+			const msg = {
+				jsonrpc: '2.0',
+				method: 'initialize',
+				params: { rootUri: null },
+			}
+
+			const result = rewriteToServer(msg)
+
+			expect(result.params.rootUri).toBeNull()
+		})
+	})
+
+	describe('rewriteToClient', () => {
+		it('strips root URI from publishDiagnostics uri', () => {
+			const msg = {
+				jsonrpc: '2.0',
+				method: 'textDocument/publishDiagnostics',
+				params: {
+					uri: 'file:///app/archive/piece.books.md',
+					diagnostics: [{ message: 'error' }],
+				},
+			}
+
+			const result = rewriteToClient(msg)
+
+			expect(result.params.uri).toBe('file:///piece.books.md')
+			expect(result.params.diagnostics).toEqual([{ message: 'error' }])
+		})
+
+		it('strips root URI from textDocument.uri', () => {
+			const msg = {
+				jsonrpc: '2.0',
+				method: 'someNotification',
+				params: {
+					textDocument: {
+						uri: 'file:///app/archive/piece.books.md',
+					},
+				},
+			}
+
+			const result = rewriteToClient(msg)
+
+			expect(result.params.textDocument.uri).toBe('file:///piece.books.md')
+		})
+
+		it('does not rewrite URIs not under root', () => {
+			const msg = {
+				jsonrpc: '2.0',
+				method: 'textDocument/publishDiagnostics',
+				params: {
+					uri: 'file:///other/piece.books.md',
+					diagnostics: [],
+				},
+			}
+
+			const result = rewriteToClient(msg)
+
+			expect(result.params.uri).toBe('file:///other/piece.books.md')
+		})
+
+		it('passes through messages without params', () => {
+			const msg = { jsonrpc: '2.0', method: 'initialized' }
+
+			const result = rewriteToClient(msg)
+
+			expect(result).toEqual(msg)
+		})
 	})
 })
