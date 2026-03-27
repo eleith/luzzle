@@ -100,6 +100,41 @@ describe('LSP WebSocket Server', () => {
 		ws.close()
 		await new Promise((resolve) => ws.on('close', resolve))
 	})
+
+	it('should close WebSocket when createServerProcess returns null', async () => {
+		vi.resetModules()
+
+		process.env.LUZZLE_LSP_ROOT = '/tmp/test-archive'
+
+		vi.doMock('vscode-ws-jsonrpc', () => ({
+			toSocket: vi.fn((ws) => ws),
+		}))
+
+		vi.doMock('vscode-ws-jsonrpc/server', () => ({
+			createWebSocketConnection: vi.fn(() => ({
+				forward: vi.fn(),
+				onClose: vi.fn(),
+				dispose: vi.fn(),
+			})),
+			createServerProcess: vi.fn(() => null),
+		}))
+
+		const { createServer } = await import('./server.js')
+		const nullServer = createServer()
+
+		await new Promise((resolve) => nullServer.listen(0, '127.0.0.1', resolve))
+		const address = nullServer.address()
+		const nullWsUrl = `ws://127.0.0.1:${address.port}`
+
+		const ws = new WebSocket(`${nullWsUrl}/editor/lsp`)
+
+		await new Promise((resolve) => ws.on('open', resolve))
+		await new Promise((resolve) => ws.on('close', resolve))
+
+		expect(ws.readyState).toBe(WebSocket.CLOSED)
+
+		await new Promise((resolve) => nullServer.close(resolve))
+	})
 })
 
 describe('injectRootUri', () => {
