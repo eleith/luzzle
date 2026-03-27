@@ -41,7 +41,6 @@ function printUsage(): void {
 	process.stdout.write('  --version   Print version and exit\n')
 	process.stdout.write('  --help      Print this help and exit\n\n')
 	process.stdout.write('Environment:\n')
-	process.stdout.write('  LUZZLE_LSP_ROOT      Override rootUri for schema discovery (e.g. /app/archive)\n')
 	process.stdout.write('  LUZZLE_LSP_DEBUG=1   Enable debug logging to stderr\n')
 }
 

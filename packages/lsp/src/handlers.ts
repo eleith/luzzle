@@ -29,8 +29,7 @@ export function handleInitialize(
 	discover: DiscoverSchemasFn,
 ): RequestMessage {
 	const params = (msg.params ?? {}) as Record<string, unknown>
-	const envRoot = process.env['LUZZLE_LSP_ROOT']
-	const rootUri = envRoot ? `file://${envRoot}` : (params['rootUri'] as string | undefined)
+	const rootUri = params['rootUri'] as string | undefined
 
 	if (rootUri) {
 		const result = discover(rootUri)

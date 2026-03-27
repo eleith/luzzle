@@ -154,6 +154,19 @@ describe('URI rewriting', () => {
 	})
 
 	describe('rewriteToServer', () => {
+		it('injects rootUri into initialize request', () => {
+			const msg = {
+				jsonrpc: '2.0',
+				id: 1,
+				method: 'initialize',
+				params: { rootUri: null, capabilities: {} },
+			}
+
+			const result = rewriteToServer(msg)
+
+			expect(result.params.rootUri).toBe('file:///app/archive')
+		})
+
 		it('prepends root URI to textDocument.uri', () => {
 			const msg = {
 				jsonrpc: '2.0',
@@ -202,13 +215,13 @@ describe('URI rewriting', () => {
 		it('passes through messages without textDocument', () => {
 			const msg = {
 				jsonrpc: '2.0',
-				method: 'initialize',
-				params: { rootUri: null },
+				method: 'workspace/didChangeConfiguration',
+				params: { settings: {} },
 			}
 
 			const result = rewriteToServer(msg)
 
-			expect(result.params.rootUri).toBeNull()
+			expect(result.params.settings).toEqual({})
 		})
 	})
 

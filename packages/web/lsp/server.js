@@ -10,12 +10,18 @@ const LSP_ROOT = process.env.LUZZLE_LSP_ROOT || '/app/archive'
 const ROOT_URI = `file://${LSP_ROOT}`
 
 /**
- * Rewrite document URIs from client-relative (file:///piece.books.md)
- * to server-absolute (file:///app/archive/piece.books.md).
+ * Rewrite messages from client to server:
+ * - inject rootUri into initialize so luzzle-lsp can discover schemas
+ * - rewrite document URIs from client-relative (file:///piece.books.md)
+ *   to server-absolute (file:///app/archive/piece.books.md)
  */
 function rewriteToServer(message) {
 	if (!message.params) return message
 	const params = message.params
+
+	if (message.method === 'initialize') {
+		params.rootUri = ROOT_URI
+	}
 
 	const textDocument = params.textDocument
 	if (textDocument?.uri && !textDocument.uri.startsWith(ROOT_URI + '/')) {

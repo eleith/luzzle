@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import type { RequestMessage, NotificationMessage, ResponseMessage } from 'vscode-jsonrpc/node.js'
 import {
 	createContext,
@@ -131,44 +131,6 @@ describe('handleInitialize', () => {
 		const yaml = settings['yaml'] as Record<string, unknown>
 
 		expect(yaml['schemas']).toEqual({})
-	})
-
-	it('uses LUZZLE_LSP_ROOT env var over client rootUri', () => {
-		vi.stubEnv('LUZZLE_LSP_ROOT', '/app/archive')
-
-		const ctx = createContext()
-		const discover: DiscoverSchemasFn = (rootUri) => {
-			expect(rootUri).toBe('file:///app/archive')
-			return { mapping: { 'file:///app/archive/.luzzle/schemas/books.json': ['*.books.md'] }, tempDir: null }
-		}
-		const msg = makeRequest('initialize', {
-			rootUri: 'file:///home/user/archive',
-		})
-
-		const result = handleInitialize(msg, ctx, discover)
-		const params = result.params as Record<string, unknown>
-		const initOpts = params['initializationOptions'] as Record<string, unknown>
-		const settings = initOpts['settings'] as Record<string, unknown>
-		const yaml = settings['yaml'] as Record<string, unknown>
-
-		expect(yaml['schemas']).toEqual({ 'file:///app/archive/.luzzle/schemas/books.json': ['*.books.md'] })
-
-		vi.unstubAllEnvs()
-	})
-
-	it('uses LUZZLE_LSP_ROOT even when client sends no rootUri', () => {
-		vi.stubEnv('LUZZLE_LSP_ROOT', '/app/archive')
-
-		const ctx = createContext()
-		const discover: DiscoverSchemasFn = (rootUri) => {
-			expect(rootUri).toBe('file:///app/archive')
-			return { mapping: {}, tempDir: null }
-		}
-		const msg = makeRequest('initialize', {})
-
-		handleInitialize(msg, ctx, discover)
-
-		vi.unstubAllEnvs()
 	})
 })
 
