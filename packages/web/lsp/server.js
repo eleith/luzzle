@@ -5,7 +5,6 @@ import { toSocket } from 'vscode-ws-jsonrpc'
 import { createWebSocketConnection, createServerProcess } from 'vscode-ws-jsonrpc/server'
 
 const PORT = 9001
-const BUILD_SECRET_TOKEN = process.env.LUZZLE_BUILD_TOKEN
 const LSP_ROOT = process.env.LUZZLE_LSP_ROOT || '/app/archive'
 const ROOT_URI = `file://${LSP_ROOT}`
 
@@ -34,12 +33,6 @@ function createServer() {
 
 		if (url.pathname !== '/lsp') {
 			socket.write('HTTP/1.1 404 Not Found\r\n\r\n')
-			socket.destroy()
-			return
-		}
-
-		if (BUILD_SECRET_TOKEN && url.searchParams.get('token') !== BUILD_SECRET_TOKEN) {
-			socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n')
 			socket.destroy()
 			return
 		}
@@ -82,9 +75,6 @@ const server = createServer()
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
 	server.listen(PORT, '0.0.0.0', () => {
 		console.log(`Luzzle Web LSP listening on port ${PORT}`)
-		if (!BUILD_SECRET_TOKEN) {
-			console.error('WARNING: LUZZLE_BUILD_TOKEN env var is not set! Auth will fail.')
-		}
 	})
 }
 /* c8 ignore stop */

@@ -9,7 +9,6 @@ describe('LSP WebSocket Server', () => {
 	beforeEach(async () => {
 		vi.resetModules()
 
-		process.env.LUZZLE_BUILD_TOKEN = 'test-token'
 		process.env.LUZZLE_LSP_ROOT = '/tmp/test-archive'
 
 		vi.doMock('vscode-ws-jsonrpc', () => ({
@@ -41,7 +40,6 @@ describe('LSP WebSocket Server', () => {
 	})
 
 	afterEach(async () => {
-		delete process.env.LUZZLE_BUILD_TOKEN
 		delete process.env.LUZZLE_LSP_ROOT
 		if (server) {
 			await new Promise((resolve) => server.close(resolve))
@@ -69,32 +67,10 @@ describe('LSP WebSocket Server', () => {
 		expect(error.statusCode).toBe(404)
 	})
 
-	it('should reject WebSocket upgrade without token', async () => {
-		const ws = new WebSocket(`${wsUrl}/lsp`)
-
-		const error = await new Promise((resolve) => {
-			ws.on('error', resolve)
-			ws.on('unexpected-response', (_req, res) => resolve(res))
-		})
-
-		expect(error.statusCode).toBe(401)
-	})
-
-	it('should reject WebSocket upgrade with invalid token', async () => {
-		const ws = new WebSocket(`${wsUrl}/lsp?token=wrong`)
-
-		const error = await new Promise((resolve) => {
-			ws.on('error', resolve)
-			ws.on('unexpected-response', (_req, res) => resolve(res))
-		})
-
-		expect(error.statusCode).toBe(401)
-	})
-
-	it('should accept WebSocket connection with valid token', async () => {
+	it('should accept WebSocket connection', async () => {
 		const { createServerProcess } = await import('vscode-ws-jsonrpc/server')
 
-		const ws = new WebSocket(`${wsUrl}/lsp?token=test-token`)
+		const ws = new WebSocket(`${wsUrl}/lsp`)
 
 		await new Promise((resolve) => {
 			ws.on('open', resolve)
