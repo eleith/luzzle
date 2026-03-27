@@ -66,11 +66,7 @@
 	{/if}
 
 	<div class="editor-container">
-		<MarkdownEditor
-			bind:value={rawContent}
-			editorThemes={data.editorThemes}
-			file={data.file}
-		/>
+		<MarkdownEditor bind:value={rawContent} editorThemes={data.editorThemes} file={data.file} />
 	</div>
 </div>
 

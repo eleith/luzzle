@@ -126,9 +126,8 @@ describe('LSP WebSocket Server', () => {
 	})
 })
 
-describe('URI rewriting', () => {
-	let rewriteToServer
-	let rewriteToClient
+describe('injectRootUri', () => {
+	let injectRootUri
 
 	beforeEach(async () => {
 		vi.resetModules()
@@ -145,140 +144,43 @@ describe('URI rewriting', () => {
 		}))
 
 		const mod = await import('./server.js')
-		rewriteToServer = mod.rewriteToServer
-		rewriteToClient = mod.rewriteToClient
+		injectRootUri = mod.injectRootUri
 	})
 
 	afterEach(() => {
 		delete process.env.LUZZLE_LSP_ROOT
 	})
 
-	describe('rewriteToServer', () => {
-		it('injects rootUri into initialize request', () => {
-			const msg = {
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'initialize',
-				params: { rootUri: null, capabilities: {} },
-			}
+	it('injects rootUri into initialize request', () => {
+		const msg = {
+			jsonrpc: '2.0',
+			id: 1,
+			method: 'initialize',
+			params: { rootUri: null, capabilities: {} },
+		}
 
-			const result = rewriteToServer(msg)
+		const result = injectRootUri(msg)
 
-			expect(result.params.rootUri).toBe('file:///app/archive')
-		})
-
-		it('prepends root URI to textDocument.uri', () => {
-			const msg = {
-				jsonrpc: '2.0',
-				method: 'textDocument/didOpen',
-				params: {
-					textDocument: {
-						uri: 'file:///piece.books.md',
-						languageId: 'markdown',
-						version: 1,
-						text: '---\ntitle: Test\n---\n',
-					},
-				},
-			}
-
-			const result = rewriteToServer(msg)
-
-			expect(result.params.textDocument.uri).toBe('file:///app/archive/piece.books.md')
-			expect(result.params.textDocument.version).toBe(1)
-		})
-
-		it('does not rewrite URIs already under root', () => {
-			const msg = {
-				jsonrpc: '2.0',
-				method: 'textDocument/didOpen',
-				params: {
-					textDocument: {
-						uri: 'file:///app/archive/piece.books.md',
-						version: 1,
-					},
-				},
-			}
-
-			const result = rewriteToServer(msg)
-
-			expect(result.params.textDocument.uri).toBe('file:///app/archive/piece.books.md')
-		})
-
-		it('passes through messages without params', () => {
-			const msg = { jsonrpc: '2.0', method: 'initialized' }
-
-			const result = rewriteToServer(msg)
-
-			expect(result).toEqual(msg)
-		})
-
-		it('passes through messages without textDocument', () => {
-			const msg = {
-				jsonrpc: '2.0',
-				method: 'workspace/didChangeConfiguration',
-				params: { settings: {} },
-			}
-
-			const result = rewriteToServer(msg)
-
-			expect(result.params.settings).toEqual({})
-		})
+		expect(result.params.rootUri).toBe('file:///app/archive')
 	})
 
-	describe('rewriteToClient', () => {
-		it('strips root URI from publishDiagnostics uri', () => {
-			const msg = {
-				jsonrpc: '2.0',
-				method: 'textDocument/publishDiagnostics',
-				params: {
-					uri: 'file:///app/archive/piece.books.md',
-					diagnostics: [{ message: 'error' }],
-				},
-			}
+	it('passes through non-initialize messages unchanged', () => {
+		const msg = {
+			jsonrpc: '2.0',
+			method: 'textDocument/didOpen',
+			params: { textDocument: { uri: 'file:///app/archive/piece.books.md' } },
+		}
 
-			const result = rewriteToClient(msg)
+		const result = injectRootUri(msg)
 
-			expect(result.params.uri).toBe('file:///piece.books.md')
-			expect(result.params.diagnostics).toEqual([{ message: 'error' }])
-		})
+		expect(result).toBe(msg)
+	})
 
-		it('strips root URI from textDocument.uri', () => {
-			const msg = {
-				jsonrpc: '2.0',
-				method: 'someNotification',
-				params: {
-					textDocument: {
-						uri: 'file:///app/archive/piece.books.md',
-					},
-				},
-			}
+	it('passes through messages without params', () => {
+		const msg = { jsonrpc: '2.0', method: 'initialized' }
 
-			const result = rewriteToClient(msg)
+		const result = injectRootUri(msg)
 
-			expect(result.params.textDocument.uri).toBe('file:///piece.books.md')
-		})
-
-		it('does not rewrite URIs not under root', () => {
-			const msg = {
-				jsonrpc: '2.0',
-				method: 'textDocument/publishDiagnostics',
-				params: {
-					uri: 'file:///other/piece.books.md',
-					diagnostics: [],
-				},
-			}
-
-			const result = rewriteToClient(msg)
-
-			expect(result.params.uri).toBe('file:///other/piece.books.md')
-		})
-
-		it('passes through messages without params', () => {
-			const msg = { jsonrpc: '2.0', method: 'initialized' }
-
-			const result = rewriteToClient(msg)
-
-			expect(result).toEqual(msg)
-		})
+		expect(result).toBe(msg)
 	})
 })

@@ -47,7 +47,7 @@
 
 		if (file) {
 			try {
-				const lspExtension = await createLSPExtension(`file:///${file}`)
+				const lspExtension = await createLSPExtension(`file:///app/archive/${file}`)
 				extensions.push(lspExtension)
 			} catch (e) {
 				console.error('[lsp] failed to create extension:', e)

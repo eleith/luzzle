@@ -24,10 +24,7 @@ export interface EditorConfigOptions {
 	onUpdate?: (update: ViewUpdate) => void
 }
 
-export function createEditorExtensions({
-	themeConfig,
-	onUpdate
-}: EditorConfigOptions) {
+export function createEditorExtensions({ themeConfig, onUpdate }: EditorConfigOptions) {
 	const extensions = [
 		highlightSpecialChars(),
 		history(),
