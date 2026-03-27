@@ -63,7 +63,7 @@ server {
         proxy_pass      http://luzzle-upstream;
     }
 
-    location /lsp {
+    location /editor/lsp {
         proxy_cache        off;
         proxy_buffering    off;
         proxy_read_timeout 86400s;

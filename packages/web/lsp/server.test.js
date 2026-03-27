@@ -47,7 +47,7 @@ describe('LSP WebSocket Server', () => {
 	})
 
 	it('should return 404 for HTTP requests', async () => {
-		const res = await fetch(`${baseUrl}/lsp`, { method: 'GET' })
+		const res = await fetch(`${baseUrl}/editor/lsp`, { method: 'GET' })
 		expect(res.status).toBe(404)
 	})
 
@@ -70,7 +70,7 @@ describe('LSP WebSocket Server', () => {
 	it('should accept WebSocket connection', async () => {
 		const { createServerProcess } = await import('vscode-ws-jsonrpc/server')
 
-		const ws = new WebSocket(`${wsUrl}/lsp`)
+		const ws = new WebSocket(`${wsUrl}/editor/lsp`)
 
 		await new Promise((resolve) => {
 			ws.on('open', resolve)
@@ -93,7 +93,7 @@ describe('LSP WebSocket Server', () => {
 	})
 
 	it('should handle client disconnect', async () => {
-		const ws = new WebSocket(`${wsUrl}/lsp`)
+		const ws = new WebSocket(`${wsUrl}/editor/lsp`)
 
 		await new Promise((resolve) => ws.on('open', resolve))
 
