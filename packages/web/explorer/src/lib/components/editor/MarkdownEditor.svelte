@@ -11,16 +11,14 @@
 		value: string
 		onchange?: (value: string) => void
 		editorThemes: { light: EditorThemeColors; dark: EditorThemeColors }
-		type?: string
 		file?: string
 	}
 
-	let { value = $bindable(), onchange, editorThemes, type, file }: Props = $props()
+	let { value = $bindable(), onchange, editorThemes, file }: Props = $props()
 
 	let editorContainer: HTMLDivElement
 	let view: EditorView
 	const themeConfig = new Compartment()
-	const linterConfig = new Compartment()
 
 	function updateTheme() {
 		const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
@@ -38,8 +36,6 @@
 
 	onMount(async () => {
 		const extensions = createEditorExtensions({
-			type,
-			linterConfig,
 			themeConfig,
 			onUpdate: (update) => {
 				if (update.docChanged) {

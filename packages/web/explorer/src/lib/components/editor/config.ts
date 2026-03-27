@@ -18,18 +18,13 @@ import { markdown } from '@codemirror/lang-markdown'
 import { yamlFrontmatter } from '@codemirror/lang-yaml'
 import { indentWithTab } from '@codemirror/commands'
 import { lintGutter, lintKeymap } from '@codemirror/lint'
-import { createFrontmatterLinter } from './linting'
 
 export interface EditorConfigOptions {
-	type?: string
-	linterConfig: Compartment
 	themeConfig: Compartment
 	onUpdate?: (update: ViewUpdate) => void
 }
 
 export function createEditorExtensions({
-	type,
-	linterConfig,
 	themeConfig,
 	onUpdate
 }: EditorConfigOptions) {
@@ -79,10 +74,6 @@ export function createEditorExtensions({
 
 	if (onUpdate) {
 		extensions.push(EditorView.updateListener.of(onUpdate))
-	}
-
-	if (type) {
-		extensions.push(linterConfig.of(createFrontmatterLinter(type)))
 	}
 
 	return extensions

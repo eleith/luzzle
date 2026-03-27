@@ -79,7 +79,6 @@ services:
     ports:
       - '9001:9001'
     environment:
-      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN:-223lk4j23oi4u23l4jlkj2l3kj4xyewr}
       - LUZZLE_LSP_ROOT=/app/archive
     networks:
       - luzzle

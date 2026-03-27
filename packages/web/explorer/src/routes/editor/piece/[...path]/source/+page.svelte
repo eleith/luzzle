@@ -69,7 +69,6 @@
 		<MarkdownEditor
 			bind:value={rawContent}
 			editorThemes={data.editorThemes}
-			type={data.type}
 			file={data.file}
 		/>
 	</div>
