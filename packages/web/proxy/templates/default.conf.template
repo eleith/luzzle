@@ -64,6 +64,7 @@ server {
     }
 
     location /editor/lsp {
+        auth_request       /api/auth/verify;
         proxy_cache        off;
         proxy_buffering    off;
         proxy_read_timeout 86400s;
