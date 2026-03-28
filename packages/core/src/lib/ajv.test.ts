@@ -5,7 +5,8 @@ import ajv, {
 	assetFormatValidator,
 	dateFormatValidator,
 	commaSeparatedFormatValidator,
-	paragraphValidator
+	paragraphFormatValidator,
+	markdownFormatValidator
 } from './ajv.js'
 
 vi.mock('ajv')
@@ -54,6 +55,14 @@ describe('src/lib/ajv.ts', () => {
 	})
 
 	test('paragraphFormatValidtor', () => {
-		expect(paragraphValidator('hi there')).toBe(true)
+		expect(paragraphFormatValidator('hi there')).toBe(true)
+	})
+
+	test('paragraphFormatValidtor', () => {
+		expect(paragraphFormatValidator('hi there')).toBe(true)
+	})
+
+	test('markdownFormatValidtor', () => {
+		expect(markdownFormatValidator('hi there')).toBe(true)
 	})
 })
