@@ -51,6 +51,21 @@ services:
       - ./data:/app/data
       - ./archive:/app/archive
 
+  luzzle-lsp:
+    build:
+      dockerfile: ../lsp/Dockerfile
+      secrets:
+        - npmrc
+      context: ../lsp
+    container_name: luzzle-lsp
+    user: '${UID:-1000}:${GID:-1000}'
+    networks:
+      - luzzle
+    ports:
+      - '9001:9001'
+    volumes:
+      - ./archive:/app/archive
+
   luzzle-proxy:
     build:
       dockerfile: ../proxy/Dockerfile
