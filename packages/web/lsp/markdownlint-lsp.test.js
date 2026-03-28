@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { DiagnosticSeverity, CodeActionKind } from 'vscode-languageserver/node.js'
 
 describe('markdownlint-lsp', () => {
@@ -6,17 +6,12 @@ describe('markdownlint-lsp', () => {
 
 	beforeEach(async () => {
 		vi.resetModules()
-		process.env.LUZZLE_LSP_ROOT = '/tmp/test-archive'
 		const mod = await import('./markdownlint-lsp.js')
 		lintErrorToDiagnostic = mod.lintErrorToDiagnostic
 		lintErrorToQuickFix = mod.lintErrorToQuickFix
 		validateDocument = mod.validateDocument
 		createServer = mod.createServer
 		route = mod.route
-	})
-
-	afterEach(() => {
-		delete process.env.LUZZLE_LSP_ROOT
 	})
 
 	describe('route', () => {
@@ -26,8 +21,6 @@ describe('markdownlint-lsp', () => {
 				command: 'node',
 			})
 			expect(route.args[0]).toMatch(/markdownlint-lsp\.js$/)
-			expect(route.spawnOptions.env.LUZZLE_LSP_ROOT).toBe('/tmp/test-archive')
-			expect(typeof route.transform).toBe('function')
 		})
 	})
 
@@ -361,7 +354,9 @@ describe('markdownlint-lsp', () => {
 			const conn = mockConnection()
 			createServer(() => conn)
 
-			const result = conn._handlers.initialize({ rootUri: 'file:///app/archive' })
+			const result = conn._handlers.initialize({
+				workspaceFolders: [{ uri: 'file:///app/archive', name: 'archive' }],
+			})
 
 			expect(result.capabilities.textDocumentSync).toBe(1)
 			expect(result.capabilities.codeActionProvider.codeActionKinds).toContain(
@@ -372,7 +367,16 @@ describe('markdownlint-lsp', () => {
 			)
 		})
 
-		it('handles initialize without rootUri', () => {
+		it('falls back to rootUri when workspaceFolders absent', () => {
+			const conn = mockConnection()
+			createServer(() => conn)
+
+			const result = conn._handlers.initialize({ rootUri: 'file:///app/archive' })
+
+			expect(result.capabilities.textDocumentSync).toBe(1)
+		})
+
+		it('handles initialize without rootUri or workspaceFolders', () => {
 			const conn = mockConnection()
 			createServer(() => conn)
 

@@ -67,13 +67,11 @@ describe('LSP WebSocket Server', () => {
 
 	beforeEach(async () => {
 		vi.resetModules()
-		process.env.LUZZLE_LSP_ROOT = '/tmp/test-archive'
 		setupMocks()
 		;({ server, baseUrl, wsUrl } = await startServer())
 	})
 
 	afterEach(async () => {
-		delete process.env.LUZZLE_LSP_ROOT
 		if (server) {
 			await new Promise((resolve) => server.close(resolve))
 		}
@@ -130,17 +128,13 @@ describe('LSP WebSocket Server', () => {
 			'luzzle-lsp',
 			'luzzle-lsp',
 			['--stdio'],
-			expect.objectContaining({
-				env: expect.objectContaining({ LUZZLE_LSP_ROOT: '/tmp/test-archive' }),
-			})
+			undefined
 		)
 		expect(createServerProcess).toHaveBeenCalledWith(
 			'markdownlint-lsp',
 			'node',
 			expect.arrayContaining([expect.stringContaining('markdownlint-lsp.js')]),
-			expect.objectContaining({
-				env: expect.objectContaining({ LUZZLE_LSP_ROOT: '/tmp/test-archive' }),
-			})
+			undefined
 		)
 
 		ws.close()
@@ -159,7 +153,6 @@ describe('LSP WebSocket Server', () => {
 		await new Promise((resolve) => server.close(resolve))
 
 		vi.resetModules()
-		process.env.LUZZLE_LSP_ROOT = '/tmp/test-archive'
 		setupMocks({ failedProcesses: ['luzzle-lsp', 'markdownlint-lsp'] })
 
 		const started = await startServer()
@@ -184,7 +177,6 @@ describe('LSP WebSocket Server', () => {
 				command: 'echo',
 				args: ['hello'],
 				spawnOptions: {},
-				transform: (msg) => msg,
 			},
 		]
 
@@ -273,22 +265,6 @@ describe('createMultiplex', () => {
 
 		expect(writerMocks[0]).toHaveBeenCalledWith(notification)
 		expect(writerMocks[1]).toHaveBeenCalledWith(notification)
-	})
-
-	it('should apply per-route transforms to client messages', () => {
-		const transform = vi.fn((msg) => ({ ...msg, transformed: true }))
-		const routes = [
-			{ name: 'a', command: 'a', args: [], spawnOptions: {}, transform },
-			{ name: 'b', command: 'b', args: [], spawnOptions: {} },
-		]
-		createMultiplex(mockWsConn, routes)
-
-		const msg = { jsonrpc: '2.0', method: 'initialized', params: {} }
-		readerCallbacks.ws.fn(msg)
-
-		expect(transform).toHaveBeenCalled()
-		expect(writerMocks[0]).toHaveBeenCalledWith(expect.objectContaining({ transformed: true }))
-		expect(writerMocks[1]).toHaveBeenCalledWith(expect.not.objectContaining({ transformed: true }))
 	})
 
 	it('should forward all messages from primary server to client', () => {

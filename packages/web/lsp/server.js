@@ -43,12 +43,10 @@ function createMultiplex(wsConn, routes) {
 		return merged
 	}
 
-	// Client → all servers (with per-route transform)
+	// Client → all servers
 	wsConn.reader.listen((message) => {
-		for (const { route, proc } of servers) {
-			const copy = JSON.parse(JSON.stringify(message))
-			const transformed = route.transform ? route.transform(copy) : copy
-			proc.writer.write(transformed)
+		for (const { proc } of servers) {
+			proc.writer.write(JSON.parse(JSON.stringify(message)))
 		}
 	})
 

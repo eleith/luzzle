@@ -40,7 +40,10 @@ export async function createLSPExtension(fileUri: string): Promise<Extension> {
 			const transport = await createWebSocketTransport(
 				`${protocol}//${window.location.host}/editor/lsp`
 			)
-			client = new LSPClient({ extensions: languageServerExtensions() })
+			client = new LSPClient({
+				rootUri: 'file:///app/archive',
+				extensions: languageServerExtensions(),
+			})
 			client.connect(transport)
 		} catch (e) {
 			console.error('[lsp] failed to connect:', e)
