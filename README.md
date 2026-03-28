@@ -47,6 +47,7 @@ This ecosystem contains everything you need to build and browse your archive:
 * `@luzzle/web` a simple web app for browsing and editing pieces 🔎
 * `@luzzle/web.builder` deploys, builds and rebuilds archives for the web 🏗️
 * `@luzzle/web.tools` CLI utilities used by the web.builder 🧰
+* `@luzzle/web.lsp` websocket server for luzzle lsp 💂
 * `@luzzle/web.proxy` a caching layer for @luzzle/web 🚀
 * `@luzzle/web.utils` common logic used by @luzzle/web and tools 🛠️
 
@@ -54,12 +55,10 @@ This ecosystem contains everything you need to build and browse your archive:
 
 * [@luzzle/web] hardcoded Base32 seeds for stateless 2FA
 * [@luzzle/web] UI for managing schemas
-* [@luzzle/web] explore codemirror/lsp for source editor
+* [@luzzle/web] enable preview before build/generate
 * [@luzzle/web] enable text attachments direct editing
 * [@luzzle/cli] improved first time experience (ex: zero conf support)
-* [@luzzle/core] google drive storage support
-* [@luzzle/core] icloud storage support
-* [@luzzle/core] dropbox support
+* [@luzzle/core] support drive, icloud, dropbox
 * [@luzzle/core] implement webdav storage sync
 * [@luzzle/core] explore tauri port
 * [@luzzle/builder] add build one piece job
