@@ -1,4 +1,9 @@
-import { LSPClient, languageServerExtensions } from '@codemirror/lsp-client'
+import {
+	LSPClient,
+	serverCompletion,
+	signatureHelp,
+	serverDiagnostics
+} from '@codemirror/lsp-client'
 import type { Transport } from '@codemirror/lsp-client'
 import type { Extension } from '@codemirror/state'
 
@@ -42,7 +47,7 @@ export async function createLSPExtension(fileUri: string): Promise<Extension> {
 			)
 			client = new LSPClient({
 				rootUri: 'file:///app/archive',
-				extensions: languageServerExtensions()
+				extensions: [serverCompletion(), signatureHelp(), serverDiagnostics()]
 			})
 			client.connect(transport)
 		} catch (e) {

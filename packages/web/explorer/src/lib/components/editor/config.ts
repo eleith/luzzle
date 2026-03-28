@@ -56,7 +56,7 @@ export function createEditorExtensions({ themeConfig, onUpdate }: EditorConfigOp
 		}),
 
 		themeConfig.of([]),
-		lintGutter(),
+		lintGutter({ tooltipFilter: () => [] }),
 
 		EditorView.theme({
 			'&': {

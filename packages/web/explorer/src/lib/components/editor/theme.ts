@@ -28,6 +28,24 @@ export function createEditorTheme(colors: EditorThemeColors, isDark: boolean): E
 				backgroundColor: colors.bg,
 				color: colors.comment,
 				border: 'none'
+			},
+			'.cm-tooltip': {
+				backgroundColor: 'var(--color-surface-container-low)',
+				color: 'var(--color-on-surface)',
+				border: '1px solid var(--color-outline-variant)',
+				borderRadius: 'var(--radius-small)',
+				boxShadow: '0 2px 8px var(--color-shadow)',
+				fontSize: 'var(--font-size-xxs)',
+				padding: 'var(--space-1) var(--space-2)'
+			},
+			'.cm-tooltip-autocomplete > ul': {
+				fontFamily: 'var(--font-mono-name), monospace'
+			},
+			'.cm-tooltip.cm-completionInfo': {
+				display: 'none'
+			},
+			'.cm-diagnostic': {
+				padding: '4px 8px'
 			}
 		},
 		{ dark: isDark }
