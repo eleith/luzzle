@@ -77,6 +77,8 @@ services:
     environment:
       - LUZZLE_EXPLORER_HOST=luzzle-web
       - LUZZLE_EXPLORER_PORT=3000
+      - LUZZLE_LSP_HOST=luzzle-lsp
+      - LUZZLE_LSP_PORT=9001
     ports:
       - "8080:8080"
     networks:
