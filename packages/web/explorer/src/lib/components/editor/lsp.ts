@@ -42,7 +42,7 @@ export async function createLSPExtension(fileUri: string): Promise<Extension> {
 			)
 			client = new LSPClient({
 				rootUri: 'file:///app/archive',
-				extensions: languageServerExtensions(),
+				extensions: languageServerExtensions()
 			})
 			client.connect(transport)
 		} catch (e) {
