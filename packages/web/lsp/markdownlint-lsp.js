@@ -254,4 +254,3 @@ export {
 	lintErrorToQuickFix,
 	loadConfig,
 };
-

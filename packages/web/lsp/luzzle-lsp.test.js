@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest'
-import { route } from './luzzle-lsp.js'
+import { describe, it, expect } from "vitest";
+import { route } from "./luzzle-lsp.js";
 
-describe('luzzle-lsp', () => {
-	describe('route', () => {
-		it('exports correct shape', () => {
+describe("luzzle-lsp", () => {
+	describe("route", () => {
+		it("exports correct shape", () => {
 			expect(route).toEqual({
-				name: 'luzzle-lsp',
-				command: 'luzzle-lsp',
-				args: ['--stdio'],
-			})
-		})
-	})
-})
+				name: "luzzle-lsp",
+				command: "luzzle-lsp",
+				args: ["--stdio"],
+			});
+		});
+	});
+});
