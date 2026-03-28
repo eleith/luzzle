@@ -9,11 +9,13 @@ RUN mkdir -p /app/archive && \
     chmod g+w /app /app/archive
 
 COPY --chown=:0 ./server.js /app/server.js
+COPY --chown=:0 ./luzzle-lsp.js /app/luzzle-lsp.js
+COPY --chown=:0 ./markdownlint-lsp.js /app/markdownlint-lsp.js
 COPY --chown=:0 ./package.json /app/package.json
 
 RUN cd /app && npm install --omit=dev
 
-RUN chmod g+w /app/server.js
+RUN chmod g+w /app/server.js /app/luzzle-lsp.js /app/markdownlint-lsp.js
 
 EXPOSE 9001
 

@@ -85,6 +85,8 @@ services:
     volumes:
       - ./demo/archive:/app/archive
       - ../lsp/server.js:/app/server.js
+      - ../lsp/luzzle-lsp.js:/app/luzzle-lsp.js
+      - ../lsp/markdownlint-lsp.js:/app/markdownlint-lsp.js
 
   luzzle-dev-proxy:
     build:
