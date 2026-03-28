@@ -35,23 +35,19 @@ let client: LSPClient | null = null
 
 export async function createLSPExtension(fileUri: string): Promise<Extension> {
 	if (!client) {
-		client = new LSPClient({
-			extensions: languageServerExtensions()
-		})
-
 		try {
 			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
 			const transport = await createWebSocketTransport(
 				`${protocol}//${window.location.host}/editor/lsp`
 			)
+			client = new LSPClient({ extensions: languageServerExtensions() })
 			client.connect(transport)
 		} catch (e) {
 			console.error('[lsp] failed to connect:', e)
-			client = null
-			return []
 		}
 	}
 
+	if (!client) return []
 	return client.plugin(fileUri, 'markdown')
 }
 
