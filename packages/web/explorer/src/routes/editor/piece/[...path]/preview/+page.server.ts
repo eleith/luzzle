@@ -1,11 +1,17 @@
 import { error } from '@sveltejs/kit'
-import type { PageServerLoad } from './$types'
 import { getPieces } from '$lib/server/pieces'
 import { config } from '$lib/server/config'
-import { getFrontmatterValue, getFrontmatterValues } from '@luzzle/core'
+import {
+	filterFrontmatterFields,
+	getFrontmatterValue,
+	getFrontmatterValues,
+	resolveFieldPaths,
+	setFrontmatterValue
+} from '@luzzle/core'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import { resolvePreviewAssets } from '$lib/pieces/preview/transforms/index.js'
 import type { PublicWebPiece } from '$lib/pieces/types'
+import type { PageServerLoad } from '../$types'
 
 function slugify(text: string): string {
 	return text
@@ -17,33 +23,6 @@ function slugify(text: string): string {
 		.replace(/\s+/g, '-')
 		.replace(/[^\w-]+/g, '')
 		.replace(/--+/g, '-')
-}
-
-function sanitizeMetadata(jsonMetadata: string, pathToKey: Map<string, string>): string {
-	if (pathToKey.size === 0) return jsonMetadata
-	return JSON.stringify(
-		JSON.parse(jsonMetadata, (_key, value) => {
-			if (typeof value === 'string' && pathToKey.has(value)) {
-				return pathToKey.get(value)
-			}
-			return value
-		})
-	)
-}
-
-function collectAssetPaths(
-	frontmatter: Record<string, unknown>,
-	pieceConfig: (typeof config.pieces)[number]
-): string[] {
-	const paths: string[] = []
-	const fields = [...(pieceConfig.fields.media || []), ...(pieceConfig.fields.attachments || [])]
-
-	for (const field of fields) {
-		const values = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
-		paths.push(...values)
-	}
-
-	return paths
 }
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -68,17 +47,22 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	const frontmatter = markdown.frontmatter
-	const assetPaths = collectAssetPaths(frontmatter, pieceConfig)
+	const assetFieldPaths = filterFrontmatterFields(piece.fields, (f) => f.format === 'asset')
 	const pathToKey = new Map<string, string>()
 	const keyToPath = new Map<string, string>()
+	const sanitizedMetadata = structuredClone(frontmatter)
 
-	for (const assetPath of assetPaths) {
-		const key = generateAssetKey(assetPath, config.assets.salt)
-		pathToKey.set(assetPath, key)
-		keyToPath.set(key, assetPath)
+	for (const schemaPath of assetFieldPaths) {
+		for (const actualPath of resolveFieldPaths(piece.fields, frontmatter, schemaPath)) {
+			const assetPath = getFrontmatterValue<string>(frontmatter, actualPath)
+			if (assetPath) {
+				const key = generateAssetKey(assetPath, config.assets.salt)
+				pathToKey.set(assetPath, key)
+				keyToPath.set(key, assetPath)
+				setFrontmatterValue(sanitizedMetadata, actualPath, key)
+			}
+		}
 	}
-
-	const sanitizedMetadata = JSON.parse(sanitizeMetadata(JSON.stringify(frontmatter), pathToKey))
 
 	const title = getFrontmatterValue<string>(frontmatter, pieceConfig.fields.title) || ''
 	const summary = pieceConfig.fields.summary
@@ -89,7 +73,11 @@ export const load: PageServerLoad = async ({ params }) => {
 		? getFrontmatterValues<string>(frontmatter, pieceConfig.fields.tags)
 				.flat()
 				.filter(Boolean)
-				.flatMap((v) => v.split(',').map((s) => s.trim()))
+				.flatMap((v) =>
+					String(v)
+						.split(',')
+						.map((s) => s.trim())
+				)
 				.filter(Boolean)
 		: []
 
@@ -126,8 +114,8 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	const tags = tagValues.map((t) => ({
-		slug: slugify(t.trim()),
-		tag: t.trim()
+		slug: slugify(t),
+		tag: t
 	}))
 
 	return {
