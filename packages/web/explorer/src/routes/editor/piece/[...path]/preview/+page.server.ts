@@ -6,7 +6,9 @@ import {
 	getFrontmatterValue,
 	getFrontmatterValues,
 	resolveFieldPaths,
-	setFrontmatterValue
+	setFrontmatterValue,
+	pieceFrontmatterValueToDatabaseValue,
+	type PieceFrontMatterValue
 } from '@luzzle/core'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import { resolvePreviewAssets } from '$lib/pieces/preview/transforms/index.js'
@@ -51,6 +53,16 @@ export const load: PageServerLoad = async ({ params }) => {
 	const pathToKey = new Map<string, string>()
 	const keyToPath = new Map<string, string>()
 	const sanitizedMetadata = structuredClone(frontmatter)
+
+	for (const field of piece.fields) {
+		const val = sanitizedMetadata[field.name]
+		if (val !== undefined) {
+			sanitizedMetadata[field.name] = pieceFrontmatterValueToDatabaseValue(
+				val,
+				field
+			) as PieceFrontMatterValue
+		}
+	}
 
 	for (const schemaPath of assetFieldPaths) {
 		for (const actualPath of resolveFieldPaths(piece.fields, frontmatter, schemaPath)) {
