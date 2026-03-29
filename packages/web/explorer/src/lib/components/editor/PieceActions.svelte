@@ -6,7 +6,7 @@
 
 	type Props = {
 		file: string
-		currentMode: 'form' | 'source'
+		currentMode: 'form' | 'source' | 'preview'
 		isDirty: boolean
 		canGenerate: boolean
 		onDelete: () => void
@@ -17,6 +17,7 @@
 	const switchUrl =
 		currentMode === 'form' ? `/editor/piece/${file}/source` : `/editor/piece/${file}`
 	const label = currentMode === 'form' ? 'source mode' : 'form mode'
+	const previewUrl = `/editor/piece/${file}/preview`
 	const returnParam = `?returnTo=${encodeURIComponent(page.url.pathname)}`
 </script>
 
@@ -44,6 +45,14 @@
 									<div class="dropdown-item" {...props}>{label}</div>
 								{/snippet}
 							</DropdownMenu.Item>
+
+							{#if currentMode !== 'preview'}
+								<DropdownMenu.Item disabled={isDirty} onSelect={() => goto(previewUrl)}>
+									{#snippet child({ props })}
+										<div class="dropdown-item" {...props}>preview</div>
+									{/snippet}
+								</DropdownMenu.Item>
+							{/if}
 
 							{#if canGenerate}
 								<DropdownMenu.Item
