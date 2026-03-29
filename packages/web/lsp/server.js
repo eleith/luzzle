@@ -12,14 +12,6 @@ import { route as markdownRoute } from "./markdownlint-lsp.js";
 const PORT = 9001;
 const ROUTES = [frontmatterRoute, markdownRoute];
 
-/**
- * Create a multiplexed connection that broadcasts client messages to all LSP
- * servers and merges their diagnostics back to the client.
- *
- * - Notifications (no id): broadcast to all servers, forwarded from all servers
- * - Requests (id + method): broadcast to all servers, only primary (first) response forwarded
- * - Diagnostics: merged across all servers before forwarding
- */
 function createMultiplex(wsConn, routes) {
 	const servers = [];
 
@@ -39,8 +31,9 @@ function createMultiplex(wsConn, routes) {
 
 	if (servers.length === 0) return null;
 
-	// Per-server diagnostic store for merging
-	const diagnosticStore = new Map(); // "index:uri" → diagnostics[]
+	const diagnosticStore = new Map();
+	const documents = new Map();
+	const pendingRequests = new Map();
 
 	function getMergedDiagnostics(uri) {
 		const merged = [];
@@ -51,52 +44,96 @@ function createMultiplex(wsConn, routes) {
 		return merged;
 	}
 
-	// Client → all servers
-	wsConn.reader.listen((message) => {
+	function isNotification(message) {
+		return message.method !== undefined && message.id === undefined;
+	}
+
+	function trackDocument(message) {
+		if (message.method === "textDocument/didOpen") {
+			const { uri, text } = message.params.textDocument;
+			documents.set(uri, text);
+		} else if (message.method === "textDocument/didChange") {
+			const uri = message.params.textDocument.uri;
+			const text = message.params.contentChanges?.[0]?.text;
+			if (text !== undefined) {
+				documents.set(uri, text);
+			}
+		} else if (message.method === "textDocument/didClose") {
+			documents.delete(message.params.textDocument.uri);
+		}
+	}
+
+	function trackPositionRequest(message) {
+		if (
+			message.id !== undefined &&
+			message.params?.position &&
+			message.params?.textDocument?.uri
+		) {
+			pendingRequests.set(message.id, {
+				uri: message.params.textDocument.uri,
+				position: message.params.position,
+			});
+		}
+	}
+
+	function handleClientMessage(message) {
+		trackDocument(message);
+		trackPositionRequest(message);
 		for (const { proc } of servers) {
 			proc.writer.write(JSON.parse(JSON.stringify(message)));
 		}
-	});
+	}
 
-	// Each server → client
-	servers.forEach(({ proc }, index) => {
-		proc.reader.listen((message) => {
-			// Diagnostics → merge from all servers
-			if (message.method === "textDocument/publishDiagnostics") {
-				const { uri, version } = message.params;
-				diagnosticStore.set(
-					`${index}:${uri}`,
-					message.params.diagnostics || [],
-				);
-				wsConn.writer.write({
-					jsonrpc: "2.0",
-					method: "textDocument/publishDiagnostics",
-					params: { uri, diagnostics: getMergedDiagnostics(uri), version },
-				});
-				return;
-			}
-
-			// Other notifications → forward from all
-			if (message.method !== undefined && message.id === undefined) {
-				wsConn.writer.write(message);
-				return;
-			}
-
-			// Responses → primary only
-			if (index === 0) {
-				wsConn.writer.write(message);
-			}
+	function handleDiagnostics(message, index) {
+		const { uri, version } = message.params;
+		diagnosticStore.set(`${index}:${uri}`, message.params.diagnostics || []);
+		wsConn.writer.write({
+			jsonrpc: "2.0",
+			method: "textDocument/publishDiagnostics",
+			params: { uri, diagnostics: getMergedDiagnostics(uri), version },
 		});
+	}
+
+	function handlePrimaryResponse(message, index) {
+		const req = pendingRequests.get(message.id);
+		if (req) {
+			pendingRequests.delete(message.id);
+			const text = documents.get(req.uri);
+			if (!servers[index].route.shouldRespond(text, req.position)) {
+				wsConn.writer.write({ jsonrpc: "2.0", id: message.id, result: null });
+				return;
+			}
+		}
+		wsConn.writer.write(message);
+	}
+
+	function handleServerMessage(message, index) {
+		if (message.method === "textDocument/publishDiagnostics") {
+			handleDiagnostics(message, index);
+			return;
+		}
+
+		if (isNotification(message)) {
+			wsConn.writer.write(message);
+			return;
+		}
+
+		if (index === 0) {
+			handlePrimaryResponse(message, index);
+		}
+	}
+
+	wsConn.reader.listen(handleClientMessage);
+	servers.forEach(({ proc }, index) => {
+		proc.reader.listen((message) => handleServerMessage(message, index));
 	});
 
-	// Cleanup: client disconnect disposes all servers
 	wsConn.onClose(() => {
 		for (const { proc } of servers) proc.dispose();
 	});
-	// Primary server close disposes client
 	servers[0].proc.onClose(() => wsConn.dispose());
 
-	return { servers, diagnosticStore };
+	return { servers, diagnosticStore, documents, pendingRequests };
 }
 
 function createServer(routes = ROUTES) {

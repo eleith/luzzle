@@ -29,6 +29,10 @@ describe("markdownlint-lsp", () => {
 			});
 			expect(route.args[0]).toMatch(/markdownlint-lsp\.js$/);
 		});
+
+		it("shouldRespond always returns true", () => {
+			expect(route.shouldRespond()).toBe(true);
+		});
 	});
 
 	describe("lintErrorToDiagnostic", () => {

@@ -230,6 +230,10 @@ function createServer(connectionFactory = defaultConnectionFactory) {
 	return { connection, documents };
 }
 
+function shouldRespond() {
+	return true;
+}
+
 const route = {
 	name: "markdownlint-lsp",
 	command: "node",
@@ -237,6 +241,7 @@ const route = {
 		fileURLToPath(new URL("./markdownlint-lsp.js", import.meta.url)),
 		"--stdio",
 	],
+	shouldRespond,
 };
 
 /* c8 ignore start */
@@ -253,4 +258,5 @@ export {
 	lintErrorToDiagnostic,
 	lintErrorToQuickFix,
 	loadConfig,
+	shouldRespond,
 };

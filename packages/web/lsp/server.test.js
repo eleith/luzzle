@@ -182,6 +182,7 @@ describe("LSP WebSocket Server", () => {
 				command: "echo",
 				args: ["hello"],
 				spawnOptions: {},
+				shouldRespond: () => true,
 			},
 		];
 
@@ -256,25 +257,46 @@ describe("createMultiplex", () => {
 		};
 	});
 
+	function makeRoutes(...names) {
+		return names.map((name) => ({
+			name,
+			command: name,
+			args: [],
+			spawnOptions: {},
+			shouldRespond: () => true,
+		}));
+	}
+
+	function openDocument(uri, text) {
+		readerCallbacks.ws.fn({
+			jsonrpc: "2.0",
+			method: "textDocument/didOpen",
+			params: { textDocument: { uri, languageId: "markdown", version: 1, text } },
+		});
+	}
+
+	function sendCompletion(id, uri, line, character = 0) {
+		readerCallbacks.ws.fn({
+			jsonrpc: "2.0",
+			id,
+			method: "textDocument/completion",
+			params: { textDocument: { uri }, position: { line, character } },
+		});
+	}
+
 	it("should return null when all processes fail", () => {
 		mockCreateServerProcess.mockReturnValue(null);
-		const result = createMultiplex(mockWsConn, [
-			{ name: "a", command: "a", args: [], spawnOptions: {} },
-		]);
+		const result = createMultiplex(mockWsConn, makeRoutes("a"));
 		expect(result).toBeNull();
 	});
 
-	it("should broadcast client notifications to all servers", () => {
-		const routes = [
-			{ name: "a", command: "a", args: [], spawnOptions: {} },
-			{ name: "b", command: "b", args: [], spawnOptions: {} },
-		];
-		createMultiplex(mockWsConn, routes);
+	it("should broadcast client messages to all servers", () => {
+		createMultiplex(mockWsConn, makeRoutes("a", "b"));
 
 		const notification = {
 			jsonrpc: "2.0",
 			method: "textDocument/didOpen",
-			params: {},
+			params: { textDocument: { uri: "file:///t.md", text: "" } },
 		};
 		readerCallbacks.ws.fn(notification);
 
@@ -282,12 +304,8 @@ describe("createMultiplex", () => {
 		expect(writerMocks[1]).toHaveBeenCalledWith(notification);
 	});
 
-	it("should forward all messages from primary server to client", () => {
-		const routes = [
-			{ name: "primary", command: "a", args: [], spawnOptions: {} },
-			{ name: "secondary", command: "b", args: [], spawnOptions: {} },
-		];
-		createMultiplex(mockWsConn, routes);
+	it("should forward responses from primary server", () => {
+		createMultiplex(mockWsConn, makeRoutes("primary", "secondary"));
 
 		const response = { jsonrpc: "2.0", id: 1, result: { capabilities: {} } };
 		readerCallbacks[0].fn(response);
@@ -296,11 +314,7 @@ describe("createMultiplex", () => {
 	});
 
 	it("should drop responses from secondary servers", () => {
-		const routes = [
-			{ name: "primary", command: "a", args: [], spawnOptions: {} },
-			{ name: "secondary", command: "b", args: [], spawnOptions: {} },
-		];
-		createMultiplex(mockWsConn, routes);
+		createMultiplex(mockWsConn, makeRoutes("primary", "secondary"));
 
 		const response = { jsonrpc: "2.0", id: 1, result: { capabilities: {} } };
 		readerCallbacks[1].fn(response);
@@ -308,12 +322,8 @@ describe("createMultiplex", () => {
 		expect(writerMocks.ws).not.toHaveBeenCalled();
 	});
 
-	it("should forward non-diagnostic notifications from all servers", () => {
-		const routes = [
-			{ name: "primary", command: "a", args: [], spawnOptions: {} },
-			{ name: "secondary", command: "b", args: [], spawnOptions: {} },
-		];
-		createMultiplex(mockWsConn, routes);
+	it("should forward notifications from all servers", () => {
+		createMultiplex(mockWsConn, makeRoutes("primary", "secondary"));
 
 		const notification = {
 			jsonrpc: "2.0",
@@ -326,11 +336,7 @@ describe("createMultiplex", () => {
 	});
 
 	it("should merge diagnostics from all servers", () => {
-		const routes = [
-			{ name: "primary", command: "a", args: [], spawnOptions: {} },
-			{ name: "secondary", command: "b", args: [], spawnOptions: {} },
-		];
-		createMultiplex(mockWsConn, routes);
+		createMultiplex(mockWsConn, makeRoutes("primary", "secondary"));
 
 		const uri = "file:///test.md";
 		const primaryDiag = {
@@ -344,7 +350,6 @@ describe("createMultiplex", () => {
 			source: "markdownlint",
 		};
 
-		// Primary publishes diagnostics
 		readerCallbacks[0].fn({
 			jsonrpc: "2.0",
 			method: "textDocument/publishDiagnostics",
@@ -359,7 +364,6 @@ describe("createMultiplex", () => {
 
 		writerMocks.ws.mockClear();
 
-		// Secondary publishes diagnostics → merged with primary
 		readerCallbacks[1].fn({
 			jsonrpc: "2.0",
 			method: "textDocument/publishDiagnostics",
@@ -374,18 +378,12 @@ describe("createMultiplex", () => {
 	});
 
 	it("should handle empty diagnostics in merge", () => {
-		const routes = [
-			{ name: "primary", command: "a", args: [], spawnOptions: {} },
-			{ name: "secondary", command: "b", args: [], spawnOptions: {} },
-		];
-		createMultiplex(mockWsConn, routes);
-
-		const uri = "file:///test.md";
+		createMultiplex(mockWsConn, makeRoutes("primary", "secondary"));
 
 		readerCallbacks[0].fn({
 			jsonrpc: "2.0",
 			method: "textDocument/publishDiagnostics",
-			params: { uri, version: 1 },
+			params: { uri: "file:///test.md", version: 1 },
 		});
 
 		expect(writerMocks.ws).toHaveBeenCalledWith(
@@ -396,24 +394,18 @@ describe("createMultiplex", () => {
 	});
 
 	it("should update diagnostics when a server republishes", () => {
-		const routes = [
-			{ name: "primary", command: "a", args: [], spawnOptions: {} },
-			{ name: "secondary", command: "b", args: [], spawnOptions: {} },
-		];
-		createMultiplex(mockWsConn, routes);
+		createMultiplex(mockWsConn, makeRoutes("primary", "secondary"));
 
 		const uri = "file:///test.md";
 		const diag1 = { range: {}, message: "error1" };
 		const diag2 = { range: {}, message: "error2" };
 
-		// Primary sends diag1
 		readerCallbacks[0].fn({
 			jsonrpc: "2.0",
 			method: "textDocument/publishDiagnostics",
 			params: { uri, diagnostics: [diag1], version: 1 },
 		});
 
-		// Secondary sends diag2
 		readerCallbacks[1].fn({
 			jsonrpc: "2.0",
 			method: "textDocument/publishDiagnostics",
@@ -422,14 +414,12 @@ describe("createMultiplex", () => {
 
 		writerMocks.ws.mockClear();
 
-		// Primary clears its diagnostics
 		readerCallbacks[0].fn({
 			jsonrpc: "2.0",
 			method: "textDocument/publishDiagnostics",
 			params: { uri, diagnostics: [], version: 2 },
 		});
 
-		// Should only have secondary's diagnostics now
 		expect(writerMocks.ws).toHaveBeenCalledWith({
 			jsonrpc: "2.0",
 			method: "textDocument/publishDiagnostics",
@@ -438,13 +428,8 @@ describe("createMultiplex", () => {
 	});
 
 	it("should dispose all servers on client close", () => {
-		const routes = [
-			{ name: "a", command: "a", args: [], spawnOptions: {} },
-			{ name: "b", command: "b", args: [], spawnOptions: {} },
-		];
-		const result = createMultiplex(mockWsConn, routes);
+		const result = createMultiplex(mockWsConn, makeRoutes("a", "b"));
 
-		// Trigger the onClose callback
 		const onCloseCallback = mockWsConn.onClose.mock.calls[0][0];
 		onCloseCallback();
 
@@ -454,24 +439,165 @@ describe("createMultiplex", () => {
 	});
 
 	it("should dispose client when primary server closes", () => {
-		const routes = [
-			{ name: "primary", command: "a", args: [], spawnOptions: {} },
-			{ name: "secondary", command: "b", args: [], spawnOptions: {} },
-		];
-		const result = createMultiplex(mockWsConn, routes);
+		const result = createMultiplex(
+			mockWsConn,
+			makeRoutes("primary", "secondary"),
+		);
 
-		// Trigger primary's onClose callback
 		const primaryOnClose = result.servers[0].proc.onClose.mock.calls[0][0];
 		primaryOnClose();
 
 		expect(mockWsConn.dispose).toHaveBeenCalled();
 	});
 
+	it("should suppress response when shouldRespond returns false", () => {
+		const routes = [
+			{
+				name: "rejecting",
+				command: "a",
+				args: [],
+				spawnOptions: {},
+				shouldRespond: () => false,
+			},
+		];
+		createMultiplex(mockWsConn, routes);
+
+		const uri = "file:///test.md";
+		openDocument(uri, "some text");
+		sendCompletion(42, uri, 0);
+
+		readerCallbacks[0].fn({
+			jsonrpc: "2.0",
+			id: 42,
+			result: { items: [{ label: "wrong" }] },
+		});
+
+		expect(writerMocks.ws).toHaveBeenCalledWith({
+			jsonrpc: "2.0",
+			id: 42,
+			result: null,
+		});
+	});
+
+	it("should forward response when shouldRespond returns true", () => {
+		createMultiplex(mockWsConn, makeRoutes("accepting"));
+
+		const uri = "file:///test.md";
+		openDocument(uri, "some text");
+		sendCompletion(43, uri, 0);
+
+		const response = {
+			jsonrpc: "2.0",
+			id: 43,
+			result: { items: [{ label: "good" }] },
+		};
+		readerCallbacks[0].fn(response);
+
+		expect(writerMocks.ws).toHaveBeenCalledWith(response);
+	});
+
+	it("should pass document text and position to shouldRespond", () => {
+		const shouldRespond = vi.fn(() => true);
+		const routes = [
+			{
+				name: "spy",
+				command: "a",
+				args: [],
+				spawnOptions: {},
+				shouldRespond,
+			},
+		];
+		createMultiplex(mockWsConn, routes);
+
+		const uri = "file:///test.md";
+		const text = "---\ntitle: Hello\n---\n# Heading";
+		openDocument(uri, text);
+		sendCompletion(1, uri, 3, 5);
+
+		readerCallbacks[0].fn({ jsonrpc: "2.0", id: 1, result: {} });
+
+		expect(shouldRespond).toHaveBeenCalledWith(text, { line: 3, character: 5 });
+	});
+
+	it("should forward non-position-based responses without calling shouldRespond", () => {
+		const shouldRespond = vi.fn(() => true);
+		const routes = [
+			{
+				name: "spy",
+				command: "a",
+				args: [],
+				spawnOptions: {},
+				shouldRespond,
+			},
+		];
+		createMultiplex(mockWsConn, routes);
+
+		readerCallbacks.ws.fn({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "initialize",
+			params: { capabilities: {} },
+		});
+
+		const response = { jsonrpc: "2.0", id: 1, result: { capabilities: {} } };
+		readerCallbacks[0].fn(response);
+
+		expect(shouldRespond).not.toHaveBeenCalled();
+		expect(writerMocks.ws).toHaveBeenCalledWith(response);
+	});
+
+	it("should track document updates via didChange", () => {
+		const shouldRespond = vi.fn(() => true);
+		const routes = [
+			{
+				name: "spy",
+				command: "a",
+				args: [],
+				spawnOptions: {},
+				shouldRespond,
+			},
+		];
+		createMultiplex(mockWsConn, routes);
+
+		const uri = "file:///test.md";
+		openDocument(uri, "original");
+
+		readerCallbacks.ws.fn({
+			jsonrpc: "2.0",
+			method: "textDocument/didChange",
+			params: {
+				textDocument: { uri },
+				contentChanges: [{ text: "updated" }],
+			},
+		});
+
+		sendCompletion(1, uri, 0);
+		readerCallbacks[0].fn({ jsonrpc: "2.0", id: 1, result: {} });
+
+		expect(shouldRespond).toHaveBeenCalledWith("updated", { line: 0, character: 0 });
+	});
+
+	it("should clean up document tracking on didClose", () => {
+		createMultiplex(mockWsConn, makeRoutes("primary"));
+
+		const uri = "file:///test.md";
+		openDocument(uri, "some text");
+
+		readerCallbacks.ws.fn({
+			jsonrpc: "2.0",
+			method: "textDocument/didClose",
+			params: { textDocument: { uri } },
+		});
+
+		const result = createMultiplex(mockWsConn, makeRoutes("primary"));
+		expect(result.documents.has(uri)).toBe(false);
+	});
+
 	it("should work when some processes fail", () => {
 		let callCount = 0;
 		mockCreateServerProcess.mockImplementation(() => {
 			callCount++;
-			if (callCount === 1) return null; // first fails
+			if (callCount === 1) return null;
 			return {
 				reader: { listen: vi.fn() },
 				writer: { write: vi.fn() },
@@ -480,11 +606,10 @@ describe("createMultiplex", () => {
 			};
 		});
 
-		const routes = [
-			{ name: "failing", command: "a", args: [], spawnOptions: {} },
-			{ name: "working", command: "b", args: [], spawnOptions: {} },
-		];
-		const result = createMultiplex(mockWsConn, routes);
+		const result = createMultiplex(
+			mockWsConn,
+			makeRoutes("failing", "working"),
+		);
 
 		expect(result).not.toBeNull();
 		expect(result.servers).toHaveLength(1);
