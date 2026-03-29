@@ -52,20 +52,10 @@ export type PiecePageProps = {
 
 export type PieceMode = 'public' | 'local' | 'preview'
 
-function buildAssetUrl(assetPath: string, mode: PieceMode, baseUrl: string): string {
-	if (mode === 'preview') {
-		return `/editor/asset/${assetPath}`
-	}
-	return `${baseUrl}/pieces/assets/${assetPath}`
-}
-
-export function getPieceHelpers(
+function createPieceHelpers(
 	piece: PublicWebPiece,
-	mode: PieceMode = 'public'
+	buildAssetUrl: (path: string) => string
 ): PieceComponentHelpers {
-	const config = page.data.config
-	const url = mode == 'public' ? config.url.luzzle_assets || config.url.app : ''
-
 	const getPiecePalette = () => {
 		const paletteAsset = piece.assets.find((a) => a.transformation === 'palette')
 		return paletteAsset?.content
@@ -75,18 +65,17 @@ export function getPieceHelpers(
 
 	return {
 		getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
+
 		getPieceAssetUrl: (key: string, transform: string) => {
-			const one = piece.assets.find(
-				(asset) => asset.asset_key === key && asset.transformation === transform
-			)
-			return one?.asset_path ? buildAssetUrl(one.asset_path, mode, url) : undefined
+			const asset = piece.assets.find((a) => a.asset_key === key && a.transformation === transform)
+			return asset?.asset_path ? buildAssetUrl(asset.asset_path) : undefined
 		},
+
 		getPieceAssetContent: (key: string, transform: string) => {
-			const one = piece.assets.find(
-				(asset) => asset.asset_key === key && asset.transformation === transform
-			)
-			return one ? one.content : undefined
+			const asset = piece.assets.find((a) => a.asset_key === key && a.transformation === transform)
+			return asset?.content
 		},
+
 		getPieceImageUrl: (
 			assetKey: PieceFrontMatterValue | string,
 			minWidth: number,
@@ -95,19 +84,39 @@ export function getPieceHelpers(
 			const size = minWidth <= 125 ? 's' : minWidth <= 250 ? 'm' : minWidth <= 500 ? 'l' : 'xl'
 			const transformation = `image.${size}.${format}`
 			const assets = piece.assets.filter((asset) => asset.asset_key === assetKey)
+
 			const transformed = assets.find((a) => a.transformation === transformation)?.asset_path
+			if (transformed) return buildAssetUrl(transformed)
+
 			const original = assets.find((a) => a.transformation === 'image.original')?.asset_path
-
-			if (transformed) {
-				return buildAssetUrl(transformed, mode, url)
-			}
-
-			if (original) {
-				return buildAssetUrl(original, mode, url)
-			}
+			if (original) return buildAssetUrl(original)
 
 			return undefined
 		},
+
 		getPiecePalette
 	}
+}
+
+function getPublicPieceHelpers(piece: PublicWebPiece): PieceComponentHelpers {
+	const config = page.data.config
+	const baseUrl = config.url.luzzle_assets || config.url.app
+	return createPieceHelpers(piece, (path) => `${baseUrl}/pieces/assets/${path}`)
+}
+
+function getLocalPieceHelpers(piece: PublicWebPiece): PieceComponentHelpers {
+	return createPieceHelpers(piece, (path) => `/pieces/assets/${path}`)
+}
+
+function getPreviewPieceHelpers(piece: PublicWebPiece): PieceComponentHelpers {
+	return createPieceHelpers(piece, (path) => `/editor/asset/${path}`)
+}
+
+export function getPieceHelpers(
+	piece: PublicWebPiece,
+	mode: PieceMode = 'public'
+): PieceComponentHelpers {
+	if (mode === 'preview') return getPreviewPieceHelpers(piece)
+	if (mode === 'local') return getLocalPieceHelpers(piece)
+	return getPublicPieceHelpers(piece)
 }
