@@ -50,7 +50,14 @@ export type PiecePageProps = {
 	helpers: PieceComponentHelpers
 }
 
-export type PieceMode = 'public' | 'local'
+export type PieceMode = 'public' | 'local' | 'preview'
+
+function buildAssetUrl(assetPath: string, mode: PieceMode, baseUrl: string): string {
+	if (mode === 'preview') {
+		return `/editor/asset/${assetPath}`
+	}
+	return `${baseUrl}/pieces/assets/${assetPath}`
+}
 
 export function getPieceHelpers(
 	piece: PublicWebPiece,
@@ -72,7 +79,7 @@ export function getPieceHelpers(
 			const one = piece.assets.find(
 				(asset) => asset.asset_key === key && asset.transformation === transform
 			)
-			return one ? `${url}/pieces/assets/${one.asset_path}` : undefined
+			return one?.asset_path ? buildAssetUrl(one.asset_path, mode, url) : undefined
 		},
 		getPieceAssetContent: (key: string, transform: string) => {
 			const one = piece.assets.find(
@@ -92,11 +99,11 @@ export function getPieceHelpers(
 			const original = assets.find((a) => a.transformation === 'image.original')?.asset_path
 
 			if (transformed) {
-				return `${url}/pieces/assets/${transformed}`
+				return buildAssetUrl(transformed, mode, url)
 			}
 
 			if (original) {
-				return `${url}/pieces/assets/${original}`
+				return buildAssetUrl(original, mode, url)
 			}
 
 			return undefined
