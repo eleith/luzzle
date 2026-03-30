@@ -55,7 +55,8 @@ async function resolve(context: PreviewContext): Promise<PreviewAssetRecord[]> {
 					is_embedded: 1,
 					content: html
 				})
-			} catch {
+			} catch (err) {
+				console.warn(`[highlight] failed to highlight ${assetPath}:`, err)
 				continue
 			}
 		}

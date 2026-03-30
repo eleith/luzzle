@@ -28,7 +28,8 @@ async function resolve(context: PreviewContext): Promise<PreviewAssetRecord[]> {
 				content: JSON.stringify(palette)
 			}
 		]
-	} catch {
+	} catch (err) {
+		console.warn(`[palette] failed to extract palette for ${filePath}:`, err)
 		return []
 	}
 }
