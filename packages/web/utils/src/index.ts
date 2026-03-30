@@ -10,9 +10,6 @@ import {
 } from "./lib/assets.js";
 import { WebPiecesAsset, WebPieces, WebPieceTags } from "./lib/sqlite.js";
 import type { Config, ConfigPublic } from "./lib/config/config.js";
-import type {
-	PieceIconPalette,
-} from "./lib/types.js";
 
 export {
 	getOpenGraphPath,
@@ -28,5 +25,4 @@ export {
 	type WebPieces,
 	type Config,
 	type ConfigPublic,
-	type PieceIconPalette,
 };
