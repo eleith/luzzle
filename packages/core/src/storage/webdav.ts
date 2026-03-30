@@ -30,7 +30,7 @@ class StorageWebDAV extends LuzzleStorage {
 		return argPath
 	}
 
-	async readFile(path: string, format: 'text' | 'binary' = 'text') {
+	async readFile(path: string, format: 'text' | 'binary' = 'binary') {
 		const fullPath = this.buildPath(path)
 		return this._webdavClient.getFileContents(fullPath, { format }) as Promise<string>
 	}

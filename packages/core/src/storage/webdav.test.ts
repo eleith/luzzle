@@ -85,7 +85,7 @@ describe('lib/storage/webdav.ts', () => {
 		const contents = await storage.readFile(filePath)
 
 		expect(contents).toEqual(fileContents)
-		expect(spies.getFileContents).toHaveBeenCalledWith(expect.any(String), { format: 'text' })
+		expect(spies.getFileContents).toHaveBeenCalledWith(expect.any(String), { format: 'binary' })
 	})
 
 	test('writeFile', async () => {
