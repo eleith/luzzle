@@ -54,7 +54,7 @@
     "remark": "15.0.1",
     "remark-frontmatter": "5.0.0",
     "unist-util-visit": "5.0.0",
-    "webdav": "5.8.0",
+    "webdav": "5.9.0",
     "yaml": "2.7.0"
   },
   "type": "module"
