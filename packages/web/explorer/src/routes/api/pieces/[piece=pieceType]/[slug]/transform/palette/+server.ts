@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { db } from '$lib/server/database'
 import { hydrateWithAssetsInternal } from '$lib/pieces/assets.server'
-import { getPalette } from '@luzzle/web.utils/server'
+import { getPalette } from '$lib/server/palette'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { config } from '$lib/server/config'
@@ -25,7 +25,7 @@ export const GET: RequestHandler = async ({ params }) => {
 	const piece = await hydrateWithAssetsInternal(webPiece)
 	const field = config.pieces.find((p) => p.type === piece.type)?.fields.media?.[0]
 	const assets = piece.assets
-		.filter((a) => a.transformation === 'image.m.jpg')
+		.filter((a) => a.transformation === 'image.original')
 		.filter((a) => a.piece_field_path === field)
 
 	const assetPath = assets?.[0]?.asset_path

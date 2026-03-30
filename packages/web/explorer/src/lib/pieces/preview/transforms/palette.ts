@@ -1,6 +1,6 @@
 import { getFrontmatterValues } from '@luzzle/core'
 import { generateAssetKey } from '@luzzle/web.utils/server'
-import { getPalette } from '@luzzle/web.utils/server'
+import { getPalette } from '$lib/server/palette'
 import type { PreviewAssetRecord, PreviewContext, PreviewResolver } from './types.js'
 
 async function resolve(context: PreviewContext): Promise<PreviewAssetRecord[]> {
