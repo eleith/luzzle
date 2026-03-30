@@ -35,6 +35,8 @@ const mockDavClient = {
 	getQuota: vi.fn(),
 	setHeaders: vi.fn(),
 	lock: vi.fn(),
+	registerAttributeParser: vi.fn(),
+	registerTagParser: vi.fn(),
 } as WebDAVClient
 
 describe('lib/storage/webdav.ts', () => {
@@ -152,7 +154,7 @@ describe('lib/storage/webdav.ts', () => {
 		const storage = new StorageWebDAV('url', 'home', {})
 		const contents = await storage.getFilesIn(filePath)
 
-		expect(spies.getDirectoryContents).toHaveBeenCalledWith('home/path', undefined)
+		expect(spies.getDirectoryContents).toHaveBeenCalledWith('home/path')
 		expect(contents).toEqual(['file', 'dir/'])
 	})
 

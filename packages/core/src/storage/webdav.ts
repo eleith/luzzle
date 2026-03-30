@@ -1,6 +1,12 @@
 import { Readable } from 'stream'
 import type { StorageStat, StorageType } from './types.js'
-import { createClient, WebDAVClient, WebDAVClientOptions, FileStat } from 'webdav'
+import {
+	createClient,
+	WebDAVClient,
+	WebDAVClientOptions,
+	FileStat,
+	GetDirectoryContentsOptionsWithoutDetails,
+} from 'webdav'
 import path from 'path'
 import { ReadStream, WriteStream } from 'fs'
 import LuzzleStorage from './abstract.js'
@@ -40,17 +46,19 @@ class StorageWebDAV extends LuzzleStorage {
 		await this._webdavClient.putFileContents(fullPath, contents)
 	}
 
-	async getFilesIn(dir: string, options?: { deep?: boolean }) {
+	async getFilesIn(dir: string, options?: GetDirectoryContentsOptionsWithoutDetails) {
 		const fullPath = this.buildPath(dir)
+		const client = this._webdavClient
+		const getDirectoryContents = options
+			? client.getDirectoryContents(fullPath, options)
+			: client.getDirectoryContents(fullPath)
 
-		return this._webdavClient
-			.getDirectoryContents(fullPath, options)
-			.then((contents) =>
-				(contents as FileStat[]).map(
-					(content) =>
-						`${path.relative(fullPath, content.filename)}${content.type === 'file' ? '' : '/'}`
-				)
+		return getDirectoryContents.then((contents) =>
+			contents.map(
+				(content) =>
+					`${path.relative(fullPath, content.filename)}${content.type === 'file' ? '' : '/'}`
 			)
+		)
 	}
 
 	async exists(path: string) {
