@@ -14,7 +14,7 @@
 
 <section>
 	<div class="container">
-		{#each data.pieces as piece (piece.id)}
+		{#each data.pieces as piece, i (piece.id)}
 			<a
 				href="/pieces/{piece.type}/{piece.slug}"
 				onmouseenter={() => {
@@ -47,7 +47,7 @@
 						<div style="display: flex;">
 							<div style="align-self: baseline;">
 								{#key activePieceId === piece.id}
-									<PieceIcon {piece} size={{ width: 125 }} active={activePieceId === piece.id} />
+									<PieceIcon {piece} size={{ width: 125 }} lazy={i >= 5} active={activePieceId === piece.id} />
 								{/key}
 							</div>
 						</div>

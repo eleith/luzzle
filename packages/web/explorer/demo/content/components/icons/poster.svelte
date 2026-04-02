@@ -24,6 +24,7 @@
 			<img
 				src={helpers.getPieceImageUrl(piece.metadata.poster, size.width, 'jpg')}
 				loading={lazy ? 'lazy' : 'eager'}
+				fetchpriority={lazy ? 'auto' : 'high'}
 				alt=""
 			/>
 		</picture>
