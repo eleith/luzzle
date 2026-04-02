@@ -203,7 +203,9 @@
 
 	.banner :global(a),
 	.banner :global(button) {
-		display: block-inline;
+		display: inline-flex;
+		min-width: 24px;
+		min-height: 24px;
 		cursor: pointer;
 		color: var(--color-on-surface);
 		background: transparent;
