@@ -9,6 +9,7 @@
 	import { page } from '$app/state'
 	import type { Snippet } from 'svelte'
 	import { onMount } from 'svelte'
+	import NavigationProgressBar from './NavigationProgressBar.svelte'
 
 	type Props = {
 		background?: string
@@ -114,9 +115,7 @@
 	{/if}
 </svelte:head>
 
-{#await import('./NavigationProgressBar.svelte') then { default: NavigationProgressBar }}
-	<NavigationProgressBar />
-{/await}
+<NavigationProgressBar />
 
 <nav class="banner" style:--banner-background-color={background}>
 	<div class="left">

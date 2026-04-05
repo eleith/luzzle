@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Progress, Portal } from 'bits-ui'
 	import { navigating } from '$app/state'
 	import { cubicInOut } from 'svelte/easing'
 	import { Tween } from 'svelte/motion'
@@ -26,18 +25,9 @@
 </script>
 
 {#if visible}
-	<Portal>
-		<Progress.Root value={tween.current} max={100}>
-			{#snippet child({ props })}
-				<div {...props} class="progress-root">
-					<div
-						class="progress-fill"
-						style={`transform: translateX(-${100 - tween.current}%)`}
-					></div>
-				</div>
-			{/snippet}
-		</Progress.Root>
-	</Portal>
+	<div class="progress-root" role="progressbar" aria-valuenow={tween.current} aria-valuemax={100}>
+		<div class="progress-fill" style={`transform: translateX(-${100 - tween.current}%)`}></div>
+	</div>
 {/if}
 
 <style>
