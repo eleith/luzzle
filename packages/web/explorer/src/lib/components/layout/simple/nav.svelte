@@ -22,10 +22,6 @@
 	}
 	const { background = 'transparent', items }: Props = $props()
 
-	function clickSearch(event: MouseEvent) {
-		event.preventDefault()
-	}
-
 	function getThemePreference(): Theme {
 		return (window.localStorage.getItem('theme') || 'system') as Theme
 	}
@@ -135,9 +131,19 @@
 	<div class="right">
 		<Dialog.Root>
 			<Dialog.Trigger>
-				<a href="/search" aria-label="search" onclick={clickSearch}>
-					<SearchIcon style="font-size: 1em;" />
-				</a>
+				{#snippet child({ props })}
+					<a
+						href="/search"
+						aria-label="search"
+						{...props}
+						onclick={(e) => {
+							e.preventDefault()
+							props.onclick?.(e)
+						}}
+					>
+						<SearchIcon style="font-size: 1em;" />
+					</a>
+				{/snippet}
 			</Dialog.Trigger>
 			<Dialog.Portal>
 				<Dialog.Overlay forceMount>
