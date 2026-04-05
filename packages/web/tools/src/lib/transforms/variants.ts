@@ -1,8 +1,13 @@
 import Sharp from 'sharp'
 import { Pieces } from '@luzzle/core'
 
+const formatOptions: Record<string, Sharp.OutputOptions> = {
+	avif: { quality: 45, effort: 4 },
+	jpg: { quality: 75, mozjpeg: true },
+}
+
 function generateVariantSharpJob(sharp: Sharp.Sharp, width: number, format: 'avif' | 'jpg') {
-	return sharp.clone().resize({ width }).toFormat(format)
+	return sharp.clone().resize({ width }).toFormat(format, formatOptions[format])
 }
 
 async function generateVariantJobs(
