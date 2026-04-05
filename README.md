@@ -58,7 +58,5 @@ This ecosystem contains everything you need to build and browse your archive:
 * [@luzzle/web] enable preview before build/generate
 * [@luzzle/web] enable text attachments direct editing
 * [@luzzle/cli] improved first time experience (ex: zero conf support)
-* [@luzzle/core] support drive, icloud, dropbox
-* [@luzzle/core] implement webdav storage sync
 * [@luzzle/core] explore tauri port
 * [@luzzle/builder] add build one piece job
