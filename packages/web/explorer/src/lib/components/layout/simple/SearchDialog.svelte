@@ -35,11 +35,7 @@
 		<Dialog.Content forceMount>
 			{#snippet child({ props, open })}
 				{#if open}
-					<div
-						class="search"
-						{...props}
-						transition:fly={{ y: -500, opacity: 100, duration: 500 }}
-					>
+					<div class="search" {...props} transition:fly={{ y: -500, opacity: 100, duration: 500 }}>
 						<form method="GET" action="/search" style="display:flex;gap:10px;">
 							<input
 								type="search"
