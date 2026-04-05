@@ -131,7 +131,7 @@
 	<div class="right">
 		<Dialog.Root>
 			<Dialog.Trigger>
-				{#snippet child({ props })}
+				{#snippet child({ props }: { props: Record<string, unknown> & { onclick?: (e: Event) => unknown } })}
 					<a
 						href="/search"
 						aria-label="search"
