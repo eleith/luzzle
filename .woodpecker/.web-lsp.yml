@@ -14,7 +14,7 @@ steps:
   prepare:
     image: node:22
     commands:
-      - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> /root/.npmrc
+      - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
@@ -67,8 +67,8 @@ steps:
       username: eleith
       dockerfile: packages/web/lsp/Dockerfile
       registry: https://git.eleith.com
-      build_args:
-        secret: id=npmrc,src=.npmrc
+      secrets:
+        - 'id=npmrc\,src=.npmrc'
       context: packages/web/lsp
       password:
         from_secret: gitea_docker_registry
@@ -86,8 +86,8 @@ steps:
       dockerfile: packages/web/lsp/Dockerfile
       registry: https://git.eleith.com
       context: packages/web/lsp
-      build_args:
-        secret: id=npmrc,src=.npmrc
+      secrets:
+        - 'id=npmrc\,src=.npmrc'
       password:
         from_secret: gitea_docker_registry
       tags_file: .tags
