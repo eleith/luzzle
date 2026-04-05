@@ -1,11 +1,11 @@
 import { type WebPieceTags } from '@luzzle/web.utils'
 import { page } from '$app/state'
-import { PUBLIC_LUZZLE_PIECE_TYPES } from '$env/static/public'
+import { env } from '$env/dynamic/public'
 import type { PublicWebPiece } from './types'
 import type { PieceFrontMatterValue } from '@luzzle/core'
 
 export function getPieceTypes(): string[] {
-	return (PUBLIC_LUZZLE_PIECE_TYPES ?? '').split(',').filter(Boolean)
+	return (env.PUBLIC_LUZZLE_PIECE_TYPES ?? '').split(',').filter(Boolean)
 }
 
 export type PieceComponentHelpers = {
