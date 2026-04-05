@@ -2,8 +2,11 @@ import { sveltekit } from '@sveltejs/kit/vite'
 import { defineConfig, type Plugin, type ViteDevServer } from 'vite'
 import Icons from 'unplugin-icons/vite'
 import { enhancedImages } from '@sveltejs/enhanced-img'
+import { loadConfig } from '@luzzle/web.utils/server'
 import path from 'path'
 import { execSync } from 'child_process'
+
+const config = loadConfig('./config.yaml')
 
 const contentWatcher = (relativeContentPath: string): Plugin => {
 	return {
@@ -24,6 +27,9 @@ const contentWatcher = (relativeContentPath: string): Plugin => {
 }
 
 export default defineConfig({
+	define: {
+		__VITE__LUZZLE__PIECE__TYPES__: JSON.stringify(config.pieces.map((p) => p.type))
+	},
 	plugins: [
 		enhancedImages(),
 		sveltekit(),

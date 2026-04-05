@@ -42,6 +42,7 @@ export default [
 			'build/',
 			'.svelte-kit/',
 			'docker-compose.yml',
+			'src/lib/pieces/components/custom/',
 			'demo/content/',
 			'demo/archive/',
 			'demo/data/',

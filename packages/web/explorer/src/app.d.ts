@@ -4,6 +4,8 @@ import type { Session } from '@auth/core/types'
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
 declare global {
+	const __VITE__LUZZLE__PIECE__TYPES__: string[]
+
 	namespace App {
 		// interface Error {}
 		interface Locals {

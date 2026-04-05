@@ -15,8 +15,7 @@
 		"check": "npm run sync:svelte && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "npm run sync:svelte && svelte-check --tsconfig ./tsconfig.json --watch",
 		"check:config": "luzzle-web-tools validate",
-		"sync:content": "npm run sync:types && node ./scripts/sync-content.js && node ./scripts/sync-piece-content.js",
-		"sync:types": "node ./scripts/set-piece-types.js",
+		"sync:content": "node ./scripts/sync-content.js && node ./scripts/sync-piece-content.js",
 		"sync:svelte": "svelte-kit sync",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write ."
