@@ -1,7 +1,7 @@
 import Sharp from 'sharp'
 import { Pieces } from '@luzzle/core'
 
-const formatOptions: Record<string, Sharp.OutputOptions> = {
+const formatOptions: Record<'avif' | 'jpg', Sharp.AvifOptions | Sharp.JpegOptions> = {
 	avif: { quality: 45, effort: 4 },
 	jpg: { quality: 75, mozjpeg: true },
 }
