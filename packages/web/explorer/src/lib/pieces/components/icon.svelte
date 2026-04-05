@@ -5,16 +5,15 @@
 	import { getPieceHelpers, type PieceIconProps, type PieceMode } from '$lib/pieces/helpers.js'
 	import { getContext } from 'svelte'
 
-	const iconComponentMap = new Map<string, { default: Component<PieceIconProps> }>()
-	const iconComponents: Record<string, { default: Component }> = import.meta.glob(
-		'$lib/pieces/components/custom/*/icon.svelte',
-		{ eager: true }
+	const iconImports = import.meta.glob<{ default: Component<PieceIconProps> }>(
+		'$lib/pieces/components/custom/*/icon.svelte'
 	)
 
-	for (const path in iconComponents) {
+	const iconImportMap = new Map<string, () => Promise<{ default: Component<PieceIconProps> }>>()
+	for (const path in iconImports) {
 		const type = path.split('/').at(-2)
 		if (type) {
-			iconComponentMap.set(type, iconComponents[path])
+			iconImportMap.set(type, iconImports[path])
 		}
 	}
 
@@ -32,7 +31,15 @@
 	const height = $derived(size.height ? size.height : (width * 3) / 2)
 	const mode = getContext<PieceMode>('piece-mode')
 	const helpers = getPieceHelpers(piece, mode)
-	const IconComponent = $derived(iconComponentMap.get(piece.type)?.default || IconDefault)
+	const iconImport = $derived(iconImportMap.get(piece.type))
 </script>
 
-<IconComponent {piece} {tags} size={{ width, height }} {lazy} {helpers} />
+{#if iconImport}
+	{#await iconImport() then { default: IconComponent }}
+		<IconComponent {piece} {tags} size={{ width, height }} {lazy} {helpers} />
+	{:catch}
+		<IconDefault {piece} {tags} size={{ width, height }} {lazy} {helpers} />
+	{/await}
+{:else}
+	<IconDefault {piece} {tags} size={{ width, height }} {lazy} {helpers} />
+{/if}
