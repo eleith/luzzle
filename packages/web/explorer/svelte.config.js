@@ -6,6 +6,11 @@ const config = loadConfig('./config.yaml')
 
 /** @type {import('@sveltejs/kit').Config}*/
 const svelteConfig = {
+	compilerOptions: {
+		experimental: {
+			async: true
+		}
+	},
 	preprocess: [vitePreprocess()],
 	kit: {
 		adapter: adapter(),

@@ -4,16 +4,15 @@
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
 	import { getPieceHelpers, type PieceMode, type PiecePageProps } from '$lib/pieces/helpers.js'
 
-	const pageComponentMap = new Map<string, Component<PiecePageProps>>()
-	const pageComponents: Record<string, { default: Component<PiecePageProps> }> = import.meta.glob(
-		'$lib/pieces/components/custom/*/page.svelte',
-		{ eager: true }
+	const pageImports = import.meta.glob<{ default: Component<PiecePageProps> }>(
+		'$lib/pieces/components/custom/*/page.svelte'
 	)
 
-	for (const customPath in pageComponents) {
+	const pageImportMap = new Map<string, () => Promise<{ default: Component<PiecePageProps> }>>()
+	for (const customPath in pageImports) {
 		const type = customPath.split('/').at(-2)
 		if (type) {
-			pageComponentMap.set(type, pageComponents[customPath].default)
+			pageImportMap.set(type, pageImports[customPath])
 		}
 	}
 
@@ -25,7 +24,19 @@
 	let { piece, tags }: Props = $props()
 	const mode = getContext<PieceMode>('piece-mode')
 	const helpers = getPieceHelpers(piece, mode)
-	const PageComponent = $derived(pageComponentMap.get(piece.type) || PageDefault)
+
+	async function resolvePage(type: string): Promise<Component<PiecePageProps>> {
+		const importer = pageImportMap.get(type)
+		if (!importer) return PageDefault
+		try {
+			const mod = await importer()
+			return mod.default
+		} catch {
+			return PageDefault
+		}
+	}
+
+	const PageComponent = $derived(await resolvePage(piece.type))
 </script>
 
 <PageComponent {piece} {tags} {helpers} />

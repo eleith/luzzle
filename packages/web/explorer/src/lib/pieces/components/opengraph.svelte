@@ -5,18 +5,18 @@
 	import OpengraphDefault from '$lib/pieces/components/opengraph.default.svelte'
 	import { getPieceHelpers, type PieceMode, type PieceOpengraphProps } from '../helpers'
 
-	const customOpengraphMap = new Map<string, { default: Component<PieceOpengraphProps> }>()
-	const customComponents: Record<string, { default: Component }> = import.meta.glob(
-		'$lib/pieces/components/custom/*/opengraph.svelte',
-		{ eager: true }
+	const opengraphImports = import.meta.glob<{ default: Component<PieceOpengraphProps> }>(
+		'$lib/pieces/components/custom/*/opengraph.svelte'
 	)
 
-	for (const customPath in customComponents) {
-		const parts = customPath.split('/')
-		const type = parts.at(-2)
-
+	const opengraphImportMap = new Map<
+		string,
+		() => Promise<{ default: Component<PieceOpengraphProps> }>
+	>()
+	for (const customPath in opengraphImports) {
+		const type = customPath.split('/').at(-2)
 		if (type) {
-			customOpengraphMap.set(type, customComponents[customPath])
+			opengraphImportMap.set(type, opengraphImports[customPath])
 		}
 	}
 
@@ -27,7 +27,19 @@
 	let { piece }: Props = $props()
 
 	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
-	const Opengraph = $derived(customOpengraphMap.get(piece.type)?.default || OpengraphDefault)
+
+	async function resolveOpengraph(type: string): Promise<Component<PieceOpengraphProps>> {
+		const importer = opengraphImportMap.get(type)
+		if (!importer) return OpengraphDefault
+		try {
+			const mod = await importer()
+			return mod.default
+		} catch {
+			return OpengraphDefault
+		}
+	}
+
+	const Opengraph = $derived(await resolveOpengraph(piece.type))
 	const mode = getContext<PieceMode>('piece-mode')
 	const helpers = getPieceHelpers(piece, mode)
 </script>
