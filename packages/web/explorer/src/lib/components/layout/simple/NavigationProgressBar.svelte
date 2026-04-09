@@ -1,25 +1,72 @@
 <script lang="ts">
 	import { navigating } from '$app/state'
+	import { onMount } from 'svelte'
 	import { cubicInOut } from 'svelte/easing'
 	import { Tween } from 'svelte/motion'
 
+	const MIN_DISPLAY_MS = 200
+	const STORAGE_KEY = 'server-nav-pending'
+	const FRESH_MS = 5000
+
 	let visible = $state(false)
+	let startedAt = 0
 	const tween = new Tween(0, { duration: 400, easing: cubicInOut })
 
+	function finish() {
+		tween.set(100, { duration: 200 })
+		setTimeout(() => {
+			visible = false
+			startedAt = 0
+		}, 200)
+	}
+
+	// Client-side navigation
 	$effect(() => {
 		if (navigating.to) {
 			visible = true
+			startedAt = Date.now()
 			tween.set(0, { duration: 0 })
-			tween.set(25, { duration: 200 })
+			tween.set(20, { duration: 200 })
 			tween.set(90, { duration: 10000 })
-		} else {
-			tween.set(100, { duration: 100 })
+		} else if (startedAt > 0) {
+			const elapsed = Date.now() - startedAt
+			const delay = Math.max(0, MIN_DISPLAY_MS - elapsed)
 
-			const timeout = setTimeout(() => {
-				visible = false
-			}, 200)
-
+			const timeout = setTimeout(() => finish(), delay)
 			return () => clearTimeout(timeout)
+		}
+	})
+
+	// Server-side navigation
+	onMount(() => {
+		let pending: string | null = null
+		try {
+			pending = sessionStorage.getItem(STORAGE_KEY)
+			sessionStorage.removeItem(STORAGE_KEY)
+		} catch {
+			// ignore
+		}
+
+		if (pending && Date.now() - Number(pending) < FRESH_MS) {
+			visible = true
+			tween.set(90, { duration: 0 })
+			requestAnimationFrame(() => finish())
+		}
+
+		function markPending() {
+			try {
+				sessionStorage.setItem(STORAGE_KEY, String(Date.now()))
+			} catch {
+				// ignore
+			}
+		}
+
+		window.addEventListener('pagehide', markPending)
+		window.addEventListener('beforeunload', markPending)
+
+		return () => {
+			window.removeEventListener('pagehide', markPending)
+			window.removeEventListener('beforeunload', markPending)
 		}
 	})
 </script>

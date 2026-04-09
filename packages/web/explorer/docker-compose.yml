@@ -10,17 +10,19 @@ services:
     env_file: .env
     environment:
       - LUZZLE_APP_URL=${LUZZLE_APP_URL}
-      - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET}
+      - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET}  # generate by `openssl rand -hex 32`
       - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME}
       - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD}
+      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN} # generate by `openssl rand -hex 32`
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     ports:
       - "3000:3000"
     volumes:
-      - ./assets:/app/assets
-      - ./config.yaml:/app/config.yaml
-      - ./data:/app/data
-      - ./content:/app/content
-      - ./archive:/app/archive
+      - ./demo/assets/pieces:/app/assets/pieces
+      - ./demo/config.yaml:/app/config.yaml
+      - ./demo/data:/app/data
+      - ./demo/content:/app/content
+      - ./demo/archive:/app/archive
     networks:
       - luzzle
     depends_on:
@@ -39,17 +41,16 @@ services:
     env_file: .env
     environment:
       - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN}
-      - LUZZLE_APP_URL=${LUZZLE_APP_URL:http://luzzle-web:3000}
-      - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET}
+      - LUZZLE_APP_URL=${LUZZLE_APP_URL:-http://luzzle-web:3000}
       - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME}
       - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD}
     networks:
       - luzzle
     volumes:
-      - ./config.yaml:/app/config.yaml
-      - ./assets/pieces:/app/assets
-      - ./data:/app/data
-      - ./archive:/app/archive
+      - ./demo/config.yaml:/app/config.yaml
+      - ./demo/assets:/app/assets
+      - ./demo/data:/app/data
+      - ./demo/archive:/app/archive
 
   luzzle-lsp:
     build:
@@ -64,7 +65,7 @@ services:
     ports:
       - '9001:9001'
     volumes:
-      - ./archive:/app/archive
+      - ./demo/archive:/app/archive
 
   luzzle-proxy:
     build:
@@ -84,7 +85,8 @@ services:
     networks:
       - luzzle
     volumes:
-      - ./nginx:/tmp/cache
+      - ./nginx/cache:/tmp/cache
+      - ./nginx/logs:/tmp/logs
     depends_on:
       - luzzle-web
 
