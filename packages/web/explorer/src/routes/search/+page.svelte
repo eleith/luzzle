@@ -98,13 +98,16 @@
 	}
 
 	.container > a {
-		color: var(--color-on-surface);
 		cursor: pointer;
 		text-decoration: none;
 		min-height: 200px;
 	}
 
-	.container > a:hover {
+	.container > a .piece-text {
+		color: var(--color-on-surface);
+	}
+
+	.container > a:hover .piece-text {
 		text-decoration: underline;
 		color: var(--color-primary);
 	}
