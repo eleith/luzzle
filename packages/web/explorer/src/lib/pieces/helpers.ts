@@ -21,6 +21,7 @@ export type PieceComponentHelpers = {
 
 export type PieceIconProps = {
 	piece: PublicWebPiece
+	active: boolean
 	tags: string[]
 	size: {
 		width: number

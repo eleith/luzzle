@@ -24,7 +24,7 @@
 		size: { width: number; height?: number }
 	}
 
-	let { piece, lazy = false, size }: Props = $props()
+	let { piece, lazy = false, size, active = false }: Props = $props()
 
 	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
 	const width = $derived(size.width)
@@ -46,4 +46,4 @@
 	const IconComponent = $derived(await resolveIcon(piece.type))
 </script>
 
-<IconComponent {piece} {tags} size={{ width, height }} {lazy} {helpers} />
+<IconComponent {piece} {tags} size={{ width, height }} {lazy} {active} {helpers} />
