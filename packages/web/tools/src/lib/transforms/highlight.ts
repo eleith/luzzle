@@ -1,20 +1,5 @@
 import { getFrontmatterValues } from '@luzzle/core'
-import languages from './highlight/languages.json' with { type: 'json' }
 import type { TransformInput, AssetRecord } from './types.js'
-
-const extToLang = new Map<string, string>()
-for (const [id, aliases] of Object.entries(languages) as [string, string[]][]) {
-	extToLang.set(id, id)
-	for (const alias of aliases) {
-		extToLang.set(alias, id)
-	}
-}
-
-export function getHighlightLang(filename: string): string | null {
-	const dot = filename.lastIndexOf('.')
-	const ext = dot === -1 ? '' : filename.slice(dot + 1).toLowerCase()
-	return extToLang.get(ext) ?? null
-}
 
 export async function run({
 	webPiece,
@@ -34,14 +19,13 @@ export async function run({
 		const assets = values.reduce(
 			(maps, key) => {
 				const path = assetKeyToPath.get(key)
-				const lang = path ? getHighlightLang(path) : null
 
-				if (path && lang) {
-					maps.push({ path, lang, key })
+				if (path) {
+					maps.push({ path, key })
 				}
 				return maps
 			},
-			[] as { path: string; lang: string; key: string }[]
+			[] as { path: string; key: string }[]
 		)
 
 		for (const asset of assets) {
