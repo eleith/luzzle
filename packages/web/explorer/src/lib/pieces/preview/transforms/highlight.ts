@@ -1,21 +1,8 @@
 import { getFrontmatterValues } from '@luzzle/core'
-import { codeToHtml, bundledLanguagesInfo } from 'shiki'
+import { codeToHtml } from 'shiki'
 import { config } from '$lib/server/config.js'
+import { getLang } from './highlight-lang.js'
 import type { PreviewAssetRecord, PreviewContext, PreviewResolver } from './types.js'
-
-const extToLang = new Map<string, string>()
-for (const lang of bundledLanguagesInfo) {
-	extToLang.set(lang.id, lang.id)
-	for (const alias of lang.aliases ?? []) {
-		extToLang.set(alias, lang.id)
-	}
-}
-
-function getLang(filename: string): string | null {
-	const dot = filename.lastIndexOf('.')
-	const ext = dot === -1 ? '' : filename.slice(dot + 1).toLowerCase()
-	return extToLang.get(ext) ?? null
-}
 
 async function resolve(context: PreviewContext): Promise<PreviewAssetRecord[]> {
 	const { frontmatter, pieceConfig, pieces, pathToKey } = context
@@ -28,8 +15,7 @@ async function resolve(context: PreviewContext): Promise<PreviewAssetRecord[]> {
 		const paths = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
 
 		for (const assetPath of paths) {
-			const lang = getLang(assetPath)
-			if (!lang) continue
+			const lang = getLang(assetPath) || 'text'
 
 			const assetKey = pathToKey.get(assetPath)
 			if (!assetKey) continue
