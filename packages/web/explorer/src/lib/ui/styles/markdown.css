@@ -1,5 +1,13 @@
 /* Shiki Theme CSS */
 
+pre.shiki {
+	overflow-x: auto;
+}
+
+pre.shiki code {
+	display: grid;
+}
+
 pre.shiki,
 .markdown pre {
 	background-color: var(--shiki-light-bg);

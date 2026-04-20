@@ -17,29 +17,19 @@
 		{#each data.pieces as piece, i (piece.id)}
 			<a
 				href="/pieces/{piece.type}/{piece.slug}"
-				onmouseenter={() => {
+				onpointerenter={() => {
 					activePieceId = piece.id
 				}}
-				onmouseleave={() => {
-					if (activePieceId) {
-						activePieceId = null
+				onpointerleave={() => {
+					activePieceId = null
+				}}
+				onfocus={(e) => {
+					if (e.currentTarget.matches(':focus-visible')) {
+						activePieceId = piece.id
 					}
-				}}
-				onfocus={() => {
-					activePieceId = piece.id
 				}}
 				onblur={() => {
-					if (activePieceId) {
-						activePieceId = null
-					}
-				}}
-				ontouchstart={() => {
-					activePieceId = piece.id
-				}}
-				ontouchend={() => {
-					if (activePieceId) {
-						activePieceId = null
-					}
+					activePieceId = null
 				}}
 			>
 				<div class="piece-card">
@@ -115,9 +105,16 @@
 		color: var(--color-on-surface);
 	}
 
-	.container > a:hover .piece-text {
+	.container > a:hover .piece-text,
+	.container > a:focus-visible .piece-text {
 		text-decoration: underline;
 		color: var(--color-primary);
+	}
+
+	.container > a:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 4px;
+		border-radius: 4px;
 	}
 
 	.piece-card {

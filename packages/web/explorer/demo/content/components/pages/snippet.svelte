@@ -217,8 +217,7 @@
 		opacity: 1;
 	}
 
-	.file-content {
-		overflow-x: auto;
+	:global(.file-content pre.shiki) {
 		font-size: var(--font-size-xxs);
 	}
 

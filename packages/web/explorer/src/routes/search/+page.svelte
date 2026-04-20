@@ -5,12 +5,6 @@
 	let activePieceId = $state<string | null>(null)
 	let { data } = $props()
 
-	function actionPiece(node: HTMLAnchorElement, focus: boolean) {
-		if (focus) {
-			node.focus()
-		}
-	}
-
 	afterNavigate(({ type }) => {
 		if (type === 'link') {
 			window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -26,40 +20,27 @@
 	<section class="container">
 		{#each data.pieces as piece (piece.id)}
 			<a
-				use:actionPiece={data.pieces[0].id === piece.id}
 				href="/pieces/{piece.type}/{piece.slug}"
-				onmouseenter={() => {
+				onpointerenter={() => {
 					activePieceId = piece.id
 				}}
-				onmouseleave={() => {
-					if (activePieceId) {
-						activePieceId = null
+				onpointerleave={() => {
+					activePieceId = null
+				}}
+				onfocus={(e) => {
+					if (e.currentTarget.matches(':focus-visible')) {
+						activePieceId = piece.id
 					}
-				}}
-				onfocus={() => {
-					activePieceId = piece.id
 				}}
 				onblur={() => {
-					if (activePieceId) {
-						activePieceId = null
-					}
-				}}
-				ontouchstart={() => {
-					activePieceId = piece.id
-				}}
-				ontouchend={() => {
-					if (activePieceId) {
-						activePieceId = null
-					}
+					activePieceId = null
 				}}
 			>
 				<div style="display: flex; align-items: flex-start;">
 					<div style="flex: 1 1 0%;">
 						<div style="display: flex;">
 							<div style="align-self: baseline;">
-								{#key activePieceId === piece.id}
-									<PieceIcon {piece} size={{ width: 125 }} active={activePieceId === piece.id} />
-								{/key}
+								<PieceIcon {piece} size={{ width: 125 }} active={activePieceId === piece.id} />
 							</div>
 						</div>
 					</div>
@@ -107,9 +88,16 @@
 		color: var(--color-on-surface);
 	}
 
-	.container > a:hover .piece-text {
+	.container > a:hover .piece-text,
+	.container > a:focus-visible .piece-text {
 		text-decoration: underline;
 		color: var(--color-primary);
+	}
+
+	.container > a:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 4px;
+		border-radius: 4px;
 	}
 
 	.action {
