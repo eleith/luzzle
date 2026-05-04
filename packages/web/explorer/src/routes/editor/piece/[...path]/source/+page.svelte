@@ -4,7 +4,6 @@
 	import PieceActions from '$lib/components/editor/PieceActions.svelte'
 	import type { PageProps } from './$types'
 
-	import { goto } from '$app/navigation'
 	import { page } from '$app/state'
 
 	let { data, form }: PageProps = $props()
