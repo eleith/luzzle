@@ -4,6 +4,9 @@
 	import PieceActions from '$lib/components/editor/PieceActions.svelte'
 	import type { PageProps } from './$types'
 
+	import { goto } from '$app/navigation'
+	import { page } from '$app/state'
+
 	let { data, form }: PageProps = $props()
 
 	let dialog: HTMLDialogElement
@@ -66,7 +69,12 @@
 	{/if}
 
 	<div class="editor-container">
-		<MarkdownEditor bind:value={rawContent} editorThemes={data.editorThemes} file={data.file} />
+		<MarkdownEditor
+			bind:value={rawContent}
+			editorThemes={data.editorThemes}
+			file={data.file}
+			returnTo={page.url.pathname}
+		/>
 	</div>
 </div>
 

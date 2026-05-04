@@ -59,6 +59,7 @@
 					bind:value={mergedContent}
 					editorThemes={data.editorThemes}
 					file={data.file}
+					returnTo={page.url.pathname + page.url.search}
 				/>
 			</div>
 		{:else}
