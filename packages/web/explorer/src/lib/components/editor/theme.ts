@@ -9,7 +9,9 @@ export function createEditorTheme(colors: EditorThemeColors, isDark: boolean): E
 		{
 			'&': {
 				color: colors.fg,
-				backgroundColor: colors.bg
+				backgroundColor: colors.bg,
+				'--cm-link': colors.link,
+				'--cm-attribute': colors.attribute
 			},
 			'.cm-content': {
 				caretColor: colors.cursor

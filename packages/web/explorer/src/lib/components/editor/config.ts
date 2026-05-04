@@ -18,6 +18,7 @@ import { markdown } from '@codemirror/lang-markdown'
 import { yamlFrontmatter } from '@codemirror/lang-yaml'
 import { indentWithTab } from '@codemirror/commands'
 import { lintGutter, lintKeymap } from '@codemirror/lint'
+import { hyperlink } from './extensions/hyperlink'
 
 export interface EditorConfigOptions {
 	themeConfig: Compartment
@@ -57,6 +58,7 @@ export function createEditorExtensions({ themeConfig, onUpdate }: EditorConfigOp
 
 		themeConfig.of([]),
 		lintGutter({ tooltipFilter: () => [] }),
+		hyperlink,
 
 		EditorView.theme({
 			'&': {
