@@ -51,11 +51,7 @@
 			</div>
 		</div>
 		<div class="editor-container">
-			<MarkdownEditor
-				bind:value={mergedContent}
-				editorThemes={data.editorThemes}
-				file={filePath}
-			/>
+			<MarkdownEditor bind:value={mergedContent} editorThemes={data.editorThemes} file={filePath} />
 		</div>
 	</section>
 {:else}
@@ -77,12 +73,7 @@
 				</div>
 				<div class="field">type</div>
 				<div class="field-edit">
-					<select
-						name="type"
-						class="input"
-						bind:value={selectedType}
-						onchange={onTypeChange}
-					>
+					<select name="type" class="input" bind:value={selectedType} onchange={onTypeChange}>
 						{#each data.types as type (type)}
 							<option value={type}>{type}</option>
 						{/each}
@@ -104,12 +95,7 @@
 				{#if data.canGenerate}
 					<div class="generate-section">
 						<label class="generate-toggle">
-							<input
-								type="checkbox"
-								name="generate"
-								value="true"
-								bind:checked={shouldGenerate}
-							/>
+							<input type="checkbox" name="generate" value="true" bind:checked={shouldGenerate} />
 							Generate metadata with AI
 						</label>
 
