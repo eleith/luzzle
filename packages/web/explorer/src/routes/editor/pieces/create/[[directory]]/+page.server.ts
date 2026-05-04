@@ -18,6 +18,15 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
 	const canGenerate = config.ai !== undefined
 
+	const pieces = getPieces()
+	const currentDir = directory || '.'
+	const files = await pieces.getFilesIn(currentDir)
+	const subDirectories = files.directories.map((d) => {
+		const name = d.replace(/\/$/, '')
+		return currentDir === '.' ? name : `${currentDir}/${name}`
+	})
+	const allDirectories = [currentDir, ...subDirectories]
+
 	const editorThemes = {
 		light: await extractEditorTheme(config.theme.markdown.code.light, 'light'),
 		dark: await extractEditorTheme(config.theme.markdown.code.dark, 'dark')
@@ -27,6 +36,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		types,
 		type,
 		directory,
+		directories: allDirectories,
 		canGenerate,
 		editorThemes
 	}
@@ -38,7 +48,7 @@ export const actions = {
 		const formData = await event.request.formData()
 		const name = formData.get('name')?.toString()
 		const type = formData.get('type')?.toString()
-		const directory = event.params.directory || ''
+		const directory = formData.get('directory')?.toString() || ''
 		const types = await pieces.getTypes()
 		const titleField = config.pieces.find((p) => p.type === type)?.fields.title
 

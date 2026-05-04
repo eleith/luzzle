@@ -6,6 +6,7 @@
 	let { data, form } = $props()
 	let editSlug: HTMLInputElement | null = $state(null)
 	let selectedType = $state(data.type)
+	let selectedDirectory = $state(data.directory || '.')
 	let shouldGenerate = $state(false)
 	let prompt = $state('')
 	let mergedContent = $state(form?.mergedContent || '')
@@ -68,8 +69,11 @@
 				{/if}
 				<div class="field">directory</div>
 				<div class="field-edit">
-					{data.directory || '(root)'}
-					<input type="hidden" name="directory" value={data.directory} />
+					<select name="directory" class="input" bind:value={selectedDirectory}>
+						{#each data.directories as dir (dir)}
+							<option value={dir}>{dir === '.' ? '(root)' : dir}</option>
+						{/each}
+					</select>
 				</div>
 				<div class="field">type</div>
 				<div class="field-edit">
