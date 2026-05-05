@@ -5,6 +5,8 @@
 
 	type Props = {
 		background?: string
+		color?: string
+		hoverColor?: string
 		showHome?: boolean
 		showSearch?: boolean
 		showThemeToggle?: boolean
@@ -15,8 +17,8 @@
 			right?: Snippet<[]>
 		}
 	}
-	const { background, items, showHome, showSearch, showThemeToggle, showProgress, showRandom }: Props = $props()
+	const { background, items, showHome, showSearch, showThemeToggle, showProgress, showRandom, color, hoverColor }: Props = $props()
 </script>
 
 <SeoHead />
-<NavBanner {background} {items} {showHome} {showSearch} {showThemeToggle} {showProgress} {showRandom} />
+<NavBanner {background} {items} {showHome} {showSearch} {showThemeToggle} {showProgress} {showRandom} {color} {hoverColor} />

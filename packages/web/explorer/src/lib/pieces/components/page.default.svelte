@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { type PiecePageProps } from '$lib/pieces/helpers'
 	import Icon from '$lib/pieces/components/icon.svelte'
+	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
 
 	const { piece, tags, helpers }: PiecePageProps = $props()
 	const metadata = piece.metadata
@@ -15,6 +16,8 @@
 		)
 	}
 </script>
+
+<NavBanner showRandom />
 
 <section
 	class="hero"

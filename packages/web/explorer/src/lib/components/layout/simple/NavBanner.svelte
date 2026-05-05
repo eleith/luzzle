@@ -9,6 +9,8 @@
 
 	type Props = {
 		background?: string
+		color?: string
+		hoverColor?: string
 		showHome?: boolean
 		showSearch?: boolean
 		showThemeToggle?: boolean
@@ -21,6 +23,8 @@
 	}
 	const {
 		background = 'transparent',
+		color = 'var(--color-on-surface)',
+		hoverColor = 'var(--color-primary)',
 		showHome = true,
 		showSearch = true,
 		showThemeToggle = true,
@@ -34,7 +38,7 @@
 	<NavigationProgressBar />
 {/if}
 
-<nav class="banner" style:--banner-background-color={background}>
+<nav class="banner" style:--banner-background-color={background} style:--banner-text-color={color} style:--banner-hover-color={hoverColor}>
 	<div class="left">
 		{#if showHome && page.url.pathname !== '/'}
 			<a href="/" aria-label="main page"><NavigationIcon style="font-size: 1em;" /></a>
@@ -97,13 +101,13 @@
 		min-width: 24px;
 		min-height: 24px;
 		cursor: pointer;
-		color: var(--color-on-surface);
+		color: var(--banner-text-color);
 		background: transparent;
 		border: none;
 	}
 
 	.banner :global(a):hover,
 	.banner :global(button):hover {
-		color: var(--color-primary);
+		color: var(--banner-hover-color);
 	}
 </style>
