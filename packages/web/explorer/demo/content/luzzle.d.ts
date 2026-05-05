@@ -1,18 +1,49 @@
 declare module '$lib/pieces/helpers' {
+	export type PieceIconPalette = {
+		accent?: string
+		background?: string
+		bodyText?: string
+		muted?: string
+		titleText?: string
+	}
+
+	export type PieceComponentHelpers = {
+		getPieceUrl: () => string
+		getPieceImageUrl: (
+			image: any,
+			minWidth: number,
+			format: 'jpg' | 'avif' | 'webp' | 'png'
+		) => string | undefined
+		getPiecePalette: () => PieceIconPalette | undefined
+		getPieceAssetUrl: (key: string, transform: string) => string | undefined
+		getPieceAssetContent: (key: string, transform: string) => string | undefined
+	}
+
+	export type PieceMode = 'public' | 'local' | 'preview'
+
 	export interface WebPieces {
 		id: string
 		title: string
 		slug: string
-		file_path: string
-		note?: string
-		date_updated?: number
-		date_added: number
-		date_consumed?: number
 		type: string
-		media?: string
-		json_metadata: string
+		key: string
+		note?: string
+		date_consumed?: number
 		summary?: string
 		keywords?: string
+		metadata: Record<string, any>
+		assets: Array<{
+			asset_key?: string
+			transformation?: string
+			asset_path?: string
+			content?: string
+		}>
+	}
+
+	export type PiecePageProps = {
+		piece: WebPieces
+		tags: Partial<WebPieceTags>[]
+		helpers: PieceComponentHelpers
 	}
 
 	export interface WebPieceTags {
@@ -23,74 +54,61 @@ declare module '$lib/pieces/helpers' {
 		slug: string
 	}
 
-	export type PieceComponentHelpers = {
-		getPieceUrl: () => string
-		getPieceImageUrl: (
-			image: string,
-			minWidth: number,
-			format: 'jpg' | 'avif' | 'webp' | 'png'
-		) => string
-	}
-
-	export type PiecePageProps = {
-		piece: WebPieces
-		metadata: Record<string, any>
-		tags: Partial<WebPieceTags>[]
-		helpers: PieceComponentHelpers
-	}
-
 	export type PieceIconProps = {
 		piece: WebPieces
-		metadata?: Record<string, any>
-		tags?: string[]
-		size: {
-			width: number
-			height?: number
-		}
+		active: boolean
+		tags: string[]
+		size: { width: number; height?: number }
 		lazy?: boolean
-		helpers?: PieceComponentHelpers
-	}
-
-	export type PieceIconPalette = {
-		accent?: string
-		background?: string
-		bodyText?: string
-		muted?: string
-		titleText?: string
+		helpers: PieceComponentHelpers
 	}
 
 	export type PieceOpengraphProps = {
-		metadata: Record<string, any>
 		tags: string[]
 		piece: WebPieces
-		size: {
-			width: number
-			height: number
-		}
-		palette?: PieceIconPalette
+		size: { width: number; height: number }
 		helpers: PieceComponentHelpers
 	}
 }
 
-type LuzzleComponent<Props> = {
-	(props: Props): any
-	new (options: { target: any; props?: Props }): any
-}
-
 declare module '$lib/pieces/components/icon.svelte' {
+	import type { SvelteComponent } from 'svelte'
 	import type { PieceIconProps } from '$lib/pieces/helpers'
-	const Icon: LuzzleComponent<PieceIconProps>
-	export default Icon
+
+	export default class extends SvelteComponent<PieceIconProps> {}
 }
 
 declare module '$lib/pieces/components/page.svelte' {
+	import type { SvelteComponent } from 'svelte'
 	import type { PiecePageProps } from '$lib/pieces/helpers'
-	const Page: LuzzleComponent<PiecePageProps>
-	export default Page
+
+	export default class extends SvelteComponent<PiecePageProps> {}
 }
 
 declare module '$lib/pieces/components/opengraph.svelte' {
+	import type { SvelteComponent } from 'svelte'
 	import type { PieceOpengraphProps } from '$lib/pieces/helpers'
-	const Opengraph: LuzzleComponent<PieceOpengraphProps>
-	export default Opengraph
+
+	export default class extends SvelteComponent<PieceOpengraphProps> {}
+}
+
+declare module '$lib/components/layout/simple/NavBanner.svelte' {
+	import type { SvelteComponent, Snippet } from 'svelte'
+
+	type Props = {
+		background?: string
+		color?: string
+		hoverColor?: string
+		showHome?: boolean
+		showSearch?: boolean
+		showThemeToggle?: boolean
+		showProgress?: boolean
+		showRandom?: boolean
+		items?: {
+			left?: Snippet<[]>
+			right?: Snippet<[]>
+		}
+	}
+
+	export default class extends SvelteComponent<Props> {}
 }
