@@ -1,21 +1,28 @@
 <script lang="ts">
 	import { type PiecePageProps } from '$lib/pieces/helpers'
+	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
 	import FileDownIcon from 'virtual:icons/ph/file-arrow-down'
 	const { piece, tags, helpers }: PiecePageProps = $props()
 	const metadata = piece.metadata
 
-	const bylineParts: string[] = [];
+	const bylineParts: string[] = []
 	if (metadata.files?.length) {
-		const formats = [...new Set(metadata.files.map((f: { format: string }) => f.format).filter(Boolean))];
-		if (formats.length) bylineParts.push(formats.join(', '));
-		bylineParts.push(metadata.files.length > 1 ? `${metadata.files.length} files` : '1 file');
+		const formats = [
+			...new Set(metadata.files.map((f: { format: string }) => f.format).filter(Boolean))
+		]
+		if (formats.length) bylineParts.push(formats.join(', '))
+		bylineParts.push(metadata.files.length > 1 ? `${metadata.files.length} files` : '1 file')
 	}
 	if (piece.date_consumed) {
 		bylineParts.push(
-			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
-		);
+			new Date(piece.date_consumed)
+				.toLocaleDateString('en-US', { timeZone: 'UTC' })
+				.replaceAll('/', '.')
+		)
 	}
 </script>
+
+<NavBanner showRandom />
 
 <section class="content">
 	<section class="details">
@@ -24,7 +31,7 @@
 		</h1>
 
 		{#if bylineParts.length}
-			<p class="byline">{bylineParts.join(" · ")}</p>
+			<p class="byline">{bylineParts.join(' · ')}</p>
 		{/if}
 
 		<section class="note">
@@ -40,56 +47,62 @@
 		{#if piece.metadata.files && piece.metadata.files.length > 0}
 			<section class="note">
 				<h2>Files</h2>
-			<div class="files-container">
-				{#each piece.metadata.files as file (file.name)}
-					{@const attachment = helpers.getPieceAssetUrl(file.file, 'attachment')}
+				<div class="files-container">
+					{#each piece.metadata.files as file (file.name)}
+						{@const attachment = helpers.getPieceAssetUrl(file.file, 'attachment')}
 
-					{#if file.type === 'snippet'}
-						{@const highlight = helpers.getPieceAssetContent(file.file, 'highlight')}
-						<div class="file">
-							<div class="file-header">
-								<div class="file-filename">{file.name}</div>
-								<div class="file-controls">
-									<div class="file-format">{file.format}</div>
-									{#if attachment}
-										<div class="file-download">
-											<a href={attachment} aria-label="download {file.name}"><FileDownIcon style="font-size: 1rem;" /></a>
-										</div>
-									{/if}
+						{#if file.type === 'snippet'}
+							{@const highlight = helpers.getPieceAssetContent(file.file, 'highlight')}
+							<div class="file">
+								<div class="file-header">
+									<div class="file-filename">{file.name}</div>
+									<div class="file-controls">
+										<div class="file-format">{file.format}</div>
+										{#if attachment}
+											<div class="file-download">
+												<a href={attachment} aria-label="download {file.name}"
+													><FileDownIcon style="font-size: 1rem;" /></a
+												>
+											</div>
+										{/if}
+									</div>
+								</div>
+								{#if highlight}
+									<div class="file-content">
+										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+										{@html highlight}
+									</div>
+								{/if}
+							</div>
+						{:else}
+							<div class="file">
+								<div class="file-header">
+									<span class="file-filename">{file.file}</span>
+									<span class="file-controls">
+										<span class="file-format">{file.format}</span>
+										{#if attachment}
+											<span class="file-download">
+												<a href={attachment} aria-label="download {file.file}"
+													><FileDownIcon style="font-size: 1rem;" /></a
+												>
+											</span>
+										{/if}
+									</span>
 								</div>
 							</div>
-							{#if highlight}
-								<div class="file-content">
-									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-									{@html highlight}
-								</div>
-							{/if}
-						</div>
-					{:else}
-						<div class="file">
-							<div class="file-header">
-								<span class="file-filename">{file.file}</span>
-								<span class="file-controls">
-									<span class="file-format">{file.format}</span>
-									{#if attachment}
-										<span class="file-download">
-											<a href={attachment} aria-label="download {file.file}"><FileDownIcon style="font-size: 1rem;" /></a>
-										</span>
-									{/if}
-								</span>
-							</div>
-						</div>
-					{/if}
-				{/each}
-			</div>
-		</section>
+						{/if}
+					{/each}
+				</div>
+			</section>
 		{/if}
 
 		{#if piece.metadata.date_updated}
 			<div class="info">
-				last updated: {new Date(piece.metadata.date_updated).toLocaleDateString("en-US", {
-					timeZone: 'UTC'
-				}).replaceAll("/", ".")}
+				last updated: {new Date(piece.metadata.date_updated)
+					.toLocaleDateString('en-US', {
+						timeZone: 'UTC'
+					})
+					.replaceAll('/', '.')}
 			</div>
 		{/if}
 		{#if tags.length}

@@ -21,7 +21,9 @@
 
 <section
 	class="hero"
-	style="--hero-bg: {palette?.background || 'var(--color-surface-container)'}; --hero-title: {palette?.titleText || 'var(--color-on-surface)'}"
+	style="--hero-bg: {palette?.background ||
+		'var(--color-surface-container)'}; --hero-title: {palette?.titleText ||
+		'var(--color-on-surface)'}"
 >
 	<div class="hero-inner">
 		<div class="hero-text">
@@ -35,7 +37,9 @@
 	{#if bylineParts.length}
 		<section
 			class="byline-section"
-			style="--byline-bg: {palette?.background || 'var(--color-surface-container)'}; --byline-text: {palette?.bodyText || 'var(--color-on-surface-variant)'}"
+			style="--byline-bg: {palette?.background ||
+				'var(--color-surface-container)'}; --byline-text: {palette?.bodyText ||
+				'var(--color-on-surface-variant)'}"
 		>
 			<div class="byline-inner">
 				<p class="byline">{bylineParts.join(' · ')}</p>
@@ -70,10 +74,7 @@
 							{#if metadata.url}
 								<a class="article-link" href={metadata.url as string}>{metadata.url as string}</a>
 							{:else if metadata.isbn}
-								<a
-									class="article-link"
-									href="https://openlibrary.org/search?isbn={metadata.isbn}"
-								>
+								<a class="article-link" href="https://openlibrary.org/search?isbn={metadata.isbn}">
 									isbn {metadata.isbn}
 								</a>
 							{/if}

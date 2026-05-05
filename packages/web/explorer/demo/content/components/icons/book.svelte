@@ -1,36 +1,36 @@
 <script lang="ts">
-	import { type PieceIconProps } from "$lib/pieces/helpers";
-	let { piece, size, helpers, lazy, active }: PieceIconProps = $props();
-	const metadata = piece.metadata;
+	import { type PieceIconProps } from '$lib/pieces/helpers'
+	let { piece, size, helpers, lazy, active }: PieceIconProps = $props()
+	const metadata = piece.metadata
 
 	function interpolate(
 		value: number,
 		input: { min: number; max: number },
-		output: { min: number; max: number },
+		output: { min: number; max: number }
 	) {
 		if (value <= input.min) {
-			return output.min;
+			return output.min
 		}
 
 		if (value >= input.max) {
-			return output.max;
+			return output.max
 		}
 
-		const inputRange = input.max - input.min;
-		const progress = (value - input.min) / inputRange;
-		const outputRange = output.max - output.min;
-		const finalValue = output.min + outputRange * progress;
+		const inputRange = input.max - input.min
+		const progress = (value - input.min) / inputRange
+		const outputRange = output.max - output.min
+		const finalValue = output.min + outputRange * progress
 
-		return parseFloat(finalValue.toFixed(2));
+		return parseFloat(finalValue.toFixed(2))
 	}
 
-	const scale = Math.round((size.width / 375) * 100) / 100;
-	const pages = metadata.pages as number | 100;
+	const scale = Math.round((size.width / 375) * 100) / 100
+	const pages = metadata.pages as number | 100
 	const thickness = interpolate(
 		pages * scale,
 		{ min: 1, max: 650 },
-		{ min: 25, max: size.width / 2 },
-	);
+		{ min: 25, max: size.width / 2 }
+	)
 </script>
 
 <div
@@ -73,13 +73,13 @@
 		{#if metadata.cover}
 			<picture>
 				<source
-					srcset={helpers.getPieceImageUrl(metadata.cover, size.width, "avif")}
+					srcset={helpers.getPieceImageUrl(metadata.cover, size.width, 'avif')}
 					type="image/avif"
 				/>
 				<img
-					src={helpers.getPieceImageUrl(metadata.cover, size.width, "jpg")}
-					loading={lazy ? "lazy" : "eager"}
-					fetchpriority={lazy ? "auto" : "high"}
+					src={helpers.getPieceImageUrl(metadata.cover, size.width, 'jpg')}
+					loading={lazy ? 'lazy' : 'eager'}
+					fetchpriority={lazy ? 'auto' : 'high'}
 					alt=""
 				/>
 			</picture>
@@ -101,8 +101,8 @@
 		from {
 			transform: var(
 				--book-transform-start,
-				rotateY(48deg) rotateX(-9deg) rotateZ(-9deg)
-					translateZ(var(--book-thickness)) translateX(-48px) translateY(-20px)
+				rotateY(48deg) rotateX(-9deg) rotateZ(-9deg) translateZ(var(--book-thickness))
+					translateX(-48px) translateY(-20px)
 			);
 		}
 	}
@@ -118,8 +118,8 @@
 			--book-transform-end,
 			var(
 				--book-transform-start,
-				rotateY(48deg) rotateX(-9deg) rotateZ(-9deg)
-					translateZ(var(--book-thickness)) translateX(-48px) translateY(-20px)
+				rotateY(48deg) rotateX(-9deg) rotateZ(-9deg) translateZ(var(--book-thickness))
+					translateX(-48px) translateY(-20px)
 			)
 		);
 		box-shadow: -8px 8px 8px var(--book-shadow-color);
@@ -136,10 +136,7 @@
 		width: calc(var(--book-thickness) - 10px);
 		height: calc(var(--book-height) - 2 * var(--book-page-offset, 3px));
 		transform: translateX(
-				calc(
-					var(--book-width) - var(--book-thickness) / 2 -
-						var(--book-page-offset, 3px)
-				)
+				calc(var(--book-width) - var(--book-thickness) / 2 - var(--book-page-offset, 3px))
 			)
 			translateZ(calc(0px - var(--book-thickness) / 2)) rotateY(90deg);
 		background: linear-gradient(
@@ -337,8 +334,7 @@
 		filter: blur(15px);
 		width: var(--book-width);
 		height: calc(var(--book-thickness) * 3);
-		transform: rotateX(90deg) rotateY(180deg)
-			translateZ(calc(var(--book-thickness) * 3 / 2))
+		transform: rotateX(90deg) rotateY(180deg) translateZ(calc(var(--book-thickness) * 3 / 2))
 			translateY(calc(var(--book-thickness) * -3 / 2));
 		position: absolute;
 		outline: solid 1px transparent;

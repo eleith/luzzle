@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { type PieceIconProps } from "$lib/pieces/helpers";
-	let { piece, size, helpers, lazy, active }: PieceIconProps = $props();
-	const metadata = piece.metadata;
+	import { type PieceIconProps } from '$lib/pieces/helpers'
+	let { piece, size, helpers, lazy, active }: PieceIconProps = $props()
+	const metadata = piece.metadata
 
-	const scale = Math.round((size.width / 375) * 100) / 100;
+	const scale = Math.round((size.width / 375) * 100) / 100
 </script>
 
 <div
@@ -21,13 +21,13 @@
 	{#if metadata.poster}
 		<picture>
 			<source
-				srcset={helpers.getPieceImageUrl(metadata.poster, size.width, "avif")}
+				srcset={helpers.getPieceImageUrl(metadata.poster, size.width, 'avif')}
 				type="image/avif"
 			/>
 			<img
-				src={helpers.getPieceImageUrl(metadata.poster, size.width, "jpg")}
-				loading={lazy ? "lazy" : "eager"}
-				fetchpriority={lazy ? "auto" : "high"}
+				src={helpers.getPieceImageUrl(metadata.poster, size.width, 'jpg')}
+				loading={lazy ? 'lazy' : 'eager'}
+				fetchpriority={lazy ? 'auto' : 'high'}
 				alt=""
 			/>
 		</picture>

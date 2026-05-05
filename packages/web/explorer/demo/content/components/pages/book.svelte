@@ -1,22 +1,37 @@
 <script lang="ts">
-	import { type PiecePageProps } from "$lib/pieces/helpers";
-	import Icon from "$lib/pieces/components/icon.svelte";
+	import { type PiecePageProps } from '$lib/pieces/helpers'
+	import Icon from '$lib/pieces/components/icon.svelte'
+	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
 
-	const { piece, tags, helpers }: PiecePageProps = $props();
-	const metadata = piece.metadata;
-	const palette = helpers.getPiecePalette();
+	const { piece, tags, helpers }: PiecePageProps = $props()
+	const metadata = piece.metadata
+	const palette = helpers.getPiecePalette()
 
-	const bylineParts: string[] = [];
-	if (metadata.author) bylineParts.push(`by ${metadata.author}`);
-	if (metadata.pages) bylineParts.push(`${metadata.pages} pages`);
+	const bylineParts: string[] = []
+	if (metadata.author) bylineParts.push(`by ${metadata.author}`)
+	if (metadata.pages) bylineParts.push(`${metadata.pages} pages`)
 	if (piece.date_consumed) {
 		bylineParts.push(
-			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
-		);
+			new Date(piece.date_consumed)
+				.toLocaleDateString('en-US', { timeZone: 'UTC' })
+				.replaceAll('/', '.')
+		)
 	}
 </script>
 
-<section class="hero" style="--hero-bg: {palette?.background || 'var(--color-surface-container)'}; --hero-title: {palette?.titleText || 'var(--color-on-surface)'}">
+<NavBanner
+	showRandom
+	background={palette?.background || 'var(--color-surface-container)'}
+	color={palette?.bodyText}
+	hoverColor={palette?.accent}
+/>
+
+<section
+	class="hero"
+	style="--hero-bg: {palette?.background ||
+		'var(--color-surface-container)'}; --hero-title: {palette?.titleText ||
+		'var(--color-on-surface)'}"
+>
 	<div class="hero-inner">
 		<div class="hero-text">
 			<h1>{piece.title}</h1>
@@ -27,15 +42,23 @@
 	</div>
 
 	{#if bylineParts.length}
-		<section class="byline-section" style="--byline-bg: {palette?.background || 'var(--color-surface-container)'}; --byline-text: {palette?.bodyText || 'var(--color-on-surface-variant)'}">
+		<section
+			class="byline-section"
+			style="--byline-bg: {palette?.background ||
+				'var(--color-surface-container)'}; --byline-text: {palette?.bodyText ||
+				'var(--color-on-surface-variant)'}"
+		>
 			<div class="byline-inner">
-				<p class="byline">{bylineParts.join(" · ")}</p>
+				<p class="byline">{bylineParts.join(' · ')}</p>
 			</div>
 		</section>
 	{/if}
 </section>
 
-<section class="content" style="--byline-border: {palette?.accent || 'var(--color-outline-variant)'};">
+<section
+	class="content"
+	style="--byline-border: {palette?.accent || 'var(--color-outline-variant)'};"
+>
 	<section class="details">
 		<section>
 			<h2>Note</h2>
@@ -58,9 +81,7 @@
 							{#if metadata.url}
 								<a class="article-link" href={metadata.url}>{metadata.url}</a>
 							{:else if metadata.isbn}
-								<a
-									class="article-link"
-									href="https://openlibrary.org/search?isbn={metadata.isbn}"
+								<a class="article-link" href="https://openlibrary.org/search?isbn={metadata.isbn}"
 									>isbn {metadata.isbn}</a
 								>
 							{/if}
@@ -237,7 +258,7 @@
 	}
 
 	section.details::before {
-		content: "";
+		content: '';
 		margin: auto;
 		width: 100%;
 	}
@@ -273,7 +294,6 @@
 		color: var(--color-on-surface-variant);
 		font-style: italic;
 	}
-
 
 	.supplemental {
 		background: var(--color-surface-container-lowest);

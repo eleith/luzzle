@@ -5,12 +5,14 @@
 	const { helpers, piece }: PieceOpengraphProps = $props()
 	const minutes = Math.floor(((piece.note?.length || 0) as number) / 5 / 250)
 
-	const bylineParts: string[] = [];
-	if (minutes > 0) bylineParts.push(`${minutes} min read`);
+	const bylineParts: string[] = []
+	if (minutes > 0) bylineParts.push(`${minutes} min read`)
 	if (piece.date_consumed) {
 		bylineParts.push(
-			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
-		);
+			new Date(piece.date_consumed)
+				.toLocaleDateString('en-US', { timeZone: 'UTC' })
+				.replaceAll('/', '.')
+		)
 	}
 </script>
 
@@ -21,7 +23,7 @@
 
 	{#if bylineParts.length}
 		<div class="accent-bar">
-			<p class="byline">{bylineParts.join(" · ")}</p>
+			<p class="byline">{bylineParts.join(' · ')}</p>
 		</div>
 	{/if}
 </section>

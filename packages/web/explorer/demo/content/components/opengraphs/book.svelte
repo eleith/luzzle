@@ -6,12 +6,14 @@
 	const metadata = piece.metadata
 	const palette = helpers.getPiecePalette()
 
-	const bylineParts: string[] = [];
-	if (metadata.pages) bylineParts.push(`${metadata.pages} pages`);
+	const bylineParts: string[] = []
+	if (metadata.pages) bylineParts.push(`${metadata.pages} pages`)
 	if (piece.date_consumed) {
 		bylineParts.push(
-			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
-		);
+			new Date(piece.date_consumed)
+				.toLocaleDateString('en-US', { timeZone: 'UTC' })
+				.replaceAll('/', '.')
+		)
 	}
 </script>
 
@@ -30,7 +32,15 @@
 		</div>
 
 		<div class="right-panel">
-			<h1 style="--title-size: {piece.title.length < 10 ? 5 : piece.title.length < 20 ? 4 : piece.title.length < 40 ? 3.2 : 2.5}rem">
+			<h1
+				style="--title-size: {piece.title.length < 10
+					? 5
+					: piece.title.length < 20
+						? 4
+						: piece.title.length < 40
+							? 3.2
+							: 2.5}rem"
+			>
 				{piece.title}
 			</h1>
 			{#if metadata.author}
@@ -41,7 +51,7 @@
 
 	{#if bylineParts.length}
 		<div class="accent-bar">
-			<p class="byline">{bylineParts.join(" · ")}</p>
+			<p class="byline">{bylineParts.join(' · ')}</p>
 		</div>
 	{/if}
 </section>

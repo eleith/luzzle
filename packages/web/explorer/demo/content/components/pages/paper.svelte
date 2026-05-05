@@ -1,27 +1,31 @@
 <script lang="ts">
 	import { type PiecePageProps } from '$lib/pieces/helpers'
+	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
 	const { piece, tags, helpers }: PiecePageProps = $props()
 	const minutes = Math.floor(((piece.note?.length || 0) as number) / 5 / 250)
 
-	const bylineParts: string[] = [];
-	if (minutes > 0) bylineParts.push(`${minutes} min read`);
+	const bylineParts: string[] = []
+	if (minutes > 0) bylineParts.push(`${minutes} min read`)
 	if (piece.date_consumed) {
 		bylineParts.push(
-			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
-		);
+			new Date(piece.date_consumed)
+				.toLocaleDateString('en-US', { timeZone: 'UTC' })
+				.replaceAll('/', '.')
+		)
 	}
 </script>
+
+<NavBanner showRandom />
 
 <section class="hero">
 	<h1>{piece.title}</h1>
 	{#if bylineParts.length}
-		<p class="byline">{bylineParts.join(" · ")}</p>
+		<p class="byline">{bylineParts.join(' · ')}</p>
 	{/if}
 </section>
 
 <section class="content">
 	<section class="details">
-
 		<div>
 			{#if piece.note}
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->

@@ -9,13 +9,16 @@
 	const backdropImage = backdrop ? helpers.getPieceImageUrl(backdrop, 1200, 'jpg') : null
 	const palette = $derived(helpers.getPiecePalette())
 
-	const bylineParts: string[] = [];
-	if (metadata.date_released) bylineParts.push(String(new Date(metadata.date_released).getUTCFullYear()));
-	if (metadata.runtime) bylineParts.push(`${metadata.runtime} min`);
+	const bylineParts: string[] = []
+	if (metadata.date_released)
+		bylineParts.push(String(new Date(metadata.date_released).getUTCFullYear()))
+	if (metadata.runtime) bylineParts.push(`${metadata.runtime} min`)
 	if (piece.date_consumed) {
 		bylineParts.push(
-			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
-		);
+			new Date(piece.date_consumed)
+				.toLocaleDateString('en-US', { timeZone: 'UTC' })
+				.replaceAll('/', '.')
+		)
 	}
 </script>
 
@@ -32,7 +35,15 @@
 	<div class="cover"></div>
 	<div class="main">
 		<div class="left-panel">
-			<h1 style="--title-size: {piece.title.length < 10 ? 5 : piece.title.length < 20 ? 4 : piece.title.length < 40 ? 3.2 : 2.5}rem">
+			<h1
+				style="--title-size: {piece.title.length < 10
+					? 5
+					: piece.title.length < 20
+						? 4
+						: piece.title.length < 40
+							? 3.2
+							: 2.5}rem"
+			>
 				{piece.title}
 			</h1>
 			{#if metadata.director}
@@ -46,7 +57,7 @@
 
 	{#if bylineParts.length}
 		<div class="accent-bar">
-			<p class="byline">{bylineParts.join(" · ")}</p>
+			<p class="byline">{bylineParts.join(' · ')}</p>
 		</div>
 	{/if}
 </section>

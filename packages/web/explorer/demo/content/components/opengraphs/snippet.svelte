@@ -5,21 +5,33 @@
 	let { piece, helpers }: PieceOpengraphProps = $props()
 	const metadata = piece.metadata
 
-	const bylineParts: string[] = [];
+	const bylineParts: string[] = []
 	if (metadata.files?.length) {
-		const formats = [...new Set(metadata.files.map((f: { format: string }) => f.format).filter(Boolean))];
-		if (formats.length) bylineParts.push(formats.join(', '));
-		bylineParts.push(metadata.files.length > 1 ? `${metadata.files.length} files` : '1 file');
+		const formats = [
+			...new Set(metadata.files.map((f: { format: string }) => f.format).filter(Boolean))
+		]
+		if (formats.length) bylineParts.push(formats.join(', '))
+		bylineParts.push(metadata.files.length > 1 ? `${metadata.files.length} files` : '1 file')
 	}
 	if (piece.date_consumed) {
 		bylineParts.push(
-			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
-		);
+			new Date(piece.date_consumed)
+				.toLocaleDateString('en-US', { timeZone: 'UTC' })
+				.replaceAll('/', '.')
+		)
 	}
 </script>
 
 <section class="container" data-theme="dark">
-	<h1 style="--title-size: {piece.title.length < 10 ? 5 : piece.title.length < 20 ? 4 : piece.title.length < 40 ? 3.2 : 2.5}rem">
+	<h1
+		style="--title-size: {piece.title.length < 10
+			? 5
+			: piece.title.length < 20
+				? 4
+				: piece.title.length < 40
+					? 3.2
+					: 2.5}rem"
+	>
 		{piece.title}
 	</h1>
 	<div class="icon-container">
@@ -28,7 +40,7 @@
 
 	{#if bylineParts.length}
 		<div class="accent-bar">
-			<p class="byline">{bylineParts.join(" · ")}</p>
+			<p class="byline">{bylineParts.join(' · ')}</p>
 		</div>
 	{/if}
 </section>

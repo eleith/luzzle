@@ -17,8 +17,28 @@
 			right?: Snippet<[]>
 		}
 	}
-	const { background, items, showHome, showSearch, showThemeToggle, showProgress, showRandom, color, hoverColor }: Props = $props()
+	const {
+		background,
+		items,
+		showHome,
+		showSearch,
+		showThemeToggle,
+		showProgress,
+		showRandom,
+		color,
+		hoverColor
+	}: Props = $props()
 </script>
 
 <SeoHead />
-<NavBanner {background} {items} {showHome} {showSearch} {showThemeToggle} {showProgress} {showRandom} {color} {hoverColor} />
+<NavBanner
+	{background}
+	{items}
+	{showHome}
+	{showSearch}
+	{showThemeToggle}
+	{showProgress}
+	{showRandom}
+	{color}
+	{hoverColor}
+/>

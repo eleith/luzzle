@@ -1,24 +1,38 @@
 <script lang="ts">
-	import { type PiecePageProps } from "$lib/pieces/helpers";
-	import Icon from "$lib/pieces/components/icon.svelte";
+	import { type PiecePageProps } from '$lib/pieces/helpers'
+	import Icon from '$lib/pieces/components/icon.svelte'
+	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
 
-	const { piece, tags, helpers }: PiecePageProps = $props();
-	const metadata = piece.metadata;
-	const palette = helpers.getPiecePalette();
+	const { piece, tags, helpers }: PiecePageProps = $props()
+	const metadata = piece.metadata
+	const palette = helpers.getPiecePalette()
 
-	const bylineParts: string[] = [];
-	if (metadata.date_released) bylineParts.push(String(new Date(metadata.date_released).getUTCFullYear()));
-	if (metadata.runtime) bylineParts.push(`${metadata.runtime} min`);
+	const bylineParts: string[] = []
+	if (metadata.date_released)
+		bylineParts.push(String(new Date(metadata.date_released).getUTCFullYear()))
+	if (metadata.runtime) bylineParts.push(`${metadata.runtime} min`)
 	if (piece.date_consumed) {
 		bylineParts.push(
-			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
-		);
+			new Date(piece.date_consumed)
+				.toLocaleDateString('en-US', { timeZone: 'UTC' })
+				.replaceAll('/', '.')
+		)
 	}
 </script>
 
+<NavBanner
+	showRandom
+	background={palette?.background || 'var(--color-surface-container)'}
+	color={palette?.bodyText}
+	hoverColor={palette?.accent}
+/>
+
 <section
 	class="hero"
-	style="--poster-background-color: {palette?.background || 'var(--color-surface-container)'}; --poster-title-color: {palette?.titleText || 'var(--color-on-surface)'}; --backdrop-accent: {palette?.accent || 'var(--color-outline-variant)'}"
+	style="--poster-background-color: {palette?.background ||
+		'var(--color-surface-container)'}; --poster-title-color: {palette?.titleText ||
+		'var(--color-on-surface)'}; --backdrop-accent: {palette?.accent ||
+		'var(--color-outline-variant)'}"
 >
 	<div class="hero-inner">
 		<div class="hero-text">
@@ -32,15 +46,23 @@
 	</div>
 
 	{#if bylineParts.length}
-		<section class="byline-section" style="--byline-bg: {palette?.background || 'var(--color-surface-container)'}; --byline-text: {palette?.bodyText || 'var(--color-on-surface-variant)'}">
+		<section
+			class="byline-section"
+			style="--byline-bg: {palette?.background ||
+				'var(--color-surface-container)'}; --byline-text: {palette?.bodyText ||
+				'var(--color-on-surface-variant)'}"
+		>
 			<div class="byline-inner">
-				<p class="byline">{bylineParts.join(" · ")}</p>
+				<p class="byline">{bylineParts.join(' · ')}</p>
 			</div>
 		</section>
 	{/if}
 </section>
 
-<section class="content" style="--byline-border: {palette?.accent || 'var(--color-outline-variant)'};">
+<section
+	class="content"
+	style="--byline-border: {palette?.accent || 'var(--color-outline-variant)'};"
+>
 	<section class="details">
 		<section>
 			<h2>Note</h2>
@@ -63,9 +85,7 @@
 							{#if metadata.url}
 								<a class="article-link" href={metadata.url}>{metadata.url}</a>
 							{:else if metadata.isbn}
-								<a
-									class="article-link"
-									href="https://openlibrary.org/search?isbn={metadata.isbn}"
+								<a class="article-link" href="https://openlibrary.org/search?isbn={metadata.isbn}"
 									>isbn {metadata.isbn}</a
 								>
 							{/if}
@@ -95,7 +115,7 @@
 					<div class="supplemental-inner">
 						<h2>People</h2>
 						<div class="body people">
-							{metadata.people.join(", ")}
+							{metadata.people.join(', ')}
 						</div>
 					</div>
 				{/if}
@@ -105,11 +125,11 @@
 						<h2>Backdrop</h2>
 						<picture class="backdrop-picture">
 							<source
-								srcset={helpers.getPieceImageUrl(metadata.backdrop, 800, "avif")}
+								srcset={helpers.getPieceImageUrl(metadata.backdrop, 800, 'avif')}
 								type="image/avif"
 							/>
 							<img
-								src={helpers.getPieceImageUrl(metadata.backdrop, 800, "jpg")}
+								src={helpers.getPieceImageUrl(metadata.backdrop, 800, 'jpg')}
 								loading="lazy"
 								alt=""
 							/>

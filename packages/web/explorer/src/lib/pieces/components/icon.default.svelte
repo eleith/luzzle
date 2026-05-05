@@ -5,9 +5,7 @@
 
 	const scale = Math.round((size.width / 375) * 100) / 100
 
-	const imageKey = $derived(
-		piece.metadata.cover || piece.metadata.image || piece.metadata.poster
-	)
+	const imageKey = $derived(piece.metadata.cover || piece.metadata.image || piece.metadata.poster)
 </script>
 
 <div
@@ -24,10 +22,7 @@
 	</div>
 	{#if imageKey}
 		<picture>
-			<source
-				srcset={helpers.getPieceImageUrl(imageKey, size.width, 'avif')}
-				type="image/avif"
-			/>
+			<source srcset={helpers.getPieceImageUrl(imageKey, size.width, 'avif')} type="image/avif" />
 			<img
 				src={helpers.getPieceImageUrl(imageKey, size.width, 'jpg')}
 				loading={lazy ? 'lazy' : 'eager'}
