@@ -18,7 +18,14 @@
 		assetFields?: string[]
 	}
 
-	let { value = $bindable(), onchange, editorThemes, file, returnTo, assetFields = [] }: Props = $props()
+	let {
+		value = $bindable(),
+		onchange,
+		editorThemes,
+		file,
+		returnTo,
+		assetFields = []
+	}: Props = $props()
 
 	let editorContainer: HTMLDivElement
 	let view: EditorView

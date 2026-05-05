@@ -86,10 +86,10 @@ function yamlKeyWidgetPlugin(icon: string, handler: KeyWidgetHandler): Extension
 				})
 
 				if (widgets.length === 0) return Decoration.none
-				
+
 				// Ensure widgets are sorted by 'from', as required by Decoration.set
 				widgets.sort((a, b) => a.from - b.from || a.value.startSide - b.value.startSide)
-				
+
 				return Decoration.set(widgets, true)
 			}
 		},

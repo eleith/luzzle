@@ -30,7 +30,11 @@ class AssetWidget extends WidgetType {
 	}
 }
 
-function yamlAssetWidgetPlugin(icon: string, assetFields: string[], handler: AssetWidgetHandler): Extension {
+function yamlAssetWidgetPlugin(
+	icon: string,
+	assetFields: string[],
+	handler: AssetWidgetHandler
+): Extension {
 	return ViewPlugin.fromClass(
 		class {
 			decorations = Decoration.none
@@ -94,10 +98,10 @@ function yamlAssetWidgetPlugin(icon: string, assetFields: string[], handler: Ass
 				})
 
 				if (widgets.length === 0) return Decoration.none
-				
+
 				// Ensure widgets are sorted by 'from', as required by Decoration.set
 				widgets.sort((a, b) => a.from - b.from || a.value.startSide - b.value.startSide)
-				
+
 				return Decoration.set(widgets, true)
 			}
 		},
@@ -123,7 +127,11 @@ export const yamlAssetWidgetStyle = EditorView.baseTheme({
 	}
 })
 
-export function yamlAssetWidget(icon: string, assetFields: string[], handler: AssetWidgetHandler): Extension {
+export function yamlAssetWidget(
+	icon: string,
+	assetFields: string[],
+	handler: AssetWidgetHandler
+): Extension {
 	if (assetFields.length === 0) return []
 	return [yamlAssetWidgetPlugin(icon, assetFields, handler), yamlAssetWidgetStyle]
 }
