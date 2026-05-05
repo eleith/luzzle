@@ -1,5 +1,6 @@
 <script lang="ts">
-	import Nav from '$lib/components/layout/simple/nav.svelte'
+	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
+	import SeoHead from '$lib/components/layout/simple/SeoHead.svelte'
 	import DiceIcon from 'virtual:icons/ph/dice-three'
 
 	const { children } = $props()
@@ -11,7 +12,8 @@
 	</a>
 {/snippet}
 
+<SeoHead />
 <main>
-	<Nav items={{ right: randomIcon }} />
+	<NavBanner items={{ right: randomIcon }} />
 	{@render children()}
 </main>
