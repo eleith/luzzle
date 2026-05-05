@@ -65,6 +65,7 @@ server {
     proxy_cache_revalidate  on;
     proxy_cache_min_uses    1;
     proxy_cache_lock        on;
+    proxy_cache_use_stale   error timeout http_502 http_504 updating;
     proxy_cache_valid       200 302 365d;
     proxy_cache_valid       404 365d;
     proxy_cache_key         "$scheme$request_method$proxy_host$request_uri";
