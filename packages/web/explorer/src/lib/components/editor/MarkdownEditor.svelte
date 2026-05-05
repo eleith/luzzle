@@ -7,6 +7,7 @@
 	import { createEditorExtensions } from './config'
 	import { createLSPExtension, destroyLSPClient } from './lsp'
 	import { luzzleFieldEditor } from './extensions/luzzleFieldEditor'
+	import { luzzleAssetEditor } from './extensions/luzzleAssetEditor'
 
 	type Props = {
 		value: string
@@ -14,15 +15,17 @@
 		editorThemes: { light: EditorThemeColors; dark: EditorThemeColors }
 		file?: string
 		returnTo?: string
+		assetFields?: string[]
 	}
 
-	let { value = $bindable(), onchange, editorThemes, file, returnTo }: Props = $props()
+	let { value = $bindable(), onchange, editorThemes, file, returnTo, assetFields = [] }: Props = $props()
 
 	let editorContainer: HTMLDivElement
 	let view: EditorView
 	const themeConfig = new Compartment()
 	const lspConfig = new Compartment()
 	const fieldEditorConfig = new Compartment()
+	const assetEditorConfig = new Compartment()
 
 	function updateTheme() {
 		const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
@@ -55,6 +58,12 @@
 			extensions.push(fieldEditorConfig.of(luzzleFieldEditor({ file, returnTo })))
 		} else {
 			extensions.push(fieldEditorConfig.of([]))
+		}
+
+		if (assetFields.length > 0) {
+			extensions.push(assetEditorConfig.of(luzzleAssetEditor(assetFields)))
+		} else {
+			extensions.push(assetEditorConfig.of([]))
 		}
 
 		const startState = EditorState.create({

@@ -3,9 +3,7 @@ import { linkDetector } from './linkDetector'
 import iconSvg from '~icons/ph/arrow-circle-up-right?raw&width=20&height=20'
 
 const URL_REGEX = /\bhttps?:\/\/[^\s<>"'`]+/gi
-const ASSET_REGEX = /\.assets\/[^\s<>"'`]+/gi
 
 export const luzzleHyperlink: Extension = linkDetector(iconSvg as unknown as string, [
-	{ regex: URL_REGEX, href: (m) => m },
-	{ regex: ASSET_REGEX, href: (m) => `/editor/asset/${m}`, title: (m) => `View ${m}` }
+	{ regex: URL_REGEX, href: (m) => m }
 ])

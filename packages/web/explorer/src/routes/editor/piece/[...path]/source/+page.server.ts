@@ -78,6 +78,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		dark: await extractEditorTheme(config.theme.markdown.code.dark, 'dark')
 	}
 
+	const assetPaths = filterFrontmatterFields(piece.fields, (f) => f.format === 'asset')
+
 	return {
 		file: pieceMarkdown.filePath,
 		directory,
@@ -85,7 +87,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		rawContent,
 		editorThemes,
 		schema: piece.schema,
-		canGenerate: config.ai !== undefined
+		canGenerate: config.ai !== undefined,
+		assetFields: assetPaths
 	}
 }
 

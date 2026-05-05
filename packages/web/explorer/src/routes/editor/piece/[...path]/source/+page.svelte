@@ -73,6 +73,7 @@
 			editorThemes={data.editorThemes}
 			file={data.file}
 			returnTo={page.url.pathname}
+			assetFields={data.assetFields}
 		/>
 	</div>
 </div>
