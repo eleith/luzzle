@@ -1,7 +1,7 @@
 import { ViewPlugin, EditorView, Decoration, WidgetType, ViewUpdate } from '@codemirror/view'
 import type { Extension } from '@codemirror/state'
-import { yamlLanguage } from '@codemirror/lang-yaml'
-import { getFrontmatterRange, buildPath } from './yamlUtils'
+import { syntaxTree } from '@codemirror/language'
+import { buildPath } from './yamlUtils'
 
 export type AssetWidgetHandler = (assetUrl: string) => { href: string; title: string }
 
@@ -40,7 +40,7 @@ function yamlAssetWidgetPlugin(icon: string, assetFields: string[], handler: Ass
 			}
 
 			update(update: ViewUpdate) {
-				if (update.docChanged) {
+				if (update.docChanged || update.viewportChanged) {
 					this.decorations = this.compute(update.view)
 				}
 			}
@@ -49,11 +49,7 @@ function yamlAssetWidgetPlugin(icon: string, assetFields: string[], handler: Ass
 				if (assetFields.length === 0) return Decoration.none
 
 				const doc = view.state.doc.toString()
-				const range = getFrontmatterRange(doc)
-				if (!range) return Decoration.none
-
-				const yaml = doc.slice(range.from, range.to)
-				const tree = yamlLanguage.parser.parse(yaml)
+				const tree = syntaxTree(view.state)
 
 				const widgets: Array<{ from: number; to: number; value: Decoration }> = []
 
@@ -70,10 +66,10 @@ function yamlAssetWidgetPlugin(icon: string, assetFields: string[], handler: Ass
 						}
 						if (!keyNode) return
 
-						const path = buildPath(keyNode, yaml)
+						const path = buildPath(keyNode, doc)
 						if (!assetFields.includes(path)) return
 
-						const rawValue = yaml.slice(node.from, node.to)
+						const rawValue = doc.slice(node.from, node.to)
 						const value = rawValue.replace(/^['"]|['"]$/g, '')
 
 						if (!value.startsWith('.assets/')) return
@@ -81,14 +77,14 @@ function yamlAssetWidgetPlugin(icon: string, assetFields: string[], handler: Ass
 						const result = handler(value)
 
 						widgets.push({
-							from: range.from + node.from,
-							to: range.from + node.to,
+							from: node.from,
+							to: node.to,
 							value: Decoration.mark({ class: 'cm-yaml-asset-underline' })
 						})
 
 						widgets.push({
-							from: range.from + node.to,
-							to: range.from + node.to,
+							from: node.to,
+							to: node.to,
 							value: Decoration.widget({
 								widget: new AssetWidget(result.href, result.title, icon),
 								side: 1

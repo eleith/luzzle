@@ -1,7 +1,7 @@
 import { ViewPlugin, EditorView, Decoration, WidgetType, ViewUpdate } from '@codemirror/view'
 import type { Extension } from '@codemirror/state'
-import { yamlLanguage } from '@codemirror/lang-yaml'
-import { getFrontmatterRange, buildPath } from './yamlUtils'
+import { syntaxTree } from '@codemirror/language'
+import { buildPath } from './yamlUtils'
 
 export interface KeyWidgetResult {
 	href: string
@@ -47,18 +47,14 @@ function yamlKeyWidgetPlugin(icon: string, handler: KeyWidgetHandler): Extension
 			}
 
 			update(update: ViewUpdate) {
-				if (update.docChanged) {
+				if (update.docChanged || update.viewportChanged) {
 					this.decorations = this.compute(update.view)
 				}
 			}
 
 			private compute(view: EditorView) {
 				const doc = view.state.doc.toString()
-				const range = getFrontmatterRange(doc)
-				if (!range) return Decoration.none
-
-				const yaml = doc.slice(range.from, range.to)
-				const tree = yamlLanguage.parser.parse(yaml)
+				const tree = syntaxTree(view.state)
 
 				const widgets: Array<{ from: number; to: number; value: Decoration }> = []
 
@@ -66,7 +62,7 @@ function yamlKeyWidgetPlugin(icon: string, handler: KeyWidgetHandler): Extension
 					enter(node) {
 						if (node.type.name !== 'Key') return
 
-						const path = buildPath(node.node, yaml)
+						const path = buildPath(node.node, doc)
 						let result: KeyWidgetResult | null = null
 
 						try {
@@ -79,8 +75,8 @@ function yamlKeyWidgetPlugin(icon: string, handler: KeyWidgetHandler): Extension
 						if (!result) return
 
 						widgets.push({
-							from: range.from + node.to,
-							to: range.from + node.to,
+							from: node.to,
+							to: node.to,
 							value: Decoration.widget({
 								widget: new KeyWidget(result.href, result.title, icon),
 								side: 1
@@ -90,6 +86,10 @@ function yamlKeyWidgetPlugin(icon: string, handler: KeyWidgetHandler): Extension
 				})
 
 				if (widgets.length === 0) return Decoration.none
+				
+				// Ensure widgets are sorted by 'from', as required by Decoration.set
+				widgets.sort((a, b) => a.from - b.from || a.value.startSide - b.value.startSide)
+				
 				return Decoration.set(widgets, true)
 			}
 		},
