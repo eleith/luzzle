@@ -1,133 +1,304 @@
 <script lang="ts">
-	import type { PiecePageProps } from '$lib/pieces/helpers'
+	import { type PiecePageProps } from '$lib/pieces/helpers'
 	import Icon from '$lib/pieces/components/icon.svelte'
 
-	const { piece, tags }: PiecePageProps = $props()
+	const { piece, tags, helpers }: PiecePageProps = $props()
 	const metadata = piece.metadata
-	const noteHtml = piece.assets.find((a) => a.transformation === 'markdown')?.content
+	const palette = helpers.getPiecePalette()
 
-	let showFullHeader = $state(false)
-
-	function toggleHeader() {
-		showFullHeader = !showFullHeader
+	const bylineParts: string[] = []
+	if (piece.date_consumed) {
+		bylineParts.push(
+			new Date(piece.date_consumed)
+				.toLocaleDateString('en-US', { timeZone: 'UTC' })
+				.replaceAll('/', '.')
+		)
 	}
 </script>
 
-<section class="header">
-	<button
-		class="piece-icon"
-		onclick={toggleHeader}
-		title="toggle full size"
-		class:piece-icon-open={showFullHeader}
-	>
-		<Icon {piece} size={{ width: 125 }} lazy={false} />
-	</button>
+<section
+	class="hero"
+	style="--hero-bg: {palette?.background || 'var(--color-surface-container)'}; --hero-title: {palette?.titleText || 'var(--color-on-surface)'}"
+>
+	<div class="hero-inner">
+		<div class="hero-text">
+			<h1>{piece.title}</h1>
+		</div>
+		<div class="hero-icon">
+			<Icon {piece} size={{ width: 125 }} lazy={false} />
+		</div>
+	</div>
+
+	{#if bylineParts.length}
+		<section
+			class="byline-section"
+			style="--byline-bg: {palette?.background || 'var(--color-surface-container)'}; --byline-text: {palette?.bodyText || 'var(--color-on-surface-variant)'}"
+		>
+			<div class="byline-inner">
+				<p class="byline">{bylineParts.join(' · ')}</p>
+			</div>
+		</section>
+	{/if}
 </section>
 
-<section class="content">
+<section
+	class="content"
+	style="--byline-border: {palette?.accent || 'var(--color-outline-variant)'};"
+>
 	<section class="details">
-		{#if piece.date_consumed}
-			<div class="date">
-				{new Date(piece.date_consumed).toLocaleDateString(undefined, { timeZone: 'UTC' })}
+		<section>
+			<h2>Note</h2>
+			<div class="body">
+				{#if piece.note}
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
+				{:else}
+					<em class="empty-note">this record does not have a note</em>
+				{/if}
 			</div>
-		{/if}
+		</section>
 
-		<h1>
-			{piece.title}
-		</h1>
+		{#if metadata.url || metadata.isbn || piece.summary}
+			<section class="supplemental">
+				{#if metadata.url || metadata.isbn}
+					<div class="supplemental-inner">
+						<h2>Link</h2>
+						<div class="body">
+							{#if metadata.url}
+								<a class="article-link" href={metadata.url as string}>{metadata.url as string}</a>
+							{:else if metadata.isbn}
+								<a
+									class="article-link"
+									href="https://openlibrary.org/search?isbn={metadata.isbn}"
+								>
+									isbn {metadata.isbn}
+								</a>
+							{/if}
+						</div>
+					</div>
+				{/if}
 
-		{#if noteHtml}
-			<div>
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html noteHtml}
-			</div>
-		{/if}
-
-		{#if piece.summary}
-			<h2>summary</h2>
-			<div>
-				{piece.summary}
-			</div>
-		{/if}
-
-		{#if metadata.url}
-			<h2>link</h2>
-			<div>
-				<a href={metadata.url as string}>{metadata.url}</a>
-			</div>
+				{#if piece.summary}
+					<div class="supplemental-inner">
+						<h2>Description</h2>
+						<div class="body">
+							{piece.summary}
+						</div>
+					</div>
+				{/if}
+			</section>
 		{/if}
 
 		{#if tags.length}
-			<h2>tags</h2>
-			<div class="tags-container">
-				{#each tags as tag (tag.slug)}
-					<a href="/tags/{tag.slug}" class="tag">{tag.tag}</a>
-				{/each}
+			<div class="section">
+				<div class="tags-container">
+					{#each tags as tag (tag.slug)}
+						<a href="/tags/{tag.slug}" class="tag">#{tag.tag?.toLowerCase()}</a>
+					{/each}
+				</div>
 			</div>
 		{/if}
 	</section>
 </section>
 
 <style>
+	section.hero {
+		background: var(--hero-bg);
+		display: flex;
+		flex-direction: column;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.hero-inner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-5);
+		margin: auto;
+		width: 85%;
+		padding: var(--space-3);
+	}
+
+	.hero-text {
+		text-align: center;
+	}
+
+	.hero-text h1 {
+		font-size: var(--font-size-xl, 1.5rem);
+		font-weight: 600;
+		line-height: 1.2;
+		letter-spacing: -0.01em;
+		color: var(--hero-title);
+		margin: 0;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.byline-section {
+		padding: var(--space-1) 0;
+		background: oklch(from var(--byline-bg) calc(l * 0.7) c h);
+		z-index: 1;
+	}
+
+	.byline-inner {
+		margin: auto;
+		width: 85%;
+		padding: 0 var(--space-2-5);
+	}
+
+	.byline {
+		font-size: var(--font-size-xs);
+		color: var(--byline-text);
+		letter-spacing: 0.02em;
+		margin: 0;
+		text-align: left;
+	}
+
+	.hero-icon {
+		display: flex;
+		justify-content: center;
+		position: relative;
+		overflow: visible;
+		max-height: 100px;
+		margin-bottom: -1.5rem;
+		animation: hero-icon-rise 800ms ease-in-out both;
+	}
+
+	@keyframes hero-icon-rise {
+		from {
+			transform: translateY(120%);
+		}
+		to {
+			transform: translateY(0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.hero-icon {
+			animation: none;
+		}
+	}
+
+	@media screen and (min-width: 768px) {
+		section.hero {
+			min-height: 100px;
+			padding-bottom: 0;
+			box-sizing: border-box;
+		}
+
+		.hero-inner {
+			flex-direction: row;
+			justify-content: space-between;
+			width: clamp(500px, 66.6666%, 800px);
+			height: 100%;
+			padding-bottom: var(--space-4);
+		}
+
+		.hero-text {
+			text-align: left;
+			flex: 1;
+			align-self: center;
+		}
+
+		.hero-icon {
+			align-self: flex-end;
+			margin-bottom: -2.2rem;
+		}
+
+		.byline-inner {
+			width: clamp(500px, 66.6666%, 800px);
+		}
+
+		.byline-section {
+			z-index: auto;
+		}
+	}
+
 	section.content {
 		width: 100%;
 		position: relative;
+		border-top: solid 2px var(--byline-border);
 	}
 
 	section.details {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-5);
-		justify-content: space-between;
-		max-width: 65ch;
-		width: 100%;
-		margin: 0 auto;
-		padding: 0 var(--space-2-5) var(--space-5);
-		position: relative;
+		margin: auto;
+		gap: var(--space-6, 1.5rem);
+		width: 85%;
+		padding-right: var(--space-2-5);
+		padding-left: var(--space-2-5);
+		padding-bottom: var(--space-5);
+		padding-top: var(--space-5);
 	}
 
 	@media screen and (min-width: 768px) {
 		section.details {
-			padding: 0 0 var(--space-5);
+			width: clamp(500px, 66.6666%, 800px);
 		}
 	}
 
-	section.header {
+	section.details > section {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding-top: var(--space-10);
-		position: absolute;
-		width: 100%;
-	}
-
-	section.header button {
-		display: none;
-	}
-
-	section.header button.piece-icon {
-		align-self: baseline;
-		cursor: pointer;
-		background: none;
-		border: none;
-		max-height: 175px;
-		transition: max-height 0.5s ease-in-out;
-	}
-
-	section.header button.piece-icon-open {
-		max-height: 620px;
-	}
-
-	section.details h1 {
-		font-size: var(--font-size-xl);
+		flex-direction: column;
+		gap: var(--space-2);
 	}
 
 	section.details h2 {
-		font-size: var(--font-size-large);
+		font-size: var(--font-size-xxs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-on-surface-variant);
+		margin: 0;
 	}
 
-	section.details .date {
-		font-size: var(--font-size-xxs);
+	.body {
+		font-size: var(--font-size-small, 0.95rem);
+		line-height: 1.7;
+		color: var(--color-on-surface);
+	}
+
+	.empty-note {
+		color: var(--color-on-surface-variant);
+		font-style: italic;
+	}
+
+	.supplemental {
+		background: var(--color-surface-container-lowest);
+		padding: var(--space-5) 0;
+		margin-left: calc(-50vw + 50%);
+		margin-right: calc(-50vw + 50%);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.supplemental-inner {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		width: 85%;
+		padding: 0 var(--space-2-5);
+	}
+
+	.supplemental-inner + .supplemental-inner {
+		margin-top: var(--space-5);
+	}
+
+	@media screen and (min-width: 768px) {
+		.supplemental-inner {
+			width: clamp(500px, 66.6666%, 800px);
+		}
+	}
+
+	.article-link {
+		font-size: var(--font-size-xs);
+		word-break: break-all;
 	}
 
 	.tags-container {
