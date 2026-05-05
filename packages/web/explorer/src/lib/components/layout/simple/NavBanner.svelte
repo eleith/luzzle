@@ -1,6 +1,7 @@
 <script lang="ts">
 	import NavigationIcon from 'virtual:icons/ph/arrow-up-left'
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
+	import DiceIcon from 'virtual:icons/ph/dice-three'
 	import { page } from '$app/state'
 	import type { Snippet } from 'svelte'
 	import NavigationProgressBar from './NavigationProgressBar.svelte'
@@ -12,6 +13,7 @@
 		showSearch?: boolean
 		showThemeToggle?: boolean
 		showProgress?: boolean
+		showRandom?: boolean
 		items?: {
 			left?: Snippet<[]>
 			right?: Snippet<[]>
@@ -23,6 +25,7 @@
 		showSearch = true,
 		showThemeToggle = true,
 		showProgress = true,
+		showRandom = false,
 		items
 	}: Props = $props()
 </script>
@@ -56,6 +59,11 @@
 		{/if}
 		{#if items?.right}
 			{@render items.right()}
+		{/if}
+		{#if showRandom}
+			<a href="/random" aria-label="random" data-sveltekit-reload>
+				<DiceIcon style="font-size: 1em;" />
+			</a>
 		{/if}
 		{#if showThemeToggle}
 			<ThemeToggle />
