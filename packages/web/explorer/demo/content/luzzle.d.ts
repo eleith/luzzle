@@ -1,3 +1,10 @@
+declare global {
+	function $props<T = unknown>(): T
+	function $state<T = unknown>(value: T): T
+	function $derived<T = unknown>(value: T): T
+	function $effect(fn: () => void | (() => void)): void
+}
+
 declare module '$lib/pieces/helpers' {
 	export type PieceIconPalette = {
 		accent?: string
@@ -56,8 +63,8 @@ declare module '$lib/pieces/helpers' {
 
 	export type PieceIconProps = {
 		piece: WebPieces
-		active: boolean
-		tags: string[]
+		active?: boolean
+		tags?: string[]
 		size: { width: number; height?: number }
 		lazy?: boolean
 		helpers: PieceComponentHelpers
