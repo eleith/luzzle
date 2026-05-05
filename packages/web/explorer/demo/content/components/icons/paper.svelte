@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { type PieceIconProps } from '$lib/pieces/helpers'
-	let { piece, size }: PieceIconProps = $props()
+	let { piece, size, active }: PieceIconProps = $props()
 
 	const scale = Math.round((size.width / (375 * 2)) * 100) / 100
 </script>
 
-<div
+<section
 	class="paper"
+	class:active
+	inert
 	style="
 		--page-scale: {scale};
 		--page-width:{size.width}px;
@@ -22,9 +24,13 @@
 			{piece.summary}
 		</div>
 	</div>
-</div>
+</section>
 
 <style>
+	.active {
+		outline: 1px solid var(--color-primary);
+	}
+
 	.paper {
 		/* Base unit for scaling */
 		--page-scale: 1;
@@ -57,11 +63,11 @@
 			1in * var(--page-scale)
 		); /* Distance from top edge to center of first hole */
 		--hole-offset-top-first: 15%;
-		--hole-color: #333; /* Dark gray instead of pure black */
+		--hole-color: var(--paper-hole-color, #333);
 
-		--writing-font-size: calc(50px * var(--page-scale));
-		--writing-title-font-size: calc(50px * var(--page-scale));
-		--writing-title-margin-bottom: calc(2px + var(--writing-font-size));
+		--writing-font-size: calc(var(--line-height) * 0.85);
+		--writing-title-font-size: calc(var(--line-height) * 0.85);
+		--writing-title-margin-bottom: var(--line-height);
 
 		/* Use variables for width and height */
 		width: var(--page-width);
@@ -69,7 +75,7 @@
 
 		background-color: white;
 		position: relative; /* Needed for absolute positioning of holes */
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		box-shadow: 2.6px 5.3px 5.3px var(--color-shadow);
 		overflow: hidden; /* Ensure nothing spills out */
 		flex-shrink: 0; /* Prevent paper from shrinking smaller than its width/height */
 
@@ -104,7 +110,7 @@
 		width: 100%;
 		padding-left: 20%;
 		padding-right: 5%;
-		color: var(--hole-color);
+		color: #333;
 		font-size: var(--writing-font-size);
 		display: flex;
 		flex-direction: column;
@@ -116,15 +122,16 @@
 		white-space: nowrap;
 		text-overflow: ellipsis;
 		line-height: var(--writing-title-font-size);
-		margin-top: var(--top-margin-height);
+		margin-top: calc(var(--top-margin-height) + var(--line-height) * 0.3);
 		margin-bottom: var(--writing-title-margin-bottom);
 		min-height: var(--writing-title-font-size);
 		font-weight: bold;
 	}
 
 	.paper .writing .summary {
-		line-height: calc(1.2px + var(--writing-font-size));
+		line-height: var(--line-height);
 		overflow: hidden;
+		font-weight: 300;
 	}
 
 	/* Rule for the red line div */

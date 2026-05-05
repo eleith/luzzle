@@ -3,109 +3,78 @@
 	import Icon from '$lib/pieces/components/icon.svelte'
 
 	const { helpers, piece }: PieceOpengraphProps = $props()
-	const title = piece.title
 	const minutes = Math.floor(((piece.note?.length || 0) as number) / 5 / 250)
-	const titleSize = piece.title.length < 20 ? 120 : 66
-	const palette = $derived(helpers.getPiecePalette())
+
+	const bylineParts: string[] = [];
+	if (minutes > 0) bylineParts.push(`${minutes} min read`);
+	if (piece.date_consumed) {
+		bylineParts.push(
+			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
+		);
+	}
 </script>
 
-<section
-	class="container"
-	style="
-			width: 100%;
-			height: 100%;
-			--color-main: {palette?.background || '#43488f'};
-			--color-accent: {palette?.accent || '#f1d53f'};
-			--color-main-text: {palette?.bodyText || '#f5f5f5'};
-			--color-title-text: {palette?.titleText || '#f5f5f5'};"
->
-	<div class="opengraph">
-		<div class="left-panel">
-			<div class="icon-container">
-				<Icon {piece} size={{ width: 400 }} lazy={false} />
-			</div>
-		</div>
-		<div class="right-panel">
-			<h1 style="--font-size:{titleSize}px">
-				{title}
-			</h1>
-			<h2 style="--font-size:44px">
-				{minutes} min read
-			</h2>
-		</div>
+<section class="container">
+	<div class="paper-backdrop">
+		<Icon {piece} size={{ width: 900 }} lazy={false} {helpers} />
 	</div>
+
+	{#if bylineParts.length}
+		<div class="accent-bar">
+			<p class="byline">{bylineParts.join(" · ")}</p>
+		</div>
+	{/if}
 </section>
 
 <style>
 	section.container {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		width: 100%;
-		height: 100%;
-		background-color: var(--color-main);
-		border-bottom: var(--color-accent) solid 10px;
-	}
-
-	.opengraph {
-		display: flex;
-		width: 100%;
-		height: 100%;
-		flex-direction: row-reverse;
-	}
-
-	.left-panel {
-		flex: 4;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 		position: relative;
-		overflow: hidden;
-	}
-
-	.icon-container {
-		width: 100%;
-		position: absolute;
-		left: 32px;
-		top: 120px;
-	}
-
-	.right-panel {
-		flex: 7;
 		display: flex;
-		flex-direction: column;
+		align-items: flex-start;
 		justify-content: center;
-		align-items: flex-end;
-		text-align: right;
-		padding: 20px;
-		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-		color: var(--color-main-text);
-	}
-
-	.right-panel h1 {
-		font-size: var(--font-size);
-		font-weight: 900;
-		margin: 0;
-		max-height: 55%;
+		width: 100%;
+		height: 100%;
+		background: var(--color-surface-inverse);
+		border-bottom: 10px solid var(--color-primary);
 		overflow: hidden;
-		text-overflow: ellipsis;
-		line-clamp: 4;
-		-webkit-line-clamp: 4;
-		display: -webkit-box;
-		-webkit-box-orient: vertical;
-		color: var(--color-body-text);
 	}
 
-	.right-panel h2 {
-		font-size: var(--font-size);
-		font-weight: 400;
-		margin: 10px 0 0;
-		max-height: 25%;
+	.paper-backdrop {
+		position: absolute;
+		top: 30px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 1;
+		--paper-hole-color: var(--color-surface-inverse);
+	}
+
+	.accent-bar {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: oklch(from var(--color-surface-container) l c h / 0.96);
+		padding: 10px 30px;
+		text-align: right;
+		z-index: 2;
+	}
+
+	.accent-bar h1 {
+		font-size: var(--title-size);
+		font-weight: 700;
+		margin: 0;
+		color: var(--color-on-surface);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		line-clamp: 2;
 		-webkit-line-clamp: 2;
 		display: -webkit-box;
 		-webkit-box-orient: vertical;
+	}
+
+	.byline {
+		font-size: 1.3rem;
+		margin: 8px 0 0;
+		color: var(--color-on-surface-variant);
 	}
 </style>

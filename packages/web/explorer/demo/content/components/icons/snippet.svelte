@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { type PieceIconProps } from '$lib/pieces/helpers'
-	let { size, piece, helpers }: PieceIconProps = $props()
+	let { size, piece, helpers, active }: PieceIconProps = $props()
 	const scale = Math.round((size.width / 375) * 100) / 100
 	const files = piece.metadata?.files ?? []
 	const firstSnippet = files.find((f: { type: string }) => f.type === 'snippet')
@@ -12,6 +12,8 @@
 <section
 	data-theme="dark"
 	class="terminal-container"
+	class:active
+	inert
 	style="
 	  --piece-icon-scale: {scale};
 	  --piece-icon-width: {size.width}px;
@@ -40,6 +42,11 @@
 </section>
 
 <style>
+	.active {
+		outline: 1px solid var(--color-primary);
+		border-radius: calc(0.75rem * var(--piece-icon-scale));
+	}
+
 	.terminal-container {
 		width: var(--piece-icon-width);
 	}
@@ -54,6 +61,10 @@
 		flex-direction: column;
 	}
 
+	.active .terminal-mockup {
+		border: 1px solid var(--color-primary);
+	}
+
 	.terminal-window-bar {
 		height: calc(30px * var(--piece-icon-scale));
 		background-color: var(--color-surface-container);
@@ -61,6 +72,15 @@
 		align-items: center;
 		padding: 0 calc(10px * var(--piece-icon-scale));
 		position: relative;
+		flex-shrink: 0;
+	}
+
+	.active .terminal-window-bar {
+		background-color: var(--color-primary);
+	}
+
+	.active .terminal-filename {
+		color: var(--color-on-primary);
 	}
 
 	.terminal-controls {
@@ -108,6 +128,8 @@
 
 	.terminal-content :global(pre) {
 		margin: 0;
+		display: inline-block;
+		width: 100%;
 	}
 
 	.terminal-content p {

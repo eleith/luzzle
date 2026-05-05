@@ -2,7 +2,19 @@
 	import { type PiecePageProps } from '$lib/pieces/helpers'
 	import FileDownIcon from 'virtual:icons/ph/file-arrow-down'
 	const { piece, tags, helpers }: PiecePageProps = $props()
-	const noteHtml = piece.assets.find((a) => a.transformation === 'markdown')?.content
+	const metadata = piece.metadata
+
+	const bylineParts: string[] = [];
+	if (metadata.files?.length) {
+		const formats = [...new Set(metadata.files.map((f: { format: string }) => f.format).filter(Boolean))];
+		if (formats.length) bylineParts.push(formats.join(', '));
+		bylineParts.push(metadata.files.length > 1 ? `${metadata.files.length} files` : '1 file');
+	}
+	if (piece.date_consumed) {
+		bylineParts.push(
+			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
+		);
+	}
 </script>
 
 <section class="content">
@@ -11,32 +23,23 @@
 			{piece.title}
 		</h1>
 
-		<div class="info">
-			<div>
-				{#if piece.metadata.date_added}
-					<div>
-						added on {new Date(piece.metadata.date_added).toLocaleDateString(undefined, {
-							timeZone: 'UTC'
-						})}
-					</div>
-				{/if}
-
-				{#if piece.metadata.url}
-					<div>
-						<a href={piece.metadata.url}>{piece.metadata.url}</a>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		{#if noteHtml}
-			<section class="note">
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html noteHtml}
-			</section>
+		{#if bylineParts.length}
+			<p class="byline">{bylineParts.join(" · ")}</p>
 		{/if}
 
+		<section class="note">
+			<h2>Note</h2>
+			{#if piece.note}
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
+			{:else}
+				<em class="empty-note">this record does not have a note</em>
+			{/if}
+		</section>
+
 		{#if piece.metadata.files && piece.metadata.files.length > 0}
+			<section class="note">
+				<h2>Files</h2>
 			<div class="files-container">
 				{#each piece.metadata.files as file (file.name)}
 					{@const attachment = helpers.getPieceAssetUrl(file.file, 'attachment')}
@@ -50,7 +53,7 @@
 									<div class="file-format">{file.format}</div>
 									{#if attachment}
 										<div class="file-download">
-											<a href={attachment}><FileDownIcon style="font-size: 1rem;" /></a>
+											<a href={attachment} aria-label="download {file.name}"><FileDownIcon style="font-size: 1rem;" /></a>
 										</div>
 									{/if}
 								</div>
@@ -70,7 +73,7 @@
 									<span class="file-format">{file.format}</span>
 									{#if attachment}
 										<span class="file-download">
-											<a href={attachment}><FileDownIcon style="font-size: 1rem;" /></a>
+											<a href={attachment} aria-label="download {file.file}"><FileDownIcon style="font-size: 1rem;" /></a>
 										</span>
 									{/if}
 								</span>
@@ -79,24 +82,26 @@
 					{/if}
 				{/each}
 			</div>
+		</section>
 		{/if}
 
 		{#if piece.metadata.date_updated}
 			<div class="info">
-				last updated: {new Date(piece.metadata.date_updated).toLocaleDateString(undefined, {
+				last updated: {new Date(piece.metadata.date_updated).toLocaleDateString("en-US", {
 					timeZone: 'UTC'
-				})}
+				}).replaceAll("/", ".")}
+			</div>
+		{/if}
+		{#if tags.length}
+			<div class="section">
+				<div class="tags-container">
+					{#each tags as tag (tag.slug)}
+						<a href="/tags/{tag.slug}" class="tag">#{tag.tag?.toLowerCase()}</a>
+					{/each}
+				</div>
 			</div>
 		{/if}
 	</section>
-
-	{#if tags.length}
-		<section class="tags-container">
-			{#each tags as tag (tag.slug)}
-				<a href="/tags/{tag.slug}" class="tag">{tag.tag}</a>
-			{/each}
-		</section>
-	{/if}
 </section>
 
 <style>
@@ -115,6 +120,7 @@
 		padding-right: var(--space-2-5);
 		padding-left: var(--space-2-5);
 		padding-bottom: var(--space-5);
+		padding-top: var(--space-5);
 	}
 
 	@media screen and (min-width: 768px) {
@@ -123,19 +129,40 @@
 		}
 	}
 
+	section.details > section {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
 	section.details h1 {
 		font-size: var(--font-size-xl);
 		margin-bottom: 0;
 	}
 
-	section.details .info {
+	section.details h2 {
+		font-size: var(--font-size-xxs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
 		color: var(--color-on-surface-variant);
-		display: flex;
-		justify-content: space-between;
+		margin: 0;
+	}
+
+	.byline {
+		font-size: var(--font-size-xs);
+		color: var(--color-on-surface-variant);
+		margin: calc(-1 * var(--space-4)) 0 0;
+	}
+
+	.empty-note {
+		color: var(--color-on-surface-variant);
+		font-style: italic;
 	}
 
 	.info {
 		font-size: var(--font-size-xxs);
+		color: var(--color-on-surface-variant);
 	}
 
 	.files-container {
@@ -154,7 +181,7 @@
 	.file-header {
 		display: flex;
 		justify-content: space-between;
-		border-bottom: 1px solid #444;
+		border-bottom: 1px solid var(--color-outline-variant);
 	}
 
 	.file-filename {
@@ -183,6 +210,8 @@
 		align-items: center;
 		padding-left: var(--space-3);
 		padding-right: var(--space-3);
+		min-width: 45px;
+		flex: none;
 	}
 
 	.file-download a {
@@ -195,9 +224,6 @@
 		flex-wrap: wrap;
 		gap: var(--space-1);
 		font-size: var(--font-size-xxs);
-		justify-content: center;
-		padding: var(--space-4);
-		margin: auto;
 	}
 
 	.tags-container .tag {

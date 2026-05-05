@@ -1,35 +1,70 @@
 <script lang="ts">
 	import { type PiecePageProps } from '$lib/pieces/helpers'
-	const { piece, tags }: PiecePageProps = $props()
-	const noteHtml = piece.assets.find((a) => a.transformation === 'markdown')?.content
+	const { piece, tags, helpers }: PiecePageProps = $props()
+	const minutes = Math.floor(((piece.note?.length || 0) as number) / 5 / 250)
+
+	const bylineParts: string[] = [];
+	if (minutes > 0) bylineParts.push(`${minutes} min read`);
+	if (piece.date_consumed) {
+		bylineParts.push(
+			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
+		);
+	}
 </script>
 
-<section class="content">
-	<section class="details">
-		{#if piece.date_consumed}
-			<div class="date">
-				{new Date(piece.date_consumed).toLocaleDateString(undefined, { timeZone: 'UTC' })}
-			</div>
-		{/if}
-
-		{#if noteHtml}
-			<div>
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html noteHtml}
-			</div>
-		{/if}
-	</section>
-
-	{#if tags.length}
-		<section class="tags-container">
-			{#each tags as tag (tag.slug)}
-				<a href="/tags/{tag.slug}" class="tag">#{tag.tag}</a>
-			{/each}
-		</section>
+<section class="hero">
+	<h1>{piece.title}</h1>
+	{#if bylineParts.length}
+		<p class="byline">{bylineParts.join(" · ")}</p>
 	{/if}
 </section>
 
+<section class="content">
+	<section class="details">
+
+		<div>
+			{#if piece.note}
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
+			{:else}
+				<em class="empty-note">this record does not have a note</em>
+			{/if}
+		</div>
+
+		{#if tags.length}
+			<div class="section">
+				<div class="tags-container">
+					{#each tags as tag (tag.slug)}
+						<a href="/tags/{tag.slug}" class="tag">#{tag.tag?.toLowerCase()}</a>
+					{/each}
+				</div>
+			</div>
+		{/if}
+	</section>
+</section>
+
 <style>
+	section.hero {
+		width: 85%;
+		margin: 0 auto;
+		padding: var(--space-5) var(--space-2-5) 0;
+	}
+
+	@media screen and (min-width: 768px) {
+		section.hero {
+			width: clamp(500px, 66.6666%, 800px);
+		}
+	}
+
+	section.hero h1 {
+		font-size: var(--font-size-xxl, 2rem);
+		font-weight: 600;
+		line-height: 1.2;
+		letter-spacing: -0.01em;
+		color: var(--color-on-surface);
+		margin: 0;
+	}
+
 	section.content {
 		width: 100%;
 		position: relative;
@@ -40,21 +75,27 @@
 		flex-direction: column;
 		gap: var(--space-5);
 		justify-content: space-between;
-		max-width: 65ch;
-		width: 100%;
+		width: 85%;
 		margin: 0 auto;
-		padding: 0 var(--space-2-5) var(--space-5);
+		padding: var(--space-5) var(--space-2-5);
 		position: relative;
 	}
 
 	@media screen and (min-width: 768px) {
 		section.details {
-			padding: 0 0 var(--space-5);
+			width: clamp(500px, 66.6666%, 800px);
 		}
 	}
 
-	section.details .date {
-		font-size: var(--font-size-xxs);
+	.byline {
+		font-size: var(--font-size-xs);
+		color: var(--color-on-surface-variant);
+		margin: var(--space-1) 0 0;
+	}
+
+	.empty-note {
+		color: var(--color-on-surface-variant);
+		font-style: italic;
 	}
 
 	.tags-container {
@@ -62,10 +103,6 @@
 		flex-wrap: wrap;
 		gap: var(--space-1);
 		font-size: var(--font-size-xxs);
-		justify-content: center;
-		padding: var(--space-4);
-		border-top: solid 1px var(--color-surface-container-low);
-		margin: auto;
 	}
 
 	.tags-container .tag {

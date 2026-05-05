@@ -1,96 +1,235 @@
 <script lang="ts">
-	import { type PiecePageProps } from '$lib/pieces/helpers'
-	import Icon from '$lib/pieces/components/icon.svelte'
+	import { type PiecePageProps } from "$lib/pieces/helpers";
+	import Icon from "$lib/pieces/components/icon.svelte";
 
-	const { piece, tags }: PiecePageProps = $props()
-	const noteHtml = piece.assets.find((a) => a.transformation === 'markdown')?.content
+	const { piece, tags, helpers }: PiecePageProps = $props();
+	const metadata = piece.metadata;
+	const palette = helpers.getPiecePalette();
+
+	const bylineParts: string[] = [];
+	if (metadata.author) bylineParts.push(`by ${metadata.author}`);
+	if (metadata.pages) bylineParts.push(`${metadata.pages} pages`);
+	if (piece.date_consumed) {
+		bylineParts.push(
+			new Date(piece.date_consumed).toLocaleDateString("en-US", { timeZone: "UTC" }).replaceAll("/", "."),
+		);
+	}
 </script>
 
-<section class="header">
-	<Icon {piece} size={{ width: 125 }} lazy={false} />
+<section class="hero" style="--hero-bg: {palette?.background || 'var(--color-surface-container)'}; --hero-title: {palette?.titleText || 'var(--color-on-surface)'}">
+	<div class="hero-inner">
+		<div class="hero-text">
+			<h1>{piece.title}</h1>
+		</div>
+		<div class="hero-icon">
+			<Icon {piece} size={{ width: 125 }} lazy={false} {helpers} />
+		</div>
+	</div>
+
+	{#if bylineParts.length}
+		<section class="byline-section" style="--byline-bg: {palette?.background || 'var(--color-surface-container)'}; --byline-text: {palette?.bodyText || 'var(--color-on-surface-variant)'}">
+			<div class="byline-inner">
+				<p class="byline">{bylineParts.join(" · ")}</p>
+			</div>
+		</section>
+	{/if}
 </section>
 
-<section class="content">
+<section class="content" style="--byline-border: {palette?.accent || 'var(--color-outline-variant)'};">
 	<section class="details">
-		<div class="info">
-			<div>
-				{#if piece.date_consumed}
-					read on {new Date(piece.date_consumed).toLocaleDateString(undefined, { timeZone: 'UTC' })}
-				{/if}
-			</div>
-			<div>
-				{#if piece.metadata.pages}
-					{piece.metadata.pages} pages
-				{/if}
-			</div>
-		</div>
-
-		<h1>
-			{piece.title}
-		</h1>
-		<div class="info">
-			<div>
-				{#if piece.metadata.author}
-					by {piece.metadata.author}
-				{/if}
-				{#if piece.metadata.year_first_published}
-					in {piece.metadata.year_first_published}
-				{/if}
-			</div>
-		</div>
-
-		{#if noteHtml}
+		<section>
 			<h2>Note</h2>
-			<div>
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html noteHtml}
-			</div>
-		{/if}
-
-		{#if piece.metadata.url || piece.metadata.isbn}
-			<h2>Link</h2>
-			<div>
-				{#if piece.metadata.url}
-					<a class="article-link" href={piece.metadata.url as string}>{piece.metadata.url}</a>
-				{:else if piece.metadata.isbn}
-					<a class="article-link" href="https://openlibrary.org/search?isbn={piece.metadata.isbn}"
-						>isbn
-						{piece.metadata.isbn}</a
-					>
+			<div class="body">
+				{#if piece.note}
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
+				{:else}
+					<em class="empty-note">this record does not have a note</em>
 				{/if}
 			</div>
-		{/if}
+		</section>
 
-		{#if piece.summary}
-			<h2>Description</h2>
-			<div>
-				{piece.summary}
-			</div>
+		{#if metadata.url || metadata.isbn || metadata.year_first_published || piece.summary}
+			<section class="supplemental">
+				{#if metadata.url || metadata.isbn}
+					<div class="supplemental-inner">
+						<h2>Link</h2>
+						<div class="body">
+							{#if metadata.url}
+								<a class="article-link" href={metadata.url}>{metadata.url}</a>
+							{:else if metadata.isbn}
+								<a
+									class="article-link"
+									href="https://openlibrary.org/search?isbn={metadata.isbn}"
+									>isbn {metadata.isbn}</a
+								>
+							{/if}
+						</div>
+					</div>
+				{/if}
+
+				{#if metadata.year_first_published}
+					<div class="supplemental-inner">
+						<h2>Published</h2>
+						<div class="body">
+							{metadata.year_first_published}
+						</div>
+					</div>
+				{/if}
+
+				{#if piece.summary}
+					<div class="supplemental-inner">
+						<h2>Description</h2>
+						<div class="body">
+							{piece.summary}
+						</div>
+					</div>
+				{/if}
+			</section>
 		{/if}
 
 		{#if tags.length}
-			<h2>Tags</h2>
-			<div class="tags-container">
-				{#each tags as tag (tag.slug)}
-					<a href="/tags/{tag.slug}" class="tag">{tag.tag}</a>
-				{/each}
+			<div class="section">
+				<div class="tags-container">
+					{#each tags as tag (tag.slug)}
+						<a href="/tags/{tag.slug}" class="tag">#{tag.tag?.toLowerCase()}</a>
+					{/each}
+				</div>
 			</div>
 		{/if}
 	</section>
 </section>
 
 <style>
+	section.hero {
+		background: var(--hero-bg);
+		display: flex;
+		flex-direction: column;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.hero-inner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-5);
+		margin: auto;
+		width: 85%;
+		padding: var(--space-3);
+	}
+
+	.hero-text {
+		text-align: center;
+	}
+
+	.hero-text h1 {
+		font-size: var(--font-size-xl, 1.5rem);
+		font-weight: 600;
+		line-height: 1.2;
+		letter-spacing: -0.01em;
+		color: var(--hero-title);
+		margin: 0;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.byline-section {
+		padding: var(--space-1) 0;
+		background: oklch(from var(--byline-bg) calc(l * 0.7) c h);
+		z-index: 1;
+	}
+
+	.byline-inner {
+		margin: auto;
+		width: 85%;
+		padding: 0 var(--space-2-5);
+	}
+
+	.byline {
+		font-size: var(--font-size-xs);
+		color: var(--byline-text);
+		letter-spacing: 0.02em;
+		margin: 0;
+		text-align: left;
+	}
+
+	.hero-icon {
+		display: flex;
+		justify-content: center;
+		max-height: 100px;
+		overflow: visible;
+		margin-bottom: -1.5rem; /* Overlap byline row */
+		--book-transform-start: rotateY(60deg);
+		--book-transform-end: none;
+		--book-transform-origin: left center;
+		animation: hero-icon-rise 800ms ease-in-out both;
+	}
+
+	@keyframes hero-icon-rise {
+		from {
+			transform: translateY(120%);
+		}
+		to {
+			transform: translateY(0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.hero-icon {
+			animation: none;
+		}
+	}
+
+	@media screen and (min-width: 768px) {
+		section.hero {
+			min-height: 100px;
+			padding-bottom: 0;
+			box-sizing: border-box;
+		}
+
+		.hero-inner {
+			flex-direction: row;
+			justify-content: space-between;
+			width: clamp(500px, 66.6666%, 800px);
+			height: 100%;
+			padding-bottom: var(--space-4);
+		}
+
+		.hero-text {
+			text-align: left;
+			flex: 1;
+			align-self: center;
+		}
+
+		.hero-icon {
+			align-self: flex-end;
+			margin-bottom: -2.2rem; /* Touches bottom border */
+		}
+
+		.byline-inner {
+			width: clamp(500px, 66.6666%, 800px);
+		}
+
+		.byline-section {
+			z-index: auto;
+		}
+	}
+
 	section.content {
 		width: 100%;
 		position: relative;
+		border-top: solid 2px var(--byline-border);
 	}
 
 	section.details {
 		display: flex;
 		flex-direction: column;
 		margin: auto;
-		gap: var(--space-5);
-		justify-content: space-between;
+		gap: var(--space-6, 1.5rem);
 		width: 85%;
 		padding-right: var(--space-2-5);
 		padding-left: var(--space-2-5);
@@ -98,8 +237,7 @@
 	}
 
 	section.details::before {
-		content: '';
-		border-top: solid 3px var(--color-surface-container-highest);
+		content: "";
 		margin: auto;
 		width: 100%;
 	}
@@ -110,35 +248,64 @@
 		}
 	}
 
-	section.header {
+	section.details > section {
 		display: flex;
-		align-items: center;
-		justify-content: space-around;
-		position: relative;
-		width: auto;
-		padding-top: 0px;
-		padding-bottom: var(--space-5);
-	}
-
-	section.details h1 {
-		font-size: var(--font-size-xl);
+		flex-direction: column;
+		gap: var(--space-2);
 	}
 
 	section.details h2 {
-		font-size: var(--font-size-large);
+		font-size: var(--font-size-xxs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-on-surface-variant);
+		margin: 0;
 	}
 
-	section.details .info {
-		font-size: var(--font-size-xxs);
+	.body {
+		font-size: var(--font-size-small, 0.95rem);
+		line-height: 1.7;
+		color: var(--color-on-surface);
+	}
+
+	.empty-note {
 		color: var(--color-on-surface-variant);
+		font-style: italic;
+	}
+
+
+	.supplemental {
+		background: var(--color-surface-container-lowest);
+		padding: var(--space-5) 0;
+		margin-left: calc(-50vw + 50%);
+		margin-right: calc(-50vw + 50%);
 		display: flex;
-		justify-content: space-between;
+		flex-direction: column;
 		align-items: center;
-		margin-top: calc(var(--space-3) * -1);
+	}
+
+	.supplemental-inner {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		width: 85%;
+		padding: 0 var(--space-2-5);
+	}
+
+	.supplemental-inner + .supplemental-inner {
+		margin-top: var(--space-5);
+	}
+
+	@media screen and (min-width: 768px) {
+		.supplemental-inner {
+			width: clamp(500px, 66.6666%, 800px);
+		}
 	}
 
 	.article-link {
 		font-size: var(--font-size-xs);
+		word-break: break-all;
 	}
 
 	.tags-container {
