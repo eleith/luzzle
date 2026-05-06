@@ -12,7 +12,7 @@ when:
 
 steps:
   prepare:
-    image: node:22
+    image: node:24
     commands:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
       - cd packages/web/explorer
@@ -23,7 +23,7 @@ steps:
         from_secret: luzzle_npmrc
 
   lint:
-    image: node:22
+    image: node:24
     commands:
       - cd packages/web/explorer
       - touch config.yaml
@@ -32,7 +32,7 @@ steps:
       - npm run check
 
   check-version:
-    image: node:22
+    image: node:24
     commands:
       - cd packages/web/explorer
       - |

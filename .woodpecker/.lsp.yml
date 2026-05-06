@@ -12,7 +12,7 @@ when:
 
 steps:
   build:
-    image: node:22
+    image: node:24
     commands:
       - npm ci -w @luzzle/lsp
       - npm run lint -w @luzzle/lsp
@@ -24,12 +24,12 @@ steps:
         from_secret: npm_token
 
   test:
-    image: node:22
+    image: node:24
     commands:
       - npm run test -w @luzzle/lsp
 
   check-version:
-    image: node:22
+    image: node:24
     commands:
       - cd packages/lsp
       - |
@@ -45,7 +45,7 @@ steps:
       - event: tag
 
   publish:
-    image: node:22
+    image: node:24
     commands:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"

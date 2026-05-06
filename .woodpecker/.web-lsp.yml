@@ -12,7 +12,7 @@ when:
 
 steps:
   prepare:
-    image: node:22
+    image: node:24
     commands:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
     environment:
@@ -20,14 +20,14 @@ steps:
         from_secret: luzzle_npmrc
 
   test:
-    image: node:22
+    image: node:24
     commands:
       - npm ci -w @luzzle/web.lsp
       - npm run lint -w @luzzle/web.lsp
       - npm run test -w @luzzle/web.lsp
 
   check-version:
-    image: node:22
+    image: node:24
     commands:
       - cd packages/web/lsp
       - |

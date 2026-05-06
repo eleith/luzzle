@@ -12,20 +12,20 @@ when:
 
 steps:
   build:
-    image: node:22
+    image: node:24
     commands:
       - npm ci -w @luzzle/core -w @luzzle/cli
       - npm run build -w @luzzle/core
       - npm run build -w @luzzle/cli
 
   test:
-    image: node:22
+    image: node:24
     commands:
       - npm run lint -w @luzzle/cli
       - npm run test -w @luzzle/cli
 
   check-version:
-    image: node:22
+    image: node:24
     commands:
       - cd packages/cli
       - |
@@ -41,7 +41,7 @@ steps:
       - event: tag
 
   publish:
-    image: node:22
+    image: node:24
     commands:
       - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
