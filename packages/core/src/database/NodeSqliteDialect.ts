@@ -27,6 +27,7 @@ class NodeSqliteConnection implements DatabaseConnection {
 
 	async executeQuery<R>(compiledQuery: CompiledQuery): Promise<QueryResult<R>> {
 		const stmt = this.#db.prepare(compiledQuery.sql)
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const params = compiledQuery.parameters as any[]
 
 		const isRead =
@@ -46,10 +47,8 @@ class NodeSqliteConnection implements DatabaseConnection {
 		}
 	}
 
-	async *streamQuery<R>(
-		_compiledQuery: CompiledQuery,
-		_chunkSize: number
-	): AsyncIterableIterator<QueryResult<R>> {
+	// eslint-disable-next-line require-yield
+	async *streamQuery<R>(): AsyncIterableIterator<QueryResult<R>> {
 		throw new Error('NodeSqliteDialect does not support streaming')
 	}
 }
@@ -79,7 +78,7 @@ class NodeSqliteDriver implements Driver {
 		await connection.executeQuery(CompiledQuery.raw('rollback'))
 	}
 
-	async releaseConnection(_connection: DatabaseConnection): Promise<void> {}
+	async releaseConnection(): Promise<void> {}
 
 	async destroy(): Promise<void> {
 		this.#config.database.close()
@@ -101,6 +100,7 @@ export class NodeSqliteDialect implements Dialect {
 		return new NodeSqliteDriver(this.#config)
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	createIntrospector(db: Kysely<any>): DatabaseIntrospector {
 		return new SqliteIntrospector(db)
 	}
