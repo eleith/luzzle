@@ -1,12 +1,13 @@
-import { Kysely, SqliteDialect } from 'kysely'
-import SqliteDatabase from 'better-sqlite3'
+import { Kysely } from 'kysely'
+import { NodeSqliteDialect } from './NodeSqliteDialect.js'
+import { DatabaseSync } from 'node:sqlite'
 import { LuzzleTables } from './tables/index.js'
 
 function getDatabaseClient(pathToDb: string, debug = false) {
 	return new Kysely<LuzzleTables>({
 		log: debug ? ['query', 'error'] : [],
-		dialect: new SqliteDialect({
-			database: new SqliteDatabase(pathToDb),
+		dialect: new NodeSqliteDialect({
+			database: new DatabaseSync(pathToDb),
 		}),
 	})
 }

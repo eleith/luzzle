@@ -9,7 +9,7 @@
     "migration:add": "bash ./src/database/migrations.sh"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,6 @@
   "description": "luzzle's core",
   "devDependencies": {
     "@types/async": "3.2.25",
-    "@types/better-sqlite3": "7.6.12",
     "@types/eslint": "9.6.1",
     "@types/mdast": "4.0.4",
     "@types/node": "22.12.0",
@@ -45,12 +44,11 @@
     "@paralleldrive/cuid2": "2.2.2",
     "@sindresorhus/slugify": "3.0.0",
     "ajv": "8.17.1",
-    "better-sqlite3": "11.7.2",
     "fdir": "6.5.0",
     "file-type": "21.3.0",
     "got": "14.6.5",
     "jsonpathly": "^3.0.0",
-    "kysely": "0.27.5",
+    "kysely": "0.28.17",
     "remark": "15.0.1",
     "remark-frontmatter": "5.0.0",
     "unist-util-visit": "5.0.0",

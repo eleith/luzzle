@@ -1,15 +1,17 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import SqliteDatabase from 'better-sqlite3'
-import { Kysely, SqliteDialect } from 'kysely'
+import { DatabaseSync } from 'node:sqlite'
+import { Kysely } from 'kysely'
+import { NodeSqliteDialect } from './NodeSqliteDialect.js'
 import { getDatabaseClient } from './client.js'
 
-vi.mock('better-sqlite3')
+vi.mock('node:sqlite')
 vi.mock('kysely')
+vi.mock('./NodeSqliteDialect.js')
 
 const mocks = {
-	SqliteDatabase: vi.mocked(SqliteDatabase),
+	DatabaseSync: vi.mocked(DatabaseSync),
 	Kysely: vi.mocked(Kysely),
-	SqliteDialect: vi.mocked(SqliteDialect),
+	NodeSqliteDialect: vi.mocked(NodeSqliteDialect),
 }
 
 describe('database', () => {
@@ -22,8 +24,8 @@ describe('database', () => {
 
 		getDatabaseClient(path)
 
-		expect(mocks.SqliteDatabase).toHaveBeenCalledWith(path)
-		expect(mocks.SqliteDialect).toHaveBeenCalledOnce()
+		expect(mocks.DatabaseSync).toHaveBeenCalledWith(path)
+		expect(mocks.NodeSqliteDialect).toHaveBeenCalledOnce()
 		expect(mocks.Kysely).toHaveBeenCalledOnce()
 	})
 
@@ -32,8 +34,8 @@ describe('database', () => {
 
 		getDatabaseClient(path, true)
 
-		expect(mocks.SqliteDatabase).toHaveBeenCalledWith(path)
-		expect(mocks.SqliteDialect).toHaveBeenCalledOnce()
+		expect(mocks.DatabaseSync).toHaveBeenCalledWith(path)
+		expect(mocks.NodeSqliteDialect).toHaveBeenCalledOnce()
 		expect(mocks.Kysely).toHaveBeenCalledWith({
 			log: ['query', 'error'],
 			dialect: expect.anything(),
