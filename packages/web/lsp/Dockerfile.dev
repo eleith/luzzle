@@ -7,7 +7,7 @@ RUN npm install -g yaml-language-server
 COPY --from=lsp . /local/lsp
 
 RUN cd /local/lsp && rm -rf node_modules && npm install && npm run build
-RUN npm install -g /local/lsp
+RUN npm install -g /local/lsp && npm cache clean --force
 
 RUN mkdir -p /app/archive && \
     chgrp 0 /app /app/archive && \
@@ -18,7 +18,7 @@ COPY --chown=:0 ./luzzle-lsp.js /app/luzzle-lsp.js
 COPY --chown=:0 ./markdownlint-lsp.js /app/markdownlint-lsp.js
 COPY --chown=:0 ./package.json /app/package.json
 
-RUN cd /app && npm install --omit=dev
+RUN cd /app && npm install --omit=dev && npm cache clean --force
 
 RUN chmod g+w /app/server.js /app/luzzle-lsp.js /app/markdownlint-lsp.js
 

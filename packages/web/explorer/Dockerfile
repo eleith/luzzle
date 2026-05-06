@@ -1,6 +1,6 @@
 FROM node:22-slim
 
-RUN apt-get update && apt-get install -y rsync && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends rsync && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -16,7 +16,8 @@ COPY --chown=:0 vite.config.ts ./vite.config.ts
 COPY --chown=:0 eslint.config.js ./eslint.config.js
 
 RUN npm run build:lock
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install --include dev
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install --include dev \
+    && npm cache clean --force
 
 RUN mkdir -p /app/assets/pieces /app/assets/build /app/data /app/content /app/build /app/node_modules/.cache /app/node_modules/.vite /app/.svelte-kit && \
     touch /app/config.yaml /app/.env && \
