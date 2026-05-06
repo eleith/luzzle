@@ -1,9 +1,7 @@
-declare global {
-	function $props<T = unknown>(): T
-	function $state<T = unknown>(value: T): T
-	function $derived<T = unknown>(value: T): T
-	function $effect(fn: () => void | (() => void)): void
-}
+declare function $props<T = unknown>(): T
+declare function $state<T = unknown>(value: T): T
+declare function $derived<T = unknown>(value: T): T
+declare function $effect(fn: () => void | (() => void)): void
 
 declare module '$lib/pieces/helpers' {
 	export type PieceIconPalette = {
