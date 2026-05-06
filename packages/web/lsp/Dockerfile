@@ -1,4 +1,4 @@
-FROM node:24-slim
+FROM node:24-alpine
 WORKDIR /app
 
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install -g @luzzle/lsp@0.0.1 yaml-language-server \
