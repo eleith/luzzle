@@ -73,8 +73,8 @@ services:
       secrets:
         - npmrc
       context: ../proxy
-    container_name: luzzle-proxy
-    user: "${UID:-1000}:${GID:-1000}"
+    container_name: luzzle-lsp
+    user: '${UID:-1000}:${GID:-1000}'
     environment:
       - LUZZLE_EXPLORER_HOST=luzzle-web
       - LUZZLE_EXPLORER_PORT=3000
@@ -97,3 +97,4 @@ secrets:
 networks:
   luzzle:
     driver: bridge
+e
