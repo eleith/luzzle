@@ -59,7 +59,7 @@ function yamlAssetWidgetPlugin(
 
 				tree.iterate({
 					enter(node) {
-						if (node.type.name !== 'String' && node.type.name !== 'Bare') return
+						if (node.type.name !== 'Literal' && node.type.name !== 'QuotedLiteral') return
 
 						const parent = node.node.parent
 						if (!parent || parent.type.name !== 'Pair') return
