@@ -1,31 +1,32 @@
-# Stage 1: Dependency builder
+# Stage 1: Local package builder
+FROM node:24-alpine AS lsp-builder
+WORKDIR /local
+COPY --from=lsp . /local/lsp
+RUN cd /local/lsp && npm install && npm run build
+
+# Stage 2: Dependency builder
 FROM node:24-alpine AS builder
 WORKDIR /app
-
 COPY package.json ./
 RUN npm install --omit=dev && npm cache clean --force
 
-# Stage 2: Final runtime
+# Stage 3: Final runtime
 FROM node:24-alpine
 WORKDIR /app
 
-# Setup dev LSP from local core (simulating local dev environment)
 RUN npm install -g yaml-language-server
-COPY --from=lsp . /local/lsp
-RUN cd /local/lsp && rm -rf node_modules && npm install && npm run build
+
+COPY --from=lsp-builder /local/lsp/package.json /local/lsp/package.json
+COPY --from=lsp-builder /local/lsp/dist /local/lsp/dist
 RUN npm install -g /local/lsp && npm cache clean --force
 
-# Copy dependencies from builder
 COPY --from=builder /app/node_modules ./node_modules
 
-# Setup directories and permissions
 RUN mkdir -p /app/archive && \
     chgrp 0 /app /app/archive && \
     chmod g+w /app /app/archive
 
-# Copy application files
-COPY --chown=:0 ./server.js ./luzzle-lsp.js ./markdownlint-lsp.js ./package.json ./
-RUN chmod g+w /app/server.js /app/luzzle-lsp.js /app/markdownlint-lsp.js
+COPY --chown=:0 --chmod=775 ./server.js ./luzzle-lsp.js ./markdownlint-lsp.js ./package.json ./
 
 EXPOSE 9001
 
