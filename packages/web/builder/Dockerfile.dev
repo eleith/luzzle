@@ -1,3 +1,17 @@
+FROM node:24-slim AS builder
+WORKDIR /local
+
+COPY --from=core . /local/core
+COPY --from=utils . /local/utils
+COPY --from=tools . /local/tools
+
+RUN cd /local/core && npm install && npm run build
+RUN cd /local/utils && npm install && npm run build
+RUN cd /local/tools && \
+    npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
+    npm pkg set 'dependencies[@luzzle/web.utils]'=file:/local/utils && \
+    npm install && npm run build
+
 FROM node:24-slim
 WORKDIR /app
 
@@ -41,17 +55,12 @@ RUN npx @puppeteer/browsers install chrome-headless-shell@stable --path /opt/chr
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chrome-headless-shell
 
-COPY --from=core . /local/core
-COPY --from=utils . /local/utils
-COPY --from=tools . /local/tools
-
-RUN cd /local/tools && \
-    npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
-    npm pkg set 'dependencies[@luzzle/web.utils]'=file:/local/utils
-
-RUN cd /local/core && rm -rf node_modules && npm install && npm run build
-RUN cd /local/utils && rm -rf node_modules && npm install && npm run build
-RUN cd /local/tools && rm -rf node_modules && npm install && npm run build
+COPY --from=builder /local/tools/package.json /local/tools/package.json
+COPY --from=builder /local/tools/dist /local/tools/dist
+COPY --from=builder /local/core/package.json /local/core/package.json
+COPY --from=builder /local/core/dist /local/core/dist
+COPY --from=builder /local/utils/package.json /local/utils/package.json
+COPY --from=builder /local/utils/dist /local/utils/dist
 
 RUN npm install -g /local/tools && npm cache clean --force
 
@@ -59,15 +68,8 @@ RUN mkdir -p /app/scripts /app/data /app/archive /app/assets && \
     chgrp 0 /app /app/scripts /app/data /app/archive /app/assets && \
     chmod g+w /app /app/scripts /app/data /app/archive /app/assets
 
-COPY --chown=:0 ./server.js /app/server.js
-COPY --chown=:0 ./scripts/pre.build.sh /app/scripts/pre.build.sh
-COPY --chown=:0 ./scripts/build.sh /app/scripts/build.sh
-COPY --chown=:0 ./scripts/post.build.sh /app/scripts/post.build.sh
-COPY --chown=:0 ./scripts/pre.deploy.sh /app/scripts/pre.deploy.sh
-COPY --chown=:0 ./scripts/deploy.sh /app/scripts/deploy.sh
-COPY --chown=:0 ./scripts/post.deploy.sh /app/scripts/post.deploy.sh
-
-RUN chmod g+w /app/server.js /app/scripts/*.sh
+COPY --chown=:0 --chmod=775 ./server.js /app/server.js
+COPY --chown=:0 --chmod=775 ./scripts/*.sh /app/scripts/
 
 EXPOSE 9000
 

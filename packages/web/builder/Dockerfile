@@ -48,15 +48,8 @@ RUN mkdir -p /app/scripts /app/data /app/archive /app/assets && \
     chgrp 0 /app /app/scripts /app/data /app/archive /app/assets && \
     chmod g+w /app /app/scripts /app/data /app/archive /app/assets
 
-COPY --chown=:0 ./server.js /app/server.js
-COPY --chown=:0 ./scripts/pre.build.sh /app/scripts/pre.build.sh
-COPY --chown=:0 ./scripts/build.sh /app/scripts/build.sh
-COPY --chown=:0 ./scripts/post.build.sh /app/scripts/post.build.sh
-COPY --chown=:0 ./scripts/pre.deploy.sh /app/scripts/pre.deploy.sh
-COPY --chown=:0 ./scripts/deploy.sh /app/scripts/deploy.sh
-COPY --chown=:0 ./scripts/post.deploy.sh /app/scripts/post.deploy.sh
-
-RUN chmod g+w /app/server.js /app/scripts/*.sh
+COPY --chown=:0 --chmod=775 ./server.js /app/server.js
+COPY --chown=:0 --chmod=775 ./scripts/*.sh /app/scripts/
 
 EXPOSE 9000
 
