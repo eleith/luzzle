@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web",
-	"version": "0.0.202",
+	"version": "0.0.203",
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
