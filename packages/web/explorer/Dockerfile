@@ -20,7 +20,6 @@ RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
       eslint \
       eslint-config-prettier \
       eslint-plugin-svelte \
-      prettier \
       prettier-plugin-svelte \
       svelte-check \
       typescript-eslint \
