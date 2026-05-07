@@ -1,6 +1,6 @@
-FROM node:24-slim
+FROM node:24-alpine
 
-RUN apt-get update && apt-get install -y --no-install-recommends rsync && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache rsync
 
 WORKDIR /app
 
