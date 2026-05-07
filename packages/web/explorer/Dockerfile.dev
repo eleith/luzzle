@@ -1,3 +1,17 @@
+FROM node:24-alpine AS builder
+WORKDIR /local
+
+COPY --from=core . /local/core
+COPY --from=utils . /local/utils
+COPY --from=tools . /local/tools
+
+RUN cd /local/core && npm install && npm run build
+RUN cd /local/utils && npm install && npm run build
+RUN cd /local/tools && \
+    npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
+    npm pkg set 'dependencies[@luzzle/web.utils]'=file:/local/utils && \
+    npm install && npm run build
+
 FROM node:24-alpine
 
 RUN apk add --no-cache rsync
@@ -6,28 +20,17 @@ WORKDIR /app
 
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
-COPY --chown=:0 package.json ./package.json
-COPY --chown=:0 src ./src
-COPY --chown=:0 static ./static
-COPY --chown=:0 scripts ./scripts
-COPY --chown=:0 tsconfig.json ./tsconfig.json
-COPY --chown=:0 svelte.config.js ./svelte.config.js
-COPY --chown=:0 vite.config.ts ./vite.config.ts
-COPY --chown=:0 eslint.config.js ./eslint.config.js
+COPY --chown=:0 --chmod=777 package.json tsconfig.json svelte.config.js vite.config.ts eslint.config.js ./
+COPY --chown=:0 --chmod=777 src ./src
+COPY --chown=:0 --chmod=777 static ./static
+COPY --chown=:0 --chmod=777 scripts ./scripts
 
-# Local Package Injection (with internal dependency setup)
-COPY --from=core . /local/core
-COPY --from=utils . /local/utils
-COPY --from=tools . /local/tools
-
-# Setup internal links for local packages (e.g. tools depends on core/utils)
-RUN cd /local/tools && \
-    npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
-    npm pkg set 'dependencies[@luzzle/web.utils]'=file:/local/utils
-
-RUN cd /local/core && rm -rf node_modules && npm install && npm run build
-RUN cd /local/utils && rm -rf node_modules && npm install && npm run build
-RUN cd /local/tools && rm -rf node_modules && npm install && npm run build
+COPY --from=builder /local/tools/package.json /local/tools/package.json
+COPY --from=builder /local/tools/dist /local/tools/dist
+COPY --from=builder /local/core/package.json /local/core/package.json
+COPY --from=builder /local/core/dist /local/core/dist
+COPY --from=builder /local/utils/package.json /local/utils/package.json
+COPY --from=builder /local/utils/dist /local/utils/dist
 
 RUN npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
     npm pkg set 'dependencies[@luzzle/web.utils]'=file:/local/utils && \
@@ -38,8 +41,8 @@ RUN rm -f package-lock.json && npm install --include dev \
 
 RUN mkdir -p /app/assets/pieces /app/assets/build /app/data /app/content /app/build /app/node_modules/.cache /app/node_modules/.vite /app/.svelte-kit && \
     touch /app/config.yaml /app/.env && \
-    chmod 777 /app && \
-    chmod -R 777 /app/src /app/scripts /app/static /app/assets /app/data /app/content /app/build /app/node_modules/.cache /app/node_modules/.vite /app/.svelte-kit /app/config.yaml /app/.env /app/package.json /app/package-lock.json
+    chmod 777 /app /app/config.yaml /app/.env /app/package.json /app/package-lock.json && \
+    chmod -R 777 /app/assets /app/data /app/content /app/build /app/node_modules/.cache /app/node_modules/.vite /app/.svelte-kit
 
 EXPOSE 3000
 
