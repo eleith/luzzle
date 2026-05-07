@@ -11,6 +11,7 @@ ENV LUZZLE_PROXY_ACCESS_LOG=/dev/stdout
 ENV LUZZLE_PROXY_ERROR_LOG=/dev/stderr
 
 USER root
-RUN chmod 777 /etc/nginx/conf.d
+RUN chmod 777 /etc/nginx/conf.d && \
+    chmod -R 777 /etc/nginx/templates
 
 USER 101
