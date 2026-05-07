@@ -1,11 +1,10 @@
 import { loadConfig, triggerBuilder } from '@luzzle/web.utils/server'
 import { spawn } from 'node:child_process'
-import { access, constants, mkdir, readdir, writeFile } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const PATHS = {
 	CONFIG: '/app/config.yaml',
-	ASSETS_BUILD: '/app/assets/build',
 	LOCAL_BUILD: '/app/build',
 	LOG: '/app/data/build.log'
 }
@@ -79,47 +78,6 @@ class HookManager {
 	}
 }
 
-class BuildManager {
-	static async hasCache() {
-		try {
-			await access(PATHS.ASSETS_BUILD, constants.R_OK)
-			const files = await readdir(PATHS.ASSETS_BUILD)
-			return files.length > 0
-		} catch {
-			return false
-		}
-	}
-
-	static async run() {
-		await Logger.log('Starting SvelteKit build...')
-		await CommandRunner.run('npm', ['run', 'build'])
-		await Logger.log('Build completed successfully.')
-	}
-
-	static async restoreFromCache() {
-		await Logger.log('Restoring build from cache...')
-		await CommandRunner.run('rsync', [
-			'-rl',
-			'--delete',
-			`${PATHS.ASSETS_BUILD}/`,
-			`${PATHS.LOCAL_BUILD}`
-		])
-		await Logger.log('Restore completed.')
-	}
-
-	static async saveToCache() {
-		await Logger.log('Saving build to cache...')
-		await mkdir(PATHS.ASSETS_BUILD, { recursive: true }).catch(() => {})
-		await CommandRunner.run('rsync', [
-			'-rl',
-			'--delete',
-			`${PATHS.LOCAL_BUILD}/`,
-			`${PATHS.ASSETS_BUILD}`
-		])
-		await Logger.log('Cache saved.')
-	}
-}
-
 class ExplorerManager {
 	constructor() {
 		this.config = null
@@ -139,18 +97,13 @@ class ExplorerManager {
 		if (this.isDev) {
 			await Logger.log('Running in development mode...')
 		} else {
-			if (await BuildManager.hasCache()) {
-				await Logger.log('Cache found. Skipping build.')
-				await BuildManager.restoreFromCache()
-			} else {
-				await Logger.log('No cache found. Initiating build sequence...')
-				await BuildManager.run()
-				await BuildManager.saveToCache()
+			await Logger.log('Initiating production build sequence...')
+			await CommandRunner.run('npm', ['run', 'build'])
+			await Logger.log('Build completed successfully.')
 
-				if (this.config.builder?.url) {
-					await HookManager.trigger(this.config.builder, 'deploy')
-					await HookManager.trigger(this.config.builder, 'build')
-				}
+			if (this.config.builder?.url) {
+				await HookManager.trigger(this.config.builder, 'deploy')
+				await HookManager.trigger(this.config.builder, 'build')
 			}
 		}
 

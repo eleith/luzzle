@@ -1,7 +1,5 @@
 FROM node:24-alpine
 
-RUN apk add --no-cache rsync
-
 WORKDIR /app
 
 ENV PUPPETEER_SKIP_DOWNLOAD=true
