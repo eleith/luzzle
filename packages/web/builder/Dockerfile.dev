@@ -57,10 +57,13 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chrome-headless-shell
 
 COPY --from=builder /local/tools/package.json /local/tools/package.json
 COPY --from=builder /local/tools/dist /local/tools/dist
+COPY --from=builder /local/tools/node_modules /local/tools/node_modules
 COPY --from=builder /local/core/package.json /local/core/package.json
 COPY --from=builder /local/core/dist /local/core/dist
+COPY --from=builder /local/core/node_modules /local/core/node_modules
 COPY --from=builder /local/utils/package.json /local/utils/package.json
 COPY --from=builder /local/utils/dist /local/utils/dist
+COPY --from=builder /local/utils/node_modules /local/utils/node_modules
 
 RUN npm install -g /local/tools && npm cache clean --force
 
