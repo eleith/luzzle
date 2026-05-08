@@ -6,16 +6,18 @@
 # --- STAGE 1: Builder ---
 # Uses the full Luzzle Explorer image which contains all build dependencies
 # (Node.js, Vite, Svelte compiler, etc.)
-FROM luzzle-web AS builder
+FROM ghcr.io/eleith/luzzle-web:latest AS builder
 WORKDIR /app
 
-# Copy in your custom configuration and content components
+# Copy in your configuration, content and static assets
 COPY config.yaml ./config.yaml
 COPY content/ ./content/
+COPY static/ ./static/
 
 # Run the SvelteKit compilation. This will read your config.yaml and 
 # statically inject it, while compiling all your Svelte content components.
 RUN npm run build
+RUN npm prune --omit=dev
 
 # --- STAGE 2: Production Runtime ---
 # We switch to a completely bare-bones Alpine Linux Node image
