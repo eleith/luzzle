@@ -1,4 +1,4 @@
-import { loadConfig, triggerBuilder } from '@luzzle/web.utils/server'
+import { loadConfig } from '@luzzle/web.utils/server'
 import { spawn } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -48,36 +48,6 @@ class CommandRunner {
 	}
 }
 
-class HookManager {
-	static async trigger(hookConfig, name) {
-		try {
-			const response = await triggerBuilder(hookConfig, name)
-
-			if (response.ok) {
-				await Logger.log(`Successfully triggered ${name} hook`)
-
-				const reader = response.body?.getReader()
-				if (reader) {
-					const decoder = new TextDecoder()
-					while (true) {
-						const { done, value } = await reader.read()
-						if (done) break
-						const chunk = decoder.decode(value, { stream: true })
-						const lines = chunk.split('\n').filter((l) => l.trim())
-						for (const line of lines) {
-							await Logger.log(`[${name}] ${line}`)
-						}
-					}
-				}
-			} else {
-				await Logger.log(`Warning: ${name} hook failed (${response.status})`)
-			}
-		} catch (error) {
-			await Logger.log(`Error triggering ${name} hook: ${error.message}`)
-		}
-	}
-}
-
 class ExplorerManager {
 	constructor() {
 		this.config = null
@@ -100,21 +70,9 @@ class ExplorerManager {
 			await Logger.log('Initiating production build sequence...')
 			await CommandRunner.run('npm', ['run', 'build'])
 			await Logger.log('Build completed successfully.')
-
-			if (this.config.builder?.url) {
-				await HookManager.trigger(this.config.builder, 'deploy')
-				await HookManager.trigger(this.config.builder, 'build')
-			}
 		}
 
-		const serverPromise = this.startServer()
-
-		if (this.isDev && this.config.builder?.url) {
-			await HookManager.trigger(this.config.builder, 'deploy')
-			await HookManager.trigger(this.config.builder, 'build')
-		}
-
-		await serverPromise
+		await this.startServer()
 	}
 
 	async startServer() {
