@@ -9,7 +9,6 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
     env_file: .env
     environment:
-      - LUZZLE_APP_URL=${LUZZLE_APP_URL}
       - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET}  # generate by `openssl rand -hex 32`
       - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME}
       - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD}
@@ -41,7 +40,6 @@ services:
     env_file: .env
     environment:
       - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN}
-      - LUZZLE_APP_URL=${LUZZLE_APP_URL:-http://luzzle-web:3000}
       - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME}
       - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD}
     networks:
@@ -51,8 +49,7 @@ services:
       - ./demo/assets:/app/assets
       - ./demo/data:/app/data
       - ./demo/archive:/app/archive
-      - ~/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
-      - rclone_workdir:/app/data/rclone
+      - ./demo/rclone:/app/rclone
 
   luzzle-lsp:
     build:
@@ -95,9 +92,6 @@ services:
 secrets:
   npmrc:
     file: $HOME/.npmrc
-
-volumes:
-  rclone_workdir:
 
 networks:
   luzzle:
