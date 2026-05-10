@@ -51,6 +51,8 @@ services:
       - ./demo/assets:/app/assets
       - ./demo/data:/app/data
       - ./demo/archive:/app/archive
+      - ~/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
+      - rclone_workdir:/app/data/rclone
 
   luzzle-lsp:
     build:
@@ -100,17 +102,3 @@ volumes:
 networks:
   luzzle:
     driver: bridge
-e
-./nginx/cache:/tmp/cache
-      - ./nginx/logs:/tmp/logs
-    depends_on:
-      - luzzle-web
-
-secrets:
-  npmrc:
-    file: $HOME/.npmrc
-
-networks:
-  luzzle:
-    driver: bridge
-e

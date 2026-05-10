@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e
 
+RCLONE_REMOTE=$(luzzle-web-tools config get sync.remote 2>/dev/null || echo "")
+RCLONE_REMOTE_PATH=$(luzzle-web-tools config get sync.path 2>/dev/null || echo "")
+
 if [ -z "$RCLONE_REMOTE" ]; then
-  echo "[sync] No RCLONE_REMOTE configured. Skipping cloud sync."
+  echo "[sync] No sync.remote configured. Skipping cloud sync."
   exit 0
 fi
 

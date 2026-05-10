@@ -67,6 +67,8 @@ services:
       - ./demo/archive:/app/archive
       - ../builder/server.js:/app/server.js
       - ../builder/scripts:/app/scripts
+      - ~/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
+      - rclone_workdir_dev:/app/data/rclone
 
   luzzle-dev-lsp:
     build:
@@ -113,16 +115,6 @@ services:
 
 volumes:
   rclone_workdir_dev:
-
-networks:
-  luzzle:
-    driver: bridge
-volumes:
-      - ./nginx/cache:/tmp/cache
-      - ./nginx/logs:/tmp/logs
-    depends_on:
-      - luzzle-dev-web
-      - luzzle-dev-lsp
 
 networks:
   luzzle:

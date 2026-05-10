@@ -7,10 +7,11 @@ const isMarkdown = (f: PieceFrontmatterProperty) =>
 
 export async function run({ webPiece, config, pieces }: TransformInput): Promise<AssetRecord[]> {
 	const records: AssetRecord[] = []
-	const baseUrl = `${config.url.app}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/markdown`
+	const baseUrl = config.url.internal || config.url.app
+	const urlBase = `${baseUrl}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/markdown`
 
 	if (webPiece.note) {
-		const response = await fetch(baseUrl)
+		const response = await fetch(urlBase)
 		if (!response.ok) {
 			throw new Error(`markdown transform failed: ${response.status} ${response.statusText}`)
 		}
@@ -33,7 +34,7 @@ export async function run({ webPiece, config, pieces }: TransformInput): Promise
 		const dataPaths = resolveFieldPaths(piece.fields, frontmatter, schemaPath)
 
 		for (const fieldPath of dataPaths) {
-			const url = `${baseUrl}?field=${encodeURIComponent(fieldPath)}`
+			const url = `${urlBase}?field=${encodeURIComponent(fieldPath)}`
 			const response = await fetch(url)
 			if (!response.ok) {
 				throw new Error(

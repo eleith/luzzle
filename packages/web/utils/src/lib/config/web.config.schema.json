@@ -10,6 +10,10 @@
           "type": "string",
           "default": "${LUZZLE_APP_URL:-http://localhost:8080}"
         },
+        "internal": {
+          "type": "string",
+          "default": "${LUZZLE_INTERNAL_URL:-http://luzzle-web:3000}"
+        },
         "app_assets": {
           "type": "string",
           "default": ""
@@ -107,36 +111,25 @@
       "type": "object",
       "default": {},
       "properties": {
-        "type": {
-          "enum": [
-            "webdav",
-            "filesystem"
-          ],
-          "default": "filesystem"
+        "root": {
+          "type": "string",
+          "minLength": 1,
+          "default": "./archive"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sync": {
+      "type": "object",
+      "default": {},
+      "properties": {
+        "remote": {
+          "type": "string",
+          "default": ""
         },
-        "config": {
-          "type": "object",
-          "default": {},
-          "properties": {
-            "url": {
-              "type": "string",
-              "default": ""
-            },
-            "root": {
-              "type": "string",
-              "minLength": 1,
-              "default": "./archive"
-            },
-            "username": {
-              "type": "string",
-              "default": ""
-            },
-            "password": {
-              "type": "string",
-              "default": ""
-            }
-          },
-          "additionalProperties": false
+        "path": {
+          "type": "string",
+          "default": ""
         }
       },
       "additionalProperties": false

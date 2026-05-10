@@ -10,6 +10,7 @@ export type Schema = {
 } & {
   url: {
     app: string;
+    internal?: string;
     app_assets: string;
     luzzle_assets: string;
   };
@@ -36,13 +37,11 @@ export type Schema = {
     };
   };
   storage: {
-    type: "webdav" | "filesystem";
-    config: {
-      url?: string;
-      root: string;
-      username?: string;
-      password?: string;
-    };
+    root: string;
+  };
+  sync: {
+    remote?: string;
+    path?: string;
   };
   ai?: {
     provider: "google";
