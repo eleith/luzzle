@@ -1,6 +1,5 @@
-import type LuzzleStorage from './abstract.js'
+import LuzzleStorage from './abstract.js'
 import StorageFileSystem from './fs.js'
-import StorageWebDAV from './webdav.js'
-import type { StorageStat, StorageType } from './types.js'
+import { type StorageStat, type StorageType } from './types.js'
 
-export { LuzzleStorage, StorageFileSystem, StorageWebDAV, type StorageStat, type StorageType }
+export { LuzzleStorage, StorageFileSystem, type StorageStat, type StorageType }

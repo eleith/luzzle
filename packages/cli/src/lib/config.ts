@@ -1,6 +1,6 @@
 import YAML from 'yaml'
 import Conf, { Options } from 'conf'
-import { StorageFileSystem, StorageWebDAV, LuzzleStorage } from '@luzzle/core'
+import { StorageFileSystem, LuzzleStorage } from '@luzzle/core'
 import path from 'path'
 
 type SchemaConfig = {
@@ -12,9 +12,8 @@ type SchemaConfig = {
 		path?: string
 	}
 	storage?: {
-		type?: 'filesystem' | 'webdav'
+		type?: 'filesystem'
 		root?: string
-		options?: Record<string, string>
 	}
 }
 type Config = Conf<SchemaConfig>
@@ -31,30 +30,12 @@ const configOptions: Options<SchemaConfig> = {
 			properties: {
 				type: {
 					type: 'string',
-					enum: ['filesystem', 'webdav'],
+					enum: ['filesystem'],
 					description: 'storage type',
 				},
 				root: {
 					type: 'string',
 					description: 'root directory for luzzle files',
-				},
-				options: {
-					type: 'object',
-					description: 'options for webdav storage',
-					properties: {
-						url: {
-							type: 'string',
-							description: 'url for webdav',
-						},
-						username: {
-							type: 'string',
-							description: 'username for webdav',
-						},
-						password: {
-							type: 'string',
-							description: 'password for webdav',
-						},
-					},
 				},
 			},
 		},
@@ -110,7 +91,6 @@ function withDefaults(config: Conf<SchemaConfig>) {
 		storage: {
 			root: configDir,
 			type: 'filesystem',
-			options: undefined,
 		},
 		database: {
 			type: 'sqlite',
@@ -153,15 +133,9 @@ function getStorage(config: Conf<SchemaConfig>): LuzzleStorage {
 	const defaults = withDefaults(config)
 	const storageRoot = config.get('storage.root', defaults.storage.root)
 	const storageType = config.get('storage.type', defaults.storage.type)
-	const storageOptions = config.get('storage.options', defaults.storage.options)
 
 	if (storageType == 'filesystem') {
 		return new StorageFileSystem(storageRoot)
-	} else if (storageType == 'webdav' && storageOptions?.url) {
-		const url = storageOptions.url
-		const username = storageOptions.username
-		const password = storageOptions.password
-		return new StorageWebDAV(url, storageRoot, { username, password })
 	}
 
 	throw new Error(`unknown storage type: ${storageType}`)

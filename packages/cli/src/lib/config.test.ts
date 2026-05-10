@@ -3,7 +3,7 @@ import Conf from 'conf'
 import { getConfig, getDatabasePath, getStorage } from './config.js'
 import log from './log.js'
 import path from 'path'
-import { StorageFileSystem, StorageWebDAV } from '@luzzle/core'
+import { StorageFileSystem } from '@luzzle/core'
 
 vi.mock('@luzzle/core')
 vi.mock('./log.js')
@@ -109,34 +109,13 @@ describe('lib/config', () => {
 		const config = getConfig('some-path')
 		const root = 'root'
 		const type = 'filesystem'
-		const options = undefined
 
 		mocks.ConfGet.mockReturnValueOnce(root)
 		mocks.ConfGet.mockReturnValueOnce(type)
-		mocks.ConfGet.mockReturnValueOnce(options)
 
 		const storage = getStorage(config)
 
 		expect(storage).toBeInstanceOf(StorageFileSystem)
-	})
-
-	test('getStorage type webdav', async () => {
-		mocks.pathResolve.mockReturnValueOnce('/test/dir/some-path.yaml')
-		mocks.pathDirname.mockReturnValueOnce('/test/dir')
-		mocks.pathBasename.mockReturnValueOnce('some-path')
-		mocks.pathExtname.mockReturnValueOnce('.yaml')
-		const config = getConfig('some-path')
-		const root = 'root'
-		const type = 'webdav'
-		const options = { username: 'a', password: 'p', url: 'u' }
-
-		mocks.ConfGet.mockReturnValueOnce(root)
-		mocks.ConfGet.mockReturnValueOnce(type)
-		mocks.ConfGet.mockReturnValueOnce(options)
-
-		const storage = getStorage(config)
-
-		expect(storage).toBeInstanceOf(StorageWebDAV)
 	})
 
 	test('getStorage invalid type', async () => {
@@ -147,11 +126,9 @@ describe('lib/config', () => {
 		const config = getConfig('some-path')
 		const root = 'root'
 		const type = 'webdax'
-		const options = { username: 'a', password: 'p', url: 'u' }
 
 		mocks.ConfGet.mockReturnValueOnce(root)
 		mocks.ConfGet.mockReturnValueOnce(type)
-		mocks.ConfGet.mockReturnValueOnce(options)
 
 		expect(() => getStorage(config)).toThrowError()
 	})
