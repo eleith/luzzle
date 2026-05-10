@@ -15,7 +15,7 @@ describe('generate-theme/theme', () => {
 			url: { app: '', app_assets: '', luzzle_assets: '' },
 			auth: { enabled: false, type: 'oidc', secret: '', oidc: { issuer: '', clientId: '', clientSecret: '' } },
 			storage: { root: '' },
-			sync: { remote: '', path: '' },
+			sync: { remote: '', path: '', config: '/app/rclone/rclone.conf' },
 			ai: { provider: 'google', api_key: '' },
 			assets: { salt: 'test-salt' },
 			paths: { database: '' },

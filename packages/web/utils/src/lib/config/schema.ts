@@ -42,6 +42,7 @@ export type Schema = {
   sync: {
     remote?: string;
     path?: string;
+    config?: string;
   };
   ai?: {
     provider: "google";

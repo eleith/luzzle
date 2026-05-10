@@ -155,6 +155,10 @@
 				"path": {
 					"type": "string",
 					"default": ""
+				},
+				"config": {
+					"type": "string",
+					"default": "/app/rclone/rclone.conf"
 				}
 			},
 			"additionalProperties": false

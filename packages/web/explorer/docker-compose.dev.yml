@@ -67,7 +67,7 @@ services:
       - ./demo/archive:/app/archive
       - ../builder/server.js:/app/server.js
       - ../builder/scripts:/app/scripts
-      - ./demo/rclone:/app/data/rclone
+      - ./demo/rclone:/app/rclone
 
   luzzle-dev-lsp:
     build:

@@ -3,6 +3,7 @@ set -e
 
 RCLONE_REMOTE=$(luzzle-web-tools config get sync.remote 2>/dev/null || echo "")
 RCLONE_REMOTE_PATH=$(luzzle-web-tools config get sync.path 2>/dev/null || echo "")
+RCLONE_CONFIG_PATH=$(luzzle-web-tools config get sync.config)
 
 if [ -z "$RCLONE_REMOTE" ]; then
   echo "[sync] No sync.remote configured. Skipping cloud sync."
@@ -11,7 +12,7 @@ fi
 
 REMOTE_TARGET="${RCLONE_REMOTE}:${RCLONE_REMOTE_PATH}"
 LOCAL_TARGET="/app/archive"
-WORKDIR="/app/data/rclone"
+WORKDIR="/app/rclone/bisync"
 
 mkdir -p "$WORKDIR"
 
@@ -23,6 +24,7 @@ LOGFILE=$(mktemp)
 set +e
 # Pipe stderr to stdout (2>&1) so tee captures everything
 rclone bisync "$LOCAL_TARGET" "$REMOTE_TARGET" \
+  --config "$RCLONE_CONFIG_PATH" \
   --workdir "$WORKDIR" \
   --verbose \
   --resilient \
@@ -36,7 +38,11 @@ set -e
 if [ $EXIT_CODE -ne 0 ]; then
   if grep -q -i "Must run --resync" "$LOGFILE" || grep -q -i "cannot find prior Path" "$LOGFILE"; then
     echo "[sync] Initial bisync baseline missing or broken. Attempting to establish baseline with --resync..."
-    rclone bisync "$LOCAL_TARGET" "$REMOTE_TARGET" --workdir "$WORKDIR" --verbose --resync
+    rclone bisync "$LOCAL_TARGET" "$REMOTE_TARGET" \
+      --config "$RCLONE_CONFIG_PATH" \
+      --workdir "$WORKDIR" \
+      --verbose \
+      --resync
   else
     echo "[sync] Sync failed with exit code $EXIT_CODE. Aborting."
     rm -f "$LOGFILE"

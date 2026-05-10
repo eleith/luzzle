@@ -44,9 +44,9 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chrome-headless-shell
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install -g @luzzle/web.tools@0.0.126 \
     && npm cache clean --force
 
-RUN mkdir -p /app/scripts /app/data /app/archive /app/assets && \
-    chgrp 0 /app /app/scripts /app/data /app/archive /app/assets && \
-    chmod g+w /app /app/scripts /app/data /app/archive /app/assets
+RUN mkdir -p /app/scripts /app/data /app/archive /app/assets /app/rclone && \
+    chgrp 0 /app /app/scripts /app/data /app/archive /app/assets /app/rclone && \
+    chmod g+w /app /app/scripts /app/data /app/archive /app/assets /app/rclone
 
 COPY --chown=:0 --chmod=775 ./server.js /app/server.js
 COPY --chown=:0 --chmod=775 ./scripts/*.sh /app/scripts/
