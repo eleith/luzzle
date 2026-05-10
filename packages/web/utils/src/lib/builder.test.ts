@@ -47,8 +47,7 @@ describe('triggerBuilder', () => {
 		const mockResponse = new Response('ok')
 		vi.mocked(fetch).mockResolvedValue(mockResponse)
 
-		await triggerBuilder(config, 'deploy')
-
+		await triggerBuilder(config, 'sync')
 		const options = vi.mocked(fetch).mock.calls[0][1]
 		expect(options?.method).toBe('PUT')
 		expect((options?.headers as Record<string, string>)['X-Token']).toBe('secret')
