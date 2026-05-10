@@ -94,6 +94,22 @@ secrets:
   npmrc:
     file: $HOME/.npmrc
 
+volumes:
+  rclone_workdir:
+
+networks:
+  luzzle:
+    driver: bridge
+e
+./nginx/cache:/tmp/cache
+      - ./nginx/logs:/tmp/logs
+    depends_on:
+      - luzzle-web
+
+secrets:
+  npmrc:
+    file: $HOME/.npmrc
+
 networks:
   luzzle:
     driver: bridge

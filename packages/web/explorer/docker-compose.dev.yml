@@ -111,6 +111,19 @@ services:
       - luzzle-dev-web
       - luzzle-dev-lsp
 
+volumes:
+  rclone_workdir_dev:
+
+networks:
+  luzzle:
+    driver: bridge
+volumes:
+      - ./nginx/cache:/tmp/cache
+      - ./nginx/logs:/tmp/logs
+    depends_on:
+      - luzzle-dev-web
+      - luzzle-dev-lsp
+
 networks:
   luzzle:
     driver: bridge
