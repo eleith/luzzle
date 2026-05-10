@@ -7,27 +7,28 @@
 	import { tick } from 'svelte'
 
 	let logs = $state('')
-	let isBuilding = $state(false)
-	let status = $state<'idle' | 'building' | 'success' | 'error'>('idle')
+	let isRunning = $state(false)
+	let activeAction = $state<'build' | 'sync' | null>(null)
+	let status = $state<'idle' | 'running' | 'success' | 'error'>('idle')
 	let errorMessage = $state('')
 	let logContainer: HTMLPreElement | null = $state(null)
 
-	async function startBuild() {
+	async function startOperation(action: 'build' | 'sync') {
 		logs = ''
-		isBuilding = true
-		status = 'building'
+		isRunning = true
+		activeAction = action
+		status = 'running'
 		errorMessage = ''
 
 		try {
-			const response = await fetch('/api/build', {
+			const response = await fetch(`/api/build?action=${action}`, {
 				method: 'POST'
 			})
 
 			if (!response.ok) {
 				const text = await response.text()
 				status = 'error'
-				errorMessage = text
-				isBuilding = false
+				errorMessage = response.status === 409 ? `Conflict: ${text}` : text
 				return
 			}
 
@@ -35,7 +36,6 @@
 			if (!reader) {
 				status = 'error'
 				errorMessage = 'Failed to initialize log stream'
-				isBuilding = false
 				return
 			}
 
@@ -66,7 +66,8 @@
 			status = 'error'
 			errorMessage = e instanceof Error ? e.message : String(e)
 		} finally {
-			isBuilding = false
+			isRunning = false
+			activeAction = null
 		}
 	}
 </script>
@@ -84,10 +85,13 @@
 
 <section class="builder-container">
 	<header>
-		<h1>System Rebuild</h1>
+		<h1>System Tools</h1>
 		<div class="actions">
-			<Button onclick={startBuild} disabled={isBuilding}>
-				{isBuilding ? 'Building...' : 'Start Rebuild'}
+			<Button onclick={() => startOperation('sync')} disabled={isRunning}>
+				{activeAction === 'sync' ? 'Syncing...' : 'Sync from Remote'}
+			</Button>
+			<Button onclick={() => startOperation('build')} disabled={isRunning}>
+				{activeAction === 'build' ? 'Building...' : 'Start Rebuild'}
 			</Button>
 		</div>
 	</header>
@@ -100,7 +104,7 @@
 	{/if}
 
 	{#if status === 'success'}
-		<div class="success-box">Rebuild finished successfully!</div>
+		<div class="success-box">Operation finished successfully!</div>
 	{/if}
 
 	<div class="console">
@@ -125,6 +129,11 @@
 		align-items: center;
 		flex-wrap: wrap;
 		gap: var(--space-4);
+	}
+
+	.actions {
+		display: flex;
+		gap: var(--space-3);
 	}
 
 	h1 {
