@@ -6,19 +6,13 @@ const PORT = 9000
 const BUILD_SECRET_TOKEN = process.env.LUZZLE_BUILD_TOKEN
 const BUILD_TIMEOUT_MS = parseFloat(process.env.LUZZLE_BUILD_TIMEOUT) || 3600000 // 1 hour
 const BUILD_SCRIPT = '/app/scripts/build.sh'
-const BUILD_DEPLOY_SCRIPT = '/app/scripts/deploy.sh'
 
 const HOOKS = {
 	BUILD: {
 		PATH: '/hooks',
 		SCRIPT: BUILD_SCRIPT,
 		ACTION: 'build',
-	},
-	DEPLOY: {
-		PATH: '/hooks',
-		SCRIPT: BUILD_DEPLOY_SCRIPT,
-		ACTION: 'deploy',
-	},
+	}
 }
 
 class ScriptRunner {
@@ -141,7 +135,6 @@ class Manager {
 
 function createServer(spawnFn = defaultSpawn, timeoutMs = BUILD_TIMEOUT_MS) {
 	const buildManager = new Manager(spawnFn, timeoutMs)
-	const deployManager = new Manager(spawnFn, timeoutMs)
 
 	const server = httpServer((req, res) => {
 		const parsedUrl = parse(req.url, true)
@@ -150,8 +143,7 @@ function createServer(spawnFn = defaultSpawn, timeoutMs = BUILD_TIMEOUT_MS) {
 		const requestAction = parsedUrl.query.action
 
 		const isBuild = pathname === HOOKS.BUILD.PATH && requestAction == HOOKS.BUILD.ACTION
-		const isDeploy = pathname === HOOKS.DEPLOY.PATH && requestAction == HOOKS.DEPLOY.ACTION
-		const isValidAction = isBuild || isDeploy
+		const isValidAction = isBuild
 
 		if (req.method !== 'POST' || !isValidAction) {
 			res.writeHead(404, { 'Content-Type': 'text/plain' })
@@ -172,8 +164,6 @@ function createServer(spawnFn = defaultSpawn, timeoutMs = BUILD_TIMEOUT_MS) {
 
 		if (isBuild) {
 			buildManager.attachOrStart(req, res, HOOKS.BUILD.SCRIPT)
-		} else if (isDeploy) {
-			deployManager.attachOrStart(req, res, HOOKS.DEPLOY.SCRIPT)
 		}
 	})
 
