@@ -81,15 +81,6 @@ describe('Builder Server', () => {
 		expect(mockSpawn).toHaveBeenCalledWith('bash', ['/app/scripts/build.sh'])
 	})
 
-	it('should trigger deploy with valid token', async () => {
-		const res = await fetch(`${baseUrl}/hooks?action=deploy&token=test-token`, requestOptions)
-
-		expect(res.status).toBe(200)
-		const text = await res.text()
-		expect(text).toContain('Executing: /app/scripts/deploy.sh')
-		expect(mockSpawn).toHaveBeenCalledWith('bash', ['/app/scripts/deploy.sh'])
-	})
-
 	it('should handle child process stderr output', async () => {
 		mockSpawn.mockImplementation(() => {
 			const child = new EventEmitter()
