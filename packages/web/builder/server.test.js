@@ -205,6 +205,53 @@ describe('Builder Server', () => {
 		await new Promise((r) => timeoutServer.close(r))
 	})
 
+	it('should trigger sync with valid token', async () => {
+		const res = await fetch(`${baseUrl}/hooks?action=sync&token=test-token`, requestOptions)
+
+		expect(res.status).toBe(200)
+		const text = await res.text()
+		expect(text).toContain('Executing: /app/scripts/sync.sh')
+		expect(mockSpawn).toHaveBeenCalledWith('bash', ['/app/scripts/sync.sh'])
+	})
+
+	it('should return 409 if a different action is already running', async () => {
+		let finishBuild
+		const buildFinishedPromise = new Promise((resolve) => {
+			finishBuild = resolve
+		})
+
+		mockSpawn.mockImplementation(() => {
+			const child = new EventEmitter()
+			child.stdout = new EventEmitter()
+			child.stderr = new EventEmitter()
+
+			setTimeout(() => {
+				child.stdout.emit('data', 'initial build log\n')
+			}, 20)
+
+			buildFinishedPromise.then(() => {
+				child.emit('close', 0)
+			})
+
+			return child
+		})
+
+		const req1 = fetch(`${baseUrl}/hooks?action=build&token=test-token`, requestOptions)
+
+		// Wait for the build to start
+		await new Promise((r) => setTimeout(r, 100))
+
+		// Attempt to start a sync while build is running
+		const res2 = await fetch(`${baseUrl}/hooks?action=sync&token=test-token`, requestOptions)
+		expect(res2.status).toBe(409)
+		const text2 = await res2.text()
+		expect(text2).toBe("Conflict: A 'build' operation is already running.")
+
+		// Finish the build
+		finishBuild()
+		await req1
+	})
+
 	it('should handle client write errors gracefully', async () => {
 		// Reset modules to allow mocking http for this specific test
 		vi.resetModules()

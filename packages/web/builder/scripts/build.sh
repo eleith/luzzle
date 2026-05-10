@@ -1,5 +1,9 @@
 #!/bin/bash
+set -e
+
 echo "[build] started at $(date)"
+
+bash /app/scripts/sync.sh
 
 bash /app/scripts/pre.build.sh
 
