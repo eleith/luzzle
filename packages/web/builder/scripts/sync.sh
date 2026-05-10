@@ -19,7 +19,13 @@ LOGFILE=$(mktemp)
 # Temporarily disable 'set -e' to gracefully catch failures
 set +e
 # Pipe stderr to stdout (2>&1) so tee captures everything
-rclone bisync "$LOCAL_TARGET" "$REMOTE_TARGET" --workdir "$WORKDIR" --verbose 2>&1 | tee "$LOGFILE"
+rclone bisync "$LOCAL_TARGET" "$REMOTE_TARGET" \
+  --workdir "$WORKDIR" \
+  --verbose \
+  --resilient \
+  --recover \
+  --max-lock 2m \
+  2>&1 | tee "$LOGFILE"
 # Capture the exit code of rclone, not tee
 EXIT_CODE=${PIPESTATUS[0]}
 set -e
