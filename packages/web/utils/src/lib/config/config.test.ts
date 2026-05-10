@@ -250,12 +250,7 @@ auth:
 			vi.stubEnv('VAR_2', 'val2')
 			const yamlContent = `
 storage:
-  type: webdav
-  config:
-    root: '\${VAR_1}'
-    url: 'http://example.com'
-    username: ''
-    password: ''
+  root: '\${VAR_1}'
 pieces:
   - type: 'book'
     fields:
@@ -265,7 +260,7 @@ pieces:
 			writeFileSync(tmpConfigPath, yamlContent)
 	
 			const config = loadConfig(tmpConfigPath)
-			expect(config.storage.config.root).toBe('val1')
+			expect(config.storage.root).toBe('val1')
 			expect(config.pieces[0].fields.title).toBe('val2')
 		})
 
