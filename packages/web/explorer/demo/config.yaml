@@ -2,6 +2,7 @@
 
 url:
   app: ${LUZZLE_APP_URL}
+  internal: ${LUZZLE_INTERNAL_URL:-http://luzzle-dev-web:5173}
   app_assets: ''
   luzzle_assets: ''
 
@@ -18,9 +19,12 @@ ai:
   api_key: ${GOOGLE_API_KEY}
 
 storage:
-  type: 'filesystem'
-  config:
-    root: ./archive
+  root: ./archive
+
+sync:
+  remote: my-remote
+  path: Luzzle
+  config: /app/rclone/rclone.conf
 
 builder:
   url: http://luzzle-dev-builder:9000/hooks?token=${LUZZLE_BUILD_TOKEN}
