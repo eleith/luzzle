@@ -1,15 +1,15 @@
 #!/bin/bash
 set -e
 
-echo "[build] started at $(date)"
+echo "[publish] started at $(date)"
 
 bash /app/scripts/sync.sh
 
-bash /app/scripts/pre.build.sh
+bash /app/scripts/pre.publish.sh
 
 echo "Syncing archive to database..."
 luzzle-web-tools sync --in /app/archive --out /app/assets/pieces
 
-bash /app/scripts/post.build.sh
+bash /app/scripts/post.publish.sh
 
-echo "[builder] finished at $(date)"
+echo "[publish] finished at $(date)"

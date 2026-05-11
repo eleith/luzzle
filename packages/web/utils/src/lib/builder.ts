@@ -2,7 +2,7 @@ import { type Schema } from './config/schema.js'
 
 export async function triggerBuilder(
 	config: Schema['builder'],
-	action: 'build' | 'sync'
+	action: 'publish'
 ): Promise<Response> {
 	if (!config?.url) {
 		throw new Error('Builder URL not configured')

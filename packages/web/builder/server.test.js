@@ -58,27 +58,27 @@ describe('Builder Server', () => {
 	})
 
 	it('should return 401 without token', async () => {
-		const res = await fetch(`${baseUrl}/hooks?action=build`, requestOptions)
+		const res = await fetch(`${baseUrl}/hooks?action=publish`, requestOptions)
 		expect(res.status).toBe(401)
 	})
 
 	it('should return 401 with invalid token', async () => {
-		const res = await fetch(`${baseUrl}/hooks?action=build&token=wrong`, requestOptions)
+		const res = await fetch(`${baseUrl}/hooks?action=publish&token=wrong`, requestOptions)
 		expect(res.status).toBe(401)
 	})
 
 	it('should trigger build with valid token', async () => {
-		const res = await fetch(`${baseUrl}/hooks?action=build&token=test-token`, requestOptions)
+		const res = await fetch(`${baseUrl}/hooks?action=publish&token=test-token`, requestOptions)
 
 		expect(res.status).toBe(200)
 		expect(res.headers.get('Transfer-Encoding')).toBe('chunked')
 
 		const text = await res.text()
-		expect(text).toContain('Executing: /app/scripts/build.sh')
+		expect(text).toContain('Executing: /app/scripts/publish.sh')
 		expect(text).toContain('log output')
 		expect(text).toContain('Finished with exit code 0')
 
-		expect(mockSpawn).toHaveBeenCalledWith('bash', ['/app/scripts/build.sh'])
+		expect(mockSpawn).toHaveBeenCalledWith('bash', ['/app/scripts/publish.sh'])
 	})
 
 	it('should handle child process stderr output', async () => {
@@ -95,7 +95,7 @@ describe('Builder Server', () => {
 			return child
 		})
 
-		const res = await fetch(`${baseUrl}/hooks?action=build&token=test-token`, requestOptions)
+		const res = await fetch(`${baseUrl}/hooks?action=publish&token=test-token`, requestOptions)
 
 		const text = await res.text()
 		expect(text).toContain('error log output')
@@ -115,7 +115,7 @@ describe('Builder Server', () => {
 			return child
 		})
 
-		const res = await fetch(`${baseUrl}/hooks?action=build&token=test-token`, requestOptions)
+		const res = await fetch(`${baseUrl}/hooks?action=publish&token=test-token`, requestOptions)
 
 		const text = await res.text()
 		expect(text).toContain('Error: Failed to start')
@@ -130,7 +130,7 @@ describe('Builder Server', () => {
 			return child
 		})
 
-		const res2 = await fetch(`${baseUrl}/hooks?action=build&token=test-token`, requestOptions)
+		const res2 = await fetch(`${baseUrl}/hooks?action=publish&token=test-token`, requestOptions)
 		expect(res2.status).toBe(200)
 	})
 
@@ -157,12 +157,12 @@ describe('Builder Server', () => {
 			return child
 		})
 
-		const req1 = fetch(`${baseUrl}/hooks?action=build&token=test-token`, requestOptions)
+		const req1 = fetch(`${baseUrl}/hooks?action=publish&token=test-token`, requestOptions)
 
 		// Wait for initial log to be produced and stored
 		await new Promise((r) => setTimeout(r, 100))
 
-		const res2 = await fetch(`${baseUrl}/hooks?action=build&token=test-token`, requestOptions)
+		const res2 = await fetch(`${baseUrl}/hooks?action=publish&token=test-token`, requestOptions)
 		expect(res2.status).toBe(200)
 
 		// Finish build
@@ -195,7 +195,7 @@ describe('Builder Server', () => {
 			return child
 		})
 
-		const res = await fetch(`${tUrl}/hooks?action=build&token=test-token`, requestOptions)
+		const res = await fetch(`${tUrl}/hooks?action=publish&token=test-token`, requestOptions)
 		const text = await res.text()
 
 		expect(killed).toBe(true)
@@ -203,53 +203,6 @@ describe('Builder Server', () => {
 		expect(text).toContain('Run failed: Timeout')
 
 		await new Promise((r) => timeoutServer.close(r))
-	})
-
-	it('should trigger sync with valid token', async () => {
-		const res = await fetch(`${baseUrl}/hooks?action=sync&token=test-token`, requestOptions)
-
-		expect(res.status).toBe(200)
-		const text = await res.text()
-		expect(text).toContain('Executing: /app/scripts/sync.sh')
-		expect(mockSpawn).toHaveBeenCalledWith('bash', ['/app/scripts/sync.sh'])
-	})
-
-	it('should return 409 if a different action is already running', async () => {
-		let finishBuild
-		const buildFinishedPromise = new Promise((resolve) => {
-			finishBuild = resolve
-		})
-
-		mockSpawn.mockImplementation(() => {
-			const child = new EventEmitter()
-			child.stdout = new EventEmitter()
-			child.stderr = new EventEmitter()
-
-			setTimeout(() => {
-				child.stdout.emit('data', 'initial build log\n')
-			}, 20)
-
-			buildFinishedPromise.then(() => {
-				child.emit('close', 0)
-			})
-
-			return child
-		})
-
-		const req1 = fetch(`${baseUrl}/hooks?action=build&token=test-token`, requestOptions)
-
-		// Wait for the build to start
-		await new Promise((r) => setTimeout(r, 100))
-
-		// Attempt to start a sync while build is running
-		const res2 = await fetch(`${baseUrl}/hooks?action=sync&token=test-token`, requestOptions)
-		expect(res2.status).toBe(409)
-		const text2 = await res2.text()
-		expect(text2).toBe("Conflict: A 'build' operation is already running.")
-
-		// Finish the build
-		finishBuild()
-		await req1
 	})
 
 	it('should handle client write errors gracefully', async () => {
@@ -281,7 +234,7 @@ describe('Builder Server', () => {
 
 		// Mock Request
 		const mockReq = new EventEmitter()
-		mockReq.url = '/hooks?action=build&token=test-token'
+		mockReq.url = '/hooks?action=publish&token=test-token'
 		mockReq.method = 'POST'
 		mockReq.socket = { remoteAddress: '127.0.0.1' }
 

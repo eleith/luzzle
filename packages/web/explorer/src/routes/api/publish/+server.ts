@@ -2,13 +2,12 @@ import { config } from '$lib/server/config'
 import type { RequestHandler } from './$types'
 import { triggerBuilder } from '@luzzle/web.utils/server'
 
-export const POST: RequestHandler = async ({ url }) => {
+export const POST: RequestHandler = async () => {
 	if (!config.builder?.url) {
 		return new Response('Builder not configured', { status: 503 })
 	}
 
-	const actionParam = url.searchParams.get('action')
-	const action = actionParam === 'sync' ? 'sync' : 'build'
+	const action = 'publish'
 
 	try {
 		const response = await triggerBuilder(config.builder, action)

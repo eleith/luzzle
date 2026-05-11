@@ -36,6 +36,5 @@ else
     --recover \
     --max-lock 2m
 fi
-fi
 
 echo "[sync] Finished sync process."

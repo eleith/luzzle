@@ -1,27 +1,21 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte'
-	import Nav from '$lib/components/layout/simple/nav.svelte'
-	import FolderIcon from 'virtual:icons/ph/folder'
-	import SignOutIcon from 'virtual:icons/ph/sign-out'
-	import { signOut } from '@auth/sveltekit/client'
 	import { tick } from 'svelte'
 
 	let logs = $state('')
 	let isRunning = $state(false)
-	let activeAction = $state<'build' | 'sync' | null>(null)
 	let status = $state<'idle' | 'running' | 'success' | 'error'>('idle')
 	let errorMessage = $state('')
 	let logContainer: HTMLPreElement | null = $state(null)
 
-	async function startOperation(action: 'build' | 'sync') {
+	async function startPublish() {
 		logs = ''
 		isRunning = true
-		activeAction = action
 		status = 'running'
 		errorMessage = ''
 
 		try {
-			const response = await fetch(`/api/build?action=${action}`, {
+			const response = await fetch(`/api/publish`, {
 				method: 'POST'
 			})
 
@@ -67,31 +61,16 @@
 			errorMessage = e instanceof Error ? e.message : String(e)
 		} finally {
 			isRunning = false
-			activeAction = null
 		}
 	}
 </script>
 
-{#snippet right()}
-	<a href="/editor/directory" aria-label="directory">
-		<FolderIcon style="font-size: 1em;" />
-	</a>
-	<button onclick={() => signOut({ callbackUrl: '/' })} aria-label="sign out">
-		<SignOutIcon style="font-size: 1em;" />
-	</button>
-{/snippet}
-
-<Nav items={{ right }} />
-
 <section class="builder-container">
 	<header>
-		<h1>System Tools</h1>
+		<h1>Publish Workspace</h1>
 		<div class="actions">
-			<Button onclick={() => startOperation('sync')} disabled={isRunning}>
-				{activeAction === 'sync' ? 'Syncing...' : 'Sync from Remote'}
-			</Button>
-			<Button onclick={() => startOperation('build')} disabled={isRunning}>
-				{activeAction === 'build' ? 'Building...' : 'Start Rebuild'}
+			<Button onclick={startPublish} disabled={isRunning}>
+				{isRunning ? 'Publishing...' : 'Publish Changes'}
 			</Button>
 		</div>
 	</header>

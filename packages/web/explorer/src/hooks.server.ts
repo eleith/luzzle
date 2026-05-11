@@ -55,7 +55,7 @@ const authHandle = SvelteKitAuth({
 	providers
 })
 
-const PROTECTED_PREFIXES = ['/editor', '/builder', '/api/build', '/api/editor']
+const PROTECTED_PREFIXES = ['/editor', '/api/publish', '/api/editor']
 
 const guardHandle: Handle = async ({ event, resolve }) => {
 	const isProtected =

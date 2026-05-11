@@ -10,7 +10,7 @@ describe('triggerBuilder', () => {
 	})
 
 	it('should throw error if URL is not configured', async () => {
-		await expect(triggerBuilder({} as BuilderConfig, 'build')).rejects.toThrow(
+		await expect(triggerBuilder({} as BuilderConfig, 'publish')).rejects.toThrow(
 			'Builder URL not configured'
 		)
 	})
@@ -20,10 +20,10 @@ describe('triggerBuilder', () => {
 		const mockResponse = new Response('ok')
 		vi.mocked(fetch).mockResolvedValue(mockResponse)
 
-		await triggerBuilder(config, 'build')
+		await triggerBuilder(config, 'publish')
 
 		const calledUrl = new URL(vi.mocked(fetch).mock.calls[0][0] as string)
-		expect(calledUrl.searchParams.get('action')).toBe('build')
+		expect(calledUrl.searchParams.get('action')).toBe('publish')
 	})
 
 	it('should NOT overwrite the action parameter if already present', async () => {
@@ -31,7 +31,7 @@ describe('triggerBuilder', () => {
 		const mockResponse = new Response('ok')
 		vi.mocked(fetch).mockResolvedValue(mockResponse)
 
-		await triggerBuilder(config, 'build')
+		await triggerBuilder(config, 'publish')
 
 		const calledUrl = new URL(vi.mocked(fetch).mock.calls[0][0] as string)
 		expect(calledUrl.searchParams.get('action')).toBe('deploy')
@@ -47,7 +47,7 @@ describe('triggerBuilder', () => {
 		const mockResponse = new Response('ok')
 		vi.mocked(fetch).mockResolvedValue(mockResponse)
 
-		await triggerBuilder(config, 'sync')
+		await triggerBuilder(config, 'publish')
 		const options = vi.mocked(fetch).mock.calls[0][1]
 		expect(options?.method).toBe('PUT')
 		expect((options?.headers as Record<string, string>)['X-Token']).toBe('secret')
@@ -59,7 +59,7 @@ describe('triggerBuilder', () => {
 		const mockResponse = new Response('ok')
 		vi.mocked(fetch).mockResolvedValue(mockResponse)
 
-		await triggerBuilder(config, 'build')
+		await triggerBuilder(config, 'publish')
 
 		const options = vi.mocked(fetch).mock.calls[0][1]
 		expect(options?.method).toBe('POST')
