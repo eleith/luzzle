@@ -19,39 +19,23 @@ mkdir -p "$WORKDIR"
 # Ensure the remote target exists (rclone mkdir is a no-op if it already exists)
 rclone mkdir "$REMOTE_TARGET" --config "$RCLONE_CONFIG_PATH"
 
-echo "[sync] Starting rclone bisync between $LOCAL_TARGET and $REMOTE_TARGET..."
-
-LOGFILE=$(mktemp)
-
-# Temporarily disable 'set -e' to gracefully catch failures
-set +e
-# Pipe stderr to stdout (2>&1) so tee captures everything
-rclone bisync "$LOCAL_TARGET" "$REMOTE_TARGET" \
-  --config "$RCLONE_CONFIG_PATH" \
-  --workdir "$WORKDIR" \
-  --verbose \
-  --resilient \
-  --recover \
-  --max-lock 2m \
-  2>&1 | tee "$LOGFILE"
-# Capture the exit code of rclone, not tee
-EXIT_CODE=${PIPESTATUS[0]}
-set -e
-
-if [ $EXIT_CODE -ne 0 ]; then
-  if [ $EXIT_CODE -eq 7 ]; then
-    echo "[sync] Initial bisync baseline missing or broken (Exit 7). Attempting to establish baseline with --resync..."
-    rclone bisync "$LOCAL_TARGET" "$REMOTE_TARGET" \
-      --config "$RCLONE_CONFIG_PATH" \
-      --workdir "$WORKDIR" \
-      --verbose \
-      --resync
-  else
-    echo "[sync] Sync failed with exit code $EXIT_CODE. Aborting."
-    rm -f "$LOGFILE"
-    exit $EXIT_CODE
-  fi
+if ! ls "$WORKDIR"/*.lst >/dev/null 2>&1; then
+  echo "[sync] No existing baseline found. Establishing initial baseline with --resync..."
+  rclone bisync "$LOCAL_TARGET" "$REMOTE_TARGET" \
+    --config "$RCLONE_CONFIG_PATH" \
+    --workdir "$WORKDIR" \
+    --verbose \
+    --resync
+else
+  echo "[sync] Existing baseline found. Starting delta sync..."
+  rclone bisync "$LOCAL_TARGET" "$REMOTE_TARGET" \
+    --config "$RCLONE_CONFIG_PATH" \
+    --workdir "$WORKDIR" \
+    --verbose \
+    --resilient \
+    --recover \
+    --max-lock 2m
+fi
 fi
 
-rm -f "$LOGFILE"
 echo "[sync] Finished sync process."
