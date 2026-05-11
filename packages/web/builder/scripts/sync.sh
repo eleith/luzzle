@@ -39,8 +39,8 @@ EXIT_CODE=${PIPESTATUS[0]}
 set -e
 
 if [ $EXIT_CODE -ne 0 ]; then
-  if grep -q -i "Must run --resync" "$LOGFILE" || grep -q -i "cannot find prior Path" "$LOGFILE"; then
-    echo "[sync] Initial bisync baseline missing or broken. Attempting to establish baseline with --resync..."
+  if [ $EXIT_CODE -eq 7 ]; then
+    echo "[sync] Initial bisync baseline missing or broken (Exit 7). Attempting to establish baseline with --resync..."
     rclone bisync "$LOCAL_TARGET" "$REMOTE_TARGET" \
       --config "$RCLONE_CONFIG_PATH" \
       --workdir "$WORKDIR" \
