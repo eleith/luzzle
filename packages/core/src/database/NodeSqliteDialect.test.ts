@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NodeSqliteDialect } from './NodeSqliteDialect.js'
-import { CompiledQuery, Kysely, SqliteAdapter, SqliteIntrospector, SqliteQueryCompiler } from 'kysely'
+import { CompiledQuery, Kysely, SqliteAdapter, SqliteIntrospector, SqliteQueryCompiler, TransactionSettings } from 'kysely'
 import type { DatabaseSync } from 'node:sqlite'
 
 describe('NodeSqliteDialect', () => {
@@ -40,7 +40,7 @@ describe('NodeSqliteDialect', () => {
 			const connection = await driver.acquireConnection()
 			expect(connection).toBeDefined()
 
-			await driver.beginTransaction(connection)
+			await driver.beginTransaction(connection, {} as TransactionSettings)
 			expect(mockDb.prepare).toHaveBeenCalledWith('begin')
 			expect(mockStatement.run).toHaveBeenCalled()
 
@@ -50,7 +50,7 @@ describe('NodeSqliteDialect', () => {
 			await driver.rollbackTransaction(connection)
 			expect(mockDb.prepare).toHaveBeenCalledWith('rollback')
 
-			await driver.releaseConnection()
+			await driver.releaseConnection(connection)
 
 			await driver.destroy()
 			expect(mockDb.close).toHaveBeenCalled()
@@ -127,7 +127,7 @@ describe('NodeSqliteDialect', () => {
 			const driver = dialect.createDriver()
 			const connection = await driver.acquireConnection()
 
-			const stream = connection.streamQuery()
+			const stream = connection.streamQuery(CompiledQuery.raw('SELECT 1'))
 			await expect(stream.next()).rejects.toThrow('NodeSqliteDialect does not support streaming')
 		})
 	})
