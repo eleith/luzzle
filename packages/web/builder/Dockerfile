@@ -47,7 +47,7 @@ RUN npx @puppeteer/browsers install chrome-headless-shell@stable --path /opt/chr
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chrome-headless-shell
 
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install -g @luzzle/web.tools@0.0.126 \
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install -g @luzzle/web.tools@0.0.127 \
     && npm cache clean --force
 
 RUN mkdir -p /app/scripts /app/data /app/archive /app/assets /app/rclone && \
