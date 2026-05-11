@@ -16,6 +16,9 @@ WORKDIR="/app/rclone/bisync"
 
 mkdir -p "$WORKDIR"
 
+# Ensure the remote target exists (rclone mkdir is a no-op if it already exists)
+rclone mkdir "$REMOTE_TARGET" --config "$RCLONE_CONFIG_PATH"
+
 echo "[sync] Starting rclone bisync between $LOCAL_TARGET and $REMOTE_TARGET..."
 
 LOGFILE=$(mktemp)

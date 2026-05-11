@@ -23,7 +23,7 @@ storage:
 
 sync:
   remote: my-remote
-  path: Luzzle
+  path: /app/remote
   config: /app/rclone/rclone.conf
 
 builder:

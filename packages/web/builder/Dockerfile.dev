@@ -18,7 +18,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     curl \
-    rclone \
+    unzip \
     wget \
     gnupg \
     ca-certificates \
@@ -47,6 +47,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdrm2 \
     libexpat1 \
     libpango-1.0-0 \
+    && curl -O https://downloads.rclone.org/rclone-current-linux-amd64.zip \
+    && unzip rclone-current-linux-amd64.zip \
+    && cp rclone-*-linux-amd64/rclone /usr/bin/ \
+    && chown root:root /usr/bin/rclone \
+    && chmod 755 /usr/bin/rclone \
+    && rm -rf rclone-* \
     && rm -rf /var/lib/apt/lists/*
 
 RUN npx @puppeteer/browsers install chrome-headless-shell@stable --path /opt/chrome && \

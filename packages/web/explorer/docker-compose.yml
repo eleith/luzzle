@@ -50,6 +50,7 @@ services:
       - ./demo/data:/app/data
       - ./demo/archive:/app/archive
       - ./demo/rclone:/app/rclone
+      - ./demo/remote:/app/remote
 
   luzzle-lsp:
     build:

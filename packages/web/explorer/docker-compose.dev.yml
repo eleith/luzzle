@@ -68,6 +68,7 @@ services:
       - ../builder/server.js:/app/server.js
       - ../builder/scripts:/app/scripts
       - ./demo/rclone:/app/rclone
+      - ./demo/remote:/app/remote
 
   luzzle-dev-lsp:
     build:
