@@ -80,7 +80,7 @@ server {
         proxy_pass http://luzzle-upstream;
     }
 
-    location /api/build {
+    location /api/publish {
         proxy_cache     off;
         proxy_buffering off;
         add_header      X-Accel-Buffering "no" always;
