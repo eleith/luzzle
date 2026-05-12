@@ -1,6 +1,7 @@
 import { config } from '$lib/server/config'
 import type { RequestHandler } from './$types'
 import { triggerBuilder } from '@luzzle/web.utils/server'
+import { createChunkedStreamResponse } from '$lib/server/stream'
 
 export const POST: RequestHandler = async () => {
 	if (!config.builder?.url) {
@@ -23,13 +24,7 @@ export const POST: RequestHandler = async () => {
 			})
 		}
 
-		return new Response(response.body, {
-			headers: {
-				'Content-Type': 'text/plain',
-				'Transfer-Encoding': 'chunked',
-				'X-Accel-Buffering': 'no'
-			}
-		})
+		return createChunkedStreamResponse(response)
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error)
 		return new Response(`Internal server error: ${message}`, { status: 500 })
