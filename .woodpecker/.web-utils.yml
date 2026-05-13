@@ -14,8 +14,8 @@ steps:
   build:
     image: node:24
     commands:
-      - npm ci -w @luzzle/web.utils
-      - npm run build -w @luzzle/web.utils
+      - npm ci -w @luzzle/web.utils -w @luzzle/web.config
+      - npm run build -w @luzzle/web.config -w @luzzle/web.utils
 
   test:
     image: node:24

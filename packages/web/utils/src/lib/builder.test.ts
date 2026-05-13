@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { triggerBuilder } from './builder.js'
-import { type Schema } from './config/schema.js'
+import { type Config } from '@luzzle/web.config'
 
-type BuilderConfig = Schema['builder']
+type BuilderConfig = Config['builder']
 
 describe('triggerBuilder', () => {
 	beforeEach(() => {

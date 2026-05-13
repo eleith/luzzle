@@ -1,7 +1,7 @@
-import { type Schema } from './config/schema.js'
+import { type Config } from '@luzzle/web.config'
 
 export async function triggerBuilder(
-	config: Schema['builder'],
+	config: Config['builder'],
 	action: 'publish'
 ): Promise<Response> {
 	if (!config?.url) {
