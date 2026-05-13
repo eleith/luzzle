@@ -8,6 +8,7 @@
     "packages/core",
     "packages/web/explorer",
     "packages/web/utils",
+    "packages/web/config",
     "packages/web/builder",
     "packages/web/lsp",
     "packages/web/proxy",
