@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run } from './markdown.js'
-import type { Config, WebPieces } from '@luzzle/web.utils'
+import type { Config, WebPieces } from '@luzzle/web.config'
 import type { Pieces } from '@luzzle/core'
 
 vi.stubGlobal('fetch', vi.fn())

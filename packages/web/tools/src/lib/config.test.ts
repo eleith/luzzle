@@ -1,11 +1,10 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { getConfig } from './config.js'
-import { loadConfig } from '@luzzle/web.utils/server'
+import { loadConfig, type Config } from '@luzzle/web.config'
 import { existsSync } from 'fs'
 import path from 'path'
-import { Config } from '@luzzle/web.utils'
 
-vi.mock('@luzzle/web.utils/server')
+vi.mock('@luzzle/web.config')
 vi.mock('fs')
 
 const mocks = {

@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { getStorage } from './storage.js'
-import { type Config } from '@luzzle/web.utils'
+import { type Config } from '@luzzle/web.config'
 import { StorageFileSystem } from '@luzzle/core'
 
 vi.mock('@luzzle/core')

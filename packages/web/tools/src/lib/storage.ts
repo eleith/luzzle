@@ -1,4 +1,4 @@
-import { type Config } from '@luzzle/web.utils'
+import { type Config } from '@luzzle/web.config'
 import { StorageFileSystem, type LuzzleStorage } from '@luzzle/core'
 
 export function getStorage(config: Config, luzzleDir?: string): LuzzleStorage {

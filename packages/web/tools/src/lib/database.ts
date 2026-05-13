@@ -1,5 +1,5 @@
 import { getDatabaseClient, migrate } from '@luzzle/core'
-import { Config, WebPieces, WebPiecesAsset, WebPieceTags } from '@luzzle/web.utils'
+import { Config, WebPieces, WebPiecesAsset, WebPieceTags } from '@luzzle/web.config'
 import path from 'path'
 
 export type WebTables = {

@@ -28,7 +28,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci -w @luzzle/core -w @luzzle/web.utils -w @luzzle/web.tools
+        run: npm ci -w @luzzle/core -w @luzzle/web.utils -w @luzzle/web.tools -w @luzzle/web.config
 
       - name: Build Dependencies
         run: npm run build -w @luzzle/core -w @luzzle/web.utils

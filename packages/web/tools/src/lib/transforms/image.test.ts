@@ -6,9 +6,8 @@ import {
 	getAssetDir,
 	getImageAssetPath,
 	ASSET_SIZES,
-	type Config,
-	type WebPieces,
 } from '@luzzle/web.utils'
+import { type Config, type WebPieces } from '@luzzle/web.config'
 import { generateVariantJobs } from './variants.js'
 import { Pieces } from '@luzzle/core'
 import type { Sharp } from 'sharp'

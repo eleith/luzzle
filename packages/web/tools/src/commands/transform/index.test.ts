@@ -5,7 +5,7 @@ import { getDatabaseAndMigrate } from '../../lib/database.js'
 import * as webMigrations from '../../database/migrations.js'
 import { getTransforms, cleanupAllTransforms } from '../../lib/transforms/index.js'
 import { runTransformsForPiece } from '../../lib/transforms/runner.js'
-import type { Config, WebPieces } from '@luzzle/web.utils'
+import type { Config, WebPieces } from '@luzzle/web.config'
 import { type LuzzleDatabase } from '@luzzle/core'
 import { setupDatabase, teardownDatabase, TestDatabase } from '../../../test/db.js'
 

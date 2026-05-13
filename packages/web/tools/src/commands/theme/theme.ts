@@ -1,4 +1,4 @@
-import { type Config } from '@luzzle/web.utils'
+import { type Config } from '@luzzle/web.config'
 import { transform } from 'lightningcss'
 import { Buffer } from 'buffer'
 

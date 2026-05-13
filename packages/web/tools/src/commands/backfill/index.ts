@@ -1,5 +1,5 @@
 import { getDatabase, getDatabaseAndMigrate } from '../../lib/database.js'
-import { type Config, type WebPieces, type WebPiecesAsset } from '@luzzle/web.utils'
+import { type Config, type WebPieces, type WebPiecesAsset } from '@luzzle/web.config'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import runWebMigrations from '../../database/migrations.js'
 

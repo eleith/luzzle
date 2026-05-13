@@ -1,7 +1,8 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run } from './attachment.js'
 import { mkdir, writeFile } from 'fs/promises'
-import { getAssetPath, getAssetDir, type Config, type WebPieces } from '@luzzle/web.utils'
+import { getAssetPath, getAssetDir } from '@luzzle/web.utils'
+import { type Config, type WebPieces } from '@luzzle/web.config'
 import { Pieces } from '@luzzle/core'
 
 vi.mock('fs/promises')

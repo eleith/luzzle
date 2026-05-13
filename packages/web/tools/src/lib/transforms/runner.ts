@@ -1,5 +1,5 @@
 import type { LuzzleTables, Pieces } from '@luzzle/core'
-import { type Config, type WebPieces } from '@luzzle/web.utils'
+import { type Config, type WebPieces } from '@luzzle/web.config'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import { getTransforms } from './index.js'
 import { Kysely } from 'kysely'

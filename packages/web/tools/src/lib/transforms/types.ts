@@ -1,5 +1,5 @@
 import type { Pieces } from '@luzzle/core'
-import type { Config, WebPieces, WebPiecesAsset } from '@luzzle/web.utils'
+import type { Config, WebPieces, WebPiecesAsset } from '@luzzle/web.config'
 
 export type TransformInput = {
 	webPiece: WebPieces

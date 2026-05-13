@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, afterEach, beforeEach } from 'vitest'
 import { runTransformsForPiece } from './runner.js'
-import { type Config, type WebPieces } from '@luzzle/web.utils'
+import { type Config, type WebPieces } from '@luzzle/web.config'
 import { setupDatabase, teardownDatabase, TestDatabase } from '../../../test/db.js'
 import { Pieces } from '@luzzle/core'
 import { generateAssetKey } from '@luzzle/web.utils/server'

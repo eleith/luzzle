@@ -1,6 +1,6 @@
 import { describe, test, vi, afterEach, expect, MockInstance } from 'vitest';
 import generateTheme from './index.js';
-import { type Config } from '@luzzle/web.utils';
+import { type Config } from '@luzzle/web.config';
 import { getConfig } from '../../lib/config.js';
 import { generateThemeCss, minifyCss } from './theme.js';
 import { mkdir, writeFile } from 'fs/promises';

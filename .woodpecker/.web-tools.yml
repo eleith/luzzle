@@ -15,7 +15,7 @@ steps:
     image: node:24
     commands:
       - npm ci -w @luzzle/core -w @luzzle/web.utils -w @luzzle/web.tools
-      - npm run build -w @luzzle/core -w @luzzle/web.utils
+      - npm run build -w @luzzle/core -w @luzzle/web.utils -w @luzzle/web.config
       - npm run build -w @luzzle/web.tools
 
   test:

@@ -1,7 +1,7 @@
 import { Pieces } from '@luzzle/core'
 import { getStorage } from '../../lib/storage.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
-import { type Config, type WebPieces } from '@luzzle/web.utils'
+import { type Config, type WebPieces } from '@luzzle/web.config'
 import runWebMigrations from '../../database/migrations.js'
 import { getTransforms, cleanupAllTransforms } from '../../lib/transforms/index.js'
 import { runTransformsForPiece } from '../../lib/transforms/runner.js'

@@ -13,7 +13,7 @@ import {
 	type WebPieces,
 	type WebPieceTags,
 	type WebPiecesAsset,
-} from '@luzzle/web.utils'
+} from '@luzzle/web.config'
 import { generateAssetKey } from '@luzzle/web.utils/server'
 import runWebMigrations from '../../database/migrations.js'
 import { cleanupAllTransforms } from '../../lib/transforms/index.js'

@@ -1,5 +1,5 @@
 import { generateThemeCss, minifyCss } from './theme.js'
-import { type Config } from '@luzzle/web.utils'
+import { type Config } from '@luzzle/web.config'
 
 export default async function generateTheme(
 	config: Config,

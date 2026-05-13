@@ -3,7 +3,7 @@ import command from './command.js'
 import generateTheme from './index.js'
 import { getConfig } from '../../lib/config.js'
 import { Argv } from 'yargs'
-import { Config } from '@luzzle/web.utils'
+import { Config } from '@luzzle/web.config'
 
 vi.mock('./index.js')
 vi.mock('../../lib/config.js')

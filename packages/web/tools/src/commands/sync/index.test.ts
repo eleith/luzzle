@@ -14,7 +14,7 @@ import { getConfig } from '../../lib/config.js'
 import { getDatabaseAndMigrate } from '../../lib/database.js'
 import runWebMigrations from '../../database/migrations.js'
 import { Readable } from 'stream'
-import { Config } from '@luzzle/web.utils'
+import { Config } from '@luzzle/web.config'
 
 vi.mock('../../lib/config.js')
 vi.mock('../../lib/database.js')

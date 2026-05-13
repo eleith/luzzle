@@ -1,5 +1,5 @@
 import { getDatabaseClient, LuzzleDatabase, LuzzleTables, migrate } from '@luzzle/core'
-import { type WebPieces, type WebPiecesAsset, type WebPieceTags } from '@luzzle/web.utils'
+import { type WebPieces, type WebPiecesAsset, type WebPieceTags } from '@luzzle/web.config'
 import { Kysely, sql } from 'kysely'
 import runWebMigrations from '../src/database/migrations.js'
 

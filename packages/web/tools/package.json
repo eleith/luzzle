@@ -44,6 +44,7 @@
 	},
 	"dependencies": {
 		"@luzzle/core": "0.0.59",
+		"@luzzle/web.config": "0.0.2",
 		"@luzzle/web.utils": "0.0.33",
 		"kysely": "0.28.17",
 		"lightningcss": "^1.30.2",

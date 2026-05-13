@@ -2,7 +2,7 @@ import { describe, test, expect, vi, afterEach } from 'vitest'
 import { getDatabase, getDatabaseAndMigrate } from './database.js'
 import { getDatabaseClient, LuzzleDatabase, migrate } from '@luzzle/core'
 import path from 'path'
-import { Config } from '@luzzle/web.utils'
+import { Config } from '@luzzle/web.config'
 
 vi.mock('@luzzle/core')
 

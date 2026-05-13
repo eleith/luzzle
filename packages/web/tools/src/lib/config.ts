@@ -1,7 +1,6 @@
 import path from 'path'
 import { existsSync } from 'fs'
-import { Config } from '@luzzle/web.utils'
-import { loadConfig } from '@luzzle/web.utils/server'
+import { loadConfig, type Config } from '@luzzle/web.config'
 
 export function getConfig(configPath?: string): Config {
 	const resolvedConfigPath = configPath
