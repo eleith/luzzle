@@ -1,5 +1,5 @@
 import type { PieceFrontmatter, Pieces } from '@luzzle/core'
-import type { Config } from '@luzzle/web.utils'
+import type { Config } from '@luzzle/web.config'
 
 export type PreviewContext = {
 	frontmatter: PieceFrontmatter

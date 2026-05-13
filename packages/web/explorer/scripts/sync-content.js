@@ -1,4 +1,4 @@
-import { loadConfig } from '@luzzle/web.utils/server'
+import { loadConfig } from '@luzzle/web.config/server'
 import { readFile, writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 

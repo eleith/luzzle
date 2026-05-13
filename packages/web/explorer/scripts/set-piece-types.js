@@ -1,4 +1,4 @@
-import { loadConfig } from '@luzzle/web.utils/server'
+import { loadConfig } from '@luzzle/web.config/server'
 import fs from 'fs'
 import path from 'path'
 

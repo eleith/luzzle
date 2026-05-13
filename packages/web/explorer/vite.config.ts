@@ -2,7 +2,7 @@ import { sveltekit } from '@sveltejs/kit/vite'
 import { defineConfig, type Plugin, type ViteDevServer } from 'vite'
 import Icons from 'unplugin-icons/vite'
 import { enhancedImages } from '@sveltejs/enhanced-img'
-import { loadConfig } from '@luzzle/web.utils/server'
+import { loadConfig } from '@luzzle/web.config'
 import path from 'path'
 import { execSync } from 'child_process'
 

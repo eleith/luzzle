@@ -1,5 +1,5 @@
 import { db } from '$lib/server/database'
-import type { WebPieces, WebPiecesAsset } from '@luzzle/web.utils'
+import type { WebPieces, WebPiecesAsset } from '@luzzle/web.config'
 import type { WebPiece, PublicWebPiece, PublicWebPieceAsset } from './types'
 
 async function fetchAssets(paths: string[]) {

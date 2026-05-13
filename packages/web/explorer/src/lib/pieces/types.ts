@@ -1,5 +1,5 @@
 import type { PieceFrontmatter } from '@luzzle/core'
-import type { WebPieces, WebPiecesAsset } from '@luzzle/web.utils'
+import type { WebPieces, WebPiecesAsset } from '@luzzle/web.config'
 
 export type WebPiece = WebPieces & {
 	assets: WebPiecesAsset[]
