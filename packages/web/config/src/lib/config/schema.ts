@@ -79,6 +79,7 @@ export type Schema = {
   };
   paths: {
     database: string;
+    assets: string;
     config?: string;
   };
   assets: {

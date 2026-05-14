@@ -472,6 +472,11 @@ url:
 			expect(config.paths.database).toBe('./data/luzzle.sqlite')
 		})
 
+		test('should set correct default for paths.assets', () => {
+			const config = loadConfig()
+			expect(config.paths.assets).toBe('./assets/pieces')
+		})
+
 		test('should set correct default for auth', () => {
 			const config = loadConfig()
 			expect(config.auth.enabled).toBe(false)

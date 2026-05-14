@@ -282,12 +282,17 @@
 					"type": "string",
 					"default": "./data/luzzle.sqlite"
 				},
+				"assets": {
+					"type": "string",
+					"default": "./assets/pieces"
+				},
 				"config": {
 					"type": "string"
 				}
 			},
 			"required": [
-				"database"
+				"database",
+				"assets"
 			],
 			"additionalProperties": false
 		},
