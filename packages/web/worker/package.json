@@ -40,6 +40,7 @@
 		"@luzzle/web.config": "0.0.2",
 		"@sidequest/sqlite-backend": "^1.15.0",
 		"mime-types": "^3.0.2",
+		"sharp": "0.33.5",
 		"sidequest": "^1.15.0"
 	}
 }
