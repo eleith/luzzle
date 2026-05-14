@@ -1,13 +1,17 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { runLuzzleSync } from './luzzle-sync.js'
+import {
+	Pieces,
+	StorageFileSystem,
+	getDatabaseClient,
+	migrate,
+	type Pieces as PiecesType,
+	type StorageFileSystem as StorageType,
+	type LuzzleTables,
+} from '@luzzle/core'
 import type { Logger } from '../logger.js'
 import type { Config } from '@luzzle/web.config'
-import type {
-	Pieces as PiecesType,
-	StorageFileSystem as StorageType,
-} from '@luzzle/core'
 import type { Kysely } from 'kysely'
-import type { LuzzleTables } from '@luzzle/core'
 import { Readable } from 'stream'
 
 vi.mock('@luzzle/core', () => ({
@@ -21,8 +25,12 @@ vi.mock('../db.js', () => ({
 	resolveDbPath: vi.fn(() => '/app/data/db.sqlite'),
 }))
 
-const { Pieces, StorageFileSystem, getDatabaseClient, migrate } =
-	await import('@luzzle/core')
+const mocks = {
+	Pieces: vi.mocked(Pieces),
+	StorageFileSystem: vi.mocked(StorageFileSystem),
+	getDatabaseClient: vi.mocked(getDatabaseClient),
+	migrate: vi.mocked(migrate),
+}
 
 type MockDb = Kysely<LuzzleTables>
 type MockStorage = StorageType
@@ -92,10 +100,10 @@ describe('handlers/luzzle-sync-module', () => {
 		const mockStorage = {} as unknown as MockStorage
 		const mockPieces = makePieces()
 
-		vi.mocked(StorageFileSystem).mockReturnValue(mockStorage)
-		vi.mocked(getDatabaseClient).mockReturnValue(mockDb)
-		vi.mocked(migrate).mockResolvedValue({})
-		vi.mocked(Pieces).mockReturnValue(mockPieces)
+		mocks.StorageFileSystem.mockReturnValue(mockStorage)
+		mocks.getDatabaseClient.mockReturnValue(mockDb)
+		mocks.migrate.mockResolvedValue({})
+		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await runLuzzleSync(config, logger)
 
@@ -114,10 +122,10 @@ describe('handlers/luzzle-sync-module', () => {
 				.mockResolvedValue(asyncIterable([{ action: 'added', name: 'books' }])),
 		})
 
-		vi.mocked(StorageFileSystem).mockReturnValue({} as unknown as MockStorage)
-		vi.mocked(getDatabaseClient).mockReturnValue(mockDb)
-		vi.mocked(migrate).mockResolvedValue({})
-		vi.mocked(Pieces).mockReturnValue(mockPieces)
+		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mocks.getDatabaseClient.mockReturnValue(mockDb)
+		mocks.migrate.mockResolvedValue({})
+		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await runLuzzleSync(config, logger)
 
@@ -132,10 +140,10 @@ describe('handlers/luzzle-sync-module', () => {
 			),
 		})
 
-		vi.mocked(StorageFileSystem).mockReturnValue({} as unknown as MockStorage)
-		vi.mocked(getDatabaseClient).mockReturnValue(mockDb)
-		vi.mocked(migrate).mockResolvedValue({})
-		vi.mocked(Pieces).mockReturnValue(mockPieces)
+		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mocks.getDatabaseClient.mockReturnValue(mockDb)
+		mocks.migrate.mockResolvedValue({})
+		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await runLuzzleSync(config, logger)
 
@@ -160,10 +168,10 @@ describe('handlers/luzzle-sync-module', () => {
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
 
-		vi.mocked(StorageFileSystem).mockReturnValue({} as unknown as MockStorage)
-		vi.mocked(getDatabaseClient).mockReturnValue(mockDb)
-		vi.mocked(migrate).mockResolvedValue({})
-		vi.mocked(Pieces).mockReturnValue(mockPieces)
+		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mocks.getDatabaseClient.mockReturnValue(mockDb)
+		mocks.migrate.mockResolvedValue({})
+		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await runLuzzleSync(config, logger)
 
@@ -188,10 +196,10 @@ describe('handlers/luzzle-sync-module', () => {
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
 
-		vi.mocked(StorageFileSystem).mockReturnValue({} as unknown as MockStorage)
-		vi.mocked(getDatabaseClient).mockReturnValue(mockDb)
-		vi.mocked(migrate).mockResolvedValue({})
-		vi.mocked(Pieces).mockReturnValue(mockPieces)
+		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mocks.getDatabaseClient.mockReturnValue(mockDb)
+		mocks.migrate.mockResolvedValue({})
+		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await runLuzzleSync(config, logger)
 
@@ -199,9 +207,9 @@ describe('handlers/luzzle-sync-module', () => {
 	})
 
 	test('throws on migration failure', async () => {
-		vi.mocked(StorageFileSystem).mockReturnValue({} as unknown as MockStorage)
-		vi.mocked(getDatabaseClient).mockReturnValue({} as unknown as MockDb)
-		vi.mocked(migrate).mockResolvedValue({ error: 'migration failed' })
+		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
+		mocks.migrate.mockResolvedValue({ error: 'migration failed' })
 
 		await expect(runLuzzleSync(config, logger)).rejects.toThrow(
 			'luzzle core migration failed: migration failed'
@@ -224,10 +232,10 @@ describe('handlers/luzzle-sync-module', () => {
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
 
-		vi.mocked(StorageFileSystem).mockReturnValue({} as unknown as MockStorage)
-		vi.mocked(getDatabaseClient).mockReturnValue(mockDb)
-		vi.mocked(migrate).mockResolvedValue({})
-		vi.mocked(Pieces).mockReturnValue(mockPieces)
+		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mocks.getDatabaseClient.mockReturnValue(mockDb)
+		mocks.migrate.mockResolvedValue({})
+		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await runLuzzleSync(config, logger)
 

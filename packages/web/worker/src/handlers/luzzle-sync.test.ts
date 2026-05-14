@@ -1,16 +1,15 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { LuzzleSync } from './luzzle-sync.js'
+import { runLuzzleSync } from '../lib/luzzle-sync.js'
 import type { HandlerContext } from './context.js'
 import type { Logger } from '../logger.js'
 import type { Config } from '@luzzle/web.config'
 
-vi.mock('../lib/luzzle-sync.js', () => ({
-	runLuzzleSync: vi.fn().mockResolvedValue(undefined)
-}))
+vi.mock('../lib/luzzle-sync.js')
 
-const mockRunLuzzleSync = vi.mocked(
-	(await import('../lib/luzzle-sync.js')).runLuzzleSync
-)
+const mocks = {
+	runLuzzleSync: vi.mocked(runLuzzleSync),
+}
 
 function makeContext(): HandlerContext {
 	const logger: Logger = {
@@ -31,6 +30,7 @@ function makeContext(): HandlerContext {
 describe('handlers/luzzle-sync', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
+		mocks.runLuzzleSync.mockResolvedValue(undefined)
 	})
 
 	test('calls runLuzzleSync and returns ok', async () => {
@@ -39,13 +39,13 @@ describe('handlers/luzzle-sync', () => {
 
 		const result = await handler.run(ctx)
 
-		expect(mockRunLuzzleSync).toHaveBeenCalledWith(ctx.config, ctx.logger)
+		expect(mocks.runLuzzleSync).toHaveBeenCalledWith(ctx.config, ctx.logger)
 		expect(result).toBe('ok')
 	})
 
 	test('throws when module throws', async () => {
 		const ctx = makeContext()
-		mockRunLuzzleSync.mockRejectedValueOnce(new Error('sync failed'))
+		mocks.runLuzzleSync.mockRejectedValueOnce(new Error('sync failed'))
 
 		const handler = new LuzzleSync()
 
