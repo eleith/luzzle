@@ -477,6 +477,11 @@ url:
 			expect(config.paths.assets).toBe('./assets/pieces')
 		})
 
+		test('should set correct default for paths.cache', () => {
+			const config = loadConfig()
+			expect(config.paths.cache).toBe('./nginx')
+		})
+
 		test('should set correct default for auth', () => {
 			const config = loadConfig()
 			expect(config.auth.enabled).toBe(false)

@@ -80,6 +80,7 @@ export type Schema = {
   paths: {
     database: string;
     assets: string;
+    cache: string;
     config?: string;
   };
   assets: {

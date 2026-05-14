@@ -286,13 +286,18 @@
 					"type": "string",
 					"default": "./assets/pieces"
 				},
+				"cache": {
+					"type": "string",
+					"default": "./nginx"
+				},
 				"config": {
 					"type": "string"
 				}
 			},
 			"required": [
 				"database",
-				"assets"
+				"assets",
+				"cache"
 			],
 			"additionalProperties": false
 		},
