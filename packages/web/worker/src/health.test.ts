@@ -1,5 +1,5 @@
 import { describe, expect, test, afterEach } from 'vitest'
-import { createHealthServer } from './index.js'
+import { createHealthServer } from './health.js'
 import type { Server } from 'node:http'
 
 describe('createHealthServer', () => {

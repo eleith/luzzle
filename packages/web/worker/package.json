@@ -33,5 +33,11 @@
 		"typescript": "5.7.3",
 		"typescript-eslint": "8.19.1",
 		"vitest": "3.2.4"
+	},
+	"dependencies": {
+		"@luzzle/core": "0.0.59",
+		"@luzzle/web.config": "0.0.2",
+		"@sidequest/sqlite-backend": "^1.15.0",
+		"sidequest": "^1.15.0"
 	}
 }
