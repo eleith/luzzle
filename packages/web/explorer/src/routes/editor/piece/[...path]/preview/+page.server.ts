@@ -10,7 +10,7 @@ import {
 	pieceFrontmatterValueToDatabaseValue,
 	type PieceFrontMatterValue
 } from '@luzzle/core'
-import { generateAssetKey } from '@luzzle/web.utils/server'
+import { generateAssetKey } from '$lib/pieces/assets.key.server'
 import { resolvePreviewAssets } from '$lib/pieces/preview/transforms/index.js'
 import type { PublicWebPiece } from '$lib/pieces/types'
 import type { PageServerLoad } from '../$types'

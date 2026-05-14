@@ -1,5 +1,5 @@
 import { getFrontmatterValues } from '@luzzle/core'
-import { generateAssetKey } from '@luzzle/web.utils/server'
+import { generateAssetKey } from '$lib/pieces/assets.key.server'
 import { getPalette } from '$lib/server/palette'
 import type { PreviewAssetRecord, PreviewContext, PreviewResolver } from './types.js'
 

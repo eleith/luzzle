@@ -4,7 +4,7 @@ import {
 	getFrontmatterValues,
 	type PieceFrontmatterProperty
 } from '@luzzle/core'
-import { generateAssetKey } from '@luzzle/web.utils/server'
+import { generateAssetKey } from '$lib/pieces/assets.key.server'
 import { processMarkdown } from '$lib/server/markdown.js'
 import type { PreviewAssetRecord, PreviewContext, PreviewResolver } from './types.js'
 
