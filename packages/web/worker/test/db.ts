@@ -9,6 +9,19 @@ export async function setupDatabase(): Promise<Kysely<WebDatabase>> {
 		cachedDb = getDatabaseClient(':memory:')
 
 		await sql`
+			CREATE TABLE IF NOT EXISTS pieces_items (
+				id TEXT PRIMARY KEY,
+				file_path TEXT NOT NULL,
+				type TEXT NOT NULL,
+				date_added INTEGER NOT NULL,
+				date_updated INTEGER,
+				note_markdown TEXT,
+				frontmatter_json TEXT NOT NULL DEFAULT '{}',
+				assets_json_array TEXT
+			)
+		`.execute(cachedDb)
+
+		await sql`
 			CREATE TABLE IF NOT EXISTS web_pieces (
 				id TEXT PRIMARY KEY,
 				key TEXT NOT NULL,
@@ -23,6 +36,16 @@ export async function setupDatabase(): Promise<Kysely<WebDatabase>> {
 				json_metadata TEXT NOT NULL DEFAULT '{}',
 				summary TEXT,
 				keywords TEXT
+			)
+		`.execute(cachedDb)
+
+		await sql`
+			CREATE TABLE IF NOT EXISTS web_pieces_tags (
+				piece_slug TEXT NOT NULL,
+				piece_type TEXT NOT NULL,
+				piece_id TEXT NOT NULL,
+				tag TEXT NOT NULL,
+				slug TEXT NOT NULL
 			)
 		`.execute(cachedDb)
 
@@ -46,6 +69,6 @@ export async function setupDatabase(): Promise<Kysely<WebDatabase>> {
 	return cachedDb.withTables<WebDatabase>() as unknown as Kysely<WebDatabase>
 }
 
-export async function teardownDatabase(db: Kysely<WebDatabase>): Promise<void> {
+export async function teardownDatabase<T>(db: Kysely<T>): Promise<void> {
 	await sql`ROLLBACK`.execute(db)
 }

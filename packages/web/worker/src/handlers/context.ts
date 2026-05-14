@@ -1,4 +1,5 @@
 import type { Config } from '@luzzle/web.config'
+import type { LuzzleTables } from '@luzzle/core'
 import type { Logger } from '../logger.js'
 import type { RcloneClient } from '../lib/rclone.js'
 import type { Kysely } from 'kysely'
@@ -8,5 +9,5 @@ export interface HandlerContext {
 	config: Config
 	logger: Logger
 	rclone: RcloneClient
-	db: Kysely<WebDatabase>
+	db: Kysely<WebDatabase & LuzzleTables>
 }
