@@ -11,7 +11,7 @@ describe('Builder Server', () => {
 		vi.resetModules()
 
 		// Setup env vars
-		process.env.LUZZLE_BUILD_TOKEN = 'test-token'
+		process.env.LUZZLE_BUILDER_TOKEN = 'test-token'
 		process.env.LUZZLE_BUILD_SCRIPT = '/tmp/test.sh'
 
 		// Create mock spawn
@@ -40,7 +40,7 @@ describe('Builder Server', () => {
 	})
 
 	afterEach(async () => {
-		delete process.env.LUZZLE_BUILD_TOKEN
+		delete process.env.LUZZLE_BUILDER_TOKEN
 		delete process.env.LUZZLE_BUILD_SCRIPT
 		if (server) {
 			await new Promise((resolve) => server.close(resolve))

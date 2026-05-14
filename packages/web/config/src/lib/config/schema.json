@@ -2,6 +2,44 @@
 	"title": "Schema",
 	"type": "object",
 	"properties": {
+		"network": {
+			"type": "object",
+			"properties": {
+				"internal": {
+					"type": "object",
+					"properties": {
+						"explorer": {
+							"type": "string",
+							"default": "http://luzzle-web:3000"
+						},
+						"lsp": {
+							"type": "string",
+							"default": "http://luzzle-lsp:9001"
+						},
+						"builder": {
+							"type": "string",
+							"default": "http://luzzle-builder:9000"
+						},
+						"queue": {
+							"type": "string",
+							"default": "http://luzzle-queue:9000"
+						}
+					}
+				},
+				"public": {
+					"type": "object",
+					"properties": {
+						"host": {
+							"type": "string",
+							"default": "0.0.0.0"
+						},
+						"hmr_port": {
+							"type": "number"
+						}
+					}
+				}
+			}
+		},
 		"url": {
 			"type": "object",
 			"default": {},
@@ -9,10 +47,6 @@
 				"app": {
 					"type": "string",
 					"default": "${LUZZLE_APP_URL:-http://localhost:8080}"
-				},
-				"internal": {
-					"type": "string",
-					"default": "${LUZZLE_INTERNAL_URL:-http://luzzle-web:3000}"
 				},
 				"app_assets": {
 					"type": "string",
@@ -34,6 +68,14 @@
 			"type": "object",
 			"default": {},
 			"properties": {
+				"token": {
+					"type": "string",
+					"default": "${LUZZLE_BUILDER_TOKEN:-}"
+				},
+				"timeout_ms": {
+					"type": "number",
+					"default": 3600000
+				},
 				"url": {
 					"type": "string",
 					"default": "http://luzzle-builder/hooks?token=${LUZZLE_BUILDER_TOKEN}"

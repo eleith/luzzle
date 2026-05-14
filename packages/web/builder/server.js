@@ -3,8 +3,8 @@ import { spawn as defaultSpawn } from 'child_process'
 import { parse, fileURLToPath } from 'url'
 
 const PORT = 9000
-const BUILD_SECRET_TOKEN = process.env.LUZZLE_BUILD_TOKEN
-const BUILD_TIMEOUT_MS = parseFloat(process.env.LUZZLE_BUILD_TIMEOUT) || 3600000 // 1 hour
+const BUILD_SECRET_TOKEN = process.env.LUZZLE_BUILDER_TOKEN
+const BUILD_TIMEOUT_MS = 3600000 // 1 hour hardcoded
 
 const HOOKS = {
 	PUBLISH: {
@@ -177,7 +177,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 	server.listen(PORT, '0.0.0.0', () => {
 		console.log(`Luzzle Web Builder listening on port ${PORT}`)
 		if (!BUILD_SECRET_TOKEN) {
-			console.error('WARNING: LUZZLE_BUILD_TOKEN env var is not set! Auth will fail.')
+			console.error('WARNING: LUZZLE_BUILDER_TOKEN env var is not set! Auth will fail.')
 		}
 	})
 }

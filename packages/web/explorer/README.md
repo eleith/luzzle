@@ -41,7 +41,7 @@ In production, you'll want to provide a few environment variables to secure your
 instance:
 
 - `LUZZLE_AUTH_SECRET`: A random string for session encryption.
-- `LUZZLE_BUILD_TOKEN`: A secret token to authenticate the builder sidecar.
+- `LUZZLE_BUILDER_TOKEN`: A secret token to authenticate the builder sidecar.
 - `LUZZLE_AUTH_USERNAME` / `LUZZLE_AUTH_PASSWORD`: If using credential-based
   auth.
 

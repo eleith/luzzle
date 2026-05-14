@@ -1,4 +1,4 @@
-const DEBUG = process.env['LUZZLE_LSP_DEBUG'] === '1'
+const DEBUG = process.env['LUZZLE_DEV'] === 'true'
 
 export function debug(msg: string): void {
 	if (DEBUG) {

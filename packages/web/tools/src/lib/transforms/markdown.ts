@@ -7,7 +7,7 @@ const isMarkdown = (f: PieceFrontmatterProperty) =>
 
 export async function run({ webPiece, config, pieces }: TransformInput): Promise<AssetRecord[]> {
 	const records: AssetRecord[] = []
-	const baseUrl = config.url.internal || config.url.app
+	const baseUrl = config.network?.internal?.explorer || config.url.app
 	const urlBase = `${baseUrl}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/markdown`
 
 	if (webPiece.note) {

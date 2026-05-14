@@ -8,13 +8,29 @@
 export type Schema = {
   [k: string]: unknown;
 } & {
+  network?: {
+    internal?: {
+      explorer?: string;
+      lsp?: string;
+      builder?: string;
+      queue?: string;
+      [k: string]: unknown;
+    };
+    public?: {
+      host?: string;
+      hmr_port?: number;
+      [k: string]: unknown;
+    };
+    [k: string]: unknown;
+  };
   url: {
     app: string;
-    internal?: string;
     app_assets: string;
     luzzle_assets: string;
   };
   builder?: {
+    token?: string;
+    timeout_ms?: number;
     url: string;
     method?: string;
     headers?: {

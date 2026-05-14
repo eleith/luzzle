@@ -29,7 +29,7 @@ export async function run({
 		)
 
 		for (const asset of assets) {
-			const baseUrl = config.url.internal || config.url.app
+			const baseUrl = config.network?.internal?.explorer || config.url.app
 			const url = `${baseUrl}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/highlight?attachment=${encodeURIComponent(asset.key)}`
 			const response = await fetch(url)
 

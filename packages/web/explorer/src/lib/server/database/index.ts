@@ -1,7 +1,7 @@
 import { building } from '$app/environment'
 import { config } from '$lib/server/config'
 import { getDatabaseClient, sql } from '@luzzle/core'
-import type { WebPieceTags, WebPieces, WebPiecesAsset } from '@luzzle/web.config'
+import type { WebPieceTags, WebPieces, WebPiecesAsset } from '$lib/pieces/types'
 
 export type WebDatabase = {
 	web_pieces: WebPieces

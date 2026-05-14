@@ -1,4 +1,4 @@
-import { type WebPieceTags } from '@luzzle/web.config'
+import { type WebPieceTags } from './types'
 import { page } from '$app/state'
 import type { PublicWebPiece } from './types'
 import type { PieceFrontMatterValue } from '@luzzle/core'

@@ -3,13 +3,16 @@ WORKDIR /local
 
 COPY --from=core . /local/core
 COPY --from=utils . /local/utils
+COPY --from=config . /local/config
 COPY --from=tools . /local/tools
 
 RUN cd /local/core && npm install && npm run build
 RUN cd /local/utils && npm install && npm run build
+RUN cd /local/config && npm install && npm run build
 RUN cd /local/tools && \
     npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
     npm pkg set 'dependencies[@luzzle/web.utils]'=file:/local/utils && \
+    npm pkg set 'dependencies[@luzzle/web.config]'=file:/local/config && \
     npm install && npm run build
 
 FROM node:24-slim
@@ -70,6 +73,9 @@ COPY --from=builder /local/core/node_modules /local/core/node_modules
 COPY --from=builder /local/utils/package.json /local/utils/package.json
 COPY --from=builder /local/utils/dist /local/utils/dist
 COPY --from=builder /local/utils/node_modules /local/utils/node_modules
+COPY --from=builder /local/config/package.json /local/config/package.json
+COPY --from=builder /local/config/dist /local/config/dist
+COPY --from=builder /local/config/node_modules /local/config/node_modules
 
 RUN npm install -g /local/tools && npm cache clean --force
 

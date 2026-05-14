@@ -13,7 +13,7 @@ export async function run({ webPiece, config, assetKeyToPath }: TransformInput):
 	)
 	if (!hasMedia) return []
 
-	const baseUrl = config.url.internal || config.url.app
+	const baseUrl = config.network?.internal?.explorer || config.url.app
 	const url = `${baseUrl}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/palette`
 	const response = await fetch(url)
 

@@ -8,12 +8,6 @@ services:
     container_name: luzzle-web
     user: "${UID:-1000}:${GID:-1000}"
     env_file: .env
-    environment:
-      - LUZZLE_AUTH_SECRET=${LUZZLE_AUTH_SECRET}  # generate by `openssl rand -hex 32`
-      - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME}
-      - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD}
-      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN} # generate by `openssl rand -hex 32`
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     ports:
       - "3000:3000"
     volumes:
@@ -38,10 +32,6 @@ services:
     ports:
       - '9000:9000'
     env_file: .env
-    environment:
-      - LUZZLE_BUILD_TOKEN=${LUZZLE_BUILD_TOKEN}
-      - LUZZLE_AUTH_USERNAME=${LUZZLE_AUTH_USERNAME}
-      - LUZZLE_AUTH_PASSWORD=${LUZZLE_AUTH_PASSWORD}
     networks:
       - luzzle
     volumes:
@@ -75,11 +65,6 @@ services:
       context: ../proxy
     container_name: luzzle-lsp
     user: '${UID:-1000}:${GID:-1000}'
-    environment:
-      - LUZZLE_EXPLORER_HOST=luzzle-web
-      - LUZZLE_EXPLORER_PORT=3000
-      - LUZZLE_LSP_HOST=luzzle-lsp
-      - LUZZLE_LSP_PORT=9001
     ports:
       - "8080:8080"
     networks:

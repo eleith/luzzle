@@ -1,4 +1,4 @@
-import { loadConfig } from '@luzzle/web.config/server'
+import { loadConfig } from '@luzzle/web.config'
 import { spawn } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -78,9 +78,13 @@ class ExplorerManager {
 	async startServer() {
 		await Logger.log('Starting Luzzle Web Explorer ...')
 
+		const env = { ...process.env }
+		env.HOST = this.config?.network?.public?.host || '0.0.0.0'
+
 		const spawnOptions = {
 			stdio: 'inherit',
-			shell: this.isDev
+			shell: this.isDev,
+			env
 		}
 
 		const command = this.isDev ? 'npm' : 'node'

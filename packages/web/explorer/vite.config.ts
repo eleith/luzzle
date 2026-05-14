@@ -7,6 +7,8 @@ import path from 'path'
 import { execSync } from 'child_process'
 
 const config = loadConfig('./config.yaml')
+const host = config.network?.public?.host
+const hmrPort = config.network?.public?.hmr_port
 
 const contentWatcher = (relativeContentPath: string): Plugin => {
 	return {
@@ -37,11 +39,12 @@ export default defineConfig({
 		contentWatcher('./content')
 	],
 	server: {
-		allowedHosts: process.env.LUZZLE_WEB_HOST
-			? [process.env.LUZZLE_WEB_HOST, 'localhost']
+		host: host || false,
+		allowedHosts: host
+			? [host, 'localhost']
 			: ['localhost'],
 		hmr: {
-			clientPort: process.env.LUZZLE_HMR_PORT ? Number(process.env.LUZZLE_HMR_PORT) : undefined
+			clientPort: hmrPort ? Number(hmrPort) : undefined
 		}
 	}
 })

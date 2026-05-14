@@ -717,7 +717,6 @@ url:
   app: 'https://example.com'
   app_assets: 'https://assets.example.com'
   luzzle_assets: 'https://luzzle.example.com'
-  internal: 'http://internal:3000'
 auth:
   enabled: true
   secret: 'super-secret-key'
@@ -740,7 +739,6 @@ builder:
 			writeFileSync(tmpConfigPath, yamlContent)
 			const config = loadConfig(tmpConfigPath)
 			expect(config.url.app).toBe('https://example.com')
-			expect(config.url.internal).toBe('http://internal:3000')
 			expect(config.auth.secret).toBe('super-secret-key')
 			expect(config.auth.oidc?.issuer).toBe('https://auth.example.com')
 			expect(config.sync.remote).toBe('s3://my-bucket')
