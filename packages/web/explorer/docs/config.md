@@ -41,10 +41,10 @@ Luzzle supports OIDC and simple Credentials.
 
 The builder settings define how the Explorer triggers background build processes.
 
-| Path             | Env Variable         | Required | Default | Description                               |
-| ---------------- | -------------------- | -------- | ------- | ----------------------------------------- |
+| Path             | Env Variable           | Required | Default | Description                               |
+| ---------------- | ---------------------- | -------- | ------- | ----------------------------------------- |
 | `builder.url`    | `LUZZLE_BUILDER_TOKEN` | Yes      | -       | The webhook URL to trigger a build.       |
-| `builder.method` | -                    | No       | `POST`  | The HTTP method used to call the webhook. |
+| `builder.method` | -                      | No       | `POST`  | The HTTP method used to call the webhook. |
 
 ## Content & Theme 🎨
 

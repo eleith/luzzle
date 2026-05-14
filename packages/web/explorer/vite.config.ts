@@ -40,9 +40,7 @@ export default defineConfig({
 	],
 	server: {
 		host: host || false,
-		allowedHosts: host
-			? [host, 'localhost']
-			: ['localhost'],
+		allowedHosts: host ? [host, 'localhost'] : ['localhost'],
 		hmr: {
 			clientPort: hmrPort ? Number(hmrPort) : undefined
 		}

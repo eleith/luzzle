@@ -1,5 +1,11 @@
 import { db } from '$lib/server/database'
-import type { WebPieces, WebPiecesAsset, WebPiece, PublicWebPiece, PublicWebPieceAsset } from './types'
+import type {
+	WebPieces,
+	WebPiecesAsset,
+	WebPiece,
+	PublicWebPiece,
+	PublicWebPieceAsset
+} from './types'
 
 async function fetchAssets(paths: string[]) {
 	return db
