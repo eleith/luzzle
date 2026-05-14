@@ -68,6 +68,11 @@ export type Schema = {
       path?: string;
     };
   };
+  worker?: {
+    queue?: {
+      path?: string;
+    };
+  };
   ai?: {
     provider: "google";
     api_key: string;

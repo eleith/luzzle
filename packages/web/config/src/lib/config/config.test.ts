@@ -767,4 +767,32 @@ builder:
 			expect(config.sync.cdn?.path).toBe('')
 		})
 	})
+
+	describe('Worker Configuration', () => {
+		const tmpConfigPath = join(tmpdir(), `worker-config-${Date.now()}.yaml`)
+
+		afterEach(() => {
+			try {
+				unlinkSync(tmpConfigPath)
+			} catch {
+				// ignore
+			}
+		})
+
+		test('should default worker.queue.path when absent', () => {
+			const config = loadConfig()
+			expect(config.worker?.queue?.path).toBe('./data/sidequest.sqlite')
+		})
+
+		test('should accept a custom worker.queue.path', () => {
+			const yamlContent = `
+worker:
+  queue:
+    path: '/custom/sidequest.db'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+			const config = loadConfig(tmpConfigPath)
+			expect(config.worker?.queue?.path).toBe('/custom/sidequest.db')
+		})
+	})
 })

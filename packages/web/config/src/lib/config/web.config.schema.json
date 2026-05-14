@@ -210,6 +210,24 @@
       },
       "additionalProperties": false
     },
+    "worker": {
+      "type": "object",
+      "default": {},
+      "properties": {
+        "queue": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "path": {
+              "type": "string",
+              "default": "./data/sidequest.sqlite"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "ai": {
       "type": "object",
       "properties": {
