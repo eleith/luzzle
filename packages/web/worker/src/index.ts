@@ -1,17 +1,16 @@
 import { loadConfig } from '@luzzle/web.config'
-import { createWorkerDb } from './db.js'
+import { createWorkerDb, resolveQueueDbPath } from './db.js'
 import { configureQueue } from './queue.js'
 import { createHealthServer } from './health.js'
 import { log } from './logger.js'
 
 const DEFAULT_PORT = 9000
-const DEFAULT_QUEUE_DB = '/app/queue/sidequest.db'
 
 async function main() {
-	const config = loadConfig(process.env.LUZZLE_CONFIG_PATH)
+	const config = loadConfig('./config.yaml')
 	createWorkerDb(config)
 
-	const queueDb = process.env.SIDEQUEST_DB ?? DEFAULT_QUEUE_DB
+	const queueDb = resolveQueueDbPath(config)
 	await configureQueue(queueDb)
 	log('info', 'queue configured', { queueDb })
 
