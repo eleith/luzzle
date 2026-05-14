@@ -5,8 +5,8 @@ describe('log', () => {
 		vi.resetModules()
 	})
 
-	it('debug logs when LUZZLE_LSP_DEBUG is 1', async () => {
-		vi.stubEnv('LUZZLE_LSP_DEBUG', '1')
+	it('debug logs when LUZZLE_DEV is true', async () => {
+		vi.stubEnv('LUZZLE_DEV', 'true')
 		const spy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
 		
 		const { debug } = await import('./log.js')
@@ -17,8 +17,8 @@ describe('log', () => {
 		vi.unstubAllEnvs()
 	})
 
-	it('debug does not log when LUZZLE_LSP_DEBUG is not 1', async () => {
-		vi.stubEnv('LUZZLE_LSP_DEBUG', '0')
+	it('debug does not log when LUZZLE_DEV is not true', async () => {
+		vi.stubEnv('LUZZLE_DEV', 'false')
 		const spy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
 		
 		const { debug } = await import('./log.js')
