@@ -1,6 +1,6 @@
 import { filterFrontmatterFields, resolveFieldPaths } from '@luzzle/core'
 import type { PieceFrontmatterProperty } from '@luzzle/core'
-import type { TransformInput, AssetRecord } from './types.js'
+import type { TransformInput, AssetRecord } from '../utils/types.js'
 
 const isMarkdown = (f: PieceFrontmatterProperty) =>
 	f.type === 'string' && f.format === 'markdown'

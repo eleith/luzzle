@@ -6,16 +6,16 @@ import {
 	getAssetDir,
 	getImageAssetPath,
 	ASSET_SIZES,
-} from '../assets/paths.js'
+} from '../../assets/paths.js'
 import { type Config } from '@luzzle/web.config'
-import { generateVariantJobs } from './variants.js'
+import { generateVariantJobs } from '../utils/variants.js'
 import { Pieces } from '@luzzle/core'
-import type { WebPieces } from '../db.js'
+import type { WebPieces } from '../../db.js'
 import type { Sharp } from 'sharp'
 
 vi.mock('fs/promises')
-vi.mock('../assets/paths.js')
-vi.mock('./variants.js')
+vi.mock('../../assets/paths.js')
+vi.mock('../utils/variants.js')
 
 const emptyMap = new Map<string, string>()
 

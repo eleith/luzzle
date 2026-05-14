@@ -1,6 +1,6 @@
 import type { Pieces } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
-import type { WebPieces, WebPiecesAsset } from '../db.js'
+import type { WebPieces, WebPiecesAsset } from '../../db.js'
 
 export type TransformInput = {
 	webPiece: WebPieces

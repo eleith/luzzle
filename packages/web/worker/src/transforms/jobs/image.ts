@@ -1,9 +1,9 @@
 import { mkdir, writeFile } from 'fs/promises'
 import { getFrontmatterValues } from '@luzzle/core'
-import { getAssetDir, getAssetPath, getImageAssetPath, ASSET_SIZES } from '../assets/paths.js'
+import { getAssetDir, getAssetPath, getImageAssetPath, ASSET_SIZES } from '../../assets/paths.js'
 import mime from 'mime-types'
-import { generateVariantJobs } from './variants.js'
-import type { TransformInput, AssetRecord } from './types.js'
+import { generateVariantJobs } from '../utils/variants.js'
+import type { TransformInput, AssetRecord } from '../utils/types.js'
 
 function getMimeType(format: string): string {
 	const type = format === 'jpg' ? 'jpeg' : format

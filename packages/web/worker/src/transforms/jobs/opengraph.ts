@@ -1,8 +1,8 @@
 import path from 'path'
-import { getOpenGraphPath } from '../assets/paths.js'
-import { getBrowser, closeBrowser } from '../utils/browser.js'
-import { generatePngFromUrl } from '../utils/png.js'
-import type { TransformInput, AssetRecord } from './types.js'
+import { getOpenGraphPath } from '../../assets/paths.js'
+import { getBrowser, closeBrowser } from '../../utils/browser.js'
+import { generatePngFromUrl } from '../../utils/png.js'
+import type { TransformInput, AssetRecord } from '../utils/types.js'
 
 export async function run({ webPiece, config, outDir }: TransformInput): Promise<AssetRecord[]> {
 	const host = config.network?.internal?.explorer || config.url.app

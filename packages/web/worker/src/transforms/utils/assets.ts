@@ -1,4 +1,4 @@
-import { generateAssetKey } from '../assets/key.js'
+import { generateAssetKey } from '../../assets/key.js'
 
 export function buildAssetMaps(
 	assetsJsonArray: string | undefined,

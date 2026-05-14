@@ -1,7 +1,7 @@
 import { describe, test, expect, vi } from 'vitest'
 import { buildAssetMaps } from './assets.js'
 
-vi.mock('../assets/key.js', () => ({
+vi.mock('../../assets/key.js', () => ({
 	generateAssetKey: vi.fn((path: string) => `key-for-${path}`),
 }))
 

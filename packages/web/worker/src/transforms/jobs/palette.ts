@@ -1,5 +1,5 @@
 import { getFrontmatterValues } from '@luzzle/core'
-import type { TransformInput, AssetRecord } from './types.js'
+import type { TransformInput, AssetRecord } from '../utils/types.js'
 
 export async function run({ webPiece, config, assetKeyToPath }: TransformInput): Promise<AssetRecord[]> {
 	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)

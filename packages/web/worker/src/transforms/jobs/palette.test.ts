@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run } from './palette.js'
 import type { Config } from '@luzzle/web.config'
-import type { WebPieces } from '../db.js'
+import type { WebPieces } from '../../db.js'
 import { Pieces } from '@luzzle/core'
 
 vi.stubGlobal('fetch', vi.fn())
