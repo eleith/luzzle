@@ -59,6 +59,14 @@ export type Schema = {
     remote?: string;
     path?: string;
     config?: string;
+    archive?: {
+      remote?: string;
+      path?: string;
+    };
+    cdn?: {
+      remote?: string;
+      path?: string;
+    };
   };
   ai?: {
     provider: "google";

@@ -729,6 +729,12 @@ sync:
   remote: 's3://my-bucket'
   path: '/sync/path'
   config: '/custom/rclone.conf'
+  archive:
+    remote: 's3://archive-bucket'
+    path: '/archive/path'
+  cdn:
+    remote: 's3://cdn-bucket'
+    path: '/cdn/path'
 builder:
   url: 'https://builder.example.com'
   method: 'POST'
@@ -743,8 +749,22 @@ builder:
 			expect(config.auth.oidc?.issuer).toBe('https://auth.example.com')
 			expect(config.sync.remote).toBe('s3://my-bucket')
 			expect(config.sync.config).toBe('/custom/rclone.conf')
+			expect(config.sync.archive?.remote).toBe('s3://archive-bucket')
+			expect(config.sync.archive?.path).toBe('/archive/path')
+			expect(config.sync.cdn?.remote).toBe('s3://cdn-bucket')
+			expect(config.sync.cdn?.path).toBe('/cdn/path')
 			expect(config.builder?.headers?.Authorization).toBe('Bearer token123')
 			expect(config.builder?.body).toBe('{"key":"value"}')
+		})
+	})
+
+	describe('Sync Configuration', () => {
+		test('should default sync.archive and sync.cdn when absent', () => {
+			const config = loadConfig()
+			expect(config.sync.archive?.remote).toBe('')
+			expect(config.sync.archive?.path).toBe('')
+			expect(config.sync.cdn?.remote).toBe('')
+			expect(config.sync.cdn?.path).toBe('')
 		})
 	})
 })

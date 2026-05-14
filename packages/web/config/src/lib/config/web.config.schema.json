@@ -176,6 +176,36 @@
         "config": {
           "type": "string",
           "default": "/app/rclone/rclone.conf"
+        },
+        "archive": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "remote": {
+              "type": "string",
+              "default": ""
+            },
+            "path": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          "additionalProperties": false
+        },
+        "cdn": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "remote": {
+              "type": "string",
+              "default": ""
+            },
+            "path": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
