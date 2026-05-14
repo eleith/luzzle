@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { ArchiveSync } from './archive-sync.js'
 import type { HandlerContext } from './context.js'
-import type { RcloneClient } from '../utils/rclone.js'
+import type { RcloneClient } from '../lib/rclone.js'
 import type { Logger } from '../logger.js'
 import type { Config } from '@luzzle/web.config'
 

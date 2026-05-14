@@ -1,6 +1,6 @@
 import type { Config } from '@luzzle/web.config'
 import type { Logger } from '../logger.js'
-import type { RcloneClient } from '../utils/rclone.js'
+import type { RcloneClient } from '../lib/rclone.js'
 import type { Kysely } from 'kysely'
 import type { WebDatabase } from '../db.js'
 
