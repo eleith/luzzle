@@ -39,6 +39,9 @@ export type PieceIconPalette = {
 	titleText?: string
 }
 
+export const OpengraphImageWidth = 1200
+export const OpengraphImageHeight = 630
+
 export type PieceOpengraphProps = {
 	tags: string[]
 	piece: PublicWebPiece

@@ -1,9 +1,14 @@
 <script lang="ts">
 	import { getContext, type Component } from 'svelte'
-	import { OpengraphImageHeight, OpengraphImageWidth } from '@luzzle/web.utils'
 	import type { PublicWebPiece } from '$lib/pieces/types'
 	import OpengraphDefault from '$lib/pieces/components/opengraph.default.svelte'
-	import { getPieceHelpers, type PieceMode, type PieceOpengraphProps } from '../helpers'
+	import {
+		getPieceHelpers,
+		OpengraphImageHeight,
+		OpengraphImageWidth,
+		type PieceMode,
+		type PieceOpengraphProps
+	} from '../helpers'
 
 	const opengraphImports = import.meta.glob<{ default: Component<PieceOpengraphProps> }>(
 		'$lib/pieces/components/custom/*/opengraph.svelte'
