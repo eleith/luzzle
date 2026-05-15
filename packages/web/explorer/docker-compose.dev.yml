@@ -1,13 +1,8 @@
 services:
   luzzle-dev-web:
     build:
-      dockerfile: Dockerfile.dev
-      context: .
-      additional_contexts:
-        core: ../../core
-        utils: ../utils
-        config: ../config
-        tools: ../tools
+      dockerfile: packages/web/explorer/Dockerfile.dev
+      context: ../../..
     container_name: luzzle-dev-web
     user: '${UID:-1000}:${GID:-1000}'
     env_file: .env
@@ -63,11 +58,8 @@ services:
 
   luzzle-dev-worker:
     build:
-      dockerfile: Dockerfile.dev
-      context: ../worker
-      additional_contexts:
-        core: ../../core
-        config: ../config
+      dockerfile: packages/web/worker/Dockerfile.dev
+      context: ../../..
     container_name: luzzle-dev-worker
     user: '${UID:-1000}:${GID:-1000}'
     env_file: .env
@@ -90,10 +82,8 @@ services:
 
   luzzle-dev-lsp:
     build:
-      dockerfile: Dockerfile.dev
-      context: ../lsp
-      additional_contexts:
-        lsp: ../../lsp
+      dockerfile: packages/web/lsp/Dockerfile.dev
+      context: ../../..
     container_name: luzzle-dev-lsp
     user: '${UID:-1000}:${GID:-1000}'
     environment:
@@ -110,8 +100,8 @@ services:
 
   luzzle-dev-proxy:
     build:
-      dockerfile: Dockerfile.dev
-      context: ../proxy
+      dockerfile: packages/web/proxy/Dockerfile.dev
+      context: ../../..
     container_name: luzzle-dev-proxy
     user: '${UID:-1000}:${GID:-1000}'
     ports:

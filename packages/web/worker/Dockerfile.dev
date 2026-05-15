@@ -1,16 +1,10 @@
 FROM node:24-slim AS builder
-WORKDIR /local
+WORKDIR /m
 
-COPY --from=core . /local/core
-COPY --from=config . /local/config
-COPY package.json tsconfig.json tsconfig.build.json ./
-COPY src ./src
+COPY package.json package-lock.json ./
+COPY packages/ packages/
 
-RUN cd /local/core && npm install && npm run build
-RUN cd /local/config && npm install && npm run build
-RUN npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
-    npm pkg set 'dependencies[@luzzle/web.config]'=file:/local/config && \
-    npm install && npm run build
+RUN npm ci --workspaces && npm run build --workspace=@luzzle/core --workspace=@luzzle/web.config
 
 FROM node:24-slim
 WORKDIR /app
@@ -61,26 +55,18 @@ RUN npx @puppeteer/browsers install chrome-headless-shell@stable --path /opt/chr
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chrome-headless-shell
 
-RUN mkdir -p /app/queue /app/archive /app/assets /app/rclone && \
+RUN mkdir -p /app/queue /app/archive /app/assets /app/rclone /app/dist && \
     chgrp 0 /app /app/queue /app/archive /app/assets /app/rclone && \
-    chmod g+w /app /app/queue /app/archive /app/assets /app/rclone
+    chmod g+w /app /app/queue /app/archive /app/assets /app/rclone && \
+    chmod -R 777 /app/dist
 
-COPY --from=builder --chown=:0 --chmod=775 /local/dist /app/dist
-COPY --from=builder --chown=:0 --chmod=775 /local/node_modules /app/node_modules
-COPY --from=builder --chown=:0 --chmod=775 /local/package.json /app/package.json
+COPY --from=builder --chown=:0 --chmod=775 /m/node_modules /app/node_modules
+COPY --from=builder --chown=:0 --chmod=775 /m/packages /app/packages
 
-COPY --from=builder --chown=:0 --chmod=775 /local/core/package.json /app/core/package.json
-COPY --from=builder --chown=:0 --chmod=775 /local/core/dist /app/core/dist
-COPY --from=builder --chown=:0 --chmod=775 /local/core/node_modules /app/core/node_modules
-COPY --from=builder --chown=:0 --chmod=775 /local/config/package.json /app/config/package.json
-COPY --from=builder --chown=:0 --chmod=775 /local/config/dist /app/config/dist
-COPY --from=builder --chown=:0 --chmod=775 /local/config/node_modules /app/config/node_modules
-
-# Dev: recompile from bind-mounted /app/src on every container start so a
-# stop/start picks up the latest code without a full image rebuild. 777 is
-# needed because compose runs as ${UID:-1000}:${GID:-1000}, which isn't in
-# group 0 and so can't write to the existing g+w dist.
-RUN chmod -R 777 /app/dist
+COPY --chown=:0 --chmod=775 packages/web/worker/package.json /app/package.json
+COPY --chown=:0 --chmod=775 packages/web/worker/tsconfig.json /app/tsconfig.json
+COPY --chown=:0 --chmod=775 packages/web/worker/tsconfig.build.json /app/tsconfig.build.json
+COPY --chown=:0 --chmod=775 packages/web/worker/src /app/src
 
 EXPOSE 9000
 
