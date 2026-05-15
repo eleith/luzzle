@@ -21,6 +21,7 @@ services:
       - ./demo/data:/app/data
       - ./demo/content:/app/content
       - ./demo/archive:/app/archive
+      - ./demo/cdn:/app/cdn
       - ./src:/app/src
       - ./static:/app/static
       - ./scripts:/app/scripts
@@ -79,6 +80,7 @@ services:
       - ./demo/archive:/app/archive
       - ./demo/rclone:/app/rclone
       - ./demo/remote:/app/remote
+      - ./demo/cdn:/app/cdn
       - ../worker/src:/app/src
       - ../worker/scripts:/app/scripts
       - ../worker/tsconfig.json:/app/tsconfig.json
