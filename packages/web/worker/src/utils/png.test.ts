@@ -14,6 +14,8 @@ describe('lib/utils/png', () => {
 		close: vi.fn(),
 	};
 
+	const okResponse = { ok: () => true, status: () => 200, statusText: () => 'OK' };
+
 	afterEach(() => {
 		Object.values(mocks).forEach((mock) => {
 			mock.mockReset();
@@ -21,6 +23,7 @@ describe('lib/utils/png', () => {
 	});
 
 	test('should generate a PNG image', async () => {
+		mocks.goto.mockResolvedValue(okResponse);
 		mocks.screenshot.mockResolvedValue(Buffer.from('test'));
 		const browser = {
 			newPage: mocks.newPage.mockResolvedValue({
@@ -42,6 +45,7 @@ describe('lib/utils/png', () => {
 	});
 
 	test('should throw an error if screenshot fails', async () => {
+		mocks.goto.mockResolvedValue(okResponse);
 		mocks.screenshot.mockRejectedValue(new Error('test error'));
 		const browser = {
 			newPage: mocks.newPage.mockResolvedValue({
@@ -53,6 +57,38 @@ describe('lib/utils/png', () => {
 		} as unknown as Browser;
 
 		await expect(generatePngFromUrl('http://localhost', browser, '')).rejects.toThrowError()
+		expect(mocks.close).toHaveBeenCalledOnce();
+	});
+
+	test('should throw when navigation returns non-2xx', async () => {
+		mocks.goto.mockResolvedValue({ ok: () => false, status: () => 403, statusText: () => 'Forbidden' });
+		const browser = {
+			newPage: mocks.newPage.mockResolvedValue({
+				setViewport: mocks.setViewport,
+				goto: mocks.goto,
+				screenshot: mocks.screenshot,
+				close: mocks.close,
+			}),
+		} as unknown as Browser;
+
+		await expect(generatePngFromUrl('http://localhost', browser, '')).rejects.toThrow(/403/);
+		expect(mocks.screenshot).not.toHaveBeenCalled();
+		expect(mocks.close).toHaveBeenCalledOnce();
+	});
+
+	test('should throw when goto returns null response', async () => {
+		mocks.goto.mockResolvedValue(null);
+		const browser = {
+			newPage: mocks.newPage.mockResolvedValue({
+				setViewport: mocks.setViewport,
+				goto: mocks.goto,
+				screenshot: mocks.screenshot,
+				close: mocks.close,
+			}),
+		} as unknown as Browser;
+
+		await expect(generatePngFromUrl('http://localhost', browser, '')).rejects.toThrow(/no response/);
+		expect(mocks.screenshot).not.toHaveBeenCalled();
 		expect(mocks.close).toHaveBeenCalledOnce();
 	});
 });

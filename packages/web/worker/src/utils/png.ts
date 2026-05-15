@@ -15,8 +15,13 @@ async function generatePngFromUrl(
 			width: 1200,
 			height: 630,
 		})
-		await page.goto(url, { waitUntil: 'networkidle0' })
-	  await mkdir(directory, { recursive: true })
+		const response = await page.goto(url, { waitUntil: 'networkidle0' })
+		if (!response || !response.ok()) {
+			throw new Error(
+				`navigation to ${url} returned ${response?.status() ?? 'no response'} ${response?.statusText() ?? ''}`.trim()
+			)
+		}
+		await mkdir(directory, { recursive: true })
 
 		return await page.screenshot({
 			path: `${outputFilePath.replace(/\.png$/, '')}.png`,
