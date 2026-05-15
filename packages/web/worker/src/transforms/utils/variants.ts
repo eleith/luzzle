@@ -1,5 +1,6 @@
 import Sharp from 'sharp'
 import { Pieces } from '@luzzle/core'
+import type { Logger } from '../../logger.js'
 
 const formatOptions: Record<'avif' | 'jpg', Sharp.AvifOptions | Sharp.JpegOptions> = {
 	avif: { quality: 45, effort: 4 },
@@ -15,7 +16,8 @@ async function generateVariantJobs(
 	asset: string,
 	pieces: Pieces,
 	widths: number[],
-	formats: Array<'avif' | 'jpg'>
+	formats: Array<'avif' | 'jpg'>,
+	logger: Logger
 ) {
 	const jobs: {
 		width: number
@@ -34,7 +36,9 @@ async function generateVariantJobs(
 			}
 		}
 	} catch (error) {
-		console.error(`error generating variant jobs for ${filePath} asset at ${asset}: ${error}`)
+		logger.error(`error generating variant jobs for ${filePath} asset at ${asset}`, {
+			error: error instanceof Error ? error.message : String(error),
+		})
 	}
 
 	return jobs

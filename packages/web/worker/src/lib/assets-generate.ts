@@ -38,7 +38,8 @@ export async function runAssetsGenerate(
 			outDir,
 			pieces,
 			{},
-			keyToPath
+			keyToPath,
+			logger
 		)
 	}
 

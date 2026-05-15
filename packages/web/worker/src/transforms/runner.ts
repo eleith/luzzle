@@ -4,6 +4,7 @@ import type { Config } from '@luzzle/web.config'
 import { generateAssetKey } from '../assets/key.js'
 import { getTransforms } from './index.js'
 import type { WebPieces, WebDatabase } from '../db.js'
+import type { Logger } from '../logger.js'
 
 export async function runTransformsForPiece(
 	db: Kysely<WebDatabase>,
@@ -12,7 +13,8 @@ export async function runTransformsForPiece(
 	outDir: string,
 	pieces: Pieces,
 	options: { typeFilter?: string; dryRun?: boolean },
-	assetKeyToPath: Map<string, string>
+	assetKeyToPath: Map<string, string>,
+	logger: Logger
 ): Promise<void> {
 	const { typeFilter, dryRun = false } = options
 
@@ -31,7 +33,14 @@ export async function runTransformsForPiece(
 		}
 
 		try {
-			const records = await transform.run({ webPiece, config, outDir, pieces, assetKeyToPath })
+			const records = await transform.run({
+				webPiece,
+				config,
+				outDir,
+				pieces,
+				assetKeyToPath,
+				logger,
+			})
 
 			if (!dryRun && records.length > 0) {
 				await db
@@ -58,10 +67,12 @@ export async function runTransformsForPiece(
 
 			for (const record of records) {
 				const what = record.asset_path ?? `content of ${record.mime_type}`
-				console.log(`[transform.${name}] generated ${what}`)
+				logger.info(`transform.${name} generated ${what}`)
 			}
 		} catch (error) {
-			console.error(`[transform.${name}] error for ${webPiece.file_path}: ${error}`)
+			logger.error(`transform.${name} error for ${webPiece.file_path}`, {
+				error: error instanceof Error ? error.message : String(error),
+			})
 		}
 	}
 }

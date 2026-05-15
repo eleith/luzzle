@@ -3,6 +3,7 @@ import { run } from './markdown.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../db.js'
 import type { Pieces } from '@luzzle/core'
+import { makeLogger } from '../../../test/logger.js'
 
 vi.stubGlobal('fetch', vi.fn())
 
@@ -52,6 +53,7 @@ describe('transforms/markdown', () => {
 			outDir: '/out',
 			pieces: makePieces(),
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(fetch).toHaveBeenCalledWith('http://localhost/api/pieces/books/my-book/transform/markdown')
@@ -73,6 +75,7 @@ describe('transforms/markdown', () => {
 			outDir: '/out',
 			pieces: makePieces(),
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(fetch).not.toHaveBeenCalled()
@@ -93,6 +96,7 @@ describe('transforms/markdown', () => {
 				outDir: '/out',
 				pieces: makePieces(),
 				assetKeyToPath: emptyMap,
+				logger: makeLogger()
 			})
 		).rejects.toThrow('500')
 	})
@@ -111,6 +115,7 @@ describe('transforms/markdown', () => {
 			outDir: '/out',
 			pieces: makePieces([{ name: 'description', type: 'string', format: 'markdown' }]),
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(fetch).toHaveBeenCalledWith(
@@ -135,6 +140,7 @@ describe('transforms/markdown', () => {
 			outDir: '/out',
 			pieces: makePieces([{ name: 'description', type: 'string', format: 'markdown' }]),
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(fetch).not.toHaveBeenCalled()
@@ -155,6 +161,7 @@ describe('transforms/markdown', () => {
 				outDir: '/out',
 				pieces: makePieces([{ name: 'description', type: 'string', format: 'markdown' }]),
 				assetKeyToPath: emptyMap,
+				logger: makeLogger()
 			})
 		).rejects.toThrow('500')
 	})
@@ -185,6 +192,7 @@ describe('transforms/markdown', () => {
 				{ name: 'sections', type: 'array', items: { type: 'string', format: 'markdown' } },
 			]),
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(fetch).toHaveBeenCalledTimes(2)
@@ -227,6 +235,7 @@ describe('transforms/markdown', () => {
 					{ name: 'sections', type: 'array', items: { type: 'string', format: 'markdown' } },
 				]),
 				assetKeyToPath: emptyMap,
+				logger: makeLogger()
 			})
 		).rejects.toThrow('500')
 	})
@@ -256,6 +265,7 @@ describe('transforms/markdown', () => {
 				},
 			]),
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(fetch).toHaveBeenCalledWith(
@@ -307,6 +317,7 @@ describe('transforms/markdown', () => {
 				},
 			]),
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(fetch).toHaveBeenCalledTimes(2)

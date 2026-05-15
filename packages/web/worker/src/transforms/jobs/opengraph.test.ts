@@ -7,6 +7,7 @@ import { type Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../db.js'
 import { Pieces } from '@luzzle/core'
 import { Browser } from 'puppeteer'
+import { makeLogger } from '../../../test/logger.js'
 
 vi.mock('../../utils/browser.js', () => ({
 	getBrowser: vi.fn(),
@@ -54,7 +55,7 @@ describe('transforms/opengraph', () => {
 		mocks.getBrowser.mockResolvedValue(browser as unknown as Browser)
 		mocks.generatePngFromUrl.mockResolvedValue(Buffer.from('png'))
 
-		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
+		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map(), logger: makeLogger() })
 
 		expect(mocks.getBrowser).toHaveBeenCalledOnce()
 		expect(mocks.generatePngFromUrl).toHaveBeenCalledWith(
@@ -79,7 +80,7 @@ describe('transforms/opengraph', () => {
 		mocks.generatePngFromUrl.mockRejectedValue(new Error('puppeteer error'))
 
 		await expect(
-			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map() })
+			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: new Map(), logger: makeLogger() })
 		).rejects.toThrow('puppeteer error')
 	})
 

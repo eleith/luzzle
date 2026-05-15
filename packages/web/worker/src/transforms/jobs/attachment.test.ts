@@ -4,6 +4,7 @@ import { Pieces } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
 import { run } from './attachment.js'
 import type { WebPieces } from '../../db.js'
+import { makeLogger } from '../../../test/logger.js'
 
 vi.mock('fs/promises')
 
@@ -54,7 +55,8 @@ describe('transforms/attachment', () => {
 			config: makeConfig(),
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: emptyMap
+			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
@@ -73,7 +75,8 @@ describe('transforms/attachment', () => {
 			config: makeConfig(['doc']),
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: new Map([['key', attachment]])
+			assetKeyToPath: new Map([['key', attachment]]),
+			logger: makeLogger()
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key123', { recursive: true })
@@ -103,7 +106,8 @@ describe('transforms/attachment', () => {
 			config: makeConfig(['doc']),
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: new Map([['key', attachment]])
+			assetKeyToPath: new Map([['key', attachment]]),
+			logger: makeLogger()
 		})
 
 		expect(mocks.writeFile).toHaveBeenCalledWith(
@@ -132,7 +136,8 @@ describe('transforms/attachment', () => {
 				config: makeConfig(['doc']),
 				outDir: '/out',
 				pieces: mockPieces,
-				assetKeyToPath: new Map<string, string>([['key', attachment]])
+				assetKeyToPath: new Map<string, string>([['key', attachment]]),
+				logger: makeLogger()
 			})
 		).rejects.toThrow('storage error')
 	})
@@ -147,7 +152,8 @@ describe('transforms/attachment', () => {
 			config,
 			outDir: '/out',
 			pieces: mockPieces,
-			assetKeyToPath: emptyMap
+			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()

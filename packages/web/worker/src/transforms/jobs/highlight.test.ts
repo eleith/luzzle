@@ -3,6 +3,7 @@ import { run } from './highlight.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../db.js'
 import { Pieces } from '@luzzle/core'
+import { makeLogger } from '../../../test/logger.js'
 
 vi.stubGlobal('fetch', vi.fn())
 
@@ -49,6 +50,7 @@ describe('transforms/highlight', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(fetch).not.toHaveBeenCalled()
@@ -71,6 +73,7 @@ describe('transforms/highlight', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: new Map([['key', 'main.js']]),
+			logger: makeLogger()
 		})
 
 		expect(fetch).toHaveBeenCalledWith(
@@ -97,6 +100,7 @@ describe('transforms/highlight', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(fetch).not.toHaveBeenCalled()
@@ -119,6 +123,7 @@ describe('transforms/highlight', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: new Map([['key', 'notes.txt']]),
+			logger: makeLogger()
 		})
 
 		expect(fetch).toHaveBeenCalledWith(
@@ -144,6 +149,7 @@ describe('transforms/highlight', () => {
 				outDir: '/out',
 				pieces: mockPieces,
 				assetKeyToPath: new Map([['key', 'main.js']]),
+				logger: makeLogger()
 			})
 		).rejects.toThrow('500')
 	})
@@ -169,6 +175,7 @@ describe('transforms/highlight', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: map,
+			logger: makeLogger()
 		})
 
 		expect(fetch).toHaveBeenCalledTimes(3)
@@ -186,6 +193,7 @@ describe('transforms/highlight', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(fetch).not.toHaveBeenCalled()

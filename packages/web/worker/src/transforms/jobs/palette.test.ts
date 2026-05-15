@@ -3,6 +3,7 @@ import { run } from './palette.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../db.js'
 import { Pieces } from '@luzzle/core'
+import { makeLogger } from '../../../test/logger.js'
 
 vi.stubGlobal('fetch', vi.fn())
 
@@ -43,7 +44,7 @@ describe('transforms/palette', () => {
 			text: vi.fn().mockResolvedValue(paletteJson),
 		} as unknown as Response)
 
-		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
+		const records = await run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap, logger: makeLogger() })
 
 		expect(fetch).toHaveBeenCalledWith('http://localhost/api/pieces/books/my-book/transform/palette')
 		expect(records).toEqual([
@@ -66,7 +67,7 @@ describe('transforms/palette', () => {
 		} as unknown as Response)
 
 		await expect(
-			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
+			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap, logger: makeLogger() })
 		).rejects.toThrow('500')
 	})
 
@@ -74,7 +75,7 @@ describe('transforms/palette', () => {
 		const mockPieces = {} as unknown as Pieces
 		const configNoMedia = makeConfig({ pieces: [{ type: 'books', fields: {} }] } as unknown as Partial<Config>)
 
-		const records = await run({ webPiece: makeWebPiece(), config: configNoMedia, outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
+		const records = await run({ webPiece: makeWebPiece(), config: configNoMedia, outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap, logger: makeLogger() })
 
 		expect(fetch).not.toHaveBeenCalled()
 		expect(records).toEqual([])
@@ -84,7 +85,7 @@ describe('transforms/palette', () => {
 		const mockPieces = {} as unknown as Pieces
 		const configOther = makeConfig({ pieces: [{ type: 'other', fields: { media: ['cover'] } }] } as unknown as Partial<Config>)
 
-		const records = await run({ webPiece: makeWebPiece(), config: configOther, outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
+		const records = await run({ webPiece: makeWebPiece(), config: configOther, outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap, logger: makeLogger() })
 
 		expect(fetch).not.toHaveBeenCalled()
 		expect(records).toEqual([])
@@ -94,7 +95,7 @@ describe('transforms/palette', () => {
 		const mockPieces = {} as unknown as Pieces
 		const webPiece = makeWebPiece({ json_metadata: '{}' })
 
-		const records = await run({ webPiece, config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
+		const records = await run({ webPiece, config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap, logger: makeLogger() })
 
 		expect(fetch).not.toHaveBeenCalled()
 		expect(records).toEqual([])
@@ -104,7 +105,7 @@ describe('transforms/palette', () => {
 		const mockPieces = {} as unknown as Pieces
 		const webPiece = makeWebPiece({ json_metadata: JSON.stringify({ cover: 'unknown.jpg' }) })
 
-		const records = await run({ webPiece, config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
+		const records = await run({ webPiece, config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap, logger: makeLogger() })
 
 		expect(fetch).not.toHaveBeenCalled()
 		expect(records).toEqual([])
@@ -116,7 +117,7 @@ describe('transforms/palette', () => {
 		vi.mocked(fetch).mockRejectedValue(new Error('network error'))
 
 		await expect(
-			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap })
+			run({ webPiece: makeWebPiece(), config: makeConfig(), outDir: '/out', pieces: mockPieces, assetKeyToPath: assetMap, logger: makeLogger() })
 		).rejects.toThrow('network error')
 	})
 })

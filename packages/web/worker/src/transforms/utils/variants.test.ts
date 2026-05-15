@@ -2,6 +2,7 @@ import { describe, test, expect, vi, afterEach } from 'vitest'
 import { generateVariantJobs } from './variants.js'
 import Sharp from 'sharp'
 import { Pieces } from '@luzzle/core'
+import { makeLogger } from '../../../test/logger.js'
 
 vi.mock('sharp')
 
@@ -14,19 +15,24 @@ describe('generateVariantJobs', () => {
 		const mockPieces = {
 			getPieceAsset: vi.fn().mockRejectedValue(new Error('test error')),
 		} as unknown as Pieces
+		const logger = makeLogger()
 
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-		const jobs = await generateVariantJobs('path/to/file.jpg', 'image.jpg', mockPieces, [100], ['avif', 'jpg'])
+		const jobs = await generateVariantJobs(
+			'path/to/file.jpg',
+			'image.jpg',
+			mockPieces,
+			[100],
+			['avif', 'jpg'],
+			logger
+		)
 
 		expect(jobs).toEqual([])
-		expect(consoleErrorSpy).toHaveBeenCalledOnce()
-
-		consoleErrorSpy.mockRestore()
+		expect(logger.error).toHaveBeenCalledOnce()
 	})
 
 	test('should generate variant jobs for an image asset', async () => {
 		const mockPieces = { getPieceAsset: vi.fn(() => 'asset_content') } as unknown as Pieces
+		const logger = makeLogger()
 
 		const mockSharp = {
 			clone: vi.fn().mockReturnThis(),
@@ -40,7 +46,8 @@ describe('generateVariantJobs', () => {
 			'image.jpg',
 			mockPieces,
 			[100, 200],
-			['avif', 'jpg']
+			['avif', 'jpg'],
+			logger
 		)
 
 		expect(mockPieces.getPieceAsset).toHaveBeenCalledWith('image.jpg')

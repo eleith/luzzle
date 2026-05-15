@@ -16,6 +16,7 @@ export async function run({
 	outDir,
 	pieces,
 	assetKeyToPath,
+	logger,
 }: TransformInput): Promise<AssetRecord[]> {
 	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
 	if (!pieceConfig) return []
@@ -71,7 +72,8 @@ export async function run({
 				asset,
 				pieces,
 				Object.values(ASSET_SIZES),
-				['avif', 'jpg']
+				['avif', 'jpg'],
+				logger
 			)
 
 			const toFileJobs = jobs.map(async (job) => {

@@ -12,6 +12,7 @@ import { generateVariantJobs } from '../utils/variants.js'
 import { Pieces } from '@luzzle/core'
 import type { WebPieces } from '../../db.js'
 import type { Sharp } from 'sharp'
+import { makeLogger } from '../../../test/logger.js'
 
 vi.mock('fs/promises')
 vi.mock('../../assets/paths.js')
@@ -69,6 +70,7 @@ describe('transforms/image', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
@@ -87,6 +89,7 @@ describe('transforms/image', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: new Map(),
+			logger: makeLogger()
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
@@ -104,6 +107,7 @@ describe('transforms/image', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: emptyMap,
+			logger: makeLogger()
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
@@ -122,6 +126,7 @@ describe('transforms/image', () => {
 				outDir: '/out',
 				pieces: mockPieces,
 				assetKeyToPath: new Map([['key', 'file.pdf']]),
+				logger: makeLogger()
 			})
 		).rejects.toThrow('non-image file')
 	})
@@ -149,6 +154,7 @@ describe('transforms/image', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: new Map([['key', 'photo.jpg']]),
+			logger: makeLogger()
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key', { recursive: true })
@@ -181,6 +187,7 @@ describe('transforms/image', () => {
 				outDir: '/out',
 				pieces: mockPieces,
 				assetKeyToPath: new Map([['key', 'photo.jpg']]),
+				logger: makeLogger()
 			})
 		).rejects.toThrow('read error')
 	})
@@ -208,6 +215,7 @@ describe('transforms/image', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: new Map([['key', 'photo.jpg']]),
+			logger: makeLogger()
 		})
 
 		expect(records).toEqual(
@@ -229,6 +237,7 @@ describe('transforms/image', () => {
 				outDir: '/out',
 				pieces: mockPieces,
 				assetKeyToPath: new Map([['key', 'photo']]),
+				logger: makeLogger()
 			})
 		).rejects.toThrow('non-image file')
 	})
@@ -256,6 +265,7 @@ describe('transforms/image', () => {
 				outDir: '/out',
 				pieces: mockPieces,
 				assetKeyToPath: new Map([['key', 'photo.jpg']]),
+				logger: makeLogger()
 			})
 		).rejects.toThrow('toFile error')
 	})

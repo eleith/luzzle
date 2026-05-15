@@ -3,9 +3,11 @@ import { runTransformsForPiece } from './runner.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../db.js'
 import { setupDatabase, teardownDatabase } from '../../test/db.js'
+import { makeLogger } from '../../test/logger.js'
 import type { Kysely } from 'kysely'
 import type { WebDatabase } from '../db.js'
 import type { Pieces } from '@luzzle/core'
+import type { Logger } from '../logger.js'
 import { generateAssetKey } from '../assets/key.js'
 import { getTransforms } from './index.js'
 
@@ -40,10 +42,12 @@ const webPiece = {
 } as WebPieces
 
 let db: Kysely<WebDatabase>
+let logger: Logger
 
 beforeEach(async () => {
 	db = await setupDatabase()
 	await db.insertInto('web_pieces').values(webPiece).execute()
+	logger = makeLogger()
 
 	mocks.generateAssetKey.mockReturnValue('asset-key')
 	mocks.getTransforms.mockReturnValue(
@@ -73,7 +77,7 @@ describe('transforms/runner', () => {
 			},
 		])
 
-		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, {}, new Map())
+		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, {}, new Map(), logger)
 
 		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
 		expect(assets).toHaveLength(1)
@@ -98,7 +102,8 @@ describe('transforms/runner', () => {
 			'/out',
 			{} as Pieces,
 			{ typeFilter: 'palette' },
-			new Map()
+			new Map(),
+			logger
 		)
 
 		expect(transforms.palette.run).toHaveBeenCalledOnce()
@@ -122,7 +127,8 @@ describe('transforms/runner', () => {
 			'/out',
 			{} as Pieces,
 			{ dryRun: true },
-			new Map()
+			new Map(),
+			logger
 		)
 
 		expect(transforms.attachment.run).toHaveBeenCalledOnce()
@@ -138,7 +144,8 @@ describe('transforms/runner', () => {
 			'/out',
 			{} as Pieces,
 			{ typeFilter: 'palette' },
-			new Map()
+			new Map(),
+			logger
 		)
 
 		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
@@ -146,7 +153,6 @@ describe('transforms/runner', () => {
 	})
 
 	test('logs generated asset path', async () => {
-		const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 		transforms.palette.run.mockResolvedValueOnce([
 			{
 				transformation: 'palette',
@@ -164,17 +170,14 @@ describe('transforms/runner', () => {
 			'/out',
 			{} as Pieces,
 			{ typeFilter: 'palette' },
-			new Map()
+			new Map(),
+			logger
 		)
 
-		expect(consoleLogSpy).toHaveBeenCalledWith(
-			'[transform.palette] generated content of application/json'
-		)
-		consoleLogSpy.mockRestore()
+		expect(logger.info).toHaveBeenCalledWith('transform.palette generated content of application/json')
 	})
 
 	test('logs error and continues when transform throws', async () => {
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 		transforms.attachment.run.mockRejectedValueOnce(new Error('boom'))
 
 		await expect(
@@ -185,14 +188,15 @@ describe('transforms/runner', () => {
 				'/out',
 				{} as Pieces,
 				{ typeFilter: 'attachment' },
-				new Map()
+				new Map(),
+				logger
 			)
 		).resolves.not.toThrow()
 
-		expect(consoleErrorSpy).toHaveBeenCalledWith(
-			expect.stringContaining('[transform.attachment] error for book.md')
+		expect(logger.error).toHaveBeenCalledWith(
+			'transform.attachment error for book.md',
+			expect.objectContaining({ error: 'boom' })
 		)
-		consoleErrorSpy.mockRestore()
 	})
 
 	test('does nothing when typeFilter matches no transform', async () => {
@@ -203,7 +207,8 @@ describe('transforms/runner', () => {
 			'/out',
 			{} as Pieces,
 			{ typeFilter: 'nonexistent' },
-			new Map()
+			new Map(),
+			logger
 		)
 
 		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
