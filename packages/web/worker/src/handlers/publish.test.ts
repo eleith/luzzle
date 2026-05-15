@@ -42,11 +42,36 @@ function makeContext(): WorkerContext {
 	}
 }
 
-function stubHandler(result: string = 'ok') {
+function stubHandler<T>(result: T) {
 	const instance = { run: vi.fn().mockResolvedValue(result) }
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const ctor = vi.fn().mockReturnValue(instance) as any
 	return { ctor, instance }
+}
+
+function wireStubs(opts: {
+	archive?: { ctor: ReturnType<typeof vi.fn>; instance: { run: ReturnType<typeof vi.fn> } }
+	luzzle?: ReturnType<typeof stubHandler<{ changedPaths: string[] }>>
+	web?: ReturnType<typeof stubHandler<string>>
+	assets?: ReturnType<typeof stubHandler<string>>
+	cdn?: ReturnType<typeof stubHandler<string>>
+	cache?: ReturnType<typeof stubHandler<string>>
+}) {
+	const archive = opts.archive ?? stubHandler<string>('ok')
+	const luzzle = opts.luzzle ?? stubHandler({ changedPaths: [] })
+	const web = opts.web ?? stubHandler<string>('ok')
+	const assets = opts.assets ?? stubHandler<string>('ok')
+	const cdn = opts.cdn ?? stubHandler<string>('ok')
+	const cache = opts.cache ?? stubHandler<string>('ok')
+
+	mocks.ArchiveSync.mockImplementation(archive.ctor)
+	mocks.LuzzleSync.mockImplementation(luzzle.ctor)
+	mocks.WebSync.mockImplementation(web.ctor)
+	mocks.AssetsGenerate.mockImplementation(assets.ctor)
+	mocks.CdnSync.mockImplementation(cdn.ctor)
+	mocks.CachePurge.mockImplementation(cache.ctor)
+
+	return { archive, luzzle, web, assets, cdn, cache }
 }
 
 describe('handlers/publish', () => {
@@ -54,71 +79,82 @@ describe('handlers/publish', () => {
 		vi.clearAllMocks()
 	})
 
-	test('runs all phases in order', async () => {
-		const phases = [
-			stubHandler(),
-			stubHandler(),
-			stubHandler(),
-			stubHandler(),
-			stubHandler(),
-			stubHandler(),
-		]
-		mocks.ArchiveSync.mockImplementation(phases[0].ctor)
-		mocks.LuzzleSync.mockImplementation(phases[1].ctor)
-		mocks.WebSync.mockImplementation(phases[2].ctor)
-		mocks.AssetsGenerate.mockImplementation(phases[3].ctor)
-		mocks.CdnSync.mockImplementation(phases[4].ctor)
-		mocks.CachePurge.mockImplementation(phases[5].ctor)
+	test('runs all phases in order, threading changedPaths from luzzle.sync into web.sync + assets.generate', async () => {
+		const phases = wireStubs({
+			luzzle: stubHandler({ changedPaths: ['books/a.md', 'words/b.md'] }),
+		})
 
 		const ctx = makeContext()
 		setWorkerContext(ctx)
 		const result = await new Publish().run()
 
 		expect(result).toBe('ok')
-		for (const phase of phases) {
-			expect(phase.instance.run).toHaveBeenCalledWith()
-		}
-		const orders = phases.map((p) => p.instance.run.mock.invocationCallOrder[0])
+		expect(phases.archive.instance.run).toHaveBeenCalledWith()
+		expect(phases.luzzle.instance.run).toHaveBeenCalledWith()
+		expect(phases.web.instance.run).toHaveBeenCalledWith({
+			filePaths: ['books/a.md', 'words/b.md'],
+		})
+		expect(phases.assets.instance.run).toHaveBeenCalledWith({
+			filePaths: ['books/a.md', 'words/b.md'],
+		})
+		expect(phases.cdn.instance.run).toHaveBeenCalledWith()
+		expect(phases.cache.instance.run).toHaveBeenCalledWith()
+
+		const orders = [
+			phases.archive,
+			phases.luzzle,
+			phases.web,
+			phases.assets,
+			phases.cdn,
+			phases.cache,
+		].map((p) => p.instance.run.mock.invocationCallOrder[0])
 		expect(orders).toEqual([...orders].sort((a, b) => a - b))
 	})
 
-	test('logs each phase start and result', async () => {
-		const stubs = Array.from({ length: 6 }, () => stubHandler('skipped'))
-		mocks.ArchiveSync.mockImplementation(stubs[0].ctor)
-		mocks.LuzzleSync.mockImplementation(stubs[1].ctor)
-		mocks.WebSync.mockImplementation(stubs[2].ctor)
-		mocks.AssetsGenerate.mockImplementation(stubs[3].ctor)
-		mocks.CdnSync.mockImplementation(stubs[4].ctor)
-		mocks.CachePurge.mockImplementation(stubs[5].ctor)
+	test('passes empty filePaths through when nothing changed', async () => {
+		const phases = wireStubs({})
 
 		const ctx = makeContext()
 		setWorkerContext(ctx)
 		await new Publish().run()
 
-		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase starting: archive.sync')
-		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: cache.purge', {
-			result: 'skipped',
+		expect(phases.web.instance.run).toHaveBeenCalledWith({ filePaths: [] })
+		expect(phases.assets.instance.run).toHaveBeenCalledWith({ filePaths: [] })
+	})
+
+	test('logs each phase and the final summary', async () => {
+		wireStubs({
+			luzzle: stubHandler({ changedPaths: ['books/a.md'] }),
 		})
+
+		const ctx = makeContext()
+		setWorkerContext(ctx)
+		await new Publish().run()
+
 		expect(ctx.logger.info).toHaveBeenCalledWith('publish starting')
+		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: archive.sync')
+		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: luzzle.sync', {
+			changed: 1,
+		})
+		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: web.sync')
+		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: assets.generate')
+		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: cdn.sync')
+		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: cache.purge')
 		expect(ctx.logger.info).toHaveBeenCalledWith('publish complete')
 	})
 
-	test('aborts on phase failure', async () => {
-		const phases = Array.from({ length: 6 }, () => stubHandler())
-		phases[2].instance.run.mockRejectedValueOnce(new Error('web.sync failed'))
-		mocks.ArchiveSync.mockImplementation(phases[0].ctor)
-		mocks.LuzzleSync.mockImplementation(phases[1].ctor)
-		mocks.WebSync.mockImplementation(phases[2].ctor)
-		mocks.AssetsGenerate.mockImplementation(phases[3].ctor)
-		mocks.CdnSync.mockImplementation(phases[4].ctor)
-		mocks.CachePurge.mockImplementation(phases[5].ctor)
+	test('aborts on web.sync failure', async () => {
+		const phases = wireStubs({
+			luzzle: stubHandler({ changedPaths: ['x.md'] }),
+		})
+		phases.web.instance.run.mockRejectedValueOnce(new Error('web.sync failed'))
 
 		const ctx = makeContext()
 		setWorkerContext(ctx)
 
 		await expect(new Publish().run()).rejects.toThrow('web.sync failed')
-		expect(phases[3].instance.run).not.toHaveBeenCalled()
-		expect(phases[4].instance.run).not.toHaveBeenCalled()
-		expect(phases[5].instance.run).not.toHaveBeenCalled()
+		expect(phases.assets.instance.run).not.toHaveBeenCalled()
+		expect(phases.cdn.instance.run).not.toHaveBeenCalled()
+		expect(phases.cache.instance.run).not.toHaveBeenCalled()
 	})
 })

@@ -30,18 +30,19 @@ function makeContext(): WorkerContext {
 describe('handlers/luzzle-sync', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
-		mocks.runLuzzleSync.mockResolvedValue(undefined)
+		mocks.runLuzzleSync.mockResolvedValue({ changedPaths: [] })
 	})
 
-	test('calls runLuzzleSync and returns ok', async () => {
+	test('calls runLuzzleSync and returns its result', async () => {
 		const ctx = makeContext()
 		setWorkerContext(ctx)
+		mocks.runLuzzleSync.mockResolvedValueOnce({ changedPaths: ['books/a.md'] })
 		const handler = new LuzzleSync()
 
 		const result = await handler.run()
 
 		expect(mocks.runLuzzleSync).toHaveBeenCalledWith(ctx.config, ctx.logger)
-		expect(result).toBe('ok')
+		expect(result).toEqual({ changedPaths: ['books/a.md'] })
 	})
 
 	test('throws when module throws', async () => {

@@ -3,12 +3,10 @@ import { getWorkerContext } from './context.js'
 import { runLuzzleSync } from '../lib/luzzle-sync.js'
 
 export class LuzzleSync extends Job {
-	async run(): Promise<string> {
+	async run(): Promise<{ changedPaths: string[] }> {
 		const ctx = getWorkerContext()
 		const { config, logger } = ctx
 
-		await runLuzzleSync(config, logger)
-
-		return 'ok'
+		return runLuzzleSync(config, logger)
 	}
 }

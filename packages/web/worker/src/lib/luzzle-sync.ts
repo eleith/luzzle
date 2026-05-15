@@ -11,7 +11,7 @@ import { resolveDbPath } from '../db.js'
 export async function runLuzzleSync(
 	config: Config,
 	logger: Logger
-): Promise<void> {
+): Promise<{ changedPaths: string[] }> {
 	logger.info('luzzle.sync starting')
 
 	const storage = new StorageFileSystem(config.storage.root)
@@ -44,6 +44,7 @@ export async function runLuzzleSync(
 	}
 
 	const files = await pieces.getFilesIn('.', { deep: true })
+	const changedPaths: string[] = []
 
 	for (const typeName of files.types) {
 		const piece = await pieces.getPiece(typeName)
@@ -51,11 +52,19 @@ export async function runLuzzleSync(
 			(one) => pieces.parseFilename(one).type === typeName
 		)
 
-		const syncItems = await piece.sync(db, piecesOnDisk, {})
+		const outdatedFlags = await Promise.all(
+			piecesOnDisk.map((file) => piece.isOutdated(file, db))
+		)
+		const outdatedFiles = piecesOnDisk.filter((_, i) => outdatedFlags[i])
+
+		const syncItems = await piece.sync(db, outdatedFiles, {})
 		for await (const result of syncItems) {
 			if (result.error) {
 				logger.warn(`item sync error for ${result.file}: ${result.message}`)
 			} else {
+				if (result.action === 'added' || result.action === 'updated') {
+					changedPaths.push(result.file)
+				}
 				logger.info(`item ${result.action}: ${result.file}`)
 			}
 		}
@@ -70,5 +79,6 @@ export async function runLuzzleSync(
 		}
 	}
 
-	logger.info('luzzle.sync complete')
+	logger.info('luzzle.sync complete', { changed: changedPaths.length })
+	return { changedPaths }
 }

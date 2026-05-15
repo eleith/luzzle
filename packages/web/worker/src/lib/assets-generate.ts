@@ -13,13 +13,23 @@ export async function runAssetsGenerate(
 	db: FullDb,
 	pieces: Pieces,
 	config: Config,
-	logger: Logger
+	logger: Logger,
+	filePaths: string[]
 ): Promise<void> {
-	logger.info('assets.generate starting')
+	logger.info('assets.generate starting', { count: filePaths.length })
+
+	if (filePaths.length === 0) {
+		logger.info('assets.generate complete')
+		return
+	}
 
 	const outDir = config.paths.assets
 
-	const webPieces = await db.selectFrom('web_pieces').selectAll().execute()
+	const webPieces = await db
+		.selectFrom('web_pieces')
+		.selectAll()
+		.where('file_path', 'in', filePaths)
+		.execute()
 
 	for (const webPiece of webPieces) {
 		const item = await db

@@ -89,21 +89,34 @@ async function seedItem(over: Partial<Record<string, unknown>> = {}) {
 }
 
 describe('lib/assets-generate', () => {
-	test('runs transforms for every web_pieces row', async () => {
+	test('runs transforms for each filePath given', async () => {
 		await seedPiece({ id: 'a', file_path: 'books/a.md' })
 		await seedPiece({ id: 'b', file_path: 'books/b.md' })
 
-		await runAssetsGenerate(db, pieces, makeConfig(), logger)
+		await runAssetsGenerate(db, pieces, makeConfig(), logger, [
+			'books/a.md',
+			'books/b.md',
+		])
 
 		expect(mocks.runTransformsForPiece).toHaveBeenCalledTimes(2)
 		const paths = mocks.runTransformsForPiece.mock.calls.map((c) => c[1].file_path).sort()
 		expect(paths).toEqual(['books/a.md', 'books/b.md'])
 	})
 
+	test('skips web_pieces rows not in filePaths', async () => {
+		await seedPiece({ id: 'a', file_path: 'books/a.md' })
+		await seedPiece({ id: 'b', file_path: 'books/b.md' })
+
+		await runAssetsGenerate(db, pieces, makeConfig(), logger, ['books/a.md'])
+
+		expect(mocks.runTransformsForPiece).toHaveBeenCalledTimes(1)
+		expect(mocks.runTransformsForPiece.mock.calls[0][1].file_path).toBe('books/a.md')
+	})
+
 	test('passes config.paths.assets as outDir', async () => {
 		await seedPiece()
 
-		await runAssetsGenerate(db, pieces, makeConfig(), logger)
+		await runAssetsGenerate(db, pieces, makeConfig(), logger, ['books/great.md'])
 
 		expect(mocks.runTransformsForPiece.mock.calls[0][3]).toBe('/app/assets/pieces')
 	})
@@ -112,7 +125,7 @@ describe('lib/assets-generate', () => {
 		await seedPiece()
 		await seedItem()
 
-		await runAssetsGenerate(db, pieces, makeConfig(), logger)
+		await runAssetsGenerate(db, pieces, makeConfig(), logger, ['books/great.md'])
 
 		expect(mocks.buildAssetMaps).toHaveBeenCalledWith(
 			JSON.stringify(['books/great/cover.png']),
@@ -123,7 +136,7 @@ describe('lib/assets-generate', () => {
 	test('passes empty asset map when pieces_items row is missing', async () => {
 		await seedPiece()
 
-		await runAssetsGenerate(db, pieces, makeConfig(), logger)
+		await runAssetsGenerate(db, pieces, makeConfig(), logger, ['books/great.md'])
 
 		expect(mocks.buildAssetMaps).toHaveBeenCalledWith(undefined, 'salt')
 	})
@@ -131,7 +144,7 @@ describe('lib/assets-generate', () => {
 	test('calls cleanupAllTransforms after iteration', async () => {
 		await seedPiece()
 
-		await runAssetsGenerate(db, pieces, makeConfig(), logger)
+		await runAssetsGenerate(db, pieces, makeConfig(), logger, ['books/great.md'])
 
 		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
 		const cleanupOrder = mocks.cleanupAllTransforms.mock.invocationCallOrder[0]
@@ -140,22 +153,23 @@ describe('lib/assets-generate', () => {
 	})
 
 	test('logs start and complete', async () => {
-		await runAssetsGenerate(db, pieces, makeConfig(), logger)
-		expect(logger.info).toHaveBeenCalledWith('assets.generate starting')
+		await runAssetsGenerate(db, pieces, makeConfig(), logger, ['books/great.md'])
+		expect(logger.info).toHaveBeenCalledWith('assets.generate starting', { count: 1 })
 		expect(logger.info).toHaveBeenCalledWith('assets.generate complete')
 	})
 
 	test('logs per-piece progress', async () => {
 		await seedPiece()
-		await runAssetsGenerate(db, pieces, makeConfig(), logger)
+		await runAssetsGenerate(db, pieces, makeConfig(), logger, ['books/great.md'])
 		expect(logger.info).toHaveBeenCalledWith(
 			'assets.generate running transforms: books/great.md'
 		)
 	})
 
-	test('no-op when web_pieces is empty', async () => {
-		await runAssetsGenerate(db, pieces, makeConfig(), logger)
+	test('short-circuits and skips cleanup when filePaths is empty', async () => {
+		await seedPiece()
+		await runAssetsGenerate(db, pieces, makeConfig(), logger, [])
 		expect(mocks.runTransformsForPiece).not.toHaveBeenCalled()
-		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
+		expect(mocks.cleanupAllTransforms).not.toHaveBeenCalled()
 	})
 })

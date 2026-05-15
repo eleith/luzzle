@@ -77,10 +77,12 @@ function makePieces(opts: Partial<{
 function makePiece(opts: Partial<{
 	sync: Awaited<ReturnType<MockPieces['getPiece']>>['sync']
 	prune: Awaited<ReturnType<MockPieces['getPiece']>>['prune']
+	isOutdated: Awaited<ReturnType<MockPieces['getPiece']>>['isOutdated']
 }> = {}) {
 	return {
 		sync: vi.fn().mockResolvedValue(asyncIterable([])),
 		prune: vi.fn().mockResolvedValue(asyncIterable([])),
+		isOutdated: vi.fn().mockResolvedValue(true),
 		...opts,
 	}
 }
@@ -152,12 +154,13 @@ describe('handlers/luzzle-sync-module', () => {
 		)
 	})
 
-	test('runs item sync per type', async () => {
+	test('runs item sync per type with only outdated files', async () => {
 		const mockDb = {} as unknown as MockDb
 		const mockPiece = makePiece({
 			sync: vi
 				.fn()
-				.mockResolvedValue(asyncIterable([{ action: 'added', file: 'book.md' }])),
+				.mockResolvedValue(asyncIterable([{ action: 'added', file: 'books/book.md' }])),
+			isOutdated: vi.fn().mockResolvedValue(true),
 		})
 		const mockPieces = makePieces({
 			getFilesIn: vi.fn().mockResolvedValue({
@@ -173,11 +176,69 @@ describe('handlers/luzzle-sync-module', () => {
 		mocks.migrate.mockResolvedValue({})
 		mocks.Pieces.mockReturnValue(mockPieces)
 
-		await runLuzzleSync(config, logger)
+		const result = await runLuzzleSync(config, logger)
 
 		expect(mockPieces.getPiece).toHaveBeenCalledWith('books')
+		expect(mockPiece.isOutdated).toHaveBeenCalledWith('books/book.md', mockDb)
 		expect(mockPiece.sync).toHaveBeenCalledWith(mockDb, ['books/book.md'], {})
-		expect(logger.info).toHaveBeenCalledWith('item added: book.md')
+		expect(logger.info).toHaveBeenCalledWith('item added: books/book.md')
+		expect(result.changedPaths).toEqual(['books/book.md'])
+	})
+
+	test('filters out non-outdated files before piece.sync', async () => {
+		const mockDb = {} as unknown as MockDb
+		const mockPiece = makePiece({
+			sync: vi.fn().mockResolvedValue(asyncIterable([])),
+			isOutdated: vi
+				.fn()
+				.mockImplementation(async (file) => file === 'books/changed.md'),
+		})
+		const mockPieces = makePieces({
+			getFilesIn: vi.fn().mockResolvedValue({
+				types: ['books'],
+				pieces: ['books/unchanged.md', 'books/changed.md'],
+			}),
+			getPiece: vi.fn().mockResolvedValue(mockPiece),
+			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
+		})
+
+		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mocks.getDatabaseClient.mockReturnValue(mockDb)
+		mocks.migrate.mockResolvedValue({})
+		mocks.Pieces.mockReturnValue(mockPieces)
+
+		await runLuzzleSync(config, logger)
+
+		expect(mockPiece.sync).toHaveBeenCalledWith(mockDb, ['books/changed.md'], {})
+	})
+
+	test('returns changedPaths only for added/updated actions', async () => {
+		const mockDb = {} as unknown as MockDb
+		const mockPiece = makePiece({
+			sync: vi.fn().mockResolvedValue(
+				asyncIterable([
+					{ action: 'added', file: 'books/new.md' },
+					{ action: 'updated', file: 'books/changed.md' },
+					{ action: 'skipped', file: 'books/same.md' },
+				])
+			),
+		})
+		const mockPieces = makePieces({
+			getFilesIn: vi.fn().mockResolvedValue({
+				types: ['books'],
+				pieces: ['books/new.md', 'books/changed.md', 'books/same.md'],
+			}),
+			getPiece: vi.fn().mockResolvedValue(mockPiece),
+			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
+		})
+
+		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mocks.getDatabaseClient.mockReturnValue(mockDb)
+		mocks.migrate.mockResolvedValue({})
+		mocks.Pieces.mockReturnValue(mockPieces)
+
+		const result = await runLuzzleSync(config, logger)
+		expect(result.changedPaths).toEqual(['books/new.md', 'books/changed.md'])
 	})
 
 	test('logs item sync errors', async () => {

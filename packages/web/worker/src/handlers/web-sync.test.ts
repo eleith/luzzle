@@ -33,14 +33,19 @@ describe('handlers/web-sync', () => {
 		mocks.runWebSync.mockResolvedValue(undefined)
 	})
 
-	test('calls runWebSync and returns ok', async () => {
+	test('forwards payload.filePaths to runWebSync and returns ok', async () => {
 		const ctx = makeContext()
 		setWorkerContext(ctx)
 		const handler = new WebSync()
 
-		const result = await handler.run()
+		const result = await handler.run({ filePaths: ['books/a.md', 'words/b.md'] })
 
-		expect(mocks.runWebSync).toHaveBeenCalledWith(ctx.db, ctx.config, ctx.logger)
+		expect(mocks.runWebSync).toHaveBeenCalledWith(
+			ctx.db,
+			ctx.config,
+			ctx.logger,
+			['books/a.md', 'words/b.md']
+		)
 		expect(result).toBe('ok')
 	})
 
@@ -51,6 +56,6 @@ describe('handlers/web-sync', () => {
 
 		const handler = new WebSync()
 
-		await expect(handler.run()).rejects.toThrow('web sync failed')
+		await expect(handler.run({ filePaths: [] })).rejects.toThrow('web sync failed')
 	})
 })

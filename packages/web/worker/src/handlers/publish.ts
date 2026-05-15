@@ -7,30 +7,30 @@ import { AssetsGenerate } from './assets-generate.js'
 import { CdnSync } from './cdn-sync.js'
 import { CachePurge } from './cache-purge.js'
 
-type PhaseHandler = { new (): { run: () => Promise<string> } }
-
-const PHASES: ReadonlyArray<readonly [string, PhaseHandler]> = [
-	['archive.sync', ArchiveSync],
-	['luzzle.sync', LuzzleSync],
-	['web.sync', WebSync],
-	['assets.generate', AssetsGenerate],
-	['cdn.sync', CdnSync],
-	['cache.purge', CachePurge],
-]
-
 export class Publish extends Job {
 	async run(): Promise<string> {
-		const ctx = getWorkerContext()
-		ctx.logger.info('publish starting')
+		const { logger } = getWorkerContext()
+		logger.info('publish starting')
 
-		for (const [name, Handler] of PHASES) {
-			ctx.logger.info(`publish phase starting: ${name}`)
-			const handler = new Handler()
-			const result = await handler.run()
-			ctx.logger.info(`publish phase done: ${name}`, { result })
-		}
+		await new ArchiveSync().run()
+		logger.info('publish phase done: archive.sync')
 
-		ctx.logger.info('publish complete')
+		const { changedPaths } = await new LuzzleSync().run()
+		logger.info('publish phase done: luzzle.sync', { changed: changedPaths.length })
+
+		await new WebSync().run({ filePaths: changedPaths })
+		logger.info('publish phase done: web.sync')
+
+		await new AssetsGenerate().run({ filePaths: changedPaths })
+		logger.info('publish phase done: assets.generate')
+
+		await new CdnSync().run()
+		logger.info('publish phase done: cdn.sync')
+
+		await new CachePurge().run()
+		logger.info('publish phase done: cache.purge')
+
+		logger.info('publish complete')
 		return 'ok'
 	}
 }

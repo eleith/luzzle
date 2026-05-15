@@ -65,9 +65,9 @@ async function seedItem(over: Partial<Record<string, unknown>> = {}) {
 }
 
 describe('lib/web-sync', () => {
-	test('upserts a web_pieces row from pieces_items', async () => {
+	test('upserts a web_pieces row for each filePath given', async () => {
 		await seedItem()
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, ['books/great.md'])
 
 		const rows = await db.selectFrom('web_pieces').selectAll().execute()
 		expect(rows).toHaveLength(1)
@@ -79,7 +79,7 @@ describe('lib/web-sync', () => {
 
 	test('inserts web_pieces_tags from frontmatter', async () => {
 		await seedItem()
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, ['books/great.md'])
 
 		const tags = await db
 			.selectFrom('web_pieces_tags')
@@ -93,7 +93,7 @@ describe('lib/web-sync', () => {
 
 	test('keeps slug stable across re-runs', async () => {
 		await seedItem()
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, ['books/great.md'])
 		const first = await db.selectFrom('web_pieces').select('slug').executeTakeFirst()
 
 		await db
@@ -101,7 +101,7 @@ describe('lib/web-sync', () => {
 			.set({ frontmatter_json: JSON.stringify({ title: 'Renamed', tags: [] }) })
 			.where('id', '=', 'item-1')
 			.execute()
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, ['books/great.md'])
 
 		const after = await db.selectFrom('web_pieces').selectAll().executeTakeFirst()
 		expect(after!.slug).toBe(first!.slug)
@@ -110,14 +110,14 @@ describe('lib/web-sync', () => {
 
 	test('replaces tags on re-sync (delete + reinsert)', async () => {
 		await seedItem()
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, ['books/great.md'])
 
 		await db
 			.updateTable('pieces_items')
 			.set({ frontmatter_json: JSON.stringify({ title: 'Great Book', tags: ['updated'] }) })
 			.where('id', '=', 'item-1')
 			.execute()
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, ['books/great.md'])
 
 		const tags = await db.selectFrom('web_pieces_tags').selectAll().execute()
 		expect(tags.map((t) => t.tag)).toEqual(['updated'])
@@ -127,21 +127,42 @@ describe('lib/web-sync', () => {
 		await seedItem({ id: 'a', file_path: 'books/great.md' })
 		await seedItem({ id: 'b', file_path: 'archive/great.md' })
 
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, ['books/great.md', 'archive/great.md'])
 
 		const rows = await db.selectFrom('web_pieces').select(['id', 'slug']).orderBy('id').execute()
 		expect(rows.map((r) => r.slug).sort()).toEqual(['great', 'great--1'])
 	})
 
-	test('prunes web_pieces rows whose file_path is no longer in pieces_items', async () => {
+	test('prunes web_pieces rows whose file_path is no longer in pieces_items, even when filePaths is empty', async () => {
 		await seedItem()
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, ['books/great.md'])
 
 		await db.deleteFrom('pieces_items').where('id', '=', 'item-1').execute()
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, [])
 
 		const rows = await db.selectFrom('web_pieces').selectAll().execute()
 		expect(rows).toHaveLength(0)
+	})
+
+	test('does not touch web_pieces rows whose file_path is not in filePaths', async () => {
+		await seedItem({ id: 'a', file_path: 'books/keep.md' })
+		await seedItem({ id: 'b', file_path: 'books/touch.md' })
+		await runWebSync(db, makeConfig(), logger, ['books/keep.md', 'books/touch.md'])
+
+		const originalTitle = (
+			await db.selectFrom('web_pieces').select('title').where('id', '=', 'a').executeTakeFirst()
+		)?.title
+
+		// change keep on disk but only sync touch
+		await db
+			.updateTable('pieces_items')
+			.set({ frontmatter_json: JSON.stringify({ title: 'Mutated', tags: [] }) })
+			.where('id', '=', 'a')
+			.execute()
+		await runWebSync(db, makeConfig(), logger, ['books/touch.md'])
+
+		const after = await db.selectFrom('web_pieces').select('title').where('id', '=', 'a').executeTakeFirst()
+		expect(after?.title).toBe(originalTitle)
 	})
 
 	test('sanitizes asset paths in json_metadata to keys', async () => {
@@ -154,7 +175,7 @@ describe('lib/web-sync', () => {
 			assets_json_array: JSON.stringify(['books/great/cover.png']),
 		})
 
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, ['books/great.md'])
 
 		const row = await db.selectFrom('web_pieces').select('json_metadata').executeTakeFirst()
 		const parsed = JSON.parse(row!.json_metadata)
@@ -164,15 +185,15 @@ describe('lib/web-sync', () => {
 
 	test('skips item types not in config.pieces', async () => {
 		await seedItem({ id: 'x', type: 'unknown', file_path: 'unknown/x.md' })
-		await runWebSync(db, makeConfig(), logger)
+		await runWebSync(db, makeConfig(), logger, ['unknown/x.md'])
 
 		const rows = await db.selectFrom('web_pieces').selectAll().execute()
 		expect(rows).toHaveLength(0)
 	})
 
 	test('logs sync start and completion', async () => {
-		await runWebSync(db, makeConfig(), logger)
-		expect(logger.info).toHaveBeenCalledWith('web.sync starting')
+		await runWebSync(db, makeConfig(), logger, [])
+		expect(logger.info).toHaveBeenCalledWith('web.sync starting', { count: 0 })
 		expect(logger.info).toHaveBeenCalledWith('web.sync complete')
 	})
 })

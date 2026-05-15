@@ -21,10 +21,12 @@ type FullDb = Kysely<WebDatabase & LuzzleTables>
 export async function runWebSync(
 	db: FullDb,
 	config: Config,
-	logger: Logger
+	logger: Logger,
+	filePaths: string[]
 ): Promise<void> {
-	logger.info('web.sync starting')
+	logger.info('web.sync starting', { count: filePaths.length })
 
+	const targets = new Set(filePaths)
 	const livePaths = new Set<string>()
 
 	for (const pieceConfig of config.pieces) {
@@ -46,6 +48,7 @@ export async function runWebSync(
 
 		for (const item of items) {
 			livePaths.add(item.file_path)
+			if (!targets.has(item.file_path)) continue
 			await syncOne(db, item, pieceConfig, config, usedSlugs, slugByFilePath, logger)
 		}
 	}

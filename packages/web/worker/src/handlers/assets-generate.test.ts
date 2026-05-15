@@ -40,7 +40,7 @@ describe('handlers/assets-generate', () => {
 		mocks.runAssetsGenerate.mockResolvedValue(undefined)
 	})
 
-	test('builds Pieces from config.storage.root and forwards to runAssetsGenerate', async () => {
+	test('builds Pieces from config.storage.root and forwards payload to runAssetsGenerate', async () => {
 		const fakeStorage = { kind: 'storage' }
 		const fakePieces = { kind: 'pieces' }
 		mocks.StorageFileSystem.mockReturnValue(fakeStorage as unknown as StorageFileSystem)
@@ -50,7 +50,7 @@ describe('handlers/assets-generate', () => {
 		setWorkerContext(ctx)
 		const handler = new AssetsGenerate()
 
-		const result = await handler.run()
+		const result = await handler.run({ filePaths: ['books/a.md'] })
 
 		expect(mocks.StorageFileSystem).toHaveBeenCalledWith('/app/archive')
 		expect(mocks.Pieces).toHaveBeenCalledWith(fakeStorage)
@@ -58,7 +58,8 @@ describe('handlers/assets-generate', () => {
 			ctx.db,
 			fakePieces,
 			ctx.config,
-			ctx.logger
+			ctx.logger,
+			['books/a.md']
 		)
 		expect(result).toBe('ok')
 	})
@@ -70,6 +71,6 @@ describe('handlers/assets-generate', () => {
 
 		const handler = new AssetsGenerate()
 
-		await expect(handler.run()).rejects.toThrow('assets failed')
+		await expect(handler.run({ filePaths: [] })).rejects.toThrow('assets failed')
 	})
 })
