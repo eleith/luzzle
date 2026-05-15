@@ -14,6 +14,10 @@ async function main() {
 	await configureQueue(queueDb)
 	log('info', 'queue configured', { queueDb })
 
+	const { Sidequest } = await import('sidequest')
+	await Sidequest.start()
+	log('info', 'sidequest engine started')
+
 	const port = Number(process.env.PORT) || DEFAULT_PORT
 	const server = createHealthServer()
 	server.listen(port, () => {
