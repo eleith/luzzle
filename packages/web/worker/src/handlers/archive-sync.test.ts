@@ -1,9 +1,15 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { mkdir, readdir } from 'node:fs/promises'
 import { ArchiveSync } from './archive-sync.js'
 import { setWorkerContext, type WorkerContext } from './context.js'
 import type { RcloneClient } from '../lib/rclone.js'
 import type { Logger } from '../logger.js'
 import type { Config } from '@luzzle/web.config'
+
+vi.mock('node:fs/promises', () => ({
+	mkdir: vi.fn().mockResolvedValue(undefined),
+	readdir: vi.fn().mockResolvedValue([]),
+}))
 
 function makeContext(overrides?: Partial<WorkerContext>): WorkerContext {
 	const logger: Logger = {
@@ -42,6 +48,8 @@ describe('handlers/archive-sync', () => {
 	let ctx: WorkerContext
 
 	beforeEach(() => {
+		vi.mocked(mkdir).mockResolvedValue(undefined)
+		vi.mocked(readdir).mockResolvedValue([])
 		ctx = makeContext({ config: makeConfig() })
 		setWorkerContext(ctx)
 	})
@@ -82,7 +90,9 @@ describe('handlers/archive-sync', () => {
 		expect(ctx.rclone.bisync).not.toHaveBeenCalled()
 	})
 
-	test('calls rclone.bisync with correct options', async () => {
+	test('passes resync=true when workdir has no .lst baseline', async () => {
+		vi.mocked(readdir).mockResolvedValueOnce([])
+
 		const handler = new ArchiveSync()
 		const result = await handler.run()
 
@@ -93,10 +103,33 @@ describe('handlers/archive-sync', () => {
 			remotePath: 'archive/',
 			configPath: '/app/rclone.conf',
 			workdir: '/app/rclone/bisync',
+			resync: true,
 		})
-		expect(ctx.logger.info).toHaveBeenCalledWith(
-			'archive.sync starting bisync',
-			expect.any(Object)
+	})
+
+	test('passes resync=false when workdir already has a .lst baseline', async () => {
+		vi.mocked(readdir).mockResolvedValueOnce([
+			'app_archive..archive__app_remote.path1.lst',
+			'app_archive..archive__app_remote.path2.lst',
+		] as unknown as Awaited<ReturnType<typeof readdir>>)
+
+		const handler = new ArchiveSync()
+		const result = await handler.run()
+
+		expect(result).toBe('ok')
+		expect(ctx.rclone.bisync).toHaveBeenCalledWith(
+			expect.objectContaining({ resync: false })
+		)
+	})
+
+	test('treats unreadable workdir as no baseline', async () => {
+		vi.mocked(readdir).mockRejectedValueOnce(new Error('ENOENT'))
+
+		const handler = new ArchiveSync()
+		await handler.run()
+
+		expect(ctx.rclone.bisync).toHaveBeenCalledWith(
+			expect.objectContaining({ resync: true })
 		)
 	})
 

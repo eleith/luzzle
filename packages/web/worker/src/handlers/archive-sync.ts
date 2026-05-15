@@ -1,5 +1,6 @@
 import { Job } from '@sidequest/core'
 import path from 'node:path'
+import { mkdir, readdir } from 'node:fs/promises'
 import { getWorkerContext } from './context.js'
 
 export class ArchiveSync extends Job {
@@ -24,7 +25,11 @@ export class ArchiveSync extends Job {
 		const localPath = config.storage.root
 		const workdir = path.resolve(localPath, '..', 'rclone', 'bisync')
 
-		logger.info('archive.sync starting bisync', { localPath, remote, remotePath })
+		await mkdir(workdir, { recursive: true })
+		const entries = await readdir(workdir).catch(() => [] as string[])
+		const resync = !entries.some((f) => f.endsWith('.lst'))
+
+		logger.info('archive.sync starting bisync', { localPath, remote, remotePath, resync })
 
 		await rclone.bisync({
 			localPath,
@@ -32,6 +37,7 @@ export class ArchiveSync extends Job {
 			remotePath,
 			configPath,
 			workdir,
+			resync,
 		})
 
 		logger.info('archive.sync complete')
