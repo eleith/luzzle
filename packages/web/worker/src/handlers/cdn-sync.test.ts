@@ -15,7 +15,7 @@ function makeContext(overrides?: Partial<WorkerContext>): WorkerContext {
 
 	const rclone: RcloneClient = {
 		bisync: vi.fn().mockResolvedValue(undefined),
-		copy: vi.fn().mockResolvedValue(undefined),
+		sync: vi.fn().mockResolvedValue(undefined),
 	} as unknown as RcloneClient
 
 	return {
@@ -54,7 +54,7 @@ describe('handlers/cdn-sync', () => {
 		const handler = new CdnSync()
 		const result = await handler.run()
 		expect(result).toBe('skipped')
-		expect(ctx.rclone.copy).not.toHaveBeenCalled()
+		expect(ctx.rclone.sync).not.toHaveBeenCalled()
 	})
 
 	test('skips when sync.cdn.path is not configured', async () => {
@@ -65,7 +65,7 @@ describe('handlers/cdn-sync', () => {
 		const handler = new CdnSync()
 		const result = await handler.run()
 		expect(result).toBe('skipped')
-		expect(ctx.rclone.copy).not.toHaveBeenCalled()
+		expect(ctx.rclone.sync).not.toHaveBeenCalled()
 	})
 
 	test('skips when sync.config is not configured', async () => {
@@ -79,33 +79,33 @@ describe('handlers/cdn-sync', () => {
 		const handler = new CdnSync()
 		const result = await handler.run()
 		expect(result).toBe('skipped')
-		expect(ctx.rclone.copy).not.toHaveBeenCalled()
+		expect(ctx.rclone.sync).not.toHaveBeenCalled()
 	})
 
-	test('calls rclone.copy with correct options', async () => {
+	test('calls rclone.sync with correct options', async () => {
 		const handler = new CdnSync()
 		const result = await handler.run()
 
 		expect(result).toBe('ok')
-		expect(ctx.rclone.copy).toHaveBeenCalledWith({
+		expect(ctx.rclone.sync).toHaveBeenCalledWith({
 			localPath: '/app/assets/pieces',
 			remote: 'my-cdn',
 			remotePath: 'assets/',
 			configPath: '/app/rclone.conf',
 		})
 		expect(ctx.logger.info).toHaveBeenCalledWith(
-			'cdn.sync starting copy',
+			'cdn.sync starting sync',
 			expect.any(Object)
 		)
 	})
 
-	test('throws when rclone.copy fails', async () => {
-		const copyError = new Error('rclone failed')
+	test('throws when rclone.sync fails', async () => {
+		const syncError = new Error('rclone failed')
 		ctx = makeContext({
 			config: makeConfig(),
 			rclone: {
 				bisync: vi.fn(),
-				copy: vi.fn().mockRejectedValue(copyError),
+				sync: vi.fn().mockRejectedValue(syncError),
 			} as unknown as RcloneClient,
 		})
 		setWorkerContext(ctx)

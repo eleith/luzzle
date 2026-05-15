@@ -21,7 +21,7 @@ function makeContext(overrides?: Partial<WorkerContext>): WorkerContext {
 
 	const rclone: RcloneClient = {
 		bisync: vi.fn().mockResolvedValue(undefined),
-		copy: vi.fn().mockResolvedValue(undefined),
+		sync: vi.fn().mockResolvedValue(undefined),
 	} as unknown as RcloneClient
 
 	return {
@@ -139,7 +139,7 @@ describe('handlers/archive-sync', () => {
 			config: makeConfig(),
 			rclone: {
 				bisync: vi.fn().mockRejectedValue(bisyncError),
-				copy: vi.fn(),
+				sync: vi.fn(),
 			} as unknown as RcloneClient,
 		})
 		setWorkerContext(ctx)

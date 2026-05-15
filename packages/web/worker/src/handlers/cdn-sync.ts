@@ -22,9 +22,9 @@ export class CdnSync extends Job {
 
 		const localPath = config.paths.assets
 
-		logger.info('cdn.sync starting copy', { localPath, remote, remotePath })
+		logger.info('cdn.sync starting sync', { localPath, remote, remotePath })
 
-		await rclone.copy({
+		await rclone.sync({
 			localPath,
 			remote,
 			remotePath,

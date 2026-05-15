@@ -10,7 +10,7 @@ export interface RcloneBisyncOptions {
 	resync?: boolean
 }
 
-export interface RcloneCopyOptions {
+export interface RcloneSyncOptions {
 	localPath: string
 	remote: string
 	remotePath: string
@@ -50,9 +50,9 @@ export class RcloneClient {
 		await this.run('rclone', args)
 	}
 
-	async copy(options: RcloneCopyOptions): Promise<void> {
+	async sync(options: RcloneSyncOptions): Promise<void> {
 		const args = [
-			'copy',
+			'sync',
 			options.localPath,
 			`${options.remote}:${options.remotePath}`,
 			'--config',
@@ -60,7 +60,7 @@ export class RcloneClient {
 			'--verbose',
 		]
 
-		this.logger.info('rclone copy starting', {
+		this.logger.info('rclone sync starting', {
 			local: options.localPath,
 			remote: `${options.remote}:${options.remotePath}`,
 		})
