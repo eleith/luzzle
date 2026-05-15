@@ -9,7 +9,6 @@
     "packages/web/explorer",
     "packages/web/utils",
     "packages/web/config",
-    "packages/web/builder",
     "packages/web/worker",
     "packages/web/lsp",
     "packages/web/proxy",
