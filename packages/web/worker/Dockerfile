@@ -1,7 +1,7 @@
 FROM node:24-slim AS builder
 WORKDIR /local
 
-COPY package.json tsconfig.json ./
+COPY package.json tsconfig.json tsconfig.build.json ./
 COPY src ./src
 
 RUN npm install && npm run build

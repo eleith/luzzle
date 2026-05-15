@@ -85,6 +85,7 @@ services:
       - ../worker/src:/app/src
       - ../worker/scripts:/app/scripts
       - ../worker/tsconfig.json:/app/tsconfig.json
+      - ../worker/tsconfig.build.json:/app/tsconfig.build.json
       - ../worker/vite.config.ts:/app/vite.config.ts
 
   luzzle-dev-lsp:

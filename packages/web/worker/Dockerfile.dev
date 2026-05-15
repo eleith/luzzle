@@ -3,7 +3,7 @@ WORKDIR /local
 
 COPY --from=core . /local/core
 COPY --from=config . /local/config
-COPY package.json tsconfig.json ./
+COPY package.json tsconfig.json tsconfig.build.json ./
 COPY src ./src
 
 RUN cd /local/core && npm install && npm run build
