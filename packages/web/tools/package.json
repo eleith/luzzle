@@ -7,8 +7,7 @@
 		"build:executable": "chmod +x ./dist/src/cli.js",
 		"postbuild": "npm run build:executable",
 		"build": "tsc",
-		"test": "vitest run --silent --coverage",
-		"schema": "npm run build && node dist/src/database/dump-schema.js"
+		"test": "vitest run --silent --coverage"
 	},
 	"engines": {
 		"node": ">=24"
@@ -42,10 +41,7 @@
 		"vitest": "3.2.4"
 	},
 	"dependencies": {
-		"@luzzle/core": "0.0.59",
 		"@luzzle/web.config": "0.0.2",
-		"@luzzle/web.utils": "0.0.33",
-		"kysely": "0.28.17",
 		"lightningcss": "^1.30.2",
 		"yaml": "^2.7.0",
 		"yargs": "17.6.0"

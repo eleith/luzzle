@@ -15,7 +15,6 @@ export default defineConfig({
 				'**/*.mock.ts',
 				'src/index.ts',
 				'src/version.ts',
-				'src/database/migrations/**',
 				'coverage/**',
 				'dist/**',
 				'**/node_modules/**',
