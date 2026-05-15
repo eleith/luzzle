@@ -7,7 +7,6 @@
     "packages/web/tools",
     "packages/core",
     "packages/web/explorer",
-    "packages/web/utils",
     "packages/web/config",
     "packages/web/worker",
     "packages/web/lsp",

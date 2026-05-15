@@ -13,7 +13,6 @@ Luzzle is a monorepo managed with `npm` workspaces.
 * `@luzzle/web.worker`: Sidecar service that runs heavy publish jobs off a shared queue 👷
 * `@luzzle/web.tools`: Build-time utility belt used by the web stack 🧰
 * `@luzzle/web.proxy`: Snappy caching layer for web deployments 🚀
-* `@luzzle/web.utils`: Shared logic, types, and configuration schemas 🛠️
 
 ## Guiding Principles
 

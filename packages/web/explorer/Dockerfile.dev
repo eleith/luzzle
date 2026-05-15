@@ -6,7 +6,7 @@ COPY packages/ packages/
 
 RUN npm ci --workspaces && \
     npm run build --workspace=@luzzle/core --workspace=@luzzle/web.config \
-                   --workspace=@luzzle/web.utils --workspace=@luzzle/web.tools
+                   --workspace=@luzzle/web.tools
 
 FROM node:24-alpine
 WORKDIR /app

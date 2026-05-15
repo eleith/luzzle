@@ -1,7 +1,6 @@
-// Asset path helpers duplicated from @luzzle/web.utils. Pure string functions
-// shared by the worker's transform handlers (attachment, image, opengraph, ...).
-// Worker writes asset files at these paths; explorer reads them at the same paths
-// from the web db. Phase 2 will revisit whether to consolidate or keep duplicated.
+// Pure string helpers shared by the worker's transform handlers (attachment,
+// image, opengraph, ...). Worker writes asset files at these paths; explorer
+// reads them at the same paths from the web db.
 
 export const ASSET_PATH_MATCHER = /^(?:.*[\\/])?(([^/\\]+?)(?:\.([^.]+))?)$/
 
