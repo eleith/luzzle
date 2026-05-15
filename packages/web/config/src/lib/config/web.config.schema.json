@@ -4,9 +4,11 @@
   "properties": {
     "network": {
       "type": "object",
+      "default": {},
       "properties": {
         "internal": {
           "type": "object",
+          "default": {},
           "properties": {
             "explorer": {
               "type": "string",
@@ -28,6 +30,7 @@
         },
         "public": {
           "type": "object",
+          "default": {},
           "properties": {
             "host": {
               "type": "string",
