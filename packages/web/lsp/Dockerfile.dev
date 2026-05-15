@@ -18,7 +18,14 @@ RUN npm install -g yaml-language-server
 
 COPY --from=lsp-builder /local/lsp/package.json /local/lsp/package.json
 COPY --from=lsp-builder /local/lsp/dist /local/lsp/dist
-RUN npm install -g /local/lsp && npm cache clean --force
+COPY --from=lsp-builder /local/lsp/node_modules /local/lsp/node_modules
+
+# npm install -g <local-path> symlinks the bin back to the source path,
+# and the lsp package is ESM — ESM resolution walks from the script's
+# real path looking for sibling node_modules, ignoring the global tree.
+# Just COPY the deps next to dist and symlink the bin manually.
+RUN chmod +x /local/lsp/dist/index.js && \
+    ln -s /local/lsp/dist/index.js /usr/local/bin/luzzle-lsp
 
 COPY --from=builder /app/node_modules ./node_modules
 
