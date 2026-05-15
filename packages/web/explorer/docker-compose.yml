@@ -61,6 +61,8 @@ services:
       - ./demo/archive:/app/archive
       - ./demo/rclone:/app/rclone
       - ./demo/remote:/app/remote
+      - ./demo/cdn:/app/cdn
+      - ./nginx/cache:/app/nginx
 
   luzzle-lsp:
     build:
