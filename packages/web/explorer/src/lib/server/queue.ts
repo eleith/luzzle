@@ -17,7 +17,8 @@ export async function configureQueue(): Promise<void> {
 		backend: {
 			driver: '@sidequest/sqlite-backend',
 			config: resolveQueueDbPath()
-		}
+		},
+		manualJobResolution: true
 	})
 
 	configured = true

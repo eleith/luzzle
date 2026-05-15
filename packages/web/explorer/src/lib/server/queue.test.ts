@@ -47,7 +47,8 @@ describe('queue', () => {
 			backend: {
 				driver: '@sidequest/sqlite-backend',
 				config: path.resolve(process.cwd(), '/custom/path.db')
-			}
+			},
+			manualJobResolution: true
 		})
 	})
 
