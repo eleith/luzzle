@@ -10,17 +10,24 @@ const config = loadConfig('./config.yaml')
 const host = config.network?.public?.host
 const hmrPort = config.network?.public?.hmr_port
 
-const allowedHosts = ['localhost']
-if (host) allowedHosts.push(host)
-const internalExplorer = config.network?.internal?.explorer
-if (internalExplorer) {
+function extractHostname(url: string | undefined): string | undefined {
+	if (!url) return undefined
 	try {
-		const internalHost = new URL(internalExplorer).hostname
-		if (!allowedHosts.includes(internalHost)) allowedHosts.push(internalHost)
+		return new URL(url).hostname
 	} catch {
-		// ignore malformed URL
+		return undefined
 	}
 }
+
+const allowedHosts = Array.from(
+	new Set(
+		[
+			'localhost',
+			extractHostname(config.url?.app),
+			extractHostname(config.network?.internal?.explorer)
+		].filter((h): h is string => !!h)
+	)
+)
 
 const contentWatcher = (relativeContentPath: string): Plugin => {
 	return {
