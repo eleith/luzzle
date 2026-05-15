@@ -6,7 +6,7 @@ import { WebSync } from './web-sync.js'
 import { AssetsGenerate } from './assets-generate.js'
 import { CdnSync } from './cdn-sync.js'
 import { CachePurge } from './cache-purge.js'
-import type { HandlerContext } from './context.js'
+import { setWorkerContext, type WorkerContext } from './context.js'
 import type { Logger } from '../logger.js'
 import type { Config } from '@luzzle/web.config'
 
@@ -26,7 +26,7 @@ const mocks = {
 	CachePurge: vi.mocked(CachePurge),
 }
 
-function makeContext(): HandlerContext {
+function makeContext(): WorkerContext {
 	const logger: Logger = {
 		debug: vi.fn(),
 		info: vi.fn(),
@@ -37,8 +37,8 @@ function makeContext(): HandlerContext {
 	return {
 		config: {} as Config,
 		logger,
-		rclone: {} as HandlerContext['rclone'],
-		db: {} as HandlerContext['db'],
+		rclone: {} as WorkerContext['rclone'],
+		db: {} as WorkerContext['db'],
 	}
 }
 
@@ -71,11 +71,12 @@ describe('handlers/publish', () => {
 		mocks.CachePurge.mockImplementation(phases[5].ctor)
 
 		const ctx = makeContext()
-		const result = await new Publish().run(ctx)
+		setWorkerContext(ctx)
+		const result = await new Publish().run()
 
 		expect(result).toBe('ok')
 		for (const phase of phases) {
-			expect(phase.instance.run).toHaveBeenCalledWith(ctx)
+			expect(phase.instance.run).toHaveBeenCalledWith()
 		}
 		const orders = phases.map((p) => p.instance.run.mock.invocationCallOrder[0])
 		expect(orders).toEqual([...orders].sort((a, b) => a - b))
@@ -91,7 +92,8 @@ describe('handlers/publish', () => {
 		mocks.CachePurge.mockImplementation(stubs[5].ctor)
 
 		const ctx = makeContext()
-		await new Publish().run(ctx)
+		setWorkerContext(ctx)
+		await new Publish().run()
 
 		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase starting: archive.sync')
 		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: cache.purge', {
@@ -112,8 +114,9 @@ describe('handlers/publish', () => {
 		mocks.CachePurge.mockImplementation(phases[5].ctor)
 
 		const ctx = makeContext()
+		setWorkerContext(ctx)
 
-		await expect(new Publish().run(ctx)).rejects.toThrow('web.sync failed')
+		await expect(new Publish().run()).rejects.toThrow('web.sync failed')
 		expect(phases[3].instance.run).not.toHaveBeenCalled()
 		expect(phases[4].instance.run).not.toHaveBeenCalled()
 		expect(phases[5].instance.run).not.toHaveBeenCalled()

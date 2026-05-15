@@ -1,8 +1,9 @@
 import { Job } from '@sidequest/core'
-import type { HandlerContext } from './context.js'
+import { getWorkerContext } from './context.js'
 
 export class CdnSync extends Job {
-	async run(ctx: HandlerContext): Promise<string> {
+	async run(): Promise<string> {
+		const ctx = getWorkerContext()
 		const { config, logger, rclone } = ctx
 
 		const remote = config.sync.cdn?.remote

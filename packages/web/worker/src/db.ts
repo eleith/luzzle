@@ -1,6 +1,7 @@
 import path from 'node:path'
-import { getDatabaseClient } from '@luzzle/core'
+import { getDatabaseClient, type LuzzleTables } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
+import type { Kysely } from 'kysely'
 
 // Local copies of the web db row types. These are intentionally duplicated from
 // @luzzle/web.config (and also exist in @luzzle/web/explorer). The duplication is
@@ -49,6 +50,8 @@ export type WebDatabase = {
 	web_pieces_assets: WebPiecesAsset
 }
 
+export type AppDatabase = WebDatabase & LuzzleTables
+
 export function resolveDbPath(config: Config): string {
 	if (!config.paths.config) {
 		throw new Error('config.paths.config is missing; cannot resolve database path')
@@ -64,7 +67,7 @@ export function resolveQueueDbPath(config: Config): string {
 	return path.resolve(path.dirname(config.paths.config), queuePath)
 }
 
-export function createWorkerDb(config: Config) {
+export function createAppDb(config: Config): Kysely<AppDatabase> {
 	const dbPath = resolveDbPath(config)
-	return getDatabaseClient(dbPath).withTables<WebDatabase>()
+	return getDatabaseClient(dbPath).withTables<AppDatabase>()
 }

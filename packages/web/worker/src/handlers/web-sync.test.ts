@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { WebSync } from './web-sync.js'
 import { runWebSync } from '../lib/web-sync.js'
-import type { HandlerContext } from './context.js'
+import { setWorkerContext, type WorkerContext } from './context.js'
 import type { Logger } from '../logger.js'
 import type { Config } from '@luzzle/web.config'
 
@@ -11,7 +11,7 @@ const mocks = {
 	runWebSync: vi.mocked(runWebSync),
 }
 
-function makeContext(): HandlerContext {
+function makeContext(): WorkerContext {
 	const logger: Logger = {
 		debug: vi.fn(),
 		info: vi.fn(),
@@ -22,8 +22,8 @@ function makeContext(): HandlerContext {
 	return {
 		config: { storage: { root: '/app/archive' } } as Config,
 		logger,
-		rclone: {} as HandlerContext['rclone'],
-		db: {} as HandlerContext['db'],
+		rclone: {} as WorkerContext['rclone'],
+		db: {} as WorkerContext['db'],
 	}
 }
 
@@ -35,9 +35,10 @@ describe('handlers/web-sync', () => {
 
 	test('calls runWebSync and returns ok', async () => {
 		const ctx = makeContext()
+		setWorkerContext(ctx)
 		const handler = new WebSync()
 
-		const result = await handler.run(ctx)
+		const result = await handler.run()
 
 		expect(mocks.runWebSync).toHaveBeenCalledWith(ctx.db, ctx.config, ctx.logger)
 		expect(result).toBe('ok')
@@ -45,10 +46,11 @@ describe('handlers/web-sync', () => {
 
 	test('throws when module throws', async () => {
 		const ctx = makeContext()
+		setWorkerContext(ctx)
 		mocks.runWebSync.mockRejectedValueOnce(new Error('web sync failed'))
 
 		const handler = new WebSync()
 
-		await expect(handler.run(ctx)).rejects.toThrow('web sync failed')
+		await expect(handler.run()).rejects.toThrow('web sync failed')
 	})
 })

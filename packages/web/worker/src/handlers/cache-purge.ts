@@ -1,10 +1,11 @@
 import { Job } from '@sidequest/core'
 import { readdir, rm } from 'node:fs/promises'
 import path from 'node:path'
-import type { HandlerContext } from './context.js'
+import { getWorkerContext } from './context.js'
 
 export class CachePurge extends Job {
-	async run(ctx: HandlerContext): Promise<string> {
+	async run(): Promise<string> {
+		const ctx = getWorkerContext()
 		const { config, logger } = ctx
 		const cacheDir = config.paths.cache
 

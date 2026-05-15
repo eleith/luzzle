@@ -2,7 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { AssetsGenerate } from './assets-generate.js'
 import { runAssetsGenerate } from '../lib/assets-generate.js'
 import { Pieces, StorageFileSystem } from '@luzzle/core'
-import type { HandlerContext } from './context.js'
+import { setWorkerContext, type WorkerContext } from './context.js'
 import type { Logger } from '../logger.js'
 import type { Config } from '@luzzle/web.config'
 
@@ -18,7 +18,7 @@ const mocks = {
 	StorageFileSystem: vi.mocked(StorageFileSystem),
 }
 
-function makeContext(): HandlerContext {
+function makeContext(): WorkerContext {
 	const logger: Logger = {
 		debug: vi.fn(),
 		info: vi.fn(),
@@ -29,8 +29,8 @@ function makeContext(): HandlerContext {
 	return {
 		config: { storage: { root: '/app/archive' } } as Config,
 		logger,
-		rclone: {} as HandlerContext['rclone'],
-		db: {} as HandlerContext['db'],
+		rclone: {} as WorkerContext['rclone'],
+		db: {} as WorkerContext['db'],
 	}
 }
 
@@ -47,9 +47,10 @@ describe('handlers/assets-generate', () => {
 		mocks.Pieces.mockReturnValue(fakePieces as unknown as Pieces)
 
 		const ctx = makeContext()
+		setWorkerContext(ctx)
 		const handler = new AssetsGenerate()
 
-		const result = await handler.run(ctx)
+		const result = await handler.run()
 
 		expect(mocks.StorageFileSystem).toHaveBeenCalledWith('/app/archive')
 		expect(mocks.Pieces).toHaveBeenCalledWith(fakeStorage)
@@ -64,10 +65,11 @@ describe('handlers/assets-generate', () => {
 
 	test('throws when module throws', async () => {
 		const ctx = makeContext()
+		setWorkerContext(ctx)
 		mocks.runAssetsGenerate.mockRejectedValueOnce(new Error('assets failed'))
 
 		const handler = new AssetsGenerate()
 
-		await expect(handler.run(ctx)).rejects.toThrow('assets failed')
+		await expect(handler.run()).rejects.toThrow('assets failed')
 	})
 })

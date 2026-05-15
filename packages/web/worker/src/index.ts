@@ -1,5 +1,5 @@
 import { loadConfig } from '@luzzle/web.config'
-import { createWorkerDb, resolveQueueDbPath } from './db.js'
+import { resolveQueueDbPath } from './db.js'
 import { configureQueue } from './queue.js'
 import { createHealthServer } from './health.js'
 import { log } from './logger.js'
@@ -8,7 +8,6 @@ const DEFAULT_PORT = 9000
 
 async function main() {
 	const config = loadConfig('./config.yaml')
-	createWorkerDb(config)
 
 	const queueDb = resolveQueueDbPath(config)
 	await configureQueue(queueDb)

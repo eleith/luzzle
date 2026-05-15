@@ -1,13 +1,33 @@
-import type { Config } from '@luzzle/web.config'
-import type { LuzzleTables } from '@luzzle/core'
+import { loadConfig, type Config } from '@luzzle/web.config'
 import type { Logger } from '../logger.js'
-import type { RcloneClient } from '../lib/rclone.js'
+import { createLogger } from '../logger.js'
+import { RcloneClient } from '../lib/rclone.js'
 import type { Kysely } from 'kysely'
-import type { WebDatabase } from '../db.js'
+import type { AppDatabase } from '../db.js'
+import { createAppDb } from '../db.js'
 
-export interface HandlerContext {
+export interface WorkerContext {
 	config: Config
 	logger: Logger
 	rclone: RcloneClient
-	db: Kysely<WebDatabase & LuzzleTables>
+	db: Kysely<AppDatabase>
+}
+
+let workerContext: WorkerContext | null = null
+
+export function setWorkerContext(ctx: WorkerContext): void {
+	workerContext = ctx
+}
+
+export function getWorkerContext(): WorkerContext {
+	if (workerContext) return workerContext
+	const config = loadConfig('./config.yaml')
+	const logger = createLogger()
+	workerContext = {
+		config,
+		logger,
+		rclone: new RcloneClient(logger),
+		db: createAppDb(config),
+	}
+	return workerContext
 }

@@ -76,7 +76,7 @@ describe('createWorkerDb', () => {
 
 		vi.doMock('@luzzle/core', () => ({ getDatabaseClient }))
 
-		const { createWorkerDb } = await import('./db.js')
+		const { createAppDb } = await import('./db.js')
 
 		const config = {
 			paths: {
@@ -85,7 +85,7 @@ describe('createWorkerDb', () => {
 			}
 		} as unknown as Config
 
-		const result = createWorkerDb(config)
+		const result = createAppDb(config)
 
 		expect(getDatabaseClient).toHaveBeenCalledWith('/etc/luzzle/data/luzzle.sqlite')
 		expect(withTables).toHaveBeenCalledOnce()

@@ -1,9 +1,10 @@
 import { Job } from '@sidequest/core'
 import path from 'node:path'
-import type { HandlerContext } from './context.js'
+import { getWorkerContext } from './context.js'
 
 export class ArchiveSync extends Job {
-	async run(ctx: HandlerContext): Promise<string> {
+	async run(): Promise<string> {
+		const ctx = getWorkerContext()
 		const { config, logger, rclone } = ctx
 
 		const remote = config.sync.archive?.remote

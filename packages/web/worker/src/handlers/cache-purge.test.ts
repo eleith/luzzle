@@ -3,11 +3,11 @@ import { mkdtemp, mkdir, writeFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { CachePurge } from './cache-purge.js'
-import type { HandlerContext } from './context.js'
+import { setWorkerContext, type WorkerContext } from './context.js'
 import type { Logger } from '../logger.js'
 import type { Config } from '@luzzle/web.config'
 
-function makeContext(cacheDir: string): HandlerContext {
+function makeContext(cacheDir: string): WorkerContext {
 	const logger: Logger = {
 		debug: vi.fn(),
 		info: vi.fn(),
@@ -18,8 +18,8 @@ function makeContext(cacheDir: string): HandlerContext {
 	return {
 		config: { paths: { cache: cacheDir } } as Config,
 		logger,
-		rclone: {} as HandlerContext['rclone'],
-		db: {} as HandlerContext['db'],
+		rclone: {} as WorkerContext['rclone'],
+		db: {} as WorkerContext['db'],
 	}
 }
 
@@ -41,9 +41,10 @@ describe('handlers/cache-purge', () => {
 		await writeFile(path.join(workDir, 'nested', 'c.html'), 'c')
 
 		const ctx = makeContext(workDir)
+		setWorkerContext(ctx)
 		const handler = new CachePurge()
 
-		const result = await handler.run(ctx)
+		const result = await handler.run()
 
 		expect(result).toBe('ok')
 		const remaining = await readdir(workDir)
@@ -54,9 +55,10 @@ describe('handlers/cache-purge', () => {
 		await writeFile(path.join(workDir, 'a.html'), 'a')
 
 		const ctx = makeContext(workDir)
+		setWorkerContext(ctx)
 		const handler = new CachePurge()
 
-		await handler.run(ctx)
+		await handler.run()
 
 		// readdir succeeds → directory still exists
 		await expect(readdir(workDir)).resolves.toEqual([])
@@ -64,9 +66,10 @@ describe('handlers/cache-purge', () => {
 
 	test('no-op when cache directory is empty', async () => {
 		const ctx = makeContext(workDir)
+		setWorkerContext(ctx)
 		const handler = new CachePurge()
 
-		const result = await handler.run(ctx)
+		const result = await handler.run()
 
 		expect(result).toBe('ok')
 		expect(ctx.logger.info).toHaveBeenCalledWith(
@@ -78,9 +81,10 @@ describe('handlers/cache-purge', () => {
 	test('skips when cache directory does not exist', async () => {
 		const missing = path.join(workDir, 'does-not-exist')
 		const ctx = makeContext(missing)
+		setWorkerContext(ctx)
 		const handler = new CachePurge()
 
-		const result = await handler.run(ctx)
+		const result = await handler.run()
 
 		expect(result).toBe('skipped')
 		expect(ctx.logger.info).toHaveBeenCalledWith(
