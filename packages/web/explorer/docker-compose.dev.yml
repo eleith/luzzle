@@ -26,35 +26,8 @@ services:
     networks:
       - luzzle
     depends_on:
-      # - luzzle-dev-builder
       - luzzle-dev-worker
       - luzzle-dev-lsp
-
-#  luzzle-dev-builder:
-#    build:
-#      dockerfile: Dockerfile.dev
-#      context: ../builder
-#      additional_contexts:
-#        core: ../../core
-#        utils: ../utils
-#        config: ../config
-#        tools: ../tools
-#    container_name: luzzle-dev-builder
-#    user: '${UID:-1000}:${GID:-1000}'
-#    ports:
-#      - '9000:9000'
-#    env_file: .env
-#    networks:
-#      - luzzle
-#    volumes:
-#      - ./demo/config.yaml:/app/config.yaml
-#      - ./demo/assets:/app/assets
-#      - ./demo/data:/app/data
-#      - ./demo/archive:/app/archive
-#      - ../builder/server.js:/app/server.js
-#      - ../builder/scripts:/app/scripts
-#      - ./demo/rclone:/app/rclone
-#      - ./demo/remote:/app/remote
 
   luzzle-dev-worker:
     build:

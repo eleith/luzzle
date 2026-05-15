@@ -19,29 +19,7 @@ services:
     networks:
       - luzzle
     depends_on:
-      # - luzzle-builder
       - luzzle-worker
-
-#  luzzle-builder:
-#    build:
-#      dockerfile: ../builder/Dockerfile
-#      secrets:
-#        - npmrc
-#      context: ../builder
-#    container_name: luzzle-builder
-#    user: "${UID:-1000}:${GID:-1000}"
-#    ports:
-#      - '9000:9000'
-#    env_file: .env
-#    networks:
-#      - luzzle
-#    volumes:
-#      - ./demo/config.yaml:/app/config.yaml
-#      - ./demo/assets:/app/assets
-#      - ./demo/data:/app/data
-#      - ./demo/archive:/app/archive
-#      - ./demo/rclone:/app/rclone
-#      - ./demo/remote:/app/remote
 
   luzzle-worker:
     build:
