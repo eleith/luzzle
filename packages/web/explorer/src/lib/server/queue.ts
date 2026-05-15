@@ -19,34 +19,17 @@ export function resolveQueueDbPath(): string {
 }
 
 export async function configureQueue(): Promise<void> {
-	try {
-		console.log('[queue] starting Sidequest configuration...')
-		await Sidequest.configure({
-			backend: {
-				driver: '@sidequest/sqlite-backend',
-				config: resolveQueueDbPath()
-			},
-			manualJobResolution: true,
-			jobsFilePath: resolveJobsFilePath()
-		})
-		console.log('[queue] Sidequest configuration finished.')
-	} catch (error) {
-		console.error('[queue] Sidequest configuration failed:', error)
-		throw error
-	}
+	await Sidequest.configure({
+		backend: {
+			driver: '@sidequest/sqlite-backend',
+			config: resolveQueueDbPath()
+		},
+		manualJobResolution: true,
+		jobsFilePath: resolveJobsFilePath()
+	})
 }
 
 export async function enqueueJob(JobClass: JobClassType, payload?: unknown) {
-	console.log('[queue] enqueueJob for:', JobClass.name)
 	await configureQueue()
-
-	console.log('[queue] building job...')
-	try {
-		const job = await Sidequest.build(JobClass).maxAttempts(1).enqueue(payload)
-		console.log('[queue] job enqueued with id:', job.id)
-		return job
-	} catch (error) {
-		console.error('[queue] failed to build/enqueue job:', error)
-		throw error
-	}
+	return Sidequest.build(JobClass).maxAttempts(1).enqueue(payload)
 }
