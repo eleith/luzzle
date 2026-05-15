@@ -84,4 +84,4 @@ RUN chmod -R 777 /app/dist
 
 EXPOSE 9000
 
-CMD ["sh", "-c", "npx tsc && node /app/dist/src/index.js"]
+CMD ["sh", "-c", "npm run build && node /app/dist/src/index.js"]
