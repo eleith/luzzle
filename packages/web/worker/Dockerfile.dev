@@ -1,10 +1,16 @@
 FROM node:24-slim AS builder
 WORKDIR /local
 
+COPY --from=core . /local/core
+COPY --from=config . /local/config
 COPY package.json tsconfig.json ./
 COPY src ./src
 
-RUN npm install && npm run build
+RUN cd /local/core && npm install && npm run build
+RUN cd /local/config && npm install && npm run build
+RUN npm pkg set 'dependencies[@luzzle/core]'=file:/local/core && \
+    npm pkg set 'dependencies[@luzzle/web.config]'=file:/local/config && \
+    npm install && npm run build
 
 FROM node:24-slim
 WORKDIR /app
@@ -62,6 +68,13 @@ RUN mkdir -p /app/queue /app/archive /app/assets /app/rclone && \
 COPY --from=builder --chown=:0 --chmod=775 /local/dist /app/dist
 COPY --from=builder --chown=:0 --chmod=775 /local/node_modules /app/node_modules
 COPY --from=builder --chown=:0 --chmod=775 /local/package.json /app/package.json
+
+COPY --from=builder --chown=:0 --chmod=775 /local/core/package.json /app/core/package.json
+COPY --from=builder --chown=:0 --chmod=775 /local/core/dist /app/core/dist
+COPY --from=builder --chown=:0 --chmod=775 /local/core/node_modules /app/core/node_modules
+COPY --from=builder --chown=:0 --chmod=775 /local/config/package.json /app/config/package.json
+COPY --from=builder --chown=:0 --chmod=775 /local/config/dist /app/config/dist
+COPY --from=builder --chown=:0 --chmod=775 /local/config/node_modules /app/config/node_modules
 
 EXPOSE 9000
 
