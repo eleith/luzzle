@@ -18,7 +18,7 @@ describe('generate-theme/theme', () => {
 			sync: { remote: '', path: '', config: '/app/rclone/rclone.conf' },
 			ai: { provider: 'google', api_key: '' },
 			assets: { salt: 'test-salt' },
-			paths: { database: '' },
+			paths: { database: '', assets: '', cache: '' },
 			content: { component: { root: '', feed: '' }, text: { title: '', description: '' } },
 			pieces: [{ type: 'test', fields: { title: 'test', date_consumed: 'test' } }],
 			theme: {
