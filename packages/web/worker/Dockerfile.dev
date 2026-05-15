@@ -76,6 +76,12 @@ COPY --from=builder --chown=:0 --chmod=775 /local/config/package.json /app/confi
 COPY --from=builder --chown=:0 --chmod=775 /local/config/dist /app/config/dist
 COPY --from=builder --chown=:0 --chmod=775 /local/config/node_modules /app/config/node_modules
 
+# Dev: recompile from bind-mounted /app/src on every container start so a
+# stop/start picks up the latest code without a full image rebuild. 777 is
+# needed because compose runs as ${UID:-1000}:${GID:-1000}, which isn't in
+# group 0 and so can't write to the existing g+w dist.
+RUN chmod -R 777 /app/dist
+
 EXPOSE 9000
 
-CMD ["node", "/app/dist/src/index.js"]
+CMD ["sh", "-c", "npx tsc && node /app/dist/src/index.js"]
