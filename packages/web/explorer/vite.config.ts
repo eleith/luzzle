@@ -10,6 +10,18 @@ const config = loadConfig('./config.yaml')
 const host = config.network?.public?.host
 const hmrPort = config.network?.public?.hmr_port
 
+const allowedHosts = ['localhost']
+if (host) allowedHosts.push(host)
+const internalExplorer = config.network?.internal?.explorer
+if (internalExplorer) {
+	try {
+		const internalHost = new URL(internalExplorer).hostname
+		if (!allowedHosts.includes(internalHost)) allowedHosts.push(internalHost)
+	} catch {
+		// ignore malformed URL
+	}
+}
+
 const contentWatcher = (relativeContentPath: string): Plugin => {
 	return {
 		name: 'content-watcher',
@@ -40,7 +52,7 @@ export default defineConfig({
 	],
 	server: {
 		host: host || false,
-		allowedHosts: host ? [host, 'localhost'] : ['localhost'],
+		allowedHosts,
 		hmr: {
 			clientPort: hmrPort ? Number(hmrPort) : undefined
 		}
