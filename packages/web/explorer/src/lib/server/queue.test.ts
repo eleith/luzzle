@@ -39,7 +39,7 @@ describe('queue', () => {
 	test('configureQueue calls Sidequest.configure with correct backend', async () => {
 		config.worker = { queue: { path: '/custom/path.db' } }
 		// we need to dynamically import to reset configured state
-		const { configureQueue } = await import('./queue.js')
+		const { configureQueue, resolveJobsFilePath } = await import('./queue.js')
 
 		await configureQueue()
 
@@ -48,7 +48,8 @@ describe('queue', () => {
 				driver: '@sidequest/sqlite-backend',
 				config: path.resolve(process.cwd(), '/custom/path.db')
 			},
-			manualJobResolution: true
+			manualJobResolution: true,
+			jobsFilePath: resolveJobsFilePath()
 		})
 	})
 
