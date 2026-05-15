@@ -15,6 +15,7 @@ node_modules
 /demo/assets
 /demo/archive/luzzle.sqlite
 /demo/remote
+/demo/cdn
 /demo/rclone/bisync
 nginx
 
