@@ -3,6 +3,10 @@
 url:
   app: http://localhost:8080
 
+network:
+  internal:
+    explorer: http://luzzle-dev-web:5173
+
 auth:
   enabled: true
   type: credentials
@@ -19,9 +23,13 @@ storage:
   root: ./archive
 
 sync:
-  remote: my-remote
-  path: /app/remote
   config: /app/rclone/rclone.conf
+  archive:
+    remote: archive
+    path: /app/remote
+  cdn:
+    remote: cdn
+    path: /app/cdn
 
 builder:
   url: http://luzzle-dev-builder:9000/hooks?token=${LUZZLE_BUILDER_TOKEN}
