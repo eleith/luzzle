@@ -1,9 +1,12 @@
 import { getFrontmatterValues } from '@luzzle/core'
+import { codeToHtml } from 'shiki'
+import { getLang } from '../../lib/highlight-lang.js'
 import type { TransformInput, AssetRecord } from '../utils/types.js'
 
 export async function run({
 	webPiece,
 	config,
+	pieces,
 	assetKeyToPath,
 }: TransformInput): Promise<AssetRecord[]> {
 	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
@@ -19,7 +22,6 @@ export async function run({
 		const assets = values.reduce(
 			(maps, key) => {
 				const path = assetKeyToPath.get(key)
-
 				if (path) {
 					maps.push({ path, key })
 				}
@@ -29,15 +31,18 @@ export async function run({
 		)
 
 		for (const asset of assets) {
-			const baseUrl = config.network?.internal?.explorer || config.url.app
-			const url = `${baseUrl}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/highlight?attachment=${encodeURIComponent(asset.key)}`
-			const response = await fetch(url)
+			const lang = getLang(asset.path) || 'text'
+			const buffer = await pieces.getPieceAsset(asset.path)
+			const code = buffer.toString('utf-8')
 
-			if (!response.ok) {
-				throw new Error(`highlight transform failed: ${response.status} ${response.statusText}`)
-			}
-
-			const content = await response.text()
+			const html = await codeToHtml(code, {
+				lang,
+				defaultColor: false,
+				themes: {
+					light: config.theme.markdown.code.light,
+					dark: config.theme.markdown.code.dark,
+				},
+			})
 
 			records.push({
 				transformation: 'highlight',
@@ -45,7 +50,7 @@ export async function run({
 				asset_path: null,
 				mime_type: 'text/html',
 				is_embedded: 1,
-				content,
+				content: html,
 			})
 		}
 	}

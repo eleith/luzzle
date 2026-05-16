@@ -1,11 +1,18 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run } from './highlight.js'
+import { codeToHtml } from 'shiki'
+import { getLang } from '../../lib/highlight-lang.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../db.js'
 import { Pieces } from '@luzzle/core'
 import { makeLogger } from '../../../test/logger.js'
 
-vi.stubGlobal('fetch', vi.fn())
+vi.mock('shiki', () => ({
+	codeToHtml: vi.fn(),
+}))
+vi.mock('../../lib/highlight-lang.js', () => ({
+	getLang: vi.fn(),
+}))
 
 const emptyMap = new Map<string, string>()
 
@@ -24,6 +31,7 @@ const makeWebPiece = (json_metadata = '{}'): WebPieces => ({
 const makeConfig = (attachments?: string[]): Config =>
 	({
 		url: { app: 'http://localhost' },
+		theme: { markdown: { code: { light: 'github-light', dark: 'github-dark' } } },
 		pieces: [
 			{
 				type: 'books',
@@ -36,49 +44,53 @@ const makeConfig = (attachments?: string[]): Config =>
 		],
 	}) as unknown as Config
 
+const makePieces = (content: string = 'console.log("hi")') =>
+	({ getPieceAsset: vi.fn().mockResolvedValue(Buffer.from(content)) }) as unknown as Pieces
+
 afterEach(() => {
 	vi.clearAllMocks()
 })
 
 describe('transforms/highlight', () => {
 	test('returns empty array when piece type has no attachments config', async () => {
-		const mockPieces = {} as unknown as Pieces
+		const pieces = makePieces()
 
 		const records = await run({
 			webPiece: makeWebPiece('{}'),
 			config: makeConfig(),
 			outDir: '/out',
-			pieces: mockPieces,
+			pieces,
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).not.toHaveBeenCalled()
+		expect(pieces.getPieceAsset).not.toHaveBeenCalled()
+		expect(codeToHtml).not.toHaveBeenCalled()
 		expect(records).toEqual([])
 	})
 
-	test('fetches highlight and returns embedded asset record for code file', async () => {
-		const mockPieces = {} as unknown as Pieces
+	test('reads asset, detects language, and highlights via shiki', async () => {
+		const pieces = makePieces('console.log("hi")')
 		const html = '<pre class="shiki">...</pre>'
-
-		vi.mocked(fetch).mockResolvedValue({
-			ok: true,
-			status: 200,
-			text: vi.fn().mockResolvedValue(html),
-		} as unknown as Response)
+		vi.mocked(getLang).mockReturnValue('javascript')
+		vi.mocked(codeToHtml).mockResolvedValue(html)
 
 		const records = await run({
 			webPiece: makeWebPiece('{"code": "key"}'),
 			config: makeConfig(['code']),
 			outDir: '/out',
-			pieces: mockPieces,
+			pieces,
 			assetKeyToPath: new Map([['key', 'main.js']]),
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).toHaveBeenCalledWith(
-			'http://localhost/api/pieces/books/my-book/transform/highlight?attachment=key'
-		)
+		expect(pieces.getPieceAsset).toHaveBeenCalledWith('main.js')
+		expect(getLang).toHaveBeenCalledWith('main.js')
+		expect(codeToHtml).toHaveBeenCalledWith('console.log("hi")', {
+			lang: 'javascript',
+			defaultColor: false,
+			themes: { light: 'github-light', dark: 'github-dark' },
+		})
 		expect(records).toEqual([
 			{
 				transformation: 'highlight',
@@ -91,78 +103,63 @@ describe('transforms/highlight', () => {
 		])
 	})
 
-	test('skips keys missing from assetKeyToPath without making an API call', async () => {
-		const mockPieces = {} as unknown as Pieces
+	test('skips keys missing from assetKeyToPath without reading or highlighting', async () => {
+		const pieces = makePieces()
 
 		const records = await run({
 			webPiece: makeWebPiece('{"doc": "missing-key"}'),
 			config: makeConfig(['doc']),
 			outDir: '/out',
-			pieces: mockPieces,
+			pieces,
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).not.toHaveBeenCalled()
+		expect(pieces.getPieceAsset).not.toHaveBeenCalled()
 		expect(records).toEqual([])
 	})
 
-	test('produces a record for non-code files (server renders them as text)', async () => {
-		const mockPieces = {} as unknown as Pieces
-		const html = '<pre>...</pre>'
+	test('falls back to "text" when getLang returns null', async () => {
+		const pieces = makePieces('plain text')
+		vi.mocked(getLang).mockReturnValue(null)
+		vi.mocked(codeToHtml).mockResolvedValue('<pre>...</pre>')
 
-		vi.mocked(fetch).mockResolvedValue({
-			ok: true,
-			status: 200,
-			text: vi.fn().mockResolvedValue(html),
-		} as unknown as Response)
-
-		const records = await run({
+		await run({
 			webPiece: makeWebPiece('{"doc": "key"}'),
 			config: makeConfig(['doc']),
 			outDir: '/out',
-			pieces: mockPieces,
-			assetKeyToPath: new Map([['key', 'notes.txt']]),
-			logger: makeLogger()
+			pieces,
+			assetKeyToPath: new Map([['key', 'notes.unknown']]),
+			logger: makeLogger(),
 		})
 
-		expect(fetch).toHaveBeenCalledWith(
-			'http://localhost/api/pieces/books/my-book/transform/highlight?attachment=key'
+		expect(codeToHtml).toHaveBeenCalledWith(
+			'plain text',
+			expect.objectContaining({ lang: 'text' })
 		)
-		expect(records).toHaveLength(1)
-		expect(records[0].piece_asset_path).toBe('notes.txt')
 	})
 
-	test('throws on error response', async () => {
-		const mockPieces = {} as unknown as Pieces
-
-		vi.mocked(fetch).mockResolvedValue({
-			ok: false,
-			status: 500,
-			statusText: 'Internal Server Error',
-		} as unknown as Response)
+	test('throws on shiki error', async () => {
+		const pieces = makePieces()
+		vi.mocked(getLang).mockReturnValue('javascript')
+		vi.mocked(codeToHtml).mockRejectedValue(new Error('shiki failed'))
 
 		await expect(
 			run({
 				webPiece: makeWebPiece('{"code": "key"}'),
 				config: makeConfig(['code']),
 				outDir: '/out',
-				pieces: mockPieces,
+				pieces,
 				assetKeyToPath: new Map([['key', 'main.js']]),
-				logger: makeLogger()
+				logger: makeLogger(),
 			})
-		).rejects.toThrow('500')
+		).rejects.toThrow('shiki failed')
 	})
 
-	test('produces one record per attachment regardless of extension', async () => {
-		const mockPieces = {} as unknown as Pieces
-		const html = '<pre class="shiki">...</pre>'
-
-		vi.mocked(fetch).mockResolvedValue({
-			ok: true,
-			status: 200,
-			text: vi.fn().mockResolvedValue(html),
-		} as unknown as Response)
+	test('produces one record per attachment', async () => {
+		const pieces = makePieces('content')
+		vi.mocked(getLang).mockReturnValue('javascript')
+		vi.mocked(codeToHtml).mockResolvedValue('<pre class="shiki">...</pre>')
 
 		const map = new Map([
 			['key1', 'main.js'],
@@ -173,30 +170,30 @@ describe('transforms/highlight', () => {
 			webPiece: makeWebPiece('{"files": ["key1", "key2", "key3"]}'),
 			config: makeConfig(['files']),
 			outDir: '/out',
-			pieces: mockPieces,
+			pieces,
 			assetKeyToPath: map,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).toHaveBeenCalledTimes(3)
+		expect(pieces.getPieceAsset).toHaveBeenCalledTimes(3)
 		expect(records).toHaveLength(3)
 		expect(records.map((r) => r.piece_asset_path)).toEqual(['main.js', 'report.pdf', 'app.ts'])
 	})
 
 	test('returns empty array for piece type not in config', async () => {
-		const mockPieces = {} as unknown as Pieces
+		const pieces = makePieces()
 		const webPiece = { ...makeWebPiece('{"code": "main.js"}'), type: 'unknown' }
 
 		const records = await run({
 			webPiece,
 			config: makeConfig(['code']),
 			outDir: '/out',
-			pieces: mockPieces,
+			pieces,
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).not.toHaveBeenCalled()
+		expect(pieces.getPieceAsset).not.toHaveBeenCalled()
 		expect(records).toEqual([])
 	})
 })
