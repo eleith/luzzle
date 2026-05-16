@@ -1,11 +1,18 @@
 <script lang="ts">
-	import Button from '$lib/components/ui/Button.svelte'
-	import { onDestroy } from 'svelte'
+	import { onMount, onDestroy, tick } from 'svelte'
 
-	let isRunning = $state(false)
-	let status = $state<'idle' | 'enqueued' | 'running' | 'completed' | 'failed'>('idle')
-	let errorMessage = $state('')
-	let jobId = $state<string | number>('')
+	import CheckCircleFill from 'virtual:icons/ph/check-circle-fill'
+	import XCircleFill from 'virtual:icons/ph/x-circle-fill'
+	import CircleNotchBold from 'virtual:icons/ph/circle-notch-bold'
+	import MinusCircle from 'virtual:icons/ph/minus-circle'
+	import SquareFill from 'virtual:icons/ph/square-fill'
+	import PlayFill from 'virtual:icons/ph/play-fill'
+
+	import type { PageData } from './$types'
+
+	let { data }: { data: PageData } = $props()
+
+	type PublishStatus = 'idle' | 'enqueued' | 'running' | 'completed' | 'failed'
 
 	type PhaseProgress = {
 		phase: string
@@ -23,17 +30,53 @@
 		message: string
 	}
 
-	let phases = $state<PhaseProgress[]>([])
-	let logs = $state<Record<string, PhaseLog[]>>({})
-	let expandedPhases = $state<Record<string, boolean>>({})
+	function stateToStatus(state: string | null | undefined): PublishStatus {
+		switch (state) {
+			case 'completed':
+				return 'completed'
+			case 'failed':
+			case 'canceled':
+				return 'failed'
+			case 'running':
+			case 'claimed':
+				return 'running'
+			case 'waiting':
+				return 'enqueued'
+			default:
+				return 'idle'
+		}
+	}
+
+	const initialJob = data.job
+	const initialPhases: PhaseProgress[] = initialJob?.phases ?? []
+	const initialLogs: Record<string, PhaseLog[]> = {}
+	if (initialJob) {
+		for (const log of initialJob.logs) {
+			if (!initialLogs[log.phase]) initialLogs[log.phase] = []
+			initialLogs[log.phase].push(log)
+		}
+	}
+	const initialErrors = initialJob?.errors as { message?: string }[] | undefined
+	const initialStatus: PublishStatus = stateToStatus(initialJob?.state)
+
+	let status = $state<PublishStatus>(initialStatus)
+	let errorMessage = $state(
+		initialStatus === 'failed' && initialErrors?.[0]?.message ? initialErrors[0].message : ''
+	)
+	let jobId = $state<string | number>(initialJob?.jobId ?? '')
+
+	let phases = $state<PhaseProgress[]>(initialPhases)
+	let logs = $state<Record<string, PhaseLog[]>>(initialLogs)
 
 	let eventSource: EventSource | null = null
 
 	function formatDuration(ms: number) {
+		if (ms < 0) return '0s'
 		const s = Math.floor(ms / 1000)
+		if (s < 60) return `${s}s`
 		const m = Math.floor(s / 60)
 		const remS = s % 60
-		return m > 0 ? `${m}m ${remS}s` : `${remS}s`
+		return `${m}m ${remS}s`
 	}
 
 	function startWatching(id: string | number) {
@@ -51,30 +94,27 @@
 		})
 
 		eventSource.addEventListener('phase', (e) => {
-			phases = JSON.parse(e.data)
+			const data = JSON.parse(e.data)
+			phases = data
 		})
 
 		eventSource.addEventListener('log', (e) => {
 			const newLogs: PhaseLog[] = JSON.parse(e.data)
+			const touched = new Set<string>()
 			for (const log of newLogs) {
 				if (!logs[log.phase]) {
 					logs[log.phase] = []
 				}
 				logs[log.phase].push(log)
+				touched.add(log.phase)
 			}
 
-			// Simple auto-scroll check for expanded phases
-			for (const p in expandedPhases) {
-				if (expandedPhases[p]) {
-					const el = document.getElementById(`log-container-${p}`)
-					if (el) {
-						// Only scroll if already near bottom or just newly expanded
-						setTimeout(() => {
-							el.scrollTop = el.scrollHeight
-						}, 0)
-					}
+			tick().then(() => {
+				for (const phase of touched) {
+					const el = document.getElementById(`log-container-${phase}`)
+					if (el) el.scrollTop = el.scrollHeight
 				}
-			}
+			})
 		})
 
 		eventSource.addEventListener('done', (e) => {
@@ -85,12 +125,10 @@
 			}
 			eventSource?.close()
 			eventSource = null
-			isRunning = false
 		})
 
 		eventSource.addEventListener('error', (e) => {
 			const msgEvent = e as MessageEvent
-			// msgEvent.data might be undefined for native EventSource errors
 			if (msgEvent.data) {
 				try {
 					const data = JSON.parse(msgEvent.data)
@@ -98,25 +136,16 @@
 				} catch {
 					errorMessage = 'Stream error'
 				}
-			} else if (status !== 'completed' && status !== 'failed') {
-				// Don't override status if we were just disconnected normally
-				// Reconnection is handled automatically by the browser
 			}
-		})
-
-		eventSource.addEventListener('cursor', (_e) => {
-			// Heartbeat/cursor update
 		})
 	}
 
 	async function startPublish() {
-		isRunning = true
 		status = 'idle'
 		errorMessage = ''
 		jobId = ''
 		phases = []
 		logs = {}
-		expandedPhases = {}
 
 		try {
 			const response = await fetch(`/api/publish`, {
@@ -135,9 +164,8 @@
 				status = 'failed'
 				errorMessage =
 					response.status === 409 && !data?.jobId
-						? `Conflict: Job already running`
+						? `Conflict: job already running`
 						: `Server error: ${response.status}`
-				isRunning = false
 				return
 			}
 
@@ -147,34 +175,29 @@
 		} catch (e) {
 			status = 'failed'
 			errorMessage = e instanceof Error ? e.message : String(e)
-			isRunning = false
 		}
 	}
+
+	function cancelPublish() {
+		if (eventSource) {
+			eventSource.close()
+			eventSource = null
+		}
+		status = 'failed'
+		errorMessage = 'Publish cancelled'
+	}
+
+	onMount(() => {
+		if (initialJob && (initialStatus === 'running' || initialStatus === 'enqueued')) {
+			startWatching(initialJob.jobId)
+		}
+	})
 
 	onDestroy(() => {
 		if (eventSource) {
 			eventSource.close()
 		}
 	})
-
-	function togglePhase(phaseName: string) {
-		expandedPhases[phaseName] = !expandedPhases[phaseName]
-	}
-
-	function getStatusIcon(s: string) {
-		switch (s) {
-			case 'completed':
-				return '✓'
-			case 'skipped':
-				return '⏭'
-			case 'failed':
-				return '✗'
-			case 'running':
-				return '⏳'
-			default:
-				return '·'
-		}
-	}
 
 	let overallDuration = $derived.by(() => {
 		if (phases.length === 0) return 0
@@ -184,290 +207,491 @@
 		const end = last.finished_at || Date.now()
 		return end - first.started_at
 	})
+
+	let completedStages = $derived(phases.filter((p) => p.status === 'completed').length)
+	let totalStages = $derived(6)
+
+	let finishedAt = $derived.by(() => {
+		let max = 0
+		for (const p of phases) {
+			if (p.finished_at && p.finished_at > max) max = p.finished_at
+		}
+		return max || null
+	})
+
+	function formatTimestamp(ts: number) {
+		return new Date(ts).toLocaleString(undefined, {
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		})
+	}
 </script>
 
-<section class="builder-container">
-	<header>
-		<h1>Publish Workspace</h1>
-		<div class="actions">
-			<Button onclick={startPublish} disabled={isRunning}>
-				{isRunning ? (status === 'enqueued' ? 'Waiting...' : 'Publishing...') : 'Publish Changes'}
-			</Button>
-		</div>
+<section class="publish-view">
+	<header class="publish-header">
+		<h1>Publish</h1>
+		<div class="header-meta">{totalStages} stages</div>
 	</header>
 
-	{#if errorMessage}
-		<div class="error-box">
-			<strong>Error:</strong>
-			{errorMessage}
+	<div class="status-card">
+		<div class="status-left">
+			<span class="status-badge status-{status}">
+				<span class="status-dot"></span>
+				{status.toUpperCase()}
+			</span>
+
+			<div class="status-text">
+				{#if status === 'idle'}
+					<div class="status-title">No active run</div>
+					<div class="status-sub">Ready to publish</div>
+				{:else if status === 'enqueued'}
+					<div class="status-title">Enqueued</div>
+					<div class="status-sub">Waiting for worker…</div>
+				{:else if status === 'running'}
+					<div class="status-title">Publishing workspace</div>
+					<div class="status-sub">
+						<span class="highlight">{completedStages}/{totalStages}</span> stages ·
+						<span class="highlight">{formatDuration(overallDuration)}</span> elapsed
+					</div>
+				{:else if status === 'completed'}
+					<div class="status-title">Workspace published</div>
+					<div class="status-sub">
+						{#if finishedAt}{formatTimestamp(finishedAt)} ·{/if}
+						{formatDuration(overallDuration)} total
+					</div>
+				{:else if status === 'failed'}
+					<div class="status-title">Publish failed</div>
+					<div class="status-sub">
+						{#if finishedAt}{formatTimestamp(finishedAt)} ·{/if}
+						{formatDuration(overallDuration)} stopped at
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		<div class="status-actions">
+			{#if status === 'running' || status === 'enqueued'}
+				<button class="btn btn-outline" onclick={cancelPublish}>
+					<SquareFill class="btn-icon" />
+					Cancel
+				</button>
+			{:else}
+				<button class="btn btn-primary" onclick={startPublish}>
+					<PlayFill class="btn-icon" />
+					Publish
+				</button>
+			{/if}
+		</div>
+	</div>
+
+	{#if errorMessage && status === 'failed'}
+		<div class="error-strip">
+			<XCircleFill class="error-icon" />
+			<span>{errorMessage}</span>
 		</div>
 	{/if}
 
-	{#if status !== 'idle' && status !== 'failed'}
-		<div class="progress-container">
-			<div class="progress-header">
-				<h2>Status: <span class="status-badge status-{status}">{status}</span></h2>
-				{#if phases.length > 0}
-					<div class="duration">{formatDuration(overallDuration)}</div>
-				{/if}
-			</div>
+	{#if phases.length > 0}
+		<div class="timeline">
+			{#each phases as phase (phase.phase)}
+				{@const hasLogs = (logs[phase.phase]?.length ?? 0) > 0}
+				<div class="phase">
+					<div class="phase-row">
+						<span class="phase-icon-wrap status-{phase.status}">
+							{#if phase.status === 'completed'}
+								<CheckCircleFill class="phase-icon" />
+							{:else if phase.status === 'running'}
+								<CircleNotchBold class="phase-icon spin" />
+							{:else if phase.status === 'failed'}
+								<XCircleFill class="phase-icon" />
+							{:else if phase.status === 'skipped'}
+								<MinusCircle class="phase-icon" />
+							{:else}
+								<span class="phase-dot"></span>
+							{/if}
+						</span>
 
-			<div class="phases-list">
-				{#each phases as phase (phase.phase)}
-					<div class="phase-item">
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
-						<div class="phase-header" onclick={() => togglePhase(phase.phase)}>
-							<span class="phase-icon status-{phase.status}">{getStatusIcon(phase.status)}</span>
-							<span class="phase-name">{phase.phase}</span>
-							{#if phase.finished_at}
-								<span class="phase-duration"
-									>({formatDuration(phase.finished_at - phase.started_at)})</span
-								>
-							{/if}
-							{#if phase.message}
-								<span class="phase-msg">— {phase.message}</span>
-							{/if}
-							<span class="phase-toggle">
-								{expandedPhases[phase.phase] ? '▼' : '▶'}
+						<span class="phase-name">{phase.phase}</span>
+
+						{#if phase.message}
+							<span class="phase-message" class:is-error={phase.status === 'failed'}>
+								{phase.message}
 							</span>
-						</div>
-						{#if expandedPhases[phase.phase]}
-							<div class="phase-logs" id="log-container-{phase.phase}">
-								{#if logs[phase.phase] && logs[phase.phase].length > 0}
-									{#each logs[phase.phase] as log (log.line_number)}
-										<div class="log-line level-{log.level}">
-											<span class="log-ts"
-												>{new Date(log.ts).toISOString().split('T')[1].slice(0, -1)}</span
-											>
-											<span class="log-msg">{log.message}</span>
-										</div>
-									{/each}
-								{:else}
-									<div class="log-line empty">No logs yet...</div>
-								{/if}
-							</div>
+						{/if}
+
+						{#if phase.status === 'skipped'}
+							<span class="phase-aside phase-time">—</span>
 						{/if}
 					</div>
-				{/each}
-			</div>
+
+					{#if hasLogs}
+						<div class="log-console">
+							<div class="log-header">
+								<span>{logs[phase.phase]?.length || 0} lines</span>
+								{#if phase.started_at}
+									<span class="log-duration">
+										{formatDuration((phase.finished_at || Date.now()) - phase.started_at)}
+									</span>
+								{/if}
+							</div>
+							<div class="log-viewport" id="log-container-{phase.phase}">
+								{#each logs[phase.phase] ?? [] as log (log.line_number)}
+									<div
+										class="log-row"
+										class:is-error={log.level === 'error' || log.level === 'stderr'}
+									>
+										<span class="log-timestamp">
+											{new Date(log.ts).toISOString().split('T')[1].slice(0, -5)}
+										</span>
+										<span class="log-body">{log.message}</span>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/each}
 		</div>
 	{/if}
 </section>
 
 <style>
-	.builder-container {
-		margin: var(--space-4) auto;
-		padding: 0 var(--space-4);
-		width: 85%;
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-		max-width: clamp(500px, 80%, 1200px);
+	.publish-view {
+		padding: var(--space-8) var(--space-4);
+		max-width: 860px;
+		margin: 0 auto;
+		color: var(--color-on-surface);
+		font-size: 14px;
+		line-height: 1.4;
 	}
 
-	header {
+	.publish-header {
+		margin-bottom: var(--space-5);
+	}
+
+	.publish-header h1 {
+		margin: 0;
+		font-size: 28px;
+		font-weight: var(--font-weight-bold);
+		letter-spacing: -0.01em;
+	}
+
+	.header-meta {
+		margin-top: 4px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		color: var(--color-on-surface-variant);
+	}
+
+	.status-card {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		flex-wrap: wrap;
 		gap: var(--space-4);
-	}
-
-	.actions {
-		display: flex;
-		gap: var(--space-3);
-	}
-
-	h1 {
-		font-size: var(--font-size-xl);
-		margin: 0;
-	}
-
-	.error-box {
-		padding: var(--space-3);
-		background-color: var(--color-error-container);
-		color: var(--color-on-error-container);
-		border-radius: var(--radius-small);
-		border: 1px solid var(--color-error);
-	}
-
-	.progress-container {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-3);
-		border: 1px solid var(--color-border);
+		padding: var(--space-4) var(--space-5);
+		background-color: var(--color-surface-container-lowest);
+		border: 1px solid var(--color-outline-variant);
 		border-radius: var(--radius-medium);
-		padding: var(--space-4);
-		background-color: var(--color-surface);
+		margin-bottom: var(--space-5);
 	}
 
-	.progress-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		border-bottom: 1px solid var(--color-border);
-		padding-bottom: var(--space-2);
-	}
-
-	.progress-header h2 {
-		margin: 0;
-		font-size: var(--font-size-lg);
+	.status-left {
 		display: flex;
 		align-items: center;
-		gap: var(--space-2);
+		gap: var(--space-5);
+		min-width: 0;
 	}
 
 	.status-badge {
-		font-size: var(--font-size-sm);
-		padding: 2px 8px;
-		border-radius: 12px;
-		text-transform: uppercase;
-		font-weight: 600;
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: 4px 10px;
+		border-radius: var(--radius-full);
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: var(--font-weight-semibold);
+		letter-spacing: 0.08em;
+		border: 1px solid var(--color-outline-variant);
+		background-color: var(--color-surface-container-low);
+		color: var(--color-on-surface);
+		white-space: nowrap;
 	}
 
-	.status-badge.status-completed {
-		background-color: var(--color-primary-container);
-		color: var(--color-on-primary-container);
+	.status-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background-color: var(--color-outline);
 	}
+
 	.status-badge.status-running {
-		background-color: var(--color-secondary-container);
-		color: var(--color-on-secondary-container);
+		color: var(--color-secondary);
+		border-color: var(--color-secondary);
+	}
+	.status-badge.status-running .status-dot {
+		background-color: var(--color-secondary);
+		box-shadow: 0 0 6px var(--color-secondary);
 	}
 	.status-badge.status-enqueued {
-		background-color: var(--color-surface-variant);
-		color: var(--color-on-surface-variant);
+		color: var(--color-tertiary);
+		border-color: var(--color-tertiary);
+	}
+	.status-badge.status-enqueued .status-dot {
+		background-color: var(--color-tertiary);
+	}
+	.status-badge.status-completed {
+		color: var(--color-primary);
+		border-color: var(--color-primary);
+	}
+	.status-badge.status-completed .status-dot {
+		background-color: var(--color-primary);
 	}
 	.status-badge.status-failed {
-		background-color: var(--color-error-container);
-		color: var(--color-on-error-container);
+		color: var(--color-error);
+		border-color: var(--color-error);
+	}
+	.status-badge.status-failed .status-dot {
+		background-color: var(--color-error);
 	}
 
-	.duration {
-		font-family: var(--font-mono);
-		font-size: var(--font-size-sm);
-		color: var(--color-text-muted);
+	.status-text {
+		min-width: 0;
 	}
 
-	.phases-list {
-		display: flex;
-		flex-direction: column;
+	.status-title {
+		font-size: 15px;
+		font-weight: var(--font-weight-semibold);
+		color: var(--color-on-surface);
+	}
+
+	.status-sub {
+		margin-top: 2px;
+		font-size: 12px;
+		color: var(--color-on-surface-variant);
+	}
+
+	.status-sub .highlight {
+		color: var(--color-on-surface);
+		font-weight: var(--font-weight-medium);
+	}
+
+	.status-actions {
+		flex-shrink: 0;
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
 		gap: var(--space-2);
-	}
-
-	.phase-item {
-		border: 1px solid var(--color-border);
+		height: 32px;
+		padding: 0 var(--space-4);
+		font-size: 12px;
+		font-weight: var(--font-weight-semibold);
+		font-family: inherit;
 		border-radius: var(--radius-small);
-		overflow: hidden;
+		border: 1px solid transparent;
+		cursor: pointer;
+		transition:
+			filter 0.15s ease,
+			background-color 0.15s ease;
 	}
 
-	.phase-header {
+	.btn-primary {
+		background-color: var(--color-primary);
+		color: var(--color-on-primary);
+	}
+	.btn-primary:hover {
+		filter: brightness(1.08);
+	}
+
+	.btn-outline {
+		background: transparent;
+		border-color: var(--color-outline-variant);
+		color: var(--color-on-surface);
+	}
+	.btn-outline:hover {
+		background-color: var(--color-surface-container-low);
+	}
+
+	.btn :global(.btn-icon) {
+		font-size: 12px;
+	}
+
+	.error-strip {
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
 		padding: var(--space-2) var(--space-3);
-		background-color: var(--color-surface-variant);
-		cursor: pointer;
-		user-select: none;
+		background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
+		border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
+		color: var(--color-error);
+		font-size: 12px;
+		border-radius: var(--radius-small);
+		margin-bottom: var(--space-4);
 	}
 
-	.phase-header:hover {
-		background-color: var(--color-surface-hover);
+	.error-strip :global(.error-icon) {
+		font-size: 14px;
+		flex-shrink: 0;
 	}
 
-	.phase-icon {
-		font-weight: bold;
-		width: 1.5rem;
-		text-align: center;
+	.timeline {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
 	}
-	.phase-icon.status-completed {
+
+	.phase-row {
+		padding: var(--space-2) var(--space-3);
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.phase-icon-wrap {
+		width: 20px;
+		height: 20px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.phase-icon-wrap :global(.phase-icon) {
+		font-size: 18px;
+	}
+
+	.phase-icon-wrap.status-completed {
 		color: var(--color-primary);
 	}
-	.phase-icon.status-failed {
+	.phase-icon-wrap.status-running {
+		color: var(--color-secondary);
+	}
+	.phase-icon-wrap.status-failed {
 		color: var(--color-error);
 	}
-	.phase-icon.status-running {
-		color: var(--color-secondary);
-		animation: pulse 1.5s infinite;
+	.phase-icon-wrap.status-skipped {
+		color: var(--color-on-surface-variant);
 	}
-	.phase-icon.status-skipped {
-		color: var(--color-text-muted);
+
+	.phase-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		border: 1.5px solid var(--color-outline-variant);
 	}
 
 	.phase-name {
-		font-weight: 600;
-	}
-
-	.phase-duration {
 		font-family: var(--font-mono);
-		font-size: var(--font-size-sm);
-		color: var(--color-text-muted);
+		font-size: 13px;
+		font-weight: var(--font-weight-medium);
+		color: var(--color-on-surface);
+		flex-shrink: 0;
 	}
 
-	.phase-msg {
-		font-size: var(--font-size-sm);
-		color: var(--color-text-muted);
-		white-space: nowrap;
+	.phase-message {
+		font-size: 12px;
+		color: var(--color-on-surface-variant);
 		overflow: hidden;
 		text-overflow: ellipsis;
-		flex-grow: 1;
+		white-space: nowrap;
+		min-width: 0;
 	}
 
-	.phase-toggle {
+	.phase-message.is-error {
+		color: var(--color-error);
+	}
+
+	.phase-aside {
 		margin-left: auto;
-		font-size: var(--font-size-sm);
-		color: var(--color-text-muted);
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		flex-shrink: 0;
 	}
 
-	.phase-logs {
-		background-color: #1e1e1e;
-		color: #d4d4d4;
+	.phase-time {
 		font-family: var(--font-mono);
-		font-size: var(--font-size-sm);
-		padding: var(--space-2);
-		max-height: 400px;
-		overflow-y: auto;
-		display: flex;
-		flex-direction: column;
+		font-size: 11px;
+		color: var(--color-on-surface-variant);
+		min-width: 36px;
+		text-align: right;
 	}
 
-	.log-line {
+	.log-console {
+		margin: 4px var(--space-3) var(--space-2) 44px;
+		background-color: var(--color-surface);
+		border: 1px solid var(--color-outline-variant);
+		border-radius: var(--radius-small);
+		overflow: hidden;
+	}
+
+	.log-header {
 		display: flex;
-		gap: var(--space-2);
-		line-height: 1.4;
+		justify-content: space-between;
+		align-items: center;
+		gap: var(--space-3);
+		padding: 4px var(--space-3);
+		background-color: var(--color-surface-container-low);
+		border-bottom: 1px solid var(--color-outline-variant);
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: var(--font-weight-semibold);
+		color: var(--color-on-surface-variant);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.log-duration {
+		color: var(--color-on-surface);
+	}
+
+	.log-viewport {
+		padding: var(--space-2) var(--space-3);
+		max-height: 260px;
+		overflow-y: auto;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		line-height: 1.6;
+		color: var(--color-on-surface-variant);
+	}
+
+	.log-row {
+		display: flex;
+		gap: var(--space-3);
+	}
+
+	.log-row.is-error {
+		background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
+		color: var(--color-error);
+		margin: 0 calc(-1 * var(--space-3));
+		padding: 0 var(--space-3);
+	}
+
+	.log-timestamp {
+		color: var(--color-outline);
+		flex-shrink: 0;
+		opacity: 0.7;
+	}
+
+	.log-body {
 		white-space: pre-wrap;
 		word-break: break-all;
 	}
 
-	.log-ts {
-		color: #858585;
-		flex-shrink: 0;
+	.spin {
+		animation: spin 1s linear infinite;
 	}
 
-	.log-line.level-error .log-msg {
-		color: #f48771;
-	}
-	.log-line.level-warn .log-msg {
-		color: #cca700;
-	}
-	.log-line.level-stderr .log-msg {
-		color: #e06c75;
-	}
-
-	.log-line.empty {
-		color: #858585;
-		font-style: italic;
-	}
-
-	@keyframes pulse {
-		0% {
-			opacity: 1;
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
 		}
-		50% {
-			opacity: 0.4;
-		}
-		100% {
-			opacity: 1;
+		to {
+			transform: rotate(360deg);
 		}
 	}
 </style>
