@@ -391,43 +391,6 @@ auth:
 		})
 	})
 
-	describe('Builder Configuration', () => {
-		const tmpConfigPath = join(tmpdir(), `builder-config-${Date.now()}.yaml`)
-
-		afterEach(() => {
-			try {
-				unlinkSync(tmpConfigPath)
-			} catch {
-				// ignore
-			}
-		})
-
-		test('should validate valid builder config', () => {
-			const yamlContent = `
-builder:
-  url: 'https://builder.example.com'
-  method: 'POST'
-  headers:
-    Authorization: 'Bearer token'
-  body: '{}'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.builder?.url).toBe('https://builder.example.com')
-			expect(config.builder?.headers?.Authorization).toBe('Bearer token')
-		})
-
-		test('should validate builder config with only url', () => {
-			const yamlContent = `
-builder:
-  url: 'https://builder.example.com'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.builder?.url).toBe('https://builder.example.com')
-		})
-	})
-
 	describe('Config paths tracking', () => {
 		const tmpConfigPath = join(tmpdir(), `paths-config-${Date.now()}.yaml`)
 
@@ -745,12 +708,6 @@ sync:
   cdn:
     remote: 's3://cdn-bucket'
     path: '/cdn/path'
-builder:
-  url: 'https://builder.example.com'
-  method: 'POST'
-  headers:
-    Authorization: 'Bearer token123'
-  body: '{"key":"value"}'
 `
 			writeFileSync(tmpConfigPath, yamlContent)
 			const config = loadConfig(tmpConfigPath)
@@ -763,8 +720,6 @@ builder:
 			expect(config.sync.archive?.path).toBe('/archive/path')
 			expect(config.sync.cdn?.remote).toBe('s3://cdn-bucket')
 			expect(config.sync.cdn?.path).toBe('/cdn/path')
-			expect(config.builder?.headers?.Authorization).toBe('Bearer token123')
-			expect(config.builder?.body).toBe('{"key":"value"}')
 		})
 	})
 

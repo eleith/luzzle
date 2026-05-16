@@ -18,10 +18,6 @@
               "type": "string",
               "default": "http://luzzle-lsp:9001"
             },
-            "builder": {
-              "type": "string",
-              "default": "http://luzzle-builder:9000"
-            },
             "queue": {
               "type": "string",
               "default": "http://luzzle-queue:9000"
@@ -56,40 +52,6 @@
           "default": ""
         },
         "luzzle_assets": {
-          "type": "string",
-          "default": ""
-        }
-      },
-      "additionalProperties": false
-    },
-    "builder": {
-      "type": "object",
-      "default": {},
-      "properties": {
-        "token": {
-          "type": "string",
-          "default": "${LUZZLE_BUILDER_TOKEN:-}"
-        },
-        "timeout_ms": {
-          "type": "number",
-          "default": 3600000
-        },
-        "url": {
-          "type": "string",
-          "default": "http://luzzle-builder/hooks?token=${LUZZLE_BUILDER_TOKEN}"
-        },
-        "method": {
-          "type": "string",
-          "default": "POST"
-        },
-        "headers": {
-          "type": "object",
-          "default": {},
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "body": {
           "type": "string",
           "default": ""
         }

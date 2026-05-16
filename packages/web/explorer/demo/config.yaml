@@ -31,9 +31,6 @@ sync:
     remote: cdn
     path: /app/cdn
 
-builder:
-  url: http://luzzle-dev-builder:9000/hooks?token=${LUZZLE_BUILDER_TOKEN}
-
 paths:
   database: ./data/luzzle.sqlite
 

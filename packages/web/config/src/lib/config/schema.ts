@@ -12,7 +12,6 @@ export type Schema = {
     internal?: {
       explorer?: string;
       lsp?: string;
-      builder?: string;
       queue?: string;
       [k: string]: unknown;
     };
@@ -27,16 +26,6 @@ export type Schema = {
     app: string;
     app_assets: string;
     luzzle_assets: string;
-  };
-  builder?: {
-    token?: string;
-    timeout_ms?: number;
-    url: string;
-    method?: string;
-    headers?: {
-      [k: string]: string;
-    };
-    body?: string;
   };
   auth: {
     enabled: boolean;
