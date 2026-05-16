@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte'
+	import Button from '$lib/components/ui/Button.svelte'
 
 	import CheckCircleFill from 'virtual:icons/ph/check-circle-fill'
 	import XCircleFill from 'virtual:icons/ph/x-circle-fill'
@@ -232,14 +233,22 @@
 <section class="publish-view">
 	<header class="publish-header">
 		<h1>Publish</h1>
-		<div class="header-meta">{totalStages} stages</div>
 	</header>
 
 	<div class="status-card">
 		<div class="status-left">
-			<span class="status-badge status-{status}">
-				<span class="status-dot"></span>
-				{status.toUpperCase()}
+			<span class="status-icon-wrap status-{status}">
+				{#if status === 'completed'}
+					<CheckCircleFill class="status-icon" />
+				{:else if status === 'running'}
+					<CircleNotchBold class="status-icon spin" />
+				{:else if status === 'enqueued'}
+					<CircleNotchBold class="status-icon" />
+				{:else if status === 'failed'}
+					<XCircleFill class="status-icon" />
+				{:else}
+					<span class="status-dot"></span>
+				{/if}
 			</span>
 
 			<div class="status-text">
@@ -256,16 +265,20 @@
 						<span class="highlight">{formatDuration(overallDuration)}</span> elapsed
 					</div>
 				{:else if status === 'completed'}
-					<div class="status-title">Workspace published</div>
+					<div class="status-title">
+						{finishedAt
+							? `Workspace published on ${formatTimestamp(finishedAt)}`
+							: 'Workspace published'}
+					</div>
 					<div class="status-sub">
-						{#if finishedAt}{formatTimestamp(finishedAt)} ·{/if}
-						{formatDuration(overallDuration)} total
+						{totalStages} stages · {formatDuration(overallDuration)} total
 					</div>
 				{:else if status === 'failed'}
-					<div class="status-title">Publish failed</div>
+					<div class="status-title">
+						{finishedAt ? `Publish failed on ${formatTimestamp(finishedAt)}` : 'Publish failed'}
+					</div>
 					<div class="status-sub">
-						{#if finishedAt}{formatTimestamp(finishedAt)} ·{/if}
-						{formatDuration(overallDuration)} stopped at
+						{completedStages}/{totalStages} stages · {formatDuration(overallDuration)} stopped at
 					</div>
 				{/if}
 			</div>
@@ -273,15 +286,15 @@
 
 		<div class="status-actions">
 			{#if status === 'running' || status === 'enqueued'}
-				<button class="btn btn-outline" onclick={cancelPublish}>
+				<Button variant="outline" onclick={cancelPublish}>
 					<SquareFill class="btn-icon" />
 					Cancel
-				</button>
+				</Button>
 			{:else}
-				<button class="btn btn-primary" onclick={startPublish}>
+				<Button onclick={startPublish}>
 					<PlayFill class="btn-icon" />
 					Publish
-				</button>
+				</Button>
 			{/if}
 		</div>
 	</div>
@@ -378,19 +391,12 @@
 		letter-spacing: -0.01em;
 	}
 
-	.header-meta {
-		margin-top: 4px;
-		font-family: var(--font-mono);
-		font-size: 11px;
-		color: var(--color-on-surface-variant);
-	}
-
 	.status-card {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		gap: var(--space-4);
-		padding: var(--space-4) var(--space-5);
+		padding: var(--space-4) var(--space-3);
 		background-color: var(--color-surface-container-lowest);
 		border: 1px solid var(--color-outline-variant);
 		border-radius: var(--radius-medium);
@@ -404,57 +410,38 @@
 		min-width: 0;
 	}
 
-	.status-badge {
-		display: inline-flex;
+	.status-icon-wrap {
+		width: 28px;
+		height: 28px;
+		display: flex;
 		align-items: center;
-		gap: var(--space-2);
-		padding: 4px 10px;
-		border-radius: var(--radius-full);
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: var(--font-weight-semibold);
-		letter-spacing: 0.08em;
-		border: 1px solid var(--color-outline-variant);
-		background-color: var(--color-surface-container-low);
-		color: var(--color-on-surface);
-		white-space: nowrap;
+		justify-content: center;
+		flex-shrink: 0;
+		color: var(--color-on-surface-variant);
+	}
+
+	.status-icon-wrap :global(.status-icon) {
+		font-size: 26px;
 	}
 
 	.status-dot {
-		width: 6px;
-		height: 6px;
+		width: 10px;
+		height: 10px;
 		border-radius: 50%;
-		background-color: var(--color-outline);
+		border: 1.5px solid var(--color-outline-variant);
 	}
 
-	.status-badge.status-running {
+	.status-icon-wrap.status-running {
 		color: var(--color-secondary);
-		border-color: var(--color-secondary);
 	}
-	.status-badge.status-running .status-dot {
-		background-color: var(--color-secondary);
-		box-shadow: 0 0 6px var(--color-secondary);
-	}
-	.status-badge.status-enqueued {
+	.status-icon-wrap.status-enqueued {
 		color: var(--color-tertiary);
-		border-color: var(--color-tertiary);
 	}
-	.status-badge.status-enqueued .status-dot {
-		background-color: var(--color-tertiary);
-	}
-	.status-badge.status-completed {
+	.status-icon-wrap.status-completed {
 		color: var(--color-primary);
-		border-color: var(--color-primary);
 	}
-	.status-badge.status-completed .status-dot {
-		background-color: var(--color-primary);
-	}
-	.status-badge.status-failed {
+	.status-icon-wrap.status-failed {
 		color: var(--color-error);
-		border-color: var(--color-error);
-	}
-	.status-badge.status-failed .status-dot {
-		background-color: var(--color-error);
 	}
 
 	.status-text {
@@ -482,42 +469,8 @@
 		flex-shrink: 0;
 	}
 
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--space-2);
-		height: 32px;
-		padding: 0 var(--space-4);
-		font-size: 12px;
-		font-weight: var(--font-weight-semibold);
-		font-family: inherit;
-		border-radius: var(--radius-small);
-		border: 1px solid transparent;
-		cursor: pointer;
-		transition:
-			filter 0.15s ease,
-			background-color 0.15s ease;
-	}
-
-	.btn-primary {
-		background-color: var(--color-primary);
-		color: var(--color-on-primary);
-	}
-	.btn-primary:hover {
-		filter: brightness(1.08);
-	}
-
-	.btn-outline {
-		background: transparent;
-		border-color: var(--color-outline-variant);
-		color: var(--color-on-surface);
-	}
-	.btn-outline:hover {
-		background-color: var(--color-surface-container-low);
-	}
-
-	.btn :global(.btn-icon) {
-		font-size: 12px;
+	.status-actions :global(.btn-icon) {
+		font-size: 14px;
 	}
 
 	.error-strip {
@@ -622,7 +575,7 @@
 	}
 
 	.log-console {
-		margin: 4px var(--space-3) var(--space-2) 44px;
+		margin: 4px 0 0 var(--space-9);
 		background-color: var(--color-surface);
 		border: 1px solid var(--color-outline-variant);
 		border-radius: var(--radius-small);
