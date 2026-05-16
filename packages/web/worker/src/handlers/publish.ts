@@ -7,6 +7,7 @@ import { AssetsGenerate } from './assets-generate.js'
 import { CdnSync } from './cdn-sync.js'
 import { CachePurge } from './cache-purge.js'
 import { JobProgress } from '../lib/job-progress.js'
+import { setActivePhase, clearActivePhase } from '../lib/phase-logger.js'
 
 export class Publish extends Job {
 	async run(): Promise<string> {
@@ -80,6 +81,7 @@ export class Publish extends Job {
 
 		for (const phase of phases) {
 			await progress.start(jobId, phase.name)
+			setActivePhase({ jobId, phase: phase.name })
 			try {
 				if (phase.name === 'web.sync' || phase.name === 'assets.generate') {
 					await (phase.execute as (paths: string[]) => Promise<void>)(changedPaths)
@@ -91,6 +93,8 @@ export class Publish extends Job {
 			} catch (err) {
 				await progress.fail(jobId, phase.name, err)
 				throw err
+			} finally {
+				clearActivePhase()
 			}
 		}
 

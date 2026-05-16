@@ -72,12 +72,24 @@ export class RcloneClient {
 		return new Promise((resolve, reject) => {
 			const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] })
 
+			let stdoutBuf = ''
 			child.stdout.on('data', (data: Buffer) => {
-				this.logger.info('rclone', { output: data.toString().trim() })
+				stdoutBuf += data.toString()
+				const lines = stdoutBuf.split('\n')
+				stdoutBuf = lines.pop() ?? ''
+				for (const line of lines) {
+					this.logger.stdout(line)
+				}
 			})
 
+			let stderrBuf = ''
 			child.stderr.on('data', (data: Buffer) => {
-				this.logger.info('rclone', { output: data.toString().trim() })
+				stderrBuf += data.toString()
+				const lines = stderrBuf.split('\n')
+				stderrBuf = lines.pop() ?? ''
+				for (const line of lines) {
+					this.logger.stderr(line)
+				}
 			})
 
 			child.on('error', (err) => {
@@ -85,6 +97,9 @@ export class RcloneClient {
 			})
 
 			child.on('close', (code) => {
+				if (stdoutBuf.length > 0) this.logger.stdout(stdoutBuf)
+				if (stderrBuf.length > 0) this.logger.stderr(stderrBuf)
+
 				if (code === 0) {
 					resolve()
 				} else {

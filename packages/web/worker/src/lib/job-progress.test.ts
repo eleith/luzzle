@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setupDatabase, teardownDatabase } from '../../test/db.js'
 import { JobProgress } from './job-progress.js'

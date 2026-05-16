@@ -102,7 +102,7 @@ describe('handlers/publish', () => {
 		setWorkerContext(ctx)
 		
 		const publish = new Publish()
-		// @ts-ignore - mock property for test
+		// @ts-expect-error - mock property for test
 		publish.id = 123
 		
 		const result = await publish.run()
@@ -173,7 +173,7 @@ describe('handlers/publish', () => {
 		setWorkerContext(ctx)
 		
 		const publish = new Publish()
-		// @ts-ignore
+		// @ts-expect-error - mock property for test
 		publish.id = 456
 
 		await expect(publish.run()).rejects.toThrow('web.sync failed')
