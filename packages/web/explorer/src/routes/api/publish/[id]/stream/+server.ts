@@ -1,8 +1,63 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import type { RequestHandler } from './$types'
 import { db } from '$lib/server/database/index.js'
 import { Sidequest } from 'sidequest'
 import { configureQueue } from '$lib/server/queue.js'
+
+const POLL_INTERVAL_MS = 350
+const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled'])
+
+type Cursors = Record<string, number>
+
+function parseCursors(raw: string | null): Cursors {
+	if (!raw) return {}
+	try {
+		const parsed = JSON.parse(raw)
+		return typeof parsed === 'object' && parsed !== null ? (parsed as Cursors) : {}
+	} catch {
+		return {}
+	}
+}
+
+function encodeEvent(event: string, data: unknown, id?: string): string {
+	const lines = [`event: ${event}`]
+	if (id) lines.push(`id: ${id}`)
+	lines.push(`data: ${JSON.stringify(data)}`)
+	return lines.join('\n') + '\n\n'
+}
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+	return new Promise((resolve) => {
+		const timer = setTimeout(resolve, ms)
+		signal.addEventListener(
+			'abort',
+			() => {
+				clearTimeout(timer)
+				resolve()
+			},
+			{ once: true }
+		)
+	})
+}
+
+function fetchPhases(jobId: number) {
+	return db
+		.selectFrom('job_progress')
+		.selectAll()
+		.where('job_id', '=', jobId)
+		.orderBy('started_at', 'asc')
+		.execute()
+}
+
+function fetchNewLogs(jobId: number, phase: string, afterLine: number) {
+	return db
+		.selectFrom('job_progress_logs')
+		.selectAll()
+		.where('job_id', '=', jobId)
+		.where('phase', '=', phase)
+		.where('line_number', '>', afterLine)
+		.orderBy('line_number', 'asc')
+		.execute()
+}
 
 export const GET: RequestHandler = async ({ params, request, url }) => {
 	const jobId = parseInt(params.id, 10)
@@ -12,130 +67,44 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 
 	await configureQueue()
 
-	let cursors: Record<string, number> = {}
-	const lastEventId = request.headers.get('last-event-id') || url.searchParams.get('cursor')
-	if (lastEventId) {
-		try {
-			cursors = JSON.parse(lastEventId)
-		} catch (e) {
-			// ignore invalid cursor
-		}
-	}
+	const cursors = parseCursors(
+		request.headers.get('last-event-id') ?? url.searchParams.get('cursor')
+	)
 
-	const stream = new ReadableStream({
+	const stream = new ReadableStream<string>({
 		async start(controller) {
-			let isClosed = false
-			let pollTimer: NodeJS.Timeout
+			const { signal } = request
+			let closed = false
 
-			const closeStream = () => {
-				if (isClosed) return
-				isClosed = true
-				clearTimeout(pollTimer)
+			const close = () => {
+				if (closed) return
+				closed = true
 				try {
 					controller.close()
-				} catch (e) {
-					// Controller might already be closed
+				} catch {
+					// already closed
 				}
 			}
 
-			// Clean up if browser disconnects
-			request.signal.addEventListener('abort', closeStream)
-
-			const sendEvent = (event: string, data: any, id?: string) => {
-				if (isClosed) return
-				let msg = `event: ${event}\n`
-				if (id) msg += `id: ${id}\n`
-				msg += `data: ${JSON.stringify(data)}\n\n`
+			const emit = (event: string, data: unknown, id?: string) => {
+				if (closed) return
 				try {
-					controller.enqueue(msg)
-				} catch (e) {
-					closeStream()
+					controller.enqueue(encodeEvent(event, data, id))
+				} catch {
+					close()
 				}
 			}
 
-			const poll = async () => {
-				if (isClosed) return
+			signal.addEventListener('abort', close, { once: true })
 
-				try {
-					// 1. Check Sidequest job state
-					const job = await Sidequest.job.get(jobId)
-					if (!job) {
-						sendEvent('error', { message: 'Job not found' })
-						closeStream()
-						return
-					}
-
-					// Verify it's a Publish job (defensive check)
-					if (job.class !== 'Publish') {
-						sendEvent('error', { message: 'Job is not a Publish job' })
-						closeStream()
-						return
-					}
-
-					sendEvent('state', { state: job.state, result: job.result, errors: job.errors })
-
-					// 2. Fetch phase states (full snapshot)
-					const phases = await db
-						.selectFrom('job_progress' as any)
-						.selectAll()
-						.where('job_id', '=', jobId)
-						.orderBy('started_at', 'asc')
-						.execute()
-
-					sendEvent('phase', phases)
-
-					// 3. Fetch new log lines
-					let hasNewLogs = false
-					for (const phase of phases) {
-						const lastLine = cursors[phase.phase] || 0
-						const newLogs = await db
-							.selectFrom('job_progress_logs' as any)
-							.selectAll()
-							.where('job_id', '=', jobId)
-							.where('phase', '=', phase.phase)
-							.where('line_number', '>', lastLine)
-							.orderBy('line_number', 'asc')
-							.execute()
-
-						if (newLogs.length > 0) {
-							hasNewLogs = true
-							sendEvent('log', newLogs)
-							cursors[phase.phase] = newLogs[newLogs.length - 1].line_number
-						}
-					}
-
-					// Send the latest cursor back to the client as an id
-					if (hasNewLogs) {
-						// we send an empty event just to update the Last-Event-ID if needed,
-						// or we can attach the ID to the log event itself. We did it in log above? No.
-						// Actually, let's just send a heartbeat or cursor update
-						sendEvent('cursor', cursors, JSON.stringify(cursors))
-					}
-
-					// 4. Check if job is terminal AND no more logs are coming
-					const isTerminal = ['completed', 'failed', 'canceled'].includes(job.state)
-					// If terminal, we assume no more logs. But we already fetched logs *after* checking state,
-					// so we've drained everything up to the terminal state check.
-					if (isTerminal) {
-						sendEvent('done', { state: job.state, result: job.result, errors: job.errors })
-						closeStream()
-						return
-					}
-				} catch (err) {
-					console.error('SSE poll error:', err)
-					sendEvent('error', { message: 'Internal poll error' })
+			while (!closed && !signal.aborted) {
+				const terminal = await pollOnce(jobId, cursors, emit)
+				if (terminal) {
+					close()
+					return
 				}
-
-				if (!isClosed) {
-					pollTimer = setTimeout(poll, 350)
-				}
+				await sleep(POLL_INTERVAL_MS, signal)
 			}
-
-			// Initial poll
-			poll()
-		},
-		cancel() {
-			// This is called when stream is canceled by the consumer
 		}
 	})
 
@@ -147,4 +116,48 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 			'X-Accel-Buffering': 'no'
 		}
 	})
+}
+
+type Emit = (event: string, data: unknown, id?: string) => void
+
+async function pollOnce(jobId: number, cursors: Cursors, emit: Emit): Promise<boolean> {
+	try {
+		const job = await Sidequest.job.get(jobId)
+		if (!job) {
+			emit('error', { message: 'Job not found' })
+			return true
+		}
+		if (job.class !== 'Publish') {
+			emit('error', { message: 'Job is not a Publish job' })
+			return true
+		}
+
+		emit('state', { state: job.state, result: job.result, errors: job.errors })
+
+		const phases = await fetchPhases(jobId)
+		emit('phase', phases)
+
+		let hasNewLogs = false
+		for (const phase of phases) {
+			const newLogs = await fetchNewLogs(jobId, phase.phase, cursors[phase.phase] ?? 0)
+			if (newLogs.length > 0) {
+				hasNewLogs = true
+				emit('log', newLogs)
+				cursors[phase.phase] = newLogs[newLogs.length - 1].line_number
+			}
+		}
+		if (hasNewLogs) {
+			emit('cursor', cursors, JSON.stringify(cursors))
+		}
+
+		if (TERMINAL_STATES.has(job.state)) {
+			emit('done', { state: job.state, result: job.result, errors: job.errors })
+			return true
+		}
+		return false
+	} catch (err) {
+		console.error('SSE poll error:', err)
+		emit('error', { message: 'Internal poll error' })
+		return false
+	}
 }
