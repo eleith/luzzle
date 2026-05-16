@@ -152,14 +152,6 @@
 			"type": "object",
 			"default": {},
 			"properties": {
-				"remote": {
-					"type": "string",
-					"default": ""
-				},
-				"path": {
-					"type": "string",
-					"default": ""
-				},
 				"config": {
 					"type": "string",
 					"default": "/app/rclone/rclone.conf"

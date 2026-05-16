@@ -45,8 +45,6 @@ export type Schema = {
     root: string;
   };
   sync: {
-    remote?: string;
-    path?: string;
     config?: string;
     archive?: {
       remote?: string;

@@ -699,8 +699,6 @@ auth:
     clientId: 'my-client'
     clientSecret: 'my-client-secret'
 sync:
-  remote: 's3://my-bucket'
-  path: '/sync/path'
   config: '/custom/rclone.conf'
   archive:
     remote: 's3://archive-bucket'
@@ -714,7 +712,6 @@ sync:
 			expect(config.url.app).toBe('https://example.com')
 			expect(config.auth.secret).toBe('super-secret-key')
 			expect(config.auth.oidc?.issuer).toBe('https://auth.example.com')
-			expect(config.sync.remote).toBe('s3://my-bucket')
 			expect(config.sync.config).toBe('/custom/rclone.conf')
 			expect(config.sync.archive?.remote).toBe('s3://archive-bucket')
 			expect(config.sync.archive?.path).toBe('/archive/path')
