@@ -63,6 +63,30 @@ export async function setupDatabase(): Promise<Kysely<WebDatabase>> {
 				content TEXT
 			)
 		`.execute(cachedDb)
+
+		await sql`
+			CREATE TABLE IF NOT EXISTS job_progress (
+				job_id INTEGER NOT NULL,
+				phase TEXT NOT NULL,
+				status TEXT NOT NULL,
+				started_at INTEGER NOT NULL,
+				finished_at INTEGER,
+				message TEXT,
+				PRIMARY KEY (job_id, phase)
+			)
+		`.execute(cachedDb)
+
+		await sql`
+			CREATE TABLE IF NOT EXISTS job_progress_logs (
+				job_id INTEGER NOT NULL,
+				phase TEXT NOT NULL,
+				line_number INTEGER NOT NULL,
+				ts INTEGER NOT NULL,
+				level TEXT NOT NULL,
+				message TEXT NOT NULL,
+				PRIMARY KEY (job_id, phase, line_number)
+			)
+		`.execute(cachedDb)
 	}
 
 	await sql`BEGIN`.execute(cachedDb)

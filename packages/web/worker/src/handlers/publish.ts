@@ -6,29 +6,93 @@ import { WebSync } from './web-sync.js'
 import { AssetsGenerate } from './assets-generate.js'
 import { CdnSync } from './cdn-sync.js'
 import { CachePurge } from './cache-purge.js'
+import { JobProgress } from '../lib/job-progress.js'
 
 export class Publish extends Job {
 	async run(): Promise<string> {
-		const { logger } = getWorkerContext()
+		const { logger, db } = getWorkerContext()
 		logger.info('publish starting')
 
-		await new ArchiveSync().run()
-		logger.info('publish phase done: archive.sync')
+		const progress = new JobProgress(db, 2)
+		try {
+			await progress.purgeOld()
+		} catch (err) {
+			logger.error('Failed to purge old job progress', { err })
+		}
 
-		const { changedPaths } = await new LuzzleSync().run()
-		logger.info('publish phase done: luzzle.sync', { changed: changedPaths.length })
+		const jobId = this.id
 
-		await new WebSync().run({ filePaths: changedPaths })
-		logger.info('publish phase done: web.sync')
+		const phases = [
+			{
+				name: 'archive.sync',
+				execute: async () => {
+					const result = await new ArchiveSync().run()
+					if (result === 'skipped') {
+						await progress.skip(jobId, 'archive.sync', 'skipped')
+					} else {
+						await progress.complete(jobId, 'archive.sync')
+					}
+				}
+			},
+			{
+				name: 'luzzle.sync',
+				execute: async () => {
+					const { changedPaths } = await new LuzzleSync().run()
+					await progress.complete(jobId, 'luzzle.sync', `${changedPaths.length} pieces changed`)
+					return changedPaths
+				}
+			},
+			{
+				name: 'web.sync',
+				execute: async (changedPaths: string[]) => {
+					await new WebSync().run({ filePaths: changedPaths })
+					await progress.complete(jobId, 'web.sync')
+				}
+			},
+			{
+				name: 'assets.generate',
+				execute: async (changedPaths: string[]) => {
+					await new AssetsGenerate().run({ filePaths: changedPaths })
+					await progress.complete(jobId, 'assets.generate')
+				}
+			},
+			{
+				name: 'cdn.sync',
+				execute: async () => {
+					const result = await new CdnSync().run()
+					if (result === 'skipped') {
+						await progress.skip(jobId, 'cdn.sync', 'skipped')
+					} else {
+						await progress.complete(jobId, 'cdn.sync')
+					}
+				}
+			},
+			{
+				name: 'cache.purge',
+				execute: async () => {
+					await new CachePurge().run()
+					await progress.complete(jobId, 'cache.purge')
+				}
+			}
+		]
 
-		await new AssetsGenerate().run({ filePaths: changedPaths })
-		logger.info('publish phase done: assets.generate')
+		let changedPaths: string[] = []
 
-		await new CdnSync().run()
-		logger.info('publish phase done: cdn.sync')
-
-		await new CachePurge().run()
-		logger.info('publish phase done: cache.purge')
+		for (const phase of phases) {
+			await progress.start(jobId, phase.name)
+			try {
+				if (phase.name === 'web.sync' || phase.name === 'assets.generate') {
+					await (phase.execute as (paths: string[]) => Promise<void>)(changedPaths)
+				} else if (phase.name === 'luzzle.sync') {
+					changedPaths = await (phase.execute as () => Promise<string[]>)()
+				} else {
+					await (phase.execute as () => Promise<void>)()
+				}
+			} catch (err) {
+				await progress.fail(jobId, phase.name, err)
+				throw err
+			}
+		}
 
 		logger.info('publish complete')
 		return 'ok'

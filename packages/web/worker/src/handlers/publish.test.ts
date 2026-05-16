@@ -6,6 +6,7 @@ import { WebSync } from './web-sync.js'
 import { AssetsGenerate } from './assets-generate.js'
 import { CdnSync } from './cdn-sync.js'
 import { CachePurge } from './cache-purge.js'
+import { JobProgress } from '../lib/job-progress.js'
 import { setWorkerContext, type WorkerContext } from './context.js'
 import type { Logger } from '../logger.js'
 import type { Config } from '@luzzle/web.config'
@@ -17,6 +18,18 @@ vi.mock('./assets-generate.js', () => ({ AssetsGenerate: vi.fn() }))
 vi.mock('./cdn-sync.js', () => ({ CdnSync: vi.fn() }))
 vi.mock('./cache-purge.js', () => ({ CachePurge: vi.fn() }))
 
+vi.mock('../lib/job-progress.js', () => {
+	return {
+		JobProgress: vi.fn().mockImplementation(() => ({
+			purgeOld: vi.fn().mockResolvedValue(undefined),
+			start: vi.fn().mockResolvedValue(undefined),
+			complete: vi.fn().mockResolvedValue(undefined),
+			skip: vi.fn().mockResolvedValue(undefined),
+			fail: vi.fn().mockResolvedValue(undefined)
+		}))
+	}
+})
+
 const mocks = {
 	ArchiveSync: vi.mocked(ArchiveSync),
 	LuzzleSync: vi.mocked(LuzzleSync),
@@ -24,6 +37,7 @@ const mocks = {
 	AssetsGenerate: vi.mocked(AssetsGenerate),
 	CdnSync: vi.mocked(CdnSync),
 	CachePurge: vi.mocked(CachePurge),
+	JobProgress: vi.mocked(JobProgress),
 }
 
 function makeContext(): WorkerContext {
@@ -86,7 +100,12 @@ describe('handlers/publish', () => {
 
 		const ctx = makeContext()
 		setWorkerContext(ctx)
-		const result = await new Publish().run()
+		
+		const publish = new Publish()
+		// @ts-ignore - mock property for test
+		publish.id = 123
+		
+		const result = await publish.run()
 
 		expect(result).toBe('ok')
 		expect(phases.archive.instance.run).toHaveBeenCalledWith()
@@ -109,6 +128,14 @@ describe('handlers/publish', () => {
 			phases.cache,
 		].map((p) => p.instance.run.mock.invocationCallOrder[0])
 		expect(orders).toEqual([...orders].sort((a, b) => a - b))
+		
+		// Assert job progress calls
+		const progressInstance = mocks.JobProgress.mock.results[0].value
+		expect(progressInstance.purgeOld).toHaveBeenCalled()
+		expect(progressInstance.start).toHaveBeenCalledWith(123, 'archive.sync')
+		expect(progressInstance.complete).toHaveBeenCalledWith(123, 'archive.sync')
+		expect(progressInstance.start).toHaveBeenCalledWith(123, 'luzzle.sync')
+		expect(progressInstance.complete).toHaveBeenCalledWith(123, 'luzzle.sync', '2 pieces changed')
 	})
 
 	test('passes empty filePaths through when nothing changed', async () => {
@@ -132,14 +159,7 @@ describe('handlers/publish', () => {
 		await new Publish().run()
 
 		expect(ctx.logger.info).toHaveBeenCalledWith('publish starting')
-		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: archive.sync')
-		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: luzzle.sync', {
-			changed: 1,
-		})
-		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: web.sync')
-		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: assets.generate')
-		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: cdn.sync')
-		expect(ctx.logger.info).toHaveBeenCalledWith('publish phase done: cache.purge')
+		expect(ctx.logger.info).not.toHaveBeenCalledWith('publish phase done: archive.sync') // Removed
 		expect(ctx.logger.info).toHaveBeenCalledWith('publish complete')
 	})
 
@@ -151,10 +171,17 @@ describe('handlers/publish', () => {
 
 		const ctx = makeContext()
 		setWorkerContext(ctx)
+		
+		const publish = new Publish()
+		// @ts-ignore
+		publish.id = 456
 
-		await expect(new Publish().run()).rejects.toThrow('web.sync failed')
+		await expect(publish.run()).rejects.toThrow('web.sync failed')
 		expect(phases.assets.instance.run).not.toHaveBeenCalled()
 		expect(phases.cdn.instance.run).not.toHaveBeenCalled()
 		expect(phases.cache.instance.run).not.toHaveBeenCalled()
+		
+		const progressInstance = mocks.JobProgress.mock.results[0].value
+		expect(progressInstance.fail).toHaveBeenCalledWith(456, 'web.sync', expect.any(Error))
 	})
 })
