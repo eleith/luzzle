@@ -1,11 +1,16 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run } from './markdown.js'
+import { processMarkdown } from '../../lib/markdown/markdown.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../db.js'
 import type { Pieces } from '@luzzle/core'
 import { makeLogger } from '../../../test/logger.js'
 
-vi.stubGlobal('fetch', vi.fn())
+vi.mock('../../lib/markdown/markdown.js', () => ({
+	processMarkdown: vi.fn(),
+}))
+
+const themes = { light: 'github-light', dark: 'github-dark' }
 
 const makeWebPiece = (overrides?: Partial<WebPieces>): WebPieces => ({
 	id: '1',
@@ -24,6 +29,7 @@ const makeWebPiece = (overrides?: Partial<WebPieces>): WebPieces => ({
 const makeConfig = (): Config =>
 	({
 		url: { app: 'http://localhost' },
+		theme: { markdown: { code: themes } },
 		pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date_consumed' } }],
 	}) as unknown as Config
 
@@ -41,11 +47,7 @@ afterEach(() => {
 describe('transforms/markdown', () => {
 	test('renders note and returns embedded asset record', async () => {
 		const html = '<section class="markdown"><h1>Hello</h1>\n<p>World</p></section>'
-		vi.mocked(fetch).mockResolvedValue({
-			ok: true,
-			status: 200,
-			text: vi.fn().mockResolvedValue(html),
-		} as unknown as Response)
+		vi.mocked(processMarkdown).mockResolvedValue(html)
 
 		const records = await run({
 			webPiece: makeWebPiece(),
@@ -53,10 +55,10 @@ describe('transforms/markdown', () => {
 			outDir: '/out',
 			pieces: makePieces(),
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).toHaveBeenCalledWith('http://localhost/api/pieces/books/my-book/transform/markdown')
+		expect(processMarkdown).toHaveBeenCalledWith('# Hello\n\nWorld', themes)
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'markdown',
@@ -75,19 +77,15 @@ describe('transforms/markdown', () => {
 			outDir: '/out',
 			pieces: makePieces(),
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).not.toHaveBeenCalled()
+		expect(processMarkdown).not.toHaveBeenCalled()
 		expect(records).toEqual([])
 	})
 
-	test('throws on error response for note', async () => {
-		vi.mocked(fetch).mockResolvedValue({
-			ok: false,
-			status: 500,
-			statusText: 'Internal Server Error',
-		} as unknown as Response)
+	test('throws when processMarkdown throws on note', async () => {
+		vi.mocked(processMarkdown).mockRejectedValue(new Error('parse failed'))
 
 		await expect(
 			run({
@@ -96,18 +94,14 @@ describe('transforms/markdown', () => {
 				outDir: '/out',
 				pieces: makePieces(),
 				assetKeyToPath: emptyMap,
-				logger: makeLogger()
+				logger: makeLogger(),
 			})
-		).rejects.toThrow('500')
+		).rejects.toThrow('parse failed')
 	})
 
 	test('renders metadata field with format markdown', async () => {
 		const html = '<section class="markdown"><p>A <strong>great</strong> book</p></section>'
-		vi.mocked(fetch).mockResolvedValue({
-			ok: true,
-			status: 200,
-			text: vi.fn().mockResolvedValue(html),
-		} as unknown as Response)
+		vi.mocked(processMarkdown).mockResolvedValue(html)
 
 		const records = await run({
 			webPiece: makeWebPiece({ note: undefined }),
@@ -115,12 +109,10 @@ describe('transforms/markdown', () => {
 			outDir: '/out',
 			pieces: makePieces([{ name: 'description', type: 'string', format: 'markdown' }]),
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).toHaveBeenCalledWith(
-			'http://localhost/api/pieces/books/my-book/transform/markdown?field=description'
-		)
+		expect(processMarkdown).toHaveBeenCalledWith('A **great** book', themes)
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'markdown.description',
@@ -140,19 +132,15 @@ describe('transforms/markdown', () => {
 			outDir: '/out',
 			pieces: makePieces([{ name: 'description', type: 'string', format: 'markdown' }]),
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).not.toHaveBeenCalled()
+		expect(processMarkdown).not.toHaveBeenCalled()
 		expect(records).toEqual([])
 	})
 
-	test('throws on error response for metadata field', async () => {
-		vi.mocked(fetch).mockResolvedValue({
-			ok: false,
-			status: 500,
-			statusText: 'Internal Server Error',
-		} as unknown as Response)
+	test('throws when processMarkdown throws on metadata field', async () => {
+		vi.mocked(processMarkdown).mockRejectedValue(new Error('parse failed'))
 
 		await expect(
 			run({
@@ -161,25 +149,15 @@ describe('transforms/markdown', () => {
 				outDir: '/out',
 				pieces: makePieces([{ name: 'description', type: 'string', format: 'markdown' }]),
 				assetKeyToPath: emptyMap,
-				logger: makeLogger()
+				logger: makeLogger(),
 			})
-		).rejects.toThrow('500')
+		).rejects.toThrow('parse failed')
 	})
 
 	test('renders each item in an array of markdown strings', async () => {
 		const html0 = '<section class="markdown"><p>First</p></section>'
 		const html1 = '<section class="markdown"><p>Second</p></section>'
-		vi.mocked(fetch)
-			.mockResolvedValueOnce({
-				ok: true,
-				status: 200,
-				text: vi.fn().mockResolvedValue(html0),
-			} as unknown as Response)
-			.mockResolvedValueOnce({
-				ok: true,
-				status: 200,
-				text: vi.fn().mockResolvedValue(html1),
-			} as unknown as Response)
+		vi.mocked(processMarkdown).mockResolvedValueOnce(html0).mockResolvedValueOnce(html1)
 
 		const records = await run({
 			webPiece: makeWebPiece({
@@ -192,16 +170,12 @@ describe('transforms/markdown', () => {
 				{ name: 'sections', type: 'array', items: { type: 'string', format: 'markdown' } },
 			]),
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).toHaveBeenCalledTimes(2)
-		expect(fetch).toHaveBeenCalledWith(
-			'http://localhost/api/pieces/books/my-book/transform/markdown?field=sections.0'
-		)
-		expect(fetch).toHaveBeenCalledWith(
-			'http://localhost/api/pieces/books/my-book/transform/markdown?field=sections.1'
-		)
+		expect(processMarkdown).toHaveBeenCalledTimes(2)
+		expect(processMarkdown).toHaveBeenNthCalledWith(1, '# First', themes)
+		expect(processMarkdown).toHaveBeenNthCalledWith(2, '# Second', themes)
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'markdown.sections.0',
@@ -216,12 +190,8 @@ describe('transforms/markdown', () => {
 		])
 	})
 
-	test('throws on error response for array item', async () => {
-		vi.mocked(fetch).mockResolvedValue({
-			ok: false,
-			status: 500,
-			statusText: 'Internal Server Error',
-		} as unknown as Response)
+	test('throws when processMarkdown throws on array item', async () => {
+		vi.mocked(processMarkdown).mockRejectedValue(new Error('parse failed'))
 
 		await expect(
 			run({
@@ -235,18 +205,14 @@ describe('transforms/markdown', () => {
 					{ name: 'sections', type: 'array', items: { type: 'string', format: 'markdown' } },
 				]),
 				assetKeyToPath: emptyMap,
-				logger: makeLogger()
+				logger: makeLogger(),
 			})
-		).rejects.toThrow('500')
+		).rejects.toThrow('parse failed')
 	})
 
 	test('renders markdown field nested inside an object', async () => {
 		const html = '<section class="markdown"><p>nested</p></section>'
-		vi.mocked(fetch).mockResolvedValue({
-			ok: true,
-			status: 200,
-			text: vi.fn().mockResolvedValue(html),
-		} as unknown as Response)
+		vi.mocked(processMarkdown).mockResolvedValue(html)
 
 		const records = await run({
 			webPiece: makeWebPiece({
@@ -265,12 +231,10 @@ describe('transforms/markdown', () => {
 				},
 			]),
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).toHaveBeenCalledWith(
-			'http://localhost/api/pieces/books/my-book/transform/markdown?field=meta.bio'
-		)
+		expect(processMarkdown).toHaveBeenCalledWith('**nested**', themes)
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'markdown.meta.bio',
@@ -283,17 +247,7 @@ describe('transforms/markdown', () => {
 	test('renders markdown fields inside array of objects', async () => {
 		const html0 = '<section class="markdown"><p>first body</p></section>'
 		const html1 = '<section class="markdown"><p>second body</p></section>'
-		vi.mocked(fetch)
-			.mockResolvedValueOnce({
-				ok: true,
-				status: 200,
-				text: vi.fn().mockResolvedValue(html0),
-			} as unknown as Response)
-			.mockResolvedValueOnce({
-				ok: true,
-				status: 200,
-				text: vi.fn().mockResolvedValue(html1),
-			} as unknown as Response)
+		vi.mocked(processMarkdown).mockResolvedValueOnce(html0).mockResolvedValueOnce(html1)
 
 		const records = await run({
 			webPiece: makeWebPiece({
@@ -317,16 +271,12 @@ describe('transforms/markdown', () => {
 				},
 			]),
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
-		expect(fetch).toHaveBeenCalledTimes(2)
-		expect(fetch).toHaveBeenCalledWith(
-			'http://localhost/api/pieces/books/my-book/transform/markdown?field=chapters.0.body'
-		)
-		expect(fetch).toHaveBeenCalledWith(
-			'http://localhost/api/pieces/books/my-book/transform/markdown?field=chapters.1.body'
-		)
+		expect(processMarkdown).toHaveBeenCalledTimes(2)
+		expect(processMarkdown).toHaveBeenNthCalledWith(1, '# First', themes)
+		expect(processMarkdown).toHaveBeenNthCalledWith(2, '# Second', themes)
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'markdown.chapters.0.body',
