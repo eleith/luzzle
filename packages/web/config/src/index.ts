@@ -1,4 +1,3 @@
-import { WebPiecesAsset, WebPieces, WebPieceTags } from "./lib/types.js";
 import type { Config, ConfigPublic } from "./lib/config/config.js";
 import {
 	loadConfig,
@@ -7,9 +6,6 @@ import {
 } from "./lib/config/config.js";
 
 export {
-	type WebPieceTags,
-	type WebPiecesAsset,
-	type WebPieces,
 	type Config,
 	type ConfigPublic,
 	loadConfig,
