@@ -1,27 +1,35 @@
 import { getFrontmatterValues } from '@luzzle/core'
+import { getPalette } from '../../lib/palette.js'
 import type { TransformInput, AssetRecord } from '../utils/types.js'
 
-export async function run({ webPiece, config, assetKeyToPath }: TransformInput): Promise<AssetRecord[]> {
+export async function run({
+	webPiece,
+	config,
+	pieces,
+	assetKeyToPath,
+}: TransformInput): Promise<AssetRecord[]> {
 	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
 	if (!pieceConfig?.fields.media?.length) return []
 
 	const frontmatter = JSON.parse(webPiece.json_metadata)
-	const hasMedia = pieceConfig.fields.media.some((field) =>
-		getFrontmatterValues<string>(frontmatter, field)
-			.flat()
-			.some((key) => assetKeyToPath.has(key))
-	)
-	if (!hasMedia) return []
 
-	const baseUrl = config.network?.internal?.explorer || config.url.app
-	const url = `${baseUrl}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/palette`
-	const response = await fetch(url)
-
-	if (!response.ok) {
-		throw new Error(`palette transform failed: ${response.status} ${response.statusText}`)
+	let assetPath: string | undefined
+	for (const field of pieceConfig.fields.media) {
+		const keys = getFrontmatterValues<string>(frontmatter, field).flat()
+		for (const key of keys) {
+			const path = assetKeyToPath.get(key)
+			if (path) {
+				assetPath = path
+				break
+			}
+		}
+		if (assetPath) break
 	}
 
-	const content = await response.text()
+	if (!assetPath) return []
+
+	const buffer = await pieces.getPieceAsset(assetPath)
+	const palette = await getPalette(buffer)
 
 	return [
 		{
@@ -29,7 +37,7 @@ export async function run({ webPiece, config, assetKeyToPath }: TransformInput):
 			asset_path: null,
 			mime_type: 'application/json',
 			is_embedded: 1,
-			content,
+			content: JSON.stringify(palette),
 		},
 	]
 }
