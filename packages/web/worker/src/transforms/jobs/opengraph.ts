@@ -8,7 +8,7 @@ export async function run({ webPiece, config, outDir }: TransformInput): Promise
 	const host = config.network?.internal?.explorer || config.url.app
 	const ogPath = getOpenGraphPath(webPiece.type, webPiece.key)
 	const outputPath = path.join(outDir, ogPath)
-	const url = `${host}/api/pieces/${webPiece.type}/${webPiece.slug}/transform/opengraph`
+	const url = `${host}/api/pieces/${webPiece.type}/${webPiece.slug}/render/opengraph`
 
 	const browser = await getBrowser()
 	await generatePngFromUrl(url, browser, outputPath)
