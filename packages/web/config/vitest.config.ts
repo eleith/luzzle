@@ -17,7 +17,7 @@ export default defineConfig({
 				"coverage/**",
 				"eslint.config.js",
 				"vitest.config.ts",
-				"**/*.schema.ts",
+				"**/schema.ts",
 				"**/*.d.ts",
 			],
 		},
