@@ -4,6 +4,8 @@ WORKDIR /local
 COPY package.json tsconfig.json tsconfig.build.json ./
 COPY src ./src
 
+RUN npm run build:lock
+
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     npm install && npm run build
 

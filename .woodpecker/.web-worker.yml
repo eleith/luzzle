@@ -16,7 +16,8 @@ steps:
     commands:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
       - cd packages/web/worker
-      - npm ci
+      - npm run build:lock
+      - npm ci --workspaces=false
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
