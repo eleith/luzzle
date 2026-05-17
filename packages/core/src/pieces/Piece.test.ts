@@ -409,6 +409,7 @@ describe('pieces/Piece.ts', () => {
 				expect(result.action).toBe('skipped')
 			}
 		}
+		expect(mocks.cache.updateCache).toHaveBeenCalledWith(db, 's.md', 'same-hash')
 	})
 
 	test('sync handles dryRun', async () => {
@@ -451,6 +452,27 @@ describe('pieces/Piece.ts', () => {
 			}
 		}
 		expect(syncUpdateSpy).not.toHaveBeenCalled()
+	})
+
+	test('sync handles dryRun skip', async () => {
+		const PieceType = makePieceMock()
+		const storage = makeStorage()
+		const piece = new PieceType('table', storage)
+		const markdown = makeMarkdownSample({ filePath: 's.md' })
+
+		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
+		mocks.items.selectItem.mockResolvedValue(makePieceItemSelectable({ id: '1' }))
+		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('same-hash')
+		mocks.cache.getCache.mockResolvedValue(makeCache({ content_hash: 'same-hash' }))
+		vi.spyOn(storage, 'createReadStream').mockReturnValue({} as ReadStream)
+
+		const stream = await piece.sync(db, ['s.md'], { dryRun: true })
+		for await (const result of stream) {
+			if (!result.error) {
+				expect(result.action).toBe('skipped')
+			}
+		}
+		expect(mocks.cache.updateCache).not.toHaveBeenCalled()
 	})
 
 	test('sync handles force update even if hash same', async () => {
@@ -640,7 +662,7 @@ describe('pieces/Piece.ts', () => {
 		const markdown = makeMarkdownSample()
 
 		const setting = piece.setField(markdown, 'title2', 'new')
-		expect(setting).rejects.toThrow()
+		await expect(setting).rejects.toThrow()
 	})
 
 	test('removeField unsets a nested value', async () => {

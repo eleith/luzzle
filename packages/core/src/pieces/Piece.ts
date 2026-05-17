@@ -219,6 +219,11 @@ class Piece<F extends PieceFrontmatter> {
 							}
 							return { action: 'updated', file }
 						}
+						
+						if (!options?.dryRun) {
+							await updateCache(db, markdown.filePath, newHash)
+						}
+
 						return { action: 'skipped', file }
 					} else {
 						if (!options?.dryRun) {
