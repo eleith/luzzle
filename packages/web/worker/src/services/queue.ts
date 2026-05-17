@@ -1,11 +1,8 @@
-import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Sidequest } from 'sidequest'
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
-
 export function resolveJobsFilePath(): string {
-	return path.join(SCRIPT_DIR, 'sidequest.jobs.js')
+	return fileURLToPath(new URL('../sidequest.jobs.js', import.meta.url))
 }
 
 export async function configureQueue(dbPath: string): Promise<void> {

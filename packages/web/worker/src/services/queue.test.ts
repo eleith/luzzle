@@ -1,9 +1,7 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const SRC_DIR = path.dirname(fileURLToPath(import.meta.url))
-const EXPECTED_JOBS_PATH = path.join(SRC_DIR, 'sidequest.jobs.js')
+const EXPECTED_JOBS_PATH = fileURLToPath(new URL('../sidequest.jobs.js', import.meta.url))
 
 describe('configureQueue', () => {
 	beforeEach(() => {

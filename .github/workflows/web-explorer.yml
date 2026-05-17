@@ -38,7 +38,7 @@ jobs:
         run: npm ci --workspaces=false
 
       - name: Sync worker types
-        run: npm run sync-worker-types
+        run: npm run sync:worker
 
       - name: Lint
         run: npm run lint

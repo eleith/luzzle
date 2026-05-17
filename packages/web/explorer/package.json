@@ -17,7 +17,7 @@
     "check:config": "luzzle-web-tools validate",
     "sync:content": "node ./scripts/sync-content.js && node ./scripts/sync-piece-content.js",
     "sync:svelte": "svelte-kit sync",
-    "sync-worker-types": "node ./scripts/sync-worker-types.js",
+    "sync:worker": "node ./scripts/sync-worker-types.js",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
     "test": "vitest run --silent"

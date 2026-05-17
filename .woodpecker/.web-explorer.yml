@@ -28,6 +28,7 @@ steps:
       - cd packages/web/explorer
       - touch config.yaml
       - touch .env
+      - npm run sync:worker
       - npm run lint
       - npm run check
 
