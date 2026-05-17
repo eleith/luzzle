@@ -14,7 +14,6 @@ import {
 	resolveFieldPaths,
 	getFrontmatterValue
 } from '@luzzle/core'
-import { extractEditorTheme } from '$lib/server/shiki'
 import { normalizeLineEndings, normalizeMarkdown } from '$lib/server/markdown'
 
 async function resolveAssetUrls(
@@ -73,11 +72,6 @@ export const load: PageServerLoad = async ({ params }) => {
 	const storage = getStorage()
 	const rawContent = (await storage.readFile(file, 'text')) as string
 
-	const editorThemes = {
-		light: await extractEditorTheme(config.theme.markdown.code.light, 'light'),
-		dark: await extractEditorTheme(config.theme.markdown.code.dark, 'dark')
-	}
-
 	const assetPaths = filterFrontmatterFields(piece.fields, (f) => f.format === 'asset')
 
 	return {
@@ -85,7 +79,6 @@ export const load: PageServerLoad = async ({ params }) => {
 		directory,
 		type,
 		rawContent,
-		editorThemes,
 		schema: piece.schema,
 		canGenerate: config.ai !== undefined,
 		assetFields: assetPaths

@@ -2,7 +2,6 @@ import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces, promptToPiece } from '$lib/server/pieces'
 import { config } from '$lib/server/config'
-import { extractEditorTheme } from '$lib/server/shiki'
 import {
 	type PieceFrontmatter,
 	type PieceFrontmatterSchema,
@@ -27,18 +26,12 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	})
 	const allDirectories = [currentDir, ...subDirectories]
 
-	const editorThemes = {
-		light: await extractEditorTheme(config.theme.markdown.code.light, 'light'),
-		dark: await extractEditorTheme(config.theme.markdown.code.dark, 'dark')
-	}
-
 	return {
 		types,
 		type,
 		directory,
 		directories: allDirectories,
-		canGenerate,
-		editorThemes
+		canGenerate
 	}
 }
 

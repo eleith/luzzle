@@ -2,8 +2,8 @@
 	import { onMount, onDestroy } from 'svelte'
 	import { EditorView } from 'codemirror'
 	import { EditorState, Compartment } from '@codemirror/state'
-	import type { EditorThemeColors } from '$lib/server/shiki'
-	import { createEditorTheme } from './theme'
+	import { gruvboxDark, gruvboxDarkBg } from './themes/gruvbox-dark'
+	import { gruvboxLight, gruvboxLightBg } from './themes/gruvbox-light'
 	import { createEditorExtensions } from './config'
 	import { createLSPExtension, destroyLSPClient } from './lsp'
 	import { luzzleFieldEditor } from './extensions/luzzleFieldEditor'
@@ -12,20 +12,12 @@
 	type Props = {
 		value: string
 		onchange?: (value: string) => void
-		editorThemes: { light: EditorThemeColors; dark: EditorThemeColors }
 		file?: string
 		returnTo?: string
 		assetFields?: string[]
 	}
 
-	let {
-		value = $bindable(),
-		onchange,
-		editorThemes,
-		file,
-		returnTo,
-		assetFields = []
-	}: Props = $props()
+	let { value = $bindable(), onchange, file, returnTo, assetFields = [] }: Props = $props()
 
 	let editorContainer: HTMLDivElement
 	let view: EditorView
@@ -36,11 +28,10 @@
 
 	function updateTheme() {
 		const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
-		const themeColors = isDark ? editorThemes.dark : editorThemes.light
-		const themeExtension = createEditorTheme(themeColors, isDark)
+		const themeExtension = isDark ? gruvboxDark : gruvboxLight
 
 		if (editorContainer) {
-			editorContainer.style.backgroundColor = themeColors.bg
+			editorContainer.style.backgroundColor = isDark ? gruvboxDarkBg : gruvboxLightBg
 		}
 
 		view.dispatch({

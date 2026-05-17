@@ -9,8 +9,6 @@ import {
 	makePieceMarkdownString
 } from '@luzzle/core'
 import path from 'path'
-import { extractEditorTheme } from '$lib/server/shiki'
-import { config } from '$lib/server/config'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -29,19 +27,13 @@ export const load: PageServerLoad = async ({ params }) => {
 		return error(404, `piece does not exist`)
 	}
 
-	const editorThemes = {
-		light: await extractEditorTheme(config.theme.markdown.code.light, 'light'),
-		dark: await extractEditorTheme(config.theme.markdown.code.dark, 'dark')
-	}
-
 	return {
 		type: pieceMarkdown.piece,
 		fields: pieceMarkdown.frontmatter,
 		schema: piece.fields,
 		fullSchema: piece.schema,
 		file: pieceMarkdown.filePath,
-		directory,
-		editorThemes
+		directory
 	}
 }
 

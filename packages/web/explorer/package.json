@@ -108,7 +108,6 @@
     "remark-preset-lint-consistent": "^6.0.1",
     "remark-preset-lint-recommended": "^7.0.1",
     "remark-rehype": "^11.1.2",
-    "shiki": "^3.22.0",
     "sidequest": "^1.15.0",
     "unified": "^11.0.5",
     "unist-util-visit": "5.0.0"

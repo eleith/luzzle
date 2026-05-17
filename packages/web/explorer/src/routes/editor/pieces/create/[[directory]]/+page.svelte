@@ -51,7 +51,7 @@
 			</div>
 		</div>
 		<div class="editor-container">
-			<MarkdownEditor bind:value={mergedContent} editorThemes={data.editorThemes} file={filePath} />
+			<MarkdownEditor bind:value={mergedContent} file={filePath} />
 		</div>
 	</section>
 {:else}
