@@ -1,20 +1,20 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run, cleanup } from './opengraph.js'
-import { getBrowser, closeBrowser } from '../../utils/browser.js'
-import { generatePngFromUrl } from '../../utils/png.js'
-import { getOpenGraphPath } from '../../assets/paths.js'
+import { getBrowser, closeBrowser } from '../utils/browser.js'
+import { generatePngFromUrl } from '../utils/png.js'
+import { getOpenGraphPath } from '../assets/paths.js'
 import { type Config } from '@luzzle/web.config'
-import type { WebPieces } from '../../services/db.js'
+import type { WebPieces } from '../services/db.js'
 import { Pieces } from '@luzzle/core'
 import { Browser } from 'puppeteer'
-import { makeLogger } from '../../../test/logger.js'
+import { makeLogger } from '../../test/logger.js'
 
-vi.mock('../../utils/browser.js', () => ({
+vi.mock('../utils/browser.js', () => ({
 	getBrowser: vi.fn(),
 	closeBrowser: vi.fn(),
 }))
-vi.mock('../../utils/png.js')
-vi.mock('../../assets/paths.js')
+vi.mock('../utils/png.js')
+vi.mock('../assets/paths.js')
 
 const mocks = {
 	getBrowser: vi.mocked(getBrowser),

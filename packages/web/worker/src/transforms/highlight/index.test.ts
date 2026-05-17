@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
-import { run } from './highlight.js'
+import { run } from './index.js'
 import { codeToHtml } from 'shiki'
-import { getLang } from '../../lib/highlight-lang.js'
+import { getLang } from './lang.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../services/db.js'
 import { Pieces } from '@luzzle/core'
@@ -10,7 +10,7 @@ import { makeLogger } from '../../../test/logger.js'
 vi.mock('shiki', () => ({
 	codeToHtml: vi.fn(),
 }))
-vi.mock('../../lib/highlight-lang.js', () => ({
+vi.mock('./lang.js', () => ({
 	getLang: vi.fn(),
 }))
 

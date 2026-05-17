@@ -1,6 +1,6 @@
 import { getFrontmatterValues } from '@luzzle/core'
 import { codeToHtml } from 'shiki'
-import { getLang } from '../../lib/highlight-lang.js'
+import { getLang } from './lang.js'
 import type { TransformInput, AssetRecord } from '../utils/types.js'
 
 export async function run({

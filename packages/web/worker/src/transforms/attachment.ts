@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from 'fs/promises'
 import { getFrontmatterValues } from '@luzzle/core'
 import mime from 'mime-types'
-import { getAssetDir, getAssetPath } from '../../assets/paths.js'
-import type { TransformInput, AssetRecord } from '../utils/types.js'
+import { getAssetDir, getAssetPath } from '../assets/paths.js'
+import type { TransformInput, AssetRecord } from './utils/types.js'
 
 export async function run({
 	webPiece,

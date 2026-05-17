@@ -1,9 +1,9 @@
-import * as attachment from './jobs/attachment.js'
-import * as image from './jobs/image.js'
-import * as palette from './jobs/palette.js'
-import * as highlight from './jobs/highlight.js'
-import * as markdown from './jobs/markdown.js'
-import * as opengraph from './jobs/opengraph.js'
+import * as attachment from './attachment.js'
+import * as image from './image.js'
+import * as palette from './palette/index.js'
+import * as highlight from './highlight/index.js'
+import * as markdown from './markdown/index.js'
+import * as opengraph from './opengraph.js'
 import type { TransformInput, AssetRecord } from './utils/types.js'
 
 type Transform = {

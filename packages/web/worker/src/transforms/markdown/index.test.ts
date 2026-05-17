@@ -1,12 +1,12 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
-import { run } from './markdown.js'
-import { processMarkdown } from '../../lib/markdown/markdown.js'
+import { run } from './index.js'
+import { processMarkdown } from './engine.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../services/db.js'
 import type { Pieces } from '@luzzle/core'
 import { makeLogger } from '../../../test/logger.js'
 
-vi.mock('../../lib/markdown/markdown.js', () => ({
+vi.mock('./engine.js', () => ({
 	processMarkdown: vi.fn(),
 }))
 
