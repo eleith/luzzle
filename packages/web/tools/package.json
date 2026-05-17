@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web.tools",
-	"version": "0.0.128",
+	"version": "0.0.129",
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
@@ -41,7 +41,7 @@
 		"vitest": "3.2.4"
 	},
 	"dependencies": {
-		"@luzzle/web.config": "0.0.2",
+		"@luzzle/web.config": "0.0.3",
 		"lightningcss": "^1.30.2",
 		"yaml": "^2.7.0",
 		"yargs": "17.6.0"
