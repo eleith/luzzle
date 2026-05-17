@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { Logger } from '../src/logger.js'
+import type { Logger } from '../src/services/logger.js'
 
 export function makeLogger(): Logger {
 	return {

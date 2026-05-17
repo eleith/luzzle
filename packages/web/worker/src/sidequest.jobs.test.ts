@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import * as registry from './sidequest.jobs.js'
-import { Publish } from './handlers/publish.js'
-import { JobProgressPurge } from './handlers/job-progress-purge.js'
-import { Preview } from './handlers/preview.js'
+import { Publish } from './jobs/publish.js'
+import { JobProgressPurge } from './jobs/job-progress-purge.js'
+import { Preview } from './jobs/preview.js'
 
 describe('sidequest.jobs registry', () => {
 	test('exports Publish under its real class name', () => {

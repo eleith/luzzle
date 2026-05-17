@@ -1,7 +1,9 @@
 import type { Pieces } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
-import type { WebPieces, WebPiecesAsset } from '../../db.js'
-import type { Logger } from '../../logger.js'
+import type { WebPieces } from '../../services/db.js'
+import type { Logger } from '../../services/logger.js'
+
+export type { AssetRecord } from '../../api/shared.js'
 
 export type TransformInput = {
 	webPiece: WebPieces
@@ -11,5 +13,3 @@ export type TransformInput = {
 	assetKeyToPath: Map<string, string>
 	logger: Logger
 }
-
-export type AssetRecord = Omit<WebPiecesAsset, 'piece_file_path' | 'piece_key' | 'asset_key'>

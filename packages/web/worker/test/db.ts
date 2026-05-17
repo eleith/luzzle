@@ -1,6 +1,6 @@
 import { getDatabaseClient } from '@luzzle/core'
 import { Kysely, sql } from 'kysely'
-import type { WebDatabase } from '../src/db.js'
+import type { WebDatabase } from '../src/services/db.js'
 
 let cachedDb: ReturnType<typeof getDatabaseClient> | null = null
 

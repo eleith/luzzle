@@ -2,6 +2,6 @@
 // dispatched jobs by class name in this file (script field is a fixed string).
 // Producers (e.g. explorer) keep a separate stub registry generated from this
 // one — see scripts/generate-stubs.mjs.
-export { Publish } from './handlers/publish.js'
-export { JobProgressPurge } from './handlers/job-progress-purge.js'
-export { Preview } from './handlers/preview.js'
+export { Publish } from './jobs/publish.js'
+export { JobProgressPurge } from './jobs/job-progress-purge.js'
+export { Preview } from './jobs/preview.js'

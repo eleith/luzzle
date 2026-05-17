@@ -1,9 +1,9 @@
 import { loadConfig } from '@luzzle/web.config'
-import { resolveQueueDbPath } from './db.js'
-import { configureQueue } from './queue.js'
-import { createHealthServer } from './health.js'
-import { log } from './logger.js'
-import { JobProgressPurge } from './handlers/job-progress-purge.js'
+import { resolveQueueDbPath } from './services/db.js'
+import { configureQueue } from './services/queue.js'
+import { createHealthServer } from './services/health.js'
+import { log } from './services/logger.js'
+import { JobProgressPurge } from './jobs/job-progress-purge.js'
 
 const DEFAULT_PORT = 9000
 const PURGE_CRON = '0 4 * * *'

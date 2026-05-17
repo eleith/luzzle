@@ -2,7 +2,7 @@ import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run } from './markdown.js'
 import { processMarkdown } from '../../lib/markdown/markdown.js'
 import type { Config } from '@luzzle/web.config'
-import type { WebPieces } from '../../db.js'
+import type { WebPieces } from '../../services/db.js'
 import type { Pieces } from '@luzzle/core'
 import { makeLogger } from '../../../test/logger.js'
 

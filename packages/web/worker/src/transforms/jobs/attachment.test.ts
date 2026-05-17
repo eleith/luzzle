@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'fs/promises'
 import { Pieces } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
 import { run } from './attachment.js'
-import type { WebPieces } from '../../db.js'
+import type { WebPieces } from '../../services/db.js'
 import { makeLogger } from '../../../test/logger.js'
 
 vi.mock('fs/promises')

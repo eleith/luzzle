@@ -3,8 +3,8 @@ import type { Pieces } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
 import { generateAssetKey } from '../assets/key.js'
 import { getTransforms } from './index.js'
-import type { WebPieces, WebDatabase } from '../db.js'
-import type { Logger } from '../logger.js'
+import type { WebPieces, WebDatabase } from '../services/db.js'
+import type { Logger } from '../services/logger.js'
 import type { AssetRecord } from './utils/types.js'
 
 export type ProducedTransform = {

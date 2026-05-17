@@ -1,6 +1,6 @@
 import Sharp from 'sharp'
 import { Pieces } from '@luzzle/core'
-import type { Logger } from '../../logger.js'
+import type { Logger } from '../../services/logger.js'
 
 const formatOptions: Record<'avif' | 'jpg', Sharp.AvifOptions | Sharp.JpegOptions> = {
 	avif: { quality: 45, effort: 4 },

@@ -3,7 +3,7 @@ import { run } from './highlight.js'
 import { codeToHtml } from 'shiki'
 import { getLang } from '../../lib/highlight-lang.js'
 import type { Config } from '@luzzle/web.config'
-import type { WebPieces } from '../../db.js'
+import type { WebPieces } from '../../services/db.js'
 import { Pieces } from '@luzzle/core'
 import { makeLogger } from '../../../test/logger.js'
 

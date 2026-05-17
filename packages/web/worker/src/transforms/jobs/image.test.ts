@@ -10,7 +10,7 @@ import {
 import { type Config } from '@luzzle/web.config'
 import { generateVariantJobs } from '../utils/variants.js'
 import { Pieces } from '@luzzle/core'
-import type { WebPieces } from '../../db.js'
+import type { WebPieces } from '../../services/db.js'
 import type { Sharp } from 'sharp'
 import { makeLogger } from '../../../test/logger.js'
 
