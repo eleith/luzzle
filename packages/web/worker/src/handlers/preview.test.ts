@@ -3,6 +3,7 @@ import { Preview } from './preview.js'
 import { Pieces, StorageFileSystem } from '@luzzle/core'
 import { parsePreview, runPreviewTransform } from '../lib/preview.js'
 import { JobProgress } from '../lib/job-progress.js'
+import { generateAssetKey } from '../assets/key.js'
 import { setWorkerContext, type WorkerContext } from './context.js'
 import type { Logger } from '../logger.js'
 import type { Config } from '@luzzle/web.config'
@@ -32,6 +33,7 @@ vi.mock('../lib/job-progress.js', () => ({
 		purgeOld: vi.fn().mockResolvedValue(undefined),
 	})),
 }))
+vi.mock('../assets/key.js')
 
 const mocks = {
 	parsePreview: vi.mocked(parsePreview),
@@ -39,6 +41,7 @@ const mocks = {
 	JobProgress: vi.mocked(JobProgress),
 	Pieces: vi.mocked(Pieces),
 	StorageFileSystem: vi.mocked(StorageFileSystem),
+	generateAssetKey: vi.mocked(generateAssetKey),
 }
 
 function makeContext(): WorkerContext {
@@ -59,7 +62,7 @@ function makeContext(): WorkerContext {
 const parsedFixture = {
 	type: 'books',
 	slug: 'my-book',
-	webPiece: { file_path: 'books/my-book.books.md' },
+	webPiece: { file_path: 'books/my-book.books.md', key: 'piece-key' },
 	pathToKey: new Map([['images/foo.jpg', 'k1']]),
 	keyToPath: new Map([['k1', 'images/foo.jpg']]),
 	sanitizedFrontmatter: { title: 'Hello' },
@@ -71,6 +74,7 @@ describe('handlers/Preview', () => {
 		vi.clearAllMocks()
 		mocks.parsePreview.mockResolvedValue(parsedFixture as unknown as Awaited<ReturnType<typeof parsePreview>>)
 		mocks.runPreviewTransform.mockResolvedValue([])
+		mocks.generateAssetKey.mockImplementation((path) => `key:${path}`)
 	})
 
 	test('runs parse + each transform phase and returns assembled result', async () => {
@@ -93,9 +97,12 @@ describe('handlers/Preview', () => {
 		expect(result.filePath).toBe('books/my-book.books.md')
 		expect(result.type).toBe('books')
 		expect(result.slug).toBe('my-book')
+		expect(result.pieceKey).toBe('piece-key')
 		expect(result.note).toBe('note body')
 		expect(result.pathToKey).toEqual({ 'images/foo.jpg': 'k1' })
 		expect(result.transforms).toHaveLength(2)
+		expect(result.transforms[0].asset_key).toBe('key:books/my-book.books.md')
+		expect(result.transforms[1].asset_key).toBe('key:books/my-book.books.md')
 
 		const progress = mocks.JobProgress.mock.results[0].value
 		expect(progress.start).toHaveBeenCalledWith(42, 'parse')

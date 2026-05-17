@@ -8,20 +8,26 @@ import {
 	parsePreview,
 	runPreviewTransform,
 } from '../lib/preview.js'
+import { generateAssetKey } from '../assets/key.js'
 import type { AssetRecord } from '../transforms/utils/types.js'
 
 export interface PreviewPayload {
 	filePath: string
 }
 
+export interface PreviewAsset extends AssetRecord {
+	asset_key: string
+}
+
 export interface PreviewResult {
 	filePath: string
 	type: string
 	slug: string
+	pieceKey: string
 	sanitizedFrontmatter: PieceFrontmatter
 	note: string
 	pathToKey: Record<string, string>
-	transforms: AssetRecord[]
+	transforms: PreviewAsset[]
 }
 
 export class Preview extends Job {
@@ -48,13 +54,21 @@ export class Preview extends Job {
 			clearActivePhase()
 		}
 
-		const transforms: AssetRecord[] = []
+		const transforms: PreviewAsset[] = []
 		for (const phase of PREVIEW_TRANSFORM_NAMES) {
 			await progress.start(jobId, phase)
 			setActivePhase({ jobId, phase })
 			try {
 				const records = await runPreviewTransform(phase, parsed, config, pieces, logger)
-				transforms.push(...records)
+				for (const r of records) {
+					transforms.push({
+						...r,
+						asset_key: generateAssetKey(
+							r.piece_asset_path || payload.filePath,
+							config.assets.salt
+						),
+					})
+				}
 				await progress.complete(jobId, phase, `${records.length} record(s)`)
 			} catch (err) {
 				await progress.fail(jobId, phase, err)
@@ -69,6 +83,7 @@ export class Preview extends Job {
 			filePath: payload.filePath,
 			type: parsed.type,
 			slug: parsed.slug,
+			pieceKey: parsed.webPiece.key,
 			sanitizedFrontmatter: parsed.sanitizedFrontmatter,
 			note: parsed.note,
 			pathToKey: Object.fromEntries(parsed.pathToKey),

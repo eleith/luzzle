@@ -50,3 +50,8 @@ export type PublicWebPiece = Omit<WebPieces, 'file_path' | 'json_metadata'> & {
 	metadata: PieceFrontmatter
 	assets: PublicWebPieceAsset[]
 }
+
+export type AssembledPreview = {
+	piece: PublicWebPiece
+	tags: Array<{ slug: string; tag: string }>
+}
