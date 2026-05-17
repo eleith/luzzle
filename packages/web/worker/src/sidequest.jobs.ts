@@ -4,3 +4,4 @@
 // one — see scripts/generate-stubs.mjs.
 export { Publish } from './handlers/publish.js'
 export { JobProgressPurge } from './handlers/job-progress-purge.js'
+export { Preview } from './handlers/preview.js'
