@@ -22,9 +22,7 @@
 		message: string | null
 	}
 
-	let status = $state<PreviewStatus>(
-		data.status === 'waiting' ? 'enqueued' : data.status
-	)
+	let status = $state<PreviewStatus>(data.status === 'waiting' ? 'enqueued' : data.status)
 	let errorMessage = $state(data.errorMessage ?? '')
 	let phases = $state<PhaseProgress[]>([])
 	let assembled = $state<AssembledPreview | null>(data.status === 'completed' ? data : null)

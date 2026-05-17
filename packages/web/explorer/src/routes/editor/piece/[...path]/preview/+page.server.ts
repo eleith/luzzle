@@ -20,5 +20,5 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	const job = await Sidequest.build(Preview).maxAttempts(1).enqueue({ filePath: file })
-	redirect(303, `./${job.id}`)
+	redirect(303, `/editor/piece/${file}/preview/${job.id}`)
 }
