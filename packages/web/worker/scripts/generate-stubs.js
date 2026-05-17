@@ -56,8 +56,10 @@ export function renderStubFile(names) {
 	]
 	for (const name of names) {
 		lines.push(`export class ${name} extends Job {`)
+		// Variadic `...args` keeps Sidequest.build(Stub).enqueue(payload) type-checking
+		// even though the producer-side run() body is never invoked.
 		lines.push(
-			`\trun() { throw new Error('${name}: producer-side stub; runs in worker process') }`
+			`\trun(..._args: unknown[]) { throw new Error('${name}: producer-side stub; runs in worker process') }`
 		)
 		lines.push('}')
 		lines.push('')

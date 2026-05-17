@@ -3,7 +3,19 @@
 import { Job } from '@sidequest/core'
 
 export class Publish extends Job {
-	run() {
+	run(..._args: unknown[]) {
 		throw new Error('Publish: producer-side stub; runs in worker process')
+	}
+}
+
+export class JobProgressPurge extends Job {
+	run(..._args: unknown[]) {
+		throw new Error('JobProgressPurge: producer-side stub; runs in worker process')
+	}
+}
+
+export class Preview extends Job {
+	run(..._args: unknown[]) {
+		throw new Error('Preview: producer-side stub; runs in worker process')
 	}
 }

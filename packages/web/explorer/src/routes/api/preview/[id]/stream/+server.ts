@@ -6,5 +6,5 @@ export const GET: RequestHandler = ({ params, request, url }) => {
 	if (isNaN(jobId)) {
 		return new Response('Invalid job ID', { status: 400 })
 	}
-	return streamJobProgress({ jobId, jobClass: 'Publish', request, url })
+	return streamJobProgress({ jobId, jobClass: 'Preview', request, url })
 }

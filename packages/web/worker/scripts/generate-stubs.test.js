@@ -43,6 +43,7 @@ describe('renderStubFile', () => {
 		expect(out).toContain('AUTO-GENERATED')
 		expect(out).toContain("import { Job } from '@sidequest/core'")
 		expect(out).toContain('export class Publish extends Job {')
+		expect(out).toContain('run(..._args: unknown[])')
 		expect(out).toContain("throw new Error('Publish: producer-side stub")
 	})
 
