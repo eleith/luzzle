@@ -4,7 +4,8 @@ WORKDIR /local
 COPY package.json tsconfig.json tsconfig.build.json ./
 COPY src ./src
 
-RUN npm install && npm run build
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
+    npm install && npm run build
 
 FROM node:24-slim
 WORKDIR /app
