@@ -3,7 +3,6 @@ import { config } from '$lib/server/config.js'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { existsSync } from 'node:fs'
-import { type JobClassType } from '@sidequest/core'
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 
@@ -27,9 +26,4 @@ export async function configureQueue(): Promise<void> {
 		manualJobResolution: true,
 		jobsFilePath: resolveJobsFilePath()
 	})
-}
-
-export async function enqueueJob(JobClass: JobClassType, payload?: unknown) {
-	await configureQueue()
-	return Sidequest.build(JobClass).maxAttempts(1).enqueue(payload)
 }

@@ -1,7 +1,6 @@
 import type { RequestHandler } from './$types'
 import { db } from '$lib/server/database/index.js'
 import { Sidequest } from 'sidequest'
-import { configureQueue } from '$lib/server/queue.js'
 
 const POLL_INTERVAL_MS = 350
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled'])
@@ -64,8 +63,6 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 	if (isNaN(jobId)) {
 		return new Response('Invalid job ID', { status: 400 })
 	}
-
-	await configureQueue()
 
 	const cursors = parseCursors(
 		request.headers.get('last-event-id') ?? url.searchParams.get('cursor')

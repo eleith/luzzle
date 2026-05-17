@@ -1,6 +1,5 @@
 import { config } from '$lib/server/config'
 import { db, type JobProgressRow, type JobProgressLogsRow } from '$lib/server/database/index.js'
-import { configureQueue } from '$lib/server/queue.js'
 import { Sidequest } from 'sidequest'
 import type { PageServerLoad } from './$types'
 
@@ -36,7 +35,6 @@ export const load: PageServerLoad = async () => {
 	let state: string | null = null
 	let errors: unknown = null
 	try {
-		await configureQueue()
 		const job = await Sidequest.job.get(jobId)
 		if (job && job.class === 'Publish') {
 			state = job.state

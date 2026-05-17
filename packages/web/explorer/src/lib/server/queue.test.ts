@@ -3,15 +3,10 @@ import { resolveQueueDbPath } from './queue.js'
 import { Sidequest } from 'sidequest'
 import { config } from '$lib/server/config.js'
 import path from 'node:path'
-import { Job } from '@sidequest/core'
 
-vi.mock('sidequest', () => {
-	const configure = vi.fn().mockResolvedValue(undefined)
-	const enqueue = vi.fn().mockResolvedValue({ id: 'job-123' })
-	const maxAttempts = vi.fn().mockReturnValue({ enqueue })
-	const build = vi.fn().mockReturnValue({ maxAttempts })
-	return { Sidequest: { configure, build, enqueue } }
-})
+vi.mock('sidequest', () => ({
+	Sidequest: { configure: vi.fn().mockResolvedValue(undefined) }
+}))
 
 vi.mock('$lib/server/config.js', () => ({
 	config: {
@@ -22,7 +17,6 @@ vi.mock('$lib/server/config.js', () => ({
 describe('queue', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
-		// reset configured state by overriding
 		vi.resetModules()
 	})
 
@@ -38,7 +32,6 @@ describe('queue', () => {
 
 	test('configureQueue calls Sidequest.configure with correct backend', async () => {
 		config.worker = { queue: { path: '/custom/path.db' } }
-		// we need to dynamically import to reset configured state
 		const { configureQueue, resolveJobsFilePath } = await import('./queue.js')
 
 		await configureQueue()
@@ -51,22 +44,5 @@ describe('queue', () => {
 			manualJobResolution: true,
 			jobsFilePath: resolveJobsFilePath()
 		})
-	})
-
-	test('enqueueJob enqueues a job and configures the queue', async () => {
-		const { enqueueJob } = await import('./queue.js')
-
-		class DummyJob extends Job {
-			run() {
-				return Promise.resolve()
-			}
-		}
-
-		const result = await enqueueJob(DummyJob, { foo: 'bar' })
-
-		expect(Sidequest.build).toHaveBeenCalledWith(DummyJob)
-		expect(Sidequest.build(DummyJob).maxAttempts).toHaveBeenCalledWith(1)
-		expect(Sidequest.build(DummyJob).maxAttempts(1).enqueue).toHaveBeenCalledWith({ foo: 'bar' })
-		expect(result).toEqual({ id: 'job-123' })
 	})
 })
