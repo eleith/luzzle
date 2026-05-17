@@ -1,13 +1,13 @@
 {
 	"name": "@luzzle/web.worker",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"author": "eleith",
 	"private": true,
 	"description": "luzzle publish worker — runs heavy jobs (transforms, rclone) handed off by the explorer",
 	"scripts": {
 		"lint": "eslint src",
 		"build": "tsc -p tsconfig.build.json",
-		"test": "vitest run --silent"
+		"test": "vitest run --silent --coverage"
 	},
 	"engines": {
 		"node": ">=24"
