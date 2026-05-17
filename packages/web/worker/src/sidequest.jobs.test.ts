@@ -1,10 +1,16 @@
 import { describe, expect, test } from 'vitest'
 import * as registry from './sidequest.jobs.js'
 import { Publish } from './handlers/publish.js'
+import { JobProgressPurge } from './handlers/job-progress-purge.js'
 
 describe('sidequest.jobs registry', () => {
 	test('exports Publish under its real class name', () => {
 		expect(registry.Publish).toBe(Publish)
 		expect(Publish.name).toBe('Publish')
+	})
+
+	test('exports JobProgressPurge under its real class name', () => {
+		expect(registry.JobProgressPurge).toBe(JobProgressPurge)
+		expect(JobProgressPurge.name).toBe('JobProgressPurge')
 	})
 })

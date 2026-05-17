@@ -131,7 +131,7 @@ describe('handlers/publish', () => {
 		
 		// Assert job progress calls
 		const progressInstance = mocks.JobProgress.mock.results[0].value
-		expect(progressInstance.purgeOld).toHaveBeenCalled()
+		expect(progressInstance.purgeOld).not.toHaveBeenCalled()
 		expect(progressInstance.start).toHaveBeenCalledWith(123, 'archive.sync')
 		expect(progressInstance.complete).toHaveBeenCalledWith(123, 'archive.sync')
 		expect(progressInstance.start).toHaveBeenCalledWith(123, 'luzzle.sync')

@@ -3,8 +3,11 @@ import { resolveQueueDbPath } from './db.js'
 import { configureQueue } from './queue.js'
 import { createHealthServer } from './health.js'
 import { log } from './logger.js'
+import { JobProgressPurge } from './handlers/job-progress-purge.js'
 
 const DEFAULT_PORT = 9000
+const PURGE_CRON = '0 4 * * *'
+const PURGE_RETENTION_DAYS = 2
 
 async function main() {
 	const config = loadConfig('./config.yaml')
@@ -16,6 +19,14 @@ async function main() {
 	const { Sidequest } = await import('sidequest')
 	await Sidequest.start()
 	log('info', 'sidequest engine started')
+
+	await Sidequest.build(JobProgressPurge)
+		.scheduleOptions({ timezone: 'UTC' })
+		.schedule(PURGE_CRON, { retentionDays: PURGE_RETENTION_DAYS })
+	log('info', 'job_progress purge scheduled', {
+		cron: PURGE_CRON,
+		retentionDays: PURGE_RETENTION_DAYS,
+	})
 
 	const port = Number(process.env.PORT) || DEFAULT_PORT
 	const server = createHealthServer()

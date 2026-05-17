@@ -3,3 +3,4 @@
 // Producers (e.g. explorer) keep a separate stub registry generated from this
 // one — see scripts/generate-stubs.mjs.
 export { Publish } from './handlers/publish.js'
+export { JobProgressPurge } from './handlers/job-progress-purge.js'

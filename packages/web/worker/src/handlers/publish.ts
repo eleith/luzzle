@@ -15,12 +15,6 @@ export class Publish extends Job {
 		logger.info('publish starting')
 
 		const progress = new JobProgress(db, 2)
-		try {
-			await progress.purgeOld()
-		} catch (err) {
-			logger.error('Failed to purge old job progress', { err })
-		}
-
 		const jobId = this.id
 
 		const phases = [
