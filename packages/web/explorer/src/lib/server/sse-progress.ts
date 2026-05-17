@@ -66,16 +66,11 @@ function fetchNewLogs(jobId: number, phase: string, afterLine: number) {
 
 type Emit = (event: string, data: unknown, id?: string) => void
 
-export type StreamJobProgressOptions = StreamJobProgressArgs & {
-	transformResult?: (result: unknown) => unknown
-}
-
 async function pollOnce(
 	jobId: number,
 	jobClass: string,
 	cursors: Cursors,
-	emit: Emit,
-	transformResult?: (result: unknown) => unknown
+	emit: Emit
 ): Promise<boolean> {
 	try {
 		const job = await Sidequest.job.get(jobId)
@@ -107,8 +102,7 @@ async function pollOnce(
 		}
 
 		if (TERMINAL_STATES.has(job.state)) {
-			const result = transformResult ? transformResult(job.result) : job.result
-			emit('done', { state: job.state, result, errors: job.errors })
+			emit('done', { state: job.state, result: job.result, errors: job.errors })
 			return true
 		}
 		return false
@@ -123,9 +117,8 @@ export function streamJobProgress({
 	jobId,
 	jobClass,
 	request,
-	url,
-	transformResult
-}: StreamJobProgressOptions): Response {
+	url
+}: StreamJobProgressArgs): Response {
 	const cursors = parseCursors(
 		request.headers.get('last-event-id') ?? url.searchParams.get('cursor')
 	)
@@ -157,7 +150,7 @@ export function streamJobProgress({
 			signal.addEventListener('abort', close, { once: true })
 
 			while (!closed && !signal.aborted) {
-				const terminal = await pollOnce(jobId, jobClass, cursors, emit, transformResult)
+				const terminal = await pollOnce(jobId, jobClass, cursors, emit)
 				if (terminal) {
 					close()
 					return

@@ -1,6 +1,8 @@
-import { error } from '@sveltejs/kit'
+import { error, redirect } from '@sveltejs/kit'
 import { getPieces } from '$lib/server/pieces'
 import { config } from '$lib/server/config'
+import { Preview } from '$lib/server/sidequest.jobs.js'
+import { Sidequest } from 'sidequest'
 import type { PageServerLoad } from '../$types'
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -17,7 +19,6 @@ export const load: PageServerLoad = async ({ params }) => {
 		return error(404, 'piece type not configured')
 	}
 
-	return {
-		file
-	}
+	const job = await Sidequest.build(Preview).maxAttempts(1).enqueue({ filePath: file })
+	redirect(303, `./${job.id}`)
 }
