@@ -79,4 +79,26 @@ describe('PhaseLogger', () => {
 		expect(rows[1].line_number).toBe(2)
 		expect(rows[1].message).toBe('msg 2')
 	})
+
+	it('routes debug, error, stdout, and stderr through both base logger and DB', async () => {
+		phaseLogger.setActivePhase({ jobId: 1, phase: 'test.phase' })
+		phaseLogger.debug('dbg msg')
+		phaseLogger.error('err msg')
+		phaseLogger.stdout('out msg')
+		phaseLogger.stderr('err msg2')
+
+		expect(baseLogger.debug).toHaveBeenCalledWith('dbg msg', undefined)
+		expect(baseLogger.error).toHaveBeenCalledWith('err msg', undefined)
+		expect(baseLogger.stdout).toHaveBeenCalledWith('out msg', undefined)
+		expect(baseLogger.stderr).toHaveBeenCalledWith('err msg2', undefined)
+
+		await new Promise((resolve) => setTimeout(resolve, 50))
+
+		const rows = await testDb
+			.selectFrom('job_progress_logs')
+			.select('level')
+			.orderBy('line_number', 'asc')
+			.execute()
+		expect(rows.map((r) => r.level)).toEqual(['debug', 'error', 'stdout', 'stderr'])
+	})
 })

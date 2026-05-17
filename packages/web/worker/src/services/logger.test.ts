@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import { log } from './logger.js'
+import { log, createLogger } from './logger.js'
 
 describe('log', () => {
 	afterEach(() => {
@@ -51,5 +51,25 @@ describe('log', () => {
 			const parsed = JSON.parse(cap.getLine()!.trimEnd())
 			expect(parsed.level).toBe(level)
 		}
+	})
+})
+
+describe('createLogger', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
+
+	test('returns a Logger that routes every level through log()', () => {
+		const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+		const logger = createLogger()
+		logger.debug('d', { a: 1 })
+		logger.info('i')
+		logger.warn('w')
+		logger.error('e')
+		logger.stdout('o')
+		logger.stderr('s')
+		expect(writeSpy).toHaveBeenCalledTimes(6)
+		const levels = writeSpy.mock.calls.map((c) => JSON.parse((c[0] as string).trim()).level)
+		expect(levels).toEqual(['debug', 'info', 'warn', 'error', 'stdout', 'stderr'])
 	})
 })

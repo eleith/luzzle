@@ -11,6 +11,7 @@ node_modules
 /src/lib/ui/styles/theme.build.css
 /src/lib/pieces/components/custom
 /src/lib/content/components/custom
+/src/lib/worker-api
 /demo/data/luzzle.sqlite
 /demo/assets
 /demo/archive/luzzle.sqlite
