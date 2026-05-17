@@ -9,6 +9,18 @@
 	import { luzzleFieldEditor } from './extensions/luzzleFieldEditor'
 	import { luzzleAssetEditor } from './extensions/luzzleAssetEditor'
 
+	function getAppliedTheme(): 'dark' | 'light' {
+		const preference = window.localStorage.getItem('theme') || 'system'
+		if (preference === 'dark') return 'dark'
+		if (preference === 'light') return 'light'
+		return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+	}
+
+	function readTheme(): { isDark: boolean; applied: string } {
+		const applied = getAppliedTheme()
+		return { isDark: applied === 'dark', applied }
+	}
+
 	type Props = {
 		value: string
 		onchange?: (value: string) => void
@@ -27,7 +39,8 @@
 	const assetEditorConfig = new Compartment()
 
 	function updateTheme() {
-		const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+		const { isDark } = readTheme()
+		console.log('[editor-theme] updateTheme:', { isDark })
 		const themeExtension = isDark ? gruvboxDark : gruvboxLight
 
 		if (editorContainer) {
@@ -40,7 +53,8 @@
 	}
 
 	onMount(() => {
-		const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+		const { isDark } = readTheme()
+		console.log('[editor-theme] onMount:', { isDark })
 		const initialTheme = isDark ? gruvboxDark : gruvboxLight
 
 		const extensions = createEditorExtensions({
@@ -90,7 +104,8 @@
 
 		updateTheme()
 
-		const observer = new MutationObserver(() => {
+		const observer = new MutationObserver((mutations) => {
+			console.log('[editor-theme] observer fired:', mutations[0]?.attributeName)
 			updateTheme()
 		})
 
