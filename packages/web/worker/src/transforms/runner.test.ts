@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, afterEach, beforeEach } from 'vitest'
-import { runTransformsForPiece } from './runner.js'
+import { runTransformsForPiece, produceTransformsForPiece, persistTransforms } from './runner.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../db.js'
 import { setupDatabase, teardownDatabase } from '../../test/db.js'
@@ -214,5 +214,119 @@ describe('transforms/runner', () => {
 		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
 		expect(assets).toHaveLength(0)
 		expect(transforms.attachment.run).not.toHaveBeenCalled()
+	})
+})
+
+describe('transforms/produceTransformsForPiece', () => {
+	test('returns produced records without touching the DB', async () => {
+		const record = {
+			transformation: 'palette',
+			asset_path: null as unknown as string,
+			mime_type: 'application/json',
+			content: '{}',
+			is_embedded: 1 as const,
+		}
+		transforms.palette.run.mockResolvedValueOnce([record])
+
+		const produced = await produceTransformsForPiece(
+			webPiece,
+			config,
+			'/out',
+			{} as Pieces,
+			{ typeFilter: 'palette' },
+			new Map(),
+			logger
+		)
+
+		expect(produced).toEqual([{ name: 'palette', records: [record] }])
+		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
+		expect(assets).toHaveLength(0)
+	})
+
+	test('records a failed transform as empty and keeps going', async () => {
+		transforms.attachment.run.mockRejectedValueOnce(new Error('boom'))
+		transforms.palette.run.mockResolvedValueOnce([])
+
+		const produced = await produceTransformsForPiece(
+			webPiece,
+			config,
+			'/out',
+			{} as Pieces,
+			{},
+			new Map(),
+			logger
+		)
+
+		expect(produced).toEqual([
+			{ name: 'attachment', records: [] },
+			{ name: 'palette', records: [] },
+			{ name: 'opengraph', records: [] },
+		])
+		expect(logger.error).toHaveBeenCalledWith(
+			'transform.attachment error for book.md',
+			expect.objectContaining({ error: 'boom' })
+		)
+	})
+})
+
+describe('transforms/persistTransforms', () => {
+	test('writes records and clears prior rows for each transform', async () => {
+		await db
+			.insertInto('web_pieces_assets')
+			.values({
+				piece_file_path: 'book.md',
+				piece_key: 'key123',
+				asset_key: 'old',
+				transformation: 'palette',
+				asset_path: null,
+				mime_type: 'application/json',
+				content: 'stale',
+				is_embedded: 1,
+				piece_asset_path: null,
+				piece_field_path: null,
+			})
+			.execute()
+
+		await persistTransforms(db, webPiece, config, [
+			{
+				name: 'palette',
+				records: [
+					{
+						transformation: 'palette',
+						asset_path: null as unknown as string,
+						mime_type: 'application/json',
+						content: 'fresh',
+						is_embedded: 1 as const,
+					},
+				],
+			},
+		])
+
+		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
+		expect(assets).toHaveLength(1)
+		expect(assets[0]).toMatchObject({ content: 'fresh', asset_key: 'asset-key' })
+	})
+
+	test('still deletes when produced records are empty (failed transform)', async () => {
+		await db
+			.insertInto('web_pieces_assets')
+			.values({
+				piece_file_path: 'book.md',
+				piece_key: 'key123',
+				asset_key: 'old',
+				transformation: 'palette',
+				asset_path: null,
+				mime_type: 'application/json',
+				content: 'stale',
+				is_embedded: 1,
+				piece_asset_path: null,
+				piece_field_path: null,
+			})
+			.execute()
+
+		await persistTransforms(db, webPiece, config, [{ name: 'palette', records: [] }])
+
+		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
+		expect(assets).toHaveLength(0)
 	})
 })
