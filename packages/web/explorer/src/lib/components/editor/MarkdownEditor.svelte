@@ -40,8 +40,12 @@
 	}
 
 	onMount(() => {
+		const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+		const initialTheme = isDark ? gruvboxDark : gruvboxLight
+
 		const extensions = createEditorExtensions({
 			themeConfig,
+			initialTheme,
 			onUpdate: (update) => {
 				if (update.docChanged) {
 					value = update.state.doc.toString()

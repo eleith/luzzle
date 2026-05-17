@@ -9,7 +9,7 @@ import {
 	keymap,
 	ViewUpdate
 } from '@codemirror/view'
-import { EditorState, Compartment } from '@codemirror/state'
+import { EditorState, Compartment, type Extension } from '@codemirror/state'
 import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
 import { closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
@@ -22,10 +22,15 @@ import { luzzleHyperlink } from './extensions/luzzleHyperlink'
 
 export interface EditorConfigOptions {
 	themeConfig: Compartment
+	initialTheme?: Extension
 	onUpdate?: (update: ViewUpdate) => void
 }
 
-export function createEditorExtensions({ themeConfig, onUpdate }: EditorConfigOptions) {
+export function createEditorExtensions({
+	themeConfig,
+	initialTheme,
+	onUpdate
+}: EditorConfigOptions) {
 	const extensions = [
 		highlightSpecialChars(),
 		history(),
@@ -56,7 +61,7 @@ export function createEditorExtensions({ themeConfig, onUpdate }: EditorConfigOp
 			content: markdown()
 		}),
 
-		themeConfig.of([]),
+		themeConfig.of(initialTheme ?? []),
 		lintGutter({ tooltipFilter: () => [] }),
 		luzzleHyperlink,
 
