@@ -6,6 +6,9 @@ import { defineConfig } from 'eslint/config'
 
 /** @type {import('eslint').Linter.Config[]} */
 export default defineConfig([
+	{
+		ignores: ['src/pieces/.compiled/**']
+	},
 	js.configs.recommended,
 	...ts.configs.recommended,
 	prettier,
