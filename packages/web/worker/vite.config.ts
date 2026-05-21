@@ -16,6 +16,7 @@ export default defineConfig({
 				'coverage/**',
 				'**/*.d.ts',
 				'src/index.ts',
+				'src/pieces/.compiled/**',
 				'src/api/**',
 				'src/transforms/utils/types.ts',
 				'src/transforms/markdown/engine.ts',

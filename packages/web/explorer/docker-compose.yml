@@ -40,6 +40,7 @@ services:
       - ./demo/rclone:/app/rclone
       - ./demo/remote:/app/remote
       - ./demo/cdn:/app/cdn
+      - ./demo/content:/app/content
       - ./nginx/cache:/app/nginx
 
   luzzle-lsp:
@@ -74,6 +75,7 @@ services:
       - ./nginx/logs:/tmp/logs
     depends_on:
       - luzzle-web
+
 
 secrets:
   npmrc:

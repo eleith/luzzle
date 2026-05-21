@@ -46,8 +46,10 @@ services:
       - ./demo/rclone:/app/rclone
       - ./demo/remote:/app/remote
       - ./demo/cdn:/app/cdn
+      - ./demo/content:/app/content
       - ./nginx/cache:/app/nginx
       - ../worker/src:/app/src
+      - ../worker/assets:/app/assets-bundled
       - ../worker/scripts:/app/scripts
       - ../worker/tsconfig.json:/app/tsconfig.json
       - ../worker/tsconfig.build.json:/app/tsconfig.build.json
@@ -87,6 +89,7 @@ services:
     depends_on:
       - luzzle-dev-web
       - luzzle-dev-lsp
+
 
 networks:
   luzzle:

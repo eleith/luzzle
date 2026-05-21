@@ -4,6 +4,7 @@ import { render } from 'svelte/server'
 import { ImageResponse } from 'takumi-js/response'
 import { getPieceHelpers } from './helpers.js'
 import { getCompiledOpengraphModule } from './compile.js'
+import { generateThemeCss } from './theme.js'
 import type { Config } from '@luzzle/web.config'
 import type { PublicWebPiece } from './helpers.js'
 import type { Component } from 'svelte'
@@ -38,24 +39,23 @@ function getAssetsDir(): string {
 	return path.resolve(import.meta.dirname, '../../../assets')
 }
 
-let cachedStylesheets: string[] | null = null
+let cachedStaticStylesheets: string[] | null = null
 let cachedFontData: Buffer | null = null
 
-function loadAssets(assetsDir: string) {
-	if (cachedStylesheets && cachedFontData) {
-		return { stylesheets: cachedStylesheets, fontData: cachedFontData }
+function loadStaticAssets(assetsDir: string) {
+	if (cachedStaticStylesheets && cachedFontData) {
+		return { staticStylesheets: cachedStaticStylesheets, fontData: cachedFontData }
 	}
 
 	const resetCss = readFileSync(path.join(assetsDir, 'styles/reset.css'), 'utf8')
 	const baseCss = readFileSync(path.join(assetsDir, 'styles/base.css'), 'utf8')
-	const themeCss = readFileSync(path.join(assetsDir, 'styles/theme.build.css'), 'utf8')
 	const markdownCss = readFileSync(path.join(assetsDir, 'styles/markdown.css'), 'utf8')
 	const fontData = readFileSync(path.join(assetsDir, 'fonts/noto-sans.woff2'))
 
-	cachedStylesheets = [resetCss, baseCss, themeCss, markdownCss]
+	cachedStaticStylesheets = [resetCss, baseCss, markdownCss]
 	cachedFontData = fontData
 
-	return { stylesheets: cachedStylesheets, fontData }
+	return { staticStylesheets: cachedStaticStylesheets, fontData }
 }
 
 function loadLocalImageResources(body: string, assetsDir: string) {
@@ -82,9 +82,11 @@ export async function renderOpengraphPng(piece: PublicWebPiece, config: Config):
 	const mod = await getCompiledOpengraphModule(piece.type, config)
 	const svelteComponent = mod.default as Component<Record<string, unknown>>
 
-	// 2. Load stylesheet & font assets
+	// 2. Load static stylesheet & font assets, and generate dynamic theme CSS
 	const assetsDir = getAssetsDir()
-	const { stylesheets, fontData } = loadAssets(assetsDir)
+	const { staticStylesheets, fontData } = loadStaticAssets(assetsDir)
+	const themeCss = generateThemeCss(config)
+	const stylesheets = [...staticStylesheets, themeCss]
 
 	// 3. SSR render to HTML
 	const helpers = getPieceHelpers(piece)
