@@ -1,0 +1,277 @@
+/* Shiki Theme CSS */
+
+pre.shiki {
+	overflow-x: auto;
+	/* takumi — `<pre>` UA default `white-space: pre` is missing from the helper
+	   preset table; without this, leading/internal runs of spaces collapse.
+	   redundant in browsers (it's the UA default); revert once fixed upstream. */
+	white-space: pre;
+}
+
+pre.shiki code {
+	display: grid;
+}
+
+/* takumi — ::before with `content` does not render; use min-height fallback.
+   revert to `:empty::before { content: " " }` (browser-spec idiom) once fixed. */
+/* pre.shiki code .line:empty::before {
+	content: " ";
+} */
+pre.shiki code .line:empty {
+	min-height: 1.4em;
+}
+
+pre.shiki,
+.markdown pre {
+	background-color: var(--shiki-light-bg);
+	padding: var(--space-3);
+}
+
+pre.shiki code,
+pre.shiki code span,
+.markdown code,
+.markdown code span {
+	color: var(--shiki-light);
+	background-color: var(--shiki-light-bg);
+}
+
+[data-theme='dark'] pre.shiki,
+html[data-them='dark'] .markdown pre {
+	background-color: var(--shiki-dark-bg);
+}
+
+[data-theme='dark'] pre.shiki,
+[data-theme='dark'] pre.shiki span,
+[data-theme='dark'] .markdown pre,
+[data-theme='dark'] .markdown pre span {
+	color: var(--shiki-dark);
+	background-color: var(--shiki-dark-bg);
+}
+
+.markdown {
+	pre {
+		padding: var(--space-3);
+		border: 1px solid var(--color-outline);
+		border-radius: var(--radius-2);
+		margin: var(--space-4) 0;
+	}
+
+	:not(pre)>code {
+		background-color: var(--color-surface-dim);
+		padding: 0 var(--space-1);
+		font-style: italic;
+		display: inline-block;
+		border-radius: 0 var(--radius-small) var(--radius-small) 0;
+	}
+
+	code[data-line-numbers] {
+		counter-reset: line;
+	}
+
+	code[data-line-numbers]>[data-line]::before {
+		counter-increment: line;
+		content: counter(line);
+		display: inline-block;
+		width: 0.75rem;
+		margin-right: 2rem;
+		text-align: right;
+		color: gray;
+	}
+
+	code[data-line-numbers-max-digits='2']>[data-line]::before {
+		width: 1.25rem;
+	}
+
+	code[data-line-numbers-max-digits='3']>[data-line]::before {
+		width: 1.75rem;
+	}
+
+	code[data-line-numbers-max-digits='4']>[data-line]::before {
+		width: 2.25rem;
+	}
+
+	figure[data-rehype-pretty-code-figure] {
+		position: relative;
+	}
+
+	figure figcaption[data-rehype-pretty-code-title] {
+		position: absolute;
+		top: 0;
+		left: 1rem;
+		transform: translateY(-50%);
+		padding: 0 0.1rem;
+		font-family: ui-monospace, monospace;
+		font-size: 0.75rem;
+		font-weight: 600;
+		background-color: var(--color-surface);
+		color: var(--color-on-surface);
+	}
+
+	table {
+		border-collapse: collapse;
+		width: 100%;
+		margin: var(--space-4) 0;
+	}
+
+	table,
+	th,
+	td {
+		border: 1px solid var(--color-outline);
+	}
+
+	th,
+	td {
+		padding: var(--space-2);
+	}
+
+	table tbody tr:nth-child(odd) {
+		background-color: transparent;
+	}
+
+	table tbody tr:nth-child(even) {
+		background-color: var(--color-surface-dim);
+	}
+
+	table thead tr {
+		background-color: var(--color-surface-dim);
+	}
+
+	ul.contains-task-list {
+		list-style: none;
+		padding-left: 0;
+		margin: var(--space-4) 0;
+	}
+
+	blockquote {
+		background: var(--color-surface-container-lowest);
+		border-left: 5px solid var(--color-primary);
+		padding: var(--space-4);
+		margin: var(--space-4) 0;
+		font-style: italic;
+		border-radius: 0 var(--radius-small) var(--radius-small) 0;
+		box-shadow: 0 2px 4px var(--color-shadow);
+	}
+
+	blockquote:before {
+		color: var(--color-primary);
+		content: ' ';
+	}
+
+	blockquote p {
+		display: inline;
+	}
+
+	.sidenote__checkbox {
+		display: none;
+	}
+
+	.sidenote__button {
+		padding-left: 0.2rem;
+		padding-right: 0.2rem;
+	}
+
+	.sidenote__button sup::before {
+		content: var(--sidenote-callout-before-content);
+	}
+
+	.sidenote__button sup::after {
+		content: var(--sidenote-callout-after-content);
+	}
+
+	.sidenote__button sup {
+		text-decoration: underline;
+		color: var(--color-secondary);
+		cursor: help;
+	}
+
+	.sidenote__id {
+		color: var(--color-secondary);
+	}
+
+	@media screen and (max-width: 1279px) {
+		.sidenote__checkbox~.sidenote__content {
+			display: none;
+		}
+
+		.sidenote__checkbox:checked~.sidenote__content {
+			position: relative;
+			display: block;
+			min-width: 100%;
+			margin: 0.8rem 0;
+			padding: 0.8rem 1.6rem;
+			background: var(--color-surface-container-lowest);
+			border-left: solid var(--color-secondary) var(--space-1);
+			border-radius: 0 var(--radius-small) var(--radius-small) 0;
+			box-shadow: 0 2px 4px var(--color-shadow);
+		}
+
+		.sidenote__id::after {
+			content: var(--sidenote-citation-after-content);
+		}
+
+		.sidenote__id::before {
+			content: var(--sidenote-citation-before-content);
+		}
+
+		.sidenote__id {
+			margin-right: 1ch;
+		}
+	}
+
+	@media screen and (min-width: 1280px) {
+		.sidenote {
+			cursor: default;
+		}
+
+		.sidenote__content::before {
+			content: '\00a0';
+			display: flex;
+			align-items: flex-start;
+			justify-content: flex-end;
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 0;
+			width: 1px;
+			background: var(--color-secondary);
+			filter: opacity(0.3);
+			margin-top: 0.5rem;
+			margin-bottom: 0.5rem;
+		}
+
+		.sidenote__content {
+			width: 25ch;
+			font-size: 0.75rem;
+			filter: opacity(0.7);
+			line-height: 1.4;
+			margin-top: -1.5ch;
+			padding: 0.5rem;
+			float: right;
+			clear: right;
+			margin-right: -28ch;
+			margin-bottom: 3ch;
+		}
+
+		.sidenote__button:hover~.sidenote__content::before {
+			margin-top: 0;
+			margin-bottom: 0;
+		}
+
+		.sidenote__button:hover~.sidenote__content {
+			background: var(--color-surface-container-lowest);
+			color: var(--color-on-surface);
+		}
+
+		.sidenote__id::before {
+			content: var(--sidenote-callout-before-content);
+		}
+
+		.sidenote__id::after {
+			content: var(--sidenote-callout-after-content);
+		}
+
+		.sidenote__id {
+			margin-right: 1ch;
+		}
+	}
+}
