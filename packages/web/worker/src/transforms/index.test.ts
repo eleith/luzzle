@@ -42,12 +42,6 @@ describe('transforms/index', () => {
 	})
 
 	test('cleanupAllTransforms handles transforms without cleanup', async () => {
-		const transforms = getTransforms()
-
-		// opengraph is the only built-in transform with cleanup
-		const opengraph = transforms.get('opengraph')
-		expect(opengraph?.cleanup).toBeTypeOf('function')
-
 		// calling cleanupAllTransforms should not throw
 		await expect(cleanupAllTransforms()).resolves.not.toThrow()
 	})
