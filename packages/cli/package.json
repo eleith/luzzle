@@ -27,6 +27,7 @@
   "types": "./dist/src/sdk.d.ts",
   "description": "cli to interact with a luzzle archive",
   "devDependencies": {
+    "@eslint/js": "9.22.0",
     "@types/async": "3.2.24",
     "@types/eslint": "9.6.1",
     "@types/lodash-es": "4.17.12",
