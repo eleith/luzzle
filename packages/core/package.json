@@ -24,6 +24,7 @@
   "homepage": "https://github.com/eleith/luzzle",
   "description": "luzzle's core",
   "devDependencies": {
+    "@eslint/js": "9.22.0",
     "@types/async": "3.2.25",
     "@types/eslint": "9.6.1",
     "@types/mdast": "4.0.4",
