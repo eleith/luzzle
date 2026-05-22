@@ -90,7 +90,6 @@ services:
       - luzzle-dev-web
       - luzzle-dev-lsp
 
-
 networks:
   luzzle:
     driver: bridge
