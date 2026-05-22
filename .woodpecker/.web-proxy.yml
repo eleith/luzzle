@@ -1,6 +1,6 @@
 workspace:
   base: /workspace
-  path: app
+  path: src
 
 when:
   - event: push
@@ -36,7 +36,7 @@ steps:
       username: eleith
       dockerfile: packages/web/proxy/Dockerfile
       registry: https://git.eleith.com
-      context: packages/web/proxy
+      context: .
       password:
         from_secret: gitea_docker_registry
       tags:
@@ -52,7 +52,7 @@ steps:
       username: eleith
       dockerfile: packages/web/proxy/Dockerfile
       registry: https://git.eleith.com
-      context: packages/web/proxy
+      context: .
       password:
         from_secret: gitea_docker_registry
       tags_file: .tags
