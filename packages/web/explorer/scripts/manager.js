@@ -68,7 +68,7 @@ class ExplorerManager {
 			await Logger.log('Running in development mode...')
 		} else {
 			await Logger.log('Initiating production build sequence...')
-			await CommandRunner.run('npm', ['run', 'build'])
+			await CommandRunner.run('pnpm', ['run', 'build'])
 			await Logger.log('Build completed successfully.')
 		}
 
@@ -87,7 +87,7 @@ class ExplorerManager {
 			env
 		}
 
-		const command = this.isDev ? 'npm' : 'node'
+		const command = this.isDev ? 'pnpm' : 'node'
 		const args = this.isDev
 			? ['run', 'dev', '--', '--host']
 			: [path.join(PATHS.LOCAL_BUILD, 'index.js')]
