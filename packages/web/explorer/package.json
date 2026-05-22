@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "npm run sync:svelte && vite build",
-    "prebuild": "npm run build:theme && npm run sync:content",
-    "predev": "npm run build:theme && npm run sync:content",
+    "prebuild": "npm run build:theme && npm run build:content",
+    "predev": "npm run build:theme && npm run build:content",
     "build:production": "npm run build && npm prune --omit=dev",
     "build:lock": "npm i --package-lock-only --workspaces=false",
     "build:theme": "luzzle-web-tools theme > src/lib/ui/styles/theme.build.css",
@@ -16,6 +16,7 @@
     "check:watch": "npm run sync:svelte && svelte-check --tsconfig ./tsconfig.json --watch",
     "check:config": "luzzle-web-tools validate",
     "sync:content": "node ./scripts/sync-content.js && node ./scripts/sync-piece-content.js",
+    "build:content": "npm run sync:content",
     "sync:svelte": "svelte-kit sync",
     "sync:worker": "node ./scripts/sync-worker-types.js",
     "lint": "prettier --check . && eslint .",
@@ -75,6 +76,7 @@
     "remark-lint-no-duplicate-headings": "^4.0.1",
     "remark-preset-lint-consistent": "^6.0.1",
     "remark-preset-lint-recommended": "^7.0.1",
-    "sidequest": "^1.15.0"
+    "sidequest": "^1.15.0",
+    "takumi-js": "^1.3.0"
   }
 }
