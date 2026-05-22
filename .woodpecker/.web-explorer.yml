@@ -6,7 +6,12 @@ when:
   - event: push
     branch: main
     path:
-      include: [".woodpecker/.web-explorer.yml", "packages/web/explorer/**"]
+      include:
+        - ".woodpecker/.web-explorer.yml"
+        - "packages/web/explorer/**"
+        - "packages/web/config/**"
+        - "packages/web/worker/src/api/**"
+        - "pnpm-lock.yaml"
   - event: tag
     ref: "refs/tags/web/v*"
 
@@ -15,9 +20,8 @@ steps:
     image: node:24
     commands:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
-      - cd packages/web/explorer
-      - npm run build:lock
-      - npm ci --workspaces=false
+      - corepack enable
+      - pnpm install --frozen-lockfile
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
@@ -25,26 +29,27 @@ steps:
   lint:
     image: node:24
     commands:
+      - corepack enable
       - cd packages/web/explorer
       - touch config.yaml
       - touch .env
-      - npm run sync:worker
-      - npm run lint
-      - npm run check
+      - pnpm run sync:worker
+      - pnpm run lint
+      - pnpm run check
 
   check-version:
     image: node:24
     commands:
       - cd packages/web/explorer
       - |
-        VERSION_FROM_PKG=$(npm pkg get version --workspaces=false)
+        VERSION_FROM_PKG=$(node -p "require('./package.json').version")
 
-        if [ "\"$VERSION_FROM_TAG\"" != "$VERSION_FROM_PKG" ]; then
-          echo "Version mismatch: Git tag version "$VERSION_FROM_TAG" does not match package.json version: $VERSION_FROM_PKG"
+        if [ "$VERSION_FROM_TAG" != "$VERSION_FROM_PKG" ]; then
+          echo "Version mismatch: Git tag version $VERSION_FROM_TAG does not match package.json version: $VERSION_FROM_PKG"
           exit 1
         fi
     environment:
-     VERSION_FROM_TAG: ${CI_COMMIT_TAG#web/v}
+      VERSION_FROM_TAG: ${CI_COMMIT_TAG#web/v}
     when:
       - event: tag
 
@@ -72,7 +77,7 @@ steps:
       repo: git.eleith.com/eleith.private/luzzle-web
       username: eleith
       dockerfile: packages/web/explorer/Dockerfile
-      context: packages/web/explorer
+      context: .
       registry: https://git.eleith.com
       secrets:
         - 'id=npmrc\,src=.npmrc'
@@ -90,7 +95,7 @@ steps:
       repo: git.eleith.com/eleith.private/luzzle-web
       username: eleith
       dockerfile: packages/web/explorer/Dockerfile
-      context: packages/web/explorer
+      context: .
       registry: https://git.eleith.com
       secrets:
         - 'id=npmrc\,src=.npmrc'
