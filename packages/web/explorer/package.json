@@ -13,7 +13,6 @@
     "preview": "vite preview",
     "check": "npm run sync:svelte && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "npm run sync:svelte && svelte-check --tsconfig ./tsconfig.json --watch",
-    "check:config": "luzzle-web-tools validate",
     "sync:content": "node ./scripts/sync-content.js && node ./scripts/sync-piece-content.js",
     "build:content": "npm run sync:content",
     "sync:svelte": "svelte-kit sync",
