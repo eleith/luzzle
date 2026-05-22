@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy, setContext } from 'svelte'
+	import { onMount, onDestroy } from 'svelte'
 	import PiecePage from '$lib/pieces/components/page.svelte'
 	import type { AssembledPreview } from '$lib/pieces/types'
 
@@ -10,7 +10,6 @@
 	import MinusCircle from 'virtual:icons/ph/minus-circle'
 
 	let { data } = $props()
-	setContext('piece-mode', 'preview')
 
 	type PreviewStatus = 'enqueued' | 'running' | 'completed' | 'failed'
 
@@ -107,7 +106,7 @@
 			back to editor
 		</a>
 	</div>
-	<PiecePage piece={assembled.piece} tags={assembled.tags} />
+	<PiecePage piece={assembled.piece} tags={assembled.tags} mode="preview" />
 {:else}
 	<section class="preview-status">
 		<header class="preview-status-header">

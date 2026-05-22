@@ -82,6 +82,7 @@
 										size={{
 											width: 125
 										}}
+										mode="public"
 									/>
 								{/key}
 							</div>

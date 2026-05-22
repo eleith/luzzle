@@ -41,6 +41,7 @@
 									size={{ width: 125 }}
 									lazy={i >= 5}
 									active={activePieceId === piece.id}
+									mode="public"
 								/>
 							</div>
 						</div>

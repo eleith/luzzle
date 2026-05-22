@@ -1,9 +1,8 @@
 <script lang="ts">
-	import type { Component } from 'svelte'
+	import { getContext, setContext, type Component } from 'svelte'
 	import type { PublicWebPiece } from '$lib/pieces/types'
 	import IconDefault from '$lib/pieces/components/icon.default.svelte'
 	import { getPieceHelpers, type PieceIconProps, type PieceMode } from '$lib/pieces/helpers.js'
-	import { getContext } from 'svelte'
 
 	const iconImports = import.meta.glob<{ default: Component<PieceIconProps> }>(
 		'$lib/pieces/components/custom/*/icon.svelte'
@@ -22,15 +21,17 @@
 		lazy?: boolean
 		piece: PublicWebPiece
 		size: { width: number; height?: number }
+		mode?: PieceMode
 	}
 
-	let { piece, lazy = false, size, active = false }: Props = $props()
+	let { piece, lazy = false, size, active = false, mode }: Props = $props()
+	const effectiveMode: PieceMode = mode ?? getContext<PieceMode>('piece-mode') ?? 'public'
+	setContext('piece-mode', effectiveMode)
 
 	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
 	const width = $derived(size.width)
 	const height = $derived(size.height ? size.height : (width * 3) / 2)
-	const mode = getContext<PieceMode>('piece-mode')
-	const helpers = getPieceHelpers(piece, mode)
+	const helpers = getPieceHelpers(piece, effectiveMode)
 
 	async function resolveIcon(type: string): Promise<Component<PieceIconProps>> {
 		const importer = iconImportMap.get(type)

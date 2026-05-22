@@ -2,6 +2,7 @@ import { type WebPieceTags } from './types'
 import { page } from '$app/state'
 import type { PublicWebPiece } from './types'
 import type { PieceFrontMatterValue } from '@luzzle/core'
+import type { Component, Snippet } from 'svelte'
 
 export function getPieceTypes(): string[] {
 	return __VITE__LUZZLE__PIECE__TYPES__
@@ -43,19 +44,35 @@ export const OpengraphImageWidth = 1200
 export const OpengraphImageHeight = 630
 
 export type PieceOpengraphProps = {
-	tags: string[]
 	piece: PublicWebPiece
-	size: {
-		width: number
-		height: number
-	}
 	helpers: PieceComponentHelpers
+}
+
+export type NavBannerProps = {
+	background?: string
+	color?: string
+	hoverColor?: string
+	showHome?: boolean
+	showSearch?: boolean
+	showThemeToggle?: boolean
+	showProgress?: boolean
+	showRandom?: boolean
+	items?: {
+		left?: Snippet<[]>
+		right?: Snippet<[]>
+	}
+}
+
+export type PieceComponents = {
+	NavBanner: Component<NavBannerProps>
+	PieceIcon: Component<PieceIconProps>
 }
 
 export type PiecePageProps = {
 	piece: PublicWebPiece
 	tags: Partial<WebPieceTags>[]
 	helpers: PieceComponentHelpers
+	components: PieceComponents
 }
 
 export type PieceMode = 'public' | 'local' | 'preview'

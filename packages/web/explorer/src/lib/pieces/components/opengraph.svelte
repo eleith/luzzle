@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getContext, type Component } from 'svelte'
+	import { getContext, setContext, type Component } from 'svelte'
 	import type { PublicWebPiece } from '$lib/pieces/types'
 	import OpengraphDefault from '$lib/pieces/components/opengraph.default.svelte'
 	import {
@@ -27,11 +27,12 @@
 
 	type Props = {
 		piece: PublicWebPiece
+		mode?: PieceMode
 	}
 
-	let { piece }: Props = $props()
-
-	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
+	let { piece, mode }: Props = $props()
+	const effectiveMode: PieceMode = mode ?? getContext<PieceMode>('piece-mode') ?? 'public'
+	setContext('piece-mode', effectiveMode)
 
 	async function resolveOpengraph(type: string): Promise<Component<PieceOpengraphProps>> {
 		const importer = opengraphImportMap.get(type)
@@ -45,15 +46,9 @@
 	}
 
 	const Opengraph = $derived(await resolveOpengraph(piece.type))
-	const mode = getContext<PieceMode>('piece-mode')
-	const helpers = getPieceHelpers(piece, mode)
+	const helpers = getPieceHelpers(piece, effectiveMode)
 </script>
 
 <section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
-	<Opengraph
-		{piece}
-		{tags}
-		size={{ width: OpengraphImageWidth, height: OpengraphImageHeight }}
-		{helpers}
-	/>
+	<Opengraph {piece} {helpers} />
 </section>

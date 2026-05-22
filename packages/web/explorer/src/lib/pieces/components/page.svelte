@@ -1,8 +1,12 @@
 <script lang="ts">
-	import { getContext, type Component } from 'svelte'
+	import { getContext, setContext, type Component } from 'svelte'
 	import type { PublicWebPiece } from '$lib/pieces/types'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
+	import PieceIcon from '$lib/pieces/components/icon.svelte'
+	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
 	import { getPieceHelpers, type PieceMode, type PiecePageProps } from '$lib/pieces/helpers.js'
+
+	const components = { NavBanner, PieceIcon }
 
 	const pageImports = import.meta.glob<{ default: Component<PiecePageProps> }>(
 		'$lib/pieces/components/custom/*/page.svelte'
@@ -19,11 +23,13 @@
 	type Props = {
 		piece: PublicWebPiece
 		tags: Array<{ slug: string; tag: string }>
+		mode?: PieceMode
 	}
 
-	let { piece, tags }: Props = $props()
-	const mode = getContext<PieceMode>('piece-mode')
-	const helpers = getPieceHelpers(piece, mode)
+	let { piece, tags, mode }: Props = $props()
+	const effectiveMode: PieceMode = mode ?? getContext<PieceMode>('piece-mode') ?? 'public'
+	setContext('piece-mode', effectiveMode)
+	const helpers = getPieceHelpers(piece, effectiveMode)
 
 	async function resolvePage(type: string): Promise<Component<PiecePageProps>> {
 		const importer = pageImportMap.get(type)
@@ -39,4 +45,4 @@
 	const PageComponent = $derived(await resolvePage(piece.type))
 </script>
 
-<PageComponent {piece} {tags} {helpers} />
+<PageComponent {piece} {tags} {helpers} {components} />
