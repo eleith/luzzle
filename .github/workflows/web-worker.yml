@@ -35,6 +35,10 @@ jobs:
         working-directory: .
         run: pnpm install --frozen-lockfile
 
+      - name: Build web.config
+        working-directory: .
+        run: pnpm --filter @luzzle/web.config build
+
       - name: Lint
         run: pnpm run lint
 
