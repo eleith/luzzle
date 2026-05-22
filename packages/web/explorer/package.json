@@ -68,7 +68,7 @@
     "@lezer/common": "^1.5.2",
     "@lezer/highlight": "^1.2.3",
     "@luzzle/core": "0.0.59",
-    "@luzzle/web.config": "0.0.3",
+    "@luzzle/web.config": "workspace:*",
     "@sidequest/core": "^1.15.0",
     "@sidequest/sqlite-backend": "^1.15.0",
     "bits-ui": "^2.17.2",
