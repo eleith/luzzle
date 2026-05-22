@@ -47,15 +47,13 @@ describe('theme command', () => {
 
 		const argv = {
 			config: '/path/to/config.yaml',
-			minify: true,
 			$0: '',
 			_: [],
 		}
 		await handler(argv)
 
 		expect(mocks.generateTheme).toHaveBeenCalledWith(
-			config,
-			true
+			config
 		)
 	})
 })

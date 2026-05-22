@@ -1,39 +1,31 @@
 import { type Config } from '@luzzle/web.config'
-import { transform } from 'lightningcss'
-import { Buffer } from 'buffer'
 
-const createCssVariableBlock = (variables: Record<string, unknown>) => {
-	return Object.keys(variables).map((key): string | string[] => {
+const createCssVariableBlock = (variables: Record<string, unknown>): string[] => {
+	return Object.keys(variables).flatMap((key): string | string[] => {
 		const value = variables[key]
-		if (typeof value === 'object') {
-			return createCssVariableBlock(value as Record<string, unknown>).join('\n')
+		if (value && typeof value === 'object' && !Array.isArray(value)) {
+			return createCssVariableBlock(value as Record<string, unknown>)
 		} else {
 			return `	--${key}: ${value};`
 		}
 	})
 }
 
-function minifyCss(css: string): string {
-	try {
-		const { code } = transform({
-			filename: 'theme.css',
-			code: Buffer.from(css),
-			minify: true,
-		})
-		return code.toString()
-	} catch (error) {
-		console.error('Error minifying CSS with Lightning CSS:', error)
-		return css
-	}
-}
-
 const generateThemeCss = (config: Config) => {
 	const themeConfig = config.theme
+	if (!themeConfig) {
+		return ''
+	}
 
-	const globalsBlock = createCssVariableBlock(themeConfig.globals).join('\n')
-	const lightBlock = createCssVariableBlock(themeConfig.light).join('\n')
-	const darkBlock = createCssVariableBlock(themeConfig.dark).join('\n')
-	const markdownBlock = createCssVariableBlock(themeConfig.markdown).join('\n')
+	const globalsBlock = createCssVariableBlock((themeConfig.globals || {}) as Record<string, unknown>).join('\n')
+	const lightBlock = createCssVariableBlock((themeConfig.light || {}) as Record<string, unknown>).join('\n')
+	const darkBlock = createCssVariableBlock((themeConfig.dark || {}) as Record<string, unknown>).join('\n')
+	const markdownBlock = createCssVariableBlock((themeConfig.markdown || {}) as Record<string, unknown>).join('\n')
+
+	const fontSansName = themeConfig.globals?.['font-sans-name'] || '"Noto Sans"'
+	const fontSansWeight = themeConfig.globals?.['font-sans-weight'] || '300 600'
+	const fontSansUrl = themeConfig.globals?.['font-sans-url'] || '"/fonts/noto-sans.woff2"'
+
 	return `
 :root {
 ${globalsBlock}
@@ -47,12 +39,12 @@ ${darkBlock}
 }
 
 @font-face {
-	font-family: ${config.theme.globals['font-sans-name']};
+	font-family: ${fontSansName};
 	font-optical-sizing: auto;
-	font-weight: ${config.theme.globals['font-sans-weight']};
+	font-weight: ${fontSansWeight};
 	font-style: normal;
 	font-variation-settings: 'wdth' 300;
-	src: url(${config.theme.globals['font-sans-url']}) format('woff2');
+	src: url(${fontSansUrl}) format('woff2');
 	font-display: swap;
 }
 
@@ -75,4 +67,4 @@ ${darkBlock}
 `
 }
 
-export { generateThemeCss, minifyCss }
+export { generateThemeCss }

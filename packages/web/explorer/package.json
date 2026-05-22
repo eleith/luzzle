@@ -10,7 +10,6 @@
     "build:production": "npm run build && npm prune --omit=dev",
     "build:lock": "npm i --package-lock-only --workspaces=false",
     "build:theme": "luzzle-web-tools theme > src/lib/ui/styles/theme.build.css",
-    "build:theme:minify": "luzzle-web-tools theme --minify > src/lib/ui/styles/theme.build.css",
     "preview": "vite preview",
     "check": "npm run sync:svelte && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "npm run sync:svelte && svelte-check --tsconfig ./tsconfig.json --watch",

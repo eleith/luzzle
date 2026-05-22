@@ -1,12 +1,9 @@
-import { generateThemeCss, minifyCss } from './theme.js'
+import { generateThemeCss } from './theme.js'
 import { type Config } from '@luzzle/web.config'
 
 export default async function generateTheme(
-	config: Config,
-	minify: boolean = false
+	config: Config
 ): Promise<void> {
-	const rawCss = generateThemeCss(config)
-	const css = minify ? minifyCss(rawCss) : rawCss
-
+	const css = generateThemeCss(config)
 	console.log(css)
 }

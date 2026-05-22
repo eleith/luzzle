@@ -12,17 +12,12 @@ export default function command(cli: Argv) {
 					type: 'string',
 					description: 'path to config.yaml',
 				},
-				minify: {
-					type: 'boolean',
-					description: 'minify output css',
-					default: false,
-				},
 			})
 			return options
 		},
 		async function (argv) {
 			const config = getConfig(argv.config as string | undefined)
-			await generateTheme(config, argv.minify as boolean)
+			await generateTheme(config)
 		}
 	)
 }

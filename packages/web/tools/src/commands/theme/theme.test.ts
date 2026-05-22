@@ -1,13 +1,6 @@
-import { describe, test, expect, vi } from 'vitest'
-import { generateThemeCss, minifyCss } from './theme.js'
+import { describe, test, expect } from 'vitest'
+import { generateThemeCss } from './theme.js'
 import { type Config } from '@luzzle/web.config'
-import { transform } from 'lightningcss'
-
-vi.mock('lightningcss')
-
-const mocks = {
-	transform: vi.mocked(transform),
-}
 
 describe('generate-theme/theme', () => {
 	test('should generate theme CSS', () => {
@@ -51,20 +44,53 @@ describe('generate-theme/theme', () => {
 		expect(css).toContain('--colors-primary: #ffffff;')
 	})
 
-	test('should handle errors during CSS minification', () => {
-		const originalCss = 'body { color: red; }'
-		mocks.transform.mockImplementation(() => {
-			throw new Error('Minification failed')
-		})
-		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
+	test('should return empty string if themeConfig is missing', () => {
+		const config = {} as Config
+		const css = generateThemeCss(config)
+		expect(css).toEqual('')
+	})
 
-		const minifiedCss = minifyCss(originalCss)
+	test('should use default font values if globals are missing or theme values are empty', () => {
+		const config = {
+			theme: {
+				globals: {},
+				light: {},
+				dark: {},
+				markdown: {},
+			},
+		} as unknown as Config
+		const css = generateThemeCss(config)
+		expect(css).toContain('font-family: "Noto Sans";')
+		expect(css).toContain('font-weight: 300 600;')
+		expect(css).toContain('src: url("/fonts/noto-sans.woff2") format(\'woff2\');')
+	})
 
-		expect(minifiedCss).toEqual(originalCss)
-		expect(consoleErrorSpy).toHaveBeenCalledWith(
-			'Error minifying CSS with Lightning CSS:',
-			expect.any(Error)
-		)
-		consoleErrorSpy.mockRestore()
+	test('should handle nested values, array, and falsy values in createCssVariableBlock', () => {
+		const config = {
+			theme: {
+				globals: {
+					nested: {
+						key: 'value',
+					},
+					list: ['a', 'b'],
+					falsy: null,
+				},
+				light: {},
+				dark: {},
+				markdown: {},
+			},
+		} as unknown as Config
+		const css = generateThemeCss(config)
+		expect(css).toContain('--key: value;')
+		expect(css).toContain('--list: a,b;')
+		expect(css).toContain('--falsy: null;')
+	})
+
+	test('should handle missing globals, light, dark, and markdown keys', () => {
+		const config = {
+			theme: {},
+		} as Config
+		const css = generateThemeCss(config)
+		expect(css).toBeDefined()
 	})
 })
