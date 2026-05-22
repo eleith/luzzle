@@ -2,6 +2,7 @@
 .antigravitycli
 
 node_modules
+.pnpm-store
 data
 tools/**.js
 generated
