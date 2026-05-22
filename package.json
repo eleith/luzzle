@@ -1,16 +1,5 @@
 {
   "name": "luzzle",
   "private": true,
-  "scripts": {},
-  "workspaces": [
-    "packages/cli",
-    "packages/web/tools",
-    "packages/core",
-    "packages/web/explorer",
-    "packages/web/config",
-    "packages/web/worker",
-    "packages/web/lsp",
-    "packages/web/proxy",
-    "packages/lsp"
-  ]
+  "scripts": {}
 }
