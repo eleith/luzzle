@@ -1,12 +1,16 @@
 workspace:
   base: /workspace
-  path: app
+  path: src
 
 when:
   - event: push
     branch: main
     path:
-      include: [".woodpecker/.web-worker.yml", "packages/web/worker/**"]
+      include:
+        - ".woodpecker/.web-worker.yml"
+        - "packages/web/worker/**"
+        - "packages/web/config/**"
+        - "pnpm-lock.yaml"
   - event: tag
     ref: "refs/tags/web.worker/v*"
 
@@ -15,9 +19,8 @@ steps:
     image: node:24
     commands:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
-      - cd packages/web/worker
-      - npm run build:lock
-      - npm ci --workspaces=false
+      - corepack enable
+      - pnpm install --frozen-lockfile
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
@@ -25,34 +28,34 @@ steps:
   lint:
     image: node:24
     commands:
-      - cd packages/web/worker
-      - npm run lint
+      - corepack enable
+      - pnpm --filter @luzzle/web.worker lint
 
   test:
     image: node:24
     commands:
-      - cd packages/web/worker
-      - npm run test
+      - corepack enable
+      - pnpm --filter @luzzle/web.worker test
 
   build:
     image: node:24
     commands:
-      - cd packages/web/worker
-      - npm run build
+      - corepack enable
+      - pnpm --filter @luzzle/web.worker build
 
   check-version:
     image: node:24
     commands:
       - cd packages/web/worker
       - |
-        VERSION_FROM_PKG=$(npm pkg get version --workspaces=false)
+        VERSION_FROM_PKG=$(node -p "require('./package.json').version")
 
-        if [ "\"$VERSION_FROM_TAG\"" != "$VERSION_FROM_PKG" ]; then
-          echo "Version mismatch: Git tag version "$VERSION_FROM_TAG" does not match package.json version: $VERSION_FROM_PKG"
+        if [ "$VERSION_FROM_TAG" != "$VERSION_FROM_PKG" ]; then
+          echo "Version mismatch: Git tag version $VERSION_FROM_TAG does not match package.json version: $VERSION_FROM_PKG"
           exit 1
         fi
     environment:
-     VERSION_FROM_TAG: ${CI_COMMIT_TAG#web.worker/v}
+      VERSION_FROM_TAG: ${CI_COMMIT_TAG#web.worker/v}
     when:
       - event: tag
 
@@ -81,7 +84,7 @@ steps:
       username: eleith
       dockerfile: packages/web/worker/Dockerfile
       registry: https://git.eleith.com
-      context: packages/web/worker
+      context: .
       secrets:
         - 'id=npmrc\,src=.npmrc'
       tags:
@@ -99,7 +102,7 @@ steps:
       username: eleith
       dockerfile: packages/web/worker/Dockerfile
       registry: https://git.eleith.com
-      context: packages/web/worker
+      context: .
       secrets:
         - 'id=npmrc\,src=.npmrc'
       tags_file: .tags
