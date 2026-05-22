@@ -212,6 +212,9 @@ importers:
         specifier: ^2.7.0
         version: 2.7.0
     devDependencies:
+      '@eslint/js':
+        specifier: 9.22.0
+        version: 9.22.0
       '@types/eslint':
         specifier: 9.6.1
         version: 9.6.1
@@ -300,8 +303,8 @@ importers:
         specifier: 0.0.59
         version: 0.0.59(picomatch@4.0.4)
       '@luzzle/web.config':
-        specifier: 0.0.3
-        version: 0.0.3
+        specifier: workspace:*
+        version: link:../config
       '@sidequest/core':
         specifier: ^1.15.0
         version: 1.15.0
@@ -436,6 +439,9 @@ importers:
         specifier: 8.18.2
         version: 8.18.2
     devDependencies:
+      '@eslint/js':
+        specifier: 9.22.0
+        version: 9.22.0
       '@vitest/coverage-v8':
         specifier: 3.2.4
         version: 3.2.4(vitest@3.2.4)
@@ -463,8 +469,11 @@ importers:
         specifier: 0.0.59
         version: 0.0.59(picomatch@4.0.4)
       '@luzzle/web.config':
-        specifier: 0.0.3
-        version: 0.0.3
+        specifier: workspace:*
+        version: link:../config
+      '@sidequest/core':
+        specifier: ^1.15.0
+        version: 1.15.0
       '@sidequest/sqlite-backend':
         specifier: ^1.15.0
         version: 1.15.0
@@ -477,6 +486,9 @@ importers:
       hastscript:
         specifier: 9.0.1
         version: 9.0.1
+      kysely:
+        specifier: ^0.28.17
+        version: 0.28.17
       mdast-util-from-markdown:
         specifier: 2.0.2
         version: 2.0.2
@@ -589,9 +601,15 @@ importers:
         specifier: 5.0.0
         version: 5.0.0
     devDependencies:
+      '@eslint/js':
+        specifier: 9.22.0
+        version: 9.22.0
       '@types/eslint':
         specifier: 9.6.1
         version: 9.6.1
+      '@types/mdast':
+        specifier: ^4.0.4
+        version: 4.0.4
       '@types/mime-types':
         specifier: ^3.0.1
         version: 3.0.1
@@ -1365,10 +1383,6 @@ packages:
 
   '@luzzle/core@0.0.59':
     resolution: {integrity: sha512-5Mp4fL+/dIgYe+5bImpv7pTp9cFYXN5l/ur+7anc4wN7iDynXryDeEMu9n8SiLFTqhLPqij6H3pWcXeThsY9LQ==}
-    engines: {node: '>=24'}
-
-  '@luzzle/web.config@0.0.3':
-    resolution: {integrity: sha512-Aa5a6kiUjR7E7ZkFhVTVVakDxjW2ADzrKP+sKiwaVAJeBQ5sDjhNsk1DKfesGUqZILVjmGcfK34f0kVqhkgCEg==}
     engines: {node: '>=24'}
 
   '@marijn/find-cluster-break@1.0.2':
@@ -5505,11 +5519,6 @@ snapshots:
       - picomatch
       - supports-color
       - utf-8-validate
-
-  '@luzzle/web.config@0.0.3':
-    dependencies:
-      ajv: 8.17.1
-      yaml: 2.7.0
 
   '@marijn/find-cluster-break@1.0.2': {}
 
