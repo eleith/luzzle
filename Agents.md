@@ -4,14 +4,15 @@ This guide provides context and instructions for agents interacting with the Luz
 
 ## Monorepo Structure
 
-Luzzle is a monorepo managed with `npm` workspaces.
+Luzzle is a monorepo managed with `pnpm` workspaces.
 
 * `@luzzle/core`: The engine room (specification implementation) 🫀
 * `@luzzle/cli`: Terminal companion for manual piece management 💻
 * `@luzzle/lsp`: Language Server Protocol proxy for IDE integrations 🗣️
 * `@luzzle/web`: SvelteKit web explorer and editor 🔎
 * `@luzzle/web.worker`: Sidecar service that runs heavy publish jobs off a shared queue 👷
-* `@luzzle/web.tools`: Build-time utility belt used by the web stack 🧰
+* `@luzzle/web.config`: Shared configuration and schemas for the web stack (internal-only) ⚙️
+* `@luzzle/web.lsp`: WebSocket bridge for the LSP in the browser 🗣️
 * `@luzzle/web.proxy`: Snappy caching layer for web deployments 🚀
 
 ## Guiding Principles

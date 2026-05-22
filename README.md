@@ -45,11 +45,10 @@ This ecosystem contains everything you need to build and browse your archive:
 * `@luzzle/cli` the terminal companion for managing pieces 💻
 * `@luzzle/lsp` auto-complete in your editor while editing pieces ✏️
 * `@luzzle/web` a simple web app for browsing and editing pieces 🔎
-* `@luzzle/web.builder` deploys, builds and rebuilds archives for the web 🏗️
-* `@luzzle/web.tools` CLI utilities used by the web.builder 🧰
+* `@luzzle/web.worker` sidecar service that handles heavy publish jobs 👷
+* `@luzzle/web.config` shared configuration and schemas for the web stack ⚙️
 * `@luzzle/web.lsp` websocket server for luzzle lsp 💂
 * `@luzzle/web.proxy` a caching layer for @luzzle/web 🚀
-* `@luzzle/web.utils` common logic used by @luzzle/web and tools 🛠️
 
 ## Future Ideas 🚀
 
