@@ -7,7 +7,16 @@
 .prettierrc.json
 
 Dockerfile
-node_modules
+**/Dockerfile
+**/Dockerfile.dev
+**/node_modules
+**/dist
+**/coverage
+**/.svelte-kit
+**/.env
+**/.env.*
+!**/.env.example
+
 packages/web/luzzle-images
 packages/web/luzzle
 packages/web/static/images/pieces
