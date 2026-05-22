@@ -22,6 +22,7 @@ steps:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
       - corepack enable
       - pnpm install --frozen-lockfile
+      - pnpm --filter @luzzle/web.config build
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
