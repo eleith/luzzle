@@ -8,11 +8,8 @@ on:
       - 'web.lsp/v*'
     paths:
       - 'packages/web/lsp/**'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/web-lsp.yml'
-
-defaults:
-  run:
-    working-directory: packages/web/lsp
 
 jobs:
   check:
@@ -21,20 +18,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: '24'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: pnpm --filter @luzzle/web.lsp lint
 
       - name: Test
-        run: npm run test
+        run: pnpm --filter @luzzle/web.lsp test
 
   build-push:
     needs: check
@@ -49,10 +49,10 @@ jobs:
       - name: Check Version
         if: github.ref_type == 'tag'
         run: |
-          VERSION_FROM_PKG=$(npm pkg get version --workspaces=false | tr -d '"')
+          VERSION_FROM_PKG=$(node -p "require('./packages/web/lsp/package.json').version")
           TAG_NAME=${GITHUB_REF#refs/tags/}
           VERSION_FROM_TAG=${TAG_NAME#web.lsp/v}
-          
+
           if [ "$VERSION_FROM_TAG" != "$VERSION_FROM_PKG" ]; then
             echo "Version mismatch: Tag version $VERSION_FROM_TAG does not match package.json version $VERSION_FROM_PKG"
             exit 1
@@ -83,7 +83,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: packages/web/lsp
+          context: .
+          file: packages/web/lsp/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
