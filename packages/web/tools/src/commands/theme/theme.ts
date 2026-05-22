@@ -35,13 +35,13 @@ const generateThemeCss = (config: Config) => {
 	const darkBlock = createCssVariableBlock(themeConfig.dark).join('\n')
 	const markdownBlock = createCssVariableBlock(themeConfig.markdown).join('\n')
 	return `
-html {
+:root {
 ${globalsBlock}
 ${markdownBlock}
 ${lightBlock}
 }
 
-html[data-theme='dark'],
+:root[data-theme='dark'],
 section[data-theme='dark'] {
 ${darkBlock}
 }
@@ -62,12 +62,13 @@ ${darkBlock}
 	size-adjust: 92%;
 }
 
-html {
+:root {
 	font-family: var(--font-sans-name), 'Adjusted Sans';
+	font-size: calc(var(--font-size-root) * 1px);
 }
 
 @media (prefers-color-scheme: dark) {
-	html:not([data-theme='light']) {
+	:root:not([data-theme='light']) {
 ${darkBlock}
 	}
 }
