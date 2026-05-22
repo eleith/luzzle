@@ -40,7 +40,7 @@ const contentWatcher = (relativeContentPath: string): Plugin => {
 			server.watcher.on('change', (path) => {
 				if (path.includes(targetPath)) {
 					console.log('Content changed, rebuilding...')
-					execSync('npm run build:content')
+					execSync('pnpm run build:content')
 				}
 			})
 		}
