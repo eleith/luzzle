@@ -7,7 +7,6 @@ packages:
   - packages/web/worker
   - packages/web/lsp
   - packages/web/proxy
-  - packages/web/tools
 allowBuilds:
   better-sqlite3: true
   esbuild: true
