@@ -8,6 +8,10 @@ pre.shiki code {
 	display: grid;
 }
 
+pre.shiki code .line:empty {
+	min-height: 1.4em;
+}
+
 pre.shiki,
 .markdown pre {
 	background-color: var(--shiki-light-bg);
