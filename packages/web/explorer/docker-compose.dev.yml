@@ -1,8 +1,11 @@
 services:
   luzzle-dev-web:
     build:
-      dockerfile: packages/web/explorer/Dockerfile.dev
       context: ../../..
+      dockerfile: packages/web/explorer/Dockerfile
+      target: dev
+      secrets:
+        - npmrc
     container_name: luzzle-dev-web
     user: '${UID:-1000}:${GID:-1000}'
     env_file: .env
@@ -11,18 +14,18 @@ services:
     ports:
       - '5173:5173'
     volumes:
-      - ./demo/assets/pieces:/app/assets/pieces
-      - ./demo/config.yaml:/app/config.yaml
-      - ./demo/data:/app/data
-      - ./demo/content:/app/content
-      - ./demo/archive:/app/archive
-      - ./demo/cdn:/app/cdn
-      - ./src:/app/src
-      - ./static:/app/static
-      - ./scripts:/app/scripts
-      - ./tsconfig.json:/app/tsconfig.json
-      - ./svelte.config.js:/app/svelte.config.js
-      - ./vite.config.ts:/app/vite.config.ts
+      - ./demo/assets/pieces:/m/packages/web/explorer/assets/pieces
+      - ./demo/config.yaml:/m/packages/web/explorer/config.yaml
+      - ./demo/data:/m/packages/web/explorer/data
+      - ./demo/content:/m/packages/web/explorer/content
+      - ./demo/archive:/m/packages/web/explorer/archive
+      - ./demo/cdn:/m/packages/web/explorer/cdn
+      - ./src:/m/packages/web/explorer/src
+      - ./static:/m/packages/web/explorer/static
+      - ./scripts:/m/packages/web/explorer/scripts
+      - ./tsconfig.json:/m/packages/web/explorer/tsconfig.json
+      - ./svelte.config.js:/m/packages/web/explorer/svelte.config.js
+      - ./vite.config.ts:/m/packages/web/explorer/vite.config.ts
     networks:
       - luzzle
     depends_on:
@@ -31,34 +34,40 @@ services:
 
   luzzle-dev-worker:
     build:
-      dockerfile: packages/web/worker/Dockerfile.dev
       context: ../../..
+      dockerfile: packages/web/worker/Dockerfile
+      target: dev
+      secrets:
+        - npmrc
     container_name: luzzle-dev-worker
     user: '${UID:-1000}:${GID:-1000}'
     env_file: .env
     networks:
       - luzzle
     volumes:
-      - ./demo/config.yaml:/app/config.yaml
-      - ./demo/assets:/app/assets
-      - ./demo/data:/app/data
-      - ./demo/archive:/app/archive
-      - ./demo/rclone:/app/rclone
-      - ./demo/remote:/app/remote
-      - ./demo/cdn:/app/cdn
-      - ./demo/content:/app/content
-      - ./nginx/cache:/app/nginx
-      - ../worker/src:/app/src
-      - ../worker/assets:/app/assets-bundled
-      - ../worker/scripts:/app/scripts
-      - ../worker/tsconfig.json:/app/tsconfig.json
-      - ../worker/tsconfig.build.json:/app/tsconfig.build.json
-      - ../worker/vite.config.ts:/app/vite.config.ts
+      - ./demo/config.yaml:/m/packages/web/worker/config.yaml
+      - ./demo/assets:/m/packages/web/worker/assets
+      - ./demo/data:/m/packages/web/worker/data
+      - ./demo/archive:/m/packages/web/worker/archive
+      - ./demo/rclone:/m/packages/web/worker/rclone
+      - ./demo/remote:/m/packages/web/worker/remote
+      - ./demo/cdn:/m/packages/web/worker/cdn
+      - ./demo/content:/m/packages/web/worker/content
+      - ./nginx/cache:/m/packages/web/worker/nginx
+      - ../worker/src:/m/packages/web/worker/src
+      - ../worker/assets:/m/packages/web/worker/assets-bundled
+      - ../worker/scripts:/m/packages/web/worker/scripts
+      - ../worker/tsconfig.json:/m/packages/web/worker/tsconfig.json
+      - ../worker/tsconfig.build.json:/m/packages/web/worker/tsconfig.build.json
+      - ../worker/vite.config.ts:/m/packages/web/worker/vite.config.ts
 
   luzzle-dev-lsp:
     build:
-      dockerfile: packages/web/lsp/Dockerfile.dev
       context: ../../..
+      dockerfile: packages/web/lsp/Dockerfile
+      target: dev
+      secrets:
+        - npmrc
     container_name: luzzle-dev-lsp
     user: '${UID:-1000}:${GID:-1000}'
     environment:
@@ -68,15 +77,16 @@ services:
     networks:
       - luzzle
     volumes:
-      - ./demo/archive:/app/archive
-      - ../lsp/server.js:/app/server.js
-      - ../lsp/luzzle-lsp.js:/app/luzzle-lsp.js
-      - ../lsp/markdownlint-lsp.js:/app/markdownlint-lsp.js
+      - ./demo/archive:/m/packages/web/lsp/archive
+      - ../lsp/server.js:/m/packages/web/lsp/server.js
+      - ../lsp/luzzle-lsp.js:/m/packages/web/lsp/luzzle-lsp.js
+      - ../lsp/markdownlint-lsp.js:/m/packages/web/lsp/markdownlint-lsp.js
 
   luzzle-dev-proxy:
     build:
-      dockerfile: packages/web/proxy/Dockerfile.dev
       context: ../../..
+      dockerfile: packages/web/proxy/Dockerfile
+      target: dev
     container_name: luzzle-dev-proxy
     user: '${UID:-1000}:${GID:-1000}'
     ports:
@@ -89,6 +99,10 @@ services:
     depends_on:
       - luzzle-dev-web
       - luzzle-dev-lsp
+
+secrets:
+  npmrc:
+    file: $HOME/.npmrc
 
 networks:
   luzzle:

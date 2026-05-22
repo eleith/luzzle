@@ -1,10 +1,10 @@
 services:
   luzzle-web:
     build:
-      dockerfile: Dockerfile
+      context: ../../..
+      dockerfile: packages/web/explorer/Dockerfile
       secrets:
         - npmrc
-      context: .
     container_name: luzzle-web
     user: "${UID:-1000}:${GID:-1000}"
     env_file: .env
@@ -23,10 +23,10 @@ services:
 
   luzzle-worker:
     build:
-      dockerfile: ../worker/Dockerfile
+      context: ../../..
+      dockerfile: packages/web/worker/Dockerfile
       secrets:
         - npmrc
-      context: ../worker
     container_name: luzzle-worker
     user: "${UID:-1000}:${GID:-1000}"
     env_file: .env
@@ -45,10 +45,10 @@ services:
 
   luzzle-lsp:
     build:
-      dockerfile: ../lsp/Dockerfile
+      context: ../../..
+      dockerfile: packages/web/lsp/Dockerfile
       secrets:
         - npmrc
-      context: ../lsp
     container_name: luzzle-lsp
     user: '${UID:-1000}:${GID:-1000}'
     networks:
@@ -60,11 +60,9 @@ services:
 
   luzzle-proxy:
     build:
-      dockerfile: ../proxy/Dockerfile
-      secrets:
-        - npmrc
-      context: ../proxy
-    container_name: luzzle-lsp
+      context: ../../..
+      dockerfile: packages/web/proxy/Dockerfile
+    container_name: luzzle-proxy
     user: '${UID:-1000}:${GID:-1000}'
     ports:
       - "8080:8080"
