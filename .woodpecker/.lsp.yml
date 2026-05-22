@@ -6,50 +6,56 @@ when:
   - event: [push]
     branch: main
     path:
-      include: [".woodpecker/.lsp.yml", "packages/lsp/**"]
+      include:
+        - ".woodpecker/.lsp.yml"
+        - "packages/lsp/**"
+        - "pnpm-lock.yaml"
   - event: tag
     ref: "refs/tags/lsp/v*"
 
 steps:
+  prepare:
+    image: node:24
+    commands:
+      - corepack enable
+      - pnpm install --frozen-lockfile
+
   build:
     image: node:24
     commands:
-      - npm ci -w @luzzle/lsp
-      - npm run lint -w @luzzle/lsp
-      - npm run build -w @luzzle/lsp
-    environment:
-      NPM_OWNER:
-        from_secret: npm_owner
-      NPM_TOKEN:
-        from_secret: npm_token
+      - corepack enable
+      - pnpm --filter @luzzle/lsp lint
+      - pnpm --filter @luzzle/lsp build
 
   test:
     image: node:24
     commands:
-      - npm run test -w @luzzle/lsp
+      - corepack enable
+      - pnpm --filter @luzzle/lsp test
 
   check-version:
     image: node:24
     commands:
       - cd packages/lsp
       - |
-        VERSION_FROM_PKG=$(npm pkg get version --workspaces=false)
+        VERSION_FROM_PKG=$(node -p "require('./package.json').version")
 
-        if [ "\"$VERSION_FROM_TAG\"" != "$VERSION_FROM_PKG" ]; then
-          echo "Version mismatch: Git tag version "$VERSION_FROM_TAG" does not match package.json version: $VERSION_FROM_PKG"
+        if [ "$VERSION_FROM_TAG" != "$VERSION_FROM_PKG" ]; then
+          echo "Version mismatch: Git tag version $VERSION_FROM_TAG does not match package.json version: $VERSION_FROM_PKG"
           exit 1
         fi
     environment:
-     VERSION_FROM_TAG: ${CI_COMMIT_TAG#lsp/v}
+      VERSION_FROM_TAG: ${CI_COMMIT_TAG#lsp/v}
     when:
       - event: tag
 
   publish:
     image: node:24
     commands:
-      - npm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
-      - npm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
-      - npm publish -w @luzzle/lsp
+      - corepack enable
+      - pnpm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
+      - pnpm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
+      - pnpm --filter @luzzle/lsp publish --no-git-checks
     when:
       - event: tag
     environment:
