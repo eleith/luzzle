@@ -7,7 +7,6 @@
 	"scripts": {
 		"lint": "eslint src",
 		"build": "tsc -p tsconfig.build.json",
-		"build:lock": "npm i --package-lock-only --workspaces=false",
 		"test": "vitest run --silent --coverage"
 	},
 	"engines": {
