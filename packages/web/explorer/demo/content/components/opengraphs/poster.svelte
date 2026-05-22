@@ -1,13 +1,17 @@
 <script lang="ts">
-	import { type PieceOpengraphProps } from '$lib/pieces/helpers'
-	import Icon from '$lib/pieces/components/icon.svelte'
-
 	let { piece, helpers }: PieceOpengraphProps = $props()
 	const metadata = piece.metadata
 
 	const backdrop = metadata.backdrop
 	const backdropImage = backdrop ? helpers.getPieceImageUrl(backdrop, 1200, 'jpg') : null
 	const palette = $derived(helpers.getPiecePalette())
+
+	const posterWidth = 350
+	const posterHeight = (posterWidth * 3) / 2
+	const posterScale = Math.round((posterWidth / 375) * 100) / 100
+	const posterImage = metadata.poster
+		? helpers.getPieceImageUrl(metadata.poster, posterWidth, 'jpg')
+		: null
 
 	const bylineParts: string[] = []
 	if (metadata.date_released)
@@ -51,7 +55,19 @@
 			{/if}
 		</div>
 		<div class="right-panel">
-			<Icon {piece} size={{ width: 350 }} lazy={false} {helpers} />
+			<div
+				class="poster"
+				inert
+				style="
+					--piece-icon-scale: {posterScale};
+					--piece-icon-width: {posterWidth}px;
+					--piece-icon-height: {posterHeight}px;"
+			>
+				<div class="poster-title">{piece.title}</div>
+				{#if posterImage}
+					<img src={posterImage} alt="" />
+				{/if}
+			</div>
 		</div>
 	</div>
 
@@ -142,8 +158,8 @@
 		position: absolute;
 		bottom: 0;
 		left: 0;
-		right: 0;
-		background: oklch(from var(--color-background) calc(l * 0.7) c h);
+		width: 100%;
+		background: oklch(from var(--color-background) 0.3 c h);
 		padding: 15px 30px;
 		text-align: left;
 		z-index: 1;
@@ -153,5 +169,39 @@
 		font-size: 1.3rem;
 		margin: 0;
 		color: var(--color-main-text);
+	}
+
+	.poster {
+		width: var(--piece-icon-width);
+		height: var(--piece-icon-height);
+		display: flex;
+		position: relative;
+		justify-content: center;
+		align-items: center;
+		background: white;
+		color: black;
+		font-size: calc(3rem * var(--piece-icon-scale));
+		border: calc(10px * var(--piece-icon-scale)) solid white;
+		border-radius: calc(0.75rem * var(--piece-icon-scale));
+		box-shadow: 2.6px 5.3px 5.3px var(--color-shadow);
+		text-align: center;
+		line-height: 1.2;
+		padding: calc(1rem * var(--piece-icon-scale));
+		word-break: break-all;
+		overflow: hidden;
+	}
+
+	.poster-title {
+		position: relative;
+	}
+
+	.poster img {
+		border-radius: calc(0.75rem * var(--piece-icon-scale));
+		object-fit: cover;
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
 	}
 </style>

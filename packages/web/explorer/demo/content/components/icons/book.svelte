@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { type PieceIconProps } from '$lib/pieces/helpers'
 	let { piece, size, helpers, lazy, active }: PieceIconProps = $props()
 	const metadata = piece.metadata
 

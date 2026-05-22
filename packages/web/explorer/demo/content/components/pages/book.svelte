@@ -1,9 +1,6 @@
 <script lang="ts">
-	import { type PiecePageProps } from '$lib/pieces/helpers'
-	import Icon from '$lib/pieces/components/icon.svelte'
-	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
-
-	const { piece, tags, helpers }: PiecePageProps = $props()
+	const { piece, tags, helpers, components }: PiecePageProps = $props()
+	const { NavBanner, PieceIcon } = components
 	const metadata = piece.metadata
 	const palette = helpers.getPiecePalette()
 
@@ -37,7 +34,7 @@
 			<h1>{piece.title}</h1>
 		</div>
 		<div class="hero-icon">
-			<Icon {piece} size={{ width: 125 }} lazy={false} {helpers} />
+			<PieceIcon {piece} size={{ width: 125 }} lazy={false} />
 		</div>
 	</div>
 

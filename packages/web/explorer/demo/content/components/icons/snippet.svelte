@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { type PieceIconProps } from '$lib/pieces/helpers'
 	let { size, piece, helpers, active }: PieceIconProps = $props()
 	const scale = Math.round((size.width / 375) * 100) / 100
 	const files = piece.metadata?.files ?? []
@@ -124,11 +123,12 @@
 		font-family: var(--font-mono-name);
 		font-size: calc(0.55rem * var(--piece-icon-scale));
 		line-height: 1.4;
+		background-color: var(--color-surface-container-lowest);
 	}
 
 	.terminal-content :global(pre) {
 		margin: 0;
-		display: inline-block;
+		display: block;
 		width: 100%;
 	}
 

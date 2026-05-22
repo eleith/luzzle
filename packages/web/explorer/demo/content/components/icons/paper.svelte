@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { type PieceIconProps } from '$lib/pieces/helpers'
 	let { piece, size, active }: PieceIconProps = $props()
 
 	const scale = Math.round((size.width / (375 * 2)) * 100) / 100
@@ -76,8 +75,8 @@
 		background-color: white;
 		position: relative; /* Needed for absolute positioning of holes */
 		box-shadow: 2.6px 5.3px 5.3px var(--color-shadow);
-		overflow: hidden; /* Ensure nothing spills out */
 		flex-shrink: 0; /* Prevent paper from shrinking smaller than its width/height */
+		overflow: hidden;
 
 		/* 1. Stack the background images */
 		background-image: repeating-linear-gradient(
@@ -101,7 +100,6 @@
 		border-radius: calc(9px * var(--page-scale));
 	}
 
-	/* Rule for the red line div */
 	.paper .writing {
 		position: absolute;
 		top: 0;
@@ -134,7 +132,6 @@
 		font-weight: 300;
 	}
 
-	/* Rule for the red line div */
 	.paper .red-line {
 		position: absolute;
 		top: 0;

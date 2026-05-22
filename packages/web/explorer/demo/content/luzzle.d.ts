@@ -3,104 +3,71 @@ declare function $state<T = unknown>(value: T): T
 declare function $derived<T = unknown>(value: T): T
 declare function $effect(fn: () => void | (() => void)): void
 
-declare module '$lib/pieces/helpers' {
-	export type PieceIconPalette = {
-		accent?: string
-		background?: string
-		bodyText?: string
-		muted?: string
-		titleText?: string
-	}
-
-	export type PieceComponentHelpers = {
-		getPieceUrl: () => string
-		getPieceImageUrl: (
-			image: any,
-			minWidth: number,
-			format: 'jpg' | 'avif' | 'webp' | 'png'
-		) => string | undefined
-		getPiecePalette: () => PieceIconPalette | undefined
-		getPieceAssetUrl: (key: string, transform: string) => string | undefined
-		getPieceAssetContent: (key: string, transform: string) => string | undefined
-	}
-
-	export type PieceMode = 'public' | 'local' | 'preview'
-
-	export interface WebPieces {
-		id: string
-		title: string
-		slug: string
-		type: string
-		key: string
-		note?: string
-		date_consumed?: number
-		summary?: string
-		keywords?: string
-		metadata: Record<string, any>
-		assets: Array<{
-			asset_key?: string
-			transformation?: string
-			asset_path?: string
-			content?: string
-		}>
-	}
-
-	export type PiecePageProps = {
-		piece: WebPieces
-		tags: Partial<WebPieceTags>[]
-		helpers: PieceComponentHelpers
-	}
-
-	export interface WebPieceTags {
-		piece_slug: string
-		piece_type: string
-		piece_id: string
-		tag: string
-		slug: string
-	}
-
-	export type PieceIconProps = {
-		piece: WebPieces
-		active?: boolean
-		tags?: string[]
-		size: { width: number; height?: number }
-		lazy?: boolean
-		helpers: PieceComponentHelpers
-	}
-
-	export type PieceOpengraphProps = {
-		tags: string[]
-		piece: WebPieces
-		size: { width: number; height: number }
-		helpers: PieceComponentHelpers
-	}
+declare type PieceIconPalette = {
+	accent?: string
+	background?: string
+	bodyText?: string
+	muted?: string
+	titleText?: string
 }
 
-declare module '$lib/pieces/components/icon.svelte' {
-	import type { SvelteComponent } from 'svelte'
-	import type { PieceIconProps } from '$lib/pieces/helpers'
-
-	export default class extends SvelteComponent<PieceIconProps> {}
+declare type PieceComponentHelpers = {
+	getPieceUrl: () => string
+	getPieceImageUrl: (
+		image: unknown,
+		minWidth: number,
+		format: 'jpg' | 'avif' | 'webp' | 'png'
+	) => string | undefined
+	getPiecePalette: () => PieceIconPalette | undefined
+	getPieceAssetUrl: (key: string, transform: string) => string | undefined
+	getPieceAssetContent: (key: string, transform: string) => string | undefined
 }
 
-declare module '$lib/pieces/components/page.svelte' {
-	import type { SvelteComponent } from 'svelte'
-	import type { PiecePageProps } from '$lib/pieces/helpers'
+declare type PieceMode = 'public' | 'local' | 'preview'
 
-	export default class extends SvelteComponent<PiecePageProps> {}
+declare interface WebPieces {
+	id: string
+	title: string
+	slug: string
+	type: string
+	key: string
+	note?: string
+	date_consumed?: number
+	summary?: string
+	keywords?: string
+	metadata: Record<string, unknown>
+	assets: Array<{
+		asset_key?: string
+		transformation?: string
+		asset_path?: string
+		content?: string
+	}>
 }
 
-declare module '$lib/pieces/components/opengraph.svelte' {
-	import type { SvelteComponent } from 'svelte'
-	import type { PieceOpengraphProps } from '$lib/pieces/helpers'
-
-	export default class extends SvelteComponent<PieceOpengraphProps> {}
+declare interface WebPieceTags {
+	piece_slug: string
+	piece_type: string
+	piece_id: string
+	tag: string
+	slug: string
 }
 
-declare module '$lib/components/layout/simple/NavBanner.svelte' {
-	import type { SvelteComponent, Snippet } from 'svelte'
+declare type PieceIconProps = {
+	piece: WebPieces
+	active?: boolean
+	tags?: string[]
+	size: { width: number; height?: number }
+	lazy?: boolean
+	helpers: PieceComponentHelpers
+}
 
-	type Props = {
+declare type PieceOpengraphProps = {
+	piece: WebPieces
+	helpers: PieceComponentHelpers
+}
+
+declare type PieceComponents = {
+	NavBanner: import('svelte').Component<{
 		background?: string
 		color?: string
 		hoverColor?: string
@@ -110,10 +77,16 @@ declare module '$lib/components/layout/simple/NavBanner.svelte' {
 		showProgress?: boolean
 		showRandom?: boolean
 		items?: {
-			left?: Snippet<[]>
-			right?: Snippet<[]>
+			left?: import('svelte').Snippet<[]>
+			right?: import('svelte').Snippet<[]>
 		}
-	}
+	}>
+	PieceIcon: import('svelte').Component<PieceIconProps>
+}
 
-	export default class extends SvelteComponent<Props> {}
+declare type PiecePageProps = {
+	piece: WebPieces
+	tags: Partial<WebPieceTags>[]
+	helpers: PieceComponentHelpers
+	components: PieceComponents
 }

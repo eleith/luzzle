@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { type PiecePageProps } from '$lib/pieces/helpers'
-	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
-	const { piece, tags, helpers }: PiecePageProps = $props()
+	const { piece, tags, helpers, components }: PiecePageProps = $props()
+	const { NavBanner } = components
 	const minutes = Math.floor(((piece.note?.length || 0) as number) / 5 / 250)
 
 	const bylineParts: string[] = []
