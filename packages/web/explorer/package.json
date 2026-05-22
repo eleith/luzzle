@@ -7,9 +7,7 @@
     "build": "npm run sync:svelte && vite build",
     "prebuild": "npm run build:theme && npm run build:content",
     "predev": "npm run build:theme && npm run build:content",
-    "build:production": "npm run build && npm prune --omit=dev",
-    "build:lock": "npm i --package-lock-only --workspaces=false",
-    "build:theme": "luzzle-web-tools theme > src/lib/ui/styles/theme.build.css",
+    "build:theme": "node ./scripts/build-theme.js > src/lib/ui/styles/theme.build.css",
     "preview": "vite preview",
     "check": "npm run sync:svelte && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "npm run sync:svelte && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -31,7 +29,6 @@
   "devDependencies": {
     "@eslint/js": "^9.18.0",
     "@iconify-json/ph": "1.2.2",
-    "@luzzle/web.tools": "0.0.129",
     "@sveltejs/adapter-node": "5.3.2",
     "@sveltejs/enhanced-img": "0.8.1",
     "@sveltejs/kit": "2.43.0",
