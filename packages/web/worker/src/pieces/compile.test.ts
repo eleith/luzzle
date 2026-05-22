@@ -70,22 +70,23 @@ describe('pieces/compile', () => {
 		expect(mod3).not.toBe(mod1)
 	})
 
-	test('compiles real book.svelte component', async () => {
+	test('compiles a realistic component using TS, props, conditionals, and CSS', async () => {
+		const fixturesDir = path.resolve(import.meta.dirname, '../../test/fixtures')
 		const config: Config = {
 			pieces: [
 				{
-					type: 'books',
+					type: 'card',
 					components: {
-						opengraph: './content/components/opengraphs/book.svelte'
+						opengraph: './opengraph.svelte'
 					}
 				}
 			],
 			paths: {
-				config: '/home/eleith/dev/luzzle/packages/web/explorer/demo/config.yaml'
+				config: path.join(fixturesDir, 'config.yaml')
 			}
 		} as unknown as Config
 
-		const mod = await getCompiledOpengraphModule('books', config)
+		const mod = await getCompiledOpengraphModule('card', config)
 		expect(mod).toBeDefined()
 		expect(mod.default).toBeTypeOf('function')
 	})
