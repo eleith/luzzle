@@ -18,9 +18,9 @@
 							"type": "string",
 							"default": "http://luzzle-lsp:9001"
 						},
-						"queue": {
+						"worker": {
 							"type": "string",
-							"default": "http://luzzle-queue:9000"
+							"default": "http://luzzle-worker:9000"
 						}
 					}
 				},

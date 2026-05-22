@@ -12,7 +12,7 @@ export type Schema = {
     internal?: {
       explorer?: string;
       lsp?: string;
-      queue?: string;
+      worker?: string;
       [k: string]: unknown;
     };
     public?: {
