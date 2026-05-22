@@ -8,6 +8,7 @@ on:
       - 'core/v*'
     paths:
       - 'packages/core/**'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/core.yml'
 
 permissions:
@@ -21,23 +22,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: '24'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - name: Install Dependencies
-        run: npm ci -w @luzzle/core
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint -w @luzzle/core
+        run: pnpm --filter @luzzle/core lint
 
       - name: Build
-        run: npm run build -w @luzzle/core
+        run: pnpm --filter @luzzle/core build
 
       - name: Test
-        run: npm run test -w @luzzle/core
+        run: pnpm --filter @luzzle/core test
 
   publish:
     needs: check
@@ -47,26 +51,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - name: Install Dependencies
-        run: npm ci -w @luzzle/core
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build -w @luzzle/core
+        run: pnpm --filter @luzzle/core build
 
       - name: Check Version
         run: |
-          cd packages/core
-          VERSION_FROM_PKG=$(npm pkg get version --workspaces=false | tr -d '"')
+          VERSION_FROM_PKG=$(node -p "require('./packages/core/package.json').version")
           TAG_NAME=${GITHUB_REF#refs/tags/}
           VERSION_FROM_TAG=${TAG_NAME#core/v}
-          
+
           if [ "$VERSION_FROM_TAG" != "$VERSION_FROM_PKG" ]; then
             echo "Version mismatch: Tag version $VERSION_FROM_TAG does not match package.json version $VERSION_FROM_PKG"
             exit 1
@@ -74,4 +80,4 @@ jobs:
           echo "Version $VERSION_FROM_PKG matches."
 
       - name: Publish
-        run: npm publish -w @luzzle/core
+        run: pnpm --filter @luzzle/core publish --no-git-checks --access public
