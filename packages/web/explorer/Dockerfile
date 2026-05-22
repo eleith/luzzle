@@ -33,7 +33,7 @@ COPY . .
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
 RUN pnpm --filter @luzzle/web.config build
-RUN pnpm --filter @luzzle/web deploy /pruned
+RUN pnpm --filter @luzzle/web deploy --legacy /pruned
 
 # --- prod (default) ----------------------------------------------------------
 FROM base AS prod
