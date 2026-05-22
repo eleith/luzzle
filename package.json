@@ -1,5 +1,6 @@
 {
   "name": "luzzle",
   "private": true,
-  "scripts": {}
+  "scripts": {},
+  "packageManager": "pnpm@11.2.2"
 }
