@@ -5,7 +5,6 @@
 
 FROM node:24-alpine AS base
 WORKDIR /m
-ENV PUPPETEER_SKIP_DOWNLOAD=true
 RUN corepack enable
 
 # --- dev: full monorepo install, manager.js runs `pnpm run dev` --------------
