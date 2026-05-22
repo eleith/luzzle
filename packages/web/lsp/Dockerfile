@@ -28,7 +28,7 @@ FROM base AS pruner
 COPY . .
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
-RUN pnpm --filter @luzzle/web.lsp --prod deploy /pruned
+RUN pnpm --filter @luzzle/web.lsp --prod deploy --legacy /pruned
 
 # --- prod (default): registry-installed @luzzle/lsp + web.lsp own bundle -----
 FROM base AS prod
