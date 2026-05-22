@@ -44,7 +44,7 @@ RUN pnpm --filter @luzzle/web.worker build
 
 # --- pruner: deploy worker prod bundle (no dev deps) -------------------------
 FROM builder AS pruner
-RUN pnpm --filter @luzzle/web.worker --prod deploy /pruned
+RUN pnpm --filter @luzzle/web.worker --prod deploy --legacy /pruned
 
 # --- prod (default) ----------------------------------------------------------
 FROM base AS prod
