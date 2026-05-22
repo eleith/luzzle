@@ -1,46 +1,8 @@
 import { loadConfig } from '@luzzle/web.config'
-import { readFile, writeFile, mkdir, readdir, unlink, rmdir, stat } from 'fs/promises'
+import { copyFile, mkdir, readdir, unlink, rmdir, stat } from 'fs/promises'
 import path from 'path'
 
 const COMPONENTS = ['page', 'icon', 'opengraph']
-
-// Build a map from author-relative paths (e.g. "icons/snippet.svelte") to the
-// piece type + role they correspond to. Used to rewrite author imports of the
-// form `../icons/<file>.svelte` into the synced layout's relative path.
-function buildComponentMap(config) {
-	const map = new Map()
-	for (const piece of config.pieces) {
-		for (const role of COMPONENTS) {
-			const sourcePath = piece.components?.[role]
-			if (!sourcePath) continue
-			const filename = path.basename(sourcePath)
-			const categoryDir = path.basename(path.dirname(sourcePath))
-			map.set(`${categoryDir}/${filename}`, { type: piece.type, role })
-		}
-	}
-	return map
-}
-
-function rewriteImports(source, currentType, componentMap, sourcePath) {
-	return source.replace(
-		/from\s+(['"])\.\.\/(icons|opengraphs|pages)\/([^'"/]+\.svelte)\1/g,
-		(match, quote, categoryDir, filename) => {
-			const key = `${categoryDir}/${filename}`
-			const target = componentMap.get(key)
-			if (!target) {
-				console.warn(
-					`  ! ${sourcePath}: import "${match}" does not match a configured piece component; leaving unchanged`
-				)
-				return match
-			}
-			const rewritten =
-				target.type === currentType
-					? `from ${quote}./${target.role}.svelte${quote}`
-					: `from ${quote}../${target.type}/${target.role}.svelte${quote}`
-			return rewritten
-		}
-	)
-}
 
 // Walk `dir` and remove any file not in `keptPaths`. Removes now-empty directories
 // on the way back up. We avoid rm -rf'ing the whole output up front because Vite's
@@ -71,7 +33,6 @@ async function syncContent() {
 	const outDir = path.resolve(process.cwd(), 'src/lib/pieces/components/custom')
 	await mkdir(outDir, { recursive: true })
 
-	const componentMap = buildComponentMap(config)
 	const tasks = []
 	const keptPaths = new Set()
 
@@ -88,9 +49,7 @@ async function syncContent() {
 			tasks.push(
 				(async () => {
 					await mkdir(destinationDir, { recursive: true })
-					const raw = await readFile(source, 'utf-8')
-					const rewritten = rewriteImports(raw, piece.type, componentMap, sourcePath)
-					await writeFile(destination, rewritten)
+					await copyFile(source, destination)
 					console.log(`Synced ${sourcePath} -> ${destination}`)
 				})().catch((err) => {
 					console.error(`Error syncing ${sourcePath}:`, err)
