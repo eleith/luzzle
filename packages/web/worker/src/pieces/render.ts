@@ -1,10 +1,10 @@
-import { readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { render } from 'svelte/server'
 import { ImageResponse } from 'takumi-js/response'
 import { getPieceHelpers } from './helpers.js'
 import { getCompiledOpengraphModule } from './compile.js'
-import { generateThemeCss } from './theme.js'
+import { generateThemeCss, getAssetsDir } from '@luzzle/web.theme'
 import type { Config } from '@luzzle/web.config'
 import type { PublicWebPiece } from './helpers.js'
 import type { Component } from 'svelte'
@@ -12,32 +12,6 @@ import type { Component } from 'svelte'
 const OpengraphImageWidth = 1200
 const OpengraphImageHeight = 630
 const PIECES_ASSETS_PREFIX = '/pieces/assets/'
-
-function getAssetsDir(): string {
-	if (process.env.ASSETS_BUNDLED_DIR) {
-		return process.env.ASSETS_BUNDLED_DIR
-	}
-
-	const dockerPath = '/app/assets-bundled'
-	try {
-		if (statSync(dockerPath).isDirectory()) {
-			return dockerPath
-		}
-	} catch {
-		// Ignore
-	}
-
-	const devPath = path.resolve(import.meta.dirname, '../../assets')
-	try {
-		if (statSync(devPath).isDirectory()) {
-			return devPath
-		}
-	} catch {
-		// Ignore
-	}
-
-	return path.resolve(import.meta.dirname, '../../../assets')
-}
 
 let cachedStaticStylesheets: string[] | null = null
 let cachedFontData: Buffer | null = null
@@ -50,7 +24,7 @@ function loadStaticAssets(assetsDir: string) {
 	const resetCss = readFileSync(path.join(assetsDir, 'styles/reset.css'), 'utf8')
 	const baseCss = readFileSync(path.join(assetsDir, 'styles/base.css'), 'utf8')
 	const markdownCss = readFileSync(path.join(assetsDir, 'styles/markdown.css'), 'utf8')
-	const fontData = readFileSync(path.join(assetsDir, 'fonts/noto-sans.woff2'))
+	const fontData = readFileSync(path.resolve(import.meta.dirname, '../../assets/fonts/noto-sans.woff2'))
 
 	cachedStaticStylesheets = [resetCss, baseCss, markdownCss]
 	cachedFontData = fontData
