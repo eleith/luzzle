@@ -10,7 +10,9 @@ when:
         - ".woodpecker/.web-explorer.yml"
         - "packages/web/explorer/**"
         - "packages/web/config/**"
-        - "packages/web/worker/src/api/**"
+        - "packages/web/theme/**"
+        - "packages/web/db/**"
+        - "packages/web/jobs/**"
         - "pnpm-lock.yaml"
   - event: tag
     ref: "refs/tags/web/v*"
@@ -22,7 +24,7 @@ steps:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
       - corepack enable
       - pnpm install --frozen-lockfile
-      - pnpm --filter @luzzle/web.config build
+      - pnpm --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs build
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
@@ -34,7 +36,6 @@ steps:
       - cd packages/web/explorer
       - touch config.yaml
       - touch .env
-      - pnpm run sync:worker
       - pnpm run lint
       - pnpm run check
 

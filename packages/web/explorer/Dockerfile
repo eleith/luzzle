@@ -12,7 +12,7 @@ FROM base AS dev
 COPY . .
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
-RUN pnpm --filter @luzzle/web.config build
+RUN pnpm --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs build
 WORKDIR /m/packages/web/explorer
 RUN mkdir -p assets/pieces assets/build data content build \
              node_modules/.cache node_modules/.vite .svelte-kit && \
@@ -31,7 +31,7 @@ FROM base AS pruner
 COPY . .
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
-RUN pnpm --filter @luzzle/web.config build
+RUN pnpm --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs build
 RUN pnpm --filter @luzzle/web deploy --legacy /pruned
 
 # --- prod (default) ----------------------------------------------------------
