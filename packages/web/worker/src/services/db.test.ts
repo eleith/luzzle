@@ -65,18 +65,21 @@ describe('resolveQueueDbPath', () => {
 	})
 })
 
-describe('createWorkerDb', () => {
+describe('createAppDb re-export', () => {
 	beforeEach(() => {
 		vi.resetModules()
 	})
 
-	test('calls getDatabaseClient with the resolved path', async () => {
-		const withTables = vi.fn().mockReturnValue({ kind: 'kysely' })
-		const getDatabaseClient = vi.fn().mockReturnValue({ withTables })
+	test('forwards the resolved path through to @luzzle/web.db', async () => {
+		const createAppDbMock = vi.fn().mockReturnValue({ kind: 'kysely' })
 
-		vi.doMock('@luzzle/core', () => ({ getDatabaseClient }))
+		vi.doMock('@luzzle/web.db', () => ({
+			createAppDb: createAppDbMock,
+			resolveDbPath: (c: Config) => `${c.paths.config.replace(/\/[^/]+$/, '')}/${c.paths.database}`,
+			resolveQueueDbPath: () => ''
+		}))
 
-		const { createAppDb } = await import('./db.js')
+		const { createAppDb, resolveDbPath: resolveDbPathFromDb } = await import('./db.js')
 
 		const config = {
 			paths: {
@@ -85,10 +88,9 @@ describe('createWorkerDb', () => {
 			}
 		} as unknown as Config
 
-		const result = createAppDb(resolveDbPath(config))
+		const result = createAppDb(resolveDbPathFromDb(config))
 
-		expect(getDatabaseClient).toHaveBeenCalledWith('/etc/luzzle/data/luzzle.sqlite')
-		expect(withTables).toHaveBeenCalledOnce()
+		expect(createAppDbMock).toHaveBeenCalledWith('/etc/luzzle/data/luzzle.sqlite')
 		expect(result).toEqual({ kind: 'kysely' })
 	})
 })

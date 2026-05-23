@@ -48,7 +48,7 @@
     "fdir": "6.5.0",
     "file-type": "21.3.0",
     "got": "14.6.5",
-    "jsonpathly": "^3.0.0",
+    "jsonpathly": "3.0.0",
     "kysely": "0.28.17",
     "remark": "15.0.1",
     "remark-frontmatter": "5.0.0",

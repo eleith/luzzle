@@ -10,9 +10,9 @@
 		"format": "prettier --write ."
 	},
 	"dependencies": {
-		"markdownlint": "^0.40.0",
-		"vscode-languageserver": "^9.0.1",
-		"vscode-languageserver-textdocument": "^1.0.12",
+		"markdownlint": "0.40.0",
+		"vscode-languageserver": "9.0.1",
+		"vscode-languageserver-textdocument": "1.0.12",
 		"vscode-ws-jsonrpc": "3.4.0",
 		"ws": "8.18.2"
 	},
