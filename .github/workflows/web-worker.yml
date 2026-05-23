@@ -9,6 +9,9 @@ on:
     paths:
       - 'packages/web/worker/**'
       - 'packages/web/config/**'
+      - 'packages/web/theme/**'
+      - 'packages/web/db/**'
+      - 'packages/web/jobs/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/web-worker.yml'
 
@@ -35,9 +38,9 @@ jobs:
         working-directory: .
         run: pnpm install --frozen-lockfile
 
-      - name: Build web.config
+      - name: Build shared packages
         working-directory: .
-        run: pnpm --filter @luzzle/web.config build
+        run: pnpm --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs build
 
       - name: Lint
         run: pnpm run lint
