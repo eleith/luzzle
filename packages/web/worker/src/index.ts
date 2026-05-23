@@ -1,5 +1,7 @@
+import { getDatabaseClient, migrate } from '@luzzle/core'
 import { loadConfig } from '@luzzle/web.config'
-import { resolveQueueDbPath } from './services/db.js'
+import { resolveDbPath, resolveQueueDbPath } from './services/db.js'
+import { runWebMigrations } from '@luzzle/web.db'
 import { configureQueue } from './services/queue.js'
 import { createHealthServer } from './services/health.js'
 import { log } from './services/logger.js'
@@ -11,6 +13,20 @@ const PURGE_RETENTION_DAYS = 2
 
 async function main() {
 	const config = loadConfig('./config.yaml')
+
+	const db = getDatabaseClient(resolveDbPath(config))
+
+	const coreResult = await migrate(db)
+	if (coreResult.error) {
+		throw new Error(`luzzle core migration failed: ${coreResult.error}`)
+	}
+	log('info', 'luzzle core migrations applied')
+
+	const webResult = await runWebMigrations(db)
+	if (webResult.error) {
+		throw new Error(`web migration failed: ${webResult.error}`)
+	}
+	log('info', 'web migrations applied')
 
 	const queueDb = resolveQueueDbPath(config)
 	await configureQueue(queueDb)

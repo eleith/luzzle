@@ -4,7 +4,6 @@ import {
 	Pieces,
 	StorageFileSystem,
 	getDatabaseClient,
-	migrate,
 	type Pieces as PiecesType,
 	type StorageFileSystem as StorageType,
 	type LuzzleTables,
@@ -18,22 +17,16 @@ vi.mock('@luzzle/core', () => ({
 	Pieces: vi.fn(),
 	StorageFileSystem: vi.fn(),
 	getDatabaseClient: vi.fn(),
-	migrate: vi.fn(),
 }))
 
 vi.mock('../services/db.js', () => ({
 	resolveDbPath: vi.fn(() => '/app/data/db.sqlite'),
 }))
 
-vi.mock('@luzzle/web.db', () => ({
-	runWebMigrations: vi.fn(() => Promise.resolve({ results: [], error: undefined })),
-}))
-
 const mocks = {
 	Pieces: vi.mocked(Pieces),
 	StorageFileSystem: vi.mocked(StorageFileSystem),
 	getDatabaseClient: vi.mocked(getDatabaseClient),
-	migrate: vi.mocked(migrate),
 }
 
 type MockDb = Kysely<LuzzleTables>
@@ -107,13 +100,11 @@ describe('luzzleSyncStep', () => {
 		const mockPieces = makePieces()
 		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
 		mocks.getDatabaseClient.mockReturnValue(mockDb)
-		mocks.migrate.mockResolvedValue({})
 		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await luzzleSyncStep.run(undefined, ctx)
 
 		expect(StorageFileSystem).toHaveBeenCalledWith('/app/archive')
-		expect(migrate).toHaveBeenCalledWith(mockDb)
 		expect(mockPieces.sync).toHaveBeenCalledWith(mockDb, {})
 		expect(mockPieces.prune).toHaveBeenCalledWith(mockDb, { dryRun: false })
 	})
@@ -124,7 +115,6 @@ describe('luzzleSyncStep', () => {
 		})
 		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.migrate.mockResolvedValue({})
 		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await luzzleSyncStep.run(undefined, ctx)
@@ -140,7 +130,6 @@ describe('luzzleSyncStep', () => {
 		})
 		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.migrate.mockResolvedValue({})
 		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await luzzleSyncStep.run(undefined, ctx)
@@ -163,7 +152,6 @@ describe('luzzleSyncStep', () => {
 		})
 		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
 		mocks.getDatabaseClient.mockReturnValue(mockDb)
-		mocks.migrate.mockResolvedValue({})
 		mocks.Pieces.mockReturnValue(mockPieces)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
@@ -190,7 +178,6 @@ describe('luzzleSyncStep', () => {
 		})
 		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.migrate.mockResolvedValue({})
 		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await luzzleSyncStep.run(undefined, ctx)
@@ -217,23 +204,12 @@ describe('luzzleSyncStep', () => {
 		})
 		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.migrate.mockResolvedValue({})
 		mocks.Pieces.mockReturnValue(mockPieces)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 		if (result.status === 'completed') {
 			expect(result.value.changedPaths).toEqual(['books/new.md', 'books/changed.md'])
 		}
-	})
-
-	test('throws on migration failure', async () => {
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.migrate.mockResolvedValue({ error: 'migration failed' })
-
-		await expect(luzzleSyncStep.run(undefined, ctx)).rejects.toThrow(
-			'luzzle core migration failed: migration failed'
-		)
 	})
 
 	test('runs item prune for pruned files', async () => {
@@ -247,7 +223,6 @@ describe('luzzleSyncStep', () => {
 		})
 		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.migrate.mockResolvedValue({})
 		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await luzzleSyncStep.run(undefined, ctx)
@@ -258,7 +233,6 @@ describe('luzzleSyncStep', () => {
 	test('returns completion message with changed count', async () => {
 		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.migrate.mockResolvedValue({})
 		mocks.Pieces.mockReturnValue(makePieces())
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
