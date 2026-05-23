@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { Publish } from '$lib/server/sidequest.jobs.js'
+import { Publish } from '@luzzle/web.jobs'
 import { Sidequest } from 'sidequest'
 
 export const POST: RequestHandler = async () => {

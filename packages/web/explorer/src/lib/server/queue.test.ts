@@ -1,11 +1,11 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { resolveQueueDbPath } from './queue.js'
-import { Sidequest } from 'sidequest'
+import { configureQueue, resolveQueueDbPath } from './queue.js'
+import { configureQueue as sharedConfigureQueue } from '@luzzle/web.jobs'
 import { config } from '$lib/server/config.js'
 import path from 'node:path'
 
-vi.mock('sidequest', () => ({
-	Sidequest: { configure: vi.fn().mockResolvedValue(undefined) }
+vi.mock('@luzzle/web.jobs', () => ({
+	configureQueue: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('$lib/server/config.js', () => ({
@@ -17,7 +17,6 @@ vi.mock('$lib/server/config.js', () => ({
 describe('queue', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
-		vi.resetModules()
 	})
 
 	test('resolveQueueDbPath defaults to ./data/sidequest.sqlite', () => {
@@ -30,19 +29,13 @@ describe('queue', () => {
 		expect(resolveQueueDbPath()).toBe(path.resolve(process.cwd(), '/tmp/test.db'))
 	})
 
-	test('configureQueue calls Sidequest.configure with correct backend', async () => {
+	test('configureQueue delegates to shared configureQueue with the resolved dbPath', async () => {
 		config.worker = { queue: { path: '/custom/path.db' } }
-		const { configureQueue, resolveJobsFilePath } = await import('./queue.js')
 
 		await configureQueue()
 
-		expect(Sidequest.configure).toHaveBeenCalledWith({
-			backend: {
-				driver: '@sidequest/sqlite-backend',
-				config: path.resolve(process.cwd(), '/custom/path.db')
-			},
-			manualJobResolution: true,
-			jobsFilePath: resolveJobsFilePath()
+		expect(sharedConfigureQueue).toHaveBeenCalledWith({
+			dbPath: path.resolve(process.cwd(), '/custom/path.db')
 		})
 	})
 })

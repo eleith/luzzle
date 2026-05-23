@@ -1,16 +1,6 @@
-import { Sidequest } from 'sidequest'
-import { config } from '$lib/server/config.js'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { existsSync } from 'node:fs'
-
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
-
-export function resolveJobsFilePath(): string {
-	const tsPath = path.join(SCRIPT_DIR, 'sidequest.jobs.ts')
-	if (existsSync(tsPath)) return tsPath
-	return path.join(SCRIPT_DIR, 'sidequest.jobs.js')
-}
+import { configureQueue as sharedConfigureQueue } from '@luzzle/web.jobs'
+import { config } from '$lib/server/config.js'
 
 export function resolveQueueDbPath(): string {
 	const queuePath = config.worker?.queue?.path || './data/sidequest.sqlite'
@@ -18,12 +8,5 @@ export function resolveQueueDbPath(): string {
 }
 
 export async function configureQueue(): Promise<void> {
-	await Sidequest.configure({
-		backend: {
-			driver: '@sidequest/sqlite-backend',
-			config: resolveQueueDbPath()
-		},
-		manualJobResolution: true,
-		jobsFilePath: resolveJobsFilePath()
-	})
+	await sharedConfigureQueue({ dbPath: resolveQueueDbPath() })
 }

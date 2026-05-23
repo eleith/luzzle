@@ -1,7 +1,7 @@
 import { error, redirect } from '@sveltejs/kit'
 import { getPieces } from '$lib/server/pieces'
 import { config } from '$lib/server/config'
-import { Preview } from '$lib/server/sidequest.jobs.js'
+import { Preview } from '@luzzle/web.jobs'
 import { Sidequest } from 'sidequest'
 import type { PageServerLoad } from '../$types'
 
