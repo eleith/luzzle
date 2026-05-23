@@ -4,7 +4,7 @@ import type { Logger } from './logger.js'
 import { RcloneClient } from './rclone.js'
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from './db.js'
-import { createAppDb } from './db.js'
+import { createAppDb, resolveDbPath } from './db.js'
 import { PhaseLogger } from '../core/phase-logger.js'
 
 export interface WorkerContext {
@@ -24,7 +24,7 @@ export function getWorkerContext(): WorkerContext {
 	if (workerContext) return workerContext
 	const config = loadConfig('./config.yaml')
 	const baseLogger: Logger = createLogger()
-	const db = createAppDb(config)
+	const db = createAppDb(resolveDbPath(config))
 	const logger = new PhaseLogger(baseLogger, db)
 	workerContext = {
 		config,

@@ -1,19 +1,7 @@
-import type { PieceFrontmatter, PieceFrontMatterValue } from '@luzzle/core'
-import type { WebPieces } from '../services/db.js'
+import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.db'
+import type { PieceFrontMatterValue } from '@luzzle/core'
 
-export interface PublicWebPieceAsset {
-	asset_key: string
-	transformation: string
-	asset_path?: string | null
-	mime_type: string
-	is_embedded?: 0 | 1
-	content?: string
-}
-
-export type PublicWebPiece = Omit<WebPieces, 'file_path' | 'json_metadata'> & {
-	metadata: PieceFrontmatter
-	assets: PublicWebPieceAsset[]
-}
+export type { PublicWebPiece, PublicWebPieceAsset }
 
 export type PieceIconPalette = {
 	accent?: string

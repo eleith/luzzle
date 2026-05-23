@@ -6,6 +6,7 @@ import {
 } from '@luzzle/core'
 import { completed, type Step, type StepResult } from '../core/step.js'
 import { resolveDbPath } from '../services/db.js'
+import { runWebMigrations } from '@luzzle/web.db'
 
 export const luzzleSyncStep: Step<void, { changedPaths: string[] }> = {
 	name: 'luzzle.sync',
@@ -20,6 +21,11 @@ export const luzzleSyncStep: Step<void, { changedPaths: string[] }> = {
 		const migrationResult = await migrate(db)
 		if (migrationResult.error) {
 			throw new Error(`luzzle core migration failed: ${migrationResult.error}`)
+		}
+
+		const webMigrationResult = await runWebMigrations(db)
+		if (webMigrationResult.error) {
+			throw new Error(`web migration failed: ${webMigrationResult.error}`)
 		}
 
 		const pieces = new Pieces(storage)

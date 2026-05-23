@@ -25,6 +25,10 @@ vi.mock('../services/db.js', () => ({
 	resolveDbPath: vi.fn(() => '/app/data/db.sqlite'),
 }))
 
+vi.mock('@luzzle/web.db', () => ({
+	runWebMigrations: vi.fn(() => Promise.resolve({ results: [], error: undefined })),
+}))
+
 const mocks = {
 	Pieces: vi.mocked(Pieces),
 	StorageFileSystem: vi.mocked(StorageFileSystem),

@@ -40,6 +40,7 @@
 	"dependencies": {
 		"@luzzle/core": "0.0.59",
 		"@luzzle/web.config": "workspace:*",
+		"@luzzle/web.db": "workspace:*",
 		"@luzzle/web.theme": "workspace:*",
 		"@sidequest/core": "^1.15.0",
 		"@sidequest/sqlite-backend": "^1.15.0",

@@ -85,7 +85,7 @@ describe('createWorkerDb', () => {
 			}
 		} as unknown as Config
 
-		const result = createAppDb(config)
+		const result = createAppDb(resolveDbPath(config))
 
 		expect(getDatabaseClient).toHaveBeenCalledWith('/etc/luzzle/data/luzzle.sqlite')
 		expect(withTables).toHaveBeenCalledOnce()
