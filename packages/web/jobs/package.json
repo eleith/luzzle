@@ -46,6 +46,7 @@
 		"vitest": "catalog:"
 	},
 	"dependencies": {
+		"@luzzle/core": "0.0.59",
 		"@sidequest/core": "^1.15.0",
 		"sidequest": "^1.15.0"
 	},

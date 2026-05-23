@@ -526,6 +526,9 @@ importers:
 
   packages/web/jobs:
     dependencies:
+      '@luzzle/core':
+        specifier: 0.0.59
+        version: 0.0.59(picomatch@4.0.4)
       '@sidequest/core':
         specifier: ^1.15.0
         version: 1.15.0
