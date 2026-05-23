@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte'
 	import PiecePage from '$lib/pieces/components/page.svelte'
-	import type { AssembledPreview } from '$lib/pieces/types'
+	import type { AssembledPreview } from '$lib/pieces/preview/assemble.server'
 
 	import ArrowLeftIcon from 'virtual:icons/ph/arrow-left'
 	import CheckCircleFill from 'virtual:icons/ph/check-circle-fill'

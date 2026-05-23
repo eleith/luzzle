@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext, setContext, type Component } from 'svelte'
-	import type { PublicWebPiece } from '$lib/pieces/types'
+	import type { PublicWebPiece } from '@luzzle/web.db'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
 	import PieceIcon from '$lib/pieces/components/icon.svelte'
 	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'

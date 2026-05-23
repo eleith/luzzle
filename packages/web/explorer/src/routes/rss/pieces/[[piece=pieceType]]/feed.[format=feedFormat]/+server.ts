@@ -1,4 +1,4 @@
-import type { PublicWebPiece } from '$lib/pieces/types'
+import type { PublicWebPiece } from '@luzzle/web.db'
 import type { RequestHandler } from './$types'
 import { config } from '$lib/server/config'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'

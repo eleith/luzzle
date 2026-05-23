@@ -1,6 +1,5 @@
-import { type WebPieceTags } from './types'
+import type { WebPieceTags, PublicWebPiece } from '@luzzle/web.db'
 import { page } from '$app/state'
-import type { PublicWebPiece } from './types'
 import type { PieceFrontMatterValue } from '@luzzle/core'
 import type { Component, Snippet } from 'svelte'
 

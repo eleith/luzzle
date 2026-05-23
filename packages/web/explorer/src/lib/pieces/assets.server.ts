@@ -2,10 +2,11 @@ import { db } from '$lib/server/database'
 import type {
 	WebPieces,
 	WebPiecesAsset,
-	WebPiece,
 	PublicWebPiece,
 	PublicWebPieceAsset
-} from './types'
+} from '@luzzle/web.db'
+
+type WebPiece = WebPieces & { assets: WebPiecesAsset[] }
 
 async function fetchAssets(paths: string[]) {
 	return db

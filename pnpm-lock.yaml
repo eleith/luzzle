@@ -402,6 +402,9 @@ importers:
       '@luzzle/web.config':
         specifier: workspace:*
         version: link:../config
+      '@luzzle/web.db':
+        specifier: workspace:*
+        version: link:../db
       '@luzzle/web.theme':
         specifier: workspace:*
         version: link:../theme

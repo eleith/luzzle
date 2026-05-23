@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext, setContext, type Component } from 'svelte'
-	import type { PublicWebPiece } from '$lib/pieces/types'
+	import type { PublicWebPiece } from '@luzzle/web.db'
 	import IconDefault from '$lib/pieces/components/icon.default.svelte'
 	import { getPieceHelpers, type PieceIconProps, type PieceMode } from '$lib/pieces/helpers.js'
 
