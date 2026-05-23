@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { Sidequest } from 'sidequest'
-import { configureProducerQueue, configureConsumerQueue } from './configure-queue.js'
+import { configureQueue } from './configure-queue.js'
 
 vi.mock('sidequest', () => ({
 	Sidequest: {
@@ -8,32 +8,26 @@ vi.mock('sidequest', () => ({
 	}
 }))
 
-describe('configureProducerQueue', () => {
+describe('configureQueue', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 	})
 
-	test('enables manualJobResolution but omits jobsFilePath', async () => {
-		await configureProducerQueue({ dbPath: '/tmp/queue.sqlite' })
+	test('falls back to a self-referencing jobsFilePath when caller omits it', async () => {
+		await configureQueue({ dbPath: '/tmp/queue.sqlite' })
 
 		const call = vi.mocked(Sidequest.configure).mock.calls[0]?.[0]
 		expect(call?.manualJobResolution).toBe(true)
-		expect(call?.jobsFilePath).toBeUndefined()
+		expect(call?.jobsFilePath).toMatch(/configure-queue\.(ts|js)$/)
 		expect(call?.maxConcurrentJobs).toBe(1)
 		expect(call?.backend).toEqual({
 			driver: '@sidequest/sqlite-backend',
 			config: '/tmp/queue.sqlite'
 		})
 	})
-})
 
-describe('configureConsumerQueue', () => {
-	beforeEach(() => {
-		vi.clearAllMocks()
-	})
-
-	test('enables manual resolution and forwards the caller-supplied jobsFilePath', async () => {
-		await configureConsumerQueue({
+	test('forwards a caller-supplied jobsFilePath', async () => {
+		await configureQueue({
 			dbPath: '/app/queue.sqlite',
 			jobsFilePath: '/srv/worker/sidequest.jobs.js'
 		})
@@ -41,10 +35,6 @@ describe('configureConsumerQueue', () => {
 		const call = vi.mocked(Sidequest.configure).mock.calls[0]?.[0]
 		expect(call?.manualJobResolution).toBe(true)
 		expect(call?.jobsFilePath).toBe('/srv/worker/sidequest.jobs.js')
-		expect(call?.maxConcurrentJobs).toBe(1)
-		expect(call?.backend).toEqual({
-			driver: '@sidequest/sqlite-backend',
-			config: '/app/queue.sqlite'
-		})
+		expect(call?.backend?.config).toBe('/app/queue.sqlite')
 	})
 })

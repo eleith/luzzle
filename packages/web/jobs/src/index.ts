@@ -1,19 +1,14 @@
 export { createJobStub } from './factory.js'
-export type { JobStub } from './factory.js'
-export { configureProducerQueue, configureConsumerQueue } from './configure-queue.js'
+export { configureQueue } from './configure-queue.js'
+export type { ConfigureQueueOptions } from './configure-queue.js'
+export { Publish, Preview, JobProgressPurge } from './stubs.js'
 export type {
-	ProducerQueueOptions,
-	ConsumerQueueOptions
-} from './configure-queue.js'
-export { Publish, Preview, JobProgressPurge } from './stubs/index.js'
-export type { PublishPayload, PublishResult } from './types/publish.js'
-export type {
+	AssetRecord,
+	PublishPayload,
+	PublishResult,
 	PreviewPayload,
 	PreviewAsset,
-	PreviewResult
-} from './types/preview.js'
-export type {
+	PreviewResult,
 	JobProgressPurgePayload,
 	JobProgressPurgeResult
-} from './types/job-progress-purge.js'
-export type { AssetRecord } from './types/shared.js'
+} from './types.js'

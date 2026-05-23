@@ -1,5 +1,17 @@
 import type { PieceFrontmatter } from '@luzzle/core'
-import type { AssetRecord } from './shared.js'
+
+export interface AssetRecord {
+	piece_asset_path?: string | null
+	piece_field_path?: string
+	transformation: string
+	asset_path?: string | null
+	mime_type: string
+	is_embedded?: 0 | 1
+	content?: string
+}
+
+export type PublishPayload = void
+export type PublishResult = 'ok'
 
 export interface PreviewPayload {
 	filePath: string
@@ -19,3 +31,9 @@ export interface PreviewResult {
 	pathToKey: Record<string, string>
 	transforms: PreviewAsset[]
 }
+
+export interface JobProgressPurgePayload {
+	retentionDays?: number
+}
+
+export type JobProgressPurgeResult = 'ok'
