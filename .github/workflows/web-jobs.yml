@@ -1,0 +1,38 @@
+name: "@luzzle/web.jobs"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/web/jobs/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/web-jobs.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --filter @luzzle/web.jobs build
+
+      - name: Lint
+        run: pnpm --filter @luzzle/web.jobs lint
+
+      - name: Test
+        run: pnpm --filter @luzzle/web.jobs test
