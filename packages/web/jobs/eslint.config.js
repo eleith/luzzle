@@ -20,16 +20,6 @@ export default defineConfig([
 				...globals.node,
 			},
 		},
-		rules: {
-			'@typescript-eslint/no-unused-vars': [
-				'error',
-				{
-					argsIgnorePattern: '^_',
-					varsIgnorePattern: '^_',
-					caughtErrorsIgnorePattern: '^_',
-				},
-			],
-		},
 	},
 	{
 		files: ["**/*.ts", "**/*.tsx"],

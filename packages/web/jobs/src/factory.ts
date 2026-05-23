@@ -8,7 +8,7 @@ export function createJobStub<Payload, Result>(
 	name: string
 ): JobStub<Payload, Result> {
 	const cls = class extends Job {
-		async run(_payload: Payload): Promise<Result> {
+		async run(): Promise<Result> {
 			throw new Error(
 				`${name}: producer-side stub; real impl runs in @luzzle/web.worker`
 			)
