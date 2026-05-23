@@ -23,13 +23,13 @@ storage:
   root: ./archive
 
 sync:
-  config: /app/rclone/rclone.conf
+  config: ./rclone/rclone.conf
   archive:
     remote: archive
-    path: /app/remote
+    path: ./remote
   cdn:
     remote: cdn
-    path: /app/cdn
+    path: ./cdn
 
 paths:
   database: ./data/luzzle.sqlite
