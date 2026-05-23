@@ -13,27 +13,26 @@ describe('configureQueue', () => {
 		vi.clearAllMocks()
 	})
 
-	test('configures Sidequest with sqlite backend, manual resolution, and maxConcurrentJobs=1', async () => {
-		await configureQueue({
-			dbPath: '/tmp/queue.sqlite',
-			jobsFilePath: '/srv/jobs.js'
-		})
+	test('defaults jobsFilePath to this package’s producer stubs bundle', async () => {
+		await configureQueue({ dbPath: '/tmp/queue.sqlite' })
 
-		expect(Sidequest.configure).toHaveBeenCalledWith({
-			backend: {
-				driver: '@sidequest/sqlite-backend',
-				config: '/tmp/queue.sqlite'
-			},
-			manualJobResolution: true,
-			jobsFilePath: '/srv/jobs.js',
-			maxConcurrentJobs: 1
+		const call = vi.mocked(Sidequest.configure).mock.calls[0]?.[0]
+		expect(call?.jobsFilePath).toMatch(/stubs[/\\]index\.js$/)
+		expect(call?.manualJobResolution).toBe(true)
+		expect(call?.maxConcurrentJobs).toBe(1)
+		expect(call?.backend).toEqual({
+			driver: '@sidequest/sqlite-backend',
+			config: '/tmp/queue.sqlite'
 		})
 	})
 
-	test('passes through caller-provided paths verbatim', async () => {
-		await configureQueue({ dbPath: 'a.db', jobsFilePath: 'b.js' })
+	test('caller-provided jobsFilePath overrides the default (consumer mode)', async () => {
+		await configureQueue({
+			dbPath: 'a.db',
+			jobsFilePath: '/srv/worker/sidequest.jobs.js'
+		})
 		const call = vi.mocked(Sidequest.configure).mock.calls[0]?.[0]
+		expect(call?.jobsFilePath).toBe('/srv/worker/sidequest.jobs.js')
 		expect(call?.backend?.config).toBe('a.db')
-		expect(call?.jobsFilePath).toBe('b.js')
 	})
 })

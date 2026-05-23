@@ -1,8 +1,19 @@
+import { fileURLToPath } from 'node:url'
 import { Sidequest } from 'sidequest'
+
+const PRODUCER_STUBS_PATH = fileURLToPath(
+	new URL('./stubs/index.js', import.meta.url)
+)
 
 export interface ConfigureQueueOptions {
 	dbPath: string
-	jobsFilePath: string
+	/**
+	 * Sidequest's `manualJobResolution` registry path. Defaults to this
+	 * package's producer-side stub bundle, which is the correct value for
+	 * any explorer/producer process. Consumers (e.g. `@luzzle/web.worker`)
+	 * pass their own jobs file listing real Job classes.
+	 */
+	jobsFilePath?: string
 }
 
 export async function configureQueue(opts: ConfigureQueueOptions): Promise<void> {
@@ -12,7 +23,7 @@ export async function configureQueue(opts: ConfigureQueueOptions): Promise<void>
 			config: opts.dbPath
 		},
 		manualJobResolution: true,
-		jobsFilePath: opts.jobsFilePath,
+		jobsFilePath: opts.jobsFilePath ?? PRODUCER_STUBS_PATH,
 		maxConcurrentJobs: 1
 	})
 }
