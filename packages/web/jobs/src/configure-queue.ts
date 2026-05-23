@@ -12,9 +12,12 @@ export interface ConsumerQueueOptions {
 /**
  * Configure Sidequest for a producer (enqueuer) process.
  *
- * Producers only build job rows and write them to the queue backend;
- * they never resolve handler classes by name, so `manualJobResolution`
- * and `jobsFilePath` are intentionally omitted.
+ * The producer never resolves handler classes by name, so no
+ * `jobsFilePath` is required. `manualJobResolution: true` is still
+ * required, though — the JobBuilder uses it to stamp each enqueued
+ * row with the MANUAL_SCRIPT_TAG marker instead of trying to
+ * auto-detect a source-file path from the stub class. Without the
+ * flag the worker reads a bogus script path and fails to dispatch.
  */
 export async function configureProducerQueue(
 	opts: ProducerQueueOptions
@@ -24,6 +27,7 @@ export async function configureProducerQueue(
 			driver: '@sidequest/sqlite-backend',
 			config: opts.dbPath
 		},
+		manualJobResolution: true,
 		maxConcurrentJobs: 1
 	})
 }
