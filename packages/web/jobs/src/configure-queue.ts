@@ -1,29 +1,53 @@
-import { fileURLToPath } from 'node:url'
 import { Sidequest } from 'sidequest'
 
-const PRODUCER_STUBS_PATH = fileURLToPath(
-	new URL('./stubs/index.js', import.meta.url)
-)
-
-export interface ConfigureQueueOptions {
+export interface ProducerQueueOptions {
 	dbPath: string
-	/**
-	 * Sidequest's `manualJobResolution` registry path. Defaults to this
-	 * package's producer-side stub bundle, which is the correct value for
-	 * any explorer/producer process. Consumers (e.g. `@luzzle/web.worker`)
-	 * pass their own jobs file listing real Job classes.
-	 */
-	jobsFilePath?: string
 }
 
-export async function configureQueue(opts: ConfigureQueueOptions): Promise<void> {
+export interface ConsumerQueueOptions {
+	dbPath: string
+	jobsFilePath: string
+}
+
+/**
+ * Configure Sidequest for a producer (enqueuer) process.
+ *
+ * Producers only build job rows and write them to the queue backend;
+ * they never resolve handler classes by name, so `manualJobResolution`
+ * and `jobsFilePath` are intentionally omitted.
+ */
+export async function configureProducerQueue(
+	opts: ProducerQueueOptions
+): Promise<void> {
+	await Sidequest.configure({
+		backend: {
+			driver: '@sidequest/sqlite-backend',
+			config: opts.dbPath
+		},
+		maxConcurrentJobs: 1
+	})
+}
+
+/**
+ * Configure Sidequest for a consumer (worker) process.
+ *
+ * Consumers must resolve the dispatched class names back to Job
+ * implementations, so the caller must supply the absolute path to a
+ * registry file (re-exporting the real Job classes by their `.name`).
+ * Manual resolution is required because workers typically run from a
+ * compiled `dist/` tree inside a container, where Sidequest's parent-
+ * directory auto-discovery is unreliable.
+ */
+export async function configureConsumerQueue(
+	opts: ConsumerQueueOptions
+): Promise<void> {
 	await Sidequest.configure({
 		backend: {
 			driver: '@sidequest/sqlite-backend',
 			config: opts.dbPath
 		},
 		manualJobResolution: true,
-		jobsFilePath: opts.jobsFilePath ?? PRODUCER_STUBS_PATH,
+		jobsFilePath: opts.jobsFilePath,
 		maxConcurrentJobs: 1
 	})
 }

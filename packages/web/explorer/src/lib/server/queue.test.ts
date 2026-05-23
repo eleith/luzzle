@@ -1,11 +1,11 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { configureQueue, resolveQueueDbPath } from './queue.js'
-import { configureQueue as sharedConfigureQueue } from '@luzzle/web.jobs'
+import { configureProducerQueue } from '@luzzle/web.jobs'
 import { config } from '$lib/server/config.js'
 import path from 'node:path'
 
 vi.mock('@luzzle/web.jobs', () => ({
-	configureQueue: vi.fn().mockResolvedValue(undefined)
+	configureProducerQueue: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('$lib/server/config.js', () => ({
@@ -29,12 +29,12 @@ describe('queue', () => {
 		expect(resolveQueueDbPath()).toBe(path.resolve(process.cwd(), '/tmp/test.db'))
 	})
 
-	test('configureQueue delegates to shared configureQueue with the resolved dbPath', async () => {
+	test('configureQueue delegates to configureProducerQueue with the resolved dbPath', async () => {
 		config.worker = { queue: { path: '/custom/path.db' } }
 
 		await configureQueue()
 
-		expect(sharedConfigureQueue).toHaveBeenCalledWith({
+		expect(configureProducerQueue).toHaveBeenCalledWith({
 			dbPath: path.resolve(process.cwd(), '/custom/path.db')
 		})
 	})

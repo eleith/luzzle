@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { configureQueue as sharedConfigureQueue } from '@luzzle/web.jobs'
+import { configureProducerQueue } from '@luzzle/web.jobs'
 import { config } from '$lib/server/config.js'
 
 export function resolveQueueDbPath(): string {
@@ -8,5 +8,5 @@ export function resolveQueueDbPath(): string {
 }
 
 export async function configureQueue(): Promise<void> {
-	await sharedConfigureQueue({ dbPath: resolveQueueDbPath() })
+	await configureProducerQueue({ dbPath: resolveQueueDbPath() })
 }

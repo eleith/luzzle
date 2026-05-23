@@ -1,7 +1,10 @@
 export { createJobStub } from './factory.js'
 export type { JobStub } from './factory.js'
-export { configureQueue } from './configure-queue.js'
-export type { ConfigureQueueOptions } from './configure-queue.js'
+export { configureProducerQueue, configureConsumerQueue } from './configure-queue.js'
+export type {
+	ProducerQueueOptions,
+	ConsumerQueueOptions
+} from './configure-queue.js'
 export { Publish, Preview, JobProgressPurge } from './stubs/index.js'
 export type { PublishPayload, PublishResult } from './types/publish.js'
 export type {

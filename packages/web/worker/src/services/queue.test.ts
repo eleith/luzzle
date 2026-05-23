@@ -8,29 +8,24 @@ describe('configureQueue', () => {
 		vi.resetModules()
 	})
 
-	test('calls Sidequest.configure with manual resolution and the resolved jobs file path', async () => {
-		const configure = vi.fn().mockResolvedValue(undefined)
-		vi.doMock('sidequest', () => ({ Sidequest: { configure } }))
+	test('delegates to configureConsumerQueue with the resolved jobs file path', async () => {
+		const configureConsumerQueue = vi.fn().mockResolvedValue(undefined)
+		vi.doMock('@luzzle/web.jobs', () => ({ configureConsumerQueue }))
 
 		const { configureQueue } = await import('./queue.js')
 
 		await configureQueue('/app/queue/sidequest.db')
 
-		expect(configure).toHaveBeenCalledOnce()
-		expect(configure).toHaveBeenCalledWith({
-			backend: {
-				driver: '@sidequest/sqlite-backend',
-				config: '/app/queue/sidequest.db'
-			},
-			manualJobResolution: true,
-			jobsFilePath: EXPECTED_JOBS_PATH,
-			maxConcurrentJobs: 1
+		expect(configureConsumerQueue).toHaveBeenCalledOnce()
+		expect(configureConsumerQueue).toHaveBeenCalledWith({
+			dbPath: '/app/queue/sidequest.db',
+			jobsFilePath: EXPECTED_JOBS_PATH
 		})
 	})
 
 	test('propagates configure errors', async () => {
-		const configure = vi.fn().mockRejectedValue(new Error('boom'))
-		vi.doMock('sidequest', () => ({ Sidequest: { configure } }))
+		const configureConsumerQueue = vi.fn().mockRejectedValue(new Error('boom'))
+		vi.doMock('@luzzle/web.jobs', () => ({ configureConsumerQueue }))
 
 		const { configureQueue } = await import('./queue.js')
 

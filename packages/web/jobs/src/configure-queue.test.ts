@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { Sidequest } from 'sidequest'
-import { configureQueue } from './configure-queue.js'
+import { configureProducerQueue, configureConsumerQueue } from './configure-queue.js'
 
 vi.mock('sidequest', () => ({
 	Sidequest: {
@@ -8,31 +8,43 @@ vi.mock('sidequest', () => ({
 	}
 }))
 
-describe('configureQueue', () => {
+describe('configureProducerQueue', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 	})
 
-	test('defaults jobsFilePath to this package’s producer stubs bundle', async () => {
-		await configureQueue({ dbPath: '/tmp/queue.sqlite' })
+	test('omits manualJobResolution and jobsFilePath', async () => {
+		await configureProducerQueue({ dbPath: '/tmp/queue.sqlite' })
 
 		const call = vi.mocked(Sidequest.configure).mock.calls[0]?.[0]
-		expect(call?.jobsFilePath).toMatch(/stubs[/\\]index\.js$/)
-		expect(call?.manualJobResolution).toBe(true)
+		expect(call?.manualJobResolution).toBeUndefined()
+		expect(call?.jobsFilePath).toBeUndefined()
 		expect(call?.maxConcurrentJobs).toBe(1)
 		expect(call?.backend).toEqual({
 			driver: '@sidequest/sqlite-backend',
 			config: '/tmp/queue.sqlite'
 		})
 	})
+})
 
-	test('caller-provided jobsFilePath overrides the default (consumer mode)', async () => {
-		await configureQueue({
-			dbPath: 'a.db',
+describe('configureConsumerQueue', () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
+
+	test('enables manual resolution and forwards the caller-supplied jobsFilePath', async () => {
+		await configureConsumerQueue({
+			dbPath: '/app/queue.sqlite',
 			jobsFilePath: '/srv/worker/sidequest.jobs.js'
 		})
+
 		const call = vi.mocked(Sidequest.configure).mock.calls[0]?.[0]
+		expect(call?.manualJobResolution).toBe(true)
 		expect(call?.jobsFilePath).toBe('/srv/worker/sidequest.jobs.js')
-		expect(call?.backend?.config).toBe('a.db')
+		expect(call?.maxConcurrentJobs).toBe(1)
+		expect(call?.backend).toEqual({
+			driver: '@sidequest/sqlite-backend',
+			config: '/app/queue.sqlite'
+		})
 	})
 })
