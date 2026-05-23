@@ -4,6 +4,7 @@ packages:
   - packages/lsp
   - packages/web/explorer
   - packages/web/config
+  - packages/web/theme
   - packages/web/worker
   - packages/web/lsp
   - packages/web/proxy
