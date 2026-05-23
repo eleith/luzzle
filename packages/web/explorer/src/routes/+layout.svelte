@@ -1,7 +1,7 @@
 <script lang="ts">
-	import '$lib/ui/styles/reset.css'
-	import '$lib/ui/styles/base.css'
-	import '$lib/ui/styles/markdown.css'
+	import '@luzzle/web.theme/styles/reset.css'
+	import '@luzzle/web.theme/styles/base.css'
+	import '@luzzle/web.theme/styles/markdown.css'
 	import '$lib/ui/styles/theme.build.css'
 
 	const { children } = $props()

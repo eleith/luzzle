@@ -353,6 +353,9 @@ importers:
       '@luzzle/web.config':
         specifier: workspace:*
         version: link:../config
+      '@luzzle/web.theme':
+        specifier: workspace:*
+        version: link:../theme
       '@sidequest/core':
         specifier: ^1.15.0
         version: 1.15.0
