@@ -672,6 +672,9 @@ importers:
       '@luzzle/web.db':
         specifier: workspace:*
         version: link:../db
+      '@luzzle/web.jobs':
+        specifier: workspace:*
+        version: link:../jobs
       '@luzzle/web.theme':
         specifier: workspace:*
         version: link:../theme

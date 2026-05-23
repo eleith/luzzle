@@ -8,7 +8,7 @@ import { webSyncStep } from '../steps/web-sync/index.js'
 import { assetsGenerateStep } from '../steps/assets-generate.js'
 import { cdnSyncStep } from '../steps/cdn-sync.js'
 import { cachePurgeStep } from '../steps/cache-purge.js'
-import type { PublishPayload, PublishResult } from '../api/publish.js'
+import type { PublishPayload, PublishResult } from '@luzzle/web.jobs'
 
 export type { PublishPayload, PublishResult }
 

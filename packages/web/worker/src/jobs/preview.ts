@@ -9,7 +9,7 @@ import {
 	PREVIEW_TRANSFORM_NAMES,
 	previewTransformStep,
 } from '../steps/preview-transform.js'
-import type { PreviewPayload, PreviewAsset, PreviewResult } from '../api/preview.js'
+import type { PreviewPayload, PreviewAsset, PreviewResult } from '@luzzle/web.jobs'
 
 export type { PreviewPayload, PreviewAsset, PreviewResult }
 

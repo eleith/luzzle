@@ -4,7 +4,7 @@ import { jobProgressPurgeStep } from '../steps/job-progress-purge.js'
 import type {
 	JobProgressPurgePayload,
 	JobProgressPurgeResult,
-} from '../api/job-progress-purge.js'
+} from '@luzzle/web.jobs'
 
 export type { JobProgressPurgePayload, JobProgressPurgeResult }
 

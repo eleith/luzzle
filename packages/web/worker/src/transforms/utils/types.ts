@@ -3,7 +3,7 @@ import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../services/db.js'
 import type { Logger } from '../../services/logger.js'
 
-export type { AssetRecord } from '../../api/shared.js'
+export type { AssetRecord } from '@luzzle/web.jobs'
 
 export type TransformInput = {
 	webPiece: WebPieces
