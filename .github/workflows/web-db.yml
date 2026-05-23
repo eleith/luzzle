@@ -7,6 +7,7 @@ on:
     paths:
       - 'packages/web/db/**'
       - 'packages/web/config/**'
+      - 'packages/core/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/web-db.yml'
 
@@ -29,8 +30,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build web.config
-        run: pnpm --filter @luzzle/web.config build
+      - name: Build core + web.config
+        run: pnpm --filter @luzzle/core --filter @luzzle/web.config build
 
       - name: Build
         run: pnpm --filter @luzzle/web.db build

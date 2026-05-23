@@ -306,8 +306,8 @@ importers:
   packages/web/db:
     dependencies:
       '@luzzle/core':
-        specifier: 0.0.59
-        version: 0.0.59(picomatch@4.0.4)
+        specifier: workspace:*
+        version: link:../../core
       '@luzzle/web.config':
         specifier: workspace:*
         version: link:../config
@@ -397,8 +397,8 @@ importers:
         specifier: 1.2.3
         version: 1.2.3
       '@luzzle/core':
-        specifier: 0.0.60
-        version: 0.0.60(picomatch@4.0.4)
+        specifier: workspace:*
+        version: link:../../core
       '@luzzle/web.config':
         specifier: workspace:*
         version: link:../config
@@ -530,8 +530,8 @@ importers:
   packages/web/jobs:
     dependencies:
       '@luzzle/core':
-        specifier: 0.0.60
-        version: 0.0.60(picomatch@4.0.4)
+        specifier: workspace:*
+        version: link:../../core
       '@sidequest/core':
         specifier: 1.15.0
         version: 1.15.0
@@ -664,8 +664,8 @@ importers:
   packages/web/worker:
     dependencies:
       '@luzzle/core':
-        specifier: 0.0.60
-        version: 0.0.60(picomatch@4.0.4)
+        specifier: workspace:*
+        version: link:../../core
       '@luzzle/web.config':
         specifier: workspace:*
         version: link:../config
@@ -1582,10 +1582,6 @@ packages:
 
   '@luzzle/core@0.0.59':
     resolution: {integrity: sha512-5Mp4fL+/dIgYe+5bImpv7pTp9cFYXN5l/ur+7anc4wN7iDynXryDeEMu9n8SiLFTqhLPqij6H3pWcXeThsY9LQ==}
-    engines: {node: '>=24'}
-
-  '@luzzle/core@0.0.60':
-    resolution: {integrity: sha512-YIzRvcMrO3IiQMHz4bEoQg6y0U9j6cONFD1dDHyGnT6acKg8QrYHyDfRXuDXbAOj70Pza6vlRivZDcUQsSNSSg==}
     engines: {node: '>=24'}
 
   '@marijn/find-cluster-break@1.0.2':
@@ -5672,28 +5668,6 @@ snapshots:
       '@lezer/lr': 1.4.10
 
   '@luzzle/core@0.0.59(picomatch@4.0.4)':
-    dependencies:
-      '@google/genai': 1.30.0
-      '@paralleldrive/cuid2': 2.2.2
-      '@sindresorhus/slugify': 3.0.0
-      ajv: 8.17.1
-      fdir: 6.5.0(picomatch@4.0.4)
-      file-type: 21.3.0
-      got: 14.6.5
-      jsonpathly: 3.0.0
-      kysely: 0.28.17
-      remark: 15.0.1
-      remark-frontmatter: 5.0.0
-      unist-util-visit: 5.0.0
-      yaml: 2.7.0
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - bufferutil
-      - picomatch
-      - supports-color
-      - utf-8-validate
-
-  '@luzzle/core@0.0.60(picomatch@4.0.4)':
     dependencies:
       '@google/genai': 1.30.0
       '@paralleldrive/cuid2': 2.2.2

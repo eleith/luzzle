@@ -42,7 +42,7 @@
 		"vitest": "catalog:"
 	},
 	"dependencies": {
-		"@luzzle/core": "0.0.60",
+		"@luzzle/core": "workspace:*",
 		"@sidequest/core": "1.15.0",
 		"sidequest": "1.15.0"
 	},

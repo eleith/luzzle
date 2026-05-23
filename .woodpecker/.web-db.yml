@@ -10,6 +10,7 @@ when:
         - ".woodpecker/.web-db.yml"
         - "packages/web/db/**"
         - "packages/web/config/**"
+        - "packages/core/**"
         - "pnpm-lock.yaml"
 
 steps:
@@ -23,7 +24,7 @@ steps:
     image: node:24
     commands:
       - corepack enable
-      - pnpm --filter @luzzle/web.config build
+      - pnpm --filter @luzzle/core --filter @luzzle/web.config build
       - pnpm --filter @luzzle/web.db build
 
   test:

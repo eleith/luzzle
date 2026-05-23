@@ -42,7 +42,7 @@
 		"vitest": "catalog:"
 	},
 	"dependencies": {
-		"@luzzle/core": "0.0.59",
+		"@luzzle/core": "workspace:*",
 		"@luzzle/web.config": "workspace:*",
 		"kysely": "0.28.17"
 	},

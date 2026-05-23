@@ -39,7 +39,7 @@
 		"vitest": "catalog:"
 	},
 	"dependencies": {
-		"@luzzle/core": "0.0.60",
+		"@luzzle/core": "workspace:*",
 		"@luzzle/web.config": "workspace:*",
 		"@luzzle/web.db": "workspace:*",
 		"@luzzle/web.jobs": "workspace:*",
