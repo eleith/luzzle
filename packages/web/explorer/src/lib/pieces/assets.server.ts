@@ -1,10 +1,5 @@
 import { db } from '$lib/server/database'
-import type {
-	WebPieces,
-	WebPiecesAsset,
-	PublicWebPiece,
-	PublicWebPieceAsset
-} from '@luzzle/web.db'
+import type { WebPieces, WebPiecesAsset, PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.db'
 
 type WebPiece = WebPieces & { assets: WebPiecesAsset[] }
 
