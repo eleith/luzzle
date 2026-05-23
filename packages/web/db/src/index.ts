@@ -12,3 +12,4 @@ export type {
 
 export { resolveDbPath, resolveQueueDbPath } from './paths.js'
 export { createAppDb } from './client.js'
+export { runWebMigrations } from './migrations.js'
