@@ -524,6 +524,52 @@ importers:
         specifier: 2.7.0
         version: 2.7.0
 
+  packages/web/jobs:
+    dependencies:
+      '@sidequest/core':
+        specifier: ^1.15.0
+        version: 1.15.0
+      sidequest:
+        specifier: ^1.15.0
+        version: 1.15.0
+    devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.22.0
+      '@types/eslint':
+        specifier: 'catalog:'
+        version: 9.6.1
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.12.0
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 3.2.4(vitest@3.2.4)
+      eslint:
+        specifier: 'catalog:'
+        version: 9.22.0
+      eslint-config-prettier:
+        specifier: 'catalog:'
+        version: 9.1.0(eslint@9.22.0)
+      globals:
+        specifier: 'catalog:'
+        version: 16.0.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.4.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.7.3
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.19.1(eslint@9.22.0)(typescript@5.7.3)
+      vite:
+        specifier: 'catalog:'
+        version: 7.1.7(@types/node@22.12.0)(yaml@2.7.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.12.0)(@vitest/ui@3.2.4)(yaml@2.7.0)
+
   packages/web/lsp:
     dependencies:
       markdownlint:

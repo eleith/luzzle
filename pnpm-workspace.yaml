@@ -6,6 +6,7 @@ packages:
   - packages/web/config
   - packages/web/theme
   - packages/web/db
+  - packages/web/jobs
   - packages/web/worker
   - packages/web/lsp
   - packages/web/proxy
