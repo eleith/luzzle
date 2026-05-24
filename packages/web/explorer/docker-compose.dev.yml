@@ -14,7 +14,7 @@ services:
     ports:
       - '5173:5173'
     volumes:
-      - ./demo/assets/pieces:/m/packages/web/explorer/assets/pieces
+      - ./demo/assets:/m/packages/web/explorer/assets
       - ./demo/config.yaml:/m/packages/web/explorer/config.yaml
       - ./demo/data:/m/packages/web/explorer/data
       - ./demo/content:/m/packages/web/explorer/content
@@ -42,6 +42,8 @@ services:
     container_name: luzzle-dev-worker
     user: '${UID:-1000}:${GID:-1000}'
     env_file: .env
+    environment:
+      - LUZZLE_DEV=true
     networks:
       - luzzle
     volumes:
@@ -55,7 +57,7 @@ services:
       - ./demo/content:/m/packages/web/worker/content
       - ./nginx/cache:/m/packages/web/worker/nginx
       - ../worker/src:/m/packages/web/worker/src
-      - ../worker/assets:/m/packages/web/worker/assets-bundled
+      - ./static:/m/packages/web/worker/static
       - ../worker/scripts:/m/packages/web/worker/scripts
       - ../worker/tsconfig.json:/m/packages/web/worker/tsconfig.json
       - ../worker/tsconfig.build.json:/m/packages/web/worker/tsconfig.build.json
