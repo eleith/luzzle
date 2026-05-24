@@ -23,27 +23,23 @@ RUN mkdir -p assets/pieces assets/build data content build \
 EXPOSE 3000
 ENTRYPOINT ["node", "scripts/manager.js"]
 
-# --- pruner: deploy explorer as a self-contained bundle ----------------------
-# Full deploy (NOT --prod) because manager.js runs `pnpm run build` at startup,
-# which needs vite/svelte-check/etc. The image is intentionally larger to
-# preserve the existing build-at-startup behavior driven by runtime config.yaml.
-FROM base AS pruner
+# --- builder: install only explorer's dependency tree and build workspace deps
+FROM base AS builder
 COPY . .
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --filter @luzzle/web...
 RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs build
-RUN pnpm --filter @luzzle/web deploy --legacy /pruned
 
 # --- prod (default) ----------------------------------------------------------
 FROM base AS prod
-WORKDIR /app
-COPY --from=pruner /pruned /app
-RUN pnpm install --frozen-lockfile
-RUN mkdir -p /app/assets/pieces /app/assets/build /app/data /app/content /app/build \
-             /app/node_modules/.cache /app/node_modules/.vite /app/.svelte-kit && \
-    touch /app/config.yaml /app/.env && \
-    chmod 777 /app /app/config.yaml /app/.env /app/package.json && \
-    chmod -R 777 /app/assets /app/data /app/content /app/build \
-                 /app/node_modules/.cache /app/node_modules/.vite /app/.svelte-kit
+WORKDIR /m/packages/web/explorer
+COPY --from=builder /m /m
+RUN ln -s /m/packages/web/explorer /app
+RUN mkdir -p assets/pieces assets/build data content build \
+             node_modules/.cache node_modules/.vite .svelte-kit && \
+    touch config.yaml .env && \
+    chmod 777 . config.yaml .env package.json && \
+    chmod -R 777 assets data content build \
+                 node_modules/.cache node_modules/.vite .svelte-kit
 EXPOSE 3000
 ENTRYPOINT ["node", "scripts/manager.js"]
