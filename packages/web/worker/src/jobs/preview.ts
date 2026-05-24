@@ -1,5 +1,6 @@
 import { Job } from '@sidequest/core'
 import { Pieces, StorageFileSystem } from '@luzzle/core'
+import path from 'node:path'
 import { getWorkerContext } from '../services/context.js'
 import { JobProgress } from '../core/job-progress.js'
 import { StepRunner } from '../core/step-runner.js'
@@ -33,10 +34,16 @@ export class Preview extends Job {
 			throw new Error('preview parse returned no result')
 		}
 
+		const outDir = path.join(path.dirname(config.paths.assets), 'previews', this.id.toString())
 		const transforms: PreviewAsset[] = []
 		for (const name of PREVIEW_TRANSFORM_NAMES) {
 			try {
-				const records = await runner.run(previewTransformStep(name), { parsed, pieces })
+				const records = await runner.run(previewTransformStep(name), {
+					parsed,
+					pieces,
+					outDir,
+					previewAssets: transforms
+				})
 				if (!records) continue
 				for (const r of records) {
 					transforms.push({
@@ -47,8 +54,10 @@ export class Preview extends Job {
 						),
 					})
 				}
-			} catch {
-				// Failure already recorded in job_progress by StepRunner; preview tolerates per-transform failures.
+			} catch (error) {
+				logger.error(`preview transform.${name} failed`, {
+					error: error instanceof Error ? { message: error.message, stack: error.stack } : error
+				})
 			}
 		}
 

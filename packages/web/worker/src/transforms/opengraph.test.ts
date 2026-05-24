@@ -101,4 +101,62 @@ describe('transforms/opengraph', () => {
 			}),
 		])
 	})
+
+	test('generates opengraph image using in-memory previewAssets during preview', async () => {
+		const mockPieces = {} as unknown as Pieces
+
+		mocks.getOpenGraphPath.mockReturnValue('books/key/opengraph.png')
+		mocks.renderOpengraphPng.mockResolvedValue(Buffer.from('png-data'))
+
+		const mockDb = {
+			selectFrom: vi.fn(),
+		}
+		mocks.getWorkerContext.mockReturnValue({
+			db: mockDb as unknown as Kysely<AppDatabase>,
+			config: {} as unknown as Config,
+			logger: {} as unknown as Logger,
+			rclone: {} as unknown as RcloneClient,
+		})
+
+		const previewAssets = [
+			{
+				asset_key: 'img-key',
+				transformation: 'image.original',
+				asset_path: 'books/k1/cover.png',
+				mime_type: 'image/png'
+			}
+		]
+
+		const records = await run({
+			webPiece: makeWebPiece(),
+			config: makeConfig(),
+			outDir: TEMP_DIR,
+			pieces: mockPieces,
+			assetKeyToPath: new Map(),
+			logger: makeLogger(),
+			previewAssets,
+		})
+
+		expect(mocks.getOpenGraphPath).toHaveBeenCalledWith('books', 'key')
+		expect(mocks.renderOpengraphPng).toHaveBeenCalledWith(
+			expect.objectContaining({
+				assets: [
+					expect.objectContaining({
+						asset_key: 'img-key',
+						transformation: 'image.original',
+					})
+				]
+			}),
+			expect.anything(),
+			TEMP_DIR
+		)
+		expect(mockDb.selectFrom).not.toHaveBeenCalled()
+		expect(records).toEqual([
+			expect.objectContaining({
+				transformation: 'opengraph',
+				mime_type: 'image/png',
+				asset_path: 'books/key/opengraph.png',
+			}),
+		])
+	})
 })

@@ -48,7 +48,7 @@ describe('previewTransformStep', () => {
 		mocks.getTransforms.mockReturnValue(new Map([['palette', palette]]))
 
 		const result = await previewTransformStep('palette').run(
-			{ parsed, pieces: {} as Pieces },
+			{ parsed, pieces: {} as Pieces, outDir: 'temp-out' },
 			makeCtx()
 		)
 
@@ -68,7 +68,7 @@ describe('previewTransformStep', () => {
 		mocks.getTransforms.mockReturnValue(new Map())
 
 		const result = await previewTransformStep('markdown').run(
-			{ parsed, pieces: {} as Pieces },
+			{ parsed, pieces: {} as Pieces, outDir: 'temp-out' },
 			makeCtx()
 		)
 		expect(result.status).toBe('completed')

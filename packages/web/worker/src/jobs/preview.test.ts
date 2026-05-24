@@ -60,7 +60,7 @@ function makeContext(): WorkerContext {
 		clearActivePhase: () => void
 	}
 	return {
-		config: { storage: { root: '/archive' }, assets: { salt: 's' } } as unknown as Config,
+		config: { storage: { root: '/archive' }, assets: { salt: 's' }, paths: { assets: '/cache/pieces' } } as unknown as Config,
 		logger,
 		rclone: {} as WorkerContext['rclone'],
 		db: {} as WorkerContext['db'],

@@ -7,26 +7,45 @@ import type { TransformInput, AssetRecord } from './utils/types.js'
 import type { PublicWebPiece, PublicWebPieceAsset } from '../pieces/helpers.js'
 import type { PieceFrontmatter } from '@luzzle/core'
 
-export async function run({ webPiece, config, outDir }: TransformInput): Promise<AssetRecord[]> {
+export async function run({
+	webPiece,
+	config,
+	outDir,
+	previewAssets
+}: TransformInput): Promise<AssetRecord[]> {
 	const ogPath = getOpenGraphPath(webPiece.type, webPiece.key)
 	const outputPath = path.join(outDir, ogPath)
 
-	const db = getWorkerContext().db
-	const assets = await db
-		.selectFrom('web_pieces_assets')
-		.selectAll()
-		.where('piece_file_path', '=', webPiece.file_path)
-		.execute()
+	let assets: PublicWebPieceAsset[] = []
+
+	if (previewAssets) {
+		assets = previewAssets.map((a) => ({
+			asset_key: a.asset_key,
+			transformation: a.transformation,
+			asset_path: a.asset_path ?? null,
+			mime_type: a.mime_type,
+			is_embedded: a.is_embedded ?? undefined,
+			content: a.content ?? undefined
+		}))
+	} else {
+		const db = getWorkerContext().db
+		const dbAssets = await db
+			.selectFrom('web_pieces_assets')
+			.selectAll()
+			.where('piece_file_path', '=', webPiece.file_path)
+			.execute()
+		assets = dbAssets.map((a) => ({
+			asset_key: a.asset_key,
+			transformation: a.transformation,
+			asset_path: a.asset_path,
+			mime_type: a.mime_type,
+			is_embedded: a.is_embedded ?? undefined,
+			content: a.content ?? undefined
+		}))
+	}
 
 	const metadata = JSON.parse(webPiece.json_metadata) as PieceFrontmatter
-	const publicAssets: PublicWebPieceAsset[] = assets.map((a) => ({
-		asset_key: a.asset_key,
-		transformation: a.transformation,
-		asset_path: a.asset_path,
-		mime_type: a.mime_type,
-		is_embedded: a.is_embedded ?? undefined,
-		content: a.content ?? undefined
-	}))
+	const publicAssets: PublicWebPieceAsset[] = assets
 
 	const publicPiece: PublicWebPiece = {
 		id: webPiece.id,
@@ -44,7 +63,7 @@ export async function run({ webPiece, config, outDir }: TransformInput): Promise
 		assets: publicAssets
 	}
 
-	const buffer = await renderOpengraphPng(publicPiece, config)
+	const buffer = await renderOpengraphPng(publicPiece, config, outDir)
 
 	await fs.mkdir(path.dirname(outputPath), { recursive: true })
 	await fs.writeFile(outputPath, buffer)

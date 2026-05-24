@@ -3,7 +3,8 @@ import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../services/db.js'
 import type { Logger } from '../../services/logger.js'
 
-export type { AssetRecord } from '@luzzle/web.jobs'
+import type { AssetRecord, PreviewAsset } from '@luzzle/web.jobs'
+export type { AssetRecord }
 
 export type TransformInput = {
 	webPiece: WebPieces
@@ -12,4 +13,5 @@ export type TransformInput = {
 	pieces: Pieces
 	assetKeyToPath: Map<string, string>
 	logger: Logger
+	previewAssets?: PreviewAsset[]
 }
