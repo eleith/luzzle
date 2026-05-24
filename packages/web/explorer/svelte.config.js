@@ -29,7 +29,7 @@ const svelteConfig = {
 					'self',
 					'unsafe-hashes',
 					'sha256-7dQwUgLau1NFCCGjfn9FsYptB6ZtWxJin6VohGIu20I=',
-					'sha256-IkSJz6bJHlgEJX/qrZfLQujPiGpWsHJXQZ7PqTVra1Y=',
+					'sha256-8oa0zHl7YAxAhiYNg8fadxmsU54ezUB+oZ/NjM03xVk=',
 					`${config.url.app_assets}/`
 				].filter((src) => src !== '/'),
 				'style-src': ['self', 'unsafe-inline', `${config.url.app_assets}/`].filter(

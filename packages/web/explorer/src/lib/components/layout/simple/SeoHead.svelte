@@ -34,10 +34,11 @@
 	{#if !browser}
 		<script>
 			;(function () {
-				let preference = window.localStorage.getItem('theme') || 'system'
+				var raw = window.localStorage.getItem('theme')
+				var preference = raw === 'dark' || raw === 'light' || raw === 'system' ? raw : 'system'
 				document.documentElement.setAttribute('data-theme-preference', preference)
 
-				let appliedTheme = preference
+				var appliedTheme = preference
 				if (preference === 'system') {
 					appliedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
 						? 'dark'

@@ -6,7 +6,8 @@
 	import { onMount } from 'svelte'
 
 	function getThemePreference(): Theme {
-		return (window.localStorage.getItem('theme') || 'system') as Theme
+		const raw = window.localStorage.getItem('theme')
+		return raw === 'dark' || raw === 'light' || raw === 'system' ? raw : 'system'
 	}
 
 	function applyTheme(preference: Theme) {
