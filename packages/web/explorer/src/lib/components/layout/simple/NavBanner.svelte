@@ -2,9 +2,7 @@
 	import NavigationIcon from 'virtual:icons/ph/arrow-up-left'
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import DiceIcon from 'virtual:icons/ph/dice-three'
-	import CodeBlockIcon from 'virtual:icons/ph/code-block'
 	import { page } from '$app/state'
-	import { onMount } from 'svelte'
 	import type { Snippet } from 'svelte'
 	import NavigationProgressBar from './NavigationProgressBar.svelte'
 	import ThemeToggle from './ThemeToggle.svelte'
@@ -34,17 +32,6 @@
 		showRandom = false,
 		items
 	}: Props = $props()
-
-	let isAdmin = $state(false)
-	const editUrl = $derived(
-		page.params.piece && page.params.slug
-			? `/editor/open/${page.params.piece}/${page.params.slug}`
-			: null
-	)
-
-	onMount(() => {
-		isAdmin = localStorage.getItem('luzzle.admin') === 'true'
-	})
 </script>
 
 {#if showProgress}
@@ -85,11 +72,6 @@
 		{#if showRandom}
 			<a href="/random" aria-label="random" data-sveltekit-reload>
 				<DiceIcon style="font-size: 1em;" />
-			</a>
-		{/if}
-		{#if isAdmin && editUrl}
-			<a href={editUrl} aria-label="edit source">
-				<CodeBlockIcon style="font-size: 1em;" />
 			</a>
 		{/if}
 		{#if showThemeToggle}
