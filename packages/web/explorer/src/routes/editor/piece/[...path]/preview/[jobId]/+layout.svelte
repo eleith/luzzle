@@ -102,28 +102,22 @@
 
 {#if status === 'completed'}
 	<div class="preview-banner">
-		<div class="preview-banner-left">
-			<span class="preview-label">preview</span>
-			<span class="preview-title">{data.piece?.title || ''}</span>
-			<div class="preview-links">
-				<a href={pageUrl} class="preview-link" class:active={page.url.pathname === pageUrl}>page</a>
-				<a href={iconUrl} class="preview-link" class:active={page.url.pathname === iconUrl}>icon</a>
-				<a
-					href="{ogUrl}?html"
-					class="preview-link"
-					class:active={page.url.pathname === ogUrl && page.url.searchParams.has('html')}>og html</a
-				>
-				<a
-					href={ogUrl}
-					class="preview-link"
-					class:active={page.url.pathname === ogUrl && !page.url.searchParams.has('html')}>og png</a
-				>
-			</div>
-		</div>
 		<a href={editorUrl} class="preview-back">
 			<ArrowLeftIcon />
-			back to editor
 		</a>
+		<div class="preview-links">
+			<a href={pageUrl} class="preview-link" class:active={page.url.pathname === pageUrl}>page</a>
+			<a href={iconUrl} class="preview-link" class:active={page.url.pathname === iconUrl}>icon</a>
+			<a
+				href={ogUrl}
+				class="preview-link"
+				class:active={page.url.pathname === ogUrl && !page.url.searchParams.has('html')}>og</a
+			>
+			{#if page.url.pathname === ogUrl && page.url.searchParams.has('html')}
+				<a href="{ogUrl}?html" class="preview-link active">og (html)</a>
+			{/if}
+		</div>
+		<span class="preview-label">preview</span>
 	</div>
 	{@render children()}
 {:else}
@@ -227,26 +221,12 @@
 		font-size: var(--font-size-small);
 	}
 
-	.preview-banner-left {
-		display: flex;
-		align-items: center;
-		gap: var(--space-4);
-		min-width: 0;
-	}
-
 	.preview-label {
 		text-transform: uppercase;
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		flex-shrink: 0;
-	}
-
-	.preview-title {
-		opacity: 0.8;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		max-width: 200px;
+		opacity: 0.7;
 	}
 
 	.preview-links {
