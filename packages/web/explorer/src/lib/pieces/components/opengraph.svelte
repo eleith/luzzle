@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { getContext, setContext, type Component } from 'svelte'
+	import type { Component } from 'svelte'
 	import type { PublicWebPiece } from '@luzzle/web.db'
 	import OpengraphDefault from '$lib/pieces/components/opengraph.default.svelte'
 	import {
 		getPieceHelpers,
 		OpengraphImageHeight,
 		OpengraphImageWidth,
-		type PieceMode,
 		type PieceOpengraphProps
 	} from '../helpers'
 
@@ -27,12 +26,9 @@
 
 	type Props = {
 		piece: PublicWebPiece
-		mode?: PieceMode
 	}
 
-	let { piece, mode }: Props = $props()
-	const effectiveMode: PieceMode = mode ?? getContext<PieceMode>('piece-mode') ?? 'public'
-	setContext('piece-mode', effectiveMode)
+	let { piece }: Props = $props()
 
 	async function resolveOpengraph(type: string): Promise<Component<PieceOpengraphProps>> {
 		const importer = opengraphImportMap.get(type)
@@ -44,11 +40,15 @@
 			return OpengraphDefault
 		}
 	}
-
-	const Opengraph = $derived(await resolveOpengraph(piece.type))
-	const helpers = getPieceHelpers(piece, effectiveMode)
+	const helpers = getPieceHelpers(piece)
 </script>
 
-<section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
-	<Opengraph {piece} {helpers} />
-</section>
+{#await resolveOpengraph(piece.type) then Opengraph}
+	<section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
+		<Opengraph {piece} {helpers} />
+	</section>
+{:catch}
+	<section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
+		<OpengraphDefault {piece} {helpers} />
+	</section>
+{/await}

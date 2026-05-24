@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { getContext, setContext, type Component } from 'svelte'
+	import type { Component } from 'svelte'
 	import type { PublicWebPiece } from '@luzzle/web.db'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
 	import PieceIcon from '$lib/pieces/components/icon.svelte'
 	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
-	import { getPieceHelpers, type PieceMode, type PiecePageProps } from '$lib/pieces/helpers.js'
+	import { getPieceHelpers, type PiecePageProps } from '$lib/pieces/helpers.js'
 
 	const components = { NavBanner, PieceIcon }
 
@@ -23,13 +23,10 @@
 	type Props = {
 		piece: PublicWebPiece
 		tags: Array<{ slug: string; tag: string }>
-		mode?: PieceMode
 	}
 
-	let { piece, tags, mode }: Props = $props()
-	const effectiveMode: PieceMode = mode ?? getContext<PieceMode>('piece-mode') ?? 'public'
-	setContext('piece-mode', effectiveMode)
-	const helpers = getPieceHelpers(piece, effectiveMode)
+	let { piece, tags }: Props = $props()
+	const helpers = getPieceHelpers(piece)
 
 	async function resolvePage(type: string): Promise<Component<PiecePageProps>> {
 		const importer = pageImportMap.get(type)
@@ -41,8 +38,10 @@
 			return PageDefault
 		}
 	}
-
-	const PageComponent = $derived(await resolvePage(piece.type))
 </script>
 
-<PageComponent {piece} {tags} {helpers} {components} />
+{#await resolvePage(piece.type) then PageComponent}
+	<PageComponent {piece} {tags} {helpers} {components} />
+{:catch}
+	<PageDefault {piece} {tags} {helpers} {components} />
+{/await}
