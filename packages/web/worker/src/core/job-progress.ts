@@ -10,7 +10,7 @@ export class JobProgress {
 		this.retentionDays = retentionDays
 	}
 
-	async purgeOld(): Promise<void> {
+	async purgeOld(): Promise<number[]> {
 		try {
 			const cutoffMs = Date.now() - this.retentionDays * 24 * 60 * 60 * 1000
 
@@ -33,8 +33,11 @@ export class JobProgress {
 					.where('job_id', 'in', oldJobIds)
 					.execute()
 			}
+
+			return oldJobIds
 		} catch (err) {
 			console.error('JobProgress purgeOld failed:', err)
+			return []
 		}
 	}
 

@@ -1,5 +1,7 @@
 import { completed, type Step, type StepResult } from '../core/step.js'
 import { JobProgress } from '../core/job-progress.js'
+import { promises as fs } from 'node:fs'
+import path from 'node:path'
 
 export interface JobProgressPurgeInput {
 	retentionDays?: number
@@ -8,10 +10,21 @@ export interface JobProgressPurgeInput {
 export const jobProgressPurgeStep: Step<JobProgressPurgeInput, void> = {
 	name: 'job_progress.purge',
 	async run(input, ctx): Promise<StepResult<void>> {
-		const { db, logger } = ctx
+		const { db, logger, config } = ctx
 		const retentionDays = input.retentionDays ?? 2
-		await new JobProgress(db, retentionDays).purgeOld()
-		logger.info('job_progress purge complete', { retentionDays })
+		const purgedJobIds = await new JobProgress(db, retentionDays).purgeOld()
+
+		for (const jobId of purgedJobIds) {
+			const previewDir = path.join(path.dirname(config.paths.assets), 'previews', jobId.toString())
+			try {
+				await fs.rm(previewDir, { recursive: true, force: true })
+				logger.info('purged preview assets directory', { jobId, previewDir })
+			} catch (err) {
+				logger.warn('failed to purge preview assets directory', { jobId, error: String(err) })
+			}
+		}
+
+		logger.info('job_progress purge complete', { retentionDays, purgedCount: purgedJobIds.length })
 		return completed(undefined)
 	},
 }
