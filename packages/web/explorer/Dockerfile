@@ -38,6 +38,7 @@ RUN pnpm --filter @luzzle/web deploy --legacy /pruned
 FROM base AS prod
 WORKDIR /app
 COPY --from=pruner /pruned /app
+RUN pnpm install --frozen-lockfile
 RUN mkdir -p /app/assets/pieces /app/assets/build /app/data /app/content /app/build \
              /app/node_modules/.cache /app/node_modules/.vite /app/.svelte-kit && \
     touch /app/config.yaml /app/.env && \
