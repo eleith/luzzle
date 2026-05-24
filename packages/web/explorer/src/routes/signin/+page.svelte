@@ -25,6 +25,7 @@
 		if (result?.error) {
 			error = 'Invalid username or password'
 		} else {
+			localStorage.setItem('luzzle.admin', 'true')
 			goto(redirectTo)
 		}
 	}
