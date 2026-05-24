@@ -20,7 +20,8 @@ const makeConfig = (opengraphPath: string): Config => ({
 		config: path.join(TEMP_DIR, 'config.yaml'),
 		database: '',
 		assets: path.join(TEMP_DIR, 'assets'),
-		cache: ''
+		cache: '',
+		static: path.join(TEMP_DIR, 'static')
 	},
 	assets: { salt: 'test' }
 }) as unknown as Config
