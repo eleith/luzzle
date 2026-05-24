@@ -1,7 +1,8 @@
-import { getFrontmatterValue, type LuzzleSelectable } from '@luzzle/core'
+import { type LuzzleSelectable } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../services/db.js'
 import { generateAssetKey } from '../../assets/key.js'
+import { resolveFromFrontmatter } from '../../pieces/fields.js'
 
 export function slugify(text: string): string {
 	return text
@@ -45,15 +46,9 @@ export function buildWebPiece(
 	slug: string,
 	salt: string,
 	frontmatter: ReturnType<typeof JSON.parse>,
-	keywords: string[]
 ): WebPieces {
-	const title = getFrontmatterValue<string>(frontmatter, pieceConfig.fields.title) || ''
-	const dateConsumed = getFrontmatterValue<number>(frontmatter, pieceConfig.fields.date_consumed)
+	const { title, summary, dateConsumed, keywords } = resolveFromFrontmatter(frontmatter, pieceConfig)
 	const key = generateAssetKey(item.file_path, salt)
-
-	const summary = pieceConfig.fields.summary
-		? getFrontmatterValue<string>(frontmatter, pieceConfig.fields.summary)
-		: undefined
 
 	return {
 		slug,

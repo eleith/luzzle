@@ -104,8 +104,8 @@ describe('buildWebPiece', () => {
 	} as unknown as Config['pieces'][number]
 
 	test('maps item + frontmatter into WebPieces row', () => {
-		const fm = { title: 'Great Book', date_consumed: 1700000500, summary: 'summary text' }
-		const result = buildWebPiece(item, pieceConfig, 'great', 'salt', fm, ['fiction'])
+		const fm = { title: 'Great Book', date_consumed: 1700000500, summary: 'summary text', tags: ['fiction'] }
+		const result = buildWebPiece(item, pieceConfig, 'great', 'salt', fm)
 
 		expect(result.id).toBe('item-1')
 		expect(result.slug).toBe('great')
@@ -123,18 +123,18 @@ describe('buildWebPiece', () => {
 
 	test('omits keywords when empty', () => {
 		const fm = { title: 'No Tags' }
-		const result = buildWebPiece(item, pieceConfig, 'no-tags', 'salt', fm, [])
+		const result = buildWebPiece(item, pieceConfig, 'no-tags', 'salt', fm)
 		expect(result.keywords).toBeUndefined()
 	})
 
 	test('omits date_updated when item lacks it', () => {
 		const noUpdate = { ...item, date_updated: undefined } as unknown as LuzzleSelectable<'pieces_items'>
-		const result = buildWebPiece(noUpdate, pieceConfig, 's', 'salt', {}, [])
+		const result = buildWebPiece(noUpdate, pieceConfig, 's', 'salt', {})
 		expect(result.date_updated).toBeUndefined()
 	})
 
 	test('uses empty title when frontmatter title missing', () => {
-		const result = buildWebPiece(item, pieceConfig, 's', 'salt', {}, [])
+		const result = buildWebPiece(item, pieceConfig, 's', 'salt', {})
 		expect(result.title).toBe('')
 	})
 
@@ -143,14 +143,14 @@ describe('buildWebPiece', () => {
 			type: 'books',
 			fields: { title: 'title', date_consumed: 'date_consumed' },
 		} as unknown as Config['pieces'][number]
-		const result = buildWebPiece(item, cfgNoSummary, 's', 'salt', { title: 't', summary: 'ignored' }, [])
+		const result = buildWebPiece(item, cfgNoSummary, 's', 'salt', { title: 't', summary: 'ignored' })
 		expect(result.summary).toBeUndefined()
 	})
 
 	test('key depends on file_path + salt', () => {
 		const fm = {}
-		const a = buildWebPiece(item, pieceConfig, 's', 'salt-a', fm, [])
-		const b = buildWebPiece(item, pieceConfig, 's', 'salt-b', fm, [])
+		const a = buildWebPiece(item, pieceConfig, 's', 'salt-a', fm)
+		const b = buildWebPiece(item, pieceConfig, 's', 'salt-b', fm)
 		expect(a.key).not.toBe(b.key)
 	})
 })

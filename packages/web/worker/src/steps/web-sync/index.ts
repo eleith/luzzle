@@ -1,5 +1,4 @@
 import {
-	getFrontmatterValues,
 	type LuzzleSelectable,
 	type LuzzleTables,
 } from '@luzzle/core'
@@ -91,9 +90,6 @@ async function syncOne(
 	}
 
 	const frontmatter = JSON.parse(item.frontmatter_json)
-	const keywords = pieceConfig.fields.tags
-		? getFrontmatterValues<string>(frontmatter, pieceConfig.fields.tags).flat().filter(Boolean)
-		: []
 
 	const { pathToKey } = buildAssetMaps(item.assets_json_array, config.assets.salt)
 	const sanitizedItem: PiecesItem = {
@@ -107,7 +103,6 @@ async function syncOne(
 		slug,
 		config.assets.salt,
 		frontmatter,
-		keywords
 	)
 
 	await db
@@ -128,6 +123,7 @@ async function syncOne(
 
 	await db.deleteFrom('web_pieces_tags').where('piece_id', '=', item.id).execute()
 
+	const keywords: string[] = webPiece.keywords ? JSON.parse(webPiece.keywords) : []
 	if (keywords.length > 0) {
 		const tags: WebPieceTags[] = keywords.map((tag) => ({
 			piece_slug: slug,

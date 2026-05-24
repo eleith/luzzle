@@ -10,6 +10,7 @@ import {
 } from '@luzzle/core'
 import { generateAssetKey } from '../assets/key.js'
 import { completed, type Step, type StepResult } from '../core/step.js'
+import { resolveFromFrontmatter } from '../pieces/fields.js'
 import type { WebPieces } from '../services/db.js'
 
 export type ParsedPreview = {
@@ -69,13 +70,22 @@ export const previewParseStep: Step<PreviewParseInput, ParsedPreview> = {
 		const slug = parts.slug || filePath
 		const pieceKey = generateAssetKey(filePath, config.assets.salt)
 
+		const pieceConfig = config.pieces.find((p) => p.type === parts.type)
+		const fields = pieceConfig
+			? resolveFromFrontmatter(frontmatter, pieceConfig)
+			: { title: '', summary: undefined, dateConsumed: undefined, keywords: [] }
+
 		const webPiece: WebPieces = {
 			id: 'preview',
 			file_path: filePath,
 			type: parts.type,
 			slug,
 			key: pieceKey,
-			title: '',
+			title: fields.title,
+			summary: fields.summary,
+			note: markdown.note,
+			keywords: fields.keywords.length > 0 ? JSON.stringify(fields.keywords) : undefined,
+			date_consumed: fields.dateConsumed,
 			json_metadata: JSON.stringify(sanitizedFrontmatter),
 			date_added: Date.now(),
 			date_updated: Date.now(),

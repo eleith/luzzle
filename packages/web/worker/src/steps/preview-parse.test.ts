@@ -13,7 +13,10 @@ const mocks = {
 
 function makeCtx(): WorkerContext {
 	return {
-		config: { assets: { salt: 'test-salt' } } as unknown as Config,
+		config: {
+			assets: { salt: 'test-salt' },
+			pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date_read', summary: 'description', tags: 'keywords' } }]
+		} as unknown as Config,
 		logger: {
 			debug: vi.fn(),
 			info: vi.fn(),
