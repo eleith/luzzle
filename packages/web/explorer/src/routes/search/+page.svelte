@@ -40,12 +40,7 @@
 					<div style="flex: 1 1 0%;">
 						<div style="display: flex;">
 							<div style="align-self: baseline;">
-								<PieceIcon
-									{piece}
-									size={{ width: 125 }}
-									active={activePieceId === piece.id}
-									mode="public"
-								/>
+								<PieceIcon {piece} size={{ width: 125 }} active={activePieceId === piece.id} />
 							</div>
 						</div>
 					</div>

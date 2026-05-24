@@ -4,4 +4,4 @@
 	let { data } = $props()
 </script>
 
-<PiecePage piece={data.piece} tags={data.tags} mode="public" />
+<PiecePage piece={data.piece} tags={data.tags} />

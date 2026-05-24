@@ -74,8 +74,6 @@ export type PiecePageProps = {
 	components: PieceComponents
 }
 
-export type PieceMode = 'public' | 'local' | 'preview'
-
 function createPieceHelpers(
 	piece: PublicWebPiece,
 	buildAssetUrl: (path: string) => string
@@ -122,25 +120,23 @@ function createPieceHelpers(
 	}
 }
 
-function getPublicPieceHelpers(piece: PublicWebPiece): PieceComponentHelpers {
+function detectAssetUrlBuilder(): (path: string) => string {
+	const jobId = page.params.jobId
+	const pathname = page.url.pathname
+
+	if (jobId && pathname.includes('/preview/')) {
+		return (path) => `/editor/preview/${jobId}/asset/${path}`
+	}
+
+	if (pathname.startsWith('/editor/')) {
+		return (path) => `/editor/asset/${path}`
+	}
+
 	const config = page.data.config
 	const baseUrl = config.url.luzzle_assets || config.url.app
-	return createPieceHelpers(piece, (path) => `${baseUrl}/pieces/assets/${path}`)
+	return (path) => `${baseUrl}/pieces/assets/${path}`
 }
 
-function getLocalPieceHelpers(piece: PublicWebPiece): PieceComponentHelpers {
-	return createPieceHelpers(piece, (path) => `/pieces/assets/${path}`)
-}
-
-function getPreviewPieceHelpers(piece: PublicWebPiece): PieceComponentHelpers {
-	return createPieceHelpers(piece, (path) => `/editor/asset/${path}`)
-}
-
-export function getPieceHelpers(
-	piece: PublicWebPiece,
-	mode: PieceMode = 'public'
-): PieceComponentHelpers {
-	if (mode === 'preview') return getPreviewPieceHelpers(piece)
-	if (mode === 'local') return getLocalPieceHelpers(piece)
-	return getPublicPieceHelpers(piece)
+export function getPieceHelpers(piece: PublicWebPiece): PieceComponentHelpers {
+	return createPieceHelpers(piece, detectAssetUrlBuilder())
 }
