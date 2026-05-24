@@ -18,7 +18,7 @@ export const luzzleSyncStep: Step<void, { changedPaths: string[] }> = {
 		for await (const result of schemaSync) {
 			if (result.error) {
 				logger.warn(`schema sync error for ${result.name}: ${result.message}`)
-			} else {
+			} else if (result.action === 'added' || result.action === 'updated') {
 				logger.info(`schema ${result.action}: ${result.name}`)
 			}
 		}
