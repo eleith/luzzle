@@ -68,6 +68,7 @@ export type Schema = {
     database: string;
     assets: string;
     cache: string;
+    static: string;
     config?: string;
   };
   assets: {

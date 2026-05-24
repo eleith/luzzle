@@ -244,6 +244,10 @@
 					"type": "string",
 					"default": "./nginx"
 				},
+				"static": {
+					"type": "string",
+					"default": "./static"
+				},
 				"config": {
 					"type": "string"
 				}
@@ -251,7 +255,8 @@
 			"required": [
 				"database",
 				"assets",
-				"cache"
+				"cache",
+				"static"
 			],
 			"additionalProperties": false
 		},
