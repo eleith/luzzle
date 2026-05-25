@@ -10,7 +10,6 @@ when:
         - ".woodpecker/.web-jobs.yml"
         - "packages/web/jobs/**"
         - "packages/core/**"
-        - "pnpm-lock.yaml"
 
 steps:
   prepare:

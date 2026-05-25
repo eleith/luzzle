@@ -9,7 +9,6 @@ when:
       include:
         - ".woodpecker/.core.yml"
         - "packages/core/**"
-        - "pnpm-lock.yaml"
   - event: tag
     ref: "refs/tags/core/v*"
 

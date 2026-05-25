@@ -10,7 +10,6 @@ when:
         - ".woodpecker/.web-theme.yml"
         - "packages/web/theme/**"
         - "packages/web/config/**"
-        - "pnpm-lock.yaml"
 
 steps:
   prepare:

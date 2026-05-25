@@ -8,7 +8,6 @@ on:
       - 'web.lsp/v*'
     paths:
       - 'packages/web/lsp/**'
-      - 'pnpm-lock.yaml'
       - '.github/workflows/web-lsp.yml'
 
 jobs:

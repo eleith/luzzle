@@ -7,7 +7,6 @@ on:
     paths:
       - 'packages/web/theme/**'
       - 'packages/web/config/**'
-      - 'pnpm-lock.yaml'
       - '.github/workflows/web-theme.yml'
 
 jobs:

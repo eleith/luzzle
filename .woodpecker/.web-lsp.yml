@@ -9,7 +9,6 @@ when:
       include:
         - ".woodpecker/.web-lsp.yml"
         - "packages/web/lsp/**"
-        - "pnpm-lock.yaml"
   - event: tag
     ref: "refs/tags/web.lsp/v*.*.*"
 

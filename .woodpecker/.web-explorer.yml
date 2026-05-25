@@ -14,7 +14,6 @@ when:
         - "packages/web/db/**"
         - "packages/web/jobs/**"
         - "packages/core/**"
-        - "pnpm-lock.yaml"
   - event: tag
     ref: "refs/tags/web/v*"
 

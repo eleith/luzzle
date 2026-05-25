@@ -10,7 +10,6 @@ when:
         - ".woodpecker/.cli.yml"
         - "packages/cli/**"
         - "packages/core/**"
-        - "pnpm-lock.yaml"
   - event: tag
     ref: "refs/tags/cli/v*"
 

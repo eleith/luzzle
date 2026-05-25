@@ -8,7 +8,6 @@ on:
       - 'lsp/v*'
     paths:
       - 'packages/lsp/**'
-      - 'pnpm-lock.yaml'
       - '.github/workflows/lsp.yml'
 
 permissions:

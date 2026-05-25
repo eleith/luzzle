@@ -11,7 +11,6 @@ when:
         - "packages/web/db/**"
         - "packages/web/config/**"
         - "packages/core/**"
-        - "pnpm-lock.yaml"
 
 steps:
   prepare:

@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'packages/web/config/**'
-      - 'pnpm-lock.yaml'
       - '.github/workflows/web-config.yml'
 
 jobs:

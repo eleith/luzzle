@@ -7,7 +7,6 @@ on:
     paths:
       - 'packages/web/jobs/**'
       - 'packages/core/**'
-      - 'pnpm-lock.yaml'
       - '.github/workflows/web-jobs.yml'
 
 jobs:

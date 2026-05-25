@@ -9,7 +9,6 @@ when:
       include:
         - ".woodpecker/.web-config.yml"
         - "packages/web/config/**"
-        - "pnpm-lock.yaml"
 
 steps:
   prepare:
