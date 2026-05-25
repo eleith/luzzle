@@ -27,3 +27,16 @@ catalog:
   typescript-eslint: 8.19.1
   vite: 7.1.7
   vitest: 3.2.4
+minimumReleaseAgeExclude:
+  - '@takumi-rs/core-darwin-arm64@1.5.0'
+  - '@takumi-rs/core-darwin-x64@1.5.0'
+  - '@takumi-rs/core-linux-arm64-gnu@1.5.0'
+  - '@takumi-rs/core-linux-arm64-musl@1.5.0'
+  - '@takumi-rs/core-linux-x64-gnu@1.5.0'
+  - '@takumi-rs/core-linux-x64-musl@1.5.0'
+  - '@takumi-rs/core-win32-arm64-msvc@1.5.0'
+  - '@takumi-rs/core-win32-x64-msvc@1.5.0'
+  - '@takumi-rs/core@1.5.0'
+  - '@takumi-rs/helpers@1.5.0'
+  - '@takumi-rs/wasm@1.5.0'
+  - takumi-js@1.5.0
