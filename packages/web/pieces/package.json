@@ -1,0 +1,49 @@
+{
+	"name": "@luzzle/web.pieces",
+	"version": "0.0.1",
+	"private": true,
+	"author": "eleith",
+	"scripts": {
+		"lint": "eslint src",
+		"build": "tsc",
+		"test": "vitest run --silent --coverage"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"files": [
+		"dist/*",
+		"package.json"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/eleith/luzzle.git"
+	},
+	"homepage": "https://github.com/eleith/luzzle",
+	"description": "shared piece helper functions and types for the luzzle web ecosystem",
+	"exports": {
+		".": {
+			"types": "./dist/src/index.d.ts",
+			"import": "./dist/src/index.js"
+		}
+	},
+	"devDependencies": {
+		"@eslint/js": "catalog:",
+		"@types/eslint": "catalog:",
+		"@types/node": "catalog:",
+		"@vitest/coverage-v8": "catalog:",
+		"eslint": "catalog:",
+		"eslint-config-prettier": "catalog:",
+		"globals": "catalog:",
+		"prettier": "catalog:",
+		"typescript": "catalog:",
+		"typescript-eslint": "catalog:",
+		"vite": "catalog:",
+		"vitest": "catalog:"
+	},
+	"dependencies": {
+		"@luzzle/core": "workspace:*",
+		"@luzzle/web.db": "workspace:*"
+	},
+	"type": "module"
+}

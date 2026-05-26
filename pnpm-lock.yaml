@@ -357,6 +357,9 @@ importers:
       '@luzzle/web.db':
         specifier: workspace:*
         version: link:../db
+      '@luzzle/web.pieces':
+        specifier: workspace:*
+        version: link:../pieces
       '@sidequest/core':
         specifier: 1.15.0
         version: 1.15.0
@@ -613,6 +616,52 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.13)(@types/node@22.12.0)(@vitest/ui@3.2.4)(yaml@2.7.0)
 
+  packages/web/pieces:
+    dependencies:
+      '@luzzle/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@luzzle/web.db':
+        specifier: workspace:*
+        version: link:../db
+    devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.22.0
+      '@types/eslint':
+        specifier: 'catalog:'
+        version: 9.6.1
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.12.0
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 3.2.4(vitest@3.2.4)
+      eslint:
+        specifier: 'catalog:'
+        version: 9.22.0
+      eslint-config-prettier:
+        specifier: 'catalog:'
+        version: 9.1.0(eslint@9.22.0)
+      globals:
+        specifier: 'catalog:'
+        version: 16.0.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.4.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.7.3
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.19.1(eslint@9.22.0)(typescript@5.7.3)
+      vite:
+        specifier: 'catalog:'
+        version: 7.1.7(@types/node@22.12.0)(yaml@2.7.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.12.0)(@vitest/ui@3.2.4)(yaml@2.7.0)
+
   packages/web/proxy: {}
 
   packages/web/theme:
@@ -672,6 +721,9 @@ importers:
       '@luzzle/web.jobs':
         specifier: workspace:*
         version: link:../jobs
+      '@luzzle/web.pieces':
+        specifier: workspace:*
+        version: link:../pieces
       '@luzzle/web.theme':
         specifier: workspace:*
         version: link:../theme
@@ -1578,7 +1630,8 @@ packages:
     resolution: {integrity: sha512-2lrrHqxalACEbxIbsjhqGpSW8kWpUKuY6RHgnSAFZa6qK62wvnPxA8hGOwOoDbwHcOFs5M4o27mjGu+P7TvBmw==}
 
   '@luzzle/core@0.0.59':
-    resolution: {integrity: sha512-5Mp4fL+/dIgYe+5bImpv7pTp9cFYXN5l/ur+7anc4wN7iDynXryDeEMu9n8SiLFTqhLPqij6H3pWcXeThsY9LQ==, tarball: https://git.eleith.com/api/packages/eleith/npm/%40luzzle%2Fcore/-/0.0.59/core-0.0.59.tgz}
+    resolution: {integrity: sha512-5Mp4fL+/dIgYe+5bImpv7pTp9cFYXN5l/ur+7anc4wN7iDynXryDeEMu9n8SiLFTqhLPqij6H3pWcXeThsY9LQ==}
+    engines: {node: '>=24'}
 
   '@marijn/find-cluster-break@1.0.2':
     resolution: {integrity: sha512-l0h88YhZFyKdXIFNfSWpyjStDjGHwZ/U7iobcK1cQQD8sejsONdQtTVU+1wVN1PBw40PiiHB1vA5S7VTfQiP9g==}
