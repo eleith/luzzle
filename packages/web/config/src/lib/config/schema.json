@@ -167,6 +167,11 @@
 						"path": {
 							"type": "string",
 							"default": ""
+						},
+						"flags": {
+							"type": "array",
+							"items": { "type": "string" },
+							"default": []
 						}
 					},
 					"additionalProperties": false
@@ -182,6 +187,11 @@
 						"path": {
 							"type": "string",
 							"default": ""
+						},
+						"flags": {
+							"type": "array",
+							"items": { "type": "string" },
+							"default": []
 						}
 					},
 					"additionalProperties": false

@@ -49,10 +49,12 @@ export type Schema = {
     archive?: {
       remote?: string;
       path?: string;
+      flags?: string[];
     };
     cdn?: {
       remote?: string;
       path?: string;
+      flags?: string[];
     };
   };
   worker?: {
