@@ -3,7 +3,7 @@ import { writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { renderOpengraphPng } from './render.js'
 import type { Config } from '@luzzle/web.config'
-import type { PublicWebPiece } from './helpers.js'
+import type { PublicWebPiece } from '@luzzle/web.pieces'
 
 const TEMP_DIR = path.join(import.meta.dirname, 'temp-render-fixtures')
 
@@ -67,7 +67,7 @@ describe('pieces/render', () => {
 			assets: []
 		}
 
-		const buffer = await renderOpengraphPng(piece, config)
+		const buffer = await renderOpengraphPng(piece, [], config)
 		expect(buffer).toBeDefined()
 		expect(Buffer.isBuffer(buffer)).toBe(true)
 		expect(buffer.length).toBeGreaterThan(0)
@@ -95,6 +95,15 @@ describe('pieces/render', () => {
 		mkdirSync(mockImgDir, { recursive: true })
 		writeFileSync(path.join(mockImgDir, 'cover.png'), onePixelPng)
 
+		const assets = [
+			{
+				asset_key: 'img-key',
+				transformation: 'image.original',
+				asset_path: 'books/k1/cover.png',
+				mime_type: 'image/png'
+			}
+		]
+
 		const piece: PublicWebPiece = {
 			id: '1',
 			key: 'k1',
@@ -103,17 +112,10 @@ describe('pieces/render', () => {
 			type: 'books',
 			date_added: Date.now(),
 			metadata: { title: 'Luzzle Image Book' },
-			assets: [
-				{
-					asset_key: 'img-key',
-					transformation: 'image.original',
-					asset_path: 'books/k1/cover.png',
-					mime_type: 'image/png'
-				}
-			]
+			assets
 		}
 
-		const buffer = await renderOpengraphPng(piece, config)
+		const buffer = await renderOpengraphPng(piece, assets, config)
 		expect(buffer).toBeDefined()
 		expect(Buffer.isBuffer(buffer)).toBe(true)
 		expect(buffer.length).toBeGreaterThan(0)

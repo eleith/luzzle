@@ -2,11 +2,11 @@ import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { render } from 'svelte/server'
 import { ImageResponse } from 'takumi-js/response'
-import { getPieceHelpers } from './helpers.js'
+import { createPieceHelpers } from '@luzzle/web.pieces'
+import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { getCompiledOpengraphModule } from './compile.js'
 import { generateThemeCss, getAssetsDir } from '@luzzle/web.theme'
 import type { Config } from '@luzzle/web.config'
-import type { PublicWebPiece } from './helpers.js'
 import type { Component } from 'svelte'
 
 const OpengraphImageWidth = 1200
@@ -70,6 +70,7 @@ function loadLocalImageResources(body: string, assetsDir: string) {
 
 export async function renderOpengraphPng(
 	piece: PublicWebPiece,
+	assets: PublicWebPieceAsset[],
 	config: Config,
 	outDir?: string
 ): Promise<Buffer> {
@@ -84,7 +85,11 @@ export async function renderOpengraphPng(
 	const stylesheets = [...staticStylesheets, themeCss]
 
 	// 3. SSR render to HTML
-	const helpers = getPieceHelpers(piece)
+	const helpers = createPieceHelpers(
+		assets,
+		(p) => `${PIECES_ASSETS_PREFIX}${p}`,
+		() => `/pieces/${piece.type}/${piece.slug}`
+	)
 	const { body, head } = render(svelteComponent, {
 		props: { piece, helpers } as Record<string, unknown>
 	})
