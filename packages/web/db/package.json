@@ -5,7 +5,9 @@
 	"author": "eleith",
 	"scripts": {
 		"lint": "eslint src",
+		"prebuild": "node scripts/generate-migrations.js",
 		"build": "tsc",
+		"pretest": "node scripts/generate-migrations.js",
 		"test": "vitest run --silent --coverage"
 	},
 	"engines": {
