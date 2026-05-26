@@ -66,15 +66,23 @@
 		display: none;
 	}
 
+	:global(.themeIconsDark) {
+		display: inline-block;
+	}
+
+	:global(html[data-theme-preference='dark'] .themeIconsDark) {
+		display: none;
+	}
+
 	:global(html[data-theme-preference='dark'] .themeIconsLight) {
 		display: inline-block;
 	}
 
-	:global(html[data-theme-preference='light'] .themeIconsSystem) {
-		display: inline-block;
+	:global(html[data-theme-preference='light'] .themeIconsDark) {
+		display: none;
 	}
 
-	:global(html[data-theme-preference='system'] .themeIconsDark) {
+	:global(html[data-theme-preference='light'] .themeIconsSystem) {
 		display: inline-block;
 	}
 </style>
