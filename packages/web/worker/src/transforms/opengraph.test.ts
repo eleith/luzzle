@@ -4,14 +4,10 @@ import path from 'node:path'
 import { run } from './opengraph.js'
 import { getOpenGraphPath } from '../assets/paths.js'
 import { renderOpengraphPng } from '../pieces/render.js'
-import { getWorkerContext } from '../services/context.js'
 import type { Config } from '@luzzle/web.config'
-import type { WebPieces, AppDatabase } from '../services/db.js'
+import type { WebPieces } from '../services/db.js'
 import { Pieces } from '@luzzle/core'
 import { makeLogger } from '../../test/logger.js'
-import type { Kysely } from 'kysely'
-import type { Logger } from '../services/logger.js'
-import type { RcloneClient } from '../services/rclone.js'
 
 const TEMP_DIR = path.join(import.meta.dirname, 'temp-opengraph-transform-fixtures')
 
@@ -19,15 +15,10 @@ vi.mock('../pieces/render.js', () => ({
 	renderOpengraphPng: vi.fn(),
 }))
 
-vi.mock('../services/context.js', () => ({
-	getWorkerContext: vi.fn(),
-}))
-
 vi.mock('../assets/paths.js')
 
 const mocks = {
 	renderOpengraphPng: vi.mocked(renderOpengraphPng),
-	getWorkerContext: vi.mocked(getWorkerContext),
 	getOpenGraphPath: vi.mocked(getOpenGraphPath),
 }
 
@@ -63,24 +54,11 @@ afterEach(() => {
 })
 
 describe('transforms/opengraph', () => {
-	test('generates opengraph image using renderOpengraphPng and returns asset record', async () => {
+	test('generates opengraph image and returns asset record', async () => {
 		const mockPieces = {} as unknown as Pieces
 
 		mocks.getOpenGraphPath.mockReturnValue('books/key/opengraph.png')
 		mocks.renderOpengraphPng.mockResolvedValue(Buffer.from('png-data'))
-
-		const mockDb = {
-			selectFrom: vi.fn().mockReturnThis(),
-			selectAll: vi.fn().mockReturnThis(),
-			where: vi.fn().mockReturnThis(),
-			execute: vi.fn().mockResolvedValue([]),
-		}
-		mocks.getWorkerContext.mockReturnValue({
-			db: mockDb as unknown as Kysely<AppDatabase>,
-			config: {} as unknown as Config,
-			logger: {} as unknown as Logger,
-			rclone: {} as unknown as RcloneClient,
-		})
 
 		const records = await run({
 			webPiece: makeWebPiece(),
@@ -102,23 +80,13 @@ describe('transforms/opengraph', () => {
 		])
 	})
 
-	test('generates opengraph image using in-memory previewAssets during preview', async () => {
+	test('passes priorAssets to renderOpengraphPng', async () => {
 		const mockPieces = {} as unknown as Pieces
 
 		mocks.getOpenGraphPath.mockReturnValue('books/key/opengraph.png')
 		mocks.renderOpengraphPng.mockResolvedValue(Buffer.from('png-data'))
 
-		const mockDb = {
-			selectFrom: vi.fn(),
-		}
-		mocks.getWorkerContext.mockReturnValue({
-			db: mockDb as unknown as Kysely<AppDatabase>,
-			config: {} as unknown as Config,
-			logger: {} as unknown as Logger,
-			rclone: {} as unknown as RcloneClient,
-		})
-
-		const previewAssets = [
+		const priorAssets = [
 			{
 				asset_key: 'img-key',
 				transformation: 'image.original',
@@ -134,23 +102,17 @@ describe('transforms/opengraph', () => {
 			pieces: mockPieces,
 			assetKeyToPath: new Map(),
 			logger: makeLogger(),
-			previewAssets,
+			priorAssets,
 		})
 
-		expect(mocks.getOpenGraphPath).toHaveBeenCalledWith('books', 'key')
 		expect(mocks.renderOpengraphPng).toHaveBeenCalledWith(
 			expect.objectContaining({
-				assets: [
-					expect.objectContaining({
-						asset_key: 'img-key',
-						transformation: 'image.original',
-					})
-				]
+				assets: priorAssets
 			}),
+			priorAssets,
 			expect.anything(),
 			TEMP_DIR
 		)
-		expect(mockDb.selectFrom).not.toHaveBeenCalled()
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'opengraph',
