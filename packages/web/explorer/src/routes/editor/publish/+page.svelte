@@ -376,7 +376,7 @@
 		max-width: 860px;
 		margin: 0 auto;
 		color: var(--color-on-surface);
-		font-size: 14px;
+		font-size: var(--font-size-xs);
 		line-height: 1.4;
 	}
 
@@ -386,7 +386,7 @@
 
 	.publish-header h1 {
 		margin: 0;
-		font-size: 28px;
+		font-size: var(--font-size-normal);
 		font-weight: var(--font-weight-bold);
 		letter-spacing: -0.01em;
 	}
@@ -449,14 +449,14 @@
 	}
 
 	.status-title {
-		font-size: 15px;
+		font-size: var(--font-size-small);
 		font-weight: var(--font-weight-semibold);
 		color: var(--color-on-surface);
 	}
 
 	.status-sub {
 		margin-top: 2px;
-		font-size: 12px;
+		font-size: var(--font-size-xxs);
 		color: var(--color-on-surface-variant);
 	}
 
@@ -481,7 +481,7 @@
 		background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
 		border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
 		color: var(--color-error);
-		font-size: 12px;
+		font-size: var(--font-size-xxs);
 		border-radius: var(--radius-small);
 		margin-bottom: var(--space-4);
 	}
@@ -498,7 +498,7 @@
 	}
 
 	.phase-row {
-		padding: var(--space-2) var(--space-3);
+		padding: var(--space-2) 0;
 		display: flex;
 		align-items: center;
 		gap: var(--space-3);
@@ -538,15 +538,14 @@
 	}
 
 	.phase-name {
-		font-family: var(--font-mono);
-		font-size: 13px;
+		font-size: var(--font-size-small);
 		font-weight: var(--font-weight-medium);
 		color: var(--color-on-surface);
 		flex-shrink: 0;
 	}
 
 	.phase-message {
-		font-size: 12px;
+		font-size: var(--font-size-xxs);
 		color: var(--color-on-surface-variant);
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -568,14 +567,14 @@
 
 	.phase-time {
 		font-family: var(--font-mono);
-		font-size: 11px;
+		font-size: var(--font-size-xxs);
 		color: var(--color-on-surface-variant);
 		min-width: 36px;
 		text-align: right;
 	}
 
 	.log-console {
-		margin: 4px 0 0 var(--space-9);
+		margin: 4px 0 0 0;
 		background-color: var(--color-surface);
 		border: 1px solid var(--color-outline-variant);
 		border-radius: var(--radius-small);
@@ -591,7 +590,7 @@
 		background-color: var(--color-surface-container-low);
 		border-bottom: 1px solid var(--color-outline-variant);
 		font-family: var(--font-mono);
-		font-size: 10px;
+		font-size: var(--font-size-xxs);
 		font-weight: var(--font-weight-semibold);
 		color: var(--color-on-surface-variant);
 		letter-spacing: 0.08em;
@@ -607,7 +606,7 @@
 		max-height: 260px;
 		overflow-y: auto;
 		font-family: var(--font-mono);
-		font-size: 11px;
+		font-size: var(--font-size-xxs);
 		line-height: 1.6;
 		color: var(--color-on-surface-variant);
 	}
