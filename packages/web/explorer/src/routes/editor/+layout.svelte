@@ -29,11 +29,13 @@
 	<a href={folderHref} aria-label="directory">
 		<FolderIcon style="font-size: 1em;" />
 	</a>
-	{#if page.data.mode === 'directory'}
-		<a href="/editor/pieces/create/{page.data.directory.current}" aria-label="create">
-			<PlusIcon style="font-size: 1em;" />
-		</a>
-	{/if}
+	{@const createHref =
+		page.data.mode === 'directory'
+			? `/editor/pieces/create/${page.data.directory.current}`
+			: '/editor/pieces/create'}
+	<a href={createHref} aria-label="create">
+		<PlusIcon style="font-size: 1em;" />
+	</a>
 	<a href="/editor/publish" aria-label="publish">
 		<ArrowCircleUpIcon style="font-size: 1em;" />
 	</a>
