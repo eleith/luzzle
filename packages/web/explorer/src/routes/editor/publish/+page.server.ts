@@ -6,12 +6,20 @@ import type { PageServerLoad } from './$types'
 export const load: PageServerLoad = async () => {
 	const meta = { title: `builder | ${config.content.text.title}` }
 
-	const latest = await db
-		.selectFrom('job_progress')
-		.select((eb) => eb.fn.max<number>('job_id').as('job_id'))
-		.executeTakeFirst()
+	let jobId: number | null = null
+	let state: string | null = null
+	let errors: unknown = null
 
-	const jobId = latest?.job_id ?? null
+	try {
+		const jobs = await Sidequest.job.list({ jobClass: 'Publish', limit: 1 })
+		if (jobs.length > 0) {
+			jobId = jobs[0].id
+			state = jobs[0].state
+			errors = jobs[0].errors
+		}
+	} catch {
+		// queue unavailable
+	}
 
 	if (!jobId) {
 		return { meta, job: null }
@@ -31,18 +39,6 @@ export const load: PageServerLoad = async () => {
 			.orderBy('line_number', 'asc')
 			.execute()
 	])) as [JobProgressRow[], JobProgressLogsRow[]]
-
-	let state: string | null = null
-	let errors: unknown = null
-	try {
-		const job = await Sidequest.job.get(jobId)
-		if (job && job.class === 'Publish') {
-			state = job.state
-			errors = job.errors
-		}
-	} catch {
-		// queue unavailable — leave state null and let client decide
-	}
 
 	return {
 		meta,
