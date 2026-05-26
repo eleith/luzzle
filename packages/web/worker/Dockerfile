@@ -25,7 +25,7 @@ COPY --from=rclone-stage /usr/bin/rclone /usr/bin/rclone
 COPY . .
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
-RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs build
+RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
 WORKDIR /m/packages/web/worker
 RUN mkdir -p queue archive assets rclone dist && \
     chgrp 0 . queue archive assets rclone && \
@@ -39,7 +39,7 @@ FROM base AS builder
 COPY . .
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
-RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs build
+RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
 RUN pnpm --filter @luzzle/web.worker build
 
 # --- pruner: deploy worker prod bundle (no dev deps) -------------------------

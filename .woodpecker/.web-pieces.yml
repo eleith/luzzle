@@ -1,0 +1,69 @@
+workspace:
+  base: /workspace
+  path: src
+
+when:
+  - event: push
+    branch: main
+    path:
+      include:
+        - ".woodpecker/.web-pieces.yml"
+        - "packages/web/pieces/**"
+        - "packages/web/db/**"
+        - "packages/web/config/**"
+        - "packages/core/**"
+
+steps:
+  prepare:
+    image: node:24
+    commands:
+      - corepack enable
+      - pnpm install --frozen-lockfile
+
+  build:
+    image: node:24
+    commands:
+      - corepack enable
+      - pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.db build
+      - pnpm --filter @luzzle/web.pieces build
+
+  test:
+    image: node:24
+    commands:
+      - corepack enable
+      - pnpm --filter @luzzle/web.pieces lint
+      - pnpm --filter @luzzle/web.pieces test
+
+  notify-success:
+    image: deblan/woodpecker-email:3.2.0
+    settings:
+      dsn:
+        from_secret: woodpecker_email_dsn
+      from:
+        address:
+          from_secret: woodpecker_email_from_address
+        name:
+          from_secret: woodpecker_email_from_name
+      recipients:
+        from_secret: woodpecker_email_recipient
+      level: success
+      recipients_only: true
+    when:
+      - status: [success]
+
+  notify-failure:
+    image: deblan/woodpecker-email:3.2.0
+    settings:
+      dsn:
+        from_secret: woodpecker_email_dsn
+      from:
+        address:
+          from_secret: woodpecker_email_from_address
+        name:
+          from_secret: woodpecker_email_from_name
+      recipients:
+        from_secret: woodpecker_email_recipient
+      level: failure
+      recipients_only: true
+    when:
+      - status: [failure]

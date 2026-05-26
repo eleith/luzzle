@@ -12,6 +12,7 @@ on:
       - 'packages/web/theme/**'
       - 'packages/web/db/**'
       - 'packages/web/jobs/**'
+      - 'packages/web/pieces/**'
       - 'packages/core/**'
       - '.github/workflows/web-worker.yml'
 
@@ -40,7 +41,7 @@ jobs:
 
       - name: Build shared packages
         working-directory: .
-        run: pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs build
+        run: pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
 
       - name: Lint
         run: pnpm run lint

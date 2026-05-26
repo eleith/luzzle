@@ -1,0 +1,43 @@
+name: "@luzzle/web.pieces"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/web/pieces/**'
+      - 'packages/web/db/**'
+      - 'packages/web/config/**'
+      - 'packages/core/**'
+      - '.github/workflows/web-pieces.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build core + web.config + web.db
+        run: pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.db build
+
+      - name: Build
+        run: pnpm --filter @luzzle/web.pieces build
+
+      - name: Lint
+        run: pnpm --filter @luzzle/web.pieces lint
+
+      - name: Test
+        run: pnpm --filter @luzzle/web.pieces test

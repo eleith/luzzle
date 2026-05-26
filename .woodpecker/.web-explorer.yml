@@ -13,6 +13,7 @@ when:
         - "packages/web/theme/**"
         - "packages/web/db/**"
         - "packages/web/jobs/**"
+        - "packages/web/pieces/**"
         - "packages/core/**"
   - event: tag
     ref: "refs/tags/web/v*"
@@ -24,7 +25,7 @@ steps:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
       - corepack enable
       - pnpm install --frozen-lockfile
-      - pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs build
+      - pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
     environment:
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
