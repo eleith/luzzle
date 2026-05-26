@@ -363,15 +363,12 @@ importers:
       '@sidequest/sqlite-backend':
         specifier: 1.15.0
         version: 1.15.0
-      better-sqlite3:
-        specifier: 12.10.0
-        version: 12.10.0
       kysely:
         specifier: 0.28.17
         version: 0.28.17
       sidequest:
         specifier: 1.15.0
-        version: 1.15.0(better-sqlite3@12.10.0)
+        version: 1.15.0
     devDependencies:
       '@auth/core':
         specifier: 0.41.1
@@ -5957,28 +5954,6 @@ snapshots:
       safe-stable-stringify: 2.5.0
       winston: 3.19.0
 
-  '@sidequest/dashboard@1.15.0(better-sqlite3@12.10.0)(sidequest@1.15.0(better-sqlite3@12.10.0))':
-    dependencies:
-      '@sidequest/backend': 1.15.0(better-sqlite3@12.10.0)
-      '@sidequest/core': 1.15.0
-      '@sidequest/engine': 1.15.0(better-sqlite3@12.10.0)(sidequest@1.15.0(better-sqlite3@12.10.0))
-      ejs: 4.0.1
-      express: 5.2.1
-      express-basic-auth: 1.2.1
-      express-ejs-layouts: 2.5.1
-      morgan: 1.10.1
-    transitivePeerDependencies:
-      - better-sqlite3
-      - mysql
-      - mysql2
-      - pg
-      - pg-native
-      - pg-query-stream
-      - sidequest
-      - sqlite3
-      - supports-color
-      - tedious
-
   '@sidequest/dashboard@1.15.0(sidequest@1.15.0)':
     dependencies:
       '@sidequest/backend': 1.15.0(better-sqlite3@12.10.0)
@@ -5997,24 +5972,6 @@ snapshots:
       - pg-native
       - pg-query-stream
       - sidequest
-      - sqlite3
-      - supports-color
-      - tedious
-
-  '@sidequest/engine@1.15.0(better-sqlite3@12.10.0)(sidequest@1.15.0(better-sqlite3@12.10.0))':
-    dependencies:
-      '@sidequest/backend': 1.15.0(better-sqlite3@12.10.0)
-      '@sidequest/core': 1.15.0
-      node-cron: 4.2.1
-      piscina: 5.1.4
-      sidequest: 1.15.0(better-sqlite3@12.10.0)
-    transitivePeerDependencies:
-      - better-sqlite3
-      - mysql
-      - mysql2
-      - pg
-      - pg-native
-      - pg-query-stream
       - sqlite3
       - supports-color
       - tedious
@@ -9233,23 +9190,6 @@ snapshots:
       '@sidequest/core': 1.15.0
       '@sidequest/dashboard': 1.15.0(sidequest@1.15.0)
       '@sidequest/engine': 1.15.0(sidequest@1.15.0)
-    transitivePeerDependencies:
-      - better-sqlite3
-      - mysql
-      - mysql2
-      - pg
-      - pg-native
-      - pg-query-stream
-      - sqlite3
-      - supports-color
-      - tedious
-
-  sidequest@1.15.0(better-sqlite3@12.10.0):
-    dependencies:
-      '@sidequest/backend': 1.15.0(better-sqlite3@12.10.0)
-      '@sidequest/core': 1.15.0
-      '@sidequest/dashboard': 1.15.0(better-sqlite3@12.10.0)(sidequest@1.15.0(better-sqlite3@12.10.0))
-      '@sidequest/engine': 1.15.0(better-sqlite3@12.10.0)(sidequest@1.15.0(better-sqlite3@12.10.0))
     transitivePeerDependencies:
       - better-sqlite3
       - mysql

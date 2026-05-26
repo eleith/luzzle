@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/web",
-  "version": "0.0.217",
+  "version": "0.0.218",
   "private": true,
   "files": ["build"],
   "scripts": {
@@ -84,7 +84,6 @@
     "@luzzle/web.db": "workspace:*",
     "@sidequest/core": "1.15.0",
     "@sidequest/sqlite-backend": "1.15.0",
-    "better-sqlite3": "12.10.0",
     "kysely": "0.28.17",
     "sidequest": "1.15.0"
   }
