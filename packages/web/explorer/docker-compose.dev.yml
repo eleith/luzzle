@@ -28,11 +28,6 @@ services:
       - ./vite.config.ts:/m/packages/web/explorer/vite.config.ts
     networks:
       - luzzle
-    depends_on:
-      luzzle-dev-worker:
-        condition: service_healthy
-      luzzle-dev-lsp:
-        condition: service_healthy
     healthcheck:
       test:
         [
