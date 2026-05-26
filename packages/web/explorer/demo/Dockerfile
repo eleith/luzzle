@@ -1,10 +1,3 @@
-# Multi-stage production container for a custom Luzzle setup.
-# Compiles content statically for instant startup and a small final image.
-#
-# adapter-node bundles all devDependencies into build/ via rollup.
-# Only native addons (better-sqlite3) remain as production dependencies
-# and are included via pnpm deploy.
-
 # --- STAGE 1: Builder ---
 FROM ghcr.io/eleith/luzzle-web:latest AS builder
 WORKDIR /app

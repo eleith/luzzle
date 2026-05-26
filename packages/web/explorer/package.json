@@ -48,8 +48,6 @@
     "@luzzle/web.db": "workspace:*",
     "@luzzle/web.jobs": "workspace:*",
     "@luzzle/web.theme": "workspace:*",
-    "@sidequest/core": "1.15.0",
-    "@sidequest/sqlite-backend": "1.15.0",
     "@sveltejs/adapter-node": "5.3.2",
     "@sveltejs/enhanced-img": "0.8.1",
     "@sveltejs/kit": "2.43.0",
@@ -74,7 +72,6 @@
     "remark-lint-no-duplicate-headings": "4.0.1",
     "remark-preset-lint-consistent": "6.0.1",
     "remark-preset-lint-recommended": "7.0.1",
-    "sidequest": "1.15.0",
     "svelte": "5.39.4",
     "svelte-check": "4.3.2",
     "typescript": "catalog:",
@@ -86,6 +83,9 @@
   },
   "type": "module",
   "dependencies": {
-    "better-sqlite3": "12.10.0"
+    "@sidequest/core": "1.15.0",
+    "@sidequest/sqlite-backend": "1.15.0",
+    "better-sqlite3": "12.10.0",
+    "sidequest": "1.15.0"
   }
 }
