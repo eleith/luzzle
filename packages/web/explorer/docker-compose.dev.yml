@@ -29,8 +29,20 @@ services:
     networks:
       - luzzle
     depends_on:
-      - luzzle-dev-worker
-      - luzzle-dev-lsp
+      luzzle-dev-worker:
+        condition: service_healthy
+      luzzle-dev-lsp:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:5173/api/health'').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"'
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
   luzzle-dev-worker:
     build:
@@ -62,6 +74,16 @@ services:
       - ../worker/tsconfig.json:/m/packages/web/worker/tsconfig.json
       - ../worker/tsconfig.build.json:/m/packages/web/worker/tsconfig.build.json
       - ../worker/vite.config.ts:/m/packages/web/worker/vite.config.ts
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:9000/health'').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"'
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
   luzzle-dev-lsp:
     build:
@@ -83,6 +105,16 @@ services:
       - ../lsp/server.js:/m/packages/web/lsp/server.js
       - ../lsp/luzzle-lsp.js:/m/packages/web/lsp/luzzle-lsp.js
       - ../lsp/markdownlint-lsp.js:/m/packages/web/lsp/markdownlint-lsp.js
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:9001/health'').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"'
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
   luzzle-dev-proxy:
     build:
@@ -99,8 +131,16 @@ services:
       - ./nginx/cache:/tmp/cache
       - ./nginx/logs:/tmp/logs
     depends_on:
-      - luzzle-dev-web
-      - luzzle-dev-lsp
+      luzzle-dev-web:
+        condition: service_healthy
+      luzzle-dev-lsp:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/ || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
 secrets:
   npmrc:

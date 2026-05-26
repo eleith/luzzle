@@ -19,7 +19,14 @@ services:
     networks:
       - luzzle
     depends_on:
-      - luzzle-worker
+      luzzle-worker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))\""]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
   luzzle-worker:
     build:
@@ -42,6 +49,12 @@ services:
       - ./demo/cdn:/app/cdn
       - ./demo/content:/app/content
       - ./nginx/cache:/app/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:9000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))\""]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
   luzzle-lsp:
     build:
@@ -57,6 +70,12 @@ services:
       - '9001:9001'
     volumes:
       - ./demo/archive:/app/archive
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:9001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))\""]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
   luzzle-proxy:
     build:
@@ -72,7 +91,14 @@ services:
       - ./nginx/cache:/tmp/cache
       - ./nginx/logs:/tmp/logs
     depends_on:
-      - luzzle-web
+      luzzle-web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
 
 secrets:
