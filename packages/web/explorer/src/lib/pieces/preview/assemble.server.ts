@@ -1,7 +1,7 @@
 import { getFrontmatterValue, getFrontmatterValues, type PieceFrontmatter } from '@luzzle/core'
 import mime from 'mime-types'
 import type { Config } from '@luzzle/web.config'
-import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.db'
+import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 
 export type AssembledPreview = {
 	piece: PublicWebPiece

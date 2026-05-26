@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Component } from 'svelte'
-	import type { PublicWebPiece } from '@luzzle/web.db'
+	import type { PublicWebPiece } from '@luzzle/web.pieces'
 	import OpengraphDefault from '$lib/pieces/components/opengraph.default.svelte'
 	import {
 		getPieceHelpers,

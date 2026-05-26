@@ -1,5 +1,5 @@
 import { db } from '$lib/server/database'
-import type { PublicWebPiece } from '@luzzle/web.db'
+import type { PublicWebPiece } from '@luzzle/web.pieces'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
 const MAX_FEED_ITEMS = 50
