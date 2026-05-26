@@ -354,6 +354,9 @@ importers:
 
   packages/web/explorer:
     dependencies:
+      '@luzzle/web.db':
+        specifier: workspace:*
+        version: link:../db
       '@sidequest/core':
         specifier: 1.15.0
         version: 1.15.0
@@ -363,6 +366,9 @@ importers:
       better-sqlite3:
         specifier: 12.10.0
         version: 12.10.0
+      kysely:
+        specifier: 0.28.17
+        version: 0.28.17
       sidequest:
         specifier: 1.15.0
         version: 1.15.0(better-sqlite3@12.10.0)
@@ -421,9 +427,6 @@ importers:
       '@luzzle/web.config':
         specifier: workspace:*
         version: link:../config
-      '@luzzle/web.db':
-        specifier: workspace:*
-        version: link:../db
       '@luzzle/web.jobs':
         specifier: workspace:*
         version: link:../jobs
@@ -472,9 +475,6 @@ importers:
       globals:
         specifier: 'catalog:'
         version: 16.0.0
-      kysely:
-        specifier: 0.28.17
-        version: 0.28.17
       mime-types:
         specifier: 3.0.2
         version: 3.0.2
