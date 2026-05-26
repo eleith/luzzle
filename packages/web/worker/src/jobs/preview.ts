@@ -1,6 +1,7 @@
 import { Job } from '@sidequest/core'
 import { Pieces, StorageFileSystem } from '@luzzle/core'
 import path from 'node:path'
+import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { getWorkerContext } from '../services/context.js'
 import { JobProgress } from '../core/job-progress.js'
 import { StepRunner } from '../core/step-runner.js'
@@ -36,22 +37,29 @@ export class Preview extends Job {
 
 		const outDir = path.join(path.dirname(config.paths.assets), 'previews', this.id.toString())
 		const transforms: PreviewAsset[] = []
+		const priorAssets: PublicWebPieceAsset[] = []
 		for (const name of PREVIEW_TRANSFORM_NAMES) {
 			try {
 				const records = await runner.run(previewTransformStep(name), {
 					parsed,
 					pieces,
 					outDir,
-					previewAssets: transforms
+					priorAssets
 				})
 				if (!records) continue
 				for (const r of records) {
-					transforms.push({
-						...r,
-						asset_key: generateAssetKey(
-							r.piece_asset_path || payload.filePath,
-							config.assets.salt
-						),
+					const assetKey = generateAssetKey(
+						r.piece_asset_path || payload.filePath,
+						config.assets.salt
+					)
+					transforms.push({ ...r, asset_key: assetKey })
+					priorAssets.push({
+						asset_key: assetKey,
+						transformation: r.transformation,
+						asset_path: r.asset_path,
+						mime_type: r.mime_type,
+						is_embedded: r.is_embedded,
+						content: r.content,
 					})
 				}
 			} catch (error) {
