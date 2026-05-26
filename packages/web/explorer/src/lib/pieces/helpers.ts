@@ -1,22 +1,14 @@
-import type { WebPieceTags, PublicWebPiece } from '@luzzle/web.db'
+import type { WebPieceTags } from '@luzzle/web.db'
+import { createPieceHelpers, OpengraphImageWidth, OpengraphImageHeight } from '@luzzle/web.pieces'
+import type { PublicWebPiece, PieceComponentHelpers, PieceIconPalette } from '@luzzle/web.pieces'
 import { page } from '$app/state'
-import type { PieceFrontMatterValue } from '@luzzle/core'
 import type { Component, Snippet } from 'svelte'
+
+export { OpengraphImageWidth, OpengraphImageHeight }
+export type { PieceComponentHelpers, PieceIconPalette }
 
 export function getPieceTypes(): string[] {
 	return __VITE__LUZZLE__PIECE__TYPES__
-}
-
-export type PieceComponentHelpers = {
-	getPieceUrl: () => PieceFrontMatterValue | string
-	getPieceImageUrl: (
-		image: PieceFrontMatterValue | string,
-		minWidth: number,
-		format: 'jpg' | 'avif' | 'webp' | 'png'
-	) => string | undefined
-	getPiecePalette: () => PieceIconPalette | undefined
-	getPieceAssetUrl: (key: string, transform: string) => string | undefined
-	getPieceAssetContent: (key: string, transform: string) => string | undefined
 }
 
 export type PieceIconProps = {
@@ -30,17 +22,6 @@ export type PieceIconProps = {
 	lazy?: boolean
 	helpers: PieceComponentHelpers
 }
-
-export type PieceIconPalette = {
-	accent?: string
-	background?: string
-	bodyText?: string
-	muted?: string
-	titleText?: string
-}
-
-export const OpengraphImageWidth = 1200
-export const OpengraphImageHeight = 630
 
 export type PieceOpengraphProps = {
 	piece: PublicWebPiece
@@ -74,52 +55,6 @@ export type PiecePageProps = {
 	components: PieceComponents
 }
 
-function createPieceHelpers(
-	piece: PublicWebPiece,
-	buildAssetUrl: (path: string) => string
-): PieceComponentHelpers {
-	const getPiecePalette = () => {
-		const paletteAsset = piece.assets.find((a) => a.transformation === 'palette')
-		return paletteAsset?.content
-			? (JSON.parse(paletteAsset.content) as PieceIconPalette)
-			: undefined
-	}
-
-	return {
-		getPieceUrl: () => `${page.data.config.url.app}/pieces/${piece.type}/${piece.slug}`,
-
-		getPieceAssetUrl: (key: string, transform: string) => {
-			const asset = piece.assets.find((a) => a.asset_key === key && a.transformation === transform)
-			return asset?.asset_path ? buildAssetUrl(asset.asset_path) : undefined
-		},
-
-		getPieceAssetContent: (key: string, transform: string) => {
-			const asset = piece.assets.find((a) => a.asset_key === key && a.transformation === transform)
-			return asset?.content
-		},
-
-		getPieceImageUrl: (
-			assetKey: PieceFrontMatterValue | string,
-			minWidth: number,
-			format: 'jpg' | 'avif' | 'webp' | 'png'
-		) => {
-			const size = minWidth <= 125 ? 's' : minWidth <= 250 ? 'm' : minWidth <= 500 ? 'l' : 'xl'
-			const transformation = `image.${size}.${format}`
-			const assets = piece.assets.filter((asset) => asset.asset_key === assetKey)
-
-			const transformed = assets.find((a) => a.transformation === transformation)?.asset_path
-			if (transformed) return buildAssetUrl(transformed)
-
-			const original = assets.find((a) => a.transformation === 'image.original')?.asset_path
-			if (original) return buildAssetUrl(original)
-
-			return undefined
-		},
-
-		getPiecePalette
-	}
-}
-
 function detectAssetUrlBuilder(): (path: string) => string {
 	const jobId = page.params.jobId
 	const pathname = page.url.pathname
@@ -138,5 +73,10 @@ function detectAssetUrlBuilder(): (path: string) => string {
 }
 
 export function getPieceHelpers(piece: PublicWebPiece): PieceComponentHelpers {
-	return createPieceHelpers(piece, detectAssetUrlBuilder())
+	const config = page.data.config
+	return createPieceHelpers(
+		piece.assets,
+		detectAssetUrlBuilder(),
+		() => `${config.url.app}/pieces/${piece.type}/${piece.slug}`
+	)
 }

@@ -82,6 +82,7 @@
   "type": "module",
   "dependencies": {
     "@luzzle/web.db": "workspace:*",
+    "@luzzle/web.pieces": "workspace:*",
     "@sidequest/core": "1.15.0",
     "@sidequest/sqlite-backend": "1.15.0",
     "kysely": "0.28.17",
