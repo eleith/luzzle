@@ -140,6 +140,11 @@ function createServer(routes = ROUTES) {
 	const wss = new WebSocketServer({ noServer: true });
 
 	const server = httpServer((req, res) => {
+		if (req.url === "/health") {
+			res.writeHead(200, { "Content-Type": "application/json" });
+			res.end(JSON.stringify({ status: "ok" }));
+			return;
+		}
 		res.writeHead(404, { "Content-Type": "text/plain" });
 		res.end("Not Found");
 	});
