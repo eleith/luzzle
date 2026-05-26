@@ -1,7 +1,8 @@
 {
   "name": "@luzzle/web",
-  "version": "0.0.213",
+  "version": "0.0.214",
   "private": true,
+  "files": ["build"],
   "scripts": {
     "dev": "vite dev",
     "build": "pnpm run sync:svelte && vite build",
