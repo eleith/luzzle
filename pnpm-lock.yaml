@@ -354,9 +354,18 @@ importers:
 
   packages/web/explorer:
     dependencies:
+      '@sidequest/core':
+        specifier: 1.15.0
+        version: 1.15.0
+      '@sidequest/sqlite-backend':
+        specifier: 1.15.0
+        version: 1.15.0
       better-sqlite3:
         specifier: 12.10.0
         version: 12.10.0
+      sidequest:
+        specifier: 1.15.0
+        version: 1.15.0(better-sqlite3@12.10.0)
     devDependencies:
       '@auth/core':
         specifier: 0.41.1
@@ -421,12 +430,6 @@ importers:
       '@luzzle/web.theme':
         specifier: workspace:*
         version: link:../theme
-      '@sidequest/core':
-        specifier: 1.15.0
-        version: 1.15.0
-      '@sidequest/sqlite-backend':
-        specifier: 1.15.0
-        version: 1.15.0
       '@sveltejs/adapter-node':
         specifier: 5.3.2
         version: 5.3.2(@sveltejs/kit@2.43.0(@sveltejs/vite-plugin-svelte@6.2.0(svelte@5.39.4(@typescript-eslint/types@8.19.1))(vite@7.1.7(@types/node@22.12.0)(yaml@2.7.0)))(svelte@5.39.4(@typescript-eslint/types@8.19.1))(vite@7.1.7(@types/node@22.12.0)(yaml@2.7.0)))
@@ -499,9 +502,6 @@ importers:
       remark-preset-lint-recommended:
         specifier: 7.0.1
         version: 7.0.1
-      sidequest:
-        specifier: 1.15.0
-        version: 1.15.0(better-sqlite3@12.10.0)
       svelte:
         specifier: 5.39.4
         version: 5.39.4(@typescript-eslint/types@8.19.1)
