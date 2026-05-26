@@ -1,39 +1,29 @@
-# This Dockerfile provides an example of how to build an optimized,
-# multi-stage production container for your custom Luzzle setup.
-# By compiling your custom content and configuration statically,
-# you benefit from instant startup times and a much smaller final image.
+# Multi-stage production container for a custom Luzzle setup.
+# Compiles content statically for instant startup and a small final image.
+#
+# adapter-node bundles all devDependencies into build/ via rollup.
+# Only native addons (better-sqlite3) remain external and are
+# installed separately in the production stage.
 
 # --- STAGE 1: Builder ---
-# Uses the full Luzzle Explorer image which contains all build dependencies
-# (pnpm, Node.js, Vite, Svelte compiler, etc.)
 FROM ghcr.io/eleith/luzzle-web:latest AS builder
 WORKDIR /app
 
-# Copy in your configuration, content and static assets
 COPY config.yaml ./config.yaml
 COPY content/ ./content/
 COPY static/ ./static/
 
-# Run the SvelteKit compilation. This will read your config.yaml and
-# statically inject it, while compiling all your Svelte content components.
 RUN pnpm run build
 
-# Drop devDependencies once the build is done — keeps the final image small.
-RUN pnpm prune --prod
-
 # --- STAGE 2: Production Runtime ---
-# We switch to a completely bare-bones Alpine Linux Node image
 FROM node:24-alpine
 WORKDIR /app
 
-# Copy ONLY the final compiled outputs and production dependencies from Stage 1
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
 COPY config.yaml ./config.yaml
 
-# Expose the standard SvelteKit port
-EXPOSE 3000
+RUN npm install --omit=dev
 
-# Start the optimized Node server directly, bypassing manager.js
+EXPOSE 3000
 CMD ["node", "build/index.js"]

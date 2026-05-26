@@ -3,12 +3,8 @@
 	const metadata = piece.metadata
 	const palette = helpers.getPiecePalette()
 
-	const bookWidth = 350
+	const bookWidth = 380
 	const bookHeight = (bookWidth * 3) / 2
-	const scale = Math.round((bookWidth / 375) * 100) / 100
-	const coverW = Math.round(bookWidth * 0.8)
-	const spineW = Math.round(bookWidth * 0.08)
-	const topEdgeH = Math.round(bookWidth * 0.025)
 
 	const bylineParts: string[] = []
 	if (metadata.pages) bylineParts.push(`${metadata.pages} pages`)
@@ -37,23 +33,20 @@
 				inert
 				style="
 					--book-width: {bookWidth}px;
-					--book-height: {bookHeight}px;
-					--cover-w: {coverW}px;
-					--spine-w: {spineW}px;
-					--top-edge-h: {topEdgeH}px;
-					--book-scale: {scale};"
+					--book-height: {bookHeight}px;"
 			>
-				<div class="book-shadow"></div>
-				<div class="book-stage">
-					<div class="book-top-edge"></div>
-					<div class="book-spine"></div>
-					<div class="book-cover">
-						{#if metadata.cover}
-							<img src={helpers.getPieceImageUrl(metadata.cover, bookWidth, 'jpg')} alt="" />
-						{:else}
-							<div class="book-cover-front">{piece.title}</div>
-						{/if}
-					</div>
+				<div class="book-pages">
+					<div class="book-page"></div>
+					<div class="book-page"></div>
+					<div class="book-page"></div>
+					<div class="book-page"></div>
+				</div>
+				<div class="book-cover">
+					{#if metadata.cover}
+						<img src={helpers.getPieceImageUrl(metadata.cover, bookWidth, 'jpg')} alt="" />
+					{:else}
+						<div class="book-cover-front">{piece.title}</div>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -150,73 +143,15 @@
 
 	.book {
 		position: relative;
-		width: calc(var(--cover-w) + var(--spine-w));
+		width: var(--book-width);
 		height: var(--book-height);
-		display: flex;
-		align-items: flex-end;
-		justify-content: center;
-	}
-
-	.book-shadow {
-		position: absolute;
-		bottom: -18px;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 88%;
-		height: 32px;
-		background: radial-gradient(
-			ellipse at center,
-			oklch(from var(--color-background) 0.05 c h / 0.65) 0%,
-			oklch(from var(--color-background) 0.05 c h / 0.45) 35%,
-			oklch(from var(--color-background) 0.05 c h / 0) 75%
-		);
-		border-radius: 50%;
-		z-index: 1;
-	}
-
-	.book-stage {
-		position: relative;
-		width: 100%;
-		height: 100%;
-		transform: rotate(-9deg);
-		transform-origin: center;
-		z-index: 2;
-	}
-
-	.book-top-edge {
-		position: absolute;
-		top: calc(-1 * var(--top-edge-h));
-		left: 0;
-		width: calc(var(--cover-w) + var(--spine-w));
-		height: var(--top-edge-h);
-		transform: skewX(-30deg);
-		transform-origin: bottom left;
-		background: repeating-linear-gradient(
-			to right,
-			#ffffff 0,
-			#ffffff 2px,
-			#cfcfcf 2px,
-			#cfcfcf 3px
-		);
-		border-top: 1px solid #888;
-		z-index: 4;
-	}
-
-	.book-spine {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: var(--spine-w);
-		height: 100%;
-		background: black;
-		z-index: 3;
 	}
 
 	.book-cover {
 		position: absolute;
 		top: 0;
-		left: var(--spine-w);
-		width: var(--cover-w);
+		left: 0;
+		width: 100%;
 		height: 100%;
 		background: black;
 		color: white;
@@ -224,10 +159,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-top-right-radius: 7px;
-		border-bottom-right-radius: 7px;
-		box-shadow: inset 14px 0 24px -8px rgba(255, 255, 255, 0.06);
+		border-radius: 4px;
 		z-index: 5;
+		box-shadow: 0 0 40px 10px rgba(0, 0, 0, 0.5);
 	}
 
 	.book-cover img {
@@ -240,11 +174,49 @@
 	}
 
 	.book-cover-front {
-		padding: 12px;
+		padding: 20px;
 		text-align: center;
-		font-size: calc(2.2rem * var(--book-scale));
+		font-size: 2.2rem;
 		font-weight: 700;
 		line-height: 1.1;
 		overflow: hidden;
+	}
+
+	.book-pages {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 1;
+	}
+
+	.book-page {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		background: #f5f5f0;
+		border-radius: 2px;
+		border: 1px solid #ddd;
+	}
+
+	.book-page:nth-child(1) {
+		top: 12px;
+		left: 12px;
+	}
+
+	.book-page:nth-child(2) {
+		top: 9px;
+		left: 9px;
+	}
+
+	.book-page:nth-child(3) {
+		top: 6px;
+		left: 6px;
+	}
+
+	.book-page:nth-child(4) {
+		top: 3px;
+		left: 3px;
 	}
 </style>
