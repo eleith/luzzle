@@ -1,6 +1,7 @@
 import { Kysely } from 'kysely'
 import type { Pieces } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
+import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { generateAssetKey } from '../assets/key.js'
 import { getTransforms } from './index.js'
 import type { WebPieces, WebDatabase } from '../services/db.js'
@@ -32,6 +33,7 @@ export async function produceTransformsForPiece(
 		: [...transforms.entries()]
 
 	const produced: ProducedTransform[] = []
+	const priorAssets: PublicWebPieceAsset[] = []
 
 	for (const [name, transform] of selected) {
 		try {
@@ -42,12 +44,25 @@ export async function produceTransformsForPiece(
 				pieces,
 				assetKeyToPath,
 				logger,
+				priorAssets,
 			})
 			produced.push({ name, records })
 
 			for (const record of records) {
 				const what = record.asset_path ?? `content of ${record.mime_type}`
 				logger.info(`transform.${name} generated ${what}`)
+
+				priorAssets.push({
+					asset_key: generateAssetKey(
+						record.piece_asset_path || webPiece.file_path,
+						config.assets.salt
+					),
+					transformation: record.transformation,
+					asset_path: record.asset_path,
+					mime_type: record.mime_type,
+					is_embedded: record.is_embedded,
+					content: record.content,
+				})
 			}
 		} catch (error) {
 			logger.error(`transform.${name} error for ${webPiece.file_path}`, {
