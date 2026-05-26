@@ -63,6 +63,25 @@ describe('cdnSyncStep', () => {
 			remote: 'r',
 			remotePath: 'cdn/',
 			configPath: '/app/rclone.conf',
+			flags: undefined,
 		})
+	})
+
+	test('passes flags from config to rclone sync', async () => {
+		const flags = ['--gcs-bucket-policy-only', '-P', '--max-age', '3h']
+		const ctx = makeCtx({
+			config: {
+				paths: { assets: '/app/assets' },
+				sync: {
+					cdn: { remote: 'r', path: 'cdn/', flags },
+					config: '/app/rclone.conf',
+				},
+			} as unknown as Config,
+		})
+		const result = await cdnSyncStep.run(undefined, ctx)
+		expect(result.status).toBe('completed')
+		expect(ctx.rclone.sync).toHaveBeenCalledWith(
+			expect.objectContaining({ flags })
+		)
 	})
 })

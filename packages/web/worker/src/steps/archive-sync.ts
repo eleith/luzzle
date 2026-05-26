@@ -37,6 +37,7 @@ export const archiveSyncStep: Step<void, void> = {
 			configPath,
 			workdir,
 			resync,
+			flags: config.sync.archive?.flags,
 		})
 
 		logger.info('archive.sync complete')

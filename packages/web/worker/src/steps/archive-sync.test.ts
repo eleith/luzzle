@@ -104,4 +104,21 @@ describe('archiveSyncStep', () => {
 		const ctx = makeCtx({ rclone })
 		await expect(archiveSyncStep.run(undefined, ctx)).rejects.toThrow('boom')
 	})
+
+	test('passes flags from config to rclone bisync', async () => {
+		const flags = ['--no-traverse', '-P']
+		const ctx = makeCtx({
+			config: {
+				storage: { root: '/app/archive' },
+				sync: {
+					archive: { remote: 'r', path: 'archive/', flags },
+					config: '/app/rclone.conf',
+				},
+			} as unknown as Config,
+		})
+		await archiveSyncStep.run(undefined, ctx)
+		expect(ctx.rclone.bisync).toHaveBeenCalledWith(
+			expect.objectContaining({ flags })
+		)
+	})
 })

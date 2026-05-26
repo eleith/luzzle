@@ -28,6 +28,7 @@ export const cdnSyncStep: Step<void, void> = {
 			remote,
 			remotePath,
 			configPath,
+			flags: config.sync.cdn?.flags,
 		})
 
 		logger.info('cdn.sync complete')

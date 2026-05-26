@@ -8,6 +8,7 @@ export interface RcloneBisyncOptions {
 	configPath: string
 	workdir: string
 	resync?: boolean
+	flags?: string[]
 }
 
 export interface RcloneSyncOptions {
@@ -15,6 +16,7 @@ export interface RcloneSyncOptions {
 	remote: string
 	remotePath: string
 	configPath: string
+	flags?: string[]
 }
 
 export class RcloneClient {
@@ -42,6 +44,10 @@ export class RcloneClient {
 			args.push('--resilient', '--recover', '--max-lock', '2m')
 		}
 
+		if (options.flags?.length) {
+			args.push(...options.flags)
+		}
+
 		this.logger.info('rclone bisync starting', {
 			local: options.localPath,
 			remote: `${options.remote}:${options.remotePath}`,
@@ -59,6 +65,10 @@ export class RcloneClient {
 			options.configPath,
 			'--verbose',
 		]
+
+		if (options.flags?.length) {
+			args.push(...options.flags)
+		}
 
 		this.logger.info('rclone sync starting', {
 			local: options.localPath,

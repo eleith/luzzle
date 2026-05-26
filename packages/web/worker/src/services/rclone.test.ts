@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { RcloneClient } from './rclone.js'
 import type { Logger } from './logger.js'
 import { EventEmitter } from 'events'
@@ -8,6 +8,100 @@ vi.mock('child_process', () => {
 	return {
 		spawn: vi.fn()
 	}
+})
+
+function makeLogger(): Logger {
+	return {
+		debug: vi.fn(),
+		info: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn(),
+		stdout: vi.fn(),
+		stderr: vi.fn(),
+	} as unknown as Logger
+}
+
+async function mockSpawnSuccess() {
+	const { spawn } = await import('child_process')
+	const spawnMock = vi.mocked(spawn)
+	const mockChild = new EventEmitter() as any
+	mockChild.stdout = new EventEmitter()
+	mockChild.stderr = new EventEmitter()
+	spawnMock.mockReturnValue(mockChild)
+	process.nextTick(() => mockChild.emit('close', 0))
+	return spawnMock
+}
+
+describe('RcloneClient flags passthrough', () => {
+	beforeEach(() => vi.clearAllMocks())
+
+	it('appends flags to sync args', async () => {
+		const spawnMock = await mockSpawnSuccess()
+		const client = new RcloneClient(makeLogger())
+
+		await client.sync({
+			localPath: '/local',
+			remote: 'gcs',
+			remotePath: 'bucket/',
+			configPath: '/conf',
+			flags: ['--gcs-bucket-policy-only', '-P', '--max-age', '3h'],
+		})
+
+		const args: string[] = spawnMock.mock.calls[0][1] as string[]
+		expect(args).toContain('--gcs-bucket-policy-only')
+		expect(args).toContain('-P')
+		expect(args.slice(args.indexOf('--max-age'))).toEqual(expect.arrayContaining(['--max-age', '3h']))
+	})
+
+	it('appends flags to bisync args', async () => {
+		const spawnMock = await mockSpawnSuccess()
+		const client = new RcloneClient(makeLogger())
+
+		await client.bisync({
+			localPath: '/local',
+			remote: 'gcs',
+			remotePath: 'bucket/',
+			configPath: '/conf',
+			workdir: '/work',
+			resync: true,
+			flags: ['--no-traverse'],
+		})
+
+		const args: string[] = spawnMock.mock.calls[0][1] as string[]
+		expect(args).toContain('--resync')
+		expect(args).toContain('--no-traverse')
+	})
+
+	it('omits no extra args when flags is undefined', async () => {
+		const spawnMock = await mockSpawnSuccess()
+		const client = new RcloneClient(makeLogger())
+
+		await client.sync({
+			localPath: '/local',
+			remote: 'gcs',
+			remotePath: 'bucket/',
+			configPath: '/conf',
+		})
+
+		const args: string[] = spawnMock.mock.calls[0][1] as string[]
+		expect(args).toEqual(['sync', '/local', 'gcs:bucket/', '--config', '/conf', '--verbose'])
+	})
+
+	it('omits no extra args when flags is empty', async () => {
+		const spawnMock = await mockSpawnSuccess()
+		const client = new RcloneClient(makeLogger())
+
+		await client.sync({
+			localPath: '/local',
+			remote: 'gcs',
+			remotePath: 'bucket/',
+			configPath: '/conf',
+			flags: [],
+		})
+
+		const args: string[] = spawnMock.mock.calls[0][1] as string[]
+		expect(args).toEqual(['sync', '/local', 'gcs:bucket/', '--config', '/conf', '--verbose'])
+	})
 })
 
 describe('RcloneClient line buffering', () => {
