@@ -19,6 +19,14 @@ export interface RcloneSyncOptions {
 	flags?: string[]
 }
 
+export interface RcloneCopyOptions {
+	localPath: string
+	remote: string
+	remotePath: string
+	configPath: string
+	flags?: string[]
+}
+
 export class RcloneClient {
 	private logger: Logger
 
@@ -51,6 +59,7 @@ export class RcloneClient {
 		this.logger.info('rclone bisync starting', {
 			local: options.localPath,
 			remote: `${options.remote}:${options.remotePath}`,
+			flags: options.flags,
 		})
 
 		await this.run('rclone', args)
@@ -73,6 +82,30 @@ export class RcloneClient {
 		this.logger.info('rclone sync starting', {
 			local: options.localPath,
 			remote: `${options.remote}:${options.remotePath}`,
+			flags: options.flags,
+		})
+
+		await this.run('rclone', args)
+	}
+
+	async copy(options: RcloneCopyOptions): Promise<void> {
+		const args = [
+			'copy',
+			options.localPath,
+			`${options.remote}:${options.remotePath}`,
+			'--config',
+			options.configPath,
+			'--verbose',
+		]
+
+		if (options.flags?.length) {
+			args.push(...options.flags)
+		}
+
+		this.logger.info('rclone copy starting', {
+			local: options.localPath,
+			remote: `${options.remote}:${options.remotePath}`,
+			flags: options.flags,
 		})
 
 		await this.run('rclone', args)

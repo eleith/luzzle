@@ -72,6 +72,22 @@ describe('RcloneClient flags passthrough', () => {
 		expect(args).toContain('--no-traverse')
 	})
 
+	it('appends flags to copy args', async () => {
+		const spawnMock = await mockSpawnSuccess()
+		const client = new RcloneClient(makeLogger())
+
+		await client.copy({
+			localPath: '/local',
+			remote: 'gcs',
+			remotePath: 'bucket/',
+			configPath: '/conf',
+			flags: ['--no-traverse'],
+		})
+
+		const args: string[] = spawnMock.mock.calls[0][1] as string[]
+		expect(args).toEqual(['copy', '/local', 'gcs:bucket/', '--config', '/conf', '--verbose', '--no-traverse'])
+	})
+
 	it('omits no extra args when flags is undefined', async () => {
 		const spawnMock = await mockSpawnSuccess()
 		const client = new RcloneClient(makeLogger())

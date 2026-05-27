@@ -20,16 +20,27 @@ export const cdnSyncStep: Step<void, void> = {
 		}
 
 		const localPath = config.paths.assets
+		const strategy = config.sync.cdn?.strategy ?? 'sync'
 
-		logger.info('cdn.sync starting sync', { localPath, remote, remotePath })
+		logger.info(`cdn.sync starting ${strategy}`, { localPath, remote, remotePath, strategy })
 
-		await rclone.sync({
-			localPath,
-			remote,
-			remotePath,
-			configPath,
-			flags: config.sync.cdn?.flags,
-		})
+		if (strategy === 'copy') {
+			await rclone.copy({
+				localPath,
+				remote,
+				remotePath,
+				configPath,
+				flags: config.sync.cdn?.flags,
+			})
+		} else {
+			await rclone.sync({
+				localPath,
+				remote,
+				remotePath,
+				configPath,
+				flags: config.sync.cdn?.flags,
+			})
+		}
 
 		logger.info('cdn.sync complete')
 		return completed(undefined)

@@ -8,6 +8,7 @@ function makeCtx(overrides?: Partial<WorkerContext>): WorkerContext {
 	const rclone: RcloneClient = {
 		bisync: vi.fn(),
 		sync: vi.fn().mockResolvedValue(undefined),
+		copy: vi.fn().mockResolvedValue(undefined),
 	} as unknown as RcloneClient
 	return {
 		config: {
@@ -83,5 +84,27 @@ describe('cdnSyncStep', () => {
 		expect(ctx.rclone.sync).toHaveBeenCalledWith(
 			expect.objectContaining({ flags })
 		)
+	})
+
+	test('runs copy when strategy is copy', async () => {
+		const ctx = makeCtx({
+			config: {
+				paths: { assets: '/app/assets' },
+				sync: {
+					cdn: { remote: 'r', path: 'cdn/', strategy: 'copy' },
+					config: '/app/rclone.conf',
+				},
+			} as unknown as Config,
+		})
+		const result = await cdnSyncStep.run(undefined, ctx)
+		expect(result.status).toBe('completed')
+		expect(ctx.rclone.copy).toHaveBeenCalledWith({
+			localPath: '/app/assets',
+			remote: 'r',
+			remotePath: 'cdn/',
+			configPath: '/app/rclone.conf',
+			flags: undefined,
+		})
+		expect(ctx.rclone.sync).not.toHaveBeenCalled()
 	})
 })
