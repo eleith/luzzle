@@ -55,6 +55,7 @@ export type Schema = {
       remote?: string;
       path?: string;
       flags?: string[];
+      strategy?: "sync" | "copy";
     };
   };
   worker?: {

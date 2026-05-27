@@ -192,6 +192,14 @@
 							"type": "array",
 							"items": { "type": "string" },
 							"default": []
+						},
+						"strategy": {
+							"type": "string",
+							"enum": [
+								"sync",
+								"copy"
+							],
+							"default": "sync"
 						}
 					},
 					"additionalProperties": false
