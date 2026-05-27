@@ -8,6 +8,8 @@
 	import MinusCircle from 'virtual:icons/ph/minus-circle'
 	import SquareFill from 'virtual:icons/ph/square-fill'
 	import PlayFill from 'virtual:icons/ph/play-fill'
+	import LockSimpleFill from 'virtual:icons/ph/lock-simple-fill'
+	import LockSimpleOpenFill from 'virtual:icons/ph/lock-simple-open-fill'
 
 	import type { PageData } from './$types'
 
@@ -68,6 +70,7 @@
 
 	let phases = $state<PhaseProgress[]>(initialPhases)
 	let logs = $state<Record<string, PhaseLog[]>>(initialLogs)
+	let scrollLocks = $state<Record<string, boolean>>({})
 
 	let eventSource: EventSource | null = null
 
@@ -78,6 +81,19 @@
 		const m = Math.floor(s / 60)
 		const remS = s % 60
 		return `${m}m ${remS}s`
+	}
+
+	function handleScroll(phaseName: string, event: Event) {
+		const el = event.currentTarget as HTMLDivElement
+		if (!el) return
+		const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10
+		const currentLock = scrollLocks[phaseName] ?? true
+
+		if (isAtBottom && !currentLock) {
+			scrollLocks[phaseName] = true
+		} else if (!isAtBottom && currentLock) {
+			scrollLocks[phaseName] = false
+		}
 	}
 
 	function startWatching(id: string | number) {
@@ -112,8 +128,11 @@
 
 			tick().then(() => {
 				for (const phase of touched) {
-					const el = document.getElementById(`log-container-${phase}`)
-					if (el) el.scrollTop = el.scrollHeight
+					const isLocked = scrollLocks[phase] ?? true
+					if (isLocked) {
+						const el = document.getElementById(`log-container-${phase}`)
+						if (el) el.scrollTop = el.scrollHeight
+					}
 				}
 			})
 		})
@@ -343,13 +362,43 @@
 						<div class="log-console">
 							<div class="log-header">
 								<span>{logs[phase.phase]?.length || 0} lines</span>
-								{#if phase.started_at}
-									<span class="log-duration">
-										{formatDuration((phase.finished_at || Date.now()) - phase.started_at)}
-									</span>
-								{/if}
+								<div class="log-header-right">
+									{#if phase.started_at}
+										<span class="log-duration">
+											{formatDuration((phase.finished_at || Date.now()) - phase.started_at)}
+										</span>
+									{/if}
+									<button
+										type="button"
+										class="scroll-lock-btn"
+										onclick={() => {
+											const current = scrollLocks[phase.phase] ?? true
+											const next = !current
+											scrollLocks[phase.phase] = next
+											if (next) {
+												tick().then(() => {
+													const el = document.getElementById(`log-container-${phase.phase}`)
+													if (el) el.scrollTop = el.scrollHeight
+												})
+											}
+										}}
+										title={(scrollLocks[phase.phase] ?? true)
+											? 'Auto-scroll locked'
+											: 'Auto-scroll unlocked'}
+									>
+										{#if scrollLocks[phase.phase] ?? true}
+											<LockSimpleFill class="lock-icon" />
+										{:else}
+											<LockSimpleOpenFill class="lock-icon" />
+										{/if}
+									</button>
+								</div>
 							</div>
-							<div class="log-viewport" id="log-container-{phase.phase}">
+							<div
+								class="log-viewport"
+								id="log-container-{phase.phase}"
+								onscroll={(e) => handleScroll(phase.phase, e)}
+							>
 								{#each logs[phase.phase] ?? [] as log (log.line_number)}
 									<div
 										class="log-row"
@@ -599,6 +648,37 @@
 
 	.log-duration {
 		color: var(--color-on-surface);
+	}
+
+	.log-header-right {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.scroll-lock-btn {
+		background: none;
+		border: none;
+		padding: 2px;
+		margin: 0;
+		color: var(--color-on-surface-variant);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-small);
+		transition:
+			background-color 0.15s,
+			color 0.15s;
+	}
+
+	.scroll-lock-btn:hover {
+		background-color: var(--color-surface-container-highest);
+		color: var(--color-on-surface);
+	}
+
+	.scroll-lock-btn :global(.lock-icon) {
+		font-size: 14px;
 	}
 
 	.log-viewport {
