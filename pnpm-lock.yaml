@@ -268,6 +268,9 @@ importers:
       kysely:
         specifier: 0.28.17
         version: 0.28.17
+      openworkflow:
+        specifier: ^0.9.0
+        version: 0.9.0
       sidequest:
         specifier: 1.15.0
         version: 1.15.0
@@ -535,6 +538,9 @@ importers:
       '@sidequest/core':
         specifier: 1.15.0
         version: 1.15.0
+      openworkflow:
+        specifier: ^0.9.0
+        version: 0.9.0
       sidequest:
         specifier: 1.15.0
         version: 1.15.0
@@ -808,6 +814,9 @@ importers:
       node-vibrant:
         specifier: 4.0.3
         version: 4.0.3
+      openworkflow:
+        specifier: ^0.9.0
+        version: 0.9.0
       rehype-autolink-headings:
         specifier: 7.1.0
         version: 7.1.0
@@ -3917,6 +3926,15 @@ packages:
 
   oniguruma-to-es@4.3.6:
     resolution: {integrity: sha512-csuQ9x3Yr0cEIs/Zgx/OEt9iBw9vqIunAPQkx19R/fiMq2oGVTgcMqO/V3Ybqefr1TBvosI6jU539ksaBULJyA==}
+
+  openworkflow@0.9.0:
+    resolution: {integrity: sha512-Ii6qkAh4ozbTHH5w7PdjjNYGF7u8xV2rsvTaBleo21rRlS8sEzrvDdxWsHawiY1VLfI1nfuRf8I3NDerlrugtg==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      postgres: ^3.4.9
+    peerDependenciesMeta:
+      postgres:
+        optional: true
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -8326,6 +8344,8 @@ snapshots:
       oniguruma-parser: 0.12.2
       regex: 6.1.0
       regex-recursion: 6.0.2
+
+  openworkflow@0.9.0: {}
 
   optionator@0.9.4:
     dependencies:
