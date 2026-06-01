@@ -7,21 +7,21 @@ on:
     tags:
       - 'web/v*'
     paths:
-      - 'packages/web/explorer/**'
+      - 'apps/web/**'
       - 'packages/web/config/**'
       - 'packages/web/theme/**'
       - 'packages/web/db/**'
       - 'packages/web/jobs/**'
       - 'packages/web/pieces/**'
-      - 'packages/core/**'
-      - '.github/workflows/web-explorer.yml'
+      - 'apps/core/**'
+      - '.github/workflows/web.yml'
 
 jobs:
   check:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/web/explorer
+        working-directory: apps/web
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -68,7 +68,7 @@ jobs:
       - name: Check Version
         if: github.ref_type == 'tag'
         run: |
-          VERSION_FROM_PKG=$(node -p "require('./packages/web/explorer/package.json').version")
+          VERSION_FROM_PKG=$(node -p "require('./apps/web/package.json').version")
           TAG_NAME=${GITHUB_REF#refs/tags/}
           VERSION_FROM_TAG=${TAG_NAME#web/v}
 
@@ -103,7 +103,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: packages/web/explorer/Dockerfile
+          file: apps/web/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

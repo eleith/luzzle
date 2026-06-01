@@ -7,7 +7,7 @@ on:
     paths:
       - 'packages/web/db/**'
       - 'packages/web/config/**'
-      - 'packages/core/**'
+      - 'apps/core/**'
       - '.github/workflows/web-db.yml'
 
 jobs:

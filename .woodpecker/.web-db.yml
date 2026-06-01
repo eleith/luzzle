@@ -10,7 +10,7 @@ when:
         - ".woodpecker/.web-db.yml"
         - "packages/web/db/**"
         - "packages/web/config/**"
-        - "packages/core/**"
+        - "apps/core/**"
 
 steps:
   prepare:

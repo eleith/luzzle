@@ -10,8 +10,13 @@
 .prettierrc
 eslint.config.js
 
-packages/core/node_modules
+apps/core/node_modules
 packages/web/node_modules
 packages/web/luzzle-images
 packages/web/luzzle
 packages/web/public/images/pieces
+
+apps/web/node_modules
+apps/web/luzzle-images
+apps/web/luzzle
+apps/web/public/images/pieces

@@ -47,7 +47,7 @@ importers:
 
   .: {}
 
-  packages/cli:
+  apps/cli:
     dependencies:
       '@luzzle/core':
         specifier: 0.0.59
@@ -123,7 +123,7 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.13)(@types/node@22.12.0)(@vitest/ui@3.2.4)(yaml@2.7.0)
 
-  packages/core:
+  apps/core:
     dependencies:
       '@google/genai':
         specifier: 1.30.0
@@ -211,7 +211,7 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.13)(@types/node@22.12.0)(@vitest/ui@3.2.4)(yaml@2.7.0)
 
-  packages/lsp:
+  apps/lsp:
     dependencies:
       vscode-jsonrpc:
         specifier: 8.2.1
@@ -251,115 +251,14 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.13)(@types/node@22.12.0)(@vitest/ui@3.2.4)(yaml@2.7.0)
 
-  packages/web/config:
-    dependencies:
-      ajv:
-        specifier: 8.17.1
-        version: 8.17.1
-      yaml:
-        specifier: 2.7.0
-        version: 2.7.0
-    devDependencies:
-      '@eslint/js':
-        specifier: 'catalog:'
-        version: 9.22.0
-      '@types/eslint':
-        specifier: 'catalog:'
-        version: 9.6.1
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.12.0
-      '@vitest/coverage-v8':
-        specifier: 'catalog:'
-        version: 3.2.4(vitest@3.2.4)
-      eslint:
-        specifier: 'catalog:'
-        version: 9.22.0
-      eslint-config-prettier:
-        specifier: 'catalog:'
-        version: 9.1.0(eslint@9.22.0)
-      eslint-plugin-prettier:
-        specifier: 5.2.1
-        version: 5.2.1(@types/eslint@9.6.1)(eslint-config-prettier@9.1.0(eslint@9.22.0))(eslint@9.22.0)(prettier@3.4.2)
-      globals:
-        specifier: 'catalog:'
-        version: 16.0.0
-      json-schema-to-typescript:
-        specifier: 15.0.4
-        version: 15.0.4
-      prettier:
-        specifier: 'catalog:'
-        version: 3.4.2
-      typescript:
-        specifier: 'catalog:'
-        version: 5.7.3
-      typescript-eslint:
-        specifier: 'catalog:'
-        version: 8.19.1(eslint@9.22.0)(typescript@5.7.3)
-      vite:
-        specifier: 'catalog:'
-        version: 7.1.7(@types/node@22.12.0)(yaml@2.7.0)
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.12.0)(@vitest/ui@3.2.4)(yaml@2.7.0)
-
-  packages/web/db:
-    dependencies:
-      '@luzzle/core':
-        specifier: workspace:*
-        version: link:../../core
-      '@luzzle/web.config':
-        specifier: workspace:*
-        version: link:../config
-      kysely:
-        specifier: 0.28.17
-        version: 0.28.17
-    devDependencies:
-      '@eslint/js':
-        specifier: 'catalog:'
-        version: 9.22.0
-      '@types/eslint':
-        specifier: 'catalog:'
-        version: 9.6.1
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.12.0
-      '@vitest/coverage-v8':
-        specifier: 'catalog:'
-        version: 3.2.4(vitest@3.2.4)
-      eslint:
-        specifier: 'catalog:'
-        version: 9.22.0
-      eslint-config-prettier:
-        specifier: 'catalog:'
-        version: 9.1.0(eslint@9.22.0)
-      globals:
-        specifier: 'catalog:'
-        version: 16.0.0
-      prettier:
-        specifier: 'catalog:'
-        version: 3.4.2
-      typescript:
-        specifier: 'catalog:'
-        version: 5.7.3
-      typescript-eslint:
-        specifier: 'catalog:'
-        version: 8.19.1(eslint@9.22.0)(typescript@5.7.3)
-      vite:
-        specifier: 'catalog:'
-        version: 7.1.7(@types/node@22.12.0)(yaml@2.7.0)
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.12.0)(@vitest/ui@3.2.4)(yaml@2.7.0)
-
-  packages/web/explorer:
+  apps/web:
     dependencies:
       '@luzzle/web.db':
         specifier: workspace:*
-        version: link:../db
+        version: link:../../packages/web/db
       '@luzzle/web.pieces':
         specifier: workspace:*
-        version: link:../pieces
+        version: link:../../packages/web/pieces
       '@sidequest/core':
         specifier: 1.15.0
         version: 1.15.0
@@ -423,16 +322,16 @@ importers:
         version: 1.2.3
       '@luzzle/core':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../core
       '@luzzle/web.config':
         specifier: workspace:*
-        version: link:../config
+        version: link:../../packages/web/config
       '@luzzle/web.jobs':
         specifier: workspace:*
-        version: link:../jobs
+        version: link:../../packages/web/jobs
       '@luzzle/web.theme':
         specifier: workspace:*
-        version: link:../theme
+        version: link:../../packages/web/theme
       '@sveltejs/adapter-node':
         specifier: 5.3.2
         version: 5.3.2(@sveltejs/kit@2.43.0(@sveltejs/vite-plugin-svelte@6.2.0(svelte@5.39.4(@typescript-eslint/types@8.19.1))(vite@7.1.7(@types/node@22.12.0)(yaml@2.7.0)))(svelte@5.39.4(@typescript-eslint/types@8.19.1))(vite@7.1.7(@types/node@22.12.0)(yaml@2.7.0)))
@@ -527,11 +426,112 @@ importers:
         specifier: 2.7.0
         version: 2.7.0
 
+  packages/web/config:
+    dependencies:
+      ajv:
+        specifier: 8.17.1
+        version: 8.17.1
+      yaml:
+        specifier: 2.7.0
+        version: 2.7.0
+    devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.22.0
+      '@types/eslint':
+        specifier: 'catalog:'
+        version: 9.6.1
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.12.0
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 3.2.4(vitest@3.2.4)
+      eslint:
+        specifier: 'catalog:'
+        version: 9.22.0
+      eslint-config-prettier:
+        specifier: 'catalog:'
+        version: 9.1.0(eslint@9.22.0)
+      eslint-plugin-prettier:
+        specifier: 5.2.1
+        version: 5.2.1(@types/eslint@9.6.1)(eslint-config-prettier@9.1.0(eslint@9.22.0))(eslint@9.22.0)(prettier@3.4.2)
+      globals:
+        specifier: 'catalog:'
+        version: 16.0.0
+      json-schema-to-typescript:
+        specifier: 15.0.4
+        version: 15.0.4
+      prettier:
+        specifier: 'catalog:'
+        version: 3.4.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.7.3
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.19.1(eslint@9.22.0)(typescript@5.7.3)
+      vite:
+        specifier: 'catalog:'
+        version: 7.1.7(@types/node@22.12.0)(yaml@2.7.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.12.0)(@vitest/ui@3.2.4)(yaml@2.7.0)
+
+  packages/web/db:
+    dependencies:
+      '@luzzle/core':
+        specifier: workspace:*
+        version: link:../../../apps/core
+      '@luzzle/web.config':
+        specifier: workspace:*
+        version: link:../config
+      kysely:
+        specifier: 0.28.17
+        version: 0.28.17
+    devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.22.0
+      '@types/eslint':
+        specifier: 'catalog:'
+        version: 9.6.1
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.12.0
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 3.2.4(vitest@3.2.4)
+      eslint:
+        specifier: 'catalog:'
+        version: 9.22.0
+      eslint-config-prettier:
+        specifier: 'catalog:'
+        version: 9.1.0(eslint@9.22.0)
+      globals:
+        specifier: 'catalog:'
+        version: 16.0.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.4.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.7.3
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.19.1(eslint@9.22.0)(typescript@5.7.3)
+      vite:
+        specifier: 'catalog:'
+        version: 7.1.7(@types/node@22.12.0)(yaml@2.7.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.12.0)(@vitest/ui@3.2.4)(yaml@2.7.0)
+
   packages/web/jobs:
     dependencies:
       '@luzzle/core':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../../../apps/core
       '@sidequest/core':
         specifier: 1.15.0
         version: 1.15.0
@@ -620,7 +620,7 @@ importers:
     dependencies:
       '@luzzle/core':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../../../apps/core
       '@luzzle/web.db':
         specifier: workspace:*
         version: link:../db
@@ -711,7 +711,7 @@ importers:
     dependencies:
       '@luzzle/core':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../../../apps/core
       '@luzzle/web.config':
         specifier: workspace:*
         version: link:../config

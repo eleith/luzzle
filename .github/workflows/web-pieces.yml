@@ -8,7 +8,7 @@ on:
       - 'packages/web/pieces/**'
       - 'packages/web/db/**'
       - 'packages/web/config/**'
-      - 'packages/core/**'
+      - 'apps/core/**'
       - '.github/workflows/web-pieces.yml'
 
 jobs:

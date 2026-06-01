@@ -1,8 +1,8 @@
 packages:
-  - packages/cli
-  - packages/core
-  - packages/lsp
-  - packages/web/explorer
+  - apps/cli
+  - apps/core
+  - apps/lsp
+  - apps/web
   - packages/web/config
   - packages/web/theme
   - packages/web/db

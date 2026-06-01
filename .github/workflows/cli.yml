@@ -7,8 +7,8 @@ on:
     tags:
       - 'cli/v*'
     paths:
-      - 'packages/cli/**'
-      - 'packages/core/**'
+      - 'apps/cli/**'
+      - 'apps/core/**'
       - '.github/workflows/cli.yml'
 
 permissions:
@@ -72,7 +72,7 @@ jobs:
 
       - name: Check Version
         run: |
-          VERSION_FROM_PKG=$(node -p "require('./packages/cli/package.json').version")
+          VERSION_FROM_PKG=$(node -p "require('./apps/cli/package.json').version")
           TAG_NAME=${GITHUB_REF#refs/tags/}
           VERSION_FROM_TAG=${TAG_NAME#cli/v}
 

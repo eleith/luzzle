@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Build context: monorepo root. Build with one of:
-#   docker build -f packages/web/explorer/Dockerfile --target dev  .
-#   docker build -f packages/web/explorer/Dockerfile --target prod .   (default)
+#   docker build -f apps/web/Dockerfile --target dev  .
+#   docker build -f apps/web/Dockerfile --target prod .   (default)
 
 FROM node:24-alpine AS base
 WORKDIR /m
@@ -13,7 +13,7 @@ COPY . .
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
 RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
-WORKDIR /m/packages/web/explorer
+WORKDIR /m/apps/web
 RUN mkdir -p assets/pieces assets/build data content build \
              node_modules/.cache node_modules/.vite .svelte-kit && \
     touch config.yaml .env && \
@@ -32,9 +32,9 @@ RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.
 
 # --- prod (default) ----------------------------------------------------------
 FROM base AS prod
-WORKDIR /m/packages/web/explorer
+WORKDIR /m/apps/web
 COPY --from=builder /m /m
-RUN ln -s /m/packages/web/explorer /app
+RUN ln -s /m/apps/web /app
 RUN mkdir -p assets/pieces assets/build data content build \
              node_modules/.cache node_modules/.vite .svelte-kit && \
     touch config.yaml .env && \

@@ -7,7 +7,7 @@ on:
     tags:
       - 'lsp/v*'
     paths:
-      - 'packages/lsp/**'
+      - 'apps/lsp/**'
       - '.github/workflows/lsp.yml'
 
 permissions:
@@ -68,7 +68,7 @@ jobs:
 
       - name: Check Version
         run: |
-          VERSION_FROM_PKG=$(node -p "require('./packages/lsp/package.json').version")
+          VERSION_FROM_PKG=$(node -p "require('./apps/lsp/package.json').version")
           TAG_NAME=${GITHUB_REF#refs/tags/}
           VERSION_FROM_TAG=${TAG_NAME#lsp/v}
 

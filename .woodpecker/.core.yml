@@ -8,7 +8,7 @@ when:
     path:
       include:
         - ".woodpecker/.core.yml"
-        - "packages/core/**"
+        - "apps/core/**"
   - event: tag
     ref: "refs/tags/core/v*"
 
@@ -35,7 +35,7 @@ steps:
   check-version:
     image: node:24
     commands:
-      - cd packages/core
+      - cd apps/core
       - |
         VERSION_FROM_PKG=$(node -p "require('./package.json').version")
 

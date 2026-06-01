@@ -13,7 +13,7 @@ on:
       - 'packages/web/db/**'
       - 'packages/web/jobs/**'
       - 'packages/web/pieces/**'
-      - 'packages/core/**'
+      - 'apps/core/**'
       - '.github/workflows/web-worker.yml'
 
 jobs:

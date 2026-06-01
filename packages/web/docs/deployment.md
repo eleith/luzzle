@@ -27,7 +27,7 @@ The fastest way to test out the stack is to run the local demo:
 
 ```bash
 # From the monorepo root, bring up the dev environment
-docker-compose -f packages/web/explorer/docker-compose.dev.yml up
+docker-compose -f apps/web/docker-compose.dev.yml up
 ```
 
 ### Production Deployment
@@ -36,12 +36,12 @@ In a production environment, you don't need to rebuild the containers locally
 unless you want to optimize specific web settings or bundle custom features.
 
 - **Standard Way:** Run the official Luzzle production containers directly
-(refer to [docker-compose.yml](../explorer/docker-compose.yml)).
+(refer to [docker-compose.yml](../../../apps/web/docker-compose.yml)).
 - **Optimization Way:** Build your own custom containers using the monorepo
-target build commands:
+  target build commands:
 
 ```bash
-docker build -f packages/web/explorer/Dockerfile --target prod -t my-luzzle-web .
+docker build -f apps/web/Dockerfile --target prod -t my-luzzle-web .
 ```
 
 ---
@@ -67,7 +67,7 @@ The Web Worker supports syncing your piece archive and static CDN assets to
 cloud providers using `rclone`.
 
 - **Sample Configuration:** Inspect the repository's sample
-[rclone.conf](../explorer/demo/rclone/rclone.conf) to see how local remotes are
+[rclone.conf](../../../apps/web/demo/rclone/rclone.conf) to see how local remotes are
 configured.
 - **Official Docs:** For configuring production cloud remotes (like AWS S3,
 Cloudflare R2, Google Cloud Storage, or Backblaze B2), check out the [Official

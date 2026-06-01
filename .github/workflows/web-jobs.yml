@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'packages/web/jobs/**'
-      - 'packages/core/**'
+      - 'apps/core/**'
       - '.github/workflows/web-jobs.yml'
 
 jobs:

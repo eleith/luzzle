@@ -7,14 +7,14 @@ when:
     branch: main
     path:
       include:
-        - ".woodpecker/.web-explorer.yml"
-        - "packages/web/explorer/**"
+        - ".woodpecker/.web.yml"
+        - "apps/web/**"
         - "packages/web/config/**"
         - "packages/web/theme/**"
         - "packages/web/db/**"
         - "packages/web/jobs/**"
         - "packages/web/pieces/**"
-        - "packages/core/**"
+        - "apps/core/**"
   - event: tag
     ref: "refs/tags/web/v*"
 
@@ -34,7 +34,7 @@ steps:
     image: node:24
     commands:
       - corepack enable
-      - cd packages/web/explorer
+      - cd apps/web
       - touch config.yaml
       - touch .env
       - pnpm run lint
@@ -43,7 +43,7 @@ steps:
   check-version:
     image: node:24
     commands:
-      - cd packages/web/explorer
+      - cd apps/web
       - |
         VERSION_FROM_PKG=$(node -p "require('./package.json').version")
 
@@ -79,7 +79,7 @@ steps:
     settings:
       repo: git.eleith.com/eleith.private/luzzle-web
       username: eleith
-      dockerfile: packages/web/explorer/Dockerfile
+      dockerfile: apps/web/Dockerfile
       context: .
       registry: https://git.eleith.com
       secrets:
@@ -97,7 +97,7 @@ steps:
     settings:
       repo: git.eleith.com/eleith.private/luzzle-web
       username: eleith
-      dockerfile: packages/web/explorer/Dockerfile
+      dockerfile: apps/web/Dockerfile
       context: .
       registry: https://git.eleith.com
       secrets:

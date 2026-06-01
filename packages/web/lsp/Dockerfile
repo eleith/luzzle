@@ -13,8 +13,8 @@ COPY . .
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
 RUN pnpm --filter @luzzle/lsp build
-RUN chmod +x /m/packages/lsp/dist/index.js && \
-    ln -s /m/packages/lsp/dist/index.js /usr/local/bin/luzzle-lsp
+RUN chmod +x /m/apps/lsp/dist/index.js && \
+    ln -s /m/apps/lsp/dist/index.js /usr/local/bin/luzzle-lsp
 RUN npm install -g yaml-language-server
 WORKDIR /m/packages/web/lsp
 RUN mkdir -p archive && \

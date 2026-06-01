@@ -14,7 +14,7 @@ when:
         - "packages/web/db/**"
         - "packages/web/jobs/**"
         - "packages/web/pieces/**"
-        - "packages/core/**"
+        - "apps/core/**"
   - event: tag
     ref: "refs/tags/web.worker/v*"
 

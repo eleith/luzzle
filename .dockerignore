@@ -21,4 +21,8 @@ packages/web/luzzle-images
 packages/web/luzzle
 packages/web/static/images/pieces
 
+apps/web/luzzle-images
+apps/web/luzzle
+apps/web/static/images/pieces
+
 .pnpm-store

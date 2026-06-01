@@ -36,7 +36,7 @@ entry points. Use one, two or all three. It's a buffet!
 - **The CLI (`@luzzle/cli`)** — _Just get a database._ A command-line companion
 to quickly initialize and sync your Markdown archive into a local SQLite index.
 Great if you just want to run queries or plug Luzzle into your own scripts. See
-the [CLI README](./packages/cli/README.md) for usage and commands.
+the [CLI README](./apps/cli/README.md) for usage and commands.
 
 - **The LSP (`@luzzle/lsp`)** — _Schema-aware editing._ Get autocomplete, schema
 validation, and diagnostics inside your editor (like Neovim) as you edit your

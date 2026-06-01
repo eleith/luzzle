@@ -8,7 +8,7 @@ when:
     path:
       include:
         - ".woodpecker/.lsp.yml"
-        - "packages/lsp/**"
+        - "apps/lsp/**"
   - event: tag
     ref: "refs/tags/lsp/v*"
 
@@ -35,7 +35,7 @@ steps:
   check-version:
     image: node:24
     commands:
-      - cd packages/lsp
+      - cd apps/lsp
       - |
         VERSION_FROM_PKG=$(node -p "require('./package.json').version")
 

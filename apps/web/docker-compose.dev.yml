@@ -1,8 +1,8 @@
 services:
   luzzle-dev-web:
     build:
-      context: ../../..
-      dockerfile: packages/web/explorer/Dockerfile
+      context: ../..
+      dockerfile: apps/web/Dockerfile
       target: dev
       secrets:
         - npmrc
@@ -14,18 +14,18 @@ services:
     ports:
       - '5173:5173'
     volumes:
-      - ./demo/assets:/m/packages/web/explorer/assets
-      - ./demo/config.yaml:/m/packages/web/explorer/config.yaml
-      - ./demo/data:/m/packages/web/explorer/data
-      - ./demo/content:/m/packages/web/explorer/content
-      - ./demo/archive:/m/packages/web/explorer/archive
-      - ./demo/cdn:/m/packages/web/explorer/cdn
-      - ./src:/m/packages/web/explorer/src
-      - ./static:/m/packages/web/explorer/static
-      - ./scripts:/m/packages/web/explorer/scripts
-      - ./tsconfig.json:/m/packages/web/explorer/tsconfig.json
-      - ./svelte.config.js:/m/packages/web/explorer/svelte.config.js
-      - ./vite.config.ts:/m/packages/web/explorer/vite.config.ts
+      - ./demo/assets:/m/apps/web/assets
+      - ./demo/config.yaml:/m/apps/web/config.yaml
+      - ./demo/data:/m/apps/web/data
+      - ./demo/content:/m/apps/web/content
+      - ./demo/archive:/m/apps/web/archive
+      - ./demo/cdn:/m/apps/web/cdn
+      - ./src:/m/apps/web/src
+      - ./static:/m/apps/web/static
+      - ./scripts:/m/apps/web/scripts
+      - ./tsconfig.json:/m/apps/web/tsconfig.json
+      - ./svelte.config.js:/m/apps/web/svelte.config.js
+      - ./vite.config.ts:/m/apps/web/vite.config.ts
     networks:
       - luzzle
     healthcheck:
@@ -41,7 +41,7 @@ services:
 
   luzzle-dev-worker:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: packages/web/worker/Dockerfile
       target: dev
       secrets:
@@ -63,12 +63,12 @@ services:
       - ./demo/cdn:/m/packages/web/worker/cdn
       - ./demo/content:/m/packages/web/worker/content
       - ./nginx/cache:/m/packages/web/worker/nginx
-      - ../worker/src:/m/packages/web/worker/src
+      - ../../packages/web/worker/src:/m/packages/web/worker/src
       - ./static:/m/packages/web/worker/static
-      - ../worker/scripts:/m/packages/web/worker/scripts
-      - ../worker/tsconfig.json:/m/packages/web/worker/tsconfig.json
-      - ../worker/tsconfig.build.json:/m/packages/web/worker/tsconfig.build.json
-      - ../worker/vite.config.ts:/m/packages/web/worker/vite.config.ts
+      - ../../packages/web/worker/scripts:/m/packages/web/worker/scripts
+      - ../../packages/web/worker/tsconfig.json:/m/packages/web/worker/tsconfig.json
+      - ../../packages/web/worker/tsconfig.build.json:/m/packages/web/worker/tsconfig.build.json
+      - ../../packages/web/worker/vite.config.ts:/m/packages/web/worker/vite.config.ts
     healthcheck:
       test:
         [
@@ -82,7 +82,7 @@ services:
 
   luzzle-dev-lsp:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: packages/web/lsp/Dockerfile
       target: dev
       secrets:
@@ -97,9 +97,9 @@ services:
       - luzzle
     volumes:
       - ./demo/archive:/m/packages/web/lsp/archive
-      - ../lsp/server.js:/m/packages/web/lsp/server.js
-      - ../lsp/luzzle-lsp.js:/m/packages/web/lsp/luzzle-lsp.js
-      - ../lsp/markdownlint-lsp.js:/m/packages/web/lsp/markdownlint-lsp.js
+      - ../../packages/web/lsp/server.js:/m/packages/web/lsp/server.js
+      - ../../packages/web/lsp/luzzle-lsp.js:/m/packages/web/lsp/luzzle-lsp.js
+      - ../../packages/web/lsp/markdownlint-lsp.js:/m/packages/web/lsp/markdownlint-lsp.js
     healthcheck:
       test:
         [
@@ -113,7 +113,7 @@ services:
 
   luzzle-dev-proxy:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: packages/web/proxy/Dockerfile
       target: dev
     container_name: luzzle-dev-proxy

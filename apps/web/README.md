@@ -9,13 +9,13 @@ All documentation, including deployment references, configuration setups, and
 styling/development standards, has been consolidated:
 
 - **Web Development Standards:** Read
-  [packages/web/docs/development.md](../docs/development.md) for style and
+  [packages/web/docs/development.md](../../packages/web/docs/development.md) for style and
   architecture rules.
 - **Deployment Reference:** Read
-  [packages/web/docs/deployment.md](../docs/deployment.md) for how the Explorer
+  [packages/web/docs/deployment.md](../../packages/web/docs/deployment.md) for how the Explorer
   runs inside Docker alongside sidecars (Worker, LSP, Proxy).
 - **Configuration Reference:** Read
-  [packages/web/docs/config.md](../docs/config.md) for settings inside
+  [packages/web/docs/config.md](../../packages/web/docs/config.md) for settings inside
   `config.yaml`.
 
 ---

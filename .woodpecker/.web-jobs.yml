@@ -9,7 +9,7 @@ when:
       include:
         - ".woodpecker/.web-jobs.yml"
         - "packages/web/jobs/**"
-        - "packages/core/**"
+        - "apps/core/**"
 
 steps:
   prepare:

@@ -1,8 +1,8 @@
 services:
   luzzle-web:
     build:
-      context: ../../..
-      dockerfile: packages/web/explorer/Dockerfile
+      context: ../..
+      dockerfile: apps/web/Dockerfile
       secrets:
         - npmrc
     container_name: luzzle-web
@@ -27,7 +27,7 @@ services:
 
   luzzle-worker:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: packages/web/worker/Dockerfile
       secrets:
         - npmrc
@@ -55,7 +55,7 @@ services:
 
   luzzle-lsp:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: packages/web/lsp/Dockerfile
       secrets:
         - npmrc
@@ -76,7 +76,7 @@ services:
 
   luzzle-proxy:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: packages/web/proxy/Dockerfile
     container_name: luzzle-proxy
     user: '${UID:-1000}:${GID:-1000}'
