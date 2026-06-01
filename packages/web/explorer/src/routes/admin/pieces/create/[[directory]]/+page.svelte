@@ -15,7 +15,6 @@
 		}
 	})
 
-	const defaultPrompt = $derived(`generate all fields for this ${selectedType} piece.`)
 	const isReview = $derived(!!(form && form.mergedContent && !form.error))
 	const filePath = $derived(form?.filePath || '')
 </script>
@@ -103,7 +102,7 @@
 										name="prompt"
 										class="input"
 										style="width:100%;height:150px;"
-										placeholder={defaultPrompt}
+										placeholder="Describe the piece or provide instructions for generating metadata..."
 										bind:value={prompt}
 									></textarea>
 								</div>

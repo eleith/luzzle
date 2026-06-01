@@ -67,7 +67,7 @@ export const actions = {
 		}
 
 		const shouldGenerate = formData.get('generate') === 'true'
-		const prompt = formData.get('prompt')?.toString() || ''
+		const promptInput = formData.get('prompt')?.toString() || ''
 		const files = formData.getAll('files') as File[]
 
 		if (!shouldGenerate || !config.ai) {
@@ -80,7 +80,9 @@ export const actions = {
 			buffers.push(Buffer.from(arrayBuffer))
 		}
 
-		const defaultPrompt = `generate all fields for this ${type} piece.`
+		const instruction =
+			'Generate all required fields, and attempt to generate as many of the other fields as possible where there is high confidence in the accuracy of the values.'
+		const finalPrompt = promptInput.trim() ? `${promptInput}\n\nNote: ${instruction}` : instruction
 
 		const contextPrompt = `You are a digital archivist tasked with correcting incorrect metadata and updating any missing data.
 
@@ -90,7 +92,7 @@ ${JSON.stringify(markdown.frontmatter, null, 2)}
 Target Fields to Update: All Fields
 
 User Request:
-${prompt || defaultPrompt}
+${finalPrompt}
 
 IMPORTANT: Please only provide values for the targeted fields. For any fields that are not being updated, please return their current values from the provided metadata.`
 

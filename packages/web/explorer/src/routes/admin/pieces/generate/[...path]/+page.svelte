@@ -8,7 +8,7 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props()
 
 	let selectedField = $state<string>('all')
-	let prompt = $state(`generate all fields for this ${data.type} piece.`)
+	let prompt = $state('')
 	let generatedFields = $state(form?.fields || {})
 	let mergedContent = $state(form?.mergedContent || '')
 
@@ -25,14 +25,6 @@
 			mergedContent = form.mergedContent
 		}
 	})
-
-	function onFieldChange() {
-		if (selectedField === 'all') {
-			prompt = `generate all fields for this ${data.type} piece.`
-		} else {
-			prompt = `generate the ${selectedField} field for this ${data.type} piece.`
-		}
-	}
 </script>
 
 {#if form && !form.error}
@@ -97,7 +89,7 @@
 
 				<div class="field">field to generate</div>
 				<div class="field-edit">
-					<select name="field" class="input" bind:value={selectedField} onchange={onFieldChange}>
+					<select name="field" class="input" bind:value={selectedField}>
 						<option value="all">All Fields</option>
 						{#each data.schema as field (field.name)}
 							<option value={field.name}>{field.name}</option>
@@ -118,7 +110,12 @@
 
 				<div class="field">prompt (optional)</div>
 				<div class="field-edit">
-					<textarea name="prompt" class="input" style="width:100%;height:200px;" bind:value={prompt}
+					<textarea
+						name="prompt"
+						class="input"
+						style="width:100%;height:200px;"
+						bind:value={prompt}
+						placeholder="Describe the changes or provide instructions for generating metadata..."
 					></textarea>
 				</div>
 

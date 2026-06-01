@@ -41,8 +41,8 @@ export const actions = {
 	default: async (event) => {
 		const formData = await event.request.formData()
 		const file = event.params.path
-		const prompt = formData.get('prompt')?.toString() || ''
-		const targetField = formData.get('field')?.toString()
+		const promptInput = formData.get('prompt')?.toString() || ''
+		const targetField = formData.get('field')?.toString() || 'all'
 		const files = formData.getAll('files') as File[]
 		const buffers: Buffer[] = []
 
@@ -77,6 +77,13 @@ export const actions = {
 			}
 		}
 
+		const instruction =
+			targetField === 'all'
+				? 'Generate all required fields, and attempt to generate as many of the other fields as possible where there is high confidence in the accuracy of the values.'
+				: `Generate values for the target field: ${targetField}.`
+
+		const finalPrompt = promptInput.trim() ? `${promptInput}\n\nNote: ${instruction}` : instruction
+
 		try {
 			// Append current field values to prompt for context
 			const contextPrompt = `You are a digital archivist tasked with correcting incorrect metadata and updating any missing data.
@@ -87,7 +94,7 @@ ${JSON.stringify(currentFields, null, 2)}
 Target Fields to Update: ${targetField === 'all' ? 'All Fields' : targetField}
 
 User Request:
-${prompt}
+${finalPrompt}
 
 IMPORTANT: Please only provide values for the targeted fields. For any fields that are not being updated, please return their current values from the provided metadata.`
 
