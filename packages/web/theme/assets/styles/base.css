@@ -83,6 +83,10 @@
 	border: none;
 }
 
+.input[type='file'] {
+	max-width: 100%;
+}
+
 .input[type='text'],
 .input[type='date'],
 .input[type='email'],
