@@ -1,11 +1,12 @@
 import { getDatabaseClient, migrate } from '@luzzle/core'
 import { loadConfig } from '@luzzle/web.config'
-import { resolveDbPath, resolveQueueDbPath } from './services/db.js'
+import { resolveDbPath, resolveQueueDbPath, resolveOpenWorkflowDbPath } from './services/db.js'
 import { runWebMigrations } from '@luzzle/web.db'
 import { configureQueue } from './services/queue.js'
 import { createHealthServer } from './services/health.js'
 import { log } from './services/logger.js'
 import { JobProgressPurge } from './jobs/job-progress-purge.js'
+import { initOpenWorkflow } from '@luzzle/web.jobs'
 
 const DEFAULT_PORT = 9000
 const PURGE_CRON = '0 4 * * *'
@@ -32,9 +33,26 @@ async function main() {
 	await configureQueue(queueDb)
 	log('info', 'queue configured', { queueDb })
 
+	const owDb = resolveOpenWorkflowDbPath(config)
+	const ow = initOpenWorkflow({ dbPath: owDb })
+	log('info', 'openworkflow client configured', { owDb })
+
 	const { Sidequest } = await import('sidequest')
 	await Sidequest.start()
 	log('info', 'sidequest engine started')
+
+	const owWorker = ow.newWorker()
+	await owWorker.start()
+	log('info', 'openworkflow worker started')
+
+	const shutdown = async () => {
+		log('info', 'shutting down openworkflow worker...')
+		await owWorker.stop()
+		log('info', 'openworkflow worker stopped')
+		process.exit(0)
+	}
+	process.on('SIGTERM', shutdown)
+	process.on('SIGINT', shutdown)
 
 	await Sidequest.build(JobProgressPurge)
 		.scheduleOptions({ timezone: 'UTC' })
