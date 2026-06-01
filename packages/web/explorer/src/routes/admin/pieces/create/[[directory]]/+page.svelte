@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation'
 	import Button from '$lib/components/ui/Button.svelte'
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
 
@@ -16,13 +15,7 @@
 		}
 	})
 
-	function onTypeChange() {
-		const url = new URL(window.location.href)
-		url.searchParams.set('type', selectedType)
-		goto(url.toString())
-	}
-
-	const defaultPrompt = $derived(`generate all fields for this ${data.type} piece.`)
+	const defaultPrompt = $derived(`generate all fields for this ${selectedType} piece.`)
 	const isReview = $derived(!!(form && form.mergedContent && !form.error))
 	const filePath = $derived(form?.filePath || '')
 </script>
@@ -66,7 +59,7 @@
 				</div>
 				<div class="field">type</div>
 				<div class="field-edit">
-					<select name="type" class="input" bind:value={selectedType} onchange={onTypeChange}>
+					<select name="type" class="input" bind:value={selectedType}>
 						{#each data.types as type (type)}
 							<option value={type}>{type}</option>
 						{/each}
@@ -78,7 +71,7 @@
 						type="text"
 						name="name"
 						class="input"
-						value="new-{selectedType}"
+						placeholder="e.g. my-new-piece"
 						required
 						style="width:100%;"
 					/>
