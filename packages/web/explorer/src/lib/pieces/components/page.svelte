@@ -3,7 +3,7 @@
 	import type { PublicWebPiece } from '@luzzle/web.pieces'
 	import PageDefault from '$lib/pieces/components/page.default.svelte'
 	import PieceIcon from '$lib/pieces/components/icon.svelte'
-	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
+	import NavBanner from './PieceNavBanner.svelte'
 	import { getPieceHelpers, type PiecePageProps } from '$lib/pieces/helpers.js'
 
 	const components = { NavBanner, PieceIcon }
