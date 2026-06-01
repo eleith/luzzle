@@ -2,6 +2,8 @@ export { createJobStub } from './factory.js'
 export { configureQueue } from './configure-queue.js'
 export type { ConfigureQueueOptions } from './configure-queue.js'
 export { Publish, Preview, JobProgressPurge } from './stubs.js'
+export { initOpenWorkflow, getOpenWorkflow } from './openworkflow.js'
+export type { ConfigureQueueOptions as ConfigureOpenWorkflowOptions } from './configure-queue.js'
 export type {
 	AssetRecord,
 	PublishPayload,
@@ -12,3 +14,4 @@ export type {
 	JobProgressPurgePayload,
 	JobProgressPurgeResult
 } from './types.js'
+
