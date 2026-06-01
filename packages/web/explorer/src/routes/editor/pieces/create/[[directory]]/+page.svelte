@@ -4,19 +4,11 @@
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
 
 	let { data, form } = $props()
-	let editSlug: HTMLInputElement | null = $state(null)
 	let selectedType = $state(data.type)
 	let selectedDirectory = $state(data.directory || '.')
 	let shouldGenerate = $state(false)
 	let prompt = $state('')
 	let mergedContent = $state(form?.mergedContent || '')
-
-	$effect(() => {
-		if (editSlug) {
-			editSlug.focus()
-			editSlug.select()
-		}
-	})
 
 	$effect(() => {
 		if (form?.mergedContent) {
@@ -65,7 +57,8 @@
 				{/if}
 				<div class="field">directory</div>
 				<div class="field-edit">
-					<select name="directory" class="input" bind:value={selectedDirectory}>
+					<!-- svelte-ignore a11y_autofocus -->
+					<select name="directory" class="input" bind:value={selectedDirectory} autofocus>
 						{#each data.directories as dir (dir)}
 							<option value={dir}>{dir === '.' ? '(root)' : dir}</option>
 						{/each}
@@ -87,7 +80,6 @@
 						class="input"
 						value="new-{selectedType}"
 						required
-						bind:this={editSlug}
 						style="width:100%;"
 					/>
 				</div>
