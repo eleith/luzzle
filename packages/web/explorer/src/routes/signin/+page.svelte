@@ -5,7 +5,7 @@
 	import { goto } from '$app/navigation'
 
 	let { data } = $props()
-	const redirectTo = $derived(page.url.searchParams.get('redirectTo') || '/editor')
+	const redirectTo = $derived(page.url.searchParams.get('redirectTo') || '/admin')
 
 	let username = $state('')
 	let password = $state('')

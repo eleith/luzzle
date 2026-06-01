@@ -107,7 +107,7 @@ server {
         proxy_set_header        X-Forwarded-Proto $proxy_x_forwarded_proto;
     }
 
-    location /editor/lsp {
+    location /admin/lsp {
         auth_request       /api/auth/verify;
         proxy_cache        off;
         proxy_buffering    off;

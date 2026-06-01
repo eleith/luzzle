@@ -7,7 +7,7 @@
 	const { children } = $props()
 
 	let isAdmin = $state(false)
-	const editUrl = $derived(`/editor/open/${page.params.piece}/${page.params.slug}`)
+	const editUrl = $derived(`/admin/open/${page.params.piece}/${page.params.slug}`)
 
 	onMount(() => {
 		isAdmin = localStorage.getItem('luzzle.admin') === 'true'

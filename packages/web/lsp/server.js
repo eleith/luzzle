@@ -152,7 +152,7 @@ function createServer(routes = ROUTES) {
 	server.on("upgrade", (req, socket, head) => {
 		const url = new URL(req.url || "", "http://localhost");
 
-		if (url.pathname !== "/editor/lsp") {
+		if (url.pathname !== "/admin/lsp") {
 			socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
 			socket.destroy();
 			return;

@@ -9,7 +9,7 @@ export interface FieldEditorOptions {
 
 export function luzzleFieldEditor({ file, returnTo }: FieldEditorOptions): Extension {
 	return yamlKeyWidget(editIconSvg as unknown as string, (path) => ({
-		href: `/editor/pieces/field/${file}?path=${encodeURIComponent(path)}&returnTo=${encodeURIComponent(returnTo)}`,
+		href: `/admin/pieces/field/${file}?path=${encodeURIComponent(path)}&returnTo=${encodeURIComponent(returnTo)}`,
 		title: `Edit field: ${path}`
 	}))
 }

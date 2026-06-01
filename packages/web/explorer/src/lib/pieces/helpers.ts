@@ -60,11 +60,11 @@ function detectAssetUrlBuilder(): (path: string) => string {
 	const pathname = page.url.pathname
 
 	if (jobId && pathname.includes('/preview/')) {
-		return (path) => `/editor/preview/${jobId}/asset/${path}`
+		return (path) => `/admin/preview/${jobId}/asset/${path}`
 	}
 
-	if (pathname.startsWith('/editor/')) {
-		return (path) => `/editor/asset/${path}`
+	if (pathname.startsWith('/admin/')) {
+		return (path) => `/admin/asset/${path}`
 	}
 
 	const config = page.data.config

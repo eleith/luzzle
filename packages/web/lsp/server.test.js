@@ -78,7 +78,7 @@ describe("LSP WebSocket Server", () => {
 	});
 
 	it("should return 404 for HTTP requests", async () => {
-		const res = await fetch(`${baseUrl}/editor/lsp`, { method: "GET" });
+		const res = await fetch(`${baseUrl}/admin/lsp`, { method: "GET" });
 		expect(res.status).toBe(404);
 	});
 
@@ -111,7 +111,7 @@ describe("LSP WebSocket Server", () => {
 	});
 
 	it("should reject old sub-routes", async () => {
-		const ws = new WebSocket(`${wsUrl}/editor/lsp/frontmatter`);
+		const ws = new WebSocket(`${wsUrl}/admin/lsp/frontmatter`);
 
 		const error = await new Promise((resolve) => {
 			ws.on("error", resolve);
@@ -121,10 +121,10 @@ describe("LSP WebSocket Server", () => {
 		expect(error.statusCode).toBe(404);
 	});
 
-	it("should accept WebSocket on /editor/lsp and spawn both processes", async () => {
+	it("should accept WebSocket on /admin/lsp and spawn both processes", async () => {
 		const { createServerProcess } = await import("vscode-ws-jsonrpc/server");
 
-		const ws = new WebSocket(`${wsUrl}/editor/lsp`);
+		const ws = new WebSocket(`${wsUrl}/admin/lsp`);
 		await new Promise((resolve) => ws.on("open", resolve));
 
 		expect(ws.readyState).toBe(WebSocket.OPEN);
@@ -147,7 +147,7 @@ describe("LSP WebSocket Server", () => {
 	});
 
 	it("should handle client disconnect", async () => {
-		const ws = new WebSocket(`${wsUrl}/editor/lsp`);
+		const ws = new WebSocket(`${wsUrl}/admin/lsp`);
 		await new Promise((resolve) => ws.on("open", resolve));
 
 		ws.close();
@@ -163,7 +163,7 @@ describe("LSP WebSocket Server", () => {
 		const started = await startServer();
 		server = started.server;
 
-		const ws = new WebSocket(`${started.wsUrl}/editor/lsp`);
+		const ws = new WebSocket(`${started.wsUrl}/admin/lsp`);
 		await new Promise((resolve) => ws.on("open", resolve));
 		await new Promise((resolve) => ws.on("close", resolve));
 
@@ -189,7 +189,7 @@ describe("LSP WebSocket Server", () => {
 		const started = await startServer(customRoutes);
 		server = started.server;
 
-		const ws = new WebSocket(`${started.wsUrl}/editor/lsp`);
+		const ws = new WebSocket(`${started.wsUrl}/admin/lsp`);
 		await new Promise((resolve) => ws.on("open", resolve));
 
 		const { createServerProcess } = await import("vscode-ws-jsonrpc/server");

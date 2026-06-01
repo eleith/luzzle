@@ -58,7 +58,7 @@ const authHandle = SvelteKitAuth({
 	providers
 })
 
-const PROTECTED_PREFIXES = ['/editor', '/api/publish', '/api/editor']
+const PROTECTED_PREFIXES = ['/admin', '/api/publish', '/api/admin']
 
 const guardHandle: Handle = async ({ event, resolve }) => {
 	const isProtected = PROTECTED_PREFIXES.some((prefix) => event.url.pathname.startsWith(prefix))

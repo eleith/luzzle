@@ -4,7 +4,7 @@ import type { PublicWebPieceAsset } from '@luzzle/web.db'
 
 const localBuilder = (p: string) => `/pieces/assets/${p}`
 const cdnBuilder = (p: string) => `https://cdn.example.com/pieces/assets/${p}`
-const previewBuilder = (jobId: string) => (p: string) => `/editor/preview/${jobId}/asset/${p}`
+const previewBuilder = (jobId: string) => (p: string) => `/admin/preview/${jobId}/asset/${p}`
 const pieceUrl = () => '/pieces/books/a-beautiful-piece'
 
 function makeHelpers(
@@ -94,7 +94,7 @@ describe('createPieceHelpers', () => {
 			previewBuilder('42')
 		)
 		expect(helpers.getPieceAssetUrl('asset-key-1', 'custom-transform')).toBe(
-			'/editor/preview/42/asset/path/to/asset.png'
+			'/admin/preview/42/asset/path/to/asset.png'
 		)
 	})
 

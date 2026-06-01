@@ -85,7 +85,7 @@
 	{#if retainAssets.length > 0}
 		{#each retainAssets as asset, index (index)}
 			<div>
-				<span><a href="/editor/asset/{asset}" target="_blank">{asset}</a></span>
+				<span><a href="/admin/asset/{asset}" target="_blank">{asset}</a></span>
 				<input type="hidden" name={currentPath} value={asset} />
 				<Button
 					variant="link"

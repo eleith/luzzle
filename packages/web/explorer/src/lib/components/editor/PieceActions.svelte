@@ -14,10 +14,9 @@
 
 	let { file, currentMode, isDirty, canGenerate, onDelete }: Props = $props()
 
-	const switchUrl =
-		currentMode === 'form' ? `/editor/piece/${file}/source` : `/editor/piece/${file}`
+	const switchUrl = currentMode === 'form' ? `/admin/piece/${file}/source` : `/admin/piece/${file}`
 	const label = currentMode === 'form' ? 'source mode' : 'form mode'
-	const previewUrl = `/editor/piece/${file}/preview`
+	const previewUrl = `/admin/piece/${file}/preview`
 	const returnParam = `?returnTo=${encodeURIComponent(page.url.pathname)}`
 </script>
 
@@ -33,7 +32,7 @@
 						<div {...props}>
 							<DropdownMenu.Item
 								disabled={isDirty}
-								onSelect={() => goto(`/editor/pieces/field/${file}${returnParam}`)}
+								onSelect={() => goto(`/admin/pieces/field/${file}${returnParam}`)}
 							>
 								{#snippet child({ props })}
 									<div class="dropdown-item" {...props}>edit field</div>
@@ -57,7 +56,7 @@
 							{#if canGenerate}
 								<DropdownMenu.Item
 									disabled={isDirty}
-									onSelect={() => goto(`/editor/pieces/generate/${file}${returnParam}`)}
+									onSelect={() => goto(`/admin/pieces/generate/${file}${returnParam}`)}
 								>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>generate</div>

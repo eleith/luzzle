@@ -43,7 +43,7 @@ validation, and diagnostics inside your editor (like Neovim) as you edit your
 piece frontmatter. It hooks into any LSP-compatible editor.
 
 - **The Web Stack (`@luzzle/web`)** — _Digital garden on the web._ A responsive
-  SvelteKit explorer/editor interface, a background Sidequest worker to sync and
+  SvelteKit explorer/admin interface, a background Sidequest worker to sync and
   transform assets, and a caching reverse proxy. It runs via Docker Compose—making
   it the heaviest to deploy, but also the most complete.
 
