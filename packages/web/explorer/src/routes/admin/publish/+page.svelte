@@ -99,7 +99,7 @@
 	function startWatching(id: string | number) {
 		if (eventSource) eventSource.close()
 
-		eventSource = new EventSource(`/api/publish/${id}/stream`)
+		eventSource = new EventSource(`/api/admin/publish/${id}/stream`)
 
 		eventSource.addEventListener('state', (e) => {
 			const data = JSON.parse(e.data)
@@ -168,7 +168,7 @@
 		logs = {}
 
 		try {
-			const response = await fetch(`/api/publish`, {
+			const response = await fetch(`/api/admin/publish`, {
 				method: 'POST'
 			})
 

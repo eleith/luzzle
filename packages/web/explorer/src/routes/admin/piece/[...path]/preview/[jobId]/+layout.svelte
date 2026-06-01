@@ -46,7 +46,7 @@
 
 	function startWatching() {
 		if (eventSource) eventSource.close()
-		eventSource = new EventSource(`/api/preview/${data.jobId}/stream`)
+		eventSource = new EventSource(`/api/admin/preview/${data.jobId}/stream`)
 
 		eventSource.addEventListener('state', (e) => {
 			const d = JSON.parse(e.data)

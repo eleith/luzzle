@@ -86,7 +86,7 @@ server {
         proxy_pass http://luzzle-upstream;
     }
 
-    location ~ ^/api/(publish|preview) {
+    location ~ ^/api/admin/(publish|preview) {
         proxy_cache     off;
         proxy_buffering off;
         add_header      X-Accel-Buffering "no" always;
