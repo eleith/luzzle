@@ -6,7 +6,7 @@ import { configureQueue } from './services/queue.js'
 import { createHealthServer } from './services/health.js'
 import { log } from './services/logger.js'
 import { JobProgressPurge } from './jobs/job-progress-purge.js'
-import { initOpenWorkflow } from '@luzzle/web.jobs'
+import { initOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
 
 const DEFAULT_PORT = 9000
 const PURGE_CRON = '0 4 * * *'
@@ -36,6 +36,9 @@ async function main() {
 	const owDb = resolveOpenWorkflowDbPath(config)
 	const ow = initOpenWorkflow({ dbPath: owDb })
 	log('info', 'openworkflow client configured', { owDb })
+
+	const { registerWorkflows } = await import('./workflows/index.js')
+	registerWorkflows()
 
 	const { Sidequest } = await import('sidequest')
 	await Sidequest.start()
@@ -72,7 +75,7 @@ async function main() {
 if (import.meta.url === `file://${process.argv[1]}`) {
 	main().catch((err) => {
 		log('error', 'worker failed to start', {
-			error: err instanceof Error ? err.message : String(err)
+			error: err instanceof Error ? err.message : String(err),
 		})
 		process.exit(1)
 	})

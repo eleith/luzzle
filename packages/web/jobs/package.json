@@ -25,6 +25,14 @@
 		".": {
 			"types": "./dist/src/index.d.ts",
 			"import": "./dist/src/index.js"
+		},
+		"./openworkflow": {
+			"types": "./dist/src/openworkflow.d.ts",
+			"import": "./dist/src/openworkflow.js"
+		},
+		"./specs": {
+			"types": "./dist/src/specs.d.ts",
+			"import": "./dist/src/specs.js"
 		}
 	},
 	"devDependencies": {
