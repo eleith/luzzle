@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit'
 import { config } from '$lib/server/config'
 import { assemblePreview, type PreviewWorkerResult } from '$lib/pieces/preview/assemble.server.js'
-import { getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
+import { getOpenWorkflowDb } from '$lib/server/workflow/index.js'
 import type { LayoutServerLoad } from './$types'
 
 export const load: LayoutServerLoad = async ({ params }) => {

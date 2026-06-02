@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types'
-import { streamJobProgress } from '$lib/server/sse-progress.js'
+import { streamJobProgress } from '$lib/server/workflow/stream.js'
 
 export const GET: RequestHandler = ({ params, request, url }) => {
 	const jobId = params.id

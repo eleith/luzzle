@@ -1,5 +1,5 @@
 import { db } from '$lib/server/database/index.js'
-import { getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
+import { getOpenWorkflowDb } from './index.js'
 import { getWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
 
 const POLL_INTERVAL_MS = 350
@@ -70,8 +70,8 @@ async function pollOnce(
 
 		// Query OpenWorkflow
 		try {
-			const owDb = getOpenWorkflowDb()
-			const run = getWorkflowRun(owDb, jobId)
+			const openWorkflowDb = getOpenWorkflowDb()
+			const run = getWorkflowRun(openWorkflowDb, jobId)
 			if (run) {
 				let state = 'waiting'
 				if (run.status === 'running') state = 'running'
@@ -106,8 +106,8 @@ async function pollOnce(
 		let phases: any[] = []
 		if (runId) {
 			try {
-				const owDb = getOpenWorkflowDb()
-				const rows = getStepAttempts(owDb, runId)
+				const openWorkflowDb = getOpenWorkflowDb()
+				const rows = getStepAttempts(openWorkflowDb, runId)
 				phases = rows.map((r) => {
 					let status = 'waiting'
 					if (r.status === 'running') status = 'running'

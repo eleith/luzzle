@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { getOpenWorkflow, getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
+import { getOpenWorkflow, getOpenWorkflowDb } from '$lib/server/workflow/index.js'
 import { getLatestWorkflowRun } from '@luzzle/web.jobs'
 import { publishSpec } from '@luzzle/web.jobs/specs'
 
