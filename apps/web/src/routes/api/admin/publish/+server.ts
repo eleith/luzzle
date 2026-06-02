@@ -1,20 +1,30 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { Publish } from '@luzzle/web.jobs'
-import { Sidequest } from 'sidequest'
+import { getOpenWorkflow, getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
+import { publishSpec } from '@luzzle/web.jobs/specs'
 
 export const POST: RequestHandler = async () => {
 	try {
-		const inFlight = await Sidequest.job.list({
-			jobClass: 'Publish',
-			state: ['waiting', 'claimed', 'running']
-		})
-		if (inFlight.length > 0) {
-			return json({ jobId: inFlight[0].id }, { status: 409 })
+		// Check in-flight publish runs in OpenWorkflow database using the singleton connection
+		const owDb = getOpenWorkflowDb()
+		const stmt = owDb.prepare(`
+			SELECT input FROM workflow_runs 
+			WHERE workflow_name = 'Publish' AND status IN ('pending', 'running')
+			LIMIT 1
+		`)
+		const row = stmt.get() as { input: string } | undefined
+
+		if (row && row.input) {
+			const inputData = JSON.parse(row.input)
+			if (inputData && typeof inputData.jobId === 'number') {
+				return json({ jobId: inputData.jobId }, { status: 409 })
+			}
 		}
 
-		const job = await Sidequest.build(Publish).maxAttempts(1).enqueue()
-		return json({ jobId: job.id })
+		const jobId = Math.floor(Math.random() * 2147483647)
+		const ow = getOpenWorkflow()
+		await ow.runWorkflow(publishSpec, { jobId })
+		return json({ jobId })
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error)
 		return new Response(`Internal server error: ${message}`, { status: 500 })

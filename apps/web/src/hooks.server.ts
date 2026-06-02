@@ -1,10 +1,9 @@
 import { config } from '$lib/server/config'
 import '$lib/server/database'
-import { configureQueue, configureOpenWorkflow } from '$lib/server/queue'
+import { configureQueue } from '$lib/server/queue'
 import { SvelteKitAuth } from '@auth/sveltekit'
 
 await configureQueue()
-configureOpenWorkflow()
 import Credentials from '@auth/core/providers/credentials'
 import { sequence } from '@sveltejs/kit/hooks'
 import { redirect, type Handle } from '@sveltejs/kit'

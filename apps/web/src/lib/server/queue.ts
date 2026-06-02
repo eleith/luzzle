@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { configureQueue as configureSharedQueue, initOpenWorkflow } from '@luzzle/web.jobs'
+import { configureQueue as configureSharedQueue } from '@luzzle/web.jobs'
 import { config } from '$lib/server/config.js'
 
 export function resolveQueueDbPath(): string {
@@ -15,8 +15,4 @@ export function resolveOpenWorkflowDbPath(): string {
 
 export async function configureQueue(): Promise<void> {
 	await configureSharedQueue({ dbPath: resolveQueueDbPath() })
-}
-
-export function configureOpenWorkflow(): void {
-	initOpenWorkflow({ dbPath: resolveOpenWorkflowDbPath() })
 }

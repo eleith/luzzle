@@ -1,5 +1,6 @@
 import { db } from '$lib/server/database/index.js'
 import { Sidequest } from 'sidequest'
+import { getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
 
 const POLL_INTERVAL_MS = 350
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled'])
@@ -73,11 +74,59 @@ async function pollOnce(
 	emit: Emit
 ): Promise<boolean> {
 	try {
-		const job = await Sidequest.job.get(jobId)
+		let job: { class: string; state: string; result: unknown; errors: unknown } | null = null
+
+		// Try Sidequest first
+		try {
+			const sqJob = await Sidequest.job.get(jobId)
+			if (sqJob) {
+				job = {
+					class: sqJob.class,
+					state: sqJob.state,
+					result: sqJob.result,
+					errors: sqJob.errors
+				}
+			}
+		} catch (_err) {
+			// ignore sidequest errors
+		}
+
+		// Fallback to OpenWorkflow
+		if (!job) {
+			try {
+				const owDb = getOpenWorkflowDb()
+				const stmt = owDb.prepare(`
+					SELECT id, workflow_name, status, error FROM workflow_runs 
+					WHERE json_extract(input, '$.jobId') = ?
+					LIMIT 1
+				`)
+				const run = stmt.get(jobId) as
+					| { id: string; workflow_name: string; status: string; error: string | null }
+					| undefined
+				if (run) {
+					let state = 'waiting'
+					if (run.status === 'running') state = 'running'
+					if (run.status === 'completed' || run.status === 'succeeded') state = 'completed'
+					if (run.status === 'failed') state = 'failed'
+					if (run.status === 'canceled') state = 'canceled'
+
+					job = {
+						class: run.workflow_name,
+						state,
+						result: state === 'completed' ? 'ok' : null,
+						errors: run.error ? [run.error] : null
+					}
+				}
+			} catch (err) {
+				console.error('Failed to query OpenWorkflow runs in SSE:', err)
+			}
+		}
+
 		if (!job) {
 			emit('error', { message: 'Job not found' })
 			return true
 		}
+
 		if (job.class !== jobClass) {
 			emit('error', { message: `Job is not a ${jobClass} job` })
 			return true
