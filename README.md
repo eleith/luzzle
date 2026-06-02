@@ -43,7 +43,7 @@ validation, and diagnostics inside your editor (like Neovim) as you edit your
 piece frontmatter. It hooks into any LSP-compatible editor.
 
 - **The Web Stack (`@luzzle/web`)** — _Digital garden on the web._ A responsive
-  SvelteKit explorer/admin interface, a background Sidequest worker to sync and
+  SvelteKit explorer/admin interface, a background worker queue to sync and
   transform assets, and a caching reverse proxy. It runs via Docker Compose—making
   it the heaviest to deploy, but also the most complete.
 
@@ -67,13 +67,13 @@ This ecosystem contains a few projects to manage a luzzlel archive:
 - `@luzzle/core` the specification implementation 🫀
 - `@luzzle/cli` the terminal companion for managing pieces 💻
 - `@luzzle/lsp` auto-complete in your editor while editing pieces ✏️
+- `@luzzle/web` web app for browsing, editing and publishing pieces 🔎
 
 a set of services to power a luzzle web app:
 
-- `@luzzle/web` web app for browsing, editing and publishing pieces 🔎
-- `@luzzle/web.worker` sidecar service that handles web jobs 👷
+- `@luzzle/web.worker` jobs for publishing and previewing 👷
 - `@luzzle/web.proxy` a caching layer for @luzzle/web 🚀
-- `@luzzle/web.lsp` websocket server for luzzle lsp 💂
+- `@luzzle/web.lsp` websocket server for the editor's luzzle lsp 💂
 
 and some shared packages used for the web project:
 
@@ -81,16 +81,6 @@ and some shared packages used for the web project:
 - `@luzzle/web.job` shared job definitions
 - `@luzzle/web.theme` shared css styles and theme types
 - `@luzzle/web.pieces` shared piece definitions and helpers
-
-## Future Ideas 🚀
-
-- [@luzzle/web] hardcoded Base32 seeds for stateless 2FA
-- [@luzzle/web] UI for managing schemas
-- [@luzzle/web] enable directly editing text attachments
-- [@luzzle/web] preview publish impact before publishing
-- [@luzzle/cli] improved first time experience (ex: zero conf support)
-- [@luzzle/cli] rclone support like web
-- [@luzzle/core] explore tauri port
 
 ## Development & Philosophy 🛠️
 
@@ -100,5 +90,5 @@ Standards](./docs/development.md).
 
 If you are working on the web stack, please also review the [Web Development
 Standards](./packages/web/docs/development.md) (such as offloading intensive
-work to the Sidequest worker and leveraging theme variables for styling
+work to the worker queue and leveraging theme variables for styling
 consistency).
