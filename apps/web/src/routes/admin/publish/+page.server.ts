@@ -1,6 +1,5 @@
 import { config } from '$lib/server/config'
 import { db, type JobProgressRow, type JobProgressLogsRow } from '$lib/server/database/index.js'
-import { Sidequest } from 'sidequest'
 import { getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
 import { getLatestWorkflowRun, getStepAttempts } from '@luzzle/web.jobs/openworkflow'
 import type { PageServerLoad } from './$types'
@@ -11,7 +10,6 @@ export const load: PageServerLoad = async () => {
 	let jobId: number | null = null
 	let state: string | null = null
 	let errors: unknown = null
-	let isOpenWorkflow = false
 	let runId: string | null = null
 
 	// Try OpenWorkflow first
@@ -29,25 +27,10 @@ export const load: PageServerLoad = async () => {
 				if (run.status === 'canceled') state = 'canceled'
 				errors = run.error ? [run.error] : null
 				runId = run.id
-				isOpenWorkflow = true
 			}
 		}
 	} catch (err) {
 		console.error('Failed to query OpenWorkflow runs in publish loader:', err)
-	}
-
-	// Fallback to Sidequest
-	if (!jobId) {
-		try {
-			const jobs = await Sidequest.job.list({ jobClass: 'Publish', limit: 1 })
-			if (jobs.length > 0) {
-				jobId = jobs[0].id
-				state = jobs[0].state
-				errors = jobs[0].errors
-			}
-		} catch {
-			// queue unavailable
-		}
 	}
 
 	if (!jobId) {
@@ -55,7 +38,7 @@ export const load: PageServerLoad = async () => {
 	}
 
 	let phases: JobProgressRow[] = []
-	if (isOpenWorkflow && runId) {
+	if (runId) {
 		try {
 			const owDb = getOpenWorkflowDb()
 			const rows = getStepAttempts(owDb, runId)
@@ -79,13 +62,6 @@ export const load: PageServerLoad = async () => {
 		} catch (err) {
 			console.error('Failed to query OpenWorkflow steps in publish loader:', err)
 		}
-	} else {
-		phases = (await db
-			.selectFrom('job_progress')
-			.selectAll()
-			.where('job_id', '=', jobId)
-			.orderBy('started_at', 'asc')
-			.execute()) as JobProgressRow[]
 	}
 
 	const logs = (await db

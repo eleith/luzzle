@@ -1,5 +1,4 @@
 import { db } from '$lib/server/database/index.js'
-import { Sidequest } from 'sidequest'
 import { getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
 import { getWorkflowRunByJobId, getStepAttempts } from '@luzzle/web.jobs/openworkflow'
 
@@ -46,15 +45,6 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
 	})
 }
 
-function fetchPhases(jobId: number) {
-	return db
-		.selectFrom('job_progress')
-		.selectAll()
-		.where('job_id', '=', jobId)
-		.orderBy('started_at', 'asc')
-		.execute()
-}
-
 function fetchNewLogs(jobId: number, phase: string, afterLine: number) {
 	return db
 		.selectFrom('job_progress_logs')
@@ -76,48 +66,29 @@ async function pollOnce(
 ): Promise<boolean> {
 	try {
 		let job: { class: string; state: string; result: unknown; errors: unknown } | null = null
-		let isOpenWorkflow = false
 		let runId: string | null = null
 
-		// Try Sidequest first
+		// Query OpenWorkflow
 		try {
-			const sqJob = await Sidequest.job.get(jobId)
-			if (sqJob) {
+			const owDb = getOpenWorkflowDb()
+			const run = getWorkflowRunByJobId(owDb, jobId)
+			if (run) {
+				let state = 'waiting'
+				if (run.status === 'running') state = 'running'
+				if (run.status === 'completed' || run.status === 'succeeded') state = 'completed'
+				if (run.status === 'failed') state = 'failed'
+				if (run.status === 'canceled') state = 'canceled'
+
 				job = {
-					class: sqJob.class,
-					state: sqJob.state,
-					result: sqJob.result,
-					errors: sqJob.errors
+					class: run.workflow_name,
+					state,
+					result: state === 'completed' ? 'ok' : null,
+					errors: run.error ? [run.error] : null
 				}
+				runId = run.id
 			}
-		} catch (_err) {
-			// ignore sidequest errors
-		}
-
-		// Fallback to OpenWorkflow
-		if (!job) {
-			try {
-				const owDb = getOpenWorkflowDb()
-				const run = getWorkflowRunByJobId(owDb, jobId)
-				if (run) {
-					let state = 'waiting'
-					if (run.status === 'running') state = 'running'
-					if (run.status === 'completed' || run.status === 'succeeded') state = 'completed'
-					if (run.status === 'failed') state = 'failed'
-					if (run.status === 'canceled') state = 'canceled'
-
-					job = {
-						class: run.workflow_name,
-						state,
-						result: state === 'completed' ? 'ok' : null,
-						errors: run.error ? [run.error] : null
-					}
-					isOpenWorkflow = true
-					runId = run.id
-				}
-			} catch (err) {
-				console.error('Failed to query OpenWorkflow runs in SSE:', err)
-			}
+		} catch (err) {
+			console.error('Failed to query OpenWorkflow runs in SSE:', err)
 		}
 
 		if (!job) {
@@ -133,7 +104,7 @@ async function pollOnce(
 		emit('state', { state: job.state, result: job.result, errors: job.errors })
 
 		let phases: any[] = []
-		if (isOpenWorkflow && runId) {
+		if (runId) {
 			try {
 				const owDb = getOpenWorkflowDb()
 				const rows = getStepAttempts(owDb, runId)
@@ -157,8 +128,6 @@ async function pollOnce(
 			} catch (err) {
 				console.error('Failed to query OpenWorkflow steps in SSE:', err)
 			}
-		} else {
-			phases = await fetchPhases(jobId)
 		}
 
 		emit('phase', phases)

@@ -1,9 +1,7 @@
 import { config } from '$lib/server/config'
 import '$lib/server/database'
-import { configureQueue } from '$lib/server/queue'
 import { SvelteKitAuth } from '@auth/sveltekit'
 
-await configureQueue()
 import Credentials from '@auth/core/providers/credentials'
 import { sequence } from '@sveltejs/kit/hooks'
 import { redirect, type Handle } from '@sveltejs/kit'

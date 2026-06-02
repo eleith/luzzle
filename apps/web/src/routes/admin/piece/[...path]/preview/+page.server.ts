@@ -1,8 +1,8 @@
 import { error, redirect } from '@sveltejs/kit'
 import { getPieces } from '$lib/server/pieces'
 import { config } from '$lib/server/config'
-import { Preview } from '@luzzle/web.jobs'
-import { Sidequest } from 'sidequest'
+import { getOpenWorkflow } from '$lib/server/database/openworkflow.js'
+import { previewSpec } from '@luzzle/web.jobs/specs'
 import type { PageServerLoad } from '../$types'
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -19,6 +19,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		return error(404, 'piece type not configured')
 	}
 
-	const job = await Sidequest.build(Preview).maxAttempts(1).enqueue({ filePath: file })
-	redirect(303, `/admin/piece/${file}/preview/${job.id}`)
+	const jobId = Math.floor(Math.random() * 2147483647)
+	const ow = getOpenWorkflow()
+	await ow.runWorkflow(previewSpec, { filePath: file, jobId })
+	redirect(303, `/admin/piece/${file}/preview/${jobId}`)
 }
