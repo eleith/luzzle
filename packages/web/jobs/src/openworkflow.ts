@@ -2,27 +2,27 @@ import { OpenWorkflow } from 'openworkflow'
 import { BackendSqlite } from 'openworkflow/sqlite'
 import { DatabaseSync } from 'node:sqlite'
 
-let owInstance: OpenWorkflow | null = null
+let openWorkflowInstance: OpenWorkflow | null = null
 
 export interface InitOpenWorkflowOptions {
 	dbPath: string
 }
 
 export function initOpenWorkflow(opts: InitOpenWorkflowOptions): OpenWorkflow {
-	if (!owInstance) {
+	if (!openWorkflowInstance) {
 		const backend = BackendSqlite.connect(opts.dbPath)
-		owInstance = new OpenWorkflow({ backend })
+		openWorkflowInstance = new OpenWorkflow({ backend })
 	}
-	return owInstance
+	return openWorkflowInstance
 }
 
 export function getOpenWorkflow(): OpenWorkflow {
-	if (!owInstance) {
+	if (!openWorkflowInstance) {
 		throw new Error(
 			'OpenWorkflow client has not been initialized. Call initOpenWorkflow({ dbPath }) first.'
 		)
 	}
-	return owInstance
+	return openWorkflowInstance
 }
 
 export interface WorkflowRunRow {
