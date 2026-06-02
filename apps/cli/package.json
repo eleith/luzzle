@@ -4,7 +4,7 @@
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
-    "build": "tsc && chmod +x dist/src/index.js",
+    "build": "tsc -p tsconfig.build.json && chmod +x dist/src/index.js",
     "postbuild": "sed -i \"s/'unbuilt'/$(npm pkg get version --workspaces=false)/\" dist/src/version.js",
     "test": "vitest run --silent --coverage"
   },

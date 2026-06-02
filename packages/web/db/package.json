@@ -6,7 +6,7 @@
 	"scripts": {
 		"lint": "eslint src",
 		"prebuild": "node scripts/generate-migrations.js",
-		"build": "tsc",
+		"build": "tsc -p tsconfig.build.json",
 		"pretest": "node scripts/generate-migrations.js",
 		"test": "vitest run --silent --coverage"
 	},

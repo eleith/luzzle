@@ -10,7 +10,7 @@
 		"build:types": "json2ts --input src/lib/config/schema.json --output src/lib/config/schema.ts",
 		"prebuild": "npm run build:external-schema && npm run build:types",
 		"postbuild": "npm run build:assets",
-		"build": "tsc",
+		"build": "tsc -p tsconfig.build.json",
 		"test": "vitest run --silent --coverage"
 	},
 	"engines": {
