@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/web",
-  "version": "0.0.221",
+  "version": "0.0.222",
   "private": true,
   "files": ["build"],
   "scripts": {
