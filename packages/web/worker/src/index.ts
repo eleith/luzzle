@@ -6,6 +6,7 @@ import { createHealthServer } from './services/health.js'
 import { log } from './services/logger.js'
 import { initOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
 import { jobProgressPurgeSpec } from '@luzzle/web.jobs/specs'
+import { registerWorkflows } from './workflows/index.js'
 
 const DEFAULT_PORT = 9000
 const PURGE_RETENTION_DAYS = 2
@@ -31,7 +32,6 @@ async function main() {
 	const ow = initOpenWorkflow({ dbPath: owDb })
 	log('info', 'openworkflow client configured', { owDb })
 
-	const { registerWorkflows } = await import('./workflows/index.js')
 	registerWorkflows()
 
 	const owWorker = ow.newWorker()
