@@ -15,6 +15,7 @@ export type PublishResult = 'ok'
 
 export interface PreviewPayload {
 	filePath: string
+	jobId?: number
 }
 
 export interface PreviewAsset extends AssetRecord {

@@ -8,33 +8,55 @@ import { generateAssetKey } from '../assets/key.js'
 import { previewParseStep } from '../steps/preview-parse.js'
 import { PREVIEW_TRANSFORM_NAMES, previewTransformStep } from '../steps/preview-transform.js'
 import type { PreviewAsset } from '@luzzle/web.jobs'
+import { JobProgress } from '../core/job-progress.js'
+import { PhaseLogger } from '../core/phase-logger.js'
 
 export function registerPreviewWorkflow(): void {
 	const ow = getOpenWorkflow()
 
 	ow.implementWorkflow(previewSpec, async ({ input, step, run }) => {
 		const ctx = getWorkerContext()
-		const { logger, config } = ctx
-		logger.info('openworkflow preview starting', { filePath: input.filePath, runId: run.id })
+		const { logger, config, db } = ctx
+
+		// Fallback to random 32-bit integer if no jobId is supplied
+		const jobId = input.jobId ?? Math.floor(Math.random() * 2147483647)
+		const progress = new JobProgress(db)
+
+		logger.info('openworkflow preview starting', { filePath: input.filePath, jobId, runId: run.id })
 
 		const storage = new StorageFileSystem(config.storage.root)
 		const pieces = new Pieces(storage)
 
 		// 1. Run preview parsing and serialize Map objects for database persistence
 		const parsedSerialized = await step.run({ name: 'parse' }, async () => {
-			const res = await previewParseStep.run({ filePath: input.filePath, pieces }, ctx)
-			if (res.status === 'skipped') {
-				throw new Error('Preview parse step was skipped unexpectedly')
+			if (logger instanceof PhaseLogger) {
+				logger.setActivePhase({ jobId, phase: 'parse' })
 			}
-			const val = res.value
-			return {
-				type: val.type,
-				slug: val.slug,
-				webPiece: val.webPiece,
-				pathToKey: Array.from(val.pathToKey.entries()),
-				keyToPath: Array.from(val.keyToPath.entries()),
-				sanitizedFrontmatter: val.sanitizedFrontmatter,
-				note: val.note,
+			await progress.start(jobId, 'parse')
+			try {
+				const res = await previewParseStep.run({ filePath: input.filePath, pieces }, ctx)
+				if (res.status === 'skipped') {
+					await progress.skip(jobId, 'parse', res.message || 'skipped')
+					throw new Error('Preview parse step was skipped unexpectedly')
+				}
+				await progress.complete(jobId, 'parse')
+				const val = res.value
+				return {
+					type: val.type,
+					slug: val.slug,
+					webPiece: val.webPiece,
+					pathToKey: Array.from(val.pathToKey.entries()),
+					keyToPath: Array.from(val.keyToPath.entries()),
+					sanitizedFrontmatter: val.sanitizedFrontmatter,
+					note: val.note,
+				}
+			} catch (err) {
+				await progress.fail(jobId, 'parse', err)
+				throw err
+			} finally {
+				if (logger instanceof PhaseLogger) {
+					logger.clearActivePhase()
+				}
 			}
 		})
 
@@ -48,6 +70,7 @@ export function registerPreviewWorkflow(): void {
 			throw new Error('preview parse returned no result')
 		}
 
+		// Use run.id (UUID) for isolating preview files on disk
 		const outDir = path.join(path.dirname(config.paths.assets), 'previews', run.id)
 		const transforms: PreviewAsset[] = []
 		const priorAssets: PublicWebPieceAsset[] = []
@@ -56,19 +79,34 @@ export function registerPreviewWorkflow(): void {
 		for (const name of PREVIEW_TRANSFORM_NAMES) {
 			try {
 				const records = await step.run({ name: `transform-${name}` }, async () => {
-					const res = await previewTransformStep(name).run(
-						{
-							parsed,
-							pieces,
-							outDir,
-							priorAssets,
-						},
-						ctx
-					)
-					if (res.status === 'skipped') {
-						return []
+					if (logger instanceof PhaseLogger) {
+						logger.setActivePhase({ jobId, phase: name })
 					}
-					return res.value
+					await progress.start(jobId, name)
+					try {
+						const res = await previewTransformStep(name).run(
+							{
+								parsed,
+								pieces,
+								outDir,
+								priorAssets,
+							},
+							ctx
+						)
+						if (res.status === 'skipped') {
+							await progress.skip(jobId, name, res.message || 'skipped')
+							return []
+						}
+						await progress.complete(jobId, name, `${res.value.length} record(s)`)
+						return res.value
+					} catch (err) {
+						await progress.fail(jobId, name, err)
+						throw err
+					} finally {
+						if (logger instanceof PhaseLogger) {
+							logger.clearActivePhase()
+						}
+					}
 				})
 
 				if (!records) continue
@@ -94,7 +132,7 @@ export function registerPreviewWorkflow(): void {
 			}
 		}
 
-		logger.info('openworkflow preview complete', { filePath: input.filePath, runId: run.id })
+		logger.info('openworkflow preview complete', { filePath: input.filePath, jobId, runId: run.id })
 
 		return {
 			filePath: input.filePath,

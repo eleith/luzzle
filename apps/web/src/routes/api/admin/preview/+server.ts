@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { Preview } from '@luzzle/web.jobs'
-import { Sidequest } from 'sidequest'
+import { getOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
+import { previewSpec } from '@luzzle/web.jobs/specs'
 
 export const POST: RequestHandler = async ({ request }) => {
 	let payload: { filePath?: unknown }
@@ -17,8 +17,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	try {
-		const job = await Sidequest.build(Preview).maxAttempts(1).enqueue({ filePath })
-		return json({ jobId: job.id })
+		const jobId = Math.floor(Math.random() * 2147483647)
+		const ow = getOpenWorkflow()
+		await ow.runWorkflow(previewSpec, { filePath, jobId })
+		return json({ jobId })
 	} catch (e) {
 		const message = e instanceof Error ? e.message : String(e)
 		return new Response(`Internal server error: ${message}`, { status: 500 })
