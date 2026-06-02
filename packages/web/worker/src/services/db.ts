@@ -7,4 +7,4 @@ export type {
 	WebDatabase,
 	AppDatabase,
 } from '@luzzle/web.db'
-export { resolveDbPath, resolveQueueDbPath, resolveOpenWorkflowDbPath, createAppDb } from '@luzzle/web.db'
+export { resolveDbPath, resolveOpenWorkflowDbPath, createAppDb } from '@luzzle/web.db'

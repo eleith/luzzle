@@ -1,8 +1,7 @@
 import { getDatabaseClient, migrate } from '@luzzle/core'
 import { loadConfig } from '@luzzle/web.config'
-import { resolveDbPath, resolveQueueDbPath, resolveOpenWorkflowDbPath } from './services/db.js'
+import { resolveDbPath, resolveOpenWorkflowDbPath } from './services/db.js'
 import { runWebMigrations } from '@luzzle/web.db'
-import { configureQueue } from './services/queue.js'
 import { createHealthServer } from './services/health.js'
 import { log } from './services/logger.js'
 import { initOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
@@ -28,20 +27,12 @@ async function main() {
 	}
 	log('info', 'web migrations applied')
 
-	const queueDb = resolveQueueDbPath(config)
-	await configureQueue(queueDb)
-	log('info', 'queue configured', { queueDb })
-
 	const owDb = resolveOpenWorkflowDbPath(config)
 	const ow = initOpenWorkflow({ dbPath: owDb })
 	log('info', 'openworkflow client configured', { owDb })
 
 	const { registerWorkflows } = await import('./workflows/index.js')
 	registerWorkflows()
-
-	const { Sidequest } = await import('sidequest')
-	await Sidequest.start()
-	log('info', 'sidequest engine started')
 
 	const owWorker = ow.newWorker()
 	await owWorker.start()
@@ -74,15 +65,6 @@ async function main() {
 	}
 	process.on('SIGTERM', shutdown)
 	process.on('SIGINT', shutdown)
-
-	// Commented out Sidequest purge scheduling since it's replaced by OpenWorkflow
-	// await Sidequest.build(JobProgressPurge)
-	// 	.scheduleOptions({ timezone: 'UTC' })
-	// 	.schedule(PURGE_CRON, { retentionDays: PURGE_RETENTION_DAYS })
-	// log('info', 'job_progress purge scheduled via sidequest', {
-	// 	cron: PURGE_CRON,
-	// 	retentionDays: PURGE_RETENTION_DAYS,
-	// })
 
 	const port = Number(process.env.PORT) || DEFAULT_PORT
 	const server = createHealthServer()

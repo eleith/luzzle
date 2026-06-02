@@ -1,6 +1,6 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import type { Config } from '@luzzle/web.config'
-import { resolveDbPath, resolveQueueDbPath } from './db.js'
+import { resolveDbPath } from './db.js'
 
 describe('resolveDbPath', () => {
 	test('resolves database path relative to the config file directory', () => {
@@ -33,38 +33,6 @@ describe('resolveDbPath', () => {
 	})
 })
 
-describe('resolveQueueDbPath', () => {
-	test('resolves worker.queue.path relative to the config file directory', () => {
-		const config = {
-			paths: { config: '/etc/luzzle/config.yaml', database: 'data/luzzle.sqlite' },
-			worker: { queue: { path: 'data/sidequest.sqlite' } }
-		} as unknown as Config
-		expect(resolveQueueDbPath(config)).toBe('/etc/luzzle/data/sidequest.sqlite')
-	})
-
-	test('handles absolute worker.queue.path', () => {
-		const config = {
-			paths: { config: '/etc/luzzle/config.yaml', database: 'data/luzzle.sqlite' },
-			worker: { queue: { path: '/var/queue/sidequest.db' } }
-		} as unknown as Config
-		expect(resolveQueueDbPath(config)).toBe('/var/queue/sidequest.db')
-	})
-
-	test('falls back to ./data/sidequest.sqlite when worker config is absent', () => {
-		const config = {
-			paths: { config: '/etc/luzzle/config.yaml', database: 'data/luzzle.sqlite' }
-		} as unknown as Config
-		expect(resolveQueueDbPath(config)).toBe('/etc/luzzle/data/sidequest.sqlite')
-	})
-
-	test('throws when paths.config is missing', () => {
-		const config = {
-			paths: { database: 'data/luzzle.sqlite' }
-		} as unknown as Config
-		expect(() => resolveQueueDbPath(config)).toThrow(/paths\.config is missing/)
-	})
-})
-
 describe('createAppDb re-export', () => {
 	beforeEach(() => {
 		vi.resetModules()
@@ -75,8 +43,7 @@ describe('createAppDb re-export', () => {
 
 		vi.doMock('@luzzle/web.db', () => ({
 			createAppDb: createAppDbMock,
-			resolveDbPath: (c: Config) => `${c.paths.config.replace(/\/[^/]+$/, '')}/${c.paths.database}`,
-			resolveQueueDbPath: () => ''
+			resolveDbPath: (c: Config) => `${c.paths.config.replace(/\/[^/]+$/, '')}/${c.paths.database}`
 		}))
 
 		const { createAppDb, resolveDbPath: resolveDbPathFromDb } = await import('./db.js')

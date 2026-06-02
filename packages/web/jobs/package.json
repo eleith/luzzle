@@ -51,9 +51,7 @@
 	},
 	"dependencies": {
 		"@luzzle/core": "workspace:*",
-		"@sidequest/core": "1.15.0",
-		"openworkflow": "^0.9.0",
-		"sidequest": "1.15.0"
+		"openworkflow": "^0.9.0"
 	},
 	"type": "module"
 }

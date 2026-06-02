@@ -83,10 +83,7 @@
   "dependencies": {
     "@luzzle/web.db": "workspace:*",
     "@luzzle/web.pieces": "workspace:*",
-    "@sidequest/core": "1.15.0",
-    "@sidequest/sqlite-backend": "1.15.0",
     "kysely": "0.28.17",
-    "openworkflow": "^0.9.0",
-    "sidequest": "1.15.0"
+    "openworkflow": "^0.9.0"
   }
 }
