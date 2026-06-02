@@ -3,6 +3,7 @@ export {
 	getOpenWorkflow,
 	getLatestWorkflowRun,
 	getWorkflowRunByJobId,
+	getWorkflowRun,
 	getStepAttempts,
 } from './openworkflow.js'
 export type { WorkflowRunRow, StepAttemptRow } from './openworkflow.js'

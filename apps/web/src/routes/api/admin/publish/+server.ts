@@ -11,16 +11,13 @@ export const POST: RequestHandler = async () => {
 		const latest = getLatestWorkflowRun(owDb, 'Publish')
 
 		if (latest && (latest.status === 'pending' || latest.status === 'running')) {
-			const inputData = JSON.parse(latest.input)
-			if (inputData && typeof inputData.jobId === 'number') {
-				return json({ jobId: inputData.jobId }, { status: 409 })
-			}
+			return json({ jobId: latest.id }, { status: 409 })
 		}
 
-		const jobId = Math.floor(Math.random() * 2147483647)
-		const ow = getOpenWorkflow()
-		await ow.runWorkflow(publishSpec, { jobId })
-		return json({ jobId })
+		const openWorkflow = getOpenWorkflow()
+		const handle = await openWorkflow.runWorkflow(publishSpec)
+		const runId = handle.workflowRun.id
+		return json({ jobId: runId })
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error)
 		return new Response(`Internal server error: ${message}`, { status: 500 })

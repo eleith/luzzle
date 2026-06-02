@@ -19,12 +19,12 @@ describe('JobProgress', () => {
 	})
 
 	it('should start a phase', async () => {
-		await jobProgress.start(42, 'archive.sync')
+		await jobProgress.start('42', 'archive.sync')
 
 		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
 		expect(rows).toHaveLength(1)
 		expect(rows[0]).toMatchObject({
-			job_id: 42,
+			job_id: '42',
 			phase: 'archive.sync',
 			status: 'running',
 			message: null,
@@ -34,13 +34,13 @@ describe('JobProgress', () => {
 	})
 
 	it('should complete a phase', async () => {
-		await jobProgress.start(42, 'archive.sync')
-		await jobProgress.complete(42, 'archive.sync', 'completed successfully')
+		await jobProgress.start('42', 'archive.sync')
+		await jobProgress.complete('42', 'archive.sync', 'completed successfully')
 
 		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
 		expect(rows).toHaveLength(1)
 		expect(rows[0]).toMatchObject({
-			job_id: 42,
+			job_id: '42',
 			phase: 'archive.sync',
 			status: 'completed',
 			message: 'completed successfully'
@@ -49,13 +49,13 @@ describe('JobProgress', () => {
 	})
 
 	it('should skip a phase', async () => {
-		await jobProgress.start(42, 'archive.sync')
-		await jobProgress.skip(42, 'archive.sync', 'no remote configured')
+		await jobProgress.start('42', 'archive.sync')
+		await jobProgress.skip('42', 'archive.sync', 'no remote configured')
 
 		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
 		expect(rows).toHaveLength(1)
 		expect(rows[0]).toMatchObject({
-			job_id: 42,
+			job_id: '42',
 			phase: 'archive.sync',
 			status: 'skipped',
 			message: 'no remote configured'
@@ -64,13 +64,13 @@ describe('JobProgress', () => {
 	})
 
 	it('should fail a phase with an Error', async () => {
-		await jobProgress.start(42, 'archive.sync')
-		await jobProgress.fail(42, 'archive.sync', new Error('network error'))
+		await jobProgress.start('42', 'archive.sync')
+		await jobProgress.fail('42', 'archive.sync', new Error('network error'))
 
 		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
 		expect(rows).toHaveLength(1)
 		expect(rows[0]).toMatchObject({
-			job_id: 42,
+			job_id: '42',
 			phase: 'archive.sync',
 			status: 'failed',
 			message: 'network error'
@@ -79,13 +79,13 @@ describe('JobProgress', () => {
 	})
 
 	it('should fail a phase with a string', async () => {
-		await jobProgress.start(42, 'archive.sync')
-		await jobProgress.fail(42, 'archive.sync', 'string error')
+		await jobProgress.start('42', 'archive.sync')
+		await jobProgress.fail('42', 'archive.sync', 'string error')
 
 		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
 		expect(rows).toHaveLength(1)
 		expect(rows[0]).toMatchObject({
-			job_id: 42,
+			job_id: '42',
 			phase: 'archive.sync',
 			status: 'failed',
 			message: 'string error'
@@ -96,7 +96,7 @@ describe('JobProgress', () => {
 	it('should purge old records based on started_at', async () => {
 		// Insert an old record
 		await testDb.insertInto('job_progress' as any).values({
-			job_id: 1,
+			job_id: '1',
 			phase: 'old.phase',
 			status: 'completed',
 			started_at: Date.now() - 3 * 24 * 60 * 60 * 1000, // 3 days old
@@ -104,7 +104,7 @@ describe('JobProgress', () => {
 
 		// Insert a recent record
 		await testDb.insertInto('job_progress' as any).values({
-			job_id: 2,
+			job_id: '2',
 			phase: 'new.phase',
 			status: 'completed',
 			started_at: Date.now() - 1 * 24 * 60 * 60 * 1000, // 1 day old
@@ -114,6 +114,6 @@ describe('JobProgress', () => {
 
 		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
 		expect(rows).toHaveLength(1)
-		expect(rows[0].job_id).toBe(2)
+		expect(rows[0].job_id).toBe('2')
 	})
 })

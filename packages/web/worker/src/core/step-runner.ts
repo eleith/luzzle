@@ -7,7 +7,7 @@ export class StepRunner {
 	constructor(
 		private readonly ctx: WorkerContext,
 		private readonly progress: JobProgress,
-		private readonly jobId: number
+		private readonly jobId: string
 	) {}
 
 	async run<I, O>(step: Step<I, O>, input: I): Promise<O | undefined> {

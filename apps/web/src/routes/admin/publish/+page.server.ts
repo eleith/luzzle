@@ -7,7 +7,7 @@ import type { PageServerLoad } from './$types'
 export const load: PageServerLoad = async () => {
 	const meta = { title: `builder | ${config.content.text.title}` }
 
-	let jobId: number | null = null
+	let jobId: string | null = null
 	let state: string | null = null
 	let errors: unknown = null
 	let runId: string | null = null
@@ -17,17 +17,14 @@ export const load: PageServerLoad = async () => {
 		const owDb = getOpenWorkflowDb()
 		const run = getLatestWorkflowRun(owDb, 'Publish')
 		if (run) {
-			const inputData = JSON.parse(run.input)
-			if (inputData && typeof inputData.jobId === 'number') {
-				jobId = inputData.jobId
-				state = 'waiting'
-				if (run.status === 'running') state = 'running'
-				if (run.status === 'completed' || run.status === 'succeeded') state = 'completed'
-				if (run.status === 'failed') state = 'failed'
-				if (run.status === 'canceled') state = 'canceled'
-				errors = run.error ? [run.error] : null
-				runId = run.id
-			}
+			jobId = run.id
+			state = 'waiting'
+			if (run.status === 'running') state = 'running'
+			if (run.status === 'completed' || run.status === 'succeeded') state = 'completed'
+			if (run.status === 'failed') state = 'failed'
+			if (run.status === 'canceled') state = 'canceled'
+			errors = run.error ? [run.error] : null
+			runId = run.id
 		}
 	} catch (err) {
 		console.error('Failed to query OpenWorkflow runs in publish loader:', err)

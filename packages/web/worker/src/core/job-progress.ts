@@ -10,7 +10,7 @@ export class JobProgress {
 		this.retentionDays = retentionDays
 	}
 
-	async purgeOld(): Promise<number[]> {
+	async purgeOld(): Promise<string[]> {
 		try {
 			const cutoffMs = Date.now() - this.retentionDays * 24 * 60 * 60 * 1000
 
@@ -36,7 +36,7 @@ export class JobProgress {
 		}
 	}
 
-	async start(jobId: number, phase: string): Promise<void> {
+	async start(jobId: string, phase: string): Promise<void> {
 		await this.db
 			.insertInto('job_progress')
 			.values({
@@ -56,7 +56,7 @@ export class JobProgress {
 			.execute()
 	}
 
-	async complete(jobId: number, phase: string, message?: string): Promise<void> {
+	async complete(jobId: string, phase: string, message?: string): Promise<void> {
 		await this.db
 			.updateTable('job_progress')
 			.set({
@@ -69,7 +69,7 @@ export class JobProgress {
 			.execute()
 	}
 
-	async skip(jobId: number, phase: string, reason: string): Promise<void> {
+	async skip(jobId: string, phase: string, reason: string): Promise<void> {
 		await this.db
 			.updateTable('job_progress')
 			.set({
@@ -82,7 +82,7 @@ export class JobProgress {
 			.execute()
 	}
 
-	async fail(jobId: number, phase: string, err: Error | unknown): Promise<void> {
+	async fail(jobId: string, phase: string, err: Error | unknown): Promise<void> {
 		const message = err instanceof Error ? err.message : String(err)
 		await this.db
 			.updateTable('job_progress')

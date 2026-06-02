@@ -14,11 +14,11 @@ import { cachePurgeStep } from '../steps/cache-purge.js'
 export function registerPublishWorkflow(): void {
 	const ow = getOpenWorkflow()
 
-	ow.implementWorkflow(publishSpec, async ({ input, step }) => {
+	ow.implementWorkflow(publishSpec, async ({ input, step, run }) => {
 		const ctx = getWorkerContext()
 		const { logger, db } = ctx
 
-		const jobId = input.jobId ?? Math.floor(Math.random() * 2147483647)
+		const jobId = run.id
 		const progress = new JobProgress(db)
 
 		logger.info('openworkflow publish starting', { jobId })

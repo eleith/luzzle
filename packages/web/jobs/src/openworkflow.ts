@@ -75,6 +75,22 @@ export function getWorkflowRunByJobId(db: DatabaseSync, jobId: number): Workflow
 }
 
 /**
+ * Finds a workflow run by its unique ID.
+ */
+export function getWorkflowRun(
+	db: DatabaseSync,
+	id: string,
+): WorkflowRunRow | null {
+	const stmt = db.prepare(`
+		SELECT id, workflow_name, status, error, input, output, finished_at, created_at FROM workflow_runs
+		WHERE id = ?
+		LIMIT 1
+	`);
+	const row = stmt.get(id);
+	return row ? (row as WorkflowRunRow) : null;
+}
+
+/**
  * Lists all step attempts for a given workflow run ID.
  */
 export function getStepAttempts(db: DatabaseSync, workflowRunId: string): StepAttemptRow[] {

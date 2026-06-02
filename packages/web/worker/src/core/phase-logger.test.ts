@@ -45,7 +45,7 @@ describe('PhaseLogger', () => {
 	})
 
 	it('should write to db when active phase is set', async () => {
-		phaseLogger.setActivePhase({ jobId: 1, phase: 'test.phase' })
+		phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
 		phaseLogger.info('test message', { foo: 'bar' })
 
 		await new Promise((resolve) => setTimeout(resolve, 50))
@@ -53,7 +53,7 @@ describe('PhaseLogger', () => {
 		const rows = await testDb.selectFrom('job_progress_logs').selectAll().execute()
 		expect(rows).toHaveLength(1)
 		expect(rows[0]).toMatchObject({
-			job_id: 1,
+			job_id: 'test-uuid',
 			phase: 'test.phase',
 			line_number: 1,
 			level: 'info',
@@ -62,7 +62,7 @@ describe('PhaseLogger', () => {
 	})
 
 	it('should increment line_number monotonically', async () => {
-		phaseLogger.setActivePhase({ jobId: 1, phase: 'test.phase' })
+		phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
 		phaseLogger.info('msg 1')
 		phaseLogger.warn('msg 2')
 
@@ -81,7 +81,7 @@ describe('PhaseLogger', () => {
 	})
 
 	it('routes debug, error, stdout, and stderr through both base logger and DB', async () => {
-		phaseLogger.setActivePhase({ jobId: 1, phase: 'test.phase' })
+		phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
 		phaseLogger.debug('dbg msg')
 		phaseLogger.error('err msg')
 		phaseLogger.stdout('out msg')

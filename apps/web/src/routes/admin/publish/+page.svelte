@@ -25,7 +25,7 @@
 		message: string | null
 	}
 	type PhaseLog = {
-		job_id: number
+		job_id: string
 		phase: string
 		line_number: number
 		ts: number

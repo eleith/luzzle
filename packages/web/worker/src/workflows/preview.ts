@@ -18,11 +18,10 @@ export function registerPreviewWorkflow(): void {
 		const ctx = getWorkerContext()
 		const { logger, config, db } = ctx
 
-		// Fallback to random 32-bit integer if no jobId is supplied
-		const jobId = input.jobId ?? Math.floor(Math.random() * 2147483647)
+		const jobId = run.id
 		const progress = new JobProgress(db)
 
-		logger.info('openworkflow preview starting', { filePath: input.filePath, jobId, runId: run.id })
+		logger.info('openworkflow preview starting', { filePath: input.filePath, jobId })
 
 		const storage = new StorageFileSystem(config.storage.root)
 		const pieces = new Pieces(storage)

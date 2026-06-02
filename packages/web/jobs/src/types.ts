@@ -10,14 +10,11 @@ export interface AssetRecord {
 	content?: string
 }
 
-export interface PublishPayload {
-	jobId?: number
-}
+export interface PublishPayload {}
 export type PublishResult = 'ok'
 
 export interface PreviewPayload {
 	filePath: string
-	jobId?: number
 }
 
 export interface PreviewAsset extends AssetRecord {

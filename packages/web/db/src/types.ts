@@ -38,7 +38,7 @@ export interface WebPieceTags {
 }
 
 export interface JobProgressRow {
-	job_id: number
+	job_id: string
 	phase: string
 	status: string
 	started_at: number
@@ -47,7 +47,7 @@ export interface JobProgressRow {
 }
 
 export interface JobProgressLogsRow {
-	job_id: number
+	job_id: string
 	phase: string
 	line_number: number
 	ts: number

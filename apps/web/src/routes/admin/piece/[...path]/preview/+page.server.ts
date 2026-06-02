@@ -19,8 +19,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		return error(404, 'piece type not configured')
 	}
 
-	const jobId = Math.floor(Math.random() * 2147483647)
-	const ow = getOpenWorkflow()
-	await ow.runWorkflow(previewSpec, { filePath: file, jobId })
-	redirect(303, `/admin/piece/${file}/preview/${jobId}`)
+	const openWorkflow = getOpenWorkflow()
+	const handle = await openWorkflow.runWorkflow(previewSpec, { filePath: file })
+	const runId = handle.workflowRun.id
+	redirect(303, `/admin/piece/${file}/preview/${runId}`)
 }

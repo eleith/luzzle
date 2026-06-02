@@ -66,7 +66,7 @@ export async function setupDatabase(): Promise<Kysely<WebDatabase>> {
 
 		await sql`
 			CREATE TABLE IF NOT EXISTS job_progress (
-				job_id INTEGER NOT NULL,
+				job_id TEXT NOT NULL,
 				phase TEXT NOT NULL,
 				status TEXT NOT NULL,
 				started_at INTEGER NOT NULL,
@@ -78,7 +78,7 @@ export async function setupDatabase(): Promise<Kysely<WebDatabase>> {
 
 		await sql`
 			CREATE TABLE IF NOT EXISTS job_progress_logs (
-				job_id INTEGER NOT NULL,
+				job_id TEXT NOT NULL,
 				phase TEXT NOT NULL,
 				line_number INTEGER NOT NULL,
 				ts INTEGER NOT NULL,

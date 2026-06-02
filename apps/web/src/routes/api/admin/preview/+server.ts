@@ -17,10 +17,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	try {
-		const jobId = Math.floor(Math.random() * 2147483647)
-		const ow = getOpenWorkflow()
-		await ow.runWorkflow(previewSpec, { filePath, jobId })
-		return json({ jobId })
+		const openWorkflow = getOpenWorkflow()
+		const handle = await openWorkflow.runWorkflow(previewSpec, { filePath })
+		const runId = handle.workflowRun.id
+		return json({ jobId: runId })
 	} catch (e) {
 		const message = e instanceof Error ? e.message : String(e)
 		return new Response(`Internal server error: ${message}`, { status: 500 })

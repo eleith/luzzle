@@ -1,6 +1,6 @@
 import { db } from '$lib/server/database/index.js'
 import { getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
-import { getWorkflowRunByJobId, getStepAttempts } from '@luzzle/web.jobs'
+import { getWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
 
 const POLL_INTERVAL_MS = 350
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled'])
@@ -8,7 +8,7 @@ const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled'])
 type Cursors = Record<string, number>
 
 export type StreamJobProgressArgs = {
-	jobId: number
+	jobId: string
 	jobClass: string
 	request: Request
 	url: URL
@@ -45,7 +45,7 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
 	})
 }
 
-function fetchNewLogs(jobId: number, phase: string, afterLine: number) {
+function fetchNewLogs(jobId: string, phase: string, afterLine: number) {
 	return db
 		.selectFrom('job_progress_logs')
 		.selectAll()
@@ -59,7 +59,7 @@ function fetchNewLogs(jobId: number, phase: string, afterLine: number) {
 type Emit = (event: string, data: unknown, id?: string) => void
 
 async function pollOnce(
-	jobId: number,
+	jobId: string,
 	jobClass: string,
 	cursors: Cursors,
 	emit: Emit
@@ -71,7 +71,7 @@ async function pollOnce(
 		// Query OpenWorkflow
 		try {
 			const owDb = getOpenWorkflowDb()
-			const run = getWorkflowRunByJobId(owDb, jobId)
+			const run = getWorkflowRun(owDb, jobId)
 			if (run) {
 				let state = 'waiting'
 				if (run.status === 'running') state = 'running'

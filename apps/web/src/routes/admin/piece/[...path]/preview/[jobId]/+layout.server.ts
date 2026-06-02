@@ -5,18 +5,14 @@ import { getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
 import type { LayoutServerLoad } from './$types'
 
 export const load: LayoutServerLoad = async ({ params }) => {
-	const jobId = parseInt(params.jobId, 10)
-	if (isNaN(jobId)) {
-		return error(400, 'Invalid job ID')
-	}
+	const runId = params.jobId
 
-	let run: { status: string; error: string | null; output: string | null; finished_at: string | null } | undefined
+	let run: { id: string; status: string; error: string | null; output: string | null; finished_at: string | null } | undefined
 
-	// Try OpenWorkflow first
 	try {
 		const owDb = getOpenWorkflowDb()
-		const stmt = owDb.prepare('SELECT status, error, output, finished_at FROM workflow_runs WHERE json_extract(input, \'$.jobId\') = ? LIMIT 1')
-		run = stmt.get(jobId) as typeof run
+		const stmt = owDb.prepare('SELECT id, status, error, output, finished_at FROM workflow_runs WHERE id = ? LIMIT 1')
+		run = stmt.get(runId) as typeof run
 	} catch (err) {
 		console.error('Failed to query OpenWorkflow preview run:', err)
 	}
@@ -36,7 +32,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		const completedAt = run.finished_at ? new Date(run.finished_at) : null
 		const isExpired = completedAt && Date.now() - completedAt.getTime() > retentionMs
 		if (isExpired) {
-			return { file: params.path, status: 'expired' as const, jobId }
+			return { file: params.path, status: 'expired' as const, jobId: runId }
 		}
 
 		const result = JSON.parse(run.output) as PreviewWorkerResult
@@ -45,17 +41,17 @@ export const load: LayoutServerLoad = async ({ params }) => {
 			return error(500, `Unknown piece type: ${result.type}`)
 		}
 		const assembled = assemblePreview(result, pieceConfig)
-		return { file: params.path, status: 'completed' as const, jobId, ...assembled }
+		return { file: params.path, status: 'completed' as const, jobId: runId, ...assembled }
 	}
 
 	if (state === 'failed' || state === 'canceled') {
 		return {
 			file: params.path,
 			status: 'failed' as const,
-			jobId,
+			jobId: runId,
 			errorMessage: run.error ?? 'Preview failed'
 		}
 	}
 
-	return { file: params.path, jobId, status: state as 'waiting' | 'running' }
+	return { file: params.path, jobId: runId, status: state as 'waiting' | 'running' }
 }

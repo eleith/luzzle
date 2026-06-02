@@ -42,15 +42,15 @@ describe('StepRunner', () => {
 		}
 		const progress = makeProgress()
 		const ctx = makeCtx()
-		const runner = new StepRunner(ctx, progress, 7)
+		const runner = new StepRunner(ctx, progress, '7')
 
 		const value = await runner.run(step, { x: 1 })
 
 		expect(value).toBe(42)
-		expect(progress.start).toHaveBeenCalledWith(7, 'test.step')
-		expect(progress.complete).toHaveBeenCalledWith(7, 'test.step', 'done')
+		expect(progress.start).toHaveBeenCalledWith('7', 'test.step')
+		expect(progress.complete).toHaveBeenCalledWith('7', 'test.step', 'done')
 		expect((ctx.logger as PhaseLogger).setActivePhase).toHaveBeenCalledWith({
-			jobId: 7,
+			jobId: '7',
 			phase: 'test.step',
 		})
 		expect((ctx.logger as PhaseLogger).clearActivePhase).toHaveBeenCalled()
@@ -62,12 +62,12 @@ describe('StepRunner', () => {
 			run: vi.fn().mockResolvedValue(skipped('no remote configured')),
 		}
 		const progress = makeProgress()
-		const runner = new StepRunner(makeCtx(), progress, 9)
+		const runner = new StepRunner(makeCtx(), progress, '9')
 
 		const value = await runner.run(step, undefined)
 
 		expect(value).toBeUndefined()
-		expect(progress.skip).toHaveBeenCalledWith(9, 'cdn.sync', 'no remote configured')
+		expect(progress.skip).toHaveBeenCalledWith('9', 'cdn.sync', 'no remote configured')
 		expect(progress.complete).not.toHaveBeenCalled()
 	})
 
@@ -78,10 +78,10 @@ describe('StepRunner', () => {
 		}
 		const progress = makeProgress()
 		const ctx = makeCtx()
-		const runner = new StepRunner(ctx, progress, 11)
+		const runner = new StepRunner(ctx, progress, '11')
 
 		await expect(runner.run(step, undefined)).rejects.toThrow('boom')
-		expect(progress.fail).toHaveBeenCalledWith(11, 'broken.step', expect.any(Error))
+		expect(progress.fail).toHaveBeenCalledWith('11', 'broken.step', expect.any(Error))
 		expect((ctx.logger as PhaseLogger).clearActivePhase).toHaveBeenCalled()
 	})
 })

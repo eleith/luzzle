@@ -10,7 +10,7 @@ function formatMessage(message: string, fields?: Record<string, unknown>): strin
 }
 
 export class PhaseLogger implements Logger {
-	private activePhase: { jobId: number; phase: string } | null = null
+	private activePhase: { jobId: string; phase: string } | null = null
 	private currentLineNumber = 0
 
 	constructor(
@@ -18,7 +18,7 @@ export class PhaseLogger implements Logger {
 		private readonly db: Kysely<AppDatabase>
 	) {}
 
-	setActivePhase(phase: { jobId: number; phase: string }): void {
+	setActivePhase(phase: { jobId: string; phase: string }): void {
 		this.activePhase = phase
 		this.currentLineNumber = 0
 	}
