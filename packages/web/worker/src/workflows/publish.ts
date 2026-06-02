@@ -1,5 +1,5 @@
 import { publishSpec } from '@luzzle/web.jobs/specs'
-import { getOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
+import { getOpenWorkflow } from '@luzzle/web.jobs'
 import { getWorkerContext } from '../services/context.js'
 import { JobProgress } from '../core/job-progress.js'
 import { PhaseLogger } from '../core/phase-logger.js'

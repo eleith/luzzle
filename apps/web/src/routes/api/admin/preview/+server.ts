@@ -1,6 +1,6 @@
 import { error, json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { getOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
+import { getOpenWorkflow } from '@luzzle/web.jobs'
 import { previewSpec } from '@luzzle/web.jobs/specs'
 
 export const POST: RequestHandler = async ({ request }) => {

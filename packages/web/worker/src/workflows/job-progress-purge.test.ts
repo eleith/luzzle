@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from 'vitest'
 import { registerJobProgressPurgeWorkflow } from './job-progress-purge.js'
-import { initOpenWorkflow, getOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
+import { initOpenWorkflow, getOpenWorkflow } from '@luzzle/web.jobs'
 import { jobProgressPurgeSpec } from '@luzzle/web.jobs/specs'
 
 describe('workflows/job-progress-purge', () => {

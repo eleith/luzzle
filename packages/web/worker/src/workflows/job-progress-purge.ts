@@ -1,4 +1,4 @@
-import { getOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
+import { getOpenWorkflow } from '@luzzle/web.jobs'
 import { jobProgressPurgeSpec } from '@luzzle/web.jobs/specs'
 import { getWorkerContext } from '../services/context.js'
 import { JobProgress } from '../core/job-progress.js'

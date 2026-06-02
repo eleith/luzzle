@@ -4,7 +4,7 @@ import { resolveDbPath, resolveOpenWorkflowDbPath } from './services/db.js'
 import { runWebMigrations } from '@luzzle/web.db'
 import { createHealthServer } from './services/health.js'
 import { log } from './services/logger.js'
-import { initOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
+import { initOpenWorkflow } from '@luzzle/web.jobs'
 import { jobProgressPurgeSpec } from '@luzzle/web.jobs/specs'
 import { registerWorkflows } from './workflows/index.js'
 

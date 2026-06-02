@@ -1,7 +1,7 @@
 import { config } from '$lib/server/config'
 import { db, type JobProgressRow, type JobProgressLogsRow } from '$lib/server/database/index.js'
 import { getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
-import { getLatestWorkflowRun, getStepAttempts } from '@luzzle/web.jobs/openworkflow'
+import { getLatestWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async () => {

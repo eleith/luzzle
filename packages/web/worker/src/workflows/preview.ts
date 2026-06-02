@@ -1,5 +1,5 @@
 import { previewSpec } from '@luzzle/web.jobs/specs'
-import { getOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
+import { getOpenWorkflow } from '@luzzle/web.jobs'
 import { Pieces, StorageFileSystem } from '@luzzle/core'
 import path from 'node:path'
 import type { PublicWebPieceAsset } from '@luzzle/web.pieces'

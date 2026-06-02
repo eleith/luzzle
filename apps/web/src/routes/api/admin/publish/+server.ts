@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { getOpenWorkflow, getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
-import { getLatestWorkflowRun } from '@luzzle/web.jobs/openworkflow'
+import { getLatestWorkflowRun } from '@luzzle/web.jobs'
 import { publishSpec } from '@luzzle/web.jobs/specs'
 
 export const POST: RequestHandler = async () => {

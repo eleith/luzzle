@@ -1,6 +1,6 @@
 import { db } from '$lib/server/database/index.js'
 import { getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
-import { getWorkflowRunByJobId, getStepAttempts } from '@luzzle/web.jobs/openworkflow'
+import { getWorkflowRunByJobId, getStepAttempts } from '@luzzle/web.jobs'
 
 const POLL_INTERVAL_MS = 350
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled'])

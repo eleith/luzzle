@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from 'vitest'
 import { registerPublishWorkflow } from './publish.js'
-import { initOpenWorkflow, getOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
+import { initOpenWorkflow, getOpenWorkflow } from '@luzzle/web.jobs'
 import { publishSpec } from '@luzzle/web.jobs/specs'
 
 describe('workflows/publish', () => {
