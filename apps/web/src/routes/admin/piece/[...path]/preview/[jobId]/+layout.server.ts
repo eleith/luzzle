@@ -2,17 +2,17 @@ import { error } from '@sveltejs/kit'
 import { config } from '$lib/server/config'
 import { assemblePreview, type PreviewWorkerResult } from '$lib/pieces/preview/assemble.server.js'
 import { getOpenWorkflowDb } from '$lib/server/workflow/index.js'
+import { getWorkflowRun } from '@luzzle/web.jobs'
 import type { LayoutServerLoad } from './$types'
 
 export const load: LayoutServerLoad = async ({ params }) => {
 	const runId = params.jobId
 
-	let run: { id: string; status: string; error: string | null; output: string | null; finished_at: string | null } | undefined
+	let run: ReturnType<typeof getWorkflowRun> | undefined
 
 	try {
-		const owDb = getOpenWorkflowDb()
-		const stmt = owDb.prepare('SELECT id, status, error, output, finished_at FROM workflow_runs WHERE id = ? LIMIT 1')
-		run = stmt.get(runId) as typeof run
+		const openWorkflowDb = getOpenWorkflowDb()
+		run = getWorkflowRun(openWorkflowDb, runId)
 	} catch (err) {
 		console.error('Failed to query OpenWorkflow preview run:', err)
 	}
