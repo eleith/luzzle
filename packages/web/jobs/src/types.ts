@@ -10,7 +10,7 @@ export interface AssetRecord {
 	content?: string
 }
 
-export interface PublishPayload {}
+export type PublishPayload = Record<string, never>
 export type PublishResult = 'ok'
 
 export interface PreviewPayload {
