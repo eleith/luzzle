@@ -263,7 +263,7 @@ importers:
         specifier: 0.28.17
         version: 0.28.17
       openworkflow:
-        specifier: ^0.9.0
+        specifier: 0.9.0
         version: 0.9.0
     devDependencies:
       '@auth/core':
@@ -527,7 +527,7 @@ importers:
         specifier: workspace:*
         version: link:../../../apps/core
       openworkflow:
-        specifier: ^0.9.0
+        specifier: 0.9.0
         version: 0.9.0
     devDependencies:
       '@eslint/js':
@@ -794,7 +794,7 @@ importers:
         specifier: 4.0.3
         version: 4.0.3
       openworkflow:
-        specifier: ^0.9.0
+        specifier: 0.9.0
         version: 0.9.0
       rehype-autolink-headings:
         specifier: 7.1.0

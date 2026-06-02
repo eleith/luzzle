@@ -51,7 +51,7 @@
 	},
 	"dependencies": {
 		"@luzzle/core": "workspace:*",
-		"openworkflow": "^0.9.0"
+		"openworkflow": "0.9.0"
 	},
 	"type": "module"
 }

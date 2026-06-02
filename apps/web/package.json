@@ -84,6 +84,6 @@
     "@luzzle/web.db": "workspace:*",
     "@luzzle/web.pieces": "workspace:*",
     "kysely": "0.28.17",
-    "openworkflow": "^0.9.0"
+    "openworkflow": "0.9.0"
   }
 }
