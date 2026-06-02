@@ -5,11 +5,10 @@ import { runWebMigrations } from '@luzzle/web.db'
 import { configureQueue } from './services/queue.js'
 import { createHealthServer } from './services/health.js'
 import { log } from './services/logger.js'
-import { JobProgressPurge } from './jobs/job-progress-purge.js'
 import { initOpenWorkflow } from '@luzzle/web.jobs/openworkflow'
+import { jobProgressPurgeSpec } from '@luzzle/web.jobs/specs'
 
 const DEFAULT_PORT = 9000
-const PURGE_CRON = '0 4 * * *'
 const PURGE_RETENTION_DAYS = 2
 
 async function main() {
@@ -48,8 +47,27 @@ async function main() {
 	await owWorker.start()
 	log('info', 'openworkflow worker started')
 
+	const runPurge = async () => {
+		try {
+			log('info', 'triggering openworkflow job progress purge...')
+			await ow.runWorkflow(jobProgressPurgeSpec, { retentionDays: PURGE_RETENTION_DAYS })
+			log('info', 'openworkflow job progress purge run completed successfully')
+		} catch (err) {
+			log('error', 'openworkflow job progress purge run failed', {
+				error: err instanceof Error ? err.message : String(err),
+			})
+		}
+	}
+
+	// Trigger immediately on start (non-blocking)
+	runPurge()
+
+	// Schedule to run every 24 hours
+	const purgeInterval = setInterval(runPurge, 24 * 60 * 60 * 1000)
+
 	const shutdown = async () => {
 		log('info', 'shutting down openworkflow worker...')
+		clearInterval(purgeInterval)
 		await owWorker.stop()
 		log('info', 'openworkflow worker stopped')
 		process.exit(0)
@@ -57,13 +75,14 @@ async function main() {
 	process.on('SIGTERM', shutdown)
 	process.on('SIGINT', shutdown)
 
-	await Sidequest.build(JobProgressPurge)
-		.scheduleOptions({ timezone: 'UTC' })
-		.schedule(PURGE_CRON, { retentionDays: PURGE_RETENTION_DAYS })
-	log('info', 'job_progress purge scheduled', {
-		cron: PURGE_CRON,
-		retentionDays: PURGE_RETENTION_DAYS,
-	})
+	// Commented out Sidequest purge scheduling since it's replaced by OpenWorkflow
+	// await Sidequest.build(JobProgressPurge)
+	// 	.scheduleOptions({ timezone: 'UTC' })
+	// 	.schedule(PURGE_CRON, { retentionDays: PURGE_RETENTION_DAYS })
+	// log('info', 'job_progress purge scheduled via sidequest', {
+	// 	cron: PURGE_CRON,
+	// 	retentionDays: PURGE_RETENTION_DAYS,
+	// })
 
 	const port = Number(process.env.PORT) || DEFAULT_PORT
 	const server = createHealthServer()

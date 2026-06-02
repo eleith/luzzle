@@ -17,21 +17,16 @@ export class JobProgress {
 			const oldJobs = await this.db
 				.selectFrom('job_progress')
 				.select('job_id')
+				.distinct()
 				.where('started_at', '<', cutoffMs)
 				.execute()
 
-			const oldJobIds = oldJobs.map(row => row.job_id)
+			const oldJobIds = oldJobs.map((row) => row.job_id)
 
 			if (oldJobIds.length > 0) {
-				await this.db
-					.deleteFrom('job_progress_logs')
-					.where('job_id', 'in', oldJobIds)
-					.execute()
+				await this.db.deleteFrom('job_progress_logs').where('job_id', 'in', oldJobIds).execute()
 
-				await this.db
-					.deleteFrom('job_progress')
-					.where('job_id', 'in', oldJobIds)
-					.execute()
+				await this.db.deleteFrom('job_progress').where('job_id', 'in', oldJobIds).execute()
 			}
 
 			return oldJobIds
@@ -48,14 +43,14 @@ export class JobProgress {
 				job_id: jobId,
 				phase,
 				status: 'running',
-				started_at: Date.now()
+				started_at: Date.now(),
 			})
 			.onConflict((oc) =>
 				oc.columns(['job_id', 'phase']).doUpdateSet({
 					status: 'running',
 					started_at: Date.now(),
 					finished_at: null,
-					message: null
+					message: null,
 				})
 			)
 			.execute()
@@ -67,7 +62,7 @@ export class JobProgress {
 			.set({
 				status: 'completed',
 				finished_at: Date.now(),
-				message: message ?? null
+				message: message ?? null,
 			})
 			.where('job_id', '=', jobId)
 			.where('phase', '=', phase)
@@ -80,7 +75,7 @@ export class JobProgress {
 			.set({
 				status: 'skipped',
 				finished_at: Date.now(),
-				message: reason
+				message: reason,
 			})
 			.where('job_id', '=', jobId)
 			.where('phase', '=', phase)
@@ -94,7 +89,7 @@ export class JobProgress {
 			.set({
 				status: 'failed',
 				finished_at: Date.now(),
-				message
+				message,
 			})
 			.where('job_id', '=', jobId)
 			.where('phase', '=', phase)
