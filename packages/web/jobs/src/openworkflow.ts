@@ -58,7 +58,7 @@ export function getLatestWorkflowRun(
 		LIMIT 1
 	`)
 	const row = stmt.get(workflowName)
-	return row ? (row as WorkflowRunRow) : null
+	return row ? (row as unknown as WorkflowRunRow) : null
 }
 
 /**
@@ -71,7 +71,7 @@ export function getWorkflowRunByJobId(db: DatabaseSync, jobId: number): Workflow
 		LIMIT 1
 	`)
 	const row = stmt.get(jobId)
-	return row ? (row as WorkflowRunRow) : null
+	return row ? (row as unknown as WorkflowRunRow) : null
 }
 
 /**
@@ -87,7 +87,7 @@ export function getWorkflowRun(
 		LIMIT 1
 	`);
 	const row = stmt.get(id);
-	return row ? (row as WorkflowRunRow) : null;
+	return row ? (row as unknown as WorkflowRunRow) : null;
 }
 
 /**
@@ -101,5 +101,5 @@ export function getStepAttempts(db: DatabaseSync, workflowRunId: string): StepAt
 		ORDER BY created_at ASC
 	`)
 	const rows = stmt.all(workflowRunId)
-	return rows as StepAttemptRow[]
+	return rows as unknown as StepAttemptRow[]
 }
