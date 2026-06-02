@@ -7,8 +7,8 @@ import { publishSpec } from '@luzzle/web.jobs/specs'
 export const POST: RequestHandler = async () => {
 	try {
 		// Check in-flight publish runs in OpenWorkflow database using the singleton connection
-		const owDb = getOpenWorkflowDb()
-		const latest = getLatestWorkflowRun(owDb, 'Publish')
+		const openWorkflowDb = getOpenWorkflowDb()
+		const latest = getLatestWorkflowRun(openWorkflowDb, 'Publish')
 
 		if (latest && (latest.status === 'pending' || latest.status === 'running')) {
 			return json({ jobId: latest.id }, { status: 409 })

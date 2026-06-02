@@ -14,8 +14,8 @@ export const load: PageServerLoad = async () => {
 
 	// Try OpenWorkflow first
 	try {
-		const owDb = getOpenWorkflowDb()
-		const run = getLatestWorkflowRun(owDb, 'Publish')
+		const openWorkflowDb = getOpenWorkflowDb()
+		const run = getLatestWorkflowRun(openWorkflowDb, 'Publish')
 		if (run) {
 			jobId = run.id
 			state = 'waiting'
@@ -37,8 +37,8 @@ export const load: PageServerLoad = async () => {
 	let phases: JobProgressRow[] = []
 	if (runId) {
 		try {
-			const owDb = getOpenWorkflowDb()
-			const rows = getStepAttempts(owDb, runId)
+			const openWorkflowDb = getOpenWorkflowDb()
+			const rows = getStepAttempts(openWorkflowDb, runId)
 			phases = rows.map((r) => {
 				let status = 'waiting'
 				if (r.status === 'running') status = 'running'
