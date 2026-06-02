@@ -1,4 +1,4 @@
-import { db } from '$lib/server/database/index.js'
+import { db, type JobProgressRow } from '$lib/server/database/index.js'
 import { getOpenWorkflowDb } from './index.js'
 import { getWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
 
@@ -103,7 +103,7 @@ async function pollOnce(
 
 		emit('state', { state: job.state, result: job.result, errors: job.errors })
 
-		let phases: any[] = []
+		let phases: JobProgressRow[] = []
 		if (runId) {
 			try {
 				const openWorkflowDb = getOpenWorkflowDb()
