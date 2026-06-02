@@ -1,21 +1,17 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { getOpenWorkflow, getOpenWorkflowDb } from '$lib/server/database/openworkflow.js'
+import { getLatestWorkflowRun } from '@luzzle/web.jobs/openworkflow'
 import { publishSpec } from '@luzzle/web.jobs/specs'
 
 export const POST: RequestHandler = async () => {
 	try {
 		// Check in-flight publish runs in OpenWorkflow database using the singleton connection
 		const owDb = getOpenWorkflowDb()
-		const stmt = owDb.prepare(`
-			SELECT input FROM workflow_runs 
-			WHERE workflow_name = 'Publish' AND status IN ('pending', 'running')
-			LIMIT 1
-		`)
-		const row = stmt.get() as { input: string } | undefined
+		const latest = getLatestWorkflowRun(owDb, 'Publish')
 
-		if (row && row.input) {
-			const inputData = JSON.parse(row.input)
+		if (latest && (latest.status === 'pending' || latest.status === 'running')) {
+			const inputData = JSON.parse(latest.input)
 			if (inputData && typeof inputData.jobId === 'number') {
 				return json({ jobId: inputData.jobId }, { status: 409 })
 			}

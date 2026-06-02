@@ -24,7 +24,7 @@ export function registerPublishWorkflow(): void {
 		logger.info('openworkflow publish starting', { jobId })
 
 		// 1. archive-sync step
-		await step.run({ name: 'archive-sync' }, async () => {
+		await step.run({ name: archiveSyncStep.name }, async () => {
 			if (logger instanceof PhaseLogger) {
 				logger.setActivePhase({ jobId, phase: archiveSyncStep.name })
 			}
@@ -47,7 +47,7 @@ export function registerPublishWorkflow(): void {
 		})
 
 		// 2. luzzle-sync step
-		const luzzleResult = await step.run({ name: 'luzzle-sync' }, async () => {
+		const luzzleResult = await step.run({ name: luzzleSyncStep.name }, async () => {
 			if (logger instanceof PhaseLogger) {
 				logger.setActivePhase({ jobId, phase: luzzleSyncStep.name })
 			}
@@ -73,7 +73,7 @@ export function registerPublishWorkflow(): void {
 		const changedPaths = luzzleResult?.changedPaths ?? []
 
 		// 3. web-sync step
-		await step.run({ name: 'web-sync' }, async () => {
+		await step.run({ name: webSyncStep.name }, async () => {
 			if (logger instanceof PhaseLogger) {
 				logger.setActivePhase({ jobId, phase: webSyncStep.name })
 			}
@@ -96,7 +96,7 @@ export function registerPublishWorkflow(): void {
 		})
 
 		// 4. assets-generate step
-		await step.run({ name: 'assets-generate' }, async () => {
+		await step.run({ name: assetsGenerateStep.name }, async () => {
 			if (logger instanceof PhaseLogger) {
 				logger.setActivePhase({ jobId, phase: assetsGenerateStep.name })
 			}
@@ -119,7 +119,7 @@ export function registerPublishWorkflow(): void {
 		})
 
 		// 5. cdn-sync step
-		await step.run({ name: 'cdn-sync' }, async () => {
+		await step.run({ name: cdnSyncStep.name }, async () => {
 			if (logger instanceof PhaseLogger) {
 				logger.setActivePhase({ jobId, phase: cdnSyncStep.name })
 			}
@@ -142,7 +142,7 @@ export function registerPublishWorkflow(): void {
 		})
 
 		// 6. cache-purge step
-		await step.run({ name: 'cache-purge' }, async () => {
+		await step.run({ name: cachePurgeStep.name }, async () => {
 			if (logger instanceof PhaseLogger) {
 				logger.setActivePhase({ jobId, phase: cachePurgeStep.name })
 			}

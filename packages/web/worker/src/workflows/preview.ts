@@ -78,7 +78,7 @@ export function registerPreviewWorkflow(): void {
 		// 2. Run preview transforms sequentially
 		for (const name of PREVIEW_TRANSFORM_NAMES) {
 			try {
-				const records = await step.run({ name: `transform-${name}` }, async () => {
+				const records = await step.run({ name: name }, async () => {
 					if (logger instanceof PhaseLogger) {
 						logger.setActivePhase({ jobId, phase: name })
 					}
