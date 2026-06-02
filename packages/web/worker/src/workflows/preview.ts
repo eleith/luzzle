@@ -12,9 +12,9 @@ import { JobProgress } from '../core/job-progress.js'
 import { PhaseLogger } from '../core/phase-logger.js'
 
 export function registerPreviewWorkflow(): void {
-	const ow = getOpenWorkflow()
+	const openWorkflow = getOpenWorkflow()
 
-	ow.implementWorkflow(previewSpec, async ({ input, step, run }) => {
+	openWorkflow.implementWorkflow(previewSpec, async ({ input, step, run }) => {
 		const ctx = getWorkerContext()
 		const { logger, config, db } = ctx
 

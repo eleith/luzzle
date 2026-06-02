@@ -28,20 +28,20 @@ async function main() {
 	}
 	log('info', 'web migrations applied')
 
-	const owDb = resolveOpenWorkflowDbPath(config)
-	const ow = initOpenWorkflow({ dbPath: owDb })
-	log('info', 'openworkflow client configured', { owDb })
+	const openWorkflowDb = resolveOpenWorkflowDbPath(config)
+	const openWorkflow = initOpenWorkflow({ dbPath: openWorkflowDb })
+	log('info', 'openworkflow client configured', { openWorkflowDb })
 
 	registerWorkflows()
 
-	const owWorker = ow.newWorker()
-	await owWorker.start()
+	const openWorkflowWorker = openWorkflow.newWorker()
+	await openWorkflowWorker.start()
 	log('info', 'openworkflow worker started')
 
 	const runPurge = async () => {
 		try {
 			log('info', 'triggering openworkflow job progress purge...')
-			await ow.runWorkflow(jobProgressPurgeSpec, { retentionDays: PURGE_RETENTION_DAYS })
+			await openWorkflow.runWorkflow(jobProgressPurgeSpec, { retentionDays: PURGE_RETENTION_DAYS })
 			log('info', 'openworkflow job progress purge run completed successfully')
 		} catch (err) {
 			log('error', 'openworkflow job progress purge run failed', {
@@ -59,7 +59,7 @@ async function main() {
 	const shutdown = async () => {
 		log('info', 'shutting down openworkflow worker...')
 		clearInterval(purgeInterval)
-		await owWorker.stop()
+		await openWorkflowWorker.stop()
 		log('info', 'openworkflow worker stopped')
 		process.exit(0)
 	}

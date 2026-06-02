@@ -12,9 +12,9 @@ import { cdnSyncStep } from '../steps/cdn-sync.js'
 import { cachePurgeStep } from '../steps/cache-purge.js'
 
 export function registerPublishWorkflow(): void {
-	const ow = getOpenWorkflow()
+	const openWorkflow = getOpenWorkflow()
 
-	ow.implementWorkflow(publishSpec, async ({ input, step, run }) => {
+	openWorkflow.implementWorkflow(publishSpec, async ({ step, run }) => {
 		const ctx = getWorkerContext()
 		const { logger, db } = ctx
 

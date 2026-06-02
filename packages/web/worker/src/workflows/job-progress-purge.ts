@@ -6,9 +6,9 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
 export function registerJobProgressPurgeWorkflow(): void {
-	const ow = getOpenWorkflow()
+	const openWorkflow = getOpenWorkflow()
 
-	ow.implementWorkflow(jobProgressPurgeSpec, async ({ input, step }) => {
+	openWorkflow.implementWorkflow(jobProgressPurgeSpec, async ({ input, step }) => {
 		const ctx = getWorkerContext()
 		const { db, logger, config } = ctx
 		const retentionDays = input.retentionDays ?? 2
