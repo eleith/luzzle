@@ -1,5 +1,5 @@
 import { getFrontmatterValues } from '@luzzle/core'
-import { getPalette } from './vibrant.js'
+import { getPalette } from './colorlip.js'
 import type { TransformInput, AssetRecord } from '../utils/types.js'
 
 export async function run({

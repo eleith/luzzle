@@ -12,7 +12,7 @@ The worker isolates intensive CPU/IO tasks from the SvelteKit app, including:
 - Bulk Markdown-to-SQLite database parsing and syncing.
 - Asset transformations
   - generating image variants using `sharp`
-  - generating color palettes using `node-vibrant`
+  - generating color palettes using `colorlip`
   - generating opengraph images using `takumi`
 - CDN asset uploads (powered by `rclone`)
 - Piece transformations
