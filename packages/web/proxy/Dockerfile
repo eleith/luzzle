@@ -10,7 +10,10 @@ RUN rm -f /etc/nginx/conf.d/default.conf && \
     mkdir -p /etc/nginx/templates && \
     chmod -R 777 /etc/nginx/templates
 COPY --chmod=664 packages/web/proxy/templates/default.conf.template /etc/nginx/templates/default.conf.template
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 --start-period=30s \
+  CMD wget -q -O /dev/null http://127.0.0.1:8080/api/health || exit 1
 USER 101
+
 
 # --- dev ---------------------------------------------------------------------
 FROM base AS dev
