@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../config/src/lib/config/web.config.schema.json
+# yaml-language-server: $schema=../../../packages/web/config/src/lib/config/web.config.schema.json
 
 url:
   app: http://localhost:8080
@@ -161,21 +161,21 @@ theme:
     color-on-error: '#282828'
     color-error-container: '#9d2d20'
     color-on-error-container: '#ebdbb2'
-    color-surface: '#282828'
-    color-surface-dim: '#1d2021'
-    color-surface-bright: '#3c3836'
+    color-surface: '#1d2021'
+    color-surface-dim: '#151718'
+    color-surface-bright: '#282828'
     color-surface-inverse: '#ebdbb2'
     color-on-surface: '#ebdbb2'
     color-on-surface-variant: '#bdae93'
     color-on-surface-inverse: '#282828'
-    color-surface-container-lowest: '#32302f'
-    color-surface-container-low: '#3c3836'
-    color-surface-container: '#504945'
-    color-surface-container-high: '#665c54'
-    color-surface-container-highest: '#7c6f64'
+    color-surface-container-lowest: '#232627'
+    color-surface-container-low: '#282828'
+    color-surface-container: '#32302f'
+    color-surface-container-high: '#3c3836'
+    color-surface-container-highest: '#4c443f'
     color-shadow: hsla(0, 0%, 0%, 0.6)
     color-outline: '#a89984'
-    color-outline-variant: '#665c54'
+    color-outline-variant: '#3c3836'
   light:
     color-primary: '#2a5d2c'
     color-on-primary: '#ffffff'
