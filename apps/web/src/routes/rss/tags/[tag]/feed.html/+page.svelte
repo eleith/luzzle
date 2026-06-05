@@ -38,27 +38,28 @@
 </svelte:head>
 
 <Nav />
-<main id="main-content" role="main">
-	<section class="content-wrapper">
-		<aside class="callout">
-			<p>
-				<FeedBlock />
-			</p>
-			<hr />
-			<p>Copy the link and paste it into an RSS reader</p>
-			<div class="copy-container">
-				<input
-					bind:this={inputElement}
-					type="text"
-					readonly
-					value={rssUrl}
-					onclick={copyToClipboard}
-					class="input"
-				/>
-				<button onclick={copyToClipboard} class="button">{isCopied ? 'copied' : 'copy'}</button>
-			</div>
-		</aside>
+<div class="content-wrapper">
+	<aside class="callout" aria-label="RSS subscription info">
+		<FeedBlock />
+		<hr />
+		<p id="rss-instructions">Copy the link and paste it into an RSS reader</p>
+		<div class="copy-container">
+			<input
+				id="rss-url-input"
+				aria-label="RSS feed URL"
+				aria-describedby="rss-instructions"
+				bind:this={inputElement}
+				type="text"
+				readonly
+				value={rssUrl}
+				onclick={copyToClipboard}
+				class="input"
+			/>
+			<button onclick={copyToClipboard} class="button">{isCopied ? 'copied' : 'copy'}</button>
+		</div>
+	</aside>
 
+	<main id="main-content" role="main">
 		<header>
 			<h1>
 				RSS feed for tag: {data.tag}
@@ -87,8 +88,8 @@
 				</a>
 			{/each}
 		</div>
-	</section>
-</main>
+	</main>
+</div>
 
 <style>
 	.content-wrapper {
@@ -102,8 +103,8 @@
 	}
 
 	aside.callout {
-		background: var(--color-surface-container-high);
-		border: 1px solid var(--color-surface-container-highest);
+		background: var(--color-surface);
+		border: 1px solid var(--color-surface-container-high);
 		padding: 1em 1.5em;
 		border-radius: var(--radius-medium);
 	}
@@ -120,7 +121,7 @@
 		padding: var(--space-2);
 		border-radius: var(--radius-medium);
 		border: 1px solid var(--color-surface-container-high);
-		background-color: var(--color-surface-container);
+		background-color: var(--color-surface-container-low);
 		color: var(--color-on-surface);
 		cursor: pointer;
 		transition: all 0.2s ease-in-out;
@@ -174,8 +175,11 @@
 	}
 
 	.item-date {
-		color: var(--color-outline);
-		font-size: 0.9em;
+		color: var(--color-on-surface);
+		font-size: 0.7em;
+		font-weight: 300;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 		margin-bottom: var(--space-1);
 	}
 
@@ -183,6 +187,11 @@
 		margin-top: var(--space-3);
 		line-height: 1.6;
 		font-size: 0.95em;
-		color: var(--color-on-surface-variant);
+		color: var(--color-on-surface);
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 4;
+		line-clamp: 4;
+		overflow: hidden;
 	}
 </style>
