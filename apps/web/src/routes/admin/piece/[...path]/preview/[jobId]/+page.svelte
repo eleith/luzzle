@@ -31,11 +31,7 @@
 		<div class="meta">{data.file}</div>
 	</header>
 
-	<WorkflowConsole
-		status="completed"
-		phases={data.phases ?? []}
-		logs={logsMap}
-	/>
+	<WorkflowConsole status="completed" phases={data.phases ?? []} logs={logsMap} />
 </div>
 
 <style>
@@ -68,4 +64,3 @@
 		color: var(--color-on-surface-variant);
 	}
 </style>
-

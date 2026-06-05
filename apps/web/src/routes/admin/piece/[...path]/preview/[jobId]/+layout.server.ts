@@ -74,7 +74,14 @@ export const load: LayoutServerLoad = async ({ params }) => {
 			return error(500, `Unknown piece type: ${result.type}`)
 		}
 		const assembled = assemblePreview(result, pieceConfig)
-		return { file: params.path, status: 'completed' as const, jobId: runId, phases, logs, ...assembled }
+		return {
+			file: params.path,
+			status: 'completed' as const,
+			jobId: runId,
+			phases,
+			logs,
+			...assembled
+		}
 	}
 
 	if (state === 'failed' || state === 'canceled') {
@@ -90,4 +97,3 @@ export const load: LayoutServerLoad = async ({ params }) => {
 
 	return { file: params.path, jobId: runId, status: state as 'waiting' | 'running', phases, logs }
 }
-

@@ -162,12 +162,7 @@
 			<div class="meta">{data.file}</div>
 		</header>
 
-		<WorkflowConsole
-			status={status}
-			phases={phases}
-			logs={logs}
-			errorMessage={errorMessage}
-		/>
+		<WorkflowConsole {status} {phases} {logs} {errorMessage} />
 	</main>
 {/if}
 
@@ -269,5 +264,3 @@
 		color: var(--color-on-surface-variant);
 	}
 </style>
-
-

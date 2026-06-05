@@ -70,7 +70,7 @@
 	)
 
 	$effect(() => {
-		for (const [phase, length] of Object.entries(logLengths)) {
+		for (const [phase, _length] of Object.entries(logLengths)) {
 			const isLocked = scrollLocks[phase] ?? true
 			if (isLocked) {
 				tick().then(() => {
