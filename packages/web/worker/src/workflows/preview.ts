@@ -50,6 +50,9 @@ export function registerPreviewWorkflow(): void {
 					note: val.note,
 				}
 			} catch (err) {
+				logger.error(`preview.parse failed for ${input.filePath}`, {
+					error: err instanceof Error ? err.message : String(err),
+				})
 				await progress.fail(jobId, 'parse', err)
 				throw err
 			} finally {
@@ -99,6 +102,9 @@ export function registerPreviewWorkflow(): void {
 						await progress.complete(jobId, name, `${res.value.length} record(s)`)
 						return res.value
 					} catch (err) {
+						logger.error(`transform.${name} error for ${parsed.webPiece.file_path}`, {
+							error: err instanceof Error ? err.message : String(err),
+						})
 						await progress.fail(jobId, name, err)
 						throw err
 					} finally {
@@ -124,10 +130,8 @@ export function registerPreviewWorkflow(): void {
 						content: r.content,
 					})
 				}
-			} catch (error) {
-				logger.error(`openworkflow preview transform.${name} failed`, {
-					error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
-				})
+			} catch (e) {
+				console.error(e)
 			}
 		}
 

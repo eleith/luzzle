@@ -31,7 +31,8 @@ export interface PreviewParseInput {
 export const previewParseStep: Step<PreviewParseInput, ParsedPreview> = {
 	name: 'parse',
 	async run({ filePath, pieces }, ctx): Promise<StepResult<ParsedPreview>> {
-		const { config } = ctx
+		const { config, logger } = ctx
+		logger.info(`preview.parse starting for ${filePath}`)
 		const parts = pieces.parseFilename(filePath)
 		if (!parts.type) {
 			throw new Error(`unknown piece type for ${filePath}`)
@@ -90,6 +91,8 @@ export const previewParseStep: Step<PreviewParseInput, ParsedPreview> = {
 			date_added: Date.now(),
 			date_updated: Date.now(),
 		}
+
+		logger.info(`preview.parse complete: type=${parts.type}, slug=${slug}`)
 
 		return completed({
 			type: parts.type,

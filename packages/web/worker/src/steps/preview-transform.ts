@@ -38,6 +38,15 @@ export function previewTransformStep(
 				priorAssets,
 			})
 
+			if (records.length === 0) {
+				logger.info(`transform.${name} skipped: not applicable for this piece`)
+			}
+
+			for (const record of records) {
+				const what = record.asset_path ?? `content of ${record.mime_type}`
+				logger.info(`transform.${name} generated ${what}`)
+			}
+
 			return completed(records, `${records.length} record(s)`)
 		},
 	}
