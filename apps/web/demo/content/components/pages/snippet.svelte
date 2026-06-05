@@ -22,120 +22,122 @@
 
 <NavBanner showRandom />
 
-<section class="content">
-	<section class="details">
-		<h1>
-			{piece.title}
-		</h1>
+<main id="main-content" role="main">
+	<section class="content">
+		<section class="details">
+			<h1>
+				{piece.title}
+			</h1>
 
-		{#if bylineParts.length}
-			<p class="byline">{bylineParts.join(' · ')}</p>
-		{/if}
+			{#if bylineParts.length}
+				<p class="byline">{bylineParts.join(' · ')}</p>
+			{/if}
 
-		<section class="note">
-			<h2>Note</h2>
-			{#if piece.note}
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
-			{:else}
-				<em class="empty-note">this record does not have a note</em>
+			<section class="note">
+				<h2>Note</h2>
+				{#if piece.note}
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
+				{:else}
+					<em class="empty-note">this record does not have a note</em>
+				{/if}
+			</section>
+
+			{#if piece.metadata.files && piece.metadata.files.length > 0}
+				<section class="note">
+					<h2>Files</h2>
+					<div class="files-container">
+						{#each piece.metadata.files as file (file.name)}
+							{@const attachment = helpers.getPieceAssetUrl(file.file, 'attachment')}
+
+							{#if file.type === 'snippet'}
+								{@const highlight = helpers.getPieceAssetContent(file.file, 'highlight')}
+								<div class="file">
+									<div class="file-header">
+										<div class="file-filename">{file.name}</div>
+										<div class="file-controls">
+											<div class="file-format">{file.format}</div>
+											{#if attachment}
+												<div class="file-download">
+													<a href={attachment} aria-label="download {file.name}"
+														><svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="1rem"
+															height="1rem"
+															viewBox="0 0 256 256"
+															fill="currentColor"
+															aria-hidden="true"
+														>
+															<path
+																d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48ZM156.69,150.34a8,8,0,0,1,11.32,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L120,164.69V120a8,8,0,0,1,16,0v44.69Z"
+															/>
+														</svg></a
+													>
+												</div>
+											{/if}
+										</div>
+									</div>
+									{#if highlight}
+										<div class="file-content">
+											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+											{@html highlight}
+										</div>
+									{/if}
+								</div>
+							{:else}
+								<div class="file">
+									<div class="file-header">
+										<span class="file-filename">{file.file}</span>
+										<span class="file-controls">
+											<span class="file-format">{file.format}</span>
+											{#if attachment}
+												<span class="file-download">
+													<a href={attachment} aria-label="download {file.file}"
+														><svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="1rem"
+															height="1rem"
+															viewBox="0 0 256 256"
+															fill="currentColor"
+															aria-hidden="true"
+														>
+															<path
+																d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48ZM156.69,150.34a8,8,0,0,1,11.32,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L120,164.69V120a8,8,0,0,1,16,0v44.69Z"
+															/>
+														</svg></a
+													>
+												</span>
+											{/if}
+										</span>
+									</div>
+								</div>
+							{/if}
+						{/each}
+					</div>
+				</section>
+			{/if}
+
+			{#if piece.metadata.date_updated}
+				<div class="info">
+					last updated: {new Date(piece.metadata.date_updated)
+						.toLocaleDateString('en-US', {
+							timeZone: 'UTC'
+						})
+						.replaceAll('/', '.')}
+				</div>
+			{/if}
+			{#if tags.length}
+				<div class="section">
+					<div class="tags-container">
+						{#each tags as tag (tag.slug)}
+							<a href="/tags/{tag.slug}" class="tag">#{tag.tag?.toLowerCase()}</a>
+						{/each}
+					</div>
+				</div>
 			{/if}
 		</section>
-
-		{#if piece.metadata.files && piece.metadata.files.length > 0}
-			<section class="note">
-				<h2>Files</h2>
-				<div class="files-container">
-					{#each piece.metadata.files as file (file.name)}
-						{@const attachment = helpers.getPieceAssetUrl(file.file, 'attachment')}
-
-						{#if file.type === 'snippet'}
-							{@const highlight = helpers.getPieceAssetContent(file.file, 'highlight')}
-							<div class="file">
-								<div class="file-header">
-									<div class="file-filename">{file.name}</div>
-									<div class="file-controls">
-										<div class="file-format">{file.format}</div>
-										{#if attachment}
-											<div class="file-download">
-												<a href={attachment} aria-label="download {file.name}"
-													><svg
-														xmlns="http://www.w3.org/2000/svg"
-														width="1rem"
-														height="1rem"
-														viewBox="0 0 256 256"
-														fill="currentColor"
-														aria-hidden="true"
-													>
-														<path
-															d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48ZM156.69,150.34a8,8,0,0,1,11.32,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L120,164.69V120a8,8,0,0,1,16,0v44.69Z"
-														/>
-													</svg></a
-												>
-											</div>
-										{/if}
-									</div>
-								</div>
-								{#if highlight}
-									<div class="file-content">
-										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-										{@html highlight}
-									</div>
-								{/if}
-							</div>
-						{:else}
-							<div class="file">
-								<div class="file-header">
-									<span class="file-filename">{file.file}</span>
-									<span class="file-controls">
-										<span class="file-format">{file.format}</span>
-										{#if attachment}
-											<span class="file-download">
-												<a href={attachment} aria-label="download {file.file}"
-													><svg
-														xmlns="http://www.w3.org/2000/svg"
-														width="1rem"
-														height="1rem"
-														viewBox="0 0 256 256"
-														fill="currentColor"
-														aria-hidden="true"
-													>
-														<path
-															d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48ZM156.69,150.34a8,8,0,0,1,11.32,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L120,164.69V120a8,8,0,0,1,16,0v44.69Z"
-														/>
-													</svg></a
-												>
-											</span>
-										{/if}
-									</span>
-								</div>
-							</div>
-						{/if}
-					{/each}
-				</div>
-			</section>
-		{/if}
-
-		{#if piece.metadata.date_updated}
-			<div class="info">
-				last updated: {new Date(piece.metadata.date_updated)
-					.toLocaleDateString('en-US', {
-						timeZone: 'UTC'
-					})
-					.replaceAll('/', '.')}
-			</div>
-		{/if}
-		{#if tags.length}
-			<div class="section">
-				<div class="tags-container">
-					{#each tags as tag (tag.slug)}
-						<a href="/tags/{tag.slug}" class="tag">#{tag.tag?.toLowerCase()}</a>
-					{/each}
-				</div>
-			</div>
-		{/if}
 	</section>
-</section>
+</main>
 
 <style>
 	section.content {
@@ -178,7 +180,7 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
-		color: var(--color-on-surface-variant);
+		color: var(--color-on-surface);
 		margin: 0;
 	}
 

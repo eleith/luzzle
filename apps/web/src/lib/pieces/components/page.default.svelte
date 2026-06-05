@@ -262,7 +262,7 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
-		color: var(--color-on-surface-variant);
+		color: var(--color-on-surface);
 		margin: 0;
 	}
 

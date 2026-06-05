@@ -23,100 +23,102 @@
 	hoverColor={palette?.accent}
 />
 
-<section
-	class="hero"
-	style="--hero-bg: {palette?.background ||
-		'var(--color-surface-container)'}; --hero-title: {palette?.titleText ||
-		'var(--color-on-surface)'}"
->
-	<div class="hero-inner">
-		<div class="hero-text">
-			<h1>{piece.title}</h1>
-		</div>
-		<div class="hero-icon">
-			<PieceIcon {piece} size={{ width: 125 }} lazy={false} />
-		</div>
-	</div>
-
-	{#if bylineParts.length}
-		<section
-			class="byline-section"
-			style="--byline-bg: {palette?.background ||
-				'var(--color-surface-container)'}; --byline-text: {palette?.bodyText ||
-				'var(--color-on-surface-variant)'}"
-		>
-			<div class="byline-inner">
-				<p class="byline">{bylineParts.join(' · ')}</p>
+<main id="main-content" role="main">
+	<section
+		class="hero"
+		style="--hero-bg: {palette?.background ||
+			'var(--color-surface-container)'}; --hero-title: {palette?.titleText ||
+			'var(--color-on-surface)'}"
+	>
+		<div class="hero-inner">
+			<div class="hero-text">
+				<h1>{piece.title}</h1>
 			</div>
-		</section>
-	{/if}
-</section>
-
-<section
-	class="content"
-	style="--byline-border: {palette?.accent || 'var(--color-outline-variant)'};"
->
-	<section class="details">
-		<section>
-			<h2>Note</h2>
-			<div class="body">
-				{#if piece.note}
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
-				{:else}
-					<em class="empty-note">this record does not have a note</em>
-				{/if}
+			<div class="hero-icon">
+				<PieceIcon {piece} size={{ width: 125 }} lazy={false} />
 			</div>
-		</section>
+		</div>
 
-		{#if metadata.url || metadata.isbn || metadata.year_first_published || piece.summary}
-			<section class="supplemental">
-				{#if metadata.url || metadata.isbn}
-					<div class="supplemental-inner">
-						<h2>Link</h2>
-						<div class="body">
-							{#if metadata.url}
-								<a class="article-link" href={metadata.url}>{metadata.url}</a>
-							{:else if metadata.isbn}
-								<a class="article-link" href="https://openlibrary.org/search?isbn={metadata.isbn}"
-									>isbn {metadata.isbn}</a
-								>
-							{/if}
-						</div>
-					</div>
-				{/if}
-
-				{#if metadata.year_first_published}
-					<div class="supplemental-inner">
-						<h2>Published</h2>
-						<div class="body">
-							{metadata.year_first_published}
-						</div>
-					</div>
-				{/if}
-
-				{#if piece.summary}
-					<div class="supplemental-inner">
-						<h2>Description</h2>
-						<div class="body">
-							{piece.summary}
-						</div>
-					</div>
-				{/if}
+		{#if bylineParts.length}
+			<section
+				class="byline-section"
+				style="--byline-bg: {palette?.background ||
+					'var(--color-surface-container)'}; --byline-text: {palette?.bodyText ||
+					'var(--color-on-surface-variant)'}"
+			>
+				<div class="byline-inner">
+					<p class="byline">{bylineParts.join(' · ')}</p>
+				</div>
 			</section>
 		{/if}
-
-		{#if tags.length}
-			<div class="section">
-				<div class="tags-container">
-					{#each tags as tag (tag.slug)}
-						<a href="/tags/{tag.slug}" class="tag">#{tag.tag?.toLowerCase()}</a>
-					{/each}
-				</div>
-			</div>
-		{/if}
 	</section>
-</section>
+
+	<section
+		class="content"
+		style="--byline-border: {palette?.accent || 'var(--color-outline-variant)'};"
+	>
+		<section class="details">
+			<section>
+				<h2>Note</h2>
+				<div class="body">
+					{#if piece.note}
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+						{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
+					{:else}
+						<em class="empty-note">this record does not have a note</em>
+					{/if}
+				</div>
+			</section>
+
+			{#if metadata.url || metadata.isbn || metadata.year_first_published || piece.summary}
+				<section class="supplemental">
+					{#if metadata.url || metadata.isbn}
+						<div class="supplemental-inner">
+							<h2>Link</h2>
+							<div class="body">
+								{#if metadata.url}
+									<a class="article-link" href={metadata.url}>{metadata.url}</a>
+								{:else if metadata.isbn}
+									<a class="article-link" href="https://openlibrary.org/search?isbn={metadata.isbn}"
+										>isbn {metadata.isbn}</a
+									>
+								{/if}
+							</div>
+						</div>
+					{/if}
+
+					{#if metadata.year_first_published}
+						<div class="supplemental-inner">
+							<h2>Published</h2>
+							<div class="body">
+								{metadata.year_first_published}
+							</div>
+						</div>
+					{/if}
+
+					{#if piece.summary}
+						<div class="supplemental-inner">
+							<h2>Description</h2>
+							<div class="body">
+								{piece.summary}
+							</div>
+						</div>
+					{/if}
+				</section>
+			{/if}
+
+			{#if tags.length}
+				<div class="section">
+					<div class="tags-container">
+						{#each tags as tag (tag.slug)}
+							<a href="/tags/{tag.slug}" class="tag">#{tag.tag?.toLowerCase()}</a>
+						{/each}
+					</div>
+				</div>
+			{/if}
+		</section>
+	</section>
+</main>
 
 <style>
 	section.hero {
@@ -277,7 +279,7 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
-		color: var(--color-on-surface-variant);
+		color: var(--color-on-surface);
 		margin: 0;
 	}
 

@@ -16,35 +16,37 @@
 
 <NavBanner showRandom />
 
-<section class="hero">
-	<h1>{piece.title}</h1>
-	{#if bylineParts.length}
-		<p class="byline">{bylineParts.join(' · ')}</p>
-	{/if}
-</section>
-
-<section class="content">
-	<section class="details">
-		<div>
-			{#if piece.note}
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
-			{:else}
-				<em class="empty-note">this record does not have a note</em>
-			{/if}
-		</div>
-
-		{#if tags.length}
-			<div class="section">
-				<div class="tags-container">
-					{#each tags as tag (tag.slug)}
-						<a href="/tags/{tag.slug}" class="tag">#{tag.tag?.toLowerCase()}</a>
-					{/each}
-				</div>
-			</div>
+<main id="main-content" role="main">
+	<section class="hero">
+		<h1>{piece.title}</h1>
+		{#if bylineParts.length}
+			<p class="byline">{bylineParts.join(' · ')}</p>
 		{/if}
 	</section>
-</section>
+
+	<section class="content">
+		<section class="details">
+			<div>
+				{#if piece.note}
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
+				{:else}
+					<em class="empty-note">this record does not have a note</em>
+				{/if}
+			</div>
+
+			{#if tags.length}
+				<div class="section">
+					<div class="tags-container">
+						{#each tags as tag (tag.slug)}
+							<a href="/tags/{tag.slug}" class="tag">#{tag.tag?.toLowerCase()}</a>
+						{/each}
+					</div>
+				</div>
+			{/if}
+		</section>
+	</section>
+</main>
 
 <style>
 	section.hero {
