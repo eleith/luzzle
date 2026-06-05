@@ -84,7 +84,9 @@
 
 <div class="status-card">
 	<span class="status-icon-wrap status-{status}">
-		{#if status === 'running'}
+		{#if status === 'completed'}
+			<CheckCircleFill class="status-icon" />
+		{:else if status === 'running'}
 			<CircleNotchBold class="status-icon spin" />
 		{:else if status === 'enqueued'}
 			<CircleNotchBold class="status-icon" />
@@ -249,6 +251,10 @@
 		height: 10px;
 		border-radius: 50%;
 		border: 1.5px solid var(--color-outline-variant);
+	}
+
+	.status-icon-wrap.status-completed {
+		color: var(--color-primary);
 	}
 
 	.status-icon-wrap.status-running {
