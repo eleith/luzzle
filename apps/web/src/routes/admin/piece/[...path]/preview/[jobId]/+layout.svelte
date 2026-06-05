@@ -101,7 +101,7 @@
 </script>
 
 {#if status === 'completed'}
-	<div class="preview-banner">
+	<header role="banner" class="preview-banner">
 		<a href={editorUrl} class="preview-back">
 			<ArrowLeftIcon />
 		</a>
@@ -118,10 +118,12 @@
 			{/if}
 		</div>
 		<span class="preview-label">preview</span>
-	</div>
-	{@render children()}
+	</header>
+	<main id="main-content" role="main">
+		{@render children()}
+	</main>
 {:else}
-	<section class="preview-status">
+	<main id="main-content" role="main" class="preview-status">
 		<header class="preview-status-header">
 			<a href={editorUrl} class="preview-back">
 				<ArrowLeftIcon />
@@ -204,7 +206,7 @@
 				{/each}
 			</div>
 		{/if}
-	</section>
+	</main>
 {/if}
 
 <style>

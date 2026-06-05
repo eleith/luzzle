@@ -41,6 +41,8 @@
 	{/if}
 </svelte:head>
 
+<h1 class="visually-hidden">Tag: #{data.tag}</h1>
+
 <section>
 	<div class="container">
 		{#each pieces as piece (piece.id)}

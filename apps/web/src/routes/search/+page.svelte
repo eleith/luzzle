@@ -12,6 +12,14 @@
 	})
 </script>
 
+<h1 class="visually-hidden">
+	{#if data.query}
+		Search results for "{data.query}"
+	{:else}
+		Search
+	{/if}
+</h1>
+
 {#if data.pieces.length === 0}
 	<section class="action">
 		<span>No results found for <em>{data.query}</em>.</span>

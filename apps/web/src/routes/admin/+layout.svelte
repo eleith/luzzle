@@ -50,7 +50,7 @@
 	</button>
 {/snippet}
 
-<main>
-	<Nav items={{ left, right }} />
+<Nav items={{ left, right }} />
+<main id="main-content" role="main">
 	{@render children()}
 </main>

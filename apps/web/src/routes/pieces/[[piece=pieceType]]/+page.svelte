@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation'
+	import { page } from '$app/state'
 	import PieceIcon from '$lib/pieces/components/icon.svelte'
 
 	let { data } = $props()
@@ -11,6 +12,14 @@
 		}
 	})
 </script>
+
+<h1 class="visually-hidden">
+	{#if page.params.piece}
+		{page.params.piece}
+	{:else}
+		Pieces
+	{/if}
+</h1>
 
 <section>
 	<div class="container">

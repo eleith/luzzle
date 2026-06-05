@@ -20,7 +20,7 @@
 	{/if}
 {/snippet}
 
-<main>
-	<Nav showRandom items={{ right: adminLink }} />
+<Nav showRandom items={{ right: adminLink }} />
+<main id="main-content" role="main">
 	{@render children()}
 </main>

@@ -29,7 +29,7 @@
 	{/if}
 {/snippet}
 
-<main>
-	<Nav items={{ right: rightItems }} />
+<Nav items={{ right: rightItems }} />
+<main id="main-content" role="main">
 	{@render children()}
 </main>

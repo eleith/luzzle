@@ -31,6 +31,8 @@
 	}
 </script>
 
+<h1 class="visually-hidden">Login</h1>
+
 <section>
 	{#if data.authType === 'oidc'}
 		<Button onclick={() => signIn('oidc', { callbackUrl: redirectTo })}>login (oidc)</Button>

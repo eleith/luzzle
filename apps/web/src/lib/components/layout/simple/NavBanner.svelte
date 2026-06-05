@@ -34,51 +34,55 @@
 	}: Props = $props()
 </script>
 
-{#if showProgress}
-	<NavigationProgressBar />
-{/if}
+<header role="banner">
+	{#if showProgress}
+		<NavigationProgressBar />
+	{/if}
 
-<nav
-	class="banner"
-	style:--banner-background-color={background}
-	style:--banner-text-color={color}
-	style:--banner-hover-color={hoverColor}
->
-	<div class="left">
-		{#if showHome && page.url.pathname !== '/'}
-			<a href="/" aria-label="main page"><NavigationIcon style="font-size: 1em;" /></a>
-		{/if}
-		{#if items?.left}
-			{@render items.left()}
-		{/if}
-	</div>
-	<div class="right">
-		{#if showSearch}
-			{#await import('./SearchDialog.svelte')}
-				<a href="/search" aria-label="search">
-					<SearchIcon style="font-size: 1em;" />
+	<nav
+		class="banner"
+		role="navigation"
+		aria-label="Global"
+		style:--banner-background-color={background}
+		style:--banner-text-color={color}
+		style:--banner-hover-color={hoverColor}
+	>
+		<div class="left">
+			{#if showHome && page.url.pathname !== '/'}
+				<a href="/" aria-label="main page"><NavigationIcon style="font-size: 1em;" /></a>
+			{/if}
+			{#if items?.left}
+				{@render items.left()}
+			{/if}
+		</div>
+		<div class="right">
+			{#if showSearch}
+				{#await import('./SearchDialog.svelte')}
+					<a href="/search" aria-label="search">
+						<SearchIcon style="font-size: 1em;" />
+					</a>
+				{:then { default: SearchDialog }}
+					<SearchDialog />
+				{:catch}
+					<a href="/search" aria-label="search">
+						<SearchIcon style="font-size: 1em;" />
+					</a>
+				{/await}
+			{/if}
+			{#if items?.right}
+				{@render items.right()}
+			{/if}
+			{#if showRandom}
+				<a href="/random" aria-label="random" data-sveltekit-reload>
+					<DiceIcon style="font-size: 1em;" />
 				</a>
-			{:then { default: SearchDialog }}
-				<SearchDialog />
-			{:catch}
-				<a href="/search" aria-label="search">
-					<SearchIcon style="font-size: 1em;" />
-				</a>
-			{/await}
-		{/if}
-		{#if items?.right}
-			{@render items.right()}
-		{/if}
-		{#if showRandom}
-			<a href="/random" aria-label="random" data-sveltekit-reload>
-				<DiceIcon style="font-size: 1em;" />
-			</a>
-		{/if}
-		{#if showThemeToggle}
-			<ThemeToggle />
-		{/if}
-	</div>
-</nav>
+			{/if}
+			{#if showThemeToggle}
+				<ThemeToggle />
+			{/if}
+		</div>
+	</nav>
+</header>
 
 <style>
 	.banner {

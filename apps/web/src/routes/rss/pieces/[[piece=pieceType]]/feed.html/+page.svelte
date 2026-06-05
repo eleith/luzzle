@@ -38,8 +38,8 @@
 	/>
 </svelte:head>
 
-<main>
-	<Nav />
+<Nav />
+<main id="main-content" role="main">
 	<section class="content-wrapper">
 		<aside class="callout">
 			<p>
@@ -70,7 +70,7 @@
 			</h1>
 		</header>
 
-		<main class="pieces-list">
+		<div class="pieces-list">
 			{#each data.pieces as piece (piece.id)}
 				<a href="/pieces/{piece.type}/{piece.slug}" class="item-card">
 					<div class="item-link">
@@ -91,7 +91,7 @@
 					{/if}
 				</a>
 			{/each}
-		</main>
+		</div>
 	</section>
 </main>
 

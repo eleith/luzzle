@@ -4,7 +4,7 @@
 	const { children } = $props()
 </script>
 
-<main>
-	<Nav />
+<Nav />
+<main id="main-content" role="main">
 	{@render children()}
 </main>

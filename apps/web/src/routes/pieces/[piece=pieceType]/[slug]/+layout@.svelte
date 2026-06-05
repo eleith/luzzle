@@ -18,9 +18,11 @@
 {@render children()}
 
 {#if isAdmin}
-	<a href={editUrl} class="edit-shortcut" aria-label="edit source">
-		<CodeBlockIcon />
-	</a>
+	<aside role="complementary" aria-label="Admin Actions">
+		<a href={editUrl} class="edit-shortcut" aria-label="edit source">
+			<CodeBlockIcon />
+		</a>
+	</aside>
 {/if}
 
 <style>

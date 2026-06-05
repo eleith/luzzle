@@ -10,7 +10,7 @@
 	<a href="/rss/tags/{page.params.tag}/feed.html"><BellIcon style="font-size: 1em;" /></a>
 {/snippet}
 
-<main>
-	<Nav items={{ right: rssIcon }} />
+<Nav items={{ right: rssIcon }} />
+<main id="main-content" role="main">
 	{@render children()}
 </main>
