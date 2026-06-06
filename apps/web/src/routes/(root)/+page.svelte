@@ -22,8 +22,4 @@
 	/>
 </svelte:head>
 
-<RootPage
-	types={data.types}
-	pieces={data.pieces}
-	{components}
-/>
+<RootPage types={data.types} pieces={data.pieces} {components} />

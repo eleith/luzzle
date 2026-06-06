@@ -19,7 +19,7 @@
 		<section class="section">
 			<h2>types</h2>
 			<div class="types-list">
-				{#each types as type, index(index)}
+				{#each types as type, index (index)}
 					<a href="/pieces/{type}" class="type-link">{type}</a>
 				{/each}
 			</div>

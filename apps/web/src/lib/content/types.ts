@@ -12,3 +12,11 @@ export type RootPageProps = {
 	pieces: PublicWebPiece[]
 	components: RootComponents
 }
+
+export type FeedPageProps = {
+	feedUrl: string
+	feedType: 'tag' | 'piece'
+	feedLabel: string
+	feedItems: PublicWebPiece[]
+	components: RootComponents
+}

@@ -119,3 +119,11 @@ declare type RootPageProps = {
 	pieces: WebPieces[]
 	components: RootComponents
 }
+
+declare type FeedPageProps = {
+	feedUrl: string
+	feedType: 'tag' | 'piece'
+	feedLabel: string
+	feedItems: WebPieces[]
+	components: RootComponents
+}
