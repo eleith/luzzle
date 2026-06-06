@@ -60,7 +60,7 @@
 		</div>
 	</aside>
 
-	<main id="main-content" role="main">
+	<main id="main-content">
 		<header>
 			<h1>
 				{#if data.type}
