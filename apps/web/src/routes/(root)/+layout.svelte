@@ -21,6 +21,7 @@
 {/snippet}
 
 <Nav showRandom items={{ right: adminLink }} />
-<main id="main-content" role="main">
+
+<main id="main-content">
 	{@render children()}
 </main>
