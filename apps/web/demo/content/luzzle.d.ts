@@ -90,3 +90,32 @@ declare type PiecePageProps = {
 	helpers: PieceComponentHelpers
 	components: PieceComponents
 }
+
+declare type RootComponents = {
+	ContentBanner: import('svelte').Component<{
+		background?: string
+		color?: string
+		hoverColor?: string
+		showHome?: boolean
+		showSearch?: boolean
+		showThemeToggle?: boolean
+		showProgress?: boolean
+		showRandom?: boolean
+		items?: {
+			left?: import('svelte').Snippet<[]>
+			right?: import('svelte').Snippet<[]>
+		}
+	}>
+	PieceIcon: import('svelte').Component<{
+		piece: WebPieces
+		active?: boolean
+		lazy?: boolean
+		size: { width: number; height?: number }
+	}>
+}
+
+declare type RootPageProps = {
+	types: string[]
+	pieces: WebPieces[]
+	components: RootComponents
+}

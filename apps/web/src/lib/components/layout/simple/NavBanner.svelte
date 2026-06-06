@@ -48,7 +48,7 @@
 		style:--banner-hover-color={hoverColor}
 	>
 		<div class="left">
-			{#if showHome && page.url.pathname !== '/'}
+			{#if showHome}
 				<a href="/" aria-label="main page"><NavigationIcon style="font-size: 1em;" /></a>
 			{/if}
 			{#if items?.left}
