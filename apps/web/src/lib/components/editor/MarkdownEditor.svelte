@@ -40,7 +40,6 @@
 
 	function updateTheme() {
 		const { isDark } = readTheme()
-		console.log('[editor-theme] updateTheme:', { isDark })
 		const themeExtension = isDark ? gruvboxDark : gruvboxLight
 
 		if (editorContainer) {
@@ -54,7 +53,6 @@
 
 	onMount(() => {
 		const { isDark } = readTheme()
-		console.log('[editor-theme] onMount:', { isDark })
 		const initialTheme = isDark ? gruvboxDark : gruvboxLight
 
 		const extensions = createEditorExtensions({
@@ -104,8 +102,7 @@
 
 		updateTheme()
 
-		const observer = new MutationObserver((mutations) => {
-			console.log('[editor-theme] observer fired:', mutations[0]?.attributeName)
+		const observer = new MutationObserver((_mutations) => {
 			updateTheme()
 		})
 
