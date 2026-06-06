@@ -11,6 +11,7 @@
 {/snippet}
 
 <Nav items={{ right: rssIcon }} />
-<main id="main-content" role="main">
+
+<main id="main-content">
 	{@render children()}
 </main>

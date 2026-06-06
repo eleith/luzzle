@@ -30,6 +30,7 @@
 {/snippet}
 
 <Nav items={{ right: rightItems }} />
-<main id="main-content" role="main">
+
+<main id="main-content">
 	{@render children()}
 </main>

@@ -111,7 +111,7 @@
 	})
 </script>
 
-<header role="banner" class="preview-banner">
+<header class="preview-banner">
 	<a href={editorUrl} class="preview-back">
 		<ArrowLeftIcon />
 	</a>
@@ -152,11 +152,11 @@
 </header>
 
 {#if status === 'completed'}
-	<main id="main-content" role="main">
+	<main id="main-content">
 		{@render children()}
 	</main>
 {:else}
-	<main id="main-content" role="main" class="preview-status">
+	<main id="main-content" class="preview-status">
 		<header class="preview-status-header">
 			<h1>Preview</h1>
 			<div class="meta">{data.file}</div>

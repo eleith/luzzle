@@ -5,6 +5,7 @@
 </script>
 
 <Nav />
-<main id="main-content" role="main">
+
+<main id="main-content">
 	{@render children()}
 </main>

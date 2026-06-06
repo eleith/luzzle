@@ -2,7 +2,6 @@
 	import NavigationIcon from 'virtual:icons/ph/arrow-up-left'
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import DiceIcon from 'virtual:icons/ph/dice-three'
-	import { page } from '$app/state'
 	import type { Snippet } from 'svelte'
 	import NavigationProgressBar from './NavigationProgressBar.svelte'
 	import ThemeToggle from './ThemeToggle.svelte'
@@ -34,14 +33,13 @@
 	}: Props = $props()
 </script>
 
-<header role="banner">
+<header>
 	{#if showProgress}
 		<NavigationProgressBar />
 	{/if}
 
 	<nav
 		class="banner"
-		role="navigation"
 		aria-label="Global"
 		style:--banner-background-color={background}
 		style:--banner-text-color={color}

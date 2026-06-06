@@ -19,7 +19,7 @@
 
 <NavBanner showRandom />
 
-<main id="main-content" role="main">
+<main id="main-content">
 	<section
 		class="hero"
 		style="--hero-bg: {palette?.background ||

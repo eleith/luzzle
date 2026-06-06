@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Snippet, ComponentProps } from 'svelte'
+	import type { ComponentProps } from 'svelte'
 	import Nav from '$lib/components/layout/simple/nav.svelte'
 	import GearIcon from 'virtual:icons/ph/gear'
 	import { onMount } from 'svelte'
