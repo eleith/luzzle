@@ -11,8 +11,8 @@ export const jobProgressPurgeStep: Step<JobProgressPurgeInput, void> = {
 	name: 'job_progress.purge',
 	async run(input, ctx): Promise<StepResult<void>> {
 		const { db, logger, config } = ctx
-		const retentionDays = input.retentionDays ?? 2
-		const purgedJobIds = await new JobProgress(db, retentionDays).purgeOld()
+		const retentionDays = input.retentionDays ?? 7
+		const purgedJobIds = await new JobProgress(db, retentionDays).purgeExpired()
 
 		for (const jobId of purgedJobIds) {
 			const previewDir = path.join(path.dirname(config.paths.assets), 'previews', jobId.toString())

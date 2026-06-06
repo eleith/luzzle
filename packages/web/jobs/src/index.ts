@@ -5,6 +5,7 @@ export {
 	getWorkflowRunByJobId,
 	getWorkflowRun,
 	getStepAttempts,
+	purgeExpiredWorkflowRuns,
 } from './openworkflow.js'
 export type { WorkflowRunRow, StepAttemptRow } from './openworkflow.js'
 export { jobProgressPurgeSpec, previewSpec, publishSpec } from './specs.js'

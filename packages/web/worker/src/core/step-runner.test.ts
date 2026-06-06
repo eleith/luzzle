@@ -11,7 +11,7 @@ function makeProgress(): JobProgress {
 		complete: vi.fn().mockResolvedValue(undefined),
 		skip: vi.fn().mockResolvedValue(undefined),
 		fail: vi.fn().mockResolvedValue(undefined),
-		purgeOld: vi.fn().mockResolvedValue(undefined),
+		purgeExpired: vi.fn().mockResolvedValue(undefined),
 	} as unknown as JobProgress
 }
 

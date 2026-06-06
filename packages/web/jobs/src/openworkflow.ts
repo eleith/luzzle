@@ -103,3 +103,46 @@ export function getStepAttempts(db: DatabaseSync, workflowRunId: string): StepAt
 	const rows = stmt.all(workflowRunId)
 	return rows as unknown as StepAttemptRow[]
 }
+
+/**
+ * Purges old workflow runs and step attempts from the database in batches of 100.
+ * Note: OpenWorkflow will add cron and cleanup in a future release,
+ * so we will need to make adjustments later if/when they do.
+ */
+export function purgeExpiredWorkflowRuns(
+	db: DatabaseSync,
+	retentionDays: number,
+	limit: number = 100
+): number {
+	const cutoffIso = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString()
+	let totalPurged = 0
+	let batch: { id: string }[] = []
+
+	do {
+		const stmtSelect = db.prepare(`
+			SELECT id FROM workflow_runs 
+			WHERE created_at < ? 
+			LIMIT ?
+		`)
+		batch = stmtSelect.all(cutoffIso, limit) as { id: string }[]
+
+		if (batch.length > 0) {
+			const ids = batch.map(r => r.id)
+			const placeholders = ids.map(() => '?').join(',')
+
+			db.prepare(`
+				DELETE FROM step_attempts 
+				WHERE workflow_run_id IN (${placeholders})
+			`).run(...ids)
+
+			db.prepare(`
+				DELETE FROM workflow_runs 
+				WHERE id IN (${placeholders})
+			`).run(...ids)
+
+			totalPurged += batch.length
+		}
+	} while (batch.length === limit)
+
+	return totalPurged
+}

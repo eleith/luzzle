@@ -110,7 +110,7 @@ describe('JobProgress', () => {
 			started_at: Date.now() - 1 * 24 * 60 * 60 * 1000, // 1 day old
 		}).execute()
 
-		await jobProgress.purgeOld()
+		await jobProgress.purgeExpired()
 
 		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
 		expect(rows).toHaveLength(1)

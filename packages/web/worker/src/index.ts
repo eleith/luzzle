@@ -9,7 +9,7 @@ import { jobProgressPurgeSpec } from '@luzzle/web.jobs/specs'
 import { registerWorkflows } from './workflows/index.js'
 
 const DEFAULT_PORT = 9000
-const PURGE_RETENTION_DAYS = 2
+const PURGE_RETENTION_DAYS = 7
 
 async function main() {
 	const config = loadConfig('./config.yaml')

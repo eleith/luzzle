@@ -4,11 +4,11 @@ import { JobProgress } from '../core/job-progress.js'
 import type { WorkerContext } from '../services/context.js'
 import { promises as fs } from 'node:fs'
 
-const mockPurgeOld = vi.fn().mockResolvedValue([])
+const mockPurgeExpired = vi.fn().mockResolvedValue([])
 
 vi.mock('../core/job-progress.js', () => ({
 	JobProgress: vi.fn().mockImplementation(() => ({
-		purgeOld: mockPurgeOld,
+		purgeExpired: mockPurgeExpired,
 	})),
 }))
 
@@ -29,21 +29,21 @@ function makeCtx(): WorkerContext {
 }
 
 describe('jobProgressPurgeStep', () => {
-	test('uses default retentionDays=2', async () => {
-		mockPurgeOld.mockResolvedValueOnce([])
+	test('uses default retentionDays=7', async () => {
+		mockPurgeExpired.mockResolvedValueOnce([])
 		const result = await jobProgressPurgeStep.run({}, makeCtx())
 		expect(result.status).toBe('completed')
-		expect(JobProgress).toHaveBeenCalledWith(expect.anything(), 2)
-	})
-
-	test('honors explicit retentionDays', async () => {
-		mockPurgeOld.mockResolvedValueOnce([])
-		await jobProgressPurgeStep.run({ retentionDays: 7 }, makeCtx())
 		expect(JobProgress).toHaveBeenCalledWith(expect.anything(), 7)
 	})
 
+	test('honors explicit retentionDays', async () => {
+		mockPurgeExpired.mockResolvedValueOnce([])
+		await jobProgressPurgeStep.run({ retentionDays: 14 }, makeCtx())
+		expect(JobProgress).toHaveBeenCalledWith(expect.anything(), 14)
+	})
+
 	test('deletes cached preview folders for purged job IDs', async () => {
-		mockPurgeOld.mockResolvedValueOnce([101, 102])
+		mockPurgeExpired.mockResolvedValueOnce([101, 102])
 		const rmSpy = vi.spyOn(fs, 'rm').mockResolvedValue(undefined)
 
 		await jobProgressPurgeStep.run({}, makeCtx())

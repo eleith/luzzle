@@ -5,12 +5,12 @@ export class JobProgress {
 	private readonly db: Kysely<AppDatabase>
 	private readonly retentionDays: number
 
-	constructor(db: Kysely<AppDatabase>, retentionDays: number = 2) {
+	constructor(db: Kysely<AppDatabase>, retentionDays: number = 7) {
 		this.db = db
 		this.retentionDays = retentionDays
 	}
 
-	async purgeOld(): Promise<string[]> {
+	async purgeExpiredBatch(limit: number): Promise<string[]> {
 		try {
 			const cutoffMs = Date.now() - this.retentionDays * 24 * 60 * 60 * 1000
 
@@ -19,21 +19,31 @@ export class JobProgress {
 				.select('job_id')
 				.distinct()
 				.where('started_at', '<', cutoffMs)
+				.limit(limit)
 				.execute()
 
 			const oldJobIds = oldJobs.map((row) => row.job_id)
 
 			if (oldJobIds.length > 0) {
 				await this.db.deleteFrom('job_progress_logs').where('job_id', 'in', oldJobIds).execute()
-
 				await this.db.deleteFrom('job_progress').where('job_id', 'in', oldJobIds).execute()
 			}
 
 			return oldJobIds
 		} catch (err) {
-			console.error('JobProgress purgeOld failed:', err)
+			console.error('JobProgress purgeExpiredBatch failed:', err)
 			return []
 		}
+	}
+
+	async purgeExpired(): Promise<string[]> {
+		const allPurged: string[] = []
+		let batch: string[] = []
+		do {
+			batch = await this.purgeExpiredBatch(100)
+			allPurged.push(...batch)
+		} while (batch.length === 100)
+		return allPurged
 	}
 
 	async start(jobId: string, phase: string): Promise<void> {
