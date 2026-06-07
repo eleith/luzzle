@@ -1,7 +1,5 @@
 import type { SyntaxNode } from '@lezer/common'
 
-const MAX_DEPTH = 20
-
 export function buildPath(keyNode: SyntaxNode, doc: string): string {
 	const getRaw = (node: SyntaxNode) => doc.slice(node.from, node.to).replace(/^['"]|['"]$/g, '')
 	const parts: string[] = []
