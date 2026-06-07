@@ -10,9 +10,10 @@
 		isDirty: boolean
 		canGenerate: boolean
 		onDelete: () => void
+		onAttach?: () => void
 	}
 
-	let { file, currentMode, isDirty, canGenerate, onDelete }: Props = $props()
+	let { file, currentMode, isDirty, canGenerate, onDelete, onAttach }: Props = $props()
 
 	const switchUrl = currentMode === 'form' ? `/admin/piece/${file}/source` : `/admin/piece/${file}`
 	const label = currentMode === 'form' ? 'source mode' : 'form mode'
@@ -60,6 +61,14 @@
 								>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>generate</div>
+									{/snippet}
+								</DropdownMenu.Item>
+							{/if}
+
+							{#if currentMode === 'source' && onAttach}
+								<DropdownMenu.Item onSelect={onAttach}>
+									{#snippet child({ props })}
+										<div class="dropdown-item" {...props}>attach file</div>
 									{/snippet}
 								</DropdownMenu.Item>
 							{/if}

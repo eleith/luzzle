@@ -12,8 +12,10 @@ import {
 	type Piece,
 	filterFrontmatterFields,
 	resolveFieldPaths,
-	getFrontmatterValue
+	getFrontmatterValue,
+	savePieceAsset
 } from '@luzzle/core'
+import { Readable } from 'stream'
 import { normalizeLineEndings, normalizeMarkdown } from '$lib/server/markdown'
 
 async function resolveAssetUrls(
@@ -86,7 +88,7 @@ export const load: PageServerLoad = async ({ params }) => {
 }
 
 export const actions = {
-	default: async (event) => {
+	save: async (event) => {
 		const file = event.params.path
 		const pieces = getPieces()
 		const type = pieces.parseFilename(file).type
@@ -129,5 +131,27 @@ export const actions = {
 		}
 
 		return { success: true }
+	},
+	attach: async (event) => {
+		const file = event.params.path
+		const formData = await event.request.formData()
+		const uploadedFile = formData.get('file') as File | null
+
+		if (!uploadedFile || uploadedFile.size === 0) {
+			return fail(400, { error: { message: 'No file provided' } })
+		}
+
+		try {
+			const storage = getStorage()
+			const arrayBuffer = await uploadedFile.arrayBuffer()
+			const stream = Readable.from(Buffer.from(arrayBuffer))
+
+			const relativePath = await savePieceAsset(file, uploadedFile.name, stream, storage)
+
+			return { success: true, path: relativePath }
+		} catch (e) {
+			const message = e instanceof Error ? e.message : String(e)
+			return fail(500, { error: { message: `Failed to save attachment: ${message}` } })
+		}
 	}
 } satisfies Actions

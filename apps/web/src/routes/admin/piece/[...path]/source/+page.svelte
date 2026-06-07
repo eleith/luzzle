@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { deserialize } from '$app/forms'
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
 	import Button from '$lib/components/ui/Button.svelte'
 	import PieceActions from '$lib/components/editor/PieceActions.svelte'
@@ -9,6 +10,8 @@
 	let { data, form }: PageProps = $props()
 
 	let dialog: HTMLDialogElement
+	let editorRef = $state<MarkdownEditor>()
+	let fileInput = $state<HTMLInputElement>()
 
 	let rawContent = $state<string>(
 		(form && 'rawContent' in form ? (form.rawContent as string) : undefined) ||
@@ -25,7 +28,43 @@
 			rawContent = data.rawContent || ''
 		}
 	})
+
+	async function handleFileSelected() {
+		const file = fileInput?.files?.[0]
+		if (!file) return
+
+		const formData = new FormData()
+		formData.append('file', file)
+
+		try {
+			const response = await fetch(`?/attach`, {
+				method: 'POST',
+				body: formData
+			})
+
+			const result = deserialize(await response.text())
+			if (result.type === 'success' || result.type === 'failure') {
+				const data = result.data as { error?: { message?: string }; path?: string } | undefined
+				if (result.type === 'success' && data?.path) {
+					editorRef?.insertText(data.path)
+				} else {
+					alert(data?.error?.message || 'Upload failed')
+				}
+			} else {
+				alert('Upload failed')
+			}
+		} catch (e) {
+			const message = e instanceof Error ? e.message : String(e)
+			alert(`Upload error: ${message}`)
+		}
+
+		if (fileInput) {
+			fileInput.value = ''
+		}
+	}
 </script>
+
+<input type="file" bind:this={fileInput} onchange={handleFileSelected} class="visually-hidden" />
 
 <dialog bind:this={dialog}>
 	<form method="post" action="/admin/piece/{data.file}?/delete">
@@ -43,7 +82,7 @@
 <div class="piece-page">
 	<div class="header">
 		<div style="display:flex; gap: var(--space-2);">
-			<form method="post">
+			<form method="post" action="?/save">
 				<input type="hidden" name="content" value={rawContent} />
 				<Button type="submit" disabled={!isDirty}>save</Button>
 			</form>
@@ -57,6 +96,7 @@
 			{isDirty}
 			canGenerate={data.canGenerate}
 			onDelete={() => dialog.showModal()}
+			onAttach={() => fileInput?.click()}
 		/>
 	</div>
 
@@ -69,6 +109,7 @@
 
 	<div class="editor-container">
 		<MarkdownEditor
+			bind:this={editorRef}
 			bind:value={rawContent}
 			file={data.file}
 			returnTo={page.url.pathname}

@@ -122,6 +122,21 @@
 		}
 		destroyLSPClient()
 	})
+
+	export function insertText(text: string) {
+		if (view) {
+			const transaction = view.state.update({
+				changes: {
+					from: view.state.selection.main.from,
+					to: view.state.selection.main.to,
+					insert: text
+				},
+				selection: { anchor: view.state.selection.main.from + text.length }
+			})
+			view.dispatch(transaction)
+			view.focus()
+		}
+	}
 </script>
 
 <div class="editor-wrapper" bind:this={editorContainer}></div>
