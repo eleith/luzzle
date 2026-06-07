@@ -50,8 +50,8 @@ importers:
   apps/cli:
     dependencies:
       '@luzzle/core':
-        specifier: 0.0.59
-        version: 0.0.59(picomatch@4.0.4)
+        specifier: 0.0.63
+        version: 0.0.63(picomatch@4.0.4)
       conf:
         specifier: 13.1.0
         version: 13.1.0
@@ -1563,8 +1563,8 @@ packages:
   '@lezer/yaml@1.0.4':
     resolution: {integrity: sha512-2lrrHqxalACEbxIbsjhqGpSW8kWpUKuY6RHgnSAFZa6qK62wvnPxA8hGOwOoDbwHcOFs5M4o27mjGu+P7TvBmw==}
 
-  '@luzzle/core@0.0.59':
-    resolution: {integrity: sha512-5Mp4fL+/dIgYe+5bImpv7pTp9cFYXN5l/ur+7anc4wN7iDynXryDeEMu9n8SiLFTqhLPqij6H3pWcXeThsY9LQ==}
+  '@luzzle/core@0.0.63':
+    resolution: {integrity: sha512-1P/epjfcvW0WmoST7dJBHKnmNKMwEpoqAIOoXtToz1X4W8GaYBQUykZ2u3sAO3u3vsbW9RhlJjEOms9EgSa/QA==}
     engines: {node: '>=24'}
 
   '@marijn/find-cluster-break@1.0.2':
@@ -4774,7 +4774,7 @@ snapshots:
       '@lezer/highlight': 1.2.3
       '@lezer/lr': 1.4.10
 
-  '@luzzle/core@0.0.59(picomatch@4.0.4)':
+  '@luzzle/core@0.0.63(picomatch@4.0.4)':
     dependencies:
       '@google/genai': 1.30.0
       '@paralleldrive/cuid2': 2.2.2
