@@ -23,7 +23,7 @@ import { makePieceMarkdown, makePieceMarkdownString, PieceMarkdown } from './uti
 import {
 	isAttachableStream,
 	calculateHashFromFile,
-	makePieceAttachment,
+	savePieceFieldAsset,
 	makePieceValue,
 } from './utils/piece.js'
 import { LuzzleDatabase, LuzzleSelectable } from '../database/tables/index.js'
@@ -352,7 +352,7 @@ class Piece<F extends PieceFrontmatter> {
 				const pieceValue = await makePieceValue(itemField, one)
 
 				const val = isAttachableStream(pieceValue)
-					? await makePieceAttachment(
+					? await savePieceFieldAsset(
 						markdown.filePath,
 						itemField as PieceFrontmatterSchemaField,
 						pieceValue,

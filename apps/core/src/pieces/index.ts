@@ -1,6 +1,7 @@
 export * from './utils/markdown.js'
 export * from './utils/frontmatter.js'
 export * from './utils/frontmatter.path.js'
+export * from './utils/piece.js'
 export * from './json.schema.js'
 export * from './items.js'
 export * from './item.js'

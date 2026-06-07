@@ -638,12 +638,12 @@ describe('pieces/Piece.ts', () => {
 			stream: new PassThrough() as unknown as ReadStream,
 		})
 		mocks.pieceUtils.isAttachableStream.mockReturnValueOnce(true)
-		mocks.pieceUtils.makePieceAttachment.mockResolvedValue('assets/cover.jpg')
+		mocks.pieceUtils.savePieceFieldAsset.mockResolvedValue('assets/cover.jpg')
 
 		const updated = await piece.setField(markdown, 'meta.cover', 'upload-me')
 		const fm = updated.frontmatter as unknown as Record<string, Record<string, string>>
 		expect(fm.meta.cover).toBe('assets/cover.jpg')
-		expect(mocks.pieceUtils.makePieceAttachment).toHaveBeenCalled()
+		expect(mocks.pieceUtils.savePieceFieldAsset).toHaveBeenCalled()
 	})
 
 	test('setField handles set error', async () => {

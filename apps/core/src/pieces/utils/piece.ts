@@ -114,38 +114,30 @@ async function detectStreamFileType(stream: Readable, maxBytes = 4100) {
 	}
 }
 
-async function makePieceAttachment(
+async function savePieceAsset(
 	file: string,
-	field: PieceFrontmatterSchemaField,
-	stream: AttachableStream,
+	filename: string,
+	stream: Readable,
 	storage: LuzzleStorage
 ): Promise<string> {
-	const format = field.type === 'array' ? field.items.format : field.format
-
-	/* c8 ignore next 3 */
-	if (format !== 'asset') {
-		throw new Error(`${field} is not an attachable field for ${file}`)
-	}
-
 	const pieceDir = file.replace(/\.[^.]+$/, '')
 	const attachDir = path.join(ASSETS_DIRECTORY, pieceDir)
 	const exists = await storage.exists(attachDir)
-	const sourceInfo = stream.filename
 
 	if (!exists) {
 		await storage.makeDirectory(attachDir)
 	}
 
-	const { type: detectedType, stream: finalStream } = await detectStreamFileType(stream.stream)
+	const { type: detectedType, stream: finalStream } = await detectStreamFileType(stream)
 
-	const sourceBasename = sourceInfo
-		? path.basename(sourceInfo, path.extname(sourceInfo))
-		: field.name
+	const sourceBasename = filename
+		? path.basename(filename, path.extname(filename))
+		: 'attachment'
 
 	const sourceExt = detectedType
 		? '.' + detectedType.ext
-		: sourceInfo
-			? path.extname(sourceInfo)
+		: filename
+			? path.extname(filename)
 			: ''
 
 	let relPath = path.join(attachDir, sourceBasename + sourceExt)
@@ -159,6 +151,23 @@ async function makePieceAttachment(
 	await pipeline(finalStream, storage.createWriteStream(relPath))
 
 	return relPath
+}
+
+async function savePieceFieldAsset(
+	file: string,
+	field: PieceFrontmatterSchemaField,
+	stream: AttachableStream,
+	storage: LuzzleStorage
+): Promise<string> {
+	const format = field.type === 'array' ? field.items.format : field.format
+
+	/* c8 ignore next 3 */
+	if (format !== 'asset') {
+		throw new Error(`${field} is not an attachable field for ${file}`)
+	}
+
+	const filename = stream.filename || field.name
+	return savePieceAsset(file, filename, stream.stream, storage)
 }
 
 function isAttachableStream(value: unknown): value is AttachableStream {
@@ -201,8 +210,9 @@ async function makePieceValue(
 export {
 	calculateHashFromFile,
 	isAttachableStream,
-	makePieceAttachment,
+	savePieceFieldAsset,
 	makePieceValue,
 	detectStreamFileType,
+	savePieceAsset,
 	type AttachableStream,
 }

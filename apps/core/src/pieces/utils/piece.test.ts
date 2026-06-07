@@ -9,9 +9,10 @@ import { ASSETS_DIRECTORY } from '../assets.js'
 import {
 	calculateHashFromFile,
 	isAttachableStream,
-	makePieceAttachment,
+	savePieceFieldAsset,
 	makePieceValue,
 	detectStreamFileType,
+	savePieceAsset,
 	AttachableStream,
 } from './piece.js'
 import { PieceFrontmatterSchemaField } from './frontmatter.js'
@@ -347,7 +348,7 @@ describe('pieces/utils/piece.ts', () => {
 		await expect(making).rejects.toThrowError()
 	})
 
-	test('makePieceAttachment should create an asset from a stream (PNG via magic bytes)', async () => {
+	test('savePieceFieldAsset should create an asset from a stream (PNG via magic bytes)', async () => {
 		const field = { name: 'cover', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
 		const storage = makeStorage('root')
 		const markdown = makeMarkdownSample('samplePath', 'books', '', { cover: 'cover.jpg' })
@@ -361,12 +362,12 @@ describe('pieces/utils/piece.ts', () => {
 		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
 
-		const asset = await makePieceAttachment(markdown.filePath, field, mockStream, storage)
+		const asset = await savePieceFieldAsset(markdown.filePath, field, mockStream, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'photo.png'))
 	})
 
-	test('makePieceAttachment should work with field arrays (PNG)', async () => {
+	test('savePieceFieldAsset should work with field arrays (PNG)', async () => {
 		const field = {
 			name: 'cover',
 			type: 'array',
@@ -384,12 +385,12 @@ describe('pieces/utils/piece.ts', () => {
 		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
 
-		const asset = await makePieceAttachment(markdown.filePath, field, mockStream, storage)
+		const asset = await savePieceFieldAsset(markdown.filePath, field, mockStream, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'photo.png'))
 	})
 
-	test('makePieceAttachment should use filename for name and ext (text file fallback)', async () => {
+	test('savePieceFieldAsset should use filename for name and ext (text file fallback)', async () => {
 		const field = { name: 'script', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
 		const storage = makeStorage('root')
 		const markdown = makeMarkdownSample('samplePath', 'books', '', { script: 'deploy.bash' })
@@ -406,12 +407,12 @@ describe('pieces/utils/piece.ts', () => {
 		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
 
-		const asset = await makePieceAttachment(markdown.filePath, field, mockStream, storage)
+		const asset = await savePieceFieldAsset(markdown.filePath, field, mockStream, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'deploy.bash'))
 	})
 
-	test('makePieceAttachment should fall back to field name with no ext for bare Readable', async () => {
+	test('savePieceFieldAsset should fall back to field name with no ext for bare Readable', async () => {
 		const field = { name: 'cover', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
 		const storage = makeStorage('root')
 		const markdown = makeMarkdownSample('samplePath.md', 'books', '', { cover: 'cover.bin' })
@@ -428,13 +429,13 @@ describe('pieces/utils/piece.ts', () => {
 		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
 		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
 
-		const asset = await makePieceAttachment(markdown.filePath, field, mockGenericReadable, storage)
+		const asset = await savePieceFieldAsset(markdown.filePath, field, mockGenericReadable, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		// Falls back to field name, no extension (not .md)
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'cover'))
 	})
 
-	test('makePieceAttachment should increment counter on filename collision', async () => {
+	test('savePieceFieldAsset should increment counter on filename collision', async () => {
 		const field = { name: 'cover', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
 		const storage = makeStorage('root')
 		const markdown = makeMarkdownSample('samplePath', 'books', '', { cover: 'cover.jpg' })
@@ -454,17 +455,53 @@ describe('pieces/utils/piece.ts', () => {
 			.mockResolvedValueOnce(true) // photo.png exists → collision
 			.mockResolvedValueOnce(false) // photo-2.png free
 
-		const asset = await makePieceAttachment(markdown.filePath, field, mockStream, storage)
+		const asset = await savePieceFieldAsset(markdown.filePath, field, mockStream, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'photo-2.png'))
 	})
 
-	test('makePieceAttachment throws for non-asset field', async () => {
+	test('savePieceFieldAsset throws for non-asset field', async () => {
 		const field = { name: 'title', type: 'string' } as PieceFrontmatterSchemaField
 		const stream = { stream: new PassThrough() as unknown as Request }
 		const storage = makeStorage('root')
-		const asset = makePieceAttachment('file', field, stream, storage)
+		const asset = savePieceFieldAsset('file', field, stream, storage)
 
 		await expect(asset).rejects.toThrowError()
+	})
+
+	test('savePieceAsset should write an asset directly to storage', async () => {
+		const storage = makeStorage('root')
+		const markdown = makeMarkdownSample('samplePath', 'books', '', { cover: 'cover.jpg' })
+		const mocksWriteStream = new PassThrough() as unknown as WriteStream
+
+		const stream = Readable.from([fullPngBuffer])
+
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockReturnValue(mocksWriteStream)
+		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
+
+		const asset = await savePieceAsset(markdown.filePath, 'photo.jpg', stream, storage)
+		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
+		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'photo.png'))
+	})
+
+	test('savePieceAsset should default to "attachment" and empty extension if filename is empty and format is unknown', async () => {
+		const storage = makeStorage('root')
+		const markdown = makeMarkdownSample('samplePath', 'books', '', {})
+		const mocksWriteStream = new PassThrough() as unknown as WriteStream
+
+		const stream = Readable.from([Buffer.from('plain binary text data')])
+
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockReturnValue(mocksWriteStream)
+		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
+
+		const asset = await savePieceAsset(markdown.filePath, '', stream, storage)
+		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
+		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'attachment'))
 	})
 })
