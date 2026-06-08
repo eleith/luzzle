@@ -119,7 +119,47 @@ async function savePieceAsset(
 	filename: string,
 	stream: Readable,
 	storage: LuzzleStorage
+): Promise<string>
+async function savePieceAsset(
+	file: string,
+	source: string,
+	storage: LuzzleStorage,
+	options?: { name?: string }
+): Promise<string>
+async function savePieceAsset(
+	file: string,
+	filenameOrSource: string,
+	streamOrStorage: Readable | LuzzleStorage,
+	storageOrOptions?: LuzzleStorage | { name?: string }
 ): Promise<string> {
+	let finalStream: Readable
+	let targetFilename: string
+	let storage: LuzzleStorage
+
+	if (
+		streamOrStorage &&
+		typeof streamOrStorage === 'object' &&
+		'pipe' in streamOrStorage &&
+		typeof (streamOrStorage as unknown as Readable).pipe === 'function'
+	) {
+		targetFilename = filenameOrSource
+		finalStream = streamOrStorage as Readable
+		storage = storageOrOptions as LuzzleStorage
+	} else {
+		storage = streamOrStorage as LuzzleStorage
+		const options = storageOrOptions as { name?: string } | undefined
+		const res = await downloadToStream(filenameOrSource)
+		finalStream = res.stream
+		const originalFilename = res.filename || 'attachment'
+		if (options?.name) {
+			const ext = path.extname(originalFilename)
+			const hasExt = path.extname(options.name) !== ''
+			targetFilename = hasExt ? options.name : options.name + ext
+		} else {
+			targetFilename = originalFilename
+		}
+	}
+
 	const pieceDir = file.replace(/\.[^.]+$/, '')
 	const attachDir = path.join(ASSETS_DIRECTORY, pieceDir)
 	const exists = await storage.exists(attachDir)
@@ -128,16 +168,16 @@ async function savePieceAsset(
 		await storage.makeDirectory(attachDir)
 	}
 
-	const { type: detectedType, stream: finalStream } = await detectStreamFileType(stream)
+	const { type: detectedType, stream: detectedStream } = await detectStreamFileType(finalStream)
 
-	const sourceBasename = filename
-		? path.basename(filename, path.extname(filename))
+	const sourceBasename = targetFilename
+		? path.basename(targetFilename, path.extname(targetFilename))
 		: 'attachment'
 
 	const sourceExt = detectedType
 		? '.' + detectedType.ext
-		: filename
-			? path.extname(filename)
+		: targetFilename
+			? path.extname(targetFilename)
 			: ''
 
 	let relPath = path.join(attachDir, sourceBasename + sourceExt)
@@ -148,7 +188,7 @@ async function savePieceAsset(
 		counter++
 	}
 
-	await pipeline(finalStream, storage.createWriteStream(relPath))
+	await pipeline(detectedStream, storage.createWriteStream(relPath))
 
 	return relPath
 }
