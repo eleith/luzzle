@@ -3,7 +3,10 @@ import type { Extension } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 import { buildPath } from './yamlUtils'
 
-export type AssetWidgetHandler = (assetUrl: string) => { href: string; title: string }
+export type AssetWidgetHandler = (
+	assetUrl: string,
+	view: EditorView
+) => { href: string; title: string }
 
 class AssetWidget extends WidgetType {
 	constructor(
@@ -24,8 +27,14 @@ class AssetWidget extends WidgetType {
 		a.title = this.title
 		a.innerHTML = this.svg
 		a.className = 'cm-yaml-asset-icon'
-		a.target = '_blank'
-		a.rel = 'nofollow'
+
+		const isInternal =
+			this.href.startsWith('/') || this.href.startsWith('./') || this.href.startsWith('../')
+		if (!isInternal) {
+			a.target = '_blank'
+			a.rel = 'nofollow'
+		}
+
 		return a
 	}
 }
@@ -78,7 +87,7 @@ function yamlAssetWidgetPlugin(
 
 						if (!value.startsWith('.assets/')) return
 
-						const result = handler(value)
+						const result = handler(value, view)
 
 						widgets.push({
 							from: node.from,

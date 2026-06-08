@@ -1,7 +1,9 @@
 import { ViewPlugin, EditorView, Decoration, WidgetType, ViewUpdate } from '@codemirror/view'
 import type { Extension } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
-import iconSvg from '~icons/ph/arrow-circle-up-right?raw&width=20&height=20'
+import urlIconSvg from 'virtual:icons/ph/arrow-circle-up-right?raw&width=20&height=20'
+import pencilIconSvg from 'virtual:icons/ph/pencil-simple?raw&width=20&height=20'
+import { backLinkConfig } from './backLinkConfig'
 
 class MarkdownLinkWidget extends WidgetType {
 	constructor(
@@ -21,9 +23,17 @@ class MarkdownLinkWidget extends WidgetType {
 		a.href = this.href
 		a.title = this.title
 		a.innerHTML = this.svg
-		a.className = 'cm-markdown-link-icon'
-		a.target = '_blank'
-		a.rel = 'nofollow'
+
+		const isInternal =
+			this.href.startsWith('/') || this.href.startsWith('./') || this.href.startsWith('../')
+		if (isInternal) {
+			a.className = 'cm-markdown-asset-icon'
+		} else {
+			a.className = 'cm-markdown-link-icon'
+			a.target = '_blank'
+			a.rel = 'nofollow'
+		}
+
 		return a
 	}
 }
@@ -33,19 +43,20 @@ const markdownLinkPlugin = ViewPlugin.fromClass(
 		decorations = Decoration.none
 
 		constructor(view: EditorView) {
-			this.decorations = this.compute(view)
+			this.decorations = this.buildMarkdownLinkWidgets(view)
 		}
 
 		update(update: ViewUpdate) {
 			if (update.docChanged || update.viewportChanged) {
-				this.decorations = this.compute(update.view)
+				this.decorations = this.buildMarkdownLinkWidgets(update.view)
 			}
 		}
 
-		private compute(view: EditorView) {
+		private buildMarkdownLinkWidgets(view: EditorView) {
 			const doc = view.state.doc.toString()
 			const tree = syntaxTree(view.state)
 			const widgets: Array<{ from: number; to: number; value: Decoration }> = []
+			const returnTo = view.state.facet(backLinkConfig)
 
 			tree.iterate({
 				enter(node) {
@@ -65,7 +76,10 @@ const markdownLinkPlugin = ViewPlugin.fromClass(
 					const isAsset = rawUrl.startsWith('.assets/') || rawUrl.startsWith('./.assets/')
 					if (isAsset) {
 						const cleanAssetPath = rawUrl.replace(/^\.\//, '')
-						href = `/admin/asset/${cleanAssetPath}`
+						href = `/admin/asset/editor/${cleanAssetPath}`
+						if (returnTo) {
+							href += `?returnTo=${encodeURIComponent(returnTo)}`
+						}
 					}
 
 					// 2. Locate the link text/label node to decorate
@@ -80,14 +94,20 @@ const markdownLinkPlugin = ViewPlugin.fromClass(
 					widgets.push({
 						from: targetNode.from,
 						to: targetNode.to,
-						value: Decoration.mark({ class: 'cm-markdown-link-underline' })
+						value: Decoration.mark({
+							class: isAsset ? 'cm-markdown-asset-underline' : 'cm-markdown-link-underline'
+						})
 					})
 
 					widgets.push({
 						from: targetNode.to,
 						to: targetNode.to,
 						value: Decoration.widget({
-							widget: new MarkdownLinkWidget(href, `Open ${rawUrl}`, iconSvg as unknown as string),
+							widget: new MarkdownLinkWidget(
+								href,
+								isAsset ? `Edit ${rawUrl}` : `Open ${rawUrl}`,
+								(isAsset ? pencilIconSvg : urlIconSvg) as unknown as string
+							),
 							side: 1
 						})
 					})
@@ -106,6 +126,11 @@ const markdownLinkStyle = EditorView.baseTheme({
 	'.cm-markdown-link-underline': {
 		textDecoration: 'underline dotted',
 		textUnderlineOffset: '3px',
+		color: 'var(--cm-variable)'
+	},
+	'.cm-markdown-asset-underline': {
+		textDecoration: 'underline dotted',
+		textUnderlineOffset: '3px',
 		color: 'var(--cm-attribute)'
 	},
 	'.cm-markdown-link-icon': {
@@ -113,9 +138,16 @@ const markdownLinkStyle = EditorView.baseTheme({
 		verticalAlign: 'middle',
 		marginLeft: '0.3ch',
 		cursor: 'pointer',
+		color: 'var(--cm-variable)'
+	},
+	'.cm-markdown-asset-icon': {
+		display: 'inline-block',
+		verticalAlign: 'middle',
+		marginLeft: '0.3ch',
+		cursor: 'pointer',
 		color: 'var(--cm-attribute)'
 	},
-	'.cm-markdown-link-icon svg': {
+	'.cm-markdown-link-icon svg, .cm-markdown-asset-icon svg': {
 		display: 'block'
 	}
 })

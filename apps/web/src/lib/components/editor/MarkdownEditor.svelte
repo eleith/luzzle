@@ -63,7 +63,8 @@
 					value = update.state.doc.toString()
 					onchange?.(value)
 				}
-			}
+			},
+			returnTo
 		})
 
 		extensions.push(lspConfig.of([]))

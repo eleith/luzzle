@@ -2,7 +2,9 @@
   "name": "@luzzle/web",
   "version": "0.0.225",
   "private": true,
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "scripts": {
     "dev": "vite dev",
     "build": "pnpm run sync:svelte && vite build",
@@ -81,6 +83,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@codemirror/language-data": "6.5.2",
     "@luzzle/web.db": "workspace:*",
     "@luzzle/web.pieces": "workspace:*",
     "kysely": "0.28.17",

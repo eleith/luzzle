@@ -122,14 +122,14 @@ export const linkDetectorStyle = EditorView.baseTheme({
 	'.cm-link-detector-underline': {
 		textDecoration: 'underline dotted',
 		textUnderlineOffset: '3px',
-		color: 'var(--cm-attribute)'
+		color: 'var(--cm-variable)'
 	},
 	'.cm-link-detector-icon': {
 		display: 'inline-block',
 		verticalAlign: 'middle',
 		marginLeft: '0.3ch',
 		cursor: 'pointer',
-		color: 'var(--cm-attribute)'
+		color: 'var(--cm-variable)'
 	},
 	'.cm-link-detector-icon svg': {
 		display: 'block'

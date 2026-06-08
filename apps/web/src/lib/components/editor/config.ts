@@ -20,17 +20,20 @@ import { indentWithTab } from '@codemirror/commands'
 import { lintGutter, lintKeymap } from '@codemirror/lint'
 import { luzzleHyperlink } from './extensions/luzzleHyperlink'
 import { luzzleMarkdownLink } from './extensions/luzzleMarkdownLink'
+import { backLinkConfig } from './extensions/backLinkConfig'
 
 export interface EditorConfigOptions {
 	themeConfig: Compartment
 	initialTheme?: Extension
 	onUpdate?: (update: ViewUpdate) => void
+	returnTo?: string
 }
 
 export function createEditorExtensions({
 	themeConfig,
 	initialTheme,
-	onUpdate
+	onUpdate,
+	returnTo
 }: EditorConfigOptions) {
 	const extensions = [
 		highlightSpecialChars(),
@@ -66,6 +69,7 @@ export function createEditorExtensions({
 		lintGutter({ tooltipFilter: () => [] }),
 		luzzleHyperlink,
 		luzzleMarkdownLink,
+		backLinkConfig.of(returnTo || ''),
 
 		EditorView.theme({
 			'&': {

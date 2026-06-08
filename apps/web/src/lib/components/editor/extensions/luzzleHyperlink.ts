@@ -1,6 +1,6 @@
 import type { Extension } from '@codemirror/state'
 import { linkDetector } from './linkDetector'
-import iconSvg from '~icons/ph/arrow-circle-up-right?raw&width=20&height=20'
+import iconSvg from 'virtual:icons/ph/arrow-circle-up-right?raw&width=20&height=20'
 
 const URL_REGEX = /\bhttps?:\/\/[^\s<>"'`()]+(?:\([^\s<>"']*\))?/gi
 

@@ -64,7 +64,7 @@ function detectAssetUrlBuilder(): (path: string) => string {
 	}
 
 	if (pathname.startsWith('/admin/')) {
-		return (path) => `/admin/asset/${path}`
+		return (path) => `/admin/asset/viewer/${path}`
 	}
 
 	const config = page.data.config
