@@ -8,6 +8,8 @@ import {
 } from '@codemirror/view'
 import type { DecorationSet } from '@codemirror/view'
 import type { Extension } from '@codemirror/state'
+import { syntaxTree } from '@codemirror/language'
+import type { SyntaxNode } from '@lezer/common'
 
 export interface LinkPattern {
 	regex: RegExp
@@ -56,8 +58,25 @@ function linkDetectorPlugin(icon: string, patterns: LinkPattern[]): Extension {
 		(p) =>
 			new MatchDecorator({
 				regexp: p.regex,
-				decorate: (add, from, to, match, _view) => {
+				decorate: (add, from, to, match, view) => {
 					try {
+						// Skip if this URL is already part of a markdown Link, Image or URL node
+						const tree = syntaxTree(view.state)
+						let node: SyntaxNode | null = tree.resolveInner(from, 1)
+						let isInsideLink = false
+						while (node) {
+							if (
+								node.type.name === 'Link' ||
+								node.type.name === 'Image' ||
+								node.type.name === 'URL'
+							) {
+								isInsideLink = true
+								break
+							}
+							node = node.parent
+						}
+						if (isInsideLink) return
+
 						const url = match[0]
 						const href = p.href(url)
 						const title = p.title?.(url) ?? `Open ${url}`

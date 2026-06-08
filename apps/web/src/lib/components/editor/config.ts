@@ -19,6 +19,7 @@ import { yamlFrontmatter } from '@codemirror/lang-yaml'
 import { indentWithTab } from '@codemirror/commands'
 import { lintGutter, lintKeymap } from '@codemirror/lint'
 import { luzzleHyperlink } from './extensions/luzzleHyperlink'
+import { luzzleMarkdownLink } from './extensions/luzzleMarkdownLink'
 
 export interface EditorConfigOptions {
 	themeConfig: Compartment
@@ -64,6 +65,7 @@ export function createEditorExtensions({
 		themeConfig.of(initialTheme ?? []),
 		lintGutter({ tooltipFilter: () => [] }),
 		luzzleHyperlink,
+		luzzleMarkdownLink,
 
 		EditorView.theme({
 			'&': {
