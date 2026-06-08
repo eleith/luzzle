@@ -1,4 +1,4 @@
-import { error, fail } from '@sveltejs/kit'
+import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces } from '$lib/server/pieces'
 import { getStorage } from '$lib/server/storage'
@@ -153,5 +153,24 @@ export const actions = {
 			const message = e instanceof Error ? e.message : String(e)
 			return fail(500, { error: { message: `Failed to save attachment: ${message}` } })
 		}
+	},
+	delete: async (event) => {
+		const file = event.params.path
+		const directory = path.dirname(file)
+		const pieces = getPieces()
+		const type = pieces.parseFilename(file).type
+
+		if (!type) {
+			return error(404, `piece type does not exist`)
+		}
+
+		try {
+			const piece = await pieces.getPiece(type)
+			await piece.delete(file)
+		} catch (e) {
+			return error(500, `piece could not be deleted: ${e}`)
+		}
+
+		redirect(303, `/admin/directory/${directory === '.' ? '' : directory}`)
 	}
 } satisfies Actions

@@ -67,7 +67,7 @@
 <input type="file" bind:this={fileInput} onchange={handleFileSelected} class="visually-hidden" />
 
 <dialog bind:this={dialog}>
-	<form method="post" action="/admin/piece/{data.file}?/delete">
+	<form method="post" action="?/delete">
 		<p>Are you sure you want to delete this piece?</p>
 		<p>This action cannot be undone.</p>
 		<div

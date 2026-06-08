@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types'
-	import PieceForm from '$lib/components/editor/PieceForm.svelte'
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
 	import Button from '$lib/components/ui/Button.svelte'
 	import { page } from '$app/state'
@@ -9,18 +8,13 @@
 
 	let selectedField = $state<string>('all')
 	let prompt = $state('')
-	let generatedFields = $state(form?.fields || {})
 	let mergedContent = $state(form?.mergedContent || '')
 
 	const returnTo = page.url.searchParams.get('returnTo')
 	const returnParam = returnTo ? '&returnTo=' + encodeURIComponent(returnTo) : ''
-	const backUrl = returnTo || `/admin/piece/${data.file}`
-	const isSourceMode = returnTo?.includes('/source')
+	const backUrl = returnTo || `/admin/piece/${data.file}/source`
 
 	$effect(() => {
-		if (form?.fields) {
-			generatedFields = form.fields
-		}
 		if (form?.mergedContent) {
 			mergedContent = form.mergedContent
 		}
@@ -29,47 +23,26 @@
 
 {#if form && !form.error}
 	<section class="review">
-		{#if isSourceMode}
-			<div class="header">
-				<div
-					style="display:flex; gap: var(--space-2); justify-content: flex-end; margin-bottom: var(--space-2);"
-				>
-					<form
-						method="post"
-						action="/admin/piece/{data.file}/source{returnParam.replace('&', '?')}"
-					>
-						<input type="hidden" name="content" value={mergedContent} />
-						<Button type="submit">save</Button>
-					</form>
-					<a href={backUrl}>
-						<Button variant="outline">cancel</Button>
-					</a>
-				</div>
-			</div>
-			<div class="editor-container">
-				<MarkdownEditor
-					bind:value={mergedContent}
-					file={data.file}
-					returnTo={page.url.pathname + page.url.search}
-				/>
-			</div>
-		{:else}
-			{#snippet buttons()}
-				<Button type="submit">save</Button>
+		<div class="header">
+			<div
+				style="display:flex; gap: var(--space-2); justify-content: flex-end; margin-bottom: var(--space-2);"
+			>
+				<form method="post" action="/admin/piece/{data.file}/source{returnParam.replace('&', '?')}">
+					<input type="hidden" name="content" value={mergedContent} />
+					<Button type="submit">save</Button>
+				</form>
 				<a href={backUrl}>
 					<Button variant="outline">cancel</Button>
 				</a>
-			{/snippet}
-
-			<PieceForm
-				action="/admin/piece/{data.file}?/edit{returnParam}"
-				schema={data.schema}
-				values={generatedFields}
-				originalValues={data.fields}
-				note={form.note || ''}
-				{buttons}
+			</div>
+		</div>
+		<div class="editor-container">
+			<MarkdownEditor
+				bind:value={mergedContent}
+				file={data.file}
+				returnTo={page.url.pathname + page.url.search}
 			/>
-		{/if}
+		</div>
 	</section>
 {:else}
 	<section class="generate">

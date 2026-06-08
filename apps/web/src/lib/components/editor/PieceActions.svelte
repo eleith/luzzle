@@ -6,7 +6,7 @@
 
 	type Props = {
 		file: string
-		currentMode: 'form' | 'source' | 'preview'
+		currentMode: 'source' | 'preview'
 		isDirty: boolean
 		canGenerate: boolean
 		onDelete: () => void
@@ -15,8 +15,6 @@
 
 	let { file, currentMode, isDirty, canGenerate, onDelete, onAttach }: Props = $props()
 
-	const switchUrl = currentMode === 'form' ? `/admin/piece/${file}/source` : `/admin/piece/${file}`
-	const label = currentMode === 'form' ? 'source mode' : 'form mode'
 	const previewUrl = `/admin/piece/${file}/preview`
 	const returnParam = `?returnTo=${encodeURIComponent(page.url.pathname)}`
 </script>
@@ -31,21 +29,6 @@
 				{#if open}
 					<div {...wrapperProps} class="dropdown-content">
 						<div {...props}>
-							<DropdownMenu.Item
-								disabled={isDirty}
-								onSelect={() => goto(`/admin/pieces/field/${file}${returnParam}`)}
-							>
-								{#snippet child({ props })}
-									<div class="dropdown-item" {...props}>edit field</div>
-								{/snippet}
-							</DropdownMenu.Item>
-
-							<DropdownMenu.Item disabled={isDirty} onSelect={() => goto(switchUrl)}>
-								{#snippet child({ props })}
-									<div class="dropdown-item" {...props}>{label}</div>
-								{/snippet}
-							</DropdownMenu.Item>
-
 							{#if currentMode !== 'preview'}
 								<DropdownMenu.Item disabled={isDirty} onSelect={() => goto(previewUrl)}>
 									{#snippet child({ props })}
