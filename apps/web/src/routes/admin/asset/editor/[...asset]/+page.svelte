@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import { enhance } from '$app/forms'
+	import { Dialog } from 'bits-ui'
+	import { fade, fly } from 'svelte/transition'
+	import { beforeNavigate, goto } from '$app/navigation'
 	import Button from '$lib/components/ui/Button.svelte'
 	import type { PageProps } from './$types'
 	import { EditorView } from 'codemirror'
@@ -33,6 +36,28 @@
 	let isSaving = $state(false)
 	let saveError = $state<string | null>(null)
 	let saveSuccess = $state(false)
+
+	const isDirty = $derived(editorContent !== data.content && !isSaving)
+
+	let targetUrl = $state<string | null>(null)
+	let showWarningDialog = $state(false)
+	let bypassWarning = $state(false)
+
+	beforeNavigate((navigation) => {
+		if (isDirty && !bypassWarning && navigation.type !== 'form' && navigation.to) {
+			navigation.cancel()
+			targetUrl = navigation.to.url.pathname + navigation.to.url.search + navigation.to.url.hash
+			showWarningDialog = true
+		}
+	})
+
+	function confirmDiscard() {
+		bypassWarning = true
+		showWarningDialog = false
+		if (targetUrl) {
+			goto(targetUrl)
+		}
+	}
 
 	const sortedLanguages = [...languages].sort((a, b) => a.name.localeCompare(b.name))
 
@@ -162,9 +187,18 @@
 			attributeFilter: ['data-theme']
 		})
 
+		const handleUnload = (e: BeforeUnloadEvent) => {
+			if (isDirty) {
+				e.preventDefault()
+				e.returnValue = ''
+			}
+		}
+		window.addEventListener('beforeunload', handleUnload)
+
 		return () => {
 			themeObserver.disconnect()
 			view?.destroy()
+			window.removeEventListener('beforeunload', handleUnload)
 		}
 	})
 
@@ -181,6 +215,44 @@
 <svelte:head>
 	<title>{data.filename} — Asset Editor</title>
 </svelte:head>
+
+<Dialog.Root bind:open={showWarningDialog}>
+	<Dialog.Portal>
+		<Dialog.Overlay forceMount>
+			{#snippet child({ props, open })}
+				{#if open}
+					<div class="dialogOverlay" {...props} transition:fade={{ duration: 150 }}></div>
+				{/if}
+			{/snippet}
+		</Dialog.Overlay>
+		<Dialog.Content forceMount>
+			{#snippet child({ props, open })}
+				{#if open}
+					<div class="dialogContent" {...props} transition:fly={{ y: 100, duration: 250 }}>
+						<Dialog.Title class="dialogTitle">Unsaved Changes</Dialog.Title>
+						<Dialog.Description class="dialogDescription">
+							You have unsaved changes. If you leave this page, these changes will be permanently lost.
+						</Dialog.Description>
+						<div class="dialog-actions">
+							<Button
+								variant="outline"
+								onclick={() => (showWarningDialog = false)}
+							>
+								stay
+							</Button>
+							<Button
+								variant="error"
+								onclick={confirmDiscard}
+							>
+								discard
+							</Button>
+						</div>
+					</div>
+				{/if}
+			{/snippet}
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <div class="asset-editor-page">
 	<div class="header">
@@ -521,5 +593,69 @@
 		.meta-label {
 			width: auto;
 		}
+
+		.dialogContent {
+			top: auto;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			transform: none;
+			width: 100%;
+			max-width: 100%;
+			border-radius: var(--radius-medium) var(--radius-medium) 0 0;
+			padding: var(--space-4) var(--space-6) max(var(--space-6), env(safe-area-inset-bottom))
+				var(--space-6);
+			border-bottom: none;
+			border-left: none;
+			border-right: none;
+		}
+	}
+
+	.dialogOverlay {
+		position: fixed;
+		inset: 0;
+		background-color: color-mix(in srgb, var(--color-surface-dim) 40%, transparent);
+		backdrop-filter: blur(4px);
+		z-index: 1000;
+	}
+
+	.dialogContent {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 90%;
+		max-width: 480px;
+		background-color: var(--color-surface);
+		color: var(--color-on-surface);
+		border: 1px solid var(--color-outline);
+		border-radius: var(--radius-medium);
+		padding: var(--space-4);
+		box-shadow: var(--shadow-raised);
+		z-index: 1001;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.dialogTitle {
+		font-size: 1.25rem;
+		font-weight: 600;
+		margin: 0;
+		color: var(--color-on-surface);
+		text-align: center;
+	}
+
+	.dialogDescription {
+		font-size: 0.875rem;
+		color: var(--color-on-surface-variant, #666);
+		margin: 0;
+	}
+
+	.dialog-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-2);
+		margin-top: var(--space-2);
 	}
 </style>

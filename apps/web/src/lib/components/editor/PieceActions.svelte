@@ -30,7 +30,7 @@
 					<div {...wrapperProps} class="dropdown-content">
 						<div {...props}>
 							{#if currentMode !== 'preview'}
-								<DropdownMenu.Item disabled={isDirty} onSelect={() => goto(previewUrl)}>
+								<DropdownMenu.Item onSelect={() => goto(previewUrl)}>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>preview</div>
 									{/snippet}
@@ -39,7 +39,6 @@
 
 							{#if canGenerate}
 								<DropdownMenu.Item
-									disabled={isDirty}
 									onSelect={() => goto(`/admin/pieces/generate/${file}${returnParam}`)}
 								>
 									{#snippet child({ props })}

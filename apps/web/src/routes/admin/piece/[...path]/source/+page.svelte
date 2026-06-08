@@ -8,8 +8,41 @@
 	import { fade, fly } from 'svelte/transition'
 
 	import { page } from '$app/state'
+	import { beforeNavigate, goto } from '$app/navigation'
+	import { onMount } from 'svelte'
 
 	let { data, form }: PageProps = $props()
+
+	let targetUrl = $state<string | null>(null)
+	let showWarningDialog = $state(false)
+	let bypassWarning = $state(false)
+
+	beforeNavigate((navigation) => {
+		if (isDirty && !bypassWarning && navigation.type !== 'form' && navigation.to) {
+			navigation.cancel()
+			targetUrl = navigation.to.url.pathname + navigation.to.url.search + navigation.to.url.hash
+			showWarningDialog = true
+		}
+	})
+
+	function confirmDiscard() {
+		bypassWarning = true
+		showWarningDialog = false
+		if (targetUrl) {
+			goto(targetUrl)
+		}
+	}
+
+	onMount(() => {
+		const handleUnload = (e: BeforeUnloadEvent) => {
+			if (isDirty) {
+				e.preventDefault()
+				e.returnValue = ''
+			}
+		}
+		window.addEventListener('beforeunload', handleUnload)
+		return () => window.removeEventListener('beforeunload', handleUnload)
+	})
 
 	let dialog: HTMLDialogElement
 	let editorRef = $state<MarkdownEditor>()
@@ -296,6 +329,44 @@
 	</form>
 </dialog>
 
+<Dialog.Root bind:open={showWarningDialog}>
+	<Dialog.Portal>
+		<Dialog.Overlay forceMount>
+			{#snippet child({ props, open })}
+				{#if open}
+					<div class="dialogOverlay" {...props} transition:fade={{ duration: 150 }}></div>
+				{/if}
+			{/snippet}
+		</Dialog.Overlay>
+		<Dialog.Content forceMount>
+			{#snippet child({ props, open })}
+				{#if open}
+					<div class="dialogContent" {...props} transition:fly={{ y: 100, duration: 250 }}>
+						<Dialog.Title class="dialogTitle">Unsaved Changes</Dialog.Title>
+						<Dialog.Description class="dialogDescription">
+							You have unsaved changes. If you leave this page, these changes will be permanently lost.
+						</Dialog.Description>
+						<div class="dialog-actions">
+							<Button
+								variant="outline"
+								onclick={() => (showWarningDialog = false)}
+							>
+								stay
+							</Button>
+							<Button
+								variant="error"
+								onclick={confirmDiscard}
+							>
+								discard
+							</Button>
+						</div>
+					</div>
+				{/if}
+			{/snippet}
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
+
 <div class="piece-page">
 	<div class="header">
 		<div style="display:flex; gap: var(--space-2);">
@@ -391,8 +462,8 @@
 	.dialogOverlay {
 		position: fixed;
 		inset: 0;
-		background-color: var(--color-surface-inverse);
-		opacity: 0.4;
+		background-color: color-mix(in srgb, var(--color-surface-dim) 40%, transparent);
+		backdrop-filter: blur(4px);
 		z-index: 1000;
 	}
 

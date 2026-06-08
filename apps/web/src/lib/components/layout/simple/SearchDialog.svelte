@@ -73,7 +73,7 @@
 	.searchOverlay {
 		position: fixed;
 		inset: 0;
-		opacity: 0.5;
-		background: var(--color-surface-inverse);
+		background-color: color-mix(in srgb, var(--color-surface-dim) 40%, transparent);
+		backdrop-filter: blur(4px);
 	}
 </style>
