@@ -31,7 +31,7 @@
 	})
 
 	let attachDialogOpen = $state(false)
-	let activeTab = $state<'file' | 'url'>('file')
+	let activeTab = $state<'file' | 'url' | 'create'>('file')
 	let selectedFile = $state<File | null>(null)
 	let urlValue = $state('')
 	let customName = $state('')
@@ -87,11 +87,16 @@
 			uploadError = 'Please enter a URL.'
 			return
 		}
+		if (activeTab === 'create' && !customName.trim()) {
+			uploadError = 'Please enter a filename.'
+			return
+		}
 
 		isUploading = true
 		uploadError = null
 
 		const formData = new FormData()
+		formData.append('mode', activeTab)
 		if (activeTab === 'file' && selectedFile) {
 			formData.append('file', selectedFile)
 		} else if (activeTab === 'url') {
@@ -166,6 +171,15 @@
 							>
 								URL
 							</button>
+							<button
+								type="button"
+								class="tab-btn"
+								class:active={activeTab === 'create'}
+								onclick={() => (activeTab = 'create')}
+								disabled={isUploading}
+							>
+								Create
+							</button>
 						</div>
 
 						<form onsubmit={handleAttachSubmit} class="attachForm">
@@ -200,7 +214,7 @@
 										{/if}
 									</label>
 								</div>
-							{:else}
+							{:else if activeTab === 'url'}
 								<div class="input-group">
 									<label for="dialog-url-input" class="field-label">Remote URL</label>
 									<input
@@ -216,19 +230,21 @@
 							{/if}
 
 							<div class="input-group">
-								<label for="dialog-name-input" class="field-label">Target Filename (Optional)</label
-								>
+								<label for="dialog-name-input" class="field-label">
+									{activeTab === 'create' ? 'Filename' : 'Target Filename (Optional)'}
+								</label>
 								<div class="filename-input-wrapper">
 									<input
 										type="text"
 										id="dialog-name-input"
-										placeholder="Default name will be used"
+										placeholder={activeTab === 'create' ? 'notes.txt' : 'Default name will be used'}
 										bind:value={customName}
 										oninput={() => {
 											isNameManuallyEdited = true
 										}}
 										disabled={isUploading}
 										class="input filename-input"
+										required={activeTab === 'create'}
 									/>
 								</div>
 							</div>

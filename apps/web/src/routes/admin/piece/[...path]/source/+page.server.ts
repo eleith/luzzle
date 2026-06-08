@@ -138,8 +138,13 @@ export const actions = {
 		const uploadedFile = formData.get('file') as File | null
 		const url = formData.get('url') as string | null
 		const name = formData.get('name') as string | null
+		const mode = formData.get('mode') as 'file' | 'url' | 'create' | null
 
-		if ((!uploadedFile || uploadedFile.size === 0) && !url) {
+		if (mode === 'create') {
+			if (!name || !name.trim()) {
+				return fail(400, { error: { message: 'Filename is required to create a blank file.' } })
+			}
+		} else if ((!uploadedFile || uploadedFile.size === 0) && !url) {
 			return fail(400, { error: { message: 'No file or URL provided' } })
 		}
 
@@ -147,7 +152,10 @@ export const actions = {
 			const storage = getStorage()
 			let relativePath: string
 
-			if (url) {
+			if (mode === 'create') {
+				const emptyStream = Readable.from(Buffer.alloc(0))
+				relativePath = await savePieceAsset(file, name!.trim(), emptyStream, storage)
+			} else if (url) {
 				relativePath = await savePieceAsset(file, url, storage, name ? { name } : undefined)
 			} else if (uploadedFile) {
 				const arrayBuffer = await uploadedFile.arrayBuffer()
