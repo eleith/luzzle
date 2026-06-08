@@ -148,8 +148,18 @@
 		border-radius: var(--radius-medium);
 		overflow: hidden;
 		min-height: 500px;
-		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+		position: relative;
 		transition: background-color 0.2s ease;
+	}
+
+	.editor-wrapper::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+		pointer-events: none;
+		z-index: 12;
+		border-radius: inherit;
 	}
 
 	:global(.cm-editor) {

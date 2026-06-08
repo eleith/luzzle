@@ -8,7 +8,7 @@ const settings: ThemeSettings = {
 	selection: '#bdae9391',
 	selectionMatch: '#bdae9391',
 	lineHighlight: '#a37f2238',
-	gutterBackground: '#ebdbb2',
+	gutterBackground: '#fbf1c7',
 	gutterForeground: '#665c54',
 	gutterActiveForeground: '#3c3836',
 	attribute: '#b57614',
