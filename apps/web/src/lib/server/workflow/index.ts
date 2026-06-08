@@ -24,7 +24,11 @@ export function getOpenWorkflow(): OpenWorkflow {
 
 export function getOpenWorkflowDb(): DatabaseSync {
 	if (!openWorkflowDbInstance) {
-		openWorkflowDbInstance = new DatabaseSync(resolveOpenWorkflowDbPath())
+		const db = new DatabaseSync(resolveOpenWorkflowDbPath())
+		db.exec('PRAGMA journal_mode = WAL;')
+		db.exec('PRAGMA synchronous = NORMAL;')
+		db.exec('PRAGMA busy_timeout = 5000;')
+		openWorkflowDbInstance = db
 	}
 	return openWorkflowDbInstance
 }
