@@ -27,5 +27,4 @@ people: Léa Drucker, Mathieu Amalric, Daniel Njo Lobé, Marie Bouvet, Sébastie
 poster: .assets/films/poster/mars-express-a7f29435.jpg
 date_viewed: 6/21/24
 ---
-
 robots.

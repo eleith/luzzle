@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { deserialize } from '$app/forms'
+	import { deserialize, enhance } from '$app/forms'
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
 	import Button from '$lib/components/ui/Button.svelte'
 	import PieceActions from '$lib/components/editor/PieceActions.svelte'
@@ -16,6 +16,8 @@
 	let targetUrl = $state<string | null>(null)
 	let showWarningDialog = $state(false)
 	let bypassWarning = $state(false)
+	let isSaving = $state(false)
+	let saveSuccess = $state(false)
 
 	beforeNavigate((navigation) => {
 		if (isDirty && !bypassWarning && navigation.type !== 'form' && navigation.to) {
@@ -53,7 +55,7 @@
 			''
 	)
 
-	const isDirty = $derived(!!form?.error || rawContent !== data.rawContent)
+	const isDirty = $derived(!!form?.error || (rawContent !== data.rawContent && !isSaving))
 
 	$effect(() => {
 		if (form && 'rawContent' in form && form.rawContent) {
@@ -140,7 +142,7 @@
 		}
 
 		try {
-			const response = await fetch(`?/attach`, {
+			const response = await fetch(`/admin/piece/${data.file}/source?/attach`, {
 				method: 'POST',
 				body: formData
 			})
@@ -317,13 +319,23 @@
 </Dialog.Root>
 
 <dialog bind:this={dialog}>
-	<form method="post" action="?/delete">
+	<form
+		method="post"
+		action="/admin/piece/{data.file}/source?/delete"
+		use:enhance={() => {
+			bypassWarning = true
+			return async ({ update }) => {
+				dialog.close()
+				await update()
+			}
+		}}
+	>
 		<p>Are you sure you want to delete this piece?</p>
 		<p>This action cannot be undone.</p>
 		<div
 			style="display:flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4);"
 		>
-			<Button variant="outline" onclick={() => dialog.close()}>cancel</Button>
+			<Button variant="outline" type="button" onclick={() => dialog.close()}>cancel</Button>
 			<Button variant="error" type="submit">delete</Button>
 		</div>
 	</form>
@@ -361,9 +373,27 @@
 <div class="piece-page">
 	<div class="header">
 		<div style="display:flex; gap: var(--space-2);">
-			<form method="post" action="?/save">
+			<form
+				method="post"
+				action="/admin/piece/{data.file}/source?/save"
+				use:enhance={() => {
+					isSaving = true
+					bypassWarning = true
+					saveSuccess = false
+					return async ({ result, update }) => {
+						isSaving = false
+						bypassWarning = false
+						if (result.type === 'success') {
+							saveSuccess = true
+						}
+						await update({ reset: false })
+					}
+				}}
+			>
 				<input type="hidden" name="content" value={rawContent} />
-				<Button type="submit" disabled={!isDirty}>save</Button>
+				<Button type="submit" disabled={!isDirty || isSaving}>
+					{isSaving ? 'saving...' : 'save'}
+				</Button>
 			</form>
 			<a href="/admin/directory/{data.directory === '.' ? '' : data.directory}">
 				<Button variant="outline">cancel</Button>
@@ -381,8 +411,12 @@
 		/>
 	</div>
 
+	{#if saveSuccess}
+		<div class="banner success-banner">Piece saved successfully!</div>
+	{/if}
+
 	{#if form?.error}
-		<div class="error-banner">
+		<div class="banner error-banner">
 			<strong>Error:</strong>
 			{form.error.message}
 		</div>
@@ -418,13 +452,23 @@
 		margin-bottom: var(--space-2);
 	}
 
-	.error-banner {
+	.banner {
 		padding: var(--space-3);
+		border-radius: var(--radius-small);
+		margin-bottom: var(--space-2);
+		font-size: 0.875rem;
+	}
+
+	.success-banner {
+		background-color: var(--color-success-container, #d4edda);
+		color: var(--color-on-success-container, #155724);
+		border: 1px solid var(--color-success, #c3e6cb);
+	}
+
+	.error-banner {
 		background-color: var(--color-error-container);
 		color: var(--color-on-error-container);
 		border: 1px solid var(--color-error);
-		border-radius: var(--radius-small);
-		margin-bottom: var(--space-2);
 	}
 
 	dialog {

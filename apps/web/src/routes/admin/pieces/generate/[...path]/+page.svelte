@@ -3,6 +3,8 @@
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
 	import Button from '$lib/components/ui/Button.svelte'
 	import { page } from '$app/state'
+	import { enhance } from '$app/forms'
+	import { goto } from '$app/navigation'
 
 	let { data, form }: { data: PageData; form: ActionData } = $props()
 
@@ -11,7 +13,6 @@
 	let mergedContent = $state(form?.mergedContent || '')
 
 	const returnTo = page.url.searchParams.get('returnTo')
-	const returnParam = returnTo ? '&returnTo=' + encodeURIComponent(returnTo) : ''
 	const backUrl = returnTo || `/admin/piece/${data.file}/source`
 
 	$effect(() => {
@@ -27,7 +28,17 @@
 			<div
 				style="display:flex; gap: var(--space-2); justify-content: flex-end; margin-bottom: var(--space-2);"
 			>
-				<form method="post" action="/admin/piece/{data.file}/source{returnParam.replace('&', '?')}">
+				<form
+					method="post"
+					action="/admin/piece/{data.file}/source?/save"
+					use:enhance={() => {
+						return async ({ result }) => {
+							if (result.type === 'success') {
+								goto(backUrl)
+							}
+						}
+					}}
+				>
 					<input type="hidden" name="content" value={mergedContent} />
 					<Button type="submit">save</Button>
 				</form>

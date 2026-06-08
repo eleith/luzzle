@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte'
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
+	import { enhance } from '$app/forms'
+	import { goto } from '$app/navigation'
 
 	let { data, form } = $props()
 	let selectedType = $state(data.type)
@@ -25,7 +27,17 @@
 			<div
 				style="display:flex; gap: var(--space-2); justify-content: flex-end; margin-bottom: var(--space-2);"
 			>
-				<form method="post" action="/admin/piece/{filePath}/source">
+				<form
+					method="post"
+					action="/admin/piece/{filePath}/source?/save"
+					use:enhance={() => {
+						return async ({ result }) => {
+							if (result.type === 'success') {
+								goto(`/admin/piece/${filePath}/source`)
+							}
+						}
+					}}
+				>
 					<input type="hidden" name="content" value={mergedContent} />
 					<Button type="submit">save</Button>
 				</form>
