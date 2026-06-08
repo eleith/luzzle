@@ -344,21 +344,12 @@
 					<div class="dialogContent" {...props} transition:fly={{ y: 100, duration: 250 }}>
 						<Dialog.Title class="dialogTitle">Unsaved Changes</Dialog.Title>
 						<Dialog.Description class="dialogDescription">
-							You have unsaved changes. If you leave this page, these changes will be permanently lost.
+							You have unsaved changes. If you leave this page, these changes will be permanently
+							lost.
 						</Dialog.Description>
 						<div class="dialog-actions">
-							<Button
-								variant="outline"
-								onclick={() => (showWarningDialog = false)}
-							>
-								stay
-							</Button>
-							<Button
-								variant="error"
-								onclick={confirmDiscard}
-							>
-								discard
-							</Button>
+							<Button variant="outline" onclick={() => (showWarningDialog = false)}>stay</Button>
+							<Button variant="error" onclick={confirmDiscard}>discard</Button>
 						</div>
 					</div>
 				{/if}

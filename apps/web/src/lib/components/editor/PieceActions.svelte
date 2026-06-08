@@ -13,7 +13,7 @@
 		onAttach?: () => void
 	}
 
-	let { file, currentMode, isDirty, canGenerate, onDelete, onAttach }: Props = $props()
+	let { file, currentMode, canGenerate, onDelete, onAttach }: Props = $props()
 
 	const previewUrl = `/admin/piece/${file}/preview`
 	const returnParam = `?returnTo=${encodeURIComponent(page.url.pathname)}`
