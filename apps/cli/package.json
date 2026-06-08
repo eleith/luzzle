@@ -47,7 +47,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@luzzle/core": "0.0.63",
+    "@luzzle/core": "workspace:*",
     "conf": "13.1.0",
     "pino": "9.6.0",
     "pino-pretty": "13.0.0",
