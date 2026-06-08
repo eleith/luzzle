@@ -37,6 +37,7 @@
 			}
 		}
 
+		applyTheme(getThemePreference())
 		mediaQuery.addEventListener('change', handleChange)
 
 		return () => {

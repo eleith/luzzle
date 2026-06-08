@@ -27,7 +27,7 @@ pre.shiki code span,
 }
 
 [data-theme='dark'] pre.shiki,
-html[data-them='dark'] .markdown pre {
+[data-theme='dark'] .markdown pre {
 	background-color: var(--shiki-dark-bg);
 }
 
@@ -37,6 +37,21 @@ html[data-them='dark'] .markdown pre {
 [data-theme='dark'] .markdown pre span {
 	color: var(--shiki-dark);
 	background-color: var(--shiki-dark-bg);
+}
+
+/* Media query fallback for system preferences when data-theme is not explicitly set */
+@media (prefers-color-scheme: dark) {
+	html:not([data-theme='light']) pre.shiki,
+	html:not([data-theme='light']) .markdown pre {
+		background-color: var(--shiki-dark-bg);
+	}
+	html:not([data-theme='light']) pre.shiki code,
+	html:not([data-theme='light']) pre.shiki span,
+	html:not([data-theme='light']) .markdown pre,
+	html:not([data-theme='light']) .markdown pre span {
+		color: var(--shiki-dark);
+		background-color: var(--shiki-dark-bg);
+	}
 }
 
 .markdown {

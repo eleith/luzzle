@@ -159,7 +159,7 @@
 		const themeObserver = new MutationObserver(() => updateTheme())
 		themeObserver.observe(document.documentElement, {
 			attributes: true,
-			attributeFilter: ['class']
+			attributeFilter: ['data-theme']
 		})
 
 		return () => {
