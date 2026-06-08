@@ -45,6 +45,9 @@ export function registerJobProgressPurgeWorkflow(): void {
 			try {
 				const openWorkflowDbPath = resolveOpenWorkflowDbPath(config)
 				const openWorkflowDb = new DatabaseSync(openWorkflowDbPath)
+				openWorkflowDb.exec('PRAGMA journal_mode = WAL;')
+				openWorkflowDb.exec('PRAGMA synchronous = NORMAL;')
+				openWorkflowDb.exec('PRAGMA busy_timeout = 5000;')
 				const count = purgeExpiredWorkflowRuns(openWorkflowDb, retentionDays)
 				logger.info('purged openworkflow runs', { count })
 			} catch (err) {
