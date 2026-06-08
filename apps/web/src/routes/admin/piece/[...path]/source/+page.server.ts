@@ -136,17 +136,34 @@ export const actions = {
 		const file = event.params.path
 		const formData = await event.request.formData()
 		const uploadedFile = formData.get('file') as File | null
+		const url = formData.get('url') as string | null
+		const name = formData.get('name') as string | null
 
-		if (!uploadedFile || uploadedFile.size === 0) {
-			return fail(400, { error: { message: 'No file provided' } })
+		if ((!uploadedFile || uploadedFile.size === 0) && !url) {
+			return fail(400, { error: { message: 'No file or URL provided' } })
 		}
 
 		try {
 			const storage = getStorage()
-			const arrayBuffer = await uploadedFile.arrayBuffer()
-			const stream = Readable.from(Buffer.from(arrayBuffer))
+			let relativePath: string
 
-			const relativePath = await savePieceAsset(file, uploadedFile.name, stream, storage)
+			if (url) {
+				relativePath = await savePieceAsset(file, url, storage, name ? { name } : undefined)
+			} else if (uploadedFile) {
+				const arrayBuffer = await uploadedFile.arrayBuffer()
+				const stream = Readable.from(Buffer.from(arrayBuffer))
+
+				let targetFilename = uploadedFile.name
+				if (name) {
+					const ext = path.extname(uploadedFile.name)
+					const hasExt = path.extname(name) !== ''
+					targetFilename = hasExt ? name : name + ext
+				}
+
+				relativePath = await savePieceAsset(file, targetFilename, stream, storage)
+			} else {
+				throw new Error('Invalid attach request')
+			}
 
 			return { success: true, path: relativePath }
 		} catch (e) {
