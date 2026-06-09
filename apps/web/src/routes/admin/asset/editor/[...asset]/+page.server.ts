@@ -46,8 +46,31 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	const storage = getStorage()
 
 	const exists = await storage.exists(assetPath)
+
+	let defaultReturnUrl: string | null = null
+	if (assetPath.startsWith('.assets/')) {
+		const relativePart = assetPath.substring('.assets/'.length)
+		const parts = relativePart.split('/')
+		if (parts.length > 1) {
+			const pieceDir = parts.slice(0, -1).join('/')
+			defaultReturnUrl = `/admin/piece/${pieceDir}.md/source`
+		}
+	}
+
+	const returnTo = url.searchParams.get('returnTo') || defaultReturnUrl || '/admin'
+
 	if (!exists) {
-		return error(404, 'Asset not found')
+		return {
+			path: assetPath,
+			filename: path.basename(assetPath),
+			size: 0,
+			lastModified: 0,
+			isImage: /\.(jpg|jpeg|png|gif|webp|svg|ico)$/i.test(assetPath),
+			isBinary: false,
+			content: null,
+			returnTo,
+			exists: false
+		}
 	}
 
 	const fileStat = await storage.stat(assetPath)
@@ -65,18 +88,6 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		isBinary = true
 	}
 
-	let defaultReturnUrl: string | null = null
-	if (assetPath.startsWith('.assets/')) {
-		const relativePart = assetPath.substring('.assets/'.length)
-		const parts = relativePart.split('/')
-		if (parts.length > 1) {
-			const pieceDir = parts.slice(0, -1).join('/')
-			defaultReturnUrl = `/admin/piece/${pieceDir}.md/source`
-		}
-	}
-
-	const returnTo = url.searchParams.get('returnTo') || defaultReturnUrl || '/admin'
-
 	return {
 		path: assetPath,
 		filename: path.basename(assetPath),
@@ -85,7 +96,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		isImage,
 		isBinary,
 		content,
-		returnTo
+		returnTo,
+		exists: true
 	}
 }
 

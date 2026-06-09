@@ -37,7 +37,7 @@
 	let saveError = $state<string | null>(null)
 	let saveSuccess = $state(false)
 
-	const isEditable = $derived(!data.isBinary && data.content !== null && data.content !== undefined)
+	const isEditable = $derived(data.exists && !data.isBinary && data.content !== null && data.content !== undefined)
 	const hasChanges = $derived(editorContent !== data.content)
 	const isDirty = $derived(isEditable && hasChanges && !isSaving)
 
@@ -253,7 +253,7 @@
 			<a href={data.returnTo}>
 				<Button variant="outline">Back</Button>
 			</a>
-			{#if !data.isBinary}
+			{#if data.exists && !data.isBinary}
 				<form
 					method="POST"
 					action="?/save"
@@ -297,12 +297,16 @@
 		<div class="meta-item">
 			<span class="meta-label">Path</span>
 			<span class="meta-value code-value">
-				<a href="/admin/asset/viewer/{data.path}" target="_blank" class="path-link">
+				{#if data.exists}
+					<a href="/admin/asset/viewer/{data.path}" target="_blank" class="path-link">
+						{data.path}
+					</a>
+				{:else}
 					{data.path}
-				</a>
+				{/if}
 			</span>
 		</div>
-		{#if !data.isBinary}
+		{#if data.exists && !data.isBinary}
 			<div class="meta-item">
 				<span class="meta-label">Language</span>
 				<span class="meta-value">
@@ -315,19 +319,25 @@
 				</span>
 			</div>
 		{/if}
-		<div class="meta-item">
-			<span class="meta-label">Size</span>
-			<span class="meta-value">{formatBytes(data.size)}</span>
-		</div>
+		{#if data.exists}
+			<div class="meta-item">
+				<span class="meta-label">Size</span>
+				<span class="meta-value">{formatBytes(data.size)}</span>
+			</div>
 
-		<div class="meta-item">
-			<span class="meta-label">Last Modified</span>
-			<span class="meta-value">{new Date(data.lastModified).toLocaleString()}</span>
-		</div>
+			<div class="meta-item">
+				<span class="meta-label">Last Modified</span>
+				<span class="meta-value">{new Date(data.lastModified).toLocaleString()}</span>
+			</div>
+		{/if}
 	</div>
 
-	<div class="content-area" class:editor-mode={!data.isBinary && !data.isImage}>
-		{#if data.isImage}
+	<div class="content-area" class:editor-mode={data.exists && !data.isBinary && !data.isImage}>
+		{#if !data.exists}
+			<div class="preview-container no-asset-box">
+				<p class="no-asset-text">there are no assets at this path</p>
+			</div>
+		{:else if data.isImage}
 			<div class="preview-container image-preview-box">
 				<div class="image-wrapper">
 					<img src="/admin/asset/viewer/{data.path}" alt={data.filename} />
@@ -650,5 +660,15 @@
 		justify-content: flex-end;
 		gap: var(--space-2);
 		margin-top: var(--space-2);
+	}
+
+	.no-asset-box {
+		background-color: var(--color-surface-container-lowest, #fff);
+	}
+
+	.no-asset-text {
+		color: var(--color-on-surface-variant);
+		font-size: 0.95rem;
+		margin: 0;
 	}
 </style>
