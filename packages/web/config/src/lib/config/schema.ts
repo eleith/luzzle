@@ -79,8 +79,10 @@ export type Schema = {
   };
   content: {
     component?: {
+      "404"?: string;
       root?: string;
       feed?: string;
+      error?: string;
     };
     text: {
       title: string;

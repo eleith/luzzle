@@ -304,6 +304,12 @@
 						},
 						"feed": {
 							"type": "string"
+						},
+						"404": {
+							"type": "string"
+						},
+						"error": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false

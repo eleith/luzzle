@@ -20,3 +20,14 @@ export type FeedPageProps = {
 	feedItems: PublicWebPiece[]
 	components: RootComponents
 }
+
+export type Page404Props = {
+	message?: string
+	components: RootComponents
+}
+
+export type PageErrorProps = {
+	status: number
+	message?: string
+	components: RootComponents
+}

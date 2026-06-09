@@ -127,3 +127,14 @@ declare type FeedPageProps = {
 	feedItems: WebPieces[]
 	components: RootComponents
 }
+
+declare type Page404Props = {
+	message?: string
+	components: RootComponents
+}
+
+declare type PageErrorProps = {
+	status: number
+	message?: string
+	components: RootComponents
+}

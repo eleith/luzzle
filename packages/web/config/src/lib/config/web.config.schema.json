@@ -268,10 +268,16 @@
         "component": {
           "type": "object",
           "properties": {
+            "404": {
+              "type": "string"
+            },
             "root": {
               "type": "string"
             },
             "feed": {
+              "type": "string"
+            },
+            "error": {
               "type": "string"
             }
           },
