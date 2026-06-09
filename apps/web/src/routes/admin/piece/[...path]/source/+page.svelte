@@ -406,6 +406,23 @@
 			canGenerate={data.canGenerate}
 			onDelete={() => dialog.showModal()}
 			onAttach={() => {
+				const selectedText = editorRef?.getSelectedText()?.trim() || ''
+				let isUrl = false
+				if (selectedText.startsWith('http://') || selectedText.startsWith('https://')) {
+					try {
+						new URL(selectedText)
+						isUrl = true
+					} catch (_) {
+						// Ignore invalid URL formatting
+					}
+				}
+
+				if (isUrl) {
+					activeTab = 'url'
+					urlValue = selectedText
+				} else {
+					activeTab = 'file'
+				}
 				attachDialogOpen = true
 			}}
 		/>

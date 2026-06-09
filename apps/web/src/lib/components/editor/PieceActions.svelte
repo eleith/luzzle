@@ -50,7 +50,7 @@
 							{#if currentMode === 'source' && onAttach}
 								<DropdownMenu.Item onSelect={onAttach}>
 									{#snippet child({ props })}
-										<div class="dropdown-item" {...props}>attach file</div>
+										<div class="dropdown-item" {...props}>attach</div>
 									{/snippet}
 								</DropdownMenu.Item>
 							{/if}

@@ -138,6 +138,14 @@
 			view.focus()
 		}
 	}
+
+	export function getSelectedText(): string {
+		if (view) {
+			const { from, to } = view.state.selection.main
+			return view.state.doc.sliceString(from, to)
+		}
+		return ''
+	}
 </script>
 
 <div class="editor-wrapper" bind:this={editorContainer}></div>
