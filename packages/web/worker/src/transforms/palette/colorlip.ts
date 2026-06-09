@@ -1,4 +1,5 @@
 import { getPalette as getRawPalette } from 'colorlip/sharp'
+import { softenBackground, getBestTextColor, rgbToHex } from './utils.js'
 
 export interface Palette {
 	background?: string
@@ -16,20 +17,25 @@ export async function getPalette(image: Buffer): Promise<Palette> {
 	const accent = rawPalette.accent
 	const swatches = rawPalette.swatches || []
 
-	// Determine background color (choose a prominent swatch that isn't dominant or accent to prevent image bleeding)
+	// Determine raw background color (choose a prominent swatch that isn't dominant or accent to prevent image bleeding)
 	const nonPrimarySwatches = swatches.filter(
 		(s) => s.hex !== dominant?.hex && s.hex !== accent?.hex
 	)
 	const bg = nonPrimarySwatches[0] || swatches.find((s) => s.hex !== dominant?.hex) || dominant
-	const backgroundColor = bg?.hex
 
-	// Compute accessible text colors using node-vibrant's YIQ formula
+	let background: string | undefined
 	let bodyText: string | undefined
 	let titleText: string | undefined
+
 	if (bg) {
-		const yiq = (bg.r * 299 + bg.g * 587 + bg.b * 114) / 1000
-		bodyText = yiq < 150 ? '#ffffff' : '#000000'
-		titleText = yiq < 200 ? '#ffffff' : '#000000'
+		// Soften background saturation/lightness to avoid eyes strain
+		const softenedBg = softenBackground(bg.r, bg.g, bg.b)
+		background = rgbToHex(softenedBg.r, softenedBg.g, softenedBg.b)
+
+		// Determine mathematically optimal text contrast
+		const textColor = getBestTextColor(softenedBg.r, softenedBg.g, softenedBg.b)
+		bodyText = textColor
+		titleText = textColor
 	}
 
 	// Determine muted color by finding the swatch with the lowest saturation
@@ -38,7 +44,7 @@ export async function getPalette(image: Buffer): Promise<Palette> {
 	const mutedSwatch = candidates.slice().sort((a, b) => a.saturation - b.saturation)[0]
 
 	return {
-		background: backgroundColor,
+		background,
 		bodyText,
 		titleText,
 		accent: accent?.hex || swatches[1]?.hex,
@@ -47,4 +53,3 @@ export async function getPalette(image: Buffer): Promise<Palette> {
 		swatches: swatches.map((s) => s.hex),
 	}
 }
-
