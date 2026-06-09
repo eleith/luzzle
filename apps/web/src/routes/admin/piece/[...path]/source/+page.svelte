@@ -39,7 +39,6 @@
 		const handleUnload = (e: BeforeUnloadEvent) => {
 			if (isDirty) {
 				e.preventDefault()
-				e.returnValue = ''
 			}
 		}
 		window.addEventListener('beforeunload', handleUnload)

@@ -1,4 +1,4 @@
-import { error, fail } from '@sveltejs/kit'
+import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getStorage } from '$lib/server/storage'
 import path from 'path'
@@ -125,5 +125,25 @@ export const actions = {
 			const message = e instanceof Error ? e.message : String(e)
 			return fail(500, { error: { message: `Failed to save asset: ${message}` } })
 		}
+	},
+	delete: async ({ params, url }) => {
+		const assetPath = path.normalize(params.asset)
+		const storage = getStorage()
+
+		const exists = await storage.exists(assetPath)
+		if (!exists) {
+			return fail(404, { error: { message: 'Asset not found' } })
+		}
+
+		const returnTo = url.searchParams.get('returnTo') || '/admin'
+
+		try {
+			await storage.delete(assetPath)
+		} catch (e) {
+			const message = e instanceof Error ? e.message : String(e)
+			return fail(500, { error: { message: `Failed to delete asset: ${message}` } })
+		}
+
+		throw redirect(303, returnTo)
 	}
 } satisfies Actions

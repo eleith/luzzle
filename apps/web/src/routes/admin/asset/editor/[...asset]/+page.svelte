@@ -37,13 +37,18 @@
 	let saveError = $state<string | null>(null)
 	let saveSuccess = $state(false)
 
-	const isEditable = $derived(data.exists && !data.isBinary && data.content !== null && data.content !== undefined)
+	const isEditable = $derived(
+		data.exists && !data.isBinary && data.content !== null && data.content !== undefined
+	)
 	const hasChanges = $derived(editorContent !== data.content)
 	const isDirty = $derived(isEditable && hasChanges && !isSaving)
 
 	let targetUrl = $state<string | null>(null)
 	let showWarningDialog = $state(false)
 	let bypassWarning = $state(false)
+
+	let showDeleteDialog = $state(false)
+	let isDeleting = $state(false)
 
 	beforeNavigate((navigation) => {
 		if (isDirty && !bypassWarning && navigation.type !== 'form' && navigation.to) {
@@ -192,7 +197,6 @@
 		const handleUnload = (e: BeforeUnloadEvent) => {
 			if (isDirty) {
 				e.preventDefault()
-				e.returnValue = ''
 			}
 		}
 		window.addEventListener('beforeunload', handleUnload)
@@ -247,12 +251,59 @@
 	</Dialog.Portal>
 </Dialog.Root>
 
+<Dialog.Root bind:open={showDeleteDialog}>
+	<Dialog.Portal>
+		<Dialog.Overlay forceMount>
+			{#snippet child({ props, open })}
+				{#if open}
+					<div class="dialogOverlay" {...props} transition:fade={{ duration: 150 }}></div>
+				{/if}
+			{/snippet}
+		</Dialog.Overlay>
+		<Dialog.Content forceMount>
+			{#snippet child({ props, open })}
+				{#if open}
+					<div class="dialogContent" {...props} transition:fly={{ y: 100, duration: 250 }}>
+						<Dialog.Description class="dialogDescription">
+							Are you sure you want to delete this asset? <br />
+							<br />
+							Make sure to delete any links to this asset in your pieces.
+						</Dialog.Description>
+						<div class="dialog-actions">
+							<Button variant="outline" onclick={() => (showDeleteDialog = false)}>cancel</Button>
+							<form
+								method="POST"
+								action="?/delete&returnTo={data.returnTo}"
+								use:enhance={() => {
+									isDeleting = true
+									showDeleteDialog = false
+									return async ({ update }) => {
+										isDeleting = false
+										await update()
+									}
+								}}
+							>
+								<Button type="submit" variant="error" disabled={isDeleting}>
+									{isDeleting ? 'deleting...' : 'delete'}
+								</Button>
+							</form>
+						</div>
+					</div>
+				{/if}
+			{/snippet}
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
+
 <div class="asset-editor-page">
 	<div class="header">
 		<div class="actions">
 			<a href={data.returnTo}>
 				<Button variant="outline">Back</Button>
 			</a>
+			{#if data.exists}
+				<Button variant="error" onclick={() => (showDeleteDialog = true)}>Delete</Button>
+			{/if}
 			{#if data.exists && !data.isBinary}
 				<form
 					method="POST"
@@ -639,14 +690,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-4);
-	}
-
-	.dialogTitle {
-		font-size: 1.25rem;
-		font-weight: 600;
-		margin: 0;
-		color: var(--color-on-surface);
-		text-align: center;
 	}
 
 	.dialogDescription {
