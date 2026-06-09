@@ -37,7 +37,9 @@
 	let saveError = $state<string | null>(null)
 	let saveSuccess = $state(false)
 
-	const isDirty = $derived(editorContent !== data.content && !isSaving)
+	const isEditable = $derived(!data.isBinary && data.content !== null && data.content !== undefined)
+	const hasChanges = $derived(editorContent !== data.content)
+	const isDirty = $derived(isEditable && hasChanges && !isSaving)
 
 	let targetUrl = $state<string | null>(null)
 	let showWarningDialog = $state(false)

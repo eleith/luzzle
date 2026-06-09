@@ -55,7 +55,8 @@
 			''
 	)
 
-	const isDirty = $derived(!!form?.error || (rawContent !== data.rawContent && !isSaving))
+	const hasChanges = $derived(rawContent !== (data.rawContent ?? ''))
+	const isDirty = $derived(!!form?.error || (hasChanges && !isSaving))
 
 	$effect(() => {
 		if (form && 'rawContent' in form && form.rawContent) {
