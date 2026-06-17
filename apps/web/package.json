@@ -43,6 +43,7 @@
     "@codemirror/view": "6.43.0",
     "@eslint/js": "catalog:",
     "@iconify-json/ph": "1.2.2",
+    "@internationalized/date": "3.12.1",
     "@lezer/common": "1.5.2",
     "@lezer/highlight": "1.2.3",
     "@luzzle/core": "workspace:*",
