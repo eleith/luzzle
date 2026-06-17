@@ -6,7 +6,7 @@
 	import DatePicker from '$lib/components/ui/DatePicker.svelte'
 	import { getPieceTypes } from '$lib/pieces/helpers'
 	import { page } from '$app/state'
-	import { afterNavigate } from '$app/navigation'
+	import { afterNavigate, goto } from '$app/navigation'
 
 	const pieceTypes = getPieceTypes()
 
@@ -34,6 +34,19 @@
 	afterNavigate(() => {
 		isOpen = false
 	})
+
+	function handleSubmit(e: SubmitEvent) {
+		e.preventDefault()
+		const params = new URLSearchParams()
+		if (query) params.set('query', query)
+		if (type) params.set('type', type)
+		if (after) params.set('after', after)
+		if (before) params.set('before', before)
+
+		const searchString = params.toString()
+		const url = `/search${searchString ? `?${searchString}` : ''}`
+		goto(url)
+	}
 
 	function responsiveFly(node: HTMLElement, { duration = 300 }) {
 		return {
@@ -80,7 +93,7 @@
 			{#snippet child({ props, open })}
 				{#if open}
 					<div class="search-modal" {...props} transition:responsiveFly={{ duration: 300 }}>
-						<form method="GET" action="/search" class="search-form">
+						<form method="GET" action="/search" onsubmit={handleSubmit} class="search-form">
 							<!-- svelte-ignore a11y_autofocus -->
 							<div class="search-input-wrapper">
 								<SearchIcon class="search-input-icon" />
