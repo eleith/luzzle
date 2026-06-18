@@ -161,6 +161,11 @@ class Pieces {
 		return schemas.map((schema) => path.basename(schema, '.json'))
 	}
 
+	isAsset(filePath: string): boolean {
+		const normalized = path.normalize(filePath)
+		return normalized.startsWith(ASSETS_DIRECTORY + '/') || normalized === ASSETS_DIRECTORY
+	}
+
 	async getFilesIn(dir: string, options?: { deep?: boolean }) {
 		const types = await this.getTypes()
 		const readdir = await this._storage.getFilesIn(dir, options)
@@ -177,14 +182,23 @@ class Pieces {
 		}
 
 		return readdir.reduce((files, file) => {
+			const fullPath = path.join(dir, file)
 			const extension = path.extname(file)
-			const isAsset = file.startsWith(ASSETS_DIRECTORY)
-			const isHidden = file.startsWith('.')
 			const isDirectory = file.endsWith('/')
+
+			const isHidden = file
+				.split(/[\\/]/)
+				.some((part) => part.startsWith('.') && part !== ASSETS_DIRECTORY && part !== '')
+
+			if (isHidden) {
+				return files
+			}
+
+			const isAsset = this.isAsset(fullPath)
 
 			if (isAsset && !isDirectory) {
 				files.assets.push(file)
-			} else if (!isHidden) {
+			} else {
 				if (isDirectory) {
 					files.directories.push(file)
 				} else {

@@ -163,6 +163,15 @@ describe('pieces/Pieces.ts', () => {
 		expect(types).toEqual(schemaNames)
 	})
 
+	test('isAsset', () => {
+		const storage = makeStorage('root')
+		const pieces = new Pieces(storage)
+		expect(pieces.isAsset('.assets/path/to/image.png')).toBe(true)
+		expect(pieces.isAsset('.assets')).toBe(true)
+		expect(pieces.isAsset('path/to/.assets/image.png')).toBe(false)
+		expect(pieces.isAsset('books/cover.jpg')).toBe(false)
+	})
+
 	test('getFilesIn', async () => {
 		const storage = makeStorage('root')
 		const pieces = new Pieces(storage)

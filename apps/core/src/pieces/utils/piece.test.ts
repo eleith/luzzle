@@ -530,6 +530,31 @@ describe('pieces/utils/piece.ts', () => {
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'some-file.png'))
 	})
 
+	test('savePieceAsset should fallback to "attachment" when URL has no filename and format is unknown', async () => {
+		const storage = makeStorage('root')
+		const markdown = makeMarkdownSample('samplePath', 'books', '', {})
+		const mocksWriteStream = new PassThrough() as unknown as WriteStream
+		const readable = new PassThrough() as unknown as Request
+
+		mocks.gotStream.mockReturnValueOnce(readable)
+
+		spies.createWriteStream = vi
+			.spyOn(storage, 'createWriteStream')
+			.mockReturnValue(mocksWriteStream)
+		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
+		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
+
+		const assetPromise = savePieceAsset(markdown.filePath, 'https://example.com/', storage)
+
+		readable.emit('response', { statusCode: 200 })
+		readable.write(Buffer.from('plain text content'))
+		readable.end()
+
+		const asset = await assetPromise
+		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
+		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'attachment'))
+	})
+
 	test('savePieceAsset should accept a URL source and options.name, using custom name but keeping extension if options.name lacks one', async () => {
 		const storage = makeStorage('root')
 		const markdown = makeMarkdownSample('samplePath', 'books', '', {})
