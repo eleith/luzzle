@@ -77,7 +77,7 @@
 					props.onclick?.(e)
 				}}
 			>
-				<SearchIcon style="font-size: 1.25em;" />
+				<SearchIcon style="font-size: 1em;" />
 			</a>
 		{/snippet}
 	</Dialog.Trigger>

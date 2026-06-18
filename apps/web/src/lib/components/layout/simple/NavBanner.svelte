@@ -92,13 +92,11 @@
 	.left {
 		padding: var(--space-5);
 		display: flex;
-		align-items: left;
 	}
 
 	.right {
 		padding: var(--space-5);
 		display: flex;
-		align-items: right;
 		gap: var(--space-5);
 	}
 
