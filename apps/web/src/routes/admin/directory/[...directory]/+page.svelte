@@ -50,8 +50,6 @@
 		gap: var(--space-4);
 	}
 
-
-
 	.list {
 		display: grid;
 		gap: 5px;
