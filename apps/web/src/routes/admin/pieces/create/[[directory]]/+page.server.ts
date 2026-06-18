@@ -20,10 +20,12 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	const pieces = getPieces()
 	const currentDir = directory || '.'
 	const files = await pieces.getFilesIn(currentDir)
-	const subDirectories = files.directories.map((d) => {
-		const name = d.replace(/\/$/, '')
-		return currentDir === '.' ? name : `${currentDir}/${name}`
-	})
+	const subDirectories = files.directories
+		.filter((d) => !pieces.isAsset(d))
+		.map((d) => {
+			const name = d.replace(/\/$/, '')
+			return currentDir === '.' ? name : `${currentDir}/${name}`
+		})
 	const allDirectories = [currentDir, ...subDirectories]
 
 	return {

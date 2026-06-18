@@ -18,15 +18,7 @@
 {#snippet left()}{/snippet}
 
 {#snippet right()}
-	{@const folderHref =
-		page.data.mode === 'directory'
-			? page.data.directory.current !== '.'
-				? `/admin/directory/${page.data.directory.parent}`
-				: '/admin/directory'
-			: page.data.directory
-				? `/admin/directory/${page.data.directory}`
-				: '/admin/directory'}
-	<a href={folderHref} aria-label="directory">
+	<a href="/admin/directory" aria-label="directory">
 		<FolderIcon style="font-size: 1em;" />
 	</a>
 	{@const createHref =

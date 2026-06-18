@@ -73,7 +73,8 @@ const markdownLinkPlugin = ViewPlugin.fromClass(
 
 					// Resolve links (external vs local asset path)
 					let href = rawUrl
-					const isAsset = rawUrl.startsWith('.assets/') || rawUrl.startsWith('./.assets/')
+					const isExternal = /^[a-z]+:/i.test(rawUrl)
+					const isAsset = !isExternal
 					if (isAsset) {
 						const cleanAssetPath = rawUrl.replace(/^\.\//, '')
 						href = `/admin/asset/editor/${cleanAssetPath}`

@@ -85,7 +85,8 @@ function yamlAssetWidgetPlugin(
 						const rawValue = doc.slice(node.from, node.to)
 						const value = rawValue.replace(/^['"]|['"]$/g, '')
 
-						if (!value.startsWith('.assets/')) return
+						const isExternal = /^[a-z]+:/i.test(value)
+						if (isExternal) return
 
 						const result = handler(value, view)
 

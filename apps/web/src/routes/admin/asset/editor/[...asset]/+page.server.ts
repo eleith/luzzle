@@ -47,15 +47,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
 	const exists = await storage.exists(assetPath)
 
-	let defaultReturnUrl: string | null = null
-	if (assetPath.startsWith('.assets/')) {
-		const relativePart = assetPath.substring('.assets/'.length)
-		const parts = relativePart.split('/')
-		if (parts.length > 1) {
-			const pieceDir = parts.slice(0, -1).join('/')
-			defaultReturnUrl = `/admin/piece/${pieceDir}.md/source`
-		}
-	}
+	const parentDir = path.dirname(assetPath)
+	const defaultReturnUrl = `/admin/directory/${parentDir === '.' ? '' : parentDir}`
 
 	const returnTo = url.searchParams.get('returnTo') || defaultReturnUrl || '/admin'
 

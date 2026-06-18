@@ -12,9 +12,16 @@ export const load: PageServerLoad = async ({ params }) => {
 	return {
 		mode: 'directory',
 		files: {
-			directories: files.directories,
+			directories: files.directories.map((d) => ({
+				path: path.join(directory, d),
+				name: d.replace(/\/$/, '')
+			})),
 			pieces: files.pieces.map((piece) => ({
 				...pieces.parseFilename(path.join(directory, piece))
+			})),
+			assets: files.assets.map((asset) => ({
+				path: path.join(directory, asset),
+				name: asset
 			}))
 		},
 		directory: {

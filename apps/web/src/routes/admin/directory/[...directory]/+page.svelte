@@ -15,12 +15,23 @@
 		</div>
 	{/if}
 
+	{#if files.assets && files.assets.length}
+		<div>
+			<p>assets:</p>
+			<div class="list">
+				{#each files.assets as asset (asset.path)}
+					<a href="/admin/asset/editor/{asset.path}">{asset.name}</a>
+				{/each}
+			</div>
+		</div>
+	{/if}
+
 	{#if files.directories.length}
 		<div>
 			<p>directories</p>
 			<div class="list">
-				{#each files.directories as dir (dir)}
-					<a href="/admin/directory/{dir}">{dir}</a>
+				{#each files.directories as dir (dir.path)}
+					<a href="/admin/directory/{dir.path}">{dir.name}</a>
 				{/each}
 			</div>
 		</div>
@@ -38,6 +49,8 @@
 		flex-direction: column;
 		gap: var(--space-4);
 	}
+
+
 
 	.list {
 		display: grid;
