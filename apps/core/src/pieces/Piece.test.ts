@@ -267,23 +267,6 @@ describe('pieces/Piece.ts', () => {
 		expect(mocks.items.deleteItem).toHaveBeenCalledWith(db, 'missing.md')
 	})
 
-	test('prune handles dryRun', async () => {
-		const PieceType = makePieceMock()
-		const piece = new PieceType('table')
-		mocks.cpus.mockReturnValue([{} as CpuInfo])
-		mocks.items.selectItems.mockResolvedValue([
-			makePieceItemSelectable({ file_path: 'missing.md' }),
-		])
-
-		const stream = await piece.prune(db, [], { dryRun: true })
-		for await (const result of stream) {
-			if (!result.error) {
-				expect(result.action).toBe('pruned')
-			}
-		}
-		expect(mocks.items.deleteItem).not.toHaveBeenCalled()
-	})
-
 	test('prune handles error', async () => {
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table')
@@ -352,8 +335,11 @@ describe('pieces/Piece.ts', () => {
 		const markdown = makeMarkdownSample({ filePath: 'new.md' })
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		vi.spyOn(piece, 'isOutdated').mockResolvedValue(true)
 		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
 		mocks.items.selectItem.mockResolvedValue(undefined)
+		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('new-hash')
+		vi.spyOn(storage, 'createReadStream').mockReturnValue({} as ReadStream)
 
 		const syncAddSpy = vi.spyOn(piece, 'syncMarkdownAdd').mockResolvedValue(undefined)
 
@@ -363,7 +349,7 @@ describe('pieces/Piece.ts', () => {
 				expect(result.action).toBe('added')
 			}
 		}
-		expect(syncAddSpy).toHaveBeenCalled()
+		expect(syncAddSpy).toHaveBeenCalledWith(db, markdown, 'new-hash')
 	})
 
 	test('sync updates existing pieces if hash changed', async () => {
@@ -373,6 +359,7 @@ describe('pieces/Piece.ts', () => {
 		const markdown = makeMarkdownSample({ filePath: 'u.md' })
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		vi.spyOn(piece, 'isOutdated').mockResolvedValue(true)
 		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
 		mocks.items.selectItem.mockResolvedValue(makePieceItemSelectable({ id: '1' }))
 		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('new-hash')
@@ -390,13 +377,14 @@ describe('pieces/Piece.ts', () => {
 		expect(syncUpdateSpy).toHaveBeenCalled()
 	})
 
-	test('sync skips unchanged pieces', async () => {
+	test('sync skips outdated pieces whose content is unchanged', async () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
 		const markdown = makeMarkdownSample({ filePath: 's.md' })
 
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		vi.spyOn(piece, 'isOutdated').mockResolvedValue(true)
 		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
 		mocks.items.selectItem.mockResolvedValue(makePieceItemSelectable({ id: '1' }))
 		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('same-hash')
@@ -412,66 +400,22 @@ describe('pieces/Piece.ts', () => {
 		expect(mocks.cache.updateCache).toHaveBeenCalledWith(db, 's.md', 'same-hash')
 	})
 
-	test('sync handles dryRun', async () => {
+	test('sync skips unchanged pieces without reading them', async () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
 		const piece = new PieceType('table', storage)
-		const markdown = makeMarkdownSample({ filePath: 'new.md' })
 
-		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
-		mocks.items.selectItem.mockResolvedValue(undefined)
-		const syncAddSpy = vi.spyOn(piece, 'syncMarkdownAdd').mockResolvedValue(undefined)
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		vi.spyOn(piece, 'isOutdated').mockResolvedValue(false)
+		const getSpy = vi.spyOn(piece, 'get')
 
-		const stream = await piece.sync(db, ['new.md'], { dryRun: true })
-		for await (const result of stream) {
-			if (!result.error) {
-				expect(result.action).toBe('added')
-			}
-		}
-		expect(syncAddSpy).not.toHaveBeenCalled()
-	})
-
-	test('sync handles dryRun update', async () => {
-		const PieceType = makePieceMock()
-		const storage = makeStorage()
-		const piece = new PieceType('table', storage)
-		const markdown = makeMarkdownSample({ filePath: 'u.md' })
-
-		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
-		mocks.items.selectItem.mockResolvedValue(makePieceItemSelectable({ id: '1' }))
-		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('new-hash')
-		mocks.cache.getCache.mockResolvedValue(makeCache({ content_hash: 'old-hash' }))
-		vi.spyOn(storage, 'createReadStream').mockReturnValue({} as ReadStream)
-
-		const syncUpdateSpy = vi.spyOn(piece, 'syncMarkdownUpdate').mockResolvedValue(undefined)
-
-		const stream = await piece.sync(db, ['u.md'], { dryRun: true })
-		for await (const result of stream) {
-			if (!result.error) {
-				expect(result.action).toBe('updated')
-			}
-		}
-		expect(syncUpdateSpy).not.toHaveBeenCalled()
-	})
-
-	test('sync handles dryRun skip', async () => {
-		const PieceType = makePieceMock()
-		const storage = makeStorage()
-		const piece = new PieceType('table', storage)
-		const markdown = makeMarkdownSample({ filePath: 's.md' })
-
-		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
-		mocks.items.selectItem.mockResolvedValue(makePieceItemSelectable({ id: '1' }))
-		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('same-hash')
-		mocks.cache.getCache.mockResolvedValue(makeCache({ content_hash: 'same-hash' }))
-		vi.spyOn(storage, 'createReadStream').mockReturnValue({} as ReadStream)
-
-		const stream = await piece.sync(db, ['s.md'], { dryRun: true })
+		const stream = await piece.sync(db, ['s.md'])
 		for await (const result of stream) {
 			if (!result.error) {
 				expect(result.action).toBe('skipped')
 			}
 		}
+		expect(getSpy).not.toHaveBeenCalled()
 		expect(mocks.cache.updateCache).not.toHaveBeenCalled()
 	})
 
@@ -481,6 +425,8 @@ describe('pieces/Piece.ts', () => {
 		const piece = new PieceType('table', storage)
 		const markdown = makeMarkdownSample({ filePath: 'u.md' })
 
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		vi.spyOn(piece, 'isOutdated').mockResolvedValue(false)
 		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
 		mocks.items.selectItem.mockResolvedValue(makePieceItemSelectable({ id: '1' }))
 		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('same-hash')
@@ -502,12 +448,89 @@ describe('pieces/Piece.ts', () => {
 		const PieceType = makePieceMock()
 		const piece = new PieceType('table')
 		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		vi.spyOn(piece, 'isOutdated').mockResolvedValue(true)
 		vi.spyOn(piece, 'get').mockRejectedValue(new Error('oof'))
 
 		const stream = await piece.sync(db, ['e.md'])
 		for await (const result of stream) {
 			expect(result.error).toBe(true)
 		}
+	})
+
+	test('diffFile reports added/updated/skipped without writing', async () => {
+		const PieceType = makePieceMock()
+		const storage = makeStorage()
+		const piece = new PieceType('table', storage)
+		const markdown = makeMarkdownSample({ filePath: 'd.md' })
+
+		const isOutdatedSpy = vi.spyOn(piece, 'isOutdated').mockResolvedValue(true)
+		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
+		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('new-hash')
+		vi.spyOn(storage, 'createReadStream').mockReturnValue({} as ReadStream)
+
+		mocks.items.selectItem.mockResolvedValueOnce(undefined)
+		expect(await piece.diffFile(db, 'd.md')).toEqual({
+			action: 'added',
+			file: 'd.md',
+			markdown,
+		})
+
+		mocks.items.selectItem.mockResolvedValueOnce(makePieceItemSelectable({ id: '1' }))
+		mocks.cache.getCache.mockResolvedValueOnce(makeCache({ content_hash: 'old-hash' }))
+		const updated = await piece.diffFile(db, 'd.md')
+		expect(updated.action).toBe('updated')
+
+		isOutdatedSpy.mockResolvedValueOnce(false)
+		expect(await piece.diffFile(db, 'd.md')).toEqual({ action: 'skipped', file: 'd.md' })
+
+		expect(mocks.items.insertItem).not.toHaveBeenCalled()
+		expect(mocks.items.updateItem).not.toHaveBeenCalled()
+		expect(mocks.cache.updateCache).not.toHaveBeenCalled()
+	})
+
+	test('diffFile reports skipped when content unchanged', async () => {
+		const PieceType = makePieceMock()
+		const storage = makeStorage()
+		const piece = new PieceType('table', storage)
+		const markdown = makeMarkdownSample({ filePath: 'd.md' })
+
+		vi.spyOn(piece, 'isOutdated').mockResolvedValue(true)
+		vi.spyOn(piece, 'get').mockResolvedValue(markdown)
+		mocks.items.selectItem.mockResolvedValue(makePieceItemSelectable({ id: '1' }))
+		mocks.pieceUtils.calculateHashFromFile.mockResolvedValue('same-hash')
+		mocks.cache.getCache.mockResolvedValue(makeCache({ content_hash: 'same-hash' }))
+		vi.spyOn(storage, 'createReadStream').mockReturnValue({} as ReadStream)
+
+		expect(await piece.diffFile(db, 'd.md')).toEqual({ action: 'skipped', file: 'd.md' })
+	})
+
+	test('diff streams diff results for many files', async () => {
+		const PieceType = makePieceMock()
+		const piece = new PieceType('table')
+
+		mocks.cpus.mockReturnValue([{} as CpuInfo])
+		vi.spyOn(piece, 'diffFile')
+			.mockResolvedValueOnce({ action: 'skipped', file: 'a.md' })
+			.mockResolvedValueOnce({ action: 'skipped', file: 'b.md' })
+
+		const actions: string[] = []
+		const stream = await piece.diff(db, ['a.md', 'b.md'])
+		for await (const result of stream) {
+			actions.push(result.action)
+		}
+		expect(actions).toEqual(['skipped', 'skipped'])
+	})
+
+	test('diffPrune returns db files missing from disk', async () => {
+		const PieceType = makePieceMock()
+		const piece = new PieceType('table')
+
+		mocks.items.selectItems.mockResolvedValue([
+			makePieceItemSelectable({ file_path: 'gone.md' }),
+			makePieceItemSelectable({ file_path: 'kept.md' }),
+		])
+
+		expect(await piece.diffPrune(db, ['kept.md'])).toEqual(['gone.md'])
 	})
 
 	test('toMarkdown restores frontmatter from DB JSON', () => {

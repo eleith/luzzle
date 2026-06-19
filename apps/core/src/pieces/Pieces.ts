@@ -12,6 +12,8 @@ import {
 } from './assets.js'
 import { Readable } from 'stream'
 import { cpus } from 'os'
+import { JSONSchemaType } from 'ajv'
+import { PieceFrontmatter } from './utils/frontmatter.js'
 
 export type PiecesPruneResult =
 	| {
@@ -36,6 +38,23 @@ export type PiecesSyncResult =
 		error: true
 		message: string
 	}
+
+export interface DiffSummary {
+	added: string[]
+	updated: string[]
+	pruned: string[]
+}
+
+export type SchemaDiff = DiffSummary
+
+export interface PiecesDiff {
+	schemas: DiffSummary
+	pieces: DiffSummary
+}
+
+type SchemaChange =
+	| { action: 'added' | 'updated' | 'skipped'; name: string; schema: JSONSchemaType<PieceFrontmatter> }
+	| { name: string; error: true; message: string }
 
 class Pieces {
 	private _storage: LuzzleStorage
@@ -75,47 +94,109 @@ class Pieces {
 		return jsonToPieceSchema(schemaJson as string)
 	}
 
-	async sync(db: LuzzleDatabase, options?: { dryRun?: boolean; force?: boolean }) {
+	private async getSchemaChange(
+		db: LuzzleDatabase,
+		name: string,
+		options?: { force?: boolean }
+	): Promise<SchemaChange> {
+		const piece = await getPiece(db, name)
+		const schemaPath = this.getSchemaPath(name)
+		const fileStat = await this._storage.stat(schemaPath).catch(() => null)
+
+		if (!fileStat) {
+			return { name, error: true, message: `schema file ${schemaPath} not found` }
+		}
+
+		const schema = await this.getSchema(name)
+
+		if (!piece) {
+			return { action: 'added', name, schema }
+		}
+
+		const pieceDate = piece.date_updated || piece.date_added
+		if (options?.force || fileStat.last_modified > new Date(pieceDate)) {
+			return { action: 'updated', name, schema }
+		}
+
+		return { action: 'skipped', name, schema }
+	}
+
+	async diffSchemas(db: LuzzleDatabase, options?: { force?: boolean }): Promise<SchemaDiff> {
+		const names = await this.getTypes()
+		const added: string[] = []
+		const updated: string[] = []
+
+		for (const name of names) {
+			const plan = await this.getSchemaChange(db, name, options)
+			if ('error' in plan) {
+				continue
+			}
+			if (plan.action === 'added') {
+				added.push(name)
+			} else if (plan.action === 'updated') {
+				updated.push(name)
+			}
+		}
+
+		const dbPieces = await getPieces(db)
+		const diskPiecesSet = new Set<string>(names)
+		const pruned = dbPieces.filter((piece) => !diskPiecesSet.has(piece.name)).map((piece) => piece.name)
+
+		return { added, updated, pruned }
+	}
+
+	async diff(db: LuzzleDatabase, options?: { force?: boolean }): Promise<PiecesDiff> {
+		const schemas = await this.diffSchemas(db, options)
+		const files = await this.getFilesIn('.', { deep: true })
+		const pieces: DiffSummary = { added: [], updated: [], pruned: [] }
+
+		for (const type of files.types) {
+			const piece = await this.getPiece(type)
+			const onDisk = files.pieces.filter((file) => this.parseFilename(file).type === type)
+
+			const stream = await piece.diff(db, onDisk, options)
+			for await (const result of stream) {
+				if (result.action === 'added') {
+					pieces.added.push(result.file)
+				} else if (result.action === 'updated') {
+					pieces.updated.push(result.file)
+				}
+			}
+
+			pieces.pruned.push(...(await piece.diffPrune(db, onDisk)))
+		}
+
+		return { schemas, pieces }
+	}
+
+	async sync(db: LuzzleDatabase, options?: { force?: boolean }) {
 		const names = await this.getTypes()
 		const stream = Readable.from(names)
 
 		return stream.map(
 			async (name: string): Promise<PiecesSyncResult> => {
-				const piece = await getPiece(db, name)
-				const schemaPath = this.getSchemaPath(name)
-				const fileStat = await this._storage.stat(schemaPath).catch(() => null)
+				const plan = await this.getSchemaChange(db, name, options)
 
-				if (fileStat) {
-					const schema = await this.getSchema(name)
+				if ('error' in plan) {
+					return plan
+				}
 
-					try {
-						if (!piece) {
-							if (!options?.dryRun) {
-								await addPiece(db, name, schema)
-							}
-							return { action: 'added', name }
-						} else {
-							const pieceDate = piece.date_updated || piece.date_added
-							if (options?.force || fileStat.last_modified > new Date(pieceDate)) {
-								if (!options?.dryRun) {
-									await updatePiece(db, name, schema)
-								}
-								return { action: 'updated', name }
-							}
-							return { action: 'skipped', name }
-						}
-					} catch (error) {
-						return { name, error: true, message: `error syncing piece: ${error}` }
+				try {
+					if (plan.action === 'added') {
+						await addPiece(db, name, plan.schema)
+					} else if (plan.action === 'updated') {
+						await updatePiece(db, name, plan.schema)
 					}
-				} else {
-					return { name, error: true, message: `schema file ${schemaPath} not found` }
+					return { action: plan.action, name }
+				} catch (error) {
+					return { name, error: true, message: `error syncing piece: ${error}` }
 				}
 			},
 			{ concurrency: cpus().length }
 		) as Readable & AsyncIterable<PiecesSyncResult>
 	}
 
-	async prune(db: LuzzleDatabase, options?: { dryRun: boolean }) {
+	async prune(db: LuzzleDatabase) {
 		const names = await this.getTypes()
 		const dbPieces = await getPieces(db)
 		const diskPiecesSet = new Set<string>(names)
@@ -127,9 +208,7 @@ class Pieces {
 		return stream.map(
 			async (name: string): Promise<PiecesPruneResult> => {
 				try {
-					if (!options?.dryRun) {
-						await deletePiece(db, name)
-					}
+					await deletePiece(db, name)
 					return { action: 'pruned', name }
 				} catch (error) {
 					return { name, error: true, message: `error pruning piece: ${error}` }

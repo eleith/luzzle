@@ -25,7 +25,7 @@ describe('commands/command/sync.ts', () => {
 		})
 	})
 
-	test('run', async () => {
+	test('run executes mutations and prunes assets', async () => {
 		const piece = makePieceMock()
 		const ctx = makeContext()
 		const type = piece.type
@@ -42,17 +42,18 @@ describe('commands/command/sync.ts', () => {
 			{ error: true, name: type, message: 'error message' },
 		])
 		const syncPiece = Readable.from([
-			{ action: 'added', name: 'item1' },
-			{ action: 'updated', name: 'item2' },
-			{ action: 'skipped', name: 'item3' },
-			{ error: true, name: 'item4', message: 'error message' },
+			{ action: 'added', file: 'item1' },
+			{ action: 'updated', file: 'item2' },
+			{ action: 'skipped', file: 'item3' },
+			{ error: true, file: 'item4', message: 'error message' },
 		])
 		const prunePiece = Readable.from([
-			{ action: 'pruned', name: 'item1' },
-			{ error: true, name: 'item2', message: 'error message' },
+			{ action: 'pruned', file: 'item1' },
+			{ error: true, file: 'item2', message: 'error message' },
 		])
 
 		spies.logInfo = vi.spyOn(ctx.log, 'info').mockResolvedValue()
+		spies.logError = vi.spyOn(ctx.log, 'error').mockResolvedValue()
 		spies.getFilesIn = vi.spyOn(ctx.pieces, 'getFilesIn').mockResolvedValue({
 			pieces: files,
 			assets: ['d'],
@@ -65,7 +66,7 @@ describe('commands/command/sync.ts', () => {
 			.mockReturnValue({ type, file: '', format: 'md', slug: '' })
 
 		spies.storageDelete = vi.spyOn(ctx.storage, 'delete')
-		spies.pieceIsOutdated = vi.spyOn(piece, 'isOutdated').mockResolvedValue(true)
+		spies.piecesDiff = vi.spyOn(ctx.pieces, 'diff')
 		spies.piecesSync = vi.spyOn(ctx.pieces, 'sync').mockResolvedValue(syncPieces)
 		spies.piecesPrune = vi.spyOn(ctx.pieces, 'prune').mockResolvedValue(prunePieces)
 		spies.pieceSync = vi.spyOn(piece, 'sync').mockResolvedValue(syncPiece)
@@ -75,53 +76,43 @@ describe('commands/command/sync.ts', () => {
 
 		await command.run(ctx, { prune: true } as Arguments<SyncArgv>)
 
-		expect(spies.piecesSync).toHaveBeenCalledOnce()
-		expect(spies.piecesPrune).toHaveBeenCalledOnce()
-		expect(spies.pieceSync).toHaveBeenCalledOnce()
-		expect(spies.piecePrune).toHaveBeenCalledOnce()
+		expect(spies.piecesDiff).not.toHaveBeenCalled()
+		expect(spies.piecesSync).toHaveBeenCalledWith(expect.anything(), { force: undefined })
+		expect(spies.piecesPrune).toHaveBeenCalledWith(expect.anything())
+		expect(spies.pieceSync).toHaveBeenCalledWith(expect.anything(), files, { force: undefined })
+		expect(spies.piecePrune).toHaveBeenCalledWith(expect.anything(), files)
 		expect(spies.storageDelete).toHaveBeenCalledOnce()
 	})
 
-	test('run with dryRun and force', async () => {
-		const piece = makePieceMock()
+	test('run with dryRun and force reports the diff without writing', async () => {
 		const ctx = makeContext({ flags: { dryRun: true } })
-		const type = piece.type
-		const files = ['a', 'b', 'c']
 		const dbAssets = ['a', 'b', 'c']
-		const passThrough = Readable.from([])
 
 		spies.logInfo = vi.spyOn(ctx.log, 'info').mockResolvedValue()
 		spies.getFilesIn = vi.spyOn(ctx.pieces, 'getFilesIn').mockResolvedValue({
-			pieces: files,
+			pieces: ['a'],
 			assets: ['d'],
-			types: [type],
+			types: ['books'],
 			directories: [],
 		})
-		spies.getPiece = vi.spyOn(ctx.pieces, 'getPiece').mockResolvedValue(piece)
-		spies.parseFilename = vi
-			.spyOn(ctx.pieces, 'parseFilename')
-			.mockReturnValue({ type, file: '', format: 'md', slug: '' })
-
 		spies.storageDelete = vi.spyOn(ctx.storage, 'delete')
-		spies.pieceIsOutdated = vi.spyOn(piece, 'isOutdated').mockResolvedValue(true)
-		spies.piecesSync = vi.spyOn(ctx.pieces, 'sync').mockResolvedValue(passThrough)
-		spies.piecesPrune = vi.spyOn(ctx.pieces, 'prune').mockResolvedValue(passThrough)
-		spies.pieceSync = vi.spyOn(piece, 'sync').mockResolvedValue(passThrough)
-		spies.piecePrune = vi.spyOn(piece, 'prune').mockResolvedValue(passThrough)
+		spies.piecesSync = vi.spyOn(ctx.pieces, 'sync')
+		spies.piecesPrune = vi.spyOn(ctx.pieces, 'prune')
+		spies.piecesDiff = vi.spyOn(ctx.pieces, 'diff').mockResolvedValue({
+			schemas: { added: ['books'], updated: ['notes'], pruned: ['old'] },
+			pieces: { added: ['a.books.md'], updated: ['b.books.md'], pruned: ['c.books.md'] },
+		})
 
 		mocks.selectItemAssets.mockResolvedValue(dbAssets)
 
 		await command.run(ctx, { prune: true, force: true } as Arguments<SyncArgv>)
 
-		expect(spies.piecesSync).toHaveBeenCalledWith(expect.anything(), { dryRun: true, force: true })
-		expect(spies.piecesPrune).toHaveBeenCalledWith(expect.anything(), { dryRun: true })
-		expect(spies.pieceSync).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
-			dryRun: true,
-			force: true,
-		})
-		expect(spies.piecePrune).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
-			dryRun: true,
-		})
+		expect(spies.piecesDiff).toHaveBeenCalledWith(expect.anything(), { force: true })
+		expect(spies.piecesSync).not.toHaveBeenCalled()
+		expect(spies.piecesPrune).not.toHaveBeenCalled()
+		expect(spies.logInfo).toHaveBeenCalledWith('[added] piece type: books')
+		expect(spies.logInfo).toHaveBeenCalledWith('[updated] piece: b.books.md')
+		expect(spies.logInfo).toHaveBeenCalledWith('[pruned] piece: c.books.md')
 		expect(spies.storageDelete).not.toHaveBeenCalled()
 	})
 

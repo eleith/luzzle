@@ -9,6 +9,7 @@ import { makePieceMock, makeRegisteredPiece, makeSchema, makeStorage } from './P
 import { setupDatabase, teardownDatabase } from '../../test/db.js'
 import { type LuzzleDatabase } from '../database/tables/index.js'
 import { StorageStat } from '../index.js'
+import { Readable } from 'stream'
 
 vi.mock('./Piece.js')
 vi.mock('./manager.js')
@@ -246,48 +247,6 @@ describe('pieces/Pieces.ts', () => {
 		expect(mocks.updatePiece).toHaveBeenCalledOnce()
 	})
 
-	test('syncGenerator dryRun', async () => {
-		const storage = makeStorage('root')
-		const pieces = new Pieces(storage)
-		const dateAdded = new Date('2020-02-02').getTime()
-		const dateModified = new Date('2021-02-02')
-		const piece = makeRegisteredPiece({ name: 'books', date_added: dateAdded })
-
-		mocks.getPiece.mockResolvedValueOnce(piece).mockResolvedValueOnce(null)
-		mocks.updatePiece.mockResolvedValueOnce()
-		mocks.addPiece.mockResolvedValueOnce()
-
-		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([piece.name, piece.name])
-		spies.getSchema = vi
-			.spyOn(pieces, 'getSchema')
-			.mockResolvedValueOnce(piece.schema)
-			.mockResolvedValueOnce(piece.schema)
-		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValue('schemaPath')
-		spies.stat = vi
-			.spyOn(storage, 'stat')
-			.mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
-			.mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
-
-		const gen = await pieces.sync(db, { dryRun: true })
-		const added: string[] = []
-		const updated: string[] = []
-
-		for await (const result of gen) {
-			if (!result.error) {
-				if (result.action === 'added') {
-					added.push(result.name)
-				} else if (result.action === 'updated') {
-					updated.push(result.name)
-				}
-			}
-		}
-
-		expect(added).toHaveLength(1)
-		expect(updated).toHaveLength(1)
-		expect(mocks.addPiece).not.toHaveBeenCalledOnce()
-		expect(mocks.updatePiece).not.toHaveBeenCalledOnce()
-	})
-
 	test('syncGenerator error add', async () => {
 		const storage = makeStorage('root')
 		const pieces = new Pieces(storage)
@@ -369,30 +328,6 @@ describe('pieces/Pieces.ts', () => {
 		expect(mocks.deletePiece).toHaveBeenCalledOnce()
 	})
 
-	test('pruneGenerator dryRun', async () => {
-		const storage = makeStorage('root')
-		const pieces = new Pieces(storage)
-		const type = 'books'
-		const piece = makeRegisteredPiece({ name: type })
-
-		mocks.getPieces.mockResolvedValueOnce([{ ...piece, schema: 'schema' }])
-		mocks.deletePiece.mockResolvedValueOnce()
-
-		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValueOnce([])
-
-		const gen = await pieces.prune(db, { dryRun: true })
-		const processed: string[] = []
-
-		for await (const result of gen) {
-			if (!result.error && result.action === 'pruned') {
-				processed.push(result.name)
-			}
-		}
-
-		expect(processed).toHaveLength(1)
-		expect(mocks.deletePiece).not.toHaveBeenCalledOnce()
-	})
-
 	test('pruneGenerator error', async () => {
 		const storage = makeStorage('root')
 		const pieces = new Pieces(storage)
@@ -415,5 +350,106 @@ describe('pieces/Pieces.ts', () => {
 
 		expect(processed).toHaveLength(1)
 		expect(mocks.deletePiece).toHaveBeenCalledOnce()
+	})
+
+	test('diffSchemas reports added, updated, skipped and pruned', async () => {
+		const storage = makeStorage('root')
+		const pieces = new Pieces(storage)
+		const dateAdded = new Date('2020-02-02')
+		const dateModified = new Date('2021-02-02')
+		const piece = makeRegisteredPiece({ name: 'books', date_added: dateAdded.getTime() })
+
+		mocks.getPiece
+			.mockResolvedValueOnce(null)
+			.mockResolvedValueOnce(piece)
+			.mockResolvedValueOnce(piece)
+		mocks.getPieces.mockResolvedValueOnce([{ ...piece, name: 'gone' }])
+
+		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValue(['a', 'b', 'c'])
+		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValue(piece.schema)
+		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValue('schemaPath')
+		spies.stat = vi
+			.spyOn(storage, 'stat')
+			.mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
+			.mockResolvedValueOnce({ last_modified: dateModified } as StorageStat)
+			.mockResolvedValueOnce({ last_modified: dateAdded } as StorageStat)
+
+		const result = await pieces.diffSchemas(db)
+
+		expect(result.added).toEqual(['a'])
+		expect(result.updated).toEqual(['b'])
+		expect(result.pruned).toEqual(['gone'])
+	})
+
+	test('diffSchemas with force marks existing schemas as updated', async () => {
+		const storage = makeStorage('root')
+		const pieces = new Pieces(storage)
+		const piece = makeRegisteredPiece({ name: 'books', date_added: new Date('2021-02-02').getTime() })
+
+		mocks.getPiece.mockResolvedValueOnce(piece)
+		mocks.getPieces.mockResolvedValueOnce([])
+
+		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValue(['a'])
+		spies.getSchema = vi.spyOn(pieces, 'getSchema').mockResolvedValue(piece.schema)
+		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValue('schemaPath')
+		spies.stat = vi
+			.spyOn(storage, 'stat')
+			.mockResolvedValueOnce({ last_modified: new Date('2020-01-01') } as StorageStat)
+
+		const result = await pieces.diffSchemas(db, { force: true })
+
+		expect(result.updated).toEqual(['a'])
+	})
+
+	test('diffSchemas skips schemas whose file is missing', async () => {
+		const storage = makeStorage('root')
+		const pieces = new Pieces(storage)
+
+		mocks.getPiece.mockResolvedValueOnce(null)
+		mocks.getPieces.mockResolvedValueOnce([])
+
+		spies.getTypes = vi.spyOn(pieces, 'getTypes').mockResolvedValue(['a'])
+		spies.getSchemaPath = vi.spyOn(pieces, 'getSchemaPath').mockReturnValue('schemaPath')
+		spies.stat = vi.spyOn(storage, 'stat').mockRejectedValueOnce(new Error('missing'))
+
+		const result = await pieces.diffSchemas(db)
+
+		expect(result).toEqual({ added: [], updated: [], pruned: [] })
+	})
+
+	test('diff aggregates schema and piece changes', async () => {
+		const storage = makeStorage('root')
+		const pieces = new Pieces(storage)
+
+		spies.diffSchemas = vi
+			.spyOn(pieces, 'diffSchemas')
+			.mockResolvedValue({ added: ['blog'], updated: ['note'], pruned: ['old'] })
+		spies.getFilesIn = vi.spyOn(pieces, 'getFilesIn').mockResolvedValue({
+			types: ['books'],
+			pieces: ['a.books.md', 'b.books.md', 'c.books.md'],
+			assets: [],
+			directories: [],
+		})
+
+		const fakePiece = {
+			diff: vi.fn().mockResolvedValue(
+				Readable.from([
+					{ action: 'added', file: 'a.books.md' },
+					{ action: 'updated', file: 'b.books.md' },
+					{ action: 'skipped', file: 'c.books.md' },
+				])
+			),
+			diffPrune: vi.fn().mockResolvedValue(['gone.books.md']),
+		}
+		spies.getPiece = vi
+			.spyOn(pieces, 'getPiece')
+			.mockResolvedValue(fakePiece as unknown as Piece<PieceFrontmatter>)
+
+		const result = await pieces.diff(db)
+
+		expect(result.schemas).toEqual({ added: ['blog'], updated: ['note'], pruned: ['old'] })
+		expect(result.pieces.added).toEqual(['a.books.md'])
+		expect(result.pieces.updated).toEqual(['b.books.md'])
+		expect(result.pieces.pruned).toEqual(['gone.books.md'])
 	})
 })

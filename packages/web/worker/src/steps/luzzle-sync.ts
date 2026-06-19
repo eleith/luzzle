@@ -23,7 +23,7 @@ export const luzzleSyncStep: Step<void, { changedPaths: string[] }> = {
 			}
 		}
 
-		const schemaPrune = await pieces.prune(db, { dryRun: false })
+		const schemaPrune = await pieces.prune(db)
 		for await (const result of schemaPrune) {
 			if (result.error) {
 				logger.warn(`schema prune error for ${result.name}: ${result.message}`)
@@ -41,24 +41,17 @@ export const luzzleSyncStep: Step<void, { changedPaths: string[] }> = {
 				(one) => pieces.parseFilename(one).type === typeName
 			)
 
-			const outdatedFlags = await Promise.all(
-				piecesOnDisk.map((file) => piece.isOutdated(file, db))
-			)
-			const outdatedFiles = piecesOnDisk.filter((_, i) => outdatedFlags[i])
-
-			const syncItems = await piece.sync(db, outdatedFiles, {})
+			const syncItems = await piece.sync(db, piecesOnDisk, {})
 			for await (const result of syncItems) {
 				if (result.error) {
 					logger.warn(`item sync error for ${result.file}: ${result.message}`)
-				} else {
-					if (result.action === 'added' || result.action === 'updated') {
-						changedPaths.push(result.file)
-					}
+				} else if (result.action === 'added' || result.action === 'updated') {
+					changedPaths.push(result.file)
 					logger.info(`item ${result.action}: ${result.file}`)
 				}
 			}
 
-			const pruneItems = await piece.prune(db, piecesOnDisk, { dryRun: false })
+			const pruneItems = await piece.prune(db, piecesOnDisk)
 			for await (const result of pruneItems) {
 				if (result.error) {
 					logger.warn(`item prune error for ${result.file}: ${result.message}`)

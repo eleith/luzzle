@@ -66,6 +66,16 @@ export type PieceSyncResult =
 		message: string
 	}
 
+export type PieceDiffResult<F extends PieceFrontmatter> =
+	| { action: 'added'; file: string; markdown: PieceMarkdown<F> }
+	| {
+		action: 'updated'
+		file: string
+		markdown: PieceMarkdown<F>
+		dbPiece: LuzzleSelectable<'pieces_items'>
+	}
+	| { action: 'skipped'; file: string }
+
 class Piece<F extends PieceFrontmatter> {
 	private _validator?: ReturnType<typeof compile<F>>
 	private _schema: PieceFrontmatterSchema<F>
@@ -178,19 +188,26 @@ class Piece<F extends PieceFrontmatter> {
 		}
 	}
 
-	async prune(db: LuzzleDatabase, files: string[], options?: { dryRun: boolean }) {
+	private async findPrunable(db: LuzzleDatabase, files: string[]): Promise<string[]> {
 		const dbPieces = await selectItems(db, { type: this._pieceName })
 		const diskPiecesSet = new Set<string>(files)
-		const missingPieces = dbPieces.filter((piece) => !diskPiecesSet.has(piece.file_path))
-		const missingFiles = missingPieces.map((piece) => piece.file_path)
+		return dbPieces
+			.filter((piece) => !diskPiecesSet.has(piece.file_path))
+			.map((piece) => piece.file_path)
+	}
+
+	async diffPrune(db: LuzzleDatabase, files: string[]): Promise<string[]> {
+		return this.findPrunable(db, files)
+	}
+
+	async prune(db: LuzzleDatabase, files: string[]) {
+		const missingFiles = await this.findPrunable(db, files)
 		const stream = Readable.from(missingFiles)
 
 		return stream.map(
 			async (file: string): Promise<PiecePruneResult> => {
 				try {
-					if (!options?.dryRun) {
-						await deleteItem(db, file)
-					}
+					await deleteItem(db, file)
 					return { action: 'pruned', file }
 				} catch (error) {
 					return { file, error: true, message: `error pruning piece: ${error}` }
@@ -200,37 +217,67 @@ class Piece<F extends PieceFrontmatter> {
 		) as Readable & AsyncIterable<PiecePruneResult>
 	}
 
-	async sync(db: LuzzleDatabase, files: string[], options?: { dryRun?: boolean; force?: boolean }) {
+	private async getChange(
+		db: LuzzleDatabase,
+		file: string,
+		options?: { force?: boolean }
+	): Promise<{ result: PieceDiffResult<F>; hash?: string }> {
+		const outdated = await this.isOutdated(file, db)
+
+		if (!options?.force && !outdated) {
+			return { result: { action: 'skipped', file } }
+		}
+
+		const markdown = await this.get(file)
+		const dbPiece = await selectItem(db, markdown.filePath)
+		const readStream = this._storage.createReadStream(markdown.filePath)
+		const hash = await calculateHashFromFile(readStream)
+
+		if (!dbPiece) {
+			return { result: { action: 'added', file, markdown }, hash }
+		}
+
+		const cache = await getCache(db, markdown.filePath)
+		if (options?.force || cache?.content_hash !== hash) {
+			return { result: { action: 'updated', file, markdown, dbPiece }, hash }
+		}
+
+		return { result: { action: 'skipped', file }, hash }
+	}
+
+	async diffFile(
+		db: LuzzleDatabase,
+		file: string,
+		options?: { force?: boolean }
+	): Promise<PieceDiffResult<F>> {
+		return (await this.getChange(db, file, options)).result
+	}
+
+	async diff(db: LuzzleDatabase, files: string[], options?: { force?: boolean }) {
+		const stream = Readable.from(files)
+
+		return stream.map((file: string) => this.diffFile(db, file, options), {
+			concurrency: cpus().length,
+		}) as Readable & AsyncIterable<PieceDiffResult<F>>
+	}
+
+	async sync(db: LuzzleDatabase, files: string[], options?: { force?: boolean }) {
 		const stream = Readable.from(files)
 
 		return stream.map(
 			async (file: string): Promise<PieceSyncResult> => {
 				try {
-					const markdown = await this.get(file)
-					const dbPiece = await selectItem(db, markdown.filePath)
+					const { result, hash } = await this.getChange(db, file, options)
 
-					if (dbPiece) {
-						const readStream = this._storage.createReadStream(markdown.filePath)
-						const newHash = await calculateHashFromFile(readStream)
-						const cache = await getCache(db, markdown.filePath)
-						if (options?.force || cache?.content_hash !== newHash) {
-							if (!options?.dryRun) {
-								await this.syncMarkdownUpdate(db, markdown, dbPiece)
-							}
-							return { action: 'updated', file }
-						}
-						
-						if (!options?.dryRun) {
-							await updateCache(db, markdown.filePath, newHash)
-						}
-
-						return { action: 'skipped', file }
-					} else {
-						if (!options?.dryRun) {
-							await this.syncMarkdownAdd(db, markdown)
-						}
-						return { action: 'added', file }
+					if (result.action === 'added') {
+						await this.syncMarkdownAdd(db, result.markdown, hash)
+					} else if (result.action === 'updated') {
+						await this.syncMarkdownUpdate(db, result.markdown, result.dbPiece, hash)
+					} else if (hash) {
+						await updateCache(db, file, hash)
 					}
+
+					return { action: result.action, file }
 				} catch (error) {
 					return { file, error: true, message: `error syncing piece: ${error}` }
 				}
@@ -239,13 +286,21 @@ class Piece<F extends PieceFrontmatter> {
 		) as Readable & AsyncIterable<PieceSyncResult>
 	}
 
-	async syncMarkdownAdd(db: LuzzleDatabase, markdown: PieceMarkdown<F>): Promise<void> {
+	async syncMarkdownAdd(
+		db: LuzzleDatabase,
+		markdown: PieceMarkdown<F>,
+		hash?: string
+	): Promise<void> {
 		const createInput = makePieceItemInsertable(this._pieceName, markdown, this._schema)
-		const readStream = this._storage.createReadStream(markdown.filePath)
-		const hash = await calculateHashFromFile(readStream)
+
+		let contentHash = hash
+		if (contentHash === undefined) {
+			const readStream = this._storage.createReadStream(markdown.filePath)
+			contentHash = await calculateHashFromFile(readStream)
+		}
 
 		await insertItem(db, createInput)
-		await addCache(db, markdown.filePath, hash)
+		await addCache(db, markdown.filePath, contentHash)
 	}
 
 	async syncMarkdown(db: LuzzleDatabase, markdown: PieceMarkdown<F>): Promise<void> {
@@ -261,14 +316,19 @@ class Piece<F extends PieceFrontmatter> {
 	async syncMarkdownUpdate(
 		db: LuzzleDatabase,
 		markdown: PieceMarkdown<F>,
-		data: LuzzleSelectable<'pieces_items'>
+		data: LuzzleSelectable<'pieces_items'>,
+		hash?: string
 	): Promise<void> {
 		const updateInput = makePieceItemUpdatable(markdown, this._schema, data, false)
 		await updateItem(db, markdown.filePath, updateInput)
-		const readStream = this._storage.createReadStream(markdown.filePath)
-		const hash = await calculateHashFromFile(readStream)
 
-		await updateCache(db, data.file_path, hash)
+		let contentHash = hash
+		if (contentHash === undefined) {
+			const readStream = this._storage.createReadStream(markdown.filePath)
+			contentHash = await calculateHashFromFile(readStream)
+		}
+
+		await updateCache(db, data.file_path, contentHash)
 	}
 
 	toMarkdown(data: LuzzleSelectable<'pieces_items'>): PieceMarkdown<F> {

@@ -106,12 +106,17 @@ describe('luzzleSyncStep', () => {
 
 		expect(StorageFileSystem).toHaveBeenCalledWith('/app/archive')
 		expect(mockPieces.sync).toHaveBeenCalledWith(mockDb, {})
-		expect(mockPieces.prune).toHaveBeenCalledWith(mockDb, { dryRun: false })
+		expect(mockPieces.prune).toHaveBeenCalledWith(mockDb)
 	})
 
 	test('logs schema sync results', async () => {
 		const mockPieces = makePieces({
-			sync: vi.fn().mockResolvedValue(asyncIterable([{ action: 'added', name: 'books' }])),
+			sync: vi.fn().mockResolvedValue(
+				asyncIterable([
+					{ action: 'added', name: 'books' },
+					{ action: 'skipped', name: 'notes' },
+				])
+			),
 		})
 		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
@@ -120,6 +125,7 @@ describe('luzzleSyncStep', () => {
 		await luzzleSyncStep.run(undefined, ctx)
 
 		expect(ctx.logger.info).toHaveBeenCalledWith('schema added: books')
+		expect(ctx.logger.info).not.toHaveBeenCalledWith('schema skipped: notes')
 	})
 
 	test('logs schema sync errors', async () => {
@@ -137,13 +143,12 @@ describe('luzzleSyncStep', () => {
 		expect(ctx.logger.warn).toHaveBeenCalledWith('schema sync error for bad: parse failed')
 	})
 
-	test('runs item sync per type with only outdated files; returns changedPaths', async () => {
+	test('runs item sync per type; returns changedPaths', async () => {
 		const mockDb = {} as unknown as MockDb
 		const mockPiece = makePiece({
 			sync: vi.fn().mockResolvedValue(
 				asyncIterable([{ action: 'added', file: 'books/book.md' }])
 			),
-			isOutdated: vi.fn().mockResolvedValue(true),
 		})
 		const mockPieces = makePieces({
 			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['books/book.md'] }),
@@ -163,10 +168,9 @@ describe('luzzleSyncStep', () => {
 		}
 	})
 
-	test('filters out non-outdated files before piece.sync', async () => {
+	test('passes all on-disk files to piece.sync (core gates staleness)', async () => {
 		const mockPiece = makePiece({
 			sync: vi.fn().mockResolvedValue(asyncIterable([])),
-			isOutdated: vi.fn().mockImplementation(async (file) => file === 'books/changed.md'),
 		})
 		const mockPieces = makePieces({
 			getFilesIn: vi.fn().mockResolvedValue({
@@ -181,7 +185,11 @@ describe('luzzleSyncStep', () => {
 		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await luzzleSyncStep.run(undefined, ctx)
-		expect(mockPiece.sync).toHaveBeenCalledWith(expect.anything(), ['books/changed.md'], {})
+		expect(mockPiece.sync).toHaveBeenCalledWith(
+			expect.anything(),
+			['books/unchanged.md', 'books/changed.md'],
+			{}
+		)
 	})
 
 	test('returns changedPaths only for added/updated actions', async () => {
@@ -210,6 +218,49 @@ describe('luzzleSyncStep', () => {
 		if (result.status === 'completed') {
 			expect(result.value.changedPaths).toEqual(['books/new.md', 'books/changed.md'])
 		}
+	})
+
+	test('logs schema prune results and errors', async () => {
+		const mockPieces = makePieces({
+			prune: vi.fn().mockResolvedValue(
+				asyncIterable([
+					{ action: 'pruned', name: 'gone' },
+					{ error: true, name: 'bad', message: 'delete failed' },
+				])
+			),
+		})
+		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
+		mocks.Pieces.mockReturnValue(mockPieces)
+
+		await luzzleSyncStep.run(undefined, ctx)
+
+		expect(ctx.logger.info).toHaveBeenCalledWith('schema pruned: gone')
+		expect(ctx.logger.warn).toHaveBeenCalledWith('schema prune error for bad: delete failed')
+	})
+
+	test('logs item sync and prune errors', async () => {
+		const mockPiece = makePiece({
+			sync: vi.fn().mockResolvedValue(
+				asyncIterable([{ error: true, file: 'books/bad.md', message: 'sync failed' }])
+			),
+			prune: vi.fn().mockResolvedValue(
+				asyncIterable([{ error: true, file: 'books/old.md', message: 'prune failed' }])
+			),
+		})
+		const mockPieces = makePieces({
+			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['books/bad.md'] }),
+			getPiece: vi.fn().mockResolvedValue(mockPiece),
+			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
+		})
+		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
+		mocks.Pieces.mockReturnValue(mockPieces)
+
+		await luzzleSyncStep.run(undefined, ctx)
+
+		expect(ctx.logger.warn).toHaveBeenCalledWith('item sync error for books/bad.md: sync failed')
+		expect(ctx.logger.warn).toHaveBeenCalledWith('item prune error for books/old.md: prune failed')
 	})
 
 	test('runs item prune for pruned files', async () => {
