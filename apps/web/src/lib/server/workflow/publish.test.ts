@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { getLatestWorkflowRun, getWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
-import { findInFlightPublishRun, validateAuditForPublish } from './publish-guard.js'
+import { findInFlightPublishRun, validateAuditForPublish, parsePiecesDiff } from './publish.js'
 
 vi.mock('@luzzle/web.jobs', () => ({
 	getLatestWorkflowRun: vi.fn(),
@@ -131,5 +131,47 @@ describe('validateAuditForPublish', () => {
 				: makeRun({ id: 'pub-1', workflow_name: 'Publish', created_at: '2026-06-20T01:00:00Z' })
 		)
 		expect(validateAuditForPublish(db, 'audit-1')).toEqual({ ok: true })
+	})
+})
+
+describe('parsePiecesDiff', () => {
+	const validDiff = {
+		schemas: { added: ['blog'], updated: [], pruned: ['old'] },
+		pieces: { added: ['a.md'], updated: ['b.md'], pruned: [] }
+	}
+
+	test('parses a well-formed PiecesDiff', () => {
+		expect(parsePiecesDiff(JSON.stringify(validDiff))).toEqual(validDiff)
+	})
+
+	test('returns null for null/empty output', () => {
+		expect(parsePiecesDiff(null)).toBeNull()
+		expect(parsePiecesDiff('')).toBeNull()
+	})
+
+	test('returns null for malformed JSON', () => {
+		expect(parsePiecesDiff('not json')).toBeNull()
+	})
+
+	test('returns null for the legacy "ok" literal', () => {
+		expect(parsePiecesDiff(JSON.stringify('ok'))).toBeNull()
+	})
+
+	test('returns null when a summary is missing keys', () => {
+		expect(
+			parsePiecesDiff(JSON.stringify({ schemas: { added: [] }, pieces: validDiff.pieces }))
+		).toBeNull()
+	})
+
+	test('returns null when an array contains non-strings', () => {
+		const bad = {
+			schemas: { added: [1], updated: [], pruned: [] },
+			pieces: { added: [], updated: [], pruned: [] }
+		}
+		expect(parsePiecesDiff(JSON.stringify(bad))).toBeNull()
+	})
+
+	test('returns null when pieces is absent', () => {
+		expect(parsePiecesDiff(JSON.stringify({ schemas: validDiff.schemas }))).toBeNull()
 	})
 })

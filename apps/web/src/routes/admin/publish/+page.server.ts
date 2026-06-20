@@ -1,7 +1,7 @@
 import { config } from '$lib/server/config'
 import { db, type JobProgressRow, type JobProgressLogsRow } from '$lib/server/database/index.js'
 import { getOpenWorkflowDb } from '$lib/server/workflow/index.js'
-import { parsePiecesDiff } from '$lib/server/workflow/pieces-diff.js'
+import { parsePiecesDiff } from '$lib/server/workflow/publish.js'
 import { getLatestWorkflowRun, getStepAttempts, type WorkflowRunRow } from '@luzzle/web.jobs'
 import type { PiecesDiff } from '@luzzle/core'
 import type { PageServerLoad } from './$types'
