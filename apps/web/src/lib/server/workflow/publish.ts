@@ -6,11 +6,7 @@ const PUBLISH_WORKFLOWS = ['Publish', 'PublishAudit'] as const
 const IN_FLIGHT_STATES = new Set(['pending', 'running'])
 const COMPLETED_STATES = new Set(['completed', 'succeeded'])
 
-/**
- * Publish and PublishAudit form one mutual-exclusion group — an audit's bisync
- * mutates the same archive a publish reads. Returns the in-flight run if either
- * workflow is pending or running, else null.
- */
+// Publish and PublishAudit are mutually exclusive: an audit's bisync mutates the archive a publish reads.
 export function findInFlightPublishRun(db: DatabaseSync): WorkflowRunRow | null {
 	for (const name of PUBLISH_WORKFLOWS) {
 		const run = getLatestWorkflowRun(db, name)
@@ -23,11 +19,6 @@ export function findInFlightPublishRun(db: DatabaseSync): WorkflowRunRow | null 
 
 export type AuditGuard = { ok: true } | { ok: false; reason: string }
 
-/**
- * A publish may only ship a freshly reviewed audit: the given run must be a
- * completed PublishAudit, still be the latest audit, and not have been consumed
- * by a later publish.
- */
 export function validateAuditForPublish(db: DatabaseSync, auditRunId: unknown): AuditGuard {
 	if (typeof auditRunId !== 'string' || auditRunId.length === 0) {
 		return { ok: false, reason: 'no audit run provided; check for changes before publishing' }
@@ -46,9 +37,7 @@ export function validateAuditForPublish(db: DatabaseSync, auditRunId: unknown): 
 		return { ok: false, reason: 'a newer audit has run; re-check before publishing' }
 	}
 
-	// A publish consumes its audit: if a publish started after this audit, the
-	// audit no longer reflects what's pending. (created_at is ISO, so string
-	// comparison is chronological.)
+	// a publish consumes its audit; created_at is ISO so string compare is chronological
 	const lastPublish = getLatestWorkflowRun(db, 'Publish')
 	if (lastPublish && lastPublish.created_at > run.created_at) {
 		return {
@@ -72,11 +61,7 @@ function isDiffSummary(value: unknown): value is PiecesDiff['schemas'] {
 	)
 }
 
-/**
- * Parse a `workflow_runs.output` JSON string into a PiecesDiff. Tolerates null,
- * malformed JSON, and legacy shapes (e.g. a historical Publish run whose output
- * was the `'ok'` literal) by returning null.
- */
+// parses workflow_runs.output; returns null on missing/malformed/legacy ('ok') output
 export function parsePiecesDiff(output: string | null): PiecesDiff | null {
 	if (!output) return null
 
