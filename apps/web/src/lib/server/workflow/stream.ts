@@ -9,7 +9,7 @@ type Cursors = Record<string, number>
 
 export type StreamJobProgressArgs = {
 	jobId: string
-	jobClass: string
+	jobClass: string | string[]
 	request: Request
 	url: URL
 }
@@ -60,7 +60,7 @@ type Emit = (event: string, data: unknown, id?: string) => void
 
 async function pollOnce(
 	jobId: string,
-	jobClass: string,
+	jobClass: string | string[],
 	cursors: Cursors,
 	emit: Emit
 ): Promise<boolean> {
@@ -96,8 +96,9 @@ async function pollOnce(
 			return true
 		}
 
-		if (job.class !== jobClass) {
-			emit('error', { message: `Job is not a ${jobClass} job` })
+		const allowedClasses = Array.isArray(jobClass) ? jobClass : [jobClass]
+		if (!allowedClasses.includes(job.class)) {
+			emit('error', { message: `Job is not a ${allowedClasses.join('/')} job` })
 			return true
 		}
 
