@@ -1,75 +1,85 @@
 import { config } from '$lib/server/config'
 import { db, type JobProgressRow, type JobProgressLogsRow } from '$lib/server/database/index.js'
 import { getOpenWorkflowDb } from '$lib/server/workflow/index.js'
-import { getLatestWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
+import { parsePiecesDiff } from '$lib/server/workflow/pieces-diff.js'
+import { getLatestWorkflowRun, getStepAttempts, type WorkflowRunRow } from '@luzzle/web.jobs'
+import type { PiecesDiff } from '@luzzle/core'
 import type { PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async () => {
-	const meta = { title: `builder | ${config.content.text.title}` }
+export type RunView = {
+	jobId: string
+	state: string
+	errors: unknown
+	phases: JobProgressRow[]
+	logs: JobProgressLogsRow[]
+	diff: PiecesDiff | null
+}
 
-	let jobId: string | null = null
-	let state: string | null = null
-	let errors: unknown = null
-	let runId: string | null = null
+function mapState(status: string): string {
+	if (status === 'running') return 'running'
+	if (status === 'completed' || status === 'succeeded') return 'completed'
+	if (status === 'failed') return 'failed'
+	if (status === 'canceled') return 'canceled'
+	if (status === 'skipped') return 'skipped'
+	return 'waiting'
+}
 
-	// Try OpenWorkflow first
-	try {
-		const openWorkflowDb = getOpenWorkflowDb()
-		const run = getLatestWorkflowRun(openWorkflowDb, 'Publish')
-		if (run) {
-			jobId = run.id
-			state = 'waiting'
-			if (run.status === 'running') state = 'running'
-			if (run.status === 'completed' || run.status === 'succeeded') state = 'completed'
-			if (run.status === 'failed') state = 'failed'
-			if (run.status === 'canceled') state = 'canceled'
-			errors = run.error ? [run.error] : null
-			runId = run.id
-		}
-	} catch (err) {
-		console.error('Failed to query OpenWorkflow runs in publish loader:', err)
-	}
+function mapPhases(jobId: string): JobProgressRow[] {
+	const rows = getStepAttempts(getOpenWorkflowDb(), jobId)
+	return rows.map((r) => ({
+		job_id: jobId,
+		phase: r.phase,
+		status: mapState(r.status),
+		started_at: r.started_at ? Date.parse(r.started_at) : Date.now(),
+		finished_at: r.finished_at ? Date.parse(r.finished_at) : null,
+		message: r.message
+	})) as JobProgressRow[]
+}
 
-	if (!jobId) {
-		return { meta, job: null }
-	}
-
-	let phases: JobProgressRow[] = []
-	if (runId) {
-		try {
-			const openWorkflowDb = getOpenWorkflowDb()
-			const rows = getStepAttempts(openWorkflowDb, runId)
-			phases = rows.map((r) => {
-				let status = 'waiting'
-				if (r.status === 'running') status = 'running'
-				if (r.status === 'completed' || r.status === 'succeeded') status = 'completed'
-				if (r.status === 'failed') status = 'failed'
-				if (r.status === 'canceled') status = 'canceled'
-				if (r.status === 'skipped') status = 'skipped'
-
-				return {
-					job_id: jobId!,
-					phase: r.phase,
-					status,
-					started_at: r.started_at ? Date.parse(r.started_at) : Date.now(),
-					finished_at: r.finished_at ? Date.parse(r.finished_at) : null,
-					message: r.message
-				}
-			})
-		} catch (err) {
-			console.error('Failed to query OpenWorkflow steps in publish loader:', err)
-		}
-	}
-
-	const logs = (await db
+async function loadLogs(jobId: string): Promise<JobProgressLogsRow[]> {
+	return (await db
 		.selectFrom('job_progress_logs')
 		.selectAll()
 		.where('job_id', '=', jobId)
 		.orderBy('line_number', 'asc')
 		.execute()) as JobProgressLogsRow[]
+}
+
+async function buildRunView(run: WorkflowRunRow | null): Promise<RunView | null> {
+	if (!run) return null
+
+	let phases: JobProgressRow[] = []
+	let logs: JobProgressLogsRow[] = []
+	try {
+		phases = mapPhases(run.id)
+		logs = await loadLogs(run.id)
+	} catch (err) {
+		console.error('Failed to load run progress in publish loader:', err)
+	}
 
 	return {
-		meta,
-		job: { jobId, state, errors, phases, logs }
+		jobId: run.id,
+		state: mapState(run.status),
+		errors: run.error ? [run.error] : null,
+		phases,
+		logs,
+		diff: parsePiecesDiff(run.output)
 	}
+}
+
+export const load: PageServerLoad = async () => {
+	const meta = { title: `builder | ${config.content.text.title}` }
+
+	let audit: RunView | null = null
+	let publish: RunView | null = null
+
+	try {
+		const openWorkflowDb = getOpenWorkflowDb()
+		audit = await buildRunView(getLatestWorkflowRun(openWorkflowDb, 'PublishAudit'))
+		publish = await buildRunView(getLatestWorkflowRun(openWorkflowDb, 'Publish'))
+	} catch (err) {
+		console.error('Failed to query OpenWorkflow runs in publish loader:', err)
+	}
+
+	return { meta, audit, publish }
 }

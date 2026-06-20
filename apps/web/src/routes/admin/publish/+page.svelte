@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte'
+	import { invalidateAll } from '$app/navigation'
 	import Button from '$lib/components/ui/Button.svelte'
 
 	import CheckCircleFill from 'virtual:icons/ph/check-circle-fill'
@@ -8,14 +9,19 @@
 	import MinusCircle from 'virtual:icons/ph/minus-circle'
 	import SquareFill from 'virtual:icons/ph/square-fill'
 	import PlayFill from 'virtual:icons/ph/play-fill'
+	import MagnifyingGlass from 'virtual:icons/ph/magnifying-glass'
+	import ArrowCircleUp from 'virtual:icons/ph/arrow-circle-up'
 	import LockSimpleFill from 'virtual:icons/ph/lock-simple-fill'
 	import LockSimpleOpenFill from 'virtual:icons/ph/lock-simple-open-fill'
 
+	import type { PiecesDiff } from '@luzzle/core'
 	import type { PageData } from './$types'
+	import type { RunView } from './+page.server'
 
 	let { data }: { data: PageData } = $props()
 
-	type PublishStatus = 'idle' | 'enqueued' | 'running' | 'completed' | 'failed'
+	type RunStatus = 'idle' | 'enqueued' | 'running' | 'completed' | 'failed'
+	type ActiveKind = 'audit' | 'publish'
 
 	type PhaseProgress = {
 		phase: string
@@ -33,7 +39,7 @@
 		message: string
 	}
 
-	function stateToStatus(state: string | null | undefined): PublishStatus {
+	function stateToStatus(state: string | null | undefined): RunStatus {
 		switch (state) {
 			case 'completed':
 				return 'completed'
@@ -50,37 +56,62 @@
 		}
 	}
 
-	const initialJob = data.job
-	const initialPhases: PhaseProgress[] = initialJob?.phases ?? []
-	const initialLogs: Record<string, PhaseLog[]> = {}
-	if (initialJob) {
-		for (const log of initialJob.logs) {
-			if (!initialLogs[log.phase]) initialLogs[log.phase] = []
-			initialLogs[log.phase].push(log)
+	function groupLogs(rows: PhaseLog[]): Record<string, PhaseLog[]> {
+		const grouped: Record<string, PhaseLog[]> = {}
+		for (const log of rows) {
+			if (!grouped[log.phase]) grouped[log.phase] = []
+			grouped[log.phase].push(log)
 		}
+		return grouped
 	}
-	const initialErrors = initialJob?.errors as { message?: string }[] | undefined
-	const initialStatus: PublishStatus = stateToStatus(initialJob?.state)
 
-	let status = $state<PublishStatus>(initialStatus)
-	let errorMessage = $state(
-		initialStatus === 'failed' && initialErrors?.[0]?.message ? initialErrors[0].message : ''
-	)
-	let jobId = $state<string | number>(initialJob?.jobId ?? '')
+	// On load, resume an in-flight run (publish takes priority over audit).
+	function pickInitial(): { kind: ActiveKind; run: RunView } | null {
+		const inFlight = (run: RunView | null) =>
+			run && (run.state === 'running' || run.state === 'waiting')
+		if (inFlight(data.publish)) return { kind: 'publish', run: data.publish as RunView }
+		if (inFlight(data.audit)) return { kind: 'audit', run: data.audit as RunView }
+		return null
+	}
+	const initial = pickInitial()
 
-	let phases = $state<PhaseProgress[]>(initialPhases)
-	let logs = $state<Record<string, PhaseLog[]>>(initialLogs)
+	let activeKind = $state<ActiveKind | null>(initial?.kind ?? null)
+	let status = $state<RunStatus>(initial ? stateToStatus(initial.run.state) : 'idle')
+	let errorMessage = $state('')
+	let jobId = $state<string>(initial?.run.jobId ?? '')
+	let phases = $state<PhaseProgress[]>((initial?.run.phases as PhaseProgress[]) ?? [])
+	let logs = $state<Record<string, PhaseLog[]>>(groupLogs((initial?.run.logs as PhaseLog[]) ?? []))
 	let scrollLocks = $state<Record<string, boolean>>({})
 
 	let eventSource: EventSource | null = null
+
+	let auditDiff = $derived(data.audit?.diff ?? null)
+	let publishDiff = $derived(data.publish?.diff ?? null)
+	let auditRunId = $derived(data.audit?.jobId ?? '')
+	let auditReady = $derived(data.audit?.state === 'completed')
+	let publishedAfterAudit = $derived(
+		data.publish?.state === 'completed' && activeKind === 'publish' && status === 'completed'
+	)
+	let busy = $derived(status === 'running' || status === 'enqueued')
+	let canPublish = $derived(auditReady && !busy)
+
+	function hasChanges(diff: PiecesDiff): boolean {
+		return [
+			diff.schemas.added,
+			diff.schemas.updated,
+			diff.schemas.pruned,
+			diff.pieces.added,
+			diff.pieces.updated,
+			diff.pieces.pruned
+		].some((list) => list.length > 0)
+	}
 
 	function formatDuration(ms: number) {
 		if (ms < 0) return '0s'
 		const s = Math.floor(ms / 1000)
 		if (s < 60) return `${s}s`
 		const m = Math.floor(s / 60)
-		const remS = s % 60
-		return `${m}m ${remS}s`
+		return `${m}m ${s % 60}s`
 	}
 
 	function handleScroll(phaseName: string, event: Event) {
@@ -88,7 +119,6 @@
 		if (!el) return
 		const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10
 		const currentLock = scrollLocks[phaseName] ?? true
-
 		if (isAtBottom && !currentLock) {
 			scrollLocks[phaseName] = true
 		} else if (!isAtBottom && currentLock) {
@@ -96,40 +126,40 @@
 		}
 	}
 
-	function startWatching(id: string | number) {
+	function resetLive() {
+		errorMessage = ''
+		jobId = ''
+		phases = []
+		logs = {}
+		status = 'idle'
+	}
+
+	function startWatching(id: string) {
 		if (eventSource) eventSource.close()
 
 		eventSource = new EventSource(`/api/admin/publish/${id}/stream`)
 
 		eventSource.addEventListener('state', (e) => {
-			const data = JSON.parse(e.data)
-			if (data.state === 'running' || data.state === 'claimed') {
-				status = 'running'
-			} else if (data.state === 'waiting') {
-				status = 'enqueued'
-			}
+			const payload = JSON.parse(e.data)
+			if (payload.state === 'running' || payload.state === 'claimed') status = 'running'
+			else if (payload.state === 'waiting') status = 'enqueued'
 		})
 
 		eventSource.addEventListener('phase', (e) => {
-			const data = JSON.parse(e.data)
-			phases = data
+			phases = JSON.parse(e.data)
 		})
 
 		eventSource.addEventListener('log', (e) => {
 			const newLogs: PhaseLog[] = JSON.parse(e.data)
 			const touched = new Set<string>()
 			for (const log of newLogs) {
-				if (!logs[log.phase]) {
-					logs[log.phase] = []
-				}
+				if (!logs[log.phase]) logs[log.phase] = []
 				logs[log.phase].push(log)
 				touched.add(log.phase)
 			}
-
 			tick().then(() => {
 				for (const phase of touched) {
-					const isLocked = scrollLocks[phase] ?? true
-					if (isLocked) {
+					if (scrollLocks[phase] ?? true) {
 						const el = document.getElementById(`log-container-${phase}`)
 						if (el) el.scrollTop = el.scrollHeight
 					}
@@ -138,21 +168,22 @@
 		})
 
 		eventSource.addEventListener('done', (e) => {
-			const data = JSON.parse(e.data)
-			status = data.state === 'completed' ? 'completed' : 'failed'
-			if (data.errors && data.errors.length > 0) {
-				errorMessage = data.errors[0]?.message || 'Unknown error'
+			const payload = JSON.parse(e.data)
+			status = payload.state === 'completed' ? 'completed' : 'failed'
+			if (payload.errors && payload.errors.length > 0) {
+				errorMessage = payload.errors[0]?.message || 'Unknown error'
 			}
 			eventSource?.close()
 			eventSource = null
+			// Refresh loader data so the latest audit/publish diff renders.
+			invalidateAll()
 		})
 
 		eventSource.addEventListener('error', (e) => {
 			const msgEvent = e as MessageEvent
 			if (msgEvent.data) {
 				try {
-					const data = JSON.parse(msgEvent.data)
-					errorMessage = data.message || 'Stream error'
+					errorMessage = JSON.parse(msgEvent.data).message || 'Stream error'
 				} catch {
 					errorMessage = 'Stream error'
 				}
@@ -160,36 +191,30 @@
 		})
 	}
 
-	async function startPublish() {
-		status = 'idle'
-		errorMessage = ''
-		jobId = ''
-		phases = []
-		logs = {}
-
+	async function trigger(url: string, body: Record<string, unknown>, kind: ActiveKind) {
+		activeKind = kind
+		resetLive()
 		try {
-			const response = await fetch(`/api/admin/publish`, {
-				method: 'POST'
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
 			})
-
-			const data = await response.json().catch(() => null)
+			const payload = await response.json().catch(() => null)
 
 			if (!response.ok) {
-				if (response.status === 409 && data?.jobId) {
-					jobId = data.jobId
+				if (response.status === 409 && payload?.jobId) {
+					jobId = payload.jobId
 					status = 'enqueued'
 					startWatching(jobId)
 					return
 				}
 				status = 'failed'
-				errorMessage =
-					response.status === 409 && !data?.jobId
-						? `Conflict: job already running`
-						: `Server error: ${response.status}`
+				errorMessage = payload?.message || `Server error: ${response.status}`
 				return
 			}
 
-			jobId = data.jobId
+			jobId = payload.jobId
 			status = 'enqueued'
 			startWatching(jobId)
 		} catch (e) {
@@ -198,55 +223,46 @@
 		}
 	}
 
-	function cancelPublish() {
+	function checkChanges() {
+		trigger('/api/admin/publish/audit', { bisync: false }, 'audit')
+	}
+
+	function syncAndCheck() {
+		trigger('/api/admin/publish/audit', { bisync: true }, 'audit')
+	}
+
+	function startPublish() {
+		if (!auditRunId) return
+		trigger('/api/admin/publish', { auditRunId }, 'publish')
+	}
+
+	function cancel() {
 		if (eventSource) {
 			eventSource.close()
 			eventSource = null
 		}
-		status = 'failed'
-		errorMessage = 'Publish cancelled'
+		status = 'idle'
 	}
 
 	onMount(() => {
-		if (initialJob && (initialStatus === 'running' || initialStatus === 'enqueued')) {
-			startWatching(initialJob.jobId)
-		}
+		if (initial) startWatching(initial.run.jobId)
 	})
 
 	onDestroy(() => {
-		if (eventSource) {
-			eventSource.close()
-		}
+		if (eventSource) eventSource.close()
 	})
 
 	let overallDuration = $derived.by(() => {
 		if (phases.length === 0) return 0
 		const first = phases[0]
-		const last = phases[phases.length - 1]
 		if (!first.started_at) return 0
+		const last = phases[phases.length - 1]
 		const end = last.finished_at || Date.now()
 		return end - first.started_at
 	})
-
 	let completedStages = $derived(phases.filter((p) => p.status === 'completed').length)
-	let totalStages = $derived(6)
-
-	let finishedAt = $derived.by(() => {
-		let max = 0
-		for (const p of phases) {
-			if (p.finished_at && p.finished_at > max) max = p.finished_at
-		}
-		return max || null
-	})
-
-	function formatTimestamp(ts: number) {
-		return new Date(ts).toLocaleString(undefined, {
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		})
-	}
+	let totalStages = $derived(phases.length)
+	let activeLabel = $derived(activeKind === 'publish' ? 'Publishing' : 'Checking for changes')
 </script>
 
 <section class="publish-view">
@@ -254,65 +270,25 @@
 		<h1>Publish</h1>
 	</header>
 
-	<div class="status-card">
-		<div class="status-left">
-			<span class="status-icon-wrap status-{status}">
-				{#if status === 'completed'}
-					<CheckCircleFill class="status-icon" />
-				{:else if status === 'running'}
-					<CircleNotchBold class="status-icon spin" />
-				{:else if status === 'enqueued'}
-					<CircleNotchBold class="status-icon" />
-				{:else if status === 'failed'}
-					<XCircleFill class="status-icon" />
-				{:else}
-					<span class="status-dot"></span>
-				{/if}
-			</span>
-
-			<div class="status-text">
-				{#if status === 'idle'}
-					<div class="status-title">No active run</div>
-					<div class="status-sub">Ready to publish</div>
-				{:else if status === 'enqueued'}
-					<div class="status-title">Enqueued</div>
-					<div class="status-sub">Waiting for worker…</div>
-				{:else if status === 'running'}
-					<div class="status-title">Publishing workspace</div>
-					<div class="status-sub">
-						<span class="highlight">{completedStages}/{totalStages}</span> stages ·
-						<span class="highlight">{formatDuration(overallDuration)}</span> elapsed
-					</div>
-				{:else if status === 'completed'}
-					<div class="status-title">
-						{finishedAt
-							? `Workspace published on ${formatTimestamp(finishedAt)}`
-							: 'Workspace published'}
-					</div>
-					<div class="status-sub">
-						{totalStages} stages · {formatDuration(overallDuration)} total
-					</div>
-				{:else if status === 'failed'}
-					<div class="status-title">
-						{finishedAt ? `Publish failed on ${formatTimestamp(finishedAt)}` : 'Publish failed'}
-					</div>
-					<div class="status-sub">
-						{completedStages}/{totalStages} stages · {formatDuration(overallDuration)} stopped at
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<div class="status-actions">
-			{#if status === 'running' || status === 'enqueued'}
-				<Button variant="outline" onclick={cancelPublish}>
-					<SquareFill class="btn-icon" />
-					Cancel
+	<div class="controls">
+		<p class="controls-hint">
+			Check what would change, then publish. <strong>Sync &amp; check</strong> pulls the latest from
+			the remote first.
+		</p>
+		<div class="controls-actions">
+			{#if busy}
+				<Button variant="outline" onclick={cancel}>
+					<SquareFill class="btn-icon" /> Stop watching
 				</Button>
 			{:else}
-				<Button onclick={startPublish}>
-					<PlayFill class="btn-icon" />
-					Publish
+				<Button variant="outline" onclick={checkChanges}>
+					<MagnifyingGlass class="btn-icon" /> Check pending changes
+				</Button>
+				<Button variant="outline" onclick={syncAndCheck}>
+					<ArrowCircleUp class="btn-icon" /> Sync &amp; check
+				</Button>
+				<Button onclick={startPublish} disabled={!canPublish}>
+					<PlayFill class="btn-icon" /> Publish
 				</Button>
 			{/if}
 		</div>
@@ -322,6 +298,63 @@
 		<div class="error-strip">
 			<XCircleFill class="error-icon" />
 			<span>{errorMessage}</span>
+		</div>
+	{/if}
+
+	{#if auditReady && auditDiff}
+		<div class="report">
+			<h2 class="report-title">
+				{publishedAfterAudit ? 'Published' : 'Pending changes'}
+			</h2>
+			{@render changeList(auditDiff)}
+		</div>
+	{:else if publishedAfterAudit && publishDiff}
+		<div class="report">
+			<h2 class="report-title">Published</h2>
+			{@render changeList(publishDiff)}
+		</div>
+	{/if}
+
+	{#if status !== 'idle' || phases.length > 0}
+		<div class="status-card">
+			<div class="status-left">
+				<span class="status-icon-wrap status-{status}">
+					{#if status === 'completed'}
+						<CheckCircleFill class="status-icon" />
+					{:else if status === 'running'}
+						<CircleNotchBold class="status-icon spin" />
+					{:else if status === 'enqueued'}
+						<CircleNotchBold class="status-icon" />
+					{:else if status === 'failed'}
+						<XCircleFill class="status-icon" />
+					{:else}
+						<span class="status-dot"></span>
+					{/if}
+				</span>
+
+				<div class="status-text">
+					{#if status === 'enqueued'}
+						<div class="status-title">Enqueued</div>
+						<div class="status-sub">Waiting for worker…</div>
+					{:else if status === 'running'}
+						<div class="status-title">{activeLabel}</div>
+						<div class="status-sub">
+							<span class="highlight">{completedStages}/{totalStages}</span> stages ·
+							<span class="highlight">{formatDuration(overallDuration)}</span> elapsed
+						</div>
+					{:else if status === 'completed'}
+						<div class="status-title">{activeLabel} complete</div>
+						<div class="status-sub">
+							{totalStages} stages · {formatDuration(overallDuration)} total
+						</div>
+					{:else if status === 'failed'}
+						<div class="status-title">{activeLabel} failed</div>
+						<div class="status-sub">
+							{completedStages}/{totalStages} stages · {formatDuration(overallDuration)}
+						</div>
+					{/if}
+				</div>
+			</div>
 		</div>
 	{/if}
 
@@ -372,8 +405,7 @@
 										type="button"
 										class="scroll-lock-btn"
 										onclick={() => {
-											const current = scrollLocks[phase.phase] ?? true
-											const next = !current
+											const next = !(scrollLocks[phase.phase] ?? true)
 											scrollLocks[phase.phase] = next
 											if (next) {
 												tick().then(() => {
@@ -419,6 +451,36 @@
 	{/if}
 </section>
 
+{#snippet changeList(diff: PiecesDiff)}
+	{#if hasChanges(diff)}
+		<div class="change-groups">
+			{@render changeGroup('added', 'Added', diff.schemas.added, diff.pieces.added)}
+			{@render changeGroup('updated', 'Updated', diff.schemas.updated, diff.pieces.updated)}
+			{@render changeGroup('pruned', 'Pruned', diff.schemas.pruned, diff.pieces.pruned)}
+		</div>
+	{:else}
+		<div class="up-to-date">
+			<CheckCircleFill class="up-to-date-icon" /> Up to date — nothing to publish.
+		</div>
+	{/if}
+{/snippet}
+
+{#snippet changeGroup(kind: string, label: string, schemas: string[], pieces: string[])}
+	{#if schemas.length > 0 || pieces.length > 0}
+		<div class="change-group change-{kind}">
+			<span class="change-label">{label}</span>
+			<ul class="change-list">
+				{#each schemas as name (name)}
+					<li class="change-schema">piece type: {name}</li>
+				{/each}
+				{#each pieces as file (file)}
+					<li><a href="/admin/piece/{file}/source">{file}</a></li>
+				{/each}
+			</ul>
+		</div>
+	{/if}
+{/snippet}
+
 <style>
 	.publish-view {
 		padding: var(--space-8) var(--space-4);
@@ -438,6 +500,138 @@
 		font-size: var(--font-size-normal);
 		font-weight: var(--font-weight-bold);
 		letter-spacing: -0.01em;
+	}
+
+	.controls {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: var(--space-4);
+		flex-wrap: wrap;
+		padding: var(--space-4) var(--space-3);
+		background-color: var(--color-surface-container-lowest);
+		border: 1px solid var(--color-outline-variant);
+		border-radius: var(--radius-medium);
+		margin-bottom: var(--space-5);
+	}
+
+	.controls-hint {
+		margin: 0;
+		max-width: 38ch;
+		font-size: var(--font-size-xxs);
+		color: var(--color-on-surface-variant);
+	}
+
+	.controls-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+	}
+
+	.controls-actions :global(.btn-icon) {
+		font-size: 14px;
+	}
+
+	.report {
+		padding: var(--space-4) var(--space-3);
+		background-color: var(--color-surface-container-lowest);
+		border: 1px solid var(--color-outline-variant);
+		border-radius: var(--radius-medium);
+		margin-bottom: var(--space-5);
+	}
+
+	.report-title {
+		margin: 0 0 var(--space-3) 0;
+		font-size: var(--font-size-small);
+		font-weight: var(--font-weight-semibold);
+	}
+
+	.change-groups {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.change-group {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.change-label {
+		font-size: var(--font-size-xxs);
+		font-weight: var(--font-weight-semibold);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+
+	.change-added .change-label {
+		color: var(--color-primary);
+	}
+	.change-updated .change-label {
+		color: var(--color-secondary);
+	}
+	.change-pruned .change-label {
+		color: var(--color-error);
+	}
+
+	.change-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.change-list li {
+		font-family: var(--font-mono);
+		font-size: var(--font-size-xxs);
+		color: var(--color-on-surface-variant);
+	}
+
+	.change-list a {
+		color: var(--color-on-surface);
+		text-decoration: none;
+	}
+
+	.change-list a:hover {
+		text-decoration: underline;
+	}
+
+	.change-schema {
+		font-style: italic;
+	}
+
+	.up-to-date {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		color: var(--color-primary);
+		font-size: var(--font-size-small);
+	}
+
+	.up-to-date :global(.up-to-date-icon) {
+		font-size: 16px;
+	}
+
+	.error-strip {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
+		border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
+		color: var(--color-error);
+		font-size: var(--font-size-xxs);
+		border-radius: var(--radius-small);
+		margin-bottom: var(--space-4);
+	}
+
+	.error-strip :global(.error-icon) {
+		font-size: 14px;
+		flex-shrink: 0;
 	}
 
 	.status-card {
@@ -512,32 +706,6 @@
 	.status-sub .highlight {
 		color: var(--color-on-surface);
 		font-weight: var(--font-weight-medium);
-	}
-
-	.status-actions {
-		flex-shrink: 0;
-	}
-
-	.status-actions :global(.btn-icon) {
-		font-size: 14px;
-	}
-
-	.error-strip {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		padding: var(--space-2) var(--space-3);
-		background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
-		border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
-		color: var(--color-error);
-		font-size: var(--font-size-xxs);
-		border-radius: var(--radius-small);
-		margin-bottom: var(--space-4);
-	}
-
-	.error-strip :global(.error-icon) {
-		font-size: 14px;
-		flex-shrink: 0;
 	}
 
 	.timeline {
