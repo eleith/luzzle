@@ -1,23 +1,14 @@
 import { publishSpec } from '@luzzle/web.jobs/specs'
 import { getOpenWorkflow } from '@luzzle/web.jobs'
-import type { PiecesDiff } from '@luzzle/core'
 import { getWorkerContext } from '../services/context.js'
 import { JobProgress } from '../core/job-progress.js'
 import { runProgressPhase } from '../core/run-progress-phase.js'
-
-function emptyPiecesDiff(): PiecesDiff {
-	return {
-		schemas: { added: [], updated: [], pruned: [] },
-		pieces: { added: [], updated: [], pruned: [] },
-	}
-}
-
-import { archiveSyncStep } from '../steps/archive-sync.js'
 import { luzzleSyncStep } from '../steps/luzzle-sync.js'
 import { webSyncStep } from '../steps/web-sync/index.js'
 import { assetsGenerateStep } from '../steps/assets-generate.js'
 import { cdnSyncStep } from '../steps/cdn-sync.js'
 import { cachePurgeStep } from '../steps/cache-purge.js'
+import { emptyPiecesDiff } from './pieces-diff.js'
 
 export function registerPublishWorkflow(): void {
 	const openWorkflow = getOpenWorkflow()
@@ -30,8 +21,6 @@ export function registerPublishWorkflow(): void {
 		const progress = new JobProgress(db)
 
 		logger.info('openworkflow publish starting', { jobId })
-
-		await runProgressPhase(step, ctx, jobId, progress, archiveSyncStep, undefined)
 
 		const summary = await runProgressPhase(step, ctx, jobId, progress, luzzleSyncStep, undefined)
 		const changedPaths = [...(summary?.pieces.added ?? []), ...(summary?.pieces.updated ?? [])]
