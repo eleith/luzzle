@@ -106,6 +106,19 @@
 		].some((list) => list.length > 0)
 	}
 
+	// Pending changes link to the editor; published changes redirect to the live
+	// piece (the /live route resolves the file path to its public URL on click).
+	// Pruned pieces have no target — rendered as plain text.
+	function editorHref(file: string): string {
+		return `/admin/piece/${file}/source`
+	}
+	function liveHref(file: string): string {
+		return `/admin/piece/${file}/live`
+	}
+	function noHref(): null {
+		return null
+	}
+
 	function formatDuration(ms: number) {
 		if (ms < 0) return '0s'
 		const s = Math.floor(ms / 1000)
@@ -301,17 +314,15 @@
 		</div>
 	{/if}
 
-	{#if auditReady && auditDiff}
-		<div class="report">
-			<h2 class="report-title">
-				{publishedAfterAudit ? 'Published' : 'Pending changes'}
-			</h2>
-			{@render changeList(auditDiff)}
-		</div>
-	{:else if publishedAfterAudit && publishDiff}
+	{#if publishedAfterAudit && publishDiff}
 		<div class="report">
 			<h2 class="report-title">Published</h2>
-			{@render changeList(publishDiff)}
+			{@render changeList(publishDiff, liveHref)}
+		</div>
+	{:else if auditReady && auditDiff}
+		<div class="report">
+			<h2 class="report-title">Pending changes</h2>
+			{@render changeList(auditDiff, editorHref)}
 		</div>
 	{/if}
 
@@ -451,12 +462,18 @@
 	{/if}
 </section>
 
-{#snippet changeList(diff: PiecesDiff)}
+{#snippet changeList(diff: PiecesDiff, hrefFor: (file: string) => string | null)}
 	{#if hasChanges(diff)}
 		<div class="change-groups">
-			{@render changeGroup('added', 'Added', diff.schemas.added, diff.pieces.added)}
-			{@render changeGroup('updated', 'Updated', diff.schemas.updated, diff.pieces.updated)}
-			{@render changeGroup('pruned', 'Pruned', diff.schemas.pruned, diff.pieces.pruned)}
+			{@render changeGroup('added', 'Added', diff.schemas.added, diff.pieces.added, hrefFor)}
+			{@render changeGroup(
+				'updated',
+				'Updated',
+				diff.schemas.updated,
+				diff.pieces.updated,
+				hrefFor
+			)}
+			{@render changeGroup('pruned', 'Pruned', diff.schemas.pruned, diff.pieces.pruned, noHref)}
 		</div>
 	{:else}
 		<div class="up-to-date">
@@ -465,7 +482,13 @@
 	{/if}
 {/snippet}
 
-{#snippet changeGroup(kind: string, label: string, schemas: string[], pieces: string[])}
+{#snippet changeGroup(
+	kind: string,
+	label: string,
+	schemas: string[],
+	pieces: string[],
+	hrefFor: (file: string) => string | null
+)}
 	{#if schemas.length > 0 || pieces.length > 0}
 		<div class="change-group change-{kind}">
 			<span class="change-label">{label}</span>
@@ -474,7 +497,14 @@
 					<li class="change-schema">piece type: {name}</li>
 				{/each}
 				{#each pieces as file (file)}
-					<li><a href="/admin/piece/{file}/source">{file}</a></li>
+					{@const href = hrefFor(file)}
+					<li>
+						{#if href}
+							<a {href}>{file}</a>
+						{:else}
+							<span class="change-gone">{file}</span>
+						{/if}
+					</li>
 				{/each}
 			</ul>
 		</div>
@@ -602,6 +632,11 @@
 
 	.change-schema {
 		font-style: italic;
+	}
+
+	.change-gone {
+		color: var(--color-on-surface-variant);
+		text-decoration: line-through;
 	}
 
 	.up-to-date {
