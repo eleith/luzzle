@@ -8,11 +8,11 @@ export {
 	purgeExpiredWorkflowRuns,
 } from './openworkflow.js'
 export type { WorkflowRunRow, StepAttemptRow } from './openworkflow.js'
-export { jobProgressPurgeSpec, previewSpec, publishSpec } from './specs.js'
+export { jobProgressPurgeSpec, previewSpec, publishSpec, publishAuditSpec } from './specs.js'
 export type {
 	AssetRecord,
 	PublishPayload,
-	PublishResult,
+	PublishAuditPayload,
 	PreviewPayload,
 	PreviewAsset,
 	PreviewResult,
