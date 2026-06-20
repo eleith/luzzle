@@ -114,6 +114,7 @@ describe('luzzleSyncStep', () => {
 			sync: vi.fn().mockResolvedValue(
 				asyncIterable([
 					{ action: 'added', name: 'books' },
+					{ action: 'updated', name: 'authors' },
 					{ action: 'skipped', name: 'notes' },
 				])
 			),
@@ -122,10 +123,15 @@ describe('luzzleSyncStep', () => {
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 		mocks.Pieces.mockReturnValue(mockPieces)
 
-		await luzzleSyncStep.run(undefined, ctx)
+		const result = await luzzleSyncStep.run(undefined, ctx)
 
 		expect(ctx.logger.info).toHaveBeenCalledWith('schema added: books')
+		expect(ctx.logger.info).toHaveBeenCalledWith('schema updated: authors')
 		expect(ctx.logger.info).not.toHaveBeenCalledWith('schema skipped: notes')
+		if (result.status === 'completed') {
+			expect(result.value.schemas.added).toEqual(['books'])
+			expect(result.value.schemas.updated).toEqual(['authors'])
+		}
 	})
 
 	test('logs schema sync errors', async () => {
@@ -143,7 +149,7 @@ describe('luzzleSyncStep', () => {
 		expect(ctx.logger.warn).toHaveBeenCalledWith('schema sync error for bad: parse failed')
 	})
 
-	test('runs item sync per type; returns changedPaths', async () => {
+	test('runs item sync per type; returns added pieces in the diff', async () => {
 		const mockDb = {} as unknown as MockDb
 		const mockPiece = makePiece({
 			sync: vi.fn().mockResolvedValue(
@@ -164,7 +170,7 @@ describe('luzzleSyncStep', () => {
 		expect(result.status).toBe('completed')
 		expect(mockPiece.sync).toHaveBeenCalledWith(mockDb, ['books/book.md'], {})
 		if (result.status === 'completed') {
-			expect(result.value.changedPaths).toEqual(['books/book.md'])
+			expect(result.value.pieces.added).toEqual(['books/book.md'])
 		}
 	})
 
@@ -192,7 +198,7 @@ describe('luzzleSyncStep', () => {
 		)
 	})
 
-	test('returns changedPaths only for added/updated actions', async () => {
+	test('collects added and updated pieces separately, skipping unchanged', async () => {
 		const mockPiece = makePiece({
 			sync: vi.fn().mockResolvedValue(
 				asyncIterable([
@@ -216,7 +222,8 @@ describe('luzzleSyncStep', () => {
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 		if (result.status === 'completed') {
-			expect(result.value.changedPaths).toEqual(['books/new.md', 'books/changed.md'])
+			expect(result.value.pieces.added).toEqual(['books/new.md'])
+			expect(result.value.pieces.updated).toEqual(['books/changed.md'])
 		}
 	})
 
@@ -233,10 +240,13 @@ describe('luzzleSyncStep', () => {
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 		mocks.Pieces.mockReturnValue(mockPieces)
 
-		await luzzleSyncStep.run(undefined, ctx)
+		const result = await luzzleSyncStep.run(undefined, ctx)
 
 		expect(ctx.logger.info).toHaveBeenCalledWith('schema pruned: gone')
 		expect(ctx.logger.warn).toHaveBeenCalledWith('schema prune error for bad: delete failed')
+		if (result.status === 'completed') {
+			expect(result.value.schemas.pruned).toEqual(['gone'])
+		}
 	})
 
 	test('logs item sync and prune errors', async () => {
@@ -276,9 +286,12 @@ describe('luzzleSyncStep', () => {
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 		mocks.Pieces.mockReturnValue(mockPieces)
 
-		await luzzleSyncStep.run(undefined, ctx)
+		const result = await luzzleSyncStep.run(undefined, ctx)
 
 		expect(ctx.logger.info).toHaveBeenCalledWith('item pruned: old.md')
+		if (result.status === 'completed') {
+			expect(result.value.pieces.pruned).toEqual(['old.md'])
+		}
 	})
 
 	test('returns completion message with changed count', async () => {

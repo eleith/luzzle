@@ -1,8 +1,16 @@
 import { publishSpec } from '@luzzle/web.jobs/specs'
 import { getOpenWorkflow } from '@luzzle/web.jobs'
+import type { PiecesDiff } from '@luzzle/core'
 import { getWorkerContext } from '../services/context.js'
 import { JobProgress } from '../core/job-progress.js'
 import { runProgressPhase } from '../core/run-progress-phase.js'
+
+function emptyPiecesDiff(): PiecesDiff {
+	return {
+		schemas: { added: [], updated: [], pruned: [] },
+		pieces: { added: [], updated: [], pruned: [] },
+	}
+}
 
 import { archiveSyncStep } from '../steps/archive-sync.js'
 import { luzzleSyncStep } from '../steps/luzzle-sync.js'
@@ -25,8 +33,8 @@ export function registerPublishWorkflow(): void {
 
 		await runProgressPhase(step, ctx, jobId, progress, archiveSyncStep, undefined)
 
-		const luzzleResult = await runProgressPhase(step, ctx, jobId, progress, luzzleSyncStep, undefined)
-		const changedPaths = luzzleResult?.changedPaths ?? []
+		const summary = await runProgressPhase(step, ctx, jobId, progress, luzzleSyncStep, undefined)
+		const changedPaths = [...(summary?.pieces.added ?? []), ...(summary?.pieces.updated ?? [])]
 
 		await runProgressPhase(step, ctx, jobId, progress, webSyncStep, { filePaths: changedPaths })
 		await runProgressPhase(step, ctx, jobId, progress, assetsGenerateStep, { filePaths: changedPaths })
@@ -34,6 +42,6 @@ export function registerPublishWorkflow(): void {
 		await runProgressPhase(step, ctx, jobId, progress, cachePurgeStep, undefined)
 
 		logger.info('openworkflow publish complete', { jobId })
-		return 'ok'
+		return summary ?? emptyPiecesDiff()
 	})
 }

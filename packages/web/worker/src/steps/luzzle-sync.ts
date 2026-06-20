@@ -1,10 +1,10 @@
-import { Pieces, StorageFileSystem, getDatabaseClient } from '@luzzle/core'
+import { Pieces, StorageFileSystem, getDatabaseClient, type PiecesDiff } from '@luzzle/core'
 import { completed, type Step, type StepResult } from '../core/step.js'
 import { resolveDbPath } from '../services/db.js'
 
-export const luzzleSyncStep: Step<void, { changedPaths: string[] }> = {
+export const luzzleSyncStep: Step<void, PiecesDiff> = {
 	name: 'luzzle.sync',
-	async run(_input, ctx): Promise<StepResult<{ changedPaths: string[] }>> {
+	async run(_input, ctx): Promise<StepResult<PiecesDiff>> {
 		const { config, logger } = ctx
 		logger.info('luzzle.sync starting')
 
@@ -13,13 +13,21 @@ export const luzzleSyncStep: Step<void, { changedPaths: string[] }> = {
 		const db = getDatabaseClient(dbPath)
 
 		const pieces = new Pieces(storage)
+		const diff: PiecesDiff = {
+			schemas: { added: [], updated: [], pruned: [] },
+			pieces: { added: [], updated: [], pruned: [] },
+		}
 
 		const schemaSync = await pieces.sync(db, {})
 		for await (const result of schemaSync) {
 			if (result.error) {
 				logger.warn(`schema sync error for ${result.name}: ${result.message}`)
-			} else if (result.action === 'added' || result.action === 'updated') {
-				logger.info(`schema ${result.action}: ${result.name}`)
+			} else if (result.action === 'added') {
+				diff.schemas.added.push(result.name)
+				logger.info(`schema added: ${result.name}`)
+			} else if (result.action === 'updated') {
+				diff.schemas.updated.push(result.name)
+				logger.info(`schema updated: ${result.name}`)
 			}
 		}
 
@@ -28,12 +36,12 @@ export const luzzleSyncStep: Step<void, { changedPaths: string[] }> = {
 			if (result.error) {
 				logger.warn(`schema prune error for ${result.name}: ${result.message}`)
 			} else if (result.action === 'pruned') {
+				diff.schemas.pruned.push(result.name)
 				logger.info(`schema pruned: ${result.name}`)
 			}
 		}
 
 		const files = await pieces.getFilesIn('.', { deep: true })
-		const changedPaths: string[] = []
 
 		for (const typeName of files.types) {
 			const piece = await pieces.getPiece(typeName)
@@ -45,9 +53,12 @@ export const luzzleSyncStep: Step<void, { changedPaths: string[] }> = {
 			for await (const result of syncItems) {
 				if (result.error) {
 					logger.warn(`item sync error for ${result.file}: ${result.message}`)
-				} else if (result.action === 'added' || result.action === 'updated') {
-					changedPaths.push(result.file)
-					logger.info(`item ${result.action}: ${result.file}`)
+				} else if (result.action === 'added') {
+					diff.pieces.added.push(result.file)
+					logger.info(`item added: ${result.file}`)
+				} else if (result.action === 'updated') {
+					diff.pieces.updated.push(result.file)
+					logger.info(`item updated: ${result.file}`)
 				}
 			}
 
@@ -56,12 +67,14 @@ export const luzzleSyncStep: Step<void, { changedPaths: string[] }> = {
 				if (result.error) {
 					logger.warn(`item prune error for ${result.file}: ${result.message}`)
 				} else if (result.action === 'pruned') {
+					diff.pieces.pruned.push(result.file)
 					logger.info(`item pruned: ${result.file}`)
 				}
 			}
 		}
 
-		logger.info('luzzle.sync complete', { changed: changedPaths.length })
-		return completed({ changedPaths }, `${changedPaths.length} pieces changed`)
+		const changedCount = diff.pieces.added.length + diff.pieces.updated.length
+		logger.info('luzzle.sync complete', { changed: changedCount })
+		return completed(diff, `${changedCount} pieces changed`)
 	},
 }
