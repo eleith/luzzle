@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte'
 	import { invalidateAll } from '$app/navigation'
+	import { Switch } from 'bits-ui'
 	import Button from '$lib/components/ui/Button.svelte'
 
 	import CheckCircleFill from 'virtual:icons/ph/check-circle-fill'
 	import XCircleFill from 'virtual:icons/ph/x-circle-fill'
 	import CircleNotchBold from 'virtual:icons/ph/circle-notch-bold'
 	import MinusCircle from 'virtual:icons/ph/minus-circle'
-	import SquareFill from 'virtual:icons/ph/square-fill'
 	import PlayFill from 'virtual:icons/ph/play-fill'
 	import MagnifyingGlass from 'virtual:icons/ph/magnifying-glass'
-	import ArrowCircleUp from 'virtual:icons/ph/arrow-circle-up'
 	import LockSimpleFill from 'virtual:icons/ph/lock-simple-fill'
 	import LockSimpleOpenFill from 'virtual:icons/ph/lock-simple-open-fill'
 
@@ -82,18 +81,21 @@
 	let phases = $state<PhaseProgress[]>((initial?.run.phases as PhaseProgress[]) ?? [])
 	let logs = $state<Record<string, PhaseLog[]>>(groupLogs((initial?.run.logs as PhaseLog[]) ?? []))
 	let scrollLocks = $state<Record<string, boolean>>({})
+	let syncRemote = $state(false)
 
 	let eventSource: EventSource | null = null
 
 	let auditDiff = $derived(data.audit?.diff ?? null)
 	let publishDiff = $derived(data.publish?.diff ?? null)
 	let auditRunId = $derived(data.audit?.jobId ?? '')
-	let auditReady = $derived(data.audit?.state === 'completed')
-	let publishedAfterAudit = $derived(
-		data.publish?.state === 'completed' && activeKind === 'publish' && status === 'completed'
-	)
+	// Only treat an audit as live "pending changes" if it ran in this session
+	// (or was resumed in-flight). A stored audit from a past visit is stale —
+	// disk may have changed or it may already have been published — so a cold
+	// load shows the empty state and the user must re-check.
+	let auditedThisSession = $derived(activeKind === 'audit' && status === 'completed')
+	let publishedAfterAudit = $derived(activeKind === 'publish' && status === 'completed')
 	let busy = $derived(status === 'running' || status === 'enqueued')
-	let canPublish = $derived(auditReady && !busy)
+	let canPublish = $derived(auditedThisSession && !busy)
 
 	function hasChanges(diff: PiecesDiff): boolean {
 		return [
@@ -236,25 +238,13 @@
 		}
 	}
 
-	function checkChanges() {
-		trigger('/api/admin/publish/audit', { bisync: false }, 'audit')
-	}
-
-	function syncAndCheck() {
-		trigger('/api/admin/publish/audit', { bisync: true }, 'audit')
+	function getChanges() {
+		trigger('/api/admin/publish/audit', { bisync: syncRemote }, 'audit')
 	}
 
 	function startPublish() {
 		if (!auditRunId) return
 		trigger('/api/admin/publish', { auditRunId }, 'publish')
-	}
-
-	function cancel() {
-		if (eventSource) {
-			eventSource.close()
-			eventSource = null
-		}
-		status = 'idle'
 	}
 
 	onMount(() => {
@@ -283,30 +273,6 @@
 		<h1>Publish</h1>
 	</header>
 
-	<div class="controls">
-		<p class="controls-hint">
-			Check what would change, then publish. <strong>Sync &amp; check</strong> pulls the latest from
-			the remote first.
-		</p>
-		<div class="controls-actions">
-			{#if busy}
-				<Button variant="outline" onclick={cancel}>
-					<SquareFill class="btn-icon" /> Stop watching
-				</Button>
-			{:else}
-				<Button variant="outline" onclick={checkChanges}>
-					<MagnifyingGlass class="btn-icon" /> Check pending changes
-				</Button>
-				<Button variant="outline" onclick={syncAndCheck}>
-					<ArrowCircleUp class="btn-icon" /> Sync &amp; check
-				</Button>
-				<Button onclick={startPublish} disabled={!canPublish}>
-					<PlayFill class="btn-icon" /> Publish
-				</Button>
-			{/if}
-		</div>
-	</div>
-
 	{#if errorMessage && status === 'failed'}
 		<div class="error-strip">
 			<XCircleFill class="error-icon" />
@@ -314,32 +280,65 @@
 		</div>
 	{/if}
 
-	{#if publishedAfterAudit && publishDiff}
-		<div class="report">
-			<h2 class="report-title">Published</h2>
-			{@render changeList(publishDiff, liveHref)}
+	<div class="report">
+		<div class="report-head">
+			<h2 class="report-title">
+				{publishedAfterAudit ? 'Published' : 'Pending changes'}
+			</h2>
+			{#if phases.length > 0 && !busy}
+				<span class="report-meta">
+					{#if publishedAfterAudit}
+						{totalStages} stages · {formatDuration(overallDuration)}
+					{:else}
+						checked in {formatDuration(overallDuration)}
+					{/if}
+				</span>
+			{/if}
 		</div>
-	{:else if auditReady && auditDiff}
-		<div class="report">
-			<h2 class="report-title">Pending changes</h2>
-			{@render changeList(auditDiff, editorHref)}
-		</div>
-	{/if}
 
-	{#if status !== 'idle' || phases.length > 0}
+		{#if publishedAfterAudit && publishDiff}
+			{@render changeList(publishDiff, liveHref)}
+		{:else if auditedThisSession && auditDiff}
+			{@render changeList(auditDiff, editorHref)}
+		{:else}
+			<p class="report-empty">
+				No checks yet — run a check to see what would change before publishing.
+			</p>
+		{/if}
+
+		<div class="action-bar">
+			<div class="switch-field" class:is-disabled={busy}>
+				<Switch.Root
+					id="sync-remote"
+					bind:checked={syncRemote}
+					disabled={busy}
+					class="switch-track"
+				>
+					<Switch.Thumb class="switch-thumb" />
+				</Switch.Root>
+				<label for="sync-remote">Sync with remote</label>
+			</div>
+			<div class="action-buttons">
+				<Button variant="outline" onclick={getChanges} disabled={busy}>
+					<MagnifyingGlass class="btn-icon" /> Get changes
+				</Button>
+				<Button onclick={startPublish} disabled={!canPublish}>
+					<PlayFill class="btn-icon" /> Publish
+				</Button>
+			</div>
+		</div>
+	</div>
+
+	{#if busy || status === 'failed'}
 		<div class="status-card">
 			<div class="status-left">
 				<span class="status-icon-wrap status-{status}">
-					{#if status === 'completed'}
-						<CheckCircleFill class="status-icon" />
-					{:else if status === 'running'}
+					{#if status === 'running'}
 						<CircleNotchBold class="status-icon spin" />
 					{:else if status === 'enqueued'}
 						<CircleNotchBold class="status-icon" />
-					{:else if status === 'failed'}
-						<XCircleFill class="status-icon" />
 					{:else}
-						<span class="status-dot"></span>
+						<XCircleFill class="status-icon" />
 					{/if}
 				</span>
 
@@ -353,12 +352,7 @@
 							<span class="highlight">{completedStages}/{totalStages}</span> stages ·
 							<span class="highlight">{formatDuration(overallDuration)}</span> elapsed
 						</div>
-					{:else if status === 'completed'}
-						<div class="status-title">{activeLabel} complete</div>
-						<div class="status-sub">
-							{totalStages} stages · {formatDuration(overallDuration)} total
-						</div>
-					{:else if status === 'failed'}
+					{:else}
 						<div class="status-title">{activeLabel} failed</div>
 						<div class="status-sub">
 							{completedStages}/{totalStages} stages · {formatDuration(overallDuration)}
@@ -477,7 +471,7 @@
 		</div>
 	{:else}
 		<div class="up-to-date">
-			<CheckCircleFill class="up-to-date-icon" /> Up to date — nothing to publish.
+			<CheckCircleFill class="up-to-date-icon" /> Up to date — no pending changes.
 		</div>
 	{/if}
 {/snippet}
@@ -532,37 +526,6 @@
 		letter-spacing: -0.01em;
 	}
 
-	.controls {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: var(--space-4);
-		flex-wrap: wrap;
-		padding: var(--space-4) var(--space-3);
-		background-color: var(--color-surface-container-lowest);
-		border: 1px solid var(--color-outline-variant);
-		border-radius: var(--radius-medium);
-		margin-bottom: var(--space-5);
-	}
-
-	.controls-hint {
-		margin: 0;
-		max-width: 38ch;
-		font-size: var(--font-size-xxs);
-		color: var(--color-on-surface-variant);
-	}
-
-	.controls-actions {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		flex-wrap: wrap;
-	}
-
-	.controls-actions :global(.btn-icon) {
-		font-size: 14px;
-	}
-
 	.report {
 		padding: var(--space-4) var(--space-3);
 		background-color: var(--color-surface-container-lowest);
@@ -571,10 +534,106 @@
 		margin-bottom: var(--space-5);
 	}
 
+	.report-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-3);
+		margin-bottom: var(--space-3);
+	}
+
 	.report-title {
-		margin: 0 0 var(--space-3) 0;
+		margin: 0;
 		font-size: var(--font-size-small);
 		font-weight: var(--font-weight-semibold);
+	}
+
+	.report-meta {
+		font-size: var(--font-size-xxs);
+		color: var(--color-on-surface-variant);
+	}
+
+	.report-empty {
+		margin: 0;
+		font-size: var(--font-size-xxs);
+		color: var(--color-on-surface-variant);
+	}
+
+	.action-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-4);
+		flex-wrap: wrap;
+		margin-top: var(--space-4);
+		padding-top: var(--space-4);
+		border-top: 1px solid var(--color-outline-variant);
+	}
+
+	.action-bar :global(.btn-icon) {
+		font-size: 14px;
+	}
+
+	.action-buttons {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+	}
+
+	.switch-field {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-size: var(--font-size-xxs);
+		color: var(--color-on-surface-variant);
+		user-select: none;
+	}
+
+	.switch-field.is-disabled {
+		opacity: 0.5;
+	}
+
+	/* bits-ui renders these elements, so :global() is needed to reach them */
+	.switch-field :global(.switch-track) {
+		position: relative;
+		box-sizing: border-box;
+		width: 32px;
+		height: 18px;
+		padding: 0;
+		border-radius: 999px;
+		background-color: var(--color-surface-container-highest);
+		border: 1px solid var(--color-outline-variant);
+		cursor: pointer;
+		transition: background-color 0.15s;
+		flex-shrink: 0;
+	}
+
+	.switch-field :global(.switch-track[data-state='checked']) {
+		background-color: var(--color-primary);
+		border-color: var(--color-primary);
+	}
+
+	.switch-field :global(.switch-track[data-disabled]) {
+		cursor: default;
+	}
+
+	.switch-field :global(.switch-thumb) {
+		position: absolute;
+		top: 1px;
+		left: 1px;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		background-color: var(--color-on-surface-variant);
+		transition:
+			transform 0.15s,
+			background-color 0.15s;
+	}
+
+	.switch-field :global(.switch-track[data-state='checked'] .switch-thumb) {
+		transform: translateX(14px);
+		background-color: var(--color-on-primary);
 	}
 
 	.change-groups {
@@ -702,21 +761,11 @@
 		font-size: 26px;
 	}
 
-	.status-dot {
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		border: 1.5px solid var(--color-outline-variant);
-	}
-
 	.status-icon-wrap.status-running {
 		color: var(--color-secondary);
 	}
 	.status-icon-wrap.status-enqueued {
 		color: var(--color-tertiary);
-	}
-	.status-icon-wrap.status-completed {
-		color: var(--color-primary);
 	}
 	.status-icon-wrap.status-failed {
 		color: var(--color-error);

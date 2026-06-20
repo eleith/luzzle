@@ -98,15 +98,38 @@ describe('validateAuditForPublish', () => {
 		})
 	})
 
-	test('accepts a completed audit that is still the latest', () => {
+	test('rejects when a publish ran after the audit', () => {
+		mocks.getWorkflowRun.mockReturnValue(
+			makeRun({ id: 'audit-1', created_at: '2026-06-20T00:00:00Z' })
+		)
+		mocks.getLatestWorkflowRun.mockImplementation((_db, name) =>
+			name === 'PublishAudit'
+				? makeRun({ id: 'audit-1', created_at: '2026-06-20T00:00:00Z' })
+				: makeRun({ id: 'pub-1', workflow_name: 'Publish', created_at: '2026-06-20T01:00:00Z' })
+		)
+		expect(validateAuditForPublish(db, 'audit-1')).toEqual({
+			ok: false,
+			reason: 'changes were published after this check; re-check before publishing'
+		})
+	})
+
+	test('accepts a completed audit that is the latest with no later publish', () => {
 		mocks.getWorkflowRun.mockReturnValue(makeRun({ id: 'audit-1' }))
-		mocks.getLatestWorkflowRun.mockReturnValue(makeRun({ id: 'audit-1' }))
+		mocks.getLatestWorkflowRun.mockImplementation((_db, name) =>
+			name === 'PublishAudit' ? makeRun({ id: 'audit-1' }) : null
+		)
 		expect(validateAuditForPublish(db, 'audit-1')).toEqual({ ok: true })
 	})
 
-	test('accepts a succeeded audit', () => {
-		mocks.getWorkflowRun.mockReturnValue(makeRun({ id: 'audit-1', status: 'succeeded' }))
-		mocks.getLatestWorkflowRun.mockReturnValue(makeRun({ id: 'audit-1', status: 'succeeded' }))
+	test('accepts a succeeded audit newer than the last publish', () => {
+		mocks.getWorkflowRun.mockReturnValue(
+			makeRun({ id: 'audit-1', status: 'succeeded', created_at: '2026-06-20T02:00:00Z' })
+		)
+		mocks.getLatestWorkflowRun.mockImplementation((_db, name) =>
+			name === 'PublishAudit'
+				? makeRun({ id: 'audit-1', status: 'succeeded', created_at: '2026-06-20T02:00:00Z' })
+				: makeRun({ id: 'pub-1', workflow_name: 'Publish', created_at: '2026-06-20T01:00:00Z' })
+		)
 		expect(validateAuditForPublish(db, 'audit-1')).toEqual({ ok: true })
 	})
 })

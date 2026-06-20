@@ -44,5 +44,16 @@ export function validateAuditForPublish(db: DatabaseSync, auditRunId: unknown): 
 		return { ok: false, reason: 'a newer audit has run; re-check before publishing' }
 	}
 
+	// A publish consumes its audit: if a publish started after this audit, the
+	// audit no longer reflects what's pending. (created_at is ISO, so string
+	// comparison is chronological.)
+	const lastPublish = getLatestWorkflowRun(db, 'Publish')
+	if (lastPublish && lastPublish.created_at > run.created_at) {
+		return {
+			ok: false,
+			reason: 'changes were published after this check; re-check before publishing'
+		}
+	}
+
 	return { ok: true }
 }
