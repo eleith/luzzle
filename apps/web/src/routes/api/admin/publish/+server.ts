@@ -14,13 +14,20 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		const body = await request.json().catch(() => ({}))
-		const guard = validateAuditForPublish(db, body?.auditRunId)
-		if (!guard.ok) {
-			return json({ message: guard.reason }, { status: 412 })
+		const auditRunId = body?.auditRunId
+		const bisync = body?.bisync === true
+
+		if (auditRunId) {
+			const guard = validateAuditForPublish(db, auditRunId)
+			if (!guard.ok) {
+				return json({ message: guard.reason }, { status: 412 })
+			}
 		}
 
 		const openWorkflow = getOpenWorkflow()
-		const handle = await openWorkflow.runWorkflow(publishSpec)
+		const handle = await openWorkflow.runWorkflow(publishSpec, {
+			bisync: auditRunId ? false : bisync
+		})
 		return json({ jobId: handle.workflowRun.id })
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error)

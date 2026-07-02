@@ -9,7 +9,7 @@
 	import CircleNotchBold from 'virtual:icons/ph/circle-notch-bold'
 	import MinusCircle from 'virtual:icons/ph/minus-circle'
 	import PlayFill from 'virtual:icons/ph/play-fill'
-	import MagnifyingGlass from 'virtual:icons/ph/magnifying-glass'
+	import ListMagnifyingGlass from 'virtual:icons/ph/list-magnifying-glass'
 	import LockSimpleFill from 'virtual:icons/ph/lock-simple-fill'
 	import LockSimpleOpenFill from 'virtual:icons/ph/lock-simple-open-fill'
 
@@ -93,9 +93,21 @@
 	// disk may have changed or it may already have been published — so a cold
 	// load shows the empty state and the user must re-check.
 	let auditedThisSession = $derived(activeKind === 'audit' && status === 'completed')
-	let publishedAfterAudit = $derived(activeKind === 'publish' && status === 'completed')
 	let busy = $derived(status === 'running' || status === 'enqueued')
-	let canPublish = $derived(auditedThisSession && !busy)
+
+	let reportTitle = $derived.by(() => {
+		if (status === 'idle') {
+			return 'Publish changes'
+		}
+		if (status === 'enqueued' || status === 'running') {
+			return activeKind === 'publish' ? 'Publishing...' : 'Checking for changes...'
+		}
+		if (status === 'completed') {
+			return activeKind === 'publish' ? 'Published successfully' : 'Pending changes'
+		}
+		// status === 'failed'
+		return activeKind === 'publish' ? 'Publish failed' : 'Check failed'
+	})
 
 	function hasChanges(diff: PiecesDiff): boolean {
 		return [
@@ -242,9 +254,12 @@
 		trigger('/api/admin/publish/audit', { bisync: syncRemote }, 'audit')
 	}
 
-	function startPublish() {
-		if (!auditRunId) return
-		trigger('/api/admin/publish', { auditRunId }, 'publish')
+	function handlePublish() {
+		if (auditedThisSession && auditRunId) {
+			trigger('/api/admin/publish', { auditRunId }, 'publish')
+		} else {
+			trigger('/api/admin/publish', { bisync: syncRemote }, 'publish')
+		}
 	}
 
 	onMount(() => {
@@ -282,27 +297,52 @@
 
 	<div class="report">
 		<div class="report-head">
-			<h2 class="report-title">
-				{publishedAfterAudit ? 'Published' : 'Pending changes'}
-			</h2>
+			<h2 class="report-title">{reportTitle}</h2>
 			{#if phases.length > 0 && !busy}
 				<span class="report-meta">
-					{#if publishedAfterAudit}
+					{#if status === 'completed' && activeKind === 'publish'}
 						{totalStages} stages · {formatDuration(overallDuration)}
-					{:else}
+					{:else if status === 'completed' && activeKind === 'audit'}
 						checked in {formatDuration(overallDuration)}
 					{/if}
 				</span>
 			{/if}
 		</div>
 
-		{#if publishedAfterAudit && publishDiff}
-			{@render changeList(publishDiff, liveHref)}
-		{:else if auditedThisSession && auditDiff}
-			{@render changeList(auditDiff, editorHref)}
+		{#if status === 'enqueued' || status === 'running'}
+			{#if activeKind === 'audit'}
+				<div class="report-loading">
+					<CircleNotchBold class="loading-spinner spin" />
+					<span>Comparing local files with the database...</span>
+				</div>
+			{:else}
+				{#if auditDiff && hasChanges(auditDiff)}
+					<div class="publishing-changes-info">
+						<p class="report-empty">Publishing the following changes:</p>
+						{@render changeList(auditDiff, editorHref)}
+					</div>
+				{:else}
+					<div class="report-loading">
+						<CircleNotchBold class="loading-spinner spin" />
+						<span>Syncing database, generating assets, and deploying...</span>
+					</div>
+				{/if}
+			{/if}
+		{:else if status === 'completed'}
+			{#if activeKind === 'publish' && publishDiff}
+				{@render changeList(publishDiff, liveHref)}
+			{:else if activeKind === 'audit' && auditDiff}
+				{@render changeList(auditDiff, editorHref)}
+			{:else}
+				<p class="report-empty">No changes to display.</p>
+			{/if}
+		{:else if status === 'failed'}
+			<p class="report-error-msg">
+				An error occurred. Check the timeline and logs below for details.
+			</p>
 		{:else}
 			<p class="report-empty">
-				No checks yet — run a check to see what would change before publishing.
+				Select an action below to check for changes or publish immediately.
 			</p>
 		{/if}
 
@@ -320,9 +360,9 @@
 			</div>
 			<div class="action-buttons">
 				<Button variant="outline" onclick={getChanges} disabled={busy}>
-					<MagnifyingGlass class="btn-icon" /> Get changes
+					<ListMagnifyingGlass class="btn-icon" /> Check
 				</Button>
-				<Button onclick={startPublish} disabled={!canPublish}>
+				<Button onclick={handlePublish} disabled={busy}>
 					<PlayFill class="btn-icon" /> Publish
 				</Button>
 			</div>
@@ -977,5 +1017,31 @@
 		to {
 			transform: rotate(360deg);
 		}
+	}
+
+	.report-loading {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		color: var(--color-on-surface-variant);
+		font-size: var(--font-size-xxs);
+		padding: var(--space-2) 0;
+	}
+
+	.report-loading :global(.loading-spinner) {
+		font-size: 16px;
+		color: var(--color-secondary);
+	}
+
+	.report-error-msg {
+		margin: 0;
+		font-size: var(--font-size-xxs);
+		color: var(--color-error);
+	}
+
+	.publishing-changes-info {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
 	}
 </style>
