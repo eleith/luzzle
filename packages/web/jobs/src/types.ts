@@ -10,7 +10,9 @@ export interface AssetRecord {
 	content?: string
 }
 
-export type PublishPayload = Record<string, never>
+export interface PublishPayload {
+	bisync?: boolean
+}
 
 export interface PublishAuditPayload {
 	bisync?: boolean
