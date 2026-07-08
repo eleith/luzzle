@@ -315,18 +315,16 @@
 					<CircleNotchBold class="loading-spinner spin" />
 					<span>Comparing local files with the database...</span>
 				</div>
+			{:else if auditDiff && hasChanges(auditDiff)}
+				<div class="publishing-changes-info">
+					<p class="report-empty">Publishing the following changes:</p>
+					{@render changeList(auditDiff, editorHref)}
+				</div>
 			{:else}
-				{#if auditDiff && hasChanges(auditDiff)}
-					<div class="publishing-changes-info">
-						<p class="report-empty">Publishing the following changes:</p>
-						{@render changeList(auditDiff, editorHref)}
-					</div>
-				{:else}
-					<div class="report-loading">
-						<CircleNotchBold class="loading-spinner spin" />
-						<span>Syncing database, generating assets, and deploying...</span>
-					</div>
-				{/if}
+				<div class="report-loading">
+					<CircleNotchBold class="loading-spinner spin" />
+					<span>Syncing database, generating assets, and deploying...</span>
+				</div>
 			{/if}
 		{:else if status === 'completed'}
 			{#if activeKind === 'publish' && publishDiff}
