@@ -19,6 +19,7 @@
 
 	const isReview = $derived(!!(form && form.mergedContent && !form.error))
 	const filePath = $derived(form?.filePath || '')
+	let saveError = $state<string | null>(null)
 </script>
 
 {#if isReview}
@@ -31,9 +32,15 @@
 					method="post"
 					action="/admin/piece/{filePath}/source?/save"
 					use:enhance={() => {
+						saveError = null
 						return async ({ result }) => {
 							if (result.type === 'success') {
 								goto(`/admin/piece/${filePath}/source`)
+							} else if (result.type === 'failure') {
+								const resData = result.data as { error?: { message?: string } } | undefined
+								saveError = resData?.error?.message || 'Failed to save piece'
+							} else if (result.type === 'error') {
+								saveError = result.error?.message || 'An unexpected error occurred'
 							}
 						}
 					}}
@@ -46,6 +53,12 @@
 				</a>
 			</div>
 		</div>
+		{#if saveError}
+			<div class="banner error-banner">
+				<strong>Error:</strong>
+				{saveError}
+			</div>
+		{/if}
 		<div class="editor-container">
 			<MarkdownEditor bind:value={mergedContent} file={filePath} />
 		</div>
@@ -191,5 +204,18 @@
 		section.review {
 			width: clamp(500px, 66.6666%, 1000px);
 		}
+	}
+
+	.banner {
+		padding: var(--space-3);
+		border-radius: var(--radius-small);
+		margin-bottom: var(--space-2);
+		font-size: 0.875rem;
+	}
+
+	.error-banner {
+		background-color: var(--color-error-container);
+		color: var(--color-on-error-container);
+		border: 1px solid var(--color-error);
 	}
 </style>
