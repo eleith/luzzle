@@ -13,20 +13,20 @@ when:
 
 steps:
   prepare:
-    image: node:24
+    image: node:26
     commands:
       - corepack enable
       - pnpm install --frozen-lockfile
 
   build:
-    image: node:24
+    image: node:26
     commands:
       - corepack enable
       - pnpm --filter @luzzle/web.config build
       - pnpm --filter @luzzle/web.theme build
 
   test:
-    image: node:24
+    image: node:26
     commands:
       - corepack enable
       - pnpm --filter @luzzle/web.theme lint

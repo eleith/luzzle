@@ -20,7 +20,7 @@ when:
 
 steps:
   prepare:
-    image: node:24
+    image: node:26
     commands:
       - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
       - corepack enable
@@ -31,25 +31,25 @@ steps:
         from_secret: luzzle_npmrc
 
   lint:
-    image: node:24
+    image: node:26
     commands:
       - corepack enable
       - pnpm --filter @luzzle/web.worker lint
 
   test:
-    image: node:24
+    image: node:26
     commands:
       - corepack enable
       - pnpm --filter @luzzle/web.worker test
 
   build:
-    image: node:24
+    image: node:26
     commands:
       - corepack enable
       - pnpm --filter @luzzle/web.worker build
 
   check-version:
-    image: node:24
+    image: node:26
     commands:
       - cd packages/web/worker
       - |

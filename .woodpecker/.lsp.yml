@@ -14,26 +14,26 @@ when:
 
 steps:
   prepare:
-    image: node:24
+    image: node:26
     commands:
       - corepack enable
       - pnpm install --frozen-lockfile
 
   build:
-    image: node:24
+    image: node:26
     commands:
       - corepack enable
       - pnpm --filter @luzzle/lsp lint
       - pnpm --filter @luzzle/lsp build
 
   test:
-    image: node:24
+    image: node:26
     commands:
       - corepack enable
       - pnpm --filter @luzzle/lsp test
 
   check-version:
-    image: node:24
+    image: node:26
     commands:
       - cd apps/lsp
       - |
@@ -49,7 +49,7 @@ steps:
       - event: tag
 
   publish:
-    image: node:24
+    image: node:26
     commands:
       - corepack enable
       - pnpm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
