@@ -5,7 +5,7 @@
 
 FROM node:26-alpine AS base
 WORKDIR /m
-RUN corepack enable
+RUN npm install -g pnpm@11.2.2
 
 # --- dev: full monorepo install, tsc at container start ----------------------
 FROM base AS dev
