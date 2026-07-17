@@ -97,14 +97,8 @@ export function getContrastRatio(l1: number, l2: number): number {
  * Select the best readable text color (#ffffff or #000000) for a given background.
  */
 export function getBestTextColor(r: number, g: number, b: number): string {
-	const bgLuminance = getRelativeLuminance(r, g, b)
-	const whiteLuminance = 1.0
-	const blackLuminance = 0.0
-
-	const whiteContrast = getContrastRatio(whiteLuminance, bgLuminance)
-	const blackContrast = getContrastRatio(bgLuminance, blackLuminance)
-
-	return whiteContrast >= blackContrast ? '#ffffff' : '#000000'
+	const yiq = (r * 299 + g * 587 + b * 114) / 1000
+	return yiq >= 128 ? '#000000' : '#ffffff'
 }
 
 /**

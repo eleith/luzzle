@@ -55,6 +55,10 @@ describe('transforms/palette/utils', () => {
 
 		// Light background should choose black text
 		expect(getBestTextColor(240, 240, 240)).toBe('#000000')
+
+		// Borderline dark/colored backgrounds that previously got black text should now get white text
+		expect(getBestTextColor(63, 132, 63)).toBe('#ffffff') // #3f843f (dark green)
+		expect(getBestTextColor(73, 126, 152)).toBe('#ffffff') // #497e98 (medium slate blue)
 	})
 
 	test('softenBackground caps saturation and clamps lightness', () => {
