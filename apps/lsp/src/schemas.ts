@@ -6,10 +6,14 @@ export function discoverSchemas(rootUri: string): { mapping: Record<string, stri
 	const mapping: Record<string, string[]> = {}
 
 	let rootPath: string
-	try {
-		rootPath = fileURLToPath(rootUri)
-	} catch {
-		return { mapping, tempDir: null }
+	if (rootUri.startsWith('luzzle-web:///archive')) {
+		rootPath = join(process.cwd(), 'archive')
+	} else {
+		try {
+			rootPath = fileURLToPath(rootUri)
+		} catch {
+			return { mapping, tempDir: null }
+		}
 	}
 
 	const schemasDir = join(rootPath, '.luzzle', 'schemas')

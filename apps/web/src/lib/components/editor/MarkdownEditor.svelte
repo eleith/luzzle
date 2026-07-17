@@ -92,7 +92,7 @@
 		})
 
 		if (file) {
-			createLSPExtension(`file:///app/archive/${file}`)
+			createLSPExtension(`luzzle-web:///archive/${file}`)
 				.then((ext) => {
 					view.dispatch({ effects: lspConfig.reconfigure(ext) })
 				})

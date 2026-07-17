@@ -7,6 +7,9 @@ import {
 import type { Transport } from '@codemirror/lsp-client'
 import type { Extension } from '@codemirror/state'
 
+let client: LSPClient | null = null
+let refCount = 0
+
 function createWebSocketTransport(url: string): Promise<Transport> {
 	return new Promise((resolve, reject) => {
 		const ws = new WebSocket(url)
@@ -32,13 +35,14 @@ function createWebSocketTransport(url: string): Promise<Transport> {
 		ws.onerror = () => reject(new Error('WebSocket connection failed'))
 		ws.onclose = () => {
 			handlers.clear()
+			client = null
+			refCount = 0
 		}
 	})
 }
 
-let client: LSPClient | null = null
-
 export async function createLSPExtension(fileUri: string): Promise<Extension> {
+	refCount++
 	if (!client) {
 		try {
 			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -46,7 +50,7 @@ export async function createLSPExtension(fileUri: string): Promise<Extension> {
 				`${protocol}//${window.location.host}/admin/lsp`
 			)
 			client = new LSPClient({
-				rootUri: 'file:///app/archive',
+				rootUri: 'luzzle-web:///archive',
 				extensions: [serverCompletion(), signatureHelp(), serverDiagnostics()]
 			})
 			client.connect(transport)
@@ -60,8 +64,10 @@ export async function createLSPExtension(fileUri: string): Promise<Extension> {
 }
 
 export function destroyLSPClient() {
-	if (client) {
+	refCount--
+	if (refCount <= 0 && client) {
 		client.disconnect()
 		client = null
+		refCount = 0
 	}
 }

@@ -71,4 +71,25 @@ describe('discoverSchemas', () => {
 		expect(Object.keys(mapping)).toHaveLength(0)
 		expect(tempDir).toBeNull()
 	})
+
+	it('resolves virtual root path when rootPath starts with luzzle-web:///archive', () => {
+		const originalCwd = process.cwd
+		const tempCwd = mkdtempSync(join(tmpdir(), 'luzzle-cwd-test-'))
+		const archiveDir = join(tempCwd, 'archive')
+		const schemasDir = join(archiveDir, '.luzzle', 'schemas')
+		mkdirSync(schemasDir, { recursive: true })
+		writeFileSync(join(schemasDir, 'books.json'), JSON.stringify({}))
+
+		process.cwd = () => tempCwd
+
+		try {
+			const { mapping } = discoverSchemas('luzzle-web:///archive')
+			expect(Object.keys(mapping)).toHaveLength(1)
+			const keys = Object.keys(mapping)
+			expect(keys[0]).toContain('books.json')
+		} finally {
+			process.cwd = originalCwd
+			rmSync(tempCwd, { recursive: true, force: true })
+		}
+	})
 })
