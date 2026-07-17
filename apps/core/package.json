@@ -19,6 +19,13 @@
     "dist/*",
     "package.json"
   ],
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "homepage": "https://github.com/eleith/luzzle",

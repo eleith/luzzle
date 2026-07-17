@@ -28,6 +28,7 @@
 	"description": "shared configuration and schemas for the luzzle web ecosystem",
 	"exports": {
 		".": {
+			"development": "./src/index.ts",
 			"types": "./dist/src/index.d.ts",
 			"import": "./dist/src/index.js"
 		}

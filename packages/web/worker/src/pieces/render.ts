@@ -1,11 +1,12 @@
 import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 import { render } from 'svelte/server'
 import { ImageResponse } from 'takumi-js/response'
 import { createPieceHelpers } from '@luzzle/web.pieces'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { getCompiledOpengraphModule } from './compile.js'
-import { generateThemeCss, getAssetsDir } from '@luzzle/web.theme'
+import { generateThemeCss } from '@luzzle/web.theme'
 import type { Config } from '@luzzle/web.config'
 import type { Component } from 'svelte'
 
@@ -17,10 +18,11 @@ let cachedStaticStylesheets: string[] | null = null
 let cachedFontData: Buffer | null = null
 let cachedFontUrl: string | null = null
 
-function loadStaticAssets(assetsDir: string, config: Config) {
-	const resetCss = readFileSync(path.join(assetsDir, 'styles/reset.css'), 'utf8')
-	const baseCss = readFileSync(path.join(assetsDir, 'styles/base.css'), 'utf8')
-	const markdownCss = readFileSync(path.join(assetsDir, 'styles/markdown.css'), 'utf8')
+function loadStaticAssets(config: Config) {
+	const require = createRequire(import.meta.url)
+	const resetCss = readFileSync(require.resolve('@luzzle/web.theme/styles/reset.css'), 'utf8')
+	const baseCss = readFileSync(require.resolve('@luzzle/web.theme/styles/base.css'), 'utf8')
+	const markdownCss = readFileSync(require.resolve('@luzzle/web.theme/styles/markdown.css'), 'utf8')
 	cachedStaticStylesheets = [resetCss, baseCss, markdownCss]
 
 	const globals = config.theme?.globals || {}
@@ -79,8 +81,7 @@ export async function renderOpengraphPng(
 	const svelteComponent = mod.default as Component<Record<string, unknown>>
 
 	// 2. Load static stylesheet & font assets, and generate dynamic theme CSS
-	const assetsDir = getAssetsDir()
-	const { staticStylesheets, fontData } = loadStaticAssets(assetsDir, config)
+	const { staticStylesheets, fontData } = loadStaticAssets(config)
 	const themeCss = generateThemeCss(config)
 	const stylesheets = [...staticStylesheets, themeCss]
 

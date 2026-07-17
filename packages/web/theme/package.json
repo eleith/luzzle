@@ -24,6 +24,7 @@
 	"description": "shared theme generator and canonical CSS for the luzzle web ecosystem",
 	"exports": {
 		".": {
+			"development": "./src/index.ts",
 			"types": "./dist/src/index.d.ts",
 			"import": "./dist/src/index.js"
 		},

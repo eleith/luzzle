@@ -23,10 +23,12 @@
 	"description": "shared sidequest job stubs, payload/result types, and queue config for the luzzle web ecosystem",
 	"exports": {
 		".": {
+			"development": "./src/index.ts",
 			"types": "./dist/src/index.d.ts",
 			"import": "./dist/src/index.js"
 		},
 		"./specs": {
+			"development": "./src/specs.ts",
 			"types": "./dist/src/specs.d.ts",
 			"import": "./dist/src/specs.js"
 		}

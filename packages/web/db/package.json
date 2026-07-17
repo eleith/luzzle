@@ -25,6 +25,7 @@
 	"description": "shared database types, migrations, and kysely helpers for the luzzle web ecosystem",
 	"exports": {
 		".": {
+			"development": "./src/index.ts",
 			"types": "./dist/src/index.d.ts",
 			"import": "./dist/src/index.js"
 		}
