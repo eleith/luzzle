@@ -14,6 +14,14 @@ services:
     ports:
       - '5173:5173'
     volumes:
+      - ../../tools:/m/tools
+      - ../../apps/core/src:/m/apps/core/src
+      - ../../packages/web/config/src:/m/packages/web/config/src
+      - ../../packages/web/db/src:/m/packages/web/db/src
+      - ../../packages/web/jobs/src:/m/packages/web/jobs/src
+      - ../../packages/web/pieces/src:/m/packages/web/pieces/src
+      - ../../packages/web/theme/src:/m/packages/web/theme/src
+      - ../../packages/web/theme/assets:/m/packages/web/theme/assets
       - ./demo/assets:/m/apps/web/assets
       - ./demo/config.yaml:/m/apps/web/config.yaml
       - ./demo/data:/m/apps/web/data
@@ -54,6 +62,14 @@ services:
     networks:
       - luzzle
     volumes:
+      - ../../tools:/m/tools
+      - ../../apps/core/src:/m/apps/core/src
+      - ../../packages/web/config/src:/m/packages/web/config/src
+      - ../../packages/web/db/src:/m/packages/web/db/src
+      - ../../packages/web/jobs/src:/m/packages/web/jobs/src
+      - ../../packages/web/pieces/src:/m/packages/web/pieces/src
+      - ../../packages/web/theme/src:/m/packages/web/theme/src
+      - ../../packages/web/theme/assets:/m/packages/web/theme/assets
       - ./demo/config.yaml:/m/packages/web/worker/config.yaml
       - ./demo/assets:/m/packages/web/worker/assets
       - ./demo/data:/m/packages/web/worker/data
