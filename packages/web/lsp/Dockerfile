@@ -3,7 +3,7 @@
 #   docker build -f packages/web/lsp/Dockerfile --target dev  .
 #   docker build -f packages/web/lsp/Dockerfile --target prod .   (default)
 
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 WORKDIR /m
 RUN corepack enable
 

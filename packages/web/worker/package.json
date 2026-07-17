@@ -6,6 +6,7 @@
 	"description": "luzzle publish worker — runs heavy jobs (transforms, rclone) handed off by the explorer",
 	"scripts": {
 		"lint": "eslint src",
+		"dev": "node --experimental-strip-types --conditions=development --watch --import ../../tools/register.mjs src/index.ts",
 		"build": "tsc -p tsconfig.build.json",
 		"test": "vitest run --silent --coverage"
 	},

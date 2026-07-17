@@ -3,7 +3,8 @@
 #   docker build -f apps/web/Dockerfile --target dev  .
 #   docker build -f apps/web/Dockerfile --target prod .   (default)
 
-FROM node:24-alpine AS base
+
+FROM node:26-alpine AS base
 WORKDIR /m
 RUN corepack enable
 

@@ -3,7 +3,7 @@
 #   docker build -f packages/web/worker/Dockerfile --target dev  .
 #   docker build -f packages/web/worker/Dockerfile --target prod .   (default)
 
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 WORKDIR /m
 RUN corepack enable
 
@@ -21,7 +21,7 @@ RUN mkdir -p queue archive assets rclone dist && \
     chmod g+w . queue archive assets rclone && \
     chmod -R 777 dist
 EXPOSE 9000
-CMD ["sh", "-c", "pnpm run build && mkdir -p dist/src/pieces/.compiled && chmod 777 dist/src/pieces/.compiled && node dist/src/index.js"]
+CMD ["pnpm", "run", "dev"]
 
 # --- builder: compile worker -------------------------------------------------
 FROM base AS builder
