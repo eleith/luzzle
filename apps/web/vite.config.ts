@@ -47,21 +47,26 @@ const contentWatcher = (relativeContentPath: string): Plugin => {
 	}
 }
 
-export default defineConfig({
-	define: {
-		__VITE__LUZZLE__PIECE__TYPES__: JSON.stringify(config.pieces.map((p) => p.type))
-	},
-	plugins: [
-		enhancedImages(),
-		sveltekit(),
-		Icons({ compiler: 'svelte' }),
-		contentWatcher('./content')
-	],
-	server: {
-		host: host || false,
-		allowedHosts,
-		hmr: {
-			clientPort: hmrPort ? Number(hmrPort) : undefined
+export default defineConfig(({ command }) => {
+	const sourceFirst = command === 'serve' && !process.env.VITEST
+
+	return {
+		define: {
+			__VITE__LUZZLE__PIECE__TYPES__: JSON.stringify(config.pieces.map((p) => p.type))
+		},
+		plugins: [
+			enhancedImages(),
+			sveltekit(),
+			Icons({ compiler: 'svelte' }),
+			contentWatcher('./content')
+		],
+		ssr: sourceFirst ? { noExternal: [/^@luzzle\//] } : {},
+		server: {
+			host: host || false,
+			allowedHosts,
+			hmr: {
+				clientPort: hmrPort ? Number(hmrPort) : undefined
+			}
 		}
 	}
 })
