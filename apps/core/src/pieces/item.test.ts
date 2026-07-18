@@ -1,8 +1,8 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import { makeMarkdownSample, makePieceItemSelectable, makeSchema } from './Piece.fixtures.js'
 import * as database from './item.js'
-import { ValidateFunction } from 'ajv'
-import { PieceFrontmatter } from './utils/frontmatter.js'
+import type { ValidateFunction } from 'ajv'
+import type { PieceFrontmatter } from './utils/frontmatter.js'
 
 describe('src/pieces/item.ts', () => {
 	afterEach(() => {

@@ -1,4 +1,5 @@
-import Ajv, { ValidateFunction, JSONSchemaType } from 'ajv'
+import type { ValidateFunction, JSONSchemaType } from 'ajv';
+import Ajv from 'ajv'
 
 export function commaSeparatedFormatValidator(data: string) {
 	return typeof data === 'string'

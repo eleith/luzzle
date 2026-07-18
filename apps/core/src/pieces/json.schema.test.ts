@@ -1,4 +1,5 @@
-import { describe, afterEach, test, vi, expect, MockInstance } from 'vitest'
+import type { MockInstance } from 'vitest';
+import { describe, afterEach, test, vi, expect } from 'vitest'
 import { jsonToPieceSchema } from './json.schema.js'
 import { existsSync, readFileSync } from 'fs'
 

@@ -1,21 +1,26 @@
-import { createReadStream, existsSync, ReadStream, Stats, WriteStream } from 'fs'
+import type { ReadStream, Stats, WriteStream } from 'fs';
+import { createReadStream, existsSync } from 'fs'
+import type * as fsPromises from 'fs/promises'
 import { copyFile, stat } from 'fs/promises' // Direct import matching source
-import { describe, expect, test, vi, afterEach, beforeAll, MockInstance } from 'vitest'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach, beforeAll } from 'vitest'
 import { createHash } from 'crypto'
 import { PassThrough, Readable } from 'stream'
-import got, { Request } from 'got'
+import type { Request } from 'got';
+import got from 'got'
 import path from 'path'
 import { ASSETS_DIRECTORY } from '../assets.js'
+import type {
+	AttachableStream} from './piece.js';
 import {
 	calculateHashFromFile,
 	isAttachableStream,
 	savePieceFieldAsset,
 	makePieceValue,
 	detectStreamFileType,
-	savePieceAsset,
-	AttachableStream,
+	savePieceAsset
 } from './piece.js'
-import { PieceFrontmatterSchemaField } from './frontmatter.js'
+import type { PieceFrontmatterSchemaField } from './frontmatter.js'
 import { makeStorage } from '../../storage/storage.mock.js'
 import { makeMarkdownSample } from '../Piece.fixtures.js'
 
@@ -39,7 +44,7 @@ let fullPngBuffer: Buffer
 
 describe('pieces/utils/piece.ts', () => {
 	beforeAll(async () => {
-		const { readFile } = await vi.importActual<typeof import('fs/promises')>('fs/promises')
+		const { readFile } = await vi.importActual<typeof fsPromises>('fs/promises')
 		const assetPath = path.resolve('test/assets/favicon.png')
 		fullPngBuffer = await readFile(assetPath)
 	})

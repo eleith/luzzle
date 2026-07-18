@@ -1,5 +1,5 @@
 import { query } from 'jsonpathly'
-import {
+import type {
 	PieceFrontmatter,
 	PieceFrontMatterValue,
 	PieceFrontmatterSchemaField,

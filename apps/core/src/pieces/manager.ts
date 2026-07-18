@@ -1,7 +1,7 @@
-import { Kysely } from 'kysely'
-import { LuzzleTables } from '../database/tables/index.js'
-import { JSONSchemaType } from 'ajv'
-import { PieceFrontmatter } from './utils/frontmatter.js'
+import type { Kysely } from 'kysely'
+import type { LuzzleTables } from '../database/tables/index.js'
+import type { JSONSchemaType } from 'ajv'
+import type { PieceFrontmatter } from './utils/frontmatter.js'
 import cuid2 from '@paralleldrive/cuid2'
 
 async function addPiece(

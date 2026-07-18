@@ -1,4 +1,4 @@
-import { ReadStream, WriteStream } from 'fs'
+import type { ReadStream, WriteStream } from 'fs'
 import type { StorageStat, StorageType } from './types.js'
 
 abstract class LuzzleStorage {

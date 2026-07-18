@@ -1,7 +1,8 @@
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest'
 import { addFrontMatter } from '../../lib/frontmatter.js'
-import { PieceFrontmatter } from './frontmatter.js'
-import { PieceMarkdown } from './markdown.js'
+import type { PieceFrontmatter } from './frontmatter.js'
+import type { PieceMarkdown } from './markdown.js'
 import { makePieceMarkdown, makePieceMarkdownString } from './markdown.js'
 
 vi.mock('ajv/dist/jtd.js')

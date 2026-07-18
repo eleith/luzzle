@@ -1,5 +1,5 @@
 
-import { LuzzleSelectable } from '../database/tables/index.js'
+import type { LuzzleSelectable } from '../database/tables/index.js'
 
 function makeCache(
 	override: Partial<LuzzleSelectable<'pieces_cache'>> = {}

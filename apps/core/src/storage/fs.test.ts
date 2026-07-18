@@ -1,14 +1,16 @@
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest'
 import { readFile, writeFile, stat, unlink, mkdir, readdir } from 'fs/promises'
 import { fdir } from 'fdir'
+import type {
+	Dirent,
+	ReadStream,
+	Stats,
+	WriteStream} from 'fs';
 import {
 	createReadStream,
 	createWriteStream,
-	Dirent,
-	existsSync,
-	ReadStream,
-	Stats,
-	WriteStream,
+	existsSync
 } from 'fs'
 import StorageFileSystem from './fs.js'
 import { resolve } from 'path'

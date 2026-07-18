@@ -1,9 +1,10 @@
-import { Kysely, sql } from 'kysely'
-import {
+import type { Kysely} from 'kysely';
+import { sql } from 'kysely'
+import type {
 	PiecesItemsInsertable,
 	PiecesItemsUpdateable,
 } from '../database/tables/pieces_items.schema.js'
-import { LuzzleTables } from '../database/tables/index.js'
+import type { LuzzleTables } from '../database/tables/index.js'
 
 async function updateItem(db: Kysely<LuzzleTables>, file: string, data: PiecesItemsUpdateable) {
 	await db.updateTable('pieces_items').set(data).where('file_path', '=', file).execute()

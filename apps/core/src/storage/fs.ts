@@ -3,7 +3,7 @@ import { fdir } from 'fdir'
 import { createReadStream, createWriteStream, existsSync } from 'fs'
 import type { StorageStat, StorageType } from './types.js'
 import path from 'path'
-import { Readable } from 'stream'
+import type { Readable } from 'stream'
 import LuzzleStorage from './abstract.js'
 
 class StorageFileSystem extends LuzzleStorage {

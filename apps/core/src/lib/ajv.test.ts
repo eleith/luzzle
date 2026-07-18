@@ -1,4 +1,5 @@
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest'
 import { makeSchema } from '../pieces/Piece.fixtures.js'
 import Ajv from 'ajv'
 import ajv, {

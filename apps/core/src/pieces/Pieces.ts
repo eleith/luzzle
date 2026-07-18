@@ -1,8 +1,8 @@
 import Piece from './Piece.js'
 import path from 'path'
-import LuzzleStorage from '../storage/abstract.js'
+import type LuzzleStorage from '../storage/abstract.js'
 import { jsonToPieceSchema } from './json.schema.js'
-import { LuzzleDatabase } from '../database/tables/index.js'
+import type { LuzzleDatabase } from '../database/tables/index.js'
 import { addPiece, deletePiece, getPiece, getPieces, updatePiece } from './manager.js'
 import {
 	LUZZLE_DIRECTORY,
@@ -12,8 +12,8 @@ import {
 } from './assets.js'
 import { Readable } from 'stream'
 import { cpus } from 'os'
-import { JSONSchemaType } from 'ajv'
-import { PieceFrontmatter } from './utils/frontmatter.js'
+import type { JSONSchemaType } from 'ajv'
+import type { PieceFrontmatter } from './utils/frontmatter.js'
 
 export type PiecesPruneResult =
 	| {

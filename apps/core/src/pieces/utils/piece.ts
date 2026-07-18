@@ -6,8 +6,8 @@ import { pipeline } from 'stream/promises'
 import path from 'path'
 import { fileTypeFromBuffer } from 'file-type'
 import got from 'got'
-import { PieceFrontmatterSchemaField, PieceFrontMatterValue } from './frontmatter.js'
-import LuzzleStorage from '../../storage/abstract.js'
+import type { PieceFrontmatterSchemaField, PieceFrontMatterValue } from './frontmatter.js'
+import type LuzzleStorage from '../../storage/abstract.js'
 import { ASSETS_DIRECTORY } from '../assets.js'
 
 type AttachableStream = { stream: Readable; filename?: string }

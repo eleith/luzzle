@@ -1,4 +1,4 @@
-import { Root } from 'mdast';
+import type { Root } from 'mdast';
 import { remark } from 'remark'
 import remarkFrontMatter from 'remark-frontmatter'
 import { visit } from 'unist-util-visit'

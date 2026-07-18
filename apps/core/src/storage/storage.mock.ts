@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import LuzzleStorage from "./abstract";
+import type LuzzleStorage from "./abstract";
 
 export function makeStorage(root: string): LuzzleStorage {
 	return {

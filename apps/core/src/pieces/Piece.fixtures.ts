@@ -1,11 +1,11 @@
-import { ValidateFunction } from 'ajv'
-import { LuzzleSelectable } from '../database/tables/index.js'
-import { PieceFrontmatter, PieceFrontmatterSchema } from './utils/frontmatter.js'
-import { PieceMarkdown } from './utils/markdown.js'
-import LuzzleStorage from '../storage/abstract.js'
+import type { ValidateFunction } from 'ajv'
+import type { LuzzleSelectable } from '../database/tables/index.js'
+import type { PieceFrontmatter, PieceFrontmatterSchema } from './utils/frontmatter.js'
+import type { PieceMarkdown } from './utils/markdown.js'
+import type LuzzleStorage from '../storage/abstract.js'
 import Piece from './Piece.js'
 import { vi } from 'vitest'
-import { PieceManagerSelect } from '../database/tables/pieces_manager.schema.js'
+import type { PieceManagerSelect } from '../database/tables/pieces_manager.schema.js'
 
 const sample = {
 	note_markdown: 'sampleNote',

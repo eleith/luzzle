@@ -1,6 +1,7 @@
-import { PieceFrontmatter } from './utils/frontmatter.js'
-import { PropertiesSchema, JSONSchemaType } from 'ajv/dist/types/json-schema.js'
-import { CreateTableBuilder, sql } from 'kysely'
+import type { PieceFrontmatter } from './utils/frontmatter.js'
+import type { PropertiesSchema, JSONSchemaType } from 'ajv/dist/types/json-schema.js'
+import type { CreateTableBuilder} from 'kysely';
+import { sql } from 'kysely'
 
 function pieceSchemaFieldTypeToColumnType(type: string) {
 	switch (type) {

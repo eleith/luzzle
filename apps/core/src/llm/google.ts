@@ -1,16 +1,17 @@
 import { fileTypeFromBuffer } from 'file-type'
 import { fileTypeFromFile } from 'file-type/node'
-import {
+import type {
 	ContentListUnion,
+	SafetySetting} from '@google/genai';
+import {
 	createPartFromUri,
 	GoogleGenAI,
 	HarmCategory,
-	HarmBlockThreshold,
-	SafetySetting,
+	HarmBlockThreshold
 } from '@google/genai'
 import { readFile } from 'fs/promises'
 import path from 'path'
-import { JSONSchemaType } from 'ajv'
+import type { JSONSchemaType } from 'ajv'
 import { type PieceFrontmatter } from '../pieces/index.js'
 
 const MODEL_NAME = 'gemini-2.5-flash'

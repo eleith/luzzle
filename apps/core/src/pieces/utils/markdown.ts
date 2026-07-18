@@ -1,5 +1,5 @@
 import { addFrontMatter } from '../../lib/frontmatter.js'
-import { PieceFrontmatter } from './frontmatter.js'
+import type { PieceFrontmatter } from './frontmatter.js'
 
 type PieceMarkdown<F extends PieceFrontmatter> = {
 	filePath: string

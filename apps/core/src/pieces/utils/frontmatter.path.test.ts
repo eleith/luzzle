@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import * as paths from './frontmatter.path.js'
-import { PieceFrontmatter, PieceFrontmatterSchemaField } from './frontmatter.js'
+import type { PieceFrontmatter, PieceFrontmatterSchemaField } from './frontmatter.js'
 
 describe('pieces/utils/frontmatter.path.ts', () => {
 	describe('getFrontmatterValue', () => {

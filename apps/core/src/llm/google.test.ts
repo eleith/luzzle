@@ -1,16 +1,18 @@
-import { describe, expect, vi, afterEach, test, MockInstance } from 'vitest'
+import type { MockInstance } from 'vitest';
+import { describe, expect, vi, afterEach, test } from 'vitest'
 import { pieceFrontMatterFromPrompt } from './google.js'
+import type {
+	Part,
+	GenerateContentResponse,
+	FileState} from '@google/genai';
 import {
 	GoogleGenAI,
-	Part,
-	createPartFromUri,
-	GenerateContentResponse,
-	FileState,
+	createPartFromUri
 } from '@google/genai'
 import { fileTypeFromBuffer, fileTypeFromFile } from 'file-type'
 import { readFile } from 'fs/promises'
-import { JSONSchemaType } from 'ajv'
-import { PieceFrontmatter } from '../pieces/index.js'
+import type { JSONSchemaType } from 'ajv'
+import type { PieceFrontmatter } from '../pieces/index.js'
 
 // Mock schema created locally to remove dependency on piece.fixtures.ts
 const makeSchema = (

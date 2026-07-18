@@ -13,11 +13,12 @@ import * as item from './item.js'
 import * as items from './items.js'
 import * as pieceUtils from './utils/piece.js'
 import slugify from '@sindresorhus/slugify'
-import { StorageStat, LuzzleInsertable } from '../index.js'
+import type { StorageStat, LuzzleInsertable } from '../index.js'
 import { PassThrough } from 'stream'
-import { CpuInfo, cpus } from 'os'
+import type { CpuInfo} from 'os';
+import { cpus } from 'os'
 import { makeCache } from './cache.fixtures.js'
-import { ReadStream } from 'fs'
+import type { ReadStream } from 'fs'
 
 vi.mock('./cache.js')
 vi.mock('./item.js')

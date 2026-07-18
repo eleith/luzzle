@@ -1,18 +1,18 @@
 import { createId } from '@paralleldrive/cuid2'
-import {
+import type {
 	PiecesItemsSelectable,
 	PiecesItemsInsertable,
 	PiecesItemsUpdateable,
 } from '../database/tables/pieces_items.schema.js'
-import { PieceMarkdown } from './utils/markdown.js'
+import type { PieceMarkdown } from './utils/markdown.js'
 import {
-	PieceFrontmatter,
+	type PieceFrontmatter,
 	pieceFrontmatterValueToDatabaseValue,
 	getPieceFrontmatterSchemaFields,
-	PieceFrontmatterSchema,
-	PieceFrontmatterProperty,
+	type PieceFrontmatterSchema,
+	type PieceFrontmatterProperty,
 } from './utils/frontmatter.js'
-import { ValidateFunction } from 'ajv'
+import type { ValidateFunction } from 'ajv'
 
 /**
  * Recursively collects asset paths from frontmatter values based on schema property definitions.

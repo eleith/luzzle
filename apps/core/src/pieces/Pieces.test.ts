@@ -1,4 +1,5 @@
-import { describe, expect, test, vi, afterEach, beforeEach, MockInstance } from 'vitest'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach, beforeEach } from 'vitest'
 import Pieces from './Pieces.js'
 import Piece from './Piece.js'
 import { addPiece, deletePiece, getPiece, getPieces, updatePiece } from './manager.js'
@@ -8,7 +9,7 @@ import { type PieceFrontmatter } from './utils/frontmatter.js'
 import { makePieceMock, makeRegisteredPiece, makeSchema, makeStorage } from './Piece.fixtures.js'
 import { setupDatabase, teardownDatabase } from '../../test/db.js'
 import { type LuzzleDatabase } from '../database/tables/index.js'
-import { StorageStat } from '../index.js'
+import type { StorageStat } from '../index.js'
 import { Readable } from 'stream'
 
 vi.mock('./Piece.js')

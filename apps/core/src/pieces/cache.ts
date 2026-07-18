@@ -1,5 +1,5 @@
 import { createId } from '@paralleldrive/cuid2'
-import { LuzzleDatabase } from '../database/tables'
+import type { LuzzleDatabase } from '../database/tables/index.js'
 
 async function getCache(db: LuzzleDatabase, file: string) {
 	const cache = await db
