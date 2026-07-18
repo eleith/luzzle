@@ -26,5 +26,16 @@ export default defineConfig([
 				parser: ts.parser
 			}
 		}
-	}
+	},
+	{
+		rules: {
+			'@typescript-eslint/consistent-type-imports': [
+				'error',
+				{
+					prefer: 'type-imports',
+					fixStyle: 'separate-type-imports'
+				}
+			]
+		}
+	},
 ])

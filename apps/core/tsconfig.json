@@ -1,5 +1,6 @@
 {
 	"compilerOptions": {
+		"verbatimModuleSyntax": true,
 		"outDir": "dist",
 		"target": "ES2022",
 		"lib": [
