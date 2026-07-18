@@ -1,4 +1,5 @@
-import { ViewPlugin, EditorView, Decoration, WidgetType, ViewUpdate } from '@codemirror/view'
+import type { ViewUpdate } from '@codemirror/view';
+import { ViewPlugin, EditorView, Decoration, WidgetType } from '@codemirror/view'
 import type { Extension } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 import urlIconSvg from 'virtual:icons/ph/arrow-circle-up-right?raw&width=20&height=20'

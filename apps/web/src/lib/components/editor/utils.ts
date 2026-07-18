@@ -1,4 +1,4 @@
-import { EditorState } from '@codemirror/state'
+import type { EditorState } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 
 export interface FrontmatterInfo {

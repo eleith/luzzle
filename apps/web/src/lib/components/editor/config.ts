@@ -1,3 +1,6 @@
+import type {
+	ViewUpdate
+} from '@codemirror/view';
 import {
 	EditorView,
 	highlightSpecialChars,
@@ -6,10 +9,10 @@ import {
 	rectangularSelection,
 	crosshairCursor,
 	highlightActiveLine,
-	keymap,
-	ViewUpdate
+	keymap
 } from '@codemirror/view'
-import { EditorState, Compartment, type Extension } from '@codemirror/state'
+import type { Compartment} from '@codemirror/state';
+import { EditorState, type Extension } from '@codemirror/state'
 import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
 import { closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'

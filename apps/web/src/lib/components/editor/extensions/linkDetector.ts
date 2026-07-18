@@ -3,10 +3,11 @@ import {
 	EditorView,
 	Decoration,
 	MatchDecorator,
-	WidgetType,
+	WidgetType
+} from '@codemirror/view'
+import type { DecorationSet ,
 	ViewUpdate
 } from '@codemirror/view'
-import type { DecorationSet } from '@codemirror/view'
 import type { Extension } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 import type { SyntaxNode } from '@lezer/common'
