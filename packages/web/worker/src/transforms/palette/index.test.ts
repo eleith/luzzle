@@ -3,7 +3,7 @@ import { run } from './index.js'
 import { getPalette } from './colorlip.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../../services/db.js'
-import { Pieces } from '@luzzle/core'
+import type { Pieces } from '@luzzle/core'
 import { makeLogger } from '../../../test/logger.js'
 
 vi.mock('./colorlip.js', () => ({

@@ -12,11 +12,16 @@ function formatMessage(message: string, fields?: Record<string, unknown>): strin
 export class PhaseLogger implements Logger {
 	private activePhase: { jobId: string; phase: string } | null = null
 	private currentLineNumber = 0
+	private readonly baseLogger: Logger
+	private readonly db: Kysely<AppDatabase>
 
 	constructor(
-		private readonly baseLogger: Logger,
-		private readonly db: Kysely<AppDatabase>
-	) {}
+		baseLogger: Logger,
+		db: Kysely<AppDatabase>
+	) {
+		this.baseLogger = baseLogger
+		this.db = db
+	}
 
 	setActivePhase(phase: { jobId: string; phase: string }): void {
 		this.activePhase = phase

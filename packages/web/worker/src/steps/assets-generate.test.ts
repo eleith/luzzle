@@ -1,5 +1,6 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { Kysely } from 'kysely'
+import type * as luzzleCore from '@luzzle/core'
 import type { LuzzleTables } from '@luzzle/core'
 import { Pieces, StorageFileSystem } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
@@ -12,7 +13,7 @@ import { buildAssetMaps } from '../transforms/utils/assets.js'
 import { assetsGenerateStep } from './assets-generate.js'
 
 vi.mock('@luzzle/core', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@luzzle/core')>()
+	const actual = await importOriginal<typeof luzzleCore>()
 	return {
 		...actual,
 		Pieces: vi.fn(),

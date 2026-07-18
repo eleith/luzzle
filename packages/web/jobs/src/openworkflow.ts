@@ -1,6 +1,6 @@
 import { OpenWorkflow } from 'openworkflow'
 import { BackendSqlite } from 'openworkflow/sqlite'
-import { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync } from 'node:sqlite'
 
 let openWorkflowInstance: OpenWorkflow | null = null
 

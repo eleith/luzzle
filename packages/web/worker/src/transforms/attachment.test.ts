@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { mkdir, writeFile } from 'fs/promises'
-import { Pieces } from '@luzzle/core'
+import type { Pieces } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
 import { run } from './attachment.js'
 import type { WebPieces } from '../services/db.js'

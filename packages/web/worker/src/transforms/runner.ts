@@ -1,4 +1,4 @@
-import { Kysely } from 'kysely'
+import type { Kysely } from 'kysely'
 import type { Pieces } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
 import type { PublicWebPieceAsset } from '@luzzle/web.pieces'

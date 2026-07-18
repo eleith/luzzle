@@ -6,7 +6,7 @@ import { getOpenGraphPath } from '../assets/paths.js'
 import { renderOpengraphPng } from '../pieces/render.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../services/db.js'
-import { Pieces } from '@luzzle/core'
+import type { Pieces } from '@luzzle/core'
 import { makeLogger } from '../../test/logger.js'
 
 const TEMP_DIR = path.join(import.meta.dirname, 'temp-opengraph-transform-fixtures')

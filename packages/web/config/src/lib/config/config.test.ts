@@ -1,5 +1,6 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import { loadConfig, getConfigValue, setConfigValue, Config, ConfigPublic } from './config.js'
+import type { Config, ConfigPublic } from './config.js';
+import { loadConfig, getConfigValue, setConfigValue } from './config.js'
 import { writeFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
