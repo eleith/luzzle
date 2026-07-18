@@ -15,17 +15,24 @@ when:
 steps:
   prepare:
     image: node:26
-    commands:
-      - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
-      - corepack enable
-      - pnpm install --frozen-lockfile
     environment:
+      COREPACK_HOME: /workspace/src/.corepack
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
+    commands:
+      - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
+      - npm install --global corepack@latest
+      - corepack enable
+      - corepack prepare pnpm@11.2.2 --activate
+      - pnpm config set store-dir .pnpm-store
+      - pnpm install --frozen-lockfile
 
   test:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
       - pnpm --filter @luzzle/web.lsp lint
       - pnpm --filter @luzzle/web.lsp test

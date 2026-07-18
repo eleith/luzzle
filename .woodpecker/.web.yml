@@ -21,18 +21,25 @@ when:
 steps:
   prepare:
     image: node:26
-    commands:
-      - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
-      - corepack enable
-      - pnpm install --frozen-lockfile
-      - pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
     environment:
+      COREPACK_HOME: /workspace/src/.corepack
       LUZZLE_NPMRC:
         from_secret: luzzle_npmrc
+    commands:
+      - printf '%s' "$LUZZLE_NPMRC" | sed 's/[[:space:]]*$//' >> .npmrc
+      - npm install --global corepack@latest
+      - corepack enable
+      - corepack prepare pnpm@11.2.2 --activate
+      - pnpm config set store-dir .pnpm-store
+      - pnpm install --frozen-lockfile
+      - pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
 
   lint:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
       - cd apps/web
       - touch config.yaml

@@ -16,20 +16,31 @@ when:
 steps:
   prepare:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
+      - corepack prepare pnpm@11.2.2 --activate
+      - pnpm config set store-dir .pnpm-store
       - pnpm install --frozen-lockfile
 
   build:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
       - pnpm --filter @luzzle/core build
       - pnpm --filter @luzzle/cli build
 
   test:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
       - pnpm --filter @luzzle/cli lint
       - pnpm --filter @luzzle/cli test
@@ -52,18 +63,20 @@ steps:
 
   publish:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
+      NPM_OWNER:
+        from_secret: npm_owner
+      NPM_TOKEN:
+        from_secret: npm_token
     commands:
+      - npm install --global corepack@latest
       - corepack enable
       - pnpm config set @luzzle:registry https://git.eleith.com/api/packages/$NPM_OWNER/npm/
       - pnpm config set -- "//git.eleith.com/api/packages/$NPM_OWNER/npm/:_authToken" "$NPM_TOKEN"
       - pnpm --filter @luzzle/cli publish --no-git-checks
     when:
       - event: tag
-    environment:
-      NPM_OWNER:
-        from_secret: npm_owner
-      NPM_TOKEN:
-        from_secret: npm_token
 
   notify-success:
     image: deblan/woodpecker-email:3.2.0

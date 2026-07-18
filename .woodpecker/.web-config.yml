@@ -13,19 +13,30 @@ when:
 steps:
   prepare:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
+      - corepack prepare pnpm@11.2.2 --activate
+      - pnpm config set store-dir .pnpm-store
       - pnpm install --frozen-lockfile
 
   build:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
       - pnpm --filter @luzzle/web.config build
 
   test:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
       - pnpm --filter @luzzle/web.config lint
       - pnpm --filter @luzzle/web.config test

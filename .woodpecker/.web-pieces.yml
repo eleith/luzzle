@@ -16,20 +16,31 @@ when:
 steps:
   prepare:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
+      - corepack prepare pnpm@11.2.2 --activate
+      - pnpm config set store-dir .pnpm-store
       - pnpm install --frozen-lockfile
 
   build:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
       - pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.db build
       - pnpm --filter @luzzle/web.pieces build
 
   test:
     image: node:26
+    environment:
+      COREPACK_HOME: /workspace/src/.corepack
     commands:
+      - npm install --global corepack@latest
       - corepack enable
       - pnpm --filter @luzzle/web.pieces lint
       - pnpm --filter @luzzle/web.pieces test
