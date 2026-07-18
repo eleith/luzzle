@@ -25,6 +25,7 @@ async function resolveAssetUrls(
 	assetSchemaPaths: string[]
 ) {
 	let updated = markdown
+	const storage = getStorage()
 
 	for (const schemaPath of assetSchemaPaths) {
 		const instancePaths = resolveFieldPaths(piece.fields, updated.frontmatter, schemaPath)
@@ -33,14 +34,31 @@ async function resolveAssetUrls(
 			const value = getFrontmatterValue(updated.frontmatter, instancePath)
 			if (typeof value !== 'string' || !/^https?:\/\//.test(value)) continue
 
-			updated = await piece.setField(updated, instancePath, value)
+			try {
+				const parts = instancePath.split('.')
+				let fieldName = 'attachment'
+				for (let i = parts.length - 1; i >= 0; i--) {
+					if (isNaN(parseInt(parts[i], 10))) {
+						fieldName = parts[i]
+						break
+					}
+				}
 
-			const resolved = getFrontmatterValue(updated.frontmatter, instancePath)
-			if (typeof resolved === 'string' && /^https?:\/\//.test(resolved)) {
+				const relativePath = await savePieceAsset(
+					markdown.filePath,
+					value,
+					storage,
+					{ name: fieldName }
+				)
+
+				updated = await piece.setField(updated, instancePath, relativePath)
+			} catch (e) {
+				const message = e instanceof Error ? e.message : String(e)
+				console.error(`Failed to download and rename URL asset for ${instancePath}:`, e)
 				return {
 					error: fail(400, {
 						error: {
-							message: `Failed to download URL for '${instancePath}'. Remove the URL and use the form editor to upload the file instead.`
+							message: `Failed to download URL for '${instancePath}' (${message}). Remove the URL and use the form editor to upload the file instead.`
 						},
 						rawContent: content,
 						fields: undefined,
