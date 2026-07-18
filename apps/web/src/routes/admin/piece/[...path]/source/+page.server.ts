@@ -44,12 +44,9 @@ async function resolveAssetUrls(
 					}
 				}
 
-				const relativePath = await savePieceAsset(
-					markdown.filePath,
-					value,
-					storage,
-					{ name: fieldName }
-				)
+				const relativePath = await savePieceAsset(markdown.filePath, value, storage, {
+					name: fieldName
+				})
 
 				updated = await piece.setField(updated, instancePath, relativePath)
 			} catch (e) {

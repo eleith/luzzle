@@ -117,6 +117,18 @@
 		}
 	})
 
+	$effect(() => {
+		if (view && value !== view.state.doc.toString()) {
+			view.dispatch({
+				changes: {
+					from: 0,
+					to: view.state.doc.length,
+					insert: value
+				}
+			})
+		}
+	})
+
 	onDestroy(() => {
 		if (view) {
 			view.destroy()
