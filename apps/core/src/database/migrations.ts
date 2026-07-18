@@ -1,5 +1,5 @@
-import { FileMigrationProvider, MigrationResultSet, Migrator } from 'kysely'
-import { LuzzleDatabase } from './tables/index.js'
+import { FileMigrationProvider, type MigrationResultSet, Migrator } from 'kysely'
+import type { LuzzleDatabase } from './tables/index.js'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'

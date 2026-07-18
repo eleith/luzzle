@@ -1,4 +1,4 @@
-import { ColumnType } from 'kysely'
+import type { ColumnType } from 'kysely'
 
 type cuid = string
 type date_added = ColumnType<number, undefined, never>

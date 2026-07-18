@@ -1,7 +1,7 @@
 import { Kysely } from 'kysely'
 import { NodeSqliteDialect } from './NodeSqliteDialect.js'
 import { DatabaseSync } from 'node:sqlite'
-import { LuzzleTables } from './tables/index.js'
+import type { LuzzleTables } from './tables/index.js'
 
 function getDatabaseClient(pathToDb: string, debug = false) {
 	const db = new DatabaseSync(pathToDb)

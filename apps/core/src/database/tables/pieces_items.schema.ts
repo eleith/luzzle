@@ -1,5 +1,5 @@
 import type { Insertable, Updateable, Selectable } from 'kysely'
-import { cuid, date_added, date_updated } from '../utils.js'
+import type { cuid, date_added, date_updated } from '../utils.js'
 
 interface PiecesItemsTable {
 	id: cuid

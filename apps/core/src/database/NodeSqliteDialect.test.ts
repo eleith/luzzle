@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NodeSqliteDialect } from './NodeSqliteDialect.js'
-import { CompiledQuery, Kysely, SqliteAdapter, SqliteIntrospector, SqliteQueryCompiler, TransactionSettings } from 'kysely'
+import type { Kysely, TransactionSettings } from 'kysely';
+import { CompiledQuery, SqliteAdapter, SqliteIntrospector, SqliteQueryCompiler } from 'kysely'
 import type { DatabaseSync } from 'node:sqlite'
 
 describe('NodeSqliteDialect', () => {

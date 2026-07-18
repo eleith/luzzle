@@ -1,13 +1,14 @@
+import type {
+	Kysely} from 'kysely';
 import {
 	CompiledQuery,
-	DatabaseConnection,
-	DatabaseIntrospector,
-	Dialect,
-	DialectAdapter,
-	Driver,
-	Kysely,
-	QueryCompiler,
-	QueryResult,
+	type DatabaseConnection,
+	type DatabaseIntrospector,
+	type Dialect,
+	type DialectAdapter,
+	type Driver,
+	type QueryCompiler,
+	type QueryResult,
 	SqliteAdapter,
 	SqliteIntrospector,
 	SqliteQueryCompiler,
