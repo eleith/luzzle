@@ -1,6 +1,8 @@
 import YAML from 'yaml'
-import Conf, { Options } from 'conf'
-import { StorageFileSystem, LuzzleStorage } from '@luzzle/core'
+import type { Options } from 'conf';
+import Conf from 'conf'
+import type { LuzzleStorage } from '@luzzle/core';
+import { StorageFileSystem } from '@luzzle/core'
 import path from 'path'
 
 type SchemaConfig = {

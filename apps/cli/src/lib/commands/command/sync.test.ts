@@ -1,6 +1,9 @@
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import command, { SyncArgv } from './sync.js'
-import yargs, { Arguments } from 'yargs'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest'
+import type { SyncArgv } from './sync.js';
+import command from './sync.js'
+import type { Arguments } from 'yargs';
+import yargs from 'yargs'
 import { makeContext, makePieceMock } from '../utils/context.fixtures.js'
 import { selectItemAssets } from '@luzzle/core'
 import { Readable } from 'stream'

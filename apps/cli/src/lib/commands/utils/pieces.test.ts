@@ -1,4 +1,5 @@
-import { vi, describe, test, afterEach, expect, MockInstance } from 'vitest'
+import type { MockInstance } from 'vitest';
+import { vi, describe, test, afterEach, expect } from 'vitest'
 import yargs from 'yargs'
 import { makeContext, makeMarkdownSample, makePieceMock } from '../utils/context.fixtures.js'
 import { Piece } from '@luzzle/core'

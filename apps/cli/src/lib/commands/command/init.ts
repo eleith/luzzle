@@ -1,6 +1,6 @@
 import log from '../../log.js'
-import { Command } from '../utils/types.js'
-import { Argv } from 'yargs'
+import type { Command } from '../utils/types.js'
+import type { Argv } from 'yargs'
 import { stat } from 'fs/promises'
 import { getDatabaseClient, migrate } from '@luzzle/core'
 import path from 'path'

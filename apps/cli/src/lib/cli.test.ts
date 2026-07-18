@@ -1,8 +1,10 @@
 import { getDatabaseClient, migrate } from '@luzzle/core'
 import log from './log.js'
 import cli from './cli.js'
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import { getDatabasePath, getConfig, Config } from './config.js'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest'
+import type { Config } from './config.js';
+import { getDatabasePath, getConfig } from './config.js'
 import getCommands from './commands/index.js'
 import { mockDatabase } from './database.mock.js'
 

@@ -1,9 +1,11 @@
-import { LuzzleDatabase, Piece, PieceFrontmatter, PieceMarkdown } from '@luzzle/core'
+import type { LuzzleDatabase, PieceFrontmatter, PieceMarkdown } from '@luzzle/core';
+import { Piece } from '@luzzle/core'
 import { merge, omit } from 'lodash-es'
-import { Command, Context } from '../index.js'
-import { Config } from '../../../lib/config.js'
+import type { Command, Context } from '../index.js'
+import type { Config } from '../../../lib/config.js'
 import log from '../../log.js'
-import { Pieces, PieceFrontmatterSchema, LuzzleStorage } from '@luzzle/core'
+import type { PieceFrontmatterSchema, LuzzleStorage } from '@luzzle/core';
+import { Pieces } from '@luzzle/core'
 import { vi } from 'vitest'
 
 function makeSchema(

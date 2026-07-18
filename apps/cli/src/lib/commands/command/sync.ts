@@ -1,6 +1,6 @@
 import { selectItemAssets } from '@luzzle/core'
-import { type Command } from '../utils/types.js'
-import { Argv } from 'yargs'
+import type { Command } from '../utils/types.js'
+import type { Argv } from 'yargs'
 
 export type SyncArgv = { force?: boolean; prune?: boolean }
 

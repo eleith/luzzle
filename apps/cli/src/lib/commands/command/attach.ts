@@ -1,9 +1,10 @@
 import log from '../../../lib/log.js'
-import { type Command } from '../utils/types.js'
-import { Argv } from 'yargs'
+import type { Command } from '../utils/types.js'
+import type { Argv } from 'yargs'
 import { savePieceAsset } from '@luzzle/core'
+import type {
+	PieceArgv} from '../utils/pieces.js';
 import {
-	PieceArgv,
 	PiecePositional,
 	makePiecePathPositional,
 	parsePiecePathPositionalArgv,

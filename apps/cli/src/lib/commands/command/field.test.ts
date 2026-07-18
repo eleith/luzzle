@@ -1,12 +1,14 @@
 import log from '../../../lib/log.js'
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import command, { FieldArgv } from './field.js'
-import { Arguments, Argv } from 'yargs'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest'
+import type { FieldArgv } from './field.js';
+import command from './field.js'
+import type { Arguments, Argv } from 'yargs'
 import yargs from 'yargs'
 import yaml from 'yaml'
 import { makeContext, makeMarkdownSample, makePieceMock } from '../utils/context.fixtures.js'
 import { makePiecePathPositional, parsePiecePathPositionalArgv } from '../utils/pieces.js'
-import { PieceFrontmatterSchemaField } from '@luzzle/core'
+import type { PieceFrontmatterSchemaField } from '@luzzle/core'
 
 vi.mock('../utils/pieces.js')
 vi.mock('../../../lib/log.js')

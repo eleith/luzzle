@@ -1,7 +1,8 @@
 import log from '../../log.js'
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import command, { AttachArgv } from './attach.js'
-import { Arguments, Argv } from 'yargs'
+import type { AttachArgv } from './attach.js';
+import command from './attach.js'
+import type { Arguments, Argv } from 'yargs'
 
 import { makeContext, makeMarkdownSample, makePieceMock } from '../utils/context.fixtures.js'
 import { makePiecePathPositional, parsePiecePathPositionalArgv } from '../utils/pieces.js'

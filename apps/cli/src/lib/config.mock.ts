@@ -1,6 +1,7 @@
-import { vi, Mocked } from 'vitest'
-import Conf from 'conf'
-import { SchemaConfig } from './config.js'
+import type { Mocked } from 'vitest';
+import { vi } from 'vitest'
+import type Conf from 'conf'
+import type { SchemaConfig } from './config.js'
 
 vi.mock('./config.js')
 

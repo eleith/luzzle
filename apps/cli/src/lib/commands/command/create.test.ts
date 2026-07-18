@@ -1,7 +1,9 @@
 import log from '../../log.js'
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import command, { CreateArgv } from './create.js'
-import { Arguments } from 'yargs'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest'
+import type { CreateArgv } from './create.js';
+import command from './create.js'
+import type { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeMarkdownSample, makePieceMock, makeContext } from '../utils/context.fixtures.js'
 import yaml from 'yaml'

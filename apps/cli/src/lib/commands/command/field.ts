@@ -1,8 +1,9 @@
 import log from '../../../lib/log.js'
-import { Argv } from 'yargs'
-import { Command } from '../utils/types.js'
+import type { Argv } from 'yargs'
+import type { Command } from '../utils/types.js'
+import type {
+	PieceArgv} from '../utils/pieces.js';
 import {
-	PieceArgv,
 	makePiecePathPositional,
 	PiecePositional,
 	parsePiecePathPositionalArgv,

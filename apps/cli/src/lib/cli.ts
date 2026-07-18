@@ -1,9 +1,11 @@
-import { getDatabaseClient, LuzzleDatabase, migrate } from '@luzzle/core'
+import type { LuzzleDatabase} from '@luzzle/core';
+import { getDatabaseClient, migrate } from '@luzzle/core'
 import { getConfig, getDatabasePath, getStorage } from './config.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import log from './log.js'
-import getCommands, { Command, Context } from './commands/index.js'
+import type { Command, Context } from './commands/index.js';
+import getCommands from './commands/index.js'
 import VERSION from '../version.js'
 import { Pieces } from '@luzzle/core'
 

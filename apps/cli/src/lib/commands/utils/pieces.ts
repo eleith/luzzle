@@ -1,6 +1,6 @@
-import { Argv } from 'yargs'
-import { Context } from '../index.js'
-import { Piece, PieceFrontmatter, PieceMarkdown } from '@luzzle/core'
+import type { Argv } from 'yargs'
+import type { Context } from '../index.js'
+import type { Piece, PieceFrontmatter, PieceMarkdown } from '@luzzle/core'
 
 export const PieceDirectory = {
 	Root: 'root',

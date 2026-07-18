@@ -1,7 +1,9 @@
 import log from '../../log.js'
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import command, { ConfigArgv } from './config.js'
-import { Arguments } from 'yargs'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest'
+import type { ConfigArgv } from './config.js';
+import command from './config.js'
+import type { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from '../utils/context.fixtures.js'
 import { withDefaults } from '../../config.js'

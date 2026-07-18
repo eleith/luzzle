@@ -1,7 +1,7 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import { readdir } from 'fs/promises'
 import getCommands from './index.js'
-import { Dirent } from 'fs'
+import type { Dirent } from 'fs'
 
 vi.mock('fs/promises')
 vi.mock('path')

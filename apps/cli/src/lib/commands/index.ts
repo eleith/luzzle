@@ -1,5 +1,5 @@
 import path from 'path'
-import { Command, Context } from './utils/types.js'
+import type { Command, Context } from './utils/types.js'
 import { readdir } from 'fs/promises'
 
 async function getCommands() {

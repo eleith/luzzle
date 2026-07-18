@@ -1,6 +1,6 @@
 import log from '../../log.js'
-import { Argv } from 'yargs'
-import { Command } from '../utils/types.js'
+import type { Argv } from 'yargs'
+import type { Command } from '../utils/types.js'
 import yaml from 'yaml'
 import { withDefaults } from '../../config.js'
 

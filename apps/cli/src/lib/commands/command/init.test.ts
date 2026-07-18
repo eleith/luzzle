@@ -1,11 +1,14 @@
 import log from '../../log.js'
-import { describe, expect, test, vi, afterEach, MockInstance } from 'vitest'
-import command, { InitArgv } from './init.js'
-import { Arguments } from 'yargs'
+import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest'
+import type { InitArgv } from './init.js';
+import command from './init.js'
+import type { Arguments } from 'yargs'
 import yargs from 'yargs'
 import { makeContext } from '../utils/context.fixtures.js'
 import { stat } from 'fs/promises'
-import { existsSync, Stats } from 'fs'
+import type { Stats } from 'fs';
+import { existsSync } from 'fs'
 import { getDatabaseClient, migrate } from '@luzzle/core'
 import { mockConfig } from '../../config.mock.js'
 import { getDatabasePath } from '../../config.js'

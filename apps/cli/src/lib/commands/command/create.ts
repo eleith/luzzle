@@ -1,8 +1,9 @@
 import log from '../../log.js'
-import { Command } from '../utils/types.js'
-import { Argv } from 'yargs'
+import type { Command } from '../utils/types.js'
+import type { Argv } from 'yargs'
 import yaml from 'yaml'
-import { PieceArgv, makePieceOption, parsePieceOptionArgv } from '../utils/pieces.js'
+import type { PieceArgv} from '../utils/pieces.js';
+import { makePieceOption, parsePieceOptionArgv } from '../utils/pieces.js'
 
 export type CreateArgv = {
 	title: string

@@ -4,11 +4,12 @@ import { spawn } from 'child_process'
 import { readFileSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import type {
+	NotificationMessage} from 'vscode-jsonrpc/node.js';
 import {
 	StreamMessageReader,
 	StreamMessageWriter,
-	Message,
-	NotificationMessage,
+	Message
 } from 'vscode-jsonrpc/node.js'
 import { discoverSchemas } from './schemas.js'
 import { debug, error } from './log.js'

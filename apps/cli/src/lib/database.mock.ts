@@ -1,5 +1,6 @@
-import { vi, Mocked } from 'vitest'
-import { LuzzleDatabase } from '@luzzle/core'
+import type { Mocked } from 'vitest';
+import { vi } from 'vitest'
+import type { LuzzleDatabase } from '@luzzle/core'
 
 function mockDatabase() {
 	const queries = {

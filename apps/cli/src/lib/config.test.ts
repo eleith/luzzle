@@ -1,4 +1,5 @@
-import { describe, expect, test, vi, afterEach, MockInstance, MockedClass } from 'vitest'
+import type { MockInstance, MockedClass } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest'
 import Conf from 'conf'
 import { getConfig, getDatabasePath, getStorage } from './config.js'
 import log from './log.js'
