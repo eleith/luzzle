@@ -1,6 +1,4 @@
-import type {
-	ViewUpdate
-} from '@codemirror/view';
+import type { ViewUpdate } from '@codemirror/view'
 import {
 	EditorView,
 	highlightSpecialChars,
@@ -11,7 +9,7 @@ import {
 	highlightActiveLine,
 	keymap
 } from '@codemirror/view'
-import type { Compartment} from '@codemirror/state';
+import type { Compartment } from '@codemirror/state'
 import { EditorState, type Extension } from '@codemirror/state'
 import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'

@@ -1,13 +1,5 @@
-import {
-	ViewPlugin,
-	EditorView,
-	Decoration,
-	MatchDecorator,
-	WidgetType
-} from '@codemirror/view'
-import type { DecorationSet ,
-	ViewUpdate
-} from '@codemirror/view'
+import { ViewPlugin, EditorView, Decoration, MatchDecorator, WidgetType } from '@codemirror/view'
+import type { DecorationSet, ViewUpdate } from '@codemirror/view'
 import type { Extension } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 import type { SyntaxNode } from '@lezer/common'
