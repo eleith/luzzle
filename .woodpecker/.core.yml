@@ -9,8 +9,13 @@ when:
       include:
         - ".woodpecker/.core.yml"
         - "apps/core/**"
+  - event: pull_request
+    path:
+      include:
+        - ".woodpecker/.core.yml"
+        - "apps/core/**"
   - event: tag
-    ref: "refs/tags/core/v*"
+    ref: "refs/tags/@luzzle/core@*"
 
 steps:
   prepare:
@@ -55,7 +60,7 @@ steps:
           exit 1
         fi
     environment:
-      VERSION_FROM_TAG: ${CI_COMMIT_TAG#core/v}
+      VERSION_FROM_TAG: ${CI_COMMIT_TAG#@luzzle/core@}
     when:
       - event: tag
 
@@ -91,7 +96,8 @@ steps:
       level: success
       recipients_only: true
     when:
-      - status: [success]
+      - event: [push, tag]
+        status: [success]
 
   notify-failure:
     image: deblan/woodpecker-email:3.2.0
@@ -108,4 +114,5 @@ steps:
       level: failure
       recipients_only: true
     when:
-      - status: [failure]
+      - event: [push, tag]
+        status: [failure]

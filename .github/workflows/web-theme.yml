@@ -9,6 +9,14 @@ on:
       - 'packages/web/config/**'
       - '.github/workflows/web-theme.yml'
 
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'packages/web/theme/**'
+      - 'packages/web/config/**'
+      - '.github/workflows/web-theme.yml'
+
 jobs:
   check:
     runs-on: ubuntu-latest

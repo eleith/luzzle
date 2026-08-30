@@ -5,7 +5,18 @@ on:
     branches:
       - main
     tags:
-      - 'web.worker/v*'
+      - '@luzzle/web.worker@*'
+    paths:
+      - 'packages/web/worker/**'
+      - 'packages/web/config/**'
+      - 'packages/web/theme/**'
+      - 'packages/web/db/**'
+      - 'packages/web/jobs/**'
+      - 'packages/web/pieces/**'
+      - 'apps/core/**'
+  pull_request:
+    branches:
+      - main
     paths:
       - 'packages/web/worker/**'
       - 'packages/web/config/**'
@@ -54,6 +65,7 @@ jobs:
 
   build-push:
     needs: check
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -67,7 +79,7 @@ jobs:
         run: |
           VERSION_FROM_PKG=$(node -p "require('./packages/web/worker/package.json').version")
           TAG_NAME=${GITHUB_REF#refs/tags/}
-          VERSION_FROM_TAG=${TAG_NAME#web.worker/v}
+          VERSION_FROM_TAG=${TAG_NAME#@luzzle/web.worker@}
 
           if [ "$VERSION_FROM_TAG" != "$VERSION_FROM_PKG" ]; then
             echo "Version mismatch: Tag version $VERSION_FROM_TAG does not match package.json version $VERSION_FROM_PKG"
@@ -82,9 +94,9 @@ jobs:
           images: ghcr.io/eleith/luzzle-web-worker
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=match,pattern=web.worker/v(\d+),group=1
-            type=match,pattern=web.worker/v(\d+\.\d+),group=1
-            type=match,pattern=web.worker/v(\d+\.\d+\.\d+),group=1
+            type=match,pattern=@luzzle/web.worker@(\d+),group=1
+            type=match,pattern=@luzzle/web.worker@(\d+\.\d+),group=1
+            type=match,pattern=@luzzle/web.worker@(\d+\.\d+\.\d+),group=1
 
       - name: Create dummy npmrc
         run: touch .npmrc

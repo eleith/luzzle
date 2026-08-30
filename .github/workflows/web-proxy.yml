@@ -5,7 +5,7 @@ on:
     branches:
       - main
     tags:
-      - 'web.proxy/v*'
+      - '@luzzle/web.proxy@*'
     paths:
       - 'packages/web/proxy/**'
       - '.github/workflows/web-proxy.yml'
@@ -25,7 +25,7 @@ jobs:
         run: |
           VERSION_FROM_PKG=$(node -p "require('./packages/web/proxy/package.json').version")
           TAG_NAME=${GITHUB_REF#refs/tags/}
-          VERSION_FROM_TAG=${TAG_NAME#web.proxy/v}
+          VERSION_FROM_TAG=${TAG_NAME#@luzzle/web.proxy@}
 
           if [ "$VERSION_FROM_TAG" != "$VERSION_FROM_PKG" ]; then
             echo "Version mismatch: Tag version $VERSION_FROM_TAG does not match package.json version $VERSION_FROM_PKG"
@@ -40,9 +40,9 @@ jobs:
           images: ghcr.io/eleith/luzzle-web-proxy
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=match,pattern=web.proxy/v(\d+),group=1
-            type=match,pattern=web.proxy/v(\d+\.\d+),group=1
-            type=match,pattern=web.proxy/v(\d+\.\d+\.\d+),group=1
+            type=match,pattern=@luzzle/web.proxy@(\d+),group=1
+            type=match,pattern=@luzzle/web.proxy@(\d+\.\d+),group=1
+            type=match,pattern=@luzzle/web.proxy@(\d+\.\d+\.\d+),group=1
 
       - name: Log in to the Container registry
         uses: docker/login-action@v4

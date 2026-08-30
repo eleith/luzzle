@@ -11,6 +11,13 @@ when:
         - "packages/web/db/**"
         - "packages/web/config/**"
         - "apps/core/**"
+  - event: pull_request
+    path:
+      include:
+        - ".woodpecker/.web-db.yml"
+        - "packages/web/db/**"
+        - "packages/web/config/**"
+        - "apps/core/**"
 
 steps:
   prepare:
@@ -59,7 +66,8 @@ steps:
       level: success
       recipients_only: true
     when:
-      - status: [success]
+      - event: [push, tag]
+        status: [success]
 
   notify-failure:
     image: deblan/woodpecker-email:3.2.0
@@ -76,4 +84,5 @@ steps:
       level: failure
       recipients_only: true
     when:
-      - status: [failure]
+      - event: [push, tag]
+        status: [failure]

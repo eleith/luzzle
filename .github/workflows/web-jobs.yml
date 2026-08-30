@@ -9,6 +9,14 @@ on:
       - 'apps/core/**'
       - '.github/workflows/web-jobs.yml'
 
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'packages/web/jobs/**'
+      - 'apps/core/**'
+      - '.github/workflows/web-jobs.yml'
+
 jobs:
   check:
     runs-on: ubuntu-latest

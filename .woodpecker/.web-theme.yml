@@ -10,6 +10,12 @@ when:
         - ".woodpecker/.web-theme.yml"
         - "packages/web/theme/**"
         - "packages/web/config/**"
+  - event: pull_request
+    path:
+      include:
+        - ".woodpecker/.web-theme.yml"
+        - "packages/web/theme/**"
+        - "packages/web/config/**"
 
 steps:
   prepare:
@@ -58,7 +64,8 @@ steps:
       level: success
       recipients_only: true
     when:
-      - status: [success]
+      - event: [push, tag]
+        status: [success]
 
   notify-failure:
     image: deblan/woodpecker-email:3.2.0
@@ -75,4 +82,5 @@ steps:
       level: failure
       recipients_only: true
     when:
-      - status: [failure]
+      - event: [push, tag]
+        status: [failure]

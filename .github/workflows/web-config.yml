@@ -8,6 +8,13 @@ on:
       - 'packages/web/config/**'
       - '.github/workflows/web-config.yml'
 
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'packages/web/config/**'
+      - '.github/workflows/web-config.yml'
+
 jobs:
   check:
     runs-on: ubuntu-latest

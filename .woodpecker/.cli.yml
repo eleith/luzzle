@@ -10,8 +10,14 @@ when:
         - ".woodpecker/.cli.yml"
         - "apps/cli/**"
         - "apps/core/**"
+  - event: pull_request
+    path:
+      include:
+        - ".woodpecker/.cli.yml"
+        - "apps/cli/**"
+        - "apps/core/**"
   - event: tag
-    ref: "refs/tags/cli/v*"
+    ref: "refs/tags/@luzzle/cli@*"
 
 steps:
   prepare:
@@ -57,7 +63,7 @@ steps:
           exit 1
         fi
     environment:
-      VERSION_FROM_TAG: ${CI_COMMIT_TAG#cli/v}
+      VERSION_FROM_TAG: ${CI_COMMIT_TAG#@luzzle/cli@}
     when:
       - event: tag
 
@@ -93,7 +99,9 @@ steps:
       level: success
       recipients_only: true
     when:
-      - status: [success]
+      - event: [push, tag]
+        status: [success]
+
   notify-failure:
     image: deblan/woodpecker-email:3.2.0
     settings:
@@ -109,4 +117,5 @@ steps:
       level: failure
       recipients_only: true
     when:
-      - status: [failure]
+      - event: [push, tag]
+        status: [failure]

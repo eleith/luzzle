@@ -10,6 +10,15 @@ on:
       - 'apps/core/**'
       - '.github/workflows/web-db.yml'
 
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'packages/web/db/**'
+      - 'packages/web/config/**'
+      - 'apps/core/**'
+      - '.github/workflows/web-db.yml'
+
 jobs:
   check:
     runs-on: ubuntu-latest
