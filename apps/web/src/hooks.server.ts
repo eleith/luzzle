@@ -12,7 +12,7 @@ const providers: Provider[] = []
 if (config.auth.type === 'oidc' && config.auth.oidc) {
 	providers.push({
 		id: 'oidc',
-		name: config.auth.oidc.name || 'Single Sign-On',
+		name: config.auth.oidc.name,
 		type: 'oidc',
 		issuer: config.auth.oidc.issuer,
 		clientId: config.auth.oidc.clientId,

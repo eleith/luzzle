@@ -41,7 +41,7 @@ content:
 
   component:
     root: ./content/components/pages/root.svelte
-    404: ./content/components/pages/404.svelte
+    '404': ./content/components/pages/404.svelte
     error: ./content/components/pages/error.svelte
 
 pieces:
