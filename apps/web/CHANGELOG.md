@@ -1,5 +1,13 @@
 # @luzzle/web
 
+## 0.0.237
+
+### Patch Changes
+
+- Fix Woodpecker CI YAML parsing for tag version extraction.
+- @luzzle/web.db@0.0.1
+  - @luzzle/web.pieces@0.0.1
+
 ## 0.0.236
 
 ### Patch Changes
