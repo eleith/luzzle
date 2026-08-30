@@ -83,7 +83,7 @@ steps:
           exit 1
         fi
     environment:
-      VERSION_FROM_TAG: ${CI_COMMIT_TAG#@luzzle/web.worker@}
+      VERSION_FROM_TAG: "${CI_COMMIT_TAG#@luzzle/web.worker@}"
     when:
       - event: tag
 
