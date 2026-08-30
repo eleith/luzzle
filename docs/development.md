@@ -46,3 +46,25 @@ accurate and evolving in pace with codebase changes.
 If you are working on the Web ecosystem (the explorer, worker, proxy, and other
 web helpers), please refer to the [Web Development
 Standards](../packages/web/docs/development.md) for web-specific rules.
+
+---
+
+## Releases 📦
+
+Luzzle uses [Changesets](https://github.com/changesets/changesets) with fixed app grouping (`apps/web`, `packages/web/worker`, `apps/cli`, `apps/core`, `apps/lsp`) so all deployable applications stay synchronized in versioning.
+
+1. **Document changes:** when finishing a feature or fix, record a changeset:
+   ```sh
+   pnpm changeset
+   ```
+2. **Bump versions & changelogs:** when ready to release:
+   ```sh
+   pnpm version:apps
+   ```
+   Commit the resulting version bumps and changelog updates (`git commit -m "[luzzle] release X.Y.Z"`).
+3. **Tag & deploy:**
+   ```sh
+   pnpm tag:apps
+   git push origin main --tags
+   ```
+

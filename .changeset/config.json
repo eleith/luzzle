@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    ["@luzzle/cli", "@luzzle/core", "@luzzle/lsp", "@luzzle/web", "@luzzle/web.worker"]
+  ],
+  "linked": [],
+  "access": "restricted",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@luzzle/web.config",
+    "@luzzle/web.db",
+    "@luzzle/web.jobs",
+    "@luzzle/web.lsp",
+    "@luzzle/web.pieces",
+    "@luzzle/web.proxy",
+    "@luzzle/web.theme"
+  ],
+  "privatePackages": {
+    "version": true,
+    "tag": true
+  }
+}
