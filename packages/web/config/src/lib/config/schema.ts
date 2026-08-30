@@ -32,6 +32,7 @@ export type Schema = {
     secret: string;
     type: "oidc" | "credentials";
     oidc?: {
+      name?: string;
       issuer: string;
       clientId: string;
       clientSecret: string;

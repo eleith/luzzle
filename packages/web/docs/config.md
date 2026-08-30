@@ -51,18 +51,23 @@ Luzzle supports OIDC and simple Credentials.
 
 <!-- markdownlint-disable MD013 -->
 
-| Path                        | Env Variable           | Required | Default | Description                               |
-| --------------------------- | ---------------------- | -------- | ------- | ----------------------------------------- |
-| `auth.enabled`              | -                      | Yes      | `false` | Set to `true` to enable editing features. |
-| `auth.secret`               | `LUZZLE_AUTH_SECRET`   | Yes\*    | -       | A random secret for session encryption.   |
-| `auth.type`                 | -                      | Yes      | `oidc`  | `oidc` or `credentials`.                  |
-| `auth.credentials.username` | `LUZZLE_AUTH_USERNAME` | No\*\*   | -       | Admin username.                           |
-| `auth.credentials.password` | `LUZZLE_AUTH_PASSWORD` | No\*\*   | -       | Admin password.                           |
+| Path                        | Env Variable           | Required | Default            | Description                               |
+| --------------------------- | ---------------------- | -------- | ------------------ | ----------------------------------------- |
+| `auth.enabled`              | -                      | Yes      | `false`            | Set to `true` to enable editing features. |
+| `auth.secret`               | `LUZZLE_AUTH_SECRET`   | Yes\*    | -                  | A random secret for session encryption.   |
+| `auth.type`                 | -                      | Yes      | `oidc`             | `oidc` or `credentials`.                  |
+| `auth.oidc.name`            | -                      | No       | `"Single Sign-On"` | Display name for OIDC login provider.     |
+| `auth.oidc.issuer`          | -                      | No\*\*\* | -                  | OIDC issuer URL.                          |
+| `auth.oidc.clientId`        | -                      | No\*\*\* | -                  | OIDC client ID.                           |
+| `auth.oidc.clientSecret`    | -                      | No\*\*\* | -                  | OIDC client secret.                       |
+| `auth.credentials.username` | `LUZZLE_AUTH_USERNAME` | No\*\*   | -                  | Admin username.                           |
+| `auth.credentials.password` | `LUZZLE_AUTH_PASSWORD` | No\*\*   | -                  | Admin password.                           |
 
 <!-- markdownlint-enable MD013 -->
 
 \* _Required if `auth.enabled` is `true`._  
-\*\* _Required if `auth.type` is `credentials`._
+\*\* _Required if `auth.type` is `credentials`._  
+\*\*\* _Required if `auth.type` is `oidc` and `auth.enabled` is `true`._
 
 ---
 

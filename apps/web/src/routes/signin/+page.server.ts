@@ -11,6 +11,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	}
 
 	return {
-		authType: config.auth.type
+		authType: config.auth.type,
+		oidcName: config.auth.oidc?.name || 'Single Sign-On'
 	}
 }

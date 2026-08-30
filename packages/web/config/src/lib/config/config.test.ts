@@ -712,12 +712,34 @@ sync:
 			const config = loadConfig(tmpConfigPath)
 			expect(config.url.app).toBe('https://example.com')
 			expect(config.auth.secret).toBe('super-secret-key')
+			expect(config.auth.oidc?.name).toBe('Single Sign-On')
 			expect(config.auth.oidc?.issuer).toBe('https://auth.example.com')
 			expect(config.sync.config).toBe('/custom/rclone.conf')
 			expect(config.sync.archive?.remote).toBe('s3://archive-bucket')
 			expect(config.sync.archive?.path).toBe('/archive/path')
 			expect(config.sync.cdn?.remote).toBe('s3://cdn-bucket')
 			expect(config.sync.cdn?.path).toBe('/cdn/path')
+		})
+
+		test('should allow custom oidc.name', () => {
+			const yamlContent = `
+url:
+  app: 'https://example.com'
+  app_assets: ''
+  luzzle_assets: ''
+auth:
+  enabled: true
+  secret: 'secret'
+  type: oidc
+  oidc:
+    name: 'Okta SSO'
+    issuer: 'https://auth.example.com'
+    clientId: 'client'
+    clientSecret: 'secret'
+`
+			writeFileSync(tmpConfigPath, yamlContent)
+			const config = loadConfig(tmpConfigPath)
+			expect(config.auth.oidc?.name).toBe('Okta SSO')
 		})
 	})
 

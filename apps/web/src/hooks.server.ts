@@ -12,11 +12,12 @@ const providers: Provider[] = []
 if (config.auth.type === 'oidc' && config.auth.oidc) {
 	providers.push({
 		id: 'oidc',
-		name: 'OIDC',
+		name: config.auth.oidc.name || 'Single Sign-On',
 		type: 'oidc',
 		issuer: config.auth.oidc.issuer,
 		clientId: config.auth.oidc.clientId,
 		clientSecret: config.auth.oidc.clientSecret,
+		checks: ['state'],
 		style: {
 			logo: `${config.url.app_assets}/images/favicon.png`
 		}

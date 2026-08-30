@@ -35,7 +35,10 @@
 
 <section>
 	{#if data.authType === 'oidc'}
-		<Button onclick={() => signIn('oidc', { callbackUrl: redirectTo })}>login (oidc)</Button>
+		<div class="oidc-login">
+			<p>login via {data.oidcName}</p>
+			<Button onclick={() => signIn('oidc', { callbackUrl: redirectTo })}>login</Button>
+		</div>
 	{:else if data.authType === 'credentials'}
 		<form onsubmit={handleSubmit} class="login-form">
 			{#if error}
@@ -60,6 +63,19 @@
 		height: calc(100vh - 300px);
 		justify-content: center;
 		align-items: center;
+	}
+
+	.oidc-login {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-4);
+	}
+
+	.oidc-login p {
+		margin: 0;
+		font-size: var(--font-size-xs);
+		text-transform: uppercase;
 	}
 
 	.login-form {
