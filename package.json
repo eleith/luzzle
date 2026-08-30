@@ -9,7 +9,7 @@
     "test": "pnpm test",
     "changeset": "changeset",
     "version:apps": "changeset version",
-    "tag:apps": "changeset tag"
+    "tag:apps": "changeset git-tag"
   },
   "packageManager": "pnpm@11.2.2",
   "devDependencies": {
