@@ -51,7 +51,7 @@ Standards](../packages/web/docs/development.md) for web-specific rules.
 
 ## Releases 📦
 
-Luzzle uses [Changesets](https://github.com/changesets/changesets) with fixed app grouping (`apps/web`, `packages/web/worker`, `apps/cli`, `apps/core`, `apps/lsp`) so all deployable applications stay synchronized in versioning.
+Luzzle uses [Changesets](https://github.com/changesets/changesets) with fixed app grouping (`apps/web`, `packages/web/worker`, `packages/web/proxy`, `packages/web/lsp`, `apps/cli`, `apps/core`, `apps/lsp`) so all deployable applications and services stay synchronized in versioning.
 
 1. **Document changes:** when finishing a feature or fix, record a changeset:
    ```sh
