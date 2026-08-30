@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/lsp",
-	"version": "0.0.2",
+	"version": "0.0.236",
 	"author": "eleith",
 	"description": "LSP proxy for YAML frontmatter validation in Luzzle markdown files",
 	"scripts": {
