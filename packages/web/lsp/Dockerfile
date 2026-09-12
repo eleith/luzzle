@@ -14,8 +14,8 @@ RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
 RUN pnpm --filter @luzzle/lsp build
 RUN chmod +x /m/apps/lsp/dist/index.js && \
-    ln -s /m/apps/lsp/dist/index.js /usr/local/bin/luzzle-lsp
-RUN npm install -g yaml-language-server
+    ln -s /m/apps/lsp/dist/index.js /usr/local/bin/luzzle-lsp && \
+    ln -s /m/apps/lsp/node_modules/.bin/yaml-language-server /usr/local/bin/yaml-language-server
 WORKDIR /m/packages/web/lsp
 RUN mkdir -p archive && \
     chgrp 0 . archive && \
@@ -23,19 +23,22 @@ RUN mkdir -p archive && \
 EXPOSE 9001
 CMD ["node", "server.js"]
 
-# --- pruner: deploy web.lsp prod bundle --------------------------------------
+# --- pruner: build @luzzle/lsp + deploy both prod bundles --------------------
 FROM base AS pruner
 COPY . .
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
+RUN pnpm --filter @luzzle/lsp build
 RUN pnpm --filter @luzzle/web.lsp --prod deploy --legacy /pruned
+RUN pnpm --filter @luzzle/lsp --prod deploy --legacy /pruned-lsp
 
-# --- prod (default): registry-installed @luzzle/lsp + web.lsp own bundle -----
+# --- prod (default): @luzzle/lsp + yaml-language-server built from source ----
 FROM base AS prod
 WORKDIR /app
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
-    npm install -g @luzzle/lsp@0.0.1 yaml-language-server \
-    && npm cache clean --force
+COPY --from=pruner --chown=:0 --chmod=775 /pruned-lsp /opt/luzzle-lsp
+RUN chmod +x /opt/luzzle-lsp/dist/index.js && \
+    ln -s /opt/luzzle-lsp/dist/index.js /usr/local/bin/luzzle-lsp && \
+    ln -s /opt/luzzle-lsp/node_modules/.bin/yaml-language-server /usr/local/bin/yaml-language-server
 COPY --from=pruner --chown=:0 --chmod=775 /pruned /app
 RUN mkdir -p /app/archive && \
     chgrp 0 /app /app/archive && \

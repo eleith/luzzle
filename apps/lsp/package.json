@@ -39,7 +39,8 @@
 		"vitest": "catalog:"
 	},
 	"dependencies": {
-		"vscode-jsonrpc": "8.2.1"
+		"vscode-jsonrpc": "8.2.1",
+		"yaml-language-server": "1.24.0"
 	},
 	"type": "module"
 }
