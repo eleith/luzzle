@@ -1,5 +1,12 @@
 # @luzzle/web
 
+## 0.0.239
+
+### Patch Changes
+
+- @luzzle/web.db@0.0.1
+  - @luzzle/web.pieces@0.0.1
+
 ## 0.0.238
 
 ### Patch Changes
