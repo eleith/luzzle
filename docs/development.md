@@ -65,6 +65,8 @@ Luzzle uses [Changesets](https://github.com/changesets/changesets) with fixed ap
 3. **Tag & deploy:**
    ```sh
    pnpm tag:apps
-   git push origin main --tags
+   git push origin main
+   git tag -l "*@X.Y.Z" | xargs -n1 git push origin
    ```
+   Push tags one at a time, not `--tags`. GitHub silently drops tag events when more than 3 tags are pushed together, so a bulk push never fires the publish workflows.
 
