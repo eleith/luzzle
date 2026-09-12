@@ -45,7 +45,7 @@ describe('PhaseLogger', () => {
 	})
 
 	it('should write to db when active phase is set', async () => {
-		phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
+		await phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
 		phaseLogger.info('test message', { foo: 'bar' })
 
 		await new Promise((resolve) => setTimeout(resolve, 50))
@@ -62,7 +62,7 @@ describe('PhaseLogger', () => {
 	})
 
 	it('should increment line_number monotonically', async () => {
-		phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
+		await phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
 		phaseLogger.info('msg 1')
 		phaseLogger.warn('msg 2')
 
@@ -81,7 +81,7 @@ describe('PhaseLogger', () => {
 	})
 
 	it('routes debug, error, stdout, and stderr through both base logger and DB', async () => {
-		phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
+		await phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
 		phaseLogger.debug('dbg msg')
 		phaseLogger.error('err msg')
 		phaseLogger.stdout('out msg')
@@ -100,5 +100,27 @@ describe('PhaseLogger', () => {
 			.orderBy('line_number', 'asc')
 			.execute()
 		expect(rows.map((r) => r.level)).toEqual(['debug', 'error', 'stdout', 'stderr'])
+	})
+
+	it('resumes line_number from existing rows when a phase restarts', async () => {
+		await phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
+		phaseLogger.info('first attempt')
+		await new Promise((resolve) => setTimeout(resolve, 50))
+		phaseLogger.clearActivePhase()
+
+		await phaseLogger.setActivePhase({ jobId: 'test-uuid', phase: 'test.phase' })
+		phaseLogger.info('second attempt')
+		await new Promise((resolve) => setTimeout(resolve, 50))
+
+		const rows = await testDb
+			.selectFrom('job_progress_logs')
+			.selectAll()
+			.orderBy('line_number', 'asc')
+			.execute()
+		expect(rows).toHaveLength(2)
+		expect(rows[0].line_number).toBe(1)
+		expect(rows[0].message).toBe('first attempt')
+		expect(rows[1].line_number).toBe(2)
+		expect(rows[1].message).toBe('second attempt')
 	})
 })

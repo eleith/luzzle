@@ -21,7 +21,7 @@ export async function runProgressPhase<I, O>(
 		const { logger } = ctx
 
 		if (logger instanceof PhaseLogger) {
-			logger.setActivePhase({ jobId, phase: jobStep.name })
+			await logger.setActivePhase({ jobId, phase: jobStep.name })
 		}
 
 		await progress.start(jobId, jobStep.name)

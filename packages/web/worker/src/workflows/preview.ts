@@ -29,7 +29,7 @@ export function registerPreviewWorkflow(): void {
 		// 1. Run preview parsing and serialize Map objects for database persistence
 		const parsedSerialized = await step.run({ name: 'parse' }, async () => {
 			if (logger instanceof PhaseLogger) {
-				logger.setActivePhase({ jobId, phase: 'parse' })
+				await logger.setActivePhase({ jobId, phase: 'parse' })
 			}
 			await progress.start(jobId, 'parse')
 			try {
@@ -82,7 +82,7 @@ export function registerPreviewWorkflow(): void {
 			try {
 				const records = await step.run({ name: name }, async () => {
 					if (logger instanceof PhaseLogger) {
-						logger.setActivePhase({ jobId, phase: name })
+						await logger.setActivePhase({ jobId, phase: name })
 					}
 					await progress.start(jobId, name)
 					try {

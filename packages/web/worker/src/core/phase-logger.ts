@@ -23,9 +23,22 @@ export class PhaseLogger implements Logger {
 		this.db = db
 	}
 
-	setActivePhase(phase: { jobId: string; phase: string }): void {
+	async setActivePhase(phase: { jobId: string; phase: string }): Promise<void> {
 		this.activePhase = phase
 		this.currentLineNumber = 0
+
+		try {
+			const row = await this.db
+				.selectFrom('job_progress_logs')
+				.select(({ fn }) => fn.max('line_number').as('maxLineNumber'))
+				.where('job_id', '=', phase.jobId)
+				.where('phase', '=', phase.phase)
+				.executeTakeFirst()
+
+			this.currentLineNumber = Number(row?.maxLineNumber ?? 0)
+		} catch (err) {
+			console.error('Failed to resume line_number for job_progress_logs:', err)
+		}
 	}
 
 	clearActivePhase(): void {
