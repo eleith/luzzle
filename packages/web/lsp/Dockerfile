@@ -14,8 +14,8 @@ RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     pnpm install --frozen-lockfile
 RUN pnpm --filter @luzzle/lsp build
 RUN chmod +x /m/apps/lsp/dist/index.js && \
-    ln -s /m/apps/lsp/dist/index.js /usr/local/bin/luzzle-lsp && \
-    ln -s /m/apps/lsp/node_modules/.bin/yaml-language-server /usr/local/bin/yaml-language-server
+    ln -s /m/apps/lsp/dist/index.js /usr/local/bin/luzzle-lsp
+ENV PATH="/m/apps/lsp/node_modules/.bin:${PATH}"
 WORKDIR /m/packages/web/lsp
 RUN mkdir -p archive && \
     chgrp 0 . archive && \
@@ -37,8 +37,8 @@ FROM base AS prod
 WORKDIR /app
 COPY --from=pruner --chown=:0 --chmod=775 /pruned-lsp /opt/luzzle-lsp
 RUN chmod +x /opt/luzzle-lsp/dist/index.js && \
-    ln -s /opt/luzzle-lsp/dist/index.js /usr/local/bin/luzzle-lsp && \
-    ln -s /opt/luzzle-lsp/node_modules/.bin/yaml-language-server /usr/local/bin/yaml-language-server
+    ln -s /opt/luzzle-lsp/dist/index.js /usr/local/bin/luzzle-lsp
+ENV PATH="/opt/luzzle-lsp/node_modules/.bin:${PATH}"
 COPY --from=pruner --chown=:0 --chmod=775 /pruned /app
 RUN mkdir -p /app/archive && \
     chgrp 0 /app /app/archive && \
