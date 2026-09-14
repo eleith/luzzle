@@ -143,7 +143,7 @@
 					<Button type="submit">
 						{shouldGenerate ? 'create & generate' : 'create'}
 					</Button>
-					<a href="/admin/directory/{data.directory}">
+					<a href="/admin">
 						<Button variant="outline">cancel</Button>
 					</a>
 				</div>

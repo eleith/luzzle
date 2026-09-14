@@ -395,7 +395,7 @@
 					{isSaving ? 'saving...' : 'save'}
 				</Button>
 			</form>
-			<a href="/admin/directory/{data.directory === '.' ? '' : data.directory}">
+			<a href="/admin">
 				<Button variant="outline">cancel</Button>
 			</a>
 		</div>
