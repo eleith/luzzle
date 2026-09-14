@@ -106,12 +106,6 @@
 								<dd>{data.configSummary.auth.clientId}</dd>
 							</div>
 						{/if}
-						{#if data.configSummary.auth.username}
-							<div class="info-row">
-								<dt>username</dt>
-								<dd>{data.configSummary.auth.username}</dd>
-							</div>
-						{/if}
 					</dl>
 				</div>
 				{#if data.configSummary.auth.issuer}
@@ -249,13 +243,13 @@
 				{@render banner(workerTest)}
 				<div class="info-card-body">
 					<h3 class="info-card-title">worker</h3>
-					{#if data.configSummary.worker.address}
-						<p class="info-address">{data.configSummary.worker.address}</p>
-					{/if}
-					<p class="info-description">
-						Runs publish syncs (archive, cdn), asset generation, and connectivity checks.
-					</p>
 					<dl class="info-list">
+						{#if data.configSummary.worker.address}
+							<div class="info-row">
+								<dt>uri</dt>
+								<dd>{data.configSummary.worker.address}</dd>
+							</div>
+						{/if}
 						<div class="info-row">
 							<dt>queue</dt>
 							<dd>{data.configSummary.worker.queuePath ?? 'not configured'}</dd>
@@ -394,21 +388,6 @@
 	.info-card-title {
 		font-size: var(--font-size-xs);
 		font-weight: var(--font-weight-bold);
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		margin: 0;
-	}
-
-	.info-address {
-		font-size: var(--font-size-xs);
-		font-family: var(--font-mono-name, monospace);
-		color: var(--color-on-surface-variant);
-		margin: 0;
-	}
-
-	.info-description {
-		font-size: var(--font-size-xs);
-		color: var(--color-on-surface-variant);
 		margin: 0;
 	}
 
@@ -426,7 +405,6 @@
 	.info-row dt {
 		color: var(--color-on-surface-variant);
 		font-size: var(--font-size-xs);
-		text-transform: uppercase;
 		white-space: nowrap;
 	}
 
@@ -525,6 +503,26 @@
 	@media screen and (min-width: 768px) {
 		section.health {
 			width: clamp(500px, 66.6666%, 1000px);
+		}
+	}
+
+	@media screen and (max-width: 640px) {
+		.info-list {
+			grid-template-columns: 1fr;
+			gap: 0;
+		}
+
+		.info-row {
+			display: block;
+			margin-top: var(--space-2);
+		}
+
+		.info-row:first-child {
+			margin-top: 0;
+		}
+
+		.info-row dt {
+			white-space: normal;
 		}
 	}
 </style>

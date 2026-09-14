@@ -75,8 +75,7 @@ describe('buildHealthConfigSummary', () => {
 			enabled: true,
 			type: 'oidc',
 			issuer: 'https://issuer.example',
-			clientId: 'abc',
-			username: null
+			clientId: 'abc'
 		})
 	})
 
@@ -96,8 +95,7 @@ describe('buildHealthConfigSummary', () => {
 			enabled: true,
 			type: 'credentials',
 			issuer: null,
-			clientId: null,
-			username: 'admin'
+			clientId: null
 		})
 	})
 

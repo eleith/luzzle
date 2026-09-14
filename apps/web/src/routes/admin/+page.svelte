@@ -84,28 +84,24 @@
 		<section class="dashboard-section">
 			<h2 class="section-header">recently edited</h2>
 			<div class="table-card">
-				<table class="recent-table">
-					<thead>
-						<tr>
-							<th>title</th>
-							<th>type</th>
-							<th>updated</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each data.recentlyEditedPieces as piece (piece.id)}
-							<tr>
-								<td>
-									<a href="/admin/piece/{piece.file_path}/source">{piece.title || piece.slug}</a>
-								</td>
-								<td class="meta-cell">{piece.type}</td>
-								<td class="meta-cell">
-									{relativeTime(piece.date_updated ?? piece.date_added)}
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
+				<div class="recent-header" aria-hidden="true">
+					<span>title</span>
+					<span>type</span>
+					<span>updated</span>
+				</div>
+				<ul class="recent-list">
+					{#each data.recentlyEditedPieces as piece (piece.id)}
+						<li class="recent-row">
+							<a class="recent-title" href="/admin/piece/{piece.file_path}/source">
+								{piece.title || piece.slug}
+							</a>
+							<span class="recent-type meta-cell">{piece.type}</span>
+							<span class="recent-updated meta-cell">
+								{relativeTime(piece.date_updated ?? piece.date_added)}
+							</span>
+						</li>
+					{/each}
+				</ul>
 			</div>
 		</section>
 	{/if}
@@ -144,7 +140,7 @@
 
 			<a class="stat-card" href="/admin/health">
 				<span class="stat-number">{data.setup.aiConfigured ? 'on' : 'off'}</span>
-				<span class="stat-label">ai generation</span>
+				<span class="stat-label">ai</span>
 			</a>
 
 			<a class="stat-card" href="/admin/health">
@@ -264,71 +260,49 @@
 		border-radius: var(--radius-small);
 	}
 
-	.recent-table {
-		width: 100%;
-		table-layout: fixed;
-		border-collapse: collapse;
+	.recent-header,
+	.recent-row {
+		display: grid;
+		grid-template-columns: 1fr 8rem 9rem;
+		gap: var(--space-3);
+		align-items: center;
+		padding: var(--space-3) var(--space-4);
 	}
 
-	.recent-table thead {
+	.recent-header {
 		background: var(--color-surface-container-high);
-	}
-
-	.recent-table th {
-		text-align: left;
 		font-size: var(--font-size-xs);
 		font-weight: var(--font-weight-medium);
 		color: var(--color-on-surface-variant);
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		padding: var(--space-3);
 		border-bottom: 1px solid var(--color-outline-variant);
 	}
 
-	.recent-table td {
-		padding: var(--space-3);
+	.recent-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.recent-row {
 		border-bottom: 1px solid var(--color-outline-variant);
-	}
-
-	.recent-table th:first-child,
-	.recent-table td:first-child {
-		padding-left: var(--space-4);
-	}
-
-	.recent-table th:last-child,
-	.recent-table td:last-child {
-		padding-right: var(--space-4);
-	}
-
-	.recent-table tbody tr:last-child td {
-		border-bottom: none;
-	}
-
-	.recent-table tbody tr {
 		transition: background 0.1s ease-in-out;
 	}
 
-	.recent-table tbody tr:hover {
+	.recent-row:last-child {
+		border-bottom: none;
+	}
+
+	.recent-row:hover {
 		background: var(--color-surface-container-low);
 	}
 
-	.recent-table a {
-		display: block;
+	.recent-title {
+		min-width: 0;
 		color: inherit;
 		text-decoration: none;
 		overflow: hidden;
 		white-space: nowrap;
 		text-overflow: ellipsis;
-	}
-
-	.recent-table th:nth-child(2),
-	.recent-table td:nth-child(2) {
-		width: 8rem;
-	}
-
-	.recent-table th:nth-child(3),
-	.recent-table td:nth-child(3) {
-		width: 9rem;
 	}
 
 	.meta-cell {
@@ -342,6 +316,30 @@
 	@media screen and (min-width: 768px) {
 		section.dashboard {
 			width: clamp(500px, 66.6666%, 1000px);
+		}
+	}
+
+	@media screen and (max-width: 640px) {
+		.recent-header {
+			display: none;
+		}
+
+		.recent-row {
+			grid-template-columns: 1fr;
+			grid-template-areas: 'title' 'type';
+			row-gap: var(--space-1);
+		}
+
+		.recent-title {
+			grid-area: title;
+		}
+
+		.recent-type {
+			grid-area: type;
+		}
+
+		.recent-updated {
+			display: none;
 		}
 	}
 </style>

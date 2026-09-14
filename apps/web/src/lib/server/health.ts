@@ -16,7 +16,6 @@ export interface AuthSummary {
 	type: string
 	issuer: string | null
 	clientId: string | null
-	username: string | null
 }
 
 export interface SyncTargetSummary {
@@ -62,8 +61,7 @@ export function buildHealthConfigSummary(config: AppConfig): HealthConfigSummary
 			enabled: config.auth.enabled,
 			type: config.auth.type,
 			issuer: config.auth.oidc?.issuer ?? null,
-			clientId: config.auth.oidc?.clientId ?? null,
-			username: config.auth.credentials?.username ?? null
+			clientId: config.auth.oidc?.clientId ?? null
 		},
 		archiveSync: {
 			configured: Boolean(config.sync.archive?.remote),
