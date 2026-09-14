@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ComponentProps } from 'svelte'
 	import Nav from '$lib/components/layout/simple/nav.svelte'
-	import GearIcon from 'virtual:icons/ph/gear'
+	import AtIcon from 'virtual:icons/ph/at'
 	import { onMount } from 'svelte'
 
 	let { items, showRandom = false, ...rest }: ComponentProps<typeof Nav> = $props()
@@ -12,14 +12,14 @@
 	})
 </script>
 
-{#snippet rightSnippet()}
+{#snippet leftSnippet()}
 	{#if isAdmin}
 		<a href="/admin" aria-label="admin">
-			<GearIcon style="font-size: 1em;" />
+			<AtIcon style="font-size: 1em;" />
 		</a>
 	{/if}
-	{#if items?.right}
-		{@render items.right()}
+	{#if items?.left}
+		{@render items.left()}
 	{/if}
 {/snippet}
 
@@ -27,7 +27,7 @@
 	{...rest}
 	{showRandom}
 	items={{
-		left: items?.left,
-		right: rightSnippet
+		left: leftSnippet,
+		right: items?.right
 	}}
 />

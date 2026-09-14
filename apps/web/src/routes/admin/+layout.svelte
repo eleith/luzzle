@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Nav from '$lib/components/layout/simple/nav.svelte'
+	import AtIcon from 'virtual:icons/ph/at'
 	import FolderIcon from 'virtual:icons/ph/folder'
 	import PlusIcon from 'virtual:icons/ph/plus'
 	import ArrowCircleUpIcon from 'virtual:icons/ph/arrow-circle-up'
@@ -15,7 +16,13 @@
 	})
 </script>
 
-{#snippet left()}{/snippet}
+{#snippet left()}
+	{#if page.url.pathname !== '/admin'}
+		<a href="/admin" aria-label="admin">
+			<AtIcon style="font-size: 1em;" />
+		</a>
+	{/if}
+{/snippet}
 
 {#snippet right()}
 	<a href="/admin/directory" aria-label="directory">
