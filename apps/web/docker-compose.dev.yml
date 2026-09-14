@@ -8,7 +8,6 @@ services:
         - npmrc
     container_name: luzzle-dev-web
     user: '${UID:-1000}:${GID:-1000}'
-    env_file: .env
     environment:
       - LUZZLE_DEV=true
     ports:
@@ -56,7 +55,6 @@ services:
         - npmrc
     container_name: luzzle-dev-worker
     user: '${UID:-1000}:${GID:-1000}'
-    env_file: .env
     environment:
       - LUZZLE_DEV=true
     networks:
