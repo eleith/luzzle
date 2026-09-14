@@ -2,7 +2,7 @@
 	import Button from '$lib/components/ui/Button.svelte'
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
 	import { enhance } from '$app/forms'
-	import { goto } from '$app/navigation'
+	import { goto, invalidateAll } from '$app/navigation'
 
 	let { data, form } = $props()
 	let selectedType = $state(data.type)
@@ -35,6 +35,7 @@
 						saveError = null
 						return async ({ result }) => {
 							if (result.type === 'success') {
+								await invalidateAll()
 								goto(`/admin/piece/${filePath}/source`)
 							} else if (result.type === 'failure') {
 								const resData = result.data as { error?: { message?: string } } | undefined

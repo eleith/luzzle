@@ -4,7 +4,7 @@
 	import Button from '$lib/components/ui/Button.svelte'
 	import { page } from '$app/state'
 	import { enhance } from '$app/forms'
-	import { goto } from '$app/navigation'
+	import { goto, invalidateAll } from '$app/navigation'
 
 	let { data, form }: { data: PageData; form: ActionData } = $props()
 
@@ -34,6 +34,7 @@
 					use:enhance={() => {
 						return async ({ result }) => {
 							if (result.type === 'success') {
+								await invalidateAll()
 								goto(backUrl)
 							}
 						}
