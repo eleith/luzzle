@@ -1,5 +1,12 @@
 # @luzzle/cli
 
+## 0.0.241
+
+### Patch Changes
+
+- Updated dependencies [fc467ac]
+  - @luzzle/core@0.0.241
+
 ## 0.0.240
 
 ### Patch Changes
