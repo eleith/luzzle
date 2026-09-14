@@ -22,22 +22,17 @@ export async function getPieceStats(db: Kysely<AppDatabase>): Promise<PieceStats
 
 export interface AssetStats {
 	total: number
-	byTransformation: { transformation: string; count: number }[]
 }
 
-export async function getAssetStats(db: Kysely<AppDatabase>): Promise<AssetStats> {
-	const byTransformation = await db
-		.selectFrom('web_pieces_assets')
-		.select(['transformation', (eb) => eb.fn.countAll<number>().as('count')])
-		.groupBy('transformation')
-		.orderBy('transformation', 'asc')
-		.execute()
+// excludes derivatives: image.{size}.{format}, opengraph
+const DIRECT_ASSET_TRANSFORMATIONS = ['image.original', 'attachment'] as const
 
-	return {
-		total: byTransformation.reduce((sum, row) => sum + Number(row.count), 0),
-		byTransformation: byTransformation.map((row) => ({
-			transformation: row.transformation,
-			count: Number(row.count)
-		}))
-	}
+export async function getAssetStats(db: Kysely<AppDatabase>): Promise<AssetStats> {
+	const result = await db
+		.selectFrom('web_pieces_assets')
+		.select((eb) => eb.fn.countAll<number>().as('count'))
+		.where('transformation', 'in', DIRECT_ASSET_TRANSFORMATIONS)
+		.executeTakeFirstOrThrow()
+
+	return { total: Number(result.count) }
 }

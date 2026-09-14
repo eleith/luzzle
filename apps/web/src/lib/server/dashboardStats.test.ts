@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { createAppDb, runWebMigrations } from '@luzzle/web.db'
-import { getPieceStats, getAssetStats } from './dashboard'
+import { getPieceStats, getAssetStats } from './dashboardStats'
 
 async function createTestDb() {
 	const db = createAppDb(':memory:')
@@ -67,7 +67,7 @@ describe('getPieceStats', () => {
 })
 
 describe('getAssetStats', () => {
-	test('counts assets by transformation', async () => {
+	test('counts only direct assets, excluding generated derivatives', async () => {
 		const db = await createTestDb()
 
 		await db
@@ -77,20 +77,27 @@ describe('getAssetStats', () => {
 					piece_file_path: 'a.md',
 					piece_key: 'k1',
 					asset_key: 'ak1',
-					transformation: 'opengraph',
+					transformation: 'image.original',
 					mime_type: 'image/png'
 				},
 				{
 					piece_file_path: 'a.md',
 					piece_key: 'k1',
 					asset_key: 'ak2',
-					transformation: 'attachment.original',
+					transformation: 'attachment',
 					mime_type: 'application/pdf'
+				},
+				{
+					piece_file_path: 'a.md',
+					piece_key: 'k1',
+					asset_key: 'ak3',
+					transformation: 'image.small.avif',
+					mime_type: 'image/avif'
 				},
 				{
 					piece_file_path: 'b.md',
 					piece_key: 'k2',
-					asset_key: 'ak3',
+					asset_key: 'ak4',
 					transformation: 'opengraph',
 					mime_type: 'image/png'
 				}
@@ -99,11 +106,7 @@ describe('getAssetStats', () => {
 
 		const stats = await getAssetStats(db)
 
-		expect(stats.total).toBe(3)
-		expect(stats.byTransformation).toEqual([
-			{ transformation: 'attachment.original', count: 1 },
-			{ transformation: 'opengraph', count: 2 }
-		])
+		expect(stats).toEqual({ total: 2 })
 	})
 
 	test('returns zero total when no assets exist', async () => {
@@ -111,6 +114,6 @@ describe('getAssetStats', () => {
 
 		const stats = await getAssetStats(db)
 
-		expect(stats).toEqual({ total: 0, byTransformation: [] })
+		expect(stats).toEqual({ total: 0 })
 	})
 })

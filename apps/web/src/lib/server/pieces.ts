@@ -4,7 +4,7 @@ import {
 	type PieceFrontmatter,
 	type PieceFrontmatterSchema
 } from '@luzzle/core'
-import type { Kysely } from 'kysely'
+import { sql, type Kysely } from 'kysely'
 import type { AppDatabase, WebPieces } from '@luzzle/web.db'
 import { getStorage } from './storage'
 import { config } from './config'
@@ -42,6 +42,18 @@ export async function getRecentPieces(
 		.selectFrom('web_pieces')
 		.selectAll()
 		.orderBy('date_added', 'desc')
+		.limit(limit)
+		.execute()
+}
+
+export async function getRecentlyEditedPieces(
+	db: Kysely<AppDatabase>,
+	limit: number
+): Promise<WebPieces[]> {
+	return db
+		.selectFrom('web_pieces')
+		.selectAll()
+		.orderBy(sql`COALESCE(date_updated, date_added)`, 'desc')
 		.limit(limit)
 		.execute()
 }
