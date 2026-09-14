@@ -2,7 +2,6 @@
 	import Nav from '$lib/components/layout/simple/nav.svelte'
 	import AtIcon from 'virtual:icons/ph/at'
 	import FolderIcon from 'virtual:icons/ph/folder'
-	import PlusIcon from 'virtual:icons/ph/plus'
 	import ArrowCircleUpIcon from 'virtual:icons/ph/arrow-circle-up'
 	import SignOutIcon from 'virtual:icons/ph/sign-out'
 	import { page } from '$app/state'
@@ -27,13 +26,6 @@
 {#snippet right()}
 	<a href="/admin/directory" aria-label="directory">
 		<FolderIcon style="font-size: 1em;" />
-	</a>
-	{@const createHref =
-		page.data.mode === 'directory'
-			? `/admin/pieces/create/${page.data.directory.current}`
-			: '/admin/pieces/create'}
-	<a href={createHref} aria-label="create">
-		<PlusIcon style="font-size: 1em;" />
 	</a>
 	<a href="/admin/publish" aria-label="publish">
 		<ArrowCircleUpIcon style="font-size: 1em;" />

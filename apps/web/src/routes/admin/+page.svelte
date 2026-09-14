@@ -43,6 +43,31 @@
 </svelte:head>
 
 <section class="dashboard">
+	<section class="dashboard-section">
+		<h2 class="section-header">statistics</h2>
+		<div class="stats-row">
+			<div class="stat-card-wrapper">
+				<a class="stat-card" href="/pieces">
+					<span class="stat-number">{data.pieceStats.total.toLocaleString()}</span>
+					<span class="stat-label">pieces</span>
+				</a>
+				<a class="quick-add" href="/admin/pieces/create" aria-label="add piece" title="add piece">
+					<PlusIcon style="width: 1em; height: 1em;" />
+				</a>
+			</div>
+
+			<a class="stat-card" href="/admin/directory/.assets">
+				<span class="stat-number">{data.assetStats.total.toLocaleString()}</span>
+				<span class="stat-label">assets</span>
+			</a>
+
+			<a class="stat-card" href="/admin/publish">
+				<span class="stat-number">{publishStatus}</span>
+				<span class="stat-label">last publish</span>
+			</a>
+		</div>
+	</section>
+
 	{#if data.recentlyEditedPieces.length}
 		<section class="dashboard-section">
 			<h2 class="section-header">recently edited</h2>
@@ -72,26 +97,6 @@
 			</div>
 		</section>
 	{/if}
-
-	<section class="dashboard-section">
-		<h2 class="section-header">statistics</h2>
-		<div class="stats-row">
-			<a class="stat-card" href="/pieces">
-				<span class="stat-number">{data.pieceStats.total.toLocaleString()}</span>
-				<span class="stat-label">pieces</span>
-			</a>
-
-			<a class="stat-card" href="/admin/directory/.assets">
-				<span class="stat-number">{data.assetStats.total.toLocaleString()}</span>
-				<span class="stat-label">assets</span>
-			</a>
-
-			<a class="stat-card" href="/admin/publish">
-				<span class="stat-number">{publishStatus}</span>
-				<span class="stat-label">last publish</span>
-			</a>
-		</div>
-	</section>
 
 	{#if data.pieceStats.byType.length}
 		<section class="dashboard-section">
