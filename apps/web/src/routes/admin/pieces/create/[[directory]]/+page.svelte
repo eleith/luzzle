@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte'
+	import Combobox from '$lib/components/ui/Combobox.svelte'
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
 	import { enhance } from '$app/forms'
 	import { goto, invalidateAll } from '$app/navigation'
@@ -10,6 +11,11 @@
 	let shouldGenerate = $state(false)
 	let prompt = $state('')
 	let mergedContent = $state(form?.mergedContent || '')
+
+	const directoryItems = $derived(
+		data.directories.map((dir) => ({ value: dir, label: dir === '.' ? '(root)' : dir }))
+	)
+	const typeItems = $derived(data.types.map((type) => ({ value: type, label: type })))
 
 	$effect(() => {
 		if (form?.mergedContent) {
@@ -75,20 +81,16 @@
 				{/if}
 				<div class="field">directory</div>
 				<div class="field-edit">
-					<!-- svelte-ignore a11y_autofocus -->
-					<select name="directory" class="input" bind:value={selectedDirectory} autofocus>
-						{#each data.directories as dir (dir)}
-							<option value={dir}>{dir === '.' ? '(root)' : dir}</option>
-						{/each}
-					</select>
+					<Combobox
+						name="directory"
+						bind:value={selectedDirectory}
+						items={directoryItems}
+						autofocus
+					/>
 				</div>
 				<div class="field">type</div>
 				<div class="field-edit">
-					<select name="type" class="input" bind:value={selectedType}>
-						{#each data.types as type (type)}
-							<option value={type}>{type}</option>
-						{/each}
-					</select>
+					<Combobox name="type" bind:value={selectedType} items={typeItems} />
 				</div>
 				<div class="field">name</div>
 				<div class="field-edit">
