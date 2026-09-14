@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import CloseIcon from 'virtual:icons/ph/x'
+	import CaretUpDownIcon from 'virtual:icons/ph/caret-up-down'
 	import { fade } from 'svelte/transition'
 	import { Dialog, Select } from 'bits-ui'
 	import DatePicker from '$lib/components/ui/DatePicker.svelte'
@@ -129,7 +130,9 @@
 												{#snippet child({ props })}
 													<button {...props} id="type-select-trigger" class="select-trigger">
 														<span>{type || 'All Types'}</span>
-														<span class="select-chevron">▼</span>
+														<CaretUpDownIcon
+															style="width: 1em; height: 1em; color: var(--color-on-surface-variant);"
+														/>
 													</button>
 												{/snippet}
 											</Select.Trigger>
@@ -381,11 +384,6 @@
 	.select-trigger:focus {
 		background: var(--color-surface-inverse);
 		color: var(--color-on-surface-inverse);
-	}
-
-	.select-chevron {
-		font-size: 0.7em;
-		color: var(--color-on-surface-variant);
 	}
 
 	.select-content {

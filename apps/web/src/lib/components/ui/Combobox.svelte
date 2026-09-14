@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Combobox as ComboboxPrimitive } from 'bits-ui'
+	import CaretUpDownIcon from 'virtual:icons/ph/caret-up-down'
 
 	type Item = { value: string; label: string }
 
@@ -25,10 +26,13 @@
 
 	let open = $state(false)
 	let filterText = $state('')
+	// only filter once the user has actually typed — otherwise opening via the
+	// trigger button re-filters against the already-selected item's full label
+	let touched = $state(false)
 	let controlRef = $state<HTMLDivElement | null>(null)
 
 	const filteredItems = $derived(
-		filterText.trim()
+		touched && filterText.trim()
 			? items.filter((item) => item.label.toLowerCase().includes(filterText.trim().toLowerCase()))
 			: items
 	)
@@ -41,6 +45,7 @@
 	// keep the input text in sync with the actual selection whenever the list is closed
 	$effect(() => {
 		if (!open) {
+			touched = false
 			const selected = items.find((item) => item.value === value)
 			filterText = selected ? selected.label : ''
 		}
@@ -57,7 +62,10 @@
 				{placeholder}
 				{autofocus}
 				size={inputSize}
-				oninput={(e: Event) => (filterText = (e.currentTarget as HTMLInputElement).value)}
+				oninput={(e: Event) => {
+					touched = true
+					filterText = (e.currentTarget as HTMLInputElement).value
+				}}
 			>
 				{#snippet child({ props })}
 					<input {...props} class="combobox-input" />
@@ -66,7 +74,9 @@
 			<ComboboxPrimitive.Trigger>
 				{#snippet child({ props })}
 					<button {...props} class="combobox-trigger-btn">
-						<span class="combobox-chevron">▼</span>
+						<CaretUpDownIcon
+							style="width: 1em; height: 1em; color: var(--color-on-surface-variant);"
+						/>
 					</button>
 				{/snippet}
 			</ComboboxPrimitive.Trigger>
@@ -154,11 +164,6 @@
 		align-items: center;
 		padding: 0;
 		margin-left: var(--space-2);
-	}
-
-	.combobox-chevron {
-		font-size: 0.7em;
-		color: var(--color-on-surface-variant);
 	}
 
 	.combobox-content {
