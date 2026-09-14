@@ -1,6 +1,6 @@
 import type { MockInstance } from 'vitest';
 import { describe, expect, vi, afterEach, test } from 'vitest'
-import { pieceFrontMatterFromPrompt } from './google.js'
+import { pieceFrontMatterFromPrompt, validateApiKey } from './google.js'
 import type {
 	Part,
 	GenerateContentResponse,
@@ -39,6 +39,7 @@ vi.mock('@google/genai', () => {
 	Gemini.prototype.models = vi.fn()
 	Gemini.prototype.files = vi.fn()
 	Gemini.prototype.models.generateContent = vi.fn()
+	Gemini.prototype.models.list = vi.fn()
 	Gemini.prototype.files.upload = vi.fn()
 	Gemini.prototype.files.get = vi.fn()
 
@@ -52,6 +53,7 @@ vi.mock('@google/genai', () => {
 
 const mocks = {
 	generateContent: vi.mocked(GoogleGenAI.prototype.models.generateContent),
+	listModels: vi.mocked(GoogleGenAI.prototype.models.list),
 	uploadFile: vi.mocked(GoogleGenAI.prototype.files.upload),
 	getFile: vi.mocked(GoogleGenAI.prototype.files.get),
 	fileTypeFromFile: vi.mocked(fileTypeFromFile),
@@ -310,5 +312,21 @@ describe('lib/llm/google.ts', () => {
 		const generating = pieceFrontMatterFromPrompt(apiKey, schema, prompt, [file])
 
 		expect(generating).rejects.toThrowError()
+	})
+
+	test('validateApiKey resolves ok when the key can list models', async () => {
+		mocks.listModels.mockResolvedValueOnce({} as never)
+
+		const result = await validateApiKey('apiKey')
+
+		expect(result).toEqual({ ok: true })
+	})
+
+	test('validateApiKey resolves not-ok when the request fails', async () => {
+		mocks.listModels.mockRejectedValueOnce(new Error('API key not valid'))
+
+		const result = await validateApiKey('apiKey')
+
+		expect(result).toEqual({ ok: false, reason: 'API key not valid' })
 	})
 })

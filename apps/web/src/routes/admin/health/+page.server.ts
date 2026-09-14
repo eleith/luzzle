@@ -1,6 +1,7 @@
 import { config } from '$lib/server/config'
 import { probeStorage } from '$lib/server/health/probes.js'
 import { testConnectivity } from '$lib/server/health/testConnectivity.js'
+import { validateAiKeyIfConfigured } from '$lib/server/health/testAiKey.js'
 import {
 	loadHealthPage,
 	probeWorkerIfConfigured,
@@ -15,5 +16,6 @@ export const actions = {
 	testWorker: async () => ({ result: await probeWorkerIfConfigured(config) }),
 	testOidcIssuer: async () => ({ result: await probeOidcIssuerIfConfigured(config) }),
 	testArchive: async () => ({ result: await testConnectivity('archive') }),
-	testCdn: async () => ({ result: await testConnectivity('cdn') })
+	testCdn: async () => ({ result: await testConnectivity('cdn') }),
+	testAi: async () => ({ result: await validateAiKeyIfConfigured(config) })
 } satisfies Actions

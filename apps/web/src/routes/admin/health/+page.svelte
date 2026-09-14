@@ -33,6 +33,9 @@
 	let cdnTest = $state<TestResult>(null)
 	let cdnTesting = $state(false)
 
+	let aiTest = $state<TestResult>(null)
+	let aiTesting = $state(false)
+
 	function runTest(setTesting: (v: boolean) => void, setResult: (v: TestResult) => void) {
 		return () => {
 			setTesting(true)
@@ -279,6 +282,7 @@
 		<h2 class="section-header">ai</h2>
 		<div class="cards-list">
 			<div class="info-card">
+				{@render banner(aiTest)}
 				<div class="info-card-body">
 					<h3 class="info-card-title">ai generation</h3>
 					<dl class="info-list">
@@ -293,6 +297,18 @@
 							</div>
 						{/if}
 					</dl>
+				</div>
+				<div class="info-card-actions">
+					<form
+						method="POST"
+						action="?/testAi"
+						use:enhance={runTest(
+							(v) => (aiTesting = v),
+							(v) => (aiTest = v)
+						)}
+					>
+						{@render testButton(aiTesting, 'test key')}
+					</form>
 				</div>
 			</div>
 		</div>
