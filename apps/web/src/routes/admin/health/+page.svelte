@@ -27,6 +27,12 @@
 		oidcTesting = false
 	})
 
+	let archiveTest = $state<TestResult>(null)
+	let archiveTesting = $state(false)
+
+	let cdnTest = $state<TestResult>(null)
+	let cdnTesting = $state(false)
+
 	function runTest(setTesting: (v: boolean) => void, setResult: (v: TestResult) => void) {
 		return () => {
 			setTesting(true)
@@ -152,6 +158,7 @@
 			</div>
 
 			<div class="info-card">
+				{@render banner(archiveTest)}
 				<div class="info-card-body">
 					<h3 class="info-card-title">archive sync</h3>
 					<dl class="info-list">
@@ -173,9 +180,22 @@
 						{/if}
 					</dl>
 				</div>
+				<div class="info-card-actions">
+					<form
+						method="POST"
+						action="?/testArchive"
+						use:enhance={runTest(
+							(v) => (archiveTesting = v),
+							(v) => (archiveTest = v)
+						)}
+					>
+						{@render testButton(archiveTesting)}
+					</form>
+				</div>
 			</div>
 
 			<div class="info-card">
+				{@render banner(cdnTest)}
 				<div class="info-card-body">
 					<h3 class="info-card-title">cdn sync</h3>
 					<dl class="info-list">
@@ -202,6 +222,18 @@
 							</div>
 						{/if}
 					</dl>
+				</div>
+				<div class="info-card-actions">
+					<form
+						method="POST"
+						action="?/testCdn"
+						use:enhance={runTest(
+							(v) => (cdnTesting = v),
+							(v) => (cdnTest = v)
+						)}
+					>
+						{@render testButton(cdnTesting)}
+					</form>
 				</div>
 			</div>
 		</div>

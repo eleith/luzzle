@@ -31,10 +31,14 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<ProbeRe
 	}
 }
 
+function joinUrl(base: string, path: string): string {
+	return `${base.replace(/\/+$/, '')}${path}`
+}
+
 export function probeWorker(url: string, timeoutMs: number): Promise<ProbeResult> {
-	return fetchWithTimeout(`${url}/health`, timeoutMs)
+	return fetchWithTimeout(joinUrl(url, '/health'), timeoutMs)
 }
 
 export function probeOidcIssuer(issuer: string, timeoutMs: number): Promise<ProbeResult> {
-	return fetchWithTimeout(`${issuer}/.well-known/openid-configuration`, timeoutMs)
+	return fetchWithTimeout(joinUrl(issuer, '/.well-known/openid-configuration'), timeoutMs)
 }

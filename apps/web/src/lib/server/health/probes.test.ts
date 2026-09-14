@@ -40,6 +40,14 @@ describe('probeWorker', () => {
 		expect(fetch).toHaveBeenCalledWith('http://worker:9000/health', expect.any(Object))
 	})
 
+	test('strips a trailing slash from the worker url before appending the path', async () => {
+		vi.mocked(fetch).mockResolvedValue({ ok: true } as Response)
+
+		await probeWorker('http://worker:9000/', 1000)
+
+		expect(fetch).toHaveBeenCalledWith('http://worker:9000/health', expect.any(Object))
+	})
+
 	test('resolves not-ok when the worker responds with an error status', async () => {
 		vi.mocked(fetch).mockResolvedValue({ ok: false, status: 503 } as Response)
 
