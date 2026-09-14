@@ -4,6 +4,8 @@ import {
 	type PieceFrontmatter,
 	type PieceFrontmatterSchema
 } from '@luzzle/core'
+import type { Kysely } from 'kysely'
+import type { AppDatabase, WebPieces } from '@luzzle/web.db'
 import { getStorage } from './storage'
 import { config } from './config'
 
@@ -30,4 +32,16 @@ export async function promptToPiece(
 	}
 
 	return pieceFrontMatterFromPrompt(config.ai.api_key, schema, prompt, file)
+}
+
+export async function getRecentPieces(
+	db: Kysely<AppDatabase>,
+	limit: number
+): Promise<WebPieces[]> {
+	return db
+		.selectFrom('web_pieces')
+		.selectAll()
+		.orderBy('date_added', 'desc')
+		.limit(limit)
+		.execute()
 }

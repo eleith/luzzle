@@ -1,0 +1,116 @@
+import { describe, expect, test } from 'vitest'
+import { createAppDb, runWebMigrations } from '@luzzle/web.db'
+import { getPieceStats, getAssetStats } from './dashboard'
+
+async function createTestDb() {
+	const db = createAppDb(':memory:')
+	await runWebMigrations(db)
+	return db
+}
+
+describe('getPieceStats', () => {
+	test('counts pieces by type', async () => {
+		const db = await createTestDb()
+
+		await db
+			.insertInto('web_pieces')
+			.values([
+				{
+					id: '1',
+					key: 'k1',
+					title: 'piece one',
+					slug: 's1',
+					type: 'article',
+					file_path: 'a.md',
+					json_metadata: '{}',
+					date_added: 1
+				},
+				{
+					id: '2',
+					key: 'k2',
+					title: 'piece two',
+					slug: 's2',
+					type: 'article',
+					file_path: 'b.md',
+					json_metadata: '{}',
+					date_added: 2
+				},
+				{
+					id: '3',
+					key: 'k3',
+					title: 'piece three',
+					slug: 's3',
+					type: 'bookmark',
+					file_path: 'c.md',
+					json_metadata: '{}',
+					date_added: 3
+				}
+			])
+			.execute()
+
+		const stats = await getPieceStats(db)
+
+		expect(stats.total).toBe(3)
+		expect(stats.byType).toEqual([
+			{ type: 'article', count: 2 },
+			{ type: 'bookmark', count: 1 }
+		])
+	})
+
+	test('returns zero total when no pieces exist', async () => {
+		const db = await createTestDb()
+
+		const stats = await getPieceStats(db)
+
+		expect(stats).toEqual({ total: 0, byType: [] })
+	})
+})
+
+describe('getAssetStats', () => {
+	test('counts assets by transformation', async () => {
+		const db = await createTestDb()
+
+		await db
+			.insertInto('web_pieces_assets')
+			.values([
+				{
+					piece_file_path: 'a.md',
+					piece_key: 'k1',
+					asset_key: 'ak1',
+					transformation: 'opengraph',
+					mime_type: 'image/png'
+				},
+				{
+					piece_file_path: 'a.md',
+					piece_key: 'k1',
+					asset_key: 'ak2',
+					transformation: 'attachment.original',
+					mime_type: 'application/pdf'
+				},
+				{
+					piece_file_path: 'b.md',
+					piece_key: 'k2',
+					asset_key: 'ak3',
+					transformation: 'opengraph',
+					mime_type: 'image/png'
+				}
+			])
+			.execute()
+
+		const stats = await getAssetStats(db)
+
+		expect(stats.total).toBe(3)
+		expect(stats.byTransformation).toEqual([
+			{ transformation: 'attachment.original', count: 1 },
+			{ transformation: 'opengraph', count: 2 }
+		])
+	})
+
+	test('returns zero total when no assets exist', async () => {
+		const db = await createTestDb()
+
+		const stats = await getAssetStats(db)
+
+		expect(stats).toEqual({ total: 0, byTransformation: [] })
+	})
+})

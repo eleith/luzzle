@@ -1,6 +1,7 @@
 import { db } from '$lib/server/database'
 import type { PageServerLoad } from './$types'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
+import { getRecentPieces } from '$lib/server/pieces'
 
 export const load: PageServerLoad = async () => {
 	const typesData = await db
@@ -12,9 +13,7 @@ export const load: PageServerLoad = async () => {
 
 	const types = typesData.map((t) => t.type)
 
-	const pieces = await hydrateWithAssets(
-		await db.selectFrom('web_pieces').selectAll().orderBy('date_added', 'desc').limit(5).execute()
-	)
+	const pieces = await hydrateWithAssets(await getRecentPieces(db, 5))
 
 	return {
 		types,
