@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PlusIcon from 'virtual:icons/ph/plus'
 	import ArrowCircleUpIcon from 'virtual:icons/ph/arrow-circle-up'
+	import FolderIcon from 'virtual:icons/ph/folder'
 	import type { PageData } from './$types'
 
 	let { data }: { data: PageData } = $props()
@@ -57,10 +58,15 @@
 				</a>
 			</div>
 
-			<a class="stat-card" href="/admin/directory/.assets">
-				<span class="stat-number">{data.assetStats.total.toLocaleString()}</span>
-				<span class="stat-label">assets</span>
-			</a>
+			<div class="stat-card-wrapper">
+				<a class="stat-card" href="/admin/directory">
+					<span class="stat-number">{data.fileCount.toLocaleString()}</span>
+					<span class="stat-label">files</span>
+				</a>
+				<a class="quick-add" href="/admin/directory" aria-label="browse files" title="browse files">
+					<FolderIcon style="width: 1em; height: 1em;" />
+				</a>
+			</div>
 
 			<div class="stat-card-wrapper">
 				<a class="stat-card" href="/admin/publish">

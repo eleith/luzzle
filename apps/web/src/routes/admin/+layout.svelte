@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Nav from '$lib/components/layout/simple/nav.svelte'
 	import AtIcon from 'virtual:icons/ph/at'
-	import FolderIcon from 'virtual:icons/ph/folder'
 	import SignOutIcon from 'virtual:icons/ph/sign-out'
 	import { page } from '$app/state'
 	import { signOut } from '@auth/sveltekit/client'
@@ -23,9 +22,6 @@
 {/snippet}
 
 {#snippet right()}
-	<a href="/admin/directory" aria-label="directory">
-		<FolderIcon style="font-size: 1em;" />
-	</a>
 	<button
 		onclick={() => {
 			localStorage.removeItem('luzzle.admin')

@@ -1,11 +1,6 @@
 import { db } from '$lib/server/database'
 import { config, type AppConfig } from '$lib/server/config'
-import {
-	getPieceStats,
-	getAssetStats,
-	type PieceStats,
-	type AssetStats
-} from '../dashboardStats.js'
+import { getPieceStats, getAssetStats, type PieceStats } from '../dashboardStats.js'
 import { getRecentlyEditedPieces } from '../pieces.js'
 import { getOpenWorkflowDb } from '../workflow/index.js'
 import { findInFlightPublishRun } from '../workflow/publish.js'
@@ -20,7 +15,7 @@ const AUTH_TYPE_LABELS: Record<AppConfig['auth']['type'], string> = {
 export interface DashboardView {
 	meta: { title: string }
 	pieceStats: PieceStats
-	assetStats: AssetStats
+	fileCount: number
 	recentlyEditedPieces: WebPieces[]
 	lastPublish: WorkflowRunRow | null
 	inFlightPublish: WorkflowRunRow | null
@@ -56,7 +51,7 @@ export async function loadDashboardPage(): Promise<DashboardView> {
 	return {
 		meta,
 		pieceStats,
-		assetStats,
+		fileCount: pieceStats.total + assetStats.total,
 		recentlyEditedPieces,
 		lastPublish,
 		inFlightPublish,

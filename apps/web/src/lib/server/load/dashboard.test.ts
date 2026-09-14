@@ -84,7 +84,7 @@ describe('loadDashboardPage', () => {
 		expect(result).toEqual({
 			meta: { title: 'dashboard | luzzle' },
 			pieceStats: { total: 3, byType: [{ type: 'article', count: 3 }] },
-			assetStats: { total: 2 },
+			fileCount: 5,
 			recentlyEditedPieces: [],
 			lastPublish: makeRun(),
 			inFlightPublish: null,
