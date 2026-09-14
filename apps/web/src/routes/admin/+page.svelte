@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PlusIcon from 'virtual:icons/ph/plus'
+	import ArrowCircleUpIcon from 'virtual:icons/ph/arrow-circle-up'
 	import type { PageData } from './$types'
 
 	let { data }: { data: PageData } = $props()
@@ -61,10 +62,15 @@
 				<span class="stat-label">assets</span>
 			</a>
 
-			<a class="stat-card" href="/admin/publish">
-				<span class="stat-number">{publishStatus}</span>
-				<span class="stat-label">last publish</span>
-			</a>
+			<div class="stat-card-wrapper">
+				<a class="stat-card" href="/admin/publish">
+					<span class="stat-number">{publishStatus}</span>
+					<span class="stat-label">last publish</span>
+				</a>
+				<a class="quick-add" href="/admin/publish" aria-label="publish" title="publish">
+					<ArrowCircleUpIcon style="width: 1em; height: 1em;" />
+				</a>
+			</div>
 		</div>
 	</section>
 
