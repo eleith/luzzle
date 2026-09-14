@@ -123,4 +123,16 @@ you are also given a responseJsonSchema to guide your output. each field in the 
 	)
 }
 
-export { pieceFrontMatterFromPrompt }
+async function validateApiKey(
+	apiKey: string
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+	try {
+		const genAI = getClient(apiKey)
+		await genAI.models.list()
+		return { ok: true }
+	} catch (err) {
+		return { ok: false, reason: err instanceof Error ? err.message : String(err) }
+	}
+}
+
+export { pieceFrontMatterFromPrompt, validateApiKey }

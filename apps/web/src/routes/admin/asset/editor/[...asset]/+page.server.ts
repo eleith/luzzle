@@ -47,10 +47,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
 	const exists = await storage.exists(assetPath)
 
-	const parentDir = path.dirname(assetPath)
-	const defaultReturnUrl = `/admin/directory/${parentDir === '.' ? '' : parentDir}`
-
-	const returnTo = url.searchParams.get('returnTo') || defaultReturnUrl || '/admin'
+	const returnTo = url.searchParams.get('returnTo') || '/admin'
 
 	if (!exists) {
 		return {

@@ -1,6 +1,4 @@
-import { redirect } from '@sveltejs/kit'
+import { loadDashboardPage } from '$lib/server/load/dashboard.js'
 import type { PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async () => {
-	throw redirect(302, '/admin/pieces/create')
-}
+export const load: PageServerLoad = async () => loadDashboardPage()

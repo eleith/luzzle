@@ -120,6 +120,88 @@ describe('RcloneClient flags passthrough', () => {
 	})
 })
 
+describe('RcloneClient checkConnectivity', () => {
+	beforeEach(() => vi.clearAllMocks())
+
+	it('resolves ok when rclone exits successfully', async () => {
+		const spawnMock = await mockSpawnSuccess()
+		const client = new RcloneClient(makeLogger())
+
+		const result = await client.checkConnectivity({
+			remote: 'gcs',
+			remotePath: 'bucket/',
+			configPath: '/conf',
+		})
+
+		expect(result).toEqual({ ok: true })
+		expect(spawnMock).toHaveBeenCalledWith(
+			'rclone',
+			['lsd', 'gcs:bucket/', '--config', '/conf', '--max-depth', '1'],
+			expect.any(Object)
+		)
+	})
+
+	it('resolves not-ok with stderr output on a non-zero exit', async () => {
+		const { spawn } = await import('child_process')
+		const spawnMock = vi.mocked(spawn)
+		const mockChild = new EventEmitter() as any
+		mockChild.stderr = new EventEmitter()
+		spawnMock.mockReturnValue(mockChild)
+
+		const client = new RcloneClient(makeLogger())
+		const resultPromise = client.checkConnectivity({
+			remote: 'gcs',
+			remotePath: 'bucket/',
+			configPath: '/conf',
+		})
+
+		mockChild.stderr.emit('data', Buffer.from('directory not found'))
+		mockChild.emit('close', 1)
+
+		expect(await resultPromise).toEqual({ ok: false, reason: 'directory not found' })
+	})
+
+	it('resolves not-ok when the process fails to spawn', async () => {
+		const { spawn } = await import('child_process')
+		const spawnMock = vi.mocked(spawn)
+		const mockChild = new EventEmitter() as any
+		mockChild.stderr = new EventEmitter()
+		spawnMock.mockReturnValue(mockChild)
+
+		const client = new RcloneClient(makeLogger())
+		const resultPromise = client.checkConnectivity({
+			remote: 'gcs',
+			remotePath: 'bucket/',
+			configPath: '/conf',
+		})
+
+		mockChild.emit('error', new Error('ENOENT'))
+
+		expect(await resultPromise).toEqual({ ok: false, reason: 'ENOENT' })
+	})
+
+	it('resolves not-ok and kills the process on timeout', async () => {
+		const { spawn } = await import('child_process')
+		const spawnMock = vi.mocked(spawn)
+		const mockChild = new EventEmitter() as any
+		mockChild.stderr = new EventEmitter()
+		mockChild.kill = vi.fn()
+		spawnMock.mockReturnValue(mockChild)
+
+		const client = new RcloneClient(makeLogger())
+
+		const result = await client.checkConnectivity({
+			remote: 'gcs',
+			remotePath: 'bucket/',
+			configPath: '/conf',
+			timeoutMs: 5,
+		})
+
+		expect(result).toEqual({ ok: false, reason: 'timed out after 5ms' })
+		expect(mockChild.kill).toHaveBeenCalled()
+	})
+})
+
 describe('RcloneClient line buffering', () => {
 	it('should route subprocess output line-by-line to logger.stdout and logger.stderr', async () => {
 		const logger = {

@@ -42,3 +42,9 @@ export interface JobProgressPurgePayload {
 }
 
 export type JobProgressPurgeResult = 'ok'
+
+export interface TestConnectivityPayload {
+	target: 'archive' | 'cdn'
+}
+
+export type TestConnectivityResult = { ok: true } | { ok: false; reason: string }

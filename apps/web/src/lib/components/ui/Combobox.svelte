@@ -24,8 +24,10 @@
 		autofocus = false
 	}: Props = $props()
 
+	const initialLabel = items.find((item) => item.value === value)?.label ?? ''
+
 	let open = $state(false)
-	let filterText = $state('')
+	let filterText = $state(initialLabel)
 	// only filter once the user has actually typed — otherwise opening via the
 	// trigger button re-filters against the already-selected item's full label
 	let touched = $state(false)
@@ -62,6 +64,7 @@
 				{placeholder}
 				{autofocus}
 				size={inputSize}
+				defaultValue={initialLabel}
 				oninput={(e: Event) => {
 					touched = true
 					filterText = (e.currentTarget as HTMLInputElement).value

@@ -6,6 +6,7 @@ url:
 network:
   internal:
     explorer: http://luzzle-dev-web:5173
+    worker: http://luzzle-dev-worker:9000
 
 auth:
   enabled: true

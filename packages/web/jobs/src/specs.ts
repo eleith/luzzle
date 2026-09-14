@@ -7,6 +7,8 @@ import type {
 	PreviewResult,
 	PublishPayload,
 	PublishAuditPayload,
+	TestConnectivityPayload,
+	TestConnectivityResult,
 } from './types.js'
 
 export const jobProgressPurgeSpec = defineWorkflowSpec<
@@ -26,4 +28,11 @@ export const publishSpec = defineWorkflowSpec<PublishPayload, PiecesDiff>({
 
 export const publishAuditSpec = defineWorkflowSpec<PublishAuditPayload, PiecesDiff>({
 	name: 'PublishAudit',
+})
+
+export const testConnectivitySpec = defineWorkflowSpec<
+	TestConnectivityPayload,
+	TestConnectivityResult
+>({
+	name: 'TestConnectivity',
 })

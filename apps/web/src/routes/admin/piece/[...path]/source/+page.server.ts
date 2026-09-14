@@ -71,7 +71,6 @@ async function resolveAssetUrls(
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
-	const directory = path.dirname(file)
 	const pieces = getPieces()
 	const type = pieces.parseFilename(file).type
 
@@ -93,7 +92,6 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	return {
 		file: pieceMarkdown.filePath,
-		directory,
 		type,
 		rawContent,
 		schema: piece.schema,
@@ -196,7 +194,6 @@ export const actions = {
 	},
 	delete: async (event) => {
 		const file = event.params.path
-		const directory = path.dirname(file)
 		const pieces = getPieces()
 		const type = pieces.parseFilename(file).type
 
@@ -211,6 +208,6 @@ export const actions = {
 			return error(500, `piece could not be deleted: ${e}`)
 		}
 
-		redirect(303, `/admin/directory/${directory === '.' ? '' : directory}`)
+		redirect(303, '/admin')
 	}
 } satisfies Actions

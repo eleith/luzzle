@@ -27,6 +27,15 @@ export interface RcloneCopyOptions {
 	flags?: string[]
 }
 
+export interface RcloneCheckOptions {
+	remote: string
+	remotePath: string
+	configPath: string
+	timeoutMs?: number
+}
+
+export type RcloneCheckResult = { ok: true } | { ok: false; reason: string }
+
 export class RcloneClient {
 	private logger: Logger
 
@@ -109,6 +118,50 @@ export class RcloneClient {
 		})
 
 		await this.run('rclone', args)
+	}
+
+	checkConnectivity(options: RcloneCheckOptions): Promise<RcloneCheckResult> {
+		const { remote, remotePath, configPath, timeoutMs = 10000 } = options
+		const args = ['lsd', `${remote}:${remotePath}`, '--config', configPath, '--max-depth', '1']
+
+		this.logger.info('rclone connectivity check starting', {
+			remote: `${remote}:${remotePath}`,
+		})
+
+		return new Promise((resolve) => {
+			const child = spawn('rclone', args, { stdio: ['ignore', 'ignore', 'pipe'] })
+			let stderrBuf = ''
+			let settled = false
+
+			const timeout = setTimeout(() => {
+				if (settled) return
+				settled = true
+				child.kill()
+				resolve({ ok: false, reason: `timed out after ${timeoutMs}ms` })
+			}, timeoutMs)
+
+			child.stderr.on('data', (data: Buffer) => {
+				stderrBuf += data.toString()
+			})
+
+			child.on('error', (err) => {
+				if (settled) return
+				settled = true
+				clearTimeout(timeout)
+				resolve({ ok: false, reason: err.message })
+			})
+
+			child.on('close', (code) => {
+				if (settled) return
+				settled = true
+				clearTimeout(timeout)
+				if (code === 0) {
+					resolve({ ok: true })
+				} else {
+					resolve({ ok: false, reason: stderrBuf.trim() || `rclone exited with code ${code}` })
+				}
+			})
+		})
 	}
 
 	private run(command: string, args: string[]): Promise<void> {
