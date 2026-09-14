@@ -2,11 +2,11 @@
   "name": "luzzle",
   "private": true,
   "scripts": {
-    "build": "pnpm build",
-    "check": "pnpm check",
-    "lint": "pnpm lint",
-    "format": "pnpm format",
-    "test": "pnpm test",
+    "build": "pnpm -r --if-present run build",
+    "check": "pnpm -r --if-present run check",
+    "lint": "pnpm -r --if-present run lint",
+    "format": "pnpm -r --if-present run format",
+    "test": "pnpm -r --if-present run test",
     "changeset": "changeset",
     "version:apps": "changeset version",
     "tag:apps": "changeset git-tag"
