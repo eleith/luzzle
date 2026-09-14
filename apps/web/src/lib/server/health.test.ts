@@ -4,6 +4,7 @@ import { buildHealthConfigSummary } from './health.js'
 
 function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
 	return {
+		storage: { root: '/data/archive' },
 		pieces: [],
 		auth: { enabled: true, secret: 'shh', type: 'oidc' },
 		sync: {},
@@ -14,6 +15,12 @@ function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
 }
 
 describe('buildHealthConfigSummary', () => {
+	test('reports the storage root', () => {
+		const config = makeConfig({ storage: { root: '/data/archive' } })
+
+		expect(buildHealthConfigSummary(config).storageRoot).toBe('/data/archive')
+	})
+
 	test('summarizes piece types by their configured field and component values', () => {
 		const config = makeConfig({
 			pieces: [

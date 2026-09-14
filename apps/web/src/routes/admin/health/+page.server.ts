@@ -1,10 +1,16 @@
 import { config } from '$lib/server/config'
-import { buildHealthConfigSummary } from '$lib/server/health.js'
-import type { PageServerLoad } from './$types'
+import { probeStorage } from '$lib/server/health/probes.js'
+import {
+	loadHealthPage,
+	probeWorkerIfConfigured,
+	probeOidcIssuerIfConfigured
+} from '$lib/server/load/health.js'
+import type { Actions, PageServerLoad } from './$types'
 
-export const load: PageServerLoad = () => {
-	return {
-		meta: { title: `health | ${config.content.text.title}` },
-		configSummary: buildHealthConfigSummary(config)
-	}
-}
+export const load: PageServerLoad = () => loadHealthPage()
+
+export const actions = {
+	testStorage: async () => ({ result: await probeStorage(config.storage.root) }),
+	testWorker: async () => ({ result: await probeWorkerIfConfigured(config) }),
+	testOidcIssuer: async () => ({ result: await probeOidcIssuerIfConfigured(config) })
+} satisfies Actions

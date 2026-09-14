@@ -31,6 +31,7 @@ export interface WorkerSummary {
 }
 
 export interface HealthConfigSummary {
+	storageRoot: string
 	pieceTypes: PieceTypeSummary[]
 	auth: AuthSummary
 	archiveSync: SyncTargetSummary
@@ -51,6 +52,7 @@ function configuredEntries(obj: object | undefined): ConfigEntry[] {
 
 export function buildHealthConfigSummary(config: AppConfig): HealthConfigSummary {
 	return {
+		storageRoot: config.storage.root,
 		pieceTypes: config.pieces.map((piece) => ({
 			type: piece.type,
 			fields: configuredEntries(piece.fields),
