@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web.lsp",
-	"version": "0.0.241",
+	"version": "0.0.242",
 	"private": true,
 	"type": "module",
 	"description": "Luzzle Web LSP WebSocket Bridge",

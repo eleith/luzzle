@@ -1,5 +1,14 @@
 # @luzzle/web
 
+## 0.0.242
+
+### Patch Changes
+
+- b6d238a: Fix keyboard navigation in the create form's directory/type combobox: arrow keys stopped working after typing a filter letter, caused by an upstream bits-ui bug (fixed in 2.19.1) where custom item filtering desynced the internal highlighted-item tracking. Also disable the input's browser autocomplete, which was competing with the combobox's own accessible listbox for arrow-key/Enter handling.
+- 0ccbcb6: Fix the editor's kebab menu rendering behind other floating content (bits-ui was reading z-index off the wrong element) and add a "live" menu item that opens the piece's public page in a new tab when one exists. "preview" is now hidden once the draft matches what's already live, since there'd be nothing new to preview.
+- @luzzle/web.db@0.0.1
+  - @luzzle/web.pieces@0.0.1
+
 ## 0.0.241
 
 ### Patch Changes

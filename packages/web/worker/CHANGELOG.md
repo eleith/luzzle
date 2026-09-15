@@ -1,5 +1,14 @@
 # @luzzle/web.worker
 
+## 0.0.242
+
+### Patch Changes
+
+- @luzzle/core@0.0.242
+  - @luzzle/web.db@0.0.1
+  - @luzzle/web.jobs@0.0.1
+  - @luzzle/web.pieces@0.0.1
+
 ## 0.0.241
 
 ### Patch Changes

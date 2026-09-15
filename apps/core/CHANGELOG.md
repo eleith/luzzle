@@ -1,5 +1,7 @@
 # @luzzle/core
 
+## 0.0.242
+
 ## 0.0.241
 
 ### Patch Changes
