@@ -71,7 +71,7 @@
 				}}
 			>
 				{#snippet child({ props })}
-					<input {...props} class="combobox-input" />
+					<input {...props} autocomplete="off" class="combobox-input" />
 				{/snippet}
 			</ComboboxPrimitive.Input>
 			<ComboboxPrimitive.Trigger>

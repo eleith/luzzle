@@ -57,7 +57,7 @@
     "@types/eslint": "catalog:",
     "@types/mime-types": "3.0.1",
     "@types/node": "catalog:",
-    "bits-ui": "2.17.2",
+    "bits-ui": "2.19.2",
     "codemirror": "6.0.2",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
