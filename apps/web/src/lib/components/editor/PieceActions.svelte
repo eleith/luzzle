@@ -9,13 +9,24 @@
 		currentMode: 'source' | 'preview'
 		isDirty: boolean
 		canGenerate: boolean
+		hasPublicVersion: boolean
+		isPublicStale: boolean
 		onDelete: () => void
 		onAttach?: () => void
 	}
 
-	let { file, currentMode, canGenerate, onDelete, onAttach }: Props = $props()
+	let {
+		file,
+		currentMode,
+		canGenerate,
+		hasPublicVersion,
+		isPublicStale,
+		onDelete,
+		onAttach
+	}: Props = $props()
 
 	const previewUrl = `/admin/piece/${file}/preview`
+	const liveUrl = `/admin/piece/${file}/live`
 	const returnParam = `?returnTo=${encodeURIComponent(page.url.pathname)}`
 </script>
 
@@ -27,9 +38,9 @@
 		<DropdownMenu.Content sideOffset={8} forceMount>
 			{#snippet child({ open, props, wrapperProps })}
 				{#if open}
-					<div {...wrapperProps} class="dropdown-content">
-						<div {...props}>
-							{#if currentMode !== 'preview'}
+					<div {...wrapperProps}>
+						<div {...props} class="dropdown-content">
+							{#if currentMode !== 'preview' && (!hasPublicVersion || isPublicStale)}
 								<DropdownMenu.Item onSelect={() => goto(previewUrl)}>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>preview</div>
@@ -51,6 +62,22 @@
 								<DropdownMenu.Item onSelect={onAttach}>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>attach</div>
+									{/snippet}
+								</DropdownMenu.Item>
+							{/if}
+
+							{#if hasPublicVersion}
+								<DropdownMenu.Item>
+									{#snippet child({ props })}
+										<a
+											href={liveUrl}
+											target="_blank"
+											rel="noopener"
+											class="dropdown-item"
+											{...props}
+										>
+											live
+										</a>
 									{/snippet}
 								</DropdownMenu.Item>
 							{/if}
@@ -88,6 +115,7 @@
 		border-radius: var(--radius-small);
 		width: 100%;
 		text-align: left;
+		text-decoration: none;
 		background: none;
 		border: none;
 		text-transform: uppercase;

@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { createAppDb, runWebMigrations } from '@luzzle/web.db'
-import { getRecentlyEditedPieces } from './pieces.js'
+import { getWebPiece, getRecentlyEditedPieces } from './pieces.js'
 
 // pieces.js pulls in getPieces()/promptToPiece()'s module-level deps on import
 vi.mock('$lib/server/config', () => ({ config: {} }))
@@ -91,5 +91,38 @@ describe('getRecentlyEditedPieces', () => {
 
 		expect(pieces).toHaveLength(1)
 		expect(pieces[0].id).toBe('b')
+	})
+})
+
+describe('getWebPiece', () => {
+	test('is undefined when there is no web_pieces row', async () => {
+		const db = await createTestDb()
+
+		const piece = await getWebPiece(db, 'missing.md')
+
+		expect(piece).toBeUndefined()
+	})
+
+	test('returns the web_pieces row for a published piece', async () => {
+		const db = await createTestDb()
+		await db
+			.insertInto('web_pieces')
+			.values({
+				id: 'a',
+				key: 'ka',
+				title: 'piece a',
+				slug: 'a',
+				type: 'article',
+				file_path: 'a.md',
+				json_metadata: '{}',
+				date_added: 100,
+				date_updated: 200
+			})
+			.execute()
+
+		const piece = await getWebPiece(db, 'a.md')
+
+		expect(piece?.id).toBe('a')
+		expect(piece?.date_updated).toBe(200)
 	})
 })

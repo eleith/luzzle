@@ -57,6 +57,9 @@
 	const hasChanges = $derived(rawContent !== (data.rawContent ?? ''))
 	const isDirty = $derived(!!form?.error || (hasChanges && !isSaving))
 
+	const hasPublicVersion = $derived(data.publishedAt !== null)
+	const isPublicStale = $derived(data.publishedAt !== null && data.fileUpdatedAt > data.publishedAt)
+
 	$effect(() => {
 		if (form && 'rawContent' in form && form.rawContent) {
 			rawContent = form.rawContent as string
@@ -404,6 +407,8 @@
 			currentMode="source"
 			{isDirty}
 			canGenerate={data.canGenerate}
+			{hasPublicVersion}
+			{isPublicStale}
 			onDelete={() => dialog.showModal()}
 			onAttach={() => {
 				const selectedText = editorRef?.getSelectedText()?.trim() || ''

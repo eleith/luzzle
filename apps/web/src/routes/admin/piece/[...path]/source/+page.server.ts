@@ -1,7 +1,8 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
-import { getPieces } from '$lib/server/pieces'
+import { getPieces, getWebPiece } from '$lib/server/pieces'
 import { getStorage } from '$lib/server/storage'
+import { db } from '$lib/server/database'
 import path from 'path'
 import { config } from '$lib/server/config'
 import {
@@ -86,7 +87,11 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	const storage = getStorage()
-	const rawContent = (await storage.readFile(file, 'text')) as string
+	const [rawContent, fileStat, webPiece] = await Promise.all([
+		storage.readFile(file, 'text') as Promise<string>,
+		storage.stat(file),
+		getWebPiece(db, file)
+	])
 
 	const assetPaths = filterFrontmatterFields(piece.fields, (f) => f.format === 'asset')
 
@@ -96,7 +101,9 @@ export const load: PageServerLoad = async ({ params }) => {
 		rawContent,
 		schema: piece.schema,
 		canGenerate: config.ai !== undefined,
-		assetFields: assetPaths
+		assetFields: assetPaths,
+		publishedAt: webPiece ? (webPiece.date_updated ?? webPiece.date_added) : null,
+		fileUpdatedAt: fileStat.last_modified.getTime()
 	}
 }
 

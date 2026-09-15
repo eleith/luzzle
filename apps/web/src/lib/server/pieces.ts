@@ -57,3 +57,14 @@ export async function getRecentlyEditedPieces(
 		.limit(limit)
 		.execute()
 }
+
+export async function getWebPiece(
+	db: Kysely<AppDatabase>,
+	filePath: string
+): Promise<WebPieces | undefined> {
+	return db
+		.selectFrom('web_pieces')
+		.selectAll()
+		.where('file_path', '=', filePath)
+		.executeTakeFirst()
+}
