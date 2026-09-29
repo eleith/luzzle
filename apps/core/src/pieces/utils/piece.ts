@@ -239,9 +239,22 @@ async function makePieceValue(
 			return value
 		}
 	} else if (type === 'boolean') {
-		return /1|true|yes/.test(value as string)
+		if (typeof value === 'boolean') return value
+		if (value === 1) return true
+		if (value === 0) return false
+		if (typeof value === 'string') {
+			const input = value.toLowerCase()
+			if (['true', 't', 'yes', '1'].includes(input)) return true
+			if (['false', 'f', 'no', '0'].includes(input)) return false
+		}
+		throw new Error(`${field.name} must be a boolean`)
 	} else if (type === 'integer') {
-		return parseInt(value as string)
+		if (typeof value === 'number' && Number.isSafeInteger(value)) return value
+		if (typeof value === 'string' && /^[+-]?\d+$/.test(value)) {
+			const number = Number(value)
+			if (Number.isSafeInteger(number)) return number
+		}
+		throw new Error(`${field.name} must be a safe integer`)
 	}
 
 	return value

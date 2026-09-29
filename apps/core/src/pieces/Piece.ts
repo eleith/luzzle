@@ -408,29 +408,23 @@ class Piece<F extends PieceFrontmatter> {
 
 		const updatedFrontmatter = structuredClone(markdown.frontmatter)
 
-		try {
-			if (isArray) {
-				setFrontmatterValue(updatedFrontmatter, fieldPath, [] as unknown as PieceFrontMatterValue)
-			}
+		if (isArray) {
+			setFrontmatterValue(updatedFrontmatter, fieldPath, [] as unknown as PieceFrontMatterValue)
+		}
 
-			for (const one of values) {
-				const pieceValue = await makePieceValue(itemField, one)
+		for (const one of values) {
+			const pieceValue = await makePieceValue(itemField, one)
 
-				const val = isAttachableStream(pieceValue)
-					? await savePieceFieldAsset(
-						markdown.filePath,
-						itemField as PieceFrontmatterSchemaField,
-						pieceValue,
-						this._storage
-					)
-					: (pieceValue as PieceFrontMatterValue)
+			const val = isAttachableStream(pieceValue)
+				? await savePieceFieldAsset(
+					markdown.filePath,
+					itemField as PieceFrontmatterSchemaField,
+					pieceValue,
+					this._storage
+				)
+				: (pieceValue as PieceFrontMatterValue)
 
-				setFrontmatterValue(updatedFrontmatter, fieldPath, val)
-			}
-		} catch (e) {
-			const error = e as Error
-			console.error(`could not set field ${fieldPath}: ${error.message}`)
-			return markdown
+			setFrontmatterValue(updatedFrontmatter, fieldPath, val)
 		}
 
 		return makePieceMarkdown(markdown.filePath, markdown.piece, markdown.note, updatedFrontmatter)

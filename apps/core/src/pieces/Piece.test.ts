@@ -789,14 +789,38 @@ describe('pieces/Piece.ts', () => {
 		expect(mocks.pieceUtils.savePieceFieldAsset).toHaveBeenCalled()
 	})
 
-	test('setField handles set error', async () => {
-		const PieceType = makePieceMock()
-		const piece = new PieceType('table')
+	test('setField propagates setting errors', async () => {
+		const piece = new (makePieceMock())('table')
 		const markdown = makeMarkdownSample()
-		mocks.pieceUtils.makePieceValue.mockRejectedValue(new Error('bad'))
+		mocks.pieceUtils.makePieceValue.mockRejectedValueOnce(new Error('bad'))
 
-		const result = await piece.setField(markdown, 'title', 'new')
-		expect(result).toBe(markdown)
+		await expect(piece.setField(markdown, 'title', 'new')).rejects.toThrow('bad')
+		expect(markdown.frontmatter.title).toBe('sampleTitle')
+	})
+
+	test('setFields stops when a field cannot be set', async () => {
+		const piece = new (makePieceMock())('table')
+		const markdown = makeMarkdownSample()
+		mocks.pieceUtils.makePieceValue.mockRejectedValueOnce(new Error('bad'))
+
+		await expect(piece.setFields(markdown, { title: 'new', subtitle: 'new' })).rejects.toThrow('bad')
+		expect(mocks.pieceUtils.makePieceValue).toHaveBeenCalledOnce()
+		expect(markdown.frontmatter.title).toBe('sampleTitle')
+	})
+
+	test('setField propagates asset errors', async () => {
+		const schema = makeSchema({ cover: { type: 'string', format: 'asset' } })
+		const piece = new (makePieceMock())('table', makeStorage(), schema)
+		const markdown = makeMarkdownSample()
+		mocks.pieceUtils.makePieceValue.mockResolvedValueOnce({
+			stream: new PassThrough() as unknown as ReadStream,
+		})
+		mocks.pieceUtils.isAttachableStream.mockReturnValueOnce(true)
+		mocks.pieceUtils.savePieceFieldAsset.mockRejectedValueOnce(new Error('download failed'))
+
+		await expect(piece.setField(markdown, 'cover', 'https://example.com/cover.png')).rejects.toThrow(
+			'download failed'
+		)
 	})
 
 	test('setField throws on bad field', async () => {

@@ -202,22 +202,39 @@ describe('pieces/utils/piece.ts', () => {
 		expect(pieceValue).toEqual(value)
 	})
 
-	test('makePieceValue boolean', async () => {
-		const field = { name: 'title', type: 'boolean' } as PieceFrontmatterSchemaField
+	test('makePieceValue accepts exact, case-insensitive boolean inputs', async () => {
+		const field = { name: 'enabled', type: 'boolean' } as PieceFrontmatterSchemaField
 
-		const pieceValueT = await makePieceValue(field, 'true')
-		const pieceValueF = await makePieceValue(field, 'false')
-
-		expect(pieceValueT).toEqual(true)
-		expect(pieceValueF).toEqual(false)
+		for (const value of [true, 1, 'true', 'True', 'T', 't', 'yes', 'YES', '1']) {
+			expect(await makePieceValue(field, value)).toBe(true)
+		}
+		for (const value of [false, 0, 'false', 'False', 'F', 'f', 'no', 'NO', '0']) {
+			expect(await makePieceValue(field, value)).toBe(false)
+		}
 	})
 
-	test('makePieceValue integer', async () => {
-		const field = { name: 'title', type: 'integer' } as PieceFrontmatterSchemaField
+	test('makePieceValue rejects ambiguous boolean inputs', async () => {
+		const field = { name: 'enabled', type: 'boolean' } as PieceFrontmatterSchemaField
 
-		const pieceValue = await makePieceValue(field, '101')
+		for (const value of ['not true', 'true-ish', 'maybe', '10', ' true ', 2]) {
+			await expect(makePieceValue(field, value)).rejects.toThrow('enabled must be a boolean')
+		}
+	})
 
-		expect(pieceValue).toEqual(101)
+	test('makePieceValue accepts safe integers and exact integer strings', async () => {
+		const field = { name: 'count', type: 'integer' } as PieceFrontmatterSchemaField
+
+		for (const [value, expected] of [[101, 101], ['101', 101], ['-3', -3], ['+4', 4], ['007', 7]]) {
+			expect(await makePieceValue(field, value)).toBe(expected)
+		}
+	})
+
+	test('makePieceValue rejects invalid or unsafe integers', async () => {
+		const field = { name: 'count', type: 'integer' } as PieceFrontmatterSchemaField
+
+		for (const value of ['12 pages', '1.5', '1e3', ' 12 ', '', '9007199254740992', 1.5, Infinity, true]) {
+			await expect(makePieceValue(field, value)).rejects.toThrow('count must be a safe integer')
+		}
 	})
 
 	test('makePieceValue preserves objects', async () => {
