@@ -102,7 +102,7 @@ class Piece<F extends PieceFrontmatter> {
 		const exists = await this._storage.exists(file)
 
 		if (exists) {
-			throw new Error(`file already exists: ${file}`)
+			throw Object.assign(new Error(`file already exists: ${file}`), { code: 'EEXIST' })
 		}
 
 		const frontmatter = initializePieceFrontMatter(this._schema, true) as F

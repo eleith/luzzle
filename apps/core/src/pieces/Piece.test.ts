@@ -78,7 +78,10 @@ describe('pieces/Piece.ts', () => {
 		mocks.slugify.mockReturnValue('my-title')
 		vi.spyOn(storage, 'exists').mockResolvedValue(true)
 
-		await expect(piece.create('dir', 'My Title')).rejects.toThrow('file already exists')
+		await expect(piece.create('dir', 'My Title')).rejects.toMatchObject({
+			code: 'EEXIST',
+			message: expect.stringContaining('file already exists'),
+		})
 	})
 
 	test('delete removes file if it exists', async () => {
