@@ -6,17 +6,22 @@ import urlIconSvg from 'virtual:icons/ph/arrow-circle-up-right?raw&width=20&heig
 import pencilIconSvg from 'virtual:icons/ph/pencil-simple?raw&width=20&height=20'
 import { backLinkConfig } from './backLinkConfig'
 
+export function isAssetLink(url: string): boolean {
+	return url.startsWith('.assets/') || url.startsWith('./.assets/')
+}
+
 class MarkdownLinkWidget extends WidgetType {
 	constructor(
 		private href: string,
 		private title: string,
-		private svg: string
+		private svg: string,
+		private isAsset: boolean
 	) {
 		super()
 	}
 
 	eq(other: MarkdownLinkWidget) {
-		return this.href === other.href
+		return this.href === other.href && this.isAsset === other.isAsset
 	}
 
 	toDOM() {
@@ -25,12 +30,8 @@ class MarkdownLinkWidget extends WidgetType {
 		a.title = this.title
 		a.innerHTML = this.svg
 
-		const isInternal =
-			this.href.startsWith('/') || this.href.startsWith('./') || this.href.startsWith('../')
-		if (isInternal) {
-			a.className = 'cm-markdown-asset-icon'
-		} else {
-			a.className = 'cm-markdown-link-icon'
+		a.className = this.isAsset ? 'cm-markdown-asset-icon' : 'cm-markdown-link-icon'
+		if (/^[a-z]+:/i.test(this.href)) {
 			a.target = '_blank'
 			a.rel = 'nofollow'
 		}
@@ -72,13 +73,10 @@ const markdownLinkPlugin = ViewPlugin.fromClass(
 
 					const rawUrl = doc.slice(urlNode.from, urlNode.to)
 
-					// Resolve links (external vs local asset path)
+					const isAsset = isAssetLink(rawUrl)
 					let href = rawUrl
-					const isExternal = /^[a-z]+:/i.test(rawUrl)
-					const isAsset = !isExternal
 					if (isAsset) {
-						const cleanAssetPath = rawUrl.replace(/^\.\//, '')
-						href = `/admin/asset/editor/${cleanAssetPath}`
+						href = `/admin/asset/editor/${rawUrl.replace(/^\.\//, '')}`
 						if (returnTo) {
 							href += `?returnTo=${encodeURIComponent(returnTo)}`
 						}
@@ -101,15 +99,13 @@ const markdownLinkPlugin = ViewPlugin.fromClass(
 						})
 					})
 
+					const title = isAsset ? `Edit ${rawUrl}` : `Open ${rawUrl}`
+					const icon = isAsset ? pencilIconSvg : urlIconSvg
 					widgets.push({
 						from: targetNode.to,
 						to: targetNode.to,
 						value: Decoration.widget({
-							widget: new MarkdownLinkWidget(
-								href,
-								isAsset ? `Edit ${rawUrl}` : `Open ${rawUrl}`,
-								(isAsset ? pencilIconSvg : urlIconSvg) as unknown as string
-							),
+							widget: new MarkdownLinkWidget(href, title, icon as unknown as string, isAsset),
 							side: 1
 						})
 					})
