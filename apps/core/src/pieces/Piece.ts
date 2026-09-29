@@ -179,6 +179,10 @@ class Piece<F extends PieceFrontmatter> {
 
 		if (validated.isValid) {
 			const markdownString = makePieceMarkdownString(markdown)
+			const directory = path.dirname(markdown.filePath)
+			if (directory !== '.') {
+				await this._storage.makeDirectory(directory)
+			}
 			await this._storage.writeFile(markdown.filePath, markdownString)
 		} else {
 			throw new Error(

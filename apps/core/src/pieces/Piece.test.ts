@@ -246,17 +246,57 @@ describe('pieces/Piece.ts', () => {
 		vi.spyOn(storage, 'writeFile').mockResolvedValue(undefined)
 
 		await piece.write(markdown)
+		expect(storage.makeDirectory).not.toHaveBeenCalled()
 		expect(storage.writeFile).toHaveBeenCalled()
 	})
 
-	test('write throws if invalid', async () => {
-		const piece = new (makePieceMock())()
-		const markdown = makeMarkdownSample()
+	test('write creates missing parent directories before writing', async () => {
+		const storage = makeStorage()
+		const piece = new (makePieceMock())('table', storage)
+		const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
+		mocks.item.validatePieceItem.mockReturnValue(true)
+		vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
+		vi.spyOn(storage, 'writeFile').mockResolvedValue(undefined)
 
+		await piece.write(markdown)
+
+		expect(storage.makeDirectory).toHaveBeenCalledWith('2099/new-folder')
+		expect(vi.mocked(storage.makeDirectory).mock.invocationCallOrder[0]).toBeLessThan(
+			vi.mocked(storage.writeFile).mock.invocationCallOrder[0]
+		)
+	})
+
+	test('write propagates directory creation errors', async () => {
+		const storage = makeStorage()
+		const piece = new (makePieceMock())('table', storage)
+		const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
+		mocks.item.validatePieceItem.mockReturnValue(true)
+		vi.spyOn(storage, 'makeDirectory').mockRejectedValue(new Error('disk full'))
+
+		await expect(piece.write(markdown)).rejects.toThrow('disk full')
+		expect(storage.writeFile).not.toHaveBeenCalled()
+	})
+
+	test('write propagates file write errors', async () => {
+		const storage = makeStorage()
+		const piece = new (makePieceMock())('table', storage)
+		const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
+		mocks.item.validatePieceItem.mockReturnValue(true)
+		vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
+		vi.spyOn(storage, 'writeFile').mockRejectedValue(new Error('permission denied'))
+
+		await expect(piece.write(markdown)).rejects.toThrow('permission denied')
+	})
+
+	test('write throws if invalid without creating directories', async () => {
+		const storage = makeStorage()
+		const piece = new (makePieceMock())('table', storage)
+		const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
 		mocks.item.validatePieceItem.mockReturnValue(false)
 		mocks.item.getValidatePieceItemErrors.mockReturnValue(['bad'])
 
 		await expect(piece.write(markdown)).rejects.toThrow('Could not write')
+		expect(storage.makeDirectory).not.toHaveBeenCalled()
 	})
 
 	test('prune deletes missing pieces from DB', async () => {
