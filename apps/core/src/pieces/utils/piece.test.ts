@@ -237,6 +237,29 @@ describe('pieces/utils/piece.ts', () => {
 		}
 	})
 
+	test('makePieceValue converts finite number inputs', async () => {
+		const field = { name: 'rating', type: 'number' } as PieceFrontmatterSchemaField
+
+		for (const [value, expected] of [
+			[4.5, 4.5],
+			['4.5', 4.5],
+			['-2', -2],
+			['1e3', 1000],
+			['0x10', 16],
+			[' 4.5 ', 4.5],
+		] as Array<[number | string, number]>) {
+			expect(await makePieceValue(field, value)).toBe(expected)
+		}
+	})
+
+	test('makePieceValue rejects non-finite or non-numeric number inputs', async () => {
+		const field = { name: 'rating', type: 'number' } as PieceFrontmatterSchemaField
+
+		for (const value of ['', '   ', '12 pages', 'Infinity', '1e309', Infinity, NaN, true]) {
+			await expect(makePieceValue(field, value)).rejects.toThrow('rating must be a finite number')
+		}
+	})
+
 	test('makePieceValue preserves objects', async () => {
 		const field = { name: 'meta', type: 'object' } as PieceFrontmatterSchemaField
 

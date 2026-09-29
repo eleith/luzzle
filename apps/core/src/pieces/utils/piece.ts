@@ -255,6 +255,13 @@ async function makePieceValue(
 			if (Number.isSafeInteger(number)) return number
 		}
 		throw new Error(`${field.name} must be a safe integer`)
+	} else if (type === 'number') {
+		if (typeof value === 'number' && Number.isFinite(value)) return value
+		if (typeof value === 'string' && value.trim() !== '') {
+			const number = Number(value)
+			if (Number.isFinite(number)) return number
+		}
+		throw new Error(`${field.name} must be a finite number`)
 	}
 
 	return value

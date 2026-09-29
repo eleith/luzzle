@@ -645,6 +645,41 @@ describe('pieces/Piece.ts', () => {
 		expect((updated.frontmatter as Record<string, unknown>).subtitle).toBe('new')
 	})
 
+	test('setFields converts numeric strings before writing', async () => {
+		const storage = makeStorage()
+		const schema = makeSchema({ rating: { type: 'number', nullable: true } })
+		const piece = new (makePieceMock())('table', storage, schema)
+		mocks.slugify.mockReturnValue('example')
+		vi.spyOn(storage, 'exists').mockResolvedValue(false)
+		const actualPieceUtils = await vi.importActual<typeof pieceUtils>('./utils/piece.js')
+		const actualItem = await vi.importActual<typeof item>('./item.js')
+		mocks.pieceUtils.makePieceValue.mockImplementationOnce(actualPieceUtils.makePieceValue)
+		mocks.item.validatePieceItem.mockImplementationOnce(actualItem.validatePieceItem)
+
+		const draft = await piece.create('.', 'Example')
+		const updated = await piece.setFields(draft, { rating: '4.5' })
+		await piece.write(updated)
+
+		expect(updated.frontmatter.rating).toBe(4.5)
+		expect(storage.writeFile).toHaveBeenCalledOnce()
+	})
+
+	test('setFields rejects invalid numeric strings before writing', async () => {
+		const storage = makeStorage()
+		const schema = makeSchema({ rating: { type: 'number', nullable: true } })
+		const piece = new (makePieceMock())('table', storage, schema)
+		mocks.slugify.mockReturnValue('example')
+		vi.spyOn(storage, 'exists').mockResolvedValue(false)
+		const actualPieceUtils = await vi.importActual<typeof pieceUtils>('./utils/piece.js')
+		mocks.pieceUtils.makePieceValue.mockImplementationOnce(actualPieceUtils.makePieceValue)
+
+		const draft = await piece.create('.', 'Example')
+		await expect(piece.setFields(draft, { rating: '12 pages' })).rejects.toThrow(
+			'rating must be a finite number'
+		)
+		expect(storage.writeFile).not.toHaveBeenCalled()
+	})
+
 	test('setField with nested path', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({

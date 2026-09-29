@@ -14,7 +14,7 @@ type PieceFrontmatter = {
 type PieceFrontmatterSchema<M extends PieceFrontmatter> = JSONSchemaType<M>
 
 export type PieceFrontmatterPropertyScalar = {
-	type: 'string' | 'boolean' | 'integer'
+	type: 'string' | 'boolean' | 'integer' | 'number'
 	// must add format validators to ajv.ts
 	format?: 'asset' | 'date' | 'comma-separated' | 'paragraph' | 'markdown'
 	nullable?: boolean
