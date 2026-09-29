@@ -6,10 +6,11 @@
 	import { goto, invalidateAll } from '$app/navigation'
 
 	let { data, form } = $props()
-	let selectedType = $state(data.type)
-	let selectedDirectory = $state(data.directory || '.')
-	let shouldGenerate = $state(false)
-	let prompt = $state('')
+	let selectedType = $state(form?.type || data.type)
+	let selectedDirectory = $state(form?.directory || data.directory || '.')
+	let name = $state(form?.name || '')
+	let shouldGenerate = $state(form?.generate ?? false)
+	let prompt = $state(form?.prompt || '')
 	let mergedContent = $state(form?.mergedContent || '')
 
 	const directoryItems = $derived(
@@ -48,6 +49,8 @@
 								saveError = resData?.error?.message || 'Failed to save piece'
 							} else if (result.type === 'error') {
 								saveError = result.error?.message || 'An unexpected error occurred'
+							} else if (result.type === 'redirect') {
+								await goto(result.location)
 							}
 						}
 					}}
@@ -75,9 +78,7 @@
 		<form method="post" enctype="multipart/form-data" action="?/create">
 			<div class="piece-container">
 				{#if form?.error}
-					<div class="error" style="color:var(--color-error); margin-bottom: var(--space-4);">
-						{form.error.message}
-					</div>
+					<div class="banner error-banner" role="alert">{form.error.message}</div>
 				{/if}
 				<div class="field">directory</div>
 				<div class="field-edit">
@@ -100,6 +101,7 @@
 						class="input"
 						placeholder="e.g. my-new-piece"
 						required
+						bind:value={name}
 						style="width:100%;"
 					/>
 				</div>
@@ -122,6 +124,9 @@
 										accept="application/pdf, application/json, text/html, .txt, image/png, image/jpeg, .csv"
 										multiple
 									/>
+									{#if form?.error}
+										<p>Reselect any attachments before retrying.</p>
+									{/if}
 								</div>
 
 								<div class="field">prompt (optional)</div>

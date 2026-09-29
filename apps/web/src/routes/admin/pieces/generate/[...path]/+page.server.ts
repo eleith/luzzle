@@ -43,14 +43,15 @@ export const actions = {
 		const file = event.params.path
 		const promptInput = formData.get('prompt')?.toString() || ''
 		const targetField = formData.get('field')?.toString() || 'all'
+		const submittedOptions = { prompt: promptInput, targetField }
 		const files = formData.getAll('files') as File[]
-		const buffers: Buffer[] = []
 
 		const pieces = getPieces()
 		const type = pieces.parseFilename(file).type
 
 		if (!type) {
 			return fail(404, {
+				...submittedOptions,
 				fields: {},
 				note: '',
 				error: { message: 'piece type does not exist' }
@@ -61,15 +62,11 @@ export const actions = {
 		const currentMarkdown = await piece.get(file)
 		const currentFields = currentMarkdown?.frontmatter || {}
 
-		for (const file of files.filter((f) => f.size > 0)) {
-			const fileArrayBuffer = await file.arrayBuffer()
-			buffers.push(Buffer.from(fileArrayBuffer))
-		}
-
 		if (targetField && targetField !== 'all') {
 			const field = findFrontmatterField(piece.fields, targetField)
 			if (!field) {
 				return fail(400, {
+					...submittedOptions,
 					fields: currentFields,
 					note: currentMarkdown?.note || '',
 					error: { message: `field ${targetField} does not exist in schema` }
@@ -85,6 +82,11 @@ export const actions = {
 		const finalPrompt = promptInput.trim() ? `${promptInput}\n\nNote: ${instruction}` : instruction
 
 		try {
+			const buffers: Buffer[] = []
+			for (const file of files.filter((f) => f.size > 0)) {
+				buffers.push(Buffer.from(await file.arrayBuffer()))
+			}
+
 			// Append current field values to prompt for context
 			const contextPrompt = `You are a digital archivist tasked with correcting incorrect metadata and updating any missing data.
 
@@ -112,6 +114,7 @@ IMPORTANT: Please only provide values for the targeted fields. For any fields th
 			const mergedContent = makePieceMarkdownString(mergedMarkdown)
 
 			return {
+				...submittedOptions,
 				fields: mergedFields,
 				note: currentMarkdown?.note || '',
 				mergedContent,
@@ -120,6 +123,7 @@ IMPORTANT: Please only provide values for the targeted fields. For any fields th
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e)
 			return fail(500, {
+				...submittedOptions,
 				fields: currentFields,
 				note: currentMarkdown?.note || '',
 				mergedContent: '',

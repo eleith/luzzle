@@ -8,9 +8,10 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props()
 
-	let selectedField = $state<string>('all')
-	let prompt = $state('')
+	let selectedField = $state<string>(form?.targetField || 'all')
+	let prompt = $state(form?.prompt || '')
 	let mergedContent = $state(form?.mergedContent || '')
+	let saveError = $state<string | null>(null)
 
 	const returnTo = page.url.searchParams.get('returnTo')
 	const backUrl = returnTo || `/admin/piece/${data.file}/source`
@@ -32,10 +33,18 @@
 					method="post"
 					action="/admin/piece/{data.file}/source?/save"
 					use:enhance={() => {
+						saveError = null
 						return async ({ result }) => {
 							if (result.type === 'success') {
 								await invalidateAll()
 								goto(backUrl)
+							} else if (result.type === 'failure') {
+								const data = result.data as { error?: { message?: string } } | undefined
+								saveError = data?.error?.message || 'Failed to save piece'
+							} else if (result.type === 'error') {
+								saveError = result.error?.message || 'An unexpected error occurred'
+							} else if (result.type === 'redirect') {
+								await goto(result.location)
 							}
 						}
 					}}
@@ -48,6 +57,9 @@
 				</a>
 			</div>
 		</div>
+		{#if saveError}
+			<div class="banner error-banner" role="alert">{saveError}</div>
+		{/if}
 		<div class="editor-container">
 			<MarkdownEditor
 				bind:value={mergedContent}
@@ -61,9 +73,7 @@
 		<form method="post" enctype="multipart/form-data">
 			<div class="piece-container">
 				{#if form?.error}
-					<div class="error" style="color:var(--color-error);">
-						{form.error.message}
-					</div>
+					<div class="banner error-banner" role="alert">{form.error.message}</div>
 				{/if}
 
 				<div class="field">directory</div>
@@ -91,6 +101,9 @@
 						accept="application/pdf, application/json, text/html, .txt, image/png, image/jpeg, .csv"
 						multiple
 					/>
+					{#if form?.error}
+						<p>Reselect any attachments before retrying.</p>
+					{/if}
 				</div>
 
 				<div class="field">prompt (optional)</div>
@@ -135,6 +148,19 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-4);
+	}
+
+	.banner {
+		padding: var(--space-3);
+		border-radius: var(--radius-small);
+		margin-bottom: var(--space-2);
+		font-size: 0.875rem;
+	}
+
+	.error-banner {
+		background-color: var(--color-error-container);
+		color: var(--color-on-error-container);
+		border: 1px solid var(--color-error);
 	}
 
 	@media screen and (min-width: 768px) {
