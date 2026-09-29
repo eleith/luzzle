@@ -90,7 +90,7 @@ function omitNullFrontmatterFields(value: unknown): unknown {
 	if (Array.isArray(value)) return value
 
 	return Object.fromEntries(
-		Object.entries(value).filter(([, field]) => field !== null || field === '')
+		Object.entries(value).filter(([, field]) => field !== null)
 	)
 }
 

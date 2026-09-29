@@ -120,6 +120,27 @@ describe('lib/llm/google.ts', () => {
 		expect(generatedFrontmatter).toEqual({ title: 'value' })
 	})
 
+	test('pieceFrontMatterFromPrompt keeps schema-permitted empty strings', async () => {
+		mocks.generateContent.mockResolvedValueOnce({
+			text: JSON.stringify({ title: '', keywords: '' }),
+		} as GenerateContentResponse)
+
+		await expect(pieceFrontMatterFromPrompt('apiKey', makeSchema('books'), 'prompt')).resolves.toEqual({
+			title: '',
+			keywords: '',
+		})
+	})
+
+	test('pieceFrontMatterFromPrompt rejects a required null field', async () => {
+		mocks.generateContent.mockResolvedValueOnce({
+			text: JSON.stringify({ title: null }),
+		} as GenerateContentResponse)
+
+		await expect(pieceFrontMatterFromPrompt('apiKey', makeSchema('books'), 'prompt')).rejects.toThrow(
+			"must have required property 'title'"
+		)
+	})
+
 	test('pieceFrontMatterFromPrompt rejects an empty result missing required fields', async () => {
 		const apiKey = 'apiKey'
 		const schema = makeSchema('books')
