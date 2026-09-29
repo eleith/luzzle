@@ -12,6 +12,7 @@ import {
 import { readFile } from 'fs/promises'
 import path from 'path'
 import type { JSONSchemaType } from 'ajv'
+import compile from '../lib/ajv.js'
 import { type PieceFrontmatter } from '../pieces/index.js'
 
 const MODEL_NAME = 'gemini-2.5-flash'
@@ -83,6 +84,33 @@ async function extractPartFromFile(file: string | Buffer, genAI: GoogleGenAI) {
 	throw new Error('File processing failed.')
 }
 
+function omitNullFrontmatterFields(value: unknown): unknown {
+	if (value === null) return value
+	if (typeof value !== 'object') return value
+	if (Array.isArray(value)) return value
+
+	return Object.fromEntries(
+		Object.entries(value).filter(([, field]) => field !== null || field === '')
+	)
+}
+
+function parseAndValidateFrontmatter(
+	metadata: string,
+	schema: JSONSchemaType<PieceFrontmatter>
+): PieceFrontmatter {
+	const parsed: unknown = JSON.parse(metadata)
+	const frontmatter = omitNullFrontmatterFields(parsed)
+	const validate = compile(schema)
+	if (!validate(frontmatter)) {
+		const error = validate.errors?.[0]
+		throw new Error(
+			`Generated frontmatter does not match schema: ${error?.instancePath || '/'} ${error?.message}`
+		)
+	}
+
+	return frontmatter
+}
+
 async function pieceFrontMatterFromPrompt(
 	apiKey: string,
 	schema: JSONSchemaType<PieceFrontmatter>,
@@ -115,12 +143,7 @@ you are also given a responseJsonSchema to guide your output. each field in the 
 		},
 	})
 
-	const metadata = result.text || '{}'
-	const frontmatter = JSON.parse(metadata) as PieceFrontmatter
-
-	return Object.fromEntries(
-		Object.entries(frontmatter).filter(([, value]) => value !== null || value === '')
-	)
+	return parseAndValidateFrontmatter(result.text || '{}', schema)
 }
 
 async function validateApiKey(

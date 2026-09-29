@@ -80,7 +80,7 @@ describe('lib/llm/google.ts', () => {
 		const apiKey = 'apiKey'
 		const schema = makeSchema('books')
 		const prompt = 'prompt'
-		const frontmatter = { field: 'value' }
+		const frontmatter = { title: 'value' }
 		const responseText = JSON.stringify(frontmatter)
 
 		mocks.generateContent.mockResolvedValueOnce({
@@ -98,11 +98,11 @@ describe('lib/llm/google.ts', () => {
 		expect(generatedFrontmatter).toEqual(frontmatter)
 	})
 
-	test('pieceFrontMatterFromPrompt strips empty fields', async () => {
+	test('pieceFrontMatterFromPrompt strips null fields', async () => {
 		const apiKey = 'apiKey'
 		const schema = makeSchema('books')
 		const prompt = 'prompt'
-		const frontmatter = { field: 'value', field2: null, field3: undefined }
+		const frontmatter = { title: 'value', keywords: null }
 		const responseText = JSON.stringify(frontmatter)
 
 		mocks.generateContent.mockResolvedValueOnce({
@@ -117,10 +117,10 @@ describe('lib/llm/google.ts', () => {
 			config: expect.any(Object),
 			model: expect.any(String),
 		})
-		expect(generatedFrontmatter).toEqual({ field: 'value' })
+		expect(generatedFrontmatter).toEqual({ title: 'value' })
 	})
 
-	test('pieceFrontMatterFromPrompt returns on empty result', async () => {
+	test('pieceFrontMatterFromPrompt rejects an empty result missing required fields', async () => {
 		const apiKey = 'apiKey'
 		const schema = makeSchema('books')
 		const prompt = 'prompt'
@@ -130,15 +130,40 @@ describe('lib/llm/google.ts', () => {
 			text: responseText,
 		} as GenerateContentResponse)
 
-		const generatedFrontmatter = await pieceFrontMatterFromPrompt(apiKey, schema, prompt)
+		await expect(pieceFrontMatterFromPrompt(apiKey, schema, prompt)).rejects.toThrow(
+			'Generated frontmatter does not match schema'
+		)
+	})
 
-		expect(mocks.generateContent).toHaveBeenCalledTimes(1)
-		expect(mocks.generateContent).toHaveBeenCalledWith({
-			contents: expect.arrayContaining([prompt]),
-			config: expect.any(Object),
-			model: expect.any(String),
-		})
-		expect(generatedFrontmatter).toEqual({})
+	test('pieceFrontMatterFromPrompt rejects the wrong types', async () => {
+		mocks.generateContent.mockResolvedValueOnce({
+			text: JSON.stringify({ title: 42 }),
+		} as GenerateContentResponse)
+
+		await expect(pieceFrontMatterFromPrompt('apiKey', makeSchema('books'), 'prompt')).rejects.toThrow(
+			'Generated frontmatter does not match schema: /title must be string'
+		)
+	})
+
+	test('pieceFrontMatterFromPrompt rejects non-object output', async () => {
+		for (const text of ['null', '[]', '"text"']) {
+			mocks.generateContent.mockResolvedValueOnce({ text } as GenerateContentResponse)
+			await expect(pieceFrontMatterFromPrompt('apiKey', makeSchema('books'), 'prompt')).rejects.toThrow(
+				'Generated frontmatter does not match schema: / must be object'
+			)
+		}
+	})
+
+	test('pieceFrontMatterFromPrompt checks schema constraints', async () => {
+		const schema = makeSchema('books')
+		schema.properties.title = { type: 'string', minLength: 3 } as typeof schema.properties.title
+		mocks.generateContent.mockResolvedValueOnce({
+			text: JSON.stringify({ title: 'a' }),
+		} as GenerateContentResponse)
+
+		await expect(pieceFrontMatterFromPrompt('apiKey', schema, 'prompt')).rejects.toThrow(
+			'Generated frontmatter does not match schema: /title must NOT have fewer than 3 characters'
+		)
 	})
 
 	test('generatePieceFrontmatter with a binary file', async () => {
@@ -149,7 +174,7 @@ describe('lib/llm/google.ts', () => {
 		const uri = 'gs://another/path/to/file.pdf'
 		const name = 'file.pdf'
 		const mimeType = 'application/pdf'
-		const frontmatter = { field: 'value' }
+		const frontmatter = { title: 'value' }
 		const responseText = JSON.stringify(frontmatter)
 		const fileContent = 'fileContent' as Part
 
@@ -187,7 +212,7 @@ describe('lib/llm/google.ts', () => {
 		const schema = makeSchema('books')
 		const prompt = 'prompt'
 		const file = '/path/to/file.html'
-		const frontmatter = { field: 'value' }
+		const frontmatter = { title: 'value' }
 		const responseText = JSON.stringify(frontmatter)
 		const fileContent = 'fileContent'
 
@@ -214,7 +239,7 @@ describe('lib/llm/google.ts', () => {
 		const apiKey = 'apiKey'
 		const schema = makeSchema('books')
 		const prompt = 'prompt'
-		const frontmatter = { field: 'value' }
+		const frontmatter = { title: 'value' }
 		const responseText = JSON.stringify(frontmatter)
 		const buffer = Buffer.from('buffer data')
 
@@ -242,7 +267,7 @@ describe('lib/llm/google.ts', () => {
 		const name = 'file.pdf'
 		const uri = 'gs://another/path/to/file.pdf'
 		const mimeType = 'application/pdf'
-		const frontmatter = { field: 'value' }
+		const frontmatter = { title: 'value' }
 		const responseText = JSON.stringify(frontmatter)
 		const buffer = Buffer.from('buffer data')
 		const blob = new Blob([buffer])
