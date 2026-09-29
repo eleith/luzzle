@@ -13,7 +13,8 @@ import { ASSETS_DIRECTORY } from '../assets.js'
 type AttachableStream = { stream: Readable; filename?: string }
 
 async function downloadToStream(fileOrUrl: string): Promise<AttachableStream> {
-	if (/https?:\/\//i.test(fileOrUrl)) {
+	const url = URL.canParse(fileOrUrl) ? new URL(fileOrUrl) : undefined
+	if (url?.protocol === 'http:' || url?.protocol === 'https:') {
 		return new Promise((resolve, reject) => {
 			const download = got.stream(fileOrUrl, {
 				throwHttpErrors: false,
@@ -29,16 +30,15 @@ async function downloadToStream(fileOrUrl: string): Promise<AttachableStream> {
 				},
 			})
 			download.on('error', (err) => {
-				console.error(`Error downloading file from ${fileOrUrl}: ${err.message}`)
+				console.error(`Error downloading file from ${url.origin}`)
 				reject(err)
 			})
 			download.on('response', (response) => {
 				if (response.statusCode >= 400) {
-					console.error(`Error downloading file from ${fileOrUrl}: http ${response.statusCode}`)
+					console.error(`Error downloading file from ${url.origin}: http ${response.statusCode}`)
 					reject(new Error(`HTTP Error: ${response.statusCode}`))
 				} else {
-					const filename = path.basename(new URL(fileOrUrl).pathname)
-					resolve({ stream: download, filename })
+					resolve({ stream: download, filename: path.basename(url.pathname) })
 				}
 			})
 		})

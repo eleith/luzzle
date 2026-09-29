@@ -39,11 +39,12 @@ const command: Command<AttachArgv> = {
 	run: async function (ctx, args) {
 		const { file, name } = args
 		const { markdown } = await parsePiecePathPositionalArgv(ctx, args)
+		const url = URL.canParse(file) ? new URL(file) : undefined
+		const remoteOrigin = url?.protocol === 'http:' || url?.protocol === 'https:' ? url.origin : undefined
 
 		if (ctx.flags.dryRun) {
-			const isUrl = /https?:\/\//i.test(file)
-			if (isUrl) {
-				log.info(`[dry-run] would download and attach ${file} to ${markdown.filePath}`)
+			if (remoteOrigin) {
+				log.info(`[dry-run] would download and attach from ${remoteOrigin} to ${markdown.filePath}`)
 			} else {
 				log.info(`[dry-run] would attach ${file} to ${markdown.filePath}`)
 			}
@@ -60,7 +61,11 @@ const command: Command<AttachArgv> = {
 
 			console.log(relativePath)
 		} catch (error) {
-			log.error(`failed to attach file: ${(error as Error).message}`)
+			log.error(
+				remoteOrigin
+					? `failed to attach downloaded file from ${remoteOrigin}`
+					: `failed to attach file: ${(error as Error).message}`
+			)
 		}
 	},
 }

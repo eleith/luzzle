@@ -72,7 +72,9 @@ describe('lib/commands/attach.ts', () => {
 
 		await command.run(ctx, { piece: 'snippets/fibo.md', file: 'photo.jpg' } as Arguments<AttachArgv>)
 
-		expect(mocks.logInfo).toHaveBeenCalledWith(expect.stringContaining('[dry-run] would attach photo.jpg'))
+		expect(mocks.logInfo).toHaveBeenCalledWith(
+			`[dry-run] would attach photo.jpg to ${markdown.filePath}`
+		)
 		expect(mocks.savePieceAsset).not.toHaveBeenCalled()
 	})
 
@@ -84,10 +86,41 @@ describe('lib/commands/attach.ts', () => {
 
 		mocks.parseArgs.mockResolvedValueOnce({ file: 'snippets/fibo.md', piece, markdown })
 
-		await command.run(ctx, { piece: 'snippets/fibo.md', file: 'https://example.com/logo.png' } as Arguments<AttachArgv>)
+		await command.run(ctx, { piece: 'snippets/fibo.md', file: 'https://user:password@example.com/private-token?signature=secret' } as Arguments<AttachArgv>)
 
-		expect(mocks.logInfo).toHaveBeenCalledWith(expect.stringContaining('[dry-run] would download and attach https://example.com/logo.png'))
+		expect(mocks.logInfo).toHaveBeenCalledWith(
+			`[dry-run] would download and attach from https://example.com to ${markdown.filePath}`
+		)
 		expect(mocks.savePieceAsset).not.toHaveBeenCalled()
+	})
+
+	test('run dry-run treats an unparseable URL as a file path', async () => {
+		const piece = makePieceMock()
+		const markdown = makeMarkdownSample()
+		const ctx = makeContext()
+		ctx.flags.dryRun = true
+		mocks.parseArgs.mockResolvedValueOnce({ file: 'snippets/fibo.md', piece, markdown })
+
+		await command.run(ctx, { piece: 'snippets/fibo.md', file: 'https://[secret?signature=private' } as Arguments<AttachArgv>)
+
+		expect(mocks.logInfo).toHaveBeenCalledWith(
+			`[dry-run] would attach https://[secret?signature=private to ${markdown.filePath}`
+		)
+	})
+
+	test('run logs only the origin when a URL attachment fails', async () => {
+		const piece = makePieceMock()
+		const markdown = makeMarkdownSample()
+		const ctx = makeContext()
+		const url = 'https://user:password@example.com/private-token?signature=secret'
+		mocks.parseArgs.mockResolvedValueOnce({ file: 'snippets/fibo.md', piece, markdown })
+		mocks.savePieceAsset.mockRejectedValueOnce(new Error(`Request failed for ${url}`))
+
+		await command.run(ctx, { piece: 'snippets/fibo.md', file: url } as Arguments<AttachArgv>)
+
+		expect(mocks.logError).toHaveBeenCalledWith(
+			'failed to attach downloaded file from https://example.com'
+		)
 	})
 
 	test('run successfully attaches a file with custom name', async () => {

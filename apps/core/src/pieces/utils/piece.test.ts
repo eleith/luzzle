@@ -260,7 +260,10 @@ describe('pieces/utils/piece.ts', () => {
 
 		const pieceValue = await pieceValuePromise as AttachableStream
 
-		expect(pieceValue.stream).toEqual(readable)
+		readable.end('downloaded content')
+		const chunks: Buffer[] = []
+		for await (const chunk of pieceValue.stream) chunks.push(chunk)
+		expect(Buffer.concat(chunks).toString()).toBe('downloaded content')
 	})
 
 	test('makePieceValue url asset bad status Code', async () => {
@@ -277,18 +280,44 @@ describe('pieces/utils/piece.ts', () => {
 		await expect(pieceValuePromise).rejects.toThrow()
 	})
 
-	test('makePieceValue bad url asset', async () => {
+	test('makePieceValue logs the origin but preserves network errors for callers', async () => {
 		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
-		const asset = 'https://path/to/asset'
+		const asset = 'https://user:password@example.com/private-token/file?signature=secret#fragment'
 		const readable = new PassThrough() as unknown as Request
-
 		mocks.gotStream.mockReturnValueOnce(readable)
+		spies.consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		const pieceValuePromise = makePieceValue(field, asset)
+		readable.emit('error', new Error(`Request failed for ${asset}`))
 
-		readable.emit('error', new Error('test error'))
+		await expect(pieceValuePromise).rejects.toThrow(`Request failed for ${asset}`)
+		expect(spies.consoleError).toHaveBeenCalledWith('Error downloading file from https://example.com')
+	})
 
-		await expect(pieceValuePromise).rejects.toThrow('test error')
+	test('makePieceValue logs the origin and HTTP status on a failed response', async () => {
+		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
+		const asset = 'https://user:password@example.com/private-token/file?signature=secret#fragment'
+		const readable = new PassThrough() as unknown as Request
+		mocks.gotStream.mockReturnValueOnce(readable)
+		spies.consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const pieceValuePromise = makePieceValue(field, asset)
+		readable.emit('response', { statusCode: 403 })
+
+		await expect(pieceValuePromise).rejects.toThrow('HTTP Error: 403')
+		expect(spies.consoleError).toHaveBeenCalledWith(
+			'Error downloading file from https://example.com: http 403'
+		)
+	})
+
+	test('makePieceValue treats an unparseable URL as an invalid local file', async () => {
+		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
+		mocks.stat.mockResolvedValueOnce(null as unknown as Stats)
+
+		await expect(makePieceValue(field, 'https://[secret?signature=private')).rejects.toThrow(
+			'https://[secret?signature=private is not a valid file'
+		)
+		expect(mocks.gotStream).not.toHaveBeenCalled()
 	})
 
 	test('makePieceValue bad file asset', async () => {
@@ -510,6 +539,19 @@ describe('pieces/utils/piece.ts', () => {
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'attachment'))
 	})
 
+	test('savePieceAsset preserves errors for a caller-supplied stream', async () => {
+		const storage = makeStorage('root')
+		vi.spyOn(storage, 'exists').mockResolvedValue(false)
+		vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
+		vi.spyOn(storage, 'createWriteStream').mockImplementation(() => {
+			throw new Error('disk full')
+		})
+
+		await expect(
+			savePieceAsset('samplePath.md', 'file.txt', Readable.from(['content']), storage)
+		).rejects.toThrow('disk full')
+	})
+
 	test('savePieceAsset should accept a URL source, download it, and write it to storage', async () => {
 		const storage = makeStorage('root')
 		const markdown = makeMarkdownSample('samplePath', 'books', '', {})
@@ -533,6 +575,23 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await assetPromise
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'some-file.png'))
+	})
+
+	test('savePieceAsset logs only the origin on stream errors after a response', async () => {
+		const storage = makeStorage('root')
+		const asset = 'https://user:password@example.com/private-token/file?signature=secret#fragment'
+		const readable = new PassThrough() as unknown as Request
+		mocks.gotStream.mockReturnValueOnce(readable)
+		vi.spyOn(storage, 'exists').mockResolvedValue(false)
+		vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
+		spies.consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const assetPromise = savePieceAsset('samplePath.md', asset, storage)
+		readable.emit('response', { statusCode: 200 })
+		setTimeout(() => readable.emit('error', new Error(`Stream failed for ${asset}`)), 0)
+
+		await expect(assetPromise).rejects.toThrow(`Stream failed for ${asset}`)
+		expect(spies.consoleError).toHaveBeenCalledWith('Error downloading file from https://example.com')
 	})
 
 	test('savePieceAsset should fallback to "attachment" when URL has no filename and format is unknown', async () => {
