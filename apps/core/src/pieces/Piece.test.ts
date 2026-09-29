@@ -663,7 +663,7 @@ describe('pieces/Piece.ts', () => {
 		expect(fm.meta.author).toBe('Bob')
 	})
 
-	test('setField appends to nested array', async () => {
+	test('setField replaces a nested array with a scalar value', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
 			meta: {
@@ -678,7 +678,7 @@ describe('pieces/Piece.ts', () => {
 
 		const updated = await piece.setField(markdown, 'meta.tags', 'b')
 		const fm = updated.frontmatter as unknown as Record<string, Record<string, string[]>>
-		expect(fm.meta.tags).toEqual(['a', 'b'])
+		expect(fm.meta.tags).toEqual(['b'])
 	})
 
 	test('setField initializes missing array field', async () => {
@@ -699,7 +699,7 @@ describe('pieces/Piece.ts', () => {
 		expect(fm.tags).toEqual(['tag1'])
 	})
 
-	test('setField handles an array of values', async () => {
+	test('setField replaces an array of values', async () => {
 		const PieceType = makePieceMock()
 		const schema = makeSchema({
 			tags: { type: 'array', items: { type: 'string' } },
@@ -711,7 +711,58 @@ describe('pieces/Piece.ts', () => {
 
 		const updated = await piece.setField(markdown, 'tags', ['b', 'c'])
 		const fm = updated.frontmatter as unknown as Record<string, string[]>
-		expect(fm.tags).toEqual(['a', 'b', 'c'])
+		expect(fm.tags).toEqual(['b', 'c'])
+
+		const repeated = await piece.setFields(updated, { tags: ['b', 'c'] })
+		expect(repeated.frontmatter.tags).toEqual(['b', 'c'])
+
+		const cleared = await piece.setField(repeated, 'tags', [])
+		expect(cleared.frontmatter.tags).toEqual([])
+	})
+
+	test('setFields replaces example values seeded by create', async () => {
+		const schema = makeSchema({
+			tags: { type: 'array', items: { type: 'string', examples: ['seed'] } },
+		})
+		schema.required = ['title', 'tags']
+		const storage = makeStorage()
+		const piece = new (makePieceMock())('table', storage, schema)
+		mocks.slugify.mockReturnValue('example')
+		vi.spyOn(storage, 'exists').mockResolvedValue(false)
+		mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
+
+		const created = await piece.create('.', 'Example')
+		expect(created.frontmatter.tags).toEqual(['seed'])
+
+		const updated = await piece.setFields(created, { tags: ['actual'] })
+		expect(updated.frontmatter.tags).toEqual(['actual'])
+	})
+
+	test('setField updates an array item by index without replacing the array', async () => {
+		const schema = makeSchema({ tags: { type: 'array', items: { type: 'string' } } })
+		const piece = new (makePieceMock())('table', makeStorage(), schema)
+		const markdown = makeMarkdownSample({ frontmatter: { title: 't', tags: ['a', 'b', 'c'] } })
+		mocks.pieceUtils.makePieceValue.mockImplementation(async (_, v) => v as string)
+
+		const updated = await piece.setField(markdown, 'tags.1', 'new')
+		expect(updated.frontmatter.tags).toEqual(['a', 'new', 'c'])
+	})
+
+	test('setField replaces asset arrays while processing each asset', async () => {
+		const schema = makeSchema({ tags: { type: 'array', items: { type: 'string', format: 'asset' } } })
+		const piece = new (makePieceMock())('table', makeStorage(), schema)
+		const markdown = makeMarkdownSample({ frontmatter: { title: 't', tags: ['.assets/old'] } })
+		mocks.pieceUtils.makePieceValue.mockImplementation(async () => ({
+			stream: new PassThrough() as unknown as ReadStream,
+		}))
+		mocks.pieceUtils.isAttachableStream.mockReturnValueOnce(true).mockReturnValueOnce(true)
+		mocks.pieceUtils.savePieceFieldAsset
+			.mockResolvedValueOnce('.assets/first')
+			.mockResolvedValueOnce('.assets/second')
+
+		const updated = await piece.setField(markdown, 'tags', ['first', 'second'])
+		expect(updated.frontmatter.tags).toEqual(['.assets/first', '.assets/second'])
+		expect(mocks.pieceUtils.savePieceFieldAsset).toHaveBeenCalledTimes(2)
 	})
 
 	test('setField attaches assets even in nested paths', async () => {

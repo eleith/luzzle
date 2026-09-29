@@ -410,10 +410,7 @@ class Piece<F extends PieceFrontmatter> {
 
 		try {
 			if (isArray) {
-				const current = getFrontmatterValue(updatedFrontmatter, fieldPath)
-				if (!Array.isArray(current)) {
-					setFrontmatterValue(updatedFrontmatter, fieldPath, [] as unknown as PieceFrontMatterValue)
-				}
+				setFrontmatterValue(updatedFrontmatter, fieldPath, [] as unknown as PieceFrontMatterValue)
 			}
 
 			for (const one of values) {
