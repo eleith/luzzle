@@ -79,7 +79,7 @@ export type PieceDiffResult<F extends PieceFrontmatter> =
 	| { action: 'skipped'; file: string }
 
 class Piece<F extends PieceFrontmatter> {
-	private _validator?: ReturnType<typeof compile<F>>
+	protected readonly validator: ReturnType<typeof compile<F>>
 	private _schema: PieceFrontmatterSchema<F>
 	private _storage: LuzzleStorage
 	private _pieceName: string
@@ -93,6 +93,8 @@ class Piece<F extends PieceFrontmatter> {
 		if (this._pieceName !== this._schema.title) {
 			throw new Error(`${pieceName} does not match the schema title: ${this._schema.title}`)
 		}
+
+		this.validator = compile<F>(this._schema)
 	}
 
 	async create(directory: string, name: string): Promise<PieceMarkdown<F>> {
@@ -126,11 +128,6 @@ class Piece<F extends PieceFrontmatter> {
 
 	get schema() {
 		return this._schema
-	}
-
-	protected get validator(): ReturnType<typeof compile<F>> {
-		this._validator = this._validator || compile<F>(this._schema)
-		return this._validator
 	}
 
 	get fields() {

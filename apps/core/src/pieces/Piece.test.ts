@@ -57,6 +57,13 @@ describe('pieces/Piece.ts', () => {
 		)
 	})
 
+	test('constructor rejects an invalid schema before a piece is written', () => {
+		const PieceType = makePieceMock()
+		const schema = makeSchema({ cover: { type: 'string', format: 'unknown-format' } })
+
+		expect(() => new PieceType('table', makeStorage(), schema)).toThrow(/unknown format/)
+	})
+
 	test('create generates a new markdown piece', async () => {
 		const PieceType = makePieceMock()
 		const storage = makeStorage()
