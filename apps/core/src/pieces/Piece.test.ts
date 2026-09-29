@@ -74,7 +74,25 @@ describe('pieces/Piece.ts', () => {
 
 		const result = await piece.create('dir', 'My Title')
 		expect(result.piece).toBe('table')
+		expect(result.filePath).toBe('dir/my-title.table.md')
 		expect(result.frontmatter.title).toBe('title')
+	})
+
+	test('create falls back to a deterministic filename when the slug is empty', async () => {
+		const storage = makeStorage()
+		const piece = new (makePieceMock())('table', storage)
+		mocks.slugify.mockReturnValue('')
+		vi.spyOn(storage, 'exists').mockResolvedValue(false)
+
+		const first = await piece.create('dir', '東京の鉄道')
+		const repeated = await piece.create('dir', '東京の鉄道')
+		const different = await piece.create('dir', '🚆🚆')
+		const punctuation = await piece.create('dir', '!!!')
+
+		expect(first.filePath).toMatch(/^dir\/table-[a-f0-9]{12}\.table\.md$/)
+		expect(repeated.filePath).toBe(first.filePath)
+		expect(different.filePath).not.toBe(first.filePath)
+		expect(punctuation.filePath).toMatch(/^dir\/table-[a-f0-9]{12}\.table\.md$/)
 	})
 
 	test('create throws if file already exists', async () => {

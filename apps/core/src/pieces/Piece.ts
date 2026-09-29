@@ -2,6 +2,7 @@ import { updateCache, addCache, getCache } from './cache.js'
 import { cpus } from 'os'
 import path from 'path'
 import slugify from '@sindresorhus/slugify'
+import { createHash } from 'crypto'
 import { Readable } from 'stream'
 import type {
 	PieceFrontmatter,
@@ -97,9 +98,13 @@ class Piece<F extends PieceFrontmatter> {
 		this.validator = compile<F>(this._schema)
 	}
 
-	async create(directory: string, name: string): Promise<PieceMarkdown<F>> {
+	private makeSlug(name: string): string {
 		const slug = slugify(name)
-		const filename = `${slug}.${this.type}.${LUZZLE_PIECE_FILE_EXTENSION}`
+		return slug || `${this.type}-${createHash('sha256').update(name).digest('hex').slice(0, 12)}`
+	}
+
+	async create(directory: string, name: string): Promise<PieceMarkdown<F>> {
+		const filename = `${this.makeSlug(name)}.${this.type}.${LUZZLE_PIECE_FILE_EXTENSION}`
 		const file = path.join(directory, filename)
 		const exists = await this._storage.exists(file)
 
