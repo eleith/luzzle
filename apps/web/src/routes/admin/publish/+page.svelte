@@ -85,8 +85,8 @@
 
 	let eventSource: EventSource | null = null
 
-	let auditDiff = $derived(data.audit?.diff ?? null)
-	let publishDiff = $derived(data.publish?.diff ?? null)
+	let auditDiff = $derived(data.audit?.jobId === jobId ? data.audit.diff : null)
+	let publishDiff = $derived(data.publish?.jobId === jobId ? data.publish.diff : null)
 	let auditRunId = $derived(data.audit?.jobId ?? '')
 	// Only treat an audit as live "pending changes" if it ran in this session
 	// (or was resumed in-flight). A stored audit from a past visit is stale —
@@ -194,16 +194,20 @@
 			})
 		})
 
-		eventSource.addEventListener('done', (e) => {
+		eventSource.addEventListener('done', async (e) => {
 			const payload = JSON.parse(e.data)
-			status = payload.state === 'completed' ? 'completed' : 'failed'
+			const finalStatus = payload.state === 'completed' ? 'completed' : 'failed'
 			if (payload.errors && payload.errors.length > 0) {
 				errorMessage = payload.errors[0]?.message || 'Unknown error'
 			}
 			eventSource?.close()
 			eventSource = null
-			// Refresh loader data so the latest audit/publish diff renders.
-			invalidateAll()
+			try {
+				await invalidateAll()
+			} catch (error) {
+				console.error('Failed to refresh publish results:', error)
+			}
+			status = finalStatus
 		})
 
 		eventSource.addEventListener('error', (e) => {
@@ -314,11 +318,6 @@
 				<div class="report-loading">
 					<CircleNotchBold class="loading-spinner spin" />
 					<span>Comparing local files with the database...</span>
-				</div>
-			{:else if auditDiff && hasChanges(auditDiff)}
-				<div class="publishing-changes-info">
-					<p class="report-empty">Publishing the following changes:</p>
-					{@render changeList(auditDiff, editorHref)}
 				</div>
 			{:else}
 				<div class="report-loading">
@@ -1035,11 +1034,5 @@
 		margin: 0;
 		font-size: var(--font-size-xxs);
 		color: var(--color-error);
-	}
-
-	.publishing-changes-info {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-3);
 	}
 </style>
