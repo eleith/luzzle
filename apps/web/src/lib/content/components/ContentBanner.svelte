@@ -3,6 +3,7 @@
 	import Nav from '$lib/components/layout/simple/nav.svelte'
 	import AtIcon from 'virtual:icons/ph/at'
 	import { onMount } from 'svelte'
+	import { page } from '$app/state'
 
 	let { items, showRandom = false, ...rest }: ComponentProps<typeof Nav> = $props()
 
@@ -13,7 +14,7 @@
 </script>
 
 {#snippet leftSnippet()}
-	{#if isAdmin}
+	{#if isAdmin && page.url.pathname === '/'}
 		<a href="/admin" aria-label="admin">
 			<AtIcon style="font-size: 1em;" />
 		</a>
