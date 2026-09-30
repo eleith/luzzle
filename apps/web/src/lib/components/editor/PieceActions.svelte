@@ -48,6 +48,14 @@
 								</DropdownMenu.Item>
 							{/if}
 
+							{#if !hasPublicVersion || isPublicStale}
+								<DropdownMenu.Item onSelect={() => goto('/admin/publish?check=1')}>
+									{#snippet child({ props })}
+										<div class="dropdown-item" {...props}>publish</div>
+									{/snippet}
+								</DropdownMenu.Item>
+							{/if}
+
 							{#if canGenerate}
 								<DropdownMenu.Item
 									onSelect={() => goto(`/admin/pieces/generate/${file}${returnParam}`)}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte'
 	import { invalidateAll } from '$app/navigation'
+	import { page } from '$app/state'
 	import { Switch } from 'bits-ui'
 	import Button from '$lib/components/ui/Button.svelte'
 
@@ -268,6 +269,7 @@
 
 	onMount(() => {
 		if (initial) startWatching(initial.run.jobId)
+		else if (page.url.searchParams.has('check')) getChanges()
 	})
 
 	onDestroy(() => {
