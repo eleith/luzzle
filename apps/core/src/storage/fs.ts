@@ -52,6 +52,11 @@ class StorageFileSystem extends LuzzleStorage {
 		}
 	}
 
+	async createFile(path: string, contents: string | Buffer): Promise<void> {
+		const resolvedPath = this.resolvePath(path)
+		await writeFile(resolvedPath, contents, { flag: 'wx', encoding: 'utf8' })
+	}
+
 	async getFilesIn(dir: string, options?: { deep?: boolean }) {
 		const resolvedPath = this.resolvePath(dir)
 

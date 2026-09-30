@@ -64,6 +64,7 @@ export function makeStorage(root = 'root'): LuzzleStorage {
 		parseArgPath: vi.fn((p) => p),
 		readFile: vi.fn(),
 		writeFile: vi.fn(),
+		createFile: vi.fn(),
 		getFilesIn: vi.fn(),
 		exists: vi.fn(),
 		delete: vi.fn(),

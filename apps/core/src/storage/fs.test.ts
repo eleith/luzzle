@@ -149,6 +149,40 @@ describe('lib/storage/fs.ts', () => {
 		expect(mocks.writeFile).toHaveBeenCalledWith(expectedPath, contents, 'utf8')
 	})
 
+	test.each(['text', Buffer.from([0, 128, 255])])('createFile uses exclusive creation for %s', async (contents) => {
+		mocks.existsSync.mockReturnValueOnce(true)
+		const storage = new StorageFileSystem('/root/dir')
+
+		await storage.createFile('new.md', contents)
+
+		expect(mocks.writeFile).toHaveBeenCalledWith('/root/dir/new.md', contents, {
+			flag: 'wx',
+			encoding: 'utf8',
+		})
+		expect(mocks.stat).not.toHaveBeenCalled()
+	})
+
+	test.each(['EEXIST', 'ENOSPC', 'EIO'])('createFile propagates %s without deleting the destination', async (code) => {
+		mocks.existsSync.mockReturnValueOnce(true)
+		const storage = new StorageFileSystem('/root/dir')
+		const error = Object.assign(new Error('write failed'), { code })
+		mocks.writeFile.mockRejectedValueOnce(error)
+
+		await expect(storage.createFile('new.md', 'contents')).rejects.toBe(error)
+
+		expect(mocks.unlink).not.toHaveBeenCalled()
+	})
+
+	test.each(['../outside.md', '/outside.md', 'nested/../../outside.md'])('createFile rejects path %s before writing', async (file) => {
+		mocks.existsSync.mockReturnValueOnce(true)
+		const storage = new StorageFileSystem('/root/dir')
+
+		await expect(storage.createFile(file, 'contents')).rejects.toThrow('Path traversal attempt detected')
+
+		expect(mocks.writeFile).not.toHaveBeenCalled()
+		expect(mocks.unlink).not.toHaveBeenCalled()
+	})
+
 	test('getFilesIn recursive', async () => {
 		const root = '/root/dir'
 		const dirs = ['dir1', 'dir2']

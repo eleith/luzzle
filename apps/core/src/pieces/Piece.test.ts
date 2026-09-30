@@ -12,6 +12,7 @@ import * as cache from './cache.js'
 import * as item from './item.js'
 import * as items from './items.js'
 import * as pieceUtils from './utils/piece.js'
+import * as markdownUtils from './utils/markdown.js'
 import slugify from '@sindresorhus/slugify'
 import type { StorageStat, LuzzleInsertable } from '../index.js'
 import { PassThrough } from 'stream'
@@ -254,67 +255,94 @@ describe('pieces/Piece.ts', () => {
 		await expect(piece.get('file.md')).rejects.toThrow('does not exist')
 	})
 
-	test('write saves markdown if valid', async () => {
-		const PieceType = makePieceMock()
-		const storage = makeStorage()
-		const piece = new PieceType('table', storage)
-		const markdown = makeMarkdownSample()
+	describe.each([
+		{ mode: 'default', options: undefined, writer: 'writeFile', unusedWriter: 'createFile' },
+		{ mode: 'overwrite', options: { createOnly: false }, writer: 'writeFile', unusedWriter: 'createFile' },
+		{ mode: 'create-only', options: { createOnly: true }, writer: 'createFile', unusedWriter: 'writeFile' },
+	] as const)('write ($mode)', ({ options, writer, unusedWriter }) => {
+		test('saves serialized markdown using only the selected storage operation', async () => {
+			const storage = makeStorage()
+			const piece = new (makePieceMock())('table', storage)
+			const markdown = makeMarkdownSample()
+			mocks.item.validatePieceItem.mockReturnValue(true)
 
-		mocks.item.validatePieceItem.mockReturnValue(true)
-		vi.spyOn(storage, 'writeFile').mockResolvedValue(undefined)
+			await piece.write(markdown, options)
 
-		await piece.write(markdown)
-		expect(storage.makeDirectory).not.toHaveBeenCalled()
-		expect(storage.writeFile).toHaveBeenCalled()
-	})
+			expect(storage.makeDirectory).not.toHaveBeenCalled()
+			expect(storage[writer]).toHaveBeenCalledExactlyOnceWith(
+				markdown.filePath, markdownUtils.makePieceMarkdownString(markdown)
+			)
+			expect(storage[unusedWriter]).not.toHaveBeenCalled()
+			expect(storage.exists).not.toHaveBeenCalled()
+		})
 
-	test('write creates missing parent directories before writing', async () => {
-		const storage = makeStorage()
-		const piece = new (makePieceMock())('table', storage)
-		const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
-		mocks.item.validatePieceItem.mockReturnValue(true)
-		vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
-		vi.spyOn(storage, 'writeFile').mockResolvedValue(undefined)
+		test('creates missing parent directories before writing', async () => {
+			const storage = makeStorage()
+			const piece = new (makePieceMock())('table', storage)
+			const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
+			mocks.item.validatePieceItem.mockReturnValue(true)
 
-		await piece.write(markdown)
+			await piece.write(markdown, options)
 
-		expect(storage.makeDirectory).toHaveBeenCalledWith('2099/new-folder')
-		expect(vi.mocked(storage.makeDirectory).mock.invocationCallOrder[0]).toBeLessThan(
-			vi.mocked(storage.writeFile).mock.invocationCallOrder[0]
-		)
-	})
+			expect(storage.makeDirectory).toHaveBeenCalledWith('2099/new-folder')
+			expect(vi.mocked(storage.makeDirectory).mock.invocationCallOrder[0]).toBeLessThan(
+				vi.mocked(storage[writer]).mock.invocationCallOrder[0]
+			)
+		})
 
-	test('write propagates directory creation errors', async () => {
-		const storage = makeStorage()
-		const piece = new (makePieceMock())('table', storage)
-		const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
-		mocks.item.validatePieceItem.mockReturnValue(true)
-		vi.spyOn(storage, 'makeDirectory').mockRejectedValue(new Error('disk full'))
+		test('propagates directory creation errors without writing', async () => {
+			const storage = makeStorage()
+			const piece = new (makePieceMock())('table', storage)
+			const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
+			mocks.item.validatePieceItem.mockReturnValue(true)
+			vi.mocked(storage.makeDirectory).mockRejectedValue(new Error('disk full'))
 
-		await expect(piece.write(markdown)).rejects.toThrow('disk full')
-		expect(storage.writeFile).not.toHaveBeenCalled()
-	})
+			await expect(piece.write(markdown, options)).rejects.toThrow('disk full')
+			expect(storage[writer]).not.toHaveBeenCalled()
+			expect(storage.delete).not.toHaveBeenCalled()
+		})
 
-	test('write propagates file write errors', async () => {
-		const storage = makeStorage()
-		const piece = new (makePieceMock())('table', storage)
-		const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
-		mocks.item.validatePieceItem.mockReturnValue(true)
-		vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
-		vi.spyOn(storage, 'writeFile').mockRejectedValue(new Error('permission denied'))
+		test.each(['EEXIST', 'ENOSPC'])('propagates %s without deleting the destination', async (code) => {
+			const storage = makeStorage()
+			const piece = new (makePieceMock())('table', storage)
+			mocks.item.validatePieceItem.mockReturnValue(true)
+			const error = Object.assign(new Error('write failed'), { code })
+			vi.mocked(storage[writer]).mockRejectedValue(error)
 
-		await expect(piece.write(markdown)).rejects.toThrow('permission denied')
-	})
+			await expect(piece.write(makeMarkdownSample(), options)).rejects.toBe(error)
+			expect(storage.delete).not.toHaveBeenCalled()
+			expect(storage[unusedWriter]).not.toHaveBeenCalled()
+		})
 
-	test('write throws if invalid without creating directories', async () => {
-		const storage = makeStorage()
-		const piece = new (makePieceMock())('table', storage)
-		const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
-		mocks.item.validatePieceItem.mockReturnValue(false)
-		mocks.item.getValidatePieceItemErrors.mockReturnValue(['bad'])
+		test('rejects invalid content without creating directories or files', async () => {
+			const storage = makeStorage()
+			const piece = new (makePieceMock())('table', storage)
+			const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
+			mocks.item.validatePieceItem.mockReturnValue(false)
+			mocks.item.getValidatePieceItemErrors.mockReturnValue(['bad'])
 
-		await expect(piece.write(markdown)).rejects.toThrow('Could not write')
-		expect(storage.makeDirectory).not.toHaveBeenCalled()
+			await expect(piece.write(markdown, options)).rejects.toThrow('Could not write')
+			expect(storage.makeDirectory).not.toHaveBeenCalled()
+			expect(storage[writer]).not.toHaveBeenCalled()
+		})
+
+		test('serializes before creating directories or files', async () => {
+			const storage = makeStorage()
+			const piece = new (makePieceMock())('table', storage)
+			const markdown = makeMarkdownSample({ filePath: '2099/new-folder/example.table.md' })
+			mocks.item.validatePieceItem.mockReturnValue(true)
+			const serialize = vi.spyOn(markdownUtils, 'makePieceMarkdownString').mockImplementationOnce(() => {
+				throw new Error('cannot serialize')
+			})
+
+			try {
+				await expect(piece.write(markdown, options)).rejects.toThrow('cannot serialize')
+				expect(storage.makeDirectory).not.toHaveBeenCalled()
+				expect(storage[writer]).not.toHaveBeenCalled()
+			} finally {
+				serialize.mockRestore()
+			}
+		})
 	})
 
 	test('prune deletes missing pieces from DB', async () => {

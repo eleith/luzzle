@@ -179,7 +179,7 @@ class Piece<F extends PieceFrontmatter> {
 		throw new Error(`${file} does not exist`)
 	}
 
-	async write(markdown: PieceMarkdown<F>): Promise<void> {
+	async write(markdown: PieceMarkdown<F>, options?: { createOnly?: boolean }): Promise<void> {
 		const validated = this.validate(markdown)
 
 		if (validated.isValid) {
@@ -188,7 +188,11 @@ class Piece<F extends PieceFrontmatter> {
 			if (directory !== '.') {
 				await this._storage.makeDirectory(directory)
 			}
-			await this._storage.writeFile(markdown.filePath, markdownString)
+			if (options?.createOnly) {
+				await this._storage.createFile(markdown.filePath, markdownString)
+			} else {
+				await this._storage.writeFile(markdown.filePath, markdownString)
+			}
 		} else {
 			throw new Error(
 				`Could not write ${markdown.filePath} due to\n\n: ${validated.errors.join('\n')}`
