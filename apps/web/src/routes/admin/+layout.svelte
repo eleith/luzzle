@@ -33,7 +33,7 @@
 	</button>
 {/snippet}
 
-<Nav items={{ left, right }} />
+<Nav showHome={page.url.pathname === '/admin'} items={{ left, right }} />
 
 <main id="main-content">
 	{@render children()}
