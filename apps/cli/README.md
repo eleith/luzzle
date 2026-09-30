@@ -74,3 +74,11 @@ Prompts the Gemini AI assistant to generate or update piece metadata based on a 
 - **`--directory`** (`-d`): Folder to write a new piece file.
 - **`--title`**: Title of the new piece.
 - **`--file`**: Path to reference documents/images (can be specified multiple times).
+
+### 7. `attach <piece-path> <file-or-url>`
+
+Attaches a local file or an HTTP(S) URL to an existing piece. The CLI opens
+local files explicitly and sends their contents to core as streams.
+
+- **`--name`** (`-n`): Use a custom attachment filename. If it has no extension,
+  the original file or URL extension is retained.

@@ -1,7 +1,5 @@
-import type { ReadStream, Stats, WriteStream } from 'fs';
-import { createReadStream, existsSync } from 'fs'
-import type * as fsPromises from 'fs/promises'
-import { copyFile, stat } from 'fs/promises' // Direct import matching source
+import type { ReadStream, WriteStream } from 'fs';
+import { readFile } from 'fs/promises'
 import type { MockInstance } from 'vitest';
 import { describe, expect, test, vi, afterEach, beforeAll } from 'vitest'
 import { createHash } from 'crypto'
@@ -24,16 +22,10 @@ import type { PieceFrontmatterSchemaField } from './frontmatter.js'
 import { makeStorage } from '../../storage/storage.mock.js'
 import { makeMarkdownSample } from '../Piece.fixtures.js'
 
-vi.mock('fs/promises')
 vi.mock('crypto')
-vi.mock('fs')
 vi.mock('got')
 
 const mocks = {
-	copyFile: vi.mocked(copyFile),
-	stat: vi.mocked(stat),
-	existsSync: vi.mocked(existsSync),
-	createReadStream: vi.mocked(createReadStream),
 	createHash: vi.mocked(createHash),
 	gotStream: vi.mocked(got.stream),
 }
@@ -44,7 +36,6 @@ let fullPngBuffer: Buffer
 
 describe('pieces/utils/piece.ts', () => {
 	beforeAll(async () => {
-		const { readFile } = await vi.importActual<typeof fsPromises>('fs/promises')
 		const assetPath = path.resolve('test/assets/favicon.png')
 		fullPngBuffer = await readFile(assetPath)
 	})
@@ -67,8 +58,6 @@ describe('pieces/utils/piece.ts', () => {
 		const mockUpdate = vi.fn()
 		const mockDigest = vi.fn().mockReturnValue(data)
 		const mockReadStream = new PassThrough() as unknown as ReadStream
-
-		mocks.createReadStream.mockReturnValueOnce(mockReadStream)
 		mocks.createHash.mockReturnValueOnce({
 			update: mockUpdate,
 			digest: mockDigest,
@@ -92,8 +81,6 @@ describe('pieces/utils/piece.ts', () => {
 		const mockUpdate = vi.fn()
 		const mockDigest = vi.fn().mockReturnValue(data)
 		const mockReadStream = new PassThrough() as unknown as ReadStream
-
-		mocks.createReadStream.mockReturnValueOnce(mockReadStream)
 		mocks.createHash.mockReturnValueOnce({
 			update: mockUpdate,
 			digest: mockDigest,
@@ -268,23 +255,20 @@ describe('pieces/utils/piece.ts', () => {
 		expect(await makePieceValue(field, value)).toBe(value)
 	})
 
-	test('makePieceValue path asset', async () => {
+	test('makePieceValue rejects local asset paths', async () => {
 		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
-		const asset = '/path/to/asset'
-		const readable = new PassThrough() as unknown as ReadStream
-
-		mocks.createReadStream.mockReturnValueOnce(readable)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats) // Properly mock resolved value
-
-		const pieceValuePromise = makePieceValue(field, asset)
-
-		process.nextTick(() => {
-			readable.emit('open')
-		})
-
-		const pieceValue = await pieceValuePromise as AttachableStream
-
-		expect(pieceValue.stream).toEqual(readable)
+		for (const source of [
+			'/path/to/asset',
+			'path/to/asset',
+			'file:///path/to/asset',
+			'http:photo.jpg',
+			'.assets-private/image.png',
+		]) {
+			await expect(makePieceValue(field, source)).rejects.toThrow(
+				'Asset source must be an HTTP(S) URL'
+			)
+		}
+		expect(mocks.gotStream).not.toHaveBeenCalled()
 	})
 
 	test('makePieceValue url asset', async () => {
@@ -350,60 +334,21 @@ describe('pieces/utils/piece.ts', () => {
 		)
 	})
 
-	test('makePieceValue treats an unparseable URL as an invalid local file', async () => {
+	test('makePieceValue rejects malformed URLs without reading a local file', async () => {
 		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
-		mocks.stat.mockResolvedValueOnce(null as unknown as Stats)
-
 		await expect(makePieceValue(field, 'https://[secret?signature=private')).rejects.toThrow(
-			'https://[secret?signature=private is not a valid file'
+			'Asset source must be an HTTP(S) URL'
 		)
 		expect(mocks.gotStream).not.toHaveBeenCalled()
-	})
-
-	test('makePieceValue bad file asset', async () => {
-		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
-		const asset = '/path/to/bad/file.jpg'
-		const readable = new PassThrough() as unknown as ReadStream
-
-		mocks.createReadStream.mockReturnValueOnce(readable)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
-		spies.consoleError = vi.spyOn(console, 'error')
-
-		const pieceValuePromise = makePieceValue(field, asset)
-
-		// Emit error synchronously or ensure the promise chain catches it
-		setTimeout(() => {
-			readable.emit('error', new Error('test file error'))
-		}, 0)
-
-		await expect(pieceValuePromise).rejects.toThrow('test file error')
-		expect(spies.consoleError).toHaveBeenCalled()
 	})
 
 	test('makePieceValue existing asset', async () => {
 		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
 		const asset = `${ASSETS_DIRECTORY}/path/to/asset`
-		const readable = new PassThrough() as unknown as ReadStream
-
-		mocks.createReadStream.mockReturnValueOnce(readable)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
 
 		const pieceValue = await makePieceValue(field, asset)
 
 		expect(pieceValue).toEqual(asset)
-	})
-
-	test('makePieceValue not-existant path', async () => {
-		const field = { name: 'title', type: 'string', format: 'asset' } as PieceFrontmatterSchemaField
-		const asset = `path/to/asset`
-		const readable = new PassThrough() as unknown as ReadStream
-
-		mocks.createReadStream.mockReturnValueOnce(readable)
-		mocks.stat.mockResolvedValueOnce(null as unknown as Stats)
-
-		const waiting = makePieceValue(field, asset)
-
-		await expect(waiting).rejects.toThrowError()
 	})
 
 	test('makePieceValue with stream', async () => {
@@ -411,7 +356,6 @@ describe('pieces/utils/piece.ts', () => {
 		const readable = new PassThrough() as unknown as ReadStream
 		const pieceValue = await makePieceValue(field, { stream: readable }) as AttachableStream
 
-		expect(mocks.stat).not.toHaveBeenCalled()
 		expect(pieceValue.stream).toEqual(readable)
 	})
 
@@ -719,31 +663,12 @@ describe('pieces/utils/piece.ts', () => {
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'custom-logo.jpg'))
 	})
 
-	test('savePieceAsset should accept a local file source, read it, and write it to storage', async () => {
+	test('savePieceAsset rejects local source path strings', async () => {
 		const storage = makeStorage('root')
-		const markdown = makeMarkdownSample('samplePath', 'books', '', {})
-		const mocksWriteStream = new PassThrough() as unknown as WriteStream
-		const readable = new PassThrough() as unknown as ReadStream
 
-		mocks.createReadStream.mockReturnValueOnce(readable)
-		mocks.stat.mockResolvedValueOnce({ isFile: () => true } as Stats)
-
-		spies.createWriteStream = vi
-			.spyOn(storage, 'createWriteStream')
-			.mockReturnValue(mocksWriteStream)
-		spies.exists = vi.spyOn(storage, 'exists').mockResolvedValue(false)
-		spies.makeDir = vi.spyOn(storage, 'makeDirectory').mockResolvedValue(undefined)
-
-		const assetPromise = savePieceAsset(markdown.filePath, '/local/path/image.png', storage)
-
-		process.nextTick(() => {
-			readable.emit('open')
-			readable.write(fullPngBuffer)
-			readable.end()
-		})
-
-		const asset = await assetPromise
-		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
-		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'image.png'))
+		await expect(savePieceAsset('samplePath.md', '/local/path/image.png', storage)).rejects.toThrow(
+			'Asset source must be an HTTP(S) URL'
+		)
+		expect(storage.createWriteStream).not.toHaveBeenCalled()
 	})
 })

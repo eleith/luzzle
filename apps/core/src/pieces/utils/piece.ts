@@ -1,7 +1,5 @@
-import { stat } from 'fs/promises'
 import { createHash } from 'crypto'
 import { Readable } from 'stream'
-import { createReadStream } from 'fs'
 import { pipeline } from 'stream/promises'
 import path from 'path'
 import { fileTypeFromBuffer } from 'file-type'
@@ -12,56 +10,39 @@ import { ASSETS_DIRECTORY } from '../assets.js'
 
 type AttachableStream = { stream: Readable; filename?: string }
 
-async function downloadToStream(fileOrUrl: string): Promise<AttachableStream> {
-	const url = URL.canParse(fileOrUrl) ? new URL(fileOrUrl) : undefined
-	if (url?.protocol === 'http:' || url?.protocol === 'https:') {
-		return new Promise((resolve, reject) => {
-			const download = got.stream(fileOrUrl, {
-				throwHttpErrors: false,
-				headers: {
-					'user-agent': 'luzzle/core (https://github.com/eleith/luzzle)',
-				},
-				retry: {
-					limit: 3,
-					methods: ['GET'],
-				},
-				timeout: {
-					request: 10000,
-				},
-			})
-			download.on('error', (err) => {
-				console.error(`Error downloading file from ${url.origin}`)
-				reject(err)
-			})
-			download.on('response', (response) => {
-				if (response.statusCode >= 400) {
-					console.error(`Error downloading file from ${url.origin}: http ${response.statusCode}`)
-					reject(new Error(`HTTP Error: ${response.statusCode}`))
-				} else {
-					resolve({ stream: download, filename: path.basename(url.pathname) })
-				}
-			})
-		})
+async function downloadUrlToStream(sourceUrl: string): Promise<AttachableStream> {
+	if (!/^https?:\/\//i.test(sourceUrl) || !URL.canParse(sourceUrl)) {
+		throw new Error('Asset source must be an HTTP(S) URL')
 	}
+	const url = new URL(sourceUrl)
 
-	const file = fileOrUrl
-	const fileStat = await stat(file).catch(() => null)
-
-	if (fileStat && fileStat.isFile()) {
-		return new Promise((resolve, reject) => {
-			const stream = createReadStream(file)
-			stream.on('error', (err) => {
-				console.error(`Error reading file from path: ${err.message}`)
-				reject(err)
-			})
-			stream.on('open', () => {
-				const filename = path.basename(file)
-				resolve({ stream, filename })
-			})
+	return new Promise((resolve, reject) => {
+		const download = got.stream(sourceUrl, {
+			throwHttpErrors: false,
+			headers: {
+				'user-agent': 'luzzle/core (https://github.com/eleith/luzzle)',
+			},
+			retry: {
+				limit: 3,
+				methods: ['GET'],
+			},
+			timeout: {
+				request: 10000,
+			},
 		})
-	}
-
-	throw new Error(`${fileOrUrl} is not a valid file`)
+		download.on('error', (err) => {
+			console.error(`Error downloading file from ${url.origin}`)
+			reject(err)
+		})
+		download.on('response', (response) => {
+			if (response.statusCode >= 400) {
+				console.error(`Error downloading file from ${url.origin}: http ${response.statusCode}`)
+				reject(new Error(`HTTP Error: ${response.statusCode}`))
+			} else {
+				resolve({ stream: download, filename: path.basename(url.pathname) })
+			}
+		})
+	})
 }
 
 function calculateHashFromFile(stream: Readable): Promise<string> {
@@ -122,13 +103,13 @@ async function savePieceAsset(
 ): Promise<string>
 async function savePieceAsset(
 	file: string,
-	source: string,
+	url: string,
 	storage: LuzzleStorage,
 	options?: { name?: string }
 ): Promise<string>
 async function savePieceAsset(
 	file: string,
-	filenameOrSource: string,
+	filenameOrUrl: string,
 	streamOrStorage: Readable | LuzzleStorage,
 	storageOrOptions?: LuzzleStorage | { name?: string }
 ): Promise<string> {
@@ -142,13 +123,13 @@ async function savePieceAsset(
 		'pipe' in streamOrStorage &&
 		typeof (streamOrStorage as unknown as Readable).pipe === 'function'
 	) {
-		targetFilename = filenameOrSource
+		targetFilename = filenameOrUrl
 		finalStream = streamOrStorage as Readable
 		storage = storageOrOptions as LuzzleStorage
 	} else {
 		storage = streamOrStorage as LuzzleStorage
 		const options = storageOrOptions as { name?: string } | undefined
-		const res = await downloadToStream(filenameOrSource)
+		const res = await downloadUrlToStream(filenameOrUrl)
 		finalStream = res.stream
 		const originalFilename = res.filename || 'attachment'
 		if (options?.name) {
@@ -229,10 +210,10 @@ async function makePieceValue(
 
 	if (format === 'asset') {
 		if (typeof value === 'string') {
-			if (value.startsWith(ASSETS_DIRECTORY)) {
+			if (value.startsWith(`${ASSETS_DIRECTORY}/`)) {
 				return value
 			}
-			return downloadToStream(value)
+			return downloadUrlToStream(value)
 		} else if (typeof value === 'number' || typeof value === 'boolean' || Array.isArray(value)) {
 			throw new Error(`${field} must be a string or stream`)
 		} else {
