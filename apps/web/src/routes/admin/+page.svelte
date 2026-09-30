@@ -28,15 +28,10 @@
 		return rtf.format(diffSec, 'second')
 	}
 
-	const publishStatus = $derived.by(() => {
-		if (data.inFlightPublish) {
-			return data.inFlightPublish.workflow_name === 'PublishAudit' ? 'auditing…' : 'publishing…'
-		}
-		if (!data.lastPublish) {
-			return 'never'
-		}
+	const publishAge = $derived.by(() => {
+		if (!data.lastPublish) return 'never'
 		const when = data.lastPublish.finished_at ?? data.lastPublish.created_at
-		return `${data.lastPublish.status} · ${relativeTime(when)}`
+		return relativeTime(when).replace(/ ago$/, '')
 	})
 </script>
 
@@ -70,8 +65,8 @@
 
 			<div class="stat-card-wrapper">
 				<a class="stat-card" href="/admin/publish">
-					<span class="stat-number">{publishStatus}</span>
-					<span class="stat-label">last publish</span>
+					<span class="stat-number">{publishAge}</span>
+					<span class="stat-label">last published</span>
 				</a>
 				<a class="quick-add" href="/admin/publish" aria-label="publish" title="publish">
 					<ArrowCircleUpIcon style="width: 1em; height: 1em;" />

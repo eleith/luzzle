@@ -3,7 +3,6 @@ import { config, type AppConfig } from '$lib/server/config'
 import { getPieceStats, getAssetStats, type PieceStats } from '../dashboardStats.js'
 import { getRecentlyEditedPieces } from '../pieces.js'
 import { getOpenWorkflowDb } from '../workflow/index.js'
-import { findInFlightPublishRun } from '../workflow/publish.js'
 import { getLatestWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
 import type { WebPieces } from '@luzzle/web.db'
 
@@ -18,7 +17,6 @@ export interface DashboardView {
 	fileCount: number
 	recentlyEditedPieces: WebPieces[]
 	lastPublish: WorkflowRunRow | null
-	inFlightPublish: WorkflowRunRow | null
 	setup: {
 		pieceTypeCount: number
 		aiConfigured: boolean
@@ -38,12 +36,10 @@ export async function loadDashboardPage(): Promise<DashboardView> {
 	])
 
 	let lastPublish: WorkflowRunRow | null = null
-	let inFlightPublish: WorkflowRunRow | null = null
 
 	try {
 		const openWorkflowDb = getOpenWorkflowDb()
 		lastPublish = getLatestWorkflowRun(openWorkflowDb, 'Publish')
-		inFlightPublish = findInFlightPublishRun(openWorkflowDb)
 	} catch (err) {
 		console.error('Failed to query OpenWorkflow runs in dashboard loader:', err)
 	}
@@ -54,7 +50,6 @@ export async function loadDashboardPage(): Promise<DashboardView> {
 		fileCount: pieceStats.total + assetStats.total,
 		recentlyEditedPieces,
 		lastPublish,
-		inFlightPublish,
 		setup: {
 			pieceTypeCount: config.pieces.length,
 			aiConfigured: Boolean(config.ai),

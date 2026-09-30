@@ -3,7 +3,6 @@ import { config } from '$lib/server/config'
 import { getPieceStats, getAssetStats } from '../dashboardStats.js'
 import { getRecentlyEditedPieces } from '../pieces.js'
 import { getOpenWorkflowDb } from '../workflow/index.js'
-import { findInFlightPublishRun } from '../workflow/publish.js'
 import { getLatestWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
 import { loadDashboardPage } from './dashboard.js'
 
@@ -32,10 +31,6 @@ vi.mock('../workflow/index.js', () => ({
 	getOpenWorkflowDb: vi.fn()
 }))
 
-vi.mock('../workflow/publish.js', () => ({
-	findInFlightPublishRun: vi.fn()
-}))
-
 vi.mock('@luzzle/web.jobs', () => ({
 	getLatestWorkflowRun: vi.fn()
 }))
@@ -45,7 +40,6 @@ const mocks = {
 	getAssetStats: vi.mocked(getAssetStats),
 	getRecentlyEditedPieces: vi.mocked(getRecentlyEditedPieces),
 	getOpenWorkflowDb: vi.mocked(getOpenWorkflowDb),
-	findInFlightPublishRun: vi.mocked(findInFlightPublishRun),
 	getLatestWorkflowRun: vi.mocked(getLatestWorkflowRun)
 }
 
@@ -69,7 +63,6 @@ beforeEach(() => {
 	mocks.getAssetStats.mockResolvedValue({ total: 2 })
 	mocks.getRecentlyEditedPieces.mockResolvedValue([])
 	mocks.getOpenWorkflowDb.mockReturnValue({} as never)
-	mocks.findInFlightPublishRun.mockReturnValue(null)
 	mocks.getLatestWorkflowRun.mockReturnValue(null)
 	config.auth = { enabled: true, secret: 'shh', type: 'oidc' }
 	config.sync = { archive: { remote: 'archive-remote' }, cdn: {} }
@@ -87,7 +80,6 @@ describe('loadDashboardPage', () => {
 			fileCount: 5,
 			recentlyEditedPieces: [],
 			lastPublish: makeRun(),
-			inFlightPublish: null,
 			setup: {
 				pieceTypeCount: 2,
 				aiConfigured: true,
@@ -98,12 +90,12 @@ describe('loadDashboardPage', () => {
 		})
 	})
 
-	test('reports an in-flight publish run instead of the last completed one', async () => {
-		mocks.findInFlightPublishRun.mockReturnValue(makeRun({ id: 'pub-2', status: 'running' }))
+	test('reports the latest publish attempt even if it failed', async () => {
+		mocks.getLatestWorkflowRun.mockReturnValue(makeRun({ status: 'failed' }))
 
 		const result = await loadDashboardPage()
 
-		expect(result.inFlightPublish).toEqual(makeRun({ id: 'pub-2', status: 'running' }))
+		expect(result.lastPublish).toEqual(makeRun({ status: 'failed' }))
 	})
 
 	test('reports no auth type when auth is disabled', async () => {
@@ -130,6 +122,5 @@ describe('loadDashboardPage', () => {
 		const result = await loadDashboardPage()
 
 		expect(result.lastPublish).toBeNull()
-		expect(result.inFlightPublish).toBeNull()
 	})
 })
