@@ -78,6 +78,12 @@ server {
 
     add_header X-Cache-Status $upstream_cache_status;
 
+    location ~ ^/admin/pieces/(?:create|generate)(?:/|$) {
+        proxy_cache        off;
+        proxy_read_timeout 420s;
+        proxy_pass         http://luzzle-upstream;
+    }
+
     location ~* "^/(?:pieces|rss|search|$)" {
         proxy_pass http://luzzle-upstream;
     }

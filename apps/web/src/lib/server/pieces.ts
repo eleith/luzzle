@@ -31,7 +31,14 @@ export async function promptToPiece(
 		throw new Error('AI is not configured. Please check your config.yaml')
 	}
 
-	return pieceFrontMatterFromPrompt(config.ai.api_key, schema, prompt, file)
+	try {
+		return await pieceFrontMatterFromPrompt(config.ai.api_key, schema, prompt, file)
+	} catch (error) {
+		if (error instanceof Error && error.message.includes('AbortError')) {
+			throw new Error('A Gemini request timed out after 5 minutes')
+		}
+		throw error
+	}
 }
 
 export async function getRecentPieces(

@@ -360,6 +360,18 @@ describe('lib/llm/google.ts', () => {
 		expect(generating).rejects.toThrowError()
 	})
 
+	test('uses a five-minute timeout for Google requests', async () => {
+		vi.mocked(GoogleGenAI).mockClear()
+		mocks.listModels.mockResolvedValueOnce({} as never)
+
+		await validateApiKey('apiKey')
+
+		expect(GoogleGenAI).toHaveBeenCalledWith({
+			apiKey: 'apiKey',
+			httpOptions: { timeout: 5 * 60 * 1000 },
+		})
+	})
+
 	test('validateApiKey resolves ok when the key can list models', async () => {
 		mocks.listModels.mockResolvedValueOnce({} as never)
 

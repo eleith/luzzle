@@ -16,6 +16,7 @@ import compile from '../lib/ajv.js'
 import { type PieceFrontmatter } from '../pieces/index.js'
 
 const MODEL_NAME = 'gemini-2.5-flash'
+const REQUEST_TIMEOUT_MS = 5 * 60 * 1000
 
 const safetySettings: SafetySetting[] = [
 	{
@@ -33,7 +34,7 @@ const safetySettings: SafetySetting[] = [
 ]
 
 function getClient(apiKey: string) {
-	return new GoogleGenAI({ apiKey })
+	return new GoogleGenAI({ apiKey, httpOptions: { timeout: REQUEST_TIMEOUT_MS } })
 }
 
 async function extractPartFromFile(file: string | Buffer, genAI: GoogleGenAI) {
