@@ -20,29 +20,6 @@ standard JSON schemas (typically defined in your archive under
 `.luzzle/schemas/`). This gives you uniform, type-safe records without holding
 your data hostage.
 
-#### Preparing, creating, and saving a piece
-
-`Piece.create(directory, name)` prepares an in-memory Markdown value and checks
-whether its destination already exists. It does not reserve or write the file.
-After completing review and any asset preparation, use
-`Piece.write(markdown, { createOnly: true })` for the first write. It validates
-and serializes the metadata and body before creating parent directories, then
-uses `LuzzleStorage.createFile()` (filesystem flag `wx`). If another writer has claimed the destination, the write rejects
-with `code: 'EEXIST'` without overwriting it. Keep the reviewed draft so the user
-can choose a different destination.
-
-Use `Piece.write(markdown)` for ordinary Save; it still overwrites existing files.
-Custom storage implementations must implement `createFile(path, contents)` with
-exclusive creation semantics, not an existence check followed by an overwrite.
-
-Exclusive creation is not a transaction: a failed write can leave an empty or
-partial new file, and parent directories can remain. There is no automatic
-path-based deletion on failure, since that could delete another writer's file.
-Asset preparation remains separate; neither write mode rolls back attachments.
-The filesystem backend's path checks are lexical: archive parent directories
-must be trusted. Exclusive creation does not prevent following a parent-directory
-symlink outside the archive.
-
 ### 2. Assets & Attachments
 
 A digital garden is not just text. `@luzzle/core` defines conventions for how

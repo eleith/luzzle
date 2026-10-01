@@ -17,7 +17,7 @@ import {
 
 export * from './database/tables/index.js'
 export * from './pieces/index.js'
-export * from './llm/google.js'
+export * from './llm/google/index.js'
 export * from './storage/index.js'
 
 export {
