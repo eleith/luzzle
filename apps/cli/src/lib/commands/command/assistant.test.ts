@@ -88,7 +88,11 @@ describe('lib/commands/assistant.ts', () => {
 
 		const creating = command.run(ctx, { prompt, update, directory } as Arguments<AssistantArgv>)
 
-		await expect(creating).rejects.toThrow()
+		await expect(creating).rejects.toThrow('update and directory are mutually exclusive')
+		expect(mocks.parseArgs).not.toHaveBeenCalled()
+		expect(mocks.generatePieceFrontmatter).not.toHaveBeenCalled()
+		expect(mocks.yamlStringify).not.toHaveBeenCalled()
+		expect(mocks.consoleLog).not.toHaveBeenCalled()
 	})
 
 	test('must use update and title exclusively', async () => {
@@ -111,7 +115,11 @@ describe('lib/commands/assistant.ts', () => {
 
 		const creating = command.run(ctx, { prompt, update, title } as Arguments<AssistantArgv>)
 
-		await expect(creating).rejects.toThrow()
+		await expect(creating).rejects.toThrow('title is only to be used when creating a new piece')
+		expect(mocks.parseArgs).not.toHaveBeenCalled()
+		expect(mocks.generatePieceFrontmatter).not.toHaveBeenCalled()
+		expect(mocks.yamlStringify).not.toHaveBeenCalled()
+		expect(mocks.consoleLog).not.toHaveBeenCalled()
 	})
 
 	test('updates a piece', async () => {
@@ -164,7 +172,11 @@ describe('lib/commands/assistant.ts', () => {
 
 		const creating = command.run(ctx, { prompt, directory } as Arguments<AssistantArgv>)
 
-		await expect(creating).rejects.toThrow()
+		await expect(creating).rejects.toThrow('title is required when creating a new piece')
+		expect(mocks.parseArgs).not.toHaveBeenCalled()
+		expect(mocks.generatePieceFrontmatter).not.toHaveBeenCalled()
+		expect(mocks.yamlStringify).not.toHaveBeenCalled()
+		expect(mocks.consoleLog).not.toHaveBeenCalled()
 	})
 
 	test('creates a new piece', async () => {

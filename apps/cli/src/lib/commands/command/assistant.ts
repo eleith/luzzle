@@ -52,9 +52,6 @@ const command: Command<AssistantArgv> = {
 
 	run: async function(ctx, args) {
 		const { prompt, file, update, directory, title } = args
-		const { piece } = await parsePieceOptionArgv(ctx, args)
-		const apiKey = ctx.config.get('api_keys.google', '')
-		const metadata = await pieceFrontMatterFromPrompt(apiKey, piece.schema, prompt, file)
 
 		if (update && directory) {
 			throw new Error(`update and directory are mutually exclusive`)
@@ -67,6 +64,10 @@ const command: Command<AssistantArgv> = {
 		if (directory && !title) {
 			throw new Error(`title is required when creating a new piece`)
 		}
+
+		const { piece } = await parsePieceOptionArgv(ctx, args)
+		const apiKey = ctx.config.get('api_keys.google', '')
+		const metadata = await pieceFrontMatterFromPrompt(apiKey, piece.schema, prompt, file)
 
 		if (update) {
 			const markdown = await piece.get(update)
