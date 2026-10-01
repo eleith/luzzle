@@ -1,4 +1,5 @@
 import { db, type JobProgressRow } from '$lib/server/database/index.js'
+import { encodeEvent, SSE_HEADERS } from '../sse.js'
 import { getOpenWorkflowDb } from './index.js'
 import { getWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
 
@@ -22,13 +23,6 @@ function parseCursors(raw: string | null): Cursors {
 	} catch {
 		return {}
 	}
-}
-
-function encodeEvent(event: string, data: unknown, id?: string): string {
-	const lines = [`event: ${event}`]
-	if (id) lines.push(`id: ${id}`)
-	lines.push(`data: ${JSON.stringify(data)}`)
-	return lines.join('\n') + '\n\n'
 }
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
@@ -205,12 +199,5 @@ export function streamJobProgress({
 		}
 	})
 
-	return new Response(stream, {
-		headers: {
-			'Content-Type': 'text/event-stream',
-			'Cache-Control': 'no-cache',
-			Connection: 'keep-alive',
-			'X-Accel-Buffering': 'no'
-		}
-	})
+	return new Response(stream, { headers: SSE_HEADERS })
 }
