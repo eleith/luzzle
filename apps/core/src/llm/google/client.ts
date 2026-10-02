@@ -10,41 +10,22 @@ import {
 } from '@google/genai'
 import type { File as GeminiFile, GenerateContentResponse, Part } from '@google/genai'
 import type { PieceFrontmatter, PieceFrontmatterSchema } from '../../pieces/utils/frontmatter.js'
-
-const MODEL_NAME = 'gemini-3.8-flash'
-const REQUEST_TIMEOUT_MS = 5 * 60 * 1000
-const FILE_POLL_MS = 5000
-const CLEANUP_TIMEOUT_MS = 10_000
+import {
+	MODEL_NAME,
+	REQUEST_TIMEOUT_MS,
+	FILE_POLL_MS,
+	CLEANUP_TIMEOUT_MS,
+	DEFAULT_GENERATION_LIMITS,
+} from './constants.js'
 
 export type GenerationProgress = {
 	phase: 'preparation' | 'generation' | 'validation'
 	message: string
 }
 
-export type GenerationLimits = {
-	maxFiles: number
-	maxFileBytes: number
-	maxTotalFileBytes: number
-	/** Maximum accepted result text; checked after the SDK receives the response. */
-	maxOutputBytes: number
-	/** Stop starting new status checks after this wait; active SDK requests may finish. */
-	maxFileProcessingMs: number
-}
-
-/** Core safety budgets, not measured web deployment limits. */
-export const DEFAULT_GENERATION_LIMITS: Readonly<GenerationLimits> = {
-	maxFiles: 10,
-	maxFileBytes: 50_000_000,
-	maxTotalFileBytes: 100_000_000,
-	maxOutputBytes: 1_000_000,
-	maxFileProcessingMs: 5 * 60 * 1000,
-}
-
 export type GenerationOptions = {
 	files?: Array<string | Buffer>
-	limits?: Partial<GenerationLimits>
 	onProgress?: (progress: GenerationProgress) => void | Promise<void>
-	onWarning?: (message: string) => void | Promise<void>
 }
 
 type GenerationTask<T> = {
@@ -56,7 +37,6 @@ type GenerationTask<T> = {
 
 type GenerationContext = {
 	client: GoogleGenAI
-	limits: GenerationLimits
 	options: GenerationOptions
 	uploaded: Set<string>
 }
@@ -74,16 +54,6 @@ export async function validateApiKey(
 	} catch (error) {
 		return { ok: false, reason: error instanceof Error ? error.message : String(error) }
 	}
-}
-
-function generationLimits(options: GenerationOptions, fileCount: number): GenerationLimits {
-	const limits = { ...DEFAULT_GENERATION_LIMITS, ...options.limits }
-	for (const [key, value] of Object.entries(limits)) {
-		if (!Number.isSafeInteger(value) || value <= 0)
-			throw new Error(`Invalid generation limit: ${key}.`)
-	}
-	if (fileCount > limits.maxFiles) throw new Error('Too many generation attachments.')
-	return limits
 }
 
 function progress(context: GenerationContext, phase: GenerationProgress['phase'], message: string) {
@@ -132,7 +102,7 @@ async function uploadFile(
 }
 
 async function waitForFile(name: string, context: GenerationContext): Promise<Part> {
-	const stopPollingAt = Date.now() + context.limits.maxFileProcessingMs
+	const stopPollingAt = Date.now() + DEFAULT_GENERATION_LIMITS.maxFileProcessingMs
 	while (Date.now() < stopPollingAt) {
 		const file = await context.client.files.get({ name })
 		if (file.state === 'ACTIVE' && file.uri && file.mimeType)
@@ -147,7 +117,7 @@ async function waitForFile(name: string, context: GenerationContext): Promise<Pa
 }
 
 async function prepareAttachments(context: GenerationContext, files: Array<string | Buffer>) {
-	const { limits } = context
+	const limits = DEFAULT_GENERATION_LIMITS
 	const parts: Array<string | Part> = []
 	let totalBytes = 0
 	for (const [index, file] of files.entries()) {
@@ -173,16 +143,6 @@ async function prepareAttachments(context: GenerationContext, files: Array<strin
 	return parts
 }
 
-function warnAboutCleanup(options: GenerationOptions) {
-	const message = 'Could not delete a temporary generation file; provider expiry still applies.'
-	const warn = options.onWarning ?? console.warn
-	try {
-		void Promise.resolve(warn(message)).catch(() => console.warn(message))
-	} catch {
-		console.warn(message)
-	}
-}
-
 async function cleanupFiles(context: GenerationContext) {
 	await Promise.all(
 		[...context.uploaded].map(async (name) => {
@@ -193,13 +153,15 @@ async function cleanupFiles(context: GenerationContext) {
 				})
 			} catch {
 				// Provider errors may include credentials or user content; don't expose them.
-				warnAboutCleanup(context.options)
+				console.warn(
+					'Could not delete a temporary generation file; provider expiry still applies.'
+				)
 			}
 		})
 	)
 }
 
-function completedText(response: GenerateContentResponse, maxOutputBytes: number): string {
+function completedText(response: GenerateContentResponse): string {
 	if (
 		response.promptFeedback?.blockReason &&
 		response.promptFeedback.blockReason !== 'BLOCKED_REASON_UNSPECIFIED'
@@ -225,7 +187,7 @@ function completedText(response: GenerateContentResponse, maxOutputBytes: number
 		text += part.text
 	}
 	if (!text.trim()) throw new Error('Generation returned empty output.')
-	if (Buffer.byteLength(text, 'utf8') > maxOutputBytes)
+	if (Buffer.byteLength(text, 'utf8') > DEFAULT_GENERATION_LIMITS.maxOutputBytes)
 		throw new Error('Generated output exceeds the byte limit.')
 	return text
 }
@@ -257,7 +219,7 @@ async function generateText<T>(
 			],
 		},
 	})
-	return completedText(response, context.limits.maxOutputBytes)
+	return completedText(response)
 }
 
 export async function runGeneration<T>(
@@ -266,10 +228,10 @@ export async function runGeneration<T>(
 	options: GenerationOptions
 ): Promise<T> {
 	const files = [...(options.files ?? [])]
-	const limits = generationLimits(options, files.length)
+	if (files.length > DEFAULT_GENERATION_LIMITS.maxFiles)
+		throw new Error('Too many generation attachments.')
 	const context: GenerationContext = {
 		client: getClient(apiKey),
-		limits,
 		options,
 		uploaded: new Set(),
 	}

@@ -80,6 +80,8 @@ async function until(condition: () => boolean) {
 	}
 	throw new Error('Expected asynchronous operation did not start')
 }
+// Small byte budgets exercise boundaries without allocating deployment-sized fixtures.
+const originalLimits = { ...DEFAULT_GENERATION_LIMITS }
 const run = (options: GenerationOptions = {}) =>
 	generatePieceMetadata('test-key', schema(), 'My instructions', options)
 
@@ -98,6 +100,7 @@ beforeEach(() => {
 	mocks.list.mockResolvedValue({} as never)
 })
 afterEach(() => {
+	Object.assign(DEFAULT_GENERATION_LIMITS, originalLimits)
 	vi.useRealTimers()
 	vi.restoreAllMocks()
 })
@@ -545,82 +548,62 @@ describe('input preparation and cleanup', () => {
 		expect(mocks.delete).toHaveBeenCalledTimes(1)
 	})
 
-	test('reports cleanup failures without exposing provider errors or changing the valid result', async () => {
+	test('logs safe cleanup warnings without changing the valid result', async () => {
 		binary()
 		mocks.delete.mockRejectedValue(new Error('API key secret; private prompt'))
-		const onWarning = vi.fn()
-		await expect(run({ files: [Buffer.from('one')], onWarning })).resolves.toEqual({
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+		await expect(run({ files: [Buffer.from('one')] })).resolves.toEqual({
 			title: 'generated',
 		})
-		expect(onWarning).toHaveBeenCalledExactlyOnceWith(
-			'Could not delete a temporary generation file; provider expiry still applies.'
-		)
-	})
-
-	test('uses safe console warnings by default and if the warning callback throws', async () => {
-		binary()
-		mocks.delete.mockRejectedValue(new Error('secret'))
-		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-		await run({ files: [Buffer.from('one')] })
-		await run({
-			files: [Buffer.from('two')],
-			onWarning: () => {
-				throw new Error('observer failed')
-			},
-		})
-		expect(warn).toHaveBeenCalledTimes(2)
-		expect(JSON.stringify(warn.mock.calls)).not.toContain('secret')
-	})
-	test('falls back to a safe warning when an asynchronous warning callback rejects', async () => {
-		binary()
-		mocks.delete.mockRejectedValue(new Error('private provider error'))
-		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-		const onWarning = vi.fn().mockRejectedValue(new Error('private observer error'))
-		await expect(run({ files: [Buffer.from('one')], onWarning })).resolves.toEqual({
-			title: 'generated',
-		})
-		expect(onWarning).toHaveBeenCalledOnce()
 		expect(warn).toHaveBeenCalledExactlyOnceWith(
 			'Could not delete a temporary generation file; provider expiry still applies.'
 		)
 	})
 
-	test('does not wait for warning callbacks or skip cleanup of other known files', async () => {
+	test.each(['provider', 'validation'])(
+		'logs safe cleanup warnings without masking a %s error',
+		async (failure) => {
+			binary()
+			const providerError = new Error('provider unavailable')
+			if (failure === 'provider') mocks.generate.mockRejectedValue(providerError)
+			else respond('{"title":42}')
+			mocks.delete.mockRejectedValue(new Error('API key secret; private prompt'))
+			const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+			const generating = run({ files: [Buffer.from('one')] })
+			if (failure === 'provider') await expect(generating).rejects.toBe(providerError)
+			else await expect(generating).rejects.toThrow('does not match schema')
+			expect(warn).toHaveBeenCalledExactlyOnceWith(
+				'Could not delete a temporary generation file; provider expiry still applies.'
+			)
+		}
+	)
+
+	test('does not skip cleanup of other known files after a deletion fails', async () => {
 		binary()
 		mocks.upload
 			.mockResolvedValueOnce({ name: 'files/first' })
 			.mockResolvedValueOnce({ name: 'files/second' })
 		mocks.delete.mockRejectedValueOnce(new Error('cleanup failed'))
-		const onWarning = vi.fn(() => new Promise<void>(() => {}))
-		await expect(
-			run({ files: [Buffer.from('one'), Buffer.from('two')], onWarning })
-		).resolves.toEqual({ title: 'generated' })
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+		await expect(run({ files: [Buffer.from('one'), Buffer.from('two')] })).resolves.toEqual({
+			title: 'generated',
+		})
 		expect(mocks.delete.mock.calls.map(([arg]) => arg.name)).toEqual([
 			'files/first',
 			'files/second',
 		])
-		expect(onWarning).toHaveBeenCalledOnce()
+		expect(warn).toHaveBeenCalledExactlyOnceWith(
+			'Could not delete a temporary generation file; provider expiry still applies.'
+		)
 	})
 })
 
 describe('input and output bounds', () => {
-	test.each([0, -1, NaN, Infinity, 1.5, Number.MAX_SAFE_INTEGER + 1])(
-		'rejects invalid limits before provider work: %s',
-		async (maxFiles) => {
-			await expect(run({ limits: { maxFiles } })).rejects.toThrow('Invalid generation limit')
-			await expect(run({ limits: { maxFileProcessingMs: maxFiles } })).rejects.toThrow(
-				'Invalid generation limit'
-			)
-			expect(GoogleGenAI).not.toHaveBeenCalled()
-		}
-	)
-
-	test('rejects excess file counts and retains the default processing wait limit', async () => {
-		await expect(
-			run({ files: [Buffer.from('1'), Buffer.from('2')], limits: { maxFiles: 1 } })
-		).rejects.toThrow('Too many')
+	test('accepts the file count boundary and rejects excess files before provider work', async () => {
+		const files = Array.from({ length: DEFAULT_GENERATION_LIMITS.maxFiles }, () => Buffer.from('1'))
+		await expect(run({ files: [...files, Buffer.from('2')] })).rejects.toThrow('Too many')
 		expect(GoogleGenAI).not.toHaveBeenCalled()
-		expect(DEFAULT_GENERATION_LIMITS.maxFileProcessingMs).toBe(300000)
+		await expect(run({ files })).resolves.toEqual({ title: 'generated' })
 	})
 
 	test('rejects invalid schema or unknown field before provider work', async () => {
@@ -634,22 +617,34 @@ describe('input and output bounds', () => {
 	})
 
 	test('bounds buffers and combined input bytes before starting further uploads', async () => {
-		await expect(run({ files: [Buffer.from('123')], limits: { maxFileBytes: 2 } })).rejects.toThrow(
+		Object.assign(DEFAULT_GENERATION_LIMITS, { maxFileBytes: 2, maxTotalFileBytes: 3 })
+		await expect(run({ files: [Buffer.from('123')] })).rejects.toThrow('byte limit')
+		await expect(run({ files: [Buffer.from('12'), Buffer.from('34')] })).rejects.toThrow(
 			'byte limit'
 		)
-		await expect(
-			run({ files: [Buffer.from('12'), Buffer.from('34')], limits: { maxTotalFileBytes: 3 } })
-		).rejects.toThrow('byte limit')
 		expect(mocks.upload).not.toHaveBeenCalled()
+		expect(mocks.generate).not.toHaveBeenCalled()
+		await expect(run({ files: [Buffer.from('12'), Buffer.from('3')] })).resolves.toEqual({
+			title: 'generated',
+		})
+	})
+
+	test('cleans earlier uploads when a later attachment exceeds the total byte budget', async () => {
+		Object.assign(DEFAULT_GENERATION_LIMITS, { maxFileBytes: 2, maxTotalFileBytes: 3 })
+		binary()
+		await expect(run({ files: [Buffer.from('12'), Buffer.from('34')] })).rejects.toThrow(
+			'byte limit'
+		)
+		expect(mocks.upload).toHaveBeenCalledOnce()
+		expect(mocks.delete).toHaveBeenCalledOnce()
 		expect(mocks.generate).not.toHaveBeenCalled()
 	})
 
 	test('stops reading an oversized path rather than buffering the entire file', async () => {
+		Object.assign(DEFAULT_GENERATION_LIMITS, { maxFileBytes: 3 })
 		const stream = Readable.from([Buffer.from('12'), Buffer.from('34'), Buffer.from('56')])
 		mocks.readStream.mockReturnValue(stream as ReadStream)
-		await expect(run({ files: ['/file'], limits: { maxFileBytes: 3 } })).rejects.toThrow(
-			'byte limit'
-		)
+		await expect(run({ files: ['/file'] })).rejects.toThrow('byte limit')
 		expect(stream.destroyed).toBe(true)
 		expect(mocks.fileType).not.toHaveBeenCalled()
 	})
@@ -658,8 +653,10 @@ describe('input and output bounds', () => {
 		const text = '{"title":"🧩"}'
 		respond(text)
 		const bytes = Buffer.byteLength(text, 'utf8')
-		await expect(run({ limits: { maxOutputBytes: bytes } })).resolves.toEqual({ title: '🧩' })
-		await expect(run({ limits: { maxOutputBytes: bytes - 1 } })).rejects.toThrow('output exceeds')
+		Object.assign(DEFAULT_GENERATION_LIMITS, { maxOutputBytes: bytes })
+		await expect(run()).resolves.toEqual({ title: '🧩' })
+		Object.assign(DEFAULT_GENERATION_LIMITS, { maxOutputBytes: bytes - 1 })
+		await expect(run()).rejects.toThrow('output exceeds')
 	})
 })
 
@@ -668,6 +665,8 @@ describe('disconnected progress observers', () => {
 		'finishes validation and cleanup when the progress sink disconnects (%s)',
 		async (failure) => {
 			binary()
+			mocks.delete.mockRejectedValue(new Error('API key secret; private prompt'))
+			const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 			const pending = deferred<GenerateContentResponse>()
 			mocks.generate.mockReturnValue(pending.promise)
 			let disconnected = false
@@ -684,6 +683,9 @@ describe('disconnected progress observers', () => {
 			await expect(generating).resolves.toEqual({ title: 'finished' })
 			expect(onProgress.mock.calls.map(([event]) => event.phase)).toContain('validation')
 			expect(mocks.delete).toHaveBeenCalledOnce()
+			expect(warn).toHaveBeenCalledExactlyOnceWith(
+				'Could not delete a temporary generation file; provider expiry still applies.'
+			)
 		}
 	)
 
@@ -705,6 +707,8 @@ describe('disconnected progress observers', () => {
 		'preserves a %s error after disconnect and still cleans known files',
 		async (failure) => {
 			binary()
+			mocks.delete.mockRejectedValue(new Error('API key secret; private prompt'))
+			const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 			const pending = deferred<GenerateContentResponse>()
 			mocks.generate.mockReturnValue(pending.promise)
 			let disconnected = false
@@ -722,6 +726,9 @@ describe('disconnected progress observers', () => {
 			else pending.resolve(response('{"title":42}'))
 			await rejected
 			expect(mocks.delete).toHaveBeenCalledOnce()
+			expect(warn).toHaveBeenCalledExactlyOnceWith(
+				'Could not delete a temporary generation file; provider expiry still applies.'
+			)
 		}
 	)
 })
@@ -731,13 +738,15 @@ describe('bounded file processing polling', () => {
 		{ maxFileProcessingMs: 1, polls: 1 },
 		{ maxFileProcessingMs: 5000, polls: 1 },
 		{ maxFileProcessingMs: 6000, polls: 2 },
+		{ maxFileProcessingMs: DEFAULT_GENERATION_LIMITS.maxFileProcessingMs, polls: 60 },
 	])(
 		'stops polling at the wait limit: $maxFileProcessingMs ms',
 		async ({ maxFileProcessingMs, polls }) => {
 			vi.useFakeTimers()
 			binary()
 			mocks.get.mockResolvedValue({ state: FileState.PROCESSING })
-			const generating = run({ files: [Buffer.from('one')], limits: { maxFileProcessingMs } })
+			Object.assign(DEFAULT_GENERATION_LIMITS, { maxFileProcessingMs })
+			const generating = run({ files: [Buffer.from('one')] })
 			const rejected = expect(generating).rejects.toThrow(
 				'Attachment processing exceeded the wait limit.'
 			)
@@ -761,13 +770,10 @@ describe('bounded file processing polling', () => {
 			const pending = deferred<Awaited<ReturnType<typeof mocks.get>>>()
 			mocks.get.mockReturnValue(pending.promise)
 			const settled = vi.fn()
-			const generating = run({
-				files: [Buffer.from('one')],
-				limits: { maxFileProcessingMs: 100 },
-			})
+			const generating = run({ files: [Buffer.from('one')] })
 			void generating.then(settled, settled)
 			await until(() => mocks.get.mock.calls.length === 1)
-			await vi.advanceTimersByTimeAsync(101)
+			await vi.advanceTimersByTimeAsync(DEFAULT_GENERATION_LIMITS.maxFileProcessingMs + 1)
 			expect(settled).not.toHaveBeenCalled()
 			pending.resolve({ state, uri: 'https://provider/ready', mimeType: 'application/pdf' })
 			if (state === FileState.ACTIVE) {

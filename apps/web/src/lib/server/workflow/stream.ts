@@ -1,9 +1,9 @@
 import { db, type JobProgressRow } from '$lib/server/database/index.js'
-import { encodeEvent, SSE_HEADERS } from '../sse.js'
+import { createEventStream } from '../sse.js'
+import { WORKFLOW_POLL_INTERVAL_MS } from '../constants.js'
 import { getOpenWorkflowDb } from './index.js'
 import { getWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
 
-const POLL_INTERVAL_MS = 350
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled'])
 
 type Cursors = Record<string, number>
@@ -25,17 +25,17 @@ function parseCursors(raw: string | null): Cursors {
 	}
 }
 
-function sleep(ms: number, signal: AbortSignal): Promise<void> {
+function waitForNextPoll(signal: AbortSignal): Promise<void> {
 	return new Promise((resolve) => {
-		const timer = setTimeout(resolve, ms)
-		signal.addEventListener(
-			'abort',
-			() => {
-				clearTimeout(timer)
-				resolve()
-			},
-			{ once: true }
-		)
+		// The observer may have closed while the previous database read was pending.
+		if (signal.aborted) return resolve()
+		const finish = () => {
+			clearTimeout(timer)
+			signal.removeEventListener('abort', finish)
+			resolve()
+		}
+		const timer = setTimeout(finish, WORKFLOW_POLL_INTERVAL_MS)
+		signal.addEventListener('abort', finish, { once: true })
 	})
 }
 
@@ -162,42 +162,23 @@ export function streamJobProgress({
 		request.headers.get('last-event-id') ?? url.searchParams.get('cursor')
 	)
 
-	const stream = new ReadableStream<string>({
-		async start(controller) {
-			const { signal } = request
-			let closed = false
+	const events = createEventStream(request)
 
-			const close = () => {
-				if (closed) return
-				closed = true
-				try {
-					controller.close()
-				} catch {
-					// already closed
-				}
+	async function poll() {
+		try {
+			while (!events.signal.aborted) {
+				if (await pollOnce(jobId, jobClass, cursors, events.emit)) break
+				await waitForNextPoll(events.signal)
 			}
-
-			const emit: Emit = (event, data, id) => {
-				if (closed) return
-				try {
-					controller.enqueue(encodeEvent(event, data, id))
-				} catch {
-					close()
-				}
-			}
-
-			signal.addEventListener('abort', close, { once: true })
-
-			while (!closed && !signal.aborted) {
-				const terminal = await pollOnce(jobId, jobClass, cursors, emit)
-				if (terminal) {
-					close()
-					return
-				}
-				await sleep(POLL_INTERVAL_MS, signal)
-			}
+		} catch (error) {
+			console.error('SSE stream error:', error)
+			events.emit('error', { message: 'Internal stream error' })
+		} finally {
+			events.close()
 		}
-	})
+	}
 
-	return new Response(stream, { headers: SSE_HEADERS })
+	// Only polling ends when the observer disconnects; the worker job is independent.
+	void poll()
+	return events.response
 }
