@@ -19,6 +19,7 @@ export * from './database/tables/index.js'
 export * from './pieces/index.js'
 export * from './llm/google/index.js'
 export * from './storage/index.js'
+export { mergeGeneratedFields, appendGeneratedBody } from './pieces/utils/generation.js'
 
 export {
 	getDatabaseClient,
