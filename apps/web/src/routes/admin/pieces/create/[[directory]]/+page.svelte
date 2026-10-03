@@ -1,226 +1,75 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte'
 	import Combobox from '$lib/components/ui/Combobox.svelte'
-	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
-	import { enhance } from '$app/forms'
-	import { goto, invalidateAll } from '$app/navigation'
+	import type { PageProps } from './$types'
 
-	let { data, form } = $props()
+	let { data, form }: PageProps = $props()
 	let selectedType = $state(form?.type || data.type)
 	let selectedDirectory = $state(form?.directory || data.directory || '.')
 	let name = $state(form?.name || '')
-	let shouldGenerate = $state(form?.generate ?? false)
-	let prompt = $state(form?.prompt || '')
-	let mergedContent = $state(form?.mergedContent || '')
 
 	const directoryItems = $derived(
 		data.directories.map((dir) => ({ value: dir, label: dir === '.' ? '(root)' : dir }))
 	)
 	const typeItems = $derived(data.types.map((type) => ({ value: type, label: type })))
-
-	$effect(() => {
-		if (form?.mergedContent) {
-			mergedContent = form.mergedContent
-		}
-	})
-
-	const isReview = $derived(!!(form && form.mergedContent && !form.error))
-	const filePath = $derived(form?.filePath || '')
-	let saveError = $state<string | null>(null)
 </script>
 
-{#if isReview}
-	<section class="review">
-		<div class="header">
-			<div
-				style="display:flex; gap: var(--space-2); justify-content: flex-end; margin-bottom: var(--space-2);"
-			>
-				<form
-					method="post"
-					action="/admin/piece/{filePath}/source?/save"
-					use:enhance={() => {
-						saveError = null
-						return async ({ result }) => {
-							if (result.type === 'success') {
-								await invalidateAll()
-								goto(`/admin/piece/${filePath}/source`)
-							} else if (result.type === 'failure') {
-								const resData = result.data as { error?: { message?: string } } | undefined
-								saveError = resData?.error?.message || 'Failed to save piece'
-							} else if (result.type === 'error') {
-								saveError = result.error?.message || 'An unexpected error occurred'
-							} else if (result.type === 'redirect') {
-								await goto(result.location)
-							}
-						}
-					}}
-				>
-					<input type="hidden" name="content" value={mergedContent} />
-					<Button type="submit">save</Button>
-				</form>
-				<a href="/admin/piece/{filePath}/source">
-					<Button variant="outline">cancel</Button>
-				</a>
-			</div>
-		</div>
-		{#if saveError}
-			<div class="banner error-banner">
-				<strong>Error:</strong>
-				{saveError}
-			</div>
+<section class="create">
+	<form method="post" action="?/create">
+		{#if form?.error}
+			<div class="banner error-banner" role="alert">{form.error.message}</div>
 		{/if}
-		<div class="editor-container">
-			<MarkdownEditor bind:value={mergedContent} file={filePath} />
+		<div class="field">folder</div>
+		<div class="field-edit">
+			<Combobox name="directory" bind:value={selectedDirectory} items={directoryItems} autofocus />
 		</div>
-	</section>
-{:else}
-	<section class="create">
-		<form method="post" enctype="multipart/form-data" action="?/create">
-			<div class="piece-container">
-				{#if form?.error}
-					<div class="banner error-banner" role="alert">{form.error.message}</div>
-				{/if}
-				<div class="field">directory</div>
-				<div class="field-edit">
-					<Combobox
-						name="directory"
-						bind:value={selectedDirectory}
-						items={directoryItems}
-						autofocus
-					/>
-				</div>
-				<div class="field">type</div>
-				<div class="field-edit">
-					<Combobox name="type" bind:value={selectedType} items={typeItems} />
-				</div>
-				<div class="field">name</div>
-				<div class="field-edit">
-					<input
-						type="text"
-						name="name"
-						class="input"
-						placeholder="e.g. my-new-piece"
-						required
-						bind:value={name}
-						style="width:100%;"
-					/>
-				</div>
-
-				{#if data.canGenerate}
-					<div class="generate-section">
-						<label class="generate-toggle">
-							<input type="checkbox" name="generate" value="true" bind:checked={shouldGenerate} />
-							Generate metadata with AI
-						</label>
-
-						{#if shouldGenerate}
-							<div class="generation-fields">
-								<div class="field">file (optional)</div>
-								<div class="field-edit">
-									<input
-										type="file"
-										name="files"
-										class="input"
-										accept="application/pdf, application/json, text/html, .txt, image/png, image/jpeg, .csv"
-										multiple
-									/>
-									{#if form?.error}
-										<p>Reselect any attachments before retrying.</p>
-									{/if}
-								</div>
-
-								<div class="field">prompt (optional)</div>
-								<div class="field-edit">
-									<textarea
-										name="prompt"
-										class="input"
-										style="width:100%;height:150px;"
-										placeholder="Describe the piece or provide instructions for generating metadata..."
-										bind:value={prompt}
-									></textarea>
-								</div>
-							</div>
-						{/if}
-					</div>
-				{/if}
-
-				<div style="display:flex;justify-content:space-between;">
-					<Button type="submit">
-						{shouldGenerate ? 'create & generate' : 'create'}
-					</Button>
-					<a href="/admin">
-						<Button variant="outline">cancel</Button>
-					</a>
-				</div>
-			</div>
-		</form>
-	</section>
-{/if}
+		<div class="field">type</div>
+		<div class="field-edit">
+			<Combobox name="type" bind:value={selectedType} items={typeItems} />
+		</div>
+		<label class="field" for="piece-title">title</label>
+		<div class="field-edit">
+			<input id="piece-title" type="text" name="name" class="input" required bind:value={name} />
+		</div>
+		<div class="actions">
+			<Button type="submit">Create</Button>
+			<a href="/admin"><Button variant="outline">Cancel</Button></a>
+		</div>
+	</form>
+</section>
 
 <style>
-	div.field {
+	.field {
+		display: block;
 		font-size: 80%;
-		padding-bottom: 5px;
+		padding-bottom: var(--space-1);
 	}
-
-	div.field-edit {
-		padding-bottom: 10px;
+	.field-edit {
+		padding-bottom: var(--space-3);
 	}
-
-	section.create,
-	section.review {
-		margin: var(--space-4);
-		margin-bottom: var(--space-8);
-		margin-left: auto;
-		margin-right: auto;
+	.input {
+		width: 100%;
+	}
+	section.create {
+		margin: var(--space-4) auto var(--space-8);
 		width: 85%;
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
 	}
-
-	.header {
+	.actions {
 		display: flex;
-		justify-content: flex-end;
+		justify-content: space-between;
 		gap: var(--space-2);
-		margin-bottom: var(--space-2);
 	}
-
-	.generate-section {
-		margin: var(--space-3) 0;
-		padding: var(--space-3);
-		border: 1px solid var(--color-outline);
-		border-radius: var(--radius-small);
-	}
-
-	.generate-toggle {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		cursor: pointer;
-		font-size: 90%;
-	}
-
-	.generation-fields {
-		margin-top: var(--space-3);
-		padding-top: var(--space-3);
-		border-top: 1px solid var(--color-outline-variant);
-	}
-
 	@media screen and (min-width: 768px) {
-		section.create,
-		section.review {
+		section.create {
 			width: clamp(500px, 66.6666%, 1000px);
 		}
 	}
-
 	.banner {
 		padding: var(--space-3);
+		margin-bottom: var(--space-3);
 		border-radius: var(--radius-small);
-		margin-bottom: var(--space-2);
 		font-size: 0.875rem;
 	}
-
 	.error-banner {
 		background-color: var(--color-error-container);
 		color: var(--color-on-error-container);

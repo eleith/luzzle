@@ -3,7 +3,7 @@ import type { Command } from '../utils/types.js'
 import yaml from 'yaml'
 import type { PieceArgv} from '../utils/pieces.js';
 import { makePieceOption, parsePieceOptionArgv } from '../utils/pieces.js'
-import { pieceFrontMatterFromPrompt } from '@luzzle/core'
+import { generatePieceFrontmatter } from '@luzzle/core'
 
 export type AssistantArgv = {
 	update?: string
@@ -67,7 +67,11 @@ const command: Command<AssistantArgv> = {
 
 		const { piece } = await parsePieceOptionArgv(ctx, args)
 		const apiKey = ctx.config.get('api_keys.google', '')
-		const metadata = await pieceFrontMatterFromPrompt(apiKey, piece.schema, prompt, file)
+		const metadata = await generatePieceFrontmatter(
+			apiKey,
+			{ schema: piece.schema, instructions: prompt },
+			{ files: file }
+		)
 
 		if (update) {
 			const markdown = await piece.get(update)

@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { DEFAULT_GENERATION_LIMITS, GenerationValidationError } from '@luzzle/core'
 import type { GenerationEvent, GenerationResult } from '$lib/generation/types'
-import type { Generate } from './generator'
-import { generationStream } from './stream'
+import { createGenerationStream } from './stream'
 
-const result: GenerationResult = { kind: 'body', value: 'café\n🧩 日本語' }
+const result: GenerationResult = { markdown: 'café\n🧩 日本語' }
 const decoder = new TextDecoder()
 
 function deferred<T>() {
@@ -42,18 +42,13 @@ async function drain(reader: ReadableStreamDefaultReader<Uint8Array>) {
 	}
 }
 
-function setup(generate?: Generate, abort = new AbortController()) {
+function setup(abort = new AbortController()) {
 	const completion = deferred<GenerationResult>()
-	let progress!: Parameters<Generate>[0]
-	const fake = vi.fn<Generate>((notify) => {
-		progress = notify
-		return generate ? generate(notify) : completion.promise
-	})
 	const request = new Request('http://localhost/api/admin/generate', { signal: abort.signal })
 	const removeListener = vi.spyOn(request.signal, 'removeEventListener')
 	const release = vi.fn()
-	const response = generationStream(request, fake, release)
-	return { completion, progress, fake, request, abort, removeListener, release, response }
+	const stream = createGenerationStream(request)
+	return { completion, request, abort, removeListener, release, ...stream }
 }
 
 beforeEach(() => {
@@ -67,9 +62,10 @@ afterEach(() => {
 	vi.restoreAllMocks()
 })
 
-describe('generationStream', () => {
+describe('createGenerationStream', () => {
 	test('streams early state and progress, then exactly one validated UTF-8 result', async () => {
 		const s = setup()
+		void s.sendResult(s.completion.promise, s.release)
 		const reader = s.response.body!.getReader()
 		expect(s.response).toBeInstanceOf(Response)
 		expect(Object.fromEntries(s.response.headers)).toEqual({
@@ -176,7 +172,8 @@ describe('generationStream', () => {
 	})
 
 	test('supports native Response.text() with multibyte output', async () => {
-		const s = setup(async () => result)
+		const s = setup()
+		void s.sendResult(Promise.resolve(result), s.release)
 		const text = await s.response.text()
 		expect(text).toContain('café\\n🧩 日本語')
 		expect(events(text).at(-1)).toEqual({
@@ -186,18 +183,52 @@ describe('generationStream', () => {
 		expect(s.release).toHaveBeenCalledTimes(1)
 	})
 
+	test.each([0, -1])(
+		'caps the serialized UTF-8 result at the byte boundary (%i)',
+		async (offset) => {
+			const originalLimit = DEFAULT_GENERATION_LIMITS.maxOutputBytes
+			Object.assign(DEFAULT_GENERATION_LIMITS, {
+				maxOutputBytes: Buffer.byteLength(JSON.stringify(result)) + offset
+			})
+			vi.spyOn(console, 'error').mockImplementation(() => {})
+			try {
+				const s = setup()
+				void s.sendResult(Promise.resolve(result), s.release)
+				const frames = events(await s.response.text())
+				expect(frames.filter((frame) => frame.type === 'done')).toEqual([
+					{
+						type: 'done',
+						data: offset === 0 ? { state: 'completed', result } : { state: 'failed' }
+					}
+				])
+				if (offset < 0) {
+					expect(frames).toContainEqual({
+						type: 'error',
+						data: { message: 'Generation failed. Please try again.' }
+					})
+					expect(JSON.stringify(frames)).not.toContain('markdown')
+				}
+				expect(s.release).toHaveBeenCalledOnce()
+				expect(vi.getTimerCount()).toBe(0)
+			} finally {
+				Object.assign(DEFAULT_GENERATION_LIMITS, { maxOutputBytes: originalLimit })
+			}
+		}
+	)
+
 	test.each(['reject', 'throw'] as const)(
 		'%s sends one failed done, a safe error and no result',
 		async (mode) => {
 			const secret = 'api-key=secret prompt=private filename=/private/scan.pdf provider-stack'
 			const log = vi.spyOn(console, 'error').mockImplementation(() => {})
-			const s = setup(
+			const s = setup()
+			const work =
 				mode === 'throw'
-					? () => {
+					? (async () => {
 							throw new Error(secret)
-						}
-					: undefined
-			)
+						})()
+					: s.completion.promise
+			void s.sendResult(work, s.release)
 			if (mode === 'reject') {
 				s.progress({ phase: 'validation', message: 'Checking output' })
 				vi.setSystemTime(1_200)
@@ -217,14 +248,72 @@ describe('generationStream', () => {
 				finished_at: mode === 'reject' ? 1_200 : 1_000
 			})
 			expect(text).not.toMatch(/result|api-key|private|provider-stack/)
-			expect(log.mock.calls).toEqual([['AI generation failed.']])
+			expect(log).toHaveBeenCalledWith(
+				'AI generation failed.',
+				expect.objectContaining({
+					phase: mode === 'reject' ? 'validation' : 'preparation',
+					error: 'Error',
+					stack: expect.stringContaining('stream.test.ts')
+				})
+			)
+			expect(JSON.stringify(log.mock.calls)).not.toMatch(/api-key|prompt=private|provider-stack/)
 			expect(s.release).toHaveBeenCalledTimes(1)
 			expect(vi.getTimerCount()).toBe(0)
 		}
 	)
 
+	test('reports the field and rule for a local schema failure without returning a result', async () => {
+		const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+		const message = 'Generated frontmatter does not match schema: /title must be string'
+		const s = setup()
+		const work = (async () => {
+			s.progress({ phase: 'validation', message: 'Validating metadata' })
+			throw new GenerationValidationError(message)
+		})()
+		void s.sendResult(work, s.release)
+		const frames = events(await s.response.text())
+		expect(frames).toContainEqual({ type: 'error', data: { message } })
+		expect(frames.at(-1)).toEqual({ type: 'done', data: { state: 'failed' } })
+		expect(log).toHaveBeenCalledWith(
+			'AI generation failed.',
+			expect.objectContaining({
+				phase: 'validation',
+				validation: message,
+				error: 'GenerationValidationError'
+			})
+		)
+		expect(s.release).toHaveBeenCalledOnce()
+	})
+
+	test.each([false, true])('logs provider status safely (wrapped cause: %s)', async (wrapped) => {
+		const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+		const s = setup()
+		const work = (async () => {
+			s.progress({ phase: 'generation', message: 'Generating content' })
+			const providerError = Object.assign(new Error('private request\nsecond private line'), {
+				status: 404,
+				request: { apiKey: 'secret-key', contents: 'private prompt' }
+			})
+			if (wrapped) throw new Error('Could not upload attachment.', { cause: providerError })
+			throw providerError
+		})()
+		void s.sendResult(work, s.release)
+		await s.response.text()
+		expect(log).toHaveBeenCalledWith(
+			'AI generation failed.',
+			expect.objectContaining({
+				phase: 'generation',
+				error: 'Error',
+				status: 404,
+				stack: expect.stringContaining('stream.test.ts')
+			})
+		)
+		expect(JSON.stringify(log.mock.calls)).not.toMatch(/private|secret-key/)
+	})
+
 	test('heartbeats every 15 seconds through and beyond 300 seconds, not an operation deadline', async () => {
 		const s = setup()
+		void s.sendResult(s.completion.promise, s.release)
 		const reader = s.response.body!.getReader()
 		await read(reader)
 		await read(reader)
@@ -250,6 +339,7 @@ describe('generationStream', () => {
 
 	test('does not accumulate queued heartbeats behind an unread response', async () => {
 		const s = setup()
+		void s.sendResult(s.completion.promise, s.release)
 		await vi.advanceTimersByTimeAsync(300_000)
 		const reader = s.response.body!.getReader()
 		expect(events(await read(reader))[0].type).toBe('state')
@@ -286,16 +376,18 @@ describe('generationStream', () => {
 			const unhandled = vi.fn()
 			process.on('unhandledRejection', unhandled)
 			try {
-				const s = setup(async (progress) => {
+				const s = setup()
+				const work = (async () => {
 					try {
 						const value = await provider.promise
-						progress({ phase: 'validation', message: 'Checking abandoned output' })
+						s.progress({ phase: 'validation', message: 'Checking abandoned output' })
 						return value
 					} finally {
 						cleaning()
 						await cleanup.promise
 					}
-				})
+				})()
+				void s.sendResult(work, s.release)
 				const reader = s.response.body!.getReader()
 				await read(reader)
 				await read(reader)
@@ -306,7 +398,6 @@ describe('generationStream', () => {
 				expect(s.removeListener).toHaveBeenCalledWith('abort', expect.any(Function))
 				expect(vi.getTimerCount()).toBe(0)
 				await vi.advanceTimersByTimeAsync(315_000)
-				expect(s.fake).toHaveBeenCalledTimes(1)
 				expect(cleaning).not.toHaveBeenCalled()
 				expect(s.release).not.toHaveBeenCalled()
 
@@ -320,7 +411,18 @@ describe('generationStream', () => {
 				await vi.advanceTimersByTimeAsync(0)
 				expect(s.release).toHaveBeenCalledTimes(1)
 				expect(await reader.read()).toEqual({ done: true, value: undefined })
-				expect(log.mock.calls).toEqual(outcome === 'success' ? [] : [['AI generation failed.']])
+				if (outcome === 'success') {
+					expect(log).not.toHaveBeenCalled()
+				} else {
+					expect(log).toHaveBeenCalledWith(
+						'AI generation failed.',
+						expect.objectContaining({
+							phase: outcome === 'provider failure' ? 'preparation' : 'validation',
+							error: 'Error'
+						})
+					)
+					expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret provider|secret cleanup/)
+				}
 				expect(unhandled).not.toHaveBeenCalled()
 				expect(vi.getTimerCount()).toBe(0)
 			} finally {
@@ -332,8 +434,14 @@ describe('generationStream', () => {
 	test('an already-aborted accepted request still runs and releases only after settling', async () => {
 		const abort = new AbortController()
 		abort.abort()
-		const s = setup(undefined, abort)
-		expect(s.fake).toHaveBeenCalledTimes(1)
+		const s = setup(abort)
+		let started = false
+		const work = (async () => {
+			started = true
+			return await s.completion.promise
+		})()
+		void s.sendResult(work, s.release)
+		expect(started).toBe(true)
 		expect(await s.response.body!.getReader().read()).toEqual({ done: true, value: undefined })
 		expect(s.removeListener).toHaveBeenCalledWith('abort', expect.any(Function))
 		expect(vi.getTimerCount()).toBe(0)
@@ -353,6 +461,7 @@ describe('generationStream', () => {
 				})
 			if (when === 'initial') fail()
 			const s = setup()
+			void s.sendResult(s.completion.promise, s.release)
 			const reader = s.response.body!.getReader()
 			if (when === 'heartbeat') {
 				await read(reader)

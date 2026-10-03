@@ -14,10 +14,9 @@ import {
 import type { PieceFrontmatter } from '../../pieces/utils/frontmatter.js'
 import {
 	DEFAULT_GENERATION_LIMITS,
-	pieceFrontMatterFromPrompt,
-	generatePieceMetadata,
-	generateFieldValue,
-	generateBody,
+	GenerationValidationError,
+	generatePieceFrontmatter,
+	generatePieceBody,
 	validateApiKey,
 } from './index.js'
 import type { GenerationOptions } from './index.js'
@@ -83,7 +82,7 @@ async function until(condition: () => boolean) {
 // Small byte budgets exercise boundaries without allocating deployment-sized fixtures.
 const originalLimits = { ...DEFAULT_GENERATION_LIMITS }
 const run = (options: GenerationOptions = {}) =>
-	generatePieceMetadata('test-key', schema(), 'My instructions', options)
+	generatePieceFrontmatter('test-key', { schema: schema(), instructions: 'My instructions' }, options)
 
 beforeEach(() => {
 	Object.values(mocks).forEach((mock) => mock.mockReset())
@@ -106,19 +105,20 @@ afterEach(() => {
 })
 
 describe('validated generation', () => {
-	test('retains the original metadata instruction and adds only the field restriction', async () => {
+	test('retains the metadata instruction, discourages nulls, and restricts selected fields', async () => {
 		const original = [
 			'you are an assistant that helps generate JSON metadata for a record that will be added to a collection of similar records.',
 			'if you are provided pdf attachments, images or other text based files, please prioritize them as inputs for generating metadata for the record.',
 			'you are also given a responseJsonSchema to guide your output. each field in the schema has a description and examples to help guide what the intention of each field is and what values to expect.',
+			'do not generate null values for unknown fields.',
 		].join('\n\n')
 		await run()
 		expect(mocks.generate.mock.calls[0][0].config!.systemInstruction).toBe(original)
 
 		respond('{"keywords":"new"}')
-		await generateFieldValue('key', { schema: schema(), key: 'keywords', source: '' })
+		await generatePieceFrontmatter('key', { schema: schema(), keys: ['keywords'], source: '' })
 		expect(mocks.generate.mock.calls[1][0].config!.systemInstruction).toBe(
-			`${original}\n\ngenerate only the "keywords" field.`
+			`${original}\n\ngenerate only the ["keywords"] fields.`
 		)
 	})
 
@@ -176,15 +176,63 @@ describe('validated generation', () => {
 		}
 	)
 
-	test('compatibility wrapper keeps full-metadata null stripping and empty strings', async () => {
+	test('full-metadata generation keeps null stripping and empty strings', async () => {
 		respond('{"title":"","keywords":null}')
-		await expect(pieceFrontMatterFromPrompt('test-key', schema(), 'prompt')).resolves.toEqual({
+		await expect(generatePieceFrontmatter('test-key', { schema: schema(), instructions: 'prompt' })).resolves.toEqual({
 			title: '',
 		})
 		respond('{"title":"value","keywords":""}')
-		await expect(pieceFrontMatterFromPrompt('test-key', schema(), 'prompt')).resolves.toEqual({
+		await expect(generatePieceFrontmatter('test-key', { schema: schema(), instructions: 'prompt' })).resolves.toEqual({
 			title: 'value',
 			keywords: '',
+		})
+	})
+
+	test('omitted keys reuse the full schema and preserve its optional and required fields', async () => {
+		const fullSchema = schema()
+		await expect(generatePieceFrontmatter('key', { schema: fullSchema })).resolves.toEqual({
+			title: 'generated',
+		})
+		expect(mocks.generate.mock.calls[0][0].config!.responseJsonSchema).toBe(fullSchema)
+		expect(mocks.generate.mock.calls[0][0].contents).toEqual([
+			'Generate metadata using the supplied attachments.',
+		])
+
+		respond('{}')
+		await expect(generatePieceFrontmatter('key', { schema: fullSchema })).rejects.toThrow(
+			"must have required property 'title'"
+		)
+		respond('{"title":"generated"}')
+		await expect(generatePieceFrontmatter('key', {
+			schema: fullSchema, keys: Object.keys(fullSchema.properties),
+		})).rejects.toThrow("must have required property 'keywords'")
+	})
+
+	test('full-metadata generation stays quiet and uses the default prompt', async () => {
+		const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+		const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+		await expect(generatePieceFrontmatter('key', { schema: schema(), instructions: '' })).resolves.toEqual({
+			title: 'generated',
+		})
+		expect(mocks.generate.mock.calls[0][0].contents).toEqual([
+			'Generate metadata using the supplied attachments.',
+		])
+		expect(log).not.toHaveBeenCalled()
+		expect(info).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+	})
+
+	test('full metadata strips only root nulls, leaving nullable nested values compatible', async () => {
+		const fullSchema = schema()
+		fullSchema.properties.details = {
+			type: 'object',
+			properties: { notes: { type: 'string', nullable: true } },
+			required: ['notes'],
+		} as typeof fullSchema.properties.title
+		respond('{"title":"Book","keywords":null,"details":{"notes":null}}')
+		await expect(generatePieceFrontmatter('key', { schema: fullSchema, instructions: 'prompt' })).resolves.toEqual({
+			title: 'Book', details: { notes: null },
 		})
 	})
 
@@ -198,14 +246,116 @@ describe('validated generation', () => {
 		['{"title":', 'not valid JSON'],
 	])('rejects invalid completed metadata %s', async (text, error) => {
 		respond(text)
-		await expect(pieceFrontMatterFromPrompt('test-key', schema(), 'prompt')).rejects.toThrow(error)
+		await expect(generatePieceFrontmatter('test-key', { schema: schema(), instructions: 'prompt' })).rejects.toThrow(error)
+	})
+
+	test('identifies local schema failures without including generated values', async () => {
+		respond('{"title":{"private":"submitted content"}}')
+		const error = await run().catch((cause: unknown) => cause)
+		expect(error).toBeInstanceOf(GenerationValidationError)
+		expect(error).toMatchObject({
+			name: 'GenerationValidationError',
+			message: 'Generated frontmatter does not match schema: /title must be string',
+		})
+		expect(String(error)).not.toContain('submitted content')
+	})
+
+	describe('asset sources in generated drafts', () => {
+		function assetSchema(): JSONSchemaType<PieceFrontmatter> {
+			return {
+				...schema(),
+				properties: {
+					title: { type: 'string' },
+					cover: { type: 'string', format: 'asset' },
+					gallery: {
+						type: 'object',
+						properties: {
+							images: { type: 'array', items: { type: 'string', format: 'asset' } },
+							published: { type: 'string', format: 'date' },
+							code: { type: 'string', pattern: '^[A-Z]+$' },
+							rating: { type: 'integer', minimum: 1, maximum: 5 },
+						},
+						required: ['images'],
+						additionalProperties: false,
+					},
+				},
+				required: ['title', 'cover'],
+			} as unknown as JSONSchemaType<PieceFrontmatter>
+		}
+
+		test.each([
+			'https://example.com/cover.jpg', 'HTTP://example.com/cover.jpg', '.assets/books/cover.jpg',
+		])('accepts metadata and field asset sources without resolving them: %s', async (cover) => {
+			const metadataSchema = assetSchema()
+			const originalSchema = structuredClone(metadataSchema)
+			const gallery = { images: [cover, '.assets/books/local.jpg'] }
+			const metadata = { title: 'Book', cover, gallery }
+			const fetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('unexpected download'))
+			respond(JSON.stringify(metadata))
+			await expect(generatePieceFrontmatter('key', { schema: metadataSchema, instructions: 'prompt' })).resolves.toEqual(metadata)
+			expect(mocks.generate.mock.calls[0][0].config!.responseJsonSchema).toEqual(originalSchema)
+
+			respond(JSON.stringify({ cover }))
+			await expect(generatePieceFrontmatter('key', {
+				schema: metadataSchema, keys: ['cover'], source: '',
+			})).resolves.toEqual({ cover })
+			expect(mocks.generate.mock.calls[1][0].config!.responseJsonSchema).toEqual({
+				type: 'object',
+				properties: { cover: originalSchema.properties.cover },
+				required: ['cover'],
+				additionalProperties: false,
+			})
+
+			respond(JSON.stringify({ gallery }))
+			await expect(generatePieceFrontmatter('key', {
+				schema: metadataSchema, keys: ['gallery'], source: '',
+			})).resolves.toEqual({ gallery })
+			expect(metadataSchema).toEqual(originalSchema)
+			expect(fetch).not.toHaveBeenCalled()
+			expect(mocks.readStream).not.toHaveBeenCalled()
+			expect(mocks.upload).not.toHaveBeenCalled()
+			expect(mocks.get).not.toHaveBeenCalled()
+		})
+
+		test.each([
+			'bad text', 'https://', 'http://[invalid', 'file:///tmp/cover.jpg',
+			'data:image/png;base64,YQ==', 'javascript:alert(1)',
+		])('rejects invalid metadata and field asset sources: %s', async (cover) => {
+			const metadataSchema = assetSchema()
+			respond(JSON.stringify({ title: 'Book', cover }))
+			await expect(generatePieceFrontmatter('key', { schema: metadataSchema })).rejects.toThrow(
+				'/cover must match format "asset"'
+			)
+			respond(JSON.stringify({ cover }))
+			await expect(generatePieceFrontmatter('key', {
+				schema: metadataSchema, keys: ['cover'], source: '',
+			})).rejects.toThrow('/cover must match format "asset"')
+		})
+
+		test.each([
+			[{}, "must have required property 'images'"],
+			[{ images: [], extra: true }, 'must NOT have additional properties'],
+			[{ images: ['bad asset'] }, '/gallery/images/0 must match format "asset"'],
+			[{ images: [], published: 'not a date' }, '/gallery/published must match format "date"'],
+			[{ images: [], code: 'lowercase' }, '/gallery/code must match pattern'],
+			[{ images: [], rating: 6 }, '/gallery/rating must be <= 5'],
+			[{ images: [], rating: '3' }, '/gallery/rating must be integer'],
+		])('preserves nested metadata and field constraints: %j', async (gallery, error) => {
+			const metadataSchema = assetSchema()
+			respond(JSON.stringify({ title: 'Book', cover: 'https://example.com/cover.jpg', gallery }))
+			await expect(generatePieceFrontmatter('key', { schema: metadataSchema })).rejects.toThrow(error)
+			respond(JSON.stringify({ gallery }))
+			await expect(generatePieceFrontmatter('key', {
+				schema: metadataSchema, keys: ['gallery'], source: '',
+			})).rejects.toThrow(error)
+		})
 	})
 
 	test('validates schema constraints and core formats', async () => {
 		const metadataSchema = schema()
 		metadataSchema.properties.title = { type: 'string', format: 'date' }
 		respond('{"title":"not-a-date"}')
-		await expect(generatePieceMetadata('key', metadataSchema, 'prompt')).rejects.toThrow(
+		await expect(generatePieceFrontmatter('key', { schema: metadataSchema, instructions: 'prompt' })).rejects.toThrow(
 			'must match format'
 		)
 	})
@@ -213,13 +363,13 @@ describe('validated generation', () => {
 	test('generates one field without imposing other required fields or stripping its null value', async () => {
 		respond('{"keywords":null}')
 		const source = '---\ntitle: unsaved title\nkeywords: old\n---\nunsaved notes'
-		const result = await generateFieldValue('key', {
+		const result = await generatePieceFrontmatter('key', {
 			schema: schema(),
-			key: 'keywords',
+			keys: ['keywords'],
 			source,
 			instructions: 'Choose keywords',
 		})
-		expect(result).toBeNull()
+		expect(result).toEqual({ keywords: null })
 		expect(mocks.generate.mock.calls[0][0]).toMatchObject({
 			contents: ['Choose keywords', expect.stringContaining(JSON.stringify(source))],
 			config: {
@@ -238,14 +388,43 @@ describe('validated generation', () => {
 		async (text) => {
 			respond(text)
 			await expect(
-				generateFieldValue('key', {
+				generatePieceFrontmatter('key', {
 					schema: schema(),
-					key: 'keywords',
+					keys: ['keywords'],
 					source: '',
 				})
-			).rejects.toThrow('Generated field does not match schema')
+			).rejects.toThrow('Generated field selection does not match schema')
 		}
 	)
+
+	test.each([['keywords', 'body'], ['title', 'keywords', 'body']])(
+		'generates selected fields as an object: %j', async (...keys) => {
+			const metadataSchema = schema()
+			metadataSchema.properties.body = { type: 'string', minLength: 2 }
+			const values = { keywords: null, body: 'Metadata body', ...(keys.includes('title') ? { title: 'New' } : {}) }
+			respond(JSON.stringify(values))
+			await expect(generatePieceFrontmatter('key', { schema: metadataSchema, keys, source: '# Actual body' }))
+				.resolves.toEqual(values)
+			expect(mocks.generate.mock.calls[0][0].config!.responseJsonSchema).toEqual({
+				type: 'object',
+				properties: Object.fromEntries(keys.map((key) => [key, metadataSchema.properties[key]])),
+				required: keys,
+				additionalProperties: false,
+			})
+		}
+	)
+
+	test.each([
+		'{}', '{"title":"New"}', '{"keywords":null}',
+		'{"title":"New","keywords":null,"extra":true}',
+		'{"title":null,"keywords":null}', '{"title":"New","keywords":42}',
+		'null', '[]', 'invalid JSON',
+	])('rejects incomplete, extra, or invalid multi-field output: %s', async (text) => {
+		respond(text)
+		await expect(generatePieceFrontmatter('key', {
+			schema: schema(), keys: ['title', 'keywords'], source: '',
+		})).rejects.toBeInstanceOf(GenerationValidationError)
+	})
 
 	test('requires an own field value, even for names inherited from Object.prototype', async () => {
 		const fieldSchema = {
@@ -254,39 +433,12 @@ describe('validated generation', () => {
 		} as unknown as JSONSchemaType<PieceFrontmatter>
 		respond('{}')
 		await expect(
-			generateFieldValue('key', {
+			generatePieceFrontmatter('key', {
 				schema: fieldSchema,
-				key: 'constructor',
+				keys: ['constructor'],
 				source: '',
 			})
-		).rejects.toThrow('missing the requested property')
-	})
-
-	test('both operations snapshot their schema and context before invoking callbacks', async () => {
-		const metadataSchema = schema()
-		const metadata = await generatePieceMetadata('key', metadataSchema, '', {
-			onProgress: () => {
-				metadataSchema.properties.title = { type: 'number' }
-			},
-		})
-		expect(metadata).toEqual({ title: 'generated' })
-
-		const fieldRequest = {
-			schema: schema(),
-			key: 'keywords',
-			source: 'original context',
-		}
-		respond('{"keywords":"new"}')
-		const value = await generateFieldValue('key', fieldRequest, {
-			onProgress: () => {
-				fieldRequest.key = 'title'
-				fieldRequest.source = 'changed context'
-			},
-		})
-		expect(value).toBe('new')
-		expect(mocks.generate.mock.calls[1][0].contents).toContainEqual(
-			expect.stringContaining('original context')
-		)
+		).rejects.toThrow('missing a requested property')
 	})
 
 	test('supports a complete array or object value', async () => {
@@ -297,20 +449,21 @@ describe('validated generation', () => {
 		} as typeof arraySchema.properties.title
 		respond('{"title":[{"name":"new"}]}')
 		await expect(
-			generateFieldValue('key', { schema: arraySchema, key: 'title', source: '' })
-		).resolves.toEqual([{ name: 'new' }])
+			generatePieceFrontmatter('key', { schema: arraySchema, keys: ['title'], source: '' })
+		).resolves.toEqual({ title: [{ name: 'new' }] })
 	})
 
-	test('body generation returns Markdown exactly and does not request metadata JSON', async () => {
+	test('body generation requests only new Markdown to append and returns it exactly', async () => {
 		respond('\n# Notes\n\n  trailing whitespace  \n')
 		const source = 'unsaved source'
-		await expect(generateBody('key', { source })).resolves.toBe(
+		await expect(generatePieceBody('key', { source })).resolves.toBe(
 			'\n# Notes\n\n  trailing whitespace  \n'
 		)
 		const config = mocks.generate.mock.calls[0][0].config!
 		expect(config.responseJsonSchema).toBeUndefined()
 		expect(config.responseMimeType).toBeUndefined()
-		expect(config.systemInstruction).toContain('Markdown')
+		expect(config.systemInstruction).toContain('return only new Markdown to append to the existing body.')
+		expect(config.systemInstruction).toContain('do not repeat or rewrite the existing content.')
 		expect(mocks.generate.mock.calls[0][0].contents).toContainEqual(
 			expect.stringContaining(JSON.stringify(source))
 		)
@@ -318,7 +471,7 @@ describe('validated generation', () => {
 
 	test.each([undefined, '', ' \n '])('rejects empty completed body output %j', async (text) => {
 		mocks.generate.mockResolvedValue(response(text))
-		await expect(generateBody('key', { source: '' })).rejects.toThrow('empty output')
+		await expect(generatePieceBody('key', { source: '' })).rejects.toThrow('empty output')
 	})
 
 	test.each([FinishReason.MAX_TOKENS, FinishReason.SAFETY, FinishReason.OTHER])(
@@ -404,7 +557,11 @@ describe('input preparation and cleanup', () => {
 		mocks.readStream.mockReturnValue(
 			Readable.from([Buffer.from('one'), Buffer.from('two')]) as ReadStream
 		)
-		await pieceFrontMatterFromPrompt('key', schema(), 'prompt', ['/private/path/notes.txt'])
+		await generatePieceFrontmatter(
+			'key',
+			{ schema: schema(), instructions: 'prompt' },
+			{ files: ['/private/path/notes.txt'] }
+		)
 		expect(mocks.readStream).toHaveBeenCalledWith('/private/path/notes.txt', {
 			highWaterMark: 65536,
 		})
@@ -494,7 +651,12 @@ describe('input preparation and cleanup', () => {
 	])('sanitizes SDK upload failures: %s', async (error, message) => {
 		binary()
 		mocks.upload.mockRejectedValue(error)
-		await expect(run({ files: [Buffer.from('binary')] })).rejects.toMatchObject({ message })
+		const failure = await run({ files: [Buffer.from('binary')] }).catch((cause: unknown) => cause)
+		expect(failure).toBeInstanceOf(Error)
+		expect(failure).toMatchObject({ message, cause: error })
+		expect(Object.hasOwn(failure as Error, 'status')).toBe(false)
+		expect(String(failure)).not.toContain('private-key')
+		expect(JSON.stringify(failure)).not.toContain('private-key')
 		expect(mocks.get).not.toHaveBeenCalled()
 		expect(mocks.generate).not.toHaveBeenCalled()
 		expect(mocks.delete).not.toHaveBeenCalled()
@@ -538,6 +700,26 @@ describe('input preparation and cleanup', () => {
 		expect(mocks.delete.mock.calls.map(([arg]) => arg.name)).toEqual([
 			'files/first',
 			'files/second',
+		])
+	})
+
+	test('reports validation before rejecting the completion envelope and still cleans files', async () => {
+		binary()
+		respond('{"title":"new"}', FinishReason.MAX_TOKENS)
+		const onProgress = vi.fn()
+		await expect(run({ files: [Buffer.from('one')], onProgress })).rejects.toThrow(
+			'Generation did not finish successfully'
+		)
+		expect(onProgress.mock.calls.at(-1)?.[0].phase).toBe('validation')
+		expect(mocks.delete).toHaveBeenCalledOnce()
+	})
+
+	test('creates a separately configured SDK client for each request', async () => {
+		await generatePieceFrontmatter('first-key', { schema: schema() })
+		await generatePieceBody('second-key', { source: '' })
+		expect(vi.mocked(GoogleGenAI).mock.calls).toEqual([
+			[{ apiKey: 'first-key', httpOptions: { timeout: 300000 } }],
+			[{ apiKey: 'second-key', httpOptions: { timeout: 300000 } }],
 		])
 	})
 
@@ -608,11 +790,41 @@ describe('input and output bounds', () => {
 
 	test('rejects invalid schema or unknown field before provider work', async () => {
 		await expect(
-			generateFieldValue('key', { schema: schema(), key: 'missing', source: '' })
+			generatePieceFrontmatter('key', { schema: schema(), keys: ['missing'], source: '' })
 		).rejects.toThrow('top-level property')
 		const invalid = schema()
 		invalid.properties.title = { type: 'string', format: 'unknown' }
-		await expect(generatePieceMetadata('key', invalid, '')).rejects.toThrow('unknown format')
+		await expect(generatePieceFrontmatter('key', { schema: invalid })).rejects.toThrow('unknown format')
+		expect(GoogleGenAI).not.toHaveBeenCalled()
+	})
+
+	test.each([[], ['title', 'missing'], ['toString'], ['__proto__']])(
+		'rejects invalid selections before provider work: %j', async (...keys) => {
+			await expect(generatePieceFrontmatter('key', { schema: schema(), keys, source: '' }))
+				.rejects.toThrow()
+			expect(GoogleGenAI).not.toHaveBeenCalled()
+			expect(mocks.generate).not.toHaveBeenCalled()
+		}
+	)
+
+	test.each([null, 'title'])('rejects a non-array selection before provider work: %j', async (keys) => {
+		await expect(generatePieceFrontmatter('key', {
+			schema: schema(), keys: keys as unknown as string[], source: '',
+		})).rejects.toThrow('nonempty selection')
+		expect(GoogleGenAI).not.toHaveBeenCalled()
+	})
+
+	test('rejects references, reserved own keys, and invalid selected schemas before provider work', async () => {
+		for (const properties of [
+			{ title: { $ref: '#' } },
+			JSON.parse('{"__proto__":{"type":"string"}}'),
+			{ title: { type: 'string', format: 'unknown' } },
+		]) {
+			const metadataSchema = { ...schema(), properties }
+			await expect(generatePieceFrontmatter('key', {
+				schema: metadataSchema, keys: Object.keys(properties), source: '',
+			})).rejects.toThrow()
+		}
 		expect(GoogleGenAI).not.toHaveBeenCalled()
 	})
 

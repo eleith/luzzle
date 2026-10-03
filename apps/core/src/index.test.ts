@@ -10,15 +10,21 @@ describe('index.ts', () => {
 
 	test('preserves the public generation exports without exposing provider internals', () => {
 		for (const name of [
-			'generatePieceMetadata',
-			'generateFieldValue',
-			'generateBody',
-			'pieceFrontMatterFromPrompt',
+			'generatePieceFrontmatter',
+			'mergeGeneratedFields',
+			'appendGeneratedBody',
+			'generatePieceBody',
 			'validateApiKey',
 		] as const) {
 			expect(index[name]).toBeTypeOf('function')
 		}
 		expect(index.DEFAULT_GENERATION_LIMITS).toBeDefined()
+		expect(Object.hasOwn(index, 'generatePieceMetadata')).toBe(false)
+		expect(Object.hasOwn(index, 'generateFieldValues')).toBe(false)
+		expect(Object.hasOwn(index, 'generateBody')).toBe(false)
+		expect(Object.hasOwn(index, 'pieceFrontMatterFromPrompt')).toBe(false)
+		expect(Object.hasOwn(index, 'generateFieldValue')).toBe(false)
+		expect(Object.hasOwn(index, 'replaceGeneratedBody')).toBe(false)
 		expect(Object.hasOwn(index, 'getClient')).toBe(false)
 		expect(Object.hasOwn(index, 'runGeneration')).toBe(false)
 	})

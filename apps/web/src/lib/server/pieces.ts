@@ -1,13 +1,7 @@
-import {
-	Pieces,
-	pieceFrontMatterFromPrompt,
-	type PieceFrontmatter,
-	type PieceFrontmatterSchema
-} from '@luzzle/core'
+import { Pieces } from '@luzzle/core'
 import { sql, type Kysely } from 'kysely'
 import type { AppDatabase, WebPieces } from '@luzzle/web.db'
 import { getStorage } from './storage'
-import { config } from './config'
 
 let pieces: Pieces | null = null
 
@@ -20,25 +14,6 @@ export function getPieces(): Pieces {
 	pieces = new Pieces(storage)
 
 	return pieces
-}
-
-export async function promptToPiece(
-	schema: PieceFrontmatterSchema<PieceFrontmatter>,
-	prompt: string,
-	file?: Buffer[]
-) {
-	if (!config.ai) {
-		throw new Error('AI is not configured. Please check your config.yaml')
-	}
-
-	try {
-		return await pieceFrontMatterFromPrompt(config.ai.api_key, schema, prompt, file)
-	} catch (error) {
-		if (error instanceof Error && error.message.includes('AbortError')) {
-			throw new Error('A Gemini request timed out after 5 minutes')
-		}
-		throw error
-	}
 }
 
 export async function getRecentPieces(

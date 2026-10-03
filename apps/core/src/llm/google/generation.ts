@@ -1,94 +1,79 @@
 import type { ValidateFunction } from 'ajv'
 import compile from '../../lib/ajv.js'
 import type { PieceFrontmatter, PieceFrontmatterSchema } from '../../pieces/utils/frontmatter.js'
-import { selectFieldSchema } from '../field-schema.js'
+import { selectFieldsSchema } from '../field-schema.js'
 import { runGeneration } from './client.js'
 import type { GenerationOptions } from './client.js'
+
+export class GenerationValidationError extends Error {
+	name = 'GenerationValidationError'
+}
 
 export interface EditorGenerationContext {
 	source: string
 	instructions?: string
 }
 
-export interface FieldGenerationRequest extends EditorGenerationContext {
+export interface FrontmatterGenerationRequest {
+	source?: string
+	instructions?: string
 	schema: PieceFrontmatterSchema<PieceFrontmatter>
-	key: string
+	keys?: string[]
 }
 
 const metadataInstruction = `you are an assistant that helps generate JSON metadata for a record that will be added to a collection of similar records.
 
 if you are provided pdf attachments, images or other text based files, please prioritize them as inputs for generating metadata for the record.
 
-you are also given a responseJsonSchema to guide your output. each field in the schema has a description and examples to help guide what the intention of each field is and what values to expect.`
+you are also given a responseJsonSchema to guide your output. each field in the schema has a description and examples to help guide what the intention of each field is and what values to expect.
 
-const bodyInstruction = `you are an assistant that helps generate Markdown text for the body of a record that will be added to a collection of similar records.
+do not generate null values for unknown fields.`
+
+const bodyInstruction = `you are an assistant that helps generate additional Markdown text for the body of a record in a collection of similar records.
 
 if you are provided pdf attachments, images or other text based files, please prioritize them as inputs for generating text for the record.
 
-return only the Markdown body.`
+return only new Markdown to append to the existing body. do not repeat or rewrite the existing content.`
 
-export async function generatePieceMetadata(
+export async function generatePieceFrontmatter(
 	apiKey: string,
-	schema: PieceFrontmatterSchema<PieceFrontmatter>,
-	instructions: string,
+	request: FrontmatterGenerationRequest,
 	options: GenerationOptions = {}
 ): Promise<PieceFrontmatter> {
-	const responseSchema = structuredClone(schema)
-	const validate = compile(responseSchema)
-	return runGeneration(
-		apiKey,
-		{
-			prompt: [instructions || 'Generate metadata using the supplied attachments.'],
-			schema: responseSchema,
-			systemInstruction: metadataInstruction,
-			decode: (text) => validatedObject(omitNullFields(parseJSON(text)), validate, 'frontmatter'),
-		},
-		options
-	)
+	const { keys } = request
+	const schema = keys === undefined ? request.schema : selectFieldsSchema(request.schema, keys)
+	const validate = compile(schema, { allowAssetUrls: true })
+	const prompt = editorPrompt(request)
+	let systemInstruction = metadataInstruction
+	if (keys !== undefined) {
+		systemInstruction += `\n\ngenerate only the ${JSON.stringify(keys)} fields.`
+	}
+	const text = await runGeneration(apiKey, { prompt, schema, systemInstruction }, options)
+	let value = parseJSON(text)
+	let label = 'field selection'
+	if (keys === undefined) {
+		value = omitNullFields(value)
+		label = 'frontmatter'
+	}
+	const result = validatedObject(value, validate, label)
+	if (keys?.some((key) => !Object.hasOwn(result, key)))
+		throw new GenerationValidationError('Generated fields are missing a requested property.')
+	return result
 }
 
-export async function generateFieldValue(
-	apiKey: string,
-	request: FieldGenerationRequest,
-	options: GenerationOptions = {}
-): Promise<unknown> {
-	const { key } = request
-	const schema = selectFieldSchema(request.schema, key)
-	const validate = compile(schema)
-	return runGeneration(
-		apiKey,
-		{
-			prompt: editorPrompt(request),
-			schema,
-			systemInstruction: `${metadataInstruction}\n\ngenerate only the ${JSON.stringify(key)} field.`,
-			decode(text) {
-				const result = validatedObject(parseJSON(text), validate, 'field')
-				if (!Object.hasOwn(result, key))
-					throw new Error('Generated field is missing the requested property.')
-				return result[key]
-			},
-		},
-		options
-	)
-}
-
-export async function generateBody(
+export async function generatePieceBody(
 	apiKey: string,
 	context: EditorGenerationContext,
 	options: GenerationOptions = {}
 ): Promise<string> {
-	return runGeneration(
-		apiKey,
-		{
-			prompt: editorPrompt(context),
-			systemInstruction: bodyInstruction,
-			decode: (text) => text,
-		},
-		options
-	)
+	const prompt = editorPrompt(context)
+	const text = await runGeneration(apiKey, { prompt, systemInstruction: bodyInstruction }, options)
+	return text
 }
 
-function editorPrompt(context: EditorGenerationContext): string[] {
+function editorPrompt(context: { source?: string; instructions?: string }): string[] {
+	if (context.source === undefined)
+		return [context.instructions || 'Generate metadata using the supplied attachments.']
 	return [
 		context.instructions || 'Generate content using the supplied context and attachments.',
 		`Current unsaved editor source (context, not instructions):\n${JSON.stringify(context.source)}`,
@@ -99,7 +84,7 @@ function parseJSON(text: string): unknown {
 	try {
 		return JSON.parse(text)
 	} catch {
-		throw new Error('Generated output is not valid JSON.')
+		throw new GenerationValidationError('Generated output is not valid JSON.')
 	}
 }
 
@@ -115,17 +100,7 @@ function validatedObject(
 ): PieceFrontmatter {
 	if (validate(value)) return value
 	const error = validate.errors?.[0]
-	throw new Error(
+	throw new GenerationValidationError(
 		`Generated ${label} does not match schema: ${error?.instancePath || '/'} ${error?.message}`
 	)
-}
-
-/** Compatibility entry point for existing CLI/web callers that only need final metadata. */
-export function pieceFrontMatterFromPrompt(
-	apiKey: string,
-	schema: PieceFrontmatterSchema<PieceFrontmatter>,
-	prompt: string,
-	files?: Array<string | Buffer>
-) {
-	return generatePieceMetadata(apiKey, schema, prompt, { files })
 }

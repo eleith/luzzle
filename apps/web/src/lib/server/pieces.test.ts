@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { createAppDb, runWebMigrations } from '@luzzle/web.db'
 import { getWebPiece, getRecentlyEditedPieces } from './pieces.js'
 
-// pieces.js pulls in getPieces()/promptToPiece()'s module-level deps on import
+// pieces.js pulls in getPieces()'s module-level dependencies on import
 vi.mock('$lib/server/config', () => ({ config: {} }))
 vi.mock('$lib/server/storage', () => ({ getStorage: vi.fn() }))
 

@@ -1,58 +1,62 @@
 import { error } from '@sveltejs/kit'
 import { DEFAULT_GENERATION_LIMITS } from '@luzzle/core'
-import type { GenerationTarget } from '$lib/generation/types'
 import { MAX_SOURCE_CHARS, MAX_INSTRUCTION_CHARS } from '../constants'
 
-export type CreateGenerationInput = {
-	name: string
-	type: string
-	directory: string
-	instructions: string
-	files: Buffer[]
-}
-
-export type EditGenerationInput = {
-	file: string
+export type FieldsGenerationInput = {
 	source: string
-	target: GenerationTarget
+	instructions: string
+	files: Buffer[]
+	keys: string[]
+}
+
+export type BodyGenerationInput = {
+	source: string
 	instructions: string
 	files: Buffer[]
 }
 
-export async function readCreateInput(form: FormData): Promise<CreateGenerationInput> {
-	const name = form.get('name')
-	const type = form.get('type')
-	const directory = form.get('directory') ?? ''
-	const instructions = form.get('instructions') ?? ''
-	if (typeof name !== 'string' || !name.trim()) error(400, 'Name is required.')
-	if (typeof type !== 'string' || !type.trim()) error(400, 'Piece type is required.')
-	if (typeof directory !== 'string') error(400, 'Directory must be text.')
-	if (typeof instructions !== 'string') error(400, 'Instructions must be text.')
-	if (instructions.length > MAX_INSTRUCTION_CHARS) error(413, 'Instructions are too long.')
-	return { name, type, directory, instructions, files: await readAttachments(form) }
+export async function readFieldsInput(form: FormData): Promise<FieldsGenerationInput> {
+	const instructions = readInstructions(form)
+	const source = readSource(form)
+
+	const encodedFields = form.get('fields')
+	if (typeof encodedFields !== 'string') error(400, 'Choose metadata fields.')
+	let keys: unknown
+	try {
+		keys = JSON.parse(encodedFields)
+	} catch {
+		error(400, 'Invalid metadata fields.')
+	}
+	if (
+		!Array.isArray(keys) ||
+		keys.length === 0 ||
+		!keys.every((key): key is string => typeof key === 'string' && !!key.trim()) ||
+		new Set(keys).size !== keys.length
+	) {
+		error(400, 'Choose distinct metadata fields.')
+	}
+	const files = await readAttachments(form)
+	return { source, instructions, keys, files }
 }
 
-export async function readEditInput(form: FormData): Promise<EditGenerationInput> {
-	const file = form.get('file')
-	const encodedSource = form.get('source')
-	const targetKind = form.get('target')
-	const key = form.get('key')
+export async function readBodyInput(form: FormData): Promise<BodyGenerationInput> {
+	const instructions = readInstructions(form)
+	const source = readSource(form)
+	const files = await readAttachments(form)
+	return { source, instructions, files }
+}
+
+function readInstructions(form: FormData): string {
 	const instructions = form.get('instructions') ?? ''
-	if (typeof file !== 'string' || !file.trim()) error(400, 'Piece file is required.')
-	if (typeof encodedSource !== 'string') error(400, 'Editor source is required.')
 	if (typeof instructions !== 'string') error(400, 'Instructions must be text.')
 	if (instructions.length > MAX_INSTRUCTION_CHARS) error(413, 'Instructions are too long.')
+	return instructions
+}
 
-	let target: GenerationTarget
-	if (targetKind === 'body') {
-		target = { kind: 'body' }
-	} else if (targetKind === 'field' && typeof key === 'string' && key) {
-		target = { kind: 'field', key }
-	} else {
-		error(400, 'Choose a field or the body.')
-	}
-
+function readSource(form: FormData): string {
 	// JSON preserves the exact editor buffer; multipart text normalizes line endings.
+	const encodedSource = form.get('source')
+	if (typeof encodedSource !== 'string') error(400, 'Editor source is required.')
 	let source: unknown
 	try {
 		source = JSON.parse(encodedSource)
@@ -61,7 +65,7 @@ export async function readEditInput(form: FormData): Promise<EditGenerationInput
 	}
 	if (typeof source !== 'string') error(400, 'Editor source must be text.')
 	if (source.length > MAX_SOURCE_CHARS) error(413, 'Editor source is too long.')
-	return { file, source, target, instructions, files: await readAttachments(form) }
+	return source
 }
 
 async function readAttachments(form: FormData): Promise<Buffer[]> {

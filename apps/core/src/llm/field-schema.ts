@@ -2,15 +2,20 @@ import type { SchemaObject } from 'ajv'
 import traverse from 'json-schema-traverse'
 import type { PieceFrontmatter, PieceFrontmatterSchema } from '../pieces/utils/frontmatter.js'
 
-export function selectFieldSchema(
+export function selectFieldsSchema(
 	schema: PieceFrontmatterSchema<PieceFrontmatter>,
-	key: string
+	keys: string[]
 ): PieceFrontmatterSchema<PieceFrontmatter> {
-	if (!schema.properties || !Object.hasOwn(schema.properties, key)) {
-		throw new Error('Field generation requires an own top-level property.')
+	if (!Array.isArray(keys) || keys.length === 0) {
+		throw new Error('Field generation requires a nonempty selection of fields.')
 	}
-	if (key === '__proto__')
-		throw new Error('The validator does not support a field named __proto__.')
+	for (const key of keys) {
+		if (typeof key !== 'string' || !schema.properties || !Object.hasOwn(schema.properties, key)) {
+			throw new Error('Field generation requires an own top-level property.')
+		}
+		if (key === '__proto__')
+			throw new Error('The validator does not support a field named __proto__.')
+	}
 
 	traverse(schema, {
 		cb(node) {
@@ -24,10 +29,10 @@ export function selectFieldSchema(
 
 	const responseSchema: SchemaObject = {
 		type: 'object',
-		properties: { [key]: schema.properties[key] },
-		required: [key],
+		properties: Object.fromEntries(keys.map((key) => [key, schema.properties[key]])),
+		required: [...new Set(keys)],
 		additionalProperties: false,
 	}
 	if (Object.hasOwn(schema, '$schema')) responseSchema.$schema = schema.$schema
-	return structuredClone(responseSchema) as PieceFrontmatterSchema<PieceFrontmatter>
+	return responseSchema as PieceFrontmatterSchema<PieceFrontmatter>
 }

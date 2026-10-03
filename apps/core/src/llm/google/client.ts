@@ -28,11 +28,10 @@ export type GenerationOptions = {
 	onProgress?: (progress: GenerationProgress) => void | Promise<void>
 }
 
-type GenerationTask<T> = {
+type GenerationTask = {
 	prompt: string[]
 	systemInstruction: string
 	schema?: PieceFrontmatterSchema<PieceFrontmatter>
-	decode: (text: string) => T
 }
 
 type GenerationContext = {
@@ -93,7 +92,7 @@ async function uploadFile(
 		})
 	} catch (error) {
 		const status = error instanceof ApiError ? ` (HTTP ${error.status})` : ''
-		throw new Error(`Gemini file upload failed${status}.`)
+		throw new Error(`Gemini file upload failed${status}.`, { cause: error })
 	}
 	if (typeof uploaded?.name !== 'string' || !uploaded.name) {
 		throw new Error('Gemini file upload returned no file name.')
@@ -192,42 +191,12 @@ function completedText(response: GenerateContentResponse): string {
 	return text
 }
 
-async function generateText<T>(
-	context: GenerationContext,
-	task: GenerationTask<T>,
-	attachments: Array<string | Part>
-) {
-	progress(context, 'generation', 'Generating content.')
-	const response = await context.client.models.generateContent({
-		model: MODEL_NAME,
-		contents: [...task.prompt, ...attachments],
-		config: {
-			candidateCount: 1,
-			systemInstruction: task.systemInstruction,
-			...(task.schema
-				? { responseMimeType: 'application/json', responseJsonSchema: task.schema }
-				: {}),
-			safetySettings: [
-				{
-					category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-					threshold: HarmBlockThreshold.BLOCK_NONE,
-				},
-				{
-					category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-					threshold: HarmBlockThreshold.BLOCK_NONE,
-				},
-			],
-		},
-	})
-	return completedText(response)
-}
-
-export async function runGeneration<T>(
+export async function runGeneration(
 	apiKey: string,
-	task: GenerationTask<T>,
+	task: GenerationTask,
 	options: GenerationOptions
-): Promise<T> {
-	const files = [...(options.files ?? [])]
+): Promise<string> {
+	const files = options.files ?? []
 	if (files.length > DEFAULT_GENERATION_LIMITS.maxFiles)
 		throw new Error('Too many generation attachments.')
 	const context: GenerationContext = {
@@ -238,9 +207,30 @@ export async function runGeneration<T>(
 	try {
 		progress(context, 'preparation', 'Preparing generation inputs.')
 		const attachments = await prepareAttachments(context, files)
-		const text = await generateText(context, task, attachments)
+		progress(context, 'generation', 'Generating content.')
+		const response = await context.client.models.generateContent({
+			model: MODEL_NAME,
+			contents: [...task.prompt, ...attachments],
+			config: {
+				candidateCount: 1,
+				systemInstruction: task.systemInstruction,
+				...(task.schema
+					? { responseMimeType: 'application/json', responseJsonSchema: task.schema }
+					: {}),
+				safetySettings: [
+					{
+						category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+						threshold: HarmBlockThreshold.BLOCK_NONE,
+					},
+					{
+						category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+						threshold: HarmBlockThreshold.BLOCK_NONE,
+					},
+				],
+			},
+		})
 		progress(context, 'validation', 'Validating the completed result.')
-		return task.decode(text)
+		return completedText(response)
 	} finally {
 		await cleanupFiles(context)
 	}

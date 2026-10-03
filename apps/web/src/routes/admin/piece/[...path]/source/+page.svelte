@@ -3,13 +3,14 @@
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
 	import Button from '$lib/components/ui/Button.svelte'
 	import PieceActions from '$lib/components/editor/PieceActions.svelte'
+	import GenerationDialog from '$lib/components/editor/GenerationDialog.svelte'
 	import type { PageProps } from './$types'
 	import { Dialog } from 'bits-ui'
 	import { fade, fly } from 'svelte/transition'
 
 	import { page } from '$app/state'
-	import { beforeNavigate, goto } from '$app/navigation'
-	import { onMount } from 'svelte'
+	import { beforeNavigate, goto, replaceState } from '$app/navigation'
+	import { onMount, onDestroy } from 'svelte'
 
 	let { data, form }: PageProps = $props()
 
@@ -18,6 +19,11 @@
 	let bypassWarning = $state(false)
 	let isSaving = $state(false)
 	let saveSuccess = $state(false)
+	let editorError = $state('')
+	let disposed = false
+	onDestroy(() => {
+		disposed = true
+	})
 
 	beforeNavigate((navigation) => {
 		if (isDirty && !bypassWarning && navigation.type !== 'form' && navigation.to) {
@@ -65,6 +71,22 @@
 			rawContent = form.rawContent as string
 		} else {
 			rawContent = data.rawContent || ''
+		}
+	})
+
+	let generateDialogOpen = $state(false)
+	$effect(() => {
+		if (data.file) {
+			generateDialogOpen = false
+			editorError = ''
+		}
+	})
+	$effect(() => {
+		if (page.url.searchParams.get('generate') === '1') {
+			generateDialogOpen = data.canGenerate
+			const url = new URL(page.url)
+			url.searchParams.delete('generate')
+			replaceState(url, page.state)
 		}
 	})
 
@@ -170,6 +192,26 @@
 		}
 	}
 </script>
+
+{#key data.file}
+	<GenerationDialog
+		bind:open={generateDialogOpen}
+		file={data.file}
+		source={rawContent}
+		fields={Object.keys(data.schema.properties ?? {}).filter((key) => key !== '__proto__')}
+		onFocusEditor={() => editorRef?.focus()}
+		onError={(message) => {
+			editorError = message
+			saveSuccess = false
+		}}
+		onApply={(source, markdown) => {
+			if (!editorRef) throw new Error('The editor is not ready. Please try again.')
+			editorRef.replaceContent(markdown, source)
+			saveSuccess = false
+			editorError = ''
+		}}
+	/>
+{/key}
 
 <Dialog.Root
 	bind:open={attachDialogOpen}
@@ -383,13 +425,25 @@
 					isSaving = true
 					bypassWarning = true
 					saveSuccess = false
+					editorError = ''
 					return async ({ result, update }) => {
-						isSaving = false
-						bypassWarning = false
-						if (result.type === 'success') {
-							saveSuccess = true
+						if (disposed) return
+						try {
+							if (result.type === 'redirect') {
+								editorError =
+									'Please sign in again in another tab, then retry. Your edits are still here.'
+								return
+							}
+							if (result.type === 'error') {
+								editorError = 'Unable to save. Your edits are still here. Please try again.'
+								return
+							}
+							if (result.type === 'success') saveSuccess = true
+							await update({ reset: false })
+						} finally {
+							isSaving = false
+							bypassWarning = false
 						}
-						await update({ reset: false })
 					}
 				}}
 			>
@@ -406,10 +460,14 @@
 			file={data.file}
 			currentMode="source"
 			{isDirty}
-			canGenerate={data.canGenerate}
+			canGenerate={data.canGenerate && !isSaving}
 			{hasPublicVersion}
 			{isPublicStale}
 			onDelete={() => dialog.showModal()}
+			onGenerate={() => {
+				editorError = ''
+				generateDialogOpen = true
+			}}
 			onAttach={() => {
 				const selectedText = editorRef?.getSelectedText()?.trim() || ''
 				let isUrl = false
@@ -437,10 +495,10 @@
 		<div class="banner success-banner">Piece saved successfully!</div>
 	{/if}
 
-	{#if form?.error}
-		<div class="banner error-banner">
+	{#if editorError || form?.error}
+		<div class="banner error-banner" role="alert">
 			<strong>Error:</strong>
-			{form.error.message}
+			{editorError || form?.error?.message}
 		</div>
 	{/if}
 

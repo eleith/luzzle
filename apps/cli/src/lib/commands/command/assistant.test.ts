@@ -8,7 +8,7 @@ import yargs from 'yargs'
 import { makeContext, makeMarkdownSample, makePieceMock } from '../utils/context.fixtures.js'
 import { makePieceOption, parsePieceOptionArgv } from '../utils/pieces.js'
 import yaml from 'yaml'
-import { pieceFrontMatterFromPrompt } from '@luzzle/core'
+import { generatePieceFrontmatter } from '@luzzle/core'
 
 vi.mock('@luzzle/core')
 vi.mock('../utils/pieces.js')
@@ -20,7 +20,7 @@ const mocks = {
 	logInfo: vi.spyOn(log, 'info'),
 	parseArgs: vi.mocked(parsePieceOptionArgv),
 	makeOption: vi.mocked(makePieceOption),
-	generatePieceFrontmatter: vi.mocked(pieceFrontMatterFromPrompt),
+	generatePieceFrontmatter: vi.mocked(generatePieceFrontmatter),
 	getPiece: vi.fn(),
 	consoleLog: vi.spyOn(console, 'log'),
 	yamlStringify: vi.mocked(yaml.stringify),
@@ -40,7 +40,7 @@ describe('lib/commands/assistant.ts', () => {
 		})
 	})
 
-	test('run', async () => {
+	test.each([{ file: undefined }, { file: ['book.pdf', 'notes.txt'] }])('generates full metadata directly with files $file', async ({ file }) => {
 		const apiKeys = 'api_key'
 		const piece = makePieceMock()
 		const frontmatter = makeMarkdownSample().frontmatter
@@ -56,15 +56,14 @@ describe('lib/commands/assistant.ts', () => {
 			frontmatter as unknown as Record<string, string | number | boolean>
 		)
 
-		await command.run(ctx, { prompt } as Arguments<AssistantArgv>)
+		await command.run(ctx, { prompt, file } as Arguments<AssistantArgv>)
 
 		expect(mocks.yamlStringify).toHaveBeenCalledOnce()
 		expect(mocks.consoleLog).toHaveBeenCalledOnce()
 		expect(mocks.generatePieceFrontmatter).toHaveBeenCalledWith(
 			apiKeys,
-			piece.schema,
-			prompt,
-			undefined
+			{ schema: piece.schema, instructions: prompt },
+			{ files: file }
 		)
 	})
 
@@ -209,6 +208,40 @@ describe('lib/commands/assistant.ts', () => {
 		expect(spies.pieceCreate).toHaveBeenCalledWith(directory, title)
 		expect(spies.pieceWrite).toHaveBeenCalledWith({ ...markdown, frontmatter })
 		expect(spies.pieceSetFields).toHaveBeenCalledWith(markdown, frontmatter)
+	})
+
+	test('stays quiet until the validated result is ready', async () => {
+		const piece = makePieceMock()
+		const pending = Promise.withResolvers<Awaited<ReturnType<typeof generatePieceFrontmatter>>>()
+		mocks.parseArgs.mockResolvedValueOnce({ piece })
+		mocks.generatePieceFrontmatter.mockReturnValueOnce(pending.promise)
+		const running = command.run(makeContext(), { prompt: 'Find details' } as Arguments<AssistantArgv>)
+		await vi.waitFor(() => expect(mocks.generatePieceFrontmatter).toHaveBeenCalledOnce())
+		expect(mocks.consoleLog).not.toHaveBeenCalled()
+		expect(mocks.logInfo).not.toHaveBeenCalled()
+		expect(mocks.yamlStringify).not.toHaveBeenCalled()
+		pending.resolve({ title: 'Completed' })
+		await running
+		expect(mocks.yamlStringify).toHaveBeenCalledWith({ title: 'Completed' })
+		expect(mocks.consoleLog).toHaveBeenCalledOnce()
+	})
+
+	test.each([
+		{},
+		{ update: 'existing.books.md' },
+		{ directory: 'books', title: 'New book' },
+	])('does not apply or print a failed generation: %j', async (options) => {
+		const piece = makePieceMock()
+		mocks.parseArgs.mockResolvedValueOnce({ piece })
+		mocks.generatePieceFrontmatter.mockRejectedValueOnce(new Error('Invalid generated metadata'))
+		await expect(command.run(makeContext(), { prompt: 'Find details', ...options } as Arguments<AssistantArgv>))
+			.rejects.toThrow('Invalid generated metadata')
+		expect(piece.get).not.toHaveBeenCalled()
+		expect(piece.create).not.toHaveBeenCalled()
+		expect(piece.setFields).not.toHaveBeenCalled()
+		expect(piece.write).not.toHaveBeenCalled()
+		expect(mocks.consoleLog).not.toHaveBeenCalled()
+		expect(mocks.yamlStringify).not.toHaveBeenCalled()
 	})
 
 	test('builder', async () => {

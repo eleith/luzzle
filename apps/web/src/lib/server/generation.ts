@@ -1,8 +1,23 @@
 import { error } from '@sveltejs/kit'
+import {
+	generatePieceBody,
+	generatePieceFrontmatter,
+	mergeGeneratedFields,
+	appendGeneratedBody,
+	type GenerationProgress,
+	type PieceFrontmatter,
+	type PieceFrontmatterSchema
+} from '@luzzle/core'
+import type { GenerationResult } from '$lib/generation/types'
 import { config } from './config'
-import { readCreateInput, readEditInput } from './generation/input'
-import { createDraftGenerator, createEditorGenerator, type Generate } from './generation/generator'
-import { generationStream } from './generation/stream'
+import { getPieces } from './pieces'
+import {
+	readFieldsInput,
+	readBodyInput,
+	type FieldsGenerationInput,
+	type BodyGenerationInput
+} from './generation/input'
+import { createGenerationStream } from './generation/stream'
 import { MAX_CONCURRENT_GENERATIONS } from './constants'
 
 let active = 0
@@ -17,20 +32,95 @@ export async function generateResponse(request: Request): Promise<Response> {
 	const release = () => active--
 	try {
 		const form = await request.formData()
-		const mode = form.get('mode')
-		let generate: Generate
-		if (mode === 'create') {
-			const input = await readCreateInput(form)
-			generate = await createDraftGenerator(input, ai.api_key)
-		} else if (mode === 'edit') {
-			const input = await readEditInput(form)
-			generate = await createEditorGenerator(input, ai.api_key)
-		} else {
-			error(400, 'Choose creation or editing.')
+		const target = form.get('target')
+		if (target === 'fields') {
+			return await generateFieldsResponse(request, form, ai.api_key, release)
 		}
-		return generationStream(request, generate, release)
+		if (target === 'body') {
+			return await generateBodyResponse(request, form, ai.api_key, release)
+		}
+		error(400, 'Choose metadata fields or the body.')
 	} catch (cause) {
 		release()
 		throw cause
 	}
+}
+
+async function generateFieldsResponse(
+	request: Request,
+	form: FormData,
+	apiKey: string,
+	release: () => void
+): Promise<Response> {
+	const file = form.get('file')
+	if (typeof file !== 'string' || !file.trim()) error(400, 'Piece file is required.')
+	const input = await readFieldsInput(form)
+	const schema = await loadFieldSchema(file)
+	const unknownKeys = input.keys.some(
+		(key) => key === '__proto__' || !Object.hasOwn(schema.properties, key)
+	)
+	if (unknownKeys) error(400, 'Choose top-level metadata fields.')
+
+	const stream = createGenerationStream(request)
+	const work = generateFieldsDocument(apiKey, input, schema, stream.progress)
+	void stream.sendResult(work, release)
+	return stream.response
+}
+
+async function generateBodyResponse(
+	request: Request,
+	form: FormData,
+	apiKey: string,
+	release: () => void
+): Promise<Response> {
+	const input = await readBodyInput(form)
+	const stream = createGenerationStream(request)
+	const work = generateBodyDocument(apiKey, input, stream.progress)
+	void stream.sendResult(work, release)
+	return stream.response
+}
+
+async function loadFieldSchema(file: string): Promise<PieceFrontmatterSchema<PieceFrontmatter>> {
+	const pieces = getPieces()
+	const filename = pieces.parseFilename(file)
+	if (filename.format !== '.md' || pieces.isAsset(file)) error(400, 'Choose an archive piece.')
+	const type = filename.type
+	if (!type || !config.pieces.some((entry) => entry.type === type)) {
+		error(400, 'Choose a configured piece type.')
+	}
+	try {
+		const piece = await pieces.getPiece(type)
+		return piece.schema
+	} catch {
+		error(400, 'Could not load the piece schema.')
+	}
+}
+
+async function generateFieldsDocument(
+	apiKey: string,
+	input: FieldsGenerationInput,
+	schema: PieceFrontmatterSchema<PieceFrontmatter>,
+	progress: (event: GenerationProgress) => void
+): Promise<GenerationResult> {
+	const fields = await generatePieceFrontmatter(
+		apiKey,
+		{ source: input.source, instructions: input.instructions, schema, keys: input.keys },
+		{ files: input.files, onProgress: progress }
+	)
+	const markdown = await mergeGeneratedFields(input.source, fields)
+	return { markdown }
+}
+
+async function generateBodyDocument(
+	apiKey: string,
+	input: BodyGenerationInput,
+	progress: (event: GenerationProgress) => void
+): Promise<GenerationResult> {
+	const body = await generatePieceBody(
+		apiKey,
+		{ source: input.source, instructions: input.instructions },
+		{ files: input.files, onProgress: progress }
+	)
+	const markdown = appendGeneratedBody(input.source, body)
+	return { markdown }
 }

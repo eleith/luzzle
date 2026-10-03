@@ -2,7 +2,6 @@
 	import { DropdownMenu } from 'bits-ui'
 	import DotsThreeVertical from 'virtual:icons/ph/dots-three-vertical'
 	import { goto } from '$app/navigation'
-	import { page } from '$app/state'
 
 	type Props = {
 		file: string
@@ -13,6 +12,7 @@
 		isPublicStale: boolean
 		onDelete: () => void
 		onAttach?: () => void
+		onGenerate?: () => void
 	}
 
 	let {
@@ -22,12 +22,12 @@
 		hasPublicVersion,
 		isPublicStale,
 		onDelete,
-		onAttach
+		onAttach,
+		onGenerate
 	}: Props = $props()
 
 	const previewUrl = `/admin/piece/${file}/preview`
 	const liveUrl = `/admin/piece/${file}/live`
-	const returnParam = `?returnTo=${encodeURIComponent(page.url.pathname)}`
 </script>
 
 <DropdownMenu.Root>
@@ -58,7 +58,10 @@
 
 							{#if canGenerate}
 								<DropdownMenu.Item
-									onSelect={() => goto(`/admin/pieces/generate/${file}${returnParam}`)}
+									onSelect={() => {
+										if (currentMode === 'source' && onGenerate) onGenerate()
+										else goto(`/admin/piece/${file}/source?generate=1`)
+									}}
 								>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>generate</div>

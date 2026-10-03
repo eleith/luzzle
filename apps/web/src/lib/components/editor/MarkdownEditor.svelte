@@ -8,6 +8,7 @@
 	import { createLSPExtension, destroyLSPClient } from './lsp'
 	import { luzzleFieldEditor } from './extensions/luzzleFieldEditor'
 	import { luzzleAssetEditor } from './extensions/luzzleAssetEditor'
+	import { replaceDocument } from './replace-document'
 
 	function getAppliedTheme(): 'dark' | 'light' {
 		const preference = window.localStorage.getItem('theme') || 'system'
@@ -149,6 +150,15 @@
 			view.dispatch(transaction)
 			view.focus()
 		}
+	}
+
+	export function replaceContent(content: string, expectedSource: string) {
+		if (!view) throw new Error('The editor is not ready. Please try again.')
+		view.dispatch(replaceDocument(view.state, content, expectedSource))
+	}
+
+	export function focus() {
+		view?.focus()
 	}
 
 	export function getSelectedText(): string {
