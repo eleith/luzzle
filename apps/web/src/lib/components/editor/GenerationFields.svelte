@@ -23,6 +23,10 @@
 		}
 	})
 
+	export function focus() {
+		input?.focus()
+	}
+
 	async function clearSearch() {
 		query = ''
 		// Bits UI sets the picked label after onValueChange. Wait, then clear both

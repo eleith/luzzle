@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Dialog, Tabs } from 'bits-ui'
-	import { onDestroy } from 'svelte'
+	import { onDestroy, tick, untrack } from 'svelte'
 	import { fade, fly } from 'svelte/transition'
 	import CircleNotch from 'virtual:icons/ph/circle-notch-bold'
 	import Button from '$lib/components/ui/Button.svelte'
@@ -27,7 +27,8 @@
 	}: Props = $props()
 	const id = $props.id()
 	let target = $state<'fields' | 'body'>('fields')
-	let selected = $state<string[]>([])
+	let selected = $state<string[]>(untrack(() => [...fields]))
+	let fieldPicker = $state<GenerationFields>()
 	let fieldInstructions = $state<string>()
 	let bodyInstructions = $state('')
 	let files = $state<FileList>()
@@ -87,7 +88,7 @@
 			if (!open || current !== operation || !result) return
 			onApply(original, result.markdown)
 			target = 'fields'
-			selected = []
+			selected = [...fields]
 			fieldInstructions = undefined
 			bodyInstructions = ''
 			files = new DataTransfer().files
@@ -120,6 +121,12 @@
 		</Dialog.Overlay>
 		<Dialog.Content
 			forceMount
+			onOpenAutoFocus={async (event) => {
+				if (target !== 'fields') return
+				event.preventDefault()
+				await tick()
+				if (open) fieldPicker?.focus()
+			}}
 			onCloseAutoFocus={(event) => {
 				if (appliedThisSession) {
 					event.preventDefault()
@@ -141,7 +148,12 @@
 								<div class="generation-body">
 									<div class="generation-inputs" class:concealed={busy} inert={busy}>
 										<Tabs.Content value="fields" class="generation-panel">
-											<GenerationFields {fields} bind:selected disabled={busy} />
+											<GenerationFields
+												bind:this={fieldPicker}
+												{fields}
+												bind:selected
+												disabled={busy}
+											/>
 										</Tabs.Content>
 										<Tabs.Content value="body" class="generation-panel">
 											<p class="hint">Append new text to the body; keep existing content.</p>
@@ -158,7 +170,7 @@
 														name="instructions"
 														bind:value={fieldInstructions}
 														rows="4"
-														>Use the current piece and attached files to fill in or improve the selected fields. Replace sample values with accurate information, preserve values that are already correct, and avoid inventing details.</textarea
+														>Use the current piece and attached files to fill in or improve the selected fields. add or replace fields with accurate information, preserve values that are already correct, and avoid inventing details.</textarea
 													>
 												{:else}
 													<textarea
