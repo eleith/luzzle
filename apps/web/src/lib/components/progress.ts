@@ -13,9 +13,3 @@ export type ProgressLog = {
 	level: string
 	message: string
 }
-
-export type ProgressStatusText = {
-	title: string
-	description?: string
-	durationLabel?: string
-}
