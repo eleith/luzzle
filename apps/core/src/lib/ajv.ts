@@ -17,15 +17,25 @@ export function assetFormatValidator(data: string) {
 	return /^\.assets\/.+\/.+/.test(data)
 }
 
+export function assetSourceFormatValidator(data: string) {
+	return assetFormatValidator(data) || (/^https?:\/\//i.test(data) && URL.canParse(data))
+}
+
 export function paragraphFormatValidator(data: string) {
 	return typeof data === 'string'
 }
 
-export default function <T>(schema: JSONSchemaType<T>): ValidateFunction<T> {
+export default function <T>(
+	schema: JSONSchemaType<T>,
+	options?: { allowAssetUrls?: boolean }
+): ValidateFunction<T> {
 	const ajv = new Ajv()
 
 	ajv.addFormat('date', { type: 'string', validate: dateFormatValidator })
-	ajv.addFormat('asset', { type: 'string', validate: assetFormatValidator })
+	ajv.addFormat('asset', {
+		type: 'string',
+		validate: options?.allowAssetUrls ? assetSourceFormatValidator : assetFormatValidator,
+	})
 	ajv.addFormat('comma-separated', {
 		type: 'string',
 		validate: commaSeparatedFormatValidator,
