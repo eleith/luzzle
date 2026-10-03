@@ -33,7 +33,7 @@ async function resolveAssetUrls(
 
 		for (const instancePath of instancePaths) {
 			const value = getFrontmatterValue(updated.frontmatter, instancePath)
-			if (typeof value !== 'string' || !/^https?:\/\//.test(value)) continue
+			if (typeof value !== 'string' || !/^https?:\/\//i.test(value)) continue
 
 			try {
 				const parts = instancePath.split('.')
