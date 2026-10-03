@@ -87,6 +87,7 @@
     "@codemirror/language-data": "6.5.2",
     "@luzzle/web.db": "workspace:*",
     "@luzzle/web.pieces": "workspace:*",
+    "eventsource-parser": "4.1.1",
     "kysely": "0.28.17",
     "openworkflow": "0.9.0"
   }
