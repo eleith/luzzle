@@ -169,7 +169,8 @@ async function savePieceAsset(
 		counter++
 	}
 
-	await pipeline(detectedStream, storage.createWriteStream(relPath))
+	// Asset names are always new (with suffixes above); do not overwrite if another upload wins the race.
+	await pipeline(detectedStream, storage.createWriteStream(relPath, { createOnly: true }))
 
 	return relPath
 }

@@ -14,7 +14,7 @@ abstract class LuzzleStorage {
 	abstract delete(path: string): Promise<void>
 	abstract stat(path: string): Promise<StorageStat>
 	abstract createReadStream(path: string): ReadStream
-	abstract createWriteStream(path: string): WriteStream
+	abstract createWriteStream(path: string, options?: { createOnly?: boolean }): WriteStream
 	abstract makeDirectory(path: string): Promise<void>
 }
 

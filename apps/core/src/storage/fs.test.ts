@@ -291,7 +291,12 @@ describe('lib/storage/fs.ts', () => {
 		expect(results).toEqual(stream)
 	})
 
-	test('createWritestream', async () => {
+	test.each([
+		[undefined, 'w'],
+		[{}, 'w'],
+		[{ createOnly: false }, 'w'],
+		[{ createOnly: true }, 'wx'],
+	] as const)('createWriteStream with options %j uses %s', (options, flags) => {
 		const root = '/root/dir'
 		const stream = new PassThrough() as unknown as WriteStream
 
@@ -299,8 +304,9 @@ describe('lib/storage/fs.ts', () => {
 		mocks.createWriteStream.mockReturnValueOnce(stream)
 
 		const storage = new StorageFileSystem(root)
-		const results = storage.createWriteStream('./path')
+		const results = storage.createWriteStream('./path', options)
 
+		expect(mocks.createWriteStream).toHaveBeenCalledExactlyOnceWith(resolve(root, './path'), { flags })
 		expect(results).toEqual(stream)
 	})
 

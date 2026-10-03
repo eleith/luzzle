@@ -97,9 +97,9 @@ class StorageFileSystem extends LuzzleStorage {
 		return createReadStream(resolvedPath)
 	}
 
-	createWriteStream(path: string) {
+	createWriteStream(path: string, options?: { createOnly?: boolean }) {
 		const resolvedPath = this.resolvePath(path)
-		return createWriteStream(resolvedPath)
+		return createWriteStream(resolvedPath, { flags: options?.createOnly ? 'wx' : 'w' })
 	}
 
 	async makeDirectory(path: string) {

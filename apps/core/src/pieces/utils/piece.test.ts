@@ -3,7 +3,7 @@ import { readFile } from 'fs/promises'
 import type { MockInstance } from 'vitest';
 import { describe, expect, test, vi, afterEach, beforeAll } from 'vitest'
 import { createHash } from 'crypto'
-import { PassThrough, Readable } from 'stream'
+import { PassThrough, Readable, Writable } from 'stream'
 import type { Request } from 'got';
 import got from 'got'
 import path from 'path'
@@ -383,6 +383,7 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await savePieceFieldAsset(markdown.filePath, field, mockStream, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'photo.png'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
 	})
 
 	test('savePieceFieldAsset should work with field arrays (PNG)', async () => {
@@ -406,6 +407,7 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await savePieceFieldAsset(markdown.filePath, field, mockStream, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'photo.png'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
 	})
 
 	test('savePieceFieldAsset should use filename for name and ext (text file fallback)', async () => {
@@ -428,6 +430,7 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await savePieceFieldAsset(markdown.filePath, field, mockStream, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'deploy.bash'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
 	})
 
 	test('savePieceFieldAsset should fall back to field name with no ext for bare Readable', async () => {
@@ -451,6 +454,7 @@ describe('pieces/utils/piece.ts', () => {
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		// Falls back to field name, no extension (not .md)
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'cover'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
 	})
 
 	test('savePieceFieldAsset should increment counter on filename collision', async () => {
@@ -476,6 +480,7 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await savePieceFieldAsset(markdown.filePath, field, mockStream, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'photo-2.png'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
 	})
 
 	test('savePieceFieldAsset throws for non-asset field', async () => {
@@ -503,6 +508,7 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await savePieceAsset(markdown.filePath, 'photo.jpg', stream, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'photo.png'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
 	})
 
 	test('savePieceAsset should default to "attachment" and empty extension if filename is empty and format is unknown', async () => {
@@ -521,6 +527,36 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await savePieceAsset(markdown.filePath, '', stream, storage)
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'attachment'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
+	})
+
+	test('savePieceAsset propagates a destination EEXIST race without overwriting or deleting', async () => {
+		const storage = makeStorage('root')
+		const error = Object.assign(new Error('destination already exists'), { code: 'EEXIST' })
+		const write = vi.fn()
+		vi.spyOn(storage, 'exists')
+			.mockResolvedValueOnce(true) // asset directory exists
+			.mockResolvedValueOnce(false) // destination is free before another writer wins
+		vi.spyOn(storage, 'createWriteStream').mockImplementationOnce(() => new Writable({
+			construct(callback) {
+				callback(error)
+			},
+			write,
+		}) as WriteStream)
+
+		await expect(
+			savePieceAsset('samplePath.md', 'file.txt', Readable.from(['content']), storage)
+		).rejects.toBe(error)
+
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(
+			path.join(ASSETS_DIRECTORY, 'samplePath', 'file.txt'),
+			{ createOnly: true }
+		)
+		expect(storage.exists).toHaveBeenCalledTimes(2)
+		expect(write).not.toHaveBeenCalled()
+		expect(storage.writeFile).not.toHaveBeenCalled()
+		expect(storage.createFile).not.toHaveBeenCalled()
+		expect(storage.delete).not.toHaveBeenCalled()
 	})
 
 	test('savePieceAsset preserves errors for a caller-supplied stream', async () => {
@@ -559,6 +595,7 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await assetPromise
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'some-file.png'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
 	})
 
 	test('savePieceAsset logs only the origin on stream errors after a response', async () => {
@@ -601,6 +638,7 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await assetPromise
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'attachment'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
 	})
 
 	test('savePieceAsset should accept a URL source and options.name, using custom name but keeping extension if options.name lacks one', async () => {
@@ -631,6 +669,7 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await assetPromise
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'custom-logo.png'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
 	})
 
 	test('savePieceAsset should accept a URL source and options.name, using custom name with its own extension if options.name has one', async () => {
@@ -661,6 +700,7 @@ describe('pieces/utils/piece.ts', () => {
 		const asset = await assetPromise
 		const pieceDir = markdown.filePath.replace(/\.[^.]+$/, '')
 		expect(asset).toBe(path.join(ASSETS_DIRECTORY, pieceDir, 'custom-logo.jpg'))
+		expect(storage.createWriteStream).toHaveBeenCalledExactlyOnceWith(asset, { createOnly: true })
 	})
 
 	test('savePieceAsset rejects local source path strings', async () => {
