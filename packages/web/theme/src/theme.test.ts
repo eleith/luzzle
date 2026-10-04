@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import type { Config } from '@luzzle/web.config'
-import { generateThemeCss } from './theme.js'
+import { generateThemeCss } from './index.js'
 
 describe('generateThemeCss', () => {
 	test('generates theme CSS with custom font and colors', () => {

@@ -1,0 +1,110 @@
+.cm-editor {
+	color: var(--editor-foreground, var(--color-on-surface));
+	background-color: var(--editor-background, var(--color-surface));
+	--cm-attribute: var(--editor-string, var(--color-on-surface));
+	--cm-variable: var(--editor-key, var(--color-on-surface));
+	--cm-link: var(--editor-link, var(--color-on-surface));
+}
+
+.cm-editor .cm-content {
+	caret-color: var(--editor-caret, var(--color-on-surface));
+}
+
+.cm-editor :is(.cm-cursor, .cm-dropCursor) {
+	border-left-color: var(--editor-caret, var(--color-on-surface));
+}
+
+.cm-editor .cm-gutters {
+	background-color: var(--editor-gutterBackground, var(--color-surface));
+	color: var(--editor-gutterForeground, var(--color-on-surface-variant));
+	border-right-color: transparent;
+}
+
+.cm-editor :is(.cm-activeLine, .cm-activeLineGutter) {
+	background-color: var(--editor-lineHighlight, var(--color-surface-container-low));
+}
+
+.cm-editor .cm-activeLineGutter {
+	color: var(--editor-gutterActiveForeground, var(--color-on-surface));
+}
+
+.cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground,
+.cm-editor .cm-selectionBackground,
+.cm-editor .cm-content ::selection,
+.cm-editor .cm-content::selection {
+	background-color: var(--editor-selection, var(--color-surface-container-highest));
+}
+
+.cm-editor .cm-selectionMatch {
+	background-color: var(--editor-selectionMatch, var(--color-surface-container-high));
+}
+
+.cm-editor :is(.cm-tooltip, .cm-panels) {
+	background-color: var(--editor-panelBackground, var(--color-surface-container));
+	color: var(--editor-panelForeground, var(--color-on-surface));
+	border-color: var(--editor-border, var(--color-outline));
+}
+
+.cm-editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
+	background-color: var(--editor-selection, var(--color-surface-container-highest));
+	color: var(--editor-foreground, var(--color-on-surface));
+}
+
+/* Keep the spike's role colors and Markdown formatting, now on stable classes. */
+.cm-editor .tok-heading {
+	color: var(--editor-heading, var(--color-on-surface));
+	font-weight: bold;
+}
+
+.cm-editor .tok-strong {
+	color: var(--editor-strong, var(--color-on-surface));
+	font-weight: bold;
+}
+
+.cm-editor .tok-emphasis {
+	color: var(--editor-emphasis, var(--color-on-surface));
+	font-style: italic;
+}
+
+.cm-editor .tok-strikethrough {
+	text-decoration: line-through;
+}
+
+.cm-editor .tok-quote {
+	color: var(--editor-quote, var(--color-on-surface-variant));
+}
+
+.cm-editor .tok-monospace {
+	color: var(--editor-code, var(--color-on-surface));
+}
+
+.cm-editor .tok-link {
+	color: var(--editor-link, var(--color-on-surface));
+	text-decoration: underline;
+}
+
+.cm-editor .tok-url {
+	color: var(--editor-url, var(--color-on-surface));
+	text-decoration: underline;
+}
+
+.cm-editor .tok-name {
+	color: var(--editor-key, var(--color-on-surface));
+}
+
+.cm-editor :is(.tok-string, .tok-string2) {
+	color: var(--editor-string, var(--color-on-surface));
+}
+
+.cm-editor :is(.tok-number, .tok-bool, .tok-atom, .tok-keyword) {
+	color: var(--editor-literal, var(--color-on-surface));
+}
+
+.cm-editor .tok-comment {
+	color: var(--editor-comment, var(--color-on-surface-variant));
+	font-style: italic;
+}
+
+.cm-editor :is(.tok-punctuation, .tok-meta, .tok-contentSeparator, .tok-operator) {
+	color: var(--editor-punctuation, var(--color-on-surface-variant));
+}

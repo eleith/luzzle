@@ -2,8 +2,7 @@
 	import { onMount, onDestroy } from 'svelte'
 	import { EditorView } from 'codemirror'
 	import { EditorState, Compartment } from '@codemirror/state'
-	import { gruvboxDark, gruvboxDarkBg } from './themes/gruvbox-dark'
-	import { gruvboxLight, gruvboxLightBg } from './themes/gruvbox-light'
+	import { configuredTheme } from './themes/configured'
 	import { createEditorExtensions } from './config'
 	import { createLSPExtension, destroyLSPClient } from './lsp'
 	import { luzzleFieldEditor } from './extensions/luzzleFieldEditor'
@@ -41,11 +40,7 @@
 
 	function updateTheme() {
 		const { isDark } = readTheme()
-		const themeExtension = isDark ? gruvboxDark : gruvboxLight
-
-		if (editorContainer) {
-			editorContainer.style.backgroundColor = isDark ? gruvboxDarkBg : gruvboxLightBg
-		}
+		const themeExtension = configuredTheme(isDark ? 'dark' : 'light')
 
 		view.dispatch({
 			effects: themeConfig.reconfigure(themeExtension)
@@ -54,7 +49,7 @@
 
 	onMount(() => {
 		const { isDark } = readTheme()
-		const initialTheme = isDark ? gruvboxDark : gruvboxLight
+		const initialTheme = configuredTheme(isDark ? 'dark' : 'light')
 
 		const extensions = createEditorExtensions({
 			themeConfig,
@@ -174,6 +169,7 @@
 
 <style>
 	.editor-wrapper {
+		background-color: var(--editor-background, var(--color-surface));
 		width: 100%;
 		border-radius: var(--radius-medium);
 		overflow: hidden;
@@ -186,7 +182,7 @@
 		content: '';
 		position: absolute;
 		inset: 0;
-		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+		box-shadow: inset 0 2px 4px var(--color-shadow);
 		pointer-events: none;
 		z-index: 12;
 		border-radius: inherit;
@@ -194,7 +190,6 @@
 
 	:global(.cm-editor) {
 		height: 100%;
-		background-color: transparent !important;
 	}
 
 	:global(.cm-scroller) {

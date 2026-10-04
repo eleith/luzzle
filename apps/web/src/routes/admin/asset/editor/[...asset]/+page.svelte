@@ -8,14 +8,7 @@
 	import type { PageProps } from './$types'
 	import { EditorView } from 'codemirror'
 	import { EditorState, Compartment } from '@codemirror/state'
-	import {
-		gruvboxDark,
-		gruvboxDarkBg
-	} from '../../../../../lib/components/editor/themes/gruvbox-dark'
-	import {
-		gruvboxLight,
-		gruvboxLightBg
-	} from '../../../../../lib/components/editor/themes/gruvbox-light'
+	import { configuredTheme } from '$lib/components/editor/themes/configured'
 	import {
 		highlightSpecialChars,
 		drawSelection,
@@ -102,11 +95,7 @@
 	function updateTheme() {
 		if (!view) return
 		const { isDark } = readTheme()
-		const themeExtension = isDark ? gruvboxDark : gruvboxLight
-
-		if (editorContainer) {
-			editorContainer.style.backgroundColor = isDark ? gruvboxDarkBg : gruvboxLightBg
-		}
+		const themeExtension = configuredTheme(isDark ? 'dark' : 'light')
 
 		view.dispatch({
 			effects: themeConfig.reconfigure(themeExtension)
@@ -144,11 +133,7 @@
 		if (data.isBinary || !editorContainer) return
 
 		const { isDark } = readTheme()
-		const initialTheme = isDark ? gruvboxDark : gruvboxLight
-
-		if (editorContainer) {
-			editorContainer.style.backgroundColor = isDark ? gruvboxDarkBg : gruvboxLightBg
-		}
+		const initialTheme = configuredTheme(isDark ? 'dark' : 'light')
 
 		const extensions = [
 			highlightSpecialChars(),
@@ -611,6 +596,7 @@
 	}
 
 	.editor-element {
+		background-color: var(--editor-background, var(--color-surface));
 		flex: 1;
 		position: relative;
 		overflow: hidden;
@@ -622,7 +608,7 @@
 		content: '';
 		position: absolute;
 		inset: 0;
-		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+		box-shadow: inset 0 2px 4px var(--color-shadow);
 		pointer-events: none;
 		z-index: 12;
 		border-radius: inherit;
@@ -630,7 +616,6 @@
 
 	:global(.cm-editor) {
 		height: 100%;
-		background-color: transparent !important;
 	}
 
 	:global(.cm-scroller) {

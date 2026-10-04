@@ -97,7 +97,7 @@ The builder settings define how the Explorer triggers background build processes
 | `theme.globals`            | No       | (Material)                   | Global design tokens (fonts, spacing, radii, breakpoints). |
 | `theme.light`              | No       | (Material)                   | Custom colors for light mode.                              |
 | `theme.dark`               | No       | (Material)                   | Custom colors for dark mode.                               |
-| `theme.markdown.code`      | Yes      | -                            | Shiki themes for code blocks.                              |
+| `theme.markdown.code`      | Yes      | -                            | Shiki themes for code blocks and editor palettes.          |
 
 <!-- markdownlint-enable MD013 -->
 

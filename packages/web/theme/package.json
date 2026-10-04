@@ -28,6 +28,11 @@
 			"types": "./dist/src/index.d.ts",
 			"import": "./dist/src/index.js"
 		},
+		"./editor": {
+			"development": "./src/editor.ts",
+			"types": "./dist/src/editor.d.ts",
+			"import": "./dist/src/editor.js"
+		},
 		"./styles/base.css": "./assets/styles/base.css",
 		"./styles/reset.css": "./assets/styles/reset.css",
 		"./styles/markdown.css": "./assets/styles/markdown.css"
@@ -47,7 +52,8 @@
 		"vitest": "catalog:"
 	},
 	"dependencies": {
-		"@luzzle/web.config": "workspace:*"
+		"@luzzle/web.config": "workspace:*",
+		"@shikijs/themes": "3.22.0"
 	},
 	"type": "module"
 }

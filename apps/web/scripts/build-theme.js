@@ -1,4 +1,5 @@
 import { generateThemeCss } from '@luzzle/web.theme'
+import { generateEditorThemeCss } from '@luzzle/web.theme/editor'
 import { loadConfig } from '@luzzle/web.config'
 import path from 'path'
 import { existsSync } from 'fs'
@@ -23,7 +24,9 @@ if (isEntrypoint) {
 	try {
 		const configPath = resolveConfigPath(process.argv[2])
 		const config = loadConfig(configPath)
-		process.stdout.write(generateThemeCss(config))
+		const themeCss = generateThemeCss(config)
+		const editorCss = await generateEditorThemeCss(config.theme.markdown.code)
+		process.stdout.write(themeCss + editorCss)
 	} catch (err) {
 		console.error(err instanceof Error ? err.message : err)
 		process.exit(1)
