@@ -213,5 +213,5 @@ theme:
     color-outline-variant: '#d6d3d1'
   markdown:
     code:
-      light: 'github-light-default'
-      dark: 'github-dark-default'
+      light: 'min-light'
+      dark: 'min-dark'
