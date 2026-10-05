@@ -3,7 +3,7 @@
 [secrets]
 # generate with: openssl rand -hex 32
 LUZZLE_AUTH_SECRET = { default = "replace-me-with-a-secret" }
-LUZZLE_AUTH_PASSWORD = { default = "luzzle" }
+LUZZLE_AUTH_PASSWORD= { provider = "seahorse", value = "LUZZLE_AUTH_PASSWORD", default = "luzzle" }
 # generate with: openssl rand -hex 32
 LUZZLE_BUILDER_TOKEN = { default = "replace-me-with-a-secret" }
 GOOGLE_API_KEY= { provider = "seahorse", value = "GOOGLE_API_KEY" }
