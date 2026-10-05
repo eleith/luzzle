@@ -9,8 +9,6 @@ network:
     worker: http://luzzle-dev-worker:9000
 
 auth:
-  enabled: true
-  type: credentials
   secret: ${LUZZLE_AUTH_SECRET}
   credentials:
     username: admin

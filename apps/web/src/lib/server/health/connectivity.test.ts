@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { getOpenWorkflow, getOpenWorkflowDb } from '$lib/server/workflow/index.js'
 import { getWorkflowRun } from '@luzzle/web.jobs'
-import { testConnectivity } from './testConnectivity.js'
+import { testConnectivity } from './connectivity.js'
 
 vi.mock('$lib/server/workflow/index.js', () => ({
 	getOpenWorkflow: vi.fn(),

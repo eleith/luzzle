@@ -3,9 +3,10 @@ import type { AppConfig } from '$lib/server/config'
 import type { ProbeResult } from './probes.js'
 
 export async function validateAiKeyIfConfigured(config: AppConfig): Promise<ProbeResult> {
-	const apiKey = config.ai?.api_key
-	if (!apiKey) {
+	const ai = config.ai
+	if (!ai) {
 		return { ok: false, reason: 'ai is not configured' }
 	}
-	return validateApiKey(apiKey)
+	if (ai.provider === 'google') return validateApiKey(ai.api_key)
+	return { ok: false, reason: 'AI provider is not supported' }
 }

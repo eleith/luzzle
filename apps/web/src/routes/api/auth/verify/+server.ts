@@ -3,7 +3,7 @@ import { config } from '$lib/server/config'
 import type { RequestEvent } from './$types'
 
 export async function GET(event: RequestEvent) {
-	if (!config.auth.enabled) {
+	if (!config.auth) {
 		return new Response('Unauthorized', { status: 401 })
 	}
 

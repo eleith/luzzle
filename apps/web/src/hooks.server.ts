@@ -7,16 +7,17 @@ import { sequence } from '@sveltejs/kit/hooks'
 import { redirect, type Handle } from '@sveltejs/kit'
 import type { Provider } from '@auth/core/providers'
 
+const auth = config.auth
 const providers: Provider[] = []
 
-if (config.auth.type === 'oidc' && config.auth.oidc) {
+if (auth && 'oidc' in auth) {
 	providers.push({
 		id: 'oidc',
-		name: config.auth.oidc.name,
+		name: auth.oidc.name,
 		type: 'oidc',
-		issuer: config.auth.oidc.issuer,
-		clientId: config.auth.oidc.clientId,
-		clientSecret: config.auth.oidc.clientSecret,
+		issuer: auth.oidc.issuer,
+		clientId: auth.oidc.clientId,
+		clientSecret: auth.oidc.clientSecret,
 		checks: ['state'],
 		style: {
 			logo: `${config.url.app_assets}/images/favicon.png`
@@ -24,7 +25,8 @@ if (config.auth.type === 'oidc' && config.auth.oidc) {
 	})
 }
 
-if (config.auth.type === 'credentials' && config.auth.credentials) {
+if (auth && 'credentials' in auth) {
+	const user = auth.credentials
 	providers.push(
 		Credentials({
 			credentials: {
@@ -32,13 +34,7 @@ if (config.auth.type === 'credentials' && config.auth.credentials) {
 				password: { label: 'Password', type: 'password' }
 			},
 			async authorize(credentials) {
-				const user = config.auth.credentials
-
-				if (
-					user &&
-					user.username === credentials?.username &&
-					user.password === credentials?.password
-				) {
+				if (user.username === credentials?.username && user.password === credentials?.password) {
 					return { id: user.username, name: user.username, email: `${user.username}@luzzle.local` }
 				}
 
@@ -48,14 +44,16 @@ if (config.auth.type === 'credentials' && config.auth.credentials) {
 	)
 }
 
-const authHandle = SvelteKitAuth({
-	trustHost: true,
-	secret: config.auth.secret,
-	pages: {
-		signIn: '/signin'
-	},
-	providers
-})
+const authHandle = auth
+	? SvelteKitAuth({
+			trustHost: true,
+			secret: auth.secret,
+			pages: {
+				signIn: '/signin'
+			},
+			providers
+		})
+	: undefined
 
 const PROTECTED_PREFIXES = ['/admin', '/api/admin']
 
@@ -63,7 +61,7 @@ const guardHandle: Handle = async ({ event, resolve }) => {
 	const isProtected = PROTECTED_PREFIXES.some((prefix) => event.url.pathname.startsWith(prefix))
 
 	if (isProtected) {
-		if (!config.auth.enabled) {
+		if (!auth) {
 			throw redirect(302, '/')
 		}
 
@@ -76,4 +74,4 @@ const guardHandle: Handle = async ({ event, resolve }) => {
 	return resolve(event)
 }
 
-export const handle = config.auth.enabled ? sequence(authHandle.handle, guardHandle) : guardHandle
+export const handle = authHandle ? sequence(authHandle.handle, guardHandle) : guardHandle

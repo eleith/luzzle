@@ -21,7 +21,7 @@ export function probeWorkerIfConfigured(appConfig: AppConfig): Promise<ProbeResu
 }
 
 export function probeOidcIssuerIfConfigured(appConfig: AppConfig): Promise<ProbeResult | null> {
-	const issuer = appConfig.auth.type === 'oidc' ? appConfig.auth.oidc?.issuer : undefined
+	const issuer = appConfig.auth && 'oidc' in appConfig.auth ? appConfig.auth.oidc.issuer : undefined
 	return issuer ? probeOidcIssuer(issuer, PROBE_TIMEOUT_MS) : Promise.resolve(null)
 }
 

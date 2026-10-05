@@ -4,19 +4,27 @@ import { getPieceStats, getAssetStats } from '../dashboardStats.js'
 import { getRecentlyEditedPieces } from '../pieces.js'
 import { getOpenWorkflowDb } from '../workflow/index.js'
 import { getLatestWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
+import { makeConfig, credentialsAuth, oidcAuth } from '../config.fixture'
 import { loadDashboardPage } from './dashboard.js'
 
 vi.mock('$lib/server/database', () => ({ db: {} }))
 
-vi.mock('$lib/server/config', () => ({
-	config: {
-		content: { text: { title: 'luzzle' } },
-		pieces: [{ type: 'article' }, { type: 'bookmark' }],
-		ai: { provider: 'google', api_key: 'key' },
-		auth: { enabled: true, secret: 'shh', type: 'oidc' },
-		sync: { archive: { remote: 'archive-remote' }, cdn: {} }
+vi.mock('$lib/server/config', async () => {
+	const { makeConfig, oidcAuth } = await import('../config.fixture')
+	const defaults = makeConfig()
+	return {
+		config: makeConfig({
+			content: { ...defaults.content, text: { title: 'luzzle', description: '' } },
+			pieces: [
+				{ type: 'article', fields: { title: 'title', date_consumed: 'date' } },
+				{ type: 'bookmark', fields: { title: 'title', date_consumed: 'date' } }
+			],
+			ai: { provider: 'google', api_key: 'key' },
+			auth: oidcAuth,
+			sync: { ...defaults.sync, archive: { ...defaults.sync.archive, remote: 'archive-remote' } }
+		})
 	}
-}))
+})
 
 vi.mock('../dashboardStats.js', () => ({
 	getPieceStats: vi.fn(),
@@ -64,8 +72,12 @@ beforeEach(() => {
 	mocks.getRecentlyEditedPieces.mockResolvedValue([])
 	mocks.getOpenWorkflowDb.mockReturnValue({} as never)
 	mocks.getLatestWorkflowRun.mockReturnValue(null)
-	config.auth = { enabled: true, secret: 'shh', type: 'oidc' }
-	config.sync = { archive: { remote: 'archive-remote' }, cdn: {} }
+	config.auth = oidcAuth
+	const defaults = makeConfig()
+	config.sync = {
+		...defaults.sync,
+		archive: { ...defaults.sync.archive, remote: 'archive-remote' }
+	}
 })
 
 describe('loadDashboardPage', () => {
@@ -98,8 +110,8 @@ describe('loadDashboardPage', () => {
 		expect(result.lastPublish).toEqual(makeRun({ status: 'failed' }))
 	})
 
-	test('reports no auth type when auth is disabled', async () => {
-		config.auth = { enabled: false, secret: 'shh', type: 'credentials' }
+	test('reports no auth type when auth is absent', async () => {
+		config.auth = undefined
 
 		const result = await loadDashboardPage()
 
@@ -107,7 +119,7 @@ describe('loadDashboardPage', () => {
 	})
 
 	test('shortens the credentials auth type to a display label', async () => {
-		config.auth = { enabled: true, secret: 'shh', type: 'credentials' }
+		config.auth = credentialsAuth
 
 		const result = await loadDashboardPage()
 

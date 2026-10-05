@@ -13,7 +13,7 @@ export interface PieceTypeSummary {
 
 export interface AuthSummary {
 	enabled: boolean
-	type: string
+	type: 'credentials' | 'oidc' | null
 	issuer: string | null
 	clientId: string | null
 }
@@ -50,6 +50,8 @@ function configuredEntries(obj: object | undefined): ConfigEntry[] {
 }
 
 export function buildHealthConfigSummary(config: AppConfig): HealthConfigSummary {
+	const auth = config.auth
+	const oidc = auth && 'oidc' in auth ? auth.oidc : undefined
 	return {
 		storageRoot: config.storage.root,
 		pieceTypes: config.pieces.map((piece) => ({
@@ -58,10 +60,10 @@ export function buildHealthConfigSummary(config: AppConfig): HealthConfigSummary
 			components: configuredEntries(piece.components)
 		})),
 		auth: {
-			enabled: config.auth.enabled,
-			type: config.auth.type,
-			issuer: config.auth.oidc?.issuer ?? null,
-			clientId: config.auth.oidc?.clientId ?? null
+			enabled: Boolean(auth),
+			type: auth ? ('credentials' in auth ? 'credentials' : 'oidc') : null,
+			issuer: oidc?.issuer ?? null,
+			clientId: oidc?.clientId ?? null
 		},
 		archiveSync: {
 			configured: Boolean(config.sync.archive?.remote),
@@ -79,7 +81,7 @@ export function buildHealthConfigSummary(config: AppConfig): HealthConfigSummary
 			queuePath: config.worker?.queue?.path ?? null
 		},
 		ai: {
-			configured: Boolean(config.ai?.api_key),
+			configured: Boolean(config.ai),
 			provider: config.ai?.provider ?? null
 		}
 	}

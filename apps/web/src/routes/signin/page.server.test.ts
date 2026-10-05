@@ -1,20 +1,15 @@
 import { beforeEach, expect, test, vi } from 'vitest'
+import { config } from '$lib/server/config'
+import { credentialsAuth, oidcAuth } from '$lib/server/config.fixture'
 import { load } from './+page.server'
 
-const { config } = vi.hoisted(() => ({
-	config: {
-		auth: {
-			enabled: true,
-			type: 'credentials' as 'credentials' | 'oidc',
-			oidc: { name: 'Single Sign-On' }
-		}
-	}
-}))
-vi.mock('$lib/server/config', () => ({ config }))
+vi.mock('$lib/server/config', async () => {
+	const { makeConfig } = await import('$lib/server/config.fixture')
+	return { config: makeConfig() }
+})
 
 beforeEach(() => {
-	config.auth.enabled = true
-	config.auth.type = 'credentials'
+	config.auth = credentialsAuth
 })
 
 function event(session: object | null) {
@@ -25,20 +20,21 @@ function event(session: object | null) {
 }
 
 test('public-only signin redirects before accessing missing Auth.js locals', async () => {
-	config.auth.enabled = false
+	config.auth = undefined
 	await expect(load({ locals: {} } as Parameters<typeof load>[0])).rejects.toMatchObject({
 		status: 302,
 		location: '/'
 	})
 })
 
-test.each(['credentials', 'oidc'] as const)(
-	'keeps %s signin available when enabled',
-	async (type) => {
-		config.auth.type = type
-		expect(await load(event(null))).toEqual({ authType: type, oidcName: 'Single Sign-On' })
-	}
-)
+test('credentials signin projects only the selected provider', async () => {
+	expect(await load(event(null))).toEqual({ authType: 'credentials', oidcName: undefined })
+})
+
+test('OIDC signin exposes its display name but no provider secrets', async () => {
+	config.auth = oidcAuth
+	expect(await load(event(null))).toEqual({ authType: 'oidc', oidcName: 'Single Sign-On' })
+})
 
 test('authenticated signin redirects to the admin page', async () => {
 	await expect(load(event({ user: { name: 'admin' } }))).rejects.toMatchObject({

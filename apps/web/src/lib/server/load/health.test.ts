@@ -1,28 +1,17 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { config } from '$lib/server/config'
+import { makeConfig, credentialsAuth, oidcAuth } from '../config.fixture'
 import { buildHealthConfigSummary } from '../health.js'
+import type * as Health from '../health.js'
 import { probeStorage, probeWorker, probeOidcIssuer } from '../health/probes.js'
 import { loadHealthPage, probeWorkerIfConfigured, probeOidcIssuerIfConfigured } from './health.js'
-import type { AppConfig } from '$lib/server/config'
 
-vi.mock('$lib/server/config', () => ({
-	config: {
-		content: { text: { title: 'luzzle' } },
-		storage: { root: '/data' },
-		network: { internal: { worker: 'http://worker:9000' } },
-		auth: {
-			enabled: true,
-			secret: 'shh',
-			type: 'oidc',
-			oidc: { name: 'okta', issuer: 'https://issuer.example', clientId: 'x', clientSecret: 'y' }
-		}
-	}
-}))
+vi.mock('$lib/server/config', async () => {
+	const { makeConfig } = await import('../config.fixture')
+	return { config: makeConfig() }
+})
 
-vi.mock('../health.js', () => ({
-	buildHealthConfigSummary: vi.fn()
-}))
-
+vi.mock('../health.js', () => ({ buildHealthConfigSummary: vi.fn() }))
 vi.mock('../health/probes.js', () => ({
 	probeStorage: vi.fn(),
 	probeWorker: vi.fn(),
@@ -36,25 +25,24 @@ const mocks = {
 	probeOidcIssuer: vi.mocked(probeOidcIssuer)
 }
 
-beforeEach(() => {
+beforeEach(async () => {
 	vi.clearAllMocks()
-	mocks.buildHealthConfigSummary.mockReturnValue({} as never)
+	const { buildHealthConfigSummary: summarize } =
+		await vi.importActual<typeof Health>('../health.js')
+	mocks.buildHealthConfigSummary.mockReturnValue(summarize(makeConfig()))
 	mocks.probeStorage.mockResolvedValue({ ok: true })
 	mocks.probeWorker.mockResolvedValue({ ok: true })
 	mocks.probeOidcIssuer.mockResolvedValue({ ok: true })
-	config.network = { internal: { worker: 'http://worker:9000' } }
-	config.auth = {
-		enabled: true,
-		secret: 'shh',
-		type: 'oidc',
-		oidc: { name: 'okta', issuer: 'https://issuer.example', clientId: 'x', clientSecret: 'y' }
-	}
+	Object.assign(config, makeConfig())
+	config.content.text.title = 'luzzle'
+	config.storage.root = '/data'
+	config.network.internal.worker = 'http://worker:9000'
+	config.auth = oidcAuth
 })
 
 describe('loadHealthPage', () => {
-	test('awaits the storage probe but streams the worker and oidc issuer probes', async () => {
+	test('awaits storage but streams worker and oidc issuer probes', async () => {
 		const result = await loadHealthPage()
-
 		expect(result.meta).toEqual({ title: 'health | luzzle' })
 		expect(result.storage).toEqual({ ok: true })
 		expect(mocks.probeStorage).toHaveBeenCalledWith('/data')
@@ -64,11 +52,9 @@ describe('loadHealthPage', () => {
 		await expect(result.oidcIssuer).resolves.toEqual({ ok: true })
 	})
 
-	test('skips the worker probe when no worker address is configured', async () => {
-		config.network = undefined
-
+	test('skips the worker probe when its address is empty', async () => {
+		config.network.internal.worker = ''
 		const result = await loadHealthPage()
-
 		expect(mocks.probeWorker).not.toHaveBeenCalled()
 		await expect(result.worker).resolves.toEqual({
 			ok: false,
@@ -76,33 +62,26 @@ describe('loadHealthPage', () => {
 		})
 	})
 
-	test('skips the oidc issuer probe when auth is not oidc', async () => {
-		config.auth = {
-			enabled: true,
-			secret: 'shh',
-			type: 'credentials',
-			credentials: { username: 'admin', password: 'x' }
+	test.each([undefined, credentialsAuth])(
+		'skips oidc when absent or credentials auth is selected',
+		async (auth) => {
+			config.auth = auth
+			const result = await loadHealthPage()
+			expect(mocks.probeOidcIssuer).not.toHaveBeenCalled()
+			await expect(result.oidcIssuer).resolves.toBeNull()
 		}
-
-		const result = await loadHealthPage()
-
-		expect(mocks.probeOidcIssuer).not.toHaveBeenCalled()
-		await expect(result.oidcIssuer).resolves.toBeNull()
-	})
+	)
 })
 
 describe('probeWorkerIfConfigured', () => {
 	test('probes the configured worker address', async () => {
-		const appConfig = { network: { internal: { worker: 'http://worker:9000' } } } as AppConfig
-
-		await expect(probeWorkerIfConfigured(appConfig)).resolves.toEqual({ ok: true })
+		await expect(probeWorkerIfConfigured(config)).resolves.toEqual({ ok: true })
 		expect(mocks.probeWorker).toHaveBeenCalledWith('http://worker:9000', 5000)
 	})
 
-	test('resolves not-ok without probing when no worker address is configured', async () => {
-		const appConfig = { network: undefined } as AppConfig
-
-		await expect(probeWorkerIfConfigured(appConfig)).resolves.toEqual({
+	test('resolves not-ok without probing an empty worker address', async () => {
+		config.network.internal.worker = ''
+		await expect(probeWorkerIfConfigured(config)).resolves.toEqual({
 			ok: false,
 			reason: 'worker address not configured'
 		})
@@ -111,26 +90,18 @@ describe('probeWorkerIfConfigured', () => {
 })
 
 describe('probeOidcIssuerIfConfigured', () => {
-	test('probes the issuer when auth type is oidc', async () => {
-		const appConfig = {
-			auth: {
-				enabled: true,
-				secret: 'shh',
-				type: 'oidc',
-				oidc: { issuer: 'https://issuer.example' }
-			}
-		} as AppConfig
-
-		await expect(probeOidcIssuerIfConfigured(appConfig)).resolves.toEqual({ ok: true })
+	test('probes the selected oidc issuer', async () => {
+		await expect(probeOidcIssuerIfConfigured(makeConfig({ auth: oidcAuth }))).resolves.toEqual({
+			ok: true
+		})
 		expect(mocks.probeOidcIssuer).toHaveBeenCalledWith('https://issuer.example', 5000)
 	})
 
-	test('resolves null without probing when auth is not oidc', async () => {
-		const appConfig = {
-			auth: { enabled: true, secret: 'shh', type: 'credentials' }
-		} as AppConfig
-
-		await expect(probeOidcIssuerIfConfigured(appConfig)).resolves.toBeNull()
-		expect(mocks.probeOidcIssuer).not.toHaveBeenCalled()
-	})
+	test.each([undefined, credentialsAuth])(
+		'resolves null for absent or credentials auth',
+		async (auth) => {
+			await expect(probeOidcIssuerIfConfigured(makeConfig({ auth }))).resolves.toBeNull()
+			expect(mocks.probeOidcIssuer).not.toHaveBeenCalled()
+		}
+	)
 })

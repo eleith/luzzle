@@ -1,783 +1,726 @@
-import { describe, expect, test, vi, afterEach } from 'vitest'
-import type { Config, ConfigPublic } from './config.js';
-import { loadConfig, getConfigValue, setConfigValue } from './config.js'
-import { writeFileSync, unlinkSync } from 'fs'
-import { join } from 'path'
-import { tmpdir } from 'os'
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { Config } from "./config.js";
+import {
+	loadConfig,
+	validateConfig,
+	getConfigValue,
+	setConfigValue,
+} from "./config.js";
+import { ConfigError } from "./errors.js";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 
 interface TestConfig extends Config {
-  a: {
-    b: {
-      c: string
-    }
-  }
+	a: { b: { c: string } };
 }
 
-describe('lib/config/config', () => {
-	test('should validate default config against schema', async () => {
-		try {
-			const config = loadConfig()
-			expect(config).toBeDefined()
-		} catch (e) {
-			if (e) {
-				expect(e).toBeUndefined()
-			}
-		}
-	})
+function validationError(
+	raw: unknown,
+	env: NodeJS.ProcessEnv = {},
+): ConfigError {
+	try {
+		validateConfig(raw, env);
+	} catch (error) {
+		if (error instanceof ConfigError) return error;
+		throw error;
+	}
+	throw new Error("Expected configuration validation to fail");
+}
 
-	test('ConfigPublic should not expose sensitive fields', () => {
-		// This is a compile-time check primarily, but we can verify at runtime
-		// that the type definition excludes it.
-		const config = loadConfig()
-		const publicConfig: ConfigPublic = {
-			url: config.url,
-			content: config.content
-		}
-		
-		// @ts-expect-error - assets should not exist on ConfigPublic
-		expect(publicConfig.assets).toBeUndefined()
-		// @ts-expect-error - auth should not exist on ConfigPublic
-		expect(publicConfig.auth).toBeUndefined()
-		// @ts-expect-error - storage should not exist on ConfigPublic
-		expect(publicConfig.storage).toBeUndefined()
-	})
+describe("loadConfig", () => {
+	let directory: string;
+	let filename: string;
 
-	test('should load a user config', () => {
-		const config = loadConfig(`${import.meta.dirname}/user.config.yaml`)
-		expect(config).toBeDefined()
-	})
+	beforeEach(() => {
+		directory = mkdtempSync(join(tmpdir(), "luzzle-config-"));
+		filename = join(directory, "config.yaml");
+		vi.stubEnv("LUZZLE_APP_URL", undefined);
+		vi.stubEnv("LUZZLE_ASSET_SALT", undefined);
+	});
 
-	test('should load a user config', () => {
-		const config = loadConfig(`${import.meta.dirname}/not.user.config.yaml`)
-		expect(config).toBeDefined()
-	})
+	afterEach(() => {
+		rmSync(directory, { recursive: true, force: true });
+		vi.unstubAllEnvs();
+	});
 
-	test('should handle an empty config file', () => {
-		const tmpConfigPath = join(tmpdir(), `empty-config-${Date.now()}.yaml`)
-		writeFileSync(tmpConfigPath, '')
-		const config = loadConfig(tmpConfigPath)
-		expect(config.url.app).toBe('http://localhost:8080')
-		unlinkSync(tmpConfigPath)
-	})
+	test("loads defaults without a filename", () => {
+		const config = loadConfig();
+		expect(config.url.app).toBe("http://localhost:8080");
+		expect(config.paths.config).toBeUndefined();
+		expect(config.auth).toBeUndefined();
+	});
 
-	test('should throw an error if config validation fails with user config', () => {		expect(() => loadConfig(`${import.meta.dirname}/user-error.config.yaml`)).toThrow(
-			'Configuration validation failed'
-		)
-	})
+	test("loads a user config fixture", () => {
+		const config = loadConfig(`${import.meta.dirname}/user.config.yaml`);
+		expect(config.url.app).toBe("https://example.com");
+		expect(config.storage.root).toBe("./archive");
+	});
 
-	describe('getConfigValue', () => {
-		test('should return the correct value for a given path', () => {
-			const config = {
-				a: {
-					b: {
-						c: 'value'
-					}
-				}
-			} as unknown as TestConfig
-			const value = getConfigValue(config, 'a.b.c')
-			expect(value).toBe('value')
-		})
+	test("loads defaults for a missing file and records its path", () => {
+		const config = loadConfig(filename);
+		expect(config.url.app).toBe("http://localhost:8080");
+		expect(config.paths.config).toBe(filename);
+	});
 
-		test('should return undefined for a non-existent path', () => {
-			const config = {
-				a: {
-					b: {
-						c: 'value'
-					}
-				}
-			} as unknown as TestConfig
-			const value = getConfigValue(config, 'a.b.d')
-			expect(value).toBeUndefined()
-		})
+	test.each(["", "# comments only\n", "null\n", "~\n"])(
+		"loads defaults for empty/null YAML %j",
+		(yaml) => {
+			writeFileSync(filename, yaml);
+			const config = loadConfig(filename);
+			expect(config.url.app).toBe("http://localhost:8080");
+			expect(config.paths.config).toBe(filename);
+		},
+	);
 
-		test('should return the value for a root-level key', () => {
-			const config = {
-				key: 'value'
-			} as unknown as TestConfig
-			const value = getConfigValue(config, 'key')
-			expect(value).toBe('value')
-		})
+	test.each(["false", "0", "42", "a scalar", '""', "[]", "- url: {}"])(
+		"rejects non-object YAML %j",
+		(yaml) => {
+			writeFileSync(filename, yaml);
+			expect(() => loadConfig(filename)).toThrow(ConfigError);
+		},
+	);
 
-		test('should return an object for a path to a non-leaf', () => {
-			const config = {
-				a: {
-					b: {
-						c: 'value'
-					}
-				}
-			} as unknown as TestConfig
-			const value = getConfigValue(config, 'a.b')
-			expect(value).toEqual({ c: 'value' })
-		})
+	test("rejects invalid YAML syntax", () => {
+		writeFileSync(filename, "url: [");
+		expect(() => loadConfig(filename)).toThrow();
+	});
 
-		test('should return undefined for a path starting with a non-existent key', () => {
-			const config = {
-				a: {
-					b: 'value'
-				}
-			} as unknown as TestConfig
-			const value = getConfigValue(config, 'x.y.z')
-			expect(value).toBeUndefined()
-		})
+	test("rejects unknown properties in a user config fixture", () => {
+		expect(() =>
+			loadConfig(`${import.meta.dirname}/user-error.config.yaml`),
+		).toThrow(ConfigError);
+	});
 
-		test('should return undefined for an empty config', () => {
-			const config = {} as unknown as TestConfig
-			const value = getConfigValue(config, 'a.b')
-			expect(value).toBeUndefined()
-		})
-	})
-
-	describe('setConfigValue', () => {
-		test('should correctly set a value at a given path', () => {
-			const config = {
-				a: {
-					b: {
-						c: 'value'
-					}
-				}
-			} as unknown as TestConfig
-			setConfigValue(config, 'a.b.c', 'new-value')
-			expect(config.a.b.c).toBe('new-value')
-		})
-
-		test('should create intermediate objects if they don\'t exist', () => {
-			const config = {
-				a: {}
-			} as unknown as TestConfig
-			setConfigValue(config, 'a.b.c', 'value')
-			expect(config.a.b.c).toBe('value')
-		})
-
-		test('should set a value at a root-level key', () => {
-			const config = {} as unknown as Record<string, unknown>
-			setConfigValue(config as unknown as TestConfig, 'key', 'value')
-			expect(config.key).toBe('value')
-		})
-
-		test('should overwrite non-object intermediate when setting a nested path', () => {
-			const config = {
-				a: {
-					b: 'not-an-object'
-				}
-			} as unknown as TestConfig
-			setConfigValue(config, 'a.b.c', 'value')
-			expect((config as unknown as { a: { b: { c: string } } }).a.b.c).toBe('value')
-		})
-
-		test('should set a value to null', () => {
-			const config = {
-				a: {
-					b: {
-						c: 'value'
-					}
-				}
-			} as unknown as TestConfig
-			setConfigValue(config, 'a.b.c', null)
-			expect(config.a.b.c).toBeNull()
-		})
-
-		test('should set a value to a number', () => {
-			const config = {
-				a: {
-					b: {
-						c: 'value'
-					}
-				}
-			} as unknown as TestConfig
-			setConfigValue(config, 'a.b.c', 42)
-			expect(config.a.b.c).toBe(42)
-		})
-
-		test('should create deeply nested objects from scratch', () => {
-			const config = {} as unknown as TestConfig
-			setConfigValue(config, 'a.b.c.d.e', 'deep')
-			expect((config as unknown as { a: { b: { c: { d: { e: string } } } } }).a.b.c.d.e).toBe('deep')
-		})
-	})
-
-	describe('Config Environment Substitution', () => {
-		const tmpConfigPath = join(tmpdir(), `test-config-${Date.now()}.yaml`)
-	
-		afterEach(() => {
-			try {
-				unlinkSync(tmpConfigPath)
-			} catch {
-				// ignore if file doesn't exist
-			}
-			vi.unstubAllEnvs()
-			vi.restoreAllMocks()
-		})
-	
-		test('should substitute environment variables', () => {
-			vi.stubEnv('TEST_VAR', 'substituted_value')
-			const yamlContent = `
-url:
-  app: ''
-  app_assets: ''
-  luzzle_assets: ''
-auth:
-  enabled: true
-  secret: '\${TEST_VAR}'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-	
-			const config = loadConfig(tmpConfigPath)
-			expect(config.auth.secret).toBe('substituted_value')
-		})
-
-		test('should substitute multiple environment variables in one string', () => {
-			vi.stubEnv('HOST', 'localhost')
-			vi.stubEnv('PORT', '8080')
-			const yamlContent = `
-url:
-  app: 'http://\${HOST}:\${PORT}'
-  app_assets: ''
-  luzzle_assets: ''
-auth:
-  enabled: false
-  secret: 'secret'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-
-			const config = loadConfig(tmpConfigPath)
-			expect(config.url.app).toBe('http://localhost:8080')
-		})
-	
-		test('should reject an unresolved environment reference with its field path', () => {
-			vi.stubEnv('MISSING_VAR', undefined)
-			const yamlContent = `
-auth:
-  enabled: true
-  secret: '\${MISSING_VAR}'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-	
-			expect(() => loadConfig(tmpConfigPath)).toThrow(
-				'/auth/secret: Environment variable "MISSING_VAR" is missing.'
-			)
-		})
-	
-		test('should handle escaping with $$', () => {
-			vi.stubEnv('TEST_VAR', 'should_not_be_used')
-			const yamlContent = `
-auth:
-  enabled: true
-  secret: '$\${TEST_VAR}'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-
-			const config = loadConfig(tmpConfigPath)
-			expect(config.auth.secret).toBe('${TEST_VAR}')
-		})
-
-		test('should handle escaping with $$ in the middle of a string', () => {
-			const yamlContent = `
-auth:
-  enabled: true
-  secret: 'Value: $\${TEST_VAR}'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-
-			const config = loadConfig(tmpConfigPath)
-			expect(config.auth.secret).toBe('Value: ${TEST_VAR}')
-		})
-
-		test('should use default value if environment variable is missing', () => {
-			const yamlContent = `
-url:
-  app: '\${MISSING_VAR:-http://localhost:8080}'
-  app_assets: ''
-  luzzle_assets: ''
-auth:
-  enabled: false
-  secret: 'secret'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-
-			const config = loadConfig(tmpConfigPath)
-			expect(config.url.app).toBe('http://localhost:8080')
-		})
-
-		test('should handle nested objects and arrays', () => {
-			vi.stubEnv('VAR_1', 'val1')
-			vi.stubEnv('VAR_2', 'val2')
-			const yamlContent = `
-storage:
-  root: '\${VAR_1}'
-pieces:
-  - type: 'book'
-    fields:
-        title: '\${VAR_2}'
-        date_consumed: '2023-01-01'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-	
-			const config = loadConfig(tmpConfigPath)
-			expect(config.storage.root).toBe('val1')
-			expect(config.pieces[0].fields.title).toBe('val2')
-		})
-
-		test('should handle ai configuration substitution', () => {
-			vi.stubEnv('AI_KEY', 'google-key')
-			const yamlContent = `
-ai:
-  provider: 'google'
-  api_key: '\${AI_KEY}'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-
-			const config = loadConfig(tmpConfigPath)
-			expect(config.ai?.api_key).toBe('google-key')
-		})
-
-		test('should throw error if auth is enabled but secret is empty', () => {
-			const yamlContent = `
-auth:
-  enabled: true
-  secret: '\${MISSING_SECRET:-}'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-
-			expect(() => loadConfig(tmpConfigPath)).toThrow('Configuration validation failed')
-		})
-
-		test('should throw error if auth type is credentials but they are empty', () => {
-			const yamlContent = `
-auth:
-  enabled: true
-  secret: 'some-secret'
-  type: credentials
-  credentials:
-    username: '\${MISSING_USER:-}'
-    password: 'password'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-
-			expect(() => loadConfig(tmpConfigPath)).toThrow('Configuration validation failed')
-		})
-	})
-
-	describe('Config paths tracking', () => {
-		const tmpConfigPath = join(tmpdir(), `paths-config-${Date.now()}.yaml`)
-
-		afterEach(() => {
-			try {
-				unlinkSync(tmpConfigPath)
-			} catch {
-				// ignore
-			}
-		})
-
-		test('should set paths.config when userConfigPath is provided', () => {
-			const yamlContent = `
+	test("loads nested overrides, provider defaults and multiple pieces from YAML", () => {
+		writeFileSync(
+			filename,
+			`
 url:
   app: 'https://example.com'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.paths.config).toBe(tmpConfigPath)
-		})
-
-		test('should not set paths.config when no userConfigPath is provided', () => {
-			const config = loadConfig()
-			expect(config.paths.config).toBeUndefined()
-		})
-	})
-
-	describe('Default values verification', () => {
-		test('should set correct default values for content.text', () => {
-			const config = loadConfig()
-			expect(config.content.text.title).toBe('Luzzle Explorer')
-			expect(config.content.text.description).toBe('A Luzzle Explorer instance')
-		})
-
-		test('should set correct default for storage.root', () => {
-			const config = loadConfig()
-			expect(config.storage.root).toBe('./archive')
-		})
-
-		test('should set correct default for paths.database', () => {
-			const config = loadConfig()
-			expect(config.paths.database).toBe('./data/luzzle.sqlite')
-		})
-
-		test('should set correct default for paths.assets', () => {
-			const config = loadConfig()
-			expect(config.paths.assets).toBe('./assets/pieces')
-		})
-
-		test('should set correct default for paths.cache', () => {
-			const config = loadConfig()
-			expect(config.paths.cache).toBe('./nginx')
-		})
-
-		test('should set correct default for auth', () => {
-			const config = loadConfig()
-			expect(config.auth.enabled).toBe(false)
-			expect(config.auth.type).toBe('oidc')
-		})
-
-		test('should set correct default for assets.salt', () => {
-			const config = loadConfig()
-			expect(config.assets.salt).toBe('')
-		})
-
-		test('should set correct default theme values', () => {
-			const config = loadConfig()
-			expect(config.theme.light['color-primary']).toBe('#0d6efd')
-			expect(config.theme.dark['color-primary']).toBe('#3b82f6')
-			expect(config.theme.globals['font-size-root']).toBe(22)
-			expect(config.theme.markdown.code.light).toBe('github-light')
-			expect(config.theme.markdown.code.dark).toBe('github-dark')
-		})
-	})
-
-	describe('Environment substitution edge cases', () => {
-		const tmpConfigPath = join(tmpdir(), `env-edge-config-${Date.now()}.yaml`)
-
-		afterEach(() => {
-			try {
-				unlinkSync(tmpConfigPath)
-			} catch {
-				// ignore
-			}
-			vi.unstubAllEnvs()
-			vi.restoreAllMocks()
-		})
-
-		test('should handle empty string env var value', () => {
-			vi.stubEnv('EMPTY_VAR', '')
-			const yamlContent = `
-url:
-  app: '\${EMPTY_VAR}'
-  app_assets: ''
-  luzzle_assets: ''
 auth:
-  enabled: false
-  secret: 'secret'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.url.app).toBe('')
-		})
-
-		test('should handle default value with colons (URL-like)', () => {
-			const yamlContent = `
-url:
-  app: '\${MISSING_URL:-http://localhost:8080/path?query=1}'
-  app_assets: ''
-  luzzle_assets: ''
-auth:
-  enabled: false
-  secret: 'secret'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.url.app).toBe('http://localhost:8080/path?query=1')
-		})
-
-		test('should leave strings without env vars unchanged', () => {
-			const yamlContent = `
-url:
-  app: 'just-a-plain-string'
-  app_assets: ''
-  luzzle_assets: ''
-auth:
-  enabled: false
-  secret: 'secret'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.url.app).toBe('just-a-plain-string')
-		})
-
-		test('should substitute env var in nested object within array', () => {
-			vi.stubEnv('PIECE_FIELD_TITLE', 'My Title')
-			const yamlContent = `
-pieces:
-  - type: 'book'
-    fields:
-      title: '\${PIECE_FIELD_TITLE}'
-      date_consumed: '2023-01-01'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.pieces[0].fields.title).toBe('My Title')
-		})
-
-		test('should substitute same env var in multiple places', () => {
-			vi.stubEnv('SHARED_VAR', 'shared')
-			const yamlContent = `
-url:
-  app: '\${SHARED_VAR}'
-  app_assets: '\${SHARED_VAR}'
-  luzzle_assets: '\${SHARED_VAR}'
-auth:
-  enabled: false
-  secret: 'secret'
-  type: oidc
-  oidc:
-    issuer: 'https://example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.url.app).toBe('shared')
-			expect(config.url.app_assets).toBe('shared')
-			expect(config.url.luzzle_assets).toBe('shared')
-		})
-
-		test('should not substitute env vars in non-string values', () => {
-			vi.stubEnv('APP_URL', 'https://example.com')
-			const yamlContent = `
-url:
-  app: '\${APP_URL}'
-  app_assets: ''
-  luzzle_assets: ''
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.url.app).toBe('https://example.com')
-			expect(config.auth.enabled).toBe(false)
-			expect(config.theme.globals['font-size-root']).toBe(22)
-		})
-	})
-
-	describe('Schema validation errors', () => {
-		const tmpConfigPath = join(tmpdir(), `schema-error-config-${Date.now()}.yaml`)
-
-		afterEach(() => {
-			try {
-				unlinkSync(tmpConfigPath)
-			} catch {
-				// ignore
-			}
-		})
-
-		test('should throw for invalid auth type', () => {
-			const yamlContent = `
-url:
-  app: 'https://example.com'
-  app_assets: ''
-  luzzle_assets: ''
-auth:
-  enabled: false
-  secret: 'secret'
-  type: invalid_type
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			expect(() => loadConfig(tmpConfigPath)).toThrow('Configuration validation failed')
-		})
-
-		test('should throw for storage.root with empty string', () => {
-			const yamlContent = `
-storage:
-  root: ''
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			expect(() => loadConfig(tmpConfigPath)).toThrow('Configuration validation failed')
-		})
-
-		test('should throw for ai.api_key with empty string when ai is present', () => {
-			const yamlContent = `
-ai:
-  provider: google
-  api_key: ''
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			expect(() => loadConfig(tmpConfigPath)).toThrow('Configuration validation failed')
-		})
-
-		test('should throw for invalid theme code enum value', () => {
-			const yamlContent = `
-theme:
-  markdown:
-    code:
-      light: invalid_theme_name
-      dark: github-dark
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			expect(() => loadConfig(tmpConfigPath)).toThrow('Configuration validation failed')
-		})
-	})
-
-	describe('Complex config loading', () => {
-		const tmpConfigPath = join(tmpdir(), `complex-config-${Date.now()}.yaml`)
-
-		afterEach(() => {
-			try {
-				unlinkSync(tmpConfigPath)
-			} catch {
-				// ignore
-			}
-		})
-
-		test('should load config with multiple pieces', () => {
-			const yamlContent = `
-pieces:
-  - type: 'book'
-    fields:
-      title: 'Book One'
-      date_consumed: '2023-01-01'
-  - type: 'video'
-    fields:
-      title: 'Video One'
-      date_consumed: '2023-02-01'
-      media:
-        - image
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.pieces).toHaveLength(2)
-			expect(config.pieces[0].type).toBe('book')
-			expect(config.pieces[1].type).toBe('video')
-			expect(config.pieces[1].fields.media).toEqual(['image'])
-		})
-
-		test('should load config with all optional sections', () => {
-			const yamlContent = `
-url:
-  app: 'https://example.com'
-  app_assets: 'https://assets.example.com'
-  luzzle_assets: 'https://luzzle.example.com'
-auth:
-  enabled: true
-  secret: 'super-secret-key'
-  type: oidc
+  secret: 'short-secret'
   oidc:
     issuer: 'https://auth.example.com'
-    clientId: 'my-client'
-    clientSecret: 'my-client-secret'
+    clientId: 'client'
+    clientSecret: 'client-secret'
 sync:
   config: '/custom/rclone.conf'
   archive:
-    remote: 's3://archive-bucket'
+    remote: 'archive-remote'
     path: '/archive/path'
   cdn:
-    remote: 's3://cdn-bucket'
+    remote: 'cdn-remote'
     path: '/cdn/path'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.url.app).toBe('https://example.com')
-			expect(config.auth.secret).toBe('super-secret-key')
-			expect(config.auth.oidc?.name).toBe('Single Sign-On')
-			expect(config.auth.oidc?.issuer).toBe('https://auth.example.com')
-			expect(config.sync.config).toBe('/custom/rclone.conf')
-			expect(config.sync.archive?.remote).toBe('s3://archive-bucket')
-			expect(config.sync.archive?.path).toBe('/archive/path')
-			expect(config.sync.cdn?.remote).toBe('s3://cdn-bucket')
-			expect(config.sync.cdn?.path).toBe('/cdn/path')
-		})
-
-		test('should allow custom oidc.name', () => {
-			const yamlContent = `
-url:
-  app: 'https://example.com'
-  app_assets: ''
-  luzzle_assets: ''
-auth:
-  enabled: true
-  secret: 'secret'
-  type: oidc
-  oidc:
-    name: 'Okta SSO'
-    issuer: 'https://auth.example.com'
-    clientId: 'client'
-    clientSecret: 'secret'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.auth.oidc?.name).toBe('Okta SSO')
-		})
-	})
-
-	describe('Sync Configuration', () => {
-		test('should default sync.archive and sync.cdn when absent', () => {
-			const config = loadConfig()
-			expect(config.sync.archive?.remote).toBe('')
-			expect(config.sync.archive?.path).toBe('')
-			expect(config.sync.cdn?.remote).toBe('')
-			expect(config.sync.cdn?.path).toBe('')
-		})
-	})
-
-	describe('Worker Configuration', () => {
-		const tmpConfigPath = join(tmpdir(), `worker-config-${Date.now()}.yaml`)
-
-		afterEach(() => {
-			try {
-				unlinkSync(tmpConfigPath)
-			} catch {
-				// ignore
-			}
-		})
-
-		test('should default worker.queue.path when absent', () => {
-			const config = loadConfig()
-			expect(config.worker?.queue?.path).toBe('./data/sidequest.sqlite')
-		})
-
-		test('should accept a custom worker.queue.path', () => {
-			const yamlContent = `
 worker:
   queue:
     path: '/custom/sidequest.db'
-`
-			writeFileSync(tmpConfigPath, yamlContent)
-			const config = loadConfig(tmpConfigPath)
-			expect(config.worker?.queue?.path).toBe('/custom/sidequest.db')
-		})
-	})
-})
+pieces:
+  - type: book
+    fields:
+      title: title
+      date_consumed: date_read
+  - type: video
+    fields:
+      title: title
+      date_consumed: date_watched
+      media: [image]
+`,
+		);
+		const config = loadConfig(filename);
+		expect(config.url.app).toBe("https://example.com");
+		expect(config.auth).toEqual({
+			secret: "short-secret",
+			oidc: {
+				name: "Single Sign-On",
+				issuer: "https://auth.example.com",
+				clientId: "client",
+				clientSecret: "client-secret",
+			},
+		});
+		expect(config.sync).toEqual({
+			config: "/custom/rclone.conf",
+			archive: { remote: "archive-remote", path: "/archive/path", flags: [] },
+			cdn: {
+				remote: "cdn-remote",
+				path: "/cdn/path",
+				flags: [],
+				strategy: "sync",
+			},
+		});
+		expect(config.worker.queue.path).toBe("/custom/sidequest.db");
+		expect(config.pieces).toHaveLength(2);
+		expect(config.pieces[0].type).toBe("book");
+		expect(config.pieces[1].fields.media).toEqual(["image"]);
+		expect(config.paths.config).toBe(filename);
+	});
+
+	test("interpolates parsed YAML using process.env, including secrets and array entries", () => {
+		vi.stubEnv("CONFIG_TEST_SECRET", "test-secret");
+		vi.stubEnv("CONFIG_TEST_TITLE", "title: # remains a string");
+		vi.stubEnv("CONFIG_TEST_MEDIA", "cover");
+		vi.stubEnv("CONFIG_TEST_AI_KEY", "google-key");
+		// The public validator, like the filesystem loader, defaults to process.env.
+		expect(
+			validateConfig({
+				ai: { provider: "google", api_key: "${CONFIG_TEST_AI_KEY}" },
+			}).ai?.api_key,
+		).toBe("google-key");
+		writeFileSync(
+			filename,
+			`
+auth:
+  secret: '\${CONFIG_TEST_SECRET}'
+  credentials:
+    username: admin
+    password: password
+ai:
+  provider: google
+  api_key: '\${CONFIG_TEST_AI_KEY}'
+pieces:
+  - type: book
+    fields:
+      title: '\${CONFIG_TEST_TITLE}'
+      date_consumed: date_read
+      media: ['\${CONFIG_TEST_MEDIA}']
+`,
+		);
+		const config = loadConfig(filename);
+		expect(config.auth?.secret).toBe("test-secret");
+		expect(config.ai?.api_key).toBe("google-key");
+		expect(config.pieces[0].fields.title).toBe("title: # remains a string");
+		expect(config.pieces[0].fields.media).toEqual(["cover"]);
+	});
+
+	test("reports unresolved references from files with their field paths", () => {
+		vi.stubEnv("CONFIG_TEST_MISSING", undefined);
+		writeFileSync(filename, "storage:\n  root: '${CONFIG_TEST_MISSING}'\n");
+		expect(() => loadConfig(filename)).toThrow(
+			'/storage/root: Environment variable "CONFIG_TEST_MISSING" is missing.',
+		);
+	});
+});
+
+describe("validateConfig", () => {
+	const credentials = { username: "admin", password: "password" };
+	const oidc = {
+		issuer: "https://auth.example.com",
+		clientId: "client",
+		clientSecret: "secret",
+	};
+
+	test("resolves defaults while leaving optional services absent", () => {
+		const config = validateConfig({}, {});
+		expect(config.auth).toBeUndefined();
+		expect(config.ai).toBeUndefined();
+		expect(config.url).toEqual({
+			app: "http://localhost:8080",
+			app_assets: "",
+			luzzle_assets: "",
+		});
+		expect(config.network).toEqual({
+			internal: {
+				explorer: "http://luzzle-web:3000",
+				lsp: "http://luzzle-lsp:9001",
+				worker: "http://luzzle-worker:9000",
+			},
+			public: { host: "0.0.0.0" },
+		});
+		expect(config.content.text).toEqual({
+			title: "Luzzle Explorer",
+			description: "A Luzzle Explorer instance",
+		});
+		expect(config.storage.root).toBe("./archive");
+		expect(config.paths).toEqual({
+			database: "./data/luzzle.sqlite",
+			assets: "./assets/pieces",
+			cache: "./nginx",
+			static: "./static",
+		});
+		expect(config.assets.salt).toBe("");
+		expect(config.sync).toEqual({
+			config: "/app/rclone/rclone.conf",
+			archive: { remote: "", path: "", flags: [] },
+			cdn: { remote: "", path: "", flags: [], strategy: "sync" },
+		});
+		expect(config.worker.queue.path).toBe("./data/sidequest.sqlite");
+		expect(config.pieces).toEqual([]);
+		expect(config.theme.light["color-primary"]).toBe("#0d6efd");
+		expect(config.theme.dark["color-primary"]).toBe("#3b82f6");
+		expect(config.theme.globals["font-size-root"]).toBe(22);
+		expect(config.theme.markdown.code).toEqual({
+			light: "github-light",
+			dark: "github-dark",
+		});
+	});
+
+	test("defaults partial nested sections without replacing explicit empty strings or zero", () => {
+		const config = validateConfig(
+			{
+				url: { app: "" },
+				network: { public: { hmr_port: 0 } },
+				sync: {
+					archive: { remote: "backup" },
+					cdn: { strategy: "copy", flags: ["--fast-list"] },
+				},
+				theme: {
+					light: { "color-primary": "rebeccapurple" },
+					globals: { "font-size-root": 0 },
+				},
+			},
+			{},
+		);
+		expect(config.url.app).toBe("");
+		expect(config.network.public).toEqual({ host: "0.0.0.0", hmr_port: 0 });
+		expect(config.sync.archive).toEqual({
+			remote: "backup",
+			path: "",
+			flags: [],
+		});
+		expect(config.sync.cdn).toEqual({
+			remote: "",
+			path: "",
+			flags: ["--fast-list"],
+			strategy: "copy",
+		});
+		expect(config.theme.light["color-primary"]).toBe("rebeccapurple");
+		expect(config.theme.light["color-on-primary"]).toBe("#ffffff");
+		expect(config.theme.globals["font-size-root"]).toBe(0);
+		expect(config.theme.markdown.code.dark).toBe("github-dark");
+	});
+
+	test("does not mutate input, environment, or share mutable defaults between calls", () => {
+		const raw = {
+			auth: { secret: "${SECRET}", oidc: { ...oidc } },
+			sync: { archive: { flags: ["${FLAG}"] } },
+			theme: { light: { "color-primary": "red" } },
+		};
+		const original = structuredClone(raw);
+		const env = { SECRET: "resolved-secret", FLAG: "--fast-list" };
+		const config = validateConfig(raw, env);
+		expect(raw).toEqual(original);
+		expect(env).toEqual({ SECRET: "resolved-secret", FLAG: "--fast-list" });
+		config.sync.archive.flags.push("--verbose");
+		config.theme.light["color-primary"] = "blue";
+		config.theme.dark["color-primary"] = "green";
+		config.pieces.push({
+			type: "book",
+			fields: { title: "title", date_consumed: "date" },
+		});
+		expect(raw).toEqual(original);
+		const next = validateConfig(raw, env);
+		expect(next.sync.archive.flags).toEqual(["--fast-list"]);
+		expect(next.theme.light["color-primary"]).toBe("red");
+		expect(next.theme.dark["color-primary"]).toBe("#3b82f6");
+		expect(next.pieces).toEqual([]);
+	});
+
+	test("does not mutate input when resolved validation fails", () => {
+		const raw = {
+			auth: { secret: "${SECRET}", credentials: { ...credentials } },
+		};
+		const original = structuredClone(raw);
+		expect(() => validateConfig(raw, { SECRET: "" })).toThrow(ConfigError);
+		expect(raw).toEqual(original);
+	});
+
+	test("accepts credentials with a nonempty secret shorter than 32 characters", () => {
+		expect(
+			validateConfig({ auth: { secret: "s", credentials } }, {}).auth,
+		).toEqual({ secret: "s", credentials });
+	});
+
+	test("defaults only the OIDC display name and accepts a custom name", () => {
+		expect(validateConfig({ auth: { secret: "s", oidc } }, {}).auth).toEqual({
+			secret: "s",
+			oidc: { ...oidc, name: "Single Sign-On" },
+		});
+		expect(
+			validateConfig(
+				{ auth: { secret: "s", oidc: { ...oidc, name: "Okta SSO" } } },
+				{},
+			).auth,
+		).toEqual({
+			secret: "s",
+			oidc: { ...oidc, name: "Okta SSO" },
+		});
+	});
+
+	test.each([
+		["empty block", {}],
+		["missing provider", { secret: "s" }],
+		["missing secret", { credentials }],
+		["empty secret", { secret: "", credentials }],
+		["missing username", { secret: "s", credentials: { password: "p" } }],
+		[
+			"empty username",
+			{ secret: "s", credentials: { username: "", password: "p" } },
+		],
+		["missing password", { secret: "s", credentials: { username: "u" } }],
+		[
+			"empty password",
+			{ secret: "s", credentials: { username: "u", password: "" } },
+		],
+		[
+			"missing issuer",
+			{ secret: "s", oidc: { clientId: "c", clientSecret: "s" } },
+		],
+		[
+			"missing clientId",
+			{ secret: "s", oidc: { issuer: "i", clientSecret: "s" } },
+		],
+		[
+			"missing clientSecret",
+			{ secret: "s", oidc: { issuer: "i", clientId: "c" } },
+		],
+		["empty issuer", { secret: "s", oidc: { ...oidc, issuer: "" } }],
+		["empty clientId", { secret: "s", oidc: { ...oidc, clientId: "" } }],
+		[
+			"empty clientSecret",
+			{ secret: "s", oidc: { ...oidc, clientSecret: "" } },
+		],
+		["both providers", { secret: "s", credentials, oidc }],
+		["null inactive OIDC", { secret: "s", credentials, oidc: null }],
+		["null inactive credentials", { secret: "s", oidc, credentials: null }],
+		["legacy enabled", { secret: "s", credentials, enabled: false }],
+		["legacy type", { secret: "s", oidc, type: "oidc" }],
+		["null auth", null],
+	])("rejects auth with %s", (_label, auth) => {
+		expect(() => validateConfig({ auth }, {})).toThrow(ConfigError);
+	});
+
+	test("never infers auth or AI credentials from environment variables", () => {
+		const env = {
+			LUZZLE_AUTH_SECRET: "secret",
+			LUZZLE_AUTH_PASSWORD: "password",
+			GOOGLE_API_KEY: "key",
+			OIDC_ISSUER: oidc.issuer,
+			OIDC_CLIENT_SECRET: oidc.clientSecret,
+		};
+		const config = validateConfig({}, env);
+		expect(config.auth).toBeUndefined();
+		expect(config.ai).toBeUndefined();
+		expect(() => validateConfig({ auth: { credentials } }, env)).toThrow(
+			ConfigError,
+		);
+		expect(() =>
+			validateConfig({ auth: { secret: "s", oidc: {} } }, env),
+		).toThrow(ConfigError);
+		expect(() => validateConfig({ ai: { provider: "google" } }, env)).toThrow(
+			ConfigError,
+		);
+	});
+
+	test("accepts explicit AI provider and key", () => {
+		expect(
+			validateConfig({ ai: { provider: "google", api_key: "key" } }, {}).ai,
+		).toEqual({
+			provider: "google",
+			api_key: "key",
+		});
+	});
+
+	test.each([
+		{},
+		{ provider: "google" },
+		{ api_key: "key" },
+		{ provider: "google", api_key: "" },
+		{ provider: "other", api_key: "key" },
+		null,
+	])("rejects incomplete or invalid AI %j", (ai) => {
+		expect(() => validateConfig({ ai }, {})).toThrow(ConfigError);
+	});
+
+	test.each([
+		["root array", []],
+		["root scalar", "config"],
+		["root false", false],
+		["root null", null],
+		["url array", { url: [] }],
+		["storage array", { storage: [] }],
+		["nested sync array", { sync: { archive: [] } }],
+		["nested theme array", { theme: { light: [] } }],
+		["provider array", { auth: { secret: "s", credentials: [] } }],
+		["piece fields array", { pieces: [{ type: "book", fields: [] }] }],
+	])(
+		"rejects %s before defaulting can turn it into an object",
+		(_label, raw) => {
+			expect(() => validateConfig(raw, {})).toThrow(ConfigError);
+		},
+	);
+
+	test.each([
+		["unknown root property", { typo: true }],
+		["unknown nested property", { storage: { rot: "./archive" } }],
+		["empty storage root", { storage: { root: "" } }],
+		["null defaulted section", { storage: null }],
+		["null defaulted value", { url: { app: null } }],
+		[
+			"invalid theme enum",
+			{ theme: { markdown: { code: { light: "not-a-theme" } } } },
+		],
+		[
+			"missing piece type",
+			{ pieces: [{ fields: { title: "title", date_consumed: "date" } }] },
+		],
+		[
+			"missing piece title",
+			{ pieces: [{ type: "book", fields: { date_consumed: "date" } }] },
+		],
+		[
+			"missing piece date",
+			{ pieces: [{ type: "book", fields: { title: "title" } }] },
+		],
+		["invalid array item", { sync: { archive: { flags: [42] } } }],
+	])("rejects %s", (_label, raw) => {
+		expect(() => validateConfig(raw, {})).toThrow(ConfigError);
+	});
+
+	test("reports schema errors as field paths and messages", () => {
+		const error = validationError({
+			storage: { root: "" },
+			ai: { provider: "google", api_key: "" },
+		});
+		expect(error.message).toContain("Configuration validation failed");
+		expect(error.issues).toEqual(
+			expect.arrayContaining([
+				{ path: "/storage/root", message: expect.any(String) },
+				{ path: "/ai/api_key", message: expect.any(String) },
+			]),
+		);
+	});
+
+	test("aggregates missing environment references without including resolved secrets", () => {
+		const error = validationError(
+			{
+				auth: {
+					secret: "${SECRET}",
+					credentials: { username: "${USER}", password: "${PASSWORD}" },
+				},
+				pieces: [
+					{
+						type: "book",
+						fields: { title: "${TITLE}", date_consumed: "date" },
+					},
+				],
+			},
+			{ SECRET: "sensitive-value" },
+		);
+		expect(error.issues).toEqual(
+			expect.arrayContaining([
+				{
+					path: "/auth/credentials/username",
+					message: 'Environment variable "USER" is missing.',
+				},
+				{
+					path: "/auth/credentials/password",
+					message: 'Environment variable "PASSWORD" is missing.',
+				},
+				{
+					path: "/pieces/0/fields/title",
+					message: 'Environment variable "TITLE" is missing.',
+				},
+			]),
+		);
+		expect(error.message).not.toContain("sensitive-value");
+	});
+
+	test("retains interpolation, fallback, escaping and plain-string behavior", () => {
+		const config = validateConfig(
+			{
+				url: {
+					app: "http://${HOST}:${PORT}",
+					app_assets: "${MISSING:-http://localhost:8080/path?query=1}",
+					luzzle_assets: "${EMPTY}",
+				},
+				auth: { secret: "Value: $${SECRET}", credentials },
+				storage: { root: "plain-string" },
+				content: { text: { title: "${HOST}", description: "${HOST}" } },
+			},
+			{ HOST: "localhost", PORT: "8080", EMPTY: "", SECRET: "unused" },
+		);
+		expect(config.url).toEqual({
+			app: "http://localhost:8080",
+			app_assets: "http://localhost:8080/path?query=1",
+			luzzle_assets: "",
+		});
+		expect(config.auth?.secret).toBe("Value: ${SECRET}");
+		expect(config.storage.root).toBe("plain-string");
+		expect(config.content.text).toEqual({
+			title: "localhost",
+			description: "localhost",
+		});
+		expect(config.theme.globals["font-size-root"]).toBe(22);
+	});
+
+	test("interpolates defaults with the supplied environment", () => {
+		const config = validateConfig(
+			{},
+			{ LUZZLE_APP_URL: "https://example.com", LUZZLE_ASSET_SALT: "salt" },
+		);
+		expect(config.url.app).toBe("https://example.com");
+		expect(config.assets.salt).toBe("salt");
+	});
+
+	test.each([
+		{ auth: { secret: "${MISSING:-}", credentials } },
+		{
+			auth: {
+				secret: "s",
+				credentials: { username: "${EMPTY}", password: "p" },
+			},
+		},
+		{ auth: { secret: "s", oidc: { ...oidc, issuer: "${EMPTY}" } } },
+		{ ai: { provider: "google", api_key: "${EMPTY}" } },
+		{ storage: { root: "${EMPTY}" } },
+	])("validates nonempty constraints after interpolation: %j", (raw) => {
+		expect(() => validateConfig(raw, { EMPTY: "" })).toThrow(ConfigError);
+	});
+
+	test.each(["8080", "${PORT}"])(
+		"does not coerce numeric strings %j",
+		(hmr_port) => {
+			expect(() =>
+				validateConfig({ network: { public: { hmr_port } } }, { PORT: "8080" }),
+			).toThrow(ConfigError);
+		},
+	);
+});
+
+// Keep path-helper behavior independent of the schema validation contract.
+describe("config path helpers", () => {
+	describe("getConfigValue", () => {
+		test("should return the correct value for a given path", () => {
+			const config = {
+				a: {
+					b: {
+						c: "value",
+					},
+				},
+			} as unknown as TestConfig;
+			const value = getConfigValue(config, "a.b.c");
+			expect(value).toBe("value");
+		});
+
+		test("should return undefined for a non-existent path", () => {
+			const config = {
+				a: {
+					b: {
+						c: "value",
+					},
+				},
+			} as unknown as TestConfig;
+			const value = getConfigValue(config, "a.b.d");
+			expect(value).toBeUndefined();
+		});
+
+		test("should return the value for a root-level key", () => {
+			const config = {
+				key: "value",
+			} as unknown as TestConfig;
+			const value = getConfigValue(config, "key");
+			expect(value).toBe("value");
+		});
+
+		test("should return an object for a path to a non-leaf", () => {
+			const config = {
+				a: {
+					b: {
+						c: "value",
+					},
+				},
+			} as unknown as TestConfig;
+			const value = getConfigValue(config, "a.b");
+			expect(value).toEqual({ c: "value" });
+		});
+
+		test("should return undefined for a path starting with a non-existent key", () => {
+			const config = {
+				a: {
+					b: "value",
+				},
+			} as unknown as TestConfig;
+			const value = getConfigValue(config, "x.y.z");
+			expect(value).toBeUndefined();
+		});
+
+		test("should return undefined for an empty config", () => {
+			const config = {} as unknown as TestConfig;
+			const value = getConfigValue(config, "a.b");
+			expect(value).toBeUndefined();
+		});
+	});
+
+	describe("setConfigValue", () => {
+		test("should correctly set a value at a given path", () => {
+			const config = {
+				a: {
+					b: {
+						c: "value",
+					},
+				},
+			} as unknown as TestConfig;
+			setConfigValue(config, "a.b.c", "new-value");
+			expect(config.a.b.c).toBe("new-value");
+		});
+
+		test("should create intermediate objects if they don't exist", () => {
+			const config = {
+				a: {},
+			} as unknown as TestConfig;
+			setConfigValue(config, "a.b.c", "value");
+			expect(config.a.b.c).toBe("value");
+		});
+
+		test("should set a value at a root-level key", () => {
+			const config = {} as unknown as Record<string, unknown>;
+			setConfigValue(config as unknown as TestConfig, "key", "value");
+			expect(config.key).toBe("value");
+		});
+
+		test("should overwrite non-object intermediate when setting a nested path", () => {
+			const config = {
+				a: {
+					b: "not-an-object",
+				},
+			} as unknown as TestConfig;
+			setConfigValue(config, "a.b.c", "value");
+			expect((config as unknown as { a: { b: { c: string } } }).a.b.c).toBe(
+				"value",
+			);
+		});
+
+		test("should set a value to null", () => {
+			const config = {
+				a: {
+					b: {
+						c: "value",
+					},
+				},
+			} as unknown as TestConfig;
+			setConfigValue(config, "a.b.c", null);
+			expect(config.a.b.c).toBeNull();
+		});
+
+		test("should set a value to a number", () => {
+			const config = {
+				a: {
+					b: {
+						c: "value",
+					},
+				},
+			} as unknown as TestConfig;
+			setConfigValue(config, "a.b.c", 42);
+			expect(config.a.b.c).toBe(42);
+		});
+
+		test("should create deeply nested objects from scratch", () => {
+			const config = {} as unknown as TestConfig;
+			setConfigValue(config, "a.b.c.d.e", "deep");
+			expect(
+				(config as unknown as { a: { b: { c: { d: { e: string } } } } }).a.b.c.d
+					.e,
+			).toBe("deep");
+		});
+	});
+});

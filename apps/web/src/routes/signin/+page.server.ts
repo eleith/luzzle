@@ -3,7 +3,8 @@ import type { PageServerLoad } from './$types'
 import { config } from '$lib/server/config'
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-	if (!config.auth.enabled) throw redirect(302, '/')
+	const auth = config.auth
+	if (!auth) throw redirect(302, '/')
 
 	const session = await locals.auth()
 	const redirectTo = url.searchParams.get('redirectTo') || '/admin'
@@ -13,7 +14,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	}
 
 	return {
-		authType: config.auth.type,
-		oidcName: config.auth.oidc?.name
+		authType: 'credentials' in auth ? 'credentials' : 'oidc',
+		oidcName: 'oidc' in auth ? auth.oidc.name : undefined
 	}
 }

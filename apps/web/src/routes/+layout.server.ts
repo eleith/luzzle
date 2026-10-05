@@ -14,7 +14,7 @@ export const load = async () => {
 				app_assets: config.url.app_assets,
 				luzzle_assets: config.url.luzzle_assets
 			}
-		} as AppConfigPublic,
+		} satisfies AppConfigPublic,
 		meta: {
 			title: config.content.text.title,
 			description: config.content.text.description

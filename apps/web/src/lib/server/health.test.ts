@@ -1,18 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import type { AppConfig } from './config.js'
+import { makeConfig } from './config.fixture'
 import { buildHealthConfigSummary } from './health.js'
-
-function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
-	return {
-		storage: { root: '/data/archive' },
-		pieces: [],
-		auth: { enabled: true, secret: 'shh', type: 'oidc' },
-		sync: {},
-		worker: undefined,
-		ai: undefined,
-		...overrides
-	} as AppConfig
-}
 
 describe('buildHealthConfigSummary', () => {
 	test('reports the storage root', () => {
@@ -62,9 +50,7 @@ describe('buildHealthConfigSummary', () => {
 	test('reports oidc auth details without the client secret', () => {
 		const config = makeConfig({
 			auth: {
-				enabled: true,
 				secret: 'shh',
-				type: 'oidc',
 				oidc: { name: 'okta', issuer: 'https://issuer.example', clientId: 'abc', clientSecret: 'x' }
 			}
 		})
@@ -82,9 +68,7 @@ describe('buildHealthConfigSummary', () => {
 	test('reports credentials auth details without the password', () => {
 		const config = makeConfig({
 			auth: {
-				enabled: true,
 				secret: 'shh',
-				type: 'credentials',
 				credentials: { username: 'admin', password: 'x' }
 			}
 		})
@@ -99,11 +83,21 @@ describe('buildHealthConfigSummary', () => {
 		})
 	})
 
+	test('absent auth reports admin disabled with no provider', () => {
+		expect(buildHealthConfigSummary(makeConfig()).auth).toEqual({
+			enabled: false,
+			type: null,
+			issuer: null,
+			clientId: null
+		})
+	})
+
 	test('reports archive and cdn sync details', () => {
 		const config = makeConfig({
 			sync: {
-				archive: { remote: 'r2', path: 'archive' },
-				cdn: { remote: 'cf', path: 'assets', strategy: 'copy' }
+				...makeConfig().sync,
+				archive: { remote: 'r2', path: 'archive', flags: [] },
+				cdn: { remote: 'cf', path: 'assets', strategy: 'copy', flags: [] }
 			}
 		})
 
@@ -118,18 +112,21 @@ describe('buildHealthConfigSummary', () => {
 		})
 	})
 
-	test('reports unconfigured sync targets as null details', () => {
-		const config = makeConfig({ sync: {} })
+	test('reports default empty sync targets as unconfigured', () => {
+		const config = makeConfig()
 
 		const summary = buildHealthConfigSummary(config)
 
-		expect(summary.archiveSync).toEqual({ configured: false, remote: null, path: null })
-		expect(summary.cdnSync).toEqual({ configured: false, remote: null, path: null, strategy: null })
+		expect(summary.archiveSync).toEqual({ configured: false, remote: '', path: '' })
+		expect(summary.cdnSync).toEqual({ configured: false, remote: '', path: '', strategy: 'sync' })
 	})
 
 	test('reports the worker address and queue path when configured', () => {
 		const config = makeConfig({
-			network: { internal: { worker: 'http://worker:9000' } },
+			network: {
+				...makeConfig().network,
+				internal: { ...makeConfig().network.internal, worker: 'http://worker:9000' }
+			},
 			worker: { queue: { path: './data/queue.sqlite' } }
 		})
 
@@ -139,13 +136,16 @@ describe('buildHealthConfigSummary', () => {
 		})
 	})
 
-	test('reports no worker address or queue path when unconfigured', () => {
-		const config = makeConfig({ network: undefined, worker: undefined })
+	test('reports the resolved worker defaults', () => {
+		const config = makeConfig()
 
-		expect(buildHealthConfigSummary(config).worker).toEqual({ address: null, queuePath: null })
+		expect(buildHealthConfigSummary(config).worker).toEqual({
+			address: config.network.internal.worker,
+			queuePath: config.worker.queue.path
+		})
 	})
 
-	test('reports ai provider only when an api_key is present', () => {
+	test('reports ai provider only when ai is configured', () => {
 		const configured = makeConfig({ ai: { provider: 'google', api_key: 'key' } })
 		const unconfigured = makeConfig({ ai: undefined })
 

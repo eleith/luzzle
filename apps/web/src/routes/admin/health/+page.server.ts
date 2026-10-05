@@ -1,7 +1,7 @@
 import { config } from '$lib/server/config'
 import { probeStorage } from '$lib/server/health/probes.js'
-import { testConnectivity } from '$lib/server/health/testConnectivity.js'
-import { validateAiKeyIfConfigured } from '$lib/server/health/testAiKey.js'
+import { testConnectivity } from '$lib/server/health/connectivity.js'
+import { validateAiKeyIfConfigured } from '$lib/server/health/ai.js'
 import {
 	loadHealthPage,
 	probeWorkerIfConfigured,

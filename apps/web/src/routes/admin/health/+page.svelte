@@ -92,7 +92,7 @@
 						</div>
 						<div class="info-row">
 							<dt>type</dt>
-							<dd>{data.configSummary.auth.type}</dd>
+							<dd>{data.configSummary.auth.type ?? 'none'}</dd>
 						</div>
 						{#if data.configSummary.auth.issuer}
 							<div class="info-row">

@@ -15,7 +15,7 @@ const fixture = vi.hoisted(() => {
 		ai,
 		config: {
 			ai: ai as typeof ai | undefined,
-			pieces: [{ type: 'books', fields: { title: 'title' } }]
+			pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date' } }]
 		},
 		provider: {
 			client: vi.fn(),
@@ -73,7 +73,7 @@ const source =
 beforeEach(() => {
 	vi.clearAllMocks()
 	fixture.config.ai = fixture.ai
-	fixture.config.pieces = [{ type: 'books', fields: { title: 'title' } }]
+	fixture.config.pieces = [{ type: 'books', fields: { title: 'title', date_consumed: 'date' } }]
 	Object.assign(DEFAULT_GENERATION_LIMITS, {
 		maxFiles: 2,
 		maxFileBytes: 50,
@@ -374,6 +374,19 @@ test('unconfigured AI rejects without reading the body', async () => {
 	await expect(post(req)).rejects.toMatchObject({ status: 503 })
 	expect(req.bodyUsed).toBe(false)
 	expect(fixture.provider.generate).not.toHaveBeenCalled()
+})
+
+test('unsupported AI providers fail closed before consuming input or using Google', async () => {
+	fixture.config.ai = { ...fixture.ai }
+	// Deliberately bypass the validated config boundary to exercise provider dispatch.
+	Object.defineProperty(fixture.config.ai, 'provider', { value: 'unsupported' })
+	const req = request()
+	await expect(post(req)).rejects.toMatchObject({ status: 503 })
+	expect(req.bodyUsed).toBe(false)
+	expect(fixture.provider.client).not.toHaveBeenCalled()
+	expect(fixture.provider.generate).not.toHaveBeenCalled()
+	fixture.config.ai = fixture.ai
+	result(await events(await post()))
 })
 
 test('reserves capacity before multipart parsing and releases it after malformed input', async () => {

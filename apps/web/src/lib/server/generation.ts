@@ -25,6 +25,7 @@ let active = 0
 export async function generateResponse(request: Request): Promise<Response> {
 	const ai = config.ai
 	if (!ai) error(503, 'AI is not configured.')
+	if (ai.provider !== 'google') error(503, 'AI provider is not supported.')
 	if (active >= MAX_CONCURRENT_GENERATIONS) error(429, 'Generation is busy. Please try again.')
 
 	// Reserve before consuming multipart data; disconnected accepted work still owns its slot.

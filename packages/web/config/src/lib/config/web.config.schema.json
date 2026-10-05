@@ -1,38 +1,46 @@
 {
-  "title": "Schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Luzzle web configuration",
+  "additionalProperties": false,
   "type": "object",
   "properties": {
     "network": {
-      "type": "object",
       "default": {},
+      "description": "Internal service and development network settings.",
+      "type": "object",
       "properties": {
         "internal": {
-          "type": "object",
           "default": {},
+          "type": "object",
           "properties": {
             "explorer": {
-              "type": "string",
-              "default": "http://luzzle-web:3000"
+              "default": "http://luzzle-web:3000",
+              "description": "Explorer address used to allow its hostname in the development server.",
+              "type": "string"
             },
             "lsp": {
-              "type": "string",
-              "default": "http://luzzle-lsp:9001"
+              "default": "http://luzzle-lsp:9001",
+              "description": "Reserved LSP address. Proxy routing is configured separately with LUZZLE_PROXY_LSP_UPSTREAM.",
+              "type": "string"
             },
             "worker": {
-              "type": "string",
-              "default": "http://luzzle-worker:9000"
+              "default": "http://luzzle-worker:9000",
+              "description": "Worker service address for health checks.",
+              "type": "string"
             }
           }
         },
         "public": {
-          "type": "object",
           "default": {},
+          "type": "object",
           "properties": {
             "host": {
-              "type": "string",
-              "default": "0.0.0.0"
+              "default": "0.0.0.0",
+              "description": "Development server bind address, not the public site URL.",
+              "type": "string"
             },
             "hmr_port": {
+              "description": "Vite hot-reload client port, when different from the server port.",
               "type": "number"
             }
           }
@@ -40,1027 +48,1464 @@
       }
     },
     "url": {
-      "type": "object",
       "default": {},
+      "additionalProperties": false,
+      "description": "Public site and asset URLs.",
+      "type": "object",
       "properties": {
         "app": {
-          "type": "string",
-          "default": "${LUZZLE_APP_URL:-http://localhost:8080}"
+          "default": "${LUZZLE_APP_URL:-http://localhost:8080}",
+          "description": "Public Explorer URL. Supports an explicit environment reference.",
+          "type": "string"
         },
         "app_assets": {
-          "type": "string",
-          "default": ""
+          "default": "",
+          "description": "Application asset base URL. Empty uses same-origin paths; a CDN URL is allowed.",
+          "type": "string"
         },
         "luzzle_assets": {
-          "type": "string",
-          "default": ""
-        }
-      },
-      "additionalProperties": false
-    },
-    "auth": {
-      "type": "object",
-      "default": {},
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": false
-        },
-        "secret": {
-          "type": "string",
-          "default": "${LUZZLE_AUTH_SECRET:-}"
-        },
-        "type": {
-          "enum": [
-            "oidc",
-            "credentials"
-          ],
-          "default": "oidc"
-        },
-        "oidc": {
-          "type": "object",
-          "default": {},
-          "properties": {
-            "name": {
-              "type": "string",
-              "default": "Single Sign-On"
-            },
-            "issuer": {
-              "type": "string",
-              "default": ""
-            },
-            "clientId": {
-              "type": "string",
-              "default": ""
-            },
-            "clientSecret": {
-              "type": "string",
-              "default": ""
-            }
-          },
-          "additionalProperties": false
-        },
-        "credentials": {
-          "type": "object",
-          "default": {},
-          "properties": {
-            "username": {
-              "type": "string",
-              "default": "${LUZZLE_AUTH_USERNAME:-}"
-            },
-            "password": {
-              "type": "string",
-              "default": "${LUZZLE_AUTH_PASSWORD:-}"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    "storage": {
-      "type": "object",
-      "default": {},
-      "properties": {
-        "root": {
-          "type": "string",
-          "minLength": 1,
-          "default": "./archive"
-        }
-      },
-      "additionalProperties": false
-    },
-    "sync": {
-      "type": "object",
-      "default": {},
-      "properties": {
-        "config": {
-          "type": "string",
-          "default": "/app/rclone/rclone.conf"
-        },
-        "archive": {
-          "type": "object",
-          "default": {},
-          "properties": {
-            "remote": {
-              "type": "string",
-              "default": ""
-            },
-            "path": {
-              "type": "string",
-              "default": ""
-            },
-            "flags": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "default": []
-            }
-          },
-          "additionalProperties": false
-        },
-        "cdn": {
-          "type": "object",
-          "default": {},
-          "properties": {
-            "remote": {
-              "type": "string",
-              "default": ""
-            },
-            "path": {
-              "type": "string",
-              "default": ""
-            },
-            "flags": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "default": []
-            },
-            "strategy": {
-              "type": "string",
-              "enum": [
-                "sync",
-                "copy"
-              ],
-              "default": "sync"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    "worker": {
-      "type": "object",
-      "default": {},
-      "properties": {
-        "queue": {
-          "type": "object",
-          "default": {},
-          "properties": {
-            "path": {
-              "type": "string",
-              "default": "./data/sidequest.sqlite"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    "ai": {
-      "type": "object",
-      "properties": {
-        "provider": {
-          "enum": [
-            "google"
-          ],
-          "default": "google"
-        },
-        "api_key": {
-          "type": "string",
-          "minLength": 1,
-          "default": ""
-        }
-      },
-      "additionalProperties": false
-    },
-    "paths": {
-      "type": "object",
-      "default": {},
-      "properties": {
-        "database": {
-          "type": "string",
-          "default": "./data/luzzle.sqlite"
-        },
-        "assets": {
-          "type": "string",
-          "default": "./assets/pieces"
-        },
-        "cache": {
-          "type": "string",
-          "default": "./nginx"
-        },
-        "static": {
-          "type": "string",
-          "default": "./static"
-        },
-        "config": {
+          "default": "",
+          "description": "Published piece asset base URL. Empty uses same-origin paths; a CDN URL is allowed.",
           "type": "string"
         }
-      },
-      "additionalProperties": false
+      }
+    },
+    "auth": {
+      "description": "Configure exactly one authentication provider and a session secret. Omit auth for a public-only site with admin access disabled.",
+      "anyOf": [
+        {
+          "title": "Credentials",
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "secret",
+            "credentials"
+          ],
+          "properties": {
+            "secret": {
+              "minLength": 1,
+              "description": "Session-signing secret. Supply a strong random value or an explicit environment reference; required whenever auth is configured.",
+              "examples": [
+                "${LUZZLE_AUTH_SECRET}"
+              ],
+              "type": "string"
+            },
+            "credentials": {
+              "additionalProperties": false,
+              "description": "Local username/password authentication.",
+              "type": "object",
+              "required": [
+                "username",
+                "password"
+              ],
+              "properties": {
+                "username": {
+                  "minLength": 1,
+                  "description": "Administrator username.",
+                  "examples": [
+                    "admin"
+                  ],
+                  "type": "string"
+                },
+                "password": {
+                  "minLength": 1,
+                  "description": "Administrator password or an explicit environment reference.",
+                  "examples": [
+                    "${LUZZLE_AUTH_PASSWORD}"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "OIDC",
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "secret",
+            "oidc"
+          ],
+          "properties": {
+            "secret": {
+              "minLength": 1,
+              "description": "Session-signing secret. Supply a strong random value or an explicit environment reference; required whenever auth is configured.",
+              "examples": [
+                "${LUZZLE_AUTH_SECRET}"
+              ],
+              "type": "string"
+            },
+            "oidc": {
+              "additionalProperties": false,
+              "description": "OpenID Connect authentication.",
+              "type": "object",
+              "required": [
+                "issuer",
+                "clientId",
+                "clientSecret"
+              ],
+              "properties": {
+                "name": {
+                  "default": "Single Sign-On",
+                  "description": "Label shown on the sign-in button.",
+                  "type": "string"
+                },
+                "issuer": {
+                  "minLength": 1,
+                  "description": "OIDC issuer URL or an explicit environment reference.",
+                  "examples": [
+                    "https://identity.example.com",
+                    "${OIDC_ISSUER}"
+                  ],
+                  "type": "string"
+                },
+                "clientId": {
+                  "minLength": 1,
+                  "description": "OIDC client identifier.",
+                  "type": "string"
+                },
+                "clientSecret": {
+                  "minLength": 1,
+                  "description": "OIDC client secret or an explicit environment reference.",
+                  "examples": [
+                    "${OIDC_CLIENT_SECRET}"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "storage": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "root": {
+          "minLength": 1,
+          "default": "./archive",
+          "description": "Local Markdown archive directory.",
+          "type": "string"
+        }
+      }
+    },
+    "sync": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "config": {
+          "default": "/app/rclone/rclone.conf",
+          "description": "rclone configuration file used by the worker.",
+          "type": "string"
+        },
+        "archive": {
+          "default": {},
+          "additionalProperties": false,
+          "description": "Bidirectional archive synchronization using rclone bisync.",
+          "type": "object",
+          "properties": {
+            "remote": {
+              "default": "",
+              "description": "rclone remote name, not an s3:// URL. Empty remote or path skips archive synchronization.",
+              "type": "string"
+            },
+            "path": {
+              "default": "",
+              "description": "Remote archive path, combined with the remote name as remote:path.",
+              "type": "string"
+            },
+            "flags": {
+              "default": [],
+              "description": "Additional rclone arguments, one argument per array entry.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "cdn": {
+          "default": {},
+          "additionalProperties": false,
+          "description": "Publish generated assets to a remote destination.",
+          "type": "object",
+          "properties": {
+            "remote": {
+              "default": "",
+              "description": "rclone remote name. Empty remote or path skips CDN synchronization.",
+              "type": "string"
+            },
+            "path": {
+              "default": "",
+              "description": "Remote published-assets path, combined as remote:path.",
+              "type": "string"
+            },
+            "flags": {
+              "default": [],
+              "description": "Additional rclone arguments, one argument per array entry.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "strategy": {
+              "default": "sync",
+              "description": "sync deletes destination-only files; copy does not.",
+              "anyOf": [
+                {
+                  "const": "sync",
+                  "type": "string"
+                },
+                {
+                  "const": "copy",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "worker": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "queue": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "path": {
+              "default": "./data/sidequest.sqlite",
+              "description": "Workflow queue database path. The legacy sidequest.sqlite filename is mapped to openworkflow.sqlite by the application.",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "ai": {
+      "additionalProperties": false,
+      "description": "AI generation settings. Omit ai to disable generation; both provider and api_key must be supplied when configured.",
+      "type": "object",
+      "required": [
+        "provider",
+        "api_key"
+      ],
+      "properties": {
+        "provider": {
+          "description": "Generation provider. Google is currently the supported provider; this field is required.",
+          "const": "google",
+          "type": "string"
+        },
+        "api_key": {
+          "minLength": 1,
+          "description": "Provider API key or an explicit environment reference.",
+          "examples": [
+            "${GOOGLE_API_KEY}"
+          ],
+          "type": "string"
+        }
+      }
+    },
+    "paths": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "database": {
+          "default": "./data/luzzle.sqlite",
+          "description": "SQLite index path, resolved relative to the config directory.",
+          "type": "string"
+        },
+        "assets": {
+          "default": "./assets/pieces",
+          "description": "Generated piece assets directory. Worker generation uses its working directory for relative paths.",
+          "type": "string"
+        },
+        "cache": {
+          "default": "./nginx",
+          "description": "Proxy cache directory.",
+          "type": "string"
+        },
+        "static": {
+          "default": "./static",
+          "description": "Static render assets directory.",
+          "type": "string"
+        },
+        "config": {
+          "description": "Runtime metadata: loadConfig records the supplied config filename here.",
+          "readOnly": true,
+          "type": "string"
+        }
+      }
     },
     "assets": {
-      "type": "object",
       "default": {},
+      "additionalProperties": false,
+      "type": "object",
       "properties": {
         "salt": {
-          "type": "string",
-          "default": "${LUZZLE_ASSET_SALT:-}"
+          "default": "${LUZZLE_ASSET_SALT:-}",
+          "description": "Salt for generated asset keys. Changing it changes published asset URLs.",
+          "type": "string"
         }
-      },
-      "additionalProperties": false
+      }
     },
     "content": {
-      "type": "object",
       "default": {},
+      "additionalProperties": false,
+      "type": "object",
       "properties": {
         "component": {
+          "additionalProperties": false,
           "type": "object",
           "properties": {
             "404": {
+              "description": "Svelte source path for the not-found page.",
               "type": "string"
             },
             "root": {
+              "description": "Svelte source path for the home page.",
               "type": "string"
             },
             "feed": {
+              "description": "Svelte source path for the feed.",
               "type": "string"
             },
             "error": {
+              "description": "Svelte source path for the error page.",
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         },
         "text": {
-          "type": "object",
           "default": {},
+          "additionalProperties": false,
+          "type": "object",
           "properties": {
             "title": {
-              "type": "string",
-              "default": "Luzzle Explorer"
+              "default": "Luzzle Explorer",
+              "description": "Site title.",
+              "type": "string"
             },
             "description": {
-              "type": "string",
-              "default": "A Luzzle Explorer instance"
+              "default": "A Luzzle Explorer instance",
+              "description": "Site description.",
+              "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
-      },
-      "additionalProperties": false
+      }
     },
     "pieces": {
+      "default": [],
+      "description": "Ordered presentation and frontmatter mappings for archive piece types.",
       "type": "array",
       "items": {
+        "additionalProperties": false,
         "type": "object",
+        "required": [
+          "type",
+          "fields"
+        ],
         "properties": {
           "type": {
+            "description": "Archive piece type associated with this presentation.",
+            "examples": [
+              "books"
+            ],
             "type": "string"
           },
           "fields": {
+            "additionalProperties": false,
             "type": "object",
+            "required": [
+              "title",
+              "date_consumed"
+            ],
             "properties": {
               "media": {
+                "description": "Frontmatter selectors for media assets.",
+                "examples": [
+                  [
+                    "cover"
+                  ]
+                ],
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
               },
               "title": {
+                "description": "Frontmatter selector for the title, not a literal display title.",
+                "examples": [
+                  "title"
+                ],
                 "type": "string"
               },
               "summary": {
+                "description": "Frontmatter selector for a summary.",
+                "examples": [
+                  "description"
+                ],
                 "type": "string"
               },
               "date_consumed": {
+                "description": "Frontmatter selector for the consumed/read/viewed date.",
+                "examples": [
+                  "date_read"
+                ],
                 "type": "string"
               },
               "tags": {
+                "description": "Frontmatter selector for tags.",
+                "examples": [
+                  "keywords"
+                ],
                 "type": "string"
               },
               "attachments": {
+                "description": "Frontmatter selectors for attachments.",
+                "examples": [
+                  [
+                    "files[*].file"
+                  ]
+                ],
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
               }
-            },
-            "additionalProperties": false,
-            "required": [
-              "title",
-              "date_consumed"
-            ]
+            }
           },
           "components": {
+            "additionalProperties": false,
             "type": "object",
             "properties": {
               "icon": {
+                "description": "Svelte source path for the piece icon.",
                 "type": "string"
               },
               "opengraph": {
+                "description": "Svelte source path for the Open Graph image.",
                 "type": "string"
               },
               "page": {
+                "description": "Svelte source path for the piece page.",
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
-        },
-        "additionalProperties": false,
-        "required": [
-          "type",
-          "fields"
-        ]
-      },
-      "default": []
+        }
+      }
     },
     "theme": {
-      "type": "object",
       "default": {},
+      "additionalProperties": false,
+      "description": "Theme overrides. Omit any defaulted tokens you do not need to customize.",
+      "type": "object",
       "properties": {
         "light": {
-          "type": "object",
           "default": {},
+          "additionalProperties": false,
+          "description": "Light palette CSS color values; hex, rgb, hsl and other CSS color syntax are supported.",
+          "type": "object",
           "properties": {
             "color-primary": {
-              "type": "string",
-              "default": "#0d6efd"
+              "default": "#0d6efd",
+              "type": "string"
             },
             "color-on-primary": {
-              "type": "string",
-              "default": "#ffffff"
+              "default": "#ffffff",
+              "type": "string"
             },
             "color-primary-container": {
-              "type": "string",
-              "default": "#cfe2ff"
+              "default": "#cfe2ff",
+              "type": "string"
             },
             "color-on-primary-container": {
-              "type": "string",
-              "default": "#084298"
+              "default": "#084298",
+              "type": "string"
             },
             "color-secondary": {
-              "type": "string",
-              "default": "#6c757d"
+              "default": "#6c757d",
+              "type": "string"
             },
             "color-on-secondary": {
-              "type": "string",
-              "default": "#ffffff"
+              "default": "#ffffff",
+              "type": "string"
             },
             "color-secondary-container": {
-              "type": "string",
-              "default": "#d3d3d4"
+              "default": "#d3d3d4",
+              "type": "string"
             },
             "color-on-secondary-container": {
-              "type": "string",
-              "default": "#41464b"
+              "default": "#41464b",
+              "type": "string"
             },
             "color-tertiary": {
-              "type": "string",
-              "default": "#6c757d"
+              "default": "#6c757d",
+              "type": "string"
             },
             "color-on-tertiary": {
-              "type": "string",
-              "default": "#ffffff"
+              "default": "#ffffff",
+              "type": "string"
             },
             "color-tertiary-container": {
-              "type": "string",
-              "default": "#d3d3d4"
+              "default": "#d3d3d4",
+              "type": "string"
             },
             "color-on-tertiary-container": {
-              "type": "string",
-              "default": "#41464b"
+              "default": "#41464b",
+              "type": "string"
             },
             "color-error": {
-              "type": "string",
-              "default": "#dc3545"
+              "default": "#dc3545",
+              "type": "string"
             },
             "color-on-error": {
-              "type": "string",
-              "default": "#ffffff"
+              "default": "#ffffff",
+              "type": "string"
             },
             "color-error-container": {
-              "type": "string",
-              "default": "#f8d7da"
+              "default": "#f8d7da",
+              "type": "string"
             },
             "color-on-error-container": {
-              "type": "string",
-              "default": "#842029"
+              "default": "#842029",
+              "type": "string"
             },
             "color-surface": {
-              "type": "string",
-              "default": "#f8f9fa"
+              "default": "#f8f9fa",
+              "type": "string"
             },
             "color-surface-dim": {
-              "type": "string",
-              "default": "#e9ecef"
+              "default": "#e9ecef",
+              "type": "string"
             },
             "color-surface-bright": {
-              "type": "string",
-              "default": "#ffffff"
+              "default": "#ffffff",
+              "type": "string"
             },
             "color-surface-inverse": {
-              "type": "string",
-              "default": "#212529"
+              "default": "#212529",
+              "type": "string"
             },
             "color-on-surface": {
-              "type": "string",
-              "default": "#212529"
+              "default": "#212529",
+              "type": "string"
             },
             "color-on-surface-variant": {
-              "type": "string",
-              "default": "#495057"
+              "default": "#495057",
+              "type": "string"
             },
             "color-on-surface-inverse": {
-              "type": "string",
-              "default": "#f8f9fa"
+              "default": "#f8f9fa",
+              "type": "string"
             },
             "color-surface-container-lowest": {
-              "type": "string",
-              "default": "#ffffff"
+              "default": "#ffffff",
+              "type": "string"
             },
             "color-surface-container-low": {
-              "type": "string",
-              "default": "#e9ecef"
+              "default": "#e9ecef",
+              "type": "string"
             },
             "color-surface-container": {
-              "type": "string",
-              "default": "#dee2e6"
+              "default": "#dee2e6",
+              "type": "string"
             },
             "color-surface-container-high": {
-              "type": "string",
-              "default": "#ced4da"
+              "default": "#ced4da",
+              "type": "string"
             },
             "color-surface-container-highest": {
-              "type": "string",
-              "default": "#adb5bd"
+              "default": "#adb5bd",
+              "type": "string"
             },
             "color-shadow": {
-              "type": "string",
-              "default": "hsla(0, 0%, 0%, 0.15)"
+              "default": "hsla(0, 0%, 0%, 0.15)",
+              "type": "string"
             },
             "color-outline": {
-              "type": "string",
-              "default": "#6c757d"
+              "default": "#6c757d",
+              "type": "string"
             },
             "color-outline-variant": {
-              "type": "string",
-              "default": "#ced4da"
+              "default": "#ced4da",
+              "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         },
         "dark": {
-          "type": "object",
           "default": {},
+          "additionalProperties": false,
+          "description": "Dark palette CSS color values.",
+          "type": "object",
           "properties": {
             "color-primary": {
-              "type": "string",
-              "default": "#3b82f6"
+              "default": "#3b82f6",
+              "type": "string"
             },
             "color-on-primary": {
-              "type": "string",
-              "default": "#ffffff"
+              "default": "#ffffff",
+              "type": "string"
             },
             "color-primary-container": {
-              "type": "string",
-              "default": "#0d6efd"
+              "default": "#0d6efd",
+              "type": "string"
             },
             "color-on-primary-container": {
-              "type": "string",
-              "default": "#cfe2ff"
+              "default": "#cfe2ff",
+              "type": "string"
             },
             "color-secondary": {
-              "type": "string",
-              "default": "#adb5bd"
+              "default": "#adb5bd",
+              "type": "string"
             },
             "color-on-secondary": {
-              "type": "string",
-              "default": "#212529"
+              "default": "#212529",
+              "type": "string"
             },
             "color-secondary-container": {
-              "type": "string",
-              "default": "#495057"
+              "default": "#495057",
+              "type": "string"
             },
             "color-on-secondary-container": {
-              "type": "string",
-              "default": "#d3d3d4"
+              "default": "#d3d3d4",
+              "type": "string"
             },
             "color-tertiary": {
-              "type": "string",
-              "default": "#adb5bd"
+              "default": "#adb5bd",
+              "type": "string"
             },
             "color-on-tertiary": {
-              "type": "string",
-              "default": "#212529"
+              "default": "#212529",
+              "type": "string"
             },
             "color-tertiary-container": {
-              "type": "string",
-              "default": "#495057"
+              "default": "#495057",
+              "type": "string"
             },
             "color-on-tertiary-container": {
-              "type": "string",
-              "default": "#d3d3d4"
+              "default": "#d3d3d4",
+              "type": "string"
             },
             "color-error": {
-              "type": "string",
-              "default": "#f87171"
+              "default": "#f87171",
+              "type": "string"
             },
             "color-on-error": {
-              "type": "string",
-              "default": "#4f0b0b"
+              "default": "#4f0b0b",
+              "type": "string"
             },
             "color-error-container": {
-              "type": "string",
-              "default": "#dc3545"
+              "default": "#dc3545",
+              "type": "string"
             },
             "color-on-error-container": {
-              "type": "string",
-              "default": "#f8d7da"
+              "default": "#f8d7da",
+              "type": "string"
             },
             "color-surface": {
-              "type": "string",
-              "default": "#121212"
+              "default": "#121212",
+              "type": "string"
             },
             "color-surface-dim": {
-              "type": "string",
-              "default": "#1f1f1f"
+              "default": "#1f1f1f",
+              "type": "string"
             },
             "color-surface-bright": {
-              "type": "string",
-              "default": "#333333"
+              "default": "#333333",
+              "type": "string"
             },
             "color-surface-inverse": {
-              "type": "string",
-              "default": "#e9ecef"
+              "default": "#e9ecef",
+              "type": "string"
             },
             "color-on-surface": {
-              "type": "string",
-              "default": "#e9ecef"
+              "default": "#e9ecef",
+              "type": "string"
             },
             "color-on-surface-variant": {
-              "type": "string",
-              "default": "#adb5bd"
+              "default": "#adb5bd",
+              "type": "string"
             },
             "color-on-surface-inverse": {
-              "type": "string",
-              "default": "#121212"
+              "default": "#121212",
+              "type": "string"
             },
             "color-surface-container-lowest": {
-              "type": "string",
-              "default": "#1f1f1f"
+              "default": "#1f1f1f",
+              "type": "string"
             },
             "color-surface-container-low": {
-              "type": "string",
-              "default": "#333333"
+              "default": "#333333",
+              "type": "string"
             },
             "color-surface-container": {
-              "type": "string",
-              "default": "#4f4f4f"
+              "default": "#4f4f4f",
+              "type": "string"
             },
             "color-surface-container-high": {
-              "type": "string",
-              "default": "#666666"
+              "default": "#666666",
+              "type": "string"
             },
             "color-surface-container-highest": {
-              "type": "string",
-              "default": "#7f7f7f"
+              "default": "#7f7f7f",
+              "type": "string"
             },
             "color-shadow": {
-              "type": "string",
-              "default": "hsla(0, 0%, 0%, 0.5)"
+              "default": "hsla(0, 0%, 0%, 0.5)",
+              "type": "string"
             },
             "color-outline": {
-              "type": "string",
-              "default": "#6c757d"
+              "default": "#6c757d",
+              "type": "string"
             },
             "color-outline-variant": {
-              "type": "string",
-              "default": "#495057"
+              "default": "#495057",
+              "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         },
         "globals": {
-          "type": "object",
           "default": {},
+          "additionalProperties": false,
+          "description": "Global CSS tokens. Sizes, spacing and radii are CSS-length strings unless a field explicitly uses a number.",
+          "type": "object",
           "properties": {
             "shadow-raised": {
-              "type": "string",
-              "default": "0px 3px 1px -2px rgba(251 241 199 / 20%), 0px 2px 2px 0px rgba(251 241 199 / 14%), 0px 1px 5px 0px rgba(0 0 0 / 12%)"
+              "default": "0px 3px 1px -2px rgba(251 241 199 / 20%), 0px 2px 2px 0px rgba(251 241 199 / 14%), 0px 1px 5px 0px rgba(0 0 0 / 12%)",
+              "type": "string"
             },
             "font-mono-name": {
-              "type": "string",
-              "default": "\"monaco, monospace\""
+              "default": "\"monaco, monospace\"",
+              "description": "CSS font-family value for monospace text.",
+              "type": "string"
             },
             "font-sans-name": {
-              "type": "string",
-              "default": "\"Noto Sans\""
+              "default": "\"Noto Sans\"",
+              "description": "CSS font-family value for sans-serif text.",
+              "type": "string"
             },
             "font-sans-url": {
-              "type": "string",
-              "default": "\"/fonts/noto-sans.woff2\""
+              "default": "\"/fonts/noto-sans.woff2\"",
+              "description": "CSS-quoted font URL.",
+              "type": "string"
             },
             "font-sans-weight": {
-              "type": "string",
-              "default": "300 600"
+              "default": "300 600",
+              "description": "Font-face weight or variable font weight range.",
+              "type": "string"
             },
             "font-size-xxs": {
-              "type": "string",
-              "default": "0.7rem"
+              "default": "0.7rem",
+              "type": "string"
             },
             "font-size-xs": {
-              "type": "string",
-              "default": "0.825rem"
+              "default": "0.825rem",
+              "type": "string"
             },
             "font-size-small": {
-              "type": "string",
-              "default": "1rem"
+              "default": "1rem",
+              "type": "string"
             },
             "font-size-normal": {
-              "type": "string",
-              "default": "1.25rem"
+              "default": "1.25rem",
+              "type": "string"
             },
             "font-size-medium": {
-              "type": "string",
-              "default": "1.5rem"
+              "default": "1.5rem",
+              "type": "string"
             },
             "font-size-large": {
-              "type": "string",
-              "default": "1.75rem"
+              "default": "1.75rem",
+              "type": "string"
             },
             "font-size-xl": {
-              "type": "string",
-              "default": "2rem"
+              "default": "2rem",
+              "type": "string"
             },
             "font-size-xxl": {
-              "type": "string",
-              "default": "2.25rem"
+              "default": "2.25rem",
+              "type": "string"
             },
             "font-size-mobile-responsive-factor": {
-              "type": "number",
-              "default": 0.8
+              "default": 0.8,
+              "description": "Mobile font-size multiplier.",
+              "type": "number"
             },
             "font-size-root": {
-              "type": "number",
-              "default": 22
+              "default": 22,
+              "description": "Root font size in pixels.",
+              "type": "number"
             },
             "font-weight-light": {
-              "type": "number",
-              "default": 300
+              "default": 300,
+              "type": "number"
             },
             "font-weight-normal": {
-              "type": "number",
-              "default": 400
+              "default": 400,
+              "type": "number"
             },
             "font-weight-medium": {
-              "type": "number",
-              "default": 500
+              "default": 500,
+              "type": "number"
             },
             "font-weight-semibold": {
-              "type": "number",
-              "default": 550
+              "default": 550,
+              "type": "number"
             },
             "font-weight-bold": {
-              "type": "number",
-              "default": 600
+              "default": 600,
+              "type": "number"
             },
             "radius-none": {
-              "type": "string",
-              "default": "0"
+              "default": "0",
+              "type": "string"
             },
             "radius-small": {
-              "type": "string",
-              "default": "0.25rem"
+              "default": "0.25rem",
+              "type": "string"
             },
             "radius-medium": {
-              "type": "string",
-              "default": "0.375rem"
+              "default": "0.375rem",
+              "type": "string"
             },
             "radius-large": {
-              "type": "string",
-              "default": "0.5rem"
+              "default": "0.5rem",
+              "type": "string"
             },
             "radius-xl": {
-              "type": "string",
-              "default": "0.75rem"
+              "default": "0.75rem",
+              "type": "string"
             },
             "radius-x2l": {
-              "type": "string",
-              "default": "1rem"
+              "default": "1rem",
+              "type": "string"
             },
             "radius-x3l": {
-              "type": "string",
-              "default": "1.5rem"
+              "default": "1.5rem",
+              "type": "string"
             },
             "radius-x4l": {
-              "type": "string",
-              "default": "2.5rem"
+              "default": "2.5rem",
+              "type": "string"
             },
             "radius-full": {
-              "type": "string",
-              "default": "9999px"
+              "default": "9999px",
+              "type": "string"
             },
             "breakpoint-phone": {
-              "type": "number",
-              "default": 640
+              "default": 640,
+              "description": "Phone breakpoint in pixels.",
+              "type": "number"
             },
             "breakpoint-tablet": {
-              "type": "number",
-              "default": 768
+              "default": 768,
+              "description": "Tablet breakpoint in pixels.",
+              "type": "number"
             },
             "breakpoint-laptop": {
-              "type": "number",
-              "default": 1024
+              "default": 1024,
+              "description": "Laptop breakpoint in pixels.",
+              "type": "number"
             },
             "breakpoint-desktop": {
-              "type": "number",
-              "default": 1280
+              "default": 1280,
+              "description": "Desktop breakpoint in pixels.",
+              "type": "number"
             },
             "space-1": {
-              "type": "string",
-              "default": "0.25rem"
+              "default": "0.25rem",
+              "type": "string"
             },
             "space-2": {
-              "type": "string",
-              "default": "0.5rem"
+              "default": "0.5rem",
+              "type": "string"
             },
             "space-3": {
-              "type": "string",
-              "default": "0.75rem"
+              "default": "0.75rem",
+              "type": "string"
             },
             "space-4": {
-              "type": "string",
-              "default": "1rem"
+              "default": "1rem",
+              "type": "string"
             },
             "space-5": {
-              "type": "string",
-              "default": "1.25rem"
+              "default": "1.25rem",
+              "type": "string"
             },
             "space-6": {
-              "type": "string",
-              "default": "1.5rem"
+              "default": "1.5rem",
+              "type": "string"
             },
             "space-7": {
-              "type": "string",
-              "default": "1.75rem"
+              "default": "1.75rem",
+              "type": "string"
             },
             "space-8": {
-              "type": "string",
-              "default": "2rem"
+              "default": "2rem",
+              "type": "string"
             },
             "space-9": {
-              "type": "string",
-              "default": "2.25rem"
+              "default": "2.25rem",
+              "type": "string"
             },
             "space-10": {
-              "type": "string",
-              "default": "2.5rem"
+              "default": "2.5rem",
+              "type": "string"
             },
             "space-0-5": {
-              "type": "string",
-              "default": "0.125rem"
+              "default": "0.125rem",
+              "type": "string"
             },
             "space-1-5": {
-              "type": "string",
-              "default": "0.375rem"
+              "default": "0.375rem",
+              "type": "string"
             },
             "space-2-5": {
-              "type": "string",
-              "default": "0.625rem"
+              "default": "0.625rem",
+              "type": "string"
             },
             "space-3-5": {
-              "type": "string",
-              "default": "0.875rem"
+              "default": "0.875rem",
+              "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         },
         "markdown": {
-          "type": "object",
           "default": {},
+          "additionalProperties": false,
+          "type": "object",
           "properties": {
             "sidenote": {
-              "type": "object",
               "default": {},
+              "additionalProperties": false,
+              "description": "CSS content values for sidenotes; include CSS string quotes inside the YAML value.",
+              "type": "object",
               "properties": {
                 "sidenote-callout-before-content": {
-                  "type": "string",
-                  "default": "\"[ \""
+                  "default": "\"[ \"",
+                  "type": "string"
                 },
                 "sidenote-callout-after-content": {
-                  "type": "string",
-                  "default": "\" ]\""
+                  "default": "\" ]\"",
+                  "type": "string"
                 },
                 "sidenote-citation-before-content": {
-                  "type": "string",
-                  "default": "\"\""
+                  "default": "\"\"",
+                  "type": "string"
                 },
                 "sidenote-citation-after-content": {
-                  "type": "string",
-                  "default": "\":\""
+                  "default": "\":\"",
+                  "type": "string"
                 }
-              },
-              "additionalProperties": false
+              }
             },
             "code": {
-              "type": "object",
               "default": {},
+              "additionalProperties": false,
+              "type": "object",
               "properties": {
                 "light": {
-                  "enum": [
-                    "andromeeda",
-                    "aurora-x",
-                    "ayu-dark",
-                    "catppuccin-frappe",
-                    "catppuccin-latte",
-                    "catppuccin-macchiato",
-                    "catppuccin-mocha",
-                    "dark-plus",
-                    "dracula",
-                    "dracula-soft",
-                    "everforest-dark",
-                    "everforest-light",
-                    "github-dark",
-                    "github-dark-default",
-                    "github-dark-dimmed",
-                    "github-dark-high-contrast",
-                    "github-light",
-                    "github-light-default",
-                    "github-light-high-contrast",
-                    "gruvbox-dark-hard",
-                    "gruvbox-dark-medium",
-                    "gruvbox-dark-soft",
-                    "gruvbox-light-hard",
-                    "gruvbox-light-medium",
-                    "gruvbox-light-soft",
-                    "houston",
-                    "kanagawa-dragon",
-                    "kanagawa-lotus",
-                    "kanagawa-wave",
-                    "laserwave",
-                    "light-plus",
-                    "material-theme",
-                    "material-theme-darker",
-                    "material-theme-lighter",
-                    "material-theme-ocean",
-                    "material-theme-palenight",
-                    "min-dark",
-                    "min-light",
-                    "monokai",
-                    "night-owl",
-                    "nord",
-                    "one-dark-pro",
-                    "one-light",
-                    "plastic",
-                    "poimandres",
-                    "red",
-                    "rose-pine",
-                    "rose-pine-dawn",
-                    "rose-pine-moon",
-                    "slack-dark",
-                    "slack-ochin",
-                    "snazzy-light",
-                    "solarized-dark",
-                    "solarized-light",
-                    "synthwave-84",
-                    "tokyo-night",
-                    "vesper",
-                    "vitesse-black",
-                    "vitesse-dark",
-                    "vitesse-light"
-                  ],
-                  "default": "github-light"
+                  "default": "github-light",
+                  "description": "Shiki theme for light-mode code blocks and both editors.",
+                  "anyOf": [
+                    {
+                      "const": "andromeeda",
+                      "type": "string"
+                    },
+                    {
+                      "const": "aurora-x",
+                      "type": "string"
+                    },
+                    {
+                      "const": "ayu-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-frappe",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-latte",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-macchiato",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-mocha",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dark-plus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dracula",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dracula-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "everforest-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "everforest-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-default",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-dimmed",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-high-contrast",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light-default",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light-high-contrast",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-hard",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-medium",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-hard",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-medium",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "houston",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-dragon",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-lotus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-wave",
+                      "type": "string"
+                    },
+                    {
+                      "const": "laserwave",
+                      "type": "string"
+                    },
+                    {
+                      "const": "light-plus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-darker",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-lighter",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-ocean",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-palenight",
+                      "type": "string"
+                    },
+                    {
+                      "const": "min-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "min-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "monokai",
+                      "type": "string"
+                    },
+                    {
+                      "const": "night-owl",
+                      "type": "string"
+                    },
+                    {
+                      "const": "nord",
+                      "type": "string"
+                    },
+                    {
+                      "const": "one-dark-pro",
+                      "type": "string"
+                    },
+                    {
+                      "const": "one-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "plastic",
+                      "type": "string"
+                    },
+                    {
+                      "const": "poimandres",
+                      "type": "string"
+                    },
+                    {
+                      "const": "red",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine-dawn",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine-moon",
+                      "type": "string"
+                    },
+                    {
+                      "const": "slack-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "slack-ochin",
+                      "type": "string"
+                    },
+                    {
+                      "const": "snazzy-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "solarized-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "solarized-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "synthwave-84",
+                      "type": "string"
+                    },
+                    {
+                      "const": "tokyo-night",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vesper",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-black",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-light",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "dark": {
-                  "enum": [
-                    "andromeeda",
-                    "aurora-x",
-                    "ayu-dark",
-                    "catppuccin-frappe",
-                    "catppuccin-latte",
-                    "catppuccin-macchiato",
-                    "catppuccin-mocha",
-                    "dark-plus",
-                    "dracula",
-                    "dracula-soft",
-                    "everforest-dark",
-                    "everforest-light",
-                    "github-dark",
-                    "github-dark-default",
-                    "github-dark-dimmed",
-                    "github-dark-high-contrast",
-                    "github-light",
-                    "github-light-default",
-                    "github-light-high-contrast",
-                    "gruvbox-dark-hard",
-                    "gruvbox-dark-medium",
-                    "gruvbox-dark-soft",
-                    "gruvbox-light-hard",
-                    "gruvbox-light-medium",
-                    "gruvbox-light-soft",
-                    "houston",
-                    "kanagawa-dragon",
-                    "kanagawa-lotus",
-                    "kanagawa-wave",
-                    "laserwave",
-                    "light-plus",
-                    "material-theme",
-                    "material-theme-darker",
-                    "material-theme-lighter",
-                    "material-theme-ocean",
-                    "material-theme-palenight",
-                    "min-dark",
-                    "min-light",
-                    "monokai",
-                    "night-owl",
-                    "nord",
-                    "one-dark-pro",
-                    "one-light",
-                    "plastic",
-                    "poimandres",
-                    "red",
-                    "rose-pine",
-                    "rose-pine-dawn",
-                    "rose-pine-moon",
-                    "slack-dark",
-                    "slack-ochin",
-                    "snazzy-light",
-                    "solarized-dark",
-                    "solarized-light",
-                    "synthwave-84",
-                    "tokyo-night",
-                    "vesper",
-                    "vitesse-black",
-                    "vitesse-dark",
-                    "vitesse-light"
-                  ],
-                  "default": "github-dark"
-                }
-              },
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    }
-  },
-  "if": {
-    "type": "object",
-    "properties": {
-      "auth": {
-        "type": "object",
-        "properties": {
-          "enabled": {
-            "const": true
-          }
-        }
-      }
-    }
-  },
-  "then": {
-    "type": "object",
-    "properties": {
-      "auth": {
-        "type": "object",
-        "properties": {
-          "secret": {
-            "type": "string",
-            "minLength": 1
-          }
-        }
-      }
-    },
-    "if": {
-      "type": "object",
-      "properties": {
-        "auth": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "const": "credentials"
-            }
-          }
-        }
-      }
-    },
-    "then": {
-      "type": "object",
-      "properties": {
-        "auth": {
-          "type": "object",
-          "required": [
-            "credentials"
-          ],
-          "properties": {
-            "credentials": {
-              "type": "object",
-              "properties": {
-                "username": {
-                  "type": "string",
-                  "minLength": 1
-                },
-                "password": {
-                  "type": "string",
-                  "minLength": 1
+                  "default": "github-dark",
+                  "description": "Shiki theme for dark-mode code blocks and both editors.",
+                  "anyOf": [
+                    {
+                      "const": "andromeeda",
+                      "type": "string"
+                    },
+                    {
+                      "const": "aurora-x",
+                      "type": "string"
+                    },
+                    {
+                      "const": "ayu-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-frappe",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-latte",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-macchiato",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-mocha",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dark-plus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dracula",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dracula-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "everforest-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "everforest-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-default",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-dimmed",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-high-contrast",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light-default",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light-high-contrast",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-hard",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-medium",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-hard",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-medium",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "houston",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-dragon",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-lotus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-wave",
+                      "type": "string"
+                    },
+                    {
+                      "const": "laserwave",
+                      "type": "string"
+                    },
+                    {
+                      "const": "light-plus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-darker",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-lighter",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-ocean",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-palenight",
+                      "type": "string"
+                    },
+                    {
+                      "const": "min-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "min-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "monokai",
+                      "type": "string"
+                    },
+                    {
+                      "const": "night-owl",
+                      "type": "string"
+                    },
+                    {
+                      "const": "nord",
+                      "type": "string"
+                    },
+                    {
+                      "const": "one-dark-pro",
+                      "type": "string"
+                    },
+                    {
+                      "const": "one-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "plastic",
+                      "type": "string"
+                    },
+                    {
+                      "const": "poimandres",
+                      "type": "string"
+                    },
+                    {
+                      "const": "red",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine-dawn",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine-moon",
+                      "type": "string"
+                    },
+                    {
+                      "const": "slack-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "slack-ochin",
+                      "type": "string"
+                    },
+                    {
+                      "const": "snazzy-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "solarized-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "solarized-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "synthwave-84",
+                      "type": "string"
+                    },
+                    {
+                      "const": "tokyo-night",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vesper",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-black",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-light",
+                      "type": "string"
+                    }
+                  ]
                 }
               }
             }
@@ -1068,35 +1513,5 @@
         }
       }
     }
-  },
-  "allOf": [
-    {
-      "if": {
-        "type": "object",
-        "properties": {
-          "ai": {
-            "type": "object"
-          }
-        },
-        "required": [
-          "ai"
-        ]
-      },
-      "then": {
-        "type": "object",
-        "properties": {
-          "ai": {
-            "type": "object",
-            "properties": {
-              "api_key": {
-                "type": "string",
-                "minLength": 1
-              }
-            }
-          }
-        }
-      }
-    }
-  ],
-  "additionalProperties": false
+  }
 }

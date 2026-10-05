@@ -1,46 +1,23 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, writeFileSync } from "node:fs";
+import { ConfigSchema } from "../src/lib/config/schema.ts";
+import { createInputSchema } from "../src/lib/config/input-schema.ts";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const output = new URL(
+	"../src/lib/config/web.config.schema.json",
+	import.meta.url,
+);
+const schema = {
+	$schema: "http://json-schema.org/draft-07/schema#",
+	...createInputSchema(ConfigSchema),
+};
+const content = JSON.stringify(schema, null, 2) + "\n";
 
-const schemaPath = path.resolve(__dirname, '../src/lib/config/schema.json');
-
-const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
-
-/**
- * Recursively removes required fields that are present in defaults.
- */
-function relax(s) {
-	if (!s || typeof s !== 'object') return;
-
-	if (s.type === 'object' && s.properties) {
-		if (s.required) {
-			s.required = s.required.filter((key) => {
-				const prop = s.properties[key];
-				// If property has a default, it's not strictly required from the user
-				return prop && prop.default === undefined;
-			});
-			if (s.required.length === 0) delete s.required;
-		}
-		for (const key in s.properties) {
-			relax(s.properties[key]);
-		}
+if (process.argv.includes("--check")) {
+	if (readFileSync(output, "utf8") !== content) {
+		throw new Error(
+			"Editor schema is stale. Run pnpm --filter @luzzle/web.config build:external-schema.",
+		);
 	}
-
-	// Handle nested schemas (allOf, anyOf, oneOf, then, else)
-	const nestedKeys = ['allOf', 'anyOf', 'oneOf', 'then', 'else'];
-	for (const key of nestedKeys) {
-		if (s[key]) {
-			if (Array.isArray(s[key])) {
-				s[key].forEach((item) => relax(item));
-			} else {
-				relax(s[key]);
-			}
-		}
-	}
+} else {
+	writeFileSync(output, content);
 }
-
-relax(schema);
-
-console.log(JSON.stringify(schema, null, 2));
