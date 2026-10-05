@@ -4,7 +4,7 @@ import type { RequestEvent } from './$types'
 
 export async function GET(event: RequestEvent) {
 	if (!config.auth.enabled) {
-		return json({ status: 'ok' })
+		return new Response('Unauthorized', { status: 401 })
 	}
 
 	const session = await event.locals.auth?.()
