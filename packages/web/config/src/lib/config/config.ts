@@ -3,6 +3,7 @@ import { parse as yamlParse } from 'yaml'
 import Ajv from 'ajv'
 import { type Schema as Config } from './schema.js'
 import schemaJson from './schema.json' with { type: 'json' }
+import { interpolate } from './interpolate.js'
 
 const defaultValidator = new Ajv({ strict: true, useDefaults: true }).compile(schemaJson)
 const finalValidator = new Ajv({ strict: true }).compile(schemaJson)
@@ -10,42 +11,6 @@ const finalValidator = new Ajv({ strict: true }).compile(schemaJson)
 export type ConfigPublic = {
 	url: Pick<Config['url'], 'app' | 'luzzle_assets' | 'app_assets'>
 	content: Config['content']
-}
-
-function replaceEnvVars(obj: unknown): unknown {
-	if (typeof obj === 'string') {
-		return obj.replace(/\$\$|\$\{([^}:]+)(?::-([^}]*))?\}/g, (match, varName, defaultValue) => {
-			if (match === '$$') {
-				return '$'
-			}
-
-			const value = process.env[varName]
-			if (value !== undefined) {
-				return value
-			}
-
-			if (defaultValue !== undefined) {
-				return defaultValue
-			}
-
-			console.warn(`Config warning: Environment variable "${varName}" is missing.`)
-			return match
-		})
-	}
-
-	if (Array.isArray(obj)) {
-		return obj.map(replaceEnvVars)
-	}
-
-	if (obj !== null && typeof obj === 'object') {
-		const result: Record<string, unknown> = {}
-		for (const key in obj) {
-			result[key] = replaceEnvVars((obj as Record<string, unknown>)[key])
-		}
-		return result
-	}
-
-	return obj
 }
 
 function loadConfig(userConfigPath?: string): Config {
@@ -59,7 +24,7 @@ function loadConfig(userConfigPath?: string): Config {
 		throw new Error(`Configuration validation failed: ${defaultValidator.errors?.map(e => e.message).join(', ')}`)
 	}
 
-	const finalConfig = replaceEnvVars(config) as Config
+	const finalConfig = interpolate(config) as Config
 
 	if (!finalValidator(finalConfig)) {
 		throw new Error(`Configuration validation failed: ${finalValidator.errors?.map(e => e.message).join(', ')}`)

@@ -253,8 +253,8 @@ auth:
 			expect(config.url.app).toBe('http://localhost:8080')
 		})
 	
-		test('should warn and preserve string if environment variable is missing', () => {
-			const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+		test('should reject an unresolved environment reference with its field path', () => {
+			vi.stubEnv('MISSING_VAR', undefined)
 			const yamlContent = `
 auth:
   enabled: true
@@ -267,9 +267,9 @@ auth:
 `
 			writeFileSync(tmpConfigPath, yamlContent)
 	
-			const config = loadConfig(tmpConfigPath)
-			expect(config.auth.secret).toBe('${MISSING_VAR}')
-			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Environment variable "MISSING_VAR" is missing'))
+			expect(() => loadConfig(tmpConfigPath)).toThrow(
+				'/auth/secret: Environment variable "MISSING_VAR" is missing.'
+			)
 		})
 	
 		test('should handle escaping with $$', () => {
