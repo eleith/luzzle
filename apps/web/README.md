@@ -3,6 +3,22 @@
 The SvelteKit application for browsing, searching, and editing your Luzzle
 archives in a responsive web manager interface.
 
+## Editor Keybindings
+
+Source and text-asset editors default to Standard keybindings. Press
+**Ctrl+Alt+V** while the editor is focused to toggle Vim keybindings. The choice
+is remembered in this browser and reused when opening another editor.
+
+A small editor footer shows Standard or the current Vim mode, alongside the
+shortcut hint. It is informational; Ctrl+Alt+V remains the only toggle. Save
+continues to use the existing Save button; Vim Save/quit commands are not connected
+to application actions. Before applying generated content, the editor finishes Vim's current
+insertion and returns to Normal mode, keeping generation outside dot-repeat.
+
+If Vimium is installed, exclude the editor URLs in its settings and leave the
+excluded-keys field empty. Vimium otherwise intercepts Escape before the editor
+can return to Normal mode.
+
 ## Centralized Web Documentation 📖
 
 All documentation, including deployment references, configuration setups, and

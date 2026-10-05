@@ -8,6 +8,7 @@
 	import { luzzleFieldEditor } from './extensions/luzzleFieldEditor'
 	import { luzzleAssetEditor } from './extensions/luzzleAssetEditor'
 	import { replaceDocument } from './replace-document'
+	import { editorKeybindings, finishVimInput } from './keybindings'
 
 	function getAppliedTheme(): 'dark' | 'light' {
 		const preference = window.localStorage.getItem('theme') || 'system'
@@ -63,6 +64,7 @@
 			returnTo
 		})
 
+		extensions.unshift(editorKeybindings())
 		extensions.push(lspConfig.of([]))
 
 		if (file && returnTo) {
@@ -149,6 +151,7 @@
 
 	export function replaceContent(content: string, expectedSource: string) {
 		if (!view) throw new Error('The editor is not ready. Please try again.')
+		if (view.state.doc.toString() === expectedSource) finishVimInput(view)
 		view.dispatch(replaceDocument(view.state, content, expectedSource))
 	}
 
@@ -173,7 +176,6 @@
 		width: 100%;
 		border-radius: var(--radius-medium);
 		overflow: hidden;
-		min-height: 500px;
 		position: relative;
 		transition: background-color 0.2s ease;
 	}
@@ -186,6 +188,11 @@
 		pointer-events: none;
 		z-index: 12;
 		border-radius: inherit;
+	}
+
+	.editor-wrapper :global(.cm-content),
+	.editor-wrapper :global(.cm-gutter) {
+		min-height: 500px;
 	}
 
 	:global(.cm-editor) {

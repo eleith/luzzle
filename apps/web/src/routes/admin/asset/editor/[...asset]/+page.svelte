@@ -9,6 +9,7 @@
 	import { EditorView } from 'codemirror'
 	import { EditorState, Compartment } from '@codemirror/state'
 	import { configuredTheme } from '$lib/components/editor/themes/configured'
+	import { editorKeybindings } from '$lib/components/editor/keybindings'
 	import {
 		highlightSpecialChars,
 		drawSelection,
@@ -136,6 +137,7 @@
 		const initialTheme = configuredTheme(isDark ? 'dark' : 'light')
 
 		const extensions = [
+			editorKeybindings(),
 			highlightSpecialChars(),
 			history(),
 			drawSelection(),
