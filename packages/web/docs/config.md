@@ -1,124 +1,93 @@
 # Web Configuration Reference ⚙️
 
-The Luzzle Web Explorer is configured via `config.yaml`.
+The Web Explorer and Worker share `config.yaml`. Omitted settings use defaults.
 
-> [!NOTE]
-> The Web ecosystem uses its own specific configuration schema, distinct from
-> the CLI configuration. Make sure to specify the schema header at the top of
-> your YAML configuration file:
->
-> ```yaml
-> # yaml-language-server: $schema=../../config/src/lib/config/web.config.schema.json
-> ```
+## Editor support
 
----
+Add a schema header for completion and diagnostics. For `apps/web/demo/config.yaml`:
 
-## Core Settings
+```yaml
+# yaml-language-server: $schema=../../../packages/web/config/src/lib/config/web.config.schema.json
+url:
+  app: http://localhost:8080
+```
 
-<!-- markdownlint-disable MD013 -->
+The schema path is relative to the YAML file.
 
-| Path                | Env Variable        | Required | Default                 | Description                               |
-| ------------------- | ------------------- | -------- | ----------------------- | ----------------------------------------- |
-| `url.app`           | `LUZZLE_APP_URL`    | Yes      | `http://localhost:8080` | The public URL of your Explorer.          |
-| `url.app_assets`    | -                   | Yes      | `""`                    | Base URL for application-specific assets. |
-| `url.luzzle_assets` | -                   | Yes      | `""`                    | Base URL for general Luzzle assets.       |
-| `paths.database`    | -                   | Yes      | `./data/luzzle.sqlite`  | Path to the SQLite database.              |
-| `assets.salt`       | `LUZZLE_ASSET_SALT` | Yes      | `""`                    | Salt used to obfuscate asset file paths.  |
+## Environment references
 
-<!-- markdownlint-enable MD013 -->
+- `${VAR}` expands an environment variable; missing variables are errors.
+- `${VAR:-fallback}` supplies a value when unset. An empty variable counts as set.
+- `$$` escapes a dollar sign, so `$${VAR}` remains literal `${VAR}`.
 
----
+Expansion applies once to string values. Enum settings such as the AI provider
+and code-theme names use their supported literal values.
 
-## Storage 📦
+## URLs, storage and paths
 
-<!-- markdownlint-disable MD013 -->
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `url.app` | `${LUZZLE_APP_URL:-http://localhost:8080}` | Public site URL |
+| `url.app_assets` | `""` | Application asset base URL |
+| `url.luzzle_assets` | `""` | Published piece asset base URL |
+| `storage.root` | `./archive` | Markdown archive directory |
+| `paths.database` | `./data/luzzle.sqlite` | SQLite index |
+| `paths.assets` | `./assets/pieces` | Generated piece assets |
+| `paths.cache` | `./nginx` | Proxy cache |
+| `paths.static` | `./static` | Static files |
+| `assets.salt` | `${LUZZLE_ASSET_SALT:-}` | Asset-key salt |
 
-| Path                      | Env Variable | Required | Default      | Description                                        |
-| ------------------------- | ------------ | -------- | ------------ | -------------------------------------------------- |
-| `storage.type`            | -            | Yes      | `filesystem` | Type of storage backend: `filesystem` or `webdav`. |
-| `storage.config.root`     | -            | Yes      | `./archive`  | Path to your Markdown archive.                     |
-| `storage.config.url`      | -            | No       | `""`         | WebDAV server URL (required if type is `webdav`).  |
-| `storage.config.username` | -            | No       | `""`         | WebDAV username.                                   |
-| `storage.config.password` | -            | No       | `""`         | WebDAV password.                                   |
+## Authentication
 
-<!-- markdownlint-enable MD013 -->
+Omit `auth` for a public-only site with admin access disabled. Otherwise, provide
+a nonempty `secret` and exactly one provider.
 
----
+Credentials:
 
-## Authentication 🔐
+```yaml
+auth:
+  secret: ${LUZZLE_AUTH_SECRET}
+  credentials:
+    username: ${LUZZLE_AUTH_USERNAME}
+    password: ${LUZZLE_AUTH_PASSWORD}
+```
 
-Luzzle supports OIDC and simple Credentials.
+Or OIDC:
 
-<!-- markdownlint-disable MD013 -->
+```yaml
+auth:
+  secret: ${LUZZLE_AUTH_SECRET}
+  oidc:
+    issuer: ${OIDC_ISSUER}
+    clientId: ${OIDC_CLIENT_ID}
+    clientSecret: ${OIDC_CLIENT_SECRET}
+```
 
-| Path                        | Env Variable           | Required | Default            | Description                               |
-| --------------------------- | ---------------------- | -------- | ------------------ | ----------------------------------------- |
-| `auth.enabled`              | -                      | Yes      | `false`            | Set to `true` to enable editing features. |
-| `auth.secret`               | `LUZZLE_AUTH_SECRET`   | Yes\*    | -                  | A random secret for session encryption.   |
-| `auth.type`                 | -                      | Yes      | `oidc`             | `oidc` or `credentials`.                  |
-| `auth.oidc.name`            | -                      | No       | `"Single Sign-On"` | Display name for OIDC login provider.     |
-| `auth.oidc.issuer`          | -                      | No\*\*\* | -                  | OIDC issuer URL.                          |
-| `auth.oidc.clientId`        | -                      | No\*\*\* | -                  | OIDC client ID.                           |
-| `auth.oidc.clientSecret`    | -                      | No\*\*\* | -                  | OIDC client secret.                       |
-| `auth.credentials.username` | `LUZZLE_AUTH_USERNAME` | No\*\*   | -                  | Admin username.                           |
-| `auth.credentials.password` | `LUZZLE_AUTH_PASSWORD` | No\*\*   | -                  | Admin password.                           |
+All shown fields are required and nonempty. OIDC also accepts `name`, which
+defaults to `Single Sign-On`.
 
-<!-- markdownlint-enable MD013 -->
+## AI generation
 
-\* _Required if `auth.enabled` is `true`._  
-\*\* _Required if `auth.type` is `credentials`._  
-\*\*\* _Required if `auth.type` is `oidc` and `auth.enabled` is `true`._
+Omit `ai` to disable generation. Both fields are required when configured:
 
----
+```yaml
+ai:
+  provider: google
+  api_key: ${GOOGLE_API_KEY}
+```
 
-## Builder 🏗️
+## Other settings
 
-The builder settings define how the Explorer triggers background build processes.
+| Section | Purpose |
+| --- | --- |
+| `network` | Internal service addresses and development networking |
+| `worker.queue.path` | Workflow queue database path |
+| `sync` | Rclone archive and CDN synchronization |
+| `content.text` | Site title and description |
+| `content.component` | Custom page components |
+| `pieces` | Piece types, frontmatter field mappings and components |
+| `theme.globals`, `theme.light`, `theme.dark` | Fonts, spacing and color tokens |
+| `theme.markdown` | Sidenotes and Shiki code/editor themes |
 
-<!-- markdownlint-disable MD013 -->
-
-| Path             | Env Variable           | Required | Default | Description                               |
-| ---------------- | ---------------------- | -------- | ------- | ----------------------------------------- |
-| `builder.url`    | `LUZZLE_BUILDER_TOKEN` | Yes      | -       | The webhook URL to trigger a build.       |
-| `builder.method` | -                      | No       | `POST`  | The HTTP method used to call the webhook. |
-
-<!-- markdownlint-enable MD013 -->
-
----
-
-<!-- markdownlint-disable MD013 -->
-
-## Content & Theme 🎨
-
-| Path                       | Required | Default                      | Description                                                |
-| -------------------------- | -------- | ---------------------------- | ---------------------------------------------------------- |
-| `content.text.title`       | Yes      | `Luzzle Explorer`            | The title displayed on your site.                          |
-| `content.text.description` | Yes      | `A Luzzle Explorer instance` | The site description for SEO and OG tags.                  |
-| `theme.globals`            | No       | (Material)                   | Global design tokens (fonts, spacing, radii, breakpoints). |
-| `theme.light`              | No       | (Material)                   | Custom colors for light mode.                              |
-| `theme.dark`               | No       | (Material)                   | Custom colors for dark mode.                               |
-| `theme.markdown.code`      | Yes      | -                            | Shiki themes for code blocks and editor palettes.          |
-
-<!-- markdownlint-enable MD013 -->
-
----
-
-## AI Features 🤖
-
-<!-- markdownlint-disable MD013 -->
-
-| Path          | Env Variable     | Required | Default  | Description                  |
-| ------------- | ---------------- | -------- | -------- | ---------------------------- |
-| `ai.provider` | -                | No       | `google` | Currently supports `google`. |
-| `ai.api_key`  | `GOOGLE_API_KEY` | No       | -        | Your Google Gemini API key.  |
-
-<!-- markdownlint-enable MD013 -->
-
----
-
-## Pieces 🧩
-
-The `pieces` array in `config.yaml` tells Luzzle how to handle different types
-of records (maps icons, Open Graph cards, and page layout components to custom
-fields). You can learn how to structure these by exploring the sample file in
-the [demo/](../explorer/demo/config.yaml) folder.
+See the [demo configuration](../../../apps/web/demo/config.yaml) for a complete
+example, and the schema's field descriptions for defaults and details.

@@ -1,9 +1,12 @@
 # @luzzle/web.config ⚙️
 
-Internal shared package that defines config schemas (using JSON schema / AJV) and configuration loaders for the web stack.
+Shared YAML configuration loading for the Web Explorer and Worker. TypeBox
+provides validation, inferred types and the generated YAML editor schema.
 
-## Purpose 🧠
+Regenerate the editor schema:
 
-This package is a local monorepo dependency. It centralizes config validation logic so both the Web Explorer SvelteKit application and the background Worker process validate incoming YAML settings identically.
+```sh
+pnpm --filter @luzzle/web.config build:external-schema
+```
 
-It is not published to npm.
+See the [configuration reference](../docs/config.md) for settings and examples.
