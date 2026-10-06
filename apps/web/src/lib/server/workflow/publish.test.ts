@@ -1,4 +1,12 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+	createWorkflowQueue,
+	closeWorkflowQueue,
+	createPendingRun,
+	createCompletedRun,
+	claimNextRun,
+	type WorkflowQueue
+} from './publish.fixture.js'
 import { getLatestWorkflowRun, getWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
 import { findInFlightPublishRun, validateAuditForPublish, parsePiecesDiff } from './publish.js'
 
@@ -33,32 +41,130 @@ beforeEach(() => {
 })
 
 describe('findInFlightPublishRun', () => {
-	test('returns the in-flight Publish run', () => {
-		mocks.getLatestWorkflowRun.mockImplementation((_db, name) =>
-			name === 'Publish'
-				? makeRun({ id: 'pub-1', workflow_name: 'Publish', status: 'running' })
-				: null
-		)
-		expect(findInFlightPublishRun(db)?.id).toBe('pub-1')
+	let queue: WorkflowQueue
+
+	beforeEach(() => {
+		vi.setSystemTime(new Date('2026-06-20T00:00:00Z'))
+		queue = createWorkflowQueue()
 	})
 
-	test('returns the in-flight PublishAudit run', () => {
-		mocks.getLatestWorkflowRun.mockImplementation((_db, name) =>
-			name === 'PublishAudit' ? makeRun({ id: 'aud-1', status: 'pending' }) : null
-		)
-		expect(findInFlightPublishRun(db)?.id).toBe('aud-1')
+	afterEach(async () => {
+		vi.useRealTimers()
+		await closeWorkflowQueue(queue)
 	})
 
-	test('returns null when neither is in-flight', () => {
-		mocks.getLatestWorkflowRun.mockImplementation((_db, name) =>
-			makeRun({ workflow_name: name, status: 'completed' })
-		)
-		expect(findInFlightPublishRun(db)).toBeNull()
+	test.each([
+		{ name: 'Publish', status: 'pending' },
+		{ name: 'Publish', status: 'running' },
+		{ name: 'PublishAudit', status: 'pending' },
+		{ name: 'PublishAudit', status: 'running' }
+	])('finds an older $status $name behind a newer completed run', async ({ name, status }) => {
+		const old = await createPendingRun(queue.backend, name)
+		await claimNextRun(queue.backend)
+		vi.setSystemTime(new Date('2026-06-20T01:00:00Z'))
+		await createCompletedRun(queue.backend, name)
+		if (status === 'pending') {
+			await queue.backend.rescheduleWorkflowRunAfterFailedStepAttempt({
+				workflowRunId: old.id,
+				workerId: 'fixture-worker',
+				error: { message: 'retry' },
+				availableAt: new Date()
+			})
+		}
+		expect(await findInFlightPublishRun(queue.backend)).toEqual({ id: old.id })
 	})
 
-	test('returns null when there are no runs', () => {
-		mocks.getLatestWorkflowRun.mockReturnValue(null)
-		expect(findInFlightPublishRun(db)).toBeNull()
+	test('returns an active run when both workflows have pending work', async () => {
+		const audit = await createPendingRun(queue.backend, 'PublishAudit')
+		const publish = await createPendingRun(queue.backend, 'Publish')
+		const active = await findInFlightPublishRun(queue.backend)
+		expect([audit.id, publish.id]).toContain(active?.id)
+	})
+
+	test('ignores finished runs and unrelated active workflows', async () => {
+		await createCompletedRun(queue.backend, 'PublishAudit')
+		await createPendingRun(queue.backend, 'Publish')
+		const failed = await claimNextRun(queue.backend)
+		await queue.backend.failWorkflowRun({
+			workflowRunId: failed.id,
+			workerId: 'fixture-worker',
+			error: { message: 'failed' },
+			retryPolicy: {
+				maximumAttempts: 1,
+				initialInterval: '1s',
+				backoffCoefficient: 2,
+				maximumInterval: '1s'
+			}
+		})
+		await createPendingRun(queue.backend, 'Preview')
+		expect(await findInFlightPublishRun(queue.backend)).toBeNull()
+	})
+
+	test.each(['Publish', 'PublishAudit'])(
+		'finds an active %s in the fifth-newest position',
+		async (name) => {
+			const old = await createPendingRun(queue.backend, name)
+			await claimNextRun(queue.backend)
+			vi.setSystemTime(new Date('2026-06-20T01:00:00Z'))
+			for (let i = 0; i < 4; i++) await createCompletedRun(queue.backend, name)
+			expect(await findInFlightPublishRun(queue.backend)).toEqual({ id: old.id })
+		}
+	)
+
+	test.each(['Publish', 'PublishAudit'])(
+		'accepts the known limit: a sixth-newest active %s is not detected',
+		async (name) => {
+			const old = await createPendingRun(queue.backend, name)
+			await claimNextRun(queue.backend)
+			vi.setSystemTime(new Date('2026-06-20T01:00:00Z'))
+			for (let i = 0; i < 5; i++) await createCompletedRun(queue.backend, name)
+			expect(await findInFlightPublishRun(queue.backend)).toBeNull()
+			expect((await queue.backend.getWorkflowRun({ workflowRunId: old.id }))?.status).toBe(
+				'running'
+			)
+		}
+	)
+
+	test('checks only the latest five per workflow without paging, status filters or counts', async () => {
+		for (let i = 0; i < 5; i++) {
+			await createCompletedRun(queue.backend, 'Publish')
+			await createCompletedRun(queue.backend, 'PublishAudit')
+		}
+		await createPendingRun(queue.backend, 'Preview')
+		const list = vi.spyOn(queue.backend, 'listWorkflowRuns')
+		const count = vi.spyOn(queue.backend, 'countWorkflowRuns')
+		expect(await findInFlightPublishRun(queue.backend)).toBeNull()
+		expect(list.mock.calls.map(([params]) => params)).toEqual([
+			{ workflowName: 'Publish', limit: 5 },
+			{ workflowName: 'PublishAudit', limit: 5 }
+		])
+		expect(count).not.toHaveBeenCalled()
+	})
+
+	test('does not miss a running run rescheduled to pending during lookup', async () => {
+		const run = await createPendingRun(queue.backend, 'Publish')
+		await claimNextRun(queue.backend)
+		const original = queue.backend.listWorkflowRuns.bind(queue.backend)
+		let rescheduled = false
+		vi.spyOn(queue.backend, 'listWorkflowRuns').mockImplementation(async (params) => {
+			const page = await original(params)
+			if (params.workflowName === 'Publish' && !rescheduled) {
+				await queue.backend.rescheduleWorkflowRunAfterFailedStepAttempt({
+					workflowRunId: run.id,
+					workerId: 'fixture-worker',
+					error: { message: 'retry' },
+					availableAt: new Date()
+				})
+				rescheduled = true
+			}
+			return page
+		})
+		expect(await findInFlightPublishRun(queue.backend)).toEqual({ id: run.id })
+		expect((await queue.backend.getWorkflowRun({ workflowRunId: run.id }))?.status).toBe('pending')
+	})
+
+	test('returns null when there are no runs', async () => {
+		expect(await findInFlightPublishRun(queue.backend)).toBeNull()
 	})
 })
 

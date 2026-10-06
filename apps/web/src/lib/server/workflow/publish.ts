@@ -1,18 +1,32 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { getLatestWorkflowRun, getWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
+import type { BackendSqlite } from 'openworkflow/sqlite'
+import { getLatestWorkflowRun, getWorkflowRun } from '@luzzle/web.jobs'
 import type { PiecesDiff } from '@luzzle/core'
 
-const PUBLISH_WORKFLOWS = ['Publish', 'PublishAudit'] as const
-const IN_FLIGHT_STATES = new Set(['pending', 'running'])
 const COMPLETED_STATES = new Set(['completed', 'succeeded'])
+let publishAdmission: Promise<void> = Promise.resolve()
 
-// Publish and PublishAudit are mutually exclusive: an audit's bisync mutates the archive a publish reads.
-export function findInFlightPublishRun(db: DatabaseSync): WorkflowRunRow | null {
-	for (const name of PUBLISH_WORKFLOWS) {
-		const run = getLatestWorkflowRun(db, name)
-		if (run && IN_FLIGHT_STATES.has(run.status)) {
-			return run
-		}
+export async function withPublishAdmission<T>(operation: () => Promise<T>): Promise<T> {
+	const previous = publishAdmission
+	let release!: () => void
+	publishAdmission = new Promise<void>((resolve) => {
+		release = resolve
+	})
+	await previous
+	try {
+		return await operation()
+	} finally {
+		release()
+	}
+}
+
+export async function findInFlightPublishRun(
+	backend: Pick<BackendSqlite, 'listWorkflowRuns'>
+): Promise<{ id: string } | null> {
+	for (const workflowName of ['Publish', 'PublishAudit']) {
+		const { data } = await backend.listWorkflowRuns({ workflowName, limit: 5 })
+		const active = data.find((run) => run.status === 'pending' || run.status === 'running')
+		if (active) return { id: active.id }
 	}
 	return null
 }

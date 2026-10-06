@@ -5,6 +5,7 @@ import { BackendSqlite } from 'openworkflow/sqlite'
 import { config } from '$lib/server/config.js'
 
 let openWorkflowInstance: OpenWorkflow | null = null
+let openWorkflowBackendInstance: BackendSqlite | null = null
 let openWorkflowDbInstance: DatabaseSync | null = null
 
 function resolveOpenWorkflowDbPath(): string {
@@ -13,11 +14,16 @@ function resolveOpenWorkflowDbPath(): string {
 	return path.resolve(process.cwd(), openWorkflowPath)
 }
 
+export function getOpenWorkflowBackend(): BackendSqlite {
+	if (!openWorkflowBackendInstance) {
+		openWorkflowBackendInstance = BackendSqlite.connect(resolveOpenWorkflowDbPath())
+	}
+	return openWorkflowBackendInstance
+}
+
 export function getOpenWorkflow(): OpenWorkflow {
 	if (!openWorkflowInstance) {
-		const dbPath = resolveOpenWorkflowDbPath()
-		const backend = BackendSqlite.connect(dbPath)
-		openWorkflowInstance = new OpenWorkflow({ backend })
+		openWorkflowInstance = new OpenWorkflow({ backend: getOpenWorkflowBackend() })
 	}
 	return openWorkflowInstance
 }
