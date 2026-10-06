@@ -14,6 +14,16 @@ export interface WorkerContext {
 	db: Kysely<AppDatabase>
 }
 
+export function createPhaseContext(
+	ctx: WorkerContext,
+	jobId: string,
+	phase: string
+): WorkerContext {
+	if (!(ctx.logger instanceof PhaseLogger)) return ctx
+	const logger = ctx.logger.forPhase({ jobId, phase })
+	return { ...ctx, logger, rclone: ctx.rclone.withLogger(logger) }
+}
+
 let workerContext: WorkerContext | null = null
 
 export function setWorkerContext(ctx: WorkerContext): void {

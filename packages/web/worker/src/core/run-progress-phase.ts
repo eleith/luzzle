@@ -1,6 +1,6 @@
 import type { Step, StepContext } from './step.js'
 import type { JobProgress } from './job-progress.js'
-import { PhaseLogger } from './phase-logger.js'
+import { createPhaseContext } from '../services/context.js'
 
 export type DurableStepApi = {
 	run<Output>(
@@ -18,16 +18,12 @@ export async function runProgressPhase<I, O>(
 	input: I
 ): Promise<O | undefined> {
 	return step.run<O | undefined>({ name: jobStep.name }, async () => {
-		const { logger } = ctx
-
-		if (logger instanceof PhaseLogger) {
-			await logger.setActivePhase({ jobId, phase: jobStep.name })
-		}
+		const phaseCtx = createPhaseContext(ctx, jobId, jobStep.name)
 
 		await progress.start(jobId, jobStep.name)
 
 		try {
-			const result = await jobStep.run(input, ctx)
+			const result = await jobStep.run(input, phaseCtx)
 
 			if (result.status === 'skipped') {
 				await progress.skip(jobId, jobStep.name, result.message || 'skipped')
@@ -39,10 +35,6 @@ export async function runProgressPhase<I, O>(
 		} catch (err) {
 			await progress.fail(jobId, jobStep.name, err)
 			throw err
-		} finally {
-			if (logger instanceof PhaseLogger) {
-				logger.clearActivePhase()
-			}
 		}
 	})
 }
