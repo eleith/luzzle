@@ -1,11 +1,11 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { getOpenWorkflow, getOpenWorkflowDb } from '$lib/server/workflow/index.js'
+import { getOpenWorkflow, getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
 import { getWorkflowRun } from '@luzzle/web.jobs'
 import { testConnectivity } from './connectivity.js'
 
 vi.mock('$lib/server/workflow/index.js', () => ({
 	getOpenWorkflow: vi.fn(),
-	getOpenWorkflowDb: vi.fn()
+	getOpenWorkflowBackend: vi.fn()
 }))
 
 vi.mock('@luzzle/web.jobs', () => ({
@@ -18,7 +18,7 @@ vi.mock('@luzzle/web.jobs/specs', () => ({
 
 const mocks = {
 	getOpenWorkflow: vi.mocked(getOpenWorkflow),
-	getOpenWorkflowDb: vi.mocked(getOpenWorkflowDb),
+	getOpenWorkflowBackend: vi.mocked(getOpenWorkflowBackend),
 	getWorkflowRun: vi.mocked(getWorkflowRun)
 }
 
@@ -27,16 +27,18 @@ const runWorkflow = vi.fn()
 beforeEach(() => {
 	vi.clearAllMocks()
 	mocks.getOpenWorkflow.mockReturnValue({ runWorkflow } as never)
-	mocks.getOpenWorkflowDb.mockReturnValue({} as never)
+	mocks.getOpenWorkflowBackend.mockReturnValue({} as never)
 	runWorkflow.mockResolvedValue({ workflowRun: { id: 'run-1' } })
 })
 
 describe('testConnectivity', () => {
 	test('triggers the workflow and polls until it completes', async () => {
-		mocks.getWorkflowRun.mockReturnValueOnce({ status: 'running' } as never).mockReturnValueOnce({
-			status: 'completed',
-			output: JSON.stringify({ ok: true })
-		} as never)
+		mocks.getWorkflowRun
+			.mockResolvedValueOnce({ status: 'running' } as never)
+			.mockResolvedValueOnce({
+				status: 'completed',
+				output: JSON.stringify({ ok: true })
+			} as never)
 
 		const result = await testConnectivity('archive', { pollIntervalMs: 1 })
 
@@ -48,7 +50,7 @@ describe('testConnectivity', () => {
 	})
 
 	test('returns not-ok when the run fails', async () => {
-		mocks.getWorkflowRun.mockReturnValue({ status: 'failed', error: 'boom' } as never)
+		mocks.getWorkflowRun.mockResolvedValue({ status: 'failed', error: 'boom' } as never)
 
 		const result = await testConnectivity('cdn', { pollIntervalMs: 1 })
 
@@ -56,7 +58,7 @@ describe('testConnectivity', () => {
 	})
 
 	test('returns a generic reason when a failed run has no error message', async () => {
-		mocks.getWorkflowRun.mockReturnValue({ status: 'canceled', error: null } as never)
+		mocks.getWorkflowRun.mockResolvedValue({ status: 'canceled', error: null } as never)
 
 		const result = await testConnectivity('cdn', { pollIntervalMs: 1 })
 
@@ -64,7 +66,7 @@ describe('testConnectivity', () => {
 	})
 
 	test('returns not-ok when the output cannot be parsed', async () => {
-		mocks.getWorkflowRun.mockReturnValue({ status: 'completed', output: 'not json' } as never)
+		mocks.getWorkflowRun.mockResolvedValue({ status: 'completed', output: 'not json' } as never)
 
 		const result = await testConnectivity('archive', { pollIntervalMs: 1 })
 
@@ -72,7 +74,7 @@ describe('testConnectivity', () => {
 	})
 
 	test('times out waiting for the worker', async () => {
-		mocks.getWorkflowRun.mockReturnValue({ status: 'running' } as never)
+		mocks.getWorkflowRun.mockResolvedValue({ status: 'running' } as never)
 
 		const result = await testConnectivity('archive', { pollIntervalMs: 5, timeoutMs: 20 })
 

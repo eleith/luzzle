@@ -1,10 +1,9 @@
-import { describe, expect, test } from 'vitest'
-import { DatabaseSync } from 'node:sqlite'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { BackendSqlite } from 'openworkflow/sqlite'
 import {
 	initOpenWorkflow,
 	getOpenWorkflow,
 	getLatestWorkflowRun,
-	getWorkflowRunByJobId,
 	getWorkflowRun,
 	getStepAttempts,
 	jobProgressPurgeSpec,
@@ -21,103 +20,269 @@ describe('openworkflow client initialization', () => {
 		const client = initOpenWorkflow({ dbPath: ':memory:' })
 		expect(client).toBeDefined()
 		expect(getOpenWorkflow()).toBe(client)
+		expect(initOpenWorkflow({ dbPath: ':memory:' })).toBe(client)
 	})
 })
 
-describe('database helpers', () => {
-	test('queries workflow runs and step attempts', () => {
-		const db = new DatabaseSync(':memory:')
+type CreateRunParams = Parameters<BackendSqlite['createWorkflowRun']>[0]
+type RunError = Parameters<BackendSqlite['failWorkflowRun']>[0]['error']
+type StepAttempt = Awaited<ReturnType<BackendSqlite['createStepAttempt']>>
 
-		// Create tables
-		db.exec(`
-			CREATE TABLE workflow_runs (
-				id TEXT PRIMARY KEY,
-				workflow_name TEXT NOT NULL,
-				status TEXT NOT NULL,
-				error TEXT,
-				input TEXT NOT NULL,
-				output TEXT,
-				finished_at TEXT,
-				created_at TEXT NOT NULL
-			)
-		`)
+const workerId = 'read-helper-test'
+const initialTime = new Date('2026-06-02T05:00:00.000Z')
 
-		db.exec(`
-			CREATE TABLE step_attempts (
-				id TEXT PRIMARY KEY,
-				workflow_run_id TEXT NOT NULL,
-				step_name TEXT NOT NULL,
-				status TEXT NOT NULL,
-				started_at TEXT,
-				finished_at TEXT,
-				error TEXT,
-				created_at TEXT NOT NULL
-			)
-		`)
+describe('SDK read helpers', () => {
+	let backend: BackendSqlite
 
-		// 1. Test getLatestWorkflowRun when no runs exist
-		expect(getLatestWorkflowRun(db, 'Publish')).toBeNull()
+	beforeEach(() => {
+		vi.useFakeTimers({ toFake: ['Date'] })
+		vi.setSystemTime(initialTime)
+		backend = BackendSqlite.connect(':memory:')
+	})
 
-		// Insert dummy runs
-		db.prepare(`
-			INSERT INTO workflow_runs (id, workflow_name, status, error, input, output, finished_at, created_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		`).run('run-1', 'Publish', 'completed', null, '{}', 'ok', null, '2026-06-02T05:00:00Z')
+	afterEach(async () => {
+		vi.restoreAllMocks()
+		vi.useRealTimers()
+		await backend.stop()
+	})
 
-		db.prepare(`
-			INSERT INTO workflow_runs (id, workflow_name, status, error, input, output, finished_at, created_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		`).run('run-2', 'Publish', 'failed', 'some error', '{"jobId":123}', null, null, '2026-06-02T05:10:00Z')
+	function createRun(overrides: Partial<CreateRunParams> = {}) {
+		return backend.createWorkflowRun({
+			workflowName: 'Publish',
+			version: null,
+			idempotencyKey: null,
+			config: {},
+			context: null,
+			input: { jobId: 123 },
+			parentStepAttemptNamespaceId: null,
+			parentStepAttemptId: null,
+			availableAt: null,
+			deadlineAt: null,
+			...overrides,
+		})
+	}
 
-		// Test getLatestWorkflowRun returns the latest by created_at DESC
-		const latest = getLatestWorkflowRun(db, 'Publish')
-		expect(latest).not.toBeNull()
-		expect(latest!.id).toBe('run-2')
-		expect(latest!.error).toBe('some error')
+	async function claimRun(id: string) {
+		const claimed = await backend.claimWorkflowRun({ workerId, leaseDurationMs: 60_000 })
+		expect(claimed?.id).toBe(id)
+	}
 
-		// 2. Test getWorkflowRunByJobId
-		const runByJobId = getWorkflowRunByJobId(db, 123)
-		expect(runByJobId).not.toBeNull()
-		expect(runByJobId!.id).toBe('run-2')
+	function createStep(workflowRunId: string, stepName: string) {
+		return backend.createStepAttempt({
+			workflowRunId,
+			workerId,
+			stepName,
+			kind: 'function',
+			config: {},
+			context: null,
+		})
+	}
 
-		const runByNonexistentJobId = getWorkflowRunByJobId(db, 999)
-		expect(runByNonexistentJobId).toBeNull()
+	test('returns null or an empty list for missing runs', async () => {
+		expect(await getLatestWorkflowRun(backend, 'Publish')).toBeNull()
+		expect(await getWorkflowRun(backend, 'missing')).toBeNull()
+		expect(await getStepAttempts(backend, 'missing')).toEqual([])
+	})
 
-		// 3. Test getWorkflowRun
-		const run = getWorkflowRun(db, 'run-1')
-		expect(run).not.toBeNull()
-		expect(run!.id).toBe('run-1')
+	test('returns the newest matching workflow as the existing DTO, not an SDK run', async () => {
+		const first = await createRun()
+		vi.setSystemTime(new Date('2026-06-02T05:10:00.000Z'))
+		const latest = await createRun({ input: { jobId: 456, assets: ['cover'] } })
+		vi.setSystemTime(new Date('2026-06-02T05:20:00.000Z'))
+		await createRun({ workflowName: 'Preview' })
 
-		const nonexistentRun = getWorkflowRun(db, 'nonexistent')
-		expect(nonexistentRun).toBeNull()
+		expect(await getLatestWorkflowRun(backend, 'Publish')).toEqual({
+			id: latest.id,
+			workflow_name: 'Publish',
+			status: 'pending',
+			error: null,
+			input: '{"jobId":456,"assets":["cover"]}',
+			output: null,
+			finished_at: null,
+			created_at: '2026-06-02T05:10:00.000Z',
+		})
+		expect(await getWorkflowRun(backend, latest.id)).toEqual(
+			await getLatestWorkflowRun(backend, 'Publish')
+		)
+		expect((await getWorkflowRun(backend, first.id))?.id).toBe(first.id)
+		expect(await getLatestWorkflowRun(backend, 'Unknown')).toBeNull()
+	})
 
-		// 4. Test getStepAttempts
-		db.prepare(`
-			INSERT INTO step_attempts (id, workflow_run_id, step_name, status, started_at, finished_at, error, created_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		`).run('step-1', 'run-1', 'step-parse', 'completed', '2026-06-02T05:01:00Z', '2026-06-02T05:02:00Z', null, '2026-06-02T05:01:00Z')
+	test.each([
+		{ input: { jobId: 123 }, output: { published: ['cover'], count: 1 } },
+		{ input: 'input string', output: 'ok' },
+		{ input: '', output: '' },
+		{ input: false, output: false },
+		{ input: 0, output: 0 },
+		{ input: null, output: null },
+	])('serializes input/output JSON and completed ISO timestamps: %j', async ({ input, output }) => {
+		const run = await createRun({ input })
+		await claimRun(run.id)
+		vi.setSystemTime(new Date('2026-06-02T05:01:00.000Z'))
+		await backend.completeWorkflowRun({ workflowRunId: run.id, workerId, output })
 
-		db.prepare(`
-			INSERT INTO step_attempts (id, workflow_run_id, step_name, status, started_at, finished_at, error, created_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		`).run('step-2', 'run-1', 'step-transform', 'failed', '2026-06-02T05:03:00Z', '2026-06-02T05:04:00Z', 'transform error', '2026-06-02T05:03:00Z')
-
-		const steps = getStepAttempts(db, 'run-1')
-		expect(steps).toHaveLength(2)
-		expect(steps[0]).toEqual({
-			phase: 'step-parse',
+		expect(await getWorkflowRun(backend, run.id)).toEqual({
+			id: run.id,
+			workflow_name: 'Publish',
 			status: 'completed',
-			started_at: '2026-06-02T05:01:00Z',
-			finished_at: '2026-06-02T05:02:00Z',
-			message: null,
+			error: null,
+			input: JSON.stringify(input),
+			output: output === null ? null : JSON.stringify(output),
+			finished_at: '2026-06-02T05:01:00.000Z',
+			created_at: initialTime.toISOString(),
 		})
-		expect(steps[1]).toEqual({
-			phase: 'step-transform',
+	})
+
+	test.each([
+		{ name: 'PublishError', message: 'upload failed', stack: 'stack', detail: { code: 503 } },
+		'legacy failure',
+		'',
+	])('preserves workflow error JSON encoding: %j', async error => {
+		const run = await createRun()
+		await claimRun(run.id)
+		vi.setSystemTime(new Date('2026-06-02T05:02:00.000Z'))
+		await backend.failWorkflowRun({
+			workflowRunId: run.id,
+			workerId,
+			// The public mutation type requires an object, but SQLite also stores
+			// string JSON errors. Exercise that compatibility through the real API.
+			error: error as unknown as RunError,
+			retryPolicy: {
+				maximumAttempts: 1,
+				initialInterval: '1s',
+				maximumInterval: '1s',
+				backoffCoefficient: 1,
+			},
+		})
+
+		const expected = {
+			id: run.id,
+			workflow_name: 'Publish',
 			status: 'failed',
-			started_at: '2026-06-02T05:03:00Z',
-			finished_at: '2026-06-02T05:04:00Z',
-			message: 'transform error',
+			error: JSON.stringify(error),
+			input: '{"jobId":123}',
+			output: null,
+			finished_at: '2026-06-02T05:02:00.000Z',
+			created_at: initialTime.toISOString(),
+		}
+		expect(await getWorkflowRun(backend, run.id)).toEqual(expected)
+		expect(await getLatestWorkflowRun(backend, 'Publish')).toEqual(expected)
+	})
+
+	test('maps completed and running step attempts, omitting SDK internals', async () => {
+		const run = await createRun()
+		await claimRun(run.id)
+		expect(await getStepAttempts(backend, run.id)).toEqual([])
+		const completed = await createStep(run.id, 'parse')
+		vi.setSystemTime(new Date('2026-06-02T05:01:00.000Z'))
+		await backend.completeStepAttempt({
+			workflowRunId: run.id,
+			stepAttemptId: completed.id,
+			workerId,
+			output: { internalStepResult: true },
 		})
+		await createStep(run.id, 'transform')
+
+		expect(await getStepAttempts(backend, run.id)).toEqual([
+			{
+				phase: 'parse',
+				status: 'completed',
+				started_at: initialTime.toISOString(),
+				finished_at: '2026-06-02T05:01:00.000Z',
+				message: null,
+			},
+			{
+				phase: 'transform',
+				status: 'running',
+				started_at: '2026-06-02T05:01:00.000Z',
+				finished_at: null,
+				message: null,
+			},
+		])
+	})
+
+	test('maps an absent SDK step start time to the existing nullable DTO field', async () => {
+		const run = await createRun()
+		await claimRun(run.id)
+		await createStep(run.id, 'wait')
+		const original = backend.listStepAttempts.bind(backend)
+		vi.spyOn(backend, 'listStepAttempts').mockImplementation(async params => {
+			const page = await original(params)
+			return { ...page, data: page.data.map(attempt => ({ ...attempt, startedAt: null })) }
+		})
+		expect(await getStepAttempts(backend, run.id)).toEqual([{
+			phase: 'wait', status: 'running', started_at: null, finished_at: null, message: null,
+		}])
+	})
+
+	test.each([
+		{ name: 'TransformError', message: 'transform failed', detail: ['cover'] },
+		'legacy step failure',
+		'',
+	])('preserves step error JSON as message: %j', async error => {
+		const run = await createRun()
+		await claimRun(run.id)
+		const step = await createStep(run.id, 'transform')
+		vi.setSystemTime(new Date('2026-06-02T05:03:00.000Z'))
+		await backend.failStepAttempt({
+			workflowRunId: run.id,
+			stepAttemptId: step.id,
+			workerId,
+			error: error as unknown as RunError,
+		})
+
+		expect(await getStepAttempts(backend, run.id)).toEqual([{
+			phase: 'transform',
+			status: 'failed',
+			started_at: initialTime.toISOString(),
+			finished_at: '2026-06-02T05:03:00.000Z',
+			message: JSON.stringify(error),
+		}])
+	})
+
+	test('follows every SDK page in chronological order, including timestamp ties and retries', async () => {
+		const run = await createRun()
+		await claimRun(run.id)
+		const attempts: StepAttempt[] = []
+		for (let i = 0; i < 7; i++) {
+			// Shared timestamps also exercise the SDK cursor ID tie-breaker.
+			vi.setSystemTime(new Date(initialTime.getTime() + Math.floor(i / 3) * 1000))
+			const step = await createStep(run.id, `phase-${i % 3}`)
+			attempts.push(await backend.completeStepAttempt({
+				workflowRunId: run.id,
+				stepAttemptId: step.id,
+				workerId,
+				output: null,
+			}))
+		}
+		const other = await createRun({ workflowName: 'Preview' })
+		await claimRun(other.id)
+		await createStep(other.id, 'not-this-run')
+
+		const original = backend.listStepAttempts.bind(backend)
+		const list = vi.spyOn(backend, 'listStepAttempts')
+			.mockImplementation(params => original({ ...params, limit: 2 }))
+		const rows = await getStepAttempts(backend, run.id)
+		const expected = attempts
+			.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))
+			.map(attempt => ({
+				phase: attempt.stepName,
+				status: 'completed',
+				started_at: attempt.startedAt!.toISOString(),
+				finished_at: attempt.finishedAt!.toISOString(),
+				message: null,
+			}))
+
+		expect(rows).toHaveLength(7)
+		expect(rows).toEqual(expected)
+		expect(list).toHaveBeenCalledTimes(4)
+		for (let i = 1; i < list.mock.calls.length; i++) {
+			const previousPage = await list.mock.results[i - 1].value
+			expect(list.mock.calls[i][0]).toEqual({
+				workflowRunId: run.id,
+				after: previousPage.pagination.next,
+			})
+		}
 	})
 })
 

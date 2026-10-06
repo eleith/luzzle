@@ -44,64 +44,69 @@ export interface StepAttemptRow {
 	message: string | null
 }
 
-/**
- * Finds the latest workflow run for a given workflow name.
- */
-export function getLatestWorkflowRun(
-	db: DatabaseSync,
-	workflowName: string
-): WorkflowRunRow | null {
-	const stmt = db.prepare(`
-		SELECT id, workflow_name, status, error, input, output, finished_at, created_at FROM workflow_runs
-		WHERE workflow_name = ?
-		ORDER BY created_at DESC
-		LIMIT 1
-	`)
-	const row = stmt.get(workflowName)
-	return row ? (row as unknown as WorkflowRunRow) : null
+type WorkflowRun = NonNullable<Awaited<ReturnType<BackendSqlite['getWorkflowRun']>>>
+
+function toWorkflowRunRow(run: WorkflowRun): WorkflowRunRow {
+	return {
+		id: run.id,
+		workflow_name: run.workflowName,
+		status: run.status,
+		error: run.error === null ? null : JSON.stringify(run.error),
+		// Keep the existing non-null string DTO even for SDK runs with no input.
+		input: JSON.stringify(run.input),
+		output: run.output === null ? null : JSON.stringify(run.output),
+		finished_at: run.finishedAt?.toISOString() ?? null,
+		created_at: run.createdAt.toISOString(),
+	}
 }
 
 /**
- * Finds a workflow run by the jobId nested inside its JSON input.
+ * Finds the latest workflow run for a given workflow name.
  */
-export function getWorkflowRunByJobId(db: DatabaseSync, jobId: number): WorkflowRunRow | null {
-	const stmt = db.prepare(`
-		SELECT id, workflow_name, status, error, input, output, finished_at, created_at FROM workflow_runs
-		WHERE json_extract(input, '$.jobId') = ?
-		LIMIT 1
-	`)
-	const row = stmt.get(jobId)
-	return row ? (row as unknown as WorkflowRunRow) : null
+export async function getLatestWorkflowRun(
+	backend: Pick<BackendSqlite, 'listWorkflowRuns'>,
+	workflowName: string
+): Promise<WorkflowRunRow | null> {
+	// The SDK lists workflow runs newest first.
+	const { data } = await backend.listWorkflowRuns({ workflowName, limit: 1 })
+	return data[0] ? toWorkflowRunRow(data[0]) : null
 }
 
 /**
  * Finds a workflow run by its unique ID.
  */
-export function getWorkflowRun(
-	db: DatabaseSync,
-	id: string,
-): WorkflowRunRow | null {
-	const stmt = db.prepare(`
-		SELECT id, workflow_name, status, error, input, output, finished_at, created_at FROM workflow_runs
-		WHERE id = ?
-		LIMIT 1
-	`);
-	const row = stmt.get(id);
-	return row ? (row as unknown as WorkflowRunRow) : null;
+export async function getWorkflowRun(
+	backend: Pick<BackendSqlite, 'getWorkflowRun'>,
+	id: string
+): Promise<WorkflowRunRow | null> {
+	const run = await backend.getWorkflowRun({ workflowRunId: id })
+	return run ? toWorkflowRunRow(run) : null
 }
 
 /**
- * Lists all step attempts for a given workflow run ID.
+ * Lists all step attempts for a given workflow run ID, oldest first.
  */
-export function getStepAttempts(db: DatabaseSync, workflowRunId: string): StepAttemptRow[] {
-	const stmt = db.prepare(`
-		SELECT step_name as phase, status, started_at, finished_at, error as message
-		FROM step_attempts
-		WHERE workflow_run_id = ?
-		ORDER BY created_at ASC
-	`)
-	const rows = stmt.all(workflowRunId)
-	return rows as unknown as StepAttemptRow[]
+export async function getStepAttempts(
+	backend: Pick<BackendSqlite, 'listStepAttempts'>,
+	workflowRunId: string
+): Promise<StepAttemptRow[]> {
+	const rows: StepAttemptRow[] = []
+	let after: string | undefined
+
+	do {
+		// Forward SDK pagination preserves chronological order across pages.
+		const page = await backend.listStepAttempts({ workflowRunId, after })
+		rows.push(...page.data.map(attempt => ({
+			phase: attempt.stepName,
+			status: attempt.status,
+			started_at: attempt.startedAt?.toISOString() ?? null,
+			finished_at: attempt.finishedAt?.toISOString() ?? null,
+			message: attempt.error === null ? null : JSON.stringify(attempt.error),
+		})))
+		after = page.pagination.next ?? undefined
+	} while (after)
+
+	return rows
 }
 
 /**

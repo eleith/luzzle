@@ -1,7 +1,7 @@
 import { db, type JobProgressRow } from '$lib/server/database/index.js'
 import { createEventStream } from '../sse.js'
 import { WORKFLOW_POLL_INTERVAL_MS } from '../constants.js'
-import { getOpenWorkflowDb } from './index.js'
+import { getOpenWorkflowBackend } from './index.js'
 import { getWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
 
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled'])
@@ -56,7 +56,8 @@ async function pollOnce(
 	jobId: string,
 	jobClass: string | string[],
 	cursors: Cursors,
-	emit: Emit
+	emit: Emit,
+	signal: AbortSignal
 ): Promise<boolean> {
 	try {
 		let job: { class: string; state: string; result: unknown; errors: unknown } | null = null
@@ -64,8 +65,8 @@ async function pollOnce(
 
 		// Query OpenWorkflow
 		try {
-			const openWorkflowDb = getOpenWorkflowDb()
-			const run = getWorkflowRun(openWorkflowDb, jobId)
+			const run = await getWorkflowRun(getOpenWorkflowBackend(), jobId)
+			if (signal.aborted) return true
 			if (run) {
 				let state = 'waiting'
 				if (run.status === 'running') state = 'running'
@@ -100,9 +101,10 @@ async function pollOnce(
 
 		let phases: JobProgressRow[] = []
 		if (runId) {
+			if (signal.aborted) return true
 			try {
-				const openWorkflowDb = getOpenWorkflowDb()
-				const rows = getStepAttempts(openWorkflowDb, runId)
+				const rows = await getStepAttempts(getOpenWorkflowBackend(), runId)
+				if (signal.aborted) return true
 				phases = rows.map((r) => {
 					let status = 'waiting'
 					if (r.status === 'running') status = 'running'
@@ -129,7 +131,9 @@ async function pollOnce(
 
 		let hasNewLogs = false
 		for (const phase of phases) {
+			if (signal.aborted) return true
 			const newLogs = await fetchNewLogs(jobId, phase.phase, cursors[phase.phase] ?? 0)
+			if (signal.aborted) return true
 			if (newLogs.length > 0) {
 				hasNewLogs = true
 				emit('log', newLogs)
@@ -167,7 +171,7 @@ export function streamJobProgress({
 	async function poll() {
 		try {
 			while (!events.signal.aborted) {
-				if (await pollOnce(jobId, jobClass, cursors, events.emit)) break
+				if (await pollOnce(jobId, jobClass, cursors, events.emit, events.signal)) break
 				await waitForNextPoll(events.signal)
 			}
 		} catch (error) {

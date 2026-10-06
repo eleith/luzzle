@@ -1,10 +1,6 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import {
-	getOpenWorkflow,
-	getOpenWorkflowBackend,
-	getOpenWorkflowDb
-} from '$lib/server/workflow/index.js'
+import { getOpenWorkflow, getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
 import {
 	findInFlightPublishRun,
 	validateAuditForPublish,
@@ -25,7 +21,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			const bisync = body?.bisync === true
 
 			if (auditRunId) {
-				const guard = validateAuditForPublish(getOpenWorkflowDb(), auditRunId)
+				const guard = await validateAuditForPublish(getOpenWorkflowBackend(), auditRunId)
 				if (!guard.ok) {
 					return json({ message: guard.reason }, { status: 412 })
 				}

@@ -2,7 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { config } from '$lib/server/config'
 import { getPieceStats, getAssetStats } from '../dashboardStats.js'
 import { getRecentlyEditedPieces } from '../pieces.js'
-import { getOpenWorkflowDb } from '../workflow/index.js'
+import { getOpenWorkflowBackend } from '../workflow/index.js'
 import { getLatestWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
 import { makeConfig, credentialsAuth, oidcAuth } from '../config.fixture'
 import { loadDashboardPage } from './dashboard.js'
@@ -36,7 +36,7 @@ vi.mock('../pieces.js', () => ({
 }))
 
 vi.mock('../workflow/index.js', () => ({
-	getOpenWorkflowDb: vi.fn()
+	getOpenWorkflowBackend: vi.fn()
 }))
 
 vi.mock('@luzzle/web.jobs', () => ({
@@ -47,7 +47,7 @@ const mocks = {
 	getPieceStats: vi.mocked(getPieceStats),
 	getAssetStats: vi.mocked(getAssetStats),
 	getRecentlyEditedPieces: vi.mocked(getRecentlyEditedPieces),
-	getOpenWorkflowDb: vi.mocked(getOpenWorkflowDb),
+	getOpenWorkflowBackend: vi.mocked(getOpenWorkflowBackend),
 	getLatestWorkflowRun: vi.mocked(getLatestWorkflowRun)
 }
 
@@ -70,8 +70,8 @@ beforeEach(() => {
 	mocks.getPieceStats.mockResolvedValue({ total: 3, byType: [{ type: 'article', count: 3 }] })
 	mocks.getAssetStats.mockResolvedValue({ total: 2 })
 	mocks.getRecentlyEditedPieces.mockResolvedValue([])
-	mocks.getOpenWorkflowDb.mockReturnValue({} as never)
-	mocks.getLatestWorkflowRun.mockReturnValue(null)
+	mocks.getOpenWorkflowBackend.mockReturnValue({} as never)
+	mocks.getLatestWorkflowRun.mockResolvedValue(null)
 	config.auth = oidcAuth
 	const defaults = makeConfig()
 	config.sync = {
@@ -82,7 +82,7 @@ beforeEach(() => {
 
 describe('loadDashboardPage', () => {
 	test('assembles stats, setup config, and publish state into the page shape', async () => {
-		mocks.getLatestWorkflowRun.mockReturnValue(makeRun())
+		mocks.getLatestWorkflowRun.mockResolvedValue(makeRun())
 
 		const result = await loadDashboardPage()
 
@@ -103,7 +103,7 @@ describe('loadDashboardPage', () => {
 	})
 
 	test('reports the latest publish attempt even if it failed', async () => {
-		mocks.getLatestWorkflowRun.mockReturnValue(makeRun({ status: 'failed' }))
+		mocks.getLatestWorkflowRun.mockResolvedValue(makeRun({ status: 'failed' }))
 
 		const result = await loadDashboardPage()
 
@@ -127,7 +127,7 @@ describe('loadDashboardPage', () => {
 	})
 
 	test('falls back to null publish state when OpenWorkflow queries fail', async () => {
-		mocks.getOpenWorkflowDb.mockImplementation(() => {
+		mocks.getOpenWorkflowBackend.mockImplementation(() => {
 			throw new Error('db unavailable')
 		})
 

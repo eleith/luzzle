@@ -1,6 +1,6 @@
 import { config } from '$lib/server/config'
 import { db, type JobProgressRow, type JobProgressLogsRow } from '$lib/server/database/index.js'
-import { getOpenWorkflowDb } from '$lib/server/workflow/index.js'
+import { getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
 import { parsePiecesDiff } from '$lib/server/workflow/publish.js'
 import { getLatestWorkflowRun, getStepAttempts, type WorkflowRunRow } from '@luzzle/web.jobs'
 import type { PiecesDiff } from '@luzzle/core'
@@ -24,8 +24,8 @@ function mapState(status: string): string {
 	return 'waiting'
 }
 
-function mapPhases(jobId: string): JobProgressRow[] {
-	const rows = getStepAttempts(getOpenWorkflowDb(), jobId)
+async function mapPhases(jobId: string): Promise<JobProgressRow[]> {
+	const rows = await getStepAttempts(getOpenWorkflowBackend(), jobId)
 	return rows.map((r) => ({
 		job_id: jobId,
 		phase: r.phase,
@@ -51,7 +51,7 @@ async function buildRunView(run: WorkflowRunRow | null): Promise<RunView | null>
 	let phases: JobProgressRow[] = []
 	let logs: JobProgressLogsRow[] = []
 	try {
-		phases = mapPhases(run.id)
+		phases = await mapPhases(run.id)
 		logs = await loadLogs(run.id)
 	} catch (err) {
 		console.error('Failed to load run progress in publish loader:', err)
@@ -74,9 +74,9 @@ export const load: PageServerLoad = async () => {
 	let publish: RunView | null = null
 
 	try {
-		const openWorkflowDb = getOpenWorkflowDb()
-		audit = await buildRunView(getLatestWorkflowRun(openWorkflowDb, 'PublishAudit'))
-		publish = await buildRunView(getLatestWorkflowRun(openWorkflowDb, 'Publish'))
+		const backend = getOpenWorkflowBackend()
+		audit = await buildRunView(await getLatestWorkflowRun(backend, 'PublishAudit'))
+		publish = await buildRunView(await getLatestWorkflowRun(backend, 'Publish'))
 	} catch (err) {
 		console.error('Failed to query OpenWorkflow runs in publish loader:', err)
 	}

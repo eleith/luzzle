@@ -2,7 +2,6 @@ export {
 	initOpenWorkflow,
 	getOpenWorkflow,
 	getLatestWorkflowRun,
-	getWorkflowRunByJobId,
 	getWorkflowRun,
 	getStepAttempts,
 	purgeExpiredWorkflowRuns,

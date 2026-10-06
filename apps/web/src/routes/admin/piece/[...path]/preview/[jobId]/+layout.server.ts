@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit'
 import { config } from '$lib/server/config'
 import { assemblePreview, type PreviewWorkerResult } from '$lib/pieces/preview/assemble.server.js'
-import { getOpenWorkflowDb } from '$lib/server/workflow/index.js'
+import { getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
 import { getWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
 import { db, type JobProgressLogsRow, type JobProgressRow } from '$lib/server/database/index.js'
 import type { LayoutServerLoad } from './$types'
@@ -9,11 +9,10 @@ import type { LayoutServerLoad } from './$types'
 export const load: LayoutServerLoad = async ({ params }) => {
 	const runId = params.jobId
 
-	let run: ReturnType<typeof getWorkflowRun> | undefined
+	let run: Awaited<ReturnType<typeof getWorkflowRun>> | undefined
 
 	try {
-		const openWorkflowDb = getOpenWorkflowDb()
-		run = getWorkflowRun(openWorkflowDb, runId)
+		run = await getWorkflowRun(getOpenWorkflowBackend(), runId)
 	} catch (err) {
 		console.error('Failed to query OpenWorkflow preview run:', err)
 	}
@@ -30,8 +29,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
 
 	let phases: JobProgressRow[] = []
 	try {
-		const openWorkflowDb = getOpenWorkflowDb()
-		const rows = getStepAttempts(openWorkflowDb, runId)
+		const rows = await getStepAttempts(getOpenWorkflowBackend(), runId)
 		phases = rows.map((r) => {
 			let status = 'waiting'
 			if (r.status === 'running') status = 'running'

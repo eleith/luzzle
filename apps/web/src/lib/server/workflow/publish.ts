@@ -1,4 +1,3 @@
-import type { DatabaseSync } from 'node:sqlite'
 import type { BackendSqlite } from 'openworkflow/sqlite'
 import { getLatestWorkflowRun, getWorkflowRun } from '@luzzle/web.jobs'
 import type { PiecesDiff } from '@luzzle/core'
@@ -33,12 +32,15 @@ export async function findInFlightPublishRun(
 
 export type AuditGuard = { ok: true } | { ok: false; reason: string }
 
-export function validateAuditForPublish(db: DatabaseSync, auditRunId: unknown): AuditGuard {
+export async function validateAuditForPublish(
+	backend: Pick<BackendSqlite, 'getWorkflowRun' | 'listWorkflowRuns'>,
+	auditRunId: unknown
+): Promise<AuditGuard> {
 	if (typeof auditRunId !== 'string' || auditRunId.length === 0) {
 		return { ok: false, reason: 'no audit run provided; check for changes before publishing' }
 	}
 
-	const run = getWorkflowRun(db, auditRunId)
+	const run = await getWorkflowRun(backend, auditRunId)
 	if (!run || run.workflow_name !== 'PublishAudit') {
 		return { ok: false, reason: 'audit run not found' }
 	}
@@ -46,13 +48,13 @@ export function validateAuditForPublish(db: DatabaseSync, auditRunId: unknown): 
 		return { ok: false, reason: 'audit has not completed' }
 	}
 
-	const latest = getLatestWorkflowRun(db, 'PublishAudit')
+	const latest = await getLatestWorkflowRun(backend, 'PublishAudit')
 	if (!latest || latest.id !== auditRunId) {
 		return { ok: false, reason: 'a newer audit has run; re-check before publishing' }
 	}
 
 	// a publish consumes its audit; created_at is ISO so string compare is chronological
-	const lastPublish = getLatestWorkflowRun(db, 'Publish')
+	const lastPublish = await getLatestWorkflowRun(backend, 'Publish')
 	if (lastPublish && lastPublish.created_at > run.created_at) {
 		return {
 			ok: false,

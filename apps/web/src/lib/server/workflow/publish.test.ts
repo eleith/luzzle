@@ -20,7 +20,7 @@ const mocks = {
 	getWorkflowRun: vi.mocked(getWorkflowRun)
 }
 
-const db = {} as never
+const backend = {} as never
 
 function makeRun(overrides: Partial<WorkflowRunRow> = {}): WorkflowRunRow {
 	return {
@@ -169,74 +169,74 @@ describe('findInFlightPublishRun', () => {
 })
 
 describe('validateAuditForPublish', () => {
-	test('rejects a missing or non-string id', () => {
-		expect(validateAuditForPublish(db, undefined).ok).toBe(false)
-		expect(validateAuditForPublish(db, '').ok).toBe(false)
+	test('rejects a missing or non-string id', async () => {
+		expect((await validateAuditForPublish(backend, undefined)).ok).toBe(false)
+		expect((await validateAuditForPublish(backend, '')).ok).toBe(false)
 	})
 
-	test('rejects when the run is not found', () => {
-		mocks.getWorkflowRun.mockReturnValue(null)
-		expect(validateAuditForPublish(db, 'audit-1')).toEqual({
+	test('rejects when the run is not found', async () => {
+		mocks.getWorkflowRun.mockResolvedValue(null)
+		expect(await validateAuditForPublish(backend, 'audit-1')).toEqual({
 			ok: false,
 			reason: 'audit run not found'
 		})
 	})
 
-	test('rejects when the run is not a PublishAudit', () => {
-		mocks.getWorkflowRun.mockReturnValue(makeRun({ workflow_name: 'Publish' }))
-		expect(validateAuditForPublish(db, 'audit-1').ok).toBe(false)
+	test('rejects when the run is not a PublishAudit', async () => {
+		mocks.getWorkflowRun.mockResolvedValue(makeRun({ workflow_name: 'Publish' }))
+		expect((await validateAuditForPublish(backend, 'audit-1')).ok).toBe(false)
 	})
 
-	test('rejects when the audit has not completed', () => {
-		mocks.getWorkflowRun.mockReturnValue(makeRun({ status: 'running' }))
-		expect(validateAuditForPublish(db, 'audit-1')).toEqual({
+	test('rejects when the audit has not completed', async () => {
+		mocks.getWorkflowRun.mockResolvedValue(makeRun({ status: 'running' }))
+		expect(await validateAuditForPublish(backend, 'audit-1')).toEqual({
 			ok: false,
 			reason: 'audit has not completed'
 		})
 	})
 
-	test('rejects when a newer audit has run since', () => {
-		mocks.getWorkflowRun.mockReturnValue(makeRun({ id: 'audit-1' }))
-		mocks.getLatestWorkflowRun.mockReturnValue(makeRun({ id: 'audit-2' }))
-		expect(validateAuditForPublish(db, 'audit-1')).toEqual({
+	test('rejects when a newer audit has run since', async () => {
+		mocks.getWorkflowRun.mockResolvedValue(makeRun({ id: 'audit-1' }))
+		mocks.getLatestWorkflowRun.mockResolvedValue(makeRun({ id: 'audit-2' }))
+		expect(await validateAuditForPublish(backend, 'audit-1')).toEqual({
 			ok: false,
 			reason: 'a newer audit has run; re-check before publishing'
 		})
 	})
 
-	test('rejects when a publish ran after the audit', () => {
-		mocks.getWorkflowRun.mockReturnValue(
+	test('rejects when a publish ran after the audit', async () => {
+		mocks.getWorkflowRun.mockResolvedValue(
 			makeRun({ id: 'audit-1', created_at: '2026-06-20T00:00:00Z' })
 		)
-		mocks.getLatestWorkflowRun.mockImplementation((_db, name) =>
+		mocks.getLatestWorkflowRun.mockImplementation(async (_backend, name) =>
 			name === 'PublishAudit'
 				? makeRun({ id: 'audit-1', created_at: '2026-06-20T00:00:00Z' })
 				: makeRun({ id: 'pub-1', workflow_name: 'Publish', created_at: '2026-06-20T01:00:00Z' })
 		)
-		expect(validateAuditForPublish(db, 'audit-1')).toEqual({
+		expect(await validateAuditForPublish(backend, 'audit-1')).toEqual({
 			ok: false,
 			reason: 'changes were published after this check; re-check before publishing'
 		})
 	})
 
-	test('accepts a completed audit that is the latest with no later publish', () => {
-		mocks.getWorkflowRun.mockReturnValue(makeRun({ id: 'audit-1' }))
-		mocks.getLatestWorkflowRun.mockImplementation((_db, name) =>
+	test('accepts a completed audit that is the latest with no later publish', async () => {
+		mocks.getWorkflowRun.mockResolvedValue(makeRun({ id: 'audit-1' }))
+		mocks.getLatestWorkflowRun.mockImplementation(async (_backend, name) =>
 			name === 'PublishAudit' ? makeRun({ id: 'audit-1' }) : null
 		)
-		expect(validateAuditForPublish(db, 'audit-1')).toEqual({ ok: true })
+		expect(await validateAuditForPublish(backend, 'audit-1')).toEqual({ ok: true })
 	})
 
-	test('accepts a succeeded audit newer than the last publish', () => {
-		mocks.getWorkflowRun.mockReturnValue(
+	test('accepts a succeeded audit newer than the last publish', async () => {
+		mocks.getWorkflowRun.mockResolvedValue(
 			makeRun({ id: 'audit-1', status: 'succeeded', created_at: '2026-06-20T02:00:00Z' })
 		)
-		mocks.getLatestWorkflowRun.mockImplementation((_db, name) =>
+		mocks.getLatestWorkflowRun.mockImplementation(async (_backend, name) =>
 			name === 'PublishAudit'
 				? makeRun({ id: 'audit-1', status: 'succeeded', created_at: '2026-06-20T02:00:00Z' })
 				: makeRun({ id: 'pub-1', workflow_name: 'Publish', created_at: '2026-06-20T01:00:00Z' })
 		)
-		expect(validateAuditForPublish(db, 'audit-1')).toEqual({ ok: true })
+		expect(await validateAuditForPublish(backend, 'audit-1')).toEqual({ ok: true })
 	})
 })
 

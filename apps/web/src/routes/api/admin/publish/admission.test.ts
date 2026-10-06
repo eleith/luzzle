@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { getOpenWorkflowBackend, getOpenWorkflowDb } from '$lib/server/workflow/index.js'
+import { getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
 import {
 	createWorkflowQueue,
 	closeWorkflowQueue,
@@ -15,8 +15,7 @@ import { POST as audit } from './audit/+server.js'
 const { runWorkflow } = vi.hoisted(() => ({ runWorkflow: vi.fn() }))
 vi.mock('$lib/server/workflow/index.js', () => ({
 	getOpenWorkflow: () => ({ runWorkflow }),
-	getOpenWorkflowBackend: vi.fn(),
-	getOpenWorkflowDb: vi.fn()
+	getOpenWorkflowBackend: vi.fn()
 }))
 
 function event(body: unknown = {}) {
@@ -41,7 +40,6 @@ describe('publish/audit admission', () => {
 		vi.resetAllMocks()
 		vi.setSystemTime(new Date('2026-06-20T00:00:00Z'))
 		queue = createWorkflowQueue()
-		vi.mocked(getOpenWorkflowDb).mockReturnValue(queue.db)
 		vi.mocked(getOpenWorkflowBackend).mockReturnValue(queue.backend)
 		runWorkflow.mockImplementation(async (spec, input) => enqueue(spec, input))
 	})

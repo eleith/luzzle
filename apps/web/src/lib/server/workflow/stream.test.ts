@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => {
 	return {
 		query,
 		selectFrom: vi.fn(() => query),
-		getOpenWorkflowDb: vi.fn(() => ({})),
+		getOpenWorkflowBackend: vi.fn(() => ({})),
 		getOpenWorkflow: vi.fn(),
 		getWorkflowRun: vi.fn(),
 		getStepAttempts: vi.fn()
@@ -23,7 +23,7 @@ vi.mock('$lib/server/database/index.js', () => ({
 	db: { selectFrom: mocks.selectFrom }
 }))
 vi.mock('./index.js', () => ({
-	getOpenWorkflowDb: mocks.getOpenWorkflowDb,
+	getOpenWorkflowBackend: mocks.getOpenWorkflowBackend,
 	getOpenWorkflow: mocks.getOpenWorkflow
 }))
 vi.mock('@luzzle/web.jobs', () => ({
@@ -100,9 +100,9 @@ beforeEach(() => {
 	mocks.query.selectAll.mockReturnThis()
 	mocks.query.where.mockReturnThis()
 	mocks.query.orderBy.mockReturnThis()
-	mocks.getOpenWorkflowDb.mockReturnValue({})
-	mocks.getWorkflowRun.mockReturnValue(run)
-	mocks.getStepAttempts.mockReturnValue([step])
+	mocks.getOpenWorkflowBackend.mockReturnValue({})
+	mocks.getWorkflowRun.mockResolvedValue(run)
+	mocks.getStepAttempts.mockResolvedValue([step])
 	mocks.query.execute.mockResolvedValue([])
 })
 
@@ -342,6 +342,39 @@ describe('streamJobProgress', () => {
 		}
 	)
 
+	test.each([
+		{ read: 'run', disconnect: 'request abort' },
+		{ read: 'run', disconnect: 'reader cancel' },
+		{ read: 'steps', disconnect: 'request abort' },
+		{ read: 'steps', disconnect: 'reader cancel' }
+	])(
+		'$disconnect during an SDK $read read does not start later queries',
+		async ({ read, disconnect }) => {
+			vi.useFakeTimers()
+			let finishRead!: () => void
+			const pending = new Promise<unknown>((resolve) => {
+				finishRead = () => resolve(read === 'run' ? run : [step])
+			})
+			if (read === 'run') mocks.getWorkflowRun.mockReturnValueOnce(pending)
+			else mocks.getStepAttempts.mockReturnValueOnce(pending)
+			const abort = new AbortController()
+			const reader = openStream({ signal: abort.signal }).body!.getReader()
+			if (read === 'steps') await readFrame(reader)
+			expect(mocks.getWorkflowRun).toHaveBeenCalledTimes(1)
+			if (disconnect === 'request abort') abort.abort()
+			else await reader.cancel()
+			expect(await reader.read()).toEqual({ done: true, value: undefined })
+			expect(vi.getTimerCount()).toBe(0)
+
+			finishRead()
+			await vi.advanceTimersByTimeAsync(0)
+			expect(mocks.getStepAttempts).toHaveBeenCalledTimes(read === 'run' ? 0 : 1)
+			expect(mocks.query.execute).not.toHaveBeenCalled()
+			expect(mocks.getWorkflowRun).toHaveBeenCalledTimes(1)
+			expect(vi.getTimerCount()).toBe(0)
+		}
+	)
+
 	test('an already-aborted request never polls, emits, or installs timers', async () => {
 		vi.useFakeTimers()
 		const abort = new AbortController()
@@ -350,7 +383,7 @@ describe('streamJobProgress', () => {
 		expect(await readChunks(openStream({ signal: abort.signal }))).toEqual([])
 		expect(vi.getTimerCount()).toBe(0)
 		await vi.advanceTimersByTimeAsync(HEARTBEAT_MS * 2)
-		expect(mocks.getOpenWorkflowDb).not.toHaveBeenCalled()
+		expect(mocks.getOpenWorkflowBackend).not.toHaveBeenCalled()
 		expect(mocks.getWorkflowRun).not.toHaveBeenCalled()
 		expect(mocks.getStepAttempts).not.toHaveBeenCalled()
 		expect(mocks.query.execute).not.toHaveBeenCalled()

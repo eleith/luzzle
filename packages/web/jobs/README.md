@@ -6,7 +6,7 @@ job queue instantiations for Luzzle.
 ## Purpose 🧠
 
 This library defines the schemas, payload interfaces, and results for tasks
-processed by the Sidequest worker queue:
+processed by the OpenWorkflow worker queue:
 
 - **`publish`** — Triggers CDN asset generation, cache purging, and remote cloud
 synchronization.

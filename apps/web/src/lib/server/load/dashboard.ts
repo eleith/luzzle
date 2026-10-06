@@ -2,7 +2,7 @@ import { db } from '$lib/server/database'
 import { config } from '$lib/server/config'
 import { getPieceStats, getAssetStats, type PieceStats } from '../dashboardStats.js'
 import { getRecentlyEditedPieces } from '../pieces.js'
-import { getOpenWorkflowDb } from '../workflow/index.js'
+import { getOpenWorkflowBackend } from '../workflow/index.js'
 import { getLatestWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
 import type { WebPieces } from '@luzzle/web.db'
 
@@ -33,8 +33,7 @@ export async function loadDashboardPage(): Promise<DashboardView> {
 	let lastPublish: WorkflowRunRow | null = null
 
 	try {
-		const openWorkflowDb = getOpenWorkflowDb()
-		lastPublish = getLatestWorkflowRun(openWorkflowDb, 'Publish')
+		lastPublish = await getLatestWorkflowRun(getOpenWorkflowBackend(), 'Publish')
 	} catch (err) {
 		console.error('Failed to query OpenWorkflow runs in dashboard loader:', err)
 	}

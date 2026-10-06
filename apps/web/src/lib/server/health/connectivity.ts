@@ -1,4 +1,4 @@
-import { getOpenWorkflow, getOpenWorkflowDb } from '$lib/server/workflow/index.js'
+import { getOpenWorkflow, getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
 import { getWorkflowRun, type TestConnectivityResult } from '@luzzle/web.jobs'
 import { testConnectivitySpec } from '@luzzle/web.jobs/specs'
 
@@ -20,11 +20,11 @@ export async function testConnectivity(
 	const openWorkflow = getOpenWorkflow()
 	const handle = await openWorkflow.runWorkflow(testConnectivitySpec, { target })
 	const runId = handle.workflowRun.id
-	const openWorkflowDb = getOpenWorkflowDb()
+	const backend = getOpenWorkflowBackend()
 
 	const deadline = Date.now() + timeoutMs
 	while (Date.now() < deadline) {
-		const run = getWorkflowRun(openWorkflowDb, runId)
+		const run = await getWorkflowRun(backend, runId)
 		if (run && TERMINAL_STATES.has(run.status)) {
 			if (run.status === 'failed' || run.status === 'canceled') {
 				return { ok: false, reason: run.error ?? `workflow ${run.status}` }
