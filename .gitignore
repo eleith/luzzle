@@ -4,6 +4,7 @@
 
 node_modules
 .pnpm-store
+.plans
 data
 tools/**.js
 generated
