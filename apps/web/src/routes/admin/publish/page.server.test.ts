@@ -63,6 +63,7 @@ test('awaits SDK-backed run and step reads while preserving publish page data', 
 			errors: null,
 			logs: [],
 			diff,
+			failedPieces: [],
 			phases: [
 				{
 					job_id: `${name}-id`,
@@ -77,6 +78,18 @@ test('awaits SDK-backed run and step reads while preserving publish page data', 
 	}
 	expect(query.where).toHaveBeenCalledWith('job_id', '=', 'PublishAudit-id')
 	expect(query.where).toHaveBeenCalledWith('job_id', '=', 'Publish-id')
+})
+
+test('preserves partial publish failures alongside the source diff without treating audit as partial', async () => {
+	const failedPieces = [{ filePath: 'failed.book.md', message: 'missing attachment' }]
+	vi.mocked(getLatestWorkflowRun).mockImplementation(async (_backend, name) => ({
+		...run(name),
+		output: JSON.stringify({ ...diff, failedPieces })
+	}))
+	const result = await load({} as Parameters<typeof load>[0])
+	if (!result) throw new Error('Expected publish page data')
+	expect(result.publish).toMatchObject({ state: 'completed', diff, failedPieces })
+	expect(result.audit).toMatchObject({ state: 'completed', diff, failedPieces: [] })
 })
 
 test('keeps absent run views null', async () => {

@@ -2,7 +2,8 @@ import { db, type JobProgressRow } from '$lib/server/database/index.js'
 import { createEventStream } from '../sse.js'
 import { WORKFLOW_POLL_INTERVAL_MS } from '../constants.js'
 import { getOpenWorkflowBackend } from './index.js'
-import { getWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
+import { getWorkflowRun, getStepAttempts, type PublishPieceFailure } from '@luzzle/web.jobs'
+import { parsePublishFailures } from './publish.js'
 
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled'])
 
@@ -52,6 +53,14 @@ function fetchNewLogs(jobId: string, phase: string, afterLine: number) {
 
 type Emit = (event: string, data: unknown, id?: string) => void
 
+type JobOutcome = {
+	state: string
+	result: unknown
+	errors: unknown
+	workflowName?: string
+	failedPieces?: PublishPieceFailure[]
+}
+
 async function pollOnce(
 	jobId: string,
 	jobClass: string | string[],
@@ -62,6 +71,7 @@ async function pollOnce(
 	try {
 		let job: { class: string; state: string; result: unknown; errors: unknown } | null = null
 		let runId: string | null = null
+		let failedPieces: PublishPieceFailure[] = []
 
 		// Query OpenWorkflow
 		try {
@@ -74,11 +84,23 @@ async function pollOnce(
 				if (run.status === 'failed') state = 'failed'
 				if (run.status === 'canceled') state = 'canceled'
 
+				let result: unknown = null
+				if (state === 'completed') {
+					result = 'ok'
+					if (run.workflow_name === 'Publish') {
+						failedPieces = parsePublishFailures(run.output)
+						if (failedPieces.length > 0) result = 'partial'
+					}
+				}
+
+				let errors: unknown = null
+				if (run.error) errors = [run.error]
+
 				job = {
 					class: run.workflow_name,
 					state,
-					result: state === 'completed' ? 'ok' : null,
-					errors: run.error ? [run.error] : null
+					result,
+					errors
 				}
 				runId = run.id
 			}
@@ -97,7 +119,18 @@ async function pollOnce(
 			return true
 		}
 
-		emit('state', { state: job.state, result: job.result, errors: job.errors })
+		const outcome: JobOutcome = {
+			state: job.state,
+			result: job.result,
+			errors: job.errors
+		}
+		if (job.class === 'Publish' || job.class === 'PublishAudit') {
+			outcome.workflowName = job.class
+		}
+		if (failedPieces.length > 0) {
+			outcome.failedPieces = failedPieces
+		}
+		emit('state', outcome)
 
 		let phases: JobProgressRow[] = []
 		if (runId) {
@@ -145,7 +178,7 @@ async function pollOnce(
 		}
 
 		if (TERMINAL_STATES.has(job.state)) {
-			emit('done', { state: job.state, result: job.result, errors: job.errors })
+			emit('done', outcome)
 			return true
 		}
 		return false

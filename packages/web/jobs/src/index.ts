@@ -17,6 +17,8 @@ export {
 export type {
 	AssetRecord,
 	PublishPayload,
+	PublishPieceFailure,
+	PublishResult,
 	PublishAuditPayload,
 	PreviewPayload,
 	PreviewAsset,

@@ -124,11 +124,11 @@ describe('streamJobProgress', () => {
 			'x-accel-buffering': 'no'
 		})
 		expect(await readChunks(response)).toEqual([
-			'event: state\ndata: {"state":"completed","result":"ok","errors":null}\n\n',
+			'event: state\ndata: {"state":"completed","result":"ok","errors":null,"workflowName":"Publish"}\n\n',
 			phaseFrame,
 			'event: log\ndata: [{"job_id":"job-1","phase":"sync","line_number":3,"message":"café\\n🧩"}]\n\n',
 			'event: cursor\nid: {"sync":3,"other":8}\ndata: {"sync":3,"other":8}\n\n',
-			'event: done\ndata: {"state":"completed","result":"ok","errors":null}\n\n'
+			'event: done\ndata: {"state":"completed","result":"ok","errors":null,"workflowName":"Publish"}\n\n'
 		])
 		expect(mocks.selectFrom).toHaveBeenCalledWith('job_progress_logs')
 		expect(mocks.query.where.mock.calls).toEqual([
@@ -176,7 +176,7 @@ describe('streamJobProgress', () => {
 			'event: done'
 		])
 		expect(chunks[0]).toBe(
-			'event: state\ndata: {"state":"running","result":null,"errors":null}\n\n'
+			'event: state\ndata: {"state":"running","result":null,"errors":null,"workflowName":"Publish"}\n\n'
 		)
 	})
 
@@ -188,7 +188,7 @@ describe('streamJobProgress', () => {
 		mocks.query.execute.mockReturnValueOnce(pending.promise)
 		const reader = openStream().body!.getReader()
 		expect(await readFrame(reader)).toBe(
-			'event: state\ndata: {"state":"completed","result":"ok","errors":null}\n\n'
+			'event: state\ndata: {"state":"completed","result":"ok","errors":null,"workflowName":"Publish"}\n\n'
 		)
 		expect(await readFrame(reader)).toBe(phaseFrame)
 		const enqueue = vi.spyOn(ReadableStreamDefaultController.prototype, 'enqueue')
@@ -206,7 +206,7 @@ describe('streamJobProgress', () => {
 
 		pending.resolve([])
 		expect(await readFrame(reader)).toBe(
-			'event: done\ndata: {"state":"completed","result":"ok","errors":null}\n\n'
+			'event: done\ndata: {"state":"completed","result":"ok","errors":null,"workflowName":"Publish"}\n\n'
 		)
 		expect(await reader.read()).toEqual({ done: true, value: undefined })
 		expect(vi.getTimerCount()).toBe(0)
@@ -399,13 +399,54 @@ describe('streamJobProgress', () => {
 	])('preserves terminal state mapping for %s', async (status, state, result) => {
 		mocks.getWorkflowRun.mockReturnValue({ ...run, status, error: 'detail' })
 		const chunks = await readChunks(openStream({ jobClass: ['PublishAudit', 'Publish'] }))
-		const data = `{"state":"${state}","result":${result},"errors":["detail"]}`
+		const data = `{"state":"${state}","result":${result},"errors":["detail"],"workflowName":"Publish"}`
 		expect(chunks).toEqual([
 			`event: state\ndata: ${data}\n\n`,
 			phaseFrame,
 			`event: done\ndata: ${data}\n\n`
 		])
 	})
+
+	test('reports a completed publish with failed pieces as partial, never as ok', async () => {
+		const failedPieces = [{ filePath: 'failed.book.md', message: 'missing attachment' }]
+		mocks.getWorkflowRun.mockResolvedValue({ ...run, output: JSON.stringify({ failedPieces }) })
+		const chunks = await readChunks(openStream())
+		const outcome = JSON.stringify({
+			state: 'completed',
+			result: 'partial',
+			errors: null,
+			workflowName: 'Publish',
+			failedPieces
+		})
+		expect(chunks).toEqual([
+			`event: state\ndata: ${outcome}\n\n`,
+			phaseFrame,
+			`event: done\ndata: ${outcome}\n\n`
+		])
+		expect(chunks.join('')).not.toContain('"result":"ok"')
+	})
+
+	test.each(['Preview', 'PublishAudit'])(
+		'keeps non-publish completion semantics unchanged for %s',
+		async (workflow_name) => {
+			mocks.getWorkflowRun.mockResolvedValue({
+				...run,
+				workflow_name,
+				output: JSON.stringify({
+					failedPieces: [{ filePath: 'ignored.book.md', message: 'not a publish result' }]
+				})
+			})
+			const chunks = await readChunks(openStream({ jobClass: workflow_name }))
+			const outcome = {
+				state: 'completed',
+				result: 'ok',
+				errors: null,
+				...(workflow_name === 'PublishAudit' ? { workflowName: workflow_name } : {})
+			}
+			expect(chunks[0]).toBe(`event: state\ndata: ${JSON.stringify(outcome)}\n\n`)
+			expect(chunks.join('')).not.toContain('failedPieces')
+		}
+	)
 
 	test('closes with the existing error when the job is missing', async () => {
 		mocks.getWorkflowRun.mockReturnValue(null)

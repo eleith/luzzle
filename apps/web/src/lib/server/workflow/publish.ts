@@ -1,5 +1,5 @@
 import type { BackendSqlite } from 'openworkflow/sqlite'
-import { getLatestWorkflowRun, getWorkflowRun } from '@luzzle/web.jobs'
+import { getLatestWorkflowRun, getWorkflowRun, type PublishPieceFailure } from '@luzzle/web.jobs'
 import type { PiecesDiff } from '@luzzle/core'
 
 const COMPLETED_STATES = new Set(['completed', 'succeeded'])
@@ -63,6 +63,39 @@ export async function validateAuditForPublish(
 	}
 
 	return { ok: true }
+}
+
+export function parsePublishFailures(output: string | null): PublishPieceFailure[] {
+	if (!output) return []
+
+	let parsed: unknown
+	try {
+		parsed = JSON.parse(output)
+	} catch {
+		return []
+	}
+
+	if (typeof parsed !== 'object') return []
+	if (parsed === null) return []
+
+	const entries = (parsed as Record<string, unknown>).failedPieces
+	if (!Array.isArray(entries)) return []
+
+	const failedPieces: PublishPieceFailure[] = []
+	for (const entry of entries) {
+		if (typeof entry !== 'object') continue
+		if (entry === null) continue
+
+		const failure = entry as Record<string, unknown>
+		if (typeof failure.filePath !== 'string') continue
+		if (typeof failure.message !== 'string') continue
+
+		failedPieces.push({
+			filePath: failure.filePath,
+			message: failure.message
+		})
+	}
+	return failedPieces
 }
 
 function isStringArray(value: unknown): value is string[] {

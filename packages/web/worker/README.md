@@ -1,7 +1,7 @@
 # @luzzle/web.worker 👷
 
 The sidecar background worker service for the Luzzle web ecosystem. The worker
-pulls asynchronous job payloads off a shared SQLite queue (powered by Sidequest)
+pulls asynchronous job payloads off a shared SQLite queue (powered by OpenWorkflow)
 and processes resource-heavy tasks off the main web thread.
 
 ## Why it exists 🤖
@@ -29,7 +29,7 @@ The worker registers and processes the following job types:
  from/to remotes, parse changes, build CDN asset variants, and sync CDN.
 2. **`preview`** — Performs hot-path parsing of piece modifications in the
  editor, returning on-the-fly syntax-highlighted HTML and asset preview URLs.
-3. **`job-progress-purge`** — Clean-up job to purge completed/failed Sidequest
+3. **`job-progress-purge`** — Clean-up job to purge completed/failed workflow
  job logs based on a retention schedule.
 
 ---

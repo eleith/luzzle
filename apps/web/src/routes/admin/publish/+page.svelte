@@ -15,13 +15,14 @@
 	import LockSimpleOpenFill from 'virtual:icons/ph/lock-simple-open-fill'
 
 	import type { PiecesDiff } from '@luzzle/core'
+	import type { PublishPieceFailure } from '@luzzle/web.jobs'
 	import type { PageData } from './$types'
 	import type { RunView } from './+page.server'
+	import { editorHref, liveHref, getRunKind, latestPhases, type ActiveKind } from './report.js'
 
 	let { data }: { data: PageData } = $props()
 
 	type RunStatus = 'idle' | 'enqueued' | 'running' | 'completed' | 'failed'
-	type ActiveKind = 'audit' | 'publish'
 
 	type PhaseProgress = {
 		phase: string
@@ -71,6 +72,9 @@
 			run && (run.state === 'running' || run.state === 'waiting')
 		if (inFlight(data.publish)) return { kind: 'publish', run: data.publish as RunView }
 		if (inFlight(data.audit)) return { kind: 'audit', run: data.audit as RunView }
+		if (data.publish?.state === 'completed' && data.publish.failedPieces?.length) {
+			return { kind: 'publish', run: data.publish }
+		}
 		return null
 	}
 	const initial = pickInitial()
@@ -83,11 +87,21 @@
 	let logs = $state<Record<string, PhaseLog[]>>(groupLogs((initial?.run.logs as PhaseLog[]) ?? []))
 	let scrollLocks = $state<Record<string, boolean>>({})
 	let syncRemote = $state(false)
+	let streamedFailures = $state<PublishPieceFailure[]>([])
 
 	let eventSource: EventSource | null = null
 
 	let auditDiff = $derived(data.audit?.jobId === jobId ? data.audit.diff : null)
 	let publishDiff = $derived(data.publish?.jobId === jobId ? data.publish.diff : null)
+	let publishFailures = $derived.by(() => {
+		if (activeKind !== 'publish') return []
+		if (streamedFailures.length > 0) return streamedFailures
+
+		const storedPublish = data.publish
+		if (!storedPublish) return []
+		if (storedPublish.jobId !== jobId) return []
+		return storedPublish.failedPieces ?? []
+	})
 	let auditRunId = $derived(data.audit?.jobId ?? '')
 	// Only treat an audit as live "pending changes" if it ran in this session
 	// (or was resumed in-flight). A stored audit from a past visit is stale —
@@ -95,20 +109,6 @@
 	// load shows the empty state and the user must re-check.
 	let auditedThisSession = $derived(activeKind === 'audit' && status === 'completed')
 	let busy = $derived(status === 'running' || status === 'enqueued')
-
-	let reportTitle = $derived.by(() => {
-		if (status === 'idle') {
-			return 'Publish changes'
-		}
-		if (status === 'enqueued' || status === 'running') {
-			return activeKind === 'publish' ? 'Publishing...' : 'Checking for changes...'
-		}
-		if (status === 'completed') {
-			return activeKind === 'publish' ? 'Published successfully' : 'Pending changes'
-		}
-		// status === 'failed'
-		return activeKind === 'publish' ? 'Publish failed' : 'Check failed'
-	})
 
 	function hasChanges(diff: PiecesDiff): boolean {
 		return [
@@ -124,12 +124,6 @@
 	// Pending changes link to the editor; published changes redirect to the live
 	// piece (the /live route resolves the file path to its public URL on click).
 	// Pruned pieces have no target — rendered as plain text.
-	function editorHref(file: string): string {
-		return `/admin/piece/${file}/source`
-	}
-	function liveHref(file: string): string {
-		return `/admin/piece/${file}/live`
-	}
 	function noHref(): null {
 		return null
 	}
@@ -156,6 +150,7 @@
 
 	function resetLive() {
 		errorMessage = ''
+		streamedFailures = []
 		jobId = ''
 		phases = []
 		logs = {}
@@ -169,6 +164,7 @@
 
 		eventSource.addEventListener('state', (e) => {
 			const payload = JSON.parse(e.data)
+			activeKind = getRunKind(payload.workflowName, activeKind)
 			if (payload.state === 'running' || payload.state === 'claimed') status = 'running'
 			else if (payload.state === 'waiting') status = 'enqueued'
 		})
@@ -197,7 +193,14 @@
 
 		eventSource.addEventListener('done', async (e) => {
 			const payload = JSON.parse(e.data)
-			const finalStatus = payload.state === 'completed' ? 'completed' : 'failed'
+			activeKind = getRunKind(payload.workflowName, activeKind)
+			let finalStatus: RunStatus = 'failed'
+			if (payload.state === 'completed') finalStatus = 'completed'
+
+			streamedFailures = []
+			if (Array.isArray(payload.failedPieces)) {
+				streamedFailures = payload.failedPieces
+			}
 			if (payload.errors && payload.errors.length > 0) {
 				errorMessage = payload.errors[0]?.message || 'Unknown error'
 			}
@@ -268,8 +271,9 @@
 	}
 
 	onMount(() => {
-		if (initial) startWatching(initial.run.jobId)
-		else if (page.url.searchParams.has('check')) getChanges()
+		if (initial && (initial.run.state === 'running' || initial.run.state === 'waiting')) {
+			startWatching(initial.run.jobId)
+		} else if (page.url.searchParams.has('check')) getChanges()
 	})
 
 	onDestroy(() => {
@@ -284,9 +288,9 @@
 		const end = last.finished_at || Date.now()
 		return end - first.started_at
 	})
-	let completedStages = $derived(phases.filter((p) => p.status === 'completed').length)
-	let totalStages = $derived(phases.length)
-	let activeLabel = $derived(activeKind === 'publish' ? 'Publishing' : 'Checking for changes')
+	let timelinePhases = $derived(latestPhases(phases))
+	let completedStages = $derived(timelinePhases.filter((p) => p.status === 'completed').length)
+	let totalStages = $derived(timelinePhases.length)
 </script>
 
 <section class="publish-view">
@@ -303,7 +307,31 @@
 
 	<div class="report">
 		<div class="report-head">
-			<h2 class="report-title">{reportTitle}</h2>
+			<h2 class="report-title">
+				{#if status === 'idle'}
+					Publish changes
+				{:else if busy}
+					{#if activeKind === 'publish'}
+						Publishing...
+					{:else}
+						Checking for changes...
+					{/if}
+				{:else if status === 'completed'}
+					{#if activeKind === 'publish'}
+						{#if publishFailures.length > 0}
+							Publish finished with errors
+						{:else}
+							Published successfully
+						{/if}
+					{:else}
+						Pending changes
+					{/if}
+				{:else if activeKind === 'publish'}
+					Publish failed
+				{:else}
+					Check failed
+				{/if}
+			</h2>
 			{#if phases.length > 0 && !busy}
 				<span class="report-meta">
 					{#if status === 'completed' && activeKind === 'publish'}
@@ -328,6 +356,24 @@
 				</div>
 			{/if}
 		{:else if status === 'completed'}
+			{#if activeKind === 'publish' && publishFailures.length > 0}
+				<div class="error-strip" role="alert">
+					<XCircleFill class="error-icon" />
+					<div>
+						<strong>
+							Asset generation failed for {publishFailures.length}
+							{#if publishFailures.length === 1}piece{:else}pieces{/if}.
+						</strong>
+						<ul class="change-list">
+							{#each publishFailures as failure (failure.filePath)}
+								<li>
+									<a href={editorHref(failure.filePath)}>{failure.filePath}</a>: {failure.message}
+								</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+			{/if}
 			{#if activeKind === 'publish' && publishDiff}
 				{@render changeList(publishDiff, liveHref)}
 			{:else if activeKind === 'audit' && auditDiff}
@@ -386,13 +432,17 @@
 						<div class="status-title">Enqueued</div>
 						<div class="status-sub">Waiting for worker…</div>
 					{:else if status === 'running'}
-						<div class="status-title">{activeLabel}</div>
+						<div class="status-title">
+							{#if activeKind === 'publish'}Publishing{:else}Checking for changes{/if}
+						</div>
 						<div class="status-sub">
 							<span class="highlight">{completedStages}/{totalStages}</span> stages ·
 							<span class="highlight">{formatDuration(overallDuration)}</span> elapsed
 						</div>
 					{:else}
-						<div class="status-title">{activeLabel} failed</div>
+						<div class="status-title">
+							{#if activeKind === 'publish'}Publishing failed{:else}Checking for changes failed{/if}
+						</div>
 						<div class="status-sub">
 							{completedStages}/{totalStages} stages · {formatDuration(overallDuration)}
 						</div>
@@ -404,7 +454,7 @@
 
 	{#if phases.length > 0}
 		<div class="timeline">
-			{#each phases as phase (phase.phase)}
+			{#each timelinePhases as phase (phase.phase)}
 				{@const hasLogs = (logs[phase.phase]?.length ?? 0) > 0}
 				<div class="phase">
 					<div class="phase-row">
@@ -531,8 +581,13 @@
 				{/each}
 				{#each pieces as file (file)}
 					{@const href = hrefFor(file)}
+					{@const assetFailure = publishFailures.find((failure) => failure.filePath === file)}
 					<li>
-						{#if href}
+						{#if assetFailure}
+							<a href={editorHref(file)}>{file}</a><span class="report-error-msg">
+								— asset generation failed</span
+							>
+						{:else if href}
 							<a {href}>{file}</a>
 						{:else}
 							<span class="change-gone">{file}</span>

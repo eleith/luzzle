@@ -1,4 +1,4 @@
-import type { PieceFrontmatter } from '@luzzle/core'
+import type { PieceFrontmatter, PiecesDiff } from '@luzzle/core'
 
 export interface AssetRecord {
 	piece_asset_path?: string | null
@@ -12,6 +12,15 @@ export interface AssetRecord {
 
 export interface PublishPayload {
 	bisync?: boolean
+}
+
+export interface PublishPieceFailure {
+	filePath: string
+	message: string
+}
+
+export interface PublishResult extends PiecesDiff {
+	failedPieces: PublishPieceFailure[]
 }
 
 export interface PublishAuditPayload {

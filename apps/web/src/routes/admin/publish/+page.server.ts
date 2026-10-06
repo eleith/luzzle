@@ -1,8 +1,13 @@
 import { config } from '$lib/server/config'
 import { db, type JobProgressRow, type JobProgressLogsRow } from '$lib/server/database/index.js'
 import { getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
-import { parsePiecesDiff } from '$lib/server/workflow/publish.js'
-import { getLatestWorkflowRun, getStepAttempts, type WorkflowRunRow } from '@luzzle/web.jobs'
+import { parsePiecesDiff, parsePublishFailures } from '$lib/server/workflow/publish.js'
+import {
+	getLatestWorkflowRun,
+	getStepAttempts,
+	type WorkflowRunRow,
+	type PublishPieceFailure
+} from '@luzzle/web.jobs'
 import type { PiecesDiff } from '@luzzle/core'
 import type { PageServerLoad } from './$types'
 
@@ -13,6 +18,7 @@ export type RunView = {
 	phases: JobProgressRow[]
 	logs: JobProgressLogsRow[]
 	diff: PiecesDiff | null
+	failedPieces: PublishPieceFailure[]
 }
 
 function mapState(status: string): string {
@@ -57,13 +63,19 @@ async function buildRunView(run: WorkflowRunRow | null): Promise<RunView | null>
 		console.error('Failed to load run progress in publish loader:', err)
 	}
 
+	let failedPieces: PublishPieceFailure[] = []
+	if (run.workflow_name === 'Publish') {
+		failedPieces = parsePublishFailures(run.output)
+	}
+
 	return {
 		jobId: run.id,
 		state: mapState(run.status),
 		errors: run.error ? [run.error] : null,
 		phases,
 		logs,
-		diff: parsePiecesDiff(run.output)
+		diff: parsePiecesDiff(run.output),
+		failedPieces
 	}
 }
 

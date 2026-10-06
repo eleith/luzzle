@@ -31,11 +31,21 @@ export function registerPublishWorkflow(): void {
 		const changedPaths = [...(summary?.pieces.added ?? []), ...(summary?.pieces.updated ?? [])]
 
 		await runProgressPhase(step, ctx, jobId, progress, webSyncStep, { filePaths: changedPaths })
-		await runProgressPhase(step, ctx, jobId, progress, assetsGenerateStep, { filePaths: changedPaths })
+		const assetsReport = await runProgressPhase(step, ctx, jobId, progress, assetsGenerateStep, {
+			filePaths: changedPaths,
+		})
 		await runProgressPhase(step, ctx, jobId, progress, cdnSyncStep, undefined)
 		await runProgressPhase(step, ctx, jobId, progress, cachePurgeStep, undefined)
 
-		logger.info('openworkflow publish complete', { jobId })
-		return summary ?? emptyPiecesDiff()
+		const failedPieces = assetsReport?.failedPieces ?? []
+		if (failedPieces.length > 0) {
+			logger.warn('openworkflow publish complete with failures', {
+				jobId,
+				failedCount: failedPieces.length,
+			})
+		} else {
+			logger.info('openworkflow publish complete', { jobId })
+		}
+		return { ...(summary ?? emptyPiecesDiff()), failedPieces }
 	})
 }

@@ -8,7 +8,12 @@ import {
 	type WorkflowQueue
 } from './publish.fixture.js'
 import { getLatestWorkflowRun, getWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
-import { findInFlightPublishRun, validateAuditForPublish, parsePiecesDiff } from './publish.js'
+import {
+	findInFlightPublishRun,
+	validateAuditForPublish,
+	parsePiecesDiff,
+	parsePublishFailures
+} from './publish.js'
 
 vi.mock('@luzzle/web.jobs', () => ({
 	getLatestWorkflowRun: vi.fn(),
@@ -237,6 +242,39 @@ describe('validateAuditForPublish', () => {
 				: makeRun({ id: 'pub-1', workflow_name: 'Publish', created_at: '2026-06-20T01:00:00Z' })
 		)
 		expect(await validateAuditForPublish(backend, 'audit-1')).toEqual({ ok: true })
+	})
+})
+
+describe('parsePublishFailures', () => {
+	const failure = { filePath: 'failed.book.md', message: 'missing attachment' }
+	test('retains explicit failed-piece details from completed publish output', () => {
+		expect(parsePublishFailures(JSON.stringify({ failedPieces: [failure] }))).toEqual([failure])
+	})
+	test.each([
+		null,
+		'',
+		'invalid JSON',
+		'null',
+		'"ok"',
+		'{}',
+		'{"failedPieces":null}',
+		'{"failedPieces":{}}'
+	])('handles legacy and missing failure reports: %s', (output) => {
+		expect(parsePublishFailures(output)).toEqual([])
+	})
+	test('keeps valid failure entries without exposing extra fields or malformed entries', () => {
+		expect(
+			parsePublishFailures(
+				JSON.stringify({
+					failedPieces: [
+						{ ...failure, extra: 'not a report field' },
+						null,
+						{ filePath: 42, message: 'bad' },
+						{ filePath: 'bad', message: null }
+					]
+				})
+			)
+		).toEqual([failure])
 	})
 })
 

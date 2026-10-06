@@ -6,6 +6,7 @@ import type {
 	PreviewPayload,
 	PreviewResult,
 	PublishPayload,
+	PublishResult,
 	PublishAuditPayload,
 	TestConnectivityPayload,
 	TestConnectivityResult,
@@ -22,7 +23,7 @@ export const previewSpec = defineWorkflowSpec<PreviewPayload, PreviewResult>({
 	name: 'Preview',
 })
 
-export const publishSpec = defineWorkflowSpec<PublishPayload, PiecesDiff>({
+export const publishSpec = defineWorkflowSpec<PublishPayload, PublishResult>({
 	name: 'Publish',
 })
 
