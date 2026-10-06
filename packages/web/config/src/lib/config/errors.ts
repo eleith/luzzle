@@ -4,6 +4,9 @@ import type { ValueError } from "@sinclair/typebox/errors";
 export interface ConfigIssue {
 	path: string;
 	message: string;
+	category?: string;
+	line?: number;
+	column?: number;
 }
 
 /** Keep TypeBox values/schemas out of diagnostics; explain the selected auth provider. */

@@ -81,9 +81,42 @@ describe("loadConfig", () => {
 		},
 	);
 
-	test("rejects invalid YAML syntax", () => {
-		writeFileSync(filename, "url: [");
-		expect(() => loadConfig(filename)).toThrow();
+	test.each([
+		["url: [", "BAD_INDENT", 1, 7],
+		["url:\n  app: one\n  app: two\n", "DUPLICATE_KEY", 3, 3],
+		['url:\n  app: "synthetic-value\\q"\n', "BAD_DQ_ESCAPE", 2, 24],
+	])(
+		"reports YAML syntax diagnostics for %j",
+		(yaml, category, line, column) => {
+			writeFileSync(filename, yaml);
+			let error: unknown;
+			try {
+				loadConfig(filename);
+			} catch (caught) {
+				error = caught;
+			}
+			expect(error).toBeInstanceOf(ConfigError);
+			if (!(error instanceof ConfigError)) throw error;
+			expect(error.issues).toEqual([
+				{
+					path: "",
+					message: `Invalid YAML syntax (${category}) at line ${line}, column ${column}.`,
+					category,
+					line,
+					column,
+				},
+			]);
+			expect(error.message).toContain(error.issues[0].message);
+			expect(error.message).not.toContain(yaml);
+			expect(error.message).not.toContain("synthetic-value");
+			expect(JSON.stringify(error)).not.toContain("synthetic-value");
+			expect(error).not.toHaveProperty("cause");
+		},
+	);
+
+	test("does not relabel non-syntax YAML conversion failures", () => {
+		writeFileSync(filename, "storage:\n  root: *missing\n");
+		expect(() => loadConfig(filename)).toThrow(ReferenceError);
 	});
 
 	test("rejects unknown properties in a user config fixture", () => {

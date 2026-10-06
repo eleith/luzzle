@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from "fs";
-import { parse as yamlParse } from "yaml";
+import { parse as yamlParse, YAMLParseError } from "yaml";
 import { Value } from "@sinclair/typebox/value";
 import { ConfigSchema } from "./schema.js";
 import type { Config } from "./schema.js";
@@ -35,7 +35,22 @@ export function validateConfig(
 function loadConfig(userConfigPath?: string): Config {
 	let raw: unknown = {};
 	if (userConfigPath && existsSync(userConfigPath)) {
-		raw = yamlParse(readFileSync(userConfigPath, "utf8")) ?? {};
+		const source = readFileSync(userConfigPath, "utf8");
+		try {
+			raw = yamlParse(source) ?? {};
+		} catch (error) {
+			if (!(error instanceof YAMLParseError)) throw error;
+			const { line, col: column } = error.linePos![0];
+			throw new ConfigError([
+				{
+					path: "",
+					message: `Invalid YAML syntax (${error.code}) at line ${line}, column ${column}.`,
+					category: error.code,
+					line,
+					column,
+				},
+			]);
+		}
 	}
 
 	const config = validateConfig(raw);
