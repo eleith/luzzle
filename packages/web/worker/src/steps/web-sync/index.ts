@@ -110,6 +110,7 @@ async function syncOne(
 		.values(webPiece)
 		.onConflict((oc) =>
 			oc.column('id').doUpdateSet({
+				content_hash: null,
 				title: webPiece.title,
 				summary: webPiece.summary,
 				note: webPiece.note,

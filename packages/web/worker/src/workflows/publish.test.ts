@@ -26,6 +26,8 @@ const mocks = vi.hoisted(() => {
 		assetsGenerate: jobStep('assets.generate'),
 		cdnSync: jobStep('cdn.sync'),
 		cachePurge: jobStep('cache.purge'),
+		publishPrepare: jobStep('publish.prepare'),
+		publishComplete: jobStep('publish.complete'),
 	}
 })
 
@@ -49,6 +51,8 @@ vi.mock('../steps/web-sync/index.js', () => ({ webSyncStep: mocks.webSync }))
 vi.mock('../steps/assets-generate.js', () => ({ assetsGenerateStep: mocks.assetsGenerate }))
 vi.mock('../steps/cdn-sync.js', () => ({ cdnSyncStep: mocks.cdnSync }))
 vi.mock('../steps/cache-purge.js', () => ({ cachePurgeStep: mocks.cachePurge }))
+vi.mock('../steps/publish-prepare.js', () => ({ publishPrepareStep: mocks.publishPrepare }))
+vi.mock('../steps/publish-complete.js', () => ({ publishCompleteStep: mocks.publishComplete }))
 
 const summary: PiecesDiff = {
 	schemas: { added: ['books'], updated: [], pruned: ['old'] },
@@ -115,11 +119,23 @@ describe('workflows/publish', () => {
 			mocks.assetsGenerate,
 			mocks.cdnSync,
 			mocks.cachePurge,
+			mocks.publishPrepare,
+			mocks.publishComplete,
 		]) {
 			jobStep.run.mockResolvedValue({ status: 'completed', value: undefined })
 		}
 		mocks.luzzleSync.run.mockResolvedValue({ status: 'completed', value: summary })
 		mocks.assetsGenerate.run.mockResolvedValue({ status: 'completed', value: { failedPieces: [] } })
+		mocks.publishPrepare.run.mockResolvedValue({
+			status: 'completed',
+			value: {
+				pieces: [
+					{ filePath: 'healthy.books.md', contentHash: 'healthy-hash' },
+					{ filePath: 'broken.books.md', contentHash: 'broken-hash' },
+				],
+				summary,
+			},
+		})
 	})
 
 	test('reports failed pieces in JSON while publishing healthy siblings and retaining the source diff', async () => {
@@ -130,10 +146,12 @@ describe('workflows/publish', () => {
 
 		expect(phases).toEqual([
 			'luzzle.sync',
+			'publish.prepare',
 			'web.sync',
 			'assets.generate',
 			'cdn.sync',
 			'cache.purge',
+			'publish.complete',
 		])
 		expect(mocks.webSync.run).toHaveBeenCalledWith(
 			{ filePaths: ['healthy.books.md', 'broken.books.md'] },
@@ -167,8 +185,12 @@ describe('workflows/publish', () => {
 			await expect(runPublish()).rejects.toBe(error)
 			expect(mocks.progress.fail).toHaveBeenCalledWith('publish-1', phase, error)
 			if (phase === 'cdn.sync') expect(mocks.cachePurge.run).not.toHaveBeenCalled()
-			expect(mocks.logger.info).not.toHaveBeenCalledWith('openworkflow publish complete', expect.anything())
+			expect(mocks.logger.info).not.toHaveBeenCalledWith(
+				'openworkflow publish complete',
+				expect.anything()
+			)
 			expect(mocks.logger.warn).not.toHaveBeenCalled()
+			expect(mocks.publishComplete.run).not.toHaveBeenCalled()
 		}
 	)
 
@@ -185,17 +207,23 @@ describe('workflows/publish', () => {
 		expect(phases).toEqual([
 			'archive.sync',
 			'luzzle.sync',
+			'publish.prepare',
 			'web.sync',
 			'assets.generate',
 			'cdn.sync',
 			'cache.purge',
+			'publish.complete',
 		])
 		expect(result).toEqual({ ...summary, failedPieces: [] })
 		expectHealthyPhasesComplete()
 		expectNormalCompletion()
 	})
 
-	test('returns an empty diff and report for an empty/older luzzle checkpoint', async () => {
+	test('returns an empty diff and report when an older luzzle checkpoint has no pending work', async () => {
+		mocks.publishPrepare.run.mockResolvedValue({
+			status: 'completed',
+			value: { pieces: [], summary: emptyPiecesDiff() },
+		})
 		const { result } = await runPublish({}, new Map([['luzzle.sync', undefined]]))
 		expect(result).toEqual({ ...emptyPiecesDiff(), failedPieces: [] })
 		expect(mocks.luzzleSync.run).not.toHaveBeenCalled()

@@ -1,6 +1,8 @@
 import { Pieces, StorageFileSystem, getDatabaseClient, type PiecesDiff } from '@luzzle/core'
 import { completed, type Step, type StepResult } from '../core/step.js'
 import { resolveDbPath } from '../services/db.js'
+import { getPendingPublication } from '../services/publication.js'
+import { includePendingPieces } from '../workflows/pieces-diff.js'
 
 export const luzzleAuditStep: Step<void, PiecesDiff> = {
 	name: 'luzzle.audit',
@@ -13,7 +15,9 @@ export const luzzleAuditStep: Step<void, PiecesDiff> = {
 		const db = getDatabaseClient(dbPath)
 
 		const pieces = new Pieces(storage)
-		const diff = await pieces.diff(db)
+		const sourceDiff = await pieces.diff(db)
+		const pending = await getPendingPublication(ctx.db, config)
+		const diff = includePendingPieces(sourceDiff, pending.diff)
 
 		const changedCount =
 			diff.pieces.added.length +

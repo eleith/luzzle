@@ -6,6 +6,7 @@ export default defineConfig({
 		coverage: {
 			exclude: [
 				'eslint.config.js',
+				'scripts/generate-test-schema.js',
 				'dist/**',
 				'node_modules/**',
 				'src/migrations/**',

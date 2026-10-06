@@ -79,7 +79,7 @@ async function seedPiece(over: Partial<Record<string, unknown>> = {}) {
 		id: 'item-1',
 		key: 'k1',
 		title: 'T',
-		slug: 'great',
+		slug: String(over.id ?? 'great'),
 		file_path: 'books/great.md',
 		date_added: 1,
 		type: 'books',

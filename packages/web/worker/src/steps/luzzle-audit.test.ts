@@ -3,12 +3,15 @@ import { luzzleAuditStep } from './luzzle-audit.js'
 import { Pieces, StorageFileSystem, getDatabaseClient } from '@luzzle/core'
 import type { WorkerContext } from '../services/context.js'
 import type { Config } from '@luzzle/web.config'
+import { getPendingPublication } from '../services/publication.js'
 
 vi.mock('@luzzle/core', () => ({
 	Pieces: vi.fn(),
 	StorageFileSystem: vi.fn(),
 	getDatabaseClient: vi.fn(),
 }))
+
+vi.mock('../services/publication.js', () => ({ getPendingPublication: vi.fn() }))
 
 vi.mock('../services/db.js', () => ({
 	resolveDbPath: vi.fn(() => '/app/data/db.sqlite'),
@@ -42,6 +45,10 @@ function makeCtx(): WorkerContext {
 describe('luzzleAuditStep', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
+		vi.mocked(getPendingPublication).mockResolvedValue({
+			pieces: [],
+			diff: { added: [], updated: [], pruned: [] },
+		})
 	})
 
 	test('runs pieces.diff and returns the structured diff', async () => {
@@ -64,6 +71,34 @@ describe('luzzleAuditStep', () => {
 			expect(result.value).toEqual(diff)
 			expect(result.message).toBe('4 pending change(s)')
 		}
+	})
+
+	test('includes indexed but unpublished changes without duplicating source changes', async () => {
+		const ctx = makeCtx()
+		const sourceDiff = {
+			schemas: { added: [], updated: [], pruned: [] },
+			pieces: { added: ['new.md'], updated: ['changed.md'], pruned: [] },
+		}
+		mocks.StorageFileSystem.mockReturnValue({} as never)
+		mocks.getDatabaseClient.mockReturnValue({} as never)
+		mocks.Pieces.mockReturnValue({ diff: vi.fn().mockResolvedValue(sourceDiff) } as never)
+		vi.mocked(getPendingPublication).mockResolvedValue({
+			pieces: [],
+			diff: { added: ['new.md'], updated: ['changed.md', 'failed.md'], pruned: ['gone.md'] },
+		})
+
+		const result = await luzzleAuditStep.run(undefined, ctx)
+
+		expect(getPendingPublication).toHaveBeenCalledWith(ctx.db, ctx.config)
+		expect(result).toEqual({
+			status: 'completed',
+			value: {
+				schemas: sourceDiff.schemas,
+				pieces: { added: ['new.md'], updated: ['changed.md', 'failed.md'], pruned: ['gone.md'] },
+			},
+			message: '4 pending change(s)',
+		})
+		expect(sourceDiff.pieces.updated).toEqual(['changed.md'])
 	})
 
 	test('reports zero pending changes for an empty diff', async () => {

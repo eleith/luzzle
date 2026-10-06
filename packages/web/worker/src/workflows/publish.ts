@@ -9,6 +9,8 @@ import { webSyncStep } from '../steps/web-sync/index.js'
 import { assetsGenerateStep } from '../steps/assets-generate.js'
 import { cdnSyncStep } from '../steps/cdn-sync.js'
 import { cachePurgeStep } from '../steps/cache-purge.js'
+import { publishPrepareStep } from '../steps/publish-prepare.js'
+import { publishCompleteStep } from '../steps/publish-complete.js'
 import { emptyPiecesDiff } from './pieces-diff.js'
 
 export function registerPublishWorkflow(): void {
@@ -28,7 +30,16 @@ export function registerPublishWorkflow(): void {
 		}
 
 		const summary = await runProgressPhase(step, ctx, jobId, progress, luzzleSyncStep, undefined)
-		const changedPaths = [...(summary?.pieces.added ?? []), ...(summary?.pieces.updated ?? [])]
+		const plan = await runProgressPhase(
+			step,
+			ctx,
+			jobId,
+			progress,
+			publishPrepareStep,
+			summary ?? emptyPiecesDiff()
+		)
+		if (!plan) throw new Error('publish.prepare did not return a plan')
+		const changedPaths = plan.pieces.map((piece) => piece.filePath)
 
 		await runProgressPhase(step, ctx, jobId, progress, webSyncStep, { filePaths: changedPaths })
 		const assetsReport = await runProgressPhase(step, ctx, jobId, progress, assetsGenerateStep, {
@@ -38,6 +49,11 @@ export function registerPublishWorkflow(): void {
 		await runProgressPhase(step, ctx, jobId, progress, cachePurgeStep, undefined)
 
 		const failedPieces = assetsReport?.failedPieces ?? []
+		await runProgressPhase(step, ctx, jobId, progress, publishCompleteStep, {
+			pieces: plan.pieces,
+			failedPieces,
+		})
+
 		if (failedPieces.length > 0) {
 			logger.warn('openworkflow publish complete with failures', {
 				jobId,
@@ -46,6 +62,6 @@ export function registerPublishWorkflow(): void {
 		} else {
 			logger.info('openworkflow publish complete', { jobId })
 		}
-		return { ...(summary ?? emptyPiecesDiff()), failedPieces }
+		return { ...plan.summary, failedPieces }
 	})
 }

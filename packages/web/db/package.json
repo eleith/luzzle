@@ -8,7 +8,8 @@
 		"prebuild": "node scripts/generate-migrations.js",
 		"build": "tsc -p tsconfig.build.json",
 		"pretest": "node scripts/generate-migrations.js",
-		"test": "vitest run --silent --coverage"
+		"test": "vitest run --silent --coverage",
+		"schema:generate": "node scripts/generate-test-schema.js"
 	},
 	"engines": {
 		"node": ">=24"
