@@ -174,10 +174,12 @@ describe('transforms/runner', () => {
 			logger
 		)
 
-		expect(logger.info).toHaveBeenCalledWith('transform.palette generated content of application/json')
+		expect(logger.info).toHaveBeenCalledWith(
+			'transform.palette generated content of application/json'
+		)
 	})
 
-	test('logs error and continues when transform throws', async () => {
+	test('logs and propagates a transform failure instead of producing empty records', async () => {
 		transforms.attachment.run.mockRejectedValueOnce(new Error('boom'))
 
 		await expect(
@@ -191,12 +193,49 @@ describe('transforms/runner', () => {
 				new Map(),
 				logger
 			)
-		).resolves.not.toThrow()
+		).rejects.toThrow('boom')
 
 		expect(logger.error).toHaveBeenCalledWith(
 			'transform.attachment error for book.md',
 			expect.objectContaining({ error: 'boom' })
 		)
+	})
+
+	test('retains existing asset rows when a later transform fails after earlier production succeeds', async () => {
+		const oldRecords = [
+			{
+				piece_file_path: webPiece.file_path,
+				piece_key: webPiece.key,
+				asset_key: 'old-attachment',
+				transformation: 'attachment',
+				asset_path: 'old.pdf',
+				mime_type: 'application/pdf',
+			},
+			{
+				piece_file_path: webPiece.file_path,
+				piece_key: webPiece.key,
+				asset_key: 'old-palette',
+				transformation: 'palette',
+				content: 'old palette',
+				mime_type: 'application/json',
+			},
+		]
+		await db.insertInto('web_pieces_assets').values(oldRecords).execute()
+		transforms.attachment.run.mockResolvedValueOnce([
+			{ transformation: 'attachment', asset_path: 'new.pdf', mime_type: 'application/pdf' },
+		])
+		transforms.palette.run.mockRejectedValueOnce(new Error('palette failed'))
+
+		await expect(
+			runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, {}, new Map(), logger)
+		).rejects.toThrow('palette failed')
+		const assets = await db
+			.selectFrom('web_pieces_assets')
+			.selectAll()
+			.orderBy('asset_key')
+			.execute()
+		expect(assets).toMatchObject(oldRecords)
+		expect(transforms.opengraph.run).not.toHaveBeenCalled()
 	})
 
 	test('does nothing when typeFilter matches no transform', async () => {
@@ -243,25 +282,15 @@ describe('transforms/produceTransformsForPiece', () => {
 		expect(assets).toHaveLength(0)
 	})
 
-	test('records a failed transform as empty and keeps going', async () => {
-		transforms.attachment.run.mockRejectedValueOnce(new Error('boom'))
-		transforms.palette.run.mockResolvedValueOnce([])
+	test('rejects failed production without returning a successful result or running later transforms', async () => {
+		const error = new Error('boom')
+		transforms.attachment.run.mockRejectedValueOnce(error)
 
-		const produced = await produceTransformsForPiece(
-			webPiece,
-			config,
-			'/out',
-			{} as Pieces,
-			{},
-			new Map(),
-			logger
-		)
-
-		expect(produced).toEqual([
-			{ name: 'attachment', records: [] },
-			{ name: 'palette', records: [] },
-			{ name: 'opengraph', records: [] },
-		])
+		await expect(
+			produceTransformsForPiece(webPiece, config, '/out', {} as Pieces, {}, new Map(), logger)
+		).rejects.toBe(error)
+		expect(transforms.palette.run).not.toHaveBeenCalled()
+		expect(transforms.opengraph.run).not.toHaveBeenCalled()
 		expect(logger.error).toHaveBeenCalledWith(
 			'transform.attachment error for book.md',
 			expect.objectContaining({ error: 'boom' })
@@ -307,7 +336,7 @@ describe('transforms/persistTransforms', () => {
 		expect(assets[0]).toMatchObject({ content: 'fresh', asset_key: 'asset-key' })
 	})
 
-	test('still deletes when produced records are empty (failed transform)', async () => {
+	test('still clears prior records after successful production of an empty result', async () => {
 		await db
 			.insertInto('web_pieces_assets')
 			.values({

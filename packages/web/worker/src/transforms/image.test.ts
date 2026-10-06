@@ -1,12 +1,7 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { run } from './image.js'
 import { mkdir, writeFile } from 'fs/promises'
-import {
-	getAssetPath,
-	getAssetDir,
-	getImageAssetPath,
-	ASSET_SIZES,
-} from '../assets/paths.js'
+import { getAssetPath, getAssetDir, getImageAssetPath, ASSET_SIZES } from '../assets/paths.js'
 import { type Config } from '@luzzle/web.config'
 import { generateVariantJobs } from './utils/variants.js'
 import type { Pieces } from '@luzzle/core'
@@ -70,7 +65,7 @@ describe('transforms/image', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
@@ -89,7 +84,7 @@ describe('transforms/image', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: new Map(),
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
@@ -107,7 +102,7 @@ describe('transforms/image', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: emptyMap,
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
 		expect(mockPieces.getPieceAsset).not.toHaveBeenCalled()
@@ -126,7 +121,7 @@ describe('transforms/image', () => {
 				outDir: '/out',
 				pieces: mockPieces,
 				assetKeyToPath: new Map([['key', 'file.pdf']]),
-				logger: makeLogger()
+				logger: makeLogger(),
 			})
 		).rejects.toThrow('non-image file')
 	})
@@ -154,7 +149,7 @@ describe('transforms/image', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: new Map([['key', 'photo.jpg']]),
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
 		expect(mocks.mkdir).toHaveBeenCalledWith('/out/books/key', { recursive: true })
@@ -187,7 +182,7 @@ describe('transforms/image', () => {
 				outDir: '/out',
 				pieces: mockPieces,
 				assetKeyToPath: new Map([['key', 'photo.jpg']]),
-				logger: makeLogger()
+				logger: makeLogger(),
 			})
 		).rejects.toThrow('read error')
 	})
@@ -215,7 +210,7 @@ describe('transforms/image', () => {
 			outDir: '/out',
 			pieces: mockPieces,
 			assetKeyToPath: new Map([['key', 'photo.jpg']]),
-			logger: makeLogger()
+			logger: makeLogger(),
 		})
 
 		expect(records).toEqual(
@@ -237,9 +232,71 @@ describe('transforms/image', () => {
 				outDir: '/out',
 				pieces: mockPieces,
 				assetKeyToPath: new Map([['key', 'photo']]),
-				logger: makeLogger()
+				logger: makeLogger(),
 			})
 		).rejects.toThrow('non-image file')
+	})
+
+	test('waits for remaining variant writes before reporting a variant failure', async () => {
+		const error = new Error('first variant failed')
+		let failFast!: (reason: Error) => void
+		let finishSlow!: () => void
+		let startedSlow!: () => void
+		const fast = new Promise<void>((_, reject) => {
+			failFast = reject
+		})
+		const slow = new Promise<void>((resolve) => {
+			finishSlow = resolve
+		})
+		const started = new Promise<void>((resolve) => {
+			startedSlow = resolve
+		})
+		mocks.getAssetDir.mockReturnValue('books/key')
+		mocks.getAssetPath.mockReturnValue('books/key/photo.jpg')
+		mocks.getImageAssetPath.mockReturnValue('books/key/photo.variant.jpg')
+		mocks.generateVariantJobs.mockResolvedValue([
+			{ sharp: { toFile: vi.fn(() => fast) } as unknown as Sharp, width: 125, format: 'jpg' },
+			{
+				sharp: {
+					toFile: vi.fn(() => {
+						startedSlow()
+						return slow
+					}),
+				} as unknown as Sharp,
+				width: 250,
+				format: 'jpg',
+			},
+		])
+		const pieces = {
+			getPieceAsset: vi.fn().mockResolvedValue(Buffer.from('image_data')),
+		} as unknown as Pieces
+		let settled = false
+		const outcome = run({
+			webPiece: makeWebPiece('{"image":"key"}'),
+			config: makeConfig(['image']),
+			outDir: '/out',
+			pieces,
+			assetKeyToPath: new Map([['key', 'photo.jpg']]),
+			logger: makeLogger(),
+		}).then(
+			() => {
+				settled = true
+				return null
+			},
+			(reason) => {
+				settled = true
+				return reason
+			}
+		)
+		try {
+			await started
+			failFast(error)
+			await new Promise<void>((resolve) => setImmediate(resolve))
+			expect(settled).toBe(false)
+		} finally {
+			finishSlow()
+		}
+		expect(await outcome).toBe(error)
 	})
 
 	test('throws on variant toFile error', async () => {
@@ -265,7 +322,7 @@ describe('transforms/image', () => {
 				outDir: '/out',
 				pieces: mockPieces,
 				assetKeyToPath: new Map([['key', 'photo.jpg']]),
-				logger: makeLogger()
+				logger: makeLogger(),
 			})
 		).rejects.toThrow('toFile error')
 	})

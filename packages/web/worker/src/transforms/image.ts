@@ -95,7 +95,9 @@ export async function run({
 				})
 			})
 
-			await Promise.all(toFileJobs)
+			const results = await Promise.allSettled(toFileJobs)
+			const failed = results.find((result) => result.status === 'rejected')
+			if (failed) throw failed.reason
 		}
 	}
 

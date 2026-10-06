@@ -1,5 +1,6 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { Kysely } from 'kysely'
+import { sql } from 'kysely'
 import type * as luzzleCore from '@luzzle/core'
 import type { LuzzleTables } from '@luzzle/core'
 import { Pieces, StorageFileSystem } from '@luzzle/core'
@@ -113,8 +114,10 @@ describe('assetsGenerateStep', () => {
 		await seedPiece({ id: 'a', file_path: 'books/a.md' })
 		await seedPiece({ id: 'b', file_path: 'books/b.md' })
 
-		await assetsGenerateStep.run({ filePaths: ['books/a.md', 'books/b.md'] }, ctx)
+		const result = await assetsGenerateStep.run({ filePaths: ['books/a.md', 'books/b.md'] }, ctx)
 
+		expect(result).toEqual({ status: 'completed', value: { failedPieces: [] } })
+		expect(ctx.logger.warn).not.toHaveBeenCalled()
 		expect(mocks.runTransformsForPiece).toHaveBeenCalledTimes(2)
 		const paths = mocks.runTransformsForPiece.mock.calls.map((c) => c[1].file_path).sort()
 		expect(paths).toEqual(['books/a.md', 'books/b.md'])
@@ -168,8 +171,136 @@ describe('assetsGenerateStep', () => {
 
 	test('short-circuits and skips cleanup when filePaths is empty', async () => {
 		await seedPiece()
-		await assetsGenerateStep.run({ filePaths: [] }, ctx)
+		const result = await assetsGenerateStep.run({ filePaths: [] }, ctx)
+		expect(result).toEqual({ status: 'completed', value: { failedPieces: [] } })
 		expect(mocks.runTransformsForPiece).not.toHaveBeenCalled()
 		expect(mocks.cleanupAllTransforms).not.toHaveBeenCalled()
+	})
+
+	test('continues after the first piece rejects', async () => {
+		await seedPiece({ id: 'a', file_path: 'books/a.md' })
+		await seedPiece({ id: 'b', file_path: 'books/b.md' })
+		mocks.runTransformsForPiece.mockRejectedValueOnce(new Error('piece processing failed'))
+
+		const result = await assetsGenerateStep.run({ filePaths: ['books/a.md', 'books/b.md'] }, ctx)
+
+		expect(mocks.runTransformsForPiece.mock.calls.map((call) => call[1].file_path)).toEqual([
+			'books/a.md',
+			'books/b.md',
+		])
+		expect(result).toEqual({
+			status: 'completed',
+			value: { failedPieces: [{ filePath: 'books/a.md', message: 'piece processing failed' }] },
+		})
+		expect(ctx.logger.error).toHaveBeenCalledWith('assets.generate failed for books/a.md', {
+			message: 'piece processing failed',
+		})
+		expect(ctx.logger.warn).toHaveBeenCalledWith('assets.generate complete with failures', {
+			failedCount: 1,
+			count: 2,
+		})
+		expect(ctx.logger.info).not.toHaveBeenCalledWith('assets.generate complete')
+		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
+		expect(mocks.cleanupAllTransforms.mock.invocationCallOrder[0]).toBeGreaterThan(
+			mocks.runTransformsForPiece.mock.invocationCallOrder[1]
+		)
+	})
+
+	test('continues after per-piece asset preparation fails', async () => {
+		await seedPiece({ id: 'a', file_path: 'books/a.md' })
+		await seedPiece({ id: 'b', file_path: 'books/b.md' })
+		mocks.buildAssetMaps.mockImplementationOnce(() => {
+			throw new Error('asset map failed')
+		})
+
+		const result = await assetsGenerateStep.run({ filePaths: ['books/a.md', 'books/b.md'] }, ctx)
+
+		expect(result).toEqual({
+			status: 'completed',
+			value: { failedPieces: [{ filePath: 'books/a.md', message: 'asset map failed' }] },
+		})
+		expect(mocks.buildAssetMaps).toHaveBeenCalledTimes(2)
+		expect(mocks.runTransformsForPiece).toHaveBeenCalledOnce()
+		expect(mocks.runTransformsForPiece.mock.calls[0][1].file_path).toBe('books/b.md')
+		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
+	})
+
+	test.each([
+		{ thrown: 'string failure', message: 'string failure' },
+		{ thrown: null, message: 'null' },
+		{ thrown: undefined, message: 'undefined' },
+		{ thrown: { reason: 'failure' }, message: '[object Object]' },
+	])('normalizes non-Error rejection $message', async ({ thrown, message }) => {
+		await seedPiece()
+		mocks.runTransformsForPiece.mockRejectedValueOnce(thrown)
+
+		const result = await assetsGenerateStep.run({ filePaths: ['books/great.md'] }, ctx)
+
+		expect(result).toEqual({
+			status: 'completed',
+			value: { failedPieces: [{ filePath: 'books/great.md', message }] },
+		})
+		expect(JSON.parse(JSON.stringify(result))).toEqual(result)
+		expect(ctx.logger.error).toHaveBeenCalledWith('assets.generate failed for books/great.md', {
+			message,
+		})
+		expect(ctx.logger.warn).toHaveBeenCalledWith('assets.generate complete with failures', {
+			failedCount: 1,
+			count: 1,
+		})
+		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
+	})
+
+	test('collects every failed piece', async () => {
+		await seedPiece({ id: 'a', file_path: 'books/a.md' })
+		await seedPiece({ id: 'b', file_path: 'books/b.md' })
+		mocks.runTransformsForPiece
+			.mockRejectedValueOnce(new Error('first failure'))
+			.mockRejectedValueOnce(new Error('second failure'))
+
+		const result = await assetsGenerateStep.run({ filePaths: ['books/a.md', 'books/b.md'] }, ctx)
+
+		expect(result).toEqual({
+			status: 'completed',
+			value: {
+				failedPieces: [
+					{ filePath: 'books/a.md', message: 'first failure' },
+					{ filePath: 'books/b.md', message: 'second failure' },
+				],
+			},
+		})
+		expect(ctx.logger.warn).toHaveBeenCalledWith('assets.generate complete with failures', {
+			failedCount: 2,
+			count: 2,
+		})
+	})
+
+	test('propagates global selection failures and still cleans up', async () => {
+		await sql`DROP TABLE web_pieces`.execute(db)
+
+		await expect(
+			assetsGenerateStep.run({ filePaths: ['books/great.md'] }, ctx)
+		).rejects.toThrow('no such table: web_pieces')
+
+		expect(mocks.runTransformsForPiece).not.toHaveBeenCalled()
+		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
+		expect(ctx.logger.warn).not.toHaveBeenCalled()
+		expect(ctx.logger.info).not.toHaveBeenCalledWith('assets.generate complete')
+	})
+
+	test.each([false, true])('propagates cleanup failures (piece failed: %s)', async (pieceFailed) => {
+		await seedPiece()
+		if (pieceFailed) mocks.runTransformsForPiece.mockRejectedValueOnce(new Error('piece failed'))
+		const error = new Error('cleanup failed')
+		mocks.cleanupAllTransforms.mockRejectedValueOnce(error)
+
+		await expect(
+			assetsGenerateStep.run({ filePaths: ['books/great.md'] }, ctx)
+		).rejects.toBe(error)
+
+		expect(mocks.runTransformsForPiece).toHaveBeenCalledOnce()
+		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
+		expect(ctx.logger.warn).not.toHaveBeenCalled()
+		expect(ctx.logger.info).not.toHaveBeenCalledWith('assets.generate complete')
 	})
 })

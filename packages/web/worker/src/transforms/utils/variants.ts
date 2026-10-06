@@ -39,6 +39,7 @@ async function generateVariantJobs(
 		logger.error(`error generating variant jobs for ${filePath} asset at ${asset}`, {
 			error: error instanceof Error ? error.message : String(error),
 		})
+		throw error
 	}
 
 	return jobs

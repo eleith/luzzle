@@ -68,7 +68,7 @@ export async function produceTransformsForPiece(
 			logger.error(`transform.${name} error for ${webPiece.file_path}`, {
 				error: error instanceof Error ? error.message : String(error),
 			})
-			produced.push({ name, records: [] })
+			throw error
 		}
 	}
 
