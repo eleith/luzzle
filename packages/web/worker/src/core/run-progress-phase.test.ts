@@ -1,8 +1,12 @@
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { runProgressPhase, type DurableStepApi } from './run-progress-phase.js'
 import { PhaseLogger } from './phase-logger.js'
 import { completed, skipped, type Step, type StepContext } from './step.js'
 import type { JobProgress } from './job-progress.js'
+import { RcloneClient } from '../services/rclone.js'
+import type { WorkerContext } from '../services/context.js'
+import type { AppDatabase } from '../services/db.js'
+import { setupDatabase, teardownDatabase } from '../../test/db.js'
 
 function makeStep(): DurableStepApi {
 	return {
@@ -27,24 +31,19 @@ function makeJobStep<O>(name: string, run: Step<void, O>['run']): Step<void, O> 
 	return { name, run }
 }
 
-function makePhaseLogger(): PhaseLogger {
-	const base = {
-		debug: vi.fn(),
-		info: vi.fn(),
-		warn: vi.fn(),
-		error: vi.fn(),
-		stdout: vi.fn(),
-		stderr: vi.fn(),
-	}
-	return new PhaseLogger(base, {} as never)
-}
-
 describe('runProgressPhase', () => {
 	test('completes: marks start + complete and returns the value', async () => {
 		const progress = makeProgress()
 		const jobStep = makeJobStep('build', vi.fn().mockResolvedValue(completed({ ok: 1 })))
 
-		const result = await runProgressPhase(makeStep(), makeCtx({}), 'job1', progress, jobStep, undefined)
+		const result = await runProgressPhase(
+			makeStep(),
+			makeCtx({}),
+			'job1',
+			progress,
+			jobStep,
+			undefined
+		)
 
 		expect(result).toEqual({ ok: 1 })
 		expect(progress.start).toHaveBeenCalledWith('job1', 'build')
@@ -56,7 +55,14 @@ describe('runProgressPhase', () => {
 		const progress = makeProgress()
 		const jobStep = makeJobStep('build', vi.fn().mockResolvedValue(skipped('nope')))
 
-		const result = await runProgressPhase(makeStep(), makeCtx({}), 'job1', progress, jobStep, undefined)
+		const result = await runProgressPhase(
+			makeStep(),
+			makeCtx({}),
+			'job1',
+			progress,
+			jobStep,
+			undefined
+		)
 
 		expect(result).toBeUndefined()
 		expect(progress.skip).toHaveBeenCalledWith('job1', 'build', 'nope')
@@ -83,28 +89,100 @@ describe('runProgressPhase', () => {
 		expect(progress.fail).toHaveBeenCalledWith('job1', 'build', err)
 	})
 
-	test('sets and clears the active phase for a PhaseLogger', async () => {
-		const progress = makeProgress()
-		const phaseLogger = makePhaseLogger()
-		const setSpy = vi.spyOn(phaseLogger, 'setActivePhase')
-		const clearSpy = vi.spyOn(phaseLogger, 'clearActivePhase')
-		const jobStep = makeJobStep('build', vi.fn().mockResolvedValue(completed(1)))
+	describe('scoped logging', () => {
+		let ctx: WorkerContext
 
-		await runProgressPhase(makeStep(), makeCtx(phaseLogger), 'job1', progress, jobStep, undefined)
+		beforeEach(async () => {
+			const db = (await setupDatabase()).withTables<AppDatabase>()
+			const base = {
+				debug: vi.fn(),
+				info: vi.fn(),
+				warn: vi.fn(),
+				error: vi.fn(),
+				stdout: vi.fn(),
+				stderr: vi.fn(),
+			}
+			const logger = new PhaseLogger(base, db)
+			ctx = { db, logger, rclone: new RcloneClient(logger), config: {} as WorkerContext['config'] }
+		})
 
-		expect(setSpy).toHaveBeenCalledWith({ jobId: 'job1', phase: 'build' })
-		expect(clearSpy).toHaveBeenCalled()
-	})
+		afterEach(async () => {
+			await teardownDatabase(ctx.db)
+		})
 
-	test('clears the active phase even when the step throws', async () => {
-		const progress = makeProgress()
-		const phaseLogger = makePhaseLogger()
-		const clearSpy = vi.spyOn(phaseLogger, 'clearActivePhase')
-		const jobStep = makeJobStep('build', vi.fn().mockRejectedValue(new Error('x')))
+		test.each(['completed', 'skipped', 'failed'])(
+			'keeps an overlapping phase isolated when another phase is %s',
+			async (outcome) => {
+				let release!: () => void
+				let entered!: () => void
+				const hold = new Promise<void>((resolve) => {
+					release = resolve
+				})
+				const started = new Promise<void>((resolve) => {
+					entered = resolve
+				})
+				const firstStep = makeJobStep('build', async (_, phaseCtx) => {
+					expect(phaseCtx).not.toBe(ctx)
+					expect(phaseCtx.rclone).not.toBe(ctx.rclone)
+					phaseCtx.logger.info('first start')
+					entered()
+					await hold
+					phaseCtx.logger.info('first end')
+					return completed(1)
+				})
+				const first = runProgressPhase(
+					makeStep(),
+					ctx,
+					'job1',
+					makeProgress(),
+					firstStep,
+					undefined
+				)
+				try {
+					await Promise.race([
+						started,
+						first.then(() => {
+							throw new Error('First phase completed before overlap')
+						}),
+					])
+					const otherStep = makeJobStep('build', async (_, phaseCtx) => {
+						phaseCtx.logger.info('other log')
+						if (outcome === 'failed') throw new Error('other failed')
+						return outcome === 'skipped' ? skipped('no work') : completed(2)
+					})
+					const other = runProgressPhase(
+						makeStep(),
+						ctx,
+						'job2',
+						makeProgress(),
+						otherStep,
+						undefined
+					)
+					if (outcome === 'failed') {
+						await expect(other).rejects.toThrow('other failed')
+					} else {
+						expect(await other).toBe(outcome === 'skipped' ? undefined : 2)
+					}
+					ctx.logger.info('unscoped')
+				} finally {
+					release()
+					await first
+				}
 
-		await expect(
-			runProgressPhase(makeStep(), makeCtx(phaseLogger), 'job1', progress, jobStep, undefined)
-		).rejects.toThrow('x')
-		expect(clearSpy).toHaveBeenCalled()
+				const logs = () =>
+					ctx.db
+						.selectFrom('job_progress_logs')
+						.selectAll()
+						.orderBy('job_id')
+						.orderBy('line_number')
+						.execute()
+				await expect.poll(logs).toHaveLength(3)
+				expect(await logs()).toMatchObject([
+					{ job_id: 'job1', phase: 'build', line_number: 1, message: 'first start' },
+					{ job_id: 'job1', phase: 'build', line_number: 2, message: 'first end' },
+					{ job_id: 'job2', phase: 'build', line_number: 1, message: 'other log' },
+				])
+			}
+		)
 	})
 })

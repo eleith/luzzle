@@ -37,10 +37,14 @@ export interface RcloneCheckOptions {
 export type RcloneCheckResult = { ok: true } | { ok: false; reason: string }
 
 export class RcloneClient {
-	private logger: Logger
+	private readonly logger: Logger
 
 	constructor(logger: Logger) {
 		this.logger = logger
+	}
+
+	withLogger(logger: Logger): RcloneClient {
+		return new RcloneClient(logger)
 	}
 
 	async bisync(options: RcloneBisyncOptions): Promise<void> {

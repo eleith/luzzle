@@ -1,4 +1,4 @@
-import type { Kysely } from 'kysely'
+import { sql, type Kysely } from 'kysely'
 import type { Logger } from '../services/logger.js'
 import type { AppDatabase } from '../services/db.js'
 
@@ -10,39 +10,22 @@ function formatMessage(message: string, fields?: Record<string, unknown>): strin
 }
 
 export class PhaseLogger implements Logger {
-	private activePhase: { jobId: string; phase: string } | null = null
-	private currentLineNumber = 0
+	private readonly phase: { jobId: string; phase: string } | undefined
 	private readonly baseLogger: Logger
 	private readonly db: Kysely<AppDatabase>
 
 	constructor(
 		baseLogger: Logger,
-		db: Kysely<AppDatabase>
+		db: Kysely<AppDatabase>,
+		phase?: { jobId: string; phase: string }
 	) {
 		this.baseLogger = baseLogger
 		this.db = db
+		this.phase = phase
 	}
 
-	async setActivePhase(phase: { jobId: string; phase: string }): Promise<void> {
-		this.activePhase = phase
-		this.currentLineNumber = 0
-
-		try {
-			const row = await this.db
-				.selectFrom('job_progress_logs')
-				.select(({ fn }) => fn.max('line_number').as('maxLineNumber'))
-				.where('job_id', '=', phase.jobId)
-				.where('phase', '=', phase.phase)
-				.executeTakeFirst()
-
-			this.currentLineNumber = Number(row?.maxLineNumber ?? 0)
-		} catch (err) {
-			console.error('Failed to resume line_number for job_progress_logs:', err)
-		}
-	}
-
-	clearActivePhase(): void {
-		this.activePhase = null
+	forPhase(phase: { jobId: string; phase: string }): PhaseLogger {
+		return new PhaseLogger(this.baseLogger, this.db, phase)
 	}
 
 	private async insertLog(
@@ -50,19 +33,20 @@ export class PhaseLogger implements Logger {
 		message: string,
 		fields?: Record<string, unknown>
 	): Promise<void> {
-		if (!this.activePhase) return
+		if (!this.phase) return
 
-		const { jobId, phase } = this.activePhase
-		this.currentLineNumber++
-		const lineNum = this.currentLineNumber
-
+		const { jobId, phase } = this.phase
 		try {
 			await this.db
 				.insertInto('job_progress_logs')
 				.values({
 					job_id: jobId,
 					phase,
-					line_number: lineNum,
+					line_number: sql<number>`(
+						SELECT COALESCE(MAX(line_number), 0) + 1
+						FROM job_progress_logs
+						WHERE job_id = ${jobId} AND phase = ${phase}
+					)`,
 					ts: Date.now(),
 					level,
 					message: formatMessage(message, fields),
