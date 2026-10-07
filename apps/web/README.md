@@ -5,6 +5,8 @@ archives in a responsive web manager interface.
 
 ## Editor Keybindings
 
+Source and text-asset editors receive focus automatically when opened.
+
 Source and text-asset editors default to Standard keybindings. Press
 **Ctrl+Alt+V** while the editor is focused to toggle Vim keybindings. The choice
 is remembered in this browser and reused when opening another editor.

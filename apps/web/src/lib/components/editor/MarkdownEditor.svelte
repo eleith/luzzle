@@ -88,6 +88,7 @@
 			state: startState,
 			parent: editorContainer
 		})
+		view.focus()
 
 		if (file) {
 			createLSPExtension(`luzzle-web:///archive/${file}`)
