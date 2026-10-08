@@ -26,7 +26,13 @@ function toPublicAsset(asset: WebPiecesAsset): PublicWebPieceAsset {
 }
 
 function toPublicPiece(piece: WebPieces, assets: WebPiecesAsset[]): PublicWebPiece {
-	const { file_path: _file_path, json_metadata, ...rest } = piece
+	const {
+		file_path: _file_path,
+		json_metadata,
+		content_hash: _content_hash,
+		last_published_at: _last_published_at,
+		...rest
+	} = piece
 	return {
 		...rest,
 		metadata: JSON.parse(json_metadata || '{}'),

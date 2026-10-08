@@ -7,6 +7,7 @@ export interface WebPieces {
 	slug: string
 	file_path: string
 	content_hash?: string | null
+	last_published_at?: number | null
 	note?: string
 	date_updated?: number
 	date_added: number
@@ -72,7 +73,10 @@ export type PublicWebPieceAsset = Pick<
 	'asset_key' | 'transformation' | 'asset_path' | 'mime_type' | 'is_embedded' | 'content'
 >
 
-export type PublicWebPiece = Omit<WebPieces, 'file_path' | 'json_metadata' | 'content_hash'> & {
+export type PublicWebPiece = Omit<
+	WebPieces,
+	'file_path' | 'json_metadata' | 'content_hash' | 'last_published_at'
+> & {
 	metadata: PieceFrontmatter
 	assets: PublicWebPieceAsset[]
 }

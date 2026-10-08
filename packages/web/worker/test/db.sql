@@ -21,7 +21,7 @@ CREATE TABLE "pieces_manager" ("id" text not null primary key, "date_added" date
 
 -- statement-breakpoint
 
-CREATE TABLE "web_pieces" ("id" text not null primary key, "key" text not null, "slug" text not null, "type" text not null, "file_path" text not null, "title" text, "summary" text, "note" text, "keywords" text, "json_metadata" text, "date_added" datetime, "date_updated" datetime, "date_consumed" datetime, "content_hash" text, constraint "slug-type" unique ("slug", "type"));
+CREATE TABLE "web_pieces" ("id" text not null primary key, "key" text not null, "slug" text not null, "type" text not null, "file_path" text not null, "title" text, "summary" text, "note" text, "keywords" text, "json_metadata" text, "date_added" datetime, "date_updated" datetime, "date_consumed" datetime, "content_hash" text, "last_published_at" integer, constraint "slug-type" unique ("slug", "type"));
 
 -- statement-breakpoint
 
