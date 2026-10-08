@@ -50,6 +50,7 @@ vi.mock('../steps/cache-purge.js', () => ({
 const healthy = 'healthy.books.md'
 const broken = 'broken.books.md'
 const batch = [broken, healthy]
+const completionTime = 1_900_000_000_000
 
 function valueOf<T>(result: StepResult<T>): T {
 	expect(result.status).toBe('completed')
@@ -64,6 +65,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 
 	beforeEach(async () => {
 		vi.resetAllMocks()
+		vi.spyOn(Date, 'now').mockReturnValue(completionTime)
 		mocks.assets.mockResolvedValue(completed({ failedPieces: [] }))
 		mocks.cdn.mockResolvedValue(completed(undefined))
 		mocks.cache.mockResolvedValue(completed(undefined))
@@ -115,6 +117,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 	})
 
 	afterEach(async () => {
+		vi.restoreAllMocks()
 		await ctx?.db.destroy()
 		await rm(directory, { recursive: true, force: true })
 	})
@@ -165,13 +168,14 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 			.executeTakeFirstOrThrow()
 		const published = await ctx.db
 			.selectFrom('web_pieces')
-			.select(['content_hash', 'title'])
+			.select(['content_hash', 'title', 'last_published_at'])
 			.where('file_path', '=', filePath)
 			.executeTakeFirstOrThrow()
 		return {
 			indexed: indexed.content_hash,
 			published: published.content_hash,
 			title: published.title,
+			lastPublishedAt: published.last_published_at,
 		}
 	}
 
@@ -233,7 +237,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 		const initialDiff = valueOf(await luzzleSyncStep.run(undefined, ctx))
 		const initialPlan = valueOf(await publishPrepareStep.run(initialDiff, ctx))
 		await webSyncStep.run({ filePaths: initialPlan.pieces.map((piece) => piece.filePath) }, ctx)
-		expect((await hashes(healthy)).published).toBeNull()
+		expect(await hashes(healthy)).toMatchObject({ published: null, lastPublishedAt: null })
 		expect((await getPendingPublication(ctx.db, ctx.config)).pieces).toEqual(initialPlan.pieces)
 
 		await publish('baseline')
@@ -246,6 +250,8 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 		expect(state.title).toBe('Metadata changed')
 		expect(state.indexed).not.toBe(original.indexed)
 		expect(state.published).toBeNull()
+		expect(original.lastPublishedAt).toBe(completionTime)
+		expect(state.lastPublishedAt).toBe(original.lastPublishedAt)
 		expect((await getPendingPublication(ctx.db, ctx.config)).pieces).toEqual(plan.pieces)
 		expect((await audit()).pieces).toEqual({ added: [], updated: [healthy], pruned: [] })
 	})
@@ -255,6 +261,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 		await writePiece(broken, 'Original broken')
 		await publish('baseline')
 		const oldBroken = await hashes(broken)
+		vi.mocked(Date.now).mockReturnValue(completionTime + 1000)
 		await writePiece(healthy, 'Changed healthy')
 		await writePiece(broken, 'Changed broken')
 		const failedPieces = [{ filePath: broken, message: 'markdown transform failed' }]
@@ -264,20 +271,28 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 		expect(partial.result.failedPieces).toEqual(failedPieces)
 		const healthyState = await hashes(healthy)
 		expect(healthyState.published).toBe(healthyState.indexed)
+		expect(healthyState.lastPublishedAt).toBe(completionTime + 1000)
 		const brokenState = await hashes(broken)
 		expect(brokenState.title).toBe('Changed broken')
 		expect(oldBroken.published).toBe(oldBroken.indexed)
 		expect(brokenState.published).toBeNull()
 		expect(brokenState.published).not.toBe(brokenState.indexed)
+		expect(oldBroken.lastPublishedAt).toBe(completionTime)
+		expect(brokenState.lastPublishedAt).toBe(oldBroken.lastPublishedAt)
 		expect((await audit()).pieces).toEqual({ added: [], updated: [broken], pruned: [] })
 
 		mocks.assets.mockClear()
+		vi.mocked(Date.now).mockReturnValue(completionTime + 2000)
 		const retry = await publish('fresh-retry')
 		expect(retry.phaseResults.get('luzzle.sync')).toEqual(emptyPiecesDiff())
 		expect(mocks.assets).toHaveBeenCalledExactlyOnceWith({ filePaths: [broken] }, ctx)
 		expect(retry.result.pieces).toEqual({ added: [], updated: [broken], pruned: [] })
 		expect(retry.result.failedPieces).toEqual([])
-		expect((await hashes(broken)).published).toBe(brokenState.indexed)
+		expect(await hashes(broken)).toMatchObject({
+			published: brokenState.indexed,
+			lastPublishedAt: completionTime + 2000,
+		})
+		expect((await hashes(healthy)).lastPublishedAt).toBe(healthyState.lastPublishedAt)
 		expect(await audit()).toEqual(emptyPiecesDiff())
 	})
 
@@ -289,6 +304,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 			await publish('baseline')
 			const originalHealthy = await hashes(healthy)
 			const originalBroken = await hashes(broken)
+			vi.mocked(Date.now).mockReturnValue(completionTime + 1000)
 			await writePiece(healthy, 'Changed healthy')
 			await writePiece(broken, 'Changed broken')
 			const error = new Error(`${phase} unavailable`)
@@ -298,8 +314,14 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 			await expect(publish('global-failure')).rejects.toBe(error)
 			expect(originalHealthy.published).toBe(originalHealthy.indexed)
 			expect(originalBroken.published).toBe(originalBroken.indexed)
-			expect((await hashes(healthy)).published).toBeNull()
-			expect((await hashes(broken)).published).toBeNull()
+			expect(await hashes(healthy)).toMatchObject({
+				published: null,
+				lastPublishedAt: originalHealthy.lastPublishedAt,
+			})
+			expect(await hashes(broken)).toMatchObject({
+				published: null,
+				lastPublishedAt: originalBroken.lastPublishedAt,
+			})
 			const completion = await ctx.db
 				.selectFrom('job_progress')
 				.selectAll()
@@ -310,6 +332,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 			expect((await audit()).pieces).toEqual({ added: [], updated: batch, pruned: [] })
 
 			mocks.assets.mockClear()
+			vi.mocked(Date.now).mockReturnValue(completionTime + 2000)
 			const retry = await publish('fresh-global-retry')
 			expect(retry.phaseResults.get('luzzle.sync')).toEqual(emptyPiecesDiff())
 			expect(mocks.assets).toHaveBeenCalledExactlyOnceWith({ filePaths: batch }, ctx)
@@ -317,6 +340,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 			for (const filePath of batch) {
 				const state = await hashes(filePath)
 				expect(state.published).toBe(state.indexed)
+				expect(state.lastPublishedAt).toBe(completionTime + 2000)
 			}
 			expect(await audit()).toEqual(emptyPiecesDiff())
 		}
@@ -354,6 +378,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 			indexed: state.indexed,
 			published: state.indexed,
 			title: 'Revision three',
+			lastPublishedAt: completionTime,
 		})
 		expect(await audit()).toEqual(emptyPiecesDiff())
 	})
@@ -384,6 +409,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 				indexed: original.indexed,
 				published: original.indexed,
 				title: 'Revision A',
+				lastPublishedAt: completionTime,
 			})
 			expect(await audit()).toEqual(emptyPiecesDiff())
 		}

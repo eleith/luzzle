@@ -10,6 +10,7 @@ export interface PublishCompleteInput {
 export const publishCompleteStep: Step<PublishCompleteInput, void> = {
 	name: 'publish.complete',
 	async run({ pieces, failedPieces }, { db, logger }) {
+		const publishedAt = Date.now()
 		const failedPaths = new Set(failedPieces.map((piece) => piece.filePath))
 		let count = 0
 
@@ -18,7 +19,10 @@ export const publishCompleteStep: Step<PublishCompleteInput, void> = {
 
 			await db
 				.updateTable('web_pieces')
-				.set({ content_hash: piece.contentHash })
+				.set({
+					content_hash: piece.contentHash,
+					last_published_at: publishedAt,
+				})
 				.where('file_path', '=', piece.filePath)
 				.execute()
 			count += 1

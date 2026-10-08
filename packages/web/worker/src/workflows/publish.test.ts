@@ -161,6 +161,16 @@ describe('workflows/publish', () => {
 			{ filePaths: ['healthy.books.md', 'broken.books.md'] },
 			expect.anything()
 		)
+		expect(mocks.publishComplete.run).toHaveBeenCalledExactlyOnceWith(
+			{
+				pieces: [
+					{ filePath: 'healthy.books.md', contentHash: 'healthy-hash' },
+					{ filePath: 'broken.books.md', contentHash: 'broken-hash' },
+				],
+				failedPieces,
+			},
+			expect.anything()
+		)
 		expect(JSON.parse(JSON.stringify(result))).toEqual({ ...summary, failedPieces })
 		expect(result.pieces.updated).toContain('broken.books.md')
 		expect(summary).not.toHaveProperty('failedPieces')
@@ -197,8 +207,32 @@ describe('workflows/publish', () => {
 	test('returns successful reports and keeps the normal completion log', async () => {
 		const { result } = await runPublish()
 		expect(result).toEqual({ ...summary, failedPieces: [] })
+		expect(mocks.publishComplete.run).toHaveBeenCalledExactlyOnceWith(
+			{
+				pieces: [
+					{ filePath: 'healthy.books.md', contentHash: 'healthy-hash' },
+					{ filePath: 'broken.books.md', contentHash: 'broken-hash' },
+				],
+				failedPieces: [],
+			},
+			expect.anything()
+		)
 		expect(mocks.archiveSync.run).not.toHaveBeenCalled()
 		expectHealthyPhasesComplete()
+		expectNormalCompletion()
+	})
+
+	test('still completes after configured delivery steps are skipped', async () => {
+		mocks.cdnSync.run.mockResolvedValue({ status: 'skipped', message: 'no remote' })
+		mocks.cachePurge.run.mockResolvedValue({ status: 'skipped', message: 'no proxy' })
+
+		const { result, phases } = await runPublish()
+
+		expect(phases.slice(-3)).toEqual(['cdn.sync', 'cache.purge', 'publish.complete'])
+		expect(mocks.progress.skip).toHaveBeenCalledWith('publish-1', 'cdn.sync', 'no remote')
+		expect(mocks.progress.skip).toHaveBeenCalledWith('publish-1', 'cache.purge', 'no proxy')
+		expect(mocks.publishComplete.run).toHaveBeenCalledOnce()
+		expect(result).toEqual({ ...summary, failedPieces: [] })
 		expectNormalCompletion()
 	})
 
@@ -248,6 +282,10 @@ describe('workflows/publish', () => {
 		const failedPieces = [{ filePath: 'broken.books.md', message: 'cached failure' }]
 		const { result } = await runPublish({}, new Map([['assets.generate', { failedPieces }]]))
 		expect(result).toEqual({ ...summary, failedPieces })
+		expect(mocks.publishComplete.run).toHaveBeenCalledWith(
+			expect.objectContaining({ failedPieces }),
+			expect.anything()
+		)
 		expect(mocks.assetsGenerate.run).not.toHaveBeenCalled()
 		expectHealthyPhasesComplete()
 		expect(mocks.logger.warn).toHaveBeenCalledWith('openworkflow publish complete with failures', {
