@@ -62,9 +62,10 @@ afterEach(() => vi.useRealTimers())
 
 test('awaits SDK-backed metadata and preserves completed preview assembly', async () => {
 	expect(await load(event())).toMatchObject({
+		preview: true,
 		file: 'example.book.md',
 		status: 'completed',
-		jobId: 'preview-id',
+		job: 'preview-id',
 		phases: [],
 		logs: [],
 		html: 'rendered-preview'
@@ -74,14 +75,52 @@ test('awaits SDK-backed metadata and preserves completed preview assembly', asyn
 
 test('preserves failed preview error data', async () => {
 	vi.mocked(getWorkflowRun).mockResolvedValue(run({ status: 'failed', error: 'preview failed' }))
-	expect(await load(event())).toMatchObject({ status: 'failed', errorMessage: 'preview failed' })
+	expect(await load(event())).toMatchObject({
+		preview: true,
+		job: 'preview-id',
+		status: 'failed',
+		errorMessage: 'preview failed'
+	})
 	expect(assemblePreview).not.toHaveBeenCalled()
 })
 
 test('preserves expiration based on the serialized SDK finish time', async () => {
 	vi.mocked(getWorkflowRun).mockResolvedValue(run({ finished_at: '2026-06-19T00:00:00Z' }))
-	expect(await load(event())).toMatchObject({ status: 'expired', jobId: 'preview-id' })
+	expect(await load(event())).toMatchObject({
+		preview: true,
+		status: 'expired',
+		job: 'preview-id'
+	})
 	expect(assemblePreview).not.toHaveBeenCalled()
+})
+
+test.each([
+	{ status: 'pending', expected: 'waiting' },
+	{ status: 'running', expected: 'running' },
+	{ status: 'canceled', expected: 'failed' },
+	{ status: 'completed', expected: 'completed' }
+])(
+	'declares preview and job for $status without assembled output',
+	async ({ status, expected }) => {
+		vi.mocked(getWorkflowRun).mockResolvedValue(run({ status, output: null }))
+		expect(await load(event())).toMatchObject({
+			preview: true,
+			job: 'preview-id',
+			status: expected
+		})
+		expect(assemblePreview).not.toHaveBeenCalled()
+	}
+)
+
+test('replacement layout data declares the newly requested Preview job', async () => {
+	const nextEvent = {
+		params: { jobId: 'next-job', path: 'next.book.md' }
+	} as Parameters<typeof load>[0]
+	expect(await load(nextEvent)).toMatchObject({
+		preview: true,
+		job: 'next-job'
+	})
+	expect(getWorkflowRun).toHaveBeenLastCalledWith({}, 'next-job')
 })
 
 test('keeps missing SDK runs as a 404', async () => {

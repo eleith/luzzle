@@ -3,6 +3,7 @@ import type { PageServerLoad } from './$types'
 import { db } from '$lib/server/database'
 import { config } from '$lib/server/config'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
+import { assetPathToUrl } from '$lib/pieces/assets.js'
 
 export const load: PageServerLoad = async (page) => {
 	const type = page.params.piece
@@ -36,7 +37,7 @@ export const load: PageServerLoad = async (page) => {
 			title: `${piece.title} | ${config.content.text.title}`,
 			type: piece.type,
 			description: piece.summary,
-			image: ogAsset ? `${config.url.luzzle_assets}/pieces/assets/${ogAsset}` : undefined
+			image: assetPathToUrl(ogAsset, config.url.luzzle_assets || config.url.app)
 		}
 	}
 }

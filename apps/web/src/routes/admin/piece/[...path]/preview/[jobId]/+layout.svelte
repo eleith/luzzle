@@ -47,14 +47,14 @@
 
 	const editorUrl = `/admin/piece/${data.file}/source`
 
-	const logsUrl = `/admin/piece/${data.file}/preview/${data.jobId}`
-	const pageUrl = `/admin/piece/${data.file}/preview/${data.jobId}/page`
-	const iconUrl = `/admin/piece/${data.file}/preview/${data.jobId}/icon`
-	const ogUrl = `/admin/piece/${data.file}/preview/${data.jobId}/og`
+	const logsUrl = `/admin/piece/${data.file}/preview/${data.job}`
+	const pageUrl = `/admin/piece/${data.file}/preview/${data.job}/page`
+	const iconUrl = `/admin/piece/${data.file}/preview/${data.job}/icon`
+	const ogUrl = `/admin/piece/${data.file}/preview/${data.job}/og`
 
 	function startWatching() {
 		if (eventSource) eventSource.close()
-		eventSource = new EventSource(`/api/admin/preview/${data.jobId}/stream`)
+		eventSource = new EventSource(`/api/admin/preview/${data.job}/stream`)
 
 		eventSource.addEventListener('state', (e) => {
 			const d = JSON.parse(e.data)

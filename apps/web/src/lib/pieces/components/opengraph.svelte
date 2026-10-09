@@ -40,15 +40,17 @@
 			return OpengraphDefault
 		}
 	}
-	const helpers = getPieceHelpers(piece)
+	const helpers = $derived(getPieceHelpers(piece))
 </script>
 
-{#await resolveOpengraph(piece.type) then Opengraph}
-	<section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
-		<Opengraph {piece} {helpers} />
-	</section>
-{:catch}
-	<section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
-		<OpengraphDefault {piece} {helpers} />
-	</section>
-{/await}
+{#key piece}
+	{#await resolveOpengraph(piece.type) then Opengraph}
+		<section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
+			<Opengraph {piece} {helpers} />
+		</section>
+	{:catch}
+		<section style="width:{OpengraphImageWidth}px;height:{OpengraphImageHeight}px;">
+			<OpengraphDefault {piece} {helpers} />
+		</section>
+	{/await}
+{/key}

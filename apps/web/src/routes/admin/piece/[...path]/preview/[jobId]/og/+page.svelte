@@ -8,9 +8,7 @@
 
 	const isHtml = $derived(page.url.searchParams.has('html'))
 	const ogAsset = $derived(data.piece?.assets.find((a) => a.transformation === 'opengraph'))
-	const ogPngUrl = $derived(
-		ogAsset ? `/admin/preview/${data.jobId}/asset/${ogAsset.asset_path}` : ''
-	)
+	const ogPngUrl = $derived(ogAsset ? `/admin/preview/${data.job}/asset/${ogAsset.asset_path}` : '')
 
 	let ogScale = $state(1)
 	let scaleContainer: HTMLDivElement | undefined = $state()

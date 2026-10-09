@@ -14,6 +14,8 @@ declare global {
 		interface PageData {
 			session: Session | null
 			config: AppConfigPublic
+			preview?: boolean
+			job?: string
 			meta: {
 				title?: string
 				description?: string

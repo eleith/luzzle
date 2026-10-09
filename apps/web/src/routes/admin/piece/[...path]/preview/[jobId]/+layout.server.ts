@@ -63,7 +63,14 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		const completedAt = run.finished_at ? new Date(run.finished_at) : null
 		const isExpired = completedAt && Date.now() - completedAt.getTime() > retentionMs
 		if (isExpired) {
-			return { file: params.path, status: 'expired' as const, jobId: runId, phases, logs }
+			return {
+				preview: true,
+				file: params.path,
+				status: 'expired' as const,
+				job: runId,
+				phases,
+				logs
+			}
 		}
 
 		const result = JSON.parse(run.output) as PreviewWorkerResult
@@ -73,9 +80,10 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		}
 		const assembled = assemblePreview(result, pieceConfig)
 		return {
+			preview: true,
 			file: params.path,
 			status: 'completed' as const,
-			jobId: runId,
+			job: runId,
 			phases,
 			logs,
 			...assembled
@@ -84,14 +92,22 @@ export const load: LayoutServerLoad = async ({ params }) => {
 
 	if (state === 'failed' || state === 'canceled') {
 		return {
+			preview: true,
 			file: params.path,
 			status: 'failed' as const,
-			jobId: runId,
+			job: runId,
 			phases,
 			logs,
 			errorMessage: run.error ?? 'Preview failed'
 		}
 	}
 
-	return { file: params.path, jobId: runId, status: state as 'waiting' | 'running', phases, logs }
+	return {
+		preview: true,
+		file: params.path,
+		job: runId,
+		status: state as 'waiting' | 'running',
+		phases,
+		logs
+	}
 }

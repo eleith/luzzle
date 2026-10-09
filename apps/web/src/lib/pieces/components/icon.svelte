@@ -28,7 +28,7 @@
 	const tags = $derived(JSON.parse(piece.keywords || '[]')) as string[]
 	const width = $derived(size.width)
 	const height = $derived(size.height ? size.height : (width * 3) / 2)
-	const helpers = getPieceHelpers(piece)
+	const helpers = $derived(getPieceHelpers(piece))
 
 	async function resolveIcon(type: string): Promise<Component<PieceIconProps>> {
 		const importer = iconImportMap.get(type)
@@ -42,8 +42,10 @@
 	}
 </script>
 
-{#await resolveIcon(piece.type) then IconComponent}
-	<IconComponent {piece} {tags} size={{ width, height }} {lazy} {active} {helpers} />
-{:catch}
-	<IconDefault {piece} {tags} size={{ width, height }} {lazy} {active} {helpers} />
-{/await}
+{#key piece}
+	{#await resolveIcon(piece.type) then IconComponent}
+		<IconComponent {piece} {tags} size={{ width, height }} {lazy} {active} {helpers} />
+	{:catch}
+		<IconDefault {piece} {tags} size={{ width, height }} {lazy} {active} {helpers} />
+	{/await}
+{/key}

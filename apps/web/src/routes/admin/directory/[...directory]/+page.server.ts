@@ -10,7 +10,6 @@ export const load: PageServerLoad = async ({ params }) => {
 	const files = await pieces.getFilesIn(canonicalDir)
 
 	return {
-		mode: 'directory',
 		files: {
 			directories: files.directories.map((d) => ({
 				path: path.join(directory, d),

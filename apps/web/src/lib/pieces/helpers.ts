@@ -3,6 +3,8 @@ import { createPieceHelpers, OpengraphImageWidth, OpengraphImageHeight } from '@
 import type { PublicWebPiece, PieceComponentHelpers, PieceIconPalette } from '@luzzle/web.pieces'
 import { page } from '$app/state'
 import type { Component, Snippet } from 'svelte'
+import { resolve } from '$app/paths'
+import { assetPathToUrl } from './assets.js'
 
 export { OpengraphImageWidth, OpengraphImageHeight }
 export type { PieceComponentHelpers, PieceIconPalette }
@@ -55,28 +57,31 @@ export type PiecePageProps = {
 	components: PieceComponents
 }
 
-function detectAssetUrlBuilder(): (path: string) => string {
-	const jobId = page.params.jobId
-	const pathname = page.url.pathname
-
-	if (jobId && pathname.includes('/preview/')) {
-		return (path) => `/admin/preview/${jobId}/asset/${path}`
-	}
-
-	if (pathname.startsWith('/admin/')) {
-		return (path) => `/admin/asset/viewer/${path}`
+function createAssetUrlBuilder(preview = false, job?: string): (path: string) => string {
+	if (preview === true) {
+		if (!job) throw new Error('Preview rendering requires a job.')
+		return (path) =>
+			resolve('/admin/preview/[jobId]/asset/[...asset]', {
+				jobId: encodeURIComponent(job),
+				asset: path.split('/').map(encodeURIComponent).join('/')
+			})
 	}
 
 	const config = page.data.config
 	const baseUrl = config.url.luzzle_assets || config.url.app
-	return (path) => `${baseUrl}/pieces/assets/${path}`
+	return (path) => assetPathToUrl(path, baseUrl) ?? ''
 }
 
 export function getPieceHelpers(piece: PublicWebPiece): PieceComponentHelpers {
 	const config = page.data.config
+	const buildAssetUrl = createAssetUrlBuilder(page.data.preview, page.data.job)
+	const assets = piece.assets.map((asset) =>
+		asset.asset_path && !buildAssetUrl(asset.asset_path) ? { ...asset, asset_path: null } : asset
+	)
 	return createPieceHelpers(
-		piece.assets,
-		detectAssetUrlBuilder(),
-		() => `${config.url.app}/pieces/${piece.type}/${piece.slug}`
+		assets,
+		buildAssetUrl,
+		() =>
+			`${config.url.app.replace(/\/+$/, '')}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`
 	)
 }

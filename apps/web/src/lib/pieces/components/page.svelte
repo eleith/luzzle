@@ -26,7 +26,7 @@
 	}
 
 	let { piece, tags }: Props = $props()
-	const helpers = getPieceHelpers(piece)
+	const helpers = $derived(getPieceHelpers(piece))
 
 	async function resolvePage(type: string): Promise<Component<PiecePageProps>> {
 		const importer = pageImportMap.get(type)
@@ -40,8 +40,10 @@
 	}
 </script>
 
-{#await resolvePage(piece.type) then PageComponent}
-	<PageComponent {piece} {tags} {helpers} {components} />
-{:catch}
-	<PageDefault {piece} {tags} {helpers} {components} />
-{/await}
+{#key piece}
+	{#await resolvePage(piece.type) then PageComponent}
+		<PageComponent {piece} {tags} {helpers} {components} />
+	{:catch}
+		<PageDefault {piece} {tags} {helpers} {components} />
+	{/await}
+{/key}
