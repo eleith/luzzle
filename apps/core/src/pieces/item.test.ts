@@ -156,7 +156,21 @@ describe('src/pieces/item.ts', () => {
 			file_path: path,
 			note_markdown: note,
 			frontmatter_json: JSON.stringify(frontmatter),
+			assets_json_array: '[]',
 		})
+	})
+
+	test('makePieceItemUpdatable clears the last asset reference', () => {
+		const data = makePieceItemSelectable({
+			frontmatter_json: JSON.stringify({ title: 'title', cover: 'cover.jpg' }),
+			assets_json_array: JSON.stringify(['cover.jpg']),
+		})
+		const markdown = makeMarkdownSample(data.file_path, 'books', 'note', { title: 'title' })
+		const schema = makeSchema({ cover: { type: 'string', format: 'asset' } })
+
+		const update = database.makePieceItemUpdatable(markdown, schema, data)
+
+		expect(update.assets_json_array).toBe('[]')
 	})
 
 	test('makePieceItemUpdatable with recursive assets', () => {

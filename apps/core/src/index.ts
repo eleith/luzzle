@@ -3,7 +3,7 @@ import compile from './lib/ajv.js'
 import { sql } from 'kysely'
 import { extractFullMarkdown } from './lib/markdown.js'
 import { addFrontMatter } from './lib/frontmatter.js'
-import { getDatabaseClient } from './database/client.js'
+import { getDatabaseClient, asCoreDatabase } from './database/client.js'
 import {
 	filterFrontmatterFields,
 	findFrontmatterField,
@@ -23,6 +23,7 @@ export { mergeGeneratedFields, appendGeneratedBody } from './pieces/utils/genera
 
 export {
 	getDatabaseClient,
+	asCoreDatabase,
 	migrate,
 	sql,
 	compile,

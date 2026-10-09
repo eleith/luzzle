@@ -6,6 +6,7 @@ import { db } from '$lib/server/database'
 import path from 'path'
 import { config } from '$lib/server/config'
 import {
+	asCoreDatabase,
 	extractFullMarkdown,
 	makePieceMarkdown,
 	type PieceFrontmatter,
@@ -125,25 +126,39 @@ export const actions = {
 
 		const piece = await pieces.getPiece(type)
 
+		let markdown: PieceMarkdown<PieceFrontmatter>
 		try {
 			const normalized = normalizeLineEndings(content)
 			const data = await extractFullMarkdown(normalized)
 			const note = await normalizeMarkdown(data.markdown)
-			const markdown = makePieceMarkdown(file, type, note, data.frontmatter as PieceFrontmatter)
+			markdown = makePieceMarkdown(file, type, note, data.frontmatter as PieceFrontmatter)
 			const assetPaths = filterFrontmatterFields(piece.fields, (f) => f.format === 'asset')
 
 			if (assetPaths.length > 0) {
 				const result = await resolveAssetUrls(piece, markdown, content, assetPaths)
 				if ('error' in result) return result.error
-				await piece.write(result.markdown)
-			} else {
-				await piece.write(markdown)
+				markdown = result.markdown
 			}
+			await piece.write(markdown)
 		} catch (e: unknown) {
 			const error = e instanceof Error ? e : new Error(String(e))
 			console.error('Save raw action error:', error)
 			return fail(400, {
 				error: { message: `failed to save raw piece: ${error.message}` },
+				rawContent: content,
+				fields: undefined,
+				note: undefined
+			})
+		}
+
+		try {
+			await piece.syncMarkdown(asCoreDatabase(db), markdown)
+		} catch (e) {
+			console.error('Sync after Save failed:', e)
+			return fail(500, {
+				error: {
+					message: 'Markdown was saved, but its database index could not be updated.'
+				},
 				rawContent: content,
 				fields: undefined,
 				note: undefined

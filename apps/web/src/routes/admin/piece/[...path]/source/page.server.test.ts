@@ -14,6 +14,7 @@ import { getPieces } from '$lib/server/pieces'
 import { getStorage } from '$lib/server/storage'
 import { actions, load } from './+page.server'
 import { config } from '$lib/server/config'
+import { db } from '$lib/server/database'
 
 vi.mock('$lib/server/pieces', () => ({ getPieces: vi.fn(), getWebPiece: vi.fn() }))
 vi.mock('$lib/server/storage', () => ({ getStorage: vi.fn() }))
@@ -40,6 +41,7 @@ function setup(content: string, fields: PieceFrontmatterSchemaField[] = []) {
 		type: 'books',
 		fields,
 		write: vi.fn().mockResolvedValue(undefined),
+		syncMarkdown: vi.fn().mockResolvedValue(undefined),
 		setField: vi.fn(
 			async (markdown: PieceMarkdown<PieceFrontmatter>, field: string, value: string) => {
 				const updated = structuredClone(markdown)
@@ -82,6 +84,10 @@ test('Save normalizes line endings and markdown and overwrites the existing piec
 		frontmatter: { title: 'Reviewed' },
 		note: '# Heading\n\nA paragraph.\n'
 	})
+	expect(piece.syncMarkdown).toHaveBeenCalledExactlyOnceWith(db, piece.write.mock.calls[0][0])
+	expect(piece.write.mock.invocationCallOrder[0]).toBeLessThan(
+		piece.syncMarkdown.mock.invocationCallOrder[0]
+	)
 	expect(savePieceAsset).not.toHaveBeenCalled()
 })
 
@@ -119,6 +125,7 @@ Body`,
 			}
 		})
 	)
+	expect(piece.syncMarkdown).toHaveBeenCalledExactlyOnceWith(db, piece.write.mock.calls[0][0])
 })
 
 test('Save returns the exact raw draft on malformed frontmatter without writing', async () => {
@@ -129,6 +136,7 @@ test('Save returns the exact raw draft on malformed frontmatter without writing'
 		data: { rawContent, error: { message: expect.stringContaining('failed to save raw piece:') } }
 	})
 	expect(piece.write).not.toHaveBeenCalled()
+	expect(piece.syncMarkdown).not.toHaveBeenCalled()
 })
 
 test('Save preserves the exact draft and stops on a failed URL download', async () => {
@@ -151,6 +159,7 @@ test('Save preserves the exact draft and stops on a failed URL download', async 
 		}
 	})
 	expect(piece.write).not.toHaveBeenCalled()
+	expect(piece.syncMarkdown).not.toHaveBeenCalled()
 	expect(storage.delete).not.toHaveBeenCalled()
 })
 
@@ -169,7 +178,51 @@ test('Save returns the exact draft on write failure and does not delete download
 		}
 	})
 	expect(piece.write).toHaveBeenCalledTimes(1)
+	expect(piece.syncMarkdown).not.toHaveBeenCalled()
 	expect(storage.delete).not.toHaveBeenCalled()
+})
+
+test('Save waits for sync before reporting success', async () => {
+	const { piece, event } = setup('---\ntitle: Reviewed\n---\nBody')
+	let finishSync!: () => void
+	const started = new Promise<void>((resolve) => {
+		piece.syncMarkdown.mockImplementationOnce(() => {
+			resolve()
+			return new Promise<void>((finish) => {
+				finishSync = finish
+			})
+		})
+	})
+	let settled = false
+	const saving = actions.save(event).then((result) => {
+		settled = true
+		return result
+	})
+	await started
+	expect(settled).toBe(false)
+	finishSync()
+	expect(await saving).toEqual({ success: true })
+})
+
+test('Save reports sync failure truthfully without retrying or rolling back the file', async () => {
+	const rawContent = '---\r\ntitle: Reviewed\r\n---\r\nBody'
+	const { piece, storage, event } = setup(rawContent)
+	const error = new Error('private database error')
+	piece.syncMarkdown.mockRejectedValueOnce(error)
+
+	expect(await actions.save(event)).toMatchObject({
+		status: 500,
+		data: {
+			rawContent,
+			fields: undefined,
+			note: undefined,
+			error: { message: 'Markdown was saved, but its database index could not be updated.' }
+		}
+	})
+	expect(piece.write).toHaveBeenCalledOnce()
+	expect(piece.syncMarkdown).toHaveBeenCalledExactlyOnceWith(db, piece.write.mock.calls[0][0])
+	expect(storage.delete).not.toHaveBeenCalled()
+	expect(console.error).toHaveBeenCalledWith('Sync after Save failed:', error)
 })
 
 test.each(['https://example.test/cover.png', 'HTTPS://example.test/cover.png'])(
@@ -189,6 +242,7 @@ test.each(['https://example.test/cover.png', 'HTTPS://example.test/cover.png'])(
 			additionalProperties: false
 		} as PieceFrontmatterSchema<PieceFrontmatter>
 		const piece = new Piece('books', targetStorage as unknown as LuzzleStorage, schema)
+		const sync = vi.spyOn(piece, 'syncMarkdown').mockResolvedValue(undefined)
 		vi.spyOn(getPieces(), 'getPiece').mockResolvedValue(piece)
 		vi.mocked(savePieceAsset).mockResolvedValue('.assets/books/example.books/cover.png')
 
@@ -199,6 +253,12 @@ test.each(['https://example.test/cover.png', 'HTTPS://example.test/cover.png'])(
 		expect(targetStorage.writeFile).toHaveBeenCalledExactlyOnceWith(
 			'books/example.books.md',
 			expect.stringContaining('cover: .assets/books/example.books/cover.png')
+		)
+		expect(sync).toHaveBeenCalledExactlyOnceWith(
+			db,
+			expect.objectContaining({
+				frontmatter: { title: 'Reviewed', cover: '.assets/books/example.books/cover.png' }
+			})
 		)
 	}
 )

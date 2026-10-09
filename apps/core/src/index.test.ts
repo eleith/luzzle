@@ -6,6 +6,7 @@ import * as index from './index.js'
 describe('index.ts', () => {
 	test('schema', () => {
 		expect(index).toBeDefined()
+		expect(index.asCoreDatabase).toBeTypeOf('function')
 	})
 
 	test('preserves the public generation exports without exposing provider internals', () => {

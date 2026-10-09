@@ -116,7 +116,7 @@ function makePieceItemUpdatable<F extends PieceFrontmatter>(
 	}
 
 	if (force || data.assets_json_array !== assetString) {
-		update.assets_json_array = assetString !== '[]' ? assetString : undefined
+		update.assets_json_array = assetString
 	}
 
 	return update
