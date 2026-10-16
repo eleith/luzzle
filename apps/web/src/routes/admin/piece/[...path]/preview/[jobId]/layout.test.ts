@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { beforeEach, afterEach, expect, test, vi } from 'vitest'
 import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
@@ -92,6 +92,11 @@ test('Preview consumes the shared viewer bar instead of keeping separate banner 
 	expect(source).not.toContain('.preview-banner {')
 })
 
+test('Preview registers Share without retaining an OG route or redirect alias', () => {
+	expect(existsSync(new URL('./share/+page.svelte', import.meta.url))).toBe(true)
+	expect(existsSync(new URL('./og/', import.meta.url))).toBe(false)
+})
+
 // SSR establishes markup/state contracts, not mount/SSE, CSS layout or client replacement.
 test.each(['waiting', 'running', 'completed', 'failed', 'expired'] as const)(
 	'Preview %s retains destinations and availability inside the shared responsive header',
@@ -112,8 +117,9 @@ test.each(['waiting', 'running', 'completed', 'failed', 'expired'] as const)(
 		expect(links[1]).toContain('aria-current="page"')
 		expect(links[1]).toContain('>overview</a>')
 		expect(header).not.toContain('>logs</a>')
+		expect(header).not.toContain(`${root}/og`)
 		expect(links[1]).not.toContain('aria-disabled="true"')
-		for (const [index, leaf] of ['page', 'icon', 'og'].entries()) {
+		for (const [index, leaf] of ['page', 'icon', 'share'].entries()) {
 			expect(links[index + 2]).toContain(
 				`href="${status === 'completed' ? `${root}/${leaf}` : '#'}"`
 			)
@@ -134,7 +140,7 @@ test.each(['waiting', 'running', 'completed', 'failed', 'expired'] as const)(
 	}
 )
 
-test.each(['', '/page', '/icon', '/og'])(
+test.each(['', '/page', '/icon', '/share'])(
 	'completed Preview %s uses the existing active-view conditions with native current-page semantics',
 	(leaf) => {
 		page.url = new URL(root + leaf, 'https://app.test')
@@ -147,12 +153,12 @@ test.each(['', '/page', '/icon', '/og'])(
 	}
 )
 
-test('Share HTML label keeps the legacy OG HTML destination available and solely active', () => {
-	page.url = new URL(`${root}/og?html`, 'https://app.test')
+test('Share HTML label keeps the renamed alternate destination available and solely active', () => {
+	page.url = new URL(`${root}/share?html`, 'https://app.test')
 	const links = anchors(body())
 	expect(links).toHaveLength(6)
 	expect(links.filter((link) => link.includes('aria-current="page"'))).toHaveLength(1)
-	expect(links.at(-1)).toContain(`href="${root}/og?html"`)
+	expect(links.at(-1)).toContain(`href="${root}/share?html"`)
 	expect(links.at(-1)).toContain('share (html)')
 	expect(links[4]).toMatch(/>\s*share\s*<\/a>/)
 	expect(links.at(-1)).not.toContain('og (html)')

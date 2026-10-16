@@ -53,7 +53,7 @@
 	const logsUrl = `/admin/piece/${data.file}/preview/${data.job}`
 	const pageUrl = `/admin/piece/${data.file}/preview/${data.job}/page`
 	const iconUrl = `/admin/piece/${data.file}/preview/${data.job}/icon`
-	const ogUrl = `/admin/piece/${data.file}/preview/${data.job}/og`
+	const shareUrl = `/admin/piece/${data.file}/preview/${data.job}/share`
 
 	function startWatching() {
 		if (eventSource) eventSource.close()
@@ -146,10 +146,10 @@
 			icon
 		</a>
 		<a
-			href={status === 'completed' ? ogUrl : '#'}
+			href={status === 'completed' ? shareUrl : '#'}
 			class="viewer-bar-link"
-			class:active={page.url.pathname === ogUrl && !page.url.searchParams.has('html')}
-			aria-current={page.url.pathname === ogUrl && !page.url.searchParams.has('html')
+			class:active={page.url.pathname === shareUrl && !page.url.searchParams.has('html')}
+			aria-current={page.url.pathname === shareUrl && !page.url.searchParams.has('html')
 				? 'page'
 				: undefined}
 			class:disabled={status !== 'completed'}
@@ -157,8 +157,8 @@
 		>
 			share
 		</a>
-		{#if status === 'completed' && page.url.pathname === ogUrl && page.url.searchParams.has('html')}
-			<a href="{ogUrl}?html" class="viewer-bar-link active" aria-current="page">share (html)</a>
+		{#if status === 'completed' && page.url.pathname === shareUrl && page.url.searchParams.has('html')}
+			<a href="{shareUrl}?html" class="viewer-bar-link active" aria-current="page">share (html)</a>
 		{/if}
 	</nav>
 	<span class="viewer-bar-label">preview</span>
