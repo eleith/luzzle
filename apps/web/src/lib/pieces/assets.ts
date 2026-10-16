@@ -1,7 +1,4 @@
-export function assetPathToUrl(
-	assetPath: string | null | undefined,
-	base: string
-): string | undefined {
+export function encodeAssetPath(assetPath: string | null | undefined): string | undefined {
 	if (!assetPath?.trim() || assetPath.includes('\\') || /^[a-z][a-z\d+.-]*:/i.test(assetPath)) {
 		return undefined
 	}
@@ -9,7 +6,16 @@ export function assetPathToUrl(
 	if (segments.some((segment) => !segment || segment === '.' || segment === '..')) {
 		return undefined
 	}
-	const path = `pieces/assets/${segments.map(encodeURIComponent).join('/')}`
+	return segments.map(encodeURIComponent).join('/')
+}
+
+export function assetPathToUrl(
+	assetPath: string | null | undefined,
+	base: string
+): string | undefined {
+	const encoded = encodeAssetPath(assetPath)
+	if (!encoded) return undefined
+	const path = `pieces/assets/${encoded}`
 	if (!base || base.startsWith('/')) {
 		return `${base.replace(/\/+$/, '')}/${path}`
 	}

@@ -3,8 +3,8 @@ import { createPieceHelpers, OpengraphImageWidth, OpengraphImageHeight } from '@
 import type { PublicWebPiece, PieceComponentHelpers, PieceIconPalette } from '@luzzle/web.pieces'
 import { page } from '$app/state'
 import type { Component, Snippet } from 'svelte'
-import { resolve } from '$app/paths'
 import { assetPathToUrl } from './assets.js'
+import { previewOutputUrl } from './preview/output-url.js'
 
 export { OpengraphImageWidth, OpengraphImageHeight }
 export type { PieceComponentHelpers, PieceIconPalette }
@@ -60,11 +60,7 @@ export type PiecePageProps = {
 function createAssetUrlBuilder(preview = false, job?: string): (path: string) => string {
 	if (preview === true) {
 		if (!job) throw new Error('Preview rendering requires a job.')
-		return (path) =>
-			resolve('/admin/preview/[jobId]/asset/[...asset]', {
-				jobId: encodeURIComponent(job),
-				asset: path.split('/').map(encodeURIComponent).join('/')
-			})
+		return (path) => previewOutputUrl(path, job) ?? ''
 	}
 
 	const config = page.data.config

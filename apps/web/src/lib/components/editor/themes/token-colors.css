@@ -1,0 +1,59 @@
+/* Keep the spike's role colors and Markdown formatting, now on stable classes. */
+:is(.cm-editor, .syntax-highlight) .tok-heading {
+	color: var(--editor-heading, var(--color-on-surface));
+	font-weight: bold;
+}
+
+:is(.cm-editor, .syntax-highlight) .tok-strong {
+	color: var(--editor-strong, var(--color-on-surface));
+	font-weight: bold;
+}
+
+:is(.cm-editor, .syntax-highlight) .tok-emphasis {
+	color: var(--editor-emphasis, var(--color-on-surface));
+	font-style: italic;
+}
+
+:is(.cm-editor, .syntax-highlight) .tok-strikethrough {
+	text-decoration: line-through;
+}
+
+:is(.cm-editor, .syntax-highlight) .tok-quote {
+	color: var(--editor-quote, var(--color-on-surface-variant));
+}
+
+:is(.cm-editor, .syntax-highlight) .tok-monospace {
+	color: var(--editor-code, var(--color-on-surface));
+}
+
+:is(.cm-editor, .syntax-highlight) .tok-link {
+	color: var(--editor-link, var(--color-on-surface));
+	text-decoration: underline;
+}
+
+:is(.cm-editor, .syntax-highlight) .tok-url {
+	color: var(--editor-url, var(--color-on-surface));
+	text-decoration: underline;
+}
+
+:is(.cm-editor, .syntax-highlight) .tok-name {
+	color: var(--editor-key, var(--color-on-surface));
+}
+
+:is(.cm-editor, .syntax-highlight) :is(.tok-string, .tok-string2) {
+	color: var(--editor-string, var(--color-on-surface));
+}
+
+:is(.cm-editor, .syntax-highlight) :is(.tok-number, .tok-bool, .tok-atom, .tok-keyword) {
+	color: var(--editor-literal, var(--color-on-surface));
+}
+
+:is(.cm-editor, .syntax-highlight) .tok-comment {
+	color: var(--editor-comment, var(--color-on-surface-variant));
+	font-style: italic;
+}
+
+:is(.cm-editor, .syntax-highlight)
+	:is(.tok-punctuation, .tok-meta, .tok-contentSeparator, .tok-operator) {
+	color: var(--editor-punctuation, var(--color-on-surface-variant));
+}

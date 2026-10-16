@@ -88,6 +88,7 @@ test('emits stable classes for other asset languages without another palette', (
 
 test('CSS binds the token classes to the accepted palette instead of fixed colors', () => {
 	const css = readFileSync(new URL('./configured.css', import.meta.url), 'utf8')
+	const tokenCss = readFileSync(new URL('./token-colors.css', import.meta.url), 'utf8')
 	const roles = {
 		heading: 'heading',
 		strong: 'strong',
@@ -110,16 +111,31 @@ test('CSS binds the token classes to the accepted palette instead of fixed color
 		operator: 'punctuation'
 	}
 	for (const [token, role] of Object.entries(roles)) {
-		expect(css).toMatch(
+		expect(tokenCss).toMatch(
 			new RegExp(`\\.tok-${token}\\b[^{]*\\{[^}]*color:\\s*var\\(--editor-${role},`)
 		)
 	}
-	expect(css).toMatch(/^\.cm-editor\s*\{/)
-	expect(css).not.toContain('luzzle-editor')
+	expect(css).toMatch(/^@import '\.\/token-colors\.css';\s+\.cm-editor\s*\{/)
+	const tokenSelectors = [...tokenCss.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{/g)].map(
+		(match) => match[1].trim().replace(/\s+/g, ' ')
+	)
+	expect(tokenSelectors).toHaveLength(13)
+	for (const selector of tokenSelectors) {
+		expect(selector.startsWith(':is(.cm-editor, .syntax-highlight) ')).toBe(true)
+	}
+	expect(tokenCss).toMatch(/\.tok-strikethrough\s*\{\s*text-decoration: line-through;/)
+	expect(tokenCss).toMatch(/\.tok-heading\s*\{[^}]*font-weight: bold;/)
+	expect(tokenCss).toMatch(/\.tok-strong\s*\{[^}]*font-weight: bold;/)
+	expect(tokenCss).toMatch(/\.tok-emphasis\s*\{[^}]*font-style: italic;/)
+	expect(tokenCss).toMatch(/\.tok-comment\s*\{[^}]*font-style: italic;/)
+	expect(tokenCss).toMatch(/\.tok-link\s*\{[^}]*text-decoration: underline;/)
+	expect(tokenCss).toMatch(/\.tok-url\s*\{[^}]*text-decoration: underline;/)
+	expect(css + tokenCss).not.toContain('luzzle-editor')
 	expect(css).toContain('--cm-attribute: var(--editor-string,')
 	expect(css).toContain('--cm-variable: var(--editor-key,')
 	expect(css).toContain('--cm-link: var(--editor-link,')
-	expect(css).not.toMatch(/#[\da-f]{3,8}\b/i)
+	expect(css + tokenCss).not.toMatch(/#[\da-f]{3,8}\b/i)
+	expect(css).not.toMatch(/\.tok-/)
 })
 
 test('theme reconfiguration preserves the document, selection, parser and undo history', () => {

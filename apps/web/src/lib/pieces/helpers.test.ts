@@ -2,7 +2,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import type { PublicWebPiece } from '@luzzle/web.pieces'
 import { getPieceHelpers } from './helpers.js'
 
-const { page } = vi.hoisted(() => ({
+const { page, resolve } = vi.hoisted(() => ({
 	page: {
 		params: {} as { jobId?: string },
 		url: new URL('https://app.example/pieces/books/book'),
@@ -11,13 +11,13 @@ const { page } = vi.hoisted(() => ({
 			job: undefined as string | undefined,
 			config: { url: { app: 'https://app.example', luzzle_assets: '' } }
 		}
-	}
+	},
+	resolve: vi.fn(() => {
+		throw new Error('Could not get the request store. This is an internal error.')
+	})
 }))
 vi.mock('$app/state', () => ({ page }))
-vi.mock('$app/paths', () => ({
-	resolve: (route: string, params: Record<string, string>) =>
-		route.replace(/\[(?:\.\.\.)?(\w+)\]/g, (_, name: string) => params[name])
-}))
+vi.mock('$app/paths', () => ({ resolve }))
 
 function piece(path = 'books/cover key/cover.jpg'): PublicWebPiece {
 	return {
@@ -47,6 +47,7 @@ function piece(path = 'books/cover key/cover.jpg'): PublicWebPiece {
 }
 
 beforeEach(() => {
+	vi.clearAllMocks()
 	page.url = new URL('https://app.example/pieces/books/book')
 	page.params = {}
 	page.data.preview = undefined
@@ -105,6 +106,39 @@ test('Preview uses its declared job, not the current route parameter', () => {
 		'/admin/preview/selected%20job/asset/books/cover%20key/cover.jpg'
 	)
 })
+
+test('Preview renderer asset links need only their declared job/path, even after an await', async () => {
+	await Promise.resolve()
+	page.url = new URL('https://app.example/unrelated/location')
+	page.data.preview = true
+	page.data.job = 'job #?%'
+	expect(
+		getPieceHelpers(piece('books/雪 ?#%.jpg')).getPieceAssetUrl('cover', 'image.original')
+	).toBe('/admin/preview/job%20%23%3F%25/asset/books/%E9%9B%AA%20%3F%23%25.jpg')
+	expect(resolve).not.toHaveBeenCalled()
+})
+
+test.each([
+	'../private.jpg',
+	'/private.jpg',
+	'books//cover.jpg',
+	'books/./cover.jpg',
+	'books\\cover.jpg',
+	'https://other.example/cover.jpg',
+	'   '
+])(
+	'invalid Preview path %j remains unlinked without changing inline data or source records',
+	(path) => {
+		page.data.preview = true
+		page.data.job = 'job'
+		const source = piece(path)
+		const helpers = getPieceHelpers(source)
+		expect(helpers.getPieceAssetUrl('cover', 'image.original')).toBeUndefined()
+		expect(helpers.getPiecePalette()).toEqual({ accent: 'blue' })
+		expect(source.assets[0].asset_path).toBe(path)
+		expect(resolve).not.toHaveBeenCalled()
+	}
+)
 
 test.each([undefined, ''])('Preview requires a nonempty job, received %j', (job) => {
 	page.data.preview = true

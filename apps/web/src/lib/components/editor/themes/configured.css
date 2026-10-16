@@ -1,3 +1,5 @@
+@import './token-colors.css';
+
 .cm-editor {
 	color: var(--editor-foreground, var(--color-on-surface));
 	background-color: var(--editor-background, var(--color-surface));
@@ -77,63 +79,4 @@
 	font-size: var(--font-size-xxs);
 	line-height: 1;
 	white-space: nowrap;
-}
-
-/* Keep the spike's role colors and Markdown formatting, now on stable classes. */
-.cm-editor .tok-heading {
-	color: var(--editor-heading, var(--color-on-surface));
-	font-weight: bold;
-}
-
-.cm-editor .tok-strong {
-	color: var(--editor-strong, var(--color-on-surface));
-	font-weight: bold;
-}
-
-.cm-editor .tok-emphasis {
-	color: var(--editor-emphasis, var(--color-on-surface));
-	font-style: italic;
-}
-
-.cm-editor .tok-strikethrough {
-	text-decoration: line-through;
-}
-
-.cm-editor .tok-quote {
-	color: var(--editor-quote, var(--color-on-surface-variant));
-}
-
-.cm-editor .tok-monospace {
-	color: var(--editor-code, var(--color-on-surface));
-}
-
-.cm-editor .tok-link {
-	color: var(--editor-link, var(--color-on-surface));
-	text-decoration: underline;
-}
-
-.cm-editor .tok-url {
-	color: var(--editor-url, var(--color-on-surface));
-	text-decoration: underline;
-}
-
-.cm-editor .tok-name {
-	color: var(--editor-key, var(--color-on-surface));
-}
-
-.cm-editor :is(.tok-string, .tok-string2) {
-	color: var(--editor-string, var(--color-on-surface));
-}
-
-.cm-editor :is(.tok-number, .tok-bool, .tok-atom, .tok-keyword) {
-	color: var(--editor-literal, var(--color-on-surface));
-}
-
-.cm-editor .tok-comment {
-	color: var(--editor-comment, var(--color-on-surface-variant));
-	font-style: italic;
-}
-
-.cm-editor :is(.tok-punctuation, .tok-meta, .tok-contentSeparator, .tok-operator) {
-	color: var(--editor-punctuation, var(--color-on-surface-variant));
 }
