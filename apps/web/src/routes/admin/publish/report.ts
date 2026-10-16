@@ -25,6 +25,6 @@ export function editorHref(file: string): string {
 	return `/admin/piece/${piecePath(file)}/source`
 }
 
-export function liveHref(file: string): string {
-	return `/admin/piece/${piecePath(file)}/live`
+export function publishedHref(file: string): string {
+	return `/admin/piece/${piecePath(file)}/published`
 }

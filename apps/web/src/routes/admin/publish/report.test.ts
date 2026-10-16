@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { getRunKind, editorHref, liveHref, latestPhases } from './report.js'
+import { getRunKind, editorHref, publishedHref, latestPhases } from './report.js'
 
 test('the actual workflow overrides the action used to attach to an existing run', () => {
 	expect(getRunKind('Publish', 'audit')).toBe('publish')
@@ -26,12 +26,13 @@ test('retry attempts collapse to the latest state per phase without changing pha
 test.each([
 	'books/chapter#1.book.md',
 	'books/name?query%.book.md',
-	'folder with spaces/a book.book.md'
+	'folder with spaces/a book.book.md',
+	'books/源 📖.book.md'
 ])('piece links preserve valid special filename characters: %s', (file) => {
 	const encoded = file.split('/').map(encodeURIComponent).join('/')
 	expect(editorHref(file)).toBe(`/admin/piece/${encoded}/source`)
-	expect(liveHref(file)).toBe(`/admin/piece/${encoded}/live`)
-	for (const href of [editorHref(file), liveHref(file)]) {
+	expect(publishedHref(file)).toBe(`/admin/piece/${encoded}/published`)
+	for (const href of [editorHref(file), publishedHref(file)]) {
 		const url = new URL(href, 'http://localhost')
 		expect(url.search).toBe('')
 		expect(url.hash).toBe('')

@@ -9,7 +9,12 @@ vi.mock('$app/state', () => ({ page: { url: new URL('http://localhost/admin/publ
 
 function html(
 	failedPieces = [{ filePath: 'failed.book.md', message: 'missing attachment' }],
-	phases: RunView['phases'] = []
+	phases: RunView['phases'] = [],
+	pieces: NonNullable<RunView['diff']>['pieces'] = {
+		added: ['failed.book.md', 'healthy.book.md'],
+		updated: [],
+		pruned: []
+	}
 ) {
 	const data = {
 		meta: { title: 'Publish' },
@@ -27,7 +32,7 @@ function html(
 			failedPieces,
 			diff: {
 				schemas: { added: [], updated: [], pruned: [] },
-				pieces: { added: ['failed.book.md', 'healthy.book.md'], updated: [], pruned: [] }
+				pieces
 			}
 		}
 	}
@@ -40,8 +45,9 @@ test('a completed partial publish stays visible after reload without an all-succ
 	expect(output).toContain('missing attachment')
 	expect(output).toContain('asset generation failed')
 	expect(output).toContain('/admin/piece/failed.book.md/source')
-	expect(output).not.toContain('/admin/piece/failed.book.md/live')
-	expect(output).toContain('/admin/piece/healthy.book.md/live')
+	expect(output).not.toContain('/admin/piece/failed.book.md/published')
+	expect(output).toContain('/admin/piece/healthy.book.md/published')
+	expect(output).not.toContain('/live')
 	expect(output).not.toContain('Published successfully')
 	expect(output).toContain('role="alert"')
 })
@@ -49,6 +55,26 @@ test('a completed partial publish stays visible after reload without an all-succ
 test('failed-piece editor links encode filenames with URL delimiters', () => {
 	const output = html([{ filePath: 'books/chapter#1?%.book.md', message: 'missing image' }])
 	expect(output).toContain('/admin/piece/books/chapter%231%3F%25.book.md/source')
+})
+
+test.each(['added', 'updated'] as const)(
+	'healthy %s pieces open the encoded Published overview in the same tab',
+	(kind) => {
+		const file = 'books/源 #?%.book.md'
+		const output = html(undefined, [], { added: [], updated: [], pruned: [], [kind]: [file] })
+		const href = '/admin/piece/books/%E6%BA%90%20%23%3F%25.book.md/published'
+		const link = output.match(/<a\b[^>]*>/g)?.find((tag) => tag.includes(`href="${href}"`))
+		expect(link).toBeDefined()
+		expect(link).not.toMatch(/\btarget\s*=/)
+		expect(output).not.toContain('/live')
+	}
+)
+
+test('pruned pieces remain plain text instead of linking to Published or source', () => {
+	const file = 'gone.book.md'
+	const output = html(undefined, [], { added: [], updated: [], pruned: [file] })
+	expect(output).toMatch(/<span class="change-gone(?:\s[^"]*)?">gone\.book\.md<\/span>/)
+	expect(output).not.toContain(`/admin/piece/${file}/`)
 })
 
 test('partial reports retain one timeline row per retried phase and count stages correctly', () => {

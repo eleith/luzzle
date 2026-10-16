@@ -18,7 +18,7 @@
 	import type { PublishPieceFailure } from '@luzzle/web.jobs'
 	import type { PageData } from './$types'
 	import type { RunView } from './+page.server'
-	import { editorHref, liveHref, getRunKind, latestPhases, type ActiveKind } from './report.js'
+	import { editorHref, publishedHref, getRunKind, latestPhases, type ActiveKind } from './report.js'
 
 	let { data }: { data: PageData } = $props()
 
@@ -121,8 +121,7 @@
 		].some((list) => list.length > 0)
 	}
 
-	// Pending changes link to the editor; published changes redirect to the live
-	// piece (the /live route resolves the file path to its public URL on click).
+	// Pending changes link to the editor; published changes open the Published overview.
 	// Pruned pieces have no target — rendered as plain text.
 	function noHref(): null {
 		return null
@@ -375,7 +374,7 @@
 				</div>
 			{/if}
 			{#if activeKind === 'publish' && publishDiff}
-				{@render changeList(publishDiff, liveHref)}
+				{@render changeList(publishDiff, publishedHref)}
 			{:else if activeKind === 'audit' && auditDiff}
 				{@render changeList(auditDiff, editorHref)}
 			{:else}
