@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest'
-import { getPieceLinks } from './navigation'
+import { editorHref, getPieceLinks, previewHref, publishedHref } from './navigation'
 
 const { resolve } = vi.hoisted(() => ({
 	resolve: vi.fn(() => {
@@ -10,6 +10,33 @@ vi.mock('$app/paths', () => ({ resolve }))
 
 const piecePath = 'books/%E6%BA%90%20%23%3F%25%26%22.books.md'
 const route = '/admin/piece/[...path]/published'
+
+test.each([
+	'books/源 #?%.books.md',
+	'folder with spaces/a book.books.md',
+	'nested/literal%2F.books.md',
+	'books/📚.books.md'
+])(
+	'editor navigation encodes raw file %s and job segments once without a request store',
+	(file) => {
+		const root = `/admin/piece/${file.split('/').map(encodeURIComponent).join('/')}`
+		const job = 'job #?%'
+		const links = [editorHref(file), publishedHref(file), previewHref(file), previewHref(file, job)]
+		expect(links).toEqual([
+			`${root}/source`,
+			`${root}/published`,
+			`${root}/preview`,
+			`${root}/preview/job%20%23%3F%25`
+		])
+		for (const href of links) {
+			const url = new URL(href, 'https://app.test')
+			expect(url.search).toBe('')
+			expect(url.hash).toBe('')
+			expect(decodeURIComponent(url.pathname)).toContain(file)
+		}
+		expect(resolve).not.toHaveBeenCalled()
+	}
+)
 
 test.each(
 	['', '/garden'].flatMap((mount) =>

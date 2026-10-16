@@ -3,6 +3,7 @@
 	import { onMount, onDestroy } from 'svelte'
 	import { page } from '$app/state'
 	import type { LayoutProps } from './$types'
+	import { editorHref, previewHref } from '$lib/pieces/navigation'
 
 	import ArrowLeftIcon from 'virtual:icons/ph/arrow-left'
 	import PieceOverview from '$lib/pieces/viewer/PieceOverview.svelte'
@@ -48,16 +49,16 @@
 
 	let eventSource: EventSource | null = null
 
-	const editorUrl = `/admin/piece/${data.file}/source`
+	const editorUrl = editorHref(data.file)
 
-	const logsUrl = `/admin/piece/${data.file}/preview/${data.job}`
-	const pageUrl = `/admin/piece/${data.file}/preview/${data.job}/page`
-	const iconUrl = `/admin/piece/${data.file}/preview/${data.job}/icon`
-	const shareUrl = `/admin/piece/${data.file}/preview/${data.job}/share`
+	const logsUrl = previewHref(data.file, data.job)
+	const pageUrl = `${logsUrl}/page`
+	const iconUrl = `${logsUrl}/icon`
+	const shareUrl = `${logsUrl}/share`
 
 	function startWatching() {
 		if (eventSource) eventSource.close()
-		eventSource = new EventSource(`/api/admin/preview/${data.job}/stream`)
+		eventSource = new EventSource(`/api/admin/preview/${encodeURIComponent(data.job)}/stream`)
 
 		eventSource.addEventListener('state', (e) => {
 			const d = JSON.parse(e.data)

@@ -2,36 +2,24 @@
 	import { DropdownMenu } from 'bits-ui'
 	import DotsThreeVertical from 'virtual:icons/ph/dots-three-vertical'
 	import { goto } from '$app/navigation'
+	import { editorHref } from '$lib/pieces/navigation'
 
 	type Props = {
 		file: string
 		currentMode: 'source' | 'preview'
-		isDirty: boolean
 		canGenerate: boolean
-		hasPublicVersion: boolean
-		isPublicStale: boolean
+		canPublish: boolean
 		onDelete: () => void
 		onAttach?: () => void
 		onGenerate?: () => void
 	}
 
-	let {
-		file,
-		currentMode,
-		canGenerate,
-		hasPublicVersion,
-		isPublicStale,
-		onDelete,
-		onAttach,
-		onGenerate
-	}: Props = $props()
-
-	const previewUrl = `/admin/piece/${file}/preview`
-	const liveUrl = `/admin/piece/${file}/live`
+	let { file, currentMode, canGenerate, canPublish, onDelete, onAttach, onGenerate }: Props =
+		$props()
 </script>
 
 <DropdownMenu.Root>
-	<DropdownMenu.Trigger class="button button-variant-outline">
+	<DropdownMenu.Trigger class="button" data-variant="outline" aria-label="Piece actions">
 		<DotsThreeVertical />
 	</DropdownMenu.Trigger>
 	<DropdownMenu.Portal>
@@ -40,15 +28,7 @@
 				{#if open}
 					<div {...wrapperProps}>
 						<div {...props} class="dropdown-content">
-							{#if currentMode !== 'preview' && (!hasPublicVersion || isPublicStale)}
-								<DropdownMenu.Item onSelect={() => goto(previewUrl)}>
-									{#snippet child({ props })}
-										<div class="dropdown-item" {...props}>preview</div>
-									{/snippet}
-								</DropdownMenu.Item>
-							{/if}
-
-							{#if !hasPublicVersion || isPublicStale}
+							{#if canPublish}
 								<DropdownMenu.Item onSelect={() => goto('/admin/publish?check=1')}>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>publish</div>
@@ -60,7 +40,7 @@
 								<DropdownMenu.Item
 									onSelect={() => {
 										if (currentMode === 'source' && onGenerate) onGenerate()
-										else goto(`/admin/piece/${file}/source?generate=1`)
+										else goto(editorHref(file) + '?generate=1')
 									}}
 								>
 									{#snippet child({ props })}
@@ -73,22 +53,6 @@
 								<DropdownMenu.Item onSelect={onAttach}>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>attach</div>
-									{/snippet}
-								</DropdownMenu.Item>
-							{/if}
-
-							{#if hasPublicVersion}
-								<DropdownMenu.Item>
-									{#snippet child({ props })}
-										<a
-											href={liveUrl}
-											target="_blank"
-											rel="noopener"
-											class="dropdown-item"
-											{...props}
-										>
-											live
-										</a>
 									{/snippet}
 								</DropdownMenu.Item>
 							{/if}

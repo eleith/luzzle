@@ -1,3 +1,5 @@
+export { editorHref, publishedHref } from '$lib/pieces/navigation'
+
 export type ActiveKind = 'audit' | 'publish'
 
 export function getRunKind(workflowName: unknown, fallback: ActiveKind | null): ActiveKind | null {
@@ -12,19 +14,4 @@ export function latestPhases<T extends { phase: string }>(rows: T[]): T[] {
 		latestByPhase.set(row.phase, row)
 	}
 	return Array.from(latestByPhase.values())
-}
-
-function piecePath(file: string): string {
-	return file
-		.split('/')
-		.map((segment) => encodeURIComponent(segment))
-		.join('/')
-}
-
-export function editorHref(file: string): string {
-	return `/admin/piece/${piecePath(file)}/source`
-}
-
-export function publishedHref(file: string): string {
-	return `/admin/piece/${piecePath(file)}/published`
 }

@@ -153,6 +153,25 @@ test.each(['', '/page', '/icon', '/share'])(
 	}
 )
 
+test('Preview header retains encoded file and job identity reached through View', () => {
+	const props = data('completed')
+	props.file = 'books/源 #?%.books.md'
+	props.job = 'job #?%'
+	const encodedRoot = '/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md'
+	const preview = `${encodedRoot}/preview/job%20%23%3F%25`
+	page.url = new URL(`${preview}/share?html`, 'https://app.test')
+	const html = render(PreviewLayout, {
+		props: { data: props, params: { path: props.file, jobId: props.job }, children }
+	}).body
+	const links = anchors(html.slice(0, html.indexOf('</header>')))
+	expect(links[0]).toContain(`href="${encodedRoot}/source"`)
+	for (const [index, leaf] of ['', '/page', '/icon', '/share', '/share?html'].entries())
+		expect(links[index + 1]).toContain(`href="${preview}${leaf}"`)
+	expect(links.filter((link) => link.includes('aria-current="page"'))).toHaveLength(1)
+	expect(links.at(-1)).toContain('aria-current="page"')
+	expect(EventSource).not.toHaveBeenCalled()
+})
+
 test('Share HTML label keeps the renamed alternate destination available and solely active', () => {
 	page.url = new URL(`${root}/share?html`, 'https://app.test')
 	const links = anchors(body())

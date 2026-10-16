@@ -3,7 +3,8 @@ import { getPieces } from '$lib/server/pieces'
 import { config } from '$lib/server/config'
 import { getOpenWorkflow } from '$lib/server/workflow/index.js'
 import { previewSpec } from '@luzzle/web.jobs/specs'
-import type { PageServerLoad } from '../$types'
+import type { PageServerLoad } from './$types'
+import { previewHref } from '$lib/pieces/navigation'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -22,5 +23,5 @@ export const load: PageServerLoad = async ({ params }) => {
 	const openWorkflow = getOpenWorkflow()
 	const handle = await openWorkflow.runWorkflow(previewSpec, { filePath: file })
 	const runId = handle.workflowRun.id
-	redirect(303, `/admin/piece/${file}/preview/${runId}`)
+	redirect(303, previewHref(file, runId))
 }

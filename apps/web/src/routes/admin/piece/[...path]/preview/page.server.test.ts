@@ -29,5 +29,26 @@ test('the UI queues its preview through the web client and redirects without the
 		status: 303,
 		location: '/admin/piece/example.book.md/preview/preview-id'
 	})
-	expect(runWorkflow).toHaveBeenCalledWith(previewSpec, { filePath: 'example.book.md' })
+	expect(runWorkflow).toHaveBeenCalledExactlyOnceWith(previewSpec, { filePath: 'example.book.md' })
 })
+
+test.each([
+	[
+		'books/源 #?%.book.md',
+		'job #?%',
+		'/admin/piece/books/%E6%BA%90%20%23%3F%25.book.md/preview/job%20%23%3F%25'
+	],
+	[
+		'nested/literal%2F.book.md',
+		'preview-id',
+		'/admin/piece/nested/literal%252F.book.md/preview/preview-id'
+	]
+])(
+	'Preview starts once from raw file %s and redirects with encoded segments',
+	async (file, job, location) => {
+		runWorkflow.mockResolvedValue({ workflowRun: { id: job } })
+		const event = { params: { path: file } } as Parameters<typeof load>[0]
+		await expect(load(event)).rejects.toMatchObject({ status: 303, location })
+		expect(runWorkflow).toHaveBeenCalledExactlyOnceWith(previewSpec, { filePath: file })
+	}
+)

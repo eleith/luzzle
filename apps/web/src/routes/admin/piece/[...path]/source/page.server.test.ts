@@ -10,14 +10,18 @@ import {
 	type PieceMarkdown,
 	type PieceFrontmatter
 } from '@luzzle/core'
-import { getPieces } from '$lib/server/pieces'
+import { getPieces, getWebPiece } from '$lib/server/pieces'
 import { getStorage } from '$lib/server/storage'
 import { actions, load } from './+page.server'
 import { config } from '$lib/server/config'
 import { db } from '$lib/server/database'
+import type { WebPieces } from '@luzzle/web.db'
+import { getMarkdownPublicationStatus } from '$lib/pieces/publication.server'
+import { MarkdownPublicationStatus } from '$lib/pieces/types'
 
 vi.mock('$lib/server/pieces', () => ({ getPieces: vi.fn(), getWebPiece: vi.fn() }))
 vi.mock('$lib/server/storage', () => ({ getStorage: vi.fn() }))
+vi.mock('$lib/pieces/publication.server', () => ({ getMarkdownPublicationStatus: vi.fn() }))
 vi.mock('$lib/server/database', () => ({ db: {} }))
 vi.mock('$lib/server/config', async () => {
 	const { makeConfig } = await import('$lib/server/config.fixture')
@@ -263,31 +267,119 @@ test.each(['https://example.test/cover.png', 'HTTPS://example.test/cover.png'])(
 	}
 )
 
+const file = 'books/example.books.md'
+const rawSource = '---\r\ntitle: Saved\r\n---\r\n untouched  \r\n'
+const publishedPiece: WebPieces = {
+	id: 'published-id',
+	key: 'published-key',
+	title: 'Published title',
+	slug: 'published-book',
+	file_path: file,
+	type: 'books',
+	json_metadata: '{"title":"Published title"}',
+	date_added: 0,
+	content_hash: 'completed-publication-hash',
+	last_published_at: null
+}
+
+function setupLoad() {
+	const saved = setup('')
+	const piece = Object.assign(saved.piece, {
+		get: vi.fn().mockResolvedValue({ filePath: file }),
+		schema: { type: 'object', properties: {} }
+	})
+	const storage = Object.assign(saved.storage, {
+		readFile: vi.fn().mockResolvedValue(rawSource),
+		stat: vi.fn(),
+		writeFile: vi.fn()
+	})
+	vi.mocked(getWebPiece).mockResolvedValue(undefined)
+	vi.mocked(getMarkdownPublicationStatus).mockResolvedValue(MarkdownPublicationStatus.UNKNOWN)
+	const event = { params: { path: file } } as Parameters<typeof load>[0]
+	return { piece, storage, event }
+}
+
 test.each([false, true])(
 	'source loader exposes only generation availability (configured: %s)',
 	async (configured) => {
 		config.ai = configured ? { provider: 'google', api_key: 'private-ai-key' } : undefined
-		const { piece, storage } = setup('')
-		Object.assign(piece, {
-			get: vi.fn().mockResolvedValue({ filePath: 'books/example.books.md' }),
-			schema: { type: 'object', properties: {} }
-		})
-		Object.assign(storage, {
-			readFile: vi.fn().mockResolvedValue('Unsaved source'),
-			stat: vi.fn().mockResolvedValue({ last_modified: new Date(0) })
-		})
-		const result = await load({ params: { path: 'books/example.books.md' } } as Parameters<
-			typeof load
-		>[0])
-		expect(result).toEqual({
-			file: 'books/example.books.md',
+		const { event } = setupLoad()
+		expect(await load(event)).toEqual({
+			file,
 			type: 'books',
-			rawContent: 'Unsaved source',
+			rawContent: rawSource,
 			schema: { type: 'object', properties: {} },
 			canGenerate: configured,
 			assetFields: [],
-			publishedAt: null,
-			fileUpdatedAt: 0
+			hasPublishedVersion: false,
+			savedMarkdown: MarkdownPublicationStatus.UNKNOWN
 		})
+	}
+)
+
+test.each([
+	{ name: 'no serving row', row: undefined, status: MarkdownPublicationStatus.UNKNOWN },
+	{
+		name: 'serving row without a hash or publication time',
+		row: { ...publishedPiece, content_hash: null },
+		status: MarkdownPublicationStatus.UNKNOWN
+	},
+	{
+		name: 'matching saved Markdown',
+		row: publishedPiece,
+		status: MarkdownPublicationStatus.MATCHING
+	},
+	{
+		name: 'changed saved Markdown',
+		row: publishedPiece,
+		status: MarkdownPublicationStatus.CHANGED
+	},
+	{ name: 'unknown saved Markdown', row: publishedPiece, status: MarkdownPublicationStatus.UNKNOWN }
+])(
+	'source loader reports $name without mutations or a status-only stat',
+	async ({ row, status }) => {
+		const { piece, storage, event } = setupLoad()
+		vi.mocked(getWebPiece).mockResolvedValue(row)
+		vi.mocked(getMarkdownPublicationStatus).mockResolvedValue(status)
+
+		expect(await load(event)).toMatchObject({
+			rawContent: rawSource,
+			hasPublishedVersion: Boolean(row),
+			savedMarkdown: status
+		})
+		expect(getWebPiece).toHaveBeenCalledExactlyOnceWith(db, file)
+		expect(getMarkdownPublicationStatus).toHaveBeenCalledExactlyOnceWith(file, row?.content_hash)
+		expect(storage.readFile).toHaveBeenCalledExactlyOnceWith(file, 'text')
+		expect(storage.stat).not.toHaveBeenCalled()
+		expect(storage.writeFile).not.toHaveBeenCalled()
+		expect(storage.delete).not.toHaveBeenCalled()
+		expect(piece.write).not.toHaveBeenCalled()
+		expect(piece.syncMarkdown).not.toHaveBeenCalled()
+		expect(savePieceAsset).not.toHaveBeenCalled()
+	}
+)
+
+test.each(['serving database', 'publication database', 'raw source'])(
+	'source loader propagates %s failures rather than claiming an unpublished or unknown state',
+	async (failure) => {
+		const { piece, storage, event } = setupLoad()
+		const error = new Error(`${failure} failed`)
+		if (failure === 'serving database') vi.mocked(getWebPiece).mockRejectedValueOnce(error)
+		if (failure === 'publication database') {
+			vi.mocked(getWebPiece).mockResolvedValueOnce(publishedPiece)
+			vi.mocked(getMarkdownPublicationStatus).mockRejectedValueOnce(error)
+		}
+		if (failure === 'raw source') storage.readFile.mockRejectedValueOnce(error)
+
+		await expect(load(event)).rejects.toBe(error)
+		if (failure !== 'publication database') {
+			expect(getMarkdownPublicationStatus).not.toHaveBeenCalled()
+		}
+		expect(storage.stat).not.toHaveBeenCalled()
+		expect(storage.writeFile).not.toHaveBeenCalled()
+		expect(storage.delete).not.toHaveBeenCalled()
+		expect(piece.write).not.toHaveBeenCalled()
+		expect(piece.syncMarkdown).not.toHaveBeenCalled()
+		expect(savePieceAsset).not.toHaveBeenCalled()
 	}
 )

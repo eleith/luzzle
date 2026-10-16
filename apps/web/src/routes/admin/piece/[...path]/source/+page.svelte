@@ -3,6 +3,9 @@
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
 	import Button from '$lib/components/ui/Button.svelte'
 	import PieceActions from '$lib/components/editor/PieceActions.svelte'
+	import PieceView from '$lib/components/editor/PieceView.svelte'
+	import { shouldOfferPublish } from '$lib/components/editor/view-state'
+	import { editorHref } from '$lib/pieces/navigation'
 	import GenerationDialog from '$lib/components/editor/GenerationDialog.svelte'
 	import type { PageProps } from './$types'
 	import { Dialog } from 'bits-ui'
@@ -63,8 +66,8 @@
 	const hasChanges = $derived(rawContent !== (data.rawContent ?? ''))
 	const isDirty = $derived(!!form?.error || (hasChanges && !isSaving))
 
-	const hasPublicVersion = $derived(data.publishedAt !== null)
-	const isPublicStale = $derived(data.publishedAt !== null && data.fileUpdatedAt > data.publishedAt)
+	const sourceUrl = $derived(editorHref(data.file))
+	const canPublish = $derived(shouldOfferPublish(data.hasPublishedVersion, data.savedMarkdown))
 
 	$effect(() => {
 		if (form && 'rawContent' in form && form.rawContent) {
@@ -167,7 +170,7 @@
 		}
 
 		try {
-			const response = await fetch(`/admin/piece/${data.file}/source?/attach`, {
+			const response = await fetch(`${sourceUrl}?/attach`, {
 				method: 'POST',
 				body: formData
 			})
@@ -366,7 +369,7 @@
 <dialog bind:this={dialog}>
 	<form
 		method="post"
-		action="/admin/piece/{data.file}/source?/delete"
+		action="{sourceUrl}?/delete"
 		use:enhance={() => {
 			bypassWarning = true
 			return async ({ update }) => {
@@ -420,7 +423,7 @@
 		<div style="display:flex; gap: var(--space-2);">
 			<form
 				method="post"
-				action="/admin/piece/{data.file}/source?/save"
+				action="{sourceUrl}?/save"
 				use:enhance={() => {
 					isSaving = true
 					bypassWarning = true
@@ -456,13 +459,12 @@
 				<Button variant="outline">cancel</Button>
 			</a>
 		</div>
+		<PieceView file={data.file} hasPublishedVersion={data.hasPublishedVersion} {isSaving} />
 		<PieceActions
 			file={data.file}
 			currentMode="source"
-			{isDirty}
 			canGenerate={data.canGenerate && !isSaving}
-			{hasPublicVersion}
-			{isPublicStale}
+			{canPublish}
 			onDelete={() => dialog.showModal()}
 			onGenerate={() => {
 				editorError = ''
@@ -527,6 +529,8 @@
 
 	.header {
 		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
 		justify-content: flex-end;
 		gap: var(--space-2);
 		margin-bottom: var(--space-2);
