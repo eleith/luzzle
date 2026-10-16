@@ -33,18 +33,16 @@
 										{...props}
 										class="dropdown-item"
 										aria-labelledby={`${id}-published-label`}
-										aria-describedby={`${id}-published-description`}
+										aria-describedby={!availability.published
+											? `${id}-published-description`
+											: undefined}
 									>
 										<span id={`${id}-published-label`}>Published</span>
-										<span id={`${id}-published-description`} class="description">
-											{#if isSaving}
-												Wait for saving to finish.
-											{:else if !hasPublishedVersion}
-												No published version yet.
-											{:else}
-												View the published version.
-											{/if}
-										</span>
+										{#if !availability.published}
+											<span id={`${id}-published-description`} class="description">
+												{#if isSaving}Saving…{:else}Not published yet{/if}
+											</span>
+										{/if}
 									</div>
 								{/snippet}
 							</DropdownMenu.Item>
@@ -58,16 +56,14 @@
 										{...props}
 										class="dropdown-item"
 										aria-labelledby={`${id}-preview-label`}
-										aria-describedby={`${id}-preview-description`}
+										aria-describedby={!availability.preview
+											? `${id}-preview-description`
+											: undefined}
 									>
 										<span id={`${id}-preview-label`}>Preview</span>
-										<span id={`${id}-preview-description`} class="description">
-											{#if isSaving}
-												Wait for saving to finish.
-											{:else}
-												Uses saved Markdown.
-											{/if}
-										</span>
+										{#if !availability.preview}
+											<span id={`${id}-preview-description`} class="description">Saving…</span>
+										{/if}
 									</div>
 								{/snippet}
 							</DropdownMenu.Item>
@@ -84,26 +80,35 @@
 		background-color: var(--color-surface-container-highest);
 		border: 1px solid var(--color-outline);
 		border-radius: var(--radius-small);
+		min-width: 160px;
 		box-shadow: var(--shadow-raised);
-		padding: var(--space-1);
 		z-index: 1000;
 	}
 
 	.dropdown-item {
 		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
+		align-items: center;
 		padding: var(--space-3);
-		border-radius: var(--radius-small);
-		color: var(--color-on-surface);
 		cursor: pointer;
+		color: var(--color-on-surface);
+		gap: var(--space-2);
+		border-radius: var(--radius-small);
+		width: 100%;
+		text-align: left;
+		text-decoration: none;
+		background: none;
+		border: none;
+		text-transform: uppercase;
 	}
 
-	.dropdown-item[data-highlighted],
-	.dropdown-item:focus-visible {
+	.dropdown-item:hover,
+	.dropdown-item[data-highlighted] {
 		background-color: var(--color-surface-container-low);
-		outline: 2px solid var(--color-primary);
-		outline-offset: -2px;
+		outline: none;
+	}
+
+	.dropdown-item:focus-visible {
+		outline: auto;
 	}
 
 	.dropdown-item[data-disabled] {

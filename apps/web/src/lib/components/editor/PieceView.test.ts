@@ -56,21 +56,53 @@ test('source editor wires availability and encoded actions without replacing its
 	expect(editor).toContain('onclick={confirmDiscard}')
 })
 
-test('real child menuitems connect instance-unique literal labels and visible descriptions', () => {
+test('View menu source matches the original actions menu presentation', () => {
+	const original = readFileSync(new URL('./PieceActions.svelte', import.meta.url), 'utf8')
+	for (const pattern of [
+		/\.dropdown-content\s*\{([^}]+)\}/,
+		/\.dropdown-item\s*\{([^}]+)\}/,
+		/\.dropdown-item\[data-disabled\]\s*\{([^}]+)\}/
+	]) {
+		const expected = original.match(pattern)?.[1]
+		const actual = source.match(pattern)?.[1]
+		expect(expected).toBeDefined()
+		expect(actual).toBeDefined()
+		expect(actual?.trim()).toBe(expected?.trim())
+	}
+	const hover = original.match(/\.dropdown-item:hover\s*\{([^}]+)\}/)?.[1]
+	const highlight = source.match(/\.dropdown-item\[data-highlighted\]\s*\{([^}]+)\}/)?.[1]
+	expect(hover).toBeDefined()
+	expect(highlight).toBeDefined()
+	expect(highlight?.trim()).toBe(hover?.trim())
+	expect(source).toMatch(/\.dropdown-item:focus-visible\s*\{\s*outline: auto;/)
+})
+
+test('menuitem source keeps labels and short reasons only while disabled', () => {
+	const markup = source.replace(/\s+/g, ' ')
 	expect(source).toContain('const id = $props.id()')
 	for (const [view, label] of [
 		['published', 'Published'],
 		['preview', 'Preview']
 	]) {
 		expect(source).toContain(`<span id={\`\${id}-${view}-label\`}>${label}</span>`)
-		expect(source).toContain(`id={\`\${id}-${view}-description\`} class="description"`)
 		expect(source).toContain(`aria-labelledby={\`\${id}-${view}-label\`}`)
-		expect(source).toContain(`aria-describedby={\`\${id}-${view}-description\`}`)
+		expect(markup).toContain(
+			`aria-describedby={!availability.${view} ? \`\${id}-${view}-description\` : undefined}`
+		)
+		expect(markup).toContain(
+			`{#if !availability.${view}} <span id={\`\${id}-${view}-description\`} class="description">`
+		)
 	}
 	expect(source.match(/\{#snippet child\(\{ props \}\)\}\s*<div\s*\{\.\.\.props\}/g)).toHaveLength(
 		2
 	)
-	expect(source.match(/Wait for saving to finish\./g)).toHaveLength(2)
-	expect(source).toContain('No published version yet.')
-	expect(source).toContain('Uses saved Markdown.')
+	expect(source.match(/Saving…/g)).toHaveLength(2)
+	expect(source).toContain('Not published yet')
+	for (const verbose of [
+		'Wait for saving to finish.',
+		'No published version yet.',
+		'View the published version.',
+		'Uses saved Markdown.'
+	])
+		expect(source).not.toContain(verbose)
 })
