@@ -6,9 +6,9 @@
 </script>
 
 {#if data.status === 'completed' && data.piece}
-	<div class="icon-preview-viewport">
+	<main id="main-content" class="icon-preview-viewport" aria-label="Icon">
 		<PieceIcon piece={data.piece} size={{ width: 500 }} lazy={false} />
-	</div>
+	</main>
 {/if}
 
 <style>

@@ -219,6 +219,26 @@ test('completed workflow without an assembled result keeps facts/logs and omits 
 	expect(resolve).not.toHaveBeenCalled()
 })
 
+test('recorded generated Share PNG remains a View link in Overview', () => {
+	const props = data()
+	if (props.status !== 'completed' || !props.outputs) throw new Error('Expected assembled fixture')
+	props.outputs = [
+		...props.outputs,
+		asset('opengraph', 'generated/share.png', 'piece', 'image/png')
+	]
+	const html = tree(props)
+	const png = html
+		.match(/<a\b[^>]*>/g)
+		?.find((tag) => tag.includes('href="/admin/preview/job/asset/generated/share.png"'))
+	expect(png).toBeDefined()
+	expect(png).toContain('aria-label="View opengraph: generated/share.png"')
+	expect(png).toContain('target="_blank"')
+	expect(png).toContain('rel="noopener noreferrer"')
+	expect(png).not.toMatch(/\bdownload(?:=|\s|>)/)
+	expect(html.match(/<main\b/g)).toHaveLength(1)
+	expect(resolve).not.toHaveBeenCalled()
+})
+
 test('empty generated outputs do not turn SDK passthroughs into downloadable preview artifacts', () => {
 	const props = data()
 	if (props.status !== 'completed') throw new Error('Expected completed fixture')

@@ -149,26 +149,19 @@
 		<a
 			href={status === 'completed' ? shareUrl : '#'}
 			class="viewer-bar-link"
-			class:active={page.url.pathname === shareUrl && !page.url.searchParams.has('html')}
-			aria-current={page.url.pathname === shareUrl && !page.url.searchParams.has('html')
-				? 'page'
-				: undefined}
+			class:active={page.url.pathname === shareUrl}
+			aria-current={page.url.pathname === shareUrl ? 'page' : undefined}
 			class:disabled={status !== 'completed'}
 			aria-disabled={status !== 'completed'}
 		>
 			share
 		</a>
-		{#if status === 'completed' && page.url.pathname === shareUrl && page.url.searchParams.has('html')}
-			<a href="{shareUrl}?html" class="viewer-bar-link active" aria-current="page">share (html)</a>
-		{/if}
 	</nav>
 	<span class="viewer-bar-label">preview</span>
 </header>
 
 {#if status === 'completed'}
-	<main id="main-content">
-		{@render children()}
-	</main>
+	{@render children()}
 {:else}
 	<main id="main-content">
 		<PieceOverview title="Preview" fileUrl={() => undefined}>
