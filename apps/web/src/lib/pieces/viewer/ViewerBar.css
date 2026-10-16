@@ -1,0 +1,110 @@
+.viewer-bar {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	grid-template-areas: 'back links label';
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-2) var(--space-4);
+	background-color: var(--color-tertiary-container);
+	color: var(--color-on-tertiary-container);
+	font-size: var(--font-size-small);
+}
+
+.viewer-bar .viewer-bar-back {
+	grid-area: back;
+	justify-self: start;
+	padding: var(--space-1);
+}
+
+.viewer-bar .viewer-bar-links {
+	grid-area: links;
+	justify-self: center;
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	max-width: 100%;
+	gap: var(--space-3);
+	overflow-x: auto;
+}
+
+.viewer-bar .viewer-bar-back,
+.viewer-bar .viewer-bar-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	min-width: 44px;
+	min-height: 44px;
+	color: inherit;
+	text-decoration: none;
+	white-space: nowrap;
+	border-radius: var(--radius-small);
+}
+
+.viewer-bar .viewer-bar-link {
+	flex-shrink: 0;
+	padding: var(--space-1) var(--space-2);
+	text-transform: uppercase;
+	font-size: 0.9em;
+	/* Keep Preview's muted treatment with stronger small-text contrast. */
+	opacity: 0.85;
+}
+
+.viewer-bar .viewer-bar-link:hover {
+	opacity: 1;
+	background-color: color-mix(in srgb, var(--color-on-tertiary-container) 10%, transparent);
+}
+
+.viewer-bar .viewer-bar-link[aria-current='page'],
+.viewer-bar .viewer-bar-link.active {
+	opacity: 1;
+	font-weight: var(--font-weight-bold);
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+	background-color: color-mix(in srgb, var(--color-on-tertiary-container) 20%, transparent);
+}
+
+.viewer-bar a:focus-visible {
+	opacity: 1;
+	outline: 2px solid currentColor;
+	outline-offset: -2px;
+}
+
+.viewer-bar .viewer-bar-link.disabled {
+	opacity: 0.35;
+	pointer-events: none;
+	cursor: not-allowed;
+}
+
+.viewer-bar .viewer-bar-label {
+	grid-area: label;
+	justify-self: end;
+	text-transform: uppercase;
+	font-weight: var(--font-weight-bold);
+	letter-spacing: 0.05em;
+	opacity: 0.85;
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+	.viewer-bar {
+		grid-template-columns: minmax(44px, 1fr) minmax(0, auto);
+		grid-template-areas: 'back label' 'links links';
+		row-gap: var(--space-1);
+	}
+
+	.viewer-bar .viewer-bar-links {
+		justify-self: stretch;
+		flex-wrap: wrap;
+		gap: var(--space-1);
+		overflow-x: visible;
+	}
+
+	.viewer-bar .viewer-bar-link {
+		flex: 1 0 auto;
+		padding-inline: var(--space-1);
+	}
+}
