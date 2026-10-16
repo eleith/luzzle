@@ -4,16 +4,7 @@ import { Readable } from 'node:stream'
 import mime from 'mime-types'
 import type { RequestHandler } from '@sveltejs/kit'
 import { config } from '$lib/server/config'
-
-function isWithin(directory: string, file: string): boolean {
-	const relative = path.relative(directory, file)
-	return (
-		relative !== '' &&
-		relative !== '..' &&
-		!relative.startsWith(`..${path.sep}`) &&
-		!path.isAbsolute(relative)
-	)
-}
+import { isSafeRelativePath, isWithinDirectory } from '$lib/server/asset-paths'
 
 export const GET: RequestHandler = async ({ params }) => {
 	const jobId = params.jobId
@@ -23,14 +14,8 @@ export const GET: RequestHandler = async ({ params }) => {
 		!jobId ||
 		!asset ||
 		jobId.includes('/') ||
-		[jobId, ...asset.split('/')].some(
-			(segment) =>
-				!segment ||
-				segment === '.' ||
-				segment === '..' ||
-				segment.includes('\\') ||
-				segment.includes('\0')
-		)
+		!isSafeRelativePath(jobId) ||
+		!isSafeRelativePath(asset)
 	) {
 		return new Response('forbidden', { status: 403 })
 	}
@@ -39,19 +24,19 @@ export const GET: RequestHandler = async ({ params }) => {
 	const baseDir = path.resolve(previewRoot, jobId)
 	const absolutePath = path.resolve(baseDir, asset)
 
-	if (!isWithin(previewRoot, baseDir) || !isWithin(baseDir, absolutePath)) {
+	if (!isWithinDirectory(previewRoot, baseDir) || !isWithinDirectory(baseDir, absolutePath)) {
 		return new Response('forbidden', { status: 403 })
 	}
 
 	try {
 		const realRoot = await fs.promises.realpath(previewRoot)
 		const realBase = await fs.promises.realpath(baseDir)
-		if (!isWithin(realRoot, realBase)) {
+		if (!isWithinDirectory(realRoot, realBase)) {
 			return new Response('forbidden', { status: 403 })
 		}
 
 		const realFile = await fs.promises.realpath(absolutePath)
-		if (!isWithin(realBase, realFile)) {
+		if (!isWithinDirectory(realBase, realFile)) {
 			return new Response('forbidden', { status: 403 })
 		}
 
