@@ -24,15 +24,28 @@ beforeEach(() => {
 })
 afterEach(() => vi.resetModules())
 
-function event(session: object | null, pathname = '/api/admin/generate') {
+function event(
+	session: object | null,
+	pathname = '/api/admin/generate',
+	{
+		routeId = pathname,
+		isDataRequest = false,
+		method = 'GET'
+	}: { routeId?: string | null; isDataRequest?: boolean; method?: string } = {}
+) {
 	return {
 		url: new URL(`http://localhost${pathname}`),
+		request: new Request(`http://localhost${pathname}${isDataRequest ? '/__data.json' : ''}`, {
+			method
+		}),
+		route: { id: routeId },
+		isDataRequest,
 		locals: { auth: vi.fn().mockResolvedValue(session) }
 	} as unknown as Parameters<Handle>[0]['event']
 }
 
-test.each(['/admin', '/admin/pieces', '/api/admin/generate', '/admin/lsp', '/administrator'])(
-	'the protected prefix %s requires a session before resolving its handler',
+test.each(['/admin', '/admin/pieces', '/api/admin', '/api/admin/generate', '/admin/lsp'])(
+	'the protected route %s requires a session before resolving its handler',
 	async (pathname) => {
 		const { handle } = await import('./hooks.server')
 		const resolve = vi.fn()
@@ -79,6 +92,86 @@ test('an authenticated generation request reaches its handler', async () => {
 	await expect(handle({ event: event({ user: { name: 'test' } }), resolve })).resolves.toBe(
 		response
 	)
+})
+
+const encodedRequests = [
+	...['', '/page', '/icon', '/share'].flatMap((suffix) =>
+		[false, true].map((isDataRequest) => ({
+			pathname: '/%61dmin/piece/books/book.books.md/published' + suffix,
+			routeId: '/admin/piece/[...path]/published' + suffix,
+			isDataRequest,
+			method: 'GET'
+		}))
+	),
+	{
+		pathname: '/%61dmin/piece/books/book.books.md/source',
+		routeId: '/admin/piece/[...path]/source',
+		method: 'POST'
+	},
+	{ pathname: '/%61pi/admin/generate', routeId: '/api/admin/generate', method: 'POST' },
+	{ pathname: '/api/%61dmin/publish', routeId: '/api/admin/publish', method: 'POST' },
+	{ pathname: '/garden/admin/pieces', routeId: '/admin/pieces', method: 'GET' },
+	{ pathname: '/public-alias', routeId: '/admin/pieces', method: 'GET' }
+]
+
+test.each(encodedRequests)(
+	'$method $pathname (data=$isDataRequest) requires a session by matched route identity',
+	async ({ pathname, ...options }) => {
+		const { handle } = await import('./hooks.server')
+		const resolve = vi.fn()
+		const request = event(null, pathname, options)
+		await expect(handle({ event: request, resolve })).rejects.toMatchObject({
+			status: 302,
+			location: `/signin?redirectTo=${pathname}`
+		})
+		expect(request.locals.auth).toHaveBeenCalledOnce()
+		expect(resolve).not.toHaveBeenCalled()
+	}
+)
+
+test.each(encodedRequests)(
+	'$pathname remains inaccessible with auth disabled, even with a session (data=$isDataRequest)',
+	async ({ pathname, ...options }) => {
+		fixture.config.auth = undefined
+		const { handle } = await import('./hooks.server')
+		const resolve = vi.fn()
+		const request = event({ user: { name: 'test' } }, pathname, options)
+		await expect(handle({ event: request, resolve })).rejects.toMatchObject({
+			status: 302,
+			location: '/'
+		})
+		expect(request.locals.auth).not.toHaveBeenCalled()
+		expect(resolve).not.toHaveBeenCalled()
+	}
+)
+
+test.each(encodedRequests)(
+	'authenticated $pathname resolves normally (data=$isDataRequest)',
+	async ({ pathname, ...options }) => {
+		const { handle } = await import('./hooks.server')
+		const response = new Response('resolved')
+		const resolve = vi.fn().mockResolvedValue(response)
+		const request = event({ user: { name: 'test' } }, pathname, options)
+		await expect(handle({ event: request, resolve })).resolves.toBe(response)
+		expect(request.locals.auth).toHaveBeenCalledOnce()
+		expect(resolve).toHaveBeenCalledExactlyOnceWith(request)
+	}
+)
+
+test.each([
+	{ pathname: '/administrator', routeId: '/administrator' },
+	{ pathname: '/api/administer', routeId: '/api/administer' },
+	{ pathname: '/admin-looking-alias', routeId: '/public' },
+	{ pathname: '/', routeId: '/(root)' },
+	{ pathname: '/admin/not-a-route', routeId: null }
+])('public/unmatched $routeId is not classified by URL spelling', async ({ pathname, routeId }) => {
+	const { handle } = await import('./hooks.server')
+	const response = new Response('public or not found')
+	const resolve = vi.fn().mockResolvedValue(response)
+	const request = event(null, pathname, { routeId })
+	await expect(handle({ event: request, resolve })).resolves.toBe(response)
+	expect(request.locals.auth).not.toHaveBeenCalled()
+	expect(resolve).toHaveBeenCalledExactlyOnceWith(request)
 })
 
 test.each([
