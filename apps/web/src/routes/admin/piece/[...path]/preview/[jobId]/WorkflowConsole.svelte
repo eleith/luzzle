@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte'
 	import type { ProgressPhase, ProgressLog } from '$lib/components/progress.js'
+	import { formatDuration } from './duration'
 	import CheckCircleFill from 'virtual:icons/ph/check-circle-fill'
 	import XCircleFill from 'virtual:icons/ph/x-circle-fill'
 	import CircleNotchBold from 'virtual:icons/ph/circle-notch-bold'
@@ -20,15 +21,6 @@
 
 	let scrollLocks = $state<Record<string, boolean>>({})
 
-	function formatDuration(ms: number) {
-		if (ms < 0) return '0s'
-		const s = Math.floor(ms / 1000)
-		if (s < 60) return `${s}s`
-		const m = Math.floor(s / 60)
-		const remS = s % 60
-		return `${m}m ${remS}s`
-	}
-
 	function handleScroll(phaseName: string, event: Event) {
 		const el = event.currentTarget as HTMLDivElement
 		if (!el) return
@@ -41,15 +33,6 @@
 			scrollLocks[phaseName] = false
 		}
 	}
-
-	let overallDuration = $derived.by(() => {
-		if (phases.length === 0) return 0
-		const first = phases[0]
-		const last = phases[phases.length - 1]
-		if (!first.started_at) return 0
-		const end = last.finished_at || Date.now()
-		return end - first.started_at
-	})
 
 	let logLengths = $derived(
 		Object.fromEntries(Object.entries(logs).map(([phase, list]) => [phase, list.length]))
@@ -67,43 +50,6 @@
 		}
 	})
 </script>
-
-<div class="status-card">
-	<span class="status-icon-wrap status-{status}">
-		{#if status === 'completed'}
-			<CheckCircleFill class="status-icon" />
-		{:else if status === 'running'}
-			<CircleNotchBold class="status-icon spin" />
-		{:else if status === 'enqueued'}
-			<CircleNotchBold class="status-icon" />
-		{:else if status === 'failed' || status === 'expired'}
-			<XCircleFill class="status-icon" />
-		{:else}
-			<span class="status-dot"></span>
-		{/if}
-	</span>
-
-	<div class="status-text">
-		{#if status === 'expired'}
-			<div class="status-title">Preview expired</div>
-			<div class="status-sub">
-				Assets are purged after 2 days. Re-run the preview from the editor.
-			</div>
-		{:else if status === 'enqueued'}
-			<div class="status-title">Enqueued</div>
-			<div class="status-sub">Waiting for worker…</div>
-		{:else if status === 'running'}
-			<div class="status-title">Rendering preview</div>
-			<div class="status-sub">{formatDuration(overallDuration)} elapsed</div>
-		{:else if status === 'failed'}
-			<div class="status-title">Preview failed</div>
-			<div class="status-sub">{formatDuration(overallDuration)} stopped at</div>
-		{:else if status === 'completed'}
-			<div class="status-title">Preview completed</div>
-			<div class="status-sub">{formatDuration(overallDuration)} total time</div>
-		{/if}
-	</div>
-</div>
 
 {#if errorMessage && status === 'failed'}
 	<div class="error-strip">
@@ -209,66 +155,6 @@
 {/if}
 
 <style>
-	.status-card {
-		display: flex;
-		align-items: center;
-		gap: var(--space-5);
-		padding: var(--space-4) var(--space-5);
-		background-color: var(--color-surface-container-lowest);
-		border: 1px solid var(--color-outline-variant);
-		border-radius: var(--radius-medium);
-		margin-bottom: var(--space-5);
-	}
-
-	.status-icon-wrap {
-		width: 28px;
-		height: 28px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		color: var(--color-on-surface-variant);
-	}
-
-	.status-icon-wrap :global(.status-icon) {
-		font-size: 26px;
-	}
-
-	.status-dot {
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		border: 1.5px solid var(--color-outline-variant);
-	}
-
-	.status-icon-wrap.status-completed {
-		color: var(--color-primary);
-	}
-
-	.status-icon-wrap.status-running {
-		color: var(--color-secondary);
-	}
-
-	.status-icon-wrap.status-enqueued {
-		color: var(--color-tertiary);
-	}
-
-	.status-icon-wrap.status-failed {
-		color: var(--color-error);
-	}
-
-	.status-title {
-		font-size: var(--font-size-small);
-		font-weight: var(--font-weight-semibold);
-		color: var(--color-on-surface);
-	}
-
-	.status-sub {
-		margin-top: 2px;
-		font-size: var(--font-size-xxs);
-		color: var(--color-on-surface-variant);
-	}
-
 	.error-strip {
 		display: flex;
 		align-items: center;

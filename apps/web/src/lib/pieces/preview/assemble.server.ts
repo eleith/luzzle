@@ -6,6 +6,7 @@ import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 export type AssembledPreview = {
 	piece: PublicWebPiece
 	tags: Array<{ slug: string; tag: string }>
+	outputs: PublicWebPieceAsset[]
 }
 
 export type PreviewWorkerAsset = PublicWebPieceAsset & {
@@ -112,15 +113,16 @@ export function assemblePreview(
 				.filter(Boolean)
 		: []
 
+	const outputs: PublicWebPieceAsset[] = result.transforms.map((r) => ({
+		asset_key: r.asset_key,
+		transformation: r.transformation,
+		asset_path: r.asset_path ?? null,
+		mime_type: r.mime_type,
+		is_embedded: r.is_embedded,
+		content: r.content
+	}))
 	const assets: PublicWebPieceAsset[] = [
-		...result.transforms.map((r) => ({
-			asset_key: r.asset_key,
-			transformation: r.transformation,
-			asset_path: r.asset_path ?? null,
-			mime_type: r.mime_type,
-			is_embedded: r.is_embedded,
-			content: r.content
-		})),
+		...outputs,
 		...imagePassthroughs(fm, pieceConfig.fields.media, keyToPath),
 		...attachmentPassthroughs(fm, pieceConfig.fields.attachments, keyToPath)
 	]
@@ -143,5 +145,5 @@ export function assemblePreview(
 
 	const tags = tagValues.map((t) => ({ slug: slugify(t), tag: t }))
 
-	return { piece, tags }
+	return { piece, tags, outputs }
 }

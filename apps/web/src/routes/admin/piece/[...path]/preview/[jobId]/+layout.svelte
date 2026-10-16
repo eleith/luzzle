@@ -1,10 +1,13 @@
 <script lang="ts">
+	import '$lib/pieces/viewer/ViewerBar.css'
 	import { onMount, onDestroy } from 'svelte'
 	import { page } from '$app/state'
 	import type { LayoutProps } from './$types'
 
 	import ArrowLeftIcon from 'virtual:icons/ph/arrow-left'
-	import WorkflowConsole from './WorkflowConsole.svelte'
+	import PieceOverview from '$lib/pieces/viewer/PieceOverview.svelte'
+	import PreviewFacts from './PreviewFacts.svelte'
+	import PreviewLogs from './PreviewLogs.svelte'
 
 	let { data, children }: LayoutProps = $props()
 
@@ -111,16 +114,22 @@
 	})
 </script>
 
-<header class="preview-banner">
-	<a href={editorUrl} class="preview-back">
-		<ArrowLeftIcon />
+<header class="viewer-bar">
+	<a href={editorUrl} class="viewer-bar-back" aria-label="Back to editor" title="Back to editor">
+		<ArrowLeftIcon aria-hidden="true" focusable="false" />
 	</a>
-	<div class="preview-links">
-		<a href={logsUrl} class="preview-link" class:active={page.url.pathname === logsUrl}>logs</a>
+	<nav class="viewer-bar-links" aria-label="Preview views">
+		<a
+			href={logsUrl}
+			class="viewer-bar-link"
+			class:active={page.url.pathname === logsUrl}
+			aria-current={page.url.pathname === logsUrl ? 'page' : undefined}>overview</a
+		>
 		<a
 			href={status === 'completed' ? pageUrl : '#'}
-			class="preview-link"
+			class="viewer-bar-link"
 			class:active={page.url.pathname === pageUrl}
+			aria-current={page.url.pathname === pageUrl ? 'page' : undefined}
 			class:disabled={status !== 'completed'}
 			aria-disabled={status !== 'completed'}
 		>
@@ -128,8 +137,9 @@
 		</a>
 		<a
 			href={status === 'completed' ? iconUrl : '#'}
-			class="preview-link"
+			class="viewer-bar-link"
 			class:active={page.url.pathname === iconUrl}
+			aria-current={page.url.pathname === iconUrl ? 'page' : undefined}
 			class:disabled={status !== 'completed'}
 			aria-disabled={status !== 'completed'}
 		>
@@ -137,18 +147,21 @@
 		</a>
 		<a
 			href={status === 'completed' ? ogUrl : '#'}
-			class="preview-link"
+			class="viewer-bar-link"
 			class:active={page.url.pathname === ogUrl && !page.url.searchParams.has('html')}
+			aria-current={page.url.pathname === ogUrl && !page.url.searchParams.has('html')
+				? 'page'
+				: undefined}
 			class:disabled={status !== 'completed'}
 			aria-disabled={status !== 'completed'}
 		>
-			og
+			share
 		</a>
 		{#if status === 'completed' && page.url.pathname === ogUrl && page.url.searchParams.has('html')}
-			<a href="{ogUrl}?html" class="preview-link active">og (html)</a>
+			<a href="{ogUrl}?html" class="viewer-bar-link active" aria-current="page">share (html)</a>
 		{/if}
-	</div>
-	<span class="preview-label">preview</span>
+	</nav>
+	<span class="viewer-bar-label">preview</span>
 </header>
 
 {#if status === 'completed'}
@@ -156,111 +169,16 @@
 		{@render children()}
 	</main>
 {:else}
-	<main id="main-content" class="preview-status">
-		<header class="preview-status-header">
-			<h1>Preview</h1>
-			<div class="meta">{data.file}</div>
-		</header>
-
-		<WorkflowConsole {status} {phases} {logs} {errorMessage} />
+	<main id="main-content">
+		<PieceOverview title="Preview" fileUrl={() => undefined}>
+			<PreviewFacts
+				file={data.file}
+				{phases}
+				{status}
+				createdAt={data.createdAt}
+				finishedAt={data.finishedAt}
+			/>
+			<PreviewLogs {status} {phases} {logs} {errorMessage} />
+		</PieceOverview>
 	</main>
 {/if}
-
-<style>
-	.preview-banner {
-		position: sticky;
-		top: 0;
-		z-index: 100;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		background-color: var(--color-tertiary-container);
-		color: var(--color-on-tertiary-container);
-		padding: var(--space-2) var(--space-4);
-		font-size: var(--font-size-small);
-	}
-
-	.preview-label {
-		text-transform: uppercase;
-		font-weight: 600;
-		letter-spacing: 0.05em;
-		flex-shrink: 0;
-		opacity: 0.7;
-	}
-
-	.preview-links {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-	}
-
-	.preview-link {
-		color: inherit;
-		text-decoration: none;
-		text-transform: uppercase;
-		font-size: 0.9em;
-		opacity: 0.7;
-		padding: var(--space-1) var(--space-2);
-		border-radius: var(--radius-small);
-	}
-
-	.preview-link:hover {
-		opacity: 1;
-		background-color: rgba(255, 255, 255, 0.1);
-	}
-
-	.preview-link.active {
-		opacity: 1;
-		font-weight: 600;
-		background-color: rgba(255, 255, 255, 0.2);
-	}
-
-	.preview-link.disabled {
-		opacity: 0.35;
-		pointer-events: none;
-		cursor: not-allowed;
-	}
-
-	.preview-back {
-		display: flex;
-		align-items: center;
-		gap: var(--space-1);
-		color: inherit;
-		text-decoration: none;
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
-
-	.preview-back:hover {
-		text-decoration: underline;
-	}
-
-	.preview-status {
-		padding: var(--space-8) var(--space-4);
-		max-width: 860px;
-		margin: 0 auto;
-		color: var(--color-on-surface);
-		font-size: var(--font-size-xs);
-		line-height: 1.4;
-	}
-
-	.preview-status-header {
-		margin-bottom: var(--space-5);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-	}
-
-	.preview-status-header h1 {
-		margin: 0;
-		font-size: var(--font-size-normal);
-		font-weight: var(--font-weight-bold);
-		letter-spacing: -0.01em;
-	}
-
-	.preview-status-header .meta {
-		font-family: var(--font-mono);
-		font-size: var(--font-size-xxs);
-		color: var(--color-on-surface-variant);
-	}
-</style>

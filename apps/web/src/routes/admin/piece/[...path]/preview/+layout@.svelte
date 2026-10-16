@@ -4,7 +4,13 @@
 	import '@luzzle/web.theme/styles/markdown.css'
 	import '$lib/ui/styles/theme.build.css'
 
-	const { children } = $props()
+	import type { LayoutProps } from './$types'
+
+	let { data, children }: LayoutProps = $props()
 </script>
+
+<svelte:head>
+	<link rel="icon" href="{data.config.url.app_assets}/images/favicon.png" />
+</svelte:head>
 
 {@render children()}

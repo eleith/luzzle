@@ -21,6 +21,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		return error(404, 'Preview not found')
 	}
 
+	const timing = { createdAt: run.created_at, finishedAt: run.finished_at }
 	let state = 'waiting'
 	if (run.status === 'running') state = 'running'
 	if (run.status === 'completed' || run.status === 'succeeded') state = 'completed'
@@ -69,7 +70,8 @@ export const load: LayoutServerLoad = async ({ params }) => {
 				status: 'expired' as const,
 				job: runId,
 				phases,
-				logs
+				logs,
+				...timing
 			}
 		}
 
@@ -86,6 +88,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
 			job: runId,
 			phases,
 			logs,
+			...timing,
 			...assembled
 		}
 	}
@@ -98,6 +101,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
 			job: runId,
 			phases,
 			logs,
+			...timing,
 			errorMessage: run.error ?? 'Preview failed'
 		}
 	}
@@ -106,8 +110,9 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		preview: true,
 		file: params.path,
 		job: runId,
-		status: state as 'waiting' | 'running',
+		status: state as 'waiting' | 'running' | 'completed',
 		phases,
-		logs
+		logs,
+		...timing
 	}
 }
