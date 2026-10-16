@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { expect, test, vi } from 'vitest'
 import { editorHref, getPieceLinks, previewHref, publishedHref } from './navigation'
 
@@ -10,6 +11,19 @@ vi.mock('$app/paths', () => ({ resolve }))
 
 const piecePath = 'books/%E6%BA%90%20%23%3F%25%26%22.books.md'
 const route = '/admin/piece/[...path]/published'
+
+test('Published replaces Live without keeping a legacy handler or redirect alias', () => {
+	const routes = new URL('../../routes/admin/piece/[...path]/', import.meta.url)
+	expect(existsSync(new URL('live/', routes))).toBe(false)
+	for (const file of [
+		'published/+layout.server.ts',
+		'published/+page.svelte',
+		'published/page/+page.svelte',
+		'published/icon/+page.svelte',
+		'published/share/+page.svelte'
+	])
+		expect(existsSync(new URL(file, routes)), file).toBe(true)
+})
 
 test.each([
 	'books/源 #?%.books.md',
