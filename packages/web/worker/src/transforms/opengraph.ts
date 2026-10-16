@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { promises as fs } from 'node:fs'
+import sharp from 'sharp'
 import { getOpenGraphPath } from '../assets/paths.js'
 import { renderOpengraphPng } from '../pieces/render.js'
 import type { TransformInput, AssetRecord } from './utils/types.js'
@@ -36,9 +37,13 @@ export async function run({
 	}
 
 	const buffer = await renderOpengraphPng(publicPiece, assets, config, outDir)
+	const optimized = await sharp(buffer)
+		.png({ palette: true, quality: 90, effort: 7, compressionLevel: 9 })
+		.toBuffer()
+	const output = optimized.length < buffer.length ? optimized : buffer
 
 	await fs.mkdir(path.dirname(outputPath), { recursive: true })
-	await fs.writeFile(outputPath, buffer)
+	await fs.writeFile(outputPath, output)
 
 	return [{ transformation: 'opengraph', asset_path: ogPath, mime_type: 'image/png' }]
 }
