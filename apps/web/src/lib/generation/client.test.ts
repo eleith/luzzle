@@ -139,6 +139,8 @@ describe('startGeneration', () => {
 	})
 
 	it.each<[Response, string]>([
+		[Response.json({ message: 'Unauthorized' }, { status: 401 }), 'Unauthorized'],
+		[Response.json({ message: 'Forbidden' }, { status: 403 }), 'Forbidden'],
 		[Response.json({ message: 'Upload too large' }, { status: 413 }), 'Upload too large'],
 		[new Response('<html>Proxy error</html>', { status: 502 }), '502'],
 		[new Response('<html>Sign in</html>', { headers: { 'Content-Type': 'text/html' } }), '200'],

@@ -67,6 +67,7 @@ test('fixed UI copy is literal markup rather than JavaScript label maps', () => 
 		'Completed',
 		'Failed',
 		'Expired',
+		'Refresh to reconnect',
 		'Waiting for worker…',
 		'Assets are purged after 2 days. Re-run the preview from the editor.',
 		'elapsed',
@@ -85,8 +86,23 @@ test('facts have no state icon imports, markup, classification, motion, or local
 		/virtual:icons|<svg\b|status-icon|status-\{|spin|@keyframes|prefers-reduced-motion/
 	)
 	expect(style).not.toMatch(/\.status\s*\{|data-status|background|animation|transform/)
-	expect(source).toContain('<span class="status" data-status={knownStatus ? status : \'unknown\'}>')
+	expect(source).toMatch(
+		/<span\s+class="status"\s+data-status=\{!streamDisconnected && knownStatus \? status : 'unknown'\}\s*>/
+	)
 })
+
+test.each(['enqueued', 'running'])(
+	'disconnection replaces the %s state label without inventing a job failure',
+	(status) => {
+		const html = facts({ status, streamDisconnected: true, finishedAt: null })
+		expect(field(html, 'State')).toBe('Refresh to reconnect')
+		expect(field(html, 'Finished')).toBe('Unknown')
+		expect(html).toContain('data-status="unknown"')
+		expect(html).not.toContain('Waiting for worker')
+		expect(html).not.toContain('Failed')
+		expect(html).not.toContain('role="alert"')
+	}
+)
 
 test('shared overview styles give Published and Preview identical badge colors and neutral pending states', () => {
 	const source = readFileSync(

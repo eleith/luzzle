@@ -82,6 +82,7 @@
 	let activeKind = $state<ActiveKind | null>(initial?.kind ?? null)
 	let status = $state<RunStatus>(initial ? stateToStatus(initial.run.state) : 'idle')
 	let errorMessage = $state('')
+	let streamDisconnected = $state(false)
 	let jobId = $state<string>(initial?.run.jobId ?? '')
 	let phases = $state<PhaseProgress[]>((initial?.run.phases as PhaseProgress[]) ?? [])
 	let logs = $state<Record<string, PhaseLog[]>>(groupLogs((initial?.run.logs as PhaseLog[]) ?? []))
@@ -158,6 +159,7 @@
 
 	function startWatching(id: string) {
 		if (eventSource) eventSource.close()
+		streamDisconnected = false
 
 		eventSource = new EventSource(`/api/admin/publish/${id}/stream`)
 
@@ -214,6 +216,7 @@
 		})
 
 		eventSource.addEventListener('error', (e) => {
+			if (eventSource?.readyState === EventSource.CLOSED) streamDisconnected = true
 			const msgEvent = e as MessageEvent
 			if (msgEvent.data) {
 				try {
@@ -417,9 +420,9 @@
 		<div class="status-card">
 			<div class="status-left">
 				<span class="status-icon-wrap status-{status}">
-					{#if status === 'running'}
+					{#if status === 'running' && !streamDisconnected}
 						<CircleNotchBold class="status-icon spin" />
-					{:else if status === 'enqueued'}
+					{:else if status === 'enqueued' || streamDisconnected}
 						<CircleNotchBold class="status-icon" />
 					{:else}
 						<XCircleFill class="status-icon" />
@@ -427,7 +430,9 @@
 				</span>
 
 				<div class="status-text">
-					{#if status === 'enqueued'}
+					{#if streamDisconnected}
+						<div class="status-title">Refresh to reconnect</div>
+					{:else if status === 'enqueued'}
 						<div class="status-title">Enqueued</div>
 						<div class="status-sub">Waiting for worker…</div>
 					{:else if status === 'running'}

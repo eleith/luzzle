@@ -6,12 +6,21 @@
 		file: string
 		type?: string
 		status: string
+		streamDisconnected?: boolean
 		createdAt: string | null
 		finishedAt: string | null
 		phases?: ProgressPhase[]
 	}
 
-	let { file, type, status, createdAt, finishedAt, phases = [] }: Props = $props()
+	let {
+		file,
+		type,
+		status,
+		streamDisconnected = false,
+		createdAt,
+		finishedAt,
+		phases = []
+	}: Props = $props()
 
 	const knownStatus = $derived(
 		status === 'waiting' ||
@@ -52,8 +61,13 @@
 			<tr role="row">
 				<th scope="row" role="rowheader">State</th>
 				<td role="cell">
-					<span class="status" data-status={knownStatus ? status : 'unknown'}>
-						{#if status === 'waiting' || status === 'enqueued'}
+					<span
+						class="status"
+						data-status={!streamDisconnected && knownStatus ? status : 'unknown'}
+					>
+						{#if streamDisconnected}
+							Refresh to reconnect
+						{:else if status === 'waiting' || status === 'enqueued'}
 							Queued
 						{:else if status === 'running'}
 							Building
@@ -67,9 +81,9 @@
 							{status}
 						{/if}
 					</span>
-					{#if status === 'enqueued' || status === 'waiting'}
+					{#if !streamDisconnected && (status === 'enqueued' || status === 'waiting')}
 						<div class="status-sub">Waiting for worker…</div>
-					{:else if status === 'expired'}
+					{:else if !streamDisconnected && status === 'expired'}
 						<div class="status-sub">
 							Assets are purged after 2 days. Re-run the preview from the editor.
 						</div>

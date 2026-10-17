@@ -4,7 +4,7 @@ import { SvelteKitAuth } from '@auth/sveltekit'
 
 import Credentials from '@auth/core/providers/credentials'
 import { sequence } from '@sveltejs/kit/hooks'
-import { redirect, type Handle } from '@sveltejs/kit'
+import { json, redirect, type Handle } from '@sveltejs/kit'
 import type { Provider } from '@auth/core/providers'
 
 const auth = config.auth
@@ -60,19 +60,27 @@ function isProtectedRoute(routeId: string | null) {
 }
 
 const guardHandle: Handle = async ({ event, resolve }) => {
-	if (isProtectedRoute(event.route.id)) {
-		if (!auth) {
-			throw redirect(302, '/')
-		}
+	if (!isProtectedRoute(event.route.id)) return resolve(event)
 
-		const session = await event.locals.auth()
-		if (!session) {
-			const params = new URLSearchParams({ redirectTo: event.url.pathname + event.url.search })
-			throw redirect(302, `/signin?${params}`)
-		}
+	const { request } = event
+	const browserGet =
+		request.method === 'GET' &&
+		(event.isDataRequest || request.headers.get('accept')?.includes('text/html'))
+	const formAction =
+		request.method === 'POST' && request.headers.get('x-sveltekit-action') === 'true'
+	const shouldRedirect = browserGet || formAction
+
+	if (!auth) {
+		if (shouldRedirect) throw redirect(302, '/')
+		return json({ message: 'Forbidden' }, { status: 403 })
 	}
 
-	return resolve(event)
+	const session = await event.locals.auth()
+	if (session) return resolve(event)
+
+	if (!shouldRedirect) return json({ message: 'Unauthorized' }, { status: 401 })
+	const params = new URLSearchParams({ redirectTo: event.url.pathname + event.url.search })
+	throw redirect(302, `/signin?${params}`)
 }
 
 export const handle = authHandle ? sequence(authHandle.handle, guardHandle) : guardHandle

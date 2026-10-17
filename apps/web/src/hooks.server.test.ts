@@ -31,15 +31,23 @@ function event(
 		routeId = `/(auth)${pathname}`,
 		isDataRequest = false,
 		method = 'GET',
-		search = ''
-	}: { routeId?: string | null; isDataRequest?: boolean; method?: string; search?: string } = {}
+		search = '',
+		headers = { accept: 'text/html' }
+	}: {
+		routeId?: string | null
+		isDataRequest?: boolean
+		method?: string
+		search?: string
+		headers?: HeadersInit
+	} = {}
 ) {
 	return {
 		url: new URL(`http://localhost${pathname}${search}`),
 		request: new Request(
 			`http://localhost${pathname}${isDataRequest ? '/__data.json' : ''}${search}`,
 			{
-				method
+				method,
+				headers
 			}
 		),
 		route: { id: routeId },
@@ -99,7 +107,8 @@ test.each([false, true])(
 		const request = event(null, pathname, {
 			routeId: '/(auth)/admin/piece/[...path]/published',
 			isDataRequest,
-			search
+			search,
+			headers: { accept: isDataRequest ? 'application/json' : 'text/html' }
 		})
 		const failure = await Promise.resolve(handle({ event: request, resolve })).catch(
 			(error) => error
@@ -149,10 +158,17 @@ test.each(encodedRequests)(
 		const { handle } = await import('./hooks.server')
 		const resolve = vi.fn()
 		const request = event(null, pathname, options)
-		await expect(handle({ event: request, resolve })).rejects.toMatchObject({
-			status: 302,
-			location: `/signin?${new URLSearchParams({ redirectTo: pathname })}`
-		})
+		if (options.method === 'GET') {
+			await expect(handle({ event: request, resolve })).rejects.toMatchObject({
+				status: 302,
+				location: `/signin?${new URLSearchParams({ redirectTo: pathname })}`
+			})
+		} else {
+			const response = await handle({ event: request, resolve })
+			expect(response.status).toBe(401)
+			expect(response.headers.has('location')).toBe(false)
+			expect(await response.json()).toEqual({ message: 'Unauthorized' })
+		}
 		expect(request.locals.auth).toHaveBeenCalledOnce()
 		expect(resolve).not.toHaveBeenCalled()
 	}
@@ -165,10 +181,17 @@ test.each(encodedRequests)(
 		const { handle } = await import('./hooks.server')
 		const resolve = vi.fn()
 		const request = event({ user: { name: 'test' } }, pathname, options)
-		await expect(handle({ event: request, resolve })).rejects.toMatchObject({
-			status: 302,
-			location: '/'
-		})
+		if (options.method === 'GET') {
+			await expect(handle({ event: request, resolve })).rejects.toMatchObject({
+				status: 302,
+				location: '/'
+			})
+		} else {
+			const response = await handle({ event: request, resolve })
+			expect(response.status).toBe(403)
+			expect(response.headers.has('location')).toBe(false)
+			expect(await response.json()).toEqual({ message: 'Forbidden' })
+		}
 		expect(request.locals.auth).not.toHaveBeenCalled()
 		expect(resolve).not.toHaveBeenCalled()
 	}
@@ -206,6 +229,51 @@ test.each([
 	expect(request.locals.auth).not.toHaveBeenCalled()
 	expect(resolve).toHaveBeenCalledExactlyOnceWith(request)
 })
+
+test.each([true, false])(
+	'non-navigation requests get generic errors (auth=%s)',
+	async (enabled) => {
+		fixture.config.auth = enabled ? credentialsAuth : undefined
+		const { handle } = await import('./hooks.server')
+		for (const pathname of ['/admin/tools', '/api/admin/generate', '/future-tool']) {
+			for (const [method, accept] of [
+				['POST', 'application/json'],
+				['GET', 'text/event-stream'],
+				['GET', '*/*'],
+				['DELETE', 'text/html'],
+				['HEAD', 'text/html']
+			]) {
+				const request = event(null, pathname, { method, headers: { accept } })
+				const resolve = vi.fn()
+				const response = await handle({ event: request, resolve })
+				expect(response.status).toBe(enabled ? 401 : 403)
+				expect(response.headers.has('location')).toBe(false)
+				expect(await response.json()).toEqual({ message: enabled ? 'Unauthorized' : 'Forbidden' })
+				expect(resolve).not.toHaveBeenCalled()
+				if (!enabled) expect(request.locals.auth).not.toHaveBeenCalled()
+			}
+		}
+	}
+)
+
+test.each([true, false])(
+	'enhanced forms keep their existing redirects (auth=%s)',
+	async (enabled) => {
+		fixture.config.auth = enabled ? credentialsAuth : undefined
+		const { handle } = await import('./hooks.server')
+		const pathname = '/admin/piece/books/book.books.md/source'
+		const request = event(null, pathname, {
+			method: 'POST',
+			headers: { accept: 'application/json', 'x-sveltekit-action': 'true' }
+		})
+		const resolve = vi.fn()
+		await expect(handle({ event: request, resolve })).rejects.toMatchObject({
+			status: 302,
+			location: enabled ? `/signin?${new URLSearchParams({ redirectTo: pathname })}` : '/'
+		})
+		expect(resolve).not.toHaveBeenCalled()
+	}
+)
 
 test.each([
 	{ auth: credentialsAuth, provider: 'credentials' },

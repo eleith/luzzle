@@ -34,6 +34,7 @@
 		data.status === 'waiting' ? 'enqueued' : data.status === 'expired' ? 'expired' : data.status
 	)
 	let errorMessage = $state(data.errorMessage ?? '')
+	let streamDisconnected = $state(false)
 
 	const initialPhases = data.phases ?? []
 	const initialLogs: Record<string, PhaseLog[]> = {}
@@ -58,6 +59,7 @@
 
 	function startWatching() {
 		if (eventSource) eventSource.close()
+		streamDisconnected = false
 		eventSource = new EventSource(`/api/admin/preview/${encodeURIComponent(data.job)}/stream`)
 
 		eventSource.addEventListener('state', (e) => {
@@ -100,7 +102,7 @@
 		})
 
 		eventSource.addEventListener('error', () => {
-			// stream error, let the next reconnect cycle handle it
+			if (eventSource?.readyState === EventSource.CLOSED) streamDisconnected = true
 		})
 	}
 
@@ -169,6 +171,7 @@
 				file={data.file}
 				{phases}
 				{status}
+				{streamDisconnected}
 				createdAt={data.createdAt}
 				finishedAt={data.finishedAt}
 			/>
