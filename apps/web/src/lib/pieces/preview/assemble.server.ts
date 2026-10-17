@@ -62,29 +62,6 @@ function imagePassthroughs(
 	return records
 }
 
-function attachmentPassthroughs(
-	frontmatter: PieceFrontmatter,
-	attachmentFields: string[] | undefined,
-	keyToPath: Map<string, string>
-): PublicWebPieceAsset[] {
-	if (!attachmentFields?.length) return []
-	const records: PublicWebPieceAsset[] = []
-	for (const field of attachmentFields) {
-		const keys = getFrontmatterValues<string>(frontmatter, field).flat().filter(Boolean)
-		for (const key of keys) {
-			const path = keyToPath.get(key)
-			if (!path) continue
-			records.push({
-				asset_key: key,
-				transformation: 'attachment',
-				asset_path: path,
-				mime_type: mime.lookup(path) || 'application/octet-stream'
-			})
-		}
-	}
-	return records
-}
-
 export function assemblePreview(
 	result: PreviewWorkerResult,
 	pieceConfig: Config['pieces'][number]
@@ -123,8 +100,7 @@ export function assemblePreview(
 	}))
 	const assets: PublicWebPieceAsset[] = [
 		...outputs,
-		...imagePassthroughs(fm, pieceConfig.fields.media, keyToPath),
-		...attachmentPassthroughs(fm, pieceConfig.fields.attachments, keyToPath)
+		...imagePassthroughs(fm, pieceConfig.fields.media, keyToPath)
 	]
 
 	const piece: PublicWebPiece = {

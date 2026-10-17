@@ -1,8 +1,10 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import type { Config } from '@luzzle/web.config'
-import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
+import type { PreviewResult } from '@luzzle/web.jobs'
+import { createPieceHelpers, type PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { makeConfig } from '$lib/server/config.fixture.js'
 import { assemblePreview, type PreviewWorkerResult } from './assemble.server.js'
+import { previewOutputUrl } from './output-url.js'
 
 const pieceConfig: Config['pieces'][number] = makeConfig({
 	pieces: [
@@ -60,18 +62,6 @@ const passthroughs: PublicWebPieceAsset[] = [
 		transformation: 'image.original',
 		asset_path: 'archive/gallery.png',
 		mime_type: 'image/png'
-	},
-	{
-		asset_key: 'pdf-key',
-		transformation: 'attachment',
-		asset_path: 'archive/manual.pdf',
-		mime_type: 'application/pdf'
-	},
-	{
-		asset_key: 'unknown-key',
-		transformation: 'attachment',
-		asset_path: 'archive/data.unrecognized-extension',
-		mime_type: 'application/octet-stream'
 	}
 ]
 
@@ -138,7 +128,7 @@ test('projects every actual worker record to only the public output fields', () 
 	}
 })
 
-test('keeps actual outputs first and archive image/attachment fallbacks only in piece.assets', () => {
+test('keeps actual outputs first and archive image fallbacks only in piece.assets', () => {
 	const output: PublicWebPieceAsset = {
 		asset_key: 'cover-key',
 		transformation: 'image.original',
@@ -190,11 +180,20 @@ test.each([
 	expect(assembled.piece.assets).toStrictEqual([{ ...inline, asset_path: null }, ...passthroughs])
 })
 
-test('does not invent generated outputs when only archive passthroughs exist', () => {
+test('does not fabricate attachment references for retained results without attachment outputs', () => {
 	const assembled = assemblePreview(workerResult(), pieceConfig)
 
 	expect(assembled.outputs).toStrictEqual([])
 	expect(assembled.piece.assets).toStrictEqual(passthroughs)
+	const helpers = createPieceHelpers(
+		assembled.piece.assets,
+		(path) => path,
+		() => '/piece'
+	)
+	for (const key of ['pdf-key', 'unknown-key', 'missing-key']) {
+		expect(helpers.getPieceAssetUrl(key, 'attachment')).toBeUndefined()
+	}
+	expect(helpers.getPieceImageUrl('cover-key', 250, 'webp')).toBe('archive/cover.jpg')
 })
 
 test('leaves the worker result and configuration unchanged', () => {
@@ -275,4 +274,66 @@ test.each([
 
 	expect(assembled.tags.map(({ tag }) => tag)).toStrictEqual(expected)
 	expect(assembled.piece.keywords).toBe(expected.length ? JSON.stringify(expected) : undefined)
+})
+
+test('exposes generated attachment downloads and prioritizes generated images over archive fallbacks', () => {
+	const attachments: PublicWebPieceAsset[] = [
+		{
+			asset_key: 'pdf-key',
+			transformation: 'attachment',
+			asset_path: 'book/piece-key/manual.pdf',
+			mime_type: 'application/pdf'
+		},
+		{
+			asset_key: 'unknown-key',
+			transformation: 'attachment',
+			asset_path: 'book/piece-key/data.unrecognized-extension',
+			mime_type: 'application/octet-stream'
+		}
+	]
+	const image: PublicWebPieceAsset = {
+		asset_key: 'cover-key',
+		transformation: 'image.original',
+		asset_path: 'book/piece-key/cover.jpg',
+		mime_type: 'image/jpeg'
+	}
+	// Exercise the persisted shared worker contract, not archive-path stand-ins.
+	const result: PreviewResult = JSON.parse(
+		JSON.stringify(
+			workerResult({
+				transforms: [...attachments, image]
+			})
+		)
+	)
+	const assembled = assemblePreview(result, pieceConfig)
+	const helpers = createPieceHelpers(
+		assembled.piece.assets,
+		(path) => previewOutputUrl(path, 'preview-job')!,
+		() => '/piece'
+	)
+
+	expect(assembled.outputs.map((asset) => asset.asset_path)).toEqual([
+		'book/piece-key/manual.pdf',
+		'book/piece-key/data.unrecognized-extension',
+		'book/piece-key/cover.jpg'
+	])
+	expect(
+		assembled.piece.assets.filter((asset) => asset.transformation === 'attachment')
+	).toStrictEqual(assembled.outputs.filter((asset) => asset.transformation === 'attachment'))
+	expect(helpers.getPieceAssetUrl('pdf-key', 'attachment')).toBe(
+		'/admin/preview/preview-job/asset/book/piece-key/manual.pdf'
+	)
+	expect(helpers.getPieceAssetUrl('unknown-key', 'attachment')).toBe(
+		'/admin/preview/preview-job/asset/book/piece-key/data.unrecognized-extension'
+	)
+	expect(helpers.getPieceAssetUrl('missing-key', 'attachment')).toBeUndefined()
+	expect(helpers.getPieceAssetUrl('cover-key', 'image.original')).toBe(
+		'/admin/preview/preview-job/asset/book/piece-key/cover.jpg'
+	)
+	expect(helpers.getPieceImageUrl('cover-key', 250, 'webp')).toBe(
+		'/admin/preview/preview-job/asset/book/piece-key/cover.jpg'
+	)
+	expect(helpers.getPieceImageUrl('gallery-key', 250, 'webp')).toBe(
+		'/admin/preview/preview-job/asset/archive/gallery.png'
+	)
 })

@@ -6,7 +6,14 @@ import type { AssetRecord } from '../transforms/utils/types.js'
 import type { ParsedPreview } from './preview-parse.js'
 
 // order matters: opengraph depends on image assets written by earlier transforms
-export const PREVIEW_TRANSFORM_NAMES = ['markdown', 'highlight', 'palette', 'image', 'opengraph'] as const
+export const PREVIEW_TRANSFORM_NAMES = [
+	'markdown',
+	'highlight',
+	'palette',
+	'image',
+	'attachment',
+	'opengraph',
+] as const
 export type PreviewTransformName = (typeof PREVIEW_TRANSFORM_NAMES)[number]
 
 export interface PreviewTransformInput {
