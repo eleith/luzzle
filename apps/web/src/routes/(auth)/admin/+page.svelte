@@ -86,14 +86,14 @@
 				</div>
 				<ul class="recent-list">
 					{#each data.recentlyEditedPieces as piece (piece.id)}
-						<li class="recent-row">
-							<a class="recent-title" href="/admin/piece/{piece.file_path}/source">
-								{piece.title || piece.slug}
+						<li>
+							<a class="recent-row" href="/admin/piece/{piece.file_path}/source">
+								<span class="recent-title">{piece.title || piece.slug}</span>
+								<span class="recent-type meta-cell">{piece.type}</span>
+								<span class="recent-updated meta-cell">
+									{relativeTime(piece.date_updated ?? piece.date_added)}
+								</span>
 							</a>
-							<span class="recent-type meta-cell">{piece.type}</span>
-							<span class="recent-updated meta-cell">
-								{relativeTime(piece.date_updated ?? piece.date_added)}
-							</span>
 						</li>
 					{/each}
 				</ul>
@@ -279,11 +279,13 @@
 	}
 
 	.recent-row {
+		color: inherit;
+		text-decoration: none;
 		border-bottom: 1px solid var(--color-outline-variant);
 		transition: background 0.1s ease-in-out;
 	}
 
-	.recent-row:last-child {
+	.recent-list li:last-child .recent-row {
 		border-bottom: none;
 	}
 
@@ -291,10 +293,13 @@
 		background: var(--color-surface-container-low);
 	}
 
+	.recent-row:focus-visible {
+		outline: auto;
+		outline-offset: -2px;
+	}
+
 	.recent-title {
 		min-width: 0;
-		color: inherit;
-		text-decoration: none;
 		overflow: hidden;
 		white-space: nowrap;
 		text-overflow: ellipsis;
