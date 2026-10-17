@@ -52,6 +52,7 @@ function event(
 		),
 		route: { id: routeId },
 		isDataRequest,
+		setHeaders: vi.fn(),
 		locals: { auth: vi.fn().mockResolvedValue(session) }
 	} as unknown as Parameters<Handle>[0]['event']
 }
@@ -90,10 +91,14 @@ test('public-only requests resolve without constructing Auth.js or reading a ses
 	fixture.config.auth = undefined
 	const { handle } = await import('./hooks.server')
 	const request = event(null, '/', { routeId: '/(root)' })
-	const response = new Response('public')
+	const response = new Response('public', {
+		headers: { 'Cache-Control': 'public, max-age=31536000, immutable' }
+	})
 	const resolve = vi.fn().mockResolvedValue(response)
 	await expect(handle({ event: request, resolve })).resolves.toBe(response)
 	expect(request.locals.auth).not.toHaveBeenCalled()
+	expect(request.setHeaders).not.toHaveBeenCalled()
+	expect(response.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
 	expect(fixture.createAuth).not.toHaveBeenCalled()
 })
 
@@ -118,6 +123,22 @@ test.each([false, true])(
 		expect(signin.pathname).toBe('/signin')
 		expect([...signin.searchParams]).toEqual([['redirectTo', pathname + search]])
 		expect(resolve).not.toHaveBeenCalled()
+	}
+)
+
+test.each(['/admin', '/admin/preview/job/asset/private.png', '/api/admin/generate'])(
+	'%s sets the framework cache policy before resolving protected content',
+	async (pathname) => {
+		const { handle } = await import('./hooks.server')
+		const request = event({ user: { name: 'test' } }, pathname)
+		const resolve = vi.fn(async () => {
+			expect(request.setHeaders).toHaveBeenCalledExactlyOnceWith({
+				'Cache-Control': 'private, no-store'
+			})
+			return new Response('private')
+		})
+		await handle({ event: request, resolve })
+		expect(resolve).toHaveBeenCalledOnce()
 	}
 )
 
@@ -247,6 +268,7 @@ test.each([true, false])(
 				const resolve = vi.fn()
 				const response = await handle({ event: request, resolve })
 				expect(response.status).toBe(enabled ? 401 : 403)
+				expect(response.headers.get('Cache-Control')).toBe('private, no-store')
 				expect(response.headers.has('location')).toBe(false)
 				expect(await response.json()).toEqual({ message: enabled ? 'Unauthorized' : 'Forbidden' })
 				expect(resolve).not.toHaveBeenCalled()

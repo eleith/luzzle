@@ -53,7 +53,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			headers: {
 				'Content-Type': responseType,
 				'Content-Length': stats.size.toString(),
-				'Cache-Control': 'public, max-age=31536000, immutable'
+				'Cache-Control': 'private, no-store'
 			}
 		})
 	} catch {

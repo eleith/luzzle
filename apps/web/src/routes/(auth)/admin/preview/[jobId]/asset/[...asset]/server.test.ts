@@ -84,13 +84,13 @@ test.each([
 	['nested/源 #?%.png', 'image/png'],
 	['literal%2Fname.png', 'image/png'],
 	['file.unknown-extension', 'application/octet-stream']
-])('streams a contained regular file %s with unchanged headers', async (asset, mime) => {
+])('streams a contained regular file %s without caching private assets', async (asset, mime) => {
 	const response = await request(job, asset)
 	expect(response.status).toBe(200)
 	expect(await response.text()).toBe('safe')
 	expect(response.headers.get('Content-Type')).toBe(mime)
 	expect(response.headers.get('Content-Length')).toBe('4')
-	expect(response.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+	expect(response.headers.get('Cache-Control')).toBe('private, no-store')
 	expect(realpath.mock.calls).toEqual([[root], [base], [`${base}/${asset}`]])
 	expect(stat).toHaveBeenCalledExactlyOnceWith(`${base}/${asset}`)
 	expect(createReadStream).toHaveBeenCalledExactlyOnceWith(`${base}/${asset}`)

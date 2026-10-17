@@ -62,6 +62,8 @@ function isProtectedRoute(routeId: string | null) {
 const guardHandle: Handle = async ({ event, resolve }) => {
 	if (!isProtectedRoute(event.route.id)) return resolve(event)
 
+	const headers = { 'Cache-Control': 'private, no-store' }
+	event.setHeaders(headers)
 	const { request } = event
 	const browserGet =
 		request.method === 'GET' &&
@@ -72,13 +74,13 @@ const guardHandle: Handle = async ({ event, resolve }) => {
 
 	if (!auth) {
 		if (shouldRedirect) throw redirect(302, '/')
-		return json({ message: 'Forbidden' }, { status: 403 })
+		return json({ message: 'Forbidden' }, { status: 403, headers })
 	}
 
 	const session = await event.locals.auth()
 	if (session) return resolve(event)
 
-	if (!shouldRedirect) return json({ message: 'Unauthorized' }, { status: 401 })
+	if (!shouldRedirect) return json({ message: 'Unauthorized' }, { status: 401, headers })
 	const params = new URLSearchParams({ redirectTo: event.url.pathname + event.url.search })
 	throw redirect(302, `/signin?${params}`)
 }

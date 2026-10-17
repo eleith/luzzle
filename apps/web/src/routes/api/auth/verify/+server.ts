@@ -3,14 +3,15 @@ import { config } from '$lib/server/config'
 import type { RequestEvent } from './$types'
 
 export async function GET(event: RequestEvent) {
+	const headers = { 'Cache-Control': 'private, no-store' }
 	if (!config.auth) {
-		return new Response('Unauthorized', { status: 401 })
+		return new Response('Unauthorized', { status: 401, headers })
 	}
 
 	const session = await event.locals.auth?.()
 	if (!session) {
-		return new Response('Unauthorized', { status: 401 })
+		return new Response('Unauthorized', { status: 401, headers })
 	}
 
-	return json({ status: 'ok' })
+	return json({ status: 'ok' }, { headers })
 }
