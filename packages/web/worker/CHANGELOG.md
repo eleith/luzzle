@@ -1,5 +1,22 @@
 # @luzzle/web.worker
 
+## 0.0.244
+
+### Patch Changes
+
+- 9e5e21b: Generate attachment copies during preview and use only worker-generated attachment references, while preserving image fallbacks.
+- ac811d6: Reduce generated Open Graph PNG sizes using the existing Sharp dependency's palette encoder. Keep the original whenever encoding would not reduce file size, and preserve image paths and MIME types. Palette encoding trades some color fidelity for smaller previews.
+- f245075: Add a Published piece viewer and align Preview with shared Overview and composition-only Share views, including inline output inspection. Replace legacy Live/OG navigation with View → Published / Preview and Share.
+
+  Record successful per-piece publication times, sync saved Markdown to its index, and compare indexed and published hashes.
+
+  Restrict public and Preview asset file access to validated directories, including resolved symlink targets.
+
+- @luzzle/core@0.0.244
+  - @luzzle/web.db@0.0.1
+  - @luzzle/web.jobs@0.0.1
+  - @luzzle/web.pieces@0.0.1
+
 ## 0.0.243
 
 ### Patch Changes
