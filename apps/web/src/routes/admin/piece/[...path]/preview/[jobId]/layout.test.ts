@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { beforeEach, afterEach, expect, test, vi } from 'vitest'
 import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
+import { parse } from 'svelte/compiler'
 import { makeConfig } from '$lib/server/config.fixture'
 import { publishedPiece } from '$lib/pieces/viewer/fixtures/published'
 import PreviewLayout from './+layout.svelte'
@@ -76,6 +77,26 @@ test.each(['/static', 'https://cdn.test/site-assets', ''])(
 		}
 	}
 )
+
+// Structural guard for the remount boundary; SSR cannot exercise client replacement or SSE cleanup.
+test('Preview keys the entire job layout subtree by job, not the current tab', () => {
+	const source = readFileSync(new URL('../+layout@.svelte', import.meta.url), 'utf8')
+	const nodes = parse(source, { modern: true }).fragment.nodes.filter(
+		(node) => node.type !== 'Text' && node.type !== 'SvelteHead'
+	)
+	expect(nodes).toHaveLength(1)
+	const boundary = nodes[0]
+	if (boundary.type !== 'KeyBlock')
+		throw new Error('Preview children must be inside the identity key')
+	expect(boundary.expression).toMatchObject({
+		type: 'MemberExpression',
+		object: { type: 'Identifier', name: 'params' },
+		property: { type: 'Identifier', name: 'jobId' }
+	})
+	expect(boundary.fragment.nodes.filter((node) => node.type !== 'Text')).toMatchObject([
+		{ type: 'RenderTag', expression: { callee: { type: 'Identifier', name: 'children' } } }
+	])
+})
 
 test('Preview consumes the shared viewer bar instead of keeping separate banner styles', () => {
 	const source = readFileSync(new URL('./+layout.svelte', import.meta.url), 'utf8')
