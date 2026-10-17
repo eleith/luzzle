@@ -73,7 +73,7 @@ function event() {
 		url: new URL(
 			'https://admin.example/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published'
 		),
-		route: { id: '/admin/piece/[...path]/published' }
+		route: { id: '/(auth)/admin/piece/[...path]/published' }
 	} as Parameters<typeof load>[0]
 }
 
@@ -256,7 +256,7 @@ test.each(['', '/page', '/icon', '/share'])(
 			url: new URL(
 				`https://admin.example/garden/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published${suffix}/?x=1`
 			),
-			route: { id: '/admin/piece/[...path]/published' + suffix }
+			route: { id: '/(auth)/admin/piece/[...path]/published' + suffix }
 		} as Parameters<typeof load>[0]
 		expect(await load(request)).toMatchObject({
 			links: {

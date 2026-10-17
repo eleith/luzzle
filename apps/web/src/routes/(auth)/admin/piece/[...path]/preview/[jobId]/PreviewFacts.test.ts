@@ -90,7 +90,7 @@ test('facts have no state icon imports, markup, classification, motion, or local
 
 test('shared overview styles give Published and Preview identical badge colors and neutral pending states', () => {
 	const source = readFileSync(
-		new URL('../../../../../../lib/pieces/viewer/PieceOverview.svelte', import.meta.url),
+		new URL('../../../../../../../lib/pieces/viewer/PieceOverview.svelte', import.meta.url),
 		'utf8'
 	)
 	const base = source.match(/\.overview\s+:global\(\.overview-facts \.status\)\s*\{([^}]+)\}/)?.[1]

@@ -28,7 +28,7 @@ function event(
 	session: object | null,
 	pathname = '/api/admin/generate',
 	{
-		routeId = pathname,
+		routeId = `/(auth)${pathname}`,
 		isDataRequest = false,
 		method = 'GET'
 	}: { routeId?: string | null; isDataRequest?: boolean; method?: string } = {}
@@ -77,7 +77,7 @@ test.each(['/admin', '/admin/lsp', '/api/admin/generate'])(
 test('public-only requests resolve without constructing Auth.js or reading a session', async () => {
 	fixture.config.auth = undefined
 	const { handle } = await import('./hooks.server')
-	const request = event(null, '/')
+	const request = event(null, '/', { routeId: '/(root)' })
 	const response = new Response('public')
 	const resolve = vi.fn().mockResolvedValue(response)
 	await expect(handle({ event: request, resolve })).resolves.toBe(response)
@@ -98,20 +98,22 @@ const encodedRequests = [
 	...['', '/page', '/icon', '/share'].flatMap((suffix) =>
 		[false, true].map((isDataRequest) => ({
 			pathname: '/%61dmin/piece/books/book.books.md/published' + suffix,
-			routeId: '/admin/piece/[...path]/published' + suffix,
+			routeId: '/(auth)/admin/piece/[...path]/published' + suffix,
 			isDataRequest,
 			method: 'GET'
 		}))
 	),
 	{
 		pathname: '/%61dmin/piece/books/book.books.md/source',
-		routeId: '/admin/piece/[...path]/source',
+		routeId: '/(auth)/admin/piece/[...path]/source',
 		method: 'POST'
 	},
-	{ pathname: '/%61pi/admin/generate', routeId: '/api/admin/generate', method: 'POST' },
-	{ pathname: '/api/%61dmin/publish', routeId: '/api/admin/publish', method: 'POST' },
-	{ pathname: '/garden/admin/pieces', routeId: '/admin/pieces', method: 'GET' },
-	{ pathname: '/public-alias', routeId: '/admin/pieces', method: 'GET' }
+	{ pathname: '/%61pi/admin/generate', routeId: '/(auth)/api/admin/generate', method: 'POST' },
+	{ pathname: '/api/%61dmin/publish', routeId: '/(auth)/api/admin/publish', method: 'POST' },
+	{ pathname: '/garden/admin/pieces', routeId: '/(auth)/admin/pieces', method: 'GET' },
+	{ pathname: '/public-alias', routeId: '/(auth)/admin/pieces', method: 'GET' },
+	{ pathname: '/future-tool', routeId: '/(auth)/future-tool', method: 'GET' },
+	{ pathname: '/', routeId: '/(auth)', method: 'GET' }
 ]
 
 test.each(encodedRequests)(
@@ -163,6 +165,10 @@ test.each([
 	{ pathname: '/api/administer', routeId: '/api/administer' },
 	{ pathname: '/admin-looking-alias', routeId: '/public' },
 	{ pathname: '/', routeId: '/(root)' },
+	{ pathname: '/signin', routeId: '/signin' },
+	{ pathname: '/api/auth/verify', routeId: '/api/auth/verify' },
+	{ pathname: '/authentication', routeId: '/(authentic)/authentication' },
+	{ pathname: '/admin-looking-group', routeId: '/(auth)extra/admin' },
 	{ pathname: '/admin/not-a-route', routeId: null }
 ])('public/unmatched $routeId is not classified by URL spelling', async ({ pathname, routeId }) => {
 	const { handle } = await import('./hooks.server')

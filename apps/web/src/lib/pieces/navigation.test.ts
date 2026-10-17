@@ -10,10 +10,10 @@ const { resolve } = vi.hoisted(() => ({
 vi.mock('$app/paths', () => ({ resolve }))
 
 const piecePath = 'books/%E6%BA%90%20%23%3F%25%26%22.books.md'
-const route = '/admin/piece/[...path]/published'
+const route = '/(auth)/admin/piece/[...path]/published'
 
 test('Published replaces Live without keeping a legacy handler or redirect alias', () => {
-	const routes = new URL('../../routes/admin/piece/[...path]/', import.meta.url)
+	const routes = new URL('../../routes/(auth)/admin/piece/[...path]/', import.meta.url)
 	expect(existsSync(new URL('live/', routes))).toBe(false)
 	for (const file of [
 		'published/+layout.server.ts',

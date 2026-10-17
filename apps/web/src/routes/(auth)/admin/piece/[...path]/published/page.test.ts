@@ -124,11 +124,11 @@ test('publication rows retain explicit table semantics when styled as narrow-scr
 test('publication and asset tables use the same caption, cell padding and metadata size', () => {
 	const sources = [
 		readFileSync(
-			new URL('../../../../../lib/pieces/viewer/PieceOverview.svelte', import.meta.url),
+			new URL('../../../../../../lib/pieces/viewer/PieceOverview.svelte', import.meta.url),
 			'utf8'
 		),
 		readFileSync(
-			new URL('../../../../../lib/pieces/viewer/AssetOutputs.svelte', import.meta.url),
+			new URL('../../../../../../lib/pieces/viewer/AssetOutputs.svelte', import.meta.url),
 			'utf8'
 		)
 	]

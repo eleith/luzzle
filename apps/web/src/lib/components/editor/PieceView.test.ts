@@ -36,7 +36,7 @@ test('both literal items use native disabled state and current-prop navigation c
 
 test('source editor wires availability and encoded actions without replacing its unsaved guard', () => {
 	const editor = readFileSync(
-		new URL('../../../routes/admin/piece/[...path]/source/+page.svelte', import.meta.url),
+		new URL('../../../routes/(auth)/admin/piece/[...path]/source/+page.svelte', import.meta.url),
 		'utf8'
 	)
 	expect(editor).toContain(

@@ -55,13 +55,8 @@ const authHandle = auth
 		})
 	: undefined
 
-const PROTECTED_PREFIXES = ['/admin', '/api/admin']
-
 function isProtectedRoute(routeId: string | null) {
-	return (
-		routeId !== null &&
-		PROTECTED_PREFIXES.some((prefix) => routeId === prefix || routeId.startsWith(`${prefix}/`))
-	)
+	return routeId === '/(auth)' || routeId?.startsWith('/(auth)/') === true
 }
 
 const guardHandle: Handle = async ({ event, resolve }) => {

@@ -13,7 +13,7 @@ import { db } from '$lib/server/database'
 import type { AppDatabase } from '@luzzle/web.db'
 import { getPieces } from '$lib/server/pieces'
 import { getStorage } from '$lib/server/storage'
-import { actions } from '../../routes/admin/piece/[...path]/source/+page.server'
+import { actions } from '../../routes/(auth)/admin/piece/[...path]/source/+page.server'
 import { getMarkdownPublicationStatus } from './publication.server.js'
 import { MarkdownPublicationStatus } from './types.js'
 

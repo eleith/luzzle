@@ -7,7 +7,7 @@ import {
 	type PieceFrontmatterSchema
 } from '@luzzle/core'
 import type { GenerationEvent } from '$lib/generation/types'
-import { POST } from '../../routes/api/admin/generate/+server'
+import { POST } from '../../routes/(auth)/api/admin/generate/+server'
 
 const fixture = vi.hoisted(() => {
 	const ai = { provider: 'google' as const, api_key: 'server-secret' }
