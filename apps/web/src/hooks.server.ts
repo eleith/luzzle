@@ -67,7 +67,8 @@ const guardHandle: Handle = async ({ event, resolve }) => {
 
 		const session = await event.locals.auth()
 		if (!session) {
-			throw redirect(302, `/signin?redirectTo=${event.url.pathname}`)
+			const params = new URLSearchParams({ redirectTo: event.url.pathname + event.url.search })
+			throw redirect(302, `/signin?${params}`)
 		}
 	}
 

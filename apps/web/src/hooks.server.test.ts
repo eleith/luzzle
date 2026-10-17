@@ -30,14 +30,18 @@ function event(
 	{
 		routeId = `/(auth)${pathname}`,
 		isDataRequest = false,
-		method = 'GET'
-	}: { routeId?: string | null; isDataRequest?: boolean; method?: string } = {}
+		method = 'GET',
+		search = ''
+	}: { routeId?: string | null; isDataRequest?: boolean; method?: string; search?: string } = {}
 ) {
 	return {
-		url: new URL(`http://localhost${pathname}`),
-		request: new Request(`http://localhost${pathname}${isDataRequest ? '/__data.json' : ''}`, {
-			method
-		}),
+		url: new URL(`http://localhost${pathname}${search}`),
+		request: new Request(
+			`http://localhost${pathname}${isDataRequest ? '/__data.json' : ''}${search}`,
+			{
+				method
+			}
+		),
 		route: { id: routeId },
 		isDataRequest,
 		locals: { auth: vi.fn().mockResolvedValue(session) }
@@ -51,7 +55,7 @@ test.each(['/admin', '/admin/pieces', '/api/admin', '/api/admin/generate', '/adm
 		const resolve = vi.fn()
 		await expect(handle({ event: event(null, pathname), resolve })).rejects.toMatchObject({
 			status: 302,
-			location: `/signin?redirectTo=${pathname}`
+			location: `/signin?${new URLSearchParams({ redirectTo: pathname })}`
 		})
 		expect(resolve).not.toHaveBeenCalled()
 	}
@@ -84,6 +88,29 @@ test('public-only requests resolve without constructing Auth.js or reading a ses
 	expect(request.locals.auth).not.toHaveBeenCalled()
 	expect(fixture.createAuth).not.toHaveBeenCalled()
 })
+
+test.each([false, true])(
+	'signin preserves an encoded path and its query as one return parameter (data=%s)',
+	async (isDataRequest) => {
+		const { handle } = await import('./hooks.server')
+		const pathname = '/garden/%61dmin/piece/books/%E6%BA%90%20%23%3F%25.md/published'
+		const search = '?tag=a%26b&filter=a+b&redirectTo=https%3A%2F%2Fexternal.example'
+		const resolve = vi.fn()
+		const request = event(null, pathname, {
+			routeId: '/(auth)/admin/piece/[...path]/published',
+			isDataRequest,
+			search
+		})
+		const failure = await Promise.resolve(handle({ event: request, resolve })).catch(
+			(error) => error
+		)
+		expect(failure).toMatchObject({ status: 302, location: expect.any(String) })
+		const signin = new URL(failure.location, request.url.origin)
+		expect(signin.pathname).toBe('/signin')
+		expect([...signin.searchParams]).toEqual([['redirectTo', pathname + search]])
+		expect(resolve).not.toHaveBeenCalled()
+	}
+)
 
 test('an authenticated generation request reaches its handler', async () => {
 	const { handle } = await import('./hooks.server')
@@ -124,7 +151,7 @@ test.each(encodedRequests)(
 		const request = event(null, pathname, options)
 		await expect(handle({ event: request, resolve })).rejects.toMatchObject({
 			status: 302,
-			location: `/signin?redirectTo=${pathname}`
+			location: `/signin?${new URLSearchParams({ redirectTo: pathname })}`
 		})
 		expect(request.locals.auth).toHaveBeenCalledOnce()
 		expect(resolve).not.toHaveBeenCalled()

@@ -1,11 +1,11 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte'
 	import { signIn } from '@auth/sveltekit/client'
-	import { page } from '$app/state'
 	import { goto } from '$app/navigation'
+	import type { PageProps } from './$types'
 
-	let { data } = $props()
-	const redirectTo = $derived(page.url.searchParams.get('redirectTo') || '/admin')
+	let { data }: PageProps = $props()
+	const redirectTo = $derived(data.redirectTo)
 
 	let username = $state('')
 	let password = $state('')
