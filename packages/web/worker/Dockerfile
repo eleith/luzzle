@@ -12,8 +12,7 @@ FROM base AS dev
 RUN apk add --no-cache bash ca-certificates
 COPY --from=rclone/rclone:latest /usr/local/bin/rclone /usr/bin/rclone
 COPY . .
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
-    pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
 WORKDIR /m/packages/web/worker
 RUN mkdir -p queue archive assets rclone dist && \

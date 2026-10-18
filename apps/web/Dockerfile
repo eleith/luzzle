@@ -11,8 +11,7 @@ RUN npm install -g pnpm@11.2.2
 # --- dev: full monorepo install, manager.js runs `pnpm run dev` --------------
 FROM base AS dev
 COPY . .
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
-    pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
 WORKDIR /m/apps/web
 RUN mkdir -p assets/pieces assets/build data content build \

@@ -17,6 +17,11 @@ From the repository root:
 docker-compose -f apps/web/docker-compose.dev.yml up
 ```
 
+Development images install `@luzzle/*` from workspace source and download other
+dependencies from the public npm registry. They do not request your host npmrc or
+npm credentials. This does not change runtime authentication/environment settings
+or the production Docker stages' existing build secrets.
+
 ## Production
 
 Use the published images with [docker-compose.yml](../../../apps/web/docker-compose.yml).

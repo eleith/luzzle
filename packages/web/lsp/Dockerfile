@@ -10,8 +10,7 @@ RUN npm install -g pnpm@11.2.2
 # --- dev: full monorepo install, runs @luzzle/lsp from workspace -------------
 FROM base AS dev
 COPY . .
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
-    pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @luzzle/lsp build
 RUN chmod +x /m/apps/lsp/dist/index.js && \
     ln -s /m/apps/lsp/dist/index.js /usr/local/bin/luzzle-lsp

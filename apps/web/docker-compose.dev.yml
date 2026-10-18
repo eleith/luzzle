@@ -4,8 +4,6 @@ services:
       context: ../..
       dockerfile: apps/web/Dockerfile
       target: dev
-      secrets:
-        - npmrc
     container_name: luzzle-dev-web
     user: '${UID:-1000}:${GID:-1000}'
     environment:
@@ -51,8 +49,6 @@ services:
       context: ../..
       dockerfile: packages/web/worker/Dockerfile
       target: dev
-      secrets:
-        - npmrc
     container_name: luzzle-dev-worker
     user: '${UID:-1000}:${GID:-1000}'
     environment:
@@ -99,8 +95,6 @@ services:
       context: ../..
       dockerfile: packages/web/lsp/Dockerfile
       target: dev
-      secrets:
-        - npmrc
     container_name: luzzle-dev-lsp
     user: '${UID:-1000}:${GID:-1000}'
     environment:
@@ -150,10 +144,6 @@ services:
       timeout: 3s
       retries: 3
       start_period: 30s
-
-secrets:
-  npmrc:
-    file: $HOME/.npmrc
 
 networks:
   luzzle:

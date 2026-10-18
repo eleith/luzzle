@@ -10,6 +10,7 @@ Dockerfile
 **/Dockerfile
 **/Dockerfile.dev
 **/node_modules
+**/.npmrc
 **/dist
 **/coverage
 **/.svelte-kit
