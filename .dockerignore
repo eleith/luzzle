@@ -27,3 +27,4 @@ apps/web/luzzle
 apps/web/static/images/pieces
 
 .pnpm-store
+.plans

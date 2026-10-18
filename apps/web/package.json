@@ -19,7 +19,8 @@
     "sync:svelte": "svelte-kit sync",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
-    "test": "vitest run --silent"
+    "test": "vitest run --silent",
+    "test:templates": "node scripts/check-template-runtime.js"
   },
   "engines": {
     "node": ">=24"
@@ -87,6 +88,7 @@
     "@codemirror/language-data": "6.5.2",
     "@luzzle/web.db": "workspace:*",
     "@luzzle/web.pieces": "workspace:*",
+    "@luzzle/web.templates": "workspace:*",
     "@replit/codemirror-vim": "6.4.0",
     "eventsource-parser": "4.1.1",
     "kysely": "0.28.17",

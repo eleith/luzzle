@@ -44,6 +44,7 @@
 		"@luzzle/web.db": "workspace:*",
 		"@luzzle/web.jobs": "workspace:*",
 		"@luzzle/web.pieces": "workspace:*",
+		"@luzzle/web.templates": "workspace:*",
 		"@luzzle/web.theme": "workspace:*",
 		"@takumi-rs/core": "1.5.0",
 		"colorlip": "^1.0.0",

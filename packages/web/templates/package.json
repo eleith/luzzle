@@ -1,0 +1,62 @@
+{
+	"name": "@luzzle/web.templates",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"author": "eleith",
+	"description": "Internal release-built Svelte SSR runtime for prepared templates",
+	"engines": {
+		"node": ">=24"
+	},
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"scripts": {
+		"build": "rollup --config",
+		"lint": "eslint . && prettier --check .",
+		"format": "prettier --write .",
+		"test": "node --conditions=node --conditions=production --test test/*.test.js"
+	},
+	"exports": {
+		".": {
+			"development": "./dist/index.js",
+			"default": "./dist/index.js"
+		},
+		"./components": {
+			"development": "./dist/components.js",
+			"default": "./dist/components.js"
+		},
+		"./compatibility": {
+			"development": "./dist/compatibility.js",
+			"default": "./dist/compatibility.js"
+		},
+		"./compatibility.json": "./dist/compatibility.json",
+		"./runtime/svelte": {
+			"development": "./dist/runtime/svelte.js",
+			"default": "./dist/runtime/svelte.js"
+		},
+		"./runtime/internal-server": {
+			"development": "./dist/runtime/internal-server.js",
+			"default": "./dist/runtime/internal-server.js"
+		},
+		"./runtime/server": {
+			"development": "./dist/runtime/server.js",
+			"default": "./dist/runtime/server.js"
+		}
+	},
+	"devDependencies": {
+		"@eslint/js": "catalog:",
+		"@rollup/plugin-node-resolve": "16.0.3",
+		"acorn": "8.16.0",
+		"eslint": "catalog:",
+		"eslint-config-prettier": "catalog:",
+		"eslint-plugin-svelte": "3.9.3",
+		"globals": "catalog:",
+		"magic-string": "0.30.21",
+		"prettier": "catalog:",
+		"prettier-plugin-svelte": "3.3.2",
+		"rollup": "4.60.4",
+		"svelte": "5.55.9"
+	}
+}

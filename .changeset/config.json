@@ -22,6 +22,7 @@
     "@luzzle/web.db",
     "@luzzle/web.jobs",
     "@luzzle/web.pieces",
+    "@luzzle/web.templates",
     "@luzzle/web.theme"
   ],
   "privatePackages": {

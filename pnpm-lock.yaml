@@ -272,6 +272,9 @@ importers:
       '@luzzle/web.pieces':
         specifier: workspace:*
         version: link:../../packages/web/pieces
+      '@luzzle/web.templates':
+        specifier: workspace:*
+        version: link:../../packages/web/templates
       '@replit/codemirror-vim':
         specifier: 6.4.0
         version: 6.4.0(@codemirror/commands@6.10.3)(@codemirror/language@6.12.3)(@codemirror/search@6.7.0)(@codemirror/state@6.6.0)(@codemirror/view@6.43.0)
@@ -674,6 +677,45 @@ importers:
 
   packages/web/proxy: {}
 
+  packages/web/templates:
+    devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.22.0
+      '@rollup/plugin-node-resolve':
+        specifier: 16.0.3
+        version: 16.0.3(rollup@4.60.4)
+      acorn:
+        specifier: 8.16.0
+        version: 8.16.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.22.0
+      eslint-config-prettier:
+        specifier: 'catalog:'
+        version: 9.1.0(eslint@9.22.0)
+      eslint-plugin-svelte:
+        specifier: 3.9.3
+        version: 3.9.3(eslint@9.22.0)(svelte@5.55.9(@typescript-eslint/types@8.19.1))
+      globals:
+        specifier: 'catalog:'
+        version: 16.0.0
+      magic-string:
+        specifier: 0.30.21
+        version: 0.30.21
+      prettier:
+        specifier: 'catalog:'
+        version: 3.4.2
+      prettier-plugin-svelte:
+        specifier: 3.3.2
+        version: 3.3.2(prettier@3.4.2)(svelte@5.55.9(@typescript-eslint/types@8.19.1))
+      rollup:
+        specifier: 4.60.4
+        version: 4.60.4
+      svelte:
+        specifier: 5.55.9
+        version: 5.55.9(@typescript-eslint/types@8.19.1)
+
   packages/web/theme:
     dependencies:
       '@luzzle/web.config':
@@ -737,6 +779,9 @@ importers:
       '@luzzle/web.pieces':
         specifier: workspace:*
         version: link:../pieces
+      '@luzzle/web.templates':
+        specifier: workspace:*
+        version: link:../templates
       '@luzzle/web.theme':
         specifier: workspace:*
         version: link:../theme

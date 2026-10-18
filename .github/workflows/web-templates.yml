@@ -1,0 +1,53 @@
+name: "@luzzle/web.templates"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/web/templates/**"
+      - "pnpm-workspace.yaml"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/web-templates.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "packages/web/templates/**"
+      - "pnpm-workspace.yaml"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/web-templates.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "26"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build runtime
+        run: pnpm --filter @luzzle/web.templates build
+
+      - name: Lint
+        run: pnpm --filter @luzzle/web.templates lint
+
+      - name: Test native rendering and isolated layout
+        run: pnpm --filter @luzzle/web.templates test
+
+      - name: Build pruned runtime proof
+        run: docker build -f packages/web/templates/test/Dockerfile -t luzzle-templates-proof .
+
+      - name: Render without compiler or workspace
+        run: docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges luzzle-templates-proof

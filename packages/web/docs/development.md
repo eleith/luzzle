@@ -42,3 +42,10 @@ colors, margins, fonts, or padding values.
 Keep web and worker pinned to the same exact Svelte release. Compiled templates
 use internal runtime APIs, so matching only the major version is not enough.
 Verify upgrades with both packages' tests and builds.
+
+The internal [template runtime](../templates/README.md) always uses built JavaScript,
+including source-first development. Build it with
+`pnpm --filter @luzzle/web.templates build` before starting web or worker. Keep it
+external to Vite SSR: prepared components and their adapters share that runtime,
+not the application's Svelte instance. Only data and rendered results cross the
+boundary.

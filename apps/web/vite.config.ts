@@ -60,7 +60,10 @@ export default defineConfig(({ command }) => {
 			Icons({ compiler: 'svelte' }),
 			contentWatcher('./content')
 		],
-		ssr: sourceFirst ? { noExternal: [/^@luzzle\//] } : {},
+		ssr: {
+			external: ['@luzzle/web.templates'],
+			...(sourceFirst ? { noExternal: [/^@luzzle\/(?!web\.templates(?:\/|$))/] } : {})
+		},
 		server: {
 			host: host || false,
 			allowedHosts,
