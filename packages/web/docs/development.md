@@ -14,7 +14,7 @@ archives to cloud storage, generating image variants, generating Open Graph
 cards, parsing pieces in bulk) in the main explorer process.
 
 - Queue jobs using **Sidequest** and implement their processing steps inside the
-sidecar worker (`@luzzle/web.worker`).
+  sidecar worker (`@luzzle/web.worker`).
 
 ### 2. Shared Web Packages are Internal-Only
 
@@ -25,7 +25,7 @@ duplicating code.
 
 - Do not publish these helper packages to npm.
 - Always manage their imports via pnpm workspace link references
-(`workspace:*`).
+  (`workspace:*`).
 
 ### 3. Leverage Theme Styles for CSS Consistency
 
@@ -33,6 +33,12 @@ To ensure robust dark-mode support and custom configuration, never hardcode
 colors, margins, fonts, or padding values.
 
 - Use the CSS variables defined in `@luzzle/web.theme` (configured under `theme`
-inside `config.yaml`).
+  inside `config.yaml`).
 - Leverage global tokens (e.g. `--color-primary`, `--space-4`,
-`--radius-medium`) to keep the user interface consistent and theme-aware.
+  `--radius-medium`) to keep the user interface consistent and theme-aware.
+
+### 4. Coordinate Svelte Versions
+
+Keep web and worker pinned to the same exact Svelte release. Compiled templates
+use internal runtime APIs, so matching only the major version is not enough.
+Verify upgrades with both packages' tests and builds.
