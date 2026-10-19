@@ -10,6 +10,7 @@ validation.
 After installing workspace dependencies, from the repository root:
 
 ```sh
+pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.db --filter @luzzle/web.pieces build
 pnpm --filter @luzzle/web.templates build
 pnpm --filter @luzzle/web.templates lint
 pnpm --filter @luzzle/web.templates test
@@ -34,6 +35,38 @@ modules.
 Build output is cleaned before each release build. Tests and reusable helpers
 create artifacts only in caller-selected directories; package tests use
 `node_modules/.cache/` and clean their scratch trees. Nothing uses `/tmp`.
+
+## Shared role contracts
+
+These internal exports contain types only, not executable modules:
+
+| Export               | Types                                                        |
+| -------------------- | ------------------------------------------------------------ |
+| `./pieces/props`     | Piece page, icon, Open Graph props; icon component inputs    |
+| `./site/props`       | Root, feed, and error page props                             |
+| `./components/props` | Navigation/component inputs, resolved sizes, page components |
+| `./helpers`          | Bound piece helpers and the common helper interface          |
+
+They keep `data`, `options`, `helpers`, and approved `components` separate. Piece
+records retain the canonical `PublicWebPiece` shape, including supplied assets
+and metadata. Type names are arbitrary strings, not a built-in allowlist. A type
+parameter can narrow that string without changing the record's public shape.
+These are shared consumer contracts, not a standalone author SDK or generated
+schema-derived editor declarations.
+
+Component-call icon inputs permit omitted height/lazy/active values. Authored
+icon options require resolved height and explicit defaults. Pages have normalized
+tags; icons/Open Graph props do not expose page components or unrelated props.
+The low-level renderer below is not a role-specific input producer or validator.
+
+Declaration emission runs after Rollup, which cleans `dist`. Emission uses
+TypeScript's isolated declarations and `--noCheck` so the lean runtime-only Docker
+proof does not need workspace declaration builds. This does **not** replace
+semantic verification: `check` and `test` run mandatory checked compilation,
+including compile-only positive/negative contract fixtures. Build the workspace
+type dependencies shown above before running them. Emitted declarations reference
+`@luzzle/web.pieces` and Svelte types; both are available in the internal developer
+workspace, not dependencies of the isolated runtime installation.
 
 ## Minimal runtime API
 

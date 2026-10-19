@@ -6,6 +6,10 @@ on:
       - main
     paths:
       - "packages/web/templates/**"
+      - "packages/web/pieces/**"
+      - "packages/web/db/**"
+      - "packages/web/config/**"
+      - "apps/core/**"
       - "pnpm-workspace.yaml"
       - "pnpm-lock.yaml"
       - ".github/workflows/web-templates.yml"
@@ -14,6 +18,10 @@ on:
       - main
     paths:
       - "packages/web/templates/**"
+      - "packages/web/pieces/**"
+      - "packages/web/db/**"
+      - "packages/web/config/**"
+      - "apps/core/**"
       - "pnpm-workspace.yaml"
       - "pnpm-lock.yaml"
       - ".github/workflows/web-templates.yml"
@@ -36,6 +44,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build contract type dependencies
+        run: pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.db --filter @luzzle/web.pieces build
 
       - name: Build runtime
         run: pnpm --filter @luzzle/web.templates build

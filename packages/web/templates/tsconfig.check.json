@@ -1,0 +1,17 @@
+{
+	"extends": "./tsconfig.types.json",
+	"compilerOptions": {
+		"rootDir": ".",
+		"noEmit": true,
+		"emitDeclarationOnly": false,
+		"noCheck": false,
+		"noUnusedLocals": true
+	},
+	"include": [
+		"src/components/props.ts",
+		"src/pieces/props.ts",
+		"src/site/props.ts",
+		"src/helpers.ts",
+		"test/types/**/*.ts"
+	]
+}

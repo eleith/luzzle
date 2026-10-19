@@ -682,6 +682,9 @@ importers:
       '@eslint/js':
         specifier: 'catalog:'
         version: 9.22.0
+      '@luzzle/web.pieces':
+        specifier: workspace:*
+        version: link:../pieces
       '@rollup/plugin-node-resolve':
         specifier: 16.0.3
         version: 16.0.3(rollup@4.60.4)
@@ -715,6 +718,12 @@ importers:
       svelte:
         specifier: 5.55.9
         version: 5.55.9(@typescript-eslint/types@8.19.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.7.3
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.19.1(eslint@9.22.0)(typescript@5.7.3)
 
   packages/web/theme:
     dependencies:

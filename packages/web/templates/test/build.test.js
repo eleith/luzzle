@@ -25,14 +25,28 @@ test('manifest always selects built JS and the runtime installation has only loc
 	const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
 	assert.equal(manifest.dependencies, undefined);
 	assert.equal(manifest.peerDependencies, undefined);
+	const typeExports = {
+		'./pieces/props': './dist/pieces/props.d.ts',
+		'./site/props': './dist/site/props.d.ts',
+		'./components/props': './dist/components/props.d.ts',
+		'./helpers': './dist/helpers.d.ts'
+	};
 	for (const [name, conditions] of Object.entries(manifest.exports)) {
 		if (name === './compatibility.json') continue;
+		if (Object.hasOwn(typeExports, name)) {
+			assert.deepEqual(conditions, { types: typeExports[name] });
+			assert.ok((await readFile(path.join(root, conditions.types), 'utf8')).length);
+			await assert.rejects(import(`${manifest.name}/${name.slice(2)}`), {
+				code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+			});
+			continue;
+		}
 		assert.equal(conditions.development, conditions.default);
 		assert.match(conditions.default, /^\.\/dist\/.*\.js$/);
 	}
 	const dist = path.join(root, 'dist');
 	for (const filename of await files(dist)) {
-		assert.match(filename, /\.(js|json)$/); // no compiler/toolchain sources or sourcemaps
+		assert.match(filename, /\.(js|json)$|\.d\.ts$/); // declarations, never executable TS or maps
 		if (!filename.endsWith('.js')) continue;
 		const code = await readFile(path.join(dist, filename), 'utf8');
 		assert.ok(!code.includes(root), 'absolute checkout path entered a runtime chunk');

@@ -13,10 +13,11 @@
 		"README.md"
 	],
 	"scripts": {
-		"build": "rollup --config",
+		"build": "rollup --config && tsc -p tsconfig.types.json --noCheck",
+		"check": "tsc -p tsconfig.check.json",
 		"lint": "eslint . && prettier --check .",
 		"format": "prettier --write .",
-		"test": "node --conditions=node --conditions=production --test test/*.test.js"
+		"test": "tsc -p tsconfig.check.json && node --conditions=node --conditions=production --test test/*.test.js"
 	},
 	"exports": {
 		".": {
@@ -32,6 +33,18 @@
 			"default": "./dist/compatibility.js"
 		},
 		"./compatibility.json": "./dist/compatibility.json",
+		"./pieces/props": {
+			"types": "./dist/pieces/props.d.ts"
+		},
+		"./site/props": {
+			"types": "./dist/site/props.d.ts"
+		},
+		"./components/props": {
+			"types": "./dist/components/props.d.ts"
+		},
+		"./helpers": {
+			"types": "./dist/helpers.d.ts"
+		},
 		"./runtime/svelte": {
 			"development": "./dist/runtime/svelte.js",
 			"default": "./dist/runtime/svelte.js"
@@ -47,6 +60,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",
+		"@luzzle/web.pieces": "workspace:*",
 		"@rollup/plugin-node-resolve": "16.0.3",
 		"acorn": "8.16.0",
 		"eslint": "catalog:",
@@ -57,6 +71,8 @@
 		"prettier": "catalog:",
 		"prettier-plugin-svelte": "3.3.2",
 		"rollup": "4.60.4",
-		"svelte": "5.55.9"
+		"svelte": "5.55.9",
+		"typescript": "catalog:",
+		"typescript-eslint": "catalog:"
 	}
 }

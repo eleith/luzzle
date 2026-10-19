@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"strict": true,
+		"verbatimModuleSyntax": true,
+		"isolatedDeclarations": true,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"declarationMap": false,
+		"rootDir": "src",
+		"outDir": "dist",
+		"types": [],
+		"skipLibCheck": true
+	},
+	"include": [
+		"src/components/props.ts",
+		"src/pieces/props.ts",
+		"src/site/props.ts",
+		"src/helpers.ts"
+	]
+}
