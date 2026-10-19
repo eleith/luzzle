@@ -1,5 +1,6 @@
 import { build } from 'esbuild'
 import { compile, type Warning } from 'svelte/compiler'
+import workerPackage from '../../package.json' with { type: 'json' }
 
 export interface TemplateSource {
 	source: string
@@ -16,6 +17,7 @@ const templateModulePrefix = 'luzzle:template/'
 export async function compileTemplates(
 	templates: Readonly<Record<string, TemplateSource>>
 ): Promise<CompiledTemplates> {
+	const nodeMinimum = workerPackage.engines.node?.match(/^>=(\d+(?:\.\d+){0,2})$/)?.[1] ?? '24'
 	const modules = new Map<string, string>()
 	const imports: string[] = []
 	const entries: string[] = []
@@ -56,7 +58,7 @@ export function render(name, props) {
 		write: false,
 		platform: 'node',
 		format: 'esm',
-		target: 'node24',
+		target: `node${nodeMinimum}`,
 		conditions: ['node', 'production'],
 		define: { 'process.env.NODE_ENV': '"production"' },
 		plugins: [
