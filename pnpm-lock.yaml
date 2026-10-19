@@ -779,6 +779,9 @@ importers:
       devlop:
         specifier: 1.1.0
         version: 1.1.0
+      esbuild:
+        specifier: 0.25.12
+        version: 0.25.12
       hastscript:
         specifier: 9.0.1
         version: 9.0.1

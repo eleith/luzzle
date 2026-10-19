@@ -26,13 +26,27 @@ The worker isolates intensive CPU/IO tasks from the SvelteKit app, including:
 The worker registers and processes the following job types:
 
 1. **`publish`** — Triggers the orchestrator pipeline to synchronize the archive
- from/to remotes, parse changes, build CDN asset variants, and sync CDN.
+   from/to remotes, parse changes, build CDN asset variants, and sync CDN.
 2. **`preview`** — Performs hot-path parsing of piece modifications in the
- editor, returning on-the-fly syntax-highlighted HTML and asset preview URLs.
+   editor, returning on-the-fly syntax-highlighted HTML and asset preview URLs.
 3. **`job-progress-purge`** — Clean-up job to purge completed/failed workflow
- job logs based on a retention schedule.
+   job logs based on a retention schedule.
 
 ---
+
+## Template compiler
+
+`src/templates/compile.ts` contains a low-level `compileTemplate(source, filename)`
+function. It uses the worker's Svelte compiler and esbuild to return a standalone
+Node ESM module as `code`, alongside the Svelte source `warnings`.
+
+The generated module exports `render(props)`, which synchronously returns plain
+`{ body, head }` strings. `head` includes injected component CSS. Svelte's server
+runtime is bundled into that module; callers do not need to install Svelte.
+
+This utility does not read configuration, validate the supported authoring subset,
+cache/publish revisions, or register a background job. Open Graph and thumbnail
+processing are unchanged. Template source is trusted site-owner code, not sandboxed.
 
 ## Operations 🛠️
 

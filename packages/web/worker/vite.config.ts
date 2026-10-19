@@ -14,6 +14,7 @@ export default defineConfig({
 				'dist/**',
 				'node_modules/**',
 				'coverage/**',
+				'test/fixtures/**',
 				'**/*.d.ts',
 				'src/index.ts',
 				'src/pieces/.compiled/**',
