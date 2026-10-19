@@ -36,13 +36,24 @@ The worker registers and processes the following job types:
 
 ## Template compiler
 
-`src/templates/compile.ts` contains a low-level `compileTemplate(source, filename)`
-function. It uses the worker's Svelte compiler and esbuild to return a standalone
-Node ESM module as `code`, alongside the Svelte source `warnings`.
+`src/templates/compile.ts` contains a low-level `compileTemplates(templates)`
+function. Each name maps to `{ source, filename }`. It compiles all sources with
+Svelte and bundles them together with esbuild into one standalone Node ESM module,
+returned as `code` alongside source `warnings`.
 
-The generated module exports `render(props)`, which synchronously returns plain
-`{ body, head }` strings. `head` includes injected component CSS. Svelte's server
-runtime is bundled into that module; callers do not need to install Svelte.
+```ts
+const compiled = await compileTemplates({
+	page: { source: pageSource, filename: 'page.svelte' },
+	icon: { source: iconSource, filename: 'icon.svelte' },
+})
+```
+
+The generated module exports `render(name, props)`, which synchronously returns
+plain `{ body, head }` strings. `head` includes only the selected render's component
+CSS. All templates share one Svelte server runtime; callers do not need to install
+Svelte. Unknown names throw an error, not a fallback. Names are identifiers, not
+filesystem paths or a piece-type allowlist. Diagnostics retain source filenames.
+The names and sources are caller-supplied; this utility does not discover them.
 
 This utility does not read configuration, validate the supported authoring subset,
 cache/publish revisions, or register a background job. Open Graph and thumbnail
