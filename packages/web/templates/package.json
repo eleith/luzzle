@@ -1,0 +1,44 @@
+{
+	"name": "@luzzle/web.templates",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"description": "Shared template input and helper contracts for web and worker",
+	"engines": {
+		"node": ">=24"
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"prebuild": "rm -rf dist",
+		"build": "tsc -p tsconfig.json",
+		"lint": "eslint . && prettier --check .",
+		"test": "tsc -p tsconfig.test.json"
+	},
+	"exports": {
+		"./pieces/props": {
+			"types": "./dist/pieces/props.d.ts"
+		},
+		"./site/props": {
+			"types": "./dist/site/props.d.ts"
+		},
+		"./components/props": {
+			"types": "./dist/components/props.d.ts"
+		},
+		"./helpers": {
+			"types": "./dist/helpers.d.ts"
+		}
+	},
+	"devDependencies": {
+		"@eslint/js": "catalog:",
+		"@luzzle/web.pieces": "workspace:*",
+		"eslint": "catalog:",
+		"eslint-config-prettier": "catalog:",
+		"globals": "catalog:",
+		"prettier": "catalog:",
+		"svelte": "5.55.9",
+		"typescript": "catalog:",
+		"typescript-eslint": "catalog:"
+	}
+}

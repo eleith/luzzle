@@ -674,6 +674,36 @@ importers:
 
   packages/web/proxy: {}
 
+  packages/web/templates:
+    devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.22.0
+      '@luzzle/web.pieces':
+        specifier: workspace:*
+        version: link:../pieces
+      eslint:
+        specifier: 'catalog:'
+        version: 9.22.0
+      eslint-config-prettier:
+        specifier: 'catalog:'
+        version: 9.1.0(eslint@9.22.0)
+      globals:
+        specifier: 'catalog:'
+        version: 16.0.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.4.2
+      svelte:
+        specifier: 5.55.9
+        version: 5.55.9(@typescript-eslint/types@8.19.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.7.3
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.19.1(eslint@9.22.0)(typescript@5.7.3)
+
   packages/web/theme:
     dependencies:
       '@luzzle/web.config':
