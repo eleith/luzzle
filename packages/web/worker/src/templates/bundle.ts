@@ -1,10 +1,13 @@
 import type { Config } from '@luzzle/web.config'
+import { generateThemeCss } from '@luzzle/web.theme'
+import { generateEditorThemeCss } from '@luzzle/web.theme/editor'
 import { compileTemplateBundle, type CompiledTemplateBundle } from './compile.js'
 import { readConfiguredTemplates, type ConfiguredTemplate } from './sources.js'
 import type { PieceRole, SiteSlot, TemplateLookup } from './types.js'
 
 export interface TemplateBundle extends CompiledTemplateBundle {
 	templateLookup: TemplateLookup
+	themeCss: string
 }
 
 export async function buildTemplateBundle(config: Config): Promise<TemplateBundle> {
@@ -14,7 +17,9 @@ export async function buildTemplateBundle(config: Config): Promise<TemplateBundl
 		templates.map(({ name, source, filename }) => [name, { source, filename }])
 	)
 	const compiled = await compileTemplateBundle(sources, templateLookup)
-	return { ...compiled, templateLookup }
+	const themeCss = generateThemeCss(config)
+	const editorThemeCss = await generateEditorThemeCss(config.theme.markdown.code)
+	return { ...compiled, templateLookup, themeCss: themeCss + editorThemeCss }
 }
 
 function buildTemplateLookup(templates: ConfiguredTemplate[]): TemplateLookup {

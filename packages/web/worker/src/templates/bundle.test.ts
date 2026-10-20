@@ -1,10 +1,12 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { validateConfig } from '@luzzle/web.config'
+import { generateThemeCss } from '@luzzle/web.theme'
+import * as editorTheme from '@luzzle/web.theme/editor'
 import { buildTemplateBundle } from './bundle.js'
 
 const exec = promisify(execFile)
@@ -17,6 +19,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
+	vi.restoreAllMocks()
 	await rm(directory, { recursive: true, force: true })
 })
 
@@ -98,10 +101,44 @@ describe('buildTemplateBundle', () => {
 		expect(reserved.body).toContain('Reserved')
 	})
 
-	test('builds an empty lookup when no overrides are configured', async () => {
-		const bundle = await buildTemplateBundle(validateConfig({}))
+	test('builds default theme CSS with an empty lookup when no overrides are configured', async () => {
+		const config = validateConfig({})
+		const bundle = await buildTemplateBundle(config)
 		expect(bundle.templateLookup).toEqual({ pieces: {}, site: {} })
 		expect(bundle.warnings).toEqual([])
+		expect(bundle.themeCss).toBe(
+			generateThemeCss(config) +
+				(await editorTheme.generateEditorThemeCss(config.theme.markdown.code))
+		)
+		expect(bundle.themeCss).toContain('--editor-background:')
+	})
+
+	test('builds configured site and editor CSS using the existing theme generators', async () => {
+		const config = validateConfig({
+			theme: {
+				light: { 'color-primary': '#123456' },
+				dark: { 'color-primary': '#abcdef' },
+				markdown: { code: { light: 'vitesse-light', dark: 'vitesse-dark' } },
+			},
+		})
+		const originalConfig = structuredClone(config)
+		const bundle = await buildTemplateBundle(config)
+		expect(bundle.themeCss).toBe(
+			generateThemeCss(config) +
+				(await editorTheme.generateEditorThemeCss(config.theme.markdown.code))
+		)
+		expect(bundle.themeCss).toContain('--color-primary: #123456;')
+		expect(bundle.themeCss).toContain('--color-primary: #abcdef;')
+		expect(bundle.themeCss).toContain("section[data-theme='light']")
+		expect(bundle.themeCss).toContain("section[data-theme='dark']")
+		expect(bundle.themeCss).toContain('--editor-foreground:')
+		expect(config).toEqual(originalConfig)
+	})
+
+	test('propagates theme-generation failures instead of returning a partial bundle', async () => {
+		const failure = new Error('simulated editor theme failure')
+		vi.spyOn(editorTheme, 'generateEditorThemeCss').mockRejectedValueOnce(failure)
+		await expect(buildTemplateBundle(validateConfig({}))).rejects.toBe(failure)
 	})
 
 	test('retains source warnings without placing source paths in the lookup', async () => {

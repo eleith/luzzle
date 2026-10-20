@@ -4,6 +4,8 @@ import path from 'node:path'
 import type { TemplateBundle } from './bundle.js'
 
 const bundleFilename = 'templates.mjs'
+const themeFilename = 'theme.css'
+const stagingDirectoryPrefix = '.template-bundle-'
 
 export async function writeTemplateBundle(
 	bundle: TemplateBundle,
@@ -13,10 +15,11 @@ export async function writeTemplateBundle(
 	const parentDirectory = path.dirname(destination)
 	await mkdir(parentDirectory, { recursive: true })
 
-	const stagingDirectory = path.join(parentDirectory, `.template-bundle-${randomUUID()}`)
+	const stagingDirectory = path.join(parentDirectory, `${stagingDirectoryPrefix}${randomUUID()}`)
 	await mkdir(stagingDirectory)
 	try {
 		await writeFile(path.join(stagingDirectory, bundleFilename), bundle.moduleCode, 'utf8')
+		await writeFile(path.join(stagingDirectory, themeFilename), bundle.themeCss, 'utf8')
 		await rename(stagingDirectory, destination)
 	} catch (error) {
 		try {

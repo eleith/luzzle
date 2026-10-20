@@ -37,13 +37,15 @@ The worker registers and processes the following job types:
 ## Template bundles
 
 `buildTemplateBundle(config)` in `src/templates/bundle.ts` reads the registered
-Svelte files and compiles them into one standalone Node ESM module.
+Svelte files and compiles them into one standalone Node ESM module. It also builds
+site and editor theme CSS using the existing `@luzzle/web.theme` generators.
 
 ```ts
 const bundle = await buildTemplateBundle(config)
 // bundle.moduleCode: generated JavaScript exporting render and templateLookup
 // bundle.templateLookup.pieces[type].page: the compiled name for that role
 // bundle.templateLookup.site.root: the compiled name for that site slot
+// bundle.themeCss: generated site and editor theme CSS
 // bundle.warnings: source compiler diagnostics
 ```
 
@@ -52,14 +54,14 @@ no source paths or source text. Shared files compile once and reuse one name.
 Conflicting sources for the same piece type and role throw an error.
 
 `writeTemplateBundle(bundle, outputDirectory)` in `src/templates/write.ts` writes
-one `templates.mjs` exporting both `render` and `templateLookup`, and returns its
-absolute filename. Use a fresh output directory. It writes in a sibling staging
-directory, then renames that directory into place; existing nonempty bundle
-directories remain untouched. Failed writes clean up staging files; if cleanup
+`templates.mjs` exporting both `render` and `templateLookup`, alongside `theme.css`.
+It returns the module's absolute filename. Use a fresh output directory. It finishes
+both files in a sibling staging directory before renaming that directory into
+place; existing nonempty bundle directories remain untouched. Failed writes clean up staging files; if cleanup
 also fails, an `AggregateError` retains both errors and the original cause.
 
-This does not activate a revision, refresh Node's module cache, or generate theme
-CSS. The caller chooses the output directory; complete revision publication and
+This does not activate a revision, refresh Node's module cache, or copy static
+assets. The caller chooses the output directory; complete revision publication and
 retention are still separate work.
 
 Two internal utilities perform the work:

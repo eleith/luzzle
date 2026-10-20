@@ -58,7 +58,7 @@ async function renderFile(filename: string) {
 }
 
 describe('writeTemplateBundle', () => {
-	test('writes one importable module containing the render function and exact template lookup', async () => {
+	test('writes the importable renderer and theme CSS from the same bundle', async () => {
 		await writeFile(path.join(directory, 'package.json'), JSON.stringify({ type: 'commonjs' }))
 		await writeFile(
 			path.join(directory, 'piece.svelte'),
@@ -73,6 +73,7 @@ describe('writeTemplateBundle', () => {
 				components: { page: './piece.svelte' },
 			})),
 			content: { component: { root: './site.svelte' } },
+			theme: { light: { 'color-primary': '#197634' } },
 		})
 		config.paths.config = path.join(directory, 'config.yaml')
 		const bundle = await buildTemplateBundle(config)
@@ -83,7 +84,11 @@ describe('writeTemplateBundle', () => {
 		)
 
 		expect(filename).toBe(path.join(outputDirectory, 'templates.mjs'))
-		expect(await readdir(outputDirectory)).toEqual(['templates.mjs'])
+		expect((await readdir(outputDirectory)).sort()).toEqual(['templates.mjs', 'theme.css'])
+		expect(await readFile(filename, 'utf8')).toBe(bundle.moduleCode)
+		const themeCss = await readFile(path.join(outputDirectory, 'theme.css'), 'utf8')
+		expect(themeCss).toBe(bundle.themeCss)
+		expect(themeCss).toContain('--color-primary: #197634;')
 		expect(await readdir(path.dirname(outputDirectory))).toEqual(['new-bundle'])
 		const rendered = await renderFile(filename)
 		expect(rendered.templateLookup).toEqual(bundle.templateLookup)
@@ -111,9 +116,16 @@ describe('writeTemplateBundle', () => {
 	test('does not overwrite an existing nonempty bundle directory', async () => {
 		const outputDirectory = path.join(directory, 'existing')
 		const filename = await writeTemplateBundle(emptyBundle, outputDirectory)
-		const changedBundle = { ...emptyBundle, moduleCode: `${emptyBundle.moduleCode}\n// Changed` }
+		const changedBundle = {
+			...emptyBundle,
+			moduleCode: `${emptyBundle.moduleCode}\n// Changed`,
+			themeCss: `${emptyBundle.themeCss}\n/* Changed */`,
+		}
 		await expect(writeTemplateBundle(changedBundle, outputDirectory)).rejects.toThrow()
 		expect(await readFile(filename, 'utf8')).toBe(emptyBundle.moduleCode)
+		expect(await readFile(path.join(outputDirectory, 'theme.css'), 'utf8')).toBe(
+			emptyBundle.themeCss
+		)
 		expect(await readdir(directory)).toEqual(['existing'])
 	})
 
@@ -132,6 +144,33 @@ describe('writeTemplateBundle', () => {
 		expect(await readdir(directory)).toEqual(['previous'])
 	})
 
+	test('removes the staged renderer and partial CSS when the second write fails', async () => {
+		const priorDirectory = path.join(directory, 'previous')
+		const priorFilename = await writeTemplateBundle(emptyBundle, priorDirectory)
+		vi.clearAllMocks()
+		const failure = new Error('simulated incomplete CSS write')
+		const actual = await vi.importActual<typeof FileSystem>('node:fs/promises')
+		vi.mocked(writeFile)
+			.mockImplementationOnce(actual.writeFile)
+			.mockImplementationOnce(async (filename) => {
+				expect(path.basename(String(filename))).toBe('theme.css')
+				expect(
+					await readFile(path.join(path.dirname(String(filename)), 'templates.mjs'), 'utf8')
+				).toBe(emptyBundle.moduleCode)
+				await actual.writeFile(filename, 'partial CSS')
+				throw failure
+			})
+		await expect(writeTemplateBundle(emptyBundle, path.join(directory, 'next'))).rejects.toBe(
+			failure
+		)
+		expect(rename).not.toHaveBeenCalled()
+		expect(await readFile(priorFilename, 'utf8')).toBe(emptyBundle.moduleCode)
+		expect(await readFile(path.join(priorDirectory, 'theme.css'), 'utf8')).toBe(
+			emptyBundle.themeCss
+		)
+		expect(await readdir(directory)).toEqual(['previous'])
+	})
+
 	test('removes completed staging files after a failed rename, preserving an earlier bundle', async () => {
 		const priorFilename = await writeTemplateBundle(emptyBundle, path.join(directory, 'previous'))
 		const failure = new Error('simulated rename failure')
@@ -139,12 +178,18 @@ describe('writeTemplateBundle', () => {
 			expect(await readFile(path.join(String(from), 'templates.mjs'), 'utf8')).toBe(
 				emptyBundle.moduleCode
 			)
+			expect(await readFile(path.join(String(from), 'theme.css'), 'utf8')).toBe(
+				emptyBundle.themeCss
+			)
 			throw failure
 		})
 		await expect(writeTemplateBundle(emptyBundle, path.join(directory, 'next'))).rejects.toBe(
 			failure
 		)
 		expect(await readFile(priorFilename, 'utf8')).toBe(emptyBundle.moduleCode)
+		expect(await readFile(path.join(path.dirname(priorFilename), 'theme.css'), 'utf8')).toBe(
+			emptyBundle.themeCss
+		)
 		expect(await readdir(directory)).toEqual(['previous'])
 	})
 
@@ -172,15 +217,25 @@ describe('writeTemplateBundle', () => {
 
 	test('allows only one concurrent writer to complete at the same destination', async () => {
 		const outputDirectory = path.join(directory, 'output')
-		const otherBundle = { ...emptyBundle, moduleCode: `${emptyBundle.moduleCode}\n// Other writer` }
+		const otherBundle = {
+			...emptyBundle,
+			moduleCode: `${emptyBundle.moduleCode}\n// Other writer`,
+			themeCss: `${emptyBundle.themeCss}\n/* Other writer */`,
+		}
 		const results = await Promise.allSettled([
 			writeTemplateBundle(emptyBundle, outputDirectory),
 			writeTemplateBundle(otherBundle, outputDirectory),
 		])
 		expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
 		expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1)
-		const moduleCode = await readFile(path.join(outputDirectory, 'templates.mjs'), 'utf8')
-		expect([emptyBundle.moduleCode, otherBundle.moduleCode]).toContain(moduleCode)
+		const written = {
+			moduleCode: await readFile(path.join(outputDirectory, 'templates.mjs'), 'utf8'),
+			themeCss: await readFile(path.join(outputDirectory, 'theme.css'), 'utf8'),
+		}
+		expect([
+			{ moduleCode: emptyBundle.moduleCode, themeCss: emptyBundle.themeCss },
+			{ moduleCode: otherBundle.moduleCode, themeCss: otherBundle.themeCss },
+		]).toContainEqual(written)
 		expect(await readdir(directory)).toEqual(['output'])
 	})
 })
