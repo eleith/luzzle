@@ -1,5 +1,6 @@
 import { build } from 'esbuild'
 import { compile, type Warning } from 'svelte/compiler'
+import type { TemplateLookup } from './types.js'
 import workerPackage from '../../package.json' with { type: 'json' }
 
 export interface TemplateSource {
@@ -15,7 +16,8 @@ export interface CompiledTemplateBundle {
 const templateModulePrefix = 'luzzle:template/'
 
 export async function compileTemplateBundle(
-	templates: Readonly<Record<string, TemplateSource>>
+	templates: Readonly<Record<string, TemplateSource>>,
+	templateLookup: TemplateLookup = { pieces: {}, site: {} }
 ): Promise<CompiledTemplateBundle> {
 	const nodeMinimum = workerPackage.engines.node?.match(/^>=(\d+(?:\.\d+){0,2})$/)?.[1] ?? '24'
 	const modules = new Map<string, string>()
@@ -39,10 +41,12 @@ export async function compileTemplateBundle(
 		entries.push(`[${JSON.stringify(name)}, ${component}]`)
 	}
 
+	const lookupJson = JSON.stringify(templateLookup)
 	const renderEntry = `
 ${imports.join('\n')}
 import { render as renderSvelte } from 'svelte/server';
 const templates = new Map([${entries.join(',\n')}]);
+export const templateLookup = JSON.parse(${JSON.stringify(lookupJson)});
 
 export function render(name, props) {
 	const Template = templates.get(name);

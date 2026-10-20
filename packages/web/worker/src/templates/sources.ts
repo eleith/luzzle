@@ -2,9 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { Config } from '@luzzle/web.config'
 import type { TemplateSource } from './compile.js'
-
-export type PieceRole = keyof NonNullable<Config['pieces'][number]['components']>
-export type SiteSlot = keyof NonNullable<Config['content']['component']>
+import type { PieceRole, SiteSlot } from './types.js'
 
 type TemplateLocation =
 	| { family: 'piece'; pieceType: string; role: PieceRole }

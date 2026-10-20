@@ -1,16 +1,7 @@
 import type { Config } from '@luzzle/web.config'
 import { compileTemplateBundle, type CompiledTemplateBundle } from './compile.js'
-import {
-	readConfiguredTemplates,
-	type ConfiguredTemplate,
-	type PieceRole,
-	type SiteSlot,
-} from './sources.js'
-
-export interface TemplateLookup {
-	pieces: Record<string, Partial<Record<PieceRole, string>>>
-	site: Partial<Record<SiteSlot, string>>
-}
+import { readConfiguredTemplates, type ConfiguredTemplate } from './sources.js'
+import type { PieceRole, SiteSlot, TemplateLookup } from './types.js'
 
 export interface TemplateBundle extends CompiledTemplateBundle {
 	templateLookup: TemplateLookup
@@ -22,7 +13,7 @@ export async function buildTemplateBundle(config: Config): Promise<TemplateBundl
 	const sources = Object.fromEntries(
 		templates.map(({ name, source, filename }) => [name, { source, filename }])
 	)
-	const compiled = await compileTemplateBundle(sources)
+	const compiled = await compileTemplateBundle(sources, templateLookup)
 	return { ...compiled, templateLookup }
 }
 

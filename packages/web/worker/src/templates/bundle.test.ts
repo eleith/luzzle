@@ -21,12 +21,11 @@ afterEach(async () => {
 })
 
 const renderBundle = `
-const { render } = await import(process.argv[1]);
-const templateLookup = JSON.parse(process.argv[2]);
+const { render, templateLookup } = await import(process.argv[1]);
 const piece = render(templateLookup.pieces['custom-kind'].page, { data: { piece: { title: '<Piece>&' } } });
 const root = render(templateLookup.site.root, { data: { pieces: [{ title: 'Site' }] } });
 const reserved = render(templateLookup.pieces['__proto__'].icon, { data: { piece: { title: 'Reserved' } } });
-console.log(JSON.stringify({ piece, root, reserved }));
+console.log(JSON.stringify({ piece, root, reserved, templateLookup }));
 `
 
 describe('buildTemplateBundle', () => {
@@ -88,9 +87,9 @@ describe('buildTemplateBundle', () => {
 			'-e',
 			renderBundle,
 			pathToFileURL(modulePath).href,
-			JSON.stringify(templateLookup),
 		])
-		const { piece, root, reserved } = JSON.parse(stdout)
+		const { piece, root, reserved, templateLookup: moduleLookup } = JSON.parse(stdout)
+		expect(moduleLookup).toEqual(templateLookup)
 		expect(piece.body).toContain('&lt;Piece>&amp;')
 		expect(piece.head).toContain('--color-primary')
 		expect(piece.head).not.toContain('--color-secondary')
