@@ -60,9 +60,21 @@ both files in a sibling staging directory before renaming that directory into
 place; existing nonempty bundle directories remain untouched. Failed writes clean up staging files; if cleanup
 also fails, an `AggregateError` retains both errors and the original cause.
 
-This does not activate a revision, refresh Node's module cache, or copy static
-assets. The caller chooses the output directory; complete revision publication and
-retention are still separate work.
+This low-level writer does not select a revision, refresh Node's module cache, or
+copy static assets. The caller chooses the output directory.
+
+`publishTemplateBundle(config, preparedDirectory)` in `src/templates/publish.ts`
+builds and writes a new `revisions/<id>/` directory, then atomically replaces
+`current.json` with `{ "revision": "<id>" }`. It returns `{ revision, warnings }`;
+source diagnostics are not stored in the selector. Readers should capture that ID
+once and use its renderer and CSS together. Older revision directories are retained.
+
+Each call builds a fresh revision. Concurrent calls select by the last successful
+selector rename, not request start order. Failed builds/writes leave the previous
+selection untouched; a failed selector update can leave a completed but unselected
+revision. Temporary selector files are cleaned up when possible, preserving primary
+and cleanup errors. Retention and unchanged-input detection are separate work.
+Atomic visibility assumes normal local-filesystem rename behavior, not crash durability.
 
 Two internal utilities perform the work:
 
@@ -78,9 +90,10 @@ The generated `render(name, props)` synchronously returns plain `{ body, head }`
 strings, including the selected template's CSS. Callers do not need to install
 Svelte. Unknown names throw; diagnostics retain source filenames.
 
-These utilities do not validate the supported authoring subset, cache/publish
-revisions, or register a background job. Open Graph and thumbnail processing are
-unchanged. Template source is trusted site-owner code, not sandboxed.
+Worker-side selection is not yet web activation or compatibility approval. These
+utilities do not validate the supported authoring subset, copy static assets,
+refresh Node's module cache, or register a background job. Open Graph and thumbnail
+processing are unchanged. Template source is trusted site-owner code, not sandboxed.
 
 ## Operations 🛠️
 
