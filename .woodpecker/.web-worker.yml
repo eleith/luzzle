@@ -14,6 +14,7 @@ when:
         - "packages/web/db/**"
         - "packages/web/jobs/**"
         - "packages/web/pieces/**"
+        - "packages/web/templates/**"
   - event: pull_request
     path:
       include:
@@ -24,6 +25,7 @@ when:
         - "packages/web/db/**"
         - "packages/web/jobs/**"
         - "packages/web/pieces/**"
+        - "packages/web/templates/**"
         - "apps/core/**"
   - event: tag
     ref: "refs/tags/@luzzle/web.worker@*"
@@ -42,7 +44,7 @@ steps:
       - corepack prepare pnpm@11.2.2 --activate
       - pnpm config set store-dir .pnpm-store
       - pnpm install --frozen-lockfile
-      - pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
+      - pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces --filter @luzzle/web.templates build
 
   lint:
     image: node:26

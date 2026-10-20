@@ -345,6 +345,9 @@ importers:
       '@luzzle/web.jobs':
         specifier: workspace:*
         version: link:../../packages/web/jobs
+      '@luzzle/web.templates':
+        specifier: workspace:*
+        version: link:../../packages/web/templates
       '@luzzle/web.theme':
         specifier: workspace:*
         version: link:../../packages/web/theme
@@ -900,6 +903,9 @@ importers:
       '@eslint/js':
         specifier: 'catalog:'
         version: 9.22.0
+      '@luzzle/web.templates':
+        specifier: workspace:*
+        version: link:../templates
       '@types/eslint':
         specifier: 'catalog:'
         version: 9.6.1

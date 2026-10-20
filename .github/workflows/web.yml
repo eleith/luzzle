@@ -13,6 +13,9 @@ on:
       - 'packages/web/db/**'
       - 'packages/web/jobs/**'
       - 'packages/web/pieces/**'
+      - 'packages/web/templates/**'
+      - 'packages/web/worker/src/templates/**'
+      - 'packages/web/worker/package.json'
       - 'apps/core/**'
   pull_request:
     branches:
@@ -24,6 +27,9 @@ on:
       - 'packages/web/db/**'
       - 'packages/web/jobs/**'
       - 'packages/web/pieces/**'
+      - 'packages/web/templates/**'
+      - 'packages/web/worker/src/templates/**'
+      - 'packages/web/worker/package.json'
       - 'apps/core/**'
       - '.github/workflows/web.yml'
 
@@ -52,7 +58,7 @@ jobs:
 
       - name: Build shared packages
         working-directory: .
-        run: pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces build
+        run: pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces --filter @luzzle/web.templates build
 
       - name: Lint
         run: pnpm run lint
@@ -63,8 +69,17 @@ jobs:
       - name: mock .env
         run: touch .env
 
+      - name: Prepare generated theme CSS
+        run: pnpm run build:theme
+
       - name: Check
         run: pnpm run check
+
+      - name: Test
+        run: pnpm run test
+
+      - name: Prepared template SSR integration
+        run: pnpm run test:templates
 
   build-push:
     needs: check

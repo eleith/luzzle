@@ -25,6 +25,7 @@
 	"type": "module",
 	"devDependencies": {
 		"@eslint/js": "catalog:",
+		"@luzzle/web.templates": "workspace:*",
 		"@types/eslint": "catalog:",
 		"@types/mdast": "4.0.4",
 		"@types/mime-types": "3.0.1",

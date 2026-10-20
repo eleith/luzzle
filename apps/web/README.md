@@ -21,6 +21,24 @@ If Vimium is installed, exclude the editor URLs in its settings and leave the
 excluded-keys field empty. Vimium otherwise intercepts Escape before the editor
 can return to Normal mode.
 
+## Prepared template loading
+
+`loadTemplateBundle(preparedDirectory)` in `src/lib/server/templates.ts` reads
+`current.json` once and loads that revision's renderer, lookup and theme CSS.
+It returns `null` if no revision is selected; malformed output and genuine
+filesystem/module/rendering errors are not silently swallowed. Callers choose
+presentation fallback and report failures. No production page uses this loader yet.
+
+The loader is read-only and does not compile, publish or refresh configuration.
+It uses immutable revision URLs without timestamp cache-busting. Node retains
+imported ES modules for the process lifetime; module-memory management is not yet
+solved for production hot replacement.
+
+`pnpm run test:templates` builds a small SvelteKit application once, then publishes
+real worker artifacts after that build. It tests SSR HTML/CSS, revision switching
+and caller-owned fallback without changing the compiled application. The fixture
+uses data-only templates; it does not stand in for helper/component integration.
+
 ## Centralized Web Documentation 📖
 
 All documentation, including deployment references, configuration setups, and

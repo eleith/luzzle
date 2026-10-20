@@ -27,6 +27,7 @@
 		"./tests/**/*.js",
 		"./tests/**/*.ts",
 		"./tests/**/*.svelte",
+		"./test/templates/**/*.ts",
 		"./content/**/*.ts",
 		"./content/**/*.svelte"
 	],

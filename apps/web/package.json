@@ -19,7 +19,8 @@
     "sync:svelte": "svelte-kit sync",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
-    "test": "vitest run --silent"
+    "test": "vitest run --silent",
+    "test:templates": "pnpm --filter @luzzle/web.worker build && vitest run --config vitest.templates.config.ts --silent"
   },
   "engines": {
     "node": ">=24"
@@ -50,6 +51,7 @@
     "@luzzle/web.config": "workspace:*",
     "@luzzle/web.jobs": "workspace:*",
     "@luzzle/web.theme": "workspace:*",
+    "@luzzle/web.templates": "workspace:*",
     "@sveltejs/adapter-node": "5.3.2",
     "@sveltejs/enhanced-img": "0.8.1",
     "@sveltejs/kit": "2.43.0",

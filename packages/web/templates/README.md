@@ -1,7 +1,8 @@
 # @luzzle/web.templates
 
 Internal shared template contracts for web and worker. This first version
-contains **types only**: role props, component inputs, and helper interfaces.
+contains **types only**: role props, component inputs, helper interfaces, and the
+prepared server module's exports.
 It reuses the reviewed contracts without introducing a rendering framework.
 
 | Import                                   | Contains                                       |
@@ -10,6 +11,7 @@ It reuses the reviewed contracts without introducing a rendering framework.
 | `@luzzle/web.templates/site/props`       | Root, feed, and error page props               |
 | `@luzzle/web.templates/components/props` | Navigation/icon inputs and page components     |
 | `@luzzle/web.templates/helpers`          | Bound piece and static-asset helper interfaces |
+| `@luzzle/web.templates/bundle`           | Renderer output and piece/site name lookup     |
 
 Use `import type`. These exports have no JavaScript implementation.
 Piece data keeps the existing `PublicWebPiece` shape. Type names are arbitrary
@@ -17,7 +19,8 @@ strings; narrowing one does not generate schema-derived metadata typings.
 
 ## Ownership
 
-- This package describes the shared inputs. It does not implement helpers yet.
+- This package describes shared inputs and prepared-module exports. It does not
+  implement helpers or module loading.
 - The worker owns template compilation and bundling, like its existing image
   and Open Graph tools. No bundler is needed by this package.
 - Web consumes prepared output. This package introduces no application wiring.
@@ -38,5 +41,4 @@ pnpm --filter @luzzle/web.templates test
 ```
 
 `build` checks the source and emits declarations into `dist`. `test` checks the
-named accepted/rejected examples in `test/types/props.typecheck.ts`; nothing in
-that file executes. There is no custom bundling or unchecked declaration pass.
+named accepted/rejected examples in `test/types/`; none of these files execute. There is no custom bundling or unchecked declaration pass.

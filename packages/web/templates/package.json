@@ -28,6 +28,9 @@
 		},
 		"./helpers": {
 			"types": "./dist/helpers.d.ts"
+		},
+		"./bundle": {
+			"types": "./dist/bundle.d.ts"
 		}
 	},
 	"devDependencies": {

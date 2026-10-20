@@ -49,6 +49,15 @@ const bundle = await buildTemplateBundle(config)
 // bundle.warnings: source compiler diagnostics
 ```
 
+Templates follow Svelte's server-rendering behavior. This build does not generate
+a client bundle or hydrate authored components, so Svelte event handlers and
+browser-only hooks do not become interactive. Browser behavior must come from
+native HTML/CSS or be supplied by the web application.
+
+There is no Tailwind/Sass preprocessing step here. Such source styles need separate
+preprocessing; already generated CSS is ordinary CSS. These are toolchain
+capabilities, not additional syntax restrictions.
+
 The lookup is worker-local selection data, not a versioned manifest. It contains
 no source paths or source text. Shared files compile once and reuse one name.
 Conflicting sources for the same piece type and role throw an error.
@@ -90,10 +99,12 @@ The generated `render(name, props)` synchronously returns plain `{ body, head }`
 strings, including the selected template's CSS. Callers do not need to install
 Svelte. Unknown names throw; diagnostics retain source filenames.
 
-Worker-side selection is not yet web activation or compatibility approval. These
-utilities do not validate the supported authoring subset, copy static assets,
-refresh Node's module cache, or register a background job. Open Graph and thumbnail
-processing are unchanged. Template source is trusted site-owner code, not sandboxed.
+Source-reading, compiler, bundler, theme-generation and publication errors
+propagate to the caller; failed publication preserves the previous selection.
+Module-loading and rendering errors also reach their caller. These utilities do
+not yet implement web fallback or activation, copy static assets, refresh Node's
+module cache, or register a background job. Templates are trusted site-owner code,
+not sandboxed. Open Graph and thumbnail processing are unchanged.
 
 ## Operations 🛠️
 
