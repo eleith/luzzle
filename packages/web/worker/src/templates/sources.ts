@@ -3,8 +3,8 @@ import path from 'node:path'
 import type { Config } from '@luzzle/web.config'
 import type { TemplateSource } from './compile.js'
 
-type PieceRole = keyof NonNullable<Config['pieces'][number]['components']>
-type SiteSlot = keyof NonNullable<Config['content']['component']>
+export type PieceRole = keyof NonNullable<Config['pieces'][number]['components']>
+export type SiteSlot = keyof NonNullable<Config['content']['component']>
 
 type TemplateLocation =
 	| { family: 'piece'; pieceType: string; role: PieceRole }
@@ -17,7 +17,7 @@ interface TemplateReference {
 
 export type ConfiguredTemplate = TemplateSource & TemplateLocation & { name: string }
 
-export async function loadTemplateSources(config: Config): Promise<ConfiguredTemplate[]> {
+export async function readConfiguredTemplates(config: Config): Promise<ConfiguredTemplate[]> {
 	const references = collectTemplateReferences(config)
 	if (references.length === 0) return []
 	if (!config.paths.config) {

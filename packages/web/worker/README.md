@@ -34,36 +34,40 @@ The worker registers and processes the following job types:
 
 ---
 
-## Template compiler
+## Template bundles
 
-`src/templates/compile.ts` contains a low-level `compileTemplates(templates)`
-function. Each name maps to `{ source, filename }`. It compiles all sources with
-Svelte and bundles them together with esbuild into one standalone Node ESM module,
-returned as `code` alongside source `warnings`.
+`buildTemplateBundle(config)` in `src/templates/bundle.ts` reads the registered
+Svelte files and compiles them into one standalone Node ESM module.
 
 ```ts
-const compiled = await compileTemplates({
-	page: { source: pageSource, filename: 'page.svelte' },
-	icon: { source: iconSource, filename: 'icon.svelte' },
-})
+const bundle = await buildTemplateBundle(config)
+// bundle.moduleCode: generated JavaScript exporting render(name, props)
+// bundle.templateLookup.pieces[type].page: the compiled name for that role
+// bundle.templateLookup.site.root: the compiled name for that site slot
+// bundle.warnings: source compiler diagnostics
 ```
 
-The generated module exports `render(name, props)`, which synchronously returns
-plain `{ body, head }` strings. `head` includes only the selected render's component
-CSS. All templates share one Svelte server runtime; callers do not need to install
-Svelte. Unknown names throw an error, not a fallback. Names are identifiers, not
-filesystem paths or a piece-type allowlist. Diagnostics retain source filenames.
-The names and sources are caller-supplied; this utility does not discover them.
+The lookup is worker-local selection data, not a published revision format. It
+contains no source paths or source text. Shared files compile once and reuse one
+name. Conflicting sources for the same piece type and role throw an error.
 
-`src/templates/sources.ts` separately loads the overrides registered in an existing
-`Config` value with `loadTemplateSources(config)`. It resolves paths relative to
-`paths.config` and returns source, filename, generated name, and piece-role or
-site-slot information. Shared filenames reuse one name/source; no archive type
-allowlist or conventional template directory is consulted.
+Two internal utilities perform the work:
 
-Neither utility validates the supported authoring subset, caches/publishes
-revisions, or registers a background job. Open Graph and thumbnail processing
-are unchanged. Template source is trusted site-owner code, not sandboxed.
+- `readConfiguredTemplates(config)` in `src/templates/sources.ts` reads the files
+  registered in an existing `Config`, resolving paths relative to `paths.config`.
+  It retains each piece-role/site-slot association, with no piece-type allowlist
+  or required template directory.
+- `compileTemplateBundle(sources)` in `src/templates/compile.ts` takes names mapped
+  to `{ source, filename }` and returns `{ moduleCode, warnings }`. Svelte compiles
+  the sources; esbuild bundles them with one shared Svelte server runtime.
+
+The generated `render(name, props)` synchronously returns plain `{ body, head }`
+strings, including the selected template's CSS. Callers do not need to install
+Svelte. Unknown names throw; diagnostics retain source filenames.
+
+These utilities do not validate the supported authoring subset, cache/publish
+revisions, or register a background job. Open Graph and thumbnail processing are
+unchanged. Template source is trusted site-owner code, not sandboxed.
 
 ## Operations 🛠️
 

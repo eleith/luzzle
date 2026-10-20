@@ -7,7 +7,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
-import { compileTemplates } from './compile.js'
+import { compileTemplateBundle } from './compile.js'
 
 vi.mock('esbuild', async (importOriginal) => {
 	const actual = await importOriginal<typeof Esbuild>()
@@ -60,7 +60,7 @@ try { render('toString', props); } catch (error) { unknown = error.message; }
 console.log(JSON.stringify({ first, contextA, contextB, environment, second, reserved, quoted, unknown }));
 `
 
-describe('compileTemplates', () => {
+describe('compileTemplateBundle', () => {
 	test('bundles named templates with one runtime and independent render output', async () => {
 		vi.stubEnv('NODE_ENV', 'development')
 		const page = {
@@ -68,7 +68,7 @@ describe('compileTemplates', () => {
 			filename: fileURLToPath(pageFixture),
 		}
 		const contextSource = await readFile(contextFixture, 'utf8')
-		const compiled = await compileTemplates({
+		const compiled = await compileTemplateBundle({
 			page,
 			environment: { source: '<p>{process.env.NODE_ENV}</p>', filename: 'environment.svelte' },
 			'context-a': { source: contextSource, filename: 'context-a.svelte' },
@@ -83,7 +83,7 @@ describe('compileTemplates', () => {
 		const directory = await mkdtemp(path.join(cache, 'template-'))
 		try {
 			const modulePath = path.join(directory, 'renderer.mjs')
-			await writeFile(modulePath, compiled.code)
+			await writeFile(modulePath, compiled.moduleCode)
 			const { stdout } = await exec(process.execPath, [
 				'--input-type=module',
 				'-e',
@@ -123,25 +123,25 @@ describe('compileTemplates', () => {
 
 	test('derives the target from the declared Node minimum', async () => {
 		workerPackage.engines.node = '>=26.1.0'
-		await compileTemplates({ page: { source: '<p>Target</p>', filename: 'target.svelte' } })
+		await compileTemplateBundle({ page: { source: '<p>Target</p>', filename: 'target.svelte' } })
 		expect(build).toHaveBeenLastCalledWith(expect.objectContaining({ target: 'node26.1.0' }))
 	})
 
 	test('defaults to Node 24 when the declaration has no simple minimum', async () => {
 		workerPackage.engines.node = '^24'
-		await compileTemplates({ page: { source: '<p>Default</p>', filename: 'default.svelte' } })
+		await compileTemplateBundle({ page: { source: '<p>Default</p>', filename: 'default.svelte' } })
 		expect(build).toHaveBeenLastCalledWith(expect.objectContaining({ target: 'node24' }))
 	})
 
 	test('defaults to Node 24 when the declaration is missing', async () => {
 		Reflect.deleteProperty(workerPackage.engines, 'node')
-		await compileTemplates({ page: { source: '<p>Default</p>', filename: 'default.svelte' } })
+		await compileTemplateBundle({ page: { source: '<p>Default</p>', filename: 'default.svelte' } })
 		expect(build).toHaveBeenLastCalledWith(expect.objectContaining({ target: 'node24' }))
 	})
 
 	test('collects warnings while preserving each source filename', async () => {
 		const source = '<p>Hello</p><style>.unused { color: var(--color-primary); }</style>'
-		const compiled = await compileTemplates({
+		const compiled = await compileTemplateBundle({
 			first: { source, filename: 'first.svelte' },
 			second: { source, filename: 'second.svelte' },
 		})
@@ -153,7 +153,7 @@ describe('compileTemplates', () => {
 
 	test('rejects invalid source without losing the original filename', async () => {
 		await expect(
-			compileTemplates({
+			compileTemplateBundle({
 				valid: { source: '<p>Valid</p>', filename: 'valid.svelte' },
 				broken: { source: '<div>', filename: 'broken.svelte' },
 			})

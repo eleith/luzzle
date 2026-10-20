@@ -7,16 +7,16 @@ export interface TemplateSource {
 	filename: string
 }
 
-export interface CompiledTemplates {
-	code: string
+export interface CompiledTemplateBundle {
+	moduleCode: string
 	warnings: Warning[]
 }
 
 const templateModulePrefix = 'luzzle:template/'
 
-export async function compileTemplates(
+export async function compileTemplateBundle(
 	templates: Readonly<Record<string, TemplateSource>>
-): Promise<CompiledTemplates> {
+): Promise<CompiledTemplateBundle> {
 	const nodeMinimum = workerPackage.engines.node?.match(/^>=(\d+(?:\.\d+){0,2})$/)?.[1] ?? '24'
 	const modules = new Map<string, string>()
 	const imports: string[] = []
@@ -79,5 +79,5 @@ export function render(name, props) {
 		],
 	})
 
-	return { code: bundled.outputFiles[0].text, warnings }
+	return { moduleCode: bundled.outputFiles[0].text, warnings }
 }
