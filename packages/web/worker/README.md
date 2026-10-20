@@ -55,9 +55,15 @@ Svelte. Unknown names throw an error, not a fallback. Names are identifiers, not
 filesystem paths or a piece-type allowlist. Diagnostics retain source filenames.
 The names and sources are caller-supplied; this utility does not discover them.
 
-This utility does not read configuration, validate the supported authoring subset,
-cache/publish revisions, or register a background job. Open Graph and thumbnail
-processing are unchanged. Template source is trusted site-owner code, not sandboxed.
+`src/templates/sources.ts` separately loads the overrides registered in an existing
+`Config` value with `loadTemplateSources(config)`. It resolves paths relative to
+`paths.config` and returns source, filename, generated name, and piece-role or
+site-slot information. Shared filenames reuse one name/source; no archive type
+allowlist or conventional template directory is consulted.
+
+Neither utility validates the supported authoring subset, caches/publishes
+revisions, or registers a background job. Open Graph and thumbnail processing
+are unchanged. Template source is trusted site-owner code, not sandboxed.
 
 ## Operations 🛠️
 
