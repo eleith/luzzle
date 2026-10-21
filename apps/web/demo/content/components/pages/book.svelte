@@ -1,8 +1,16 @@
 <script lang="ts">
-	const { piece, tags, helpers, components }: PiecePageProps = $props()
-	const { NavBanner, PieceIcon } = components
+	const { data, helpers, components }: PiecePageProps = $props()
+	const { piece, tags } = data
+	const pieceHelpers = helpers.forPiece(piece)
+	const { PieceIcon } = components
 	const metadata = piece.metadata
-	const palette = helpers.getPiecePalette()
+	const palette = pieceHelpers.getPalette()
+
+	helpers.showNavBanner({
+		background: palette?.background || 'var(--color-surface-container)',
+		color: palette?.bodyText,
+		hoverColor: palette?.accent
+	})
 
 	const bylineParts: string[] = []
 	if (metadata.author) bylineParts.push(`by ${metadata.author}`)
@@ -15,13 +23,6 @@
 		)
 	}
 </script>
-
-<NavBanner
-	showRandom
-	background={palette?.background || 'var(--color-surface-container)'}
-	color={palette?.bodyText}
-	hoverColor={palette?.accent}
-/>
 
 <main id="main-content" role="main">
 	<section
@@ -63,7 +64,7 @@
 				<div class="body">
 					{#if piece.note}
 						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-						{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
+						{@html pieceHelpers.getAssetContent(piece.key, 'markdown') || piece.note}
 					{:else}
 						<em class="empty-note">this record does not have a note</em>
 					{/if}

@@ -1,6 +1,4 @@
 <script lang="ts">
-	import type { PageErrorProps } from '$lib/content/types.js'
-
 	let { status, message = 'an unexpected error occurred', components }: PageErrorProps = $props()
 	const { ContentBanner } = components
 </script>

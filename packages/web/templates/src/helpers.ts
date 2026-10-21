@@ -23,5 +23,6 @@ export interface PageTemplateHelpers extends TemplateHelpers {
 
 export interface TemplateHelpers {
 	forPiece(piece: PublicWebPiece): BoundPieceHelpers;
+	/** Construct a URL; invalid paths are unlinked, but file availability is not checked. */
 	getStaticAssetUrl(relativePath: string): string | undefined;
 }

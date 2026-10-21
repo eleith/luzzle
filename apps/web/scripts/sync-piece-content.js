@@ -2,7 +2,8 @@ import { loadConfig } from '@luzzle/web.config'
 import { copyFile, mkdir, readdir, unlink, rmdir, stat } from 'fs/promises'
 import path from 'path'
 
-const COMPONENTS = ['page', 'icon', 'opengraph']
+// Piece pages are prepared by the worker; remaining surfaces still compile icons/OG.
+const COMPONENTS = ['icon', 'opengraph']
 
 // Walk `dir` and remove any file not in `keptPaths`. Removes now-empty directories
 // on the way back up. We avoid rm -rf'ing the whole output up front because Vite's

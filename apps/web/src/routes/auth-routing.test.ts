@@ -60,7 +60,7 @@ test.each([
 	['/', '/(root)'],
 	['/signin', '/signin'],
 	['/pieces/[[piece=pieceType]]', '/pieces/[[piece=pieceType]]'],
-	['/pieces/[piece=pieceType]/[slug]', '/pieces/[piece=pieceType]/[slug]'],
+	['/pieces/[piece]/[slug]', '/pieces/[piece]/[slug]'],
 	['/search', '/search'],
 	['/tags/[tag]', '/tags/[tag]'],
 	['/api/health', '/api/health'],

@@ -1,5 +1,10 @@
 export function encodeAssetPath(assetPath: string | null | undefined): string | undefined {
-	if (!assetPath?.trim() || assetPath.includes('\\') || /^[a-z][a-z\d+.-]*:/i.test(assetPath)) {
+	if (
+		!assetPath?.trim() ||
+		assetPath.includes('\\') ||
+		assetPath.includes('\0') ||
+		/^[a-z][a-z\d+.-]*:/i.test(assetPath)
+	) {
 		return undefined
 	}
 	const segments = assetPath.split('/')
@@ -15,7 +20,19 @@ export function assetPathToUrl(
 ): string | undefined {
 	const encoded = encodeAssetPath(assetPath)
 	if (!encoded) return undefined
-	const path = `pieces/assets/${encoded}`
+	return joinAssetUrl(`pieces/assets/${encoded}`, base)
+}
+
+export function staticAssetPathToUrl(
+	relativePath: string | null | undefined,
+	base: string
+): string | undefined {
+	const encoded = encodeAssetPath(relativePath)
+	if (!encoded) return undefined
+	return joinAssetUrl(encoded, base)
+}
+
+function joinAssetUrl(path: string, base: string): string {
 	if (!base || base.startsWith('/')) {
 		return `${base.replace(/\/+$/, '')}/${path}`
 	}

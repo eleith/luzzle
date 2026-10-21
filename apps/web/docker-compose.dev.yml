@@ -19,6 +19,7 @@ services:
       - ../../packages/web/pieces/src:/m/packages/web/pieces/src
       - ../../packages/web/theme/src:/m/packages/web/theme/src
       - ../../packages/web/theme/assets:/m/packages/web/theme/assets
+      - ../../packages/web/templates/src:/m/packages/web/templates/src
       - ./demo/assets:/m/apps/web/assets
       - ./demo/config.yaml:/m/apps/web/config.yaml
       - ./demo/data:/m/apps/web/data
@@ -64,6 +65,7 @@ services:
       - ../../packages/web/pieces/src:/m/packages/web/pieces/src
       - ../../packages/web/theme/src:/m/packages/web/theme/src
       - ../../packages/web/theme/assets:/m/packages/web/theme/assets
+      - ../../packages/web/templates/src:/m/packages/web/templates/src
       - ./demo/config.yaml:/m/packages/web/worker/config.yaml
       - ./demo/assets:/m/packages/web/worker/assets
       - ./demo/data:/m/packages/web/worker/data

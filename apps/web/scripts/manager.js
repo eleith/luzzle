@@ -4,9 +4,9 @@ import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const PATHS = {
-	CONFIG: '/app/config.yaml',
-	LOCAL_BUILD: '/app/build',
-	LOG: '/app/data/build.log'
+	CONFIG: path.resolve('config.yaml'),
+	LOCAL_BUILD: path.resolve('build'),
+	LOG: path.resolve('data/build.log')
 }
 
 const isDev = process.env.LUZZLE_DEV === 'true'

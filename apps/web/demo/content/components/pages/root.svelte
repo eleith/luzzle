@@ -1,6 +1,4 @@
 <script lang="ts">
-	import type { RootPageProps } from '$lib/content/types.js'
-
 	let { types, pieces, components }: RootPageProps = $props()
 	const { ContentBanner, PieceIcon } = components
 </script>

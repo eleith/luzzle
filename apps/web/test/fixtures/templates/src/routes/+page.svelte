@@ -9,8 +9,8 @@
 	{@html data.head}
 </svelte:head>
 
-{#if data.navigation}
-	<NavBanner {...data.navigation} />
+{#if data.navBanner !== null}
+	<NavBanner {...data.navBanner} />
 {/if}
 
 <p id="selected-revision">{data.state}</p>

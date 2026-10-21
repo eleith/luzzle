@@ -1,7 +1,7 @@
 import { loadConfig, resolvePreparedDirectory } from '@luzzle/web.config'
 import { loadTemplateBundle } from '$lib/server/templates.js'
 import { renderTemplatePage } from '$lib/server/template-page.js'
-import { createTemplateHelpers } from '$lib/server/template-helpers.js'
+import { createTemplateHelpers } from '$lib/pieces/template-helpers.js'
 import { assetPathToUrl } from '$lib/pieces/assets.js'
 import { previewOutputUrl } from '$lib/pieces/preview/output-url.js'
 
@@ -9,7 +9,7 @@ const fallback = {
 	state: 'fallback',
 	body: '<p>Built-in presentation</p>',
 	head: '',
-	navigation: undefined
+	navBanner: null
 }
 
 export async function load({ url }) {
@@ -71,12 +71,12 @@ export async function load({ url }) {
 				options: { size: { width: 1200, height: 630 } },
 				helpers: createTemplateHelpers(urls)
 			})
-			output = { ...rendered, navigation: undefined }
+			output = { ...rendered, navBanner: null }
 		}
 		return {
 			state: bundle.revision,
 			body: output.body,
-			navigation: output.navigation,
+			navBanner: output.navBanner,
 			head: `${output.head}<style data-prepared-theme>${bundle.themeCss}</style>`
 		}
 	} catch (error) {

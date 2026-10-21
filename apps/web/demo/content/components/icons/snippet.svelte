@@ -1,11 +1,14 @@
 <script lang="ts">
-	let { size, piece, helpers, active }: PieceIconProps = $props()
-	const scale = Math.round((size.width / 375) * 100) / 100
-	const files = piece.metadata?.files ?? []
-	const firstSnippet = files.find((f: { type: string }) => f.type === 'snippet')
-	const content = firstSnippet
-		? helpers.getPieceAssetContent(firstSnippet.file, 'highlight')
-		: undefined
+	let { data, options, helpers }: PieceIconProps = $props()
+	const piece = $derived(data.piece)
+	const { size, active } = $derived(options)
+	const pieceHelpers = $derived(helpers.forPiece(piece))
+	const scale = $derived(Math.round((size.width / 375) * 100) / 100)
+	const files = $derived(piece.metadata?.files ?? [])
+	const firstSnippet = $derived(files.find((f: { type: string }) => f.type === 'snippet'))
+	const content = $derived(
+		firstSnippet ? pieceHelpers.getAssetContent(firstSnippet.file, 'highlight') : undefined
+	)
 </script>
 
 <section

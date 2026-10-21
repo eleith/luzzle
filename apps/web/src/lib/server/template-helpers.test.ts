@@ -2,11 +2,8 @@ import { describe, expect, test, vi } from 'vitest'
 import type { PublicWebPiece } from '@luzzle/web.pieces'
 import { assetPathToUrl } from '$lib/pieces/assets.js'
 import { previewOutputUrl } from '$lib/pieces/preview/output-url.js'
-import {
-	createPageTemplateHelpers,
-	createTemplateHelpers,
-	type TemplateUrlBuilders
-} from './template-helpers.js'
+import { createTemplateHelpers, type TemplateUrlBuilders } from '$lib/pieces/template-helpers.js'
+import { createPageTemplateHelpers } from './template-helpers.js'
 
 function piece(): PublicWebPiece {
 	return {
@@ -67,7 +64,10 @@ describe('createPageTemplateHelpers', () => {
 		)
 		helpers.showNavBanner()
 		expect(onNavigation).toHaveBeenCalledExactlyOnceWith({})
-		expect(createTemplateHelpers(publicUrls())).not.toHaveProperty('showNavBanner')
+		expect(Object.keys(createTemplateHelpers(publicUrls())).sort()).toEqual([
+			'forPiece',
+			'getStaticAssetUrl'
+		])
 	})
 
 	test('reports a snapshot of only the supplied colors and omits undefined overrides', () => {

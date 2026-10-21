@@ -65,10 +65,11 @@ exit nonzero and publication failures preserve the previously selected revision.
 It does not start the worker service, migrate databases, run archive jobs, or
 change authentication settings. Automatic startup/refresh hooks remain separate.
 
-**Production pages have not cut over yet.** Publishing artifacts alone does not
-switch the current UI or provide owner manual acceptance of prepared pages. The
-built SSR fixture exercises this actual command and the shared path resolver;
-real route integration is the next slice.
+Public piece pages, published-page inspection and completed preview-page views
+consume selected artifacts through the shared path resolver. Republish after
+source/theme changes, then refresh those views. Other page surfaces and automatic
+preparation remain separate work. Automated SSR checks do not replace owner manual
+browser and authenticated-preview acceptance.
 
 ## Template bundles
 

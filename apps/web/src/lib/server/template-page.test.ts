@@ -32,7 +32,7 @@ describe('renderTemplatePage', () => {
 		expect(result).toEqual({
 			body: '<main>Page</main>',
 			head: '<title>Page</title>',
-			navigation: undefined
+			navBanner: null
 		})
 	})
 
@@ -43,7 +43,7 @@ describe('renderTemplatePage', () => {
 			{},
 			urls
 		)
-		expect(result.navigation).toEqual({})
+		expect(result.navBanner).toEqual({})
 	})
 
 	test('snapshots only the three color inputs and preserves other helpers', () => {
@@ -64,7 +64,7 @@ describe('renderTemplatePage', () => {
 			{},
 			urls
 		)
-		expect(result.navigation).toEqual({
+		expect(result.navBanner).toEqual({
 			background: 'var(--color-primary)',
 			color: 'var(--color-on-primary)',
 			hoverColor: 'var(--color-secondary)'
@@ -81,7 +81,7 @@ describe('renderTemplatePage', () => {
 			{},
 			urls
 		)
-		expect(result.navigation).toEqual({ color: 'var(--color-on-surface)' })
+		expect(result.navBanner).toEqual({ color: 'var(--color-on-surface)' })
 	})
 
 	test('passes the requested data to the renderer without any component constructors', () => {
@@ -103,8 +103,8 @@ describe('renderTemplatePage', () => {
 		const first = renderTemplatePage(bundle, 'page', {}, urls)
 		show = false
 		const second = renderTemplatePage(bundle, 'page', {}, urls)
-		expect(first.navigation).toEqual({ background: 'var(--color-primary)' })
-		expect(second.navigation).toBeUndefined()
+		expect(first.navBanner).toEqual({ background: 'var(--color-primary)' })
+		expect(second.navBanner).toBeNull()
 	})
 
 	test('lets genuine rendering failures reach the caller without leaking partial presentation', () => {
@@ -120,7 +120,7 @@ describe('renderTemplatePage', () => {
 				'page',
 				{},
 				urls
-			).navigation
-		).toBeUndefined()
+			).navBanner
+		).toBeNull()
 	})
 })

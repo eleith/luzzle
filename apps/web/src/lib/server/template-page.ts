@@ -1,6 +1,7 @@
 import type { TemplateBundleModule } from '@luzzle/web.templates/bundle'
 import type { NavBannerColors } from '@luzzle/web.templates/components/props'
-import { createPageTemplateHelpers, type TemplateUrlBuilders } from './template-helpers.js'
+import type { TemplateUrlBuilders } from '$lib/pieces/template-helpers.js'
+import { createPageTemplateHelpers } from './template-helpers.js'
 
 export function renderTemplatePage(
 	bundle: TemplateBundleModule,
@@ -8,10 +9,10 @@ export function renderTemplatePage(
 	data: object,
 	urls: TemplateUrlBuilders
 ) {
-	let navigation: NavBannerColors | undefined
+	let navBanner: NavBannerColors | null = null
 	const helpers = createPageTemplateHelpers(urls, (colors) => {
-		navigation = colors
+		navBanner = colors
 	})
 	const rendered = bundle.render(name, { data, helpers })
-	return { ...rendered, navigation }
+	return { ...rendered, navBanner }
 }

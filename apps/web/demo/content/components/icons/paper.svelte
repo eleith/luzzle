@@ -1,7 +1,9 @@
 <script lang="ts">
-	let { piece, size, active }: PieceIconProps = $props()
+	let { data, options }: PieceIconProps = $props()
+	const piece = $derived(data.piece)
+	const { size, active } = $derived(options)
 
-	const scale = Math.round((size.width / (375 * 2)) * 100) / 100
+	const scale = $derived(Math.round((size.width / (375 * 2)) * 100) / 100)
 </script>
 
 <section

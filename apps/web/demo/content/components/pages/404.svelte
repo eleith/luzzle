@@ -1,6 +1,4 @@
 <script lang="ts">
-	import type { Page404Props } from '$lib/content/types.js'
-
 	let { message, components }: Page404Props = $props()
 	const { ContentBanner } = components
 </script>

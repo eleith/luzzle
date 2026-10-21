@@ -23,12 +23,21 @@ strings; narrowing one does not generate schema-derived metadata typings.
 
 `components/icon.default.svelte` is the canonical default icon UI. The legacy app
 adapter imports it, and the worker resolves and compiles the same source into
-prepared bundles. It is included in production package files. Other defaults
-remain in their existing locations until their cutover needs shared sources; no
+prepared bundles. `components/page.default.svelte` owns the canonical default page
+body and styles; the app keeps a thin adapter for its interactive navigation and
+helper bindings. It is included in production package files. Remaining defaults
+stay in their existing locations until their cutover needs shared sources; no
 placeholder defaults or duplicated implementations are introduced.
 
 Worker depends on this package in production to read built-ins during preparation.
 The package does not compile them, render requests, or bundle a Svelte runtime.
+
+## Author folders
+
+The demo author folder supplies portable ambient declarations in `luzzle.d.ts`.
+Its Svelte files do not require `@luzzle` workspace imports or a package install.
+Internal application/worker consumers continue using the canonical package
+contracts above. Schema-derived author typings remain separate work.
 
 ## Page navigation
 
@@ -72,6 +81,11 @@ throwing icon aborts the page render; the caller chooses whole-page presentation
 fallback. There is no separate nested render, HTML head merger, or per-icon error
 recovery. Prepared templates remain server-only; browser-reactive icon props are
 not introduced by this API.
+
+The current production piece-page consumer reserves document SEO for the app.
+Templates used there must avoid competing title, description and Open Graph tags;
+styles and non-conflicting head content are preserved. This is the agreed first
+cutover boundary, not a compiler restriction or source validator.
 
 ## Ownership
 

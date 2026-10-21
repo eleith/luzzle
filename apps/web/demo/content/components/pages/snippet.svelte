@@ -1,6 +1,9 @@
 <script lang="ts">
-	const { piece, tags, helpers, components }: PiecePageProps = $props()
-	const { NavBanner } = components
+	const { data, helpers }: PiecePageProps = $props()
+	const { piece, tags } = data
+	const pieceHelpers = helpers.forPiece(piece)
+
+	helpers.showNavBanner()
 	const metadata = piece.metadata
 
 	const bylineParts: string[] = []
@@ -20,8 +23,6 @@
 	}
 </script>
 
-<NavBanner showRandom />
-
 <main id="main-content" role="main">
 	<section class="content">
 		<section class="details">
@@ -37,7 +38,7 @@
 				<h2>Note</h2>
 				{#if piece.note}
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
+					{@html pieceHelpers.getAssetContent(piece.key, 'markdown') || piece.note}
 				{:else}
 					<em class="empty-note">this record does not have a note</em>
 				{/if}
@@ -48,10 +49,10 @@
 					<h2>Files</h2>
 					<div class="files-container">
 						{#each piece.metadata.files as file (file.name)}
-							{@const attachment = helpers.getPieceAssetUrl(file.file, 'attachment')}
+							{@const attachment = pieceHelpers.getAssetUrl(file.file, 'attachment')}
 
 							{#if file.type === 'snippet'}
-								{@const highlight = helpers.getPieceAssetContent(file.file, 'highlight')}
+								{@const highlight = pieceHelpers.getAssetContent(file.file, 'highlight')}
 								<div class="file">
 									<div class="file-header">
 										<div class="file-filename">{file.name}</div>

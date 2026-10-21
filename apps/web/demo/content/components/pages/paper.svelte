@@ -1,6 +1,9 @@
 <script lang="ts">
-	const { piece, tags, helpers, components }: PiecePageProps = $props()
-	const { NavBanner } = components
+	const { data, helpers }: PiecePageProps = $props()
+	const { piece, tags } = data
+	const pieceHelpers = helpers.forPiece(piece)
+
+	helpers.showNavBanner()
 	const minutes = Math.floor(((piece.note?.length || 0) as number) / 5 / 250)
 
 	const bylineParts: string[] = []
@@ -13,8 +16,6 @@
 		)
 	}
 </script>
-
-<NavBanner showRandom />
 
 <main id="main-content" role="main">
 	<section class="hero">
@@ -29,7 +30,7 @@
 			<div>
 				{#if piece.note}
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					{@html helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note}
+					{@html pieceHelpers.getAssetContent(piece.key, 'markdown') || piece.note}
 				{:else}
 					<em class="empty-note">this record does not have a note</em>
 				{/if}

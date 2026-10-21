@@ -1,8 +1,11 @@
 <script lang="ts">
-	let { piece, size, helpers, lazy, active }: PieceIconProps = $props()
-	const metadata = piece.metadata
+	let { data, options, helpers }: PieceIconProps = $props()
+	const piece = $derived(data.piece)
+	const { size, lazy, active } = $derived(options)
+	const pieceHelpers = $derived(helpers.forPiece(piece))
+	const metadata = $derived(piece.metadata)
 
-	const scale = Math.round((size.width / 375) * 100) / 100
+	const scale = $derived(Math.round((size.width / 375) * 100) / 100)
 </script>
 
 <div
@@ -19,7 +22,7 @@
 	</div>
 	{#if metadata.poster}
 		<img
-			src={helpers.getPieceImageUrl(metadata.poster, size.width, 'jpg')}
+			src={pieceHelpers.getImageUrl(metadata.poster, size.width, 'jpg')}
 			loading={lazy ? 'lazy' : 'eager'}
 			fetchpriority={lazy ? 'auto' : 'high'}
 			alt=""

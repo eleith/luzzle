@@ -1,6 +1,9 @@
 <script lang="ts">
-	let { piece, size, helpers, lazy, active }: PieceIconProps = $props()
-	const metadata = piece.metadata
+	let { data, options, helpers }: PieceIconProps = $props()
+	const piece = $derived(data.piece)
+	const { size, lazy, active } = $derived(options)
+	const pieceHelpers = $derived(helpers.forPiece(piece))
+	const metadata = $derived(piece.metadata)
 
 	function interpolate(
 		value: number,
@@ -23,12 +26,10 @@
 		return parseFloat(finalValue.toFixed(2))
 	}
 
-	const scale = Math.round((size.width / 375) * 100) / 100
-	const pages = metadata.pages as number | 100
-	const thickness = interpolate(
-		pages * scale,
-		{ min: 1, max: 650 },
-		{ min: 25, max: size.width / 2 }
+	const scale = $derived(Math.round((size.width / 375) * 100) / 100)
+	const pages = $derived(metadata.pages as number | 100)
+	const thickness = $derived(
+		interpolate(pages * scale, { min: 1, max: 650 }, { min: 25, max: size.width / 2 })
 	)
 </script>
 
@@ -72,11 +73,11 @@
 		{#if metadata.cover}
 			<picture>
 				<source
-					srcset={helpers.getPieceImageUrl(metadata.cover, size.width, 'avif')}
+					srcset={pieceHelpers.getImageUrl(metadata.cover, size.width, 'avif')}
 					type="image/avif"
 				/>
 				<img
-					src={helpers.getPieceImageUrl(metadata.cover, size.width, 'jpg')}
+					src={pieceHelpers.getImageUrl(metadata.cover, size.width, 'jpg')}
 					loading={lazy ? 'lazy' : 'eager'}
 					fetchpriority={lazy ? 'auto' : 'high'}
 					alt=""
