@@ -7,15 +7,10 @@ export interface TemplateSize {
 	readonly height: number;
 }
 
-export interface NavBannerInputs {
+export interface NavBannerColors {
 	readonly background?: string;
 	readonly color?: string;
 	readonly hoverColor?: string;
-	readonly showHome?: boolean;
-	readonly showSearch?: boolean;
-	readonly showThemeToggle?: boolean;
-	readonly showProgress?: boolean;
-	readonly showRandom?: boolean;
 }
 
 /** Inputs at a page's component call, not the icon template's props. */
@@ -31,6 +26,5 @@ export interface PieceIconInputs<T extends string = string> {
 }
 
 export interface PageComponents {
-	readonly NavBanner: Component<NavBannerInputs>;
 	readonly PieceIcon: Component<PieceIconInputs>;
 }

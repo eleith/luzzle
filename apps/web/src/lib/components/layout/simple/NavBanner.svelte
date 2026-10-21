@@ -3,13 +3,11 @@
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import DiceIcon from 'virtual:icons/ph/dice-three'
 	import type { Snippet } from 'svelte'
+	import type { NavBannerColors } from '@luzzle/web.templates/components/props'
 	import NavigationProgressBar from './NavigationProgressBar.svelte'
 	import ThemeToggle from './ThemeToggle.svelte'
 
-	type Props = {
-		background?: string
-		color?: string
-		hoverColor?: string
+	type Props = NavBannerColors & {
 		showHome?: boolean
 		showSearch?: boolean
 		showThemeToggle?: boolean

@@ -1,4 +1,5 @@
 import type { PieceIconPalette, PublicWebPiece } from '@luzzle/web.pieces';
+import type { NavBannerColors } from './components/props.js';
 
 export type ImageFormat = 'jpg' | 'avif' | 'webp' | 'png';
 
@@ -12,6 +13,12 @@ export interface BoundPieceHelpers {
 	): string | undefined;
 	getAssetUrl(assetKey: string, transformation: string): string | undefined;
 	getAssetContent(assetKey: string, transformation: string): string | undefined;
+}
+
+/** Page-only presentation controls; icon and Open Graph templates use TemplateHelpers. */
+export interface PageTemplateHelpers extends TemplateHelpers {
+	/** Request the app-owned banner; no call means no banner, no arguments means defaults. */
+	showNavBanner(colors?: NavBannerColors): void;
 }
 
 export interface TemplateHelpers {

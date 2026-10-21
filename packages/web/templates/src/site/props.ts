@@ -1,13 +1,13 @@
 import type { PublicWebPiece } from '@luzzle/web.pieces';
 import type { PageComponents } from '../components/props.js';
-import type { TemplateHelpers } from '../helpers.js';
+import type { PageTemplateHelpers } from '../helpers.js';
 
 export interface RootPageProps {
 	readonly data: {
 		readonly types: readonly string[];
 		readonly pieces: readonly PublicWebPiece[];
 	};
-	readonly helpers: TemplateHelpers;
+	readonly helpers: PageTemplateHelpers;
 	readonly components: PageComponents;
 }
 
@@ -22,7 +22,7 @@ export interface FeedPageProps {
 		readonly feed: FeedReference;
 		readonly pieces: readonly PublicWebPiece[];
 	};
-	readonly helpers: TemplateHelpers;
+	readonly helpers: PageTemplateHelpers;
 	readonly components: PageComponents;
 }
 
@@ -32,6 +32,6 @@ export interface ErrorPageProps {
 		/** Safe public text, never a private debugging message or stack trace. */
 		readonly message: string;
 	};
-	readonly helpers: TemplateHelpers;
+	readonly helpers: PageTemplateHelpers;
 	readonly components: PageComponents;
 }

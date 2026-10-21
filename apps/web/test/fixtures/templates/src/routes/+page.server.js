@@ -1,9 +1,14 @@
 import { loadTemplateBundle } from '$lib/server/templates.js'
-import { createTemplateHelpers } from '$lib/server/template-helpers.js'
+import { renderTemplatePage } from '$lib/server/template-page.js'
 import { assetPathToUrl } from '$lib/pieces/assets.js'
 import { previewOutputUrl } from '$lib/pieces/preview/output-url.js'
 
-const fallback = { state: 'fallback', body: '<p>Built-in presentation</p>', head: '' }
+const fallback = {
+	state: 'fallback',
+	body: '<p>Built-in presentation</p>',
+	head: '',
+	navigation: undefined
+}
 
 export async function load({ url }) {
 	try {
@@ -45,18 +50,23 @@ export async function load({ url }) {
 				}
 			]
 		}
-		const helpers = createTemplateHelpers({
-			buildPieceUrl: (piece) =>
-				`${origin}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`,
-			buildAssetUrl: (path) =>
-				job === null ? assetPathToUrl(path, origin) : previewOutputUrl(path, job),
-			buildStaticAssetUrl: (path) =>
-				path === 'images/mark.svg' ? `${origin}/site-assets/images/mark.svg` : undefined
-		})
-		const output = bundle.render(name, { data: { piece, tags: [] }, helpers })
+		const output = renderTemplatePage(
+			bundle,
+			name,
+			{ piece, tags: [] },
+			{
+				buildPieceUrl: (piece) =>
+					`${origin}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`,
+				buildAssetUrl: (path) =>
+					job === null ? assetPathToUrl(path, origin) : previewOutputUrl(path, job),
+				buildStaticAssetUrl: (path) =>
+					path === 'images/mark.svg' ? `${origin}/site-assets/images/mark.svg` : undefined
+			}
+		)
 		return {
 			state: bundle.revision,
 			body: output.body,
+			navigation: output.navigation,
 			head: `${output.head}<style data-prepared-theme>${bundle.themeCss}</style>`
 		}
 	} catch (error) {

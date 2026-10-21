@@ -1,10 +1,30 @@
 import { createPieceHelpers, type PublicWebPiece } from '@luzzle/web.pieces'
-import type { TemplateHelpers } from '@luzzle/web.templates/helpers'
+import type { NavBannerColors } from '@luzzle/web.templates/components/props'
+import type { PageTemplateHelpers, TemplateHelpers } from '@luzzle/web.templates/helpers'
 
 export interface TemplateUrlBuilders {
 	buildPieceUrl(piece: PublicWebPiece): string
 	buildAssetUrl(assetPath: string): string | undefined
 	buildStaticAssetUrl(relativePath: string): string | undefined
+}
+
+export function createPageTemplateHelpers(
+	urls: TemplateUrlBuilders,
+	onNavigation: (colors: NavBannerColors) => void
+): PageTemplateHelpers {
+	return {
+		...createTemplateHelpers(urls),
+		showNavBanner(colors = {}) {
+			const snapshot = {
+				background: colors.background,
+				color: colors.color,
+				hoverColor: colors.hoverColor
+			}
+			onNavigation(
+				Object.fromEntries(Object.entries(snapshot).filter(([, value]) => value !== undefined))
+			)
+		}
+	}
 }
 
 export function createTemplateHelpers(urls: TemplateUrlBuilders): TemplateHelpers {

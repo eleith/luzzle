@@ -171,7 +171,9 @@ const firstSource = `
 
 describe('prepared templates in built SvelteKit SSR', () => {
 	test('starts with built-in presentation before a revision is available', async () => {
-		expect(await request()).toContain('Built-in presentation')
+		const html = await request()
+		expect(html).toContain('Built-in presentation')
+		expect(html).not.toContain('aria-label="Global"')
 	})
 
 	test('renders a newly prepared template with its component and theme CSS without rebuilding', async () => {
@@ -267,6 +269,69 @@ const mark = helpers.getStaticAssetUrl('images/mark.svg');
 		expect(preview).not.toContain('<p>Published note</p>')
 		expect(preview).toContain(`href="${origin}/pieces/custom-kind/prepared%20piece"`)
 		expect(await request()).toContain('<p>Published note</p>')
+	})
+
+	test('renders requested navigation as the real app banner before custom content', async () => {
+		const source = `<script>
+let { data, helpers } = $props();
+const palette = helpers.forPiece(data.piece).getPalette();
+if (data.piece.title !== 'omitted') {
+  if (data.piece.title === 'defaults') helpers.showNavBanner();
+  else helpers.showNavBanner({ background: palette?.accent, color: 'var(--color-on-primary)', hoverColor: 'var(--color-secondary)' });
+}
+if (data.piece.title === 'updated') helpers.showNavBanner({ background: 'var(--color-surface-container)' });
+if (data.piece.title === 'throwing') throw new Error('failed after requesting navigation');
+</script>
+<svelte:head><title>Owner page {data.piece.title}</title><meta name="description" content="Prepared server content" /></svelte:head>
+<main id="custom-content" style:background={palette?.accent}><p>{data.piece.title}</p></main>`
+		await publishSource(source, '#135790')
+		const html = await request('?title=normal')
+		expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
+		expect(html).toContain('aria-label="main page"')
+		expect(html).toContain('aria-label="search"')
+		expect(html).toContain('aria-label="change theme"')
+		expect(html).not.toContain('href="/random"')
+		expect(html).toContain('--banner-background-color: #123456')
+		expect(html).toContain('<main id="custom-content" style="background: #123456')
+		expect(html).toContain('--banner-text-color: var(--color-on-primary)')
+		expect(html).toContain('--banner-hover-color: var(--color-secondary)')
+		expect(htmlHead(html)).toContain('<title>Owner page normal</title>')
+		expect(htmlHead(html)).toContain('name="description" content="Prepared server content"')
+		expect(html.indexOf('aria-label="Global"')).toBeLessThan(
+			html.indexOf('<main id="custom-content"')
+		)
+		const navClass = html.match(/<nav[^>]*class="banner (svelte-[a-z0-9]+)"/)?.[1]
+		expect(navClass).toBeDefined()
+		const head = htmlHead(html)
+		let deliveredCss = head
+		for (const match of head.matchAll(/<link[^>]*href="([^"]+\.css)"[^>]*>/g)) {
+			const response = await fetch(new URL(match[1], `${origin}/`))
+			expect(response.status).toBe(200)
+			deliveredCss += await response.text()
+		}
+		expect(deliveredCss).toContain(`.banner.${navClass}`)
+		expect(deliveredCss).toContain('--banner-background-color')
+
+		const defaults = await request('?title=defaults')
+		expect(defaults).toContain('aria-label="Global"')
+		expect(defaults).toContain('aria-label="main page"')
+		expect(defaults).toContain('aria-label="search"')
+		expect(defaults).toContain('aria-label="change theme"')
+		expect(defaults).not.toContain('href="/random"')
+		expect(defaults).toContain('--banner-background-color: transparent')
+		const updated = await request('?title=updated')
+		expect(updated.match(/aria-label="Global"/g)).toHaveLength(1)
+		expect(updated).toContain('--banner-background-color: var(--color-surface-container)')
+		expect(updated).toContain('--banner-text-color: var(--color-on-surface)')
+		const omitted = await request('?title=omitted')
+		expect(omitted).not.toContain('aria-label="Global"')
+		expect(omitted).toContain('<main id="custom-content"')
+		const failure = await request('?title=throwing')
+		expect(failure).toContain('Built-in presentation')
+		expect(failure).not.toContain('aria-label="Global"')
+		expect(failure).not.toContain('Owner page throwing')
+		expect(serverErrors).toContain('failed after requesting navigation')
+		expect(await request('?title=after-error')).toContain('aria-label="Global"')
 	})
 
 	test('leaves every compiled application file unchanged across publication and fallback', async () => {

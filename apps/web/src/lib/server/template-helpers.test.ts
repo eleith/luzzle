@@ -2,7 +2,11 @@ import { describe, expect, test, vi } from 'vitest'
 import type { PublicWebPiece } from '@luzzle/web.pieces'
 import { assetPathToUrl } from '$lib/pieces/assets.js'
 import { previewOutputUrl } from '$lib/pieces/preview/output-url.js'
-import { createTemplateHelpers, type TemplateUrlBuilders } from './template-helpers.js'
+import {
+	createPageTemplateHelpers,
+	createTemplateHelpers,
+	type TemplateUrlBuilders
+} from './template-helpers.js'
 
 function piece(): PublicWebPiece {
 	return {
@@ -51,6 +55,38 @@ function publicUrls(): TemplateUrlBuilders {
 function previewUrls(job: string): TemplateUrlBuilders {
 	return { ...publicUrls(), buildAssetUrl: (assetPath) => previewOutputUrl(assetPath, job) }
 }
+
+describe('createPageTemplateHelpers', () => {
+	test('adds an opt-in navigation helper while retaining the base helpers', () => {
+		const onNavigation = vi.fn()
+		const helpers = createPageTemplateHelpers(publicUrls(), onNavigation)
+		expect(onNavigation).not.toHaveBeenCalled()
+		expect(helpers.forPiece(piece()).getPalette()).toEqual({ accent: '#123456' })
+		expect(helpers.getStaticAssetUrl('images/mark.svg')).toBe(
+			'https://public.example/garden/site-assets/images/mark.svg'
+		)
+		helpers.showNavBanner()
+		expect(onNavigation).toHaveBeenCalledExactlyOnceWith({})
+		expect(createTemplateHelpers(publicUrls())).not.toHaveProperty('showNavBanner')
+	})
+
+	test('reports a snapshot of only the supplied colors and omits undefined overrides', () => {
+		const onNavigation = vi.fn()
+		const helpers = createPageTemplateHelpers(publicUrls(), onNavigation)
+		const colors = {
+			background: 'var(--color-primary)',
+			color: undefined,
+			hoverColor: 'var(--color-secondary)',
+			showRandom: true
+		}
+		helpers.showNavBanner(colors)
+		colors.background = 'var(--color-surface)'
+		expect(onNavigation).toHaveBeenCalledExactlyOnceWith({
+			background: 'var(--color-primary)',
+			hoverColor: 'var(--color-secondary)'
+		})
+	})
+})
 
 describe('createTemplateHelpers', () => {
 	test('binds the accepted piece API to existing URL, palette, image and content helpers', () => {

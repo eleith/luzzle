@@ -1,6 +1,7 @@
 import adapter from '@sveltejs/adapter-node'
 
 export default {
+	compilerOptions: { experimental: { async: true } },
 	kit: {
 		adapter: adapter({ out: process.env.TEMPLATE_BUILD_DIR }),
 		outDir: process.env.TEMPLATE_KIT_DIR,

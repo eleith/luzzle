@@ -1,6 +1,6 @@
 import type { PublicWebPiece } from '@luzzle/web.pieces';
 import type { PageComponents, TemplateSize } from '../components/props.js';
-import type { TemplateHelpers } from '../helpers.js';
+import type { PageTemplateHelpers, TemplateHelpers } from '../helpers.js';
 
 export type { PieceIconInputs } from '../components/props.js';
 
@@ -16,7 +16,7 @@ interface PieceData<T extends string> {
 
 export interface PiecePageProps<T extends string = string> {
 	readonly data: PieceData<T> & { readonly tags: readonly PieceTag[] };
-	readonly helpers: TemplateHelpers;
+	readonly helpers: PageTemplateHelpers;
 	readonly components: PageComponents;
 }
 

@@ -37,8 +37,13 @@ solved for production hot replacement.
 `pnpm run test:templates` builds a small SvelteKit application once, then publishes
 real worker artifacts after that build. It tests SSR HTML/CSS, revision switching
 and caller-owned fallback without changing the compiled application. The fixture
-also exercises real piece helpers and public/preview URL separation; it does not
-stand in for navigation/icon component integration or authenticated asset serving.
+also exercises real piece helpers and public/preview URL separation. Page templates
+can call `helpers.showNavBanner()` for the app-owned banner with existing defaults,
+or pass `{ background, color, hoverColor }` overrides. No call means no banner;
+the last call replaces the overrides. The fixture renders the real banner above
+custom HTML in the initial server response, with its normal application-owned
+client behavior. This is not yet production page cutover, `PieceIcon` integration,
+authenticated asset serving, or a browser interaction test.
 
 `createTemplateHelpers(urls)` in `src/lib/server/template-helpers.ts` implements the
 shared `helpers.forPiece(piece)` API using existing piece helpers. Callers supply
@@ -47,6 +52,18 @@ and base values once and keep those builders stable for the render; no page stor
 database or filesystem access is performed by the factory. Published and draft
 records carry their own asset content—the URL context does not turn one into the
 other. Static-file availability and serving remain the caller's responsibility.
+
+`createPageTemplateHelpers(urls, onNavigation)` in the same helper module adds
+`showNavBanner` and reports requested color snapshots through the supplied callback.
+The base factory remains usable by icon and Open Graph templates.
+
+`renderTemplatePage(bundle, name, data, urls)` in `src/lib/server/template-page.ts`
+uses that factory and keeps navigation capture local to one server render.
+It returns the unchanged rendered body/head and optional navigation colors. Only
+the three color fields are copied; visibility flags, snippets, and other banner
+props are not part of the author API. Render failures reach the caller before any
+partial presentation is returned. Icon and Open Graph inputs retain their base
+helpers, without navigation controls.
 
 ## Centralized Web Documentation 📖
 

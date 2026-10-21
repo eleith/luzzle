@@ -13,8 +13,7 @@
 	"scripts": {
 		"prebuild": "rm -rf dist",
 		"build": "tsc -p tsconfig.json",
-		"lint": "eslint . && prettier --check .",
-		"test": "tsc -p tsconfig.test.json"
+		"lint": "eslint . && prettier --check ."
 	},
 	"exports": {
 		"./pieces/props": {

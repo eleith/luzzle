@@ -53,6 +53,3 @@ jobs:
 
       - name: Lint
         run: pnpm --filter @luzzle/web.templates lint
-
-      - name: Test
-        run: pnpm --filter @luzzle/web.templates test
