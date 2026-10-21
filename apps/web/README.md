@@ -42,8 +42,9 @@ can call `helpers.showNavBanner()` for the app-owned banner with existing defaul
 or pass `{ background, color, hoverColor }` overrides. No call means no banner;
 the last call replaces the overrides. The fixture renders the real banner above
 custom HTML in the initial server response, with its normal application-owned
-client behavior. This is not yet production page cutover, `PieceIcon` integration,
-authenticated asset serving, or a browser interaction test.
+client behavior. It also exercises configured/default icons and their stylesheet
+collection inside the page's single SSR render. This is not yet production page
+cutover, authenticated asset serving, or a browser interaction test.
 
 `createTemplateHelpers(urls)` in `src/lib/server/template-helpers.ts` implements the
 shared `helpers.forPiece(piece)` API using existing piece helpers. Callers supply
@@ -64,6 +65,17 @@ the three color fields are copied; visibility flags, snippets, and other banner
 props are not part of the author API. Render failures reach the caller before any
 partial presentation is returned. Icon and Open Graph inputs retain their base
 helpers, without navigation controls.
+
+Page and Open Graph authors embed icons with
+`<components.PieceIcon piece={data.piece} size={{ width: 125 }} />`. The bundle
+supplies this actual component internally; no constructor crosses from the app.
+Icons share the enclosing Svelte render, including CSS collection, component
+context and ordinary head ordering (an icon title can replace a direct page
+title). A failing icon aborts the enclosing render and reaches caller-owned
+fallback. Missing icons use the canonical `icon.default.svelte` UI, shared with
+the legacy app adapter through the components asset family in `@luzzle/web.templates`.
+
+The prepared module's public renderer/lookup/body/head contract is unchanged.
 
 ## Centralized Web Documentation 📖
 

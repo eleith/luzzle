@@ -1,2 +1,4 @@
 dist/
 node_modules/
+# Raw Svelte assets use the web consumer's existing Svelte formatter.
+src/components/*.svelte

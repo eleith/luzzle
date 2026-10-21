@@ -1,5 +1,6 @@
 import { loadTemplateBundle } from '$lib/server/templates.js'
 import { renderTemplatePage } from '$lib/server/template-page.js'
+import { createTemplateHelpers } from '$lib/server/template-helpers.js'
 import { assetPathToUrl } from '$lib/pieces/assets.js'
 import { previewOutputUrl } from '$lib/pieces/preview/output-url.js'
 
@@ -15,7 +16,8 @@ export async function load({ url }) {
 		const bundle = await loadTemplateBundle(process.env.TEMPLATE_PREPARED_DIR)
 		if (!bundle) return fallback
 		const type = url.searchParams.get('type') ?? 'custom-kind'
-		const name = bundle.templateLookup.pieces[type]?.page
+		const role = url.searchParams.get('role') === 'opengraph' ? 'opengraph' : 'page'
+		const name = bundle.templateLookup.pieces[type]?.[role]
 		if (!name) return fallback
 		const origin = url.origin
 		const job = url.searchParams.get('job')
@@ -50,19 +52,25 @@ export async function load({ url }) {
 				}
 			]
 		}
-		const output = renderTemplatePage(
-			bundle,
-			name,
-			{ piece, tags: [] },
-			{
-				buildPieceUrl: (piece) =>
-					`${origin}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`,
-				buildAssetUrl: (path) =>
-					job === null ? assetPathToUrl(path, origin) : previewOutputUrl(path, job),
-				buildStaticAssetUrl: (path) =>
-					path === 'images/mark.svg' ? `${origin}/site-assets/images/mark.svg` : undefined
-			}
-		)
+		const urls = {
+			buildPieceUrl: (piece) =>
+				`${origin}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`,
+			buildAssetUrl: (path) =>
+				job === null ? assetPathToUrl(path, origin) : previewOutputUrl(path, job),
+			buildStaticAssetUrl: (path) =>
+				path === 'images/mark.svg' ? `${origin}/site-assets/images/mark.svg` : undefined
+		}
+		let output
+		if (role === 'page') {
+			output = renderTemplatePage(bundle, name, { piece, tags: [] }, urls)
+		} else {
+			const rendered = bundle.render(name, {
+				data: { piece },
+				options: { size: { width: 1200, height: 630 } },
+				helpers: createTemplateHelpers(urls)
+			})
+			output = { ...rendered, navigation: undefined }
+		}
 		return {
 			state: bundle.revision,
 			body: output.body,

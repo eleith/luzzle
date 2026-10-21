@@ -770,6 +770,9 @@ importers:
       '@luzzle/web.pieces':
         specifier: workspace:*
         version: link:../pieces
+      '@luzzle/web.templates':
+        specifier: workspace:*
+        version: link:../templates
       '@luzzle/web.theme':
         specifier: workspace:*
         version: link:../theme
@@ -903,9 +906,6 @@ importers:
       '@eslint/js':
         specifier: 'catalog:'
         version: 9.22.0
-      '@luzzle/web.templates':
-        specifier: workspace:*
-        version: link:../templates
       '@types/eslint':
         specifier: 'catalog:'
         version: 9.6.1

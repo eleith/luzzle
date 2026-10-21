@@ -3,12 +3,13 @@
 	"version": "0.0.1",
 	"private": true,
 	"type": "module",
-	"description": "Shared template input and helper contracts for web and worker",
+	"description": "Shared template contracts and built-in sources for web and worker",
 	"engines": {
 		"node": ">=24"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"src/components/*.svelte"
 	],
 	"scripts": {
 		"prebuild": "rm -rf dist",
@@ -16,6 +17,7 @@
 		"lint": "eslint . && prettier --check ."
 	},
 	"exports": {
+		"./components/*.svelte": "./src/components/*.svelte",
 		"./pieces/props": {
 			"types": "./dist/pieces/props.d.ts"
 		},

@@ -94,10 +94,24 @@ Two internal utilities perform the work:
 - `compileTemplateBundle(sources)` in `src/templates/compile.ts` takes names mapped
   to `{ source, filename }` and returns `{ moduleCode, warnings }`. Svelte compiles
   the sources; esbuild bundles them with one shared Svelte server runtime.
+  `piece-icon.ts` owns the canonical default-source lookup and generated icon
+  selector; `entry.ts` owns the generated public renderer. Shared compiler settings
+  and esbuild orchestration stay in `compile.ts`.
 
 The generated `render(name, props)` synchronously returns plain `{ body, head }`
 strings, including the selected template's CSS. Callers do not need to install
 Svelte. Unknown names throw; diagnostics retain source filenames.
+
+The renderer supplies `components.PieceIcon` internally to page and Open Graph
+templates. This actual Svelte component selects and renders the configured icon
+or canonical default in the same SSR graph. No constructor or snippet is exported
+to or supplied by the app. Svelte collects CSS and preserves ordinary context/head
+ordering without a head parser, private runtime calls, or nested public rendering.
+The default is compiled from `@luzzle/web.templates/components/icon.default.svelte`,
+a raw asset included in that package's production files and shared with the legacy
+app adapter. The templates package is a production dependency for this source
+lookup, not a provider of compiled component constructors or a shared runtime. Missing icon registrations use this default; selected icon errors
+reach the enclosing template caller. No browser hydration is added.
 
 Source-reading, compiler, bundler, theme-generation and publication errors
 propagate to the caller; failed publication preserves the previous selection.

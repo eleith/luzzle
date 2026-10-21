@@ -17,7 +17,7 @@
     "sync:content": "node ./scripts/sync-content.js && node ./scripts/sync-piece-content.js",
     "build:content": "pnpm run sync:content",
     "sync:svelte": "svelte-kit sync",
-    "lint": "prettier --check . && eslint .",
+    "lint": "prettier --check . && prettier --config .prettierrc --check ../../packages/web/templates/src/components/*.svelte && eslint .",
     "format": "prettier --write .",
     "test": "vitest run --silent",
     "test:templates": "pnpm --filter @luzzle/web.worker build && vitest run --config vitest.templates.config.ts --silent"

@@ -1,12 +1,11 @@
 import { build } from 'esbuild'
 import { compile, type Warning } from 'svelte/compiler'
-import type { TemplateLookup } from './types.js'
+import { createRenderEntry } from './entry.js'
+import { createPieceIconSource, readDefaultIconSource } from './piece-icon.js'
+import type { TemplateLookup, TemplateSource } from './types.js'
 import workerPackage from '../../package.json' with { type: 'json' }
 
-export interface TemplateSource {
-	source: string
-	filename: string
-}
+export type { TemplateSource } from './types.js'
 
 export interface CompiledTemplateBundle {
 	moduleCode: string
@@ -14,6 +13,12 @@ export interface CompiledTemplateBundle {
 }
 
 const templateModulePrefix = 'luzzle:template/'
+const serverCompileOptions = {
+	generate: 'server',
+	css: 'injected',
+	dev: false,
+	experimental: { async: false },
+} as const
 
 export async function compileTemplateBundle(
 	templates: Readonly<Record<string, TemplateSource>>,
@@ -21,43 +26,45 @@ export async function compileTemplateBundle(
 ): Promise<CompiledTemplateBundle> {
 	const nodeMinimum = workerPackage.engines.node?.match(/^>=(\d+(?:\.\d+){0,2})$/)?.[1] ?? '24'
 	const modules = new Map<string, string>()
-	const imports: string[] = []
-	const entries: string[] = []
+	const templateModules = new Map<string, string>()
 	const warnings: Warning[] = []
 
+	const defaultIconModuleId = `${templateModulePrefix}default-icon`
+	const defaultIcon = await readDefaultIconSource()
+	modules.set(
+		defaultIconModuleId,
+		compile(defaultIcon.source, {
+			...serverCompileOptions,
+			filename: defaultIcon.filename,
+		}).js.code
+	)
+
 	for (const [name, template] of Object.entries(templates)) {
-		const component = `Template${modules.size}`
 		const moduleId = `${templateModulePrefix}${modules.size}`
 		const compiled = compile(template.source, {
+			...serverCompileOptions,
 			filename: template.filename,
-			generate: 'server',
-			css: 'injected',
-			dev: false,
-			experimental: { async: false },
 		})
 		modules.set(moduleId, compiled.js.code)
+		templateModules.set(name, moduleId)
 		warnings.push(...compiled.warnings)
-		imports.push(`import ${component} from ${JSON.stringify(moduleId)};`)
-		entries.push(`[${JSON.stringify(name)}, ${component}]`)
 	}
 
-	const lookupJson = JSON.stringify(templateLookup)
-	const renderEntry = `
-${imports.join('\n')}
-import { render as renderSvelte } from 'svelte/server';
-const templates = new Map([${entries.join(',\n')}]);
-export const templateLookup = JSON.parse(${JSON.stringify(lookupJson)});
-
-export function render(name, props) {
-	const Template = templates.get(name);
-	if (!Template) throw new Error('Unknown template: ' + name);
-	const { body, head } = renderSvelte(Template, { props });
-	return { body, head };
-}
-`
+	const iconComponentModuleId = `${templateModulePrefix}piece-icon`
+	const iconComponent = createPieceIconSource(templateModules, defaultIconModuleId, templateLookup)
+	modules.set(
+		iconComponentModuleId,
+		compile(iconComponent.source, {
+			...serverCompileOptions,
+			filename: iconComponent.filename,
+		}).js.code
+	)
 
 	const bundled = await build({
-		stdin: { contents: renderEntry, resolveDir: import.meta.dirname },
+		stdin: {
+			contents: createRenderEntry(iconComponentModuleId),
+			resolveDir: import.meta.dirname,
+		},
 		bundle: true,
 		write: false,
 		platform: 'node',

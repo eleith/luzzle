@@ -1,5 +1,5 @@
 import type { PublicWebPiece } from '@luzzle/web.pieces';
-import type { PageComponents, TemplateSize } from '../components/props.js';
+import type { PieceComponents, TemplateSize } from '../components/props.js';
 import type { PageTemplateHelpers, TemplateHelpers } from '../helpers.js';
 
 export type { PieceIconInputs } from '../components/props.js';
@@ -17,7 +17,7 @@ interface PieceData<T extends string> {
 export interface PiecePageProps<T extends string = string> {
 	readonly data: PieceData<T> & { readonly tags: readonly PieceTag[] };
 	readonly helpers: PageTemplateHelpers;
-	readonly components: PageComponents;
+	readonly components: PieceComponents;
 }
 
 export interface PieceIconOptions {
@@ -36,4 +36,5 @@ export interface PieceOpengraphProps<T extends string = string> {
 	readonly data: PieceData<T>;
 	readonly options: { readonly size: TemplateSize };
 	readonly helpers: TemplateHelpers;
+	readonly components: PieceComponents;
 }

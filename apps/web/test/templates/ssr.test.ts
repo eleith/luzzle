@@ -30,20 +30,42 @@ process.send({ port: server.server.address().port });
 
 const publish = `
 import path from 'node:path';
-const [publisherUrl, configUrl, sourceFile, preparedDirectory, color, pieceType] = process.argv.slice(1);
+const [publisherUrl, configUrl, sourceFile, preparedDirectory, color, pieceType, iconFiles, opengraphFile] = process.argv.slice(1);
 const { publishTemplateBundle } = await import(publisherUrl);
 const { validateConfig } = await import(configUrl);
+const pieces = new Map([[pieceType, { page: sourceFile, ...(opengraphFile ? { opengraph: opengraphFile } : {}) }]]);
+for (const [type, icon] of Object.entries(JSON.parse(iconFiles))) pieces.set(type, { ...pieces.get(type), icon });
 const config = validateConfig({
- pieces: [{ type: pieceType, fields: { title: 'title', date_consumed: 'date' }, components: { page: sourceFile } }],
+ pieces: [...pieces].map(([type, components]) => ({ type, fields: { title: 'title', date_consumed: 'date' }, components })),
  theme: { light: { 'color-primary': color } }
 });
 config.paths.config = path.join(path.dirname(sourceFile), 'config.yaml');
 console.log(JSON.stringify(await publishTemplateBundle(config, preparedDirectory)));
 `
 
-async function publishSource(source: string, color: string, type = 'custom-kind') {
+async function publishSource(
+	source: string,
+	color: string,
+	type = 'custom-kind',
+	icons: Record<string, string> = {},
+	opengraph?: string
+) {
 	const filename = path.join(directory, `source-${sourceNumber++}.svelte`)
 	await writeFile(filename, source)
+	const opengraphFile =
+		opengraph === undefined ? '' : path.join(directory, `opengraph-${sourceNumber++}.svelte`)
+	if (opengraph !== undefined) await writeFile(opengraphFile, opengraph)
+	const iconFiles = new Map<string, string>()
+	const iconSources = new Map<string, string>()
+	for (const [type, source] of Object.entries(icons)) {
+		let iconFile = iconSources.get(source)
+		if (!iconFile) {
+			iconFile = path.join(directory, `icon-${sourceNumber++}.svelte`)
+			await writeFile(iconFile, source)
+			iconSources.set(source, iconFile)
+		}
+		iconFiles.set(type, iconFile)
+	}
 	const { stdout } = await exec(
 		process.execPath,
 		[
@@ -56,7 +78,9 @@ async function publishSource(source: string, color: string, type = 'custom-kind'
 			filename,
 			preparedDirectory,
 			color,
-			type
+			type,
+			JSON.stringify(Object.fromEntries(iconFiles)),
+			opengraphFile
 		],
 		{ timeout: 30000 }
 	)
@@ -232,6 +256,17 @@ describe('prepared templates in built SvelteKit SSR', () => {
 		expect(serverErrors).toContain('Invalid prepared template exports')
 	})
 
+	test('keeps existing body/head-only prepared modules compatible without new exports', async () => {
+		const published = await publishSource(firstSource, '#135790')
+		await writeFile(
+			path.join(preparedDirectory, 'revisions', published.revision, 'templates.mjs'),
+			'export const templateLookup = {pieces:{"custom-kind":{page:"page"}},site:{}}; export function render(){return {body:"Older module",head:""}};'
+		)
+		const html = await request()
+		expect(html).toContain('Older module')
+		expect(html).not.toContain('Built-in presentation')
+	})
+
 	test('renders real piece helpers with separate published and preview contexts', async () => {
 		const source = `<script>
 let { data, helpers } = $props();
@@ -332,6 +367,99 @@ if (data.piece.title === 'throwing') throw new Error('failed after requesting na
 		expect(failure).not.toContain('Owner page throwing')
 		expect(serverErrors).toContain('failed after requesting navigation')
 		expect(await request('?title=after-error')).toContain('aria-label="Global"')
+	})
+
+	test('renders configured and canonical default icons with one SSR stylesheet and real request helpers', async () => {
+		const icon = `<svelte:options css="injected" />
+<script>let { data, options, helpers } = $props()</script>
+<svelte:head><meta name="icon-piece" content={data.piece.title} /><style>.manual-icon-style { color: var(--color-primary); }</style></svelte:head>
+<a class="prepared-icon" href={helpers.forPiece(data.piece).getUrl()}
+ data-size={options.size.width + 'x' + options.size.height} data-lazy={options.lazy} data-active={options.active}
+ data-page-control={typeof helpers.showNavBanner}>
+ <img src={helpers.forPiece(data.piece).getImageUrl('cover', options.size.width, 'jpg')} alt="Prepared cover" />
+ {data.piece.title}
+</a>
+<style>.prepared-icon { color: var(--color-secondary); }</style>`
+		const source = `<script>let { data, components } = $props()</script>
+<svelte:head><title>Icon page {data.piece.title}</title></svelte:head>
+<main class="icon-page">
+<components.PieceIcon piece={data.piece} size={{ width: 125 }} />
+<components.PieceIcon piece={{ ...data.piece, type: '__proto__', title: 'Related' }} size={{ width: 80, height: 93 }} lazy active />
+<components.PieceIcon piece={{ ...data.piece, type: 'unknown-kind', title: '<Default>&' }} size={{ width: 90, height: 111 }} lazy active />
+</main>
+<style>.icon-page { background: var(--color-surface); }</style>`
+		await publishSource(
+			source,
+			'#135790',
+			'custom-kind',
+			Object.fromEntries([
+				['custom-kind', icon],
+				['__proto__', icon]
+			])
+		)
+		const html = await request('?title=%3CPiece%3E%26')
+		expect(html).toContain('data-size="125x187.5" data-lazy="false" data-active="false"')
+		expect(html).toContain('data-size="80x93" data-lazy="true" data-active="true"')
+		expect(html).toContain('data-page-control="undefined"')
+		expect(html).toContain('href="' + origin + '/pieces/__proto__/prepared%20piece"')
+		expect(html).toMatch(/class="default-icon [^"]*\bactive\b/)
+		expect(html).toContain('--piece-icon-height: 111px;')
+		expect(html).toContain('&lt;Default>&amp;')
+		expect(html).toContain('loading="lazy"')
+		expect(html).toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
+		const head = htmlHead(html)
+		expect(head.match(/<title>/g)).toHaveLength(1)
+		expect(head).toContain('<title>Icon page &lt;Piece>&amp;</title>')
+		expect(head).toContain('name="icon-piece" content="&lt;Piece>&amp;"')
+		expect(head).toContain('name="icon-piece" content="Related"')
+		expect(head).toContain('.manual-icon-style')
+		const iconClass = html.match(/class="prepared-icon (svelte-[a-z0-9]+)"/)?.[1]
+		expect(iconClass).toBeDefined()
+		expect(head.match(new RegExp(`id="${iconClass}"`, 'g'))).toHaveLength(1)
+		expect(head).toContain('.default-icon.')
+		expect(head).toContain('.icon-page.')
+		const preview = await request('?job=icon%20job')
+		expect(preview).toContain('src="/admin/preview/icon%20job/asset/fixture/cover%20small.jpg"')
+		expect(preview).not.toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
+	})
+
+	test('composes icons inside Open Graph templates without page-only helpers', async () => {
+		const icon = `<script>let { data, options, helpers } = $props()</script>
+<img class="og-icon" src={helpers.forPiece(data.piece).getImageUrl('cover', options.size.width, 'jpg')}
+ alt={data.piece.title} data-icon-size={options.size.width + 'x' + options.size.height} />
+<style>.og-icon { border-color: var(--color-primary); }</style>`
+		const opengraph = `<script>let { data, options, helpers, components } = $props()</script>
+<section id="opengraph" data-size={options.size.width + 'x' + options.size.height} data-page-control={typeof helpers.showNavBanner}>
+<components.PieceIcon piece={data.piece} size={{ width: 125, height: 87 }} />
+<components.PieceIcon piece={{ ...data.piece, type: 'unconfigured' }} size={{ width: 80 }} />
+</section>`
+		await publishSource(firstSource, '#135790', 'custom-kind', { 'custom-kind': icon }, opengraph)
+		const html = await request('?role=opengraph')
+		expect(html).toContain('id="opengraph" data-size="1200x630" data-page-control="undefined"')
+		expect(html).toContain('data-icon-size="125x87"')
+		expect(html).toContain('class="default-icon')
+		expect(html).not.toContain('aria-label="Global"')
+		expect(htmlHead(html)).toContain('.og-icon.')
+		expect(htmlHead(html)).toContain('.default-icon.')
+		const preview = await request('?role=opengraph&job=og%20job')
+		expect(preview).toContain('src="/admin/preview/og%20job/asset/fixture/cover%20small.jpg"')
+	})
+
+	test('lets icon errors fall back at the page boundary and restores the next render', async () => {
+		const source = `<script>let { data, helpers, components } = $props(); helpers.showNavBanner()</script>
+<components.PieceIcon piece={data.piece} size={{ width: 80 }} />`
+		await publishSource(source, '#135790', 'custom-kind', {
+			'custom-kind': '<script>throw new Error("icon render failure")</script><p>Never shown</p>'
+		})
+		const html = await request()
+		expect(html).toContain('Built-in presentation')
+		expect(html).not.toContain('aria-label="Global"')
+		expect(serverErrors).toContain('icon render failure')
+		await publishSource(source, '#135790')
+		const recovered = await request()
+		expect(recovered).toContain('class="default-icon')
+		expect(recovered).toContain('aria-label="Global"')
+		expect(htmlHead(recovered)).not.toContain('Never shown')
 	})
 
 	test('leaves every compiled application file unchanged across publication and fallback', async () => {

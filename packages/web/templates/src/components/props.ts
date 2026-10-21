@@ -13,7 +13,7 @@ export interface NavBannerColors {
 	readonly hoverColor?: string;
 }
 
-/** Inputs at a page's component call, not the icon template's props. */
+/** Inputs at a page/Open Graph component call, not the icon template's props. */
 export interface PieceIconInputs<T extends string = string> {
 	readonly piece: PublicWebPiece & { readonly type: T };
 	readonly size: {
@@ -25,6 +25,6 @@ export interface PieceIconInputs<T extends string = string> {
 	readonly active?: boolean;
 }
 
-export interface PageComponents {
+export interface PieceComponents {
 	readonly PieceIcon: Component<PieceIconInputs>;
 }

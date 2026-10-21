@@ -1,5 +1,5 @@
 import type { PublicWebPiece } from '@luzzle/web.pieces';
-import type { PageComponents } from '../components/props.js';
+import type { PieceComponents } from '../components/props.js';
 import type { PageTemplateHelpers } from '../helpers.js';
 
 export interface RootPageProps {
@@ -8,7 +8,7 @@ export interface RootPageProps {
 		readonly pieces: readonly PublicWebPiece[];
 	};
 	readonly helpers: PageTemplateHelpers;
-	readonly components: PageComponents;
+	readonly components: PieceComponents;
 }
 
 export interface FeedReference {
@@ -23,7 +23,7 @@ export interface FeedPageProps {
 		readonly pieces: readonly PublicWebPiece[];
 	};
 	readonly helpers: PageTemplateHelpers;
-	readonly components: PageComponents;
+	readonly components: PieceComponents;
 }
 
 export interface ErrorPageProps {
@@ -33,5 +33,5 @@ export interface ErrorPageProps {
 		readonly message: string;
 	};
 	readonly helpers: PageTemplateHelpers;
-	readonly components: PageComponents;
+	readonly components: PieceComponents;
 }
