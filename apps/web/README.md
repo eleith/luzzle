@@ -37,7 +37,16 @@ solved for production hot replacement.
 `pnpm run test:templates` builds a small SvelteKit application once, then publishes
 real worker artifacts after that build. It tests SSR HTML/CSS, revision switching
 and caller-owned fallback without changing the compiled application. The fixture
-uses data-only templates; it does not stand in for helper/component integration.
+also exercises real piece helpers and public/preview URL separation; it does not
+stand in for navigation/icon component integration or authenticated asset serving.
+
+`createTemplateHelpers(urls)` in `src/lib/server/template-helpers.ts` implements the
+shared `helpers.forPiece(piece)` API using existing piece helpers. Callers supply
+request-bound builders for piece, asset and static-asset URLs. Capture origin, job
+and base values once and keep those builders stable for the render; no page store,
+database or filesystem access is performed by the factory. Published and draft
+records carry their own asset content—the URL context does not turn one into the
+other. Static-file availability and serving remain the caller's responsibility.
 
 ## Centralized Web Documentation 📖
 

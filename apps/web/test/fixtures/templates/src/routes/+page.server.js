@@ -1,4 +1,7 @@
 import { loadTemplateBundle } from '$lib/server/templates.js'
+import { createTemplateHelpers } from '$lib/server/template-helpers.js'
+import { assetPathToUrl } from '$lib/pieces/assets.js'
+import { previewOutputUrl } from '$lib/pieces/preview/output-url.js'
 
 const fallback = { state: 'fallback', body: '<p>Built-in presentation</p>', head: '' }
 
@@ -9,9 +12,48 @@ export async function load({ url }) {
 		const type = url.searchParams.get('type') ?? 'custom-kind'
 		const name = bundle.templateLookup.pieces[type]?.page
 		if (!name) return fallback
-		const output = bundle.render(name, {
-			data: { piece: { title: url.searchParams.get('title') ?? 'Prepared title' } }
+		const origin = url.origin
+		const job = url.searchParams.get('job')
+		const noteContent = job === null ? '<p>Published note</p>' : '<p>Draft note</p>'
+		const piece = {
+			id: 'fixture-piece',
+			key: 'fixture-key',
+			type,
+			slug: 'prepared piece',
+			title: url.searchParams.get('title') ?? 'Prepared title',
+			date_added: 1,
+			metadata: { cover: 'cover' },
+			keywords: '[]',
+			assets: [
+				{
+					asset_key: 'cover',
+					transformation: 'image.s.jpg',
+					asset_path: 'fixture/cover small.jpg',
+					mime_type: 'image/jpeg'
+				},
+				{
+					asset_key: 'cover',
+					transformation: 'palette',
+					content: '{"accent":"#123456"}',
+					mime_type: 'application/json'
+				},
+				{
+					asset_key: 'fixture-key',
+					transformation: 'markdown',
+					content: noteContent,
+					mime_type: 'text/html'
+				}
+			]
+		}
+		const helpers = createTemplateHelpers({
+			buildPieceUrl: (piece) =>
+				`${origin}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`,
+			buildAssetUrl: (path) =>
+				job === null ? assetPathToUrl(path, origin) : previewOutputUrl(path, job),
+			buildStaticAssetUrl: (path) =>
+				path === 'images/mark.svg' ? `${origin}/site-assets/images/mark.svg` : undefined
 		})
+		const output = bundle.render(name, { data: { piece, tags: [] }, helpers })
 		return {
 			state: bundle.revision,
 			body: output.body,

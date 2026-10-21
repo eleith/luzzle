@@ -83,7 +83,10 @@ function htmlHead(html: string): string {
 }
 
 async function request(query = '') {
-	const response = await fetch(`${origin}/${query}`, { signal: AbortSignal.timeout(10000) })
+	const response = await fetch(`${origin}/${query}`, {
+		headers: { 'x-forwarded-proto': 'http' },
+		signal: AbortSignal.timeout(10000)
+	})
 	expect(response.status).toBe(200)
 	return response.text()
 }
@@ -118,6 +121,7 @@ beforeAll(async () => {
 				HOST: '127.0.0.1',
 				PORT: '0',
 				ORIGIN: '',
+				PROTOCOL_HEADER: 'x-forwarded-proto',
 				SOCKET_PATH: '',
 				LISTEN_PID: '0',
 				LISTEN_FDS: '0'
@@ -224,6 +228,45 @@ describe('prepared templates in built SvelteKit SSR', () => {
 		)
 		expect(await request()).toContain('Built-in presentation')
 		expect(serverErrors).toContain('Invalid prepared template exports')
+	})
+
+	test('renders real piece helpers with separate published and preview contexts', async () => {
+		const source = `<script>
+let { data, helpers } = $props();
+const piece = helpers.forPiece(data.piece);
+const image = piece.getImageUrl(data.piece.metadata.cover, 125, 'jpg');
+const note = piece.getAssetContent(data.piece.key, 'markdown');
+const palette = piece.getPalette();
+const mark = helpers.getStaticAssetUrl('images/mark.svg');
+</script>
+<a id="piece-link" href={piece.getUrl()}>{data.piece.title}</a>
+<img id="cover" src={image} alt="Cover" />
+<a id="asset-link" href={piece.getAssetUrl('cover', 'image.s.jpg')}>Asset</a>
+<p id="palette" data-accent={palette?.accent}>Palette</p>
+{@html note ?? ''}
+<img id="mark" src={mark} alt="Mark" />`
+		await publishSource(source, '#135790')
+		const published = await request()
+		expect(published).toContain(`href="${origin}/pieces/custom-kind/prepared%20piece"`)
+		expect(published).toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
+		expect(published).toContain(`href="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
+		expect(published).toContain('data-accent="#123456"')
+		expect(published).toContain('<p>Published note</p>')
+		expect(published).toContain(`src="${origin}/site-assets/images/mark.svg"`)
+		const staticAsset = await fetch(`${origin}/site-assets/images/mark.svg`)
+		expect(staticAsset.status).toBe(200)
+		expect(await staticAsset.text()).toContain('Fixture mark')
+
+		const preview = await request('?job=selected%20job')
+		expect(preview).toContain('src="/admin/preview/selected%20job/asset/fixture/cover%20small.jpg"')
+		expect(preview).toContain(
+			'href="/admin/preview/selected%20job/asset/fixture/cover%20small.jpg"'
+		)
+		expect(preview).not.toContain(`${origin}/pieces/assets/fixture/cover%20small.jpg`)
+		expect(preview).toContain('<p>Draft note</p>')
+		expect(preview).not.toContain('<p>Published note</p>')
+		expect(preview).toContain(`href="${origin}/pieces/custom-kind/prepared%20piece"`)
+		expect(await request()).toContain('<p>Published note</p>')
 	})
 
 	test('leaves every compiled application file unchanged across publication and fallback', async () => {
