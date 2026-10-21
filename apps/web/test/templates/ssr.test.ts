@@ -4,7 +4,7 @@ import { once } from 'node:events'
 import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 const exec = promisify(execFile)
@@ -13,6 +13,7 @@ const webRoot = fileURLToPath(new URL('../../', import.meta.url))
 const repository = path.resolve(webRoot, '../..')
 let directory: string
 let preparedDirectory: string
+let configFilename: string
 let buildDirectory: string
 let origin: string
 let server: ChildProcess | undefined
@@ -26,21 +27,6 @@ import { pathToFileURL } from 'node:url';
 const { server } = await import(pathToFileURL(process.argv[1]).href);
 if (!server.server.listening) await once(server.server, 'listening');
 process.send({ port: server.server.address().port });
-`
-
-const publish = `
-import path from 'node:path';
-const [publisherUrl, configUrl, sourceFile, preparedDirectory, color, pieceType, iconFiles, opengraphFile] = process.argv.slice(1);
-const { publishTemplateBundle } = await import(publisherUrl);
-const { validateConfig } = await import(configUrl);
-const pieces = new Map([[pieceType, { page: sourceFile, ...(opengraphFile ? { opengraph: opengraphFile } : {}) }]]);
-for (const [type, icon] of Object.entries(JSON.parse(iconFiles))) pieces.set(type, { ...pieces.get(type), icon });
-const config = validateConfig({
- pieces: [...pieces].map(([type, components]) => ({ type, fields: { title: 'title', date_consumed: 'date' }, components })),
- theme: { light: { 'color-primary': color } }
-});
-config.paths.config = path.join(path.dirname(sourceFile), 'config.yaml');
-console.log(JSON.stringify(await publishTemplateBundle(config, preparedDirectory)));
 `
 
 async function publishSource(
@@ -66,23 +52,29 @@ async function publishSource(
 		}
 		iconFiles.set(type, iconFile)
 	}
+	const pieces = new Map<string, Record<string, string>>([[type, { page: filename }]])
+	if (opengraphFile) pieces.set(type, { page: filename, opengraph: opengraphFile })
+	for (const [type, icon] of iconFiles) pieces.set(type, { ...pieces.get(type), icon })
+	await writeFile(
+		configFilename,
+		JSON.stringify({
+			paths: { prepared: './prepared' },
+			pieces: [...pieces].map(([type, components]) => ({
+				type,
+				fields: { title: 'title', date_consumed: 'date' },
+				components
+			})),
+			theme: { light: { 'color-primary': color } }
+		})
+	)
 	const { stdout } = await exec(
 		process.execPath,
 		[
-			'--input-type=module',
-			'-e',
-			publish,
-			pathToFileURL(path.join(repository, 'packages/web/worker/dist/src/templates/publish.js'))
-				.href,
-			pathToFileURL(path.join(repository, 'packages/web/config/dist/src/index.js')).href,
-			filename,
-			preparedDirectory,
-			color,
-			type,
-			JSON.stringify(Object.fromEntries(iconFiles)),
-			opengraphFile
+			path.join(repository, 'packages/web/worker/dist/src/commands/publish-templates.js'),
+			'--config',
+			configFilename
 		],
-		{ timeout: 30000 }
+		{ cwd: fixture, timeout: 30000 }
 	)
 	return JSON.parse(stdout) as { revision: string }
 }
@@ -120,12 +112,13 @@ beforeAll(async () => {
 	await mkdir(cache, { recursive: true })
 	directory = await mkdtemp(path.join(cache, 'template-ssr-'))
 	preparedDirectory = path.join(directory, 'prepared')
+	configFilename = path.join(directory, 'config.yaml')
+	await writeFile(configFilename, JSON.stringify({ paths: { prepared: './prepared' } }))
 	buildDirectory = path.join(directory, 'build')
 	const env = {
 		...process.env,
 		TEMPLATE_BUILD_DIR: buildDirectory,
-		TEMPLATE_KIT_DIR: path.join(directory, 'kit'),
-		TEMPLATE_PREPARED_DIR: preparedDirectory
+		TEMPLATE_KIT_DIR: path.join(directory, 'kit')
 	}
 	// The application is compiled before any owner template exists.
 	await exec(process.execPath, [path.join(webRoot, 'node_modules/vite/bin/vite.js'), 'build'], {
@@ -139,7 +132,7 @@ beforeAll(async () => {
 		process.execPath,
 		['--input-type=module', '-e', startServer, path.join(buildDirectory, 'index.js')],
 		{
-			cwd: fixture,
+			cwd: directory,
 			env: {
 				...env,
 				HOST: '127.0.0.1',
@@ -224,6 +217,18 @@ describe('prepared templates in built SvelteKit SSR', () => {
 		expect(html).toContain(published.revision)
 		expect(html).toContain('Second Changed')
 		expect(htmlHead(html)).toContain('--color-primary: #246801;')
+	})
+
+	test('keeps the previous selected page when the real publication command fails', async () => {
+		const published = await publishSource(firstSource, '#135790')
+		const pointer = await readFile(path.join(preparedDirectory, 'current.json'), 'utf8')
+		await expect(publishSource('<div>', '#abcdef')).rejects.toMatchObject({ code: 1 })
+		expect(await readFile(path.join(preparedDirectory, 'current.json'), 'utf8')).toBe(pointer)
+		const html = await request('?title=Still%20selected')
+		expect(html).toContain(published.revision)
+		expect(html).toContain('First Still selected')
+		expect(htmlHead(html)).toContain('--color-primary: #135790;')
+		expect(htmlHead(html)).not.toContain('--color-primary: #abcdef;')
 	})
 
 	test('lets the caller report rendering errors and choose built-in fallback', async () => {

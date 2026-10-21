@@ -17,6 +17,8 @@ export default defineConfig({
 				'test/fixtures/**',
 				'**/*.d.ts',
 				'src/index.ts',
+				// Native command tests compile/run this entrypoint in child Node processes.
+				'src/commands/publish-templates.ts',
 				'src/pieces/.compiled/**',
 				'src/api/**',
 				'src/transforms/utils/types.ts',

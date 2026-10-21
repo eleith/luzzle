@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "fs";
+import { readFileSync } from "fs";
 import { parse as yamlParse, YAMLParseError } from "yaml";
 import { Value } from "@sinclair/typebox/value";
 import { ConfigSchema } from "./schema.js";
@@ -32,9 +32,10 @@ export function validateConfig(
 	return config;
 }
 
+/** No filename uses defaults; an explicit filename must exist and be readable. */
 function loadConfig(userConfigPath?: string): Config {
 	let raw: unknown = {};
-	if (userConfigPath && existsSync(userConfigPath)) {
+	if (userConfigPath !== undefined) {
 		const source = readFileSync(userConfigPath, "utf8");
 		try {
 			raw = yamlParse(source) ?? {};
@@ -54,7 +55,7 @@ function loadConfig(userConfigPath?: string): Config {
 	}
 
 	const config = validateConfig(raw);
-	if (userConfigPath) config.paths.config = userConfigPath;
+	if (userConfigPath !== undefined) config.paths.config = userConfigPath;
 	return config;
 }
 

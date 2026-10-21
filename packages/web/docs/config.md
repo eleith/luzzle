@@ -1,6 +1,9 @@
 # Web Configuration Reference ⚙️
 
 The Web Explorer and Worker share `config.yaml`. Omitted settings use defaults.
+An explicitly supplied config filename must exist and be readable; missing files
+are errors. Programmatic callers can use `loadConfig()` without a filename to
+request defaults. An existing empty or comment-only YAML file also uses defaults.
 
 ## Editor support
 
@@ -32,10 +35,22 @@ and code-theme names use their supported literal values.
 | `url.luzzle_assets` | `""` | Published piece asset base URL |
 | `storage.root` | `./archive` | Markdown archive directory |
 | `paths.database` | `./data/luzzle.sqlite` | SQLite index |
+| `paths.prepared` | `./data/prepared` | Prepared template bundle revisions (server-only shared data) |
 | `paths.assets` | `./assets/pieces` | Generated piece assets |
 | `paths.cache` | `./nginx` | Proxy cache |
 | `paths.static` | `./static` | Static files |
 | `assets.salt` | `${LUZZLE_ASSET_SALT:-}` | Asset-key salt |
+
+`paths.prepared` must be nonempty. Relative values resolve from the directory
+containing `config.yaml`; absolute paths stay absolute. Prepared revisions are
+server-only artifacts shared by the worker and web, not a public asset folder.
+The existing Docker Compose data mounts share `demo/data` between both services,
+so the default lives in that shared data directory without an additional mount.
+Custom locations must also be accessible to both services.
+
+On-demand template publication is a worker-side producer command; it does not
+yet switch production web rendering to prepared bundles. Manual acceptance of
+that rendering cutover is still pending.
 
 ## Authentication
 

@@ -57,10 +57,16 @@ describe("loadConfig", () => {
 		expect(config.storage.root).toBe("./archive");
 	});
 
-	test("loads defaults for a missing file and records its path", () => {
-		const config = loadConfig(filename);
-		expect(config.url.app).toBe("http://localhost:8080");
-		expect(config.paths.config).toBe(filename);
+	test("fails for an explicitly supplied missing file", () => {
+		expect(() => loadConfig(filename)).toThrow(
+			expect.objectContaining({ code: "ENOENT" }),
+		);
+	});
+
+	test("does not treat an explicit empty filename as a request for defaults", () => {
+		expect(() => loadConfig("")).toThrow(
+			expect.objectContaining({ code: "ENOENT" }),
+		);
 	});
 
 	test.each(["", "# comments only\n", "null\n", "~\n"])(
@@ -266,6 +272,7 @@ describe("validateConfig", () => {
 		expect(config.storage.root).toBe("./archive");
 		expect(config.paths).toEqual({
 			database: "./data/luzzle.sqlite",
+			prepared: "./data/prepared",
 			assets: "./assets/pieces",
 			cache: "./nginx",
 			static: "./static",
@@ -486,6 +493,7 @@ describe("validateConfig", () => {
 		["unknown root property", { typo: true }],
 		["unknown nested property", { storage: { rot: "./archive" } }],
 		["empty storage root", { storage: { root: "" } }],
+		["empty prepared directory", { paths: { prepared: "" } }],
 		["null defaulted section", { storage: null }],
 		["null defaulted value", { url: { app: null } }],
 		[
@@ -606,6 +614,7 @@ describe("validateConfig", () => {
 		{ auth: { secret: "s", oidc: { ...oidc, issuer: "${EMPTY}" } } },
 		{ ai: { provider: "google", api_key: "${EMPTY}" } },
 		{ storage: { root: "${EMPTY}" } },
+		{ paths: { prepared: "${EMPTY}" } },
 	])("validates nonempty constraints after interpolation: %j", (raw) => {
 		expect(() => validateConfig(raw, { EMPTY: "" })).toThrow(ConfigError);
 	});

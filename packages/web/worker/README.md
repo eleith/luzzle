@@ -34,6 +34,42 @@ The worker registers and processes the following job types:
 
 ---
 
+## Publish prepared templates on demand
+
+After building the worker, publish the configured templates and theme CSS with:
+
+```sh
+pnpm --filter @luzzle/web.worker build
+pnpm --filter @luzzle/web.worker run publish:templates --config /absolute/path/config.yaml
+```
+
+`--config` (or `-c`) defaults to `config.yaml` in the command's working directory.
+The file must exist; a missing or invalid config fails instead of silently
+publishing defaults. `--help` describes the command without publishing.
+
+Output goes to `paths.prepared`, defaulting to `./data/prepared`, relative to the
+config file's directory. An absolute setting is preserved. Web and worker must
+share this directory; the existing Compose data mounts already share the default
+location. It contains executable server modules and is not a public asset directory.
+
+In an existing production worker container:
+
+```sh
+docker compose -f apps/web/docker-compose.yml exec luzzle-worker \
+  node dist/src/commands/publish-templates.js --config /app/config.yaml
+```
+
+The command prints JSON with `directory`, `revision`, and compiler `warnings`.
+It uses the existing immutable-revision publisher and atomic selector; failures
+exit nonzero and publication failures preserve the previously selected revision.
+It does not start the worker service, migrate databases, run archive jobs, or
+change authentication settings. Automatic startup/refresh hooks remain separate.
+
+**Production pages have not cut over yet.** Publishing artifacts alone does not
+switch the current UI or provide owner manual acceptance of prepared pages. The
+built SSR fixture exercises this actual command and the shared path resolver;
+real route integration is the next slice.
+
 ## Template bundles
 
 `buildTemplateBundle(config)` in `src/templates/bundle.ts` reads the registered

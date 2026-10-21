@@ -256,6 +256,12 @@ const PathsSchema = Type.Object(
 			description:
 				"SQLite index path, resolved relative to the config directory.",
 		}),
+		prepared: Type.String({
+			minLength: 1,
+			default: "./data/prepared",
+			description:
+				"Prepared template bundle revisions, resolved relative to the config directory. Server-only artifact data shared by worker and web, not a public asset folder.",
+		}),
 		assets: Type.String({
 			default: "./assets/pieces",
 			description:

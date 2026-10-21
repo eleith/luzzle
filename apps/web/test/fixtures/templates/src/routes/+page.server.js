@@ -1,3 +1,4 @@
+import { loadConfig, resolvePreparedDirectory } from '@luzzle/web.config'
 import { loadTemplateBundle } from '$lib/server/templates.js'
 import { renderTemplatePage } from '$lib/server/template-page.js'
 import { createTemplateHelpers } from '$lib/server/template-helpers.js'
@@ -13,7 +14,8 @@ const fallback = {
 
 export async function load({ url }) {
 	try {
-		const bundle = await loadTemplateBundle(process.env.TEMPLATE_PREPARED_DIR)
+		const config = loadConfig('./config.yaml')
+		const bundle = await loadTemplateBundle(resolvePreparedDirectory(config))
 		if (!bundle) return fallback
 		const type = url.searchParams.get('type') ?? 'custom-kind'
 		const role = url.searchParams.get('role') === 'opengraph' ? 'opengraph' : 'page'

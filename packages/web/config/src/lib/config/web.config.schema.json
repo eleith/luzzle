@@ -323,6 +323,12 @@
           "description": "SQLite index path, resolved relative to the config directory.",
           "type": "string"
         },
+        "prepared": {
+          "minLength": 1,
+          "default": "./data/prepared",
+          "description": "Prepared template bundle revisions, resolved relative to the config directory. Server-only artifact data shared by worker and web, not a public asset folder.",
+          "type": "string"
+        },
         "assets": {
           "default": "./assets/pieces",
           "description": "Generated piece assets directory. Worker generation uses its working directory for relative paths.",

@@ -34,6 +34,12 @@ It uses immutable revision URLs without timestamp cache-busting. Node retains
 imported ES modules for the process lifetime; module-memory management is not yet
 solved for production hot replacement.
 
+The shared config's `paths.prepared` defaults to `./data/prepared`, resolved by
+`resolvePreparedDirectory(config)` relative to the config file's directory. The
+worker's `publish:templates --config <filename>` command publishes there. The
+existing Compose data mounts share that default location. The fixture uses this
+real command and resolver; production routes still do not consume it.
+
 `pnpm run test:templates` builds a small SvelteKit application once, then publishes
 real worker artifacts after that build. It tests SSR HTML/CSS, revision switching
 and caller-owned fallback without changing the compiled application. The fixture
