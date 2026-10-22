@@ -7,15 +7,23 @@ request defaults. An existing empty or comment-only YAML file also uses defaults
 
 ## Editor support
 
-Add a schema header for completion and diagnostics. For `apps/web/demo/config.yaml`:
+Add a schema header for completion and diagnostics. For `apps/web/demo/config/config.yaml`:
 
 ```yaml
-# yaml-language-server: $schema=../../../packages/web/config/src/lib/config/web.config.schema.json
+# yaml-language-server: $schema=../../../../packages/web/config/src/lib/config/web.config.schema.json
 url:
   app: http://localhost:8080
 ```
 
 The schema path is relative to the YAML file.
+
+For the demo, edit `apps/web/demo/config/config.yaml`. Compose mounts its directory
+read-only so editor atomic saves remain visible to running containers. The older
+`demo/config.yaml` path and the container's working-directory `config.yaml` are
+compatibility symlinks; use those logical filenames for commands so existing
+relative template/data/prepared paths stay rooted beside content and data. Do not
+edit or replace the compatibility links. This is a mount-layout fix, not automatic
+server-config reloading.
 
 ## Environment references
 
@@ -104,5 +112,5 @@ ai:
 | `theme.globals`, `theme.light`, `theme.dark` | Fonts, spacing and color tokens |
 | `theme.markdown` | Sidenotes and Shiki code/editor themes |
 
-See the [demo configuration](../../../apps/web/demo/config.yaml) for a complete
+See the [demo configuration](../../../apps/web/demo/config/config.yaml) for a complete
 example, and the schema's field descriptions for defaults and details.

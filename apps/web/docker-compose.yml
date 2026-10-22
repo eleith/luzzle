@@ -12,7 +12,7 @@ services:
       - "3000:3000"
     volumes:
       - ./demo/assets/pieces:/app/assets/pieces
-      - ./demo/config.yaml:/app/config.yaml
+      - ./demo/config:/app/config:ro
       - ./demo/data:/app/data
       - ./demo/content:/app/content
       - ./demo/archive:/app/archive
@@ -37,7 +37,7 @@ services:
     networks:
       - luzzle
     volumes:
-      - ./demo/config.yaml:/app/config.yaml
+      - ./demo/config:/app/config:ro
       - ./demo/assets:/app/assets
       - ./demo/data:/app/data
       - ./demo/archive:/app/archive

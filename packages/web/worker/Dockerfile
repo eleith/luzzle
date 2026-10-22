@@ -15,7 +15,8 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces --filter @luzzle/web.templates build
 WORKDIR /m/packages/web/worker
-RUN mkdir -p queue archive assets rclone dist && \
+RUN mkdir -p queue archive assets rclone dist config && \
+    ln -sfn config/config.yaml config.yaml && \
     chgrp 0 . queue archive assets rclone && \
     chmod g+w . queue archive assets rclone && \
     chmod -R 777 dist
@@ -39,7 +40,8 @@ FROM base AS prod
 WORKDIR /app
 RUN apk add --no-cache bash ca-certificates
 COPY --from=rclone/rclone:latest /usr/local/bin/rclone /usr/bin/rclone
-RUN mkdir -p /app/queue /app/archive /app/assets /app/rclone && \
+RUN mkdir -p /app/queue /app/archive /app/assets /app/rclone /app/config && \
+    ln -s config/config.yaml /app/config.yaml && \
     chgrp 0 /app /app/queue /app/archive /app/assets /app/rclone && \
     chmod g+w /app /app/queue /app/archive /app/assets /app/rclone
 COPY --from=pruner --chown=:0 --chmod=775 /pruned/dist           /app/dist

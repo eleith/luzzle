@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../../packages/web/config/src/lib/config/web.config.schema.json
+# yaml-language-server: $schema=../../../../packages/web/config/src/lib/config/web.config.schema.json
 
 url:
   app: http://localhost:8080

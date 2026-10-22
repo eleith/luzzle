@@ -161,6 +161,31 @@ surfaces, automatic preparation, runtime static publication, and final prebuilt
 packaging remain later work. Dev/build tooling can still compile remaining legacy
 surfaces; this is not a claim that all application rebuild couplings are removed.
 
+## Docker configuration mounts
+
+Edit **`demo/config/config.yaml`**. Only that YAML currently lives in the config
+directory; Compose mounts the directory read-only in web and worker. Directory
+mounts make editor atomic-save replacements visible inside running containers,
+unlike a bind mount of one file.
+
+The local `demo/config.yaml` and container `config.yaml` paths are compatibility
+symlinks. Keep using the existing worker command/default filename: relative
+content, prepared and data paths retain their deployment-root behavior. **Do not
+edit the compatibility symlink itself**—an editor may replace it with a regular
+file. Edit the canonical file above instead.
+
+Apply the new mount layout and image links once, from `apps/web`:
+
+```sh
+mise docker up -d --build --force-recreate luzzle-dev-web luzzle-dev-worker
+```
+
+A restart alone does not change an existing container's mounts. After this one-time
+recreation, fresh worker commands can read config replacements without restarting
+the container. General server config remains cached: changes to URLs, types,
+paths, authentication or connections still require the relevant service restart.
+This mount fix does not introduce a configuration watcher or live reload.
+
 ## Transitional startup and author folders
 
 Demo author files use ambient types from their portable `luzzle.d.ts`; authors do

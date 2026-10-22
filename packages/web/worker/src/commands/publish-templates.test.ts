@@ -1,6 +1,16 @@
 import { afterAll, beforeAll, beforeEach, expect, test } from 'vitest'
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import {
+	mkdir,
+	mkdtemp,
+	readFile,
+	readdir,
+	readlink,
+	rename,
+	rm,
+	symlink,
+	writeFile,
+} from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
@@ -103,6 +113,74 @@ console.log(JSON.stringify(bundle.render(bundle.templateLookup.pieces['arbitrary
 	])
 	expect(JSON.parse(rendered).body).toContain('<h1>&lt;Published>&amp;</h1>')
 })
+
+test('fresh CLI processes follow an atomically replaced config through the compatibility link', async () => {
+	const filename = await configure()
+	const target = path.join(fixture, 'config/config.yaml')
+	await mkdir(path.join(fixture, 'config'))
+	await rename(filename, target)
+	await symlink('config/config.yaml', filename)
+
+	async function renderArtifact(prepared: string, revision: string, type: string) {
+		const { stdout } = await exec(process.execPath, [
+			'--input-type=module',
+			'-e',
+			`
+const { render, templateLookup } = await import(process.argv[1]);
+const props = {data:{piece:{title:'<Linked>&'}}};
+console.log(JSON.stringify({
+	templateLookup,
+	piece: render(templateLookup.pieces[process.argv[2]].page, props),
+	feed: templateLookup.site.feed ? render(templateLookup.site.feed, props) : null,
+}));
+`,
+			pathToFileURL(path.join(prepared, 'revisions', revision, 'templates.mjs')).href,
+			type,
+		])
+		return JSON.parse(stdout)
+	}
+
+	// These are fresh production CLI processes, not a running web cache or a container mount test.
+	const first = JSON.parse((await run()).stdout)
+	const prepared = path.join(fixture, 'data/prepared')
+	expect(first.directory).toBe(prepared)
+	expect(await selected(prepared)).toEqual({ revision: first.revision })
+	const original = await renderArtifact(prepared, first.revision, 'arbitrary-kind')
+	expect(Object.keys(original.templateLookup.pieces)).toEqual(['arbitrary-kind'])
+	expect(original.templateLookup.site).toEqual({})
+	expect(original.piece.body).toContain('<h1>&lt;Linked>&amp;</h1>')
+
+	const temporary = path.join(fixture, 'config/config.next.yaml')
+	await writeFile(
+		temporary,
+		JSON.stringify({
+			paths: { prepared: './output/prepared' },
+			pieces: [
+				{
+					type: 'replacement-kind',
+					fields: { title: 'title', date_consumed: 'date' },
+					components: { page: './page.svelte' },
+				},
+			],
+			content: { component: { feed: './page.svelte' } },
+		})
+	)
+	await rename(temporary, target)
+	expect(await readlink(filename)).toBe('config/config.yaml')
+	const second = JSON.parse((await run()).stdout)
+	expect(second.directory).toBe(path.join(fixture, 'output/prepared'))
+	expect(second.revision).not.toBe(first.revision)
+	expect(await selected(second.directory)).toEqual({ revision: second.revision })
+	const replacement = await renderArtifact(second.directory, second.revision, 'replacement-kind')
+	expect(Object.keys(replacement.templateLookup.pieces)).toEqual(['replacement-kind'])
+	expect(Object.keys(replacement.templateLookup.site)).toEqual(['feed'])
+	expect(replacement.piece.body).toContain('<h1>&lt;Linked>&amp;</h1>')
+	expect(replacement.feed.body).toContain('<h1>&lt;Linked>&amp;</h1>')
+	// Changing the relative output leaves the old selected revision and artifact intact.
+	expect(await selected(prepared)).toEqual({ revision: first.revision })
+	expect(await renderArtifact(prepared, first.revision, 'arbitrary-kind')).toEqual(original)
+	expect(await readdir(path.join(fixture, 'config'))).toEqual(['config.yaml'])
+}, 30000)
 
 test('resolves configured relative output and sources beside the config, not the command cwd', async () => {
 	const filename = await configure({ prepared: './output/prepared' })

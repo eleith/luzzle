@@ -33,12 +33,19 @@ docker build -f apps/web/Dockerfile --target prod -t my-luzzle-web .
 
 ## Configuration
 
+The supplied Compose files mount the demo's `config/` directory read-only, not a
+single YAML file. Container images keep `config.yaml` as a compatibility symlink
+to `config/config.yaml`; relative deployment paths and existing commands remain
+unchanged. This lets containers observe editor atomic saves. Edit the real file,
+not the symlink. An initial image rebuild and container recreation is required to
+adopt this mount layout; general cached settings still require service restarts.
+
 Configure the site in `config.yaml` and supply any referenced environment
 variables through `.env` beside the Compose file. The supplied Compose setup
 passes that environment to both the Explorer and Worker.
 
 See the [configuration reference](./config.md) for authentication, AI and
-other settings, and the [demo config](../../../apps/web/demo/config.yaml) for
+other settings, and the [demo config](../../../apps/web/demo/config/config.yaml) for
 an example.
 
 ## Cloud sync

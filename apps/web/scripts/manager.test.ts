@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, expect, test } from 'vitest'
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import {
+	mkdir,
+	mkdtemp,
+	readFile,
+	readlink,
+	rename,
+	rm,
+	symlink,
+	writeFile
+} from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
@@ -71,6 +80,39 @@ test('production startup uses build and log files in the same working directory'
 	const log = await readFile(path.join(directory, 'data/build.log'), 'utf8')
 	expect(log).toContain('Config App URL: https://manager.example/garden')
 	expect(log).toContain('Build completed successfully.')
+})
+
+test('fresh production startups follow the compatibility link after atomic config replacement', async () => {
+	const filename = path.join(directory, 'config.yaml')
+	const target = path.join(directory, 'config/config.yaml')
+	await configure()
+	await mkdir(path.join(directory, 'config'))
+	await rename(filename, target)
+	await symlink('config/config.yaml', filename)
+	await writeFile(
+		path.join(directory, 'build/index.js'),
+		'console.log("manager-server " + JSON.stringify({cwd:process.cwd(),host:process.env.HOST}))'
+	)
+
+	// Each run is a fresh manager process, not a live-server config reload.
+	async function checkStartup(app: string, host: string) {
+		const { stdout } = await run(false)
+		expect(await readlink(filename)).toBe('config/config.yaml')
+		expect(stdout).toContain(`Config App URL: ${app}`)
+		expect(stdout).toContain('manager-command run build')
+		expect(stdout).toContain(`manager-server ${JSON.stringify({ cwd: directory, host })}`)
+		const log = await readFile(path.join(directory, 'data/build.log'), 'utf8')
+		expect(log).toContain(`Config App URL: ${app}`)
+		expect(log).toContain('Build completed successfully.')
+	}
+
+	await checkStartup('https://manager.example/garden', '127.0.0.1')
+	const app = 'https://replacement.example/garden'
+	const host = '0.0.0.0'
+	const temporary = path.join(directory, 'config/config.next.yaml')
+	await writeFile(temporary, JSON.stringify({ url: { app }, network: { public: { host } } }))
+	await rename(temporary, target)
+	await checkStartup(app, host)
 })
 
 test('startup still fails when the working-directory config is missing', async () => {

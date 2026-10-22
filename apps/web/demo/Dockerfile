@@ -2,7 +2,8 @@
 FROM ghcr.io/eleith/luzzle-web:latest AS builder
 WORKDIR /app
 
-COPY config.yaml ./config.yaml
+COPY config/config.yaml ./config/config.yaml
+RUN ln -sfn config/config.yaml config.yaml
 COPY content/ ./content/
 COPY static/ ./static/
 
@@ -14,7 +15,8 @@ FROM node:24-alpine
 WORKDIR /app
 
 COPY --from=builder /deploy ./
-COPY config.yaml ./config.yaml
+COPY config/config.yaml ./config/config.yaml
+RUN ln -sfn config/config.yaml config.yaml
 
 EXPOSE 3000
 CMD ["node", "build/index.js"]
