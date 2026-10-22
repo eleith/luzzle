@@ -1,9 +1,7 @@
 import { resolvePreparedDirectory } from '@luzzle/web.config'
 import type { PublicWebPiece } from '@luzzle/web.pieces'
-import { assetPathToUrl, staticAssetPathToUrl } from '$lib/pieces/assets.js'
-import { previewOutputUrl } from '$lib/pieces/preview/output-url.js'
-import type { TemplateUrlBuilders } from '$lib/pieces/template-helpers.js'
-import type { PreparedPiecePage } from '$lib/pieces/types.js'
+import { createTemplateUrlBuilders } from '$lib/pieces/urls.server.js'
+import type { PreparedPage } from '$lib/content/types.js'
 import { config } from './config.js'
 import { loadTemplateBundle } from './templates.js'
 import { renderTemplatePage } from './template-page.js'
@@ -15,30 +13,9 @@ interface PiecePageRequest {
 	previewJob?: string
 }
 
-function bindPageUrls({ url, previewJob }: PiecePageRequest): TemplateUrlBuilders {
-	const { app, luzzle_assets: assetBase, app_assets: staticBase } = config.url
-	const siteUrl = new URL(app || '/', url.origin)
-	return {
-		buildPieceUrl(piece) {
-			const target = new URL(siteUrl)
-			target.pathname = `${target.pathname.replace(/\/+$/, '')}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`
-			target.search = ''
-			target.hash = ''
-			return target.href
-		},
-		buildAssetUrl(assetPath) {
-			if (previewJob !== undefined) return previewOutputUrl(assetPath, previewJob)
-			return assetPathToUrl(assetPath, assetBase || app)
-		},
-		buildStaticAssetUrl(relativePath) {
-			return staticAssetPathToUrl(relativePath, staticBase)
-		}
-	}
-}
-
 export async function renderPreparedPiecePage(
 	request: PiecePageRequest
-): Promise<PreparedPiecePage | null> {
+): Promise<PreparedPage | null> {
 	const { piece, tags } = request
 	if (!config.paths.config) return null
 	try {
@@ -51,7 +28,7 @@ export async function renderPreparedPiecePage(
 			bundle,
 			pageTemplateName,
 			structuredClone({ piece, tags }),
-			bindPageUrls(request)
+			createTemplateUrlBuilders(request.url, request.previewJob)
 		)
 		return {
 			revision: bundle.revision,

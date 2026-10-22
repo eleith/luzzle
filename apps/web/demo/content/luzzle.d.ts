@@ -133,7 +133,20 @@ declare interface PieceIconProps<T extends string = string> {
 	readonly helpers: TemplateHelpers
 }
 
-// Legacy Open Graph/site globals below still describe the existing pipeline.
+declare interface FeedPageProps {
+	readonly data: {
+		readonly feed: {
+			readonly url: string
+			readonly type: 'tag' | 'piece'
+			readonly label: string
+		}
+		readonly pieces: readonly PublicWebPiece[]
+	}
+	readonly helpers: PageTemplateHelpers
+	readonly components: PieceComponents
+}
+
+// Legacy Open Graph/root/error globals below still describe the existing pipeline.
 declare type PieceMode = 'public' | 'local' | 'preview'
 
 declare type PieceComponentHelpers = {
@@ -176,14 +189,6 @@ declare type RootComponents = {
 declare type RootPageProps = {
 	types: string[]
 	pieces: WebPieces[]
-	components: RootComponents
-}
-
-declare type FeedPageProps = {
-	feedUrl: string
-	feedType: 'tag' | 'piece'
-	feedLabel: string
-	feedItems: WebPieces[]
 	components: RootComponents
 }
 

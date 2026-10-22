@@ -1,31 +1,34 @@
 <script lang="ts">
-	import type { FeedPageProps } from '$lib/content/types.js'
-
-	let { feedUrl, feedType, feedLabel, feedItems, components }: FeedPageProps = $props()
-	const { ContentBanner } = components
+	let { data, helpers }: FeedPageProps = $props()
+	helpers.showNavBanner()
 
 	let isCopied = $state<boolean>(false)
 	let inputElement: HTMLInputElement
+	let copiedTimeout: ReturnType<typeof setTimeout> | undefined
+	$effect(() => () => clearTimeout(copiedTimeout))
 
 	const title = $derived(
-		feedType === 'tag' ? `RSS feed for tag: ${feedLabel}` : `RSS feed for ${feedLabel}`
+		data.feed.type === 'tag'
+			? `RSS feed for tag: ${data.feed.label}`
+			: `RSS feed for ${data.feed.label}`
 	)
 
 	async function copyToClipboard() {
-		if (!inputElement) return
-		await navigator.clipboard.writeText(feedUrl)
+		const input = inputElement
+		if (!input) return
+		await navigator.clipboard.writeText(data.feed.url)
+		if (inputElement !== input) return
 		isCopied = true
-		inputElement.select()
-		setTimeout(() => {
+		input.select()
+		clearTimeout(copiedTimeout)
+		copiedTimeout = setTimeout(() => {
 			isCopied = false
-			inputElement.blur()
+			input.blur()
 		}, 2000)
 	}
 </script>
 
-<ContentBanner showRandom={true} showHome={true} />
-
-<div class="content-wrapper">
+<div class="content-wrapper" data-demo-feed>
 	<aside aria-label="RSS subscription info">
 		<section>
 			<div>
@@ -48,7 +51,7 @@
 				bind:this={inputElement}
 				type="text"
 				readonly
-				value={feedUrl}
+				value={data.feed.url}
 				onclick={copyToClipboard}
 				class="input"
 			/>
@@ -62,7 +65,7 @@
 		</header>
 
 		<div class="pieces-list">
-			{#each feedItems as piece (piece.id)}
+			{#each data.pieces as piece (piece.id)}
 				<a href="/pieces/{piece.type}/{piece.slug}" class="item-card">
 					<div class="item-link">
 						<span class="item-date">

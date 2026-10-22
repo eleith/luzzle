@@ -1,4 +1,5 @@
 import type { PublicWebPiece } from '@luzzle/web.pieces'
+import type { NavBannerColors } from '@luzzle/web.templates/components/props'
 import type ContentBanner from './components/ContentBanner.svelte'
 import type PieceIcon from '$lib/pieces/components/icon.svelte'
 
@@ -13,12 +14,11 @@ export type RootPageProps = {
 	components: RootComponents
 }
 
-export type FeedPageProps = {
-	feedUrl: string
-	feedType: 'tag' | 'piece'
-	feedLabel: string
-	feedItems: PublicWebPiece[]
-	components: RootComponents
+export interface PreparedPage {
+	revision: string
+	body: string
+	head: string
+	navBanner: NavBannerColors | null
 }
 
 export type Page404Props = {
