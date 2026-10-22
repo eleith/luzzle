@@ -74,6 +74,7 @@ export async function load({ url }) {
 			output = { ...rendered, navBanner: null }
 		}
 		return {
+			pieceTypes: config.pieces.map((piece) => piece.type),
 			state: bundle.revision,
 			body: output.body,
 			navBanner: output.navBanner,

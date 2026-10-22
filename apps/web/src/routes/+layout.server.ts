@@ -1,7 +1,9 @@
 import { config, type AppConfigPublic } from '$lib/server/config'
+import { getConfiguredPieceTypes } from '$lib/pieces/types.server.js'
 
 export const load = async () => {
 	return {
+		pieceTypes: getConfiguredPieceTypes(),
 		config: {
 			content: {
 				text: {

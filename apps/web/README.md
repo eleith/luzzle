@@ -147,10 +147,16 @@ Manual acceptance checklist:
   cache header and need separate hardening. This slice does not change auth hooks.
 - Theme/search controls, client navigation, admin edit shortcut and list icons still work.
 
-Public detail URLs are unchanged. Their type check now uses runtime server config;
-other listing/API/feed/admin-open matchers and search type discovery remain on the
-existing build-time catalog. Changing server settings such as configured types or site text requires a server
-restart because server config is cached. Root/feed/error templates, standalone icon/share
+Configured piece types come from the loaded server configuration, not a Vite
+constant. Layout data exposes only the type names as `pieceTypes`; search reads that
+list reactively. Detail/listing/feed/admin-open handlers validate type filters on
+the server, and the pieces API retains its existing invalid-type response. The
+configured-type route matcher is gone; URLs and feed-format matching are unchanged.
+Protected admin handlers still run behind the existing authentication guard.
+
+Changing configured types or other server settings requires a server restart and
+page refresh because server config is cached, but not a web rebuild. This does not
+remove the remaining legacy icon/site/Open Graph source-compilation dependencies. Root/feed/error templates, standalone icon/share
 surfaces, automatic preparation, runtime static publication, and final prebuilt
 packaging remain later work. Dev/build tooling can still compile remaining legacy
 surfaces; this is not a claim that all application rebuild couplings are removed.

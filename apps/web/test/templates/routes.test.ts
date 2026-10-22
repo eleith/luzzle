@@ -340,8 +340,53 @@ afterAll(async () => {
 })
 
 describe('prepared pages through the production app HTTP routes', () => {
-	test('uses the real default page for a runtime-only type before publication', async () => {
-		expectBuiltIn(await pageHtml())
+	test('uses the real default page and public catalog for types configured only after build', async () => {
+		const html = await pageHtml()
+		expectBuiltIn(html)
+		expect(html).toContain('pieceTypes:["cutover-kind"]')
+	})
+
+	test('serves runtime-filtered listings and typed/untyped feeds without a compiled type matcher', async () => {
+		for (const pathname of [
+			'/pieces/cutover-kind',
+			'/rss/pieces/cutover-kind/feed.html',
+			'/rss/pieces/cutover-kind/feed.md'
+		]) {
+			const response = await request(pathname)
+			expect(response.status, pathname).toBe(200)
+			const html = await response.text()
+			expect(html).toContain('Real Piece')
+			expect(html).not.toContain('Orphan must not be visible')
+		}
+		for (const pathname of ['/pieces', '/rss/pieces/feed.html', '/rss/pieces/feed.md']) {
+			const response = await request(pathname)
+			expect(response.status, pathname).toBe(200)
+			expect(await response.text()).toContain('Real Piece')
+		}
+	})
+
+	test('keeps unknown type filters and rejected feed formats out of listing/feed handlers', async () => {
+		for (const pathname of [
+			'/pieces/unconfigured-kind',
+			'/rss/pieces/unconfigured-kind/feed.html',
+			'/rss/pieces/unconfigured-kind/feed.md',
+			'/rss/pieces/cutover-kind/feed.invalid'
+		]) {
+			const response = await request(pathname)
+			expect(response.status, pathname).toBe(404)
+			expect(await response.text()).not.toContain('Orphan must not be visible')
+		}
+	})
+
+	test('uses the runtime type authority for API filters while preserving the invalid-type status', async () => {
+		const response = await request('/api/pieces?type=cutover-kind', 'application/json')
+		expect(response.status).toBe(200)
+		const result = await response.json()
+		expect(result.pieces).toHaveLength(1)
+		expect(result.pieces[0]).toMatchObject({ title: 'Real Piece', type: 'cutover-kind' })
+		const invalid = await request('/api/pieces?type=unconfigured-kind', 'application/json')
+		expect(invalid.status).toBe(400)
+		expect(await invalid.text()).toBe('invalid type')
 	})
 
 	test('404s an unknown type even with a matching orphan row, and a missing slug', async () => {
@@ -446,7 +491,9 @@ helpers.showNavBanner({ background: '#123456' }); throw new Error('cutover owner
 	test('preserves anonymous redirects and private JSON denials for admin page routes', async () => {
 		for (const pathname of [
 			'/admin/piece/real-piece.cutover-kind.md/published/page',
-			'/admin/piece/real-piece.cutover-kind.md/preview/selected-job/page'
+			'/admin/piece/real-piece.cutover-kind.md/preview/selected-job/page',
+			'/admin/open/cutover-kind/real-piece',
+			'/admin/open/unconfigured-kind/real-piece'
 		]) {
 			const browser = await request(pathname)
 			expect(browser.status).toBe(302)

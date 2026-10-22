@@ -3,6 +3,8 @@ import type { RequestHandler } from './$types'
 import { config } from '$lib/server/config'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
 import { getPiecesForFeed } from '$lib/feeds/utils'
+import { error } from '@sveltejs/kit'
+import { isConfiguredPieceType } from '$lib/pieces/types.server.js'
 import YAML from 'yaml'
 
 type FeedRss = RssFeed<Date>
@@ -98,6 +100,10 @@ function getMarkdownFeedFromPieces(pieces: PublicWebPiece[], folder?: string) {
 export const GET: RequestHandler = async (event) => {
 	const { params } = event
 	const { piece: type, format } = params
+	if (type && !isConfiguredPieceType(type)) {
+		error(404, 'piece type not found')
+	}
+
 	const pieces = await getPiecesForFeed(type)
 
 	if (format === 'json') {

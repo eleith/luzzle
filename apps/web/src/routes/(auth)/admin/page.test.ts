@@ -27,6 +27,7 @@ function html(pieces = [piece]) {
 	return render(Page, {
 		props: {
 			data: {
+				pieceTypes: ['books'],
 				config: {
 					content: { text: { title: 'Garden', description: '' } },
 					url: { app: 'http://localhost', app_assets: '', luzzle_assets: '' }

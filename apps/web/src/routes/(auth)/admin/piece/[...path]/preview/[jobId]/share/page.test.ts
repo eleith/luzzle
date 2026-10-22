@@ -40,6 +40,7 @@ type Data = ComponentProps<typeof SharePage>['data']
 type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
 function data(status: Status = 'completed', png = true): Data {
 	const common = {
+		pieceTypes: ['books'],
 		config: makeConfig({
 			url: {
 				app: 'https://public.test/site',

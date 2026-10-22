@@ -1,5 +1,6 @@
 import { db, sql } from '$lib/server/database'
-import { redirect } from '@sveltejs/kit'
+import { error, redirect } from '@sveltejs/kit'
+import { isConfiguredPieceType } from '$lib/pieces/types.server.js'
 import type { PageServerLoad } from './$types'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
 
@@ -7,6 +8,10 @@ const TAKE_DEFAULT = 50
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const type = params.piece
+	if (type && !isConfiguredPieceType(type)) {
+		error(404, 'piece type not found')
+	}
+
 	const pageParam = url.searchParams.get('page') || '1'
 	const pageNumber = parseInt(pageParam) || null
 	const yearParam = url.searchParams.get('year') || null

@@ -51,9 +51,6 @@ export default defineConfig(({ command }) => {
 	const sourceFirst = command === 'serve' && !process.env.VITEST
 
 	return {
-		define: {
-			__VITE__LUZZLE__PIECE__TYPES__: JSON.stringify(config.pieces.map((p) => p.type))
-		},
 		plugins: [
 			enhancedImages(),
 			sveltekit(),

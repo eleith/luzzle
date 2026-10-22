@@ -21,6 +21,7 @@ type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
 
 function data(status: Status): ComponentProps<typeof PreviewLayout>['data'] {
 	const common = {
+		pieceTypes: ['books'],
 		config: makeConfig(),
 		meta: { title: 'Garden', description: 'Description' },
 		preview: true as const,

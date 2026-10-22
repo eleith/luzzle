@@ -9,10 +9,6 @@ import { previewOutputUrl } from './preview/output-url.js'
 export { OpengraphImageWidth, OpengraphImageHeight }
 export type { PieceComponentHelpers, PieceIconPalette }
 
-export function getPieceTypes(): string[] {
-	return __VITE__LUZZLE__PIECE__TYPES__
-}
-
 export type PieceIconProps = {
 	piece: PublicWebPiece
 	active: boolean

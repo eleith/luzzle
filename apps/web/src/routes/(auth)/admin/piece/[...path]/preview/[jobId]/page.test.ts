@@ -19,6 +19,7 @@ type Data = ComponentProps<typeof Overview>['data']
 type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
 function data(status: Status = 'completed'): Data {
 	const common = {
+		pieceTypes: ['books'],
 		config: makeConfig({
 			url: {
 				app: 'https://public.test/site',

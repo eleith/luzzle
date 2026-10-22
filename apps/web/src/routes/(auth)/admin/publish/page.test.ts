@@ -17,6 +17,7 @@ function html(
 	}
 ) {
 	const data = {
+		pieceTypes: ['books'],
 		meta: { title: 'Publish' },
 		config: {
 			url: { app: 'http://localhost', app_assets: '', luzzle_assets: '' },

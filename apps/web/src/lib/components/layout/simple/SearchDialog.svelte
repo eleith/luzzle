@@ -5,11 +5,10 @@
 	import { fade } from 'svelte/transition'
 	import { Dialog, Select } from 'bits-ui'
 	import DatePicker from '$lib/components/ui/DatePicker.svelte'
-	import { getPieceTypes } from '$lib/pieces/helpers'
 	import { page } from '$app/state'
 	import { afterNavigate, goto } from '$app/navigation'
 
-	const pieceTypes = getPieceTypes()
+	const pieceTypes = $derived(page.data.pieceTypes ?? [])
 
 	let query = $state('')
 	let type = $state('')

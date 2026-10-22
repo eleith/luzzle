@@ -35,6 +35,7 @@ function data(
 	time: number | null = 1234
 ): ComponentProps<typeof Overview>['data'] {
 	return {
+		pieceTypes: ['books'],
 		file: 'books/<draft #?%>.books.md',
 		piece: publishedPiece,
 		tags: [{ slug: 'fiction', tag: 'Fiction' }],

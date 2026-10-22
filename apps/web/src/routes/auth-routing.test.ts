@@ -44,6 +44,7 @@ test.each([
 	'/admin/piece/[...path]/published',
 	'/admin/piece/[...path]/preview',
 	'/admin/piece/[...path]/preview/[jobId]',
+	'/admin/open/[piece]/[slug]',
 	'/api/admin/generate',
 	'/api/admin/publish/[id]/stream',
 	'/api/admin/preview/[id]/stream'
@@ -59,7 +60,12 @@ test.each(['published', 'preview'])('%s reset layout remains under the auth grou
 test.each([
 	['/', '/(root)'],
 	['/signin', '/signin'],
-	['/pieces/[[piece=pieceType]]', '/pieces/[[piece=pieceType]]'],
+	['/pieces/[[piece]]', '/pieces/[[piece]]'],
+	['/rss/pieces/[[piece]]/feed.html', '/rss/pieces/[[piece]]/feed.html'],
+	[
+		'/rss/pieces/[[piece]]/feed.[format=feedFormat]',
+		'/rss/pieces/[[piece]]/feed.[format=feedFormat]'
+	],
 	['/pieces/[piece]/[slug]', '/pieces/[piece]/[slug]'],
 	['/search', '/search'],
 	['/tags/[tag]', '/tags/[tag]'],

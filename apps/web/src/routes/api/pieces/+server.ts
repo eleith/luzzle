@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
 import { db, sql } from '$lib/server/database'
-import { config } from '$lib/server/config'
+import { isConfiguredPieceType } from '$lib/pieces/types.server.js'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
 import type { WebPieces } from '@luzzle/web.db'
 
@@ -22,7 +22,7 @@ export const GET: RequestHandler = async ({ request }) => {
 		return new Response('no pieces for this page', { status: 404 })
 	}
 
-	if (type && config.pieces.map((x) => x.type).indexOf(type) === -1) {
+	if (type && !isConfiguredPieceType(type)) {
 		return new Response('invalid type', { status: 400 })
 	}
 
