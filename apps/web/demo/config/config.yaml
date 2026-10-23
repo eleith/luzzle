@@ -48,8 +48,11 @@ pieces:
   - type: books
     templates:
       icon:
+        name: book
         mapping:
           image: cover
+          author: author
+          pages: pages
       page:
         mapping:
           image: cover
@@ -68,6 +71,7 @@ pieces:
   - type: films
     templates:
       icon:
+        name: poster
         mapping:
           image: poster
       page:
@@ -95,6 +99,15 @@ pieces:
         - poster
         - backdrop
   - type: snippets
+    templates:
+      icon:
+        name: code-snippet
+        mapping:
+          files:
+            each: files
+            fields:
+              file: file
+              type: type
     fields:
       title: title
       summary: summary
@@ -105,8 +118,10 @@ pieces:
   - type: words
     templates:
       icon:
+        name: browser-window
         mapping:
           image: representative_image
+          url: url
       page:
         mapping:
           image: representative_image

@@ -5,6 +5,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 import type { render as Render } from 'svelte/server'
 import type { Component } from 'svelte'
 import type { PublicWebPiece } from '@luzzle/web.pieces'
+import type { TemplateConfig } from '@luzzle/web.templates/config'
 import { mapPieceTemplates, type TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 
 const lib = fileURLToPath(new URL('../../', import.meta.url))
@@ -103,9 +104,73 @@ function piece(type = 'arbitrary-kind'): TemplatedPiece {
 	})
 }
 
+type IconMapping = NonNullable<TemplateConfig['pieces'][number]['templates']>['icon']['mapping']
+
+function namedPiece(name: string, mapping: IconMapping = {}): TemplatedPiece {
+	const source = piece()
+	return mapPieceTemplates(source, {
+		type: source.type,
+		fields: { title: 'title', date_consumed: 'date' },
+		templates: {
+			icon: { name, mapping },
+			page: { name: 'default' },
+			opengraph: { name: 'default' }
+		}
+	})
+}
+
 async function html(props: Partial<Props> = {}) {
 	return (await render(Icon, { props: { piece: piece(), size: { width: 125 }, ...props } })).body
 }
+
+describe('named icon catalog consumer SSR', () => {
+	test.each([
+		['book', 'book'],
+		['browser-window', 'browser-container'],
+		['code-snippet', 'terminal-container'],
+		['lined-notebook-paper', 'paper'],
+		['playing-cards', 'cards-container'],
+		['poster', 'poster'],
+		['recipe-card', 'recipe-card'],
+		['video-game-cartridge', 'cartridge-container'],
+		['vinyl-record', 'vinyl-container']
+	])('selects %s and preserves active styling', async (name, className) => {
+		const body = await html({ piece: namedPiece(name), active: true })
+		expect(body).toContain(`class="${className} `)
+		expect(body).toContain('active')
+	})
+
+	test('fits the cartridge artwork, not just its wrapper, into a short height', async () => {
+		const rendered = await render(Icon, {
+			props: {
+				piece: namedPiece('video-game-cartridge', { image: 'art.thumbnail' }),
+				size: { width: 80, height: 55 }
+			}
+		})
+		const scale = Number(
+			rendered.body.match(
+				/class="cartridge [^"]*"[^>]*style="[^"]*transform:\s*scale\(([0-9.]+)\)/
+			)?.[1]
+		)
+		const naturalHeight = 80 * 1.25 * 0.02 + 80 * 1.25 * 0.12 + 80 * 0.74 + 80 * 0.1 + 16
+		expect(scale).toBeGreaterThan(0)
+		expect(scale).toBeLessThan(1)
+		expect(naturalHeight * scale).toBeLessThanOrEqual(55 + Number.EPSILON * 55)
+		expect(rendered.body).toMatch(/overflow:\s*hidden/)
+	})
+
+	test('the cards coins symbol is not a duplicate sword', async () => {
+		const current = namedPiece('playing-cards')
+		current.title = 'a'
+		const body = await html({ piece: current })
+		const coins = body.match(/<symbol[^>]*-icon-coins[^>]*>([\s\S]*?)<\/symbol>/)?.[1]
+		const sword = body.match(/<symbol[^>]*-icon-sword[^>]*>([\s\S]*?)<\/symbol>/)?.[1]
+		expect(coins).toBeDefined()
+		expect(sword).toBeDefined()
+		expect(coins).not.toBe(sword)
+		expect(body).toMatch(/<use[^>]*href="#[^"]*-icon-coins"/)
+	})
+})
 
 describe('static default icon consumer SSR', () => {
 	test('renders mapped fields for arbitrary piece types with normal default props', async () => {
@@ -163,7 +228,7 @@ describe('static default icon consumer SSR', () => {
 	test('uses each new piece and mapped field value rather than a fallback snapshot', async () => {
 		const current = piece('new-kind')
 		current.title = 'Next <Piece>'
-		current.templates.icon.fields.image = 'missing'
+		current.templates.icon.fields = { image: 'missing' }
 		const body = await html({ piece: current, size: { width: 200 }, active: true })
 		expect(body).toContain('Next &lt;Piece>')
 		expect(body).toContain('--piece-icon-width: 200px;')

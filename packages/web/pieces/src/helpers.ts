@@ -21,6 +21,16 @@ export type PieceComponentHelpers = {
 	getPieceAssetContent: (key: string, transform: string) => string | undefined
 }
 
+export function getPieceTags(keywords?: string | null): string[] {
+	if (!keywords) return []
+	try {
+		const tags: unknown = JSON.parse(keywords)
+		return Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === 'string') : []
+	} catch {
+		return []
+	}
+}
+
 export function safeExternalUrl(value?: string): string | undefined {
 	if (!value) return undefined
 	try {
@@ -29,6 +39,18 @@ export function safeExternalUrl(value?: string): string | undefined {
 	} catch {
 		return undefined
 	}
+}
+
+/** Map a value between ranges, clamping to the output endpoints. */
+export function interpolate(
+	value: number,
+	input: { min: number; max: number },
+	output: { min: number; max: number }
+): number {
+	if (value <= input.min) return output.min
+	if (value >= input.max) return output.max
+	const progress = (value - input.min) / (input.max - input.min)
+	return Number((output.min + (output.max - output.min) * progress).toFixed(2))
 }
 
 /** Shared date/duration formatting; layouts and field mappings remain template-owned. */

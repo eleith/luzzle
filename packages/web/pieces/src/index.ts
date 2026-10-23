@@ -1,6 +1,8 @@
 export {
 	createPieceHelpers,
 	formatPieceByline,
+	getPieceTags,
+	interpolate,
 	safeExternalUrl,
 	OpengraphImageWidth,
 	OpengraphImageHeight

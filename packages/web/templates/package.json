@@ -11,6 +11,7 @@
 		"dist",
 		"src/components/*.svelte",
 		"src/icons/*/template.svelte",
+		"src/icons/*/helpers.js",
 		"src/icons/catalog.js",
 		"src/pages/*/template.svelte",
 		"src/pages/catalog.js",

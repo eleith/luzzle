@@ -499,95 +499,1078 @@
                 "default": {
                   "name": "default"
                 },
-                "additionalProperties": false,
-                "description": "The default piece icon: a poster image with a title fallback.",
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "default": "default",
-                    "const": "default",
-                    "type": "string"
-                  },
-                  "mapping": {
+                "anyOf": [
+                  {
                     "additionalProperties": false,
+                    "description": "The default piece icon: a poster image with a title fallback.",
                     "type": "object",
                     "properties": {
-                      "image": {
-                        "$id": "icon-default-image",
-                        "description": "Image asset key displayed as the poster.",
-                        "anyOf": [
-                          {
-                            "minLength": 1,
-                            "type": "string"
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "field"
-                            ],
-                            "properties": {
-                              "field": {
+                      "name": {
+                        "default": "default",
+                        "const": "default",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "icon-default-image",
+                            "description": "Image asset key displayed as the poster.",
+                            "anyOf": [
+                              {
                                 "minLength": 1,
                                 "type": "string"
                               },
-                              "default": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "value"
-                            ],
-                            "properties": {
-                              "value": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "fields"
-                            ],
-                            "properties": {
-                              "fields": {
+                              {
+                                "additionalProperties": false,
                                 "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "icon-default-image"
-                                  }
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
                                 }
-                              }
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "each",
-                              "fields"
-                            ],
-                            "properties": {
-                              "each": {
-                                "minLength": 1,
-                                "type": "string"
                               },
-                              "fields": {
+                              {
+                                "additionalProperties": false,
                                 "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "icon-default-image"
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-default-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-default-image"
+                                      }
+                                    }
                                   }
                                 }
                               }
-                            }
+                            ]
                           }
-                        ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A three-dimensional book cover and spine with page-count thickness.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "book",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "icon-book-image",
+                            "description": "Book cover image asset key.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-book-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-book-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "author": {
+                            "$id": "icon-book-author",
+                            "description": "Author text displayed on the spine.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-book-author"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-book-author"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "pages": {
+                            "$id": "icon-book-pages",
+                            "description": "Page count used to calculate spine thickness.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-book-pages"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-book-pages"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A browser window with address-bar text, an optional banner, title and summary.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "browser-window",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "icon-browser-window-image",
+                            "description": "Article banner image asset key.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-browser-window-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-browser-window-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "url": {
+                            "$id": "icon-browser-window-url",
+                            "description": "Address-bar display text; defaults to the piece URL.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-browser-window-url"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-browser-window-url"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A dark terminal showing the first snippet asset highlight, or the piece summary.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "code-snippet",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "files": {
+                            "$id": "icon-code-snippet-files",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-code-snippet-files"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-code-snippet-files"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A ruled, three-hole sheet displaying the normalized piece title and summary.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "lined-notebook-paper",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {}
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A fan of playing cards using the piece title, normalized tags and palette.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "playing-cards",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {}
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A poster image with a title fallback, maintained independently from the default icon.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "poster",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "icon-poster-image",
+                            "description": "Image asset key displayed as the poster.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-poster-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-poster-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A recipe card with an ingredient checklist and ring-binding cutouts.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "recipe-card",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "icon-recipe-card-image",
+                            "description": "Recipe image asset key.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-recipe-card-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-recipe-card-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "ingredients": {
+                            "$id": "icon-recipe-card-ingredients",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-recipe-card-ingredients"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-recipe-card-ingredients"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A video-game cartridge with a title and optional label image.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "video-game-cartridge",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "icon-video-game-cartridge-image",
+                            "description": "Cartridge label image asset key.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-video-game-cartridge-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-video-game-cartridge-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A grooved vinyl record with label artwork or a title fallback.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "vinyl-record",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "icon-vinyl-record-image",
+                            "description": "Record label image asset key.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-vinyl-record-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-vinyl-record-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
                       }
                     }
                   }
-                }
+                ]
               },
               "page": {
                 "default": {

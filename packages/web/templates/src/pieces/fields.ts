@@ -3,7 +3,7 @@ import type { FieldMappings } from '@luzzle/web.config/mapping';
 import type { Static, TObject } from '@sinclair/typebox';
 import type { TemplateConfig } from '../config/index.js';
 import { mapTemplateFields, TemplateFieldsError } from '../mapping.js';
-import { schema as icon } from '../icons/default/schema.js';
+import { getIconSchema, type IconDefinition } from '../icons/schema.js';
 import { schema as page } from '../pages/default/schema.js';
 import { schema as opengraph } from '../opengraphs/default/schema.js';
 
@@ -16,7 +16,7 @@ export interface TemplateData<Fields> {
 }
 
 export interface PieceTemplateData {
-	icon: TemplateData<Static<typeof icon.fields>>;
+	icon: TemplateData<Static<IconDefinition['fields']>>;
 	page: TemplateData<Static<typeof page.fields>>;
 	opengraph: TemplateData<Static<typeof opengraph.fields>>;
 }
@@ -48,6 +48,11 @@ function mapRole<Schema extends TObject>(
 	}
 }
 
+function mapIconTemplate(piece: PublicWebPiece, config?: PieceConfig): PieceTemplateData['icon'] {
+	const definition = getIconSchema(config?.templates?.icon.name);
+	return mapRole<IconDefinition['fields']>('icon', definition, piece, config);
+}
+
 /** Worker OG rendering does not evaluate icon/page bindings. */
 export function mapOpengraphTemplate(
 	piece: PublicWebPiece,
@@ -61,7 +66,7 @@ export function mapPieceTemplates(piece: PublicWebPiece, config?: PieceConfig): 
 	return {
 		...piece,
 		templates: {
-			icon: mapRole('icon', icon, piece, config),
+			icon: mapIconTemplate(piece, config),
 			page: mapRole('page', page, piece, config),
 			opengraph: mapOpengraphTemplate(piece, config)
 		}
