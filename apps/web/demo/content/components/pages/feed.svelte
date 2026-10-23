@@ -2,30 +2,11 @@
 	let { data, helpers }: FeedPageProps = $props()
 	helpers.showNavBanner()
 
-	let isCopied = $state<boolean>(false)
-	let inputElement: HTMLInputElement
-	let copiedTimeout: ReturnType<typeof setTimeout> | undefined
-	$effect(() => () => clearTimeout(copiedTimeout))
-
 	const title = $derived(
 		data.feed.type === 'tag'
 			? `RSS feed for tag: ${data.feed.label}`
 			: `RSS feed for ${data.feed.label}`
 	)
-
-	async function copyToClipboard() {
-		const input = inputElement
-		if (!input) return
-		await navigator.clipboard.writeText(data.feed.url)
-		if (inputElement !== input) return
-		isCopied = true
-		input.select()
-		clearTimeout(copiedTimeout)
-		copiedTimeout = setTimeout(() => {
-			isCopied = false
-			input.blur()
-		}, 2000)
-	}
 </script>
 
 <div class="content-wrapper" data-demo-feed>
@@ -42,20 +23,17 @@
 			</div>
 		</section>
 		<hr />
-		<p id="rss-instructions">Copy the link and paste it into an RSS reader</p>
-		<div class="copy-container">
+		<p id="rss-instructions">Select the link and copy it into an RSS reader</p>
+		<div class="subscription-url">
 			<input
 				id="rss-url-input"
 				aria-label="RSS feed URL"
 				aria-describedby="rss-instructions"
-				bind:this={inputElement}
 				type="text"
 				readonly
 				value={data.feed.url}
-				onclick={copyToClipboard}
 				class="input"
 			/>
-			<button onclick={copyToClipboard} class="button">{isCopied ? 'copied' : 'copy'}</button>
 		</div>
 	</aside>
 
@@ -112,25 +90,25 @@
 		margin-bottom: 1em;
 	}
 
-	.copy-container {
+	.subscription-url {
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
 		margin-top: var(--space-3);
 	}
 
-	.copy-container input {
+	.subscription-url input {
 		flex-grow: 1;
 		padding: var(--space-2);
 		border-radius: var(--radius-medium);
 		border: 1px solid var(--color-surface-container-high);
 		background-color: var(--color-surface-container-low);
 		color: var(--color-on-surface);
-		cursor: pointer;
+		cursor: text;
 		transition: all 0.2s ease-in-out;
 	}
 
-	.copy-container input:hover {
+	.subscription-url input:hover {
 		border-color: var(--color-outline);
 	}
 

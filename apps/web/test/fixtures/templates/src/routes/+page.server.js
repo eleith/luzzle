@@ -71,14 +71,18 @@ export async function load({ url }) {
 				options: { size: { width: 1200, height: 630 } },
 				helpers: createTemplateHelpers(urls)
 			})
-			output = { ...rendered, navBanner: null }
+			output = {
+				...rendered,
+				head: `${rendered.head}<style data-prepared-theme>${bundle.themeCss}</style>`,
+				navBanner: null
+			}
 		}
 		return {
 			pieceTypes: config.pieces.map((piece) => piece.type),
 			state: bundle.revision,
 			body: output.body,
 			navBanner: output.navBanner,
-			head: `${output.head}<style data-prepared-theme>${bundle.themeCss}</style>`
+			head: output.head
 		}
 	} catch (error) {
 		console.error(error)

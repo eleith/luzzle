@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { TemplateBundleModule } from '@luzzle/web.templates/bundle'
+import type { LoadedTemplateBundle } from './templates.js'
 import type { PageTemplateHelpers } from '@luzzle/web.templates/helpers'
 import { renderTemplatePage } from './template-page.js'
 
@@ -9,8 +9,13 @@ const urls = {
 	buildStaticAssetUrl: (path: string) => `/static/${path}`
 }
 
-function page(render: (helpers: PageTemplateHelpers) => void): TemplateBundleModule {
+function page(
+	render: (helpers: PageTemplateHelpers) => void,
+	revision = 'first'
+): LoadedTemplateBundle {
 	return {
+		revision,
+		themeCss: `/* theme ${revision} */`,
 		templateLookup: { pieces: {}, site: { root: 'page' } },
 		render(name, props) {
 			expect(name).toBe('page')
@@ -22,19 +27,25 @@ function page(render: (helpers: PageTemplateHelpers) => void): TemplateBundleMod
 }
 
 describe('renderTemplatePage', () => {
-	test('preserves body and head and omits navigation unless requested', () => {
-		const result = renderTemplatePage(
-			page(() => {}),
-			'page',
-			{},
-			urls
-		)
-		expect(result).toEqual({
-			body: '<main>Page</main>',
-			head: '<title>Page</title>',
-			navBanner: null
-		})
-	})
+	test.each(['first', 'second'])(
+		'returns only serializable presentation with the matching %s revision and theme',
+		(revision) => {
+			const result = renderTemplatePage(
+				page(() => {}, revision),
+				'page',
+				{},
+				urls
+			)
+			expect(result).toEqual({
+				revision,
+				body: '<main>Page</main>',
+				head: `<title>Page</title><style data-prepared-theme>/* theme ${revision} */</style>`,
+				navBanner: null
+			})
+			expect(JSON.parse(JSON.stringify(result))).toEqual(result)
+			expect(Object.keys(result).sort()).toEqual(['body', 'head', 'navBanner', 'revision'])
+		}
+	)
 
 	test('requests the real banner with its existing defaults when called without colors', () => {
 		const result = renderTemplatePage(
@@ -84,15 +95,39 @@ describe('renderTemplatePage', () => {
 		expect(result.navBanner).toEqual({ color: 'var(--color-on-surface)' })
 	})
 
-	test('passes the requested data to the renderer without any component constructors', () => {
-		const data = { piece: { title: 'Example' } }
+	test('passes a new deep copy of serving data on every render without component constructors', () => {
+		const data = { piece: { title: 'Example', metadata: { cover: 'cover' } }, tags: ['tag'] }
+		const copies: object[] = []
 		const bundle = page(() => {})
 		bundle.render = (_name, props) => {
-			expect(props).toHaveProperty('data', data)
-			expect(props).not.toHaveProperty('components')
+			const input = props as { data: typeof data }
+			expect(input.data).toEqual(data)
+			expect(input.data).not.toBe(data)
+			expect(input.data.piece).not.toBe(data.piece)
+			expect(input.data.piece.metadata).not.toBe(data.piece.metadata)
+			expect(input.data.tags).not.toBe(data.tags)
+			expect(Object.keys(props).sort()).toEqual(['data', 'helpers'])
+			copies.push(input.data)
 			return { body: '', head: '' }
 		}
 		renderTemplatePage(bundle, 'page', data, urls)
+		renderTemplatePage(bundle, 'page', data, urls)
+		expect(copies[0]).not.toBe(copies[1])
+	})
+
+	test('a successful template cannot mutate serving data', () => {
+		const data = { piece: { title: 'Example', metadata: { cover: 'cover' } }, tags: ['tag'] }
+		const before = structuredClone(data)
+		const bundle = page(() => {})
+		bundle.render = (_name, props) => {
+			const input = props as { data: typeof data }
+			input.data.piece.title = 'Changed'
+			input.data.piece.metadata.cover = 'Changed'
+			input.data.tags.length = 0
+			return { body: '<main>Changed</main>', head: '' }
+		}
+		expect(renderTemplatePage(bundle, 'page', data, urls).body).toBe('<main>Changed</main>')
+		expect(data).toEqual(before)
 	})
 
 	test('keeps render state isolated across requests, including calls on the same bundle', () => {
@@ -107,20 +142,30 @@ describe('renderTemplatePage', () => {
 		expect(second.navBanner).toBeNull()
 	})
 
-	test('lets genuine rendering failures reach the caller without leaking partial presentation', () => {
+	test('a throwing template cannot mutate serving data or leak partial presentation', () => {
+		const data = { piece: { title: 'Example' }, tags: ['tag'] }
+		const before = structuredClone(data)
 		const failure = new Error('failed after requesting navigation')
-		const bundle = page((helpers) => {
-			helpers.showNavBanner()
+		const bundle = page(() => {})
+		bundle.render = (_name, props) => {
+			const input = props as { data: typeof data; helpers: PageTemplateHelpers }
+			input.helpers.showNavBanner()
+			input.data.piece.title = 'Changed'
+			input.data.tags.length = 0
 			throw failure
+		}
+		let result
+		expect(() => {
+			result = renderTemplatePage(bundle, 'page', data, urls)
+		}).toThrow(failure)
+		expect(result).toBeUndefined()
+		expect(data).toEqual(before)
+		bundle.render = () => ({ body: 'Recovered', head: '' })
+		expect(renderTemplatePage(bundle, 'page', data, urls)).toEqual({
+			revision: 'first',
+			body: 'Recovered',
+			head: '<style data-prepared-theme>/* theme first */</style>',
+			navBanner: null
 		})
-		expect(() => renderTemplatePage(bundle, 'page', {}, urls)).toThrow(failure)
-		expect(
-			renderTemplatePage(
-				page(() => {}),
-				'page',
-				{},
-				urls
-			).navBanner
-		).toBeNull()
 	})
 })

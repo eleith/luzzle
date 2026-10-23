@@ -24,18 +24,12 @@ export async function renderPreparedPiecePage(
 		const roles = bundle.templateLookup.pieces[piece.type]
 		const pageTemplateName = Object.hasOwn(roles, 'page') ? roles.page : undefined
 		if (!pageTemplateName) return null
-		const rendered = renderTemplatePage(
+		return renderTemplatePage(
 			bundle,
 			pageTemplateName,
-			structuredClone({ piece, tags }),
+			{ piece, tags },
 			createTemplateUrlBuilders(request.url, request.previewJob)
 		)
-		return {
-			revision: bundle.revision,
-			body: rendered.body,
-			head: `${rendered.head}<style data-prepared-theme>${bundle.themeCss}</style>`,
-			navBanner: rendered.navBanner
-		}
 	} catch (error) {
 		console.error(`Prepared page rendering failed for ${piece.type}`, error)
 		return null

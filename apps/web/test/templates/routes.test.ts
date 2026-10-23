@@ -760,7 +760,7 @@ helpers.showNavBanner({ background: '#123456' }); throw new Error('cutover owner
 		await publishSource(ownerSource('Demo feed companion'), {
 			feed: await readFile(path.join(webRoot, 'demo/content/components/pages/feed.svelte'), 'utf8')
 		})
-		// Native HTTP checks server-rendered markup only, not hydration, clicks or clipboard behavior.
+		// Subscription is ordinary HTML: retain the URL field without an inactive copy button.
 		for (const feed of [feedCases[0], feedCases[2]]) {
 			const html = await pageHtml(`${feed.folder}/feed.html`)
 			expectFeedSeo(html, feed)
@@ -768,7 +768,7 @@ helpers.showNavBanner({ background: '#123456' }); throw new Error('cutover owner
 			expect(html).toContain('data-demo-feed')
 			expect(html).not.toContain('id="default-feed"')
 			expect(html).toContain('aria-label="RSS subscription info"')
-			expect(html).toContain('Copy the link and paste it into an RSS reader')
+			expect(html).toContain('Select the link and copy it into an RSS reader')
 			const title = feed.type === 'tag' ? `tag: ${feed.label}` : feed.label
 			expect(html).toMatch(new RegExp(`<h1[^>]*>RSS feed for ${title}</h1>`))
 			for (const [format, label] of [
@@ -778,18 +778,18 @@ helpers.showNavBanner({ background: '#123456' }); throw new Error('cutover owner
 			]) {
 				expect(html).toContain(`href="feed.${format}">${label}</a>`)
 			}
-			const copy = html.match(/<div class="copy-container[^"]*">([\s\S]*?)<\/div>/)?.[1]
-			expect(copy).toBeDefined()
-			expect(copy).toContain('id="rss-url-input"')
-			expect(copy).toContain('aria-label="RSS feed URL"')
-			expect(copy).toContain('aria-describedby="rss-instructions"')
-			expect(copy).toMatch(/\breadonly(?:\s|=|>)/)
-			expect(copy).toContain(`value="${feed.folder}/feed.xml"`)
-			expect(copy).toMatch(/<button[^>]*class="button"[^>]*>copy<\/button>/)
-			const scopedClass = html.match(/class="copy-container (svelte-[a-z0-9]+)"/)?.[1]
+			const subscription = html.match(/<div class="subscription-url[^"]*">([\s\S]*?)<\/div>/)?.[1]
+			expect(subscription).toBeDefined()
+			expect(subscription).toContain('id="rss-url-input"')
+			expect(subscription).toContain('aria-label="RSS feed URL"')
+			expect(subscription).toContain('aria-describedby="rss-instructions"')
+			expect(subscription).toMatch(/\breadonly(?:\s|=|>)/)
+			expect(subscription).toContain(`value="${feed.folder}/feed.xml"`)
+			expect(subscription).not.toContain('<button')
+			const scopedClass = html.match(/class="subscription-url (svelte-[a-z0-9]+)"/)?.[1]
 			expect(scopedClass).toBeDefined()
 			const head = htmlHead(html)
-			expect(head).toContain(`.copy-container.${scopedClass}`)
+			expect(head).toContain(`.subscription-url.${scopedClass}`)
 			expect(head).toContain(`.content-wrapper.${scopedClass}`)
 			expect(head).toContain('var(--color-surface)')
 			expect(html).toContain(`href="${piecePath}"`)

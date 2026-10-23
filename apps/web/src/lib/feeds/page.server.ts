@@ -19,18 +19,7 @@ export async function renderPreparedFeedPage({
 		if (!bundle || !Object.hasOwn(bundle.templateLookup.site, 'feed')) return null
 		const name = bundle.templateLookup.site.feed
 		if (!name) return null
-		const rendered = renderTemplatePage(
-			bundle,
-			name,
-			structuredClone({ feed, pieces }),
-			createTemplateUrlBuilders(url)
-		)
-		return {
-			revision: bundle.revision,
-			body: rendered.body,
-			head: `${rendered.head}<style data-prepared-theme>${bundle.themeCss}</style>`,
-			navBanner: rendered.navBanner
-		}
+		return renderTemplatePage(bundle, name, { feed, pieces }, createTemplateUrlBuilders(url))
 	} catch (error) {
 		console.error(`Prepared feed rendering failed for ${feed.type}: ${feed.label}`, error)
 		return null
