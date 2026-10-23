@@ -4,7 +4,6 @@ import { db } from '$lib/server/database'
 import { config } from '$lib/server/config'
 import { hydrateWithAssets } from '$lib/pieces/assets.server'
 import { assetPathToUrl } from '$lib/pieces/assets.js'
-import { renderPreparedPiecePage } from '$lib/server/piece-page.js'
 import { isConfiguredPieceType } from '$lib/pieces/types.server.js'
 
 export const load: PageServerLoad = async (page) => {
@@ -36,7 +35,6 @@ export const load: PageServerLoad = async (page) => {
 	return {
 		piece,
 		tags,
-		presentation: await renderPreparedPiecePage({ piece, tags, url: page.url }),
 		meta: {
 			title: `${piece.title} | ${config.content.text.title}`,
 			type: piece.type,

@@ -2,6 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { Static } from '@sinclair/typebox';
 import { ConfigSchema, loadConfig as loadBaseConfig } from '@luzzle/web.config';
 import { templateSchema } from './schema.js';
+import { validateTemplateSelectors } from './selectors.js';
 
 const pieces = ConfigSchema.properties.pieces;
 
@@ -31,5 +32,7 @@ export const configSchema = Type.Object(
 export type TemplateConfig = Static<typeof configSchema>;
 
 export function loadConfig(filename?: string): TemplateConfig {
-	return loadBaseConfig(filename, { schema: configSchema });
+	const config = loadBaseConfig(filename, { schema: configSchema });
+	validateTemplateSelectors(config);
+	return config;
 }

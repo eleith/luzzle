@@ -5,10 +5,9 @@ import { render } from 'svelte/server'
 import { ImageResponse } from 'takumi-js/response'
 import { createPieceHelpers } from '@luzzle/web.pieces'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
-import { getCompiledOpengraphModule } from './compile.js'
+import { mapOpengraphTemplate } from '@luzzle/web.templates/pieces/fields'
+import type { TemplateConfig } from '@luzzle/web.templates/config'
 import { generateThemeCss } from '@luzzle/web.theme'
-import type { Config } from '@luzzle/web.config'
-import type { Component } from 'svelte'
 
 const OpengraphImageWidth = 1200
 const OpengraphImageHeight = 630
@@ -18,7 +17,7 @@ let cachedStaticStylesheets: string[] | null = null
 let cachedFontData: Buffer | null = null
 let cachedFontUrl: string | null = null
 
-function loadStaticAssets(config: Config) {
+function loadStaticAssets(config: TemplateConfig) {
 	const require = createRequire(import.meta.url)
 	const resetCss = readFileSync(require.resolve('@luzzle/web.theme/styles/reset.css'), 'utf8')
 	const baseCss = readFileSync(require.resolve('@luzzle/web.theme/styles/base.css'), 'utf8')
@@ -26,7 +25,9 @@ function loadStaticAssets(config: Config) {
 	cachedStaticStylesheets = [resetCss, baseCss, markdownCss]
 
 	const globals = config.theme?.globals || {}
-	const fontUrl = (globals['font-sans-url'] as string | undefined)?.replace(/['"]/g, '') || '/fonts/noto-sans.woff2'
+	const fontUrl =
+		(globals['font-sans-url'] as string | undefined)?.replace(/['"]/g, '') ||
+		'/fonts/noto-sans.woff2'
 
 	if (cachedFontData && cachedFontUrl === fontUrl) {
 		return { staticStylesheets: cachedStaticStylesheets, fontData: cachedFontData }
@@ -70,51 +71,51 @@ function loadLocalImageResources(body: string, assetsDir: string) {
 	return resources
 }
 
-export async function renderOpengraphPng(
+async function renderOpengraphHtml(
 	piece: PublicWebPiece,
 	assets: PublicWebPieceAsset[],
-	config: Config,
-	outDir?: string
-): Promise<Buffer> {
-	// 1. Get compiled Svelte component
-	const mod = await getCompiledOpengraphModule(piece.type, config)
-	const svelteComponent = mod.default as Component<Record<string, unknown>>
-
-	// 2. Load static stylesheet & font assets, and generate dynamic theme CSS
-	const { staticStylesheets, fontData } = loadStaticAssets(config)
-	const themeCss = generateThemeCss(config)
-	const stylesheets = [...staticStylesheets, themeCss]
-
-	// 3. SSR render to HTML
+	config: TemplateConfig
+) {
+	const pieceConfig = config.pieces.find((entry) => entry.type === piece.type)
 	const helpers = createPieceHelpers(
 		assets,
 		(p) => `${PIECES_ASSETS_PREFIX}${p}`,
 		() => `/pieces/${piece.type}/${piece.slug}`
 	)
-	const { body, head } = render(svelteComponent, {
-		props: { piece, helpers } as Record<string, unknown>
-	})
+	const template = mapOpengraphTemplate(piece, pieceConfig)
+	const { getCompiledOpengraphModule } = await import('./compile.js')
+	const component = await getCompiledOpengraphModule(template.name)
+	return render(component.default, { props: { piece, fields: template.fields, helpers } })
+}
 
-	// 4. Clean HTML for Takumi compatibility
-	const scopedHead = head.replace(/:where\(\.svelte-[a-z0-9]+\)/gi, '')
-	const cleanBody = body.replace(/<!--[\s\S]*?-->/g, '').replace(/>\s+</g, '><')
-	const wrapperStyle = `display:flex;width:${OpengraphImageWidth}px;height:${OpengraphImageHeight}px`
-	const takumiHtml = `${scopedHead}<div style="${wrapperStyle}">${cleanBody}</div>`
+function prepareTakumiMarkup(rendered: { body: string; head: string }) {
+	const head = rendered.head.replace(/:where\(\.svelte-[a-z0-9]+\)/gi, '')
+	const body = rendered.body.replace(/<!--[\s\S]*?-->/g, '').replace(/>\s+</g, '><')
+	const style = `display:flex;width:${OpengraphImageWidth}px;height:${OpengraphImageHeight}px`
+	return { body, html: `${head}<div style="${style}">${body}</div>` }
+}
 
-	// 5. Pre-load local images referenced in HTML
+function getAssetsDirectory(config: TemplateConfig, outDir?: string): string {
 	if (!config.paths.config) {
 		throw new Error('config.paths.config is missing; cannot resolve assets path')
 	}
-	const absoluteAssetsDir = outDir
-		? outDir
-		: path.resolve(path.dirname(config.paths.config), config.paths.assets)
-	const fetchedResources = loadLocalImageResources(cleanBody, absoluteAssetsDir)
+	return outDir ? outDir : path.resolve(path.dirname(config.paths.config), config.paths.assets)
+}
 
+export async function renderOpengraphPng(
+	piece: PublicWebPiece,
+	assets: PublicWebPieceAsset[],
+	config: TemplateConfig,
+	outDir?: string
+): Promise<Buffer> {
+	const { staticStylesheets, fontData } = loadStaticAssets(config)
+	const stylesheets = [...staticStylesheets, generateThemeCss(config)]
+	const markup = prepareTakumiMarkup(await renderOpengraphHtml(piece, assets, config))
+	const fetchedResources = loadLocalImageResources(markup.body, getAssetsDirectory(config, outDir))
 	const globals = config.theme?.globals || {}
-	const fontName = (globals['font-sans-name'] as string | undefined)?.replace(/['"]/g, '') || 'Noto Sans'
-
-	// 6. Render via Takumi
-	const response = new ImageResponse(takumiHtml, {
+	const fontName =
+		(globals['font-sans-name'] as string | undefined)?.replace(/['"]/g, '') || 'Noto Sans'
+	const response = new ImageResponse(markup.html, {
 		width: OpengraphImageWidth,
 		height: OpengraphImageHeight,
 		stylesheets,
@@ -122,9 +123,7 @@ export async function renderOpengraphPng(
 		fetchedResources,
 		onError: (err: unknown) => {
 			console.error('[takumi] render error:', err)
-		}
+		},
 	})
-
-	const arrayBuffer = await response.arrayBuffer()
-	return Buffer.from(arrayBuffer)
+	return Buffer.from(await response.arrayBuffer())
 }

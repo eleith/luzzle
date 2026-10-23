@@ -490,24 +490,6 @@
               }
             }
           },
-          "components": {
-            "additionalProperties": false,
-            "type": "object",
-            "properties": {
-              "icon": {
-                "description": "Svelte source path for the piece icon.",
-                "type": "string"
-              },
-              "opengraph": {
-                "description": "Svelte source path for the Open Graph image.",
-                "type": "string"
-              },
-              "page": {
-                "description": "Svelte source path for the piece page.",
-                "type": "string"
-              }
-            }
-          },
           "templates": {
             "default": {},
             "additionalProperties": false,
@@ -612,7 +594,7 @@
                   "name": "default"
                 },
                 "additionalProperties": false,
-                "description": "The default piece page with its title, note, tags and optional details.",
+                "description": "An independent poster-style default piece page.",
                 "type": "object",
                 "properties": {
                   "name": {
@@ -624,82 +606,9 @@
                     "additionalProperties": false,
                     "type": "object",
                     "properties": {
-                      "subtitle": {
-                        "$id": "page-default-subtitle",
-                        "description": "Text displayed below the title.",
-                        "anyOf": [
-                          {
-                            "minLength": 1,
-                            "type": "string"
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "field"
-                            ],
-                            "properties": {
-                              "field": {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              "default": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "value"
-                            ],
-                            "properties": {
-                              "value": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "fields"
-                            ],
-                            "properties": {
-                              "fields": {
-                                "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "page-default-subtitle"
-                                  }
-                                }
-                              }
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "each",
-                              "fields"
-                            ],
-                            "properties": {
-                              "each": {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              "fields": {
-                                "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "page-default-subtitle"
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        ]
-                      },
                       "image": {
                         "$id": "page-default-image",
-                        "description": "Representative image asset key.",
+                        "description": "Poster image asset key.",
                         "anyOf": [
                           {
                             "minLength": 1,
@@ -770,9 +679,9 @@
                           }
                         ]
                       },
-                      "details": {
-                        "$id": "page-default-details",
-                        "description": "Ordered detail rows containing label and value fields.",
+                      "backdrop": {
+                        "$id": "page-default-backdrop",
+                        "description": "Backdrop image asset key.",
                         "anyOf": [
                           {
                             "minLength": 1,
@@ -813,7 +722,7 @@
                                 "type": "object",
                                 "patternProperties": {
                                   "^(.*)$": {
-                                    "$ref": "page-default-details"
+                                    "$ref": "page-default-backdrop"
                                   }
                                 }
                               }
@@ -835,7 +744,445 @@
                                 "type": "object",
                                 "patternProperties": {
                                   "^(.*)$": {
-                                    "$ref": "page-default-details"
+                                    "$ref": "page-default-backdrop"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "dateReleased": {
+                        "$id": "page-default-dateReleased",
+                        "description": "Release date as text or epoch milliseconds.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-dateReleased"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-dateReleased"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "runtime": {
+                        "$id": "page-default-runtime",
+                        "description": "Duration in minutes.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-runtime"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-runtime"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "url": {
+                        "$id": "page-default-url",
+                        "description": "External link.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-url"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-url"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "isbn": {
+                        "$id": "page-default-isbn",
+                        "description": "ISBN used for an Open Library link when no URL is supplied.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-isbn"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-isbn"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "category": {
+                        "$id": "page-default-category",
+                        "description": "Display category, independent of the archive piece type.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-category"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-category"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "people": {
+                        "$id": "page-default-people",
+                        "description": "People as names or mapped objects with a name field.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-people"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-people"
                                   }
                                 }
                               }
@@ -852,7 +1199,7 @@
                   "name": "default"
                 },
                 "additionalProperties": false,
-                "description": "The default share card using the piece title and summary.",
+                "description": "An independent poster-style default share card.",
                 "type": "object",
                 "properties": {
                   "name": {
@@ -866,7 +1213,7 @@
                     "properties": {
                       "image": {
                         "$id": "opengraph-default-image",
-                        "description": "Representative image asset key.",
+                        "description": "Poster image asset key.",
                         "anyOf": [
                           {
                             "minLength": 1,
@@ -930,6 +1277,298 @@
                                 "patternProperties": {
                                   "^(.*)$": {
                                     "$ref": "opengraph-default-image"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "backdrop": {
+                        "$id": "opengraph-default-backdrop",
+                        "description": "Backdrop image asset key.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "opengraph-default-backdrop"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "opengraph-default-backdrop"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "director": {
+                        "$id": "opengraph-default-director",
+                        "description": "Director text displayed in the byline.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "opengraph-default-director"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "opengraph-default-director"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "dateReleased": {
+                        "$id": "opengraph-default-dateReleased",
+                        "description": "Release date as text or epoch milliseconds.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "opengraph-default-dateReleased"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "opengraph-default-dateReleased"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "runtime": {
+                        "$id": "opengraph-default-runtime",
+                        "description": "Duration in minutes.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "opengraph-default-runtime"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "opengraph-default-runtime"
                                   }
                                 }
                               }

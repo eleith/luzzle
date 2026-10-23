@@ -1,7 +1,7 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import { load } from './+page.server.js'
 
-const { query, hydrateWithAssets, renderPreparedPiecePage, config } = vi.hoisted(() => ({
+const { query, hydrateWithAssets, config } = vi.hoisted(() => ({
 	query: {
 		selectAll: vi.fn().mockReturnThis(),
 		select: vi.fn().mockReturnThis(),
@@ -11,7 +11,6 @@ const { query, hydrateWithAssets, renderPreparedPiecePage, config } = vi.hoisted
 		execute: vi.fn()
 	},
 	hydrateWithAssets: vi.fn(),
-	renderPreparedPiecePage: vi.fn(),
 	config: {
 		pieces: [{ type: 'books' }],
 		url: { app: 'https://app.example', luzzle_assets: '' },
@@ -21,7 +20,6 @@ const { query, hydrateWithAssets, renderPreparedPiecePage, config } = vi.hoisted
 vi.mock('$lib/server/database', () => ({ db: { selectFrom: () => query } }))
 vi.mock('$lib/server/config', () => ({ config }))
 vi.mock('$lib/pieces/assets.server', () => ({ hydrateWithAssets }))
-vi.mock('$lib/server/piece-page.js', () => ({ renderPreparedPiecePage }))
 
 function event() {
 	return {
@@ -33,7 +31,6 @@ function event() {
 beforeEach(() => {
 	vi.clearAllMocks()
 	config.url.luzzle_assets = ''
-	renderPreparedPiecePage.mockResolvedValue(null)
 	query.executeTakeFirst.mockResolvedValue({ id: 'book', file_path: 'book.books.md' })
 	query.execute.mockResolvedValue([{ slug: 'fiction', tag: 'Fiction' }])
 	hydrateWithAssets.mockResolvedValue({
@@ -73,20 +70,20 @@ test.each([
 	expect(await load(event())).toMatchObject({ meta: { image: undefined } })
 })
 
-test('passes serving data to prepared rendering without changing the public metadata', async () => {
-	const presentation = {
-		revision: 'current',
-		body: '<main>Prepared</main>',
-		head: '<style>/* prepared */</style>'
+test('passes hydrated template fields to native rendering, not prepared HTML', async () => {
+	const piece = {
+		id: 'book',
+		title: 'Book',
+		type: 'books',
+		assets: [],
+		templates: {
+			page: { name: 'default', fields: { image: 'cover-key' } }
+		}
 	}
-	renderPreparedPiecePage.mockResolvedValue(presentation)
-	const request = event()
-	expect(await load(request)).toMatchObject({ presentation, meta: { title: 'Book | Garden' } })
-	expect(renderPreparedPiecePage).toHaveBeenCalledWith({
-		piece: await hydrateWithAssets.mock.results[0].value,
-		tags: [{ slug: 'fiction', tag: 'Fiction' }],
-		url: request.url
-	})
+	hydrateWithAssets.mockResolvedValue(piece)
+	const data = await load(event())
+	expect(data).toMatchObject({ piece, tags: [{ slug: 'fiction', tag: 'Fiction' }] })
+	expect(data).not.toHaveProperty('presentation')
 })
 
 test('unconfigured public piece types fail before querying persisted records', async () => {
@@ -94,7 +91,6 @@ test('unconfigured public piece types fail before querying persisted records', a
 	request.params.piece = 'unconfigured'
 	await expect(load(request)).rejects.toMatchObject({ status: 404 })
 	expect(query.executeTakeFirst).not.toHaveBeenCalled()
-	expect(renderPreparedPiecePage).not.toHaveBeenCalled()
 })
 
 test('missing public pieces remain a 404', async () => {

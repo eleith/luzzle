@@ -3,20 +3,28 @@ import type { Static } from '@sinclair/typebox';
 
 const fields = Type.Object(
 	{
-		subtitle: Type.Optional(Type.String({ description: 'Text displayed below the title.' })),
-		image: Type.Optional(Type.String({ description: 'Representative image asset key.' })),
-		details: Type.Optional(
+		image: Type.Optional(Type.String({ description: 'Poster image asset key.' })),
+		backdrop: Type.Optional(Type.String({ description: 'Backdrop image asset key.' })),
+		dateReleased: Type.Optional(
+			Type.Union([Type.String(), Type.Number()], {
+				description: 'Release date as text or epoch milliseconds.'
+			})
+		),
+		runtime: Type.Optional(Type.Number({ description: 'Duration in minutes.' })),
+		url: Type.Optional(Type.String({ description: 'External link.' })),
+		isbn: Type.Optional(
+			Type.String({ description: 'ISBN used for an Open Library link when no URL is supplied.' })
+		),
+		category: Type.Optional(
+			Type.String({ description: 'Display category, independent of the archive piece type.' })
+		),
+		people: Type.Optional(
 			Type.Array(
-				Type.Object(
-					{
-						label: Type.String(),
-						value: Type.Union([Type.String(), Type.Number(), Type.Boolean()])
-					},
-					{ additionalProperties: false }
-				),
-				{
-					description: 'Ordered detail rows containing label and value fields.'
-				}
+				Type.Union([
+					Type.String(),
+					Type.Object({ name: Type.String() }, { additionalProperties: false })
+				]),
+				{ description: 'People as names or mapped objects with a name field.' }
 			)
 		)
 	},
@@ -25,7 +33,7 @@ const fields = Type.Object(
 
 export const schema = {
 	name: 'default',
-	description: 'The default piece page with its title, note, tags and optional details.',
+	description: 'An independent poster-style default piece page.',
 	fields
 } as const;
 

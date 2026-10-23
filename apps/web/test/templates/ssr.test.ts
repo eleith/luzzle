@@ -29,44 +29,13 @@ if (!server.server.listening) await once(server.server, 'listening');
 process.send({ port: server.server.address().port });
 `
 
-async function publishSource(
-	source: string,
-	color: string,
-	type = 'custom-kind',
-	icons: Record<string, string> = {},
-	opengraph?: string
-) {
-	const filename = path.join(directory, `source-${sourceNumber++}.svelte`)
+async function publishSource(source: string, color: string) {
+	const filename = path.join(directory, `feed-${sourceNumber++}.svelte`)
 	await writeFile(filename, source)
-	const opengraphFile =
-		opengraph === undefined ? '' : path.join(directory, `opengraph-${sourceNumber++}.svelte`)
-	if (opengraph !== undefined) await writeFile(opengraphFile, opengraph)
-	const iconFiles = new Map<string, string>()
-	const iconSources = new Map<string, string>()
-	for (const [type, source] of Object.entries(icons)) {
-		let iconFile = iconSources.get(source)
-		if (!iconFile) {
-			iconFile = path.join(directory, `icon-${sourceNumber++}.svelte`)
-			await writeFile(iconFile, source)
-			iconSources.set(source, iconFile)
-		}
-		iconFiles.set(type, iconFile)
-	}
-	const pieces = new Map<string, Record<string, string>>([[type, { page: filename }]])
-	if (opengraphFile) pieces.set(type, { page: filename, opengraph: opengraphFile })
-	for (const [type, icon] of iconFiles) pieces.set(type, { ...pieces.get(type), icon })
-	await writeFile(
-		configFilename,
-		JSON.stringify({
-			paths: { prepared: './prepared' },
-			pieces: [...pieces].map(([type, components]) => ({
-				type,
-				fields: { title: 'title', date_consumed: 'date' },
-				components
-			})),
-			theme: { light: { 'color-primary': color } }
-		})
-	)
+	const config = JSON.parse(await readFile(configFilename, 'utf8'))
+	config.content = { component: { feed: filename } }
+	config.theme = { light: { 'color-primary': color } }
+	await writeFile(configFilename, JSON.stringify(config))
 	const { stdout } = await exec(
 		process.execPath,
 		[
@@ -113,10 +82,49 @@ beforeAll(async () => {
 	directory = await mkdtemp(path.join(cache, 'template-ssr-'))
 	preparedDirectory = path.join(directory, 'prepared')
 	configFilename = path.join(directory, 'config.yaml')
-	await writeFile(configFilename, JSON.stringify({ paths: { prepared: './prepared' } }))
+	await writeFile(
+		configFilename,
+		JSON.stringify({
+			paths: { prepared: './prepared' },
+			pieces: [
+				{
+					type: 'custom-kind',
+					fields: { title: 'title', date_consumed: 'date' },
+					templates: {
+						icon: { name: 'default', mapping: { image: 'artwork' } },
+						page: {
+							name: 'default',
+							mapping: {
+								image: 'artwork',
+								backdrop: 'scenery',
+								dateReleased: 'released',
+								runtime: 'minutes',
+								category: 'category',
+								url: 'website',
+								isbn: 'isbn',
+								people: 'creators'
+							}
+						},
+						opengraph: {
+							name: 'default',
+							mapping: {
+								image: 'artwork',
+								backdrop: 'scenery',
+								director: 'filmmaker',
+								dateReleased: 'released',
+								runtime: 'minutes'
+							}
+						}
+					}
+				},
+				{ type: 'unmapped-kind', fields: { title: 'title', date_consumed: 'date' } }
+			]
+		})
+	)
 	buildDirectory = path.join(directory, 'build')
 	const env = {
 		...process.env,
+		NODE_ENV: 'production',
 		TEMPLATE_BUILD_DIR: buildDirectory,
 		TEMPLATE_KIT_DIR: path.join(directory, 'kit')
 	}
@@ -151,7 +159,12 @@ beforeAll(async () => {
 		serverErrors += String(chunk)
 	})
 	const port = await new Promise<number>((resolve, reject) => {
+		const timeout = setTimeout(
+			() => reject(new Error(`Fixture startup timed out: ${serverErrors}`)),
+			10000
+		)
 		child.once('message', (message) => {
+			clearTimeout(timeout)
 			if (
 				typeof message === 'object' &&
 				message !== null &&
@@ -161,32 +174,42 @@ beforeAll(async () => {
 				resolve(message.port)
 			else reject(new Error('Invalid fixture server startup message'))
 		})
-		child.once('error', reject)
-		child.once('exit', (code) =>
+		child.once('error', (error) => {
+			clearTimeout(timeout)
+			reject(error)
+		})
+		child.once('exit', (code) => {
+			clearTimeout(timeout)
 			reject(new Error(`Fixture server exited (${code}): ${serverErrors}`))
-		)
+		})
 	})
 	origin = `http://127.0.0.1:${port}`
 })
 
 afterAll(async () => {
-	if (server && server.exitCode === null) {
-		const exited = once(server, 'exit')
-		server.kill('SIGTERM')
-		const timeout = setTimeout(() => server?.kill('SIGKILL'), 5000)
-		await exited
-		clearTimeout(timeout)
+	try {
+		if (server && server.exitCode === null && server.signalCode === null) {
+			const exited = once(server, 'exit')
+			server.kill('SIGTERM')
+			const timeout = setTimeout(() => server?.kill('SIGKILL'), 5000)
+			try {
+				await exited
+			} finally {
+				clearTimeout(timeout)
+			}
+		}
+	} finally {
+		if (directory) await rm(directory, { recursive: true, force: true })
 	}
-	if (directory) await rm(directory, { recursive: true, force: true })
 })
 
 const firstSource = `
 <script>let { data } = $props()</script>
-<article class="prepared">First {data.piece.title}</article>
+<article class="prepared">First {data.pieces[0].title}</article>
 <style>.prepared { color: var(--color-primary); }</style>
 `
 
-describe('prepared templates in built SvelteKit SSR', () => {
+describe('site/feed publication and stock catalog in built SvelteKit SSR', () => {
 	test('starts with built-in presentation before a revision is available', async () => {
 		const html = await request()
 		expect(html).toContain('Built-in presentation')
@@ -208,18 +231,18 @@ describe('prepared templates in built SvelteKit SSR', () => {
 		expect(theme).toContain('--color-primary: #135790;')
 	})
 
-	test('switches revision and supports normal module initialization and a new arbitrary type', async () => {
+	test('switches site/feed revision and supports normal module initialization with fresh request data', async () => {
 		const source = `<script module>const prefix = await Promise.resolve('Second')</script>
 <script>import { getContext } from 'svelte'; let { data } = $props(); const missing = getContext('missing')</script>
-<p>{prefix} {missing ?? data.piece.title}</p>`
-		const published = await publishSource(source, '#246801', 'new-kind')
-		const html = await request('?type=new-kind&title=Changed')
+<p>{prefix} {missing ?? data.pieces[0].title}</p>`
+		const published = await publishSource(source, '#246801')
+		const html = await request('?title=Changed')
 		expect(html).toContain(published.revision)
 		expect(html).toContain('Second Changed')
 		expect(htmlHead(html)).toContain('--color-primary: #246801;')
 	})
 
-	test('keeps the previous selected page when the real publication command fails', async () => {
+	test('keeps the previous selected site/feed revision when the real publication command fails', async () => {
 		const published = await publishSource(firstSource, '#135790')
 		const pointer = await readFile(path.join(preparedDirectory, 'current.json'), 'utf8')
 		await expect(publishSource('<div>', '#abcdef')).rejects.toMatchObject({ code: 1 })
@@ -265,23 +288,23 @@ describe('prepared templates in built SvelteKit SSR', () => {
 		const published = await publishSource(firstSource, '#135790')
 		await writeFile(
 			path.join(preparedDirectory, 'revisions', published.revision, 'templates.mjs'),
-			'export const templateLookup = {pieces:{"custom-kind":{page:"page"}},site:{}}; export function render(){return {body:"Older module",head:""}};'
+			'export const templateLookup = {site:{feed:"feed"}}; export function render(){return {body:"Older module",head:""}};'
 		)
 		const html = await request()
 		expect(html).toContain('Older module')
 		expect(html).not.toContain('Built-in presentation')
 	})
 
-	test('renders real piece helpers with separate published and preview contexts', async () => {
+	test('renders site/feed helpers with separate published and preview asset contexts', async () => {
 		const source = `<script>
 let { data, helpers } = $props();
-const piece = helpers.forPiece(data.piece);
-const image = piece.getImageUrl(data.piece.metadata.cover, 125, 'jpg');
-const note = piece.getAssetContent(data.piece.key, 'markdown');
+const piece = helpers.forPiece(data.pieces[0]);
+const image = piece.getImageUrl(data.pieces[0].metadata.cover, 125, 'jpg');
+const note = piece.getAssetContent(data.pieces[0].key, 'markdown');
 const palette = piece.getPalette();
 const mark = helpers.getStaticAssetUrl('images/mark.svg');
 </script>
-<a id="piece-link" href={piece.getUrl()}>{data.piece.title}</a>
+<a id="piece-link" href={piece.getUrl()}>{data.pieces[0].title}</a>
 <img id="cover" src={image} alt="Cover" />
 <a id="asset-link" href={piece.getAssetUrl('cover', 'image.s.jpg')}>Asset</a>
 <p id="palette" data-accent={palette?.accent}>Palette</p>
@@ -314,16 +337,16 @@ const mark = helpers.getStaticAssetUrl('images/mark.svg');
 	test('renders requested navigation as the real app banner before custom content', async () => {
 		const source = `<script>
 let { data, helpers } = $props();
-const palette = helpers.forPiece(data.piece).getPalette();
-if (data.piece.title !== 'omitted') {
-  if (data.piece.title === 'defaults') helpers.showNavBanner();
+const palette = helpers.forPiece(data.pieces[0]).getPalette();
+if (data.pieces[0].title !== 'omitted') {
+  if (data.pieces[0].title === 'defaults') helpers.showNavBanner();
   else helpers.showNavBanner({ background: palette?.accent, color: 'var(--color-on-primary)', hoverColor: 'var(--color-secondary)' });
 }
-if (data.piece.title === 'updated') helpers.showNavBanner({ background: 'var(--color-surface-container)' });
-if (data.piece.title === 'throwing') throw new Error('failed after requesting navigation');
+if (data.pieces[0].title === 'updated') helpers.showNavBanner({ background: 'var(--color-surface-container)' });
+if (data.pieces[0].title === 'throwing') throw new Error('failed after requesting navigation');
 </script>
-<svelte:head><title>Owner page {data.piece.title}</title><meta name="description" content="Prepared server content" /></svelte:head>
-<main id="custom-content" style:background={palette?.accent}><p>{data.piece.title}</p></main>`
+<svelte:head><title>Owner page {data.pieces[0].title}</title><meta name="description" content="Prepared server content" /></svelte:head>
+<main id="custom-content" style:background={palette?.accent}><p>{data.pieces[0].title}</p></main>`
 		await publishSource(source, '#135790')
 		const html = await request('?title=normal')
 		expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
@@ -374,97 +397,95 @@ if (data.piece.title === 'throwing') throw new Error('failed after requesting na
 		expect(await request('?title=after-error')).toContain('aria-label="Global"')
 	})
 
-	test('renders configured and canonical default icons with one SSR stylesheet and real request helpers', async () => {
-		const icon = `<svelte:options css="injected" />
-<script>let { data, options, helpers } = $props()</script>
-<svelte:head><meta name="icon-piece" content={data.piece.title} /><style>.manual-icon-style { color: var(--color-primary); }</style></svelte:head>
-<a class="prepared-icon" href={helpers.forPiece(data.piece).getUrl()}
- data-size={options.size.width + 'x' + options.size.height} data-lazy={options.lazy} data-active={options.active}
- data-page-control={typeof helpers.showNavBanner}>
- <img src={helpers.forPiece(data.piece).getImageUrl('cover', options.size.width, 'jpg')} alt="Prepared cover" />
- {data.piece.title}
-</a>
-<style>.prepared-icon { color: var(--color-secondary); }</style>`
-		const source = `<script>let { data, components } = $props()</script>
-<svelte:head><title>Icon page {data.piece.title}</title></svelte:head>
-<main class="icon-page">
-<components.PieceIcon piece={data.piece} size={{ width: 125 }} />
-<components.PieceIcon piece={{ ...data.piece, type: '__proto__', title: 'Related' }} size={{ width: 80, height: 93 }} lazy active />
-<components.PieceIcon piece={{ ...data.piece, type: 'unknown-kind', title: '<Default>&' }} size={{ width: 90, height: 111 }} lazy active />
-</main>
-<style>.icon-page { background: var(--color-surface); }</style>`
-		await publishSource(
-			source,
-			'#135790',
-			'custom-kind',
-			Object.fromEntries([
-				['custom-kind', icon],
-				['__proto__', icon]
-			])
-		)
-		const html = await request('?title=%3CPiece%3E%26')
-		expect(html).toContain('data-size="125x187.5" data-lazy="false" data-active="false"')
-		expect(html).toContain('data-size="80x93" data-lazy="true" data-active="true"')
-		expect(html).toContain('data-page-control="undefined"')
-		expect(html).toContain('href="' + origin + '/pieces/__proto__/prepared%20piece"')
-		expect(html).toMatch(/class="default-icon [^"]*\bactive\b/)
-		expect(html).toContain('--piece-icon-height: 111px;')
-		expect(html).toContain('&lt;Default>&amp;')
+	test('renders the package-owned poster icon with mapped fields, escaped text and preview URLs', async () => {
+		const html = await request('?role=icon&title=%3CStock%3E%26')
+		expect(html).toMatch(/class="poster [^"]*\bactive\b/)
+		expect(html).toContain('&lt;Stock>&amp;')
+		expect(html).toContain('--piece-icon-width: 125px;')
+		expect(html).toContain('--piece-icon-height: 187.5px;')
 		expect(html).toContain('loading="lazy"')
 		expect(html).toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
-		const head = htmlHead(html)
-		expect(head.match(/<title>/g)).toHaveLength(1)
-		expect(head).toContain('<title>Icon page &lt;Piece>&amp;</title>')
-		expect(head).toContain('name="icon-piece" content="&lt;Piece>&amp;"')
-		expect(head).toContain('name="icon-piece" content="Related"')
-		expect(head).toContain('.manual-icon-style')
-		const iconClass = html.match(/class="prepared-icon (svelte-[a-z0-9]+)"/)?.[1]
-		expect(iconClass).toBeDefined()
-		expect(head.match(new RegExp(`id="${iconClass}"`, 'g'))).toHaveLength(1)
-		expect(head).toContain('.default-icon.')
-		expect(head).toContain('.icon-page.')
-		const preview = await request('?job=icon%20job')
+		expect(html).not.toContain('aria-label="Global"')
+		const preview = await request('?role=icon&job=icon%20job')
 		expect(preview).toContain('src="/admin/preview/icon%20job/asset/fixture/cover%20small.jpg"')
-		expect(preview).not.toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
+		expect(preview).not.toContain(`${origin}/pieces/assets/fixture/cover%20small.jpg`)
 	})
 
-	test('composes icons inside Open Graph templates without page-only helpers', async () => {
-		const icon = `<script>let { data, options, helpers } = $props()</script>
-<img class="og-icon" src={helpers.forPiece(data.piece).getImageUrl('cover', options.size.width, 'jpg')}
- alt={data.piece.title} data-icon-size={options.size.width + 'x' + options.size.height} />
-<style>.og-icon { border-color: var(--color-primary); }</style>`
-		const opengraph = `<script>let { data, options, helpers, components } = $props()</script>
-<section id="opengraph" data-size={options.size.width + 'x' + options.size.height} data-page-control={typeof helpers.showNavBanner}>
-<components.PieceIcon piece={data.piece} size={{ width: 125, height: 87 }} />
-<components.PieceIcon piece={{ ...data.piece, type: 'unconfigured' }} size={{ width: 80 }} />
-</section>`
-		await publishSource(firstSource, '#135790', 'custom-kind', { 'custom-kind': icon }, opengraph)
+	test('renders useful stock page HTML, explicit supplemental fields and palette navigation', async () => {
+		const html = await request('?role=page')
+		expect(html).toMatch(/<h1[^>]*>Prepared title<\/h1>/)
+		for (const text of [
+			'Fixture category',
+			'Ada Example',
+			'2001',
+			'123 min',
+			'Fixture description'
+		]) {
+			expect(html).toContain(text)
+		}
+		expect(html).toContain('href="https://example.com/fixture"')
+		expect(html).toContain('href="/tags/fixture-tag"')
+		expect(html).toContain('<p>Published note</p>')
+		expect(html).toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
+		expect(html).toContain(`src="${origin}/pieces/assets/fixture/backdrop%20large.jpg"`)
+		expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
+		expect(html).toContain('href="/random"')
+		expect(html).toContain('--banner-background-color: #234567')
+		expect(html.indexOf('aria-label="Global"')).toBeLessThan(html.indexOf('<h1'))
+		const preview = await request('?role=page&job=page%20job')
+		expect(preview).toContain('<p>Draft note</p>')
+		expect(preview).not.toContain('<p>Published note</p>')
+		expect(preview).toContain('src="/admin/preview/page%20job/asset/fixture/cover%20small.jpg"')
+		expect(preview).not.toContain(`${origin}/pieces/assets/`)
+		expect(await request('?role=page')).toContain('<p>Published note</p>')
+	})
+
+	test('uses the ISBN fallback instead of rendering an unsafe mapped external URL', async () => {
+		const html = await request('?role=page&external=javascript%3Aalert%281%29')
+		expect(html).toContain('href="https://openlibrary.org/search?isbn=9780000000001"')
+		expect(html).not.toContain('href="javascript:')
+	})
+
+	test('renders the stock Open Graph catalog with explicit director, backdrop and byline fields', async () => {
 		const html = await request('?role=opengraph')
-		expect(html).toContain('id="opengraph" data-size="1200x630" data-page-control="undefined"')
-		expect(html).toContain('data-icon-size="125x87"')
-		expect(html).toContain('class="default-icon')
+		expect(html).toContain('width:1200px;height:630px;')
+		expect(html).toMatch(/<h1[^>]*>\s*Prepared title/)
+		expect(html).toContain('by Ada Example')
+		expect(html).toContain('2001 · 123 min')
+		expect(html).toContain(`src="${origin}/pieces/assets/fixture/cover%20medium.jpg"`)
+		expect(html).toContain(`src="${origin}/pieces/assets/fixture/backdrop%20large.jpg"`)
 		expect(html).not.toContain('aria-label="Global"')
-		expect(htmlHead(html)).toContain('.og-icon.')
-		expect(htmlHead(html)).toContain('.default-icon.')
 		const preview = await request('?role=opengraph&job=og%20job')
-		expect(preview).toContain('src="/admin/preview/og%20job/asset/fixture/cover%20small.jpg"')
+		expect(preview).toContain('src="/admin/preview/og%20job/asset/fixture/cover%20medium.jpg"')
+		expect(preview).toContain('src="/admin/preview/og%20job/asset/fixture/backdrop%20large.jpg"')
+		expect(preview).not.toContain(`${origin}/pieces/assets/`)
 	})
 
-	test('lets icon errors fall back at the page boundary and restores the next render', async () => {
-		const source = `<script>let { data, helpers, components } = $props(); helpers.showNavBanner()</script>
-<components.PieceIcon piece={data.piece} size={{ width: 80 }} />`
-		await publishSource(source, '#135790', 'custom-kind', {
-			'custom-kind': '<script>throw new Error("icon render failure")</script><p>Never shown</p>'
-		})
-		const html = await request()
-		expect(html).toContain('Built-in presentation')
-		expect(html).not.toContain('aria-label="Global"')
-		expect(serverErrors).toContain('icon render failure')
-		await publishSource(source, '#135790')
-		const recovered = await request()
-		expect(recovered).toContain('class="default-icon')
-		expect(recovered).toContain('aria-label="Global"')
-		expect(htmlHead(recovered)).not.toContain('Never shown')
+	test('uses all three poster defaults without inferring presentation fields from raw metadata', async () => {
+		for (const role of ['icon', 'page', 'opengraph']) {
+			// Raw metadata legitimately remains in Kit's bootstrap data; check rendered HTML only.
+			const html = (
+				await request(`?role=${role}&type=unmapped-kind&title=%3CDefault%3E%26`)
+			).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
+			expect(html).toContain('&lt;Default>&amp;')
+			expect(html).not.toContain('src=')
+			expect(html).not.toContain('by Ada Example')
+			expect(html).not.toContain('Fixture category')
+			expect(html).not.toContain('123 min')
+			if (role !== 'page') expect(html).not.toContain('aria-label="Global"')
+		}
+	})
+
+	test('keeps stock piece SSR independent of a broken selected site bundle', async () => {
+		const published = await publishSource(firstSource, '#135790')
+		await writeFile(
+			path.join(preparedDirectory, 'revisions', published.revision, 'templates.mjs'),
+			'export const wrong = true;'
+		)
+		expect(await request()).toContain('Built-in presentation')
+		expect(await request('?role=page')).toContain('<p>Published note</p>')
+		expect(await request('?role=icon')).toContain('class="poster')
+		expect(await request('?role=opengraph')).toContain('by Ada Example')
 	})
 
 	test('leaves every compiled application file unchanged across publication and fallback', async () => {

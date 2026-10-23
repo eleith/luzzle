@@ -41,10 +41,9 @@ afterEach(async () => {
 
 const renderWrittenBundle = `
 const { render, templateLookup } = await import(process.argv[1]);
-const types = Object.keys(templateLookup.pieces);
-const pieces = types.map(type => render(templateLookup.pieces[type].page, { data: { piece: { title: type } } }).body);
+const feed = templateLookup.site.feed ? render(templateLookup.site.feed, { data: { pieces: [{ title: '<Written>&' }] } }) : null;
 const root = render(templateLookup.site.root, {});
-console.log(JSON.stringify({ templateLookup, types, pieces, root }));
+console.log(JSON.stringify({ templateLookup, feed, root }));
 `
 
 async function renderFile(filename: string) {
@@ -61,18 +60,12 @@ describe('writeTemplateBundle', () => {
 	test('writes the importable renderer and theme CSS from the same bundle', async () => {
 		await writeFile(path.join(directory, 'package.json'), JSON.stringify({ type: 'commonjs' }))
 		await writeFile(
-			path.join(directory, 'piece.svelte'),
-			'<script>let { data } = $props()</script><p>{data.piece.title}</p>'
+			path.join(directory, 'feed.svelte'),
+			'<script>let { data } = $props()</script><p>{data.pieces[0].title}</p>'
 		)
 		await writeFile(path.join(directory, 'site.svelte'), '<h1>Written site</h1>')
-		const types = ['custom-kind', '__proto__', 'quoted"\\\nkind']
 		const config = validateConfig({
-			pieces: types.map((type) => ({
-				type,
-				fields: { title: 'title', date_consumed: 'date' },
-				components: { page: './piece.svelte' },
-			})),
-			content: { component: { root: './site.svelte' } },
+			content: { component: { root: './site.svelte', feed: './feed.svelte' } },
 			theme: { light: { 'color-primary': '#197634' } },
 		})
 		config.paths.config = path.join(directory, 'config.yaml')
@@ -92,10 +85,8 @@ describe('writeTemplateBundle', () => {
 		expect(await readdir(path.dirname(outputDirectory))).toEqual(['new-bundle'])
 		const rendered = await renderFile(filename)
 		expect(rendered.templateLookup).toEqual(bundle.templateLookup)
-		expect(rendered.types).toEqual(types)
-		expect(rendered.pieces).toHaveLength(3)
-		expect(rendered.pieces[0]).toContain('custom-kind')
-		expect(rendered.pieces[1]).toContain('__proto__')
+		expect(Object.keys(rendered.templateLookup)).toEqual(['site'])
+		expect(rendered.feed.body).toContain('&lt;Written>&amp;')
 		expect(rendered.root.body).toContain('Written site')
 	})
 

@@ -1,10 +1,11 @@
 import { getFrontmatterValue, getFrontmatterValues, type PieceFrontmatter } from '@luzzle/core'
 import mime from 'mime-types'
-import type { Config } from '@luzzle/web.config'
+import type { TemplateConfig as Config } from '@luzzle/web.templates/config'
+import { mapPieceTemplates, type TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 
 export type AssembledPreview = {
-	piece: PublicWebPiece
+	piece: TemplatedPiece
 	tags: Array<{ slug: string; tag: string }>
 	outputs: PublicWebPieceAsset[]
 }
@@ -121,5 +122,5 @@ export function assemblePreview(
 
 	const tags = tagValues.map((t) => ({ slug: slugify(t), tag: t }))
 
-	return { piece, tags, outputs }
+	return { piece: mapPieceTemplates(piece, pieceConfig), tags, outputs }
 }

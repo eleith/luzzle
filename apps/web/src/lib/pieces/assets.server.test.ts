@@ -11,6 +11,23 @@ const { selectFrom, query } = vi.hoisted(() => {
 	}
 	return { selectFrom: vi.fn(() => query), query }
 })
+vi.mock('$lib/server/config', () => ({
+	config: {
+		pieces: [
+			{
+				type: 'books',
+				templates: {
+					icon: { name: 'default', mapping: { image: 'art.cover' } },
+					page: {
+						name: 'default',
+						mapping: { image: 'art.cover', people: { each: 'credits', fields: { name: 'name' } } }
+					},
+					opengraph: { name: 'default', mapping: { image: 'art.share' } }
+				}
+			}
+		]
+	}
+}))
 vi.mock('$lib/server/database', () => ({ db: { selectFrom } }))
 
 function makePiece(overrides: Partial<WebPieces> = {}) {
@@ -144,6 +161,11 @@ describe('hydrateWithAssets', () => {
 			summary: piece.summary,
 			keywords: piece.keywords,
 			metadata: JSON.parse(piece.json_metadata),
+			templates: {
+				icon: { name: 'default', fields: {} },
+				page: { name: 'default', fields: { people: [] } },
+				opengraph: { name: 'default', fields: {} }
+			},
 			assets: [
 				{
 					asset_key: asset.asset_key,
@@ -168,6 +190,30 @@ describe('hydrateWithAssets', () => {
 		expect(piece.content_hash).toBe('completed-source-hash')
 		expect(piece.last_published_at).toBe(1750000000000)
 		expect(asset.piece_asset_path).toBe('.assets/original-cover.jpg')
+	})
+
+	test('maps configured fields per role without exposing selectors or guessing metadata names', async () => {
+		const hydrated = await hydrateWithAssets(
+			makePiece({
+				json_metadata: JSON.stringify({
+					art: { cover: 'cover-key', share: 'share-key' },
+					credits: [{ name: 'Ada' }],
+					poster: 'unused'
+				})
+			})
+		)
+		expect(hydrated.templates).toStrictEqual({
+			icon: { name: 'default', fields: { image: 'cover-key' } },
+			page: { name: 'default', fields: { image: 'cover-key', people: [{ name: 'Ada' }] } },
+			opengraph: { name: 'default', fields: { image: 'share-key' } }
+		})
+		expect(JSON.stringify(hydrated.templates)).not.toMatch(/mapping|art\.cover|credits/)
+		const unconfigured = await hydrateWithAssets(
+			makePiece({ type: 'arbitrary-kind', json_metadata: '{"poster":"unused"}' })
+		)
+		for (const role of ['icon', 'page', 'opengraph'] as const) {
+			expect(unconfigured.templates[role]).toStrictEqual({ name: 'default', fields: {} })
+		}
 	})
 
 	test('strips null completion markers and retains allowed optional asset values', async () => {

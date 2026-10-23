@@ -489,24 +489,6 @@
                 }
               }
             }
-          },
-          "components": {
-            "additionalProperties": false,
-            "type": "object",
-            "properties": {
-              "icon": {
-                "description": "Svelte source path for the piece icon.",
-                "type": "string"
-              },
-              "opengraph": {
-                "description": "Svelte source path for the Open Graph image.",
-                "type": "string"
-              },
-              "page": {
-                "description": "Svelte source path for the piece page.",
-                "type": "string"
-              }
-            }
           }
         }
       }

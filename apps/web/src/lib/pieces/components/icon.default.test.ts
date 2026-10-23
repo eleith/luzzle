@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import { render } from 'svelte/server'
 import { createPieceHelpers, type PublicWebPiece } from '@luzzle/web.pieces'
-import IconDefault from './icon.default.svelte'
+import { getIcon } from '@luzzle/web.templates/icons'
+
+const IconDefault = getIcon('default')
 
 const piece: PublicWebPiece = {
 	id: 'default-icon',
@@ -27,12 +29,12 @@ const helpers = createPieceHelpers(
 	() => '/piece'
 )
 
-describe('legacy default icon adapter', () => {
-	test('renders the canonical UI with legacy piece helpers and the default aspect ratio', () => {
+describe('shipped static default icon', () => {
+	test('renders the poster UI with mapped fields and piece helpers and the default aspect ratio', () => {
 		const { body } = render(IconDefault, {
-			props: { piece, tags: [], size: { width: 80 }, active: false, helpers }
+			props: { piece, fields: { image: 'cover' }, size: { width: 80 }, active: false, helpers }
 		})
-		expect(body).toContain('class="default-icon')
+		expect(body).toContain('class="poster')
 		expect(body).toContain('&lt;Default>&amp;')
 		expect(body).toContain('--piece-icon-height: 120px;')
 		expect(body).toContain('src="/assets/cover.jpg" loading="eager"')
@@ -40,10 +42,17 @@ describe('legacy default icon adapter', () => {
 
 	test('honors explicit height, lazy loading and active styling', () => {
 		const { body } = render(IconDefault, {
-			props: { piece, tags: [], size: { width: 80, height: 55 }, lazy: true, active: true, helpers }
+			props: {
+				piece,
+				fields: { image: 'cover' },
+				size: { width: 80, height: 55 },
+				lazy: true,
+				active: true,
+				helpers
+			}
 		})
 		expect(body).toContain('--piece-icon-height: 55px;')
-		expect(body).toMatch(/class="default-icon [^"]*\bactive\b/)
+		expect(body).toMatch(/class="poster [^"]*\bactive\b/)
 		expect(body).toContain('loading="lazy" fetchpriority="auto"')
 	})
 })

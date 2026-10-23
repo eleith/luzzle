@@ -51,12 +51,7 @@ function isNameMap(value: unknown): boolean {
 }
 
 function isTemplateLookup(value: unknown): value is TemplateLookup {
-	return (
-		isRecord(value) &&
-		isRecord(value.pieces) &&
-		Object.values(value.pieces).every(isNameMap) &&
-		isNameMap(value.site)
-	)
+	return isRecord(value) && isNameMap(value.site)
 }
 
 function isTemplateBundleModule(value: unknown): value is TemplateBundleModule {

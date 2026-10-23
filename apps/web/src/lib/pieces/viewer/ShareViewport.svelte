@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
-	import type { PublicWebPiece } from '@luzzle/web.pieces'
+	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import Opengraph from '$lib/pieces/components/opengraph.svelte'
 	import { OpengraphImageWidth, OpengraphImageHeight } from '@luzzle/web.pieces'
 
-	let { piece }: { piece: PublicWebPiece } = $props()
+	let { piece }: { piece: TemplatedPiece } = $props()
 	let container: HTMLDivElement | undefined = $state()
 	let scale = $state(1)
 

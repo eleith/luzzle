@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../../../packages/web/config/src/lib/config/web.config.schema.json
+# yaml-language-server: $schema=../../../../packages/web/templates/config.schema.json
 
 url:
   app: http://localhost:8080
@@ -46,10 +46,18 @@ content:
 
 pieces:
   - type: books
-    components:
-      icon: ./content/components/icons/book.svelte
-      opengraph: ./content/components/opengraphs/book.svelte
-      page: ./content/components/pages/book.svelte
+    templates:
+      icon:
+        mapping:
+          image: cover
+      page:
+        mapping:
+          image: cover
+          url: url
+          isbn: isbn
+      opengraph:
+        mapping:
+          image: cover
     fields:
       title: title
       summary: description
@@ -58,10 +66,26 @@ pieces:
       media:
         - cover
   - type: films
-    components:
-      icon: ./content/components/icons/poster.svelte
-      opengraph: ./content/components/opengraphs/poster.svelte
-      page: ./content/components/pages/poster.svelte
+    templates:
+      icon:
+        mapping:
+          image: poster
+      page:
+        mapping:
+          image: poster
+          backdrop: backdrop
+          dateReleased: date_released
+          runtime: runtime
+          url: url
+          category: type
+          people: people
+      opengraph:
+        mapping:
+          image: poster
+          backdrop: backdrop
+          director: director
+          dateReleased: date_released
+          runtime: runtime
     fields:
       title: title
       summary: summary
@@ -69,11 +93,8 @@ pieces:
       tags: keywords
       media:
         - poster
+        - backdrop
   - type: snippets
-    components:
-      icon: ./content/components/icons/snippet.svelte
-      opengraph: ./content/components/opengraphs/snippet.svelte
-      page: ./content/components/pages/snippet.svelte
     fields:
       title: title
       summary: summary
@@ -82,10 +103,17 @@ pieces:
       attachments:
         - files[*].file
   - type: words
-    components:
-      icon: ./content/components/icons/paper.svelte
-      opengraph: ./content/components/opengraphs/paper.svelte
-      page: ./content/components/pages/paper.svelte
+    templates:
+      icon:
+        mapping:
+          image: representative_image
+      page:
+        mapping:
+          image: representative_image
+          url: url
+      opengraph:
+        mapping:
+          image: representative_image
     fields:
       title: title
       summary: summary

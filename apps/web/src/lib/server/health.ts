@@ -8,7 +8,7 @@ export interface ConfigEntry {
 export interface PieceTypeSummary {
 	type: string
 	fields: ConfigEntry[]
-	components: ConfigEntry[]
+	templates: ConfigEntry[]
 }
 
 export interface AuthSummary {
@@ -57,7 +57,10 @@ export function buildHealthConfigSummary(config: AppConfig): HealthConfigSummary
 		pieceTypes: config.pieces.map((piece) => ({
 			type: piece.type,
 			fields: configuredEntries(piece.fields),
-			components: configuredEntries(piece.components)
+			templates: (['icon', 'page', 'opengraph'] as const).map((role) => ({
+				name: role,
+				value: piece.templates?.[role].name ?? 'default'
+			}))
 		})),
 		auth: {
 			enabled: Boolean(auth),

@@ -1,7 +1,8 @@
-import { loadConfig, resolvePreparedDirectory } from '@luzzle/web.config'
+import { loadConfig } from '@luzzle/web.templates/config'
+import { resolvePreparedDirectory } from '@luzzle/web.config'
+import { mapPieceTemplates } from '@luzzle/web.templates/pieces/fields'
 import { loadTemplateBundle } from '$lib/server/templates.js'
 import { renderTemplatePage } from '$lib/server/template-page.js'
-import { createTemplateHelpers } from '$lib/pieces/template-helpers.js'
 import { assetPathToUrl } from '$lib/pieces/assets.js'
 import { previewOutputUrl } from '$lib/pieces/preview/output-url.js'
 
@@ -13,25 +14,32 @@ const fallback = {
 }
 
 export async function load({ url }) {
-	try {
-		const config = loadConfig('./config.yaml')
-		const bundle = await loadTemplateBundle(resolvePreparedDirectory(config))
-		if (!bundle) return fallback
-		const type = url.searchParams.get('type') ?? 'custom-kind'
-		const role = url.searchParams.get('role') === 'opengraph' ? 'opengraph' : 'page'
-		const name = bundle.templateLookup.pieces[type]?.[role]
-		if (!name) return fallback
-		const origin = url.origin
-		const job = url.searchParams.get('job')
-		const noteContent = job === null ? '<p>Published note</p>' : '<p>Draft note</p>'
-		const piece = {
+	const config = loadConfig('./config.yaml')
+	const type = url.searchParams.get('type') ?? 'custom-kind'
+	const job = url.searchParams.get('job')
+	const origin = url.origin
+	const piece = mapPieceTemplates(
+		{
 			id: 'fixture-piece',
 			key: 'fixture-key',
 			type,
 			slug: 'prepared piece',
 			title: url.searchParams.get('title') ?? 'Prepared title',
 			date_added: 1,
-			metadata: { cover: 'cover' },
+			note: 'Raw note',
+			summary: 'Fixture description',
+			metadata: {
+				cover: 'cover',
+				artwork: 'cover',
+				scenery: 'backdrop',
+				released: '2001-09-09',
+				minutes: 123,
+				filmmaker: 'Ada Example',
+				category: 'Fixture category',
+				website: url.searchParams.get('external') ?? 'https://example.com/fixture',
+				isbn: '9780000000001',
+				creators: [{ name: 'Ada Example' }]
+			},
 			keywords: '[]',
 			assets: [
 				{
@@ -42,18 +50,56 @@ export async function load({ url }) {
 				},
 				{
 					asset_key: 'cover',
+					transformation: 'image.l.jpg',
+					asset_path: 'fixture/cover medium.jpg',
+					mime_type: 'image/jpeg'
+				},
+				{
+					asset_key: 'backdrop',
+					transformation: 'image.l.jpg',
+					asset_path: 'fixture/backdrop large.jpg',
+					mime_type: 'image/jpeg'
+				},
+				{
+					asset_key: 'backdrop',
+					transformation: 'image.xl.jpg',
+					asset_path: 'fixture/backdrop large.jpg',
+					mime_type: 'image/jpeg'
+				},
+				{
+					asset_key: 'cover',
 					transformation: 'palette',
-					content: '{"accent":"#123456"}',
+					content: '{"accent":"#123456","background":"#234567","bodyText":"#eeeeee"}',
 					mime_type: 'application/json'
 				},
 				{
 					asset_key: 'fixture-key',
 					transformation: 'markdown',
-					content: noteContent,
+					content: job === null ? '<p>Published note</p>' : '<p>Draft note</p>',
 					mime_type: 'text/html'
 				}
 			]
+		},
+		config.pieces.find((entry) => entry.type === type)
+	)
+	const role = url.searchParams.get('role') ?? 'feed'
+	const common = {
+		role,
+		piece,
+		tags: [{ slug: 'fixture-tag', tag: 'Fixture Tag' }],
+		preview: job !== null,
+		job,
+		pieceTypes: config.pieces.map((entry) => entry.type),
+		config: {
+			content: { text: { title: 'Fixture garden', description: '' } },
+			url: { app: origin, luzzle_assets: '' }
 		}
+	}
+	if (role !== 'feed') return { ...common, ...fallback }
+	try {
+		const bundle = await loadTemplateBundle(resolvePreparedDirectory(config))
+		const name = bundle?.templateLookup.site.feed
+		if (!bundle || !name) return { ...common, ...fallback }
 		const urls = {
 			buildPieceUrl: (piece) =>
 				`${origin}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`,
@@ -62,30 +108,18 @@ export async function load({ url }) {
 			buildStaticAssetUrl: (path) =>
 				path === 'images/mark.svg' ? `${origin}/site-assets/images/mark.svg` : undefined
 		}
-		let output
-		if (role === 'page') {
-			output = renderTemplatePage(bundle, name, { piece, tags: [] }, urls)
-		} else {
-			const rendered = bundle.render(name, {
-				data: { piece },
-				options: { size: { width: 1200, height: 630 } },
-				helpers: createTemplateHelpers(urls)
-			})
-			output = {
-				...rendered,
-				head: `${rendered.head}<style data-prepared-theme>${bundle.themeCss}</style>`,
-				navBanner: null
-			}
-		}
-		return {
-			pieceTypes: config.pieces.map((piece) => piece.type),
-			state: bundle.revision,
-			body: output.body,
-			navBanner: output.navBanner,
-			head: output.head
-		}
+		const output = renderTemplatePage(
+			bundle,
+			name,
+			{
+				pieces: [piece],
+				feed: { url: '/rss/pieces/feed.xml', type: 'piece', label: 'all' }
+			},
+			urls
+		)
+		return { ...common, ...output, state: bundle.revision }
 	} catch (error) {
 		console.error(error)
-		return fallback
+		return { ...common, ...fallback }
 	}
 }

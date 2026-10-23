@@ -32,4 +32,4 @@ export function createFieldMappingSchema(id: string, description?: string) {
 }
 
 export type FieldMapping = Static<ReturnType<typeof createFieldMappingSchema>>;
-export type FieldMappings = Record<string, FieldMapping>;
+export type FieldMappings = Partial<Record<string, FieldMapping>>;

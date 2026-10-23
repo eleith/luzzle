@@ -4,4 +4,4 @@
 	let { data } = $props()
 </script>
 
-<PiecePage piece={data.piece} tags={data.tags} presentation={data.presentation} />
+<PiecePage piece={data.piece} tags={data.tags} />

@@ -10,6 +10,12 @@
 	"files": [
 		"dist",
 		"src/components/*.svelte",
+		"src/icons/*/template.svelte",
+		"src/icons/catalog.js",
+		"src/pages/*/template.svelte",
+		"src/pages/catalog.js",
+		"src/opengraphs/*/template.svelte",
+		"src/opengraphs/catalog.js",
 		"config.schema.json"
 	],
 	"scripts": {
@@ -20,6 +26,17 @@
 		"lint": "eslint . && prettier --check ."
 	},
 	"exports": {
+		"./icons": "./src/icons/catalog.js",
+		"./icons/*": "./src/icons/*/template.svelte",
+		"./pages": "./src/pages/catalog.js",
+		"./pages/*": "./src/pages/*/template.svelte",
+		"./opengraphs": "./src/opengraphs/catalog.js",
+		"./opengraphs/*": "./src/opengraphs/*/template.svelte",
+		"./pieces/fields": {
+			"development": "./src/pieces/fields.ts",
+			"types": "./dist/pieces/fields.d.ts",
+			"import": "./dist/pieces/fields.js"
+		},
 		"./config": {
 			"development": "./src/config/index.ts",
 			"types": "./dist/config/index.d.ts",
@@ -71,11 +88,14 @@
 	"dependencies": {
 		"@luzzle/core": "workspace:*",
 		"@luzzle/web.config": "workspace:*",
+		"@luzzle/web.pieces": "workspace:*",
 		"@sinclair/typebox": "0.34.49"
+	},
+	"peerDependencies": {
+		"svelte": "5.55.9"
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",
-		"@luzzle/web.pieces": "workspace:*",
 		"eslint": "catalog:",
 		"eslint-config-prettier": "catalog:",
 		"globals": "catalog:",

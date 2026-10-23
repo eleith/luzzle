@@ -6,5 +6,5 @@
 </script>
 
 {#if data.status === 'completed' && data.piece}
-	<PiecePage piece={data.piece} tags={data.tags ?? []} presentation={data.presentation} />
+	<PiecePage piece={data.piece} tags={data.tags ?? []} />
 {/if}

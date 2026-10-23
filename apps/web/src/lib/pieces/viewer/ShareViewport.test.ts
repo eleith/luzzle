@@ -2,7 +2,16 @@ import { expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
 import { OpengraphImageWidth, OpengraphImageHeight } from '@luzzle/web.pieces'
 import ShareViewport from './ShareViewport.svelte'
-import { publishedPiece, asset } from './fixtures/published'
+import { publishedPiece as rawPublishedPiece, asset } from './fixtures/published'
+
+const publishedPiece = {
+	...rawPublishedPiece,
+	templates: {
+		icon: { name: 'default', fields: { image: 'cover' } },
+		page: { name: 'default', fields: { image: 'cover' } },
+		opengraph: { name: 'default', fields: { image: 'cover' } }
+	}
+}
 
 vi.mock('$app/state', () => ({
 	page: { data: { config: { url: { app: '/garden', luzzle_assets: '/cdn' } } } }
@@ -11,8 +20,8 @@ vi.mock('$app/paths', () => ({
 	resolve: (route: string, params: Record<string, string>) =>
 		route.replace(/\[(?:\.\.\.)?(\w+)\]/g, (_, name: string) => params[name])
 }))
-// The production wrapper imports renderers asynchronously. This synchronous stub
-// establishes viewport markup and helper URLs, not actual renderer/client behavior.
+// This synchronous stub establishes viewport markup and helper URLs,
+// not the actual static renderer or client prop updates.
 vi.mock('$lib/pieces/components/opengraph.svelte', async () => ({
 	default: (await import('./fixtures/Composition.svelte')).default
 }))

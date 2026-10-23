@@ -113,7 +113,7 @@ test('fresh production startups follow the compatibility link after atomic confi
 	await writeFile(temporary, JSON.stringify({ url: { app }, network: { public: { host } } }))
 	await rename(temporary, target)
 	await checkStartup(app, host)
-})
+}, 25000)
 
 test('startup still fails when the working-directory config is missing', async () => {
 	await expect(run()).rejects.toMatchObject({

@@ -1,6 +1,8 @@
 import { db } from '$lib/server/database'
 import type { WebPieces, WebPiecesAsset } from '@luzzle/web.db'
-import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
+import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
+import { mapPieceTemplates, type TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
+import { config } from '$lib/server/config'
 
 type WebPiece = WebPieces & { assets: WebPiecesAsset[] }
 
@@ -25,7 +27,7 @@ function toPublicAsset(asset: WebPiecesAsset): PublicWebPieceAsset {
 	}
 }
 
-function toPublicPiece(piece: WebPieces, assets: WebPiecesAsset[]): PublicWebPiece {
+function toPublicPiece(piece: WebPieces, assets: WebPiecesAsset[]): TemplatedPiece {
 	const {
 		file_path: _file_path,
 		json_metadata,
@@ -33,18 +35,21 @@ function toPublicPiece(piece: WebPieces, assets: WebPiecesAsset[]): PublicWebPie
 		last_published_at: _last_published_at,
 		...rest
 	} = piece
-	return {
-		...rest,
-		metadata: JSON.parse(json_metadata || '{}'),
-		assets: assets.map(toPublicAsset)
-	}
+	return mapPieceTemplates(
+		{
+			...rest,
+			metadata: JSON.parse(json_metadata || '{}'),
+			assets: assets.map(toPublicAsset)
+		},
+		config.pieces.find((entry) => entry.type === piece.type)
+	)
 }
 
-export async function hydrateWithAssets(piece: WebPieces): Promise<PublicWebPiece>
-export async function hydrateWithAssets(pieces: WebPieces[]): Promise<PublicWebPiece[]>
+export async function hydrateWithAssets(piece: WebPieces): Promise<TemplatedPiece>
+export async function hydrateWithAssets(pieces: WebPieces[]): Promise<TemplatedPiece[]>
 export async function hydrateWithAssets(
 	pieceOrPieces: WebPieces | WebPieces[]
-): Promise<PublicWebPiece | PublicWebPiece[]> {
+): Promise<TemplatedPiece | TemplatedPiece[]> {
 	const isArray = Array.isArray(pieceOrPieces)
 	const pieces = isArray ? pieceOrPieces : [pieceOrPieces]
 

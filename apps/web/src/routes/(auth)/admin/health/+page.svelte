@@ -322,10 +322,10 @@
 									<dd>{field.value}</dd>
 								</div>
 							{/each}
-							{#each pieceType.components as component (component.name)}
+							{#each pieceType.templates as template (template.name)}
 								<div class="info-row">
-									<dt>{component.name}</dt>
-									<dd>{component.value}</dd>
+									<dt>{template.name} template</dt>
+									<dd>{template.value}</dd>
 								</div>
 							{/each}
 						</dl>

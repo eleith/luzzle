@@ -18,36 +18,19 @@ afterEach(async () => {
 })
 
 describe('readConfiguredTemplates', () => {
-	test('loads every configured piece role and site slot relative to the config file', async () => {
+	test('loads configured site slots relative to the config file and deduplicates resolved paths', async () => {
 		await mkdir(path.join(directory, 'components'))
 		const sharedFile = path.join(directory, 'components/shared.svelte')
-		const iconFile = path.join(directory, 'components/icon.svelte')
-		const opengraphFile = path.join(directory, 'opengraph.svelte')
+		const feedFile = path.join(directory, 'feed.svelte')
 		await writeFile(sharedFile, '<p>Shared</p>')
-		await writeFile(iconFile, '<span>Icon</span>')
-		await writeFile(opengraphFile, '<div>Open Graph</div>')
+		await writeFile(feedFile, '<div>Feed</div>')
 		const config = validateConfig({
-			pieces: [
-				{
-					type: 'custom-kind',
-					fields: { title: 'title', date_consumed: 'date' },
-					components: {
-						page: './components/shared.svelte',
-						icon: './components/icon.svelte',
-						opengraph: opengraphFile,
-					},
-				},
-				{
-					type: 'another/type',
-					fields: { title: 'name', date_consumed: 'date' },
-					components: { page: './components/../components/shared.svelte' },
-				},
-			],
+			pieces: [{ type: 'custom-kind', fields: { title: 'title', date_consumed: 'date' } }],
 			content: {
 				component: {
 					root: './components/shared.svelte',
-					feed: './components/shared.svelte',
-					'404': './components/shared.svelte',
+					feed: feedFile,
+					'404': './components/../components/shared.svelte',
 					error: './components/shared.svelte',
 				},
 			},
@@ -56,27 +39,17 @@ describe('readConfiguredTemplates', () => {
 		const originalConfig = structuredClone(config)
 		const templates = await readConfiguredTemplates(config)
 
-		expect(templates).toHaveLength(8)
-		const pieceTemplates = templates.filter((template) => template.family === 'piece')
-		expect(pieceTemplates.map((template) => [template.pieceType, template.role])).toEqual([
-			['custom-kind', 'page'],
-			['custom-kind', 'icon'],
-			['custom-kind', 'opengraph'],
-			['another/type', 'page'],
-		])
-		const siteTemplates = templates.filter((template) => template.family === 'site')
-		expect(new Set(siteTemplates.map((template) => template.slot))).toEqual(
+		expect(templates).toHaveLength(4)
+		expect(new Set(templates.map((template) => template.slot))).toEqual(
 			new Set(['root', 'feed', '404', 'error'])
 		)
-		const byFile = new Map(templates.map((template) => [template.filename, template.source]))
-		expect(byFile).toEqual(
+		expect(new Map(templates.map((template) => [template.filename, template.source]))).toEqual(
 			new Map([
 				[sharedFile, '<p>Shared</p>'],
-				[iconFile, '<span>Icon</span>'],
-				[opengraphFile, '<div>Open Graph</div>'],
+				[feedFile, '<div>Feed</div>'],
 			])
 		)
-		expect(new Set(templates.map((template) => template.name)).size).toBe(3)
+		expect(new Set(templates.map((template) => template.name)).size).toBe(2)
 		const shared = templates.filter((template) => template.filename === sharedFile)
 		expect(new Set(shared.map((template) => template.name)).size).toBe(1)
 		expect(templates.every((template) => /^template-\d+$/.test(template.name))).toBe(true)
@@ -89,7 +62,6 @@ describe('readConfiguredTemplates', () => {
 		})
 		expect(config.paths.config).toBeUndefined()
 		expect(await readConfiguredTemplates(config)).toEqual([])
-		config.pieces[0].components = { page: undefined, icon: '' }
 		config.content.component = { root: undefined, feed: '' }
 		expect(await readConfiguredTemplates(config)).toEqual([])
 	})

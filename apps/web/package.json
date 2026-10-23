@@ -14,10 +14,10 @@
     "preview": "vite preview",
     "check": "pnpm run sync:svelte && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "pnpm run sync:svelte && svelte-check --tsconfig ./tsconfig.json --watch",
-    "sync:content": "node ./scripts/sync-content.js && node ./scripts/sync-piece-content.js",
+    "sync:content": "node ./scripts/sync-content.js",
     "build:content": "pnpm run sync:content",
     "sync:svelte": "svelte-kit sync",
-    "lint": "prettier --check . && prettier --config .prettierrc --check ../../packages/web/templates/src/components/*.svelte && eslint .",
+    "lint": "prettier --check . && prettier --config .prettierrc --check '../../packages/web/templates/src/**/*.svelte' && eslint .",
     "format": "prettier --write .",
     "test": "vitest run --silent",
     "test:templates": "pnpm --filter @luzzle/web.worker build && vitest run --config vitest.templates.config.ts --silent"

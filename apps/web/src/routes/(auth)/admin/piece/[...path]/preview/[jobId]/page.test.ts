@@ -2,9 +2,18 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
 import { makeConfig } from '$lib/server/config.fixture'
-import { publishedPiece, asset } from '$lib/pieces/viewer/fixtures/published'
+import { publishedPiece as rawPublishedPiece, asset } from '$lib/pieces/viewer/fixtures/published'
 import Overview from './+page.svelte'
 import PreviewLayout from './+layout.svelte'
+
+const publishedPiece = {
+	...rawPublishedPiece,
+	templates: {
+		icon: { name: 'default', fields: { image: 'cover' } },
+		page: { name: 'default', fields: { image: 'cover' } },
+		opengraph: { name: 'default', fields: { image: 'cover' } }
+	}
+}
 
 const { page, resolve } = vi.hoisted(() => ({
 	page: { url: new URL('https://app.test/admin/piece/books/book.md/preview/job') },

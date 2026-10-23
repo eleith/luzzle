@@ -4,3 +4,6 @@ node_modules/
 config.schema.json
 # Raw Svelte assets use the web consumer's existing Svelte formatter.
 src/components/*.svelte
+src/icons/**/*.svelte
+src/pages/**/*.svelte
+src/opengraphs/**/*.svelte

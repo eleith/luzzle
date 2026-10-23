@@ -4,7 +4,6 @@ export interface RenderedTemplate {
 }
 
 export interface TemplateLookup {
-	pieces: Record<string, { page?: string; icon?: string; opengraph?: string }>;
 	site: { root?: string; feed?: string; '404'?: string; error?: string };
 }
 

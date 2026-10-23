@@ -2,11 +2,9 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { Config } from '@luzzle/web.config'
 import type { TemplateSource } from './compile.js'
-import type { PieceRole, SiteSlot } from './types.js'
+import type { SiteSlot } from './types.js'
 
-type TemplateLocation =
-	| { family: 'piece'; pieceType: string; role: PieceRole }
-	| { family: 'site'; slot: SiteSlot }
+type TemplateLocation = { family: 'site'; slot: SiteSlot }
 
 interface TemplateReference {
 	location: TemplateLocation
@@ -43,19 +41,6 @@ export async function readConfiguredTemplates(config: Config): Promise<Configure
 
 function collectTemplateReferences(config: Config): TemplateReference[] {
 	const references: TemplateReference[] = []
-	for (const piece of config.pieces) {
-		const components = piece.components
-		if (!components) continue
-		for (const role of Object.keys(components) as PieceRole[]) {
-			const sourcePath = components[role]
-			if (!sourcePath) continue
-			references.push({
-				location: { family: 'piece', pieceType: piece.type, role },
-				sourcePath,
-			})
-		}
-	}
-
 	const components = config.content.component
 	if (components) {
 		for (const slot of Object.keys(components) as SiteSlot[]) {

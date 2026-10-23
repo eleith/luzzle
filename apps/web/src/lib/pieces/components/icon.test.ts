@@ -5,11 +5,12 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 import type { render as Render } from 'svelte/server'
 import type { Component } from 'svelte'
 import type { PublicWebPiece } from '@luzzle/web.pieces'
+import { mapPieceTemplates, type TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 
 const lib = fileURLToPath(new URL('../../', import.meta.url))
 const wrapper = fileURLToPath(new URL('./icon.svelte', import.meta.url))
 type Props = {
-	piece: PublicWebPiece
+	piece: TemplatedPiece
 	size: { width: number; height?: number }
 	lazy?: boolean
 	active?: boolean
@@ -32,29 +33,16 @@ beforeAll(async () => {
 		optimizeDeps: { noDiscovery: true },
 		plugins: [
 			{
-				name: 'configured-icon-fixtures',
+				name: 'icon-test-page',
 				enforce: 'pre',
 				resolveId(id) {
 					if (id === '$app/state') return '\0icon-test-page'
 				},
 				load(id) {
 					if (id === '\0icon-test-page') return 'export const page = { data: {} }'
-				},
-				transform(source, id) {
-					// Redirect only glob discovery to actual fixture sources. The real wrapper and
-					// its configured/default children compile together in the normal Svelte runtime.
-					if (id === wrapper)
-						return source.replace(
-							'$lib/pieces/components/custom/*/icon.svelte',
-							'$lib/pieces/components/fixtures/configured-icons/*/icon.svelte'
-						)
 				}
 			},
-			svelte({
-				configFile: false,
-				hot: false,
-				compilerOptions: { experimental: { async: true } }
-			})
+			svelte({ configFile: false, hot: false })
 		],
 		resolve: { alias: { $lib: lib } }
 	})
@@ -79,15 +67,15 @@ beforeEach(() => {
 	}
 })
 
-function piece(type = 'configured'): PublicWebPiece {
-	return {
+function piece(type = 'arbitrary-kind'): TemplatedPiece {
+	const source: PublicWebPiece = {
 		id: 'configured-piece',
 		key: 'piece-key',
 		type,
 		slug: 'a piece',
 		title: '<Piece>&',
 		date_added: 1,
-		metadata: { cover: 'cover' },
+		metadata: { art: { thumbnail: 'cover' }, poster: 'not-mapped' },
 		keywords: '["tag"]',
 		assets: [
 			{
@@ -104,34 +92,47 @@ function piece(type = 'configured'): PublicWebPiece {
 			}
 		]
 	}
+	return mapPieceTemplates(source, {
+		type,
+		fields: { title: 'title', date_consumed: 'date' },
+		templates: {
+			icon: { name: 'default', mapping: { image: 'art.thumbnail' } },
+			page: { name: 'default', mapping: {} },
+			opengraph: { name: 'default', mapping: {} }
+		}
+	})
 }
 
 async function html(props: Partial<Props> = {}) {
 	return (await render(Icon, { props: { piece: piece(), size: { width: 125 }, ...props } })).body
 }
 
-describe('legacy configured icon consumer SSR', () => {
-	test('passes only the v1 data/options/base helpers to a real configured component', async () => {
+describe('static default icon consumer SSR', () => {
+	test('renders mapped fields for arbitrary piece types with normal default props', async () => {
 		const body = await html()
-		expect(body).toContain('class="configured-icon"')
-		expect(body).toContain('data-props="data,helpers,options"')
-		expect(body).toContain('data-helpers="forPiece,getStaticAssetUrl"')
-		expect(body).toContain('data-size="125x187.5" data-lazy="false" data-active="false"')
-		expect(body).toContain('href="https://app.example/garden/pieces/configured/a%20piece"')
+		expect(body).toContain('class="poster ')
+		expect(body).toContain('--piece-icon-width: 125px;')
+		expect(body).toContain('--piece-icon-height: 187.5px;')
+		expect(body).toContain('loading="eager" fetchpriority="high"')
 		expect(body).toContain(
 			'src="https://assets.example/archive/pieces/assets/books/cover%20key/original.jpg"'
 		)
-		expect(body).toContain('data-accent="#123456"')
-		expect(body).toContain('data-static="https://static.example/site/images/favicon.png"')
-		expect(body).not.toContain('data-invalid-static=')
 		expect(body).toContain('&lt;Piece>&amp;')
+		expect(body).not.toContain('configured-icon')
 	})
 
-	test('resolves explicit options and current preview job without published asset fallback', async () => {
+	test('honors explicit size, active styling and lazy loading', async () => {
+		const body = await html({ size: { width: 80, height: 93 }, lazy: true, active: true })
+		expect(body).toContain('--piece-icon-width: 80px;')
+		expect(body).toContain('--piece-icon-height: 93px;')
+		expect(body).toMatch(/class="poster [^"]*\bactive\b/)
+		expect(body).toContain('loading="lazy" fetchpriority="auto"')
+	})
+
+	test('uses current preview job without published asset fallback', async () => {
 		page.data.preview = true
 		page.data.job = 'first job'
-		const first = await html({ size: { width: 80, height: 93 }, lazy: true, active: true })
-		expect(first).toContain('data-size="80x93" data-lazy="true" data-active="true"')
+		const first = await html()
 		expect(first).toContain('src="/admin/preview/first%20job/asset/books/cover%20key/original.jpg"')
 		expect(first).not.toContain('https://assets.example')
 		page.data = { ...page.data, job: 'second job' }
@@ -146,31 +147,27 @@ describe('legacy configured icon consumer SSR', () => {
 		expect(invalid).not.toContain('https://assets.example')
 	})
 
-	test.each(['', '/site/'])('constructs native static asset URLs with base %j', async (base) => {
-		page.data.config.url = { app: '/garden/', app_assets: base, luzzle_assets: '' }
-		const body = await html()
-		expect(body).toContain('href="/garden/pieces/configured/a%20piece"')
-		expect(body).toContain('src="/garden/pieces/assets/books/cover%20key/original.jpg"')
-		expect(body).toContain(`data-static="${base.replace(/\/+$/, '')}/images/favicon.png"`)
+	test('uses app base for published assets when no CDN is configured', async () => {
+		page.data.config.url = { app: '/garden/', app_assets: '/static/', luzzle_assets: '' }
+		expect(await html()).toContain('src="/garden/pieces/assets/books/cover%20key/original.jpg"')
 	})
 
-	test.each(['unknown', 'import-failed'])(
-		'uses the actual legacy default adapter when %s has no usable configured import',
-		async (type) => {
-			const body = await html({
-				piece: piece(type),
-				size: { width: 80, height: 93 },
-				lazy: true,
-				active: true
-			})
-			expect(body).toMatch(/class="default-icon [^"]*\bactive\b/)
-			expect(body).toContain('--piece-icon-height: 93px;')
-			expect(body).toContain('loading="lazy"')
-			expect(body).toContain(
-				'src="https://assets.example/archive/pieces/assets/books/cover%20key/original.jpg"'
-			)
-			expect(body).toContain('&lt;Piece>&amp;')
-			expect(body).not.toContain('configured-icon')
-		}
-	)
+	test('does not infer images from metadata when mapped template fields are empty', async () => {
+		const current = piece()
+		current.templates.icon.fields = {}
+		const body = await html({ piece: current })
+		expect(body).toContain('&lt;Piece>&amp;')
+		expect(body).not.toContain('<img')
+	})
+
+	test('uses each new piece and mapped field value rather than a fallback snapshot', async () => {
+		const current = piece('new-kind')
+		current.title = 'Next <Piece>'
+		current.templates.icon.fields.image = 'missing'
+		const body = await html({ piece: current, size: { width: 200 }, active: true })
+		expect(body).toContain('Next &lt;Piece>')
+		expect(body).toContain('--piece-icon-width: 200px;')
+		expect(body).toMatch(/class="poster [^"]*\bactive\b/)
+		expect(body).not.toContain('<img')
+	})
 })

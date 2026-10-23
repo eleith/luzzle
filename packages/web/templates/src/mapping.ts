@@ -1,7 +1,25 @@
 import { getFrontmatterValue, type PieceFrontmatter } from '@luzzle/core';
 import type { FieldMapping, FieldMappings } from '@luzzle/web.config/mapping';
+import type { Static, TObject } from '@sinclair/typebox';
+import { Value } from '@sinclair/typebox/value';
 
-/** Resolve a presentation model without changing the piece metadata or configuration. */
+export class TemplateFieldsError extends Error {}
+
+/** Validate mapped values against the selected template's own field contract. */
+export function mapTemplateFields<Schema extends TObject>(
+	schema: Schema,
+	metadata: PieceFrontmatter,
+	mapping: FieldMappings = {}
+): Static<Schema> {
+	const fields = Value.Default(schema, resolveTemplateFields(metadata, mapping));
+	if (!Value.Check(schema, fields)) {
+		const paths = [...Value.Errors(schema, fields)].map((issue) => issue.path).join(', ');
+		throw new TemplateFieldsError(`Invalid mapped fields: ${paths}`);
+	}
+	return fields;
+}
+
+/** Map field bindings without changing the piece metadata or configuration. */
 export function resolveTemplateFields(
 	metadata: PieceFrontmatter,
 	mapping: FieldMappings = {}
@@ -11,12 +29,12 @@ export function resolveTemplateFields(
 
 function resolveFields(data: unknown, fields: FieldMappings, parent = ''): Record<string, unknown> {
 	return Object.fromEntries(
-		Object.entries(fields)
-			.map(([name, mapping]) => {
-				const path = parent ? `${parent}.${name}` : name;
-				return [name, resolveField(data, mapping, path)] as const;
-			})
-			.filter(([, value]) => value !== undefined)
+		Object.entries(fields).flatMap(([name, mapping]) => {
+			if (mapping === undefined) return [];
+			const path = parent ? `${parent}.${name}` : name;
+			const value = resolveField(data, mapping, path);
+			return value === undefined ? [] : [[name, value]];
+		})
 	);
 }
 
@@ -31,7 +49,9 @@ function resolveField(data: unknown, mapping: FieldMapping, path: string): unkno
 		const items = select(data, mapping.each, path);
 		if (items === undefined) return [];
 		if (!Array.isArray(items)) {
-			throw new Error(`Template field "${path}" expects an array at "${mapping.each}"`);
+			throw new TemplateFieldsError(
+				`Template field "${path}" expects an array at "${mapping.each}"`
+			);
 		}
 		return items.map((item, index) => resolveFields(item, mapping.fields, `${path}[${index}]`));
 	}

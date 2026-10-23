@@ -2,16 +2,21 @@ import { expect, test, vi } from 'vitest'
 import { load } from './+layout.server'
 
 vi.mock('$lib/server/config', async () => {
-	const { makeConfig, oidcAuth } = await import('$lib/server/config.fixture')
+	const { makeConfig: baseConfig, oidcAuth } = await import('$lib/server/config.fixture')
 	return {
-		config: makeConfig({
+		config: {
+			...baseConfig(),
 			auth: oidcAuth,
 			ai: { provider: 'google', api_key: 'private-ai-key' },
 			pieces: [
 				{
 					type: 'runtime-kind',
 					fields: { title: 'title', date_consumed: 'date' },
-					components: { page: '/private/piece/page.svelte' }
+					templates: {
+						icon: { name: 'default', mapping: {} },
+						page: { name: 'default', mapping: { image: { field: 'private.cover' } } },
+						opengraph: { name: 'default', mapping: {} }
+					}
 				}
 			],
 			content: {
@@ -19,7 +24,7 @@ vi.mock('$lib/server/config', async () => {
 				component: { root: '/private/components/root.svelte' }
 			},
 			url: { app: 'https://example.test', app_assets: '/app', luzzle_assets: '/assets' }
-		})
+		}
 	}
 })
 

@@ -23,10 +23,9 @@ async function syncContent() {
 	await mkdir(outDir, { recursive: true })
 
 	const retiredFeedCopy = path.join(outDir, 'feed.svelte')
-	const sourcePaths = [
-		...Object.values(config.content?.component || {}),
-		...config.pieces.flatMap((piece) => Object.values(piece.components || {}))
-	].map((source) => path.resolve(process.cwd(), source))
+	const sourcePaths = Object.values(config.content?.component || {}).map((source) =>
+		path.resolve(process.cwd(), source)
+	)
 	const configuredPaths = await Promise.all(sourcePaths.map(existingPath))
 	const retiredPath = await existingPath(retiredFeedCopy)
 	// Preserve configured sources, including file and parent-directory symlink aliases.

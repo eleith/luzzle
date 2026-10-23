@@ -22,7 +22,7 @@ const serverCompileOptions = {
 
 export async function compileTemplateBundle(
 	templates: Readonly<Record<string, TemplateSource>>,
-	templateLookup: TemplateLookup = { pieces: {}, site: {} }
+	templateLookup: TemplateLookup = { site: {} }
 ): Promise<CompiledTemplateBundle> {
 	const nodeMinimum = workerPackage.engines.node?.match(/^>=(\d+(?:\.\d+){0,2})$/)?.[1] ?? '24'
 	const modules = new Map<string, string>()

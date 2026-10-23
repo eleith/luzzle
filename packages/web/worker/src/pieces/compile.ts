@@ -1,61 +1,41 @@
 import { readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { createRequire } from 'node:module'
 import { compile } from 'svelte/compiler'
-import type { Config } from '@luzzle/web.config'
+import type { Component } from 'svelte'
+import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+import type { Fields } from '@luzzle/web.templates/opengraphs/default/schema'
 
 type CompiledModule = {
-	default: unknown
+	default: Component<{ piece: PublicWebPiece; fields: Fields; helpers: PieceComponentHelpers }>
 }
 
+const require = createRequire(import.meta.url)
+const sources = new Map([
+	['default', () => require.resolve('@luzzle/web.templates/opengraphs/default')],
+])
 const compileCache = new Map<string, { mtimeMs: number; mod: CompiledModule }>()
+const compiledDirectory = path.join(import.meta.dirname, '.compiled')
 
-const COMPILED_DIR = path.join(import.meta.dirname, '.compiled')
+export async function getCompiledOpengraphModule(name: string): Promise<CompiledModule> {
+	const getSourcePath = sources.get(name)
+	if (!getSourcePath) throw new Error(`Unknown opengraph template: ${name}`)
+	const filename = getSourcePath()
+	const { mtimeMs } = statSync(filename)
+	const cached = compileCache.get(name)
+	if (cached?.mtimeMs === mtimeMs) return cached.mod
 
-export async function getCompiledOpengraphModule(
-	pieceType: string,
-	config: Config
-): Promise<CompiledModule> {
-	const pieceConfig = config.pieces.find((p) => p.type === pieceType)
-	if (!pieceConfig) {
-		throw new Error(`Piece type "${pieceType}" not found in config`)
-	}
-
-	const opengraphPath = pieceConfig.components?.opengraph
-	if (!opengraphPath) {
-		throw new Error(`No opengraph component configured for piece type "${pieceType}"`)
-	}
-
-	if (!config.paths.config) {
-		throw new Error('config.paths.config is missing; cannot resolve opengraph component path')
-	}
-
-	const absoluteSourcePath = path.resolve(path.dirname(config.paths.config), opengraphPath)
-	const stat = statSync(absoluteSourcePath)
-	const mtimeMs = stat.mtimeMs
-
-	const cached = compileCache.get(pieceType)
-	if (cached && cached.mtimeMs === mtimeMs) {
-		return cached.mod
-	}
-
-	const source = readFileSync(absoluteSourcePath, 'utf8')
-
-	const { js } = compile(source, {
+	const { js } = compile(readFileSync(filename, 'utf8'), {
+		filename,
 		generate: 'server',
-		filename: absoluteSourcePath,
-		css: 'injected'
+		css: 'injected',
+		dev: false,
 	})
-
-	mkdirSync(COMPILED_DIR, { recursive: true })
-	const outFilename = `${pieceType}-${mtimeMs}.js`
-	const outPath = path.join(COMPILED_DIR, outFilename)
-
-	writeFileSync(outPath, js.code, 'utf8')
-
-	const href = pathToFileURL(outPath).href + `?t=${mtimeMs}`
-	const mod = (await import(href)) as CompiledModule
-
-	compileCache.set(pieceType, { mtimeMs, mod })
+	mkdirSync(compiledDirectory, { recursive: true })
+	const output = path.join(compiledDirectory, `${name}-${mtimeMs}.js`)
+	writeFileSync(output, js.code, 'utf8')
+	const mod = (await import(pathToFileURL(output).href)) as CompiledModule
+	compileCache.set(name, { mtimeMs, mod })
 	return mod
 }

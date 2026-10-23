@@ -15,6 +15,7 @@ test('maps arbitrary metadata with paths, constants and missing-value defaults',
 			author: 'creator.name',
 			label: { value: 'A record' },
 			pages: { field: 'stats.pages', default: 100 },
+			omitted: undefined,
 			missing: 'unknown',
 			fallback: { field: 'unknown', default: 'Unknown' }
 		}),

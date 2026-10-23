@@ -21,18 +21,11 @@ afterEach(async () => {
 	await rm(directory, { recursive: true, force: true })
 })
 
-async function sync(
-	component: Record<string, string>,
-	pieces: Array<{ type: string; components: Record<string, string> }> = []
-) {
+async function sync(component: Record<string, string>) {
 	await writeFile(
 		path.join(directory, 'config.yaml'),
 		JSON.stringify({
-			content: { component },
-			pieces: pieces.map((piece) => ({
-				...piece,
-				fields: { title: 'title', date_consumed: 'date' }
-			}))
+			content: { component }
 		})
 	)
 	return exec(process.execPath, [script], { cwd: directory, timeout: 10000 })
@@ -71,30 +64,6 @@ test.each(['file', 'directory'])(
 		await sync({ feed: configured })
 		expect(await readFile(source, 'utf8')).toBe('configured aliased source')
 		expect(await readFile(configured, 'utf8')).toBe('configured aliased source')
-	}
-)
-
-test.each(['file', 'directory'])(
-	'preserves a configured piece source through a %s symlink',
-	async (kind) => {
-		const source = path.join(output, 'feed.svelte')
-		const alias = path.join(directory, 'piece-source')
-		await writeFile(source, 'configured aliased piece source')
-		await symlink(kind === 'file' ? source : output, alias, kind === 'file' ? 'file' : 'dir')
-		const configured = kind === 'file' ? alias : path.join(alias, 'feed.svelte')
-		await sync({}, [{ type: 'notes', components: { icon: configured } }])
-		expect(await readFile(source, 'utf8')).toBe('configured aliased piece source')
-		expect(await readFile(configured, 'utf8')).toBe('configured aliased piece source')
-	}
-)
-
-test.each(['icon', 'page', 'opengraph'])(
-	'preserves a configured piece %s source at the old generated path',
-	async (role) => {
-		const source = path.join(output, 'feed.svelte')
-		await writeFile(source, 'configured piece source')
-		await sync({}, [{ type: 'notes', components: { [role]: source } }])
-		expect(await readFile(source, 'utf8')).toBe('configured piece source')
 	}
 )
 

@@ -53,6 +53,7 @@ const feedCases = [
 type FeedCase = (typeof feedCases)[number]
 type MachineFeeds = Record<string, { contentType: string | null; body: string }>
 let originalMachineFeeds: MachineFeeds
+let originalPublicPiece: unknown
 let directory: string
 let configFilename: string
 let preparedDirectory: string
@@ -82,7 +83,9 @@ try {
     id: 'cutover-id', key: 'cutover-key', slug: 'real-piece', type: 'cutover-kind',
     title: 'Real Piece', file_path: 'real-piece.cutover-kind.md', date_added: 1700000000000,
     note: 'Raw indexed note', summary: 'Published route description',
-    json_metadata: JSON.stringify({ title: 'Real Piece', cover: 'cover-key', subtitle: 'Published metadata' })
+    json_metadata: JSON.stringify({ title: 'Real Piece', cover: 'cover-key', subtitle: 'Published metadata',
+      artwork: 'cover-key', released: '2001-09-09', minutes: 123, genre: 'Native catalog',
+      filmmaker: 'Ada Example', website: 'https://example.com/real-piece', isbn: '9780000000001', creators: [{ name: 'Ada Example' }] })
   };
   await db.insertInto('web_pieces').values([
     row,
@@ -98,7 +101,11 @@ try {
     piece_asset_path: 'cover.png', is_embedded: 1
   };
   await db.insertInto('web_pieces_assets').values([
+    { ...asset, transformation: 'image.s.jpg', asset_path: 'cutover/cover small.png',
+      mime_type: 'image/png', is_embedded: 0 },
     { ...asset, transformation: 'image.s.png', asset_path: 'cutover/cover small.png',
+      mime_type: 'image/png', is_embedded: 0 },
+    { ...asset, asset_key: row.key, transformation: 'opengraph', asset_path: 'cutover/share.png',
       mime_type: 'image/png', is_embedded: 0 },
     { ...asset, transformation: 'palette', mime_type: 'application/json',
       content: JSON.stringify({ accent: '#123456', background: '#234567' }) },
@@ -268,11 +275,11 @@ function expectOwnerFeed(html: string, feed: FeedCase, label: string) {
 	expect(html.match(/data-feed-piece="/g) ?? []).toHaveLength(feed.count)
 	expect(html.includes('Orphan must not be visible')).toBe(feed.label === 'all')
 	if (feed.count) {
-		expect(html).toContain('Prepared icon Real Piece')
+		expect(html).toContain('class="default-icon')
 		expect(html).toContain('Published metadata')
 		expect(html).toContain('<p>Published rendered note</p>')
 		expect(html).toContain(`href="${origin}${piecePath}"`)
-		expect(htmlHead(html)).toContain('.cutover-icon.')
+		expect(htmlHead(html)).toContain('.default-icon.')
 	}
 	expect(html).not.toContain('aria-label="RSS subscription info"')
 	expect(html).not.toContain('/admin/preview/')
@@ -337,45 +344,21 @@ function expectAppSeo(html: string) {
 	expect(head.match(/name="description"/g)).toHaveLength(1)
 	expect(head).toContain('name="description" content="Published route description"')
 	expect(head.match(/property="og:title"/g)).toHaveLength(1)
+	expect(head).toContain('property="og:image" content="/pieces/assets/cutover/share.png"')
 }
 
 function expectBuiltIn(html: string) {
-	expect(html).toContain('id="main-content"')
-	expect(html).toContain('class="default-icon')
+	expect(html).toMatch(/class="hero svelte-[a-z0-9]+"/)
+	expect(html).toContain('class="poster')
 	expect(html).toMatch(/<h1(?:\s[^>]*)?>Real Piece<\/h1>/)
 	expect(html).toContain('<p>Published rendered note</p>')
 	expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
 	expect(html).toContain('href="/random"')
 	expect(html).not.toContain('id="cutover-owner"')
 	expect(html).not.toContain('data-prepared-theme')
-	expect(html).not.toContain('--banner-background-color: #123456')
+	expect(html).toContain('--banner-background-color: #234567')
 	expect(html).not.toContain(directory)
 	expectAppSeo(html)
-}
-
-const iconSource = `<script>let { data, helpers } = $props()</script>
-<a class="cutover-icon" href={helpers.forPiece(data.piece).getUrl()}>Prepared icon {data.piece.title}</a>
-<style>.cutover-icon { color: var(--color-secondary); }</style>`
-
-function ownerSource(label: string, navigation = true) {
-	// Head ownership policy: only styles, not competing owner title/description tags.
-	return `<script>
-let { data, helpers, components } = $props();
-const piece = helpers.forPiece(data.piece);
-const palette = piece.getPalette();
-${navigation ? 'helpers.showNavBanner({ background: palette?.accent });' : ''}
-</script>
-<main id="cutover-owner" class="cutover-page">
-<h1>${label} {data.piece.title}</h1>
-<p>{data.piece.metadata.subtitle}</p>
-<a id="public-piece" href={piece.getUrl()}>Public piece</a>
-<img id="public-cover" src={piece.getImageUrl(data.piece.metadata.cover, 125, 'png')} alt="Cover" />
-<img id="site-mark" src={helpers.getStaticAssetUrl('images/favicon.png')} alt="Site mark" />
-<p id="constructed-static-url">{helpers.getStaticAssetUrl('images/owner-only.svg')}</p>
-{@html piece.getAssetContent(data.piece.key, 'markdown') ?? ''}
-<components.PieceIcon piece={data.piece} size={{ width: 125 }} />
-</main>
-<style>.cutover-page { color: var(--color-primary); }</style>`
 }
 
 function ownerFeedSource(
@@ -397,7 +380,7 @@ ${navigation}
 <p id="feed-count">{data.pieces.length}</p>
 {#each data.pieces as piece (piece.id)}
 <section data-feed-piece={piece.id}>
-<h2>{piece.title}</h2>
+<h2><a href={helpers.forPiece(piece).getUrl()}>{piece.title}</a></h2>
 <components.PieceIcon {piece} size={{ width: 125 }} />
 {#if piece.id === 'cutover-id'}
 <p>{piece.metadata.subtitle}</p>
@@ -413,13 +396,10 @@ ${navigation}
 
 type PublishOptions = {
 	feed?: string | null
-	icon?: string
 	themePrimary?: string
 }
 
-async function publishSource(source: string, options: PublishOptions = {}) {
-	await writeFile(path.join(directory, 'owner-page.svelte'), source)
-	await writeFile(path.join(directory, 'owner-icon.svelte'), options.icon ?? iconSource)
+async function publishSource(options: PublishOptions = {}) {
 	await writeFile(
 		path.join(directory, 'owner-feed.svelte'),
 		options.feed ?? ownerFeedSource('Companion feed')
@@ -515,7 +495,7 @@ beforeAll(async () => {
 	originalBuild = await buildHashes()
 	expect(Object.keys(originalBuild).length).toBeGreaterThan(0)
 
-	// This arbitrary type and its not-yet-created owner sources are configured only after build.
+	// The stock catalog handles an arbitrary type configured only after build.
 	configFilename = path.join(directory, 'config.yaml')
 	preparedDirectory = path.join(directory, 'prepared')
 	await writeFile(
@@ -535,7 +515,30 @@ beforeAll(async () => {
 				{
 					type: 'cutover-kind',
 					fields: { title: 'title', date_consumed: 'date' },
-					components: { page: './owner-page.svelte', icon: './owner-icon.svelte' }
+					templates: {
+						icon: { name: 'default', mapping: { image: 'artwork' } },
+						page: {
+							name: 'default',
+							mapping: {
+								image: 'artwork',
+								dateReleased: 'released',
+								runtime: 'minutes',
+								category: 'genre',
+								url: 'website',
+								isbn: 'isbn',
+								people: 'creators'
+							}
+						},
+						opengraph: {
+							name: 'default',
+							mapping: {
+								image: 'artwork',
+								director: 'filmmaker',
+								dateReleased: 'released',
+								runtime: 'minutes'
+							}
+						}
+					}
 				}
 			],
 			theme: { light: { 'color-primary': '#135790' } }
@@ -582,7 +585,7 @@ afterAll(async () => {
 	}
 })
 
-describe('prepared pages through the production app HTTP routes', () => {
+describe('stock pieces and published site feeds through production HTTP routes', () => {
 	test('uses the real default page and public catalog for types configured only after build', async () => {
 		const html = await pageHtml()
 		expectBuiltIn(html)
@@ -633,7 +636,43 @@ describe('prepared pages through the production app HTTP routes', () => {
 		expect(response.status).toBe(200)
 		const result = await response.json()
 		expect(result.pieces).toHaveLength(1)
-		expect(result.pieces[0]).toMatchObject({ title: 'Real Piece', type: 'cutover-kind' })
+		originalPublicPiece = result.pieces[0]
+		expect(result.pieces[0]).toMatchObject({
+			title: 'Real Piece',
+			type: 'cutover-kind',
+			note: 'Raw indexed note',
+			metadata: { artwork: 'cover-key', subtitle: 'Published metadata' },
+			templates: {
+				icon: { name: 'default', fields: { image: 'cover-key' } },
+				page: {
+					name: 'default',
+					fields: {
+						image: 'cover-key',
+						dateReleased: '2001-09-09',
+						runtime: 123,
+						category: 'Native catalog',
+						url: 'https://example.com/real-piece',
+						isbn: '9780000000001',
+						people: [{ name: 'Ada Example' }]
+					}
+				},
+				opengraph: {
+					name: 'default',
+					fields: {
+						image: 'cover-key',
+						director: 'Ada Example',
+						dateReleased: '2001-09-09',
+						runtime: 123
+					}
+				}
+			}
+		})
+		for (const template of Object.values(result.pieces[0].templates)) {
+			expect(Object.keys(template as object).sort()).toEqual(['fields', 'name'])
+		}
+		for (const key of ['components', 'file_path', 'json_metadata']) {
+			expect(result.pieces[0]).not.toHaveProperty(key)
+		}
 		const invalid = await request('/api/pieces?type=unconfigured-kind', 'application/json')
 		expect(invalid.status).toBe(400)
 		expect(await invalid.text()).toBe('invalid type')
@@ -650,89 +689,49 @@ describe('prepared pages through the production app HTTP routes', () => {
 		}
 	})
 
-	test('publishes late owner content, helpers, icon, navigation and CSS without rebuilding', async () => {
-		await publishSource(ownerSource('First prepared'))
+	test('renders mapped stock page fields, poster assets, tags and palette navigation as useful SSR', async () => {
 		const html = await pageHtml()
-		expect(html).toContain('<h1>First prepared Real Piece</h1>')
-		expect(html).toContain('Published metadata')
-		expect(html).toContain('<p>Published rendered note</p>')
-		expect(html).not.toContain('Raw indexed note</')
-		expect(html).toContain(`href="${origin}${piecePath}"`)
+		expectBuiltIn(html)
+		for (const text of ['Native catalog', 'Ada Example', '2001', '123 min']) {
+			expect(html).toContain(text)
+		}
+		expect(html).toContain('href="https://example.com/real-piece"')
+		expect(html).toContain('href="/tags/field-notes"')
 		expect(html).toContain('src="/pieces/assets/cutover/cover%20small.png"')
 		expect(html).not.toContain('/admin/preview/')
-		expect(html).toContain('src="/images/favicon.png"')
-		expect(html).toContain('<p id="constructed-static-url">/images/owner-only.svg</p>')
-		expect((await request('/images/owner-only.svg')).status).toBe(404)
-		expect(html).toContain('Prepared icon Real Piece')
-		expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
-		expect(html).toContain('--banner-background-color: #123456')
-		expect(html).not.toContain('href="/random"')
-		expect(html.indexOf('aria-label="Global"')).toBeLessThan(html.indexOf('id="cutover-owner"'))
-		const scopedClass = html.match(/class="cutover-page (svelte-[a-z0-9]+)"/)?.[1]
-		expect(scopedClass).toBeDefined()
-		const head = htmlHead(html)
-		expect(head).toContain(`.cutover-page.${scopedClass}`)
-		expect(head).toContain('.cutover-icon.')
-		expect(head).toContain('var(--color-primary)')
-		expect(head).toContain('data-prepared-theme')
-		expect(head).toContain('--color-primary: #135790;')
-		expectAppSeo(html)
-		for (const pathname of ['/images/favicon.png', '/pieces/assets/cutover/cover%20small.png']) {
-			const response = await request(pathname)
-			expect(response.status).toBe(200)
-			expect(response.headers.get('content-type')).toContain('image/png')
-			expect(Buffer.from(await response.arrayBuffer())).toEqual(
-				await readFile(path.join(webRoot, 'static/images/favicon.png'))
-			)
-		}
-	})
-
-	test('retains the selected real page when Svelte preparation fails', async () => {
-		const pointer = await readFile(path.join(preparedDirectory, 'current.json'), 'utf8')
-		await expect(publishSource('<div>')).rejects.toMatchObject({ code: 1 })
-		expect(await readFile(path.join(preparedDirectory, 'current.json'), 'utf8')).toBe(pointer)
-		expect(await pageHtml()).toContain('<h1>First prepared Real Piece</h1>')
-	})
-
-	test('falls back atomically when a valid published template throws after requesting navigation', async () => {
-		await publishSource(`<script>let { helpers } = $props();
-helpers.showNavBanner({ background: '#123456' }); throw new Error('cutover owner render failure');
-</script><main id="cutover-owner">Never visible</main>
-<style>#cutover-owner { color: #abcdef; }</style>`)
-		const html = await pageHtml()
-		expectBuiltIn(html)
-		expect(htmlHead(html)).not.toContain('#abcdef')
-		expect(html).not.toContain('cutover owner render failure')
-		expect(serverErrors).toContain('cutover owner render failure')
-	})
-
-	test('falls back for incompatible module exports without leaking server paths', async () => {
-		const published = await publishSource(ownerSource('Invalid module'))
-		await writeFile(
-			path.join(preparedDirectory, 'revisions', published.revision, 'templates.mjs'),
-			'export const wrong = true;'
+		expect(html).not.toContain('Raw indexed note</')
+		expect(html.indexOf('aria-label="Global"')).toBeLessThan(html.indexOf('<h1'))
+		const response = await request('/pieces/assets/cutover/cover%20small.png')
+		expect(response.status).toBe(200)
+		expect(Buffer.from(await response.arrayBuffer())).toEqual(
+			await readFile(path.join(webRoot, 'static/images/favicon.png'))
 		)
-		const html = await pageHtml()
-		expectBuiltIn(html)
-		expect(html).not.toContain('Invalid prepared template exports')
-		expect(serverErrors).toContain('Invalid prepared template exports')
 	})
 
-	test('selects a repaired revision on the next real request without app restart or rebuild', async () => {
-		await publishSource(ownerSource('Repaired prepared'))
-		const html = await pageHtml()
-		expect(html).toContain('<h1>Repaired prepared Real Piece</h1>')
-		expect(html).not.toContain('First prepared Real Piece')
-		expect(html).not.toContain('id="main-content"')
-		expectAppSeo(html)
-	})
-
-	test('omits the banner when a prepared page does not request one', async () => {
-		await publishSource(ownerSource('Without banner', false))
-		const html = await pageHtml()
-		expect(html).toContain('<h1>Without banner Real Piece</h1>')
-		expect(html).not.toContain('aria-label="Global"')
-		expectAppSeo(html)
+	test('rejects retired piece source keys rather than reading or publishing arbitrary Svelte', async () => {
+		const original = await readFile(configFilename, 'utf8')
+		for (const role of ['icon', 'page', 'opengraph']) {
+			try {
+				const config = JSON.parse(original)
+				config.pieces[0].components = { [role]: './must-not-be-read.svelte' }
+				await writeFile(configFilename, JSON.stringify(config))
+				await expect(
+					exec(
+						process.execPath,
+						[
+							path.join(repository, 'packages/web/worker/dist/src/commands/publish-templates.js'),
+							'--config',
+							configFilename
+						],
+						{ cwd: directory, env: childEnv, timeout: 30000 }
+					)
+				).rejects.toMatchObject({ code: 1, stderr: expect.stringContaining('components') })
+				expect(await readOptional(path.join(preparedDirectory, 'current.json'))).toBeUndefined()
+			} finally {
+				await writeFile(configFilename, original)
+			}
+		}
+		expectBuiltIn(await pageHtml())
 	})
 
 	// Anonymous hook-boundary checks, not authenticated preview rendering coverage.
@@ -757,7 +756,7 @@ helpers.showNavBanner({ background: '#123456' }); throw new Error('cutover owner
 	})
 
 	test('serves the actual demo feed through native HTTP as rich SSR only for typed and tag feeds', async () => {
-		await publishSource(ownerSource('Demo feed companion'), {
+		await publishSource({
 			feed: await readFile(path.join(webRoot, 'demo/content/components/pages/feed.svelte'), 'utf8')
 		})
 		// Subscription is ordinary HTML: retain the URL field without an inactive copy button.
@@ -800,7 +799,7 @@ helpers.showNavBanner({ background: '#123456' }); throw new Error('cutover owner
 	})
 
 	test('publishes the canonical owner feed late and refreshes references across piece/tag requests', async () => {
-		const published = await publishSource(ownerSource('Feed companion'), {
+		const published = await publishSource({
 			feed: ownerFeedSource('First owner feed')
 		})
 		// Separate HTTP navigations exercise new server props, not browser hydration behavior.
@@ -843,7 +842,7 @@ helpers.showNavBanner({ background: '#123456' }); throw new Error('cutover owner
 		const previous = JSON.parse(
 			await readFile(path.join(preparedDirectory, 'current.json'), 'utf8')
 		)
-		const published = await publishSource(ownerSource('Feed companion'), {
+		const published = await publishSource({
 			feed: ownerFeedSource('Edited owner feed', 'helpers.showNavBanner();', '#fedcba'),
 			themePrimary: '#246801'
 		})
@@ -870,11 +869,11 @@ helpers.showNavBanner({ background: '#123456' }); throw new Error('cutover owner
 	})
 
 	test('falls back as a whole feed for a missing role or selected bundle', async () => {
-		await publishSource(ownerSource('Roleless companion'), { feed: null })
+		await publishSource({ feed: null })
 		for (const feed of [feedCases[0], feedCases[2]]) {
 			expectDefaultFeed(await pageHtml(`${feed.folder}/feed.html`), feed)
 		}
-		const published = await publishSource(ownerSource('Missing bundle companion'), {
+		const published = await publishSource({
 			feed: ownerFeedSource('Missing bundle feed')
 		})
 		await rm(path.join(preparedDirectory, 'revisions', published.revision, 'templates.mjs'))
@@ -884,7 +883,7 @@ helpers.showNavBanner({ background: '#123456' }); throw new Error('cutover owner
 	})
 
 	test('isolates the entire feed data clone before a throwing owner render falls back', async () => {
-		await publishSource(ownerSource('Throwing feed companion'), {
+		await publishSource({
 			feed: ownerFeedSource(
 				'Never visible feed',
 				`
@@ -910,24 +909,21 @@ throw new Error('cutover feed render failure');`
 		expect(serverErrors).toContain('cutover feed render failure')
 	})
 
-	test('discards owner body, head, CSS and navigation when its selected icon throws', async () => {
-		await publishSource(ownerSource('Icon failure companion'), {
-			feed: ownerFeedSource('Partial feed must not survive'),
-			icon: `<script>throw new Error('cutover feed icon failure');</script>
-<span>Failed selected feed icon</span><style>span { color: #facade; }</style>`
-		})
+	test('discards owner output when a selected site bundle has incompatible exports', async () => {
+		const published = await publishSource({ feed: ownerFeedSource('Invalid module feed') })
+		await writeFile(
+			path.join(preparedDirectory, 'revisions', published.revision, 'templates.mjs'),
+			'export const wrong = true;'
+		)
 		for (const feed of [feedCases[0], feedCases[2]]) {
-			const html = await pageHtml(`${feed.folder}/feed.html`)
-			expectDefaultFeed(html, feed)
-			expect(html).not.toContain('Partial feed must not survive')
-			expect(html).not.toContain('Failed selected feed icon')
-			expect(htmlHead(html)).not.toContain('#facade')
+			expectDefaultFeed(await pageHtml(`${feed.folder}/feed.html`), feed)
 		}
-		expect(serverErrors).toContain('cutover feed icon failure')
+		expect(serverErrors).toContain('Invalid prepared template exports')
+		expectBuiltIn(await pageHtml())
 	})
 
 	test('repairs on the next request and keeps the last selection when feed compilation fails', async () => {
-		await publishSource(ownerSource('Feed companion'), {
+		await publishSource({
 			feed: ownerFeedSource('Repaired owner feed')
 		})
 		expectOwnerFeed(
@@ -936,9 +932,7 @@ throw new Error('cutover feed render failure');`
 			'Repaired owner feed'
 		)
 		const pointer = await readFile(path.join(preparedDirectory, 'current.json'), 'utf8')
-		await expect(
-			publishSource(ownerSource('Feed companion'), { feed: '<div>' })
-		).rejects.toMatchObject({ code: 1 })
+		await expect(publishSource({ feed: '<div>' })).rejects.toMatchObject({ code: 1 })
 		expect(await readFile(path.join(preparedDirectory, 'current.json'), 'utf8')).toBe(pointer)
 		expectOwnerFeed(
 			await pageHtml(`${feedCases[0].folder}/feed.html`),
@@ -958,7 +952,7 @@ throw new Error('cutover feed render failure');`
 				'transparent'
 			]
 		] as const) {
-			await publishSource(ownerSource('Feed companion'), {
+			await publishSource({
 				feed: ownerFeedSource(label, navigation)
 			})
 			for (const feed of [feedCases[0], feedCases[2]]) {
@@ -983,7 +977,7 @@ throw new Error('cutover feed render failure');`
 
 	test('rejects unknown types before prepared rendering and preserves machine feed metadata/items', async () => {
 		const sentinel = 'machine feeds must never render owner feed'
-		await publishSource(ownerSource('Feed companion'), {
+		await publishSource({
 			feed: ownerFeedSource('Forbidden machine feed', `throw new Error('${sentinel}');`)
 		})
 		for (const format of ['html', 'xml', 'json', 'md']) {
@@ -997,7 +991,11 @@ throw new Error('cutover feed render failure');`
 		expect(serverErrors).not.toContain(sentinel)
 	})
 
-	test('leaves every adapter build file byte-for-byte unchanged', async () => {
+	test('leaves indexed piece data and every adapter build file unchanged', async () => {
+		expectBuiltIn(await pageHtml())
+		const response = await request('/api/pieces?type=cutover-kind', 'application/json')
+		expect(response.status).toBe(200)
+		expect((await response.json()).pieces).toEqual([originalPublicPiece])
 		expect(await buildHashes()).toEqual(originalBuild)
 	})
 })

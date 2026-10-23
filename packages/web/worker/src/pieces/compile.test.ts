@@ -1,93 +1,27 @@
-import { describe, test, expect, afterAll, beforeAll } from 'vitest'
-import { writeFileSync, mkdirSync, rmSync, utimesSync } from 'node:fs'
-import path from 'node:path'
+import { test, expect } from 'vitest'
+import { render } from 'svelte/server'
+import { createPieceHelpers } from '@luzzle/web.pieces'
 import { getCompiledOpengraphModule } from './compile.js'
-import type { Config } from '@luzzle/web.config'
 
-const TEMP_DIR = path.join(import.meta.dirname, 'temp-fixtures')
+const piece = {
+	id: 'example', key: 'example', title: 'A poster record', type: 'arbitrary', slug: 'example',
+	date_added: 1, metadata: {}, assets: []
+}
 
-const makeConfig = (opengraphPath: string): Config => ({
-	pieces: [
-		{
-			type: 'books',
-			components: {
-				opengraph: opengraphPath
-			},
-			fields: {
-				title: 'title',
-				date_consumed: 'date_consumed'
-			}
-		}
-	],
-	paths: {
-		config: path.join(TEMP_DIR, 'config.yaml'),
-		database: '',
-		assets: '',
-		cache: ''
-	},
-	assets: { salt: 'test' }
-}) as unknown as Config
-
-beforeAll(() => {
-	mkdirSync(TEMP_DIR, { recursive: true })
+test('compiles the shipped default once and reuses its module', async () => {
+	const first = await getCompiledOpengraphModule('default')
+	const second = await getCompiledOpengraphModule('default')
+	expect(first).toBe(second)
+	const helpers = createPieceHelpers([], (path) => '/pieces/assets/' + path, () => '/pieces/arbitrary/example')
+	const rendered = render(first.default, {
+		props: { piece, fields: { director: 'Ada', dateReleased: '2024-01-01', runtime: 90 }, helpers }
+	})
+	expect(rendered.body).toContain('A poster record')
+	expect(rendered.body).toContain('by Ada')
+	expect(rendered.body).toContain('2024 · 90 min')
+	expect(rendered.head).toContain('<style')
 })
 
-afterAll(() => {
-	rmSync(TEMP_DIR, { recursive: true, force: true })
-})
-
-describe('pieces/compile', () => {
-	test('compiles a simple Svelte component and caches it', async () => {
-		const svelteContent = `
-			<script>
-				let { name } = $props();
-			</script>
-			<div>Hello {name}!</div>
-		`
-		const relPath = './components/book.svelte'
-		const absPath = path.resolve(TEMP_DIR, relPath)
-		mkdirSync(path.dirname(absPath), { recursive: true })
-		writeFileSync(absPath, svelteContent, 'utf8')
-
-		const config = makeConfig(relPath)
-
-		// Compile first time
-		const mod1 = await getCompiledOpengraphModule('books', config)
-		expect(mod1).toBeDefined()
-		expect(mod1.default).toBeTypeOf('function')
-
-		// Compile second time, should return cached
-		const mod2 = await getCompiledOpengraphModule('books', config)
-		expect(mod2).toBe(mod1)
-
-		// Touch file (update mtime)
-		const now = new Date()
-		const newTime = new Date(now.getTime() + 5000)
-		utimesSync(absPath, newTime, newTime)
-
-		// Compile third time, should return new instance
-		const mod3 = await getCompiledOpengraphModule('books', config)
-		expect(mod3).not.toBe(mod1)
-	})
-
-	test('compiles a realistic component using TS, props, conditionals, and CSS', async () => {
-		const fixturesDir = path.resolve(import.meta.dirname, '../../test/fixtures')
-		const config: Config = {
-			pieces: [
-				{
-					type: 'card',
-					components: {
-						opengraph: './opengraph.svelte'
-					}
-				}
-			],
-			paths: {
-				config: path.join(fixturesDir, 'config.yaml')
-			}
-		} as unknown as Config
-
-		const mod = await getCompiledOpengraphModule('card', config)
-		expect(mod).toBeDefined()
-		expect(mod.default).toBeTypeOf('function')
-	})
+test('unknown names do not become arbitrary source paths', async () => {
+	await expect(getCompiledOpengraphModule('../../owned.svelte')).rejects.toThrow('Unknown opengraph template')
 })

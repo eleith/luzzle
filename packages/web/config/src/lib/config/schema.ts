@@ -387,28 +387,6 @@ const PiecesSchema = Type.Array(
 				},
 				{ additionalProperties: false },
 			),
-			components: Type.Optional(
-				Type.Object(
-					{
-						icon: Type.Optional(
-							Type.String({
-								description: "Svelte source path for the piece icon.",
-							}),
-						),
-						opengraph: Type.Optional(
-							Type.String({
-								description: "Svelte source path for the Open Graph image.",
-							}),
-						),
-						page: Type.Optional(
-							Type.String({
-								description: "Svelte source path for the piece page.",
-							}),
-						),
-					},
-					{ additionalProperties: false },
-				),
-			),
 		},
 		{ additionalProperties: false },
 	),

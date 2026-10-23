@@ -17,7 +17,7 @@
 
 <Layout {data} {params}>
 	{#if view === 'page'}
-		<Page data={{ ...data, presentation: null }} {params} form={null} />
+		<Page {data} {params} />
 	{:else if view === 'icon'}
 		<Icon {data} {params} />
 	{:else if view === 'share'}

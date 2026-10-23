@@ -68,6 +68,14 @@ test("schema constraints also apply to the recorded configuration filename", () 
 	}
 });
 
+test("retired per-piece source components are rejected rather than ignored", () => {
+	expect(() =>
+		validateConfig({
+			pieces: [{ ...piece, components: { icon: "owned.svelte" } }],
+		}),
+	).toThrow(ConfigError);
+});
+
 test("only the supplied schema can authorize and validate an extension", () => {
 	const raw = { pieces: [{ ...piece, badge: "featured" }] };
 	expect(() => validateConfig(raw)).toThrow();

@@ -32,7 +32,7 @@ async function writeRevision(revision: string, body = revision, moduleCode?: str
 		path.join(target, 'templates.mjs'),
 		moduleCode ??
 			`
-export const templateLookup = { pieces: { 'custom-kind': { page: 'page' } }, site: { root: 'root' } };
+export const templateLookup = { site: { root: 'root' } };
 export function render(name, props) { return { body: ${JSON.stringify(body)}, head: '' }; }
 `
 	)
@@ -53,8 +53,8 @@ describe('loadTemplateBundle', () => {
 		const loaded = await loadTemplateBundle(path.relative(process.cwd(), directory))
 		expect(loaded?.revision).toBe('first')
 		expect(loaded?.themeCss).toBe('/* first */')
-		expect(loaded?.templateLookup.pieces['custom-kind'].page).toBe('page')
-		expect(loaded?.render('page', {})).toEqual({ body: 'first', head: '' })
+		expect(loaded?.templateLookup).toEqual({ site: { root: 'root' } })
+		expect(loaded?.render('root', {})).toEqual({ body: 'first', head: '' })
 		const module = await import(
 			pathToFileURL(path.join(directory, 'revisions/first/templates.mjs')).href
 		)
@@ -68,9 +68,9 @@ describe('loadTemplateBundle', () => {
 		await writeRevision('second')
 		await select('second')
 		const second = await loadTemplateBundle(directory)
-		expect(first?.render('page', {}).body).toBe('first')
+		expect(first?.render('root', {}).body).toBe('first')
 		expect(first?.themeCss).toBe('/* first */')
-		expect(second?.render('page', {}).body).toBe('second')
+		expect(second?.render('root', {}).body).toBe('second')
 		expect(second?.themeCss).toBe('/* second */')
 	})
 
@@ -91,7 +91,7 @@ describe('loadTemplateBundle', () => {
 		const loaded = await loadTemplateBundle(directory)
 		expect(selectorReads).toBe(1)
 		expect(loaded?.revision).toBe('first')
-		expect(loaded?.render('page', {}).body).toBe('first')
+		expect(loaded?.render('root', {}).body).toBe('first')
 		expect(loaded?.themeCss).toBe('/* first */')
 	})
 
@@ -138,26 +138,17 @@ describe('loadTemplateBundle', () => {
 	})
 
 	test.each([
-		['missing renderer', 'export const templateLookup = { pieces: {}, site: {} };'],
+		['missing renderer', 'export const templateLookup = { site: {} };'],
 		['missing lookup', 'export function render() { return {body:"",head:""}; }'],
-		[
-			'nonfunction renderer',
-			'export const render = 1; export const templateLookup = {pieces:{},site:{}};'
-		],
+		['nonfunction renderer', 'export const render = 1; export const templateLookup = {site:{}};'],
 		['array lookup', 'export function render() {} export const templateLookup = [];'],
-		['missing piece map', 'export function render() {} export const templateLookup = {site:{}};'],
-		[
-			'invalid piece roles',
-			'export function render() {} export const templateLookup = {pieces:{kind:[]},site:{}};'
-		],
+		['missing site map', 'export function render() {} export const templateLookup = {};'],
+		['array site map', 'export function render() {} export const templateLookup = {site:[]};'],
 		[
 			'invalid template name',
-			'export function render() {} export const templateLookup = {pieces:{kind:{page:5}},site:{}};'
+			'export function render() {} export const templateLookup = {site:{root:5}};'
 		],
-		[
-			'invalid site map',
-			'export function render() {} export const templateLookup = {pieces:{},site:null};'
-		]
+		['invalid site map', 'export function render() {} export const templateLookup = {site:null};']
 	])('reports invalid artifact exports: %s', async (_label, code) => {
 		await writeRevision('broken', '', code)
 		await select('broken')
@@ -168,7 +159,7 @@ describe('loadTemplateBundle', () => {
 		await writeRevision(
 			'async',
 			'',
-			'const text = await Promise.resolve("initialized"); export const templateLookup = {pieces:{},site:{root:"root"}}; export function render() { return {body:text,head:""}; }'
+			'const text = await Promise.resolve("initialized"); export const templateLookup = {site:{root:"root"}}; export function render() { return {body:text,head:""}; }'
 		)
 		await select('async')
 		expect((await loadTemplateBundle(directory))?.render('root', {}).body).toBe('initialized')
@@ -184,7 +175,7 @@ describe('loadTemplateBundle', () => {
 		await writeRevision(
 			'broken',
 			'',
-			'export const templateLookup = {pieces:{},site:{root:"root"}}; export function render() { throw new Error("render failed"); }'
+			'export const templateLookup = {site:{root:"root"}}; export function render() { throw new Error("render failed"); }'
 		)
 		await select('broken')
 		const loaded = await loadTemplateBundle(directory)

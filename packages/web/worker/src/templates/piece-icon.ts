@@ -37,8 +37,6 @@ export const templateLookup = JSON.parse(${JSON.stringify(lookupJson)});
 <script>
 let { piece, size, lazy, active } = $props();
 const helpers = getContext(iconHelpersKey);
-const roles = $derived(Object.hasOwn(templateLookup.pieces, piece.type) ? templateLookup.pieces[piece.type] : undefined);
-const Icon = $derived(templates.get(roles?.icon));
 const options = $derived({
 	size: { width: size.width, height: size.height ?? size.width * 1.5 },
 	lazy: lazy ?? false,
@@ -46,11 +44,7 @@ const options = $derived({
 });
 </script>
 
-{#if Icon}
-	<Icon data={{ piece }} {options} {helpers} />
-{:else}
-	<DefaultIcon {piece} size={options.size} lazy={options.lazy} active={options.active} helpers={{ getPieceImageUrl: helpers.forPiece(piece).getImageUrl }} />
-{/if}
+<DefaultIcon {piece} size={options.size} lazy={options.lazy} active={options.active} helpers={{ getPieceImageUrl: helpers.forPiece(piece).getImageUrl }} />
 `,
 	}
 }

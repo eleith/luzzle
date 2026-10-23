@@ -1,34 +1,24 @@
 <script lang="ts">
-	import type { PublicWebPiece } from '@luzzle/web.pieces'
-	import type { PreparedPage } from '$lib/content/types.js'
-	import PageDefault from '$lib/pieces/components/page.default.svelte'
+	import { getPage } from '@luzzle/web.templates/pages'
+	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
 	import { getPieceHelpers } from '$lib/pieces/helpers.js'
 
 	type Props = {
-		piece: PublicWebPiece
+		piece: TemplatedPiece
 		tags: Array<{ slug: string; tag: string }>
-		presentation: PreparedPage | null
 	}
-
-	let { piece, tags, presentation }: Props = $props()
+	let { piece, tags }: Props = $props()
+	const Page = $derived(getPage(piece.templates?.page.name))
+	const fields = $derived(piece.templates?.page.fields ?? {})
 	const helpers = $derived(getPieceHelpers(piece))
+	const palette = $derived(helpers.getPiecePalette())
 </script>
 
-<svelte:head>
-	<!-- The app retains SEO ownership; prepared head carries styles/non-conflicting content. -->
-	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-	{@html presentation?.head ?? ''}
-</svelte:head>
-
-{#key piece}
-	{#if presentation}
-		{#if presentation.navBanner !== null}
-			<NavBanner {...presentation.navBanner} />
-		{/if}
-		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-		{@html presentation.body}
-	{:else}
-		<PageDefault {piece} {tags} {helpers} />
-	{/if}
-{/key}
+<NavBanner
+	showRandom
+	background={palette?.background || 'var(--color-surface-container)'}
+	color={palette?.bodyText}
+	hoverColor={palette?.accent}
+/>
+<Page {piece} {fields} {tags} {helpers} />

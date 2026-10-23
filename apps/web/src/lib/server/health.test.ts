@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { makeConfig } from './config.fixture'
+import { makeConfig as baseConfig } from './config.fixture'
+import type { TemplateConfig } from '@luzzle/web.templates/config'
 import { buildHealthConfigSummary } from './health.js'
+
+const makeConfig = (overrides: Partial<TemplateConfig> = {}): TemplateConfig => ({
+	...baseConfig(),
+	...overrides
+})
 
 describe('buildHealthConfigSummary', () => {
 	test('reports the storage root', () => {
@@ -9,13 +15,17 @@ describe('buildHealthConfigSummary', () => {
 		expect(buildHealthConfigSummary(config).storageRoot).toBe('/data/archive')
 	})
 
-	test('summarizes piece types by their configured field and component values', () => {
+	test('summarizes piece types by their configured fields and selected template IDs', () => {
 		const config = makeConfig({
 			pieces: [
 				{
 					type: 'article',
 					fields: { title: 'title', date_consumed: 'read_date', media: ['images', 'cover'] },
-					components: { icon: 'icon.svelte' }
+					templates: {
+						icon: { name: 'default', mapping: { image: { field: 'cover' } } },
+						page: { name: 'default', mapping: {} },
+						opengraph: { name: 'default', mapping: {} }
+					}
 				},
 				{
 					type: 'bookmark',
@@ -34,7 +44,11 @@ describe('buildHealthConfigSummary', () => {
 					{ name: 'date_consumed', value: 'read_date' },
 					{ name: 'media', value: 'images, cover' }
 				],
-				components: [{ name: 'icon', value: 'icon.svelte' }]
+				templates: [
+					{ name: 'icon', value: 'default' },
+					{ name: 'page', value: 'default' },
+					{ name: 'opengraph', value: 'default' }
+				]
 			},
 			{
 				type: 'bookmark',
@@ -42,7 +56,11 @@ describe('buildHealthConfigSummary', () => {
 					{ name: 'title', value: 'title' },
 					{ name: 'date_consumed', value: 'date' }
 				],
-				components: []
+				templates: [
+					{ name: 'icon', value: 'default' },
+					{ name: 'page', value: 'default' },
+					{ name: 'opengraph', value: 'default' }
+				]
 			}
 		])
 	})

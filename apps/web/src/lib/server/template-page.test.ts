@@ -16,7 +16,7 @@ function page(
 	return {
 		revision,
 		themeCss: `/* theme ${revision} */`,
-		templateLookup: { pieces: {}, site: { root: 'page' } },
+		templateLookup: { site: { root: 'page' } },
 		render(name, props) {
 			expect(name).toBe('page')
 			const { helpers } = props as { helpers: PageTemplateHelpers }

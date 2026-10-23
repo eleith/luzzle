@@ -21,6 +21,37 @@ export type PieceComponentHelpers = {
 	getPieceAssetContent: (key: string, transform: string) => string | undefined
 }
 
+export function safeExternalUrl(value?: string): string | undefined {
+	if (!value) return undefined
+	try {
+		const url = new URL(value)
+		return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url.href : undefined
+	} catch {
+		return undefined
+	}
+}
+
+/** Shared date/duration formatting; layouts and field mappings remain template-owned. */
+export function formatPieceByline(
+	dateConsumed?: number | null,
+	dateReleased?: string | number,
+	runtime?: number
+): string {
+	const parts: string[] = []
+	if (dateReleased !== undefined) {
+		const date = new Date(dateReleased)
+		if (!Number.isNaN(date.getTime())) parts.push(String(date.getUTCFullYear()))
+	}
+	if (runtime !== undefined) parts.push(`${runtime} min`)
+	if (dateConsumed != null) {
+		const date = new Date(dateConsumed)
+		if (!Number.isNaN(date.getTime())) {
+			parts.push(date.toLocaleDateString('en-US', { timeZone: 'UTC' }).replaceAll('/', '.'))
+		}
+	}
+	return parts.join(' · ')
+}
+
 export const OpengraphImageWidth = 1200
 export const OpengraphImageHeight = 630
 

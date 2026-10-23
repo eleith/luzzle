@@ -56,7 +56,7 @@ function makeBundle(revision: string): LoadedTemplateBundle {
 	return {
 		revision,
 		themeCss: `/* ${revision} theme */`,
-		templateLookup: { pieces: {}, site: { feed: 'owner-feed' } },
+		templateLookup: { site: { feed: 'owner-feed' } },
 		render: vi.fn((_name: string, props: object) => {
 			const input = props as RenderProps
 			captured.push(input)

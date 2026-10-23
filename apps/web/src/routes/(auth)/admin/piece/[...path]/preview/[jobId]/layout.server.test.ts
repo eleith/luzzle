@@ -1,8 +1,17 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { getWorkflowRun, getStepAttempts, type WorkflowRunRow } from '@luzzle/web.jobs'
 import type { AssembledPreview } from '$lib/pieces/preview/assemble.server.js'
-import { publishedPiece } from '$lib/pieces/viewer/fixtures/published.js'
+import { publishedPiece as rawPublishedPiece } from '$lib/pieces/viewer/fixtures/published.js'
 import { load } from './+layout.server.js'
+
+const publishedPiece = {
+	...rawPublishedPiece,
+	templates: {
+		icon: { name: 'default', fields: { image: 'cover' } },
+		page: { name: 'default', fields: { image: 'cover' } },
+		opengraph: { name: 'default', fields: { image: 'cover' } }
+	}
+}
 
 const { assemblePreview, query } = vi.hoisted(() => ({
 	assemblePreview: vi.fn<() => AssembledPreview>(),

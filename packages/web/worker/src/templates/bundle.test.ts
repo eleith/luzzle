@@ -25,20 +25,19 @@ afterEach(async () => {
 
 const renderBundle = `
 const { render, templateLookup } = await import(process.argv[1]);
-const piece = render(templateLookup.pieces['custom-kind'].page, { data: { piece: { title: '<Piece>&' } } });
+const feed = render(templateLookup.site.feed, { data: { pieces: [{ title: '<Feed>&' }] } });
 const root = render(templateLookup.site.root, { data: { pieces: [{ title: 'Site' }] } });
-const reserved = render(templateLookup.pieces['__proto__'].icon, { data: { piece: { title: 'Reserved' } } });
-console.log(JSON.stringify({ piece, root, reserved, templateLookup }));
+console.log(JSON.stringify({ feed, root, templateLookup }));
 `
 
 describe('buildTemplateBundle', () => {
-	test('builds configured templates with a lookup that selects the right rendered output', async () => {
+	test('builds configured site templates with a lookup that selects the right rendered output', async () => {
 		await writeFile(
-			path.join(directory, 'piece.svelte'),
+			path.join(directory, 'feed.svelte'),
 			`
 			<script>let { data } = $props()</script>
-			<p class="piece">{data.piece.title}</p>
-			<style>.piece { color: var(--color-primary); }</style>
+			<p class="feed">{data.pieces[0].title}</p>
+			<style>.feed { color: var(--color-primary); }</style>
 		`
 		)
 		await writeFile(
@@ -53,12 +52,11 @@ describe('buildTemplateBundle', () => {
 			pieces: ['custom-kind', '__proto__'].map((type) => ({
 				type,
 				fields: { title: 'title', date_consumed: 'date' },
-				components: { page: './piece.svelte', icon: './piece.svelte', opengraph: './piece.svelte' },
 			})),
 			content: {
 				component: {
 					root: './site.svelte',
-					feed: './site.svelte',
+					feed: './feed.svelte',
 					'404': './site.svelte',
 					error: './site.svelte',
 				},
@@ -68,18 +66,13 @@ describe('buildTemplateBundle', () => {
 		const bundle = await buildTemplateBundle(config)
 		const { templateLookup } = bundle
 		expect(bundle.warnings).toEqual([])
-		expect(Object.keys(templateLookup.pieces)).toEqual(['custom-kind', '__proto__'])
-		for (const roles of Object.values(templateLookup.pieces)) {
-			expect(Object.keys(roles)).toEqual(['page', 'icon', 'opengraph'])
-			expect(roles.icon).toBe(roles.page)
-			expect(roles.opengraph).toBe(roles.page)
-		}
-		expect(templateLookup.pieces['__proto__'].page).toBe(templateLookup.pieces['custom-kind'].page)
-		expect(new Set(Object.values(templateLookup.site))).toEqual(new Set([templateLookup.site.root]))
+		expect(Object.keys(templateLookup)).toEqual(['site'])
+		expect(templateLookup.site['404']).toBe(templateLookup.site.root)
+		expect(templateLookup.site.error).toBe(templateLookup.site.root)
 		expect(new Set(Object.keys(templateLookup.site))).toEqual(
 			new Set(['root', 'feed', '404', 'error'])
 		)
-		expect(templateLookup.site.root).not.toBe(templateLookup.pieces['custom-kind'].page)
+		expect(templateLookup.site.root).not.toBe(templateLookup.site.feed)
 		expect(JSON.stringify(templateLookup)).not.toContain(directory)
 		expect(JSON.stringify(templateLookup)).not.toContain('.svelte')
 
@@ -91,20 +84,19 @@ describe('buildTemplateBundle', () => {
 			renderBundle,
 			pathToFileURL(modulePath).href,
 		])
-		const { piece, root, reserved, templateLookup: moduleLookup } = JSON.parse(stdout)
+		const { feed, root, templateLookup: moduleLookup } = JSON.parse(stdout)
 		expect(moduleLookup).toEqual(templateLookup)
-		expect(piece.body).toContain('&lt;Piece>&amp;')
-		expect(piece.head).toContain('--color-primary')
-		expect(piece.head).not.toContain('--color-secondary')
+		expect(feed.body).toContain('&lt;Feed>&amp;')
+		expect(feed.head).toContain('--color-primary')
+		expect(feed.head).not.toContain('--color-secondary')
 		expect(root.body).toContain('Site')
 		expect(root.head).toContain('--color-secondary')
-		expect(reserved.body).toContain('Reserved')
 	})
 
 	test('builds default theme CSS with an empty lookup when no overrides are configured', async () => {
 		const config = validateConfig({})
 		const bundle = await buildTemplateBundle(config)
-		expect(bundle.templateLookup).toEqual({ pieces: {}, site: {} })
+		expect(bundle.templateLookup).toEqual({ site: {} })
 		expect(bundle.warnings).toEqual([])
 		expect(bundle.themeCss).toBe(
 			generateThemeCss(config) +
@@ -161,36 +153,5 @@ describe('buildTemplateBundle', () => {
 			code: 'element_unclosed',
 			filename,
 		})
-	})
-
-	test('rejects conflicting registrations for the same piece type and role', async () => {
-		await writeFile(path.join(directory, 'first.svelte'), '<p>First</p>')
-		await writeFile(path.join(directory, 'second.svelte'), '<p>Second</p>')
-		const config = validateConfig({
-			pieces: ['first', 'second'].map((file) => ({
-				type: 'same-kind',
-				fields: { title: 'title', date_consumed: 'date' },
-				components: { page: `./${file}.svelte` },
-			})),
-		})
-		config.paths.config = path.join(directory, 'config.yaml')
-		await expect(buildTemplateBundle(config)).rejects.toThrow(
-			'Conflicting page templates for piece type "same-kind"'
-		)
-	})
-
-	test('coalesces identical repeated registrations for the same role', async () => {
-		await writeFile(path.join(directory, 'shared.svelte'), '<p>Shared</p>')
-		const config = validateConfig({
-			pieces: [1, 2].map(() => ({
-				type: 'same-kind',
-				fields: { title: 'title', date_consumed: 'date' },
-				components: { page: './shared.svelte' },
-			})),
-		})
-		config.paths.config = path.join(directory, 'config.yaml')
-		const bundle = await buildTemplateBundle(config)
-		expect(Object.keys(bundle.templateLookup.pieces)).toEqual(['same-kind'])
-		expect(Object.keys(bundle.templateLookup.pieces['same-kind'])).toEqual(['page'])
 	})
 })

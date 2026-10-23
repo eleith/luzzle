@@ -1,26 +1,33 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import type { Config } from '@luzzle/web.config'
+import type { TemplateConfig as Config } from '@luzzle/web.templates/config'
 import type { PreviewResult } from '@luzzle/web.jobs'
 import { createPieceHelpers, type PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { makeConfig } from '$lib/server/config.fixture.js'
 import { assemblePreview, type PreviewWorkerResult } from './assemble.server.js'
 import { previewOutputUrl } from './output-url.js'
 
-const pieceConfig: Config['pieces'][number] = makeConfig({
-	pieces: [
-		{
-			type: 'book',
-			fields: {
-				title: 'details.title',
-				summary: 'details.summary',
-				date_consumed: 'details.read_on',
-				tags: 'tags',
-				media: ['media.cover', 'media.gallery[*].key'],
-				attachments: ['files']
+const pieceConfig: Config['pieces'][number] = {
+	...makeConfig({
+		pieces: [
+			{
+				type: 'book',
+				fields: {
+					title: 'details.title',
+					summary: 'details.summary',
+					date_consumed: 'details.read_on',
+					tags: 'tags',
+					media: ['media.cover', 'media.gallery[*].key'],
+					attachments: ['files']
+				}
 			}
-		}
-	]
-}).pieces[0]
+		]
+	}).pieces[0],
+	templates: {
+		icon: { name: 'default', mapping: { image: 'media.cover' } },
+		page: { name: 'default', mapping: { image: 'media.gallery[0].key' } },
+		opengraph: { name: 'default', mapping: { image: 'media.cover' } }
+	}
+}
 
 function workerResult(overrides: Partial<PreviewWorkerResult> = {}): PreviewWorkerResult {
 	return {
@@ -237,7 +244,12 @@ test('preserves piece metadata and the existing comma, accent, and duplicate tag
 		assets: passthroughs,
 		date_added: Date.now(),
 		date_updated: Date.now(),
-		date_consumed: 123
+		date_consumed: 123,
+		templates: {
+			icon: { name: 'default', fields: { image: 'cover-key' } },
+			page: { name: 'default', fields: { image: 'gallery-key' } },
+			opengraph: { name: 'default', fields: { image: 'cover-key' } }
+		}
 	})
 	expect(assembled.tags).toStrictEqual([
 		{ slug: 'cafe', tag: 'Café' },
@@ -261,6 +273,11 @@ test('handles missing optional fields without inventing assets or tags and retai
 	expect(assembled.piece.assets).toStrictEqual([])
 	expect(assembled.tags).toStrictEqual([])
 	expect(assembled.piece).toMatchObject({ title: '', slug: 'cafe-draftbookmd' })
+	expect(assembled.piece.templates).toStrictEqual({
+		icon: { name: 'default', fields: {} },
+		page: { name: 'default', fields: {} },
+		opengraph: { name: 'default', fields: {} }
+	})
 	expect(assembled.piece.summary).toBeUndefined()
 	expect(assembled.piece.keywords).toBeUndefined()
 	expect(assembled.piece.date_consumed).toBeUndefined()

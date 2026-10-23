@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, expect, test } from 'vitest'
+import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest'
 import { execFile } from 'node:child_process'
 import {
 	mkdir,
@@ -14,6 +14,9 @@ import {
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
+
+// Native CLI startup and compilation can exceed Vitest's default under concurrent verification.
+vi.setConfig({ testTimeout: 30000 })
 
 const exec = promisify(execFile)
 const workerRoot = fileURLToPath(new URL('../../', import.meta.url))
@@ -55,19 +58,19 @@ function run(args: string[] = [], cwd = fixture) {
 
 async function configure(paths: object = {}) {
 	await writeFile(
-		path.join(fixture, 'page.svelte'),
-		'<script>let { data } = $props()</script><h1>{data.piece.title}</h1>'
+		path.join(fixture, 'site.svelte'),
+		'<script>let { data } = $props()</script><h1>{data.pieces[0].title}</h1>'
 	)
 	const filename = path.join(fixture, 'config.yaml')
 	await writeFile(
 		filename,
 		JSON.stringify({
 			paths,
+			content: { component: { root: './site.svelte' } },
 			pieces: [
 				{
 					type: 'arbitrary-kind',
 					fields: { title: 'title', date_consumed: 'date' },
-					components: { page: './page.svelte' },
 				},
 			],
 		})
@@ -107,7 +110,7 @@ test('publishes with default paths and renders a real standalone artifact', asyn
 		'-e',
 		`
 const bundle = await import(process.argv[1]);
-console.log(JSON.stringify(bundle.render(bundle.templateLookup.pieces['arbitrary-kind'].page, {data:{piece:{title:'<Published>&'}}})));
+console.log(JSON.stringify(bundle.render(bundle.templateLookup.site.root, {data:{pieces:[{title:'<Published>&'}]}})));
 `,
 		pathToFileURL(path.join(revisionDirectory, 'templates.mjs')).href,
 	])
@@ -121,21 +124,20 @@ test('fresh CLI processes follow an atomically replaced config through the compa
 	await rename(filename, target)
 	await symlink('config/config.yaml', filename)
 
-	async function renderArtifact(prepared: string, revision: string, type: string) {
+	async function renderArtifact(prepared: string, revision: string) {
 		const { stdout } = await exec(process.execPath, [
 			'--input-type=module',
 			'-e',
 			`
 const { render, templateLookup } = await import(process.argv[1]);
-const props = {data:{piece:{title:'<Linked>&'}}};
+const props = {data:{pieces:[{title:'<Linked>&'}]}};
 console.log(JSON.stringify({
 	templateLookup,
-	piece: render(templateLookup.pieces[process.argv[2]].page, props),
+	root: templateLookup.site.root ? render(templateLookup.site.root, props) : null,
 	feed: templateLookup.site.feed ? render(templateLookup.site.feed, props) : null,
 }));
 `,
 			pathToFileURL(path.join(prepared, 'revisions', revision, 'templates.mjs')).href,
-			type,
 		])
 		return JSON.parse(stdout)
 	}
@@ -145,10 +147,10 @@ console.log(JSON.stringify({
 	const prepared = path.join(fixture, 'data/prepared')
 	expect(first.directory).toBe(prepared)
 	expect(await selected(prepared)).toEqual({ revision: first.revision })
-	const original = await renderArtifact(prepared, first.revision, 'arbitrary-kind')
-	expect(Object.keys(original.templateLookup.pieces)).toEqual(['arbitrary-kind'])
-	expect(original.templateLookup.site).toEqual({})
-	expect(original.piece.body).toContain('<h1>&lt;Linked>&amp;</h1>')
+	const original = await renderArtifact(prepared, first.revision)
+	expect(Object.keys(original.templateLookup)).toEqual(['site'])
+	expect(Object.keys(original.templateLookup.site)).toEqual(['root'])
+	expect(original.root.body).toContain('<h1>&lt;Linked>&amp;</h1>')
 
 	const temporary = path.join(fixture, 'config/config.next.yaml')
 	await writeFile(
@@ -159,10 +161,9 @@ console.log(JSON.stringify({
 				{
 					type: 'replacement-kind',
 					fields: { title: 'title', date_consumed: 'date' },
-					components: { page: './page.svelte' },
 				},
 			],
-			content: { component: { feed: './page.svelte' } },
+			content: { component: { feed: './site.svelte' } },
 		})
 	)
 	await rename(temporary, target)
@@ -171,14 +172,14 @@ console.log(JSON.stringify({
 	expect(second.directory).toBe(path.join(fixture, 'output/prepared'))
 	expect(second.revision).not.toBe(first.revision)
 	expect(await selected(second.directory)).toEqual({ revision: second.revision })
-	const replacement = await renderArtifact(second.directory, second.revision, 'replacement-kind')
-	expect(Object.keys(replacement.templateLookup.pieces)).toEqual(['replacement-kind'])
+	const replacement = await renderArtifact(second.directory, second.revision)
+	expect(Object.keys(replacement.templateLookup)).toEqual(['site'])
 	expect(Object.keys(replacement.templateLookup.site)).toEqual(['feed'])
-	expect(replacement.piece.body).toContain('<h1>&lt;Linked>&amp;</h1>')
+	expect(replacement.root).toBeNull()
 	expect(replacement.feed.body).toContain('<h1>&lt;Linked>&amp;</h1>')
 	// Changing the relative output leaves the old selected revision and artifact intact.
 	expect(await selected(prepared)).toEqual({ revision: first.revision })
-	expect(await renderArtifact(prepared, first.revision, 'arbitrary-kind')).toEqual(original)
+	expect(await renderArtifact(prepared, first.revision)).toEqual(original)
 	expect(await readdir(path.join(fixture, 'config'))).toEqual(['config.yaml'])
 }, 30000)
 
@@ -203,7 +204,7 @@ test('preserves an absolute output setting and accepts an absolute config filena
 
 test('returns compiler warnings and their real source filename without failing publication', async () => {
 	await configure({ prepared: './prepared' })
-	const filename = path.join(fixture, 'page.svelte')
+	const filename = path.join(fixture, 'site.svelte')
 	await writeFile(filename, '<p>Warning</p><style>.unused { color: var(--color-primary); }</style>')
 	const { stdout } = await run()
 	const result = JSON.parse(stdout)
@@ -219,7 +220,7 @@ test('returns compiler warnings and their real source filename without failing p
 test('publishes replacement revisions and retains the previous revision', async () => {
 	await configure({ prepared: './prepared' })
 	const first = JSON.parse((await run()).stdout)
-	await writeFile(path.join(fixture, 'page.svelte'), '<p>Replacement</p>')
+	await writeFile(path.join(fixture, 'site.svelte'), '<p>Replacement</p>')
 	const second = JSON.parse((await run()).stdout)
 	expect(second.revision).not.toBe(first.revision)
 	expect(await selected(second.directory)).toEqual({ revision: second.revision })
@@ -246,10 +247,10 @@ test('keeps the selected revision and CSS untouched after a real compilation fai
 		path.join(first.directory, 'revisions', first.revision, 'theme.css'),
 		'utf8'
 	)
-	await writeFile(path.join(fixture, 'page.svelte'), '<div>')
+	await writeFile(path.join(fixture, 'site.svelte'), '<div>')
 	await expect(run()).rejects.toMatchObject({
 		code: 1,
-		stderr: expect.stringContaining('page.svelte'),
+		stderr: expect.stringContaining('site.svelte'),
 	})
 	expect(await readFile(path.join(first.directory, 'current.json'), 'utf8')).toBe(pointer)
 	expect(
