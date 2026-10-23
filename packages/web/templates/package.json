@@ -9,14 +9,48 @@
 	},
 	"files": [
 		"dist",
-		"src/components/*.svelte"
+		"src/components/*.svelte",
+		"config.schema.json"
 	],
 	"scripts": {
 		"prebuild": "rm -rf dist",
 		"build": "tsc -p tsconfig.json",
+		"postbuild": "node scripts/generate-schema.js",
+		"test": "node --test \"src/**/*.test.js\"",
 		"lint": "eslint . && prettier --check ."
 	},
 	"exports": {
+		"./config": {
+			"development": "./src/config/index.ts",
+			"types": "./dist/config/index.d.ts",
+			"import": "./dist/config/index.js"
+		},
+		"./schema": {
+			"development": "./src/config/schema.ts",
+			"types": "./dist/config/schema.d.ts",
+			"import": "./dist/config/schema.js"
+		},
+		"./icons/*/schema": {
+			"development": "./src/icons/*/schema.ts",
+			"types": "./dist/icons/*/schema.d.ts",
+			"import": "./dist/icons/*/schema.js"
+		},
+		"./pages/*/schema": {
+			"development": "./src/pages/*/schema.ts",
+			"types": "./dist/pages/*/schema.d.ts",
+			"import": "./dist/pages/*/schema.js"
+		},
+		"./opengraphs/*/schema": {
+			"development": "./src/opengraphs/*/schema.ts",
+			"types": "./dist/opengraphs/*/schema.d.ts",
+			"import": "./dist/opengraphs/*/schema.js"
+		},
+		"./config.schema.json": "./config.schema.json",
+		"./mapping": {
+			"development": "./src/mapping.ts",
+			"types": "./dist/mapping.d.ts",
+			"import": "./dist/mapping.js"
+		},
 		"./components/*.svelte": "./src/components/*.svelte",
 		"./pieces/props": {
 			"types": "./dist/pieces/props.d.ts"
@@ -33,6 +67,11 @@
 		"./bundle": {
 			"types": "./dist/bundle.d.ts"
 		}
+	},
+	"dependencies": {
+		"@luzzle/core": "workspace:*",
+		"@luzzle/web.config": "workspace:*",
+		"@sinclair/typebox": "0.34.49"
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",

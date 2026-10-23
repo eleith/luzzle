@@ -51,5 +51,8 @@ jobs:
       - name: Build
         run: pnpm --filter @luzzle/web.templates build
 
+      - name: Test
+        run: pnpm --filter @luzzle/web.templates test
+
       - name: Lint
         run: pnpm --filter @luzzle/web.templates lint

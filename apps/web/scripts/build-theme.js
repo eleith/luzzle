@@ -1,6 +1,6 @@
 import { generateThemeCss } from '@luzzle/web.theme'
 import { generateEditorThemeCss } from '@luzzle/web.theme/editor'
-import { loadConfig } from '@luzzle/web.config'
+import { loadConfig } from '@luzzle/web.templates/config'
 import path from 'path'
 import { existsSync } from 'fs'
 import { fileURLToPath } from 'url'

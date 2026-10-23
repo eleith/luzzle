@@ -1,9 +1,9 @@
-import { type Config, type ConfigPublic } from '@luzzle/web.config'
-import { loadConfig } from '@luzzle/web.config'
+import { type ConfigPublic } from '@luzzle/web.config'
+import { loadConfig, type TemplateConfig } from '@luzzle/web.templates/config'
 import * as path from 'path'
 import { existsSync } from 'fs'
 
-export type AppConfig = Config
+export type AppConfig = TemplateConfig
 export type AppConfigPublic = ConfigPublic
 
 let cachedConfig: AppConfig | null = null

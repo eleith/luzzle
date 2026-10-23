@@ -1,4 +1,4 @@
-import { loadConfig } from '@luzzle/web.config'
+import { loadConfig } from '@luzzle/web.templates/config'
 import { copyFile, mkdir, readdir, unlink, rmdir, stat } from 'fs/promises'
 import path from 'path'
 

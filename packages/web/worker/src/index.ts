@@ -1,5 +1,5 @@
 import { getDatabaseClient, migrate } from '@luzzle/core'
-import { loadConfig } from '@luzzle/web.config'
+import { loadConfig } from '@luzzle/web.templates/config'
 import { resolveDbPath, resolveOpenWorkflowDbPath } from './services/db.js'
 import { runWebMigrations } from '@luzzle/web.db'
 import { createHealthServer } from './services/health.js'

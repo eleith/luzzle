@@ -2,38 +2,64 @@ import { readFileSync } from "fs";
 import { parse as yamlParse, YAMLParseError } from "yaml";
 import { Value } from "@sinclair/typebox/value";
 import { ConfigSchema } from "./schema.js";
+import type { Static, TSchema } from "@sinclair/typebox";
 import type { Config } from "./schema.js";
 import { createInputSchema } from "./input-schema.js";
 import { ConfigError, configIssues } from "./errors.js";
 import { interpolate } from "./interpolate.js";
 
-const InputSchema = createInputSchema(ConfigSchema);
+// Compare validated values, not TypeBox's exact schema/required-tuple representation.
+type BaseConfigSchema = TSchema & { static: Config };
+
+export interface ConfigSchemaOptions<
+	Schema extends BaseConfigSchema = BaseConfigSchema,
+> {
+	/** A complete schema extending the base configuration contract. */
+	schema: Schema;
+}
 
 export type ConfigPublic = {
 	url: Pick<Config["url"], "app" | "luzzle_assets" | "app_assets">;
 	content: Config["content"];
 };
 
+export function validateConfig(raw: unknown, env?: NodeJS.ProcessEnv): Config;
+export function validateConfig<Schema extends BaseConfigSchema>(
+	raw: unknown,
+	env: NodeJS.ProcessEnv | undefined,
+	options: ConfigSchemaOptions<Schema>,
+): Static<Schema>;
 export function validateConfig(
 	raw: unknown,
 	env: NodeJS.ProcessEnv = process.env,
+	options?: ConfigSchemaOptions,
 ): Config {
+	const schema = options?.schema ?? ConfigSchema;
+	const inputSchema = createInputSchema(schema);
 	// Check input shape before defaults: Value.Default can otherwise turn an array
 	// supplied for a defaulted object into an apparently valid configuration.
-	if (!Value.Check(InputSchema, raw)) {
-		throw new ConfigError(configIssues(Value.Errors(InputSchema, raw)));
+	if (!Value.Check(inputSchema, raw)) {
+		throw new ConfigError(configIssues(Value.Errors(inputSchema, raw)));
 	}
 
-	const defaulted = Value.Default(ConfigSchema, structuredClone(raw));
+	const defaulted = Value.Default(schema, structuredClone(raw));
 	const config = interpolate(defaulted, env);
-	if (!Value.Check(ConfigSchema, config)) {
-		throw new ConfigError(configIssues(Value.Errors(ConfigSchema, config)));
+	if (!Value.Check(schema, config)) {
+		throw new ConfigError(configIssues(Value.Errors(schema, config)));
 	}
 	return config;
 }
 
 /** No filename uses defaults; an explicit filename must exist and be readable. */
-function loadConfig(userConfigPath?: string): Config {
+function loadConfig(userConfigPath?: string): Config;
+function loadConfig<Schema extends BaseConfigSchema>(
+	userConfigPath: string | undefined,
+	options: ConfigSchemaOptions<Schema>,
+): Static<Schema>;
+function loadConfig(
+	userConfigPath?: string,
+	options?: ConfigSchemaOptions,
+): Config {
 	let raw: unknown = {};
 	if (userConfigPath !== undefined) {
 		const source = readFileSync(userConfigPath, "utf8");
@@ -54,8 +80,16 @@ function loadConfig(userConfigPath?: string): Config {
 		}
 	}
 
-	const config = validateConfig(raw);
-	if (userConfigPath !== undefined) config.paths.config = userConfigPath;
+	const config = options
+		? validateConfig(raw, process.env, options)
+		: validateConfig(raw);
+	if (userConfigPath !== undefined) {
+		config.paths.config = userConfigPath;
+		const schema = options?.schema ?? ConfigSchema;
+		if (!Value.Check(schema, config)) {
+			throw new ConfigError(configIssues(Value.Errors(schema, config)));
+		}
+	}
 	return config;
 }
 

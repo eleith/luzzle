@@ -8,6 +8,7 @@
 		"build:assets": "cp src/lib/config/web.config.schema.json dist/src/lib/config/",
 		"build:external-schema": "node scripts/generate-external-schema.js",
 		"check:schemas": "node scripts/generate-external-schema.js --check",
+		"check:types": "tsc -p tsconfig.json --noEmit --declarationMap false",
 		"prebuild": "npm run build:external-schema && rm -rf dist",
 		"postbuild": "npm run build:assets",
 		"build": "tsc -p tsconfig.build.json",
@@ -27,6 +28,11 @@
 	"homepage": "https://github.com/eleith/luzzle",
 	"description": "shared configuration and schemas for the luzzle web ecosystem",
 	"exports": {
+		"./mapping": {
+			"development": "./src/lib/mapping/schema.ts",
+			"types": "./dist/src/lib/mapping/schema.d.ts",
+			"import": "./dist/src/lib/mapping/schema.js"
+		},
 		".": {
 			"development": "./src/index.ts",
 			"types": "./dist/src/index.d.ts",

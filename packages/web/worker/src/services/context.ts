@@ -1,4 +1,4 @@
-import { loadConfig, type Config } from '@luzzle/web.config'
+import { loadConfig, type TemplateConfig } from '@luzzle/web.templates/config'
 import { createLogger } from './logger.js'
 import type { Logger } from './logger.js'
 import { RcloneClient } from './rclone.js'
@@ -8,7 +8,7 @@ import { createAppDb, resolveDbPath } from './db.js'
 import { PhaseLogger } from '../core/phase-logger.js'
 
 export interface WorkerContext {
-	config: Config
+	config: TemplateConfig
 	logger: Logger
 	rclone: RcloneClient
 	db: Kysely<AppDatabase>

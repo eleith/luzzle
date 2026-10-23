@@ -1,4 +1,4 @@
-import { loadConfig } from '@luzzle/web.config'
+import { loadConfig } from '@luzzle/web.templates/config'
 import { spawn } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'

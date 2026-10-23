@@ -272,6 +272,9 @@ importers:
       '@luzzle/web.pieces':
         specifier: workspace:*
         version: link:../../packages/web/pieces
+      '@luzzle/web.templates':
+        specifier: workspace:*
+        version: link:../../packages/web/templates
       '@replit/codemirror-vim':
         specifier: 6.4.0
         version: 6.4.0(@codemirror/commands@6.10.3)(@codemirror/language@6.12.3)(@codemirror/search@6.7.0)(@codemirror/state@6.6.0)(@codemirror/view@6.43.0)
@@ -345,9 +348,6 @@ importers:
       '@luzzle/web.jobs':
         specifier: workspace:*
         version: link:../../packages/web/jobs
-      '@luzzle/web.templates':
-        specifier: workspace:*
-        version: link:../../packages/web/templates
       '@luzzle/web.theme':
         specifier: workspace:*
         version: link:../../packages/web/theme
@@ -678,6 +678,16 @@ importers:
   packages/web/proxy: {}
 
   packages/web/templates:
+    dependencies:
+      '@luzzle/core':
+        specifier: workspace:*
+        version: link:../../../apps/core
+      '@luzzle/web.config':
+        specifier: workspace:*
+        version: link:../config
+      '@sinclair/typebox':
+        specifier: 0.34.49
+        version: 0.34.49
     devDependencies:
       '@eslint/js':
         specifier: 'catalog:'

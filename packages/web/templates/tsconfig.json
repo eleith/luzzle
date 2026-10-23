@@ -6,7 +6,6 @@
 		"strict": true,
 		"verbatimModuleSyntax": true,
 		"declaration": true,
-		"emitDeclarationOnly": true,
 		"rootDir": "src",
 		"outDir": "dist",
 		"types": [],

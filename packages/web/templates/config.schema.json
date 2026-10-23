@@ -1,0 +1,1958 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Luzzle web configuration",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "network": {
+      "default": {},
+      "description": "Internal service and development network settings.",
+      "type": "object",
+      "properties": {
+        "internal": {
+          "default": {},
+          "type": "object",
+          "properties": {
+            "explorer": {
+              "default": "http://luzzle-web:3000",
+              "description": "Explorer address used to allow its hostname in the development server.",
+              "type": "string"
+            },
+            "lsp": {
+              "default": "http://luzzle-lsp:9001",
+              "description": "Reserved LSP address. Proxy routing is configured separately with LUZZLE_PROXY_LSP_UPSTREAM.",
+              "type": "string"
+            },
+            "worker": {
+              "default": "http://luzzle-worker:9000",
+              "description": "Worker service address for health checks.",
+              "type": "string"
+            }
+          }
+        },
+        "public": {
+          "default": {},
+          "type": "object",
+          "properties": {
+            "host": {
+              "default": "0.0.0.0",
+              "description": "Development server bind address, not the public site URL.",
+              "type": "string"
+            },
+            "hmr_port": {
+              "description": "Vite hot-reload client port, when different from the server port.",
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "url": {
+      "default": {},
+      "additionalProperties": false,
+      "description": "Public site and asset URLs.",
+      "type": "object",
+      "properties": {
+        "app": {
+          "default": "${LUZZLE_APP_URL:-http://localhost:8080}",
+          "description": "Public Explorer URL. Supports an explicit environment reference.",
+          "type": "string"
+        },
+        "app_assets": {
+          "default": "",
+          "description": "Application asset base URL. Empty uses same-origin paths; a CDN URL is allowed.",
+          "type": "string"
+        },
+        "luzzle_assets": {
+          "default": "",
+          "description": "Published piece asset base URL. Empty uses same-origin paths; a CDN URL is allowed.",
+          "type": "string"
+        }
+      }
+    },
+    "auth": {
+      "description": "Configure exactly one authentication provider and a session secret. Omit auth for a public-only site with admin access disabled.",
+      "anyOf": [
+        {
+          "title": "Credentials",
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "secret",
+            "credentials"
+          ],
+          "properties": {
+            "secret": {
+              "minLength": 1,
+              "description": "Session-signing secret. Supply a strong random value or an explicit environment reference; required whenever auth is configured.",
+              "examples": [
+                "${LUZZLE_AUTH_SECRET}"
+              ],
+              "type": "string"
+            },
+            "credentials": {
+              "additionalProperties": false,
+              "description": "Local username/password authentication.",
+              "type": "object",
+              "required": [
+                "username",
+                "password"
+              ],
+              "properties": {
+                "username": {
+                  "minLength": 1,
+                  "description": "Administrator username.",
+                  "examples": [
+                    "admin"
+                  ],
+                  "type": "string"
+                },
+                "password": {
+                  "minLength": 1,
+                  "description": "Administrator password or an explicit environment reference.",
+                  "examples": [
+                    "${LUZZLE_AUTH_PASSWORD}"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "OIDC",
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "secret",
+            "oidc"
+          ],
+          "properties": {
+            "secret": {
+              "minLength": 1,
+              "description": "Session-signing secret. Supply a strong random value or an explicit environment reference; required whenever auth is configured.",
+              "examples": [
+                "${LUZZLE_AUTH_SECRET}"
+              ],
+              "type": "string"
+            },
+            "oidc": {
+              "additionalProperties": false,
+              "description": "OpenID Connect authentication.",
+              "type": "object",
+              "required": [
+                "issuer",
+                "clientId",
+                "clientSecret"
+              ],
+              "properties": {
+                "name": {
+                  "default": "Single Sign-On",
+                  "description": "Label shown on the sign-in button.",
+                  "type": "string"
+                },
+                "issuer": {
+                  "minLength": 1,
+                  "description": "OIDC issuer URL or an explicit environment reference.",
+                  "examples": [
+                    "https://identity.example.com",
+                    "${OIDC_ISSUER}"
+                  ],
+                  "type": "string"
+                },
+                "clientId": {
+                  "minLength": 1,
+                  "description": "OIDC client identifier.",
+                  "type": "string"
+                },
+                "clientSecret": {
+                  "minLength": 1,
+                  "description": "OIDC client secret or an explicit environment reference.",
+                  "examples": [
+                    "${OIDC_CLIENT_SECRET}"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "storage": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "root": {
+          "minLength": 1,
+          "default": "./archive",
+          "description": "Local Markdown archive directory.",
+          "type": "string"
+        }
+      }
+    },
+    "sync": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "config": {
+          "default": "/app/rclone/rclone.conf",
+          "description": "rclone configuration file used by the worker.",
+          "type": "string"
+        },
+        "archive": {
+          "default": {},
+          "additionalProperties": false,
+          "description": "Bidirectional archive synchronization using rclone bisync.",
+          "type": "object",
+          "properties": {
+            "remote": {
+              "default": "",
+              "description": "rclone remote name, not an s3:// URL. Empty remote or path skips archive synchronization.",
+              "type": "string"
+            },
+            "path": {
+              "default": "",
+              "description": "Remote archive path, combined with the remote name as remote:path.",
+              "type": "string"
+            },
+            "flags": {
+              "default": [],
+              "description": "Additional rclone arguments, one argument per array entry.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "cdn": {
+          "default": {},
+          "additionalProperties": false,
+          "description": "Publish generated assets to a remote destination.",
+          "type": "object",
+          "properties": {
+            "remote": {
+              "default": "",
+              "description": "rclone remote name. Empty remote or path skips CDN synchronization.",
+              "type": "string"
+            },
+            "path": {
+              "default": "",
+              "description": "Remote published-assets path, combined as remote:path.",
+              "type": "string"
+            },
+            "flags": {
+              "default": [],
+              "description": "Additional rclone arguments, one argument per array entry.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "strategy": {
+              "default": "sync",
+              "description": "sync deletes destination-only files; copy does not.",
+              "anyOf": [
+                {
+                  "const": "sync",
+                  "type": "string"
+                },
+                {
+                  "const": "copy",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "worker": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "queue": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "path": {
+              "default": "./data/sidequest.sqlite",
+              "description": "Workflow queue database path. The legacy sidequest.sqlite filename is mapped to openworkflow.sqlite by the application.",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "ai": {
+      "additionalProperties": false,
+      "description": "AI generation settings. Omit ai to disable generation; both provider and api_key must be supplied when configured.",
+      "type": "object",
+      "required": [
+        "provider",
+        "api_key"
+      ],
+      "properties": {
+        "provider": {
+          "description": "Generation provider. Google is currently the supported provider; this field is required.",
+          "const": "google",
+          "type": "string"
+        },
+        "api_key": {
+          "minLength": 1,
+          "description": "Provider API key or an explicit environment reference.",
+          "examples": [
+            "${GOOGLE_API_KEY}"
+          ],
+          "type": "string"
+        }
+      }
+    },
+    "paths": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "database": {
+          "default": "./data/luzzle.sqlite",
+          "description": "SQLite index path, resolved relative to the config directory.",
+          "type": "string"
+        },
+        "prepared": {
+          "minLength": 1,
+          "default": "./data/prepared",
+          "description": "Prepared template bundle revisions, resolved relative to the config directory. Server-only artifact data shared by worker and web, not a public asset folder.",
+          "type": "string"
+        },
+        "assets": {
+          "default": "./assets/pieces",
+          "description": "Generated piece assets directory. Worker generation uses its working directory for relative paths.",
+          "type": "string"
+        },
+        "cache": {
+          "default": "./nginx",
+          "description": "Proxy cache directory.",
+          "type": "string"
+        },
+        "static": {
+          "default": "./static",
+          "description": "Static render assets directory.",
+          "type": "string"
+        },
+        "config": {
+          "description": "Runtime metadata: loadConfig records the supplied config filename here.",
+          "readOnly": true,
+          "type": "string"
+        }
+      }
+    },
+    "assets": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "salt": {
+          "default": "${LUZZLE_ASSET_SALT:-}",
+          "description": "Salt for generated asset keys. Changing it changes published asset URLs.",
+          "type": "string"
+        }
+      }
+    },
+    "content": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "component": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "404": {
+              "description": "Svelte source path for the not-found page.",
+              "type": "string"
+            },
+            "root": {
+              "description": "Svelte source path for the home page.",
+              "type": "string"
+            },
+            "feed": {
+              "description": "Svelte source path for the feed.",
+              "type": "string"
+            },
+            "error": {
+              "description": "Svelte source path for the error page.",
+              "type": "string"
+            }
+          }
+        },
+        "text": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "title": {
+              "default": "Luzzle Explorer",
+              "description": "Site title.",
+              "type": "string"
+            },
+            "description": {
+              "default": "A Luzzle Explorer instance",
+              "description": "Site description.",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "pieces": {
+      "default": [],
+      "description": "Ordered presentation and frontmatter mappings for archive piece types.",
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "fields"
+        ],
+        "properties": {
+          "type": {
+            "description": "Archive piece type associated with this presentation.",
+            "examples": [
+              "books"
+            ],
+            "type": "string"
+          },
+          "fields": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "title",
+              "date_consumed"
+            ],
+            "properties": {
+              "media": {
+                "description": "Frontmatter selectors for media assets.",
+                "examples": [
+                  [
+                    "cover"
+                  ]
+                ],
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "title": {
+                "description": "Frontmatter selector for the title, not a literal display title.",
+                "examples": [
+                  "title"
+                ],
+                "type": "string"
+              },
+              "summary": {
+                "description": "Frontmatter selector for a summary.",
+                "examples": [
+                  "description"
+                ],
+                "type": "string"
+              },
+              "date_consumed": {
+                "description": "Frontmatter selector for the consumed/read/viewed date.",
+                "examples": [
+                  "date_read"
+                ],
+                "type": "string"
+              },
+              "tags": {
+                "description": "Frontmatter selector for tags.",
+                "examples": [
+                  "keywords"
+                ],
+                "type": "string"
+              },
+              "attachments": {
+                "description": "Frontmatter selectors for attachments.",
+                "examples": [
+                  [
+                    "files[*].file"
+                  ]
+                ],
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "components": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "icon": {
+                "description": "Svelte source path for the piece icon.",
+                "type": "string"
+              },
+              "opengraph": {
+                "description": "Svelte source path for the Open Graph image.",
+                "type": "string"
+              },
+              "page": {
+                "description": "Svelte source path for the piece page.",
+                "type": "string"
+              }
+            }
+          },
+          "templates": {
+            "default": {},
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "icon": {
+                "default": {
+                  "name": "default"
+                },
+                "additionalProperties": false,
+                "description": "The default piece icon: a poster image with a title fallback.",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "default": "default",
+                    "const": "default",
+                    "type": "string"
+                  },
+                  "mapping": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "$id": "icon-default-image",
+                        "description": "Image asset key displayed as the poster.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "icon-default-image"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "icon-default-image"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "page": {
+                "default": {
+                  "name": "default"
+                },
+                "additionalProperties": false,
+                "description": "The default piece page with its title, note, tags and optional details.",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "default": "default",
+                    "const": "default",
+                    "type": "string"
+                  },
+                  "mapping": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "properties": {
+                      "subtitle": {
+                        "$id": "page-default-subtitle",
+                        "description": "Text displayed below the title.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-subtitle"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-subtitle"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "image": {
+                        "$id": "page-default-image",
+                        "description": "Representative image asset key.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-image"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-image"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "details": {
+                        "$id": "page-default-details",
+                        "description": "Ordered detail rows containing label and value fields.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-details"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "page-default-details"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "opengraph": {
+                "default": {
+                  "name": "default"
+                },
+                "additionalProperties": false,
+                "description": "The default share card using the piece title and summary.",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "default": "default",
+                    "const": "default",
+                    "type": "string"
+                  },
+                  "mapping": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "$id": "opengraph-default-image",
+                        "description": "Representative image asset key.",
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "field"
+                            ],
+                            "properties": {
+                              "field": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "default": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {}
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "fields"
+                            ],
+                            "properties": {
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "opengraph-default-image"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "each",
+                              "fields"
+                            ],
+                            "properties": {
+                              "each": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "fields": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^(.*)$": {
+                                    "$ref": "opengraph-default-image"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "theme": {
+      "default": {},
+      "additionalProperties": false,
+      "description": "Theme overrides. Omit any defaulted tokens you do not need to customize.",
+      "type": "object",
+      "properties": {
+        "light": {
+          "default": {},
+          "additionalProperties": false,
+          "description": "Light palette CSS color values; hex, rgb, hsl and other CSS color syntax are supported.",
+          "type": "object",
+          "properties": {
+            "color-primary": {
+              "default": "#0d6efd",
+              "type": "string"
+            },
+            "color-on-primary": {
+              "default": "#ffffff",
+              "type": "string"
+            },
+            "color-primary-container": {
+              "default": "#cfe2ff",
+              "type": "string"
+            },
+            "color-on-primary-container": {
+              "default": "#084298",
+              "type": "string"
+            },
+            "color-secondary": {
+              "default": "#6c757d",
+              "type": "string"
+            },
+            "color-on-secondary": {
+              "default": "#ffffff",
+              "type": "string"
+            },
+            "color-secondary-container": {
+              "default": "#d3d3d4",
+              "type": "string"
+            },
+            "color-on-secondary-container": {
+              "default": "#41464b",
+              "type": "string"
+            },
+            "color-tertiary": {
+              "default": "#6c757d",
+              "type": "string"
+            },
+            "color-on-tertiary": {
+              "default": "#ffffff",
+              "type": "string"
+            },
+            "color-tertiary-container": {
+              "default": "#d3d3d4",
+              "type": "string"
+            },
+            "color-on-tertiary-container": {
+              "default": "#41464b",
+              "type": "string"
+            },
+            "color-error": {
+              "default": "#dc3545",
+              "type": "string"
+            },
+            "color-on-error": {
+              "default": "#ffffff",
+              "type": "string"
+            },
+            "color-error-container": {
+              "default": "#f8d7da",
+              "type": "string"
+            },
+            "color-on-error-container": {
+              "default": "#842029",
+              "type": "string"
+            },
+            "color-surface": {
+              "default": "#f8f9fa",
+              "type": "string"
+            },
+            "color-surface-dim": {
+              "default": "#e9ecef",
+              "type": "string"
+            },
+            "color-surface-bright": {
+              "default": "#ffffff",
+              "type": "string"
+            },
+            "color-surface-inverse": {
+              "default": "#212529",
+              "type": "string"
+            },
+            "color-on-surface": {
+              "default": "#212529",
+              "type": "string"
+            },
+            "color-on-surface-variant": {
+              "default": "#495057",
+              "type": "string"
+            },
+            "color-on-surface-inverse": {
+              "default": "#f8f9fa",
+              "type": "string"
+            },
+            "color-surface-container-lowest": {
+              "default": "#ffffff",
+              "type": "string"
+            },
+            "color-surface-container-low": {
+              "default": "#e9ecef",
+              "type": "string"
+            },
+            "color-surface-container": {
+              "default": "#dee2e6",
+              "type": "string"
+            },
+            "color-surface-container-high": {
+              "default": "#ced4da",
+              "type": "string"
+            },
+            "color-surface-container-highest": {
+              "default": "#adb5bd",
+              "type": "string"
+            },
+            "color-shadow": {
+              "default": "hsla(0, 0%, 0%, 0.15)",
+              "type": "string"
+            },
+            "color-outline": {
+              "default": "#6c757d",
+              "type": "string"
+            },
+            "color-outline-variant": {
+              "default": "#ced4da",
+              "type": "string"
+            }
+          }
+        },
+        "dark": {
+          "default": {},
+          "additionalProperties": false,
+          "description": "Dark palette CSS color values.",
+          "type": "object",
+          "properties": {
+            "color-primary": {
+              "default": "#3b82f6",
+              "type": "string"
+            },
+            "color-on-primary": {
+              "default": "#ffffff",
+              "type": "string"
+            },
+            "color-primary-container": {
+              "default": "#0d6efd",
+              "type": "string"
+            },
+            "color-on-primary-container": {
+              "default": "#cfe2ff",
+              "type": "string"
+            },
+            "color-secondary": {
+              "default": "#adb5bd",
+              "type": "string"
+            },
+            "color-on-secondary": {
+              "default": "#212529",
+              "type": "string"
+            },
+            "color-secondary-container": {
+              "default": "#495057",
+              "type": "string"
+            },
+            "color-on-secondary-container": {
+              "default": "#d3d3d4",
+              "type": "string"
+            },
+            "color-tertiary": {
+              "default": "#adb5bd",
+              "type": "string"
+            },
+            "color-on-tertiary": {
+              "default": "#212529",
+              "type": "string"
+            },
+            "color-tertiary-container": {
+              "default": "#495057",
+              "type": "string"
+            },
+            "color-on-tertiary-container": {
+              "default": "#d3d3d4",
+              "type": "string"
+            },
+            "color-error": {
+              "default": "#f87171",
+              "type": "string"
+            },
+            "color-on-error": {
+              "default": "#4f0b0b",
+              "type": "string"
+            },
+            "color-error-container": {
+              "default": "#dc3545",
+              "type": "string"
+            },
+            "color-on-error-container": {
+              "default": "#f8d7da",
+              "type": "string"
+            },
+            "color-surface": {
+              "default": "#121212",
+              "type": "string"
+            },
+            "color-surface-dim": {
+              "default": "#1f1f1f",
+              "type": "string"
+            },
+            "color-surface-bright": {
+              "default": "#333333",
+              "type": "string"
+            },
+            "color-surface-inverse": {
+              "default": "#e9ecef",
+              "type": "string"
+            },
+            "color-on-surface": {
+              "default": "#e9ecef",
+              "type": "string"
+            },
+            "color-on-surface-variant": {
+              "default": "#adb5bd",
+              "type": "string"
+            },
+            "color-on-surface-inverse": {
+              "default": "#121212",
+              "type": "string"
+            },
+            "color-surface-container-lowest": {
+              "default": "#1f1f1f",
+              "type": "string"
+            },
+            "color-surface-container-low": {
+              "default": "#333333",
+              "type": "string"
+            },
+            "color-surface-container": {
+              "default": "#4f4f4f",
+              "type": "string"
+            },
+            "color-surface-container-high": {
+              "default": "#666666",
+              "type": "string"
+            },
+            "color-surface-container-highest": {
+              "default": "#7f7f7f",
+              "type": "string"
+            },
+            "color-shadow": {
+              "default": "hsla(0, 0%, 0%, 0.5)",
+              "type": "string"
+            },
+            "color-outline": {
+              "default": "#6c757d",
+              "type": "string"
+            },
+            "color-outline-variant": {
+              "default": "#495057",
+              "type": "string"
+            }
+          }
+        },
+        "globals": {
+          "default": {},
+          "additionalProperties": false,
+          "description": "Global CSS tokens. Sizes, spacing and radii are CSS-length strings unless a field explicitly uses a number.",
+          "type": "object",
+          "properties": {
+            "shadow-raised": {
+              "default": "0px 3px 1px -2px rgba(251 241 199 / 20%), 0px 2px 2px 0px rgba(251 241 199 / 14%), 0px 1px 5px 0px rgba(0 0 0 / 12%)",
+              "type": "string"
+            },
+            "font-mono-name": {
+              "default": "\"monaco, monospace\"",
+              "description": "CSS font-family value for monospace text.",
+              "type": "string"
+            },
+            "font-sans-name": {
+              "default": "\"Noto Sans\"",
+              "description": "CSS font-family value for sans-serif text.",
+              "type": "string"
+            },
+            "font-sans-url": {
+              "default": "\"/fonts/noto-sans.woff2\"",
+              "description": "CSS-quoted font URL.",
+              "type": "string"
+            },
+            "font-sans-weight": {
+              "default": "300 600",
+              "description": "Font-face weight or variable font weight range.",
+              "type": "string"
+            },
+            "font-size-xxs": {
+              "default": "0.7rem",
+              "type": "string"
+            },
+            "font-size-xs": {
+              "default": "0.825rem",
+              "type": "string"
+            },
+            "font-size-small": {
+              "default": "1rem",
+              "type": "string"
+            },
+            "font-size-normal": {
+              "default": "1.25rem",
+              "type": "string"
+            },
+            "font-size-medium": {
+              "default": "1.5rem",
+              "type": "string"
+            },
+            "font-size-large": {
+              "default": "1.75rem",
+              "type": "string"
+            },
+            "font-size-xl": {
+              "default": "2rem",
+              "type": "string"
+            },
+            "font-size-xxl": {
+              "default": "2.25rem",
+              "type": "string"
+            },
+            "font-size-mobile-responsive-factor": {
+              "default": 0.8,
+              "description": "Mobile font-size multiplier.",
+              "type": "number"
+            },
+            "font-size-root": {
+              "default": 22,
+              "description": "Root font size in pixels.",
+              "type": "number"
+            },
+            "font-weight-light": {
+              "default": 300,
+              "type": "number"
+            },
+            "font-weight-normal": {
+              "default": 400,
+              "type": "number"
+            },
+            "font-weight-medium": {
+              "default": 500,
+              "type": "number"
+            },
+            "font-weight-semibold": {
+              "default": 550,
+              "type": "number"
+            },
+            "font-weight-bold": {
+              "default": 600,
+              "type": "number"
+            },
+            "radius-none": {
+              "default": "0",
+              "type": "string"
+            },
+            "radius-small": {
+              "default": "0.25rem",
+              "type": "string"
+            },
+            "radius-medium": {
+              "default": "0.375rem",
+              "type": "string"
+            },
+            "radius-large": {
+              "default": "0.5rem",
+              "type": "string"
+            },
+            "radius-xl": {
+              "default": "0.75rem",
+              "type": "string"
+            },
+            "radius-x2l": {
+              "default": "1rem",
+              "type": "string"
+            },
+            "radius-x3l": {
+              "default": "1.5rem",
+              "type": "string"
+            },
+            "radius-x4l": {
+              "default": "2.5rem",
+              "type": "string"
+            },
+            "radius-full": {
+              "default": "9999px",
+              "type": "string"
+            },
+            "breakpoint-phone": {
+              "default": 640,
+              "description": "Phone breakpoint in pixels.",
+              "type": "number"
+            },
+            "breakpoint-tablet": {
+              "default": 768,
+              "description": "Tablet breakpoint in pixels.",
+              "type": "number"
+            },
+            "breakpoint-laptop": {
+              "default": 1024,
+              "description": "Laptop breakpoint in pixels.",
+              "type": "number"
+            },
+            "breakpoint-desktop": {
+              "default": 1280,
+              "description": "Desktop breakpoint in pixels.",
+              "type": "number"
+            },
+            "space-1": {
+              "default": "0.25rem",
+              "type": "string"
+            },
+            "space-2": {
+              "default": "0.5rem",
+              "type": "string"
+            },
+            "space-3": {
+              "default": "0.75rem",
+              "type": "string"
+            },
+            "space-4": {
+              "default": "1rem",
+              "type": "string"
+            },
+            "space-5": {
+              "default": "1.25rem",
+              "type": "string"
+            },
+            "space-6": {
+              "default": "1.5rem",
+              "type": "string"
+            },
+            "space-7": {
+              "default": "1.75rem",
+              "type": "string"
+            },
+            "space-8": {
+              "default": "2rem",
+              "type": "string"
+            },
+            "space-9": {
+              "default": "2.25rem",
+              "type": "string"
+            },
+            "space-10": {
+              "default": "2.5rem",
+              "type": "string"
+            },
+            "space-0-5": {
+              "default": "0.125rem",
+              "type": "string"
+            },
+            "space-1-5": {
+              "default": "0.375rem",
+              "type": "string"
+            },
+            "space-2-5": {
+              "default": "0.625rem",
+              "type": "string"
+            },
+            "space-3-5": {
+              "default": "0.875rem",
+              "type": "string"
+            }
+          }
+        },
+        "markdown": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "sidenote": {
+              "default": {},
+              "additionalProperties": false,
+              "description": "CSS content values for sidenotes; include CSS string quotes inside the YAML value.",
+              "type": "object",
+              "properties": {
+                "sidenote-callout-before-content": {
+                  "default": "\"[ \"",
+                  "type": "string"
+                },
+                "sidenote-callout-after-content": {
+                  "default": "\" ]\"",
+                  "type": "string"
+                },
+                "sidenote-citation-before-content": {
+                  "default": "\"\"",
+                  "type": "string"
+                },
+                "sidenote-citation-after-content": {
+                  "default": "\":\"",
+                  "type": "string"
+                }
+              }
+            },
+            "code": {
+              "default": {},
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "light": {
+                  "default": "github-light",
+                  "description": "Shiki theme for light-mode code blocks and both editors.",
+                  "anyOf": [
+                    {
+                      "const": "andromeeda",
+                      "type": "string"
+                    },
+                    {
+                      "const": "aurora-x",
+                      "type": "string"
+                    },
+                    {
+                      "const": "ayu-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-frappe",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-latte",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-macchiato",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-mocha",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dark-plus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dracula",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dracula-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "everforest-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "everforest-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-default",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-dimmed",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-high-contrast",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light-default",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light-high-contrast",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-hard",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-medium",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-hard",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-medium",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "houston",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-dragon",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-lotus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-wave",
+                      "type": "string"
+                    },
+                    {
+                      "const": "laserwave",
+                      "type": "string"
+                    },
+                    {
+                      "const": "light-plus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-darker",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-lighter",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-ocean",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-palenight",
+                      "type": "string"
+                    },
+                    {
+                      "const": "min-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "min-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "monokai",
+                      "type": "string"
+                    },
+                    {
+                      "const": "night-owl",
+                      "type": "string"
+                    },
+                    {
+                      "const": "nord",
+                      "type": "string"
+                    },
+                    {
+                      "const": "one-dark-pro",
+                      "type": "string"
+                    },
+                    {
+                      "const": "one-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "plastic",
+                      "type": "string"
+                    },
+                    {
+                      "const": "poimandres",
+                      "type": "string"
+                    },
+                    {
+                      "const": "red",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine-dawn",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine-moon",
+                      "type": "string"
+                    },
+                    {
+                      "const": "slack-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "slack-ochin",
+                      "type": "string"
+                    },
+                    {
+                      "const": "snazzy-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "solarized-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "solarized-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "synthwave-84",
+                      "type": "string"
+                    },
+                    {
+                      "const": "tokyo-night",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vesper",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-black",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-light",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "dark": {
+                  "default": "github-dark",
+                  "description": "Shiki theme for dark-mode code blocks and both editors.",
+                  "anyOf": [
+                    {
+                      "const": "andromeeda",
+                      "type": "string"
+                    },
+                    {
+                      "const": "aurora-x",
+                      "type": "string"
+                    },
+                    {
+                      "const": "ayu-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-frappe",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-latte",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-macchiato",
+                      "type": "string"
+                    },
+                    {
+                      "const": "catppuccin-mocha",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dark-plus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dracula",
+                      "type": "string"
+                    },
+                    {
+                      "const": "dracula-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "everforest-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "everforest-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-default",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-dimmed",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-dark-high-contrast",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light-default",
+                      "type": "string"
+                    },
+                    {
+                      "const": "github-light-high-contrast",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-hard",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-medium",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-dark-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-hard",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-medium",
+                      "type": "string"
+                    },
+                    {
+                      "const": "gruvbox-light-soft",
+                      "type": "string"
+                    },
+                    {
+                      "const": "houston",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-dragon",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-lotus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "kanagawa-wave",
+                      "type": "string"
+                    },
+                    {
+                      "const": "laserwave",
+                      "type": "string"
+                    },
+                    {
+                      "const": "light-plus",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-darker",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-lighter",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-ocean",
+                      "type": "string"
+                    },
+                    {
+                      "const": "material-theme-palenight",
+                      "type": "string"
+                    },
+                    {
+                      "const": "min-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "min-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "monokai",
+                      "type": "string"
+                    },
+                    {
+                      "const": "night-owl",
+                      "type": "string"
+                    },
+                    {
+                      "const": "nord",
+                      "type": "string"
+                    },
+                    {
+                      "const": "one-dark-pro",
+                      "type": "string"
+                    },
+                    {
+                      "const": "one-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "plastic",
+                      "type": "string"
+                    },
+                    {
+                      "const": "poimandres",
+                      "type": "string"
+                    },
+                    {
+                      "const": "red",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine-dawn",
+                      "type": "string"
+                    },
+                    {
+                      "const": "rose-pine-moon",
+                      "type": "string"
+                    },
+                    {
+                      "const": "slack-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "slack-ochin",
+                      "type": "string"
+                    },
+                    {
+                      "const": "snazzy-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "solarized-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "solarized-light",
+                      "type": "string"
+                    },
+                    {
+                      "const": "synthwave-84",
+                      "type": "string"
+                    },
+                    {
+                      "const": "tokyo-night",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vesper",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-black",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-dark",
+                      "type": "string"
+                    },
+                    {
+                      "const": "vitesse-light",
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,4 +1,6 @@
 dist/
 node_modules/
+# Generated editor asset keeps the config generator's JSON formatting.
+config.schema.json
 # Raw Svelte assets use the web consumer's existing Svelte formatter.
 src/components/*.svelte

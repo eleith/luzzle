@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { parseArgs } from 'node:util'
-import { loadConfig, resolvePreparedDirectory } from '@luzzle/web.config'
+import { resolvePreparedDirectory } from '@luzzle/web.config'
+import { loadConfig } from '@luzzle/web.templates/config'
 import { publishTemplateBundle } from '../templates/publish.js'
 
 try {
