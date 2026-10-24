@@ -4,7 +4,7 @@ import type { Static, TObject } from '@sinclair/typebox';
 import type { TemplateConfig } from '../config/index.js';
 import { mapTemplateFields, TemplateFieldsError } from '../mapping.js';
 import { getIconSchema, type IconDefinition } from '../icons/schema.js';
-import { schema as page } from '../pages/default/schema.js';
+import { getPageSchema, type PageDefinition } from '../pages/schema.js';
 import { schema as opengraph } from '../opengraphs/default/schema.js';
 
 type PieceConfig = TemplateConfig['pieces'][number];
@@ -17,7 +17,7 @@ export interface TemplateData<Fields> {
 
 export interface PieceTemplateData {
 	icon: TemplateData<Static<IconDefinition['fields']>>;
-	page: TemplateData<Static<typeof page.fields>>;
+	page: TemplateData<Static<PageDefinition['fields']>>;
 	opengraph: TemplateData<Static<typeof opengraph.fields>>;
 }
 
@@ -49,8 +49,13 @@ function mapRole<Schema extends TObject>(
 }
 
 function mapIconTemplate(piece: PublicWebPiece, config?: PieceConfig): PieceTemplateData['icon'] {
-	const definition = getIconSchema(config?.templates?.icon.name);
+	const definition = getIconSchema(config?.templates?.icon?.name);
 	return mapRole<IconDefinition['fields']>('icon', definition, piece, config);
+}
+
+function mapPageTemplate(piece: PublicWebPiece, config?: PieceConfig): PieceTemplateData['page'] {
+	const definition = getPageSchema(config?.templates?.page?.name);
+	return mapRole<PageDefinition['fields']>('page', definition, piece, config);
 }
 
 /** Worker OG rendering does not evaluate icon/page bindings. */
@@ -67,7 +72,7 @@ export function mapPieceTemplates(piece: PublicWebPiece, config?: PieceConfig): 
 		...piece,
 		templates: {
 			icon: mapIconTemplate(piece, config),
-			page: mapRole('page', page, piece, config),
+			page: mapPageTemplate(piece, config),
 			opengraph: mapOpengraphTemplate(piece, config)
 		}
 	};

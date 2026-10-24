@@ -35,6 +35,12 @@ export async function load({ url }) {
 				released: '2001-09-09',
 				minutes: 123,
 				filmmaker: 'Ada Example',
+				pageCount: 320,
+				bookYear: 2001,
+				materials: [{ label: 'Flour', amount: '1/2', measure: 'cup' }],
+				directions: [{ content: '<em>Mix ingredients</em>' }],
+				prepMinutes: 2,
+				cookMinutes: 10,
 				category: 'Fixture category',
 				website: url.searchParams.get('external') ?? 'https://example.com/fixture',
 				isbn: '9780000000001',
@@ -46,6 +52,12 @@ export async function load({ url }) {
 					asset_key: 'cover',
 					transformation: 'image.s.jpg',
 					asset_path: 'fixture/cover small.jpg',
+					mime_type: 'image/jpeg'
+				},
+				{
+					asset_key: 'cover',
+					transformation: 'image.m.jpg',
+					asset_path: 'fixture/cover card.jpg',
 					mime_type: 'image/jpeg'
 				},
 				{

@@ -54,8 +54,12 @@ pieces:
           author: author
           pages: pages
       page:
+        name: book
         mapping:
           image: cover
+          author: author
+          pages: pages
+          publicationYear: year_first_published
           url: url
           isbn: isbn
       opengraph:
@@ -75,6 +79,7 @@ pieces:
         mapping:
           image: poster
       page:
+        name: film
         mapping:
           image: poster
           backdrop: backdrop
@@ -108,6 +113,17 @@ pieces:
             fields:
               file: file
               type: type
+      page:
+        name: snippet
+        mapping:
+          files:
+            each: files
+            fields:
+              file: file
+              name: name
+              format: format
+              type: type
+          dateUpdated: date_updated
     fields:
       title: title
       summary: summary
@@ -123,9 +139,15 @@ pieces:
           image: representative_image
           url: url
       page:
+        name: article
         mapping:
           image: representative_image
           url: url
+          author: author
+          wordCount: word_count
+          datePublished: date_published
+          isActive: is_active
+          isPaywalled: is_paywalled
       opengraph:
         mapping:
           image: representative_image

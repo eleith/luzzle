@@ -1,6 +1,9 @@
 export {
 	createPieceHelpers,
 	formatPieceByline,
+	formatPieceDate,
+	formatPieceYear,
+	formatTrackDuration,
 	getPieceTags,
 	interpolate,
 	safeExternalUrl,

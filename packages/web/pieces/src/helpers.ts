@@ -53,6 +53,25 @@ export function interpolate(
 	return Number((output.min + (output.max - output.min) * progress).toFixed(2))
 }
 
+export function formatPieceDate(value?: string | number | null): string | undefined {
+	if (value == null) return undefined
+	const date = new Date(value)
+	if (Number.isNaN(date.getTime())) return undefined
+	return date.toLocaleDateString('en-US', { timeZone: 'UTC' }).replaceAll('/', '.')
+}
+
+export function formatPieceYear(value?: string | number | null): number | undefined {
+	if (value == null) return undefined
+	const date = new Date(value)
+	return Number.isNaN(date.getTime()) ? undefined : date.getUTCFullYear()
+}
+
+export function formatTrackDuration(seconds?: number | null): string | undefined {
+	if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return undefined
+	const rounded = Math.round(seconds)
+	return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, '0')}`
+}
+
 /** Shared date/duration formatting; layouts and field mappings remain template-owned. */
 export function formatPieceByline(
 	dateConsumed?: number | null,
@@ -60,17 +79,11 @@ export function formatPieceByline(
 	runtime?: number
 ): string {
 	const parts: string[] = []
-	if (dateReleased !== undefined) {
-		const date = new Date(dateReleased)
-		if (!Number.isNaN(date.getTime())) parts.push(String(date.getUTCFullYear()))
-	}
+	const released = formatPieceYear(dateReleased)
+	if (released !== undefined) parts.push(String(released))
 	if (runtime !== undefined) parts.push(`${runtime} min`)
-	if (dateConsumed != null) {
-		const date = new Date(dateConsumed)
-		if (!Number.isNaN(date.getTime())) {
-			parts.push(date.toLocaleDateString('en-US', { timeZone: 'UTC' }).replaceAll('/', '.'))
-		}
-	}
+	const consumed = formatPieceDate(dateConsumed)
+	if (consumed) parts.push(consumed)
 	return parts.join(' · ')
 }
 

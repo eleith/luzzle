@@ -6,7 +6,8 @@ import type { Component, ComponentProps } from 'svelte'
 import type { render as Render } from 'svelte/server'
 import { createPieceHelpers, type PublicWebPiece } from '@luzzle/web.pieces'
 import type DefaultPage from '@luzzle/web.templates/pages/default'
-import { mapPieceTemplates } from '@luzzle/web.templates/pieces/fields'
+import { mapTemplateFields } from '@luzzle/web.templates/mapping'
+import { schema as defaultSchema } from '@luzzle/web.templates/pages/default/schema'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 
 type Props = ComponentProps<typeof DefaultPage>
@@ -90,15 +91,7 @@ async function html(
 		runtime: 'runtime'
 	}
 ) {
-	const mapped = mapPieceTemplates(current, {
-		type: current.type,
-		fields: { title: 'title', date_consumed: 'date' },
-		templates: {
-			icon: { name: 'default', mapping: {} },
-			page: { name: 'default', mapping },
-			opengraph: { name: 'default', mapping: {} }
-		}
-	})
+	const fields = mapTemplateFields(defaultSchema.fields, current.metadata, mapping)
 	const helpers = createPieceHelpers(
 		current.assets,
 		(path) => `https://assets.example/${path.split('/').map(encodeURIComponent).join('/')}`,
@@ -108,7 +101,7 @@ async function html(
 	)
 	return (
 		await render(Page, {
-			props: { piece: mapped, fields: mapped.templates.page.fields, tags, helpers }
+			props: { piece: current, fields, tags, helpers }
 		})
 	).body
 }

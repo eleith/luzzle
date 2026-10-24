@@ -117,6 +117,44 @@ beforeAll(async () => {
 						}
 					}
 				},
+				{
+					type: 'book-kind',
+					fields: { title: 'title', date_consumed: 'date' },
+					templates: {
+						icon: { name: 'playing-cards' },
+						page: {
+							name: 'book',
+							mapping: {
+								image: 'artwork',
+								author: 'filmmaker',
+								pages: 'pageCount',
+								publicationYear: 'bookYear'
+							}
+						},
+						opengraph: { name: 'default' }
+					}
+				},
+				{
+					type: 'recipe-kind',
+					fields: { title: 'title', date_consumed: 'date' },
+					templates: {
+						icon: { name: 'lined-notebook-paper' },
+						page: {
+							name: 'recipe',
+							mapping: {
+								image: 'artwork',
+								ingredients: {
+									each: 'materials',
+									fields: { item: 'label', quantity: 'amount', unit: 'measure' }
+								},
+								instructions: { each: 'directions', fields: { html: 'content' } },
+								prepMinutes: 'prepMinutes',
+								cookMinutes: 'cookMinutes'
+							}
+						},
+						opengraph: { name: 'default' }
+					}
+				},
 				{ type: 'unmapped-kind', fields: { title: 'title', date_consumed: 'date' } }
 			]
 		})
@@ -459,6 +497,28 @@ if (data.pieces[0].title === 'throwing') throw new Error('failed after requestin
 		expect(preview).toContain('src="/admin/preview/og%20job/asset/fixture/cover%20medium.jpg"')
 		expect(preview).toContain('src="/admin/preview/og%20job/asset/fixture/backdrop%20large.jpg"')
 		expect(preview).not.toContain(`${origin}/pieces/assets/`)
+	})
+
+	test('renders an independently mapped book page in native HTTP without changing icon choice', async () => {
+		const book = await request('?role=page&type=book-kind')
+		expect(book).toContain('by Ada Example · 320 pages')
+		expect(book).toContain('2001')
+		expect(book).toContain('class="book ')
+		expect(book).toContain('<p>Published note</p>')
+		expect(book).toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
+		expect(await request('?role=icon&type=book-kind')).toContain('cards-container')
+	})
+
+	test('renders structured recipe data and job-preview assets through native HTTP', async () => {
+		const recipe = await request('?role=page&type=recipe-kind&job=recipe%20job')
+		expect(recipe).toContain('Flour')
+		expect(recipe).toContain('1/2')
+		expect(recipe).toContain('<em>Mix ingredients</em>')
+		expect(recipe).toContain('1 ingredients · 12m')
+		expect(recipe).toContain('type="checkbox"')
+		expect(recipe).toContain('<p>Draft note</p>')
+		expect(recipe).toContain('src="/admin/preview/recipe%20job/asset/fixture/cover%20card.jpg"')
+		expect(recipe).not.toContain(`${origin}/pieces/assets/`)
 	})
 
 	test('uses all three poster defaults without inferring presentation fields from raw metadata', async () => {

@@ -14,6 +14,7 @@
 		"src/icons/*/helpers.js",
 		"src/icons/catalog.js",
 		"src/pages/*/template.svelte",
+		"src/pages/*/helpers.js",
 		"src/pages/catalog.js",
 		"src/opengraphs/*/template.svelte",
 		"src/opengraphs/catalog.js",
