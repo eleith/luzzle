@@ -1,9 +1,9 @@
 import { getPiecesForTagFeed } from '$lib/feeds/utils'
-import { renderPreparedFeedPage } from '$lib/feeds/page.server.js'
+import { loadPageMarkdown } from '$lib/server/pages.js'
 import { config } from '$lib/server/config'
 import type { PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async ({ params, url }) => {
+export const load: PageServerLoad = async ({ params }) => {
 	const { tag } = params
 	const pieces = await getPiecesForTagFeed(tag)
 	const feed = {
@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		type: 'tag' as const,
 		label: tag
 	}
-	const presentation = await renderPreparedFeedPage({ feed, pieces, url })
+	const about = await loadPageMarkdown(config.pages.feed.about)
 
 	return {
 		pieces,
@@ -21,6 +21,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			description: `an RSS feed for pieces tagged with ${tag}`
 		},
 		feed,
-		presentation
+		about,
+		links: config.pages.feed.links
 	}
 }

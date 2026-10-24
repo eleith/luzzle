@@ -18,12 +18,30 @@ export function getPieces(): Pieces {
 
 export async function getRecentPieces(
 	db: Kysely<AppDatabase>,
-	limit: number
+	limit: number,
+	types: readonly string[]
 ): Promise<WebPieces[]> {
+	if (!types.length) return []
 	return db
 		.selectFrom('web_pieces')
 		.selectAll()
+		.where('type', 'in', types)
 		.orderBy('date_added', 'desc')
+		.limit(limit)
+		.execute()
+}
+
+export async function getRandomPieces(
+	db: Kysely<AppDatabase>,
+	limit: number,
+	types: readonly string[],
+	excludedIds: readonly string[] = []
+): Promise<WebPieces[]> {
+	if (!types.length) return []
+	let query = db.selectFrom('web_pieces').selectAll().where('type', 'in', types)
+	if (excludedIds.length) query = query.where('id', 'not in', excludedIds)
+	return query
+		.orderBy(sql`RANDOM()`)
 		.limit(limit)
 		.execute()
 }

@@ -1,11 +1,11 @@
 import { getPiecesForFeed } from '$lib/feeds/utils'
-import { renderPreparedFeedPage } from '$lib/feeds/page.server.js'
+import { loadPageMarkdown } from '$lib/server/pages.js'
 import { config } from '$lib/server/config'
 import { error } from '@sveltejs/kit'
 import { isConfiguredPieceType } from '$lib/pieces/types.server.js'
 import type { PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async ({ params, url }) => {
+export const load: PageServerLoad = async ({ params }) => {
 	const { piece: type } = params
 	if (type && !isConfiguredPieceType(type)) {
 		error(404, 'piece type not found')
@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		type: 'piece' as const,
 		label: type || 'all'
 	}
-	const presentation = await renderPreparedFeedPage({ feed, pieces, url })
+	const about = await loadPageMarkdown(config.pages.feed.about)
 
 	return {
 		pieces,
@@ -27,6 +27,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			description: type ? `an RSS feed for ${type}` : 'RSS feed for all pieces'
 		},
 		feed,
-		presentation
+		about,
+		links: config.pages.feed.links
 	}
 }

@@ -23,6 +23,21 @@ test('the demo configuration is a regular file in its mounted directory', async 
 	expect((await lstat(canonical)).isFile()).toBe(true)
 })
 
+test('the standalone demo runtime copies the Markdown files referenced by its config', async () => {
+	const config = parse(await readFile(path.join(web, 'demo/config/config.yaml'), 'utf8'))
+	const dockerfile = await readFile(path.join(web, 'demo/Dockerfile'), 'utf8')
+	const runtime = dockerfile.slice(dockerfile.lastIndexOf('\nFROM '))
+	const copy = runtime
+		.split('\n')
+		.find((line) => line.startsWith('COPY ') && line.endsWith(' ./content/'))
+	expect(copy).toBeDefined()
+	for (const filename of [config.pages.home.body, config.pages.feed.about]) {
+		const source = filename.replace(/^\.\//, '')
+		expect(copy!.split(/\s+/)).toContain(source)
+		expect((await stat(path.join(web, 'demo', source))).isFile()).toBe(true)
+	}
+})
+
 test('the schema header resolves from the canonical editable config location', async () => {
 	const canonical = path.join(web, 'demo/config/config.yaml')
 	const source = await readFile(canonical, 'utf8')

@@ -39,10 +39,17 @@ content:
     description: an example luzzle site description
 
   component:
-    root: ./content/components/pages/root.svelte
-    feed: ./content/components/pages/feed.svelte
     '404': ./content/components/pages/404.svelte
     error: ./content/components/pages/error.svelte
+
+pages:
+  home:
+    body: ./content/home.md
+    latest: true
+    random: true
+  feed:
+    about: ./content/feed-about.md
+    links: true
 
 pieces:
   - type: books

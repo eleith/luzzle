@@ -15,6 +15,7 @@ FROM node:24-alpine
 WORKDIR /app
 
 COPY --from=builder /deploy ./
+COPY content/home.md content/feed-about.md ./content/
 COPY config/config.yaml ./config/config.yaml
 RUN ln -sfn config/config.yaml config.yaml
 

@@ -13,4 +13,4 @@
 	/>
 </svelte:head>
 
-<FeedPage feed={data.feed} pieces={data.pieces} presentation={data.presentation} />
+<FeedPage feed={data.feed} pieces={data.pieces} about={data.about} links={data.links} />

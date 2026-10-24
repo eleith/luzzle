@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { createAppDb, runWebMigrations } from '@luzzle/web.db'
-import { getWebPiece, getRecentlyEditedPieces } from './pieces.js'
+import { getWebPiece, getRecentlyEditedPieces, getRecentPieces, getRandomPieces } from './pieces.js'
 
 // pieces.js pulls in getPieces()'s module-level dependencies on import
 vi.mock('$lib/server/config', () => ({ config: {} }))
@@ -91,6 +91,57 @@ describe('getRecentlyEditedPieces', () => {
 
 		expect(pieces).toHaveLength(1)
 		expect(pieces[0].id).toBe('b')
+	})
+})
+
+describe('public home collections', () => {
+	test('latest and random stay inside configured types and random excludes latest IDs', async () => {
+		const db = await createTestDb()
+		try {
+			await db
+				.insertInto('web_pieces')
+				.values([
+					{
+						id: 'a',
+						key: 'ka',
+						title: 'A',
+						slug: 'a',
+						type: 'inventory',
+						file_path: 'a.md',
+						json_metadata: '{}',
+						date_added: 3
+					},
+					{
+						id: 'b',
+						key: 'kb',
+						title: 'B',
+						slug: 'b',
+						type: 'inventory',
+						file_path: 'b.md',
+						json_metadata: '{}',
+						date_added: 2
+					},
+					{
+						id: 'orphan',
+						key: 'ko',
+						title: 'Hidden',
+						slug: 'orphan',
+						type: 'unconfigured',
+						file_path: 'orphan.md',
+						json_metadata: '{}',
+						date_added: 4
+					}
+				])
+				.execute()
+			expect((await getRecentPieces(db, 1, ['inventory'])).map((piece) => piece.id)).toEqual(['a'])
+			expect((await getRandomPieces(db, 5, ['inventory'], ['a'])).map((piece) => piece.id)).toEqual(
+				['b']
+			)
+			expect(await getRecentPieces(db, 5, [])).toEqual([])
+			expect(await getRandomPieces(db, 5, [])).toEqual([])
+		} finally {
+			await db.destroy()
+		}
 	})
 })
 

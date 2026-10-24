@@ -409,6 +409,52 @@
         }
       }
     },
+    "pages": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "home": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "body": {
+              "minLength": 1,
+              "description": "Markdown file replacing the home introduction, relative to the supplied config file.",
+              "type": "string"
+            },
+            "latest": {
+              "default": true,
+              "description": "Show the latest published pieces.",
+              "type": "boolean"
+            },
+            "random": {
+              "default": false,
+              "description": "Show a random selection of published pieces.",
+              "type": "boolean"
+            }
+          }
+        },
+        "feed": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "about": {
+              "minLength": 1,
+              "description": "Markdown file for the feed explanation card. Omit to hide the card.",
+              "type": "string"
+            },
+            "links": {
+              "default": true,
+              "description": "Show feed format links and subscription copy controls.",
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
     "pieces": {
       "default": [],
       "description": "Ordered presentation and frontmatter mappings for archive piece types.",

@@ -297,6 +297,48 @@ const AssetsSchema = Type.Object(
 	{ default: {}, additionalProperties: false },
 );
 
+const PagesSchema = Type.Object(
+	{
+		home: Type.Object(
+			{
+				body: Type.Optional(
+					Type.String({
+						minLength: 1,
+						description:
+							"Markdown file replacing the home introduction, relative to the supplied config file.",
+					}),
+				),
+				latest: Type.Boolean({
+					default: true,
+					description: "Show the latest published pieces.",
+				}),
+				random: Type.Boolean({
+					default: false,
+					description: "Show a random selection of published pieces.",
+				}),
+			},
+			{ default: {}, additionalProperties: false },
+		),
+		feed: Type.Object(
+			{
+				about: Type.Optional(
+					Type.String({
+						minLength: 1,
+						description:
+							"Markdown file for the feed explanation card. Omit to hide the card.",
+					}),
+				),
+				links: Type.Boolean({
+					default: true,
+					description: "Show feed format links and subscription copy controls.",
+				}),
+			},
+			{ default: {}, additionalProperties: false },
+		),
+	},
+	{ default: {}, additionalProperties: false },
+);
+
 const ContentSchema = Type.Object(
 	{
 		component: Type.Optional(
@@ -697,6 +739,7 @@ export const ConfigSchema = Type.Object(
 		paths: PathsSchema,
 		assets: AssetsSchema,
 		content: ContentSchema,
+		pages: PagesSchema,
 		pieces: PiecesSchema,
 		theme: ThemeSchema,
 	},

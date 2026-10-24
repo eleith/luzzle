@@ -92,6 +92,7 @@
     "@replit/codemirror-vim": "6.4.0",
     "eventsource-parser": "4.1.1",
     "kysely": "0.28.17",
+    "micromark": "4.0.2",
     "openworkflow": "0.9.2"
   }
 }
