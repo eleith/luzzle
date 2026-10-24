@@ -45,7 +45,7 @@ test('a default association can supply its own mapping without a name', () => {
 test('unknown explicit names and unsupported fields do not silently fall back', () => {
 	for (const templates of [
 		{ icon: { name: 'not-a-template' } },
-		{ opengraph: { name: 'poster' } },
+		{ opengraph: { name: 'not-a-template' } },
 		{ page: { name: 'generic' } },
 		{ icon: { name: 'default', mapping: { unsupported: 'metadata' } } }
 	])

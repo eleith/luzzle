@@ -87,6 +87,13 @@ export function formatPieceByline(
 	return parts.join(' · ')
 }
 
+export function getOpengraphTitleSize(title: string): number {
+	if (title.length < 10) return 5
+	if (title.length < 20) return 4
+	if (title.length < 40) return 3.2
+	return 2.5
+}
+
 export const OpengraphImageWidth = 1200
 export const OpengraphImageHeight = 630
 

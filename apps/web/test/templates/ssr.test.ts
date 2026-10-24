@@ -21,6 +21,70 @@ let serverErrors = ''
 let sourceNumber = 0
 let originalBuild: Record<string, string>
 
+const ogSelections = [
+	{
+		name: 'book',
+		mapping: { image: 'artwork', author: 'filmmaker', pages: 'pageCount' },
+		marker: 'book',
+		text: '320 pages'
+	},
+	{
+		name: 'poster',
+		mapping: { image: 'artwork', director: 'filmmaker', runtime: 'minutes' },
+		marker: 'poster',
+		text: '123 min'
+	},
+	{
+		name: 'browser-window',
+		mapping: { image: 'artwork', url: 'website', author: 'filmmaker', wordCount: 'wordCount' },
+		marker: 'browser-container',
+		text: '3 min'
+	},
+	{ name: 'lined-notebook-paper', mapping: {}, marker: 'paper', text: 'Fixture description' },
+	{
+		name: 'recipe-card',
+		mapping: {
+			image: 'artwork',
+			ingredients: { each: 'materials', fields: { item: 'label' } },
+			prepMinutes: 'prepMinutes',
+			cookMinutes: 'cookMinutes'
+		},
+		marker: 'notepad',
+		text: '12 min'
+	},
+	{
+		name: 'vinyl-record',
+		mapping: { image: 'artwork', artist: 'filmmaker', durationSeconds: 'seconds' },
+		marker: 'vinyl-container',
+		text: '2:05'
+	},
+	{
+		name: 'code-snippet',
+		mapping: {
+			files: { each: 'files', fields: { file: 'key', type: 'kind', format: 'language' } }
+		},
+		marker: 'terminal-container',
+		text: '<pre data-code>let value = 1;</pre>'
+	},
+	{
+		name: 'video-game-cartridge',
+		mapping: {
+			image: 'artwork',
+			publisher: 'filmmaker',
+			platform: 'platform',
+			playTimeMinutes: 'minutes'
+		},
+		marker: 'cartridge-container',
+		text: 'Console · 2 hrs'
+	},
+	{
+		name: 'playing-cards',
+		mapping: { backdrop: 'scenery', publisher: 'filmmaker', playTimeMinutes: 'minutes' },
+		marker: 'cards-container',
+		text: '123 min'
+	}
+]
+
 const startServer = `
 import { once } from 'node:events';
 import { pathToFileURL } from 'node:url';
@@ -75,6 +139,27 @@ async function request(query = '') {
 	expect(response.status).toBe(200)
 	return response.text()
 }
+
+test.each(ogSelections)(
+	'serves mapped $name OG HTML from the built fixture over HTTP',
+	async ({ name, marker, text }) => {
+		for (const job of ['', '&job=current-preview']) {
+			const html = await request(`?role=opengraph&type=share-${name}${job}`)
+			expect(html).toContain('Prepared title')
+			expect(html).toContain(`class="${marker} `)
+			expect(html).toContain(text)
+			expect(html).toContain('width:1200px;height:630px;')
+			expect(html).not.toContain('aria-label="Global"')
+			if (name === 'book') {
+				expect(html).toContain(
+					job
+						? '/admin/preview/current-preview/asset/fixture/cover%20medium.jpg'
+						: '/pieces/assets/fixture/cover%20medium.jpg'
+				)
+			}
+		}
+	}
+)
 
 beforeAll(async () => {
 	const cache = path.join(webRoot, 'node_modules/.cache')
@@ -155,7 +240,16 @@ beforeAll(async () => {
 						opengraph: { name: 'default' }
 					}
 				},
-				{ type: 'unmapped-kind', fields: { title: 'title', date_consumed: 'date' } }
+				{ type: 'unmapped-kind', fields: { title: 'title', date_consumed: 'date' } },
+				...ogSelections.map(({ name, mapping }) => ({
+					type: `share-${name}`,
+					fields: { title: 'title', date_consumed: 'date' },
+					templates: {
+						icon: { name: 'poster' },
+						page: { name: 'note' },
+						opengraph: { name, mapping }
+					}
+				}))
 			]
 		})
 	)

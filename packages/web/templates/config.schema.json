@@ -6517,387 +6517,2757 @@
                 "default": {
                   "name": "default"
                 },
-                "additionalProperties": false,
-                "description": "An independent poster-style default share card.",
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "default": "default",
-                    "const": "default",
-                    "type": "string"
-                  },
-                  "mapping": {
+                "anyOf": [
+                  {
                     "additionalProperties": false,
+                    "description": "An independent poster-style default share card.",
                     "type": "object",
                     "properties": {
-                      "image": {
-                        "$id": "opengraph-default-image",
-                        "description": "Poster image asset key.",
-                        "anyOf": [
-                          {
-                            "minLength": 1,
-                            "type": "string"
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "field"
-                            ],
-                            "properties": {
-                              "field": {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              "default": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "value"
-                            ],
-                            "properties": {
-                              "value": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "fields"
-                            ],
-                            "properties": {
-                              "fields": {
-                                "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "opengraph-default-image"
-                                  }
-                                }
-                              }
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "each",
-                              "fields"
-                            ],
-                            "properties": {
-                              "each": {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              "fields": {
-                                "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "opengraph-default-image"
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        ]
+                      "name": {
+                        "default": "default",
+                        "const": "default",
+                        "type": "string"
                       },
-                      "backdrop": {
-                        "$id": "opengraph-default-backdrop",
-                        "description": "Backdrop image asset key.",
-                        "anyOf": [
-                          {
-                            "minLength": 1,
-                            "type": "string"
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "field"
-                            ],
-                            "properties": {
-                              "field": {
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "opengraph-default-image",
+                            "description": "Poster image asset key.",
+                            "anyOf": [
+                              {
                                 "minLength": 1,
                                 "type": "string"
                               },
-                              "default": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "value"
-                            ],
-                            "properties": {
-                              "value": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "fields"
-                            ],
-                            "properties": {
-                              "fields": {
+                              {
+                                "additionalProperties": false,
                                 "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "opengraph-default-backdrop"
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-default-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-default-image"
+                                      }
+                                    }
                                   }
                                 }
                               }
-                            }
+                            ]
                           },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "each",
-                              "fields"
-                            ],
-                            "properties": {
-                              "each": {
+                          "backdrop": {
+                            "$id": "opengraph-default-backdrop",
+                            "description": "Backdrop image asset key.",
+                            "anyOf": [
+                              {
                                 "minLength": 1,
                                 "type": "string"
                               },
-                              "fields": {
+                              {
+                                "additionalProperties": false,
                                 "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "opengraph-default-backdrop"
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-default-backdrop"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-default-backdrop"
+                                      }
+                                    }
                                   }
                                 }
                               }
-                            }
+                            ]
+                          },
+                          "director": {
+                            "$id": "opengraph-default-director",
+                            "description": "Director text displayed in the byline.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-default-director"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-default-director"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "dateReleased": {
+                            "$id": "opengraph-default-dateReleased",
+                            "description": "Release date as text or epoch milliseconds.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-default-dateReleased"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-default-dateReleased"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "runtime": {
+                            "$id": "opengraph-default-runtime",
+                            "description": "Duration in minutes.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-default-runtime"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-default-runtime"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
                           }
-                        ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A book cover and pages beside its title and author, with a page-count/date byline.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "book",
+                        "type": "string"
                       },
-                      "director": {
-                        "$id": "opengraph-default-director",
-                        "description": "Director text displayed in the byline.",
-                        "anyOf": [
-                          {
-                            "minLength": 1,
-                            "type": "string"
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "field"
-                            ],
-                            "properties": {
-                              "field": {
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "opengraph-book-image",
+                            "description": "Book cover image asset key.",
+                            "anyOf": [
+                              {
                                 "minLength": 1,
                                 "type": "string"
                               },
-                              "default": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "value"
-                            ],
-                            "properties": {
-                              "value": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "fields"
-                            ],
-                            "properties": {
-                              "fields": {
+                              {
+                                "additionalProperties": false,
                                 "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "opengraph-default-director"
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-book-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-book-image"
+                                      }
+                                    }
                                   }
                                 }
                               }
-                            }
+                            ]
                           },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "each",
-                              "fields"
-                            ],
-                            "properties": {
-                              "each": {
+                          "author": {
+                            "$id": "opengraph-book-author",
+                            "description": "Author displayed below the title.",
+                            "anyOf": [
+                              {
                                 "minLength": 1,
                                 "type": "string"
                               },
-                              "fields": {
+                              {
+                                "additionalProperties": false,
                                 "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "opengraph-default-director"
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-book-author"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-book-author"
+                                      }
+                                    }
                                   }
                                 }
                               }
-                            }
+                            ]
+                          },
+                          "pages": {
+                            "$id": "opengraph-book-pages",
+                            "description": "Page count displayed in the byline.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-book-pages"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-book-pages"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
                           }
-                        ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A browser-window mockup beside the title and author, with a hostname/reading-time/date byline.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "browser-window",
+                        "type": "string"
                       },
-                      "dateReleased": {
-                        "$id": "opengraph-default-dateReleased",
-                        "description": "Release date as text or epoch milliseconds.",
-                        "anyOf": [
-                          {
-                            "minLength": 1,
-                            "type": "string"
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "field"
-                            ],
-                            "properties": {
-                              "field": {
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "opengraph-browser-window-image",
+                            "description": "Webpage banner image asset key.",
+                            "anyOf": [
+                              {
                                 "minLength": 1,
                                 "type": "string"
                               },
-                              "default": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "value"
-                            ],
-                            "properties": {
-                              "value": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "fields"
-                            ],
-                            "properties": {
-                              "fields": {
+                              {
+                                "additionalProperties": false,
                                 "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "opengraph-default-dateReleased"
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-browser-window-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-browser-window-image"
+                                      }
+                                    }
                                   }
                                 }
                               }
-                            }
+                            ]
                           },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "each",
-                              "fields"
-                            ],
-                            "properties": {
-                              "each": {
+                          "url": {
+                            "$id": "opengraph-browser-window-url",
+                            "description": "URL displayed in the browser address bar.",
+                            "anyOf": [
+                              {
                                 "minLength": 1,
                                 "type": "string"
                               },
-                              "fields": {
+                              {
+                                "additionalProperties": false,
                                 "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "opengraph-default-dateReleased"
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-browser-window-url"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-browser-window-url"
+                                      }
+                                    }
                                   }
                                 }
                               }
-                            }
+                            ]
+                          },
+                          "author": {
+                            "$id": "opengraph-browser-window-author",
+                            "description": "Author displayed below the title.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-browser-window-author"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-browser-window-author"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "wordCount": {
+                            "$id": "opengraph-browser-window-wordCount",
+                            "description": "Word count used to estimate reading time.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-browser-window-wordCount"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-browser-window-wordCount"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
                           }
-                        ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A dark terminal displaying generated code highlighting or a summary, with a formats/file-count/date byline.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "code-snippet",
+                        "type": "string"
                       },
-                      "runtime": {
-                        "$id": "opengraph-default-runtime",
-                        "description": "Duration in minutes.",
-                        "anyOf": [
-                          {
-                            "minLength": 1,
-                            "type": "string"
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "field"
-                            ],
-                            "properties": {
-                              "field": {
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "files": {
+                            "$id": "opengraph-code-snippet-files",
+                            "description": "Source files in display order.",
+                            "anyOf": [
+                              {
                                 "minLength": 1,
                                 "type": "string"
                               },
-                              "default": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "value"
-                            ],
-                            "properties": {
-                              "value": {}
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "fields"
-                            ],
-                            "properties": {
-                              "fields": {
+                              {
+                                "additionalProperties": false,
                                 "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "opengraph-default-runtime"
-                                  }
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
                                 }
-                              }
-                            }
-                          },
-                          {
-                            "additionalProperties": false,
-                            "type": "object",
-                            "required": [
-                              "each",
-                              "fields"
-                            ],
-                            "properties": {
-                              "each": {
-                                "minLength": 1,
-                                "type": "string"
                               },
-                              "fields": {
+                              {
+                                "additionalProperties": false,
                                 "type": "object",
-                                "patternProperties": {
-                                  "^(.*)$": {
-                                    "$ref": "opengraph-default-runtime"
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-code-snippet-files"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-code-snippet-files"
+                                      }
+                                    }
                                   }
                                 }
                               }
-                            }
+                            ]
                           }
-                        ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A lined notebook sheet on a dark backdrop, using the piece title, summary, note reading time and date.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "lined-notebook-paper",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {}
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "Fanned playing cards using the title, summary and a deterministic symbol, with a publisher and play-time/date byline.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "playing-cards",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "backdrop": {
+                            "$id": "opengraph-playing-cards-backdrop",
+                            "description": "Background image asset key behind the playing cards.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-playing-cards-backdrop"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-playing-cards-backdrop"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "publisher": {
+                            "$id": "opengraph-playing-cards-publisher",
+                            "description": "Publisher displayed below the title.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-playing-cards-publisher"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-playing-cards-publisher"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "playTimeMinutes": {
+                            "$id": "opengraph-playing-cards-playTimeMinutes",
+                            "description": "Play time in minutes, displayed without conversion to hours.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-playing-cards-playTimeMinutes"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-playing-cards-playTimeMinutes"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A poster and optional backdrop beside the title/credits, independent of the default card.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "poster",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "opengraph-poster-image",
+                            "description": "Poster image asset key.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-poster-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-poster-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "backdrop": {
+                            "$id": "opengraph-poster-backdrop",
+                            "description": "Backdrop image asset key.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-poster-backdrop"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-poster-backdrop"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "director": {
+                            "$id": "opengraph-poster-director",
+                            "description": "Director text displayed in the byline.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-poster-director"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-poster-director"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "dateReleased": {
+                            "$id": "opengraph-poster-dateReleased",
+                            "description": "Release date as text or epoch milliseconds.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-poster-dateReleased"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-poster-dateReleased"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "runtime": {
+                            "$id": "opengraph-poster-runtime",
+                            "description": "Duration in minutes.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-poster-runtime"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-poster-runtime"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "An ingredient checklist and optional photo backdrop beside the recipe title/source.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "recipe-card",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "opengraph-recipe-card-image",
+                            "description": "Recipe backdrop image asset key.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "source": {
+                            "$id": "opengraph-recipe-card-source",
+                            "description": "Source label displayed under the title.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-source"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-source"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "ingredients": {
+                            "$id": "opengraph-recipe-card-ingredients",
+                            "description": "Ordered ingredient names displayed on the checklist.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-ingredients"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-ingredients"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "prepMinutes": {
+                            "$id": "opengraph-recipe-card-prepMinutes",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-prepMinutes"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-prepMinutes"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "cookMinutes": {
+                            "$id": "opengraph-recipe-card-cookMinutes",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-cookMinutes"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-cookMinutes"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "totalMinutes": {
+                            "$id": "opengraph-recipe-card-totalMinutes",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-totalMinutes"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-recipe-card-totalMinutes"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A video game cartridge beside its title and publisher, with a platform/play-time/date byline.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "video-game-cartridge",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "opengraph-video-game-cartridge-image",
+                            "description": "Image asset key for the cartridge label; also the backdrop when no backdrop is mapped.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-video-game-cartridge-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-video-game-cartridge-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "publisher": {
+                            "$id": "opengraph-video-game-cartridge-publisher",
+                            "description": "Publisher displayed below the title.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-video-game-cartridge-publisher"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-video-game-cartridge-publisher"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "platform": {
+                            "$id": "opengraph-video-game-cartridge-platform",
+                            "description": "Platform displayed in the byline.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-video-game-cartridge-platform"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-video-game-cartridge-platform"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "playTimeMinutes": {
+                            "$id": "opengraph-video-game-cartridge-playTimeMinutes",
+                            "description": "Play time in minutes, displayed as rounded whole hours.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-video-game-cartridge-playTimeMinutes"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-video-game-cartridge-playTimeMinutes"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "backdrop": {
+                            "$id": "opengraph-video-game-cartridge-backdrop",
+                            "description": "Independent background image asset key.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-video-game-cartridge-backdrop"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-video-game-cartridge-backdrop"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "description": "A vinyl record beside its title and artist, with a duration/date byline.",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "const": "vinyl-record",
+                        "type": "string"
+                      },
+                      "mapping": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "$id": "opengraph-vinyl-record-image",
+                            "description": "Vinyl label image asset key.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-vinyl-record-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-vinyl-record-image"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "artist": {
+                            "$id": "opengraph-vinyl-record-artist",
+                            "description": "Artist displayed below the title.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-vinyl-record-artist"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-vinyl-record-artist"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "durationSeconds": {
+                            "$id": "opengraph-vinyl-record-durationSeconds",
+                            "description": "Duration in seconds, displayed as minutes and seconds.",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-vinyl-record-durationSeconds"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "opengraph-vinyl-record-durationSeconds"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
                       }
                     }
                   }
-                }
+                ]
               }
             }
           }

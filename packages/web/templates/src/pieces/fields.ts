@@ -5,7 +5,7 @@ import type { TemplateConfig } from '../config/index.js';
 import { mapTemplateFields, TemplateFieldsError } from '../mapping.js';
 import { getIconSchema, type IconDefinition } from '../icons/schema.js';
 import { getPageSchema, type PageDefinition } from '../pages/schema.js';
-import { schema as opengraph } from '../opengraphs/default/schema.js';
+import { getOpengraphSchema, type OpengraphDefinition } from '../opengraphs/schema.js';
 
 type PieceConfig = TemplateConfig['pieces'][number];
 type Role = 'icon' | 'page' | 'opengraph';
@@ -18,7 +18,7 @@ export interface TemplateData<Fields> {
 export interface PieceTemplateData {
 	icon: TemplateData<Static<IconDefinition['fields']>>;
 	page: TemplateData<Static<PageDefinition['fields']>>;
-	opengraph: TemplateData<Static<typeof opengraph.fields>>;
+	opengraph: TemplateData<Static<OpengraphDefinition['fields']>>;
 }
 
 export type TemplatedPiece = PublicWebPiece & { templates: PieceTemplateData };
@@ -63,7 +63,8 @@ export function mapOpengraphTemplate(
 	piece: PublicWebPiece,
 	config?: PieceConfig
 ): PieceTemplateData['opengraph'] {
-	return mapRole('opengraph', opengraph, piece, config);
+	const definition = getOpengraphSchema(config?.templates?.opengraph?.name);
+	return mapRole<OpengraphDefinition['fields']>('opengraph', definition, piece, config);
 }
 
 /** Keep config/selector expressions on the server; clients receive only public field values. */

@@ -63,8 +63,11 @@ pieces:
           url: url
           isbn: isbn
       opengraph:
+        name: book
         mapping:
           image: cover
+          author: author
+          pages: pages
     fields:
       title: title
       summary: description
@@ -89,6 +92,7 @@ pieces:
           category: type
           people: people
       opengraph:
+        name: poster
         mapping:
           image: poster
           backdrop: backdrop
@@ -124,6 +128,15 @@ pieces:
               format: format
               type: type
           dateUpdated: date_updated
+      opengraph:
+        name: code-snippet
+        mapping:
+          files:
+            each: files
+            fields:
+              file: file
+              type: type
+              format: format
     fields:
       title: title
       summary: summary
@@ -149,8 +162,12 @@ pieces:
           isActive: is_active
           isPaywalled: is_paywalled
       opengraph:
+        name: browser-window
         mapping:
           image: representative_image
+          url: url
+          author: author
+          wordCount: word_count
     fields:
       title: title
       summary: summary

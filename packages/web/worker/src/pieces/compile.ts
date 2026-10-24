@@ -5,23 +5,24 @@ import { createRequire } from 'node:module'
 import { compile } from 'svelte/compiler'
 import type { Component } from 'svelte'
 import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
-import type { Fields } from '@luzzle/web.templates/opengraphs/default/schema'
+import { getOpengraphSchema } from '@luzzle/web.templates/opengraphs/schema'
+import type { PieceTemplateData } from '@luzzle/web.templates/pieces/fields'
 
 type CompiledModule = {
-	default: Component<{ piece: PublicWebPiece; fields: Fields; helpers: PieceComponentHelpers }>
+	default: Component<{
+		piece: PublicWebPiece
+		fields: PieceTemplateData['opengraph']['fields']
+		helpers: PieceComponentHelpers
+	}>
 }
 
 const require = createRequire(import.meta.url)
-const sources = new Map([
-	['default', () => require.resolve('@luzzle/web.templates/opengraphs/default')],
-])
 const compileCache = new Map<string, { mtimeMs: number; mod: CompiledModule }>()
 const compiledDirectory = path.join(import.meta.dirname, '.compiled')
 
 export async function getCompiledOpengraphModule(name: string): Promise<CompiledModule> {
-	const getSourcePath = sources.get(name)
-	if (!getSourcePath) throw new Error(`Unknown opengraph template: ${name}`)
-	const filename = getSourcePath()
+	const definition = getOpengraphSchema(name)
+	const filename = require.resolve(`@luzzle/web.templates/opengraphs/${definition.name}`)
 	const { mtimeMs } = statSync(filename)
 	const cached = compileCache.get(name)
 	if (cached?.mtimeMs === mtimeMs) return cached.mod

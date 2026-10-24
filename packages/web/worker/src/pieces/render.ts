@@ -61,7 +61,10 @@ function loadLocalImageResources(body: string, assetsDir: string) {
 	const resources: { src: string; data: Buffer }[] = []
 	for (const url of urls) {
 		if (!url.startsWith(PIECES_ASSETS_PREFIX)) continue
-		const diskPath = path.join(assetsDir, url.slice(PIECES_ASSETS_PREFIX.length))
+		const diskPath = path.join(
+			assetsDir,
+			decodeURIComponent(url.slice(PIECES_ASSETS_PREFIX.length))
+		)
 		try {
 			resources.push({ src: url, data: readFileSync(diskPath) })
 		} catch (err) {
@@ -79,7 +82,7 @@ async function renderOpengraphHtml(
 	const pieceConfig = config.pieces.find((entry) => entry.type === piece.type)
 	const helpers = createPieceHelpers(
 		assets,
-		(p) => `${PIECES_ASSETS_PREFIX}${p}`,
+		(p) => `${PIECES_ASSETS_PREFIX}${p.split('/').map(encodeURIComponent).join('/')}`,
 		() => `/pieces/${piece.type}/${piece.slug}`
 	)
 	const template = mapOpengraphTemplate(piece, pieceConfig)

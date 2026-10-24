@@ -59,6 +59,11 @@
 			"types": "./dist/pages/*/schema.d.ts",
 			"import": "./dist/pages/*/schema.js"
 		},
+		"./opengraphs/schema": {
+			"development": "./src/opengraphs/schema.ts",
+			"types": "./dist/opengraphs/schema.d.ts",
+			"import": "./dist/opengraphs/schema.js"
+		},
 		"./opengraphs/*/schema": {
 			"development": "./src/opengraphs/*/schema.ts",
 			"types": "./dist/opengraphs/*/schema.d.ts",

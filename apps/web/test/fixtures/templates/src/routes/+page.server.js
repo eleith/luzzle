@@ -37,6 +37,10 @@ export async function load({ url }) {
 				filmmaker: 'Ada Example',
 				pageCount: 320,
 				bookYear: 2001,
+				wordCount: 750,
+				seconds: 125,
+				platform: 'Console',
+				files: [{ key: 'code-source', kind: 'snippet', language: 'javascript' }],
 				materials: [{ label: 'Flour', amount: '1/2', measure: 'cup' }],
 				directions: [{ content: '<em>Mix ingredients</em>' }],
 				prepMinutes: 2,
@@ -48,6 +52,12 @@ export async function load({ url }) {
 			},
 			keywords: '[]',
 			assets: [
+				{
+					asset_key: 'code-source',
+					transformation: 'highlight',
+					content: '<pre data-code>let value = 1;</pre>',
+					mime_type: 'text/html'
+				},
 				{
 					asset_key: 'cover',
 					transformation: 'image.s.jpg',
