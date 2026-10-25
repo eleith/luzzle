@@ -1,7 +1,7 @@
 <script lang="ts">
-	let { data, helpers }: FeedPageProps = $props()
-	helpers.showNavBanner()
+	import type { FeedData } from './types.js'
 
+	let { data }: { data: FeedData } = $props()
 	const title = $derived(
 		data.feed.type === 'tag'
 			? `RSS feed for tag: ${data.feed.label}`
@@ -9,34 +9,7 @@
 	)
 </script>
 
-<div class="content-wrapper" data-demo-feed>
-	<aside aria-label="RSS subscription info">
-		<section>
-			<div>
-				<h2>What is this?</h2>
-				RSS (Really Simple Syndication) allows for people to subscribe to updates without having to provide
-				their email address.<br />
-				<br />
-				View the raw data files: <a href="feed.xml">XML</a> |
-				<a href="feed.json">JSON</a>
-				| <a href="feed.md">Markdown</a>
-			</div>
-		</section>
-		<hr />
-		<p id="rss-instructions">Select the link and copy it into an RSS reader</p>
-		<div class="subscription-url">
-			<input
-				id="rss-url-input"
-				aria-label="RSS feed URL"
-				aria-describedby="rss-instructions"
-				type="text"
-				readonly
-				value={data.feed.url}
-				class="input"
-			/>
-		</div>
-	</aside>
-
+<div class="content-wrapper" id="default-feed">
 	<main>
 		<header>
 			<h1>{title}</h1>
@@ -76,40 +49,6 @@
 		flex-direction: column;
 		gap: var(--space-4);
 		max-width: clamp(500px, 66.6666%, 1000px);
-	}
-
-	aside {
-		background: var(--color-surface);
-		border: 1px solid var(--color-surface-container-high);
-		padding: 1em 1.5em;
-		border-radius: var(--radius-medium);
-	}
-
-	aside hr {
-		margin-top: 1em;
-		margin-bottom: 1em;
-	}
-
-	.subscription-url {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		margin-top: var(--space-3);
-	}
-
-	.subscription-url input {
-		flex-grow: 1;
-		padding: var(--space-2);
-		border-radius: var(--radius-medium);
-		border: 1px solid var(--color-surface-container-high);
-		background-color: var(--color-surface-container-low);
-		color: var(--color-on-surface);
-		cursor: text;
-		transition: all 0.2s ease-in-out;
-	}
-
-	.subscription-url input:hover {
-		border-color: var(--color-outline);
 	}
 
 	h1 {

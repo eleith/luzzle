@@ -55,7 +55,6 @@ type FeedCase = (typeof feedCases)[number]
 type MachineFeeds = Record<string, { contentType: string | null; body: string }>
 let directory: string
 let configFilename: string
-let preparedDirectory: string
 let origin: string
 let server: ChildProcess | undefined
 let serverErrors = ''
@@ -111,6 +110,24 @@ async function readOptional(filename: string) {
 		if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
 		throw error
 	}
+}
+
+function validateRuntimeConfig() {
+	return exec(
+		process.execPath,
+		[
+			'--input-type=module',
+			'-e',
+			`
+import { pathToFileURL } from 'node:url';
+const { loadConfig } = await import(pathToFileURL(process.argv[1]).href);
+loadConfig(process.argv[2]);
+`,
+			path.join(repository, 'packages/web/templates/dist/config/index.js'),
+			configFilename
+		],
+		{ cwd: directory, env: childEnv, timeout: 30000 }
+	)
 }
 
 async function buildBlankApp() {
@@ -378,17 +395,15 @@ beforeAll(async () => {
 	await buildBlankApp()
 	originalBuild = await buildHashes()
 	configFilename = path.join(directory, 'config.yaml')
-	preparedDirectory = path.join(directory, 'prepared')
 	await writeFile(
 		configFilename,
 		JSON.stringify({
 			url: { app: '' },
 			paths: {
 				database: path.join(directory, 'luzzle.sqlite'),
-				prepared: './prepared',
 				static: path.join(directory, 'owner-static')
 			},
-			content: { text: { title: 'Cutover Garden' }, component: {} },
+			content: { text: { title: 'Cutover Garden' } },
 			pieces: [
 				{
 					type: 'cutover-kind',
@@ -536,23 +551,36 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				const config = JSON.parse(original)
 				config.pieces[0].components = { [role]: './must-not-be-read.svelte' }
 				await writeFile(configFilename, JSON.stringify(config))
-				await expect(
-					exec(
-						process.execPath,
-						[
-							path.join(repository, 'packages/web/worker/dist/src/commands/publish-templates.js'),
-							'--config',
-							configFilename
-						],
-						{ cwd: directory, env: childEnv, timeout: 30000 }
-					)
-				).rejects.toMatchObject({ code: 1, stderr: expect.stringContaining('components') })
-				expect(await readOptional(path.join(preparedDirectory, 'current.json'))).toBeUndefined()
+				await expect(validateRuntimeConfig()).rejects.toMatchObject({
+					code: 1,
+					stderr: expect.stringContaining('components')
+				})
 			} finally {
 				await writeFile(configFilename, original)
 			}
 		}
 	})
+
+	test.each([
+		{ section: 'content', key: 'component', value: { root: './must-not-be-read.svelte' } },
+		{ section: 'paths', key: 'prepared', value: './must-not-be-created' }
+	])(
+		'rejects retired $key setting in $section through the runtime configuration loader',
+		async ({ section, key, value }) => {
+			const original = await readFile(configFilename, 'utf8')
+			try {
+				const config = JSON.parse(original)
+				config[section][key] = value
+				await writeFile(configFilename, JSON.stringify(config))
+				await expect(validateRuntimeConfig()).rejects.toMatchObject({
+					code: 1,
+					stderr: expect.stringContaining(`/${section}/${key}`)
+				})
+			} finally {
+				await writeFile(configFilename, original)
+			}
+		}
+	)
 
 	test('preserves anonymous admin redirects and private JSON denials', async () => {
 		for (const pathname of [
@@ -666,9 +694,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect((await request('/rss/pieces/neighbor.png')).status).toBe(404)
 	})
 
-	test('ignores stale prepared bundles and preserves machine-feed metadata and item data', async () => {
-		await mkdir(preparedDirectory, { recursive: true })
-		await writeFile(path.join(preparedDirectory, 'current.json'), '{broken old bundle selector')
+	test('site section settings preserve machine-feed metadata and item data', async () => {
 		await restartWithPages({ feed: { links: false } })
 		for (const feed of feedCases)
 			expectNativeFeed(await pageHtml(`${feed.folder}/feed.html`), feed, false, false)

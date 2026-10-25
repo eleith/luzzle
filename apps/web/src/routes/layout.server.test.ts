@@ -20,8 +20,7 @@ vi.mock('$lib/server/config', async () => {
 				}
 			],
 			content: {
-				text: { title: 'Public title', description: 'Public description' },
-				component: { root: '/private/components/root.svelte' }
+				text: { title: 'Public title', description: 'Public description' }
 			},
 			url: { app: 'https://example.test', app_assets: '/app', luzzle_assets: '/assets' }
 		}

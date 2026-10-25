@@ -23,15 +23,6 @@ export function assetPathToUrl(
 	return joinAssetUrl(`pieces/assets/${encoded}`, base)
 }
 
-export function staticAssetPathToUrl(
-	relativePath: string | null | undefined,
-	base: string
-): string | undefined {
-	const encoded = encodeAssetPath(relativePath)
-	if (!encoded) return undefined
-	return joinAssetUrl(encoded, base)
-}
-
 function joinAssetUrl(path: string, base: string): string {
 	if (!base || base.startsWith('/')) {
 		return `${base.replace(/\/+$/, '')}/${path}`

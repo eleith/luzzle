@@ -1,31 +1,21 @@
 import { describe, expect, expectTypeOf, test } from "vitest";
-import path from "node:path";
 import {
 	loadConfig,
 	validateConfig,
 	getConfigValue,
 	setConfigValue,
-	resolvePreparedDirectory,
 	ConfigError,
 	type Config,
 	type ConfigPublic,
 } from "./index.js";
 
 describe("index (package entry point)", () => {
-	test("exports the loader, validator and path helpers", () => {
+	test("exports the loader, validator and config value helpers", () => {
 		expect(typeof loadConfig).toBe("function");
 		expect(typeof validateConfig).toBe("function");
 		expect(typeof getConfigValue).toBe("function");
 		expect(typeof setConfigValue).toBe("function");
 		expectTypeOf(validateConfig).returns.toEqualTypeOf<Config>();
-	});
-
-	test("exports the prepared-directory resolver as a usable runtime function", () => {
-		const config = loadConfig();
-		config.paths.config = path.resolve("site/config.yaml");
-		expect(resolvePreparedDirectory(config)).toBe(
-			path.resolve("site/data/prepared"),
-		);
 	});
 
 	test("exports ConfigError with structured validation issues", () => {
@@ -95,6 +85,7 @@ describe("index (package entry point)", () => {
 		expect(publicConfig.url.app).toBe("http://localhost:8080");
 		expect(publicConfig.content.text.title).toBe("Luzzle Explorer");
 		expectTypeOf<keyof ConfigPublic>().toEqualTypeOf<"url" | "content">();
+		expectTypeOf<keyof ConfigPublic["content"]>().toEqualTypeOf<"text">();
 		expectTypeOf<keyof ConfigPublic["url"]>().toEqualTypeOf<
 			"app" | "app_assets" | "luzzle_assets"
 		>();

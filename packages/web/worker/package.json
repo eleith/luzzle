@@ -7,8 +7,7 @@
 	"scripts": {
 		"lint": "eslint src",
 		"dev": "node --experimental-strip-types --conditions=development --watch --import ../../../tools/register.mjs src/index.ts",
-		"build": "tsc -p tsconfig.build.json",
-		"publish:templates": "node dist/src/commands/publish-templates.js",
+		"build": "rm -rf dist && tsc -p tsconfig.build.json",
 		"test": "vitest run --silent --coverage"
 	},
 	"engines": {
@@ -50,7 +49,6 @@
 		"@takumi-rs/core": "1.5.0",
 		"colorlip": "^1.0.0",
 		"devlop": "1.1.0",
-		"esbuild": "0.25.12",
 		"hastscript": "9.0.1",
 		"kysely": "0.28.17",
 		"mdast-util-from-markdown": "2.0.2",

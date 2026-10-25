@@ -38,10 +38,6 @@ content:
     title: example luzzle site title
     description: an example luzzle site description
 
-  component:
-    '404': ./content/components/pages/404.svelte
-    error: ./content/components/pages/error.svelte
-
 pages:
   home:
     body: ./content/home.md

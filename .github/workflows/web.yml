@@ -14,8 +14,6 @@ on:
       - 'packages/web/jobs/**'
       - 'packages/web/pieces/**'
       - 'packages/web/templates/**'
-      - 'packages/web/worker/src/templates/**'
-      - 'packages/web/worker/package.json'
       - 'apps/core/**'
   pull_request:
     branches:
@@ -28,8 +26,6 @@ on:
       - 'packages/web/jobs/**'
       - 'packages/web/pieces/**'
       - 'packages/web/templates/**'
-      - 'packages/web/worker/src/templates/**'
-      - 'packages/web/worker/package.json'
       - 'apps/core/**'
       - '.github/workflows/web.yml'
 
@@ -78,7 +74,7 @@ jobs:
       - name: Test
         run: pnpm run test
 
-      - name: Prepared template SSR integration
+      - name: Built-in template HTTP/SSR integration
         run: pnpm run test:templates
 
   build-push:

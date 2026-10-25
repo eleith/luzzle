@@ -9,7 +9,6 @@
 	},
 	"files": [
 		"dist",
-		"src/components/*.svelte",
 		"src/icons/*/template.svelte",
 		"src/icons/*/helpers.js",
 		"src/icons/catalog.js",
@@ -74,22 +73,6 @@
 			"development": "./src/mapping.ts",
 			"types": "./dist/mapping.d.ts",
 			"import": "./dist/mapping.js"
-		},
-		"./components/*.svelte": "./src/components/*.svelte",
-		"./pieces/props": {
-			"types": "./dist/pieces/props.d.ts"
-		},
-		"./site/props": {
-			"types": "./dist/site/props.d.ts"
-		},
-		"./components/props": {
-			"types": "./dist/components/props.d.ts"
-		},
-		"./helpers": {
-			"types": "./dist/helpers.d.ts"
-		},
-		"./bundle": {
-			"types": "./dist/bundle.d.ts"
 		}
 	},
 	"dependencies": {

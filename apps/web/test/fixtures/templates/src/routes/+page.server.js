@@ -1,19 +1,10 @@
+import { error } from '@sveltejs/kit'
 import { loadConfig } from '@luzzle/web.templates/config'
-import { resolvePreparedDirectory } from '@luzzle/web.config'
 import { mapPieceTemplates } from '@luzzle/web.templates/pieces/fields'
-import { loadTemplateBundle } from '$lib/server/templates.js'
-import { renderTemplatePage } from '$lib/server/template-page.js'
-import { assetPathToUrl } from '$lib/pieces/assets.js'
-import { previewOutputUrl } from '$lib/pieces/preview/output-url.js'
-
-const fallback = {
-	state: 'fallback',
-	body: '<p>Built-in presentation</p>',
-	head: '',
-	navBanner: null
-}
 
 export async function load({ url }) {
+	const role = url.searchParams.get('role') ?? 'page'
+	if (!['page', 'icon', 'opengraph'].includes(role)) error(400, 'Unsupported stock template role')
 	const config = loadConfig('./config.yaml')
 	const type = url.searchParams.get('type') ?? 'custom-kind'
 	const job = url.searchParams.get('job')
@@ -23,8 +14,8 @@ export async function load({ url }) {
 			id: 'fixture-piece',
 			key: 'fixture-key',
 			type,
-			slug: 'prepared piece',
-			title: url.searchParams.get('title') ?? 'Prepared title',
+			slug: 'catalog piece',
+			title: url.searchParams.get('title') ?? 'Catalog title',
 			date_added: 1,
 			note: 'Raw note',
 			summary: 'Fixture description',
@@ -104,8 +95,7 @@ export async function load({ url }) {
 		},
 		config.pieces.find((entry) => entry.type === type)
 	)
-	const role = url.searchParams.get('role') ?? 'feed'
-	const common = {
+	return {
 		role,
 		piece,
 		tags: [{ slug: 'fixture-tag', tag: 'Fixture Tag' }],
@@ -116,32 +106,5 @@ export async function load({ url }) {
 			content: { text: { title: 'Fixture garden', description: '' } },
 			url: { app: origin, luzzle_assets: '' }
 		}
-	}
-	if (role !== 'feed') return { ...common, ...fallback }
-	try {
-		const bundle = await loadTemplateBundle(resolvePreparedDirectory(config))
-		const name = bundle?.templateLookup.site.feed
-		if (!bundle || !name) return { ...common, ...fallback }
-		const urls = {
-			buildPieceUrl: (piece) =>
-				`${origin}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`,
-			buildAssetUrl: (path) =>
-				job === null ? assetPathToUrl(path, origin) : previewOutputUrl(path, job),
-			buildStaticAssetUrl: (path) =>
-				path === 'images/mark.svg' ? `${origin}/site-assets/images/mark.svg` : undefined
-		}
-		const output = renderTemplatePage(
-			bundle,
-			name,
-			{
-				pieces: [piece],
-				feed: { url: '/rss/pieces/feed.xml', type: 'piece', label: 'all' }
-			},
-			urls
-		)
-		return { ...common, ...output, state: bundle.revision }
-	} catch (error) {
-		console.error(error)
-		return { ...common, ...fallback }
 	}
 }

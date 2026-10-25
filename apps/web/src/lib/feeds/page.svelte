@@ -1,12 +1,12 @@
 <script lang="ts">
-	import type { FeedPageProps } from '@luzzle/web.templates/site/props'
-	import FeedDefault from '@luzzle/web.templates/components/feed.default.svelte'
+	import type { FeedData } from './types.js'
+	import FeedList from './list.svelte'
 	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
 	import SeoHead from '$lib/components/layout/simple/SeoHead.svelte'
 	import Markdown from '$lib/content/markdown/Markdown.svelte'
 	import Subscription from './subscription.svelte'
 
-	type Props = FeedPageProps['data'] & { about?: string; links: boolean }
+	type Props = FeedData & { about?: string; links: boolean }
 	let { feed, pieces, about, links }: Props = $props()
 </script>
 
@@ -24,7 +24,7 @@
 			{/if}
 		</div>
 	{/if}
-	<FeedDefault data={{ feed, pieces }} />
+	<FeedList data={{ feed, pieces }} />
 {/key}
 
 <style>

@@ -5,7 +5,6 @@ import {
 	getConfigValue,
 	setConfigValue,
 } from "./lib/config/config.js";
-export { resolvePreparedDirectory } from "./lib/config/paths.js";
 export { ConfigError } from "./lib/config/errors.js";
 export { ConfigSchema } from "./lib/config/schema.js";
 export { createInputSchema } from "./lib/config/input-schema.js";

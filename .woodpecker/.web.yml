@@ -15,8 +15,6 @@ when:
         - "packages/web/jobs/**"
         - "packages/web/pieces/**"
         - "packages/web/templates/**"
-        - "packages/web/worker/src/templates/**"
-        - "packages/web/worker/package.json"
   - event: pull_request
     path:
       include:
@@ -28,8 +26,6 @@ when:
         - "packages/web/jobs/**"
         - "packages/web/pieces/**"
         - "packages/web/templates/**"
-        - "packages/web/worker/src/templates/**"
-        - "packages/web/worker/package.json"
         - "apps/core/**"
   - event: tag
     ref: "refs/tags/@luzzle/web@*"

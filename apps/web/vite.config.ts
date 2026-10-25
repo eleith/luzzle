@@ -1,10 +1,8 @@
 import { sveltekit } from '@sveltejs/kit/vite'
-import { defineConfig, type Plugin, type ViteDevServer } from 'vite'
+import { defineConfig } from 'vite'
 import Icons from 'unplugin-icons/vite'
 import { enhancedImages } from '@sveltejs/enhanced-img'
 import { loadConfig } from '@luzzle/web.templates/config'
-import path from 'path'
-import { execSync } from 'child_process'
 
 const config = loadConfig('./config.yaml')
 const host = config.network?.public?.host
@@ -29,34 +27,11 @@ const allowedHosts = Array.from(
 	)
 )
 
-const contentWatcher = (relativeContentPath: string): Plugin => {
-	return {
-		name: 'content-watcher',
-		apply: 'serve',
-		configureServer(server: ViteDevServer) {
-			const targetPath = path.resolve(process.cwd(), relativeContentPath)
-			console.log(`[Content Watcher] Watching: ${targetPath}`)
-			server.watcher.add(targetPath)
-			server.watcher.on('change', (path) => {
-				if (path.includes(targetPath)) {
-					console.log('Content changed, rebuilding...')
-					execSync('pnpm run build:content')
-				}
-			})
-		}
-	}
-}
-
 export default defineConfig(({ command }) => {
 	const sourceFirst = command === 'serve' && !process.env.VITEST
 
 	return {
-		plugins: [
-			enhancedImages(),
-			sveltekit(),
-			Icons({ compiler: 'svelte' }),
-			contentWatcher('./content')
-		],
+		plugins: [enhancedImages(), sveltekit(), Icons({ compiler: 'svelte' })],
 		ssr: sourceFirst ? { noExternal: [/^@luzzle\//] } : {},
 		server: {
 			host: host || false,

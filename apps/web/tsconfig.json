@@ -28,12 +28,11 @@
 		"./tests/**/*.ts",
 		"./tests/**/*.svelte",
 		"./test/templates/**/*.ts",
-		"./content/**/*.ts",
-		"./content/**/*.svelte"
 	],
 	"exclude": [
 		"./node_modules/**",
 		"./src/lib/pieces/components/custom/",
+		"./src/lib/content/components/custom/",
 		"./src/service-worker.js",
 		"./src/service-worker/**/*.js",
 		"./src/service-worker.ts",

@@ -76,6 +76,69 @@ test("retired per-piece source components are rejected rather than ignored", () 
 	).toThrow(ConfigError);
 });
 
+test("site identity text remains configurable without source settings", () => {
+	const content = {
+		text: { title: "My garden", description: "Notes and records" },
+	};
+	expect(validateConfig({ content }, {}).content).toEqual(content);
+	expect(validateConfig({}, {}).content).toEqual({
+		text: {
+			title: "Luzzle Explorer",
+			description: "A Luzzle Explorer instance",
+		},
+	});
+	expect(validateConfig({}, {}).paths).not.toHaveProperty("prepared");
+});
+
+test.each([
+	{},
+	{ root: "./missing.svelte" },
+	{ feed: "./missing.svelte" },
+	{ "404": "./missing.svelte" },
+	{ error: "./missing.svelte" },
+	{ unknown: "./missing.svelte" },
+	{ root: "" },
+	{ feed: "" },
+	{ "404": "" },
+	{ error: "" },
+	{ unknown: "" },
+	"",
+	null,
+])(
+	"rejects retired content.component rather than ignoring it: %j",
+	(component) => {
+		const raw = { content: { component } };
+		for (const validate of [
+			() => validateConfig(raw, {}),
+			() => validateConfig(raw, {}, { schema }),
+		]) {
+			expect(validate).toThrow(ConfigError);
+			expect(validate).toThrow("/content/component");
+		}
+	},
+);
+
+test.each(["./prepared", "/unknown/prepared", "", {}, null])(
+	"rejects retired paths.prepared rather than ignoring it: %j",
+	(prepared) => {
+		const raw = { paths: { prepared } };
+		for (const validate of [
+			() => validateConfig(raw, {}),
+			() => validateConfig(raw, {}, { schema }),
+		]) {
+			expect(validate).toThrow(ConfigError);
+			expect(validate).toThrow("/paths/prepared");
+		}
+	},
+);
+
+test.each([
+	{ content: { sources: {} } },
+	{ paths: { sources: "./missing.svelte" } },
+])("does not introduce source-setting aliases: %j", (raw) => {
+	expect(() => validateConfig(raw, {})).toThrow(ConfigError);
+});
+
 test("only the supplied schema can authorize and validate an extension", () => {
 	const raw = { pieces: [{ ...piece, badge: "featured" }] };
 	expect(() => validateConfig(raw)).toThrow();

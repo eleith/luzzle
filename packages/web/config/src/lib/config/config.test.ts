@@ -7,8 +7,8 @@ import {
 	setConfigValue,
 } from "./config.js";
 import { ConfigError } from "./errors.js";
-import { mkdtempSync, rmSync, writeFileSync } from "fs";
-import { join } from "path";
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "fs";
+import { join, relative } from "path";
 import { tmpdir } from "os";
 
 interface TestConfig extends Config {
@@ -55,6 +55,31 @@ describe("loadConfig", () => {
 		const config = loadConfig(`${import.meta.dirname}/user.config.yaml`);
 		expect(config.url.app).toBe("https://example.com");
 		expect(config.storage.root).toBe("./archive");
+	});
+
+	test.each(["relative", "absolute", "symlink"])(
+		"records the supplied %s config filename without canonicalizing it",
+		(kind) => {
+			writeFileSync(filename, "paths:\n  config: ignored.yaml\n");
+			let supplied = filename;
+			if (kind === "relative") supplied = relative(process.cwd(), filename);
+			if (kind === "symlink") {
+				supplied = join(directory, "linked.yaml");
+				symlinkSync(filename, supplied);
+			}
+			expect(loadConfig(supplied).paths.config).toBe(supplied);
+		},
+	);
+
+	test.each([
+		"content:\n  component: {}\n",
+		"content:\n  component:\n    root: missing.svelte\n",
+		"content:\n  component:\n    unknown: ''\n",
+		"paths:\n  prepared: ./prepared\n",
+		"paths:\n  prepared: ''\n",
+	])("rejects retired source settings from YAML: %j", (yaml) => {
+		writeFileSync(filename, yaml);
+		expect(() => loadConfig(filename)).toThrow(ConfigError);
 	});
 
 	test("fails for an explicitly supplied missing file", () => {
@@ -272,7 +297,6 @@ describe("validateConfig", () => {
 		expect(config.storage.root).toBe("./archive");
 		expect(config.paths).toEqual({
 			database: "./data/luzzle.sqlite",
-			prepared: "./data/prepared",
 			assets: "./assets/pieces",
 			cache: "./nginx",
 			static: "./static",
@@ -493,7 +517,6 @@ describe("validateConfig", () => {
 		["unknown root property", { typo: true }],
 		["unknown nested property", { storage: { rot: "./archive" } }],
 		["empty storage root", { storage: { root: "" } }],
-		["empty prepared directory", { paths: { prepared: "" } }],
 		["null defaulted section", { storage: null }],
 		["null defaulted value", { url: { app: null } }],
 		[
@@ -614,7 +637,6 @@ describe("validateConfig", () => {
 		{ auth: { secret: "s", oidc: { ...oidc, issuer: "${EMPTY}" } } },
 		{ ai: { provider: "google", api_key: "${EMPTY}" } },
 		{ storage: { root: "${EMPTY}" } },
-		{ paths: { prepared: "${EMPTY}" } },
 	])("validates nonempty constraints after interpolation: %j", (raw) => {
 		expect(() => validateConfig(raw, { EMPTY: "" })).toThrow(ConfigError);
 	});
