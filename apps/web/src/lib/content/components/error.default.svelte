@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { PageErrorProps } from '$lib/content/types.js'
+	import ContentBanner from './ContentBanner.svelte'
 
-	let { status, message = 'an unexpected error occurred', components }: PageErrorProps = $props()
-	const { ContentBanner } = components
+	type Props = { status: number; message?: string }
+	let { status, message = 'an unexpected error occurred' }: Props = $props()
 </script>
 
 <ContentBanner showHome={true} />

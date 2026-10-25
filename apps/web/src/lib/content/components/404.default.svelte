@@ -1,8 +1,7 @@
 <script lang="ts">
-	import type { Page404Props } from '$lib/content/types.js'
+	import ContentBanner from './ContentBanner.svelte'
 
-	let { message, components }: Page404Props = $props()
-	const { ContentBanner } = components
+	let { message }: { message?: string } = $props()
 </script>
 
 <ContentBanner showHome={true} />
