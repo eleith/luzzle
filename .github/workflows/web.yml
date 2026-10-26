@@ -65,9 +65,6 @@ jobs:
       - name: mock .env
         run: touch .env
 
-      - name: Prepare generated theme CSS
-        run: pnpm run build:theme
-
       - name: Check
         run: pnpm run check
 

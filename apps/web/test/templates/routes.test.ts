@@ -190,6 +190,78 @@ function htmlHead(html: string) {
 	return head
 }
 
+function expectInlineConfiguredCss(html: string) {
+	const head = htmlHead(html)
+	const styles = [
+		...head.matchAll(/<style\b[^>]*\bdata-luzzle-configured-styles\b[^>]*>([\s\S]*?)<\/style>/g)
+	]
+	expect(styles).toHaveLength(1)
+	const [style, css] = styles[0]
+	const charset = head.match(/<meta\b[^>]*\bcharset\b[^>]*>/i)
+	if (!charset) throw new Error('Expected the real app charset meta tag')
+	const stylePosition = head.indexOf(style)
+	expect(stylePosition).toBeGreaterThanOrEqual(head.indexOf(charset[0]) + charset[0].length)
+	const frameworkStyles =
+		head.match(
+			/<link\b[^>]*\brel=["']stylesheet["'][^>]*>|<style\b(?![^>]*\bdata-luzzle-configured-styles\b)[^>]*>[\s\S]*?<\/style>/g
+		) ?? []
+	// The app-template token precedes Kit's linked or inlined component CSS.
+	for (const frameworkStyle of frameworkStyles)
+		expect(head.indexOf(frameworkStyle)).toBeGreaterThanOrEqual(stylePosition + style.length)
+	expect(html).not.toContain('%luzzle.styles%')
+	const body = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/)?.[1]
+	if (body === undefined) throw new Error('Expected the real app HTML body')
+	expect(body).not.toContain('data-luzzle-configured-styles')
+	expect(body).not.toContain('--editor-background:')
+	const declaration = css.match(/--color-primary: [^;]+;/)?.[0]
+	if (!declaration) throw new Error('Expected a configured primary color')
+	expect(head.split(declaration)).toHaveLength(2)
+	// Include bootstrap scripts: CSS must remain server-only rather than loader data.
+	expect(body).not.toContain(declaration)
+	expect(css).not.toContain('box-sizing:')
+	expect(css).not.toContain('.button')
+	expect(css).not.toContain('.markdown')
+	expect(css).not.toContain('pre.shiki')
+	expect(css.indexOf('--color-primary:')).toBeGreaterThanOrEqual(0)
+	expect(css.indexOf('--editor-background:')).toBeGreaterThan(css.indexOf('--color-primary:'))
+	for (const privatePath of [directory, configFilename, path.basename(configFilename)])
+		expect(css).not.toContain(privatePath)
+	expect(css).not.toMatch(/\.(?:cm-|monaco-|ace_)/)
+	return css
+}
+
+async function frameworkCss(html: string) {
+	const head = htmlHead(html)
+	const sources = [...head.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)]
+		.filter(([tag]) => !tag.includes('data-luzzle-configured-styles'))
+		.map(([, css]) => css)
+	const links = head.match(/<link\b[^>]*\brel=["']stylesheet["'][^>]*>/g) ?? []
+	for (const link of links) {
+		const href = link.match(/\bhref=["']([^"']+)["']/)?.[1]
+		if (!href) throw new Error('Expected a framework stylesheet URL')
+		expect(href).toMatch(/\/_app\/immutable\/assets\/[^"']+\.css$/)
+		const response = await request(new URL(href, origin).pathname, 'text/css')
+		expect(response.status).toBe(200)
+		sources.push(await response.text())
+	}
+	return sources.join('\n')
+}
+
+function expectThemeVariables(css: string, selector: string, variables: Record<string, string>) {
+	const blocks = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+	const block = blocks.find(
+		([, selectors, declarations]) =>
+			selectors.trim().replace(/\s+/g, ' ') === selector &&
+			Object.entries(variables).every(([name, value]) =>
+				declarations.includes(`--${name}: ${value};`)
+			)
+	)
+	expect(
+		block,
+		`Expected theme variables for ${selector}: ${JSON.stringify(variables)}`
+	).toBeDefined()
+}
+
 function expectFeedSeo(html: string, feed: FeedCase) {
 	const head = htmlHead(html)
 	expect(head.match(/<title>/g)).toHaveLength(1)
@@ -211,6 +283,7 @@ function expectFeedSeo(html: string, feed: FeedCase) {
 }
 
 function expectNativeFeed(html: string, feed: FeedCase, about: boolean, links: boolean) {
+	expectInlineConfiguredCss(html)
 	expectFeedSeo(html, feed)
 	expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
 	for (const label of ['main page', 'search', 'change theme', 'random'])
@@ -258,6 +331,9 @@ async function machineFeedSnapshot(): Promise<MachineFeeds> {
 			expect(response.status, pathname).toBe(200)
 			expect(response.headers.get('content-type')).toContain(contentType)
 			const body = await response.text()
+			expect(body).not.toContain('data-luzzle-configured-styles')
+			expect(body).not.toContain('--editor-background:')
+			expect(body).not.toContain('--color-primary:')
 			expect(body).toContain('Cutover Garden')
 			expect(body.includes('Real Piece')).toBe(feed.count > 0)
 			expect(body.includes('Orphan must not be visible')).toBe(feed.label === 'all')
@@ -289,6 +365,7 @@ async function machineFeedSnapshot(): Promise<MachineFeeds> {
 }
 
 function expectBuiltIn(html: string) {
+	expectInlineConfiguredCss(html)
 	expect(html).toMatch(/class="hero svelte-[a-z0-9]+"/)
 	expect(html).toContain('class="poster')
 	expect(html).toMatch(/<h1(?:\s[^>]*)?>Real Piece<\/h1>/)
@@ -434,7 +511,17 @@ beforeAll(async () => {
 					}
 				}
 			],
-			theme: { light: { 'color-primary': '#135790' } }
+			theme: {
+				light: { 'color-primary': '#135790' },
+				dark: { 'color-primary': '#2468ac' },
+				globals: {
+					'font-sans-name': '"Runtime Sans A"',
+					'font-sans-url': '"/fonts/runtime-a.woff2"',
+					'font-sans-weight': '300 600',
+					'radius-small': 'clamp(0.25rem, 1vw + 2px, 0.75rem)'
+				},
+				markdown: { sidenote: { 'sidenote-callout-before-content': '"A < & >"' } }
+			}
 		})
 	)
 	await mkdir(path.join(directory, 'sections'), { recursive: true })
@@ -499,14 +586,21 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		]) {
 			const response = await request(pathname)
 			expect(response.status, pathname).toBe(404)
-			expect(await response.text()).not.toContain('Orphan must not be visible')
+			const html = await response.text()
+			expect(html).not.toContain('Orphan must not be visible')
+			if (pathname === '/pieces/cutover-kind/missing')
+				expect(expectInlineConfiguredCss(html)).toContain('--color-primary: #135790;')
 		}
 	})
 
 	test('keeps API template data public and independent of site section settings', async () => {
 		const response = await request('/api/pieces?type=cutover-kind', 'application/json')
 		expect(response.status).toBe(200)
-		const result = await response.json()
+		const body = await response.text()
+		expect(body).not.toContain('data-luzzle-configured-styles')
+		expect(body).not.toContain('--editor-background:')
+		expect(body).not.toContain('--color-primary:')
+		const result = JSON.parse(body)
 		expect(result.pieces).toHaveLength(1)
 		originalPublicPiece = result.pieces[0]
 		expect(result.pieces[0]).toMatchObject({
@@ -526,6 +620,111 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		const invalid = await request('/api/pieces?type=unconfigured-kind', 'application/json')
 		expect(invalid.status).toBe(400)
 		expect(await invalid.text()).toBe('invalid type')
+	})
+
+	test('keeps configured CSS fixed until restart, then adopts mounted config on the same build', async () => {
+		const original = await readFile(configFilename)
+		const lightEditor = ":root, :root[data-theme='light'], section[data-theme='light']"
+		const darkEditor = ":root[data-theme='dark'], section[data-theme='dark']"
+		const systemDark = ":root:not([data-theme='light'])"
+		async function pageTheme() {
+			const html = await pageHtml(piecePath)
+			const css = expectInlineConfiguredCss(html)
+			const head = htmlHead(html)
+			const fixedCss = await frameworkCss(html)
+			expect(fixedCss).toMatch(/box-sizing:\s*border-box/)
+			expect(fixedCss).toContain('.button')
+			expect(fixedCss).toContain('.markdown')
+			expect(fixedCss).toContain('pre.shiki')
+			expect(fixedCss).not.toContain('--color-primary: #135790;')
+			expect(fixedCss).not.toContain('--color-primary: #a13579;')
+			expect(head).not.toMatch(/\b(?:href|src)=["'][^"']*theme(?:\.build)?\.css\b/)
+			return css
+		}
+		try {
+			const cssA = await pageTheme()
+			expectThemeVariables(cssA, ':root', {
+				'color-primary': '#135790',
+				'font-sans-name': '"Runtime Sans A"',
+				'radius-small': 'clamp(0.25rem, 1vw + 2px, 0.75rem)',
+				'sidenote-callout-before-content': '"A < & >"'
+			})
+			for (const selector of [darkEditor, systemDark])
+				expectThemeVariables(cssA, selector, { 'color-primary': '#2468ac' })
+			expect(cssA).toContain('font-family: "Runtime Sans A";')
+			expect(cssA).toContain('src: url("/fonts/runtime-a.woff2") format(\'woff2\');')
+			// Literal editor.background/editor.foreground values from the declared Shiki sources.
+			expectThemeVariables(cssA, lightEditor, {
+				'editor-background': '#fff',
+				'editor-foreground': '#24292e'
+			})
+			for (const selector of [darkEditor, systemDark])
+				expectThemeVariables(cssA, selector, {
+					'editor-background': '#24292e',
+					'editor-foreground': '#e1e4e8'
+				})
+
+			const config = JSON.parse(original.toString('utf8'))
+			config.theme = {
+				light: { 'color-primary': '#a13579' },
+				dark: { 'color-primary': '#b24680' },
+				globals: {
+					'font-sans-name': '"Runtime Sans B"',
+					'font-sans-url': '"/fonts/runtime-b.woff2"',
+					'font-sans-weight': '400 700',
+					'radius-small': 'calc(1rem + 3px)'
+				},
+				markdown: {
+					code: { light: 'rose-pine-dawn', dark: 'rose-pine' },
+					sidenote: {
+						'sidenote-callout-before-content': '"B < & > </style> </StYlE> </span>"'
+					}
+				}
+			}
+			await writeFile(configFilename, JSON.stringify(config))
+			expect(await pageTheme()).toBe(cssA)
+			expect(await pageTheme()).toBe(cssA)
+			await stopBuiltApp()
+			origin = await startBuiltApp()
+
+			const cssB = await pageTheme()
+			expect(cssB).not.toBe(cssA)
+			expectThemeVariables(cssB, ':root', {
+				'color-primary': '#a13579',
+				'font-sans-name': '"Runtime Sans B"',
+				'radius-small': 'calc(1rem + 3px)',
+				'sidenote-callout-before-content': '"B < & > <\\/style> <\\/StYlE> </span>"'
+			})
+			for (const selector of [darkEditor, systemDark])
+				expectThemeVariables(cssB, selector, { 'color-primary': '#b24680' })
+			expect(cssB).toContain('font-family: "Runtime Sans B";')
+			expect(cssB).toContain('font-weight: 400 700;')
+			expect(cssB).toContain('src: url("/fonts/runtime-b.woff2") format(\'woff2\');')
+			expect(cssB).not.toContain('#135790')
+			expect(cssB).not.toContain('#2468ac')
+			expect(cssB).not.toContain('Runtime Sans A')
+			expectThemeVariables(cssB, lightEditor, {
+				'editor-background': '#faf4ed',
+				'editor-foreground': '#575279'
+			})
+			for (const selector of [darkEditor, systemDark])
+				expectThemeVariables(cssB, selector, {
+					'editor-background': '#191724',
+					'editor-foreground': '#e0def4'
+				})
+			expect(await machineFeedSnapshot()).toEqual(originalMachineFeeds)
+			const api = await request('/api/pieces?type=cutover-kind', 'application/json')
+			expect(api.status).toBe(200)
+			const body = await api.text()
+			expect(body).not.toContain('data-luzzle-configured-styles')
+			expect(body).not.toContain('--editor-background:')
+			expect(body).not.toContain('--color-primary:')
+			expect(JSON.parse(body).pieces).toEqual([originalPublicPiece])
+		} finally {
+			await stopBuiltApp()
+			await writeFile(configFilename, original)
+			origin = await startBuiltApp()
+		}
 	})
 
 	test('keeps mapped page data, assets, tags, navigation and SEO useful in native SSR', async () => {
@@ -595,6 +794,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			const api = await request(pathname, 'application/json')
 			expect(api.status).toBe(403)
 			expect(api.headers.get('cache-control')).toBe('private, no-store')
+			expect(await api.text()).not.toContain('data-luzzle-configured-styles')
 		}
 	})
 
@@ -683,7 +883,9 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expectNativeFeed(await pageHtml('/rss/pieces/feed.html'), feedCases[1], false, true)
 		const failedHome = await request('/')
 		expect(failedHome.status).toBe(500)
-		expect(await failedHome.text()).not.toContain(directory)
+		const html = await failedHome.text()
+		expect(html).not.toContain(directory)
+		expect(expectInlineConfiguredCss(html)).toContain('--color-primary: #135790;')
 	})
 
 	test('Markdown image URLs do not publish neighboring filesystem assets', async () => {

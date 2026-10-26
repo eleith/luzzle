@@ -66,7 +66,6 @@ steps:
     commands:
       - npm install --global corepack@latest
       - corepack enable
-      - pnpm --filter @luzzle/web build:theme
       - pnpm --filter @luzzle/web test
       - pnpm --filter @luzzle/web test:templates
 

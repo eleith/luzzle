@@ -7,6 +7,7 @@ declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
+			inlineConfiguredStyles(): void
 			auth(): Promise<Session | null>
 		}
 		interface PageData {

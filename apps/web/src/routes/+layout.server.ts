@@ -1,7 +1,9 @@
 import { config, type AppConfigPublic } from '$lib/server/config'
 import { getConfiguredPieceTypes } from '$lib/pieces/types.server.js'
+import type { LayoutServerLoad } from './$types'
 
-export const load = async () => {
+export const load: LayoutServerLoad = async ({ locals }) => {
+	locals.inlineConfiguredStyles()
 	return {
 		pieceTypes: getConfiguredPieceTypes(),
 		config: {

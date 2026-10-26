@@ -70,11 +70,12 @@ const tags = [{ slug: 'fiction', tag: 'Fiction' }]
 function event() {
 	return {
 		params: { path: file },
+		locals: { inlineConfiguredStyles: vi.fn() },
 		url: new URL(
 			'https://admin.example/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published'
 		),
 		route: { id: '/(auth)/admin/piece/[...path]/published' }
-	} as Parameters<typeof load>[0]
+	} as unknown as Parameters<typeof load>[0]
 }
 
 beforeEach(() => {
@@ -161,10 +162,12 @@ test('loads only serving data/public assets, distinct tags and actual public URL
 
 test('404 before hydration/status queries when no serving row exists', async () => {
 	getWebPiece.mockResolvedValue(undefined)
-	await expect(load(event())).rejects.toMatchObject({
+	const request = event()
+	await expect(load(request)).rejects.toMatchObject({
 		status: 404,
 		body: { message: 'Piece is not published.' }
 	})
+	expect(request.locals.inlineConfiguredStyles).toHaveBeenCalledExactlyOnceWith()
 	expect(db.selectFrom).not.toHaveBeenCalled()
 	expect(getStorage).not.toHaveBeenCalled()
 	expect(runWorkflow).not.toHaveBeenCalled()

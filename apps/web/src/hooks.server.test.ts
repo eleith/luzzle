@@ -4,6 +4,10 @@ import type { Config } from '@luzzle/web.config'
 import { credentialsAuth, oidcAuth } from '$lib/server/config.fixture'
 
 const fixture = vi.hoisted(() => ({
+	building: false,
+	prepareConfiguredStyles: vi.fn(
+		async () => '<style data-luzzle-configured-styles>prepared</style>'
+	),
 	config: {
 		auth: undefined as Config['auth'],
 		url: { app_assets: '' }
@@ -12,13 +16,25 @@ const fixture = vi.hoisted(() => ({
 		handle: (({ event, resolve }) => resolve(event)) satisfies Handle
 	}))
 }))
+vi.mock('$app/environment', () => ({
+	get building() {
+		return fixture.building
+	}
+}))
 vi.mock('$lib/server/config', () => ({ config: fixture.config }))
+vi.mock('$lib/server/configured-styles', () => ({
+	prepareConfiguredStyles: fixture.prepareConfiguredStyles,
+	renderConfiguredStyles: ({ event, resolve }: Parameters<Handle>[0]) => resolve(event)
+}))
 vi.mock('$lib/server/database', () => ({}))
-// Exercise the application guard, not Auth.js or SvelteKit's request-store machinery.
-vi.mock('@sveltejs/kit/hooks', () => ({ sequence: (_auth: Handle, guard: Handle) => guard }))
+// Exercise the application guard, not configured CSS rendering or Auth.js request-store machinery.
+vi.mock('@sveltejs/kit/hooks', () => ({
+	sequence: (...handles: Handle[]) => handles[handles.length - 1]
+}))
 vi.mock('@auth/sveltekit', () => ({ SvelteKitAuth: fixture.createAuth }))
 
 beforeEach(() => {
+	fixture.building = false
 	fixture.config.auth = credentialsAuth
 	vi.clearAllMocks()
 })
@@ -56,6 +72,30 @@ function event(
 		locals: { auth: vi.fn().mockResolvedValue(session) }
 	} as unknown as Parameters<Handle>[0]['event']
 }
+
+test('awaits configured CSS once when the server hooks load, not per request', async () => {
+	const { handle } = await import('./hooks.server')
+	expect(fixture.prepareConfiguredStyles).toHaveBeenCalledExactlyOnceWith(fixture.config)
+	for (let request = 0; request < 2; request++) {
+		await handle({
+			event: event(null, '/', { routeId: '/(root)' }),
+			resolve: vi.fn().mockResolvedValue(new Response('public'))
+		})
+	}
+	expect(fixture.prepareConfiguredStyles).toHaveBeenCalledTimes(1)
+})
+
+test('does not prepare configured CSS during framework building', async () => {
+	fixture.building = true
+	await import('./hooks.server')
+	expect(fixture.prepareConfiguredStyles).not.toHaveBeenCalled()
+})
+
+test('failed configured CSS preparation rejects server hook loading', async () => {
+	const failure = new Error('Configured CSS preparation failed')
+	fixture.prepareConfiguredStyles.mockRejectedValueOnce(failure)
+	await expect(import('./hooks.server')).rejects.toBe(failure)
+})
 
 test.each(['/admin', '/admin/pieces', '/api/admin', '/api/admin/generate', '/admin/lsp'])(
 	'the protected route %s requires a session before resolving its handler',

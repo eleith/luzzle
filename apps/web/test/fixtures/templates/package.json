@@ -1,5 +1,8 @@
 {
   "name": "stock-catalog-ssr-fixture",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@luzzle/web.theme": "workspace:*"
+  }
 }

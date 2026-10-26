@@ -32,7 +32,8 @@ export default defineConfig(({ command }) => {
 
 	return {
 		plugins: [enhancedImages(), sveltekit(), Icons({ compiler: 'svelte' })],
-		ssr: sourceFirst ? { noExternal: [/^@luzzle\//] } : {},
+		// Keep computed Shiki imports relative to their owning runtime package.
+		ssr: sourceFirst ? { noExternal: [/^@luzzle\//] } : { external: ['@luzzle/web.theme/editor'] },
 		server: {
 			host: host || false,
 			allowedHosts,

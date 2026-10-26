@@ -102,13 +102,82 @@ async function buildHashes() {
 	return hashes
 }
 
-async function request(query = '') {
-	const response = await fetch(`${origin}/${query}`, {
+async function request(route = '') {
+	const response = await fetch(`${origin}/${route}`, {
 		headers: { 'x-forwarded-proto': 'http' },
 		signal: AbortSignal.timeout(10000)
 	})
 	expect(response.status).toBe(200)
 	return response.text()
+}
+
+function expectNoConfiguredCss(html: string) {
+	expect(html).not.toContain('%luzzle.styles%')
+	expect(html).not.toContain('data-luzzle-configured-styles')
+	expect(html).not.toContain('--color-primary: #123abc;')
+	expect(html).not.toContain('--editor-background:')
+}
+
+function htmlHead(html: string) {
+	const head = html.match(/<head>([\s\S]*?)<\/head>/)?.[1]
+	if (head === undefined) throw new Error('Expected the fixture HTML head')
+	return head
+}
+
+function htmlBody(html: string) {
+	const body = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/)?.[1]
+	if (body === undefined) throw new Error('Expected the fixture HTML body')
+	return body
+}
+
+function expectInlineConfiguredCss(html: string) {
+	expect(html).not.toContain('%luzzle.styles%')
+	const head = htmlHead(html)
+	const styles = [
+		...head.matchAll(/<style\b[^>]*\bdata-luzzle-configured-styles\b[^>]*>([\s\S]*?)<\/style>/g)
+	]
+	expect(styles).toHaveLength(1)
+	const [style, css] = styles[0]
+	const charset = head.match(/<meta\b[^>]*\bcharset\b[^>]*>/i)
+	if (!charset) throw new Error('Expected the fixture charset meta tag')
+	const stylePosition = head.indexOf(style)
+	expect(stylePosition).toBeGreaterThanOrEqual(head.indexOf(charset[0]) + charset[0].length)
+	const frameworkStyles =
+		head.match(
+			/<link\b[^>]*\brel=["']stylesheet["'][^>]*>|<style\b(?![^>]*\bdata-luzzle-configured-styles\b)[^>]*>[\s\S]*?<\/style>/g
+		) ?? []
+	// The app-template token precedes Kit's head, including linked or inlined component CSS.
+	for (const frameworkStyle of frameworkStyles)
+		expect(head.indexOf(frameworkStyle)).toBeGreaterThanOrEqual(stylePosition + style.length)
+	expect(htmlBody(html)).not.toContain('data-luzzle-configured-styles')
+	expect(htmlBody(html)).not.toContain('--color-primary: #123abc;')
+	expect(htmlBody(html)).not.toContain('--editor-background:')
+	expect(css).not.toContain('box-sizing:')
+	expect(css).not.toContain('.button')
+	expect(css).not.toContain('.markdown')
+	expect(css).not.toContain('pre.shiki')
+	expect(css.indexOf('--color-primary:')).toBeGreaterThanOrEqual(0)
+	expect(css.indexOf('--editor-background:')).toBeGreaterThan(css.indexOf('--color-primary:'))
+	return css
+}
+
+async function frameworkCss(html: string) {
+	const head = htmlHead(html)
+	const sources = [...head.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)]
+		.filter(([tag]) => !tag.includes('data-luzzle-configured-styles'))
+		.map(([, css]) => css)
+	const links = head.match(/<link\b[^>]*\brel=["']stylesheet["'][^>]*>/g) ?? []
+	for (const link of links) {
+		const href = link.match(/\bhref=["']([^"']+)["']/)?.[1]
+		if (!href) throw new Error('Expected a framework stylesheet URL')
+		expect(href).toMatch(/\/_app\/immutable\/assets\/[^"']+\.css$/)
+		const response = await fetch(new URL(href, origin), {
+			signal: AbortSignal.timeout(10000)
+		})
+		expect(response.status).toBe(200)
+		sources.push(await response.text())
+	}
+	return sources.join('\n')
 }
 
 test.each(ogSelections)(
@@ -140,6 +209,7 @@ beforeAll(async () => {
 	await writeFile(
 		configFilename,
 		JSON.stringify({
+			theme: { light: { 'color-primary': '#123abc' } },
 			pieces: [
 				{
 					type: 'custom-kind',
@@ -404,6 +474,51 @@ describe('stock catalog in built SvelteKit SSR', () => {
 			expect(html).not.toContain('123 min')
 			if (role !== 'page') expect(html).not.toContain('aria-label="Global"')
 		}
+	})
+
+	test('omits configured CSS from stock pages without a layout opt-in', async () => {
+		const html = await request()
+		expect(html).toContain('Catalog title')
+		expectNoConfiguredCss(html)
+	})
+
+	test('inlines only configured theme and editor CSS once for an opted-in layout', async () => {
+		for (let attempt = 0; attempt < 2; attempt++) {
+			const html = await request('themed')
+			expect(html).toContain('<h1>Themed fixture</h1>')
+			const css = expectInlineConfiguredCss(html)
+			expect(css).toContain('--color-primary: #123abc;')
+			expect(css).toContain('--color-primary: #3b82f6;')
+			expect(css).toContain("section[data-theme='dark']")
+			expect(css).toContain('--editor-background: #fff;')
+			expect(css).toContain('--editor-background: #24292e;')
+			expect(css).toContain('--editor-heading:')
+			expect(html).not.toContain('theme.css')
+			// Opt-in must not leak into the next request on the same server.
+			expectNoConfiguredCss(await request())
+		}
+	})
+
+	test('keeps fixed reset, base and Markdown CSS in the normal framework pipeline', async () => {
+		const html = await request('themed')
+		expectInlineConfiguredCss(html)
+		// Kit may inline manifest CSS instead of emitting external stylesheet links.
+		const css = await frameworkCss(html)
+		expect(css).toMatch(/box-sizing:\s*border-box/)
+		expect(css).toContain('.button')
+		expect(css).toContain('.markdown')
+		expect(css).toContain('pre.shiki')
+		expect(css).not.toContain('--color-primary: #123abc;')
+	})
+
+	test('keeps the unique configured declaration only in the head, never in bootstrap data', async () => {
+		const html = await request('themed')
+		expectInlineConfiguredCss(html)
+		const declaration = '--color-primary: #123abc;'
+		expect(htmlHead(html).split(declaration)).toHaveLength(2)
+		// Include scripts: no CSS packet should be serialized for hydration.
+		expect(htmlBody(html)).not.toContain(declaration)
+		expect(htmlBody(html)).not.toContain('data-luzzle-configured-styles')
 	})
 
 	test('leaves every compiled application file unchanged across stock rendering and preview requests', async () => {

@@ -11,7 +11,7 @@ type Theme = {
 	settings?: Rule[]
 }
 
-/** Build-side only: project configured Shiki colors without shipping a tokenizer. */
+/** Project configured Shiki colors on the server without shipping a browser tokenizer. */
 export async function generateEditorThemeCss(themes: Config['theme']['markdown']['code']): Promise<string> {
 	const light = await loadTheme(themes.light)
 	const dark = await loadTheme(themes.dark)

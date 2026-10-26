@@ -4,7 +4,7 @@ import Icons from 'unplugin-icons/vite'
 
 export default defineConfig({
 	plugins: [sveltekit(), Icons({ compiler: 'svelte' })],
-	// Match the app's external core dependency rather than bundling its optional Node integrations.
-	ssr: { external: ['@luzzle/core'], noExternal: ['bits-ui'] },
+	// Preserve Node integrations and package-relative computed theme imports at runtime.
+	ssr: { external: ['@luzzle/core', '@luzzle/web.theme/editor'], noExternal: ['bits-ui'] },
 	logLevel: 'error'
 })

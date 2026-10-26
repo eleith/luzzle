@@ -27,8 +27,11 @@ vi.mock('$lib/server/config', async () => {
 	}
 })
 
-test('the public layout returns only its explicit safe configuration projection', async () => {
-	expect(await load()).toEqual({
+test('the layout returns only its safe projection and keeps configured CSS out of page data', async () => {
+	const inlineConfiguredStyles = vi.fn()
+	expect(
+		await load({ locals: { inlineConfiguredStyles } } as unknown as Parameters<typeof load>[0])
+	).toEqual({
 		pieceTypes: ['runtime-kind'],
 		config: {
 			content: { text: { title: 'Public title', description: 'Public description' } },
@@ -36,4 +39,5 @@ test('the public layout returns only its explicit safe configuration projection'
 		},
 		meta: { title: 'Public title', description: 'Public description' }
 	})
+	expect(inlineConfiguredStyles).toHaveBeenCalledExactlyOnceWith()
 })

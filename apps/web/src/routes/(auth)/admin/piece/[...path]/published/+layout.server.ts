@@ -7,7 +7,8 @@ import { hydrateWithAssets } from '$lib/pieces/assets.server'
 import { getMarkdownPublicationStatus } from '$lib/pieces/publication.server'
 import { getPieceLinks } from '$lib/pieces/navigation'
 
-export const load: LayoutServerLoad = async ({ params, url, route }) => {
+export const load: LayoutServerLoad = async ({ params, url, route, locals }) => {
+	locals.inlineConfiguredStyles()
 	const webPiece = await getWebPiece(db, params.path)
 	if (!webPiece) error(404, 'Piece is not published.')
 
