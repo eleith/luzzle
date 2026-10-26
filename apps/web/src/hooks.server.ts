@@ -1,12 +1,28 @@
 import { building } from '$app/environment'
 import { config } from '$lib/server/config'
 import { createAuthentication } from '$lib/server/authentication'
+import { createAssetCspHandle } from '$lib/server/asset-csp'
 import { prepareConfiguredStyles, renderConfiguredStyles } from '$lib/server/configured-styles'
 import '$lib/server/database'
 import { sequence } from '@sveltejs/kit/hooks'
 import { json, redirect, type Handle } from '@sveltejs/kit'
 
-const configuredStyles = building ? '' : await prepareConfiguredStyles(config)
+async function prepareStartupStyles() {
+	if (building) return ''
+	return prepareConfiguredStyles(config)
+}
+
+function resolveRequest({ event, resolve }: Parameters<Handle>[0]) {
+	return resolve(event)
+}
+
+function createAssetPolicy(): Handle {
+	if (building) return resolveRequest
+	return createAssetCspHandle(config.url)
+}
+
+const configuredStyles = await prepareStartupStyles()
+const handleAssetCsp = createAssetPolicy()
 
 const auth = config.auth
 const authHandle = createAuthentication(auth, config.url.app_assets)
@@ -44,6 +60,11 @@ const guardHandle: Handle = async ({ event, resolve }) => {
 const handleConfiguredStyles: Handle = (request) =>
 	renderConfiguredStyles(request, configuredStyles)
 
-export const handle = authHandle
-	? sequence(handleConfiguredStyles, authHandle.handle, guardHandle)
-	: sequence(handleConfiguredStyles, guardHandle)
+function createRequestPipeline(): Handle {
+	const handlers = [handleAssetCsp, handleConfiguredStyles]
+	if (authHandle) handlers.push(authHandle.handle)
+	handlers.push(guardHandle)
+	return sequence(...handlers)
+}
+
+export const handle = createRequestPipeline()

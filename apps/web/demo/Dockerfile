@@ -20,4 +20,4 @@ COPY config/config.yaml ./config/config.yaml
 RUN ln -sfn config/config.yaml config.yaml
 
 EXPOSE 3000
-CMD ["node", "build/index.js"]
+CMD ["node", "scripts/start-server.js"]

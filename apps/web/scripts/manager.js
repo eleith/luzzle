@@ -2,6 +2,7 @@ import { loadConfig } from '@luzzle/web.templates/config'
 import { spawn } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { createServerEnvironment } from './runtime-environment.js'
 
 const PATHS = {
 	CONFIG: path.resolve('config.yaml'),
@@ -51,13 +52,22 @@ class CommandRunner {
 class ExplorerManager {
 	constructor() {
 		this.config = null
+		this.serverEnvironment = null
 		this.serverProcess = null
 		this.isDev = isDev
+	}
+
+	#createEnvironment() {
+		if (this.isDev) {
+			return { ...process.env, HOST: this.config?.network?.public?.host || '0.0.0.0' }
+		}
+		return createServerEnvironment(this.config)
 	}
 
 	async initialize() {
 		await Logger.clear()
 		this.config = loadConfig(PATHS.CONFIG)
+		this.serverEnvironment = this.#createEnvironment()
 		await Logger.log(`Config App URL: ${this.config.url.app}`)
 	}
 
@@ -78,13 +88,10 @@ class ExplorerManager {
 	async startServer() {
 		await Logger.log('Starting Luzzle Web Explorer ...')
 
-		const env = { ...process.env }
-		env.HOST = this.config?.network?.public?.host || '0.0.0.0'
-
 		const spawnOptions = {
 			stdio: 'inherit',
 			shell: this.isDev,
-			env
+			env: this.serverEnvironment
 		}
 
 		const command = this.isDev ? 'pnpm' : 'node'

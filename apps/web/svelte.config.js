@@ -1,10 +1,7 @@
 import adapter from '@sveltejs/adapter-node'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
-import { loadConfig } from '@luzzle/web.templates/config'
 
-const config = loadConfig('./config.yaml')
-
-/** @type {import('@sveltejs/kit').Config}*/
+/** @type {import('@sveltejs/kit').Config} */
 const svelteConfig = {
 	compilerOptions: {
 		experimental: {
@@ -15,11 +12,7 @@ const svelteConfig = {
 	kit: {
 		adapter: adapter(),
 		csrf: {
-			trustedOrigins: [
-				config.url.app.replace(/\/$/, ''),
-				'http://localhost:3000',
-				'http://localhost:5173'
-			]
+			trustedOrigins: ['http://localhost:3000', 'http://localhost:5173']
 		},
 		csp: {
 			mode: 'auto',
@@ -29,20 +22,12 @@ const svelteConfig = {
 					'self',
 					'unsafe-hashes',
 					'sha256-7dQwUgLau1NFCCGjfn9FsYptB6ZtWxJin6VohGIu20I=',
-					'sha256-8oa0zHl7YAxAhiYNg8fadxmsU54ezUB+oZ/NjM03xVk=',
-					`${config.url.app_assets}/`
-				].filter((src) => src !== '/'),
-				'style-src': ['self', 'unsafe-inline', `${config.url.app_assets}/`].filter(
-					(src) => src !== '/'
-				),
-				'img-src': [
-					'self',
-					'data:',
-					`${config.url.app_assets}/`,
-					`${config.url.luzzle_assets}/`
-				].filter((src) => src !== '/'),
+					'sha256-8oa0zHl7YAxAhiYNg8fadxmsU54ezUB+oZ/NjM03xVk='
+				],
+				'style-src': ['self', 'unsafe-inline'],
+				'img-src': ['self', 'data:'],
 				'connect-src': ['self'],
-				'font-src': ['self', `${config.url.app_assets}/`].filter((src) => src !== '/'),
+				'font-src': ['self'],
 				'object-src': ['none'],
 				'base-uri': ['self'],
 				'frame-ancestors': ['none']
@@ -50,7 +35,7 @@ const svelteConfig = {
 		},
 		inlineStyleThreshold: 3072,
 		paths: {
-			assets: config.url.app_assets
+			assets: ''
 		},
 		prerender: {
 			concurrency: 8,

@@ -6,6 +6,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
+import { createServerEnvironment } from '../../scripts/runtime-environment.js'
 
 const exec = promisify(execFile)
 const webRoot = fileURLToPath(new URL('../../', import.meta.url))
@@ -172,9 +173,13 @@ async function buildHashes() {
 	return hashes
 }
 
-async function request(pathname = piecePath, accept = 'text/html') {
+async function request(pathname = piecePath, accept = 'text/html', init: RequestInit = {}) {
+	const headers = new Headers(init.headers)
+	headers.set('accept', accept)
+	headers.set('x-forwarded-proto', 'http')
 	return fetch(`${origin}${pathname}`, {
-		headers: { accept, 'x-forwarded-proto': 'http' },
+		...init,
+		headers,
 		redirect: 'manual',
 		signal: AbortSignal.timeout(10000)
 	})
@@ -228,6 +233,70 @@ function expectInlineConfiguredCss(html: string) {
 		expect(css).not.toContain(privatePath)
 	expect(css).not.toMatch(/\.(?:cm-|monaco-|ace_)/)
 	return css
+}
+
+function expectRuntimeCsp(response: Response, html: string, appAssets = '', pieceAssets = '') {
+	const header = response.headers.get('content-security-policy')
+	if (!header) throw new Error('Expected the framework-generated CSP')
+	// Fetch combines repeated headers with commas: there must be only one policy.
+	expect(header).not.toContain(',')
+	const directives: Record<string, string[]> = {}
+	for (const directive of header
+		.split(';')
+		.map((value) => value.trim())
+		.filter(Boolean)) {
+		const [name, ...sources] = directive.split(/\s+/)
+		expect(directives, `duplicate CSP directive: ${name}`).not.toHaveProperty(name)
+		directives[name] = sources.sort()
+	}
+	const bootstrap = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)].find(
+		([, , script]) => script.includes('import(') && script.includes('/_app/immutable/')
+	)
+	if (!bootstrap) throw new Error('Expected the framework bootstrap script')
+	const nonce = bootstrap[1].match(/\bnonce="([^"]+)"/)?.[1]
+	expect(nonce).toBeTruthy()
+	const appSources = appAssets ? [`${appAssets.replace(/\/+$/, '')}/`] : []
+	const pieceSources = pieceAssets ? [`${pieceAssets.replace(/\/+$/, '')}/`] : []
+	const expected: Record<string, string[]> = {
+		'default-src': ["'self'"],
+		'script-src': [
+			"'self'",
+			"'unsafe-hashes'",
+			"'sha256-7dQwUgLau1NFCCGjfn9FsYptB6ZtWxJin6VohGIu20I='",
+			"'sha256-8oa0zHl7YAxAhiYNg8fadxmsU54ezUB+oZ/NjM03xVk='",
+			`'nonce-${nonce}'`,
+			...appSources
+		],
+		'style-src': ["'self'", "'unsafe-inline'", ...appSources],
+		'img-src': ["'self'", 'data:', ...appSources, ...pieceSources],
+		'connect-src': ["'self'"],
+		'font-src': ["'self'", ...appSources],
+		'object-src': ["'none'"],
+		'base-uri': ["'self'"],
+		'frame-ancestors': ["'none'"]
+	}
+	for (const sources of Object.values(expected)) sources.sort()
+	// Exact lists also forbid piece-CDN script/style/font access or relaxed restrictions.
+	expect(directives).toEqual(expected)
+}
+
+function expectSameOriginFrameworkUrls(html: string, requestOrigin: string) {
+	const urls = [
+		...html.matchAll(/\b(?:href|src)=["']([^"']*\/_app\/immutable\/[^"']+)["']/g),
+		...html.matchAll(/\bimport\(["']([^"']*\/_app\/immutable\/[^"']+)["']\)/g)
+	].map(([, url]) => url)
+	expect(urls.some((url) => url.endsWith('.js'))).toBe(true)
+	expect(urls.some((url) => url.endsWith('.css'))).toBe(true)
+	for (const url of urls) {
+		expect(url).not.toMatch(/^(?:[a-z][a-z\d+.-]*:|\/\/)/i)
+		expect(new URL(url, `${requestOrigin}${piecePath}`).origin).toBe(requestOrigin)
+	}
+}
+
+function stablePageHeaders(response: Response) {
+	// Body/nonce changes affect validators and size; Date belongs to the Node transport.
+	const variable = new Set(['content-security-policy', 'etag', 'content-length', 'date'])
+	return Object.fromEntries([...response.headers].filter(([name]) => !variable.has(name)))
 }
 
 async function frameworkCss(html: string) {
@@ -393,7 +462,7 @@ async function stopBuiltApp() {
 	}
 }
 
-async function startBuiltApp(): Promise<string> {
+async function startBuiltApp(envOverrides: NodeJS.ProcessEnv = {}): Promise<string> {
 	const child = spawn(
 		process.execPath,
 		['--input-type=module', '-e', startServer, path.join(buildDirectory, 'index.js')],
@@ -407,7 +476,8 @@ async function startBuiltApp(): Promise<string> {
 				PROTOCOL_HEADER: 'x-forwarded-proto',
 				SOCKET_PATH: '',
 				LISTEN_PID: '0',
-				LISTEN_FDS: '0'
+				LISTEN_FDS: '0',
+				...envOverrides
 			},
 			stdio: ['ignore', 'ignore', 'pipe', 'ipc']
 		}
@@ -622,6 +692,194 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(await invalid.text()).toBe('invalid type')
 	})
 
+	test('adopts runtime origins and CDN prefixes A/B across Node restarts without moving framework assets', async () => {
+		const original = await readFile(configFilename)
+		const baseline = await request()
+		expect(baseline.status).toBe(200)
+		expectRuntimeCsp(baseline, await baseline.text())
+		const deployments = [
+			{
+				label: 'A',
+				app: 'https://Garden-A.example.test:8443/published-a/',
+				app_assets: 'https://app-assets-a.example.test:8443/site/v1',
+				luzzle_assets: 'https://piece-assets-a.example.test/archive/v1',
+				requestOrigin: 'https://garden-a.example.test:8443',
+				environment: {}
+			},
+			{
+				label: 'B',
+				app: 'https://garden-b.example.test:9443/published-b/',
+				app_assets: 'https://app-assets-b.example.test/site/v2/',
+				luzzle_assets: 'https://piece-assets-b.example.test/archive/v2/',
+				requestOrigin: 'https://public-b.example.test:10443',
+				environment: { ORIGIN: 'https://public-b.example.test:10443/' }
+			}
+		]
+		try {
+			for (const deployment of deployments) {
+				const { label, app, app_assets, luzzle_assets, requestOrigin, environment } = deployment
+				const config = JSON.parse(original.toString('utf8'))
+				config.url = { app, app_assets, luzzle_assets }
+				const runtimeEnvironment = createServerEnvironment(config, environment)
+				expect(runtimeEnvironment.ORIGIN, label).toBe(requestOrigin)
+				await stopBuiltApp()
+				await writeFile(configFilename, JSON.stringify(config))
+				origin = await startBuiltApp({ ORIGIN: runtimeEnvironment.ORIGIN })
+
+				// Only the local Node listener is contacted; CDN URLs are inspected, never fetched.
+				const response = await request()
+				expect(response.status, label).toBe(200)
+				const html = await response.text()
+				expectInlineConfiguredCss(html)
+				expectRuntimeCsp(response, html, app_assets, luzzle_assets)
+				expect(stablePageHeaders(response)).toEqual(stablePageHeaders(baseline))
+				expectSameOriginFrameworkUrls(html, requestOrigin)
+				const head = htmlHead(html)
+				expect(head).toContain(`rel="icon" href="${app_assets}/images/favicon.png"`)
+				const pieces = luzzle_assets.replace(/\/+$/, '')
+				expect(html).toContain(`src="${pieces}/pieces/assets/cutover/cover%20small.png"`)
+				expect(head).toContain(
+					`property="og:image" content="${pieces}/pieces/assets/cutover/share.png"`
+				)
+				// SeoHead renders page.url: canonical origin keeps its port, never url.app's prefix.
+				expect(head).toContain(`property="og:url" content="${requestOrigin}${piecePath}"`)
+				expect(html).toContain(app)
+				if (label === 'B') {
+					const policyAndHtml = (
+						response.headers.get('content-security-policy') + html
+					).toLowerCase()
+					for (const previous of [
+						deployments[0].app,
+						deployments[0].app_assets,
+						deployments[0].luzzle_assets
+					])
+						expect(policyAndHtml).not.toContain(new URL(previous).hostname)
+				}
+				const api = await request('/api/pieces?type=cutover-kind', 'application/json')
+				expect(api.status).toBe(200)
+				expect(api.headers.has('content-security-policy')).toBe(false)
+				expect(api.headers.has('content-security-policy-report-only')).toBe(false)
+				expect((await api.json()).pieces).toEqual([originalPublicPiece])
+			}
+		} finally {
+			await stopBuiltApp()
+			await writeFile(configFilename, original)
+			origin = await startBuiltApp()
+		}
+	}, 60000)
+
+	test('enforces pre-handle form CSRF against the canonical request origin on a public GET-only endpoint', async () => {
+		const original = await readFile(configFilename)
+		const config = JSON.parse(original.toString('utf8'))
+		config.url.app = 'https://configured-csrf.example.test:8443/garden/'
+		const requestOrigin = 'https://request-csrf.example.test:9443'
+		const runtimeEnvironment = createServerEnvironment(config, { ORIGIN: requestOrigin })
+		expect(runtimeEnvironment.ORIGIN).toBe(requestOrigin)
+		try {
+			await stopBuiltApp()
+			await writeFile(configFilename, JSON.stringify(config))
+			origin = await startBuiltApp({ ORIGIN: runtimeEnvironment.ORIGIN })
+			const get = await request('/api/pieces?type=cutover-kind', 'application/json')
+			expect(get.status).toBe(200)
+			expect((await get.json()).pieces).toEqual([originalPublicPiece])
+			const cases = [
+				{ label: 'canonical same origin', requestOrigin, status: 405 },
+				{ label: 'cross origin', requestOrigin: 'https://cross.example.test', status: 403 },
+				{ label: 'missing origin', requestOrigin: undefined, status: 403 },
+				{ label: 'literal null origin', requestOrigin: 'null', status: 403 },
+				{
+					label: 'fixed localhost 3000 exception',
+					requestOrigin: 'http://localhost:3000',
+					status: 405
+				},
+				{
+					label: 'fixed localhost 5173 exception',
+					requestOrigin: 'http://localhost:5173',
+					status: 405
+				},
+				{ label: 'untrusted localhost port', requestOrigin: 'http://localhost:3001', status: 403 },
+				{
+					label: 'configured app is not an extra exception',
+					requestOrigin: new URL(config.url.app).origin,
+					status: 403
+				},
+				{ label: 'listener is not the canonical origin', requestOrigin: origin, status: 403 }
+			]
+			for (const entry of cases) {
+				const headers: Record<string, string> = {
+					'content-type': 'application/x-www-form-urlencoded'
+				}
+				if (entry.requestOrigin !== undefined) headers.origin = entry.requestOrigin
+				const response = await request('/api/pieces', 'application/json', {
+					method: 'POST',
+					headers,
+					body: 'title=not-a-write'
+				})
+				expect(response.status, entry.label).toBe(entry.status)
+				// 403 occurs before handle; 405 proves the gate passed, not a successful write.
+				expect(response.headers.has('content-security-policy'), entry.label).toBe(false)
+				if (entry.status === 403) {
+					expect(response.headers.get('content-type'), entry.label).toContain('application/json')
+					expect(await response.json(), entry.label).toEqual({
+						message: 'Cross-site POST form submissions are forbidden'
+					})
+				}
+			}
+			for (const accept of ['*/*', 'application/json, */*']) {
+				const response = await request('/api/pieces', accept, {
+					method: 'POST',
+					headers: { origin: 'https://cross.example.test', 'content-type': 'text/plain' },
+					body: 'not-a-write'
+				})
+				expect(response.status, accept).toBe(403)
+				expect(response.headers.get('content-type'), accept).toBeNull()
+				expect(await response.text()).toBe('Cross-site POST form submissions are forbidden')
+			}
+			const json = await request('/api/pieces', 'application/json', {
+				method: 'POST',
+				headers: { origin: 'https://cross.example.test', 'content-type': 'application/json' },
+				body: '{}'
+			})
+			expect(json.status).toBe(405)
+		} finally {
+			await stopBuiltApp()
+			await writeFile(configFilename, original)
+			origin = await startBuiltApp()
+		}
+	})
+
+	test('also gates unsafe PUT, PATCH and DELETE forms before GET-only endpoint dispatch', async () => {
+		const requestOrigin = 'https://method-csrf.example.test:9443'
+		try {
+			await stopBuiltApp()
+			origin = await startBuiltApp({ ORIGIN: requestOrigin })
+			for (const method of ['PUT', 'PATCH', 'DELETE']) {
+				for (const entry of [
+					{ label: 'same origin reaches method dispatch', origin: requestOrigin, status: 405 },
+					{
+						label: 'cross origin rejected before handle',
+						origin: 'https://cross.example.test',
+						status: 403
+					}
+				]) {
+					const response = await request('/api/pieces', 'application/json', {
+						method,
+						headers: { origin: entry.origin, 'content-type': 'application/x-www-form-urlencoded' },
+						body: 'title=not-a-write'
+					})
+					expect(response.status, `${method}: ${entry.label}`).toBe(entry.status)
+					if (entry.status === 403)
+						expect(await response.json()).toEqual({
+							message: `Cross-site ${method} form submissions are forbidden`
+						})
+				}
+			}
+		} finally {
+			await stopBuiltApp()
+			origin = await startBuiltApp()
+		}
+	})
+
 	test('keeps configured CSS fixed until restart, then adopts mounted config on the same build', async () => {
 		const original = await readFile(configFilename)
 		const lightEditor = ":root, :root[data-theme='light'], section[data-theme='light']"
@@ -744,10 +1002,10 @@ describe('stock pieces and configured site sections through production HTTP', ()
 	})
 
 	test('rejects retired piece source configuration rather than reading arbitrary Svelte', async () => {
-		const original = await readFile(configFilename, 'utf8')
+		const original = await readFile(configFilename)
 		for (const role of ['icon', 'page', 'opengraph']) {
 			try {
-				const config = JSON.parse(original)
+				const config = JSON.parse(original.toString('utf8'))
 				config.pieces[0].components = { [role]: './must-not-be-read.svelte' }
 				await writeFile(configFilename, JSON.stringify(config))
 				await expect(validateRuntimeConfig()).rejects.toMatchObject({
@@ -755,7 +1013,9 @@ describe('stock pieces and configured site sections through production HTTP', ()
 					stderr: expect.stringContaining('components')
 				})
 			} finally {
+				await stopBuiltApp()
 				await writeFile(configFilename, original)
+				origin = await startBuiltApp()
 			}
 		}
 	})
@@ -766,9 +1026,9 @@ describe('stock pieces and configured site sections through production HTTP', ()
 	])(
 		'rejects retired $key setting in $section through the runtime configuration loader',
 		async ({ section, key, value }) => {
-			const original = await readFile(configFilename, 'utf8')
+			const original = await readFile(configFilename)
 			try {
-				const config = JSON.parse(original)
+				const config = JSON.parse(original.toString('utf8'))
 				config[section][key] = value
 				await writeFile(configFilename, JSON.stringify(config))
 				await expect(validateRuntimeConfig()).rejects.toMatchObject({
@@ -776,7 +1036,9 @@ describe('stock pieces and configured site sections through production HTTP', ()
 					stderr: expect.stringContaining(`/${section}/${key}`)
 				})
 			} finally {
+				await stopBuiltApp()
 				await writeFile(configFilename, original)
+				origin = await startBuiltApp()
 			}
 		}
 	)

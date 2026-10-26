@@ -55,7 +55,7 @@ const UrlSchema = Type.Object(
 		app_assets: Type.String({
 			default: "",
 			description:
-				"Application asset base URL. Empty uses same-origin paths; a CDN URL is allowed.",
+				"App-owned static asset URL prefix, such as icons and social images. Empty uses same-origin paths; a CDN URL is allowed. Framework JavaScript and CSS use same-origin build paths independently.",
 		}),
 		luzzle_assets: Type.String({
 			default: "",

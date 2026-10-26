@@ -27,6 +27,12 @@ vi.mock('$lib/server/configured-styles', () => ({
 	renderConfiguredStyles: ({ event, resolve }: Parameters<Handle>[0]) => resolve(event)
 }))
 vi.mock('$lib/server/database', () => ({}))
+vi.mock('$lib/server/asset-csp', () => ({
+	createAssetCspHandle:
+		() =>
+		({ event, resolve }: Parameters<Handle>[0]) =>
+			resolve(event)
+}))
 // Exercise the application guard, not configured CSS rendering or Auth.js request-store machinery.
 vi.mock('@sveltejs/kit/hooks', () => ({
 	sequence: (...handles: Handle[]) => handles[handles.length - 1]

@@ -60,7 +60,7 @@
         },
         "app_assets": {
           "default": "",
-          "description": "Application asset base URL. Empty uses same-origin paths; a CDN URL is allowed.",
+          "description": "App-owned static asset URL prefix, such as icons and social images. Empty uses same-origin paths; a CDN URL is allowed. Framework JavaScript and CSS use same-origin build paths independently.",
           "type": "string"
         },
         "luzzle_assets": {

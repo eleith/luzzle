@@ -3,7 +3,9 @@
   "version": "0.0.244",
   "private": true,
   "files": [
-    "build"
+    "build",
+    "scripts/start-server.js",
+    "scripts/runtime-environment.js"
   ],
   "scripts": {
     "dev": "vite dev",
