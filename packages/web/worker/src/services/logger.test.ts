@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import { log, createLogger } from './logger.js'
+import { log, createLogger, createOpenWorkflowLogger } from './logger.js'
 
 describe('log', () => {
 	afterEach(() => {
@@ -14,7 +14,7 @@ describe('log', () => {
 		})
 		return {
 			getLine: () => line,
-			spy
+			spy,
 		}
 	}
 
@@ -51,6 +51,52 @@ describe('log', () => {
 			const parsed = JSON.parse(cap.getLine()!.trimEnd())
 			expect(parsed.level).toBe(level)
 		}
+	})
+})
+
+describe('createOpenWorkflowLogger', () => {
+	function logger() {
+		return {
+			debug: vi.fn(),
+			info: vi.fn(),
+			warn: vi.fn(),
+			error: vi.fn(),
+			stdout: vi.fn(),
+			stderr: vi.fn(),
+		}
+	}
+
+	test('routes native levels without forwarding engine messages or arguments', () => {
+		const base = logger()
+		const engine = createOpenWorkflowLogger(base)
+		for (const level of ['debug', 'info', 'warn', 'error'] as const) {
+			engine[level]('private payload', new Error('private credential'), { input: 'secret' })
+			expect(base[level]).toHaveBeenCalledWith('OpenWorkflow operational log')
+		}
+	})
+
+	test('keeps known operational categories without error details', () => {
+		const base = logger()
+		const engine = createOpenWorkflowLogger(base)
+		engine.error('Worker tick failed:', new Error('private path'))
+		engine.warn('Worker schedule tick failed:', { secret: 'private' })
+		engine.error('Heartbeat failed:', 'private error')
+		engine.error('Critical error during workflow execution for run private-value:', 'private error')
+		expect(base.error.mock.calls).toEqual([
+			['OpenWorkflow worker tick failed'],
+			['OpenWorkflow heartbeat failed'],
+			['OpenWorkflow execution failed'],
+		])
+		expect(base.warn).toHaveBeenCalledWith('OpenWorkflow schedule tick failed')
+	})
+
+	test('accepts console-style calls with no message or non-text values', () => {
+		const base = logger()
+		const engine = createOpenWorkflowLogger(base)
+		engine.error()
+		engine.info({ secret: 'private' })
+		expect(base.error).toHaveBeenCalledWith('OpenWorkflow operational log')
+		expect(base.info).toHaveBeenCalledWith('OpenWorkflow operational log')
 	})
 })
 

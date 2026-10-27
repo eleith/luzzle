@@ -24,6 +24,15 @@ export function createPhaseContext(
 	return { ...ctx, logger, rclone: ctx.rclone.withLogger(logger) }
 }
 
+export function createWorkerContext(
+	config: TemplateConfig,
+	db: Kysely<AppDatabase>,
+	baseLogger: Logger = createLogger()
+): WorkerContext {
+	const logger = new PhaseLogger(baseLogger, db)
+	return { config, db, logger, rclone: new RcloneClient(logger) }
+}
+
 let workerContext: WorkerContext | null = null
 
 export function setWorkerContext(ctx: WorkerContext): void {
@@ -33,14 +42,6 @@ export function setWorkerContext(ctx: WorkerContext): void {
 export function getWorkerContext(): WorkerContext {
 	if (workerContext) return workerContext
 	const config = loadConfig('./config.yaml')
-	const baseLogger: Logger = createLogger()
-	const db = createAppDb(resolveDbPath(config))
-	const logger = new PhaseLogger(baseLogger, db)
-	workerContext = {
-		config,
-		logger,
-		rclone: new RcloneClient(logger),
-		db,
-	}
+	workerContext = createWorkerContext(config, createAppDb(resolveDbPath(config)))
 	return workerContext
 }

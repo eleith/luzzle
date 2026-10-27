@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { BackendSqlite } from 'openworkflow/sqlite'
+import type { Logger } from 'openworkflow'
+import type * as WorkflowClient from './openworkflow.js'
 import {
-	initOpenWorkflow,
-	getOpenWorkflow,
 	getLatestWorkflowRun,
 	getWorkflowRun,
 	getStepAttempts,
@@ -12,15 +12,88 @@ import {
 } from './index.js'
 
 describe('openworkflow client initialization', () => {
-	test('throws before initialization', () => {
-		expect(() => getOpenWorkflow()).toThrow(/has not been initialized/)
+	let lifecycle: typeof WorkflowClient
+
+	beforeEach(async () => {
+		vi.resetModules()
+		lifecycle = await import('./openworkflow.js')
 	})
 
-	test('initializes and returns singleton instance', () => {
-		const client = initOpenWorkflow({ dbPath: ':memory:' })
-		expect(client).toBeDefined()
-		expect(getOpenWorkflow()).toBe(client)
-		expect(initOpenWorkflow({ dbPath: ':memory:' })).toBe(client)
+	afterEach(async () => {
+		await lifecycle.closeOpenWorkflow().catch(() => {})
+		vi.restoreAllMocks()
+	})
+
+	test('throws before initialization', () => {
+		expect(() => lifecycle.getOpenWorkflow()).toThrow(/has not been initialized/)
+		expect(() => lifecycle.getOpenWorkflowBackend()).toThrow(/has not been initialized/)
+	})
+
+	test('owns one backend in the SDK default namespace and returns the singleton', async () => {
+		const client = lifecycle.initOpenWorkflow({ dbPath: ':memory:' })
+		const backend = lifecycle.getOpenWorkflowBackend()
+		expect(lifecycle.getOpenWorkflow()).toBe(client)
+		expect(lifecycle.initOpenWorkflow({ dbPath: 'not-opened.sqlite' })).toBe(client)
+		expect(lifecycle.getOpenWorkflowBackend()).toBe(backend)
+		const handle = await client.runWorkflow(publishSpec, {})
+		expect(handle.workflowRun.namespaceId).toBe('default')
+		expect((await backend.getWorkflowRun({ workflowRunId: handle.workflowRun.id }))?.id).toBe(
+			handle.workflowRun.id
+		)
+	})
+
+	test('passes the native logger to workers without adapting its arguments', async () => {
+		const logger: Logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+		const client = lifecycle.initOpenWorkflow({ dbPath: ':memory:', logger })
+		const backend = lifecycle.getOpenWorkflowBackend()
+		const failure = new Error('poll failed')
+		vi.spyOn(backend, 'claimWorkflowRun').mockRejectedValue(failure)
+		const worker = client.newWorker({ concurrency: 1 })
+		try {
+			await worker.start()
+			await vi.waitFor(() => {
+				expect(logger.error).toHaveBeenCalledWith(expect.any(String), failure)
+			})
+		} finally {
+			await worker.stop()
+		}
+	})
+
+	test('shares one terminal close and never reopens the backend', async () => {
+		lifecycle.initOpenWorkflow({ dbPath: ':memory:' })
+		const backend = lifecycle.getOpenWorkflowBackend()
+		const stop = vi.spyOn(backend, 'stop')
+		const closing = lifecycle.closeOpenWorkflow()
+		expect(lifecycle.closeOpenWorkflow()).toBe(closing)
+		expect(() => lifecycle.getOpenWorkflow()).toThrow(/closed/)
+		expect(() => lifecycle.getOpenWorkflowBackend()).toThrow(/closed/)
+		expect(() => lifecycle.initOpenWorkflow({ dbPath: ':memory:' })).toThrow(/closed/)
+		await closing
+		expect(stop).toHaveBeenCalledTimes(1)
+		expect(lifecycle.closeOpenWorkflow()).toBe(closing)
+	})
+
+	test('preserves a close failure without retrying or reporting success', async () => {
+		lifecycle.initOpenWorkflow({ dbPath: ':memory:' })
+		const backend = lifecycle.getOpenWorkflowBackend()
+		const actualStop = backend.stop.bind(backend)
+		const failure = new Error('close failed')
+		const stop = vi.spyOn(backend, 'stop').mockRejectedValue(failure)
+		try {
+			const closing = lifecycle.closeOpenWorkflow()
+			await expect(closing).rejects.toBe(failure)
+			expect(lifecycle.closeOpenWorkflow()).toBe(closing)
+			expect(stop).toHaveBeenCalledTimes(1)
+			expect(() => lifecycle.initOpenWorkflow({ dbPath: ':memory:' })).toThrow(/closed/)
+		} finally {
+			await actualStop()
+		}
+	})
+
+	test('closing before initialization is harmless', async () => {
+		await lifecycle.closeOpenWorkflow()
+		expect(() => lifecycle.getOpenWorkflow()).toThrow(/has not been initialized/)
+		expect(lifecycle.initOpenWorkflow({ dbPath: ':memory:' })).toBeDefined()
 	})
 })
 
@@ -137,7 +210,7 @@ describe('SDK read helpers', () => {
 		{ name: 'PublishError', message: 'upload failed', stack: 'stack', detail: { code: 503 } },
 		'legacy failure',
 		'',
-	])('preserves workflow error JSON encoding: %j', async error => {
+	])('preserves workflow error JSON encoding: %j', async (error) => {
 		const run = await createRun()
 		await claimRun(run.id)
 		vi.setSystemTime(new Date('2026-06-02T05:02:00.000Z'))
@@ -206,20 +279,26 @@ describe('SDK read helpers', () => {
 		await claimRun(run.id)
 		await createStep(run.id, 'wait')
 		const original = backend.listStepAttempts.bind(backend)
-		vi.spyOn(backend, 'listStepAttempts').mockImplementation(async params => {
+		vi.spyOn(backend, 'listStepAttempts').mockImplementation(async (params) => {
 			const page = await original(params)
-			return { ...page, data: page.data.map(attempt => ({ ...attempt, startedAt: null })) }
+			return { ...page, data: page.data.map((attempt) => ({ ...attempt, startedAt: null })) }
 		})
-		expect(await getStepAttempts(backend, run.id)).toEqual([{
-			phase: 'wait', status: 'running', started_at: null, finished_at: null, message: null,
-		}])
+		expect(await getStepAttempts(backend, run.id)).toEqual([
+			{
+				phase: 'wait',
+				status: 'running',
+				started_at: null,
+				finished_at: null,
+				message: null,
+			},
+		])
 	})
 
 	test.each([
 		{ name: 'TransformError', message: 'transform failed', detail: ['cover'] },
 		'legacy step failure',
 		'',
-	])('preserves step error JSON as message: %j', async error => {
+	])('preserves step error JSON as message: %j', async (error) => {
 		const run = await createRun()
 		await claimRun(run.id)
 		const step = await createStep(run.id, 'transform')
@@ -231,13 +310,15 @@ describe('SDK read helpers', () => {
 			error: error as unknown as RunError,
 		})
 
-		expect(await getStepAttempts(backend, run.id)).toEqual([{
-			phase: 'transform',
-			status: 'failed',
-			started_at: initialTime.toISOString(),
-			finished_at: '2026-06-02T05:03:00.000Z',
-			message: JSON.stringify(error),
-		}])
+		expect(await getStepAttempts(backend, run.id)).toEqual([
+			{
+				phase: 'transform',
+				status: 'failed',
+				started_at: initialTime.toISOString(),
+				finished_at: '2026-06-02T05:03:00.000Z',
+				message: JSON.stringify(error),
+			},
+		])
 	})
 
 	test('follows every SDK page in chronological order, including timestamp ties and retries', async () => {
@@ -248,24 +329,27 @@ describe('SDK read helpers', () => {
 			// Shared timestamps also exercise the SDK cursor ID tie-breaker.
 			vi.setSystemTime(new Date(initialTime.getTime() + Math.floor(i / 3) * 1000))
 			const step = await createStep(run.id, `phase-${i % 3}`)
-			attempts.push(await backend.completeStepAttempt({
-				workflowRunId: run.id,
-				stepAttemptId: step.id,
-				workerId,
-				output: null,
-			}))
+			attempts.push(
+				await backend.completeStepAttempt({
+					workflowRunId: run.id,
+					stepAttemptId: step.id,
+					workerId,
+					output: null,
+				})
+			)
 		}
 		const other = await createRun({ workflowName: 'Preview' })
 		await claimRun(other.id)
 		await createStep(other.id, 'not-this-run')
 
 		const original = backend.listStepAttempts.bind(backend)
-		const list = vi.spyOn(backend, 'listStepAttempts')
-			.mockImplementation(params => original({ ...params, limit: 2 }))
+		const list = vi
+			.spyOn(backend, 'listStepAttempts')
+			.mockImplementation((params) => original({ ...params, limit: 2 }))
 		const rows = await getStepAttempts(backend, run.id)
 		const expected = attempts
 			.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))
-			.map(attempt => ({
+			.map((attempt) => ({
 				phase: attempt.stepName,
 				status: 'completed',
 				started_at: attempt.startedAt!.toISOString(),

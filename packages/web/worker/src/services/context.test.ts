@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
 import { spawn } from 'child_process'
-import { createPhaseContext, type WorkerContext } from './context.js'
+import { createPhaseContext, createWorkerContext, type WorkerContext } from './context.js'
 import { PhaseLogger } from '../core/phase-logger.js'
 import type { AppDatabase } from './db.js'
 import { RcloneClient } from './rclone.js'
@@ -36,6 +36,14 @@ describe('createPhaseContext', () => {
 
 	afterEach(async () => {
 		await teardownDatabase(ctx.db)
+	})
+
+	test('creates a context around the application database supplied by startup', () => {
+		const created = createWorkerContext(ctx.config, ctx.db, baseLogger)
+		expect(created.db).toBe(ctx.db)
+		expect(created.config).toBe(ctx.config)
+		expect(created.logger).toBeInstanceOf(PhaseLogger)
+		expect(created.rclone).toBeInstanceOf(RcloneClient)
 	})
 
 	test('leaves contexts with a plain logger unchanged', () => {

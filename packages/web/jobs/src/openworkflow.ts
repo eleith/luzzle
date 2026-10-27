@@ -1,22 +1,45 @@
 import { OpenWorkflow } from 'openworkflow'
+import type { Logger } from 'openworkflow'
 import { BackendSqlite } from 'openworkflow/sqlite'
-import type { DatabaseSync } from 'node:sqlite'
 
 let openWorkflowInstance: OpenWorkflow | null = null
+let openWorkflowBackend: BackendSqlite | null = null
+let closePromise: Promise<void> | null = null
 
 export interface InitOpenWorkflowOptions {
 	dbPath: string
+	logger?: Logger
+}
+
+function assertOpen(): void {
+	if (closePromise) {
+		throw new Error('OpenWorkflow has been closed and cannot be reinitialized.')
+	}
 }
 
 export function initOpenWorkflow(opts: InitOpenWorkflowOptions): OpenWorkflow {
+	assertOpen()
 	if (!openWorkflowInstance) {
-		const backend = BackendSqlite.connect(opts.dbPath)
-		openWorkflowInstance = new OpenWorkflow({ backend })
+		openWorkflowBackend = BackendSqlite.connect(opts.dbPath)
+		openWorkflowInstance = new OpenWorkflow({ backend: openWorkflowBackend, logger: opts.logger })
 	}
 	return openWorkflowInstance
 }
 
+/** The caller must stop workers before closing their shared backend. */
+export function closeOpenWorkflow(): Promise<void> {
+	if (!openWorkflowBackend) return Promise.resolve()
+	closePromise ??= openWorkflowBackend.stop()
+	return closePromise
+}
+
+export function getOpenWorkflowBackend(): BackendSqlite {
+	getOpenWorkflow()
+	return openWorkflowBackend!
+}
+
 export function getOpenWorkflow(): OpenWorkflow {
+	assertOpen()
 	if (!openWorkflowInstance) {
 		throw new Error(
 			'OpenWorkflow client has not been initialized. Call initOpenWorkflow({ dbPath }) first.'
@@ -96,58 +119,17 @@ export async function getStepAttempts(
 	do {
 		// Forward SDK pagination preserves chronological order across pages.
 		const page = await backend.listStepAttempts({ workflowRunId, after })
-		rows.push(...page.data.map(attempt => ({
-			phase: attempt.stepName,
-			status: attempt.status,
-			started_at: attempt.startedAt?.toISOString() ?? null,
-			finished_at: attempt.finishedAt?.toISOString() ?? null,
-			message: attempt.error === null ? null : JSON.stringify(attempt.error),
-		})))
+		rows.push(
+			...page.data.map((attempt) => ({
+				phase: attempt.stepName,
+				status: attempt.status,
+				started_at: attempt.startedAt?.toISOString() ?? null,
+				finished_at: attempt.finishedAt?.toISOString() ?? null,
+				message: attempt.error === null ? null : JSON.stringify(attempt.error),
+			}))
+		)
 		after = page.pagination.next ?? undefined
 	} while (after)
 
 	return rows
-}
-
-/**
- * Purges old workflow runs and step attempts from the database in batches of 100.
- * Note: OpenWorkflow will add cron and cleanup in a future release,
- * so we will need to make adjustments later if/when they do.
- */
-export function purgeExpiredWorkflowRuns(
-	db: DatabaseSync,
-	retentionDays: number,
-	limit: number = 100
-): number {
-	const cutoffIso = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString()
-	let totalPurged = 0
-	let batch: { id: string }[] = []
-
-	do {
-		const stmtSelect = db.prepare(`
-			SELECT id FROM workflow_runs 
-			WHERE created_at < ? 
-			LIMIT ?
-		`)
-		batch = stmtSelect.all(cutoffIso, limit) as { id: string }[]
-
-		if (batch.length > 0) {
-			const ids = batch.map(r => r.id)
-			const placeholders = ids.map(() => '?').join(',')
-
-			db.prepare(`
-				DELETE FROM step_attempts 
-				WHERE workflow_run_id IN (${placeholders})
-			`).run(...ids)
-
-			db.prepare(`
-				DELETE FROM workflow_runs 
-				WHERE id IN (${placeholders})
-			`).run(...ids)
-
-			totalPurged += batch.length
-		}
-	} while (batch.length === limit)
-
-	return totalPurged
 }

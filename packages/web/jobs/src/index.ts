@@ -1,12 +1,13 @@
 export {
 	initOpenWorkflow,
 	getOpenWorkflow,
+	getOpenWorkflowBackend,
+	closeOpenWorkflow,
 	getLatestWorkflowRun,
 	getWorkflowRun,
 	getStepAttempts,
-	purgeExpiredWorkflowRuns,
 } from './openworkflow.js'
-export type { WorkflowRunRow, StepAttemptRow } from './openworkflow.js'
+export type { InitOpenWorkflowOptions, WorkflowRunRow, StepAttemptRow } from './openworkflow.js'
 export {
 	jobProgressPurgeSpec,
 	previewSpec,
