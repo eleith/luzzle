@@ -25,6 +25,11 @@ packages/web/static/images/pieces
 apps/web/luzzle-images
 apps/web/luzzle
 apps/web/static/images/pieces
+apps/web/build
+apps/web/config.yaml
+apps/web/config
+apps/web/demo
+apps/web/nginx
 
 .pnpm-store
 .plans
