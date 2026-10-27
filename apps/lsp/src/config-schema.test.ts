@@ -170,7 +170,7 @@ describe("generated web config schema in yaml-language-server", () => {
 	});
 
 	it("validates the demo through its checked-in schema header", async () => {
-		const file = new URL("../../web/demo/config.yaml", import.meta.url);
+		const file = new URL("../../web/demo/config/config.yaml", import.meta.url);
 		const uri = file.href;
 		const text = await readFile(file, "utf8");
 		const diagnostics = new Promise<Diagnostic[]>((resolve) =>
