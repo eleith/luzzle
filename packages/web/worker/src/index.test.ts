@@ -14,12 +14,15 @@ import type * as Workflows from './workflows/index.js'
 const probe = defineWorkflowSpec<void, string>({ name: 'ShutdownProbe' })
 
 afterEach(() => {
+	vi.useRealTimers()
 	vi.doUnmock('./workflows/index.js')
 	vi.resetModules()
 })
 
 test('starts the native worker and health server, then lets active work finish before closing databases', async () => {
 	vi.resetModules()
+	vi.useFakeTimers({ toFake: ['Date'] })
+	vi.setSystemTime(new Date('2026-06-02T12:00:00.000Z'))
 	const directory = await fs.mkdtemp(path.join(tmpdir(), 'luzzle-worker-'))
 	const queuePath = path.join(directory, 'queue.sqlite')
 	const config = validateConfig(
@@ -64,12 +67,12 @@ test('starts the native worker and health server, then lets active work finish b
 		const { port } = running.server.address() as AddressInfo
 		expect((await fetch(`http://127.0.0.1:${port}/health`)).status).toBe(200)
 		const backend = jobs.getOpenWorkflowBackend()
-		await expect
-			.poll(
-				async () =>
-					(await backend.listWorkflowRuns({ workflowName: 'JobProgressPurge' })).data[0]?.status
-			)
-			.toBe('completed')
+		expect(await jobs.getOpenWorkflow().schedules.get('luzzle:job-progress-purge')).toMatchObject({
+			cron: '0 48 1 * * *',
+			timezone: 'UTC',
+			nextRunAt: new Date('2026-06-03T01:48:00.000Z'),
+		})
+		expect((await backend.listWorkflowRuns({ workflowName: 'JobProgressPurge' })).data).toEqual([])
 		const handle = await jobs.getOpenWorkflow().runWorkflow(probe)
 		await expect.poll(() => entered).toBe(true)
 
@@ -104,7 +107,7 @@ test('starts the native worker and health server, then lets active work finish b
 			)
 			expect(
 				(await reopened.listWorkflowRuns({ workflowName: 'JobProgressPurge' })).data
-			).toHaveLength(1)
+			).toHaveLength(0)
 		} finally {
 			await reopened.stop()
 		}

@@ -1,119 +1,113 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { setupDatabase, teardownDatabase } from '../../test/db.js'
+import { createAppDb, runWebMigrations } from '@luzzle/web.db'
+import { sql } from 'kysely'
 import { JobProgress } from './job-progress.js'
-import type { Kysely } from 'kysely'
-import type { WebDatabase } from '../services/db.js'
 
 describe('JobProgress', () => {
-	let testDb: Kysely<WebDatabase>
+	let testDb: ReturnType<typeof createAppDb>
 	let jobProgress: JobProgress
 
 	beforeEach(async () => {
-		testDb = await setupDatabase()
-		jobProgress = new JobProgress(testDb, 2)
+		testDb = createAppDb(':memory:')
+		expect((await runWebMigrations(testDb)).error).toBeUndefined()
+		jobProgress = new JobProgress(testDb)
 	})
 
 	afterEach(async () => {
-		await teardownDatabase(testDb)
+		await testDb.destroy()
 	})
 
-	it('should start a phase', async () => {
+	it('starts and restarts a phase', async () => {
 		await jobProgress.start('42', 'archive.sync')
-
-		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
+		await jobProgress.complete('42', 'archive.sync', 'done')
+		await jobProgress.start('42', 'archive.sync')
+		const rows = await testDb.selectFrom('job_progress').selectAll().execute()
 		expect(rows).toHaveLength(1)
 		expect(rows[0]).toMatchObject({
 			job_id: '42',
 			phase: 'archive.sync',
 			status: 'running',
 			message: null,
-			finished_at: null
+			finished_at: null,
 		})
 		expect(rows[0].started_at).toBeGreaterThan(0)
 	})
 
-	it('should complete a phase', async () => {
+	it('completes a phase', async () => {
 		await jobProgress.start('42', 'archive.sync')
 		await jobProgress.complete('42', 'archive.sync', 'completed successfully')
-
-		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
-		expect(rows).toHaveLength(1)
-		expect(rows[0]).toMatchObject({
-			job_id: '42',
-			phase: 'archive.sync',
-			status: 'completed',
-			message: 'completed successfully'
-		})
-		expect(rows[0].finished_at).toBeGreaterThan(0)
+		const row = await testDb.selectFrom('job_progress').selectAll().executeTakeFirstOrThrow()
+		expect(row).toMatchObject({ status: 'completed', message: 'completed successfully' })
+		expect(row.finished_at).toBeGreaterThan(0)
 	})
 
-	it('should skip a phase', async () => {
+	it('skips a phase', async () => {
 		await jobProgress.start('42', 'archive.sync')
 		await jobProgress.skip('42', 'archive.sync', 'no remote configured')
-
-		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
-		expect(rows).toHaveLength(1)
-		expect(rows[0]).toMatchObject({
-			job_id: '42',
-			phase: 'archive.sync',
-			status: 'skipped',
-			message: 'no remote configured'
-		})
-		expect(rows[0].finished_at).toBeGreaterThan(0)
+		const row = await testDb.selectFrom('job_progress').selectAll().executeTakeFirstOrThrow()
+		expect(row).toMatchObject({ status: 'skipped', message: 'no remote configured' })
+		expect(row.finished_at).toBeGreaterThan(0)
 	})
 
-	it('should fail a phase with an Error', async () => {
+	it.each([new Error('network error'), 'network error'])('fails a phase: %s', async (error) => {
 		await jobProgress.start('42', 'archive.sync')
-		await jobProgress.fail('42', 'archive.sync', new Error('network error'))
-
-		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
-		expect(rows).toHaveLength(1)
-		expect(rows[0]).toMatchObject({
-			job_id: '42',
-			phase: 'archive.sync',
-			status: 'failed',
-			message: 'network error'
-		})
-		expect(rows[0].finished_at).toBeGreaterThan(0)
+		await jobProgress.fail('42', 'archive.sync', error)
+		const row = await testDb.selectFrom('job_progress').selectAll().executeTakeFirstOrThrow()
+		expect(row).toMatchObject({ status: 'failed', message: 'network error' })
+		expect(row.finished_at).toBeGreaterThan(0)
 	})
 
-	it('should fail a phase with a string', async () => {
-		await jobProgress.start('42', 'archive.sync')
-		await jobProgress.fail('42', 'archive.sync', 'string error')
+	async function log(jobId: string) {
+		await testDb
+			.insertInto('job_progress_logs')
+			.values({
+				job_id: jobId,
+				phase: 'render',
+				line_number: 1,
+				ts: Date.now(),
+				level: 'info',
+				message: 'log',
+			})
+			.execute()
+	}
 
-		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
-		expect(rows).toHaveLength(1)
-		expect(rows[0]).toMatchObject({
-			job_id: '42',
-			phase: 'archive.sync',
-			status: 'failed',
-			message: 'string error'
-		})
-		expect(rows[0].finished_at).toBeGreaterThan(0)
+	it('lists the distinct union of progress and log IDs, including logs without progress', async () => {
+		await jobProgress.start('both', 'one')
+		await jobProgress.start('both', 'two')
+		await jobProgress.start('progress-only', 'one')
+		await log('both')
+		await log('logs-only')
+		expect((await jobProgress.listJobIds()).sort()).toEqual(['both', 'logs-only', 'progress-only'])
 	})
 
-	it('should purge old records based on started_at', async () => {
-		// Insert an old record
-		await testDb.insertInto('job_progress' as any).values({
-			job_id: '1',
-			phase: 'old.phase',
-			status: 'completed',
-			started_at: Date.now() - 3 * 24 * 60 * 60 * 1000, // 3 days old
-		}).execute()
+	it('purges only selected IDs in bounded chunks, idempotently', async () => {
+		const ids = Array.from({ length: 205 }, (_, index) => `job-${index}`)
+		for (const id of [...ids, 'keep']) {
+			await jobProgress.start(id, 'render')
+			await log(id)
+		}
+		await jobProgress.purgeJobs(ids)
+		await jobProgress.purgeJobs(ids)
+		await jobProgress.purgeJobs([])
+		expect(await jobProgress.listJobIds()).toEqual(['keep'])
+		expect(await testDb.selectFrom('job_progress').select('job_id').execute()).toEqual([
+			{ job_id: 'keep' },
+		])
+		expect(await testDb.selectFrom('job_progress_logs').select('job_id').execute()).toEqual([
+			{ job_id: 'keep' },
+		])
+	})
 
-		// Insert a recent record
-		await testDb.insertInto('job_progress' as any).values({
-			job_id: '2',
-			phase: 'new.phase',
-			status: 'completed',
-			started_at: Date.now() - 1 * 24 * 60 * 60 * 1000, // 1 day old
-		}).execute()
-
-		await jobProgress.purgeExpired()
-
-		const rows = await testDb.selectFrom('job_progress' as any).selectAll().execute()
-		expect(rows).toHaveLength(1)
-		expect(rows[0].job_id).toBe('2')
+	it('rolls back logs and earlier chunks and propagates database failures', async () => {
+		const ids = Array.from({ length: 101 }, (_, index) => `job-${index}`)
+		for (const id of ids) {
+			await jobProgress.start(id, 'render')
+			await log(id)
+		}
+		await sql`CREATE TRIGGER prevent_purge BEFORE DELETE ON job_progress
+			WHEN OLD.job_id = 'job-100' BEGIN SELECT RAISE(FAIL, 'delete failed'); END`.execute(testDb)
+		await expect(jobProgress.purgeJobs(ids)).rejects.toThrow('delete failed')
+		expect(await testDb.selectFrom('job_progress').selectAll().execute()).toHaveLength(101)
+		expect(await testDb.selectFrom('job_progress_logs').selectAll().execute()).toHaveLength(101)
 	})
 })

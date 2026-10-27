@@ -6,14 +6,12 @@ import { createHealthServer } from './services/health.js'
 import { createLogger, createOpenWorkflowLogger, log } from './services/logger.js'
 import { createWorkerContext, setWorkerContext } from './services/context.js'
 import { closeOpenWorkflow, initOpenWorkflow } from '@luzzle/web.jobs'
-import { jobProgressPurgeSpec } from '@luzzle/web.jobs/specs'
 import { registerWorkflows } from './workflows/index.js'
 import { once } from 'node:events'
 import type { Server } from 'node:http'
 import type { Worker } from 'openworkflow'
 
 const DEFAULT_PORT = 9000
-const PURGE_RETENTION_DAYS = 7
 
 async function closeHealthServer(server: Server): Promise<void> {
 	if (!server.listening) return
@@ -34,11 +32,9 @@ export async function main(
 	const db = createAppDb(resolveDbPath(config))
 	const server = createHealthServer()
 	let worker: Worker | undefined
-	let purgeInterval: ReturnType<typeof setInterval> | undefined
 	let stopPromise: Promise<void> | undefined
 
 	async function stopResources(): Promise<void> {
-		clearInterval(purgeInterval)
 		await closeHealthServer(server)
 		await worker?.stop()
 		const errors: unknown[] = []
@@ -82,19 +78,6 @@ export async function main(
 		await worker.start()
 		logger.info('openworkflow worker started')
 
-		async function enqueuePurge(): Promise<void> {
-			try {
-				const run = await openWorkflow.runWorkflow(jobProgressPurgeSpec, {
-					retentionDays: PURGE_RETENTION_DAYS,
-				})
-				logger.info('openworkflow job progress purge enqueued', { jobId: run.workflowRun.id })
-			} catch {
-				logger.error('failed to enqueue openworkflow job progress purge')
-			}
-		}
-
-		void enqueuePurge()
-		purgeInterval = setInterval(enqueuePurge, 24 * 60 * 60 * 1000)
 		const listening = once(server, 'listening')
 		server.listen(port)
 		await listening

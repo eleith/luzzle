@@ -67,6 +67,13 @@ To update, back up your archive and deployment data, change `LUZZLE_VERSION` if
 pinned, then run `docker compose pull` and `docker compose up -d`.
 [Republish affected pieces](templates.md#apply-your-choices) after OG changes.
 
+## Preview cleanup
+
+The worker cleans expired preview files and app logs daily, near **02:00 UTC
+±12 minutes**. It waits through OpenWorkflow, so other jobs can run during the
+random delay. There is no extra cleanup run at startup; downtime or a busy worker
+can delay it. Finished-job data is kept for seven days. Workflow history stays.
+
 ## Optional remote sync
 
 Put your rclone configuration in `rclone/rclone.conf`. Set `sync.archive` for
