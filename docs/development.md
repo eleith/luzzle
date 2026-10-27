@@ -1,72 +1,55 @@
-# Luzzle Development Philosophy & Standards 🛠️
+# Development
 
-So you want to hack on Luzzle? Welcome! We like text, fast SQL databases, and
-robust schemas. Here is how we build things around here.
+Make a small change. Make it work. Stop there.
 
-## Core Philosophy 🧠
+## Set up
 
-### 1. Markdown is the Source of Truth
+Use Node.js 26 and pnpm 11.2.2, matching the repository toolchain.
 
-Never forget: the `.md` files in the archive are the absolute source of truth.
-The SQLite database is a **disposable, derivative cache**. If the database gets
-corrupted, deleted, or thrown into the sun, we should be able to reconstruct the
-entire state in seconds just by parsing the Markdown files again.
+```sh
+pnpm install --frozen-lockfile
+pnpm build
+```
 
-### 2. Core-First Approach
+For the browser app and worker, follow [web development](web/development.md).
 
-All parsing, schema validation, and storage operations must happen within
-`@luzzle/core`. Never implement low-level filesystem or piece parsing in other
-packages. Keep core generic, and let other packages import and reuse its
-abstractions.
+## Before committing
 
-### 3. Maintain High Quality
+Run the checks for the packages you changed. From the repository root, these run
+across the workspace:
 
-We write tests for everything.
+```sh
+pnpm test
+pnpm check
+pnpm lint
+pnpm build
+```
 
-- **Coverage Targets:** Code coverage should not go down. Always check `vitest`
-reports and keep coverage at 100% (or very near it) where required.
-- **CI Checks:** Before pushing or committing, ensure you get `lint`, `build`,
-and `test` passing locally.
+Keep coverage from dropping. If you change Docker or publishing, exercise that
+path too. A passing unit test is not a running container.
 
-### 4. No-Commit-Until-Verified
+## Keep it boring
 
-Don't commit fixes until they are actually verified to work. Especially when
-working with Docker configs, Nginx caches, and worker job runners, run them
-locally, verify they perform correctly, and only then write your commit.
+- Markdown is the source of truth. SQLite is a rebuildable index.
+- Put archive parsing and storage logic in `@luzzle/core`, not another copy in an app.
+- Leave expensive asset generation to the worker.
+- Keep changes focused. Don't commit fixes you haven't verified.
+- User guides live in `docs/`. Package READMEs are signposts, not implementation diaries.
 
-### 5. Keep docs relevant
+## Releases
 
-After any commit, follow up with documentation updates to keep the docs fresh,
-accurate and evolving in pace with codebase changes.
+Runtime changes need a changeset; documentation-only changes don't.
 
----
+```sh
+pnpm changeset
+```
 
-## Web Ecosystem 🌐
+When preparing a release:
 
-If you are working on the Web ecosystem (the explorer, worker, proxy, and other
-web helpers), please refer to the [Web Development
-Standards](../packages/web/docs/development.md) for web-specific rules.
+```sh
+pnpm version:apps
+pnpm tag:apps
+```
 
----
-
-## Releases 📦
-
-Luzzle uses [Changesets](https://github.com/changesets/changesets) with fixed app grouping (`apps/web`, `packages/web/worker`, `packages/web/proxy`, `packages/web/lsp`, `apps/cli`, `apps/core`, `apps/lsp`) so all deployable applications and services stay synchronized in versioning.
-
-1. **Document changes:** when finishing a feature or fix, record a changeset:
-   ```sh
-   pnpm changeset
-   ```
-2. **Bump versions & changelogs:** when ready to release:
-   ```sh
-   pnpm version:apps
-   ```
-   Commit the resulting version bumps and changelog updates (`git commit -m "[luzzle] release X.Y.Z"`).
-3. **Tag & deploy:**
-   ```sh
-   pnpm tag:apps
-   git push origin main
-   git tag -l "*@X.Y.Z" | xargs -n1 git push origin
-   ```
-   Push tags one at a time, not `--tags`. GitHub silently drops tag events when more than 3 tags are pushed together, so a bulk push never fires the publish workflows.
-
+Deployable apps share a release version. Commit and push the version changes, then
+push release tags individually; bulk tag pushes can skip GitHub workflows.

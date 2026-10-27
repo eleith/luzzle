@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://git.eleith.com/eleith/luzzle/raw/branch/main/packages/web/templates/config.schema.json
+
+# Save as config/config.yaml beside docker-compose.yml. No checkout files needed.
+url:
+  app: http://localhost:8080 # Change to your public URL before sharing.
+
+# Addresses inside the published-image Compose network, not browser URLs.
+network:
+  internal:
+    explorer: http://luzzle-web:3000
+    worker: http://luzzle-worker:9000
+    lsp: http://luzzle-lsp:9001
+
+content:
+  text:
+    title: My garden
+    description: A few things worth keeping.
+
+# Match this type and these frontmatter selectors to your own archive.
+# For example: hello.notes.md, with title and date_published in its frontmatter.
+pieces:
+  - type: notes
+    fields:
+      title: title
+      summary: summary
+      date_consumed: date_published
+      tags: tags
+    templates:
+      icon:
+        name: lined-notebook-paper
+      page:
+        name: note
+      opengraph:
+        name: lined-notebook-paper
+# Omitted auth means public-only: no admin editing or publishing.
+# To enable admin access, uncomment this block and supply your own values in .env.
+# Generate a session secret with: openssl rand -hex 32
+# auth:
+#   secret: '${LUZZLE_AUTH_SECRET}'
+#   credentials:
+#     username: '${LUZZLE_AUTH_USERNAME}'
+#     password: '${LUZZLE_AUTH_PASSWORD}'
+
+# Optional ordinary Markdown files. Create them before enabling these settings.
+# Paths below resolve from /app/config.yaml, so ./content means /app/content.
+# pages:
+#   home:
+#     body: ./content/home.md
+#   feed:
+#     about: ./content/feed-about.md

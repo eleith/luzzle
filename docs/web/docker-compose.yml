@@ -1,0 +1,115 @@
+# Copy this file to a deployment directory alongside .env and config/config.yaml.
+# Set LUZZLE_VERSION in .env to pin all four images to a published release.
+# Create the bind-mounted directories first, writable by the selected UID/GID.
+# In config.yaml, use luzzle-web:3000 and luzzle-worker:9000 for internal addresses,
+# and set url.app to the public URL. Do not use the demo's luzzle-dev-* addresses.
+# Start with: docker compose pull && docker compose up -d
+
+services:
+  luzzle-web:
+    image: ghcr.io/eleith/luzzle-web:${LUZZLE_VERSION:-latest}
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
+    env_file: .env
+    environment:
+      LUZZLE_DEV: "false"
+    volumes:
+      - ./config:/app/config:ro
+      - ./archive:/app/archive
+      - ./assets/pieces:/app/assets/pieces
+      - ./data:/app/data
+      - ./content:/app/content:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+
+  luzzle-worker:
+    image: ghcr.io/eleith/luzzle-web-worker:${LUZZLE_VERSION:-latest}
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
+    env_file: .env
+    environment:
+      LUZZLE_DEV: "false"
+    volumes:
+      - ./config:/app/config:ro
+      - ./archive:/app/archive
+      - ./assets:/app/assets
+      - ./data:/app/data
+      - ./content:/app/content:ro
+      - ./rclone:/app/rclone
+      # Shared with the proxy so publishing can purge cached pages.
+      - ./nginx/cache:/app/nginx
+      # Local OG font files, when configured through paths.static/theme.globals.
+      - ./static:/app/static:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:9000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+
+  luzzle-lsp:
+    image: ghcr.io/eleith/luzzle-web-lsp:${LUZZLE_VERSION:-latest}
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./archive:/app/archive
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:9001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+
+  luzzle-proxy:
+    image: ghcr.io/eleith/luzzle-web-proxy:${LUZZLE_VERSION:-latest}
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      LUZZLE_DEV: "false"
+      LUZZLE_PROXY_EXPLORER_UPSTREAM: luzzle-web:3000
+      LUZZLE_PROXY_LSP_UPSTREAM: luzzle-lsp:9001
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx/cache:/tmp/cache
+    depends_on:
+      luzzle-web:
+        condition: service_healthy
+      luzzle-lsp:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1:8080/api/health",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s

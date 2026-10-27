@@ -34,18 +34,18 @@ Depending on how you want to interact with your garden, Luzzle offers three
 entry points. Use one, two or all three. It's a buffet!
 
 - **The CLI (`@luzzle/cli`)** — _Just get a database._ A command-line companion
-to quickly initialize and sync your Markdown archive into a local SQLite index.
-Great if you just want to run queries or plug Luzzle into your own scripts. See
-the [CLI README](./apps/cli/README.md) for usage and commands.
+  to quickly initialize and sync your Markdown archive into a local SQLite index.
+  Great if you just want to run queries or plug Luzzle into your own scripts. See
+  the [CLI guide](./docs/cli.md) for usage and commands.
 
 - **The LSP (`@luzzle/lsp`)** — _Schema-aware editing._ Get autocomplete, schema
-validation, and diagnostics inside your editor (like Neovim) as you edit your
-piece frontmatter. It hooks into any LSP-compatible editor.
+  validation, and diagnostics inside your editor (like Neovim) as you edit your
+  piece frontmatter. See the [editor setup](./docs/lsp.md).
 
 - **The Web Stack (`@luzzle/web`)** — _Digital garden on the web._ A responsive
   SvelteKit explorer/admin interface, a background worker queue to sync and
   transform assets, and a caching reverse proxy. It runs via Docker Compose—making
-  it the heaviest to deploy, but also the most complete.
+  it the heaviest to deploy, but also the most complete. See the [web guide](./docs/web/README.md).
 
 ## The Spec 🏗️
 
@@ -62,7 +62,7 @@ The formal specification is still evolving alongside the codebase. 🚧
 
 ## The Monorepo 📦
 
-This ecosystem contains a few projects to manage a luzzlel archive:
+This ecosystem contains a few projects to manage a luzzle archive:
 
 - `@luzzle/core` the specification implementation 🫀
 - `@luzzle/cli` the terminal companion for managing pieces 💻
@@ -78,18 +78,12 @@ a set of services to power a luzzle web app:
 and some shared packages used for the web project:
 
 - `@luzzle/web.config` shared configuration schemas for the web stack ⚙️
-- `@luzzle/web.job` shared job definitions
+- `@luzzle/web.jobs` shared job definitions
 - `@luzzle/web.theme` shared css styles and theme types
 - `@luzzle/web.pieces` shared piece definitions and helpers
 - `@luzzle/web.templates` shared template contracts and canonical built-in sources
 
-## Development & Philosophy 🛠️
+## Documentation 📖
 
-If you'd like to contribute or understand the design principles behind the
-codebase, check out the [Development Philosophy &
-Standards](./docs/development.md).
-
-If you are working on the web stack, please also review the [Web Development
-Standards](./packages/web/docs/development.md) (such as offloading intensive
-work to the worker queue and leveraging theme variables for styling
-consistency).
+Start with [the guides](./docs/README.md): your archive, the CLI, editor support
+and the web stack. Working on Luzzle itself? See [development](./docs/development.md).

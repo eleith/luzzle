@@ -1,8 +1,7 @@
-# Luzzle Monorepo Agent Guide 🧩
+# Working in this repository
 
-refer to the following documents for comprehensive guides, architecture details,
-and development standards:
+Read [README.md](README.md), the [user guides](docs/README.md), and
+[development checks](docs/development.md) before changing code.
 
-- Read [README.md](./README.md) to understand Luzzle, its packages, and the three main entry points (CLI, LSP, and Web Stack).
-- Read [docs/development.md](./docs/development.md) for codebase-wide standards, tests, and the "no-commit-until-verified" workflow.
-- when needed, refer to individual package READMEs under the ./packages/ folder
+Keep user documentation in `docs/`; app and package READMEs only point there.
+Implementation details belong in the code, not an architecture essay.
