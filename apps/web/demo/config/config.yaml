@@ -150,27 +150,11 @@ pieces:
   - type: words
     templates:
       icon:
-        name: browser-window
-        mapping:
-          image: representative_image
-          url: url
+        name: lined-notebook-paper
       page:
-        name: article
-        mapping:
-          image: representative_image
-          url: url
-          author: author
-          wordCount: word_count
-          datePublished: date_published
-          isActive: is_active
-          isPaywalled: is_paywalled
+        name: note
       opengraph:
-        name: browser-window
-        mapping:
-          image: representative_image
-          url: url
-          author: author
-          wordCount: word_count
+        name: lined-notebook-paper
     fields:
       title: title
       summary: summary

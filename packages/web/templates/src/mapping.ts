@@ -59,10 +59,10 @@ function resolveField(data: unknown, mapping: FieldMapping, path: string): unkno
 }
 
 function select(data: unknown, selector: string, path: string): unknown {
-	if (selector === '$') return data;
+	if (selector === '$') return data ?? undefined;
 	if (data === null || typeof data !== 'object') return undefined;
 	try {
-		return getFrontmatterValue(data as PieceFrontmatter, selector);
+		return getFrontmatterValue(data as PieceFrontmatter, selector) ?? undefined;
 	} catch (error) {
 		throw new Error(`Invalid selector "${selector}" for template field "${path}"`, {
 			cause: error

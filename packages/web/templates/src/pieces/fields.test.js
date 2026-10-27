@@ -93,6 +93,82 @@ test('worker OG mapping does not evaluate unrelated page bindings', (t) => {
 	assert.equal(warning.mock.callCount(), 0);
 });
 
+test('a missing film backdrop keeps the poster in every selected role without warnings', (t) => {
+	const warning = t.mock.method(console, 'warn', () => {});
+	const source = piece();
+	source.type = 'films';
+	source.metadata = { poster: 'poster-key', backdrop: null };
+	const result = mapPieceTemplates(source, {
+		type: 'films',
+		templates: {
+			icon: { name: 'poster', mapping: { image: 'poster' } },
+			page: { name: 'film', mapping: { image: 'poster', backdrop: 'backdrop' } },
+			opengraph: { name: 'poster', mapping: { image: 'poster', backdrop: 'backdrop' } }
+		}
+	});
+	for (const role of ['icon', 'page', 'opengraph']) {
+		assert.equal(result.templates[role].fields.image, 'poster-key');
+		assert.equal(Object.hasOwn(result.templates[role].fields, 'backdrop'), false);
+	}
+	assert.equal(source.metadata.backdrop, null);
+	assert.equal(warning.mock.callCount(), 0);
+});
+
+test('a missing snippet update date keeps its mapped files and file defaults', (t) => {
+	const warning = t.mock.method(console, 'warn', () => {});
+	const source = piece();
+	source.type = 'snippets';
+	source.metadata = {
+		files: [{ file: 'code-key', name: null, format: 'rust', type: null }],
+		date_updated: null
+	};
+	const result = mapPieceTemplates(source, {
+		type: 'snippets',
+		templates: {
+			page: {
+				name: 'snippet',
+				mapping: {
+					files: {
+						each: 'files',
+						fields: { file: 'file', name: 'name', format: 'format', type: 'type' }
+					},
+					dateUpdated: 'date_updated'
+				}
+			}
+		}
+	});
+	assert.deepEqual(result.templates.page.fields, {
+		files: [{ file: 'code-key', format: 'rust', type: 'snippet' }]
+	});
+	assert.equal(source.metadata.files[0].name, null);
+	assert.equal(source.metadata.date_updated, null);
+	assert.equal(warning.mock.callCount(), 0);
+});
+
+test('a missing article image keeps its publication date without warnings in any role', (t) => {
+	const warning = t.mock.method(console, 'warn', () => {});
+	const source = piece();
+	source.type = 'words';
+	source.metadata = { representative_image: null, date_published: 1700000000000 };
+	const result = mapPieceTemplates(source, {
+		type: 'words',
+		templates: {
+			icon: { name: 'browser-window', mapping: { image: 'representative_image' } },
+			page: {
+				name: 'article',
+				mapping: { image: 'representative_image', datePublished: 'date_published' }
+			},
+			opengraph: { name: 'browser-window', mapping: { image: 'representative_image' } }
+		}
+	});
+	for (const role of ['icon', 'page', 'opengraph']) {
+		assert.equal(Object.hasOwn(result.templates[role].fields, 'image'), false);
+	}
+	assert.equal(result.templates.page.fields.datePublished, 1700000000000);
+	assert.equal(source.metadata.representative_image, null);
+	assert.equal(warning.mock.callCount(), 0);
+});
+
 test('mapped data contains no source-component dispatch state', () => {
 	const result = mapPieceTemplates(piece(), config);
 	assert.equal(Object.hasOwn(result.templates.icon, 'legacy'), false);
