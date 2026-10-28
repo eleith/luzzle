@@ -1,166 +1,223 @@
 <script lang="ts">
-	import { onMount, onDestroy, tick } from 'svelte'
+	import { onMount, onDestroy, tick, untrack } from 'svelte'
 	import { invalidateAll } from '$app/navigation'
 	import { page } from '$app/state'
-	import { Switch } from 'bits-ui'
 	import Button from '$lib/components/ui/Button.svelte'
+	import PublishTable from './PublishTable.svelte'
+	import PublishDetails from './PublishDetails.svelte'
 
+	import ArrowClockwise from 'virtual:icons/ph/arrow-clockwise'
+	import ArrowsClockwise from 'virtual:icons/ph/arrows-clockwise'
 	import CheckCircleFill from 'virtual:icons/ph/check-circle-fill'
 	import XCircleFill from 'virtual:icons/ph/x-circle-fill'
 	import CircleNotchBold from 'virtual:icons/ph/circle-notch-bold'
-	import MinusCircle from 'virtual:icons/ph/minus-circle'
-	import PlayFill from 'virtual:icons/ph/play-fill'
-	import ListMagnifyingGlass from 'virtual:icons/ph/list-magnifying-glass'
-	import LockSimpleFill from 'virtual:icons/ph/lock-simple-fill'
-	import LockSimpleOpenFill from 'virtual:icons/ph/lock-simple-open-fill'
 
 	import type { PiecesDiff } from '@luzzle/core'
 	import type { PublishPieceFailure } from '@luzzle/web.jobs'
 	import type { PageData } from './$types'
 	import type { RunView } from './+page.server'
-	import { editorHref, publishedHref, getRunKind, latestPhases, type ActiveKind } from './report.js'
+	import {
+		getRunKind,
+		latestPhases,
+		selectablePaths,
+		initialSelection,
+		canPublishSelection,
+		recordPublication,
+		completionReport,
+		pendingAfterPublication,
+		retainSelection,
+		mergePhaseLogs,
+		type PhaseLog,
+		type PhaseProgress,
+		type PublicationOutcome,
+		type ActiveKind
+	} from './report.js'
 
 	let { data }: { data: PageData } = $props()
 
-	type RunStatus = 'idle' | 'enqueued' | 'running' | 'completed' | 'failed'
-
-	type PhaseProgress = {
-		phase: string
-		status: string
-		started_at: number
-		finished_at: number | null
-		message: string | null
+	type RunStatus = 'idle' | 'submitting' | 'enqueued' | 'running' | 'completed' | 'failed'
+	type RunCompletion = {
+		id: string
+		completed: boolean
+		refreshed: boolean
+		failures: PublishPieceFailure[]
+		error: string
 	}
-	type PhaseLog = {
-		job_id: string
-		phase: string
-		line_number: number
-		ts: number
-		level: string
-		message: string
+	type CheckOptions = {
+		syncRemote: boolean
+		afterPublication?: boolean
 	}
-
-	function stateToStatus(state: string | null | undefined): RunStatus {
-		switch (state) {
-			case 'completed':
-				return 'completed'
-			case 'failed':
-			case 'canceled':
-				return 'failed'
-			case 'running':
-			case 'claimed':
-				return 'running'
-			case 'waiting':
-				return 'enqueued'
-			default:
-				return 'idle'
-		}
+	type DisplayFailure = {
+		reason:
+			| 'pending-refresh'
+			| 'checked-changes'
+			| 'publication-refresh'
+			| 'conflict'
+			| 'server'
+			| 'stream'
+			| 'detail'
+		details?: string
+		status?: number
+		afterPublication?: boolean
 	}
 
-	function groupLogs(rows: PhaseLog[]): Record<string, PhaseLog[]> {
-		const grouped: Record<string, PhaseLog[]> = {}
-		for (const log of rows) {
-			if (!grouped[log.phase]) grouped[log.phase] = []
-			grouped[log.phase].push(log)
-		}
-		return grouped
+	function stateToStatus(state: string): RunStatus {
+		if (state === 'completed') return 'completed'
+		if (state === 'failed' || state === 'canceled') return 'failed'
+		if (state === 'running' || state === 'claimed') return 'running'
+		if (state === 'waiting') return 'enqueued'
+		return 'idle'
 	}
 
-	// On load, resume an in-flight run (publish takes priority over audit).
 	function pickInitial(): { kind: ActiveKind; run: RunView } | null {
 		const inFlight = (run: RunView | null) =>
 			run && (run.state === 'running' || run.state === 'waiting')
 		if (inFlight(data.publish)) return { kind: 'publish', run: data.publish as RunView }
 		if (inFlight(data.audit)) return { kind: 'audit', run: data.audit as RunView }
-		if (data.publish?.state === 'completed' && data.publish.failedPieces?.length) {
+		if (data.publish?.state === 'completed' && data.publish.failedPieces.length > 0) {
 			return { kind: 'publish', run: data.publish }
 		}
 		return null
 	}
+
 	const initial = pickInitial()
+	const resumingCheck = initial?.kind === 'audit'
+	const initialPublication = untrack(() => {
+		if (data.publish?.state !== 'completed') return null
+		if (resumingCheck) return data.publish
+		if (initial?.kind === 'publish') return data.publish
+		return null
+	})
+	const initialDetails = initialPublication ?? initial?.run
 
 	let activeKind = $state<ActiveKind | null>(initial?.kind ?? null)
 	let status = $state<RunStatus>(initial ? stateToStatus(initial.run.state) : 'idle')
-	let errorMessage = $state('')
+	let displayFailure = $state<DisplayFailure | null>(null)
 	let streamDisconnected = $state(false)
-	let jobId = $state<string>(initial?.run.jobId ?? '')
-	let phases = $state<PhaseProgress[]>((initial?.run.phases as PhaseProgress[]) ?? [])
-	let logs = $state<Record<string, PhaseLog[]>>(groupLogs((initial?.run.logs as PhaseLog[]) ?? []))
-	let scrollLocks = $state<Record<string, boolean>>({})
-	let syncRemote = $state(false)
-	let streamedFailures = $state<PublishPieceFailure[]>([])
-
+	let jobId = $state(initial?.run.jobId ?? '')
+	let phases = $state<PhaseProgress[]>((initialDetails?.phases as PhaseProgress[]) ?? [])
+	let logs = $state<Record<string, PhaseLog[]>>(
+		mergePhaseLogs({}, (initialDetails?.logs as PhaseLog[]) ?? [])
+	)
+	let pendingDiff = $state<PiecesDiff | null>(null)
+	let outcomes = $state<PublicationOutcome[]>(
+		initialPublication
+			? recordPublication(initialPublication.diff, initialPublication.failedPieces)
+			: []
+	)
+	let selectedPaths = $state<string[]>(
+		initialPublication?.failedPieces.map((failure) => failure.filePath) ?? []
+	)
+	let fileOrder = $state<string[]>(
+		initialPublication?.diff ? selectablePaths(initialPublication.diff) : []
+	)
+	let publishingPaths = $state<string[]>([])
+	let auditRunId = $state('')
+	let checkingAfterPublication = $state(resumingCheck && initialPublication !== null)
+	let publicationState = $state<'none' | 'complete' | 'failed'>(
+		initialPublication ? 'complete' : 'none'
+	)
+	let publicationError = $state('')
+	let detailsDiff = $state<PiecesDiff | null>(initialDetails?.diff ?? null)
+	const requestedFile = $derived(page.url.searchParams.get('file'))
 	let eventSource: EventSource | null = null
+	let disposed = false
 
-	let auditDiff = $derived(data.audit?.jobId === jobId ? data.audit.diff : null)
-	let publishDiff = $derived(data.publish?.jobId === jobId ? data.publish.diff : null)
-	let publishFailures = $derived.by(() => {
-		if (activeKind !== 'publish') return []
-		if (streamedFailures.length > 0) return streamedFailures
-
-		const storedPublish = data.publish
-		if (!storedPublish) return []
-		if (storedPublish.jobId !== jobId) return []
-		return storedPublish.failedPieces ?? []
-	})
-	let auditRunId = $derived(data.audit?.jobId ?? '')
-	// Only treat an audit as live "pending changes" if it ran in this session
-	// (or was resumed in-flight). A stored audit from a past visit is stale —
-	// disk may have changed or it may already have been published — so a cold
-	// load shows the empty state and the user must re-check.
-	let auditedThisSession = $derived(activeKind === 'audit' && status === 'completed')
-	let busy = $derived(status === 'running' || status === 'enqueued')
+	let busy = $derived(status === 'submitting' || status === 'running' || status === 'enqueued')
+	let availablePaths = $derived(pendingDiff ? selectablePaths(pendingDiff) : [])
+	let missingPreselection = $derived(
+		pendingDiff !== null && requestedFile !== null && !availablePaths.includes(requestedFile)
+	)
+	let canPublish = $derived(
+		!busy &&
+			auditRunId !== '' &&
+			pendingDiff !== null &&
+			canPublishSelection(pendingDiff, selectedPaths)
+	)
+	let currentDiff = $derived(auditRunId ? pendingDiff : detailsDiff)
+	let hasTableRows = $derived(
+		availablePaths.length > 0 || (pendingDiff?.pieces.pruned.length ?? 0) > 0 || outcomes.length > 0
+	)
 
 	function hasChanges(diff: PiecesDiff): boolean {
-		return [
-			diff.schemas.added,
-			diff.schemas.updated,
-			diff.schemas.pruned,
-			diff.pieces.added,
-			diff.pieces.updated,
-			diff.pieces.pruned
-		].some((list) => list.length > 0)
+		return [...Object.values(diff.schemas), ...Object.values(diff.pieces)].some(
+			(list) => list.length > 0
+		)
 	}
 
-	// Pending changes link to the editor; published changes open the Published overview.
-	// Pruned pieces have no target — rendered as plain text.
-	function noHref(): null {
-		return null
-	}
-
-	function formatDuration(ms: number) {
-		if (ms < 0) return '0s'
-		const s = Math.floor(ms / 1000)
-		if (s < 60) return `${s}s`
-		const m = Math.floor(s / 60)
-		return `${m}m ${s % 60}s`
-	}
-
-	function handleScroll(phaseName: string, event: Event) {
-		const el = event.currentTarget as HTMLDivElement
-		if (!el) return
-		const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10
-		const currentLock = scrollLocks[phaseName] ?? true
-		if (isAtBottom && !currentLock) {
-			scrollLocks[phaseName] = true
-		} else if (!isAtBottom && currentLock) {
-			scrollLocks[phaseName] = false
-		}
-	}
-
-	function resetLive() {
-		errorMessage = ''
-		streamedFailures = []
+	function resetLive(afterPublication: boolean) {
+		displayFailure = null
+		streamDisconnected = false
 		jobId = ''
-		phases = []
-		logs = {}
+		if (!afterPublication) {
+			phases = []
+			logs = {}
+			detailsDiff = null
+		}
 		status = 'idle'
 	}
 
-	function startWatching(id: string) {
-		if (eventSource) eventSource.close()
-		streamDisconnected = false
+	function finishCheck(
+		{ id, completed, refreshed, error }: RunCompletion,
+		afterPublication: boolean
+	) {
+		const audit = data.audit?.jobId === id ? data.audit : null
+		checkingAfterPublication = false
+		if (!completed || !refreshed || !audit?.diff) {
+			status = 'failed'
+			if (afterPublication) {
+				displayFailure = { reason: 'pending-refresh' }
+			} else if (error) {
+				displayFailure = { reason: 'detail', details: error }
+			} else {
+				displayFailure = { reason: 'checked-changes' }
+			}
+			return
+		}
+		pendingDiff = audit.diff
+		if (afterPublication) {
+			selectedPaths = retainSelection(audit.diff, selectedPaths)
+			fileOrder = [...new Set([...fileOrder, ...selectablePaths(audit.diff)])]
+		} else {
+			selectedPaths = initialSelection(audit.diff, requestedFile)
+			fileOrder = selectablePaths(audit.diff)
+			outcomes = []
+			publicationState = 'none'
+			publicationError = ''
+			detailsDiff = audit.diff
+		}
+		displayFailure = null
+		auditRunId = id
+	}
 
+	function finishPublication(completion: RunCompletion) {
+		const { completed, refreshed, error } = completion
+		let diff: PiecesDiff | null = null
+		publishingPaths = []
+		if (completed) {
+			const report = completionReport(completion, data.publish)
+			diff = report.diff
+			const failedPieces = report.failedPieces
+			outcomes = recordPublication(diff, failedPieces, outcomes)
+			pendingDiff = pendingAfterPublication(pendingDiff, diff, failedPieces)
+			selectedPaths = [...new Set(failedPieces.map((failure) => failure.filePath))]
+			publicationState = 'complete'
+			publicationError = ''
+		} else {
+			publicationState = 'failed'
+			publicationError = error
+		}
+		detailsDiff = diff
+		if (!refreshed || (completed && !diff)) {
+			displayFailure = { reason: 'publication-refresh' }
+			return
+		}
+		getChanges({ syncRemote: false, afterPublication: true })
+	}
+
+	function startWatching(id: string) {
+		eventSource?.close()
+		streamDisconnected = false
 		eventSource = new EventSource(`/api/admin/publish/${id}/stream`)
 
 		eventSource.addEventListener('state', (e) => {
@@ -169,68 +226,67 @@
 			if (payload.state === 'running' || payload.state === 'claimed') status = 'running'
 			else if (payload.state === 'waiting') status = 'enqueued'
 		})
-
 		eventSource.addEventListener('phase', (e) => {
+			if (checkingAfterPublication) return
 			phases = JSON.parse(e.data)
 		})
-
 		eventSource.addEventListener('log', (e) => {
+			if (checkingAfterPublication) return
 			const newLogs: PhaseLog[] = JSON.parse(e.data)
-			const touched = new Set<string>()
-			for (const log of newLogs) {
-				if (!logs[log.phase]) logs[log.phase] = []
-				logs[log.phase].push(log)
-				touched.add(log.phase)
-			}
-			tick().then(() => {
-				for (const phase of touched) {
-					if (scrollLocks[phase] ?? true) {
-						const el = document.getElementById(`log-container-${phase}`)
-						if (el) el.scrollTop = el.scrollHeight
-					}
-				}
-			})
+			logs = mergePhaseLogs(logs, newLogs)
 		})
-
 		eventSource.addEventListener('done', async (e) => {
 			const payload = JSON.parse(e.data)
+			const finishedId = jobId
+			const afterPublication = checkingAfterPublication
 			activeKind = getRunKind(payload.workflowName, activeKind)
-			let finalStatus: RunStatus = 'failed'
-			if (payload.state === 'completed') finalStatus = 'completed'
-
-			streamedFailures = []
-			if (Array.isArray(payload.failedPieces)) {
-				streamedFailures = payload.failedPieces
-			}
-			if (payload.errors && payload.errors.length > 0) {
-				errorMessage = payload.errors[0]?.message || 'Unknown error'
-			}
+			const completed = payload.state === 'completed'
+			const failures = Array.isArray(payload.failedPieces) ? payload.failedPieces : []
+			const error = payload.errors?.[0]?.message || ''
 			eventSource?.close()
 			eventSource = null
+			let refreshed = true
 			try {
 				await invalidateAll()
+				await tick()
 			} catch (error) {
+				refreshed = false
 				console.error('Failed to refresh publish results:', error)
 			}
-			status = finalStatus
+			if (disposed) return
+			status = completed ? 'completed' : 'failed'
+			const completion = { id: finishedId, completed, refreshed, failures, error }
+			if (activeKind === 'publish') {
+				finishPublication(completion)
+			} else {
+				finishCheck(completion, afterPublication)
+			}
 		})
-
 		eventSource.addEventListener('error', (e) => {
 			if (eventSource?.readyState === EventSource.CLOSED) streamDisconnected = true
-			const msgEvent = e as MessageEvent
-			if (msgEvent.data) {
+			const message = e as MessageEvent
+			if (message.data) {
+				let details = ''
 				try {
-					errorMessage = JSON.parse(msgEvent.data).message || 'Stream error'
+					const payload = JSON.parse(message.data)
+					if (typeof payload?.message === 'string') details = payload.message
 				} catch {
-					errorMessage = 'Stream error'
+					// A malformed stream error has no diagnostic detail.
 				}
+				displayFailure = { reason: 'stream', details }
 			}
 		})
 	}
 
-	async function trigger(url: string, body: Record<string, unknown>, kind: ActiveKind) {
+	async function trigger(
+		url: string,
+		body: Record<string, unknown>,
+		kind: ActiveKind,
+		afterPublication = false
+	) {
 		activeKind = kind
-		resetLive()
+		resetLive(afterPublication)
+		status = 'submitting'
 		try {
 			const response = await fetch(url, {
 				method: 'POST',
@@ -238,862 +294,298 @@
 				body: JSON.stringify(body)
 			})
 			const payload = await response.json().catch(() => null)
-
+			if (disposed) return
 			if (!response.ok) {
-				if (response.status === 409 && payload?.jobId) {
-					jobId = payload.jobId
-					status = 'enqueued'
-					startWatching(jobId)
-					return
-				}
 				status = 'failed'
-				errorMessage = payload?.message || `Server error: ${response.status}`
+				checkingAfterPublication = false
+				publishingPaths = []
+				if (response.status === 409) {
+					displayFailure = { reason: 'conflict', afterPublication }
+				} else if (typeof payload?.message === 'string' && payload.message) {
+					displayFailure = { reason: 'detail', details: payload.message, afterPublication }
+				} else {
+					displayFailure = { reason: 'server', status: response.status, afterPublication }
+				}
 				return
 			}
-
 			jobId = payload.jobId
 			status = 'enqueued'
 			startWatching(jobId)
-		} catch (e) {
+		} catch (error) {
+			if (disposed) return
 			status = 'failed'
-			errorMessage = e instanceof Error ? e.message : String(e)
+			checkingAfterPublication = false
+			publishingPaths = []
+			const details = error instanceof Error ? error.message : String(error)
+			if (afterPublication || details) {
+				displayFailure = { reason: 'detail', details, afterPublication }
+			}
 		}
 	}
 
-	function getChanges() {
-		trigger('/api/admin/publish/audit', { bisync: syncRemote }, 'audit')
+	function getChanges({ syncRemote, afterPublication = false }: CheckOptions) {
+		if (disposed || busy) return
+		checkingAfterPublication = afterPublication
+		auditRunId = ''
+		trigger('/api/admin/publish/audit', { bisync: syncRemote }, 'audit', afterPublication)
 	}
 
 	function handlePublish() {
-		if (auditedThisSession && auditRunId) {
-			trigger('/api/admin/publish', { auditRunId }, 'publish')
-		} else {
-			trigger('/api/admin/publish', { bisync: syncRemote }, 'publish')
-		}
+		if (!canPublish) return
+		const checkedRunId = auditRunId
+		const filePaths = [...selectedPaths]
+		auditRunId = ''
+		publishingPaths = filePaths
+		publicationState = 'none'
+		publicationError = ''
+		trigger('/api/admin/publish', { auditRunId: checkedRunId, filePaths }, 'publish')
 	}
 
 	onMount(() => {
 		if (initial && (initial.run.state === 'running' || initial.run.state === 'waiting')) {
 			startWatching(initial.run.jobId)
-		} else if (page.url.searchParams.has('check')) getChanges()
+		} else {
+			getChanges({ syncRemote: false, afterPublication: initialPublication !== null })
+		}
 	})
-
 	onDestroy(() => {
-		if (eventSource) eventSource.close()
+		disposed = true
+		eventSource?.close()
 	})
 
-	let overallDuration = $derived.by(() => {
-		if (phases.length === 0) return 0
-		const first = phases[0]
-		if (!first.started_at) return 0
-		const last = phases[phases.length - 1]
-		const end = last.finished_at || Date.now()
-		return end - first.started_at
-	})
 	let timelinePhases = $derived(latestPhases(phases))
-	let completedStages = $derived(timelinePhases.filter((p) => p.status === 'completed').length)
+	let completedStages = $derived(
+		timelinePhases.filter((phase) => phase.status === 'completed' || phase.status === 'skipped')
+			.length
+	)
 	let totalStages = $derived(timelinePhases.length)
+	let statusError = $derived(
+		status === 'failed' ||
+			streamDisconnected ||
+			displayFailure !== null ||
+			(!busy &&
+				(publicationState === 'failed' || outcomes.some((outcome) => outcome.state === 'failed')))
+	)
+	let showStatus = $derived(
+		streamDisconnected ||
+			displayFailure !== null ||
+			busy ||
+			status === 'idle' ||
+			status === 'failed' ||
+			publicationState !== 'none' ||
+			(auditRunId !== '' && missingPreselection) ||
+			(pendingDiff !== null && !hasChanges(pendingDiff))
+	)
 </script>
 
 <section class="publish-view">
 	<header class="publish-header">
 		<h1>Publish</h1>
+		<div class="check-actions">
+			<button
+				type="button"
+				class="check-action"
+				onclick={() => getChanges({ syncRemote: false })}
+				disabled={busy}
+			>
+				<ArrowClockwise aria-hidden="true" /> Check
+			</button>
+			<button
+				type="button"
+				class="check-action"
+				onclick={() => getChanges({ syncRemote: true })}
+				disabled={busy}
+				title="Sync archive with remote, then check"
+			>
+				<ArrowsClockwise aria-hidden="true" /> Sync &amp; Check
+			</button>
+		</div>
 	</header>
 
-	{#if errorMessage && status === 'failed'}
-		<div class="error-strip">
-			<XCircleFill class="error-icon" />
-			<span>{errorMessage}</span>
-		</div>
-	{/if}
-
-	<div class="report">
-		<div class="report-head">
-			<h2 class="report-title">
-				{#if status === 'idle'}
-					Publish changes
-				{:else if busy}
-					{#if activeKind === 'publish'}
-						Publishing...
+	<div class="publish-panel">
+		{#if showStatus}
+			<div class="status-line" class:is-error={statusError} role={statusError ? 'alert' : 'status'}>
+				<span
+					class="status-icon"
+					class:spin={!statusError && (busy || status === 'idle')}
+					aria-hidden="true"
+				>
+					{#if statusError}
+						<XCircleFill />
+					{:else if busy || status === 'idle'}
+						<CircleNotchBold />
 					{:else}
-						Checking for changes...
-					{/if}
-				{:else if status === 'completed'}
-					{#if activeKind === 'publish'}
-						{#if publishFailures.length > 0}
-							Publish finished with errors
-						{:else}
-							Published successfully
-						{/if}
-					{:else}
-						Pending changes
-					{/if}
-				{:else if activeKind === 'publish'}
-					Publish failed
-				{:else}
-					Check failed
-				{/if}
-			</h2>
-			{#if phases.length > 0 && !busy}
-				<span class="report-meta">
-					{#if status === 'completed' && activeKind === 'publish'}
-						{totalStages} stages · {formatDuration(overallDuration)}
-					{:else if status === 'completed' && activeKind === 'audit'}
-						checked in {formatDuration(overallDuration)}
+						<CheckCircleFill />
 					{/if}
 				</span>
-			{/if}
-		</div>
-
-		{#if status === 'enqueued' || status === 'running'}
-			{#if activeKind === 'audit'}
-				<div class="report-loading">
-					<CircleNotchBold class="loading-spinner spin" />
-					<span>Comparing local files with the database...</span>
-				</div>
-			{:else}
-				<div class="report-loading">
-					<CircleNotchBold class="loading-spinner spin" />
-					<span>Syncing database, generating assets, and deploying...</span>
-				</div>
-			{/if}
-		{:else if status === 'completed'}
-			{#if activeKind === 'publish' && publishFailures.length > 0}
-				<div class="error-strip" role="alert">
-					<XCircleFill class="error-icon" />
-					<div>
-						<strong>
-							Asset generation failed for {publishFailures.length}
-							{#if publishFailures.length === 1}piece{:else}pieces{/if}.
-						</strong>
-						<ul class="change-list">
-							{#each publishFailures as failure (failure.filePath)}
-								<li>
-									<a href={editorHref(failure.filePath)}>{failure.filePath}</a>: {failure.message}
-								</li>
-							{/each}
-						</ul>
-					</div>
-				</div>
-			{/if}
-			{#if activeKind === 'publish' && publishDiff}
-				{@render changeList(publishDiff, publishedHref)}
-			{:else if activeKind === 'audit' && auditDiff}
-				{@render changeList(auditDiff, editorHref)}
-			{:else}
-				<p class="report-empty">No changes to display.</p>
-			{/if}
-		{:else if status === 'failed'}
-			<p class="report-error-msg">
-				An error occurred. Check the timeline and logs below for details.
-			</p>
-		{:else}
-			<p class="report-empty">
-				Select an action below to check for changes or publish immediately.
-			</p>
+				<span>
+					{#if streamDisconnected}
+						Connection lost — refresh to reconnect.
+					{:else if displayFailure}
+						{#if displayFailure.afterPublication}Could not refresh pending changes.
+						{/if}
+						{#if displayFailure.reason === 'pending-refresh'}
+							Could not refresh pending changes. Check again.
+						{:else if displayFailure.reason === 'checked-changes'}
+							Could not load checked changes. Check again.
+						{:else if displayFailure.reason === 'publication-refresh'}
+							Could not refresh publication results. Check again.
+						{:else if displayFailure.reason === 'conflict'}
+							Another publication operation is running. Try again when it finishes.
+						{:else if displayFailure.reason === 'server'}
+							Server error: {displayFailure.status}
+						{:else if displayFailure.reason === 'stream'}
+							{#if displayFailure.details}{displayFailure.details}{:else}Stream error{/if}
+						{:else}
+							{displayFailure.details}
+						{/if}
+					{:else if busy && checkingAfterPublication}
+						Checking remaining changes…
+					{:else if status === 'idle'}
+						Checking changes…
+					{:else if status === 'submitting'}
+						Starting…
+					{:else if status === 'enqueued'}
+						Waiting for worker…
+					{:else if status === 'running'}
+						{#if activeKind === 'publish'}
+							Publishing{#if totalStages > 0}
+								· {completedStages}/{totalStages}{:else}…{/if}
+						{:else}
+							Checking changes…
+						{/if}
+					{:else if publicationState === 'failed'}
+						{#if publicationError}{publicationError}{:else}Publish failed{/if}
+					{:else if publicationState === 'complete'}
+						{#if outcomes.some((outcome) => outcome.state === 'failed')}Published with errors{:else}Published{/if}
+					{:else if status === 'failed'}
+						{#if activeKind === 'publish'}Publish failed{:else}Check failed{/if}
+					{:else if auditRunId && missingPreselection}
+						No pending additions or updates for this item.
+					{:else}
+						Up to date
+					{/if}
+				</span>
+			</div>
 		{/if}
 
-		<div class="action-bar">
-			<div class="switch-field" class:is-disabled={busy}>
-				<Switch.Root
-					id="sync-remote"
-					bind:checked={syncRemote}
-					disabled={busy}
-					class="switch-track"
-				>
-					<Switch.Thumb class="switch-thumb" />
-				</Switch.Root>
-				<label for="sync-remote">Sync with remote</label>
-			</div>
-			<div class="action-buttons">
-				<Button variant="outline" onclick={getChanges} disabled={busy}>
-					<ListMagnifyingGlass class="btn-icon" /> Check
+		{#if hasTableRows}
+			<PublishTable
+				diff={pendingDiff}
+				{outcomes}
+				order={fileOrder}
+				bind:selectedPaths
+				{publishingPaths}
+				disabled={busy || !auditRunId}
+			/>
+		{/if}
+
+		{#if canPublish}
+			<footer class="action-bar">
+				<Button onclick={handlePublish}>
+					{#if selectedPaths.length > 0}Publish{:else if pendingDiff?.pieces.pruned.length}Apply
+						removals{:else}Apply schema changes{/if}
 				</Button>
-				<Button onclick={handlePublish} disabled={busy}>
-					<PlayFill class="btn-icon" /> Publish
-				</Button>
-			</div>
-		</div>
+			</footer>
+		{/if}
 	</div>
 
-	{#if busy || status === 'failed'}
-		<div class="status-card">
-			<div class="status-left">
-				<span class="status-icon-wrap status-{status}">
-					{#if status === 'running' && !streamDisconnected}
-						<CircleNotchBold class="status-icon spin" />
-					{:else if status === 'enqueued' || streamDisconnected}
-						<CircleNotchBold class="status-icon" />
-					{:else}
-						<XCircleFill class="status-icon" />
-					{/if}
-				</span>
-
-				<div class="status-text">
-					{#if streamDisconnected}
-						<div class="status-title">Refresh to reconnect</div>
-					{:else if status === 'enqueued'}
-						<div class="status-title">Enqueued</div>
-						<div class="status-sub">Waiting for worker…</div>
-					{:else if status === 'running'}
-						<div class="status-title">
-							{#if activeKind === 'publish'}Publishing{:else}Checking for changes{/if}
-						</div>
-						<div class="status-sub">
-							<span class="highlight">{completedStages}/{totalStages}</span> stages ·
-							<span class="highlight">{formatDuration(overallDuration)}</span> elapsed
-						</div>
-					{:else}
-						<div class="status-title">
-							{#if activeKind === 'publish'}Publishing failed{:else}Checking for changes failed{/if}
-						</div>
-						<div class="status-sub">
-							{completedStages}/{totalStages} stages · {formatDuration(overallDuration)}
-						</div>
-					{/if}
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	{#if phases.length > 0}
-		<div class="timeline">
-			{#each timelinePhases as phase (phase.phase)}
-				{@const hasLogs = (logs[phase.phase]?.length ?? 0) > 0}
-				<div class="phase">
-					<div class="phase-row">
-						<span class="phase-icon-wrap status-{phase.status}">
-							{#if phase.status === 'completed'}
-								<CheckCircleFill class="phase-icon" />
-							{:else if phase.status === 'running'}
-								<CircleNotchBold class="phase-icon spin" />
-							{:else if phase.status === 'failed'}
-								<XCircleFill class="phase-icon" />
-							{:else if phase.status === 'skipped'}
-								<MinusCircle class="phase-icon" />
-							{:else}
-								<span class="phase-dot"></span>
-							{/if}
-						</span>
-
-						<span class="phase-name">{phase.phase}</span>
-
-						{#if phase.message}
-							<span class="phase-message" class:is-error={phase.status === 'failed'}>
-								{phase.message}
-							</span>
-						{/if}
-
-						{#if phase.status === 'skipped'}
-							<span class="phase-aside phase-time">—</span>
-						{/if}
-					</div>
-
-					{#if hasLogs}
-						<div class="log-console">
-							<div class="log-header">
-								<span>{logs[phase.phase]?.length || 0} lines</span>
-								<div class="log-header-right">
-									{#if phase.started_at}
-										<span class="log-duration">
-											{formatDuration((phase.finished_at || Date.now()) - phase.started_at)}
-										</span>
-									{/if}
-									<button
-										type="button"
-										class="scroll-lock-btn"
-										onclick={() => {
-											const next = !(scrollLocks[phase.phase] ?? true)
-											scrollLocks[phase.phase] = next
-											if (next) {
-												tick().then(() => {
-													const el = document.getElementById(`log-container-${phase.phase}`)
-													if (el) el.scrollTop = el.scrollHeight
-												})
-											}
-										}}
-										title={(scrollLocks[phase.phase] ?? true)
-											? 'Auto-scroll locked'
-											: 'Auto-scroll unlocked'}
-									>
-										{#if scrollLocks[phase.phase] ?? true}
-											<LockSimpleFill class="lock-icon" />
-										{:else}
-											<LockSimpleOpenFill class="lock-icon" />
-										{/if}
-									</button>
-								</div>
-							</div>
-							<div
-								class="log-viewport"
-								id="log-container-{phase.phase}"
-								onscroll={(e) => handleScroll(phase.phase, e)}
-							>
-								{#each logs[phase.phase] ?? [] as log (log.line_number)}
-									<div
-										class="log-row"
-										class:is-error={log.level === 'error' || log.level === 'stderr'}
-									>
-										<span class="log-timestamp">
-											{new Date(log.ts).toISOString().split('T')[1].slice(0, -5)}
-										</span>
-										<span class="log-body">{log.message}</span>
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/if}
-				</div>
-			{/each}
-		</div>
-	{/if}
+	<PublishDetails
+		schemas={currentDiff?.schemas ?? null}
+		schemasAlwaysIncluded={auditRunId !== ''}
+		{phases}
+		{logs}
+	/>
 </section>
-
-{#snippet changeList(diff: PiecesDiff, hrefFor: (file: string) => string | null)}
-	{#if hasChanges(diff)}
-		<div class="change-groups">
-			{@render changeGroup('added', 'Added', diff.schemas.added, diff.pieces.added, hrefFor)}
-			{@render changeGroup(
-				'updated',
-				'Updated',
-				diff.schemas.updated,
-				diff.pieces.updated,
-				hrefFor
-			)}
-			{@render changeGroup('pruned', 'Pruned', diff.schemas.pruned, diff.pieces.pruned, noHref)}
-		</div>
-	{:else}
-		<div class="up-to-date">
-			<CheckCircleFill class="up-to-date-icon" /> Up to date — no pending changes.
-		</div>
-	{/if}
-{/snippet}
-
-{#snippet changeGroup(
-	kind: string,
-	label: string,
-	schemas: string[],
-	pieces: string[],
-	hrefFor: (file: string) => string | null
-)}
-	{#if schemas.length > 0 || pieces.length > 0}
-		<div class="change-group change-{kind}">
-			<span class="change-label">{label}</span>
-			<ul class="change-list">
-				{#each schemas as name (name)}
-					<li class="change-schema">piece type: {name}</li>
-				{/each}
-				{#each pieces as file (file)}
-					{@const href = hrefFor(file)}
-					{@const assetFailure = publishFailures.find((failure) => failure.filePath === file)}
-					<li>
-						{#if assetFailure}
-							<a href={editorHref(file)}>{file}</a><span class="report-error-msg">
-								— asset generation failed</span
-							>
-						{:else if href}
-							<a {href}>{file}</a>
-						{:else}
-							<span class="change-gone">{file}</span>
-						{/if}
-					</li>
-				{/each}
-			</ul>
-		</div>
-	{/if}
-{/snippet}
 
 <style>
 	.publish-view {
-		padding: var(--space-8) var(--space-4);
 		max-width: 860px;
 		margin: 0 auto;
+		padding: var(--space-8) var(--space-4);
 		color: var(--color-on-surface);
 		font-size: var(--font-size-xs);
 		line-height: 1.4;
 	}
 
-	.publish-header {
-		margin-bottom: var(--space-5);
-	}
-
-	.publish-header h1 {
-		margin: 0;
-		font-size: var(--font-size-normal);
-		font-weight: var(--font-weight-bold);
-		letter-spacing: -0.01em;
-	}
-
-	.report {
-		padding: var(--space-4) var(--space-3);
-		background-color: var(--color-surface-container-lowest);
-		border: 1px solid var(--color-outline-variant);
-		border-radius: var(--radius-medium);
-		margin-bottom: var(--space-5);
-	}
-
-	.report-head {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: var(--space-3);
-		margin-bottom: var(--space-3);
-	}
-
-	.report-title {
-		margin: 0;
-		font-size: var(--font-size-small);
-		font-weight: var(--font-weight-semibold);
-	}
-
-	.report-meta {
-		font-size: var(--font-size-xxs);
-		color: var(--color-on-surface-variant);
-	}
-
-	.report-empty {
-		margin: 0;
-		font-size: var(--font-size-xxs);
-		color: var(--color-on-surface-variant);
-	}
-
+	.publish-header,
 	.action-bar {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: var(--space-4);
 		flex-wrap: wrap;
-		margin-top: var(--space-4);
-		padding-top: var(--space-4);
-		border-top: 1px solid var(--color-outline-variant);
+		gap: var(--space-3);
 	}
 
-	.action-bar :global(.btn-icon) {
-		font-size: 14px;
-	}
-
-	.action-buttons {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		flex-wrap: wrap;
-	}
-
-	.switch-field {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		font-size: var(--font-size-xxs);
-		color: var(--color-on-surface-variant);
-		user-select: none;
-	}
-
-	.switch-field.is-disabled {
-		opacity: 0.5;
-	}
-
-	/* bits-ui renders these elements, so :global() is needed to reach them */
-	.switch-field :global(.switch-track) {
-		position: relative;
-		box-sizing: border-box;
-		width: 32px;
-		height: 18px;
-		padding: 0;
-		border-radius: 999px;
-		background-color: var(--color-surface-container-highest);
-		border: 1px solid var(--color-outline-variant);
-		cursor: pointer;
-		transition: background-color 0.15s;
-		flex-shrink: 0;
-	}
-
-	.switch-field :global(.switch-track[data-state='checked']) {
-		background-color: var(--color-primary);
-		border-color: var(--color-primary);
-	}
-
-	.switch-field :global(.switch-track[data-disabled]) {
-		cursor: default;
-	}
-
-	.switch-field :global(.switch-thumb) {
-		position: absolute;
-		top: 1px;
-		left: 1px;
-		width: 14px;
-		height: 14px;
-		border-radius: 50%;
-		background-color: var(--color-on-surface-variant);
-		transition:
-			transform 0.15s,
-			background-color 0.15s;
-	}
-
-	.switch-field :global(.switch-track[data-state='checked'] .switch-thumb) {
-		transform: translateX(14px);
-		background-color: var(--color-on-primary);
-	}
-
-	.change-groups {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
-	.change-group {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-	}
-
-	.change-label {
-		font-size: var(--font-size-xxs);
-		font-weight: var(--font-weight-semibold);
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-	}
-
-	.change-added .change-label {
-		color: var(--color-primary);
-	}
-	.change-updated .change-label {
-		color: var(--color-secondary);
-	}
-	.change-pruned .change-label {
-		color: var(--color-error);
-	}
-
-	.change-list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.change-list li {
-		font-family: var(--font-mono);
-		font-size: var(--font-size-xxs);
-		color: var(--color-on-surface-variant);
-	}
-
-	.change-list a {
-		color: var(--color-on-surface);
-		text-decoration: none;
-	}
-
-	.change-list a:hover {
-		text-decoration: underline;
-	}
-
-	.change-schema {
-		font-style: italic;
-	}
-
-	.change-gone {
-		color: var(--color-on-surface-variant);
-		text-decoration: line-through;
-	}
-
-	.up-to-date {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		color: var(--color-primary);
-		font-size: var(--font-size-small);
-	}
-
-	.up-to-date :global(.up-to-date-icon) {
-		font-size: 16px;
-	}
-
-	.error-strip {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		padding: var(--space-2) var(--space-3);
-		background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
-		border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
-		color: var(--color-error);
-		font-size: var(--font-size-xxs);
-		border-radius: var(--radius-small);
+	.publish-header {
 		margin-bottom: var(--space-4);
 	}
-
-	.error-strip :global(.error-icon) {
-		font-size: 14px;
-		flex-shrink: 0;
-	}
-
-	.status-card {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: var(--space-4);
-		padding: var(--space-4) var(--space-3);
-		background-color: var(--color-surface-container-lowest);
-		border: 1px solid var(--color-outline-variant);
-		border-radius: var(--radius-medium);
-		margin-bottom: var(--space-5);
-	}
-
-	.status-left {
-		display: flex;
-		align-items: center;
-		gap: var(--space-5);
-		min-width: 0;
-	}
-
-	.status-icon-wrap {
-		width: 28px;
-		height: 28px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		color: var(--color-on-surface-variant);
-	}
-
-	.status-icon-wrap :global(.status-icon) {
-		font-size: 26px;
-	}
-
-	.status-icon-wrap.status-running {
-		color: var(--color-secondary);
-	}
-	.status-icon-wrap.status-enqueued {
-		color: var(--color-tertiary);
-	}
-	.status-icon-wrap.status-failed {
-		color: var(--color-error);
-	}
-
-	.status-text {
-		min-width: 0;
-	}
-
-	.status-title {
-		font-size: var(--font-size-small);
-		font-weight: var(--font-weight-semibold);
-		color: var(--color-on-surface);
-	}
-
-	.status-sub {
-		margin-top: 2px;
-		font-size: var(--font-size-xxs);
-		color: var(--color-on-surface-variant);
-	}
-
-	.status-sub .highlight {
-		color: var(--color-on-surface);
-		font-weight: var(--font-weight-medium);
-	}
-
-	.timeline {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.phase-row {
-		padding: var(--space-2) 0;
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-	}
-
-	.phase-icon-wrap {
-		width: 20px;
-		height: 20px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-
-	.phase-icon-wrap :global(.phase-icon) {
-		font-size: 18px;
-	}
-
-	.phase-icon-wrap.status-completed {
-		color: var(--color-primary);
-	}
-	.phase-icon-wrap.status-running {
-		color: var(--color-secondary);
-	}
-	.phase-icon-wrap.status-failed {
-		color: var(--color-error);
-	}
-	.phase-icon-wrap.status-skipped {
-		color: var(--color-on-surface-variant);
-	}
-
-	.phase-dot {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		border: 1.5px solid var(--color-outline-variant);
-	}
-
-	.phase-name {
-		font-size: var(--font-size-small);
-		font-weight: var(--font-weight-medium);
-		color: var(--color-on-surface);
-		flex-shrink: 0;
-	}
-
-	.phase-message {
-		font-size: var(--font-size-xxs);
-		color: var(--color-on-surface-variant);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		min-width: 0;
-	}
-
-	.phase-message.is-error {
-		color: var(--color-error);
-	}
-
-	.phase-aside {
-		margin-left: auto;
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-		flex-shrink: 0;
-	}
-
-	.phase-time {
-		font-family: var(--font-mono);
-		font-size: var(--font-size-xxs);
-		color: var(--color-on-surface-variant);
-		min-width: 36px;
-		text-align: right;
-	}
-
-	.log-console {
-		margin: 4px 0 0 0;
-		background-color: var(--color-surface);
-		border: 1px solid var(--color-outline-variant);
-		border-radius: var(--radius-small);
-		overflow: hidden;
-	}
-
-	.log-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: var(--space-3);
-		padding: 4px var(--space-3);
-		background-color: var(--color-surface-container-low);
-		border-bottom: 1px solid var(--color-outline-variant);
-		font-family: var(--font-mono);
-		font-size: var(--font-size-xxs);
-		font-weight: var(--font-weight-semibold);
-		color: var(--color-on-surface-variant);
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
-	.log-duration {
-		color: var(--color-on-surface);
-	}
-
-	.log-header-right {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-	}
-
-	.scroll-lock-btn {
-		background: none;
-		border: none;
-		padding: 2px;
+	h1 {
 		margin: 0;
+		font-size: var(--font-size-normal);
+	}
+
+	.check-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+		margin-left: auto;
+	}
+
+	.check-action {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-1);
+		padding: var(--space-2);
+		border: none;
+		background: none;
+		font: inherit;
 		color: var(--color-on-surface-variant);
 		cursor: pointer;
+	}
+
+	.check-action:hover {
+		color: var(--color-primary);
+	}
+	.check-action:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+	button:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
+
+	.status-line {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-small);
-		transition:
-			background-color 0.15s,
-			color 0.15s;
-	}
-
-	.scroll-lock-btn:hover {
-		background-color: var(--color-surface-container-highest);
-		color: var(--color-on-surface);
-	}
-
-	.scroll-lock-btn :global(.lock-icon) {
-		font-size: 14px;
-	}
-
-	.log-viewport {
-		padding: var(--space-2) var(--space-3);
-		max-height: 260px;
-		overflow-y: auto;
-		font-family: var(--font-mono);
-		font-size: var(--font-size-xxs);
-		line-height: 1.6;
+		gap: var(--space-2);
+		margin-bottom: var(--space-3);
+		min-height: 44px;
 		color: var(--color-on-surface-variant);
 	}
 
-	.log-row {
-		display: flex;
-		gap: var(--space-3);
-	}
-
-	.log-row.is-error {
-		background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
-		color: var(--color-error);
-		margin: 0 calc(-1 * var(--space-3));
-		padding: 0 var(--space-3);
-	}
-
-	.log-timestamp {
-		color: var(--color-outline);
+	.status-icon {
+		display: inline-flex;
 		flex-shrink: 0;
-		opacity: 0.7;
+	}
+	.is-error {
+		color: var(--color-error);
 	}
 
-	.log-body {
-		white-space: pre-wrap;
-		word-break: break-all;
+	.action-bar {
+		justify-content: flex-end;
+		align-items: flex-start;
+		margin-top: var(--space-4);
 	}
 
 	.spin {
 		animation: spin 1s linear infinite;
 	}
-
 	@keyframes spin {
-		from {
-			transform: rotate(0deg);
-		}
 		to {
 			transform: rotate(360deg);
 		}
-	}
-
-	.report-loading {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-		color: var(--color-on-surface-variant);
-		font-size: var(--font-size-xxs);
-		padding: var(--space-2) 0;
-	}
-
-	.report-loading :global(.loading-spinner) {
-		font-size: 16px;
-		color: var(--color-secondary);
-	}
-
-	.report-error-msg {
-		margin: 0;
-		font-size: var(--font-size-xxs);
-		color: var(--color-error);
 	}
 </style>

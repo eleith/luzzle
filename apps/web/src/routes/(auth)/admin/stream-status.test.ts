@@ -14,11 +14,3 @@ test.each(['publish/+page.svelte', 'piece/[...path]/preview/[jobId]/+layout.svel
 		expect(source).toMatch(/streamDisconnected = false\s+eventSource = new EventSource/)
 	}
 )
-
-test('Publish uses its existing status title and stops the spinner when disconnected', () => {
-	const source = readFileSync(new URL('./publish/+page.svelte', import.meta.url), 'utf8')
-	expect(source).toMatch(
-		/<div class="status-text">\s*\{#if streamDisconnected\}\s*<div class="status-title">Refresh to reconnect<\/div>/
-	)
-	expect(source).toContain("{#if status === 'running' && !streamDisconnected}")
-})

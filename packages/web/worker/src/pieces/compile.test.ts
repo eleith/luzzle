@@ -87,7 +87,9 @@ test.each([
 	expect(result.body).toContain(long)
 	expect(result.head).toMatch(new RegExp(`\\.${panel}[^{}]*\\{[^}]*min-width:\\s*0`))
 	for (const heading of ['h1', 'h2']) {
-		const rule = result.head.match(new RegExp(`\\.${panel}[^{}]*${heading}[^{}]*\\{([^}]+)`))?.[1]
+		const rule = result.head.match(
+			new RegExp(`\\.${panel}[^{}]*[\\s>]${heading}\\b[^{}]*\\{([^}]+)`)
+		)?.[1]
 		expect(rule).toMatch(/max-width:\s*100%/)
 		expect(rule).toMatch(/overflow-wrap:\s*anywhere/)
 	}

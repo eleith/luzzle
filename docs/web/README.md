@@ -17,6 +17,16 @@ With [authentication configured](config.md#sign-in), open `/admin` to manage
 pieces. Save edits, preview them, then use `/admin/publish` to check changes and
 publish. Saving a file is not the same as publishing it.
 
+Check lists all pending changes. Choose which added or updated pieces to publish.
+Publishing uses saved files, so edits saved after Check may be included.
+Unselected edits stay pending.
+
+**Every publish also applies all pending removals**, regardless of selection.
+They are listed separately; you can apply removals without selecting any pieces.
+Schema changes also apply globally. A renamed file looks like a removal and an
+addition: the old public version can disappear before you select its replacement.
+Check alone does not change the public site.
+
 Source and text-asset editors start with Standard keybindings. Press
 **Ctrl+Alt+V** while focused to toggle Vim mode; the browser remembers your choice.
 Use the Save button: Vim save/quit commands do not trigger application actions.
