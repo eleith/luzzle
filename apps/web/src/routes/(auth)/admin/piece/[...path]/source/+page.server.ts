@@ -19,7 +19,6 @@ import {
 } from '@luzzle/core'
 import { Readable } from 'stream'
 import { normalizeLineEndings, normalizeMarkdown } from '$lib/server/markdown'
-import { getMarkdownPublicationStatus } from '$lib/pieces/publication.server'
 
 async function resolveAssetUrls(
 	piece: Piece<PieceFrontmatter>,
@@ -103,8 +102,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		schema: piece.schema,
 		canGenerate: config.ai !== undefined,
 		assetFields: assetPaths,
-		hasPublishedVersion: Boolean(webPiece),
-		savedMarkdown: await getMarkdownPublicationStatus(file, webPiece?.content_hash)
+		hasPublishedVersion: Boolean(webPiece)
 	}
 }
 

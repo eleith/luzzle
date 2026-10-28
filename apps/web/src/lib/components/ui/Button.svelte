@@ -3,7 +3,7 @@
 	import type { Snippet } from 'svelte'
 
 	type Props = {
-		variant?: 'primary' | 'secondary' | 'tertiary' | 'error' | 'outline' | 'link'
+		variant?: 'primary' | 'secondary' | 'tertiary' | 'error' | 'outline' | 'link' | 'editor'
 		type?: 'button' | 'submit' | 'reset'
 		form?: string
 		onclick?: (e: MouseEvent) => void

@@ -16,12 +16,9 @@ import { actions, load } from './+page.server'
 import { config } from '$lib/server/config'
 import { db } from '$lib/server/database'
 import type { WebPieces } from '@luzzle/web.db'
-import { getMarkdownPublicationStatus } from '$lib/pieces/publication.server'
-import { MarkdownPublicationStatus } from '$lib/pieces/types'
 
 vi.mock('$lib/server/pieces', () => ({ getPieces: vi.fn(), getWebPiece: vi.fn() }))
 vi.mock('$lib/server/storage', () => ({ getStorage: vi.fn() }))
-vi.mock('$lib/pieces/publication.server', () => ({ getMarkdownPublicationStatus: vi.fn() }))
 vi.mock('$lib/server/database', () => ({ db: {} }))
 vi.mock('$lib/server/config', async () => {
 	const { makeConfig } = await import('$lib/server/config.fixture')
@@ -294,13 +291,12 @@ function setupLoad() {
 		writeFile: vi.fn()
 	})
 	vi.mocked(getWebPiece).mockResolvedValue(undefined)
-	vi.mocked(getMarkdownPublicationStatus).mockResolvedValue(MarkdownPublicationStatus.UNKNOWN)
 	const event = { params: { path: file } } as Parameters<typeof load>[0]
 	return { piece, storage, event }
 }
 
 test.each([false, true])(
-	'source loader exposes only generation availability (configured: %s)',
+	'source loader reports generation availability (configured: %s)',
 	async (configured) => {
 		config.ai = configured ? { provider: 'google', api_key: 'private-ai-key' } : undefined
 		const { event } = setupLoad()
@@ -311,44 +307,35 @@ test.each([false, true])(
 			schema: { type: 'object', properties: {} },
 			canGenerate: configured,
 			assetFields: [],
-			hasPublishedVersion: false,
-			savedMarkdown: MarkdownPublicationStatus.UNKNOWN
+			hasPublishedVersion: false
 		})
 	}
 )
 
 test.each([
-	{ name: 'no serving row', row: undefined, status: MarkdownPublicationStatus.UNKNOWN },
+	{ name: 'no serving row', row: undefined },
 	{
 		name: 'serving row without a hash or publication time',
-		row: { ...publishedPiece, content_hash: null },
-		status: MarkdownPublicationStatus.UNKNOWN
+		row: { ...publishedPiece, content_hash: null }
 	},
-	{
-		name: 'matching saved Markdown',
-		row: publishedPiece,
-		status: MarkdownPublicationStatus.MATCHING
-	},
-	{
-		name: 'changed saved Markdown',
-		row: publishedPiece,
-		status: MarkdownPublicationStatus.CHANGED
-	},
-	{ name: 'unknown saved Markdown', row: publishedPiece, status: MarkdownPublicationStatus.UNKNOWN }
+	{ name: 'serving row with a publication hash', row: publishedPiece }
 ])(
-	'source loader reports $name without mutations or a status-only stat',
-	async ({ row, status }) => {
+	'source loader returns raw saved source and reports $name without mutations or extra reads',
+	async ({ row }) => {
 		const { piece, storage, event } = setupLoad()
 		vi.mocked(getWebPiece).mockResolvedValue(row)
-		vi.mocked(getMarkdownPublicationStatus).mockResolvedValue(status)
 
-		expect(await load(event)).toMatchObject({
+		expect(await load(event)).toEqual({
+			file,
+			type: 'books',
 			rawContent: rawSource,
-			hasPublishedVersion: Boolean(row),
-			savedMarkdown: status
+			schema: piece.schema,
+			canGenerate: config.ai !== undefined,
+			assetFields: [],
+			hasPublishedVersion: Boolean(row)
 		})
 		expect(getWebPiece).toHaveBeenCalledExactlyOnceWith(db, file)
-		expect(getMarkdownPublicationStatus).toHaveBeenCalledExactlyOnceWith(file, row?.content_hash)
+		expect(piece.get).toHaveBeenCalledExactlyOnceWith(file)
 		expect(storage.readFile).toHaveBeenCalledExactlyOnceWith(file, 'text')
 		expect(storage.stat).not.toHaveBeenCalled()
 		expect(storage.writeFile).not.toHaveBeenCalled()
@@ -359,22 +346,15 @@ test.each([
 	}
 )
 
-test.each(['serving database', 'publication database', 'raw source'])(
-	'source loader propagates %s failures rather than claiming an unpublished or unknown state',
+test.each(['serving database', 'raw source'])(
+	'source loader propagates %s failures',
 	async (failure) => {
 		const { piece, storage, event } = setupLoad()
 		const error = new Error(`${failure} failed`)
 		if (failure === 'serving database') vi.mocked(getWebPiece).mockRejectedValueOnce(error)
-		if (failure === 'publication database') {
-			vi.mocked(getWebPiece).mockResolvedValueOnce(publishedPiece)
-			vi.mocked(getMarkdownPublicationStatus).mockRejectedValueOnce(error)
-		}
 		if (failure === 'raw source') storage.readFile.mockRejectedValueOnce(error)
 
 		await expect(load(event)).rejects.toBe(error)
-		if (failure !== 'publication database') {
-			expect(getMarkdownPublicationStatus).not.toHaveBeenCalled()
-		}
 		expect(storage.stat).not.toHaveBeenCalled()
 		expect(storage.writeFile).not.toHaveBeenCalled()
 		expect(storage.delete).not.toHaveBeenCalled()

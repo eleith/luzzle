@@ -10,6 +10,11 @@ export function publishedHref(file: string): string {
 	return `/admin/piece/${piecePath(file)}/published`
 }
 
+export function publishHref(file: string): string {
+	const query = new URLSearchParams({ check: '1', file })
+	return `/admin/publish?${query}`
+}
+
 export function previewHref(file: string, job?: string): string {
 	const href = `/admin/piece/${piecePath(file)}/preview`
 	return job === undefined ? href : `${href}/${encodeURIComponent(job)}`

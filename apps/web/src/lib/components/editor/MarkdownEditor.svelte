@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte'
+	import { onMount, onDestroy, type Snippet } from 'svelte'
 	import { EditorView } from 'codemirror'
 	import { EditorState, Compartment } from '@codemirror/state'
 	import { configuredTheme } from './themes/configured'
@@ -28,9 +28,10 @@
 		file?: string
 		returnTo?: string
 		assetFields?: string[]
+		toolbar?: Snippet
 	}
 
-	let { value = $bindable(), onchange, file, returnTo, assetFields = [] }: Props = $props()
+	let { value = $bindable(), onchange, file, returnTo, assetFields = [], toolbar }: Props = $props()
 
 	let editorContainer: HTMLDivElement
 	let view: EditorView
@@ -169,19 +170,37 @@
 	}
 </script>
 
-<div class="editor-wrapper" bind:this={editorContainer}></div>
+<div class="editor-wrapper">
+	{#if toolbar}
+		<div class="editor-toolbar">
+			{@render toolbar()}
+		</div>
+	{/if}
+	<div class="editor-body" bind:this={editorContainer}></div>
+</div>
 
 <style>
 	.editor-wrapper {
 		background-color: var(--editor-background, var(--color-surface));
 		width: 100%;
+		box-sizing: border-box;
+		border: 1px solid var(--editor-border, var(--color-outline));
 		border-radius: var(--radius-medium);
 		overflow: hidden;
-		position: relative;
 		transition: background-color 0.2s ease;
 	}
 
-	.editor-wrapper::after {
+	.editor-toolbar {
+		background-color: var(--editor-panelBackground, var(--color-surface-container));
+		color: var(--editor-panelForeground, var(--color-on-surface));
+		border-bottom: 1px solid var(--editor-border, var(--color-outline));
+	}
+
+	.editor-body {
+		position: relative;
+	}
+
+	.editor-body::after {
 		content: '';
 		position: absolute;
 		inset: 0;

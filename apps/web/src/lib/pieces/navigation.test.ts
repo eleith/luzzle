@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { expect, test, vi } from 'vitest'
-import { editorHref, getPieceLinks, previewHref, publishedHref } from './navigation'
+import { editorHref, getPieceLinks, previewHref, publishedHref, publishHref } from './navigation'
 
 const { resolve } = vi.hoisted(() => ({
 	resolve: vi.fn(() => {
@@ -51,6 +51,29 @@ test.each([
 		expect(resolve).not.toHaveBeenCalled()
 	}
 )
+
+test.each([
+	'books/源 #?%&"+=.books.md',
+	'folder with spaces/a book.books.md',
+	'nested/literal%2F.books.md',
+	'books/📚.books.md',
+	'nested/name?check=0&file=other#fragment.books.md'
+])('publish navigation preselects the complete raw filename %s', (file) => {
+	const url = new URL(publishHref(file), 'https://app.test')
+	expect(url.pathname).toBe('/admin/publish')
+	expect(url.hash).toBe('')
+	expect([...url.searchParams.entries()]).toEqual([
+		['check', '1'],
+		['file', file]
+	])
+	expect(resolve).not.toHaveBeenCalled()
+})
+
+test('publish navigation encodes a query value rather than a pathname', () => {
+	expect(publishHref('folder/a b+c.books.md')).toBe(
+		'/admin/publish?check=1&file=folder%2Fa+b%2Bc.books.md'
+	)
+})
 
 test.each(
 	['', '/garden'].flatMap((mount) =>

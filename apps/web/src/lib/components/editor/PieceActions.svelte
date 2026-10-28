@@ -1,26 +1,21 @@
 <script lang="ts">
 	import { DropdownMenu } from 'bits-ui'
-	import DotsThreeVertical from 'virtual:icons/ph/dots-three-vertical'
-	import { goto } from '$app/navigation'
-	import { editorHref } from '$lib/pieces/navigation'
+	import CaretDown from 'virtual:icons/ph/caret-down'
 
 	type Props = {
-		file: string
-		currentMode: 'source' | 'preview'
 		canGenerate: boolean
-		canPublish: boolean
+		disabled?: boolean
 		onDelete: () => void
 		onAttach?: () => void
 		onGenerate?: () => void
 	}
 
-	let { file, currentMode, canGenerate, canPublish, onDelete, onAttach, onGenerate }: Props =
-		$props()
+	let { canGenerate, disabled = false, onDelete, onAttach, onGenerate }: Props = $props()
 </script>
 
 <DropdownMenu.Root>
-	<DropdownMenu.Trigger class="button" data-variant="outline" aria-label="Piece actions">
-		<DotsThreeVertical />
+	<DropdownMenu.Trigger class="button" data-variant="editor" {disabled}>
+		More <CaretDown aria-hidden="true" />
 	</DropdownMenu.Trigger>
 	<DropdownMenu.Portal>
 		<DropdownMenu.Content sideOffset={8} forceMount>
@@ -28,38 +23,25 @@
 				{#if open}
 					<div {...wrapperProps}>
 						<div {...props} class="dropdown-content">
-							{#if canPublish}
-								<DropdownMenu.Item onSelect={() => goto('/admin/publish?check=1')}>
+							{#if canGenerate && onGenerate}
+								<DropdownMenu.Item onSelect={onGenerate}>
 									{#snippet child({ props })}
-										<div class="dropdown-item" {...props}>publish</div>
+										<div class="dropdown-item" {...props}>Generate</div>
 									{/snippet}
 								</DropdownMenu.Item>
 							{/if}
 
-							{#if canGenerate}
-								<DropdownMenu.Item
-									onSelect={() => {
-										if (currentMode === 'source' && onGenerate) onGenerate()
-										else goto(editorHref(file) + '?generate=1')
-									}}
-								>
-									{#snippet child({ props })}
-										<div class="dropdown-item" {...props}>generate</div>
-									{/snippet}
-								</DropdownMenu.Item>
-							{/if}
-
-							{#if currentMode === 'source' && onAttach}
+							{#if onAttach}
 								<DropdownMenu.Item onSelect={onAttach}>
 									{#snippet child({ props })}
-										<div class="dropdown-item" {...props}>attach</div>
+										<div class="dropdown-item" {...props}>Attach</div>
 									{/snippet}
 								</DropdownMenu.Item>
 							{/if}
 
 							<DropdownMenu.Item onSelect={onDelete}>
 								{#snippet child({ props })}
-									<div class="dropdown-item destructive" {...props}>delete</div>
+									<div class="dropdown-item destructive" {...props}>Delete</div>
 								{/snippet}
 							</DropdownMenu.Item>
 						</div>
@@ -72,10 +54,17 @@
 
 <style>
 	.dropdown-content {
-		background-color: var(--color-surface-container-highest);
-		border: 1px solid var(--color-outline);
+		background-color: var(--editor-panelBackground, var(--color-surface-container));
+		color: var(--editor-panelForeground, var(--color-on-surface));
+		border: 1px solid var(--editor-border, var(--color-outline));
 		border-radius: var(--radius-small);
-		min-width: 160px;
+		box-sizing: border-box;
+		width: 10rem;
+		max-width: calc(100vw - 1rem);
+		padding: var(--space-1);
+		font-family: var(--font-mono-name), monospace;
+		font-size: var(--font-size-xxs);
+		line-height: 1.4;
 		box-shadow: var(--shadow-raised);
 		z-index: 1000;
 	}
@@ -83,22 +72,31 @@
 	.dropdown-item {
 		display: flex;
 		align-items: center;
-		padding: var(--space-3);
+		min-height: calc(var(--space-4) + var(--space-2));
+		padding: var(--space-1) var(--space-2);
 		cursor: pointer;
-		color: var(--color-on-surface);
+		color: inherit;
 		gap: var(--space-2);
 		border-radius: var(--radius-small);
+		box-sizing: border-box;
 		width: 100%;
 		text-align: left;
 		text-decoration: none;
 		background: none;
 		border: none;
-		text-transform: uppercase;
+		font: inherit;
+		text-transform: none;
 	}
 
-	.dropdown-item:hover {
-		background-color: var(--color-surface-container-low);
+	.dropdown-item:hover,
+	.dropdown-item[data-highlighted] {
+		background-color: var(--editor-selection, var(--color-surface-container-highest));
 		outline: none;
+	}
+
+	.dropdown-item:focus-visible {
+		outline: 2px solid var(--editor-caret, var(--color-primary));
+		outline-offset: -2px;
 	}
 
 	.dropdown-item[data-disabled] {

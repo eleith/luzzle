@@ -1,10 +1,15 @@
 <script lang="ts">
 	import { deserialize, enhance } from '$app/forms'
+	import type { SubmitFunction } from '@sveltejs/kit'
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
+	import {
+		reconcileSave,
+		reconcileSourceRefresh,
+		type SaveSnapshot
+	} from '$lib/components/editor/save-state'
 	import Button from '$lib/components/ui/Button.svelte'
 	import PieceActions from '$lib/components/editor/PieceActions.svelte'
-	import PieceView from '$lib/components/editor/PieceView.svelte'
-	import { shouldOfferPublish } from '$lib/components/editor/view-state'
+	import PieceToolbar from '$lib/components/editor/PieceToolbar.svelte'
 	import { editorHref } from '$lib/pieces/navigation'
 	import GenerationDialog from '$lib/components/editor/GenerationDialog.svelte'
 	import type { PageProps } from './$types'
@@ -13,16 +18,17 @@
 
 	import { page } from '$app/state'
 	import { beforeNavigate, goto, replaceState } from '$app/navigation'
-	import { onMount, onDestroy } from 'svelte'
+	import { onMount, onDestroy, tick, untrack } from 'svelte'
 
 	let { data, form }: PageProps = $props()
+	const saveFormId = $props.id()
 
 	let targetUrl = $state<string | null>(null)
 	let showWarningDialog = $state(false)
 	let bypassWarning = $state(false)
 	let isSaving = $state(false)
-	let saveSuccess = $state(false)
-	let editorError = $state('')
+	let editorErrorReason = $state<'sign-in' | 'save' | 'refresh' | null>(null)
+	let editorErrorDetail = $state('')
 	let disposed = false
 	onDestroy(() => {
 		disposed = true
@@ -57,31 +63,87 @@
 	let dialog: HTMLDialogElement
 	let editorRef = $state<MarkdownEditor>()
 
-	let rawContent = $state<string>(
-		(form && 'rawContent' in form ? (form.rawContent as string) : undefined) ||
-			data.rawContent ||
-			''
-	)
+	function initialRawContent(): string {
+		if (form && 'rawContent' in form) {
+			if (typeof form.rawContent === 'string') return form.rawContent
+		}
+		if (data.rawContent != null) return data.rawContent
+		return ''
+	}
+
+	let rawContent = $state(initialRawContent())
+	let loadedSource = untrack(() => ({ file: data.file, content: data.rawContent ?? '' }))
+	let activeSave: SaveSnapshot | undefined
+
+	const enhanceSave: SubmitFunction = ({ formData, cancel }) => {
+		if (isSaving) {
+			cancel()
+			return
+		}
+		const submitted = { file: data.file, content: String(formData.get('content') ?? '') }
+		activeSave = submitted
+		isSaving = true
+		editorErrorReason = null
+		editorErrorDetail = ''
+		const isCurrentSave = () =>
+			!disposed && activeSave === submitted && data.file === submitted.file
+		return async ({ result, update }) => {
+			if (!isCurrentSave()) return
+			try {
+				if (result.type === 'redirect') {
+					editorErrorReason = 'sign-in'
+					return
+				}
+				if (result.type === 'error') {
+					editorErrorReason = 'save'
+					return
+				}
+				await update({ reset: false })
+				await tick()
+				if (!isCurrentSave()) return
+				const saveResult =
+					result.type === 'success'
+						? { type: result.type, content: data.rawContent ?? '' }
+						: { type: result.type }
+				rawContent = reconcileSave({ file: data.file, content: rawContent }, submitted, saveResult)
+			} catch {
+				if (isCurrentSave()) {
+					editorErrorReason = 'refresh'
+				}
+			} finally {
+				if (isCurrentSave()) {
+					activeSave = undefined
+					isSaving = false
+					bypassWarning = false
+				}
+			}
+		}
+	}
 
 	const hasChanges = $derived(rawContent !== (data.rawContent ?? ''))
-	const isDirty = $derived(!!form?.error || (hasChanges && !isSaving))
+	const isDirty = $derived(!!form?.error || hasChanges)
 
 	const sourceUrl = $derived(editorHref(data.file))
-	const canPublish = $derived(shouldOfferPublish(data.hasPublishedVersion, data.savedMarkdown))
 
 	$effect(() => {
-		if (form && 'rawContent' in form && form.rawContent) {
-			rawContent = form.rawContent as string
-		} else {
-			rawContent = data.rawContent || ''
-		}
+		const refreshed = { file: data.file, content: data.rawContent ?? '' }
+		untrack(() => {
+			const changedFile = refreshed.file !== loadedSource.file
+			rawContent = reconcileSourceRefresh(rawContent, loadedSource, refreshed, !!activeSave)
+			loadedSource = refreshed
+			if (!changedFile) return
+			activeSave = undefined
+			isSaving = false
+			bypassWarning = false
+		})
 	})
 
 	let generateDialogOpen = $state(false)
 	$effect(() => {
 		if (data.file) {
 			generateDialogOpen = false
-			editorError = ''
+			editorErrorReason = null
+			editorErrorDetail = ''
 		}
 	})
 	$effect(() => {
@@ -100,7 +162,10 @@
 	let customName = $state('')
 	let isNameManuallyEdited = $state(false)
 	let isUploading = $state(false)
-	let uploadError = $state<string | null>(null)
+	let uploadErrorReason = $state<
+		'file-required' | 'url-required' | 'filename-required' | 'failed' | null
+	>(null)
+	let uploadErrorDetail = $state<string | null>(null)
 	let fileInputRef = $state<HTMLInputElement>()
 
 	function getBasenameWithoutExtension(filename: string): string {
@@ -131,32 +196,55 @@
 		}
 	})
 
+	function openAttachDialog() {
+		const selectedText = editorRef?.getSelectedText()?.trim() || ''
+		let isUrl = false
+		if (selectedText.startsWith('http://') || selectedText.startsWith('https://')) {
+			try {
+				new URL(selectedText)
+				isUrl = true
+			} catch (_) {
+				// Ignore invalid URL formatting
+			}
+		}
+
+		if (isUrl) {
+			activeTab = 'url'
+			urlValue = selectedText
+		} else {
+			activeTab = 'file'
+		}
+		attachDialogOpen = true
+	}
+
 	function resetAttachState() {
 		selectedFile = null
 		urlValue = ''
 		customName = ''
 		isNameManuallyEdited = false
-		uploadError = null
+		uploadErrorReason = null
+		uploadErrorDetail = null
 		isUploading = false
 	}
 
 	async function handleAttachSubmit(e: Event) {
 		e.preventDefault()
+		uploadErrorReason = null
+		uploadErrorDetail = null
 		if (activeTab === 'file' && !selectedFile) {
-			uploadError = 'Please select a file to upload.'
+			uploadErrorReason = 'file-required'
 			return
 		}
 		if (activeTab === 'url' && !urlValue) {
-			uploadError = 'Please enter a URL.'
+			uploadErrorReason = 'url-required'
 			return
 		}
 		if (activeTab === 'create' && !customName.trim()) {
-			uploadError = 'Please enter a filename.'
+			uploadErrorReason = 'filename-required'
 			return
 		}
 
 		isUploading = true
-		uploadError = null
 
 		const formData = new FormData()
 		formData.append('mode', activeTab)
@@ -183,13 +271,14 @@
 					attachDialogOpen = false
 					resetAttachState()
 				} else {
-					uploadError = resData?.error?.message || 'Attachment failed'
+					uploadErrorDetail = resData?.error?.message || null
+					if (!uploadErrorDetail) uploadErrorReason = 'failed'
 				}
 			} else {
-				uploadError = 'Attachment failed'
+				uploadErrorReason = 'failed'
 			}
 		} catch (err) {
-			uploadError = err instanceof Error ? err.message : String(err)
+			uploadErrorDetail = err instanceof Error ? err.message : String(err)
 		} finally {
 			isUploading = false
 		}
@@ -204,14 +293,14 @@
 		fields={Object.keys(data.schema.properties ?? {}).filter((key) => key !== '__proto__')}
 		onFocusEditor={() => editorRef?.focus()}
 		onError={(message) => {
-			editorError = message
-			saveSuccess = false
+			editorErrorReason = null
+			editorErrorDetail = message
 		}}
 		onApply={(source, markdown) => {
 			if (!editorRef) throw new Error('The editor is not ready. Please try again.')
 			editorRef.replaceContent(markdown, source)
-			saveSuccess = false
-			editorError = ''
+			editorErrorReason = null
+			editorErrorDetail = ''
 		}}
 	/>
 {/key}
@@ -332,9 +421,19 @@
 								</div>
 							</div>
 
-							{#if uploadError}
+							{#if uploadErrorReason || uploadErrorDetail}
 								<div class="dialog-error">
-									{uploadError}
+									{#if uploadErrorReason === 'file-required'}
+										Please select a file to upload.
+									{:else if uploadErrorReason === 'url-required'}
+										Please enter a URL.
+									{:else if uploadErrorReason === 'filename-required'}
+										Please enter a filename.
+									{:else if uploadErrorReason === 'failed'}
+										Attachment failed
+									{:else}
+										{uploadErrorDetail}
+									{/if}
 								</div>
 							{/if}
 
@@ -419,99 +518,56 @@
 </Dialog.Root>
 
 <div class="piece-page">
-	<div class="header">
-		<div style="display:flex; gap: var(--space-2);">
-			<form
-				method="post"
-				action="{sourceUrl}?/save"
-				use:enhance={() => {
-					isSaving = true
-					bypassWarning = true
-					saveSuccess = false
-					editorError = ''
-					return async ({ result, update }) => {
-						if (disposed) return
-						try {
-							if (result.type === 'redirect') {
-								editorError =
-									'Please sign in again in another tab, then retry. Your edits are still here.'
-								return
-							}
-							if (result.type === 'error') {
-								editorError = 'Unable to save. Your edits are still here. Please try again.'
-								return
-							}
-							if (result.type === 'success') saveSuccess = true
-							await update({ reset: false })
-						} finally {
-							isSaving = false
-							bypassWarning = false
-						}
-					}
-				}}
-			>
-				<input type="hidden" name="content" value={rawContent} />
-				<Button type="submit" disabled={!isDirty || isSaving}>
-					{isSaving ? 'saving...' : 'save'}
-				</Button>
-			</form>
-			<a href="/admin">
-				<Button variant="outline">cancel</Button>
-			</a>
-		</div>
-		<PieceView file={data.file} hasPublishedVersion={data.hasPublishedVersion} {isSaving} />
-		<PieceActions
-			file={data.file}
-			currentMode="source"
-			canGenerate={data.canGenerate && !isSaving}
-			{canPublish}
-			onDelete={() => dialog.showModal()}
-			onGenerate={() => {
-				editorError = ''
-				generateDialogOpen = true
-			}}
-			onAttach={() => {
-				const selectedText = editorRef?.getSelectedText()?.trim() || ''
-				let isUrl = false
-				if (selectedText.startsWith('http://') || selectedText.startsWith('https://')) {
-					try {
-						new URL(selectedText)
-						isUrl = true
-					} catch (_) {
-						// Ignore invalid URL formatting
-					}
-				}
-
-				if (isUrl) {
-					activeTab = 'url'
-					urlValue = selectedText
-				} else {
-					activeTab = 'file'
-				}
-				attachDialogOpen = true
-			}}
-		/>
-	</div>
-
-	{#if saveSuccess}
-		<div class="banner success-banner">Piece saved successfully!</div>
-	{/if}
-
-	{#if editorError || form?.error}
+	<form id={saveFormId} hidden method="post" action="{sourceUrl}?/save" use:enhance={enhanceSave}>
+		<input type="hidden" name="content" value={rawContent} />
+	</form>
+	{#if editorErrorReason || editorErrorDetail || form?.error}
 		<div class="banner error-banner" role="alert">
 			<strong>Error:</strong>
-			{editorError || form?.error?.message}
+			{#if editorErrorReason === 'sign-in'}
+				Please sign in again in another tab, then retry. Your edits are still here.
+			{:else if editorErrorReason === 'save'}
+				Unable to save. Your edits are still here. Please try again.
+			{:else if editorErrorReason === 'refresh'}
+				Unable to refresh after saving. Your edits are still here. Please try again.
+			{:else}
+				{editorErrorDetail || form?.error?.message}
+			{/if}
 		</div>
 	{/if}
 
 	<div class="editor-container">
-		<MarkdownEditor
-			bind:this={editorRef}
-			bind:value={rawContent}
-			file={data.file}
-			returnTo={page.url.pathname}
-			assetFields={data.assetFields}
-		/>
+		{#key data.file}
+			<MarkdownEditor
+				bind:this={editorRef}
+				bind:value={rawContent}
+				file={data.file}
+				returnTo={page.url.pathname}
+				assetFields={data.assetFields}
+			>
+				{#snippet toolbar()}
+					<PieceToolbar
+						file={data.file}
+						{saveFormId}
+						{isDirty}
+						{isSaving}
+						hasPublishedVersion={data.hasPublishedVersion}
+					>
+						<PieceActions
+							canGenerate={data.canGenerate}
+							disabled={isSaving}
+							onDelete={() => dialog.showModal()}
+							onGenerate={() => {
+								editorErrorReason = null
+								editorErrorDetail = ''
+								generateDialogOpen = true
+							}}
+							onAttach={openAttachDialog}
+						/>
+					</PieceToolbar>
+				{/snippet}
+			</MarkdownEditor>
+		{/key}
 	</div>
 </div>
 
@@ -527,26 +583,11 @@
 		gap: var(--space-4);
 	}
 
-	.header {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: flex-end;
-		gap: var(--space-2);
-		margin-bottom: var(--space-2);
-	}
-
 	.banner {
 		padding: var(--space-3);
 		border-radius: var(--radius-small);
 		margin-bottom: var(--space-2);
 		font-size: 0.875rem;
-	}
-
-	.success-banner {
-		background-color: var(--color-success-container, #d4edda);
-		color: var(--color-on-success-container, #155724);
-		border: 1px solid var(--color-success, #c3e6cb);
 	}
 
 	.error-banner {

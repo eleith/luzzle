@@ -69,6 +69,35 @@
 	text-decoration: underline;
 }
 
+.button[data-variant='editor'] {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	height: auto;
+	min-height: calc(var(--space-4) + var(--space-2));
+	padding: var(--space-1) var(--space-2);
+	border: 1px solid transparent;
+	border-radius: var(--radius-small);
+	background: transparent;
+	color: inherit;
+	box-shadow: none;
+	font: inherit;
+	text-transform: none;
+	top: 0;
+	filter: none;
+}
+
+.button[data-variant='editor']:not(:disabled):hover,
+.button[data-variant='editor'][data-state='open'] {
+	background-color: var(--editor-selection, var(--color-surface-container-highest));
+	border-color: var(--editor-border, var(--color-outline));
+}
+
+.button[data-variant='editor']:focus-visible {
+	outline: 2px solid var(--editor-caret, var(--color-primary));
+	outline-offset: 2px;
+}
+
 .input::file-selector-button {
 	display: inline-block;
 	padding: 1px 6px;
