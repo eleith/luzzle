@@ -8,14 +8,35 @@ export interface PublishPlan {
 	summary: PiecesDiff
 }
 
-export const publishPrepareStep: Step<PiecesDiff, PublishPlan> = {
+export interface PublishPrepareInput {
+	summary: PiecesDiff
+	filePaths?: string[]
+}
+
+export const publishPrepareStep: Step<PublishPrepareInput, PublishPlan> = {
 	name: 'publish.prepare',
-	async run(summary, { db, config, logger }) {
+	async run({ summary: indexSummary, filePaths }, { db, config, logger }) {
 		const pending = await getPendingPublication(db, config)
-		logger.info('publish.prepare complete', { count: pending.pieces.length })
-		return completed({
-			pieces: pending.pieces,
-			summary: includePendingPieces(summary, pending.diff),
-		})
+		let pieces = pending.pieces
+		if (filePaths !== undefined) {
+			const selectedPaths = new Set(filePaths)
+			pieces = pending.pieces.filter((piece) => selectedPaths.has(piece.filePath))
+		}
+		const targetPaths = new Set(pieces.map((piece) => piece.filePath))
+
+		// Core sync is global; only authoritative pending targets count as upserts.
+		const globalChanges: PiecesDiff = {
+			schemas: indexSummary.schemas,
+			pieces: { added: [], updated: [], pruned: indexSummary.pieces.pruned },
+		}
+		const selectedChanges: PiecesDiff['pieces'] = {
+			added: pending.diff.added.filter((filePath) => targetPaths.has(filePath)),
+			updated: pending.diff.updated.filter((filePath) => targetPaths.has(filePath)),
+			pruned: pending.diff.pruned,
+		}
+		const publicationSummary = includePendingPieces(globalChanges, selectedChanges)
+
+		logger.info('publish.prepare complete', { count: pieces.length })
+		return completed({ pieces, summary: publicationSummary })
 	},
 }

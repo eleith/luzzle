@@ -7,14 +7,16 @@ import { validateConfig } from '@luzzle/web.config'
 import { createAppDb, runWebMigrations } from '@luzzle/web.db'
 import type { PublishPayload, PublishResult } from '@luzzle/web.jobs'
 import { publishSpec } from '@luzzle/web.jobs/specs'
-import type { Workflow } from 'openworkflow'
+import { OpenWorkflow, type Workflow } from 'openworkflow'
+import { BackendSqlite } from 'openworkflow/sqlite'
 import { completed, type StepResult } from '../core/step.js'
 import { RcloneClient } from '../services/rclone.js'
+import { createOpenWorkflowLogger } from '../services/logger.js'
 import { setWorkerContext, type WorkerContext } from '../services/context.js'
 import { getPendingPublication } from '../services/publication.js'
 import { luzzleSyncStep } from '../steps/luzzle-sync.js'
 import { luzzleAuditStep } from '../steps/luzzle-audit.js'
-import { publishPrepareStep } from '../steps/publish-prepare.js'
+import { publishPrepareStep, type PublishPlan } from '../steps/publish-prepare.js'
 import { webSyncStep } from '../steps/web-sync/index.js'
 import type { AssetsGenerateInput, AssetsGenerateResult } from '../steps/assets-generate.js'
 import { registerPublishWorkflow } from './publish.js'
@@ -160,6 +162,77 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 		return { result, phaseResults }
 	}
 
+	// Real SDK queue/checkpoint storage; only external delivery and transforms are stubbed.
+	async function withQueue(
+		run: (
+			client: OpenWorkflow,
+			worker: ReturnType<OpenWorkflow['newWorker']>,
+			backend: BackendSqlite
+		) => Promise<void>
+	) {
+		const backend = BackendSqlite.connect(path.join(directory, 'queue.sqlite'))
+		const client = new OpenWorkflow({ backend, logger: createOpenWorkflowLogger(ctx.logger) })
+		client.implementWorkflow(publishSpec, workflow)
+		const worker = client.newWorker({ concurrency: 1 })
+		try {
+			await run(client, worker, backend)
+		} finally {
+			await worker.stop()
+			await backend.stop()
+		}
+	}
+
+	async function finishQueued(
+		worker: ReturnType<OpenWorkflow['newWorker']>,
+		backend: BackendSqlite,
+		id: string
+	) {
+		await vi.waitFor(
+			async () => {
+				await worker.tick()
+				expect((await backend.getWorkflowRun({ workflowRunId: id }))?.status).toBe('completed')
+			},
+			{ timeout: 5000 }
+		)
+		const run = await backend.getWorkflowRun({ workflowRunId: id })
+		return run!.output as unknown as PublishResult
+	}
+
+	async function publicRows(filePath: string) {
+		return {
+			pieces: await ctx.db
+				.selectFrom('web_pieces')
+				.selectAll()
+				.where('file_path', '=', filePath)
+				.execute(),
+			assets: await ctx.db
+				.selectFrom('web_pieces_assets')
+				.selectAll()
+				.where('piece_file_path', '=', filePath)
+				.execute(),
+		}
+	}
+
+	async function seedAsset(filePath: string) {
+		const piece = await ctx.db
+			.selectFrom('web_pieces')
+			.select('key')
+			.where('file_path', '=', filePath)
+			.executeTakeFirstOrThrow()
+		await ctx.db
+			.insertInto('web_pieces_assets')
+			.values({
+				piece_file_path: filePath,
+				piece_key: piece.key,
+				piece_asset_path: '.assets/cover.jpg',
+				asset_key: `${piece.key}-cover`,
+				transformation: 'image',
+				asset_path: `${piece.key}/cover.webp`,
+				mime_type: 'image/webp',
+			})
+			.execute()
+	}
+
 	async function hashes(filePath: string) {
 		const indexed = await ctx.db
 			.selectFrom('pieces_cache')
@@ -182,6 +255,219 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 	async function audit(): Promise<PiecesDiff> {
 		return valueOf(await luzzleAuditStep.run(undefined, ctx))
 	}
+
+	test.each(['added', 'updated'] as const)(
+		'queued selection publishes only the pending %s target, preserving unselected rows and pruning globally',
+		async (action) => {
+			const removed = 'removed.books.md'
+			const unchanged = 'unchanged.books.md'
+			if (action === 'updated') await writePiece(healthy, 'Original selected')
+			await writePiece(broken, 'Original unselected')
+			await writePiece(removed, 'Removed globally')
+			await writePiece(unchanged, 'Unchanged')
+			await withQueue(async (client, worker, backend) => {
+				const baseline = await client.runWorkflow(publishSpec, {})
+				await finishQueued(worker, backend, baseline.workflowRun.id)
+				await seedAsset(broken)
+				await seedAsset(removed)
+				const unselectedBefore = await publicRows(broken)
+				const unchangedBefore = await publicRows(unchanged)
+				await writePiece(healthy, 'Selected current')
+				await writePiece(broken, 'Unselected current')
+				await writePiece('new-unselected.books.md', 'New unselected')
+				await rm(path.join(ctx.config.storage.root, removed))
+				mocks.assets.mockClear()
+				mocks.cdn.mockClear()
+				mocks.cache.mockClear()
+
+				const selected = await client.runWorkflow(publishSpec, {
+					filePaths: [healthy, healthy, unchanged, removed, 'missing.books.md'],
+				})
+				const result = await finishQueued(worker, backend, selected.workflowRun.id)
+
+				expect(result).toEqual({
+					schemas: emptyPiecesDiff().schemas,
+					pieces: {
+						added: action === 'added' ? [healthy] : [],
+						updated: action === 'updated' ? [healthy] : [],
+						pruned: [removed],
+					},
+					failedPieces: [],
+				})
+				expect(mocks.assets).toHaveBeenCalledExactlyOnceWith({ filePaths: [healthy] }, ctx)
+				expect(mocks.cdn).toHaveBeenCalledOnce()
+				expect(mocks.cache).toHaveBeenCalledOnce()
+				expect(await publicRows(broken)).toEqual(unselectedBefore)
+				expect(await publicRows(unchanged)).toEqual(unchangedBefore)
+				expect(await publicRows(removed)).toEqual({ pieces: [], assets: [] })
+				expect(await publicRows('new-unselected.books.md')).toEqual({ pieces: [], assets: [] })
+				const state = await hashes(healthy)
+				expect(state.published).toBe(state.indexed)
+				expect(state.title).toBe('Selected current')
+				expect((await audit()).pieces).toEqual({
+					added: ['new-unselected.books.md'],
+					updated: [broken],
+					pruned: [],
+				})
+			})
+		}
+	)
+
+	test.each([false, true])(
+		'queued explicit empty selection keeps schema housekeeping and global removals (%s)',
+		async (removePiece) => {
+			const removed = 'removed.books.md'
+			for (const filePath of [healthy, broken, removed]) {
+				await writePiece(filePath, `Original ${filePath}`)
+			}
+			await publish('baseline-empty-selection')
+			await seedAsset(broken)
+			await seedAsset(removed)
+			const healthyBefore = await publicRows(healthy)
+			const brokenBefore = await publicRows(broken)
+			const removedBefore = await publicRows(removed)
+			await writePiece(healthy, 'Pending selected none')
+			await writePiece(broken, 'Pending unselected')
+			if (removePiece) await rm(path.join(ctx.config.storage.root, removed))
+			await writeFile(
+				path.join(ctx.config.storage.root, '.luzzle', 'schemas', 'books.json'),
+				JSON.stringify({
+					type: 'object',
+					title: 'books',
+					description: 'Updated globally',
+					properties: { title: { type: 'string' } },
+					required: ['title'],
+					additionalProperties: true,
+				})
+			)
+			mocks.assets.mockClear()
+			mocks.cdn.mockClear()
+			mocks.cache.mockClear()
+
+			await withQueue(async (client, worker, backend) => {
+				const empty = await client.runWorkflow(publishSpec, { filePaths: [] })
+				const result = await finishQueued(worker, backend, empty.workflowRun.id)
+				expect(result).toEqual({
+					schemas: { added: [], updated: ['books'], pruned: [] },
+					pieces: { added: [], updated: [], pruned: removePiece ? [removed] : [] },
+					failedPieces: [],
+				})
+				expect(mocks.assets).toHaveBeenCalledExactlyOnceWith({ filePaths: [] }, ctx)
+				expect(mocks.cdn).toHaveBeenCalledOnce()
+				expect(mocks.cache).toHaveBeenCalledOnce()
+				expect(await publicRows(healthy)).toEqual(healthyBefore)
+				expect(await publicRows(broken)).toEqual(brokenBefore)
+				expect(await publicRows(removed)).toEqual(
+					removePiece ? { pieces: [], assets: [] } : removedBefore
+				)
+				expect((await audit()).pieces).toEqual({ added: [], updated: batch, pruned: [] })
+			})
+		}
+	)
+
+	test('queued interrupted delivery replays the captured selected plan without widening membership or hashes', async () => {
+		const late = 'late.books.md'
+		await writePiece(healthy, 'Original selected')
+		await writePiece(broken, 'Original unselected')
+		await publish('baseline-interruption')
+		await seedAsset(broken)
+		const unselectedBefore = await publicRows(broken)
+		await writePiece(healthy, 'Selected revision two')
+		await writePiece(broken, 'Unselected revision two')
+		mocks.assets.mockClear()
+		mocks.cache.mockRejectedValueOnce(new Error('interrupted delivery'))
+
+		await withQueue(async (client, worker, backend) => {
+			const handle = await client.runWorkflow(publishSpec, { filePaths: [healthy, late] })
+			const id = handle.workflowRun.id
+			await worker.tick()
+			await vi.waitFor(
+				async () => {
+					const run = await backend.getWorkflowRun({ workflowRunId: id })
+					expect(run?.status).toBe('pending')
+					expect(run?.attempts).toBe(1)
+				},
+				{ timeout: 5000 }
+			)
+			const attempts = (await backend.listStepAttempts({ workflowRunId: id })).data
+			const plan = attempts.find((attempt) => attempt.stepName === 'publish.prepare')!
+				.output as unknown as PublishPlan
+			expect(plan.pieces.map((piece) => piece.filePath)).toEqual([healthy])
+			const capturedHash = plan.pieces[0]!.contentHash
+			await writePiece(healthy, 'Selected revision three')
+			await writePiece(late, 'Selected but not pending when prepared')
+			await luzzleSyncStep.run(undefined, ctx)
+
+			const result = await finishQueued(worker, backend, id)
+
+			expect(result).toEqual({ ...plan.summary, failedPieces: [] })
+			expect(mocks.assets).toHaveBeenCalledExactlyOnceWith({ filePaths: [healthy] }, ctx)
+			expect(await publicRows(broken)).toEqual(unselectedBefore)
+			expect(await publicRows(late)).toEqual({ pieces: [], assets: [] })
+			const state = await hashes(healthy)
+			expect(state.published).toBe(capturedHash)
+			expect(state.indexed).not.toBe(capturedHash)
+			expect(state.title).toBe('Selected revision two')
+			const retried = (await backend.listStepAttempts({ workflowRunId: id })).data
+			expect(retried.filter((attempt) => attempt.stepName === 'publish.prepare')).toHaveLength(1)
+			expect(retried.find((attempt) => attempt.stepName === 'publish.prepare')!.output).toEqual(plan)
+			expect(retried.filter((attempt) => attempt.stepName === 'cache.purge')).toHaveLength(2)
+			expect((await audit()).pieces).toEqual({ added: [late], updated: batch, pruned: [] })
+		})
+	})
+
+	test('queued partial-failure rerun retains selected hashes and leaves unselected pending work untouched', async () => {
+		const unselected = 'unselected.books.md'
+		const late = 'late.books.md'
+		for (const filePath of [...batch, unselected]) await writePiece(filePath, `Original ${filePath}`)
+		await publish('baseline-partial-selection')
+		await seedAsset(unselected)
+		const unselectedBefore = await publicRows(unselected)
+		for (const filePath of [...batch, unselected]) await writePiece(filePath, `Changed ${filePath}`)
+		const failedPieces = [{ filePath: broken, message: 'selected transform failed' }]
+		mocks.assets.mockClear()
+		mocks.assets.mockResolvedValueOnce(completed({ failedPieces }))
+
+		await withQueue(async (client, worker, backend) => {
+			const partial = await client.runWorkflow(publishSpec, { filePaths: [...batch, late] })
+			const partialResult = await finishQueued(worker, backend, partial.workflowRun.id)
+			expect(partialResult.failedPieces).toEqual(failedPieces)
+			expect((await hashes(healthy)).published).toBe((await hashes(healthy)).indexed)
+			expect((await hashes(broken)).published).toBeNull()
+			expect(await publicRows(unselected)).toEqual(unselectedBefore)
+			const attempts = (
+				await backend.listStepAttempts({ workflowRunId: partial.workflowRun.id })
+			).data
+			const plan = attempts.find((attempt) => attempt.stepName === 'publish.prepare')!
+				.output as unknown as PublishPlan
+			expect(plan.pieces.map((piece) => piece.filePath)).toEqual(batch)
+			await writePiece(healthy, 'Newer than captured selected hash')
+			await writePiece(late, 'Late selected addition')
+			await luzzleSyncStep.run(undefined, ctx)
+			mocks.assets.mockClear()
+
+			const retry = await client.rerunWorkflowRun(partial.workflowRun.id, {
+				fromStep: 'assets.generate',
+			})
+			const result = await finishQueued(worker, backend, retry.id)
+
+			expect(result).toEqual({ ...plan.summary, failedPieces: [] })
+			expect(mocks.assets).toHaveBeenCalledExactlyOnceWith({ filePaths: batch }, ctx)
+			for (const piece of plan.pieces) {
+				expect((await hashes(piece.filePath)).published).toBe(piece.contentHash)
+			}
+			expect((await hashes(healthy)).indexed).not.toBe((await hashes(healthy)).published)
+			expect(await publicRows(unselected)).toEqual(unselectedBefore)
+			expect(await publicRows(late)).toEqual({ pieces: [], assets: [] })
+			const retried = (await backend.listStepAttempts({ workflowRunId: retry.id })).data
+			expect(retried.find((attempt) => attempt.stepName === 'publish.prepare')!.output).toEqual(plan)
+			expect((await audit()).pieces).toEqual({
+				added: [late],
+				updated: [healthy, unselected],
+				pruned: [],
+			})
+		})
+	})
 
 	test('a fresh publish rediscovers new and updated pieces after the sync result is discarded', async () => {
 		await writePiece(healthy, 'Original')
@@ -235,7 +521,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 	test('metadata sync alone never records publication success for either new or existing rows', async () => {
 		await writePiece(healthy, 'Original')
 		const initialDiff = valueOf(await luzzleSyncStep.run(undefined, ctx))
-		const initialPlan = valueOf(await publishPrepareStep.run(initialDiff, ctx))
+		const initialPlan = valueOf(await publishPrepareStep.run({ summary: initialDiff }, ctx))
 		await webSyncStep.run({ filePaths: initialPlan.pieces.map((piece) => piece.filePath) }, ctx)
 		expect(await hashes(healthy)).toMatchObject({ published: null, lastPublishedAt: null })
 		expect((await getPendingPublication(ctx.db, ctx.config)).pieces).toEqual(initialPlan.pieces)
@@ -244,7 +530,7 @@ describe('publish hash recovery with a real archive and SQLite', () => {
 		const original = await hashes(healthy)
 		await writePiece(healthy, 'Metadata changed')
 		const diff = valueOf(await luzzleSyncStep.run(undefined, ctx))
-		const plan = valueOf(await publishPrepareStep.run(diff, ctx))
+		const plan = valueOf(await publishPrepareStep.run({ summary: diff }, ctx))
 		await webSyncStep.run({ filePaths: plan.pieces.map((piece) => piece.filePath) }, ctx)
 		const state = await hashes(healthy)
 		expect(state.title).toBe('Metadata changed')

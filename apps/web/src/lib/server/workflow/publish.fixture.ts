@@ -20,7 +20,7 @@ export async function closeWorkflowQueue(queue: WorkflowQueue): Promise<void> {
 export function createPendingRun(
 	backend: BackendSqlite,
 	workflowName: string,
-	input: Record<string, boolean> = {}
+	input: Parameters<BackendSqlite['createWorkflowRun']>[0]['input'] = {}
 ) {
 	return backend.createWorkflowRun({
 		workflowName,
@@ -45,18 +45,25 @@ export async function claimNextRun(backend: BackendSqlite) {
 	return run
 }
 
-export async function completeNextRun(backend: BackendSqlite) {
+export async function completeNextRun(
+	backend: BackendSqlite,
+	output: Parameters<BackendSqlite['completeWorkflowRun']>[0]['output'] = null
+) {
 	const run = await claimNextRun(backend)
 	return backend.completeWorkflowRun({
 		workflowRunId: run.id,
 		workerId: 'fixture-worker',
-		output: null
+		output
 	})
 }
 
-export async function createCompletedRun(backend: BackendSqlite, workflowName: string) {
+export async function createCompletedRun(
+	backend: BackendSqlite,
+	workflowName: string,
+	output: Parameters<BackendSqlite['completeWorkflowRun']>[0]['output'] = null
+) {
 	const run = await createPendingRun(backend, workflowName)
-	const completed = await completeNextRun(backend)
+	const completed = await completeNextRun(backend, output)
 	if (completed.id !== run.id) throw new Error('Fixture completed a different pending run')
 	return completed
 }

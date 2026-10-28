@@ -18,6 +18,15 @@ vi.mock('$lib/server/workflow/index.js', () => ({
 	getOpenWorkflowBackend: vi.fn()
 }))
 
+const auditDiff = {
+	schemas: { added: ['book'], updated: [], pruned: [] },
+	pieces: {
+		added: ['added.book.md', '書 shelves/été?draft=1&tag=#%.book.md'],
+		updated: ['updated.book.md'],
+		pruned: ['removed.book.md']
+	}
+}
+
 function event(body: unknown = {}) {
 	return {
 		request: new Request('http://localhost/api/admin/publish', {
@@ -30,7 +39,7 @@ function event(body: unknown = {}) {
 describe('publish/audit admission', () => {
 	let queue: WorkflowQueue
 
-	async function enqueue(spec: { name: string }, input: { bisync: boolean }) {
+	async function enqueue(spec: { name: string }, input: { bisync: boolean; filePaths?: string[] }) {
 		vi.setSystemTime(new Date('2026-06-21T00:00:00Z'))
 		const workflowRun = await createPendingRun(queue.backend, spec.name, input)
 		return { workflowRun }
@@ -217,6 +226,201 @@ describe('publish/audit admission', () => {
 		expect(await rejected.json()).toEqual({
 			message: 'changes were published after this check; re-check before publishing'
 		})
+		expect(runWorkflow).toHaveBeenCalledTimes(1)
+	})
+
+	test.each([false, true])(
+		'persists omitted selection as publish-all with bisync=%s',
+		async (bisync) => {
+			const response = await publish(event({ bisync }))
+			expect(response.status).toBe(200)
+			const { jobId } = await response.json()
+			const run = await queue.backend.getWorkflowRun({ workflowRunId: jobId })
+			expect(run?.input).toEqual({ bisync })
+			expect(run?.input).not.toHaveProperty('filePaths')
+		}
+	)
+
+	test('keeps selection omitted for a checked publish-all with a legacy audit report', async () => {
+		const auditRun = await createCompletedRun(queue.backend, 'PublishAudit', 'ok')
+		const response = await publish(event({ auditRunId: auditRun.id, bisync: true }))
+		expect(response.status).toBe(200)
+		const { jobId } = await response.json()
+		expect((await queue.backend.getWorkflowRun({ workflowRunId: jobId }))?.input).toEqual({
+			bisync: false
+		})
+	})
+
+	test.each([
+		{ label: 'pending upserts', diff: auditDiff },
+		{
+			label: 'removals only',
+			diff: {
+				schemas: { added: [], updated: [], pruned: [] },
+				pieces: { added: [], updated: [], pruned: ['removed.book.md'] }
+			}
+		},
+		{
+			label: 'schemas only',
+			diff: {
+				schemas: { added: [], updated: ['book'], pruned: [] },
+				pieces: { added: [], updated: [], pruned: [] }
+			}
+		},
+		{
+			label: 'no changes',
+			diff: {
+				schemas: { added: [], updated: [], pruned: [] },
+				pieces: { added: [], updated: [], pruned: [] }
+			}
+		}
+	])('preserves explicit [] with $label for global processing', async ({ diff }) => {
+		const auditRun = await createCompletedRun(queue.backend, 'PublishAudit', diff)
+		const response = await publish(event({ auditRunId: auditRun.id, bisync: true, filePaths: [] }))
+		expect(response.status).toBe(200)
+		const { jobId } = await response.json()
+		expect((await queue.backend.getWorkflowRun({ workflowRunId: jobId }))?.input).toEqual({
+			bisync: false,
+			filePaths: []
+		})
+		expect(runWorkflow).toHaveBeenCalledWith(expect.objectContaining({ name: 'Publish' }), {
+			bisync: false,
+			filePaths: []
+		})
+	})
+
+	test('persists deduplicated exact added/updated paths without decoding special characters', async () => {
+		const auditRun = await createCompletedRun(queue.backend, 'PublishAudit', auditDiff)
+		const filePaths = [auditDiff.pieces.added[1], 'updated.book.md', 'added.book.md']
+		const response = await publish(
+			event({ auditRunId: auditRun.id, filePaths: [...filePaths, filePaths[0]] })
+		)
+		expect(response.status).toBe(200)
+		const { jobId } = await response.json()
+		expect((await queue.backend.getWorkflowRun({ workflowRunId: jobId }))?.input).toEqual({
+			bisync: false,
+			filePaths
+		})
+	})
+
+	test.each([
+		{ filePaths: null },
+		{ filePaths: 'added.book.md' },
+		{ filePaths: {} },
+		{ filePaths: true },
+		{ filePaths: 1 },
+		{ filePaths: [null] },
+		{ filePaths: [1] },
+		{ filePaths: [['added.book.md']] },
+		{ filePaths: ['added.book.md', {}] }
+	])('rejects malformed selection $filePaths before enqueue', async ({ filePaths }) => {
+		const auditRun = await createCompletedRun(queue.backend, 'PublishAudit', auditDiff)
+		const response = await publish(event({ auditRunId: auditRun.id, filePaths }))
+		expect(response.status).toBe(400)
+		expect(await response.json()).toEqual({ message: 'filePaths must be an array of strings' })
+		expect(runWorkflow).not.toHaveBeenCalled()
+		expect((await queue.backend.countWorkflowRuns()).pending).toBe(0)
+	})
+
+	test.each([
+		'',
+		'unknown.book.md',
+		'removed.book.md',
+		'book',
+		'/tmp/added.book.md',
+		'../added.book.md',
+		'./added.book.md',
+		'folder/../added.book.md',
+		encodeURIComponent(auditDiff.pieces.added[1])
+	])('rejects paths outside exact audit upsert membership: %s', async (filePath) => {
+		const auditRun = await createCompletedRun(queue.backend, 'PublishAudit', auditDiff)
+		const response = await publish(
+			event({ auditRunId: auditRun.id, filePaths: ['added.book.md', filePath] })
+		)
+		expect(response.status).toBe(400)
+		expect(await response.json()).toEqual({
+			message: 'selected file paths must be pending additions or updates from this audit'
+		})
+		expect(runWorkflow).not.toHaveBeenCalled()
+	})
+
+	test.each([{ filePaths: [] }, { filePaths: ['added.book.md'] }])(
+		'requires an audit for explicit selection $filePaths',
+		async ({ filePaths }) => {
+			const response = await publish(event({ filePaths, bisync: true }))
+			expect(response.status).toBe(412)
+			expect(await response.json()).toEqual({
+				message: 'no audit run provided; check for changes before publishing'
+			})
+			expect(runWorkflow).not.toHaveBeenCalled()
+		}
+	)
+
+	test.each([null, '', 42, 'missing-run'])(
+		'rejects invalid audit identity for explicit []: %s',
+		async (auditRunId) => {
+			expect((await publish(event({ auditRunId, filePaths: [] }))).status).toBe(412)
+			expect(runWorkflow).not.toHaveBeenCalled()
+		}
+	)
+
+	const invalidAuditOutputs: Parameters<typeof createCompletedRun>[2][] = [
+		null,
+		'ok',
+		{},
+		{ pieces: auditDiff.pieces },
+		{ ...auditDiff, pieces: { ...auditDiff.pieces, updated: [42] } }
+	]
+
+	test.each(invalidAuditOutputs)(
+		'rejects absent/legacy/malformed completed audit output for []: %j',
+		async (output) => {
+			const auditRun = await createCompletedRun(queue.backend, 'PublishAudit', output)
+			const response = await publish(event({ auditRunId: auditRun.id, filePaths: [] }))
+			expect(response.status).toBe(412)
+			expect(await response.json()).toEqual({
+				message: 'audit has no valid changes report; re-check before publishing'
+			})
+			expect(runWorkflow).not.toHaveBeenCalled()
+		}
+	)
+
+	test.each([{ filePaths: [] }, { filePaths: ['added.book.md'] }])(
+		'rejects stale audit selection $filePaths and releases admission',
+		async ({ filePaths }) => {
+			const oldAudit = await createCompletedRun(queue.backend, 'PublishAudit', auditDiff)
+			vi.setSystemTime(new Date('2026-06-20T01:00:00Z'))
+			const latestAudit = await createCompletedRun(queue.backend, 'PublishAudit', auditDiff)
+			const rejected = await publish(event({ auditRunId: oldAudit.id, filePaths }))
+			expect(rejected.status).toBe(412)
+			expect(runWorkflow).not.toHaveBeenCalled()
+			expect((await publish(event({ auditRunId: latestAudit.id, filePaths }))).status).toBe(200)
+		}
+	)
+
+	test.each([{ filePaths: [] }, { filePaths: ['added.book.md'] }])(
+		'consumes the audit after selected publish $filePaths completes',
+		async ({ filePaths }) => {
+			const auditRun = await createCompletedRun(queue.backend, 'PublishAudit', auditDiff)
+			const response = await publish(event({ auditRunId: auditRun.id, filePaths }))
+			expect(response.status).toBe(200)
+			await completeNextRun(queue.backend)
+			const rejected = await publish(event({ auditRunId: auditRun.id, filePaths }))
+			expect(rejected.status).toBe(412)
+			expect(await rejected.json()).toEqual({
+				message: 'changes were published after this check; re-check before publishing'
+			})
+			expect(runWorkflow).toHaveBeenCalledTimes(1)
+		}
+	)
+
+	test('retains active-run conflict precedence for an explicit selection', async () => {
+		const auditRun = await createCompletedRun(queue.backend, 'PublishAudit', auditDiff)
+		const accepted = await publish(event({ auditRunId: auditRun.id, filePaths: [] }))
+		const rejected = await publish(event({ auditRunId: auditRun.id, filePaths: ['unknown'] }))
+		expect(accepted.status).toBe(200)
+		expect(rejected.status).toBe(409)
+		expect(await rejected.json()).toEqual(await accepted.json())
 		expect(runWorkflow).toHaveBeenCalledTimes(1)
 	})
 

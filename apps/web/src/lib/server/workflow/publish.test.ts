@@ -232,6 +232,71 @@ describe('validateAuditForPublish', () => {
 		expect(await validateAuditForPublish(backend, 'audit-1')).toEqual({ ok: true })
 	})
 
+	test.each([
+		{ filePaths: [] },
+		{ filePaths: ['added.book.md', 'updated.book.md', 'added.book.md'] }
+	])(
+		'validates and deduplicates explicit selection $filePaths against audit upserts',
+		async ({ filePaths }) => {
+			const run = makeRun({
+				output: JSON.stringify({
+					schemas: { added: ['book'], updated: [], pruned: [] },
+					pieces: {
+						added: ['added.book.md'],
+						updated: ['updated.book.md'],
+						pruned: ['removed.book.md']
+					}
+				})
+			})
+			mocks.getWorkflowRun.mockResolvedValue(run)
+			mocks.getLatestWorkflowRun.mockImplementation(async (_backend, name) =>
+				name === 'PublishAudit' ? run : null
+			)
+			expect(await validateAuditForPublish(backend, run.id, filePaths)).toEqual({
+				ok: true,
+				filePaths: [...new Set(filePaths)]
+			})
+		}
+	)
+
+	test.each([null, 'not JSON', '"ok"', '{}', '{"pieces":{"added":[]}}'])(
+		'requires a valid audit report even for an empty selection: %s',
+		async (output) => {
+			const run = makeRun({ output })
+			mocks.getWorkflowRun.mockResolvedValue(run)
+			mocks.getLatestWorkflowRun.mockImplementation(async (_backend, name) =>
+				name === 'PublishAudit' ? run : null
+			)
+			expect(await validateAuditForPublish(backend, run.id, [])).toEqual({
+				ok: false,
+				reason: 'audit has no valid changes report; re-check before publishing'
+			})
+			// Omitted selection keeps accepting legacy completed audits.
+			expect(await validateAuditForPublish(backend, run.id)).toEqual({ ok: true })
+		}
+	)
+
+	test.each(['removed.book.md', 'book', './added.book.md', 'unknown.book.md'])(
+		'rejects a path outside exact audit additions/updates: %s',
+		async (filePath) => {
+			const run = makeRun({
+				output: JSON.stringify({
+					schemas: { added: ['book'], updated: [], pruned: [] },
+					pieces: { added: ['added.book.md'], updated: [], pruned: ['removed.book.md'] }
+				})
+			})
+			mocks.getWorkflowRun.mockResolvedValue(run)
+			mocks.getLatestWorkflowRun.mockImplementation(async (_backend, name) =>
+				name === 'PublishAudit' ? run : null
+			)
+			expect(await validateAuditForPublish(backend, run.id, [filePath])).toEqual({
+				ok: false,
+				reason: 'selected file paths must be pending additions or updates from this audit',
+				status: 400
+			})
+		}
+	)
+
 	test('accepts a succeeded audit newer than the last publish', async () => {
 		mocks.getWorkflowRun.mockResolvedValue(
 			makeRun({ id: 'audit-1', status: 'succeeded', created_at: '2026-06-20T02:00:00Z' })

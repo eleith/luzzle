@@ -7,6 +7,7 @@ import {
 	withPublishAdmission
 } from '$lib/server/workflow/publish.js'
 import { publishSpec } from '@luzzle/web.jobs/specs'
+import type { PublishPayload } from '@luzzle/web.jobs'
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
@@ -18,19 +19,34 @@ export const POST: RequestHandler = async ({ request }) => {
 			}
 
 			const auditRunId = body?.auditRunId
-			const bisync = body?.bisync === true
-
-			if (auditRunId) {
-				const guard = await validateAuditForPublish(getOpenWorkflowBackend(), auditRunId)
-				if (!guard.ok) {
-					return json({ message: guard.reason }, { status: 412 })
+			const selectionProvided = Object.hasOwn(body ?? {}, 'filePaths')
+			let filePaths: string[] | undefined
+			if (selectionProvided) {
+				const requestedPaths = body.filePaths
+				if (!Array.isArray(requestedPaths)) {
+					return json({ message: 'filePaths must be an array of strings' }, { status: 400 })
 				}
+				if (!requestedPaths.every((filePath: unknown) => typeof filePath === 'string')) {
+					return json({ message: 'filePaths must be an array of strings' }, { status: 400 })
+				}
+				filePaths = requestedPaths
 			}
 
+			if (auditRunId || selectionProvided) {
+				const guard = await validateAuditForPublish(getOpenWorkflowBackend(), auditRunId, filePaths)
+				if (!guard.ok) {
+					return json({ message: guard.reason }, { status: guard.status ?? 412 })
+				}
+				filePaths = guard.filePaths
+			}
+
+			let bisync = body?.bisync === true
+			if (auditRunId) bisync = false
+			const input: PublishPayload = { bisync }
+			if (filePaths !== undefined) input.filePaths = filePaths
+
 			const openWorkflow = getOpenWorkflow()
-			const handle = await openWorkflow.runWorkflow(publishSpec, {
-				bisync: auditRunId ? false : bisync
-			})
+			const handle = await openWorkflow.runWorkflow(publishSpec, input)
 			return json({ jobId: handle.workflowRun.id })
 		})
 	} catch (error) {

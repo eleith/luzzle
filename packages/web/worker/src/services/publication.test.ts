@@ -162,7 +162,7 @@ describe('publication', () => {
 		const summary = emptyPiecesDiff()
 		summary.pieces.added.push('new.books.md')
 
-		const prepared = await publishPrepareStep.run(summary, ctx)
+		const prepared = await publishPrepareStep.run({ summary }, ctx)
 
 		expect(prepared).toEqual({
 			status: 'completed',
@@ -178,6 +178,57 @@ describe('publication', () => {
 			},
 		})
 		expect(summary.pieces.updated).toEqual([])
+	})
+
+	test.each([
+		{ filePaths: undefined, added: ['new.books.md'], updated: ['changed.books.md'] },
+		{ filePaths: [], added: [], updated: [] },
+		{
+			filePaths: ['changed.books.md', 'changed.books.md', 'unchanged.books.md', 'missing.books.md'],
+			added: [],
+			updated: ['changed.books.md'],
+		},
+	])('prepare intersects fresh pending work with selection $filePaths, retaining global work', async ({
+		filePaths,
+		added,
+		updated,
+	}) => {
+		await indexPiece('new.books.md', 'new-hash')
+		await indexPiece('changed.books.md', 'current-hash')
+		await indexPiece('unchanged.books.md', 'same-hash')
+		await indexPiece('gone.books.md', 'gone-hash')
+		await publishMetadata('changed.books.md', 'old-hash', 123)
+		await publishMetadata('unchanged.books.md', 'same-hash', 456)
+		await publishMetadata('gone.books.md', 'gone-hash', 789)
+		await db.deleteFrom('pieces_items').where('file_path', '=', 'gone.books.md').execute()
+		const summary = {
+			schemas: { added: ['books'], updated: ['films'], pruned: ['old'] },
+			pieces: {
+				added: ['changed.books.md', 'missing.books.md'],
+				updated: ['unchanged.books.md', 'new.books.md'],
+				pruned: ['already-pruned.books.md', 'gone.books.md'],
+			},
+		}
+		const before = await db.selectFrom('web_pieces').selectAll().orderBy('file_path').execute()
+
+		const result = await publishPrepareStep.run({ summary, filePaths }, ctx)
+
+		expect(result.status).toBe('completed')
+		if (result.status !== 'completed') throw new Error('Expected a completed plan')
+		expect(result.value).toEqual({
+			pieces: [
+				...(updated.length ? [{ filePath: 'changed.books.md', contentHash: 'current-hash' }] : []),
+				...(added.length ? [{ filePath: 'new.books.md', contentHash: 'new-hash' }] : []),
+			],
+			summary: {
+				schemas: summary.schemas,
+				pieces: { added, updated, pruned: ['already-pruned.books.md', 'gone.books.md'] },
+			},
+		})
+		expect(await db.selectFrom('web_pieces').selectAll().orderBy('file_path').execute()).toEqual(
+			before
+		)
+		expect(summary.pieces.added).toEqual(['changed.books.md', 'missing.books.md'])
 	})
 
 	test('complete advances healthy pieces only, using their captured hashes', async () => {
@@ -338,7 +389,7 @@ describe('publication', () => {
 	})
 
 	test('complete and prepare accept an empty archive', async () => {
-		expect(await publishPrepareStep.run(emptyPiecesDiff(), ctx)).toEqual({
+		expect(await publishPrepareStep.run({ summary: emptyPiecesDiff() }, ctx)).toEqual({
 			status: 'completed',
 			value: { pieces: [], summary: emptyPiecesDiff() },
 		})

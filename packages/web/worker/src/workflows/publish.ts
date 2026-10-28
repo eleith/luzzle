@@ -36,7 +36,7 @@ export function registerPublishWorkflow(): void {
 			jobId,
 			progress,
 			publishPrepareStep,
-			summary ?? emptyPiecesDiff()
+			{ summary: summary ?? emptyPiecesDiff(), filePaths: input.filePaths }
 		)
 		if (!plan) throw new Error('publish.prepare did not return a plan')
 		const changedPaths = plan.pieces.map((piece) => piece.filePath)

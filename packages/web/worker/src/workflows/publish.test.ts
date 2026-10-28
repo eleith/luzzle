@@ -186,6 +186,57 @@ describe('workflows/publish', () => {
 		)
 	})
 
+	test.each([
+		{ filePaths: undefined },
+		{ filePaths: [] },
+		{ filePaths: ['healthy.books.md'] },
+	])(
+		'passes selection $filePaths to prepare without narrowing global sync or delivery',
+		async ({ filePaths }) => {
+			const { result } = await runPublish({ filePaths })
+
+			expect(mocks.luzzleSync.run).toHaveBeenCalledExactlyOnceWith(undefined, expect.anything())
+			expect(mocks.publishPrepare.run).toHaveBeenCalledExactlyOnceWith(
+				{ summary, filePaths },
+				expect.anything()
+			)
+			expect(mocks.cdnSync.run).toHaveBeenCalledExactlyOnceWith(undefined, expect.anything())
+			expect(mocks.cachePurge.run).toHaveBeenCalledExactlyOnceWith(undefined, expect.anything())
+			expect(result).toEqual({ ...summary, failedPieces: [] })
+		}
+	)
+
+	test('uses only the saved selected plan and hashes when retrying, not the input or global diff', async () => {
+		const plan = {
+			pieces: [{ filePath: 'healthy.books.md', contentHash: 'captured-hash' }],
+			summary: {
+				schemas: summary.schemas,
+				pieces: { added: ['healthy.books.md'], updated: [], pruned: summary.pieces.pruned },
+			},
+		}
+		const { result } = await runPublish(
+			{ filePaths: ['healthy.books.md', 'broken.books.md'] },
+			new Map<string, unknown>([['luzzle.sync', summary], ['publish.prepare', plan]])
+		)
+
+		expect(mocks.luzzleSync.run).not.toHaveBeenCalled()
+		expect(mocks.publishPrepare.run).not.toHaveBeenCalled()
+		expect(mocks.webSync.run).toHaveBeenCalledExactlyOnceWith(
+			{ filePaths: ['healthy.books.md'] },
+			expect.anything()
+		)
+		expect(mocks.assetsGenerate.run).toHaveBeenCalledExactlyOnceWith(
+			{ filePaths: ['healthy.books.md'] },
+			expect.anything()
+		)
+		expect(mocks.publishComplete.run).toHaveBeenCalledExactlyOnceWith(
+			{ pieces: plan.pieces, failedPieces: [] },
+			expect.anything()
+		)
+		expect(result).toEqual({ ...plan.summary, failedPieces: [] })
+		expectHealthyPhasesComplete()
+	})
+
 	test.each(['cdn.sync', 'cache.purge'])(
 		'keeps a global %s rejection as a real publish failure',
 		async (phase) => {

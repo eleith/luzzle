@@ -30,11 +30,14 @@ export async function findInFlightPublishRun(
 	return null
 }
 
-export type AuditGuard = { ok: true } | { ok: false; reason: string }
+export type AuditGuard =
+	| { ok: true; filePaths?: string[] }
+	| { ok: false; reason: string; status?: 400 }
 
 export async function validateAuditForPublish(
 	backend: Pick<BackendSqlite, 'getWorkflowRun' | 'listWorkflowRuns'>,
-	auditRunId: unknown
+	auditRunId: unknown,
+	filePaths?: string[]
 ): Promise<AuditGuard> {
 	if (typeof auditRunId !== 'string' || auditRunId.length === 0) {
 		return { ok: false, reason: 'no audit run provided; check for changes before publishing' }
@@ -60,6 +63,22 @@ export async function validateAuditForPublish(
 			ok: false,
 			reason: 'changes were published after this check; re-check before publishing'
 		}
+	}
+
+	if (filePaths !== undefined) {
+		const diff = parsePiecesDiff(run.output)
+		if (!diff) {
+			return { ok: false, reason: 'audit has no valid changes report; re-check before publishing' }
+		}
+		const pending = new Set([...diff.pieces.added, ...diff.pieces.updated])
+		if (filePaths.some((filePath) => !pending.has(filePath))) {
+			return {
+				ok: false,
+				reason: 'selected file paths must be pending additions or updates from this audit',
+				status: 400
+			}
+		}
+		return { ok: true, filePaths: [...new Set(filePaths)] }
 	}
 
 	return { ok: true }

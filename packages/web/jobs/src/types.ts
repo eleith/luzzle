@@ -12,6 +12,8 @@ export interface AssetRecord {
 
 export interface PublishPayload {
 	bisync?: boolean
+	/** Omitted publishes all pending pieces; an empty list selects no upserts. */
+	filePaths?: string[]
 }
 
 export interface PublishPieceFailure {
