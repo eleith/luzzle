@@ -1,5 +1,5 @@
 import type { Config } from '@luzzle/web.config'
-import { themeNames } from '@shikijs/themes'
+import { bundledThemesInfo } from 'shiki/themes'
 
 type Rule = { scope?: string | string[]; settings?: { foreground?: string } }
 type Theme = {
@@ -33,9 +33,10 @@ ${darkCss}
 }
 
 async function loadTheme(name: string): Promise<Theme> {
-	if (!themeNames.includes(name)) throw new Error(`Unknown editor theme: ${name}`)
-	const theme = await import(`@shikijs/themes/${name}`)
-	return theme.default
+	const definition = bundledThemesInfo.find((theme) => theme.id === name)
+	if (!definition) throw new Error(`Unknown editor theme: ${name}`)
+	const theme = await definition.import()
+	return { ...theme.default, name: theme.default.name ?? definition.id }
 }
 
 // Canonical Markdown/YAML scopes, in fallback order. Not a TextMate selector engine.

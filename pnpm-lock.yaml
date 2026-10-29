@@ -725,7 +725,7 @@ importers:
       '@luzzle/web.config':
         specifier: workspace:*
         version: link:../config
-      '@shikijs/themes':
+      shiki:
         specifier: 3.22.0
         version: 3.22.0
     devDependencies:

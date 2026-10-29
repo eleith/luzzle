@@ -4,16 +4,26 @@ import { generateEditorThemeCss } from './editor.js'
 const fixtures = vi.hoisted(() => ({
 	light: {} as Record<string, unknown>,
 	dark: {} as Record<string, unknown>,
+	loadLight: vi.fn(),
+	loadDark: vi.fn(),
+	loadUnused: vi.fn(),
 }))
-vi.mock('@shikijs/themes', () => ({ themeNames: ['github-light-default', 'github-dark-default'] }))
-vi.mock('@shikijs/themes/github-light-default', () => ({ get default() { return fixtures.light } }))
-vi.mock('@shikijs/themes/github-dark-default', () => ({ get default() { return fixtures.dark } }))
+vi.mock('shiki/themes', () => ({
+	bundledThemesInfo: [
+		{ id: 'github-light-default', import: fixtures.loadLight },
+		{ id: 'github-dark-default', import: fixtures.loadDark },
+		{ id: 'dracula', import: fixtures.loadUnused },
+	],
+}))
 
 const names = { light: 'github-light-default', dark: 'github-dark-default' }
 
 beforeEach(() => {
 	fixtures.light = { name: names.light, bg: '#fff', fg: '#222' }
 	fixtures.dark = { name: names.dark, bg: '#111', fg: '#eee' }
+	fixtures.loadLight.mockReset().mockImplementation(async () => ({ default: fixtures.light }))
+	fixtures.loadDark.mockReset().mockImplementation(async () => ({ default: fixtures.dark }))
+	fixtures.loadUnused.mockReset().mockRejectedValue(new Error('Unconfigured theme imported'))
 })
 
 async function lightVariables() {
@@ -25,6 +35,18 @@ async function lightVariables() {
 }
 
 describe('generateEditorThemeCss', () => {
+	test('loads only the configured light and dark themes from the lazy registry', async () => {
+		await generateEditorThemeCss(names)
+		expect(fixtures.loadLight).toHaveBeenCalledOnce()
+		expect(fixtures.loadDark).toHaveBeenCalledOnce()
+		expect(fixtures.loadUnused).not.toHaveBeenCalled()
+	})
+
+	test('accepts a registry theme without an explicit definition name', async () => {
+		fixtures.light = { bg: '#fff', fg: '#222' }
+		expect(await lightVariables()).toMatchObject({ background: '#fff', foreground: '#222' })
+	})
+
 	test('emits default, explicit light/dark and system preference selectors', async () => {
 		const css = await generateEditorThemeCss(names)
 		expect(css).toContain(":root, :root[data-theme='light'], section[data-theme='light']")
@@ -126,6 +148,7 @@ describe('generateEditorThemeCss', () => {
 	test.each(['light', 'dark'] as const)('rejects an unknown %s theme before importing it', async (mode) => {
 		await expect(generateEditorThemeCss({ ...names, [mode]: '../not-a-theme' }))
 			.rejects.toThrow('Unknown editor theme: ../not-a-theme')
+		expect(fixtures.loadUnused).not.toHaveBeenCalled()
 	})
 
 	test.each([{ fg: '#222' }, { bg: '#fff' }, { tokenColors: [{ settings: {} }] }])(

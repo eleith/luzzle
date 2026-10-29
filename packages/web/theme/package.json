@@ -53,7 +53,7 @@
 	},
 	"dependencies": {
 		"@luzzle/web.config": "workspace:*",
-		"@shikijs/themes": "3.22.0"
+		"shiki": "3.22.0"
 	},
 	"type": "module"
 }
