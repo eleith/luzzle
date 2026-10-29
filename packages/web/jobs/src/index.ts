@@ -13,6 +13,7 @@ export {
 	previewSpec,
 	publishSpec,
 	publishAuditSpec,
+	unpublishSpec,
 	testConnectivitySpec,
 } from './specs.js'
 export type {
@@ -21,6 +22,8 @@ export type {
 	PublishPieceFailure,
 	PublishResult,
 	PublishAuditPayload,
+	UnpublishPayload,
+	UnpublishResult,
 	PreviewPayload,
 	PreviewAsset,
 	PreviewResult,

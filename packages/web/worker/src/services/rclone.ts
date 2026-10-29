@@ -1,5 +1,6 @@
 import { spawn } from 'child_process'
 import type { Logger } from './logger.js'
+import type { Config } from '@luzzle/web.config'
 
 export interface RcloneBisyncOptions {
 	localPath: string
@@ -42,6 +43,17 @@ export interface RcloneCheckOptions {
 }
 
 export type RcloneCheckResult = { ok: true } | { ok: false; reason: string }
+
+export function getRcloneRemoteOptions(sync: Config['sync'], target: 'archive' | 'cdn') {
+	const destination = sync[target]
+	if (!destination?.remote && !destination?.path) return null
+	return {
+		remote: destination?.remote ?? '',
+		remotePath: destination?.path ?? '',
+		configPath: sync.config,
+		flags: destination?.flags,
+	}
+}
 
 export class RcloneClient {
 	private readonly logger: Logger

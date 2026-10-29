@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { RcloneClient } from './rclone.js'
+import { getRcloneRemoteOptions, RcloneClient } from './rclone.js'
+import type { Config } from '@luzzle/web.config'
 import type { Logger } from './logger.js'
 import { EventEmitter } from 'events'
 
@@ -31,6 +32,47 @@ async function mockSpawnSuccess() {
 	process.nextTick(() => mockChild.emit('close', 0))
 	return spawnMock
 }
+
+describe('getRcloneRemoteOptions', () => {
+	function syncConfig(): Config['sync'] {
+		return {
+			config: '/config/rclone.conf',
+			archive: { remote: 'archive', path: 'sources/', flags: ['--no-traverse'] },
+			cdn: { remote: 'cdn', path: 'published/', flags: ['--dry-run'], strategy: 'copy' },
+		}
+	}
+
+	it.each(['archive', 'cdn'] as const)('maps the configured %s target', (target) => {
+		const sync = syncConfig()
+		expect(getRcloneRemoteOptions(sync, target)).toEqual({
+			remote: sync[target].remote,
+			remotePath: sync[target].path,
+			configPath: sync.config,
+			flags: sync[target].flags,
+		})
+	})
+
+	it('returns no target when both the name and path are empty', () => {
+		const sync = syncConfig()
+		sync.cdn.remote = ''
+		sync.cdn.path = ''
+		expect(getRcloneRemoteOptions(sync, 'cdn')).toBeNull()
+	})
+
+	it.each([
+		{ remote: 'cdn', path: '' },
+		{ remote: '', path: 'published/' },
+	])('leaves incomplete target policy to callers: %j', (target) => {
+		const sync = syncConfig()
+		Object.assign(sync.cdn, target)
+		expect(getRcloneRemoteOptions(sync, 'cdn')).toEqual({
+			remote: target.remote,
+			remotePath: target.path,
+			configPath: sync.config,
+			flags: sync.cdn.flags,
+		})
+	})
+})
 
 describe('RcloneClient flags passthrough', () => {
 	beforeEach(() => vi.clearAllMocks())

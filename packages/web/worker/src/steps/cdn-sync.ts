@@ -1,45 +1,33 @@
 import { completed, skipped, type Step, type StepResult } from '../core/step.js'
+import { getRcloneRemoteOptions } from '../services/rclone.js'
 
 export const cdnSyncStep: Step<void, void> = {
 	name: 'cdn.sync',
 	async run(_input, ctx): Promise<StepResult<void>> {
 		const { config, logger, rclone } = ctx
 
-		const remote = config.sync.cdn?.remote
-		const remotePath = config.sync.cdn?.path
-		const configPath = config.sync.config
+		const options = getRcloneRemoteOptions(config.sync, 'cdn')
 
-		if (!remote || !remotePath) {
+		if (!options?.remote || !options.remotePath) {
 			logger.info('cdn.sync skipped: sync.cdn.remote or sync.cdn.path not configured')
 			return skipped('sync.cdn.remote or sync.cdn.path not configured')
 		}
 
-		if (!configPath) {
+		if (!options.configPath) {
 			logger.info('cdn.sync skipped: sync.config not configured')
 			return skipped('sync.config not configured')
 		}
 
+		const { remote, remotePath } = options
 		const localPath = config.paths.assets
 		const strategy = config.sync.cdn?.strategy ?? 'sync'
 
 		logger.info(`cdn.sync starting ${strategy}`, { localPath, remote, remotePath, strategy })
 
 		if (strategy === 'copy') {
-			await rclone.copy({
-				localPath,
-				remote,
-				remotePath,
-				configPath,
-				flags: config.sync.cdn?.flags,
-			})
+			await rclone.copy({ ...options, localPath })
 		} else {
-			await rclone.sync({
-				localPath,
-				remote,
-				remotePath,
-				configPath,
-				flags: config.sync.cdn?.flags,
-			})
+			await rclone.sync({ ...options, localPath })
 		}
 
 		logger.info('cdn.sync complete')

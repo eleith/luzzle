@@ -29,6 +29,12 @@ export interface PublishAuditPayload {
 	bisync?: boolean
 }
 
+export interface UnpublishPayload {
+	filePath: string
+}
+
+export type UnpublishResult = 'ok'
+
 export interface PreviewPayload {
 	filePath: string
 }

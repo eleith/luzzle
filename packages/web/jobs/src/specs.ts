@@ -8,6 +8,8 @@ import type {
 	PublishPayload,
 	PublishResult,
 	PublishAuditPayload,
+	UnpublishPayload,
+	UnpublishResult,
 	TestConnectivityPayload,
 	TestConnectivityResult,
 } from './types.js'
@@ -37,6 +39,10 @@ export const publishSpec = defineWorkflowSpec<PublishPayload, PublishResult>({
 
 export const publishAuditSpec = defineWorkflowSpec<PublishAuditPayload, PiecesDiff>({
 	name: 'PublishAudit',
+})
+
+export const unpublishSpec = defineWorkflowSpec<UnpublishPayload, UnpublishResult>({
+	name: 'Unpublish',
 })
 
 export const testConnectivitySpec = defineWorkflowSpec<
