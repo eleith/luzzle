@@ -11,6 +11,7 @@ import {
 } from '$lib/server/workflow/publish.fixture.js'
 import { POST as publish } from './+server.js'
 import { POST as audit } from './audit/+server.js'
+import { POST as unpublish } from '../unpublish/+server.js'
 
 const { runWorkflow } = vi.hoisted(() => ({ runWorkflow: vi.fn() }))
 vi.mock('$lib/server/workflow/index.js', () => ({
@@ -27,20 +28,23 @@ const auditDiff = {
 	}
 }
 
-function event(body: unknown = {}) {
+function event(body: unknown = { filePath: 'books/one.books.md' }) {
 	return {
 		request: new Request('http://localhost/api/admin/publish', {
 			method: 'POST',
 			body: JSON.stringify(body)
 		})
-	} as Parameters<typeof publish>[0] & Parameters<typeof audit>[0]
+	} as Parameters<typeof publish>[0] & Parameters<typeof audit>[0] & Parameters<typeof unpublish>[0]
 }
 
-describe('publish/audit admission', () => {
+describe('publication admission', () => {
 	let queue: WorkflowQueue
 
-	async function enqueue(spec: { name: string }, input: { bisync: boolean; filePaths?: string[] }) {
-		vi.setSystemTime(new Date('2026-06-21T00:00:00Z'))
+	async function enqueue(
+		spec: { name: string },
+		input: { bisync?: boolean; filePaths?: string[]; filePath?: string }
+	) {
+		vi.setSystemTime(new Date(Date.now() + 1000))
 		const workflowRun = await createPendingRun(queue.backend, spec.name, input)
 		return { workflowRun }
 	}
@@ -62,7 +66,12 @@ describe('publish/audit admission', () => {
 		{ firstName: 'Publish', firstRoute: publish, otherName: 'Publish', otherRoute: publish },
 		{ firstName: 'Publish', firstRoute: publish, otherName: 'PublishAudit', otherRoute: audit },
 		{ firstName: 'PublishAudit', firstRoute: audit, otherName: 'Publish', otherRoute: publish },
-		{ firstName: 'PublishAudit', firstRoute: audit, otherName: 'PublishAudit', otherRoute: audit }
+		{ firstName: 'PublishAudit', firstRoute: audit, otherName: 'PublishAudit', otherRoute: audit },
+		{ firstName: 'Publish', firstRoute: publish, otherName: 'Unpublish', otherRoute: unpublish },
+		{ firstName: 'PublishAudit', firstRoute: audit, otherName: 'Unpublish', otherRoute: unpublish },
+		{ firstName: 'Unpublish', firstRoute: unpublish, otherName: 'Publish', otherRoute: publish },
+		{ firstName: 'Unpublish', firstRoute: unpublish, otherName: 'PublishAudit', otherRoute: audit },
+		{ firstName: 'Unpublish', firstRoute: unpublish, otherName: 'Unpublish', otherRoute: unpublish }
 	])(
 		'admits only one overlapping $firstName/$otherName request',
 		async ({ firstRoute, otherRoute }) => {
@@ -182,7 +191,7 @@ describe('publish/audit admission', () => {
 		expect(runWorkflow).toHaveBeenCalledTimes(1)
 	})
 
-	test.each([publish, audit])(
+	test.each([publish, audit, unpublish])(
 		'uses persisted active runs even without a local submission',
 		async (route) => {
 			const active = await createPendingRun(queue.backend, 'Publish')
@@ -227,6 +236,25 @@ describe('publish/audit admission', () => {
 			message: 'changes were published after this check; re-check before publishing'
 		})
 		expect(runWorkflow).toHaveBeenCalledTimes(1)
+	})
+
+	test('an Unpublish request consumes the old audit and a fresh Check permits publishing', async () => {
+		const oldAudit = await createCompletedRun(queue.backend, 'PublishAudit')
+		const accepted = await unpublish(event({ filePath: 'books/one.books.md' }))
+		expect(accepted.status).toBe(200)
+		await completeNextRun(queue.backend)
+
+		const rejected = await publish(event({ auditRunId: oldAudit.id }))
+		expect(rejected.status).toBe(412)
+		expect(await rejected.json()).toEqual({
+			message: 'an unpublish was requested after this check; re-check before publishing'
+		})
+		expect(runWorkflow).toHaveBeenCalledTimes(1)
+
+		vi.setSystemTime(new Date('2026-06-22T00:00:00Z'))
+		const freshAudit = await createCompletedRun(queue.backend, 'PublishAudit')
+		expect((await publish(event({ auditRunId: freshAudit.id }))).status).toBe(200)
+		expect(runWorkflow).toHaveBeenCalledTimes(2)
 	})
 
 	test.each([false, true])(

@@ -46,6 +46,7 @@ test.each([
 	'/admin/piece/[...path]/preview/[jobId]',
 	'/admin/open/[piece]/[slug]',
 	'/api/admin/generate',
+	'/api/admin/unpublish',
 	'/api/admin/publish/[id]/stream',
 	'/api/admin/preview/[id]/stream'
 ])('%s has an auth-grouped route ID without changing its public path', (path) => {

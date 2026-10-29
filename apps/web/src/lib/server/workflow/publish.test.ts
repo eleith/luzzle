@@ -62,7 +62,9 @@ describe('findInFlightPublishRun', () => {
 		{ name: 'Publish', status: 'pending' },
 		{ name: 'Publish', status: 'running' },
 		{ name: 'PublishAudit', status: 'pending' },
-		{ name: 'PublishAudit', status: 'running' }
+		{ name: 'PublishAudit', status: 'running' },
+		{ name: 'Unpublish', status: 'pending' },
+		{ name: 'Unpublish', status: 'running' }
 	])('finds an older $status $name behind a newer completed run', async ({ name, status }) => {
 		const old = await createPendingRun(queue.backend, name)
 		await claimNextRun(queue.backend)
@@ -141,7 +143,8 @@ describe('findInFlightPublishRun', () => {
 		expect(await findInFlightPublishRun(queue.backend)).toBeNull()
 		expect(list.mock.calls.map(([params]) => params)).toEqual([
 			{ workflowName: 'Publish', limit: 5 },
-			{ workflowName: 'PublishAudit', limit: 5 }
+			{ workflowName: 'PublishAudit', limit: 5 },
+			{ workflowName: 'Unpublish', limit: 5 }
 		])
 		expect(count).not.toHaveBeenCalled()
 	})
@@ -222,6 +225,54 @@ describe('validateAuditForPublish', () => {
 			ok: false,
 			reason: 'changes were published after this check; re-check before publishing'
 		})
+	})
+
+	test.each(['pending', 'completed', 'failed'])(
+		'rejects an audit after a later %s Unpublish request',
+		async (status) => {
+			const audit = makeRun()
+			mocks.getWorkflowRun.mockResolvedValue(audit)
+			mocks.getLatestWorkflowRun.mockImplementation(async (_backend, name) => {
+				if (name === 'PublishAudit') return audit
+				if (name === 'Unpublish') {
+					return makeRun({
+						id: 'unpublish-1',
+						workflow_name: 'Unpublish',
+						status,
+						created_at: '2026-06-20T01:00:00Z'
+					})
+				}
+				return null
+			})
+			expect(await validateAuditForPublish(backend, audit.id)).toEqual({
+				ok: false,
+				reason: 'an unpublish was requested after this check; re-check before publishing'
+			})
+		}
+	)
+
+	test('treats equal creation timestamps as stale rather than guessing request order', async () => {
+		const audit = makeRun()
+		mocks.getWorkflowRun.mockResolvedValue(audit)
+		mocks.getLatestWorkflowRun.mockImplementation(async (_backend, name) => {
+			if (name === 'PublishAudit') return audit
+			if (name === 'Unpublish') return makeRun({ workflow_name: 'Unpublish' })
+			return null
+		})
+		expect((await validateAuditForPublish(backend, audit.id)).ok).toBe(false)
+	})
+
+	test('accepts a fresh audit made after Unpublish', async () => {
+		const audit = makeRun({ created_at: '2026-06-20T02:00:00Z' })
+		mocks.getWorkflowRun.mockResolvedValue(audit)
+		mocks.getLatestWorkflowRun.mockImplementation(async (_backend, name) => {
+			if (name === 'PublishAudit') return audit
+			if (name === 'Unpublish') {
+				return makeRun({ workflow_name: 'Unpublish', created_at: '2026-06-20T01:00:00Z' })
+			}
+			return null
+		})
+		expect(await validateAuditForPublish(backend, audit.id)).toEqual({ ok: true })
 	})
 
 	test('accepts a completed audit that is the latest with no later publish', async () => {

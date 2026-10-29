@@ -2,6 +2,8 @@ import type { BackendSqlite } from 'openworkflow/sqlite'
 import { getLatestWorkflowRun, getWorkflowRun, type PublishPieceFailure } from '@luzzle/web.jobs'
 import type { PiecesDiff } from '@luzzle/core'
 
+export const publicationWorkflowNames = ['Publish', 'PublishAudit', 'Unpublish']
+
 const COMPLETED_STATES = new Set(['completed', 'succeeded'])
 let publishAdmission: Promise<void> = Promise.resolve()
 
@@ -22,7 +24,7 @@ export async function withPublishAdmission<T>(operation: () => Promise<T>): Prom
 export async function findInFlightPublishRun(
 	backend: Pick<BackendSqlite, 'listWorkflowRuns'>
 ): Promise<{ id: string } | null> {
-	for (const workflowName of ['Publish', 'PublishAudit']) {
+	for (const workflowName of publicationWorkflowNames) {
 		const { data } = await backend.listWorkflowRuns({ workflowName, limit: 5 })
 		const active = data.find((run) => run.status === 'pending' || run.status === 'running')
 		if (active) return { id: active.id }
@@ -62,6 +64,14 @@ export async function validateAuditForPublish(
 		return {
 			ok: false,
 			reason: 'changes were published after this check; re-check before publishing'
+		}
+	}
+
+	const lastUnpublish = await getLatestWorkflowRun(backend, 'Unpublish')
+	if (lastUnpublish && lastUnpublish.created_at >= run.created_at) {
+		return {
+			ok: false,
+			reason: 'an unpublish was requested after this check; re-check before publishing'
 		}
 	}
 

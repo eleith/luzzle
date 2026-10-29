@@ -407,6 +407,53 @@ describe('streamJobProgress', () => {
 		])
 	})
 
+	const unpublishError = JSON.stringify({
+		message: 'Unpublish cleanup incomplete: remote file.png'
+	})
+	test.each([
+		{ status: 'completed', runError: null, expectedResult: 'ok', expectedErrors: null },
+		{
+			status: 'failed',
+			runError: unpublishError,
+			expectedResult: null,
+			expectedErrors: [unpublishError]
+		}
+	])(
+		'reports a $status Unpublish outcome and preserves diagnostic details',
+		async ({ status, runError, expectedResult, expectedErrors }) => {
+			mocks.getWorkflowRun.mockResolvedValue({
+				...run,
+				workflow_name: 'Unpublish',
+				status,
+				error: runError
+			})
+			mocks.getStepAttempts.mockResolvedValue([])
+			const chunks = await readChunks(
+				openStream({ jobClass: ['Publish', 'PublishAudit', 'Unpublish'] })
+			)
+			const outcome = JSON.stringify({
+				state: status,
+				result: expectedResult,
+				errors: expectedErrors,
+				workflowName: 'Unpublish'
+			})
+			expect(chunks).toEqual([
+				`event: state\ndata: ${outcome}\n\n`,
+				'event: phase\ndata: []\n\n',
+				`event: done\ndata: ${outcome}\n\n`
+			])
+			expect(mocks.query.execute).not.toHaveBeenCalled()
+		}
+	)
+
+	test('does not present an Unpublish run as a Publish-only stream', async () => {
+		mocks.getWorkflowRun.mockResolvedValue({ ...run, workflow_name: 'Unpublish' })
+		expect(await readChunks(openStream())).toEqual([
+			'event: error\ndata: {"message":"Job is not a Publish job"}\n\n'
+		])
+		expect(mocks.getStepAttempts).not.toHaveBeenCalled()
+	})
+
 	test('reports a completed publish with failed pieces as partial, never as ok', async () => {
 		const failedPieces = [{ filePath: 'failed.book.md', message: 'missing attachment' }]
 		mocks.getWorkflowRun.mockResolvedValue({ ...run, output: JSON.stringify({ failedPieces }) })
@@ -426,7 +473,7 @@ describe('streamJobProgress', () => {
 		expect(chunks.join('')).not.toContain('"result":"ok"')
 	})
 
-	test.each(['Preview', 'PublishAudit'])(
+	test.each(['Preview', 'PublishAudit', 'Unpublish'])(
 		'keeps non-publish completion semantics unchanged for %s',
 		async (workflow_name) => {
 			mocks.getWorkflowRun.mockResolvedValue({
@@ -441,7 +488,7 @@ describe('streamJobProgress', () => {
 				state: 'completed',
 				result: 'ok',
 				errors: null,
-				...(workflow_name === 'PublishAudit' ? { workflowName: workflow_name } : {})
+				...(workflow_name !== 'Preview' ? { workflowName: workflow_name } : {})
 			}
 			expect(chunks[0]).toBe(`event: state\ndata: ${JSON.stringify(outcome)}\n\n`)
 			expect(chunks.join('')).not.toContain('failedPieces')
