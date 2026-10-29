@@ -120,6 +120,100 @@ describe('RcloneClient flags passthrough', () => {
 	})
 })
 
+describe('RcloneClient deleteFile', () => {
+	const options = {
+		remote: 'cdn',
+		remotePath: 'published/books/key/cover #1.png',
+		configPath: '/config/rclone.conf',
+	}
+
+	beforeEach(() => vi.clearAllMocks())
+
+	it.each([{ flags: undefined }, { flags: [] }])(
+		'deletes one exact remote file with flags=$flags',
+		async ({ flags }) => {
+			const spawnMock = await mockSpawnSuccess()
+			const client = new RcloneClient(makeLogger())
+
+			await client.deleteFile({ ...options, flags })
+
+			expect(spawnMock).toHaveBeenCalledExactlyOnceWith(
+				'rclone',
+				[
+					'deletefile',
+					'cdn:published/books/key/cover #1.png',
+					'--config',
+					'/config/rclone.conf',
+					'--verbose',
+				],
+				{ stdio: ['ignore', 'pipe', 'pipe'] }
+			)
+		}
+	)
+
+	it('passes configured flags through unchanged', async () => {
+		const spawnMock = await mockSpawnSuccess()
+		const logger = makeLogger()
+		const client = new RcloneClient(logger)
+		const flags = ['--s3-endpoint', 'https://objects.example.test', '--dry-run']
+
+		await client.deleteFile({ ...options, flags })
+
+		expect(spawnMock).toHaveBeenCalledExactlyOnceWith(
+			'rclone',
+			[
+				'deletefile',
+				'cdn:published/books/key/cover #1.png',
+				'--config',
+				'/config/rclone.conf',
+				'--verbose',
+				...flags,
+			],
+			{ stdio: ['ignore', 'pipe', 'pipe'] }
+		)
+		expect(logger.info).toHaveBeenCalledWith('rclone deletefile starting', {
+			remote: 'cdn:published/books/key/cover #1.png',
+			flags,
+		})
+	})
+
+	it('reports a failed deletion without retrying', async () => {
+		const { spawn } = await import('child_process')
+		const child = new EventEmitter() as any
+		child.stdout = new EventEmitter()
+		child.stderr = new EventEmitter()
+		vi.mocked(spawn).mockReturnValue(child)
+		const logger = makeLogger()
+		const client = new RcloneClient(logger)
+
+		const deletion = client.deleteFile(options)
+		const rejection = expect(deletion).rejects.toThrow('rclone exited with code 1')
+		child.stderr.emit('data', Buffer.from('remote rejected deletion\n'))
+		child.emit('close', 1)
+
+		await rejection
+		expect(logger.stderr).toHaveBeenCalledWith('remote rejected deletion')
+		expect(spawn).toHaveBeenCalledTimes(1)
+	})
+
+	it('propagates a process error without retrying', async () => {
+		const { spawn } = await import('child_process')
+		const child = new EventEmitter() as any
+		child.stdout = new EventEmitter()
+		child.stderr = new EventEmitter()
+		vi.mocked(spawn).mockReturnValue(child)
+		const client = new RcloneClient(makeLogger())
+		const error = new Error('rclone is unavailable')
+
+		const deletion = client.deleteFile(options)
+		const rejection = expect(deletion).rejects.toBe(error)
+		child.emit('error', error)
+
+		await rejection
+		expect(spawn).toHaveBeenCalledTimes(1)
+	})
+})
+
 describe('RcloneClient checkConnectivity', () => {
 	beforeEach(() => vi.clearAllMocks())
 

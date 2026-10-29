@@ -27,6 +27,13 @@ export interface RcloneCopyOptions {
 	flags?: string[]
 }
 
+export interface RcloneDeleteFileOptions {
+	remote: string
+	remotePath: string
+	configPath: string
+	flags?: string[]
+}
+
 export interface RcloneCheckOptions {
 	remote: string
 	remotePath: string
@@ -118,6 +125,22 @@ export class RcloneClient {
 		this.logger.info('rclone copy starting', {
 			local: options.localPath,
 			remote: `${options.remote}:${options.remotePath}`,
+			flags: options.flags,
+		})
+
+		await this.run('rclone', args)
+	}
+
+	async deleteFile(options: RcloneDeleteFileOptions): Promise<void> {
+		const target = `${options.remote}:${options.remotePath}`
+		const args = ['deletefile', target, '--config', options.configPath, '--verbose']
+
+		if (options.flags?.length) {
+			args.push(...options.flags)
+		}
+
+		this.logger.info('rclone deletefile starting', {
+			remote: target,
 			flags: options.flags,
 		})
 
