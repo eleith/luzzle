@@ -4,9 +4,9 @@
 	import type { PageProps } from './$types'
 
 	let { data, form }: PageProps = $props()
-	let selectedType = $state(form?.type || data.type)
-	let selectedDirectory = $state(form?.directory || data.directory || '.')
-	let name = $state(form?.name || '')
+	let selectedType = $derived(form?.type || data.type)
+	let selectedDirectory = $derived(form?.directory || data.directory || '.')
+	let name = $derived(form?.name || '')
 
 	const directoryItems = $derived(
 		data.directories.map((dir) => ({ value: dir, label: dir === '.' ? '(root)' : dir }))

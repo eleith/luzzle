@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Combobox as ComboboxPrimitive } from 'bits-ui'
+	import { untrack } from 'svelte'
 	import CaretUpDownIcon from 'virtual:icons/ph/caret-up-down'
 
 	type Item = { value: string; label: string }
@@ -24,7 +25,7 @@
 		autofocus = false
 	}: Props = $props()
 
-	const initialLabel = items.find((item) => item.value === value)?.label ?? ''
+	const initialLabel = untrack(() => items.find((item) => item.value === value)?.label ?? '')
 
 	let open = $state(false)
 	let filterText = $state(initialLabel)
@@ -33,11 +34,12 @@
 	let touched = $state(false)
 	let controlRef = $state<HTMLDivElement | null>(null)
 
-	const filteredItems = $derived(
-		touched && filterText.trim()
-			? items.filter((item) => item.label.toLowerCase().includes(filterText.trim().toLowerCase()))
-			: items
-	)
+	const filteredItems = $derived.by(() => {
+		if (!touched) return items
+		const query = filterText.trim().toLowerCase()
+		if (!query) return items
+		return items.filter((item) => item.label.toLowerCase().includes(query))
+	})
 
 	// size the control to fit the longest option, rather than stretching full width
 	const inputSize = $derived(
@@ -58,13 +60,19 @@
 	{#if label}
 		<span class="combobox-label">{label}</span>
 	{/if}
-	<ComboboxPrimitive.Root type="single" {name} {required} bind:value bind:open>
+	<ComboboxPrimitive.Root
+		type="single"
+		{name}
+		{required}
+		inputValue={filterText}
+		bind:value
+		bind:open
+	>
 		<div class="combobox-control" bind:this={controlRef}>
 			<ComboboxPrimitive.Input
 				{placeholder}
 				{autofocus}
 				size={inputSize}
-				defaultValue={initialLabel}
 				oninput={(e: Event) => {
 					touched = true
 					filterText = (e.currentTarget as HTMLInputElement).value
