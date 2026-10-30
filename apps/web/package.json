@@ -27,8 +27,6 @@
     "url": "git+https://github.com/eleith/luzzle.git"
   },
   "devDependencies": {
-    "@auth/core": "0.41.1",
-    "@auth/sveltekit": "1.11.1",
     "@codemirror/autocomplete": "6.20.2",
     "@codemirror/commands": "6.10.3",
     "@codemirror/lang-markdown": "6.5.0",

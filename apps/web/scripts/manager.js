@@ -57,17 +57,10 @@ class ExplorerManager {
 		this.isDev = isDev
 	}
 
-	#createEnvironment() {
-		if (this.isDev) {
-			return { ...process.env, HOST: this.config?.network?.public?.host || '0.0.0.0' }
-		}
-		return createServerEnvironment(this.config)
-	}
-
 	async initialize() {
 		await Logger.clear()
 		this.config = loadConfig(PATHS.CONFIG)
-		this.serverEnvironment = this.#createEnvironment()
+		this.serverEnvironment = createServerEnvironment(this.config)
 		await Logger.log(`Config App URL: ${this.config.url.app}`)
 	}
 

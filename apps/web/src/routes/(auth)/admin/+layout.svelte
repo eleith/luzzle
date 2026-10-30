@@ -3,11 +3,34 @@
 	import AtIcon from 'virtual:icons/ph/at'
 	import SignOutIcon from 'virtual:icons/ph/sign-out'
 	import { page } from '$app/state'
-	import { signOut } from '@auth/sveltekit/client'
+	import { signOut, type AuthFailure } from '$lib/auth-client'
+	import { goto } from '$app/navigation'
 	import { onMount } from 'svelte'
 
 	const { children } = $props()
 	const isSourceEditor = $derived(page.route.id === '/(auth)/admin/piece/[...path]/source')
+	let signingOut = $state(false)
+	let signOutError = $state<AuthFailure | 'navigation' | null>(null)
+
+	async function handleSignOut() {
+		if (signingOut) return
+		signingOut = true
+		signOutError = null
+		const failure = await signOut()
+		if (failure) {
+			signOutError = failure
+			signingOut = false
+			return
+		}
+		localStorage.removeItem('luzzle.admin')
+		try {
+			await goto('/', { invalidateAll: true })
+		} catch {
+			signOutError = 'navigation'
+		} finally {
+			signingOut = false
+		}
+	}
 
 	onMount(() => {
 		localStorage.setItem('luzzle.admin', 'true')
@@ -23,13 +46,16 @@
 {/snippet}
 
 {#snippet right()}
-	<button
-		onclick={() => {
-			localStorage.removeItem('luzzle.admin')
-			signOut({ callbackUrl: '/' })
-		}}
-		aria-label="sign out"
-	>
+	{#if signOutError}
+		<span class="sign-out-error" role="alert">
+			{#if signOutError === 'navigation'}
+				Signed out. Navigation was cancelled or failed.
+			{:else}
+				Unable to sign out. Please try again.
+			{/if}
+		</span>
+	{/if}
+	<button onclick={handleSignOut} disabled={signingOut} aria-label="sign out">
 		<SignOutIcon style="font-size: 1em;" />
 	</button>
 {/snippet}
@@ -43,6 +69,12 @@
 </div>
 
 <style>
+	.sign-out-error {
+		color: var(--color-error);
+		font-size: var(--font-size-xs);
+		max-width: 20rem;
+	}
+
 	.editor-layout {
 		height: 100dvh;
 		display: grid;

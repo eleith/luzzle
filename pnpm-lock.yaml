@@ -297,12 +297,6 @@ importers:
         specifier: 0.11.0
         version: 0.11.0
     devDependencies:
-      '@auth/core':
-        specifier: 0.41.1
-        version: 0.41.1
-      '@auth/sveltekit':
-        specifier: 1.11.1
-        version: 1.11.1(@sveltejs/kit@2.43.0(@sveltejs/vite-plugin-svelte@6.2.0(svelte@5.55.9(@typescript-eslint/types@8.19.1))(vite@7.1.7(@types/node@24.12.4)(yaml@2.7.0)))(svelte@5.55.9(@typescript-eslint/types@8.19.1))(vite@7.1.7(@types/node@24.12.4)(yaml@2.7.0)))(svelte@5.55.9(@typescript-eslint/types@8.19.1))
       '@codemirror/autocomplete':
         specifier: 6.20.2
         version: 6.20.2
@@ -964,36 +958,6 @@ packages:
 
   '@antfu/install-pkg@1.1.0':
     resolution: {integrity: sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ==}
-
-  '@auth/core@0.41.1':
-    resolution: {integrity: sha512-t9cJ2zNYAdWMacGRMT6+r4xr1uybIdmYa49calBPeTqwgAFPV/88ac9TEvCR85pvATiSPt8VaNf+Gt24JIT/uw==}
-    peerDependencies:
-      '@simplewebauthn/browser': ^9.0.1
-      '@simplewebauthn/server': ^9.0.2
-      nodemailer: ^7.0.7
-    peerDependenciesMeta:
-      '@simplewebauthn/browser':
-        optional: true
-      '@simplewebauthn/server':
-        optional: true
-      nodemailer:
-        optional: true
-
-  '@auth/sveltekit@1.11.1':
-    resolution: {integrity: sha512-cWNfXcKrNIVtJYOY1tq7H7m03j89Wg7xrTvOJALu18fZdYulzYCPIAdTw8XSEzOp6KyhOGo7tmW7VtzRNtr/8Q==}
-    peerDependencies:
-      '@simplewebauthn/browser': ^9.0.1
-      '@simplewebauthn/server': ^9.0.3
-      '@sveltejs/kit': ^1.0.0 || ^2.0.0
-      nodemailer: ^7.0.7
-      svelte: ^3.54.0 || ^4.0.0 || ^5.0.0-0
-    peerDependenciesMeta:
-      '@simplewebauthn/browser':
-        optional: true
-      '@simplewebauthn/server':
-        optional: true
-      nodemailer:
-        optional: true
 
   '@babel/helper-string-parser@7.27.1':
     resolution: {integrity: sha512-qMlSxKbpRlAridDExk92nSobyDdpPijUq2DW6oDnUqd0iOGxmQjyqhMIihI9+zv4LPyZdRje2cavWPbCbWm3eA==}
@@ -1897,9 +1861,6 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
-
-  '@panva/hkdf@1.2.1':
-    resolution: {integrity: sha512-6oclG6Y3PiDFcoyk8srjLfVKyMfVCKJ27JwNPViuXziFpmdz+MZnZN/aKY0JGXgYuO/VghU0jcOAZgWXZ1Dmrw==}
 
   '@paralleldrive/cuid2@2.2.2':
     resolution: {integrity: sha512-ZOBkgDwEdoYVlSeRbYYXs0S9MejQofiVYoTbKzy/6GQa39/q5tQU2IX46+shYnUkpEl3wc+J6wRlar7r2EK2xA==}
@@ -3730,9 +3691,6 @@ packages:
     resolution: {integrity: sha512-JYc0DPlpGWB40kH5g07gGTrYuMqV653k3uBKY6uITPWds3M0ov3GaWGp9lbE3Bzngx8+XkfzgvASb9vk9JDFXQ==}
     engines: {node: '>=14.16'}
 
-  oauth4webapi@3.8.6:
-    resolution: {integrity: sha512-iwemM91xz8nryHti2yTmg5fhyEMVOkOXwHNqbvcATjyajb5oQxCQzrNOA6uElRHuMhQQTKUyFKV9y/CNyg25BQ==}
-
   obug@2.1.1:
     resolution: {integrity: sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ==}
 
@@ -3895,14 +3853,6 @@ packages:
   postcss@8.5.15:
     resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
     engines: {node: ^10 || ^12 || >=14}
-
-  preact-render-to-string@6.5.11:
-    resolution: {integrity: sha512-ubnauqoGczeGISiOh6RjX0/cdaF8v/oDXIjO85XALCQjwQP+SB4RDXXtvZ6yTYSjG+PC1QRP2AhPgCEsM2EvUw==}
-    peerDependencies:
-      preact: '>=10'
-
-  preact@10.24.3:
-    resolution: {integrity: sha512-Z2dPnBnMUfyQfSQ+GBdsGa16hz35YmLmtTLhM169uW944hYL6xzTYkJjC07j+Wosz733pMWx0fgON3JNw1jJQA==}
 
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
@@ -4738,21 +4688,6 @@ snapshots:
     dependencies:
       package-manager-detector: 1.6.0
       tinyexec: 1.1.2
-
-  '@auth/core@0.41.1':
-    dependencies:
-      '@panva/hkdf': 1.2.1
-      jose: 6.2.3
-      oauth4webapi: 3.8.6
-      preact: 10.24.3
-      preact-render-to-string: 6.5.11(preact@10.24.3)
-
-  '@auth/sveltekit@1.11.1(@sveltejs/kit@2.43.0(@sveltejs/vite-plugin-svelte@6.2.0(svelte@5.55.9(@typescript-eslint/types@8.19.1))(vite@7.1.7(@types/node@24.12.4)(yaml@2.7.0)))(svelte@5.55.9(@typescript-eslint/types@8.19.1))(vite@7.1.7(@types/node@24.12.4)(yaml@2.7.0)))(svelte@5.55.9(@typescript-eslint/types@8.19.1))':
-    dependencies:
-      '@auth/core': 0.41.1
-      '@sveltejs/kit': 2.43.0(@sveltejs/vite-plugin-svelte@6.2.0(svelte@5.55.9(@typescript-eslint/types@8.19.1))(vite@7.1.7(@types/node@24.12.4)(yaml@2.7.0)))(svelte@5.55.9(@typescript-eslint/types@8.19.1))(vite@7.1.7(@types/node@24.12.4)(yaml@2.7.0))
-      set-cookie-parser: 2.7.2
-      svelte: 5.55.9(@typescript-eslint/types@8.19.1)
 
   '@babel/helper-string-parser@7.27.1': {}
 
@@ -5716,8 +5651,6 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
-
-  '@panva/hkdf@1.2.1': {}
 
   '@paralleldrive/cuid2@2.2.2':
     dependencies:
@@ -7765,8 +7698,6 @@ snapshots:
 
   normalize-url@8.1.1: {}
 
-  oauth4webapi@3.8.6: {}
-
   obug@2.1.1: {}
 
   on-exit-leak-free@2.1.2: {}
@@ -7935,12 +7866,6 @@ snapshots:
       nanoid: 3.3.12
       picocolors: 1.1.1
       source-map-js: 1.2.1
-
-  preact-render-to-string@6.5.11(preact@10.24.3):
-    dependencies:
-      preact: 10.24.3
-
-  preact@10.24.3: {}
 
   prelude-ls@1.2.1: {}
 

@@ -1,5 +1,5 @@
 import { type AppConfigPublic } from '$lib/server/config'
-import type { Session } from '@auth/core/types'
+import type { LuzzleSession as Session } from '$lib/server/auth'
 
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
@@ -12,7 +12,7 @@ declare global {
 		}
 		interface PageData {
 			pieceTypes: string[]
-			session: Session | null
+			session?: Session | null
 			config: AppConfigPublic
 			preview?: boolean
 			job?: string

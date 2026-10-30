@@ -1,5 +1,7 @@
 import type { Config } from '@luzzle/web.config'
+import type { Handle } from '@sveltejs/kit'
 import { betterAuth, type BetterAuthOptions } from 'better-auth/minimal'
+import { isAuthPath } from 'better-auth/svelte-kit'
 import { buildAuthOptions } from './providers'
 
 const WEEK_SECONDS = 7 * 24 * 60 * 60
@@ -17,7 +19,7 @@ export function createAuth(auth: Config['auth'], baseURL: string) {
 		)
 	}
 
-	return betterAuth<BetterAuthOptions>({
+	return betterAuth<BetterAuthOptions & { baseURL: string }>({
 		// Pin both native inputs so an environment keyring cannot override YAML.
 		secret: auth.secret,
 		secrets: [{ version: 1, value: auth.secret }],
@@ -44,6 +46,19 @@ export function createAuth(auth: Config['auth'], baseURL: string) {
 }
 
 type Auth = ReturnType<typeof createAuth>
+
+export function createAuthHandle(auth: Auth, building: boolean): Handle {
+	const runtimeAuth = building ? undefined : auth
+	return ({ event, resolve }) => {
+		event.locals.auth = createSessionReader(runtimeAuth, event.request.headers)
+		if (!runtimeAuth) return resolve(event)
+		const canonical = new URL(runtimeAuth.options.baseURL)
+		canonical.pathname = event.url.pathname
+		canonical.search = event.url.search
+		if (!isAuthPath(canonical.href, runtimeAuth.options)) return resolve(event)
+		return runtimeAuth.handler(new Request(canonical, event.request))
+	}
+}
 
 export function createSessionReader(auth: Auth, headers: Headers) {
 	async function readSession(): Promise<LuzzleSession | null> {

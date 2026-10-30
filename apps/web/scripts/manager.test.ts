@@ -37,7 +37,7 @@ afterEach(async () => {
 
 function run(dev = true, environment: NodeJS.ProcessEnv = {}) {
 	const inherited = { ...process.env }
-	for (const key of ['ORIGIN', 'AUTH_URL', 'NEXTAUTH_URL']) delete inherited[key]
+	for (const key of ['ORIGIN', 'BETTER_AUTH_URL', 'AUTH_URL', 'NEXTAUTH_URL']) delete inherited[key]
 	return exec(process.execPath, [manager], {
 		cwd: directory,
 		env: {
@@ -132,11 +132,11 @@ test('startup still fails when the working-directory config is missing', async (
 async function captureServerEnvironment() {
 	await writeFile(
 		path.join(directory, 'build/index.js'),
-		'console.log("manager-environment " + JSON.stringify({host:process.env.HOST,origin:process.env.ORIGIN,auth:process.env.AUTH_URL,legacy:process.env.NEXTAUTH_URL}))'
+		'console.log("manager-environment " + JSON.stringify({host:process.env.HOST,origin:process.env.ORIGIN}))'
 	)
 }
 
-test('production supplies canonical origin and auth URL to the compiled Node server', async () => {
+test('production derives the canonical Kit origin from configured url.app', async () => {
 	await configure('https://Manager.EXAMPLE:443/garden/', true)
 	await captureServerEnvironment()
 	const { stdout } = await run(false)
@@ -144,46 +144,33 @@ test('production supplies canonical origin and auth URL to the compiled Node ser
 	expect(stdout).toContain(
 		`manager-environment ${JSON.stringify({
 			host: '127.0.0.1',
-			origin: 'https://manager.example',
-			auth: 'https://manager.example'
+			origin: 'https://manager.example'
 		})}`
 	)
 })
 
-test.each([
-	{
-		environment: { ORIGIN: 'https://override.example:443/' },
-		expected: { origin: 'https://override.example', auth: 'https://override.example' }
-	},
-	{ environment: { ORIGIN: '' }, expected: { origin: '' } },
-	{
-		environment: { AUTH_URL: '' },
-		expected: { origin: 'https://manager.example', auth: '' }
-	},
-	{
-		environment: { NEXTAUTH_URL: '' },
-		expected: { origin: 'https://manager.example', legacy: '' }
-	}
-])(
-	'production preserves explicit origin/auth settings: $environment',
-	async ({ environment, expected }) => {
-		await configure(undefined, true)
-		await captureServerEnvironment()
-		const { stdout } = await run(false, environment)
-		expect(stdout).toContain(
-			`manager-environment ${JSON.stringify({ host: '127.0.0.1', ...expected })}`
-		)
-	}
-)
+test('production uses YAML even when ambient URL variables disagree', async () => {
+	await configure(undefined, true)
+	await captureServerEnvironment()
+	const { stdout } = await run(false, {
+		ORIGIN: 'not-a-url',
+		BETTER_AUTH_URL: 'https://unexpected.example',
+		AUTH_URL: '',
+		NEXTAUTH_URL: ''
+	})
+	expect(stdout).toContain(
+		'manager-environment {"host":"127.0.0.1","origin":"https://manager.example"}'
+	)
+})
 
 test.each(['', '/garden'])('production keeps app URL %s request-derived', async (app) => {
-	await configure(app, true)
+	await configure(app, false)
 	await captureServerEnvironment()
 	const { stdout } = await run(false)
 	expect(stdout).toContain('manager-environment {"host":"127.0.0.1"}')
 })
 
-test('production does not supply an automatic auth URL with authentication disabled', async () => {
+test('production derives Kit origin even with authentication disabled', async () => {
 	await configure()
 	await captureServerEnvironment()
 	const { stdout } = await run(false)
@@ -192,20 +179,15 @@ test('production does not supply an automatic auth URL with authentication disab
 	)
 })
 
-test.each([
-	{},
-	{ ORIGIN: 'https://dev.example/', AUTH_URL: '', NEXTAUTH_URL: 'https://legacy.example' }
-])('development leaves origin/auth settings untouched: %j', async (environment) => {
+test('development derives the same internal Kit origin from YAML', async () => {
 	await configure(undefined, true)
 	await writeFile(
 		path.join(directory, 'bin/pnpm'),
-		'#!/bin/sh\nprintf "manager-environment HOST=%s ORIGIN=%s AUTH_URL=%s NEXTAUTH_URL=%s\\n" "$HOST" "${ORIGIN-unset}" "${AUTH_URL-unset}" "${NEXTAUTH_URL-unset}"\n',
+		'#!/bin/sh\nprintf "manager-environment HOST=%s ORIGIN=%s\\n" "$HOST" "${ORIGIN-unset}"\n',
 		{ mode: 0o755 }
 	)
-	const { stdout } = await run(true, environment)
-	expect(stdout).toContain(
-		`manager-environment HOST=127.0.0.1 ORIGIN=${environment.ORIGIN ?? 'unset'} AUTH_URL=${environment.AUTH_URL ?? 'unset'} NEXTAUTH_URL=${environment.NEXTAUTH_URL ?? 'unset'}`
-	)
+	const { stdout } = await run(true, { ORIGIN: 'https://unexpected.example' })
+	expect(stdout).toContain('manager-environment HOST=127.0.0.1 ORIGIN=https://manager.example')
 	expect(stdout).not.toContain('Initiating production build sequence')
 })
 
@@ -222,12 +204,10 @@ test('production rejects unsafe configured URLs before logging values, building 
 	expect(log).not.toContain('private-session-secret')
 })
 
-test('production rejects invalid explicit ORIGIN with a safe field-only error', async () => {
-	await configure()
-	await expect(
-		run(false, { ORIGIN: 'https://user:private-password@origin.example' })
-	).rejects.toMatchObject({
+test('authenticated production rejects relative app URLs instead of using an ambient origin', async () => {
+	await configure('/garden', true)
+	await expect(run(false, { ORIGIN: 'https://unexpected.example' })).rejects.toMatchObject({
 		code: 1,
-		stdout: 'FATAL ERROR: Invalid ORIGIN: expected an HTTP(S) URL without credentials\n'
+		stdout: 'FATAL ERROR: Authentication requires an absolute url.app\n'
 	})
 })

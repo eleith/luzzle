@@ -5,9 +5,10 @@ import { createServerEnvironment } from './runtime-environment.js'
 
 /** @param {NodeJS.ProcessEnv} environment */
 function applyServerEnvironment(environment) {
-	for (const key of ['HOST', 'ORIGIN', 'AUTH_URL']) {
+	for (const key of ['HOST', 'ORIGIN']) {
 		const value = environment[key]
-		if (value !== undefined) process.env[key] = value
+		if (value === undefined) delete process.env[key]
+		else process.env[key] = value
 	}
 }
 

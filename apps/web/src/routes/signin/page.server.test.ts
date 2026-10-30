@@ -21,7 +21,7 @@ function event(session: object | null, redirectTo?: string) {
 	} as unknown as Parameters<typeof load>[0]
 }
 
-test('public-only signin redirects before accessing missing Auth.js locals', async () => {
+test('public-only signin redirects before accessing missing authentication locals', async () => {
 	config.auth = undefined
 	await expect(load({ locals: {} } as Parameters<typeof load>[0])).rejects.toMatchObject({
 		status: 302,
@@ -33,7 +33,8 @@ test('credentials signin projects only the selected provider', async () => {
 	expect(await load(event(null))).toEqual({
 		authType: 'credentials',
 		oidcName: undefined,
-		redirectTo: '/admin'
+		redirectTo: '/admin',
+		errorCode: null
 	})
 })
 
@@ -42,7 +43,17 @@ test('OIDC signin exposes its display name but no provider secrets', async () =>
 	expect(await load(event(null))).toEqual({
 		authType: 'oidc',
 		oidcName: 'Single Sign-On',
-		redirectTo: '/admin'
+		redirectTo: '/admin',
+		errorCode: null
+	})
+})
+
+test('OIDC callback errors become a reason code without reflecting raw diagnostics', async () => {
+	const request = event(null, '/admin/publish')
+	request.url.searchParams.set('error', 'private-provider-diagnostic')
+	expect(await load(request)).toMatchObject({
+		redirectTo: '/admin/publish',
+		errorCode: 'AuthError'
 	})
 })
 

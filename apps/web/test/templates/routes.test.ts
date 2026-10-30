@@ -692,7 +692,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(await invalid.text()).toBe('invalid type')
 	})
 
-	test('adopts runtime origins and CDN prefixes A/B across Node restarts without moving framework assets', async () => {
+	test('adopts configured origins and CDN prefixes across restarts, ignoring ambient ORIGIN without moving framework assets', async () => {
 		const original = await readFile(configFilename)
 		const baseline = await request()
 		expect(baseline.status).toBe(200)
@@ -711,7 +711,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				app: 'https://garden-b.example.test:9443/published-b/',
 				app_assets: 'https://app-assets-b.example.test/site/v2/',
 				luzzle_assets: 'https://piece-assets-b.example.test/archive/v2/',
-				requestOrigin: 'https://public-b.example.test:10443',
+				requestOrigin: 'https://garden-b.example.test:9443',
 				environment: { ORIGIN: 'https://public-b.example.test:10443/' }
 			}
 		]
@@ -772,8 +772,9 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		const original = await readFile(configFilename)
 		const config = JSON.parse(original.toString('utf8'))
 		config.url.app = 'https://configured-csrf.example.test:8443/garden/'
-		const requestOrigin = 'https://request-csrf.example.test:9443'
-		const runtimeEnvironment = createServerEnvironment(config, { ORIGIN: requestOrigin })
+		const requestOrigin = new URL(config.url.app).origin
+		const ignoredOrigin = 'https://request-csrf.example.test:9443'
+		const runtimeEnvironment = createServerEnvironment(config, { ORIGIN: ignoredOrigin })
 		expect(runtimeEnvironment.ORIGIN).toBe(requestOrigin)
 		try {
 			await stopBuiltApp()
@@ -799,8 +800,8 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				},
 				{ label: 'untrusted localhost port', requestOrigin: 'http://localhost:3001', status: 403 },
 				{
-					label: 'configured app is not an extra exception',
-					requestOrigin: new URL(config.url.app).origin,
+					label: 'ignored environment origin is not an exception',
+					requestOrigin: ignoredOrigin,
 					status: 403
 				},
 				{ label: 'listener is not the canonical origin', requestOrigin: origin, status: 403 }

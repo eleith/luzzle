@@ -2,7 +2,8 @@ import { afterAll, afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { validateConfig } from '@luzzle/web.config'
 import { parseSetCookieHeader } from 'better-auth/cookies'
 import { credentialsAuth, oidcAuth } from '$lib/server/config.fixture'
-import { createAuth, createSessionReader } from './index'
+import type { Handle } from '@sveltejs/kit'
+import { createAuth, createAuthHandle, createSessionReader } from './index'
 
 // Exercise production rate limiting and origin checks, not the library's test defaults.
 vi.hoisted(() => vi.stubEnv('NODE_ENV', 'production'))
@@ -211,6 +212,106 @@ test('native logout clears browser cookies and unconfigured native strategies ca
 	expect(social.ok).toBe(false)
 	expect(cookies(social)).not.toContain('session_data=')
 })
+
+test('the Kit adapter handles native login and leaves proxy verification outside the auth namespace', async () => {
+	const handle = createAuthHandle(auth, false)
+	const url = new URL('/api/auth/sign-in/credentials', origin)
+	const loginEvent = {
+		url,
+		request: new Request(url, {
+			method: 'POST',
+			headers: { origin, 'content-type': 'application/json', 'x-real-ip': address },
+			body: JSON.stringify(credentials)
+		}),
+		locals: {}
+	} as Parameters<Handle>[0]['event']
+	const resolve = vi.fn()
+	const login = await handle({ event: loginEvent, resolve })
+	expect(login.status).toBe(200)
+	expect(resolve).not.toHaveBeenCalled()
+
+	const verifyUrl = new URL('/api/session/verify', origin)
+	const verifyEvent = {
+		url: verifyUrl,
+		request: new Request(verifyUrl, { headers: { cookie: cookies(login) } }),
+		locals: {}
+	} as Parameters<Handle>[0]['event']
+	const getSession = vi.spyOn(auth.api, 'getSession')
+	const response = await handle({
+		event: verifyEvent,
+		resolve: async (event) => {
+			expect(getSession).not.toHaveBeenCalled()
+			const first = event.locals.auth()
+			expect(event.locals.auth()).toBe(first)
+			return Response.json(await first)
+		}
+	})
+	expect(getSession).toHaveBeenCalledOnce()
+	expect((await response.json()).user.name).toBe(credentials.username)
+})
+
+test.each([
+	{ canonicalOrigin: 'http://localhost:8080', kitOrigin: 'http://localhost' },
+	{ canonicalOrigin: 'https://auth.example.test', kitOrigin: 'https://kit.example.test' }
+])(
+	'proxy-shaped login dispatch uses $canonicalOrigin without trusting $kitOrigin',
+	async ({ canonicalOrigin, kitOrigin }) => {
+		const admin = { username: 'admin', password: 'luzzle' }
+		auth = createAuth({ ...credentialsAuth, credentials: admin }, canonicalOrigin)!
+		const handle = createAuthHandle(auth, false)
+		function proxyEvent(path: string, body: unknown, browserOrigin: string, cookie = '') {
+			const url = new URL(`/api/auth${path}`, kitOrigin)
+			return {
+				url,
+				request: new Request(url, {
+					method: 'POST',
+					headers: {
+						origin: browserOrigin,
+						cookie,
+						'content-type': 'application/json',
+						'x-real-ip': address
+					},
+					body: JSON.stringify(body)
+				}),
+				locals: {}
+			} as Parameters<Handle>[0]['event']
+		}
+		const resolve = vi.fn()
+		const event = proxyEvent('/sign-in/credentials', admin, canonicalOrigin)
+		const login = await handle({ event, resolve })
+		expect(login.status).toBe(200)
+		expect(event.url.origin).toBe(kitOrigin)
+		expect(event.request.headers.get('origin')).toBe(canonicalOrigin)
+		const conflict = await handle({
+			event: proxyEvent('/sign-in/credentials', admin, kitOrigin),
+			resolve
+		})
+		expect(conflict.status).toBe(403)
+		expect((await conflict.json()).code).toBe('INVALID_ORIGIN')
+		const logout = await handle({
+			event: proxyEvent('/sign-out', {}, canonicalOrigin, cookies(login)),
+			resolve
+		})
+		expect(logout.status).toBe(200)
+		expect(resolve).not.toHaveBeenCalled()
+	}
+)
+
+test.each([true, false])(
+	'the Kit adapter is build/public-only safe (building=%s)',
+	async (building) => {
+		const handle = createAuthHandle(building ? auth : undefined, building)
+		const getSession = vi.spyOn(auth.api, 'getSession')
+		const url = new URL('/admin', origin)
+		const event = { url, request: new Request(url), locals: {} } as Parameters<Handle>[0]['event']
+		const response = await handle({
+			event,
+			resolve: async (event) => Response.json(await event.locals.auth())
+		})
+		expect(await response.json()).toBeNull()
+		expect(getSession).not.toHaveBeenCalled()
+	}
+)
 
 test('OIDC discovery uses PKCE, verified-token configuration and the default callback namespace', async () => {
 	const issuer = 'https://idp.example.test/tenant'

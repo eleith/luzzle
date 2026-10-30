@@ -19,7 +19,7 @@ beforeEach(async () => {
 	// Never print the entire environment or any auth secrets in the child fixture.
 	await writeFile(
 		path.join(directory, 'build/index.js'),
-		'console.log(JSON.stringify({HOST:process.env.HOST,ORIGIN:process.env.ORIGIN,AUTH_URL:process.env.AUTH_URL,NEXTAUTH_URL:process.env.NEXTAUTH_URL}))'
+		'console.log(JSON.stringify({HOST:process.env.HOST,ORIGIN:process.env.ORIGIN}))'
 	)
 })
 
@@ -29,7 +29,8 @@ afterEach(async () => {
 
 function run(environment: NodeJS.ProcessEnv = {}) {
 	const inherited = { ...process.env }
-	for (const key of ['HOST', 'ORIGIN', 'AUTH_URL', 'NEXTAUTH_URL']) delete inherited[key]
+	for (const key of ['HOST', 'ORIGIN', 'BETTER_AUTH_URL', 'AUTH_URL', 'NEXTAUTH_URL'])
+		delete inherited[key]
 	return exec(process.execPath, [entry], {
 		cwd: directory,
 		env: { ...inherited, ...environment },
@@ -60,32 +61,26 @@ test('loads working-directory config and applies the canonical environment befor
 	const { stdout } = await run({ HOST: 'ignored-host' })
 	expect(JSON.parse(stdout)).toEqual({
 		HOST: '127.0.0.1',
-		ORIGIN: 'https://startup.example',
-		AUTH_URL: 'https://startup.example'
+		ORIGIN: 'https://startup.example'
 	})
 })
 
-test('normalizes explicit ORIGIN instead of replacing it with the configured app origin', async () => {
+test('configured url.app supplies internal ORIGIN despite ambient URL settings', async () => {
 	await configure()
-	const { stdout } = await run({ ORIGIN: 'http://Override.EXAMPLE:80/' })
-	expect(JSON.parse(stdout)).toEqual({
-		HOST: '127.0.0.1',
-		ORIGIN: 'http://override.example',
-		AUTH_URL: 'http://override.example'
+	const { stdout } = await run({
+		ORIGIN: 'not-a-url',
+		BETTER_AUTH_URL: 'https://unexpected.example',
+		AUTH_URL: 'https://legacy.example',
+		NEXTAUTH_URL: ''
 	})
-})
-
-test('preserves an explicit empty ORIGIN without deriving an auth URL', async () => {
-	await configure()
-	const { stdout } = await run({ ORIGIN: '' })
-	expect(JSON.parse(stdout)).toEqual({ HOST: '127.0.0.1', ORIGIN: '' })
+	expect(JSON.parse(stdout)).toEqual({ HOST: '127.0.0.1', ORIGIN: 'https://startup.example' })
 })
 
 test.each(['', '/garden', './garden', '//relative.example/garden'])(
 	'leaves app URL %s request-derived before importing the server',
 	async (app) => {
-		await configure(app)
-		const { stdout } = await run()
+		await configure(app, false)
+		const { stdout } = await run({ ORIGIN: 'https://unexpected.example' })
 		expect(JSON.parse(stdout)).toEqual({ HOST: '127.0.0.1' })
 	}
 )
@@ -104,30 +99,18 @@ test('uses the existing HOST fallback for an empty configured bind host', async 
 	const { stdout } = await run()
 	expect(JSON.parse(stdout)).toEqual({
 		HOST: '0.0.0.0',
-		ORIGIN: 'https://startup.example',
-		AUTH_URL: 'https://startup.example'
+		ORIGIN: 'https://startup.example'
 	})
 })
 
-test.each([
-	{ AUTH_URL: 'https://auth.example/custom/path' },
-	{ AUTH_URL: '' },
-	{ NEXTAUTH_URL: 'https://legacy.example/custom/path' },
-	{ NEXTAUTH_URL: '' },
-	{ AUTH_URL: '', NEXTAUTH_URL: '' },
-	{ AUTH_URL: 'https://auth.example', NEXTAUTH_URL: 'https://legacy.example' }
-])(
-	'preserves explicit auth URL settings without changing NEXTAUTH_URL: %j',
-	async (environment) => {
-		await configure()
-		const { stdout } = await run(environment)
-		expect(JSON.parse(stdout)).toEqual({
-			HOST: '127.0.0.1',
-			ORIGIN: 'https://startup.example',
-			...environment
-		})
-	}
-)
+test('authentication requires an absolute configured app URL before server import', async () => {
+	await configure('/garden')
+	await expect(run({ ORIGIN: 'https://unexpected.example' })).rejects.toMatchObject({
+		code: 1,
+		stdout: '',
+		stderr: expect.stringContaining('Authentication requires an absolute url.app')
+	})
+})
 
 test.each([
 	'https://',
@@ -140,19 +123,6 @@ test.each([
 		code: 1,
 		stdout: '',
 		stderr: expect.stringContaining('Invalid url.app: expected an HTTP(S) URL without credentials')
-	})
-})
-
-test.each([
-	'https://override.example/private-token',
-	'https://user:private-password@override.example',
-	'javascript:private-token'
-])('rejects invalid explicit ORIGIN %s before importing the server', async (ORIGIN) => {
-	await configure()
-	await expect(run({ ORIGIN })).rejects.toMatchObject({
-		code: 1,
-		stdout: '',
-		stderr: expect.stringContaining('Invalid ORIGIN:')
 	})
 })
 

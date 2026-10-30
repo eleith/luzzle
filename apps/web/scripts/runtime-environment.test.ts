@@ -1,10 +1,10 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
-import { createServerEnvironment } from './runtime-environment.js'
+import { createServerEnvironment, resolveAuthUrl } from './runtime-environment.js'
 
 type RuntimeConfig = Pick<TemplateConfig, 'network' | 'url' | 'auth'>
 const auth: NonNullable<RuntimeConfig['auth']> = {
-	secret: 'private-session-secret',
+	secret: 'private-session-secret-with-at-least-32-characters',
 	credentials: { username: 'admin', password: 'private-password' }
 }
 
@@ -26,7 +26,7 @@ function config(app = 'https://configured.example/garden', authenticated = false
 
 afterEach(() => vi.unstubAllEnvs())
 
-test('returns a fresh environment without mutating config, metadata or the supplied environment', () => {
+test('returns a fresh environment without mutating config or supplied environment', () => {
 	const configured = config('https://configured.example/garden/?page=2#top', true)
 	Object.freeze(configured.url)
 	Object.freeze(configured.network.public)
@@ -38,15 +38,10 @@ test('returns a fresh environment without mutating config, metadata or the suppl
 	expect(result).toEqual({
 		HOST: '127.0.0.1',
 		UNRELATED: 'keep',
-		ORIGIN: 'https://configured.example',
-		AUTH_URL: 'https://configured.example'
+		ORIGIN: 'https://configured.example'
 	})
 	expect(environment).toEqual({ HOST: 'old-host', UNRELATED: 'keep' })
-	expect(configured.url).toEqual({
-		app: 'https://configured.example/garden/?page=2#top',
-		app_assets: '/assets',
-		luzzle_assets: '/pieces'
-	})
+	expect(configured.url.app).toBe('https://configured.example/garden/?page=2#top')
 })
 
 test('falls back to the existing public bind host when the configured host is empty', () => {
@@ -59,94 +54,35 @@ test.each([
 	['https://Example.COM:443/', 'https://example.com'],
 	['http://Example.COM:80/garden', 'http://example.com'],
 	['https://example.com:8443/garden/', 'https://example.com:8443'],
-	['http://example.com', 'http://example.com'],
+	['http://localhost:8080', 'http://localhost:8080'],
 	['https://[::1]:443/', 'https://[::1]']
-])('derives a canonical origin from app URL %s', (app, expected) => {
-	const result = createServerEnvironment(config(app, true), {})
-	expect(result.ORIGIN).toBe(expected)
-	expect(result.AUTH_URL).toBe(expected)
+])('Kit and auth derive the same canonical origin from %s', (app, expected) => {
+	expect(createServerEnvironment(config(app, true), {}).ORIGIN).toBe(expected)
+	expect(resolveAuthUrl(app)).toBe(expected)
+})
+
+test('ambient URL variables cannot replace the configured public URL', () => {
+	vi.stubEnv('ORIGIN', 'https://unexpected.example')
+	vi.stubEnv('BETTER_AUTH_URL', 'not-a-url')
+	vi.stubEnv('AUTH_URL', 'https://legacy.example')
+	vi.stubEnv('NEXTAUTH_URL', '')
+	const before = { ...process.env }
+	expect(createServerEnvironment(config(undefined, true)).ORIGIN).toBe('https://configured.example')
+	expect(resolveAuthUrl('https://configured.example/garden')).toBe('https://configured.example')
+	expect(process.env).toEqual(before)
 })
 
 test.each(['', '/', '/garden/', 'garden', './garden', '../garden', '//example.com/garden'])(
-	'leaves relative or empty app URL %s request-derived',
+	'public-only relative app URL %s leaves Kit request-derived, ignoring ambient ORIGIN',
 	(app) => {
-		const result = createServerEnvironment(config(app, true), {})
+		const result = createServerEnvironment(config(app), { ORIGIN: 'https://unexpected.example' })
 		expect(result).not.toHaveProperty('ORIGIN')
-		expect(result).not.toHaveProperty('AUTH_URL')
+		expect(() => resolveAuthUrl(app)).toThrow('Authentication requires an absolute url.app')
+		expect(() => createServerEnvironment(config(app, true), {})).toThrow(
+			'Authentication requires an absolute url.app'
+		)
 	}
 )
-
-test.each([
-	['https://Override.EXAMPLE:443/', 'https://override.example'],
-	['http://override.example:80', 'http://override.example'],
-	['https://override.example:8443/', 'https://override.example:8443']
-])('explicit ORIGIN %s wins over a mismatched configured URL', (ORIGIN, expected) => {
-	const environment = { ORIGIN }
-	const result = createServerEnvironment(config(undefined, true), environment)
-	expect(result.ORIGIN).toBe(expected)
-	expect(result.AUTH_URL).toBe(expected)
-	expect(environment.ORIGIN).toBe(ORIGIN)
-})
-
-test('an empty explicit ORIGIN opts out of canonical derivation and automatic AUTH_URL', () => {
-	const result = createServerEnvironment(config(undefined, true), { ORIGIN: '' })
-	expect(result.ORIGIN).toBe('')
-	expect(result).not.toHaveProperty('AUTH_URL')
-})
-
-test('explicit origin mode works with relative configured URLs without deriving a fallback', () => {
-	for (const ORIGIN of ['', 'https://override.example']) {
-		expect(createServerEnvironment(config('/garden', true), { ORIGIN }).ORIGIN).toBe(ORIGIN)
-	}
-})
-
-test('unsafe absolute app URLs are rejected even with an explicit ORIGIN', () => {
-	for (const ORIGIN of ['', 'https://override.example']) {
-		expect(() =>
-			createServerEnvironment(config('https://user:private-password@example.com'), { ORIGIN })
-		).toThrow(new Error('Invalid url.app: expected an HTTP(S) URL without credentials'))
-	}
-})
-
-test.each([
-	'https://example.com/garden',
-	'https://example.com/.',
-	'https://example.com/garden/..',
-	'https://example.com//',
-	'https://example.com?',
-	'https://example.com#',
-	'https://example.com/?secret=private-token',
-	'https://example.com/#private-token',
-	'https://user:private-password@example.com',
-	'https://@example.com',
-	'ftp://example.com',
-	'javascript:private-token',
-	'/garden',
-	'//example.com',
-	'https:example.com',
-	'https:/example.com',
-	'https:///example.com',
-	'https://',
-	'https://[invalid',
-	'https://example.com:invalid',
-	'https://example.com:65536',
-	'https://example.com\\garden',
-	'https://example.com\n',
-	' https://example.com',
-	' '
-])('rejects invalid explicit ORIGIN without including its value: %s', (ORIGIN) => {
-	try {
-		createServerEnvironment(config(undefined, true), { ORIGIN })
-		expect.fail('Expected ORIGIN validation to fail')
-	} catch (error) {
-		expect(error).toBeInstanceOf(Error)
-		expect([
-			'Invalid ORIGIN: expected an HTTP(S) URL without credentials',
-			'Invalid ORIGIN: expected an HTTP(S) origin without path, query or fragment'
-		]).toContain((error as Error).message)
-		expect((error as Error).message).not.toContain(auth.secret)
-	}
-})
 
 test.each([
 	'ftp://example.com/private-token',
@@ -167,53 +103,10 @@ test.each([
 	' https://example.com',
 	'ht\ntps://example.com',
 	'\u0000https://example.com'
-])('rejects unsafe absolute app URLs with field-only errors: %s', (app) => {
+])('rejects unsafe configured URLs with field-only errors: %s', (app) => {
+	const invalid = new Error('Invalid url.app: expected an HTTP(S) URL without credentials')
 	for (const authenticated of [true, false]) {
-		expect(() => createServerEnvironment(config(app, authenticated), {})).toThrow(
-			new Error('Invalid url.app: expected an HTTP(S) URL without credentials')
-		)
+		expect(() => createServerEnvironment(config(app, authenticated), {})).toThrow(invalid)
 	}
-})
-
-test.each([
-	{ AUTH_URL: 'https://auth.example/custom/path' },
-	{ AUTH_URL: '' },
-	{ AUTH_URL: 'not-a-url' },
-	{ NEXTAUTH_URL: 'https://legacy.example/custom/path' },
-	{ NEXTAUTH_URL: '' },
-	{ NEXTAUTH_URL: 'not-a-url' },
-	{ AUTH_URL: '', NEXTAUTH_URL: '' },
-	{ AUTH_URL: 'https://auth.example', NEXTAUTH_URL: 'https://legacy.example' }
-])('preserves explicit modern and legacy auth URL settings: %j', (environment) => {
-	for (const authenticated of [true, false]) {
-		for (const ORIGIN of [undefined, '', 'https://override.example']) {
-			const result = createServerEnvironment(config(undefined, authenticated), {
-				...environment,
-				ORIGIN
-			})
-			expect(result.AUTH_URL).toBe(environment.AUTH_URL)
-			expect(result.NEXTAUTH_URL).toBe(environment.NEXTAUTH_URL)
-			expect(result.ORIGIN).toBe(ORIGIN ?? 'https://configured.example')
-		}
-	}
-})
-
-test('does not automatically set AUTH_URL when authentication is disabled', () => {
-	const result = createServerEnvironment(config(), {})
-	expect(result.ORIGIN).toBe('https://configured.example')
-	expect(result).not.toHaveProperty('AUTH_URL')
-	expect(result).not.toHaveProperty('NEXTAUTH_URL')
-})
-
-test('defaults to process.env without changing it', () => {
-	vi.stubEnv('ORIGIN', 'https://process.example:443/')
-	vi.stubEnv('AUTH_URL', undefined)
-	vi.stubEnv('NEXTAUTH_URL', undefined)
-	vi.stubEnv('HOST', 'existing-host')
-	const before = { ...process.env }
-	const result = createServerEnvironment(config(undefined, true))
-	expect(result.ORIGIN).toBe('https://process.example')
-	expect(result.AUTH_URL).toBe('https://process.example')
-	expect(result.HOST).toBe('127.0.0.1')
-	expect(process.env).toEqual(before)
+	expect(() => resolveAuthUrl(app)).toThrow(invalid)
 })

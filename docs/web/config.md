@@ -48,7 +48,8 @@ LUZZLE_AUTH_PASSWORD=replace-with-a-strong-password
 LUZZLE_AUTH_SECRET=replace-with-a-generated-secret
 ```
 
-Replace both placeholders. Generate a secret with `openssl rand -hex 32`.
+Replace both placeholders. The resolved secret must contain at least 32 characters.
+Generate one with `openssl rand -hex 32`.
 
 For OIDC, use this instead:
 
@@ -62,8 +63,10 @@ auth:
 ```
 
 All shown values must be nonempty. Optional OIDC `name` defaults to
-`Single Sign-On`; register `/auth/callback/oidc` on your public origin.
-Use HTTPS beyond local testing. Changing the secret invalidates sessions.
+`Single Sign-On`; register `/api/auth/callback/oidc` on your public origin.
+Use HTTPS beyond local testing. Sessions last seven days without rolling renewal.
+Changing the secret invalidates sessions; the Auth.js migration also requires a new sign-in.
+`url.app` supplies the public origin for authentication and the web server.
 
 ## Environment values
 

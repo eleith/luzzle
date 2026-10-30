@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte'
-	import { signIn } from '@auth/sveltekit/client'
+	import { signInCredentials, signInOidc, type AuthFailure } from '$lib/auth-client'
 	import { goto } from '$app/navigation'
 	import type { PageProps } from './$types'
 
@@ -9,50 +9,104 @@
 
 	let username = $state('')
 	let password = $state('')
-	let error = $state('')
+	let pending = $state(false)
+	let submitError = $state<AuthFailure | 'NavigationError' | null>(null)
+	const errorCode = $derived(submitError ?? data.errorCode)
 
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault()
-		error = ''
+		if (pending) return
+		pending = true
+		submitError = null
+		const failure = await signInCredentials(username, password)
+		if (failure) {
+			submitError = failure
+			pending = false
+			return
+		}
+		localStorage.setItem('luzzle.admin', 'true')
+		try {
+			await goto(redirectTo, { invalidateAll: true })
+		} catch {
+			submitError = 'NavigationError'
+		} finally {
+			pending = false
+		}
+	}
 
-		const result = await signIn('credentials', {
-			username,
-			password,
-			redirect: false,
-			callbackUrl: redirectTo
-		})
-
-		if (result?.error) {
-			error = 'Invalid username or password'
-		} else {
-			localStorage.setItem('luzzle.admin', 'true')
-			goto(redirectTo)
+	async function handleOidc() {
+		if (pending) return
+		pending = true
+		submitError = null
+		const failure = await signInOidc(redirectTo)
+		if (failure) {
+			submitError = failure
+			pending = false
 		}
 	}
 </script>
+
+<svelte:window
+	onpageshow={(event) => {
+		if (event.persisted) pending = false
+	}}
+/>
+
+{#snippet errorBanner()}
+	{#if errorCode}
+		<div class="error" role="alert">
+			{#if errorCode === 'NavigationError'}
+				Signed in. <a href={redirectTo}>Continue</a> when ready.
+			{:else if errorCode === 'CredentialsSignin'}
+				Invalid username or password
+			{:else if errorCode === 'RateLimited'}
+				Too many sign-in attempts. Please wait and try again.
+			{:else if errorCode === 'NetworkError'}
+				Unable to connect. Please try again.
+			{:else}
+				Unable to sign in. Please try again.
+			{/if}
+		</div>
+	{/if}
+{/snippet}
 
 <h1 class="visually-hidden">Login</h1>
 
 <section>
 	{#if data.authType === 'oidc'}
 		<div class="oidc-login">
+			{@render errorBanner()}
 			<p>login via {data.oidcName}</p>
-			<Button onclick={() => signIn('oidc', { callbackUrl: redirectTo })}>login</Button>
+			<Button onclick={handleOidc} disabled={pending}>login</Button>
 		</div>
 	{:else if data.authType === 'credentials'}
-		<form onsubmit={handleSubmit} class="login-form">
-			{#if error}
-				<div class="error">{error}</div>
-			{/if}
+		<form onsubmit={handleSubmit} class="login-form" aria-busy={pending}>
+			{@render errorBanner()}
 			<div class="field">
 				<label for="username">username</label>
-				<input type="text" id="username" bind:value={username} class="input" required />
+				<input
+					type="text"
+					id="username"
+					bind:value={username}
+					class="input"
+					autocomplete="username"
+					disabled={pending}
+					required
+				/>
 			</div>
 			<div class="field">
 				<label for="password">password</label>
-				<input type="password" id="password" bind:value={password} class="input" required />
+				<input
+					type="password"
+					id="password"
+					bind:value={password}
+					class="input"
+					autocomplete="current-password"
+					disabled={pending}
+					required
+				/>
 			</div>
-			<Button type="submit">login</Button>
+			<Button type="submit" disabled={pending}>login</Button>
 		</form>
 	{/if}
 </section>

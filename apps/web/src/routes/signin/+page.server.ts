@@ -14,9 +14,13 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		throw redirect(302, redirectTo)
 	}
 
+	let errorCode: 'AuthError' | null = null
+	if (url.searchParams.has('error')) errorCode = 'AuthError'
+
 	return {
 		redirectTo,
 		authType: 'credentials' in auth ? 'credentials' : 'oidc',
-		oidcName: 'oidc' in auth ? auth.oidc.name : undefined
+		oidcName: 'oidc' in auth ? auth.oidc.name : undefined,
+		errorCode
 	}
 }

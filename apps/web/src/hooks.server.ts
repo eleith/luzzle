@@ -1,6 +1,7 @@
 import { building } from '$app/environment'
 import { config } from '$lib/server/config'
-import { createAuthentication } from '$lib/server/authentication'
+import { createAuth, createAuthHandle } from '$lib/server/auth'
+import { resolveAuthUrl } from '../scripts/runtime-environment.js'
 import { createAssetCspHandle } from '$lib/server/asset-csp'
 import { prepareConfiguredStyles, renderConfiguredStyles } from '$lib/server/configured-styles'
 import '$lib/server/database'
@@ -25,7 +26,11 @@ const configuredStyles = await prepareStartupStyles()
 const handleAssetCsp = createAssetPolicy()
 
 const auth = config.auth
-const authHandle = createAuthentication(auth, config.url.app_assets)
+function initializeAuth() {
+	if (building || !auth) return undefined
+	return createAuth(auth, resolveAuthUrl(config.url.app))
+}
+const authHandle = createAuthHandle(initializeAuth(), building)
 
 function isProtectedRoute(routeId: string | null) {
 	return routeId === '/(auth)' || routeId?.startsWith('/(auth)/') === true
@@ -61,9 +66,7 @@ const handleConfiguredStyles: Handle = (request) =>
 	renderConfiguredStyles(request, configuredStyles)
 
 function createRequestPipeline(): Handle {
-	const handlers = [handleAssetCsp, handleConfiguredStyles]
-	if (authHandle) handlers.push(authHandle.handle)
-	handlers.push(guardHandle)
+	const handlers = [handleAssetCsp, handleConfiguredStyles, authHandle, guardHandle]
 	return sequence(...handlers)
 }
 

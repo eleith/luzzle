@@ -10,11 +10,10 @@ const fixture = vi.hoisted(() => ({
 	),
 	config: {
 		auth: undefined as Config['auth'],
-		url: { app_assets: '' }
+		url: { app: 'http://localhost', app_assets: '' }
 	},
-	createAuth: vi.fn(() => ({
-		handle: (({ event, resolve }) => resolve(event)) satisfies Handle
-	}))
+	createAuth: vi.fn(() => ({ id: 'native-auth' })),
+	createAuthHandle: vi.fn(() => (({ event, resolve }) => resolve(event)) satisfies Handle)
 }))
 vi.mock('$app/environment', () => ({
 	get building() {
@@ -33,11 +32,17 @@ vi.mock('$lib/server/asset-csp', () => ({
 		({ event, resolve }: Parameters<Handle>[0]) =>
 			resolve(event)
 }))
-// Exercise the application guard, not configured CSS rendering or Auth.js request-store machinery.
+// Exercise the application guard; native adapter behavior is covered with the auth core.
 vi.mock('@sveltejs/kit/hooks', () => ({
 	sequence: (...handles: Handle[]) => handles[handles.length - 1]
 }))
-vi.mock('@auth/sveltekit', () => ({ SvelteKitAuth: fixture.createAuth }))
+vi.mock('$lib/server/auth', () => ({
+	createAuth: fixture.createAuth,
+	createAuthHandle: fixture.createAuthHandle
+}))
+vi.mock('../scripts/runtime-environment.js', () => ({
+	resolveAuthUrl: () => fixture.config.url.app
+}))
 
 beforeEach(() => {
 	fixture.building = false
@@ -95,6 +100,8 @@ test('does not prepare configured CSS during framework building', async () => {
 	fixture.building = true
 	await import('./hooks.server')
 	expect(fixture.prepareConfiguredStyles).not.toHaveBeenCalled()
+	expect(fixture.createAuth).not.toHaveBeenCalled()
+	expect(fixture.createAuthHandle).toHaveBeenCalledExactlyOnceWith(undefined, true)
 })
 
 test('failed configured CSS preparation rejects server hook loading', async () => {
@@ -133,7 +140,7 @@ test.each(['/admin', '/admin/lsp', '/api/admin/generate'])(
 	}
 )
 
-test('public-only requests resolve without constructing Auth.js or reading a session', async () => {
+test('public-only requests resolve without constructing native auth or reading a session', async () => {
 	fixture.config.auth = undefined
 	const { handle } = await import('./hooks.server')
 	const request = event(null, '/', { routeId: '/(root)' })
@@ -346,13 +353,8 @@ test.each([true, false])(
 test.each([
 	{ auth: credentialsAuth, provider: 'credentials' },
 	{ auth: oidcAuth, provider: 'oidc' }
-])('installs only the configured $provider provider', async ({ auth, provider }) => {
+])('initializes the native core with the configured $provider provider', async ({ auth }) => {
 	fixture.config.auth = auth
 	await import('./hooks.server')
-	expect(fixture.createAuth).toHaveBeenCalledExactlyOnceWith(
-		expect.objectContaining({
-			secret: auth.secret,
-			providers: [expect.objectContaining({ id: provider })]
-		})
-	)
+	expect(fixture.createAuth).toHaveBeenCalledExactlyOnceWith(auth, fixture.config.url.app)
 })
