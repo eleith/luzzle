@@ -5,12 +5,24 @@
 	type Props = {
 		canGenerate: boolean
 		disabled?: boolean
+		hasPublishedVersion?: boolean
+		unpublishDisabled?: boolean
+		onUnpublish?: () => void
 		onDelete: () => void
 		onAttach?: () => void
 		onGenerate?: () => void
 	}
 
-	let { canGenerate, disabled = false, onDelete, onAttach, onGenerate }: Props = $props()
+	let {
+		canGenerate,
+		disabled = false,
+		hasPublishedVersion = false,
+		unpublishDisabled = false,
+		onUnpublish,
+		onDelete,
+		onAttach,
+		onGenerate
+	}: Props = $props()
 </script>
 
 <DropdownMenu.Root>
@@ -35,6 +47,14 @@
 								<DropdownMenu.Item onSelect={onAttach}>
 									{#snippet child({ props })}
 										<div class="dropdown-item" {...props}>Attach</div>
+									{/snippet}
+								</DropdownMenu.Item>
+							{/if}
+
+							{#if hasPublishedVersion && onUnpublish}
+								<DropdownMenu.Item onSelect={onUnpublish} disabled={unpublishDisabled}>
+									{#snippet child({ props })}
+										<div class="dropdown-item destructive" {...props}>Unpublish</div>
 									{/snippet}
 								</DropdownMenu.Item>
 							{/if}

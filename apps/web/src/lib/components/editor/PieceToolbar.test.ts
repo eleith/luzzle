@@ -84,9 +84,20 @@ test('publication status is an encoded link only when a public version exists', 
 	const href = '/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md/published'
 	expect(html()).toContain(`href="${href}"`)
 	const unpublished = html({ hasPublishedVersion: false })
-	expect(unpublished).toContain('Not published')
+	expect(unpublished).toContain('Unpublished')
 	expect(unpublished).not.toContain(href)
 })
+
+test.each([false, true])(
+	'pending Unpublish replaces publication status and its link when published=%s',
+	(hasPublishedVersion) => {
+		const output = html({ hasPublishedVersion, isUnpublishing: true })
+		expect(output).toContain('Unpublishing…')
+		expect(output).not.toContain('>Published</a>')
+		expect(output).not.toContain('>Unpublished</span>')
+		expect(output).not.toContain('/published')
+	}
+)
 
 test('editor actions do not duplicate the surrounding archive navigation', () => {
 	const output = html()

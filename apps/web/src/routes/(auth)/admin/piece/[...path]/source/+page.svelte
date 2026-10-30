@@ -10,14 +10,15 @@
 	import Button from '$lib/components/ui/Button.svelte'
 	import PieceActions from '$lib/components/editor/PieceActions.svelte'
 	import PieceToolbar from '$lib/components/editor/PieceToolbar.svelte'
+	import { submitUnpublish, type UnpublishOutcome } from '$lib/pieces/unpublish-client'
 	import { editorHref } from '$lib/pieces/navigation'
 	import GenerationDialog from '$lib/components/editor/GenerationDialog.svelte'
 	import type { PageProps } from './$types'
 	import { Dialog } from 'bits-ui'
 	import { fade, fly } from 'svelte/transition'
 
-	import { page } from '$app/state'
-	import { beforeNavigate, goto, replaceState } from '$app/navigation'
+	import { navigating, page } from '$app/state'
+	import { beforeNavigate, goto, invalidateAll, replaceState } from '$app/navigation'
 	import { onMount, onDestroy, tick, untrack } from 'svelte'
 
 	let { data, form }: PageProps = $props()
@@ -30,8 +31,10 @@
 	let editorErrorReason = $state<'sign-in' | 'save' | 'refresh' | null>(null)
 	let editorErrorDetail = $state('')
 	let disposed = false
+	let activeUnpublish: AbortController | undefined
 	onDestroy(() => {
 		disposed = true
+		activeUnpublish?.abort()
 	})
 
 	beforeNavigate((navigation) => {
@@ -62,6 +65,9 @@
 
 	let dialog: HTMLDialogElement
 	let editorRef = $state<MarkdownEditor>()
+	let isUnpublishing = $state(false)
+	let unpublishOutcome = $state<UnpublishOutcome | null>(null)
+	let unpublishRefreshFailed = $state(false)
 
 	function initialRawContent(): string {
 		if (form && 'rawContent' in form) {
@@ -122,8 +128,40 @@
 
 	const hasChanges = $derived(rawContent !== (data.rawContent ?? ''))
 	const isDirty = $derived(!!form?.error || hasChanges)
+	const unpublishDisabled = $derived(
+		isDirty || isSaving || isUnpublishing || !data.hasPublishedVersion
+	)
 
 	const sourceUrl = $derived(editorHref(data.file))
+
+	async function handleUnpublish() {
+		if (unpublishDisabled) return
+		const file = data.file
+		const observer = new AbortController()
+		activeUnpublish = observer
+		isUnpublishing = true
+		unpublishOutcome = null
+		unpublishRefreshFailed = false
+		const isCurrent = () => !disposed && activeUnpublish === observer && data.file === file
+		try {
+			const result = await submitUnpublish(file, observer.signal)
+			if (!isCurrent() || !result) return
+			unpublishOutcome = result
+			if (!result.jobId) return
+			if (result.state === 'failed' && result.reason === 'sign-in') return
+			if (navigating.to) return
+			try {
+				await invalidateAll()
+			} catch {
+				if (isCurrent()) unpublishRefreshFailed = true
+			}
+		} finally {
+			if (isCurrent()) {
+				activeUnpublish = undefined
+				isUnpublishing = false
+			}
+		}
+	}
 
 	$effect(() => {
 		const refreshed = { file: data.file, content: data.rawContent ?? '' }
@@ -134,6 +172,11 @@
 			if (!changedFile) return
 			activeSave = undefined
 			isSaving = false
+			activeUnpublish?.abort()
+			activeUnpublish = undefined
+			isUnpublishing = false
+			unpublishOutcome = null
+			unpublishRefreshFailed = false
 			bypassWarning = false
 		})
 	})
@@ -536,6 +579,31 @@
 		</div>
 	{/if}
 
+	{#if unpublishOutcome?.state === 'failed' || unpublishRefreshFailed}
+		<div class="banner error-banner" role="alert">
+			{#if unpublishOutcome?.state === 'failed'}
+				{#if unpublishOutcome.reason === 'busy'}
+					Another publication operation is running.
+				{:else if unpublishOutcome.reason === 'sign-in'}
+					Please sign in again in another tab. Your edits are still here.
+				{:else if unpublishOutcome.reason === 'job'}
+					{#if data.hasPublishedVersion}Unpublish did not complete.
+					{:else}Unpublished, but cleanup did not complete.{/if}
+				{:else if unpublishOutcome.reason === 'connection'}
+					Unable to confirm completion. The job may still be running.
+				{:else if unpublishOutcome.reason === 'response'}
+					Could not read the Unpublish response. The job may have been accepted.
+				{:else}
+					Unable to confirm the Unpublish request.
+				{/if}
+				{#if unpublishOutcome.detail}<pre class="error-details">{unpublishOutcome.detail}</pre>{/if}
+			{/if}
+			{#if unpublishRefreshFailed}
+				<p>Unable to refresh publication status. Your edits are still here.</p>
+			{/if}
+		</div>
+	{/if}
+
 	<div class="editor-container">
 		{#key data.file}
 			<MarkdownEditor
@@ -551,11 +619,15 @@
 						{saveFormId}
 						{isDirty}
 						{isSaving}
+						{isUnpublishing}
 						hasPublishedVersion={data.hasPublishedVersion}
 					>
 						<PieceActions
 							canGenerate={data.canGenerate}
 							disabled={isSaving}
+							hasPublishedVersion={data.hasPublishedVersion}
+							{unpublishDisabled}
+							onUnpublish={handleUnpublish}
 							onDelete={() => dialog.showModal()}
 							onGenerate={() => {
 								editorErrorReason = null
@@ -594,6 +666,13 @@
 		background-color: var(--color-error-container);
 		color: var(--color-on-error-container);
 		border: 1px solid var(--color-error);
+	}
+
+	.error-details {
+		margin: var(--space-2) 0 0;
+		font: inherit;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
 	}
 
 	dialog {

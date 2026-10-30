@@ -8,6 +8,9 @@ test.each([false, true])('More is labeled and disabled=%s while saving', (disabl
 		props: {
 			canGenerate: true,
 			disabled,
+			hasPublishedVersion: true,
+			unpublishDisabled: disabled,
+			onUnpublish: vi.fn(),
 			onDelete: vi.fn(),
 			onAttach: vi.fn(),
 			onGenerate: vi.fn()

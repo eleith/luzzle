@@ -9,11 +9,20 @@
 		saveFormId: string
 		isDirty: boolean
 		isSaving: boolean
+		isUnpublishing?: boolean
 		hasPublishedVersion: boolean
 		children: Snippet
 	}
 
-	let { file, saveFormId, isDirty, isSaving, hasPublishedVersion, children }: Props = $props()
+	let {
+		file,
+		saveFormId,
+		isDirty,
+		isSaving,
+		isUnpublishing = false,
+		hasPublishedVersion,
+		children
+	}: Props = $props()
 	const needsSave = $derived(isDirty || isSaving)
 </script>
 
@@ -40,10 +49,12 @@
 				Saved
 			{/if}
 		</span>
-		{#if hasPublishedVersion}
+		{#if isUnpublishing}
+			<span>Unpublishing…</span>
+		{:else if hasPublishedVersion}
 			<a href={publishedHref(file)}>Published</a>
 		{:else}
-			<span>Not published</span>
+			<span>Unpublished</span>
 		{/if}
 	</div>
 </div>
