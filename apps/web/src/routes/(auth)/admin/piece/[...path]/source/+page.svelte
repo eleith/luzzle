@@ -11,7 +11,7 @@
 	import PieceActions from '$lib/components/editor/PieceActions.svelte'
 	import PieceToolbar from '$lib/components/editor/PieceToolbar.svelte'
 	import { submitUnpublish, type UnpublishOutcome } from '$lib/pieces/unpublish-client'
-	import { editorHref } from '$lib/pieces/navigation'
+	import { editorHref, publishHref } from '$lib/pieces/navigation'
 	import GenerationDialog from '$lib/components/editor/GenerationDialog.svelte'
 	import type { PageProps } from './$types'
 	import { Dialog } from 'bits-ui'
@@ -626,7 +626,9 @@
 							canGenerate={data.canGenerate}
 							disabled={isSaving}
 							hasPublishedVersion={data.hasPublishedVersion}
+							publishDisabled={isDirty || isSaving}
 							{unpublishDisabled}
+							onPublish={() => goto(publishHref(data.file))}
 							onUnpublish={handleUnpublish}
 							onDelete={() => dialog.showModal()}
 							onGenerate={() => {
@@ -645,17 +647,26 @@
 
 <style>
 	.piece-page {
-		margin: var(--space-4);
-		margin-bottom: var(--space-8);
-		margin-left: auto;
-		margin-right: auto;
-		width: 85%;
+		margin: 0;
+		width: 100%;
+		flex: 1;
+		min-height: 0;
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-4);
 	}
 
+	.editor-container {
+		display: flex;
+		flex: 1;
+		min-height: 0;
+	}
+
 	.banner {
+		flex-shrink: 0;
+		max-height: 25%;
+		overflow: auto;
+		box-sizing: border-box;
 		padding: var(--space-3);
 		border-radius: var(--radius-small);
 		margin-bottom: var(--space-2);
@@ -694,6 +705,7 @@
 
 	@media screen and (min-width: 768px) {
 		.piece-page {
+			margin: var(--space-1) auto 0;
 			width: clamp(500px, 66.6666%, 1000px);
 		}
 	}

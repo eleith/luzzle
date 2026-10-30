@@ -6,7 +6,9 @@
 		canGenerate: boolean
 		disabled?: boolean
 		hasPublishedVersion?: boolean
+		publishDisabled?: boolean
 		unpublishDisabled?: boolean
+		onPublish: () => void
 		onUnpublish?: () => void
 		onDelete: () => void
 		onAttach?: () => void
@@ -17,7 +19,9 @@
 		canGenerate,
 		disabled = false,
 		hasPublishedVersion = false,
+		publishDisabled = false,
 		unpublishDisabled = false,
+		onPublish,
 		onUnpublish,
 		onDelete,
 		onAttach,
@@ -35,6 +39,12 @@
 				{#if open}
 					<div {...wrapperProps}>
 						<div {...props} class="dropdown-content">
+							<DropdownMenu.Item onSelect={onPublish} disabled={publishDisabled}>
+								{#snippet child({ props })}
+									<div class="dropdown-item" {...props}>Publish</div>
+								{/snippet}
+							</DropdownMenu.Item>
+
 							{#if canGenerate && onGenerate}
 								<DropdownMenu.Item onSelect={onGenerate}>
 									{#snippet child({ props })}

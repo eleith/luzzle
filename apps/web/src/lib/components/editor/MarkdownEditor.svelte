@@ -183,6 +183,11 @@
 	.editor-wrapper {
 		background-color: var(--editor-background, var(--color-surface));
 		width: 100%;
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+		min-width: 0;
 		box-sizing: border-box;
 		border: 1px solid var(--editor-border, var(--color-outline));
 		border-radius: var(--radius-medium);
@@ -191,6 +196,7 @@
 	}
 
 	.editor-toolbar {
+		flex-shrink: 0;
 		background-color: var(--editor-panelBackground, var(--color-surface-container));
 		color: var(--editor-panelForeground, var(--color-on-surface));
 		border-bottom: 1px solid var(--editor-border, var(--color-outline));
@@ -198,6 +204,9 @@
 
 	.editor-body {
 		position: relative;
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	.editor-body::after {
@@ -210,16 +219,21 @@
 		border-radius: inherit;
 	}
 
-	.editor-wrapper :global(.cm-content),
-	.editor-wrapper :global(.cm-gutter) {
-		min-height: 500px;
-	}
-
-	:global(.cm-editor) {
+	.editor-body :global(.cm-editor) {
 		height: 100%;
+		min-height: 0;
 	}
 
-	:global(.cm-scroller) {
+	.editor-body :global(.cm-scroller) {
+		min-height: 0;
+		overflow: auto;
 		font-family: var(--font-mono-name), monospace !important;
+	}
+
+	@media (max-width: 767px) {
+		.editor-wrapper {
+			border-inline: none;
+			border-radius: 0;
+		}
 	}
 </style>

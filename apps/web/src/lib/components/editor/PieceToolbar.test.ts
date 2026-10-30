@@ -1,11 +1,11 @@
 import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 import PieceToolbar from './PieceToolbar.svelte'
 
-vi.mock('$app/navigation', () => ({ goto: vi.fn() }))
-
 const file = 'books/源 #?%.books.md'
+const previewHref = '/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md/preview'
+const publishedHref = '/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md/published'
 const children = createRawSnippet(() => ({ render: () => '<span>More fixture</span>' }))
 const disabledAttribute = /(?:^|\s)disabled(?:\s|=|$)/
 
@@ -23,88 +23,88 @@ function html(props: Partial<ComponentProps<typeof PieceToolbar>> = {}) {
 	}).body
 }
 
+function buttons(output: string) {
+	return [...output.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)].map((match) => ({
+		attributes: match[1],
+		label: match[2].replace(/<!--[\s\S]*?-->/g, '').trim()
+	}))
+}
+
 function buttonAttributes(output: string, label: string): string {
-	const buttons = [...output.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)]
-	const button = buttons.find((match) => match[2].replace(/<!--[\s\S]*?-->/g, '').trim() === label)
+	const button = buttons(output).find((button) => button.label === label)
 	if (!button) throw new Error(`Missing button: ${label}`)
-	return button[1]
+	return button.attributes
 }
 
 test.each([false, true])(
-	'saved files keep Preview and Publish visible and available with published version=%s',
+	'saved files show Save and More, with Saved linking to preview when published=%s',
 	(hasPublishedVersion) => {
 		const output = html({ hasPublishedVersion })
-		expect(buttonAttributes(output, 'Preview')).not.toMatch(disabledAttribute)
-		expect(buttonAttributes(output, 'Publish')).not.toMatch(disabledAttribute)
+		expect(buttons(output).map((button) => button.label)).toEqual(['Save'])
 		expect(buttonAttributes(output, 'Save')).toMatch(disabledAttribute)
+		expect(output).toContain(`href="${previewHref}"`)
+		expect(output).toContain('aria-label="Preview saved piece"')
 		expect(output).toContain('More fixture')
-		expect(output).toContain('Saved')
 		expect(output).toContain('aria-live="polite"')
 	}
 )
 
-test('unsaved edits keep primary actions visible with a short status', () => {
+test('unsaved documents have a short status instead of a Saved preview link', () => {
 	const output = html({ isDirty: true })
 	expect(buttonAttributes(output, 'Save')).not.toMatch(disabledAttribute)
-	expect(buttonAttributes(output, 'Preview')).toMatch(disabledAttribute)
-	expect(buttonAttributes(output, 'Publish')).toMatch(disabledAttribute)
-	expect(output).toContain('Unsaved changes')
+	expect(output).toContain('Unsaved')
+	expect(output).not.toContain('Unsaved changes')
+	expect(output).not.toContain(previewHref)
+	expect(output).toContain(publishedHref)
 })
 
-test.each([false, true])('saving disables primary actions even when dirty=%s', (isDirty) => {
+test.each([false, true])('saving disables Save when dirty=%s', (isDirty) => {
 	const output = html({ isDirty, isSaving: true })
-	for (const label of ['Saving…', 'Preview', 'Publish']) {
-		expect(buttonAttributes(output, label)).toMatch(disabledAttribute)
-	}
-	expect(output).not.toContain('Unsaved changes')
+	expect(buttonAttributes(output, 'Saving…')).toMatch(disabledAttribute)
+	expect(output).not.toContain(previewHref)
+	expect(output).not.toContain('Unsaved')
 })
 
 test.each([
-	{ isDirty: false, isSaving: false },
-	{ isDirty: true, isSaving: false },
-	{ isDirty: false, isSaving: true },
-	{ isDirty: true, isSaving: true }
-])('editor commands retain their explicit appearance with %o', (state) => {
+	{ isDirty: false, isSaving: false, saveLabel: 'Save' },
+	{ isDirty: true, isSaving: false, saveLabel: 'Save' },
+	{ isDirty: false, isSaving: true, saveLabel: 'Saving…' },
+	{ isDirty: true, isSaving: true, saveLabel: 'Saving…' }
+])('editor commands retain their shared appearance with %o', ({ saveLabel, ...state }) => {
 	const output = html(state)
-	for (const label of [state.isSaving ? 'Saving…' : 'Save', 'Preview', 'Publish']) {
-		expect(buttonAttributes(output, label)).toContain('data-variant="editor"')
-	}
+	expect(buttonAttributes(output, saveLabel)).toContain('data-variant="editor"')
 })
 
-test('Save submits the source form instead of navigating or implicitly publishing', () => {
-	const attributes = buttonAttributes(html({ isDirty: true }), 'Save')
-	expect(attributes).toContain('type="submit"')
-	expect(attributes).toContain('form="save-piece"')
-	for (const label of ['Preview', 'Publish']) {
-		expect(buttonAttributes(html(), label)).toContain('type="button"')
-	}
+test('Save retains its source form submission', () => {
+	const output = html({ isDirty: true })
+	const save = buttonAttributes(output, 'Save')
+	expect(save).toContain('type="submit"')
+	expect(save).toContain('form="save-piece"')
 })
 
-test('publication status is an encoded link only when a public version exists', () => {
-	const href = '/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md/published'
-	expect(html()).toContain(`href="${href}"`)
+test('publication status links only to an existing public version', () => {
+	expect(html()).toContain(`href="${publishedHref}"`)
 	const unpublished = html({ hasPublishedVersion: false })
 	expect(unpublished).toContain('Unpublished')
-	expect(unpublished).not.toContain(href)
+	expect(unpublished).not.toContain(publishedHref)
+	expect(unpublished).toContain(previewHref)
 })
 
 test.each([false, true])(
-	'pending Unpublish replaces publication status and its link when published=%s',
+	'pending Unpublish replaces only the public link when published=%s',
 	(hasPublishedVersion) => {
 		const output = html({ hasPublishedVersion, isUnpublishing: true })
 		expect(output).toContain('Unpublishing…')
-		expect(output).not.toContain('>Published</a>')
-		expect(output).not.toContain('>Unpublished</span>')
-		expect(output).not.toContain('/published')
+		expect(output).not.toContain(publishedHref)
+		expect(output).toContain(previewHref)
 	}
 )
 
-test('editor actions do not duplicate the surrounding archive navigation', () => {
+test('editor actions do not duplicate archive navigation', () => {
 	const output = html()
 	expect(output).toContain('aria-label="Editor actions"')
 	expect(output).not.toContain('href="/admin"')
 	expect(output).not.toContain('Back to archive')
-	expect(output).not.toContain('Publish…')
 })
 
-// SSR proves rendering and disabled/form semantics, not click handling or navigation guards.
+// SSR verifies labels, links and disabled/form semantics, not clicks or responsive layout.

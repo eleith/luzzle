@@ -47,6 +47,10 @@
 	border-color: var(--editor-border, var(--color-outline));
 }
 
+.cm-editor > .cm-panels.cm-panels-bottom {
+	border-top: 1px solid var(--editor-border, var(--color-outline));
+}
+
 .cm-editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
 	background-color: var(--editor-selection, var(--color-surface-container-highest));
 	color: var(--editor-foreground, var(--color-on-surface));

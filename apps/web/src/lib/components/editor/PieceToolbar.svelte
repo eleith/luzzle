@@ -1,8 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
-	import { goto } from '$app/navigation'
 	import Button from '$lib/components/ui/Button.svelte'
-	import { previewHref, publishHref, publishedHref } from '$lib/pieces/navigation'
+	import { previewHref, publishedHref } from '$lib/pieces/navigation'
 
 	type Props = {
 		file: string
@@ -23,19 +22,12 @@
 		hasPublishedVersion,
 		children
 	}: Props = $props()
-	const needsSave = $derived(isDirty || isSaving)
 </script>
 
 <div class="toolbar" role="group" aria-label="Editor actions">
 	<div class="actions">
 		<Button variant="editor" type="submit" form={saveFormId} disabled={!isDirty || isSaving}>
 			{isSaving ? 'Saving…' : 'Save'}
-		</Button>
-		<Button variant="editor" disabled={needsSave} onclick={() => goto(previewHref(file))}>
-			Preview
-		</Button>
-		<Button variant="editor" disabled={needsSave} onclick={() => goto(publishHref(file))}>
-			Publish
 		</Button>
 		{@render children()}
 	</div>
@@ -44,18 +36,22 @@
 			{#if isSaving}
 				Saving…
 			{:else if isDirty}
-				Unsaved changes
+				Unsaved
 			{:else}
-				Saved
+				<a href={previewHref(file)} aria-label="Preview saved piece" title="Preview saved piece">
+					Saved
+				</a>
 			{/if}
 		</span>
-		{#if isUnpublishing}
-			<span>Unpublishing…</span>
-		{:else if hasPublishedVersion}
-			<a href={publishedHref(file)}>Published</a>
-		{:else}
-			<span>Unpublished</span>
-		{/if}
+		<span class="publication-status">
+			{#if isUnpublishing}
+				Unpublishing…
+			{:else if hasPublishedVersion}
+				<a href={publishedHref(file)}>Published</a>
+			{:else}
+				Unpublished
+			{/if}
+		</span>
 	</div>
 </div>
 
@@ -72,17 +68,23 @@
 
 	.actions {
 		display: flex;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		align-items: center;
 		gap: var(--space-1);
 	}
 
 	.status {
 		display: flex;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		align-items: center;
-		gap: var(--space-2) var(--space-3);
+		gap: var(--space-3);
 		margin-left: auto;
+		white-space: nowrap;
+	}
+
+	.publication-status {
+		border-inline-start: 1px solid var(--editor-border, var(--color-outline));
+		padding-inline-start: var(--space-3);
 	}
 
 	.status a {

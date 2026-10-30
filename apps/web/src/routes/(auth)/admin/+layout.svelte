@@ -7,6 +7,7 @@
 	import { onMount } from 'svelte'
 
 	const { children } = $props()
+	const isSourceEditor = $derived(page.route.id === '/(auth)/admin/piece/[...path]/source')
 
 	onMount(() => {
 		localStorage.setItem('luzzle.admin', 'true')
@@ -33,8 +34,27 @@
 	</button>
 {/snippet}
 
-<Nav showHome={page.url.pathname === '/admin'} items={{ left, right }} />
+<div class:editor-layout={isSourceEditor}>
+	<Nav showHome={page.url.pathname === '/admin'} items={{ left, right }} />
 
-<main id="main-content">
-	{@render children()}
-</main>
+	<main id="main-content">
+		{@render children()}
+	</main>
+</div>
+
+<style>
+	.editor-layout {
+		height: 100dvh;
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr);
+		overflow: hidden;
+	}
+
+	.editor-layout > main {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+		min-width: 0;
+		overflow: hidden;
+	}
+</style>
