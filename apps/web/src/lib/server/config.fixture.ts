@@ -6,12 +6,12 @@ export function makeConfig(overrides: Partial<Config> = {}): Config {
 }
 
 export const credentialsAuth = {
-	secret: 'test-session-secret',
+	secret: 'test-session-secret-with-at-least-32-characters',
 	credentials: { username: 'admin', password: 'test-password' }
 } satisfies NonNullable<Config['auth']>
 
 export const oidcAuth = {
-	secret: 'test-session-secret',
+	secret: 'test-session-secret-with-at-least-32-characters',
 	oidc: {
 		name: 'Single Sign-On',
 		issuer: 'https://issuer.example',

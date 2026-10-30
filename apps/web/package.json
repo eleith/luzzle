@@ -87,6 +87,7 @@
     "@luzzle/web.templates": "workspace:*",
     "@luzzle/web.theme": "workspace:*",
     "@replit/codemirror-vim": "6.4.0",
+    "better-auth": "1.7.14",
     "eventsource-parser": "4.1.1",
     "kysely": "0.28.17",
     "micromark": "4.0.2",
