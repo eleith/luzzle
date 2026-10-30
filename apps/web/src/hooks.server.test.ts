@@ -283,7 +283,7 @@ test.each([
 	{ pathname: '/admin-looking-alias', routeId: '/public' },
 	{ pathname: '/', routeId: '/(root)' },
 	{ pathname: '/signin', routeId: '/signin' },
-	{ pathname: '/api/auth/verify', routeId: '/api/auth/verify' },
+	{ pathname: '/api/session/verify', routeId: '/api/session/verify' },
 	{ pathname: '/authentication', routeId: '/(authentic)/authentication' },
 	{ pathname: '/admin-looking-group', routeId: '/(auth)extra/admin' },
 	{ pathname: '/admin/not-a-route', routeId: null }

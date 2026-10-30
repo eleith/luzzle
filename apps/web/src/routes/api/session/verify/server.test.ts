@@ -27,8 +27,14 @@ test('public-only sites deny proxy authorization even if a session exists', asyn
 	expect(request.locals.auth).not.toHaveBeenCalled()
 })
 
-test('public-only sites deny proxy authorization without Auth.js locals', async () => {
+test('public-only sites deny proxy authorization without authentication locals', async () => {
 	config.auth = undefined
+	const response = await GET({ locals: {} } as Parameters<typeof GET>[0])
+	expect(response.status).toBe(401)
+	expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+})
+
+test('configured auth denies proxy authorization without a session accessor', async () => {
 	const response = await GET({ locals: {} } as Parameters<typeof GET>[0])
 	expect(response.status).toBe(401)
 	expect(response.headers.get('Cache-Control')).toBe('private, no-store')

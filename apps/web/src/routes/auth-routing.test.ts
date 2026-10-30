@@ -73,7 +73,7 @@ test.each([
 	['/api/health', '/api/health'],
 	['/api/pieces', '/api/pieces'],
 	['/api/search', '/api/search'],
-	['/api/auth/verify', '/api/auth/verify']
+	['/api/session/verify', '/api/session/verify']
 ])('%s stays outside the auth group', (path, id) => {
 	expect(routeIds.filter((routeId) => publicPath(routeId) === path)).toEqual([id])
 })

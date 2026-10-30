@@ -96,7 +96,7 @@ server {
         proxy_pass http://luzzle-upstream;
     }
 
-    location = /api/auth/verify {
+    location = /api/session/verify {
         internal;
         proxy_cache             off;
         proxy_pass              http://luzzle-upstream;
@@ -112,7 +112,7 @@ server {
     }
 
     location ^~ /admin/lsp {
-        auth_request       /api/auth/verify;
+        auth_request       /api/session/verify;
         proxy_cache        off;
         proxy_hide_header  Cache-Control;
         add_header         Cache-Control "private, no-store" always;
