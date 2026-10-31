@@ -33,6 +33,24 @@ type MockDb = Kysely<LuzzleTables>
 type MockStorage = StorageType
 type MockPieces = PiecesType
 
+function mockCoreConstructors(mockPieces: MockPieces) {
+	const mockStorage = {} as MockStorage
+	mocks.StorageFileSystem.mockImplementation(
+		class {
+			constructor() {
+				return mockStorage
+			}
+		} as typeof StorageFileSystem
+	)
+	mocks.Pieces.mockImplementation(
+		class {
+			constructor() {
+				return mockPieces
+			}
+		} as typeof Pieces
+	)
+}
+
 function makeCtx(): WorkerContext {
 	return {
 		config: {
@@ -57,13 +75,15 @@ function asyncIterable<T>(items: T[]): AsyncIterable<T> {
 	return readable[Symbol.asyncIterator]()
 }
 
-function makePieces(opts: Partial<{
-	sync: MockPieces['sync']
-	prune: MockPieces['prune']
-	getFilesIn: MockPieces['getFilesIn']
-	getPiece: MockPieces['getPiece']
-	parseFilename: MockPieces['parseFilename']
-}> = {}): MockPieces {
+function makePieces(
+	opts: Partial<{
+		sync: MockPieces['sync']
+		prune: MockPieces['prune']
+		getFilesIn: MockPieces['getFilesIn']
+		getPiece: MockPieces['getPiece']
+		parseFilename: MockPieces['parseFilename']
+	}> = {}
+): MockPieces {
 	return {
 		sync: vi.fn().mockResolvedValue(asyncIterable([])),
 		prune: vi.fn().mockResolvedValue(asyncIterable([])),
@@ -74,11 +94,13 @@ function makePieces(opts: Partial<{
 	} as unknown as MockPieces
 }
 
-function makePiece(opts: Partial<{
-	sync: Awaited<ReturnType<MockPieces['getPiece']>>['sync']
-	prune: Awaited<ReturnType<MockPieces['getPiece']>>['prune']
-	isOutdated: Awaited<ReturnType<MockPieces['getPiece']>>['isOutdated']
-}> = {}) {
+function makePiece(
+	opts: Partial<{
+		sync: Awaited<ReturnType<MockPieces['getPiece']>>['sync']
+		prune: Awaited<ReturnType<MockPieces['getPiece']>>['prune']
+		isOutdated: Awaited<ReturnType<MockPieces['getPiece']>>['isOutdated']
+	}> = {}
+) {
 	return {
 		sync: vi.fn().mockResolvedValue(asyncIterable([])),
 		prune: vi.fn().mockResolvedValue(asyncIterable([])),
@@ -98,9 +120,8 @@ describe('luzzleSyncStep', () => {
 	test('runs schema sync and prune', async () => {
 		const mockDb = {} as unknown as MockDb
 		const mockPieces = makePieces()
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue(mockDb)
-		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await luzzleSyncStep.run(undefined, ctx)
 
@@ -119,9 +140,8 @@ describe('luzzleSyncStep', () => {
 				])
 			),
 		})
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.Pieces.mockReturnValue(mockPieces)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 
@@ -136,13 +156,12 @@ describe('luzzleSyncStep', () => {
 
 	test('logs schema sync errors', async () => {
 		const mockPieces = makePieces({
-			sync: vi.fn().mockResolvedValue(
-				asyncIterable([{ error: true, name: 'bad', message: 'parse failed' }])
-			),
+			sync: vi
+				.fn()
+				.mockResolvedValue(asyncIterable([{ error: true, name: 'bad', message: 'parse failed' }])),
 		})
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await luzzleSyncStep.run(undefined, ctx)
 
@@ -152,18 +171,15 @@ describe('luzzleSyncStep', () => {
 	test('runs item sync per type; returns added pieces in the diff', async () => {
 		const mockDb = {} as unknown as MockDb
 		const mockPiece = makePiece({
-			sync: vi.fn().mockResolvedValue(
-				asyncIterable([{ action: 'added', file: 'books/book.md' }])
-			),
+			sync: vi.fn().mockResolvedValue(asyncIterable([{ action: 'added', file: 'books/book.md' }])),
 		})
 		const mockPieces = makePieces({
 			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['books/book.md'] }),
 			getPiece: vi.fn().mockResolvedValue(mockPiece),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue(mockDb)
-		mocks.Pieces.mockReturnValue(mockPieces)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 
@@ -186,9 +202,8 @@ describe('luzzleSyncStep', () => {
 			getPiece: vi.fn().mockResolvedValue(mockPiece),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await luzzleSyncStep.run(undefined, ctx)
 		expect(mockPiece.sync).toHaveBeenCalledWith(
@@ -216,9 +231,8 @@ describe('luzzleSyncStep', () => {
 			getPiece: vi.fn().mockResolvedValue(mockPiece),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.Pieces.mockReturnValue(mockPieces)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 		if (result.status === 'completed') {
@@ -236,9 +250,8 @@ describe('luzzleSyncStep', () => {
 				])
 			),
 		})
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.Pieces.mockReturnValue(mockPieces)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 
@@ -251,21 +264,24 @@ describe('luzzleSyncStep', () => {
 
 	test('logs item sync and prune errors', async () => {
 		const mockPiece = makePiece({
-			sync: vi.fn().mockResolvedValue(
-				asyncIterable([{ error: true, file: 'books/bad.md', message: 'sync failed' }])
-			),
-			prune: vi.fn().mockResolvedValue(
-				asyncIterable([{ error: true, file: 'books/old.md', message: 'prune failed' }])
-			),
+			sync: vi
+				.fn()
+				.mockResolvedValue(
+					asyncIterable([{ error: true, file: 'books/bad.md', message: 'sync failed' }])
+				),
+			prune: vi
+				.fn()
+				.mockResolvedValue(
+					asyncIterable([{ error: true, file: 'books/old.md', message: 'prune failed' }])
+				),
 		})
 		const mockPieces = makePieces({
 			getFilesIn: vi.fn().mockResolvedValue({ types: ['books'], pieces: ['books/bad.md'] }),
 			getPiece: vi.fn().mockResolvedValue(mockPiece),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.Pieces.mockReturnValue(mockPieces)
 
 		await luzzleSyncStep.run(undefined, ctx)
 
@@ -282,9 +298,8 @@ describe('luzzleSyncStep', () => {
 			getPiece: vi.fn().mockResolvedValue(mockPiece),
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.Pieces.mockReturnValue(mockPieces)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 
@@ -295,9 +310,8 @@ describe('luzzleSyncStep', () => {
 	})
 
 	test('returns completion message with changed count', async () => {
-		mocks.StorageFileSystem.mockReturnValue({} as unknown as MockStorage)
+		mockCoreConstructors(makePieces())
 		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
-		mocks.Pieces.mockReturnValue(makePieces())
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 		if (result.status === 'completed') {

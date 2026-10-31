@@ -5,7 +5,7 @@ node_modules
 # Output
 .output
 .vercel
-/.svelte-kit
+.svelte-kit/
 /build
 /package-lock.json
 /src/lib/ui/styles/theme.build.css

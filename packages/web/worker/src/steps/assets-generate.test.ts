@@ -65,8 +65,22 @@ beforeEach(async () => {
 	mocks.runTransformsForPiece.mockResolvedValue(undefined)
 	mocks.cleanupAllTransforms.mockResolvedValue(undefined)
 	mocks.buildAssetMaps.mockReturnValue({ pathToKey: new Map(), keyToPath: new Map() })
-	mocks.Pieces.mockReturnValue({} as unknown as Pieces)
-	mocks.StorageFileSystem.mockReturnValue({} as unknown as StorageFileSystem)
+	const mockPieces = {} as Pieces
+	const mockStorage = {} as StorageFileSystem
+	mocks.Pieces.mockImplementation(
+		class {
+			constructor() {
+				return mockPieces
+			}
+		} as typeof Pieces
+	)
+	mocks.StorageFileSystem.mockImplementation(
+		class {
+			constructor() {
+				return mockStorage
+			}
+		} as typeof StorageFileSystem
+	)
 })
 
 afterEach(async () => {
@@ -101,9 +115,11 @@ async function seedItem(over: Partial<Record<string, unknown>> = {}) {
 		assets_json_array: JSON.stringify(['books/great/cover.png']),
 		...over,
 	}
-	await (db.insertInto('pieces_items') as unknown as {
-		values: (v: typeof row) => { execute: () => Promise<void> }
-	})
+	await (
+		db.insertInto('pieces_items') as unknown as {
+			values: (v: typeof row) => { execute: () => Promise<void> }
+		}
+	)
 		.values(row)
 		.execute()
 	return row
@@ -278,9 +294,9 @@ describe('assetsGenerateStep', () => {
 	test('propagates global selection failures and still cleans up', async () => {
 		await sql`DROP TABLE web_pieces`.execute(db)
 
-		await expect(
-			assetsGenerateStep.run({ filePaths: ['books/great.md'] }, ctx)
-		).rejects.toThrow('no such table: web_pieces')
+		await expect(assetsGenerateStep.run({ filePaths: ['books/great.md'] }, ctx)).rejects.toThrow(
+			'no such table: web_pieces'
+		)
 
 		expect(mocks.runTransformsForPiece).not.toHaveBeenCalled()
 		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
@@ -288,19 +304,22 @@ describe('assetsGenerateStep', () => {
 		expect(ctx.logger.info).not.toHaveBeenCalledWith('assets.generate complete')
 	})
 
-	test.each([false, true])('propagates cleanup failures (piece failed: %s)', async (pieceFailed) => {
-		await seedPiece()
-		if (pieceFailed) mocks.runTransformsForPiece.mockRejectedValueOnce(new Error('piece failed'))
-		const error = new Error('cleanup failed')
-		mocks.cleanupAllTransforms.mockRejectedValueOnce(error)
+	test.each([false, true])(
+		'propagates cleanup failures (piece failed: %s)',
+		async (pieceFailed) => {
+			await seedPiece()
+			if (pieceFailed) mocks.runTransformsForPiece.mockRejectedValueOnce(new Error('piece failed'))
+			const error = new Error('cleanup failed')
+			mocks.cleanupAllTransforms.mockRejectedValueOnce(error)
 
-		await expect(
-			assetsGenerateStep.run({ filePaths: ['books/great.md'] }, ctx)
-		).rejects.toBe(error)
+			await expect(assetsGenerateStep.run({ filePaths: ['books/great.md'] }, ctx)).rejects.toBe(
+				error
+			)
 
-		expect(mocks.runTransformsForPiece).toHaveBeenCalledOnce()
-		expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
-		expect(ctx.logger.warn).not.toHaveBeenCalled()
-		expect(ctx.logger.info).not.toHaveBeenCalledWith('assets.generate complete')
-	})
+			expect(mocks.runTransformsForPiece).toHaveBeenCalledOnce()
+			expect(mocks.cleanupAllTransforms).toHaveBeenCalledOnce()
+			expect(ctx.logger.warn).not.toHaveBeenCalled()
+			expect(ctx.logger.info).not.toHaveBeenCalledWith('assets.generate complete')
+		}
+	)
 })

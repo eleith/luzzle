@@ -12,6 +12,7 @@
 		"strict": true,
 		"moduleResolution": "bundler",
 		"types": [
+			"node",
 			"unplugin-icons/types/svelte"
 		]
 	},

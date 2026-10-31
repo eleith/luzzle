@@ -82,7 +82,7 @@
 		"@sinclair/typebox": "0.34.49"
 	},
 	"peerDependencies": {
-		"svelte": "5.55.9"
+		"svelte": "5.57.3"
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",
@@ -90,7 +90,7 @@
 		"eslint-config-prettier": "catalog:",
 		"globals": "catalog:",
 		"prettier": "catalog:",
-		"svelte": "5.55.9",
+		"svelte": "5.57.3",
 		"typescript": "catalog:",
 		"typescript-eslint": "catalog:"
 	}

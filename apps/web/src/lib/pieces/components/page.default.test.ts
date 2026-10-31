@@ -19,10 +19,13 @@ let render: typeof Render
 beforeAll(async () => {
 	server = await createServer({
 		configFile: false,
+		cacheDir: fileURLToPath(
+			new URL('../../../../node_modules/.cache/catalog-default-page', import.meta.url)
+		),
 		root: fileURLToPath(new URL('../../../../', import.meta.url)),
 		server: { middlewareMode: true, hmr: false },
 		optimizeDeps: { noDiscovery: true },
-		plugins: [svelte({ configFile: false, hot: false })]
+		plugins: [svelte({ configFile: false })]
 	})
 	// Compile the actual shipped catalog and selected default, not a fixture or legacy adapter.
 	Page = (await server.ssrLoadModule('@luzzle/web.templates/pages')).getPage('default')

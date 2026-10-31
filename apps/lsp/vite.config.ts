@@ -4,6 +4,7 @@ export default defineConfig({
 	test: {
 		exclude: ['dist/**', 'node_modules/**'],
 		coverage: {
+			include: ['src/**/*.{js,ts}'],
 			thresholds: {
 				lines: 80,
 				branches: 80,

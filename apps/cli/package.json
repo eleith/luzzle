@@ -34,7 +34,7 @@
     "@types/node": "catalog:",
     "@types/yargs": "17.0.33",
     "@vitest/coverage-v8": "catalog:",
-    "@vitest/ui": "3.2.4",
+    "@vitest/ui": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-plugin-prettier": "5.2.1",

@@ -19,6 +19,9 @@ export default [
 			}
 		},
 		rules: {
+			// Adopt these newly recommended rules in the final lint-cleanup commit.
+			'svelte/no-navigation-without-resolve': 'off',
+			'svelte/prefer-svelte-reactivity': 'off',
 			'@typescript-eslint/no-unused-vars': [
 				'error',
 				{

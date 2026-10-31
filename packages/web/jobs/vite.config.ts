@@ -4,6 +4,7 @@ export default defineConfig({
 	test: {
 		exclude: ['dist/**', 'node_modules/**'],
 		coverage: {
+			include: ['src/**/*.{js,ts}'],
 			exclude: [
 				'eslint.config.js',
 				'dist/**',

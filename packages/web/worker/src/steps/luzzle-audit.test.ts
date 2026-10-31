@@ -23,6 +23,24 @@ const mocks = {
 	getDatabaseClient: vi.mocked(getDatabaseClient),
 }
 
+function mockCoreConstructors(mockPieces: Pick<Pieces, 'diff'>) {
+	const mockStorage = {} as StorageFileSystem
+	mocks.StorageFileSystem.mockImplementation(
+		class {
+			constructor() {
+				return mockStorage
+			}
+		} as typeof StorageFileSystem
+	)
+	mocks.Pieces.mockImplementation(
+		class {
+			constructor() {
+				return mockPieces
+			}
+		} as typeof Pieces
+	)
+}
+
 function makeCtx(): WorkerContext {
 	return {
 		config: {
@@ -58,9 +76,8 @@ describe('luzzleAuditStep', () => {
 			pieces: { added: ['a.md'], updated: ['b.md'], pruned: ['c.md'] },
 		}
 		const mockPieces = { diff: vi.fn().mockResolvedValue(diff) }
-		mocks.StorageFileSystem.mockReturnValue({} as never)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue({} as never)
-		mocks.Pieces.mockReturnValue(mockPieces as never)
 
 		const result = await luzzleAuditStep.run(undefined, ctx)
 
@@ -79,9 +96,8 @@ describe('luzzleAuditStep', () => {
 			schemas: { added: [], updated: [], pruned: [] },
 			pieces: { added: ['new.md'], updated: ['changed.md'], pruned: [] },
 		}
-		mocks.StorageFileSystem.mockReturnValue({} as never)
+		mockCoreConstructors({ diff: vi.fn().mockResolvedValue(sourceDiff) })
 		mocks.getDatabaseClient.mockReturnValue({} as never)
-		mocks.Pieces.mockReturnValue({ diff: vi.fn().mockResolvedValue(sourceDiff) } as never)
 		vi.mocked(getPendingPublication).mockResolvedValue({
 			pieces: [],
 			diff: { added: ['new.md'], updated: ['changed.md', 'failed.md'], pruned: ['gone.md'] },
@@ -108,9 +124,8 @@ describe('luzzleAuditStep', () => {
 			pieces: { added: [], updated: [], pruned: [] },
 		}
 		const mockPieces = { diff: vi.fn().mockResolvedValue(diff) }
-		mocks.StorageFileSystem.mockReturnValue({} as never)
+		mockCoreConstructors(mockPieces)
 		mocks.getDatabaseClient.mockReturnValue({} as never)
-		mocks.Pieces.mockReturnValue(mockPieces as never)
 
 		const result = await luzzleAuditStep.run(undefined, ctx)
 

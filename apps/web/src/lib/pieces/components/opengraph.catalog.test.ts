@@ -25,6 +25,9 @@ let page: {
 beforeAll(async () => {
 	server = await createServer({
 		configFile: false,
+		cacheDir: fileURLToPath(
+			new URL('../../../../node_modules/.cache/catalog-opengraph', import.meta.url)
+		),
 		root: fileURLToPath(new URL('../../../../', import.meta.url)),
 		server: { middlewareMode: true, hmr: false },
 		optimizeDeps: { noDiscovery: true },
@@ -39,7 +42,7 @@ beforeAll(async () => {
 					if (id === '\0og-test-page') return 'export const page = { data: {} }'
 				}
 			},
-			svelte({ configFile: false, hot: false })
+			svelte({ configFile: false })
 		],
 		resolve: { alias: { $lib: fileURLToPath(new URL('../../', import.meta.url)) } }
 	})

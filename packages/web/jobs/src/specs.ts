@@ -14,40 +14,50 @@ import type {
 	TestConnectivityResult,
 } from './types.js'
 
-export const jobProgressPurgeSpec = defineWorkflowSpec<
-	JobProgressPurgePayload,
-	JobProgressPurgeResult
->({
-	name: 'JobProgressPurge',
-	schedules: [
-		{
-			id: 'luzzle:job-progress-purge',
-			cron: '48 1 * * *',
-			timezone: 'UTC',
-			input: { retentionDays: 7 },
-		},
-	],
-})
+type WorkflowSpec<Input, Output> = ReturnType<typeof defineWorkflowSpec<Input, Output>>
 
-export const previewSpec = defineWorkflowSpec<PreviewPayload, PreviewResult>({
+export const jobProgressPurgeSpec: WorkflowSpec<JobProgressPurgePayload, JobProgressPurgeResult> =
+	defineWorkflowSpec<JobProgressPurgePayload, JobProgressPurgeResult>({
+		name: 'JobProgressPurge',
+		schedules: [
+			{
+				id: 'luzzle:job-progress-purge',
+				cron: '48 1 * * *',
+				timezone: 'UTC',
+				input: { retentionDays: 7 },
+			},
+		],
+	})
+
+export const previewSpec: WorkflowSpec<PreviewPayload, PreviewResult> = defineWorkflowSpec<
+	PreviewPayload,
+	PreviewResult
+>({
 	name: 'Preview',
 })
 
-export const publishSpec = defineWorkflowSpec<PublishPayload, PublishResult>({
+export const publishSpec: WorkflowSpec<PublishPayload, PublishResult> = defineWorkflowSpec<
+	PublishPayload,
+	PublishResult
+>({
 	name: 'Publish',
 })
 
-export const publishAuditSpec = defineWorkflowSpec<PublishAuditPayload, PiecesDiff>({
+export const publishAuditSpec: WorkflowSpec<PublishAuditPayload, PiecesDiff> = defineWorkflowSpec<
+	PublishAuditPayload,
+	PiecesDiff
+>({
 	name: 'PublishAudit',
 })
 
-export const unpublishSpec = defineWorkflowSpec<UnpublishPayload, UnpublishResult>({
+export const unpublishSpec: WorkflowSpec<UnpublishPayload, UnpublishResult> = defineWorkflowSpec<
+	UnpublishPayload,
+	UnpublishResult
+>({
 	name: 'Unpublish',
 })
 
-export const testConnectivitySpec = defineWorkflowSpec<
-	TestConnectivityPayload,
-	TestConnectivityResult
->({
-	name: 'TestConnectivity',
-})
+export const testConnectivitySpec: WorkflowSpec<TestConnectivityPayload, TestConnectivityResult> =
+	defineWorkflowSpec<TestConnectivityPayload, TestConnectivityResult>({
+		name: 'TestConnectivity',
+	})

@@ -26,10 +26,13 @@ let getPage: (name?: string) => Component<Props>
 beforeAll(async () => {
 	server = await createServer({
 		configFile: false,
+		cacheDir: fileURLToPath(
+			new URL('../../../../node_modules/.cache/catalog-pages', import.meta.url)
+		),
 		root: fileURLToPath(new URL('../../../../', import.meta.url)),
 		server: { middlewareMode: true, hmr: false },
 		optimizeDeps: { noDiscovery: true },
-		plugins: [svelte({ configFile: false, hot: false })]
+		plugins: [svelte({ configFile: false })]
 	})
 	getPage = (await server.ssrLoadModule('@luzzle/web.templates/pages')).getPage
 	render = (await server.ssrLoadModule('svelte/server')).render

@@ -5,6 +5,8 @@ export default defineConfig({
 		environment: "node",
 		coverage: {
 			provider: "v8",
+			include: ["*.js"],
+			exclude: ["eslint.config.js"],
 			thresholds: {
 				lines: 75,
 				branches: 75,
