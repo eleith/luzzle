@@ -6,7 +6,7 @@ import type { RunView } from './+page.server.js'
 
 const location = vi.hoisted(() => ({ url: 'http://localhost/admin/publish' }))
 
-vi.mock('$app/navigation', () => ({ invalidateAll: vi.fn() }))
+vi.mock('$app/navigation', () => ({ refreshAll: vi.fn() }))
 vi.mock('$app/state', () => ({
 	page: {
 		get url() {

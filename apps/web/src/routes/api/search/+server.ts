@@ -1,4 +1,4 @@
-import { json, type RequestHandler } from '@sveltejs/kit'
+import type { RequestHandler } from '@sveltejs/kit'
 import { db, sql } from '#lib/server/database/index.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 
@@ -36,7 +36,7 @@ export const GET: RequestHandler = async ({ request }) => {
 
 	const pieces = await hydrateWithAssets(webPieces)
 
-	return json({
+	return Response.json({
 		pieces
 	})
 }

@@ -26,7 +26,7 @@
 		}
 		localStorage.setItem('luzzle.admin', 'true')
 		try {
-			await goto(redirectTo, { invalidateAll: true })
+			await goto(redirectTo, { refreshAll: true })
 		} catch {
 			submitError = 'NavigationError'
 		} finally {

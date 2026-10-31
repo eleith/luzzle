@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit'
 import { compile } from '@luzzle/core'
 import { getPieces } from '#lib/server/pieces.js'
 import { remark } from 'remark'
@@ -14,7 +13,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		const { type, data, markdown } = await request.json()
 
 		if (!type || !data) {
-			return json(
+			return Response.json(
 				{
 					valid: false,
 					errors: [{ message: 'Missing type or data', source: 'frontmatter' }]
@@ -27,7 +26,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		const piece = await pieces.getPiece(type)
 
 		if (!piece) {
-			return json(
+			return Response.json(
 				{
 					valid: false,
 					errors: [{ message: `Piece type ${type} not found`, source: 'frontmatter' }]
@@ -86,10 +85,10 @@ export const POST: RequestHandler = async ({ request }) => {
 			errors
 		}
 
-		return json(response)
+		return Response.json(response)
 	} catch (e) {
 		const message = e instanceof Error ? e.message : String(e)
-		return json(
+		return Response.json(
 			{ valid: false, errors: [{ message, source: 'frontmatter' }] } satisfies ValidationResponse,
 			{ status: 500 }
 		)

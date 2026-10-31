@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit'
 import { config } from '#lib/server/config.js'
 import type { RequestEvent } from './$types'
 
@@ -13,5 +12,5 @@ export async function GET(event: RequestEvent) {
 		return new Response('Unauthorized', { status: 401, headers })
 	}
 
-	return json({ status: 'ok' }, { headers })
+	return Response.json({ status: 'ok' }, { headers })
 }

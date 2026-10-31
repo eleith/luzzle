@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { getOpenWorkflow, getOpenWorkflowBackend } from '#lib/server/workflow/index.js'
 import {
@@ -15,7 +14,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		return await withPublishAdmission(async () => {
 			const inFlight = await findInFlightPublishRun(getOpenWorkflowBackend())
 			if (inFlight) {
-				return json({ jobId: inFlight.id }, { status: 409 })
+				return Response.json({ jobId: inFlight.id }, { status: 409 })
 			}
 
 			const auditRunId = body?.auditRunId
@@ -24,10 +23,16 @@ export const POST: RequestHandler = async ({ request }) => {
 			if (selectionProvided) {
 				const requestedPaths = body.filePaths
 				if (!Array.isArray(requestedPaths)) {
-					return json({ message: 'filePaths must be an array of strings' }, { status: 400 })
+					return Response.json(
+						{ message: 'filePaths must be an array of strings' },
+						{ status: 400 }
+					)
 				}
 				if (!requestedPaths.every((filePath: unknown) => typeof filePath === 'string')) {
-					return json({ message: 'filePaths must be an array of strings' }, { status: 400 })
+					return Response.json(
+						{ message: 'filePaths must be an array of strings' },
+						{ status: 400 }
+					)
 				}
 				filePaths = requestedPaths
 			}
@@ -35,7 +40,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			if (auditRunId || selectionProvided) {
 				const guard = await validateAuditForPublish(getOpenWorkflowBackend(), auditRunId, filePaths)
 				if (!guard.ok) {
-					return json({ message: guard.reason }, { status: guard.status ?? 412 })
+					return Response.json({ message: guard.reason }, { status: guard.status ?? 412 })
 				}
 				filePaths = guard.filePaths
 			}
@@ -47,7 +52,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 			const openWorkflow = getOpenWorkflow()
 			const handle = await openWorkflow.runWorkflow(publishSpec, input)
-			return json({ jobId: handle.workflowRun.id })
+			return Response.json({ jobId: handle.workflowRun.id })
 		})
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error)

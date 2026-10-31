@@ -24,7 +24,7 @@
 		}
 		localStorage.removeItem('luzzle.admin')
 		try {
-			await goto('/', { invalidateAll: true })
+			await goto('/', { refreshAll: true })
 		} catch {
 			signOutError = 'navigation'
 		} finally {

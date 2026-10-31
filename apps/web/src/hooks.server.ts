@@ -1,4 +1,4 @@
-import { json, redirect } from '@sveltejs/kit'
+import { redirect } from '@sveltejs/kit'
 import { building } from '$app/env'
 import { config } from '#lib/server/config.js'
 import { createAuth, createAuthHandle } from '#lib/server/auth/index.js'
@@ -53,13 +53,13 @@ const guardHandle: Handle = async ({ event, resolve }) => {
 
 	if (!auth) {
 		if (shouldRedirect) throw redirect(302, '/')
-		return json({ message: 'Forbidden' }, { status: 403, headers })
+		return Response.json({ message: 'Forbidden' }, { status: 403, headers })
 	}
 
 	const session = await event.locals.auth()
 
 	if (session) return resolve(event)
-	if (!shouldRedirect) return json({ message: 'Unauthorized' }, { status: 401, headers })
+	if (!shouldRedirect) return Response.json({ message: 'Unauthorized' }, { status: 401, headers })
 
 	const params = new URLSearchParams({ redirectTo: event.url.pathname + event.url.search })
 

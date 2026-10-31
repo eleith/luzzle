@@ -47,6 +47,7 @@ test.each([credentialsAuth, oidcAuth])('configured auth requires a session', asy
 	expect(denied.headers.get('Cache-Control')).toBe('private, no-store')
 	const response = await GET(event({ user: { name: 'admin' } }))
 	expect(response.status).toBe(200)
+	expect(response.headers.get('Content-Type')).toBe('application/json')
 	expect(response.headers.get('Cache-Control')).toBe('private, no-store')
 	expect(await response.json()).toEqual({ status: 'ok' })
 })

@@ -16,7 +16,7 @@
 	import { Dialog } from 'bits-ui'
 	import { fade, fly } from 'svelte/transition'
 	import { navigating, page } from '$app/state'
-	import { beforeNavigate, goto, invalidateAll } from '$app/navigation'
+	import { beforeNavigate, goto, refreshAll } from '$app/navigation'
 	import { onMount, onDestroy, tick, untrack } from 'svelte'
 
 	let { data, form }: PageProps = $props()
@@ -175,7 +175,7 @@
 			if (result.state === 'failed' && result.reason === 'sign-in') return
 			if (navigating.to) return
 			try {
-				await invalidateAll()
+				await refreshAll()
 			} catch {
 				if (isCurrent()) unpublishRefreshFailed = true
 			}

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick, untrack } from 'svelte'
-	import { invalidateAll } from '$app/navigation'
+	import { refreshAll } from '$app/navigation'
 	import { page } from '$app/state'
 	import Button from '#lib/components/ui/Button.svelte'
 	import PublishTable from './PublishTable.svelte'
@@ -247,7 +247,7 @@
 			eventSource = null
 			let refreshed = true
 			try {
-				await invalidateAll()
+				await refreshAll()
 				await tick()
 			} catch (error) {
 				refreshed = false

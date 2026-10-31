@@ -1,4 +1,4 @@
-import { json, type RequestHandler } from '@sveltejs/kit'
+import type { RequestHandler } from '@sveltejs/kit'
 import { db, sql } from '#lib/server/database/index.js'
 import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
@@ -70,7 +70,7 @@ export const GET: RequestHandler = async ({ request }) => {
 				.execute()
 		)
 
-		return json({
+		return Response.json({
 			pieces
 		})
 	} else {
@@ -88,7 +88,7 @@ export const GET: RequestHandler = async ({ request }) => {
 			pieces.pop()
 		}
 
-		return json({
+		return Response.json({
 			pieces,
 			prevPage: pageNumber > 1 ? pageNumber - 1 : null,
 			nextPage: hasMore ? pageNumber + 1 : null
