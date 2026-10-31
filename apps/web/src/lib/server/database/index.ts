@@ -1,5 +1,5 @@
-import { building } from '$app/environment'
-import { config } from '$lib/server/config'
+import { building } from '$app/env'
+import { config } from '#lib/server/config.js'
 import { sql } from '@luzzle/core'
 import { runWebMigrations, createAppDb } from '@luzzle/web.db'
 import type { WebDatabase } from '@luzzle/web.db'

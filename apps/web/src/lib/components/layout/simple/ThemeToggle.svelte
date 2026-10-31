@@ -2,7 +2,7 @@
 	import SunIcon from 'virtual:icons/ph/sun-dim'
 	import MoonIcon from 'virtual:icons/ph/moon'
 	import FaderIcon from 'virtual:icons/ph/faders'
-	import themes, { type Theme } from '$lib/ui/styles/themes'
+	import themes, { type Theme } from '#lib/ui/styles/themes.js'
 	import { onMount } from 'svelte'
 
 	function getThemePreference(): Theme {

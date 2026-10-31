@@ -3,8 +3,8 @@ import {
 	GenerationValidationError,
 	type GenerationProgress
 } from '@luzzle/core'
-import type { ProgressPhase } from '$lib/components/progress'
-import type { GenerationEvent, GenerationResult } from '$lib/generation/types'
+import type { ProgressPhase } from '#lib/components/progress.js'
+import type { GenerationEvent, GenerationResult } from '#lib/generation/types.js'
 import { createEventStream } from '../sse'
 
 export function createGenerationStream(request: Request) {

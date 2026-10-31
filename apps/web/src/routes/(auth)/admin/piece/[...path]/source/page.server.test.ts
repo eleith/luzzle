@@ -10,18 +10,18 @@ import {
 	type PieceMarkdown,
 	type PieceFrontmatter
 } from '@luzzle/core'
-import { getPieces, getWebPiece } from '$lib/server/pieces'
-import { getStorage } from '$lib/server/storage'
+import { getPieces, getWebPiece } from '#lib/server/pieces.js'
+import { getStorage } from '#lib/server/storage.js'
 import { actions, load } from './+page.server'
-import { config } from '$lib/server/config'
-import { db } from '$lib/server/database'
+import { config } from '#lib/server/config.js'
+import { db } from '#lib/server/database/index.js'
 import type { WebPieces } from '@luzzle/web.db'
 
-vi.mock('$lib/server/pieces', () => ({ getPieces: vi.fn(), getWebPiece: vi.fn() }))
-vi.mock('$lib/server/storage', () => ({ getStorage: vi.fn() }))
-vi.mock('$lib/server/database', () => ({ db: {} }))
-vi.mock('$lib/server/config', async () => {
-	const { makeConfig } = await import('$lib/server/config.fixture')
+vi.mock('#lib/server/pieces.js', () => ({ getPieces: vi.fn(), getWebPiece: vi.fn() }))
+vi.mock('#lib/server/storage.js', () => ({ getStorage: vi.fn() }))
+vi.mock('#lib/server/database/index.js', () => ({ db: {} }))
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	return { config: makeConfig() }
 })
 vi.mock('@luzzle/core', async (importOriginal) => ({

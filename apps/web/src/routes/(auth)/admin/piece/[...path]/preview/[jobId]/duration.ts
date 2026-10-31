@@ -1,4 +1,4 @@
-import type { ProgressPhase } from '$lib/components/progress.js'
+import type { ProgressPhase } from '#lib/components/progress.js'
 
 export function formatDuration(ms: number): string {
 	if (ms < 0) return '0s'

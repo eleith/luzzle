@@ -44,7 +44,7 @@ beforeAll(async () => {
 			},
 			svelte({ configFile: false })
 		],
-		resolve: { alias: { $lib: fileURLToPath(new URL('../../', import.meta.url)) } }
+		resolve: { alias: { '#lib': fileURLToPath(new URL('../../', import.meta.url)) } }
 	})
 	Opengraph = (
 		await server.ssrLoadModule(fileURLToPath(new URL('./opengraph.svelte', import.meta.url)))

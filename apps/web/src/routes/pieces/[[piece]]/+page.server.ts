@@ -1,8 +1,8 @@
-import { db, sql } from '$lib/server/database'
+import { db, sql } from '#lib/server/database/index.js'
 import { error, redirect } from '@sveltejs/kit'
-import { isConfiguredPieceType } from '$lib/pieces/types.server.js'
+import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 import type { PageServerLoad } from './$types'
-import { hydrateWithAssets } from '$lib/pieces/assets.server'
+import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 
 const TAKE_DEFAULT = 50
 

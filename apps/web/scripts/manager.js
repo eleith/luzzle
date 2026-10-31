@@ -2,11 +2,11 @@ import { loadConfig } from '@luzzle/web.templates/config'
 import { spawn } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createServerEnvironment } from './runtime-environment.js'
 
 const PATHS = {
 	CONFIG: path.resolve('config.yaml'),
-	LOCAL_BUILD: path.resolve('build'),
 	LOG: path.resolve('data/build.log')
 }
 
@@ -90,7 +90,7 @@ class ExplorerManager {
 		const command = this.isDev ? 'pnpm' : 'node'
 		const args = this.isDev
 			? ['run', 'dev', '--', '--host']
-			: [path.join(PATHS.LOCAL_BUILD, 'index.js')]
+			: [fileURLToPath(new URL('./start-server.js', import.meta.url))]
 
 		this.serverProcess = spawn(command, args, spawnOptions)
 

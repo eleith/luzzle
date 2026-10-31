@@ -13,11 +13,11 @@ const { config, db, getRecentPieces, getRandomPieces, hydrateWithAssets, loadPag
 		hydrateWithAssets: vi.fn(),
 		loadPageMarkdown: vi.fn()
 	}))
-vi.mock('$lib/server/config', () => ({ config }))
-vi.mock('$lib/server/database', () => ({ db }))
-vi.mock('$lib/server/pieces', () => ({ getRecentPieces, getRandomPieces }))
-vi.mock('$lib/pieces/assets.server', () => ({ hydrateWithAssets }))
-vi.mock('$lib/server/pages.js', () => ({ loadPageMarkdown }))
+vi.mock('#lib/server/config.js', () => ({ config }))
+vi.mock('#lib/server/database/index.js', () => ({ db }))
+vi.mock('#lib/server/pieces.js', () => ({ getRecentPieces, getRandomPieces }))
+vi.mock('#lib/pieces/assets.server.js', () => ({ hydrateWithAssets }))
+vi.mock('#lib/server/pages.js', () => ({ loadPageMarkdown }))
 const recent = [{ id: 'one', title: 'Latest' }]
 const random = [{ id: 'two', title: 'Random' }]
 

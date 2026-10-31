@@ -1,11 +1,11 @@
 import { error } from '@sveltejs/kit'
 import type { LayoutServerLoad } from './$types'
-import { db } from '$lib/server/database'
-import { config } from '$lib/server/config'
-import { getWebPiece } from '$lib/server/pieces'
-import { hydrateWithAssets } from '$lib/pieces/assets.server'
-import { getMarkdownPublicationStatus } from '$lib/pieces/publication.server'
-import { getPieceLinks } from '$lib/pieces/navigation'
+import { db } from '#lib/server/database/index.js'
+import { config } from '#lib/server/config.js'
+import { getWebPiece } from '#lib/server/pieces.js'
+import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
+import { getMarkdownPublicationStatus } from '#lib/pieces/publication.server.js'
+import { getPieceLinks } from '#lib/pieces/navigation.js'
 
 export const load: LayoutServerLoad = async ({ params, url, route, locals }) => {
 	locals.inlineConfiguredStyles()

@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit'
-import { config } from '$lib/server/config'
-import { assemblePreview, type PreviewWorkerResult } from '$lib/pieces/preview/assemble.server.js'
-import { getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
+import { config } from '#lib/server/config.js'
+import { assemblePreview, type PreviewWorkerResult } from '#lib/pieces/preview/assemble.server.js'
+import { getOpenWorkflowBackend } from '#lib/server/workflow/index.js'
 import { getWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
-import { db, type JobProgressLogsRow, type JobProgressRow } from '$lib/server/database/index.js'
+import { db, type JobProgressLogsRow, type JobProgressRow } from '#lib/server/database/index.js'
 import type { LayoutServerLoad } from './$types'
 
 export const load: LayoutServerLoad = async ({ params }) => {

@@ -1,5 +1,5 @@
-import type { AppConfig } from '$lib/server/config'
-import { config } from '$lib/server/config'
+import type { AppConfig } from '#lib/server/config.js'
+import { config } from '#lib/server/config.js'
 import { buildHealthConfigSummary, type HealthConfigSummary } from '../health.js'
 import { probeStorage, probeWorker, probeOidcIssuer, type ProbeResult } from '../health/probes.js'
 

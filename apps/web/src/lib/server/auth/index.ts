@@ -1,8 +1,8 @@
+import type { Handle } from '@sveltejs/kit/hooks'
 import type { Config } from '@luzzle/web.config'
-import type { Handle } from '@sveltejs/kit'
 import { betterAuth, type BetterAuthOptions } from 'better-auth/minimal'
 import { isAuthPath } from 'better-auth/svelte-kit'
-import { buildAuthOptions } from './providers'
+import { buildAuthOptions } from './providers.js'
 
 const WEEK_SECONDS = 7 * 24 * 60 * 60
 

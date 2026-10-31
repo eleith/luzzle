@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { credentialsAuth, oidcAuth } from '$lib/server/config.fixture'
+import { credentialsAuth, oidcAuth } from '#lib/server/config.fixture.js'
 import { buildAuthOptions, verifyCredentials } from './providers'
 
 const origin = 'https://luzzle.example.test'

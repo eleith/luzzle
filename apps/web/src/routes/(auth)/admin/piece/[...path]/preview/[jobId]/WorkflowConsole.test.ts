@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
 import WorkflowConsole from './WorkflowConsole.svelte'
 import PreviewFacts from './PreviewFacts.svelte'
-import type { ProgressPhase, ProgressLog } from '$lib/components/progress.js'
+import type { ProgressPhase, ProgressLog } from '#lib/components/progress.js'
 
 const started = Date.parse('2026-01-02T03:04:00Z')
 const phases: ProgressPhase[] = [

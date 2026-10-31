@@ -1,5 +1,5 @@
-import { db } from '$lib/server/database'
-import { config } from '$lib/server/config'
+import { db } from '#lib/server/database/index.js'
+import { config } from '#lib/server/config.js'
 import { getPieceStats, getAssetStats, type PieceStats } from '../dashboardStats.js'
 import { getRecentlyEditedPieces } from '../pieces.js'
 import { getOpenWorkflowBackend } from '../workflow/index.js'

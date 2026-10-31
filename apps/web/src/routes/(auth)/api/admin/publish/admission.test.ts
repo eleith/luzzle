@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
+import { getOpenWorkflowBackend } from '#lib/server/workflow/index.js'
 import {
 	createWorkflowQueue,
 	closeWorkflowQueue,
@@ -8,13 +8,13 @@ import {
 	claimNextRun,
 	completeNextRun,
 	type WorkflowQueue
-} from '$lib/server/workflow/publish.fixture.js'
+} from '#lib/server/workflow/publish.fixture.js'
 import { POST as publish } from './+server.js'
 import { POST as audit } from './audit/+server.js'
 import { POST as unpublish } from '../unpublish/+server.js'
 
 const { runWorkflow } = vi.hoisted(() => ({ runWorkflow: vi.fn() }))
-vi.mock('$lib/server/workflow/index.js', () => ({
+vi.mock('#lib/server/workflow/index.js', () => ({
 	getOpenWorkflow: () => ({ runWorkflow }),
 	getOpenWorkflowBackend: vi.fn()
 }))

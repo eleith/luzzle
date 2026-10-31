@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
-	import Button from '$lib/components/ui/Button.svelte'
-	import { previewHref, publishedHref } from '$lib/pieces/navigation'
+	import Button from '#lib/components/ui/Button.svelte'
+	import { previewHref, publishedHref } from '#lib/pieces/navigation.js'
 
 	type Props = {
 		file: string

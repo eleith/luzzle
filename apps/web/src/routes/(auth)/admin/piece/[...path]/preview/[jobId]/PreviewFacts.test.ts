@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
 import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
-import type { ProgressPhase } from '$lib/components/progress.js'
+import type { ProgressPhase } from '#lib/components/progress.js'
 import PreviewFacts from './PreviewFacts.svelte'
 
 function facts(overrides: Partial<ComponentProps<typeof PreviewFacts>> = {}) {

@@ -1,11 +1,11 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { getOpenWorkflow, getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
+import { getOpenWorkflow, getOpenWorkflowBackend } from '#lib/server/workflow/index.js'
 import {
 	findInFlightPublishRun,
 	validateAuditForPublish,
 	withPublishAdmission
-} from '$lib/server/workflow/publish.js'
+} from '#lib/server/workflow/publish.js'
 import { publishSpec } from '@luzzle/web.jobs/specs'
 import type { PublishPayload } from '@luzzle/web.jobs'
 

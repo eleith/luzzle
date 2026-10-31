@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProgressPhase, ProgressLog } from '$lib/components/progress'
+	import type { ProgressPhase, ProgressLog } from '#lib/components/progress.js'
 	import WorkflowConsole from './WorkflowConsole.svelte'
 
 	interface Props {

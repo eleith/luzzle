@@ -1,10 +1,10 @@
 import { beforeEach, expect, test, vi } from 'vitest'
-import { config } from '$lib/server/config'
-import { credentialsAuth, oidcAuth } from '$lib/server/config.fixture'
+import { config } from '#lib/server/config.js'
+import { credentialsAuth, oidcAuth } from '#lib/server/config.fixture.js'
 import { load } from './+page.server'
 
-vi.mock('$lib/server/config', async () => {
-	const { makeConfig } = await import('$lib/server/config.fixture')
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	return { config: makeConfig() }
 })
 

@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit'
-import { config } from '$lib/server/config'
+import { config } from '#lib/server/config.js'
 import type { RequestEvent } from './$types'
 
 export async function GET(event: RequestEvent) {

@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { config } from '$lib/server/config'
+import { config } from '#lib/server/config.js'
 import { getPieceStats, getAssetStats } from '../dashboardStats.js'
 import { getRecentlyEditedPieces } from '../pieces.js'
 import { getOpenWorkflowBackend } from '../workflow/index.js'
@@ -7,10 +7,10 @@ import { getLatestWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
 import { makeConfig, credentialsAuth, oidcAuth } from '../config.fixture'
 import { loadDashboardPage } from './dashboard.js'
 
-vi.mock('$lib/server/database', () => ({ db: {} }))
+vi.mock('#lib/server/database/index.js', () => ({ db: {} }))
 
-vi.mock('$lib/server/config', async () => {
-	const { makeConfig, oidcAuth } = await import('../config.fixture')
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig, oidcAuth } = await import('../config.fixture.js')
 	const defaults = makeConfig()
 	return {
 		config: makeConfig({

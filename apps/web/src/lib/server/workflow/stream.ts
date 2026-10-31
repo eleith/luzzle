@@ -1,4 +1,4 @@
-import { db, type JobProgressRow } from '$lib/server/database/index.js'
+import { db, type JobProgressRow } from '#lib/server/database/index.js'
 import { createEventStream } from '../sse.js'
 import { WORKFLOW_POLL_INTERVAL_MS } from '../constants.js'
 import { getOpenWorkflowBackend } from './index.js'

@@ -25,7 +25,8 @@ beforeAll(async () => {
 		root: fileURLToPath(new URL('../../../../', import.meta.url)),
 		server: { middlewareMode: true, hmr: false },
 		optimizeDeps: { noDiscovery: true },
-		plugins: [svelte({ configFile: false })]
+		plugins: [svelte({ configFile: false })],
+		resolve: { alias: { '#lib': fileURLToPath(new URL('../../', import.meta.url)) } }
 	})
 	// Compile the actual shipped catalog and selected default, not a fixture or legacy adapter.
 	Page = (await server.ssrLoadModule('@luzzle/web.templates/pages')).getPage('default')

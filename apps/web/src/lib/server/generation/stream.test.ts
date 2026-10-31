@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { DEFAULT_GENERATION_LIMITS, GenerationValidationError } from '@luzzle/core'
-import type { GenerationEvent, GenerationResult } from '$lib/generation/types'
+import type { GenerationEvent, GenerationResult } from '#lib/generation/types.js'
 import { createGenerationStream } from './stream'
 
 const result: GenerationResult = { markdown: 'café\n🧩 日本語' }

@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest'
 import { groupAssetOutputs } from './assets'
-import { assetPathToUrl } from '$lib/pieces/assets'
+import { assetPathToUrl } from '#lib/pieces/assets.js'
 import { asset } from './fixtures/published'
 
 function groupAssets(assets: Parameters<typeof groupAssetOutputs>[0], base: string) {

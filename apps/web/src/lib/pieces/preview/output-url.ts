@@ -1,4 +1,4 @@
-import { encodeAssetPath } from '$lib/pieces/assets'
+import { encodeAssetPath } from '#lib/pieces/assets.js'
 
 export function previewOutputUrl(path: string, job: string): string | undefined {
 	const encoded = encodeAssetPath(path)

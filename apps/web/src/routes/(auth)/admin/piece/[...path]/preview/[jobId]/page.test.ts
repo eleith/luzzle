@@ -1,8 +1,11 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
-import { makeConfig } from '$lib/server/config.fixture'
-import { publishedPiece as rawPublishedPiece, asset } from '$lib/pieces/viewer/fixtures/published'
+import { makeConfig } from '#lib/server/config.fixture.js'
+import {
+	publishedPiece as rawPublishedPiece,
+	asset
+} from '#lib/pieces/viewer/fixtures/published.js'
 import Overview from './+page.svelte'
 import PreviewLayout from './+layout.svelte'
 

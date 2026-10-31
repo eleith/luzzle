@@ -22,7 +22,7 @@ vi.mock('$app/paths', () => ({
 }))
 // This synchronous stub establishes viewport markup and helper URLs,
 // not the actual static renderer or client prop updates.
-vi.mock('$lib/pieces/components/opengraph.svelte', async () => ({
+vi.mock('#lib/pieces/components/opengraph.svelte', async () => ({
 	default: (await import('./fixtures/Composition.svelte')).default
 }))
 

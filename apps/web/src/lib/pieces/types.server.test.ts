@@ -2,7 +2,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { getConfiguredPieceTypes, isConfiguredPieceType } from './types.server.js'
 
 const { config } = vi.hoisted(() => ({ config: { pieces: [] as Array<{ type: string }> } }))
-vi.mock('$lib/server/config', () => ({ config }))
+vi.mock('#lib/server/config.js', () => ({ config }))
 
 beforeEach(() => {
 	config.pieces = [{ type: 'arbitrary-kind' }, { type: '__proto__' }, { type: 'constructor' }]

@@ -11,7 +11,7 @@ const { selectFrom, query } = vi.hoisted(() => {
 	}
 	return { selectFrom: vi.fn(() => query), query }
 })
-vi.mock('$lib/server/config', () => ({
+vi.mock('#lib/server/config.js', () => ({
 	config: {
 		pieces: [
 			{
@@ -28,7 +28,7 @@ vi.mock('$lib/server/config', () => ({
 		]
 	}
 }))
-vi.mock('$lib/server/database', () => ({ db: { selectFrom } }))
+vi.mock('#lib/server/database/index.js', () => ({ db: { selectFrom } }))
 
 function makePiece(overrides: Partial<WebPieces> = {}) {
 	return {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProgressPhase } from '$lib/components/progress.js'
+	import type { ProgressPhase } from '#lib/components/progress.js'
 	import { formatDuration, previewDuration } from './duration.js'
 
 	interface Props {

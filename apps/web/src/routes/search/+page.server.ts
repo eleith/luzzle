@@ -1,7 +1,7 @@
-import { db, sql } from '$lib/server/database'
+import { db, sql } from '#lib/server/database/index.js'
 import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { hydrateWithAssets } from '$lib/pieces/assets.server'
+import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 
 const MAX_RESULTS = 20
 

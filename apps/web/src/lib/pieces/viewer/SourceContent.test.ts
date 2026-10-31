@@ -67,7 +67,7 @@ test('large source remains available in full rather than truncating the record',
 
 test('source view uses the editor token palette with a bounded keyboard-scrollable viewport', () => {
 	const file = readFileSync(new URL('./SourceContent.svelte', import.meta.url), 'utf8')
-	expect(file).toContain("import '$lib/components/editor/themes/token-colors.css'")
+	expect(file).toContain("import '#lib/components/editor/themes/token-colors.css'")
 	expect(file).toContain('class="syntax-highlight"')
 	expect(file).toContain('max-height: 24rem')
 	expect(file).toContain('overflow: auto')
@@ -79,7 +79,7 @@ test('source view uses the editor token palette with a bounded keyboard-scrollab
 
 test('highlighting is loaded after expansion/mount with a current-source guard and safe plain fallback', () => {
 	const file = readFileSync(new URL('./SourceContent.svelte', import.meta.url), 'utf8')
-	expect(file).toContain("import('./source-highlight')")
+	expect(file).toContain("import('./source-highlight.js')")
 	expect(file).toContain('highlighted?.source === source && highlighted.mime === value.mime')
 	expect(file).toContain('if (active) highlighted =')
 	expect(file).toContain('active = false')

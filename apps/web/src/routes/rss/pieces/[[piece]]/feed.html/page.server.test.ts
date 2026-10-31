@@ -10,9 +10,9 @@ const { config, getPiecesForFeed, loadPageMarkdown } = vi.hoisted(() => ({
 	getPiecesForFeed: vi.fn(),
 	loadPageMarkdown: vi.fn()
 }))
-vi.mock('$lib/server/config', () => ({ config }))
-vi.mock('$lib/feeds/utils', () => ({ getPiecesForFeed }))
-vi.mock('$lib/server/pages.js', () => ({ loadPageMarkdown }))
+vi.mock('#lib/server/config.js', () => ({ config }))
+vi.mock('#lib/feeds/utils.js', () => ({ getPiecesForFeed }))
+vi.mock('#lib/server/pages.js', () => ({ loadPageMarkdown }))
 const pieces = [{ id: 'note', type: 'field-notes', title: 'A note', assets: [] }]
 
 function event(type?: string) {

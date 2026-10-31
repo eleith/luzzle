@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit'
-import { db, sql } from '$lib/server/database'
+import { db, sql } from '#lib/server/database/index.js'
 import type { RequestHandler } from './$types'
 
 export const GET: RequestHandler = async ({ url }) => {

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/state'
 	import type { PageProps } from './$types'
-	import ContentBanner from '$lib/content/components/ContentBanner.svelte'
-	import PieceIcon from '$lib/pieces/components/icon.svelte'
-	import Markdown from '$lib/content/markdown/Markdown.svelte'
+	import ContentBanner from '#lib/content/components/ContentBanner.svelte'
+	import PieceIcon from '#lib/pieces/components/icon.svelte'
+	import Markdown from '#lib/content/markdown/Markdown.svelte'
 
 	let { data }: PageProps = $props()
 	const collections = $derived([

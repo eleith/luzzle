@@ -2,8 +2,11 @@ import { readFileSync } from 'node:fs'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
-import { MarkdownPublicationStatus } from '$lib/pieces/types'
-import { publishedPiece as rawPublishedPiece, asset } from '$lib/pieces/viewer/fixtures/published'
+import { MarkdownPublicationStatus } from '#lib/pieces/types.js'
+import {
+	publishedPiece as rawPublishedPiece,
+	asset
+} from '#lib/pieces/viewer/fixtures/published.js'
 import Overview from './+page.svelte'
 import PublishedTree from './fixtures/PublishedTree.svelte'
 
@@ -30,14 +33,14 @@ vi.mock('$app/paths', () => ({
 }))
 // These synchronous renderer stubs establish route props, URLs and landmarks;
 // they do not exercise the wrappers' static catalogs or client prop updates.
-vi.mock('$lib/pieces/components/page.svelte', async () => ({
-	default: (await import('$lib/pieces/viewer/fixtures/PageRenderer.svelte')).default
+vi.mock('#lib/pieces/components/page.svelte', async () => ({
+	default: (await import('#lib/pieces/viewer/fixtures/PageRenderer.svelte')).default
 }))
-vi.mock('$lib/pieces/components/icon.svelte', async () => ({
-	default: (await import('$lib/pieces/viewer/fixtures/IconRenderer.svelte')).default
+vi.mock('#lib/pieces/components/icon.svelte', async () => ({
+	default: (await import('#lib/pieces/viewer/fixtures/IconRenderer.svelte')).default
 }))
-vi.mock('$lib/pieces/components/opengraph.svelte', async () => ({
-	default: (await import('$lib/pieces/viewer/fixtures/Composition.svelte')).default
+vi.mock('#lib/pieces/components/opengraph.svelte', async () => ({
+	default: (await import('#lib/pieces/viewer/fixtures/Composition.svelte')).default
 }))
 function data(
 	status: MarkdownPublicationStatus = MarkdownPublicationStatus.MATCHING,

@@ -1,5 +1,5 @@
 import { validateApiKey } from '@luzzle/core'
-import type { AppConfig } from '$lib/server/config'
+import type { AppConfig } from '#lib/server/config.js'
 import type { ProbeResult } from './probes.js'
 
 export async function validateAiKeyIfConfigured(config: AppConfig): Promise<ProbeResult> {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { getWorkflowRun, getStepAttempts, type WorkflowRunRow } from '@luzzle/web.jobs'
-import type { AssembledPreview } from '$lib/pieces/preview/assemble.server.js'
-import { publishedPiece as rawPublishedPiece } from '$lib/pieces/viewer/fixtures/published.js'
+import type { AssembledPreview } from '#lib/pieces/preview/assemble.server.js'
+import { publishedPiece as rawPublishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
 import { load } from './+layout.server.js'
 
 const publishedPiece = {
@@ -22,17 +22,17 @@ const { assemblePreview, query } = vi.hoisted(() => ({
 		execute: vi.fn()
 	}
 }))
-vi.mock('$lib/server/database/index.js', () => ({ db: { selectFrom: () => query } }))
-vi.mock('$lib/server/config', async () => {
-	const { makeConfig } = await import('$lib/server/config.fixture.js')
+vi.mock('#lib/server/database/index.js', () => ({ db: { selectFrom: () => query } }))
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	return {
 		config: makeConfig({
 			pieces: [{ type: 'book', fields: { title: 'title', date_consumed: 'read_on' } }]
 		})
 	}
 })
-vi.mock('$lib/server/workflow/index.js', () => ({ getOpenWorkflowBackend: () => ({}) }))
-vi.mock('$lib/pieces/preview/assemble.server.js', () => ({ assemblePreview }))
+vi.mock('#lib/server/workflow/index.js', () => ({ getOpenWorkflowBackend: () => ({}) }))
+vi.mock('#lib/pieces/preview/assemble.server.js', () => ({ assemblePreview }))
 vi.mock('@luzzle/web.jobs', () => ({ getWorkflowRun: vi.fn(), getStepAttempts: vi.fn() }))
 
 const assembled: AssembledPreview = {

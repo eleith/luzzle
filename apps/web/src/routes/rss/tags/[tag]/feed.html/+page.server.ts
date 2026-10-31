@@ -1,6 +1,6 @@
-import { getPiecesForTagFeed } from '$lib/feeds/utils'
-import { loadPageMarkdown } from '$lib/server/pages.js'
-import { config } from '$lib/server/config'
+import { getPiecesForTagFeed } from '#lib/feeds/utils.js'
+import { loadPageMarkdown } from '#lib/server/pages.js'
+import { config } from '#lib/server/config.js'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ params }) => {

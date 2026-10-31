@@ -2,7 +2,7 @@
 	import './ViewerBar.css'
 	import { page } from '$app/state'
 	import ArrowLeftIcon from 'virtual:icons/ph/arrow-left'
-	import type { PieceLinks } from '$lib/pieces/navigation'
+	import type { PieceLinks } from '#lib/pieces/navigation.js'
 
 	let { links }: { links: PieceLinks } = $props()
 	const tabs = $derived(
@@ -22,7 +22,8 @@
 			<a
 				class="viewer-bar-link"
 				href={tab.href}
-				aria-current={page.url.pathname.replace(/\/$/, '') === new URL(tab.href, page.url).pathname
+				aria-current={page.url.pathname.replace(/\/$/, '') ===
+				new URL(tab.href, page.url.href).pathname
 					? 'page'
 					: undefined}>{tab.label}</a
 			>

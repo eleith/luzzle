@@ -5,7 +5,7 @@ import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
 import AssetOutputs from './AssetOutputs.svelte'
 import { asset } from './fixtures/published'
 import { groupAssetOutputs } from './assets'
-import { assetPathToUrl } from '$lib/pieces/assets'
+import { assetPathToUrl } from '#lib/pieces/assets.js'
 import { fileType, transformCaption, transformFamily } from './presentation'
 
 function groupAssets(assets: Parameters<typeof groupAssetOutputs>[0], base: string) {

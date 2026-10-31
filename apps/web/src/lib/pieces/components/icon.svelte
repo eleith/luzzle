@@ -2,7 +2,7 @@
 	import { getIcon } from '@luzzle/web.templates/icons'
 	import type { PublicWebPiece } from '@luzzle/web.pieces'
 	import type { PieceTemplateData } from '@luzzle/web.templates/pieces/fields'
-	import { getPieceHelpers } from '$lib/pieces/helpers.js'
+	import { getPieceHelpers } from '#lib/pieces/helpers.js'
 
 	type Props = {
 		piece: PublicWebPiece & { templates?: PieceTemplateData }

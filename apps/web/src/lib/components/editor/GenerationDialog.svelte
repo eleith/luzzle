@@ -3,9 +3,9 @@
 	import { onDestroy, tick, untrack } from 'svelte'
 	import { fade, fly } from 'svelte/transition'
 	import CircleNotch from 'virtual:icons/ph/circle-notch-bold'
-	import Button from '$lib/components/ui/Button.svelte'
+	import Button from '#lib/components/ui/Button.svelte'
 	import GenerationFields from './GenerationFields.svelte'
-	import { startGeneration } from '$lib/generation/client'
+	import { startGeneration } from '#lib/generation/client.js'
 
 	type Props = {
 		open: boolean

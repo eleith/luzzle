@@ -6,7 +6,7 @@ import {
 	type PieceFrontmatter,
 	type PieceFrontmatterSchema
 } from '@luzzle/core'
-import type { GenerationEvent } from '$lib/generation/types'
+import type { GenerationEvent } from '#lib/generation/types.js'
 import { POST } from '../../routes/(auth)/api/admin/generate/+server'
 
 const fixture = vi.hoisted(() => {
@@ -58,7 +58,7 @@ vi.mock('../../../../core/node_modules/@google/genai', async (original) => ({
 		}
 	})
 }))
-vi.mock('$lib/server/database', () => {
+vi.mock('#lib/server/database/index.js', () => {
 	throw new Error('Generation must not import the database')
 })
 vi.mock('@luzzle/web.jobs', () => {

@@ -8,7 +8,7 @@ import {
 	type PieceFrontmatter,
 	type PieceFrontmatterSchema
 } from '@luzzle/core'
-import type { GenerationResult } from '$lib/generation/types'
+import type { GenerationResult } from '#lib/generation/types.js'
 import { config } from './config'
 import { getPieces } from './pieces'
 import {

@@ -1,8 +1,8 @@
-import { db } from '$lib/server/database'
+import { db } from '#lib/server/database/index.js'
 import type { WebPieces, WebPiecesAsset } from '@luzzle/web.db'
 import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { mapPieceTemplates, type TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-import { config } from '$lib/server/config'
+import { config } from '#lib/server/config.js'
 
 type WebPiece = WebPieces & { assets: WebPiecesAsset[] }
 

@@ -1,4 +1,4 @@
-import { db } from '$lib/server/database'
+import { db } from '#lib/server/database/index.js'
 import { MarkdownPublicationStatus } from './types.js'
 
 export async function getMarkdownPublicationStatus(

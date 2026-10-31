@@ -1,6 +1,6 @@
 import path from 'node:path'
-import { config } from '$lib/server/config'
-import { loadMarkdownFile } from '$lib/content/markdown/files.server.js'
+import { config } from '#lib/server/config.js'
+import { loadMarkdownFile } from '#lib/content/markdown/files.server.js'
 
 export function loadPageMarkdown(file?: string): Promise<string | undefined> {
 	if (file === undefined) return Promise.resolve(undefined)

@@ -1,7 +1,7 @@
 <script>
-	import PiecePage from '$lib/pieces/components/page.svelte'
-	import PieceIcon from '$lib/pieces/components/icon.svelte'
-	import PieceOpengraph from '$lib/pieces/components/opengraph.svelte'
+	import PiecePage from '#lib/pieces/components/page.svelte'
+	import PieceIcon from '#lib/pieces/components/icon.svelte'
+	import PieceOpengraph from '#lib/pieces/components/opengraph.svelte'
 
 	let { data } = $props()
 </script>

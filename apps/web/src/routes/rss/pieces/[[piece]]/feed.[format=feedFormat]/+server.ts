@@ -1,10 +1,10 @@
 import type { PublicWebPiece } from '@luzzle/web.pieces'
 import type { RequestHandler } from './$types'
-import { config } from '$lib/server/config'
+import { config } from '#lib/server/config.js'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
-import { getPiecesForFeed } from '$lib/feeds/utils'
+import { getPiecesForFeed } from '#lib/feeds/utils.js'
 import { error } from '@sveltejs/kit'
-import { isConfiguredPieceType } from '$lib/pieces/types.server.js'
+import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 import YAML from 'yaml'
 
 type FeedRss = RssFeed<Date>

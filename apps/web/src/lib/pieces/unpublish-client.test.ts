@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { encodeEvent, SSE_HEADERS } from '$lib/server/sse'
+import { encodeEvent, SSE_HEADERS } from '#lib/server/sse.js'
 import { submitUnpublish } from './unpublish-client'
 
 const fetchMock = vi.fn<typeof fetch>()

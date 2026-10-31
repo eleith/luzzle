@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
-import type { ProgressPhase, ProgressLog } from '$lib/components/progress'
+import type { ProgressPhase, ProgressLog } from '#lib/components/progress.js'
 import PreviewLogs from './PreviewLogs.svelte'
 import PreviewFacts from './PreviewFacts.svelte'
 

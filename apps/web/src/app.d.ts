@@ -1,5 +1,5 @@
-import { type AppConfigPublic } from '$lib/server/config'
-import type { LuzzleSession as Session } from '$lib/server/auth'
+import { type AppConfigPublic } from '#lib/server/config.js'
+import type { LuzzleSession as Session } from '#lib/server/auth/index.js'
 
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces

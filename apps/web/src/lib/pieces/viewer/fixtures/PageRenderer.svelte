@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PublicWebPiece } from '@luzzle/web.pieces'
-	import { getPieceHelpers } from '$lib/pieces/helpers'
+	import { getPieceHelpers } from '#lib/pieces/helpers.js'
 	let { piece, tags }: { piece: PublicWebPiece; tags: Array<{ slug: string; tag: string }> } =
 		$props()
 	const helpers = $derived(getPieceHelpers(piece))

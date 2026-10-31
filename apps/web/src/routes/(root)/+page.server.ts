@@ -1,10 +1,10 @@
-import { db } from '$lib/server/database'
+import { db } from '#lib/server/database/index.js'
 import type { PageServerLoad } from './$types'
-import { hydrateWithAssets } from '$lib/pieces/assets.server'
-import { getRecentPieces, getRandomPieces } from '$lib/server/pieces'
-import { getConfiguredPieceTypes } from '$lib/pieces/types.server.js'
-import { config } from '$lib/server/config'
-import { loadPageMarkdown } from '$lib/server/pages.js'
+import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
+import { getRecentPieces, getRandomPieces } from '#lib/server/pieces.js'
+import { getConfiguredPieceTypes } from '#lib/pieces/types.server.js'
+import { config } from '#lib/server/config.js'
+import { loadPageMarkdown } from '#lib/server/pages.js'
 
 const HOME_PIECE_COUNT = 5
 

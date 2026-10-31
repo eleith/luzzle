@@ -6,7 +6,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
-import { createServerEnvironment } from '../../scripts/runtime-environment.js'
+import { resolveAuthUrl } from '../../scripts/runtime-environment.js'
 
 const exec = promisify(execFile)
 const webRoot = fileURLToPath(new URL('../../', import.meta.url))
@@ -59,17 +59,21 @@ let configFilename: string
 let origin: string
 let server: ChildProcess | undefined
 let serverErrors = ''
+let nativeShutdownObserved = false
 let originalBuild: Record<string, string>
 let originalMachineFeeds: MachineFeeds
 let originalPublicPiece: unknown
 let childEnv: NodeJS.ProcessEnv
 
+// Keep argv[1] as the built entry so importing the bootstrap does not trigger its CLI guard.
 const startServer = `
 import { once } from 'node:events';
 import { pathToFileURL } from 'node:url';
-const { server } = await import(pathToFileURL(process.argv[1]).href);
-if (!server.server.listening) await once(server.server, 'listening');
-process.send({ port: server.server.address().port });
+const { startServer } = await import(pathToFileURL(process.argv[2]).href);
+const server = await startServer(process.argv[1]);
+process.once('sveltekit:shutdown', () => process.send({ nativeShutdown: true }));
+if (!server.listening) await once(server, 'listening');
+process.send({ port: server.address().port });
 `
 
 const seedDatabase = `
@@ -176,7 +180,7 @@ async function buildHashes() {
 async function request(pathname = piecePath, accept = 'text/html', init: RequestInit = {}) {
 	const headers = new Headers(init.headers)
 	headers.set('accept', accept)
-	headers.set('x-forwarded-proto', 'http')
+	if (!headers.has('x-forwarded-proto')) headers.set('x-forwarded-proto', 'http')
 	return fetch(`${origin}${pathname}`, {
 		...init,
 		headers,
@@ -456,7 +460,9 @@ async function stopBuiltApp() {
 	server.kill('SIGTERM')
 	const timeout = setTimeout(() => server?.kill('SIGKILL'), 5000)
 	try {
-		await exited
+		const [, signal] = await exited
+		expect(signal).not.toBe('SIGKILL')
+		expect(nativeShutdownObserved).toBe(true)
 	} finally {
 		clearTimeout(timeout)
 	}
@@ -465,14 +471,19 @@ async function stopBuiltApp() {
 async function startBuiltApp(envOverrides: NodeJS.ProcessEnv = {}): Promise<string> {
 	const child = spawn(
 		process.execPath,
-		['--input-type=module', '-e', startServer, path.join(buildDirectory, 'index.js')],
+		[
+			'--input-type=module',
+			'-e',
+			startServer,
+			path.join(buildDirectory, 'index.js'),
+			path.join(webRoot, 'scripts/start-server.js')
+		],
 		{
 			cwd: directory,
 			env: {
 				...childEnv,
 				HOST: '127.0.0.1',
 				PORT: '0',
-				ORIGIN: '',
 				PROTOCOL_HEADER: 'x-forwarded-proto',
 				SOCKET_PATH: '',
 				LISTEN_PID: '0',
@@ -483,6 +494,12 @@ async function startBuiltApp(envOverrides: NodeJS.ProcessEnv = {}): Promise<stri
 		}
 	)
 	server = child
+	nativeShutdownObserved = false
+	child.on('message', (message) => {
+		if (typeof message === 'object' && message !== null && 'nativeShutdown' in message) {
+			nativeShutdownObserved = message.nativeShutdown === true
+		}
+	})
 	child.stderr?.on('data', (chunk) => {
 		serverErrors += String(chunk)
 	})
@@ -546,6 +563,7 @@ beforeAll(async () => {
 		configFilename,
 		JSON.stringify({
 			url: { app: '' },
+			network: { public: { host: '127.0.0.1' } },
 			paths: {
 				database: path.join(directory, 'luzzle.sqlite'),
 				static: path.join(directory, 'owner-static')
@@ -708,10 +726,10 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			},
 			{
 				label: 'B',
-				app: 'https://garden-b.example.test:9443/published-b/',
+				app: 'http://garden-b.example.test:9443/published-b/',
 				app_assets: 'https://app-assets-b.example.test/site/v2/',
 				luzzle_assets: 'https://piece-assets-b.example.test/archive/v2/',
-				requestOrigin: 'https://garden-b.example.test:9443',
+				requestOrigin: 'http://garden-b.example.test:9443',
 				environment: { ORIGIN: 'https://public-b.example.test:10443/' }
 			}
 		]
@@ -720,14 +738,22 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				const { label, app, app_assets, luzzle_assets, requestOrigin, environment } = deployment
 				const config = JSON.parse(original.toString('utf8'))
 				config.url = { app, app_assets, luzzle_assets }
-				const runtimeEnvironment = createServerEnvironment(config, environment)
-				expect(runtimeEnvironment.ORIGIN, label).toBe(requestOrigin)
+				expect(resolveAuthUrl(config.url.app), label).toBe(requestOrigin)
 				await stopBuiltApp()
 				await writeFile(configFilename, JSON.stringify(config))
-				origin = await startBuiltApp({ ORIGIN: runtimeEnvironment.ORIGIN })
+				origin = await startBuiltApp(environment)
 
-				// Only the local Node listener is contacted; CDN URLs are inspected, never fetched.
-				const response = await request()
+				// First request after the real bootstrap returns: incoming proxy values must not
+				// override YAML. Only the local listener is contacted; CDNs are never fetched.
+				const proxyProtocol = requestOrigin.startsWith('https:') ? 'http' : 'https'
+				const response = await request(piecePath, 'text/html', {
+					headers: {
+						host: 'incoming.example.test:12443',
+						'x-forwarded-host': 'forwarded.example.test:11443',
+						'x-forwarded-proto': proxyProtocol,
+						'x-forwarded-port': '10443'
+					}
+				})
 				expect(response.status, label).toBe(200)
 				const html = await response.text()
 				expectInlineConfiguredCss(html)
@@ -760,6 +786,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				expect(api.headers.has('content-security-policy')).toBe(false)
 				expect(api.headers.has('content-security-policy-report-only')).toBe(false)
 				expect((await api.json()).pieces).toEqual([originalPublicPiece])
+				expect(await buildHashes(), label).toEqual(originalBuild)
 			}
 		} finally {
 			await stopBuiltApp()
@@ -772,14 +799,13 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		const original = await readFile(configFilename)
 		const config = JSON.parse(original.toString('utf8'))
 		config.url.app = 'https://configured-csrf.example.test:8443/garden/'
-		const requestOrigin = new URL(config.url.app).origin
+		const requestOrigin = resolveAuthUrl(config.url.app)
 		const ignoredOrigin = 'https://request-csrf.example.test:9443'
-		const runtimeEnvironment = createServerEnvironment(config, { ORIGIN: ignoredOrigin })
-		expect(runtimeEnvironment.ORIGIN).toBe(requestOrigin)
+		expect(requestOrigin).toBe('https://configured-csrf.example.test:8443')
 		try {
 			await stopBuiltApp()
 			await writeFile(configFilename, JSON.stringify(config))
-			origin = await startBuiltApp({ ORIGIN: runtimeEnvironment.ORIGIN })
+			origin = await startBuiltApp({ ORIGIN: ignoredOrigin })
 			const get = await request('/api/pieces?type=cutover-kind', 'application/json')
 			expect(get.status).toBe(200)
 			expect((await get.json()).pieces).toEqual([originalPublicPiece])
@@ -804,11 +830,20 @@ describe('stock pieces and configured site sections through production HTTP', ()
 					requestOrigin: ignoredOrigin,
 					status: 403
 				},
-				{ label: 'listener is not the canonical origin', requestOrigin: origin, status: 403 }
+				{ label: 'listener is not the canonical origin', requestOrigin: origin, status: 403 },
+				{
+					label: 'browser origin matching spoofed forwarded host is not trusted',
+					requestOrigin: 'http://spoofed.example.test:11443',
+					status: 403
+				}
 			]
 			for (const entry of cases) {
 				const headers: Record<string, string> = {
-					'content-type': 'application/x-www-form-urlencoded'
+					'content-type': 'application/x-www-form-urlencoded',
+					host: 'incoming.example.test:12443',
+					'x-forwarded-host': 'spoofed.example.test:11443',
+					'x-forwarded-proto': 'http',
+					'x-forwarded-port': '10443'
 				}
 				if (entry.requestOrigin !== undefined) headers.origin = entry.requestOrigin
 				const response = await request('/api/pieces', 'application/json', {
@@ -850,10 +885,14 @@ describe('stock pieces and configured site sections through production HTTP', ()
 	})
 
 	test('also gates unsafe PUT, PATCH and DELETE forms before GET-only endpoint dispatch', async () => {
-		const requestOrigin = 'https://method-csrf.example.test:9443'
+		const original = await readFile(configFilename)
+		const config = JSON.parse(original.toString('utf8'))
+		config.url.app = 'https://method-csrf.example.test:9443/garden/'
+		const requestOrigin = resolveAuthUrl(config.url.app)
 		try {
 			await stopBuiltApp()
-			origin = await startBuiltApp({ ORIGIN: requestOrigin })
+			await writeFile(configFilename, JSON.stringify(config))
+			origin = await startBuiltApp({ ORIGIN: 'http://ignored.example.test:3000' })
 			for (const method of ['PUT', 'PATCH', 'DELETE']) {
 				for (const entry of [
 					{ label: 'same origin reaches method dispatch', origin: requestOrigin, status: 405 },
@@ -861,14 +900,29 @@ describe('stock pieces and configured site sections through production HTTP', ()
 						label: 'cross origin rejected before handle',
 						origin: 'https://cross.example.test',
 						status: 403
+					},
+					{ label: 'missing origin', origin: undefined, status: 403 },
+					{ label: 'literal null origin', origin: 'null', status: 403 },
+					{
+						label: 'browser origin matching spoofed forwarded host is not trusted',
+						origin: 'http://spoofed.example.test:11443',
+						status: 403
 					}
 				]) {
+					const headers: Record<string, string> = {
+						'content-type': 'application/x-www-form-urlencoded',
+						host: 'incoming.example.test:12443',
+						'x-forwarded-host': 'spoofed.example.test:11443',
+						'x-forwarded-port': '10443'
+					}
+					if (entry.origin !== undefined) headers.origin = entry.origin
 					const response = await request('/api/pieces', 'application/json', {
 						method,
-						headers: { origin: entry.origin, 'content-type': 'application/x-www-form-urlencoded' },
+						headers,
 						body: 'title=not-a-write'
 					})
 					expect(response.status, `${method}: ${entry.label}`).toBe(entry.status)
+					expect(response.headers.has('content-security-policy')).toBe(false)
 					if (entry.status === 403)
 						expect(await response.json()).toEqual({
 							message: `Cross-site ${method} form submissions are forbidden`
@@ -877,6 +931,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			}
 		} finally {
 			await stopBuiltApp()
+			await writeFile(configFilename, original)
 			origin = await startBuiltApp()
 		}
 	})
@@ -1147,6 +1202,8 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		const failedHome = await request('/')
 		expect(failedHome.status).toBe(500)
 		const html = await failedHome.text()
+		expect(html).toContain('error 500')
+		expect(html).not.toContain('sections/missing.md')
 		expect(html).not.toContain(directory)
 		expect(expectInlineConfiguredCss(html)).toContain('--color-primary: #135790;')
 	})
@@ -1156,7 +1213,9 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		await writeFile(path.join(directory, 'sections/neighbor.png'), 'not a public asset')
 		await restartWithPages({ feed: { about: 'sections/image.md' } })
 		expect(await pageHtml('/rss/pieces/feed.html')).toContain('src="neighbor.png"')
-		expect((await request('/rss/pieces/neighbor.png')).status).toBe(404)
+		const missing = await request('/rss/pieces/neighbor.png')
+		expect(missing.status).toBe(404)
+		expect(await missing.text()).toContain('page not found')
 	})
 
 	test('site section settings preserve machine-feed metadata and item data', async () => {

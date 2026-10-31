@@ -1,43 +1,52 @@
 <script lang="ts">
-	import { deserialize, enhance } from '$app/forms'
-	import type { SubmitFunction } from '@sveltejs/kit'
-	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte'
+	import { deserialize, enhance, type SubmitFunction } from '$app/forms'
+	import MarkdownEditor from '#lib/components/editor/MarkdownEditor.svelte'
 	import {
 		reconcileSave,
 		reconcileSourceRefresh,
 		type SaveSnapshot
-	} from '$lib/components/editor/save-state'
-	import Button from '$lib/components/ui/Button.svelte'
-	import PieceActions from '$lib/components/editor/PieceActions.svelte'
-	import PieceToolbar from '$lib/components/editor/PieceToolbar.svelte'
-	import { submitUnpublish, type UnpublishOutcome } from '$lib/pieces/unpublish-client'
-	import { editorHref, publishHref } from '$lib/pieces/navigation'
-	import GenerationDialog from '$lib/components/editor/GenerationDialog.svelte'
+	} from '#lib/components/editor/save-state.js'
+	import Button from '#lib/components/ui/Button.svelte'
+	import PieceActions from '#lib/components/editor/PieceActions.svelte'
+	import PieceToolbar from '#lib/components/editor/PieceToolbar.svelte'
+	import { submitUnpublish, type UnpublishOutcome } from '#lib/pieces/unpublish-client.js'
+	import { editorHref, publishHref } from '#lib/pieces/navigation.js'
+	import GenerationDialog from '#lib/components/editor/GenerationDialog.svelte'
 	import type { PageProps } from './$types'
 	import { Dialog } from 'bits-ui'
 	import { fade, fly } from 'svelte/transition'
-
 	import { navigating, page } from '$app/state'
-	import { beforeNavigate, goto, invalidateAll, replaceState } from '$app/navigation'
+	import { beforeNavigate, goto, invalidateAll } from '$app/navigation'
 	import { onMount, onDestroy, tick, untrack } from 'svelte'
 
 	let { data, form }: PageProps = $props()
 	const saveFormId = $props.id()
-
 	let targetUrl = $state<string | null>(null)
 	let showWarningDialog = $state(false)
 	let bypassWarning = $state(false)
 	let isSaving = $state(false)
-	let editorErrorReason = $state<'sign-in' | 'save' | 'refresh' | null>(null)
+	let editorErrorReason = $state<
+		| 'sign-in'
+		| 'save'
+		| 'refresh'
+		| 'navigation'
+		| 'generation-url'
+		| 'publish'
+		| 'delete-refresh'
+		| null
+	>(null)
 	let editorErrorDetail = $state('')
 	let disposed = false
 	let activeUnpublish: AbortController | undefined
+
 	onDestroy(() => {
 		disposed = true
 		activeUnpublish?.abort()
 	})
 
 	beforeNavigate((navigation) => {
+		if (navigation.shallow && navigation.type === 'goto') return
+
 		if (isDirty && !bypassWarning && navigation.type !== 'form' && navigation.to) {
 			navigation.cancel()
 			targetUrl = navigation.to.url.pathname + navigation.to.url.search + navigation.to.url.hash
@@ -45,11 +54,20 @@
 		}
 	})
 
-	function confirmDiscard() {
+	async function confirmDiscard() {
+		if (!targetUrl) return
+		const file = data.file
 		bypassWarning = true
 		showWarningDialog = false
-		if (targetUrl) {
-			goto(targetUrl)
+		try {
+			await goto(targetUrl)
+		} catch {
+			if (!disposed && data.file === file) {
+				editorErrorReason = 'navigation'
+				editorErrorDetail = ''
+			}
+		} finally {
+			if (!disposed && data.file === file) bypassWarning = false
 		}
 	}
 
@@ -59,7 +77,9 @@
 				e.preventDefault()
 			}
 		}
+
 		window.addEventListener('beforeunload', handleUnload)
+
 		return () => window.removeEventListener('beforeunload', handleUnload)
 	})
 
@@ -97,14 +117,19 @@
 			if (!isCurrentSave()) return
 			try {
 				if (result.type === 'redirect') {
-					editorErrorReason = 'sign-in'
+					const destination = new URL(result.location, page.url.href)
+					if (destination.origin === page.url.origin && destination.pathname === '/signin') {
+						editorErrorReason = 'sign-in'
+					} else {
+						await update()
+					}
 					return
 				}
 				if (result.type === 'error') {
 					editorErrorReason = 'save'
 					return
 				}
-				await update({ reset: false })
+				await update({ reset: false, navigate: false })
 				await tick()
 				if (!isCurrentSave()) return
 				const saveResult =
@@ -131,7 +156,6 @@
 	const unpublishDisabled = $derived(
 		isDirty || isSaving || isUnpublishing || !data.hasPublishedVersion
 	)
-
 	const sourceUrl = $derived(editorHref(data.file))
 
 	async function handleUnpublish() {
@@ -167,9 +191,12 @@
 		const refreshed = { file: data.file, content: data.rawContent ?? '' }
 		untrack(() => {
 			const changedFile = refreshed.file !== loadedSource.file
+
 			rawContent = reconcileSourceRefresh(rawContent, loadedSource, refreshed, !!activeSave)
 			loadedSource = refreshed
+
 			if (!changedFile) return
+
 			activeSave = undefined
 			isSaving = false
 			activeUnpublish?.abort()
@@ -182,6 +209,7 @@
 	})
 
 	let generateDialogOpen = $state(false)
+
 	$effect(() => {
 		if (data.file) {
 			generateDialogOpen = false
@@ -190,12 +218,20 @@
 		}
 	})
 	$effect(() => {
-		if (page.url.searchParams.get('generate') === '1') {
+		const currentUrl = page.shallow?.url ?? page.url
+		if (currentUrl.searchParams.get('generate') !== '1') return
+		untrack(() => {
+			const file = data.file
 			generateDialogOpen = data.canGenerate
-			const url = new URL(page.url)
+			const url = new URL(currentUrl.href)
 			url.searchParams.delete('generate')
-			replaceState(url, page.state)
-		}
+			void goto(url, { shallow: true, replace: true, state: page.state }).catch(() => {
+				if (!disposed && data.file === file) {
+					editorErrorReason = 'generation-url'
+					editorErrorDetail = ''
+				}
+			})
+		})
 	})
 
 	let attachDialogOpen = $state(false)
@@ -208,6 +244,7 @@
 	let uploadErrorReason = $state<
 		'file-required' | 'url-required' | 'filename-required' | 'failed' | null
 	>(null)
+
 	let uploadErrorDetail = $state<string | null>(null)
 	let fileInputRef = $state<HTMLInputElement>()
 
@@ -301,12 +338,9 @@
 		}
 
 		try {
-			const response = await fetch(`${sourceUrl}?/attach`, {
-				method: 'POST',
-				body: formData
-			})
-
+			const response = await fetch(`${sourceUrl}?/attach`, { method: 'POST', body: formData })
 			const result = deserialize(await response.text())
+
 			if (result.type === 'success' || result.type === 'failure') {
 				const resData = result.data as { error?: { message?: string }; path?: string } | undefined
 				if (result.type === 'success' && resData?.path) {
@@ -513,10 +547,21 @@
 		method="post"
 		action="{sourceUrl}?/delete"
 		use:enhance={() => {
+			const file = data.file
 			bypassWarning = true
 			return async ({ update }) => {
+				if (disposed || data.file !== file) return
 				dialog.close()
-				await update()
+				try {
+					await update()
+				} catch {
+					if (!disposed && data.file === file) {
+						editorErrorReason = 'delete-refresh'
+						editorErrorDetail = ''
+					}
+				} finally {
+					if (!disposed && data.file === file) bypassWarning = false
+				}
 			}
 		}}
 	>
@@ -551,6 +596,7 @@
 						</Dialog.Description>
 						<div class="dialog-actions">
 							<Button variant="outline" onclick={() => (showWarningDialog = false)}>stay</Button>
+
 							<Button variant="error" onclick={confirmDiscard}>discard</Button>
 						</div>
 					</div>
@@ -573,6 +619,14 @@
 				Unable to save. Your edits are still here. Please try again.
 			{:else if editorErrorReason === 'refresh'}
 				Unable to refresh after saving. Your edits are still here. Please try again.
+			{:else if editorErrorReason === 'navigation'}
+				Unable to leave this page. Your edits are still here.
+			{:else if editorErrorReason === 'generation-url'}
+				Unable to clear the generation link from the URL.
+			{:else if editorErrorReason === 'publish'}
+				Unable to open publishing. Your edits are still here.
+			{:else if editorErrorReason === 'delete-refresh'}
+				Unable to finish deleting this piece. Please reload to confirm its status.
 			{:else}
 				{editorErrorDetail || form?.error?.message}
 			{/if}
@@ -628,7 +682,15 @@
 							hasPublishedVersion={data.hasPublishedVersion}
 							publishDisabled={isDirty || isSaving}
 							{unpublishDisabled}
-							onPublish={() => goto(publishHref(data.file))}
+							onPublish={() => {
+								const file = data.file
+								void goto(publishHref(file)).catch(() => {
+									if (!disposed && data.file === file) {
+										editorErrorReason = 'publish'
+										editorErrorDetail = ''
+									}
+								})
+							}}
 							onUnpublish={handleUnpublish}
 							onDelete={() => dialog.showModal()}
 							onGenerate={() => {

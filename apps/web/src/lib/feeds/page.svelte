@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { FeedData } from './types.js'
 	import FeedList from './list.svelte'
-	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
-	import SeoHead from '$lib/components/layout/simple/SeoHead.svelte'
-	import Markdown from '$lib/content/markdown/Markdown.svelte'
+	import NavBanner from '#lib/components/layout/simple/NavBanner.svelte'
+	import SeoHead from '#lib/components/layout/simple/SeoHead.svelte'
+	import Markdown from '#lib/content/markdown/Markdown.svelte'
 	import Subscription from './subscription.svelte'
 
 	type Props = FeedData & { about?: string; links: boolean }

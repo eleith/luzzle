@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SeoHead from '$lib/components/layout/simple/SeoHead.svelte'
+	import SeoHead from '#lib/components/layout/simple/SeoHead.svelte'
 	import CodeBlockIcon from 'virtual:icons/ph/code-block'
 	import { page } from '$app/state'
 	import { onMount } from 'svelte'

@@ -18,6 +18,13 @@ test.each([
 	expect(volumes.some((volume) => volume.startsWith('./demo/config.yaml:'))).toBe(false)
 })
 
+test('development mounts the Vite configuration without the retired Svelte config', async () => {
+	const compose = parse(await readFile(path.join(web, 'docker-compose.dev.yml'), 'utf8'))
+	const volumes: string[] = compose.services['luzzle-dev-web'].volumes
+	expect(volumes).toContain('./vite.config.ts:/m/apps/web/vite.config.ts')
+	expect(volumes.some((volume) => volume.startsWith('./svelte.config.js:'))).toBe(false)
+})
+
 test('the demo configuration is a regular file in its mounted directory', async () => {
 	const canonical = path.join(web, 'demo/config/config.yaml')
 	expect((await lstat(canonical)).isFile()).toBe(true)

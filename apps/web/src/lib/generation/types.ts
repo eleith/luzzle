@@ -1,4 +1,4 @@
-import type { ProgressPhase } from '$lib/components/progress'
+import type { ProgressPhase } from '#lib/components/progress.js'
 
 export type GenerationResult = { markdown: string }
 

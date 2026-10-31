@@ -1,15 +1,15 @@
 <script lang="ts">
-	import { onMount } from 'svelte'
-	import { enhance } from '$app/forms'
+	import { onDestroy, onMount } from 'svelte'
+	import { enhance, type SubmitFunction } from '$app/forms'
 	import { Dialog } from 'bits-ui'
 	import { fade, fly } from 'svelte/transition'
 	import { beforeNavigate, goto } from '$app/navigation'
-	import Button from '$lib/components/ui/Button.svelte'
+	import Button from '#lib/components/ui/Button.svelte'
 	import type { PageProps } from './$types'
 	import { EditorView } from 'codemirror'
 	import { EditorState, Compartment } from '@codemirror/state'
-	import { configuredTheme } from '$lib/components/editor/themes/configured'
-	import { editorKeybindings } from '$lib/components/editor/keybindings'
+	import { configuredTheme } from '#lib/components/editor/themes/configured.js'
+	import { editorKeybindings } from '#lib/components/editor/keybindings.js'
 	import {
 		highlightSpecialChars,
 		drawSelection,
@@ -17,34 +17,41 @@
 		highlightActiveLine,
 		keymap
 	} from '@codemirror/view'
+
 	import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
 	import { indentWithTab } from '@codemirror/commands'
 	import { bracketMatching } from '@codemirror/language'
 	import { languages } from '@codemirror/language-data'
 
 	let { data }: PageProps = $props()
-
 	let editorContainer = $state<HTMLDivElement>()
 	let view = $state<EditorView | null>(null)
 	let editorContent = $state(data.content || '')
 	let isSaving = $state(false)
 	let saveError = $state<string | null>(null)
+	let saveErrorReason = $state<
+		'navigation' | 'delete' | 'delete-refresh' | 'sign-in' | 'save' | 'refresh' | null
+	>(null)
 	let saveSuccess = $state(false)
-
 	const isEditable = $derived(
 		data.exists && !data.isBinary && data.content !== null && data.content !== undefined
 	)
 	const hasChanges = $derived(editorContent !== data.content)
-	const isDirty = $derived(isEditable && hasChanges && !isSaving)
-
+	const isDirty = $derived(isEditable && hasChanges)
 	let targetUrl = $state<string | null>(null)
 	let showWarningDialog = $state(false)
 	let bypassWarning = $state(false)
-
 	let showDeleteDialog = $state(false)
 	let isDeleting = $state(false)
+	let disposed = false
+
+	onDestroy(() => {
+		disposed = true
+	})
 
 	beforeNavigate((navigation) => {
+		if (navigation.shallow && navigation.type === 'goto') return
+
 		if (isDirty && !bypassWarning && navigation.type !== 'form' && navigation.to) {
 			navigation.cancel()
 			targetUrl = navigation.to.url.pathname + navigation.to.url.search + navigation.to.url.hash
@@ -52,11 +59,91 @@
 		}
 	})
 
-	function confirmDiscard() {
+	async function confirmDiscard() {
+		if (!targetUrl) return
+		const file = data.path
 		bypassWarning = true
 		showWarningDialog = false
-		if (targetUrl) {
-			goto(targetUrl)
+		try {
+			await goto(targetUrl)
+		} catch {
+			if (!disposed && data.path === file) {
+				saveErrorReason = 'navigation'
+				saveError = null
+			}
+		} finally {
+			if (!disposed) bypassWarning = false
+		}
+	}
+
+	const enhanceSave: SubmitFunction = ({ cancel }) => {
+		if (isSaving) {
+			cancel()
+			return
+		}
+		const file = data.path
+		isSaving = true
+		saveError = null
+		saveErrorReason = null
+		saveSuccess = false
+		return async ({ result, update }) => {
+			if (disposed) return
+			try {
+				if (data.path !== file) return
+				if (result.type === 'success') {
+					await update({ reset: false, navigate: false })
+					if (!disposed && data.path === file) saveSuccess = true
+				} else if (result.type === 'failure') {
+					const failure = result.data as { error?: { message?: string } } | undefined
+					saveError = failure?.error?.message || 'Failed to save'
+				} else if (result.type === 'redirect') {
+					const destination = new URL(result.location, window.location.href)
+					if (destination.origin === window.location.origin && destination.pathname === '/signin') {
+						saveErrorReason = 'sign-in'
+					} else {
+						await update()
+					}
+				} else {
+					saveErrorReason = 'save'
+				}
+			} catch {
+				if (!disposed && data.path === file) {
+					saveErrorReason = 'refresh'
+				}
+			} finally {
+				if (!disposed) isSaving = false
+			}
+		}
+	}
+
+	const enhanceDelete: SubmitFunction = () => {
+		const file = data.path
+		isDeleting = true
+		bypassWarning = true
+		showDeleteDialog = false
+		saveError = null
+		saveErrorReason = null
+		return async ({ result, update }) => {
+			if (disposed) return
+			try {
+				if (data.path !== file) return
+				if (result.type === 'failure') {
+					const failure = result.data as { error?: { message?: string } } | undefined
+					saveError = failure?.error?.message || null
+					saveErrorReason = 'delete'
+				}
+				await update()
+			} catch {
+				if (!disposed && data.path === file) {
+					saveErrorReason = 'delete-refresh'
+					saveError = null
+				}
+			} finally {
+				if (!disposed) {
+					isDeleting = false
+					bypassWarning = false
+				}
+			}
 		}
 	}
 
@@ -72,6 +159,7 @@
 				l.extensions.includes(ext) ||
 				(l.filename && l.filename.test(data.filename))
 		)
+
 		if (langDesc) {
 			initialLang = langDesc.name
 		}
@@ -95,12 +183,10 @@
 
 	function updateTheme() {
 		if (!view) return
+
 		const { isDark } = readTheme()
 		const themeExtension = configuredTheme(isDark ? 'dark' : 'light')
-
-		view.dispatch({
-			effects: themeConfig.reconfigure(themeExtension)
-		})
+		view.dispatch({ effects: themeConfig.reconfigure(themeExtension) })
 	}
 
 	$effect(() => {
@@ -176,6 +262,7 @@
 		})
 
 		const themeObserver = new MutationObserver(() => updateTheme())
+
 		themeObserver.observe(document.documentElement, {
 			attributes: true,
 			attributeFilter: ['data-theme']
@@ -186,6 +273,7 @@
 				e.preventDefault()
 			}
 		}
+
 		window.addEventListener('beforeunload', handleUnload)
 
 		return () => {
@@ -229,6 +317,7 @@
 						</Dialog.Description>
 						<div class="dialog-actions">
 							<Button variant="outline" onclick={() => (showWarningDialog = false)}>stay</Button>
+
 							<Button variant="error" onclick={confirmDiscard}>discard</Button>
 						</div>
 					</div>
@@ -252,23 +341,18 @@
 				{#if open}
 					<div class="dialogContent" {...props} transition:fly={{ y: 100, duration: 250 }}>
 						<Dialog.Description class="dialogDescription">
-							Are you sure you want to delete this asset? <br />
+							Are you sure you want to delete this asset?
+							<br />
 							<br />
 							Make sure to delete any links to this asset in your pieces.
 						</Dialog.Description>
 						<div class="dialog-actions">
 							<Button variant="outline" onclick={() => (showDeleteDialog = false)}>cancel</Button>
+
 							<form
 								method="POST"
-								action="?/delete&returnTo={data.returnTo}"
-								use:enhance={() => {
-									isDeleting = true
-									showDeleteDialog = false
-									return async ({ update }) => {
-										isDeleting = false
-										await update()
-									}
-								}}
+								action="?/delete&returnTo={encodeURIComponent(data.returnTo)}"
+								use:enhance={enhanceDelete}
 							>
 								<Button type="submit" variant="error" disabled={isDeleting}>
 									{isDeleting ? 'deleting...' : 'delete'}
@@ -292,25 +376,7 @@
 				<Button variant="error" onclick={() => (showDeleteDialog = true)}>Delete</Button>
 			{/if}
 			{#if data.exists && !data.isBinary}
-				<form
-					method="POST"
-					action="?/save"
-					use:enhance={() => {
-						isSaving = true
-						saveError = null
-						saveSuccess = false
-						return async ({ result, update }) => {
-							isSaving = false
-							if (result.type === 'success') {
-								saveSuccess = true
-								await update({ reset: false })
-							} else if (result.type === 'failure') {
-								const data = result.data as { error?: { message?: string } } | undefined
-								saveError = data?.error?.message || 'Failed to save'
-							}
-						}
-					}}
-				>
+				<form method="POST" action="?/save" use:enhance={enhanceSave}>
 					<input type="hidden" name="content" value={editorContent} />
 					<Button type="submit" disabled={isSaving}>
 						{isSaving ? 'Saving...' : 'Save'}
@@ -324,10 +390,24 @@
 		<div class="banner success-banner">Asset saved successfully!</div>
 	{/if}
 
-	{#if saveError}
+	{#if saveErrorReason || saveError}
 		<div class="banner error-banner">
 			<strong>Error:</strong>
-			{saveError}
+			{#if saveErrorReason === 'navigation'}
+				Unable to leave this page. Your edits are still here.
+			{:else if saveErrorReason === 'delete-refresh'}
+				Unable to finish deleting this asset. Please reload to confirm its status.
+			{:else if saveErrorReason === 'sign-in'}
+				Please sign in again in another tab, then retry. Your edits are still here.
+			{:else if saveErrorReason === 'save'}
+				Unable to save. Your edits are still here. Please try again.
+			{:else if saveErrorReason === 'refresh'}
+				Unable to refresh after saving. Your edits are still here. Please try again.
+			{:else if saveErrorReason === 'delete' && !saveError}
+				Failed to delete
+			{:else}
+				{saveError}
+			{/if}
 		</div>
 	{/if}
 
@@ -400,7 +480,7 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-						/>
+						></path>
 					</svg>
 				</div>
 				<p class="binary-text">This file cannot be edited inline.</p>

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PageProps } from './$types'
-	import PieceOverview from '$lib/pieces/viewer/PieceOverview.svelte'
-	import { assetPathToUrl } from '$lib/pieces/assets'
-	import { MarkdownPublicationStatus } from '$lib/pieces/types'
+	import PieceOverview from '#lib/pieces/viewer/PieceOverview.svelte'
+	import { assetPathToUrl } from '#lib/pieces/assets.js'
+	import { MarkdownPublicationStatus } from '#lib/pieces/types.js'
 	let { data }: PageProps = $props()
 	function fileUrl(path: string) {
 		return assetPathToUrl(path, data.config.url.luzzle_assets || data.config.url.app)

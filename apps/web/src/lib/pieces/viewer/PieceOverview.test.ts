@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
 import { render } from 'svelte/server'
 import { createRawSnippet } from 'svelte'
-import { assetPathToUrl } from '$lib/pieces/assets'
+import { assetPathToUrl } from '#lib/pieces/assets.js'
 import { asset } from './fixtures/published'
 import PieceOverview from './PieceOverview.svelte'
 

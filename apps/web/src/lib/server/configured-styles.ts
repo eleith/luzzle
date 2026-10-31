@@ -1,6 +1,6 @@
+import type { Handle } from '@sveltejs/kit/hooks'
 import { generateThemeCss } from '@luzzle/web.theme'
 import { generateEditorThemeCss } from '@luzzle/web.theme/editor'
-import type { Handle } from '@sveltejs/kit'
 import type { AppConfig } from './config'
 
 export async function prepareConfiguredStyles(config: AppConfig): Promise<string> {

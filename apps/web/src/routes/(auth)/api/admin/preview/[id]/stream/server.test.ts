@@ -1,8 +1,8 @@
 import { expect, test, vi } from 'vitest'
-import { streamJobProgress } from '$lib/server/workflow/stream.js'
+import { streamJobProgress } from '#lib/server/workflow/stream.js'
 import { GET } from './+server.js'
 
-vi.mock('$lib/server/workflow/stream.js', () => ({ streamJobProgress: vi.fn() }))
+vi.mock('#lib/server/workflow/stream.js', () => ({ streamJobProgress: vi.fn() }))
 
 test('the preview progress stream remains independently available', async () => {
 	const url = new URL('http://localhost/api/admin/preview/preview-id/stream')

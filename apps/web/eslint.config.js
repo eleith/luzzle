@@ -3,6 +3,12 @@ import ts from 'typescript-eslint'
 import svelte from 'eslint-plugin-svelte'
 import prettier from 'eslint-config-prettier'
 import globals from 'globals'
+import { loadConfig } from '@sveltejs/load-config'
+
+const loadedConfig = await loadConfig(import.meta.dirname, { traverse: false })
+if (!loadedConfig) throw new Error('Svelte configuration not found')
+if ('error' in loadedConfig) throw loadedConfig.error
+const svelteConfig = loadedConfig.config
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -36,7 +42,8 @@ export default [
 		files: ['**/*.svelte'],
 		languageOptions: {
 			parserOptions: {
-				parser: ts.parser
+				parser: ts.parser,
+				svelteConfig
 			}
 		}
 	},

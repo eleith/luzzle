@@ -1,10 +1,10 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { db } from '$lib/server/database'
-import { config } from '$lib/server/config'
-import { hydrateWithAssets } from '$lib/pieces/assets.server'
-import { assetPathToUrl } from '$lib/pieces/assets.js'
-import { isConfiguredPieceType } from '$lib/pieces/types.server.js'
+import { db } from '#lib/server/database/index.js'
+import { config } from '#lib/server/config.js'
+import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
+import { assetPathToUrl } from '#lib/pieces/assets.js'
+import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 
 export const load: PageServerLoad = async (page) => {
 	const type = page.params.piece

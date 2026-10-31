@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
-import { getStorage } from '$lib/server/storage'
+import { getStorage } from '#lib/server/storage.js'
 import path from 'path'
 import type { LuzzleStorage } from '@luzzle/core'
 

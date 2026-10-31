@@ -9,15 +9,15 @@ import {
 	type PieceFrontmatterSchema,
 	type PieceFrontmatter
 } from '@luzzle/core'
-import { db } from '$lib/server/database'
+import { db } from '#lib/server/database/index.js'
 import type { AppDatabase } from '@luzzle/web.db'
-import { getPieces } from '$lib/server/pieces'
-import { getStorage } from '$lib/server/storage'
+import { getPieces } from '#lib/server/pieces.js'
+import { getStorage } from '#lib/server/storage.js'
 import { actions } from '../../routes/(auth)/admin/piece/[...path]/source/+page.server'
 import { getMarkdownPublicationStatus } from './publication.server.js'
 import { MarkdownPublicationStatus } from './types.js'
 
-vi.mock('$lib/server/database', async () => {
+vi.mock('#lib/server/database/index.js', async () => {
 	const { runWebMigrations } = await import('@luzzle/web.db')
 	const { migrate, getDatabaseClient } = await import('@luzzle/core')
 	const coreDb = getDatabaseClient(':memory:')
@@ -28,10 +28,10 @@ vi.mock('$lib/server/database', async () => {
 	if (web.error) throw new Error(`Test web migration failed: ${web.error}`)
 	return { db }
 })
-vi.mock('$lib/server/pieces', () => ({ getPieces: vi.fn(), getWebPiece: vi.fn() }))
-vi.mock('$lib/server/storage', () => ({ getStorage: vi.fn() }))
-vi.mock('$lib/server/config', async () => {
-	const { makeConfig } = await import('$lib/server/config.fixture')
+vi.mock('#lib/server/pieces.js', () => ({ getPieces: vi.fn(), getWebPiece: vi.fn() }))
+vi.mock('#lib/server/storage.js', () => ({ getStorage: vi.fn() }))
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	return { config: makeConfig() }
 })
 

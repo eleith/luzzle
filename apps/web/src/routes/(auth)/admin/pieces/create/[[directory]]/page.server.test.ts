@@ -7,12 +7,12 @@ import {
 	type PieceMarkdown,
 	type PieceFrontmatterSchemaField
 } from '@luzzle/core'
-import { getPieces } from '$lib/server/pieces'
-import { config } from '$lib/server/config'
+import { getPieces } from '#lib/server/pieces.js'
+import { config } from '#lib/server/config.js'
 import { actions, load } from './+page.server'
 
-vi.mock('$lib/server/pieces', () => ({ getPieces: vi.fn() }))
-vi.mock('$lib/server/config', () => ({
+vi.mock('#lib/server/pieces.js', () => ({ getPieces: vi.fn() }))
+vi.mock('#lib/server/config.js', () => ({
 	config: {
 		pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date' } }],
 		ai: { provider: 'google', api_key: 'test-key' }

@@ -6,7 +6,7 @@ import {
 	type PieceMarkdown,
 	findFrontmatterField
 } from '@luzzle/core'
-import { normalizeMarkdown } from '$lib/server/markdown'
+import { normalizeMarkdown } from '#lib/server/markdown.js'
 
 type FormOperations = {
 	removes: Set<string>

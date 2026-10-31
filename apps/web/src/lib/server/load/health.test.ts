@@ -1,13 +1,13 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { config } from '$lib/server/config'
+import { config } from '#lib/server/config.js'
 import { makeConfig, credentialsAuth, oidcAuth } from '../config.fixture'
 import { buildHealthConfigSummary } from '../health.js'
 import type * as Health from '../health.js'
 import { probeStorage, probeWorker, probeOidcIssuer } from '../health/probes.js'
 import { loadHealthPage, probeWorkerIfConfigured, probeOidcIssuerIfConfigured } from './health.js'
 
-vi.mock('$lib/server/config', async () => {
-	const { makeConfig } = await import('../config.fixture')
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig } = await import('../config.fixture.js')
 	return { config: makeConfig() }
 })
 

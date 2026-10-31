@@ -1,6 +1,6 @@
-import { readJsonEvents, type JsonEvent } from '$lib/sse'
+import { readJsonEvents, type JsonEvent } from '#lib/sse.js'
 import type { GenerationEvent, GenerationResult } from './types'
-import type { ProgressPhase } from '$lib/components/progress'
+import type { ProgressPhase } from '#lib/components/progress.js'
 
 function isObject(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === 'object' && !Array.isArray(value)

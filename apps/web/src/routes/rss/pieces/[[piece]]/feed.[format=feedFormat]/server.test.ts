@@ -9,8 +9,8 @@ const { config, getPiecesForFeed } = vi.hoisted(() => ({
 	},
 	getPiecesForFeed: vi.fn()
 }))
-vi.mock('$lib/server/config', () => ({ config }))
-vi.mock('$lib/feeds/utils', () => ({ getPiecesForFeed }))
+vi.mock('#lib/server/config.js', () => ({ config }))
+vi.mock('#lib/feeds/utils.js', () => ({ getPiecesForFeed }))
 
 function event(type: string | undefined, format: string) {
 	return { params: { piece: type, format } } as Parameters<typeof GET>[0]

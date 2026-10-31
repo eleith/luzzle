@@ -4,18 +4,17 @@
 	import CaretUpDownIcon from 'virtual:icons/ph/caret-up-down'
 	import { fade } from 'svelte/transition'
 	import { Dialog, Select } from 'bits-ui'
-	import DatePicker from '$lib/components/ui/DatePicker.svelte'
+	import DatePicker from '#lib/components/ui/DatePicker.svelte'
 	import { page } from '$app/state'
 	import { afterNavigate, goto } from '$app/navigation'
 
 	const pieceTypes = $derived(page.data.pieceTypes ?? [])
-
 	let query = $state('')
 	let type = $state('')
 	let after = $state('')
 	let before = $state('')
-
 	let isOpen = $state(false)
+	let navigationError = $state(false)
 
 	$effect(() => {
 		query = page.url.searchParams.get('query') || ''
@@ -31,13 +30,19 @@
 		before = ''
 	}
 
-	afterNavigate(() => {
+	afterNavigate(({ shallow, type }) => {
+		if (shallow && type === 'goto') return
+
 		isOpen = false
+		navigationError = false
 	})
 
-	function handleSubmit(e: SubmitEvent) {
+	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault()
+		navigationError = false
+
 		const params = new URLSearchParams()
+
 		if (query) params.set('query', query)
 		if (type) params.set('type', type)
 		if (after) params.set('after', after)
@@ -45,7 +50,12 @@
 
 		const searchString = params.toString()
 		const url = `/search${searchString ? `?${searchString}` : ''}`
-		goto(url)
+
+		try {
+			await goto(url)
+		} catch {
+			navigationError = true
+		}
 	}
 
 	function responsiveFly(node: HTMLElement, { duration = 300 }) {
@@ -171,6 +181,12 @@
 										<DatePicker label="Before" bind:value={before} />
 									</div>
 								</div>
+
+								{#if navigationError}
+									<p role="alert">
+										Search navigation did not complete. Your filters are still here.
+									</p>
+								{/if}
 
 								<div class="actions-container">
 									{#if query || type || after || before}

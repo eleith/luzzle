@@ -1,6 +1,13 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
-import { createServerEnvironment, resolveAuthUrl } from './runtime-environment.js'
+import { createServer, IncomingMessage, ServerResponse } from 'node:http'
+import { Socket } from 'node:net'
+import {
+	createServerEnvironment,
+	installRequestOrigin,
+	resolveAppOrigin,
+	resolveAuthUrl
+} from './runtime-environment.js'
 
 type RuntimeConfig = Pick<TemplateConfig, 'network' | 'url' | 'auth'>
 const auth: NonNullable<RuntimeConfig['auth']> = {
@@ -38,10 +45,27 @@ test('returns a fresh environment without mutating config or supplied environmen
 	expect(result).toEqual({
 		HOST: '127.0.0.1',
 		UNRELATED: 'keep',
-		ORIGIN: 'https://configured.example'
+		PROTOCOL_HEADER: 'x-luzzle-public-protocol',
+		HOST_HEADER: 'x-luzzle-public-authority',
+		PORT_HEADER: ''
 	})
 	expect(environment).toEqual({ HOST: 'old-host', UNRELATED: 'keep' })
 	expect(configured.url.app).toBe('https://configured.example/garden/?page=2#top')
+})
+
+test('absolute YAML replaces ambient header selection without putting the authority in the environment', () => {
+	const result = createServerEnvironment(config('https://configured.example:8443/garden'), {
+		ORIGIN: 'https://unexpected.example',
+		PROTOCOL_HEADER: 'x-forwarded-proto',
+		HOST_HEADER: 'x-forwarded-host',
+		PORT_HEADER: 'x-forwarded-port'
+	})
+	expect(result).toEqual({
+		HOST: '127.0.0.1',
+		PROTOCOL_HEADER: 'x-luzzle-public-protocol',
+		HOST_HEADER: 'x-luzzle-public-authority',
+		PORT_HEADER: ''
+	})
 })
 
 test('falls back to the existing public bind host when the configured host is empty', () => {
@@ -56,9 +80,15 @@ test.each([
 	['https://example.com:8443/garden/', 'https://example.com:8443'],
 	['http://localhost:8080', 'http://localhost:8080'],
 	['https://[::1]:443/', 'https://[::1]']
-])('Kit and auth derive the same canonical origin from %s', (app, expected) => {
-	expect(createServerEnvironment(config(app, true), {}).ORIGIN).toBe(expected)
+])('request boundary and auth derive the same canonical origin from %s', (app, expected) => {
+	expect(resolveAppOrigin(app)).toBe(expected)
 	expect(resolveAuthUrl(app)).toBe(expected)
+	expect(createServerEnvironment(config(app, true), {})).toEqual({
+		HOST: '127.0.0.1',
+		PROTOCOL_HEADER: 'x-luzzle-public-protocol',
+		HOST_HEADER: 'x-luzzle-public-authority',
+		PORT_HEADER: ''
+	})
 })
 
 test('ambient URL variables cannot replace the configured public URL', () => {
@@ -67,7 +97,12 @@ test('ambient URL variables cannot replace the configured public URL', () => {
 	vi.stubEnv('AUTH_URL', 'https://legacy.example')
 	vi.stubEnv('NEXTAUTH_URL', '')
 	const before = { ...process.env }
-	expect(createServerEnvironment(config(undefined, true)).ORIGIN).toBe('https://configured.example')
+	expect(createServerEnvironment(config(undefined, true))).toMatchObject({
+		PROTOCOL_HEADER: 'x-luzzle-public-protocol',
+		HOST_HEADER: 'x-luzzle-public-authority',
+		PORT_HEADER: ''
+	})
+	expect(createServerEnvironment(config(undefined, true))).not.toHaveProperty('ORIGIN')
 	expect(resolveAuthUrl('https://configured.example/garden')).toBe('https://configured.example')
 	expect(process.env).toEqual(before)
 })
@@ -75,14 +110,86 @@ test('ambient URL variables cannot replace the configured public URL', () => {
 test.each(['', '/', '/garden/', 'garden', './garden', '../garden', '//example.com/garden'])(
 	'public-only relative app URL %s leaves Kit request-derived, ignoring ambient ORIGIN',
 	(app) => {
-		const result = createServerEnvironment(config(app), { ORIGIN: 'https://unexpected.example' })
-		expect(result).not.toHaveProperty('ORIGIN')
+		const result = createServerEnvironment(config(app), {
+			ORIGIN: 'https://unexpected.example',
+			PROTOCOL_HEADER: 'x-forwarded-proto',
+			HOST_HEADER: 'x-forwarded-host',
+			PORT_HEADER: 'x-forwarded-port'
+		})
+		expect(result).toEqual({
+			HOST: '127.0.0.1',
+			PROTOCOL_HEADER: 'x-forwarded-proto',
+			HOST_HEADER: 'x-forwarded-host',
+			PORT_HEADER: 'x-forwarded-port'
+		})
+		expect(resolveAppOrigin(app)).toBeUndefined()
 		expect(() => resolveAuthUrl(app)).toThrow('Authentication requires an absolute url.app')
 		expect(() => createServerEnvironment(config(app, true), {})).toThrow(
 			'Authentication requires an absolute url.app'
 		)
 	}
 )
+
+test('relative public mode does not introduce header settings when none were supplied', () => {
+	expect(
+		createServerEnvironment(config('/garden'), { ORIGIN: 'https://unexpected.example' })
+	).toEqual({
+		HOST: '127.0.0.1'
+	})
+})
+
+test('origin listener precedes the native listener on the first and later requests, replacing only internal headers', () => {
+	const received: Record<string, unknown>[] = []
+	const nativeListener = vi.fn((request: IncomingMessage) => {
+		received.push({ method: request.method, url: request.url, headers: { ...request.headers } })
+	})
+	const server = createServer(nativeListener)
+	installRequestOrigin(server, resolveAppOrigin('https://Configured.EXAMPLE:8443/garden'))
+	expect(server.listeners('request')[1]).toBe(nativeListener)
+
+	for (const origin of ['https://configured.example:8443', 'https://browser.example']) {
+		const request = new IncomingMessage(new Socket())
+		request.method = 'POST'
+		request.url = '/garden/action?next=%2Fprivate&tag=a&tag=b'
+		request.headers = {
+			host: 'internal.example:3000',
+			origin,
+			cookie: 'session=unchanged',
+			'content-type': 'application/x-www-form-urlencoded',
+			'x-forwarded-proto': 'http',
+			'x-forwarded-host': 'spoofed.example:9999',
+			'x-forwarded-port': '9999',
+			'x-luzzle-public-protocol': 'http',
+			'x-luzzle-public-authority': 'spoofed.example:9999'
+		}
+		const original = { ...request.headers }
+		server.emit('request', request, new ServerResponse(request))
+		expect(received.at(-1)).toEqual({
+			method: 'POST',
+			url: '/garden/action?next=%2Fprivate&tag=a&tag=b',
+			headers: {
+				...original,
+				'x-luzzle-public-protocol': 'https',
+				'x-luzzle-public-authority': 'configured.example:8443'
+			}
+		})
+		request.destroy()
+	}
+	expect(nativeListener).toHaveBeenCalledTimes(2)
+})
+
+test('relative public origin leaves the native request listener and headers untouched', () => {
+	const nativeListener = vi.fn()
+	const server = createServer(nativeListener)
+	installRequestOrigin(server, resolveAppOrigin('/garden'))
+	expect(server.listeners('request')).toEqual([nativeListener])
+	const request = new IncomingMessage(new Socket())
+	request.headers = { host: 'native.example', 'x-forwarded-proto': 'https' }
+	server.emit('request', request, new ServerResponse(request))
+	expect(request.headers).toEqual({ host: 'native.example', 'x-forwarded-proto': 'https' })
+	expect(nativeListener).toHaveBeenCalledOnce()
+	request.destroy()
+})
 
 test.each([
 	'ftp://example.com/private-token',

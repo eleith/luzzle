@@ -48,7 +48,7 @@ beforeAll(async () => {
 			},
 			svelte({ configFile: false })
 		],
-		resolve: { alias: { $lib: lib } }
+		resolve: { alias: { '#lib': lib } }
 	})
 	Icon = (await server.ssrLoadModule(wrapper)).default
 	render = (await server.ssrLoadModule('svelte/server')).render

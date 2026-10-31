@@ -2,7 +2,7 @@
 	import { onMount, onDestroy, tick, untrack } from 'svelte'
 	import { invalidateAll } from '$app/navigation'
 	import { page } from '$app/state'
-	import Button from '$lib/components/ui/Button.svelte'
+	import Button from '#lib/components/ui/Button.svelte'
 	import PublishTable from './PublishTable.svelte'
 	import PublishDetails from './PublishDetails.svelte'
 

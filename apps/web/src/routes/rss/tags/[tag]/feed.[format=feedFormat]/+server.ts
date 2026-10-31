@@ -1,8 +1,8 @@
 import type { PublicWebPiece } from '@luzzle/web.pieces'
 import type { RequestHandler } from './$types'
-import { config } from '$lib/server/config'
+import { config } from '#lib/server/config.js'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
-import { getPiecesForTagFeed } from '$lib/feeds/utils'
+import { getPiecesForTagFeed } from '#lib/feeds/utils.js'
 import YAML from 'yaml'
 
 type FeedRss = RssFeed<Date>

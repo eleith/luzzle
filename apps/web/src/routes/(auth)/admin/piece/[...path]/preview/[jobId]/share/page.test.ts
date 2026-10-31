@@ -1,8 +1,11 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
-import { makeConfig } from '$lib/server/config.fixture'
-import { publishedPiece as rawPublishedPiece, asset } from '$lib/pieces/viewer/fixtures/published'
+import { makeConfig } from '#lib/server/config.fixture.js'
+import {
+	publishedPiece as rawPublishedPiece,
+	asset
+} from '#lib/pieces/viewer/fixtures/published.js'
 import PreviewLayout from '../+layout.svelte'
 import Page from '../page/+page.svelte'
 import Icon from '../icon/+page.svelte'
@@ -35,14 +38,14 @@ vi.mock('$app/paths', () => ({ resolve }))
 // Only renderer wrappers are replaced: the real routes, layout, ShareViewport
 // and getPieceHelpers run. SSR cannot prove reactive prop updates, client SSE,
 // or instance ResizeObserver mounting/cleanup and responsive scaling behavior.
-vi.mock('$lib/pieces/components/opengraph.svelte', async () => ({
-	default: (await import('$lib/pieces/viewer/fixtures/Composition.svelte')).default
+vi.mock('#lib/pieces/components/opengraph.svelte', async () => ({
+	default: (await import('#lib/pieces/viewer/fixtures/Composition.svelte')).default
 }))
-vi.mock('$lib/pieces/components/page.svelte', async () => ({
-	default: (await import('$lib/pieces/viewer/fixtures/PageRenderer.svelte')).default
+vi.mock('#lib/pieces/components/page.svelte', async () => ({
+	default: (await import('#lib/pieces/viewer/fixtures/PageRenderer.svelte')).default
 }))
-vi.mock('$lib/pieces/components/icon.svelte', async () => ({
-	default: (await import('$lib/pieces/viewer/fixtures/IconRenderer.svelte')).default
+vi.mock('#lib/pieces/components/icon.svelte', async () => ({
+	default: (await import('#lib/pieces/viewer/fixtures/IconRenderer.svelte')).default
 }))
 
 type Data = ComponentProps<typeof SharePage>['data']

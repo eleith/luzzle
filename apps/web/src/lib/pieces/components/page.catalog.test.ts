@@ -32,7 +32,8 @@ beforeAll(async () => {
 		root: fileURLToPath(new URL('../../../../', import.meta.url)),
 		server: { middlewareMode: true, hmr: false },
 		optimizeDeps: { noDiscovery: true },
-		plugins: [svelte({ configFile: false })]
+		plugins: [svelte({ configFile: false })],
+		resolve: { alias: { '#lib': fileURLToPath(new URL('../../', import.meta.url)) } }
 	})
 	getPage = (await server.ssrLoadModule('@luzzle/web.templates/pages')).getPage
 	render = (await server.ssrLoadModule('svelte/server')).render

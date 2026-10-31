@@ -1,10 +1,10 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
-import { getPieces, getWebPiece } from '$lib/server/pieces'
-import { getStorage } from '$lib/server/storage'
-import { db } from '$lib/server/database'
+import { getPieces, getWebPiece } from '#lib/server/pieces.js'
+import { getStorage } from '#lib/server/storage.js'
+import { db } from '#lib/server/database/index.js'
 import path from 'path'
-import { config } from '$lib/server/config'
+import { config } from '#lib/server/config.js'
 import {
 	asCoreDatabase,
 	extractFullMarkdown,
@@ -18,7 +18,7 @@ import {
 	savePieceAsset
 } from '@luzzle/core'
 import { Readable } from 'stream'
-import { normalizeLineEndings, normalizeMarkdown } from '$lib/server/markdown'
+import { normalizeLineEndings, normalizeMarkdown } from '#lib/server/markdown.js'
 
 async function resolveAssetUrls(
 	piece: Piece<PieceFrontmatter>,

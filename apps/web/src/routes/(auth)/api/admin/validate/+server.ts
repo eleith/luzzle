@@ -1,13 +1,13 @@
 import { json } from '@sveltejs/kit'
 import { compile } from '@luzzle/core'
-import { getPieces } from '$lib/server/pieces'
+import { getPieces } from '#lib/server/pieces.js'
 import { remark } from 'remark'
 import recommended from 'remark-preset-lint-recommended'
 import consistent from 'remark-preset-lint-consistent'
 import duplicateHeadings from 'remark-lint-no-duplicate-headings'
 import headingIncrement from 'remark-lint-heading-increment'
 import type { RequestHandler } from './$types'
-import type { ValidationError, ValidationResponse } from '$lib/types/validation'
+import type { ValidationError, ValidationResponse } from '#lib/types/validation.js'
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {

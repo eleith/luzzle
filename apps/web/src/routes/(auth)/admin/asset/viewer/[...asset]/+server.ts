@@ -1,6 +1,6 @@
 import path from 'path'
 import type { RequestHandler } from './$types'
-import { getStorage } from '$lib/server/storage'
+import { getStorage } from '#lib/server/storage.js'
 import mime from 'mime-types'
 import { Readable } from 'stream'
 

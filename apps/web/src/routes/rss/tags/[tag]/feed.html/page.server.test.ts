@@ -9,9 +9,9 @@ const { config, getPiecesForTagFeed, loadPageMarkdown } = vi.hoisted(() => ({
 	getPiecesForTagFeed: vi.fn(),
 	loadPageMarkdown: vi.fn()
 }))
-vi.mock('$lib/server/config', () => ({ config }))
-vi.mock('$lib/feeds/utils', () => ({ getPiecesForTagFeed }))
-vi.mock('$lib/server/pages.js', () => ({ loadPageMarkdown }))
+vi.mock('#lib/server/config.js', () => ({ config }))
+vi.mock('#lib/feeds/utils.js', () => ({ getPiecesForTagFeed }))
+vi.mock('#lib/server/pages.js', () => ({ loadPageMarkdown }))
 const pieces = [{ id: 'note', type: 'field-notes', title: 'A note', assets: [] }]
 function event(tag = 'field-notes') {
 	return { params: { tag } } as Parameters<typeof load>[0]

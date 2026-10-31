@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { OutputValue } from './assets'
 	import { formatSource, type SourceToken } from './source'
-	import '$lib/components/editor/themes/token-colors.css'
+	import '#lib/components/editor/themes/token-colors.css'
 
 	let { value, label }: { value: OutputValue; label: string } = $props()
 	const source = $derived(formatSource(value.value ?? '', value.mime))
@@ -20,7 +20,7 @@
 		const text = source
 		const mime = value.mime
 		let active = true
-		import('./source-highlight')
+		import('./source-highlight.js')
 			.then(({ highlightSource }) => highlightSource(text, mime))
 			.then((tokens) => {
 				if (active) highlighted = { source: text, mime, tokens }

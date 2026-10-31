@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => {
 	}
 })
 
-vi.mock('$lib/server/database/index.js', () => ({
+vi.mock('#lib/server/database/index.js', () => ({
 	db: { selectFrom: mocks.selectFrom }
 }))
 vi.mock('./index.js', () => ({

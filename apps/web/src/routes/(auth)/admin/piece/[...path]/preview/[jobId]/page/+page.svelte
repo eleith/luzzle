@@ -1,5 +1,5 @@
 <script lang="ts">
-	import PiecePage from '$lib/pieces/components/page.svelte'
+	import PiecePage from '#lib/pieces/components/page.svelte'
 	import type { PageProps } from './$types'
 
 	let { data }: PageProps = $props()

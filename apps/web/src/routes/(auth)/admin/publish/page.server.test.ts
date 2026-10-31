@@ -10,12 +10,12 @@ const { query } = vi.hoisted(() => ({
 		execute: vi.fn()
 	}
 }))
-vi.mock('$lib/server/database/index.js', () => ({ db: { selectFrom: () => query } }))
-vi.mock('$lib/server/config', async () => {
-	const { makeConfig } = await import('$lib/server/config.fixture.js')
+vi.mock('#lib/server/database/index.js', () => ({ db: { selectFrom: () => query } }))
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	return { config: makeConfig() }
 })
-vi.mock('$lib/server/workflow/index.js', () => ({ getOpenWorkflowBackend: () => ({}) }))
+vi.mock('#lib/server/workflow/index.js', () => ({ getOpenWorkflowBackend: () => ({}) }))
 vi.mock('@luzzle/web.jobs', () => ({ getLatestWorkflowRun: vi.fn(), getStepAttempts: vi.fn() }))
 
 const diff = {

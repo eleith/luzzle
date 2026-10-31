@@ -3,7 +3,7 @@
 	import '@luzzle/web.theme/styles/base.css'
 	import '@luzzle/web.theme/styles/markdown.css'
 	import type { LayoutProps } from './$types'
-	import ViewerHeader from '$lib/pieces/viewer/ViewerHeader.svelte'
+	import ViewerHeader from '#lib/pieces/viewer/ViewerHeader.svelte'
 
 	let { data, children }: LayoutProps = $props()
 </script>

@@ -1,7 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { db, sql } from '$lib/server/database'
-import { isConfiguredPieceType } from '$lib/pieces/types.server.js'
-import { hydrateWithAssets } from '$lib/pieces/assets.server'
+import { db, sql } from '#lib/server/database/index.js'
+import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
+import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 import type { WebPieces } from '@luzzle/web.db'
 
 const TAKE_DEFAULT = 50

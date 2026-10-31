@@ -1,11 +1,11 @@
 import { expect, test, vi } from 'vitest'
 import { publishSpec } from '@luzzle/web.jobs/specs'
-import { config } from '$lib/server/config.js'
+import { config } from '#lib/server/config.js'
 import { getOpenWorkflow, getOpenWorkflowBackend } from './index.js'
 import { createWorkflowQueue, closeWorkflowQueue } from './publish.fixture.js'
 
-vi.mock('$lib/server/config.js', async () => {
-	const { makeConfig } = await import('$lib/server/config.fixture.js')
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	return { config: makeConfig() }
 })
 

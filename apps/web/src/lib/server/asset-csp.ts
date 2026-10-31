@@ -1,18 +1,21 @@
+import type { Handle } from '@sveltejs/kit/hooks'
 import type { Config } from '@luzzle/web.config'
-import type { Handle } from '@sveltejs/kit'
 
 type AssetUrls = Pick<Config['url'], 'app_assets' | 'luzzle_assets'>
 type AssetSources = ReadonlyMap<string, readonly string[]>
 
 function assetSource(value: string, field: string): string | undefined {
 	if (!value) return undefined
+
 	const invalid = () =>
 		new Error(
 			`${field} must be an HTTP(S) URL prefix or a same-origin path without credentials, query, fragment or CSP delimiters.`
 		)
+
 	if (/[\s\p{Cc}\\;,'"<>`?#]/u.test(value)) throw invalid()
 
 	const absolute = /^[a-z][a-z\d+.-]*:/i.test(value)
+
 	if (!absolute) {
 		if (value.startsWith('//')) throw invalid()
 		return undefined
@@ -35,8 +38,11 @@ function assetSources(urls: AssetUrls): AssetSources {
 	const app = assetSource(urls.app_assets, 'url.app_assets')
 	const pieces = assetSource(urls.luzzle_assets, 'url.luzzle_assets')
 	const appSources: string[] = []
+
 	if (app) appSources.push(app)
+
 	const imageSources = [...appSources]
+
 	if (pieces && !imageSources.includes(pieces)) imageSources.push(pieces)
 
 	return new Map([
@@ -83,12 +89,18 @@ export function createAssetCspHandle(urls: AssetUrls): Handle {
 	return async ({ event, resolve }) => {
 		const response = await resolve(event)
 		const policy = response.headers.get('content-security-policy')
+
 		if (!policy || !/^text\/html(?:;|$)/i.test(response.headers.get('content-type') ?? ''))
 			return response
+
 		const updated = addAssetSources(policy, additions)
+
 		if (updated === policy) return response
+
 		const headers = new Headers(response.headers)
+
 		headers.set('content-security-policy', updated)
+
 		return new Response(response.body, {
 			status: response.status,
 			statusText: response.statusText,

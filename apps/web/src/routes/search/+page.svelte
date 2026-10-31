@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation'
-	import PieceIcon from '$lib/pieces/components/icon.svelte'
+	import PieceIcon from '#lib/pieces/components/icon.svelte'
 
 	let activePieceId = $state<string | null>(null)
 	let { data } = $props()
-
 	let hasSearchTerms = $derived(!!(data.query || data.type || data.after || data.before))
 
-	afterNavigate(({ type }) => {
+	afterNavigate(({ type, shallow }) => {
+		if (shallow && type === 'goto') return
+
 		if (type === 'link') {
 			window.scrollTo({ top: 0, behavior: 'smooth' })
 		}

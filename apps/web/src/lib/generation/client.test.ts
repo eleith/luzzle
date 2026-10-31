@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { encodeEvent, SSE_HEADERS } from '$lib/server/sse'
+import { encodeEvent, SSE_HEADERS } from '#lib/server/sse.js'
 import { startGeneration } from './client'
 import type { GenerationResult } from './types'
 

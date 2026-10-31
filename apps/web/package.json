@@ -45,9 +45,10 @@
     "@luzzle/core": "workspace:*",
     "@luzzle/web.config": "workspace:*",
     "@luzzle/web.jobs": "workspace:*",
-    "@sveltejs/adapter-node": "5.3.2",
+    "@sveltejs/adapter-node": "6.0.1",
     "@sveltejs/enhanced-img": "1.0.0",
-    "@sveltejs/kit": "2.70.3",
+    "@sveltejs/kit": "3.1.1",
+    "@sveltejs/load-config": "0.2.2",
     "@sveltejs/vite-plugin-svelte": "7.1.2",
     "@types/eslint": "catalog:",
     "@types/mime-types": "3.0.1",
@@ -90,5 +91,8 @@
     "kysely": "0.28.17",
     "micromark": "4.0.2",
     "openworkflow": "0.11.0"
+  },
+  "imports": {
+    "#lib/*": "./src/lib/*"
   }
 }

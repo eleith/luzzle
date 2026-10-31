@@ -1,3 +1,6 @@
+const protocolHeader = 'x-luzzle-public-protocol'
+const authorityHeader = 'x-luzzle-public-authority'
+
 /** @param {string} value */
 function parseAppUrl(value) {
 	const invalid = () => new Error('Invalid url.app: expected an HTTP(S) URL without credentials')
@@ -16,7 +19,7 @@ function parseAppUrl(value) {
 }
 
 /** @param {string} app */
-function originFromAppUrl(app) {
+export function resolveAppOrigin(app) {
 	const schemeCandidate = app.replace(/[\s\p{Cc}]/gu, '')
 	if (!/^[a-z][a-z\d+.-]*:/i.test(schemeCandidate)) return undefined
 	return parseAppUrl(app).origin
@@ -24,9 +27,23 @@ function originFromAppUrl(app) {
 
 /** @param {string} app */
 export function resolveAuthUrl(app) {
-	const origin = originFromAppUrl(app)
+	const origin = resolveAppOrigin(app)
 	if (origin) return origin
 	throw new Error('Authentication requires an absolute url.app')
+}
+
+/**
+ * @param {import('node:http').Server} server
+ * @param {string | undefined} origin
+ */
+export function installRequestOrigin(server, origin) {
+	if (!origin) return
+	const url = new URL(origin)
+	const protocol = url.protocol.slice(0, -1)
+	server.prependListener('request', (request) => {
+		request.headers[protocolHeader] = protocol
+		request.headers[authorityHeader] = url.host
+	})
 }
 
 /**
@@ -37,10 +54,13 @@ export function resolveAuthUrl(app) {
 export function createServerEnvironment(config, environment = process.env) {
 	/** @type {NodeJS.ProcessEnv} */
 	const env = { ...environment, HOST: config.network?.public?.host || '0.0.0.0' }
-	const origin = originFromAppUrl(config.url.app)
+	const origin = resolveAppOrigin(config.url.app)
 	if (config.auth && !origin) throw new Error('Authentication requires an absolute url.app')
-
-	if (origin) env.ORIGIN = origin
-	else delete env.ORIGIN
+	delete env.ORIGIN
+	if (origin) {
+		env.PROTOCOL_HEADER = protocolHeader
+		env.HOST_HEADER = authorityHeader
+		env.PORT_HEADER = ''
+	}
 	return env
 }

@@ -1,4 +1,4 @@
-import { config } from '$lib/server/config'
+import { config } from '#lib/server/config.js'
 import { StorageFileSystem, type LuzzleStorage } from '@luzzle/core'
 
 let storage: LuzzleStorage | null = null

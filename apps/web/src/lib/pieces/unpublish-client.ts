@@ -1,4 +1,4 @@
-import { readJsonEvents } from '$lib/sse'
+import { readJsonEvents } from '#lib/sse.js'
 
 export type UnpublishFailureReason =
 	| 'busy'

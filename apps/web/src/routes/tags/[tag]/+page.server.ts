@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { db } from '$lib/server/database'
-import { hydrateWithAssets } from '$lib/pieces/assets.server'
+import { db } from '#lib/server/database/index.js'
+import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 
 const TAKE_DEFAULT = 50
 

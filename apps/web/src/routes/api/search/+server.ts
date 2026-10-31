@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { db, sql } from '$lib/server/database'
-import { hydrateWithAssets } from '$lib/pieces/assets.server'
+import { db, sql } from '#lib/server/database/index.js'
+import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 
 const MAX_RESULTS = 20
 

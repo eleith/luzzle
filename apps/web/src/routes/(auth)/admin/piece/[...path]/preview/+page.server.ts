@@ -1,10 +1,10 @@
 import { error, redirect } from '@sveltejs/kit'
-import { getPieces } from '$lib/server/pieces'
-import { config } from '$lib/server/config'
-import { getOpenWorkflow } from '$lib/server/workflow/index.js'
+import { getPieces } from '#lib/server/pieces.js'
+import { config } from '#lib/server/config.js'
+import { getOpenWorkflow } from '#lib/server/workflow/index.js'
 import { previewSpec } from '@luzzle/web.jobs/specs'
 import type { PageServerLoad } from './$types'
-import { previewHref } from '$lib/pieces/navigation'
+import { previewHref } from '#lib/pieces/navigation.js'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path

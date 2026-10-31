@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Button from '$lib/components/ui/Button.svelte'
-	import { signInCredentials, signInOidc, type AuthFailure } from '$lib/auth-client'
+	import Button from '#lib/components/ui/Button.svelte'
+	import { signInCredentials, signInOidc, type AuthFailure } from '#lib/auth-client.js'
 	import { goto } from '$app/navigation'
 	import type { PageProps } from './$types'
 

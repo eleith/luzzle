@@ -5,8 +5,8 @@ const { config, loadMarkdownFile } = vi.hoisted(() => ({
 	config: { paths: { config: '/deployment/config/config.yaml' } },
 	loadMarkdownFile: vi.fn()
 }))
-vi.mock('$lib/server/config', () => ({ config }))
-vi.mock('$lib/content/markdown/files.server.js', () => ({ loadMarkdownFile }))
+vi.mock('#lib/server/config.js', () => ({ config }))
+vi.mock('#lib/content/markdown/files.server.js', () => ({ loadMarkdownFile }))
 
 beforeEach(() => {
 	vi.clearAllMocks()

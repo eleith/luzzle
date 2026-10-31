@@ -1,7 +1,7 @@
 import type { PiecesDiff } from '@luzzle/core'
 import type { PublishPieceFailure } from '@luzzle/web.jobs'
 
-export { editorHref, publishedHref } from '$lib/pieces/navigation'
+export { editorHref, publishedHref } from '#lib/pieces/navigation.js'
 
 export function selectablePaths(diff: PiecesDiff): string[] {
 	return [...new Set([...diff.pieces.added, ...diff.pieces.updated])]

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Button from '$lib/components/ui/Button.svelte'
-	import Combobox from '$lib/components/ui/Combobox.svelte'
+	import Button from '#lib/components/ui/Button.svelte'
+	import Combobox from '#lib/components/ui/Combobox.svelte'
 	import type { PageProps } from './$types'
 
 	let { data, form }: PageProps = $props()

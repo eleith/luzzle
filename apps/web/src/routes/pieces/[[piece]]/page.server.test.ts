@@ -15,9 +15,9 @@ const { config, query, selectFrom, sql, hydrateWithAssets } = vi.hoisted(() => (
 	sql: vi.fn(),
 	hydrateWithAssets: vi.fn()
 }))
-vi.mock('$lib/server/config', () => ({ config }))
-vi.mock('$lib/server/database', () => ({ db: { selectFrom }, sql }))
-vi.mock('$lib/pieces/assets.server', () => ({ hydrateWithAssets }))
+vi.mock('#lib/server/config.js', () => ({ config }))
+vi.mock('#lib/server/database/index.js', () => ({ db: { selectFrom }, sql }))
+vi.mock('#lib/pieces/assets.server.js', () => ({ hydrateWithAssets }))
 
 function event(type?: string, search = '') {
 	return {

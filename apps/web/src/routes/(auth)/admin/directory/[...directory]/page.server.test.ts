@@ -9,7 +9,7 @@ const { getFilesIn, parseFilename } = vi.hoisted(() => ({
 	})),
 	parseFilename: vi.fn((file: string) => ({ file }))
 }))
-vi.mock('$lib/server/pieces', () => ({ getPieces: () => ({ getFilesIn, parseFilename }) }))
+vi.mock('#lib/server/pieces.js', () => ({ getPieces: () => ({ getFilesIn, parseFilename }) }))
 
 test('directory loader keeps browsing data without the unused mode marker', async () => {
 	const event = { params: { directory: 'books' } } as Parameters<typeof load>[0]

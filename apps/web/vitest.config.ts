@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 export default defineConfig({
 	plugins: [svelte({ configFile: false }), Icons({ compiler: 'svelte' })],
 	server: { hmr: false },
-	resolve: { alias: { $lib: fileURLToPath(new URL('./src/lib', import.meta.url)) } },
+	resolve: { alias: { '#lib': fileURLToPath(new URL('./src/lib', import.meta.url)) } },
 	test: {
 		include: ['src/**/*.{test,spec}.{ts,js}', 'scripts/**/*.{test,spec}.{ts,js}'],
 		exclude: ['build/**', '.svelte-kit/**', 'node_modules/**']

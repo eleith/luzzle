@@ -1,12 +1,12 @@
 <script lang="ts">
-	import '$lib/pieces/viewer/ViewerBar.css'
+	import '#lib/pieces/viewer/ViewerBar.css'
 	import { onMount, onDestroy } from 'svelte'
 	import { page } from '$app/state'
 	import type { LayoutProps } from './$types'
-	import { editorHref, previewHref } from '$lib/pieces/navigation'
+	import { editorHref, previewHref } from '#lib/pieces/navigation.js'
 
 	import ArrowLeftIcon from 'virtual:icons/ph/arrow-left'
-	import PieceOverview from '$lib/pieces/viewer/PieceOverview.svelte'
+	import PieceOverview from '#lib/pieces/viewer/PieceOverview.svelte'
 	import PreviewFacts from './PreviewFacts.svelte'
 	import PreviewLogs from './PreviewLogs.svelte'
 

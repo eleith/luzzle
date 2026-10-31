@@ -10,8 +10,8 @@ const { realpath, stat, createReadStream } = vi.hoisted(() => ({
 vi.mock('node:fs', () => ({
 	default: { promises: { realpath, stat }, createReadStream }
 }))
-vi.mock('$lib/server/config', async () => {
-	const { makeConfig } = await import('$lib/server/config.fixture')
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	const config = makeConfig()
 	config.paths.assets = '/site/assets'
 	return { config }

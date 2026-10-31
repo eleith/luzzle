@@ -1,9 +1,9 @@
+import type { Handle } from '@sveltejs/kit/hooks'
 import { afterAll, afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { validateConfig } from '@luzzle/web.config'
 import { parseSetCookieHeader } from 'better-auth/cookies'
-import { credentialsAuth, oidcAuth } from '$lib/server/config.fixture'
-import type { Handle } from '@sveltejs/kit'
-import { createAuth, createAuthHandle, createSessionReader } from './index'
+import { credentialsAuth, oidcAuth } from '#lib/server/config.fixture.js'
+import { createAuth, createAuthHandle, createSessionReader } from './index.js'
 
 // Exercise production rate limiting and origin checks, not the library's test defaults.
 vi.hoisted(() => vi.stubEnv('NODE_ENV', 'production'))
@@ -27,11 +27,13 @@ afterEach(() => {
 	vi.unstubAllGlobals()
 	vi.unstubAllEnvs()
 })
+
 afterAll(() => vi.unstubAllEnvs())
 
 function request(path: string, body?: unknown, headers: Record<string, string> = {}) {
 	let method = 'GET'
 	let requestBody: string | undefined
+
 	if (body !== undefined) {
 		method = 'POST'
 		requestBody = JSON.stringify(body)
@@ -58,8 +60,10 @@ function appSession(cookie: string) {
 
 test('public-only mode needs neither a secret nor a valid auth URL', async () => {
 	expect(createAuth(undefined, '')).toBeUndefined()
+
 	const read = createSessionReader(undefined, new Headers())
 	const first = read()
+
 	expect(read()).toBe(first)
 	expect(await first).toBeNull()
 })
@@ -76,6 +80,7 @@ test('32-character resolved secrets are accepted after interpolating a shorter p
 		{ auth: { ...credentialsAuth, secret: '${TEST_AUTH_SECRET}' } },
 		{ TEST_AUTH_SECRET: secret }
 	)
+
 	auth = createAuth(config.auth, origin)!
 	expect((await auth.$context).secret).toBe(secret)
 	expect((await request('/sign-in/credentials', credentials)).status).toBe(200)
@@ -91,10 +96,14 @@ test('an environment keyring cannot replace YAML secrets or keep cookies valid a
 		currentVersion: 1,
 		legacySecret: credentialsAuth.secret
 	})
+
 	const login = await request('/sign-in/credentials', credentials)
+
 	expect(login.status).toBe(200)
+
 	const cookie = cookies(login)
 	const rotated = 'replacement-session-secret-with-at-least-32-characters'
+
 	auth = createAuth({ ...credentialsAuth, secret: rotated }, origin)!
 	expect((await auth.$context).secret).toBe(rotated)
 	expect(await appSession(cookie)).toBeNull()
@@ -103,6 +112,7 @@ test('an environment keyring cannot replace YAML secrets or keep cookies valid a
 test('native log severity is retained without forwarding sensitive messages or arguments', () => {
 	const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 	const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+
 	auth.options.logger?.log?.('error', 'sensitive native message', { token: 'private-token' })
 	auth.options.logger?.log?.('info', 'another sensitive message')
 	expect(error).toHaveBeenLastCalledWith('Authentication event', { source: 'better-auth' })
@@ -111,6 +121,7 @@ test('native log severity is retained without forwarding sensitive messages or a
 
 test('native HTTP login validates YAML credentials and cookie-less first-login origin', async () => {
 	const bad = await request('/sign-in/credentials', { ...credentials, password: 'wrong' })
+
 	expect(bad.status).toBe(401)
 	expect((await bad.json()).code).toBe('CredentialsSignin')
 	expect(cookies(bad)).toBe('')
@@ -118,10 +129,12 @@ test('native HTTP login validates YAML credentials and cookie-less first-login o
 	const crossOrigin = await request('/sign-in/credentials', credentials, {
 		origin: 'https://another.example.test'
 	})
+
 	expect(crossOrigin.status).toBe(403)
 	expect(cookies(crossOrigin)).toBe('')
 
 	const good = await request('/sign-in/credentials', credentials)
+
 	expect(good.status).toBe(200)
 	expect(await good.json()).toEqual({ success: true })
 	expect(cookies(good)).toContain('session_data=')
@@ -133,7 +146,9 @@ test('native HTTP login validates YAML credentials and cookie-less first-login o
 
 test('native auth endpoints accept a canonical URL with a trailing slash', async () => {
 	auth = createAuth(credentialsAuth, `${origin}/`)!
+
 	const login = await request('/sign-in/credentials', credentials)
+
 	expect(login.status).toBe(200)
 	expect((await request('/sign-out', {}, { cookie: cookies(login) })).status).toBe(200)
 })
@@ -168,6 +183,7 @@ test('the lazy app session reader memoizes and preserves fixed expiry across an 
 	})
 
 	const damaged = cookie.replace(/(session_data=.{12})/, '$1x')
+
 	expect(await appSession(damaged)).toBeNull()
 	vi.setSystemTime(new Date('2026-11-04T12:00:00Z'))
 	expect(await appSession(cookie)).toEqual(session)
@@ -178,21 +194,30 @@ test('the lazy app session reader memoizes and preserves fixed expiry across an 
 test('bypassing the cookie cache cannot renew the underlying session beyond seven days', async () => {
 	const login = await request('/sign-in/credentials', credentials)
 	const cookie = cookies(login)
+
 	vi.setSystemTime(new Date('2026-10-31T12:00:00Z'))
+
 	const response = await request('/get-session?disableCookieCache=true', undefined, { cookie })
+
 	expect((await response.json()).session.expiresAt).toBe('2026-11-05T12:00:00.000Z')
 	vi.setSystemTime(new Date('2026-11-05T12:00:01Z'))
+
 	const expired = await request('/get-session?disableCookieCache=true', undefined, { cookie })
+
 	expect(await expired.json()).toBeNull()
 })
 
 test('native logout clears browser cookies and unconfigured native strategies cannot create sessions', async () => {
 	const login = await request('/sign-in/credentials', credentials)
 	const logout = await request('/sign-out', {}, { cookie: cookies(login) })
+
 	expect(logout.status).toBe(200)
+
 	const cleared = parseSetCookieHeader(logout.headers.get('set-cookie') ?? '')
 	const sessionCookies = [...cleared].filter(([name]) => name.includes('session_'))
+
 	expect(sessionCookies.length).toBeGreaterThanOrEqual(2)
+
 	for (const [, attributes] of sessionCookies) expect(attributes.value).toBe('')
 
 	const signup = await request('/sign-up/email', {
@@ -206,9 +231,12 @@ test('native logout clears browser cookies and unconfigured native strategies ca
 		email: `${credentials.username}@luzzle.local`,
 		password: credentials.password
 	})
+
 	expect((await passwordLogin.json()).code).toBe('EMAIL_PASSWORD_DISABLED')
 	expect(cookies(passwordLogin)).toBe('')
+
 	const social = await request('/sign-in/social', { provider: 'oidc', callbackURL: '/admin' })
+
 	expect(social.ok).toBe(false)
 	expect(cookies(social)).not.toContain('session_data=')
 })
@@ -225,12 +253,15 @@ test('the Kit adapter handles native login and leaves proxy verification outside
 		}),
 		locals: {}
 	} as Parameters<Handle>[0]['event']
+
 	const resolve = vi.fn()
 	const login = await handle({ event: loginEvent, resolve })
+
 	expect(login.status).toBe(200)
 	expect(resolve).not.toHaveBeenCalled()
 
 	const verifyUrl = new URL('/api/session/verify', origin)
+
 	const verifyEvent = {
 		url: verifyUrl,
 		request: new Request(verifyUrl, { headers: { cookie: cookies(login) } }),
@@ -246,6 +277,7 @@ test('the Kit adapter handles native login and leaves proxy verification outside
 			return Response.json(await first)
 		}
 	})
+
 	expect(getSession).toHaveBeenCalledOnce()
 	expect((await response.json()).user.name).toBe(credentials.username)
 })
@@ -292,6 +324,7 @@ test.each([
 			event: proxyEvent('/sign-out', {}, canonicalOrigin, cookies(login)),
 			resolve
 		})
+
 		expect(logout.status).toBe(200)
 		expect(resolve).not.toHaveBeenCalled()
 	}
@@ -304,10 +337,12 @@ test.each([true, false])(
 		const getSession = vi.spyOn(auth.api, 'getSession')
 		const url = new URL('/admin', origin)
 		const event = { url, request: new Request(url), locals: {} } as Parameters<Handle>[0]['event']
+
 		const response = await handle({
 			event,
 			resolve: async (event) => Response.json(await event.locals.auth())
 		})
+
 		expect(await response.json()).toBeNull()
 		expect(getSession).not.toHaveBeenCalled()
 	}

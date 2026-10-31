@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { enhance } from '$app/forms'
-	import type { ActionResult } from '@sveltejs/kit'
+	import { enhance, type ActionResult } from '$app/forms'
 	import CheckCircleIcon from 'virtual:icons/ph/check-circle'
 	import WarningCircleIcon from 'virtual:icons/ph/warning-circle'
 	import SpinnerIcon from 'virtual:icons/ph/spinner'
@@ -12,9 +11,9 @@
 
 	let storageTest = $state<TestResult>(data.storage)
 	let storageTesting = $state(false)
-
 	let workerTest = $state<TestResult>(null)
 	let workerTesting = $state(true)
+
 	data.worker.then((result) => {
 		workerTest = result
 		workerTesting = false
@@ -29,10 +28,8 @@
 
 	let archiveTest = $state<TestResult>(null)
 	let archiveTesting = $state(false)
-
 	let cdnTest = $state<TestResult>(null)
 	let cdnTesting = $state(false)
-
 	let aiTest = $state<TestResult>(null)
 	let aiTesting = $state(false)
 

@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { config } from '$lib/server/config'
-import { localRedirect } from '$lib/server/redirect'
+import { config } from '#lib/server/config.js'
+import { localRedirect } from '#lib/server/redirect.js'
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const auth = config.auth

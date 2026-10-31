@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ComponentProps } from 'svelte'
-	import Nav from '$lib/components/layout/simple/nav.svelte'
+	import Nav from '#lib/components/layout/simple/nav.svelte'
 	import AtIcon from 'virtual:icons/ph/at'
 	import { onMount } from 'svelte'
 	import { page } from '$app/state'

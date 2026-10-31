@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { OpenWorkflow } from 'openworkflow'
 import { BackendSqlite } from 'openworkflow/sqlite'
-import { config } from '$lib/server/config.js'
+import { config } from '#lib/server/config.js'
 
 let openWorkflowInstance: OpenWorkflow | null = null
 let openWorkflowBackendInstance: BackendSqlite | null = null

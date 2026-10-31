@@ -1,4 +1,4 @@
-import { config } from '$lib/server/config'
+import { config } from '#lib/server/config.js'
 import type { LayoutServerLoad } from './$types'
 
 export const load: LayoutServerLoad = async () => {

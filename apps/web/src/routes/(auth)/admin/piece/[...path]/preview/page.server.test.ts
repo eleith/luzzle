@@ -1,21 +1,21 @@
 import { beforeEach, expect, test, vi } from 'vitest'
-import { getOpenWorkflow } from '$lib/server/workflow/index.js'
+import { getOpenWorkflow } from '#lib/server/workflow/index.js'
 import { previewSpec } from '@luzzle/web.jobs/specs'
 import { load } from './+page.server.js'
 
 const { runWorkflow } = vi.hoisted(() => ({ runWorkflow: vi.fn() }))
-vi.mock('$lib/server/pieces', () => ({
+vi.mock('#lib/server/pieces.js', () => ({
 	getPieces: () => ({ parseFilename: () => ({ type: 'book' }) })
 }))
-vi.mock('$lib/server/config', async () => {
-	const { makeConfig } = await import('$lib/server/config.fixture.js')
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	return {
 		config: makeConfig({
 			pieces: [{ type: 'book', fields: { title: 'title', date_consumed: 'read_on' } }]
 		})
 	}
 })
-vi.mock('$lib/server/workflow/index.js', () => ({ getOpenWorkflow: vi.fn() }))
+vi.mock('#lib/server/workflow/index.js', () => ({ getOpenWorkflow: vi.fn() }))
 
 beforeEach(() => {
 	vi.clearAllMocks()

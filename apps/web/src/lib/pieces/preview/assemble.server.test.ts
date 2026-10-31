@@ -2,7 +2,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import type { TemplateConfig as Config } from '@luzzle/web.templates/config'
 import type { PreviewResult } from '@luzzle/web.jobs'
 import { createPieceHelpers, type PublicWebPieceAsset } from '@luzzle/web.pieces'
-import { makeConfig } from '$lib/server/config.fixture.js'
+import { makeConfig } from '#lib/server/config.fixture.js'
 import { assemblePreview, type PreviewWorkerResult } from './assemble.server.js'
 import { previewOutputUrl } from './output-url.js'
 

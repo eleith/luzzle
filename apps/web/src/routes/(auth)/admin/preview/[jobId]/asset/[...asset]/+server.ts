@@ -3,8 +3,8 @@ import fs from 'node:fs'
 import { Readable } from 'node:stream'
 import mime from 'mime-types'
 import type { RequestHandler } from '@sveltejs/kit'
-import { config } from '$lib/server/config'
-import { isSafeRelativePath, isWithinDirectory } from '$lib/server/asset-paths'
+import { config } from '#lib/server/config.js'
+import { isSafeRelativePath, isWithinDirectory } from '#lib/server/asset-paths.js'
 
 export const GET: RequestHandler = async ({ params }) => {
 	const jobId = params.jobId

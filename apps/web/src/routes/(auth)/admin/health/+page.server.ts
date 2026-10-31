@@ -1,12 +1,12 @@
-import { config } from '$lib/server/config'
-import { probeStorage } from '$lib/server/health/probes.js'
-import { testConnectivity } from '$lib/server/health/connectivity.js'
-import { validateAiKeyIfConfigured } from '$lib/server/health/ai.js'
+import { config } from '#lib/server/config.js'
+import { probeStorage } from '#lib/server/health/probes.js'
+import { testConnectivity } from '#lib/server/health/connectivity.js'
+import { validateAiKeyIfConfigured } from '#lib/server/health/ai.js'
 import {
 	loadHealthPage,
 	probeWorkerIfConfigured,
 	probeOidcIssuerIfConfigured
-} from '$lib/server/load/health.js'
+} from '#lib/server/load/health.js'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = () => loadHealthPage()

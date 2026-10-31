@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
-import { getPieces } from '$lib/server/pieces'
-import { config } from '$lib/server/config'
+import { getPieces } from '#lib/server/pieces.js'
+import { config } from '#lib/server/config.js'
 import { setFrontmatterValue } from '@luzzle/core'
 
 export const load: PageServerLoad = async ({ params, url }) => {

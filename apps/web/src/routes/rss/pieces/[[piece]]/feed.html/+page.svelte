@@ -1,5 +1,5 @@
 <script lang="ts">
-	import FeedPage from '$lib/feeds/page.svelte'
+	import FeedPage from '#lib/feeds/page.svelte'
 
 	let { data } = $props()
 </script>

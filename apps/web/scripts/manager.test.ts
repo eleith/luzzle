@@ -16,6 +16,13 @@ import { promisify } from 'node:util'
 
 const exec = promisify(execFile)
 const manager = fileURLToPath(new URL('./manager.js', import.meta.url))
+const launcher = fileURLToPath(new URL('./start-server.js', import.meta.url))
+const absoluteEnvironment = {
+	HOST: '127.0.0.1',
+	PROTOCOL_HEADER: 'x-luzzle-public-protocol',
+	HOST_HEADER: 'x-luzzle-public-authority',
+	PORT_HEADER: ''
+}
 const cache = fileURLToPath(new URL('../node_modules/.cache/', import.meta.url))
 let directory: string
 
@@ -37,7 +44,17 @@ afterEach(async () => {
 
 function run(dev = true, environment: NodeJS.ProcessEnv = {}) {
 	const inherited = { ...process.env }
-	for (const key of ['ORIGIN', 'BETTER_AUTH_URL', 'AUTH_URL', 'NEXTAUTH_URL']) delete inherited[key]
+	for (const key of [
+		'HOST',
+		'ORIGIN',
+		'PROTOCOL_HEADER',
+		'HOST_HEADER',
+		'PORT_HEADER',
+		'BETTER_AUTH_URL',
+		'AUTH_URL',
+		'NEXTAUTH_URL'
+	])
+		delete inherited[key]
 	return exec(process.execPath, [manager], {
 		cwd: directory,
 		env: {
@@ -73,16 +90,20 @@ test('development startup loads config from the mounted working directory withou
 	expect(stdout).not.toContain('Initiating production build sequence')
 })
 
-test('production startup uses build and log files in the same working directory', async () => {
+test('production delegates to the absolute real launcher with build and log files in the working directory', async () => {
 	await configure()
 	await writeFile(
 		path.join(directory, 'build/index.js'),
-		'console.log("manager-server " + JSON.stringify({cwd:process.cwd(),host:process.env.HOST}))'
+		`import { createServer } from 'node:http'
+export const server = createServer()
+console.log("manager-server " + JSON.stringify({
+	cwd:process.cwd(),host:process.env.HOST,launcher:process.argv[1]
+}))`
 	)
 	const { stdout } = await run(false)
 	expect(stdout).toContain('manager-command run build')
 	expect(stdout).toContain(
-		`manager-server ${JSON.stringify({ cwd: directory, host: '127.0.0.1' })}`
+		`manager-server ${JSON.stringify({ cwd: directory, host: '127.0.0.1', launcher })}`
 	)
 	const log = await readFile(path.join(directory, 'data/build.log'), 'utf8')
 	expect(log).toContain('Config App URL: https://manager.example/garden')
@@ -98,7 +119,9 @@ test('fresh production startups follow the compatibility link after atomic confi
 	await symlink('config/config.yaml', filename)
 	await writeFile(
 		path.join(directory, 'build/index.js'),
-		'console.log("manager-server " + JSON.stringify({cwd:process.cwd(),host:process.env.HOST}))'
+		`import { createServer } from 'node:http'
+export const server = createServer()
+console.log("manager-server " + JSON.stringify({cwd:process.cwd(),host:process.env.HOST}))`
 	)
 
 	// Each run is a fresh manager process, not a live-server config reload.
@@ -132,21 +155,23 @@ test('startup still fails when the working-directory config is missing', async (
 async function captureServerEnvironment() {
 	await writeFile(
 		path.join(directory, 'build/index.js'),
-		'console.log("manager-environment " + JSON.stringify({host:process.env.HOST,origin:process.env.ORIGIN}))'
+		`import { createServer } from 'node:http'
+// Keep the native export unbound so this environment snapshot exits naturally.
+export const server = createServer()
+console.log("manager-environment " + JSON.stringify({
+	HOST:process.env.HOST,ORIGIN:process.env.ORIGIN,
+	PROTOCOL_HEADER:process.env.PROTOCOL_HEADER,HOST_HEADER:process.env.HOST_HEADER,
+	PORT_HEADER:process.env.PORT_HEADER
+}))`
 	)
 }
 
-test('production derives the canonical Kit origin from configured url.app', async () => {
+test('production selects internal protocol and authority headers from configured url.app', async () => {
 	await configure('https://Manager.EXAMPLE:443/garden/', true)
 	await captureServerEnvironment()
 	const { stdout } = await run(false)
 	expect(stdout).toContain('manager-command run build')
-	expect(stdout).toContain(
-		`manager-environment ${JSON.stringify({
-			host: '127.0.0.1',
-			origin: 'https://manager.example'
-		})}`
-	)
+	expect(stdout).toContain(`manager-environment ${JSON.stringify(absoluteEnvironment)}`)
 })
 
 test('production uses YAML even when ambient URL variables disagree', async () => {
@@ -154,40 +179,52 @@ test('production uses YAML even when ambient URL variables disagree', async () =
 	await captureServerEnvironment()
 	const { stdout } = await run(false, {
 		ORIGIN: 'not-a-url',
+		PROTOCOL_HEADER: 'x-forwarded-proto',
+		HOST_HEADER: 'x-forwarded-host',
+		PORT_HEADER: 'x-forwarded-port',
 		BETTER_AUTH_URL: 'https://unexpected.example',
 		AUTH_URL: '',
 		NEXTAUTH_URL: ''
 	})
-	expect(stdout).toContain(
-		'manager-environment {"host":"127.0.0.1","origin":"https://manager.example"}'
-	)
+	expect(stdout).toContain(`manager-environment ${JSON.stringify(absoluteEnvironment)}`)
 })
 
-test.each(['', '/garden'])('production keeps app URL %s request-derived', async (app) => {
-	await configure(app, false)
-	await captureServerEnvironment()
-	const { stdout } = await run(false)
-	expect(stdout).toContain('manager-environment {"host":"127.0.0.1"}')
-})
+test.each(['', '/garden'])(
+	'production keeps app URL %s request-derived and clears ambient ORIGIN',
+	async (app) => {
+		await configure(app, false)
+		await captureServerEnvironment()
+		const { stdout } = await run(false, {
+			ORIGIN: 'https://unexpected.example',
+			PROTOCOL_HEADER: 'x-forwarded-proto'
+		})
+		expect(stdout).toContain(
+			`manager-environment ${JSON.stringify({
+				HOST: '127.0.0.1',
+				PROTOCOL_HEADER: 'x-forwarded-proto'
+			})}`
+		)
+	}
+)
 
-test('production derives Kit origin even with authentication disabled', async () => {
+test('production selects configured header settings even with authentication disabled', async () => {
 	await configure()
 	await captureServerEnvironment()
 	const { stdout } = await run(false)
-	expect(stdout).toContain(
-		'manager-environment {"host":"127.0.0.1","origin":"https://manager.example"}'
-	)
+	expect(stdout).toContain(`manager-environment ${JSON.stringify(absoluteEnvironment)}`)
 })
 
-test('development derives the same internal Kit origin from YAML', async () => {
+test('development selects the same internal headers from YAML and clears ambient ORIGIN', async () => {
 	await configure(undefined, true)
 	await writeFile(
 		path.join(directory, 'bin/pnpm'),
-		'#!/bin/sh\nprintf "manager-environment HOST=%s ORIGIN=%s\\n" "$HOST" "${ORIGIN-unset}"\n',
+		'#!/bin/sh\nprintf "manager-environment HOST=%s ORIGIN=%s PROTOCOL_HEADER=%s HOST_HEADER=%s PORT_HEADER=%s\\n" "$HOST" "${ORIGIN-unset}" "$PROTOCOL_HEADER" "$HOST_HEADER" "${PORT_HEADER-unset}"\n',
 		{ mode: 0o755 }
 	)
 	const { stdout } = await run(true, { ORIGIN: 'https://unexpected.example' })
-	expect(stdout).toContain('manager-environment HOST=127.0.0.1 ORIGIN=https://manager.example')
+	expect(stdout).toContain(
+		'manager-environment HOST=127.0.0.1 ORIGIN=unset PROTOCOL_HEADER=x-luzzle-public-protocol HOST_HEADER=x-luzzle-public-authority PORT_HEADER=\n'
+	)
 	expect(stdout).not.toContain('Initiating production build sequence')
 })
 
@@ -206,7 +243,13 @@ test('production rejects unsafe configured URLs before logging values, building 
 
 test('authenticated production rejects relative app URLs instead of using an ambient origin', async () => {
 	await configure('/garden', true)
-	await expect(run(false, { ORIGIN: 'https://unexpected.example' })).rejects.toMatchObject({
+	await expect(
+		run(false, {
+			ORIGIN: 'https://unexpected.example',
+			BETTER_AUTH_URL: 'https://unexpected.example',
+			AUTH_URL: 'https://legacy.example'
+		})
+	).rejects.toMatchObject({
 		code: 1,
 		stdout: 'FATAL ERROR: Authentication requires an absolute url.app\n'
 	})

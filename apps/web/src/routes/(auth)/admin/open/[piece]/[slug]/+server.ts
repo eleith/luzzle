@@ -1,7 +1,7 @@
 import { error, redirect } from '@sveltejs/kit'
-import { isConfiguredPieceType } from '$lib/pieces/types.server.js'
+import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 import type { RequestHandler } from './$types'
-import { db } from '$lib/server/database'
+import { db } from '#lib/server/database/index.js'
 
 export const GET: RequestHandler = async ({ params }) => {
 	if (!isConfiguredPieceType(params.piece)) {

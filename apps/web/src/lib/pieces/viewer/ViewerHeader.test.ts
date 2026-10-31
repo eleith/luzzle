@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
-import type { PieceLinks } from '$lib/pieces/navigation'
+import type { PieceLinks } from '#lib/pieces/navigation.js'
 import ViewerHeader from './ViewerHeader.svelte'
 
 const { page, resolve } = vi.hoisted(() => ({

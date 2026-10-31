@@ -1,8 +1,8 @@
 import { expect, test, vi } from 'vitest'
 import { load } from './+layout.server'
 
-vi.mock('$lib/server/config', async () => {
-	const { makeConfig: baseConfig, oidcAuth } = await import('$lib/server/config.fixture')
+vi.mock('#lib/server/config.js', async () => {
+	const { makeConfig: baseConfig, oidcAuth } = await import('#lib/server/config.fixture.js')
 	return {
 		config: {
 			...baseConfig(),

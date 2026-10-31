@@ -10,8 +10,8 @@ const { config, selectFrom, query } = vi.hoisted(() => ({
 		executeTakeFirst: vi.fn()
 	}
 }))
-vi.mock('$lib/server/config', () => ({ config }))
-vi.mock('$lib/server/database', () => ({ db: { selectFrom } }))
+vi.mock('#lib/server/config.js', () => ({ config }))
+vi.mock('#lib/server/database/index.js', () => ({ db: { selectFrom } }))
 
 function event(type: string) {
 	return { params: { piece: type, slug: 'observation' } } as Parameters<typeof GET>[0]

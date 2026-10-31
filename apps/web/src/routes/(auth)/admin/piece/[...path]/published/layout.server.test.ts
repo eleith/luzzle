@@ -1,5 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest'
-import { MarkdownPublicationStatus } from '$lib/pieces/types'
+import { MarkdownPublicationStatus } from '#lib/pieces/types.js'
 import { load } from './+layout.server'
 
 const {
@@ -46,11 +46,11 @@ vi.mock('$app/paths', () => ({
 		throw new Error('Could not get the request store. This is an internal error.')
 	}
 }))
-vi.mock('$lib/server/database', () => ({ db }))
-vi.mock('$lib/server/config', () => ({ config }))
-vi.mock('$lib/server/pieces', () => ({ getWebPiece, getPieces }))
-vi.mock('$lib/server/storage', () => ({ getStorage }))
-vi.mock('$lib/server/workflow/index.js', () => ({ getOpenWorkflow: () => ({ runWorkflow }) }))
+vi.mock('#lib/server/database/index.js', () => ({ db }))
+vi.mock('#lib/server/config.js', () => ({ config }))
+vi.mock('#lib/server/pieces.js', () => ({ getWebPiece, getPieces }))
+vi.mock('#lib/server/storage.js', () => ({ getStorage }))
+vi.mock('#lib/server/workflow/index.js', () => ({ getOpenWorkflow: () => ({ runWorkflow }) }))
 
 const file = 'old type/源 #?%.books.md'
 const serving = {

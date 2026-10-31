@@ -1,4 +1,4 @@
-import { getOpenWorkflow, getOpenWorkflowBackend } from '$lib/server/workflow/index.js'
+import { getOpenWorkflow, getOpenWorkflowBackend } from '#lib/server/workflow/index.js'
 import { getWorkflowRun, type TestConnectivityResult } from '@luzzle/web.jobs'
 import { testConnectivitySpec } from '@luzzle/web.jobs/specs'
 

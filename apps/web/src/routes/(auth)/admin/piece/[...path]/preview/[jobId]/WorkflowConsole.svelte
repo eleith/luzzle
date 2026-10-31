@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte'
-	import type { ProgressPhase, ProgressLog } from '$lib/components/progress.js'
+	import type { ProgressPhase, ProgressLog } from '#lib/components/progress.js'
 	import { formatDuration } from './duration'
 	import CheckCircleFill from 'virtual:icons/ph/check-circle-fill'
 	import XCircleFill from 'virtual:icons/ph/x-circle-fill'

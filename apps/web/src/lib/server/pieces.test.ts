@@ -3,8 +3,8 @@ import { createAppDb, runWebMigrations } from '@luzzle/web.db'
 import { getWebPiece, getRecentlyEditedPieces, getRecentPieces, getRandomPieces } from './pieces.js'
 
 // pieces.js pulls in getPieces()'s module-level dependencies on import
-vi.mock('$lib/server/config', () => ({ config: {} }))
-vi.mock('$lib/server/storage', () => ({ getStorage: vi.fn() }))
+vi.mock('#lib/server/config.js', () => ({ config: {} }))
+vi.mock('#lib/server/storage.js', () => ({ getStorage: vi.fn() }))
 
 async function createTestDb() {
 	const db = createAppDb(':memory:')

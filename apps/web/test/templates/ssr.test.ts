@@ -81,12 +81,14 @@ const ogSelections = [
 	}
 ]
 
+// Isolated compiler fixture only: adapter-node6 exports the native HTTP server directly.
+// Production origin/CSRF coverage lives in routes.test.ts and uses the real bootstrap.
 const startServer = `
 import { once } from 'node:events';
 import { pathToFileURL } from 'node:url';
 const { server } = await import(pathToFileURL(process.argv[1]).href);
-if (!server.server.listening) await once(server.server, 'listening');
-process.send({ port: server.server.address().port });
+if (!server.listening) await once(server, 'listening');
+process.send({ port: server.address().port });
 `
 
 async function buildHashes() {
@@ -316,7 +318,6 @@ beforeAll(async () => {
 				...env,
 				HOST: '127.0.0.1',
 				PORT: '0',
-				ORIGIN: '',
 				PROTOCOL_HEADER: 'x-forwarded-proto',
 				SOCKET_PATH: '',
 				LISTEN_PID: '0',

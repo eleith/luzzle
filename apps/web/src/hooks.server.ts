@@ -1,12 +1,12 @@
-import { building } from '$app/environment'
-import { config } from '$lib/server/config'
-import { createAuth, createAuthHandle } from '$lib/server/auth'
+import { json, redirect } from '@sveltejs/kit'
+import { building } from '$app/env'
+import { config } from '#lib/server/config.js'
+import { createAuth, createAuthHandle } from '#lib/server/auth/index.js'
 import { resolveAuthUrl } from '../scripts/runtime-environment.js'
-import { createAssetCspHandle } from '$lib/server/asset-csp'
-import { prepareConfiguredStyles, renderConfiguredStyles } from '$lib/server/configured-styles'
-import '$lib/server/database'
-import { sequence } from '@sveltejs/kit/hooks'
-import { json, redirect, type Handle } from '@sveltejs/kit'
+import { createAssetCspHandle } from '#lib/server/asset-csp.js'
+import { prepareConfiguredStyles, renderConfiguredStyles } from '#lib/server/configured-styles.js'
+import '#lib/server/database/index.js'
+import { sequence, type Handle } from '@sveltejs/kit/hooks'
 
 async function prepareStartupStyles() {
 	if (building) return ''
@@ -24,8 +24,8 @@ function createAssetPolicy(): Handle {
 
 const configuredStyles = await prepareStartupStyles()
 const handleAssetCsp = createAssetPolicy()
-
 const auth = config.auth
+
 function initializeAuth() {
 	if (building || !auth) return undefined
 	return createAuth(auth, resolveAuthUrl(config.url.app))
@@ -40,7 +40,9 @@ const guardHandle: Handle = async ({ event, resolve }) => {
 	if (!isProtectedRoute(event.route.id)) return resolve(event)
 
 	const headers = { 'Cache-Control': 'private, no-store' }
+
 	event.setHeaders(headers)
+
 	const { request } = event
 	const browserGet =
 		request.method === 'GET' &&
@@ -55,10 +57,12 @@ const guardHandle: Handle = async ({ event, resolve }) => {
 	}
 
 	const session = await event.locals.auth()
-	if (session) return resolve(event)
 
+	if (session) return resolve(event)
 	if (!shouldRedirect) return json({ message: 'Unauthorized' }, { status: 401, headers })
+
 	const params = new URLSearchParams({ redirectTo: event.url.pathname + event.url.search })
+
 	throw redirect(302, `/signin?${params}`)
 }
 

@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
 	runWorkflow: vi.fn(),
 	listWorkflowRuns: vi.fn()
 }))
-vi.mock('$lib/server/workflow/index.js', () => ({
+vi.mock('#lib/server/workflow/index.js', () => ({
 	getOpenWorkflow: () => ({ runWorkflow: mocks.runWorkflow }),
 	getOpenWorkflowBackend: () => ({ listWorkflowRuns: mocks.listWorkflowRuns })
 }))

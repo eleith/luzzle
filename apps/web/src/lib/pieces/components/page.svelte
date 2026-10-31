@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { getPage } from '@luzzle/web.templates/pages'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-	import NavBanner from '$lib/components/layout/simple/NavBanner.svelte'
-	import { getPieceHelpers } from '$lib/pieces/helpers.js'
+	import NavBanner from '#lib/components/layout/simple/NavBanner.svelte'
+	import { getPieceHelpers } from '#lib/pieces/helpers.js'
 
 	type Props = {
 		piece: TemplatedPiece

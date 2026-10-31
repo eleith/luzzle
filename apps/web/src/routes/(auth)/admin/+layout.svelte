@@ -1,9 +1,9 @@
 <script lang="ts">
-	import Nav from '$lib/components/layout/simple/nav.svelte'
+	import Nav from '#lib/components/layout/simple/nav.svelte'
 	import AtIcon from 'virtual:icons/ph/at'
 	import SignOutIcon from 'virtual:icons/ph/sign-out'
 	import { page } from '$app/state'
-	import { signOut, type AuthFailure } from '$lib/auth-client'
+	import { signOut, type AuthFailure } from '#lib/auth-client.js'
 	import { goto } from '$app/navigation'
 	import { onMount } from 'svelte'
 
