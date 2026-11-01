@@ -46,6 +46,16 @@ pages:
   feed:
     about: ./content/feed-about.md
     links: true
+  error:
+    '404':
+      body: ./content/error-404.md
+      home: false
+    '4xx':
+      body: ./content/error-4xx.md
+      home: true
+    '500':
+      body: ./content/error-500.md
+      home: true
 
 pieces:
   - type: books

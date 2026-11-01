@@ -15,12 +15,12 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @luzzle/core --filter @luzzle/web.config --filter @luzzle/web.theme --filter @luzzle/web.db --filter @luzzle/web.jobs --filter @luzzle/web.pieces --filter @luzzle/web.templates build
 WORKDIR /m/apps/web
 RUN mkdir -p assets/pieces assets/build data content build config \
-             node_modules/.cache node_modules/.vite .svelte-kit && \
+             node_modules/.cache node_modules/.vite 'node_modules/$app' .svelte-kit && \
     touch config/config.yaml .env && \
     ln -sfn config/config.yaml config.yaml && \
     chmod 777 . config/config.yaml .env package.json && \
     chmod -R 777 assets data content build \
-                 node_modules/.cache node_modules/.vite .svelte-kit
+                 node_modules/.cache node_modules/.vite 'node_modules/$app' .svelte-kit
 EXPOSE 3000
 ENTRYPOINT ["node", "scripts/manager.js"]
 
