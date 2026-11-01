@@ -1,5 +1,102 @@
 # @luzzle/web
 
+## 0.0.245
+
+### Patch Changes
+
+- 09d3171: Replace Auth.js with stateless Better Auth for YAML credentials and OIDC. Keep
+  protected pages, APIs, preview assets and LSP authorization private and uncached;
+  return JSON authentication errors for non-navigation requests and preserve
+  validated local sign-in destinations.
+
+  **Upgrade:** existing sessions require signing in again. Configure a resolved
+  auth secret of at least 32 characters and register `/api/auth/callback/oidc` with
+  the OIDC provider. Sessions last seven days without rolling renewal. `url.app`
+  is the sole public-origin authority; separate auth URL environment overrides
+  are no longer used. Deploy matching web/proxy versions: session verification
+  moves to `/api/session/verify`. Public-only sites still need no auth secret.
+
+- 65f2ffe: Customize distinct 404, remaining 4xx and server-error pages with Markdown through
+  `pages.error`, including independent recovery-link controls. Use native Kit 3
+  error handling, lazy selected-file caching and safe built-in fallback without
+  changing HTTP statuses, API responses or healthy-page payloads.
+
+  **Upgrade:** replace legacy `content.component.404` and `.error` source paths with
+  `pages.error` settings. The `500` presentation covers all 5xx responses while
+  preserving their actual status; 404 remains independent of other 4xx copy.
+
+- 123b503: Simplify the editor toolbar to Save and More, with Publish/Attach in the menu,
+  a Saved preview link and clear dirty/publication status. Fill the remaining
+  viewport and scroll the document internally, including edge-to-edge mobile
+  editing. Preserve newer drafts during saves, refreshes and publication updates.
+  Keep creation fields and Combobox text editable as defaults change, and make
+  recent dashboard rows fully clickable.
+- 3dbf10c: Align development and CI on Node 26, pnpm 11.2.2, TypeScript 6 and Vitest 4.
+  Keep web, worker and template Svelte versions aligned at 5.57.3. Preserve the
+  LSP executable's `dist/index.js` layout and exclude CLI test mocks from production
+  builds. Include untested production files in coverage without lowering thresholds.
+  CLI command behavior, core APIs and the archive format are unchanged.
+- b20ce15: Upgrade OpenWorkflow to 0.11.0, using native backend/lifecycle ownership and
+  ordered worker resource shutdown. Schedule expired preview-file and application
+  progress/log cleanup with durable cron jitter near 02:00 UTC instead of startup
+  runs or process-local timers. Preserve active jobs and OpenWorkflow engine
+  history; application cleanup does not purge engine job records.
+- 8ec14ec: Ship a prebuilt, author-independent web image that reads YAML at startup without
+  rebuilding the application. Discover piece types at runtime, keep framework
+  JavaScript/CSS same-origin, and apply configured asset prefixes to CSP without
+  relaxing native CSRF checks. Development images need no host npm credentials;
+  configuration-directory mounts support atomic saves without adding hot reload.
+
+  **Upgrade:** use the published-image Compose/config examples and deploy the web
+  stack together. `url.app_assets` affects app-owned static files, not framework
+  chunks. Rebuild/recreate existing checkout-based containers for the new image
+  and config-directory layout; config changes thereafter require restart, not an
+  app build. Back up archive/data and let active jobs finish before upgrading.
+
+- 44e8385: Choose pending additions and updates in a consistent publishing table with
+  separate edit links, local/remote checks, retained results and a fresh check
+  before retrying. Keep unselected work pending while still applying global
+  removals and schema housekeeping. Capture audited selections and hashes across
+  worker retries, and deduplicate replayed progress logs. Omitted selections retain
+  publish-all behavior.
+- 7af4430: Customize the home introduction and feed explanation with ordinary Markdown,
+  with independent latest/random lists and subscription controls. Generate configured
+  site/editor CSS once at startup and load configured editor palettes through
+  Shiki's lazy registry without shipping Shiki to the browser.
+
+  **Upgrade:** replace `content.component.root` and `.feed` Svelte source paths with
+  `pages.home.body` and `pages.feed.about`. Markdown is server-rendered without raw
+  HTML, authored helpers or asset processing. Paths follow the supplied config
+  file; restart after changing configuration or cached Markdown.
+
+- 18761d5: Migrate the web application to SvelteKit 3.1.1, adapter-node 6 and Vite 8. Use
+  native configuration, error props, JSON responses and refresh APIs. Resolve
+  internal navigation through typed routes while preserving encoded filenames,
+  editor drafts and shallow-navigation state. Prepare the development image's
+  Kit-generated directory for its configured non-root user.
+- 55cb722: Select independent built-in icon, page and Open Graph templates through YAML,
+  with nine named choices per role and poster-style defaults. Map metadata into
+  template-owned fields, including structured lists and snippet assets; missing
+  or null optional values use defaults without hiding invalid mappings. Archive
+  types remain independent of presentation choices. The worker retains native
+  runtime OG compilation, caching and PNG rendering.
+
+  **Upgrade:** replace `pieces[].components` Svelte source paths with
+  `pieces[].templates` selections and role-specific mappings. Executable author
+  Svelte sources are no longer supported.
+  Restart web/worker after changing mappings, then edit/save and republish affected
+  pieces when regenerated OG assets are needed.
+
+- 6458f9c: Add inline Unpublish to the editor's More menu, with progress and failure
+  feedback that preserves drafts. Withdraw the public record and attempt exact
+  local/configured-remote deletion of recorded, unshared generated files, including
+  copy-mode assets. Preserve archive originals and assets still used by other
+  pieces; retain configured rclone flags. Unpublish is one attempt, without
+  automatic replay or rollback, and requires a fresh publication check afterward.
+  Cleanup can fail after the public record has been removed.
+- Internal dependency versions remain unchanged: `@luzzle/web.db`,
+  `@luzzle/web.pieces` and `@luzzle/web.templates` remain at `0.0.1`.
+
 ## 0.0.244
 
 ### Patch Changes

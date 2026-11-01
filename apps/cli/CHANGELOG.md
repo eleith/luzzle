@@ -1,5 +1,20 @@
 # @luzzle/cli
 
+## 0.0.245
+
+### Patch Changes
+
+- 3dbf10c: Align development and CI on Node 26, pnpm 11.2.2, TypeScript 6 and Vitest 4.
+  Keep web, worker and template Svelte versions aligned at 5.57.3. Preserve the
+  LSP executable's `dist/index.js` layout and exclude CLI test mocks from production
+  builds. Include untested production files in coverage without lowering thresholds.
+  CLI command behavior, core APIs and the archive format are unchanged.
+- Remove stale package `main`/`types` declarations that pointed to nonexistent SDK
+  files. The `luzzle` executable remains the CLI entrypoint; use `@luzzle/core`
+  for programmatic archive APIs.
+- Updated dependencies [3dbf10c]
+  - @luzzle/core@0.0.245
+
 ## 0.0.244
 
 ### Patch Changes

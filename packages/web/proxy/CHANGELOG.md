@@ -1,5 +1,21 @@
 # @luzzle/web.proxy
 
+## 0.0.245
+
+### Patch Changes
+
+- 09d3171: Replace Auth.js with stateless Better Auth for YAML credentials and OIDC. Keep
+  protected pages, APIs, preview assets and LSP authorization private and uncached;
+  return JSON authentication errors for non-navigation requests and preserve
+  validated local sign-in destinations.
+
+  **Upgrade:** existing sessions require signing in again. Configure a resolved
+  auth secret of at least 32 characters and register `/api/auth/callback/oidc` with
+  the OIDC provider. Sessions last seven days without rolling renewal. `url.app`
+  is the sole public-origin authority; separate auth URL environment overrides
+  are no longer used. Deploy matching web/proxy versions: session verification
+  moves to `/api/session/verify`. Public-only sites still need no auth secret.
+
 ## 0.0.244
 
 ## 0.0.243

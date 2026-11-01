@@ -1,6 +1,6 @@
 {
   "name": "@luzzle/cli",
-  "version": "0.0.244",
+  "version": "0.0.245",
   "author": "eleith",
   "scripts": {
     "lint": "eslint src",
@@ -23,8 +23,6 @@
     "url": "git+https://github.com/eleith/luzzle.git"
   },
   "homepage": "https://github.com/eleith/luzzle",
-  "main": "./dist/src/sdk.js",
-  "types": "./dist/src/sdk.d.ts",
   "description": "cli to interact with a luzzle archive",
   "devDependencies": {
     "@eslint/js": "catalog:",

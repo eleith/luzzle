@@ -1,5 +1,62 @@
 # @luzzle/web.worker
 
+## 0.0.245
+
+### Patch Changes
+
+- 3dbf10c: Align development and CI on Node 26, pnpm 11.2.2, TypeScript 6 and Vitest 4.
+  Keep web, worker and template Svelte versions aligned at 5.57.3. Preserve the
+  LSP executable's `dist/index.js` layout and exclude CLI test mocks from production
+  builds. Include untested production files in coverage without lowering thresholds.
+  CLI command behavior, core APIs and the archive format are unchanged.
+- b20ce15: Upgrade OpenWorkflow to 0.11.0, using native backend/lifecycle ownership and
+  ordered worker resource shutdown. Schedule expired preview-file and application
+  progress/log cleanup with durable cron jitter near 02:00 UTC instead of startup
+  runs or process-local timers. Preserve active jobs and OpenWorkflow engine
+  history; application cleanup does not purge engine job records.
+- 8ec14ec: Ship a prebuilt, author-independent web image that reads YAML at startup without
+  rebuilding the application. Discover piece types at runtime, keep framework
+  JavaScript/CSS same-origin, and apply configured asset prefixes to CSP without
+  relaxing native CSRF checks. Development images need no host npm credentials;
+  configuration-directory mounts support atomic saves without adding hot reload.
+
+  **Upgrade:** use the published-image Compose/config examples and deploy the web
+  stack together. `url.app_assets` affects app-owned static files, not framework
+  chunks. Rebuild/recreate existing checkout-based containers for the new image
+  and config-directory layout; config changes thereafter require restart, not an
+  app build. Back up archive/data and let active jobs finish before upgrading.
+
+- 44e8385: Choose pending additions and updates in a consistent publishing table with
+  separate edit links, local/remote checks, retained results and a fresh check
+  before retrying. Keep unselected work pending while still applying global
+  removals and schema housekeeping. Capture audited selections and hashes across
+  worker retries, and deduplicate replayed progress logs. Omitted selections retain
+  publish-all behavior.
+- 55cb722: Select independent built-in icon, page and Open Graph templates through YAML,
+  with nine named choices per role and poster-style defaults. Map metadata into
+  template-owned fields, including structured lists and snippet assets; missing
+  or null optional values use defaults without hiding invalid mappings. Archive
+  types remain independent of presentation choices. The worker retains native
+  runtime OG compilation, caching and PNG rendering.
+
+  **Upgrade:** replace `pieces[].components` Svelte source paths with
+  `pieces[].templates` selections and role-specific mappings. Executable author
+  Svelte sources are no longer supported.
+  Restart web/worker after changing mappings, then edit/save and republish affected
+  pieces when regenerated OG assets are needed.
+
+- 6458f9c: Add inline Unpublish to the editor's More menu, with progress and failure
+  feedback that preserves drafts. Withdraw the public record and attempt exact
+  local/configured-remote deletion of recorded, unshared generated files, including
+  copy-mode assets. Preserve archive originals and assets still used by other
+  pieces; retain configured rclone flags. Unpublish is one attempt, without
+  automatic replay or rollback, and requires a fresh publication check afterward.
+  Cleanup can fail after the public record has been removed.
+- Updated dependencies [3dbf10c]
+  - @luzzle/core@0.0.245
+- Internal dependency versions remain unchanged: `@luzzle/web.db`,
+  `@luzzle/web.jobs`, `@luzzle/web.pieces` and `@luzzle/web.templates` remain at `0.0.1`.
+
 ## 0.0.244
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @luzzle/lsp
 
+## 0.0.245
+
+### Patch Changes
+
+- 3dbf10c: Align development and CI on Node 26, pnpm 11.2.2, TypeScript 6 and Vitest 4.
+  Keep web, worker and template Svelte versions aligned at 5.57.3. Preserve the
+  LSP executable's `dist/index.js` layout and exclude CLI test mocks from production
+  builds. Include untested production files in coverage without lowering thresholds.
+  CLI command behavior, core APIs and the archive format are unchanged.
+
 ## 0.0.244
 
 ## 0.0.243
