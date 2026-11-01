@@ -1,11 +1,14 @@
 import { type AppConfigPublic } from '#lib/server/config.js'
 import type { LuzzleSession as Session } from '#lib/server/auth/index.js'
+import type { ErrorPresentation } from '#lib/content/errors.js'
 
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
 declare global {
 	namespace App {
-		// interface Error {}
+		interface Error {
+			presentation?: ErrorPresentation
+		}
 		interface Locals {
 			inlineConfiguredStyles(): void
 			auth(): Promise<Session | null>

@@ -1,8 +1,14 @@
 <script lang="ts">
 	import { resolve } from '$app/paths'
 	import ContentBanner from './ContentBanner.svelte'
+	import Markdown from '#lib/content/markdown/Markdown.svelte'
 
-	let { message }: { message?: string } = $props()
+	type Props = {
+		message?: string
+		html?: string
+		home?: boolean
+	}
+	let { message, html, home = true }: Props = $props()
 </script>
 
 <ContentBanner showHome={true} />
@@ -10,10 +16,22 @@
 <main id="main-content" class="error-page">
 	<section class="section">
 		<div class="error-card">
-			<h1>404</h1>
-			<h2>page not found</h2>
-			<p>{message || 'there are no pieces at this path.'}</p>
-			<a href={resolve('')} class="home-button">go home</a>
+			{#if html !== undefined}
+				<Markdown {html} />
+			{:else}
+				<h1>404</h1>
+				<h2>page not found</h2>
+				<p>
+					{#if message}
+						{message}
+					{:else}
+						there are no pieces at this path.
+					{/if}
+				</p>
+			{/if}
+			{#if home}
+				<a href={resolve('')} class="home-button">go home</a>
+			{/if}
 		</div>
 	</section>
 </main>

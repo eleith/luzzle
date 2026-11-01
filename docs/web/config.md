@@ -104,3 +104,18 @@ Omit `ai` to disable generation; otherwise supply `provider: google` and
 `api_key: '${GOOGLE_API_KEY}'`. [Remote sync](deployment.md#optional-remote-sync)
 is optional. `assets.salt` defaults to `${LUZZLE_ASSET_SALT:-}`; keep it stable
 because changing it changes published asset keys and URLs.
+
+## Error pages
+
+Customize three independent presentations under `pages.error`: `"404"` is selected
+before `"4xx"` (all remaining client errors); it does not inherit `"4xx"` copy.
+`"500"` presents every server error without changing its actual HTTP status.
+Each slot defaults to `{}`: optional
+`body` is a nonempty, config-relative Markdown filename, and `home` defaults to
+`true` to show the recovery link. Omit `body` for built-in copy; set `home: false`
+to hide that link without removing global navigation. The [example](config.example.yaml) shows all three.
+
+Only the selected Markdown file is loaded, lazily. If it cannot be loaded or
+rendered, built-in copy is used instead. Restart web after changing these settings
+or files. Bodies are ordinary Markdown, not templates; environment references in
+configured filenames still use the shared config expansion described above.

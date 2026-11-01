@@ -15,6 +15,9 @@ const fixture = vi.hoisted(() => ({
 	createAuth: vi.fn(() => ({ id: 'native-auth' })),
 	createAuthHandle: vi.fn(() => (({ event, resolve }) => resolve(event)) satisfies Handle)
 }))
+const createErrorHandler = vi.hoisted(() => vi.fn(() => vi.fn()))
+vi.mock('#lib/server/error-pages.js', () => ({ createErrorHandler }))
+
 vi.mock('$app/env', () => ({
 	get building() {
 		return fixture.building
@@ -96,6 +99,13 @@ test('awaits configured CSS once when the server hooks load, not per request', a
 		})
 	}
 	expect(fixture.prepareConfiguredStyles).toHaveBeenCalledTimes(1)
+})
+
+test('exports the native error hook without preparing error content during startup', async () => {
+	const { handleError } = await import('./hooks.server.js')
+	expect(createErrorHandler).toHaveBeenCalledExactlyOnceWith(fixture.config)
+	expect(handleError).toBe(createErrorHandler.mock.results[0].value)
+	expect(handleError).not.toHaveBeenCalled()
 })
 
 test('does not prepare configured CSS during framework building', async () => {

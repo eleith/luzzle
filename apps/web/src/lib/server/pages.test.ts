@@ -27,6 +27,12 @@ test('relative references follow the logical supplied config path', async () => 
 	expect(loadMarkdownFile).toHaveBeenLastCalledWith('/deployment/site/home.md')
 })
 
+test('an explicit config path binds Markdown to the matching server configuration', async () => {
+	await loadPageMarkdown('errors/not-found.md', '/fixture/site/config.yaml')
+	expect(loadMarkdownFile).toHaveBeenCalledExactlyOnceWith('/fixture/site/errors/not-found.md')
+	expect(config.paths.config).toBe('/deployment/config/config.yaml')
+})
+
 test('loads only the requested section rather than discovering or preloading other pages', async () => {
 	await loadPageMarkdown('home.md')
 	expect(loadMarkdownFile.mock.calls).toEqual([['/deployment/config/home.md']])

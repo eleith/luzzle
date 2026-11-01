@@ -1,9 +1,16 @@
 <script lang="ts">
 	import { resolve } from '$app/paths'
 	import ContentBanner from './ContentBanner.svelte'
+	import Markdown from '#lib/content/markdown/Markdown.svelte'
 
-	type Props = { status: number; message?: string }
-	let { status, message = 'an unexpected error occurred' }: Props = $props()
+	type Props = {
+		status: number
+		message?: string
+		/** Trusted server-rendered Markdown only; never arbitrary author HTML. */
+		html?: string
+		home?: boolean
+	}
+	let { status, message, html, home = true }: Props = $props()
 </script>
 
 <ContentBanner showHome={true} />
@@ -11,9 +18,21 @@
 <main id="main-content" class="error-page">
 	<section class="section">
 		<div class="error-card">
-			<h1>error {status}</h1>
-			<p>{message}</p>
-			<a href={resolve('')} class="home-button">go home</a>
+			{#if html !== undefined}
+				<Markdown {html} />
+			{:else}
+				<h1>error {status}</h1>
+				<p>
+					{#if message !== undefined}
+						{message}
+					{:else}
+						an unexpected error occurred
+					{/if}
+				</p>
+			{/if}
+			{#if home}
+				<a href={resolve('')} class="home-button">go home</a>
+			{/if}
 		</div>
 	</section>
 </main>

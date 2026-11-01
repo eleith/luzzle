@@ -1,36 +1,40 @@
 <script lang="ts">
 	import { browser } from '$app/env'
 	import { page } from '$app/state'
+
+	const meta = $derived(page.data.meta ?? {})
+	const content = $derived(page.data.config?.content.text)
+	const assets = $derived(page.data.config?.url.app_assets ?? '')
 </script>
 
 <svelte:head>
-	{#if page.data.meta.title}
-		<title>{page.data.meta.title}</title>
-		<meta property="og:title" content={page.data.meta.title} />
+	{#if meta.title}
+		<title>{meta.title}</title>
+		<meta property="og:title" content={meta.title} />
 	{:else}
-		<title>{page.data.config.content.text.title}</title>
-		<meta property="og:title" content={page.data.config.content.text.title} />
+		<title>{content?.title ?? 'Luzzle Explorer'}</title>
+		<meta property="og:title" content={content?.title ?? 'Luzzle Explorer'} />
 	{/if}
-	{#if page.data.meta.description}
-		<meta name="description" content={page.data.meta.description} />
-		<meta property="og:description" content={page.data.meta.description} />
+	{#if meta.description}
+		<meta name="description" content={meta.description} />
+		<meta property="og:description" content={meta.description} />
 	{:else}
-		<meta name="description" content={page.data.config.content.text.description} />
-		<meta property="og:description" content={page.data.config.content.text.description} />
+		<meta name="description" content={content?.description ?? ''} />
+		<meta property="og:description" content={content?.description ?? ''} />
 	{/if}
-	{#if page.data.meta.image}
-		<meta property="og:image" content={page.data.meta.image} />
+	{#if meta.image}
+		<meta property="og:image" content={meta.image} />
 	{:else}
-		<meta property="og:image" content="{page.data.config.url.app_assets}/images/opengraph.png" />
+		<meta property="og:image" content="{assets}/images/opengraph.png" />
 	{/if}
-	{#if page.data.meta.type}
-		<meta property="og:type" content={page.data.meta.type} />
+	{#if meta.type}
+		<meta property="og:type" content={meta.type} />
 	{:else}
 		<meta property="og:type" content="website" />
 	{/if}
 	<meta property="og:url" content={page.url.href} />
 	<meta property="og:locale" content="en_US" />
-	<link rel="icon" href="{page.data.config.url.app_assets}/images/favicon.png" />
+	<link rel="icon" href="{assets}/images/favicon.png" />
 	{#if !browser}
 		<script>
 			;(function () {

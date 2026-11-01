@@ -48,3 +48,15 @@ pieces:
 #     body: ./content/home.md
 #   feed:
 #     about: ./content/feed-about.md
+#   error:
+#     "404": # Selected before "4xx"; each slot defaults to {}.
+#       body: ./content/not-found.md # Omit for built-in copy.
+#       home: true # Default: show the home link.
+#     "4xx": # All remaining client errors, independently configured.
+#       body: ./content/client-error.md
+#       home: false
+#     "500": # All server errors; the actual HTTP status is preserved.
+#       body: ./content/server-error.md
+#       home: true
+# Error Markdown is loaded lazily for the selected slot; failures use built-in copy.
+# Restart web after changing error settings or Markdown files.

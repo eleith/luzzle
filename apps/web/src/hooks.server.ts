@@ -4,6 +4,7 @@ import { config } from '#lib/server/config.js'
 import { createAuth, createAuthHandle } from '#lib/server/auth/index.js'
 import { resolveAuthUrl } from '../scripts/runtime-environment.js'
 import { createAssetCspHandle } from '#lib/server/asset-csp.js'
+import { createErrorHandler } from '#lib/server/error-pages.js'
 import { prepareConfiguredStyles, renderConfiguredStyles } from '#lib/server/configured-styles.js'
 import '#lib/server/database/index.js'
 import { sequence, type Handle } from '@sveltejs/kit/hooks'
@@ -75,3 +76,4 @@ function createRequestPipeline(): Handle {
 }
 
 export const handle = createRequestPipeline()
+export const handleError = createErrorHandler(config)

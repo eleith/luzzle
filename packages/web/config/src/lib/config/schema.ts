@@ -291,6 +291,23 @@ const AssetsSchema = Type.Object(
 	{ default: {}, additionalProperties: false },
 );
 
+const ErrorPageSchema = Type.Object(
+	{
+		body: Type.Optional(
+			Type.String({
+				minLength: 1,
+				description:
+					"Markdown file replacing the error body, relative to the supplied config file.",
+			}),
+		),
+		home: Type.Boolean({
+			default: true,
+			description: "Show a link back to the home page.",
+		}),
+	},
+	{ default: {}, additionalProperties: false },
+);
+
 const PagesSchema = Type.Object(
 	{
 		home: Type.Object(
@@ -328,6 +345,19 @@ const PagesSchema = Type.Object(
 				}),
 			},
 			{ default: {}, additionalProperties: false },
+		),
+		error: Type.Object(
+			{
+				"404": ErrorPageSchema,
+				"4xx": ErrorPageSchema,
+				"500": ErrorPageSchema,
+			},
+			{
+				default: {},
+				additionalProperties: false,
+				description:
+					"Independent error presentations: 404 takes precedence over remaining 4xx; 500 presents all 5xx without changing the actual status.",
+			},
 		),
 	},
 	{ default: {}, additionalProperties: false },

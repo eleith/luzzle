@@ -424,6 +424,65 @@
               "type": "boolean"
             }
           }
+        },
+        "error": {
+          "default": {},
+          "additionalProperties": false,
+          "description": "Independent error presentations: 404 takes precedence over remaining 4xx; 500 presents all 5xx without changing the actual status.",
+          "type": "object",
+          "properties": {
+            "404": {
+              "default": {},
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "body": {
+                  "minLength": 1,
+                  "description": "Markdown file replacing the error body, relative to the supplied config file.",
+                  "type": "string"
+                },
+                "home": {
+                  "default": true,
+                  "description": "Show a link back to the home page.",
+                  "type": "boolean"
+                }
+              }
+            },
+            "500": {
+              "default": {},
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "body": {
+                  "minLength": 1,
+                  "description": "Markdown file replacing the error body, relative to the supplied config file.",
+                  "type": "string"
+                },
+                "home": {
+                  "default": true,
+                  "description": "Show a link back to the home page.",
+                  "type": "boolean"
+                }
+              }
+            },
+            "4xx": {
+              "default": {},
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "body": {
+                  "minLength": 1,
+                  "description": "Markdown file replacing the error body, relative to the supplied config file.",
+                  "type": "string"
+                },
+                "home": {
+                  "default": true,
+                  "description": "Show a link back to the home page.",
+                  "type": "boolean"
+                }
+              }
+            }
+          }
         }
       }
     },

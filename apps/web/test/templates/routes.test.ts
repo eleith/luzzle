@@ -1239,6 +1239,81 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(await machineFeedSnapshot()).toEqual(originalMachineFeeds)
 	})
 
+	test('adopts runtime error Markdown for framework and expected 404s without leaking into healthy pages or APIs', async () => {
+		const copies = ['Runtime missing copy', 'Runtime client copy', 'Runtime server copy']
+		for (const [index, key] of ['404', '4xx', '500'].entries())
+			await writeFile(path.join(directory, `sections/error-${key}.md`), `# ${copies[index]}`)
+		await restartWithPages({
+			error: {
+				'404': { body: 'sections/error-404.md', home: false },
+				'4xx': { body: 'sections/error-4xx.md' },
+				'500': { body: 'sections/error-500.md' }
+			}
+		})
+		function expectNoErrorContent(body: string) {
+			for (const value of [...copies, 'presentation', directory, configFilename, 'sections/error-'])
+				expect(body).not.toContain(value)
+		}
+		for (const pathname of ['/no-such-runtime-page', '/pieces/cutover-kind/missing']) {
+			const response = await request(pathname)
+			expect(response.status, pathname).toBe(404)
+			const html = await response.text()
+			expect(html).toContain('<h1>Runtime missing copy</h1>')
+			expect(html).not.toContain('Runtime client copy')
+			expect(html).not.toContain('Runtime server copy')
+			expect(html).toContain('aria-label="main page"')
+			expect(linkTargets(html, pathname)).toContain(new URL('/', origin).href)
+			expect(html).not.toMatch(/<a\b[^>]*\bclass="[^"]*\bhome-button\b/)
+			for (const privateValue of [directory, configFilename, 'sections/error-'])
+				expect(html).not.toContain(privateValue)
+			expect(expectInlineConfiguredCss(html)).toContain('--color-primary: #135790;')
+		}
+		const unmatched = await request('/no-such-runtime-page', 'application/json')
+		expect(unmatched.status).toBe(404)
+		expect(unmatched.headers.get('content-type')).toContain('text/html')
+		const unmatchedBody = await unmatched.text()
+		expect(unmatchedBody).toContain('page not found')
+		expectNoErrorContent(unmatchedBody)
+
+		// Matched loader errors render +error HTML even when JSON was requested.
+		const matched = await request('/pieces/cutover-kind/missing', 'application/json')
+		expect(matched.status).toBe(404)
+		expect(matched.headers.get('content-type')).toContain('text/html')
+		const matchedBody = await matched.text()
+		expect(matchedBody).toContain('page not found')
+		expectNoErrorContent(matchedBody)
+		for (const pathname of ['/', piecePath, '/rss/pieces/feed.html'])
+			expectNoErrorContent(await pageHtml(pathname))
+		const feeds = await machineFeedSnapshot()
+		expect(feeds).toEqual(originalMachineFeeds)
+		for (const feed of Object.values(feeds)) expectNoErrorContent(feed.body)
+
+		const publicApi = await request('/api/pieces?type=cutover-kind', 'application/json')
+		expect(publicApi.status).toBe(200)
+		const publicBody = await publicApi.text()
+		expectNoErrorContent(publicBody)
+		expect(JSON.parse(publicBody).pieces).toEqual([originalPublicPiece])
+		for (const accept of ['text/html', 'application/json']) {
+			const invalid = await request('/api/pieces?type=unconfigured-kind', accept)
+			expect(invalid.status).toBe(400)
+			const body = await invalid.text()
+			expect(body).toBe('invalid type')
+			expectNoErrorContent(body)
+		}
+		const denied = await request('/admin/open/cutover-kind/real-piece', 'application/json')
+		expect(denied.status).toBe(403)
+		expect(denied.headers.get('cache-control')).toBe('private, no-store')
+		expectNoErrorContent(await denied.text())
+		const methodError = await request('/api/pieces', 'application/json', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: '{}'
+		})
+		expect(methodError.status).toBe(405)
+		expectNoErrorContent(await methodError.text())
+		expect(await buildHashes()).toEqual(originalBuild)
+	})
+
 	test('leaves piece data and every built adapter file unchanged after runtime content/config changes', async () => {
 		expectBuiltIn(await pageHtml())
 		const response = await request('/api/pieces?type=cutover-kind', 'application/json')
