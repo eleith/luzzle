@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths'
 	import ContentBanner from './ContentBanner.svelte'
 
 	type Props = { status: number; message?: string }
@@ -12,7 +13,7 @@
 		<div class="error-card">
 			<h1>error {status}</h1>
 			<p>{message}</p>
-			<a href="/" class="home-button">go home</a>
+			<a href={resolve('')} class="home-button">go home</a>
 		</div>
 	</section>
 </main>

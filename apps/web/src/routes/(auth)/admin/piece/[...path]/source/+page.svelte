@@ -10,13 +10,14 @@
 	import PieceActions from '#lib/components/editor/PieceActions.svelte'
 	import PieceToolbar from '#lib/components/editor/PieceToolbar.svelte'
 	import { submitUnpublish, type UnpublishOutcome } from '#lib/pieces/unpublish-client.js'
-	import { editorHref, publishHref } from '#lib/pieces/navigation.js'
+	import { editorHref, publishQuery } from '#lib/pieces/navigation.js'
 	import GenerationDialog from '#lib/components/editor/GenerationDialog.svelte'
 	import type { PageProps } from './$types'
 	import { Dialog } from 'bits-ui'
 	import { fade, fly } from 'svelte/transition'
 	import { navigating, page } from '$app/state'
 	import { beforeNavigate, goto, refreshAll } from '$app/navigation'
+	import { resolve } from '$app/paths'
 	import { onMount, onDestroy, tick, untrack } from 'svelte'
 
 	let { data, form }: PageProps = $props()
@@ -60,6 +61,7 @@
 		bypassWarning = true
 		showWarningDialog = false
 		try {
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- The navigation guard captured an already resolved router URL.
 			await goto(targetUrl)
 		} catch {
 			if (!disposed && data.file === file) {
@@ -225,6 +227,7 @@
 			generateDialogOpen = data.canGenerate
 			const url = new URL(currentUrl.href)
 			url.searchParams.delete('generate')
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- Only the query changes on the already resolved router URL.
 			void goto(url, { shallow: true, replace: true, state: page.state }).catch(() => {
 				if (!disposed && data.file === file) {
 					editorErrorReason = 'generation-url'
@@ -684,7 +687,8 @@
 							{unpublishDisabled}
 							onPublish={() => {
 								const file = data.file
-								void goto(publishHref(file)).catch(() => {
+								const query = publishQuery(file)
+								void goto(resolve(`admin/publish?${query}`)).catch(() => {
 									if (!disposed && data.file === file) {
 										editorErrorReason = 'publish'
 										editorErrorDetail = ''

@@ -19,13 +19,38 @@ const publishedPiece = {
 }
 
 const { page, resolve } = vi.hoisted(() => ({
-	page: { url: new URL('https://app.test/admin/piece/books/book.md/preview/job') },
-	resolve: vi.fn(() => {
-		throw new Error('Could not get the request store. This is an internal error.')
-	})
+	page: {
+		url: new URL('https://app.test/admin/piece/books/book.md/preview/job'),
+		route: { id: '/(auth)/admin/piece/[...path]/preview/[jobId]' }
+	},
+	resolve: vi.fn((route: string, params: { path: string; jobId?: string }) =>
+		route
+			.replace('/(auth)', '')
+			.replace('[...path]', () => params.path)
+			.replace('[jobId]', () => params.jobId ?? '')
+	)
 }))
 vi.mock('$app/state', () => ({ page }))
 vi.mock('$app/paths', () => ({ resolve }))
+
+// Only the layout's five app-navigation destinations may use this mocked resolver.
+// Resource/helper URLs must remain independent; this is not native Kit resolution evidence.
+function expectAppNavigation(jobs = ['job']) {
+	expect(resolve.mock.calls).toEqual(
+		jobs.flatMap((job) => {
+			const route = '/(auth)/admin/piece/[...path]/preview/[jobId]'
+			const path = 'books/book.md'
+			const jobId = encodeURIComponent(job)
+			return [
+				['/(auth)/admin/piece/[...path]/source', { path }],
+				[route, { path, jobId }],
+				[`${route}/page`, { path, jobId }],
+				[`${route}/icon`, { path, jobId }],
+				[`${route}/share`, { path, jobId }]
+			]
+		})
+	)
+}
 
 type Data = ComponentProps<typeof Overview>['data']
 type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
@@ -115,6 +140,7 @@ function tree(props: Data) {
 
 beforeEach(() => {
 	page.url = new URL('https://app.test/admin/piece/books/book.md/preview/job')
+	page.route.id = '/(auth)/admin/piece/[...path]/preview/[jobId]'
 	vi.clearAllMocks()
 })
 
@@ -181,7 +207,7 @@ test('completed Preview reads title, consolidated facts, Preview logs, then asse
 		'background-color: #abc'
 	])
 		expect(html).not.toContain(absent)
-	expect(resolve).not.toHaveBeenCalled()
+	expectAppNavigation()
 })
 
 test.each(['waiting', 'running', 'failed', 'expired'] as const)(
@@ -209,7 +235,7 @@ test.each(['waiting', 'running', 'failed', 'expired'] as const)(
 		expect(html).not.toContain('Publication</caption>')
 		expect(html).not.toContain('Preview &lt;Draft>')
 		expect(html).not.toContain('/asset/generated/')
-		expect(resolve).not.toHaveBeenCalled()
+		expectAppNavigation()
 	}
 )
 
@@ -229,7 +255,7 @@ test('completed workflow without an assembled result keeps facts/logs and omits 
 	expect(html).not.toContain('Preview assets')
 	expect(html).not.toContain('None recorded')
 	expect(html).not.toContain('/asset/generated/')
-	expect(resolve).not.toHaveBeenCalled()
+	expectAppNavigation()
 })
 
 test('recorded generated Share PNG remains a View link in Overview', () => {
@@ -246,10 +272,10 @@ test('recorded generated Share PNG remains a View link in Overview', () => {
 	expect(png).toBeDefined()
 	expect(png).toContain('aria-label="View opengraph: generated/share.png"')
 	expect(png).toContain('target="_blank"')
-	expect(png).toContain('rel="noopener noreferrer"')
+	expect(png).toContain('rel="external noopener noreferrer"')
 	expect(png).not.toMatch(/\bdownload(?:=|\s|>)/)
 	expect(html.match(/<main\b/g)).toHaveLength(1)
-	expect(resolve).not.toHaveBeenCalled()
+	expectAppNavigation()
 })
 
 test('empty generated outputs do not turn SDK passthroughs into downloadable preview artifacts', () => {
@@ -262,9 +288,10 @@ test('empty generated outputs do not turn SDK passthroughs into downloadable pre
 	expect(html).not.toContain('Image</caption>')
 	expect(html).not.toContain('archive/manual.pdf')
 	expect(html).not.toContain('/asset/generated/')
+	expectAppNavigation()
 })
 
-test('replacement completed snapshots use only the new job namespace and metadata without a request store', () => {
+test('replacement completed snapshots use only the new job namespace and metadata with mocked app navigation', () => {
 	tree(data())
 	const props = data()
 	if (props.status !== 'completed' || !props.piece) throw new Error('Expected assembled fixture')
@@ -272,10 +299,11 @@ test('replacement completed snapshots use only the new job namespace and metadat
 	props.piece = { ...props.piece, title: 'New result' }
 	props.outputs = [asset('custom', 'new.txt', 'new', 'text/plain')]
 	page.url = new URL('https://app.test/admin/piece/books/book.md/preview/new-job')
+	page.route.id = '/(auth)/admin/piece/[...path]/preview/[jobId]'
 	const html = tree(props)
 	expect(html).toContain('New result')
 	expect(html).toContain('href="/admin/preview/new-job/asset/new.txt"')
 	expect(html).not.toContain('/preview/job/asset/')
 	expect(html).not.toContain('generated/cover.jpg')
-	expect(resolve).not.toHaveBeenCalled()
+	expectAppNavigation(['job', 'new-job'])
 })

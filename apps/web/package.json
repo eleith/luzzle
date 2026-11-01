@@ -57,7 +57,7 @@
     "codemirror": "6.0.2",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
-    "eslint-plugin-svelte": "3.18.0",
+    "eslint-plugin-svelte": "3.23.1",
     "feedsmith": "2.1.0",
     "globals": "catalog:",
     "mime-types": "3.0.2",

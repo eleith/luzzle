@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { PiecesDiff } from '@luzzle/core'
+	import { resolve } from '$app/paths'
 	import Check from 'virtual:icons/ph/check'
 	import X from 'virtual:icons/ph/x'
 	import PencilSimple from 'virtual:icons/ph/pencil-simple'
+	import { encodeArchivePath } from '#lib/pieces/navigation.js'
 	import {
-		editorHref,
-		publishedHref,
 		selectablePaths as getSelectablePaths,
 		toggleSelection,
 		type PublicationOutcome
@@ -39,34 +39,32 @@
 		}
 		return paths
 	})
-	const outcomesByPath = $derived.by(() => {
-		const latest = new Map<string, PublicationOutcome>()
-		for (const outcome of outcomes) latest.set(outcome.filePath, outcome)
-		return latest
-	})
+	const outcomesByPath = $derived(
+		new Map<string, PublicationOutcome>(outcomes.map((outcome) => [outcome.filePath, outcome]))
+	)
 	const currentMembership = $derived.by(() => {
-		const paths = new Set(selectablePaths)
+		const paths = [...selectablePaths]
 		for (const outcome of outcomesByPath.values()) {
 			if (outcome.state === 'removed' || pendingRemovals.has(outcome.filePath)) continue
-			paths.add(outcome.filePath)
+			paths.push(outcome.filePath)
 		}
-		return paths
+		return new Set(paths)
 	})
 	const displayOrder = $derived.by(() => {
-		const paths = new Set<string>()
+		const paths: string[] = []
 		for (const file of order) {
-			if (currentMembership.has(file)) paths.add(file)
+			if (currentMembership.has(file)) paths.push(file)
 		}
-		for (const file of currentMembership) paths.add(file)
-		return Array.from(paths)
+		for (const file of currentMembership) paths.push(file)
+		return Array.from(new Set(paths))
 	})
 	const removals = $derived.by(() => {
-		const paths = new Set(pendingRemovals)
+		const paths = [...pendingRemovals]
 		for (const outcome of outcomesByPath.values()) {
 			if (outcome.state !== 'removed' || selectablePaths.includes(outcome.filePath)) continue
-			paths.add(outcome.filePath)
+			paths.push(outcome.filePath)
 		}
-		return Array.from(paths)
+		return Array.from(new Set(paths))
 	})
 	const selectedCount = $derived(
 		selectablePaths.filter((file) => selectedPaths.includes(file)).length
@@ -102,6 +100,7 @@
 			{/if}
 			<ul>
 				{#each displayOrder as file (file)}
+					{@const path = encodeArchivePath(file)}
 					{@const pending = selectablePaths.includes(file)}
 					{@const outcome = outcomesByPath.get(file)}
 					{@const publishing = publishingPaths.includes(file)}
@@ -117,7 +116,10 @@
 						{#if publishing}
 							<span class="badge">Publishing</span>
 						{:else if published}
-							<a class="badge published-link" href={publishedHref(file)}>Published</a>
+							<a
+								class="badge published-link"
+								href={resolve('/(auth)/admin/piece/[...path]/published', { path })}>Published</a
+							>
 						{:else}
 							<span class="badge">
 								{#if failed}
@@ -159,7 +161,7 @@
 						{/if}
 						<a
 							class="edit-link"
-							href={editorHref(file)}
+							href={resolve('/(auth)/admin/piece/[...path]/source', { path })}
 							aria-label={`Edit ${file}`}
 							title={`Edit ${file}`}
 						>

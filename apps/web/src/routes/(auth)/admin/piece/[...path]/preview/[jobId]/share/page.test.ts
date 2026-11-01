@@ -23,18 +23,44 @@ const publishedPiece = {
 const { page, resolve } = vi.hoisted(() => ({
 	page: {
 		url: new URL('https://app.test/admin/piece/books/book.md/preview/job/share'),
+		route: { id: '/(auth)/admin/piece/[...path]/preview/[jobId]/share' },
 		data: {
 			preview: true,
 			job: 'job',
 			config: { url: { app: 'https://public.test/site', luzzle_assets: 'https://cdn.test' } }
 		}
 	},
-	resolve: vi.fn(() => {
-		throw new Error('Could not get the request store. This is an internal error.')
+	resolve: vi.fn((route: string, params: { tag: string } | { path: string; jobId?: string }) => {
+		if (route === '/tags/[tag]' && 'tag' in params) return `/tags/${params.tag}`
+		if (!('path' in params)) throw new Error(`Unexpected route: ${route}`)
+		return route
+			.replace('/(auth)', '')
+			.replace('[...path]', () => params.path)
+			.replace('[jobId]', () => params.jobId ?? '')
 	})
 }))
 vi.mock('$app/state', () => ({ page }))
 vi.mock('$app/paths', () => ({ resolve }))
+
+// Only the layout's five destinations and explicit page tag links may use this mock.
+// Resource/helper URLs must remain independent; this is not native Kit resolution evidence.
+function expectAppNavigation(jobs = ['job'], tags: string[] = []) {
+	expect(resolve.mock.calls).toEqual([
+		...jobs.flatMap((job) => {
+			const route = '/(auth)/admin/piece/[...path]/preview/[jobId]'
+			const path = 'books/book.md'
+			const jobId = encodeURIComponent(job)
+			return [
+				['/(auth)/admin/piece/[...path]/source', { path }],
+				[route, { path, jobId }],
+				[`${route}/page`, { path, jobId }],
+				[`${route}/icon`, { path, jobId }],
+				[`${route}/share`, { path, jobId }]
+			]
+		}),
+		...tags.map((tag) => ['/tags/[tag]', { tag: encodeURIComponent(tag) }])
+	])
+}
 // Only renderer wrappers are replaced: the real routes, layout, ShareViewport
 // and getPieceHelpers run. SSR cannot prove reactive prop updates, client SSE,
 // or instance ResizeObserver mounting/cleanup and responsive scaling behavior.
@@ -110,6 +136,7 @@ function tree(props: Data, view: keyof typeof routes = 'share', query = '') {
 	page.url = new URL(
 		`https://app.test/admin/piece/${props.file}/preview/${props.job}/${view}${query}`
 	)
+	page.route.id = `/(auth)/admin/piece/[...path]/preview/[jobId]/${view}`
 	const params = { path: props.file, jobId: props.job }
 	const children = createRawSnippet(() => ({
 		render: () => render(routes[view], { props: { data: props, params } }).body
@@ -137,7 +164,7 @@ test.each([true, false])('Share reconstructs composition with recorded PNG=%s', 
 	expect(html).not.toMatch(
 		/https:\/\/(?:public|cdn)\.test|\/pieces\/assets\/|\/admin\/asset\/|published\/cover\.jpg/
 	)
-	expect(resolve).not.toHaveBeenCalled()
+	expectAppNavigation()
 })
 
 test('?html is ignored: identical composition and four tabs plus Back, only Share active', () => {
@@ -153,6 +180,7 @@ test('?html is ignored: identical composition and four tabs plus Back, only Shar
 	expect(header).toMatch(/<a[^>]*href="[^"]*\/share"[^>]*aria-current="page"[^>]*>\s*share\s*<\/a>/)
 	expect(header).not.toContain('?html')
 	expect(header).not.toContain('share (html)')
+	expectAppNavigation(['job', 'job'])
 })
 
 test.each(['share', 'page', 'icon'] as const)(
@@ -163,7 +191,7 @@ test.each(['share', 'page', 'icon'] as const)(
 		expect(html.match(/id="main-content"/g)).toHaveLength(1)
 		expect(html).toContain(`data-renderer="${view === 'share' ? 'composition' : view}"`)
 		expect(html).toContain('src="/admin/preview/job/asset/generated/cover.jpg"')
-		expect(resolve).not.toHaveBeenCalled()
+		expectAppNavigation()
 	}
 )
 
@@ -181,7 +209,7 @@ test.each(['waiting', 'running', 'failed', 'expired'] as const)(
 		expect(html).not.toMatch(
 			/data-renderer="composition"|<img|generated\/share\.png|Open generated share image|\?html|Preview assets/
 		)
-		expect(resolve).not.toHaveBeenCalled()
+		expectAppNavigation()
 	}
 )
 
@@ -193,5 +221,16 @@ test('completed without an assembled piece is safe and invents no composition or
 	expect(html).not.toMatch(
 		/data-renderer=|<img|\/asset\/|Open generated share image|not (?:been )?generated/i
 	)
-	expect(resolve).not.toHaveBeenCalled()
+	expectAppNavigation()
+})
+
+test('completed Page resolves tag navigation but never preview resources', () => {
+	const props = data()
+	if (props.status !== 'completed') throw new Error('Expected completed fixture')
+	props.tags = [{ slug: '源 #?%', tag: 'Tag <label>' }]
+	const html = tree(props, 'page')
+	expect(html).toContain('href="/tags/%E6%BA%90%20%23%3F%25"')
+	expect(html).toContain('Tag &lt;label>')
+	expect(html).toContain('src="/admin/preview/job/asset/generated/cover.jpg"')
+	expectAppNavigation(['job'], ['源 #?%'])
 })

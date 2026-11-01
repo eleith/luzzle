@@ -18,6 +18,20 @@ export type OutputValue = {
 	mime: string
 }
 
+export type OutputRow = OutputFile | OutputValue
+
+export function groupOutputRows(items: OutputRow[], ordinals: ReadonlyMap<string, number>) {
+	const groups = new Map<string, OutputRow[]>()
+	for (const item of items) {
+		const group = groups.get(item.key)
+		if (group) group.push(item)
+		else groups.set(item.key, [item])
+	}
+	return Array.from(groups, ([key, items]) => ({ key, items })).sort(
+		(first, second) => ordinals.get(first.key)! - ordinals.get(second.key)!
+	)
+}
+
 export type OutputFamily = {
 	name: string
 	files: OutputFile[]

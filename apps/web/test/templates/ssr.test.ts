@@ -408,7 +408,9 @@ describe('stock catalog in built SvelteKit SSR', () => {
 		expect(html).toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
 		expect(html).toContain(`src="${origin}/pieces/assets/fixture/backdrop%20large.jpg"`)
 		expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
-		expect(html).toContain('href="/random"')
+		const randomHref = html.match(/<a\b[^>]*href="([^"]+)"[^>]*aria-label="random"/)?.[1]
+		if (!randomHref) throw new Error('Expected the random navigation link')
+		expect(new URL(randomHref, `${origin}/`).href).toBe(`${origin}/random`)
 		expect(html).toContain('--banner-background-color: #234567')
 		expect(html.indexOf('aria-label="Global"')).toBeLessThan(html.indexOf('<h1'))
 		const preview = await request('?role=page&job=page%20job')

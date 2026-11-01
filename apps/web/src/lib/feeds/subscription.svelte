@@ -17,8 +17,9 @@
 
 <aside class="subscription" aria-label="RSS subscription">
 	<p>
-		View the raw data files: <a href="feed.xml">XML</a> | <a href="feed.json">JSON</a> |
-		<a href="feed.md">Markdown</a>
+		View the raw data files: <a href="feed.xml" rel="external">XML</a> |
+		<a href="feed.json" rel="external">JSON</a> |
+		<a href="feed.md" rel="external">Markdown</a>
 	</p>
 	<p id="rss-instructions">Copy the link and paste it into an RSS reader.</p>
 	<div class="copy-controls">

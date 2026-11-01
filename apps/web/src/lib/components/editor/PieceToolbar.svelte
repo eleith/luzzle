@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
+	import { resolve } from '$app/paths'
 	import Button from '#lib/components/ui/Button.svelte'
-	import { previewHref, publishedHref } from '#lib/pieces/navigation.js'
+	import { encodeArchivePath } from '#lib/pieces/navigation.js'
 
 	type Props = {
 		file: string
@@ -22,6 +23,7 @@
 		hasPublishedVersion,
 		children
 	}: Props = $props()
+	const path = $derived(encodeArchivePath(file))
 </script>
 
 <div class="toolbar" role="group" aria-label="Editor actions">
@@ -38,7 +40,11 @@
 			{:else if isDirty}
 				Unsaved
 			{:else}
-				<a href={previewHref(file)} aria-label="Preview saved piece" title="Preview saved piece">
+				<a
+					href={resolve('/(auth)/admin/piece/[...path]/preview', { path })}
+					aria-label="Preview saved piece"
+					title="Preview saved piece"
+				>
 					Saved
 				</a>
 			{/if}
@@ -47,7 +53,7 @@
 			{#if isUnpublishing}
 				Unpublishing…
 			{:else if hasPublishedVersion}
-				<a href={publishedHref(file)}>Published</a>
+				<a href={resolve('/(auth)/admin/piece/[...path]/published', { path })}>Published</a>
 			{:else}
 				Unpublished
 			{/if}

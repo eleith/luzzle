@@ -4,6 +4,13 @@ import type { ComponentProps } from 'svelte'
 import Page from './+page.svelte'
 import type { RunView } from './+page.server.js'
 
+vi.mock('$app/paths', () => ({
+	resolve: vi.fn((route: string, params?: { path: string }) => {
+		const path = route.replace('/(auth)', '').replace('[...path]', () => params?.path ?? '')
+		return path.startsWith('/') ? path : `/${path}`
+	})
+}))
+
 const location = vi.hoisted(() => ({ url: 'http://localhost/admin/publish' }))
 
 vi.mock('$app/navigation', () => ({ refreshAll: vi.fn() }))

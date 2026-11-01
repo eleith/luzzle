@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
-	import { groupAssetOutputs, type OutputFile, type OutputValue } from './assets'
+	import { groupAssetOutputs, groupOutputRows, type OutputFile, type OutputValue } from './assets'
 	import { transformCaption, fileType } from './presentation'
 	import { toggleDisclosure } from './disclosure'
 	import SourceContent from './SourceContent.svelte'
@@ -17,34 +17,19 @@
 	const grouped = $derived(groupAssetOutputs(assets, fileUrl))
 	// Presentation ordinals follow root input order, even for file/value subsets.
 	const ordinalMap = $derived.by(() => {
-		const ordinals = new Map<string, number>()
-		for (const asset of assets) {
-			if (!ordinals.has(asset.asset_key)) ordinals.set(asset.asset_key, ordinals.size + 1)
-		}
-		return ordinals
+		const keys = new Set(assets.map((asset) => asset.asset_key))
+		return new Map<string, number>(Array.from(keys, (key, index) => [key, index + 1]))
 	})
 
 	function assetLabel(key: string) {
 		return `Asset ${ordinalMap.get(key)}`
 	}
 
-	function groupByKey<T extends { key: string }>(items: T[]) {
-		const groups = new Map<string, T[]>()
-		for (const item of items) {
-			const group = groups.get(item.key)
-			if (group) group.push(item)
-			else groups.set(item.key, [item])
-		}
-		return Array.from(groups, ([key, items]) => ({ key, items })).sort(
-			(first, second) => ordinalMap.get(first.key)! - ordinalMap.get(second.key)!
-		)
-	}
-	type OutputRow = OutputFile | OutputValue
 	// Keep projected model identities as row and disclosure keys.
 	const families = $derived(
 		grouped.transforms.map((transform) => ({
 			name: transform.name,
-			groups: groupByKey<OutputRow>([...transform.files, ...transform.values])
+			groups: groupOutputRows([...transform.files, ...transform.values], ordinalMap)
 		}))
 	)
 	let expanded = $state.raw<Set<OutputValue>>(new Set())
@@ -78,7 +63,7 @@
 					aria-label={`View ${file.label}: ${file.path}`}
 					title={file.path}
 					target="_blank"
-					rel="noopener noreferrer">View</a
+					rel="external noopener noreferrer">View</a
 				>
 			</div>
 		{:else}

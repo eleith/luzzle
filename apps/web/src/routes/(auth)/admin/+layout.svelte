@@ -5,6 +5,7 @@
 	import { page } from '$app/state'
 	import { signOut, type AuthFailure } from '#lib/auth-client.js'
 	import { goto } from '$app/navigation'
+	import { resolve } from '$app/paths'
 	import { onMount } from 'svelte'
 
 	const { children } = $props()
@@ -24,7 +25,7 @@
 		}
 		localStorage.removeItem('luzzle.admin')
 		try {
-			await goto('/', { refreshAll: true })
+			await goto(resolve(''), { refreshAll: true })
 		} catch {
 			signOutError = 'navigation'
 		} finally {
@@ -39,7 +40,7 @@
 
 {#snippet left()}
 	{#if page.url.pathname !== '/admin'}
-		<a href="/admin" aria-label="admin">
+		<a href={resolve('admin')} aria-label="admin">
 			<AtIcon style="font-size: 1em;" />
 		</a>
 	{/if}

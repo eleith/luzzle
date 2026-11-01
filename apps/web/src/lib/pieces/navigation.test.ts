@@ -1,6 +1,12 @@
 import { existsSync } from 'node:fs'
 import { expect, test, vi } from 'vitest'
-import { editorHref, getPieceLinks, previewHref, publishedHref, publishHref } from './navigation'
+import {
+	editorHref,
+	encodeArchivePath,
+	previewHref,
+	publishedHref,
+	publishHref
+} from './navigation'
 
 const { resolve } = vi.hoisted(() => ({
 	resolve: vi.fn(() => {
@@ -8,9 +14,6 @@ const { resolve } = vi.hoisted(() => ({
 	})
 }))
 vi.mock('$app/paths', () => ({ resolve }))
-
-const piecePath = 'books/%E6%BA%90%20%23%3F%25%26%22.books.md'
-const route = '/(auth)/admin/piece/[...path]/published'
 
 test('Published replaces Live without keeping a legacy handler or redirect alias', () => {
 	const routes = new URL('../../routes/(auth)/admin/piece/[...path]/', import.meta.url)
@@ -75,57 +78,13 @@ test('publish navigation encodes a query value rather than a pathname', () => {
 	)
 })
 
-test.each(
-	['', '/garden'].flatMap((mount) =>
-		['', '/page', '/icon', '/share'].map((suffix) => ({ mount, suffix }))
-	)
-)(
-	'builds all five links for mount=$mount view=$suffix without a request store',
-	({ mount, suffix }) => {
-		const root = `${mount}/admin/piece/${piecePath}`
-		const url = new URL(`https://app.test${root}/published${suffix}?private=query#fragment`)
-		const before = url.href
-		const links = getPieceLinks(url, route + suffix)
-		expect(links).toEqual({
-			source: `${root}/source`,
-			overview: `${root}/published`,
-			page: `${root}/published/page`,
-			icon: `${root}/published/icon`,
-			share: `${root}/published/share`
-		})
-		expect(JSON.parse(JSON.stringify(links))).toEqual(links)
-		expect(url.href).toBe(before)
-		expect(resolve).not.toHaveBeenCalled()
-	}
-)
-
-test.each(['', '/page', '/icon', '/share'])(
-	'trailing slash on %s does not change piece identity',
-	(suffix) => {
-		const url = new URL(
-			`https://app.test/admin/piece/films/mars-express.films.md/published${suffix}/`
-		)
-		expect(getPieceLinks(url, route + suffix).overview).toBe(
-			'/admin/piece/films/mars-express.films.md/published'
-		)
-	}
-)
-
-test('already-encoded literal percent filenames are preserved, not encoded twice or decoded', () => {
-	const url = new URL('https://app.test/admin/piece/nested/cover%2520name.md/published')
-	expect(getPieceLinks(url, route).source).toBe('/admin/piece/nested/cover%2520name.md/source')
-})
-
-test('nested source folders named after view routes remain part of source identity', () => {
-	const url = new URL(
-		'https://app.test/garden/admin/piece/published/page/icon/share/file.md/published/share'
-	)
-	expect(getPieceLinks(url, route + '/share').source).toBe(
-		'/garden/admin/piece/published/page/icon/share/file.md/source'
-	)
-})
-
-test('encoded static route segments stay navigable under the matched route identity', () => {
-	const url = new URL('https://app.test/%61dmin/piece/books/book.md/published/icon')
-	expect(getPieceLinks(url, route + '/icon').source).toBe('/%61dmin/piece/books/book.md/source')
+test.each([
+	['books/源 #?%.books.md', 'books/%E6%BA%90%20%23%3F%25.books.md'],
+	['folder with spaces/a book.books.md', 'folder%20with%20spaces/a%20book.books.md'],
+	['nested/literal%2F.books.md', 'nested/literal%252F.books.md'],
+	['books/📚.books.md', 'books/%F0%9F%93%9A.books.md'],
+	['published/page/icon/share/source/file.md', 'published/page/icon/share/source/file.md']
+])('encodes raw piece path %s segment-wise without a request store', (file, encoded) => {
+	expect(encodeArchivePath(file)).toBe(encoded)
+	expect(resolve).not.toHaveBeenCalled()
 })

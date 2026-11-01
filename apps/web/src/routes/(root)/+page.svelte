@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state'
+	import { resolve } from '$app/paths'
 	import type { PageProps } from './$types'
 	import ContentBanner from '#lib/content/components/ContentBanner.svelte'
 	import PieceIcon from '#lib/pieces/components/icon.svelte'
@@ -27,12 +28,12 @@
 	{#if data.body === undefined}
 		<section class="section">
 			<h1>luzzle pieces</h1>
-			<p>export all the <a href="/pieces">pieces</a></p>
+			<p>export all the <a href={resolve('pieces')}>pieces</a></p>
 			{#if data.types.length}
 				<h2>types</h2>
 				<div class="types-list">
 					{#each data.types as type (type)}
-						<a href="/pieces/{type}" class="type-link">{type}</a>
+						<a href={resolve(`pieces/${type}`)} class="type-link">{type}</a>
 					{/each}
 				</div>
 			{/if}
@@ -47,7 +48,7 @@
 				<h2>{collection.title}</h2>
 				<div class="pieces-grid">
 					{#each collection.pieces as piece (piece.id)}
-						<a href="/pieces/{piece.type}/{piece.slug}" class="piece">
+						<a href={resolve(`pieces/${piece.type}/${piece.slug}`)} class="piece">
 							<div class="piece-card">
 								<PieceIcon {piece} size={{ width: 80 }} />
 								<span>{piece.title}</span>

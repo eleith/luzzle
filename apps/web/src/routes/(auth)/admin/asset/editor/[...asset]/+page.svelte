@@ -65,6 +65,7 @@
 		bypassWarning = true
 		showWarningDialog = false
 		try {
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- The navigation guard captured an already resolved router URL.
 			await goto(targetUrl)
 		} catch {
 			if (!disposed && data.path === file) {
@@ -369,6 +370,7 @@
 <div class="asset-editor-page">
 	<div class="header">
 		<div class="actions">
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- Validated destination already includes any application base. -->
 			<a href={data.returnTo}>
 				<Button variant="outline">Back</Button>
 			</a>
@@ -416,7 +418,12 @@
 			<span class="meta-label">Path</span>
 			<span class="meta-value code-value">
 				{#if data.exists}
-					<a href="/admin/asset/viewer/{data.path}" target="_blank" class="path-link">
+					<a
+						href="/admin/asset/viewer/{data.path}"
+						target="_blank"
+						rel="external noopener noreferrer"
+						class="path-link"
+					>
 						{data.path}
 					</a>
 				{:else}

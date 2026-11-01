@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths'
 	import type { FeedData } from './types.js'
 
 	let { data }: { data: FeedData } = $props()
@@ -17,7 +18,7 @@
 
 		<div class="pieces-list">
 			{#each data.pieces as piece (piece.id)}
-				<a href="/pieces/{piece.type}/{piece.slug}" class="item-card">
+				<a href={resolve(`pieces/${piece.type}/${piece.slug}`)} class="item-card">
 					<div class="item-link">
 						<span class="item-date">
 							{new Date(piece.date_consumed || piece.date_added).toLocaleDateString('en-US', {

@@ -1,19 +1,33 @@
 import { readFileSync } from 'node:fs'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
-import type { PieceLinks } from '#lib/pieces/navigation.js'
 import ViewerHeader from './ViewerHeader.svelte'
 
-const { page, resolve } = vi.hoisted(() => ({
-	page: { url: new URL('https://app.test/') },
-	resolve: vi.fn(() => {
-		throw new Error('Could not get the request store. This is an internal error.')
-	})
-}))
+const { page, mount, resolve } = vi.hoisted(() => {
+	const mount = { prefix: '' }
+	return {
+		mount,
+		page: {
+			url: new URL('https://app.test/'),
+			route: { id: '/(auth)/admin/piece/[...path]/published' }
+		},
+		resolve: vi.fn(
+			(route: string, params: { path: string }) =>
+				`${mount.prefix}${route.replace('/(auth)', '').replace('[...path]', params.path)}`
+		)
+	}
+})
 vi.mock('$app/state', () => ({ page }))
 vi.mock('$app/paths', () => ({ resolve }))
 
-function links(root = '/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md'): PieceLinks {
+// This resolver double tests delegation and encoded params, not native Kit/browser routing.
+const file = 'books/源 #?%.books.md'
+const encodedPath = 'books/%E6%BA%90%20%23%3F%25.books.md'
+const publishedRoute = '/(auth)/admin/piece/[...path]/published'
+const tabSuffixes = { overview: '', page: '/page', icon: '/icon', share: '/share' }
+
+function links(path = encodedPath, prefix = '') {
+	const root = `${prefix}/admin/piece/${path}`
 	return {
 		source: `${root}/source`,
 		overview: `${root}/published`,
@@ -23,17 +37,29 @@ function links(root = '/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md'): Piec
 	}
 }
 
+function expectNavigation(path = encodedPath) {
+	const routes = [
+		'/(auth)/admin/piece/[...path]/source',
+		...Object.values(tabSuffixes).map((suffix) => publishedRoute + suffix)
+	]
+	expect(resolve).toHaveBeenCalledTimes(routes.length)
+	for (const route of routes) expect(resolve).toHaveBeenCalledWith(route, { path })
+}
+
 beforeEach(() => {
 	page.url = new URL('https://app.test/')
+	page.route.id = publishedRoute
+	mount.prefix = ''
 	vi.clearAllMocks()
 })
 
 test.each(['overview', 'page', 'icon', 'share'] as const)(
-	'%s is active using serialized loader links without a render request store',
+	'%s is active by route ID and delegates navigation to resolve',
 	(tab) => {
 		const navigation = links()
 		page.url = new URL(navigation[tab], 'https://app.test')
-		const html = render(ViewerHeader, { props: { links: navigation } }).body
+		page.route.id = publishedRoute + tabSuffixes[tab]
+		const html = render(ViewerHeader, { props: { file } }).body
 		expect(html).toContain(`href="${navigation.source}"`)
 		expect(html).toContain('aria-label="Back to editor"')
 		expect(html).toContain('title="Back to editor"')
@@ -44,42 +70,69 @@ test.each(['overview', 'page', 'icon', 'share'] as const)(
 		expect(html).not.toContain('Logs')
 		expect(html).not.toContain('<main')
 		expect(html).not.toContain('target="_blank"')
-		expect(resolve).not.toHaveBeenCalled()
+		expectNavigation()
 	}
 )
 
-test('mounted loader links preserve active tab and editor destination', () => {
-	const navigation = links('/garden/admin/piece/books/book.md')
-	page.url = new URL(navigation.icon, 'https://app.test')
-	const html = render(ViewerHeader, { props: { links: navigation } }).body
-	expect(html).toContain(`href="${navigation.icon}" aria-current="page"`)
-	expect(html).toContain(`href="${navigation.source}"`)
-	expect(resolve).not.toHaveBeenCalled()
+test.each([
+	[file, encodedPath],
+	['folder with spaces/a book.books.md', 'folder%20with%20spaces/a%20book.books.md'],
+	['nested/literal%2F.books.md', 'nested/literal%252F.books.md'],
+	['books/📚.books.md', 'books/%F0%9F%93%9A.books.md'],
+	['published/page/icon/share/source/file.md', 'published/page/icon/share/source/file.md']
+])('raw file %s becomes an encoded-once path param for all five routes', (raw, encoded) => {
+	// A different URL identity must not be used to derive the file or its mount.
+	page.url = new URL('https://app.test/garden/admin/piece/other.md/published/share?x=1#old')
+	page.route.id = publishedRoute + '/share'
+	const html = render(ViewerHeader, { props: { file: raw } }).body
+	for (const href of Object.values(links(encoded))) expect(html).toContain(`href="${href}"`)
+	expectNavigation(encoded)
+	expect(html).not.toContain('/garden/')
+	expect(html).not.toContain('other.md')
 })
 
-test('trailing slash still identifies the active view', () => {
-	const navigation = links()
-	page.url = new URL(navigation.overview + '/', 'https://app.test')
-	const html = render(ViewerHeader, { props: { links: navigation } }).body
-	expect(html).toContain(`href="${navigation.overview}" aria-current="page"`)
+test.each(['overview', 'page', 'icon', 'share'] as const)(
+	'controlled resolver prefix and trailing slash leave %s active by route ID',
+	(tab) => {
+		mount.prefix = '/garden'
+		const navigation = links(encodedPath, mount.prefix)
+		page.url = new URL(`${navigation[tab]}/?x=1#fragment`, 'https://app.test')
+		page.route.id = publishedRoute + tabSuffixes[tab]
+		const html = render(ViewerHeader, { props: { file } }).body
+		expect(html).toContain(`href="${navigation[tab]}" aria-current="page"`)
+		expect(html.match(/aria-current="page"/g)).toHaveLength(1)
+		expect(html).toContain(`href="${navigation.source}"`)
+		// Prefix handling belongs to resolve, not the raw file or its encoded param.
+		expectNavigation()
+	}
+)
+
+test('active tab follows route ID rather than a coincidentally matching URL pathname', () => {
+	page.url = new URL(links().icon, 'https://app.test')
+	page.route.id = publishedRoute + '/page'
+	const html = render(ViewerHeader, { props: { file } }).body
+	expect(html).toContain(`href="${links().page}" aria-current="page"`)
+	expect(html).not.toContain(`href="${links().icon}" aria-current="page"`)
+	expect(html.match(/aria-current="page"/g)).toHaveLength(1)
 })
 
-test('replacement loader links do not retain a previous source identity', () => {
-	render(ViewerHeader, { props: { links: links('/admin/piece/first.md') } })
-	const navigation = links('/admin/piece/second.md')
-	page.url = new URL(navigation.share, 'https://app.test')
-	const html = render(ViewerHeader, { props: { links: navigation } }).body
+test('replacement file renders do not retain a previous source identity', () => {
+	render(ViewerHeader, { props: { file: 'first.md' } })
+	vi.clearAllMocks()
+	page.url = new URL(links('second.md').share, 'https://app.test')
+	page.route.id = publishedRoute + '/share'
+	const html = render(ViewerHeader, { props: { file: 'second.md' } }).body
 	expect(html).toContain('/second.md/published/share')
 	expect(html).toContain('aria-current="page"')
 	expect(html).not.toContain('first')
+	expectNavigation('second.md')
 })
 
 test('back link uses the same decorative arrow icon as Preview, not a visible text label', () => {
-	const navigation = links()
-	const html = render(ViewerHeader, { props: { links: navigation } }).body
+	const html = render(ViewerHeader, { props: { file } }).body
 	const anchors = html.match(/<a\b(?:[^>"']|"[^"]*"|'[^']*')*>[\s\S]*?<\/a>/g) ?? []
 	const back = anchors.find((anchor) => anchor.includes('aria-label="Back to editor"'))!
-	expect(back).toContain(`href="${navigation.source}"`)
+	expect(back).toContain(`href="${links().source}"`)
 	expect(back).toContain('title="Back to editor"')
 	expect(back).toMatch(/<svg\b[^>]*aria-hidden="true"/)
 	expect(back).toMatch(/<svg\b[^>]*focusable="false"/)
@@ -90,7 +143,7 @@ test('back link uses the same decorative arrow icon as Preview, not a visible te
 			.trim()
 	).toBe('')
 	expect(back).not.toContain('target=')
-	expect(resolve).not.toHaveBeenCalled()
+	expectNavigation()
 })
 
 test('Published header consumes the narrowly scoped shared bar stylesheet', () => {
@@ -141,7 +194,7 @@ test('shared bar stacks mode/back above full-width wrapping tabs on mobile, with
 	expect(css).toContain('min-height: 44px')
 	expect(mobile).not.toContain('display: none')
 	expect(mobile).not.toContain('position: absolute')
-	const html = render(ViewerHeader, { props: { links: links() } }).body
+	const html = render(ViewerHeader, { props: { file } }).body
 	expect(html).toContain('<nav class="viewer-bar-links" aria-label="Published views"')
 	expect(html).toContain('class="viewer-bar-label">Published</span>')
 	for (const label of ['Overview', 'Page', 'Icon', 'Share']) expect(html).toContain(`>${label}</a>`)
@@ -168,9 +221,9 @@ test('shared active/hover/focus states are token-based, visibly distinguish sele
 	expect(css).not.toContain('rgba(')
 })
 
-test('rendering after an await still needs no paths API', async () => {
+test('mocked SSR after an await still delegates encoded route params', async () => {
 	await Promise.resolve()
-	const html = render(ViewerHeader, { props: { links: links() } }).body
+	const html = render(ViewerHeader, { props: { file } }).body
 	expect(html).toContain('Back to editor')
-	expect(resolve).not.toHaveBeenCalled()
+	expectNavigation()
 })

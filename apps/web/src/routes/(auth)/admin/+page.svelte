@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths'
+	import { encodeArchivePath } from '#lib/pieces/navigation.js'
 	import PlusIcon from 'virtual:icons/ph/plus'
 	import ArrowCircleUpIcon from 'virtual:icons/ph/arrow-circle-up'
 	import FolderIcon from 'virtual:icons/ph/folder'
@@ -44,31 +46,41 @@
 		<h2 class="section-header">statistics</h2>
 		<div class="stats-row">
 			<div class="stat-card-wrapper">
-				<a class="stat-card" href="/pieces">
+				<a class="stat-card" href={resolve('pieces')}>
 					<span class="stat-number">{data.pieceStats.total.toLocaleString()}</span>
 					<span class="stat-label">pieces</span>
 				</a>
-				<a class="quick-add" href="/admin/pieces/create" aria-label="add piece" title="add piece">
+				<a
+					class="quick-add"
+					href={resolve('admin/pieces/create')}
+					aria-label="add piece"
+					title="add piece"
+				>
 					<PlusIcon style="width: 1em; height: 1em;" />
 				</a>
 			</div>
 
 			<div class="stat-card-wrapper">
-				<a class="stat-card" href="/admin/directory">
+				<a class="stat-card" href={resolve('admin/directory')}>
 					<span class="stat-number">{data.fileCount.toLocaleString()}</span>
 					<span class="stat-label">files</span>
 				</a>
-				<a class="quick-add" href="/admin/directory" aria-label="browse files" title="browse files">
+				<a
+					class="quick-add"
+					href={resolve('admin/directory')}
+					aria-label="browse files"
+					title="browse files"
+				>
 					<FolderIcon style="width: 1em; height: 1em;" />
 				</a>
 			</div>
 
 			<div class="stat-card-wrapper">
-				<a class="stat-card" href="/admin/publish">
+				<a class="stat-card" href={resolve('admin/publish')}>
 					<span class="stat-number">{publishAge}</span>
 					<span class="stat-label">last published</span>
 				</a>
-				<a class="quick-add" href="/admin/publish" aria-label="publish" title="publish">
+				<a class="quick-add" href={resolve('admin/publish')} aria-label="publish" title="publish">
 					<ArrowCircleUpIcon style="width: 1em; height: 1em;" />
 				</a>
 			</div>
@@ -87,7 +99,12 @@
 				<ul class="recent-list">
 					{#each data.recentlyEditedPieces as piece (piece.id)}
 						<li>
-							<a class="recent-row" href="/admin/piece/{piece.file_path}/source">
+							<a
+								class="recent-row"
+								href={resolve('/(auth)/admin/piece/[...path]/source', {
+									path: encodeArchivePath(piece.file_path)
+								})}
+							>
 								<span class="recent-title">{piece.title || piece.slug}</span>
 								<span class="recent-type meta-cell">{piece.type}</span>
 								<span class="recent-updated meta-cell">
@@ -107,13 +124,13 @@
 			<div class="stats-row">
 				{#each data.pieceStats.byType as { type, count } (type)}
 					<div class="stat-card-wrapper">
-						<a class="stat-card" href="/pieces/{type}">
+						<a class="stat-card" href={resolve(`pieces/${type}`)}>
 							<span class="stat-number">{count.toLocaleString()}</span>
 							<span class="stat-label">{type}</span>
 						</a>
 						<a
 							class="quick-add"
-							href="/admin/pieces/create?type={type}"
+							href={resolve(`admin/pieces/create?type=${type}`)}
 							aria-label="add {type}"
 							title="add {type}"
 						>
@@ -128,27 +145,27 @@
 	<section class="dashboard-section">
 		<h2 class="section-header">setup</h2>
 		<div class="stats-row">
-			<a class="stat-card" href="/admin/health">
+			<a class="stat-card" href={resolve('admin/health')}>
 				<span class="stat-number">{data.setup.pieceTypeCount}</span>
 				<span class="stat-label">piece types</span>
 			</a>
 
-			<a class="stat-card" href="/admin/health">
+			<a class="stat-card" href={resolve('admin/health')}>
 				<span class="stat-number">{data.setup.aiConfigured ? 'on' : 'off'}</span>
 				<span class="stat-label">ai</span>
 			</a>
 
-			<a class="stat-card" href="/admin/health">
+			<a class="stat-card" href={resolve('admin/health')}>
 				<span class="stat-number">{data.setup.authType ?? 'disabled'}</span>
 				<span class="stat-label">auth</span>
 			</a>
 
-			<a class="stat-card" href="/admin/health">
+			<a class="stat-card" href={resolve('admin/health')}>
 				<span class="stat-number">{data.setup.archiveSyncConfigured ? 'on' : 'off'}</span>
 				<span class="stat-label">archive sync</span>
 			</a>
 
-			<a class="stat-card" href="/admin/health">
+			<a class="stat-card" href={resolve('admin/health')}>
 				<span class="stat-number">{data.setup.cdnSyncConfigured ? 'on' : 'off'}</span>
 				<span class="stat-label">cdn sync</span>
 			</a>

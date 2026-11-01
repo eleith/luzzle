@@ -3,6 +3,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
 import { MarkdownPublicationStatus } from '#lib/pieces/types.js'
+import { editorHref, publishedHref } from '#lib/pieces/navigation.js'
 import {
 	publishedPiece as rawPublishedPiece,
 	asset
@@ -19,20 +20,25 @@ const publishedPiece = {
 	}
 }
 
-const { page } = vi.hoisted(() => ({
+const { page, resolve } = vi.hoisted(() => ({
 	page: {
-		url: new URL('https://app.test/admin/piece/books/book.md/published'),
+		url: new URL('https://app.test/'),
+		route: { id: '/(auth)/admin/piece/[...path]/published' },
 		params: {},
 		data: { config: { url: { app: '/garden', luzzle_assets: '/cdn' } } }
-	}
+	},
+	resolve: vi.fn((route: string, params?: { path?: string; tag?: string }) => {
+		if (route === '/tags/[tag]' && params?.tag !== undefined) return `/tags/${params.tag}`
+		if (route.startsWith('/(auth)/admin/piece/[...path]/') && params?.path !== undefined)
+			return route.replace('/(auth)', '').replace('[...path]', params.path)
+		if (params || route.includes('[')) throw new Error(`Unexpected route: ${route}`)
+		return route.startsWith('/') ? route : `/${route}`
+	})
 }))
 vi.mock('$app/state', () => ({ page }))
-vi.mock('$app/paths', () => ({
-	resolve: (route: string, params: Record<string, string>) =>
-		route.replace(/\[(?:\.\.\.)?(\w+)\]/g, (_, name: string) => params[name])
-}))
+vi.mock('$app/paths', () => ({ resolve }))
 // These synchronous renderer stubs establish route props, URLs and landmarks;
-// they do not exercise the wrappers' static catalogs or client prop updates.
+// they do not exercise native Kit resolution, the wrappers' static catalogs or client prop updates.
 vi.mock('#lib/pieces/components/page.svelte', async () => ({
 	default: (await import('#lib/pieces/viewer/fixtures/PageRenderer.svelte')).default
 }))
@@ -53,13 +59,6 @@ function data(
 		tags: [{ slug: 'fiction', tag: 'Fiction' }],
 		publication: { lastPublishedAt: time, markdownStatus: status },
 		publishedUrl: 'https://public.test/garden/pieces/books/published%20%23%3F%25',
-		links: {
-			source: '/admin/piece/books/book.md/source',
-			overview: '/admin/piece/books/book.md/published',
-			page: '/admin/piece/books/book.md/published/page',
-			icon: '/admin/piece/books/book.md/published/icon',
-			share: '/admin/piece/books/book.md/published/share'
-		},
 		config: {
 			content: { text: { title: 'Garden', description: 'Description' } },
 			url: { app: '/garden', app_assets: '/static', luzzle_assets: '/cdn' }
@@ -68,7 +67,9 @@ function data(
 	}
 }
 beforeEach(() => {
-	page.url = new URL('https://app.test/admin/piece/books/book.md/published')
+	vi.clearAllMocks()
+	page.url = new URL(publishedHref(data().file), 'https://app.test')
+	page.route.id = '/(auth)/admin/piece/[...path]/published'
 })
 
 test('Overview shows escaped published identity, actual completion time and external public link', () => {
@@ -90,7 +91,7 @@ test('Overview shows escaped published identity, actual completion time and exte
 		'href="https://public.test/garden/pieces/books/published%20%23%3F%25" target="_blank" rel="noopener noreferrer"'
 	)
 	expect(html).toContain(`<bdi dir="ltr">${data().publishedUrl}</bdi>`)
-	expect(html).not.toContain('href="/admin/piece/books/book.md/source"')
+	expect(html).not.toContain(`href="${editorHref(data().file)}"`)
 	expect(html).not.toContain('>Open<')
 	expect(html).not.toContain('<details')
 	expect(html).toContain('href="/cdn/pieces/assets/published/cover.jpg"')
@@ -113,7 +114,7 @@ test('only the public URL remains a linked field value; long source paths are ab
 		expect(link).toMatch(/<bdi[^>]*dir="ltr"[^>]*>/)
 		expect(link).not.toContain('aria-label=')
 	}
-	expect(html).not.toContain(props.links.source)
+	expect(html).not.toContain(editorHref(props.file))
 	expect(html).not.toContain('nested folder/')
 	expect(links[0]).toContain(`href="${props.publishedUrl}"`)
 	expect(links[0]).toContain(`>${props.publishedUrl}</bdi>`)
@@ -212,7 +213,7 @@ test('Overview, not Share, links only the actual recorded generated output', () 
 		/<a[^>]*href="\/cdn\/pieces\/assets\/piece\/generated.png"[^>]*>/
 	)?.[0]
 	expect(generatedLink).toContain('target="_blank"')
-	expect(generatedLink).toContain('rel="noopener noreferrer"')
+	expect(generatedLink).toContain('rel="external noopener noreferrer"')
 	expect(html).toMatch(/<a[^>]*href="\/cdn\/pieces\/assets\/piece\/generated.png"[^>]*>View<\/a>/)
 	expect(html).not.toContain('>Open<')
 	expect(html).not.toContain('<details')
@@ -524,7 +525,9 @@ test('reset layout keeps its inspector title/noindex and adds only the favicon, 
 	expect(result.head).toContain('name="robots" content="noindex"')
 	expect(result.head).not.toContain('og:')
 	expect(result.body).toContain('Back to editor')
-	expect(result.body).toContain(`href="${data().links.source}"`)
+	expect(result.body).toContain(`href="${editorHref(data().file)}"`)
+	expect(result.body).toContain(`href="${publishedHref(data().file)}" aria-current="page"`)
+	expect(result.body.match(/aria-current="page"/g)).toHaveLength(1)
 	expect(result.body).not.toMatch(/<th[^>]*>Source<\/th>/)
 	expect(result.body.match(/<main /g)).toHaveLength(1)
 })
@@ -532,7 +535,13 @@ test('reset layout keeps its inspector title/noindex and adds only the favicon, 
 test.each(['page', 'icon', 'share'] as const)(
 	'Published %s delegates serving data and uses published assets without nested main',
 	(view) => {
+		page.url = new URL(`${publishedHref(data().file)}/${view}`, 'https://app.test')
+		page.route.id = `/(auth)/admin/piece/[...path]/published/${view}`
 		const result = render(PublishedTree, { props: { data: data(), view } })
+		expect(result.body).toContain(
+			`href="${publishedHref(data().file)}/${view}" aria-current="page"`
+		)
+		expect(result.body.match(/aria-current="page"/g)).toHaveLength(1)
 		expect(result.body.match(/<main /g)).toHaveLength(1)
 		expect(result.body).toContain('src="/cdn/pieces/assets/published/cover.jpg"')
 		expect(result.body).not.toContain('/admin/asset')
@@ -541,6 +550,7 @@ test.each(['page', 'icon', 'share'] as const)(
 			expect(result.body).toContain('data-renderer="page"')
 			expect(result.body).toContain('href="/tags/fiction"')
 			expect(result.body).toContain('Fiction')
+			expect(resolve).toHaveBeenCalledWith('/tags/[tag]', { tag: 'fiction' })
 		}
 		if (view === 'icon') {
 			expect(result.body).toContain('aria-label="Piece icon"')

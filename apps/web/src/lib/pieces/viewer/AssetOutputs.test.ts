@@ -177,7 +177,7 @@ function expectFileViews(html: string) {
 		expect(link).toContain('title=')
 		expect(link).not.toContain('truncated')
 		expect(link).toContain('target="_blank"')
-		expect(link).toContain('rel="noopener noreferrer"')
+		expect(link).toContain('rel="external noopener noreferrer"')
 		expect(link).not.toMatch(/\sdownload(?:\s|=|>)/)
 		const href = link.match(/\bhref="([^"]*)"/)?.[1]
 		expect(href).toBeDefined()
@@ -1019,7 +1019,6 @@ test('parent owns identity-keyed disclosure state and lazily delegates only open
 	expect(effect).not.toContain('expanded.')
 	expect(effect).not.toContain('toggleDisclosure')
 	expect(source).toContain('{#each group.items as row, rowIndex (row)}')
-	expect(source).toContain('groupByKey<OutputRow>([...transform.files, ...transform.values])')
 	expect(source).toContain('`${titleId}-source-${familyIndex}-${groupIndex}-${rowIndex}`')
 	expect(source).toContain('`${transformCaption(output)}: ${assetLabel(group.key)}, ${field}`')
 	expect(source).toContain('onclick={() => toggle(row)}')
@@ -1427,7 +1426,7 @@ test('generic preview-shaped callback URLs retain only native View, full outputs
 	for (const link of [view]) {
 		expect(link).toContain(`href="${url}"`)
 		expect(link).toContain(`title="${escapedAttribute(path)}"`)
-		expect(link).toContain('rel="noopener noreferrer"')
+		expect(link).toContain('rel="external noopener noreferrer"')
 	}
 	expect(view).toContain(`aria-label="${escapedAttribute(`View custom.full.output: ${path}`)}"`)
 	expect(view).toContain('target="_blank"')

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation'
+	import { resolve } from '$app/paths'
 	import PieceIcon from '#lib/pieces/components/icon.svelte'
 
 	let activePieceId = $state<string | null>(null)
@@ -53,7 +54,7 @@
 		{#if data.pieces.length > 0}
 			{#each data.pieces as piece (piece.id)}
 				<a
-					href="/pieces/{piece.type}/{piece.slug}"
+					href={resolve(`pieces/${piece.type}/${piece.slug}`)}
 					onpointerenter={() => {
 						activePieceId = piece.id
 					}}
@@ -89,6 +90,7 @@
 
 {#if data.nextPage}
 	<section class="action">
+		<!-- eslint-disable svelte/no-navigation-without-resolve -- Query links retain the browser-resolved pathname. -->
 		<a
 			href="?{new URLSearchParams({
 				...(data.query && { query: data.query }),
@@ -100,6 +102,7 @@
 		>
 			more
 		</a>
+		<!-- eslint-enable svelte/no-navigation-without-resolve -->
 	</section>
 {/if}
 

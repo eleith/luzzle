@@ -2,7 +2,15 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
 import type { WebPieces } from '@luzzle/web.db'
+import { resolve } from '$app/paths'
 import Page from './+page.svelte'
+
+vi.mock('$app/paths', () => ({
+	resolve: vi.fn((route: string, params?: { path: string }) => {
+		const path = route.replace('/(auth)', '').replace('[...path]', () => params?.path ?? '')
+		return path.startsWith('/') ? path : `/${path}`
+	})
+}))
 
 const now = Date.parse('2026-01-02T12:00:00Z')
 const piece: WebPieces = {
@@ -18,6 +26,7 @@ const piece: WebPieces = {
 }
 
 beforeEach(() => {
+	vi.clearAllMocks()
 	vi.useFakeTimers()
 	vi.setSystemTime(now)
 })
@@ -74,4 +83,13 @@ test('recent rows retain the slug and added-time fallbacks', () => {
 
 test('the recently edited section stays hidden when empty', () => {
 	expect(html([])).not.toContain('recent-list')
+})
+
+// The native resolver receives already-encoded params, not an erased pathstring.
+test('recent files preserve encoded archive segments in native route params', () => {
+	const file = 'books/literal%2F/源 #?%.books.md'
+	const path = 'books/literal%252F/%E6%BA%90%20%23%3F%25.books.md'
+	const output = html([{ ...piece, file_path: file }])
+	expect(resolve).toHaveBeenCalledWith('/(auth)/admin/piece/[...path]/source', { path })
+	expect(output).toContain(`href="/admin/piece/${path}/source"`)
 })

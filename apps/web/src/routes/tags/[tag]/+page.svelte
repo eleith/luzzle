@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PieceIcon from '#lib/pieces/components/icon.svelte'
 	import { page } from '$app/state'
+	import { resolve } from '$app/paths'
 
 	let { data } = $props()
 	let pieces = $state(data.pieces)
@@ -8,13 +9,10 @@
 	let nextPage = $state<number | null>(data.nextPage)
 
 	async function getNextPage(tagPage: number) {
-		const params = new URLSearchParams()
-
-		if (tagPage) {
-			params.append('page', tagPage.toString())
-		}
-
-		params.append('tag', data.tag)
+		const query: Record<string, string> = {}
+		if (tagPage) query.page = tagPage.toString()
+		query.tag = data.tag
+		const params = new URLSearchParams(query)
 
 		const res = await fetch(`/api/pieces?${params}`, {
 			headers: {
@@ -47,7 +45,7 @@
 	<div class="container">
 		{#each pieces as piece (piece.id)}
 			<a
-				href="/pieces/{piece.type}/{piece.slug}"
+				href={resolve(`pieces/${piece.type}/${piece.slug}`)}
 				onmouseenter={() => {
 					activePieceId = piece.id
 				}}

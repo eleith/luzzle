@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths'
+	import { encodeArchivePath } from '#lib/pieces/navigation.js'
 	let { data } = $props()
 	const { files } = $derived(data)
 </script>
@@ -9,7 +11,11 @@
 			<p>pieces:</p>
 			<div class="list">
 				{#each files.pieces as piece (piece.slug)}
-					<a href="/admin/piece/{piece.file}/source">{piece.slug}</a>
+					<a
+						href={resolve('/(auth)/admin/piece/[...path]/source', {
+							path: encodeArchivePath(piece.file)
+						})}>{piece.slug}</a
+					>
 				{/each}
 			</div>
 		</div>
@@ -20,7 +26,7 @@
 			<p>assets:</p>
 			<div class="list">
 				{#each files.assets as asset (asset.path)}
-					<a href="/admin/asset/editor/{asset.path}">{asset.name}</a>
+					<a href={resolve(`admin/asset/editor/${encodeArchivePath(asset.path)}`)}>{asset.name}</a>
 				{/each}
 			</div>
 		</div>
@@ -31,7 +37,7 @@
 			<p>directories</p>
 			<div class="list">
 				{#each files.directories as dir (dir.path)}
-					<a href="/admin/directory/{dir.path}">{dir.name}</a>
+					<a href={resolve(`admin/directory/${encodeArchivePath(dir.path)}`)}>{dir.name}</a>
 				{/each}
 			</div>
 		</div>

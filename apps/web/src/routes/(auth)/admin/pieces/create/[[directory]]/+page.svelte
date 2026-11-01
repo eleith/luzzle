@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths'
 	import Button from '#lib/components/ui/Button.svelte'
 	import Combobox from '#lib/components/ui/Combobox.svelte'
 	import type { PageProps } from './$types'
@@ -33,7 +34,7 @@
 		</div>
 		<div class="actions">
 			<Button type="submit">Create</Button>
-			<a href="/admin"><Button variant="outline">Cancel</Button></a>
+			<a href={resolve('admin')}><Button variant="outline">Cancel</Button></a>
 		</div>
 	</form>
 </section>

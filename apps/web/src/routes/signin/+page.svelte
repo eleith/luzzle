@@ -26,6 +26,7 @@
 		}
 		localStorage.setItem('luzzle.admin', 'true')
 		try {
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- Validated browser destination already includes any application base.
 			await goto(redirectTo, { refreshAll: true })
 		} catch {
 			submitError = 'NavigationError'
@@ -56,7 +57,9 @@
 	{#if errorCode}
 		<div class="error" role="alert">
 			{#if errorCode === 'NavigationError'}
+				<!-- eslint-disable svelte/no-navigation-without-resolve -- Use the same validated destination as the server redirect. -->
 				Signed in. <a href={redirectTo}>Continue</a> when ready.
+				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			{:else if errorCode === 'CredentialsSignin'}
 				Invalid username or password
 			{:else if errorCode === 'RateLimited'}

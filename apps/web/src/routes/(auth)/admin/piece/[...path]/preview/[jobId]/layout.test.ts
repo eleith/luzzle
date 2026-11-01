@@ -17,14 +17,31 @@ const publishedPiece = {
 	}
 }
 
-const { page, EventSource } = vi.hoisted(() => ({
-	page: { url: new URL('https://app.test/') },
-	EventSource: vi.fn()
-}))
+const { page, EventSource, resolver, resolve } = vi.hoisted(() => {
+	const resolver = { prefix: '' }
+	return {
+		page: {
+			url: new URL('https://app.test/'),
+			route: { id: '/(auth)/admin/piece/[...path]/preview/[jobId]' }
+		},
+		EventSource: vi.fn(),
+		resolver,
+		resolve: vi.fn(
+			(route: string, params: { path: string; jobId?: string }) =>
+				resolver.prefix +
+				route
+					.replace('/(auth)', '')
+					.replace('[...path]', () => params.path)
+					.replace('[jobId]', () => params.jobId ?? '')
+		)
+	}
+})
 vi.mock('$app/state', () => ({ page }))
+vi.mock('$app/paths', () => ({ resolve }))
 
 const file = 'books/book.books.md'
 const root = `/admin/piece/${file}/preview/preview-id`
+const previewRoute = '/(auth)/admin/piece/[...path]/preview/[jobId]'
 const children = createRawSnippet(() => ({ render: () => '<p>Preview child fixture</p>' }))
 type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
 
@@ -60,8 +77,21 @@ function anchors(html: string) {
 	return html.match(/<a\b(?:[^>"']|"[^"]*"|'[^']*')*>[\s\S]*?<\/a>/g) ?? []
 }
 
+function expectAppNavigation(path = file, jobId = 'preview-id', renders = 1) {
+	const calls = [
+		['/(auth)/admin/piece/[...path]/source', { path }],
+		[previewRoute, { path, jobId }],
+		[`${previewRoute}/page`, { path, jobId }],
+		[`${previewRoute}/icon`, { path, jobId }],
+		[`${previewRoute}/share`, { path, jobId }]
+	]
+	expect(resolve.mock.calls).toEqual(Array.from({ length: renders }, () => calls).flat())
+}
+
 beforeEach(() => {
 	page.url = new URL(root, 'https://app.test')
+	page.route.id = previewRoute
+	resolver.prefix = ''
 	vi.clearAllMocks()
 	vi.stubGlobal('EventSource', EventSource)
 })
@@ -83,6 +113,7 @@ test.each(['/static', 'https://cdn.test/site-assets', ''])(
 			expect(result.head).not.toContain('name="description"')
 			expect(result.head).not.toContain('name="robots"')
 			expect(result.body).toContain('Preview child fixture')
+			expect(resolve).not.toHaveBeenCalled()
 			expect(EventSource).not.toHaveBeenCalled()
 		}
 	}
@@ -128,7 +159,8 @@ test('Preview registers Share without retaining an OG route or redirect alias', 
 	expect(existsSync(new URL('./og/', import.meta.url))).toBe(false)
 })
 
-// SSR establishes markup/state contracts, not mount/SSE, CSS layout or client replacement.
+// Mocked SSR establishes resolver inputs and markup/state contracts, not native Kit
+// resolution, mount/SSE, CSS layout or client replacement.
 test.each(['waiting', 'running', 'completed', 'failed', 'expired'] as const)(
 	'Preview %s retains destinations and availability inside the shared responsive header',
 	(status) => {
@@ -167,6 +199,7 @@ test.each(['waiting', 'running', 'completed', 'failed', 'expired'] as const)(
 		expect(header).not.toMatch(/>\s*og(?: \(html\))?\s*<\/a>/)
 		expect(header).not.toContain('share (html)')
 		expect(html.includes('Preview child fixture')).toBe(status === 'completed')
+		expectAppNavigation()
 		expect(EventSource).not.toHaveBeenCalled()
 	}
 )
@@ -175,22 +208,65 @@ test.each(['', '/page', '/icon', '/share'])(
 	'completed Preview %s uses the existing active-view conditions with native current-page semantics',
 	(leaf) => {
 		page.url = new URL(root + leaf, 'https://app.test')
+		page.route.id = previewRoute + leaf
 		const links = anchors(body())
-		const selected = links.filter((link) => link.includes('aria-current="page"'))
-		expect(selected).toHaveLength(1)
-		expect(selected[0]).toContain(`href="${root}${leaf}"`)
-		expect(selected[0]).toContain('active')
+		for (const [index, tab] of ['', '/page', '/icon', '/share'].entries()) {
+			const link = links[index + 1]
+			expect(link).toContain(`href="${root}${tab}"`)
+			expect(link.includes('aria-current="page"')).toBe(tab === leaf)
+			expect(
+				link
+					.match(/class="([^"]*)"/)?.[1]
+					.split(/\s+/)
+					.includes('active')
+			).toBe(tab === leaf)
+		}
+		expectAppNavigation()
+		expect(EventSource).not.toHaveBeenCalled()
+	}
+)
+
+// Deliberately controlled unit output, not native Kit/browser resolution proof.
+// A full pathname must not be compared to the resolver's SSR-relative hrefs.
+test.each(['', '/page', '/icon', '/share'])(
+	'Preview %s stays active with SSR-relative resolver output in every job state',
+	(leaf) => {
+		resolver.prefix = '../../../../..'
+		page.url = new URL(root + leaf, 'https://app.test')
+		page.route.id = previewRoute + leaf
+		for (const status of ['waiting', 'running', 'completed', 'failed', 'expired'] as const) {
+			const html = body(status)
+			const links = anchors(html.slice(0, html.indexOf('</header>')))
+			expect(links).toHaveLength(5)
+			expect(links[0]).toContain(`href="${resolver.prefix}/admin/piece/${file}/source"`)
+			for (const [index, tab] of ['', '/page', '/icon', '/share'].entries()) {
+				const link = links[index + 1]
+				const disabled = index > 0 && status !== 'completed'
+				const classes = link.match(/class="([^"]*)"/)?.[1].split(/\s+/) ?? []
+				expect(link).toContain(`href="${disabled ? '#' : resolver.prefix + root + tab}"`)
+				expect(classes.includes('active')).toBe(tab === leaf)
+				expect(link.includes('aria-current="page"')).toBe(tab === leaf)
+				expect(classes.includes('disabled')).toBe(disabled)
+				if (index > 0) expect(link).toContain(`aria-disabled="${disabled}"`)
+				else expect(link).not.toContain('aria-disabled')
+			}
+			expect(html.includes('Preview child fixture')).toBe(status === 'completed')
+		}
+		expectAppNavigation(file, 'preview-id', 5)
 		expect(EventSource).not.toHaveBeenCalled()
 	}
 )
 
 test('Preview header retains encoded file and job identity reached through View', () => {
 	const props = data('completed')
-	props.file = 'books/源 #?%.books.md'
-	props.job = 'job #?%'
-	const encodedRoot = '/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md'
-	const preview = `${encodedRoot}/preview/job%20%23%3F%25`
+	props.file = 'books/literal%2F/源 #?%.books.md'
+	props.job = 'job /#?%2F'
+	const path = 'books/literal%252F/%E6%BA%90%20%23%3F%25.books.md'
+	const jobId = 'job%20%2F%23%3F%252F'
+	const encodedRoot = `/admin/piece/${path}`
+	const preview = `${encodedRoot}/preview/${jobId}`
 	page.url = new URL(`${preview}/share?html`, 'https://app.test')
+	page.route.id = `${previewRoute}/share`
 	const html = render(PreviewLayout, {
 		props: { data: props, params: { path: props.file, jobId: props.job }, children }
 	}).body
@@ -201,11 +277,13 @@ test('Preview header retains encoded file and job identity reached through View'
 		expect(links[index + 1]).toContain(`href="${preview}${leaf}"`)
 	expect(links.filter((link) => link.includes('aria-current="page"'))).toHaveLength(1)
 	expect(links.at(-1)).toContain('aria-current="page"')
+	expectAppNavigation(path, jobId)
 	expect(EventSource).not.toHaveBeenCalled()
 })
 
 test('obsolete html query does not create a mode, extra tab or different active view', () => {
 	page.url = new URL(`${root}/share?html`, 'https://app.test')
+	page.route.id = `${previewRoute}/share`
 	const withQuery = body()
 	const links = anchors(withQuery)
 	expect(links).toHaveLength(5)
@@ -216,6 +294,8 @@ test('obsolete html query does not create a mode, extra tab or different active 
 	expect(withQuery).not.toContain('?html')
 	expect(withQuery).not.toContain('share (html)')
 	page.url = new URL(`${root}/share`, 'https://app.test')
+	page.route.id = `${previewRoute}/share`
 	expect(body()).toBe(withQuery)
+	expectAppNavigation(file, 'preview-id', 2)
 	expect(EventSource).not.toHaveBeenCalled()
 })

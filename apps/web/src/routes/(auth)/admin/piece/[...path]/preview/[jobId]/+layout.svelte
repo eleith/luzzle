@@ -2,8 +2,9 @@
 	import '#lib/pieces/viewer/ViewerBar.css'
 	import { onMount, onDestroy } from 'svelte'
 	import { page } from '$app/state'
+	import { resolve } from '$app/paths'
 	import type { LayoutProps } from './$types'
-	import { editorHref, previewHref } from '#lib/pieces/navigation.js'
+	import { encodeArchivePath } from '#lib/pieces/navigation.js'
 
 	import ArrowLeftIcon from 'virtual:icons/ph/arrow-left'
 	import PieceOverview from '#lib/pieces/viewer/PieceOverview.svelte'
@@ -50,12 +51,14 @@
 
 	let eventSource: EventSource | null = null
 
-	const editorUrl = editorHref(data.file)
-
-	const logsUrl = previewHref(data.file, data.job)
-	const pageUrl = `${logsUrl}/page`
-	const iconUrl = `${logsUrl}/icon`
-	const shareUrl = `${logsUrl}/share`
+	const path = encodeArchivePath(data.file)
+	const jobId = encodeURIComponent(data.job)
+	const previewRoute = '/(auth)/admin/piece/[...path]/preview/[jobId]'
+	const editorUrl = resolve('/(auth)/admin/piece/[...path]/source', { path })
+	const logsUrl = resolve(previewRoute, { path, jobId })
+	const pageUrl = resolve(`${previewRoute}/page`, { path, jobId })
+	const iconUrl = resolve(`${previewRoute}/icon`, { path, jobId })
+	const shareUrl = resolve(`${previewRoute}/share`, { path, jobId })
 
 	function startWatching() {
 		if (eventSource) eventSource.close()
@@ -125,14 +128,14 @@
 		<a
 			href={logsUrl}
 			class="viewer-bar-link"
-			class:active={page.url.pathname === logsUrl}
-			aria-current={page.url.pathname === logsUrl ? 'page' : undefined}>overview</a
+			class:active={page.route.id === previewRoute}
+			aria-current={page.route.id === previewRoute ? 'page' : undefined}>overview</a
 		>
 		<a
 			href={status === 'completed' ? pageUrl : '#'}
 			class="viewer-bar-link"
-			class:active={page.url.pathname === pageUrl}
-			aria-current={page.url.pathname === pageUrl ? 'page' : undefined}
+			class:active={page.route.id === `${previewRoute}/page`}
+			aria-current={page.route.id === `${previewRoute}/page` ? 'page' : undefined}
 			class:disabled={status !== 'completed'}
 			aria-disabled={status !== 'completed'}
 		>
@@ -141,8 +144,8 @@
 		<a
 			href={status === 'completed' ? iconUrl : '#'}
 			class="viewer-bar-link"
-			class:active={page.url.pathname === iconUrl}
-			aria-current={page.url.pathname === iconUrl ? 'page' : undefined}
+			class:active={page.route.id === `${previewRoute}/icon`}
+			aria-current={page.route.id === `${previewRoute}/icon` ? 'page' : undefined}
 			class:disabled={status !== 'completed'}
 			aria-disabled={status !== 'completed'}
 		>
@@ -151,8 +154,8 @@
 		<a
 			href={status === 'completed' ? shareUrl : '#'}
 			class="viewer-bar-link"
-			class:active={page.url.pathname === shareUrl}
-			aria-current={page.url.pathname === shareUrl ? 'page' : undefined}
+			class:active={page.route.id === `${previewRoute}/share`}
+			aria-current={page.route.id === `${previewRoute}/share` ? 'page' : undefined}
 			class:disabled={status !== 'completed'}
 			aria-disabled={status !== 'completed'}
 		>

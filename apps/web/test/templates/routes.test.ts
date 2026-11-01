@@ -193,6 +193,14 @@ async function pageHtml(pathname = piecePath) {
 	expect(response.status).toBe(200)
 	return response.text()
 }
+function linkTargets(html: string, pathname: string) {
+	const pageUrl = new URL(pathname, origin)
+	return Array.from(
+		html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/g),
+		([, href]) => new URL(href.replaceAll('&amp;', '&'), pageUrl).href
+	)
+}
+
 function htmlHead(html: string) {
 	const head = html.match(/<head>([\s\S]*?)<\/head>/)?.[1]
 	if (head === undefined) throw new Error('Expected the real app HTML head')
@@ -361,6 +369,9 @@ function expectNativeFeed(html: string, feed: FeedCase, about: boolean, links: b
 	expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
 	for (const label of ['main page', 'search', 'change theme', 'random'])
 		expect(html).toContain(`aria-label="${label}"`)
+	const targets = linkTargets(html, `${feed.folder}/feed.html`)
+	for (const pathname of ['/', '/search', '/random'])
+		expect(targets).toContain(new URL(pathname, origin).href)
 	expect(html).toContain('id="default-feed"')
 	expect(html.match(/class="item-card\b/g) ?? []).toHaveLength(feed.count)
 	const title = feed.type === 'tag' ? `tag: ${feed.label}` : feed.label
@@ -373,7 +384,7 @@ function expectNativeFeed(html: string, feed: FeedCase, about: boolean, links: b
 			['json', 'JSON'],
 			['md', 'Markdown']
 		])
-			expect(html).toContain(`href="feed.${format}">${label}</a>`)
+			expect(html).toContain(`href="feed.${format}" rel="external">${label}</a>`)
 		expect(html).toContain('aria-label="RSS feed URL"')
 		expect(html).toContain('aria-describedby="rss-instructions"')
 		expect(html).toMatch(/\breadonly(?:\s|=|>)/)
@@ -381,7 +392,7 @@ function expectNativeFeed(html: string, feed: FeedCase, about: boolean, links: b
 		expect(html).toContain('copy</button>')
 	} else expect(html).not.toContain('aria-label="RSS feed URL"')
 	if (feed.count) {
-		expect(html).toContain(`href="${piecePath}" class="item-card`)
+		expect(targets).toContain(new URL(piecePath, origin).href)
 		expect(html).toContain('Raw indexed note')
 		expect(html).toContain('Nov 14, 2023')
 	}
@@ -1120,6 +1131,9 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		const html = await pageHtml('/')
 		expect(html).toMatch(/<h1[^>]*>luzzle pieces<\/h1>/)
 		expect(html).toContain('class="type-link"')
+		const targets = linkTargets(html, '/')
+		for (const pathname of ['/pieces', '/pieces/cutover-kind', piecePath])
+			expect(targets).toContain(new URL(pathname, origin).href)
 		expect(html).toMatch(/<h2[^>]*>latest<\/h2>/)
 		expect(html).not.toMatch(/<h2[^>]*>random<\/h2>/)
 		expect(html).toContain('Real Piece')

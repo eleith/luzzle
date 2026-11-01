@@ -7,6 +7,7 @@
 	import DatePicker from '#lib/components/ui/DatePicker.svelte'
 	import { page } from '$app/state'
 	import { afterNavigate, goto } from '$app/navigation'
+	import { resolve } from '$app/paths'
 
 	const pieceTypes = $derived(page.data.pieceTypes ?? [])
 	let query = $state('')
@@ -41,18 +42,16 @@
 		e.preventDefault()
 		navigationError = false
 
-		const params = new URLSearchParams()
+		const filters: Record<string, string> = {}
+		if (query) filters.query = query
+		if (type) filters.type = type
+		if (after) filters.after = after
+		if (before) filters.before = before
 
-		if (query) params.set('query', query)
-		if (type) params.set('type', type)
-		if (after) params.set('after', after)
-		if (before) params.set('before', before)
-
-		const searchString = params.toString()
-		const url = `/search${searchString ? `?${searchString}` : ''}`
-
+		const searchString = new URLSearchParams(filters).toString()
 		try {
-			await goto(url)
+			const destination = searchString ? resolve(`search?${searchString}`) : resolve('search')
+			await goto(destination)
 		} catch {
 			navigationError = true
 		}
@@ -79,7 +78,7 @@
 			props: Record<string, unknown> & { onclick?: (e: Event) => unknown }
 		})}
 			<a
-				href="/search"
+				href={resolve('search')}
 				aria-label="search"
 				{...props}
 				onclick={(e) => {

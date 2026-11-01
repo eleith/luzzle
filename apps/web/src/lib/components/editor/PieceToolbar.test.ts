@@ -1,7 +1,20 @@
 import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
+import { resolve } from '$app/paths'
+import {
+	encodeArchivePath,
+	previewHref as piecePreviewHref,
+	publishedHref as piecePublishedHref
+} from '#lib/pieces/navigation.js'
 import PieceToolbar from './PieceToolbar.svelte'
+
+vi.mock('$app/paths', () => ({
+	resolve: vi.fn((route: string, params: { path: string }) =>
+		route.replace('/(auth)', '').replace('[...path]', () => params.path)
+	)
+}))
+beforeEach(() => vi.clearAllMocks())
 
 const file = 'books/源 #?%.books.md'
 const previewHref = '/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md/preview'
@@ -107,4 +120,20 @@ test('editor actions do not duplicate archive navigation', () => {
 	expect(output).not.toContain('Back to archive')
 })
 
-// SSR verifies labels, links and disabled/form semantics, not clicks or responsive layout.
+test('encoded file paths enter the app resolver unchanged', () => {
+	const file = 'books/literal%2F 源 #?%.books.md'
+	const preview = piecePreviewHref(file)
+	const published = piecePublishedHref(file)
+	const output = html({ file })
+
+	expect(preview).toContain('literal%252F%20%E6%BA%90%20%23%3F%25.books.md')
+	expect(vi.mocked(resolve).mock.calls).toEqual([
+		['/(auth)/admin/piece/[...path]/preview', { path: encodeArchivePath(file) }],
+		['/(auth)/admin/piece/[...path]/published', { path: encodeArchivePath(file) }]
+	])
+	expect(output).toContain(`href="${preview}"`)
+	expect(output).toContain(`href="${published}"`)
+})
+
+// Mocked SSR verifies resolver inputs, labels, links and disabled/form semantics,
+// not browser/native resolution, clicks or responsive layout.

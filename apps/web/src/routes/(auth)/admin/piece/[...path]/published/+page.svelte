@@ -57,6 +57,7 @@
 					<tr role="row">
 						<th scope="row" role="rowheader">URL</th>
 						<td role="cell">
+							<!-- eslint-disable svelte/no-navigation-without-resolve -- Canonical URL already carries the public origin and prefix. -->
 							<a
 								href={data.publishedUrl}
 								target="_blank"
@@ -64,6 +65,7 @@
 								class="truncated"
 								title={data.publishedUrl}><bdi dir="ltr">{data.publishedUrl}</bdi></a
 							>
+							<!-- eslint-enable svelte/no-navigation-without-resolve -->
 						</td>
 					</tr>
 				</tbody>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths'
 	import NavigationIcon from 'virtual:icons/ph/arrow-up-left'
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import DiceIcon from 'virtual:icons/ph/dice-three'
@@ -47,7 +48,7 @@
 	>
 		<div class="left">
 			{#if showHome}
-				<a href="/" aria-label="main page"><NavigationIcon style="font-size: 1em;" /></a>
+				<a href={resolve('')} aria-label="main page"><NavigationIcon style="font-size: 1em;" /></a>
 			{/if}
 			{#if items?.left}
 				{@render items.left()}
@@ -56,13 +57,13 @@
 		<div class="right">
 			{#if showSearch}
 				{#await import('./SearchDialog.svelte')}
-					<a href="/search" aria-label="search">
+					<a href={resolve('search')} aria-label="search">
 						<SearchIcon style="font-size: 1em;" />
 					</a>
 				{:then { default: SearchDialog }}
 					<SearchDialog />
 				{:catch}
-					<a href="/search" aria-label="search">
+					<a href={resolve('search')} aria-label="search">
 						<SearchIcon style="font-size: 1em;" />
 					</a>
 				{/await}
@@ -71,7 +72,7 @@
 				{@render items.right()}
 			{/if}
 			{#if showRandom}
-				<a href="/random" aria-label="random" data-sveltekit-reload>
+				<a href={resolve('random')} aria-label="random" data-sveltekit-reload>
 					<DiceIcon style="font-size: 1em;" />
 				</a>
 			{/if}

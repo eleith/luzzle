@@ -32,6 +32,7 @@
 	let open = $state(false)
 	let disclosure = $state<HTMLDetailsElement>()
 	let scrollLocks = $state<Record<string, boolean>>({})
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- Imperative DOM registry, not rendered state.
 	const viewports = new Map<string, HTMLDivElement>()
 
 	function viewport(node: HTMLDivElement, phase: string) {

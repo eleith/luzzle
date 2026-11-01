@@ -73,8 +73,7 @@ function event() {
 		locals: { inlineConfiguredStyles: vi.fn() },
 		url: new URL(
 			'https://admin.example/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published'
-		),
-		route: { id: '/(auth)/admin/piece/[...path]/published' }
+		)
 	} as unknown as Parameters<typeof load>[0]
 }
 
@@ -114,18 +113,10 @@ test('loads only serving data/public assets, distinct tags and actual public URL
 		},
 		tags,
 		publication: { lastPublishedAt: 1234, markdownStatus: MarkdownPublicationStatus.MATCHING },
-		publishedUrl: 'https://app.example/garden/pieces/removed-schema/public%20%23%3F%25',
-		links: {
-			source: '/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/source',
-			overview: '/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published',
-			page: '/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published/page',
-			icon: '/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published/icon',
-			share: '/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published/share'
-		}
+		publishedUrl: 'https://app.example/garden/pieces/removed-schema/public%20%23%3F%25'
 	})
 	expect(Object.keys(data!).sort()).toEqual([
 		'file',
-		'links',
 		'piece',
 		'publication',
 		'publishedUrl',
@@ -250,26 +241,6 @@ test('public URL encodes both serving type and slug, including literal percent c
 		publishedUrl: 'https://app.example/garden/pieces/%E6%97%A7%20%23%3F%25%2Ftype/slug%2520%2F%22'
 	})
 })
-
-test.each(['', '/page', '/icon', '/share'])(
-	'loader serializes mounted navigation on %s without a Kit request store',
-	async (suffix) => {
-		const request = {
-			...event(),
-			url: new URL(
-				`https://admin.example/garden/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published${suffix}/?x=1`
-			),
-			route: { id: '/(auth)/admin/piece/[...path]/published' + suffix }
-		} as Parameters<typeof load>[0]
-		expect(await load(request)).toMatchObject({
-			links: {
-				source: '/garden/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/source',
-				overview: '/garden/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published',
-				share: '/garden/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published/share'
-			}
-		})
-	}
-)
 
 test('cache database failures follow normal loader failure semantics', async () => {
 	query.executeTakeFirst.mockRejectedValue(new Error('Database unavailable'))

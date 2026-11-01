@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths'
 	import ContentBanner from './ContentBanner.svelte'
 
 	let { message }: { message?: string } = $props()
@@ -12,7 +13,7 @@
 			<h1>404</h1>
 			<h2>page not found</h2>
 			<p>{message || 'there are no pieces at this path.'}</p>
-			<a href="/" class="home-button">go home</a>
+			<a href={resolve('')} class="home-button">go home</a>
 		</div>
 	</section>
 </main>

@@ -2,12 +2,12 @@
 	import SeoHead from '#lib/components/layout/simple/SeoHead.svelte'
 	import CodeBlockIcon from 'virtual:icons/ph/code-block'
 	import { page } from '$app/state'
+	import { resolve } from '$app/paths'
 	import { onMount } from 'svelte'
 
 	const { children } = $props()
 
 	let isAdmin = $state(false)
-	const editUrl = $derived(`/admin/open/${page.params.piece}/${page.params.slug}`)
 
 	onMount(() => {
 		isAdmin = localStorage.getItem('luzzle.admin') === 'true'
@@ -19,7 +19,11 @@
 
 {#if isAdmin}
 	<aside aria-label="Admin Actions">
-		<a href={editUrl} class="edit-shortcut" aria-label="edit source">
+		<a
+			href={resolve(`admin/open/${page.params.piece}/${page.params.slug}`)}
+			class="edit-shortcut"
+			aria-label="edit source"
+		>
 			<CodeBlockIcon />
 		</a>
 	</aside>

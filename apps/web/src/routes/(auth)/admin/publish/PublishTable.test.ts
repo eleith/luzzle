@@ -1,8 +1,16 @@
 import type { PiecesDiff } from '@luzzle/core'
 import { render } from 'svelte/server'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
+import { resolve } from '$app/paths'
 import PublishTable from './PublishTable.svelte'
 import type { PublicationOutcome } from './report.js'
+
+vi.mock('$app/paths', () => ({
+	resolve: vi.fn((route: string, params?: { path: string }) => {
+		const path = route.replace('/(auth)', '').replace('[...path]', () => params?.path ?? '')
+		return path.startsWith('/') ? path : `/${path}`
+	})
+}))
 
 const added = 'books/源 #?%.books.md'
 const updated = 'films/a saved change.films.md'
@@ -535,3 +543,16 @@ test('partial results keep skipped pending targets unchecked rather than inferri
 
 // SSR exercises rendering only. Owner review still needs to cover label/keyboard toggles,
 // parent binding updates, master indeterminate state, and independent native link navigation.
+
+test('source and published links pass encoded paths unchanged as native route params', () => {
+	vi.mocked(resolve).mockClear()
+	const file = 'books/literal%2F/源 #?%.books.md'
+	const path = 'books/literal%252F/%E6%BA%90%20%23%3F%25.books.md'
+	const output = table({ outcomes: [{ filePath: file, state: 'published' }] })
+	expect(vi.mocked(resolve).mock.calls).toEqual([
+		['/(auth)/admin/piece/[...path]/published', { path }],
+		['/(auth)/admin/piece/[...path]/source', { path }]
+	])
+	for (const leaf of ['published', 'source'])
+		expect(output).toContain(`href="/admin/piece/${path}/${leaf}"`)
+})

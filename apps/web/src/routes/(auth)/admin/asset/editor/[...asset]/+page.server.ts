@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getStorage } from '#lib/server/storage.js'
+import { localRedirect } from '#lib/server/redirect.js'
 import path from 'path'
 import type { LuzzleStorage } from '@luzzle/core'
 
@@ -47,7 +48,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
 	const exists = await storage.exists(assetPath)
 
-	const returnTo = url.searchParams.get('returnTo') || '/admin'
+	const returnTo = localRedirect(url.searchParams.get('returnTo'), url.origin)
 
 	if (!exists) {
 		return {
@@ -125,7 +126,7 @@ export const actions = {
 			return fail(404, { error: { message: 'Asset not found' } })
 		}
 
-		const returnTo = url.searchParams.get('returnTo') || '/admin'
+		const returnTo = localRedirect(url.searchParams.get('returnTo'), url.origin)
 
 		try {
 			await storage.delete(assetPath)

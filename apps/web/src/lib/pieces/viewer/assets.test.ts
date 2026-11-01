@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest'
-import { groupAssetOutputs } from './assets'
+import { groupAssetOutputs, groupOutputRows } from './assets'
 import { assetPathToUrl } from '#lib/pieces/assets.js'
 import { asset } from './fixtures/published'
 
@@ -12,6 +12,33 @@ function transform(records: Parameters<typeof groupAssetOutputs>[0], name: strin
 	expect(section).toBeDefined()
 	return section!
 }
+
+test('groups projected rows in asset order without replacing row identities or reordering input', () => {
+	const section = transform(
+		[
+			asset('image.original', 'second.jpg', 'second'),
+			asset('image.original', 'first.jpg', 'first'),
+			{ ...asset('image.palette', null, 'first', 'text/plain'), content: '#123456' },
+			{ ...asset('image.palette', null, 'second', 'text/plain'), content: '#abcdef' }
+		],
+		'image'
+	)
+	const rows = [...section.files, ...section.values]
+	const before = [...rows]
+	const ordinals = new Map([
+		['first', 1],
+		['second', 2]
+	])
+	const groups = groupOutputRows(rows, ordinals)
+
+	expect(groups.map((group) => group.key)).toEqual(['first', 'second'])
+	expect(groups[0].items[0]).toBe(section.files[1])
+	expect(groups[0].items[1]).toBe(section.values[0])
+	expect(groups[1].items[0]).toBe(section.files[0])
+	expect(groups[1].items[1]).toBe(section.values[1])
+	expect(rows).toEqual(before)
+	expect(groupOutputRows([], ordinals)).toEqual([])
+})
 
 test('groups every producer uniformly while retaining keys, originals, variants and attachments as recorded', () => {
 	const original = asset('image.original', 'first/cover.jpg', 'first')

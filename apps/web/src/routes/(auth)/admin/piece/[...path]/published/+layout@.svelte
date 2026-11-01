@@ -14,5 +14,5 @@
 	<link rel="icon" href="{data.config.url.app_assets}/images/favicon.png" />
 </svelte:head>
 
-<ViewerHeader links={data.links} />
+<ViewerHeader file={data.file} />
 {@render children()}

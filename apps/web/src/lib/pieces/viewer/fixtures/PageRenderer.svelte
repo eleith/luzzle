@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PublicWebPiece } from '@luzzle/web.pieces'
+	import { resolve } from '$app/paths'
 	import { getPieceHelpers } from '#lib/pieces/helpers.js'
 	let { piece, tags }: { piece: PublicWebPiece; tags: Array<{ slug: string; tag: string }> } =
 		$props()
@@ -10,6 +11,6 @@
 	<h1>{piece.title}</h1>
 	<img src={helpers.getPieceImageUrl('cover', 500, 'jpg')} alt="Published cover" />
 	{#each tags as tag (tag.slug)}
-		<a href="/tags/{tag.slug}">{tag.tag}</a>
+		<a href={resolve('/tags/[tag]', { tag: encodeURIComponent(tag.slug) })}>{tag.tag}</a>
 	{/each}
 </main>

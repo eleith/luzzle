@@ -5,9 +5,8 @@ import { config } from '#lib/server/config.js'
 import { getWebPiece } from '#lib/server/pieces.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 import { getMarkdownPublicationStatus } from '#lib/pieces/publication.server.js'
-import { getPieceLinks } from '#lib/pieces/navigation.js'
 
-export const load: LayoutServerLoad = async ({ params, url, route, locals }) => {
+export const load: LayoutServerLoad = async ({ params, url, locals }) => {
 	locals.inlineConfiguredStyles()
 	const webPiece = await getWebPiece(db, params.path)
 	if (!webPiece) error(404, 'Piece is not published.')
@@ -33,7 +32,6 @@ export const load: LayoutServerLoad = async ({ params, url, route, locals }) => 
 			lastPublishedAt: webPiece.last_published_at ?? null,
 			markdownStatus: await getMarkdownPublicationStatus(params.path, webPiece.content_hash)
 		},
-		publishedUrl: publishedUrl.href,
-		links: getPieceLinks(url, route.id)
+		publishedUrl: publishedUrl.href
 	}
 }

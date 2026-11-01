@@ -3,6 +3,8 @@ import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
 import Page from './+page.svelte'
 
+vi.mock('$app/paths', () => ({ resolve: (path: string) => `/${path}` }))
+
 vi.mock('$app/navigation', () => ({ goto: vi.fn() }))
 vi.mock('$app/state', () => ({ page: { url: new URL('http://localhost/admin/pieces/create') } }))
 
