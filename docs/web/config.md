@@ -99,6 +99,9 @@ them before enabling the sample paths. Home defaults to latest on, random off;
 feed links default on. Omitting feed `about` hides its explanation card.
 
 Override selected tokens under `theme.light`, `theme.dark`, and `theme.globals`.
+The stock proxy lets browsers cache font files for one year in production. When
+replacing a font, change its filename and update `theme.globals.font-sans-url`.
+Development fonts are not cached; externally hosted fonts use their host's policy.
 Quote hex colors. `theme.markdown.code.light` and `.dark` select code/editor themes,
 defaulting to `github-light` and `github-dark`.
 Omit `ai` to disable generation; otherwise supply `provider: google` and
