@@ -15,6 +15,14 @@ content:
   text:
     title: My garden
     description: A few things worth keeping.
+  # Optional local files, each a readable regular file <=5 MiB.
+  # Relative to /app/config.yaml: ./content/images means /app/content/images.
+  # Uses the existing read-only content mount.
+  # Schema defaults: /images/favicon.png and /images/opengraph.png (bundled files).
+  # images:
+  #   favicon: ./content/images/favicon.png # PNG, SVG, ICO.
+  #   opengraph: ./content/images/share.png # PNG, JPEG, WebP, GIF.
+  # Restart web after changing these settings or files. See config.md#site-images.
 
 # Match this type and these frontmatter selectors to your own archive.
 # For example: hello.notes.md, with title and date_published in its frontmatter.

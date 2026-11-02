@@ -29,6 +29,13 @@ Set `url.app` to your public URL. Prepare an [archive](../archive.md), configure
 its [piece types](config.md#piece-types), and enable [sign-in](config.md#sign-in)
 to edit and publish through `/admin`. Without auth, admin access is disabled.
 
+For optional [site images](config.md#site-images), place files in
+`content/images/` and configure `content.images.favicon` or `.opengraph`.
+For example, `./content/images/share.png` resolves from the supplied
+`/app/config.yaml` alias to `/app/content/images/share.png`. The existing
+read-only `content` mount is sufficient; keep files readable by the web service.
+Restart web after changing these files or settings; no application build is needed.
+
 ## Start and publish
 
 ```sh
@@ -65,7 +72,9 @@ docker compose restart luzzle-web luzzle-worker
 After changing `.env` or mounts, use `docker compose up -d --force-recreate`.
 To update, back up your archive and deployment data, change `LUZZLE_VERSION` if
 pinned, then run `docker compose pull` and `docker compose up -d`.
-[Republish affected pieces](templates.md#apply-your-choices) after OG changes.
+[Republish affected pieces](templates.md#apply-your-choices) after piece OG template
+or font changes. Site-image settings and files are restart-bound: restart
+`luzzle-web` after changing either, without rebuilding or republishing pieces.
 
 ## Preview cleanup
 

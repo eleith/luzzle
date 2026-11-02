@@ -1,7 +1,7 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
-import { makeConfig } from '#lib/server/config.fixture.js'
+import { makePublicConfig } from '#lib/server/config.fixture.js'
 import {
 	publishedPiece as rawPublishedPiece,
 	asset
@@ -79,7 +79,7 @@ type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
 function data(status: Status = 'completed', png = true): Data {
 	const common = {
 		pieceTypes: ['books'],
-		config: makeConfig({
+		config: makePublicConfig({
 			url: {
 				app: 'https://public.test/site',
 				app_assets: '/static',

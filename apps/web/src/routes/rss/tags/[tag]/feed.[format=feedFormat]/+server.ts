@@ -1,6 +1,7 @@
 import type { PublicWebPiece } from '@luzzle/web.pieces'
 import type { RequestHandler } from './$types'
 import { config } from '#lib/server/config.js'
+import { siteImageUrls } from '#lib/server/site-images.js'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
 import { getPiecesForTagFeed } from '#lib/feeds/utils.js'
 import YAML from 'yaml'
@@ -11,7 +12,7 @@ type FeedItem<T extends FeedRss | FeedJson> = Exclude<T['items'], undefined>[num
 type FeedRssItem = FeedItem<FeedRss>
 type FeedJsonItem = FeedItem<FeedJson>
 
-function getRssFeedFromPieces(pieces: PublicWebPiece[], tag?: string) {
+function getRssFeedFromPieces(pieces: PublicWebPiece[], image: string, tag?: string) {
 	const feedTitle = tag ? `${config.content.text.title} | tag: ${tag}` : config.content.text.title
 	const feed: FeedRss = {
 		title: feedTitle,
@@ -28,10 +29,10 @@ function getRssFeedFromPieces(pieces: PublicWebPiece[], tag?: string) {
 			link: `${config.url.app}/search`
 		},
 		image: {
-			url: `${config.url.app_assets}/images/opengraph.png`,
+			url: image,
 			description: config.content.text.title,
 			title: config.content.text.title,
-			link: `${config.url.app_assets}/images/opengraph.png`
+			link: config.url.app
 		},
 		items: pieces.map(
 			(piece): FeedRssItem => ({
@@ -110,7 +111,7 @@ export const GET: RequestHandler = async (event) => {
 	}
 
 	if (format === 'xml') {
-		const rss = getRssFeedFromPieces(pieces, tag)
+		const rss = getRssFeedFromPieces(pieces, siteImageUrls(config, event.url).opengraph, tag)
 		const stylesheets = [{ type: 'text/css', href: '/css/feed.css' }]
 		const body = generateRssFeed(rss as RssFeed<Date>, { stylesheets })
 		return new Response(body, { headers: { 'content-type': 'application/xml' } })

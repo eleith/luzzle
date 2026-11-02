@@ -82,6 +82,20 @@ describe("loadConfig", () => {
 		expect(() => loadConfig(filename)).toThrow(ConfigError);
 	});
 
+	test("loads image selections without resolving or reading the selected files", () => {
+		vi.stubEnv("CONFIG_TEST_SITE_IMAGE", "/missing/site image.JPEG");
+		writeFileSync(
+			filename,
+			"content:\n  images:\n    favicon: './missing/site icon.SVG'\n    opengraph: '${CONFIG_TEST_SITE_IMAGE}'\n",
+		);
+		const config = loadConfig(filename);
+		expect(config.content.images).toEqual({
+			favicon: "./missing/site icon.SVG",
+			opengraph: "/missing/site image.JPEG",
+		});
+		expect(config.paths.config).toBe(filename);
+	});
+
 	test("fails for an explicitly supplied missing file", () => {
 		expect(() => loadConfig(filename)).toThrow(
 			expect.objectContaining({ code: "ENOENT" }),

@@ -5,6 +5,7 @@ import {
 	getConfigValue,
 	setConfigValue,
 	ConfigError,
+	siteImageDefaults,
 	type Config,
 	type ConfigPublic,
 } from "./index.js";
@@ -16,6 +17,29 @@ describe("index (package entry point)", () => {
 		expect(typeof getConfigValue).toBe("function");
 		expect(typeof setConfigValue).toBe("function");
 		expectTypeOf(validateConfig).returns.toEqualTypeOf<Config>();
+	});
+
+	test("exports the schema's built-in site image sources", () => {
+		expect(siteImageDefaults).toEqual({
+			favicon: "/images/favicon.png",
+			opengraph: "/images/opengraph.png",
+		});
+		expect(validateConfig({}, {}).content.images).toEqual(siteImageDefaults);
+	});
+
+	test("resolved Config requires both image sources", () => {
+		expectTypeOf<Config["content"]["images"]>().toEqualTypeOf<{
+			favicon: string;
+			opengraph: string;
+		}>();
+		// @ts-expect-error Resolved images cannot omit the Open Graph source.
+		const faviconOnly: Config["content"]["images"] = { favicon: "./icon.png" };
+		// @ts-expect-error Resolved images cannot omit the favicon source.
+		const opengraphOnly: Config["content"]["images"] = {
+			opengraph: "./share.png",
+		};
+		expect(faviconOnly).not.toHaveProperty("opengraph");
+		expect(opengraphOnly).not.toHaveProperty("favicon");
 	});
 
 	test("exports ConfigError with structured validation issues", () => {
@@ -75,17 +99,33 @@ describe("index (package entry point)", () => {
 					credentials: { username: "admin", password: "private-password" },
 				},
 				ai: { provider: "google", api_key: "private-key" },
+				content: {
+					images: {
+						favicon: "/private/icon.png",
+						opengraph: "/private/share.png",
+					},
+				},
 			},
 			{},
 		);
 		const publicConfig: ConfigPublic = {
 			url: config.url,
-			content: config.content,
+			content: {
+				text: config.content.text,
+				images: {
+					favicon: "/site-assets/favicon",
+					opengraph: "/site-assets/opengraph",
+				},
+			},
 		};
 		expect(publicConfig.url.app).toBe("http://localhost:8080");
 		expect(publicConfig.content.text.title).toBe("Luzzle Explorer");
 		expectTypeOf<keyof ConfigPublic>().toEqualTypeOf<"url" | "content">();
-		expectTypeOf<keyof ConfigPublic["content"]>().toEqualTypeOf<"text">();
+		expectTypeOf<keyof ConfigPublic["content"]>().toEqualTypeOf<
+			"text" | "images"
+		>();
+		expect(publicConfig.content.images.favicon).toBe("/site-assets/favicon");
+		expect(JSON.stringify(publicConfig)).not.toContain("/private/");
 		expectTypeOf<keyof ConfigPublic["url"]>().toEqualTypeOf<
 			"app" | "app_assets" | "luzzle_assets"
 		>();

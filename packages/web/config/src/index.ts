@@ -6,7 +6,7 @@ import {
 	setConfigValue,
 } from "./lib/config/config.js";
 export { ConfigError } from "./lib/config/errors.js";
-export { ConfigSchema } from "./lib/config/schema.js";
+export { ConfigSchema, siteImageDefaults } from "./lib/config/schema.js";
 export { createInputSchema } from "./lib/config/input-schema.js";
 export { createFieldMappingSchema } from "./lib/mapping/schema.js";
 export type { ConfigSchemaOptions } from "./lib/config/config.js";

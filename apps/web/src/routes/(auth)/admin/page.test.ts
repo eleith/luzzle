@@ -3,6 +3,7 @@ import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
 import type { WebPieces } from '@luzzle/web.db'
 import { resolve } from '$app/paths'
+import { makePublicConfig } from '#lib/server/config.fixture.js'
 import Page from './+page.svelte'
 
 vi.mock('$app/paths', () => ({
@@ -33,14 +34,15 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers())
 
 function html(pieces = [piece]) {
+	const config = makePublicConfig({
+		url: { app: 'http://localhost', app_assets: '', luzzle_assets: '' }
+	})
+	config.content.text = { title: 'Garden', description: '' }
 	return render(Page, {
 		props: {
 			data: {
 				pieceTypes: ['books'],
-				config: {
-					content: { text: { title: 'Garden', description: '' } },
-					url: { app: 'http://localhost', app_assets: '', luzzle_assets: '' }
-				},
+				config,
 				meta: { title: 'Dashboard' },
 				pieceStats: { total: pieces.length, byType: [] },
 				fileCount: pieces.length,

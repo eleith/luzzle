@@ -20,7 +20,11 @@ export interface ConfigSchemaOptions<
 
 export type ConfigPublic = {
 	url: Pick<Config["url"], "app" | "luzzle_assets" | "app_assets">;
-	content: Config["content"];
+	content: {
+		text: Config["content"]["text"];
+		/** Resolved public URLs, never the configured filesystem filenames. */
+		images: { favicon: string; opengraph: string };
+	};
 };
 
 export function validateConfig(raw: unknown, env?: NodeJS.ProcessEnv): Config;

@@ -1,6 +1,7 @@
 import type { PublicWebPiece } from '@luzzle/web.pieces'
 import type { RequestHandler } from './$types'
 import { config } from '#lib/server/config.js'
+import { siteImageUrls } from '#lib/server/site-images.js'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
 import { getPiecesForFeed } from '#lib/feeds/utils.js'
 import { error } from '@sveltejs/kit'
@@ -13,7 +14,7 @@ type FeedItem<T extends FeedRss | FeedJson> = Exclude<T['items'], undefined>[num
 type FeedRssItem = FeedItem<FeedRss>
 type FeedJsonItem = FeedItem<FeedJson>
 
-function getRssFeedFromPieces(pieces: PublicWebPiece[], folder?: string) {
+function getRssFeedFromPieces(pieces: PublicWebPiece[], image: string, folder?: string) {
 	const feed: FeedRss = {
 		title: folder ? config.content.text.title : `${config.content.text.title} | ${folder}`,
 		description: config.content.text.description,
@@ -29,10 +30,10 @@ function getRssFeedFromPieces(pieces: PublicWebPiece[], folder?: string) {
 			link: `${config.url.app}/search`
 		},
 		image: {
-			url: `${config.url.app_assets}/images/opengraph.png`,
+			url: image,
 			description: config.content.text.title,
 			title: config.content.text.title,
-			link: `${config.url.app_assets}/images/opengraph.png`
+			link: config.url.app
 		},
 		items: pieces.map(
 			(piece): FeedRssItem => ({
@@ -113,7 +114,11 @@ export const GET: RequestHandler = async (event) => {
 	}
 
 	if (format === 'xml') {
-		const rss = getRssFeedFromPieces(pieces, type ? `pieces/${type}` : 'pieces')
+		const rss = getRssFeedFromPieces(
+			pieces,
+			siteImageUrls(config, event.url).opengraph,
+			type ? `pieces/${type}` : 'pieces'
+		)
 		const stylesheets = [{ type: 'text/css', href: '/css/feed.css' }]
 		const body = generateRssFeed(rss as RssFeed<Date>, { stylesheets })
 		return new Response(body, { headers: { 'content-type': 'application/xml' } })

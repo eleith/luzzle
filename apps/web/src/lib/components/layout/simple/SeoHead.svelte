@@ -4,7 +4,7 @@
 
 	const meta = $derived(page.data.meta ?? {})
 	const content = $derived(page.data.config?.content.text)
-	const assets = $derived(page.data.config?.url.app_assets ?? '')
+	const images = $derived(page.data.config?.content.images)
 </script>
 
 <svelte:head>
@@ -24,8 +24,8 @@
 	{/if}
 	{#if meta.image}
 		<meta property="og:image" content={meta.image} />
-	{:else}
-		<meta property="og:image" content="{assets}/images/opengraph.png" />
+	{:else if images}
+		<meta property="og:image" content={images.opengraph} />
 	{/if}
 	{#if meta.type}
 		<meta property="og:type" content={meta.type} />
@@ -34,7 +34,9 @@
 	{/if}
 	<meta property="og:url" content={page.url.href} />
 	<meta property="og:locale" content="en_US" />
-	<link rel="icon" href="{assets}/images/favicon.png" />
+	{#if images}
+		<link rel="icon" href={images.favicon} />
+	{/if}
 	{#if !browser}
 		<script>
 			;(function () {

@@ -11,7 +11,7 @@
 <svelte:head>
 	<title>Published: {data.piece.title}</title>
 	<meta name="robots" content="noindex" />
-	<link rel="icon" href="{data.config.url.app_assets}/images/favicon.png" />
+	<link rel="icon" href={data.config.content.images.favicon} />
 </svelte:head>
 
 <ViewerHeader file={data.file} />

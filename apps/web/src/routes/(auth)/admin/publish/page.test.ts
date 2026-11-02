@@ -1,6 +1,7 @@
 import { expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
+import { makePublicConfig } from '#lib/server/config.fixture.js'
 import Page from './+page.svelte'
 import type { RunView } from './+page.server.js'
 
@@ -57,13 +58,14 @@ function html({
 				diff: { schemas, pieces }
 			}
 		: null
+	const config = makePublicConfig({
+		url: { app: 'http://localhost', app_assets: '', luzzle_assets: '' }
+	})
+	config.content.text = { title: 'Test', description: '' }
 	const data = {
 		pieceTypes: ['books'],
 		meta: { title: 'Publish' },
-		config: {
-			url: { app: 'http://localhost', app_assets: '', luzzle_assets: '' },
-			content: { text: { title: 'Test', description: '' } }
-		},
+		config,
 		audit,
 		publish: publication
 	}

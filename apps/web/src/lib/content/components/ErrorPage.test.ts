@@ -1,6 +1,7 @@
 import { render } from 'svelte/server'
 import { expect, test, vi } from 'vitest'
 import { renderMarkdown } from '#lib/content/markdown/render.server.js'
+import { makePublicConfig } from '#lib/server/config.fixture.js'
 import ErrorPage from './ErrorPage.svelte'
 import Page404Default from './404.default.svelte'
 import PageErrorDefault from './error.default.svelte'
@@ -14,13 +15,15 @@ vi.mock('$app/state', () => ({
 		url: new URL('https://garden.test/missing'),
 		get data() {
 			if (layout.absent) return {}
-			return {
-				meta: {},
-				config: {
-					content: { text: { title: 'Garden', description: 'A garden' } },
-					url: { app_assets: 'https://assets.test' }
+			const config = makePublicConfig({
+				url: {
+					app: 'https://garden.test',
+					app_assets: 'https://assets.test',
+					luzzle_assets: ''
 				}
-			}
+			})
+			config.content.text = { title: 'Garden', description: 'A garden' }
+			return { meta: {}, config }
 		}
 	},
 	navigating: { to: null }

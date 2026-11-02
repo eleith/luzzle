@@ -9,7 +9,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href="{data.config.url.app_assets}/images/favicon.png" />
+	<link rel="icon" href={data.config.content.images.favicon} />
 </svelte:head>
 
 {#key params.jobId}

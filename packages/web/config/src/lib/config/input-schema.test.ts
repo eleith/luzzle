@@ -18,6 +18,21 @@ describe("configuration input schema", () => {
 		expect(InputSchema.required).toBeUndefined();
 	});
 
+	test("allows independent image overrides only in the input contract", () => {
+		const images = ConfigSchema.properties.content.properties.images;
+		const inputImages = InputSchema.properties.content.properties.images;
+		for (const value of [
+			{},
+			{ favicon: "./icon.png" },
+			{ opengraph: "./share.png" },
+		]) {
+			expect(Value.Check(inputImages, value)).toBe(true);
+			expect(Value.Check(images, value)).toBe(false);
+		}
+		expect(images.required).toEqual(["favicon", "opengraph"]);
+		expect(inputImages.required).toBeUndefined();
+	});
+
 	test("keeps required fields inside piece arrays", () => {
 		expect(
 			Value.Check(InputSchema, {
@@ -111,6 +126,25 @@ describe("configuration input schema", () => {
 		expect(input.properties.settings.default).toEqual(data);
 		expect(input.properties.settings.examples).toEqual([data]);
 		expect(JSON.stringify(schema)).toBe(before);
+	});
+
+	test("relaxes string patterns only for environment references at input time", () => {
+		const schema = Type.String({ pattern: "^local$", minLength: 1 });
+		const input = createInputSchema(schema);
+		for (const value of [
+			"local",
+			"${VALUE}",
+			"${VALUE:-local}",
+			"./${VALUE}.png",
+		]) {
+			expect(Value.Check(input, value)).toBe(true);
+		}
+		for (const value of ["remote", "", "${}", "${VALUE", 42, null]) {
+			expect(Value.Check(input, value)).toBe(false);
+		}
+		expect(schema.pattern).toBe("^local$");
+		expect(Value.Check(schema, "${VALUE}")).toBe(false);
+		expect(Value.Check(schema, "local")).toBe(true);
 	});
 
 	test("preserves optional fields and produces independently editable copies", () => {

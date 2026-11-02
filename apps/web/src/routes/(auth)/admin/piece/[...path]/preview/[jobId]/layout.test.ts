@@ -3,7 +3,7 @@ import { beforeEach, afterEach, expect, test, vi } from 'vitest'
 import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
 import { parse } from 'svelte/compiler'
-import { makeConfig } from '#lib/server/config.fixture.js'
+import { makePublicConfig } from '#lib/server/config.fixture.js'
 import { publishedPiece as rawPublishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
 import PreviewLayout from './+layout.svelte'
 import PreviewResetLayout from '../+layout@.svelte'
@@ -48,7 +48,7 @@ type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
 function data(status: Status): ComponentProps<typeof PreviewLayout>['data'] {
 	const common = {
 		pieceTypes: ['books'],
-		config: makeConfig(),
+		config: makePublicConfig(),
 		meta: { title: 'Garden', description: 'Description' },
 		preview: true as const,
 		file,
@@ -98,11 +98,19 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 test.each(['/static', 'https://cdn.test/site-assets', ''])(
-	'Preview reset layout adds only the configured site favicon for base %j in every job state',
+	'Preview reset layout renders the resolved default favicon for original asset base %j in every job state',
 	(base) => {
 		for (const status of ['waiting', 'running', 'completed', 'failed', 'expired'] as const) {
 			const props = data(status)
-			props.config.url.app_assets = base
+			props.config = makePublicConfig({
+				url: { ...props.config.url, app: 'https://public.test/garden', app_assets: base }
+			})
+			expect(props.config.content.images).toEqual({
+				favicon: `${base}/images/favicon.png`,
+				opengraph: new URL(`${base}/images/opengraph.png`, 'https://public.test').href
+			})
+			// Defaults are already in the payload, not recalculated by the consumer.
+			props.config.url.app_assets = 'https://unrelated-cdn.test/assets'
 			const result = render(PreviewResetLayout, {
 				props: { data: props, params: { path: file }, children }
 			})
@@ -115,6 +123,30 @@ test.each(['/static', 'https://cdn.test/site-assets', ''])(
 			expect(result.body).toContain('Preview child fixture')
 			expect(resolve).not.toHaveBeenCalled()
 			expect(EventSource).not.toHaveBeenCalled()
+		}
+	}
+)
+
+test.each([false, true])(
+	'Preview reset layout consumes resolved favicon selection %s in every state',
+	(selected) => {
+		for (const status of ['waiting', 'running', 'completed', 'failed', 'expired'] as const) {
+			const props = data(status)
+			props.config.url.app_assets = 'https://unrelated-cdn.test/assets'
+			props.config.url.app = 'https://public.test'
+			const favicon = selected ? '/site-assets/favicon' : '/static/images/favicon.png'
+			const opengraph = selected
+				? 'https://public.test/site-assets/opengraph'
+				: 'https://public.test/static/images/opengraph.png'
+			props.config.content.images = { favicon, opengraph }
+			const result = render(PreviewResetLayout, {
+				props: { data: props, params: { path: file }, children }
+			})
+			expect(result.head).toContain(`rel="icon" href="${props.config.content.images.favicon}"`)
+			expect(result.head.match(/rel="icon"/g)).toHaveLength(1)
+			expect(result.head).not.toContain('property="og:')
+			expect(result.head).not.toContain('site-assets/opengraph')
+			expect(result.body).toContain('Preview child fixture')
 		}
 	}
 )

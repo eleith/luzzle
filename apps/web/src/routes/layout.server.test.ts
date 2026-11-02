@@ -1,11 +1,14 @@
-import { expect, test, vi } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
+import { siteImageDefaults, validateConfig } from '@luzzle/web.config'
 import { load } from './+layout.server'
+import { config } from '#lib/server/config.js'
 
 vi.mock('#lib/server/config.js', async () => {
-	const { makeConfig: baseConfig, oidcAuth } = await import('#lib/server/config.fixture.js')
+	const { makeConfig, oidcAuth } = await import('#lib/server/config.fixture.js')
+	const base = makeConfig()
 	return {
 		config: {
-			...baseConfig(),
+			...base,
 			auth: oidcAuth,
 			ai: { provider: 'google', api_key: 'private-ai-key' },
 			pieces: [
@@ -20,24 +23,99 @@ vi.mock('#lib/server/config.js', async () => {
 				}
 			],
 			content: {
-				text: { title: 'Public title', description: 'Public description' }
+				text: { title: 'Public title', description: 'Public description' },
+				images: base.content.images
 			},
 			url: { app: 'https://example.test', app_assets: '/app', luzzle_assets: '/assets' }
 		}
 	}
 })
 
+beforeEach(() => {
+	config.content.images = validateConfig({}, {}).content.images
+	config.url.app = 'https://example.test'
+	config.url.app_assets = '/app'
+})
+
+function event(inlineConfiguredStyles = vi.fn()) {
+	return {
+		locals: { inlineConfiguredStyles },
+		url: new URL('https://request.test/garden')
+	} as unknown as Parameters<typeof load>[0]
+}
+
 test('the layout returns only its safe projection and keeps configured CSS out of page data', async () => {
 	const inlineConfiguredStyles = vi.fn()
-	expect(
-		await load({ locals: { inlineConfiguredStyles } } as unknown as Parameters<typeof load>[0])
-	).toEqual({
+	expect(await load(event(inlineConfiguredStyles))).toEqual({
 		pieceTypes: ['runtime-kind'],
 		config: {
-			content: { text: { title: 'Public title', description: 'Public description' } },
+			content: {
+				text: { title: 'Public title', description: 'Public description' },
+				images: {
+					favicon: '/app/images/favicon.png',
+					opengraph: 'https://example.test/app/images/opengraph.png'
+				}
+			},
 			url: { app: 'https://example.test', app_assets: '/app', luzzle_assets: '/assets' }
 		},
 		meta: { title: 'Public title', description: 'Public description' }
 	})
 	expect(inlineConfiguredStyles).toHaveBeenCalledExactlyOnceWith()
 })
+
+test.each([
+	[undefined, '/app/images/favicon.png', 'https://example.test/app/images/opengraph.png'],
+	[{}, '/app/images/favicon.png', 'https://example.test/app/images/opengraph.png'],
+	[siteImageDefaults, '/app/images/favicon.png', 'https://example.test/app/images/opengraph.png'],
+	[
+		{ favicon: siteImageDefaults.favicon },
+		'/app/images/favicon.png',
+		'https://example.test/app/images/opengraph.png'
+	],
+	[
+		{ opengraph: siteImageDefaults.opengraph },
+		'/app/images/favicon.png',
+		'https://example.test/app/images/opengraph.png'
+	],
+	[
+		{ favicon: '/private/content/secret-icon.svg' },
+		'/site-assets/favicon',
+		'https://example.test/app/images/opengraph.png'
+	],
+	[
+		{ opengraph: '/private/content/secret-card.webp' },
+		'/app/images/favicon.png',
+		'https://example.test/site-assets/opengraph'
+	],
+	[
+		{ favicon: '/private/content/secret-icon.svg', opengraph: '/private/content/secret-card.webp' },
+		'/site-assets/favicon',
+		'https://example.test/site-assets/opengraph'
+	]
+] as const)(
+	'projects only resolved public image URLs for %j',
+	async (images, favicon, opengraph) => {
+		config.content.images = validateConfig(images ? { content: { images } } : {}, {}).content.images
+		const result = await load(event())
+		expect(result).toMatchObject({
+			config: { content: { images: { favicon, opengraph } } }
+		})
+		expect(JSON.stringify(result)).not.toMatch(
+			/private|secret-|private-ai-key|clientSecret|templates/
+		)
+	}
+)
+
+test.each(['', '/garden', '//relative.example/garden'])(
+	'uses the request origin with relative app URL %j',
+	async (app) => {
+		config.url.app = app
+		config.content.images = validateConfig(
+			{ content: { images: { opengraph: '/private/card.png' } } },
+			{}
+		).content.images
+		expect(await load(event())).toMatchObject({
+			config: { content: { images: { opengraph: 'https://request.test/site-assets/opengraph' } } }
+		})
+	}
+)

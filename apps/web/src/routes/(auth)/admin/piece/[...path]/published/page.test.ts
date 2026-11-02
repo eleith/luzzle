@@ -4,6 +4,7 @@ import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
 import { MarkdownPublicationStatus } from '#lib/pieces/types.js'
 import { editorHref, publishedHref } from '#lib/pieces/navigation.js'
+import { makePublicConfig } from '#lib/server/config.fixture.js'
 import {
 	publishedPiece as rawPublishedPiece,
 	asset
@@ -52,6 +53,10 @@ function data(
 	status: MarkdownPublicationStatus = MarkdownPublicationStatus.MATCHING,
 	time: number | null = 1234
 ): ComponentProps<typeof Overview>['data'] {
+	const config = makePublicConfig({
+		url: { app: '/garden', app_assets: '/static', luzzle_assets: '/cdn' }
+	})
+	config.content.text = { title: 'Garden', description: 'Description' }
 	return {
 		pieceTypes: ['books'],
 		file: 'books/<draft #?%>.books.md',
@@ -59,10 +64,7 @@ function data(
 		tags: [{ slug: 'fiction', tag: 'Fiction' }],
 		publication: { lastPublishedAt: time, markdownStatus: status },
 		publishedUrl: 'https://public.test/garden/pieces/books/published%20%23%3F%25',
-		config: {
-			content: { text: { title: 'Garden', description: 'Description' } },
-			url: { app: '/garden', app_assets: '/static', luzzle_assets: '/cdn' }
-		},
+		config,
 		meta: { title: 'Garden', description: 'Description' }
 	}
 }
@@ -503,10 +505,18 @@ test('Overview renders one table per family with every image and Markdown output
 })
 
 test.each(['/static', 'https://cdn.test/site-assets', ''])(
-	'Published reset layout adds only the configured site favicon for asset base %j',
+	'Published reset layout renders the resolved default favicon for original asset base %j',
 	(base) => {
 		const props = data()
-		props.config.url.app_assets = base
+		props.config = makePublicConfig({
+			url: { ...props.config.url, app: 'https://public.test/garden', app_assets: base }
+		})
+		expect(props.config.content.images).toEqual({
+			favicon: `${base}/images/favicon.png`,
+			opengraph: new URL(`${base}/images/opengraph.png`, 'https://public.test').href
+		})
+		// Defaults are already in the payload, not recalculated by the consumer.
+		props.config.url.app_assets = 'https://unrelated-cdn.test/assets'
 		const result = render(PublishedTree, { props: { data: props } })
 		expect(result.head).toContain(`rel="icon" href="${base}/images/favicon.png"`)
 		expect(result.head.match(/rel="icon"/g)).toHaveLength(1)
@@ -516,6 +526,26 @@ test.each(['/static', 'https://cdn.test/site-assets', ''])(
 		expect(result.head).not.toContain('name="description"')
 		expect(result.head).not.toContain('/cdn/images/favicon.png')
 		expect(result.body.match(/<main\b/g)).toHaveLength(1)
+	}
+)
+
+test.each([false, true])(
+	'Published reset layout consumes resolved favicon selection %s',
+	(selected) => {
+		const props = data()
+		props.config.url.app_assets = 'https://unrelated-cdn.test/assets'
+		props.config.url.app = 'https://public.test'
+		const favicon = selected ? '/site-assets/favicon' : '/static/images/favicon.png'
+		const opengraph = selected
+			? 'https://public.test/site-assets/opengraph'
+			: 'https://public.test/static/images/opengraph.png'
+		props.config.content.images = { favicon, opengraph }
+		const result = render(PublishedTree, { props: { data: props, view: 'share' } })
+		expect(result.head).toContain(`rel="icon" href="${props.config.content.images.favicon}"`)
+		expect(result.head.match(/rel="icon"/g)).toHaveLength(1)
+		expect(result.head).not.toContain('property="og:')
+		expect(result.head).not.toContain('site-assets/opengraph')
+		expect(result.body).toContain('data-renderer="composition"')
 	}
 )
 

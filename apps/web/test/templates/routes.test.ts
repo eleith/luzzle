@@ -193,6 +193,43 @@ async function pageHtml(pathname = piecePath) {
 	expect(response.status).toBe(200)
 	return response.text()
 }
+async function expectSiteImageResponse(
+	endpoint: string,
+	bytes: Buffer,
+	contentType: string,
+	previousEtag?: string
+): Promise<string> {
+	const etag = `"${createHash('sha256').update(bytes).digest('base64url')}"`
+	for (const method of ['GET', 'HEAD']) {
+		const response = await request(endpoint, 'image/*', {
+			method,
+			headers: { 'accept-encoding': 'br, gzip', range: 'bytes=0-1' }
+		})
+		expect(response.status).toBe(200)
+		expect(response.headers.get('content-length')).toBe(String(bytes.length))
+		expect(response.headers.get('content-type')).toBe(contentType)
+		expect(response.headers.get('etag')).toBe(etag)
+		expect(response.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate')
+		expect(response.headers.has('content-encoding')).toBe(false)
+		expect(Buffer.from(await response.arrayBuffer())).toEqual(
+			method === 'HEAD' ? Buffer.alloc(0) : bytes
+		)
+	}
+	const conditional = await request(endpoint, 'image/*', {
+		headers: { 'if-none-match': `W/${etag}` }
+	})
+	expect(conditional.status).toBe(304)
+	expect(await conditional.text()).toBe('')
+	if (previousEtag && previousEtag !== etag) {
+		const stale = await request(endpoint, 'image/*', {
+			headers: { 'if-none-match': previousEtag }
+		})
+		expect(stale.status).toBe(200)
+		expect(Buffer.from(await stale.arrayBuffer())).toEqual(bytes)
+	}
+	return etag
+}
+
 function linkTargets(html: string, pathname: string) {
 	const pageUrl = new URL(pathname, origin)
 	return Array.from(
@@ -442,6 +479,7 @@ async function machineFeedSnapshot(): Promise<MachineFeeds> {
 						'<lastBuildDate>REQUEST_TIME</lastBuildDate>'
 					)
 					.replace(/^lastBuildDate:.*$/m, 'lastBuildDate: REQUEST_TIME')
+					.replaceAll(origin, 'REQUEST_ORIGIN')
 			}
 		}
 	}
@@ -721,6 +759,188 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(await invalid.text()).toBe('invalid type')
 	})
 
+	test('selects runtime site images after a blank build without changing piece OG or framework assets', async () => {
+		const original = await readFile(configFilename)
+		const imageDirectory = path.join(directory, 'content/images')
+		await mkdir(imageDirectory, { recursive: true })
+		const iconA =
+			'<svg xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" fill="red"/></svg>'
+		const iconB = iconA.replace('red', 'tan') // Same size, different content.
+		const iconLarge = iconA.replace('red', '#012345')
+		const smallPng = Buffer.from(
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=',
+			'base64'
+		)
+		const largePng = await readFile(path.join(webRoot, 'static/images/favicon.png'))
+		const variants = [
+			{ images: {}, icon: iconA, png: smallPng },
+			{ images: { favicon: './content/images/PRIVATE_ICON.svg' }, icon: iconA, png: smallPng },
+			{ images: { opengraph: './content/images/PRIVATE_SHARE.png' }, icon: iconA, png: smallPng },
+			{
+				images: {
+					favicon: './content/images/PRIVATE_ICON.svg',
+					opengraph: './content/images/PRIVATE_SHARE.png'
+				},
+				icon: iconA,
+				png: largePng
+			},
+			{
+				images: {
+					favicon: './content/images/PRIVATE_ICON.svg',
+					opengraph: './content/images/PRIVATE_SHARE.png'
+				},
+				icon: iconB,
+				png: smallPng
+			},
+			{
+				images: {
+					favicon: './content/images/PRIVATE_ICON.svg',
+					opengraph: './content/images/PRIVATE_SHARE.png'
+				},
+				icon: iconLarge,
+				png: largePng
+			}
+		]
+		const previousEtags = new Map<string, string>()
+		const baselineHtml = await pageHtml()
+		const frameworkUrl = baselineHtml.match(
+			/(?:href|src)="([^" ]*\/_app\/immutable\/[^" ]+\.css)"/
+		)?.[1]
+		expect(frameworkUrl).toBeDefined()
+		const frameworkPath = new URL(frameworkUrl!, `${origin}${piecePath}`).pathname
+		const frameworkBefore = await request(frameworkPath, 'text/css')
+		const frameworkBytes = Buffer.from(await frameworkBefore.arrayBuffer())
+		try {
+			for (const variant of variants) {
+				await stopBuiltApp()
+				await writeFile(path.join(imageDirectory, 'PRIVATE_ICON.svg'), variant.icon)
+				await writeFile(path.join(imageDirectory, 'PRIVATE_SHARE.png'), variant.png)
+				await writeFile(path.join(imageDirectory, 'PRIVATE_ICON.svg.gz'), 'stale gzip')
+				await writeFile(path.join(imageDirectory, 'PRIVATE_SHARE.png.br'), 'stale brotli')
+				const config = JSON.parse(original.toString('utf8'))
+				config.content.images = variant.images
+				config.url = { app: 'https://public.images.test', app_assets: '/cdn' }
+				await writeFile(configFilename, JSON.stringify(config))
+				origin = await startBuiltApp()
+				const favicon =
+					'favicon' in variant.images ? '/site-assets/favicon' : '/cdn/images/favicon.png'
+				const opengraph =
+					'opengraph' in variant.images ? '/site-assets/opengraph' : '/cdn/images/opengraph.png'
+				const root = await pageHtml('/')
+				expect(htmlHead(root)).toContain(`rel="icon" href="${favicon}"`)
+				expect(htmlHead(root)).toContain(
+					`property="og:image" content="https://public.images.test${opengraph}"`
+				)
+				const piece = await pageHtml()
+				expect(htmlHead(piece)).toContain(`rel="icon" href="${favicon}"`)
+				expect(htmlHead(piece)).toContain(
+					'property="og:image" content="https://public.images.test/pieces/assets/cutover/share.png"'
+				)
+				const dataResponse = await request(
+					'/__data.json?x-sveltekit-invalidated=11',
+					'application/json'
+				)
+				expect(dataResponse.status).toBe(200)
+				const data = await dataResponse.text()
+				for (const body of [root, piece, data]) {
+					for (const privatePath of [
+						'PRIVATE_ICON',
+						'PRIVATE_SHARE',
+						imageDirectory,
+						configFilename
+					])
+						expect(body).not.toContain(privatePath)
+				}
+				for (const feed of [
+					'/rss/pieces/feed.xml',
+					'/rss/pieces/cutover-kind/feed.xml',
+					'/rss/tags/field-notes/feed.xml'
+				]) {
+					const response = await request(feed, 'application/xml')
+					expect(response.status).toBe(200)
+					const xml = await response.text()
+					expect(xml).toContain(`<url>https://public.images.test${opengraph}</url>`)
+					expect(xml).not.toContain('PRIVATE_')
+				}
+				for (const [role, selected, bytes, mime] of [
+					['favicon', 'favicon' in variant.images, Buffer.from(variant.icon), 'image/svg+xml'],
+					['opengraph', 'opengraph' in variant.images, variant.png, 'image/png']
+				] as const) {
+					const endpoint = `/site-assets/${role}?file=/private/unselected.png`
+					if (!selected) {
+						const response = await request(endpoint)
+						expect(response.status).toBe(404)
+						expect(response.headers.get('cache-control')).toBe('no-store')
+						continue
+					}
+					const etag = await expectSiteImageResponse(endpoint, bytes, mime, previousEtags.get(role))
+					previousEtags.set(role, etag)
+				}
+				const frameworkAfter = await request(frameworkPath, 'text/css')
+				expect(frameworkAfter.headers.get('etag')).toBe(frameworkBefore.headers.get('etag'))
+				expect(frameworkAfter.headers.get('cache-control')).toBe(
+					frameworkBefore.headers.get('cache-control')
+				)
+				expect(Buffer.from(await frameworkAfter.arrayBuffer())).toEqual(frameworkBytes)
+				expect(await buildHashes()).toEqual(originalBuild)
+			}
+		} finally {
+			await stopBuiltApp()
+			await writeFile(configFilename, original)
+			origin = await startBuiltApp()
+		}
+	}, 60000)
+
+	test('keeps selected images public with authentication enabled and errors generic', async () => {
+		const original = await readFile(configFilename)
+		const config = JSON.parse(original.toString('utf8'))
+		config.url.app = 'https://authenticated.images.test'
+		config.auth = {
+			secret: 'image-test-session-secret-at-least-32-characters',
+			credentials: { username: 'admin', password: 'private-password' }
+		}
+		config.content.images = {
+			favicon: './content/auth-icon.svg',
+			opengraph: './content/PRIVATE_MISSING.png'
+		}
+		const icon = '<svg xmlns="http://www.w3.org/2000/svg"/>'
+		await mkdir(path.join(directory, 'content'), { recursive: true })
+		await writeFile(path.join(directory, 'content/auth-icon.svg'), icon)
+		try {
+			await stopBuiltApp()
+			await writeFile(configFilename, JSON.stringify(config))
+			origin = await startBuiltApp()
+			for (const method of ['GET', 'HEAD']) {
+				const response = await request('/site-assets/favicon', 'image/*', { method })
+				expect(response.status).toBe(200)
+				expect(await response.text()).toBe(method === 'HEAD' ? '' : icon)
+				for (const pathname of ['/site-assets/opengraph', '/site-assets/unknown']) {
+					const missing = await request(pathname, 'image/*', { method })
+					expect(missing.status).toBe(404)
+					expect(missing.headers.get('cache-control')).toBe('no-store')
+					expect(await missing.text()).toBe(method === 'HEAD' ? '' : 'Not found')
+				}
+			}
+			const signIn = await pageHtml('/signin')
+			expect(htmlHead(signIn)).toContain('rel="icon" href="/site-assets/favicon"')
+			expect(signIn).not.toContain('PRIVATE_MISSING')
+			const admin = await request('/admin', 'text/html')
+			expect(admin.status).toBe(302)
+			expect(admin.headers.get('location')).toContain('/signin')
+			for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+				const response = await request('/site-assets/favicon', 'application/json', {
+					method,
+					headers: { origin: config.url.app }
+				})
+				expect(response.status).toBe(405)
+			}
+		} finally {
+			await stopBuiltApp()
+			await writeFile(configFilename, original)
+			origin = await startBuiltApp()
+		}
+	}, 30000)
+
 	test('adopts configured origins and CDN prefixes across restarts, ignoring ambient ORIGIN without moving framework assets', async () => {
 		const original = await readFile(configFilename)
 		const baseline = await request()
@@ -772,7 +992,9 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				expect(stablePageHeaders(response)).toEqual(stablePageHeaders(baseline))
 				expectSameOriginFrameworkUrls(html, requestOrigin)
 				const head = htmlHead(html)
-				expect(head).toContain(`rel="icon" href="${app_assets}/images/favicon.png"`)
+				expect(head).toContain(
+					`rel="icon" href="${app_assets.replace(/\/+$/, '')}/images/favicon.png"`
+				)
 				const pieces = luzzle_assets.replace(/\/+$/, '')
 				expect(html).toContain(`src="${pieces}/pieces/assets/cutover/cover%20small.png"`)
 				expect(head).toContain(

@@ -34,7 +34,8 @@ Framework JavaScript and CSS stay same-origin. Keep the sample's production
 internal service names, not the checkout's `luzzle-dev-*` addresses.
 
 Restart web and worker after runtime config edits, then refresh. No hot reload.
-[Republish affected pieces](templates.md#apply-your-choices) after OG changes.
+[Republish affected pieces](templates.md#apply-your-choices) after piece OG template
+or font changes, not site-image changes.
 
 ## Sign-in
 
@@ -104,6 +105,36 @@ Omit `ai` to disable generation; otherwise supply `provider: google` and
 `api_key: '${GOOGLE_API_KEY}'`. [Remote sync](deployment.md#optional-remote-sync)
 is optional. `assets.salt` defaults to `${LUZZLE_ASSET_SALT:-}`; keep it stable
 because changing it changes published asset keys and URLs.
+
+## Site images
+
+`content.images.favicon` defaults to `/images/favicon.png`, and
+`content.images.opengraph` defaults to `/images/opengraph.png`. These values select
+the bundled static images, including the `url.app_assets` prefix.
+
+To override an image, set its value to a nonempty local filename, not a remote URL
+or browser path. Relative filenames resolve against
+the supplied config filename; absolute filenames are also allowed. With the
+supplied `/app/config.yaml` alias, `./content/images/share.png` resolves to
+`/app/content/images/share.png`, not `/app/config/content/images/share.png`.
+Reuse the existing read-only `content` mount; no new directory mounts are needed.
+
+Each image must be a readable regular file, at most 5 MiB. Supported formats:
+
+- Favicon: PNG, SVG, ICO.
+- Site Open Graph image: PNG, JPEG, WebP, GIF.
+
+Custom files use public, same-origin `/site-assets/favicon` and
+`/site-assets/opengraph` endpoints,
+respectively, without `url.app_assets`. These serve only the selected files,
+without generation or embedding. Unsupported filename types fail configuration
+validation. Missing, empty, unreadable, or oversized files return 404, with no
+bundled fallback. These endpoints also return 404 when the bundled image is selected.
+
+Restart web after changing image settings or files; neither is live-reloaded.
+Piece OG images and their generation are unaffected; piece-specific OG images
+still take precedence. Piece pages, including previews, use the site favicon.
+Custom images do not require an application build.
 
 ## Error pages
 

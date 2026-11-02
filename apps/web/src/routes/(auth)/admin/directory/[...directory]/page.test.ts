@@ -1,7 +1,7 @@
 import { expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
-import { makeConfig } from '#lib/server/config.fixture.js'
+import { makePublicConfig } from '#lib/server/config.fixture.js'
 import Page from './+page.svelte'
 
 const { resolve } = vi.hoisted(() => ({
@@ -17,7 +17,7 @@ vi.mock('$app/paths', () => ({ resolve }))
 test('directory links encode segments once and retain nested separators and trailing slash', () => {
 	const props = {
 		data: {
-			config: makeConfig(),
+			config: makePublicConfig(),
 			meta: { title: 'Directory' },
 			pieceTypes: ['books'],
 			directory: { parent: '棚 #?%', current: '棚 #?%/literal%2F' },

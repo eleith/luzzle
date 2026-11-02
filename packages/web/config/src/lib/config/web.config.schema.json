@@ -362,6 +362,27 @@
       "additionalProperties": false,
       "type": "object",
       "properties": {
+        "images": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "favicon": {
+              "minLength": 1,
+              "pattern": "(?:^(?!\\s*(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//))(?!.*://)(?!.*[\\u0000-\\u001f\\u007f-\\u009f?#]).*[^/]\\.(?:[pP][nN][gG]|[sS][vV][gG]|[iI][cC][oO])$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
+              "default": "/images/favicon.png",
+              "description": "Built-in static favicon by default; otherwise a local filename (PNG, SVG or ICO), absolute or relative to the supplied config file. Supports explicit environment references.",
+              "type": "string"
+            },
+            "opengraph": {
+              "minLength": 1,
+              "pattern": "(?:^(?!\\s*(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//))(?!.*://)(?!.*[\\u0000-\\u001f\\u007f-\\u009f?#]).*[^/]\\.(?:[pP][nN][gG]|[jJ][pP][gG]|[jJ][pP][eE][gG]|[wW][eE][bB][pP]|[gG][iI][fF])$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
+              "default": "/images/opengraph.png",
+              "description": "Built-in static site Open Graph image by default; otherwise a local filename (PNG, JPEG, WebP or GIF), absolute or relative to the supplied config file. Supports explicit environment references.",
+              "type": "string"
+            }
+          }
+        },
         "text": {
           "default": {},
           "additionalProperties": false,

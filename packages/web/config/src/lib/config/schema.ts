@@ -363,8 +363,53 @@ const PagesSchema = Type.Object(
 	{ default: {}, additionalProperties: false },
 );
 
+function siteImageSchema(
+	extensions: string[],
+	defaultSource: string,
+	description: string,
+) {
+	const extensionPattern = extensions
+		.map((extension) =>
+			extension
+				.split("")
+				.map((letter) => `[${letter}${letter.toUpperCase()}]`)
+				.join(""),
+		)
+		.join("|");
+	const notUrl = String.raw`(?!\s*(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//))(?!.*://)`;
+	const noControlsQueryOrFragment = String.raw`(?!.*[\u0000-\u001f\u007f-\u009f?#])`;
+	const filenameWithExtension = String.raw`.*[^/]\.(?:${extensionPattern})`;
+	return Type.String({
+		minLength: 1,
+		pattern: `^${notUrl}${noControlsQueryOrFragment}${filenameWithExtension}$`,
+		default: defaultSource,
+		description,
+	});
+}
+
+/** These exact sources identify built-in static assets, not local file selections. */
+export const siteImageDefaults = {
+	favicon: "/images/favicon.png",
+	opengraph: "/images/opengraph.png",
+} as const;
+
 const ContentSchema = Type.Object(
 	{
+		images: Type.Object(
+			{
+				favicon: siteImageSchema(
+					["png", "svg", "ico"],
+					siteImageDefaults.favicon,
+					"Built-in static favicon by default; otherwise a local filename (PNG, SVG or ICO), absolute or relative to the supplied config file. Supports explicit environment references.",
+				),
+				opengraph: siteImageSchema(
+					["png", "jpg", "jpeg", "webp", "gif"],
+					siteImageDefaults.opengraph,
+					"Built-in static site Open Graph image by default; otherwise a local filename (PNG, JPEG, WebP or GIF), absolute or relative to the supplied config file. Supports explicit environment references.",
+				),
+			},
+			{ default: {}, additionalProperties: false },
+		),
 		text: Type.Object(
 			{
 				title: Type.String({

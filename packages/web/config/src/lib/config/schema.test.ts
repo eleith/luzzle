@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { ConfigError } from "./errors.js";
-import { ConfigSchema } from "./schema.js";
+import { ConfigSchema, siteImageDefaults } from "./schema.js";
 import { loadConfig, validateConfig } from "./config.js";
 
 const schema = Type.Object(
@@ -80,8 +80,12 @@ test("site identity text remains configurable without source settings", () => {
 	const content = {
 		text: { title: "My garden", description: "Notes and records" },
 	};
-	expect(validateConfig({ content }, {}).content).toEqual(content);
+	expect(validateConfig({ content }, {}).content).toEqual({
+		...content,
+		images: siteImageDefaults,
+	});
 	expect(validateConfig({}, {}).content).toEqual({
+		images: siteImageDefaults,
 		text: {
 			title: "Luzzle Explorer",
 			description: "A Luzzle Explorer instance",
