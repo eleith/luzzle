@@ -3,9 +3,11 @@
 	import NavigationIcon from 'virtual:icons/ph/arrow-up-left'
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import DiceIcon from 'virtual:icons/ph/dice-three'
-	import type { Snippet } from 'svelte'
+	import { onMount, type Snippet } from 'svelte'
+	import { afterLoadIdle } from '#lib/utils/after-load-idle.js'
 	import NavigationProgressBar from './NavigationProgressBar.svelte'
 	import ThemeToggle from './ThemeToggle.svelte'
+	import type SearchDialogComponent from './SearchDialog.svelte'
 
 	type Props = {
 		background?: string
@@ -32,7 +34,22 @@
 		showRandom = false,
 		items
 	}: Props = $props()
+
+	let startSearch!: () => void
+	const searchDialog = new Promise<{ default: typeof SearchDialogComponent }>((resolve) => {
+		startSearch = () => resolve(import('./SearchDialog.svelte'))
+	})
+	onMount(() => {
+		if (!showSearch) return
+		return afterLoadIdle(startSearch)
+	})
 </script>
+
+{#snippet searchLink()}
+	<a href={resolve('search')} aria-label="search">
+		<SearchIcon style="font-size: 1em;" />
+	</a>
+{/snippet}
 
 <header>
 	{#if showProgress}
@@ -56,16 +73,12 @@
 		</div>
 		<div class="right">
 			{#if showSearch}
-				{#await import('./SearchDialog.svelte')}
-					<a href={resolve('search')} aria-label="search">
-						<SearchIcon style="font-size: 1em;" />
-					</a>
+				{#await searchDialog}
+					{@render searchLink()}
 				{:then { default: SearchDialog }}
 					<SearchDialog />
 				{:catch}
-					<a href={resolve('search')} aria-label="search">
-						<SearchIcon style="font-size: 1em;" />
-					</a>
+					{@render searchLink()}
 				{/await}
 			{/if}
 			{#if items?.right}
