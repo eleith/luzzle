@@ -1,5 +1,11 @@
 # @luzzle/web.proxy
 
+## 0.0.246
+
+### Patch Changes
+
+- da9f190: Cache public font files in browsers for one year in production, while keeping development fonts uncached. Rename font files and update their configured URLs when replacing them.
+
 ## 0.0.245
 
 ### Patch Changes

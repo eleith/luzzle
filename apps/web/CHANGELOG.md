@@ -1,5 +1,15 @@
 # @luzzle/web
 
+## 0.0.246
+
+### Patch Changes
+
+- 71e9393: Load the optional search dialog after page load during idle time, retaining the normal search link until the dialog is ready or if loading fails.
+- 64524a7: Allow runtime configuration of the site favicon and default Open Graph image without replacing bundled static files. Piece-specific Open Graph images remain unchanged.
+- @luzzle/web.db@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.245
 
 ### Patch Changes

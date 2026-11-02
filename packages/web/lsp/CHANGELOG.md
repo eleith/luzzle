@@ -1,5 +1,7 @@
 # @luzzle/web.lsp
 
+## 0.0.246
+
 ## 0.0.245
 
 ### Patch Changes
