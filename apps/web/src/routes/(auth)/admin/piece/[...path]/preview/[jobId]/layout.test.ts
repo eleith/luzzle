@@ -134,9 +134,9 @@ test.each([false, true])(
 			const props = data(status)
 			props.config.url.app_assets = 'https://unrelated-cdn.test/assets'
 			props.config.url.app = 'https://public.test'
-			const favicon = selected ? '/site-assets/favicon' : '/static/images/favicon.png'
+			const favicon = selected ? '/assets/favicon/selected-icon.svg' : '/static/images/favicon.png'
 			const opengraph = selected
-				? 'https://public.test/site-assets/opengraph'
+				? 'https://public.test/assets/opengraph/selected-card.png'
 				: 'https://public.test/static/images/opengraph.png'
 			props.config.content.images = { favicon, opengraph }
 			const result = render(PreviewResetLayout, {
@@ -145,7 +145,7 @@ test.each([false, true])(
 			expect(result.head).toContain(`rel="icon" href="${props.config.content.images.favicon}"`)
 			expect(result.head.match(/rel="icon"/g)).toHaveLength(1)
 			expect(result.head).not.toContain('property="og:')
-			expect(result.head).not.toContain('site-assets/opengraph')
+			expect(result.head).not.toContain('assets/opengraph')
 			expect(result.body).toContain('Preview child fixture')
 		}
 	}

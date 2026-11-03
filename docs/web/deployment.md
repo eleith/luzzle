@@ -1,40 +1,26 @@
 # Deployment
 
-Use the [Compose example](docker-compose.yml): four published images for web,
-worker, editor language server, and proxy. No checkout or custom Dockerfile needed.
+The [Compose example](docker-compose.yml) runs published web, worker, LSP and proxy
+images. No checkout or custom build is needed.
 
 ## Set up
 
-With Docker and Compose installed, make a deployment directory:
-
 ```sh
-mkdir luzzle
-cd luzzle
+mkdir luzzle && cd luzzle
 mkdir -p config archive assets/pieces data content rclone static nginx/cache
 touch .env
 ```
 
 Save [docker-compose.yml](docker-compose.yml) here and
 [config.example.yaml](config.example.yaml) as `config/config.yaml`.
-Neither needs files from the monorepo.
 
-Compose requires `.env`, even if empty. Optionally set `LUZZLE_VERSION` there to
-pin all four images to a published release; otherwise they use `latest`.
-Services use UID/GID `1000:1000` unless `UID` and `GID` override them. Match host
-directory permissions to those IDs: archive, assets, data, rclone state, and
-cache must be writable. Bind mounts do not inherit the image's permissions.
-Keep `.env` private and out of Git.
-
-Set `url.app` to your public URL. Prepare an [archive](../archive.md), configure
-its [piece types](config.md#piece-types), and enable [sign-in](config.md#sign-in)
-to edit and publish through `/admin`. Without auth, admin access is disabled.
-
-For optional [site images](config.md#site-images), place files in
-`content/images/` and configure `content.images.favicon` or `.opengraph`.
-For example, `./content/images/share.png` resolves from the supplied
-`/app/config.yaml` alias to `/app/content/images/share.png`. The existing
-read-only `content` mount is sufficient; keep files readable by the web service.
-Restart web after changing these files or settings; no application build is needed.
+- Set `url.app` to your public URL and configure [piece types](config.md#piece-types).
+- Enable [sign-in](config.md#sign-in) for admin access.
+- Keep `.env` private; optionally pin `LUZZLE_VERSION` instead of `latest`.
+- Services default to UID/GID `1000:1000`; override with `UID`/`GID`.
+  Archive, assets, data, rclone state and cache must be writable by those IDs.
+- Put custom [images](config.md#site-images) and [fonts](config.md#local-sans-font)
+  under `content/`; do not overwrite `build/client` files.
 
 ## Start and publish
 
@@ -43,14 +29,9 @@ docker compose pull
 docker compose up -d
 ```
 
-Open <http://localhost:8080>, or your configured public URL. Only proxy port
-**8080** is exposed. Internal addresses are `luzzle-web:3000`,
-`luzzle-worker:9000`, and `luzzle-lsp:9001`, not `localhost` or `luzzle-dev-*`.
-The web image starts an already-built server; config changes need no rebuild.
-
-Sign in and visit `/admin/publish` to check changes and publish initial content.
-The [CLI](../cli.md) can prepare an archive, but indexing alone does not generate
-web assets. Saving edits is not publishing them either.
+Open <http://localhost:8080> or your public URL. Only proxy port 8080 is exposed.
+Sign in at `/admin`, then publish through `/admin/publish`. Saving or CLI indexing
+alone does not publish web assets.
 
 ## Check and restart
 
@@ -59,34 +40,29 @@ docker compose ps
 docker compose logs --tail=100 luzzle-web luzzle-worker luzzle-proxy
 ```
 
-Check `/api/health` through the proxy, `/admin/health` when signed in, and the
-publish report. A healthy process does not promise a successful publish.
-
-Edit the real `config/config.yaml`, not the container's `config.yaml` symlink.
-Runtime config is cached; restart web and worker after edits:
+Check `/api/health`, `/admin/health` and the publish report.
+After config changes:
 
 ```sh
 docker compose restart luzzle-web luzzle-worker
 ```
 
-After changing `.env` or mounts, use `docker compose up -d --force-recreate`.
-To update, back up your archive and deployment data, change `LUZZLE_VERSION` if
-pinned, then run `docker compose pull` and `docker compose up -d`.
-[Republish affected pieces](templates.md#apply-your-choices) after piece OG template
-or font changes. Site-image settings and files are restart-bound: restart
-`luzzle-web` after changing either, without rebuilding or republishing pieces.
+Image and font files are reread on use; replacing them needs no restart.
+Republish pieces after font or piece-template changes to regenerate OG images.
+Changes to `.env` or mounts require
+`docker compose up -d --force-recreate`.
+
+To update: back up your data, update `LUZZLE_VERSION` if pinned, then pull and
+start again.
 
 ## Preview cleanup
 
-The worker cleans expired preview files and app logs daily, near **02:00 UTC
-±12 minutes**. It waits through OpenWorkflow, so other jobs can run during the
-random delay. There is no extra cleanup run at startup; downtime or a busy worker
-can delay it. Finished-job data is kept for seven days. Workflow history stays.
+The worker removes expired previews and app logs daily around 02:00 UTC.
+Finished jobs are retained for seven days; workflow history stays.
 
 ## Optional remote sync
 
-Put your rclone configuration in `rclone/rclone.conf`. Set `sync.archive` for
-bidirectional archive sync and `sync.cdn` for generated assets, using a remote
-name and path from that file. Empty remote or path skips that sync.
+Put credentials in `rclone/rclone.conf`. Configure `sync.archive` for bidirectional
+archive sync and `sync.cdn` for generated assets. Empty remote/path disables sync.
 CDN `strategy: sync` deletes destination-only files; `copy` does not.
-Read the [rclone docs](https://rclone.org/docs/) before syncing anything precious.
+Read the [rclone docs](https://rclone.org/docs/) first.

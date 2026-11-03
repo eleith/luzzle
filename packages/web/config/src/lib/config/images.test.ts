@@ -126,7 +126,10 @@ test("accepts both selections alongside custom site text", () => {
 		text: { title: "My garden", description: "Notes" },
 		images: { favicon: "./icon.ico", opengraph: "/content/share.jpeg" },
 	};
-	expect(validateConfig({ content }, {}).content).toEqual(content);
+	expect(validateConfig({ content }, {}).content).toEqual({
+		...content,
+		fonts: {},
+	});
 });
 
 for (const [role, extensions] of [
@@ -287,11 +290,11 @@ test("public content requires both resolved image URLs", () => {
 	const content: ConfigPublic["content"] = {
 		text: { title: "My garden", description: "Notes" },
 		images: {
-			favicon: "/site-assets/favicon",
-			opengraph: "/site-assets/opengraph",
+			favicon: "/assets/favicon/icon.png",
+			opengraph: "/assets/opengraph/share.png",
 		},
 	};
-	expect(content.images.favicon).toBe("/site-assets/favicon");
+	expect(content.images.favicon).toBe("/assets/favicon/icon.png");
 	// @ts-expect-error Consumers must receive defaults, not infer absent selections.
 	const incomplete: ConfigPublic["content"] = { text: content.text };
 	expect(incomplete).not.toHaveProperty("images");

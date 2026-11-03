@@ -2,7 +2,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
 import type { AppConfigPublic } from '#lib/server/config.js'
 import { makeConfig } from '#lib/server/config.fixture.js'
-import { siteImageUrls } from '#lib/server/site-images.js'
+import { siteImageUrls } from '#lib/server/assets/images.js'
 import SeoHead from './SeoHead.svelte'
 
 const { page } = vi.hoisted(() => ({
@@ -50,9 +50,9 @@ test.each([
 
 test.each([
 	['/static/images/favicon.png', 'https://public.test/static/images/opengraph.png'],
-	['/site-assets/favicon', 'https://public.test/static/images/opengraph.png'],
-	['/static/images/favicon.png', 'https://public.test/site-assets/opengraph'],
-	['/site-assets/favicon', 'https://public.test/site-assets/opengraph']
+	['/assets/favicon/selected-icon.svg', 'https://public.test/static/images/opengraph.png'],
+	['/static/images/favicon.png', 'https://public.test/assets/opengraph/selected-card.png'],
+	['/assets/favicon/selected-icon.svg', 'https://public.test/assets/opengraph/selected-card.png']
 ])('consumes resolved favicon %s and OG %s independently', (favicon, opengraph) => {
 	const config = configuration()
 	config.content.images = { favicon, opengraph }
@@ -78,29 +78,31 @@ test.each([
 ])('piece OG %j retains priority and is not absolutized or rewritten', (image) => {
 	const config = configuration()
 	config.content.images = {
-		favicon: '/site-assets/favicon',
-		opengraph: 'https://public.test/site-assets/opengraph'
+		favicon: '/assets/favicon/selected-icon.svg',
+		opengraph: 'https://public.test/assets/opengraph/selected-card.png'
 	}
 	page.data = { config, meta: { title: 'Book | Garden', image } }
 	const { head } = render(SeoHead)
 	expect(head).toContain(`property="og:image" content="${image}"`)
-	expect(head).toContain('rel="icon" href="/site-assets/favicon"')
-	expect(head).not.toContain('site-assets/opengraph')
+	expect(head).toContain('rel="icon" href="/assets/favicon/selected-icon.svg"')
+	expect(head).not.toContain('assets/opengraph')
 	expect(head).toContain('<title>Book | Garden</title>')
 })
 
 test('head escapes metadata and resolved image URLs', () => {
 	const config = configuration()
 	config.content.images = {
-		favicon: '/site-assets/favicon?a=1&b="icon"',
-		opengraph: 'https://public.test/site-assets/opengraph?a=1&b=2'
+		favicon: '/assets/favicon/selected-icon.svg?a=1&b="icon"',
+		opengraph: 'https://public.test/assets/opengraph/selected-card.png?a=1&b=2'
 	}
 	page.data = { config, meta: { title: '<Book> & Garden', description: 'A "quote" & detail' } }
 	const { head } = render(SeoHead)
 	expect(head).toContain('<title>&lt;Book> &amp; Garden</title>')
 	expect(head).toContain('content="A &quot;quote&quot; &amp; detail"')
-	expect(head).toContain('href="/site-assets/favicon?a=1&amp;b=&quot;icon&quot;"')
-	expect(head).toContain('content="https://public.test/site-assets/opengraph?a=1&amp;b=2"')
+	expect(head).toContain('href="/assets/favicon/selected-icon.svg?a=1&amp;b=&quot;icon&quot;"')
+	expect(head).toContain(
+		'content="https://public.test/assets/opengraph/selected-card.png?a=1&amp;b=2"'
+	)
 })
 
 test('absent root layout data renders safely without inventing site-image selections', () => {

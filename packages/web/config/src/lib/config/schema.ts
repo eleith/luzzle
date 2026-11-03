@@ -363,28 +363,34 @@ const PagesSchema = Type.Object(
 	{ default: {}, additionalProperties: false },
 );
 
-function siteImageSchema(
+/** Local filenames only: no URL schemes, controls, queries or fragments. */
+function localAssetFilenameSchema(
 	extensions: string[],
-	defaultSource: string,
 	description: string,
+	defaultSource?: string,
 ) {
 	const extensionPattern = extensions
 		.map((extension) =>
 			extension
 				.split("")
-				.map((letter) => `[${letter}${letter.toUpperCase()}]`)
+				.map((character) =>
+					character === character.toUpperCase()
+						? character
+						: `[${character}${character.toUpperCase()}]`,
+				)
 				.join(""),
 		)
 		.join("|");
 	const notUrl = String.raw`(?!\s*(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//))(?!.*://)`;
 	const noControlsQueryOrFragment = String.raw`(?!.*[\u0000-\u001f\u007f-\u009f?#])`;
 	const filenameWithExtension = String.raw`.*[^/]\.(?:${extensionPattern})`;
-	return Type.String({
+	const schema = Type.String({
 		minLength: 1,
 		pattern: `^${notUrl}${noControlsQueryOrFragment}${filenameWithExtension}$`,
-		default: defaultSource,
 		description,
 	});
+	if (defaultSource !== undefined) schema.default = defaultSource;
+	return schema;
 }
 
 /** These exact sources identify built-in static assets, not local file selections. */
@@ -395,17 +401,28 @@ export const siteImageDefaults = {
 
 const ContentSchema = Type.Object(
 	{
+		fonts: Type.Object(
+			{
+				sans: Type.Optional(
+					localAssetFilenameSchema(
+						["woff2"],
+						"Local sans font filename (WOFF2), absolute or relative to the supplied config file. Supports explicit environment references. Omit to retain theme.globals.font-sans-url.",
+					),
+				),
+			},
+			{ default: {}, additionalProperties: false },
+		),
 		images: Type.Object(
 			{
-				favicon: siteImageSchema(
+				favicon: localAssetFilenameSchema(
 					["png", "svg", "ico"],
-					siteImageDefaults.favicon,
 					"Built-in static favicon by default; otherwise a local filename (PNG, SVG or ICO), absolute or relative to the supplied config file. Supports explicit environment references.",
+					siteImageDefaults.favicon,
 				),
-				opengraph: siteImageSchema(
+				opengraph: localAssetFilenameSchema(
 					["png", "jpg", "jpeg", "webp", "gif"],
-					siteImageDefaults.opengraph,
 					"Built-in static site Open Graph image by default; otherwise a local filename (PNG, JPEG, WebP or GIF), absolute or relative to the supplied config file. Supports explicit environment references.",
+					siteImageDefaults.opengraph,
 				),
 			},
 			{ default: {}, additionalProperties: false },

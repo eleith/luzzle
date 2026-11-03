@@ -7,6 +7,18 @@ import type { TemplateConfig } from '@luzzle/web.templates/config'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { renderOpengraphPng } from './render.js'
 import { templates } from '@luzzle/web.templates/opengraphs/schema'
+import { ImageResponse } from 'takumi-js/response'
+import type * as TakumiResponse from 'takumi-js/response'
+
+vi.mock('takumi-js/response', async (importOriginal) => {
+	const actual = await importOriginal<typeof TakumiResponse>()
+	return {
+		...actual,
+		ImageResponse: vi.fn(function (...args: ConstructorParameters<typeof actual.ImageResponse>) {
+			return new actual.ImageResponse(...args)
+		}),
+	}
+})
 
 type OgMapping = NonNullable<
 	NonNullable<TemplateConfig['pieces'][number]['templates']>['opengraph']
@@ -73,6 +85,25 @@ afterAll(() => {
 })
 
 describe('pieces/render', () => {
+	test('passes configured WOFF2 bytes into the actual PNG renderer instead of the static URL', async () => {
+		const config = makeConfig()
+		const fontPath = path.resolve(import.meta.dirname, '../../assets/fonts/noto-sans.woff2')
+		const fontBytes = readFileSync(fontPath)
+		const localFont = path.join(TEMP_DIR, 'local-sans.woff2')
+		writeFileSync(localFont, fontBytes)
+		config.content.fonts = { sans: './local-sans.woff2' }
+		config.theme.globals = {
+			...config.theme.globals,
+			'font-sans-name': "'Noto Sans'",
+			'font-sans-url': "'/fonts/not-the-configured-font.woff2'",
+		}
+
+		expectPng(await renderOpengraphPng(makePiece(), [], config))
+		expect(vi.mocked(ImageResponse).mock.calls.at(-1)![1]).toEqual(
+			expect.objectContaining({ fonts: [{ name: 'Noto Sans', data: fontBytes }] })
+		)
+	})
+
 	test.each(templates.map((template) => template.name))(
 		'renders the mapped %s card through the actual PNG pipeline',
 		async (name) => {

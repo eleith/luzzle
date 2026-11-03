@@ -113,6 +113,22 @@ test.each([
 	expect(styles).toContain('font-weight: 200 800;')
 })
 
+test.each([
+	['/private/owner/selected-font.woff2', '/assets/fonts/selected-font.woff2'],
+	['/private/owner/selected font.woff2', '/assets/fonts/selected%20font.woff2']
+])('publishes the selected local font %s without exposing its directory', async (source, url) => {
+	const config = loadConfig()
+	config.content.fonts.sans = source
+	config.theme.globals['font-sans-url'] = '"/fonts/ignored.woff2"'
+
+	const html = await renderChunks(await prepareConfiguredStyles(config), [document])
+
+	expect(html).toContain(`src: url("${url}") format('woff2');`)
+	expect(html).toContain(`--font-sans-url: "${url}";`)
+	expect(html).not.toContain(source)
+	expect(html).not.toMatch(/private|ignored\.woff2/)
+})
+
 test('CSS raw-text escaping preserves case, other less-than signs and dollar literals', async () => {
 	const config = loadConfig()
 	const content = '"$& $` $\' $$ \\</StYlE><script id=style-breakout>text</script>"'

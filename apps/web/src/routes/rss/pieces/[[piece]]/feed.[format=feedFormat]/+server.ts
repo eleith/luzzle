@@ -1,7 +1,7 @@
 import type { PublicWebPiece } from '@luzzle/web.pieces'
 import type { RequestHandler } from './$types'
 import { config } from '#lib/server/config.js'
-import { siteImageUrls } from '#lib/server/site-images.js'
+import { siteImageUrls } from '#lib/server/assets/images.js'
 import { generateRssFeed, generateJsonFeed, type RssFeed, type JsonFeed } from 'feedsmith'
 import { getPiecesForFeed } from '#lib/feeds/utils.js'
 import { error } from '@sveltejs/kit'

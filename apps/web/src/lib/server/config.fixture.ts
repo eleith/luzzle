@@ -1,5 +1,5 @@
 import { loadConfig, type Config, type ConfigPublic } from '@luzzle/web.config'
-import { siteImageUrls } from './site-images.js'
+import { siteImageUrls } from './assets/images.js'
 
 /** Complete resolved configuration for server tests, without reading deployment YAML. */
 export function makeConfig(overrides: Partial<Config> = {}): Config {

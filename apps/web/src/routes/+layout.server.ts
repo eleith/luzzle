@@ -1,5 +1,5 @@
 import { config, type AppConfigPublic } from '#lib/server/config.js'
-import { siteImageUrls } from '#lib/server/site-images.js'
+import { siteImageUrls } from '#lib/server/assets/images.js'
 import { getConfiguredPieceTypes } from '#lib/pieces/types.server.js'
 import type { LayoutServerLoad } from './$types'
 

@@ -8,48 +8,44 @@ import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { mapOpengraphTemplate } from '@luzzle/web.templates/pieces/fields'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 import { generateThemeCss } from '@luzzle/web.theme'
+import { readConfiguredAsset } from '@luzzle/web.config/assets'
 
 const OpengraphImageWidth = 1200
 const OpengraphImageHeight = 630
 const PIECES_ASSETS_PREFIX = '/pieces/assets/'
 
-let cachedStaticStylesheets: string[] | null = null
-let cachedFontData: Buffer | null = null
-let cachedFontUrl: string | null = null
-
-function loadStaticAssets(config: TemplateConfig) {
-	const require = createRequire(import.meta.url)
-	const resetCss = readFileSync(require.resolve('@luzzle/web.theme/styles/reset.css'), 'utf8')
-	const baseCss = readFileSync(require.resolve('@luzzle/web.theme/styles/base.css'), 'utf8')
-	const markdownCss = readFileSync(require.resolve('@luzzle/web.theme/styles/markdown.css'), 'utf8')
-	cachedStaticStylesheets = [resetCss, baseCss, markdownCss]
-
-	const globals = config.theme?.globals || {}
-	const fontUrl =
-		(globals['font-sans-url'] as string | undefined)?.replace(/['"]/g, '') ||
-		'/fonts/noto-sans.woff2'
-
-	if (cachedFontData && cachedFontUrl === fontUrl) {
-		return { staticStylesheets: cachedStaticStylesheets, fontData: cachedFontData }
+async function readFont(config: TemplateConfig): Promise<Buffer | null> {
+	const source = config.content.fonts.sans
+	if (source) {
+		const bytes = await readConfiguredAsset(config, source)
+		if (bytes) return Buffer.from(bytes)
+		console.warn('[render] Configured sans font unavailable. Takumi will use default fonts.')
+		return null
 	}
 
+	const fontUrl =
+		config.theme.globals['font-sans-url'].replace(/['"]/g, '') || '/fonts/noto-sans.woff2'
 	const staticDir = config.paths.config
 		? path.resolve(path.dirname(config.paths.config), config.paths.static)
 		: config.paths.static
 	const fontPath = path.join(staticDir, fontUrl)
-
 	if (!existsSync(fontPath)) {
 		console.warn(`[render] Font not found at "${fontPath}". Takumi will use default fonts.`)
-		cachedFontData = null
-		cachedFontUrl = fontUrl
-		return { staticStylesheets: cachedStaticStylesheets, fontData: null }
+		return null
 	}
+	return readFileSync(fontPath)
+}
 
-	const fontData = readFileSync(fontPath)
-	cachedFontData = fontData
-	cachedFontUrl = fontUrl
+async function loadStaticAssets(config: TemplateConfig) {
+	const require = createRequire(import.meta.url)
+	const resetCss = readFileSync(require.resolve('@luzzle/web.theme/styles/reset.css'), 'utf8')
+	const baseCss = readFileSync(require.resolve('@luzzle/web.theme/styles/base.css'), 'utf8')
+	const markdownCss = readFileSync(require.resolve('@luzzle/web.theme/styles/markdown.css'), 'utf8')
 
-	return { staticStylesheets: cachedStaticStylesheets, fontData }
+	return {
+		staticStylesheets: [resetCss, baseCss, markdownCss],
+		fontData: await readFont(config),
+	}
 }
 
 function loadLocalImageResources(body: string, assetsDir: string) {
@@ -111,7 +107,7 @@ export async function renderOpengraphPng(
 	config: TemplateConfig,
 	outDir?: string
 ): Promise<Buffer> {
-	const { staticStylesheets, fontData } = loadStaticAssets(config)
+	const { staticStylesheets, fontData } = await loadStaticAssets(config)
 	const stylesheets = [...staticStylesheets, generateThemeCss(config)]
 	const markup = prepareTakumiMarkup(await renderOpengraphHtml(piece, assets, config))
 	const fetchedResources = loadLocalImageResources(markup.body, getAssetsDirectory(config, outDir))

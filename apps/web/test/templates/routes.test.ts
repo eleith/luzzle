@@ -193,7 +193,7 @@ async function pageHtml(pathname = piecePath) {
 	expect(response.status).toBe(200)
 	return response.text()
 }
-async function expectSiteImageResponse(
+async function expectSiteAssetResponse(
 	endpoint: string,
 	bytes: Buffer,
 	contentType: string,
@@ -799,9 +799,19 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				},
 				icon: iconLarge,
 				png: largePng
+			},
+			{
+				images: {
+					favicon: './content/images/RENAMED_ICON new.svg',
+					opengraph: './content/images/RENAMED_SHARE new.png'
+				},
+				renamed: true,
+				icon: iconA,
+				png: smallPng
 			}
 		]
 		const previousEtags = new Map<string, string>()
+		const previousUrls = new Map<string, string>()
 		const baselineHtml = await pageHtml()
 		const frameworkUrl = baselineHtml.match(
 			/(?:href|src)="([^" ]*\/_app\/immutable\/[^" ]+\.css)"/
@@ -810,11 +820,18 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		const frameworkPath = new URL(frameworkUrl!, `${origin}${piecePath}`).pathname
 		const frameworkBefore = await request(frameworkPath, 'text/css')
 		const frameworkBytes = Buffer.from(await frameworkBefore.arrayBuffer())
+		const bundledShareBefore = await request('/images/opengraph.png', 'image/png')
+		const bundledShareBytes = Buffer.from(await bundledShareBefore.arrayBuffer())
+		expect(bundledShareBefore.status).toBe(200)
 		try {
 			for (const variant of variants) {
 				await stopBuiltApp()
-				await writeFile(path.join(imageDirectory, 'PRIVATE_ICON.svg'), variant.icon)
-				await writeFile(path.join(imageDirectory, 'PRIVATE_SHARE.png'), variant.png)
+				const renamed = 'renamed' in variant
+				const iconFilename = renamed ? 'RENAMED_ICON new.svg' : 'PRIVATE_ICON.svg'
+				const shareFilename = renamed ? 'RENAMED_SHARE new.png' : 'PRIVATE_SHARE.png'
+				await writeFile(path.join(imageDirectory, iconFilename), variant.icon)
+				await writeFile(path.join(imageDirectory, shareFilename), variant.png)
+				await writeFile(path.join(imageDirectory, 'unselected.png'), variant.png)
 				await writeFile(path.join(imageDirectory, 'PRIVATE_ICON.svg.gz'), 'stale gzip')
 				await writeFile(path.join(imageDirectory, 'PRIVATE_SHARE.png.br'), 'stale brotli')
 				const config = JSON.parse(original.toString('utf8'))
@@ -822,10 +839,15 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				config.url = { app: 'https://public.images.test', app_assets: '/cdn' }
 				await writeFile(configFilename, JSON.stringify(config))
 				origin = await startBuiltApp()
-				const favicon =
-					'favicon' in variant.images ? '/site-assets/favicon' : '/cdn/images/favicon.png'
+				const customFavicon = renamed
+					? '/assets/favicon/RENAMED_ICON%20new.svg'
+					: '/assets/favicon/PRIVATE_ICON.svg'
+				const customOpengraph = renamed
+					? '/assets/opengraph/RENAMED_SHARE%20new.png'
+					: '/assets/opengraph/PRIVATE_SHARE.png'
+				const favicon = 'favicon' in variant.images ? customFavicon : '/cdn/images/favicon.png'
 				const opengraph =
-					'opengraph' in variant.images ? '/site-assets/opengraph' : '/cdn/images/opengraph.png'
+					'opengraph' in variant.images ? customOpengraph : '/cdn/images/opengraph.png'
 				const root = await pageHtml('/')
 				expect(htmlHead(root)).toContain(`rel="icon" href="${favicon}"`)
 				expect(htmlHead(root)).toContain(
@@ -844,8 +866,8 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				const data = await dataResponse.text()
 				for (const body of [root, piece, data]) {
 					for (const privatePath of [
-						'PRIVATE_ICON',
-						'PRIVATE_SHARE',
+						'./content/images/',
+						...Object.values(variant.images),
 						imageDirectory,
 						configFilename
 					])
@@ -860,22 +882,57 @@ describe('stock pieces and configured site sections through production HTTP', ()
 					expect(response.status).toBe(200)
 					const xml = await response.text()
 					expect(xml).toContain(`<url>https://public.images.test${opengraph}</url>`)
-					expect(xml).not.toContain('PRIVATE_')
+					expect(xml).not.toContain('content/images/')
+					expect(xml).not.toContain(imageDirectory)
 				}
 				for (const [role, selected, bytes, mime] of [
 					['favicon', 'favicon' in variant.images, Buffer.from(variant.icon), 'image/svg+xml'],
 					['opengraph', 'opengraph' in variant.images, variant.png, 'image/png']
 				] as const) {
-					const endpoint = `/site-assets/${role}?file=/private/unselected.png`
+					const assetUrl = role === 'favicon' ? favicon : opengraph
+					const requestedUrl = role === 'favicon' ? customFavicon : customOpengraph
+					const endpoint = `${requestedUrl}?file=/private/unselected.png`
 					if (!selected) {
 						const response = await request(endpoint)
 						expect(response.status).toBe(404)
 						expect(response.headers.get('cache-control')).toBe('no-store')
 						continue
 					}
-					const etag = await expectSiteImageResponse(endpoint, bytes, mime, previousEtags.get(role))
+					const etag = await expectSiteAssetResponse(endpoint, bytes, mime, previousEtags.get(role))
 					previousEtags.set(role, etag)
+					const previousUrl = previousUrls.get(role)
+					if (previousUrl && previousUrl !== assetUrl) {
+						expect(root).not.toContain(previousUrl)
+						for (const method of ['GET', 'HEAD']) {
+							const retired = await request(previousUrl, 'image/*', { method })
+							expect(retired.status).toBe(404)
+							expect(retired.headers.get('cache-control')).toBe('no-store')
+						}
+					}
+					previousUrls.set(role, assetUrl)
 				}
+				for (const pathname of [
+					'/assets/favicon/unselected.png',
+					'/assets/opengraph/unselected.png',
+					'/assets/favicon/%2e%2e%2fPRIVATE_ICON.svg',
+					'/assets/opengraph/%2e%2e%2fPRIVATE_SHARE.png',
+					'/assets/unknown/PRIVATE_ICON.svg',
+					'/site-assets/favicon',
+					'/site-assets/opengraph'
+				])
+					expect((await request(pathname)).status, pathname).toBe(404)
+				const bundledIcon = await request('/images/favicon.png', 'image/png')
+				expect(bundledIcon.status).toBe(200)
+				expect(Buffer.from(await bundledIcon.arrayBuffer())).toEqual(largePng)
+				const bundledShareAfter = await request('/images/opengraph.png', 'image/png')
+				expect(bundledShareAfter.status).toBe(200)
+				expect(bundledShareAfter.headers.get('etag')).toBe(bundledShareBefore.headers.get('etag'))
+				expect(bundledShareAfter.headers.get('cache-control')).toBe(
+					bundledShareBefore.headers.get('cache-control')
+				)
+				expect(Buffer.from(await bundledShareAfter.arrayBuffer()).equals(bundledShareBytes)).toBe(
+					true
+				)
 				const frameworkAfter = await request(frameworkPath, 'text/css')
 				expect(frameworkAfter.headers.get('etag')).toBe(frameworkBefore.headers.get('etag'))
 				expect(frameworkAfter.headers.get('cache-control')).toBe(
@@ -890,6 +947,182 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			origin = await startBuiltApp()
 		}
 	}, 60000)
+
+	describe('local fonts with restart-bound configuration', () => {
+		const appUrl = 'https://public.fonts.test'
+
+		async function configureFont(original: Buffer, source?: string) {
+			const config = JSON.parse(original.toString('utf8'))
+			config.content.fonts = source ? { sans: source } : {}
+			config.url.app = appUrl
+			config.theme.globals['font-sans-url'] = '"/fonts/authored.woff2"'
+			config.theme.globals['font-sans-name'] = '"Local Sans"'
+			config.auth = {
+				secret: 'font-test-session-secret-at-least-32-characters',
+				credentials: { username: 'admin', password: 'private-password' }
+			}
+			await writeFile(configFilename, JSON.stringify(config))
+		}
+
+		async function expectPublicFontPresentation(url: string, source?: string, retiredUrl?: string) {
+			const fontDirectory = path.join(directory, 'content/fonts')
+			for (const pathname of ['/', piecePath, '/signin']) {
+				const html = await pageHtml(pathname)
+				expect(htmlHead(html)).toContain(`src: url("${url}") format('woff2');`)
+				expect(html).not.toContain(fontDirectory)
+				expect(html).not.toContain('content/fonts/')
+				if (retiredUrl) expect(html).not.toContain(retiredUrl)
+				if (source) expect(html).not.toContain(source)
+			}
+			const data = await request('/__data.json?x-sveltekit-invalidated=11', 'application/json')
+			expect(data.status).toBe(200)
+			const dataBody = await data.text()
+			expect(dataBody).not.toContain(fontDirectory)
+			expect(dataBody).not.toContain('content/fonts/')
+			expect(dataBody).not.toContain('"fonts":')
+			if (source) expect(dataBody).not.toContain(source)
+		}
+
+		async function expectFontAssetIsolation(endpoint: string, bundled: Buffer) {
+			for (const pathname of [
+				'/assets/fonts/unselected.woff2',
+				'/assets/fonts/%2e%2e%2fPRIVATE_FONT.woff2',
+				'/assets/fonts/PRIVATE_FONT.woff2.gz',
+				'/assets/fonts/PRIVATE_FONT.woff2.br',
+				'/site-assets/font-sans'
+			])
+				expect((await request(pathname, 'font/woff2')).status, pathname).toBe(404)
+			for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+				const response = await request(endpoint, 'font/woff2', {
+					method,
+					headers: { origin: appUrl }
+				})
+				expect(response.status).toBe(405)
+			}
+			const builtFont = await request('/fonts/noto-sans.woff2', 'font/woff2')
+			expect(Buffer.from(await builtFont.arrayBuffer())).toEqual(bundled)
+			expect(await buildHashes()).toEqual(originalBuild)
+		}
+
+		test.each([
+			{
+				name: 'omitted source',
+				source: undefined,
+				filename: 'PRIVATE_FONT.woff2',
+				url: '/fonts/authored.woff2'
+			},
+			{
+				name: 'missing selected file',
+				source: './content/fonts/PRIVATE_MISSING.woff2',
+				filename: 'PRIVATE_MISSING.woff2',
+				url: '/assets/fonts/PRIVATE_MISSING.woff2'
+			}
+		])(
+			'returns generic uncached font 404s for $name without exposing directories',
+			async ({ source, filename, url }) => {
+				const original = await readFile(configFilename)
+				const fontDirectory = path.join(directory, 'content/fonts')
+				const bundled = await readFile(path.join(webRoot, 'static/fonts/noto-sans.woff2'))
+				await mkdir(fontDirectory, { recursive: true })
+				try {
+					await stopBuiltApp()
+					const fontFilename = path.join(fontDirectory, filename)
+					if (source) await rm(fontFilename, { force: true })
+					else await writeFile(fontFilename, bundled)
+					await writeFile(path.join(fontDirectory, 'unselected.woff2'), bundled)
+					await writeFile(`${fontFilename}.gz`, 'stale gzip')
+					await writeFile(`${fontFilename}.br`, 'stale brotli')
+					await configureFont(original, source)
+					origin = await startBuiltApp()
+					const unselectedUrl = '/assets/fonts/renamed%20font%20100%25%C3%A9.woff2'
+					await expectPublicFontPresentation(url, source, unselectedUrl)
+					const endpoint = `/assets/fonts/${filename}?file=/private/unselected.woff2`
+					for (const method of ['GET', 'HEAD']) {
+						const response = await request(endpoint, 'font/woff2', { method })
+						expect(response.status).toBe(404)
+						expect(response.headers.get('cache-control')).toBe('no-store')
+						expect(await response.text()).toBe(method === 'HEAD' ? '' : 'Not found')
+						const unselected = await request(unselectedUrl, 'font/woff2', { method })
+						expect(unselected.status).toBe(404)
+						expect(unselected.headers.get('cache-control')).toBe('no-store')
+					}
+					await expectFontAssetIsolation(endpoint, bundled)
+				} finally {
+					await stopBuiltApp()
+					await writeFile(configFilename, original)
+					origin = await startBuiltApp()
+				}
+			},
+			30000
+		)
+
+		test('rereads public font files and adopts renamed selections after restart', async () => {
+			const original = await readFile(configFilename)
+			const fontDirectory = path.join(directory, 'content/fonts')
+			const bundled = await readFile(path.join(webRoot, 'static/fonts/noto-sans.woff2'))
+			await mkdir(fontDirectory, { recursive: true })
+			const restarts = [
+				{
+					source: './content/fonts/PRIVATE_FONT.woff2',
+					filename: 'PRIVATE_FONT.woff2',
+					url: '/assets/fonts/PRIVATE_FONT.woff2',
+					bytes: bundled
+				},
+				{
+					source: './content/fonts/renamed font 100%é.woff2',
+					filename: 'renamed font 100%é.woff2',
+					url: '/assets/fonts/renamed%20font%20100%25%C3%A9.woff2',
+					bytes: bundled
+				}
+			]
+			let previousUrl: string | undefined
+			try {
+				for (const restart of restarts) {
+					await stopBuiltApp()
+					const fontFilename = path.join(fontDirectory, restart.filename)
+					await writeFile(fontFilename, restart.bytes)
+					await writeFile(path.join(fontDirectory, 'unselected.woff2'), bundled)
+					await writeFile(`${fontFilename}.gz`, 'stale gzip')
+					await writeFile(`${fontFilename}.br`, 'stale brotli')
+					await configureFont(original, restart.source)
+					origin = await startBuiltApp()
+					const retiredUrl = previousUrl && previousUrl !== restart.url ? previousUrl : undefined
+					await expectPublicFontPresentation(restart.url, restart.source, retiredUrl)
+					const endpoint = `${restart.url}?file=/private/unselected.woff2`
+					const etag = await expectSiteAssetResponse(endpoint, restart.bytes, 'font/woff2')
+					const replacement = Buffer.from('modified after first request')
+					await writeFile(fontFilename, replacement)
+					const updated = await request(endpoint, 'font/woff2', {
+						headers: { 'if-none-match': etag }
+					})
+					expect({
+						status: updated.status,
+						bytes: Buffer.from(await updated.arrayBuffer()),
+						length: updated.headers.get('content-length'),
+						etag: updated.headers.get('etag')
+					}).toEqual({
+						status: 200,
+						bytes: replacement,
+						length: String(replacement.length),
+						etag: `"${createHash('sha256').update(replacement).digest('base64url')}"`
+					})
+					if (retiredUrl) {
+						for (const method of ['GET', 'HEAD']) {
+							const retired = await request(retiredUrl, 'font/woff2', { method })
+							expect(retired.status).toBe(404)
+							expect(retired.headers.get('cache-control')).toBe('no-store')
+						}
+					}
+					previousUrl = restart.url
+					await expectFontAssetIsolation(endpoint, bundled)
+				}
+			} finally {
+				await stopBuiltApp()
+				await writeFile(configFilename, original)
+				origin = await startBuiltApp()
+			}
+		}, 60000)
+	})
 
 	test('keeps selected images public with authentication enabled and errors generic', async () => {
 		const original = await readFile(configFilename)
@@ -911,10 +1144,13 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			await writeFile(configFilename, JSON.stringify(config))
 			origin = await startBuiltApp()
 			for (const method of ['GET', 'HEAD']) {
-				const response = await request('/site-assets/favicon', 'image/*', { method })
+				const response = await request('/assets/favicon/auth-icon.svg', 'image/*', { method })
 				expect(response.status).toBe(200)
 				expect(await response.text()).toBe(method === 'HEAD' ? '' : icon)
-				for (const pathname of ['/site-assets/opengraph', '/site-assets/unknown']) {
+				for (const pathname of [
+					'/assets/opengraph/PRIVATE_MISSING.png',
+					'/assets/unknown/auth-icon.svg'
+				]) {
 					const missing = await request(pathname, 'image/*', { method })
 					expect(missing.status).toBe(404)
 					expect(missing.headers.get('cache-control')).toBe('no-store')
@@ -922,13 +1158,14 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				}
 			}
 			const signIn = await pageHtml('/signin')
-			expect(htmlHead(signIn)).toContain('rel="icon" href="/site-assets/favicon"')
-			expect(signIn).not.toContain('PRIVATE_MISSING')
+			expect(htmlHead(signIn)).toContain('rel="icon" href="/assets/favicon/auth-icon.svg"')
+			expect(signIn).not.toContain('content/PRIVATE_MISSING.png')
+			expect(signIn).not.toContain(path.join(directory, 'content'))
 			const admin = await request('/admin', 'text/html')
 			expect(admin.status).toBe(302)
 			expect(admin.headers.get('location')).toContain('/signin')
 			for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
-				const response = await request('/site-assets/favicon', 'application/json', {
+				const response = await request('/assets/favicon/auth-icon.svg', 'application/json', {
 					method,
 					headers: { origin: config.url.app }
 				})

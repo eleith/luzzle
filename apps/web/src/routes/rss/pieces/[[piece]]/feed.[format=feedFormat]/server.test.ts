@@ -81,17 +81,17 @@ test.each([
 	[{ favicon: siteImageDefaults.favicon }, 'https://assets.example/images/opengraph.png'],
 	[{ opengraph: siteImageDefaults.opengraph }, 'https://assets.example/images/opengraph.png'],
 	[{ favicon: '/private/icon.svg' }, 'https://assets.example/images/opengraph.png'],
-	[{ opengraph: '/private/card.webp' }, 'https://app.example/site-assets/opengraph'],
+	[{ opengraph: '/private/card.webp' }, 'https://app.example/assets/opengraph/card.webp'],
 	[
 		{ favicon: '/private/icon.svg', opengraph: '/private/card.webp' },
-		'https://app.example/site-assets/opengraph'
+		'https://app.example/assets/opengraph/card.webp'
 	]
 ] as const)('XML channel image resolves independently for %j', async (images, image) => {
 	config.content.images = validateConfig(images ? { content: { images } } : {}, {}).content.images
 	const xml = await (await GET(event(undefined, 'xml'))).text()
 	expect(parseRssFeed(xml).image).toMatchObject({ url: image, link: config.url.app })
 	expect(xml).toContain('https://app.example/pieces/field-notes/observation')
-	expect(xml).not.toMatch(/private|card.webp|icon.svg|site-assets\/favicon/)
+	expect(xml).not.toMatch(/private|icon.svg|assets\/favicon/)
 })
 
 test.each(['', '/garden', '//relative.example/garden'])(

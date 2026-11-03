@@ -24,7 +24,8 @@ vi.mock('#lib/server/config.js', async () => {
 			],
 			content: {
 				text: { title: 'Public title', description: 'Public description' },
-				images: base.content.images
+				images: base.content.images,
+				fonts: { sans: '/private/fonts/selected-font.woff2' }
 			},
 			url: { app: 'https://example.test', app_assets: '/app', luzzle_assets: '/assets' }
 		}
@@ -79,18 +80,23 @@ test.each([
 	],
 	[
 		{ favicon: '/private/content/secret-icon.svg' },
-		'/site-assets/favicon',
+		'/assets/favicon/secret-icon.svg',
 		'https://example.test/app/images/opengraph.png'
 	],
 	[
 		{ opengraph: '/private/content/secret-card.webp' },
 		'/app/images/favicon.png',
-		'https://example.test/site-assets/opengraph'
+		'https://example.test/assets/opengraph/secret-card.webp'
 	],
 	[
 		{ favicon: '/private/content/secret-icon.svg', opengraph: '/private/content/secret-card.webp' },
-		'/site-assets/favicon',
-		'https://example.test/site-assets/opengraph'
+		'/assets/favicon/secret-icon.svg',
+		'https://example.test/assets/opengraph/secret-card.webp'
+	],
+	[
+		{ favicon: '/private/content/icon 1.svg', opengraph: '/private/content/card 1.webp' },
+		'/assets/favicon/icon%201.svg',
+		'https://example.test/assets/opengraph/card%201.webp'
 	]
 ] as const)(
 	'projects only resolved public image URLs for %j',
@@ -100,8 +106,9 @@ test.each([
 		expect(result).toMatchObject({
 			config: { content: { images: { favicon, opengraph } } }
 		})
+		expect(result).not.toHaveProperty('config.content.fonts')
 		expect(JSON.stringify(result)).not.toMatch(
-			/private|secret-|private-ai-key|clientSecret|templates/
+			/private|selected-font|private-ai-key|clientSecret|templates/
 		)
 	}
 )
@@ -115,7 +122,9 @@ test.each(['', '/garden', '//relative.example/garden'])(
 			{}
 		).content.images
 		expect(await load(event())).toMatchObject({
-			config: { content: { images: { opengraph: 'https://request.test/site-assets/opengraph' } } }
+			config: {
+				content: { images: { opengraph: 'https://request.test/assets/opengraph/card.png' } }
+			}
 		})
 	}
 )

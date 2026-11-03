@@ -22,7 +22,7 @@ export type ConfigPublic = {
 	url: Pick<Config["url"], "app" | "luzzle_assets" | "app_assets">;
 	content: {
 		text: Config["content"]["text"];
-		/** Resolved public URLs, never the configured filesystem filenames. */
+		/** Resolved public URLs; configured basenames are public, directories are not. */
 		images: { favicon: string; opengraph: string };
 	};
 };

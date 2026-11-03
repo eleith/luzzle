@@ -28,6 +28,16 @@
 	"homepage": "https://github.com/eleith/luzzle",
 	"description": "shared configuration and schemas for the luzzle web ecosystem",
 	"exports": {
+		"./asset-urls": {
+			"development": "./src/asset-urls.ts",
+			"types": "./dist/src/asset-urls.d.ts",
+			"import": "./dist/src/asset-urls.js"
+		},
+		"./assets": {
+			"development": "./src/assets.ts",
+			"types": "./dist/src/assets.d.ts",
+			"import": "./dist/src/assets.js"
+		},
 		"./mapping": {
 			"development": "./src/lib/mapping/schema.ts",
 			"types": "./dist/src/lib/mapping/schema.d.ts",

@@ -94,6 +94,12 @@ server {
         proxy_pass        http://luzzle-upstream;
     }
 
+    # Configured assets revalidate even when their filenames look immutable.
+    location ^~ /assets/ {
+        proxy_cache off;
+        proxy_pass  http://luzzle-upstream;
+    }
+
     location ~* "\.(?:woff2?|ttf|otf)$" {
         proxy_cache       off;
         proxy_hide_header Cache-Control;

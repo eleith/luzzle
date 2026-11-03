@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, test } from "vitest";
+import { configuredAssetUrl } from "./asset-urls.js";
 import {
 	loadConfig,
 	validateConfig,
@@ -100,6 +101,7 @@ describe("index (package entry point)", () => {
 				},
 				ai: { provider: "google", api_key: "private-key" },
 				content: {
+					fonts: { sans: "/private/font.woff2" },
 					images: {
 						favicon: "/private/icon.png",
 						opengraph: "/private/share.png",
@@ -113,8 +115,11 @@ describe("index (package entry point)", () => {
 			content: {
 				text: config.content.text,
 				images: {
-					favicon: "/site-assets/favicon",
-					opengraph: "/site-assets/opengraph",
+					favicon: configuredAssetUrl("favicon", config.content.images.favicon),
+					opengraph: configuredAssetUrl(
+						"opengraph",
+						config.content.images.opengraph,
+					),
 				},
 			},
 		};
@@ -124,7 +129,10 @@ describe("index (package entry point)", () => {
 		expectTypeOf<keyof ConfigPublic["content"]>().toEqualTypeOf<
 			"text" | "images"
 		>();
-		expect(publicConfig.content.images.favicon).toBe("/site-assets/favicon");
+		expect(publicConfig.content.images).toEqual({
+			favicon: "/assets/favicon/icon.png",
+			opengraph: "/assets/opengraph/share.png",
+		});
 		expect(JSON.stringify(publicConfig)).not.toContain("/private/");
 		expectTypeOf<keyof ConfigPublic["url"]>().toEqualTypeOf<
 			"app" | "app_assets" | "luzzle_assets"
@@ -139,5 +147,7 @@ describe("index (package entry point)", () => {
 		expect(publicConfig.storage).toBeUndefined();
 		// @ts-expect-error Internal network addresses are not public.
 		expect(publicConfig.network).toBeUndefined();
+		// @ts-expect-error Configured font sources are not public.
+		expect(publicConfig.content.fonts).toBeUndefined();
 	});
 });

@@ -82,9 +82,11 @@ test("site identity text remains configurable without source settings", () => {
 	};
 	expect(validateConfig({ content }, {}).content).toEqual({
 		...content,
+		fonts: {},
 		images: siteImageDefaults,
 	});
 	expect(validateConfig({}, {}).content).toEqual({
+		fonts: {},
 		images: siteImageDefaults,
 		text: {
 			title: "Luzzle Explorer",

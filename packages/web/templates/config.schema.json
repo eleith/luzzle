@@ -362,6 +362,19 @@
       "additionalProperties": false,
       "type": "object",
       "properties": {
+        "fonts": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "sans": {
+              "minLength": 1,
+              "pattern": "(?:^(?!\\s*(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//))(?!.*://)(?!.*[\\u0000-\\u001f\\u007f-\\u009f?#]).*[^/]\\.(?:[wW][oO][fF][fF]2)$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
+              "description": "Local sans font filename (WOFF2), absolute or relative to the supplied config file. Supports explicit environment references. Omit to retain theme.globals.font-sans-url.",
+              "type": "string"
+            }
+          }
+        },
         "images": {
           "default": {},
           "additionalProperties": false,
@@ -370,16 +383,16 @@
             "favicon": {
               "minLength": 1,
               "pattern": "(?:^(?!\\s*(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//))(?!.*://)(?!.*[\\u0000-\\u001f\\u007f-\\u009f?#]).*[^/]\\.(?:[pP][nN][gG]|[sS][vV][gG]|[iI][cC][oO])$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
-              "default": "/images/favicon.png",
               "description": "Built-in static favicon by default; otherwise a local filename (PNG, SVG or ICO), absolute or relative to the supplied config file. Supports explicit environment references.",
-              "type": "string"
+              "type": "string",
+              "default": "/images/favicon.png"
             },
             "opengraph": {
               "minLength": 1,
               "pattern": "(?:^(?!\\s*(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//))(?!.*://)(?!.*[\\u0000-\\u001f\\u007f-\\u009f?#]).*[^/]\\.(?:[pP][nN][gG]|[jJ][pP][gG]|[jJ][pP][eE][gG]|[wW][eE][bB][pP]|[gG][iI][fF])$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
-              "default": "/images/opengraph.png",
               "description": "Built-in static site Open Graph image by default; otherwise a local filename (PNG, JPEG, WebP or GIF), absolute or relative to the supplied config file. Supports explicit environment references.",
-              "type": "string"
+              "type": "string",
+              "default": "/images/opengraph.png"
             }
           }
         },

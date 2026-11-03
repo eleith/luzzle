@@ -1,4 +1,5 @@
 import type { Config } from '@luzzle/web.config'
+import { configuredAssetUrl } from '@luzzle/web.config/asset-urls'
 
 const createCssVariableBlock = (variables: Record<string, unknown>): string[] => {
 	return Object.keys(variables).flatMap((key): string | string[] => {
@@ -17,14 +18,20 @@ export function generateThemeCss(config: Config): string {
 		return ''
 	}
 
-	const globalsBlock = createCssVariableBlock((themeConfig.globals || {}) as Record<string, unknown>).join('\n')
+	const globals = { ...themeConfig.globals }
+	if (config.content?.fonts?.sans)
+		globals['font-sans-url'] = JSON.stringify(
+			configuredAssetUrl('fonts', config.content.fonts.sans)
+		)
+
+	const globalsBlock = createCssVariableBlock(globals as Record<string, unknown>).join('\n')
 	const lightBlock = createCssVariableBlock((themeConfig.light || {}) as Record<string, unknown>).join('\n')
 	const darkBlock = createCssVariableBlock((themeConfig.dark || {}) as Record<string, unknown>).join('\n')
 	const markdownBlock = createCssVariableBlock((themeConfig.markdown || {}) as Record<string, unknown>).join('\n')
 
-	const fontSansName = themeConfig.globals?.['font-sans-name'] || '"Noto Sans"'
-	const fontSansWeight = themeConfig.globals?.['font-sans-weight'] || '300 600'
-	const fontSansUrl = themeConfig.globals?.['font-sans-url'] || '"/fonts/noto-sans.woff2"'
+	const fontSansName = globals['font-sans-name'] || '"Noto Sans"'
+	const fontSansWeight = globals['font-sans-weight'] || '300 600'
+	const fontSansUrl = globals['font-sans-url'] || '"/fonts/noto-sans.woff2"'
 
 	return `
 :root {
