@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://git.eleith.com/eleith/luzzle/raw/branch/main/packages/web/templates/config.schema.json
+# yaml-language-server: $schema=http://localhost:8080/schema.json
 
 # Save as config/config.yaml beside docker-compose.yml. No checkout files needed.
 url:

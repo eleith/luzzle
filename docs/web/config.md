@@ -1,8 +1,11 @@
 # Configuration
 
 Start with [config.example.yaml](config.example.yaml). Omitted settings use
-defaults; unknown settings and invalid values fail validation. The
-[editor schema](../../packages/web/templates/config.schema.json) lists fields and defaults.
+defaults; unknown settings and invalid values fail validation.
+
+Point the example's `$schema` comment at your site's `/schema.json` for the editor
+schema matching its release. The [repository copy](../../packages/web/templates/config.schema.json)
+is also available for offline use.
 
 ## Files, URLs, and paths
 

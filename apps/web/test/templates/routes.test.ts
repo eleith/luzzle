@@ -696,6 +696,57 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(html).toContain('pieceTypes:["cutover-kind"]')
 	})
 
+	test('serves the bundled editor schema publicly without exposing instance configuration', async () => {
+		const original = await readFile(configFilename)
+		const editorSchema = JSON.parse(
+			await readFile(path.join(repository, 'packages/web/templates/config.schema.json'), 'utf8')
+		)
+		const config = JSON.parse(original.toString('utf8'))
+		config.url.app = 'https://private.schema.test'
+		config.content.text = {
+			title: 'PRIVATE_SCHEMA_TITLE',
+			description: 'PRIVATE_SCHEMA_DESCRIPTION'
+		}
+		config.auth = {
+			secret: 'schema-test-session-secret-at-least-32-characters',
+			credentials: { username: 'schema-private-user', password: 'schema-private-password' }
+		}
+		try {
+			await stopBuiltApp()
+			await writeFile(configFilename, JSON.stringify(config))
+			origin = await startBuiltApp()
+			expect((await request('/admin', 'text/html')).status).toBe(302)
+			for (const pathname of ['/schema.json', '/schema.json?include=config&path=/private.yaml']) {
+				const response = await request(pathname, 'application/schema+json')
+				expect(response.status).toBe(200)
+				expect(response.headers.get('content-type')).toBe('application/schema+json; charset=utf-8')
+				expect(response.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate')
+				expect(response.headers.has('location')).toBe(false)
+				const body = await response.text()
+				expect(JSON.parse(body)).toEqual(editorSchema)
+				for (const value of [
+					config.url.app,
+					config.content.text.title,
+					config.content.text.description,
+					config.auth.secret,
+					config.auth.credentials.username,
+					config.auth.credentials.password,
+					configFilename
+				])
+					expect(body).not.toContain(value)
+			}
+			const head = await request('/schema.json', 'application/schema+json', { method: 'HEAD' })
+			expect(head.status).toBe(200)
+			expect(head.headers.get('content-type')).toBe('application/schema+json; charset=utf-8')
+			expect(head.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate')
+			expect(await head.text()).toBe('')
+		} finally {
+			await stopBuiltApp()
+			await writeFile(configFilename, original)
+			origin = await startBuiltApp()
+		}
+	})
+
 	test('omitted feed.about hides the card while subscription and machine feeds remain available', async () => {
 		for (const feed of feedCases)
 			expectNativeFeed(await pageHtml(`${feed.folder}/feed.html`), feed, false, true)
