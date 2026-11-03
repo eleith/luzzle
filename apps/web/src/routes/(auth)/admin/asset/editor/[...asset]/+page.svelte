@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte'
+	import { onDestroy, onMount, untrack } from 'svelte'
 	import { enhance, type SubmitFunction } from '$app/forms'
 	import { Dialog } from 'bits-ui'
 	import { fade, fly } from 'svelte/transition'
@@ -26,7 +26,8 @@
 	let { data }: PageProps = $props()
 	let editorContainer = $state<HTMLDivElement>()
 	let view = $state<EditorView | null>(null)
-	let editorContent = $state(data.content || '')
+	// Save refreshes preserve the draft; the asset-path key resets it on navigation.
+	let editorContent = $state(untrack(() => data.content ?? ''))
 	let isSaving = $state(false)
 	let saveError = $state<string | null>(null)
 	let saveErrorReason = $state<
@@ -150,22 +151,19 @@
 
 	const sortedLanguages = [...languages].sort((a, b) => a.name.localeCompare(b.name))
 
-	// Run auto-detection to set initial selection
-	const ext = data.filename.split('.').pop()?.toLowerCase()
-	let initialLang = 'Plain Text'
-	if (ext) {
-		const langDesc = languages.find(
-			(l) =>
-				l.name.toLowerCase() === ext ||
-				l.extensions.includes(ext) ||
-				(l.filename && l.filename.test(data.filename))
+	function detectLanguage(filename: string): string {
+		const ext = filename.split('.').pop()?.toLowerCase()
+		if (!ext) return 'Plain Text'
+		return (
+			languages.find(
+				(language) =>
+					language.name.toLowerCase() === ext ||
+					language.extensions.includes(ext) ||
+					(language.filename && language.filename.test(filename))
+			)?.name ?? 'Plain Text'
 		)
-
-		if (langDesc) {
-			initialLang = langDesc.name
-		}
 	}
-	let selectedLanguageName = $state(initialLang)
+	let selectedLanguageName = $state(untrack(() => detectLanguage(data.filename)))
 
 	function getAppliedTheme(): 'dark' | 'light' {
 		const preference = window.localStorage.getItem('theme') || 'system'

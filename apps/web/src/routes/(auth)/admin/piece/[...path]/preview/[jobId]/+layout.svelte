@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '#lib/pieces/viewer/ViewerBar.css'
-	import { onMount, onDestroy } from 'svelte'
+	import { onMount, onDestroy, untrack } from 'svelte'
 	import { page } from '$app/state'
 	import { resolve } from '$app/paths'
 	import type { LayoutProps } from './$types'
@@ -20,25 +20,21 @@
 
 	type PreviewStatus = 'enqueued' | 'running' | 'completed' | 'failed' | 'expired'
 
+	// The job key owns this state: loader data seeds it, then the stream updates it.
 	let status = $state<PreviewStatus>(
-		data.status === 'waiting' ? 'enqueued' : data.status === 'expired' ? 'expired' : data.status
+		untrack(() => (data.status === 'waiting' ? 'enqueued' : data.status))
 	)
-	let errorMessage = $state(data.errorMessage ?? '')
+	let errorMessage = $state(untrack(() => data.errorMessage ?? ''))
 	let streamDisconnected = $state(false)
 
-	let phases = $state<ProgressPhase[]>(data.phases ?? [])
-	let logs = $state(mergePhaseLogs({}, data.logs ?? []))
+	let phases = $state<ProgressPhase[]>(untrack(() => data.phases ?? []))
+	let logs = $state(untrack(() => mergePhaseLogs({}, data.logs ?? [])))
 
 	let eventSource: EventSource | null = null
 
-	const path = encodeArchivePath(data.file)
-	const jobId = encodeURIComponent(data.job)
+	const path = $derived(encodeArchivePath(data.file))
+	const jobId = $derived(encodeURIComponent(data.job))
 	const previewRoute = '/(auth)/admin/piece/[...path]/preview/[jobId]'
-	const editorUrl = resolve('/(auth)/admin/piece/[...path]/source', { path })
-	const logsUrl = resolve(previewRoute, { path, jobId })
-	const pageUrl = resolve(`${previewRoute}/page`, { path, jobId })
-	const iconUrl = resolve(`${previewRoute}/icon`, { path, jobId })
-	const shareUrl = resolve(`${previewRoute}/share`, { path, jobId })
 
 	function startWatching() {
 		if (eventSource) eventSource.close()
@@ -94,18 +90,23 @@
 </script>
 
 <header class="viewer-bar">
-	<a href={editorUrl} class="viewer-bar-back" aria-label="Back to editor" title="Back to editor">
+	<a
+		href={resolve('/(auth)/admin/piece/[...path]/source', { path })}
+		class="viewer-bar-back"
+		aria-label="Back to editor"
+		title="Back to editor"
+	>
 		<ArrowLeftIcon aria-hidden="true" focusable="false" />
 	</a>
 	<nav class="viewer-bar-links" aria-label="Preview views">
 		<a
-			href={logsUrl}
+			href={resolve(previewRoute, { path, jobId })}
 			class="viewer-bar-link"
 			class:active={page.route.id === previewRoute}
 			aria-current={page.route.id === previewRoute ? 'page' : undefined}>overview</a
 		>
 		<a
-			href={status === 'completed' ? pageUrl : '#'}
+			href={status === 'completed' ? resolve(`${previewRoute}/page`, { path, jobId }) : '#'}
 			class="viewer-bar-link"
 			class:active={page.route.id === `${previewRoute}/page`}
 			aria-current={page.route.id === `${previewRoute}/page` ? 'page' : undefined}
@@ -115,7 +116,7 @@
 			page
 		</a>
 		<a
-			href={status === 'completed' ? iconUrl : '#'}
+			href={status === 'completed' ? resolve(`${previewRoute}/icon`, { path, jobId }) : '#'}
 			class="viewer-bar-link"
 			class:active={page.route.id === `${previewRoute}/icon`}
 			aria-current={page.route.id === `${previewRoute}/icon` ? 'page' : undefined}
@@ -125,7 +126,7 @@
 			icon
 		</a>
 		<a
-			href={status === 'completed' ? shareUrl : '#'}
+			href={status === 'completed' ? resolve(`${previewRoute}/share`, { path, jobId }) : '#'}
 			class="viewer-bar-link"
 			class:active={page.route.id === `${previewRoute}/share`}
 			aria-current={page.route.id === `${previewRoute}/share` ? 'page' : undefined}

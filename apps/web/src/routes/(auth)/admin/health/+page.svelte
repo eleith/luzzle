@@ -9,23 +9,12 @@
 
 	type TestResult = { ok: boolean; reason?: string } | null
 
-	let storageTest = $state<TestResult>(data.storage)
+	let storageTest = $derived<TestResult>(data.storage)
 	let storageTesting = $state(false)
 	let workerTest = $state<TestResult>(null)
 	let workerTesting = $state(true)
-
-	data.worker.then((result) => {
-		workerTest = result
-		workerTesting = false
-	})
-
 	let oidcTest = $state<TestResult>(null)
 	let oidcTesting = $state(true)
-	data.oidcIssuer.then((result) => {
-		oidcTest = result
-		oidcTesting = false
-	})
-
 	let archiveTest = $state<TestResult>(null)
 	let archiveTesting = $state(false)
 	let cdnTest = $state<TestResult>(null)
@@ -33,15 +22,114 @@
 	let aiTest = $state<TestResult>(null)
 	let aiTesting = $state(false)
 
-	function runTest(setTesting: (v: boolean) => void, setResult: (v: TestResult) => void) {
+	// A new load supersedes manual checks, including any pending requests.
+	let activeLoad: PageData | undefined
+	$effect(() => {
+		activeLoad = data
+		storageTesting = false
+		archiveTesting = false
+		cdnTesting = false
+		aiTesting = false
+		archiveTest = null
+		cdnTest = null
+		aiTest = null
+
 		return () => {
+			activeLoad = undefined
+		}
+	})
+
+	$effect(() => {
+		const load = data
+		let active = true
+		workerTest = null
+		workerTesting = true
+
+		load.worker.then(
+			(result) => {
+				if (!active || data !== load) return
+				workerTest = result
+				workerTesting = false
+			},
+			(error: unknown) => {
+				if (!active || data !== load) return
+				workerTest = probeFailure(error)
+				workerTesting = false
+			}
+		)
+
+		return () => {
+			active = false
+		}
+	})
+
+	$effect(() => {
+		const load = data
+		let active = true
+		oidcTest = null
+		oidcTesting = true
+
+		load.oidcIssuer.then(
+			(result) => {
+				if (!active || data !== load) return
+				oidcTest = result
+				oidcTesting = false
+			},
+			(error: unknown) => {
+				if (!active || data !== load) return
+				oidcTest = probeFailure(error)
+				oidcTesting = false
+			}
+		)
+
+		return () => {
+			active = false
+		}
+	})
+
+	function probeFailure(error: unknown): TestResult {
+		return { ok: false, reason: error instanceof Error ? error.message : 'health check failed' }
+	}
+
+	function runTest(setTesting: (v: boolean) => void, setResult: (v: TestResult) => void) {
+		let latestRequest = 0
+		return () => {
+			const load = data
+			const request = ++latestRequest
 			setTesting(true)
 			return async ({ result }: { result: ActionResult }) => {
+				if (activeLoad !== load || data !== load || request !== latestRequest) return
 				setTesting(false)
 				setResult(result.type === 'success' ? ((result.data?.result as TestResult) ?? null) : null)
 			}
 		}
 	}
+
+	// Keep each form's request counter stable across result/pending-state updates.
+	const testStorage = runTest(
+		(v) => (storageTesting = v),
+		(v) => (storageTest = v)
+	)
+	const testWorker = runTest(
+		(v) => (workerTesting = v),
+		(v) => (workerTest = v)
+	)
+	const testOidcIssuer = runTest(
+		(v) => (oidcTesting = v),
+		(v) => (oidcTest = v)
+	)
+	const testArchive = runTest(
+		(v) => (archiveTesting = v),
+		(v) => (archiveTest = v)
+	)
+	const testCdn = runTest(
+		(v) => (cdnTesting = v),
+		(v) => (cdnTest = v)
+	)
+	const testAi = runTest(
+		(v) => (aiTesting = v),
+		(v) => (aiTest = v)
+	)
 </script>
 
 <svelte:head>
@@ -107,14 +195,7 @@
 				</div>
 				{#if data.configSummary.auth.issuer}
 					<div class="info-card-actions">
-						<form
-							method="POST"
-							action="?/testOidcIssuer"
-							use:enhance={runTest(
-								(v) => (oidcTesting = v),
-								(v) => (oidcTest = v)
-							)}
-						>
+						<form method="POST" action="?/testOidcIssuer" use:enhance={testOidcIssuer}>
 							{@render testButton(oidcTesting, 'test issuer')}
 						</form>
 					</div>
@@ -138,14 +219,7 @@
 					</dl>
 				</div>
 				<div class="info-card-actions">
-					<form
-						method="POST"
-						action="?/testStorage"
-						use:enhance={runTest(
-							(v) => (storageTesting = v),
-							(v) => (storageTest = v)
-						)}
-					>
+					<form method="POST" action="?/testStorage" use:enhance={testStorage}>
 						{@render testButton(storageTesting)}
 					</form>
 				</div>
@@ -175,14 +249,7 @@
 					</dl>
 				</div>
 				<div class="info-card-actions">
-					<form
-						method="POST"
-						action="?/testArchive"
-						use:enhance={runTest(
-							(v) => (archiveTesting = v),
-							(v) => (archiveTest = v)
-						)}
-					>
+					<form method="POST" action="?/testArchive" use:enhance={testArchive}>
 						{@render testButton(archiveTesting)}
 					</form>
 				</div>
@@ -218,14 +285,7 @@
 					</dl>
 				</div>
 				<div class="info-card-actions">
-					<form
-						method="POST"
-						action="?/testCdn"
-						use:enhance={runTest(
-							(v) => (cdnTesting = v),
-							(v) => (cdnTest = v)
-						)}
-					>
+					<form method="POST" action="?/testCdn" use:enhance={testCdn}>
 						{@render testButton(cdnTesting)}
 					</form>
 				</div>
@@ -254,14 +314,7 @@
 					</dl>
 				</div>
 				<div class="info-card-actions">
-					<form
-						method="POST"
-						action="?/testWorker"
-						use:enhance={runTest(
-							(v) => (workerTesting = v),
-							(v) => (workerTest = v)
-						)}
-					>
+					<form method="POST" action="?/testWorker" use:enhance={testWorker}>
 						{@render testButton(workerTesting)}
 					</form>
 				</div>
@@ -290,14 +343,7 @@
 					</dl>
 				</div>
 				<div class="info-card-actions">
-					<form
-						method="POST"
-						action="?/testAi"
-						use:enhance={runTest(
-							(v) => (aiTesting = v),
-							(v) => (aiTest = v)
-						)}
-					>
+					<form method="POST" action="?/testAi" use:enhance={testAi}>
 						{@render testButton(aiTesting, 'test key')}
 					</form>
 				</div>

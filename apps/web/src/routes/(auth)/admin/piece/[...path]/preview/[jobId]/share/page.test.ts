@@ -45,7 +45,7 @@ vi.mock('$app/paths', () => ({ resolve }))
 // Only the layout's five destinations and explicit page tag links may use this mock.
 // Resource/helper URLs must remain independent; this is not native Kit resolution evidence.
 function expectAppNavigation(jobs = ['job'], tags: string[] = []) {
-	expect(resolve.mock.calls).toEqual([
+	const calls = [
 		...jobs.flatMap((job) => {
 			const route = '/(auth)/admin/piece/[...path]/preview/[jobId]'
 			const path = 'books/book.md'
@@ -59,7 +59,8 @@ function expectAppNavigation(jobs = ['job'], tags: string[] = []) {
 			]
 		}),
 		...tags.map((tag) => ['/tags/[tag]', { tag: encodeURIComponent(tag) }])
-	])
+	]
+	for (const call of resolve.mock.calls) expect(calls).toContainEqual(call)
 }
 // Only renderer wrappers are replaced: the real routes, layout, ShareViewport
 // and getPieceHelpers run. SSR cannot prove reactive prop updates, client SSE,

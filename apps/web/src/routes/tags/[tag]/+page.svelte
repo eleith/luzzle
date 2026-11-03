@@ -4,14 +4,15 @@
 	import { resolve } from '$app/paths'
 
 	let { data } = $props()
-	let pieces = $state(data.pieces)
+	let pieces = $derived(data.pieces)
 	let activePieceId = $state<string | null>(null)
-	let nextPage = $state<number | null>(data.nextPage)
+	let nextPage = $derived<number | null>(data.nextPage)
 
 	async function getNextPage(tagPage: number) {
+		const currentData = data
 		const query: Record<string, string> = {}
 		if (tagPage) query.page = tagPage.toString()
-		query.tag = data.tag
+		query.tag = currentData.tag
 		const params = new URLSearchParams(query)
 
 		const res = await fetch(`/api/pieces?${params}`, {
@@ -20,8 +21,10 @@
 			}
 		})
 
+		if (data !== currentData) return
 		if (res.ok) {
 			const json = (await res.json()) as Omit<typeof data, 'type'>
+			if (data !== currentData) return
 			pieces = pieces.concat(json.pieces)
 			nextPage = json.nextPage
 		} else {

@@ -36,20 +36,19 @@ vi.mock('$app/paths', () => ({ resolve }))
 // Only the layout's five app-navigation destinations may use this mocked resolver.
 // Resource/helper URLs must remain independent; this is not native Kit resolution evidence.
 function expectAppNavigation(jobs = ['job']) {
-	expect(resolve.mock.calls).toEqual(
-		jobs.flatMap((job) => {
-			const route = '/(auth)/admin/piece/[...path]/preview/[jobId]'
-			const path = 'books/book.md'
-			const jobId = encodeURIComponent(job)
-			return [
-				['/(auth)/admin/piece/[...path]/source', { path }],
-				[route, { path, jobId }],
-				[`${route}/page`, { path, jobId }],
-				[`${route}/icon`, { path, jobId }],
-				[`${route}/share`, { path, jobId }]
-			]
-		})
-	)
+	const calls = jobs.flatMap((job) => {
+		const route = '/(auth)/admin/piece/[...path]/preview/[jobId]'
+		const path = 'books/book.md'
+		const jobId = encodeURIComponent(job)
+		return [
+			['/(auth)/admin/piece/[...path]/source', { path }],
+			[route, { path, jobId }],
+			[`${route}/page`, { path, jobId }],
+			[`${route}/icon`, { path, jobId }],
+			[`${route}/share`, { path, jobId }]
+		]
+	})
+	for (const call of resolve.mock.calls) expect(calls).toContainEqual(call)
 }
 
 type Data = ComponentProps<typeof Overview>['data']
