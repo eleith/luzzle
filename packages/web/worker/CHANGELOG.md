@@ -1,5 +1,16 @@
 # @luzzle/web.worker
 
+## 0.0.247
+
+### Patch Changes
+
+- 3495dda: Support local WOFF2 via `content.fonts.sans` for browser text and worker OG images. Serve configured images and fonts at `/assets/{role}/{filename}` using URL-encoded basenames and revalidation. Reread files on use; only config changes need a restart. Preserve bundled defaults when omitted.
+- @luzzle/core@0.0.247
+  - @luzzle/web.db@0.0.1
+  - @luzzle/web.jobs@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.246
 
 ### Patch Changes
