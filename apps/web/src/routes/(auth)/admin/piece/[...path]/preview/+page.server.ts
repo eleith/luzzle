@@ -3,25 +3,27 @@ import { getPieces } from '#lib/server/pieces.js'
 import { config } from '#lib/server/config.js'
 import { getOpenWorkflow } from '#lib/server/workflow/index.js'
 import { previewSpec } from '@luzzle/web.jobs/specs'
-import type { PageServerLoad } from './$types'
+import type { Actions, PageServerLoad } from './$types'
 import { previewHref } from '#lib/pieces/navigation.js'
 
-export const load: PageServerLoad = async ({ params }) => {
-	const file = params.path
-	const pieces = getPieces()
-	const { type } = pieces.parseFilename(file)
-
-	if (!type) {
-		return error(404, 'piece type does not exist')
+function validatePreviewFile(file: string) {
+	const { type } = getPieces().parseFilename(file)
+	if (!type) error(404, 'piece type does not exist')
+	if (!config.pieces.some((piece) => piece.type === type)) {
+		error(404, 'piece type not configured')
 	}
-
-	const pieceConfig = config.pieces.find((p) => p.type === type)
-	if (!pieceConfig) {
-		return error(404, 'piece type not configured')
-	}
-
-	const openWorkflow = getOpenWorkflow()
-	const handle = await openWorkflow.runWorkflow(previewSpec, { filePath: file })
-	const runId = handle.workflowRun.id
-	redirect(303, previewHref(file, runId))
 }
+
+export const load: PageServerLoad = ({ params }) => {
+	validatePreviewFile(params.path)
+	return { file: params.path }
+}
+
+export const actions = {
+	default: async ({ params }) => {
+		const file = params.path
+		validatePreviewFile(file)
+		const handle = await getOpenWorkflow().runWorkflow(previewSpec, { filePath: file })
+		redirect(303, previewHref(file, handle.workflowRun.id))
+	}
+} satisfies Actions

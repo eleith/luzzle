@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
 	import { resolve } from '$app/paths'
+	import { enhance } from '$app/forms'
 	import Button from '#lib/components/ui/Button.svelte'
 	import { encodeArchivePath } from '#lib/pieces/navigation.js'
 
@@ -34,21 +35,23 @@
 		{@render children()}
 	</div>
 	<div class="status" aria-live="polite">
-		<span>
+		<div>
 			{#if isSaving}
 				Saving…
 			{:else if isDirty}
 				Unsaved
 			{:else}
-				<a
-					href={resolve('/(auth)/admin/piece/[...path]/preview', { path })}
-					aria-label="Preview saved piece"
-					title="Preview saved piece"
+				<form
+					method="post"
+					action={resolve('/(auth)/admin/piece/[...path]/preview', { path })}
+					use:enhance
 				>
-					Saved
-				</a>
+					<button type="submit" aria-label="Preview saved piece" title="Preview saved piece">
+						Saved
+					</button>
+				</form>
 			{/if}
-		</span>
+		</div>
 		<span class="publication-status">
 			{#if isUnpublishing}
 				Unpublishing…
@@ -93,8 +96,17 @@
 		padding-inline-start: var(--space-3);
 	}
 
-	.status a {
+	.status a,
+	.status button {
 		color: inherit;
 		text-decoration: underline;
+	}
+
+	.status button {
+		border: 0;
+		padding: 0;
+		background: transparent;
+		font: inherit;
+		cursor: pointer;
 	}
 </style>

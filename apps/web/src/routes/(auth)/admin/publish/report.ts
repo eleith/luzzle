@@ -98,54 +98,8 @@ export function getRunKind(workflowName: unknown, fallback: ActiveKind | null): 
 	return fallback
 }
 
-export type PhaseProgress = {
-	phase: string
-	status: string
-	started_at: number
-	finished_at: number | null
-	message: string | null
-}
-
-export type PhaseLog = {
-	job_id: string
-	phase: string
-	line_number: number
-	ts: number
-	level: string
-	message: string
-}
-
-export function mergePhaseLogs(
-	current: Record<string, PhaseLog[]>,
-	incoming: PhaseLog[]
-): Record<string, PhaseLog[]> {
-	const phases = new Map<string, Map<string, PhaseLog>>()
-	for (const phase of Object.keys(current)) {
-		phases.set(phase, new Map())
-	}
-	for (const rows of [...Object.values(current), incoming]) {
-		for (const row of rows) {
-			let phaseRows = phases.get(row.phase)
-			if (!phaseRows) {
-				phaseRows = new Map()
-				phases.set(row.phase, phaseRows)
-			}
-			const identity = JSON.stringify([row.job_id, row.line_number])
-			phaseRows.set(identity, row)
-		}
-	}
-	return Object.fromEntries(
-		[...phases].map(([phase, rows]) => [
-			phase,
-			[...rows.values()].sort((a, b) => a.line_number - b.line_number)
-		])
-	)
-}
-
-export function latestPhases<T extends { phase: string }>(rows: T[]): T[] {
-	const latestByPhase = new Map<string, T>()
-	for (const row of rows) {
-		latestByPhase.set(row.phase, row)
-	}
-	return Array.from(latestByPhase.values())
-}
+export { mergePhaseLogs, latestPhases } from '#lib/components/progress.js'
+export type {
+	ProgressPhase as PhaseProgress,
+	JobProgressLog as PhaseLog
+} from '#lib/components/progress.js'

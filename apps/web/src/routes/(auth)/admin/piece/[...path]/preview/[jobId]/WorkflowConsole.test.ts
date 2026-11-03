@@ -113,6 +113,22 @@ describe('preview phases and logs', () => {
 		expect(withoutLogs.body).not.toContain('class="log-console')
 	})
 
+	test('renders one timeline row for a retried phase using its latest state', () => {
+		const result = render(WorkflowConsole, {
+			props: {
+				status: 'completed',
+				phases: [
+					{ ...phases[0], status: 'failed', message: 'First attempt failed' },
+					{ ...phases[0], message: 'Retry succeeded' }
+				],
+				logs
+			}
+		})
+		expect(result.body.match(/class="phase-name\b/g)).toHaveLength(1)
+		expect(text(result.body)).toContain('Retry succeeded')
+		expect(text(result.body)).not.toContain('First attempt failed')
+	})
+
 	test('scopes log viewport IDs to the rendered console', () => {
 		const props = { status: 'completed', phases, logs }
 		const first = render(WorkflowConsole, { props, idPrefix: 'first' })

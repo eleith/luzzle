@@ -14,6 +14,7 @@ vi.mock('$app/paths', () => ({
 		route.replace('/(auth)', '').replace('[...path]', () => params.path)
 	)
 }))
+vi.mock('$app/forms', () => ({ enhance: vi.fn() }))
 beforeEach(() => vi.clearAllMocks())
 
 const file = 'books/源 #?%.books.md'
@@ -50,19 +51,22 @@ function buttonAttributes(output: string, label: string): string {
 }
 
 test.each([false, true])(
-	'saved files show Save and More, with Saved linking to preview when published=%s',
+	'saved files submit a preview action when published=%s',
 	(hasPublishedVersion) => {
 		const output = html({ hasPublishedVersion })
-		expect(buttons(output).map((button) => button.label)).toEqual(['Save'])
+		expect(buttons(output).map((button) => button.label)).toEqual(['Save', 'Saved'])
 		expect(buttonAttributes(output, 'Save')).toMatch(disabledAttribute)
-		expect(output).toContain(`href="${previewHref}"`)
+		expect(buttonAttributes(output, 'Saved')).toContain('type="submit"')
+		expect(output).toContain('method="post"')
+		expect(output).toContain(`action="${previewHref}"`)
+		expect(output).not.toContain(`href="${previewHref}"`)
 		expect(output).toContain('aria-label="Preview saved piece"')
 		expect(output).toContain('More fixture')
 		expect(output).toContain('aria-live="polite"')
 	}
 )
 
-test('unsaved documents have a short status instead of a Saved preview link', () => {
+test('unsaved documents have a short status instead of a Saved preview action', () => {
 	const output = html({ isDirty: true })
 	expect(buttonAttributes(output, 'Save')).not.toMatch(disabledAttribute)
 	expect(output).toContain('Unsaved')
@@ -131,7 +135,7 @@ test('encoded file paths enter the app resolver unchanged', () => {
 		['/(auth)/admin/piece/[...path]/preview', { path: encodeArchivePath(file) }],
 		['/(auth)/admin/piece/[...path]/published', { path: encodeArchivePath(file) }]
 	])
-	expect(output).toContain(`href="${preview}"`)
+	expect(output).toContain(`action="${preview}"`)
 	expect(output).toContain(`href="${published}"`)
 })
 

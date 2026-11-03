@@ -14,8 +14,8 @@ New to the files underneath? Start with [archives](../archive.md) or the
 ## Using the editor
 
 With [authentication configured](config.md#sign-in), open `/admin` to manage
-pieces. Save edits, preview them, then use `/admin/publish` to check changes and
-publish. Saving a file is not the same as publishing it.
+pieces. Save edits, then click **Saved** to start a preview of that saved file.
+Use `/admin/publish` to check changes and publish. Saving is not publishing.
 
 Check lists all pending changes. Choose which added or updated pieces to publish.
 Publishing uses saved files, so edits saved after Check may be included.

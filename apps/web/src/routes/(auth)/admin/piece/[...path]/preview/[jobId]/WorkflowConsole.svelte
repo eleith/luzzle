@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte'
-	import type { ProgressPhase, ProgressLog } from '#lib/components/progress.js'
+	import { latestPhases, type ProgressPhase, type ProgressLog } from '#lib/components/progress.js'
 	import { formatDuration } from './duration'
 	import CheckCircleFill from 'virtual:icons/ph/check-circle-fill'
 	import XCircleFill from 'virtual:icons/ph/x-circle-fill'
@@ -20,6 +20,7 @@
 	const consoleId = $props.id()
 
 	let scrollLocks = $state<Record<string, boolean>>({})
+	const timelinePhases = $derived(latestPhases(phases))
 
 	function handleScroll(phaseName: string, event: Event) {
 		const el = event.currentTarget as HTMLDivElement
@@ -58,9 +59,9 @@
 	</div>
 {/if}
 
-{#if phases.length > 0}
+{#if timelinePhases.length > 0}
 	<div class="timeline">
-		{#each phases as phase (phase.phase)}
+		{#each timelinePhases as phase (phase.phase)}
 			{@const hasLogs = (logs[phase.phase]?.length ?? 0) > 0}
 			<div class="phase">
 				<div class="phase-row">

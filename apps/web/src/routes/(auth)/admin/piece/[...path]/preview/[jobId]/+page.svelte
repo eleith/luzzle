@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProgressLog } from '#lib/components/progress.js'
+	import { mergePhaseLogs } from '#lib/components/progress.js'
 	import PieceOverview from '#lib/pieces/viewer/PieceOverview.svelte'
 	import { previewOutputUrl } from '#lib/pieces/preview/output-url.js'
 	import PreviewFacts from './PreviewFacts.svelte'
@@ -11,14 +11,7 @@
 		return previewOutputUrl(path, data.job)
 	}
 
-	let logsMap = $derived.by(() => {
-		const map: Record<string, ProgressLog[]> = {}
-		for (const log of data.logs ?? []) {
-			if (!map[log.phase]) map[log.phase] = []
-			map[log.phase].push(log)
-		}
-		return map
-	})
+	const logsMap = $derived(mergePhaseLogs({}, data.logs ?? []))
 </script>
 
 {#if data.status === 'completed'}

@@ -5,6 +5,11 @@
 	import { resolve } from '$app/paths'
 	import type { LayoutProps } from './$types'
 	import { encodeArchivePath } from '#lib/pieces/navigation.js'
+	import {
+		mergePhaseLogs,
+		type ProgressPhase,
+		type JobProgressLog
+	} from '#lib/components/progress.js'
 
 	import ArrowLeftIcon from 'virtual:icons/ph/arrow-left'
 	import PieceOverview from '#lib/pieces/viewer/PieceOverview.svelte'
@@ -15,39 +20,14 @@
 
 	type PreviewStatus = 'enqueued' | 'running' | 'completed' | 'failed' | 'expired'
 
-	type PhaseProgress = {
-		phase: string
-		status: string
-		started_at: number
-		finished_at: number | null
-		message: string | null
-	}
-	type PhaseLog = {
-		job_id: string
-		phase: string
-		line_number: number
-		ts: number
-		level: string
-		message: string
-	}
-
 	let status = $state<PreviewStatus>(
 		data.status === 'waiting' ? 'enqueued' : data.status === 'expired' ? 'expired' : data.status
 	)
 	let errorMessage = $state(data.errorMessage ?? '')
 	let streamDisconnected = $state(false)
 
-	const initialPhases = data.phases ?? []
-	const initialLogs: Record<string, PhaseLog[]> = {}
-	if (data.logs) {
-		for (const log of data.logs) {
-			if (!initialLogs[log.phase]) initialLogs[log.phase] = []
-			initialLogs[log.phase].push(log)
-		}
-	}
-
-	let phases = $state<PhaseProgress[]>(initialPhases)
-	let logs = $state<Record<string, PhaseLog[]>>(initialLogs)
+	let phases = $state<ProgressPhase[]>(data.phases ?? [])
+	let logs = $state(mergePhaseLogs({}, data.logs ?? []))
 
 	let eventSource: EventSource | null = null
 
@@ -79,15 +59,8 @@
 		})
 
 		eventSource.addEventListener('log', (e) => {
-			const newLogs: PhaseLog[] = JSON.parse(e.data)
-			const updated = { ...logs }
-			for (const log of newLogs) {
-				if (!updated[log.phase]) {
-					updated[log.phase] = []
-				}
-				updated[log.phase] = [...updated[log.phase], log]
-			}
-			logs = updated
+			const newLogs: JobProgressLog[] = JSON.parse(e.data)
+			logs = mergePhaseLogs(logs, newLogs)
 		})
 
 		eventSource.addEventListener('done', (e) => {

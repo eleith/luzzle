@@ -144,6 +144,19 @@ beforeEach(() => {
 	vi.clearAllMocks()
 })
 
+test.each(['running', 'completed'] as const)(
+	'%s Preview renders duplicated seed logs once and retains new lines',
+	(status) => {
+		const props = data(status)
+		const first = { ...props.logs[0], message: 'Duplicated seed line' }
+		props.logs = [first, { ...first }, { ...first, line_number: 2, message: 'New seed line' }]
+		const html = tree(props)
+		expect(html.match(/Duplicated seed line/g)).toHaveLength(1)
+		expect(html.match(/New seed line/g)).toHaveLength(1)
+		expect(html).toContain('2 lines')
+	}
+)
+
 test('completed Preview reads title, consolidated facts, Preview logs, then assets with a single main/title', () => {
 	const html = tree(data())
 	expect(html.match(/<main\b/g)).toHaveLength(1)
