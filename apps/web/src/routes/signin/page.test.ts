@@ -1,58 +1,98 @@
-import { readFileSync } from 'node:fs'
-import { parse } from 'svelte/compiler'
 import { afterAll, expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
+import type { ComponentProps } from 'svelte'
+import type { ConfigPublic } from '@luzzle/web.config'
+import { makePublicConfig } from '#lib/server/config.fixture.js'
 import Signin from './+page.svelte'
+import SigninTree from './fixtures/SigninTree.svelte'
 
+const { page } = vi.hoisted(() => ({
+	page: {
+		url: new URL('https://app.test/signin'),
+		data: {
+			config: undefined as ConfigPublic | undefined,
+			meta: { title: 'Test Garden', description: 'An archive' }
+		}
+	}
+}))
+vi.mock('$app/state', () => ({ page }))
+vi.mock('$app/env', () => ({ browser: false }))
+vi.mock('$app/paths', () => ({ resolve: (path: string) => (path === '' ? '/' : path) }))
 vi.mock('$app/navigation', () => ({ goto: vi.fn() }))
-// Import the real client during SSR without consulting ambient auth URL settings.
+// Client authentication must remain lazy during SSR, even with invalid ambient settings.
 vi.hoisted(() => vi.stubEnv('BETTER_AUTH_URL', 'not-a-url'))
 afterAll(() => vi.unstubAllEnvs())
 
-const source = readFileSync(new URL('./+page.svelte', import.meta.url), 'utf8')
+function signinData(): ComponentProps<typeof Signin>['data'] {
+	const config = makePublicConfig()
+	config.content.text.title = 'Test Garden'
+	config.content.images.favicon = '/assets/favicon/garden.svg'
+	return {
+		pieceTypes: [],
+		config,
+		meta: { title: 'Test Garden', description: 'An archive' },
+		redirectTo: '/admin',
+		authType: 'credentials',
+		oidcName: undefined,
+		errorCode: null
+	}
+}
 
-// Structural guards: SSR cannot exercise clicks or client-side navigation.
-test('the client destination reacts to validated page data, not raw query parameters', () => {
-	const statements = parse(source, { modern: true }).instance?.content.body ?? []
-	const declaration = statements
-		.flatMap((statement) =>
-			statement.type === 'VariableDeclaration' ? statement.declarations : []
-		)
-		.find(
-			(declaration) => declaration.id.type === 'Identifier' && declaration.id.name === 'redirectTo'
-		)
+test('credentials use configured branding and named POST controls with password-manager hints', () => {
+	const data = signinData()
 
-	expect(declaration).toMatchObject({
-		init: {
-			type: 'CallExpression',
-			callee: { type: 'Identifier', name: '$derived' },
-			arguments: [
-				{
-					type: 'MemberExpression',
-					object: { type: 'Identifier', name: 'data' },
-					property: { type: 'Identifier', name: 'redirectTo' }
-				}
-			]
-		}
-	})
-	expect(source).not.toContain('searchParams')
+	const result = render(Signin, { props: { data, params: {}, form: null } })
+	const html = result.body.replace(/<!--[\s\S]*?-->/g, '')
+
+	expect(html).toContain('Sign in to Test Garden')
+	expect(html).toContain('src="/assets/favicon/garden.svg"')
+	expect(html).toMatch(/<form\b[^>]*\bmethod="post"/i)
+	expect(html).toMatch(/<input\b(?=[^>]*\bname="username")(?=[^>]*\bautocomplete="username")[^>]*>/)
+	expect(html).toMatch(
+		/<input\b(?=[^>]*\bname="password")(?=[^>]*\btype="password")(?=[^>]*\bautocomplete="current-password")[^>]*>/
+	)
+	expect(result.head).toContain('Sign in — Test Garden')
 })
 
-test.each(['credentials', 'oidc'])(
-	'SSR with an invalid ambient auth URL renders an accessible callback failure for %s',
-	(authType) => {
-		const { body } = render(Signin, {
-			props: {
-				data: { redirectTo: '/admin', authType, oidcName: 'Our SSO', errorCode: 'AuthError' }
-			} as never
-		})
-		expect(body).toContain('role="alert"')
-		expect(body).toContain('Unable to sign in. Please try again.')
-		if (authType === 'credentials') {
-			expect(body).toContain('autocomplete="username"')
-			expect(body).toContain('autocomplete="current-password"')
-		} else {
-			expect(body).toContain('Our SSO')
-		}
-	}
-)
+test('OIDC offers the selected provider without presenting local credential fields', () => {
+	const data = signinData()
+	data.authType = 'oidc'
+	data.oidcName = 'Our SSO'
+
+	const { body } = render(Signin, { props: { data, params: {}, form: null } })
+	const html = body.replace(/<!--[\s\S]*?-->/g, '')
+
+	expect(html).toContain('Sign in with Our SSO')
+	expect(html).toMatch(/<button\b[^>]*\btype="submit"/)
+	expect(html).not.toMatch(/<input\b/)
+})
+
+test('a callback failure is announced without removing the selected sign-in method', () => {
+	const data = signinData()
+	data.authType = 'oidc'
+	data.oidcName = 'Our SSO'
+	data.errorCode = 'AuthError'
+
+	const { body } = render(Signin, { props: { data, params: {}, form: null } })
+	const html = body.replace(/<!--[\s\S]*?-->/g, '')
+
+	expect(html).toContain('role="alert"')
+	expect(html).toContain('Unable to sign in. Please try again.')
+	expect(html).toContain('Sign in with Our SSO')
+})
+
+test('the sign-in layout keeps branding, theme and return navigation without public search', () => {
+	const data = signinData()
+	page.data.config = data.config
+
+	const result = render(SigninTree, { props: { data } })
+
+	expect(result.body.match(/<main\b/g)).toHaveLength(1)
+	expect(result.body).toContain('href="/"')
+	expect(result.body).toContain('Back to site')
+	expect(result.body).toContain('aria-label="change theme"')
+	expect(result.body).not.toContain('aria-label="search"')
+	expect(result.head).toContain('rel="icon" href="/assets/favicon/garden.svg"')
+	expect(result.head).toContain('Sign in — Test Garden')
+	expect(result.head).toContain('name="robots" content="noindex"')
+})

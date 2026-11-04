@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte'
+	import WarningIcon from 'virtual:icons/ph/warning-circle'
 	import Button from '#lib/components/ui/Button.svelte'
 	import { signInCredentials, signInOidc, type AuthFailure } from '#lib/auth-client.js'
 	import { goto } from '$app/navigation'
@@ -6,16 +8,28 @@
 
 	let { data }: PageProps = $props()
 	const redirectTo = $derived(data.redirectTo)
+	const site = $derived(data.config.content)
 
+	let form: HTMLFormElement | undefined = $state()
 	let username = $state('')
 	let password = $state('')
 	let pending = $state(false)
 	let submitError = $state<AuthFailure | 'NavigationError' | null>(null)
 	const errorCode = $derived(submitError ?? data.errorCode)
 
-	async function handleSubmit(e: SubmitEvent) {
-		e.preventDefault()
+	onMount(() => {
+		if (!window.matchMedia('(min-width: 48rem) and (pointer: fine)').matches) return
+		form?.querySelector<HTMLElement>('input[name="username"], button[type="submit"]')?.focus()
+	})
+
+	async function handleSubmit(event: SubmitEvent) {
+		event.preventDefault()
 		if (pending) return
+		if (data.authType === 'oidc') {
+			await handleOidc()
+			return
+		}
+
 		pending = true
 		submitError = null
 		const failure = await signInCredentials(username, password)
@@ -47,120 +61,223 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Sign in — {site.text.title}</title>
+	<meta name="robots" content="noindex" />
+</svelte:head>
+
 <svelte:window
 	onpageshow={(event) => {
 		if (event.persisted) pending = false
 	}}
 />
 
-{#snippet errorBanner()}
+<section class="signin-card" aria-labelledby="signin-title">
+	<header class="signin-header">
+		<img src={site.images.favicon} alt="" width="48" height="48" />
+		<h1 id="signin-title">Sign in to {site.text.title}</h1>
+		<p>Manage and publish your archive.</p>
+	</header>
+
 	{#if errorCode}
-		<div class="error" role="alert">
-			{#if errorCode === 'NavigationError'}
-				<!-- eslint-disable svelte/no-navigation-without-resolve -- Use the same validated destination as the server redirect. -->
-				Signed in. <a href={redirectTo}>Continue</a> when ready.
-				<!-- eslint-enable svelte/no-navigation-without-resolve -->
-			{:else if errorCode === 'CredentialsSignin'}
-				Invalid username or password
-			{:else if errorCode === 'RateLimited'}
-				Too many sign-in attempts. Please wait and try again.
-			{:else if errorCode === 'NetworkError'}
-				Unable to connect. Please try again.
-			{:else}
-				Unable to sign in. Please try again.
-			{/if}
+		<div class="error-banner" role="alert">
+			<WarningIcon aria-hidden="true" focusable="false" />
+			<div>
+				{#if errorCode === 'NavigationError'}
+					<!-- eslint-disable svelte/no-navigation-without-resolve -- Use the same validated destination as the server redirect. -->
+					Signed in. <a href={redirectTo}>Continue</a> when ready.
+					<!-- eslint-enable svelte/no-navigation-without-resolve -->
+				{:else if errorCode === 'CredentialsSignin'}
+					Invalid username or password. Please try again.
+				{:else if errorCode === 'RateLimited'}
+					Too many sign-in attempts. Please wait and try again.
+				{:else if errorCode === 'NetworkError'}
+					Unable to connect. Please try again.
+				{:else}
+					Unable to sign in. Please try again.
+				{/if}
+			</div>
 		</div>
 	{/if}
-{/snippet}
 
-<h1 class="visually-hidden">Login</h1>
-
-<section>
-	{#if data.authType === 'oidc'}
-		<div class="oidc-login">
-			{@render errorBanner()}
-			<p>login via {data.oidcName}</p>
-			<Button onclick={handleOidc} disabled={pending}>login</Button>
-		</div>
-	{:else if data.authType === 'credentials'}
-		<form onsubmit={handleSubmit} class="login-form" aria-busy={pending}>
-			{@render errorBanner()}
+	<form
+		method="POST"
+		onsubmit={handleSubmit}
+		bind:this={form}
+		class="signin-form"
+		aria-busy={pending}
+	>
+		{#if data.authType === 'credentials'}
 			<div class="field">
-				<label for="username">username</label>
+				<label for="username">Username</label>
 				<input
 					type="text"
 					id="username"
+					name="username"
 					bind:value={username}
-					class="input"
 					autocomplete="username"
 					disabled={pending}
 					required
 				/>
 			</div>
 			<div class="field">
-				<label for="password">password</label>
+				<label for="password">Password</label>
 				<input
 					type="password"
 					id="password"
+					name="password"
 					bind:value={password}
-					class="input"
 					autocomplete="current-password"
 					disabled={pending}
 					required
 				/>
 			</div>
-			<Button type="submit" disabled={pending}>login</Button>
-		</form>
-	{/if}
+		{:else if data.authType === 'oidc'}
+			<p class="sso-description">Use {data.oidcName} to access your archive.</p>
+		{/if}
+
+		<Button type="submit" disabled={pending}>
+			{#if pending}
+				Signing in…
+			{:else if data.authType === 'oidc'}
+				Sign in with {data.oidcName}
+			{:else}
+				Sign in
+			{/if}
+		</Button>
+	</form>
+
+	<noscript><p class="javascript-notice">JavaScript is required to sign in.</p></noscript>
 </section>
 
 <style>
-	section {
-		display: flex;
-		height: calc(100vh - 300px);
-		justify-content: center;
-		align-items: center;
-	}
-
-	.oidc-login {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: var(--space-4);
-	}
-
-	.oidc-login p {
-		margin: 0;
-		font-size: var(--font-size-xs);
-		text-transform: uppercase;
-	}
-
-	.login-form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
+	.signin-card {
 		width: 100%;
-		max-width: 300px;
-		padding: var(--space-6);
+		max-width: 25rem;
+		min-width: 0;
+		display: grid;
+		gap: var(--space-6);
+		padding: var(--space-8);
 		background: var(--color-surface-container-low);
-		border-radius: var(--radius-medium);
-		border: 1px solid var(--color-outline);
+		border: 1px solid var(--color-outline-variant);
+		border-radius: var(--radius-large);
+		box-shadow: var(--shadow-raised);
+	}
+
+	.signin-header {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-3);
+		text-align: center;
+	}
+
+	.signin-header img {
+		object-fit: contain;
+	}
+
+	h1 {
+		margin: 0;
+		font-size: var(--font-size-xl);
+		font-weight: var(--font-weight-bold);
+		line-height: 1.2;
+		overflow-wrap: anywhere;
+	}
+
+	.signin-header p,
+	.sso-description,
+	.javascript-notice {
+		margin: 0;
+		color: var(--color-on-surface-variant);
+		font-size: var(--font-size-small);
+		line-height: 1.5;
+		text-align: center;
+	}
+
+	.signin-form {
+		display: grid;
+		gap: var(--space-5);
 	}
 
 	.field {
+		display: grid;
+		gap: var(--space-2);
+		min-width: 0;
+	}
+
+	label {
+		font-size: var(--font-size-small);
+		font-weight: var(--font-weight-medium);
+	}
+
+	input {
+		width: 100%;
+		min-width: 0;
+		min-height: 50px;
+		padding: var(--space-3) var(--space-4);
+		border: 1px solid var(--color-outline);
+		border-radius: var(--radius-small);
+		background: var(--color-surface-container-highest);
+		color: var(--color-on-surface);
+		font: inherit;
+		font-size: 16px;
+	}
+
+	input:focus-visible,
+	.signin-form :global(.button:focus-visible) {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
+
+	input:disabled {
+		opacity: 0.6;
+	}
+
+	.signin-form :global(.button) {
 		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: auto;
+		min-height: 50px;
+		padding: var(--space-3) var(--space-4);
+		text-transform: none;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		font-size: var(--font-size-normal);
+		line-height: 1.4;
 	}
 
-	.field label {
-		font-size: var(--font-size-xxs);
-		text-transform: uppercase;
+	.error-banner {
+		display: flex;
+		align-items: flex-start;
+		gap: var(--space-3);
+		padding: var(--space-4);
+		border: 1px solid var(--color-error);
+		border-radius: var(--radius-small);
+		background: var(--color-error-container);
+		color: var(--color-on-error-container);
+		font-size: var(--font-size-small);
+		line-height: 1.5;
+		overflow-wrap: anywhere;
 	}
 
-	.error {
-		color: var(--color-error);
-		font-size: var(--font-size-xs);
-		margin-bottom: var(--space-2);
+	.error-banner :global(svg) {
+		flex-shrink: 0;
+		width: 1.25em;
+		height: 1.25em;
+	}
+
+	.error-banner a {
+		color: inherit;
+	}
+
+	@media (max-width: 30rem) {
+		.signin-card {
+			padding: var(--space-4);
+			border: none;
+			box-shadow: none;
+			background: transparent;
+		}
 	}
 </style>
