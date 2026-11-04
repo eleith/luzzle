@@ -86,7 +86,7 @@ try {
   const row = {
     id: 'cutover-id', key: 'cutover-key', slug: 'real-piece', type: 'cutover-kind',
     title: 'Real Piece', file_path: 'real-piece.cutover-kind.md', date_added: 1700000000000,
-    note: 'Raw indexed note', summary: 'Published route description',
+    date_consumed: 1700000000000, note: 'Raw indexed note', summary: 'Published route description',
     json_metadata: JSON.stringify({ title: 'Real Piece', cover: 'cover-key', subtitle: 'Published metadata',
       artwork: 'cover-key', released: '2001-09-09', minutes: 123, genre: 'Native catalog',
       filmmaker: 'Ada Example', website: 'https://example.com/real-piece', isbn: '9780000000001', creators: [{ name: 'Ada Example' }] })
@@ -694,6 +694,100 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		const html = await pageHtml()
 		expectBuiltIn(html)
 		expect(html).toContain('pieceTypes:["cutover-kind"]')
+	})
+
+	test('keeps a native search link on the initial public piece', async () => {
+		const html = await pageHtml()
+		const searchLinks = html.match(/<a\b(?=[^>]*\baria-label="search")[^>]*>[\s\S]*?<\/a>/g) ?? []
+		expect(searchLinks).toHaveLength(1)
+		expect(linkTargets(searchLinks[0]!, piecePath)).toEqual([new URL('/search', origin).href])
+		expect(searchLinks[0]).not.toMatch(/\b(?:role="button"|onclick=)/)
+	})
+
+	test('shows the native search form only without filters and keeps filtered pages results-only', async () => {
+		async function searchHtml(pathname: string) {
+			// Ignore Svelte's SSR branch markers when asserting visible heading text.
+			return (await pageHtml(pathname)).replace(/<!--[\s\S]*?-->/g, '')
+		}
+		function searchForm(html: string, pathname: string) {
+			expect(html.match(/<main\b/g)).toHaveLength(1)
+			expect(html.match(/<h1\b[^>]*>Search<\/h1>/g)).toHaveLength(1)
+			const forms = [...html.matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/g)]
+			expect(forms).toHaveLength(1)
+			const [, attributes, body] = forms[0]
+			expect(attributes).toMatch(/\bmethod="get"/i)
+			const action = attributes.match(/\baction="([^"]+)"/)?.[1]
+			expect(action).toBeDefined()
+			const url = new URL(action!.replaceAll('&amp;', '&'), new URL(pathname, origin))
+			expect(url.href).toBe(new URL('/search', origin).href)
+			const controls = [...body.matchAll(/<input\b[^>]*\bname="([^"]+)"[^>]*>/g)]
+			expect(controls.map(([, name]) => name).sort()).toEqual(['after', 'before', 'query', 'type'])
+			const params = new URLSearchParams()
+			for (const [tag, name] of controls) {
+				expect(tag).not.toMatch(/\sdisabled(?:\s|=|>)/)
+				const value = tag.match(/\bvalue="([^"]*)"/)?.[1]
+				expect(value, name).toBeDefined()
+				params.set(name, value!.replaceAll('&amp;', '&'))
+				if (name === 'after' || name === 'before') expect(tag).toContain('type="hidden"')
+			}
+			expect(body).toMatch(/<input\b(?=[^>]*\bname="query")(?=[^>]*\btype="search")[^>]*>/)
+			expect(body).toMatch(/<button\b[^>]*\btype="submit"/)
+			expect(html.indexOf('<h1')).toBeLessThan(html.indexOf('<form'))
+			expect(html).not.toContain('id="search-results-title"')
+			expect(html).not.toContain('Real Piece')
+			expect(linkTargets(html, pathname)).not.toContain(new URL(piecePath, origin).href)
+			return { url, params }
+		}
+
+		function expectResultsOnly(html: string, pathname: string) {
+			expect(html.match(/<main\b/g)).toHaveLength(1)
+			expect(html.match(/<h1\b/g)).toHaveLength(1)
+			expect(html).not.toMatch(/<form\b/)
+			expect(html).not.toContain('class="search-panel')
+			expect(linkTargets(html, pathname)).toContain(new URL('/search', origin).href)
+		}
+
+		const empty = await searchHtml('/search')
+		const { url, params } = searchForm(empty, '/search')
+		expect(Object.fromEntries(params)).toEqual({
+			query: '',
+			type: '',
+			after: '',
+			before: ''
+		})
+		expect(await frameworkCss(empty)).toContain('.search-input-wrapper')
+		searchForm(await searchHtml('/search?query=&page=1'), '/search?query=&page=1')
+
+		const filters = {
+			query: 'native-missing-query',
+			type: 'cutover-kind',
+			after: '2020-01-02',
+			before: '2030-03-04'
+		}
+		const pathname = `/search?${new URLSearchParams(filters)}&page=1&unrelated=old`
+		const filtered = await searchHtml(pathname)
+		expectResultsOnly(filtered, pathname)
+		expect(filtered).toMatch(/<h1\b[^>]*>\s*No results found\s*<\/h1>/)
+		expect(filtered).toContain(filters.query)
+		expect(linkTargets(filtered, pathname)).not.toContain(new URL(piecePath, origin).href)
+		for (const filter of ['type=cutover-kind', 'after=2020-01-02', 'before=2030-03-04']) {
+			const filteredPath = `/search?${filter}`
+			const filteredHtml = await searchHtml(filteredPath)
+			expectResultsOnly(filteredHtml, filteredPath)
+			expect(linkTargets(filteredHtml, filteredPath)).toContain(new URL(piecePath, origin).href)
+		}
+
+		// Construct the GET a native form would send after editing its controls;
+		// this does not execute browser submission or the enhanced goto handler.
+		params.set('query', 'Real Piece')
+		params.set('after', '')
+		params.set('before', '')
+		expect(params.has('page')).toBe(false)
+		url.search = params.toString()
+		const results = await searchHtml(`${url.pathname}${url.search}`)
+		expectResultsOnly(results, `${url.pathname}${url.search}`)
+		expect(results).toMatch(/<h1\b[^>]*>\s*Search results\s*<\/h1>/)
+		expect(linkTargets(results, url.pathname)).toContain(new URL(piecePath, origin).href)
 	})
 
 	test('serves the bundled editor schema publicly without exposing instance configuration', async () => {

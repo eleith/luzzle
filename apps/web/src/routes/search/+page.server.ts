@@ -17,6 +17,10 @@ export const load: PageServerLoad = async ({ url }) => {
 		redirect(302, url.pathname)
 	}
 
+	if (!query && !type && !after && !before) {
+		return { pieces: [], query, type, after, before, nextPage: null }
+	}
+
 	let piecesQuery = db.selectFrom('web_pieces_fts5').selectAll()
 
 	if (query) {

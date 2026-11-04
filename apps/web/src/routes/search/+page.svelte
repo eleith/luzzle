@@ -2,9 +2,15 @@
 	import { afterNavigate } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import PieceIcon from '#lib/pieces/components/icon.svelte'
+	import SearchForm from '#lib/components/layout/simple/SearchForm.svelte'
+	import type { PageProps } from './$types'
 
 	let activePieceId = $state<string | null>(null)
-	let { data } = $props()
+	let { data }: PageProps = $props()
+	let query = $derived(data.query)
+	let type = $derived(data.type)
+	let after = $derived(data.after)
+	let before = $derived(data.before)
 	let hasSearchTerms = $derived(!!(data.query || data.type || data.after || data.before))
 
 	afterNavigate(({ type, shallow }) => {
@@ -16,19 +22,20 @@
 	})
 </script>
 
-<section>
-	<div class="container">
-		<div class="search-header">
-			<h1>
-				{#if !hasSearchTerms}
-					All pieces
-				{:else if data.pieces.length === 0}
-					No results found
-				{:else}
-					Search results
-				{/if}
-			</h1>
-			{#if hasSearchTerms}
+{#if !hasSearchTerms}
+	<section class="search-panel" aria-labelledby="search-title">
+		<h1 id="search-title">Search</h1>
+		<div class="search-form-frame">
+			<SearchForm bind:query bind:type bind:after bind:before />
+		</div>
+	</section>
+{:else}
+	<section aria-labelledby="search-results-title">
+		<div class="container">
+			<div class="search-header">
+				<h1 id="search-results-title">
+					{data.pieces.length === 0 ? 'No results found' : 'Search results'}
+				</h1>
 				<div class="search-summary">
 					{#if data.query}
 						for <span class="summary-highlight">"{data.query}"</span>
@@ -48,65 +55,82 @@
 						{/if}
 					{/if}
 				</div>
-			{/if}
-		</div>
+			</div>
 
-		{#if data.pieces.length > 0}
-			{#each data.pieces as piece (piece.id)}
-				<a
-					href={resolve(`pieces/${piece.type}/${piece.slug}`)}
-					onpointerenter={() => {
-						activePieceId = piece.id
-					}}
-					onpointerleave={() => {
-						activePieceId = null
-					}}
-					onfocus={(e) => {
-						if (e.currentTarget.matches(':focus-visible')) {
+			{#if data.pieces.length > 0}
+				{#each data.pieces as piece (piece.id)}
+					<a
+						href={resolve(`pieces/${piece.type}/${piece.slug}`)}
+						onpointerenter={() => {
 							activePieceId = piece.id
-						}
-					}}
-					onblur={() => {
-						activePieceId = null
-					}}
-				>
-					<div class="piece-card">
-						<div class="piece-icon">
-							<div style="display: flex;">
-								<div style="align-self: baseline;">
-									<PieceIcon {piece} size={{ width: 125 }} active={activePieceId === piece.id} />
+						}}
+						onpointerleave={() => {
+							activePieceId = null
+						}}
+						onfocus={(e) => {
+							if (e.currentTarget.matches(':focus-visible')) {
+								activePieceId = piece.id
+							}
+						}}
+						onblur={() => {
+							activePieceId = null
+						}}
+					>
+						<div class="piece-card">
+							<div class="piece-icon">
+								<div style="display: flex;">
+									<div style="align-self: baseline;">
+										<PieceIcon {piece} size={{ width: 125 }} active={activePieceId === piece.id} />
+									</div>
 								</div>
 							</div>
+							<div class="piece-text">
+								{piece.title}
+							</div>
 						</div>
-						<div class="piece-text">
-							{piece.title}
-						</div>
-					</div>
-				</a>
-			{/each}
-		{/if}
-	</div>
-</section>
-
-{#if data.nextPage}
-	<section class="action">
-		<!-- eslint-disable svelte/no-navigation-without-resolve -- Query links retain the browser-resolved pathname. -->
-		<a
-			href="?{new URLSearchParams({
-				...(data.query && { query: data.query }),
-				...(data.type && { type: data.type }),
-				...(data.after && { after: data.after }),
-				...(data.before && { before: data.before }),
-				page: data.nextPage.toString()
-			}).toString()}"
-		>
-			more
-		</a>
-		<!-- eslint-enable svelte/no-navigation-without-resolve -->
+					</a>
+				{/each}
+			{/if}
+		</div>
 	</section>
+
+	{#if data.nextPage}
+		<section class="action">
+			<!-- eslint-disable svelte/no-navigation-without-resolve -- Query links retain the browser-resolved pathname. -->
+			<a
+				href="?{new URLSearchParams({
+					...(data.query && { query: data.query }),
+					...(data.type && { type: data.type }),
+					...(data.after && { after: data.after }),
+					...(data.before && { before: data.before }),
+					page: data.nextPage.toString()
+				}).toString()}"
+			>
+				more
+			</a>
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
+		</section>
+	{/if}
 {/if}
 
 <style>
+	.search-panel {
+		max-width: 800px;
+		margin: 0 auto var(--space-5);
+		padding: var(--space-5);
+	}
+
+	.search-panel h1 {
+		margin-bottom: var(--space-3);
+		font-size: var(--font-size-xl);
+	}
+
+	.search-form-frame {
+		background: var(--color-surface-container-high);
+		border: 2px solid var(--color-outline);
+		border-radius: var(--radius-medium);
+	}
+
 	.search-header {
 		grid-column: 1 / -1;
 		padding-top: var(--space-1);
