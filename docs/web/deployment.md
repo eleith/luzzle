@@ -7,7 +7,7 @@ images. No checkout or custom build is needed.
 
 ```sh
 mkdir luzzle && cd luzzle
-mkdir -p config archive assets/pieces data content rclone static nginx/cache
+mkdir -p config archive assets/pieces assets/previews data content rclone static nginx/cache
 touch .env
 ```
 
@@ -55,7 +55,13 @@ Changes to `.env` or mounts require
 To update: back up your data, update `LUZZLE_VERSION` if pinned, then pull and
 start again.
 
-## Preview cleanup
+## Preview storage and cleanup
+
+The worker writes previews to `assets/previews`; the web service needs the same
+directory mounted read-only. For existing deployments, first create this directory
+with ownership and write permissions matching the worker's configured UID/GID.
+Then add the preview mount from the Compose example and recreate `luzzle-web`;
+updating the image alone does not change mounts.
 
 The worker removes expired previews and app logs daily around 02:00 UTC.
 Finished jobs are retained for seven days; workflow history stays.

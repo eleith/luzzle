@@ -22,7 +22,7 @@ Set `LUZZLE_AUTH_SECRET`, `LUZZLE_AUTH_PASSWORD` and, if using AI, `GOOGLE_API_K
 Generate a secret with `openssl rand -hex 32`. Keep `.env` out of Git.
 
 ```sh
-mkdir -p demo/assets/pieces demo/data nginx/cache nginx/logs
+mkdir -p demo/assets/pieces demo/assets/previews demo/data nginx/cache nginx/logs
 docker compose -f docker-compose.dev.yml -f docker-compose.dev.local.yml up --build
 ```
 

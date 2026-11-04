@@ -17,6 +17,7 @@ services:
       - ./config:/app/config:ro
       - ./archive:/app/archive
       - ./assets/pieces:/app/assets/pieces
+      - ./assets/previews:/app/assets/previews:ro
       - ./data:/app/data
       - ./content:/app/content:ro
     healthcheck:

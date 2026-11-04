@@ -12,6 +12,7 @@ services:
       - "3000:3000"
     volumes:
       - ./demo/assets/pieces:/app/assets/pieces
+      - ./demo/assets/previews:/app/assets/previews:ro
       - ./demo/config:/app/config:ro
       - ./demo/data:/app/data
       - ./demo/content:/app/content
