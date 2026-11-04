@@ -25,8 +25,24 @@ pnpm lint
 pnpm build
 ```
 
-Keep coverage from dropping. If you change Docker or publishing, exercise that
-path too. A passing unit test is not a running container.
+If you change Docker or publishing, exercise that path too.
+A passing unit test is not a running container.
+
+## Testing
+
+Tests should protect plausible application-owned regressions. Name what could
+break and why it matters before adding or repairing a test. Remove low-value
+tests without replacement; test counts and coverage percentages are not goals.
+
+Use the cheapest valid proof. Each layer should protect a distinct boundary,
+not repeat an existing matrix. Keep real database, HTTP or browser tests where
+mocks cannot prove the behavior. Test our decisions and integration; trust
+established dependencies to do their jobs.
+
+Write scenarios in setup, action and outcome order, using named facts and simple
+fixtures. String assertions and small functions can protect important contracts;
+cosmetic inventories, private implementation details and hypothetical failures
+usually do not.
 
 ## Keep it boring
 

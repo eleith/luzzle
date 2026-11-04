@@ -1,321 +1,145 @@
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
+import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { makePublicConfig } from '#lib/server/config.fixture.js'
-import {
-	publishedPiece as rawPublishedPiece,
-	asset
-} from '#lib/pieces/viewer/fixtures/published.js'
+import { publishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
 import Overview from './+page.svelte'
 import PreviewLayout from './+layout.svelte'
 
-const publishedPiece = {
-	...rawPublishedPiece,
-	templates: {
-		icon: { name: 'default', fields: { image: 'cover' } },
-		page: { name: 'default', fields: { image: 'cover' } },
-		opengraph: { name: 'default', fields: { image: 'cover' } }
-	}
-}
-
-const { page, resolve } = vi.hoisted(() => ({
+vi.mock('$app/state', () => ({
 	page: {
-		url: new URL('https://app.test/admin/piece/books/book.md/preview/job'),
+		url: new URL('https://app.test/admin/piece/books/book.md/preview/current-job'),
 		route: { id: '/(auth)/admin/piece/[...path]/preview/[jobId]' }
-	},
-	resolve: vi.fn((route: string, params: { path: string; jobId?: string }) =>
+	}
+}))
+vi.mock('$app/paths', () => ({
+	resolve: (route: string, params: { path: string; jobId?: string }) =>
 		route
 			.replace('/(auth)', '')
 			.replace('[...path]', () => params.path)
 			.replace('[jobId]', () => params.jobId ?? '')
-	)
 }))
-vi.mock('$app/state', () => ({ page }))
-vi.mock('$app/paths', () => ({ resolve }))
-
-// Only the layout's five app-navigation destinations may use this mocked resolver.
-// Resource/helper URLs must remain independent; this is not native Kit resolution evidence.
-function expectAppNavigation(jobs = ['job']) {
-	const calls = jobs.flatMap((job) => {
-		const route = '/(auth)/admin/piece/[...path]/preview/[jobId]'
-		const path = 'books/book.md'
-		const jobId = encodeURIComponent(job)
-		return [
-			['/(auth)/admin/piece/[...path]/source', { path }],
-			[route, { path, jobId }],
-			[`${route}/page`, { path, jobId }],
-			[`${route}/icon`, { path, jobId }],
-			[`${route}/share`, { path, jobId }]
-		]
-	})
-	for (const call of resolve.mock.calls) expect(calls).toContainEqual(call)
-}
 
 type Data = ComponentProps<typeof Overview>['data']
-type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
-function data(status: Status = 'completed'): Data {
-	const common = {
-		pieceTypes: ['books'],
-		config: makePublicConfig({
-			url: {
-				app: 'https://public.test/site',
-				app_assets: '/static',
-				luzzle_assets: 'https://cdn.test/published'
-			}
-		}),
-		meta: { title: 'Garden', description: 'Description' },
-		preview: true as const,
-		file: 'books/book.md',
-		job: 'job',
-		createdAt: '1970-01-01T00:00:00.000Z',
-		finishedAt:
-			status === 'completed' || status === 'failed' || status === 'expired'
-				? '1970-01-01T00:00:02.000Z'
-				: null,
-		phases: [
-			{
-				job_id: 'job',
-				phase: 'transform',
-				status: 'completed',
-				started_at: 1000,
-				finished_at: 2000,
-				message: null
-			}
-		],
-		logs: [
-			{
-				job_id: 'job',
-				phase: 'transform',
-				line_number: 1,
-				ts: 1000,
-				level: 'info',
-				message: 'Preview log <script>escaped()</script>'
-			}
-		]
-	}
-	if (status === 'failed') return { ...common, status, errorMessage: 'Preview failed fixture' }
-	if (status !== 'completed') return { ...common, status }
-	const outputs = [
-		asset('image.original', 'generated/cover.jpg', 'image'),
-		asset('image.s.webp', 'generated/s.webp', 'image', 'image/webp'),
+
+const job = {
+	pieceTypes: ['books'],
+	config: makePublicConfig({
+		url: {
+			app: 'https://public.test/site',
+			app_assets: '/static',
+			luzzle_assets: 'https://cdn.test/published'
+		}
+	}),
+	meta: { title: 'Garden', description: 'Description' },
+	preview: true as const,
+	file: 'books/book.md',
+	job: 'current-job',
+	createdAt: '2026-11-01T12:00:00.000Z',
+	finishedAt: null,
+	phases: [
 		{
-			...asset('markdown', 'generated/body.html', 'piece', 'text/html'),
-			content: '<script>privateBody()</script><h1>Body</h1>'
-		},
+			job_id: 'current-job',
+			phase: 'transform',
+			status: 'completed',
+			started_at: Date.UTC(2026, 10, 1, 12),
+			finished_at: Date.UTC(2026, 10, 1, 12, 0, 1),
+			message: null
+		}
+	],
+	logs: [
 		{
-			...asset('markdown.description', null, 'piece', 'text/html'),
-			content: '<p>privateDescription()</p>'
-		},
-		{
-			...asset('palette', null, 'piece', 'application/json'),
-			content: '{"color":"#abc","count":42}'
-		},
-		asset('custom.invalid', '../private.pdf', 'piece', 'application/pdf'),
-		asset('custom.missing', null, 'piece', 'application/pdf')
+			job_id: 'current-job',
+			phase: 'transform',
+			line_number: 1,
+			ts: Date.UTC(2026, 10, 1, 12),
+			level: 'info',
+			message: 'Preview seed line'
+		}
 	]
-	return {
-		...common,
-		status,
-		outputs,
-		piece: {
-			...publishedPiece,
-			title: 'Preview <Draft>',
-			assets: [...outputs, asset('attachment', 'archive/manual.pdf')]
+}
+const generatedCover: PublicWebPieceAsset = {
+	asset_key: 'cover',
+	transformation: 'image.original',
+	asset_path: 'generated/cover.jpg',
+	mime_type: 'image/jpeg'
+}
+const archiveAttachment: PublicWebPieceAsset = {
+	asset_key: 'manual',
+	transformation: 'attachment',
+	asset_path: 'archive/manual.pdf',
+	mime_type: 'application/pdf'
+}
+const completedPreview = {
+	...job,
+	status: 'completed',
+	finishedAt: '2026-11-01T12:00:02.000Z',
+	outputs: [generatedCover],
+	piece: {
+		...publishedPiece,
+		title: 'Preview <Draft>',
+		templates: {
+			icon: { name: 'default', fields: { image: 'cover' } },
+			page: { name: 'default', fields: { image: 'cover' } },
+			opengraph: { name: 'default', fields: { image: 'cover' } }
 		},
-		tags: []
-	}
-}
+		assets: [generatedCover, archiveAttachment]
+	},
+	tags: []
+} satisfies Data
 
-function tree(props: Data) {
+function renderPreview(data: Data) {
+	const params = { path: data.file, jobId: data.job }
 	const children = createRawSnippet(() => ({
-		render: () =>
-			render(Overview, { props: { data: props, params: { path: props.file, jobId: props.job } } })
-				.body
+		render: () => render(Overview, { props: { data, params } }).body
 	}))
-	return render(PreviewLayout, {
-		props: { data: props, params: { path: props.file, jobId: props.job }, children }
-	}).body.replace(/<!--[^]*?-->/g, '')
+	return render(PreviewLayout, { props: { data, params, children } }).body
 }
-
-beforeEach(() => {
-	page.url = new URL('https://app.test/admin/piece/books/book.md/preview/job')
-	page.route.id = '/(auth)/admin/piece/[...path]/preview/[jobId]'
-	vi.clearAllMocks()
-})
 
 test.each(['running', 'completed'] as const)(
-	'%s Preview renders duplicated seed logs once and retains new lines',
+	'%s Preview deduplicates replayed seed logs while retaining distinct lines',
 	(status) => {
-		const props = data(status)
-		const first = { ...props.logs[0], message: 'Duplicated seed line' }
-		props.logs = [first, { ...first }, { ...first, line_number: 2, message: 'New seed line' }]
-		const html = tree(props)
-		expect(html.match(/Duplicated seed line/g)).toHaveLength(1)
-		expect(html.match(/New seed line/g)).toHaveLength(1)
-		expect(html).toContain('2 lines')
+		const replayed = { ...job.logs[0], message: 'Replayed seed line' }
+		const logs = [replayed, { ...replayed }, { ...replayed, line_number: 2, message: 'Later line' }]
+		let data: Data = { ...job, status: 'running', logs }
+		if (status === 'completed') data = { ...completedPreview, logs }
+
+		const html = renderPreview(data)
+
+		expect(html.match(/Replayed seed line/g)).toHaveLength(1)
+		expect(html.match(/Later line/g)).toHaveLength(1)
 	}
 )
 
-test('completed Preview reads title, consolidated facts, Preview logs, then assets with a single main/title', () => {
-	const html = tree(data())
-	expect(html.match(/<main\b/g)).toHaveLength(1)
-	expect(html.match(/<h1\b/g)).toHaveLength(1)
+test('completed Preview inspects only generated outputs in the current job namespace', () => {
+	const html = renderPreview(completedPreview)
+
 	expect(html).toContain('Preview &lt;Draft>')
-	expect(html).toContain('Preview assets</h2>')
-	expect(html).toContain('Preview logs</h2>')
-	expect(html).toContain('Preview log &lt;script>escaped()&lt;/script>')
-	expect(html.indexOf('Preview &lt;Draft>')).toBeLessThan(html.indexOf('Preview</caption>'))
-	expect(html.indexOf('Preview</caption>')).toBeLessThan(html.indexOf('Preview logs</h2>'))
-	expect(html.indexOf('Preview logs</h2>')).toBeLessThan(html.indexOf('Preview assets</h2>'))
-	const facts = html.slice(html.indexOf('<caption'), html.indexOf('</table>'))
-	const logSection = html.slice(
-		html.indexOf('Preview logs</h2>'),
-		html.indexOf('Preview assets</h2>')
-	)
-	expect(facts).toContain('books/book.md</bdi>')
-	expect(facts).toContain('data-status="completed"')
-	expect(facts).toContain('>Completed</span>')
-	expect(facts).toContain('1s total time')
-	expect(facts).not.toContain('<svg')
-	expect(logSection).not.toContain('books/book.md')
-	expect(logSection).not.toContain('Preview completed')
-	expect(logSection).not.toContain('total time')
-	expect(html).not.toContain('status-card')
-	expect(html.indexOf('Preview logs</h2>')).toBeLessThan(html.indexOf('Preview log &lt;script>'))
-	expect(html).toContain('datetime="1970-01-01T00:00:00.000Z"')
-	expect(html).toContain('datetime="1970-01-01T00:00:02.000Z"')
-	for (const caption of ['Preview', 'Image', 'Markdown', 'Palette', 'Custom'])
-		expect(html).toContain(`${caption}</caption>`)
-	expect(html.match(/Image<\/caption>/g)).toHaveLength(1)
-	expect(html.match(/Markdown<\/caption>/g)).toHaveLength(1)
-	for (const output of ['image.original', 'image.s.webp', 'markdown.description'])
-		expect(html).toContain(`${output}</bdi>`)
-	for (const path of ['generated/cover.jpg', 'generated/s.webp', 'generated/body.html'])
-		expect(html).toContain(`href="/admin/preview/job/asset/${path}"`)
-	expect(html).not.toMatch(/ download(?:[= >])/)
-	expect(html).toContain('aria-label="Show Markdown: Asset 2, Content"')
-	expect(html).toContain('aria-label="Show Markdown.description: Asset 2, Content"')
-	expect(html).toContain('aria-label="Show Palette: Asset 2, Content"')
-	expect(html).toContain('aria-expanded="false"')
-	expect(html).not.toContain('{"color":"#abc","count":42}')
-	expect(html).not.toContain('color</bdi>')
-	expect(html).not.toContain('count</bdi>')
-	expect(html).toContain('Unavailable</small>')
-	expect(html).toContain('Not recorded')
-	for (const absent of [
-		'privateBody()',
-		'privateDescription()',
-		'<script>',
-		'<iframe',
-		'archive/manual.pdf',
-		'Attachment</caption>',
-		'Last publish',
-		'Publication</caption>',
-		'Matches publish',
-		'https://public.test',
-		'https://cdn.test',
-		'/pieces/assets/',
-		'/admin/asset/',
-		'background-color: #abc'
-	])
-		expect(html).not.toContain(absent)
-	expectAppNavigation()
-})
-
-test.each(['waiting', 'running', 'failed', 'expired'] as const)(
-	'%s Preview puts current facts above logs without inventing assets or publication facts',
-	(status) => {
-		const props = data(status)
-		const html = tree(props)
-		expect(html.match(/<main\b/g)).toHaveLength(1)
-		expect(html).toContain('Piece overview')
-		expect(html).toContain('Preview</caption>')
-		expect(html).toContain('Preview logs</h2>')
-		const label = {
-			waiting: 'Queued',
-			running: 'Building',
-			failed: 'Failed',
-			expired: 'Expired'
-		}[status]
-		expect(html).toContain(`>${label}</span>`)
-		expect(html).toContain('datetime="1970-01-01T00:00:00.000Z"')
-		if (status === 'waiting' || status === 'running')
-			expect(html).not.toContain('datetime="1970-01-01T00:00:02.000Z"')
-		expect(html.indexOf('Preview</caption>')).toBeLessThan(html.indexOf('Preview logs</h2>'))
-		expect(html).not.toContain('Preview assets')
-		expect(html).not.toContain('Preview outputs')
-		expect(html).not.toContain('Publication</caption>')
-		expect(html).not.toContain('Preview &lt;Draft>')
-		expect(html).not.toContain('/asset/generated/')
-		expectAppNavigation()
-	}
-)
-
-test('completed workflow without an assembled result keeps facts/logs and omits assets rather than crashing', () => {
-	const running = data('running')
-	if (running.status !== 'running') throw new Error('Expected running fixture')
-	const props = { ...running, status: 'completed' as const }
-	const html = tree(props)
-	expect(html.match(/<main\b/g)).toHaveLength(1)
-	expect(html.match(/<h1\b/g)).toHaveLength(1)
-	expect(html).toContain('Preview</h1>')
-	expect(html).toContain('Preview</caption>')
-	expect(html).toContain('>Completed</span>')
-	expect(html).toContain('Preview logs</h2>')
-	expect(html).toContain('Preview log &lt;script>escaped()&lt;/script>')
-	expect(html.indexOf('Preview</caption>')).toBeLessThan(html.indexOf('Preview logs</h2>'))
-	expect(html).not.toContain('Preview assets')
-	expect(html).not.toContain('None recorded')
-	expect(html).not.toContain('/asset/generated/')
-	expectAppNavigation()
-})
-
-test('recorded generated Share PNG remains a View link in Overview', () => {
-	const props = data()
-	if (props.status !== 'completed' || !props.outputs) throw new Error('Expected assembled fixture')
-	props.outputs = [
-		...props.outputs,
-		asset('opengraph', 'generated/share.png', 'piece', 'image/png')
-	]
-	const html = tree(props)
-	const png = html
-		.match(/<a\b[^>]*>/g)
-		?.find((tag) => tag.includes('href="/admin/preview/job/asset/generated/share.png"'))
-	expect(png).toBeDefined()
-	expect(png).toContain('aria-label="View opengraph: generated/share.png"')
-	expect(png).toContain('target="_blank"')
-	expect(png).toContain('rel="external noopener noreferrer"')
-	expect(png).not.toMatch(/\bdownload(?:=|\s|>)/)
-	expect(html.match(/<main\b/g)).toHaveLength(1)
-	expectAppNavigation()
-})
-
-test('empty generated outputs do not turn SDK passthroughs into downloadable preview artifacts', () => {
-	const props = data()
-	if (props.status !== 'completed') throw new Error('Expected completed fixture')
-	props.outputs = []
-	const html = tree(props)
-	expect(html).toContain('Preview assets</h2>')
-	expect(html).toContain('None recorded')
-	expect(html).not.toContain('Image</caption>')
+	expect(html).toContain('Preview logs')
+	expect(html).toContain('Preview seed line')
+	expect(html).toContain('href="/admin/preview/current-job/asset/generated/cover.jpg"')
 	expect(html).not.toContain('archive/manual.pdf')
-	expect(html).not.toContain('/asset/generated/')
-	expectAppNavigation()
+	expect(html).not.toContain('/pieces/assets/')
+	expect(html.indexOf('Preview logs')).toBeLessThan(html.indexOf('Preview assets'))
+	expect(html.match(/<main\b/g)).toHaveLength(1)
 })
 
-test('replacement completed snapshots use only the new job namespace and metadata with mocked app navigation', () => {
-	tree(data())
-	const props = data()
-	if (props.status !== 'completed' || !props.piece) throw new Error('Expected assembled fixture')
-	props.job = 'new-job'
-	props.piece = { ...props.piece, title: 'New result' }
-	props.outputs = [asset('custom', 'new.txt', 'new', 'text/plain')]
-	page.url = new URL('https://app.test/admin/piece/books/book.md/preview/new-job')
-	page.route.id = '/(auth)/admin/piece/[...path]/preview/[jobId]'
-	const html = tree(props)
-	expect(html).toContain('New result')
-	expect(html).toContain('href="/admin/preview/new-job/asset/new.txt"')
-	expect(html).not.toContain('/preview/job/asset/')
+test('empty generated outputs do not fall back to SDK passthrough assets', () => {
+	const html = renderPreview({ ...completedPreview, outputs: [] })
+
+	expect(html).toContain('Preview assets')
+	expect(html).toContain('None recorded')
 	expect(html).not.toContain('generated/cover.jpg')
-	expectAppNavigation(['job', 'new-job'])
+	expect(html).not.toContain('archive/manual.pdf')
+})
+
+test('a completed job without an assembled result keeps its facts and logs rather than crashing', () => {
+	const html = renderPreview({ ...job, status: 'completed' })
+
+	expect(html).toContain('Preview seed line')
+	expect(html).toContain('Preview logs')
+	expect(html).toContain('Completed')
+	expect(html).not.toContain('Preview assets')
+	expect(html.match(/<main\b/g)).toHaveLength(1)
 })

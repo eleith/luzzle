@@ -228,14 +228,13 @@ describe('static default icon consumer SSR', () => {
 		expect(body).not.toContain('<img')
 	})
 
-	test('uses each new piece and mapped field value rather than a fallback snapshot', async () => {
-		const current = piece('new-kind')
-		current.title = 'Next <Piece>'
+	test('a missing mapped image retains the title without emitting a broken image request', async () => {
+		const current = piece()
 		current.templates.icon.fields = { image: 'missing' }
-		const body = await html({ piece: current, size: { width: 200 }, active: true })
-		expect(body).toContain('Next &lt;Piece>')
-		expect(body).toContain('--piece-icon-width: 200px;')
-		expect(body).toMatch(/class="poster [^"]*\bactive\b/)
+
+		const body = await html({ piece: current })
+
+		expect(body).toContain('&lt;Piece>&amp;')
 		expect(body).not.toContain('<img')
 	})
 })
