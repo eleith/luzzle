@@ -22,46 +22,65 @@
 	/>
 </svelte:head>
 
-<ContentBanner showRandom showHome={false} />
+<div class:centered-content={data.centerContent}>
+	<ContentBanner showRandom showHome={false} />
 
-<main id="main-content">
-	{#if data.body === undefined}
-		<section class="section">
-			<h1>luzzle pieces</h1>
-			<p>export all the <a href={resolve('pieces')}>pieces</a></p>
-			{#if data.types.length}
-				<h2>types</h2>
-				<div class="types-list">
-					{#each data.types as type (type)}
-						<a href={resolve(`pieces/${type}`)} class="type-link">{type}</a>
-					{/each}
-				</div>
-			{/if}
-		</section>
-	{:else if data.body}
-		<section class="section"><Markdown html={data.body} /></section>
-	{/if}
-
-	{#each collections as collection (collection.title)}
-		{#if collection.pieces.length}
+	<main id="main-content">
+		{#if data.body === undefined}
 			<section class="section">
-				<h2>{collection.title}</h2>
-				<div class="pieces-grid">
-					{#each collection.pieces as piece (piece.id)}
-						<a href={resolve(`pieces/${piece.type}/${piece.slug}`)} class="piece">
-							<div class="piece-card">
-								<PieceIcon {piece} size={{ width: 80 }} />
-								<span>{piece.title}</span>
-							</div>
-						</a>
-					{/each}
-				</div>
+				<h1>luzzle pieces</h1>
+				<p>export all the <a href={resolve('pieces')}>pieces</a></p>
+				{#if data.types.length}
+					<h2>types</h2>
+					<div class="types-list">
+						{#each data.types as type (type)}
+							<a href={resolve(`pieces/${type}`)} class="type-link">{type}</a>
+						{/each}
+					</div>
+				{/if}
 			</section>
+		{:else if data.body}
+			<section class="section"><Markdown html={data.body} /></section>
 		{/if}
-	{/each}
-</main>
+
+		{#each collections as collection (collection.title)}
+			{#if collection.pieces.length}
+				<section class="section">
+					<h2>{collection.title}</h2>
+					<div class="pieces-grid">
+						{#each collection.pieces as piece (piece.id)}
+							<a href={resolve(`pieces/${piece.type}/${piece.slug}`)} class="piece">
+								<div class="piece-card">
+									<PieceIcon {piece} size={{ width: 80 }} />
+									<span>{piece.title}</span>
+								</div>
+							</a>
+						{/each}
+					</div>
+				</section>
+			{/if}
+		{/each}
+	</main>
+</div>
 
 <style>
+	.centered-content {
+		min-height: 100svh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.centered-content main {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.centered-content .section {
+		width: 100%;
+	}
+
 	.section {
 		max-width: 800px;
 		margin: auto;

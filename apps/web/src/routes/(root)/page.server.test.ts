@@ -36,7 +36,8 @@ test('stock home uses published latest pieces and does not request random data',
 		types: ['inventory'],
 		body: undefined,
 		latest: recent,
-		random: []
+		random: [],
+		centerContent: false
 	})
 	expect(getRecentPieces).toHaveBeenCalledExactlyOnceWith(db, 5, ['inventory'])
 	expect(getRandomPieces).not.toHaveBeenCalled()
@@ -46,24 +47,46 @@ test('Markdown body does not replace dynamic lists and random excludes latest ID
 	config.pages.home.body = 'home.md'
 	config.pages.home.random = true
 	loadPageMarkdown.mockResolvedValue('<h1>Welcome</h1>')
-	expect(await load(event)).toMatchObject({ body: '<h1>Welcome</h1>', latest: recent, random })
+	expect(await load(event)).toMatchObject({
+		body: '<h1>Welcome</h1>',
+		latest: recent,
+		random,
+		centerContent: false
+	})
 	expect(loadPageMarkdown).toHaveBeenCalledExactlyOnceWith('home.md')
 	expect(getRandomPieces).toHaveBeenCalledExactlyOnceWith(db, 5, ['inventory'], ['one'])
 })
 
-test('disabled lists skip piece queries and delegate empty collections to hydration', async () => {
+test('Markdown alone selects the centered layout when both lists are disabled', async () => {
+	config.pages.home.body = 'home.md'
 	config.pages.home.latest = false
-	expect(await load(event)).toMatchObject({ latest: [], random: [] })
+	loadPageMarkdown.mockResolvedValue('<h1>Welcome</h1>')
+	expect(await load(event)).toMatchObject({
+		body: '<h1>Welcome</h1>',
+		latest: [],
+		random: [],
+		centerContent: true
+	})
 	expect(getRecentPieces).not.toHaveBeenCalled()
 	expect(getRandomPieces).not.toHaveBeenCalled()
-	expect(hydrateWithAssets.mock.calls).toEqual([[[]], [[]]])
 })
 
-test('random works independently of latest and delegates empty collections to hydration', async () => {
+test.each([
+	{ label: 'no custom Markdown', file: undefined, body: undefined },
+	{ label: 'empty custom Markdown', file: 'home.md', body: '' }
+])('$label keeps the normal layout with both lists disabled', async ({ file, body }) => {
+	config.pages.home = { body: file, latest: false, random: false }
+	loadPageMarkdown.mockResolvedValue(body)
+
+	expect(await load(event)).toMatchObject({ body, latest: [], random: [], centerContent: false })
+})
+
+test('enabled random keeps the normal layout even when its collection is empty', async () => {
+	config.pages.home.body = 'home.md'
 	config.pages.home.latest = false
 	config.pages.home.random = true
+	loadPageMarkdown.mockResolvedValue('<h1>Welcome</h1>')
 	getRandomPieces.mockResolvedValue([])
-	expect(await load(event)).toMatchObject({ latest: [], random: [] })
+	expect(await load(event)).toMatchObject({ latest: [], random: [], centerContent: false })
 	expect(getRandomPieces).toHaveBeenCalledExactlyOnceWith(db, 5, ['inventory'], [])
-	expect(hydrateWithAssets.mock.calls).toEqual([[[]], [[]]])
 })

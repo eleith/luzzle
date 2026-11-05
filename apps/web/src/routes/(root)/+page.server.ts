@@ -27,5 +27,6 @@ export const load: PageServerLoad = async () => {
 		hydrateWithAssets(latestRows),
 		hydrateWithAssets(randomRows)
 	])
-	return { types, body, latest, random }
+	const centerContent = Boolean(body) && !settings.latest && !settings.random
+	return { types, body, latest, random, centerContent }
 }
