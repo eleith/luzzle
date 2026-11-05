@@ -153,11 +153,13 @@
 <style>
 	.signin-card {
 		width: 100%;
-		max-width: 25rem;
+		max-width: 400px;
 		min-width: 0;
 		display: grid;
-		gap: var(--space-6);
-		padding: var(--space-8);
+		gap: 20px;
+		padding: 32px;
+		font-size: 14px;
+		line-height: 1.5;
 		background: var(--color-surface-container-low);
 		border: 1px solid var(--color-outline-variant);
 		border-radius: var(--radius-large);
@@ -168,7 +170,7 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: var(--space-3);
+		gap: 8px;
 		text-align: center;
 	}
 
@@ -178,7 +180,7 @@
 
 	h1 {
 		margin: 0;
-		font-size: var(--font-size-xl);
+		font-size: 24px;
 		font-weight: var(--font-weight-bold);
 		line-height: 1.2;
 		overflow-wrap: anywhere;
@@ -189,32 +191,32 @@
 	.javascript-notice {
 		margin: 0;
 		color: var(--color-on-surface-variant);
-		font-size: var(--font-size-small);
+		font-size: 14px;
 		line-height: 1.5;
 		text-align: center;
 	}
 
 	.signin-form {
 		display: grid;
-		gap: var(--space-5);
+		gap: 16px;
 	}
 
 	.field {
 		display: grid;
-		gap: var(--space-2);
+		gap: 4px;
 		min-width: 0;
 	}
 
 	label {
-		font-size: var(--font-size-small);
+		font-size: 14px;
 		font-weight: var(--font-weight-medium);
 	}
 
 	input {
 		width: 100%;
 		min-width: 0;
-		min-height: 50px;
-		padding: var(--space-3) var(--space-4);
+		min-height: 44px;
+		padding: 8px 12px;
 		border: 1px solid var(--color-outline);
 		border-radius: var(--radius-small);
 		background: var(--color-surface-container-highest);
@@ -239,25 +241,25 @@
 		justify-content: center;
 		width: 100%;
 		height: auto;
-		min-height: 50px;
-		padding: var(--space-3) var(--space-4);
+		min-height: 44px;
+		padding: 10px 12px;
 		text-transform: none;
 		white-space: normal;
 		overflow-wrap: anywhere;
-		font-size: var(--font-size-normal);
+		font-size: 16px;
 		line-height: 1.4;
 	}
 
 	.error-banner {
 		display: flex;
 		align-items: flex-start;
-		gap: var(--space-3);
-		padding: var(--space-4);
+		gap: 8px;
+		padding: 12px;
 		border: 1px solid var(--color-error);
 		border-radius: var(--radius-small);
 		background: var(--color-error-container);
 		color: var(--color-on-error-container);
-		font-size: var(--font-size-small);
+		font-size: 14px;
 		line-height: 1.5;
 		overflow-wrap: anywhere;
 	}
@@ -274,7 +276,7 @@
 
 	@media (max-width: 30rem) {
 		.signin-card {
-			padding: var(--space-4);
+			padding: 20px;
 			border: none;
 			box-shadow: none;
 			background: transparent;

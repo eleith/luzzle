@@ -33,18 +33,18 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: var(--space-3) var(--space-5);
+		padding: 8px 16px;
 		color: var(--color-on-surface-variant);
 	}
 
 	.signin-tools a {
 		display: inline-flex;
 		align-items: center;
-		gap: var(--space-2);
+		gap: 8px;
 		min-height: 44px;
 		color: inherit;
 		text-decoration: none;
-		font-size: var(--font-size-small);
+		font-size: 14px;
 	}
 
 	.signin-tools a:hover {
@@ -61,7 +61,7 @@
 		border-radius: var(--radius-small);
 		background: transparent;
 		color: inherit;
-		font-size: var(--font-size-large);
+		font-size: 20px;
 		cursor: pointer;
 	}
 
@@ -77,13 +77,13 @@
 		align-items: center;
 		justify-content: center;
 		min-width: 0;
-		padding: var(--space-6) var(--space-4) var(--space-8);
+		padding: 24px 16px 32px;
 	}
 
 	@media (max-width: 30rem) {
 		main {
 			align-items: flex-start;
-			padding-block-start: var(--space-5);
+			padding-block-start: 20px;
 		}
 	}
 </style>
