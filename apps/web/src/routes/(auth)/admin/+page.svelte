@@ -120,24 +120,35 @@
 
 	{#if data.pieceStats.byType.length}
 		<section class="dashboard-section">
-			<h2 class="section-header">pieces by type</h2>
-			<div class="stats-row">
-				{#each data.pieceStats.byType as { type, count } (type)}
-					<div class="stat-card-wrapper">
-						<a class="stat-card" href={resolve(`pieces/${type}`)}>
-							<span class="stat-number">{count.toLocaleString()}</span>
-							<span class="stat-label">{type}</span>
-						</a>
-						<a
-							class="quick-add"
-							href={resolve(`admin/pieces/create?type=${type}`)}
-							aria-label="add {type}"
-							title="add {type}"
-						>
-							<PlusIcon style="width: 1em; height: 1em;" />
-						</a>
-					</div>
-				{/each}
+			<h2 id="piece-types-title" class="section-header">pieces by type</h2>
+			<div class="table-card">
+				<table class="type-table" aria-labelledby="piece-types-title">
+					<thead>
+						<tr>
+							<th scope="col">type</th>
+							<th scope="col" class="type-count">pieces</th>
+							<th scope="col" class="type-actions">action</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.pieceStats.byType as { type, count } (type)}
+							<tr>
+								<th scope="row"><a href={resolve(`pieces/${type}`)} title={type}>{type}</a></th>
+								<td class="type-count">{count.toLocaleString()}</td>
+								<td class="type-actions">
+									<a
+										class="type-add"
+										href={resolve(`admin/pieces/create?type=${type}`)}
+										aria-label="add {type}"
+										title="add {type}"
+									>
+										<PlusIcon aria-hidden="true" style="width: 1em; height: 1em;" />
+									</a>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
 			</div>
 		</section>
 	{/if}
@@ -175,6 +186,11 @@
 
 <style>
 	section.dashboard {
+		--middle-column-width: 8rem;
+		--last-column-width: 9rem;
+		--column-gap: var(--space-3);
+		--row-block-padding: var(--space-3);
+		--row-inline-padding: var(--space-4);
 		margin: var(--space-4);
 		margin-bottom: var(--space-8);
 		margin-left: auto;
@@ -272,13 +288,92 @@
 		border-radius: var(--radius-small);
 	}
 
+	.type-table {
+		width: 100%;
+		table-layout: fixed;
+		border-collapse: separate;
+		border-spacing: 0;
+		font: inherit;
+		text-align: left;
+	}
+
+	.type-table th,
+	.type-table td {
+		padding: var(--row-block-padding) var(--row-inline-padding);
+		text-align: left;
+		vertical-align: middle;
+		border-bottom: 1px solid var(--color-outline-variant);
+	}
+
+	.type-table th {
+		font-weight: inherit;
+	}
+
+	.type-table thead {
+		background: var(--color-surface-container-high);
+		font-size: var(--font-size-xs);
+		font-weight: var(--font-weight-medium);
+		color: var(--color-on-surface-variant);
+	}
+
+	.type-table tbody tr:last-child > * {
+		border-bottom: none;
+	}
+
+	.type-table tbody tr:hover {
+		background: var(--color-surface-container-low);
+	}
+
+	.type-table a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.type-table th a {
+		display: block;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.type-table a:hover {
+		color: var(--color-primary);
+		text-decoration: underline;
+	}
+
+	.type-table a:focus-visible {
+		outline: auto;
+		outline-offset: 2px;
+	}
+
+	/* Table cells include padding; the recent grid sizes its content tracks separately. */
+	.type-count {
+		width: calc(var(--middle-column-width) + var(--column-gap));
+		font-size: var(--font-size-xs);
+		white-space: nowrap;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.type-actions {
+		width: calc(var(--last-column-width) + 2 * var(--row-inline-padding));
+	}
+
+	.type-add {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		border-radius: var(--radius-small);
+	}
+
 	.recent-header,
 	.recent-row {
 		display: grid;
-		grid-template-columns: 1fr 8rem 9rem;
-		gap: var(--space-3);
+		grid-template-columns: 1fr var(--middle-column-width) var(--last-column-width);
+		gap: var(--column-gap);
 		align-items: center;
-		padding: var(--space-3) var(--space-4);
+		padding: var(--row-block-padding) var(--row-inline-padding);
 	}
 
 	.recent-header {
@@ -337,6 +432,13 @@
 	}
 
 	@media screen and (max-width: 640px) {
+		.type-table {
+			--middle-column-width: 5rem;
+			--last-column-width: 3rem;
+			--column-gap: var(--space-2);
+			--row-inline-padding: var(--space-2);
+		}
+
 		.recent-header {
 			display: none;
 		}

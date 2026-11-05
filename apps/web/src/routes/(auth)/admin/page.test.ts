@@ -4,6 +4,7 @@ import type { ComponentProps } from 'svelte'
 import type { WebPieces } from '@luzzle/web.db'
 import { resolve } from '$app/paths'
 import { makePublicConfig } from '#lib/server/config.fixture.js'
+import type { PieceStats } from '#lib/server/dashboardStats.js'
 import Page from './+page.svelte'
 
 vi.mock('$app/paths', () => ({
@@ -33,7 +34,7 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 
-function html(pieces = [piece]) {
+function html(pieces = [piece], pieceStats: PieceStats = { total: pieces.length, byType: [] }) {
 	const config = makePublicConfig({
 		url: { app: 'http://localhost', app_assets: '', luzzle_assets: '' }
 	})
@@ -44,8 +45,8 @@ function html(pieces = [piece]) {
 				pieceTypes: ['books'],
 				config,
 				meta: { title: 'Dashboard' },
-				pieceStats: { total: pieces.length, byType: [] },
-				fileCount: pieces.length,
+				pieceStats,
+				fileCount: pieceStats.total,
 				recentlyEditedPieces: pieces,
 				lastPublish: null,
 				setup: {
@@ -59,6 +60,29 @@ function html(pieces = [piece]) {
 		} satisfies ComponentProps<typeof Page>
 	}).body.replace(/<!--[\s\S]*?-->/g, '')
 }
+
+test('type rows retain their name, count, browse link and type-specific create link', () => {
+	const stats = {
+		total: 15,
+		byType: [
+			{ type: 'books', count: 12 },
+			{ type: 'films', count: 3 }
+		]
+	}
+	const output = html([], stats)
+	const body = output.match(/<tbody\b[^>]*>([\s\S]*?)<\/tbody>/)?.[1] ?? ''
+	const rows = [...body.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/g)].map((match) => match[1])
+
+	expect(rows).toHaveLength(stats.byType.length)
+	for (const [index, { type, count }] of stats.byType.entries()) {
+		const row = rows[index]
+		expect(row).toContain(`href="/pieces/${type}"`)
+		expect(row).toContain(`>${type}</a>`)
+		expect(row).toMatch(new RegExp(`<td\\b[^>]*>\\s*${count.toLocaleString()}\\s*</td>`))
+		expect(row).toContain(`href="/admin/pieces/create?type=${type}"`)
+		expect(row).toContain(`aria-label="add ${type}"`)
+	}
+})
 
 test('each recent row is one native link containing title, type, and updated time', () => {
 	const output = html([piece, { ...piece, id: 'book-2', file_path: 'books/another.books.md' }])
