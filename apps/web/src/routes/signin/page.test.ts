@@ -88,8 +88,7 @@ test('the sign-in layout keeps branding, theme and return navigation without pub
 	const result = render(SigninTree, { props: { data } })
 
 	expect(result.body.match(/<main\b/g)).toHaveLength(1)
-	expect(result.body).toContain('href="/"')
-	expect(result.body).toContain('Back to site')
+	expect(result.body).toMatch(/<a\b(?=[^>]*\bhref="\/")(?=[^>]*\baria-label="main page")[^>]*>/)
 	expect(result.body).toContain('aria-label="change theme"')
 	expect(result.body).not.toContain('aria-label="search"')
 	expect(result.head).toContain('rel="icon" href="/assets/favicon/garden.svg"')

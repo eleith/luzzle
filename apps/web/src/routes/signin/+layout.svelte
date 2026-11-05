@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths'
-	import ArrowLeftIcon from 'virtual:icons/ph/arrow-left'
+	import NavigationIcon from 'virtual:icons/ph/arrow-up-left'
 	import SeoHead from '#lib/components/layout/simple/SeoHead.svelte'
 	import ThemeToggle from '#lib/components/layout/simple/ThemeToggle.svelte'
 
@@ -11,9 +11,8 @@
 
 <div class="signin-shell">
 	<header class="signin-tools">
-		<a href={resolve('')}>
-			<ArrowLeftIcon aria-hidden="true" focusable="false" />
-			Back to site
+		<a href={resolve('')} aria-label="main page">
+			<NavigationIcon aria-hidden="true" focusable="false" />
 		</a>
 		<ThemeToggle />
 	</header>
@@ -40,15 +39,17 @@
 	.signin-tools a {
 		display: inline-flex;
 		align-items: center;
-		gap: 8px;
+		justify-content: center;
+		min-width: 44px;
 		min-height: 44px;
+		border-radius: var(--radius-small);
 		color: inherit;
 		text-decoration: none;
-		font-size: 14px;
+		font-size: 20px;
 	}
 
 	.signin-tools a:hover {
-		text-decoration: underline;
+		color: var(--color-primary);
 	}
 
 	.signin-tools :global(button) {
