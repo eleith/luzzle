@@ -713,19 +713,19 @@
               "type": "string"
             },
             "color-surface-container-low": {
-              "default": "#e9ecef",
+              "default": "#f8f9fa",
               "type": "string"
             },
             "color-surface-container": {
-              "default": "#dee2e6",
+              "default": "#f4f6f8",
               "type": "string"
             },
             "color-surface-container-high": {
-              "default": "#ced4da",
+              "default": "#f0f2f5",
               "type": "string"
             },
             "color-surface-container-highest": {
-              "default": "#adb5bd",
+              "default": "#eceff3",
               "type": "string"
             },
             "color-shadow": {
