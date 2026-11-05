@@ -5,33 +5,36 @@ on:
     branches:
       - main
     tags:
-      - '@luzzle/web@*'
+      - "@luzzle/web@*"
     paths:
-      - 'apps/web/**'
-      - 'packages/web/config/**'
-      - 'packages/web/theme/**'
-      - 'packages/web/db/**'
-      - 'packages/web/jobs/**'
-      - 'packages/web/pieces/**'
-      - 'packages/web/templates/**'
-      - 'apps/core/**'
+      - "apps/web/**"
+      - "packages/web/config/**"
+      - "packages/web/theme/**"
+      - "packages/web/db/**"
+      - "packages/web/jobs/**"
+      - "packages/web/pieces/**"
+      - "packages/web/templates/**"
+      - "apps/core/**"
   pull_request:
     branches:
       - main
     paths:
-      - 'apps/web/**'
-      - 'packages/web/config/**'
-      - 'packages/web/theme/**'
-      - 'packages/web/db/**'
-      - 'packages/web/jobs/**'
-      - 'packages/web/pieces/**'
-      - 'packages/web/templates/**'
-      - 'apps/core/**'
-      - '.github/workflows/web.yml'
+      - "apps/web/**"
+      - "packages/web/config/**"
+      - "packages/web/theme/**"
+      - "packages/web/db/**"
+      - "packages/web/jobs/**"
+      - "packages/web/pieces/**"
+      - "packages/web/templates/**"
+      - "apps/core/**"
+      - ".github/workflows/web.yml"
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Keep the image's browser revision aligned with @playwright/test.
+    container:
+      image: ghcr.io/eleith/containers-playwright:1.61.1-node26@sha256:31ca7ae8b89997e60b60dec15487ea25ac9ea7b1eea45ea967f0f873c89af1ab
     defaults:
       run:
         working-directory: apps/web
@@ -45,8 +48,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: '26'
-          cache: 'pnpm'
+          node-version: "26"
+          cache: "pnpm"
 
       - name: Install dependencies
         working-directory: .
@@ -74,6 +77,19 @@ jobs:
 
       - name: Built-in template HTTP/SSR integration
         run: pnpm run test:templates
+
+      - name: Browser tests
+        # The HTTP integration suite already built the real app from this checkout.
+        run: pnpm run test:e2e
+
+      - name: Browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: web-browser-failures
+          path: apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
 
   build-push:
     needs: check

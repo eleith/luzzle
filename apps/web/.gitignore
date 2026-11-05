@@ -7,6 +7,7 @@ node_modules
 .vercel
 .svelte-kit/
 /build
+/test-results/
 /package-lock.json
 /src/lib/ui/styles/theme.build.css
 /src/lib/pieces/components/custom

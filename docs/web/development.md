@@ -42,3 +42,27 @@ It is intentionally different from the [published-image example](docker-compose.
 Follow the [development checks](../development.md). Keep parsing in `@luzzle/core`,
 heavy work in the worker, UI styling on theme tokens, and web/worker/templates on
 one exact Svelte version. Shared web packages stay internal with `workspace:*`.
+
+## Browser tests
+
+After building shared packages, install Chromium's headless shell and build the web app:
+
+```sh
+pnpm --filter @luzzle/web exec playwright install --with-deps --only-shell chromium
+pnpm --filter @luzzle/web build
+pnpm --filter @luzzle/web test:e2e
+```
+
+The Playwright suite covers two journeys: sign in to a protected editor,
+save an edit and reload it; and search for a piece and open its public page. It
+uses one Chromium worker against the production build, with a temporary
+archive/config and a real SQLite index, not your demo or live data. It runs no
+worker, LSP or external identity/storage services; it does not prove Preview/Publish
+execution.
+
+GitHub and Woodpecker reuse the app build from `test:templates` in their existing
+test jobs. Both use the prebuilt Playwright image used by When/Directory: GHCR on
+GitHub, the Gitea mirror on Woodpecker. Keep the image/browser version aligned with
+`@playwright/test`. Failed journeys retain traces, screenshots and server logs
+under `apps/web/test-results`; GitHub uploads those artifacts. There is no second
+build, browser matrix or automatic retry.

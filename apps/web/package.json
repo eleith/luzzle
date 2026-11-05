@@ -17,7 +17,8 @@
     "lint": "prettier --check . && prettier --config .prettierrc --check '../../packages/web/templates/src/**/*.svelte' && eslint .",
     "format": "prettier --write .",
     "test": "vitest run --silent",
-    "test:templates": "vitest run --config vitest.templates.config.ts --silent"
+    "test:templates": "vitest run --config vitest.templates.config.ts --silent",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "node": ">=24"
@@ -45,6 +46,7 @@
     "@luzzle/core": "workspace:*",
     "@luzzle/web.config": "workspace:*",
     "@luzzle/web.jobs": "workspace:*",
+    "@playwright/test": "1.61.1",
     "@sveltejs/adapter-node": "6.0.1",
     "@sveltejs/enhanced-img": "1.0.0",
     "@sveltejs/kit": "3.1.1",

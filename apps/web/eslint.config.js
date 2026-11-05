@@ -48,6 +48,7 @@ export default [
 		ignores: [
 			'build/',
 			'.svelte-kit/',
+			'test-results/',
 			'docker-compose.yml',
 			'src/lib/pieces/components/custom/',
 			'src/lib/content/components/custom/',

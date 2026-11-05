@@ -9,6 +9,8 @@
 		"src",
 		"scripts/**/*.test.ts",
 		"test/templates/**/*.ts",
+		"e2e/**/*.ts",
+		"playwright.config.ts",
 		"vite.config.ts",
 		"vitest*.config.ts"
 	],

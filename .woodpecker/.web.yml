@@ -60,7 +60,8 @@ steps:
       - pnpm run check
 
   test:
-    image: node:26
+    # Same browser version as @playwright/test, using the Gitea mirror.
+    image: git.eleith.com/eleith.private/playwright:1.61.1-node26
     environment:
       COREPACK_HOME: /workspace/src/.corepack
     commands:
@@ -68,6 +69,7 @@ steps:
       - corepack enable
       - pnpm --filter @luzzle/web test
       - pnpm --filter @luzzle/web test:templates
+      - pnpm --filter @luzzle/web test:e2e
 
   check-version:
     image: node:26
