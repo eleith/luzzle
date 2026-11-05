@@ -1,0 +1,47 @@
+{
+  "title": "video-games",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "examples": ["Starfall Station"]
+    },
+    "summary": {
+      "type": "string",
+      "format": "paragraph"
+    },
+    "publisher": {
+      "type": "string"
+    },
+    "platform": {
+      "type": "string",
+      "examples": ["Pocket Console"]
+    },
+    "play_time_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "date_published": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_played": {
+      "type": "string",
+      "format": "date"
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https?://"
+    },
+    "cover": {
+      "type": "string",
+      "format": "asset"
+    },
+    "keywords": {
+      "type": "string",
+      "format": "comma-separated"
+    }
+  },
+  "required": ["title", "platform"],
+  "additionalProperties": true
+}

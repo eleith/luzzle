@@ -174,6 +174,175 @@ pieces:
         - representative_image
       attachments:
         - attachments
+  - type: articles
+    templates:
+      icon:
+        name: browser-window
+        mapping:
+          image: banner
+          url: url
+      page:
+        name: article
+        mapping:
+          image: banner
+          url: url
+          author: author
+          wordCount: word_count
+          datePublished: date_published
+      opengraph:
+        name: browser-window
+        mapping:
+          image: banner
+          url: url
+          author: author
+          wordCount: word_count
+    fields:
+      title: title
+      summary: summary
+      date_consumed: date_read
+      tags: keywords
+      media:
+        - banner
+  - type: recipes
+    templates:
+      icon:
+        name: recipe-card
+        mapping:
+          image: photo
+          ingredients:
+            each: ingredients
+            fields:
+              item: item
+      page:
+        name: recipe
+        mapping:
+          image: photo
+          url: url
+          ingredients:
+            each: ingredients
+            fields:
+              item: item
+              quantity: quantity
+              unit: unit
+              note: note
+          instructions:
+            each: instructions
+            fields:
+              text: text
+          prepMinutes: prep_minutes
+          cookMinutes: cook_minutes
+          totalMinutes: total_minutes
+          dateUpdated: date_updated
+      opengraph:
+        name: recipe-card
+        mapping:
+          image: photo
+          source: source
+          ingredients:
+            each: ingredients
+            fields:
+              item: item
+          prepMinutes: prep_minutes
+          cookMinutes: cook_minutes
+          totalMinutes: total_minutes
+    fields:
+      title: title
+      summary: summary
+      date_consumed: date_cooked
+      tags: keywords
+      media:
+        - photo
+  - type: music
+    templates:
+      icon:
+        name: vinyl-record
+        mapping:
+          image: cover
+      page:
+        name: music
+        mapping:
+          image: cover
+          artist: artist
+          durationSeconds: duration_seconds
+          album: album
+          dateReleased: date_released
+          language: language
+          collaborators: collaborators
+          url: url
+      opengraph:
+        name: vinyl-record
+        mapping:
+          image: cover
+          artist: artist
+          durationSeconds: duration_seconds
+    fields:
+      title: title
+      summary: summary
+      date_consumed: date_listened
+      tags: keywords
+      media:
+        - cover
+  - type: video-games
+    templates:
+      icon:
+        name: video-game-cartridge
+        mapping:
+          image: cover
+      page:
+        name: video-game
+        mapping:
+          image: cover
+          url: url
+          publisher: publisher
+          datePublished: date_published
+          playTimeMinutes: play_time_minutes
+          platform: platform
+      opengraph:
+        name: video-game-cartridge
+        mapping:
+          image: cover
+          publisher: publisher
+          platform: platform
+          playTimeMinutes: play_time_minutes
+    fields:
+      title: title
+      summary: summary
+      date_consumed: date_played
+      tags: keywords
+      media:
+        - cover
+  - type: tabletop-games
+    templates:
+      icon:
+        name: playing-cards
+      page:
+        name: tabletop-game
+        mapping:
+          image: cover
+          url: url
+          publisher: publisher
+          datePublished: date_published
+          playTimeMinutes: play_time_minutes
+          playerCount: player_count
+      opengraph:
+        name: playing-cards
+        mapping:
+          backdrop: cover
+          publisher: publisher
+          playTimeMinutes: play_time_minutes
+    fields:
+      title: title
+      summary: summary
+      date_consumed: date_played
+      tags: keywords
+      media:
+        - cover
+  - type: generic
+    fields:
+      title: title
+      summary: summary
+      date_consumed: date_added
+      tags: keywords
 
 theme:
   globals:

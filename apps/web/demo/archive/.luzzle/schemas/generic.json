@@ -1,0 +1,24 @@
+{
+  "title": "generic",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "examples": ["A Ticket for the Night Tram"]
+    },
+    "summary": {
+      "type": "string",
+      "format": "paragraph"
+    },
+    "date_added": {
+      "type": "string",
+      "format": "date"
+    },
+    "keywords": {
+      "type": "string",
+      "format": "comma-separated"
+    }
+  },
+  "required": ["title"],
+  "additionalProperties": true
+}

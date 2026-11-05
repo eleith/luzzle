@@ -1,0 +1,45 @@
+{
+  "title": "articles",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "examples": ["A Small Web Worth Keeping"]
+    },
+    "author": {
+      "type": "string",
+      "examples": ["Mira Chen"]
+    },
+    "url": {
+      "type": "string",
+      "examples": ["https://example.com/articles/a-small-web-worth-keeping"],
+      "pattern": "^https?://"
+    },
+    "summary": {
+      "type": "string",
+      "format": "paragraph"
+    },
+    "word_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "date_published": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_read": {
+      "type": "string",
+      "format": "date"
+    },
+    "keywords": {
+      "type": "string",
+      "format": "comma-separated"
+    },
+    "banner": {
+      "type": "string",
+      "format": "asset"
+    }
+  },
+  "required": ["title", "author", "url"],
+  "additionalProperties": true
+}

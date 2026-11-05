@@ -1,0 +1,78 @@
+{
+  "title": "recipes",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "examples": ["Roasted Tomato Pasta"]
+    },
+    "summary": {
+      "type": "string",
+      "format": "paragraph"
+    },
+    "source": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https?://"
+    },
+    "photo": {
+      "type": "string",
+      "format": "asset"
+    },
+    "ingredients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": { "type": "string" },
+          "quantity": { "type": "number", "minimum": 0 },
+          "unit": { "type": "string" },
+          "note": { "type": "string" }
+        },
+        "required": ["item"],
+        "examples": [{ "item": "cherry tomatoes", "quantity": 600, "unit": "g", "note": "halved" }],
+        "additionalProperties": false
+      }
+    },
+    "instructions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" }
+        },
+        "required": ["text"],
+        "examples": [{ "text": "Heat the oven to 220°C." }],
+        "additionalProperties": false
+      }
+    },
+    "prep_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cook_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "total_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "date_cooked": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_updated": {
+      "type": "string",
+      "format": "date"
+    },
+    "keywords": {
+      "type": "string",
+      "format": "comma-separated"
+    }
+  },
+  "required": ["title", "ingredients", "instructions"],
+  "additionalProperties": true
+}

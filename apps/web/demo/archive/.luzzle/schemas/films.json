@@ -27,6 +27,12 @@
       "enum": ["movie", "tv", "video"],
       "examples": ["movie"]
     },
+    "director": {
+      "description": "The director of the film",
+      "type": "string",
+      "examples": ["Mira Sol"],
+      "nullable": true
+    },
     "people": {
       "description": "A comma separated list of people involved in the film",
       "type": "string",

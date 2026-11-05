@@ -1,0 +1,54 @@
+{
+  "title": "music",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "examples": ["After the Last Tram"]
+    },
+    "artist": {
+      "type": "string",
+      "examples": ["The Night Windows"]
+    },
+    "summary": {
+      "type": "string",
+      "format": "paragraph"
+    },
+    "album": {
+      "type": "string"
+    },
+    "duration_seconds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "date_released": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_listened": {
+      "type": "string",
+      "format": "date"
+    },
+    "language": {
+      "type": "string"
+    },
+    "collaborators": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https?://"
+    },
+    "cover": {
+      "type": "string",
+      "format": "asset"
+    },
+    "keywords": {
+      "type": "string",
+      "format": "comma-separated"
+    }
+  },
+  "required": ["title", "artist"],
+  "additionalProperties": true
+}
