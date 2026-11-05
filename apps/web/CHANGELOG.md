@@ -1,5 +1,24 @@
 # @luzzle/web
 
+## 0.0.248
+
+### Patch Changes
+
+- 79d3e90: Give sign-in a responsive branded card, consistent credential and single sign-on forms, clear error and pending states, and simple return/theme controls instead of the public search navbar. Keep client-side authentication and validated redirects unchanged.
+- b89f433: Center custom homepage Markdown below the navigation when both latest and random sections are disabled, while preserving normal layouts when either section is enabled.
+- 66dc919: Show dashboard piece types in a compact table while retaining their names, counts, browse links and type-specific create actions.
+- e730e6f: Show a usable search form on unfiltered `/search` visits, sharing controls with the navbar dialog. Keep filtered pages results-only, preserve dialog drafts between openings, and skip querying and hydrating pieces until filters are provided.
+- a9151cc: Start previews through an explicit POST action instead of page loading or link preloading. Merge replayed preview logs by identity and show the latest attempt of each phase so working previews do not fail with duplicate rendering keys.
+- 4ec5e52: Keep asset editor drafts scoped to their file, reset tag pagination when loaded results change, and ignore obsolete pagination and health-probe responses. Make preview destinations reactive while preserving each job's live progress.
+- 8f3f312: Share worker-generated preview files with the web service through a read-only preview mount in the production Compose examples. Document the directory setup and mount update required for existing deployments.
+- 2c1c0e0: Use the shared up-left navigation icon instead of the sign-in page's text back link, preserving its home destination, accessible label and keyboard focus with a 44px hit target.
+- 68c1dd6: Use compact sign-in typography, card sizing and form spacing while preserving themed colors and fonts, 16px credential inputs, 44px controls and existing authentication behavior. Leave public-site typography unchanged.
+- 2c66a44: Use softer, near-white surface containers in the default light palette and the bundled demo. Preserve dark palettes, accent colors and existing focus behavior.
+- 99f793f: Use the same responsive icon viewport for Preview and Published views, scaling each complete composition uniformly instead of shrinking its individual parts on narrow screens.
+- @luzzle/web.db@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.247
 
 ### Patch Changes

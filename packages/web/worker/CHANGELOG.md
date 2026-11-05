@@ -1,5 +1,16 @@
 # @luzzle/web.worker
 
+## 0.0.248
+
+### Patch Changes
+
+- 2c66a44: Use softer, near-white surface containers in the default light palette and the bundled demo. Preserve dark palettes, accent colors and existing focus behavior.
+- @luzzle/core@0.0.248
+  - @luzzle/web.db@0.0.1
+  - @luzzle/web.jobs@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.247
 
 ### Patch Changes

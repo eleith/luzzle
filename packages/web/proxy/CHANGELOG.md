@@ -1,5 +1,7 @@
 # @luzzle/web.proxy
 
+## 0.0.248
+
 ## 0.0.247
 
 ### Patch Changes
