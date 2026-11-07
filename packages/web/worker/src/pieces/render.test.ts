@@ -85,7 +85,7 @@ afterAll(() => {
 })
 
 describe('pieces/render', () => {
-	test('passes configured WOFF2 bytes into the actual PNG renderer instead of the static URL', async () => {
+	test('keeps configured fonts and fixed root sizing in the PNG renderer', async () => {
 		const config = makeConfig()
 		const fontPath = path.resolve(import.meta.dirname, '../../assets/fonts/noto-sans.woff2')
 		const fontBytes = readFileSync(fontPath)
@@ -100,7 +100,12 @@ describe('pieces/render', () => {
 
 		expectPng(await renderOpengraphPng(makePiece(), [], config))
 		expect(vi.mocked(ImageResponse).mock.calls.at(-1)![1]).toEqual(
-			expect.objectContaining({ fonts: [{ name: 'Noto Sans', data: fontBytes }] })
+			expect.objectContaining({
+				fonts: [{ name: 'Noto Sans', data: fontBytes }],
+				stylesheets: expect.arrayContaining([
+					':root { font-size: calc(var(--font-size-root) * 1px); }',
+				]),
+			})
 		)
 	})
 

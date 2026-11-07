@@ -108,7 +108,12 @@ export async function renderOpengraphPng(
 	outDir?: string
 ): Promise<Buffer> {
 	const { staticStylesheets, fontData } = await loadStaticAssets(config)
-	const stylesheets = [...staticStylesheets, generateThemeCss(config)]
+	// Share images use fixed canvas typography, not responsive browser sizing.
+	const stylesheets = [
+		...staticStylesheets,
+		generateThemeCss(config),
+		':root { font-size: calc(var(--font-size-root) * 1px); }',
+	]
 	const markup = prepareTakumiMarkup(await renderOpengraphHtml(piece, assets, config))
 	const fetchedResources = loadLocalImageResources(markup.body, getAssetsDirectory(config, outDir))
 	const globals = config.theme?.globals || {}

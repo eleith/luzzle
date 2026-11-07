@@ -63,7 +63,6 @@ ${darkBlock}
 
 :root {
 	font-family: var(--font-sans-name), 'Adjusted Sans';
-	font-size: calc(var(--font-size-root) * 1px);
 }
 
 @media (prefers-color-scheme: dark) {
