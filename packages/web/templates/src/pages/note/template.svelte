@@ -57,20 +57,19 @@
 </main>
 
 <style>
-	section.hero {
-		width: 85%;
+	main {
+		width: 100%;
+		max-width: 800px;
 		margin: 0 auto;
-		padding: var(--space-5) var(--space-2-5) 0;
+		padding-inline: clamp(20px, 4vw, 24px);
 	}
 
-	@media screen and (min-width: 768px) {
-		section.hero {
-			width: clamp(500px, 66.6666%, 800px);
-		}
+	section.hero {
+		padding-top: var(--space-5);
 	}
 
 	section.hero h1 {
-		font-size: var(--font-size-xxl, 2rem);
+		font-size: 2em;
 		font-weight: 600;
 		line-height: 1.2;
 		letter-spacing: -0.01em;
@@ -88,16 +87,8 @@
 		flex-direction: column;
 		gap: var(--space-5);
 		justify-content: space-between;
-		width: 85%;
-		margin: 0 auto;
-		padding: var(--space-5) var(--space-2-5);
+		padding-block: var(--space-5);
 		position: relative;
-	}
-
-	@media screen and (min-width: 768px) {
-		section.details {
-			width: clamp(500px, 66.6666%, 800px);
-		}
 	}
 
 	.byline {
