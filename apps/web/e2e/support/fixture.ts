@@ -13,34 +13,18 @@ export const notebook = {
 	title: 'Meteor Notebook'
 }
 
-export const readingBook = {
-	file: 'quiet.books.md',
-	publicUrl: '/pieces/books/quiet-book',
-	type: 'books',
-	slug: 'quiet-book',
-	title: 'Quiet Book'
-}
-
 const note = `Original observation.
 
-## A quiet section
-
-A small thought deserves room to breathe.
-
-- First thought
-- Second thought
-
-### A detail
-
-A final paragraph.
+> First quoted paragraph.
+>
+> Second quoted paragraph.
 `
 const noteHtml = `<section class="markdown">
 <p>Original observation.</p>
-<h2>A quiet section</h2>
-<p>A small thought deserves room to breathe.</p>
-<ul><li>First thought</li><li>Second thought</li></ul>
-<h3>A detail</h3>
-<p>A final paragraph.</p>
+<blockquote>
+<p>First quoted paragraph.</p>
+<p>Second quoted paragraph.</p>
+</blockquote>
 </section>`
 
 const pieces = [
@@ -50,8 +34,7 @@ const pieces = [
 		type: 'notes',
 		slug: 'forest-notebook',
 		title: 'Forest Notebook'
-	},
-	readingBook
+	}
 ]
 
 export async function createFixture(directory: string, origin: string) {
@@ -61,21 +44,19 @@ export async function createFixture(directory: string, origin: string) {
 	await mkdir(path.join(archive, '.luzzle/schemas'), { recursive: true })
 	await mkdir(path.join(archive, 'reading'), { recursive: true })
 	await mkdir(path.join(directory, 'data'), { recursive: true })
-	for (const type of new Set(pieces.map((piece) => piece.type))) {
-		await writeFile(
-			path.join(archive, `.luzzle/schemas/${type}.json`),
-			JSON.stringify({
-				title: type,
-				type: 'object',
-				properties: {
-					title: { type: 'string' },
-					date: { type: 'string', format: 'date' }
-				},
-				required: ['title', 'date'],
-				additionalProperties: false
-			})
-		)
-	}
+	await writeFile(
+		path.join(archive, '.luzzle/schemas/notes.json'),
+		JSON.stringify({
+			title: 'notes',
+			type: 'object',
+			properties: {
+				title: { type: 'string' },
+				date: { type: 'string', format: 'date' }
+			},
+			required: ['title', 'date'],
+			additionalProperties: false
+		})
+	)
 	for (const piece of pieces) {
 		await writeFile(
 			path.join(archive, piece.file),
@@ -90,19 +71,12 @@ export async function createFixture(directory: string, origin: string) {
 			storage: { root: archive },
 			paths: { database },
 			content: { text: { title: 'E2E Garden' } },
-			// Book prose should inherit its smaller body size, unlike the reading page.
-			theme: { globals: { 'font-size-small': '0.95rem' } },
 			auth: { secret: 'e2e-only-session-secret-at-least-32-characters', credentials: ADMIN },
 			pieces: [
 				{
 					type: 'notes',
 					fields: { title: 'title', date_consumed: 'date' },
 					templates: { page: { name: 'note' } }
-				},
-				{
-					type: 'books',
-					fields: { title: 'title', date_consumed: 'date' },
-					templates: { page: { name: 'book' } }
 				}
 			]
 		})
