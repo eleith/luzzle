@@ -1,5 +1,5 @@
 import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
-import { encodeAssetPath } from '#lib/pieces/assets.js'
+import { encodeAssetPath } from '@luzzle/web.pieces'
 import { transformFamily } from './presentation'
 
 export type OutputFile = {

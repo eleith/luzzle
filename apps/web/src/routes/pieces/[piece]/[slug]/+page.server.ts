@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types'
 import { db } from '#lib/server/database/index.js'
 import { config } from '#lib/server/config.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
-import { assetPathToUrl } from '#lib/pieces/assets.js'
+import { assetPathToUrl } from '@luzzle/web.pieces'
 import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 
 export const load: PageServerLoad = async (page) => {

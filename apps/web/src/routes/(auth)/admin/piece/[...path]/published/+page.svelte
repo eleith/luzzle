@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageProps } from './$types'
 	import PieceOverview from '#lib/pieces/viewer/PieceOverview.svelte'
-	import { assetPathToUrl } from '#lib/pieces/assets.js'
+	import { assetPathToUrl } from '@luzzle/web.pieces'
 	import { MarkdownPublicationStatus } from '#lib/pieces/types.js'
 	let { data }: PageProps = $props()
 	function fileUrl(path: string) {

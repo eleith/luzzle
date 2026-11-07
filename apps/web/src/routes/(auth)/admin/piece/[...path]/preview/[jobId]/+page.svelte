@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { mergePhaseLogs } from '#lib/components/progress.js'
 	import PieceOverview from '#lib/pieces/viewer/PieceOverview.svelte'
-	import { previewOutputUrl } from '#lib/pieces/preview/output-url.js'
+	import { previewOutputUrl } from '@luzzle/web.pieces'
 	import PreviewFacts from './PreviewFacts.svelte'
 	import PreviewLogs from './PreviewLogs.svelte'
 	import type { PageProps } from './$types'

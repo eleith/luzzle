@@ -1,8 +1,12 @@
-import { createPieceHelpers, OpengraphImageWidth, OpengraphImageHeight } from '@luzzle/web.pieces'
+import {
+	createPieceHelpers,
+	OpengraphImageWidth,
+	OpengraphImageHeight,
+	assetPathToUrl,
+	previewOutputUrl
+} from '@luzzle/web.pieces'
 import type { PublicWebPiece, PieceComponentHelpers, PieceIconPalette } from '@luzzle/web.pieces'
 import { page } from '$app/state'
-import { assetPathToUrl } from './assets.js'
-import { previewOutputUrl } from './preview/output-url.js'
 
 export { OpengraphImageWidth, OpengraphImageHeight }
 export type { PieceComponentHelpers, PieceIconPalette }

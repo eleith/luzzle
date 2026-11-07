@@ -23,6 +23,13 @@ export function assetPathToUrl(
 	return joinAssetUrl(`pieces/assets/${encoded}`, base)
 }
 
+export function previewOutputUrl(path: string, job: string): string | undefined {
+	const encoded = encodeAssetPath(path)
+	const encodedJob = encodeAssetPath(job)
+	if (!encoded || !encodedJob || job.includes('/')) return undefined
+	return `/admin/preview/${encodedJob}/asset/${encoded}`
+}
+
 function joinAssetUrl(path: string, base: string): string {
 	if (!base || base.startsWith('/')) {
 		return `${base.replace(/\/+$/, '')}/${path}`
