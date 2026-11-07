@@ -10,6 +10,7 @@ import { previewParseStep, type ParsedPreview } from '../steps/preview-parse.js'
 import { getTransforms } from '../transforms/index.js'
 import { run as attachment } from '../transforms/attachment.js'
 import { run as markdown } from '../transforms/markdown/index.js'
+import { run as highlight } from '../transforms/highlight/index.js'
 import { generateAssetKey } from '../assets/key.js'
 import { completed } from '../core/step.js'
 import type { DurableStepApi } from '../core/run-progress-phase.js'
@@ -183,6 +184,45 @@ describe('preview attachment production', () => {
 			persisted.transforms.find((asset) => asset.transformation === 'markdown')?.content
 		).toContain('href="/admin/preview/job-markdown/asset/snippets/piece-key/fibonacci.py"')
 		expect(ctx.logger.warn).not.toHaveBeenCalled()
+	})
+
+	test('highlights selected text after attachment generation, leaving binary files downloadable', async () => {
+		const imagePath = '.assets/diagram.gif'
+		const imageKey = generateAssetKey(imagePath, ctx.config.assets.salt)
+		const image = Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64')
+		await writeFile(path.join(directory, imagePath), image)
+		parsed.pathToKey.set(imagePath, imageKey)
+		parsed.keyToPath.set(imageKey, imagePath)
+		const metadata = JSON.parse(parsed.webPiece.json_metadata)
+		metadata.files = [{ file: imageKey }, metadata.files[0]]
+		parsed.webPiece.json_metadata = JSON.stringify(metadata)
+		ctx.config.pieces[0].fields.highlight = ['files[*].file']
+		getTransforms().set('highlight', { run: highlight })
+
+		const result = await workflow({
+			input: { filePath: parsed.webPiece.file_path },
+			run: { id: 'job-highlight' },
+			step,
+		})
+
+		const highlights = result.transforms.filter((asset) => asset.transformation === 'highlight')
+		expect(highlights).toHaveLength(1)
+		expect(highlights[0].piece_asset_path).toBe('.assets/fibonacci.py')
+		expect(highlights[0].content).toContain('fibonacci')
+		const download = result.transforms.find(
+			(asset) => asset.transformation === 'attachment' && asset.asset_key === imageKey
+		)
+		expect(download?.mime_type).toBe('image/gif')
+		expect(
+			await readFile(
+				path.join(directory, 'generated/previews/job-highlight', download!.asset_path!)
+			)
+		).toEqual(image)
+		expect(ctx.logger.warn).toHaveBeenCalledWith('Highlight skipped', {
+			file: parsed.webPiece.file_path,
+			asset: imagePath,
+			reason: 'source contains NUL bytes',
+		})
 	})
 
 	test('does not report a generated attachment when the source cannot be copied', async () => {

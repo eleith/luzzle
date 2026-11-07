@@ -35,6 +35,22 @@ test("consumers can supply complete extended schemas with their own defaults", (
 	expect(config.pieces[0].badge).toBe("new");
 });
 
+test("attachment highlighting requires explicit selectors", () => {
+	const fields = { ...piece.fields, attachments: ["files[*].file"] };
+	const config = validateConfig({ pieces: [{ ...piece, fields }] }, {});
+	expect(config.pieces[0].fields.highlight).toBeUndefined();
+
+	const selected = validateConfig(
+		{
+			pieces: [
+				{ ...piece, fields: { ...fields, highlight: ["files[*].file"] } },
+			],
+		},
+		{},
+	);
+	expect(selected.pieces[0].fields.highlight).toEqual(["files[*].file"]);
+});
+
 test("loading defaults preserves the supplied schema and base config contract", () => {
 	const config = loadConfig(undefined, { schema });
 	expect(config.instance).toBe("demo");

@@ -1,59 +1,72 @@
+import path from 'node:path'
 import { getFrontmatterValues } from '@luzzle/core'
 import { codeToHtml } from 'shiki'
 import { getLang } from './lang.js'
+import { readHighlightSource } from './source.js'
 import type { TransformInput, AssetRecord } from '../utils/types.js'
 
-export async function run({
-	webPiece,
-	config,
-	pieces,
-	assetKeyToPath,
-}: TransformInput): Promise<AssetRecord[]> {
-	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
-	if (!pieceConfig?.fields.attachments) return []
+const MAX_HTML_BYTES = 512 * 1024
+
+type HighlightAttachment = { source: string; filename: string }
+
+export async function run(input: TransformInput): Promise<AssetRecord[]> {
+	const records: AssetRecord[] = []
+	for (const { source, filename } of selectHighlightAttachments(input)) {
+		const skip = (reason: string) => warnSkipped(input, source, reason)
+		const code = await readHighlightSource(filename, skip)
+		if (code === undefined) continue
+
+		const lang = getLang(source) || 'text'
+		const html = await codeToHtml(code, {
+			lang,
+			defaultColor: false,
+			themes: input.config.theme.markdown.code,
+		})
+		if (Buffer.byteLength(html) > MAX_HTML_BYTES) {
+			skip(`generated HTML exceeds ${MAX_HTML_BYTES} bytes`)
+			continue
+		}
+
+		records.push({
+			transformation: 'highlight',
+			piece_asset_path: source,
+			asset_path: null,
+			mime_type: 'text/html',
+			is_embedded: 1,
+			content: html,
+		})
+	}
+	return records
+}
+
+function selectHighlightAttachments(input: TransformInput): HighlightAttachment[] {
+	const { webPiece, config, outDir, assetKeyToPath, priorAssets = [] } = input
+	const selectors = config.pieces.find((piece) => piece.type === webPiece.type)?.fields.highlight
+	if (!selectors?.length) return []
 
 	const frontmatter = JSON.parse(webPiece.json_metadata)
-	const attachments = pieceConfig.fields.attachments
-	const records: AssetRecord[] = []
+	const selectedKeys = new Set(
+		selectors.flatMap((field) => getFrontmatterValues<string>(frontmatter, field).flat())
+	)
+	const attachments = new Map(
+		priorAssets
+			.filter((asset) => asset.transformation === 'attachment')
+			.map((asset) => [asset.asset_key, asset])
+	)
+	const selected: HighlightAttachment[] = []
 
-	for (const field of attachments) {
-		const values = getFrontmatterValues<string>(frontmatter, field).flat()
-
-		const assets = values.reduce(
-			(maps, key) => {
-				const path = assetKeyToPath.get(key)
-				if (path) {
-					maps.push({ path, key })
-				}
-				return maps
-			},
-			[] as { path: string; key: string }[]
-		)
-
-		for (const asset of assets) {
-			const lang = getLang(asset.path) || 'text'
-			const buffer = await pieces.getPieceAsset(asset.path)
-			const code = buffer.toString('utf-8')
-
-			const html = await codeToHtml(code, {
-				lang,
-				defaultColor: false,
-				themes: {
-					light: config.theme.markdown.code.light,
-					dark: config.theme.markdown.code.dark,
-				},
-			})
-
-			records.push({
-				transformation: 'highlight',
-				piece_asset_path: asset.path,
-				asset_path: null,
-				mime_type: 'text/html',
-				is_embedded: 1,
-				content: html,
-			})
+	for (const key of selectedKeys) {
+		const source = assetKeyToPath.get(key)
+		const attachment = attachments.get(key)
+		if (!source || !attachment?.asset_path) {
+			warnSkipped(input, source || key, 'not a registered, generated attachment')
+			continue
 		}
+		selected.push({ source, filename: path.join(outDir, attachment.asset_path) })
 	}
+	return selected
+}
 
-	return records
+function warnSkipped({ webPiece, logger }: TransformInput, asset: string, reason: string): void {
+	logger.warn('Highlight skipped', { file: webPiece.file_path, asset, reason })
 }

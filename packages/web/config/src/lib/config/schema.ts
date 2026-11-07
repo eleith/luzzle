@@ -487,6 +487,13 @@ const PiecesSchema = Type.Array(
 							examples: [["files[*].file"]],
 						}),
 					),
+					highlight: Type.Optional(
+						Type.Array(Type.String(), {
+							description:
+								"Frontmatter selectors for published attachments to highlight as code or text. Omit to disable attachment highlighting.",
+							examples: [["files[*].file"]],
+						}),
+					),
 				},
 				{ additionalProperties: false },
 			),

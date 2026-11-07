@@ -598,6 +598,18 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "highlight": {
+                "description": "Frontmatter selectors for published attachments to highlight as code or text. Omit to disable attachment highlighting.",
+                "examples": [
+                  [
+                    "files[*].file"
+                  ]
+                ],
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }

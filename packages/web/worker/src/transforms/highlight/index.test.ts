@@ -1,199 +1,242 @@
-import { describe, test, expect, vi, afterEach } from 'vitest'
-import { run } from './index.js'
-import { codeToHtml } from 'shiki'
-import { getLang } from './lang.js'
-import type { Config } from '@luzzle/web.config'
-import type { WebPieces } from '../../services/db.js'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { createReadStream } from 'node:fs'
+import type * as FileSystem from 'node:fs'
+import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
+import type * as FileSystemPromises from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { validateConfig } from '@luzzle/web.config'
 import type { Pieces } from '@luzzle/core'
+import { codeToHtml } from 'shiki'
+import type * as Shiki from 'shiki'
+import type { TransformInput } from '../utils/types.js'
 import { makeLogger } from '../../../test/logger.js'
+import { run } from './index.js'
 
-vi.mock('shiki', () => ({
+vi.mock('shiki', async (importOriginal) => ({
+	...(await importOriginal<typeof Shiki>()),
 	codeToHtml: vi.fn(),
 }))
-vi.mock('./lang.js', () => ({
-	getLang: vi.fn(),
-}))
-
-const emptyMap = new Map<string, string>()
-
-const makeWebPiece = (json_metadata = '{}'): WebPieces => ({
-	id: '1',
-	type: 'books',
-	date_updated: 100,
-	date_added: 50,
-	json_metadata,
-	file_path: 'book.md',
-	key: 'key123',
-	slug: 'my-book',
-	title: 'My Book',
+vi.mock('node:fs', async (importOriginal) => {
+	const actual = await importOriginal<typeof FileSystem>()
+	return { ...actual, createReadStream: vi.fn(actual.createReadStream) }
+})
+vi.mock('node:fs/promises', async (importOriginal) => {
+	const actual = await importOriginal<typeof FileSystemPromises>()
+	return { ...actual, stat: vi.fn(actual.stat) }
 })
 
-const makeConfig = (attachments?: string[]): Config =>
-	({
-		url: { app: 'http://localhost' },
-		theme: { markdown: { code: { light: 'github-light', dark: 'github-dark' } } },
-		pieces: [
+const source = '.assets/example/main.js'
+const output = 'snippets/piece-key/main.js'
+const code = 'console.log("hi")'
+const html = '<pre class="shiki">highlighted code</pre>'
+let directory: string
+
+function makeInput(): TransformInput {
+	return {
+		webPiece: {
+			id: 'example',
+			key: 'piece-key',
+			type: 'snippets',
+			slug: 'example',
+			title: 'Example',
+			file_path: 'example.snippets.md',
+			date_added: 1,
+			json_metadata: JSON.stringify({ files: [{ file: 'code' }] }),
+		},
+		config: validateConfig(
 			{
-				type: 'books',
-				fields: {
-					title: 'title',
-					date_consumed: 'date_consumed',
-					...(attachments ? { attachments } : {}),
-				},
+				pieces: [
+					{
+						type: 'snippets',
+						fields: {
+							title: 'title',
+							date_consumed: 'date',
+							attachments: ['files[*].file', 'downloads'],
+							highlight: ['files[*].file'],
+						},
+					},
+				],
+			},
+			{}
+		),
+		outDir: directory,
+		pieces: {} as Pieces,
+		assetKeyToPath: new Map([['code', source]]),
+		priorAssets: [
+			{
+				asset_key: 'code',
+				transformation: 'attachment',
+				asset_path: output,
+				mime_type: 'text/javascript',
 			},
 		],
-	}) as unknown as Config
+		logger: makeLogger(),
+	}
+}
 
-const makePieces = (content: string = 'console.log("hi")') =>
-	({ getPieceAsset: vi.fn().mockResolvedValue(Buffer.from(content)) }) as unknown as Pieces
-
-afterEach(() => {
-	vi.clearAllMocks()
+beforeEach(async () => {
+	directory = await mkdtemp(path.join(tmpdir(), 'luzzle-highlight-'))
+	await mkdir(path.dirname(path.join(directory, output)), { recursive: true })
+	await writeFile(path.join(directory, output), code)
+	vi.mocked(codeToHtml).mockResolvedValue(html)
 })
 
-describe('transforms/highlight', () => {
-	test('returns empty array when piece type has no attachments config', async () => {
-		const pieces = makePieces()
+afterEach(async () => {
+	vi.clearAllMocks()
+	await rm(directory, { recursive: true, force: true })
+})
 
-		const records = await run({
-			webPiece: makeWebPiece('{}'),
-			config: makeConfig(),
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: emptyMap,
-			logger: makeLogger(),
-		})
+test('does not read or highlight attachments without explicit selection', async () => {
+	const input = makeInput()
+	delete input.config.pieces[0].fields.highlight
 
-		expect(pieces.getPieceAsset).not.toHaveBeenCalled()
+	expect(await run(input)).toEqual([])
+	expect(createReadStream).not.toHaveBeenCalled()
+	expect(codeToHtml).not.toHaveBeenCalled()
+})
+
+test('highlights selected originals once, leaving other attachments unread', async () => {
+	const input = makeInput()
+	input.config.pieces[0].fields.highlight?.push('source')
+	input.webPiece.json_metadata = JSON.stringify({
+		files: [{ file: 'code' }],
+		source: 'code',
+		downloads: ['recording'],
+	})
+	input.assetKeyToPath.set('recording', '.assets/example/recording.gif')
+	input.priorAssets?.push({
+		asset_key: 'recording',
+		transformation: 'attachment',
+		asset_path: 'snippets/piece-key/recording.gif',
+		mime_type: 'image/gif',
+	})
+
+	const records = await run(input)
+
+	expect(createReadStream).toHaveBeenCalledTimes(1)
+	expect(codeToHtml).toHaveBeenCalledExactlyOnceWith(code, {
+		lang: 'javascript',
+		defaultColor: false,
+		themes: { light: 'github-light', dark: 'github-dark' },
+	})
+	expect(records).toEqual([
+		{
+			transformation: 'highlight',
+			piece_asset_path: source,
+			asset_path: null,
+			mime_type: 'text/html',
+			is_embedded: 1,
+			content: html,
+		},
+	])
+})
+
+test.each(['unregistered', 'ungenerated'])(
+	'skips a selected %s attachment before file access',
+	async (missing) => {
+		const input = makeInput()
+		if (missing === 'unregistered') input.assetKeyToPath.clear()
+		else input.priorAssets = []
+
+		expect(await run(input)).toEqual([])
+		expect(createReadStream).not.toHaveBeenCalled()
 		expect(codeToHtml).not.toHaveBeenCalled()
-		expect(records).toEqual([])
-	})
-
-	test('reads asset, detects language, and highlights via shiki', async () => {
-		const pieces = makePieces('console.log("hi")')
-		const html = '<pre class="shiki">...</pre>'
-		vi.mocked(getLang).mockReturnValue('javascript')
-		vi.mocked(codeToHtml).mockResolvedValue(html)
-
-		const records = await run({
-			webPiece: makeWebPiece('{"code": "key"}'),
-			config: makeConfig(['code']),
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: new Map([['key', 'main.js']]),
-			logger: makeLogger(),
-		})
-
-		expect(pieces.getPieceAsset).toHaveBeenCalledWith('main.js')
-		expect(getLang).toHaveBeenCalledWith('main.js')
-		expect(codeToHtml).toHaveBeenCalledWith('console.log("hi")', {
-			lang: 'javascript',
-			defaultColor: false,
-			themes: { light: 'github-light', dark: 'github-dark' },
-		})
-		expect(records).toEqual([
-			{
-				transformation: 'highlight',
-				piece_asset_path: 'main.js',
-				asset_path: null,
-				mime_type: 'text/html',
-				is_embedded: 1,
-				content: html,
-			},
-		])
-	})
-
-	test('skips keys missing from assetKeyToPath without reading or highlighting', async () => {
-		const pieces = makePieces()
-
-		const records = await run({
-			webPiece: makeWebPiece('{"doc": "missing-key"}'),
-			config: makeConfig(['doc']),
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: emptyMap,
-			logger: makeLogger(),
-		})
-
-		expect(pieces.getPieceAsset).not.toHaveBeenCalled()
-		expect(records).toEqual([])
-	})
-
-	test('falls back to "text" when getLang returns null', async () => {
-		const pieces = makePieces('plain text')
-		vi.mocked(getLang).mockReturnValue(null)
-		vi.mocked(codeToHtml).mockResolvedValue('<pre>...</pre>')
-
-		await run({
-			webPiece: makeWebPiece('{"doc": "key"}'),
-			config: makeConfig(['doc']),
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: new Map([['key', 'notes.unknown']]),
-			logger: makeLogger(),
-		})
-
-		expect(codeToHtml).toHaveBeenCalledWith(
-			'plain text',
-			expect.objectContaining({ lang: 'text' })
-		)
-	})
-
-	test('throws on shiki error', async () => {
-		const pieces = makePieces()
-		vi.mocked(getLang).mockReturnValue('javascript')
-		vi.mocked(codeToHtml).mockRejectedValue(new Error('shiki failed'))
-
-		await expect(
-			run({
-				webPiece: makeWebPiece('{"code": "key"}'),
-				config: makeConfig(['code']),
-				outDir: '/out',
-				pieces,
-				assetKeyToPath: new Map([['key', 'main.js']]),
-				logger: makeLogger(),
+		expect(input.logger.warn).toHaveBeenCalledWith(
+			'Highlight skipped',
+			expect.objectContaining({
+				reason: 'not a registered, generated attachment',
 			})
-		).rejects.toThrow('shiki failed')
+		)
+	}
+)
+
+test('rejects an oversized source before reading its contents', async () => {
+	const input = makeInput()
+	await writeFile(path.join(directory, output), Buffer.alloc(100 * 1024 + 1, 'a'))
+
+	expect(await run(input)).toEqual([])
+	expect(createReadStream).not.toHaveBeenCalled()
+	expect(codeToHtml).not.toHaveBeenCalled()
+	expect(input.logger.warn).toHaveBeenCalledWith('Highlight skipped', {
+		file: input.webPiece.file_path,
+		asset: source,
+		reason: 'source exceeds 102400 bytes',
 	})
+})
 
-	test('produces one record per attachment', async () => {
-		const pieces = makePieces('content')
-		vi.mocked(getLang).mockReturnValue('javascript')
-		vi.mocked(codeToHtml).mockResolvedValue('<pre class="shiki">...</pre>')
+test('caps the read and rejects a source that grew after stat', async () => {
+	const input = makeInput()
+	const filename = path.join(directory, output)
+	const staleStat = await stat(filename)
+	await writeFile(filename, Buffer.alloc(200 * 1024, 'a'))
+	vi.mocked(stat).mockResolvedValueOnce(staleStat)
 
-		const map = new Map([
-			['key1', 'main.js'],
-			['key2', 'report.pdf'],
-			['key3', 'app.ts'],
-		])
-		const records = await run({
-			webPiece: makeWebPiece('{"files": ["key1", "key2", "key3"]}'),
-			config: makeConfig(['files']),
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: map,
-			logger: makeLogger(),
-		})
-
-		expect(pieces.getPieceAsset).toHaveBeenCalledTimes(3)
-		expect(records).toHaveLength(3)
-		expect(records.map((r) => r.piece_asset_path)).toEqual(['main.js', 'report.pdf', 'app.ts'])
+	expect(await run(input)).toEqual([])
+	expect(createReadStream).toHaveBeenCalledWith(filename, { start: 0, end: 100 * 1024 })
+	expect(codeToHtml).not.toHaveBeenCalled()
+	expect(input.logger.warn).toHaveBeenCalledWith('Highlight skipped', {
+		file: input.webPiece.file_path,
+		asset: source,
+		reason: 'source exceeds 102400 bytes',
 	})
+})
 
-	test('returns empty array for piece type not in config', async () => {
-		const pieces = makePieces()
-		const webPiece = { ...makeWebPiece('{"code": "main.js"}'), type: 'unknown' }
+test.each([
+	['NUL bytes', Buffer.from('GIF89a\0'), 'source contains NUL bytes'],
+	['invalid UTF-8', Buffer.from([0xc3, 0x28]), 'source is not valid UTF-8'],
+])('rejects %s before Shiki, regardless of the code extension', async (_name, bytes, reason) => {
+	const input = makeInput()
+	await writeFile(path.join(directory, output), bytes)
 
-		const records = await run({
-			webPiece,
-			config: makeConfig(['code']),
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: emptyMap,
-			logger: makeLogger(),
-		})
-
-		expect(pieces.getPieceAsset).not.toHaveBeenCalled()
-		expect(records).toEqual([])
+	expect(await run(input)).toEqual([])
+	expect(codeToHtml).not.toHaveBeenCalled()
+	expect(input.logger.warn).toHaveBeenCalledWith('Highlight skipped', {
+		file: input.webPiece.file_path,
+		asset: source,
+		reason,
 	})
+})
+
+test('renders selected valid text with an unknown extension as plain text', async () => {
+	const input = makeInput()
+	const output = 'snippets/piece-key/notes.unknown'
+	input.assetKeyToPath.set('code', '.assets/example/notes.unknown')
+	input.priorAssets = [
+		{
+			asset_key: 'code',
+			transformation: 'attachment',
+			asset_path: output,
+			mime_type: 'application/octet-stream',
+		},
+	]
+	await writeFile(path.join(directory, output), 'plain text')
+
+	await run(input)
+
+	expect(codeToHtml).toHaveBeenCalledWith('plain text', expect.objectContaining({ lang: 'text' }))
+})
+
+test('discards generated HTML exceeding the byte limit', async () => {
+	const input = makeInput()
+	vi.mocked(codeToHtml).mockResolvedValue('é'.repeat(256 * 1024 + 1))
+
+	expect(await run(input)).toEqual([])
+	expect(input.logger.warn).toHaveBeenCalledWith('Highlight skipped', {
+		file: input.webPiece.file_path,
+		asset: source,
+		reason: 'generated HTML exceeds 524288 bytes',
+	})
+})
+
+test('does not swallow filesystem failures', async () => {
+	await rm(path.join(directory, output))
+
+	await expect(run(makeInput())).rejects.toMatchObject({ code: 'ENOENT' })
+})
+
+test('does not swallow Shiki failures', async () => {
+	vi.mocked(codeToHtml).mockRejectedValue(new Error('shiki failed'))
+
+	await expect(run(makeInput())).rejects.toThrow('shiki failed')
 })

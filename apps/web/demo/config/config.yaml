@@ -157,6 +157,8 @@ pieces:
       tags: keywords
       attachments:
         - files[*].file
+      highlight:
+        - files[*].file
   - type: words
     templates:
       icon:
