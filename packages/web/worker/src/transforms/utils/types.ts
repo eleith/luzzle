@@ -15,4 +15,5 @@ export type TransformInput = {
 	assetKeyToPath: Map<string, string>
 	logger: Logger
 	priorAssets?: PublicWebPieceAsset[]
+	buildAssetUrl?: (path: string) => string | undefined
 }

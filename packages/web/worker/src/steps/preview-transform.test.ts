@@ -31,7 +31,10 @@ function makeCtx(): WorkerContext {
 const parsed: ParsedPreview = {
 	type: 'books',
 	slug: 'my-book',
-	webPiece: { file_path: 'books/my-book.books.md', key: 'k' } as unknown as ParsedPreview['webPiece'],
+	webPiece: {
+		file_path: 'books/my-book.books.md',
+		key: 'k',
+	} as unknown as ParsedPreview['webPiece'],
 	pathToKey: new Map([['images/foo.jpg', 'k1']]),
 	keyToPath: new Map([['k1', 'images/foo.jpg']]),
 	sanitizedFrontmatter: { title: 'Hello' },
@@ -48,7 +51,7 @@ describe('previewTransformStep', () => {
 		mocks.getTransforms.mockReturnValue(new Map([['palette', palette]]))
 
 		const result = await previewTransformStep('palette').run(
-			{ parsed, pieces: {} as Pieces, outDir: 'temp-out' },
+			{ jobId: 'job-one', parsed, pieces: {} as Pieces, outDir: 'temp-out' },
 			makeCtx()
 		)
 
@@ -60,6 +63,7 @@ describe('previewTransformStep', () => {
 			expect.objectContaining({
 				webPiece: parsed.webPiece,
 				assetKeyToPath: parsed.keyToPath,
+				buildAssetUrl: expect.any(Function),
 			})
 		)
 	})
@@ -68,7 +72,7 @@ describe('previewTransformStep', () => {
 		mocks.getTransforms.mockReturnValue(new Map())
 
 		const result = await previewTransformStep('markdown').run(
-			{ parsed, pieces: {} as Pieces, outDir: 'temp-out' },
+			{ jobId: 'job-one', parsed, pieces: {} as Pieces, outDir: 'temp-out' },
 			makeCtx()
 		)
 		expect(result.status).toBe('completed')

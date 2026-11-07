@@ -58,7 +58,7 @@ describe('transforms/markdown', () => {
 			logger: makeLogger(),
 		})
 
-		expect(processMarkdown).toHaveBeenCalledWith('# Hello\n\nWorld', themes)
+		expect(processMarkdown).toHaveBeenCalledWith('# Hello\n\nWorld', themes, expect.any(Object))
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'markdown',
@@ -112,7 +112,7 @@ describe('transforms/markdown', () => {
 			logger: makeLogger(),
 		})
 
-		expect(processMarkdown).toHaveBeenCalledWith('A **great** book', themes)
+		expect(processMarkdown).toHaveBeenCalledWith('A **great** book', themes, expect.any(Object))
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'markdown.description',
@@ -174,8 +174,8 @@ describe('transforms/markdown', () => {
 		})
 
 		expect(processMarkdown).toHaveBeenCalledTimes(2)
-		expect(processMarkdown).toHaveBeenNthCalledWith(1, '# First', themes)
-		expect(processMarkdown).toHaveBeenNthCalledWith(2, '# Second', themes)
+		expect(processMarkdown).toHaveBeenNthCalledWith(1, '# First', themes, expect.any(Object))
+		expect(processMarkdown).toHaveBeenNthCalledWith(2, '# Second', themes, expect.any(Object))
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'markdown.sections.0',
@@ -234,7 +234,7 @@ describe('transforms/markdown', () => {
 			logger: makeLogger(),
 		})
 
-		expect(processMarkdown).toHaveBeenCalledWith('**nested**', themes)
+		expect(processMarkdown).toHaveBeenCalledWith('**nested**', themes, expect.any(Object))
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'markdown.meta.bio',
@@ -275,8 +275,8 @@ describe('transforms/markdown', () => {
 		})
 
 		expect(processMarkdown).toHaveBeenCalledTimes(2)
-		expect(processMarkdown).toHaveBeenNthCalledWith(1, '# First', themes)
-		expect(processMarkdown).toHaveBeenNthCalledWith(2, '# Second', themes)
+		expect(processMarkdown).toHaveBeenNthCalledWith(1, '# First', themes, expect.any(Object))
+		expect(processMarkdown).toHaveBeenNthCalledWith(2, '# Second', themes, expect.any(Object))
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'markdown.chapters.0.body',

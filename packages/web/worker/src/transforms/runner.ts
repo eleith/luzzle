@@ -1,7 +1,7 @@
 import type { Kysely } from 'kysely'
 import type { Pieces } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
-import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
+import { assetPathToUrl, type PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { generateAssetKey } from '../assets/key.js'
 import { getTransforms } from './index.js'
 import type { WebPieces, WebDatabase } from '../services/db.js'
@@ -34,6 +34,8 @@ export async function produceTransformsForPiece(
 
 	const produced: ProducedTransform[] = []
 	const priorAssets: PublicWebPieceAsset[] = []
+	const buildAssetUrl = (path: string) =>
+		assetPathToUrl(path, config.url.luzzle_assets || config.url.app)
 
 	for (const [name, transform] of selected) {
 		try {
@@ -45,6 +47,7 @@ export async function produceTransformsForPiece(
 				assetKeyToPath,
 				logger,
 				priorAssets,
+				buildAssetUrl,
 			})
 			produced.push({ name, records })
 

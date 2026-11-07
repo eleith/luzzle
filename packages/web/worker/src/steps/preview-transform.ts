@@ -1,22 +1,23 @@
 import type { Pieces } from '@luzzle/core'
-import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
+import { previewOutputUrl, type PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { completed, type Step, type StepResult } from '../core/step.js'
 import { getTransforms } from '../transforms/index.js'
 import type { AssetRecord } from '../transforms/utils/types.js'
 import type { ParsedPreview } from './preview-parse.js'
 
-// order matters: opengraph depends on image assets written by earlier transforms
+// Markdown needs generated originals; opengraph needs the preceding transform outputs.
 export const PREVIEW_TRANSFORM_NAMES = [
-	'markdown',
-	'highlight',
-	'palette',
-	'image',
 	'attachment',
+	'image',
+	'palette',
+	'highlight',
+	'markdown',
 	'opengraph',
 ] as const
 export type PreviewTransformName = (typeof PREVIEW_TRANSFORM_NAMES)[number]
 
 export interface PreviewTransformInput {
+	jobId: string
 	parsed: ParsedPreview
 	pieces: Pieces
 	outDir: string
@@ -28,7 +29,10 @@ export function previewTransformStep(
 ): Step<PreviewTransformInput, AssetRecord[]> {
 	return {
 		name,
-		async run({ parsed, pieces, outDir, priorAssets }, ctx): Promise<StepResult<AssetRecord[]>> {
+		async run(
+			{ jobId, parsed, pieces, outDir, priorAssets },
+			ctx
+		): Promise<StepResult<AssetRecord[]>> {
 			const { config, logger } = ctx
 			const transform = getTransforms().get(name)
 			if (!transform) {
@@ -43,6 +47,7 @@ export function previewTransformStep(
 				assetKeyToPath: parsed.keyToPath,
 				logger,
 				priorAssets,
+				buildAssetUrl: (path) => previewOutputUrl(path, jobId),
 			})
 
 			if (records.length === 0) {

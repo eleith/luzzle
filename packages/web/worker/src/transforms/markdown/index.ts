@@ -1,20 +1,20 @@
 import { filterFrontmatterFields, getFrontmatterValues, resolveFieldPaths } from '@luzzle/core'
 import type { PieceFrontmatterProperty } from '@luzzle/core'
+import { encodeAssetPath } from '@luzzle/web.pieces'
 import { processMarkdown } from './engine.js'
+import type { AssetUrls } from './rehype-asset-urls.js'
 import type { TransformInput, AssetRecord } from '../utils/types.js'
 
-const isMarkdown = (f: PieceFrontmatterProperty) =>
-	f.type === 'string' && f.format === 'markdown'
+const isMarkdown = (f: PieceFrontmatterProperty) => f.type === 'string' && f.format === 'markdown'
 
-export async function run({ webPiece, config, pieces }: TransformInput): Promise<AssetRecord[]> {
+export async function run(input: TransformInput): Promise<AssetRecord[]> {
+	const { webPiece, config } = input
+	const assets = createMarkdownAssets(input)
+	const render = (markdown: string) => processMarkdown(markdown, config.theme.markdown.code, assets)
 	const records: AssetRecord[] = []
-	const themes = {
-		light: config.theme.markdown.code.light,
-		dark: config.theme.markdown.code.dark,
-	}
 
 	if (webPiece.note) {
-		const html = await processMarkdown(webPiece.note, themes)
+		const html = await render(webPiece.note)
 		records.push({
 			transformation: 'markdown',
 			piece_asset_path: null,
@@ -25,6 +25,43 @@ export async function run({ webPiece, config, pieces }: TransformInput): Promise
 		})
 	}
 
+	records.push(...(await renderMarkdownFields(input, render)))
+	return records
+}
+
+function createMarkdownAssets({
+	webPiece,
+	assetKeyToPath,
+	priorAssets = [],
+	buildAssetUrl,
+	logger,
+}: TransformInput): AssetUrls {
+	const urls = new Map<string, string>()
+	for (const asset of priorAssets) {
+		if (asset.transformation !== 'attachment' && asset.transformation !== 'image.original') continue
+		const source = assetKeyToPath.get(asset.asset_key)
+		if (!source || !asset.asset_path || !encodeAssetPath(source)) continue
+
+		// Markdown preserves URI punctuation such as '+'; output URLs still encode each segment.
+		const destination = encodeURI(source).replace(/[?#]/g, encodeURIComponent)
+		const url = buildAssetUrl?.(asset.asset_path)
+		if (destination && url) urls.set(destination, url)
+	}
+	return {
+		urls,
+		warn: (destination) =>
+			logger.warn('Markdown asset has no generated original file', {
+				file: webPiece.file_path,
+				asset: destination,
+			}),
+	}
+}
+
+async function renderMarkdownFields(
+	{ webPiece, pieces }: TransformInput,
+	render: (markdown: string) => Promise<string>
+): Promise<AssetRecord[]> {
+	const records: AssetRecord[] = []
 	const piece = await pieces.getPiece(webPiece.type)
 	const schemaPaths = filterFrontmatterFields(piece.fields, isMarkdown)
 	const frontmatter = JSON.parse(webPiece.json_metadata || '{}')
@@ -37,7 +74,7 @@ export async function run({ webPiece, config, pieces }: TransformInput): Promise
 			const value = values[0]
 			if (typeof value !== 'string' || !value) continue
 
-			const html = await processMarkdown(value, themes)
+			const html = await render(value)
 			records.push({
 				transformation: `markdown.${fieldPath}`,
 				piece_asset_path: null,

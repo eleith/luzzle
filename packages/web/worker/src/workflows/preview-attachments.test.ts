@@ -9,6 +9,7 @@ import { getWorkerContext, type WorkerContext } from '../services/context.js'
 import { previewParseStep, type ParsedPreview } from '../steps/preview-parse.js'
 import { getTransforms } from '../transforms/index.js'
 import { run as attachment } from '../transforms/attachment.js'
+import { run as markdown } from '../transforms/markdown/index.js'
 import { generateAssetKey } from '../assets/key.js'
 import { completed } from '../core/step.js'
 import type { DurableStepApi } from '../core/run-progress-phase.js'
@@ -32,7 +33,7 @@ type PreviewWorkflow = (args: {
 }) => Promise<PreviewResult>
 
 // Keep this independent of PREVIEW_TRANSFORM_NAMES so omission from production is caught.
-const phases = ['markdown', 'highlight', 'palette', 'image', 'attachment', 'opengraph']
+const phases = ['attachment', 'image', 'palette', 'highlight', 'markdown', 'opengraph']
 
 describe('preview attachment production', () => {
 	let directory: string
@@ -154,6 +155,34 @@ describe('preview attachment production', () => {
 				.where('phase', '=', 'attachment')
 				.execute()
 		).toEqual([{ phase: 'attachment', status: 'completed', message: '1 record(s)' }])
+	})
+
+	test('renders Markdown against the attachment generated for this preview job', async () => {
+		await mkdir(path.join(directory, '.luzzle', 'schemas'), { recursive: true })
+		await writeFile(
+			path.join(directory, '.luzzle', 'schemas', 'snippets.json'),
+			JSON.stringify({
+				title: 'snippets',
+				type: 'object',
+				properties: { title: { type: 'string' } },
+				required: ['title'],
+			})
+		)
+		parsed.note = '[Source](.assets/fibonacci.py)'
+		parsed.webPiece.note = parsed.note
+		getTransforms().set('markdown', { run: markdown })
+
+		const result = await workflow({
+			input: { filePath: parsed.webPiece.file_path },
+			run: { id: 'job-markdown' },
+			step,
+		})
+
+		const persisted: PreviewResult = JSON.parse(JSON.stringify(result))
+		expect(
+			persisted.transforms.find((asset) => asset.transformation === 'markdown')?.content
+		).toContain('href="/admin/preview/job-markdown/asset/snippets/piece-key/fibonacci.py"')
+		expect(ctx.logger.warn).not.toHaveBeenCalled()
 	})
 
 	test('does not report a generated attachment when the source cannot be copied', async () => {

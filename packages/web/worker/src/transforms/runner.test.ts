@@ -10,6 +10,7 @@ import type { Pieces } from '@luzzle/core'
 import type { Logger } from '../services/logger.js'
 import { generateAssetKey } from '../assets/key.js'
 import { getTransforms } from './index.js'
+import type { TransformInput } from './utils/types.js'
 
 vi.mock('../assets/key.js')
 vi.mock('./index.js')
@@ -26,6 +27,7 @@ const mocks = {
 }
 
 const config = {
+	url: { app: 'https://garden.test', luzzle_assets: 'https://cdn.test/garden' },
 	paths: { database: 'db.sqlite' },
 	assets: { salt: 'test-salt' },
 } as unknown as Config
@@ -92,6 +94,10 @@ describe('transforms/runner', () => {
 		expect(transforms.attachment.run).toHaveBeenCalledOnce()
 		expect(transforms.palette.run).toHaveBeenCalledOnce()
 		expect(transforms.opengraph.run).toHaveBeenCalledOnce()
+		const { buildAssetUrl } = transforms.attachment.run.mock.calls[0][0] as TransformInput
+		expect(buildAssetUrl?.('books/key/file.pdf')).toBe(
+			'https://cdn.test/garden/pieces/assets/books/key/file.pdf'
+		)
 	})
 
 	test('filters to only the specified transform when typeFilter is given', async () => {

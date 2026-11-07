@@ -79,6 +79,7 @@ export function registerPreviewWorkflow(): void {
 					try {
 						const res = await previewTransformStep(name).run(
 							{
+								jobId,
 								parsed,
 								pieces,
 								outDir,

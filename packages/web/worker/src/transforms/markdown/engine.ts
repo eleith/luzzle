@@ -6,6 +6,7 @@ import remarkGemoji from 'remark-gemoji'
 import remarkDirective from 'remark-directive'
 import remarkRehype from 'remark-rehype'
 import rehypeRaw from 'rehype-raw'
+import { rehypeAssetUrls, type AssetUrls } from './rehype-asset-urls.js'
 import rehypeSlug from 'rehype-slug'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypePrettyCode from 'rehype-pretty-code'
@@ -14,7 +15,11 @@ import type { Config } from '@luzzle/web.config'
 
 export type CodeThemes = Config['theme']['markdown']['code']
 
-export async function processMarkdown(markdown: string, themes: CodeThemes): Promise<string> {
+export async function processMarkdown(
+	markdown: string,
+	themes: CodeThemes,
+	assets?: AssetUrls
+): Promise<string> {
 	const processor = unified()
 		.use(remarkGfm, { plugins: { footnote: false } })
 		.use(remarkSidenote)
@@ -30,6 +35,7 @@ export async function processMarkdown(markdown: string, themes: CodeThemes): Pro
 		})
 		.use(rehypePrettyCode, { theme: themes })
 		.use(rehypeRaw)
+		.use(rehypeAssetUrls, assets)
 		.use(rehypeSlug)
 		.use(rehypeAutolinkHeadings)
 		.use(rehypeStringify, { allowDangerousHtml: true })
