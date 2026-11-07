@@ -1,6 +1,7 @@
 /* Shiki Theme CSS */
 
-pre.shiki {
+pre.shiki,
+.markdown pre {
 	overflow-x: auto;
 }
 
@@ -158,8 +159,11 @@ pre.shiki code span,
 	}
 
 	table {
+		display: block;
 		border-collapse: collapse;
-		width: 100%;
+		width: max-content;
+		max-width: 100%;
+		overflow-x: auto;
 		margin: var(--space-4) 0;
 	}
 
