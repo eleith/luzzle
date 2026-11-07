@@ -111,8 +111,6 @@ pre.shiki code span,
 	:not(pre) > code {
 		background-color: var(--color-surface-dim);
 		padding: 0 var(--space-1);
-		font-style: italic;
-		display: inline-block;
 		border-radius: 0 var(--radius-small) var(--radius-small) 0;
 	}
 
