@@ -1,5 +1,5 @@
 ---
-title: Untitled Words Piece
+title: "Markdown: A Typographical Exploration"
 subtitle: the subtitle
 summary: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
   eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
@@ -8,8 +8,6 @@ summary: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
 keywords: lorem, ipsum, dolor, sit, amet, consectetur, adipiscing, elit, quisque, dictum
 date_published: 2025-11-11
 ---
-# Markdown: A Typographical Exploration
-
 ## Introduction
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse potenti. Nullam finibus, nulla ac suscipit sollicitudin, enim felis commodo turpis, nec maximus ex enim in quam. Aenean in ultrices massa. In hac habitasse platea dictumst. Curabitur sit amet consequat odio, nec egestas velit.
