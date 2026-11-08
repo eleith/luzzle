@@ -1,7 +1,12 @@
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import remarkGfm from './remark-gfm.js'
-import { remarkSidenote, remarkSidenotesUnified, sidenoteHandler } from './remark-sidenotes.js'
+import {
+	remarkSidenote,
+	remarkSidenotesUnified,
+	sidenoteHandler,
+	rehypeSidenotes,
+} from './remark-sidenotes.js'
 import remarkGemoji from 'remark-gemoji'
 import remarkDirective from 'remark-directive'
 import remarkRehype from 'remark-rehype'
@@ -33,6 +38,7 @@ export async function processMarkdown(
 				sidenote: sidenoteHandler,
 			},
 		})
+		.use(rehypeSidenotes)
 		.use(rehypePrettyCode, { theme: themes })
 		.use(rehypeRaw)
 		.use(rehypeAssetUrls, assets)

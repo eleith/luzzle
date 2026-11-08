@@ -55,6 +55,16 @@ pre.shiki code span,
 	}
 }
 
+@keyframes sidenote-sheet-in {
+	from {
+		transform: translateY(100%);
+	}
+
+	to {
+		transform: translateY(0);
+	}
+}
+
 .markdown {
 	line-height: 1.6;
 
@@ -204,24 +214,21 @@ pre.shiki code span,
 		box-shadow: 0 2px 4px var(--color-shadow);
 	}
 
-	.sidenote__checkbox {
+	.sidenote__button,
+	.sidenote__reference {
+		padding: 0 0.2rem;
+	}
+
+	button.sidenote__button {
 		display: none;
+		border: 0;
+		background: none;
+		font: inherit;
+		min-inline-size: 1em;
+		min-block-size: 1.5em;
 	}
 
-	.sidenote__button {
-		padding-left: 0.2rem;
-		padding-right: 0.2rem;
-	}
-
-	.sidenote__button sup::before {
-		content: var(--sidenote-callout-before-content);
-	}
-
-	.sidenote__button sup::after {
-		content: var(--sidenote-callout-after-content);
-	}
-
-	.sidenote__button sup {
+	:is(.sidenote__button, .sidenote__reference) sup {
 		text-decoration: underline;
 		color: var(--color-secondary);
 		cursor: help;
@@ -231,33 +238,78 @@ pre.shiki code span,
 		color: var(--color-secondary);
 	}
 
-	@media screen and (max-width: 1279px) {
-		.sidenote__checkbox ~ .sidenote__content {
+	.sidenote__content[popover]::backdrop {
+		background: rgb(0 0 0 / 12%);
+	}
+
+	.sidenote__content[popover]:popover-open {
+		display: block;
+		position: fixed;
+		position-anchor: none;
+		inset: auto 0 0;
+		margin: 0 auto;
+		inline-size: 100%;
+		max-inline-size: 36rem;
+		max-block-size: min(50dvh, 30rem);
+		padding: 1rem clamp(20px, 4vw, 24px) max(1rem, env(safe-area-inset-bottom));
+		overflow: auto;
+		overscroll-behavior: contain;
+		float: none;
+		clear: none;
+		filter: none;
+		font: inherit;
+		font-size: 1rem;
+		font-weight: 400;
+		font-style: normal;
+		color: var(--color-on-surface);
+		background: var(--color-surface-container-lowest);
+		border: 1px solid var(--color-outline);
+		border-block-end: 0;
+		border-radius: 0.75rem 0.75rem 0 0;
+		box-shadow: 0 -4px 20px var(--color-shadow);
+
+		&::before,
+		.sidenote__id {
 			display: none;
 		}
 
-		.sidenote__checkbox:checked ~ .sidenote__content {
-			position: relative;
-			display: block;
-			min-width: 100%;
-			margin: 0.8rem 0;
-			padding: 0.8rem 1.6rem;
-			background: var(--color-surface-container-lowest);
-			border-left: solid var(--color-secondary) var(--space-1);
-			border-radius: 0 var(--radius-small) var(--radius-small) 0;
-			box-shadow: 0 2px 4px var(--color-shadow);
+		.sidenote__close {
+			display: inline;
 		}
+	}
 
-		.sidenote__id::after {
-			content: var(--sidenote-citation-after-content);
+	.sidenote__close {
+		display: none;
+		min-inline-size: 1.5em;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: var(--color-secondary);
+		font: inherit;
+		text-decoration: underline;
+		cursor: pointer;
+	}
+
+	:is(button.sidenote__button, .sidenote__close):focus-visible {
+		outline: 2px solid var(--color-secondary);
+		outline-offset: 2px;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.sidenote__content[popover]:popover-open {
+			animation: sidenote-sheet-in 160ms ease-out;
 		}
+	}
 
-		.sidenote__id::before {
-			content: var(--sidenote-citation-before-content);
-		}
+	@media screen and (max-width: 1279px) {
+		@supports selector(:popover-open) {
+			button.sidenote__button {
+				display: inline;
+			}
 
-		.sidenote__id {
-			margin-right: 1ch;
+			.sidenote__reference {
+				display: none;
+			}
 		}
 	}
 
@@ -282,6 +334,16 @@ pre.shiki code span,
 			margin-bottom: 0.5rem;
 		}
 
+		.sidenote__content[popover]:not(:popover-open) {
+			display: block;
+			position: relative;
+			inset: auto;
+			height: auto;
+			border: 0;
+			background: transparent;
+			color: inherit;
+		}
+
 		.sidenote__content {
 			width: 25ch;
 			font-size: 0.75rem;
@@ -295,12 +357,12 @@ pre.shiki code span,
 			margin-bottom: 3ch;
 		}
 
-		.sidenote__button:hover ~ .sidenote__content::before {
+		.sidenote__reference:hover ~ .sidenote__content::before {
 			margin-top: 0;
 			margin-bottom: 0;
 		}
 
-		.sidenote__button:hover ~ .sidenote__content {
+		.sidenote__reference:hover ~ .sidenote__content {
 			background: var(--color-surface-container-lowest);
 			color: var(--color-on-surface);
 		}
@@ -315,6 +377,40 @@ pre.shiki code span,
 
 		.sidenote__id {
 			margin-right: 1ch;
+		}
+	}
+
+	@media print {
+		.sidenote__content[popover],
+		.sidenote__content[popover]:popover-open {
+			display: block;
+			position: static;
+			inset: auto;
+			inline-size: auto;
+			block-size: auto;
+			max-inline-size: none;
+			max-block-size: none;
+			margin: 0.5em 0;
+			padding: 0;
+			overflow: visible;
+			border: 0;
+			background: transparent;
+			color: inherit;
+			font: inherit;
+			box-shadow: none;
+			animation: none;
+
+			.sidenote__close {
+				display: none;
+			}
+
+			.sidenote__id {
+				display: inline;
+			}
+		}
+
+		.sidenote__content[popover]::backdrop {
+			background: none;
 		}
 	}
 }

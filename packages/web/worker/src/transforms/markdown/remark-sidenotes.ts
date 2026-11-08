@@ -1,6 +1,7 @@
 import { visit, SKIP } from 'unist-util-visit'
 import { h } from 'hastscript'
 import type { Handler } from 'mdast-util-to-hast'
+import type * as Hast from 'hast'
 import type { Processor, Data } from 'unified'
 import type {
 	TokenizeContext,
@@ -56,7 +57,7 @@ interface SidenoteDefinition extends Mdast.Parent {
 
 interface Sidenote extends Mdast.Parent {
 	type: 'sidenote'
-	data?: Mdast.Data & { noteId: string }
+	data: Mdast.Data & { noteId: string; referenceId: number; inline: boolean }
 	children: Array<Mdast.RootContent>
 }
 
@@ -499,6 +500,7 @@ export const remarkSidenotesUnified = () => {
 	return (tree: Mdast.Root) => {
 		const definitions = new Map<string, Mdast.RootContent[]>()
 		const nodesToRemove: SidenoteDefinition[] = []
+		let referenceId = 0
 
 		visit(tree, 'sidenoteDefinition', (node: SidenoteDefinition) => {
 			definitions.set(node.identifier, node.children)
@@ -517,15 +519,15 @@ export const remarkSidenotesUnified = () => {
 				const definitionChildren = definitions.get(id)
 				if (!definitionChildren) return undefined
 
-				const content =
+				const paragraph =
 					definitionChildren.length === 1 && definitionChildren[0].type === 'paragraph'
-						? definitionChildren[0].children
-						: definitionChildren
+						? definitionChildren[0]
+						: undefined
 
 				parent.children.splice(index, 1, {
 					type: 'sidenote',
-					data: { noteId: id },
-					children: content
+					data: { noteId: id, referenceId: ++referenceId, inline: Boolean(paragraph) },
+					children: paragraph?.children ?? definitionChildren
 				} as Sidenote)
 				return [SKIP, index]
 			}
@@ -535,38 +537,89 @@ export const remarkSidenotesUnified = () => {
 }
 
 export const sidenoteHandler: Handler = (state, node) => {
-	const data = (node as Sidenote).data
-	const noteId = data?.noteId
-	const type = 'sidenote'
-	const checkboxId = `tufte-sn-${noteId}`
-
-	return h('span', { className: type }, [
-		h('input', {
-			'aria-label': `Show ${type}`,
-			type: 'checkbox',
-			id: checkboxId,
-			className: 'sidenote__checkbox'
-		}),
+	const { noteId, referenceId, inline } = (node as Sidenote).data
+	const contentId = `sidenote-${referenceId}`
+	const prefix: Hast.ElementContent[] = [
 		h(
-			'label',
+			'button',
 			{
-				tabIndex: 0,
-				title: `${type} content`,
-				'aria-describedby': `${type}-${noteId}`,
-				'anchor-name': `--${type}-label-${noteId}`,
+				type: 'button',
+				className: 'sidenote__close',
+				popovertarget: contentId,
+				popovertargetaction: 'hide',
+				'aria-label': `Close sidenote ${noteId}`
+			},
+			noteId
+		),
+		h('span', { className: 'sidenote__id' }, noteId),
+		{ type: 'text', value: ' ' }
+	]
+	const content = state.all(node)
+	const first = content[0]
+	if (!inline && first?.type === 'element' && first.tagName === 'p') {
+		first.children.unshift(...prefix)
+	} else {
+		content.unshift(...prefix)
+	}
+
+	return h('span', { className: 'sidenote' }, [
+		h(
+			'button',
+			{
+				type: 'button',
 				className: 'sidenote__button',
-				for: checkboxId
+				popovertarget: contentId,
+				'aria-label': `Sidenote ${noteId}`
 			},
 			[h('sup', noteId)]
 		),
+		h('span', { className: 'sidenote__reference', 'aria-hidden': 'true' }, [h('sup', noteId)]),
 		h(
-			'small',
+			inline ? 'small' : 'div',
 			{
-				id: `${type}-${noteId}`,
-				style: `position-anchor:--${type}-label-${noteId};`,
-				className: 'sidenote__content'
+				id: contentId,
+				className: 'sidenote__content',
+				popover: 'auto',
+				role: 'note',
+				'aria-label': `Sidenote ${noteId}`
 			},
-			[h('span', { className: 'sidenote__id' }, noteId), h('span', {}, state.all(node))]
+			content
 		)
 	])
+}
+
+// Block-rich notes must escape phrasing wrappers before HTML parsing repairs their structure.
+export const rehypeSidenotes = () => {
+	return (tree: Hast.Root) => {
+		const parents = new Map<Hast.Nodes, Hast.Parents>()
+		const notes: Hast.Element[] = []
+		const flowContainers = new Set(['blockquote', 'div', 'li', 'td', 'th'])
+
+		visit(tree, (node, _index, parent) => {
+			if (parent) parents.set(node, parent)
+			if (
+				node.type === 'element' &&
+				node.tagName === 'div' &&
+				Array.isArray(node.properties.className) &&
+				node.properties.className.includes('sidenote__content')
+			) {
+				notes.push(node)
+			}
+		})
+
+		// Insert backwards so notes sharing a paragraph retain their reference order.
+		for (const note of notes.reverse()) {
+			const parent = parents.get(note)
+			let container = parent
+			let anchor: Hast.Nodes = note
+			while (container && container.type !== 'root' && !flowContainers.has(container.tagName)) {
+				anchor = container
+				container = parents.get(container)
+			}
+			if (!parent || !container || parent === container) continue
+
+			parent.children.splice(parent.children.indexOf(note), 1)
+			container.children.splice(container.children.indexOf(anchor) + 1, 0, note)
+		}
+	}
 }
