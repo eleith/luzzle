@@ -55,6 +55,20 @@ pre.shiki code span,
 	}
 }
 
+@position-try --sidenote-fit-viewport {
+	top: min(12px, max(0px, anchor(top)));
+	bottom: min(12px, max(0px, anchor(bottom)));
+	align-self: anchor-center;
+}
+
+@position-try --sidenote-fit-viewport-inline {
+	top: min(12px, max(0px, anchor(top)));
+	bottom: min(12px, max(0px, anchor(bottom)));
+	left: auto;
+	right: min(12px, max(0px, anchor(right)));
+	align-self: anchor-center;
+}
+
 @keyframes sidenote-sheet-in {
 	from {
 		transform: translateY(100%);
@@ -214,24 +228,24 @@ pre.shiki code span,
 		box-shadow: 0 2px 4px var(--color-shadow);
 	}
 
-	.sidenote__button,
-	.sidenote__reference {
-		padding: 0 0.2rem;
-	}
-
-	button.sidenote__button {
+	.sidenote__button {
 		display: none;
+		padding: 0 0.2rem;
 		border: 0;
 		background: none;
 		font: inherit;
 		min-inline-size: 1em;
 		min-block-size: 1.5em;
+		cursor: pointer;
 	}
 
-	:is(.sidenote__button, .sidenote__reference) sup {
+	.sidenote__button sup {
 		text-decoration: underline;
 		color: var(--color-secondary);
-		cursor: help;
+	}
+
+	.sidenote__preview {
+		display: none;
 	}
 
 	.sidenote__id {
@@ -250,6 +264,7 @@ pre.shiki code span,
 		margin: 0 auto;
 		inline-size: 100%;
 		max-inline-size: 36rem;
+		min-block-size: min(10rem, 30dvh);
 		max-block-size: min(50dvh, 30rem);
 		padding: 1rem clamp(20px, 4vw, 24px) max(1rem, env(safe-area-inset-bottom));
 		overflow: auto;
@@ -265,7 +280,7 @@ pre.shiki code span,
 		background: var(--color-surface-container-lowest);
 		border: 1px solid var(--color-outline);
 		border-block-end: 0;
-		border-radius: 0.75rem 0.75rem 0 0;
+		border-radius: 0.5rem 0.5rem 0 0;
 		box-shadow: 0 -4px 20px var(--color-shadow);
 
 		&::before,
@@ -290,7 +305,7 @@ pre.shiki code span,
 		cursor: pointer;
 	}
 
-	:is(button.sidenote__button, .sidenote__close):focus-visible {
+	:is(.sidenote__button, .sidenote__preview, .sidenote__close):focus-visible {
 		outline: 2px solid var(--color-secondary);
 		outline-offset: 2px;
 	}
@@ -301,21 +316,17 @@ pre.shiki code span,
 		}
 	}
 
-	@media screen and (max-width: 1279px) {
+	@media screen {
 		@supports selector(:popover-open) {
-			button.sidenote__button {
+			.sidenote__button {
 				display: inline;
-			}
-
-			.sidenote__reference {
-				display: none;
 			}
 		}
 	}
 
 	@media screen and (min-width: 1280px) {
-		.sidenote {
-			cursor: default;
+		.sidenote__content[popover]:popover-open {
+			animation: none;
 		}
 
 		.sidenote__content::before {
@@ -327,9 +338,8 @@ pre.shiki code span,
 			top: 0;
 			bottom: 0;
 			left: 0;
-			width: 1px;
+			width: 2px;
 			background: var(--color-secondary);
-			filter: opacity(0.3);
 			margin-top: 0.5rem;
 			margin-bottom: 0.5rem;
 		}
@@ -347,7 +357,6 @@ pre.shiki code span,
 		.sidenote__content {
 			width: 25ch;
 			font-size: 0.75rem;
-			filter: opacity(0.7);
 			line-height: 1.4;
 			margin-top: -1.5ch;
 			padding: 0.5rem;
@@ -355,32 +364,119 @@ pre.shiki code span,
 			clear: right;
 			margin-right: -28ch;
 			margin-bottom: 3ch;
-		}
-
-		.sidenote__reference:hover ~ .sidenote__content::before {
-			margin-top: 0;
-			margin-bottom: 0;
-		}
-
-		.sidenote__reference:hover ~ .sidenote__content {
-			background: var(--color-surface-container-lowest);
-			color: var(--color-on-surface);
-		}
-
-		.sidenote__id::before {
-			content: var(--sidenote-callout-before-content);
-		}
-
-		.sidenote__id::after {
-			content: var(--sidenote-callout-after-content);
+			border-radius: 0 0.5rem 0.5rem 0;
 		}
 
 		.sidenote__id {
 			margin-right: 1ch;
 		}
+
+		@supports (position-anchor: --sidenote) and (anchor-scope: --sidenote) and
+			(align-self: anchor-center) and (position-try-fallbacks: --sidenote-fit-viewport) {
+			.sidenote__slot {
+				display: block;
+				position: relative;
+				anchor-name: --sidenote;
+				anchor-scope: --sidenote;
+				float: right;
+				clear: right;
+				inline-size: 25ch;
+				font-size: 0.75rem;
+				font-weight: 400;
+				font-style: normal;
+				line-height: 1.4;
+				margin: -1.5ch -28ch 3ch 0;
+				padding: 0.5rem;
+			}
+
+			.sidenote__slot::before {
+				content: '';
+				position: absolute;
+				inset: 0.5rem auto 0.5rem 0;
+				inline-size: 2px;
+				background: var(--color-secondary);
+			}
+
+			.sidenote__preview {
+				display: block;
+				inline-size: 100%;
+				padding: 0;
+				border: 0;
+				background: transparent;
+				color: inherit;
+				font: inherit;
+				text-align: start;
+				cursor: pointer;
+			}
+
+			.sidenote__excerpt {
+				display: -webkit-box;
+				-webkit-box-orient: vertical;
+				-webkit-line-clamp: 3;
+				overflow: hidden;
+			}
+
+			.sidenote__close {
+				min-inline-size: 0;
+				padding-inline-end: 1ch;
+				text-align: start;
+			}
+
+			/* Keep the invoker itself visible so native Escape can restore focus. */
+			.sidenote__slot:has(> :popover-open) > .sidenote__preview > .sidenote__excerpt,
+			.sidenote__slot:has(> :popover-open)::before {
+				visibility: hidden;
+			}
+
+			.sidenote__slot > .sidenote__content > :first-child {
+				margin-block-start: 0;
+			}
+
+			.sidenote__slot > .sidenote__content > :last-child {
+				margin-block-end: 0;
+			}
+
+			.sidenote__slot > .sidenote__content[popover]:not(:popover-open) {
+				display: none;
+			}
+
+			.sidenote__slot > .sidenote__content[popover]:popover-open {
+				position: fixed;
+				position-anchor: --sidenote;
+				position-visibility: always;
+				inset: auto;
+				top: anchor(top);
+				left: anchor(left);
+				align-self: auto;
+				inline-size: anchor-size(width);
+				max-inline-size: calc(100dvw - 24px);
+				block-size: auto;
+				min-block-size: 0;
+				max-block-size: min(50dvh, 30rem);
+				margin: 0;
+				padding: 0.5rem;
+				overflow: auto;
+				overscroll-behavior: contain;
+				position-try-fallbacks: --sidenote-fit-viewport, --sidenote-fit-viewport-inline;
+				border: 0;
+				font: inherit;
+				color: var(--color-on-surface);
+				background: var(--color-surface-container-lowest);
+				border-radius: 0 0.5rem 0.5rem 0;
+				box-shadow:
+					inset 2px 0 var(--color-secondary),
+					0 4px 20px var(--color-shadow);
+			}
+		}
 	}
 
 	@media print {
+		.sidenote__button {
+			display: inline;
+			min-inline-size: 0;
+			min-block-size: 0;
+		}
+
 		.sidenote__content[popover],
 		.sidenote__content[popover]:popover-open {
 			display: block;
@@ -389,6 +485,7 @@ pre.shiki code span,
 			inline-size: auto;
 			block-size: auto;
 			max-inline-size: none;
+			min-block-size: 0;
 			max-block-size: none;
 			margin: 0.5em 0;
 			padding: 0;

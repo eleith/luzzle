@@ -6,6 +6,7 @@ import {
 	remarkSidenotesUnified,
 	sidenoteHandler,
 	rehypeSidenotes,
+	rehypeSidenotePreviews,
 } from './remark-sidenotes.js'
 import remarkGemoji from 'remark-gemoji'
 import remarkDirective from 'remark-directive'
@@ -41,6 +42,7 @@ export async function processMarkdown(
 		.use(rehypeSidenotes)
 		.use(rehypePrettyCode, { theme: themes })
 		.use(rehypeRaw)
+		.use(rehypeSidenotePreviews)
 		.use(rehypeAssetUrls, assets)
 		.use(rehypeSlug)
 		.use(rehypeAutolinkHeadings)

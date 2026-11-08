@@ -562,6 +562,37 @@ export const sidenoteHandler: Handler = (state, node) => {
 		content.unshift(...prefix)
 	}
 
+	const preview = h(
+		'button',
+		{
+			type: 'button',
+			className: 'sidenote__preview',
+			// The numbered button is the keyboard entry; avoid a second stop beneath the card.
+			tabIndex: -1,
+			popovertarget: contentId,
+			'aria-label': `Read sidenote ${noteId}`
+		},
+		[
+			h('span', { className: 'sidenote__excerpt', 'aria-hidden': 'true' }, [
+				h('span', { className: 'sidenote__id' }, noteId),
+				' '
+			])
+		]
+	)
+	const card = h(
+		inline ? 'small' : 'div',
+		{
+			id: contentId,
+			className: 'sidenote__content',
+			tabIndex: -1,
+			autoFocus: true,
+			popover: 'auto',
+			role: 'note',
+			'aria-label': `Sidenote ${noteId}`
+		},
+		content
+	)
+
 	return h('span', { className: 'sidenote' }, [
 		h(
 			'button',
@@ -573,53 +604,107 @@ export const sidenoteHandler: Handler = (state, node) => {
 			},
 			[h('sup', noteId)]
 		),
-		h('span', { className: 'sidenote__reference', 'aria-hidden': 'true' }, [h('sup', noteId)]),
-		h(
-			inline ? 'small' : 'div',
-			{
-				id: contentId,
-				className: 'sidenote__content',
-				popover: 'auto',
-				role: 'note',
-				'aria-label': `Sidenote ${noteId}`
-			},
-			content
-		)
+		h(inline ? 'span' : 'div', { className: 'sidenote__slot' }, [preview, card])
 	])
 }
 
-// Block-rich notes must escape phrasing wrappers before HTML parsing repairs their structure.
+function hasClass(node: Hast.Nodes, className: string): node is Hast.Element {
+	return (
+		node.type === 'element' &&
+		Array.isArray(node.properties.className) &&
+		node.properties.className.includes(className)
+	)
+}
+
+// Hoist block-rich slots before HTML parsing repairs their nesting.
 export const rehypeSidenotes = () => {
 	return (tree: Hast.Root) => {
 		const parents = new Map<Hast.Nodes, Hast.Parents>()
-		const notes: Hast.Element[] = []
+		const slots: Hast.Element[] = []
 		const flowContainers = new Set(['blockquote', 'div', 'li', 'td', 'th'])
 
 		visit(tree, (node, _index, parent) => {
 			if (parent) parents.set(node, parent)
-			if (
-				node.type === 'element' &&
-				node.tagName === 'div' &&
-				Array.isArray(node.properties.className) &&
-				node.properties.className.includes('sidenote__content')
-			) {
-				notes.push(node)
+			if (hasClass(node, 'sidenote__slot') && node.tagName === 'div') {
+				slots.push(node)
 			}
 		})
 
-		// Insert backwards so notes sharing a paragraph retain their reference order.
-		for (const note of notes.reverse()) {
-			const parent = parents.get(note)
+		// Insert backwards so slots sharing an anchor retain reference order.
+		for (const slot of slots.reverse()) {
+			const parent = parents.get(slot)
 			let container = parent
-			let anchor: Hast.Nodes = note
+			let anchor: Hast.Nodes = slot
 			while (container && container.type !== 'root' && !flowContainers.has(container.tagName)) {
 				anchor = container
 				container = parents.get(container)
 			}
 			if (!parent || !container || parent === container) continue
 
-			parent.children.splice(parent.children.indexOf(note), 1)
-			container.children.splice(container.children.indexOf(anchor) + 1, 0, note)
+			parent.children.splice(parent.children.indexOf(slot), 1)
+			container.children.splice(container.children.indexOf(anchor) + 1, 0, slot)
 		}
+	}
+}
+
+const previewBreakTags = new Set([
+	'blockquote',
+	'br',
+	'div',
+	'h1',
+	'h2',
+	'h3',
+	'h4',
+	'h5',
+	'h6',
+	'hr',
+	'li',
+	'ol',
+	'p',
+	'pre',
+	'section',
+	'table',
+	'td',
+	'th',
+	'tr',
+	'ul'
+])
+
+function sidenotePreviewText(node: Hast.Nodes): string {
+	if (node.type === 'text') return node.value
+	if (node.type !== 'element') return ''
+	const classes = node.properties.className
+	if (
+		Array.isArray(classes) &&
+		(classes.includes('sidenote__close') || classes.includes('sidenote__id'))
+	)
+		return ''
+	if (node.tagName === 'script' || node.tagName === 'style') return ''
+
+	const text = node.children.map(sidenotePreviewText).join('')
+	return previewBreakTags.has(node.tagName) ? ` ${text} ` : text
+}
+
+export const rehypeSidenotePreviews = () => {
+	return (tree: Hast.Root) => {
+		visit(tree, 'element', (slot) => {
+			if (!hasClass(slot, 'sidenote__slot')) return
+			const preview = slot.children.find((node): node is Hast.Element =>
+				hasClass(node, 'sidenote__preview')
+			)
+			const content = slot.children.find((node): node is Hast.Element =>
+				hasClass(node, 'sidenote__content')
+			)
+			if (!preview || !content) return
+			const excerpt = preview.children.find((node): node is Hast.Element =>
+				hasClass(node, 'sidenote__excerpt')
+			)
+			if (!excerpt) return
+
+			excerpt.children.push({
+				type: 'text',
+				value: sidenotePreviewText(content).replace(/\s+/g, ' ').trim()
+			})
+		})
 	}
 }
