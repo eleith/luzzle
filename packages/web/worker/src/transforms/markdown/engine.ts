@@ -12,6 +12,7 @@ import remarkGemoji from 'remark-gemoji'
 import remarkDirective from 'remark-directive'
 import remarkRehype from 'remark-rehype'
 import rehypeRaw from 'rehype-raw'
+import { rehypeTaskListLabels } from './rehype-task-list-labels.js'
 import { rehypeAssetUrls, type AssetUrls } from './rehype-asset-urls.js'
 import rehypeSlug from 'rehype-slug'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
@@ -42,6 +43,7 @@ export async function processMarkdown(
 		.use(rehypeSidenotes)
 		.use(rehypePrettyCode, { theme: themes })
 		.use(rehypeRaw)
+		.use(rehypeTaskListLabels)
 		.use(rehypeSidenotePreviews)
 		.use(rehypeAssetUrls, assets)
 		.use(rehypeSlug)

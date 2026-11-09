@@ -11,6 +11,16 @@ const inlineDefinition =
 	'First **para**graph. A [link](https://example.com), <em>in</em>line, and `code`.'
 const inlinePreview = 'First paragraph. A link, inline, and code.'
 
+async function renderMarkdownTree(markdown: string) {
+	const html = await processMarkdown(markdown, themes)
+	return unified()
+		.use(rehypeRaw)
+		.runSync({
+			type: 'root',
+			children: [{ type: 'raw', value: html }],
+		})
+}
+
 function textContent(element: Element): string {
 	const text: string[] = []
 	visit(element, 'text', (node) => {
@@ -43,16 +53,9 @@ test.each([
 ])(
 	'keeps repeated $kind sidenotes intact with independent controls and previews',
 	async ({ definition, preview: expectedPreview }) => {
-		const html = await processMarkdown(
-			`First[^shared], then again[^shared].\n\n[^shared]: ${definition}`,
-			themes
+		const tree = await renderMarkdownTree(
+			`First[^shared], then again[^shared].\n\n[^shared]: ${definition}`
 		)
-		const tree = unified()
-			.use(rehypeRaw)
-			.runSync({
-				type: 'root',
-				children: [{ type: 'raw', value: html }],
-			})
 		const notes: Element[] = []
 		const slots: Element[] = []
 		const references: Element[] = []
@@ -94,3 +97,75 @@ test.each([
 		}
 	}
 )
+
+test('labels tight, nested and loose tasks without changing their states', async () => {
+	const tree = await renderMarkdownTree(
+		[
+			'- [x] Parent **ta**sk.',
+			'  - [ ] Child `task`.',
+			'- [ ] Before <span hidden>secret</span><span aria-hidden="true">decoration</span>after<br>break.',
+			'- [ ] Task title',
+			'  <p>Additional text</p>',
+			'',
+			'## Loose tasks',
+			'',
+			'- [ ] Loose *task*.',
+			'',
+			'  More details.',
+			'',
+			'- [x] Another loose task.',
+		].join('\n')
+	)
+	const checkboxes: Element[] = []
+	visit(tree, 'element', (node) => {
+		if (node.tagName === 'input' && node.properties.type === 'checkbox') checkboxes.push(node)
+	})
+
+	expect(checkboxes.map((checkbox) => checkbox.properties.ariaLabel)).toEqual([
+		'Parent task.',
+		'Child task.',
+		'Before after break.',
+		'Task title Additional text',
+		'Loose task.',
+		'Another loose task.',
+	])
+	expect(checkboxes.map((checkbox) => Boolean(checkbox.properties.checked))).toEqual([
+		true,
+		false,
+		false,
+		false,
+		false,
+		true,
+	])
+	expect(checkboxes.every((checkbox) => checkbox.properties.disabled === true)).toBe(true)
+})
+
+test('preserves author-supplied task names while labeling unnamed raw tasks', async () => {
+	const tree = await renderMarkdownTree(`
+<label for="native-task">Explicit native name</label>
+
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled aria-label="Explicit name">Different text</li>
+<li class="task-list-item"><input type="checkbox" disabled aria-labelledby="task-name"><span id="task-name">Referenced name</span></li>
+<li class="task-list-item"><input id="native-task" type="checkbox" disabled>Different native text</li>
+<li class="task-list-item"><input type="checkbox" disabled>Derived <em>name</em>.</li>
+</ul>
+`)
+	const checkboxes: Element[] = []
+	const labels: Element[] = []
+	visit(tree, 'element', (node) => {
+		if (node.tagName === 'input' && node.properties.type === 'checkbox') checkboxes.push(node)
+		if (node.tagName === 'label') labels.push(node)
+	})
+
+	expect(checkboxes).toHaveLength(4)
+	expect(checkboxes[0].properties.ariaLabel).toBe('Explicit name')
+	expect(checkboxes[1].properties.ariaLabel).toBeUndefined()
+	expect(checkboxes[1].properties.ariaLabelledBy).toEqual(['task-name'])
+	expect(checkboxes[2].properties.ariaLabel).toBeUndefined()
+	expect(checkboxes[2].properties.id).toBe('native-task')
+	expect(labels).toHaveLength(1)
+	expect(labels[0].properties.htmlFor).toEqual(['native-task'])
+	expect(textContent(labels[0])).toBe('Explicit native name')
+	expect(checkboxes[3].properties.ariaLabel).toBe('Derived name.')
+})
