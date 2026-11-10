@@ -1,16 +1,12 @@
 <script lang="ts">
 	import type { PageProps } from './$types'
 	import PieceOverview from '#lib/pieces/viewer/PieceOverview.svelte'
+	import OverviewActions from '#lib/pieces/viewer/OverviewActions.svelte'
 	import { assetPathToUrl } from '@luzzle/web.pieces'
 	import { MarkdownPublicationStatus } from '#lib/pieces/types.js'
 	let { data }: PageProps = $props()
 	function fileUrl(path: string) {
 		return assetPathToUrl(path, data.config.url.luzzle_assets || data.config.url.app)
-	}
-	const statusLabels: Record<MarkdownPublicationStatus, string> = {
-		[MarkdownPublicationStatus.MATCHING]: 'Matches publish',
-		[MarkdownPublicationStatus.CHANGED]: 'Unpublished changes',
-		[MarkdownPublicationStatus.UNKNOWN]: 'Unknown'
 	}
 	const publishedAt = $derived(
 		data.publication.lastPublishedAt === null ? null : new Date(data.publication.lastPublishedAt)
@@ -49,9 +45,13 @@
 					<tr role="row">
 						<th scope="row" role="rowheader">State</th>
 						<td role="cell">
-							<span class="status" data-status={data.publication.markdownStatus}
-								>{statusLabels[data.publication.markdownStatus]}</span
-							>
+							<span class="status" data-status={data.publication.markdownStatus}>
+								{#if data.publication.markdownStatus === MarkdownPublicationStatus.MATCHING}Matches
+									publish
+								{:else if data.publication.markdownStatus === MarkdownPublicationStatus.CHANGED}Unpublished
+									changes
+								{:else}Unknown{/if}
+							</span>
 						</td>
 					</tr>
 					<tr role="row">
@@ -68,6 +68,12 @@
 							<!-- eslint-enable svelte/no-navigation-without-resolve -->
 						</td>
 					</tr>
+					{#if data.publication.markdownStatus === MarkdownPublicationStatus.CHANGED}
+						<tr role="row">
+							<th scope="row" role="rowheader">Preview</th>
+							<td role="cell"><OverviewActions file={data.file} preview="saved" /></td>
+						</tr>
+					{/if}
 				</tbody>
 			</table>
 		</div>

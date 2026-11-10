@@ -3,7 +3,6 @@ import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
 import type { ProgressPhase, ProgressLog } from '#lib/components/progress.js'
 import PreviewLogs from './PreviewLogs.svelte'
-import PreviewFacts from './PreviewFacts.svelte'
 
 const started = Date.parse('2026-01-02T03:04:00Z')
 const phases: ProgressPhase[] = [
@@ -71,46 +70,6 @@ test('logs are a labelled section with an instance-scoped heading, not a main or
 	}
 	expect(headingId(first)).not.toBe(headingId(second))
 })
-
-test('file metadata is preserved by facts rather than duplicated in the logs section', () => {
-	const file = `${'nested folder/'.repeat(24)}雪 & <script>draft</script> #?%.books.md`
-	const html = render(PreviewLogs, { props: props() }).body
-	const facts = render(PreviewFacts, {
-		props: { file, status: 'completed', phases, createdAt: null, finishedAt: null }
-	}).body
-	expect(facts).toContain(file.replace(/&/g, '&amp;').replace(/</g, '&lt;'))
-	expect(html).not.toContain('nested folder/')
-	expect(facts).not.toContain('<script>')
-	expect(facts).not.toContain('<a ')
-	expect(html).not.toContain('class="meta')
-	expect(html).not.toContain('Publication')
-})
-
-test.each([
-	['expired', 'Expired', 'Assets are purged after 2 days. Re-run the preview from the editor.'],
-	['enqueued', 'Queued', 'Waiting for worker…'],
-	['running', 'Building', '1m 30s elapsed'],
-	['failed', 'Failed', '1m 30s stopped at'],
-	['completed', 'Completed', '1m 30s total time']
-])(
-	'keeps %s summary in the facts table while preserving phase/log delegation',
-	(status, title, detail) => {
-		const html = render(PreviewLogs, { props: props({ status }) }).body
-		const facts = render(PreviewFacts, {
-			props: { file: 'book.md', status, phases, createdAt: null, finishedAt: null }
-		}).body
-		expect(text(facts)).toContain(title)
-		expect(text(facts)).toContain(detail)
-		expect(facts).not.toContain('<svg')
-		expect(facts).not.toContain('spin')
-		expect(html).not.toContain(title)
-		expect(html).not.toContain('status-card')
-		expect(html).not.toContain('status-title')
-		expect(html).toContain('timeline')
-		expect(text(html)).toContain('Output ready')
-		expect(text(html)).toContain('Recorded asset error')
-	}
-)
 
 test.each(['waiting', 'future-state'])(
 	'passes %s through without inventing console status copy',

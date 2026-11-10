@@ -31,6 +31,13 @@ not save; use **Save** when ready. Use **Attach** to download or upload assets e
 **Preview** always generates a fresh preview of the saved file; save your edits first.
 **View published** opens the existing public version's Overview.
 
+When saved Markdown has unpublished changes, Published Overview adds a **Preview**
+row to the Publication table. Its **Generate** action creates a fresh preview
+of the saved file without changing the publication. The Preview table adds a
+**Publication → View published** row when a public version exists. Failed or expired
+previews add a **Preview → Generate fresh preview** row;
+this starts a new job from saved content rather than reusing the old preview.
+
 When saved Markdown matches the publication, the toolbar is quieter. **Publish**
 remains available in **More** to regenerate unchanged Markdown after attachment,
 template, or renderer changes.

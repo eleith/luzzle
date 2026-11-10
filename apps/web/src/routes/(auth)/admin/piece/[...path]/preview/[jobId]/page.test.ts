@@ -13,6 +13,7 @@ vi.mock('$app/state', () => ({
 		route: { id: '/(auth)/admin/piece/[...path]/preview/[jobId]' }
 	}
 }))
+vi.mock('$app/forms', () => ({ enhance: vi.fn() }))
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params: { path: string; jobId?: string }) =>
 		route
@@ -34,6 +35,7 @@ const job = {
 	}),
 	meta: { title: 'Garden', description: 'Description' },
 	preview: true as const,
+	hasPublishedVersion: false,
 	file: 'books/book.md',
 	job: 'current-job',
 	createdAt: '2026-11-01T12:00:00.000Z',
@@ -112,8 +114,16 @@ test.each(['running', 'completed'] as const)(
 	}
 )
 
-test('completed Preview inspects only generated outputs in the current job namespace', () => {
-	const html = renderPreview(completedPreview)
+test('completed Preview links its publication and inspects only current-job generated outputs', () => {
+	const html = renderPreview({
+		...completedPreview,
+		file: 'books/源 #?%.books.md',
+		hasPublishedVersion: true
+	})
+
+	expect(
+		html.split('href="/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md/published"')
+	).toHaveLength(2)
 
 	expect(html).toContain('Preview &lt;Draft>')
 	expect(html).toContain('Preview logs')
@@ -130,6 +140,7 @@ test('empty generated outputs do not fall back to SDK passthrough assets', () =>
 
 	expect(html).toContain('Preview assets')
 	expect(html).toContain('None recorded')
+	expect(html).not.toContain('/published"')
 	expect(html).not.toContain('generated/cover.jpg')
 	expect(html).not.toContain('archive/manual.pdf')
 })

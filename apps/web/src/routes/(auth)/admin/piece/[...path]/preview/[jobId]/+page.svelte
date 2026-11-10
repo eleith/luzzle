@@ -24,6 +24,7 @@
 		>
 			<PreviewFacts
 				file={data.file}
+				hasPublishedVersion={data.hasPublishedVersion}
 				phases={data.phases ?? []}
 				type={data.piece?.type}
 				status="completed"

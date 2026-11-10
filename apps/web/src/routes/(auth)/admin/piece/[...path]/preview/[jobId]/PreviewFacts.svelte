@@ -1,11 +1,13 @@
 <script lang="ts">
 	import type { ProgressPhase } from '#lib/components/progress.js'
 	import { formatDuration, previewDuration } from './duration.js'
+	import OverviewActions from '#lib/pieces/viewer/OverviewActions.svelte'
 
 	interface Props {
 		file: string
 		type?: string
 		status: string
+		hasPublishedVersion?: boolean
 		streamDisconnected?: boolean
 		createdAt: string | null
 		finishedAt: string | null
@@ -16,6 +18,7 @@
 		file,
 		type,
 		status,
+		hasPublishedVersion = false,
 		streamDisconnected = false,
 		createdAt,
 		finishedAt,
@@ -84,9 +87,7 @@
 					{#if !streamDisconnected && (status === 'enqueued' || status === 'waiting')}
 						<div class="status-sub">Waiting for worker…</div>
 					{:else if !streamDisconnected && status === 'expired'}
-						<div class="status-sub">
-							Assets are purged after 2 days. Re-run the preview from the editor.
-						</div>
+						<div class="status-sub">Assets are purged after 2 days.</div>
 					{/if}
 				</td>
 			</tr>
@@ -131,6 +132,18 @@
 					{/if}
 				</td>
 			</tr>
+			{#if hasPublishedVersion}
+				<tr role="row">
+					<th scope="row" role="rowheader">Publication</th>
+					<td role="cell"><OverviewActions {file} {hasPublishedVersion} /></td>
+				</tr>
+			{/if}
+			{#if status === 'failed' || status === 'expired'}
+				<tr role="row">
+					<th scope="row" role="rowheader">Preview</th>
+					<td role="cell"><OverviewActions {file} preview="retry" /></td>
+				</tr>
+			{/if}
 		</tbody>
 	</table>
 </div>

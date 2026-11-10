@@ -146,6 +146,7 @@
 		<PieceOverview title="Preview" fileUrl={() => undefined}>
 			<PreviewFacts
 				file={data.file}
+				hasPublishedVersion={data.hasPublishedVersion}
 				{phases}
 				{status}
 				{streamDisconnected}

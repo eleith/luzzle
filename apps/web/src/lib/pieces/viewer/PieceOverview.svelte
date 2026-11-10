@@ -67,7 +67,7 @@
 		padding: var(--space-2) var(--space-3);
 		border-top: 1px solid var(--color-outline-variant);
 		text-align: left;
-		vertical-align: top;
+		vertical-align: middle;
 		overflow-wrap: anywhere;
 	}
 	.overview :global(.overview-facts th) {
@@ -112,7 +112,7 @@
 			grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 			border-top: 1px solid var(--color-outline-variant);
 			padding: 0;
-			align-items: start;
+			align-items: center;
 		}
 		.overview :global(.overview-facts th),
 		.overview :global(.overview-facts td) {

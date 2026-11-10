@@ -14,6 +14,7 @@ const { page } = vi.hoisted(() => ({
 	}
 }))
 vi.mock('$app/state', () => ({ page }))
+vi.mock('$app/forms', () => ({ enhance: vi.fn() }))
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: { path?: string; tag?: string }) => {
 		if (route === '/tags/[tag]') return `/tags/${params?.tag}`
@@ -71,6 +72,7 @@ test('overview shows the published snapshot, recorded completion time and public
 	expect(html).toContain('Published &lt;Book>')
 	expect(html).toContain('datetime="2026-11-01T12:00:00.000Z"')
 	expect(html).toContain('data-status="matching"')
+	expect(html).not.toMatch(/<form\b/)
 	expect(html).toContain(`href="${data.publishedUrl}"`)
 	expect(html).toContain('href="/cdn/pieces/assets/generated/share.png"')
 	expect(html).not.toContain('/admin/preview/')
@@ -95,7 +97,14 @@ test('unpublished changes do not hide the previous publication or claim it match
 	const html = render(Overview, { props: { data, params: { path: data.file } } }).body
 
 	expect(html).toContain('data-status="changed"')
-	expect(html).toContain('Unpublished changes')
+	expect(html).toMatch(/Unpublished\s+changes/)
+	const forms = html.match(/<form\b[^>]*>[\s\S]*?<\/form>/g) ?? []
+	expect(forms).toHaveLength(1)
+	expect(forms[0]).toContain('method="post"')
+	expect(forms[0]).toContain('action="/admin/piece/books/draft%20%23%3F.books.md/preview"')
+	expect(forms[0]?.replace(/<!--[\s\S]*?-->/g, '')).toMatch(
+		/<button\b[^>]*type="submit"[^>]*>\s*Generate\s*<\/button>/
+	)
 	expect(html).not.toContain('Matches publish')
 	expect(html).toContain('datetime="2026-11-01T12:00:00.000Z"')
 	expect(html).toContain(`href="${data.publishedUrl}"`)
@@ -108,6 +117,7 @@ test('missing publication evidence remains unknown rather than using source date
 	const html = render(Overview, { props: { data, params: { path: data.file } } }).body
 
 	expect(html).toContain('data-status="unknown"')
+	expect(html).not.toMatch(/<form\b/)
 	expect(html).toContain('Unknown')
 	expect(html).not.toMatch(/<time\b/)
 })

@@ -37,6 +37,7 @@ const { page, EventSource, resolver, resolve } = vi.hoisted(() => {
 	}
 })
 vi.mock('$app/state', () => ({ page }))
+vi.mock('$app/forms', () => ({ enhance: vi.fn() }))
 vi.mock('$app/paths', () => ({ resolve }))
 
 const file = 'books/book.books.md'
@@ -51,6 +52,7 @@ function data(status: Status): ComponentProps<typeof PreviewLayout>['data'] {
 		config: makePublicConfig(),
 		meta: { title: 'Garden', description: 'Description' },
 		preview: true as const,
+		hasPublishedVersion: false,
 		file,
 		job: 'preview-id',
 		createdAt: '2026-06-20T00:00:00Z',
@@ -67,9 +69,13 @@ function data(status: Status): ComponentProps<typeof PreviewLayout>['data'] {
 	return { ...common, status }
 }
 
-function body(status: Status = 'completed') {
+function body(status: Status = 'completed', hasPublishedVersion = false) {
 	return render(PreviewLayout, {
-		props: { data: data(status), params: { path: file, jobId: 'preview-id' }, children }
+		props: {
+			data: { ...data(status), hasPublishedVersion },
+			params: { path: file, jobId: 'preview-id' },
+			children
+		}
 	}).body.replace(/<!--[^]*?-->/g, '')
 }
 
@@ -80,6 +86,8 @@ function anchors(html: string) {
 function expectAppNavigation(path = file, jobId = 'preview-id') {
 	const calls = [
 		['/(auth)/admin/piece/[...path]/source', { path }],
+		['/(auth)/admin/piece/[...path]/preview', { path }],
+		['/(auth)/admin/piece/[...path]/published', { path }],
 		[previewRoute, { path, jobId }],
 		[`${previewRoute}/page`, { path, jobId }],
 		[`${previewRoute}/icon`, { path, jobId }],
@@ -196,7 +204,17 @@ test('Preview registers Share without retaining an OG route or redirect alias', 
 test.each(['waiting', 'running', 'completed', 'failed', 'expired'] as const)(
 	'Preview %s retains destinations and availability inside the shared responsive header',
 	(status) => {
-		const html = body(status)
+		const html = body(status, status === 'failed')
+		const forms = html.match(/<form\b[^>]*>[\s\S]*?<\/form>/g) ?? []
+		if (status === 'failed' || status === 'expired') {
+			expect(forms).toHaveLength(1)
+			expect(forms[0]).toContain('method="post"')
+			expect(forms[0]).toContain(`action="/admin/piece/${file}/preview"`)
+			expect(forms[0]).toContain('Generate fresh preview')
+		} else {
+			expect(forms).toHaveLength(0)
+		}
+		expect(html.includes(`href="/admin/piece/${file}/published"`)).toBe(status === 'failed')
 		const header = html.slice(0, html.indexOf('</header>') + '</header>'.length)
 		const links = anchors(header)
 		expect(links).toHaveLength(5)
@@ -289,7 +307,7 @@ test.each(['', '/page', '/icon', '/share'])(
 	}
 )
 
-test('Preview header retains encoded file and job identity reached through View', () => {
+test('Preview retains encoded file and job navigation and publication identity', () => {
 	const props = data('completed')
 	props.file = 'books/literal%2F/源 #?%.books.md'
 	props.job = 'job /#?%2F'
@@ -309,6 +327,17 @@ test('Preview header retains encoded file and job identity reached through View'
 		expect(links[index + 1]).toContain(`href="${preview}${leaf}"`)
 	expect(links.filter((link) => link.includes('aria-current="page"'))).toHaveLength(1)
 	expect(links.at(-1)).toContain('aria-current="page"')
+	expectAppNavigation(path, jobId)
+
+	const running = data('running')
+	running.file = props.file
+	running.job = props.job
+	running.hasPublishedVersion = true
+	const pendingHtml = render(PreviewLayout, {
+		props: { data: running, params: { path: running.file, jobId: running.job }, children }
+	}).body
+	expect(pendingHtml.split(`href="${encodedRoot}/published"`)).toHaveLength(2)
+	expect(pendingHtml).not.toMatch(/<form\b/)
 	expectAppNavigation(path, jobId)
 	expect(EventSource).not.toHaveBeenCalled()
 })

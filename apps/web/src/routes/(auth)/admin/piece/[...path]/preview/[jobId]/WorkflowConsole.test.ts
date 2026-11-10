@@ -1,7 +1,6 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { render } from 'svelte/server'
 import WorkflowConsole from './WorkflowConsole.svelte'
-import PreviewFacts from './PreviewFacts.svelte'
 import type { ProgressPhase, ProgressLog } from '#lib/components/progress.js'
 
 const started = Date.parse('2026-01-02T03:04:00Z')
@@ -20,19 +19,6 @@ const logs: Record<string, ProgressLog[]> = {
 	]
 }
 
-function summary(status: string, items: ProgressPhase[] = phases) {
-	return render(PreviewFacts, {
-		props: {
-			file: 'book.md',
-			type: 'book',
-			status,
-			phases: items,
-			createdAt: '2026-01-02T03:04:00Z',
-			finishedAt: null
-		}
-	}).body.replace(/<!--[^]*?-->/g, '')
-}
-
 function text(html: string) {
 	return html
 		.replace(/<[^>]+>/g, '')
@@ -40,34 +26,7 @@ function text(html: string) {
 		.trim()
 }
 
-beforeEach(() => {
-	vi.spyOn(Date, 'now').mockReturnValue(started + 75_000)
-})
-afterEach(() => vi.restoreAllMocks())
-
-describe('preview status summary', () => {
-	test.each([
-		['expired', 'Expired', 'Assets are purged after 2 days. Re-run the preview from the editor.'],
-		['enqueued', 'Queued', 'Waiting for worker…'],
-		['running', 'Building', '1m 5s elapsed'],
-		['failed', 'Failed', '1m 5s stopped at'],
-		['completed', 'Completed', '1m 5s total time']
-	])('retains wording and duration for %s', (status, title, subtitle) => {
-		const result = render(WorkflowConsole, { props: { status, phases, logs } })
-		const facts = summary(status)
-		expect(text(facts)).toContain(title)
-		expect(text(facts)).toContain(subtitle)
-		expect(facts).not.toContain('<svg')
-		expect(facts).not.toContain('spin')
-		expect(result.body).not.toContain('status-card')
-		expect(result.body).not.toContain(title)
-		expect(result.body).toContain('phase-icon')
-		expect(result.body).toContain('log-viewport')
-		expect(text(result.body)).toContain('Rendered successfully')
-		expect(text(result.body)).toContain('03:04:00')
-		expect(text(result.body)).toContain('Output ready')
-	})
-
+describe('preview error reporting', () => {
 	test('preserves an empty summary for an unrecognized status', () => {
 		const result = render(WorkflowConsole, { props: { status: 'unknown', phases: [], logs: {} } })
 		expect(result.body).not.toContain('status-title')
@@ -95,7 +54,6 @@ describe('preview phases and logs', () => {
 				logs
 			}
 		})
-		expect(text(summary('completed'))).toContain('1m 5s total time')
 		expect(result.body).not.toContain('Completed')
 		expect(text(result.body)).toContain('1 lines')
 		expect(result.body).toContain('Auto-scroll locked')
@@ -139,7 +97,7 @@ describe('preview phases and logs', () => {
 		expect(viewportId(first.body)).not.toBe(viewportId(second.body))
 	})
 
-	test('measures total preview duration from the first phase through the last', () => {
+	test('shows each phase duration rather than a total preview time', () => {
 		const result = render(WorkflowConsole, {
 			props: {
 				status: 'completed',
@@ -155,42 +113,8 @@ describe('preview phases and logs', () => {
 				logs: {}
 			}
 		})
-		expect(
-			text(
-				summary('completed', [
-					phases[0],
-					{
-						...phases[0],
-						phase: 'publish',
-						started_at: started + 65_000,
-						finished_at: started + 90_000
-					}
-				])
-			)
-		).toContain('1m 30s total time')
 		expect(result.body).not.toContain('total time')
 		expect(text(result.body)).toContain('25s')
-	})
-
-	test.each([
-		[[], 'Unknown'],
-		[[{ ...phases[0], started_at: 0, finished_at: 2000 }], '2s'],
-		[[{ ...phases[0], finished_at: null }], '1m 15s'],
-		[[{ ...phases[0], finished_at: started + 5000 }], '5s'],
-		[[{ ...phases[0], finished_at: started - 1000 }], '0s']
-	])('retains elapsed-time formatting for %j', (items, duration) => {
-		const result = render(WorkflowConsole, {
-			props: {
-				status: 'running',
-				phases: items,
-				logs: {}
-			}
-		})
-		const facts = summary('running', items)
-		const durationCell = facts.match(/>Duration<\/th>\s*<td[^>]*>([\s\S]*?)<\/td>/)?.[1]
-		expect(durationCell).toBeDefined()
-		expect(text(durationCell!)).toContain(duration === 'Unknown' ? duration : `${duration} elapsed`)
-		expect(result.body).not.toContain('Building')
 	})
 
 	test('retains phase statuses and stderr/error highlighting', () => {

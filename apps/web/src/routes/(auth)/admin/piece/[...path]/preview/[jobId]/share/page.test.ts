@@ -40,9 +40,10 @@ const { page, resolve } = vi.hoisted(() => ({
 	})
 }))
 vi.mock('$app/state', () => ({ page }))
+vi.mock('$app/forms', () => ({ enhance: vi.fn() }))
 vi.mock('$app/paths', () => ({ resolve }))
 
-// Only the layout's five destinations and explicit page tag links may use this mock.
+// Only layout destinations, the retry action and explicit page tag links may use this mock.
 // Resource/helper URLs must remain independent; this is not native Kit resolution evidence.
 function expectAppNavigation(jobs = ['job'], tags: string[] = []) {
 	const calls = [
@@ -52,6 +53,7 @@ function expectAppNavigation(jobs = ['job'], tags: string[] = []) {
 			const jobId = encodeURIComponent(job)
 			return [
 				['/(auth)/admin/piece/[...path]/source', { path }],
+				['/(auth)/admin/piece/[...path]/preview', { path }],
 				[route, { path, jobId }],
 				[`${route}/page`, { path, jobId }],
 				[`${route}/icon`, { path, jobId }],
@@ -89,6 +91,7 @@ function data(status: Status = 'completed', png = true): Data {
 		}),
 		meta: { title: 'Garden', description: 'Description' },
 		preview: true as const,
+		hasPublishedVersion: false,
 		file: 'books/book.md',
 		job: 'job',
 		createdAt: '1970-01-01T00:00:00.000Z',
