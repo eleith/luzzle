@@ -2,6 +2,7 @@
 	import SearchIcon from 'virtual:icons/ph/magnifying-glass'
 	import CloseIcon from 'virtual:icons/ph/x'
 	import { fade } from 'svelte/transition'
+	import { responsiveFly } from '#lib/components/ui/dialog-motion.js'
 	import { Dialog } from 'bits-ui'
 	import SearchForm from './SearchForm.svelte'
 	import { afterNavigate } from '$app/navigation'
@@ -19,18 +20,6 @@
 
 		isOpen = false
 	})
-
-	function responsiveFly(node: HTMLElement, { duration = 300 }) {
-		return {
-			duration,
-			css: (t: number) => {
-				return `
-					opacity: ${t};
-					transform: translate(var(--fly-x, 0px), calc((1 - ${t}) * var(--fly-y-offset, 0px)));
-				`
-			}
-		}
-	}
 </script>
 
 <Dialog.Root bind:open={isOpen}>

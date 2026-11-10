@@ -4,22 +4,22 @@ import {
 	Piece,
 	type LuzzleStorage,
 	type PieceFrontmatterSchema,
-	savePieceAsset,
-	setFrontmatterValue,
-	type PieceFrontmatterSchemaField,
-	type PieceMarkdown,
-	type PieceFrontmatter
+	type PieceFrontmatter,
+	savePieceAsset
 } from '@luzzle/core'
-import { getPieces, getWebPiece } from '#lib/server/pieces.js'
+import { getPieces } from '#lib/server/pieces.js'
 import { getStorage } from '#lib/server/storage.js'
 import { actions, load } from './+page.server'
 import { config } from '#lib/server/config.js'
 import { db } from '#lib/server/database/index.js'
-import type { WebPieces } from '@luzzle/web.db'
+import * as markdownFormatting from '#lib/server/markdown.js'
+import { getPiecePublicationState } from '#lib/pieces/publication.server.js'
+import { MarkdownPublicationStatus } from '#lib/pieces/types.js'
 
-vi.mock('#lib/server/pieces.js', () => ({ getPieces: vi.fn(), getWebPiece: vi.fn() }))
+vi.mock('#lib/server/pieces.js', () => ({ getPieces: vi.fn() }))
 vi.mock('#lib/server/storage.js', () => ({ getStorage: vi.fn() }))
 vi.mock('#lib/server/database/index.js', () => ({ db: {} }))
+vi.mock('#lib/pieces/publication.server.js', () => ({ getPiecePublicationState: vi.fn() }))
 vi.mock('#lib/server/config.js', async () => {
 	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	return { config: makeConfig() }
@@ -35,22 +35,27 @@ afterEach(() => {
 	vi.restoreAllMocks()
 })
 
-function setup(content: string, fields: PieceFrontmatterSchemaField[] = []) {
-	const storage = { delete: vi.fn() }
-	vi.mocked(getStorage).mockReturnValue(storage as unknown as ReturnType<typeof getStorage>)
-	const piece = {
-		type: 'books',
-		fields,
-		write: vi.fn().mockResolvedValue(undefined),
-		syncMarkdown: vi.fn().mockResolvedValue(undefined),
-		setField: vi.fn(
-			async (markdown: PieceMarkdown<PieceFrontmatter>, field: string, value: string) => {
-				const updated = structuredClone(markdown)
-				setFrontmatterValue(updated.frontmatter, field, value)
-				return updated
-			}
-		)
+const file = 'books/example.books.md'
+const schema = {
+	title: 'books',
+	type: 'object',
+	properties: { title: { type: 'string' }, cover: { type: 'string' } },
+	required: ['title'],
+	additionalProperties: false
+} as PieceFrontmatterSchema<PieceFrontmatter>
+
+function setup(content: string) {
+	const storage = {
+		writeFile: vi.fn().mockResolvedValue(undefined),
+		readFile: vi.fn(),
+		stat: vi.fn(),
+		delete: vi.fn()
 	}
+	vi.mocked(getStorage).mockReturnValue(storage as unknown as ReturnType<typeof getStorage>)
+	const piece = new Piece('books', storage as unknown as LuzzleStorage, schema)
+	const validate = vi.spyOn(piece, 'validate')
+	const write = vi.spyOn(piece, 'write')
+	const sync = vi.spyOn(piece, 'syncMarkdown').mockResolvedValue(undefined)
 	vi.mocked(getPieces).mockReturnValue({
 		parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		getPiece: vi.fn().mockResolvedValue(piece)
@@ -58,308 +63,172 @@ function setup(content: string, fields: PieceFrontmatterSchemaField[] = []) {
 	const formData = new FormData()
 	formData.set('content', content)
 	const event = {
-		params: { path: 'books/example.books.md' },
+		params: { path: file },
 		request: { formData: async () => formData }
 	} as unknown as Parameters<typeof actions.save>[0]
-	return { piece, storage, event }
+	return { piece, validate, write, sync, storage, formData, event }
 }
 
-const assets: PieceFrontmatterSchemaField[] = [
-	{ name: 'cover', type: 'string', format: 'asset' },
-	{ name: 'images', type: 'array', items: { type: 'string', format: 'asset' } },
-	{
-		name: 'editions',
-		type: 'array',
-		items: { type: 'object', properties: { cover: { type: 'string', format: 'asset' } } }
-	}
-]
+test('Save validates a model but writes the exact submitted source before syncing', async () => {
+	const content =
+		'---\r\n# keep this comment\r\ntitle:   "Reviewed"\r\ncover: \'https://example.test/cover.png\'\r\n---\r\n# Heading\r\n\r\nA   paragraph.  \r\n'
+	const { validate, write, sync, storage, event } = setup(content)
+	const format = vi.spyOn(markdownFormatting, 'normalizeMarkdown')
 
-test('Save normalizes line endings and markdown and overwrites the existing piece', async () => {
-	const { piece, event } = setup(
-		'---\r\ntitle: Reviewed\r\n---\r\n# Heading\r\n\r\nA   paragraph.\r\n'
-	)
-	expect(await actions.save(event)).toEqual({ success: true })
-	expect(piece.write).toHaveBeenCalledExactlyOnceWith({
-		filePath: 'books/example.books.md',
-		piece: 'books',
-		frontmatter: { title: 'Reviewed' },
-		note: '# Heading\n\nA paragraph.\n'
-	})
-	expect(piece.syncMarkdown).toHaveBeenCalledExactlyOnceWith(db, piece.write.mock.calls[0][0])
-	expect(piece.write.mock.invocationCallOrder[0]).toBeLessThan(
-		piece.syncMarkdown.mock.invocationCallOrder[0]
-	)
-	expect(savePieceAsset).not.toHaveBeenCalled()
-})
-
-test('Save resolves scalar, array and nested asset URLs while preserving local references', async () => {
-	const { piece, storage, event } = setup(
-		`---
-title: Reviewed
-cover: https://example.test/cover.png
-images:
-  - .assets/local.png
-  - https://example.test/image.png
-editions:
-  - cover: https://example.test/edition.png
----
-Body`,
-		assets
-	)
-	vi.mocked(savePieceAsset)
-		.mockResolvedValueOnce('.assets/cover.png')
-		.mockResolvedValueOnce('.assets/images.png')
-		.mockResolvedValueOnce('.assets/edition.png')
-	expect(await actions.save(event)).toEqual({ success: true })
-	expect(vi.mocked(savePieceAsset).mock.calls).toEqual([
-		['books/example.books.md', 'https://example.test/cover.png', storage, { name: 'cover' }],
-		['books/example.books.md', 'https://example.test/image.png', storage, { name: 'images' }],
-		['books/example.books.md', 'https://example.test/edition.png', storage, { name: 'cover' }]
-	])
-	expect(piece.write).toHaveBeenCalledExactlyOnceWith(
-		expect.objectContaining({
-			frontmatter: {
-				title: 'Reviewed',
-				cover: '.assets/cover.png',
-				images: ['.assets/local.png', '.assets/images.png'],
-				editions: [{ cover: '.assets/edition.png' }]
-			}
-		})
-	)
-	expect(piece.syncMarkdown).toHaveBeenCalledExactlyOnceWith(db, piece.write.mock.calls[0][0])
-})
-
-test('Save returns the exact raw draft on malformed frontmatter without writing', async () => {
-	const rawContent = '---\r\ntitle: [broken\r\n---\r\n untouched  '
-	const { piece, event } = setup(rawContent)
-	expect(await actions.save(event)).toMatchObject({
-		status: 400,
-		data: { rawContent, error: { message: expect.stringContaining('failed to save raw piece:') } }
-	})
-	expect(piece.write).not.toHaveBeenCalled()
-	expect(piece.syncMarkdown).not.toHaveBeenCalled()
-})
-
-test('Save preserves the exact draft and stops on a failed URL download', async () => {
-	const rawContent =
-		'---\r\ncover: https://example.test/cover.png\r\nimages: [https://example.test/image.png]\r\n---\r\n untouched  '
-	const { piece, storage, event } = setup(rawContent, assets)
-	vi.mocked(savePieceAsset)
-		.mockResolvedValueOnce('.assets/cover.png')
-		.mockRejectedValueOnce(new Error('download failed'))
-	expect(await actions.save(event)).toMatchObject({
-		status: 400,
-		data: {
-			rawContent,
-			fields: undefined,
-			note: undefined,
-			error: {
-				message:
-					"Failed to download URL for 'images.0' (download failed). Remove the URL and use the form editor to upload the file instead."
-			}
-		}
-	})
-	expect(piece.write).not.toHaveBeenCalled()
-	expect(piece.syncMarkdown).not.toHaveBeenCalled()
-	expect(storage.delete).not.toHaveBeenCalled()
-})
-
-test('Save returns the exact draft on write failure and does not delete downloaded assets', async () => {
-	const rawContent = '---\r\ncover: https://example.test/cover.png\r\n---\r\n untouched  '
-	const { piece, storage, event } = setup(rawContent, assets)
-	vi.mocked(savePieceAsset).mockResolvedValueOnce('.assets/cover.png')
-	piece.write.mockRejectedValueOnce(new Error('invalid metadata'))
-	expect(await actions.save(event)).toMatchObject({
-		status: 400,
-		data: {
-			rawContent,
-			fields: undefined,
-			note: undefined,
-			error: { message: 'failed to save raw piece: invalid metadata' }
-		}
-	})
-	expect(piece.write).toHaveBeenCalledTimes(1)
-	expect(piece.syncMarkdown).not.toHaveBeenCalled()
-	expect(storage.delete).not.toHaveBeenCalled()
-})
-
-test('Save waits for sync before reporting success', async () => {
-	const { piece, event } = setup('---\ntitle: Reviewed\n---\nBody')
 	let finishSync!: () => void
-	const started = new Promise<void>((resolve) => {
-		piece.syncMarkdown.mockImplementationOnce(() => {
-			resolve()
-			return new Promise<void>((finish) => {
-				finishSync = finish
-			})
-		})
+	let startSync!: () => void
+	const syncStarted = new Promise<void>((resolve) => {
+		startSync = resolve
+	})
+	const syncFinished = new Promise<void>((resolve) => {
+		finishSync = resolve
+	})
+	sync.mockImplementationOnce(() => {
+		startSync()
+		return syncFinished
 	})
 	let settled = false
 	const saving = actions.save(event).then((result) => {
 		settled = true
 		return result
 	})
-	await started
+	await syncStarted
 	expect(settled).toBe(false)
+	expect(storage.writeFile).toHaveBeenCalledExactlyOnceWith(file, content)
 	finishSync()
 	expect(await saving).toEqual({ success: true })
+	expect(validate).toHaveBeenCalledExactlyOnceWith({
+		filePath: file,
+		piece: 'books',
+		frontmatter: { title: 'Reviewed', cover: 'https://example.test/cover.png' },
+		note: '# Heading\r\n\r\nA   paragraph.'
+	})
+	expect(storage.writeFile).toHaveBeenCalledExactlyOnceWith(file, content)
+	expect(sync).toHaveBeenCalledExactlyOnceWith(db, validate.mock.calls[0][0])
+	expect(write).not.toHaveBeenCalled()
+	expect(format).not.toHaveBeenCalled()
+	expect(savePieceAsset).not.toHaveBeenCalled()
 })
 
-test('Save reports sync failure truthfully without retrying or rolling back the file', async () => {
+test.each([
+	['malformed frontmatter', '---\r\ntitle: [broken\r\n---\r\n untouched  '],
+	['invalid schema', '---\r\ntitle: 42\r\n---\r\n untouched  ']
+])('Save rejects %s before writing', async (_failure, rawContent) => {
+	const { storage, sync, event } = setup(rawContent)
+
+	expect(await actions.save(event)).toMatchObject({
+		status: 400,
+		data: { rawContent, error: { message: expect.stringContaining('failed to save raw piece:') } }
+	})
+	expect(storage.writeFile).not.toHaveBeenCalled()
+	expect(sync).not.toHaveBeenCalled()
+	expect(savePieceAsset).not.toHaveBeenCalled()
+})
+
+test('Save preserves the draft on write failure and does not sync or retry', async () => {
+	const rawContent = '---\r\ntitle: Reviewed\r\n---\r\n untouched  '
+	const { storage, sync, event } = setup(rawContent)
+	storage.writeFile.mockRejectedValueOnce(new Error('disk full'))
+
+	expect(await actions.save(event)).toMatchObject({
+		status: 400,
+		data: { rawContent, error: { message: 'failed to save raw piece: disk full' } }
+	})
+	expect(storage.writeFile).toHaveBeenCalledExactlyOnceWith(file, rawContent)
+	expect(sync).not.toHaveBeenCalled()
+	expect(storage.delete).not.toHaveBeenCalled()
+})
+
+test('Save reports sync failure truthfully without retrying or rolling back the saved file', async () => {
 	const rawContent = '---\r\ntitle: Reviewed\r\n---\r\nBody'
-	const { piece, storage, event } = setup(rawContent)
-	const error = new Error('private database error')
-	piece.syncMarkdown.mockRejectedValueOnce(error)
+	const { validate, storage, sync, event } = setup(rawContent)
+	sync.mockRejectedValueOnce(new Error('private database error'))
 
 	expect(await actions.save(event)).toMatchObject({
 		status: 500,
 		data: {
 			rawContent,
-			fields: undefined,
-			note: undefined,
 			error: { message: 'Markdown was saved, but its database index could not be updated.' }
 		}
 	})
-	expect(piece.write).toHaveBeenCalledOnce()
-	expect(piece.syncMarkdown).toHaveBeenCalledExactlyOnceWith(db, piece.write.mock.calls[0][0])
+	expect(storage.writeFile).toHaveBeenCalledExactlyOnceWith(file, rawContent)
+	expect(sync).toHaveBeenCalledExactlyOnceWith(db, validate.mock.calls[0][0])
 	expect(storage.delete).not.toHaveBeenCalled()
-	expect(console.error).toHaveBeenCalledWith('Sync after Save failed:', error)
 })
 
-test.each(['https://example.test/cover.png', 'HTTPS://example.test/cover.png'])(
-	'Save converts %s to a local asset before strict validation and writing',
-	async (url) => {
-		const { storage, event } = setup(`---\ntitle: Reviewed\ncover: ${url}\n---\n`)
-		const targetStorage = {
-			...storage,
-			makeDirectory: vi.fn(),
-			writeFile: vi.fn()
-		}
-		const schema = {
-			title: 'books',
-			type: 'object',
-			properties: { title: { type: 'string' }, cover: { type: 'string', format: 'asset' } },
-			required: ['title', 'cover'],
-			additionalProperties: false
-		} as PieceFrontmatterSchema<PieceFrontmatter>
-		const piece = new Piece('books', targetStorage as unknown as LuzzleStorage, schema)
-		const sync = vi.spyOn(piece, 'syncMarkdown').mockResolvedValue(undefined)
-		vi.spyOn(getPieces(), 'getPiece').mockResolvedValue(piece)
-		vi.mocked(savePieceAsset).mockResolvedValue('.assets/books/example.books/cover.png')
+test('Format formats the whole buffer including frontmatter without saving, syncing or downloading', async () => {
+	const content = '---\r\ntitle:   "Reviewed"\r\n---\r\nA   paragraph.\r\n'
+	const { storage, write, sync, event } = setup(content)
+	const formattedContent = '---\ntitle: "Reviewed"\n---\n\nA paragraph.\n'
+	const format = vi
+		.spyOn(markdownFormatting, 'normalizeMarkdown')
+		.mockResolvedValueOnce(formattedContent)
 
-		expect(await actions.save(event)).toEqual({ success: true })
-		expect(savePieceAsset).toHaveBeenCalledExactlyOnceWith('books/example.books.md', url, storage, {
-			name: 'cover'
-		})
-		expect(targetStorage.writeFile).toHaveBeenCalledExactlyOnceWith(
-			'books/example.books.md',
-			expect.stringContaining('cover: .assets/books/example.books/cover.png')
-		)
-		expect(sync).toHaveBeenCalledExactlyOnceWith(
-			db,
-			expect.objectContaining({
-				frontmatter: { title: 'Reviewed', cover: '.assets/books/example.books/cover.png' }
-			})
-		)
-	}
-)
+	expect(await actions.format(event)).toEqual({ formattedContent })
+	expect(format).toHaveBeenCalledExactlyOnceWith(content)
+	expect(getPieces).not.toHaveBeenCalled()
+	expect(getStorage).not.toHaveBeenCalled()
+	expect(storage.writeFile).not.toHaveBeenCalled()
+	expect(write).not.toHaveBeenCalled()
+	expect(sync).not.toHaveBeenCalled()
+	expect(savePieceAsset).not.toHaveBeenCalled()
+})
 
-const file = 'books/example.books.md'
+test('Format returns formatter errors without touching the saved file', async () => {
+	const { storage, sync, event } = setup('---\ntitle: [broken\n---\nBody')
+	vi.spyOn(markdownFormatting, 'normalizeMarkdown').mockRejectedValueOnce(new Error('invalid YAML'))
+
+	expect(await actions.format(event)).toMatchObject({
+		status: 400,
+		data: { error: { message: 'invalid YAML' } }
+	})
+	expect(storage.writeFile).not.toHaveBeenCalled()
+	expect(sync).not.toHaveBeenCalled()
+	expect(savePieceAsset).not.toHaveBeenCalled()
+})
+
 const rawSource = '---\r\ntitle: Saved\r\n---\r\n untouched  \r\n'
-const publishedPiece: WebPieces = {
-	id: 'published-id',
-	key: 'published-key',
-	title: 'Published title',
-	slug: 'published-book',
-	file_path: file,
-	type: 'books',
-	json_metadata: '{"title":"Published title"}',
-	date_added: 0,
-	content_hash: 'completed-publication-hash',
-	last_published_at: null
-}
 
 function setupLoad() {
 	const saved = setup('')
-	const piece = Object.assign(saved.piece, {
-		get: vi.fn().mockResolvedValue({ filePath: file }),
-		schema: { type: 'object', properties: {} }
+	vi.spyOn(saved.piece, 'get').mockResolvedValue({
+		filePath: file,
+		piece: 'books',
+		frontmatter: { title: 'Saved' }
 	})
-	const storage = Object.assign(saved.storage, {
-		readFile: vi.fn().mockResolvedValue(rawSource),
-		stat: vi.fn(),
-		writeFile: vi.fn()
+	saved.storage.readFile.mockResolvedValue(rawSource)
+	vi.mocked(getPiecePublicationState).mockResolvedValue({
+		hasPublishedVersion: false,
+		markdownPublicationStatus: MarkdownPublicationStatus.UNKNOWN
 	})
-	vi.mocked(getWebPiece).mockResolvedValue(undefined)
 	const event = { params: { path: file } } as Parameters<typeof load>[0]
-	return { piece, storage, event }
+	return { ...saved, event }
 }
 
-test.each([false, true])(
-	'source loader reports generation availability (configured: %s)',
-	async (configured) => {
-		config.ai = configured ? { provider: 'google', api_key: 'private-ai-key' } : undefined
-		const { event } = setupLoad()
-		expect(await load(event)).toEqual({
-			file,
-			type: 'books',
-			rawContent: rawSource,
-			schema: { type: 'object', properties: {} },
-			canGenerate: configured,
-			assetFields: [],
-			hasPublishedVersion: false
-		})
+test('source loader returns raw saved source, schema, generation and publication state without mutations', async () => {
+	const { piece, storage, write, sync, event } = setupLoad()
+	const publicationState = {
+		hasPublishedVersion: true,
+		markdownPublicationStatus: MarkdownPublicationStatus.CHANGED
 	}
-)
+	vi.mocked(getPiecePublicationState).mockResolvedValue(publicationState)
 
-test.each([
-	{ name: 'no serving row', row: undefined },
-	{
-		name: 'serving row without a hash or publication time',
-		row: { ...publishedPiece, content_hash: null }
-	},
-	{ name: 'serving row with a publication hash', row: publishedPiece }
-])(
-	'source loader returns raw saved source and reports $name without mutations or extra reads',
-	async ({ row }) => {
-		const { piece, storage, event } = setupLoad()
-		vi.mocked(getWebPiece).mockResolvedValue(row)
-
-		expect(await load(event)).toEqual({
-			file,
-			type: 'books',
-			rawContent: rawSource,
-			schema: piece.schema,
-			canGenerate: config.ai !== undefined,
-			assetFields: [],
-			hasPublishedVersion: Boolean(row)
-		})
-		expect(getWebPiece).toHaveBeenCalledExactlyOnceWith(db, file)
-		expect(piece.get).toHaveBeenCalledExactlyOnceWith(file)
-		expect(storage.readFile).toHaveBeenCalledExactlyOnceWith(file, 'text')
-		expect(storage.stat).not.toHaveBeenCalled()
-		expect(storage.writeFile).not.toHaveBeenCalled()
-		expect(storage.delete).not.toHaveBeenCalled()
-		expect(piece.write).not.toHaveBeenCalled()
-		expect(piece.syncMarkdown).not.toHaveBeenCalled()
-		expect(savePieceAsset).not.toHaveBeenCalled()
-	}
-)
-
-test.each(['serving database', 'raw source'])(
-	'source loader propagates %s failures',
-	async (failure) => {
-		const { piece, storage, event } = setupLoad()
-		const error = new Error(`${failure} failed`)
-		if (failure === 'serving database') vi.mocked(getWebPiece).mockRejectedValueOnce(error)
-		if (failure === 'raw source') storage.readFile.mockRejectedValueOnce(error)
-
-		await expect(load(event)).rejects.toBe(error)
-		expect(storage.stat).not.toHaveBeenCalled()
-		expect(storage.writeFile).not.toHaveBeenCalled()
-		expect(storage.delete).not.toHaveBeenCalled()
-		expect(piece.write).not.toHaveBeenCalled()
-		expect(piece.syncMarkdown).not.toHaveBeenCalled()
-		expect(savePieceAsset).not.toHaveBeenCalled()
-	}
-)
+	expect(await load(event)).toEqual({
+		file,
+		type: 'books',
+		rawContent: rawSource,
+		schema: piece.schema,
+		canGenerate: config.ai !== undefined,
+		assetFields: [],
+		...publicationState
+	})
+	expect(getPiecePublicationState).toHaveBeenCalledExactlyOnceWith(file)
+	expect(piece.get).toHaveBeenCalledExactlyOnceWith(file)
+	expect(storage.readFile).toHaveBeenCalledExactlyOnceWith(file, 'text')
+	expect(storage.stat).not.toHaveBeenCalled()
+	expect(storage.writeFile).not.toHaveBeenCalled()
+	expect(storage.delete).not.toHaveBeenCalled()
+	expect(write).not.toHaveBeenCalled()
+	expect(sync).not.toHaveBeenCalled()
+	expect(savePieceAsset).not.toHaveBeenCalled()
+})

@@ -29,6 +29,7 @@
 	// Save refreshes preserve the draft; the asset-path key resets it on navigation.
 	let editorContent = $state(untrack(() => data.content ?? ''))
 	let isSaving = $state(false)
+	let saveForm = $state<HTMLFormElement>()
 	let saveError = $state<string | null>(null)
 	let saveErrorReason = $state<
 		'navigation' | 'delete' | 'delete-refresh' | 'sign-in' | 'save' | 'refresh' | null
@@ -78,6 +79,10 @@
 		}
 	}
 
+	function saveFromVim() {
+		if (isDirty && !isSaving) saveForm?.requestSubmit()
+	}
+
 	const enhanceSave: SubmitFunction = ({ cancel }) => {
 		if (isSaving) {
 			cancel()
@@ -93,8 +98,12 @@
 			try {
 				if (data.path !== file) return
 				if (result.type === 'success') {
+					const restoreEditorFocus = view?.hasFocus ?? false
 					await update({ reset: false, navigate: false })
-					if (!disposed && data.path === file) saveSuccess = true
+					if (!disposed && data.path === file) {
+						if (restoreEditorFocus) view?.focus()
+						saveSuccess = true
+					}
 				} else if (result.type === 'failure') {
 					const failure = result.data as { error?: { message?: string } } | undefined
 					saveError = failure?.error?.message || 'Failed to save'
@@ -222,7 +231,7 @@
 		const initialTheme = configuredTheme(isDark ? 'dark' : 'light')
 
 		const extensions = [
-			editorKeybindings(),
+			editorKeybindings(saveFromVim),
 			highlightSpecialChars(),
 			history(),
 			drawSelection(),
@@ -376,7 +385,7 @@
 				<Button variant="error" onclick={() => (showDeleteDialog = true)}>Delete</Button>
 			{/if}
 			{#if data.exists && !data.isBinary}
-				<form method="POST" action="?/save" use:enhance={enhanceSave}>
+				<form bind:this={saveForm} method="POST" action="?/save" use:enhance={enhanceSave}>
 					<input type="hidden" name="content" value={editorContent} />
 					<Button type="submit" disabled={isSaving}>
 						{isSaving ? 'Saving...' : 'Save'}

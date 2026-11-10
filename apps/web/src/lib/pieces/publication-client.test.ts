@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { encodeEvent, SSE_HEADERS } from '#lib/server/sse.js'
-import { submitUnpublish } from './unpublish-client'
+import { getPublicationState, submitPublication } from './publication-client'
+import { MarkdownPublicationStatus } from './types.js'
 
 const fetchMock = vi.fn<typeof fetch>()
 const encoder = new TextEncoder()
@@ -49,7 +50,7 @@ test('posts the exact file and waits for its own completion, not just admission'
 	fetchMock.mockResolvedValueOnce(accepted()).mockResolvedValueOnce(source.response)
 	const observer = new AbortController()
 	let settled = false
-	const pending = submitUnpublish(filePath, observer.signal).then((result) => {
+	const pending = submitPublication('unpublish', filePath, observer.signal).then((result) => {
 		settled = true
 		return result
 	})
@@ -73,7 +74,7 @@ test('does not adopt a conflicting job or submit again', async () => {
 	fetchMock.mockResolvedValue(
 		new Response(JSON.stringify({ jobId: 'foreign-job' }), { status: 409 })
 	)
-	const result = await submitUnpublish(filePath, new AbortController().signal)
+	const result = await submitPublication('unpublish', filePath, new AbortController().signal)
 	expect(result).toMatchObject({ state: 'failed', reason: 'busy' })
 	expect(result?.jobId).toBeUndefined()
 	expect(fetchMock).toHaveBeenCalledOnce()
@@ -90,7 +91,9 @@ test('preserves serialized cleanup diagnostics without retrying the job', async 
 		})
 	)
 	fetchMock.mockResolvedValueOnce(accepted()).mockResolvedValueOnce(source.response)
-	await expect(submitUnpublish(filePath, new AbortController().signal)).resolves.toMatchObject({
+	await expect(
+		submitPublication('unpublish', filePath, new AbortController().signal)
+	).resolves.toMatchObject({
 		state: 'failed',
 		reason: 'job',
 		jobId: 'job-1',
@@ -108,7 +111,9 @@ test('rejects a different workflow rather than claiming Unpublish succeeded', as
 		})
 	)
 	fetchMock.mockResolvedValueOnce(accepted()).mockResolvedValueOnce(source.response)
-	await expect(submitUnpublish(filePath, new AbortController().signal)).resolves.toMatchObject({
+	await expect(
+		submitPublication('unpublish', filePath, new AbortController().signal)
+	).resolves.toMatchObject({
 		state: 'failed',
 		reason: 'response',
 		jobId: 'job-1'
@@ -119,7 +124,9 @@ test('reports an interrupted stream as unknown completion and does not reconnect
 	const source = stream(encodeEvent('state', { workflowName: 'Unpublish', state: 'running' }))
 	source.close()
 	fetchMock.mockResolvedValueOnce(accepted()).mockResolvedValueOnce(source.response)
-	await expect(submitUnpublish(filePath, new AbortController().signal)).resolves.toMatchObject({
+	await expect(
+		submitPublication('unpublish', filePath, new AbortController().signal)
+	).resolves.toMatchObject({
 		state: 'failed',
 		reason: 'connection',
 		jobId: 'job-1'
@@ -129,7 +136,7 @@ test('reports an interrupted stream as unknown completion and does not reconnect
 
 test('reports authentication failure without observing a job', async () => {
 	fetchMock.mockResolvedValue(new Response('Unauthorized', { status: 401 }))
-	const result = await submitUnpublish(filePath, new AbortController().signal)
+	const result = await submitPublication('unpublish', filePath, new AbortController().signal)
 	expect(result).toMatchObject({ state: 'failed', reason: 'sign-in' })
 	expect(result?.jobId).toBeUndefined()
 	expect(fetchMock).toHaveBeenCalledOnce()
@@ -139,7 +146,9 @@ test('distinguishes authentication loss after admission from a worker failure', 
 	fetchMock
 		.mockResolvedValueOnce(accepted())
 		.mockResolvedValueOnce(new Response('Unauthorized', { status: 401 }))
-	await expect(submitUnpublish(filePath, new AbortController().signal)).resolves.toMatchObject({
+	await expect(
+		submitPublication('unpublish', filePath, new AbortController().signal)
+	).resolves.toMatchObject({
 		state: 'failed',
 		reason: 'sign-in',
 		jobId: 'job-1'
@@ -148,7 +157,9 @@ test('distinguishes authentication loss after admission from a worker failure', 
 
 test('reports request diagnostics without treating them as success', async () => {
 	fetchMock.mockResolvedValue(new Response('queue unavailable', { status: 500 }))
-	await expect(submitUnpublish(filePath, new AbortController().signal)).resolves.toMatchObject({
+	await expect(
+		submitPublication('unpublish', filePath, new AbortController().signal)
+	).resolves.toMatchObject({
 		state: 'failed',
 		reason: 'request',
 		detail: 'queue unavailable'
@@ -158,7 +169,9 @@ test('reports request diagnostics without treating them as success', async () =>
 
 test('requires a job ID before opening a status stream', async () => {
 	fetchMock.mockResolvedValue(new Response(JSON.stringify({ result: 'ok' })))
-	await expect(submitUnpublish(filePath, new AbortController().signal)).resolves.toMatchObject({
+	await expect(
+		submitPublication('unpublish', filePath, new AbortController().signal)
+	).resolves.toMatchObject({
 		state: 'failed',
 		reason: 'response'
 	})
@@ -169,10 +182,107 @@ test('detaching stops observation, not the admitted server job', async () => {
 	const source = stream()
 	fetchMock.mockResolvedValueOnce(accepted()).mockResolvedValueOnce(source.response)
 	const observer = new AbortController()
-	const pending = submitUnpublish(filePath, observer.signal)
+	const pending = submitPublication('unpublish', filePath, observer.signal)
 	await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
 	observer.abort()
 	await expect(pending).resolves.toBeUndefined()
 	expect(fetchMock).toHaveBeenCalledTimes(2)
 	expect(source.cancel).toHaveBeenCalledOnce()
+})
+
+test('publishes through the shared transport and waits for Publish completion', async () => {
+	const source = stream(
+		encodeEvent('done', {
+			workflowName: 'Publish',
+			state: 'completed',
+			result: 'ok',
+			errors: null
+		})
+	)
+	fetchMock.mockResolvedValueOnce(accepted()).mockResolvedValueOnce(source.response)
+	const observer = new AbortController()
+	await expect(submitPublication('publish', filePath, observer.signal)).resolves.toEqual({
+		state: 'completed',
+		jobId: 'job-1'
+	})
+	expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/admin/publish', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ filePath }),
+		signal: observer.signal
+	})
+})
+
+test('reports partial publication as a job failure with the failed piece diagnostics', async () => {
+	const detail = 'cover upload refused'
+	const source = stream(
+		encodeEvent('done', {
+			workflowName: 'Publish',
+			state: 'completed',
+			result: 'partial',
+			errors: null,
+			failedPieces: [{ filePath, message: detail }]
+		})
+	)
+	fetchMock.mockResolvedValueOnce(accepted()).mockResolvedValueOnce(source.response)
+	await expect(
+		submitPublication('publish', filePath, new AbortController().signal)
+	).resolves.toEqual({
+		state: 'failed',
+		reason: 'job',
+		jobId: 'job-1',
+		detail: `${filePath}: ${detail}`
+	})
+})
+
+test('reads publication state for the exact filename with a cancellable GET', async () => {
+	const state = {
+		hasPublishedVersion: true,
+		markdownPublicationStatus: MarkdownPublicationStatus.MATCHING
+	}
+	fetchMock.mockResolvedValue(Response.json(state))
+	const observer = new AbortController()
+
+	await expect(getPublicationState(filePath, observer.signal)).resolves.toEqual(state)
+
+	expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+		`/api/admin/publish?${new URLSearchParams({ filePath })}`,
+		{ signal: observer.signal }
+	)
+})
+
+test.each([
+	{ name: 'HTTP failure', response: () => new Response('unavailable', { status: 500 }) },
+	{ name: 'sign-in HTML', response: () => new Response('<html>Sign in</html>') },
+	{ name: 'invalid JSON', response: () => new Response('{') },
+	{ name: 'missing state', response: () => Response.json({}) },
+	{
+		name: 'invalid boolean',
+		response: () =>
+			Response.json({ hasPublishedVersion: 'yes', markdownPublicationStatus: 'matching' })
+	},
+	{
+		name: 'unknown status',
+		response: () =>
+			Response.json({ hasPublishedVersion: true, markdownPublicationStatus: 'pending' })
+	}
+])(
+	'a state read throws on $name without retrying or submitting an action',
+	async ({ response }) => {
+		fetchMock.mockResolvedValue(response())
+
+		await expect(getPublicationState(filePath, new AbortController().signal)).rejects.toThrow()
+
+		expect(fetchMock).toHaveBeenCalledOnce()
+		expect(fetchMock.mock.calls[0][1]?.method).toBeUndefined()
+	}
+)
+
+test('a failed or aborted state fetch propagates without retrying an action', async () => {
+	const error = new DOMException('Aborted', 'AbortError')
+	fetchMock.mockRejectedValue(error)
+
+	await expect(getPublicationState(filePath, new AbortController().signal)).rejects.toBe(error)
+
+	expect(fetchMock).toHaveBeenCalledOnce()
 })

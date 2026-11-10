@@ -1,8 +1,9 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
-import { getPieces, getWebPiece } from '#lib/server/pieces.js'
+import { getPieces } from '#lib/server/pieces.js'
 import { getStorage } from '#lib/server/storage.js'
 import { db } from '#lib/server/database/index.js'
+import { getPiecePublicationState } from '#lib/pieces/publication.server.js'
 import path from 'path'
 import { config } from '#lib/server/config.js'
 import {
@@ -11,65 +12,11 @@ import {
 	makePieceMarkdown,
 	type PieceFrontmatter,
 	type PieceMarkdown,
-	type Piece,
 	filterFrontmatterFields,
-	resolveFieldPaths,
-	getFrontmatterValue,
 	savePieceAsset
 } from '@luzzle/core'
 import { Readable } from 'stream'
-import { normalizeLineEndings, normalizeMarkdown } from '#lib/server/markdown.js'
-
-async function resolveAssetUrls(
-	piece: Piece<PieceFrontmatter>,
-	markdown: PieceMarkdown<PieceFrontmatter>,
-	content: string,
-	assetSchemaPaths: string[]
-) {
-	let updated = markdown
-	const storage = getStorage()
-
-	for (const schemaPath of assetSchemaPaths) {
-		const instancePaths = resolveFieldPaths(piece.fields, updated.frontmatter, schemaPath)
-
-		for (const instancePath of instancePaths) {
-			const value = getFrontmatterValue(updated.frontmatter, instancePath)
-			if (typeof value !== 'string' || !/^https?:\/\//i.test(value)) continue
-
-			try {
-				const parts = instancePath.split('.')
-				let fieldName = 'attachment'
-				for (let i = parts.length - 1; i >= 0; i--) {
-					if (isNaN(parseInt(parts[i], 10))) {
-						fieldName = parts[i]
-						break
-					}
-				}
-
-				const relativePath = await savePieceAsset(markdown.filePath, value, storage, {
-					name: fieldName
-				})
-
-				updated = await piece.setField(updated, instancePath, relativePath)
-			} catch (e) {
-				const message = e instanceof Error ? e.message : String(e)
-				console.error(`Failed to download and rename URL asset for ${instancePath}:`, e)
-				return {
-					error: fail(400, {
-						error: {
-							message: `Failed to download URL for '${instancePath}' (${message}). Remove the URL and use the form editor to upload the file instead.`
-						},
-						rawContent: content,
-						fields: undefined,
-						note: undefined
-					})
-				}
-			}
-		}
-	}
-
-	return { markdown: updated }
-}
+import { normalizeMarkdown } from '#lib/server/markdown.js'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -88,9 +35,9 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	const storage = getStorage()
-	const [rawContent, webPiece] = await Promise.all([
+	const [rawContent, publicationState] = await Promise.all([
 		storage.readFile(file, 'text') as Promise<string>,
-		getWebPiece(db, file)
+		getPiecePublicationState(file)
 	])
 
 	const assetPaths = filterFrontmatterFields(piece.fields, (f) => f.format === 'asset')
@@ -102,23 +49,38 @@ export const load: PageServerLoad = async ({ params }) => {
 		schema: piece.schema,
 		canGenerate: config.ai !== undefined,
 		assetFields: assetPaths,
-		hasPublishedVersion: Boolean(webPiece)
+		...publicationState
 	}
 }
 
 export const actions = {
+	format: async (event) => {
+		const formData = await event.request.formData()
+		const content = formData.get('content')
+
+		if (typeof content !== 'string') {
+			return fail(400, { error: { message: 'content is required' } })
+		}
+
+		try {
+			return { formattedContent: await normalizeMarkdown(content) }
+		} catch (e) {
+			const message = e instanceof Error ? e.message : String(e)
+			return fail(400, { error: { message } })
+		}
+	},
 	save: async (event) => {
 		const file = event.params.path
 		const pieces = getPieces()
 		const type = pieces.parseFilename(file).type
 		const formData = await event.request.formData()
-		const content = formData.get('content')?.toString()
+		const content = formData.get('content')
 
 		if (!type) {
 			return error(404, `piece type does not exist`)
 		}
 
-		if (!content) {
+		if (typeof content !== 'string' || !content) {
 			return fail(400, { error: { message: 'content is required' } })
 		}
 
@@ -126,18 +88,13 @@ export const actions = {
 
 		let markdown: PieceMarkdown<PieceFrontmatter>
 		try {
-			const normalized = normalizeLineEndings(content)
-			const data = await extractFullMarkdown(normalized)
-			const note = await normalizeMarkdown(data.markdown)
-			markdown = makePieceMarkdown(file, type, note, data.frontmatter as PieceFrontmatter)
-			const assetPaths = filterFrontmatterFields(piece.fields, (f) => f.format === 'asset')
-
-			if (assetPaths.length > 0) {
-				const result = await resolveAssetUrls(piece, markdown, content, assetPaths)
-				if ('error' in result) return result.error
-				markdown = result.markdown
+			const data = await extractFullMarkdown(content)
+			markdown = makePieceMarkdown(file, type, data.markdown, data.frontmatter as PieceFrontmatter)
+			const validated = piece.validate(markdown)
+			if (!validated.isValid) {
+				throw new Error(validated.errors.join('\n'))
 			}
-			await piece.write(markdown)
+			await getStorage().writeFile(file, content)
 		} catch (e: unknown) {
 			const error = e instanceof Error ? e : new Error(String(e))
 			console.error('Save raw action error:', error)

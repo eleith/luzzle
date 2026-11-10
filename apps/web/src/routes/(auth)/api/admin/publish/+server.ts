@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types'
 import { config } from '#lib/server/config.js'
 import { getPieces } from '#lib/server/pieces.js'
+import { getPiecePublicationState } from '#lib/pieces/publication.server.js'
 import { getOpenWorkflow, getOpenWorkflowBackend } from '#lib/server/workflow/index.js'
 import {
 	findInFlightPublishRun,
@@ -67,6 +68,19 @@ async function prepareArchivePublish(
 	return input
 }
 
+export const GET: RequestHandler = async ({ url }) => {
+	try {
+		const filePath = validatePiecePath(url.searchParams.get('filePath'))
+		if (filePath instanceof Response) return filePath
+		return Response.json(await getPiecePublicationState(filePath), {
+			headers: { 'Cache-Control': 'no-store' }
+		})
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error)
+		return new Response(`Internal server error: ${message}`, { status: 500 })
+	}
+}
+
 export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const body: PublishRequestBody | null = await request.json().catch(() => ({}))
@@ -82,8 +96,12 @@ export const POST: RequestHandler = async ({ request }) => {
 				return Response.json({ jobId: inFlight.id }, { status: 409 })
 			}
 
-			const input: PublishPayload | PublishPiecePayload | Response =
-				filePath !== undefined ? { filePath } : await prepareArchivePublish(body)
+			let input: PublishPayload | PublishPiecePayload | Response
+			if (filePath !== undefined) {
+				input = { filePath }
+			} else {
+				input = await prepareArchivePublish(body)
+			}
 			if (input instanceof Response) return input
 
 			const openWorkflow = getOpenWorkflow()

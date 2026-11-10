@@ -1,48 +1,51 @@
 <script lang="ts">
 	import { deserialize, enhance, type SubmitFunction } from '$app/forms'
 	import MarkdownEditor from '#lib/components/editor/MarkdownEditor.svelte'
-	import {
-		reconcileSave,
-		reconcileSourceRefresh,
-		type SaveSnapshot
-	} from '#lib/components/editor/save-state.js'
 	import Button from '#lib/components/ui/Button.svelte'
 	import PieceActions from '#lib/components/editor/PieceActions.svelte'
 	import PieceToolbar from '#lib/components/editor/PieceToolbar.svelte'
-	import { submitUnpublish, type UnpublishOutcome } from '#lib/pieces/unpublish-client.js'
-	import { editorHref, publishQuery } from '#lib/pieces/navigation.js'
+	import PublicationStatus from '#lib/components/editor/PublicationStatus.svelte'
+	import {
+		submitPublication,
+		getPublicationState,
+		type PublicationAction,
+		type PublicationOutcome
+	} from '#lib/pieces/publication-client.js'
+	import { editorHref } from '#lib/pieces/navigation.js'
+	import {
+		MarkdownPublicationStatus,
+		type PiecePublicationState,
+		type EditorPublicationStatus
+	} from '#lib/pieces/types.js'
 	import GenerationDialog from '#lib/components/editor/GenerationDialog.svelte'
 	import type { PageProps } from './$types'
 	import { Dialog } from 'bits-ui'
 	import { fade, fly } from 'svelte/transition'
 	import { navigating, page } from '$app/state'
-	import { beforeNavigate, goto, refreshAll } from '$app/navigation'
-	import { resolve } from '$app/paths'
-	import { onMount, onDestroy, tick, untrack } from 'svelte'
+	import { beforeNavigate, goto } from '$app/navigation'
+	import { onMount, onDestroy, untrack } from 'svelte'
 
 	let { data, form }: PageProps = $props()
 	const saveFormId = $props.id()
+	let saveForm = $state<HTMLFormElement>()
 	let targetUrl = $state<string | null>(null)
 	let showWarningDialog = $state(false)
 	let bypassWarning = $state(false)
 	let isSaving = $state(false)
 	let editorErrorReason = $state<
-		| 'sign-in'
-		| 'save'
-		| 'refresh'
-		| 'navigation'
-		| 'generation-url'
-		| 'publish'
-		| 'delete-refresh'
-		| null
+		'sign-in' | 'save' | 'format' | 'navigation' | 'generation-url' | 'delete-refresh' | null
 	>(null)
 	let editorErrorDetail = $state('')
 	let disposed = false
-	let activeUnpublish: AbortController | undefined
+	let activePublication: AbortController | undefined
+	let publicationRead: AbortController | undefined
+	let activeFormat = $state<AbortController>()
 
 	onDestroy(() => {
 		disposed = true
-		activeUnpublish?.abort()
+		activePublication?.abort()
+		publicationRead?.abort()
+		activeFormat?.abort()
 	})
 
 	beforeNavigate((navigation) => {
@@ -87,9 +90,21 @@
 
 	let dialog: HTMLDialogElement
 	let editorRef = $state<MarkdownEditor>()
-	let isUnpublishing = $state(false)
-	let unpublishOutcome = $state<UnpublishOutcome | null>(null)
-	let unpublishRefreshFailed = $state(false)
+	let vimEnabled = $state(false)
+	let publicationAction = $state<PublicationAction>('publish')
+	let publicationRunning = $state(false)
+	let publicationOutcome = $state<PublicationOutcome | null>(null)
+	let publicationRefreshFailed = $state(false)
+	let publicationState = $state<PiecePublicationState>(
+		untrack(() => ({
+			hasPublishedVersion: data.hasPublishedVersion,
+			markdownPublicationStatus: data.markdownPublicationStatus
+		}))
+	)
+	const hasPublishedVersion = $derived(publicationState.hasPublishedVersion)
+	const markdownPublicationStatus = $derived(publicationState.markdownPublicationStatus)
+	const isPublishing = $derived(publicationRunning && publicationAction === 'publish')
+	const isUnpublishing = $derived(publicationRunning && publicationAction === 'unpublish')
 
 	function initialRawContent(): string {
 		if (form && 'rawContent' in form) {
@@ -100,49 +115,47 @@
 	}
 
 	let rawContent = $state(initialRawContent())
-	let loadedSource = untrack(() => ({ file: data.file, content: data.rawContent ?? '' }))
-	let activeSave: SaveSnapshot | undefined
+	let savedSource = $state(untrack(() => ({ file: data.file, content: data.rawContent ?? '' })))
+	let activeSave: { file: string; content: string } | undefined
+
+	function saveFromVim() {
+		if (isDirty && !isSaving) saveForm?.requestSubmit()
+	}
 
 	const enhanceSave: SubmitFunction = ({ formData, cancel }) => {
 		if (isSaving) {
 			cancel()
 			return
 		}
-		const submitted = { file: data.file, content: String(formData.get('content') ?? '') }
+		const submitted = { file: data.file, content: rawContent }
+		formData.set('content', submitted.content)
 		activeSave = submitted
 		isSaving = true
+		form = null
 		editorErrorReason = null
 		editorErrorDetail = ''
 		const isCurrentSave = () =>
 			!disposed && activeSave === submitted && data.file === submitted.file
-		return async ({ result, update }) => {
+		return async ({ result }) => {
 			if (!isCurrentSave()) return
 			try {
-				if (result.type === 'redirect') {
+				if (result.type === 'success') {
+					savedSource = submitted
+					await refreshPublicationState()
+				} else if (result.type === 'failure') {
+					form = result.data as PageProps['form']
+				} else if (result.type === 'redirect') {
 					const destination = new URL(result.location, page.url.href)
 					if (destination.origin === page.url.origin && destination.pathname === '/signin') {
 						editorErrorReason = 'sign-in'
 					} else {
-						await update()
+						editorErrorReason = 'save'
 					}
-					return
-				}
-				if (result.type === 'error') {
+				} else {
 					editorErrorReason = 'save'
-					return
 				}
-				await update({ reset: false, navigate: false })
-				await tick()
-				if (!isCurrentSave()) return
-				const saveResult =
-					result.type === 'success'
-						? { type: result.type, content: data.rawContent ?? '' }
-						: { type: result.type }
-				rawContent = reconcileSave({ file: data.file, content: rawContent }, submitted, saveResult)
 			} catch {
-				if (isCurrentSave()) {
-					editorErrorReason = 'refresh'
-				}
+				if (isCurrentSave()) editorErrorReason = 'save'
 			} finally {
 				if (isCurrentSave()) {
 					activeSave = undefined
@@ -153,59 +166,148 @@
 		}
 	}
 
-	const hasChanges = $derived(rawContent !== (data.rawContent ?? ''))
-	const isDirty = $derived(!!form?.error || hasChanges)
-	const unpublishDisabled = $derived(
-		isDirty || isSaving || isUnpublishing || !data.hasPublishedVersion
-	)
-	const sourceUrl = $derived(editorHref(data.file))
+	async function handleFormat() {
+		if (isSaving || activeFormat) return
+		const file = data.file
+		const source = rawContent
+		const controller = new AbortController()
+		activeFormat = controller
+		editorErrorReason = null
+		editorErrorDetail = ''
+		const isCurrent = () => !disposed && activeFormat === controller && data.file === file
+		try {
+			const body = new FormData()
+			body.set('content', source)
+			const response = await fetch(`${sourceUrl}?/format`, {
+				method: 'POST',
+				headers: { accept: 'application/json', 'x-sveltekit-action': 'true' },
+				body,
+				signal: controller.signal
+			})
+			if (!isCurrent()) return
+			if (response.redirected || response.status === 401 || response.status === 403) {
+				editorErrorReason = 'sign-in'
+				return
+			}
+			const result = deserialize(await response.text())
+			if (!isCurrent()) return
+			if (result.type !== 'success' && result.type !== 'failure') {
+				editorErrorReason = 'format'
+				return
+			}
+			const formatted = result.data as
+				| {
+						formattedContent?: string
+						error?: { message?: string }
+				  }
+				| undefined
+			if (result.type !== 'success' || typeof formatted?.formattedContent !== 'string') {
+				editorErrorReason = 'format'
+				editorErrorDetail = formatted?.error?.message ?? ''
+				return
+			}
+			if (formatted.formattedContent !== source) {
+				editorRef?.replaceContent(formatted.formattedContent, source)
+			}
+			editorRef?.focus()
+		} catch (error) {
+			if (isCurrent()) {
+				editorErrorReason = 'format'
+				editorErrorDetail = error instanceof Error ? error.message : String(error)
+			}
+		} finally {
+			if (isCurrent()) activeFormat = undefined
+		}
+	}
 
-	async function handleUnpublish() {
-		if (unpublishDisabled) return
+	const hasChanges = $derived(rawContent !== savedSource.content)
+	const isDirty = $derived(!!form?.error || hasChanges)
+	const publishDisabled = $derived(isDirty || isSaving || publicationRunning)
+	const unpublishDisabled = $derived(publishDisabled || !hasPublishedVersion)
+	const sourceUrl = $derived(editorHref(data.file))
+	const publicationStatus = $derived.by((): EditorPublicationStatus => {
+		if (isPublishing) return 'publishing'
+		if (isUnpublishing) return 'unpublishing'
+		if (publicationRefreshFailed) return 'unknown'
+		if (!hasPublishedVersion) return 'unpublished'
+		if (isDirty || isSaving || markdownPublicationStatus === MarkdownPublicationStatus.CHANGED)
+			return 'changed'
+		if (markdownPublicationStatus === MarkdownPublicationStatus.MATCHING) return 'published'
+		return 'unknown'
+	})
+
+	async function refreshPublicationState() {
+		publicationRead?.abort()
+		const reader = new AbortController()
+		const file = data.file
+		publicationRead = reader
+		const isCurrent = () => !disposed && publicationRead === reader && data.file === file
+		try {
+			const state = await getPublicationState(file, reader.signal)
+			if (isCurrent()) {
+				publicationState = state
+				publicationRefreshFailed = false
+			}
+		} catch {
+			if (isCurrent()) publicationRefreshFailed = true
+		} finally {
+			if (isCurrent()) publicationRead = undefined
+		}
+	}
+
+	async function handlePublication(action: PublicationAction) {
+		if (action === 'publish' && publishDisabled) return
+		if (action === 'unpublish' && unpublishDisabled) return
 		const file = data.file
 		const observer = new AbortController()
-		activeUnpublish = observer
-		isUnpublishing = true
-		unpublishOutcome = null
-		unpublishRefreshFailed = false
-		const isCurrent = () => !disposed && activeUnpublish === observer && data.file === file
+		activePublication = observer
+		publicationAction = action
+		publicationRunning = true
+		publicationOutcome = null
+		publicationRefreshFailed = false
+		const isCurrent = () => !disposed && activePublication === observer && data.file === file
 		try {
-			const result = await submitUnpublish(file, observer.signal)
+			const result = await submitPublication(action, file, observer.signal)
 			if (!isCurrent() || !result) return
-			unpublishOutcome = result
+			publicationOutcome = result
 			if (!result.jobId) return
 			if (result.state === 'failed' && result.reason === 'sign-in') return
 			if (navigating.to) return
-			try {
-				await refreshAll()
-			} catch {
-				if (isCurrent()) unpublishRefreshFailed = true
-			}
+			await refreshPublicationState()
 		} finally {
 			if (isCurrent()) {
-				activeUnpublish = undefined
-				isUnpublishing = false
+				activePublication = undefined
+				publicationRunning = false
 			}
 		}
 	}
 
 	$effect(() => {
-		const refreshed = { file: data.file, content: data.rawContent ?? '' }
+		const file = data.file
 		untrack(() => {
-			const changedFile = refreshed.file !== loadedSource.file
+			if (file === savedSource.file) return
 
-			rawContent = reconcileSourceRefresh(rawContent, loadedSource, refreshed, !!activeSave)
-			loadedSource = refreshed
-
-			if (!changedFile) return
-
+			savedSource = { file, content: data.rawContent ?? '' }
+			rawContent = savedSource.content
+			form = null
+			activeFormat?.abort()
+			activeFormat = undefined
+			attachDialogOpen = false
+			resetAttachState()
+			publicationRead?.abort()
+			publicationRead = undefined
+			publicationState = {
+				hasPublishedVersion: data.hasPublishedVersion,
+				markdownPublicationStatus: data.markdownPublicationStatus
+			}
 			activeSave = undefined
 			isSaving = false
-			activeUnpublish?.abort()
-			activeUnpublish = undefined
-			isUnpublishing = false
-			unpublishOutcome = null
-			unpublishRefreshFailed = false
+			activePublication?.abort()
+			activePublication = undefined
+			publicationRunning = false
+			publicationAction = 'publish'
+			publicationOutcome = null
+			publicationRefreshFailed = false
 			bypassWarning = false
 		})
 	})
@@ -273,8 +375,8 @@
 				if (pathname && pathname !== '/') {
 					customName = getBasenameWithoutExtension(pathname)
 				}
-			} catch (_) {
-				// Invalid URL or incomplete, ignore
+			} catch {
+				return
 			}
 		}
 	})
@@ -286,8 +388,8 @@
 			try {
 				new URL(selectedText)
 				isUrl = true
-			} catch (_) {
-				// Ignore invalid URL formatting
+			} catch {
+				isUrl = false
 			}
 		}
 
@@ -328,6 +430,9 @@
 		}
 
 		isUploading = true
+		const file = data.file
+		const editor = editorRef
+		const isCurrent = () => !disposed && data.file === file && editorRef === editor
 
 		const formData = new FormData()
 		formData.append('mode', activeTab)
@@ -343,6 +448,7 @@
 		try {
 			const response = await fetch(`${sourceUrl}?/attach`, { method: 'POST', body: formData })
 			const result = deserialize(await response.text())
+			if (!isCurrent()) return
 
 			if (result.type === 'success' || result.type === 'failure') {
 				const resData = result.data as { error?: { message?: string }; path?: string } | undefined
@@ -358,9 +464,9 @@
 				uploadErrorReason = 'failed'
 			}
 		} catch (err) {
-			uploadErrorDetail = err instanceof Error ? err.message : String(err)
+			if (isCurrent()) uploadErrorDetail = err instanceof Error ? err.message : String(err)
 		} finally {
-			isUploading = false
+			if (isCurrent()) isUploading = false
 		}
 	}
 </script>
@@ -610,7 +716,14 @@
 </Dialog.Root>
 
 <div class="piece-page">
-	<form id={saveFormId} hidden method="post" action="{sourceUrl}?/save" use:enhance={enhanceSave}>
+	<form
+		id={saveFormId}
+		bind:this={saveForm}
+		hidden
+		method="post"
+		action="{sourceUrl}?/save"
+		use:enhance={enhanceSave}
+	>
 		<input type="hidden" name="content" value={rawContent} />
 	</form>
 	{#if editorErrorReason || editorErrorDetail || form?.error}
@@ -620,14 +733,13 @@
 				Please sign in again in another tab, then retry. Your edits are still here.
 			{:else if editorErrorReason === 'save'}
 				Unable to save. Your edits are still here. Please try again.
-			{:else if editorErrorReason === 'refresh'}
-				Unable to refresh after saving. Your edits are still here. Please try again.
+			{:else if editorErrorReason === 'format'}
+				Unable to format. Your edits are still here.
+				{#if editorErrorDetail}<pre class="error-details">{editorErrorDetail}</pre>{/if}
 			{:else if editorErrorReason === 'navigation'}
 				Unable to leave this page. Your edits are still here.
 			{:else if editorErrorReason === 'generation-url'}
 				Unable to clear the generation link from the URL.
-			{:else if editorErrorReason === 'publish'}
-				Unable to open publishing. Your edits are still here.
 			{:else if editorErrorReason === 'delete-refresh'}
 				Unable to finish deleting this piece. Please reload to confirm its status.
 			{:else}
@@ -636,26 +748,38 @@
 		</div>
 	{/if}
 
-	{#if unpublishOutcome?.state === 'failed' || unpublishRefreshFailed}
+	{#if publicationOutcome?.state === 'failed' || publicationRefreshFailed}
 		<div class="banner error-banner" role="alert">
-			{#if unpublishOutcome?.state === 'failed'}
-				{#if unpublishOutcome.reason === 'busy'}
+			{#if publicationOutcome?.state === 'failed'}
+				{#if publicationOutcome.reason === 'busy'}
 					Another publication operation is running.
-				{:else if unpublishOutcome.reason === 'sign-in'}
+				{:else if publicationOutcome.reason === 'sign-in'}
 					Please sign in again in another tab. Your edits are still here.
-				{:else if unpublishOutcome.reason === 'job'}
-					{#if data.hasPublishedVersion}Unpublish did not complete.
-					{:else}Unpublished, but cleanup did not complete.{/if}
-				{:else if unpublishOutcome.reason === 'connection'}
+				{:else if publicationOutcome.reason === 'job'}
+					{#if publicationAction === 'unpublish' && !hasPublishedVersion}
+						Unpublished, but cleanup did not complete.
+					{:else if publicationAction === 'publish'}
+						Publish did not complete.
+					{:else}
+						Unpublish did not complete.
+					{/if}
+				{:else if publicationOutcome.reason === 'connection'}
 					Unable to confirm completion. The job may still be running.
-				{:else if unpublishOutcome.reason === 'response'}
-					Could not read the Unpublish response. The job may have been accepted.
+				{:else if publicationOutcome.reason === 'response'}
+					{#if publicationAction === 'publish'}
+						Could not read the Publish response. The job may have been accepted.
+					{:else}
+						Could not read the Unpublish response. The job may have been accepted.
+					{/if}
+				{:else if publicationAction === 'publish'}
+					Unable to confirm the Publish request.
 				{:else}
 					Unable to confirm the Unpublish request.
 				{/if}
-				{#if unpublishOutcome.detail}<pre class="error-details">{unpublishOutcome.detail}</pre>{/if}
+				{#if publicationOutcome.detail}<pre
+						class="error-details">{publicationOutcome.detail}</pre>{/if}
 			{/if}
-			{#if unpublishRefreshFailed}
+			{#if publicationRefreshFailed}
 				<p>Unable to refresh publication status. Your edits are still here.</p>
 			{/if}
 		</div>
@@ -666,36 +790,38 @@
 			<MarkdownEditor
 				bind:this={editorRef}
 				bind:value={rawContent}
+				onSave={saveFromVim}
 				file={data.file}
 				returnTo={page.url.pathname}
 				assetFields={data.assetFields}
+				bind:vimEnabled
 			>
 				{#snippet toolbar()}
 					<PieceToolbar
-						file={data.file}
 						{saveFormId}
 						{isDirty}
 						{isSaving}
-						{isUnpublishing}
-						hasPublishedVersion={data.hasPublishedVersion}
+						{publishDisabled}
+						{publicationStatus}
+						onPublish={() => handlePublication('publish')}
 					>
 						<PieceActions
+							file={data.file}
 							canGenerate={data.canGenerate}
 							disabled={isSaving}
-							hasPublishedVersion={data.hasPublishedVersion}
-							publishDisabled={isDirty || isSaving}
+							{hasPublishedVersion}
+							previewDisabled={isDirty || isSaving}
+							{publishDisabled}
+							onPublish={() => handlePublication('publish')}
 							{unpublishDisabled}
-							onPublish={() => {
-								const file = data.file
-								const query = publishQuery(file)
-								void goto(resolve(`admin/publish?${query}`)).catch(() => {
-									if (!disposed && data.file === file) {
-										editorErrorReason = 'publish'
-										editorErrorDetail = ''
-									}
-								})
+							{vimEnabled}
+							onVimChange={(enabled) => {
+								vimEnabled = enabled
 							}}
-							onUnpublish={handleUnpublish}
+							onEditorFocus={() => editorRef?.focus()}
+							onFormat={handleFormat}
+							formatDisabled={isSaving || !!activeFormat}
+							onUnpublish={() => handlePublication('unpublish')}
 							onDelete={() => dialog.showModal()}
 							onGenerate={() => {
 								editorErrorReason = null
@@ -705,6 +831,14 @@
 							onAttach={openAttachDialog}
 						/>
 					</PieceToolbar>
+				{/snippet}
+				{#snippet footer()}
+					<PublicationStatus
+						status={publicationStatus}
+						{hasPublishedVersion}
+						{isDirty}
+						{isSaving}
+					/>
 				{/snippet}
 			</MarkdownEditor>
 		{/key}

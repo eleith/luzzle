@@ -12,9 +12,10 @@ import {
 import { db } from '#lib/server/database/index.js'
 import type { AppDatabase } from '@luzzle/web.db'
 import { getPieces } from '#lib/server/pieces.js'
+import type * as ServerPieces from '#lib/server/pieces.js'
 import { getStorage } from '#lib/server/storage.js'
 import { actions } from '../../routes/(auth)/admin/piece/[...path]/source/+page.server'
-import { getMarkdownPublicationStatus } from './publication.server.js'
+import { getMarkdownPublicationStatus, getPiecePublicationState } from './publication.server.js'
 import { MarkdownPublicationStatus } from './types.js'
 
 vi.mock('#lib/server/database/index.js', async () => {
@@ -28,7 +29,10 @@ vi.mock('#lib/server/database/index.js', async () => {
 	if (web.error) throw new Error(`Test web migration failed: ${web.error}`)
 	return { db }
 })
-vi.mock('#lib/server/pieces.js', () => ({ getPieces: vi.fn(), getWebPiece: vi.fn() }))
+vi.mock('#lib/server/pieces.js', async (importOriginal) => ({
+	...(await importOriginal<typeof ServerPieces>()),
+	getPieces: vi.fn()
+}))
 vi.mock('#lib/server/storage.js', () => ({ getStorage: vi.fn() }))
 vi.mock('#lib/server/config.js', async () => {
 	const { makeConfig } = await import('#lib/server/config.fixture.js')
@@ -163,13 +167,17 @@ test('Save creates the archive item/cache before first publication, not a servin
 		title: 'Saved title',
 		cover: '.assets/books/cover.png'
 	})
-	expect(item.note_markdown).toBe('A paragraph.\n')
+	expect(item.note_markdown).toBe('A   paragraph.')
 	expect(JSON.parse(item.assets_json_array!)).toEqual(['.assets/books/cover.png'])
 	expect(cache.content_hash).toBe(digest(savedBytes))
-	expect(cache.content_hash).not.toBe(digest(raw))
+	expect(savedBytes).toEqual(Buffer.from(raw))
 	expect(storage.writeFile).toHaveBeenCalledOnce()
 	expect(storage.createReadStream).toHaveBeenCalledExactlyOnceWith(file)
 	expect(await db.selectFrom('web_pieces').selectAll().execute()).toEqual([])
+	expect(await getPiecePublicationState(file)).toEqual({
+		hasPublishedVersion: false,
+		markdownPublicationStatus: MarkdownPublicationStatus.UNKNOWN
+	})
 })
 
 test('Save updates existing item/cache while retaining serving content, hash and timestamp', async () => {
@@ -180,9 +188,10 @@ test('Save updates existing item/cache while retaining serving content, hash and
 		.where('file_path', '=', file)
 		.executeTakeFirstOrThrow()
 	const serving = await published(originalCache.content_hash)
-	expect(await getMarkdownPublicationStatus(file, serving.content_hash)).toBe(
-		MarkdownPublicationStatus.MATCHING
-	)
+	expect(await getPiecePublicationState(file)).toEqual({
+		hasPublishedVersion: true,
+		markdownPublicationStatus: MarkdownPublicationStatus.MATCHING
+	})
 
 	expect(
 		await save('---\ntitle: Updated\ncover: .assets/books/new.png\n---\nUpdated body')
@@ -201,9 +210,10 @@ test('Save updates existing item/cache while retaining serving content, hash and
 	expect(cache.content_hash).toBe(digest(savedBytes))
 	expect(JSON.parse(item.frontmatter_json).title).toBe('Updated')
 	expect(JSON.parse(item.assets_json_array!)).toEqual(['.assets/books/new.png'])
-	expect(await getMarkdownPublicationStatus(file, serving.content_hash)).toBe(
-		MarkdownPublicationStatus.CHANGED
-	)
+	expect(await getPiecePublicationState(file)).toEqual({
+		hasPublishedVersion: true,
+		markdownPublicationStatus: MarkdownPublicationStatus.CHANGED
+	})
 	expect(
 		await db
 			.selectFrom('web_pieces')

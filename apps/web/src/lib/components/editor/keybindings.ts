@@ -1,9 +1,17 @@
-import { Compartment, Prec, type Extension } from '@codemirror/state'
-import { EditorView, showPanel } from '@codemirror/view'
-import { getCM, Vim, vim } from '@replit/codemirror-vim'
-import { keybindingsStatus } from './keybindings-status'
+import { Compartment, type Extension } from '@codemirror/state'
+import { showPanel, ViewPlugin, type EditorView } from '@codemirror/view'
+import { getCM, Vim, vim, type CodeMirrorV } from '@replit/codemirror-vim'
+import { editorStatusPanel, type StatusContentRenderer } from './editor-status'
 
 const preferenceKey = 'editor.keybindings'
+const saveHandlers = new WeakMap<EditorView, () => void>()
+
+function saveFromVim(editor: CodeMirrorV) {
+	saveHandlers.get(editor.cm6)?.()
+}
+
+Vim.defineEx('write', 'w', saveFromVim)
+Vim.defineEx('wq', 'wq', saveFromVim)
 
 function readPreference(): boolean {
 	try {
@@ -21,38 +29,47 @@ function savePreference(enabled: boolean) {
 	}
 }
 
-/** Create once per editor, before its ordinary keymaps. */
-export function editorKeybindings(): Extension {
+export function createEditorKeybindings(renderStatus?: StatusContentRenderer, onSave?: () => void) {
 	const keybindings = new Compartment()
 	let enabled = readPreference()
-	return [
-		Prec.highest(
-			EditorView.domEventHandlers({
-				keydown(event, view) {
-					if (
-						!event.ctrlKey ||
-						!event.altKey ||
-						event.shiftKey ||
-						event.metaKey ||
-						event.isComposing ||
-						event.key.toLowerCase() !== 'v'
-					)
-						return false
-					event.preventDefault()
-					event.stopPropagation()
-					if (event.repeat) return true
-					enabled = !enabled
-					view.dispatch({
-						effects: keybindings.reconfigure(enabled ? vim({ status: false }) : [])
-					})
-					savePreference(enabled)
-					return true
+
+	function setEnabled(view: EditorView, next: boolean) {
+		if (enabled === next) return
+		enabled = next
+		view.dispatch({
+			effects: keybindings.reconfigure(enabled ? vim({ status: false }) : [])
+		})
+		savePreference(enabled)
+	}
+
+	const extension: Extension[] = [
+		keybindings.of(enabled ? vim({ status: false }) : []),
+		showPanel.of((view) => editorStatusPanel(view, renderStatus))
+	]
+	if (onSave) {
+		extension.push(
+			ViewPlugin.define((view) => {
+				saveHandlers.set(view, onSave)
+				return {
+					destroy() {
+						saveHandlers.delete(view)
+					}
 				}
 			})
-		),
-		keybindings.of(enabled ? vim({ status: false }) : []),
-		showPanel.of(keybindingsStatus)
-	]
+		)
+	}
+
+	return {
+		extension,
+		get enabled() {
+			return enabled
+		},
+		setEnabled
+	}
+}
+
+export function editorKeybindings(onSave?: () => void): Extension {
+	return createEditorKeybindings(undefined, onSave).extension
 }
 
 /** Finish Vim's insertion before applying a generated document, outside dot-repeat. */

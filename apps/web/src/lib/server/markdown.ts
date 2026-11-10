@@ -7,7 +7,3 @@ export async function normalizeMarkdown(content: string): Promise<string> {
 		printWidth: 80
 	})
 }
-
-export function normalizeLineEndings(content: string): string {
-	return content.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-}

@@ -1,112 +1,77 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
-	import { resolve } from '$app/paths'
-	import { enhance } from '$app/forms'
+	import type { EditorPublicationStatus } from '#lib/pieces/types.js'
 	import Button from '#lib/components/ui/Button.svelte'
-	import { encodeArchivePath } from '#lib/pieces/navigation.js'
 
 	type Props = {
-		file: string
 		saveFormId: string
 		isDirty: boolean
 		isSaving: boolean
-		isUnpublishing?: boolean
-		hasPublishedVersion: boolean
+		publishDisabled: boolean
+		publicationStatus: EditorPublicationStatus
+		onPublish: () => void
 		children: Snippet
 	}
 
 	let {
-		file,
 		saveFormId,
 		isDirty,
 		isSaving,
-		isUnpublishing = false,
-		hasPublishedVersion,
+		publishDisabled,
+		publicationStatus,
+		onPublish,
 		children
 	}: Props = $props()
-	const path = $derived(encodeArchivePath(file))
+	const isPublishing = $derived(publicationStatus === 'publishing')
 </script>
 
 <div class="toolbar" role="group" aria-label="Editor actions">
 	<div class="actions">
-		<Button variant="editor" type="submit" form={saveFormId} disabled={!isDirty || isSaving}>
-			{isSaving ? 'Saving…' : 'Save'}
-		</Button>
-		{@render children()}
-	</div>
-	<div class="status" aria-live="polite">
-		<div>
-			{#if isSaving}
-				Saving…
-			{:else if isDirty}
-				Unsaved
-			{:else}
-				<form
-					method="post"
-					action={resolve('/(auth)/admin/piece/[...path]/preview', { path })}
-					use:enhance
-				>
-					<button type="submit" aria-label="Preview saved piece" title="Preview saved piece">
-						Saved
-					</button>
-				</form>
-			{/if}
-		</div>
-		<span class="publication-status">
-			{#if isUnpublishing}
-				Unpublishing…
-			{:else if hasPublishedVersion}
-				<a href={resolve('/(auth)/admin/piece/[...path]/published', { path })}>Published</a>
-			{:else}
-				Unpublished
-			{/if}
+		<span class="save-action" class:clean={!isDirty && !isSaving}>
+			<Button variant="editor" type="submit" form={saveFormId} disabled={!isDirty || isSaving}>
+				{#if isSaving}Saving…{:else if isDirty}Save{:else}Saved{/if}
+			</Button>
 		</span>
+		{#if publicationStatus !== 'published' && publicationStatus !== 'unpublishing'}
+			<span class="publish-action" class:deferred={(isDirty || isSaving) && !isPublishing}>
+				<Button variant="editor" type="button" onclick={onPublish} disabled={publishDisabled}>
+					{#if isPublishing}Publishing…{:else}Publish{/if}
+				</Button>
+			</span>
+		{/if}
+		{@render children()}
 	</div>
 </div>
 
 <style>
 	.toolbar {
 		display: flex;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		align-items: center;
-		gap: var(--space-2) var(--space-3);
+		justify-content: flex-end;
+		gap: var(--space-3);
 		padding: var(--space-2) var(--space-3);
 		font-family: var(--font-mono-name), monospace;
 		font-size: var(--font-size-xxs);
 	}
-
 	.actions {
 		display: flex;
-		flex-wrap: nowrap;
 		align-items: center;
+		flex-shrink: 0;
 		gap: var(--space-1);
 	}
-
-	.status {
-		display: flex;
-		flex-wrap: nowrap;
-		align-items: center;
-		gap: var(--space-3);
-		margin-left: auto;
-		white-space: nowrap;
+	.save-action,
+	.publish-action {
+		display: contents;
 	}
-
-	.publication-status {
-		border-inline-start: 1px solid var(--editor-border, var(--color-outline));
-		padding-inline-start: var(--space-3);
-	}
-
-	.status a,
-	.status button {
-		color: inherit;
-		text-decoration: underline;
-	}
-
-	.status button {
-		border: 0;
-		padding: 0;
-		background: transparent;
-		font: inherit;
-		cursor: pointer;
+	@media (max-width: 767px) {
+		.toolbar {
+			gap: var(--space-2);
+			padding-inline: var(--space-2);
+		}
+		.save-action.clean,
+		.publish-action.deferred {
+			display: none;
+		}
 	}
 </style>

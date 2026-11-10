@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy, type Snippet } from 'svelte'
+	import { onMount, onDestroy, mount, unmount, type Snippet } from 'svelte'
 	import { EditorView } from 'codemirror'
 	import { EditorState, Compartment } from '@codemirror/state'
 	import { configuredTheme } from './themes/configured'
@@ -8,7 +8,9 @@
 	import { luzzleFieldEditor } from './extensions/luzzleFieldEditor'
 	import { luzzleAssetEditor } from './extensions/luzzleAssetEditor'
 	import { replaceDocument } from './replace-document'
-	import { editorKeybindings, finishVimInput } from './keybindings'
+	import { createEditorKeybindings, finishVimInput } from './keybindings'
+	import type { StatusContentRenderer } from './editor-status'
+	import EditorStatusContent from './EditorStatusContent.svelte'
 
 	function getAppliedTheme(): 'dark' | 'light' {
 		const preference = window.localStorage.getItem('theme') || 'system'
@@ -25,16 +27,30 @@
 	type Props = {
 		value: string
 		onchange?: (value: string) => void
+		onSave?: () => void
 		file?: string
 		returnTo?: string
 		assetFields?: string[]
 		toolbar?: Snippet
+		footer?: Snippet
+		vimEnabled?: boolean
 	}
 
-	let { value = $bindable(), onchange, file, returnTo, assetFields = [], toolbar }: Props = $props()
+	let {
+		value = $bindable(),
+		onchange,
+		onSave,
+		file,
+		returnTo,
+		assetFields = [],
+		toolbar,
+		footer,
+		vimEnabled = $bindable(false)
+	}: Props = $props()
 
 	let editorContainer: HTMLDivElement
 	let view: EditorView
+	let keybindings: ReturnType<typeof createEditorKeybindings>
 	const themeConfig = new Compartment()
 	const lspConfig = new Compartment()
 	const fieldEditorConfig = new Compartment()
@@ -65,7 +81,20 @@
 			returnTo
 		})
 
-		extensions.unshift(editorKeybindings())
+		let renderStatus: StatusContentRenderer | undefined
+		if (footer) {
+			const content = footer
+			renderStatus = (target) => {
+				const component = mount(EditorStatusContent, { target, props: { children: content } })
+				return () => {
+					void unmount(component)
+				}
+			}
+		}
+		keybindings = createEditorKeybindings(renderStatus, onSave)
+		// Restore before reactive menu synchronization can apply its initial false value.
+		vimEnabled = keybindings.enabled
+		extensions.unshift(keybindings.extension)
 		extensions.push(lspConfig.of([]))
 
 		if (file && returnTo) {
@@ -119,14 +148,13 @@
 
 	$effect(() => {
 		if (view && value !== view.state.doc.toString()) {
-			view.dispatch({
-				changes: {
-					from: 0,
-					to: view.state.doc.length,
-					insert: value
-				}
-			})
+			view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } })
 		}
+	})
+
+	$effect(() => {
+		const enabled = vimEnabled
+		if (view && keybindings) keybindings.setEnabled(view, enabled)
 	})
 
 	onDestroy(() => {

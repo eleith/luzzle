@@ -91,6 +91,17 @@ export async function createFixture(directory: string, origin: string) {
 		for await (const result of await schemas.sync(asCoreDatabase(db))) {
 			if (result.error) throw new Error(result.message)
 		}
+		const notes = await schemas.getPiece('notes')
+		for await (const result of await notes.sync(
+			asCoreDatabase(db),
+			pieces.map((piece) => piece.file)
+		)) {
+			if (result.error) throw new Error(result.message)
+		}
+		const cachedPieces = await db
+			.selectFrom('pieces_cache')
+			.select(['file_path', 'content_hash'])
+			.execute()
 		// Seed the published read model directly; no Publish job is being simulated.
 		await db
 			.insertInto('web_pieces')
@@ -101,6 +112,8 @@ export async function createFixture(directory: string, origin: string) {
 					slug: piece.slug,
 					type: piece.type,
 					file_path: piece.file,
+					content_hash: cachedPieces.find((cached) => cached.file_path === piece.file)!
+						.content_hash,
 					title: piece.title,
 					note,
 					json_metadata: JSON.stringify({ title: piece.title, date: dateConsumed }),

@@ -14,6 +14,7 @@ import { POST as audit } from './audit/+server.js'
 import { POST as unpublish } from '../unpublish/+server.js'
 
 const { runWorkflow } = vi.hoisted(() => ({ runWorkflow: vi.fn() }))
+vi.mock('#lib/pieces/publication.server.js', () => ({ getPiecePublicationState: vi.fn() }))
 vi.mock('#lib/server/workflow/index.js', () => ({
 	getOpenWorkflow: () => ({ runWorkflow }),
 	getOpenWorkflowBackend: vi.fn()

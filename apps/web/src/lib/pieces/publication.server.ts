@@ -1,5 +1,14 @@
 import { db } from '#lib/server/database/index.js'
-import { MarkdownPublicationStatus } from './types.js'
+import { getWebPiece } from '#lib/server/pieces.js'
+import { MarkdownPublicationStatus, type PiecePublicationState } from './types.js'
+
+export async function getPiecePublicationState(file: string): Promise<PiecePublicationState> {
+	const webPiece = await getWebPiece(db, file)
+	return {
+		hasPublishedVersion: Boolean(webPiece),
+		markdownPublicationStatus: await getMarkdownPublicationStatus(file, webPiece?.content_hash)
+	}
+}
 
 export async function getMarkdownPublicationStatus(
 	file: string,
