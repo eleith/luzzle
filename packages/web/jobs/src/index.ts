@@ -18,6 +18,7 @@ export {
 } from './specs.js'
 export type {
 	AssetRecord,
+	PublishPiecePayload,
 	PublishPayload,
 	PublishPieceFailure,
 	PublishResult,

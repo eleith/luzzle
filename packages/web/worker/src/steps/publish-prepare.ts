@@ -1,10 +1,10 @@
 import type { PiecesDiff } from '@luzzle/core'
 import { completed, type Step } from '../core/step.js'
-import { getPendingPublication, type PublicationPiece } from '../services/publication.js'
+import { getPendingPublication } from '../services/publication.js'
 import { includePendingPieces } from '../workflows/pieces-diff.js'
 
 export interface PublishPlan {
-	pieces: PublicationPiece[]
+	filePaths: string[]
 	summary: PiecesDiff
 }
 
@@ -17,12 +17,12 @@ export const publishPrepareStep: Step<PublishPrepareInput, PublishPlan> = {
 	name: 'publish.prepare',
 	async run({ summary: indexSummary, filePaths }, { db, config, logger }) {
 		const pending = await getPendingPublication(db, config)
-		let pieces = pending.pieces
+		let selectedPaths = pending.pieces.map((piece) => piece.filePath)
 		if (filePaths !== undefined) {
-			const selectedPaths = new Set(filePaths)
-			pieces = pending.pieces.filter((piece) => selectedPaths.has(piece.filePath))
+			const requestedPaths = new Set(filePaths)
+			selectedPaths = selectedPaths.filter((filePath) => requestedPaths.has(filePath))
 		}
-		const targetPaths = new Set(pieces.map((piece) => piece.filePath))
+		const targetPaths = new Set(selectedPaths)
 
 		// Core sync is global; only authoritative pending targets count as upserts.
 		const globalChanges: PiecesDiff = {
@@ -36,7 +36,7 @@ export const publishPrepareStep: Step<PublishPrepareInput, PublishPlan> = {
 		}
 		const publicationSummary = includePendingPieces(globalChanges, selectedChanges)
 
-		logger.info('publish.prepare complete', { count: pieces.length })
-		return completed({ pieces, summary: publicationSummary })
+		logger.info('publish.prepare complete', { count: selectedPaths.length })
+		return completed({ filePaths: selectedPaths, summary: publicationSummary })
 	},
 }

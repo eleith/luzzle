@@ -64,12 +64,26 @@ async function indexPiece(filePath: string, contentHash?: string, type = 'books'
 	}
 }
 
+async function syncPaths(filePaths: string[]) {
+	const sources = await Promise.all(
+		filePaths.map(async (filePath) => ({
+			item: await db
+				.selectFrom('pieces_items')
+				.selectAll()
+				.where('file_path', '=', filePath)
+				.executeTakeFirstOrThrow(),
+			contentHash: `hash:${filePath}`,
+		}))
+	)
+	return webSyncStep.run(sources, ctx)
+}
+
 async function publishMetadata(
 	filePath: string,
 	contentHash: string | null,
 	lastPublishedAt: number | null = null
 ) {
-	await webSyncStep.run({ filePaths: [filePath] }, ctx)
+	await syncPaths([filePath])
 	await db
 		.updateTable('web_pieces')
 		.set({ content_hash: contentHash, last_published_at: lastPublishedAt })
@@ -143,7 +157,7 @@ describe('publication', () => {
 		await indexPiece('new.books.md', 'new-hash')
 		await publishMetadata('existing.books.md', 'old-hash', 123)
 
-		await webSyncStep.run({ filePaths: ['existing.books.md', 'new.books.md'] }, ctx)
+		await syncPaths(['existing.books.md', 'new.books.md'])
 
 		expect(await publicationState('existing.books.md')).toEqual({
 			content_hash: null,
@@ -155,7 +169,7 @@ describe('publication', () => {
 		})
 	})
 
-	test('prepare captures pending hashes and includes recovery paths in the report', async () => {
+	test('prepare selects pending filenames and includes recovery paths in the report', async () => {
 		await indexPiece('new.books.md', 'new-hash')
 		await indexPiece('changed.books.md', 'current-hash')
 		await publishMetadata('changed.books.md', 'old-hash')
@@ -167,10 +181,7 @@ describe('publication', () => {
 		expect(prepared).toEqual({
 			status: 'completed',
 			value: {
-				pieces: [
-					{ filePath: 'changed.books.md', contentHash: 'current-hash' },
-					{ filePath: 'new.books.md', contentHash: 'new-hash' },
-				],
+				filePaths: ['changed.books.md', 'new.books.md'],
 				summary: {
 					schemas: summary.schemas,
 					pieces: { added: ['new.books.md'], updated: ['changed.books.md'], pruned: [] },
@@ -216,9 +227,9 @@ describe('publication', () => {
 		expect(result.status).toBe('completed')
 		if (result.status !== 'completed') throw new Error('Expected a completed plan')
 		expect(result.value).toEqual({
-			pieces: [
-				...(updated.length ? [{ filePath: 'changed.books.md', contentHash: 'current-hash' }] : []),
-				...(added.length ? [{ filePath: 'new.books.md', contentHash: 'new-hash' }] : []),
+			filePaths: [
+				...(updated.length ? ['changed.books.md'] : []),
+				...(added.length ? ['new.books.md'] : []),
 			],
 			summary: {
 				schemas: summary.schemas,
@@ -268,7 +279,7 @@ describe('publication', () => {
 
 	test('first completion and a new captured hash record the current time atomically', async () => {
 		await indexPiece('new.books.md', 'indexed-hash')
-		await webSyncStep.run({ filePaths: ['new.books.md'] }, ctx)
+		await syncPaths(['new.books.md'])
 		const input = {
 			pieces: [{ filePath: 'new.books.md', contentHash: "captured'hash" }],
 			failedPieces: [],
@@ -391,7 +402,7 @@ describe('publication', () => {
 	test('complete and prepare accept an empty archive', async () => {
 		expect(await publishPrepareStep.run({ summary: emptyPiecesDiff() }, ctx)).toEqual({
 			status: 'completed',
-			value: { pieces: [], summary: emptyPiecesDiff() },
+			value: { filePaths: [], summary: emptyPiecesDiff() },
 		})
 		expect(await publishCompleteStep.run({ pieces: [], failedPieces: [] }, ctx)).toEqual({
 			status: 'completed',

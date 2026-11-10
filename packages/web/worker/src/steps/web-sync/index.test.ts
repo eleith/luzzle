@@ -63,18 +63,46 @@ async function seedItem(over: Partial<Record<string, unknown>> = {}) {
 		assets_json_array: '[]',
 		...over,
 	}
-	await (db.insertInto('pieces_items') as unknown as {
-		values: (v: typeof row) => { execute: () => Promise<void> }
-	})
+	await (
+		db.insertInto('pieces_items') as unknown as {
+			values: (v: typeof row) => { execute: () => Promise<void> }
+		}
+	)
 		.values(row)
 		.execute()
 	return row
 }
 
+async function syncPaths(filePaths: string[]) {
+	const sources = await Promise.all(
+		filePaths.map(async (filePath) => ({
+			item: await db
+				.selectFrom('pieces_items')
+				.selectAll()
+				.where('file_path', '=', filePath)
+				.executeTakeFirstOrThrow(),
+			contentHash: `hash:${filePath}`,
+		}))
+	)
+	return webSyncStep.run(sources, ctx)
+}
+
 describe('webSyncStep', () => {
-	test('upserts a web_pieces row for each filePath given', async () => {
+	test('upserts supplied sources and returns prepared metadata with the captured hash', async () => {
 		await seedItem()
-		await webSyncStep.run({ filePaths: ['books/great.md'] }, ctx)
+		const result = await syncPaths(['books/great.md'])
+
+		expect(result).toMatchObject({
+			status: 'completed',
+			value: [
+				{
+					webPiece: { id: 'item-1', title: 'Great Book', slug: 'great', type: 'books' },
+					contentHash: 'hash:books/great.md',
+					assetKeyToPath: [],
+					wasPublished: false,
+				},
+			],
+		})
 
 		const rows = await db.selectFrom('web_pieces').selectAll().execute()
 		expect(rows).toHaveLength(1)
@@ -84,92 +112,49 @@ describe('webSyncStep', () => {
 		expect(rows[0].type).toBe('books')
 	})
 
-	test('inserts web_pieces_tags from frontmatter', async () => {
+	test('keeps the public slug while preparing and persisting changed content and configuration', async () => {
 		await seedItem()
-		await webSyncStep.run({ filePaths: ['books/great.md'] }, ctx)
-
-		const tags = await db.selectFrom('web_pieces_tags').selectAll().orderBy('tag').execute()
-		expect(tags.map((t) => t.tag)).toEqual(['classic', 'fiction'])
-	})
-
-	test('keeps slug stable across re-runs', async () => {
-		await seedItem()
-		await webSyncStep.run({ filePaths: ['books/great.md'] }, ctx)
-		const first = await db.selectFrom('web_pieces').select('slug').executeTakeFirst()
+		await syncPaths(['books/great.md'])
+		const first = await db.selectFrom('web_pieces').select(['slug', 'key']).executeTakeFirst()
+		ctx.config.assets.salt = 'new-salt'
 
 		await db
 			.updateTable('pieces_items')
 			.set({ frontmatter_json: JSON.stringify({ title: 'Renamed', tags: [] }) })
 			.where('id', '=', 'item-1')
 			.execute()
-		await webSyncStep.run({ filePaths: ['books/great.md'] }, ctx)
+		const result = await syncPaths(['books/great.md'])
 
 		const after = await db.selectFrom('web_pieces').selectAll().executeTakeFirst()
 		expect(after!.slug).toBe(first!.slug)
 		expect(after!.title).toBe('Renamed')
-	})
-
-	test('replaces tags on re-sync', async () => {
-		await seedItem()
-		await webSyncStep.run({ filePaths: ['books/great.md'] }, ctx)
-
-		await db
-			.updateTable('pieces_items')
-			.set({ frontmatter_json: JSON.stringify({ title: 'Great Book', tags: ['updated'] }) })
-			.where('id', '=', 'item-1')
-			.execute()
-		await webSyncStep.run({ filePaths: ['books/great.md'] }, ctx)
-
-		const tags = await db.selectFrom('web_pieces_tags').selectAll().execute()
-		expect(tags.map((t) => t.tag)).toEqual(['updated'])
+		expect(after!.key).not.toBe(first!.key)
+		expect(result).toMatchObject({
+			status: 'completed',
+			value: [
+				{ webPiece: { slug: first!.slug, key: after!.key, title: 'Renamed' }, wasPublished: true },
+			],
+		})
 	})
 
 	test('generates unique slugs when filenames collide within type', async () => {
 		await seedItem({ id: 'a', file_path: 'books/great.md' })
 		await seedItem({ id: 'b', file_path: 'archive/great.md' })
 
-		await webSyncStep.run({ filePaths: ['books/great.md', 'archive/great.md'] }, ctx)
+		const result = await syncPaths(['books/great.md', 'archive/great.md'])
 
 		const rows = await db.selectFrom('web_pieces').select(['id', 'slug']).orderBy('id').execute()
 		expect(rows.map((r) => r.slug).sort()).toEqual(['great', 'great--1'])
+		expect(result).toMatchObject({
+			status: 'completed',
+			value: [
+				{ webPiece: { id: 'a', slug: 'great' }, contentHash: 'hash:books/great.md' },
+				{ webPiece: { id: 'b', slug: 'great--1' }, contentHash: 'hash:archive/great.md' },
+			],
+		})
 	})
 
-	test('prunes web_pieces rows whose file_path is no longer in pieces_items', async () => {
-		await seedItem()
-		await webSyncStep.run({ filePaths: ['books/great.md'] }, ctx)
-
-		await db.deleteFrom('pieces_items').where('id', '=', 'item-1').execute()
-		await webSyncStep.run({ filePaths: [] }, ctx)
-
-		const rows = await db.selectFrom('web_pieces').selectAll().execute()
-		expect(rows).toHaveLength(0)
-	})
-
-	test('does not touch web_pieces rows whose file_path is not in filePaths', async () => {
-		await seedItem({ id: 'a', file_path: 'books/keep.md' })
-		await seedItem({ id: 'b', file_path: 'books/touch.md' })
-		await webSyncStep.run({ filePaths: ['books/keep.md', 'books/touch.md'] }, ctx)
-
-		const originalTitle = (
-			await db.selectFrom('web_pieces').select('title').where('id', '=', 'a').executeTakeFirst()
-		)?.title
-
-		await db
-			.updateTable('pieces_items')
-			.set({ frontmatter_json: JSON.stringify({ title: 'Mutated', tags: [] }) })
-			.where('id', '=', 'a')
-			.execute()
-		await webSyncStep.run({ filePaths: ['books/touch.md'] }, ctx)
-
-		const after = await db
-			.selectFrom('web_pieces')
-			.select('title')
-			.where('id', '=', 'a')
-			.executeTakeFirst()
-		expect(after?.title).toBe(originalTitle)
-	})
-
-	test('sanitizes asset paths in json_metadata to keys', async () => {
+	test('sanitizes metadata assets and returns the matching key-to-path map for transforms', async () => {
 		await seedItem({
 			frontmatter_json: JSON.stringify({
 				title: 'X',
@@ -179,25 +164,28 @@ describe('webSyncStep', () => {
 			assets_json_array: JSON.stringify(['books/great/cover.png']),
 		})
 
-		await webSyncStep.run({ filePaths: ['books/great.md'] }, ctx)
+		const result = await syncPaths(['books/great.md'])
 
 		const row = await db.selectFrom('web_pieces').select('json_metadata').executeTakeFirst()
 		const parsed = JSON.parse(row!.json_metadata)
 		expect(parsed.cover).not.toBe('books/great/cover.png')
 		expect(parsed.cover).toMatch(/^[a-f0-9]{64}$/)
+		expect(result).toMatchObject({
+			status: 'completed',
+			value: [
+				{
+					webPiece: { json_metadata: row!.json_metadata },
+					assetKeyToPath: [[parsed.cover, 'books/great/cover.png']],
+				},
+			],
+		})
 	})
 
-	test('skips item types not in config.pieces', async () => {
+	test('rejects supplied source types not in config.pieces', async () => {
 		await seedItem({ id: 'x', type: 'unknown', file_path: 'unknown/x.md' })
-		await webSyncStep.run({ filePaths: ['unknown/x.md'] }, ctx)
+		await expect(syncPaths(['unknown/x.md'])).rejects.toThrow('Piece type is not configured')
 
 		const rows = await db.selectFrom('web_pieces').selectAll().execute()
 		expect(rows).toHaveLength(0)
-	})
-
-	test('logs sync start and completion', async () => {
-		await webSyncStep.run({ filePaths: [] }, ctx)
-		expect(ctx.logger.info).toHaveBeenCalledWith('web.sync starting', { count: 0 })
-		expect(ctx.logger.info).toHaveBeenCalledWith('web.sync complete')
 	})
 })

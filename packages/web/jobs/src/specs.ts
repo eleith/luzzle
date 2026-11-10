@@ -6,6 +6,7 @@ import type {
 	PreviewPayload,
 	PreviewResult,
 	PublishPayload,
+	PublishPiecePayload,
 	PublishResult,
 	PublishAuditPayload,
 	UnpublishPayload,
@@ -36,12 +37,10 @@ export const previewSpec: WorkflowSpec<PreviewPayload, PreviewResult> = defineWo
 	name: 'Preview',
 })
 
-export const publishSpec: WorkflowSpec<PublishPayload, PublishResult> = defineWorkflowSpec<
-	PublishPayload,
-	PublishResult
->({
-	name: 'Publish',
-})
+export const publishSpec: WorkflowSpec<PublishPayload | PublishPiecePayload, PublishResult> =
+	defineWorkflowSpec<PublishPayload | PublishPiecePayload, PublishResult>({
+		name: 'Publish',
+	})
 
 export const publishAuditSpec: WorkflowSpec<PublishAuditPayload, PiecesDiff> = defineWorkflowSpec<
 	PublishAuditPayload,

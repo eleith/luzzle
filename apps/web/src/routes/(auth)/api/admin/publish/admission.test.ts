@@ -28,13 +28,17 @@ const auditDiff = {
 	}
 }
 
-function event(body: unknown = { filePath: 'books/one.books.md' }) {
+function event(body: unknown = {}) {
 	return {
 		request: new Request('http://localhost/api/admin/publish', {
 			method: 'POST',
 			body: JSON.stringify(body)
 		})
 	} as Parameters<typeof publish>[0] & Parameters<typeof audit>[0] & Parameters<typeof unpublish>[0]
+}
+
+function routeEvent(route: typeof publish | typeof audit | typeof unpublish) {
+	return event(route === unpublish ? { filePath: 'books/one.books.md' } : {})
 }
 
 describe('publication admission', () => {
@@ -89,7 +93,7 @@ describe('publication admission', () => {
 				return enqueue(spec, input)
 			})
 
-			const first = Promise.resolve(firstRoute(event()))
+			const first = Promise.resolve(firstRoute(routeEvent(firstRoute)))
 			try {
 				await Promise.race([
 					started,
@@ -97,7 +101,7 @@ describe('publication admission', () => {
 						throw new Error('First request finished before enqueue')
 					})
 				])
-				const other = otherRoute(event())
+				const other = otherRoute(routeEvent(otherRoute))
 				release()
 				const [accepted, rejected] = await Promise.all([first, other])
 				expect(accepted.status).toBe(200)
@@ -124,7 +128,7 @@ describe('publication admission', () => {
 			})
 			const request = { json: vi.fn(() => body) } as unknown as Request
 			const slow = Promise.resolve(slowRoute({ ...event(), request }))
-			const other = Promise.resolve(otherRoute(event()))
+			const other = Promise.resolve(otherRoute(routeEvent(otherRoute)))
 			try {
 				await expect.poll(() => runWorkflow.mock.calls.length).toBe(1)
 				expect((await other).status).toBe(200)
@@ -198,7 +202,7 @@ describe('publication admission', () => {
 			await claimNextRun(queue.backend)
 			vi.setSystemTime(new Date('2026-06-20T01:00:00Z'))
 			await createCompletedRun(queue.backend, 'Publish')
-			const response = await route(event())
+			const response = await route(routeEvent(route))
 			expect(response.status).toBe(409)
 			expect(await response.json()).toEqual({ jobId: active.id })
 			expect(runWorkflow).not.toHaveBeenCalled()
@@ -457,6 +461,17 @@ describe('publication admission', () => {
 		expect(accepted.status).toBe(200)
 		expect(runWorkflow).toHaveBeenCalledWith(expect.objectContaining({ name: 'Publish' }), {
 			bisync: true
+		})
+		await completeNextRun(queue.backend)
+		const malformedPublish = new Request('http://localhost/api/admin/publish', {
+			method: 'POST',
+			body: '{'
+		})
+		expect(
+			(await publish({ request: malformedPublish } as Parameters<typeof publish>[0])).status
+		).toBe(200)
+		expect(runWorkflow).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Publish' }), {
+			bisync: false
 		})
 		await completeNextRun(queue.backend)
 		const request = new Request('http://localhost/api/admin/publish/audit', {

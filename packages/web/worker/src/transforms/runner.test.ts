@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, afterEach, beforeEach } from 'vitest'
-import { runTransformsForPiece, produceTransformsForPiece, persistTransforms } from './runner.js'
+import { produceTransformsForPiece, persistTransforms } from './runner.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../services/db.js'
 import { setupDatabase, teardownDatabase } from '../../test/db.js'
@@ -69,201 +69,47 @@ afterEach(async () => {
 	vi.clearAllMocks()
 })
 
-describe('transforms/runner', () => {
-	test('runs all transforms and writes to DB by default', async () => {
-		transforms.attachment.run.mockResolvedValueOnce([
-			{
-				transformation: 'attachment.original',
-				asset_path: 'books/key/file.pdf',
-				mime_type: 'application/pdf',
-			},
-		])
-
-		await runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, {}, new Map(), logger)
-
-		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
-		expect(assets).toHaveLength(1)
-		expect(assets[0]).toMatchObject({
+describe('transforms/produceTransformsForPiece', () => {
+	test('produces records and shares prior assets and public URLs with later transforms', async () => {
+		const record = {
 			transformation: 'attachment.original',
 			asset_path: 'books/key/file.pdf',
 			mime_type: 'application/pdf',
-			piece_file_path: 'book.md',
-			piece_key: 'key123',
-			asset_key: 'asset-key',
-		})
+		}
+		transforms.attachment.run.mockResolvedValueOnce([record])
+		transforms.palette.run.mockImplementationOnce(
+			async ({ priorAssets, buildAssetUrl }: TransformInput) => {
+				expect(priorAssets).toEqual([
+					expect.objectContaining({ ...record, asset_key: 'asset-key' }),
+				])
+				expect(buildAssetUrl?.(record.asset_path)).toBe(
+					'https://cdn.test/garden/pieces/assets/books/key/file.pdf'
+				)
+				return []
+			}
+		)
+
+		const produced = await produceTransformsForPiece(
+			webPiece,
+			config,
+			'/out',
+			{} as Pieces,
+			{},
+			new Map(),
+			logger
+		)
+
+		expect(produced).toEqual([
+			{ name: 'attachment', records: [record] },
+			{ name: 'palette', records: [] },
+			{ name: 'opengraph', records: [] },
+		])
 		expect(transforms.attachment.run).toHaveBeenCalledOnce()
 		expect(transforms.palette.run).toHaveBeenCalledOnce()
 		expect(transforms.opengraph.run).toHaveBeenCalledOnce()
-		const { buildAssetUrl } = transforms.attachment.run.mock.calls[0][0] as TransformInput
-		expect(buildAssetUrl?.('books/key/file.pdf')).toBe(
-			'https://cdn.test/garden/pieces/assets/books/key/file.pdf'
-		)
 	})
 
-	test('filters to only the specified transform when typeFilter is given', async () => {
-		await runTransformsForPiece(
-			db,
-			webPiece,
-			config,
-			'/out',
-			{} as Pieces,
-			{ typeFilter: 'palette' },
-			new Map(),
-			logger
-		)
-
-		expect(transforms.palette.run).toHaveBeenCalledOnce()
-		expect(transforms.attachment.run).not.toHaveBeenCalled()
-		expect(transforms.opengraph.run).not.toHaveBeenCalled()
-	})
-
-	test('skips DB delete and insert when dryRun is true', async () => {
-		transforms.attachment.run.mockResolvedValueOnce([
-			{
-				transformation: 'attachment.original',
-				asset_path: 'books/key/file.pdf',
-				mime_type: 'application/pdf',
-			},
-		])
-
-		await runTransformsForPiece(
-			db,
-			webPiece,
-			config,
-			'/out',
-			{} as Pieces,
-			{ dryRun: true },
-			new Map(),
-			logger
-		)
-
-		expect(transforms.attachment.run).toHaveBeenCalledOnce()
-		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
-		expect(assets).toHaveLength(0)
-	})
-
-	test('does not insert when transform returns empty records', async () => {
-		await runTransformsForPiece(
-			db,
-			webPiece,
-			config,
-			'/out',
-			{} as Pieces,
-			{ typeFilter: 'palette' },
-			new Map(),
-			logger
-		)
-
-		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
-		expect(assets).toHaveLength(0)
-	})
-
-	test('logs generated asset path', async () => {
-		transforms.palette.run.mockResolvedValueOnce([
-			{
-				transformation: 'palette',
-				asset_path: null as unknown as string,
-				mime_type: 'application/json',
-				content: '{}',
-				is_embedded: 1 as const,
-			},
-		])
-
-		await runTransformsForPiece(
-			db,
-			webPiece,
-			config,
-			'/out',
-			{} as Pieces,
-			{ typeFilter: 'palette' },
-			new Map(),
-			logger
-		)
-
-		expect(logger.info).toHaveBeenCalledWith(
-			'transform.palette generated content of application/json'
-		)
-	})
-
-	test('logs and propagates a transform failure instead of producing empty records', async () => {
-		transforms.attachment.run.mockRejectedValueOnce(new Error('boom'))
-
-		await expect(
-			runTransformsForPiece(
-				db,
-				webPiece,
-				config,
-				'/out',
-				{} as Pieces,
-				{ typeFilter: 'attachment' },
-				new Map(),
-				logger
-			)
-		).rejects.toThrow('boom')
-
-		expect(logger.error).toHaveBeenCalledWith(
-			'transform.attachment error for book.md',
-			expect.objectContaining({ error: 'boom' })
-		)
-	})
-
-	test('retains existing asset rows when a later transform fails after earlier production succeeds', async () => {
-		const oldRecords = [
-			{
-				piece_file_path: webPiece.file_path,
-				piece_key: webPiece.key,
-				asset_key: 'old-attachment',
-				transformation: 'attachment',
-				asset_path: 'old.pdf',
-				mime_type: 'application/pdf',
-			},
-			{
-				piece_file_path: webPiece.file_path,
-				piece_key: webPiece.key,
-				asset_key: 'old-palette',
-				transformation: 'palette',
-				content: 'old palette',
-				mime_type: 'application/json',
-			},
-		]
-		await db.insertInto('web_pieces_assets').values(oldRecords).execute()
-		transforms.attachment.run.mockResolvedValueOnce([
-			{ transformation: 'attachment', asset_path: 'new.pdf', mime_type: 'application/pdf' },
-		])
-		transforms.palette.run.mockRejectedValueOnce(new Error('palette failed'))
-
-		await expect(
-			runTransformsForPiece(db, webPiece, config, '/out', {} as Pieces, {}, new Map(), logger)
-		).rejects.toThrow('palette failed')
-		const assets = await db
-			.selectFrom('web_pieces_assets')
-			.selectAll()
-			.orderBy('asset_key')
-			.execute()
-		expect(assets).toMatchObject(oldRecords)
-		expect(transforms.opengraph.run).not.toHaveBeenCalled()
-	})
-
-	test('does nothing when typeFilter matches no transform', async () => {
-		await runTransformsForPiece(
-			db,
-			webPiece,
-			config,
-			'/out',
-			{} as Pieces,
-			{ typeFilter: 'nonexistent' },
-			new Map(),
-			logger
-		)
-
-		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
-		expect(assets).toHaveLength(0)
-		expect(transforms.attachment.run).not.toHaveBeenCalled()
-	})
-})
-
-describe('transforms/produceTransformsForPiece', () => {
-	test('returns produced records without touching the DB', async () => {
+	test('returns records for only the selected transform', async () => {
 		const record = {
 			transformation: 'palette',
 			asset_path: null as unknown as string,
@@ -284,8 +130,8 @@ describe('transforms/produceTransformsForPiece', () => {
 		)
 
 		expect(produced).toEqual([{ name: 'palette', records: [record] }])
-		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
-		expect(assets).toHaveLength(0)
+		expect(transforms.attachment.run).not.toHaveBeenCalled()
+		expect(transforms.opengraph.run).not.toHaveBeenCalled()
 	})
 
 	test('rejects failed production without returning a successful result or running later transforms', async () => {
@@ -339,7 +185,15 @@ describe('transforms/persistTransforms', () => {
 
 		const assets = await db.selectFrom('web_pieces_assets').selectAll().execute()
 		expect(assets).toHaveLength(1)
-		expect(assets[0]).toMatchObject({ content: 'fresh', asset_key: 'asset-key' })
+		expect(assets[0]).toMatchObject({
+			content: 'fresh',
+			asset_key: 'asset-key',
+			transformation: 'palette',
+			mime_type: 'application/json',
+			is_embedded: 1,
+			piece_file_path: webPiece.file_path,
+			piece_key: webPiece.key,
+		})
 	})
 
 	test('still clears prior records after successful production of an empty result', async () => {

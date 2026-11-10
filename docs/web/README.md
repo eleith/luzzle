@@ -18,11 +18,11 @@ pieces. Save edits, then click **Saved** to start a preview of that saved file.
 Use `/admin/publish` to check changes and publish. Saving is not publishing.
 
 Check lists all pending changes. Choose which added or updated pieces to publish.
-Publishing uses saved files, so edits saved after Check may be included.
-Unselected edits stay pending.
+Publishing reads saved files when the worker runs, so edits saved after Check or
+while the job is waiting may be included. Unselected edits stay pending.
 
-**Every publish also applies all pending removals**, regardless of selection.
-They are listed separately; you can apply removals without selecting any pieces.
+**Publishing from this screen also applies all pending removals**, regardless of
+selection. They are listed separately; you can apply removals without selecting any pieces.
 Schema changes also apply globally. A renamed file looks like a removal and an
 addition: the old public version can disappear before you select its replacement.
 Check alone does not change the public site.

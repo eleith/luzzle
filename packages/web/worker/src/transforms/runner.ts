@@ -115,28 +115,3 @@ export async function persistTransforms(
 			.execute()
 	}
 }
-
-export async function runTransformsForPiece(
-	db: Kysely<WebDatabase>,
-	webPiece: WebPieces,
-	config: Config,
-	outDir: string,
-	pieces: Pieces,
-	options: { typeFilter?: string; dryRun?: boolean },
-	assetKeyToPath: Map<string, string>,
-	logger: Logger
-): Promise<void> {
-	const produced = await produceTransformsForPiece(
-		webPiece,
-		config,
-		outDir,
-		pieces,
-		{ typeFilter: options.typeFilter },
-		assetKeyToPath,
-		logger
-	)
-
-	if (!options.dryRun) {
-		await persistTransforms(db, webPiece, config, produced)
-	}
-}

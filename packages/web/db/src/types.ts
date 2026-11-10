@@ -11,11 +11,11 @@ export interface WebPieces {
 	note?: string
 	date_updated?: number
 	date_added: number
-	date_consumed?: number
+	date_consumed?: number | null
 	type: string
 	json_metadata: string
-	summary?: string
-	keywords?: string
+	summary?: string | null
+	keywords?: string | null
 }
 
 export interface WebPiecesAsset {

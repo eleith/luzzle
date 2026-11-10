@@ -1,140 +1,128 @@
-import {
-	type LuzzleSelectable,
-	type LuzzleTables,
-} from '@luzzle/core'
-import type { Config } from '@luzzle/web.config'
-import type { Kysely } from 'kysely'
-import type { Logger } from '../../services/logger.js'
-import type { WebDatabase, WebPieceTags } from '../../services/db.js'
+import type { LuzzleSelectable } from '@luzzle/core'
+import { completed, type Step } from '../../core/step.js'
+import type { WebPieces } from '../../services/db.js'
 import { buildAssetMaps } from '../../transforms/utils/assets.js'
-import { completed, type Step, type StepResult } from '../../core/step.js'
-import {
-	buildWebPiece,
-	generateUniqueSlug,
-	sanitizeMetadata,
-	slugify,
-} from './helpers.js'
+import { buildWebPiece, generateUniqueSlug, sanitizeMetadata, slugify } from './helpers.js'
 
-type PiecesItem = LuzzleSelectable<'pieces_items'>
-type FullDb = Kysely<WebDatabase & LuzzleTables>
-
-export interface WebSyncInput {
-	filePaths: string[]
+export interface PublicationSource {
+	item: LuzzleSelectable<'pieces_items'>
+	contentHash: string
 }
 
-export const webSyncStep: Step<WebSyncInput, void> = {
+export interface PreparedPublication {
+	webPiece: WebPieces
+	contentHash: string
+	assetKeyToPath: Array<[string, string]>
+	wasPublished: boolean
+}
+
+export const webSyncStep: Step<PublicationSource[], PreparedPublication[]> = {
 	name: 'web.sync',
-	async run({ filePaths }, ctx): Promise<StepResult<void>> {
-		const { db, config, logger } = ctx
-		const fullDb = db as unknown as FullDb
-
-		logger.info('web.sync starting', { count: filePaths.length })
-
-		const targets = new Set(filePaths)
-		const livePaths = new Set<string>()
-
-		for (const pieceConfig of config.pieces) {
-			const items = await fullDb
-				.selectFrom('pieces_items')
-				.selectAll()
-				.where('type', '=', pieceConfig.type)
-				.execute()
-
-			const existing = await fullDb
-				.selectFrom('web_pieces')
-				.select(['slug', 'file_path'])
-				.where('type', '=', pieceConfig.type)
-				.execute()
-			const usedSlugs = new Set<string>(existing.map((p) => p.slug))
-			const slugByFilePath = new Map<string, string>(
-				existing.map((p) => [p.file_path, p.slug])
+	async run(sources, { db, config, logger }) {
+		const existing = await db
+			.selectFrom('web_pieces')
+			.select(['id', 'slug', 'type', 'file_path', 'date_added'])
+			.execute()
+		const publicationByPath = new Map(existing.map((piece) => [piece.file_path, piece]))
+		const usedSlugs = new Map<string, Set<string>>()
+		for (const piece of existing) {
+			if (!usedSlugs.has(piece.type)) usedSlugs.set(piece.type, new Set())
+			usedSlugs.get(piece.type)!.add(piece.slug)
+		}
+		const prepared: PreparedPublication[] = []
+		for (const { item, contentHash } of sources) {
+			const pieceConfig = config.pieces.find((piece) => piece.type === item.type)
+			if (!pieceConfig) throw new Error(`Piece type is not configured: ${item.type}`)
+			const previous = publicationByPath.get(item.file_path)
+			if (previous && previous.type !== item.type) {
+				throw new Error('Unpublish the previous piece type before publishing this source')
+			}
+			if (!usedSlugs.has(item.type)) usedSlugs.set(item.type, new Set())
+			const slug =
+				previous?.slug ??
+				generateUniqueSlug(
+					usedSlugs.get(item.type)!,
+					item.file_path.split('/').pop()!.replace(/\.md$/, '').split('.')[0]
+				)
+			const frontmatter = JSON.parse(item.frontmatter_json)
+			const { pathToKey, keyToPath } = buildAssetMaps(item.assets_json_array, config.assets.salt)
+			const webPiece = buildWebPiece(
+				{
+					...item,
+					id: previous?.id ?? item.id,
+					date_added: previous?.date_added ?? item.date_added,
+					frontmatter_json: sanitizeMetadata(item.frontmatter_json, pathToKey),
+				},
+				pieceConfig,
+				slug,
+				config.assets.salt,
+				frontmatter
 			)
-
-			for (const item of items) {
-				livePaths.add(item.file_path)
-				if (!targets.has(item.file_path)) continue
-				await syncOne(fullDb, item, pieceConfig, config, usedSlugs, slugByFilePath, logger)
+			await db
+				.insertInto('web_pieces')
+				.values({ ...webPiece, content_hash: null })
+				.onConflict((conflict) =>
+					conflict.column('id').doUpdateSet({
+						content_hash: null,
+						key: webPiece.key,
+						title: webPiece.title,
+						summary: webPiece.summary ?? null,
+						note: webPiece.note,
+						keywords: webPiece.keywords ?? null,
+						json_metadata: webPiece.json_metadata,
+						date_updated: webPiece.date_updated,
+						date_consumed: webPiece.date_consumed ?? null,
+					})
+				)
+				.execute()
+			await db.deleteFrom('web_pieces_tags').where('piece_id', '=', webPiece.id).execute()
+			const keywords: string[] = webPiece.keywords ? JSON.parse(webPiece.keywords) : []
+			if (keywords.length) {
+				await db
+					.insertInto('web_pieces_tags')
+					.values(
+						keywords.map((tag) => ({
+							piece_slug: webPiece.slug,
+							piece_type: webPiece.type,
+							piece_id: webPiece.id,
+							tag: tag.trim(),
+							slug: slugify(tag.trim()),
+						}))
+					)
+					.execute()
 			}
+			prepared.push({
+				webPiece,
+				contentHash,
+				assetKeyToPath: [...keyToPath],
+				wasPublished: Boolean(previous),
+			})
+			logger.info(`web piece synced: ${webPiece.file_path}`)
 		}
-
-		const stored = await fullDb.selectFrom('web_pieces').select('file_path').execute()
-		for (const row of stored) {
-			if (!livePaths.has(row.file_path)) {
-				await fullDb.deleteFrom('web_pieces').where('file_path', '=', row.file_path).execute()
-				logger.info(`web piece pruned: ${row.file_path}`)
-			}
-		}
-
-		logger.info('web.sync complete')
-		return completed(undefined)
+		return completed(prepared)
 	},
 }
 
-async function syncOne(
-	db: FullDb,
-	item: PiecesItem,
-	pieceConfig: Config['pieces'][number],
-	config: Config,
-	usedSlugs: Set<string>,
-	slugByFilePath: Map<string, string>,
-	logger: Logger
-): Promise<void> {
-	let slug: string
-	const existingSlug = slugByFilePath.get(item.file_path)
-	if (existingSlug) {
-		slug = existingSlug
-	} else {
-		const filename = item.file_path.split('/').pop()!.replace(/\.md$/, '').split('.')[0]
-		slug = generateUniqueSlug(usedSlugs, filename)
-		slugByFilePath.set(item.file_path, slug)
-	}
-
-	const frontmatter = JSON.parse(item.frontmatter_json)
-
-	const { pathToKey } = buildAssetMaps(item.assets_json_array, config.assets.salt)
-	const sanitizedItem: PiecesItem = {
-		...item,
-		frontmatter_json: sanitizeMetadata(item.frontmatter_json, pathToKey),
-	}
-
-	const webPiece = buildWebPiece(
-		sanitizedItem,
-		pieceConfig,
-		slug,
-		config.assets.salt,
-		frontmatter,
-	)
-
-	await db
-		.insertInto('web_pieces')
-		.values(webPiece)
-		.onConflict((oc) =>
-			oc.column('id').doUpdateSet({
-				content_hash: null,
-				title: webPiece.title,
-				summary: webPiece.summary,
-				note: webPiece.note,
-				keywords: webPiece.keywords,
-				json_metadata: webPiece.json_metadata,
-				date_updated: webPiece.date_updated,
-				date_consumed: webPiece.date_consumed,
-			})
-		)
-		.execute()
-
-	await db.deleteFrom('web_pieces_tags').where('piece_id', '=', item.id).execute()
-
-	const keywords: string[] = webPiece.keywords ? JSON.parse(webPiece.keywords) : []
-	if (keywords.length > 0) {
-		const tags: WebPieceTags[] = keywords.map((tag) => ({
-			piece_slug: slug,
-			piece_type: item.type,
-			piece_id: item.id,
-			tag: tag.trim(),
-			slug: slugify(tag.trim()),
-		}))
-		await db.insertInto('web_pieces_tags').values(tags).execute()
-	}
-
-	logger.info(`web piece synced: ${item.file_path}`)
+export const pruneWebPiecesStep: Step<void, void> = {
+	name: 'web.prune',
+	async run(_input, { db, config, logger }) {
+		const live = await db
+			.selectFrom('pieces_items')
+			.select('file_path')
+			.where(
+				'type',
+				'in',
+				config.pieces.map((piece) => piece.type)
+			)
+			.execute()
+		const livePaths = new Set(live.map((piece) => piece.file_path))
+		const publications = await db.selectFrom('web_pieces').select('file_path').execute()
+		for (const piece of publications) {
+			if (!livePaths.has(piece.file_path)) {
+				await db.deleteFrom('web_pieces').where('file_path', '=', piece.file_path).execute()
+				logger.info(`web piece pruned: ${piece.file_path}`)
+			}
+		}
+		return completed(undefined)
+	},
 }
