@@ -48,7 +48,6 @@
 		"@luzzle/web.templates": "workspace:*",
 		"@luzzle/web.theme": "workspace:*",
 		"@takumi-rs/core": "1.5.0",
-		"colorlip": "^1.0.0",
 		"devlop": "1.1.0",
 		"hastscript": "9.0.1",
 		"kysely": "0.28.17",

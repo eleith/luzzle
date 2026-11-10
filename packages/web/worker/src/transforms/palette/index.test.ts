@@ -1,176 +1,99 @@
-import { describe, test, expect, vi, afterEach } from 'vitest'
-import { run } from './index.js'
-import { getPalette } from './colorlip.js'
+import { afterEach, expect, test, vi } from 'vitest'
 import type { Config } from '@luzzle/web.config'
-import type { WebPieces } from '../../services/db.js'
 import type { Pieces } from '@luzzle/core'
+import type { WebPieces } from '../../services/db.js'
 import { makeLogger } from '../../../test/logger.js'
+import { extractSwatches } from './extract.js'
+import { run } from './index.js'
 
-vi.mock('./colorlip.js', () => ({
-	getPalette: vi.fn(),
-}))
+vi.mock('./extract.js', () => ({ extractSwatches: vi.fn() }))
 
-const makeWebPiece = (overrides?: Partial<WebPieces>): WebPieces => ({
-	id: '1',
+afterEach(() => vi.resetAllMocks())
+
+const webPiece = {
 	type: 'books',
-	date_updated: 100,
-	date_added: 50,
-	json_metadata: JSON.stringify({ cover: 'cover.jpg' }),
-	file_path: 'book.md',
-	key: 'key',
-	slug: 'my-book',
-	title: 'My Book',
-	...overrides,
-})
-
-const makeConfig = (overrides?: Partial<Config>): Config =>
-	({
-		url: { app: 'http://localhost' },
-		pieces: [{ type: 'books', fields: { media: ['cover'] } }],
-		...overrides,
-	}) as unknown as Config
-
-const makePieces = (buffer: Buffer = Buffer.from('img')) =>
+	json_metadata: JSON.stringify({ poster: 'missing-key', cover: 'cover-key' }),
+} as WebPieces
+const assetMap = new Map([['cover-key', 'assets/cover.jpg']])
+const config = (media = ['poster', 'cover']) =>
+	({ pieces: [{ type: 'books', fields: { media } }] }) as unknown as Config
+const pieces = (buffer = Buffer.from('image')) =>
 	({ getPieceAsset: vi.fn().mockResolvedValue(buffer) }) as unknown as Pieces
 
-afterEach(() => {
-	vi.clearAllMocks()
+test('uses the first resolved media image and stores its palette as embedded JSON', async () => {
+	const image = Buffer.from('image-bytes')
+	const archive = pieces(image)
+	vi.mocked(extractSwatches).mockResolvedValue([
+		{ r: 184, g: 89, b: 76, hex: '#b8594c', population: 1 },
+	])
+
+	const records = await run({
+		webPiece,
+		config: config(),
+		outDir: '/out',
+		pieces: archive,
+		assetKeyToPath: assetMap,
+		logger: makeLogger(),
+	})
+
+	expect(archive.getPieceAsset).toHaveBeenCalledWith('assets/cover.jpg')
+	expect(extractSwatches).toHaveBeenCalledWith(image)
+	expect(records).toEqual([
+		expect.objectContaining({
+			transformation: 'palette',
+			mime_type: 'application/json',
+			is_embedded: 1,
+		}),
+	])
+	expect(JSON.parse(records[0].content!)).toMatchObject({
+		background: '#b8594c',
+		swatches: ['#b8594c'],
+	})
 })
 
-const assetMap = new Map([['cover.jpg', 'assets/cover.jpg']])
+test('does not read an image for a piece without configured media', async () => {
+	const archive = pieces()
 
-describe('transforms/palette', () => {
-	test('reads asset from pieces and returns embedded palette JSON', async () => {
-		const buffer = Buffer.from('image-bytes')
-		const pieces = makePieces(buffer)
-		const palette = { accent: '#ff0000', background: '#ffffff' }
-		vi.mocked(getPalette).mockResolvedValue(palette)
-
-		const records = await run({
-			webPiece: makeWebPiece(),
-			config: makeConfig(),
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: assetMap,
-			logger: makeLogger(),
-		})
-
-		expect(pieces.getPieceAsset).toHaveBeenCalledWith('assets/cover.jpg')
-		expect(getPalette).toHaveBeenCalledWith(buffer)
-		expect(records).toEqual([
-			expect.objectContaining({
-				transformation: 'palette',
-				content: JSON.stringify(palette),
-				mime_type: 'application/json',
-				is_embedded: 1,
-			}),
-		])
+	const records = await run({
+		webPiece,
+		config: config([]),
+		outDir: '/out',
+		pieces: archive,
+		assetKeyToPath: assetMap,
+		logger: makeLogger(),
 	})
 
-	test('returns empty when piece type has no media fields', async () => {
-		const pieces = makePieces()
-		const configNoMedia = makeConfig({ pieces: [{ type: 'books', fields: {} }] } as unknown as Partial<Config>)
+	expect(records).toEqual([])
+	expect(archive.getPieceAsset).not.toHaveBeenCalled()
+})
 
-		const records = await run({
-			webPiece: makeWebPiece(),
-			config: configNoMedia,
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: assetMap,
-			logger: makeLogger(),
-		})
+test('does not read an image when no media references resolve to registered assets', async () => {
+	const archive = pieces()
 
-		expect(pieces.getPieceAsset).not.toHaveBeenCalled()
-		expect(getPalette).not.toHaveBeenCalled()
-		expect(records).toEqual([])
+	const records = await run({
+		webPiece,
+		config: config(),
+		outDir: '/out',
+		pieces: archive,
+		assetKeyToPath: new Map(),
+		logger: makeLogger(),
 	})
 
-	test('returns empty when piece type not found in config', async () => {
-		const pieces = makePieces()
-		const configOther = makeConfig({ pieces: [{ type: 'other', fields: { media: ['cover'] } }] } as unknown as Partial<Config>)
+	expect(records).toEqual([])
+	expect(archive.getPieceAsset).not.toHaveBeenCalled()
+})
 
-		const records = await run({
-			webPiece: makeWebPiece(),
-			config: configOther,
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: assetMap,
-			logger: makeLogger(),
-		})
+test('propagates extraction failures to the workflow', async () => {
+	vi.mocked(extractSwatches).mockRejectedValue(new Error('invalid image'))
 
-		expect(pieces.getPieceAsset).not.toHaveBeenCalled()
-		expect(records).toEqual([])
-	})
-
-	test('returns empty when piece has no media values in frontmatter', async () => {
-		const pieces = makePieces()
-		const webPiece = makeWebPiece({ json_metadata: '{}' })
-
-		const records = await run({
+	await expect(
+		run({
 			webPiece,
-			config: makeConfig(),
+			config: config(),
 			outDir: '/out',
-			pieces,
+			pieces: pieces(),
 			assetKeyToPath: assetMap,
 			logger: makeLogger(),
 		})
-
-		expect(pieces.getPieceAsset).not.toHaveBeenCalled()
-		expect(records).toEqual([])
-	})
-
-	test('returns empty when media values do not resolve to assets', async () => {
-		const pieces = makePieces()
-		const webPiece = makeWebPiece({ json_metadata: JSON.stringify({ cover: 'unknown.jpg' }) })
-
-		const records = await run({
-			webPiece,
-			config: makeConfig(),
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: assetMap,
-			logger: makeLogger(),
-		})
-
-		expect(pieces.getPieceAsset).not.toHaveBeenCalled()
-		expect(records).toEqual([])
-	})
-
-	test('falls through to second media field when first has no resolved asset', async () => {
-		const pieces = makePieces()
-		const palette = { accent: '#000' }
-		vi.mocked(getPalette).mockResolvedValue(palette)
-
-		const config = makeConfig({
-			pieces: [{ type: 'books', fields: { media: ['poster', 'cover'] } }],
-		} as unknown as Partial<Config>)
-
-		const records = await run({
-			webPiece: makeWebPiece(),
-			config,
-			outDir: '/out',
-			pieces,
-			assetKeyToPath: assetMap,
-			logger: makeLogger(),
-		})
-
-		expect(pieces.getPieceAsset).toHaveBeenCalledWith('assets/cover.jpg')
-		expect(records).toHaveLength(1)
-	})
-
-	test('throws when getPalette throws', async () => {
-		const pieces = makePieces()
-		vi.mocked(getPalette).mockRejectedValue(new Error('palette failed'))
-
-		await expect(
-			run({
-				webPiece: makeWebPiece(),
-				config: makeConfig(),
-				outDir: '/out',
-				pieces,
-				assetKeyToPath: assetMap,
-				logger: makeLogger(),
-			})
-		).rejects.toThrow('palette failed')
-	})
+	).rejects.toThrow('invalid image')
 })

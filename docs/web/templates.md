@@ -80,6 +80,18 @@ Values must match the chosen field types; a page count is a number, not text.
 Invalid values log a warning and use that role's default field values for the
 piece. Unknown names/keys and malformed selectors fail config validation.
 
+## Image-derived colors
+
+The first registered image resolved from `fields.media` supplies a shared palette
+for piece banners, icons and OG images. Colorful images favor representative
+colored backgrounds; monochrome images retain neutral tones. Black or white text
+is chosen for contrast against the solid palette background. Image layers under
+translucent template surfaces can still change the final rendered contrast.
+
+Generate a fresh Preview to inspect the colors, then use the piece's Publish
+action to regenerate its public outputs. Existing published palettes and OG
+images do not change automatically.
+
 ## Apply your choices
 
 Restart web and worker after config changes, then refresh. To regenerate OG

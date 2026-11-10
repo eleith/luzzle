@@ -1,5 +1,6 @@
 import { getFrontmatterValues } from '@luzzle/core'
-import { getPalette } from './colorlip.js'
+import { extractSwatches } from './extract.js'
+import { createPalette } from './palette.js'
 import type { TransformInput, AssetRecord } from '../utils/types.js'
 
 export async function run({
@@ -29,7 +30,8 @@ export async function run({
 	if (!assetPath) return []
 
 	const buffer = await pieces.getPieceAsset(assetPath)
-	const palette = await getPalette(buffer)
+	const swatches = await extractSwatches(buffer)
+	const palette = createPalette(swatches)
 
 	return [
 		{
