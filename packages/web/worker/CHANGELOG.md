@@ -1,5 +1,23 @@
 # @luzzle/web.worker
 
+## 0.0.249
+
+### Patch Changes
+
+- db04e94: Use Sharp's palette quantizer instead of Colorlip to extract image swatches. Build piece palettes from those swatches, favoring colorful backgrounds and choosing black or white text with measured contrast against the solid background. Share the same straightforward pipeline between Preview and Publish.
+- 86cfa8c: Require fields.highlight selectors for attachment highlighting. Skip oversized, NUL-containing or invalid UTF-8 sources and oversized generated HTML, leaving original attachments downloadable.
+- ad1ff19: Show clickable, three-line desktop sidenote previews with viewport-fitted native popovers. Keep scrollable bottom sheets on phones and tablets, with native keyboard controls, Escape and outside-click dismissal, and no application JavaScript.
+- 98f6d84: Label rendered Markdown task-list checkboxes with their task descriptions, preserving their checked and disabled states.
+- eed0a54: Show sidenotes as native bottom sheets on phones and tablets, with whole-sheet scrolling, a subtle backdrop, and the note number as a close button. Keep visible margin notes on wide screens without application JavaScript.
+- 8af42a2: Resolve registered asset links and images in Markdown to preview or public original-file URLs.
+- 9446be6: Restore configured responsive browser font sizing while keeping Open Graph typography fixed.
+- 73615eb: Share one filename-based publishing pipeline for individual pieces and archive selections. Read saved Markdown when the worker runs. Publish one piece through the existing endpoint without publishing or pruning unrelated pieces, copying only its generated files.
+- @luzzle/core@0.0.249
+  - @luzzle/web.db@0.0.1
+  - @luzzle/web.jobs@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.248
 
 ### Patch Changes

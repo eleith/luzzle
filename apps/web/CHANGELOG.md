@@ -1,5 +1,26 @@
 # @luzzle/web
 
+## 0.0.249
+
+### Patch Changes
+
+- e666e04: Share a compact step-log layout between Publish and Preview, with step/status in the header and line count, elapsed seconds and a compact scroll lock below the output. Keep Publish logs visible without a disclosure.
+- 2be09b7: Clarify saved and published editor states in the bottom status bar, with a grouped More menu on desktop and an accessible bottom sheet on phones. Share Publish/Unpublish progress and non-destructive status refresh, retain explicit Save and Publish, and toggle Vim through the menu instead of a keyboard shortcut. Save preserves the exact source without reloading the editor; an explicit Format action edits the buffer without saving.
+- 86cfa8c: Require fields.highlight selectors for attachment highlighting. Skip oversized, NUL-containing or invalid UTF-8 sources and oversized generated HTML, leaving original attachments downloadable.
+- d00bfe0: Let inline code flow with prose without forced italics, retaining its background, padding, and rounded corners. Fenced code blocks are unchanged.
+- ad1ff19: Show clickable, three-line desktop sidenote previews with viewport-fitted native popovers. Keep scrollable bottom sheets on phones and tablets, with native keyboard controls, Escape and outside-click dismissal, and no application JavaScript.
+- eed0a54: Show sidenotes as native bottom sheets on phones and tablets, with whole-sheet scrolling, a subtle backdrop, and the note number as a close button. Keep visible margin notes on wide screens without application JavaScript.
+- 0766d05: Connect Published and Preview overviews and offer fresh saved-source previews when a preview fails or expires.
+- f97e032: Preserve paragraph breaks in Markdown quotes, leave italics to authored emphasis, and use a thinner border with body-relative padding while retaining the background, rounded corners, and shadow.
+- 8af42a2: Resolve registered asset links and images in Markdown to preview or public original-file URLs.
+- 9446be6: Restore configured responsive browser font sizing while keeping Open Graph typography fixed.
+- d9f21ef: Keep fenced code and wide tables within the reading column and let readers scroll them horizontally without widening the page. Tables use their natural width, capped at the column width.
+- 72647d8: Give rendered Markdown shared prose typography and simplify the note page's headline scale and reading-column gutters.
+- 73615eb: Share one filename-based publishing pipeline for individual pieces and archive selections. Read saved Markdown when the worker runs. Publish one piece through the existing endpoint without publishing or pruning unrelated pieces, copying only its generated files.
+- @luzzle/web.db@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.248
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
 	"name": "@luzzle/web.worker",
-	"version": "0.0.248",
+	"version": "0.0.249",
 	"author": "eleith",
 	"private": true,
 	"description": "luzzle publish worker — runs heavy jobs (transforms, rclone) handed off by the explorer",
