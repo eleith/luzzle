@@ -52,6 +52,10 @@ Schema changes also apply globally. A renamed file looks like a removal and an
 addition: the old public version can disappear before you select its replacement.
 Check alone does not change the public site.
 
+Publish and Preview show each step's logs directly. The header contains the step
+name and status; the footer shows line count, elapsed seconds and a compact auto-scroll lock.
+Scroll up to stop following new output, or lock auto-scroll to return to the latest lines.
+
 Source and text-asset editors default to Standard keybindings. Toggle **Vim mode**
 in the piece editor's **More** menu; the browser remembers your choice.
 The piece editor's bottom bar shows the active Vim mode on the left and publication

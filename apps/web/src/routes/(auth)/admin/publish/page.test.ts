@@ -120,17 +120,6 @@ function expectEditLink(output: string, file: string, href: string) {
 	expect(editors[0][2]).toMatch(/<svg\b/)
 }
 
-function disclosure(output: string, summary: string) {
-	const details = [...withoutComments(output).matchAll(/<details\b([^>]*)>([\s\S]*?)<\/details>/g)]
-	const match = details.find((item) => {
-		const label = item[2].match(/<summary\b[^>]*>([\s\S]*?)<\/summary>/)?.[1]
-		return label !== undefined && text(label).trim() === summary
-	})
-	expect(match, `native ${summary} disclosure`).toBeDefined()
-	expect(match![1]).not.toMatch(/\bopen(?:\s|=|$)/)
-	return match![2]
-}
-
 function expectHeaderChecksOnly(output: string) {
 	expect(buttons(output).map((button) => text(button[2]).trim())).toEqual(['Check', 'Sync & Check'])
 	expect(withoutComments(output)).not.toMatch(/<footer\b/)
@@ -233,35 +222,7 @@ test('pruned pieces remain plain text instead of linking to Published or source'
 	expect(output).not.toContain(`/admin/piece/${file}/`)
 })
 
-test('partial reports retain one timeline row for the latest attempt and count stages inside collapsed Details', () => {
-	const phase = {
-		job_id: 'publish-id',
-		phase: 'cdn.sync',
-		started_at: 1000,
-		finished_at: 2000,
-		message: null
-	}
-	const output = html({
-		phases: [
-			{ ...phase, status: 'failed', message: 'Earlier CDN attempt failed' },
-			{
-				...phase,
-				status: 'completed',
-				started_at: 2000,
-				finished_at: 3000,
-				message: 'Latest CDN attempt completed'
-			}
-		]
-	})
-	const details = disclosure(output, 'Details')
-	expect(output).toContain('Published with errors')
-	expect(text(details).match(/cdn\.sync/g)).toHaveLength(1)
-	expect(text(details)).toContain('1 stages')
-	expect(text(details)).toContain('Latest CDN attempt completed')
-	expect(output).not.toContain('Earlier CDN attempt failed')
-})
-
-test('schemas and phase logs stay inside collapsed native Details', () => {
+test('schema changes and phase logs stay visible on the publish page', () => {
 	const output = html({
 		phases: [
 			{
@@ -285,25 +246,9 @@ test('schemas and phase logs stay inside collapsed native Details', () => {
 			}
 		]
 	})
-	const details = disclosure(output, 'Details')
-	expect(details).toContain('book.schema.json')
+	expect(output).not.toMatch(/<(?:details|summary)\b/)
 	expect(text(output).match(/book\.schema\.json/g)).toHaveLength(1)
-	expect(details).toContain('CDN assets synchronized')
 	expect(text(output).match(/CDN assets synchronized/g)).toHaveLength(1)
-})
-
-test.each([
-	{ kind: 'added', badge: 'New' },
-	{ kind: 'updated', badge: 'Updated' },
-	{ kind: 'pruned', badge: 'Removed' }
-] as const)('schema $kind changes keep their $badge badge inside Details', ({ kind, badge }) => {
-	const name = `${kind}.schema.json`
-	const output = html({ schemas: { added: [], updated: [], pruned: [], [kind]: [name] } })
-	const details = disclosure(output, 'Details')
-	const rows = [...withoutComments(details).matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)]
-	const schemaRows = rows.filter((row) => text(row[1]).includes(name))
-	expect(schemaRows).toHaveLength(1)
-	expect(text(schemaRows[0][1]).trim().replace(/\s+/g, ' ')).toBe(`${badge} ${name}`)
 })
 
 test('local and remote checks are separate header actions without an Options menu or result checkboxes', () => {
@@ -382,7 +327,7 @@ test.each(['running', 'waiting'])(
 )
 
 test.each(['partial', 'successful'])(
-	'a resumed audit preserves the %s publication’s collapsed Details instead of audit progress',
+	'a resumed audit preserves the %s publication’s logs instead of audit progress',
 	(result) => {
 		const resumedAudit = audit('running')
 		resumedAudit.phases = [
@@ -431,12 +376,10 @@ test.each(['partial', 'successful'])(
 			],
 			audit: resumedAudit
 		})
-		const details = disclosure(output, 'Details')
-		expect(text(details)).toContain('1 stages')
-		expect(text(details)).toContain('cdn.sync')
-		expect(text(details)).toContain('Publication CDN sync completed')
-		expect(text(details)).toContain('Published assets synchronized')
-		expect(text(details)).toContain('book.schema.json')
+		expect(text(output)).toContain('cdn.sync')
+		expect(text(output)).toContain('Publication CDN sync completed')
+		expect(text(output)).toContain('Published assets synchronized')
+		expect(text(output)).toContain('book.schema.json')
 		expect(text(output).match(/Published assets synchronized/g)).toHaveLength(1)
 		expect(text(output)).not.toContain('archive.diff')
 		expect(text(output)).not.toContain('Audit is comparing changes')
