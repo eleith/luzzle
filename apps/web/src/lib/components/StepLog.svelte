@@ -90,6 +90,8 @@
 			{/if}
 		</span>
 	</header>
+	<!-- Keyboard focus lets users scroll the bounded log output without a mouse. -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
 		class="log-viewport"
 		bind:this={viewport}

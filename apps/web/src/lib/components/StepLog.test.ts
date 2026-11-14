@@ -38,6 +38,9 @@ test('puts status above escaped terminal output and line count, seconds and lock
 	expect(header).toMatch(/<h3\b[^>]*>render<\/h3>/)
 	expect(header).toContain('Failed')
 	expect(header).not.toContain('aria-label="Auto-scroll"')
+	// Keep the scrollable output named and keyboard-focusable, not just the lock button.
+	expect(terminal).toContain('aria-label="render output"')
+	expect(terminal).toContain('tabindex="0"')
 	expect(terminal).toContain('&lt;script>Failure &amp; details&lt;/script>')
 	expect(terminal).toContain('&lt;img src=x> &amp; output')
 	expect(body).not.toMatch(/<(?:script|img)\b/)
