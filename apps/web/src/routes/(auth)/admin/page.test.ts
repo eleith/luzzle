@@ -5,6 +5,7 @@ import type { WebPieces } from '@luzzle/web.db'
 import { resolve } from '$app/paths'
 import { makePublicConfig } from '#lib/server/config.fixture.js'
 import type { PieceStats } from '#lib/server/dashboardStats.js'
+import type { DashboardView } from '#lib/server/load/dashboard.js'
 import Page from './+page.svelte'
 
 vi.mock('$app/paths', () => ({
@@ -34,7 +35,11 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 
-function html(pieces = [piece], pieceStats: PieceStats = { total: pieces.length, byType: [] }) {
+function html(
+	pieces = [piece],
+	pieceStats: PieceStats = { total: pieces.length, byType: [] },
+	edits: DashboardView['recentlyEditedPieces'] = []
+) {
 	const config = makePublicConfig({
 		url: { app: 'http://localhost', app_assets: '', luzzle_assets: '' }
 	})
@@ -47,7 +52,8 @@ function html(pieces = [piece], pieceStats: PieceStats = { total: pieces.length,
 				meta: { title: 'Dashboard' },
 				pieceStats,
 				fileCount: pieceStats.total,
-				recentlyEditedPieces: pieces,
+				recentlyPublishedPieces: pieces,
+				recentlyEditedPieces: edits,
 				lastPublish: null,
 				setup: {
 					pieceTypeCount: 1,
@@ -107,8 +113,55 @@ test('recent rows retain the slug and added-time fallbacks', () => {
 	expect(output).toContain('1 hour ago')
 })
 
-test('the recently edited section stays hidden when empty', () => {
-	expect(html([])).not.toContain('recent-list')
+test('both recent sections explain their empty state', () => {
+	const output = html([])
+	expect(output).not.toContain('recent-list')
+	expect(output).toContain('recently published')
+	expect(output).toContain('No published pieces yet.')
+	expect(output).toContain('pending publication')
+	expect(output.indexOf('pending publication')).toBeLessThan(output.indexOf('recently published'))
+	expect(output).toContain('No pieces pending publication.')
+})
+
+test('pending rows show draft or changes status instead of edit time, alongside their published version', () => {
+	const edits: DashboardView['recentlyEditedPieces'] = [
+		{
+			...piece,
+			title: 'Edited title',
+			hasPublishedVersion: true,
+			date_updated: piece.date_updated!
+		},
+		{
+			...piece,
+			id: 'draft',
+			file_path: 'books/draft #1.books.md',
+			title: 'New draft',
+			hasPublishedVersion: false,
+			date_updated: null
+		}
+	]
+	const output = html([piece], { total: 1, byType: [] }, edits)
+	const lists = [...output.matchAll(/<ul\b[^>]*class="recent-list[^"]*"[^>]*>([\s\S]*?)<\/ul>/g)]
+	expect(lists).toHaveLength(2)
+	expect(lists[1][1]).toContain('A book')
+	expect(lists[1][1]).not.toContain('Edited title')
+	const rows = [...lists[0][1].matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)].map((match) => match[1])
+	expect(rows).toHaveLength(2)
+	expect(rows[0]).toContain('Edited title')
+	expect(rows[0]).toMatch(/class="recent-status[^"]*"[^>]*>\s*has changes\s*<\/span>/)
+	expect(rows[0]).toContain('href="/admin/piece/books/a-book.books.md/source"')
+	expect(rows[0]).not.toContain('2 minutes ago')
+	expect(rows[1]).toContain('New draft')
+	expect(rows[1]).toMatch(/class="recent-status[^"]*"[^>]*>\s*draft\s*<\/span>/)
+	expect(rows[1]).toContain('href="/admin/piece/books/draft%20%231.books.md/source"')
+	expect(rows[1]).not.toContain('1 hour ago')
+	for (const row of rows) expect(row.match(/<a\b/g)).toHaveLength(1)
+})
+
+test('published rows display the successful publication timestamp when available', () => {
+	const output = html([{ ...piece, last_published_at: now - 60000 }])
+	expect(output).toContain('1 minute ago')
+	expect(output).not.toContain('2 minutes ago')
 })
 
 // The native resolver receives already-encoded params, not an erased pathstring.

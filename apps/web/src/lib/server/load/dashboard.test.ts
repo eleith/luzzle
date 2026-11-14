@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { config } from '#lib/server/config.js'
 import { getPieceStats, getAssetStats } from '../dashboardStats.js'
-import { getRecentlyEditedPieces } from '../pieces.js'
+import { getRecentlyPublishedPieces, getRecentlyEditedPieces } from '../pieces.js'
 import { getOpenWorkflowBackend } from '../workflow/index.js'
 import { getLatestWorkflowRun, type WorkflowRunRow } from '@luzzle/web.jobs'
 import { makeConfig, credentialsAuth, oidcAuth } from '../config.fixture'
@@ -17,7 +17,7 @@ vi.mock('#lib/server/config.js', async () => {
 			content: { ...defaults.content, text: { title: 'luzzle', description: '' } },
 			pieces: [
 				{ type: 'article', fields: { title: 'title', date_consumed: 'date' } },
-				{ type: 'bookmark', fields: { title: 'title', date_consumed: 'date' } }
+				{ type: 'bookmark', fields: { title: 'metadata.title', date_consumed: 'date' } }
 			],
 			ai: { provider: 'google', api_key: 'key' },
 			auth: oidcAuth,
@@ -32,6 +32,7 @@ vi.mock('../dashboardStats.js', () => ({
 }))
 
 vi.mock('../pieces.js', () => ({
+	getRecentlyPublishedPieces: vi.fn(),
 	getRecentlyEditedPieces: vi.fn()
 }))
 
@@ -46,6 +47,7 @@ vi.mock('@luzzle/web.jobs', () => ({
 const mocks = {
 	getPieceStats: vi.mocked(getPieceStats),
 	getAssetStats: vi.mocked(getAssetStats),
+	getRecentlyPublishedPieces: vi.mocked(getRecentlyPublishedPieces),
 	getRecentlyEditedPieces: vi.mocked(getRecentlyEditedPieces),
 	getOpenWorkflowBackend: vi.mocked(getOpenWorkflowBackend),
 	getLatestWorkflowRun: vi.mocked(getLatestWorkflowRun)
@@ -69,6 +71,7 @@ beforeEach(() => {
 	vi.clearAllMocks()
 	mocks.getPieceStats.mockResolvedValue({ total: 3, byType: [{ type: 'article', count: 3 }] })
 	mocks.getAssetStats.mockResolvedValue({ total: 2 })
+	mocks.getRecentlyPublishedPieces.mockResolvedValue([])
 	mocks.getRecentlyEditedPieces.mockResolvedValue([])
 	mocks.getOpenWorkflowBackend.mockReturnValue({} as never)
 	mocks.getLatestWorkflowRun.mockResolvedValue(null)
@@ -90,6 +93,7 @@ describe('loadDashboardPage', () => {
 			meta: { title: 'dashboard | luzzle' },
 			pieceStats: { total: 3, byType: [{ type: 'article', count: 3 }] },
 			fileCount: 5,
+			recentlyPublishedPieces: [],
 			recentlyEditedPieces: [],
 			lastPublish: makeRun(),
 			setup: {
@@ -100,6 +104,55 @@ describe('loadDashboardPage', () => {
 				cdnSyncConfigured: false
 			}
 		})
+	})
+
+	test('returns source titles and publication state without display labels', async () => {
+		const source = {
+			id: 'draft',
+			file_path: 'draft.article.md',
+			type: 'article',
+			date_added: 100,
+			date_updated: null,
+			frontmatter_json: '{"title":"Draft title"}',
+			publishedHash: null,
+			publishedAt: null
+		}
+		mocks.getRecentlyEditedPieces.mockResolvedValue([
+			source,
+			{
+				...source,
+				id: 'changed',
+				publishedHash: 'legacy-published-hash',
+				frontmatter_json: '{"title":"New title"}'
+			},
+			{ ...source, id: 'republish', publishedAt: 200, frontmatter_json: '{"title":"Retry title"}' },
+			{ ...source, id: 'untitled', frontmatter_json: '{}' },
+			{
+				...source,
+				id: 'bookmark',
+				type: 'bookmark',
+				frontmatter_json: '{"metadata":{"title":"Nested title"}}'
+			}
+		])
+
+		const result = await loadDashboardPage()
+
+		expect(
+			result.recentlyEditedPieces.map(({ title, hasPublishedVersion }) => ({
+				title,
+				hasPublishedVersion
+			}))
+		).toEqual([
+			{ title: 'Draft title', hasPublishedVersion: false },
+			{ title: 'New title', hasPublishedVersion: true },
+			{ title: 'Retry title', hasPublishedVersion: true },
+			{ title: 'draft.article.md', hasPublishedVersion: false },
+			{ title: 'Nested title', hasPublishedVersion: false }
+		])
+		expect(mocks.getRecentlyEditedPieces).toHaveBeenCalledWith(expect.anything(), 5, [
+			'article',
+			'bookmark'
+		])
 	})
 
 	test('reports the latest publish attempt even if it failed', async () => {

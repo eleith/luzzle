@@ -87,14 +87,14 @@
 		</div>
 	</section>
 
-	{#if data.recentlyEditedPieces.length}
-		<section class="dashboard-section">
-			<h2 class="section-header">recently edited</h2>
+	<section class="dashboard-section">
+		<h2 class="section-header">pending publication</h2>
+		{#if data.recentlyEditedPieces.length}
 			<div class="table-card">
 				<div class="recent-header" aria-hidden="true">
 					<span>title</span>
 					<span>type</span>
-					<span>updated</span>
+					<span>status</span>
 				</div>
 				<ul class="recent-list">
 					{#each data.recentlyEditedPieces as piece (piece.id)}
@@ -105,18 +105,53 @@
 									path: encodeArchivePath(piece.file_path)
 								})}
 							>
-								<span class="recent-title">{piece.title || piece.slug}</span>
+								<span class="recent-title">{piece.title}</span>
 								<span class="recent-type meta-cell">{piece.type}</span>
-								<span class="recent-updated meta-cell">
-									{relativeTime(piece.date_updated ?? piece.date_added)}
+								<span class="recent-status meta-cell">
+									{#if piece.hasPublishedVersion}has changes{:else}draft{/if}
 								</span>
 							</a>
 						</li>
 					{/each}
 				</ul>
 			</div>
-		</section>
-	{/if}
+		{:else}
+			<p class="empty-state">No pieces pending publication.</p>
+		{/if}
+	</section>
+
+	<section class="dashboard-section">
+		<h2 class="section-header">recently published</h2>
+		{#if data.recentlyPublishedPieces.length}
+			<div class="table-card">
+				<div class="recent-header" aria-hidden="true">
+					<span>title</span>
+					<span>type</span>
+					<span>published</span>
+				</div>
+				<ul class="recent-list">
+					{#each data.recentlyPublishedPieces as piece (piece.id)}
+						<li>
+							<a
+								class="recent-row"
+								href={resolve('/(auth)/admin/piece/[...path]/source', {
+									path: encodeArchivePath(piece.file_path)
+								})}
+							>
+								<span class="recent-title">{piece.title || piece.slug}</span>
+								<span class="recent-type meta-cell">{piece.type}</span>
+								<span class="recent-updated meta-cell">
+									{relativeTime(piece.last_published_at ?? piece.date_updated ?? piece.date_added)}
+								</span>
+							</a>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		{:else}
+			<p class="empty-state">No published pieces yet.</p>
+		{/if}
+	</section>
 
 	{#if data.pieceStats.byType.length}
 		<section class="dashboard-section">
@@ -410,6 +445,12 @@
 		outline-offset: -2px;
 	}
 
+	.empty-state {
+		margin: 0;
+		color: var(--color-on-surface-variant);
+		font-size: var(--font-size-xs);
+	}
+
 	.recent-title {
 		min-width: 0;
 		overflow: hidden;
@@ -459,6 +500,10 @@
 
 		.recent-updated {
 			display: none;
+		}
+
+		.recent-status {
+			grid-column: 1;
 		}
 	}
 </style>
