@@ -1,5 +1,16 @@
 # @luzzle/web
 
+## 0.0.250
+
+### Patch Changes
+
+- a151058: Stop loading application YAML and secrets during Vite/Svelte configuration discovery. Preserve configured Docker development networking through the existing startup manager, without changing production startup.
+- 3798150: Let page templates own navbar rendering and colors through a required helpers.navBar render function. Note pages, including words pieces, use a continuous theme background; other templates retain their palette-based navigation.
+- e8bcf3f: Split the admin dashboard's recent pieces into recently published and pending publication lists, with a status column distinguishing drafts from unpublished Markdown changes.
+- @luzzle/web.db@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.249
 
 ### Patch Changes
