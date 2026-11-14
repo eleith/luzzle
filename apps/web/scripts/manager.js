@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createServerEnvironment } from './runtime-environment.js'
+import { createServerEnvironment, createDevServerEnvironment } from './runtime-environment.js'
 
 const PATHS = {
 	CONFIG: path.resolve('config.yaml'),
@@ -60,7 +60,9 @@ class ExplorerManager {
 	async initialize() {
 		await Logger.clear()
 		this.config = loadConfig(PATHS.CONFIG)
-		this.serverEnvironment = createServerEnvironment(this.config)
+		this.serverEnvironment = this.isDev
+			? createDevServerEnvironment(this.config)
+			: createServerEnvironment(this.config)
 		await Logger.log(`Config App URL: ${this.config.url.app}`)
 	}
 

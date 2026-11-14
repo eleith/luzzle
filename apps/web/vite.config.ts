@@ -3,19 +3,12 @@ import type { Adapter } from '@sveltejs/kit'
 import { getRequest } from '@sveltejs/kit/node'
 import { sveltekit } from '@sveltejs/kit/vite'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
-import { defineConfig } from 'vite'
+import { defineConfig, type ServerOptions } from 'vite'
 import Icons from 'unplugin-icons/vite'
 import { enhancedImages } from '@sveltejs/enhanced-img'
-import { loadConfig } from '@luzzle/web.templates/config'
-import { resolveAppOrigin } from './scripts/runtime-environment.js'
 
-function extractHostname(url: string | undefined): string | undefined {
-	if (!url) return undefined
-	try {
-		return new URL(url).hostname
-	} catch {
-		return undefined
-	}
+type DevServerSettings = Pick<ServerOptions, 'host' | 'allowedHosts' | 'hmr'> & {
+	appOrigin?: string
 }
 
 function createAdapter(origin: string | undefined): Adapter {
@@ -35,19 +28,11 @@ function createAdapter(origin: string | undefined): Adapter {
 }
 
 export default defineConfig(({ command }) => {
-	const config = command === 'serve' ? loadConfig('./config.yaml') : undefined
-	const appOrigin = config ? resolveAppOrigin(config.url.app) : undefined
-	const host = config?.network?.public?.host
-	const hmrPort = config?.network?.public?.hmr_port
-	const allowedHosts = Array.from(
-		new Set(
-			[
-				'localhost',
-				extractHostname(config?.url.app),
-				extractHostname(config?.network.internal.explorer)
-			].filter((value): value is string => !!value)
-		)
-	)
+	// The development manager supplies networking settings after validating YAML.
+	// Editors resolve this config too, without starting the application.
+	const { appOrigin, ...server } = (
+		command === 'serve' ? JSON.parse(process.env.LUZZLE_DEV_SERVER || '{}') : {}
+	) as DevServerSettings
 	const sourceFirst = command === 'serve' && !process.env.VITEST
 
 	return {
@@ -85,10 +70,6 @@ export default defineConfig(({ command }) => {
 		],
 		// Keep computed Shiki imports relative to their owning runtime package.
 		ssr: sourceFirst ? { noExternal: [/^@luzzle\//] } : { external: ['@luzzle/web.theme/editor'] },
-		server: {
-			host: host || false,
-			allowedHosts,
-			hmr: { clientPort: hmrPort ? Number(hmrPort) : undefined }
-		}
+		server: { host: false, allowedHosts: ['localhost'], ...server }
 	}
 })

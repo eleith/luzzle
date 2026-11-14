@@ -67,10 +67,14 @@ function run(dev = true, environment: NodeJS.ProcessEnv = {}) {
 	})
 }
 
-async function configure(app = 'https://manager.example/garden', authenticated = false) {
+async function configure(
+	app = 'https://manager.example/garden',
+	authenticated = false,
+	hmrPort?: number
+) {
 	const config: Record<string, unknown> = {
 		url: { app },
-		network: { public: { host: '127.0.0.1' } }
+		network: { public: { host: '127.0.0.1', hmr_port: hmrPort } }
 	}
 	if (authenticated) {
 		config.auth = {
@@ -88,6 +92,25 @@ test('development startup loads config from the mounted working directory withou
 	expect(stdout).toContain('Running in development mode...')
 	expect(stdout).toContain('manager-command run dev -- --host')
 	expect(stdout).not.toContain('Initiating production build sequence')
+})
+
+test('development passes only YAML-derived networking settings to Vite', async () => {
+	await configure('https://manager.example:8443/garden', true, 8443)
+	await writeFile(
+		path.join(directory, 'bin/pnpm'),
+		'#!/bin/sh\nprintf "vite-settings %s\\n" "$LUZZLE_DEV_SERVER"\n',
+		{ mode: 0o755 }
+	)
+
+	const { stdout } = await run(true, { LUZZLE_DEV_SERVER: '{"allowedHosts":true}' })
+	const settings = JSON.parse(stdout.match(/^vite-settings (.+)$/m)![1])
+
+	expect(settings).toEqual({
+		appOrigin: 'https://manager.example:8443',
+		host: '127.0.0.1',
+		allowedHosts: ['localhost', 'manager.example', 'luzzle-web'],
+		hmr: { clientPort: 8443 }
+	})
 })
 
 test('production delegates to the absolute real launcher with build and log files in the working directory', async () => {

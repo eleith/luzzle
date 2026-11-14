@@ -64,3 +64,39 @@ export function createServerEnvironment(config, environment = process.env) {
 	}
 	return env
 }
+
+/** @param {string} url */
+function extractHostname(url) {
+	if (!url) return undefined
+	try {
+		return new URL(url).hostname
+	} catch {
+		return undefined
+	}
+}
+
+/**
+ * @param {Pick<import('@luzzle/web.templates/config').TemplateConfig, 'network' | 'url' | 'auth'>} config
+ * @param {NodeJS.ProcessEnv} environment
+ * @returns {NodeJS.ProcessEnv}
+ */
+export function createDevServerEnvironment(config, environment = process.env) {
+	// Pass only public dev-server settings; config discovery must not load the app.
+	return {
+		...createServerEnvironment(config, environment),
+		LUZZLE_DEV_SERVER: JSON.stringify({
+			appOrigin: resolveAppOrigin(config.url.app),
+			host: config.network.public.host || false,
+			allowedHosts: Array.from(
+				new Set(
+					[
+						'localhost',
+						extractHostname(config.url.app),
+						extractHostname(config.network.internal.explorer)
+					].filter(Boolean)
+				)
+			),
+			hmr: { clientPort: config.network.public.hmr_port || undefined }
+		})
+	}
+}
