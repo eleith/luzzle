@@ -1,15 +1,9 @@
 <script lang="ts">
 	import { formatPieceByline, safeExternalUrl } from '@luzzle/web.pieces'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { PageProps } from '@luzzle/web.templates/pages/props'
 	import type { Fields } from './schema.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		tags: Array<{ slug: string; tag: string }>
-		helpers: PieceComponentHelpers
-	}
-	let { piece, fields, tags, helpers }: Props = $props()
+	let { piece, fields, tags, helpers }: PageProps<Fields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const byline = $derived(
 		formatPieceByline(piece.date_consumed, fields.dateReleased, fields.runtime)
@@ -25,6 +19,13 @@
 		fields.image ? helpers.getPieceImageUrl(fields.image, 125, 'avif') : undefined
 	)
 </script>
+
+{@render helpers.navBar({
+	showRandom: true,
+	background: palette?.background || 'var(--color-surface-container)',
+	color: palette?.bodyText,
+	hoverColor: palette?.accent
+})}
 
 <main>
 	<section

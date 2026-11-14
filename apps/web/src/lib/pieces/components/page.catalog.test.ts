@@ -1,27 +1,30 @@
-import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { fileURLToPath } from 'node:url'
 import { createServer, type ViteDevServer } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
-import type { Component } from 'svelte'
+import { createRawSnippet, type Component } from 'svelte'
 import type { render as Render } from 'svelte/server'
-import {
-	createPieceHelpers,
-	type PieceComponentHelpers,
-	type PublicWebPiece
-} from '@luzzle/web.pieces'
+import { createPieceHelpers, type PublicWebPiece } from '@luzzle/web.pieces'
 import { mapPieceTemplates, type PieceTemplateData } from '@luzzle/web.templates/pieces/fields'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
+import type { PageNavbarProps, PageProps } from '@luzzle/web.templates/pages/props'
 
-type Props = {
-	piece: PublicWebPiece
-	fields: PieceTemplateData['page']['fields']
-	tags: Array<{ slug: string; tag: string }>
-	helpers: PieceComponentHelpers
-}
+type Props = PageProps<PieceTemplateData['page']['fields']>
 type PageMapping = NonNullable<TemplateConfig['pieces'][number]['templates']>['page']['mapping']
 let server: ViteDevServer
 let render: typeof Render
 let getPage: (name?: string) => Component<Props>
+const palette = {
+	background: '#123456',
+	titleText: '#111111',
+	bodyText: '#abcdef',
+	accent: '#654321'
+}
+const renderNavBar = vi.fn(
+	(_options: PageNavbarProps) => '<nav aria-label="Template navigation"></nav>'
+)
+
+beforeEach(() => renderNavBar.mockClear())
 
 beforeAll(async () => {
 	server = await createServer({
@@ -56,6 +59,12 @@ function source(metadata: PublicWebPiece['metadata'] = {}): PublicWebPiece {
 		date_consumed: Date.UTC(2025, 0, 2),
 		metadata,
 		assets: [
+			{
+				asset_key: 'image-key',
+				transformation: 'palette',
+				content: JSON.stringify(palette),
+				mime_type: 'application/json'
+			},
 			{
 				asset_key: 'one',
 				transformation: 'markdown',
@@ -109,11 +118,16 @@ function props(
 		piece: mapped,
 		fields: mapped.templates.page.fields,
 		tags: [{ slug: 'a tag', tag: 'A TAG' }],
-		helpers: createPieceHelpers(
-			piece.assets,
-			(path) => 'https://assets.example/' + path.split('/').map(encodeURIComponent).join('/'),
-			() => 'https://app.example/pieces/inventory/one'
-		)
+		helpers: {
+			...createPieceHelpers(
+				piece.assets,
+				(path) => 'https://assets.example/' + path.split('/').map(encodeURIComponent).join('/'),
+				() => 'https://app.example/pieces/inventory/one'
+			),
+			navBar: createRawSnippet((options) => ({
+				render: () => renderNavBar(options())
+			}))
+		}
 	}
 }
 
@@ -136,16 +150,24 @@ describe('named page catalog SSR', () => {
 		'snippet',
 		'video-game',
 		'tabletop-game'
-	])(
-		'%s renders useful escaped HTML and normalized note content without app chrome',
-		async (name) => {
-			const body = await html(name)
-			expect(body).toContain('Mapped &lt;Record>')
-			expect(body).toContain('<p>Rendered note</p>')
-			expect(body).not.toContain('<nav')
-			expect(body).toContain('href="/tags/a%20tag"')
-		}
-	)
+	])('%s renders escaped content and calls the provided navigation helper', async (name) => {
+		const body = await html(name)
+		expect(body).toContain('Mapped &lt;Record>')
+		expect(body).toContain('<p>Rendered note</p>')
+		expect(body).toContain('aria-label="Template navigation"')
+		expect(body).toContain('href="/tags/a%20tag"')
+		expect(renderNavBar).toHaveBeenCalledTimes(1)
+		expect(renderNavBar).toHaveBeenCalledWith(
+			name === 'note'
+				? { showRandom: true }
+				: {
+						showRandom: true,
+						background: palette.background,
+						color: palette.bodyText,
+						hoverColor: palette.accent
+					}
+		)
+	})
 
 	test('book/film fields are separate from the selected icon and remain template-specific', async () => {
 		const book = await html(

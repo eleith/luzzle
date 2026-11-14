@@ -1,17 +1,11 @@
 <script lang="ts">
 	import { formatPieceDate, formatPieceYear, formatTrackDuration } from '@luzzle/web.pieces'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { PageProps } from '@luzzle/web.templates/pages/props'
 	import VinylRecord from '@luzzle/web.templates/icons/vinyl-record'
 	import type { Fields } from './schema.js'
 	import { getMusicLinks } from './helpers.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		tags: Array<{ slug: string; tag: string }>
-		helpers: PieceComponentHelpers
-	}
-	let { piece, fields, tags, helpers }: Props = $props()
+	let { piece, fields, tags, helpers }: PageProps<Fields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const bylineParts = $derived(
 		[
@@ -47,6 +41,13 @@
 		)
 	)
 </script>
+
+{@render helpers.navBar({
+	showRandom: true,
+	background: palette?.background || 'var(--color-surface-container)',
+	color: palette?.bodyText,
+	hoverColor: palette?.accent
+})}
 
 <main>
 	<section

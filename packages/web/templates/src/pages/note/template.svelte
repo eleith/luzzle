@@ -1,16 +1,10 @@
 <script lang="ts">
 	import { formatPieceDate } from '@luzzle/web.pieces'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { PageProps } from '@luzzle/web.templates/pages/props'
 	import type { Fields } from './schema.js'
 	import { noteReadTime } from './helpers.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		tags: Array<{ slug: string; tag: string }>
-		helpers: PieceComponentHelpers
-	}
-	let { piece, tags, helpers }: Props = $props()
+	let { piece, tags, helpers }: PageProps<Fields> = $props()
 	const note = $derived(helpers.getPieceAssetContent(piece.key, 'markdown') || piece.note)
 	const byline = $derived.by(() => {
 		const parts: string[] = []
@@ -21,6 +15,8 @@
 		return parts.join(' · ')
 	})
 </script>
+
+{@render helpers.navBar({ showRandom: true })}
 
 <main>
 	<section class="hero">

@@ -1,20 +1,26 @@
-import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { fileURLToPath } from 'node:url'
 import { createServer, type ViteDevServer } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
-import type { Component, ComponentProps } from 'svelte'
+import { createRawSnippet, type Component, type ComponentProps } from 'svelte'
 import type { render as Render } from 'svelte/server'
 import { createPieceHelpers, type PublicWebPiece } from '@luzzle/web.pieces'
 import type DefaultPage from '@luzzle/web.templates/pages/default'
 import { mapTemplateFields } from '@luzzle/web.templates/mapping'
 import { schema as defaultSchema } from '@luzzle/web.templates/pages/default/schema'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
+import type { PageNavbarProps } from '@luzzle/web.templates/pages/props'
 
 type Props = ComponentProps<typeof DefaultPage>
 type PageMapping = NonNullable<TemplateConfig['pieces'][number]['templates']>['page']['mapping']
 let server: ViteDevServer
 let Page: Component<Props>
 let render: typeof Render
+const renderNavBar = vi.fn(
+	(_options: PageNavbarProps) => '<nav aria-label="Template navigation"></nav>'
+)
+
+beforeEach(() => renderNavBar.mockClear())
 
 beforeAll(async () => {
 	server = await createServer({
@@ -96,13 +102,18 @@ async function html(
 	}
 ) {
 	const fields = mapTemplateFields(defaultSchema.fields, current.metadata, mapping)
-	const helpers = createPieceHelpers(
-		current.assets,
-		(path) => `https://assets.example/${path.split('/').map(encodeURIComponent).join('/')}`,
-		() => {
-			throw new Error('The built-in body must not request navigation helpers')
-		}
-	)
+	const helpers: Props['helpers'] = {
+		...createPieceHelpers(
+			current.assets,
+			(path) => `https://assets.example/${path.split('/').map(encodeURIComponent).join('/')}`,
+			() => {
+				throw new Error('The template must not request a piece URL here')
+			}
+		),
+		navBar: createRawSnippet((options) => ({
+			render: () => renderNavBar(options())
+		}))
+	}
 	return (
 		await render(Page, {
 			props: { piece: current, fields, tags, helpers }
@@ -111,7 +122,7 @@ async function html(
 }
 
 describe('canonical default page body SSR', () => {
-	test('renders original title, escaped description and normalized tags without app navigation', async () => {
+	test('renders original title, escaped description, normalized tags and supplied navigation', async () => {
 		const body = await html(piece(), [{ slug: 'reading', tag: 'READING<&' }])
 		expect(body.match(/<main\b/g)).toHaveLength(1)
 		expect(body).toContain('Book_Source &lt;Title>&amp;')
@@ -119,7 +130,7 @@ describe('canonical default page body SSR', () => {
 		expect(body).toContain('href="/tags/reading"')
 		expect(body).toContain('#reading&lt;&amp;')
 		expect(body).not.toContain('<Description>')
-		expect(body).not.toContain('<nav')
+		expect(body).toContain('aria-label="Template navigation"')
 		expect(body).not.toContain('Not a default byline')
 	})
 
@@ -148,11 +159,18 @@ describe('canonical default page body SSR', () => {
 		expect(undated).not.toContain('1.2.2024')
 	})
 
-	test('uses the helper palette for the poster hero and border', async () => {
+	test('uses the helper palette for navigation, poster hero and border', async () => {
 		const body = await html()
 		expect(body).toContain('--poster-background-color: #123456; --poster-title-color: #abcdef')
 		expect(body).toContain('--backdrop-accent: #654321')
 		expect(body).toContain('--byline-border: #654321;')
+		expect(renderNavBar).toHaveBeenCalledTimes(1)
+		expect(renderNavBar).toHaveBeenCalledWith({
+			showRandom: true,
+			background: '#123456',
+			color: '#fedcba',
+			hoverColor: '#654321'
+		})
 	})
 
 	test('preserves theme fallbacks and omits absent supplemental details and tags', async () => {
@@ -162,6 +180,12 @@ describe('canonical default page body SSR', () => {
 		expect(body).toContain('--byline-border: var(--color-outline-variant)')
 		expect(body).not.toContain('class="supplemental ')
 		expect(body).not.toContain('tags-container')
+		expect(renderNavBar).toHaveBeenCalledWith({
+			showRandom: true,
+			background: 'var(--color-surface-container)',
+			color: undefined,
+			hoverColor: undefined
+		})
 	})
 
 	test('renders a normalized safe URL in preference to ISBN, or the original ISBN search link', async () => {

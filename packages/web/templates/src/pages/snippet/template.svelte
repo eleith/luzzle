@@ -1,22 +1,24 @@
 <script lang="ts">
 	import { formatPieceDate } from '@luzzle/web.pieces'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { PageProps } from '@luzzle/web.templates/pages/props'
 	import type { Fields } from './schema.js'
 	import { getFileByline } from './helpers.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		tags: Array<{ slug: string; tag: string }>
-		helpers: PieceComponentHelpers
-	}
-	let { piece, fields, tags, helpers }: Props = $props()
+	let { piece, fields, tags, helpers }: PageProps<Fields> = $props()
+	const palette = $derived(helpers.getPiecePalette())
 	const files = $derived(fields.files ?? [])
 	const bylineParts = $derived(
 		[...getFileByline(files), formatPieceDate(piece.date_consumed)].filter(Boolean)
 	)
 	const dateUpdated = $derived(formatPieceDate(fields.dateUpdated))
 </script>
+
+{@render helpers.navBar({
+	showRandom: true,
+	background: palette?.background || 'var(--color-surface-container)',
+	color: palette?.bodyText,
+	hoverColor: palette?.accent
+})}
 
 <main>
 	<section class="content">

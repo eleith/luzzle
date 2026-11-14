@@ -30,6 +30,11 @@
 		"./icons": "./src/icons/catalog.js",
 		"./icons/*": "./src/icons/*/template.svelte",
 		"./pages": "./src/pages/catalog.js",
+		"./pages/props": {
+			"development": "./src/pages/props.ts",
+			"types": "./dist/pages/props.d.ts",
+			"import": "./dist/pages/props.js"
+		},
 		"./pages/*": "./src/pages/*/template.svelte",
 		"./opengraphs": "./src/opengraphs/catalog.js",
 		"./opengraphs/*": "./src/opengraphs/*/template.svelte",

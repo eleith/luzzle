@@ -1,17 +1,11 @@
 <script lang="ts">
 	import { formatPieceDate, formatPieceYear, safeExternalUrl } from '@luzzle/web.pieces'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { PageProps } from '@luzzle/web.templates/pages/props'
 	import BrowserWindow from '@luzzle/web.templates/icons/browser-window'
 	import type { Fields } from './schema.js'
 	import { articleBylineSource, articleReadTime } from './helpers.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		tags: Array<{ slug: string; tag: string }>
-		helpers: PieceComponentHelpers
-	}
-	let { piece, fields, tags, helpers }: Props = $props()
+	let { piece, fields, tags, helpers }: PageProps<Fields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const link = $derived(safeExternalUrl(fields.url))
 	const publishedYear = $derived(formatPieceYear(fields.datePublished))
@@ -35,6 +29,13 @@
 		return parts.join(' · ')
 	})
 </script>
+
+{@render helpers.navBar({
+	showRandom: true,
+	background: palette?.background || 'var(--color-surface-container)',
+	color: palette?.bodyText,
+	hoverColor: palette?.accent
+})}
 
 <main>
 	<section

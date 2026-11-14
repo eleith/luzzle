@@ -1,16 +1,10 @@
 <script lang="ts">
 	import { formatPieceDate, safeExternalUrl } from '@luzzle/web.pieces'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { PageProps } from '@luzzle/web.templates/pages/props'
 	import BookCover from '@luzzle/web.templates/icons/book'
 	import type { Fields } from './schema.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		tags: Array<{ slug: string; tag: string }>
-		helpers: PieceComponentHelpers
-	}
-	let { piece, fields, tags, helpers }: Props = $props()
+	let { piece, fields, tags, helpers }: PageProps<Fields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const link = $derived(safeExternalUrl(fields.url))
 	const coverUrl = $derived(
@@ -28,6 +22,13 @@
 		return parts.join(' · ')
 	})
 </script>
+
+{@render helpers.navBar({
+	showRandom: true,
+	background: palette?.background || 'var(--color-surface-container)',
+	color: palette?.bodyText,
+	hoverColor: palette?.accent
+})}
 
 <main>
 	<section
