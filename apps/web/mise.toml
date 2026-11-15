@@ -3,3 +3,7 @@
 [tasks.docker]
 description = "Docker compose commands for dev environment"
 run = 'fnox exec -- docker compose -f docker-compose.dev.yml -f docker-compose.dev.local.yml "$@"'
+
+[tasks.docker-prod]
+description = "Docker compose commands for local production builds"
+run = 'fnox exec -- docker compose -f docker-compose.yml -f docker-compose.prod.local.yml "$@"'

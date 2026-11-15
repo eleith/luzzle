@@ -42,3 +42,4 @@ vite.config.ts.timestamp-*
 mise.local.toml
 fnox.local.toml
 docker-compose.dev.local.yml
+docker-compose.prod.local.yml

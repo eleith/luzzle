@@ -36,8 +36,62 @@ Web source reloads through Vite; worker source uses Node watch mode. Rebuild ima
 after changing manifests, the lockfile or Dockerfiles. Restart services after YAML
 changes. Edit `demo/config/config.yaml`, not the compatibility symlink.
 
-`apps/web/docker-compose.yml` builds production-like images for developer testing.
-It is intentionally different from the [published-image example](docker-compose.yml).
+## Test a local production build
+
+From `apps/web`, create an untracked `docker-compose.prod.local.yml`, just as you
+have a local override for development. With fnox, explicitly forward its variables
+to the production services; exporting them to Compose alone does not put them in
+the containers:
+
+```yaml
+services:
+  luzzle-web:
+    environment:
+      - LUZZLE_AUTH_SECRET
+      - LUZZLE_AUTH_PASSWORD
+      - GOOGLE_API_KEY
+  luzzle-worker:
+    environment:
+      - LUZZLE_AUTH_SECRET
+      - LUZZLE_AUTH_PASSWORD
+      - GOOGLE_API_KEY
+```
+
+Add any other variables referenced by your YAML. Do not forward `LUZZLE_DEV`.
+Alternatively, use `.env` and an empty local override (`services: {}`). The base
+production Compose file reads `.env` when present; it is optional (Compose 2.24+
+required). Image builds also require `$HOME/.npmrc`, passed as a BuildKit secret.
+
+The shared mise config defines `docker-prod`; a `mise.local.toml` override of
+`docker` does not override this separate task.
+
+Stop the dev stack before starting the production build. Both stacks use port
+8080 (and 9001) and share the demo archive, database and asset directories.
+
+```sh
+mise docker down
+mise docker-prod up --build
+```
+
+Open <http://localhost:8080>. This runs the compiled app rather than Vite's dev
+server, so you can inspect production JS/CSS requests. There is no hot reload;
+use `--build` again after source changes.
+
+The production Compose file supplies internal web/worker URLs through environment
+variables; the demo YAML defaults to dev URLs when those variables are absent.
+You do not need to edit the YAML when switching stacks.
+
+To return to development:
+
+```sh
+mise docker-prod down
+mise docker up
+```
+
+Without mise/fnox, the production command is
+`docker compose -f docker-compose.yml -f docker-compose.prod.local.yml up --build`
+with the required environment configured. This local-build Compose file is
+intentionally different from the [published-image example](docker-compose.yml).
 
 Follow the [development checks](../development.md). Keep parsing in `@luzzle/core`,
 heavy work in the worker, UI styling on theme tokens, and web/worker/templates on

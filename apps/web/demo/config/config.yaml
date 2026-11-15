@@ -5,8 +5,8 @@ url:
 
 network:
   internal:
-    explorer: http://luzzle-dev-web:5173
-    worker: http://luzzle-dev-worker:9000
+    explorer: ${LUZZLE_INTERNAL_EXPLORER_URL:-http://luzzle-dev-web:5173}
+    worker: ${LUZZLE_INTERNAL_WORKER_URL:-http://luzzle-dev-worker:9000}
 
 auth:
   secret: ${LUZZLE_AUTH_SECRET}

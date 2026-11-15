@@ -7,7 +7,12 @@ services:
         - npmrc
     container_name: luzzle-web
     user: "${UID:-1000}:${GID:-1000}"
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      LUZZLE_INTERNAL_EXPLORER_URL: http://luzzle-web:3000
+      LUZZLE_INTERNAL_WORKER_URL: http://luzzle-worker:9000
     ports:
       - "3000:3000"
     volumes:
@@ -34,7 +39,12 @@ services:
         - npmrc
     container_name: luzzle-worker
     user: "${UID:-1000}:${GID:-1000}"
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      LUZZLE_INTERNAL_EXPLORER_URL: http://luzzle-web:3000
+      LUZZLE_INTERNAL_WORKER_URL: http://luzzle-worker:9000
     networks:
       - luzzle
     volumes:
