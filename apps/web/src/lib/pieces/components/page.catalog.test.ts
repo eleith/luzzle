@@ -158,7 +158,7 @@ describe('named page catalog SSR', () => {
 		expect(body).toContain('href="/tags/a%20tag"')
 		expect(renderNavBar).toHaveBeenCalledTimes(1)
 		expect(renderNavBar).toHaveBeenCalledWith(
-			name === 'note'
+			name === 'note' || name === 'snippet'
 				? { showRandom: true }
 				: {
 						showRandom: true,

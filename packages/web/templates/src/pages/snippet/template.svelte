@@ -5,7 +5,6 @@
 	import { getFileByline } from './helpers.js'
 
 	let { piece, fields, tags, helpers }: PageProps<Fields> = $props()
-	const palette = $derived(helpers.getPiecePalette())
 	const files = $derived(fields.files ?? [])
 	const bylineParts = $derived(
 		[...getFileByline(files), formatPieceDate(piece.date_consumed)].filter(Boolean)
@@ -13,12 +12,7 @@
 	const dateUpdated = $derived(formatPieceDate(fields.dateUpdated))
 </script>
 
-{@render helpers.navBar({
-	showRandom: true,
-	background: palette?.background || 'var(--color-surface-container)',
-	color: palette?.bodyText,
-	hoverColor: palette?.accent
-})}
+{@render helpers.navBar({ showRandom: true })}
 
 <main>
 	<section class="content">
