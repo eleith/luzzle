@@ -1,59 +1,68 @@
 <script lang="ts">
-	import { onMount } from 'svelte'
-	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-	import Opengraph from '#lib/pieces/components/opengraph.svelte'
+	import type { PublicWebPiece } from '@luzzle/web.pieces'
 	import { OpengraphImageWidth, OpengraphImageHeight } from '@luzzle/web.pieces'
+	import { getPieceHelpers } from '#lib/pieces/helpers.js'
 
-	let { piece }: { piece: TemplatedPiece } = $props()
-	let container: HTMLDivElement | undefined = $state()
-	let scale = $state(1)
-
-	onMount(() => {
-		function updateScale() {
-			if (container) scale = Math.min(1, container.clientWidth / OpengraphImageWidth)
-		}
-		updateScale()
-		const observer = new ResizeObserver(updateScale)
-		if (container) observer.observe(container)
-		return () => observer.disconnect()
-	})
+	let { piece, publishedAt }: { piece: PublicWebPiece; publishedAt?: number | null } = $props()
+	const asset = $derived(piece.assets.find((asset) => asset.transformation === 'opengraph'))
+	const assetUrl = $derived(
+		asset ? getPieceHelpers(piece).getPieceAssetUrl(asset.asset_key, 'opengraph') : undefined
+	)
+	// Published paths are reused, but their responses are cached as immutable.
+	const imageUrl = $derived(
+		assetUrl && publishedAt != null ? `${assetUrl}?v=${publishedAt}` : assetUrl
+	)
+	let failedUrl = $state<string>()
 </script>
 
 <main id="main-content" class="share-viewport" aria-label="Share">
-	<div
-		class="scale-container"
-		bind:this={container}
-		style:max-width="{OpengraphImageWidth}px"
-		style:height="{OpengraphImageHeight * scale}px"
-	>
-		<div
-			class="scale-inner"
-			style:transform="scale({scale})"
-			style:width="{OpengraphImageWidth}px"
-			style:height="{OpengraphImageHeight}px"
+	{#if imageUrl}
+		{#if failedUrl === imageUrl}
+			<p role="status">The generated share image could not be loaded.</p>
+		{/if}
+		<a
+			href={imageUrl}
+			target="_blank"
+			rel="external noopener noreferrer"
+			aria-label="Open share image for {piece.title} in a new tab"
+			style:max-width="{OpengraphImageWidth}px"
 		>
-			<Opengraph {piece} />
-		</div>
-	</div>
+			{#if failedUrl === imageUrl}
+				Open image in a new tab
+			{:else}
+				<img
+					src={imageUrl}
+					alt="Share image for {piece.title}"
+					width={OpengraphImageWidth}
+					height={OpengraphImageHeight}
+					onerror={() => (failedUrl = imageUrl)}
+				/>
+			{/if}
+		</a>
+	{:else}
+		<p>No generated share image is available. Publish or generate a fresh preview to create one.</p>
+	{/if}
 </main>
 
 <style>
 	.share-viewport {
 		display: flex;
-		justify-content: center;
+		flex-direction: column;
 		align-items: center;
-		padding: var(--space-8);
-		min-height: 80vh;
+		gap: var(--space-4);
+		padding: var(--space-4);
 		background: var(--color-surface-container-low);
 		color: var(--color-on-surface);
 	}
-	.scale-container {
+	a {
+		display: block;
 		width: 100%;
-		margin-inline: auto;
-		overflow: hidden;
-		box-shadow: var(--shadow-raised);
 	}
-	.scale-inner {
-		transform-origin: top left;
+	img {
+		display: block;
+		width: 100%;
+		height: auto;
+		max-height: 80svh;
+		object-fit: contain;
 	}
 </style>

@@ -64,12 +64,7 @@ function expectAppNavigation(jobs = ['job'], tags: string[] = []) {
 	]
 	for (const call of resolve.mock.calls) expect(calls).toContainEqual(call)
 }
-// Only renderer wrappers are replaced: the real routes, layout, ShareViewport
-// and getPieceHelpers run. SSR cannot prove reactive prop updates, client SSE,
-// or instance ResizeObserver mounting/cleanup and responsive scaling behavior.
-vi.mock('#lib/pieces/components/opengraph.svelte', async () => ({
-	default: (await import('#lib/pieces/viewer/fixtures/Composition.svelte')).default
-}))
+// Page and icon renderers are replaced; Share uses the real image viewer and URL helpers.
 vi.mock('#lib/pieces/components/page.svelte', async () => ({
 	default: (await import('#lib/pieces/viewer/fixtures/PageRenderer.svelte')).default
 }))
@@ -153,25 +148,32 @@ function tree(props: Data, view: keyof typeof routes = 'share', query = '') {
 
 beforeEach(() => vi.clearAllMocks())
 
-test.each([true, false])('Share reconstructs composition with recorded PNG=%s', (png) => {
-	const html = tree(data('completed', png))
+test('Share links only the recorded PNG from the current preview job', () => {
+	const props = data()
+	props.job = 'preview #2'
+	const html = tree(props)
+	const url = '/admin/preview/preview%20%232/asset/generated/share.png'
 	expect(html).toContain('aria-label="Share"')
-	expect(html).toContain('data-renderer="composition"')
-	expect(html).toContain('Preview &lt;Draft>')
-	expect(html).toContain('src="/admin/preview/job/asset/generated/cover.jpg"')
+	expect(html).toContain('alt="Share image for Preview &lt;Draft>"')
+	expect(html).toContain(`src="${url}"`)
+	expect(html).toContain(`href="${url}" target="_blank" rel="external noopener noreferrer"`)
 	expect(html.match(/<img\b/g)).toHaveLength(1)
 	expect(html.match(/<main\b/g)).toHaveLength(1)
 	expect(html).toContain('id="main-content"')
-	expect(html).not.toMatch(
-		/generated\/share\.png|not (?:been )?generated|Open generated share image|share \(html\)|<button/i
-	)
+	expect(html).not.toMatch(/generated\/cover\.jpg|data-renderer=|share \(html\)|<button/i)
 	expect(html).not.toMatch(
 		/https:\/\/(?:public|cdn)\.test|\/pieces\/assets\/|\/admin\/asset\/|published\/cover\.jpg/
 	)
-	expectAppNavigation()
+	expectAppNavigation(['preview #2'])
 })
 
-test('?html is ignored: identical composition and four tabs plus Back, only Share active', () => {
+test('a completed preview without a PNG does not substitute its cover or a published image', () => {
+	const html = tree(data('completed', false))
+	expect(html).toContain('No generated share image is available.')
+	expect(html).not.toMatch(/<img\b|data-renderer=|\/pieces\/assets\//)
+})
+
+test('?html is ignored: identical image viewer and four tabs plus Back, only Share active', () => {
 	const props = data()
 	const html = tree(props)
 	expect(tree(props, 'share', '?html')).toBe(html)
@@ -187,20 +189,20 @@ test('?html is ignored: identical composition and four tabs plus Back, only Shar
 	expectAppNavigation(['job', 'job'])
 })
 
-test.each(['share', 'page', 'icon'] as const)(
+test.each(['page', 'icon'] as const)(
 	'completed %s owns exactly one main inside the real layout',
 	(view) => {
 		const html = tree(data(), view)
 		expect(html.match(/<main\b/g)).toHaveLength(1)
 		expect(html.match(/id="main-content"/g)).toHaveLength(1)
-		expect(html).toContain(`data-renderer="${view === 'share' ? 'composition' : view}"`)
+		expect(html).toContain(`data-renderer="${view}"`)
 		expect(html).toContain('src="/admin/preview/job/asset/generated/cover.jpg"')
 		expectAppNavigation()
 	}
 )
 
 test.each(['waiting', 'running', 'failed', 'expired'] as const)(
-	'%s Share keeps facts and logs under the layout main, not composition or PNG UI',
+	'%s Share keeps facts and logs under the layout main, not PNG UI',
 	(status) => {
 		const html = tree(data(status))
 		expect(html.match(/<main\b/g)).toHaveLength(1)
@@ -217,7 +219,7 @@ test.each(['waiting', 'running', 'failed', 'expired'] as const)(
 	}
 )
 
-test('completed without an assembled piece is safe and invents no composition or artifacts', () => {
+test('completed without an assembled piece is safe and invents no artifacts', () => {
 	const pending = data('running')
 	if (pending.status !== 'running') throw new Error('Expected running fixture')
 	const html = tree({ ...pending, status: 'completed' })

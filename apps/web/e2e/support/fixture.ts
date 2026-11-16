@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { asCoreDatabase, migrate, Pieces, StorageFileSystem } from '@luzzle/core'
 import { createAppDb, runWebMigrations } from '@luzzle/web.db'
@@ -10,7 +10,8 @@ export const notebook = {
 	publicUrl: '/pieces/notes/meteor-notebook',
 	type: 'notes',
 	slug: 'meteor-notebook',
-	title: 'Meteor Notebook'
+	title: 'Meteor Notebook',
+	publishedAt: Date.UTC(2026, 0, 1)
 }
 
 const note = `Original observation.
@@ -118,7 +119,8 @@ export async function createFixture(directory: string, origin: string) {
 					note,
 					json_metadata: JSON.stringify({ title: piece.title, date: dateConsumed }),
 					date_added: consumedAt,
-					date_consumed: consumedAt
+					date_consumed: consumedAt,
+					last_published_at: notebook.publishedAt
 				}))
 			)
 			.execute()
@@ -135,6 +137,26 @@ export async function createFixture(directory: string, origin: string) {
 					content: noteHtml
 				}))
 			)
+			.execute()
+		// A recorded output for the Share viewer; this fixture does not run Takumi or publish.
+		const sharePath = `${notebook.slug}/share image.png`
+		const assetsDirectory = path.join(directory, 'assets/pieces')
+		await mkdir(path.join(assetsDirectory, notebook.slug), { recursive: true })
+		await copyFile(
+			new URL('../../static/images/opengraph.png', import.meta.url),
+			path.join(assetsDirectory, sharePath)
+		)
+		await db
+			.insertInto('web_pieces_assets')
+			.values({
+				piece_file_path: notebook.file,
+				piece_key: notebook.slug,
+				asset_key: notebook.slug,
+				transformation: 'opengraph',
+				asset_path: sharePath,
+				mime_type: 'image/png',
+				is_embedded: 0
+			})
 			.execute()
 	} finally {
 		await db.destroy()

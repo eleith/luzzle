@@ -4,4 +4,4 @@
 	let { data }: PageProps = $props()
 </script>
 
-<ShareViewport piece={data.piece} />
+<ShareViewport piece={data.piece} publishedAt={data.publication.lastPublishedAt} />

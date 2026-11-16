@@ -16,7 +16,6 @@
 		"src/pages/*/helpers.js",
 		"src/pages/catalog.js",
 		"src/opengraphs/*/template.svelte",
-		"src/opengraphs/catalog.js",
 		"config.schema.json"
 	],
 	"scripts": {
@@ -36,7 +35,6 @@
 			"import": "./dist/pages/props.js"
 		},
 		"./pages/*": "./src/pages/*/template.svelte",
-		"./opengraphs": "./src/opengraphs/catalog.js",
 		"./opengraphs/*": "./src/opengraphs/*/template.svelte",
 		"./pieces/fields": {
 			"development": "./src/pieces/fields.ts",

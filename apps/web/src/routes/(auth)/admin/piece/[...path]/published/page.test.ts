@@ -27,9 +27,6 @@ vi.mock('#lib/pieces/components/page.svelte', async () => ({
 vi.mock('#lib/pieces/components/icon.svelte', async () => ({
 	default: (await import('#lib/pieces/viewer/fixtures/IconRenderer.svelte')).default
 }))
-vi.mock('#lib/pieces/components/opengraph.svelte', async () => ({
-	default: (await import('#lib/pieces/viewer/fixtures/Composition.svelte')).default
-}))
 
 function publishedData(): ComponentProps<typeof Overview>['data'] {
 	return {
@@ -138,8 +135,7 @@ test('the reset layout retains configured branding and noindex without adding pu
 
 test.each([
 	{ view: 'page', marker: 'data-renderer="page"' },
-	{ view: 'icon', marker: 'data-renderer="icon"' },
-	{ view: 'share', marker: 'data-renderer="composition"' }
+	{ view: 'icon', marker: 'data-renderer="icon"' }
 ] as const)('the $view route delegates the published piece to its renderer', ({ view, marker }) => {
 	const data = publishedData()
 	page.route.id = `/(auth)/admin/piece/[...path]/published/${view}`
@@ -153,5 +149,48 @@ test.each([
 		expect(html).toContain('href="/tags/fiction"')
 		expect(html).toContain('Fiction')
 	}
-	if (view === 'share') expect(html).not.toContain('generated/share.png')
 })
+
+function shareHtml(data = publishedData()) {
+	page.route.id = '/(auth)/admin/piece/[...path]/published/share'
+	page.data.config = data.config
+	return render(PublishedTree, { props: { data, view: 'share' } }).body
+}
+
+test.each(['/cdn', ''])('Share links the recorded PNG using the asset base %j', (assetBase) => {
+	const data = publishedData()
+	data.config.url.luzzle_assets = assetBase
+	const html = shareHtml(data)
+	const url = `${assetBase || '/garden'}/pieces/assets/generated/share.png?v=${data.publication.lastPublishedAt}`
+
+	expect(html).toContain(`src="${url}"`)
+	expect(html).toContain(`href="${url}" target="_blank" rel="external noopener noreferrer"`)
+	expect(html).toContain('alt="Share image for Published &lt;Book>"')
+	expect(html.match(/<main\b/g)).toHaveLength(1)
+	expect(html.match(/<img\b/g)).toHaveLength(1)
+	expect(html).not.toContain('/admin/preview/')
+})
+
+test('republishing versions both the image and inspection link without changing the asset path', () => {
+	const data = publishedData()
+	const assetUrl = '/cdn/pieces/assets/generated/share.png'
+	for (const publishedAt of [1000, 2000, null]) {
+		data.publication.lastPublishedAt = publishedAt
+		const html = shareHtml(data)
+		const url = publishedAt === null ? assetUrl : `${assetUrl}?v=${publishedAt}`
+		expect(html).toContain(`src="${url}"`)
+		expect(html).toContain(`href="${url}" target="_blank"`)
+	}
+})
+
+test.each([undefined, '../private.png'])(
+	'Share does not invent an image for unavailable path %j',
+	(path) => {
+		const data = publishedData()
+		data.piece.assets.find((asset) => asset.transformation === 'opengraph')!.asset_path = path
+		const html = shareHtml(data)
+
+		expect(html).toContain('No generated share image is available.')
+		expect(html).not.toMatch(/<img\b|private\.png|data-renderer=/)
+	}
+)

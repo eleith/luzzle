@@ -19,70 +19,6 @@ let server: ChildProcess | undefined
 let serverErrors = ''
 let originalBuild: Record<string, string>
 
-const ogSelections = [
-	{
-		name: 'book',
-		mapping: { image: 'artwork', author: 'filmmaker', pages: 'pageCount' },
-		marker: 'book',
-		text: '320 pages'
-	},
-	{
-		name: 'poster',
-		mapping: { image: 'artwork', director: 'filmmaker', runtime: 'minutes' },
-		marker: 'poster',
-		text: '123 min'
-	},
-	{
-		name: 'browser-window',
-		mapping: { image: 'artwork', url: 'website', author: 'filmmaker', wordCount: 'wordCount' },
-		marker: 'browser-container',
-		text: '3 min'
-	},
-	{ name: 'lined-notebook-paper', mapping: {}, marker: 'paper', text: 'Fixture description' },
-	{
-		name: 'recipe-card',
-		mapping: {
-			image: 'artwork',
-			ingredients: { each: 'materials', fields: { item: 'label' } },
-			prepMinutes: 'prepMinutes',
-			cookMinutes: 'cookMinutes'
-		},
-		marker: 'notepad',
-		text: '12 min'
-	},
-	{
-		name: 'vinyl-record',
-		mapping: { image: 'artwork', artist: 'filmmaker', durationSeconds: 'seconds' },
-		marker: 'vinyl-container',
-		text: '2:05'
-	},
-	{
-		name: 'code-snippet',
-		mapping: {
-			files: { each: 'files', fields: { file: 'key', type: 'kind', format: 'language' } }
-		},
-		marker: 'terminal-container',
-		text: '<pre data-code>let value = 1;</pre>'
-	},
-	{
-		name: 'video-game-cartridge',
-		mapping: {
-			image: 'artwork',
-			publisher: 'filmmaker',
-			platform: 'platform',
-			playTimeMinutes: 'minutes'
-		},
-		marker: 'cartridge-container',
-		text: 'Console · 2 hrs'
-	},
-	{
-		name: 'playing-cards',
-		mapping: { backdrop: 'scenery', publisher: 'filmmaker', playTimeMinutes: 'minutes' },
-		marker: 'cards-container',
-		text: '123 min'
-	}
-]
-
 // Isolated compiler fixture only: adapter-node6 exports the native HTTP server directly.
 // Production origin/CSRF coverage lives in routes.test.ts and uses the real bootstrap.
 const startServer = `
@@ -184,27 +120,6 @@ async function frameworkCss(html: string) {
 	return sources.join('\n')
 }
 
-test.each(ogSelections)(
-	'serves mapped $name OG HTML from the built fixture over HTTP',
-	async ({ name, marker, text }) => {
-		for (const job of ['', '&job=current-preview']) {
-			const html = await request(`?role=opengraph&type=share-${name}${job}`)
-			expect(html).toContain('Catalog title')
-			expect(html).toContain(`class="${marker} `)
-			expect(html).toContain(text)
-			expect(html).toContain('width:1200px;height:630px;')
-			expect(html).not.toContain('aria-label="Global"')
-			if (name === 'book') {
-				expect(html).toContain(
-					job
-						? '/admin/preview/current-preview/asset/fixture/cover%20medium.jpg'
-						: '/pieces/assets/fixture/cover%20medium.jpg'
-				)
-			}
-		}
-	}
-)
-
 beforeAll(async () => {
 	const cache = path.join(webRoot, 'node_modules/.cache')
 	await mkdir(cache, { recursive: true })
@@ -232,16 +147,6 @@ beforeAll(async () => {
 								isbn: 'isbn',
 								people: 'creators'
 							}
-						},
-						opengraph: {
-							name: 'default',
-							mapping: {
-								image: 'artwork',
-								backdrop: 'scenery',
-								director: 'filmmaker',
-								dateReleased: 'released',
-								runtime: 'minutes'
-							}
 						}
 					}
 				},
@@ -258,8 +163,7 @@ beforeAll(async () => {
 								pages: 'pageCount',
 								publicationYear: 'bookYear'
 							}
-						},
-						opengraph: { name: 'default' }
+						}
 					}
 				},
 				{
@@ -279,20 +183,10 @@ beforeAll(async () => {
 								prepMinutes: 'prepMinutes',
 								cookMinutes: 'cookMinutes'
 							}
-						},
-						opengraph: { name: 'default' }
+						}
 					}
 				},
-				{ type: 'unmapped-kind', fields: { title: 'title', date_consumed: 'date' } },
-				...ogSelections.map(({ name, mapping }) => ({
-					type: `share-${name}`,
-					fields: { title: 'title', date_consumed: 'date' },
-					templates: {
-						icon: { name: 'poster' },
-						page: { name: 'note' },
-						opengraph: { name, mapping }
-					}
-				}))
+				{ type: 'unmapped-kind', fields: { title: 'title', date_consumed: 'date' } }
 			]
 		})
 	)
@@ -445,21 +339,6 @@ describe('stock catalog in built SvelteKit SSR', () => {
 		expect(html).not.toContain('href="javascript:')
 	})
 
-	test('renders the stock Open Graph catalog with explicit director, backdrop and byline fields', async () => {
-		const html = await request('?role=opengraph')
-		expect(html).toContain('width:1200px;height:630px;')
-		expect(html).toMatch(/<h1[^>]*>\s*Catalog title/)
-		expect(html).toContain('by Ada Example')
-		expect(html).toContain('2001 · 123 min')
-		expect(html).toContain(`src="${origin}/pieces/assets/fixture/cover%20medium.jpg"`)
-		expect(html).toContain(`src="${origin}/pieces/assets/fixture/backdrop%20large.jpg"`)
-		expect(html).not.toContain('aria-label="Global"')
-		const preview = await request('?role=opengraph&job=og%20job')
-		expect(preview).toContain('src="/admin/preview/og%20job/asset/fixture/cover%20medium.jpg"')
-		expect(preview).toContain('src="/admin/preview/og%20job/asset/fixture/backdrop%20large.jpg"')
-		expect(preview).not.toContain(`${origin}/pieces/assets/`)
-	})
-
 	test('renders an independently mapped book page in native HTTP without changing icon choice', async () => {
 		const book = await request('?role=page&type=book-kind')
 		expect(book).toContain('by Ada Example · 320 pages')
@@ -482,8 +361,8 @@ describe('stock catalog in built SvelteKit SSR', () => {
 		expect(recipe).not.toContain(`${origin}/pieces/assets/`)
 	})
 
-	test('uses all three poster defaults without inferring presentation fields from raw metadata', async () => {
-		for (const role of ['icon', 'page', 'opengraph']) {
+	test('uses icon and page defaults without inferring presentation fields from raw metadata', async () => {
+		for (const role of ['icon', 'page']) {
 			// Raw metadata legitimately remains in Kit's bootstrap data; check rendered HTML only.
 			const html = (
 				await request(`?role=${role}&type=unmapped-kind&title=%3CDefault%3E%26`)
