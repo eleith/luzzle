@@ -4,7 +4,7 @@ import type { Static, TObject } from '@sinclair/typebox';
 import type { TemplateConfig } from '../config/index.js';
 import { mapTemplateFields, TemplateFieldsError } from '../mapping.js';
 import { getIconSchema, type IconDefinition } from '../icons/schema.js';
-import { getPageSchema, type PageDefinition } from '../pages/schema.js';
+import { selectPageTemplate, type PageDefinition } from '../pages/schema.js';
 import { getOpengraphSchema, type OpengraphDefinition } from '../opengraphs/schema.js';
 
 type PieceConfig = TemplateConfig['pieces'][number];
@@ -54,7 +54,7 @@ function mapIconTemplate(piece: PublicWebPiece, config?: PieceConfig): PieceTemp
 }
 
 function mapPageTemplate(piece: PublicWebPiece, config?: PieceConfig): PieceTemplateData['page'] {
-	const definition = getPageSchema(config?.templates?.page?.name);
+	const definition = selectPageTemplate(config);
 	return mapRole<PageDefinition['fields']>('page', definition, piece, config);
 }
 

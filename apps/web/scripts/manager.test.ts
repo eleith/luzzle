@@ -94,16 +94,30 @@ test('development startup loads config from the mounted working directory withou
 	expect(stdout).not.toContain('Initiating production build sequence')
 })
 
-test('development passes only YAML-derived networking settings to Vite', async () => {
+test('development supplies YAML-derived networking and routing settings before starting Vite', async () => {
 	await configure('https://manager.example:8443/garden', true, 8443)
+	const filename = path.join(directory, 'config.yaml')
+	const config = JSON.parse(await readFile(filename, 'utf8'))
+	config.pieces = [
+		{
+			type: 'words',
+			fields: { title: 'private.title', date_consumed: 'date' },
+			templates: { page: { name: 'note' } }
+		}
+	]
+	await writeFile(filename, JSON.stringify(config))
 	await writeFile(
 		path.join(directory, 'bin/pnpm'),
-		'#!/bin/sh\nprintf "vite-settings %s\\n" "$LUZZLE_DEV_SERVER"\n',
+		'#!/bin/sh\nprintf "vite-settings %s\\n" "$LUZZLE_DEV_SERVER"\nprintf "routing-settings %s\\n" "$LUZZLE_PAGE_TEMPLATES"\n',
 		{ mode: 0o755 }
 	)
 
-	const { stdout } = await run(true, { LUZZLE_DEV_SERVER: '{"allowedHosts":true}' })
+	const { stdout } = await run(true, {
+		LUZZLE_DEV_SERVER: '{"allowedHosts":true}',
+		LUZZLE_PAGE_TEMPLATES: 'ignored-map'
+	})
 	const settings = JSON.parse(stdout.match(/^vite-settings (.+)$/m)![1])
+	expect(JSON.parse(stdout.match(/^routing-settings (.+)$/m)![1])).toEqual({ words: 'note' })
 
 	expect(settings).toEqual({
 		appOrigin: 'https://manager.example:8443',

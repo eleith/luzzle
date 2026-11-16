@@ -9,7 +9,14 @@ import {
 
 /** @param {NodeJS.ProcessEnv} environment */
 function applyServerEnvironment(environment) {
-	for (const key of ['HOST', 'ORIGIN', 'PROTOCOL_HEADER', 'HOST_HEADER', 'PORT_HEADER']) {
+	for (const key of [
+		'HOST',
+		'ORIGIN',
+		'PROTOCOL_HEADER',
+		'HOST_HEADER',
+		'PORT_HEADER',
+		'LUZZLE_PAGE_TEMPLATES'
+	]) {
 		const value = environment[key]
 		if (value === undefined) delete process.env[key]
 		else process.env[key] = value

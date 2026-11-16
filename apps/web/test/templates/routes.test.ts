@@ -6,6 +6,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
+import { compile } from 'svelte/compiler'
 import { resolveAuthUrl } from '../../scripts/runtime-environment.js'
 
 const exec = promisify(execFile)
@@ -690,11 +691,81 @@ afterAll(async () => {
 })
 
 describe('stock pieces and configured site sections through production HTTP', () => {
+	test('production rejects a missing launcher map instead of silently using build-time routing', async () => {
+		const environment = { ...childEnv }
+		delete environment.LUZZLE_PAGE_TEMPLATES
+		await expect(
+			exec(
+				process.execPath,
+				[
+					'--input-type=module',
+					'-e',
+					"import { pathToFileURL } from 'node:url'; await import(pathToFileURL(process.argv[1]).href)",
+					path.join(buildDirectory, 'handler.js')
+				],
+				{ cwd: directory, env: environment, timeout: 10000 }
+			)
+		).rejects.toMatchObject({
+			code: 1,
+			stderr: expect.stringContaining('Missing routing configuration')
+		})
+	})
+
 	test('uses runtime-configured piece types and the native stock page after a blank build', async () => {
 		const html = await pageHtml()
 		expectBuiltIn(html)
 		expect(html).toContain('pieceTypes:["cutover-kind"]')
 	})
+
+	test('YAML selects only the public page template CSS without rebuilding or changing URLs', async () => {
+		const scopes = await Promise.all(
+			['default', 'note'].map(async (name) => {
+				const filename = path.join(
+					repository,
+					'packages/web/templates/src/pages',
+					name,
+					'template.svelte'
+				)
+				const source = await readFile(filename, 'utf8')
+				const { css } = compile(source, { filename, rootDir: webRoot, generate: 'server' })
+				return css!.code.match(/\.svelte-[\w-]+/)![0]
+			})
+		)
+		const [defaultScope, noteScope] = scopes
+		const before = await frameworkCss(await pageHtml())
+		expect(before).toContain(defaultScope)
+		expect(before).not.toContain(noteScope)
+
+		const original = await readFile(configFilename)
+		try {
+			await stopBuiltApp()
+			const config = JSON.parse(original.toString('utf8'))
+			config.pieces[0].templates.page = { name: 'note' }
+			await writeFile(configFilename, JSON.stringify(config))
+			origin = await startBuiltApp()
+
+			const html = await pageHtml()
+			expect(html).toContain('LUZZLE_PAGE_TEMPLATES')
+			expect(html).not.toContain('luzzle-page-templates')
+			const after = await frameworkCss(html)
+			expect(after).toContain(noteScope)
+			expect(after).not.toContain(defaultScope)
+			expect(await buildHashes()).toEqual(originalBuild)
+
+			for (const pathname of [
+				'/templates/page/note/cutover-kind/real-piece?keep=1',
+				'/%74emplates/%70age/book/cutover-kind/real-piece?keep=1'
+			]) {
+				const internal = await request(pathname)
+				expect(internal.status).toBe(307)
+				expect(internal.headers.get('location')).toBe(`${piecePath}?keep=1`)
+			}
+		} finally {
+			await stopBuiltApp()
+			await writeFile(configFilename, original)
+			origin = await startBuiltApp()
+		}
+	}, 30000)
 
 	test('keeps a native search link on the initial public piece', async () => {
 		const html = await pageHtml()

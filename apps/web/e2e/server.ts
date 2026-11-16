@@ -2,6 +2,8 @@ import { createServer } from 'node:http'
 import { once } from 'node:events'
 import type { AddressInfo } from 'node:net'
 import { createFixture } from './support/fixture.ts'
+import { loadConfig } from '@luzzle/web.templates/config'
+import { createServerEnvironment } from '../scripts/runtime-environment.js'
 
 const server = createServer()
 function shutdown() {
@@ -18,6 +20,9 @@ server.listen(0, '127.0.0.1')
 await once(server, 'listening')
 const origin = `http://localhost:${(server.address() as AddressInfo).port}`
 await createFixture(process.cwd(), origin)
+process.env.LUZZLE_PAGE_TEMPLATES = createServerEnvironment(
+	loadConfig('config.yaml')
+).LUZZLE_PAGE_TEMPLATES
 process.env.ORIGIN = origin
 process.env.PROTOCOL_HEADER = 'x-forwarded-proto'
 const { handler } = await import(new URL('../build/handler.js', import.meta.url).href)

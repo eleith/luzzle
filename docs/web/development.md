@@ -34,7 +34,17 @@ keep your existing environment override.
 
 Web source reloads through Vite; worker source uses Node watch mode. Rebuild images
 after changing manifests, the lockfile or Dockerfiles. Restart services after YAML
-changes. Edit `demo/config/config.yaml`, not the compatibility symlink.
+changes. After changing a page-template selection in YAML, also reload open browser
+tabs: each browser document keeps its routing configuration, and SvelteKit caches
+internal route choices during client navigation. Changing a selection among the
+built-in templates does not require rebuilding the app.
+Edit `demo/config/config.yaml`, not the compatibility symlink.
+
+When running outside Docker, start development with `LUZZLE_DEV=true node scripts/manager.js`
+or a production build with `node scripts/start-server.js`, from `apps/web` with its
+`config.yaml` and runtime environment ready. These launchers prepare the YAML-derived
+startup environment before starting Vite or Kit; invoking `vite dev` or `build/index.js`
+directly bypasses that preparation. No generated `.env` file is needed.
 
 ## Test a local production build
 

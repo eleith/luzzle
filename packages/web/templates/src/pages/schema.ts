@@ -1,4 +1,5 @@
 import { createTemplateSelectionSchema } from '../config/association.js';
+import type { TemplateConfig } from '../config/index.js';
 import { schema as fallback } from './default/schema.js';
 import { schema as article } from './article/schema.js';
 import { schema as book } from './book/schema.js';
@@ -28,6 +29,19 @@ export function getPageSchema(name = 'default'): PageDefinition {
 	const template = templates.find((template) => template.name === name);
 	if (!template) throw new Error(`Unknown page template: ${name}`);
 	return template;
+}
+
+export function selectPageTemplate(config?: TemplateConfig['pieces'][number]): PageDefinition {
+	return getPageSchema(config?.templates?.page?.name);
+}
+
+export function getPageTemplateNames(pieces: TemplateConfig['pieces']): Record<string, string> {
+	const names = new Map<string, string>();
+	for (const piece of pieces) {
+		// Match the first configured type used when hydrating a piece's fields.
+		if (!names.has(piece.type)) names.set(piece.type, selectPageTemplate(piece).name);
+	}
+	return Object.fromEntries(names);
 }
 
 export const schema = createTemplateSelectionSchema('page', templates);

@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { getPage } from '@luzzle/web.templates/pages'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-	import type { PageNavbarProps } from '@luzzle/web.templates/pages/props'
-	import NavBanner from '#lib/components/layout/simple/NavBanner.svelte'
-	import { getPieceHelpers } from '#lib/pieces/helpers.js'
+	import TemplatePage from '#lib/templates/page.svelte'
 
 	type Props = {
 		piece: TemplatedPiece
@@ -11,12 +9,6 @@
 	}
 	let { piece, tags }: Props = $props()
 	const Page = $derived(getPage(piece.templates?.page.name))
-	const fields = $derived(piece.templates?.page.fields ?? {})
-	const helpers = $derived({ ...getPieceHelpers(piece), navBar })
 </script>
 
-{#snippet navBar(options: PageNavbarProps)}
-	<NavBanner {...options} />
-{/snippet}
-
-<Page {piece} {fields} {tags} {helpers} />
+<TemplatePage {Page} {piece} {tags} />
