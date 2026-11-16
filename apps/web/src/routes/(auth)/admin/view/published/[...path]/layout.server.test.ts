@@ -72,7 +72,7 @@ function event() {
 		params: { path: file },
 		locals: { inlineConfiguredStyles: vi.fn() },
 		url: new URL(
-			'https://admin.example/admin/piece/old%20type/%E6%BA%90%20%23%3F%25.books.md/published'
+			'https://admin.example/admin/view/published/old%20type/%E6%BA%90%20%23%3F%25.books.md'
 		)
 	} as unknown as Parameters<typeof load>[0]
 }

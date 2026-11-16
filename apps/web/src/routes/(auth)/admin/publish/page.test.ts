@@ -167,12 +167,12 @@ test('a completed partial publish stays visible after reload without duplicate r
 	expect(text(failed)).toContain('missing attachment')
 	expect(text(failed)).not.toContain('Published')
 	expectEditLink(failed, 'failed.book.md', '/admin/piece/failed.book.md/source')
-	expect(output).not.toContain('/admin/piece/failed.book.md/published')
+	expect(output).not.toContain('/admin/view/published/failed.book.md')
 	const healthy = pieceRow(output, 'healthy.book.md')
 	expectEditLink(healthy, 'healthy.book.md', '/admin/piece/healthy.book.md/source')
 	const published = links(healthy).filter((link) => text(link[2]).trim() === 'Published')
 	expect(published).toHaveLength(1)
-	expect(published[0][1]).toContain('href="/admin/piece/healthy.book.md/published"')
+	expect(published[0][1]).toContain('href="/admin/view/published/healthy.book.md"')
 	expect(links(output).some((link) => /(?:failed|healthy)\.book\.md/.test(text(link[2])))).toBe(
 		false
 	)
@@ -189,7 +189,7 @@ test('failures outside the diff remain visible once with encoded editor links', 
 		file,
 		'/admin/piece/books/chapter%231%3F%25.book.md/source'
 	)
-	expect(output).not.toContain('/admin/piece/books/chapter%231%3F%25.book.md/published')
+	expect(output).not.toContain('/admin/view/published/books/chapter%231%3F%25.book.md')
 	expect(text(output).split(file)).toHaveLength(2)
 	expect(text(output).match(/missing image/g)).toHaveLength(1)
 })
@@ -199,7 +199,7 @@ test.each(['added', 'updated'] as const)(
 	(kind) => {
 		const file = 'books/源 #?%.book.md'
 		const output = html({ pieces: { added: [], updated: [], pruned: [], [kind]: [file] } })
-		const href = '/admin/piece/books/%E6%BA%90%20%23%3F%25.book.md/published'
+		const href = '/admin/view/published/books/%E6%BA%90%20%23%3F%25.book.md'
 		const row = pieceRow(output, file)
 		const published = links(row).filter((link) => link[1].includes(`href="${href}"`))
 		expect(published).toHaveLength(1)
@@ -220,6 +220,7 @@ test('pruned pieces remain plain text instead of linking to Published or source'
 	expect(links(removals)).toHaveLength(0)
 	expect(text(output).split(file)).toHaveLength(2)
 	expect(output).not.toContain(`/admin/piece/${file}/`)
+	expect(output).not.toContain(`/admin/view/published/${file}`)
 })
 
 test('schema changes and phase logs stay visible on the publish page', () => {
@@ -291,7 +292,7 @@ test.each(['running', 'waiting'])(
 		for (const file of ['healthy.book.md', 'failed.book.md']) {
 			const row = pieceRow(output, file)
 			expect(links(row).filter((link) => text(link[2]).trim() === 'Published')).toHaveLength(1)
-			expect(row).toContain(`/admin/piece/${file}/published`)
+			expect(row).toContain(`/admin/view/published/${file}`)
 			expectEditLink(row, file, `/admin/piece/${file}/source`)
 			expect(text(row)).not.toMatch(/\b(?:New|Updated|Failed)\b/)
 		}
@@ -309,13 +310,13 @@ test.each(['running', 'waiting'])(
 		const healthy = pieceRow(output, 'healthy.book.md')
 		const published = links(healthy).filter((link) => text(link[2]).trim() === 'Published')
 		expect(published).toHaveLength(1)
-		expect(published[0][1]).toContain('href="/admin/piece/healthy.book.md/published"')
+		expect(published[0][1]).toContain('href="/admin/view/published/healthy.book.md"')
 		expectEditLink(healthy, 'healthy.book.md', '/admin/piece/healthy.book.md/source')
 		const failed = pieceRow(output, 'failed.book.md')
 		expect(text(failed)).toContain('Failed')
 		expect(text(failed)).toContain('missing attachment')
 		expect(content.match(/missing attachment/g)).toHaveLength(1)
-		expect(failed).not.toContain('/admin/piece/failed.book.md/published')
+		expect(failed).not.toContain('/admin/view/published/failed.book.md')
 		expectEditLink(failed, 'failed.book.md', '/admin/piece/failed.book.md/source')
 		expectHeaderChecksOnly(output)
 		for (const button of buttons(output)) {
@@ -393,7 +394,7 @@ test.each(['running', 'waiting', 'failed', 'canceled'])(
 		const output = html({ state, audit: audit('running') })
 		expectHeaderChecksOnly(output)
 		expect(output).not.toContain('aria-label="Pieces"')
-		expect(output).not.toContain('/admin/piece/healthy.book.md/published')
+		expect(output).not.toContain('/admin/view/published/healthy.book.md')
 		expect(output).not.toContain('missing attachment')
 		expect(output).not.toMatch(/<input\b[^>]*\btype="checkbox"/)
 		for (const button of buttons(output)) {
@@ -406,8 +407,8 @@ test('a cold visit with only successful publication history starts checking with
 	const output = html({ failedPieces: [] })
 	expectChecking(output)
 	expect(output).not.toContain('aria-label="Pieces"')
-	expect(output).not.toContain('/admin/piece/healthy.book.md/published')
-	expect(output).not.toContain('/admin/piece/failed.book.md/published')
+	expect(output).not.toContain('/admin/view/published/healthy.book.md')
+	expect(output).not.toContain('/admin/view/published/failed.book.md')
 })
 
 test.each(['books/源 #?%.book.md', ''])(
@@ -507,5 +508,5 @@ test('duplicate failures and overlapping diff entries render one escaped filenam
 	expect(links(row)).toHaveLength(1)
 	expect(links(row)[0][1]).toContain('/source')
 	expect(text(links(row)[0][2]).trim()).toBe('')
-	expect(row).not.toContain('/published')
+	expect(row).not.toContain('href="/admin/view/published/')
 })

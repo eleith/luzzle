@@ -41,9 +41,9 @@ test('all admin page and server entrypoints live under the top-level auth group'
 test.each([
 	'/admin',
 	'/admin/piece/[...path]/source',
-	'/admin/piece/[...path]/published',
+	'/admin/view/published/[...path]',
 	'/admin/piece/[...path]/preview',
-	'/admin/piece/[...path]/preview/[jobId]',
+	'/admin/view/preview/[jobId]',
 	'/admin/open/[piece]/[slug]',
 	'/api/admin/generate',
 	'/api/admin/unpublish',
@@ -54,9 +54,12 @@ test.each([
 	expect(ids).toEqual([`/(auth)${path}`])
 })
 
-test.each(['published', 'preview'])('%s reset layout remains under the auth group', (view) => {
-	expect(files).toContain(`(auth)/admin/piece/[...path]/${view}/+layout@.svelte`)
-})
+test.each(['view/published/[...path]', 'view/preview', 'piece/[...path]/preview'])(
+	'%s reset layout remains under the auth group',
+	(path) => {
+		expect(files).toContain(`(auth)/admin/${path}/+layout@.svelte`)
+	}
+)
 
 test.each([
 	['/', '/(root)'],

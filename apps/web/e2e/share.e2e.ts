@@ -1,7 +1,7 @@
 import { expect, test } from './support/test.js'
 import { ADMIN, notebook } from './support/fixture.js'
 
-const shareUrl = notebook.editorUrl.replace(/source$/, 'published/share')
+const shareUrl = `/admin/view/published/${notebook.file.split('/').map(encodeURIComponent).join('/')}/share`
 const imagePath = `/pieces/assets/${notebook.slug}/share%20image.png?v=${notebook.publishedAt}`
 
 test('Share fits mobile and desktop, opens the recorded PNG, and reports a missing file', async ({

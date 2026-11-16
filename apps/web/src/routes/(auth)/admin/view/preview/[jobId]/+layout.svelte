@@ -34,7 +34,7 @@
 
 	const path = $derived(encodeArchivePath(data.file))
 	const jobId = $derived(encodeURIComponent(data.job))
-	const previewRoute = '/(auth)/admin/piece/[...path]/preview/[jobId]'
+	const previewRoute = '/(auth)/admin/view/preview/[jobId]'
 
 	function startWatching() {
 		if (eventSource) eventSource.close()
@@ -100,13 +100,13 @@
 	</a>
 	<nav class="viewer-bar-links" aria-label="Preview views">
 		<a
-			href={resolve(previewRoute, { path, jobId })}
+			href={resolve(previewRoute, { jobId })}
 			class="viewer-bar-link"
 			class:active={page.route.id === previewRoute}
 			aria-current={page.route.id === previewRoute ? 'page' : undefined}>overview</a
 		>
 		<a
-			href={status === 'completed' ? resolve(`${previewRoute}/page`, { path, jobId }) : '#'}
+			href={status === 'completed' ? resolve(`${previewRoute}/page`, { jobId }) : '#'}
 			class="viewer-bar-link"
 			class:active={page.route.id === `${previewRoute}/page`}
 			aria-current={page.route.id === `${previewRoute}/page` ? 'page' : undefined}
@@ -116,7 +116,7 @@
 			page
 		</a>
 		<a
-			href={status === 'completed' ? resolve(`${previewRoute}/icon`, { path, jobId }) : '#'}
+			href={status === 'completed' ? resolve(`${previewRoute}/icon`, { jobId }) : '#'}
 			class="viewer-bar-link"
 			class:active={page.route.id === `${previewRoute}/icon`}
 			aria-current={page.route.id === `${previewRoute}/icon` ? 'page' : undefined}
@@ -126,7 +126,7 @@
 			icon
 		</a>
 		<a
-			href={status === 'completed' ? resolve(`${previewRoute}/share`, { path, jobId }) : '#'}
+			href={status === 'completed' ? resolve(`${previewRoute}/share`, { jobId }) : '#'}
 			class="viewer-bar-link"
 			class:active={page.route.id === `${previewRoute}/share`}
 			aria-current={page.route.id === `${previewRoute}/share` ? 'page' : undefined}

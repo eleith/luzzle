@@ -12,9 +12,11 @@
 		"src/icons/*/template.svelte",
 		"src/icons/*/helpers.js",
 		"src/icons/catalog.js",
+		"src/icons/lazy.js",
 		"src/pages/*/template.svelte",
 		"src/pages/*/helpers.js",
 		"src/pages/catalog.js",
+		"src/pages/lazy.js",
 		"src/opengraphs/*/template.svelte",
 		"config.schema.json"
 	],
@@ -27,8 +29,10 @@
 	},
 	"exports": {
 		"./icons": "./src/icons/catalog.js",
+		"./icons/lazy": "./src/icons/lazy.js",
 		"./icons/*": "./src/icons/*/template.svelte",
 		"./pages": "./src/pages/catalog.js",
+		"./pages/lazy": "./src/pages/lazy.js",
 		"./pages/props": {
 			"development": "./src/pages/props.ts",
 			"types": "./dist/pages/props.d.ts",

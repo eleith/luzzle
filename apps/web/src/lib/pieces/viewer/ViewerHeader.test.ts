@@ -3,7 +3,7 @@ import { render } from 'svelte/server'
 import ViewerHeader from './ViewerHeader.svelte'
 
 const { page } = vi.hoisted(() => ({
-	page: { route: { id: '/(auth)/admin/piece/[...path]/published' } }
+	page: { route: { id: '/(auth)/admin/view/published/[...path]' } }
 }))
 vi.mock('$app/state', () => ({ page }))
 vi.mock('$app/paths', () => ({
@@ -12,24 +12,20 @@ vi.mock('$app/paths', () => ({
 }))
 
 const file = 'notes/icon/雪 #?%.books.md'
-const root = '/admin/piece/notes/icon/%E9%9B%AA%20%23%3F%25.books.md'
-const publishedRoute = '/(auth)/admin/piece/[...path]/published'
+const encodedFile = 'notes/icon/%E9%9B%AA%20%23%3F%25.books.md'
+const root = `/admin/view/published/${encodedFile}`
+const publishedRoute = '/(auth)/admin/view/published/[...path]'
 
 test('all views and the editor link refer to the current archive file', () => {
-	const destinations = [
-		'source',
-		'published',
-		'published/page',
-		'published/icon',
-		'published/share'
-	]
+	const destinations = ['', '/page', '/icon', '/share']
 
 	const html = render(ViewerHeader, { props: { file } }).body
 
 	for (const destination of destinations) {
-		expect(html).toContain(`href="${root}/${destination}"`)
+		expect(html).toContain(`href="${root}${destination}"`)
 	}
 	expect(html).toContain('aria-label="Back to editor"')
+	expect(html).toContain(`href="/admin/piece/${encodedFile}/source"`)
 })
 
 test.each([
@@ -44,5 +40,5 @@ test.each([
 
 	const activeLinks = html.match(/<a\b[^>]*aria-current="page"[^>]*>/g) ?? []
 	expect(activeLinks).toHaveLength(1)
-	expect(activeLinks[0]).toContain(`href="${root}/published${suffix}"`)
+	expect(activeLinks[0]).toContain(`href="${root}${suffix}"`)
 })

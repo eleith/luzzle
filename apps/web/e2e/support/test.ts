@@ -3,10 +3,12 @@ import { once } from 'node:events'
 import { access, mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { test as base } from '@playwright/test'
+import type { PreviewJobs } from './fixture.js'
 
 export { expect } from '@playwright/test'
 
-type AppServer = { origin: string; output: () => string }
+type ServerReady = { origin: string; previews: PreviewJobs }
+type AppServer = ServerReady & { directory: string; output: () => string }
 
 export const test = base.extend<{ serverLogs: void }, { appServer: AppServer }>({
 	appServer: [
@@ -27,11 +29,11 @@ export const test = base.extend<{ serverLogs: void }, { appServer: AppServer }>(
 			child.stdout!.on('data', (chunk) => (output = (output + chunk).slice(-50000)))
 			child.stderr!.on('data', (chunk) => (output = (output + chunk).slice(-50000)))
 			try {
-				const origin = await new Promise<string>((resolve, reject) => {
+				const ready = await new Promise<ServerReady>((resolve, reject) => {
 					const timeout = setTimeout(() => reject(new Error('E2E server startup timed out')), 30000)
-					child.once('message', (message: { origin: string }) => {
+					child.once('message', (message: ServerReady) => {
 						clearTimeout(timeout)
-						resolve(message.origin)
+						resolve(message)
 					})
 					child.once('error', (error) => {
 						clearTimeout(timeout)
@@ -42,7 +44,7 @@ export const test = base.extend<{ serverLogs: void }, { appServer: AppServer }>(
 						reject(new Error(`E2E server exited (${code ?? signal})`))
 					})
 				})
-				await use({ origin, output: () => output })
+				await use({ ...ready, directory, output: () => output })
 			} catch (error) {
 				console.error(output)
 				throw error

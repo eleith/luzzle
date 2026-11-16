@@ -44,7 +44,7 @@
 	</form>
 {/if}
 {#if hasPublishedVersion}
-	<a href={resolve('/(auth)/admin/piece/[...path]/published', { path })}>View published</a>
+	<a href={resolve('/(auth)/admin/view/published/[...path]', { path })}>View published</a>
 {/if}
 
 <style>

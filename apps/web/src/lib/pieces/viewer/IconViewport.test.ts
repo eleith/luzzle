@@ -1,6 +1,7 @@
 import { expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
 import IconViewport from './IconViewport.svelte'
+import Icon from './fixtures/IconRenderer.svelte'
 import { publishedPiece as rawPublishedPiece } from './fixtures/published'
 
 const piece = {
@@ -27,12 +28,9 @@ vi.mock('$app/paths', () => ({
 		route.replace(/\[(?:\.\.\.)?(\w+)\]/g, (_, name: string) => params[name])
 }))
 // SSR establishes the initial composition, not client resize behavior.
-vi.mock('#lib/pieces/components/icon.svelte', async () => ({
-	default: (await import('./fixtures/IconRenderer.svelte')).default
-}))
 
 test('starts with an eager 500px composition without imposing a height on the selected icon', () => {
-	const html = render(IconViewport, { props: { piece } }).body
+	const html = render(IconViewport, { props: { Icon, piece } }).body
 
 	expect(html).toContain('data-width="500"')
 	expect(html).toContain('loading="eager"')

@@ -5,13 +5,11 @@
 
 	import type { LayoutProps } from './$types'
 
-	let { data, params, children }: LayoutProps = $props()
+	let { data, children }: LayoutProps = $props()
 </script>
 
 <svelte:head>
 	<link rel="icon" href={data.config.content.images.favicon} />
 </svelte:head>
 
-{#key params.jobId}
-	{@render children()}
-{/key}
+{@render children()}

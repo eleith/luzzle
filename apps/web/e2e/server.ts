@@ -19,7 +19,7 @@ process.on('disconnect', shutdown)
 server.listen(0, '127.0.0.1')
 await once(server, 'listening')
 const origin = `http://localhost:${(server.address() as AddressInfo).port}`
-await createFixture(process.cwd(), origin)
+const previews = await createFixture(process.cwd(), origin)
 process.env.LUZZLE_PAGE_TEMPLATES = createServerEnvironment(
 	loadConfig('config.yaml')
 ).LUZZLE_PAGE_TEMPLATES
@@ -30,4 +30,4 @@ server.on('request', (request, response) => {
 	request.headers['x-forwarded-proto'] = 'http'
 	handler(request, response)
 })
-process.send!({ origin })
+process.send!({ origin, previews })

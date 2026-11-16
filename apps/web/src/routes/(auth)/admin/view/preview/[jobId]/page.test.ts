@@ -9,16 +9,16 @@ import PreviewLayout from './+layout.svelte'
 
 vi.mock('$app/state', () => ({
 	page: {
-		url: new URL('https://app.test/admin/piece/books/book.md/preview/current-job'),
-		route: { id: '/(auth)/admin/piece/[...path]/preview/[jobId]' }
+		url: new URL('https://app.test/admin/view/preview/current-job'),
+		route: { id: '/(auth)/admin/view/preview/[jobId]' }
 	}
 }))
 vi.mock('$app/forms', () => ({ enhance: vi.fn() }))
 vi.mock('$app/paths', () => ({
-	resolve: (route: string, params: { path: string; jobId?: string }) =>
+	resolve: (route: string, params: { path?: string; jobId?: string }) =>
 		route
 			.replace('/(auth)', '')
-			.replace('[...path]', () => params.path)
+			.replace('[...path]', () => params.path ?? '')
 			.replace('[jobId]', () => params.jobId ?? '')
 }))
 
@@ -92,7 +92,7 @@ const completedPreview = {
 } satisfies Data
 
 function renderPreview(data: Data) {
-	const params = { path: data.file, jobId: data.job }
+	const params = { jobId: data.job }
 	const children = createRawSnippet(() => ({
 		render: () => render(Overview, { props: { data, params } }).body
 	}))
@@ -122,7 +122,7 @@ test('completed Preview links its publication and inspects only current-job gene
 	})
 
 	expect(
-		html.split('href="/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md/published"')
+		html.split('href="/admin/view/published/books/%E6%BA%90%20%23%3F%25.books.md"')
 	).toHaveLength(2)
 
 	expect(html).toContain('Preview &lt;Draft>')
@@ -140,7 +140,7 @@ test('empty generated outputs do not fall back to SDK passthrough assets', () =>
 
 	expect(html).toContain('Preview assets')
 	expect(html).toContain('None recorded')
-	expect(html).not.toContain('/published"')
+	expect(html).not.toContain('/admin/view/published/')
 	expect(html).not.toContain('generated/cover.jpg')
 	expect(html).not.toContain('archive/manual.pdf')
 })

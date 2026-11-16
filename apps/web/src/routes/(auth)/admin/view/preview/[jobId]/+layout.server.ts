@@ -1,12 +1,14 @@
 import { error } from '@sveltejs/kit'
+import { getWebPiece } from '#lib/server/pieces.js'
 import { config } from '#lib/server/config.js'
 import { assemblePreview, type PreviewWorkerResult } from '#lib/pieces/preview/assemble.server.js'
 import { getOpenWorkflowBackend } from '#lib/server/workflow/index.js'
-import { getWorkflowRun, getStepAttempts } from '@luzzle/web.jobs'
+import { getWorkflowRun, getStepAttempts, previewSpec } from '@luzzle/web.jobs'
 import { db, type JobProgressLogsRow, type JobProgressRow } from '#lib/server/database/index.js'
 import type { LayoutServerLoad } from './$types'
 
-export const load: LayoutServerLoad = async ({ params }) => {
+export const load: LayoutServerLoad = async ({ locals, params }) => {
+	locals.inlineConfiguredStyles()
 	const runId = params.jobId
 
 	let run: Awaited<ReturnType<typeof getWorkflowRun>> | undefined
@@ -17,9 +19,28 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		console.error('Failed to query OpenWorkflow preview run:', err)
 	}
 
-	if (!run) {
+	if (!run || run.workflow_name !== previewSpec.name) {
 		return error(404, 'Preview not found')
 	}
+
+	let input: unknown
+	try {
+		input = JSON.parse(run.input)
+	} catch {
+		return error(404, 'Preview not found')
+	}
+	if (
+		!input ||
+		typeof input !== 'object' ||
+		!('filePath' in input) ||
+		typeof input.filePath !== 'string' ||
+		!input.filePath.trim()
+	) {
+		return error(404, 'Preview not found')
+	}
+	const file = input.filePath
+	const published = await getWebPiece(db, file)
+	const identity = { preview: true, file, hasPublishedVersion: !!published, job: runId }
 
 	const timing = { createdAt: run.created_at, finishedAt: run.finished_at }
 	let state = 'waiting'
@@ -65,10 +86,8 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		const isExpired = completedAt && Date.now() - completedAt.getTime() > retentionMs
 		if (isExpired) {
 			return {
-				preview: true,
-				file: params.path,
+				...identity,
 				status: 'expired' as const,
-				job: runId,
 				phases,
 				logs,
 				...timing
@@ -82,10 +101,8 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		}
 		const assembled = assemblePreview(result, pieceConfig)
 		return {
-			preview: true,
-			file: params.path,
+			...identity,
 			status: 'completed' as const,
-			job: runId,
 			phases,
 			logs,
 			...timing,
@@ -95,10 +112,8 @@ export const load: LayoutServerLoad = async ({ params }) => {
 
 	if (state === 'failed' || state === 'canceled') {
 		return {
-			preview: true,
-			file: params.path,
+			...identity,
 			status: 'failed' as const,
-			job: runId,
 			phases,
 			logs,
 			...timing,
@@ -107,9 +122,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
 	}
 
 	return {
-		preview: true,
-		file: params.path,
-		job: runId,
+		...identity,
 		status: state as 'waiting' | 'running' | 'completed',
 		phases,
 		logs,

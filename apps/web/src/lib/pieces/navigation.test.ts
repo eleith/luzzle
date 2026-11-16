@@ -6,9 +6,8 @@ test('archive filenames and preview jobs remain path segments, not URL queries o
 	const root = '/admin/piece/books/%E9%9B%AA%20%23%3F%25.books.md'
 
 	expect(editorHref(file)).toBe(`${root}/source`)
-	expect(publishedHref(file)).toBe(`${root}/published`)
-	expect(previewHref(file)).toBe(`${root}/preview`)
-	expect(previewHref(file, 'job #?%')).toBe(`${root}/preview/job%20%23%3F%25`)
+	expect(publishedHref(file)).toBe('/admin/view/published/books/%E9%9B%AA%20%23%3F%25.books.md')
+	expect(previewHref('job #?%')).toBe('/admin/view/preview/job%20%23%3F%25')
 })
 
 test('a percent-looking filename is encoded literally rather than becoming another path segment', () => {

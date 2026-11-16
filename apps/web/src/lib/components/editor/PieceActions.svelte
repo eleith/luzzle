@@ -88,7 +88,7 @@
 		if (hasPublishedVersion)
 			view.push({
 				id: 'published',
-				href: resolve('/(auth)/admin/piece/[...path]/published', { path })
+				href: resolve('/(auth)/admin/view/published/[...path]', { path })
 			})
 		const editor: Action[] = [
 			{ id: 'format', run: onFormat, disabled: formatDisabled },

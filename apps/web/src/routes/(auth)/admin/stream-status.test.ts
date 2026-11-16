@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
 
 // Source guards cover handler wiring, not browser EventSource behavior.
-test.each(['publish/+page.svelte', 'piece/[...path]/preview/[jobId]/+layout.svelte'])(
+test.each(['publish/+page.svelte', 'view/preview/[jobId]/+layout.svelte'])(
 	'%s marks only a closed stream as disconnected, leaving job status alone',
 	(file) => {
 		const source = readFileSync(new URL(file, import.meta.url), 'utf8')

@@ -172,7 +172,7 @@ test.each([
 ])('piece links preserve valid special filename characters: %s', (file) => {
 	const encoded = file.split('/').map(encodeURIComponent).join('/')
 	expect(editorHref(file)).toBe(`/admin/piece/${encoded}/source`)
-	expect(publishedHref(file)).toBe(`/admin/piece/${encoded}/published`)
+	expect(publishedHref(file)).toBe(`/admin/view/published/${encoded}`)
 	for (const href of [editorHref(file), publishedHref(file)]) {
 		const url = new URL(href, 'http://localhost')
 		expect(url.search).toBe('')

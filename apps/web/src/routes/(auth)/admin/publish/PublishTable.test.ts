@@ -262,9 +262,7 @@ test('confirmed publication replaces the checkbox with a check icon and a linked
 	const row = rowFor(pieces, added)
 	const links = [...row.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)]
 	expect(links).toHaveLength(2)
-	expect(links[0][1]).toContain(
-		'href="/admin/piece/books/%E6%BA%90%20%23%3F%25.books.md/published"'
-	)
+	expect(links[0][1]).toContain('href="/admin/view/published/books/%E6%BA%90%20%23%3F%25.books.md"')
 	expect(links[0][2].trim()).toBe('Published')
 	expect(links[1][1]).toContain(`aria-label="Edit ${added}"`)
 	expect(row.match(/<svg\b/g)).toHaveLength(2)
@@ -295,7 +293,7 @@ test('fresh pending data takes precedence over prior published and removed outco
 		expect(label).not.toContain('Published')
 	}
 	expect(output).not.toContain('aria-label="Removals"')
-	expect(output).not.toContain('/published"')
+	expect(output).not.toContain('href="/admin/view/published/')
 })
 
 test('fresh pending removals replace prior outcomes and keep the always-included policy', () => {
@@ -395,7 +393,7 @@ test('failed-only completed lists have a Pieces header and a separate editor act
 	expect(pieces).toContain('Cannot parse YAML')
 	expect(pieces).not.toMatch(/<(?:input|label)\b/)
 	expect(pieces).not.toContain('Select all')
-	expect(pieces).not.toContain('/published"')
+	expect(pieces).not.toContain('href="/admin/view/published/')
 	expect(pieces.match(/<a\b/g)).toHaveLength(1)
 	expect(pieces).toContain(`aria-label="Edit ${added}"`)
 })
@@ -416,7 +414,7 @@ test('untrusted outcome filenames and failure messages render as escaped text', 
 	expect(output).toContain('&lt;script')
 	expect(output).toContain('&amp; invalid')
 	expect(output).toContain(
-		'/%3Cimg%20src%3Dx%20onerror%3D%22alert(1)%22%3E%20%26%20notes.books.md/published'
+		'href="/admin/view/published/%3Cimg%20src%3Dx%20onerror%3D%22alert(1)%22%3E%20%26%20notes.books.md"'
 	)
 	expect(section(output, 'Removals')).not.toMatch(/<a\b/)
 })
@@ -503,7 +501,7 @@ test('latest outcomes decide piece versus removal membership without duplicate r
 	expect(pieces.match(/<li\b/g)).toHaveLength(1)
 	expect(pieces).toContain(added)
 	expect(pieces).not.toContain(removed)
-	expect(rowFor(pieces, added)).toContain('/published"')
+	expect(rowFor(pieces, added)).toContain('href="/admin/view/published/')
 	const removals = section(output, 'Removals')
 	expect(removals.match(/<li\b/g)).toHaveLength(1)
 	expect(removals).toContain(removed)
@@ -530,14 +528,14 @@ test('partial results keep skipped pending targets unchecked rather than inferri
 	expect(pieces).not.toContain('unknown.books.md')
 	expect(pieces.indexOf(done)).toBeLessThan(pieces.indexOf(retry))
 	expect(pieces.indexOf(retry)).toBeLessThan(pieces.indexOf(skipped))
-	expect(rowFor(output, done)).toContain('/published"')
+	expect(rowFor(output, done)).toContain('href="/admin/view/published/')
 	expect(rowFor(output, done)).not.toMatch(/<(?:input|label)\b/)
 	expect(checkbox(labelFor(output, retry))).toMatch(checkedAttribute)
 	expect(labelFor(output, retry)).toContain('Failed')
 	expect(labelFor(output, retry)).toContain('Retry this item')
 	expect(checkbox(labelFor(output, skipped))).not.toMatch(checkedAttribute)
 	expect(labelFor(output, skipped)).toContain('New')
-	expect(rowFor(output, skipped)).not.toContain('/published"')
+	expect(rowFor(output, skipped)).not.toContain('href="/admin/view/published/')
 	expect(checkbox(labelFor(output, 'Select all'))).not.toMatch(checkedAttribute)
 })
 
@@ -550,9 +548,9 @@ test('source and published links pass encoded paths unchanged as native route pa
 	const path = 'books/literal%252F/%E6%BA%90%20%23%3F%25.books.md'
 	const output = table({ outcomes: [{ filePath: file, state: 'published' }] })
 	expect(vi.mocked(resolve).mock.calls).toEqual([
-		['/(auth)/admin/piece/[...path]/published', { path }],
+		['/(auth)/admin/view/published/[...path]', { path }],
 		['/(auth)/admin/piece/[...path]/source', { path }]
 	])
-	for (const leaf of ['published', 'source'])
-		expect(output).toContain(`href="/admin/piece/${path}/${leaf}"`)
+	expect(output).toContain(`href="/admin/view/published/${path}"`)
+	expect(output).toContain(`href="/admin/piece/${path}/source"`)
 })

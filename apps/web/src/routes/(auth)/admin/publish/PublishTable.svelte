@@ -118,7 +118,7 @@
 						{:else if published}
 							<a
 								class="badge published-link"
-								href={resolve('/(auth)/admin/piece/[...path]/published', { path })}>Published</a
+								href={resolve('/(auth)/admin/view/published/[...path]', { path })}>Published</a
 							>
 						{:else}
 							<span class="badge">

@@ -7,7 +7,7 @@ export function editorHref(file: string): string {
 }
 
 export function publishedHref(file: string): string {
-	return `/admin/piece/${encodeArchivePath(file)}/published`
+	return `/admin/view/published/${encodeArchivePath(file)}`
 }
 
 export function publishQuery(file: string): URLSearchParams {
@@ -18,7 +18,6 @@ export function publishHref(file: string): string {
 	return `/admin/publish?${publishQuery(file)}`
 }
 
-export function previewHref(file: string, job?: string): string {
-	const href = `/admin/piece/${encodeArchivePath(file)}/preview`
-	return job === undefined ? href : `${href}/${encodeURIComponent(job)}`
+export function previewHref(job: string): string {
+	return `/admin/view/preview/${encodeURIComponent(job)}`
 }

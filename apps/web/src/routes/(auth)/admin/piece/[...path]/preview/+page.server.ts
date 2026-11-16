@@ -24,6 +24,6 @@ export const actions = {
 		const file = params.path
 		validatePreviewFile(file)
 		const handle = await getOpenWorkflow().runWorkflow(previewSpec, { filePath: file })
-		redirect(303, previewHref(file, handle.workflowRun.id))
+		redirect(303, previewHref(handle.workflowRun.id))
 	}
 } satisfies Actions

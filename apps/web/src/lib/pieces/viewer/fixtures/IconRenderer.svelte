@@ -1,8 +1,11 @@
 <script lang="ts">
 	import type { PublicWebPiece } from '@luzzle/web.pieces'
 	import { getPieceHelpers } from '#lib/pieces/helpers.js'
-	let { piece, size, lazy }: { piece: PublicWebPiece; size: { width: number }; lazy: boolean } =
-		$props()
+	let {
+		piece,
+		size,
+		lazy = false
+	}: { piece: PublicWebPiece; size: { width: number }; lazy?: boolean } = $props()
 	const helpers = $derived(getPieceHelpers(piece))
 </script>
 

@@ -178,12 +178,12 @@ test.each([false, true])(
 	'signin preserves an encoded path and its query as one return parameter (data=%s)',
 	async (isDataRequest) => {
 		const { handle } = await import('./hooks.server.js')
-		const pathname = '/garden/%61dmin/piece/books/%E6%BA%90%20%23%3F%25.md/published'
+		const pathname = '/garden/%61dmin/view/published/books/%E6%BA%90%20%23%3F%25.md'
 		const search = '?tag=a%26b&filter=a+b&redirectTo=https%3A%2F%2Fexternal.example'
 		const resolve = vi.fn<Parameters<Handle>[0]['resolve']>(async () => new Response('resolved'))
 
 		const request = event(null, pathname, {
-			routeId: '/(auth)/admin/piece/[...path]/published',
+			routeId: '/(auth)/admin/view/published/[...path]',
 			isDataRequest,
 			search,
 			headers: { accept: isDataRequest ? 'application/json' : 'text/html' }
@@ -235,8 +235,8 @@ test('an authenticated generation request reaches its handler', async () => {
 const encodedRequests = [
 	...['', '/page', '/icon', '/share'].flatMap((suffix) =>
 		[false, true].map((isDataRequest) => ({
-			pathname: '/%61dmin/piece/books/book.books.md/published' + suffix,
-			routeId: '/(auth)/admin/piece/[...path]/published' + suffix,
+			pathname: '/%61dmin/view/published/books/book.books.md' + suffix,
+			routeId: '/(auth)/admin/view/published/[...path]' + suffix,
 			isDataRequest,
 			method: 'GET'
 		}))

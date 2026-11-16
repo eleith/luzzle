@@ -22,20 +22,18 @@ const publishedPiece = {
 
 const { page, resolve } = vi.hoisted(() => ({
 	page: {
-		url: new URL('https://app.test/admin/piece/books/book.md/preview/job/share'),
-		route: { id: '/(auth)/admin/piece/[...path]/preview/[jobId]/share' },
+		url: new URL('https://app.test/admin/view/preview/job/share'),
+		route: { id: '/(auth)/admin/view/preview/[jobId]/share' },
 		data: {
 			preview: true,
 			job: 'job',
 			config: { url: { app: 'https://public.test/site', luzzle_assets: 'https://cdn.test' } }
 		}
 	},
-	resolve: vi.fn((route: string, params: { tag: string } | { path: string; jobId?: string }) => {
-		if (route === '/tags/[tag]' && 'tag' in params) return `/tags/${params.tag}`
-		if (!('path' in params)) throw new Error(`Unexpected route: ${route}`)
+	resolve: vi.fn((route: string, params: { path?: string; jobId?: string }) => {
 		return route
 			.replace('/(auth)', '')
-			.replace('[...path]', () => params.path)
+			.replace('[...path]', () => params.path ?? '')
 			.replace('[jobId]', () => params.jobId ?? '')
 	})
 }))
@@ -43,35 +41,26 @@ vi.mock('$app/state', () => ({ page }))
 vi.mock('$app/forms', () => ({ enhance: vi.fn() }))
 vi.mock('$app/paths', () => ({ resolve }))
 
-// Only layout destinations, the retry action and explicit page tag links may use this mock.
+// Only layout destinations and the retry action may use this mock.
 // Resource/helper URLs must remain independent; this is not native Kit resolution evidence.
-function expectAppNavigation(jobs = ['job'], tags: string[] = []) {
+function expectAppNavigation(jobs = ['job']) {
 	const calls = [
 		...jobs.flatMap((job) => {
-			const route = '/(auth)/admin/piece/[...path]/preview/[jobId]'
+			const route = '/(auth)/admin/view/preview/[jobId]'
 			const path = 'books/book.md'
 			const jobId = encodeURIComponent(job)
 			return [
 				['/(auth)/admin/piece/[...path]/source', { path }],
 				['/(auth)/admin/piece/[...path]/preview', { path }],
-				[route, { path, jobId }],
-				[`${route}/page`, { path, jobId }],
-				[`${route}/icon`, { path, jobId }],
-				[`${route}/share`, { path, jobId }]
+				[route, { jobId }],
+				[`${route}/page`, { jobId }],
+				[`${route}/icon`, { jobId }],
+				[`${route}/share`, { jobId }]
 			]
-		}),
-		...tags.map((tag) => ['/tags/[tag]', { tag: encodeURIComponent(tag) }])
+		})
 	]
 	for (const call of resolve.mock.calls) expect(calls).toContainEqual(call)
 }
-// Page and icon renderers are replaced; Share uses the real image viewer and URL helpers.
-vi.mock('#lib/pieces/components/page.svelte', async () => ({
-	default: (await import('#lib/pieces/viewer/fixtures/PageRenderer.svelte')).default
-}))
-vi.mock('#lib/pieces/components/icon.svelte', async () => ({
-	default: (await import('#lib/pieces/viewer/fixtures/IconRenderer.svelte')).default
-}))
-
 type Data = ComponentProps<typeof SharePage>['data']
 type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
 function data(status: Status = 'completed', png = true): Data {
@@ -132,11 +121,9 @@ function data(status: Status = 'completed', png = true): Data {
 const routes = { share: SharePage, page: Page, icon: Icon }
 function tree(props: Data, view: keyof typeof routes = 'share', query = '') {
 	page.data = props
-	page.url = new URL(
-		`https://app.test/admin/piece/${props.file}/preview/${props.job}/${view}${query}`
-	)
-	page.route.id = `/(auth)/admin/piece/[...path]/preview/[jobId]/${view}`
-	const params = { path: props.file, jobId: props.job }
+	page.url = new URL(`https://app.test/admin/view/preview/${props.job}/${view}${query}`)
+	page.route.id = `/(auth)/admin/view/preview/[jobId]/${view}`
+	const params = { jobId: props.job }
 	const children = createRawSnippet(() => ({
 		render: () => render(routes[view], { props: { data: props, params } }).body
 	}))
@@ -190,13 +177,14 @@ test('?html is ignored: identical image viewer and four tabs plus Back, only Sha
 })
 
 test.each(['page', 'icon'] as const)(
-	'completed %s owns exactly one main inside the real layout',
+	'completed %s SSR shows one loading landmark, not template contents',
 	(view) => {
 		const html = tree(data(), view)
 		expect(html.match(/<main\b/g)).toHaveLength(1)
 		expect(html.match(/id="main-content"/g)).toHaveLength(1)
-		expect(html).toContain(`data-renderer="${view}"`)
-		expect(html).toContain('src="/admin/preview/job/asset/generated/cover.jpg"')
+		expect(html).toContain(`Loading ${view} preview`)
+		expect(html).toContain(`JavaScript is required to display the ${view} preview.`)
+		expect(html).not.toMatch(/data-renderer=|generated\/cover\.jpg|<img\b/)
 		expectAppNavigation()
 	}
 )
@@ -228,15 +216,4 @@ test('completed without an assembled piece is safe and invents no artifacts', ()
 		/data-renderer=|<img|\/asset\/|Open generated share image|not (?:been )?generated/i
 	)
 	expectAppNavigation()
-})
-
-test('completed Page resolves tag navigation but never preview resources', () => {
-	const props = data()
-	if (props.status !== 'completed') throw new Error('Expected completed fixture')
-	props.tags = [{ slug: '源 #?%', tag: 'Tag <label>' }]
-	const html = tree(props, 'page')
-	expect(html).toContain('href="/tags/%E6%BA%90%20%23%3F%25"')
-	expect(html).toContain('Tag &lt;label>')
-	expect(html).toContain('src="/admin/preview/job/asset/generated/cover.jpg"')
-	expectAppNavigation(['job'], ['源 #?%'])
 })

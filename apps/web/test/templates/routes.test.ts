@@ -717,12 +717,19 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(html).toContain('pieceTypes:["cutover-kind"]')
 	})
 
-	test('YAML selects only the public page template CSS without rebuilding or changing URLs', async () => {
+	test('YAML selects only the page and icon CSS it uses without rebuilding or changing URLs', async () => {
 		const scopes = await Promise.all(
-			['default', 'note'].map(async (name) => {
+			[
+				['pages', 'default'],
+				['pages', 'note'],
+				['pages', 'book'],
+				['icons', 'book'],
+				['icons', 'recipe-card']
+			].map(async ([role, name]) => {
 				const filename = path.join(
 					repository,
-					'packages/web/templates/src/pages',
+					'packages/web/templates/src',
+					role,
 					name,
 					'template.svelte'
 				)
@@ -731,10 +738,11 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				return css!.code.match(/\.svelte-[\w-]+/)![0]
 			})
 		)
-		const [defaultScope, noteScope] = scopes
+		const [defaultScope, noteScope, bookScope, bookIconScope, recipeIconScope] = scopes
 		const before = await frameworkCss(await pageHtml())
 		expect(before).toContain(defaultScope)
-		expect(before).not.toContain(noteScope)
+		for (const scope of [noteScope, bookIconScope, recipeIconScope])
+			expect(before).not.toContain(scope)
 
 		const original = await readFile(configFilename)
 		try {
@@ -749,7 +757,8 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			expect(html).not.toContain('luzzle-page-templates')
 			const after = await frameworkCss(html)
 			expect(after).toContain(noteScope)
-			expect(after).not.toContain(defaultScope)
+			for (const scope of [defaultScope, bookIconScope, recipeIconScope])
+				expect(after).not.toContain(scope)
 			expect(await buildHashes()).toEqual(originalBuild)
 
 			for (const pathname of [
@@ -760,6 +769,17 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				expect(internal.status).toBe(307)
 				expect(internal.headers.get('location')).toBe(`${piecePath}?keep=1`)
 			}
+
+			await stopBuiltApp()
+			config.pieces[0].templates.page = { name: 'book' }
+			await writeFile(configFilename, JSON.stringify(config))
+			origin = await startBuiltApp()
+			const book = await frameworkCss(await pageHtml())
+			expect(book).toContain(bookScope)
+			expect(book).toContain(bookIconScope)
+			for (const scope of [defaultScope, noteScope, recipeIconScope])
+				expect(book).not.toContain(scope)
+			expect(await buildHashes()).toEqual(originalBuild)
 		} finally {
 			await stopBuiltApp()
 			await writeFile(configFilename, original)
@@ -1785,10 +1805,21 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		}
 	)
 
+	test('admin lazy template registries stay outside the server build graph', async () => {
+		const manifest = JSON.parse(
+			await readFile(path.join(webRoot, '.svelte-kit/output/server/.vite/manifest.json'), 'utf8')
+		)
+		expect(
+			Object.keys(manifest).filter((entry) =>
+				/templates\/src\/(?:pages|icons)\/lazy\.js$/.test(entry)
+			)
+		).toEqual([])
+	})
+
 	test('preserves anonymous admin redirects and private JSON denials', async () => {
 		for (const pathname of [
-			'/admin/piece/real-piece.cutover-kind.md/published/page',
-			'/admin/piece/real-piece.cutover-kind.md/preview/selected-job/page',
+			'/admin/view/published/real-piece.cutover-kind.md/page',
+			'/admin/view/preview/selected-job/page',
 			'/admin/open/cutover-kind/real-piece',
 			'/admin/open/unconfigured-kind/real-piece'
 		]) {

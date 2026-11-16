@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-	import PieceIcon from '#lib/pieces/components/icon.svelte'
+	import type { getIcon } from '@luzzle/web.templates/icons'
+	import { getPieceHelpers } from '#lib/pieces/helpers.js'
 
 	const renderWidth = 500
-	let { piece }: { piece: TemplatedPiece } = $props()
+	let { Icon, piece }: { Icon: ReturnType<typeof getIcon>; piece: TemplatedPiece } = $props()
+	const fields = $derived(piece.templates.icon.fields)
+	const helpers = $derived(getPieceHelpers(piece))
 	let container: HTMLDivElement | undefined = $state()
 	let scale = $state(1)
 
@@ -25,7 +28,7 @@
 <main id="main-content" class="icon-viewport" aria-label="Piece icon">
 	<div class="scale-container" bind:this={container} style:max-width="{renderWidth}px">
 		<div class="icon-frame" style:width="{renderWidth}px" style:zoom={scale}>
-			<PieceIcon {piece} size={{ width: renderWidth }} lazy={false} />
+			<Icon {piece} {fields} {helpers} size={{ width: renderWidth }} lazy={false} />
 		</div>
 	</div>
 </main>

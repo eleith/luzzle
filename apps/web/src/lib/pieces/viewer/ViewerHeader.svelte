@@ -7,7 +7,7 @@
 
 	let { file }: { file: string } = $props()
 	const path = $derived(encodeArchivePath(file))
-	const publishedRoute = '/(auth)/admin/piece/[...path]/published'
+	const publishedRoute = '/(auth)/admin/view/published/[...path]'
 </script>
 
 <header class="viewer-bar">

@@ -22,16 +22,16 @@ const { page, EventSource, resolver, resolve } = vi.hoisted(() => {
 	return {
 		page: {
 			url: new URL('https://app.test/'),
-			route: { id: '/(auth)/admin/piece/[...path]/preview/[jobId]' }
+			route: { id: '/(auth)/admin/view/preview/[jobId]' }
 		},
 		EventSource: vi.fn(),
 		resolver,
 		resolve: vi.fn(
-			(route: string, params: { path: string; jobId?: string }) =>
+			(route: string, params: { path?: string; jobId?: string }) =>
 				resolver.prefix +
 				route
 					.replace('/(auth)', '')
-					.replace('[...path]', () => params.path)
+					.replace('[...path]', () => params.path ?? '')
 					.replace('[jobId]', () => params.jobId ?? '')
 		)
 	}
@@ -41,8 +41,8 @@ vi.mock('$app/forms', () => ({ enhance: vi.fn() }))
 vi.mock('$app/paths', () => ({ resolve }))
 
 const file = 'books/book.books.md'
-const root = `/admin/piece/${file}/preview/preview-id`
-const previewRoute = '/(auth)/admin/piece/[...path]/preview/[jobId]'
+const root = '/admin/view/preview/preview-id'
+const previewRoute = '/(auth)/admin/view/preview/[jobId]'
 const children = createRawSnippet(() => ({ render: () => '<p>Preview child fixture</p>' }))
 type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
 
@@ -73,7 +73,7 @@ function body(status: Status = 'completed', hasPublishedVersion = false) {
 	return render(PreviewLayout, {
 		props: {
 			data: { ...data(status), hasPublishedVersion },
-			params: { path: file, jobId: 'preview-id' },
+			params: { jobId: 'preview-id' },
 			children
 		}
 	}).body.replace(/<!--[^]*?-->/g, '')
@@ -87,11 +87,11 @@ function expectAppNavigation(path = file, jobId = 'preview-id') {
 	const calls = [
 		['/(auth)/admin/piece/[...path]/source', { path }],
 		['/(auth)/admin/piece/[...path]/preview', { path }],
-		['/(auth)/admin/piece/[...path]/published', { path }],
-		[previewRoute, { path, jobId }],
-		[`${previewRoute}/page`, { path, jobId }],
-		[`${previewRoute}/icon`, { path, jobId }],
-		[`${previewRoute}/share`, { path, jobId }]
+		['/(auth)/admin/view/published/[...path]', { path }],
+		[previewRoute, { jobId }],
+		[`${previewRoute}/page`, { jobId }],
+		[`${previewRoute}/icon`, { jobId }],
+		[`${previewRoute}/share`, { jobId }]
 	]
 	for (const call of resolve.mock.calls) expect(calls).toContainEqual(call)
 }
@@ -120,7 +120,7 @@ test.each(['/static', 'https://cdn.test/site-assets', ''])(
 			// Defaults are already in the payload, not recalculated by the consumer.
 			props.config.url.app_assets = 'https://unrelated-cdn.test/assets'
 			const result = render(PreviewResetLayout, {
-				props: { data: props, params: { path: file }, children }
+				props: { data: props, params: { jobId: 'preview-id' }, children }
 			})
 			expect(result.head).toContain(`rel="icon" href="${base}/images/favicon.png"`)
 			expect(result.head.match(/rel="icon"/g)).toHaveLength(1)
@@ -148,7 +148,7 @@ test.each([false, true])(
 				: 'https://public.test/static/images/opengraph.png'
 			props.config.content.images = { favicon, opengraph }
 			const result = render(PreviewResetLayout, {
-				props: { data: props, params: { path: file }, children }
+				props: { data: props, params: { jobId: 'preview-id' }, children }
 			})
 			expect(result.head).toContain(`rel="icon" href="${props.config.content.images.favicon}"`)
 			expect(result.head.match(/rel="icon"/g)).toHaveLength(1)
@@ -214,7 +214,7 @@ test.each(['waiting', 'running', 'completed', 'failed', 'expired'] as const)(
 		} else {
 			expect(forms).toHaveLength(0)
 		}
-		expect(html.includes(`href="/admin/piece/${file}/published"`)).toBe(status === 'failed')
+		expect(html.includes(`href="/admin/view/published/${file}"`)).toBe(status === 'failed')
 		const header = html.slice(0, html.indexOf('</header>') + '</header>'.length)
 		const links = anchors(header)
 		expect(links).toHaveLength(5)
@@ -314,11 +314,11 @@ test('Preview retains encoded file and job navigation and publication identity',
 	const path = 'books/literal%252F/%E6%BA%90%20%23%3F%25.books.md'
 	const jobId = 'job%20%2F%23%3F%252F'
 	const encodedRoot = `/admin/piece/${path}`
-	const preview = `${encodedRoot}/preview/${jobId}`
+	const preview = `/admin/view/preview/${jobId}`
 	page.url = new URL(`${preview}/share?html`, 'https://app.test')
 	page.route.id = `${previewRoute}/share`
 	const html = render(PreviewLayout, {
-		props: { data: props, params: { path: props.file, jobId: props.job }, children }
+		props: { data: props, params: { jobId: props.job }, children }
 	}).body
 	const links = anchors(html.slice(0, html.indexOf('</header>')))
 	expect(links[0]).toContain(`href="${encodedRoot}/source"`)
@@ -329,15 +329,16 @@ test('Preview retains encoded file and job navigation and publication identity',
 	expect(links.at(-1)).toContain('aria-current="page"')
 	expectAppNavigation(path, jobId)
 
-	const running = data('running')
-	running.file = props.file
-	running.job = props.job
-	running.hasPublishedVersion = true
-	const pendingHtml = render(PreviewLayout, {
-		props: { data: running, params: { path: running.file, jobId: running.job }, children }
+	const failed = data('failed')
+	failed.file = props.file
+	failed.job = props.job
+	failed.hasPublishedVersion = true
+	const failedHtml = render(PreviewLayout, {
+		props: { data: failed, params: { jobId: failed.job }, children }
 	}).body
-	expect(pendingHtml.split(`href="${encodedRoot}/published"`)).toHaveLength(2)
-	expect(pendingHtml).not.toMatch(/<form\b/)
+	expect(failedHtml.split(`href="/admin/view/published/${path}"`)).toHaveLength(2)
+	expect(failedHtml).toContain(`action="${encodedRoot}/preview"`)
+	expect(failedHtml).toContain('Generate fresh preview')
 	expectAppNavigation(path, jobId)
 	expect(EventSource).not.toHaveBeenCalled()
 })

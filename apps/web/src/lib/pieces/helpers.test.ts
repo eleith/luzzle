@@ -91,7 +91,7 @@ test.each([undefined, false])(
 )
 
 test('Published is the default even on an admin pathname', () => {
-	page.url = new URL('https://app.example/admin/piece/book.books.md/published')
+	page.url = new URL('https://app.example/admin/view/published/book.books.md')
 	page.data.config.url.luzzle_assets = 'https://cdn.example/prefix/'
 	expect(getPieceHelpers(piece()).getPieceAssetUrl('cover', 'image.original')).toBe(
 		'https://cdn.example/prefix/pieces/assets/books/cover%20key/cover.jpg'
@@ -171,7 +171,7 @@ test('clearing Preview data returns to Published without changing an existing he
 })
 
 test('a preview pathname cannot change the Published default without an explicit flag', () => {
-	page.url = new URL('https://app.example/admin/piece/book.books.md/preview/job/share')
+	page.url = new URL('https://app.example/admin/view/preview/job/share')
 	page.params.jobId = 'job'
 	expect(getPieceHelpers(piece()).getPieceAssetUrl('cover', 'image.original')).toBe(
 		'https://app.example/pieces/assets/books/cover%20key/cover.jpg'

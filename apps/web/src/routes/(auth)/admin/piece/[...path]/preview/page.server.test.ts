@@ -38,22 +38,14 @@ test('submitting the preview action creates a job and redirects to it', async ()
 	const event = { params: { path: 'example.book.md' } } as Parameters<typeof actions.default>[0]
 	await expect(actions.default(event)).rejects.toMatchObject({
 		status: 303,
-		location: '/admin/piece/example.book.md/preview/preview-id'
+		location: '/admin/view/preview/preview-id'
 	})
 	expect(runWorkflow).toHaveBeenCalledExactlyOnceWith(previewSpec, { filePath: 'example.book.md' })
 })
 
 test.each([
-	[
-		'books/源 #?%.book.md',
-		'job #?%',
-		'/admin/piece/books/%E6%BA%90%20%23%3F%25.book.md/preview/job%20%23%3F%25'
-	],
-	[
-		'nested/literal%2F.book.md',
-		'preview-id',
-		'/admin/piece/nested/literal%252F.book.md/preview/preview-id'
-	]
+	['books/源 #?%.book.md', 'job #?%', '/admin/view/preview/job%20%23%3F%25'],
+	['nested/literal%2F.book.md', 'preview-id', '/admin/view/preview/preview-id']
 ])(
 	'Preview starts once from raw file %s and redirects with encoded segments',
 	async (file, job, location) => {

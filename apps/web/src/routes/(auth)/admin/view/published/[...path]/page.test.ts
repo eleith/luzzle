@@ -9,7 +9,7 @@ import PublishedTree from './fixtures/PublishedTree.svelte'
 
 const { page } = vi.hoisted(() => ({
 	page: {
-		route: { id: '/(auth)/admin/piece/[...path]/published' },
+		route: { id: '/(auth)/admin/view/published/[...path]' },
 		data: { config: { url: { app: '/garden', luzzle_assets: '/cdn' } } }
 	}
 }))
@@ -20,12 +20,6 @@ vi.mock('$app/paths', () => ({
 		if (route === '/tags/[tag]') return `/tags/${params?.tag}`
 		return route.replace('/(auth)', '').replace('[...path]', () => params?.path ?? '')
 	}
-}))
-vi.mock('#lib/pieces/components/page.svelte', async () => ({
-	default: (await import('#lib/pieces/viewer/fixtures/PageRenderer.svelte')).default
-}))
-vi.mock('#lib/pieces/components/icon.svelte', async () => ({
-	default: (await import('#lib/pieces/viewer/fixtures/IconRenderer.svelte')).default
 }))
 
 function publishedData(): ComponentProps<typeof Overview>['data'] {
@@ -58,7 +52,7 @@ function publishedData(): ComponentProps<typeof Overview>['data'] {
 }
 
 beforeEach(() => {
-	page.route.id = '/(auth)/admin/piece/[...path]/published'
+	page.route.id = '/(auth)/admin/view/published/[...path]'
 })
 
 test('overview shows the published snapshot, recorded completion time and public destinations', () => {
@@ -133,26 +127,25 @@ test('the reset layout retains configured branding and noindex without adding pu
 	expect(result.body).toContain('href="/admin/piece/books/draft%20%23%3F.books.md/source"')
 })
 
-test.each([
-	{ view: 'page', marker: 'data-renderer="page"' },
-	{ view: 'icon', marker: 'data-renderer="icon"' }
-] as const)('the $view route delegates the published piece to its renderer', ({ view, marker }) => {
-	const data = publishedData()
-	page.route.id = `/(auth)/admin/piece/[...path]/published/${view}`
+test.each(['page', 'icon'] as const)(
+	'the %s route server-renders a loading state and no-JavaScript notice, not the composition',
+	(view) => {
+		const data = publishedData()
+		page.route.id = `/(auth)/admin/view/published/[...path]/${view}`
 
-	const html = render(PublishedTree, { props: { data, view } }).body
+		const html = render(PublishedTree, { props: { data, view } }).body
 
-	expect(html).toContain(marker)
-	expect(html).toContain('Published &lt;Book>')
-	expect(html.match(/<main\b/g)).toHaveLength(1)
-	if (view === 'page') {
-		expect(html).toContain('href="/tags/fiction"')
-		expect(html).toContain('Fiction')
+		expect(html).toContain(`role="status">Loading ${view} preview…`)
+		expect(html).toContain('<noscript>')
+		expect(html).toContain(`JavaScript is required to display the ${view} preview.`)
+		expect(html).not.toContain('Published &lt;Book>')
+		expect(html).not.toContain('href="/tags/fiction"')
+		expect(html.match(/<main\b/g)).toHaveLength(1)
 	}
-})
+)
 
 function shareHtml(data = publishedData()) {
-	page.route.id = '/(auth)/admin/piece/[...path]/published/share'
+	page.route.id = '/(auth)/admin/view/published/[...path]/share'
 	page.data.config = data.config
 	return render(PublishedTree, { props: { data, view: 'share' } }).body
 }
