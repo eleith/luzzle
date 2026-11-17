@@ -1,6 +1,9 @@
 import type { Cookie, Page } from '@playwright/test'
 import { expect, test } from './support/test.js'
-import { ADMIN, notebook } from './support/fixture.js'
+import { ADMIN, fieldGuide, notebook } from './support/fixture.js'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+import { extractFullMarkdown } from '@luzzle/core'
 
 let editorSession: Cookie[] | undefined
 
@@ -125,6 +128,73 @@ test('Save persists source; Vim menu changes preserve history and :w keeps focus
 	await expect(editor).toHaveText(beforeFormat, { useInnerText: true })
 	await expect(saved).toBeDisabled()
 	expect(formatSaveRequests).toBe(0)
+})
+
+test('asset URL saves update an unchanged editor but never replace a newer draft', async ({
+	page,
+	baseURL,
+	appServer
+}) => {
+	await signIn(page, fieldGuide.editorUrl)
+	const editor = page.getByRole('textbox')
+	const save = page.getByRole('button', { name: 'Save', exact: true })
+	const sourceInput = page.locator('input[name="content"]')
+	const assetUrl = `${baseURL}/pieces/assets/${notebook.slug}/share%20image.png`
+	const body = `\nBody with ${assetUrl}.\n`
+	const draft = `---\n# formatting may change on URL conversion\ntitle:   "${fieldGuide.title}"\ndate: 2024-01-01\ncover: '${assetUrl}'\n---\n${body}`
+	await editor.press('ControlOrMeta+a')
+	await page.keyboard.insertText(draft)
+	await page.getByRole('button', { name: 'More', exact: true }).click()
+	await page.getByRole('menuitemcheckbox', { name: 'Vim mode', exact: true }).click()
+	const mode = page.locator('.cm-editor .editor-status-mode')
+	await editor.press('i')
+	await expect(mode).toHaveText('Insert')
+	await save.click()
+	await expect(page.getByRole('button', { name: 'Saved', exact: true })).toBeDisabled()
+	const file = path.join(appServer.directory, 'archive', fieldGuide.file)
+	const savedContent = await readFile(file, 'utf8')
+	const { frontmatter } = await extractFullMarkdown(savedContent)
+	expect(frontmatter.cover).toMatch(/^\.assets\/.+\/.+\.png$/)
+	expect(savedContent.endsWith(`---\n${body}`)).toBe(true)
+	await readFile(path.join(appServer.directory, 'archive', frontmatter.cover as string))
+	await expect(sourceInput).toHaveValue(savedContent)
+	await expect(editor).toContainText(frontmatter.cover as string)
+	await expect(mode).toHaveText('Normal')
+
+	await page.getByRole('button', { name: 'More', exact: true }).click()
+	await page.getByRole('menuitemcheckbox', { name: 'Vim mode', exact: true }).click()
+	const secondUrl = `${assetUrl}?second=1`
+	const secondDraft = draft.replace(`cover: '${assetUrl}'`, `cover: '${secondUrl}'`)
+	await editor.press('ControlOrMeta+a')
+	await page.keyboard.insertText(secondDraft)
+	const responseReady = Promise.withResolvers<void>()
+	const releaseResponse = Promise.withResolvers<void>()
+	await page.route(
+		(url) => url.pathname === fieldGuide.editorUrl && url.searchParams.has('/save'),
+		async (route) => {
+			const response = await route.fetch()
+			expect(response.status()).toBe(200)
+			responseReady.resolve()
+			await releaseResponse.promise
+			await route.fulfill({ response })
+		}
+	)
+	try {
+		await save.click()
+		await responseReady.promise
+		await editor.press('ControlOrMeta+End')
+		await page.keyboard.insertText('\nTyped while Save was pending.')
+		await expect(sourceInput).toHaveValue(/Typed while Save was pending\./)
+		const newerDraft = await sourceInput.inputValue()
+		expect(newerDraft).toContain(secondUrl)
+		releaseResponse.resolve()
+		await expect(save).toBeEnabled()
+		await expect(sourceInput).toHaveValue(newerDraft)
+		await expect(editor).toContainText('Typed while Save was pending.')
+		expect(await readFile(file, 'utf8')).not.toContain('Typed while Save was pending.')
+	} finally {
+		releaseResponse.resolve()
+	}
 })
 
 test('pending Publish allows saving and typing; failed metadata refresh retains the draft', async ({

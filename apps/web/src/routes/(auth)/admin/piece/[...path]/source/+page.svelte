@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { deserialize, enhance, type SubmitFunction } from '$app/forms'
+	import { deserialize, enhance, type ActionResult, type SubmitFunction } from '$app/forms'
 	import MarkdownEditor from '#lib/components/editor/MarkdownEditor.svelte'
 	import Button from '#lib/components/ui/Button.svelte'
 	import PieceActions from '#lib/components/editor/PieceActions.svelte'
@@ -122,6 +122,17 @@
 		if (isDirty && !isSaving) saveForm?.requestSubmit()
 	}
 
+	function recordSavedSource(result: ActionResult, submitted: { file: string; content: string }) {
+		if (result.type !== 'success' && result.type !== 'failure') return
+		const savedContent = (result.data as { savedContent?: string } | undefined)?.savedContent
+		if (typeof savedContent !== 'string') return
+		// An index failure can still mean the file was saved.
+		savedSource = { file: submitted.file, content: savedContent }
+		if (savedContent !== submitted.content && rawContent === submitted.content) {
+			editorRef?.replaceContent(savedContent, submitted.content)
+		}
+	}
+
 	const enhanceSave: SubmitFunction = ({ formData, cancel }) => {
 		if (isSaving) {
 			cancel()
@@ -139,8 +150,8 @@
 		return async ({ result }) => {
 			if (!isCurrentSave()) return
 			try {
+				recordSavedSource(result, submitted)
 				if (result.type === 'success') {
-					savedSource = submitted
 					await refreshPublicationState()
 				} else if (result.type === 'failure') {
 					form = result.data as PageProps['form']

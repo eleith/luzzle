@@ -5,6 +5,7 @@ import {
 	type LuzzleStorage,
 	type PieceFrontmatterSchema,
 	type PieceFrontmatter,
+	extractFullMarkdown,
 	savePieceAsset
 } from '@luzzle/core'
 import { getPieces } from '#lib/server/pieces.js'
@@ -44,7 +45,7 @@ const schema = {
 	additionalProperties: false
 } as PieceFrontmatterSchema<PieceFrontmatter>
 
-function setup(content: string) {
+function setup(content: string, pieceSchema = schema) {
 	const storage = {
 		writeFile: vi.fn().mockResolvedValue(undefined),
 		readFile: vi.fn(),
@@ -52,7 +53,7 @@ function setup(content: string) {
 		delete: vi.fn()
 	}
 	vi.mocked(getStorage).mockReturnValue(storage as unknown as ReturnType<typeof getStorage>)
-	const piece = new Piece('books', storage as unknown as LuzzleStorage, schema)
+	const piece = new Piece('books', storage as unknown as LuzzleStorage, pieceSchema)
 	const validate = vi.spyOn(piece, 'validate')
 	const write = vi.spyOn(piece, 'write')
 	const sync = vi.spyOn(piece, 'syncMarkdown').mockResolvedValue(undefined)
@@ -96,7 +97,7 @@ test('Save validates a model but writes the exact submitted source before syncin
 	expect(settled).toBe(false)
 	expect(storage.writeFile).toHaveBeenCalledExactlyOnceWith(file, content)
 	finishSync()
-	expect(await saving).toEqual({ success: true })
+	expect(await saving).toEqual({ success: true, savedContent: content })
 	expect(validate).toHaveBeenCalledExactlyOnceWith({
 		filePath: file,
 		piece: 'books',
@@ -108,6 +109,126 @@ test('Save validates a model but writes the exact submitted source before syncin
 	expect(write).not.toHaveBeenCalled()
 	expect(format).not.toHaveBeenCalled()
 	expect(savePieceAsset).not.toHaveBeenCalled()
+})
+
+const assetSchema = {
+	...schema,
+	properties: {
+		title: { type: 'string' },
+		cover: { type: 'string', format: 'asset' },
+		website: { type: 'string' },
+		gallery: {
+			type: 'array',
+			items: {
+				type: 'object',
+				properties: { image: { type: 'string', format: 'asset' } },
+				additionalProperties: false
+			}
+		}
+	}
+} as PieceFrontmatterSchema<PieceFrontmatter>
+
+const coverUrl = 'HTTPS://example.test/cover.png'
+const assetBody = '# Heading\r\n\r\nA   paragraph.  \r\n'
+const assetDraft = `---\r\n# comment and formatting may change when URLs are converted\r\ntitle:   "Reviewed"\r\ncover: '${coverUrl}'\r\nwebsite: '${coverUrl}'\r\ngallery: [{ image: 'https://example.test/gallery.png' }]\r\n---\r\n${assetBody}`
+
+function mockAssetDownloads() {
+	const downloads = new Map([
+		[coverUrl, '.assets/books/cover.png'],
+		['https://example.test/gallery.png', '.assets/books/image.png']
+	])
+	vi.mocked(savePieceAsset).mockImplementation(async (_file, url) => {
+		const assetPath = downloads.get(url)
+		if (!assetPath) throw new Error('Unexpected asset URL')
+		return assetPath
+	})
+}
+
+test('Save downloads asset URLs, returns the saved source and leaves the body untouched', async () => {
+	const { storage, sync, validate, event } = setup(assetDraft, assetSchema)
+	mockAssetDownloads()
+
+	const result = await actions.save(event)
+	expect(storage.writeFile).toHaveBeenCalledOnce()
+	const savedContent = storage.writeFile.mock.calls[0][1] as string
+	expect(result).toEqual({ success: true, savedContent })
+	expect(savedContent.endsWith(`---\r\n${assetBody}`)).toBe(true)
+	expect(savePieceAsset).toHaveBeenCalledTimes(2)
+	expect(savePieceAsset).toHaveBeenCalledWith(file, coverUrl, storage, { name: 'cover' })
+	expect(savePieceAsset).toHaveBeenCalledWith(file, 'https://example.test/gallery.png', storage, {
+		name: 'image'
+	})
+	expect(storage.writeFile).toHaveBeenCalledExactlyOnceWith(file, savedContent)
+	expect(validate).toHaveBeenCalledExactlyOnceWith(
+		expect.objectContaining({
+			frontmatter: {
+				title: 'Reviewed',
+				cover: '.assets/books/cover.png',
+				website: coverUrl,
+				gallery: [{ image: '.assets/books/image.png' }]
+			}
+		})
+	)
+	expect((await extractFullMarkdown(savedContent)).frontmatter).toEqual(
+		validate.mock.calls[0][0].frontmatter
+	)
+	expect(sync).toHaveBeenCalledExactlyOnceWith(db, validate.mock.calls[0][0])
+})
+
+test('URL conversion preserves the body after a standalone-CR delimiter, including later dividers', async () => {
+	const body = 'Body to preserve\n---\nTail'
+	const source = `---\ntitle: Reviewed\ncover: '${coverUrl}'\n---\r${body}`
+	const { storage, sync, event } = setup(source, assetSchema)
+	mockAssetDownloads()
+
+	expect(await actions.save(event)).toMatchObject({ success: true })
+	const savedContent = storage.writeFile.mock.calls[0][1] as string
+	expect(savedContent.endsWith(`---\r${body}`)).toBe(true)
+	expect(sync.mock.calls[0][1].note).toBe(body)
+})
+
+test('invalid drafts do not download URLs or write source', async () => {
+	const { storage, sync, event } = setup(assetDraft.replace('"Reviewed"', '42'), assetSchema)
+	expect(await actions.save(event)).toMatchObject({ status: 400 })
+	expect(savePieceAsset).not.toHaveBeenCalled()
+	expect(storage.writeFile).not.toHaveBeenCalled()
+	expect(sync).not.toHaveBeenCalled()
+})
+
+test('a failed asset download preserves the submitted draft without writing or syncing', async () => {
+	const { storage, sync, event } = setup(assetDraft, assetSchema)
+	vi.mocked(savePieceAsset).mockRejectedValueOnce(new Error('Download failed'))
+
+	expect(await actions.save(event)).toMatchObject({
+		status: 400,
+		data: {
+			rawContent: assetDraft,
+			error: { message: expect.stringContaining("Failed to download asset for 'cover'") }
+		}
+	})
+	expect(storage.writeFile).not.toHaveBeenCalled()
+	expect(sync).not.toHaveBeenCalled()
+})
+
+test('index failure reports the converted source without retrying or rolling back the saved file', async () => {
+	const { storage, sync, validate, event } = setup(assetDraft, assetSchema)
+	mockAssetDownloads()
+	sync.mockRejectedValueOnce(new Error('Index unavailable'))
+
+	const result = await actions.save(event)
+	expect(storage.writeFile).toHaveBeenCalledOnce()
+	const savedContent = storage.writeFile.mock.calls[0][1] as string
+	expect(result).toMatchObject({
+		status: 500,
+		data: {
+			savedContent,
+			rawContent: savedContent,
+			error: { message: 'Markdown was saved, but its database index could not be updated.' }
+		}
+	})
+	expect(storage.writeFile).toHaveBeenCalledExactlyOnceWith(file, savedContent)
+	expect(sync).toHaveBeenCalledExactlyOnceWith(db, validate.mock.calls[0][0])
+	expect(storage.delete).not.toHaveBeenCalled()
 })
 
 test.each([
@@ -136,23 +257,6 @@ test('Save preserves the draft on write failure and does not sync or retry', asy
 	})
 	expect(storage.writeFile).toHaveBeenCalledExactlyOnceWith(file, rawContent)
 	expect(sync).not.toHaveBeenCalled()
-	expect(storage.delete).not.toHaveBeenCalled()
-})
-
-test('Save reports sync failure truthfully without retrying or rolling back the saved file', async () => {
-	const rawContent = '---\r\ntitle: Reviewed\r\n---\r\nBody'
-	const { validate, storage, sync, event } = setup(rawContent)
-	sync.mockRejectedValueOnce(new Error('private database error'))
-
-	expect(await actions.save(event)).toMatchObject({
-		status: 500,
-		data: {
-			rawContent,
-			error: { message: 'Markdown was saved, but its database index could not be updated.' }
-		}
-	})
-	expect(storage.writeFile).toHaveBeenCalledExactlyOnceWith(file, rawContent)
-	expect(sync).toHaveBeenCalledExactlyOnceWith(db, validate.mock.calls[0][0])
 	expect(storage.delete).not.toHaveBeenCalled()
 })
 

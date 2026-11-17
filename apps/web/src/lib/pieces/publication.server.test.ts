@@ -151,7 +151,7 @@ describe('getMarkdownPublicationStatus', () => {
 test('Save creates the archive item/cache before first publication, not a serving row', async () => {
 	const raw =
 		'---\r\ntitle: Saved title\r\ncover: .assets/books/cover.png\r\n---\r\nA   paragraph.\r\n'
-	expect(await save(raw)).toEqual({ success: true })
+	expect(await save(raw)).toMatchObject({ success: true })
 	const item = await db
 		.selectFrom('pieces_items')
 		.selectAll()
@@ -195,7 +195,7 @@ test('Save updates existing item/cache while retaining serving content, hash and
 
 	expect(
 		await save('---\ntitle: Updated\ncover: .assets/books/new.png\n---\nUpdated body')
-	).toEqual({ success: true })
+	).toMatchObject({ success: true })
 	const cache = await db
 		.selectFrom('pieces_cache')
 		.selectAll()
@@ -239,7 +239,7 @@ test('Save updates existing item/cache while retaining serving content, hash and
 
 test('Save removing the last asset reference clears the indexed attachment list', async () => {
 	await save('---\ntitle: Original\ncover: .assets/books/cover.png\n---\nBody')
-	expect(await save('---\ntitle: Original\n---\nBody')).toEqual({ success: true })
+	expect(await save('---\ntitle: Original\n---\nBody')).toMatchObject({ success: true })
 	const item = await db
 		.selectFrom('pieces_items')
 		.selectAll()

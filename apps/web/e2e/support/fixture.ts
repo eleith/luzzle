@@ -72,7 +72,8 @@ export async function createFixture(directory: string, origin: string) {
 				type: 'object',
 				properties: {
 					title: { type: 'string' },
-					date: { type: 'string', format: 'date' }
+					date: { type: 'string', format: 'date' },
+					...(type === 'records' ? { cover: { type: 'string', format: 'asset' } } : {})
 				},
 				required: ['title', 'date'],
 				additionalProperties: false

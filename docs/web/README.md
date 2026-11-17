@@ -28,9 +28,12 @@ designs.
 ## Using the editor
 
 With [authentication configured](config.md#sign-in), open `/admin` to manage
-pieces. **Save** validates and writes exactly your editor text, without formatting,
-rewriting asset URLs, or reloading the editor. **Saved** means the file is saved, not
-published. **Publish** requires a saved editor and publishes only that piece. You can keep
+pieces. **Save** normally validates and writes your editor text as-is, without
+reloading the editor. HTTP(S) URLs in asset fields are a shorthand: Save downloads
+them and writes local asset paths. Only this special case reserializes frontmatter,
+so its comments and formatting may change; the body is untouched. The saved text
+updates the editor unless you have typed newer changes, in which case your draft is
+left alone and remains unsaved. **Saved** means the file is saved, not published. **Publish** requires a saved editor and publishes only that piece. You can keep
 typing and saving while it runs.
 
 The editor's bottom status bar shows one short description on the right, such as

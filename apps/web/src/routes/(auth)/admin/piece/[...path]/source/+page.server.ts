@@ -17,6 +17,7 @@ import {
 } from '@luzzle/core'
 import { Readable } from 'stream'
 import { normalizeMarkdown } from '#lib/server/markdown.js'
+import { downloadAssetsAndRewriteSource } from '#lib/pieces/resolve-asset-urls.server.js'
 
 export const load: PageServerLoad = async ({ params }) => {
 	const file = params.path
@@ -87,14 +88,18 @@ export const actions = {
 		const piece = await pieces.getPiece(type)
 
 		let markdown: PieceMarkdown<PieceFrontmatter>
+		let savedContent = content
 		try {
 			const data = await extractFullMarkdown(content)
 			markdown = makePieceMarkdown(file, type, data.markdown, data.frontmatter as PieceFrontmatter)
+			const rewritten = await downloadAssetsAndRewriteSource(piece, markdown, content, getStorage())
+			markdown = rewritten.markdown
+			savedContent = rewritten.source
 			const validated = piece.validate(markdown)
 			if (!validated.isValid) {
 				throw new Error(validated.errors.join('\n'))
 			}
-			await getStorage().writeFile(file, content)
+			await getStorage().writeFile(file, savedContent)
 		} catch (e: unknown) {
 			const error = e instanceof Error ? e : new Error(String(e))
 			console.error('Save raw action error:', error)
@@ -114,13 +119,14 @@ export const actions = {
 				error: {
 					message: 'Markdown was saved, but its database index could not be updated.'
 				},
-				rawContent: content,
+				savedContent,
+				rawContent: savedContent,
 				fields: undefined,
 				note: undefined
 			})
 		}
 
-		return { success: true }
+		return { success: true, savedContent }
 	},
 	attach: async (event) => {
 		const file = event.params.path
