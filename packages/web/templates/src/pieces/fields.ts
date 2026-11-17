@@ -3,7 +3,7 @@ import type { FieldMappings } from '@luzzle/web.config/mapping';
 import type { Static, TObject } from '@sinclair/typebox';
 import type { TemplateConfig } from '../config/index.js';
 import { mapTemplateFields, TemplateFieldsError } from '../mapping.js';
-import { getIconSchema, type IconDefinition } from '../icons/schema.js';
+import { selectIconTemplate, type IconDefinition } from '../icons/schema.js';
 import { selectPageTemplate, type PageDefinition } from '../pages/schema.js';
 import { getOpengraphSchema, type OpengraphDefinition } from '../opengraphs/schema.js';
 
@@ -49,7 +49,7 @@ function mapRole<Schema extends TObject>(
 }
 
 function mapIconTemplate(piece: PublicWebPiece, config?: PieceConfig): PieceTemplateData['icon'] {
-	const definition = getIconSchema(config?.templates?.icon?.name);
+	const definition = selectIconTemplate(config);
 	return mapRole<IconDefinition['fields']>('icon', definition, piece, config);
 }
 

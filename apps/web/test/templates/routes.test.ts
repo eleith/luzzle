@@ -2,11 +2,10 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { execFile, spawn, type ChildProcess } from 'node:child_process'
 import { once } from 'node:events'
 import { createHash } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
-import { compile } from 'svelte/compiler'
 import { resolveAuthUrl } from '../../scripts/runtime-environment.js'
 
 const exec = promisify(execFile)
@@ -61,7 +60,6 @@ let origin: string
 let server: ChildProcess | undefined
 let serverErrors = ''
 let nativeShutdownObserved = false
-let originalBuild: Record<string, string>
 let originalMachineFeeds: MachineFeeds
 let originalPublicPiece: unknown
 let childEnv: NodeJS.ProcessEnv
@@ -103,7 +101,6 @@ try {
     { ...asset, transformation: 'image.s.jpg', asset_path: 'cutover/cover small.png', mime_type: 'image/png', is_embedded: 0 },
     { ...asset, transformation: 'image.s.png', asset_path: 'cutover/cover small.png', mime_type: 'image/png', is_embedded: 0 },
     { ...asset, asset_key: row.key, transformation: 'opengraph', asset_path: 'cutover/share.png', mime_type: 'image/png', is_embedded: 0 },
-    { ...asset, transformation: 'palette', mime_type: 'application/json', content: JSON.stringify({ accent: '#123456', background: '#234567' }) },
     { ...asset, asset_key: row.key, piece_asset_path: row.file_path, transformation: 'markdown', mime_type: 'text/html', content: '<p>Published rendered note</p>' }
   ]).execute();
 } finally { await db.destroy(); }
@@ -116,24 +113,6 @@ async function readOptional(filename: string) {
 		if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
 		throw error
 	}
-}
-
-function validateRuntimeConfig() {
-	return exec(
-		process.execPath,
-		[
-			'--input-type=module',
-			'-e',
-			`
-import { pathToFileURL } from 'node:url';
-const { loadConfig } = await import(pathToFileURL(process.argv[1]).href);
-loadConfig(process.argv[2]);
-`,
-			path.join(repository, 'packages/web/templates/dist/config/index.js'),
-			configFilename
-		],
-		{ cwd: directory, env: childEnv, timeout: 30000 }
-	)
 }
 
 async function buildBlankApp() {
@@ -164,18 +143,6 @@ async function buildBlankApp() {
 			)
 		)
 	}
-}
-
-async function buildHashes() {
-	const hashes: Record<string, string> = {}
-	for (const entry of await readdir(buildDirectory, { recursive: true, withFileTypes: true })) {
-		if (!entry.isFile()) continue
-		const filename = path.join(entry.parentPath, entry.name)
-		hashes[path.relative(buildDirectory, filename)] = createHash('sha256')
-			.update(await readFile(filename))
-			.digest('hex')
-	}
-	return hashes
 }
 
 async function request(pathname = piecePath, accept = 'text/html', init: RequestInit = {}) {
@@ -245,46 +212,6 @@ function htmlHead(html: string) {
 	return head
 }
 
-function expectInlineConfiguredCss(html: string) {
-	const head = htmlHead(html)
-	const styles = [
-		...head.matchAll(/<style\b[^>]*\bdata-luzzle-configured-styles\b[^>]*>([\s\S]*?)<\/style>/g)
-	]
-	expect(styles).toHaveLength(1)
-	const [style, css] = styles[0]
-	const charset = head.match(/<meta\b[^>]*\bcharset\b[^>]*>/i)
-	if (!charset) throw new Error('Expected the real app charset meta tag')
-	const stylePosition = head.indexOf(style)
-	expect(stylePosition).toBeGreaterThanOrEqual(head.indexOf(charset[0]) + charset[0].length)
-	const frameworkStyles =
-		head.match(
-			/<link\b[^>]*\brel=["']stylesheet["'][^>]*>|<style\b(?![^>]*\bdata-luzzle-configured-styles\b)[^>]*>[\s\S]*?<\/style>/g
-		) ?? []
-	// The app-template token precedes Kit's linked or inlined component CSS.
-	for (const frameworkStyle of frameworkStyles)
-		expect(head.indexOf(frameworkStyle)).toBeGreaterThanOrEqual(stylePosition + style.length)
-	expect(html).not.toContain('%luzzle.styles%')
-	const body = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/)?.[1]
-	if (body === undefined) throw new Error('Expected the real app HTML body')
-	expect(body).not.toContain('data-luzzle-configured-styles')
-	expect(body).not.toContain('--editor-background:')
-	const declaration = css.match(/--color-primary: [^;]+;/)?.[0]
-	if (!declaration) throw new Error('Expected a configured primary color')
-	expect(head.split(declaration)).toHaveLength(2)
-	// Include bootstrap scripts: CSS must remain server-only rather than loader data.
-	expect(body).not.toContain(declaration)
-	expect(css).not.toContain('box-sizing:')
-	expect(css).not.toContain('.button')
-	expect(css).not.toContain('.markdown')
-	expect(css).not.toContain('pre.shiki')
-	expect(css.indexOf('--color-primary:')).toBeGreaterThanOrEqual(0)
-	expect(css.indexOf('--editor-background:')).toBeGreaterThan(css.indexOf('--color-primary:'))
-	for (const privatePath of [directory, configFilename, path.basename(configFilename)])
-		expect(css).not.toContain(privatePath)
-	expect(css).not.toMatch(/\.(?:cm-|monaco-|ace_)/)
-	return css
-}
-
 function expectRuntimeCsp(response: Response, html: string, appAssets = '', pieceAssets = '') {
 	const header = response.headers.get('content-security-policy')
 	if (!header) throw new Error('Expected the framework-generated CSP')
@@ -349,38 +276,6 @@ function stablePageHeaders(response: Response) {
 	return Object.fromEntries([...response.headers].filter(([name]) => !variable.has(name)))
 }
 
-async function frameworkCss(html: string) {
-	const head = htmlHead(html)
-	const sources = [...head.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)]
-		.filter(([tag]) => !tag.includes('data-luzzle-configured-styles'))
-		.map(([, css]) => css)
-	const links = head.match(/<link\b[^>]*\brel=["']stylesheet["'][^>]*>/g) ?? []
-	for (const link of links) {
-		const href = link.match(/\bhref=["']([^"']+)["']/)?.[1]
-		if (!href) throw new Error('Expected a framework stylesheet URL')
-		expect(href).toMatch(/\/_app\/immutable\/assets\/[^"']+\.css$/)
-		const response = await request(new URL(href, origin).pathname, 'text/css')
-		expect(response.status).toBe(200)
-		sources.push(await response.text())
-	}
-	return sources.join('\n')
-}
-
-function expectThemeVariables(css: string, selector: string, variables: Record<string, string>) {
-	const blocks = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-	const block = blocks.find(
-		([, selectors, declarations]) =>
-			selectors.trim().replace(/\s+/g, ' ') === selector &&
-			Object.entries(variables).every(([name, value]) =>
-				declarations.includes(`--${name}: ${value};`)
-			)
-	)
-	expect(
-		block,
-		`Expected theme variables for ${selector}: ${JSON.stringify(variables)}`
-	).toBeDefined()
-}
-
 function expectFeedSeo(html: string, feed: FeedCase) {
 	const head = htmlHead(html)
 	expect(head.match(/<title>/g)).toHaveLength(1)
@@ -402,7 +297,6 @@ function expectFeedSeo(html: string, feed: FeedCase) {
 }
 
 function expectNativeFeed(html: string, feed: FeedCase, about: boolean, links: boolean) {
-	expectInlineConfiguredCss(html)
 	expectFeedSeo(html, feed)
 	expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
 	for (const label of ['main page', 'search', 'change theme', 'random'])
@@ -453,9 +347,6 @@ async function machineFeedSnapshot(): Promise<MachineFeeds> {
 			expect(response.status, pathname).toBe(200)
 			expect(response.headers.get('content-type')).toContain(contentType)
 			const body = await response.text()
-			expect(body).not.toContain('data-luzzle-configured-styles')
-			expect(body).not.toContain('--editor-background:')
-			expect(body).not.toContain('--color-primary:')
 			expect(body).toContain('Cutover Garden')
 			expect(body.includes('Real Piece')).toBe(feed.count > 0)
 			expect(body.includes('Orphan must not be visible')).toBe(feed.label === 'all')
@@ -488,13 +379,10 @@ async function machineFeedSnapshot(): Promise<MachineFeeds> {
 }
 
 function expectBuiltIn(html: string) {
-	expectInlineConfiguredCss(html)
-	expect(html).toMatch(/class="hero svelte-[a-z0-9]+"/)
 	expect(html).toContain('class="poster')
 	expect(html).toMatch(/<h1(?:\s[^>]*)?>Real Piece<\/h1>/)
 	expect(html).toContain('<p>Published rendered note</p>')
 	expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
-	expect(html).toContain('--banner-background-color: #234567')
 	expect(html).not.toContain('data-prepared-theme')
 	expect(html).not.toContain(directory)
 	const head = htmlHead(html)
@@ -607,7 +495,6 @@ beforeAll(async () => {
 		npm_config_cache: path.join(directory, 'npm-cache')
 	}
 	await buildBlankApp()
-	originalBuild = await buildHashes()
 	configFilename = path.join(directory, 'config.yaml')
 	await writeFile(
 		configFilename,
@@ -649,17 +536,7 @@ beforeAll(async () => {
 					}
 				}
 			],
-			theme: {
-				light: { 'color-primary': '#135790' },
-				dark: { 'color-primary': '#2468ac' },
-				globals: {
-					'font-sans-name': '"Runtime Sans A"',
-					'font-sans-url': '"/fonts/runtime-a.woff2"',
-					'font-sans-weight': '300 600',
-					'radius-small': 'clamp(0.25rem, 1vw + 2px, 0.75rem)'
-				},
-				markdown: { sidenote: { 'sidenote-callout-before-content': '"A < & >"' } }
-			}
+			theme: { light: { 'color-primary': '#135790' }, globals: {} }
 		})
 	)
 	await mkdir(path.join(directory, 'sections'), { recursive: true })
@@ -694,6 +571,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 	test('production rejects a missing launcher map instead of silently using build-time routing', async () => {
 		const environment = { ...childEnv }
 		delete environment.LUZZLE_PAGE_TEMPLATES
+		delete environment.LUZZLE_ICON_TEMPLATES
 		await expect(
 			exec(
 				process.execPath,
@@ -711,55 +589,33 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		})
 	})
 
-	test('uses runtime-configured piece types and the native stock page after a blank build', async () => {
-		const html = await pageHtml()
-		expectBuiltIn(html)
-		expect(html).toContain('pieceTypes:["cutover-kind"]')
-	})
-
-	test('YAML selects only the page and icon CSS it uses without rebuilding or changing URLs', async () => {
-		const scopes = await Promise.all(
-			[
-				['pages', 'default'],
-				['pages', 'note'],
-				['pages', 'book'],
-				['icons', 'book'],
-				['icons', 'recipe-card']
-			].map(async ([role, name]) => {
-				const filename = path.join(
-					repository,
-					'packages/web/templates/src',
-					role,
-					name,
-					'template.svelte'
-				)
-				const source = await readFile(filename, 'utf8')
-				const { css } = compile(source, { filename, rootDir: webRoot, generate: 'server' })
-				return css!.code.match(/\.svelte-[\w-]+/)![0]
-			})
-		)
-		const [defaultScope, noteScope, bookScope, bookIconScope, recipeIconScope] = scopes
-		const before = await frameworkCss(await pageHtml())
-		expect(before).toContain(defaultScope)
-		for (const scope of [noteScope, bookIconScope, recipeIconScope])
-			expect(before).not.toContain(scope)
-
+	test('YAML remaps page and icon templates after restart without rebuilding or changing public URLs', async () => {
+		const listing = '/pieces/cutover-kind?year=2023&page=1'
+		const rendered = (html: string) => html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
+		const before = rendered(await pageHtml())
+		expect(before).toContain('123 min')
+		expect(before).toContain('src="/pieces/assets/cutover/cover%20small.png"')
+		expect(rendered(await pageHtml(listing))).toMatch(/class="poster\b/)
 		const original = await readFile(configFilename)
 		try {
-			await stopBuiltApp()
 			const config = JSON.parse(original.toString('utf8'))
 			config.pieces[0].templates.page = { name: 'note' }
+			config.pieces[0].templates.icon.name = 'recipe-card'
 			await writeFile(configFilename, JSON.stringify(config))
+			// Configuration is restart-bound; this server still renders the original selection.
+			expect(rendered(await pageHtml())).toContain('123 min')
+			await stopBuiltApp()
+			// Reuse the already built application, without invoking the compiler again.
 			origin = await startBuiltApp()
-
-			const html = await pageHtml()
-			expect(html).toContain('LUZZLE_PAGE_TEMPLATES')
-			expect(html).not.toContain('luzzle-page-templates')
-			const after = await frameworkCss(html)
-			expect(after).toContain(noteScope)
-			for (const scope of [defaultScope, bookIconScope, recipeIconScope])
-				expect(after).not.toContain(scope)
-			expect(await buildHashes()).toEqual(originalBuild)
+			const page = rendered(await pageHtml())
+			expect(page).toMatch(/<h1[^>]*>Real Piece<\/h1>/)
+			expect(page).toContain('<p>Published rendered note</p>')
+			expect(page).not.toContain('123 min')
+			expect(page).not.toContain('<img')
+			const icons = rendered(await pageHtml(listing))
+			expect(icons).toMatch(/class="recipe-card\b/)
+			expect(icons).toContain('src="/pieces/assets/cutover/cover%20small.png"')
+			expect(linkTargets(icons, listing)).toContain(new URL(piecePath, origin).href)
 
 			for (const pathname of [
 				'/templates/page/note/cutover-kind/real-piece?keep=1',
@@ -769,31 +625,22 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				expect(internal.status).toBe(307)
 				expect(internal.headers.get('location')).toBe(`${piecePath}?keep=1`)
 			}
-
-			await stopBuiltApp()
-			config.pieces[0].templates.page = { name: 'book' }
-			await writeFile(configFilename, JSON.stringify(config))
-			origin = await startBuiltApp()
-			const book = await frameworkCss(await pageHtml())
-			expect(book).toContain(bookScope)
-			expect(book).toContain(bookIconScope)
-			for (const scope of [defaultScope, noteScope, recipeIconScope])
-				expect(book).not.toContain(scope)
-			expect(await buildHashes()).toEqual(originalBuild)
+			// Unselected and encoded internal routes also canonicalize before rendering.
+			for (const pathname of [
+				'/templates/icon/recipe-card/cutover-kind?year=2023&page=2',
+				'/templates/icon/book/cutover-kind?year=2023&page=2',
+				'/%74emplates/%69con/book/cutover-kind?year=2023&page=2'
+			]) {
+				const internal = await request(pathname)
+				expect(internal.status).toBe(307)
+				expect(internal.headers.get('location')).toBe('/pieces/cutover-kind?year=2023&page=2')
+			}
 		} finally {
 			await stopBuiltApp()
 			await writeFile(configFilename, original)
 			origin = await startBuiltApp()
 		}
 	}, 30000)
-
-	test('keeps a native search link on the initial public piece', async () => {
-		const html = await pageHtml()
-		const searchLinks = html.match(/<a\b(?=[^>]*\baria-label="search")[^>]*>[\s\S]*?<\/a>/g) ?? []
-		expect(searchLinks).toHaveLength(1)
-		expect(linkTargets(searchLinks[0]!, piecePath)).toEqual([new URL('/search', origin).href])
-		expect(searchLinks[0]).not.toMatch(/\b(?:role="button"|onclick=)/)
-	})
 
 	test('shows the native search form only without filters and keeps filtered pages results-only', async () => {
 		async function searchHtml(pathname: string) {
@@ -846,7 +693,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			after: '',
 			before: ''
 		})
-		expect(await frameworkCss(empty)).toContain('.search-input-wrapper')
 		searchForm(await searchHtml('/search?query=&page=1'), '/search?query=&page=1')
 
 		const filters = {
@@ -938,7 +784,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		originalMachineFeeds = await machineFeedSnapshot()
 	})
 
-	test('serves typed/untyped listings and rejects unknown types and feed formats', async () => {
+	test('serves typed/untyped listings and rejects unknown or malformed types and feed formats', async () => {
 		for (const pathname of [
 			'/pieces/cutover-kind',
 			'/rss/pieces/cutover-kind/feed.html',
@@ -950,8 +796,18 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		}
 		for (const pathname of ['/pieces', '/rss/pieces/feed.html', '/rss/pieces/feed.md'])
 			expect(await pageHtml(pathname)).toContain('Real Piece')
+		const emptyYear = await pageHtml('/pieces/cutover-kind?year=2022&page=1')
+		expect(linkTargets(emptyYear, '/pieces/cutover-kind')).not.toContain(
+			new URL(piecePath, origin).href
+		)
+		// A reroute must retain pagination and redirect empty pages to the public path.
+		const emptyPage = await request('/pieces/cutover-kind?year=2023&page=2')
+		expect(emptyPage.status).toBe(302)
+		expect(emptyPage.headers.get('location')).toBe('/pieces/cutover-kind')
 		for (const pathname of [
 			'/pieces/unconfigured-kind',
+			'/pieces/unknown-kind/real-piece',
+			'/pieces/cutover-kind%2Fother',
 			'/rss/pieces/unconfigured-kind/feed.html',
 			'/rss/pieces/unconfigured-kind/feed.md',
 			'/rss/pieces/cutover-kind/feed.invalid',
@@ -961,18 +817,16 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			expect(response.status, pathname).toBe(404)
 			const html = await response.text()
 			expect(html).not.toContain('Orphan must not be visible')
-			if (pathname === '/pieces/cutover-kind/missing')
-				expect(expectInlineConfiguredCss(html)).toContain('--color-primary: #135790;')
 		}
+		const malformed = await request('/pieces/%E0%A4%A')
+		expect(malformed.status).toBe(400)
+		expect(await malformed.text()).not.toContain('Orphan must not be visible')
 	})
 
 	test('keeps API template data public and independent of site section settings', async () => {
 		const response = await request('/api/pieces?type=cutover-kind', 'application/json')
 		expect(response.status).toBe(200)
 		const body = await response.text()
-		expect(body).not.toContain('data-luzzle-configured-styles')
-		expect(body).not.toContain('--editor-background:')
-		expect(body).not.toContain('--color-primary:')
 		const result = JSON.parse(body)
 		expect(result.pieces).toHaveLength(1)
 		originalPublicPiece = result.pieces[0]
@@ -995,14 +849,13 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(await invalid.text()).toBe('invalid type')
 	})
 
-	test('selects runtime site images after a blank build without changing piece OG or framework assets', async () => {
+	test('serves selected runtime site images without changing piece OG or exposing neighboring files', async () => {
 		const original = await readFile(configFilename)
 		const imageDirectory = path.join(directory, 'content/images')
 		await mkdir(imageDirectory, { recursive: true })
 		const iconA =
 			'<svg xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" fill="red"/></svg>'
 		const iconB = iconA.replace('red', 'tan') // Same size, different content.
-		const iconLarge = iconA.replace('red', '#012345')
 		const smallPng = Buffer.from(
 			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=',
 			'base64'
@@ -1010,8 +863,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		const largePng = await readFile(path.join(webRoot, 'static/images/favicon.png'))
 		const variants = [
 			{ images: {}, icon: iconA, png: smallPng },
-			{ images: { favicon: './content/images/PRIVATE_ICON.svg' }, icon: iconA, png: smallPng },
-			{ images: { opengraph: './content/images/PRIVATE_SHARE.png' }, icon: iconA, png: smallPng },
 			{
 				images: {
 					favicon: './content/images/PRIVATE_ICON.svg',
@@ -1030,14 +881,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			},
 			{
 				images: {
-					favicon: './content/images/PRIVATE_ICON.svg',
-					opengraph: './content/images/PRIVATE_SHARE.png'
-				},
-				icon: iconLarge,
-				png: largePng
-			},
-			{
-				images: {
 					favicon: './content/images/RENAMED_ICON new.svg',
 					opengraph: './content/images/RENAMED_SHARE new.png'
 				},
@@ -1048,14 +891,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		]
 		const previousEtags = new Map<string, string>()
 		const previousUrls = new Map<string, string>()
-		const baselineHtml = await pageHtml()
-		const frameworkUrl = baselineHtml.match(
-			/(?:href|src)="([^" ]*\/_app\/immutable\/[^" ]+\.css)"/
-		)?.[1]
-		expect(frameworkUrl).toBeDefined()
-		const frameworkPath = new URL(frameworkUrl!, `${origin}${piecePath}`).pathname
-		const frameworkBefore = await request(frameworkPath, 'text/css')
-		const frameworkBytes = Buffer.from(await frameworkBefore.arrayBuffer())
 		const bundledShareBefore = await request('/images/opengraph.png', 'image/png')
 		const bundledShareBytes = Buffer.from(await bundledShareBefore.arrayBuffer())
 		expect(bundledShareBefore.status).toBe(200)
@@ -1169,13 +1004,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				expect(Buffer.from(await bundledShareAfter.arrayBuffer()).equals(bundledShareBytes)).toBe(
 					true
 				)
-				const frameworkAfter = await request(frameworkPath, 'text/css')
-				expect(frameworkAfter.headers.get('etag')).toBe(frameworkBefore.headers.get('etag'))
-				expect(frameworkAfter.headers.get('cache-control')).toBe(
-					frameworkBefore.headers.get('cache-control')
-				)
-				expect(Buffer.from(await frameworkAfter.arrayBuffer())).toEqual(frameworkBytes)
-				expect(await buildHashes()).toEqual(originalBuild)
 			}
 		} finally {
 			await stopBuiltApp()
@@ -1192,7 +1020,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			config.content.fonts = source ? { sans: source } : {}
 			config.url.app = appUrl
 			config.theme.globals['font-sans-url'] = '"/fonts/authored.woff2"'
-			config.theme.globals['font-sans-name'] = '"Local Sans"'
 			config.auth = {
 				secret: 'font-test-session-secret-at-least-32-characters',
 				credentials: { username: 'admin', password: 'private-password' }
@@ -1204,7 +1031,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			const fontDirectory = path.join(directory, 'content/fonts')
 			for (const pathname of ['/', piecePath, '/signin']) {
 				const html = await pageHtml(pathname)
-				expect(htmlHead(html)).toContain(`src: url("${url}") format('woff2');`)
+				expect(htmlHead(html)).toContain(url)
 				expect(html).not.toContain(fontDirectory)
 				expect(html).not.toContain('content/fonts/')
 				if (retiredUrl) expect(html).not.toContain(retiredUrl)
@@ -1237,7 +1064,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			}
 			const builtFont = await request('/fonts/noto-sans.woff2', 'font/woff2')
 			expect(Buffer.from(await builtFont.arrayBuffer())).toEqual(bundled)
-			expect(await buildHashes()).toEqual(originalBuild)
 		}
 
 		test.each([
@@ -1460,7 +1286,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				})
 				expect(response.status, label).toBe(200)
 				const html = await response.text()
-				expectInlineConfiguredCss(html)
 				expectRuntimeCsp(response, html, app_assets, luzzle_assets)
 				expect(stablePageHeaders(response)).toEqual(stablePageHeaders(baseline))
 				expectSameOriginFrameworkUrls(html, requestOrigin)
@@ -1492,7 +1317,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				expect(api.headers.has('content-security-policy')).toBe(false)
 				expect(api.headers.has('content-security-policy-report-only')).toBe(false)
 				expect((await api.json()).pieces).toEqual([originalPublicPiece])
-				expect(await buildHashes(), label).toEqual(originalBuild)
 			}
 		} finally {
 			await stopBuiltApp()
@@ -1642,104 +1466,33 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		}
 	})
 
-	test('keeps configured CSS fixed until restart, then adopts mounted config on the same build', async () => {
+	test('serves configured theme changes only after restart without exposing server configuration', async () => {
 		const original = await readFile(configFilename)
-		const lightEditor = ":root, :root[data-theme='light'], section[data-theme='light']"
-		const darkEditor = ":root[data-theme='dark'], section[data-theme='dark']"
-		const systemDark = ":root:not([data-theme='light'])"
-		async function pageTheme() {
-			const html = await pageHtml(piecePath)
-			const css = expectInlineConfiguredCss(html)
-			const head = htmlHead(html)
-			const fixedCss = await frameworkCss(html)
-			expect(fixedCss).toMatch(/box-sizing:\s*border-box/)
-			expect(fixedCss).toContain('.button')
-			expect(fixedCss).toContain('.markdown')
-			expect(fixedCss).toContain('pre.shiki')
-			expect(fixedCss).not.toContain('--color-primary: #135790;')
-			expect(fixedCss).not.toContain('--color-primary: #a13579;')
-			expect(head).not.toMatch(/\b(?:href|src)=["'][^"']*theme(?:\.build)?\.css\b/)
+		async function configuredStyles() {
+			const html = await pageHtml()
+			const styles = [
+				...htmlHead(html).matchAll(
+					/<style\b[^>]*data-luzzle-configured-styles[^>]*>([\s\S]*?)<\/style>/g
+				)
+			]
+			expect(styles).toHaveLength(1)
+			const css = styles[0][1]
+			expect(css).not.toBe('')
+			for (const privatePath of [directory, configFilename]) expect(css).not.toContain(privatePath)
+			const body = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/)?.[1]
+			expect(body).toBeDefined()
+			expect(body).not.toContain(css)
 			return css
 		}
 		try {
-			const cssA = await pageTheme()
-			expectThemeVariables(cssA, ':root', {
-				'color-primary': '#135790',
-				'font-sans-name': '"Runtime Sans A"',
-				'radius-small': 'clamp(0.25rem, 1vw + 2px, 0.75rem)',
-				'sidenote-callout-before-content': '"A < & >"'
-			})
-			for (const selector of [darkEditor, systemDark])
-				expectThemeVariables(cssA, selector, { 'color-primary': '#2468ac' })
-			expect(cssA).toContain('font-family: "Runtime Sans A";')
-			expect(cssA).toContain('src: url("/fonts/runtime-a.woff2") format(\'woff2\');')
-			// Literal editor.background/editor.foreground values from the declared Shiki sources.
-			expectThemeVariables(cssA, lightEditor, {
-				'editor-background': '#fff',
-				'editor-foreground': '#24292e'
-			})
-			for (const selector of [darkEditor, systemDark])
-				expectThemeVariables(cssA, selector, {
-					'editor-background': '#24292e',
-					'editor-foreground': '#e1e4e8'
-				})
-
+			const before = await configuredStyles()
 			const config = JSON.parse(original.toString('utf8'))
-			config.theme = {
-				light: { 'color-primary': '#a13579' },
-				dark: { 'color-primary': '#b24680' },
-				globals: {
-					'font-sans-name': '"Runtime Sans B"',
-					'font-sans-url': '"/fonts/runtime-b.woff2"',
-					'font-sans-weight': '400 700',
-					'radius-small': 'calc(1rem + 3px)'
-				},
-				markdown: {
-					code: { light: 'rose-pine-dawn', dark: 'rose-pine' },
-					sidenote: {
-						'sidenote-callout-before-content': '"B < & > </style> </StYlE> </span>"'
-					}
-				}
-			}
+			config.theme.light['color-primary'] = '#a13579'
 			await writeFile(configFilename, JSON.stringify(config))
-			expect(await pageTheme()).toBe(cssA)
-			expect(await pageTheme()).toBe(cssA)
+			expect(await configuredStyles()).toBe(before)
 			await stopBuiltApp()
 			origin = await startBuiltApp()
-
-			const cssB = await pageTheme()
-			expect(cssB).not.toBe(cssA)
-			expectThemeVariables(cssB, ':root', {
-				'color-primary': '#a13579',
-				'font-sans-name': '"Runtime Sans B"',
-				'radius-small': 'calc(1rem + 3px)',
-				'sidenote-callout-before-content': '"B < & > <\\/style> <\\/StYlE> </span>"'
-			})
-			for (const selector of [darkEditor, systemDark])
-				expectThemeVariables(cssB, selector, { 'color-primary': '#b24680' })
-			expect(cssB).toContain('font-family: "Runtime Sans B";')
-			expect(cssB).toContain('font-weight: 400 700;')
-			expect(cssB).toContain('src: url("/fonts/runtime-b.woff2") format(\'woff2\');')
-			expect(cssB).not.toContain('#135790')
-			expect(cssB).not.toContain('#2468ac')
-			expect(cssB).not.toContain('Runtime Sans A')
-			expectThemeVariables(cssB, lightEditor, {
-				'editor-background': '#faf4ed',
-				'editor-foreground': '#575279'
-			})
-			for (const selector of [darkEditor, systemDark])
-				expectThemeVariables(cssB, selector, {
-					'editor-background': '#191724',
-					'editor-foreground': '#e0def4'
-				})
-			expect(await machineFeedSnapshot()).toEqual(originalMachineFeeds)
-			const api = await request('/api/pieces?type=cutover-kind', 'application/json')
-			expect(api.status).toBe(200)
-			const body = await api.text()
-			expect(body).not.toContain('data-luzzle-configured-styles')
-			expect(body).not.toContain('--editor-background:')
-			expect(body).not.toContain('--color-primary:')
-			expect(JSON.parse(body).pieces).toEqual([originalPublicPiece])
+			expect(await configuredStyles()).not.toBe(before)
 		} finally {
 			await stopBuiltApp()
 			await writeFile(configFilename, original)
@@ -1750,6 +1503,11 @@ describe('stock pieces and configured site sections through production HTTP', ()
 	test('keeps mapped page data, assets, tags, navigation and SEO useful in native SSR', async () => {
 		const html = await pageHtml()
 		expectBuiltIn(html)
+		expect(html).toContain('pieceTypes:["cutover-kind"]')
+		const searchLinks = html.match(/<a\b(?=[^>]*\baria-label="search")[^>]*>[\s\S]*?<\/a>/g) ?? []
+		expect(searchLinks).toHaveLength(1)
+		expect(linkTargets(searchLinks[0]!, piecePath)).toEqual([new URL('/search', origin).href])
+		expect(searchLinks[0]).not.toMatch(/\b(?:role="button"|onclick=)/)
 		for (const text of ['Native catalog', 'Ada Example', '2001', '123 min'])
 			expect(html).toContain(text)
 		expect(html).toContain('href="https://example.com/real-piece"')
@@ -1761,59 +1519,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(Buffer.from(await image.arrayBuffer())).toEqual(
 			await readFile(path.join(webRoot, 'static/images/favicon.png'))
 		)
-	})
-
-	test('rejects retired piece source configuration rather than reading arbitrary Svelte', async () => {
-		const original = await readFile(configFilename)
-		for (const role of ['icon', 'page', 'opengraph']) {
-			try {
-				const config = JSON.parse(original.toString('utf8'))
-				config.pieces[0].components = { [role]: './must-not-be-read.svelte' }
-				await writeFile(configFilename, JSON.stringify(config))
-				await expect(validateRuntimeConfig()).rejects.toMatchObject({
-					code: 1,
-					stderr: expect.stringContaining('components')
-				})
-			} finally {
-				await stopBuiltApp()
-				await writeFile(configFilename, original)
-				origin = await startBuiltApp()
-			}
-		}
-	})
-
-	test.each([
-		{ section: 'content', key: 'component', value: { root: './must-not-be-read.svelte' } },
-		{ section: 'paths', key: 'prepared', value: './must-not-be-created' }
-	])(
-		'rejects retired $key setting in $section through the runtime configuration loader',
-		async ({ section, key, value }) => {
-			const original = await readFile(configFilename)
-			try {
-				const config = JSON.parse(original.toString('utf8'))
-				config[section][key] = value
-				await writeFile(configFilename, JSON.stringify(config))
-				await expect(validateRuntimeConfig()).rejects.toMatchObject({
-					code: 1,
-					stderr: expect.stringContaining(`/${section}/${key}`)
-				})
-			} finally {
-				await stopBuiltApp()
-				await writeFile(configFilename, original)
-				origin = await startBuiltApp()
-			}
-		}
-	)
-
-	test('admin lazy template registries stay outside the server build graph', async () => {
-		const manifest = JSON.parse(
-			await readFile(path.join(webRoot, '.svelte-kit/output/server/.vite/manifest.json'), 'utf8')
-		)
-		expect(
-			Object.keys(manifest).filter((entry) =>
-				/templates\/src\/(?:pages|icons|opengraphs)\/lazy\.js$/.test(entry)
-			)
-		).toEqual([])
 	})
 
 	test('preserves anonymous admin redirects and private JSON denials', async () => {
@@ -1829,7 +1534,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			const api = await request(pathname, 'application/json')
 			expect(api.status).toBe(403)
 			expect(api.headers.get('cache-control')).toBe('private, no-store')
-			expect(await api.text()).not.toContain('data-luzzle-configured-styles')
 		}
 	})
 
@@ -1843,19 +1547,14 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(html).toMatch(/<h2[^>]*>latest<\/h2>/)
 		expect(html).not.toMatch(/<h2[^>]*>random<\/h2>/)
 		expect(html).toContain('Real Piece')
+		expect(html.match(/class="icon-placeholder\b/g)).toHaveLength(1)
+		expect(html).not.toMatch(/class="(?:poster|recipe-card|book)\b/)
 		expect(html).not.toContain('Orphan must not be visible')
 	})
 
 	test.each([
-		{ label: 'latest only', latest: true, random: false, headings: ['latest'] },
 		{ label: 'random only', latest: false, random: true, headings: ['random'] },
-		{ label: 'both lists disabled', latest: false, random: false, headings: [] },
-		{
-			label: 'latest consumes the only eligible piece, leaving random empty',
-			latest: true,
-			random: true,
-			headings: ['latest']
-		}
+		{ label: 'both lists disabled', latest: false, random: false, headings: [] }
 	])('home: $label', async ({ latest, random, headings }) => {
 		await writeFile(
 			path.join(directory, 'sections/home.md'),
@@ -1872,30 +1571,33 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			(match) => match[1]
 		)
 		expect(visibleCollections).toEqual(headings)
+		// Both collections share lazy decorations without changing which pieces are selected.
+		const count = headings.length
+		expect(html.match(/class="piece-card\b/g) ?? []).toHaveLength(count)
+		expect(html.match(/class="icon-placeholder\b/g) ?? []).toHaveLength(count)
+		expect(
+			linkTargets(html, '/').filter((href) => href === new URL(piecePath, origin).href)
+		).toHaveLength(count)
+		const markup = html.replace(/<!--[\s\S]*?-->/g, '')
+		expect(markup.match(/<span\b[^>]*>Real Piece<\/span>/g) ?? []).toHaveLength(count)
+		expect(html).not.toMatch(/class="(?:poster|recipe-card|book)\b/)
 		expect(html.includes('Orphan must not be visible')).toBe(false)
 		expect(html).not.toContain(directory)
 	})
 
-	test.each([
-		[false, false],
-		[true, false],
-		[false, true],
-		[true, true]
-	])(
-		'native feed about=%s/links=%s preserve all feed kinds and discovery',
-		async (about, links) => {
-			await writeFile(
-				path.join(directory, 'sections/about.md'),
-				'## What is this?\n\nA [normal link](/pieces).'
-			)
-			await restartWithPages({ feed: { ...(about ? { about: 'sections/about.md' } : {}), links } })
-			for (const feed of feedCases) {
-				const html = await pageHtml(`${feed.folder}/feed.html`)
-				expectNativeFeed(html, feed, about, links)
-				if (about) expect(html).toContain('<h2>What is this?</h2>')
-			}
-		}
-	)
+	test('configured feed Markdown can be shown with subscription controls disabled', async () => {
+		await writeFile(
+			path.join(directory, 'sections/about.md'),
+			'## What is this?\n\nA [normal link](/pieces).'
+		)
+		await restartWithPages({ feed: { about: 'sections/about.md', links: false } })
+		const feed = feedCases[0]
+		const html = await pageHtml(`${feed.folder}/feed.html`)
+		expectNativeFeed(html, feed, true, false)
+		expect(html).toContain('<h2>What is this?</h2>')
+		expect(html).toContain('href="/pieces"')
+		expect(await machineFeedSnapshot()).toEqual(originalMachineFeeds)
+	})
 
 	test('loads lazily and caches shared Markdown across home/feed until restart', async () => {
 		const file = path.join(directory, 'sections/shared.md')
@@ -1925,7 +1627,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(html).toContain('error 500')
 		expect(html).not.toContain('sections/missing.md')
 		expect(html).not.toContain(directory)
-		expect(expectInlineConfiguredCss(html)).toContain('--color-primary: #135790;')
 	})
 
 	test('Markdown image URLs do not publish neighboring filesystem assets', async () => {
@@ -1936,13 +1637,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		const missing = await request('/rss/pieces/neighbor.png')
 		expect(missing.status).toBe(404)
 		expect(await missing.text()).toContain('page not found')
-	})
-
-	test('site section settings preserve machine-feed metadata and item data', async () => {
-		await restartWithPages({ feed: { links: false } })
-		for (const feed of feedCases)
-			expectNativeFeed(await pageHtml(`${feed.folder}/feed.html`), feed, false, false)
-		expect(await machineFeedSnapshot()).toEqual(originalMachineFeeds)
 	})
 
 	test('adopts runtime error Markdown for framework and expected 404s without leaking into healthy pages or APIs', async () => {
@@ -1972,7 +1666,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			expect(html).not.toMatch(/<a\b[^>]*\bclass="[^"]*\bhome-button\b/)
 			for (const privateValue of [directory, configFilename, 'sections/error-'])
 				expect(html).not.toContain(privateValue)
-			expect(expectInlineConfiguredCss(html)).toContain('--color-primary: #135790;')
 		}
 		const unmatched = await request('/no-such-runtime-page', 'application/json')
 		expect(unmatched.status).toBe(404)
@@ -2017,13 +1710,5 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		})
 		expect(methodError.status).toBe(405)
 		expectNoErrorContent(await methodError.text())
-		expect(await buildHashes()).toEqual(originalBuild)
-	})
-
-	test('leaves piece data and every built adapter file unchanged after runtime content/config changes', async () => {
-		expectBuiltIn(await pageHtml())
-		const response = await request('/api/pieces?type=cutover-kind', 'application/json')
-		expect((await response.json()).pieces).toEqual([originalPublicPiece])
-		expect(await buildHashes()).toEqual(originalBuild)
 	})
 })

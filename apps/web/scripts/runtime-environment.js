@@ -1,4 +1,4 @@
-import { getPageTemplateNames } from '@luzzle/web.templates/config'
+import { getPageTemplateNames, getIconTemplateNames } from '@luzzle/web.templates/config'
 
 const protocolHeader = 'x-luzzle-public-protocol'
 const authorityHeader = 'x-luzzle-public-authority'
@@ -58,8 +58,9 @@ export function createServerEnvironment(config, environment = process.env) {
 	const env = {
 		...environment,
 		HOST: config.network?.public?.host || '0.0.0.0',
-		// Always derive this public value from YAML, never an ambient override.
-		LUZZLE_PAGE_TEMPLATES: JSON.stringify(getPageTemplateNames(config.pieces))
+		// Always derive these public values from YAML, never ambient overrides.
+		LUZZLE_PAGE_TEMPLATES: JSON.stringify(getPageTemplateNames(config.pieces)),
+		LUZZLE_ICON_TEMPLATES: JSON.stringify(getIconTemplateNames(config.pieces))
 	}
 	const origin = resolveAppOrigin(config.url.app)
 	if (config.auth && !origin) throw new Error('Authentication requires an absolute url.app')

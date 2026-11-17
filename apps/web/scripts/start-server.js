@@ -15,7 +15,8 @@ function applyServerEnvironment(environment) {
 		'PROTOCOL_HEADER',
 		'HOST_HEADER',
 		'PORT_HEADER',
-		'LUZZLE_PAGE_TEMPLATES'
+		'LUZZLE_PAGE_TEMPLATES',
+		'LUZZLE_ICON_TEMPLATES'
 	]) {
 		const value = environment[key]
 		if (value === undefined) delete process.env[key]

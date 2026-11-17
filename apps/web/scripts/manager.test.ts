@@ -102,22 +102,26 @@ test('development supplies YAML-derived networking and routing settings before s
 		{
 			type: 'words',
 			fields: { title: 'private.title', date_consumed: 'date' },
-			templates: { page: { name: 'note' } }
+			templates: { page: { name: 'note' }, icon: { name: 'lined-notebook-paper' } }
 		}
 	]
 	await writeFile(filename, JSON.stringify(config))
 	await writeFile(
 		path.join(directory, 'bin/pnpm'),
-		'#!/bin/sh\nprintf "vite-settings %s\\n" "$LUZZLE_DEV_SERVER"\nprintf "routing-settings %s\\n" "$LUZZLE_PAGE_TEMPLATES"\n',
+		'#!/bin/sh\nprintf "vite-settings %s\\n" "$LUZZLE_DEV_SERVER"\nprintf "routing-settings %s\\n" "$LUZZLE_PAGE_TEMPLATES"\nprintf "icon-routing-settings %s\\n" "$LUZZLE_ICON_TEMPLATES"\n',
 		{ mode: 0o755 }
 	)
 
 	const { stdout } = await run(true, {
 		LUZZLE_DEV_SERVER: '{"allowedHosts":true}',
-		LUZZLE_PAGE_TEMPLATES: 'ignored-map'
+		LUZZLE_PAGE_TEMPLATES: 'ignored-map',
+		LUZZLE_ICON_TEMPLATES: 'ignored-map'
 	})
 	const settings = JSON.parse(stdout.match(/^vite-settings (.+)$/m)![1])
 	expect(JSON.parse(stdout.match(/^routing-settings (.+)$/m)![1])).toEqual({ words: 'note' })
+	expect(JSON.parse(stdout.match(/^icon-routing-settings (.+)$/m)![1])).toEqual({
+		words: 'lined-notebook-paper'
+	})
 
 	expect(settings).toEqual({
 		appOrigin: 'https://manager.example:8443',

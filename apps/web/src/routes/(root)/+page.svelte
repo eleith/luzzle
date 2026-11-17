@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths'
 	import type { PageProps } from './$types'
 	import ContentBanner from '#lib/content/components/ContentBanner.svelte'
-	import PieceIcon from '#lib/pieces/components/icon.svelte'
+	import ClientListingIcon from '#lib/pieces/components/ClientListingIcon.svelte'
 	import Markdown from '#lib/content/markdown/Markdown.svelte'
 
 	let { data }: PageProps = $props()
@@ -51,7 +51,9 @@
 						{#each collection.pieces as piece (piece.id)}
 							<a href={resolve(`pieces/${piece.type}/${piece.slug}`)} class="piece">
 								<div class="piece-card">
-									<PieceIcon {piece} size={{ width: 80 }} />
+									<div class="piece-icon" aria-hidden="true">
+										<ClientListingIcon {piece} size={{ width: 80 }} />
+									</div>
 									<span>{piece.title}</span>
 								</div>
 							</a>
@@ -104,6 +106,10 @@
 		display: flex;
 		align-items: flex-start;
 		gap: var(--space-3);
+		min-height: 120px;
 		height: 100%;
+	}
+	.piece-icon {
+		flex: 0 0 80px;
 	}
 </style>

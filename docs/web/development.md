@@ -34,8 +34,8 @@ keep your existing environment override.
 
 Web source reloads through Vite; worker source uses Node watch mode. Rebuild images
 after changing manifests, the lockfile or Dockerfiles. Restart services after YAML
-changes. After changing a page-template selection in YAML, also reload open browser
-tabs: each browser document keeps its routing configuration, and SvelteKit caches
+changes. After changing a page or icon template selection in YAML, also reload open
+browser tabs: each browser document keeps its routing configuration, and SvelteKit caches
 internal route choices during client navigation. Changing a selection among the
 built-in templates does not require rebuilding the app.
 Edit `demo/config/config.yaml`, not the compatibility symlink.

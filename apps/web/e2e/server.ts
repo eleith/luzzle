@@ -20,9 +20,9 @@ server.listen(0, '127.0.0.1')
 await once(server, 'listening')
 const origin = `http://localhost:${(server.address() as AddressInfo).port}`
 const previews = await createFixture(process.cwd(), origin)
-process.env.LUZZLE_PAGE_TEMPLATES = createServerEnvironment(
-	loadConfig('config.yaml')
-).LUZZLE_PAGE_TEMPLATES
+const environment = createServerEnvironment(loadConfig('config.yaml'))
+process.env.LUZZLE_PAGE_TEMPLATES = environment.LUZZLE_PAGE_TEMPLATES
+process.env.LUZZLE_ICON_TEMPLATES = environment.LUZZLE_ICON_TEMPLATES
 process.env.ORIGIN = origin
 process.env.PROTOCOL_HEADER = 'x-forwarded-proto'
 const { handler } = await import(new URL('../build/handler.js', import.meta.url).href)

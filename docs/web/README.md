@@ -11,6 +11,20 @@ through. Your Markdown stays yours. The web stack just gives it a front door.
 New to the files underneath? Start with [archives](../archive.md) or the
 [CLI guide](../cli.md).
 
+## Browsing pieces
+
+Type-specific listings such as `/pieces/books` render their configured icon design
+on the server, loading only that template's styles. Icons and cover images are
+available without waiting for JavaScript. Their public URLs and pagination are unchanged.
+
+The mixed listing at `/pieces` and the home page's latest/random collections render
+titles and links on the server, then load only the icon templates their results use
+in the browser. Pagination and any configured home Markdown also remain
+server-rendered. A small, static puzzle-piece placeholder occupies reserved card
+space until the icon loads. Without JavaScript or after a loading failure, the
+placeholder stays visible and the text links remain usable. Search and individual public piece pages retain their server-rendered
+designs.
+
 ## Using the editor
 
 With [authentication configured](config.md#sign-in), open `/admin` to manage

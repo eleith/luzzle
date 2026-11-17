@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { validateConfig } from '@luzzle/web.config';
-import { configSchema } from '@luzzle/web.templates/config';
+import {
+	configSchema,
+	selectIconTemplate,
+	getIconTemplateNames
+} from '@luzzle/web.templates/config';
 import { getIconSchema } from '../../dist/icons/schema.js';
 
 function configure(icon) {
@@ -19,6 +23,24 @@ function configure(icon) {
 		{ schema: configSchema }
 	);
 }
+
+test('icon routing names use the first configured type and contain no private mappings', () => {
+	const configured = configure({ name: 'book', mapping: { author: 'private.author' } }).pieces[0];
+	assert.deepEqual(
+		getIconTemplateNames([
+			configured,
+			configure({ name: 'poster' }).pieces[0],
+			{ ...configured, type: 'constructor' },
+			{ ...configured, type: '__proto__' },
+			{ type: 'notes', fields: { title: 'title', date_consumed: 'date' } },
+			{ ...configured, type: 'notes' }
+		]),
+		{ inventory: 'book', constructor: 'book', ['__proto__']: 'book', notes: 'default' }
+	);
+	assert.equal(selectIconTemplate(configured), getIconSchema('book'));
+	assert.equal(selectIconTemplate(), getIconSchema());
+	assert.deepEqual(getIconTemplateNames([]), {});
+});
 
 test('configuration exposes the supported mappings of the selected icon', () => {
 	assert.equal(

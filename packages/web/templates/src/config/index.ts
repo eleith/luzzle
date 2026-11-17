@@ -31,6 +31,7 @@ export const configSchema = Type.Object(
 
 export type TemplateConfig = Static<typeof configSchema>;
 export { selectPageTemplate, getPageTemplateNames } from '../pages/schema.js';
+export { selectIconTemplate, getIconTemplateNames } from '../icons/schema.js';
 
 export function loadConfig(filename?: string): TemplateConfig {
 	const config = loadBaseConfig(filename, { schema: configSchema });
