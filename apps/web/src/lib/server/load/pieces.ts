@@ -1,0 +1,67 @@
+import { db, sql } from '#lib/server/database/index.js'
+import { error, redirect } from '@sveltejs/kit'
+import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
+import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
+
+const TAKE_DEFAULT = 50
+
+export const loadPieceListing = async ({
+	params,
+	url
+}: {
+	params: { piece?: string }
+	url: URL
+}) => {
+	const type = params.piece
+	if (type && !isConfiguredPieceType(type)) {
+		error(404, 'piece type not found')
+	}
+
+	const pageParam = url.searchParams.get('page') || '1'
+	const pageNumber = parseInt(pageParam) || null
+	const yearParam = url.searchParams.get('year') || null
+	const yearNumber = yearParam ? parseInt(yearParam) || null : null
+
+	if (pageNumber === null || pageNumber < 1) {
+		redirect(302, url.pathname)
+	}
+
+	let piecesQuery = db.selectFrom('web_pieces').selectAll()
+
+	if (type) {
+		piecesQuery = piecesQuery.where('type', '=', type)
+	}
+
+	if (yearNumber) {
+		piecesQuery = piecesQuery.where(
+			sql`strftime('%Y', datetime(web_pieces.date_consumed/1000, 'unixepoch'))`,
+			'=',
+			yearNumber.toString()
+		)
+	}
+
+	const pieces = await hydrateWithAssets(
+		await piecesQuery
+			.orderBy('date_consumed', 'desc')
+			.orderBy('date_added', 'desc')
+			.offset((pageNumber - 1) * TAKE_DEFAULT)
+			.limit(TAKE_DEFAULT + 1)
+			.execute()
+	)
+
+	if (pieces.length === 0 && pageNumber > 1) {
+		redirect(302, url.pathname)
+	}
+
+	const hasMore = pieces.length === TAKE_DEFAULT + 1
+	if (hasMore) {
+		pieces.pop()
+	}
+
+	return {
+		pieces,
+		nextPage: hasMore ? pageNumber + 1 : null,
+		page: pageNumber,
+		year: yearNumber
+	}
+}
