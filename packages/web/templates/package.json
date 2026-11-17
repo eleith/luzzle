@@ -18,6 +18,7 @@
 		"src/pages/catalog.js",
 		"src/pages/lazy.js",
 		"src/opengraphs/*/template.svelte",
+		"src/opengraphs/lazy.js",
 		"config.schema.json"
 	],
 	"scripts": {
@@ -39,6 +40,7 @@
 			"import": "./dist/pages/props.js"
 		},
 		"./pages/*": "./src/pages/*/template.svelte",
+		"./opengraphs/lazy": "./src/opengraphs/lazy.js",
 		"./opengraphs/*": "./src/opengraphs/*/template.svelte",
 		"./pieces/fields": {
 			"development": "./src/pieces/fields.ts",

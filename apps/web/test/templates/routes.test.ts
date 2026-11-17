@@ -1811,7 +1811,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		)
 		expect(
 			Object.keys(manifest).filter((entry) =>
-				/templates\/src\/(?:pages|icons)\/lazy\.js$/.test(entry)
+				/templates\/src\/(?:pages|icons|opengraphs)\/lazy\.js$/.test(entry)
 			)
 		).toEqual([])
 	})

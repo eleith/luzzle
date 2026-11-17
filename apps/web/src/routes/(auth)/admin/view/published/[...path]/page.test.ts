@@ -135,7 +135,8 @@ test.each(['page', 'icon'] as const)(
 
 		const html = render(PublishedTree, { props: { data, view } }).body
 
-		expect(html).toContain(`role="status">Loading ${view} preview…`)
+		expect(html).toContain('role="status"')
+		expect(html).toContain(`class="visually-hidden">Loading ${view} preview…`)
 		expect(html).toContain('<noscript>')
 		expect(html).toContain(`JavaScript is required to display the ${view} preview.`)
 		expect(html).not.toContain('Published &lt;Book>')
@@ -150,40 +151,55 @@ function shareHtml(data = publishedData()) {
 	return render(PublishedTree, { props: { data, view: 'share' } }).body
 }
 
-test.each(['/cdn', ''])('Share links the recorded PNG using the asset base %j', (assetBase) => {
-	const data = publishedData()
-	data.config.url.luzzle_assets = assetBase
-	const html = shareHtml(data)
-	const url = `${assetBase || '/garden'}/pieces/assets/generated/share.png?v=${data.publication.lastPublishedAt}`
+test.each(['/cdn', ''])(
+	'Share SSR displays the recorded PNG using asset base %j while HTML waits for the client',
+	(assetBase) => {
+		const data = publishedData()
+		data.config.url.luzzle_assets = assetBase
+		const html = shareHtml(data)
+		const url = `${assetBase || '/garden'}/pieces/assets/generated/share.png?v=${data.publication.lastPublishedAt}`
 
-	expect(html).toContain(`src="${url}"`)
-	expect(html).toContain(`href="${url}" target="_blank" rel="external noopener noreferrer"`)
-	expect(html).toContain('alt="Share image for Published &lt;Book>"')
-	expect(html.match(/<main\b/g)).toHaveLength(1)
-	expect(html.match(/<img\b/g)).toHaveLength(1)
-	expect(html).not.toContain('/admin/preview/')
-})
+		const link = html.match(/<a\b[^>]*aria-label="Open generated Takumi PNG[^]*?<\/a>/)?.[0]
+		expect(link).toContain(`href="${url}" target="_blank" rel="external noopener noreferrer"`)
+		expect(link).toContain(
+			'aria-label="Open generated Takumi PNG for Published &lt;Book> in a new tab"'
+		)
+		expect(link).toContain(`src="${url}"`)
+		expect(link).toContain('alt="Generated share image for Published &lt;Book>"')
+		expect(html).toContain('role="status"')
+		expect(html).toContain('class="visually-hidden">Loading browser preview…')
+		expect(html).toContain('<noscript>')
+		expect(html).toContain('JavaScript is required to display the browser preview.')
+		expect(html.match(/<main\b/g)).toHaveLength(1)
+		expect(html.match(/<img\b/g)).toHaveLength(1)
+		expect(html).not.toMatch(/published\/cover\.jpg|>Published &lt;Book></)
+		expect(html).not.toContain('/admin/preview/')
+	}
+)
 
-test('republishing versions both the image and inspection link without changing the asset path', () => {
+test('republishing versions both the PNG and inspection link without changing the asset path', () => {
 	const data = publishedData()
 	const assetUrl = '/cdn/pieces/assets/generated/share.png'
 	for (const publishedAt of [1000, 2000, null]) {
 		data.publication.lastPublishedAt = publishedAt
 		const html = shareHtml(data)
 		const url = publishedAt === null ? assetUrl : `${assetUrl}?v=${publishedAt}`
-		expect(html).toContain(`src="${url}"`)
 		expect(html).toContain(`href="${url}" target="_blank"`)
+		expect(html).toContain(`src="${url}"`)
 	}
 })
 
 test.each([undefined, '../private.png'])(
-	'Share does not invent an image for unavailable path %j',
+	'Share keeps the browser preview but invents no PNG link for unavailable path %j',
 	(path) => {
 		const data = publishedData()
 		data.piece.assets.find((asset) => asset.transformation === 'opengraph')!.asset_path = path
 		const html = shareHtml(data)
 
-		expect(html).toContain('No generated share image is available.')
-		expect(html).not.toMatch(/<img\b|private\.png|data-renderer=/)
+		expect(html).toContain('No generated image available.')
+		expect(html).toContain('Loading browser preview…')
+		expect(html).not.toMatch(
+			/<img\b|private\.png|data-renderer=|Open generated Takumi PNG|\/pieces\/assets\//
+		)
 	}
 )

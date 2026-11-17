@@ -119,9 +119,9 @@ function data(status: Status = 'completed', png = true): Data {
 }
 
 const routes = { share: SharePage, page: Page, icon: Icon }
-function tree(props: Data, view: keyof typeof routes = 'share', query = '') {
+function tree(props: Data, view: keyof typeof routes = 'share') {
 	page.data = props
-	page.url = new URL(`https://app.test/admin/view/preview/${props.job}/${view}${query}`)
+	page.url = new URL(`https://app.test/admin/view/preview/${props.job}/${view}`)
 	page.route.id = `/(auth)/admin/view/preview/[jobId]/${view}`
 	const params = { jobId: props.job }
 	const children = createRawSnippet(() => ({
@@ -135,46 +135,49 @@ function tree(props: Data, view: keyof typeof routes = 'share', query = '') {
 
 beforeEach(() => vi.clearAllMocks())
 
-test('Share links only the recorded PNG from the current preview job', () => {
+test('Share SSR displays only the current job PNG and leaves HTML to the client', () => {
 	const props = data()
 	props.job = 'preview #2'
 	const html = tree(props)
 	const url = '/admin/preview/preview%20%232/asset/generated/share.png'
 	expect(html).toContain('aria-label="Share"')
-	expect(html).toContain('alt="Share image for Preview &lt;Draft>"')
-	expect(html).toContain(`src="${url}"`)
-	expect(html).toContain(`href="${url}" target="_blank" rel="external noopener noreferrer"`)
-	expect(html.match(/<img\b/g)).toHaveLength(1)
+	const link = html.match(/<a\b[^>]*aria-label="Open generated Takumi PNG[^]*?<\/a>/)?.[0]
+	expect(link).toContain(`href="${url}" target="_blank" rel="external noopener noreferrer"`)
+	expect(link).toContain(
+		'aria-label="Open generated Takumi PNG for Preview &lt;Draft> in a new tab"'
+	)
+	expect(link).toContain(`src="${url}"`)
+	expect(link).toContain('alt="Generated share image for Preview &lt;Draft>"')
+	expect(html).toContain('role="status"')
+	expect(html).toContain('class="visually-hidden">Loading browser preview…')
+	expect(html).toContain('<noscript>')
+	expect(html).toContain('JavaScript is required to display the browser preview.')
 	expect(html.match(/<main\b/g)).toHaveLength(1)
 	expect(html).toContain('id="main-content"')
-	expect(html).not.toMatch(/generated\/cover\.jpg|data-renderer=|share \(html\)|<button/i)
+	expect(html.match(/<img\b/g)).toHaveLength(1)
+	expect(html).not.toMatch(/generated\/cover\.jpg|data-renderer=|>Preview &lt;Draft></)
 	expect(html).not.toMatch(
 		/https:\/\/(?:public|cdn)\.test|\/pieces\/assets\/|\/admin\/asset\/|published\/cover\.jpg/
 	)
 	expectAppNavigation(['preview #2'])
 })
 
-test('a completed preview without a PNG does not substitute its cover or a published image', () => {
-	const html = tree(data('completed', false))
-	expect(html).toContain('No generated share image is available.')
-	expect(html).not.toMatch(/<img\b|data-renderer=|\/pieces\/assets\//)
-})
+test.each([undefined, '../private.png'])(
+	'a completed preview with unavailable PNG %j does not substitute its cover or a published image',
+	(path) => {
+		const props = data('completed', path !== undefined)
+		if (props.status !== 'completed' || !props.piece) throw new Error('Expected completed fixture')
+		const png = props.piece.assets.find((asset) => asset.transformation === 'opengraph')
+		if (png) png.asset_path = path
+		const html = tree(props)
 
-test('?html is ignored: identical image viewer and four tabs plus Back, only Share active', () => {
-	const props = data()
-	const html = tree(props)
-	expect(tree(props, 'share', '?html')).toBe(html)
-	const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'))
-	expect(header.match(/<a\b/g)).toHaveLength(5)
-	expect(header.match(/aria-current="page"/g)).toHaveLength(1)
-	expect(header).toContain('aria-label="Back to editor"')
-	for (const view of ['overview', 'page', 'icon', 'share'])
-		expect(header).toMatch(new RegExp(`>\\s*${view}\\s*</a>`))
-	expect(header).toMatch(/<a[^>]*href="[^"]*\/share"[^>]*aria-current="page"[^>]*>\s*share\s*<\/a>/)
-	expect(header).not.toContain('?html')
-	expect(header).not.toContain('share (html)')
-	expectAppNavigation(['job', 'job'])
-})
+		expect(html).toContain('No generated image available.')
+		expect(html).toContain('Loading browser preview…')
+		expect(html).not.toMatch(
+			/<img\b|data-renderer=|Open generated Takumi PNG|\/asset\/|\/pieces\/assets\/|private\.png/
+		)
+	}
+)
 
 test.each(['page', 'icon'] as const)(
 	'completed %s SSR shows one loading landmark, not template contents',
@@ -201,7 +204,7 @@ test.each(['waiting', 'running', 'failed', 'expired'] as const)(
 		expect(html).toContain('Preview log &lt;draft>')
 		expect(html.indexOf('Preview</caption>')).toBeLessThan(html.indexOf('Preview logs</h2>'))
 		expect(html).not.toMatch(
-			/data-renderer="composition"|<img|generated\/share\.png|Open generated share image|\?html|Preview assets/
+			/data-renderer=|<img|\/asset\/|Takumi PNG|browser preview|Preview assets/
 		)
 		expectAppNavigation()
 	}
@@ -213,7 +216,7 @@ test('completed without an assembled piece is safe and invents no artifacts', ()
 	const html = tree({ ...pending, status: 'completed' })
 	expect(html).toContain('Back to editor')
 	expect(html).not.toMatch(
-		/data-renderer=|<img|\/asset\/|Open generated share image|not (?:been )?generated/i
+		/data-renderer=|<img|\/asset\/|Takumi PNG|browser preview|not (?:been )?generated/i
 	)
 	expectAppNavigation()
 })

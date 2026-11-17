@@ -1,6 +1,12 @@
 import type { Cookie, Page } from '@playwright/test'
 import { expect, test } from './support/test.js'
 import { ADMIN, completePendingPreview, fieldGuide, notebook } from './support/fixture.js'
+import {
+	bookOpengraphCSS,
+	expectPreviewLoading,
+	opengraphScopes,
+	styles
+} from './support/viewer-styles.js'
 
 let viewerSession: Cookie[] | undefined
 
@@ -20,17 +26,11 @@ async function signIn(page: Page, destination: string) {
 	viewerSession = await page.context().cookies()
 }
 
-async function styles(page: Page) {
-	return page.evaluate(() =>
-		Array.from(document.styleSheets)
-			.flatMap((sheet) => Array.from(sheet.cssRules, (rule) => rule.cssText))
-			.join('\n')
-	)
-}
-
 const previewUrl = (job: string) => `/admin/view/preview/${job}`
 const assetUrl = (job: string) =>
 	`/admin/preview/${job}/asset/${encodeURIComponent(fieldGuide.previewAsset)}`
+const shareAssetUrl = (job: string) =>
+	`/admin/preview/${job}/asset/${encodeURIComponent(fieldGuide.previewShareAsset)}`
 
 test('new viewer HTML/data and preview PNG/stream stay private; login returns to the requested Share tab', async ({
 	page,
@@ -58,6 +58,7 @@ test('new viewer HTML/data and preview PNG/stream stay private; login returns to
 	}
 	for (const url of [
 		assetUrl(appServer.previews.completed),
+		shareAssetUrl(appServer.previews.completed),
 		`/api/admin/preview/${appServer.previews.completed}/stream`
 	]) {
 		const response = await request.get(url)
@@ -66,19 +67,46 @@ test('new viewer HTML/data and preview PNG/stream stay private; login returns to
 		expect(await response.text()).not.toContain(fieldGuide.previewTitle)
 	}
 
+	const generatedRequests: string[] = []
+	page.on('request', (request) => {
+		if (new URL(request.url()).pathname === shareAssetUrl(appServer.previews.completed))
+			generatedRequests.push(request.url())
+	})
 	await signIn(page, `${preview}/share`)
 	await expect(
 		page
 			.getByRole('navigation', { name: 'Preview views' })
 			.getByRole('link', { name: 'share', exact: true })
 	).toHaveAttribute('aria-current', 'page')
-	const image = page.getByRole('img', { name: `Share image for ${fieldGuide.previewTitle}` })
-	await expect(image).toBeVisible()
-	await expect(image).toHaveAttribute('src', assetUrl(appServer.previews.completed))
+	const previewRegion = page.getByRole('region', { name: 'HTML', exact: true })
+	await expect(
+		previewRegion.getByRole('heading', { name: fieldGuide.previewTitle, exact: true })
+	).toBeVisible()
+	await expect(
+		previewRegion.getByRole('heading', { name: 'by Olivia Sharer', exact: true })
+	).toBeVisible()
+	const cover = previewRegion.locator('.opengraph-canvas .book-cover img')
+	await expect(cover).toHaveAttribute('src', assetUrl(appServer.previews.completed))
 	await expect
-		.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
+		.poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth))
 		.toBeGreaterThan(0)
-	const png = await page.request.get(assetUrl(appServer.previews.completed))
+	await expect(
+		page.getByRole('link', {
+			name: `Open generated Takumi PNG for ${fieldGuide.previewTitle} in a new tab`
+		})
+	).toHaveAttribute('href', shareAssetUrl(appServer.previews.completed))
+	const generatedImage = page
+		.getByRole('region', { name: 'Image', exact: true })
+		.getByRole('img', { name: `Generated share image for ${fieldGuide.previewTitle}` })
+	await expect(generatedImage).toHaveAttribute('src', shareAssetUrl(appServer.previews.completed))
+	await expect(generatedImage).toBeVisible()
+	await expect
+		.poll(() => generatedImage.evaluate((img: HTMLImageElement) => img.naturalWidth))
+		.toBeGreaterThan(0)
+	expect(generatedRequests).toEqual([
+		new URL(shareAssetUrl(appServer.previews.completed), appServer.origin).href
+	])
+	const png = await page.request.get(shareAssetUrl(appServer.previews.completed))
 	expect(png.status()).toBe(200)
 	expect(png.headers()['content-type']).toBe('image/png')
 	expect(png.headers()['cache-control']).toBe('private, no-store')
@@ -86,8 +114,10 @@ test('new viewer HTML/data and preview PNG/stream stay private; login returns to
 	const data = await page.request.get(`${preview}/share/__data.json`)
 	expect(data.headers()['cache-control']).toBe('private, no-store')
 	expect(await data.text()).toContain(fieldGuide.previewTitle)
-	// Share is an SSR PNG inspection view, not a template renderer.
-	expect(await styles(page)).not.toMatch(/\.recipe-card|\.book-cover/)
+	const css = await styles(page)
+	expect(css).toMatch(bookOpengraphCSS)
+	expect(opengraphScopes(css)).toEqual([css.match(bookOpengraphCSS)![1]])
+	expect(css).not.toMatch(/\.recipe-card|\.book-spine|\.hero-icon/)
 })
 
 test('published Page and Icon are client-only, select independent CSS, wait for styles and reuse native imports', async ({
@@ -115,6 +145,7 @@ test('published Page and Icon are client-only, select independent CSS, wait for 
 			await expect(shell.getByRole('main')).toHaveCount(1)
 			await expect(shell.locator('.book, .recipe-card')).toHaveCount(0)
 			expect(await styles(shell)).not.toMatch(/\.book-cover|\.recipe-card/)
+			expect(opengraphScopes(await styles(shell))).toEqual([])
 		}
 	} finally {
 		await noScript.close()
@@ -130,6 +161,7 @@ test('published Page and Icon are client-only, select independent CSS, wait for 
 	await expect(page.locator('.hero-icon .book')).toBeVisible()
 	expect(await styles(page)).toContain('.book-cover')
 	expect(await styles(page)).not.toContain('.recipe-card')
+	expect(opengraphScopes(await styles(page))).toEqual([])
 
 	// Hold the chosen Icon's actual production stylesheet, not the whole route or app shell.
 	const release = Promise.withResolvers<void>()
@@ -149,6 +181,7 @@ test('published Page and Icon are client-only, select independent CSS, wait for 
 		await expect.poll(() => held).toBe(true)
 		await expect(page.getByRole('status')).toHaveText('Loading icon preview…')
 		await expect(page.getByRole('main')).toHaveCount(1)
+		await expectPreviewLoading(page.getByRole('main'), 'Loading icon preview…')
 		await expect(page.locator('.recipe-card, .book')).toHaveCount(0)
 		// Navigation while the import is pending must not restore the obsolete renderer.
 		await tabs.getByRole('link', { name: 'Page', exact: true }).click()
@@ -162,6 +195,7 @@ test('published Page and Icon are client-only, select independent CSS, wait for 
 	await expect(page.locator('.recipe-card')).toBeVisible()
 	await expect(page.locator('.recipe-card .card-title')).toHaveText(fieldGuide.title)
 	await expect(page.locator('.book')).toHaveCount(0)
+	expect(opengraphScopes(await styles(page))).toEqual([])
 	await expect(tabs.getByRole('link', { name: 'Icon', exact: true })).toHaveAttribute(
 		'aria-current',
 		'page'
@@ -172,12 +206,15 @@ test('published Page and Icon are client-only, select independent CSS, wait for 
 	)
 	for (const width of [390, 1440]) {
 		await page.setViewportSize({ width, height: 900 })
-		await expect
-			.poll(async () => {
-				const bounds = await page.locator('.recipe-card').boundingBox()
-				return !!bounds && bounds.x >= 0 && bounds.x + bounds.width <= width
-			})
-			.toBe(true)
+		await expect(async () => {
+			const iconBounds = await page.locator('.recipe-card').boundingBox()
+			expect(iconBounds, 'Icon has rendered bounds').not.toBeNull()
+			expect(iconBounds!.x, 'Icon fits the left viewport edge').toBeGreaterThanOrEqual(0)
+			expect(
+				iconBounds!.x + iconBounds!.width,
+				'Icon fits the right viewport edge'
+			).toBeLessThanOrEqual(width)
+		}).toPass({ timeout: 5000 })
 	}
 	const firstVisit = [...requests]
 	await tabs.getByRole('link', { name: 'Page', exact: true }).click()
@@ -468,6 +505,7 @@ test('the representative public book still renders with selective CSS without Ja
 		await expect(page.locator('.hero-icon .book')).toBeVisible()
 		expect(await styles(page)).toContain('.book-cover')
 		expect(await styles(page)).not.toContain('.recipe-card')
+		expect(opengraphScopes(await styles(page))).toEqual([])
 	} finally {
 		await context.close()
 	}

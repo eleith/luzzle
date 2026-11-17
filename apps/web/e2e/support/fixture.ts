@@ -16,7 +16,7 @@ export const notebook = {
 	publishedAt: Date.UTC(2026, 0, 1)
 }
 
-// Deliberately unrelated filename/type and independently selected Page/Icon roles.
+// Deliberately unrelated filename/type and independently selected Page/Icon/Opengraph roles.
 export const fieldGuide = {
 	file: 'reading/field guide.records.md',
 	editorUrl: '/admin/piece/reading/field%20guide.records.md/source',
@@ -26,7 +26,8 @@ export const fieldGuide = {
 	slug: 'field-guide',
 	title: 'Field Guide',
 	previewTitle: 'Private Field Guide Draft',
-	previewAsset: 'private cover.png'
+	previewAsset: 'private cover.png',
+	previewShareAsset: 'private share image.png'
 }
 
 export type PreviewJobs = { completed: string; failed: string; pending: string }
@@ -105,7 +106,11 @@ export async function createFixture(directory: string, origin: string) {
 					fields: { title: 'title', date_consumed: 'date' },
 					templates: {
 						page: { name: 'book', mapping: { image: 'cover', author: { value: 'Ada Reader' } } },
-						icon: { name: 'recipe-card', mapping: { image: 'cover' } }
+						icon: { name: 'recipe-card', mapping: { image: 'cover' } },
+						opengraph: {
+							name: 'book',
+							mapping: { image: 'cover', author: { value: 'Olivia Sharer' } }
+						}
 					}
 				}
 			]
@@ -246,10 +251,12 @@ function createPreviewRun(backend: BackendSqlite, filePath: string) {
 async function seedPreviewAssets(directory: string, job: string) {
 	const assets = path.join(directory, 'assets/previews', job)
 	await mkdir(assets, { recursive: true })
-	await copyFile(
-		new URL('../../static/images/opengraph.png', import.meta.url),
-		path.join(assets, fieldGuide.previewAsset)
-	)
+	for (const asset of [fieldGuide.previewAsset, fieldGuide.previewShareAsset]) {
+		await copyFile(
+			new URL('../../static/images/opengraph.png', import.meta.url),
+			path.join(assets, asset)
+		)
+	}
 }
 
 async function completeRecordedPreview(backend: BackendSqlite, job: string, workerId: string) {
@@ -280,7 +287,7 @@ async function completeRecordedPreview(backend: BackendSqlite, job: string, work
 				{
 					asset_key: fieldGuide.slug,
 					transformation: 'opengraph',
-					asset_path: fieldGuide.previewAsset,
+					asset_path: fieldGuide.previewShareAsset,
 					mime_type: 'image/png',
 					is_embedded: 0
 				},

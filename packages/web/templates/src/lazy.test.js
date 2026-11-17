@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadPage } from '@luzzle/web.templates/pages/lazy';
 import { loadIcon } from '@luzzle/web.templates/icons/lazy';
+import { loadOpengraph } from '@luzzle/web.templates/opengraphs/lazy';
 
 for (const [role, load] of [
 	['page', loadPage],
-	['icon', loadIcon]
+	['icon', loadIcon],
+	['opengraph', loadOpengraph]
 ]) {
 	test(`${role} lazy entry rejects unknown and inherited names without importing templates`, async () => {
 		for (const name of ['missing', 'constructor', 'toString', '__proto__', '../default']) {
