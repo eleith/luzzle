@@ -58,13 +58,18 @@ selected component directly.
 The public page/icon route adapters are generated from the existing template schema
 catalogs and are ignored by Git. Shared layouts and server loaders remain handwritten.
 Do not edit generated `+page.svelte` files; change the template or the generator in
-`scripts/generate-template-routes.js` instead.
+`scripts/template-routes/generate.js` instead. That folder groups the generate/clean
+entrypoints, shared file helpers, and their behavior test.
 
 After installing and building shared packages, `pnpm run dev`, `build`, `check`, and
 `check:watch` generate adapters before synchronizing Kit's route types. From a fresh
 checkout, run `pnpm run sync:svelte` before relying on editor route types. You can also
-run `pnpm run generate:template-routes` on its own. Direct Vite/Kit CLI commands bypass
-this preparation. Generation does not read `config.yaml`, secrets, or site data; it
+run `pnpm run generate:template-routes` on its own. To remove generated adapters, use
+`pnpm run clean:template-routes`; it preserves shared layouts and unmarked files, and
+requires neither site configuration nor a built template package. Empty directories
+may remain. Do not delete the whole `src/routes/templates` folder: its shared layouts
+are handwritten. The next sync/dev/build/check recreates generated adapters.
+Direct Vite/Kit CLI commands bypass this preparation. Generation does not read `config.yaml`, secrets, or site data; it
 includes every available built-in page/icon template. Production startup only serves
 the compiled build and does not generate routes.
 
