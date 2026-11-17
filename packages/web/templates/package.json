@@ -32,6 +32,11 @@
 		"lint": "eslint . && prettier --check ."
 	},
 	"exports": {
+		"./names": {
+			"development": "./src/names.ts",
+			"types": "./dist/names.d.ts",
+			"import": "./dist/names.js"
+		},
 		"./icons": "./src/icons/catalog.js",
 		"./icons/lazy": "./src/icons/lazy.js",
 		"./icons/client": "./src/icons/client.svelte",
