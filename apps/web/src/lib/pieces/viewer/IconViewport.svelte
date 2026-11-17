@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-	import type { getIcon } from '@luzzle/web.templates/icons'
+	import type { IconComponent } from '@luzzle/web.templates/icons/props'
 	import { getPieceHelpers } from '#lib/pieces/helpers.js'
 
 	const renderWidth = 500
-	let { Icon, piece }: { Icon: ReturnType<typeof getIcon>; piece: TemplatedPiece } = $props()
+	let { Icon, piece }: { Icon: IconComponent; piece: TemplatedPiece } = $props()
 	const fields = $derived(piece.templates.icon.fields)
 	const helpers = $derived(getPieceHelpers(piece))
 	let container: HTMLDivElement | undefined = $state()

@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { formatPieceDate, getOpengraphTitleSize } from '@luzzle/web.pieces'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { OpengraphProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
-	type Props = { piece: PublicWebPiece; fields: Fields; helpers: PieceComponentHelpers }
-	let { piece, fields, helpers }: Props = $props()
+	let { piece, fields, helpers }: OpengraphProps<Fields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const iconWidth = 400
 	const iconHeight = (iconWidth * 3) / 2

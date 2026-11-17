@@ -1,17 +1,9 @@
 <script lang="ts">
 	import { getCartridgeFit } from './helpers.js'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { IconProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		size: { width: number; height?: number }
-		helpers: PieceComponentHelpers
-		lazy?: boolean
-		active?: boolean
-	}
-	let { piece, fields, size, helpers, lazy = false, active = false }: Props = $props()
+	let { piece, fields, size, helpers, lazy = false, active = false }: IconProps<Fields> = $props()
 	const scale = $derived(Math.round((size.width / 375) * 100) / 100)
 	const height = $derived(size.height ?? (size.width * 3) / 2)
 	const fit = $derived(getCartridgeFit(size.width, height))

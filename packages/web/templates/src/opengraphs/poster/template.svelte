@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { formatPieceByline } from '@luzzle/web.pieces'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { OpengraphProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
-	type Props = { piece: PublicWebPiece; fields: Fields; helpers: PieceComponentHelpers }
-	let { piece, fields, helpers }: Props = $props()
+	let { piece, fields, helpers }: OpengraphProps<Fields> = $props()
 	// A smaller source is sufficient beneath the 80%-opaque background overlay.
 	const backdropImage = $derived(
 		fields.backdrop ? helpers.getPieceImageUrl(fields.backdrop, 500, 'jpg') : null

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte'
+	import LoadOpengraph from '@luzzle/web.templates/opengraphs/client'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import { OpengraphImageWidth, OpengraphImageHeight } from '@luzzle/web.pieces'
 	import { getPieceHelpers } from '#lib/pieces/helpers.js'
@@ -8,21 +8,8 @@
 	const canvasMaxWidth = `min(${OpengraphImageWidth}px, calc(80svh * ${OpengraphImageWidth} / ${OpengraphImageHeight}))`
 
 	let { piece }: { piece: TemplatedPiece } = $props()
-	let mounted = $state(false)
-	onMount(() => {
-		mounted = true
-	})
-	const name = $derived(piece.templates.opengraph.name)
 	const fields = $derived(piece.templates.opengraph.fields)
 	const helpers = $derived(getPieceHelpers(piece))
-	const component = $derived.by(() => {
-		// Exclude the lazy registry from Kit's server dependency graph, not just SSR execution.
-		if (import.meta.env.SSR || !mounted) return undefined
-		const selected = name
-		return import('@luzzle/web.templates/opengraphs/lazy').then(({ loadOpengraph }) =>
-			loadOpengraph(selected)
-		)
-	})
 
 	let container: HTMLDivElement | undefined = $state()
 	let scale = $state(1)
@@ -51,10 +38,8 @@
 	<noscript><p>JavaScript is required to display the browser preview.</p></noscript>
 {/snippet}
 
-{#if component}
-	{#await component}
-		{@render loadingPreview()}
-	{:then Opengraph}
+<LoadOpengraph name={piece.templates.opengraph.name} pending={loadingPreview}>
+	{#snippet children(Opengraph)}
 		<div
 			class="scale-container"
 			bind:this={container}
@@ -70,13 +55,12 @@
 				<Opengraph {piece} {fields} {helpers} />
 			</div>
 		</div>
-	{:catch}
+	{/snippet}
+	{#snippet failed()}
 		<p role="alert">The browser preview could not be loaded.</p>
 		<button type="button" onclick={() => window.location.reload()}>Reload</button>
-	{/await}
-{:else}
-	{@render loadingPreview()}
-{/if}
+	{/snippet}
+</LoadOpengraph>
 
 <style>
 	.loading-canvas,

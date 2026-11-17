@@ -46,6 +46,18 @@ or a production build with `node scripts/start-server.js`, from `apps/web` with 
 startup environment before starting Vite or Kit; invoking `vite dev` or `build/index.js`
 directly bypasses that preparation. No generated `.env` file is needed.
 
+## Template changes
+
+`@luzzle/web.templates` owns component contracts and client loading through its
+`icons/client`, `pages/client`, and `opengraphs/client` exports. Each accepts a
+selected `name` and `children`, `pending`, and `failed` snippets. Web supplies the
+application UI, navigation, and asset helpers; public SSR routes still import their
+selected component directly.
+
+Keep template content tests in the package and application behavior tests in web.
+Do not add template CSS inventories, visual snapshots, or style/layout assertions.
+Check visual changes manually instead.
+
 ## Test a local production build
 
 From `apps/web`, create an untracked `docker-compose.prod.local.yml`, just as you

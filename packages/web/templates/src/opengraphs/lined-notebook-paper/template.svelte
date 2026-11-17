@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { formatPieceDate } from '@luzzle/web.pieces'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { OpengraphProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
-	type Props = { piece: PublicWebPiece; fields: Fields; helpers: PieceComponentHelpers }
-	let { piece }: Props = $props()
+	let { piece }: OpengraphProps<Fields> = $props()
 	const size = { width: 900 }
 	const scale = Math.round((size.width / (375 * 2)) * 100) / 100
 	const byline = $derived.by(() => {

@@ -1,12 +1,11 @@
 <script lang="ts">
-	import type { getPage } from '@luzzle/web.templates/pages'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-	import type { PageNavbarProps } from '@luzzle/web.templates/pages/props'
+	import type { PageComponent, PageNavbarProps } from '@luzzle/web.templates/pages/props'
 	import NavBanner from '#lib/components/layout/simple/NavBanner.svelte'
 	import { getPieceHelpers } from '#lib/pieces/helpers.js'
 
 	type Props = {
-		Page: ReturnType<typeof getPage>
+		Page: PageComponent
 		piece: TemplatedPiece
 		tags: Array<{ slug: string; tag: string }>
 	}

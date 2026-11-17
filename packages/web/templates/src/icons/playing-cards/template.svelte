@@ -1,18 +1,10 @@
 <script lang="ts">
 	import { getPieceTags } from '@luzzle/web.pieces'
 	import { getCardSymbol } from './helpers.js'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { IconProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		size: { width: number; height?: number }
-		helpers: PieceComponentHelpers
-		lazy?: boolean
-		active?: boolean
-	}
-	let { piece, size, helpers, active = false }: Props = $props()
+	let { piece, size, helpers, active = false }: IconProps<Fields> = $props()
 	const symbolScope = $props.id()
 	const palette = $derived(helpers.getPiecePalette())
 	const scale = $derived(Math.round((size.width / 375) * 100) / 100)

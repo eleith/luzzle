@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { formatPieceDate, formatTrackDuration, getOpengraphTitleSize } from '@luzzle/web.pieces'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { OpengraphProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
-	type Props = { piece: PublicWebPiece; fields: Fields; helpers: PieceComponentHelpers }
-	let { piece, fields, helpers }: Props = $props()
+	let { piece, fields, helpers }: OpengraphProps<Fields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const iconWidth = 700
 	// The cover art fills only the vinyl label (55% of the disc width).

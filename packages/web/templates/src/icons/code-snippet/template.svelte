@@ -1,16 +1,8 @@
 <script lang="ts">
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { IconProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		size: { width: number; height?: number }
-		helpers: PieceComponentHelpers
-		lazy?: boolean
-		active?: boolean
-	}
-	let { size, piece, fields, helpers, active = false }: Props = $props()
+	let { size, piece, fields, helpers, active = false }: IconProps<Fields> = $props()
 	const scale = $derived(Math.round((size.width / 375) * 100) / 100)
 	const files = $derived(fields.files ?? [])
 	const firstSnippet = $derived(files.find((file) => (file.type ?? 'snippet') === 'snippet'))

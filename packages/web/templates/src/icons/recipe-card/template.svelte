@@ -1,17 +1,9 @@
 <script lang="ts">
 	import { getRecipeCutouts } from './helpers.js'
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { IconProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		size: { width: number; height?: number }
-		helpers: PieceComponentHelpers
-		lazy?: boolean
-		active?: boolean
-	}
-	let { piece, fields, size, helpers, lazy = false, active = false }: Props = $props()
+	let { piece, fields, size, helpers, lazy = false, active = false }: IconProps<Fields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const headerColor = $derived({
 		bg: palette?.background || '#827717',

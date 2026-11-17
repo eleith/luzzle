@@ -1,16 +1,8 @@
 <script lang="ts">
-	import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
+	import type { IconProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
-	type Props = {
-		piece: PublicWebPiece
-		fields: Fields
-		size: { width: number; height?: number }
-		helpers: PieceComponentHelpers
-		lazy?: boolean
-		active?: boolean
-	}
-	let { piece, size, active = false }: Props = $props()
+	let { piece, size, active = false }: IconProps<Fields> = $props()
 	const scale = $derived(Math.round((size.width / (375 * 2)) * 100) / 100)
 	const height = $derived(size.height ?? size.width * (11 / 8.5))
 </script>

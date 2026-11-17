@@ -13,12 +13,15 @@
 		"src/icons/*/helpers.js",
 		"src/icons/catalog.js",
 		"src/icons/lazy.js",
+		"src/icons/client.svelte",
 		"src/pages/*/template.svelte",
 		"src/pages/*/helpers.js",
 		"src/pages/catalog.js",
 		"src/pages/lazy.js",
+		"src/pages/client.svelte",
 		"src/opengraphs/*/template.svelte",
 		"src/opengraphs/lazy.js",
+		"src/opengraphs/client.svelte",
 		"config.schema.json"
 	],
 	"scripts": {
@@ -31,9 +34,16 @@
 	"exports": {
 		"./icons": "./src/icons/catalog.js",
 		"./icons/lazy": "./src/icons/lazy.js",
+		"./icons/client": "./src/icons/client.svelte",
+		"./icons/props": {
+			"development": "./src/icons/props.ts",
+			"types": "./dist/icons/props.d.ts",
+			"import": "./dist/icons/props.js"
+		},
 		"./icons/*": "./src/icons/*/template.svelte",
 		"./pages": "./src/pages/catalog.js",
 		"./pages/lazy": "./src/pages/lazy.js",
+		"./pages/client": "./src/pages/client.svelte",
 		"./pages/props": {
 			"development": "./src/pages/props.ts",
 			"types": "./dist/pages/props.d.ts",
@@ -41,6 +51,12 @@
 		},
 		"./pages/*": "./src/pages/*/template.svelte",
 		"./opengraphs/lazy": "./src/opengraphs/lazy.js",
+		"./opengraphs/client": "./src/opengraphs/client.svelte",
+		"./opengraphs/props": {
+			"development": "./src/opengraphs/props.ts",
+			"types": "./dist/opengraphs/props.d.ts",
+			"import": "./dist/opengraphs/props.js"
+		},
 		"./opengraphs/*": "./src/opengraphs/*/template.svelte",
 		"./pieces/fields": {
 			"development": "./src/pieces/fields.ts",
@@ -95,12 +111,14 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",
+		"@sveltejs/vite-plugin-svelte": "7.1.2",
 		"eslint": "catalog:",
 		"eslint-config-prettier": "catalog:",
 		"globals": "catalog:",
 		"prettier": "catalog:",
 		"svelte": "5.57.3",
 		"typescript": "catalog:",
-		"typescript-eslint": "catalog:"
+		"typescript-eslint": "catalog:",
+		"vite": "catalog:"
 	}
 }
