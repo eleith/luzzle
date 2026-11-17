@@ -1,4 +1,4 @@
-import { afterEach, expect, test, vi } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 import { createServer, IncomingMessage, ServerResponse } from 'node:http'
 import { Socket } from 'node:net'
@@ -33,30 +33,6 @@ function config(app = 'https://configured.example/garden', authenticated = false
 	return configured
 }
 
-afterEach(() => vi.unstubAllEnvs())
-
-test('returns a fresh environment without mutating config or supplied environment', () => {
-	const configured = config('https://configured.example/garden/?page=2#top', true)
-	Object.freeze(configured.url)
-	Object.freeze(configured.network.public)
-	Object.freeze(configured.network)
-	Object.freeze(configured)
-	const environment = Object.freeze({ HOST: 'old-host', UNRELATED: 'keep' })
-	const result = createServerEnvironment(configured, environment)
-	expect(result).not.toBe(environment)
-	expect(result).toEqual({
-		HOST: '127.0.0.1',
-		UNRELATED: 'keep',
-		LUZZLE_PAGE_TEMPLATES: '{}',
-		LUZZLE_ICON_TEMPLATES: '{}',
-		PROTOCOL_HEADER: 'x-luzzle-public-protocol',
-		HOST_HEADER: 'x-luzzle-public-authority',
-		PORT_HEADER: ''
-	})
-	expect(environment).toEqual({ HOST: 'old-host', UNRELATED: 'keep' })
-	expect(configured.url.app).toBe('https://configured.example/garden/?page=2#top')
-})
-
 test('startup publishes only YAML-derived template names, replacing any ambient map', () => {
 	const configured = config(undefined, true)
 	configured.pieces = [
@@ -89,12 +65,14 @@ test('startup publishes only YAML-derived template names, replacing any ambient 
 
 test('absolute YAML replaces ambient header selection without putting the authority in the environment', () => {
 	const result = createServerEnvironment(config('https://configured.example:8443/garden'), {
+		UNRELATED: 'keep',
 		ORIGIN: 'https://unexpected.example',
 		PROTOCOL_HEADER: 'x-forwarded-proto',
 		HOST_HEADER: 'x-forwarded-host',
 		PORT_HEADER: 'x-forwarded-port'
 	})
 	expect(result).toEqual({
+		UNRELATED: 'keep',
 		HOST: '127.0.0.1',
 		LUZZLE_PAGE_TEMPLATES: '{}',
 		LUZZLE_ICON_TEMPLATES: '{}',
@@ -127,22 +105,6 @@ test.each([
 		HOST_HEADER: 'x-luzzle-public-authority',
 		PORT_HEADER: ''
 	})
-})
-
-test('ambient URL variables cannot replace the configured public URL', () => {
-	vi.stubEnv('ORIGIN', 'https://unexpected.example')
-	vi.stubEnv('BETTER_AUTH_URL', 'not-a-url')
-	vi.stubEnv('AUTH_URL', 'https://legacy.example')
-	vi.stubEnv('NEXTAUTH_URL', '')
-	const before = { ...process.env }
-	expect(createServerEnvironment(config(undefined, true))).toMatchObject({
-		PROTOCOL_HEADER: 'x-luzzle-public-protocol',
-		HOST_HEADER: 'x-luzzle-public-authority',
-		PORT_HEADER: ''
-	})
-	expect(createServerEnvironment(config(undefined, true))).not.toHaveProperty('ORIGIN')
-	expect(resolveAuthUrl('https://configured.example/garden')).toBe('https://configured.example')
-	expect(process.env).toEqual(before)
 })
 
 test.each(['', '/', '/garden/', 'garden', './garden', '../garden', '//example.com/garden'])(

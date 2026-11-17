@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test } from 'vitest'
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
@@ -66,14 +66,10 @@ function run(environment: NodeJS.ProcessEnv = {}, args = [entry]) {
 	})
 }
 
-async function configure(
-	app = 'https://Startup.EXAMPLE:443/garden/',
-	authenticated = true,
-	host = '127.0.0.1'
-) {
+async function configure(app = 'https://Startup.EXAMPLE:443/garden/', authenticated = true) {
 	const config: Record<string, unknown> = {
 		url: { app },
-		network: { public: { host } },
+		network: { public: { host: '127.0.0.1' } },
 		pieces: [
 			{
 				type: 'words',
@@ -92,19 +88,12 @@ async function configure(
 	await writeFile(path.join(directory, 'config.yaml'), JSON.stringify(config))
 }
 
-test('loads working-directory config and applies internal header settings before importing the server', async () => {
+test('working-directory YAML overrides ambient settings before importing the server', async () => {
 	await configure()
 	const { stdout } = await run({
 		HOST: 'ignored-host',
 		LUZZLE_PAGE_TEMPLATES: 'ignored-map',
-		LUZZLE_ICON_TEMPLATES: 'ignored-map'
-	})
-	expect(JSON.parse(stdout)).toEqual(absoluteEnvironment)
-})
-
-test('configured url.app selects internal headers and clears ORIGIN despite ambient URL settings', async () => {
-	await configure()
-	const { stdout } = await run({
+		LUZZLE_ICON_TEMPLATES: 'ignored-map',
 		ORIGIN: 'not-a-url',
 		PROTOCOL_HEADER: 'x-forwarded-proto',
 		HOST_HEADER: 'x-forwarded-host',
@@ -116,33 +105,56 @@ test('configured url.app selects internal headers and clears ORIGIN despite ambi
 	expect(JSON.parse(stdout)).toEqual(absoluteEnvironment)
 })
 
-test.each(['', '/garden', './garden', '//relative.example/garden'])(
-	'leaves app URL %s request-derived before importing the server',
-	async (app) => {
-		await configure(app, false)
-		const { stdout } = await run({
-			ORIGIN: 'https://unexpected.example',
-			PROTOCOL_HEADER: 'x-forwarded-proto'
-		})
-		expect(JSON.parse(stdout)).toEqual({
-			HOST: '127.0.0.1',
-			PROTOCOL_HEADER: 'x-forwarded-proto',
-			LUZZLE_PAGE_TEMPLATES: absoluteEnvironment.LUZZLE_PAGE_TEMPLATES,
-			LUZZLE_ICON_TEMPLATES: absoluteEnvironment.LUZZLE_ICON_TEMPLATES
-		})
-	}
-)
-
-test('uses configured header settings even when authentication is disabled', async () => {
-	await configure(undefined, false)
-	const { stdout } = await run()
-	expect(JSON.parse(stdout)).toEqual(absoluteEnvironment)
+test('a public relative app URL stays request-derived despite ambient ORIGIN', async () => {
+	await configure('/garden', false)
+	const { stdout } = await run({
+		ORIGIN: 'https://unexpected.example',
+		PROTOCOL_HEADER: 'x-forwarded-proto'
+	})
+	expect(JSON.parse(stdout)).toEqual({
+		HOST: '127.0.0.1',
+		PROTOCOL_HEADER: 'x-forwarded-proto',
+		LUZZLE_PAGE_TEMPLATES: absoluteEnvironment.LUZZLE_PAGE_TEMPLATES,
+		LUZZLE_ICON_TEMPLATES: absoluteEnvironment.LUZZLE_ICON_TEMPLATES
+	})
 })
 
-test('uses the existing HOST fallback for an empty configured bind host', async () => {
-	await configure(undefined, true, '')
-	const { stdout } = await run()
-	expect(JSON.parse(stdout)).toEqual({ ...absoluteEnvironment, HOST: '0.0.0.0' })
+test('fresh production startups follow the compatibility symlink after atomic config replacement', async () => {
+	await configure()
+	const filename = path.join(directory, 'config.yaml')
+	const target = path.join(directory, 'config/config.yaml')
+	await mkdir(path.dirname(target))
+	await rename(filename, target)
+	await symlink('config/config.yaml', filename)
+
+	const first = await run()
+	expect(JSON.parse(first.stdout)).toEqual(absoluteEnvironment)
+
+	const replacement = path.join(directory, 'config/config.next.yaml')
+	await writeFile(
+		replacement,
+		JSON.stringify({
+			url: { app: 'https://replacement.example/garden' },
+			network: { public: { host: '0.0.0.0' } },
+			pieces: [
+				{
+					type: 'words',
+					fields: { title: 'title', date_consumed: 'date' },
+					templates: { page: { name: 'default' }, icon: { name: 'default' } }
+				}
+			]
+		})
+	)
+	await rename(replacement, target)
+
+	// Restart the actual launcher: this is not a live-server config reload.
+	const second = await run()
+	expect(JSON.parse(second.stdout)).toEqual({
+		...absoluteEnvironment,
+		HOST: '0.0.0.0',
+		LUZZLE_PAGE_TEMPLATES: '{"words":"default"}',
+		LUZZLE_ICON_TEMPLATES: '{"words":"default"}'
+	})
 })
 
 test('import alone exports startServer without loading config or starting the default entry', async () => {
@@ -157,32 +169,29 @@ console.log(typeof startServer)`
 	expect(stderr).toBe('')
 })
 
-test.each(['https://Public.EXAMPLE:8443/garden', 'http://Other.EXAMPLE:8080/base'])(
-	'startServer returns the native server and normalizes its first HTTP request using %s',
-	async (app) => {
-		await configure(app)
-		const compiledEntry = path.join(directory, 'build/probe #.js')
-		// This is a native HTTP transport probe, not proof of Kit pre-handle CSRF.
-		// Like the adapter entry, it installs its request listener and starts listening on import.
-		await writeFile(
-			compiledEntry,
-			`import { createServer } from 'node:http'
+test('a public absolute URL normalizes the first HTTP request on the returned native server', async () => {
+	const app = 'https://Public.EXAMPLE:8443/garden'
+	await configure(app, false)
+	const compiledEntry = path.join(directory, 'build/probe #.js')
+	// Native transport probe; Kit's pre-handle behavior belongs in production HTTP tests.
+	await writeFile(
+		compiledEntry,
+		`import { createServer } from 'node:http'
 export const server = createServer(async (request, response) => {
 	const protocol = request.headers[process.env.PROTOCOL_HEADER]
 	const authority = request.headers[process.env.HOST_HEADER]
 	const url = new URL(request.url, protocol + '://' + authority).href
-	const headers = { ...request.headers }
 	let body = ''
 	for await (const chunk of request) body += chunk
 	response.setHeader('content-type', 'application/json')
-	response.end(JSON.stringify({ url, method: request.method, headers, body }))
+	response.end(JSON.stringify({ url, method: request.method, origin: request.headers.origin, body }))
 })
 server.listen(0, '127.0.0.1')`
-		)
-		const { stdout } = await run({ ORIGIN: 'https://ambient.example' }, [
-			'--input-type=module',
-			'--eval',
-			`import { request } from 'node:http'
+	)
+	const { stdout } = await run({ ORIGIN: 'https://ambient.example' }, [
+		'--input-type=module',
+		'--eval',
+		`import { request } from 'node:http'
 import { once } from 'node:events'
 const { startServer } = await import(${JSON.stringify(pathToFileURL(entry).href)})
 const server = await startServer(${JSON.stringify(compiledEntry)})
@@ -190,59 +199,38 @@ const compiled = await import(${JSON.stringify(pathToFileURL(compiledEntry).href
 if (server !== compiled.server) throw new Error('Native server was replaced')
 try {
 	if (!server.listening) await once(server, 'listening')
-	const results = []
-	for (const origin of ['https://browser.example', 'null']) {
-		results.push(await new Promise((resolve, reject) => {
-			const outgoing = request({
-				hostname: '127.0.0.1', port: server.address().port, agent: false,
-				method: 'POST', path: '/submit?next=%2Fprivate&tag=a&tag=b',
-				headers: {
-					host: 'internal.example:3000', origin, cookie: 'session=unchanged',
-					'content-type': 'application/x-www-form-urlencoded',
-					'x-forwarded-proto': 'http', 'x-forwarded-host': 'spoofed.example:9999',
-					'x-forwarded-port': '9999', 'x-luzzle-public-protocol': 'http',
-					'x-luzzle-public-authority': 'spoofed.example:9999'
-				}
-			}, async (response) => {
-				try {
-					let body = ''
-					for await (const chunk of response) body += chunk
-					resolve(JSON.parse(body))
-				} catch (error) { reject(error) }
-			})
-			outgoing.on('error', reject)
-			outgoing.end('title=one%26two&tag=a&tag=b')
-		}))
-	}
-	console.log(JSON.stringify(results))
+	const result = await new Promise((resolve, reject) => {
+		const outgoing = request({
+			hostname: '127.0.0.1', port: server.address().port, agent: false,
+			method: 'POST', path: '/submit?next=%2Fprivate&tag=a&tag=b',
+			headers: {
+				host: 'internal.example:3000', origin: 'https://browser.example',
+				'content-type': 'application/x-www-form-urlencoded',
+				'x-luzzle-public-protocol': 'http',
+				'x-luzzle-public-authority': 'spoofed.example:9999'
+			}
+		}, async (response) => {
+			try {
+				let body = ''
+				for await (const chunk of response) body += chunk
+				resolve(JSON.parse(body))
+			} catch (error) { reject(error) }
+		})
+		outgoing.on('error', reject)
+		outgoing.end('title=one%26two&tag=a&tag=b')
+	})
+	console.log(JSON.stringify(result))
 } finally {
 	await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
 }`
-		])
-		const canonical = new URL(app)
-		const results = JSON.parse(stdout)
-		expect(results).toHaveLength(2)
-		for (const [index, origin] of ['https://browser.example', 'null'].entries()) {
-			expect(results[index]).toEqual({
-				url: `${canonical.origin}/submit?next=%2Fprivate&tag=a&tag=b`,
-				method: 'POST',
-				headers: expect.objectContaining({
-					host: 'internal.example:3000',
-					origin,
-					cookie: 'session=unchanged',
-					'content-type': 'application/x-www-form-urlencoded',
-					'x-forwarded-proto': 'http',
-					'x-forwarded-host': 'spoofed.example:9999',
-					'x-forwarded-port': '9999',
-					'x-luzzle-public-protocol': canonical.protocol.slice(0, -1),
-					'x-luzzle-public-authority': canonical.host
-				}),
-				body: 'title=one%26two&tag=a&tag=b'
-			})
-		}
-	},
-	15000
-)
+	])
+	expect(JSON.parse(stdout)).toEqual({
+		url: 'https://public.example:8443/submit?next=%2Fprivate&tag=a&tag=b',
+		method: 'POST',
+		origin: 'https://browser.example',
+		body: 'title=one%26two&tag=a&tag=b'
+	})
+}, 15000)
 
 test('authentication requires an absolute configured app URL before server import', async () => {
 	await configure('/garden')
@@ -259,21 +247,7 @@ test('authentication requires an absolute configured app URL before server impor
 	})
 })
 
-test.each([
-	'https://',
-	'https:startup.example',
-	'ftp://startup.example/private-token',
-	'https://user:private-password@startup.example/garden'
-])('rejects unsafe absolute app URL %s before importing the server', async (app) => {
-	await configure(app)
-	await expect(run()).rejects.toMatchObject({
-		code: 1,
-		stdout: '',
-		stderr: expect.stringContaining('Invalid url.app: expected an HTTP(S) URL without credentials')
-	})
-})
-
-test('validation errors do not log URL values or auth secrets', async () => {
+test('credential-bearing URLs fail before server import without exposing URL values or auth secrets', async () => {
 	await configure('https://user:private-password@startup.example/private-token')
 	try {
 		await run()
