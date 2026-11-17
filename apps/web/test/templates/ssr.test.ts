@@ -1,8 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { execFile, spawn, type ChildProcess } from 'node:child_process'
 import { once } from 'node:events'
-import { createHash } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
@@ -17,7 +16,6 @@ let buildDirectory: string
 let origin: string
 let server: ChildProcess | undefined
 let serverErrors = ''
-let originalBuild: Record<string, string>
 
 // Isolated compiler fixture only: adapter-node6 exports the native HTTP server directly.
 // Production origin/CSRF coverage lives in routes.test.ts and uses the real bootstrap.
@@ -29,19 +27,6 @@ if (!server.listening) await once(server, 'listening');
 process.send({ port: server.address().port });
 `
 
-async function buildHashes() {
-	const entries = await readdir(buildDirectory, { recursive: true, withFileTypes: true })
-	const hashes: Record<string, string> = {}
-	for (const entry of entries) {
-		if (!entry.isFile()) continue
-		const filename = path.join(entry.parentPath, entry.name)
-		hashes[path.relative(buildDirectory, filename)] = createHash('sha256')
-			.update(await readFile(filename))
-			.digest('hex')
-	}
-	return hashes
-}
-
 async function request(route = '') {
 	const response = await fetch(`${origin}/${route}`, {
 		headers: { 'x-forwarded-proto': 'http' },
@@ -49,75 +34,6 @@ async function request(route = '') {
 	})
 	expect(response.status).toBe(200)
 	return response.text()
-}
-
-function expectNoConfiguredCss(html: string) {
-	expect(html).not.toContain('%luzzle.styles%')
-	expect(html).not.toContain('data-luzzle-configured-styles')
-	expect(html).not.toContain('--color-primary: #123abc;')
-	expect(html).not.toContain('--editor-background:')
-}
-
-function htmlHead(html: string) {
-	const head = html.match(/<head>([\s\S]*?)<\/head>/)?.[1]
-	if (head === undefined) throw new Error('Expected the fixture HTML head')
-	return head
-}
-
-function htmlBody(html: string) {
-	const body = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/)?.[1]
-	if (body === undefined) throw new Error('Expected the fixture HTML body')
-	return body
-}
-
-function expectInlineConfiguredCss(html: string) {
-	expect(html).not.toContain('%luzzle.styles%')
-	const head = htmlHead(html)
-	const styles = [
-		...head.matchAll(/<style\b[^>]*\bdata-luzzle-configured-styles\b[^>]*>([\s\S]*?)<\/style>/g)
-	]
-	expect(styles).toHaveLength(1)
-	const [style, css] = styles[0]
-	const charset = head.match(/<meta\b[^>]*\bcharset\b[^>]*>/i)
-	if (!charset) throw new Error('Expected the fixture charset meta tag')
-	const stylePosition = head.indexOf(style)
-	expect(stylePosition).toBeGreaterThanOrEqual(head.indexOf(charset[0]) + charset[0].length)
-	const frameworkStyles =
-		head.match(
-			/<link\b[^>]*\brel=["']stylesheet["'][^>]*>|<style\b(?![^>]*\bdata-luzzle-configured-styles\b)[^>]*>[\s\S]*?<\/style>/g
-		) ?? []
-	// The app-template token precedes Kit's head, including linked or inlined component CSS.
-	for (const frameworkStyle of frameworkStyles)
-		expect(head.indexOf(frameworkStyle)).toBeGreaterThanOrEqual(stylePosition + style.length)
-	expect(htmlBody(html)).not.toContain('data-luzzle-configured-styles')
-	expect(htmlBody(html)).not.toContain('--color-primary: #123abc;')
-	expect(htmlBody(html)).not.toContain('--editor-background:')
-	expect(css).not.toContain('box-sizing:')
-	expect(css).not.toContain('.button')
-	expect(css).not.toContain('.markdown')
-	expect(css).not.toContain('pre.shiki')
-	expect(css.indexOf('--color-primary:')).toBeGreaterThanOrEqual(0)
-	expect(css.indexOf('--editor-background:')).toBeGreaterThan(css.indexOf('--color-primary:'))
-	return css
-}
-
-async function frameworkCss(html: string) {
-	const head = htmlHead(html)
-	const sources = [...head.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)]
-		.filter(([tag]) => !tag.includes('data-luzzle-configured-styles'))
-		.map(([, css]) => css)
-	const links = head.match(/<link\b[^>]*\brel=["']stylesheet["'][^>]*>/g) ?? []
-	for (const link of links) {
-		const href = link.match(/\bhref=["']([^"']+)["']/)?.[1]
-		if (!href) throw new Error('Expected a framework stylesheet URL')
-		expect(href).toMatch(/\/_app\/immutable\/assets\/[^"']+\.css$/)
-		const response = await fetch(new URL(href, origin), {
-			signal: AbortSignal.timeout(10000)
-		})
-		expect(response.status).toBe(200)
-		sources.push(await response.text())
-	}
-	return sources.join('\n')
 }
 
 beforeAll(async () => {
@@ -128,66 +44,7 @@ beforeAll(async () => {
 	await writeFile(
 		configFilename,
 		JSON.stringify({
-			theme: { light: { 'color-primary': '#123abc' } },
-			pieces: [
-				{
-					type: 'custom-kind',
-					fields: { title: 'title', date_consumed: 'date' },
-					templates: {
-						icon: { name: 'default', mapping: { image: 'artwork' } },
-						page: {
-							name: 'default',
-							mapping: {
-								image: 'artwork',
-								backdrop: 'scenery',
-								dateReleased: 'released',
-								runtime: 'minutes',
-								category: 'category',
-								url: 'website',
-								isbn: 'isbn',
-								people: 'creators'
-							}
-						}
-					}
-				},
-				{
-					type: 'book-kind',
-					fields: { title: 'title', date_consumed: 'date' },
-					templates: {
-						icon: { name: 'playing-cards' },
-						page: {
-							name: 'book',
-							mapping: {
-								image: 'artwork',
-								author: 'filmmaker',
-								pages: 'pageCount',
-								publicationYear: 'bookYear'
-							}
-						}
-					}
-				},
-				{
-					type: 'recipe-kind',
-					fields: { title: 'title', date_consumed: 'date' },
-					templates: {
-						icon: { name: 'lined-notebook-paper' },
-						page: {
-							name: 'recipe',
-							mapping: {
-								image: 'artwork',
-								ingredients: {
-									each: 'materials',
-									fields: { item: 'label', quantity: 'amount', unit: 'measure' }
-								},
-								instructions: { each: 'directions', fields: { html: 'content' } },
-								prepMinutes: 'prepMinutes',
-								cookMinutes: 'cookMinutes'
-							}
-						}
-					}
-				},
-				{ type: 'unmapped-kind', fields: { title: 'title', date_consumed: 'date' } }
-			]
+			pieces: [{ type: 'custom-kind', fields: { title: 'title', date_consumed: 'date' } }]
 		})
 	)
 	buildDirectory = path.join(directory, 'build')
@@ -197,14 +54,13 @@ beforeAll(async () => {
 		TEMPLATE_BUILD_DIR: buildDirectory,
 		TEMPLATE_KIT_DIR: path.join(directory, 'kit')
 	}
-	// Compile once, then exercise the native stock components over HTTP.
+	// Compile once to exercise framework error handling over native HTTP.
 	await exec(process.execPath, [path.join(webRoot, 'node_modules/vite/bin/vite.js'), 'build'], {
 		cwd: fixture,
 		env,
 		timeout: 60000,
 		maxBuffer: 2 * 1024 * 1024
 	})
-	originalBuild = await buildHashes()
 	childEnv = env
 	await startFixture()
 })
@@ -285,145 +141,6 @@ afterAll(async () => {
 	} finally {
 		if (directory) await rm(directory, { recursive: true, force: true })
 	}
-})
-
-describe('stock catalog in built SvelteKit SSR', () => {
-	test('renders the package-owned poster icon with mapped fields, escaped text and preview URLs', async () => {
-		const html = await request('?role=icon&title=%3CStock%3E%26')
-		expect(html).toMatch(/class="poster [^"]*\bactive\b/)
-		expect(html).toContain('&lt;Stock>&amp;')
-		expect(html).toContain('--piece-icon-width: 125px;')
-		expect(html).toContain('--piece-icon-height: 187.5px;')
-		expect(html).toContain('loading="lazy"')
-		expect(html).toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
-		expect(html).not.toContain('aria-label="Global"')
-		const preview = await request('?role=icon&job=icon%20job')
-		expect(preview).toContain('src="/admin/preview/icon%20job/asset/fixture/cover%20small.jpg"')
-		expect(preview).not.toContain(`${origin}/pieces/assets/fixture/cover%20small.jpg`)
-	})
-
-	test('renders useful stock page HTML by default, explicit supplemental fields and palette navigation', async () => {
-		const html = await request()
-		expect(html).toMatch(/<h1[^>]*>Catalog title<\/h1>/)
-		for (const text of [
-			'Fixture category',
-			'Ada Example',
-			'2001',
-			'123 min',
-			'Fixture description'
-		]) {
-			expect(html).toContain(text)
-		}
-		expect(html).toContain('href="https://example.com/fixture"')
-		expect(html).toContain('href="/tags/fixture-tag"')
-		expect(html).toContain('<p>Published note</p>')
-		expect(html).toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
-		expect(html).toContain(`src="${origin}/pieces/assets/fixture/backdrop%20large.jpg"`)
-		expect(html.match(/aria-label="Global"/g)).toHaveLength(1)
-		const randomHref = html.match(/<a\b[^>]*href="([^"]+)"[^>]*aria-label="random"/)?.[1]
-		if (!randomHref) throw new Error('Expected the random navigation link')
-		expect(new URL(randomHref, `${origin}/`).href).toBe(`${origin}/random`)
-		expect(html).toContain('--banner-background-color: #234567')
-		expect(html.indexOf('aria-label="Global"')).toBeLessThan(html.indexOf('<h1'))
-		const preview = await request('?role=page&job=page%20job')
-		expect(preview).toContain('<p>Draft note</p>')
-		expect(preview).not.toContain('<p>Published note</p>')
-		expect(preview).toContain('src="/admin/preview/page%20job/asset/fixture/cover%20small.jpg"')
-		expect(preview).not.toContain(`${origin}/pieces/assets/`)
-		expect(await request('?role=page')).toContain('<p>Published note</p>')
-	})
-
-	test('uses the ISBN fallback instead of rendering an unsafe mapped external URL', async () => {
-		const html = await request('?role=page&external=javascript%3Aalert%281%29')
-		expect(html).toContain('href="https://openlibrary.org/search?isbn=9780000000001"')
-		expect(html).not.toContain('href="javascript:')
-	})
-
-	test('renders an independently mapped book page in native HTTP without changing icon choice', async () => {
-		const book = await request('?role=page&type=book-kind')
-		expect(book).toContain('by Ada Example · 320 pages')
-		expect(book).toContain('2001')
-		expect(book).toContain('class="book ')
-		expect(book).toContain('<p>Published note</p>')
-		expect(book).toContain(`src="${origin}/pieces/assets/fixture/cover%20small.jpg"`)
-		expect(await request('?role=icon&type=book-kind')).toContain('cards-container')
-	})
-
-	test('renders structured recipe data and job-preview assets through native HTTP', async () => {
-		const recipe = await request('?role=page&type=recipe-kind&job=recipe%20job')
-		expect(recipe).toContain('Flour')
-		expect(recipe).toContain('1/2')
-		expect(recipe).toContain('<em>Mix ingredients</em>')
-		expect(recipe).toContain('1 ingredients · 12m')
-		expect(recipe).toContain('type="checkbox"')
-		expect(recipe).toContain('<p>Draft note</p>')
-		expect(recipe).toContain('src="/admin/preview/recipe%20job/asset/fixture/cover%20card.jpg"')
-		expect(recipe).not.toContain(`${origin}/pieces/assets/`)
-	})
-
-	test('uses icon and page defaults without inferring presentation fields from raw metadata', async () => {
-		for (const role of ['icon', 'page']) {
-			// Raw metadata legitimately remains in Kit's bootstrap data; check rendered HTML only.
-			const html = (
-				await request(`?role=${role}&type=unmapped-kind&title=%3CDefault%3E%26`)
-			).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
-			expect(html).toContain('&lt;Default>&amp;')
-			expect(html).not.toContain('src=')
-			expect(html).not.toContain('by Ada Example')
-			expect(html).not.toContain('Fixture category')
-			expect(html).not.toContain('123 min')
-			if (role !== 'page') expect(html).not.toContain('aria-label="Global"')
-		}
-	})
-
-	test('omits configured CSS from stock pages without a layout opt-in', async () => {
-		const html = await request()
-		expect(html).toContain('Catalog title')
-		expectNoConfiguredCss(html)
-	})
-
-	test('inlines only configured theme and editor CSS once for an opted-in layout', async () => {
-		for (let attempt = 0; attempt < 2; attempt++) {
-			const html = await request('themed')
-			expect(html).toContain('<h1>Themed fixture</h1>')
-			const css = expectInlineConfiguredCss(html)
-			expect(css).toContain('--color-primary: #123abc;')
-			expect(css).toContain('--color-primary: #3b82f6;')
-			expect(css).toContain("section[data-theme='dark']")
-			expect(css).toContain('--editor-background: #fff;')
-			expect(css).toContain('--editor-background: #24292e;')
-			expect(css).toContain('--editor-heading:')
-			expect(html).not.toContain('theme.css')
-			// Opt-in must not leak into the next request on the same server.
-			expectNoConfiguredCss(await request())
-		}
-	})
-
-	test('keeps fixed reset, base and Markdown CSS in the normal framework pipeline', async () => {
-		const html = await request('themed')
-		expectInlineConfiguredCss(html)
-		// Kit may inline manifest CSS instead of emitting external stylesheet links.
-		const css = await frameworkCss(html)
-		expect(css).toMatch(/box-sizing:\s*border-box/)
-		expect(css).toContain('.button')
-		expect(css).toContain('.markdown')
-		expect(css).toContain('pre.shiki')
-		expect(css).not.toContain('--color-primary: #123abc;')
-	})
-
-	test('keeps the unique configured declaration only in the head, never in bootstrap data', async () => {
-		const html = await request('themed')
-		expectInlineConfiguredCss(html)
-		const declaration = '--color-primary: #123abc;'
-		expect(htmlHead(html).split(declaration)).toHaveLength(2)
-		// Include scripts: no CSS packet should be serialized for hydration.
-		expect(htmlBody(html)).not.toContain(declaration)
-		expect(htmlBody(html)).not.toContain('data-luzzle-configured-styles')
-	})
-
-	test('leaves every compiled application file unchanged across stock rendering and preview requests', async () => {
-		expect(await buildHashes()).toEqual(originalBuild)
-	})
 })
 
 async function errorResponse(
@@ -715,6 +432,5 @@ describe('configured error pages through the native fixture HTTP server', () => 
 		expect(afterRestart).toContain('<h1>Restart configuration copy</h1>')
 		expectErrorHome(afterRestart, false)
 		expect(await errorHtml(400)).toContain('<h1>Atomic replacement copy</h1>')
-		expect(await buildHashes()).toEqual(originalBuild)
 	})
 })

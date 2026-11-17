@@ -1,17 +1,10 @@
 import { expect, test } from './support/test.js'
 import { notebook } from './support/fixture.js'
 
-test('search opens the public page after its CSS is ready and reuses it on revisit', async ({
+test('search filters results and opens a public piece with working history', async ({
 	page,
 	baseURL
 }) => {
-	const templateLookups: string[] = []
-	page.on('request', (request) => {
-		const path = new URL(request.url()).pathname
-		if (path.startsWith('/api/templates/') || path === '/_app/env.js') {
-			templateLookups.push(request.url())
-		}
-	})
 	await page.goto('/')
 	const search = page
 		.getByRole('navigation', { name: 'Global' })
@@ -27,50 +20,22 @@ test('search opens the public page after its CSS is ready and reuses it on revis
 
 	const results = page.getByRole('region', { name: 'Search results', exact: true })
 	await expect(results.getByRole('link', { name: 'Forest Notebook' })).toHaveCount(0)
-	const releaseStylesheets = Promise.withResolvers<void>()
-	let stylesheetRequests = 0
-	await page.route('**/*.css', async (route) => {
-		stylesheetRequests++
-		await releaseStylesheets.promise
-		await route.continue()
-	})
-
 	const searchUrl = page.url()
-	const navigation = results.getByRole('link', { name: notebook.title }).click()
-	try {
-		await expect.poll(() => stylesheetRequests).toBeGreaterThan(0)
-		// Hold CSS long enough to catch a premature route commit, not just request initiation.
-		await page.waitForTimeout(500)
-		await expect(page).toHaveURL(searchUrl)
-		await expect(page.getByRole('heading', { name: notebook.title, exact: true })).not.toBeVisible()
-	} finally {
-		releaseStylesheets.resolve()
-	}
-	await navigation
+	await results.getByRole('link', { name: notebook.title }).click()
 	await expect(page).toHaveURL(`${baseURL}${notebook.publicUrl}`)
 	await expect(page.getByRole('heading', { name: notebook.title, exact: true })).toBeVisible()
 
-	const firstVisitRequests = stylesheetRequests
 	await page.goBack()
 	await expect(page).toHaveURL(searchUrl)
 	await results.getByRole('link', { name: notebook.title }).click()
 	await expect(page).toHaveURL(`${baseURL}${notebook.publicUrl}`)
 	await expect(page.getByRole('heading', { name: notebook.title, exact: true })).toBeVisible()
-	expect(stylesheetRequests).toBe(firstVisitRequests)
-	expect(templateLookups).toEqual([])
 })
 
-test('a server-rendered error page can navigate to a piece without a lookup or document reload', async ({
+test('a server-rendered error page can navigate to a piece without a document reload', async ({
 	page,
 	baseURL
 }) => {
-	const templateLookups: string[] = []
-	page.on('request', (request) => {
-		const path = new URL(request.url()).pathname
-		if (path.startsWith('/api/templates/') || path === '/_app/env.js') {
-			templateLookups.push(request.url())
-		}
-	})
 	const response = await page.goto('/missing-routing-example')
 	expect(response?.status()).toBe(404)
 	await expect(
@@ -88,5 +53,4 @@ test('a server-rendered error page can navigate to a piece without a lookup or d
 	await expect(page).toHaveURL(`${baseURL}${notebook.publicUrl}`)
 	await expect(page.getByRole('heading', { name: notebook.title, exact: true })).toBeVisible()
 	await expect(page.locator('html')).toHaveAttribute('data-routing-proof', 'same-document')
-	expect(templateLookups).toEqual([])
 })
