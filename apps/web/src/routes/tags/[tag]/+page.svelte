@@ -1,5 +1,5 @@
 <script lang="ts">
-	import PieceIcon from '#lib/pieces/components/icon.svelte'
+	import ClientListingIcon from '#lib/pieces/components/ClientListingIcon.svelte'
 	import { page } from '$app/state'
 	import { resolve } from '$app/paths'
 
@@ -75,18 +75,14 @@
 				}}
 			>
 				<div style="display: flex; align-items: flex-start;">
-					<div style="flex: 1 1 0%;">
+					<div style="flex: 1 1 0%;" aria-hidden="true">
 						<div style="display: flex;">
 							<div style="align-self: baseline;">
-								{#key activePieceId === piece.id}
-									<PieceIcon
-										{piece}
-										active={activePieceId === piece.id}
-										size={{
-											width: 125
-										}}
-									/>
-								{/key}
+								<ClientListingIcon
+									{piece}
+									active={activePieceId === piece.id}
+									size={{ width: 125 }}
+								/>
 							</div>
 						</div>
 					</div>

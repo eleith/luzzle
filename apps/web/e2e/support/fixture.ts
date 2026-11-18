@@ -30,6 +30,8 @@ export const fieldGuide = {
 	previewShareAsset: 'private share image.png'
 }
 
+export const fieldNotesTag = { label: 'Field Notes', slug: 'field-notes' }
+
 export type PreviewJobs = { completed: string; failed: string; pending: string }
 
 const note = `Original observation.
@@ -158,6 +160,18 @@ export async function createFixture(directory: string, origin: string) {
 					date_added: consumedAt,
 					date_consumed: consumedAt,
 					last_published_at: notebook.publishedAt
+				}))
+			)
+			.execute()
+		await db
+			.insertInto('web_pieces_tags')
+			.values(
+				[notebook, fieldGuide].map((piece) => ({
+					piece_type: piece.type,
+					piece_slug: piece.slug,
+					piece_id: piece.slug,
+					tag: fieldNotesTag.label,
+					slug: fieldNotesTag.slug
 				}))
 			)
 			.execute()
