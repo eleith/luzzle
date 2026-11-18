@@ -1,136 +1,72 @@
-import type { MockInstance, MockedClass } from 'vitest';
-import { describe, expect, test, vi, afterEach } from 'vitest'
-import Conf from 'conf'
-import { getConfig, getDatabasePath, getStorage } from './config.js'
-import log from './log.js'
-import path from 'path'
+import { afterEach, beforeEach, expect, test } from 'vitest'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import YAML from 'yaml'
 import { StorageFileSystem } from '@luzzle/core'
+import { getConfig, getDatabasePath, getStorage, withDefaults } from './config.js'
 
-vi.mock('@luzzle/core')
-vi.mock('./log.js')
-vi.mock('path')
-vi.mock('conf', () => {
-	const ConfMock = vi.fn()
-	ConfMock.prototype.get = vi.fn()
-	ConfMock.prototype.set = vi.fn()
-	ConfMock.prototype.store = {}
-	ConfMock.prototype.path = '/some/path'
-	return { default: ConfMock }
+let directory: string
+let configPath: string
+
+beforeEach(async () => {
+	const cache = fileURLToPath(new URL('../../node_modules/.cache/', import.meta.url))
+	await mkdir(cache, { recursive: true })
+	directory = await mkdtemp(path.join(cache, 'cli-config-'))
+	configPath = path.join(directory, 'config.yaml')
 })
 
-const mocks = {
-	Conf: Conf as MockedClass<typeof Conf>,
-	ConfGet: vi.spyOn(Conf.prototype, 'get'),
-	ConfSet: vi.spyOn(Conf.prototype, 'set'),
-	logWarn: vi.spyOn(log, 'warn'),
-	pathResolve: vi.spyOn(path, 'resolve'),
-	pathDirname: vi.spyOn(path, 'dirname'),
-	pathBasename: vi.spyOn(path, 'basename'),
-	pathExtname: vi.spyOn(path, 'extname'),
-}
+afterEach(async () => {
+	await rm(directory, { recursive: true, force: true })
+})
 
-const spies: { [key: string]: MockInstance } = {}
+test('database and storage defaults use the selected configuration directory', () => {
+	const config = getConfig(configPath)
+	expect(config.path).toBe(configPath)
+	expect(getDatabasePath(config)).toBe(path.join(directory, 'luzzle.sqlite'))
+	const storage = getStorage(config)
+	expect(storage).toBeInstanceOf(StorageFileSystem)
+	expect(storage.root).toBe(directory)
+})
 
-describe('lib/config', () => {
-	afterEach(() => {
-		Object.values(mocks).forEach((mock) => {
-			mock.mockReset()
-		})
+test('configured database and archive paths survive reopening the configuration', async () => {
+	const archive = path.join(directory, 'archive')
+	const database = path.join(directory, 'custom.sqlite')
+	await mkdir(archive)
+	const config = getConfig(configPath)
+	config.set('storage', { type: 'filesystem', root: archive })
+	config.set('database', { type: 'sqlite', path: database })
 
-		Object.keys(spies).forEach((key) => {
-			spies[key].mockRestore()
-			delete spies[key]
-		})
-	})
+	const reopened = getConfig(configPath)
+	expect(getDatabasePath(reopened)).toBe(database)
+	expect(getStorage(reopened).root).toBe(archive)
+})
 
-	test('getConfig', async () => {
-		getConfig()
+test('assistant model persists, appears in settings, and can be cleared without storing a default', async () => {
+	const config = getConfig(configPath)
+	expect(config.get('ai.model')).toBeUndefined()
+	expect(config.store).not.toHaveProperty('ai')
+	expect(withDefaults(config)).not.toHaveProperty('ai')
 
-		expect(mocks.Conf).toHaveBeenCalledOnce()
-		expect(mocks.Conf).not.toHaveBeenCalledWith(expect.objectContaining({ cwd: expect.anything() }))
-	})
+	const model = 'custom-model'
+	config.set('ai.model', model)
+	const reopened = getConfig(configPath)
+	expect(YAML.parse(await readFile(configPath, 'utf8'))).toEqual({ ai: { model } })
+	expect(reopened.get('ai.model')).toBe(model)
+	expect(withDefaults(reopened)).toHaveProperty('ai', { model })
 
-	test('getConfig with path', async () => {
-		const configPath = '/test/dir/config.yaml'
-		mocks.pathResolve.mockReturnValueOnce(configPath)
-		mocks.pathDirname.mockReturnValueOnce('/test/dir')
-		mocks.pathBasename.mockReturnValueOnce('config')
-		mocks.pathExtname.mockReturnValueOnce('.yaml')
+	reopened.set('ai.model', '')
+	const blank = getConfig(configPath)
+	expect(blank.get('ai.model')).toBe('')
+	expect(withDefaults(blank)).toHaveProperty('ai', { model: '' })
 
-		getConfig(configPath)
+	blank.delete('ai.model')
+	const removed = getConfig(configPath)
+	expect(removed.get('ai.model')).toBeUndefined()
+	expect(withDefaults(removed)).not.toHaveProperty('ai')
+})
 
-		expect(mocks.Conf).toHaveBeenCalledOnce()
-		expect(mocks.Conf).toHaveBeenCalledWith(
-			expect.objectContaining({
-				cwd: '/test/dir',
-				configName: 'config',
-				fileExtension: 'yaml',
-				projectName: '',
-			}),
-		)
-	})
-
-		test('getDatabasePath', async () => {
-		mocks.pathResolve.mockReturnValueOnce('/test/dir/some-path.yaml')
-		mocks.pathDirname.mockReturnValueOnce('/test/dir')
-		mocks.pathBasename.mockReturnValueOnce('some-path')
-		mocks.pathExtname.mockReturnValueOnce('.yaml')
-		const config = getConfig('some-path')
-		const dbPath = '/db/path/to/here'
-		const dbType = 'sqlite'
-
-		mocks.ConfGet.mockReturnValueOnce(dbPath)
-		mocks.ConfGet.mockReturnValueOnce(dbType)
-
-		const databasePath = getDatabasePath(config)
-
-		expect(databasePath).toBe(dbPath)
-	})
-
-	test('getDatabasePath throws', async () => {
-		mocks.pathResolve.mockReturnValueOnce('/test/dir/some-path.yaml')
-		mocks.pathDirname.mockReturnValueOnce('/test/dir')
-		mocks.pathBasename.mockReturnValueOnce('some-path')
-		mocks.pathExtname.mockReturnValueOnce('.yaml')
-		const config = getConfig('some-path')
-		const dbPath = '/db/path/to/here'
-		const dbType = 'postgres'
-
-		mocks.ConfGet.mockReturnValueOnce(dbPath)
-		mocks.ConfGet.mockReturnValueOnce(dbType)
-
-		expect(() => getDatabasePath(config)).toThrow()
-	})
-
-	test('getStorage type filesystem', async () => {
-		mocks.pathResolve.mockReturnValueOnce('/test/dir/some-path.yaml')
-		mocks.pathDirname.mockReturnValueOnce('/test/dir')
-		mocks.pathBasename.mockReturnValueOnce('some-path')
-		mocks.pathExtname.mockReturnValueOnce('.yaml')
-		const config = getConfig('some-path')
-		const root = 'root'
-		const type = 'filesystem'
-
-		mocks.ConfGet.mockReturnValueOnce(root)
-		mocks.ConfGet.mockReturnValueOnce(type)
-
-		const storage = getStorage(config)
-
-		expect(storage).toBeInstanceOf(StorageFileSystem)
-	})
-
-	test('getStorage invalid type', async () => {
-		mocks.pathResolve.mockReturnValueOnce('/test/dir/some-path.yaml')
-		mocks.pathDirname.mockReturnValueOnce('/test/dir')
-		mocks.pathBasename.mockReturnValueOnce('some-path')
-		mocks.pathExtname.mockReturnValueOnce('.yaml')
-		const config = getConfig('some-path')
-		const root = 'root'
-		const type = 'webdax'
-
-		mocks.ConfGet.mockReturnValueOnce(root)
-		mocks.ConfGet.mockReturnValueOnce(type)
-
-		expect(() => getStorage(config)).toThrowError()
-	})
+test('the assistant model must be a string', async () => {
+	await writeFile(configPath, 'ai:\n  model: 42\n')
+	expect(() => getConfig(configPath)).toThrow()
 })

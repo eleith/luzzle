@@ -56,5 +56,6 @@ piece; it does not update frontmatter for you.
 - Read validation output, not just the exit status; validation failures are logged.
 
 The optional `assistant` command sends your prompt, schema and supplied files to
-Google Gemini. Set `api_keys.google` in [config](cli/config.md), then use
-`luzzle assistant --help`. Review what you send and what comes back.
+Google Gemini. Set `api_keys.google` and optionally `ai.model` in
+[config](cli/config.md), then use `luzzle assistant --help`. Review what you send and
+what comes back.

@@ -25,6 +25,7 @@ The archive and the database's parent directory must already exist.
 | `database.type`   | `sqlite`                      | The supported database type.                 |
 | `database.path`   | `luzzle.sqlite` beside config | The derived index.                           |
 | `api_keys.google` | Unset                         | Optional Gemini assistant key.               |
+| `ai.model`        | `gemini-3.5-flash-lite`       | Assistant model; blank uses the default.     |
 
 YAML values do not expand `~`, `$HOME` or `${VARIABLE}`. There are no environment
 overrides for these settings; write the values in YAML. Keep secrets out of Git.
@@ -36,6 +37,8 @@ luzzle -c ./cli.yaml config path
 luzzle -c ./cli.yaml config storage.root
 luzzle -c ./cli.yaml config storage.root /absolute/path/to/archive
 luzzle -c ./cli.yaml config api_keys.google --remove
+luzzle -c ./cli.yaml config ai.model gemini-3.8-flash
+luzzle -c ./cli.yaml config ai.model --remove
 ```
 
 `config path` prints the selected filename. Plain `config` prints all settings,

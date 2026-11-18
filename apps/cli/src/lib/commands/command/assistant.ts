@@ -67,10 +67,11 @@ const command: Command<AssistantArgv> = {
 
 		const { piece } = await parsePieceOptionArgv(ctx, args)
 		const apiKey = ctx.config.get('api_keys.google', '')
+		const model = ctx.config.get('ai.model', '')
 		const metadata = await generatePieceFrontmatter(
 			apiKey,
 			{ schema: piece.schema, instructions: prompt },
-			{ files: file }
+			{ model, files: file }
 		)
 
 		if (update) {

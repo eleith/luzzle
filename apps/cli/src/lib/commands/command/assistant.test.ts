@@ -1,7 +1,7 @@
 import log from '../../log.js'
-import type { MockInstance } from 'vitest';
+import type { MockInstance } from 'vitest'
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import type { AssistantArgv } from './assistant.js';
+import type { AssistantArgv } from './assistant.js'
 import command from './assistant.js'
 import type { Arguments, Argv } from 'yargs'
 import yargs from 'yargs'
@@ -40,32 +40,42 @@ describe('lib/commands/assistant.ts', () => {
 		})
 	})
 
-	test.each([{ file: undefined }, { file: ['book.pdf', 'notes.txt'] }])('generates full metadata directly with files $file', async ({ file }) => {
-		const apiKeys = 'api_key'
-		const piece = makePieceMock()
-		const frontmatter = makeMarkdownSample().frontmatter
-		const prompt = 'prompt'
-		const ctx = makeContext({
-			config: {
-				get: vi.fn().mockReturnValueOnce(apiKeys),
-			},
-		})
+	test.each([
+		{ file: undefined, model: undefined },
+		{ file: ['book.pdf', 'notes.txt'], model: 'custom-model' },
+	])(
+		'generates full metadata directly with files $file and model $model',
+		async ({ file, model }) => {
+			const apiKeys = 'api_key'
+			const piece = makePieceMock()
+			const frontmatter = makeMarkdownSample().frontmatter
+			const prompt = 'prompt'
+			const ctx = makeContext({
+				config: {
+					get: vi.fn((key, defaultValue) => {
+						if (key === 'api_keys.google') return apiKeys
+						if (key === 'ai.model') return model ?? defaultValue
+						return defaultValue
+					}),
+				},
+			})
 
-		mocks.parseArgs.mockResolvedValueOnce({ piece })
-		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
-			frontmatter as unknown as Record<string, string | number | boolean>
-		)
+			mocks.parseArgs.mockResolvedValueOnce({ piece })
+			mocks.generatePieceFrontmatter.mockResolvedValueOnce(
+				frontmatter as unknown as Record<string, string | number | boolean>
+			)
 
-		await command.run(ctx, { prompt, file } as Arguments<AssistantArgv>)
+			await command.run(ctx, { prompt, file } as Arguments<AssistantArgv>)
 
-		expect(mocks.yamlStringify).toHaveBeenCalledOnce()
-		expect(mocks.consoleLog).toHaveBeenCalledOnce()
-		expect(mocks.generatePieceFrontmatter).toHaveBeenCalledWith(
-			apiKeys,
-			{ schema: piece.schema, instructions: prompt },
-			{ files: file }
-		)
-	})
+			expect(mocks.yamlStringify).toHaveBeenCalledOnce()
+			expect(mocks.consoleLog).toHaveBeenCalledOnce()
+			expect(mocks.generatePieceFrontmatter).toHaveBeenCalledWith(
+				apiKeys,
+				{ schema: piece.schema, instructions: prompt },
+				{ model: model ?? '', files: file }
+			)
+		}
+	)
 
 	test('must use update and create exclusively', async () => {
 		const update = 'path/to/piece'
@@ -76,7 +86,7 @@ describe('lib/commands/assistant.ts', () => {
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
-				get: vi.fn().mockReturnValueOnce(apiKeys),
+				get: vi.fn((key) => (key === 'api_keys.google' ? apiKeys : undefined)),
 			},
 		})
 
@@ -103,7 +113,7 @@ describe('lib/commands/assistant.ts', () => {
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
-				get: vi.fn().mockReturnValueOnce(apiKeys),
+				get: vi.fn((key) => (key === 'api_keys.google' ? apiKeys : undefined)),
 			},
 		})
 
@@ -121,7 +131,7 @@ describe('lib/commands/assistant.ts', () => {
 		expect(mocks.consoleLog).not.toHaveBeenCalled()
 	})
 
-	test('updates a piece', async () => {
+	test('updates a piece with an explicitly blank model', async () => {
 		const update = 'path/to/piece'
 		const apiKeys = 'api_key'
 		const piece = makePieceMock()
@@ -130,15 +140,17 @@ describe('lib/commands/assistant.ts', () => {
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
-				get: vi.fn().mockReturnValueOnce(apiKeys),
+				get: vi.fn((key) => {
+					if (key === 'api_keys.google') return apiKeys
+					if (key === 'ai.model') return ''
+					return undefined
+				}),
 			},
 		})
 
 		spies.pieceGet = vi.spyOn(piece, 'get').mockResolvedValueOnce(markdown)
 		spies.pieceWrite = vi.spyOn(piece, 'write').mockResolvedValueOnce()
-		spies.pieceSetFields = vi
-			.spyOn(piece, 'setFields')
-			.mockResolvedValueOnce(markdown)
+		spies.pieceSetFields = vi.spyOn(piece, 'setFields').mockResolvedValueOnce(markdown)
 
 		mocks.parseArgs.mockResolvedValueOnce({ piece })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
@@ -147,6 +159,11 @@ describe('lib/commands/assistant.ts', () => {
 
 		await command.run(ctx, { prompt, update } as Arguments<AssistantArgv>)
 
+		expect(mocks.generatePieceFrontmatter).toHaveBeenCalledWith(
+			apiKeys,
+			{ schema: piece.schema, instructions: prompt },
+			{ model: '', files: undefined }
+		)
 		expect(spies.pieceGet).toHaveBeenCalledWith(update)
 		expect(spies.pieceWrite).toHaveBeenCalledWith({ ...markdown, frontmatter })
 		expect(spies.pieceSetFields).toHaveBeenCalledWith(markdown, frontmatter)
@@ -160,7 +177,7 @@ describe('lib/commands/assistant.ts', () => {
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
-				get: vi.fn().mockReturnValueOnce(apiKeys),
+				get: vi.fn((key) => (key === 'api_keys.google' ? apiKeys : undefined)),
 			},
 		})
 
@@ -188,15 +205,13 @@ describe('lib/commands/assistant.ts', () => {
 		const prompt = 'prompt'
 		const ctx = makeContext({
 			config: {
-				get: vi.fn().mockReturnValueOnce(apiKeys),
+				get: vi.fn((key) => (key === 'api_keys.google' ? apiKeys : undefined)),
 			},
 		})
 
 		spies.pieceCreate = vi.spyOn(piece, 'create').mockResolvedValueOnce(markdown)
 		spies.pieceWrite = vi.spyOn(piece, 'write').mockResolvedValueOnce()
-		spies.pieceSetFields = vi
-			.spyOn(piece, 'setFields')
-			.mockResolvedValueOnce(markdown)
+		spies.pieceSetFields = vi.spyOn(piece, 'setFields').mockResolvedValueOnce(markdown)
 
 		mocks.parseArgs.mockResolvedValueOnce({ piece })
 		mocks.generatePieceFrontmatter.mockResolvedValueOnce(
@@ -215,7 +230,9 @@ describe('lib/commands/assistant.ts', () => {
 		const pending = Promise.withResolvers<Awaited<ReturnType<typeof generatePieceFrontmatter>>>()
 		mocks.parseArgs.mockResolvedValueOnce({ piece })
 		mocks.generatePieceFrontmatter.mockReturnValueOnce(pending.promise)
-		const running = command.run(makeContext(), { prompt: 'Find details' } as Arguments<AssistantArgv>)
+		const running = command.run(makeContext(), {
+			prompt: 'Find details',
+		} as Arguments<AssistantArgv>)
 		await vi.waitFor(() => expect(mocks.generatePieceFrontmatter).toHaveBeenCalledOnce())
 		expect(mocks.consoleLog).not.toHaveBeenCalled()
 		expect(mocks.logInfo).not.toHaveBeenCalled()
@@ -226,23 +243,26 @@ describe('lib/commands/assistant.ts', () => {
 		expect(mocks.consoleLog).toHaveBeenCalledOnce()
 	})
 
-	test.each([
-		{},
-		{ update: 'existing.books.md' },
-		{ directory: 'books', title: 'New book' },
-	])('does not apply or print a failed generation: %j', async (options) => {
-		const piece = makePieceMock()
-		mocks.parseArgs.mockResolvedValueOnce({ piece })
-		mocks.generatePieceFrontmatter.mockRejectedValueOnce(new Error('Invalid generated metadata'))
-		await expect(command.run(makeContext(), { prompt: 'Find details', ...options } as Arguments<AssistantArgv>))
-			.rejects.toThrow('Invalid generated metadata')
-		expect(piece.get).not.toHaveBeenCalled()
-		expect(piece.create).not.toHaveBeenCalled()
-		expect(piece.setFields).not.toHaveBeenCalled()
-		expect(piece.write).not.toHaveBeenCalled()
-		expect(mocks.consoleLog).not.toHaveBeenCalled()
-		expect(mocks.yamlStringify).not.toHaveBeenCalled()
-	})
+	test.each([{}, { update: 'existing.books.md' }, { directory: 'books', title: 'New book' }])(
+		'does not apply or print a failed generation: %j',
+		async (options) => {
+			const piece = makePieceMock()
+			mocks.parseArgs.mockResolvedValueOnce({ piece })
+			mocks.generatePieceFrontmatter.mockRejectedValueOnce(new Error('Invalid generated metadata'))
+			await expect(
+				command.run(makeContext(), {
+					prompt: 'Find details',
+					...options,
+				} as Arguments<AssistantArgv>)
+			).rejects.toThrow('Invalid generated metadata')
+			expect(piece.get).not.toHaveBeenCalled()
+			expect(piece.create).not.toHaveBeenCalled()
+			expect(piece.setFields).not.toHaveBeenCalled()
+			expect(piece.write).not.toHaveBeenCalled()
+			expect(mocks.consoleLog).not.toHaveBeenCalled()
+			expect(mocks.yamlStringify).not.toHaveBeenCalled()
+		}
+	)
 
 	test('builder', async () => {
 		const args = yargs()

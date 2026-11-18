@@ -9,6 +9,9 @@ type SchemaConfig = {
 	api_keys?: {
 		google?: string
 	}
+	ai?: {
+		model?: string
+	}
 	database?: {
 		type?: 'sqlite'
 		path?: string
@@ -64,6 +67,15 @@ const configOptions: Options<SchemaConfig> = {
 				},
 			},
 		},
+		ai: {
+			type: 'object',
+			properties: {
+				model: {
+					type: 'string',
+					description: 'Gemini model ID; omitted or blank uses the core default',
+				},
+			},
+		},
 	},
 }
 
@@ -116,6 +128,7 @@ function withDefaults(config: Conf<SchemaConfig>) {
 			...defaults.api_keys,
 			...store.api_keys,
 		},
+		...(store.ai?.model !== undefined ? { ai: store.ai } : {}),
 	}
 }
 
