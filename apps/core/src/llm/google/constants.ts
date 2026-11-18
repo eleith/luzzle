@@ -1,4 +1,4 @@
-export const MODEL_NAME = 'gemini-3.8-flash'
+export const DEFAULT_MODEL = 'gemini-3.5-flash-lite'
 export const REQUEST_TIMEOUT_MS = 5 * 60 * 1000
 export const FILE_POLL_MS = 5000
 export const CLEANUP_TIMEOUT_MS = 10_000

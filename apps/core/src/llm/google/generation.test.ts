@@ -132,7 +132,7 @@ describe('validated generation', () => {
 		])
 		expect(mocks.generate).toHaveBeenCalledExactlyOnceWith(
 			expect.objectContaining({
-				model: 'gemini-3.8-flash',
+				model: 'gemini-3.5-flash-lite',
 				contents: ['My instructions'],
 				config: expect.objectContaining({
 					candidateCount: 1,
@@ -140,6 +140,26 @@ describe('validated generation', () => {
 					responseJsonSchema: schema(),
 				}),
 			})
+		)
+	})
+
+	test('forwards model overrides for metadata and body without changing the default', async () => {
+		await run({ model: ' gemini-3.8-flash ' })
+		respond('# Generated body')
+		await generatePieceBody('key', { source: '' }, { model: 'gemini-4-carbon' })
+		await generatePieceBody('key', { source: '' })
+
+		expect(mocks.generate.mock.calls.map(([request]) => request.model)).toEqual([
+			'gemini-3.8-flash',
+			'gemini-4-carbon',
+			'gemini-3.5-flash-lite',
+		])
+	})
+
+	test('uses the default when the model override is blank', async () => {
+		await run({ model: ' \n ' })
+		expect(mocks.generate).toHaveBeenCalledExactlyOnceWith(
+			expect.objectContaining({ model: 'gemini-3.5-flash-lite' })
 		)
 	})
 

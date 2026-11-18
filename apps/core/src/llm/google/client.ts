@@ -11,7 +11,7 @@ import {
 import type { File as GeminiFile, GenerateContentResponse, Part } from '@google/genai'
 import type { PieceFrontmatter, PieceFrontmatterSchema } from '../../pieces/utils/frontmatter.js'
 import {
-	MODEL_NAME,
+	DEFAULT_MODEL,
 	REQUEST_TIMEOUT_MS,
 	FILE_POLL_MS,
 	CLEANUP_TIMEOUT_MS,
@@ -24,6 +24,7 @@ export type GenerationProgress = {
 }
 
 export type GenerationOptions = {
+	model?: string
 	files?: Array<string | Buffer>
 	onProgress?: (progress: GenerationProgress) => void | Promise<void>
 }
@@ -196,6 +197,7 @@ export async function runGeneration(
 	task: GenerationTask,
 	options: GenerationOptions
 ): Promise<string> {
+	const model = options.model?.trim() || DEFAULT_MODEL
 	const files = options.files ?? []
 	if (files.length > DEFAULT_GENERATION_LIMITS.maxFiles)
 		throw new Error('Too many generation attachments.')
@@ -209,7 +211,7 @@ export async function runGeneration(
 		const attachments = await prepareAttachments(context, files)
 		progress(context, 'generation', 'Generating content.')
 		const response = await context.client.models.generateContent({
-			model: MODEL_NAME,
+			model,
 			contents: [...task.prompt, ...attachments],
 			config: {
 				candidateCount: 1,
