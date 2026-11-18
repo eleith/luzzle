@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation'
 	import { resolve } from '$app/paths'
-	import PieceIcon from '#lib/pieces/components/icon.svelte'
+	import ClientListingIcon from '#lib/pieces/components/ClientListingIcon.svelte'
 	import SearchForm from '#lib/components/layout/simple/SearchForm.svelte'
 	import type { PageProps } from './$types'
 
@@ -77,10 +77,14 @@
 						}}
 					>
 						<div class="piece-card">
-							<div class="piece-icon">
+							<div class="piece-icon" aria-hidden="true">
 								<div style="display: flex;">
 									<div style="align-self: baseline;">
-										<PieceIcon {piece} size={{ width: 125 }} active={activePieceId === piece.id} />
+										<ClientListingIcon
+											{piece}
+											size={{ width: 125 }}
+											active={activePieceId === piece.id}
+										/>
 									</div>
 								</div>
 							</div>

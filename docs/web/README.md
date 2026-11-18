@@ -22,8 +22,9 @@ titles and links on the server, then load only the icon templates their results 
 in the browser. Pagination and any configured home Markdown also remain
 server-rendered. A small, static puzzle-piece placeholder occupies reserved card
 space until the icon loads. Without JavaScript or after a loading failure, the
-placeholder stays visible and the text links remain usable. Search and individual public piece pages retain their server-rendered
-designs.
+placeholder stays visible and the text links remain usable. Search results use the same lazy icons, including type-filtered
+searches; forms, summaries, and navigation remain server-rendered.
+Individual public piece pages retain their server-rendered designs.
 
 ## Using the editor
 
