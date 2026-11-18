@@ -74,9 +74,24 @@ lists. `title: title` reads metadata, not literal text. See
   Home defaults to latest on, random off; feed links default on.
 - Theme tokens: `theme.light`, `.dark`, and `.globals`; quote hex colors.
   `theme.markdown.code.light` and `.dark` default to `github-light` and `github-dark`.
-- AI: omit `ai` to disable, or set `provider: google` and `api_key`.
+- AI: see [generation settings](#ai-generation) for credentials and model selection.
 - Sync: see [remote sync](deployment.md#optional-remote-sync).
   Keep `assets.salt` stable to preserve published asset URLs.
+
+## AI generation
+
+Omit `ai` to disable generation.
+
+```yaml
+ai:
+  provider: google
+  api_key: ${GOOGLE_API_KEY}
+  model: gemini-3.8-flash # Optional.
+```
+
+Omitted or blank model strings use `gemini-3.5-flash-lite`. The model applies to
+metadata and body generation. Restart web after changing it; no rebuild is needed.
+See [Google's model catalog](https://aistudio.google.com/docs/models) for other choices.
 
 ## Site images
 

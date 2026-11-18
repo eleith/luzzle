@@ -20,6 +20,8 @@ import {
 import { createGenerationStream } from './generation/stream'
 import { MAX_CONCURRENT_GENERATIONS } from './constants'
 
+type ConfigAi = NonNullable<typeof config.ai>
+
 let active = 0
 
 export async function generateResponse(request: Request): Promise<Response> {
@@ -35,10 +37,10 @@ export async function generateResponse(request: Request): Promise<Response> {
 		const form = await request.formData()
 		const target = form.get('target')
 		if (target === 'fields') {
-			return await generateFieldsResponse(request, form, ai.api_key, release)
+			return await generateFieldsResponse(request, form, ai, release)
 		}
 		if (target === 'body') {
-			return await generateBodyResponse(request, form, ai.api_key, release)
+			return await generateBodyResponse(request, form, ai, release)
 		}
 		error(400, 'Choose metadata fields or the body.')
 	} catch (cause) {
@@ -50,7 +52,7 @@ export async function generateResponse(request: Request): Promise<Response> {
 async function generateFieldsResponse(
 	request: Request,
 	form: FormData,
-	apiKey: string,
+	ai: ConfigAi,
 	release: () => void
 ): Promise<Response> {
 	const file = form.get('file')
@@ -63,7 +65,7 @@ async function generateFieldsResponse(
 	if (unknownKeys) error(400, 'Choose top-level metadata fields.')
 
 	const stream = createGenerationStream(request)
-	const work = generateFieldsDocument(apiKey, input, schema, stream.progress)
+	const work = generateFieldsDocument(ai, input, schema, stream.progress)
 	void stream.sendResult(work, release)
 	return stream.response
 }
@@ -71,12 +73,12 @@ async function generateFieldsResponse(
 async function generateBodyResponse(
 	request: Request,
 	form: FormData,
-	apiKey: string,
+	ai: ConfigAi,
 	release: () => void
 ): Promise<Response> {
 	const input = await readBodyInput(form)
 	const stream = createGenerationStream(request)
-	const work = generateBodyDocument(apiKey, input, stream.progress)
+	const work = generateBodyDocument(ai, input, stream.progress)
 	void stream.sendResult(work, release)
 	return stream.response
 }
@@ -98,29 +100,29 @@ async function loadFieldSchema(file: string): Promise<PieceFrontmatterSchema<Pie
 }
 
 async function generateFieldsDocument(
-	apiKey: string,
+	ai: ConfigAi,
 	input: FieldsGenerationInput,
 	schema: PieceFrontmatterSchema<PieceFrontmatter>,
 	progress: (event: GenerationProgress) => void
 ): Promise<GenerationResult> {
 	const fields = await generatePieceFrontmatter(
-		apiKey,
+		ai.api_key,
 		{ source: input.source, instructions: input.instructions, schema, keys: input.keys },
-		{ files: input.files, onProgress: progress }
+		{ model: ai.model, files: input.files, onProgress: progress }
 	)
 	const markdown = await mergeGeneratedFields(input.source, fields)
 	return { markdown }
 }
 
 async function generateBodyDocument(
-	apiKey: string,
+	ai: ConfigAi,
 	input: BodyGenerationInput,
 	progress: (event: GenerationProgress) => void
 ): Promise<GenerationResult> {
 	const body = await generatePieceBody(
-		apiKey,
+		ai.api_key,
 		{ source: input.source, instructions: input.instructions },
-		{ files: input.files, onProgress: progress }
+		{ model: ai.model, files: input.files, onProgress: progress }
 	)
 	const markdown = appendGeneratedBody(input.source, body)
 	return { markdown }

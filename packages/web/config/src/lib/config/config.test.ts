@@ -238,12 +238,21 @@ pieces:
 		vi.stubEnv("CONFIG_TEST_TITLE", "title: # remains a string");
 		vi.stubEnv("CONFIG_TEST_MEDIA", "cover");
 		vi.stubEnv("CONFIG_TEST_AI_KEY", "google-key");
+		vi.stubEnv("CONFIG_TEST_AI_MODEL", "operator-model");
 		// The public validator, like the filesystem loader, defaults to process.env.
 		expect(
 			validateConfig({
-				ai: { provider: "google", api_key: "${CONFIG_TEST_AI_KEY}" },
-			}).ai?.api_key,
-		).toBe("google-key");
+				ai: {
+					provider: "google",
+					api_key: "${CONFIG_TEST_AI_KEY}",
+					model: "${CONFIG_TEST_AI_MODEL}",
+				},
+			}).ai,
+		).toEqual({
+			provider: "google",
+			api_key: "google-key",
+			model: "operator-model",
+		});
 		writeFileSync(
 			filename,
 			`
@@ -255,6 +264,7 @@ auth:
 ai:
   provider: google
   api_key: '\${CONFIG_TEST_AI_KEY}'
+  model: '\${CONFIG_TEST_AI_MODEL}'
 pieces:
   - type: book
     fields:
@@ -265,7 +275,11 @@ pieces:
 		);
 		const config = loadConfig(filename);
 		expect(config.auth?.secret).toBe("test-secret");
-		expect(config.ai?.api_key).toBe("google-key");
+		expect(config.ai).toEqual({
+			provider: "google",
+			api_key: "google-key",
+			model: "operator-model",
+		});
 		expect(config.pieces[0].fields.title).toBe("title: # remains a string");
 		expect(config.pieces[0].fields.media).toEqual(["cover"]);
 	});
@@ -498,12 +512,22 @@ describe("validateConfig", () => {
 		});
 	});
 
+	test.each(["operator-model", "", " \t "])(
+		"preserves an explicit AI model %j without applying a default",
+		(model) => {
+			const ai = { provider: "google", api_key: "key", model };
+			expect(validateConfig({ ai }, {}).ai).toEqual(ai);
+		},
+	);
+
 	test.each([
 		{},
 		{ provider: "google" },
 		{ api_key: "key" },
 		{ provider: "google", api_key: "" },
 		{ provider: "other", api_key: "key" },
+		{ provider: "google", api_key: "key", model: null },
+		{ provider: "google", api_key: "key", model: 42 },
 		null,
 	])("rejects incomplete or invalid AI %j", (ai) => {
 		expect(() => validateConfig({ ai }, {})).toThrow(ConfigError);

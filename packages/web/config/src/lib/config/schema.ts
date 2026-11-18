@@ -152,6 +152,13 @@ const AiSchema = Type.Object(
 			description: "Provider API key or an explicit environment reference.",
 			examples: ["${GOOGLE_API_KEY}"],
 		}),
+		model: Type.Optional(
+			Type.String({
+				description:
+					"Optional Gemini model ID. Omitted or blank values use the core default.",
+				examples: ["gemini-3.8-flash"],
+			}),
+		),
 	},
 	{
 		additionalProperties: false,

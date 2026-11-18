@@ -6,6 +6,7 @@ import {
 	type PieceFrontmatter,
 	type PieceFrontmatterSchema
 } from '@luzzle/core'
+import type { Config } from '@luzzle/web.config'
 import type { GenerationEvent } from '#lib/generation/types.js'
 import { POST } from '../../routes/(auth)/api/admin/generate/+server'
 
@@ -14,7 +15,7 @@ const fixture = vi.hoisted(() => {
 	return {
 		ai,
 		config: {
-			ai: ai as typeof ai | undefined,
+			ai: ai as Config['ai'],
 			pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date' } }]
 		},
 		provider: {
@@ -168,14 +169,19 @@ function failed(frames: GenerationEvent[]) {
 	expect(JSON.stringify(frames)).not.toContain('"markdown"')
 }
 
-test.each([{ keys: ['title'] }, { keys: ['title', 'body'] }])(
+test.each([
+	{ keys: ['title'], model: 'operator-metadata-model' },
+	{ keys: ['title', 'body'], model: undefined }
+])(
 	'metadata generation merges selected fields in one operation: $keys',
-	async ({ keys }) => {
+	async ({ keys, model }) => {
+		fixture.config.ai = { ...fixture.ai, model }
 		const generated = Object.fromEntries(keys.map((key) => [key, `Generated ${key}`]))
 		fixture.provider.generate.mockResolvedValue(completion(JSON.stringify(generated)))
 		const data = form(keys)
 		data.append('files', new File(['attachment'], 'source.txt'))
 		data.set('api_key', 'untrusted-browser-key')
+		data.set('model', 'untrusted-browser-model')
 		data.set('schema', JSON.stringify({ type: 'object' }))
 		const response = await post(request(data))
 		expect(response.headers.get('content-type')).toBe('text/event-stream')
@@ -186,6 +192,7 @@ test.each([{ keys: ['title'] }, { keys: ['title', 'body'] }])(
 		})
 		expect(fixture.provider.generate).toHaveBeenCalledTimes(1)
 		const call = fixture.provider.generate.mock.calls[0][0]
+		expect(call.model).toBe(model ?? 'gemini-3.5-flash-lite')
 		expect(call.config.responseJsonSchema.properties).toEqual(
 			Object.fromEntries(keys.map((key) => [key, schema.properties[key]]))
 		)
@@ -234,16 +241,28 @@ test('nullable generated fields complete with null-free metadata without overwri
 })
 
 test('body append preserves unsaved metadata and notes without validating untouched values', async () => {
-	const frames = await events(await post())
+	fixture.config.ai = { ...fixture.ai, model: 'operator-body-model' }
+	const data = form()
+	data.set('model', 'untrusted-browser-model')
+	const frames = await events(await post(request(data)))
 	expect(result(frames)).toBe(`${source}\n\n# Generated body`)
 	expect(await extractFullMarkdown(result(frames))).toMatchObject({
 		frontmatter: { title: 'Unsaved', body: 'Metadata body', cover: 'unfinished' },
 		markdown: 'Actual unsaved body\n\n\n# Generated body'
 	})
 	const call = fixture.provider.generate.mock.calls[0][0]
+	expect(call.model).toBe('operator-body-model')
 	expect(call.config).not.toHaveProperty('responseJsonSchema')
 	expect(call.contents.join('\n')).toContain(JSON.stringify(source))
 	expect(fixture.storage.readFile).not.toHaveBeenCalled()
+})
+
+test('a blank configured model uses the core default', async () => {
+	fixture.config.ai = { ...fixture.ai, model: ' \t ' }
+	await events(await post())
+	expect(fixture.provider.generate).toHaveBeenCalledWith(
+		expect.objectContaining({ model: 'gemini-3.5-flash-lite' })
+	)
 })
 
 test.each([

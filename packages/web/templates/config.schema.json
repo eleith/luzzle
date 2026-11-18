@@ -310,6 +310,13 @@
             "${GOOGLE_API_KEY}"
           ],
           "type": "string"
+        },
+        "model": {
+          "description": "Optional Gemini model ID. Omitted or blank values use the core default.",
+          "examples": [
+            "gemini-3.8-flash"
+          ],
+          "type": "string"
         }
       }
     },

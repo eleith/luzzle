@@ -64,6 +64,12 @@ pieces:
 #     username: '${LUZZLE_AUTH_USERNAME}'
 #     password: '${LUZZLE_AUTH_PASSWORD}'
 
+# Optional AI generation; omit to disable. Metadata and body use the same model.
+# ai:
+#   provider: google
+#   api_key: '${GOOGLE_API_KEY}'
+#   model: gemini-3.8-flash # Omit or leave blank for core's default Flash-Lite model.
+
 # Optional ordinary Markdown files. Create them before enabling these settings.
 # Paths below resolve from /app/config.yaml, so ./content means /app/content.
 # pages:

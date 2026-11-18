@@ -75,7 +75,7 @@ describe("index (package entry point)", () => {
 			config.theme.globals["font-size-root"],
 		).toEqualTypeOf<number>();
 		expectTypeOf<Config["ai"]>().toEqualTypeOf<
-			{ provider: "google"; api_key: string } | undefined
+			{ provider: "google"; api_key: string; model?: string } | undefined
 		>();
 		expectTypeOf<Config["auth"]>().toEqualTypeOf<
 			| { secret: string; credentials: { username: string; password: string } }
