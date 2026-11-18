@@ -1,5 +1,11 @@
 # @luzzle/core
 
+## 0.0.251
+
+### Patch Changes
+
+- 3b796b6: Use gemini-3.5-flash-lite as the shared generation default and support an optional per-call model override for metadata and body generation. Omitted or blank overrides use the default.
+
 ## 0.0.250
 
 ## 0.0.249

@@ -1,5 +1,31 @@
 # @luzzle/web
 
+## 0.0.251
+
+### Patch Changes
+
+- cd78d70: Show HTML and Image sections in Share views for comparing the selectively loaded browser Open Graph composition with the responsive recorded Takumi PNG. Keep the generated image available without JavaScript, clickable for full-size inspection, with publication versioning and private preview asset URLs preserved. Use centered, theme-colored loading spinners for Page, Icon, and Share previews, with accessible labels and reduced-motion support.
+- 4cd4f1d: Load only the selected Page and Icon templates in authenticated admin viewers. Published and job-based Preview views now have dedicated URLs; their Page/Icon content requires JavaScript, while Overview, PNG Share, and public pages retain server rendering.
+- 654ce61: Simplify the development launcher and remove its unused production build-at-startup path and obsolete piece-type environment-file script. Production continues to start prebuilt output through its existing launcher. Consolidate overlapping launcher tests while retaining origin validation, startup ordering, and configuration replacement coverage.
+- 307ed3b: Give each mounted editor its own language-assistance connection, await initialization before attaching it, and close pending connections when navigating away. Retry once automatically, provide a local Retry action after failure, and reconnect using the current unsaved buffer without recreating the editor or changing Save behavior.
+- 190badb: Show recorded Open Graph PNGs alongside the browser HTML composition in published and preview Share views. Images fit mobile and desktop screens and open directly in a new tab when clicked. Published image URLs include the publication timestamp so republishing does not reuse a stale browser-cached image. Report missing images independently of the browser composition.
+- 3126e96: Generate public page and icon route adapters from the template package's existing catalogs before development, builds, and type checks. Keep generated adapters out of version control while preserving direct component imports, shared server loaders, public URLs, and runtime template selection without reading site configuration during generation. Provide a cleanup command that removes only marked generated adapters, preserving shared layouts and handwritten files.
+- 1fa700f: Load only the icon templates used by the mixed all-pieces index and the home page's latest/random collections in the browser, while preserving server-rendered titles, links, pagination, and home Markdown. Reserve card space so icons can load without shifting surrounding content. Show a small, static puzzle-piece placeholder until each icon loads. Type-specific listings and individual public piece pages retain their server-rendered designs.
+- 66d7548: Load search-result icon templates in the browser instead of importing the full icon catalog. Preserve server-rendered forms, titles, links, filters and pagination, with the existing static puzzle placeholder for loading, failure and no-JavaScript browsing.
+- 589e608: Load tagged-piece icon templates lazily while retaining server-rendered titles and links. Preserve hover behavior without remounting icons.
+- 7c1ae7d: Move client template loading and shared component contracts into the template package. Keep application loading/error UI, navigation and asset policies in web, with unchanged template selection and rendering behavior. Replace template style checks and duplicated rendering matrices with focused package content tests and application behavior checks.
+- 15bf951: Use a transparent, theme-colored navbar on snippet pages, matching note pages.
+- 84907f1: Remove the legacy public page entrypoint and unused eager template renderers now that configured piece URLs use generated, template-specific server-rendered routes. Preserve metadata and loading behavior, and keep the public edit-source shortcut in application chrome rather than template routing. Unknown or malformed public paths continue to use framework error handling.
+- e6ca883: Restore HTTP(S) URL shorthand in editor asset fields on Save using the existing attachment machinery. Ordinary saves remain unchanged; URL-converting saves rewrite frontmatter with local asset paths while preserving the body. Update an unchanged editor with saved text, leave newer drafts alone, and preserve the draft when downloads fail.
+- 1fa700f: Render type-specific piece listings through dedicated icon-template routes so SvelteKit delivers only the selected icon styles while preserving server-rendered cards, public URLs, and pagination. Derive icon routing from runtime YAML using the same selection rules as field hydration, and redirect direct internal route visits to the canonical public listing.
+- 4cd4f1d: Load only the required icon styles on individual public piece pages through native component dependency splitting. Small styles remain automatically inlined by SvelteKit.
+- 646a103: Centralize public piece and listing data loaders for reuse by template layouts instead of repeated per-template server adapters. Preserve public URLs, canonical redirects, metadata, and listing filters while keeping direct component imports in each template route.
+- 4c8d000: Use dedicated routes for public page templates so SvelteKit selects their assets while preserving public URLs and runtime YAML selection. Pass the YAML-derived public template-name map through SvelteKit's runtime bootstrap, avoiding routing lookup requests and custom browser metadata. Upgrade Vite to fix stylesheet readiness during client navigation.
+- 0ec97bd: Allow an optional server-side ai.model setting for metadata and body generation. Omitted or blank values use core's shared default, and model changes require only a web restart. Keep model selection out of browser requests and public configuration.
+- @luzzle/web.db@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.250
 
 ### Patch Changes

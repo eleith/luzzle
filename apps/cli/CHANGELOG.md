@@ -1,5 +1,13 @@
 # @luzzle/cli
 
+## 0.0.251
+
+### Patch Changes
+
+- c4eb28c: Support persistent ai.model configuration for the assistant command. Omitted or blank values use core's shared default. Keep the existing api_keys.google credential setting and add no model flag.
+- Updated dependencies [3b796b6]
+  - @luzzle/core@0.0.251
+
 ## 0.0.250
 
 ### Patch Changes

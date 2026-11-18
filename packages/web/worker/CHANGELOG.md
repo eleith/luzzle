@@ -1,5 +1,16 @@
 # @luzzle/web.worker
 
+## 0.0.251
+
+### Patch Changes
+
+- Updated dependencies [3b796b6]
+  - @luzzle/core@0.0.251
+  - @luzzle/web.db@0.0.1
+  - @luzzle/web.jobs@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.250
 
 ### Patch Changes
