@@ -57,6 +57,8 @@ selected component directly.
 
 The public page/icon route adapters are generated from the existing template schema
 catalogs and are ignored by Git. Shared layouts and server loaders remain handwritten.
+Public piece pages use these adapters without an eager catalog fallback; unknown URLs
+use normal framework error handling.
 Do not edit generated `+page.svelte` files; change the template or the generator in
 `scripts/template-routes/generate.js` instead. That folder groups the generate/clean
 entrypoints, shared file helpers, and their behavior test.

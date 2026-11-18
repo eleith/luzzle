@@ -1,6 +1,7 @@
 import { type AppConfigPublic } from '#lib/server/config.js'
 import type { LuzzleSession as Session } from '#lib/server/auth/index.js'
 import type { ErrorPresentation } from '#lib/content/errors.js'
+import type { PublicWebPiece } from '@luzzle/web.pieces'
 
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
@@ -14,6 +15,7 @@ declare global {
 			auth(): Promise<Session | null>
 		}
 		interface PageData {
+			piece?: PublicWebPiece | null
 			pieceTypes: string[]
 			session?: Session | null
 			config: AppConfigPublic

@@ -68,12 +68,16 @@ test('client navigation refreshes listing and page layout data without reloading
 	).toHaveAttribute('aria-haspopup', 'dialog')
 	await page.evaluate(() => {
 		document.documentElement.dataset.listingNavigation = 'same-document'
+		localStorage.setItem('luzzle.admin', 'true')
 	})
+	const editSource = page.getByRole('link', { name: 'edit source', exact: true })
+	await expect(editSource).toHaveCount(0)
 	await page.getByRole('main').getByRole('link', { name: fieldGuide.type, exact: true }).click()
 	await expect(page).toHaveURL(`${baseURL}/pieces/${fieldGuide.type}`)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')
 	await expect(page.locator('.piece-card')).toHaveCount(1)
 	await expect(page.locator('.piece-icon .recipe-card .card-title')).toHaveText(fieldGuide.title)
+	await expect(editSource).toHaveCount(0)
 	await expect(page.getByRole('link', { name: fieldGuide.title, exact: true })).toBeVisible()
 	await expect(page.locator('.icon-placeholder')).toHaveCount(0)
 
@@ -103,6 +107,7 @@ test('client navigation refreshes listing and page layout data without reloading
 	await expect(page).toHaveURL(`${baseURL}${notebook.publicUrl}`)
 	await expect(page.getByRole('heading', { name: notebook.title, exact: true })).toBeVisible()
 	await expect(page).toHaveTitle(`${notebook.title} | E2E Garden`)
+	await expect(editSource).toHaveJSProperty('href', `${baseURL}/admin/open/notes/meteor-notebook`)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')
 
 	// The same page template must refresh when only the slug changes.
@@ -110,11 +115,18 @@ test('client navigation refreshes listing and page layout data without reloading
 	await expect(page).toHaveURL(`${baseURL}/pieces/notes/forest-notebook`)
 	await expect(page.getByRole('heading', { name: 'Forest Notebook', exact: true })).toBeVisible()
 	await expect(page).toHaveTitle('Forest Notebook | E2E Garden')
+	await expect(editSource).toHaveJSProperty('href', `${baseURL}/admin/open/notes/forest-notebook`)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')
 
 	await clickInjectedNavigationLink(fieldGuide.publicUrl)
 	await expect(page).toHaveURL(`${baseURL}${fieldGuide.publicUrl}`)
 	await expect(page.getByRole('heading', { name: fieldGuide.title, exact: true })).toBeVisible()
 	await expect(page).toHaveTitle(`${fieldGuide.title} | E2E Garden`)
+	await expect(editSource).toHaveJSProperty('href', `${baseURL}/admin/open/records/field-guide`)
+	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')
+
+	await clickInjectedNavigationLink('/pieces/notes/missing')
+	await expect(page).toHaveURL(`${baseURL}/pieces/notes/missing`)
+	await expect(editSource).toHaveCount(0)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')
 })

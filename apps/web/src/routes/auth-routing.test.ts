@@ -70,7 +70,6 @@ test.each([
 		'/rss/pieces/[[piece]]/feed.[format=feedFormat]',
 		'/rss/pieces/[[piece]]/feed.[format=feedFormat]'
 	],
-	['/pieces/[piece]/[slug]', '/pieces/[piece]/[slug]'],
 	['/search', '/search'],
 	['/tags/[tag]', '/tags/[tag]'],
 	['/api/health', '/api/health'],

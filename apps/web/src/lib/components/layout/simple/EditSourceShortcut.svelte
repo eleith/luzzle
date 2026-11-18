@@ -1,12 +1,9 @@
 <script lang="ts">
-	import SeoHead from '#lib/components/layout/simple/SeoHead.svelte'
 	import CodeBlockIcon from 'virtual:icons/ph/code-block'
-	import { page } from '$app/state'
 	import { resolve } from '$app/paths'
 	import { onMount } from 'svelte'
 
-	const { children } = $props()
-
+	let { pieceType, slug }: { pieceType: string; slug: string } = $props()
 	let isAdmin = $state(false)
 
 	onMount(() => {
@@ -14,13 +11,10 @@
 	})
 </script>
 
-<SeoHead />
-{@render children()}
-
 {#if isAdmin}
 	<aside aria-label="Admin Actions">
 		<a
-			href={resolve(`admin/open/${page.params.piece}/${page.params.slug}`)}
+			href={resolve(`admin/open/${pieceType}/${slug}`)}
 			class="edit-shortcut"
 			aria-label="edit source"
 		>

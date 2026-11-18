@@ -1,7 +1,8 @@
 <script lang="ts">
-	import PieceLayout from '../../pieces/[piece]/[slug]/+layout@.svelte'
+	import SeoHead from '#lib/components/layout/simple/SeoHead.svelte'
 
-	let { children } = $props()
+	const { children } = $props()
 </script>
 
-<PieceLayout {children} />
+<SeoHead />
+{@render children()}

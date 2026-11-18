@@ -1,5 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest'
-import { load } from './+page.server.js'
+import { loadPiece as load } from './piece.js'
 
 const { query, hydrateWithAssets, config } = vi.hoisted(() => ({
 	query: {

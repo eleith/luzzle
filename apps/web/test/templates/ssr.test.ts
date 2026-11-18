@@ -390,7 +390,7 @@ describe('configured error pages through the native fixture HTTP server', () => 
 		const unknown = await errorHtml('unknown', 500)
 		expect(unknown).toContain('Internal Error')
 		expect(unknown).not.toContain('Fixture private failure')
-		expect(await request()).toContain('Catalog title')
+		expect(await request()).toContain('Fixture healthy page')
 		await writeFile(path.join(directory, 'sections/error-missing.md'), '# Recovered missing copy')
 		expect(await errorHtml(404)).not.toContain('Recovered missing copy')
 		await stopFixture()

@@ -126,11 +126,11 @@ test('search stays usable without JavaScript, including mixed and typed result p
 	}
 })
 
-test('a server-rendered error page can navigate to a piece without a document reload', async ({
+test('an unconfigured public piece URL can navigate to a configured piece without a document reload', async ({
 	page,
 	baseURL
 }) => {
-	const response = await page.goto('/missing-routing-example')
+	const response = await page.goto('/pieces/unconfigured-kind/missing')
 	expect(response?.status()).toBe(404)
 	await expect(
 		page.getByRole('navigation', { name: 'Global' }).getByLabel('search', { exact: true })
