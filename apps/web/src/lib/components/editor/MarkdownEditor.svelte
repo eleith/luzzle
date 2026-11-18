@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { onMount, onDestroy, mount, unmount, type Snippet } from 'svelte'
+	import { onMount, mount, unmount, type Snippet } from 'svelte'
 	import { EditorView } from 'codemirror'
 	import { EditorState, Compartment } from '@codemirror/state'
 	import { configuredTheme } from './themes/configured'
 	import { createEditorExtensions } from './config'
-	import { createLSPExtension, destroyLSPClient } from './lsp'
+	import { createEditorLspSession } from './lsp'
+	import { closeCompletion } from '@codemirror/autocomplete'
+	import { setDiagnostics } from '@codemirror/lint'
 	import { luzzleFieldEditor } from './extensions/luzzleFieldEditor'
 	import { luzzleAssetEditor } from './extensions/luzzleAssetEditor'
 	import { replaceDocument } from './replace-document'
@@ -51,6 +53,8 @@
 	let editorContainer: HTMLDivElement
 	let view: EditorView
 	let keybindings: ReturnType<typeof createEditorKeybindings>
+	let lspSession: ReturnType<typeof createEditorLspSession> | undefined
+	let lspUnavailable = $state(false)
 	const themeConfig = new Compartment()
 	const lspConfig = new Compartment()
 	const fieldEditorConfig = new Compartment()
@@ -121,13 +125,16 @@
 		view.focus()
 
 		if (file) {
-			createLSPExtension(`luzzle-web:///archive/${file}`)
-				.then((ext) => {
-					view.dispatch({ effects: lspConfig.reconfigure(ext) })
-				})
-				.catch((e) => {
-					console.error('[lsp] failed to create extension:', e)
-				})
+			lspSession = createEditorLspSession(file, {
+				setExtension(extension) {
+					closeCompletion(view)
+					view.dispatch({ effects: lspConfig.reconfigure(extension ?? []) })
+					if (!extension) view.dispatch(setDiagnostics(view.state, []))
+				},
+				setUnavailable(unavailable) {
+					lspUnavailable = unavailable
+				}
+			})
 		}
 
 		updateTheme()
@@ -143,6 +150,9 @@
 
 		return () => {
 			observer.disconnect()
+			lspSession?.dispose()
+			lspSession = undefined
+			view.destroy()
 		}
 	})
 
@@ -155,13 +165,6 @@
 	$effect(() => {
 		const enabled = vimEnabled
 		if (view && keybindings) keybindings.setEnabled(view, enabled)
-	})
-
-	onDestroy(() => {
-		if (view) {
-			view.destroy()
-		}
-		destroyLSPClient()
 	})
 
 	export function insertText(text: string) {
@@ -204,6 +207,12 @@
 			{@render toolbar()}
 		</div>
 	{/if}
+	{#if lspUnavailable}
+		<p class="lsp-notice" role="status">
+			Language assistance unavailable. Editing and saving still work.
+			<button type="button" onclick={() => lspSession?.retry()}>Retry</button>
+		</p>
+	{/if}
 	<div class="editor-body" bind:this={editorContainer}></div>
 </div>
 
@@ -221,6 +230,11 @@
 		border-radius: var(--radius-medium);
 		overflow: hidden;
 		transition: background-color 0.2s ease;
+	}
+
+	.lsp-notice {
+		margin: 0;
+		padding: var(--space-2) var(--space-4);
 	}
 
 	.editor-toolbar {

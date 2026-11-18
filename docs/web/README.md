@@ -36,6 +36,11 @@ updates the editor unless you have typed newer changes, in which case your draft
 left alone and remains unsaved. **Saved** means the file is saved, not published. **Publish** requires a saved editor and publishes only that piece. You can keep
 typing and saving while it runs.
 
+Completion and diagnostics use a connection owned by the current editor. If it
+fails, the editor retries once automatically. After that, an unavailable notice
+provides **Retry** without reloading or discarding your draft; editing and saving
+continue to work. Opening another file starts a new connection.
+
 The editor's bottom status bar shows one short description on the right, such as
 **Up to date**, **Unsaved**, **Saved changes**, or **Unpublished**.
 This uses the existing saved-Markdown comparison; it does not track changes to
