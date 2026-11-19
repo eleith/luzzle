@@ -42,6 +42,7 @@ beforeEach(() => vi.resetAllMocks())
 test('GET returns the exact shared publication state for the canonical filename without queueing', async () => {
 	const state = {
 		hasPublishedVersion: true,
+		publicPath: '/pieces/books/published-book',
 		markdownPublicationStatus: MarkdownPublicationStatus.CHANGED
 	}
 	vi.mocked(getPiecePublicationState).mockResolvedValue(state)

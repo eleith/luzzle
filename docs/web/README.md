@@ -52,8 +52,9 @@ attachment bytes, templates, or the renderer.
 On phones the same **More** button opens a text-only bottom sheet with editor colors and the search dialog's spacing and motion.
 **Format** formats the current buffer, including frontmatter. It is undoable and does
 not save; use **Save** when ready. Use **Attach** to download or upload assets explicitly.
-**Preview** always generates a fresh preview of the saved file; save your edits first.
-**View published** opens the existing public version's Overview.
+Under **View**, **Preview draft** generates a fresh preview of the saved file;
+save your edits first. Once the piece is published, **Public page** opens the live
+page directly and **Published details** opens its admin Overview.
 
 Published viewers live at `/admin/view/published/<file>`; preview viewers use
 `/admin/view/preview/<jobId>`. Both have **Overview**, **Page**, **Icon**, and **Share**

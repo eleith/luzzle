@@ -1,11 +1,13 @@
 import { db } from '#lib/server/database/index.js'
 import { getWebPiece } from '#lib/server/pieces.js'
+import { publicPieceHref } from './navigation.js'
 import { MarkdownPublicationStatus, type PiecePublicationState } from './types.js'
 
 export async function getPiecePublicationState(file: string): Promise<PiecePublicationState> {
 	const webPiece = await getWebPiece(db, file)
 	return {
 		hasPublishedVersion: Boolean(webPiece),
+		publicPath: webPiece?.slug ? publicPieceHref(webPiece) : null,
 		markdownPublicationStatus: await getMarkdownPublicationStatus(file, webPiece?.content_hash)
 	}
 }

@@ -4,6 +4,7 @@ import { db } from '#lib/server/database/index.js'
 import { config } from '#lib/server/config.js'
 import { getWebPiece } from '#lib/server/pieces.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
+import { publicPageUrl, publicPieceHref } from '#lib/pieces/navigation.js'
 import { getMarkdownPublicationStatus } from '#lib/pieces/publication.server.js'
 
 export const load: LayoutServerLoad = async ({ params, url, locals }) => {
@@ -19,10 +20,7 @@ export const load: LayoutServerLoad = async ({ params, url, locals }) => {
 		.where('piece_id', '=', piece.id)
 		.execute()
 
-	const publishedUrl = new URL(config.url.app || '/', url.origin)
-	publishedUrl.pathname = `${publishedUrl.pathname.replace(/\/+$/, '')}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`
-	publishedUrl.search = ''
-	publishedUrl.hash = ''
+	const publishedUrl = publicPageUrl(config.url.app, url.origin, publicPieceHref(piece))
 
 	return {
 		file: params.path,
@@ -32,6 +30,6 @@ export const load: LayoutServerLoad = async ({ params, url, locals }) => {
 			lastPublishedAt: webPiece.last_published_at ?? null,
 			markdownStatus: await getMarkdownPublicationStatus(params.path, webPiece.content_hash)
 		},
-		publishedUrl: publishedUrl.href
+		publishedUrl
 	}
 }

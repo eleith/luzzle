@@ -238,6 +238,7 @@ test('reports partial publication as a job failure with the failed piece diagnos
 test('reads publication state for the exact filename with a cancellable GET', async () => {
 	const state = {
 		hasPublishedVersion: true,
+		publicPath: '/pieces/books/published-book',
 		markdownPublicationStatus: MarkdownPublicationStatus.MATCHING
 	}
 	fetchMock.mockResolvedValue(Response.json(state))
@@ -249,6 +250,20 @@ test('reads publication state for the exact filename with a cancellable GET', as
 		`/api/admin/publish?${new URLSearchParams({ filePath })}`,
 		{ signal: observer.signal }
 	)
+})
+
+test('omits the public link without discarding publication state if the path is missing or external', async () => {
+	const state = {
+		hasPublishedVersion: true,
+		markdownPublicationStatus: MarkdownPublicationStatus.MATCHING
+	}
+	for (const publicPath of [undefined, '//example.com']) {
+		fetchMock.mockResolvedValueOnce(Response.json({ ...state, publicPath }))
+		await expect(getPublicationState(filePath, new AbortController().signal)).resolves.toEqual({
+			...state,
+			publicPath: null
+		})
+	}
 })
 
 test.each([
@@ -264,7 +279,11 @@ test.each([
 	{
 		name: 'unknown status',
 		response: () =>
-			Response.json({ hasPublishedVersion: true, markdownPublicationStatus: 'pending' })
+			Response.json({
+				hasPublishedVersion: false,
+				publicPath: null,
+				markdownPublicationStatus: 'pending'
+			})
 	}
 ])(
 	'a state read throws on $name without retrying or submitting an action',

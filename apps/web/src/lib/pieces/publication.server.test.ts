@@ -176,6 +176,7 @@ test('Save creates the archive item/cache before first publication, not a servin
 	expect(await db.selectFrom('web_pieces').selectAll().execute()).toEqual([])
 	expect(await getPiecePublicationState(file)).toEqual({
 		hasPublishedVersion: false,
+		publicPath: null,
 		markdownPublicationStatus: MarkdownPublicationStatus.UNKNOWN
 	})
 })
@@ -190,6 +191,7 @@ test('Save updates existing item/cache while retaining serving content, hash and
 	const serving = await published(originalCache.content_hash)
 	expect(await getPiecePublicationState(file)).toEqual({
 		hasPublishedVersion: true,
+		publicPath: '/pieces/books/published-book',
 		markdownPublicationStatus: MarkdownPublicationStatus.MATCHING
 	})
 
@@ -212,6 +214,7 @@ test('Save updates existing item/cache while retaining serving content, hash and
 	expect(JSON.parse(item.assets_json_array!)).toEqual(['.assets/books/new.png'])
 	expect(await getPiecePublicationState(file)).toEqual({
 		hasPublishedVersion: true,
+		publicPath: '/pieces/books/published-book',
 		markdownPublicationStatus: MarkdownPublicationStatus.CHANGED
 	})
 	expect(

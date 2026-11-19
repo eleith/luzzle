@@ -15,6 +15,7 @@
 		canGenerate: boolean
 		disabled?: boolean
 		hasPublishedVersion?: boolean
+		publicHref: string | null
 		onPublish: () => void
 		publishDisabled: boolean
 		previewDisabled?: boolean
@@ -35,6 +36,7 @@
 		canGenerate,
 		disabled = false,
 		hasPublishedVersion = false,
+		publicHref,
 		onPublish,
 		publishDisabled,
 		previewDisabled = false,
@@ -63,6 +65,7 @@
 	type ActionId =
 		| 'publish'
 		| 'preview'
+		| 'public-page'
 		| 'published'
 		| 'vim'
 		| 'format'
@@ -85,6 +88,7 @@
 				disabled: previewDisabled
 			}
 		]
+		if (publicHref) view.push({ id: 'public-page', href: publicHref })
 		if (hasPublishedVersion)
 			view.push({
 				id: 'published',
@@ -158,8 +162,9 @@
 {#snippet actionLabel(action: Action)}
 	<span class="action-copy">
 		{#if action.id === 'publish'}Publish
-		{:else if action.id === 'preview'}Preview
-		{:else if action.id === 'published'}View published
+		{:else if action.id === 'preview'}Preview draft
+		{:else if action.id === 'public-page'}Public page
+		{:else if action.id === 'published'}Published details
 		{:else if action.id === 'format'}Format
 		{:else if action.id === 'vim'}Vim mode
 		{:else if action.id === 'generate'}Generate

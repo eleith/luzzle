@@ -303,6 +303,7 @@ function setupLoad() {
 	saved.storage.readFile.mockResolvedValue(rawSource)
 	vi.mocked(getPiecePublicationState).mockResolvedValue({
 		hasPublishedVersion: false,
+		publicPath: null,
 		markdownPublicationStatus: MarkdownPublicationStatus.UNKNOWN
 	})
 	const event = { params: { path: file } } as Parameters<typeof load>[0]
@@ -313,6 +314,7 @@ test('source loader returns raw saved source, schema, generation and publication
 	const { piece, storage, write, sync, event } = setupLoad()
 	const publicationState = {
 		hasPublishedVersion: true,
+		publicPath: '/pieces/books/published-book',
 		markdownPublicationStatus: MarkdownPublicationStatus.CHANGED
 	}
 	vi.mocked(getPiecePublicationState).mockResolvedValue(publicationState)

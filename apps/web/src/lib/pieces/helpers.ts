@@ -7,6 +7,7 @@ import {
 } from '@luzzle/web.pieces'
 import type { PublicWebPiece, PieceComponentHelpers, PieceIconPalette } from '@luzzle/web.pieces'
 import { page } from '$app/state'
+import { publicPieceHref } from './navigation.js'
 
 export { OpengraphImageWidth, OpengraphImageHeight }
 export type { PieceComponentHelpers, PieceIconPalette }
@@ -28,10 +29,12 @@ export function getPieceHelpers(piece: PublicWebPiece): PieceComponentHelpers {
 	const assets = piece.assets.map((asset) =>
 		asset.asset_path && !buildAssetUrl(asset.asset_path) ? { ...asset, asset_path: null } : asset
 	)
-	return createPieceHelpers(
-		assets,
-		buildAssetUrl,
-		() =>
-			`${config.url.app.replace(/\/+$/, '')}/pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`
-	)
+	const appUrl = config.url.app.replace(/\/+$/, '')
+	const pieceUrl = `${appUrl}${publicPieceHref(piece)}`
+
+	function getPieceUrl() {
+		return pieceUrl
+	}
+
+	return createPieceHelpers(assets, buildAssetUrl, getPieceUrl)
 }

@@ -11,7 +11,7 @@
 		type PublicationAction,
 		type PublicationOutcome
 	} from '#lib/pieces/publication-client.js'
-	import { editorHref } from '#lib/pieces/navigation.js'
+	import { editorHref, publicPageUrl } from '#lib/pieces/navigation.js'
 	import {
 		MarkdownPublicationStatus,
 		type PiecePublicationState,
@@ -50,6 +50,8 @@
 
 	beforeNavigate((navigation) => {
 		if (navigation.shallow && navigation.type === 'goto') return
+		// Let the browser’s unload warning handle links to the public site on another origin.
+		if (navigation.to && navigation.to.url.origin !== page.url.origin) return
 
 		if (isDirty && !bypassWarning && navigation.type !== 'form' && navigation.to) {
 			navigation.cancel()
@@ -98,10 +100,16 @@
 	let publicationState = $state<PiecePublicationState>(
 		untrack(() => ({
 			hasPublishedVersion: data.hasPublishedVersion,
+			publicPath: data.publicPath,
 			markdownPublicationStatus: data.markdownPublicationStatus
 		}))
 	)
 	const hasPublishedVersion = $derived(publicationState.hasPublishedVersion)
+	const publicHref = $derived(
+		publicationState.publicPath
+			? publicPageUrl(data.config.url.app, page.url.origin, publicationState.publicPath)
+			: null
+	)
 	const markdownPublicationStatus = $derived(publicationState.markdownPublicationStatus)
 	const isPublishing = $derived(publicationRunning && publicationAction === 'publish')
 	const isUnpublishing = $derived(publicationRunning && publicationAction === 'unpublish')
@@ -281,6 +289,13 @@
 			const result = await submitPublication(action, file, observer.signal)
 			if (!isCurrent() || !result) return
 			publicationOutcome = result
+			if (action === 'unpublish' && result.state === 'completed') {
+				publicationState = {
+					hasPublishedVersion: false,
+					publicPath: null,
+					markdownPublicationStatus: MarkdownPublicationStatus.UNKNOWN
+				}
+			}
 			if (!result.jobId) return
 			if (result.state === 'failed' && result.reason === 'sign-in') return
 			if (navigating.to) return
@@ -309,6 +324,7 @@
 			publicationRead = undefined
 			publicationState = {
 				hasPublishedVersion: data.hasPublishedVersion,
+				publicPath: data.publicPath,
 				markdownPublicationStatus: data.markdownPublicationStatus
 			}
 			activeSave = undefined
@@ -821,6 +837,7 @@
 							canGenerate={data.canGenerate}
 							disabled={isSaving}
 							{hasPublishedVersion}
+							{publicHref}
 							previewDisabled={isDirty || isSaving}
 							{publishDisabled}
 							onPublish={() => handlePublication('publish')}

@@ -6,6 +6,18 @@ export function editorHref(file: string): string {
 	return `/admin/piece/${encodeArchivePath(file)}/source`
 }
 
+export function publicPieceHref({ type, slug }: { type: string; slug: string }): string {
+	return `/pieces/${encodeURIComponent(type)}/${encodeURIComponent(slug)}`
+}
+
+export function publicPageUrl(appUrl: string, origin: string, publicPath: string): string {
+	const url = new URL(appUrl || '/', origin)
+	url.pathname = `${url.pathname.replace(/\/+$/, '')}${publicPath}`
+	url.search = ''
+	url.hash = ''
+	return url.href
+}
+
 export function publishedHref(file: string): string {
 	return `/admin/view/published/${encodeArchivePath(file)}`
 }

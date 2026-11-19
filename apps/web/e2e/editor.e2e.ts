@@ -1,7 +1,7 @@
 import type { Cookie, Page } from '@playwright/test'
 import { expect, test } from './support/test.js'
 import { ADMIN, fieldGuide, notebook } from './support/fixture.js'
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { extractFullMarkdown } from '@luzzle/core'
 
@@ -33,6 +33,86 @@ test.beforeEach(async ({ page }) => {
 		return route.abort()
 	})
 	await page.route(/\/admin\/piece\/.*\/preview(?:\/[^?]*)?(?:\?.*)?$/, (route) => route.abort())
+})
+
+test('the editor opens the published page directly, with a separate admin details link', async ({
+	page,
+	baseURL
+}) => {
+	await signIn(page, notebook.editorUrl)
+	await page.getByRole('button', { name: 'More', exact: true }).click()
+	const view = page.getByRole('group', { name: 'View', exact: true })
+	await expect(view.getByRole('menuitem')).toHaveText([
+		'Preview draft',
+		'Public page',
+		'Published details'
+	])
+	await expect(view.getByRole('menuitem', { name: 'Published details' })).toHaveJSProperty(
+		'href',
+		`${baseURL}${notebook.publishedUrl}`
+	)
+	await view.getByRole('menuitem', { name: 'Public page' }).click()
+	await expect(page).toHaveURL(`${baseURL}${notebook.publicUrl}`)
+	await expect(page.getByRole('heading', { name: notebook.title, exact: true })).toBeVisible()
+})
+
+test('publication adds the public link and confirmed unpublish removes it even if refresh fails', async ({
+	page,
+	appServer
+}) => {
+	const file = 'draft.notes.md'
+	const editorUrl = `/admin/piece/${file}/source`
+	await writeFile(
+		path.join(appServer.directory, 'archive', file),
+		'---\ntitle: Draft\ndate: 2024-01-01\n---\n\nDraft body.\n'
+	)
+	await signIn(page, editorUrl)
+	const more = page.getByRole('button', { name: 'More', exact: true })
+	const publicPage = page.getByRole('menuitem', { name: 'Public page', exact: true })
+	await more.click()
+	await expect(page.getByRole('menuitem', { name: 'Preview draft' })).toBeVisible()
+	await expect(publicPage).toHaveCount(0)
+	await expect(page.getByRole('menuitem', { name: 'Published details' })).toHaveCount(0)
+	await page.keyboard.press('Escape')
+
+	await page.route('**/api/admin/publish', (route) =>
+		route.fulfill({ status: 202, json: { jobId: 'first-publication' } })
+	)
+	await page.route('**/api/admin/publish/first-publication/stream', (route) =>
+		route.fulfill({
+			contentType: 'text/event-stream',
+			body: 'event: done\ndata: {"workflowName":"Publish","state":"completed","result":"ok"}\n\n'
+		})
+	)
+	const publicPath = '/pieces/notes/new-public-slug'
+	await page.route(`**/api/admin/publish?filePath=${file}`, (route) =>
+		route.fulfill({
+			json: { hasPublishedVersion: true, markdownPublicationStatus: 'matching', publicPath }
+		})
+	)
+	await page.getByRole('button', { name: 'Publish', exact: true }).click()
+	await expect(page.locator('.editor-publication-status')).toHaveText('Up to date')
+	await more.click()
+	await expect(publicPage).toHaveAttribute('href', `${appServer.origin}${publicPath}`)
+
+	await page.route('**/api/admin/unpublish', (route) =>
+		route.fulfill({ status: 202, json: { jobId: 'remove-publication' } })
+	)
+	await page.route('**/api/admin/publish/remove-publication/stream', (route) =>
+		route.fulfill({
+			contentType: 'text/event-stream',
+			body: 'event: done\ndata: {"workflowName":"Unpublish","state":"completed","result":"ok"}\n\n'
+		})
+	)
+	await page.route(`**/api/admin/publish?filePath=${file}`, (route) =>
+		route.fulfill({ status: 500, json: { message: 'Status temporarily unavailable' } })
+	)
+	await page.getByRole('menuitem', { name: 'Unpublish', exact: true }).click()
+	await expect(page.getByRole('alert')).toContainText('Unable to refresh publication status')
+	await more.click()
+	await expect(page.getByRole('menuitem', { name: 'Preview draft' })).toBeVisible()
+	await expect(publicPage).toHaveCount(0)
+	await expect(page.getByRole('menuitem', { name: 'Published details' })).toHaveCount(0)
 })
 
 test('Save persists source; Vim menu changes preserve history and :w keeps focus and cursor', async ({
@@ -111,7 +191,7 @@ test('Save persists source; Vim menu changes preserve history and :w keeps focus
 		route.fulfill({ status: 400, json: { type: 'failure', status: 400, data: null } })
 	)
 	const previewRequest = page.waitForRequest(previewUrl)
-	await page.getByRole('menuitem', { name: 'Preview', exact: true }).click()
+	await page.getByRole('menuitem', { name: 'Preview draft', exact: true }).click()
 	expect((await previewRequest).method()).toBe('POST')
 
 	const beforeFormat = await editor.innerText()

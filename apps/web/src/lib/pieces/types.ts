@@ -14,5 +14,6 @@ export type EditorPublicationStatus =
 
 export interface PiecePublicationState {
 	hasPublishedVersion: boolean
+	publicPath: string | null
 	markdownPublicationStatus: MarkdownPublicationStatus
 }

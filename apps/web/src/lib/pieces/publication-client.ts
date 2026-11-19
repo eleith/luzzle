@@ -52,6 +52,12 @@ function publicationFailureDetail(errors: unknown, failedPieces: unknown[]): str
 	return details.join('\n')
 }
 
+function readPublicPath(value: unknown): string | null {
+	if (typeof value !== 'string') return null
+	if (!value.startsWith('/pieces/')) return null
+	return value
+}
+
 export async function getPublicationState(
 	filePath: string,
 	signal: AbortSignal
@@ -65,13 +71,17 @@ export async function getPublicationState(
 	if (!isObject(state) || typeof state.hasPublishedVersion !== 'boolean') {
 		throw new Error('Invalid publication state response')
 	}
-	const markdownPublicationStatus = state.markdownPublicationStatus
+	const { hasPublishedVersion, publicPath, markdownPublicationStatus } = state
 	const validPublicationStatus =
 		markdownPublicationStatus === MarkdownPublicationStatus.MATCHING ||
 		markdownPublicationStatus === MarkdownPublicationStatus.CHANGED ||
 		markdownPublicationStatus === MarkdownPublicationStatus.UNKNOWN
 	if (!validPublicationStatus) throw new Error('Invalid publication state response')
-	return { hasPublishedVersion: state.hasPublishedVersion, markdownPublicationStatus }
+	return {
+		hasPublishedVersion,
+		publicPath: hasPublishedVersion ? readPublicPath(publicPath) : null,
+		markdownPublicationStatus
+	}
 }
 
 function failure(
