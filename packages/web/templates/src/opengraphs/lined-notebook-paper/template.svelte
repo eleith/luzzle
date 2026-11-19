@@ -54,8 +54,8 @@
 		justify-content: center;
 		width: 100%;
 		height: 100%;
-		background: var(--color-surface-inverse);
-		border-bottom: 10px solid var(--color-primary);
+		background: var(--color-tertiary-container);
+		border-bottom: 10px solid var(--color-secondary);
 		overflow: hidden;
 	}
 
@@ -66,7 +66,7 @@
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 1;
-		--paper-hole-color: var(--color-surface-inverse);
+		--paper-hole-color: var(--color-tertiary-container);
 	}
 
 	.paper {

@@ -161,7 +161,7 @@ test('a pending Icon import cannot replace the new template on a same-route piec
 		const response = await route.fetch()
 		// The recipe-card renderer's markup is distinct from other production JS chunks.
 		const module = await response.text()
-		if (module.includes('ingredients-grid') && module.includes('card-cutouts')) {
+		if (module.includes('--card-max-height') && module.includes('card-cutouts')) {
 			held = true
 			await obsoleteModule.promise
 		}

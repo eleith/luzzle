@@ -20,6 +20,13 @@ For text-first pieces, use `lined-notebook-paper` for icon/OG and `note` for pag
 as in the [minimal config](config.example.yaml). Your archive type and schema
 are independent of template names: `words` can use `note`, `books` can use `book`.
 
+The `recipe` page shows a ring-bound recipe card in its header. The card keeps
+its cream paper and dark ink in both site themes. To use the same card in
+listings and the Icon preview, set `templates.icon.name: recipe-card`
+for the same piece type and map both `icon` and `page` image fields to the same
+photo selector. Map the same ingredient names in both roles to show the same
+short checklist.
+
 ## Map your metadata
 
 Templates read the metadata fields you map to them. For example:
@@ -83,7 +90,8 @@ piece. Unknown names/keys and malformed selectors fail config validation.
 ## Image-derived colors
 
 The first registered image resolved from `fields.media` supplies a shared palette
-for piece banners, icons and OG images. Colorful images favor representative
+for banners, icons, and OG templates that use it. The recipe card icon keeps its
+cream paper instead. Colorful images favor representative
 colored backgrounds; monochrome images retain neutral tones. Black or white text
 is chosen for contrast against the solid palette background. Image layers under
 translucent template surfaces can still change the final rendered contrast.

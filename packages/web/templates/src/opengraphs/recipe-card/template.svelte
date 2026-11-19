@@ -39,7 +39,7 @@
 >
 	{#if imageUrl}
 		<img class="backdrop-img" src={imageUrl} alt="" />
-		<div class="cover"></div>
+		<div class="photo-fade"></div>
 	{/if}
 	<div class="main">
 		<div class="left-panel">
@@ -91,14 +91,13 @@
 		object-fit: cover;
 	}
 
-	.cover {
+	.photo-fade {
 		position: absolute;
 		top: 0;
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background: var(--color-background);
-		opacity: 0.8;
+		background: linear-gradient(180deg, var(--color-background) 20%, transparent 78%);
 	}
 
 	.main {

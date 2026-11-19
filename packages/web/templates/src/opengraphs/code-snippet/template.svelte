@@ -76,7 +76,7 @@
 		align-items: center;
 		width: 100%;
 		height: 100%;
-		background: var(--color-surface-inverse);
+		background: var(--color-tertiary-container);
 		overflow: hidden;
 		padding-top: 30px;
 		gap: 30px;
@@ -87,7 +87,7 @@
 		font-size: var(--title-size);
 		font-weight: 700;
 		margin: 0;
-		color: var(--color-on-surface-inverse);
+		color: var(--color-on-tertiary-container);
 		text-align: center;
 		padding: 0 60px;
 		max-width: 90%;

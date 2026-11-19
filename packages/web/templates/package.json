@@ -116,14 +116,12 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",
-		"@sveltejs/vite-plugin-svelte": "7.1.2",
 		"eslint": "catalog:",
 		"eslint-config-prettier": "catalog:",
 		"globals": "catalog:",
 		"prettier": "catalog:",
 		"svelte": "5.57.3",
 		"typescript": "catalog:",
-		"typescript-eslint": "catalog:",
-		"vite": "catalog:"
+		"typescript-eslint": "catalog:"
 	}
 }

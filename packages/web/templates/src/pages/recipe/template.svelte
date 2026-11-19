@@ -255,7 +255,6 @@
 	.hero-icon {
 		display: flex;
 		justify-content: center;
-		max-height: 100px;
 		overflow: visible;
 		margin-bottom: -1.5rem; /* Overlap byline row */
 		animation: hero-icon-rise 800ms ease-in-out both;
