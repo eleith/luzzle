@@ -1,5 +1,16 @@
 # @luzzle/web.worker
 
+## 0.0.252
+
+### Patch Changes
+
+- 27ffc5b: Polish recipe cards and refine the share image templates for recipes, snippets, and notes.
+- @luzzle/core@0.0.252
+  - @luzzle/web.db@0.0.1
+  - @luzzle/web.jobs@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.251
 
 ### Patch Changes

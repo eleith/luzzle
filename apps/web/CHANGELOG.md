@@ -1,5 +1,15 @@
 # @luzzle/web
 
+## 0.0.252
+
+### Patch Changes
+
+- 7245f3e: Add a direct Public page link to the editor’s View menu, alongside Preview draft and Published details.
+- 27ffc5b: Polish recipe cards and refine the share image templates for recipes, snippets, and notes.
+- @luzzle/web.db@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.251
 
 ### Patch Changes
