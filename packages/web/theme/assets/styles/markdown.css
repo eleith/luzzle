@@ -244,12 +244,42 @@ pre.shiki code span,
 		color: var(--color-secondary);
 	}
 
-	.sidenote__preview {
+	.sidenote__preview,
+	.sidenote__reference {
 		display: none;
 	}
 
 	.sidenote__id {
 		color: var(--color-secondary);
+	}
+
+	.sidenote__content a[href] {
+		text-decoration: underline;
+	}
+
+	.sidenote__rest > summary {
+		margin-block-start: 0.25rem;
+		color: var(--color-secondary);
+		cursor: pointer;
+	}
+
+	.sidenote__rest[open] .sidenote__read-more,
+	.sidenote__rest:not([open]) .sidenote__show-less {
+		display: none;
+	}
+
+	.sidenote__body {
+		display: flow-root;
+		overflow-wrap: anywhere;
+
+		> :first-child,
+		> .sidenote__id + * {
+			margin-block-start: 0;
+		}
+
+		> :last-child {
+			margin-block-end: 0;
+		}
 	}
 
 	.sidenote__header {
@@ -273,9 +303,9 @@ pre.shiki code span,
 		margin: 0 auto;
 		inline-size: 100%;
 		max-inline-size: 36rem;
-		min-block-size: min(10rem, 30dvh);
+		min-block-size: 0;
 		max-block-size: min(50dvh, 30rem);
-		padding: 1rem clamp(20px, 4vw, 24px) max(1rem, env(safe-area-inset-bottom));
+		padding: 0.5rem clamp(20px, 4vw, 24px) max(1rem, env(safe-area-inset-bottom));
 		overflow: auto;
 		overscroll-behavior: contain;
 		float: none;
@@ -297,8 +327,58 @@ pre.shiki code span,
 			display: none;
 		}
 
+		> :first-child,
+		> .sidenote__id + * {
+			margin-block-start: 0;
+		}
+
+		> :last-child {
+			margin-block-end: 0;
+		}
+
 		.sidenote__close {
 			display: inline;
+		}
+
+		.sidenote__header {
+			display: flex;
+			align-items: center;
+			min-block-size: 2.5rem;
+			margin-block-end: 0.25rem;
+			padding-inline-end: 2rem;
+			color: var(--color-on-surface-variant);
+		}
+
+		.sidenote__label {
+			display: block;
+			font-size: var(--font-size-xs);
+			overflow-wrap: anywhere;
+		}
+
+		.sidenote__header > .sidenote__close {
+			display: grid;
+			place-items: center;
+			position: absolute;
+			inset-block-start: 0.125rem;
+			inset-inline-end: 0.125rem;
+			inline-size: 2.75rem;
+			block-size: 2.75rem;
+			color: inherit;
+			font-size: 1.5rem;
+			line-height: 1;
+			text-decoration: none;
+
+			&:focus-visible {
+				outline-offset: -2px;
+			}
+		}
+
+		.sidenote__close-id {
+			display: none;
+		}
+
+		.sidenote__close-icon {
+			display: block;
 		}
 	}
 
@@ -314,7 +394,13 @@ pre.shiki code span,
 		cursor: pointer;
 	}
 
-	:is(.sidenote__button, .sidenote__preview, .sidenote__close):focus-visible {
+	:is(
+		.sidenote__button,
+		.sidenote__preview,
+		.sidenote__close,
+		.sidenote__reference > a,
+		.sidenote__rest > summary
+	):focus-visible {
 		outline: 2px solid var(--color-secondary);
 		outline-offset: 2px;
 	}
@@ -333,69 +419,35 @@ pre.shiki code span,
 		}
 	}
 
-	@media screen and (width < 1280px) {
-		.sidenote__content[popover]:popover-open {
-			min-block-size: 0;
-			padding-block-start: 0.5rem;
-
-			> :first-child,
-			> .sidenote__id + * {
-				margin-block-start: 0;
+	@media print, screen and (width < 1280px), screen and (pointer: coarse) {
+		/* Older browsers keep the native disclosure as a fallback. */
+		@supports selector(details::details-content) {
+			.sidenote__rest::details-content {
+				content-visibility: visible;
 			}
 
-			> :last-child {
-				margin-block-end: 0;
-			}
-
-			.sidenote__header {
-				display: flex;
-				align-items: center;
-				min-block-size: 2.5rem;
-				margin-block-end: 0.25rem;
-				padding-inline-end: 2rem;
-				color: var(--color-on-surface-variant);
-			}
-
-			.sidenote__label {
-				display: block;
-				font-size: var(--font-size-xs);
-				overflow-wrap: anywhere;
-			}
-
-			.sidenote__header > .sidenote__close {
-				display: grid;
-				place-items: center;
-				position: absolute;
-				inset-block-start: 0.125rem;
-				inset-inline-end: 0.125rem;
-				inline-size: 2.75rem;
-				block-size: 2.75rem;
-				color: inherit;
-				font-size: 1.5rem;
-				line-height: 1;
-				text-decoration: none;
-
-				&:focus-visible {
-					outline-offset: -2px;
-				}
-			}
-
-			.sidenote__close-id {
+			.sidenote__rest > summary {
 				display: none;
-			}
-
-			.sidenote__close-icon {
-				display: block;
 			}
 		}
 	}
 
-	@media screen and (min-width: 1280px) {
-		.sidenote__content[popover]:popover-open {
-			animation: none;
+	@media screen and (min-width: 1280px) and (not (pointer: coarse)) {
+		.sidenote__reference {
+			display: inline;
+			padding-inline: 0.2rem;
+
+			> a {
+				color: var(--color-secondary);
+				text-decoration: underline;
+			}
+
+			+ .sidenote__button {
+				display: none;
+			}
 		}
 
-		.sidenote__content::before {
+		.sidenote__content:not(.sidenote__content--sheet)::before {
 			content: '\00a0';
 			display: flex;
 			align-items: flex-start;
@@ -410,17 +462,7 @@ pre.shiki code span,
 			margin-bottom: 0.5rem;
 		}
 
-		.sidenote__content[popover]:not(:popover-open) {
-			display: block;
-			position: relative;
-			inset: auto;
-			height: auto;
-			border: 0;
-			background: transparent;
-			color: inherit;
-		}
-
-		.sidenote__content {
+		.sidenote__content:not(.sidenote__content--sheet, :popover-open) {
 			width: 25ch;
 			font-size: 0.75rem;
 			line-height: 1.4;
@@ -431,6 +473,37 @@ pre.shiki code span,
 			margin-right: -28ch;
 			margin-bottom: 3ch;
 			border-radius: 0 0.5rem 0.5rem 0;
+
+			&[popover] {
+				display: block;
+				position: relative;
+				inset: auto;
+				height: auto;
+				border: 0;
+				background: transparent;
+				color: inherit;
+			}
+		}
+
+		.sidenote__content--live[popover]:not(:popover-open) {
+			overflow: visible;
+			font-weight: 400;
+			font-style: normal;
+			scroll-margin-block-start: 2rem;
+
+			&:target {
+				background: var(--color-surface-container-lowest);
+				box-shadow: 0 4px 16px color-mix(in srgb, var(--color-shadow) 60%, transparent);
+
+				.sidenote__id {
+					color: var(--color-primary);
+				}
+
+				&::before {
+					margin-block: 0;
+					background: var(--color-primary);
+				}
+			}
 		}
 
 		.sidenote__id {
@@ -439,7 +512,8 @@ pre.shiki code span,
 
 		@supports (position-anchor: --sidenote) and (anchor-scope: --sidenote) and
 			(align-self: anchor-center) and (position-try-fallbacks: --sidenote-fit-viewport) {
-			.sidenote__slot {
+			/* Previously published notes keep their desktop preview until regenerated. */
+			.sidenote__slot:has(> .sidenote__preview) {
 				display: block;
 				position: relative;
 				anchor-name: --sidenote;
@@ -453,85 +527,92 @@ pre.shiki code span,
 				line-height: 1.4;
 				margin: -1.5ch -28ch 3ch 0;
 				padding: 0.5rem;
-			}
 
-			.sidenote__slot::before {
-				content: '';
-				position: absolute;
-				inset: 0.5rem auto 0.5rem 0;
-				inline-size: 2px;
-				background: var(--color-secondary);
-			}
+				&::before {
+					content: '';
+					position: absolute;
+					inset: 0.5rem auto 0.5rem 0;
+					inline-size: 2px;
+					background: var(--color-secondary);
+				}
 
-			.sidenote__preview {
-				display: block;
-				inline-size: 100%;
-				padding: 0;
-				border: 0;
-				background: transparent;
-				color: inherit;
-				font: inherit;
-				text-align: start;
-				cursor: pointer;
-			}
+				&:has(> :popover-open)::before {
+					visibility: hidden;
+				}
 
-			.sidenote__excerpt {
-				display: -webkit-box;
-				-webkit-box-orient: vertical;
-				-webkit-line-clamp: 3;
-				overflow: hidden;
-			}
+				> .sidenote__preview {
+					display: block;
+					inline-size: 100%;
+					padding: 0;
+					border: 0;
+					background: transparent;
+					color: inherit;
+					font: inherit;
+					text-align: start;
+					cursor: pointer;
+				}
 
-			.sidenote__close {
-				min-inline-size: 0;
-				padding-inline-end: 1ch;
-				text-align: start;
-			}
+				.sidenote__excerpt {
+					display: -webkit-box;
+					-webkit-box-orient: vertical;
+					-webkit-line-clamp: 3;
+					overflow: hidden;
+				}
 
-			/* Keep the invoker itself visible so native Escape can restore focus. */
-			.sidenote__slot:has(> :popover-open) > .sidenote__preview > .sidenote__excerpt,
-			.sidenote__slot:has(> :popover-open)::before {
-				visibility: hidden;
-			}
+				/* Keep the invoker visible so Escape can restore focus. */
+				&:has(> :popover-open) > .sidenote__preview > .sidenote__excerpt {
+					visibility: hidden;
+				}
 
-			.sidenote__slot > .sidenote__content > :first-child {
-				margin-block-start: 0;
-			}
+				> .sidenote__content[popover]:not(:popover-open) {
+					display: none;
+				}
 
-			.sidenote__slot > .sidenote__content > :last-child {
-				margin-block-end: 0;
-			}
+				> .sidenote__content[popover]:popover-open {
+					position-anchor: --sidenote;
+					position-visibility: always;
+					inset: auto;
+					top: anchor(top);
+					left: anchor(left);
+					inline-size: anchor-size(width);
+					max-inline-size: calc(100dvw - 24px);
+					margin: 0;
+					padding: 0.5rem;
+					position-try-fallbacks: --sidenote-fit-viewport, --sidenote-fit-viewport-inline;
+					border: 0;
+					font: inherit;
+					border-radius: 0 0.5rem 0.5rem 0;
+					box-shadow:
+						inset 2px 0 var(--color-secondary),
+						0 4px 20px var(--color-shadow);
+					animation: none;
 
-			.sidenote__slot > .sidenote__content[popover]:not(:popover-open) {
-				display: none;
-			}
+					.sidenote__header {
+						display: contents;
+					}
 
-			.sidenote__slot > .sidenote__content[popover]:popover-open {
-				position: fixed;
-				position-anchor: --sidenote;
-				position-visibility: always;
-				inset: auto;
-				top: anchor(top);
-				left: anchor(left);
-				align-self: auto;
-				inline-size: anchor-size(width);
-				max-inline-size: calc(100dvw - 24px);
-				block-size: auto;
-				min-block-size: 0;
-				max-block-size: min(50dvh, 30rem);
-				margin: 0;
-				padding: 0.5rem;
-				overflow: auto;
-				overscroll-behavior: contain;
-				position-try-fallbacks: --sidenote-fit-viewport, --sidenote-fit-viewport-inline;
-				border: 0;
-				font: inherit;
-				color: var(--color-on-surface);
-				background: var(--color-surface-container-lowest);
-				border-radius: 0 0.5rem 0.5rem 0;
-				box-shadow:
-					inset 2px 0 var(--color-secondary),
-					0 4px 20px var(--color-shadow);
+					.sidenote__label,
+					.sidenote__close-icon {
+						display: none;
+					}
+
+					.sidenote__close-id {
+						display: inline;
+					}
+
+					.sidenote__close {
+						display: inline;
+						position: static;
+						inline-size: auto;
+						block-size: auto;
+						min-inline-size: 0;
+						padding-inline-end: 1ch;
+						color: var(--color-secondary);
+						font: inherit;
+						text-align: start;
+						text-decoration: underline;
+					}
+				}
 			}
 		}
 	}

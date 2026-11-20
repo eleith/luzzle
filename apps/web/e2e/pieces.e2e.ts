@@ -44,6 +44,87 @@ test('without JavaScript the root keeps usable placeholders while typed listings
 	}
 })
 
+test('tapping a superscript opens the full sheet even on a wide touch screen', async ({
+	browser,
+	baseURL
+}) => {
+	const context = await browser.newContext({
+		baseURL,
+		hasTouch: true,
+		isMobile: true,
+		javaScriptEnabled: false,
+		reducedMotion: 'reduce',
+		viewport: { width: 1366, height: 1024 }
+	})
+	try {
+		const page = await context.newPage()
+		await page.goto(notebook.publicUrl)
+
+		const reference = page.getByRole('button', { name: 'Sidenote 1', exact: true })
+		const note = page.getByRole('note', { name: 'Sidenote 1' })
+		await reference.tap()
+		await expect(note.getByText('Sidenote 1', { exact: true })).toBeVisible()
+		await expect(note.getByRole('link', { name: 'Later source' })).toBeVisible()
+		await note.getByRole('button', { name: 'Close sidenote 1' }).tap()
+		await expect(note).toBeHidden()
+	} finally {
+		await context.close()
+	}
+})
+
+test('desktop sidenotes link to the margin and expand in place without JavaScript', async ({
+	browser,
+	baseURL
+}) => {
+	const context = await browser.newContext({
+		baseURL,
+		javaScriptEnabled: false,
+		viewport: { width: 1440, height: 900 }
+	})
+	try {
+		const page = await context.newPage()
+		await page.goto(notebook.publicUrl)
+
+		const note = page.getByRole('note', { name: 'Sidenote 1' })
+		const early = note.getByRole('link', { name: 'Early source' })
+		const later = note.getByRole('link', { name: 'Later source' })
+		const disclosure = note.locator('summary')
+		const reference = page.getByRole('link', { name: 'Locate sidenote 1' })
+		const targetedNote = note.and(page.locator(':target'))
+
+		// Locate and expand a sidenote deep in an essay.
+		await page.getByRole('main').evaluate((main) => {
+			main.style.marginBlockStart = '300vh'
+		})
+		await early.click()
+		await expect(page).toHaveURL(/#observation$/)
+		await reference.press('Enter')
+		await expect(page).toHaveURL(/#sidenote-1$/)
+		await expect(targetedNote).toBeInViewport()
+		await expect(page.locator(':popover-open')).toHaveCount(0)
+		await expect(note.getByText('Sidenote 1', { exact: true })).toBeHidden()
+
+		await page.keyboard.press('Tab')
+		await expect(early).toBeFocused()
+		await page.keyboard.press('Tab')
+		await expect(disclosure).toBeFocused()
+		await page.keyboard.press('Enter')
+		await page.keyboard.press('Tab')
+		await expect(later).toBeFocused()
+
+		await disclosure.click()
+		await expect(later).toBeHidden()
+		await expect(early).toBeInViewport()
+		await expect(targetedNote).toBeVisible()
+
+		await early.click()
+		await expect(page).toHaveURL(/#observation$/)
+		await expect(targetedNote).toHaveCount(0)
+	} finally {
+		await context.close()
+	}
+})
+
 test('client navigation refreshes listing and page layout data without reloading', async ({
 	page,
 	baseURL

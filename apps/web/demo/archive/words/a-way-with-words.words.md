@@ -83,8 +83,14 @@ greet('Mundo');
 
 Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, quis gravida magna mi a libero. Fusce vulputate eleifend sapien. Vestibulum purus quam, scelerisque ut, mollis sed, nonummy id, metus.[^1] Nullam accumsan lorem in dui.
 
+A sidenote can be a short citation[^2] or a longer aside with its own sources.[^3]
+
 ## Conclusion
 
 Curabitur turpis. Vestibulum facilisis, purus nec pulvinar iaculis, ligula mi congue nunc, vitae euismod ligula urna in dolor. Mauris sollicitudin fermentum libero. Praesent nonummy mi in odio. Nunc interdum lacus sit amet orci.
 
 [^1]: Haec est leo annotatio sive nota pedalis
+[^2]: [CommonMark](https://commonmark.org/)
+[^3]: The [CommonMark guide](https://commonmark.org/help/) is useful when an example looks different from what you expected.
+
+    Markdown has several dialects, and they do not all agree about whitespace or extensions. The [specification](https://spec.commonmark.org/) collects side-by-side examples of source and rendered output.

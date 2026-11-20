@@ -23,7 +23,6 @@ export default defineConfig({
 				'src/transforms/utils/types.ts',
 				'src/transforms/markdown/engine.ts',
 				'src/transforms/markdown/remark-gfm.ts',
-				'src/transforms/markdown/remark-sidenotes.ts',
 				'src/workflows/**',
 				'eslint.config.js',
 				'vite.config.ts',

@@ -40,8 +40,27 @@ const note = `Original observation.
 >
 > Second quoted paragraph.
 `
-const noteHtml = `<section class="markdown">
-<p>Original observation.</p>
+const sidenoteHtml = `<p>More on this observation<span class="sidenote">
+<sup class="sidenote__reference"><a href="#sidenote-1" aria-label="Locate sidenote 1">1</a></sup>
+<button type="button" class="sidenote__button" popovertarget="sidenote-1" aria-label="Sidenote 1"><sup>1</sup></button>
+</span>.</p>
+<div class="sidenote__slot"><div id="sidenote-1" class="sidenote__content sidenote__content--live" tabindex="-1" popover="auto" role="note" aria-label="Sidenote 1">
+<span class="sidenote__header">
+<span class="sidenote__label" aria-hidden="true">Sidenote 1</span>
+<button type="button" autofocus class="sidenote__close" popovertarget="sidenote-1" popovertargetaction="hide" aria-label="Close sidenote 1"><span class="sidenote__close-icon">×</span></button>
+</span>
+<div class="sidenote__body">
+<p><span class="sidenote__id" aria-hidden="true">1</span> <a href="#observation">Early source</a></p>
+<details class="sidenote__rest">
+<summary><span class="sidenote__read-more">Read more</span><span class="sidenote__show-less">Show less</span></summary>
+<p>The observation was recorded from a different site. <a href="#observation">Later source</a>.</p>
+</details>
+</div>
+</div></div>`
+
+const noteHtml = (extra = '') => `<section class="markdown">
+${extra}
+<p id="observation">Original observation.</p>
 <blockquote>
 <p>First quoted paragraph.</p>
 <p>Second quoted paragraph.</p>
@@ -185,7 +204,7 @@ export async function createFixture(directory: string, origin: string) {
 					transformation: 'markdown',
 					mime_type: 'text/html',
 					is_embedded: 1,
-					content: noteHtml
+					content: noteHtml(piece.slug === notebook.slug ? sidenoteHtml : '')
 				}))
 			)
 			.execute()

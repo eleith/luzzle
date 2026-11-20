@@ -1,20 +1,15 @@
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import remarkGfm from './remark-gfm.js'
-import {
-	remarkSidenote,
-	remarkSidenotesUnified,
-	sidenoteHandler,
-	rehypeSidenotes,
-	rehypeSidenotePreviews,
-} from './remark-sidenotes.js'
+import { remarkSidenoteSyntax, remarkResolveSidenotes } from './remark-sidenotes.js'
+import { sidenoteHandler, rehypePlaceSidenotes, rehypePresentSidenotes } from './sidenotes/html.js'
+import { rehypeSidenoteHeadingIds } from './sidenotes/heading-ids.js'
 import remarkGemoji from 'remark-gemoji'
 import remarkDirective from 'remark-directive'
 import remarkRehype from 'remark-rehype'
 import rehypeRaw from 'rehype-raw'
 import { rehypeTaskListLabels } from './rehype-task-list-labels.js'
 import { rehypeAssetUrls, type AssetUrls } from './rehype-asset-urls.js'
-import rehypeSlug from 'rehype-slug'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypePrettyCode from 'rehype-pretty-code'
 import rehypeStringify from 'rehype-stringify'
@@ -29,9 +24,9 @@ export async function processMarkdown(
 ): Promise<string> {
 	const processor = unified()
 		.use(remarkGfm, { plugins: { footnote: false } })
-		.use(remarkSidenote)
+		.use(remarkSidenoteSyntax)
 		.use(remarkParse)
-		.use(remarkSidenotesUnified)
+		.use(remarkResolveSidenotes)
 		.use(remarkGemoji)
 		.use(remarkDirective)
 		.use(remarkRehype, {
@@ -40,13 +35,13 @@ export async function processMarkdown(
 				sidenote: sidenoteHandler,
 			},
 		})
-		.use(rehypeSidenotes)
 		.use(rehypePrettyCode, { theme: themes })
-		.use(rehypeRaw)
+		.use(rehypeRaw, { passThrough: ['sidenoteMarkup'] })
+		.use(rehypePlaceSidenotes)
 		.use(rehypeTaskListLabels)
-		.use(rehypeSidenotePreviews)
 		.use(rehypeAssetUrls, assets)
-		.use(rehypeSlug)
+		.use(rehypeSidenoteHeadingIds)
+		.use(rehypePresentSidenotes)
 		.use(rehypeAutolinkHeadings)
 		.use(rehypeStringify, { allowDangerousHtml: true })
 

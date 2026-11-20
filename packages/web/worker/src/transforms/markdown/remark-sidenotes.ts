@@ -1,51 +1,18 @@
 import { visit, SKIP } from 'unist-util-visit'
-import { h } from 'hastscript'
-import type { Handler } from 'mdast-util-to-hast'
-import type * as Hast from 'hast'
-import type { Processor, Data } from 'unified'
-import type {
-	TokenizeContext,
-	Effects,
-	State,
-	Code,
-	Token,
-	Event,
-	Extension as MicromarkExtension
-} from 'micromark-util-types'
-import type { CompileContext, Extension as FromMarkdownExtension } from 'mdast-util-from-markdown'
-import { blankLine } from 'micromark-core-commonmark'
-import { factorySpace } from 'micromark-factory-space'
-import { markdownLineEndingOrSpace } from 'micromark-util-character'
-import { normalizeIdentifier } from 'micromark-util-normalize-identifier'
-import { codes, constants, types } from 'micromark-util-symbol'
 import { ok as assert } from 'devlop'
-
-declare module 'micromark-util-types' {
-	interface TokenTypeMap {
-		sidenoteCall: 'sidenoteCall'
-		sidenoteCallLabelMarker: 'sidenoteCallLabelMarker'
-		sidenoteCallMarker: 'sidenoteCallMarker'
-		sidenoteCallString: 'sidenoteCallString'
-		sidenoteDefinition: 'sidenoteDefinition'
-		sidenoteDefinitionIndent: 'sidenoteDefinitionIndent'
-		sidenoteDefinitionLabel: 'sidenoteDefinitionLabel'
-		sidenoteDefinitionLabelMarker: 'sidenoteDefinitionLabelMarker'
-		sidenoteDefinitionLabelString: 'sidenoteDefinitionLabelString'
-		sidenoteDefinitionMarker: 'sidenoteDefinitionMarker'
-		sidenoteDefinitionWhitespace: 'sidenoteDefinitionWhitespace'
-	}
-
-	interface ParseContext {
-		sidenotes?: string[]
-	}
-}
-
+import { normalizeIdentifier } from 'micromark-util-normalize-identifier'
 import type * as Mdast from 'mdast'
+import type { Processor, Data } from 'unified'
+import type { Extension as MicromarkExtension, Token } from 'micromark-util-types'
+import type { CompileContext, Extension as FromMarkdownExtension } from 'mdast-util-from-markdown'
+import { sidenoteSyntax } from './sidenotes/syntax.js'
 
 interface SidenoteReference extends Mdast.Node {
 	type: 'sidenoteReference'
 	identifier: string
 	label: string
+	children: []
+	referenceType: 'shortcut'
 }
 
 interface SidenoteDefinition extends Mdast.Parent {
@@ -55,7 +22,7 @@ interface SidenoteDefinition extends Mdast.Parent {
 	children: Array<Mdast.RootContent>
 }
 
-interface Sidenote extends Mdast.Parent {
+export interface Sidenote extends Mdast.Parent {
 	type: 'sidenote'
 	data: Mdast.Data & { noteId: string; referenceId: number; inline: boolean }
 	children: Array<Mdast.RootContent>
@@ -63,6 +30,7 @@ interface Sidenote extends Mdast.Parent {
 
 declare module 'mdast' {
 	interface RootContentMap {
+		sidenoteReference: SidenoteReference
 		sidenoteDefinition: SidenoteDefinition
 		sidenote: Sidenote
 	}
@@ -72,363 +40,19 @@ declare module 'mdast' {
 	}
 }
 
-// Micromark extension
-const indent = { tokenize: tokenizeIndent, partial: true }
-
-function sidenoteSyntax(): MicromarkExtension {
-	return {
-		document: {
-			[codes.leftSquareBracket]: {
-				name: 'sidenoteDefinition',
-				tokenize: tokenizeDefinitionStart,
-				continuation: { tokenize: tokenizeDefinitionContinuation },
-				exit: sidenoteDefinitionEnd
-			}
-		},
-		text: {
-			[codes.leftSquareBracket]: {
-				name: 'sidenoteCall',
-				tokenize: tokenizeSidenoteCall
-			},
-			[codes.rightSquareBracket]: {
-				name: 'potentialSidenoteCall',
-				add: 'after',
-				tokenize: tokenizePotentialSidenoteCall,
-				resolveTo: resolveToPotentialSidenoteCall
-			}
-		}
-	}
-}
-
-function tokenizePotentialSidenoteCall(
-	this: TokenizeContext,
-	effects: Effects,
-	ok: State,
-	nok: State
-) {
-	// eslint-disable-next-line @typescript-eslint/no-this-alias
-	const self = this
-	let index = self.events.length
-	const defined = self.parser.sidenotes || (self.parser.sidenotes = [])
-	let labelStart: Token | undefined
-
-	while (index--) {
-		const token = self.events[index][1]
-
-		if (token.type === types.labelImage) {
-			labelStart = token
-			break
-		}
-
-		if (
-			token.type === 'sidenoteCall' ||
-			token.type === types.labelLink ||
-			token.type === types.label ||
-			token.type === types.image ||
-			token.type === types.link
-		) {
-			break
-		}
-	}
-
-	return start
-
-	function start(code: Code) {
-		assert(code === codes.rightSquareBracket, 'expected `]`')
-
-		if (!labelStart || !labelStart._balanced) {
-			return nok(code)
-		}
-
-		const id = normalizeIdentifier(self.sliceSerialize({ start: labelStart.end, end: self.now() }))
-
-		if (id.codePointAt(0) !== codes.caret || !defined.includes(id.slice(1))) {
-			return nok(code)
-		}
-
-		effects.enter('sidenoteCallLabelMarker')
-		effects.consume(code)
-		effects.exit('sidenoteCallLabelMarker')
-		return ok(code)
-	}
-}
-
-function resolveToPotentialSidenoteCall(events: Event[], context: TokenizeContext) {
-	let index = events.length
-	let labelStart: Token | undefined
-
-	while (index--) {
-		if (events[index][1].type === types.labelImage && events[index][0] === 'enter') {
-			labelStart = events[index][1]
-			break
-		}
-	}
-
-	assert(labelStart, 'expected `labelStart` to resolve')
-
-	events[index + 1][1].type = types.data
-	events[index + 3][1].type = 'sidenoteCallLabelMarker'
-
-	const call = {
-		type: 'sidenoteCall',
-		start: Object.assign({}, events[index + 3][1].start),
-		end: Object.assign({}, events[events.length - 1][1].end)
-	}
-	const marker = {
-		type: 'sidenoteCallMarker',
-		start: Object.assign({}, events[index + 3][1].end),
-		end: Object.assign({}, events[index + 3][1].end)
-	}
-	marker.end.column++
-	marker.end.offset++
-	marker.end._bufferIndex++
-	const string = {
-		type: 'sidenoteCallString',
-		start: Object.assign({}, marker.end),
-		end: Object.assign({}, events[events.length - 1][1].start)
-	}
-	const chunk = {
-		type: types.chunkString,
-		contentType: 'string',
-		start: Object.assign({}, string.start),
-		end: Object.assign({}, string.end)
-	}
-
-	const replacement: Event[] = [
-		events[index + 1],
-		events[index + 2],
-		['enter', call as Token, context],
-		events[index + 3],
-		events[index + 4],
-		['enter', marker as Token, context],
-		['exit', marker as Token, context],
-		['enter', string as Token, context],
-		['enter', chunk as Token, context],
-		['exit', chunk as Token, context],
-		['exit', string as Token, context],
-		events[events.length - 2],
-		events[events.length - 1],
-		['exit', call as Token, context]
-	]
-
-	events.splice(index, events.length - index + 1, ...replacement)
-
-	return events
-}
-
-function tokenizeSidenoteCall(this: TokenizeContext, effects: Effects, ok: State, nok: State) {
-	//const self = this
-	//const defined = self.parser.sidenotes || (self.parser.sidenotes = [])
-	let size = 0
-	let data: boolean
-
-	return start
-
-	function start(code: Code) {
-		assert(code === codes.leftSquareBracket, 'expected `[`')
-		effects.enter('sidenoteCall')
-		effects.enter('sidenoteCallLabelMarker')
-		effects.consume(code)
-		effects.exit('sidenoteCallLabelMarker')
-		return callStart
-	}
-
-	function callStart(code: Code) {
-		if (code !== codes.caret) return nok(code)
-
-		effects.enter('sidenoteCallMarker')
-		effects.consume(code)
-		effects.exit('sidenoteCallMarker')
-		effects.enter('sidenoteCallString')
-		effects.enter('chunkString').contentType = 'string'
-		return callData
-	}
-
-	function callData(code: Code) {
-		if (
-			size > constants.linkReferenceSizeMax ||
-			(code === codes.rightSquareBracket && !data) ||
-			code === codes.eof ||
-			code === codes.leftSquareBracket ||
-			markdownLineEndingOrSpace(code)
-		) {
-			return nok(code)
-		}
-
-		if (code === codes.rightSquareBracket) {
-			effects.exit('chunkString')
-			effects.exit('sidenoteCallString')
-
-			effects.enter('sidenoteCallLabelMarker')
-			effects.consume(code)
-			effects.exit('sidenoteCallLabelMarker')
-			effects.exit('sidenoteCall')
-			return ok
-		}
-
-		if (!markdownLineEndingOrSpace(code)) {
-			data = true
-		}
-
-		size++
-		effects.consume(code)
-		return code === codes.backslash ? callEscape : callData
-	}
-
-	function callEscape(code: Code) {
-		if (
-			code === codes.leftSquareBracket ||
-			code === codes.backslash ||
-			code === codes.rightSquareBracket
-		) {
-			effects.consume(code)
-			size++
-			return callData
-		}
-
-		return callData(code)
-	}
-}
-
-function tokenizeDefinitionStart(this: TokenizeContext, effects: Effects, ok: State, nok: State) {
-	// eslint-disable-next-line @typescript-eslint/no-this-alias
-	const self = this
-	const defined = self.parser.sidenotes || (self.parser.sidenotes = [])
-	let identifier: string
-	let size = 0
-	let data: boolean | undefined
-
-	return start
-
-	function start(code: Code) {
-		assert(code === codes.leftSquareBracket, 'expected `[`')
-		effects.enter('sidenoteDefinition')._container = true
-		effects.enter('sidenoteDefinitionLabel')
-		effects.enter('sidenoteDefinitionLabelMarker')
-		effects.consume(code)
-		effects.exit('sidenoteDefinitionLabelMarker')
-		return labelAtMarker
-	}
-
-	function labelAtMarker(code: Code) {
-		if (code === codes.caret) {
-			effects.enter('sidenoteDefinitionMarker')
-			effects.consume(code)
-			effects.exit('sidenoteDefinitionMarker')
-			effects.enter('sidenoteDefinitionLabelString')
-			effects.enter('chunkString').contentType = 'string'
-			return labelInside
-		}
-
-		return nok(code)
-	}
-
-	function labelInside(code: Code) {
-		if (
-			size > constants.linkReferenceSizeMax ||
-			(code === codes.rightSquareBracket && !data) ||
-			code === codes.eof ||
-			code === codes.leftSquareBracket ||
-			markdownLineEndingOrSpace(code)
-		) {
-			return nok(code)
-		}
-
-		if (code === codes.rightSquareBracket) {
-			effects.exit('chunkString')
-			const token = effects.exit('sidenoteDefinitionLabelString')
-			identifier = normalizeIdentifier(self.sliceSerialize(token))
-			effects.enter('sidenoteDefinitionLabelMarker')
-			effects.consume(code)
-			effects.exit('sidenoteDefinitionLabelMarker')
-			effects.exit('sidenoteDefinitionLabel')
-			return labelAfter
-		}
-
-		if (!markdownLineEndingOrSpace(code)) {
-			data = true
-		}
-
-		size++
-		effects.consume(code)
-		return code === codes.backslash ? labelEscape : labelInside
-	}
-
-	function labelEscape(code: Code) {
-		if (
-			code === codes.leftSquareBracket ||
-			code === codes.backslash ||
-			code === codes.rightSquareBracket
-		) {
-			effects.consume(code)
-			size++
-			return labelInside
-		}
-
-		return labelInside(code)
-	}
-
-	function labelAfter(code: Code) {
-		if (code === codes.colon) {
-			effects.enter('definitionMarker')
-			effects.consume(code)
-			effects.exit('definitionMarker')
-
-			if (!defined.includes(identifier)) {
-				defined.push(identifier)
-			}
-
-			return factorySpace(effects, whitespaceAfter, 'sidenoteDefinitionWhitespace')
-		}
-
-		return nok(code)
-	}
-
-	function whitespaceAfter(code: Code) {
-		return ok(code)
-	}
-}
-
-function tokenizeDefinitionContinuation(effects: Effects, ok: State, nok: State) {
-	return effects.check(blankLine, ok, effects.attempt(indent, ok, nok))
-}
-
-function sidenoteDefinitionEnd(this: TokenizeContext, effects: Effects): undefined {
-	effects.exit('sidenoteDefinition')
-}
-
-function tokenizeIndent(this: TokenizeContext, effects: Effects, ok: State, nok: State) {
-	// eslint-disable-next-line @typescript-eslint/no-this-alias
-	const self = this
-
-	return factorySpace(effects, afterPrefix, 'sidenoteDefinitionIndent', constants.tabSize + 1)
-
-	function afterPrefix(code: Code) {
-		const tail = self.events[self.events.length - 1]
-		return tail &&
-			tail[1].type === 'sidenoteDefinitionIndent' &&
-			tail[2].sliceSerialize(tail[1], true).length === constants.tabSize
-			? ok(code)
-			: nok(code)
-	}
-}
-
-// Mdast extension
 function enterSidenoteCallString(this: CompileContext) {
 	this.buffer()
 }
 
 function enterSidenoteCall(this: CompileContext, token: Token) {
-	this.enter(
-		{
-			type: 'sidenoteReference' as 'linkReference',
-			identifier: '',
-			label: '',
-			children: [],
-			referenceType: 'shortcut'
-		} as Mdast.Nodes,
-		token
-	)
+	const reference: SidenoteReference = {
+		type: 'sidenoteReference',
+		identifier: '',
+		label: '',
+		children: [],
+		referenceType: 'shortcut'
+	}
+	this.enter(reference, token)
 }
 
 function enterSidenoteDefinitionLabelString(this: CompileContext) {
@@ -436,15 +60,12 @@ function enterSidenoteDefinitionLabelString(this: CompileContext) {
 }
 
 function enterSidenoteDefinition(this: CompileContext, token: Token) {
-	this.enter(
-		{ type: 'sidenoteDefinition', identifier: '', label: '', children: [] } as Mdast.Nodes,
-		token
-	)
+	this.enter({ type: 'sidenoteDefinition', identifier: '', label: '', children: [] }, token)
 }
 
 function exitSidenoteCallString(this: CompileContext, token: Token) {
 	const label = this.resume()
-	const node = this.stack[this.stack.length - 1] as unknown as SidenoteReference
+	const node = this.stack[this.stack.length - 1] as SidenoteReference
 	node.identifier = normalizeIdentifier(this.sliceSerialize(token)).toLowerCase()
 	node.label = label
 }
@@ -482,8 +103,7 @@ function sidenoteFromMarkdown(): FromMarkdownExtension {
 	}
 }
 
-// Remark plugin
-export function remarkSidenote(this: Processor) {
+export function remarkSidenoteSyntax(this: Processor) {
 	const data = this.data() as Data & {
 		micromarkExtensions?: MicromarkExtension[]
 		fromMarkdownExtensions?: FromMarkdownExtension[]
@@ -496,225 +116,38 @@ export function remarkSidenote(this: Processor) {
 	fromMarkdownExtensions.push(sidenoteFromMarkdown())
 }
 
-export const remarkSidenotesUnified = () => {
+export const remarkResolveSidenotes = () => {
 	return (tree: Mdast.Root) => {
 		const definitions = new Map<string, Mdast.RootContent[]>()
-		const nodesToRemove: SidenoteDefinition[] = []
+		const definitionsToRemove = new Set<Mdast.RootContent>()
 		let referenceId = 0
 
-		visit(tree, 'sidenoteDefinition', (node: SidenoteDefinition) => {
+		visit(tree, 'sidenoteDefinition', (node) => {
 			definitions.set(node.identifier, node.children)
-			nodesToRemove.push(node)
+			definitionsToRemove.add(node)
 		})
 
-		tree.children = tree.children.filter(
-			(child) => !nodesToRemove.includes(child as SidenoteDefinition)
-		)
+		tree.children = tree.children.filter((child) => !definitionsToRemove.has(child))
 
 		visit(tree, 'sidenoteReference', (node, index, parent) => {
 			if (!parent || typeof index !== 'number') return undefined
 
 			const id = node.identifier
-			if (definitions.has(id)) {
-				const definitionChildren = definitions.get(id)
-				if (!definitionChildren) return undefined
+			const definitionChildren = definitions.get(id)
+			if (!definitionChildren) return undefined
 
-				const paragraph =
-					definitionChildren.length === 1 && definitionChildren[0].type === 'paragraph'
-						? definitionChildren[0]
-						: undefined
+			const paragraph =
+				definitionChildren.length === 1 && definitionChildren[0].type === 'paragraph'
+					? definitionChildren[0]
+					: undefined
 
-				parent.children.splice(index, 1, {
-					type: 'sidenote',
-					data: { noteId: id, referenceId: ++referenceId, inline: Boolean(paragraph) },
-					children: paragraph?.children ?? definitionChildren
-				} as Sidenote)
-				return [SKIP, index]
+			const note: Sidenote = {
+				type: 'sidenote',
+				data: { noteId: id, referenceId: ++referenceId, inline: Boolean(paragraph) },
+				children: paragraph?.children ?? definitionChildren
 			}
-			return undefined
-		})
-	}
-}
-
-function renderSidenoteHeader(noteId: string, contentId: string): Hast.Element {
-	return h('span', { className: 'sidenote__header' }, [
-		h('span', { className: 'sidenote__label', 'aria-hidden': 'true' }, `Sidenote ${noteId}`),
-		h(
-			'button',
-			{
-				type: 'button',
-				className: 'sidenote__close',
-				popovertarget: contentId,
-				popovertargetaction: 'hide',
-				'aria-label': `Close sidenote ${noteId}`
-			},
-			[
-				h('span', { className: 'sidenote__close-id' }, noteId),
-				h('span', { className: 'sidenote__close-icon' }, '×')
-			]
-		)
-	])
-}
-
-export const sidenoteHandler: Handler = (state, node) => {
-	const { noteId, referenceId, inline } = (node as Sidenote).data
-	const contentId = `sidenote-${referenceId}`
-	const prefix: Hast.ElementContent[] = [
-		renderSidenoteHeader(noteId, contentId),
-		h('span', { className: 'sidenote__id' }, noteId),
-		{ type: 'text', value: ' ' }
-	]
-	const content = state.all(node)
-	const first = content[0]
-	if (!inline && first?.type === 'element' && first.tagName === 'p') {
-		first.children.unshift(...prefix)
-	} else {
-		content.unshift(...prefix)
-	}
-
-	const preview = h(
-		'button',
-		{
-			type: 'button',
-			className: 'sidenote__preview',
-			// The numbered button is the keyboard entry; avoid a second stop beneath the card.
-			tabIndex: -1,
-			popovertarget: contentId,
-			'aria-label': `Read sidenote ${noteId}`
-		},
-		[
-			h('span', { className: 'sidenote__excerpt', 'aria-hidden': 'true' }, [
-				h('span', { className: 'sidenote__id' }, noteId),
-				' '
-			])
-		]
-	)
-	const card = h(
-		inline ? 'small' : 'div',
-		{
-			id: contentId,
-			className: 'sidenote__content',
-			tabIndex: -1,
-			autoFocus: true,
-			popover: 'auto',
-			role: 'note',
-			'aria-label': `Sidenote ${noteId}`
-		},
-		content
-	)
-
-	return h('span', { className: 'sidenote' }, [
-		h(
-			'button',
-			{
-				type: 'button',
-				className: 'sidenote__button',
-				popovertarget: contentId,
-				'aria-label': `Sidenote ${noteId}`
-			},
-			[h('sup', noteId)]
-		),
-		h(inline ? 'span' : 'div', { className: 'sidenote__slot' }, [preview, card])
-	])
-}
-
-function hasClass(node: Hast.Nodes, className: string): node is Hast.Element {
-	return (
-		node.type === 'element' &&
-		Array.isArray(node.properties.className) &&
-		node.properties.className.includes(className)
-	)
-}
-
-// Hoist block-rich slots before HTML parsing repairs their nesting.
-export const rehypeSidenotes = () => {
-	return (tree: Hast.Root) => {
-		const parents = new Map<Hast.Nodes, Hast.Parents>()
-		const slots: Hast.Element[] = []
-		const flowContainers = new Set(['blockquote', 'div', 'li', 'td', 'th'])
-
-		visit(tree, (node, _index, parent) => {
-			if (parent) parents.set(node, parent)
-			if (hasClass(node, 'sidenote__slot') && node.tagName === 'div') {
-				slots.push(node)
-			}
-		})
-
-		// Insert backwards so slots sharing an anchor retain reference order.
-		for (const slot of slots.reverse()) {
-			const parent = parents.get(slot)
-			let container = parent
-			let anchor: Hast.Nodes = slot
-			while (container && container.type !== 'root' && !flowContainers.has(container.tagName)) {
-				anchor = container
-				container = parents.get(container)
-			}
-			if (!parent || !container || parent === container) continue
-
-			parent.children.splice(parent.children.indexOf(slot), 1)
-			container.children.splice(container.children.indexOf(anchor) + 1, 0, slot)
-		}
-	}
-}
-
-const previewBreakTags = new Set([
-	'blockquote',
-	'br',
-	'div',
-	'h1',
-	'h2',
-	'h3',
-	'h4',
-	'h5',
-	'h6',
-	'hr',
-	'li',
-	'ol',
-	'p',
-	'pre',
-	'section',
-	'table',
-	'td',
-	'th',
-	'tr',
-	'ul'
-])
-
-function sidenotePreviewText(node: Hast.Nodes): string {
-	if (node.type === 'text') return node.value
-	if (node.type !== 'element') return ''
-	const classes = node.properties.className
-	if (
-		Array.isArray(classes) &&
-		(classes.includes('sidenote__header') || classes.includes('sidenote__id'))
-	)
-		return ''
-	if (node.tagName === 'script' || node.tagName === 'style') return ''
-
-	const text = node.children.map(sidenotePreviewText).join('')
-	return previewBreakTags.has(node.tagName) ? ` ${text} ` : text
-}
-
-export const rehypeSidenotePreviews = () => {
-	return (tree: Hast.Root) => {
-		visit(tree, 'element', (slot) => {
-			if (!hasClass(slot, 'sidenote__slot')) return
-			const preview = slot.children.find((node): node is Hast.Element =>
-				hasClass(node, 'sidenote__preview')
-			)
-			const content = slot.children.find((node): node is Hast.Element =>
-				hasClass(node, 'sidenote__content')
-			)
-			if (!preview || !content) return
-			const excerpt = preview.children.find((node): node is Hast.Element =>
-				hasClass(node, 'sidenote__excerpt')
-			)
-			if (!excerpt) return
-
-			excerpt.children.push({
-				type: 'text',
-				value: sidenotePreviewText(content).replace(/\s+/g, ' ').trim()
-			})
+			parent.children.splice(index, 1, note)
+			return [SKIP, index]
 		})
 	}
 }
