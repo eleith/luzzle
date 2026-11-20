@@ -1,5 +1,15 @@
 # @luzzle/web
 
+## 0.0.253
+
+### Patch Changes
+
+- b64a869: Let short sidenotes fit their content on narrow screens. Add a quiet “Sidenote X” label and a separate close button, while keeping longer notes scrollable. Republish existing pieces to regenerate their sidenote controls.
+- c60b040: Show formatted sidenotes with clickable links in the desktop margin. Click a superscript to jump to and highlight its note without moving it out of the margin. Notes with more content after the first paragraph expand in place with Read more. These interactions work without application JavaScript. Republish existing pieces to regenerate their sidenotes.
+- @luzzle/web.db@0.0.1
+  - @luzzle/web.pieces@0.0.1
+  - @luzzle/web.templates@0.0.1
+
 ## 0.0.252
 
 ### Patch Changes

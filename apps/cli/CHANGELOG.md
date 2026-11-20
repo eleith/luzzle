@@ -1,5 +1,11 @@
 # @luzzle/cli
 
+## 0.0.253
+
+### Patch Changes
+
+- @luzzle/core@0.0.253
+
 ## 0.0.252
 
 ### Patch Changes
