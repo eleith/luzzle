@@ -536,10 +536,9 @@ export const remarkSidenotesUnified = () => {
 	}
 }
 
-export const sidenoteHandler: Handler = (state, node) => {
-	const { noteId, referenceId, inline } = (node as Sidenote).data
-	const contentId = `sidenote-${referenceId}`
-	const prefix: Hast.ElementContent[] = [
+function renderSidenoteHeader(noteId: string, contentId: string): Hast.Element {
+	return h('span', { className: 'sidenote__header' }, [
+		h('span', { className: 'sidenote__label', 'aria-hidden': 'true' }, `Sidenote ${noteId}`),
 		h(
 			'button',
 			{
@@ -549,8 +548,19 @@ export const sidenoteHandler: Handler = (state, node) => {
 				popovertargetaction: 'hide',
 				'aria-label': `Close sidenote ${noteId}`
 			},
-			noteId
-		),
+			[
+				h('span', { className: 'sidenote__close-id' }, noteId),
+				h('span', { className: 'sidenote__close-icon' }, '×')
+			]
+		)
+	])
+}
+
+export const sidenoteHandler: Handler = (state, node) => {
+	const { noteId, referenceId, inline } = (node as Sidenote).data
+	const contentId = `sidenote-${referenceId}`
+	const prefix: Hast.ElementContent[] = [
+		renderSidenoteHeader(noteId, contentId),
 		h('span', { className: 'sidenote__id' }, noteId),
 		{ type: 'text', value: ' ' }
 	]
@@ -676,7 +686,7 @@ function sidenotePreviewText(node: Hast.Nodes): string {
 	const classes = node.properties.className
 	if (
 		Array.isArray(classes) &&
-		(classes.includes('sidenote__close') || classes.includes('sidenote__id'))
+		(classes.includes('sidenote__header') || classes.includes('sidenote__id'))
 	)
 		return ''
 	if (node.tagName === 'script' || node.tagName === 'style') return ''

@@ -252,6 +252,15 @@ pre.shiki code span,
 		color: var(--color-secondary);
 	}
 
+	.sidenote__header {
+		display: contents;
+	}
+
+	.sidenote__label,
+	.sidenote__close-icon {
+		display: none;
+	}
+
 	.sidenote__content[popover]::backdrop {
 		background: rgb(0 0 0 / 12%);
 	}
@@ -320,6 +329,63 @@ pre.shiki code span,
 		@supports selector(:popover-open) {
 			.sidenote__button {
 				display: inline;
+			}
+		}
+	}
+
+	@media screen and (width < 1280px) {
+		.sidenote__content[popover]:popover-open {
+			min-block-size: 0;
+			padding-block-start: 0.5rem;
+
+			> :first-child,
+			> .sidenote__id + * {
+				margin-block-start: 0;
+			}
+
+			> :last-child {
+				margin-block-end: 0;
+			}
+
+			.sidenote__header {
+				display: flex;
+				align-items: center;
+				min-block-size: 2.5rem;
+				margin-block-end: 0.25rem;
+				padding-inline-end: 2rem;
+				color: var(--color-on-surface-variant);
+			}
+
+			.sidenote__label {
+				display: block;
+				font-size: var(--font-size-xs);
+				overflow-wrap: anywhere;
+			}
+
+			.sidenote__header > .sidenote__close {
+				display: grid;
+				place-items: center;
+				position: absolute;
+				inset-block-start: 0.125rem;
+				inset-inline-end: 0.125rem;
+				inline-size: 2.75rem;
+				block-size: 2.75rem;
+				color: inherit;
+				font-size: 1.5rem;
+				line-height: 1;
+				text-decoration: none;
+
+				&:focus-visible {
+					outline-offset: -2px;
+				}
+			}
+
+			.sidenote__close-id {
+				display: none;
+			}
+
+			.sidenote__close-icon {
+				display: block;
 			}
 		}
 	}

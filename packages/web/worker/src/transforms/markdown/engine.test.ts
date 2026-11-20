@@ -83,12 +83,21 @@ test.each([
 			expect(textContent(preview)).toBe(`shared ${expectedPreview}`)
 
 			const closeButtons: Element[] = []
+			const labels: Element[] = []
 			visit(note, 'element', (node) => {
 				if (node.tagName === 'button') closeButtons.push(node)
+				const classes = node.properties.className
+				if (Array.isArray(classes) && classes.includes('sidenote__label')) labels.push(node)
 			})
 			expect(closeButtons).toHaveLength(1)
 			expect(closeButtons[0].properties.popoverTarget).toBe(note.properties.id)
 			expect(closeButtons[0].properties.popoverTargetAction).toBe('hide')
+			expect(closeButtons[0].properties.ariaLabel).toBe('Close sidenote shared')
+			expect(textContent(closeButtons[0])).toContain('×')
+			expect(textContent(closeButtons[0])).not.toContain('Sidenote shared')
+			expect(labels).toHaveLength(1)
+			expect(textContent(labels[0])).toBe('Sidenote shared')
+			expect(labels[0].properties.ariaHidden).toBe('true')
 			expect(note.properties.tabIndex).toBe(-1)
 			expect(textContent(note)).toContain('First paragraph.')
 			if (definition.includes('Second paragraph.')) {
