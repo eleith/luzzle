@@ -34,7 +34,7 @@ To replace the icons on `/pieces/books`, put a **trusted, operator-authored**
 
 ```yaml
 icon:
-  file: ./content/templates/icon/example.svelte
+  file: ./content/templates/book/icon.svelte
   name: book
   mapping:
     image: cover
@@ -44,9 +44,10 @@ icon:
 
 `file` is a local path relative to the web process’s working directory (beside the
 `config.yaml` alias, `/app` in production Docker), not relative to the physical
-`config/` mount or the requested URL. The [demo component](../../apps/web/demo/content/templates/icon/example.svelte)
-and its adjacent `props.d.ts` are a copyable example. In the demo, removing just
-`file` restores the built-in book design with the same mapped metadata.
+`config/` mount or the requested URL. The demo books listing selects the [3D book icon](../../apps/web/demo/content/templates/book/icon.svelte).
+It shares its editor types with the [minimal starter](../../apps/web/demo/content/templates/icon/example.svelte),
+which is still available to copy with its adjacent `props.d.ts`. Removing just `file`
+restores the built-in book icon with the same mapped metadata.
 
 Only the public **type listing** renders this file. Mixed listings, home, search
 (including type-filtered searches), tags, and admin previews still use the
