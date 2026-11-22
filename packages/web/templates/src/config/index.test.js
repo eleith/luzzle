@@ -51,3 +51,28 @@ test('unknown explicit names and unsupported fields do not silently fall back', 
 	])
 		assert.throws(() => configure(templates));
 });
+
+test('a local icon file accepts its own field names, with an optional built-in fallback', () => {
+	const file = './content/templates/icon/example.svelte';
+	const mapping = { heading: { field: 'headline', default: 'Untitled' } };
+	for (const icon of [
+		{ file, mapping },
+		{ file, name: 'book', mapping }
+	]) {
+		assert.deepEqual(configure({ icon }).icon, { name: 'default', ...icon });
+	}
+	for (const invalid of [
+		{ icon: { file, name: 'unknown' } },
+		{ icon: { file, mapping: { heading: { expression: 'headline' } } } },
+		{ page: { file } },
+		{ opengraph: { file } },
+		...[
+			'',
+			'example.js',
+			'/tmp/icon.svelte',
+			'C:\\icons\\book.svelte',
+			'https://host/icon.svelte'
+		].map((file) => ({ icon: { file } }))
+	])
+		assert.throws(() => configure(invalid));
+});

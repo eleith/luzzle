@@ -61,6 +61,7 @@ pieces:
   - type: books
     templates:
       icon:
+        file: ./content/templates/icon/example.svelte
         name: book
         mapping:
           image: cover

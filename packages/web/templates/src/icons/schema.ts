@@ -1,3 +1,5 @@
+import { Type } from '@sinclair/typebox';
+import { createFieldMappingSchema } from '@luzzle/web.config/mapping';
 import { createTemplateSelectionSchema } from '../config/association.js';
 import type { TemplateConfig } from '../config/index.js';
 import { schema as fallback } from './default/schema.js';
@@ -44,4 +46,19 @@ export function getIconTemplateNames(pieces: TemplateConfig['pieces']): Record<s
 	return Object.fromEntries(names);
 }
 
-export const schema = createTemplateSelectionSchema('icon', templates);
+const builtIn = createTemplateSelectionSchema('icon', templates);
+const external = Type.Object(
+	{
+		file: Type.String({
+			pattern: '^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\\\\\x00\\r\\n]+\\.svelte$',
+			description:
+				'Trusted local Svelte file, relative to the web process working directory (/app in production Docker), not the mounted config directory.'
+		}),
+		name: Type.Optional(Type.Union(templates.map(({ name }) => Type.Literal(name)))),
+		mapping: Type.Optional(
+			Type.Record(Type.String(), createFieldMappingSchema('icon-external-field'))
+		)
+	},
+	{ additionalProperties: false }
+);
+export const schema = Type.Union([...builtIn.anyOf, external], { default: builtIn.default });

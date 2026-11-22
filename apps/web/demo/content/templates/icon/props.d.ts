@@ -2,6 +2,8 @@
 export interface IconProps<Fields> {
 	piece: { title: string }
 	fields: Fields
+	size: { width: number; height?: number }
+	lazy?: boolean
 	helpers: {
 		getPieceImageUrl(
 			image: string | undefined,

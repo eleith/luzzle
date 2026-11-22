@@ -17,7 +17,8 @@
 		}
 		icon: Snippet<[piece: TemplatedPiece, index: number, active: boolean]>
 	} = $props()
-	let activePieceId = $state<string | null>(null)
+	let hoveredPieceId = $state<string | null>(null)
+	let focusedPieceId = $state<string | null>(null)
 
 	afterNavigate(({ type, shallow }) => {
 		if (shallow && type === 'goto') return
@@ -39,36 +40,27 @@
 <section>
 	<div class="container">
 		{#each data.pieces as piece, i (piece.id)}
-			<a
-				href={resolve(`pieces/${piece.type}/${piece.slug}`)}
-				onpointerenter={() => {
-					activePieceId = piece.id
-				}}
-				onpointerleave={() => {
-					activePieceId = null
-				}}
-				onfocus={(e) => {
-					if (e.currentTarget.matches(':focus-visible')) {
-						activePieceId = piece.id
-					}
-				}}
-				onblur={() => {
-					activePieceId = null
-				}}
-			>
-				<div class="piece-card">
-					<div class="piece-icon" aria-hidden="true">
-						<div style="display: flex;">
-							<div style="align-self: baseline;">
-								{@render icon(piece, i, activePieceId === piece.id)}
-							</div>
+			<div class="piece-card">
+				<div class="piece-icon" inert aria-hidden="true">
+					<div style="display: flex;">
+						<div style="align-self: baseline;">
+							{@render icon(piece, i, hoveredPieceId === piece.id || focusedPieceId === piece.id)}
 						</div>
 					</div>
-					<div class="piece-text">
-						{piece.title}
-					</div>
 				</div>
-			</a>
+				<a
+					class="piece-text"
+					href={resolve(`pieces/${piece.type}/${piece.slug}`)}
+					onpointerenter={() => (hoveredPieceId = piece.id)}
+					onpointerleave={() => (hoveredPieceId = null)}
+					onfocus={(e) => {
+						if (e.currentTarget.matches(':focus-visible')) focusedPieceId = piece.id
+					}}
+					onblur={() => (focusedPieceId = null)}
+				>
+					<span>{piece.title}</span>
+				</a>
+			</div>
 		{/each}
 	</div>
 </section>
@@ -115,36 +107,40 @@
 		padding: var(--space-5) 0 var(--space-5) 0;
 	}
 
-	.container > a {
-		cursor: pointer;
+	.piece-card {
+		position: relative;
+		isolation: isolate;
 		min-height: 200px;
-		cursor: pointer;
-		text-decoration: none;
+		display: flex;
+		align-items: flex-start;
 	}
 
-	.container > a .piece-text {
-		color: var(--color-on-surface);
+	/* Stretch the title link over the decorative icon without nesting its markup. */
+	.piece-text::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: 1;
 	}
 
-	.container > a:hover .piece-text,
-	.container > a:focus-visible .piece-text {
+	.piece-text:hover,
+	.piece-text:focus-visible {
 		text-decoration: underline;
 		color: var(--color-primary);
 	}
 
-	.container > a:focus-visible {
+	.piece-text:focus-visible {
+		outline: none;
+	}
+
+	.piece-text:focus-visible::after {
 		outline: 2px solid var(--color-primary);
 		outline-offset: 4px;
 		border-radius: 4px;
 	}
 
-	.piece-card {
-		display: flex;
-		align-items: flex-start;
-		height: 100%;
-	}
-
 	.piece-icon {
+		isolation: isolate;
 		flex: 1 1 0%;
 		align-self: center;
 	}
@@ -152,9 +148,16 @@
 	.piece-text {
 		flex: 1 1 0%;
 		align-self: center;
+		min-width: 0;
+		margin-left: var(--space-2);
+		color: var(--color-on-surface);
+		text-decoration: none;
+	}
+
+	.piece-text span {
+		display: block;
 		max-height: 160px;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		margin-left: var(--space-2);
 	}
 </style>

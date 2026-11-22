@@ -23,7 +23,7 @@ function isRouteSafeTemplateName(templateName) {
 function createIconRouteSource(templateName) {
 	return `${generatedFileHeader}<script lang="ts">
 	import Template from '@luzzle/web.templates/icons/${templateName}'
-	import IconListing from '#lib/templates/icon-listing.svelte'
+	import IconListing from '#lib/pieces/components/IconListing.svelte'
 
 	let { data } = $props()
 </script>

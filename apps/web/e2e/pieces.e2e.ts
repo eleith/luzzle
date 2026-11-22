@@ -3,6 +3,7 @@ import { expect, test } from './support/test.js'
 import { fieldGuide, notebook } from './support/fixture.js'
 
 const compositions = '.piece-icon .poster, .piece-icon .recipe-card'
+const noteIconStyle = "xpath=//head/style[contains(., '--fixture-note-active')]"
 
 async function expectListingLinks(page: Page) {
 	for (const piece of [notebook, fieldGuide]) {
@@ -39,9 +40,65 @@ test('without JavaScript the root keeps usable placeholders while typed listings
 		)
 		await expect(page.locator('.piece-icon .recipe-card .card-title')).toHaveText(fieldGuide.title)
 		await expect(page.locator('.icon-placeholder')).toHaveCount(0)
+
+		await page.goto('/pieces/notes')
+		await expect(page.locator('.fixture-note-icon')).toHaveCount(2)
+		await expect(page.locator('.fixture-note-icon').first()).toHaveCSS(
+			'--fixture-note-active',
+			'no'
+		)
+		await expect(page.locator(noteIconStyle)).toHaveCount(1)
+		const card = page.locator('.piece-card').filter({ hasText: notebook.title })
+		await expect(card.getByRole('link')).toHaveCount(1)
+		await card.getByRole('link', { name: notebook.title, exact: true }).click()
+		await expect(page).toHaveURL(new URL(notebook.publicUrl, baseURL!).href)
 	} finally {
 		await context.close()
 	}
+})
+
+test('a direct typed visit hydrates external icons without replacing the parsed card', async ({
+	page,
+	baseURL
+}) => {
+	const errors: string[] = []
+	page.on('pageerror', (error) => errors.push(error.message))
+	page.on('console', (message) => {
+		if (/hydration/i.test(message.text())) errors.push(message.text())
+	})
+
+	// Hold the client modules so we can identify the server-rendered DOM before hydration.
+	const modules = Promise.withResolvers<void>()
+	await page.route('**/_app/immutable/**/*.js', async (route) => {
+		await modules.promise
+		await route.continue()
+	})
+	await page.goto('/pieces/notes', { waitUntil: 'commit' })
+	const card = page.locator('.piece-card').filter({ hasText: notebook.title })
+	const title = card.getByRole('link', { name: notebook.title, exact: true })
+	const icon = card.locator('.piece-icon[inert] .fixture-note-icon')
+	try {
+		await icon.evaluate((node) => node.setAttribute('data-parsed-icon', 'yes'))
+	} finally {
+		modules.resolve()
+	}
+	await expect(card.getByRole('link')).toHaveCount(1)
+	await expect(title.locator('.fixture-note-icon')).toHaveCount(0)
+	await expect(icon).toHaveAttribute('href', '/decorative')
+	await expect(
+		page.getByRole('navigation', { name: 'Global' }).getByLabel('search', { exact: true })
+	).toHaveAttribute('aria-haspopup', 'dialog')
+
+	await expect(icon).toHaveAttribute('data-parsed-icon', 'yes')
+
+	// The title's hit area extends over the inert decoration, not just its text.
+	const box = (await icon.boundingBox())!
+	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+	await expect(icon).toHaveCSS('--fixture-note-active', 'yes')
+	await page.mouse.down()
+	await page.mouse.up()
+	await expect(page).toHaveURL(new URL(notebook.publicUrl, baseURL!).href)
+	expect(errors).toEqual([])
 })
 
 test('tapping a superscript opens the full sheet even on a wide touch screen', async ({
@@ -168,6 +225,24 @@ test('client navigation refreshes listing and page layout data without reloading
 	await expect(page.locator('.piece-card')).toHaveCount(2)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')
 
+	const externalStyles = page.locator(noteIconStyle)
+	const notebookLink = page.getByRole('link', { name: notebook.title, exact: true })
+	const noteIcon = page
+		.locator('.piece-card')
+		.filter({ has: notebookLink })
+		.locator('.fixture-note-icon')
+	await expect(externalStyles).toHaveCount(1)
+	await expect(noteIcon).toHaveCSS('--fixture-note-active', 'no')
+	await notebookLink.hover()
+	await expect(noteIcon).toHaveCSS('--fixture-note-active', 'yes')
+	await page.mouse.move(0, 0)
+	await expect(noteIcon).toHaveCSS('--fixture-note-active', 'no')
+	await notebookLink.focus()
+	await page.keyboard.press('Tab')
+	await page.keyboard.press('Shift+Tab')
+	await expect(notebookLink).toBeFocused()
+	await expect(noteIcon).toHaveCSS('--fixture-note-active', 'yes')
+
 	await clickInjectedNavigationLink('/pieces/notes?year=2023&page=1')
 	await expect(page).toHaveURL(`${baseURL}/pieces/notes?year=2023&page=1`)
 	await expect(page.locator('.piece-card')).toHaveCount(0)
@@ -186,6 +261,7 @@ test('client navigation refreshes listing and page layout data without reloading
 
 	await page.getByRole('main').getByRole('link', { name: notebook.title, exact: true }).click()
 	await expect(page).toHaveURL(`${baseURL}${notebook.publicUrl}`)
+	await expect(externalStyles).toHaveCount(0)
 	await expect(page.getByRole('heading', { name: notebook.title, exact: true })).toBeVisible()
 	await expect(page).toHaveTitle(`${notebook.title} | E2E Garden`)
 	await expect(editSource).toHaveJSProperty('href', `${baseURL}/admin/open/notes/meteor-notebook`)

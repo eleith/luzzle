@@ -27,13 +27,8 @@ function mapRole<Schema extends TObject>(
 	role: Role,
 	definition: { name: string; fields: Schema },
 	piece: PublicWebPiece,
-	config?: PieceConfig
+	mapping: FieldMappings = {}
 ): TemplateData<Static<Schema>> {
-	const selection = config?.templates?.[role];
-	if (selection?.name && selection.name !== definition.name) {
-		throw new Error(`Unknown ${role} template: ${selection.name}`);
-	}
-	const mapping: FieldMappings = selection?.mapping ?? {};
 	try {
 		return {
 			name: definition.name,
@@ -50,12 +45,27 @@ function mapRole<Schema extends TObject>(
 
 function mapIconTemplate(piece: PublicWebPiece, config?: PieceConfig): PieceTemplateData['icon'] {
 	const definition = selectIconTemplate(config);
-	return mapRole<IconDefinition['fields']>('icon', definition, piece, config);
+	const icon = config?.templates?.icon;
+	// The built-in fallback must not evaluate bindings used only by the local file.
+	const mapping =
+		icon && 'file' in icon && icon.mapping
+			? Object.fromEntries(
+					Object.entries(icon.mapping).filter(([key]) =>
+						Object.hasOwn(definition.fields.properties, key)
+					)
+				)
+			: icon?.mapping;
+	return mapRole<IconDefinition['fields']>('icon', definition, piece, mapping);
 }
 
 function mapPageTemplate(piece: PublicWebPiece, config?: PieceConfig): PieceTemplateData['page'] {
 	const definition = selectPageTemplate(config);
-	return mapRole<PageDefinition['fields']>('page', definition, piece, config);
+	return mapRole<PageDefinition['fields']>(
+		'page',
+		definition,
+		piece,
+		config?.templates?.page?.mapping
+	);
 }
 
 /** Worker OG rendering does not evaluate icon/page bindings. */
@@ -64,7 +74,12 @@ export function mapOpengraphTemplate(
 	config?: PieceConfig
 ): PieceTemplateData['opengraph'] {
 	const definition = getOpengraphSchema(config?.templates?.opengraph?.name);
-	return mapRole<OpengraphDefinition['fields']>('opengraph', definition, piece, config);
+	return mapRole<OpengraphDefinition['fields']>(
+		'opengraph',
+		definition,
+		piece,
+		config?.templates?.opengraph?.mapping
+	);
 }
 
 /** Keep config/selector expressions on the server; clients receive only public field values. */

@@ -107,6 +107,15 @@ export async function createFixture(directory: string, origin: string) {
 			`---\ntitle: ${piece.title}\ndate: ${dateConsumed}\n---\n\n${note}`
 		)
 	}
+	await writeFile(
+		path.join(directory, 'notes-icon.svelte'),
+		`<script>let { piece } = $props()</script>
+		{@html '<!---->'}<a class="fixture-note-icon" href="/decorative">{piece.title}</a>
+		<style>
+			.fixture-note-icon { --fixture-note-active: no }
+			:global([data-active="true"]) .fixture-note-icon { --fixture-note-active: yes }
+		</style>`
+	)
 	const database = path.join(directory, 'data/luzzle.sqlite')
 	await writeFile(
 		path.join(directory, 'config.yaml'),
@@ -121,7 +130,7 @@ export async function createFixture(directory: string, origin: string) {
 				{
 					type: 'notes',
 					fields: { title: 'title', date_consumed: 'date' },
-					templates: { page: { name: 'note' } }
+					templates: { page: { name: 'note' }, icon: { file: './notes-icon.svelte' } }
 				},
 				{
 					type: fieldGuide.type,

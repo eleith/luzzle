@@ -6,6 +6,7 @@ import { resolveAuthUrl } from '../scripts/runtime-environment.js'
 import { createAssetCspHandle } from '#lib/server/asset-csp.js'
 import { createErrorHandler } from '#lib/server/error-pages.js'
 import { prepareConfiguredStyles, renderConfiguredStyles } from '#lib/server/configured-styles.js'
+import { preloadConfiguredListingIcons } from '#lib/server/templates/icon.js'
 import '#lib/server/database/index.js'
 import { sequence, type Handle } from '@sveltejs/kit/hooks'
 
@@ -21,6 +22,11 @@ function resolveRequest({ event, resolve }: Parameters<Handle>[0]) {
 function createAssetPolicy(): Handle {
 	if (building) return resolveRequest
 	return createAssetCspHandle(config.url)
+}
+
+export async function init() {
+	if (building || process.env.LUZZLE_DEV === 'true') return
+	await preloadConfiguredListingIcons(config)
 }
 
 const configuredStyles = await prepareStartupStyles()

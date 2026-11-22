@@ -9,6 +9,7 @@ const fixture = vi.hoisted(() => ({
 		async () => '<style data-luzzle-configured-styles>prepared</style>'
 	),
 	config: {
+		pieces: [],
 		auth: undefined as Config['auth'],
 		url: { app: 'http://localhost', app_assets: '' }
 	},

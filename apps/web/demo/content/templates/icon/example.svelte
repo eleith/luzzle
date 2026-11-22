@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { IconProps } from './props'
 
-	type Fields = { cover?: string }
-	let { piece, fields, helpers }: IconProps<Fields> = $props()
-	const cover = $derived(helpers.getPieceImageUrl(fields.cover, 500, 'jpg'))
+	type Fields = { image?: string }
+	let { piece, fields, helpers, size, lazy }: IconProps<Fields> = $props()
+	const cover = $derived(helpers.getPieceImageUrl(fields.image, size.width, 'jpg'))
 </script>
 
 {#if cover}
-	<img src={cover} alt="" />
+	<img src={cover} width={size.width} loading={lazy ? 'lazy' : 'eager'} alt="" />
 {:else}
 	<span>{piece.title}</span>
 {/if}

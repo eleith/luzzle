@@ -27,6 +27,54 @@ for the same piece type and map both `icon` and `page` image fields to the same
 photo selector. Map the same ingredient names in both roles to show the same
 short checklist.
 
+## Use a local icon on a type listing
+
+To replace the icons on `/pieces/books`, put a **trusted, operator-authored**
+`.svelte` file in the web service’s content mount. Under `templates` in the `pieces` entry for `books`, set:
+
+```yaml
+icon:
+  file: ./content/templates/icon/example.svelte
+  name: book
+  mapping:
+    image: cover
+    author: author
+    pages: pages
+```
+
+`file` is a local path relative to the web process’s working directory (beside the
+`config.yaml` alias, `/app` in production Docker), not relative to the physical
+`config/` mount or the requested URL. The [demo component](../../apps/web/demo/content/templates/icon/example.svelte)
+and its adjacent `props.d.ts` are a copyable example. In the demo, removing just
+`file` restores the built-in book design with the same mapped metadata.
+
+Only the public **type listing** renders this file. Mixed listings, home, search
+(including type-filtered searches), tags, and admin previews still use the
+built-in `name`, or `default` when omitted. Page and Open Graph templates are
+unchanged. The file can read arbitrary `fields` from `mapping` using the same
+bindings as below. Only keys supported by the built-in icon are used by its
+fallback; remove any file-only mapping keys when removing `file`.
+
+Use a self-contained server-renderable component: it receives `piece`, `fields`,
+`helpers`, `size`, and `lazy`. Type-only imports are fine; runtime imports, browser
+event handlers, and effects are not supported. **Templates execute in the web
+server process**; the compiler is not a sandbox. Do not use uploads, archive
+metadata, or request parameters to supply code or filenames.
+
+If mapping the external fields or rendering the component throws for a piece,
+only that row uses the built-in icon. Its link and the other rows remain usable.
+Check the web logs for the piece type and slug.
+
+File errors are different: with `LUZZLE_DEV=true`, the listing loads the file on
+request. A missing or invalid file fails the request; fix the file and refresh.
+Production loads configured files at web startup. An unreadable file, compile
+error, or unsupported feature prevents startup; fix the file or remove `file`
+(and any file-only mapping keys), then restart web.
+
+After a source-only edit, restart web in production. After a YAML edit, restart
+web and worker. Then [clear cached listing responses](deployment.md#clear-cached-public-pages)
+and reload open tabs. No app rebuild or republish is needed for listing icons.
+
 ## Map your metadata
 
 Templates read the metadata fields you map to them. For example:
@@ -85,7 +133,8 @@ Missing or `null` metadata counts as absent: a `field` binding uses its default,
 an absent `each` produces an empty list, and template defaults apply otherwise.
 Values must match the chosen field types; a page count is a number, not text.
 Invalid values log a warning and use that role's default field values for the
-piece. Unknown names/keys and malformed selectors fail config validation.
+piece. Unknown built-in names, unsupported mapping keys on built-in-only roles,
+and malformed selectors fail config validation.
 
 ## Image-derived colors
 

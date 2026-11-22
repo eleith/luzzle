@@ -71,3 +71,11 @@ test('configuration exposes the supported mappings of the selected icon', () => 
 		assert.throws(() => configure({ name: previous }));
 	}
 });
+
+test('only built-in names enter the public routing map for file-backed icons', () => {
+	const file = './private/icon.svelte';
+	for (const name of [undefined, 'book']) {
+		const pieces = configure(name ? { file, name } : { file }).pieces;
+		assert.deepEqual(getIconTemplateNames(pieces), { inventory: name ?? 'default' });
+	}
+});

@@ -1699,6 +1699,141 @@
                         }
                       }
                     }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "file"
+                    ],
+                    "properties": {
+                      "file": {
+                        "pattern": "(?:^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\\\\\x00\\r\\n]+\\.svelte$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
+                        "description": "Trusted local Svelte file, relative to the web process working directory (/app in production Docker), not the mounted config directory.",
+                        "type": "string"
+                      },
+                      "name": {
+                        "anyOf": [
+                          {
+                            "const": "default",
+                            "type": "string"
+                          },
+                          {
+                            "const": "book",
+                            "type": "string"
+                          },
+                          {
+                            "const": "browser-window",
+                            "type": "string"
+                          },
+                          {
+                            "const": "code-snippet",
+                            "type": "string"
+                          },
+                          {
+                            "const": "lined-notebook-paper",
+                            "type": "string"
+                          },
+                          {
+                            "const": "playing-cards",
+                            "type": "string"
+                          },
+                          {
+                            "const": "poster",
+                            "type": "string"
+                          },
+                          {
+                            "const": "recipe-card",
+                            "type": "string"
+                          },
+                          {
+                            "const": "video-game-cartridge",
+                            "type": "string"
+                          },
+                          {
+                            "const": "vinyl-record",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "mapping": {
+                        "type": "object",
+                        "patternProperties": {
+                          "^(.*)$": {
+                            "$id": "icon-external-field",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-external-field"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "icon-external-field"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
                   }
                 ]
               },

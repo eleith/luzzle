@@ -642,6 +642,36 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		}
 	}, 30000)
 
+	test('an external icon is prepared at startup and renders on a direct visit without JavaScript', async () => {
+		const original = await readFile(configFilename)
+		const filename = path.join(directory, 'owner-icon.svelte')
+		try {
+			await stopBuiltApp()
+			await writeFile(
+				filename,
+				`<script>let { fields } = $props();</script><b data-owner-icon>{fields.caption}</b><style>b { color: teal }</style>`
+			)
+			const config = JSON.parse(original.toString('utf8'))
+			config.pieces[0].templates.icon = {
+				file: './owner-icon.svelte',
+				mapping: { caption: 'subtitle' }
+			}
+			await writeFile(configFilename, JSON.stringify(config))
+			origin = await startBuiltApp()
+			// Production must serve the prepared design even if its source is no longer present.
+			await rm(filename)
+			const listing = await pageHtml('/pieces/cutover-kind')
+			const markup = listing.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
+			expect(markup).toMatch(/<b\b[^>]*data-owner-icon[^>]*>Published metadata<\/b>/)
+			expect(markup).toMatch(/<style\b[^>]*>[^<]*color:\s*teal/)
+			expect(listing).not.toContain('owner-icon.svelte')
+		} finally {
+			await stopBuiltApp()
+			await writeFile(configFilename, original)
+			origin = await startBuiltApp()
+		}
+	}, 30000)
+
 	test('shows the native search form only without filters and keeps filtered pages results-only', async () => {
 		async function searchHtml(pathname: string) {
 			// Ignore Svelte's SSR branch markers when asserting visible heading text.

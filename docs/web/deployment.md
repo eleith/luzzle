@@ -48,12 +48,36 @@ docker compose restart luzzle-web luzzle-worker
 ```
 
 Image and font files are reread on use; replacing them needs no restart.
-Republish pieces after font or piece-template changes to regenerate OG images.
+Republish pieces after font or Open Graph template changes to regenerate OG images.
 Changes to `.env` or mounts require
 `docker compose up -d --force-recreate`.
 
 To update: back up your data, update `LUZZLE_VERSION` if pinned, then pull and
 start again.
+
+## Clear cached public pages
+
+Restarting web or the proxy does not remove cached responses. The production
+proxy keys them by the full request URI: `/pieces/books`, `?page=2`, `?year=2024`,
+and combinations are separate entries. When changing a listing icon, invalidate
+all variants, including the listing’s SvelteKit data requests. If you operate
+an additional cache or CDN, invalidate those variants there too.
+
+The shipped Nginx proxy has no per-URL purge endpoint. The worker’s publish
+cache-purge step clears the shared cache directory. To clear it **without
+publishing**, use the following from the [example Compose](docker-compose.yml)
+deployment directory after web is healthy with the new config:
+
+```sh
+docker compose stop luzzle-proxy
+find ./nginx/cache -mindepth 1 -delete
+docker compose start luzzle-proxy
+```
+
+This briefly stops public traffic and evicts **all** proxy cache entries. Verify
+`./nginx/cache` is the dedicated bind mount for the proxy’s `/tmp/cache` before
+running `find`; keep the mount directory itself. Reload the listing through the
+proxy and check both the base URL and a previously cached filtered page.
 
 ## Preview storage and cleanup
 

@@ -25,18 +25,29 @@ const book: PublicWebPiece = {
 			asset_path: 'books/front cover.jpg',
 			mime_type: 'image/jpeg',
 			transformation: 'image.original'
+		},
+		{
+			asset_key: 'front',
+			asset_path: 'books/small cover.jpg',
+			mime_type: 'image/jpeg',
+			transformation: 'image.s.jpg'
 		}
 	]
 }
 test('one external design renders the mapped cover or fallback for each book on the server', async () => {
-	const design = await loadIconDesign(
-		{ filename, mapping: { cover: 'jacket' } },
-		{ mode: 'published', appUrl: 'https://app.example', assetBaseUrl: 'https://cdn.example' }
-	)
+	const design = await loadIconDesign({
+		filename,
+		mapping: { image: 'jacket' },
+		context: {
+			mode: 'published',
+			appUrl: 'https://app.example',
+			assetBaseUrl: 'https://cdn.example'
+		}
+	})
 	const placement = { size: { width: 125 } }
-	expect(design.render(book, placement)).toContain(
-		'https://cdn.example/pieces/assets/books/front%20cover.jpg'
-	)
+	const html = design.render(book, { ...placement, lazy: true })
+	expect(html).toContain('https://cdn.example/pieces/assets/books/small%20cover.jpg')
+	expect(html).toContain('loading="lazy"')
 	expect(design.render({ ...book, title: 'Ink & Paper', assets: [] }, placement)).toContain(
 		'Ink &amp; Paper'
 	)
@@ -53,10 +64,10 @@ test('two placements of one icon get independent IDs, dimensions and loading hin
 		filename,
 		`<script>let { size, lazy } = $props(); const id = $props.id();</script><img {id} alt="" width={size.width} loading={lazy ? 'lazy' : 'eager'} />`
 	)
-	const design = await loadIconDesign(
-		{ filename },
-		{ mode: 'published', appUrl: 'https://app.example' }
-	)
+	const design = await loadIconDesign({
+		filename,
+		context: { mode: 'published', appUrl: 'https://app.example' }
+	})
 	const first = design.render(book, { size: { width: 80 } })
 	const second = design.render(book, { size: { width: 125 }, lazy: true })
 	const id = (html: string) => /<img\b[^>]*\bid="([^"]+)"/.exec(html)?.[1]

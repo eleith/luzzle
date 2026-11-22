@@ -175,3 +175,17 @@ test('mapped data contains no source-component dispatch state', () => {
 	assert.equal(Object.hasOwn(result.templates.page, 'legacy'), false);
 	assert.equal(Object.hasOwn(result.templates.opengraph, 'legacy'), false);
 });
+
+test('built-in icon surfaces map shared fields without evaluating external-only bindings', () => {
+	const result = mapPieceTemplates(piece(), {
+		...config,
+		templates: {
+			...config.templates,
+			icon: {
+				file: './private/icon.svelte',
+				mapping: { image: 'art.cover', custom: { each: 'film.minutes', fields: { x: '$' } } }
+			}
+		}
+	});
+	assert.deepEqual(result.templates.icon, { name: 'default', fields: { image: 'cover-key' } });
+});

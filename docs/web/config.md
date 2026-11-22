@@ -26,7 +26,8 @@ to `${LUZZLE_APP_URL:-http://localhost:8080}`. Asset URLs default to same-origin
 stay same-origin. Use Compose service names for internal addresses.
 
 Restart web and worker after config changes; no rebuild is needed.
-[Republish](templates.md#apply-your-choices) after piece template or font changes.
+[Republish](templates.md#apply-your-choices) to regenerate OG images after OG template
+or font changes. For listing icon changes, [clear cached pages](deployment.md#clear-cached-public-pages) instead.
 
 ## Sign-in
 
@@ -127,7 +128,7 @@ This overrides `font-sans-url`; omit it to keep existing defaults.
 
 `{filename}` is the URL-encoded basename, never directories. Browsers revalidate
 same-name changes. Filename config changes need a restart; old URLs return 404.
-Purge cached page HTML after config/filename changes.
+[Clear cached page HTML](deployment.md#clear-cached-public-pages) after config/filename changes.
 
 ## Error pages
 

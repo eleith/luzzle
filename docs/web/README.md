@@ -14,7 +14,7 @@ New to the files underneath? Start with [archives](../archive.md) or the
 ## Browsing pieces
 
 Type-specific listings such as `/pieces/books` render their configured icon design
-on the server, loading only that template's styles. Icons and cover images are
+on the server. They can also use an [operator-supplied Svelte icon](templates.md#use-a-local-icon-on-a-type-listing). Icons and cover images are
 available without waiting for JavaScript. Their public URLs and pagination are unchanged.
 
 The mixed listing at `/pieces` and the home page's latest/random collections render

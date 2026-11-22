@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import { resolve } from 'node:path'
+import type { AppConfig } from '#lib/server/config.js'
 import { createTemplateFileCache } from '@luzzle/web.templates/server'
 import { resolveTemplateFields } from '@luzzle/web.templates/mapping'
 import type { IconProps } from '@luzzle/web.templates/icons/props'
@@ -15,18 +17,36 @@ export type IconDesign = {
 	render(piece: PublicWebPiece, placement: Placement): string
 }
 
-export async function loadIconDesign(
-	selection: { filename: string; mapping?: FieldMappings },
-	context: RenderContext
-): Promise<IconDesign> {
-	const template = await designs.load(selection.filename)
+type IconOptions = { filename: string; mapping?: FieldMappings; context: RenderContext }
+
+export async function preloadConfiguredListingIcons(config: AppConfig) {
+	for (const piece of config.pieces) await loadPublishedIcon(piece.type, config)
+}
+
+export function loadPublishedIcon(type: string, config: AppConfig) {
+	const icon = config.pieces.find((piece) => piece.type === type)?.templates?.icon
+	if (!icon || !('file' in icon)) return
+	// Resolve beside ./config.yaml (the launcher's path), not its symlink target.
+	return loadIconDesign({
+		filename: resolve(icon.file),
+		mapping: icon.mapping,
+		context: { mode: 'published', appUrl: config.url.app, assetBaseUrl: config.url.luzzle_assets }
+	})
+}
+
+export async function loadIconDesign({
+	filename,
+	mapping,
+	context
+}: IconOptions): Promise<IconDesign> {
+	const template = await designs.load(filename)
 	return {
 		css: template.css,
 		render(piece, { size, lazy }) {
 			return template.render(
 				{
 					piece,
-					fields: resolveTemplateFields(piece.metadata, selection.mapping),
+					fields: resolveTemplateFields(piece.metadata, mapping),
 					helpers: createRenderHelpers(piece, context),
 					size,
 					lazy
