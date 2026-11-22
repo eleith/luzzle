@@ -5,10 +5,11 @@
 	"type": "module",
 	"description": "Shared template contracts and built-in sources for web and worker",
 	"engines": {
-		"node": ">=24"
+		"node": ">=26"
 	},
 	"files": [
 		"dist",
+		"src/server/*.ts",
 		"src/icons/*/template.svelte",
 		"src/icons/*/helpers.js",
 		"src/icons/catalog.js",
@@ -32,6 +33,13 @@
 		"lint": "eslint . && prettier --check ."
 	},
 	"exports": {
+		"./server": {
+			"types": "./dist/server/index.d.ts",
+			"node": {
+				"development": "./src/server/index.ts",
+				"import": "./dist/server/index.js"
+			}
+		},
 		"./names": {
 			"development": "./src/names.ts",
 			"types": "./dist/names.d.ts",
@@ -116,6 +124,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",
+		"@types/node": "catalog:",
 		"eslint": "catalog:",
 		"eslint-config-prettier": "catalog:",
 		"globals": "catalog:",

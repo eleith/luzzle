@@ -299,6 +299,9 @@ importers:
       openworkflow:
         specifier: 0.11.0
         version: 0.11.0
+      svelte:
+        specifier: 5.57.3
+        version: 5.57.3(@typescript-eslint/types@8.60.0)
     devDependencies:
       '@codemirror/autocomplete':
         specifier: 6.20.2
@@ -429,9 +432,6 @@ importers:
       remark-preset-lint-recommended:
         specifier: 7.0.1
         version: 7.0.1
-      svelte:
-        specifier: 5.57.3
-        version: 5.57.3(@typescript-eslint/types@8.60.0)
       svelte-check:
         specifier: 4.7.7
         version: 4.7.7(picomatch@4.0.7)(svelte@5.57.3(@typescript-eslint/types@8.60.0))(typescript@6.0.3)
@@ -704,6 +704,9 @@ importers:
       '@eslint/js':
         specifier: 'catalog:'
         version: 9.22.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.12.4
       eslint:
         specifier: 'catalog:'
         version: 9.22.0

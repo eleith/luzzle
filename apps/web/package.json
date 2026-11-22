@@ -23,7 +23,7 @@
     "test:e2e": "playwright test"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "repository": {
     "type": "git",
@@ -73,7 +73,6 @@
     "remark-lint-no-duplicate-headings": "4.0.1",
     "remark-preset-lint-consistent": "6.0.1",
     "remark-preset-lint-recommended": "7.0.1",
-    "svelte": "5.57.3",
     "svelte-check": "4.7.7",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
@@ -94,7 +93,8 @@
     "eventsource-parser": "4.1.1",
     "kysely": "0.28.17",
     "micromark": "4.0.2",
-    "openworkflow": "0.11.0"
+    "openworkflow": "0.11.0",
+    "svelte": "5.57.3"
   },
   "imports": {
     "#lib/*": "./src/lib/*"
