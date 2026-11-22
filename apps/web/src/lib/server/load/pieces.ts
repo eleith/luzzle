@@ -5,13 +5,9 @@ import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 
 const TAKE_DEFAULT = 50
 
-export const loadPieceListing = async ({
-	params,
-	url
-}: {
-	params: { piece?: string }
-	url: URL
-}) => {
+type ListingRequest = { params: { piece?: string }; url: URL }
+
+export async function loadPieceListing({ params, url }: ListingRequest) {
 	const type = params.piece
 	if (type && !isConfiguredPieceType(type)) {
 		error(404, 'piece type not found')

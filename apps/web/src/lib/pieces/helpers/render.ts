@@ -7,7 +7,7 @@ import {
 } from '@luzzle/web.pieces'
 import { publicPieceHref } from '../navigation.js'
 
-type RenderContext =
+export type RenderContext =
 	| { mode: 'published'; appUrl: string; assetBaseUrl?: string }
 	| { mode: 'preview'; appUrl: string; job: string }
 

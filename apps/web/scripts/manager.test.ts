@@ -19,6 +19,7 @@ beforeEach(async () => {
 		path.join(directory, 'bin/pnpm'),
 		`#!${process.execPath}
 console.log(JSON.stringify({
+	devMode: process.env.LUZZLE_DEV,
 	dev: JSON.parse(process.env.LUZZLE_DEV_SERVER),
 	pages: JSON.parse(process.env.LUZZLE_PAGE_TEMPLATES),
 	icons: JSON.parse(process.env.LUZZLE_ICON_TEMPLATES),
@@ -43,6 +44,7 @@ function run() {
 			...process.env,
 			PATH: `${path.join(directory, 'bin')}${path.delimiter}${process.env.PATH}`,
 			ORIGIN: 'https://ambient.example',
+			LUZZLE_DEV: undefined,
 			LUZZLE_DEV_SERVER: '{"allowedHosts":true}',
 			LUZZLE_PAGE_TEMPLATES: 'ignored-map',
 			LUZZLE_ICON_TEMPLATES: 'ignored-map'
@@ -69,6 +71,7 @@ test('development reads working-directory YAML and supplies networking and publi
 	const { stdout } = await run()
 	const environment = JSON.parse(stdout.trim().split('\n').at(-1)!)
 	expect(environment).toEqual({
+		devMode: 'true',
 		dev: {
 			appOrigin: 'https://manager.example:8443',
 			host: '127.0.0.1',

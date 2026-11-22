@@ -92,6 +92,7 @@ export function createDevServerEnvironment(config, environment = process.env) {
 	// Pass only public dev-server settings; config discovery must not load the app.
 	return {
 		...createServerEnvironment(config, environment),
+		LUZZLE_DEV: environment.LUZZLE_DEV ?? 'true',
 		LUZZLE_DEV_SERVER: JSON.stringify({
 			appOrigin: resolveAppOrigin(config.url.app),
 			host: config.network.public.host || false,
