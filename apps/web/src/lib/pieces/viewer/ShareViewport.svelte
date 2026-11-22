@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import { OpengraphImageWidth, OpengraphImageHeight } from '@luzzle/web.pieces'
-	import { getPieceHelpers } from '#lib/pieces/helpers.js'
+	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
 	import ClientOpengraph from './ClientOpengraph.svelte'
 
 	let { piece, publishedAt }: { piece: TemplatedPiece; publishedAt?: number | null } = $props()

@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import type { IconComponent } from '@luzzle/web.templates/icons/props'
-	import { getPieceHelpers } from '#lib/pieces/helpers.js'
+	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
 
 	const renderWidth = 500
 	let { Icon, piece }: { Icon: IconComponent; piece: TemplatedPiece } = $props()

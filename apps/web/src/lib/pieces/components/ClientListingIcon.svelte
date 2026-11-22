@@ -1,7 +1,7 @@
 <script lang="ts">
 	import LoadIcon from '@luzzle/web.templates/icons/client'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-	import { getPieceHelpers } from '#lib/pieces/helpers.js'
+	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
 	import ListingIconPlaceholder from './ListingIconPlaceholder.svelte'
 
 	let {

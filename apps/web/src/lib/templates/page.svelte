@@ -2,7 +2,7 @@
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import type { PageComponent, PageNavbarProps } from '@luzzle/web.templates/pages/props'
 	import NavBanner from '#lib/components/layout/simple/NavBanner.svelte'
-	import { getPieceHelpers } from '#lib/pieces/helpers.js'
+	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
 
 	type Props = {
 		Page: PageComponent

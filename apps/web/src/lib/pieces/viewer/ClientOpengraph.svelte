@@ -2,7 +2,7 @@
 	import LoadOpengraph from '@luzzle/web.templates/opengraphs/client'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import { OpengraphImageWidth, OpengraphImageHeight } from '@luzzle/web.pieces'
-	import { getPieceHelpers } from '#lib/pieces/helpers.js'
+	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
 	import PreviewLoading from './PreviewLoading.svelte'
 
 	const canvasMaxWidth = `min(${OpengraphImageWidth}px, calc(80svh * ${OpengraphImageWidth} / ${OpengraphImageHeight}))`

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ComponentProps } from 'svelte'
 	import type { IconComponent } from '@luzzle/web.templates/icons/props'
-	import { getPieceHelpers } from '#lib/pieces/helpers.js'
+	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
 	import PieceListing from '#lib/pieces/components/PieceListing.svelte'
 
 	let {

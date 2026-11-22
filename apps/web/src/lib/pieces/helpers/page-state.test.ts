@@ -1,6 +1,6 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import type { PublicWebPiece } from '@luzzle/web.pieces'
-import { getPieceHelpers } from './helpers.js'
+import { getPieceHelpers } from './page-state.js'
 
 const { page, resolve } = vi.hoisted(() => ({
 	page: {
