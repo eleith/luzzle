@@ -732,6 +732,12 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			before: '2030-03-04'
 		}
 		const pathname = `/search?${new URLSearchParams(filters)}&page=1&unrelated=old`
+		for (const page of ['2oops', '2']) {
+			const firstPage = `/search?${new URLSearchParams(filters)}&unrelated=old`
+			const response = await request(`${firstPage}&page=${page}`)
+			expect(response.status).toBe(302)
+			expect(response.headers.get('location')).toBe(firstPage)
+		}
 		const filtered = await searchHtml(pathname)
 		expectResultsOnly(filtered, pathname)
 		expect(filtered).toMatch(/<h1\b[^>]*>\s*No results found\s*<\/h1>/)
@@ -741,6 +747,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			const filteredPath = `/search?${filter}`
 			const filteredHtml = await searchHtml(filteredPath)
 			expectResultsOnly(filteredHtml, filteredPath)
+			expect(filteredHtml).not.toContain('Orphan must not be visible')
 			expect(linkTargets(filteredHtml, filteredPath)).toContain(new URL(piecePath, origin).href)
 		}
 

@@ -22,8 +22,9 @@ Rows without an external file keep their titles and links and load their built-i
 icons in the browser, as do the home page's latest/random collections. Pagination and any configured home Markdown also remain
 server-rendered. A small, static puzzle-piece placeholder occupies reserved card
 space until the icon loads. Without JavaScript or after a loading failure, the
-placeholder stays visible and the text links remain usable. Search results use the same lazy icons, including type-filtered
-searches; forms, summaries, and navigation remain server-rendered. Tagged listings
+placeholder stays visible and the text links remain usable. Search results, including
+type-filtered searches, render configured external icons on the server and retain
+lazy built-in icons for other rows. The search form, summaries, and navigation remain server-rendered. Tagged listings
 also use lazy icons while retaining their server-rendered links and existing “more”
 interaction. Individual public piece pages retain their server-rendered designs.
 

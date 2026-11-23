@@ -1,11 +1,9 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation'
-	import { resolve } from '$app/paths'
-	import ClientListingIcon from '#lib/pieces/components/ClientListingIcon.svelte'
+	import IconListing from '#lib/pieces/components/IconListing.svelte'
 	import SearchForm from '#lib/components/layout/simple/SearchForm.svelte'
 	import type { PageProps } from './$types'
 
-	let activePieceId = $state<string | null>(null)
 	let { data }: PageProps = $props()
 	let query = $derived(data.query)
 	let type = $derived(data.type)
@@ -31,71 +29,34 @@
 	</section>
 {:else}
 	<section aria-labelledby="search-results-title">
-		<div class="container">
-			<div class="search-header">
-				<h1 id="search-results-title">
-					{data.pieces.length === 0 ? 'No results found' : 'Search results'}
-				</h1>
-				<div class="search-summary">
-					{#if data.query}
-						for <span class="summary-highlight">"{data.query}"</span>
-					{/if}
-					{#if data.type}
-						in <span class="summary-highlight">{data.type}</span>
-					{/if}
-					{#if data.after && data.before}
-						between <span class="summary-highlight">{data.after}</span> and
-						<span class="summary-highlight">{data.before}</span>
-					{:else}
-						{#if data.after}
-							after <span class="summary-highlight">{data.after}</span>
+		<IconListing {data}>
+			{#snippet header()}
+				<div class="search-header">
+					<h1 id="search-results-title">
+						{data.pieces.length === 0 ? 'No results found' : 'Search results'}
+					</h1>
+					<div class="search-summary">
+						{#if data.query}
+							for <span class="summary-highlight">"{data.query}"</span>
 						{/if}
-						{#if data.before}
-							before <span class="summary-highlight">{data.before}</span>
+						{#if data.type}
+							in <span class="summary-highlight">{data.type}</span>
 						{/if}
-					{/if}
+						{#if data.after && data.before}
+							between <span class="summary-highlight">{data.after}</span> and
+							<span class="summary-highlight">{data.before}</span>
+						{:else}
+							{#if data.after}
+								after <span class="summary-highlight">{data.after}</span>
+							{/if}
+							{#if data.before}
+								before <span class="summary-highlight">{data.before}</span>
+							{/if}
+						{/if}
+					</div>
 				</div>
-			</div>
-
-			{#if data.pieces.length > 0}
-				{#each data.pieces as piece (piece.id)}
-					<a
-						href={resolve(`pieces/${piece.type}/${piece.slug}`)}
-						onpointerenter={() => {
-							activePieceId = piece.id
-						}}
-						onpointerleave={() => {
-							activePieceId = null
-						}}
-						onfocus={(e) => {
-							if (e.currentTarget.matches(':focus-visible')) {
-								activePieceId = piece.id
-							}
-						}}
-						onblur={() => {
-							activePieceId = null
-						}}
-					>
-						<div class="piece-card">
-							<div class="piece-icon" aria-hidden="true">
-								<div style="display: flex;">
-									<div style="align-self: baseline;">
-										<ClientListingIcon
-											{piece}
-											size={{ width: 125 }}
-											active={activePieceId === piece.id}
-										/>
-									</div>
-								</div>
-							</div>
-							<div class="piece-text">
-								{piece.title}
-							</div>
-						</div>
-					</a>
-				{/each}
-			{/if}
-		</div>
+			{/snippet}
+		</IconListing>
 	</section>
 
 	{#if data.nextPage}
@@ -136,9 +97,7 @@
 	}
 
 	.search-header {
-		grid-column: 1 / -1;
 		padding-top: var(--space-1);
-		margin-bottom: var(--space-4);
 		text-align: left;
 	}
 
@@ -156,63 +115,6 @@
 	.summary-highlight {
 		color: var(--color-primary);
 		font-weight: var(--font-weight-medium);
-	}
-
-	.container {
-		display: grid;
-		margin: auto;
-		padding-bottom: var(--space-5);
-		padding-left: var(--space-5);
-		padding-right: var(--space-5);
-		grid-template-columns: repeat(auto-fill, 280px);
-		gap: var(--space-5);
-		justify-content: space-around;
-	}
-
-	.container:last-child {
-		margin-right: auto;
-	}
-
-	.container > a {
-		cursor: pointer;
-		text-decoration: none;
-		min-height: 200px;
-	}
-
-	.container > a .piece-text {
-		color: var(--color-on-surface);
-	}
-
-	.container > a:hover .piece-text,
-	.container > a:focus-visible .piece-text {
-		text-decoration: underline;
-		color: var(--color-primary);
-	}
-
-	.container > a:focus-visible {
-		outline: 2px solid var(--color-primary);
-		outline-offset: 4px;
-		border-radius: 4px;
-	}
-
-	.piece-card {
-		display: flex;
-		align-items: flex-start;
-		height: 100%;
-	}
-
-	.piece-icon {
-		flex: 1 1 0%;
-		align-self: center;
-	}
-
-	.piece-text {
-		flex: 1 1 0%;
-		align-self: center;
-		max-height: 160px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		margin-left: var(--space-2);
 	}
 
 	.action {

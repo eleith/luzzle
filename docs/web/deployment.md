@@ -60,7 +60,7 @@ start again.
 Restarting web or the proxy does not remove cached responses. The production
 proxy keys them by the full request URI: `/pieces`, `/pieces/books`, `?page=2`, `?year=2024`,
 and combinations are separate entries. When changing a listing icon, invalidate
-all variants, including the listing’s SvelteKit data requests. If you operate
+both listings and affected `/search` queries, including their SvelteKit data requests. If you operate
 an additional cache or CDN, invalidate those variants there too.
 
 The shipped Nginx proxy has no per-URL purge endpoint. The worker’s publish

@@ -2,26 +2,39 @@ import { db, sql } from '#lib/server/database/index.js'
 import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
+import { renderIconListing } from '#lib/pieces/icon-listing/render.server.js'
+import { config } from '#lib/server/config.js'
+import { getConfiguredPieceTypes } from '#lib/pieces/types.server.js'
 
 const MAX_RESULTS = 20
+
+function redirectToFirstPage(url: URL): never {
+	const firstPage = new URL(url)
+	firstPage.searchParams.delete('page')
+	redirect(302, firstPage.pathname + firstPage.search)
+}
 
 export const load: PageServerLoad = async ({ url }) => {
 	const query = url.searchParams.get('query') || ''
 	const type = url.searchParams.get('type') || ''
 	const after = url.searchParams.get('after') || ''
 	const before = url.searchParams.get('before') || ''
-	const pageParam = url.searchParams.get('page') || '1'
-	const pageNumber = parseInt(pageParam) || null
+	const pageParam = url.searchParams.get('page') ?? '1'
+	const pageNumber = Number(pageParam)
+	const offset = (pageNumber - 1) * MAX_RESULTS
 
-	if (pageNumber === null || pageNumber < 1) {
-		redirect(302, url.pathname)
+	if (!/^\d+$/.test(pageParam) || pageNumber < 1 || !Number.isSafeInteger(offset)) {
+		redirectToFirstPage(url)
 	}
 
 	if (!query && !type && !after && !before) {
-		return { pieces: [], query, type, after, before, nextPage: null }
+		return { pieces: [], externalIcons: undefined, query, type, after, before, nextPage: null }
 	}
 
-	let piecesQuery = db.selectFrom('web_pieces_fts5').selectAll()
+	let piecesQuery = db
+		.selectFrom('web_pieces_fts5')
+		.selectAll()
+		.where('type', 'in', getConfiguredPieceTypes())
 
 	if (query) {
 		const escapedQuery = `"${query.replace(/"/g, '""')}"`
@@ -51,12 +64,12 @@ export const load: PageServerLoad = async ({ url }) => {
 	}
 
 	const webPieces = await piecesQuery
-		.offset((pageNumber - 1) * MAX_RESULTS)
+		.offset(offset)
 		.limit(MAX_RESULTS + 1)
 		.execute()
 
 	if (webPieces.length === 0 && pageNumber > 1) {
-		redirect(302, url.pathname)
+		redirectToFirstPage(url)
 	}
 
 	const hasMore = webPieces.length === MAX_RESULTS + 1
@@ -68,6 +81,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	return {
 		pieces,
+		externalIcons: await renderIconListing(pieces, config),
 		query,
 		type,
 		after,

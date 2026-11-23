@@ -1,5 +1,14 @@
+import type { Page } from '@playwright/test'
 import { expect, test } from './support/test.js'
 import { fieldGuide, notebook } from './support/fixture.js'
+
+const forestNotebook = { title: 'Forest Notebook', publicUrl: '/pieces/notes/forest-notebook' }
+
+function resultCard(page: Page, title: string) {
+	return page.getByRole('region', { name: 'Search results', exact: true }).locator('.piece-card', {
+		has: page.getByRole('link', { name: title, exact: true })
+	})
+}
 
 test('search filters results and opens a public piece with working history', async ({
 	page,
@@ -12,7 +21,7 @@ test('search filters results and opens a public piece with working history', asy
 	await expect(search).toHaveAttribute('aria-haspopup', 'dialog')
 	await search.click()
 	const dialog = page.getByRole('dialog', { name: 'Search', exact: true })
-	// All three fixture pieces share this text, but select different icon templates.
+	// This query matches both the file-backed notes icon and the built-in records icon.
 	const query = 'Original observation'
 	await dialog.getByRole('searchbox', { name: 'Search query' }).fill(query)
 	await dialog.getByRole('button', { name: 'Search', exact: true }).click()
@@ -21,27 +30,26 @@ test('search filters results and opens a public piece with working history', asy
 	const results = page.getByRole('region', { name: 'Search results', exact: true })
 	const notebookLink = results.getByRole('link', { name: notebook.title, exact: true })
 	const guideLink = results.getByRole('link', { name: fieldGuide.title, exact: true })
-	await expect(notebookLink.locator('.piece-icon[aria-hidden="true"] .poster-title')).toHaveText(
-		notebook.title
-	)
-	await expect(
-		guideLink.locator('.piece-icon[aria-hidden="true"] .recipe-card .card-title')
-	).toHaveText(fieldGuide.title)
-	await expect(notebookLink.locator('.icon-placeholder')).toHaveCount(0)
-	await expect(guideLink.locator('.icon-placeholder')).toHaveCount(0)
+	const notebookIcon = resultCard(page, notebook.title).locator('.fixture-note-icon')
+	await expect(notebookIcon).toHaveText(notebook.title)
+	const guideIcon = resultCard(page, fieldGuide.title).locator('.recipe-card')
+	await expect(guideIcon.locator('.card-title')).toHaveText(fieldGuide.title)
+	await guideLink.hover()
+	await expect(guideIcon).toHaveClass(/\bactive\b/)
+	await notebookLink.hover()
+	await expect(guideIcon).not.toHaveClass(/\bactive\b/)
 
 	await search.click()
 	await dialog.getByRole('button', { name: 'Piece Type', exact: true }).click()
-	await page.getByRole('option', { name: fieldGuide.type, exact: true }).click()
+	await page.getByRole('option', { name: notebook.type, exact: true }).click()
 	await dialog.getByRole('button', { name: 'Search', exact: true }).click()
 	await expect(page).toHaveURL(
-		`${baseURL}/search?${new URLSearchParams({ query, type: fieldGuide.type })}`
+		`${baseURL}/search?${new URLSearchParams({ query, type: notebook.type })}`
 	)
-	await expect(notebookLink).toHaveCount(0)
-	await expect(
-		guideLink.locator('.piece-icon[aria-hidden="true"] .recipe-card .card-title')
-	).toHaveText(fieldGuide.title)
-	await expect(guideLink.locator('.icon-placeholder')).toHaveCount(0)
+	await expect(results).toContainText(`in ${notebook.type}`)
+	await expect(guideLink).toHaveCount(0)
+	await notebookLink.hover()
+	await expect(notebookIcon).toHaveCSS('--fixture-note-active', 'yes')
 
 	await search.click()
 	await dialog.getByRole('button', { name: 'Clear Filters', exact: true }).click()
@@ -50,20 +58,20 @@ test('search filters results and opens a public piece with working history', asy
 	await expect(page).toHaveURL(
 		`${baseURL}/search?${new URLSearchParams({ query: notebook.title })}`
 	)
-	await expect(results.getByRole('link', { name: 'Forest Notebook' })).toHaveCount(0)
+	await expect(results.getByRole('link', { name: forestNotebook.title })).toHaveCount(0)
 	const searchUrl = page.url()
-	await results.getByRole('link', { name: notebook.title }).click()
+	await notebookLink.click()
 	await expect(page).toHaveURL(`${baseURL}${notebook.publicUrl}`)
 	await expect(page.getByRole('heading', { name: notebook.title, exact: true })).toBeVisible()
 
 	await page.goBack()
 	await expect(page).toHaveURL(searchUrl)
-	await results.getByRole('link', { name: notebook.title }).click()
+	await notebookLink.click()
 	await expect(page).toHaveURL(`${baseURL}${notebook.publicUrl}`)
 	await expect(page.getByRole('heading', { name: notebook.title, exact: true })).toBeVisible()
 })
 
-test('search stays usable without JavaScript, including mixed and typed result placeholders', async ({
+test('search without JavaScript keeps external icons and fallback results linked', async ({
 	browser,
 	baseURL
 }) => {
@@ -95,32 +103,22 @@ test('search stays usable without JavaScript, including mixed and typed result p
 		await page.goto(`/search?${new URLSearchParams(filters)}`)
 		const results = page.getByRole('region', { name: 'Search results', exact: true })
 		await expect(results).toContainText(`between ${filters.after} and ${filters.before}`)
-		for (const piece of [
-			notebook,
-			{ title: 'Forest Notebook', publicUrl: '/pieces/notes/forest-notebook' },
-			fieldGuide
-		]) {
+		for (const piece of [notebook, forestNotebook, fieldGuide]) {
 			const link = results.getByRole('link', { name: piece.title, exact: true })
 			await expect(link).toBeVisible()
 			await expect(link).toHaveJSProperty('href', new URL(piece.publicUrl, page.url()).href)
-			await expect(link.locator('.piece-icon')).toHaveAttribute('aria-hidden', 'true')
-			await expect(link.locator('.icon-placeholder')).toBeVisible()
 		}
-		await expect(results.locator('.poster, .recipe-card')).toHaveCount(0)
+		// Both notes render their file-backed icon on the server; the built-in guide icon needs JS.
+		for (const { title } of [notebook, forestNotebook]) {
+			const icon = resultCard(page, title).locator('.piece-icon[inert] .fixture-note-icon')
+			await expect(icon).toHaveText(title)
+		}
+		await expect(resultCard(page, fieldGuide.title).locator('.icon-placeholder')).toBeVisible()
 		await expect(main.getByRole('link', { name: 'more', exact: true })).toHaveCount(0)
 
-		// A typed search is lazy too; only its text and link are needed to open the piece.
-		await page.goto(`/search?${new URLSearchParams({ ...filters, type: fieldGuide.type })}`)
-		await expect(results).toContainText(`in ${fieldGuide.type}`)
-		await expect(results.getByRole('link', { name: notebook.title, exact: true })).toHaveCount(0)
-		const guideLink = results.getByRole('link', { name: fieldGuide.title, exact: true })
-		await expect(guideLink).toHaveJSProperty('href', new URL(fieldGuide.publicUrl, page.url()).href)
-		await expect(guideLink.locator('.piece-icon')).toHaveAttribute('aria-hidden', 'true')
-		await expect(guideLink.locator('.icon-placeholder')).toBeVisible()
-		await expect(results.locator('.poster, .recipe-card')).toHaveCount(0)
-		await guideLink.click()
-		await expect(page).toHaveURL(`${baseURL}${fieldGuide.publicUrl}`)
-		await expect(page.getByRole('heading', { name: fieldGuide.title, exact: true })).toBeVisible()
+		await results.getByRole('link', { name: notebook.title, exact: true }).click()
+		await expect(page).toHaveURL(`${baseURL}${notebook.publicUrl}`)
+		await expect(page.getByRole('heading', { name: notebook.title, exact: true })).toBeVisible()
 	} finally {
 		await context.close()
 	}

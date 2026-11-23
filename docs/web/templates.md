@@ -49,9 +49,8 @@ It shares its editor types with the [minimal starter](../../apps/web/demo/conten
 which is still available to copy with its adjacent `props.d.ts`. Removing just `file`
 restores the built-in book icon with the same mapped metadata.
 
-Both the public **type listing** and matching rows on the **mixed `/pieces` listing**
-render this file. Home, search
-(including type-filtered searches), tags, and admin previews still use the
+Matching pieces use this file on their **type listing**, the **mixed `/pieces` listing**,
+and in **search results**, including type-filtered searches. Home, tags, and admin previews still use the
 built-in `name`, or `default` when omitted. Page and Open Graph templates are
 unchanged. The file can read arbitrary `fields` from `mapping` using the same
 bindings as below. Only keys supported by the built-in icon are used by its

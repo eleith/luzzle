@@ -1,7 +1,12 @@
 <script lang="ts">
 	import ListingLayout from '../../pieces/+layout.svelte'
 
-	let { children } = $props()
+	import PieceListing from '#lib/pieces/components/PieceListing.svelte'
+	import type { LayoutProps } from './$types'
+
+	let { data, children }: LayoutProps = $props()
 </script>
 
-<ListingLayout {children} />
+<ListingLayout>
+	<PieceListing {data} {children} />
+</ListingLayout>
