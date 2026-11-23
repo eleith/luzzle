@@ -53,9 +53,9 @@ test.each(config.pieces.map(({ type }) => type))(
 	}
 )
 
-test('omitting the optional type lists all pieces', async () => {
+test('omitting the optional type lists pieces from configured types only', async () => {
 	await load(event())
-	expect(query.where).not.toHaveBeenCalled()
+	expect(query.where).toHaveBeenCalledExactlyOnceWith('type', 'in', ['field-notes', 'specimens'])
 	expect(hydrateWithAssets).toHaveBeenCalledOnce()
 })
 

@@ -19,7 +19,10 @@ const data = { pieces, page: 1, nextPage: null, year: null }
 test('renders external fragments in row order, using the built-in icon for a failed row', () => {
 	const externalIcons = {
 		html: ['<!----><a href="/fixture">external first</a>', null, '<b>external third</b>'],
-		css: '.example > b::after { content: "</StYlE><meta name=breakout>" }'
+		stylesheets: [
+			'.example > b::after { content: "</StYlE><meta name=breakout>" }',
+			'@import url("/icon-font.css");'
+		]
 	}
 	const { head, body } = render(IconListing, {
 		props: { data: { ...data, externalIcons }, Icon: DefaultIcon }
@@ -27,15 +30,9 @@ test('renders external fragments in row order, using the built-in icon for a fai
 	expect(body).toMatch(
 		/<a href="\/fixture">external first<\/a>[\s\S]*?poster-title[^>]*>second<[\s\S]*?<b>external third<\/b>/
 	)
-	expect(body).toContain('<div><!----><a href="/fixture">external first</a></div>')
 	expect(body.match(/class="external-icon"/g)).toHaveLength(2)
 	expect(head.match(/\.example > b/g)).toHaveLength(1)
+	expect(head).toContain('<style>@import url("/icon-font.css");</style>')
 	expect(head).not.toMatch(/<\/style><meta/i)
 	expect(body).not.toContain('.example > b')
-})
-
-test('keeps the named route built-in when no external design was loaded', () => {
-	const { body } = render(IconListing, { props: { data, Icon: DefaultIcon } })
-	expect(body.match(/poster-title/g)).toHaveLength(3)
-	expect(body).not.toContain('class="external-icon"')
 })

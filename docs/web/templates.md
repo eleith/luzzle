@@ -27,7 +27,7 @@ for the same piece type and map both `icon` and `page` image fields to the same
 photo selector. Map the same ingredient names in both roles to show the same
 short checklist.
 
-## Use a local icon on a type listing
+## Use a local icon on piece listings
 
 To replace the icons on `/pieces/books`, put a **trusted, operator-authored**
 `.svelte` file in the web service’s content mount. Under `templates` in the `pieces` entry for `books`, set:
@@ -49,7 +49,8 @@ It shares its editor types with the [minimal starter](../../apps/web/demo/conten
 which is still available to copy with its adjacent `props.d.ts`. Removing just `file`
 restores the built-in book icon with the same mapped metadata.
 
-Only the public **type listing** renders this file. Mixed listings, home, search
+Both the public **type listing** and matching rows on the **mixed `/pieces` listing**
+render this file. Home, search
 (including type-filtered searches), tags, and admin previews still use the
 built-in `name`, or `default` when omitted. Page and Open Graph templates are
 unchanged. The file can read arbitrary `fields` from `mapping` using the same

@@ -1,6 +1,6 @@
 import { db, sql } from '#lib/server/database/index.js'
 import { error, redirect } from '@sveltejs/kit'
-import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
+import { getConfiguredPieceTypes, isConfiguredPieceType } from '#lib/pieces/types.server.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 
 const TAKE_DEFAULT = 50
@@ -26,6 +26,8 @@ export async function loadPieceListing({ params, url }: ListingRequest) {
 
 	if (type) {
 		piecesQuery = piecesQuery.where('type', '=', type)
+	} else {
+		piecesQuery = piecesQuery.where('type', 'in', getConfiguredPieceTypes())
 	}
 
 	if (yearNumber) {

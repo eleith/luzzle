@@ -816,6 +816,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 
 	test('serves typed/untyped listings and rejects unknown or malformed types and feed formats', async () => {
 		for (const pathname of [
+			'/pieces',
 			'/pieces/cutover-kind',
 			'/rss/pieces/cutover-kind/feed.html',
 			'/rss/pieces/cutover-kind/feed.md'
@@ -824,7 +825,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			expect(html).toContain('Real Piece')
 			expect(html).not.toContain('Orphan must not be visible')
 		}
-		for (const pathname of ['/pieces', '/rss/pieces/feed.html', '/rss/pieces/feed.md'])
+		for (const pathname of ['/rss/pieces/feed.html', '/rss/pieces/feed.md'])
 			expect(await pageHtml(pathname)).toContain('Real Piece')
 		const emptyYear = await pageHtml('/pieces/cutover-kind?year=2022&page=1')
 		expect(linkTargets(emptyYear, '/pieces/cutover-kind')).not.toContain(

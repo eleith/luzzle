@@ -36,7 +36,7 @@ test('a failed icon leaves a fallback slot without shifting the following pieceâ
 
 	expect(result).toEqual({
 		...listing,
-		externalIcons: { css, html: ['<b>first</b>', null, '<b>last</b>'] }
+		externalIcons: { stylesheets: [css], html: ['<b>first</b>', null, '<b>last</b>'] }
 	})
 	expect(log).toHaveBeenCalledExactlyOnceWith('Cannot render listing icon for books/broken', cause)
 })

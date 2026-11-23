@@ -58,7 +58,7 @@ start again.
 ## Clear cached public pages
 
 Restarting web or the proxy does not remove cached responses. The production
-proxy keys them by the full request URI: `/pieces/books`, `?page=2`, `?year=2024`,
+proxy keys them by the full request URI: `/pieces`, `/pieces/books`, `?page=2`, `?year=2024`,
 and combinations are separate entries. When changing a listing icon, invalidate
 all variants, including the listing’s SvelteKit data requests. If you operate
 an additional cache or CDN, invalidate those variants there too.
