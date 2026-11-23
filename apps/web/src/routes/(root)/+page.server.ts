@@ -1,5 +1,6 @@
 import { db } from '#lib/server/database/index.js'
 import type { PageServerLoad } from './$types'
+import { renderPieceIcons } from '#lib/pieces/icon-listing/render.server.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 import { getRecentPieces, getRandomPieces } from '#lib/server/pieces.js'
 import { getConfiguredPieceTypes } from '#lib/pieces/types.server.js'
@@ -28,5 +29,17 @@ export const load: PageServerLoad = async () => {
 		hydrateWithAssets(randomRows)
 	])
 	const centerContent = Boolean(body) && !settings.latest && !settings.random
-	return { types, body, latest, random, centerContent }
+	// Render both collections together so a shared design contributes just one stylesheet.
+	const pieces = [...latest, ...random]
+	const iconRequests = pieces.map((piece) => ({ piece, size: { width: 80 }, lazy: false }))
+	const icons = await renderPieceIcons(iconRequests, config)
+	const cards = pieces.map((piece, index) => ({ piece, iconHtml: icons?.html[index] ?? null }))
+	return {
+		types,
+		body,
+		latest: cards.slice(0, latest.length),
+		random: cards.slice(latest.length),
+		iconStylesheets: icons?.stylesheets ?? [],
+		centerContent
+	}
 }

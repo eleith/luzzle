@@ -10,11 +10,11 @@ import { createRenderHelpers, type RenderContext } from '#lib/pieces/helpers/ren
 
 const designs = createTemplateFileCache({ reloadOnChange: process.env.LUZZLE_DEV === 'true' })
 
-type Placement = Pick<IconProps<unknown>, 'size' | 'lazy'>
+export type IconImageProps = Pick<IconProps<unknown>, 'size' | 'lazy'>
 
 export type IconDesign = {
 	css: string
-	render(piece: PublicWebPiece, placement: Placement): string
+	render(piece: PublicWebPiece, props: IconImageProps): string
 }
 
 type IconOptions = { filename: string; mapping?: FieldMappings; context: RenderContext }

@@ -3,13 +3,17 @@
 	import { resolve } from '$app/paths'
 	import type { PageProps } from './$types'
 	import ContentBanner from '#lib/content/components/ContentBanner.svelte'
+	import IconFragment from '#lib/pieces/components/IconFragment.svelte'
+	import IconStylesheets from '#lib/pieces/components/IconStylesheets.svelte'
 	import ClientListingIcon from '#lib/pieces/components/ClientListingIcon.svelte'
 	import Markdown from '#lib/content/markdown/Markdown.svelte'
 
 	let { data }: PageProps = $props()
+	let hoveredPieceId = $state<string | null>(null)
+	let focusedPieceId = $state<string | null>(null)
 	const collections = $derived([
-		{ title: 'latest', pieces: data.latest },
-		{ title: 'random', pieces: data.random }
+		{ title: 'latest', rows: data.latest },
+		{ title: 'random', rows: data.random }
 	])
 </script>
 
@@ -21,6 +25,10 @@
 		href={`${page.data.config.url.app}/rss/pieces/feed.xml`}
 	/>
 </svelte:head>
+
+{#if data.iconStylesheets.length}
+	<IconStylesheets stylesheets={data.iconStylesheets} />
+{/if}
 
 <div class:centered-content={data.centerContent}>
 	<ContentBanner showRandom showHome={false} />
@@ -44,19 +52,31 @@
 		{/if}
 
 		{#each collections as collection (collection.title)}
-			{#if collection.pieces.length}
+			{#if collection.rows.length}
 				<section class="section">
 					<h2>{collection.title}</h2>
 					<div class="pieces-grid">
-						{#each collection.pieces as piece (piece.id)}
-							<a href={resolve(`pieces/${piece.type}/${piece.slug}`)} class="piece">
-								<div class="piece-card">
-									<div class="piece-icon" aria-hidden="true">
-										<ClientListingIcon {piece} size={{ width: 80 }} />
-									</div>
-									<span>{piece.title}</span>
+						{#each collection.rows as { piece, iconHtml } (piece.id)}
+							{@const active = hoveredPieceId === piece.id || focusedPieceId === piece.id}
+							<div class="piece-card">
+								<div class="piece-icon" inert aria-hidden="true">
+									{#if iconHtml != null}
+										<IconFragment markup={iconHtml} {active} />
+									{:else}
+										<ClientListingIcon {piece} size={{ width: 80 }} lazy={false} {active} />
+									{/if}
 								</div>
-							</a>
+								<a
+									class="piece"
+									href={resolve(`pieces/${piece.type}/${piece.slug}`)}
+									onpointerenter={() => (hoveredPieceId = piece.id)}
+									onpointerleave={() => (hoveredPieceId = null)}
+									onfocus={(e) => {
+										if (e.currentTarget.matches(':focus-visible')) focusedPieceId = piece.id
+									}}
+									onblur={() => (focusedPieceId = null)}>{piece.title}</a
+								>
+							</div>
 						{/each}
 					</div>
 				</section>
@@ -103,13 +123,22 @@
 		gap: var(--space-4);
 	}
 	.piece-card {
+		position: relative;
+		isolation: isolate;
 		display: flex;
 		align-items: flex-start;
 		gap: var(--space-3);
 		min-height: 120px;
 		height: 100%;
 	}
+	.piece::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+	}
 	.piece-icon {
+		isolation: isolate;
 		flex: 0 0 80px;
 	}
 </style>

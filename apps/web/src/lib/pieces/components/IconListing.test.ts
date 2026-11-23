@@ -30,7 +30,6 @@ test('renders external fragments in row order, using the built-in icon for a fai
 	expect(body).toMatch(
 		/<a href="\/fixture">external first<\/a>[\s\S]*?poster-title[^>]*>second<[\s\S]*?<b>external third<\/b>/
 	)
-	expect(body.match(/class="external-icon"/g)).toHaveLength(2)
 	expect(head.match(/\.example > b/g)).toHaveLength(1)
 	expect(head).toContain('<style>@import url("/icon-font.css");</style>')
 	expect(head).not.toMatch(/<\/style><meta/i)

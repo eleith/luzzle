@@ -1,7 +1,7 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import { db } from '#lib/server/database/index.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
-import { renderIconListing } from '#lib/pieces/icon-listing/render.server.js'
+import { renderPieceIcons } from '#lib/pieces/icon-listing/render.server.js'
 import { load } from './+page.server.js'
 
 vi.mock('#lib/server/database/index.js', () => ({
@@ -9,7 +9,7 @@ vi.mock('#lib/server/database/index.js', () => ({
 	sql: vi.fn()
 }))
 vi.mock('#lib/pieces/assets.server.js', () => ({ hydrateWithAssets: vi.fn() }))
-vi.mock('#lib/pieces/icon-listing/render.server.js', () => ({ renderIconListing: vi.fn() }))
+vi.mock('#lib/pieces/icon-listing/render.server.js', () => ({ renderPieceIcons: vi.fn() }))
 vi.mock('#lib/server/config.js', () => ({ config: {} }))
 
 beforeEach(() => vi.clearAllMocks())
@@ -28,6 +28,6 @@ test.each(['/search', '/search?query=&type=&after=&before=&page=2'])(
 		})
 		expect(db.selectFrom).not.toHaveBeenCalled()
 		expect(hydrateWithAssets).not.toHaveBeenCalled()
-		expect(renderIconListing).not.toHaveBeenCalled()
+		expect(renderPieceIcons).not.toHaveBeenCalled()
 	}
 )

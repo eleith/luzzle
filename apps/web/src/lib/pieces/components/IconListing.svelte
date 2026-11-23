@@ -3,9 +3,10 @@
 	import type { Snippet } from 'svelte'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import type { IconComponent } from '@luzzle/web.templates/icons/props'
+	import IconFragment from './IconFragment.svelte'
+	import IconStylesheets from './IconStylesheets.svelte'
 	import ClientListingIcon from './ClientListingIcon.svelte'
 	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
-	import { iconListingPlacement } from '#lib/pieces/icon-listing/placement.js'
 
 	type ListingData = {
 		pieces: TemplatedPiece[]
@@ -16,40 +17,21 @@
 		$props()
 	let hoveredPieceId = $state<string | null>(null)
 	let focusedPieceId = $state<string | null>(null)
-
-	// A CSS string or comment can contain a literal HTML raw-text end tag.
-	function escapeStyleText(css: string) {
-		return css.replace(/<(?=\/style)/gi, '\\3c ')
-	}
 </script>
 
-<svelte:head>
-	{#each data.externalIcons?.stylesheets ?? [] as sheet (sheet)}
-		<!-- eslint-disable-next-line svelte/no-at-html-tags -- Trusted template CSS escaped for an HTML style element. -->
-		{@html `<style>${escapeStyleText(sheet)}</style>`}
-	{/each}
-</svelte:head>
+<IconStylesheets stylesheets={data.externalIcons?.stylesheets} />
 
 {#snippet pieceIcon(piece: TemplatedPiece, index: number, active: boolean)}
 	{@const markup = data.externalIcons?.html[index]}
+	{@const size = { width: 125 }}
+	{@const lazy = index >= 5}
 	{#if markup != null}
-		<div class="external-icon" data-active={active ? 'true' : undefined}>
-			<!-- Keep SSR fragment comments below one root: a top-level empty comment would
-			     be mistaken for the end of the host's raw HTML during hydration. -->
-			<!-- eslint-disable-next-line svelte/no-at-html-tags -- Server-rendered markup from the operator's template. -->
-			{@html `<div>${markup}</div>`}
-		</div>
+		<IconFragment {markup} {active} />
 	{:else if Icon}
 		{@const helpers = getPieceHelpers(piece)}
-		<Icon
-			{piece}
-			fields={piece.templates.icon.fields}
-			{helpers}
-			{...iconListingPlacement(index)}
-			{active}
-		/>
+		<Icon {piece} fields={piece.templates.icon.fields} {helpers} {size} {lazy} {active} />
 	{:else}
-		<ClientListingIcon {piece} {...iconListingPlacement(index)} {active} />
+		<ClientListingIcon {piece} {size} {lazy} {active} />
 	{/if}
 {/snippet}
 

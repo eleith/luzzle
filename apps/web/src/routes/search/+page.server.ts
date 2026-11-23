@@ -2,7 +2,7 @@ import { db, sql } from '#lib/server/database/index.js'
 import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
-import { renderIconListing } from '#lib/pieces/icon-listing/render.server.js'
+import { renderPieceIcons } from '#lib/pieces/icon-listing/render.server.js'
 import { config } from '#lib/server/config.js'
 import { getConfiguredPieceTypes } from '#lib/pieces/types.server.js'
 
@@ -78,10 +78,11 @@ export const load: PageServerLoad = async ({ url }) => {
 	}
 
 	const pieces = await hydrateWithAssets(webPieces)
-
+	const rows = pieces.map((piece, index) => ({ piece, size: { width: 125 }, lazy: index >= 5 }))
+	const externalIcons = await renderPieceIcons(rows, config)
 	return {
 		pieces,
-		externalIcons: await renderIconListing(pieces, config),
+		externalIcons,
 		query,
 		type,
 		after,

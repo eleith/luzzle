@@ -109,8 +109,8 @@ export async function createFixture(directory: string, origin: string) {
 	}
 	await writeFile(
 		path.join(directory, 'notes-icon.svelte'),
-		`<script>let { piece } = $props()</script>
-		{@html '<!---->'}<a class="fixture-note-icon" href="/decorative">{piece.title}</a>
+		`<script>let { piece, size } = $props()</script>
+		{@html '<!---->'}<a class="fixture-note-icon" data-width={size.width} href="/decorative">{piece.title}</a>
 		<style>
 			.fixture-note-icon { --fixture-note-active: no }
 			:global([data-active="true"]) .fixture-note-icon { --fixture-note-active: yes }

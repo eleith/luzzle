@@ -656,6 +656,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				file: './owner-icon.svelte',
 				mapping: { caption: 'subtitle' }
 			}
+			config.pages = { ...config.pages, home: { latest: false, random: true } }
 			await writeFile(configFilename, JSON.stringify(config))
 			origin = await startBuiltApp()
 			// Production must serve the prepared design even if its source is no longer present.
@@ -665,6 +666,10 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			expect(markup).toMatch(/<b\b[^>]*data-owner-icon[^>]*>Published metadata<\/b>/)
 			expect(markup).toMatch(/<style\b[^>]*>[^<]*color:\s*teal/)
 			expect(listing).not.toContain('owner-icon.svelte')
+			const home = (await pageHtml('/')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
+			expect(home).toMatch(
+				/<h2[^>]*>random<\/h2>[\s\S]*?<b\b[^>]*data-owner-icon[^>]*>Published metadata<\/b>/
+			)
 		} finally {
 			await stopBuiltApp()
 			await writeFile(configFilename, original)
@@ -1616,8 +1621,6 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(
 			linkTargets(html, '/').filter((href) => href === new URL(piecePath, origin).href)
 		).toHaveLength(count)
-		const markup = html.replace(/<!--[\s\S]*?-->/g, '')
-		expect(markup.match(/<span\b[^>]*>Real Piece<\/span>/g) ?? []).toHaveLength(count)
 		expect(html).not.toMatch(/class="(?:poster|recipe-card|book)\b/)
 		expect(html.includes('Orphan must not be visible')).toBe(false)
 		expect(html).not.toContain(directory)

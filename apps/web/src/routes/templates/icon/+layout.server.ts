@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit'
 import { loadPieceListing } from '#lib/server/load/pieces.js'
 import { config } from '#lib/server/config.js'
-import { renderIconListing } from '#lib/pieces/icon-listing/render.server.js'
+import { renderPieceIcons } from '#lib/pieces/icon-listing/render.server.js'
 import type { LayoutServerLoadEvent } from './$types'
 
 export const load = async (event: LayoutServerLoadEvent) => {
@@ -11,5 +11,11 @@ export const load = async (event: LayoutServerLoadEvent) => {
 		redirect(307, `/pieces/${encodeURIComponent(params.piece ?? '')}${url.search}`)
 	}
 	const listing = await loadPieceListing(event)
-	return { ...listing, externalIcons: await renderIconListing(listing.pieces, config) }
+	const rows = listing.pieces.map((piece, index) => ({
+		piece,
+		size: { width: 125 },
+		lazy: index >= 5
+	}))
+	const externalIcons = await renderPieceIcons(rows, config)
+	return { ...listing, externalIcons }
 }

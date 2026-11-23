@@ -50,7 +50,9 @@ which is still available to copy with its adjacent `props.d.ts`. Removing just `
 restores the built-in book icon with the same mapped metadata.
 
 Matching pieces use this file on their **type listing**, the **mixed `/pieces` listing**,
-and in **search results**, including type-filtered searches. Home, tags, and admin previews still use the
+in **search results** (including type-filtered searches), and in the homepage’s
+**Latest and Random** collections. Home requests a compact 80px icon instead of the
+125px listing icon, so use the template’s `size` prop. Tags and admin previews still use the
 built-in `name`, or `default` when omitted. Page and Open Graph templates are
 unchanged. The file can read arbitrary `fields` from `mapping` using the same
 bindings as below. Only keys supported by the built-in icon are used by its
