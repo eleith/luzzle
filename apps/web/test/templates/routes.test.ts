@@ -867,7 +867,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 	})
 
 	test('keeps API template data public and independent of site section settings', async () => {
-		const response = await request('/api/pieces?type=cutover-kind', 'application/json')
+		const response = await request('/api/pieces?tag=field-notes', 'application/json')
 		expect(response.status).toBe(200)
 		const body = await response.text()
 		const result = JSON.parse(body)

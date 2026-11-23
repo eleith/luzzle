@@ -25,9 +25,11 @@ server-rendered. A small, static puzzle-piece placeholder occupies reserved card
 space until the icon loads. Without JavaScript or after a loading failure, the
 placeholder stays visible and the text links remain usable. Search results, including
 type-filtered searches, render configured external icons on the server and retain
-lazy built-in icons for other rows. The search form, summaries, and navigation remain server-rendered. Tagged listings
-also use lazy icons while retaining their server-rendered links and existing “more”
-interaction. Individual public piece pages retain their server-rendered designs.
+lazy built-in icons for other rows. The search form, summaries, and navigation remain server-rendered.
+
+Tag listings use the same icons and pagination as `/pieces`. Follow **next** or
+**prev** to navigate between pages of up to 50 pieces, with or without JavaScript.
+Each page has its own URL (for example, `/tags/field-notes?page=2`) so it can be bookmarked. Individual public piece pages retain their server-rendered designs.
 
 ## Using the editor
 

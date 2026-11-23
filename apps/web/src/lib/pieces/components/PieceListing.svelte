@@ -5,13 +5,15 @@
 
 	let {
 		data,
+		heading,
 		children
 	}: {
 		data: {
 			page: number
-			year: number | null
+			year?: number | null
 			nextPage: number | null
 		}
+		heading?: string
 		children: Snippet
 	} = $props()
 
@@ -24,13 +26,7 @@
 	})
 </script>
 
-<h1 class="visually-hidden">
-	{#if page.params.piece}
-		{page.params.piece}
-	{:else}
-		Pieces
-	{/if}
-</h1>
+<h1 class="visually-hidden">{heading ?? page.params.piece ?? 'Pieces'}</h1>
 
 <section>
 	{@render children()}

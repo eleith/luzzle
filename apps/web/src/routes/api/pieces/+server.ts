@@ -1,6 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit'
 import { db, sql } from '#lib/server/database/index.js'
 import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
+import { selectTaggedPieces } from '#lib/server/load/tagged-pieces.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
 import type { WebPieces } from '@luzzle/web.db'
 
@@ -30,28 +31,10 @@ export const GET: RequestHandler = async ({ request }) => {
 		return new Response('invalid order', { status: 400 })
 	}
 
-	let piecesQuery = db.selectFrom('web_pieces').selectAll()
+	let piecesQuery = tag ? selectTaggedPieces(tag) : db.selectFrom('web_pieces').selectAll()
 
 	if (type) {
 		piecesQuery = piecesQuery.where('web_pieces.type', '=', type as WebPieces['type'])
-	}
-
-	if (tag) {
-		const pieceTags = await db
-			.selectFrom('web_pieces_tags')
-			.selectAll()
-			.where('slug', '=', tag)
-			.execute()
-
-		if (pieceTags) {
-			piecesQuery = piecesQuery.where(
-				'id',
-				'in',
-				pieceTags.map((x) => x.piece_id)
-			)
-		} else {
-			return new Response('tag not found', { status: 404 })
-		}
 	}
 
 	if (orderBy === 'random') {

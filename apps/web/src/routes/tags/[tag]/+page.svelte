@@ -1,160 +1,26 @@
 <script lang="ts">
-	import ClientListingIcon from '#lib/pieces/components/ClientListingIcon.svelte'
 	import { page } from '$app/state'
-	import { resolve } from '$app/paths'
+	import { publicPageUrl, publicPieceHref } from '#lib/pieces/navigation.js'
+	import PieceListing from '#lib/pieces/components/PieceListing.svelte'
+	import IconListing from '#lib/pieces/components/IconListing.svelte'
+	import type { PageProps } from './$types'
 
-	let { data } = $props()
-	let pieces = $derived(data.pieces)
-	let activePieceId = $state<string | null>(null)
-	let nextPage = $derived<number | null>(data.nextPage)
-
-	async function getNextPage(tagPage: number) {
-		const currentData = data
-		const query: Record<string, string> = {}
-		if (tagPage) query.page = tagPage.toString()
-		query.tag = currentData.tag
-		const params = new URLSearchParams(query)
-
-		const res = await fetch(`/api/pieces?${params}`, {
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		})
-
-		if (data !== currentData) return
-		if (res.ok) {
-			const json = (await res.json()) as Omit<typeof data, 'type'>
-			if (data !== currentData) return
-			pieces = pieces.concat(json.pieces)
-			nextPage = json.nextPage
-		} else {
-			nextPage = null
-		}
-	}
+	let { data }: PageProps = $props()
 </script>
 
 <svelte:head>
-	{#if pieces.length === 1}
+	{#if data.page === 1 && !data.nextPage && data.pieces.length === 1}
 		<link
 			rel="canonical"
-			href="{page.data.config.url.app}/pieces/{pieces[0].type}/{pieces[0].slug}"
+			href={publicPageUrl(
+				page.data.config.url.app,
+				page.url.origin,
+				publicPieceHref(data.pieces[0])
+			)}
 		/>
 	{/if}
 </svelte:head>
 
-<h1 class="visually-hidden">Tag: #{data.tag}</h1>
-
-<section>
-	<div class="container">
-		{#each pieces as piece (piece.id)}
-			<a
-				href={resolve(`pieces/${piece.type}/${piece.slug}`)}
-				onmouseenter={() => {
-					activePieceId = piece.id
-				}}
-				onmouseleave={() => {
-					if (activePieceId) {
-						activePieceId = null
-					}
-				}}
-				onfocus={() => {
-					activePieceId = piece.id
-				}}
-				onblur={() => {
-					if (activePieceId) {
-						activePieceId = null
-					}
-				}}
-				ontouchstart={() => {
-					activePieceId = piece.id
-				}}
-				ontouchend={() => {
-					if (activePieceId) {
-						activePieceId = null
-					}
-				}}
-			>
-				<div style="display: flex; align-items: flex-start;">
-					<div style="flex: 1 1 0%;" aria-hidden="true">
-						<div style="display: flex;">
-							<div style="align-self: baseline;">
-								<ClientListingIcon
-									{piece}
-									active={activePieceId === piece.id}
-									size={{ width: 125 }}
-								/>
-							</div>
-						</div>
-					</div>
-					<div class="piece-text">
-						{piece.title}
-					</div>
-				</div>
-			</a>
-		{/each}
-	</div>
-</section>
-
-{#if nextPage}
-	<section class="action">
-		{#if nextPage}
-			<button onclick={() => getNextPage(nextPage as number)}>more</button>
-		{/if}
-	</section>
-{/if}
-
-<style>
-	.container {
-		display: grid;
-		width: 100%;
-		margin: auto;
-		padding-left: var(--space-5);
-		padding-bottom: var(--space-5);
-		padding-right: var(--space-5);
-		grid-template-columns: repeat(auto-fill, 280px);
-		gap: var(--space-5);
-		justify-content: space-around;
-	}
-
-	.container:last-child {
-		margin-right: auto;
-	}
-
-	.action {
-		text-align: center;
-		padding: var(--space-5) 0 var(--space-5) 0;
-	}
-
-	.container > a {
-		color: var(--color-on-surface);
-		cursor: pointer;
-		text-decoration: none;
-		min-height: 200px;
-	}
-
-	.container > a:hover {
-		text-decoration: underline;
-		color: var(--color-primary);
-	}
-
-	.action > button {
-		background: transparent;
-		color: var(--color-primary);
-		padding: none;
-		border: none;
-		cursor: pointer;
-	}
-
-	.action > button:hover {
-		text-decoration: underline;
-	}
-
-	.piece-text {
-		flex: 1 1 0%;
-		align-self: center;
-		max-height: 160px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		margin-left: var(--space-2);
-	}
-</style>
+<PieceListing {data} heading="Tag: #{data.tag}">
+	<IconListing {data} />
+</PieceListing>

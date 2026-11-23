@@ -78,15 +78,6 @@ test('page and take retain their existing pagination semantics', async () => {
 	expect(query.limit).toHaveBeenCalledWith(3)
 })
 
-test('tag filtering still uses matching piece IDs', async () => {
-	query.execute.mockResolvedValueOnce([{ piece_id: 'note' }])
-	const response = await GET(event(`?type=${config.pieces[0].type}&tag=field`))
-	expect(response.status).toBe(200)
-	expect(selectFrom).toHaveBeenCalledWith('web_pieces_tags')
-	expect(query.where).toHaveBeenCalledWith('slug', '=', 'field')
-	expect(query.where).toHaveBeenCalledWith('id', 'in', ['note'])
-})
-
 test('random ordering retains its unpaginated response shape', async () => {
 	const response = await GET(event(`?type=${config.pieces[0].type}&order=random`))
 	expect(await response.json()).toEqual({ pieces: [{ id: 'note' }] })

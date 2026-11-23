@@ -1,44 +1,38 @@
-import { error } from '@sveltejs/kit'
+import { error, redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { db } from '#lib/server/database/index.js'
+import { selectTaggedPieces } from '#lib/server/load/tagged-pieces.js'
+import { config } from '#lib/server/config.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
+import { renderPieceIcons } from '#lib/pieces/icon-listing/render.server.js'
 
-const TAKE_DEFAULT = 50
+const PAGE_SIZE = 50
 
-export const load: PageServerLoad = async (page) => {
-	const tag = page.params.tag
+export const load = (async ({ params: { tag }, url }) => {
+	const pageParam = url.searchParams.get('page') ?? '1'
+	const page = Number(pageParam)
+	const offset = (page - 1) * PAGE_SIZE
+	if (!/^\d+$/.test(pageParam) || page < 1 || !Number.isSafeInteger(offset)) {
+		redirect(302, url.pathname)
+	}
 
-	const pieceTags = await db
-		.selectFrom('web_pieces_tags')
-		.selectAll()
-		.where('slug', '=', tag)
+	const rows = await selectTaggedPieces(tag)
+		.orderBy('date_consumed', 'desc')
+		.orderBy('date_added', 'desc')
+		.orderBy('id', 'asc')
+		.offset(offset)
+		.limit(PAGE_SIZE + 1)
 		.execute()
 
-	if (!pieceTags.length) {
-		return error(404, 'tag not found')
+	if (!rows.length) {
+		if (page > 1) redirect(302, url.pathname)
+		error(404, 'tag not found')
 	}
 
-	const ids = pieceTags.map((x) => x.piece_id)
-
-	const pieces = await hydrateWithAssets(
-		await db
-			.selectFrom('web_pieces')
-			.selectAll()
-			.where('id', 'in', ids)
-			.orderBy('date_consumed', 'desc')
-			.limit(TAKE_DEFAULT + 1)
-			.execute()
+	const nextPage = rows.length > PAGE_SIZE ? page + 1 : null
+	const pieces = await hydrateWithAssets(rows.slice(0, PAGE_SIZE))
+	const externalIcons = await renderPieceIcons(
+		pieces.map((piece, index) => ({ piece, size: { width: 125 }, lazy: index >= 5 })),
+		config
 	)
-
-	const hasMore = pieces.length === TAKE_DEFAULT + 1
-	if (hasMore) {
-		pieces.pop()
-	}
-
-	return {
-		pieces,
-		nextPage: hasMore ? 2 : null,
-		prevPage: null,
-		tag
-	}
-}
+	return { tag, page, nextPage, pieces, externalIcons }
+}) satisfies PageServerLoad
