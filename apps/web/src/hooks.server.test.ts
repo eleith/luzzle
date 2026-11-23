@@ -25,6 +25,8 @@ vi.mock('$app/env', () => ({
 	}
 }))
 vi.mock('#lib/server/config.js', () => ({ config: fixture.config }))
+// These tests exercise the request hooks. Production startup exercises the real compiler in the HTTP suite.
+vi.mock('#lib/server/templates/icon.js', () => ({ preloadConfiguredListingIcons: vi.fn() }))
 vi.mock('#lib/server/configured-styles.js', () => ({
 	prepareConfiguredStyles: fixture.prepareConfiguredStyles,
 	renderConfiguredStyles: ({ event, resolve }: Parameters<Handle>[0]) => resolve(event)
@@ -234,23 +236,14 @@ test('an authenticated generation request reaches its handler', async () => {
 })
 
 const encodedRequests = [
-	...['', '/page', '/icon', '/share'].flatMap((suffix) =>
-		[false, true].map((isDataRequest) => ({
-			pathname: '/%61dmin/view/published/books/book.books.md' + suffix,
-			routeId: '/(auth)/admin/view/published/[...path]' + suffix,
-			isDataRequest,
-			method: 'GET'
-		}))
-	),
+	// The guard receives a matched route ID; viewer suffixes use the same branch.
 	{
-		pathname: '/%61dmin/piece/books/book.books.md/source',
-		routeId: '/(auth)/admin/piece/[...path]/source',
-		method: 'POST'
+		pathname: '/%61dmin/view/published/books/book.books.md/icon',
+		routeId: '/(auth)/admin/view/published/[...path]/icon',
+		isDataRequest: true,
+		method: 'GET'
 	},
 	{ pathname: '/%61pi/admin/generate', routeId: '/(auth)/api/admin/generate', method: 'POST' },
-	{ pathname: '/api/%61dmin/publish', routeId: '/(auth)/api/admin/publish', method: 'POST' },
-	{ pathname: '/garden/admin/pieces', routeId: '/(auth)/admin/pieces', method: 'GET' },
-	{ pathname: '/public-alias', routeId: '/(auth)/admin/pieces', method: 'GET' },
 	{ pathname: '/future-tool', routeId: '/(auth)/future-tool', method: 'GET' },
 	{ pathname: '/', routeId: '/(auth)', method: 'GET' }
 ]

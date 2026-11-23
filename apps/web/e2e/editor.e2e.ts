@@ -8,19 +8,19 @@ import { extractFullMarkdown } from '@luzzle/core'
 let editorSession: Cookie[] | undefined
 
 async function signIn(page: Page, editorUrl: string) {
-	if (editorSession) {
-		await page.context().addCookies(editorSession)
-		await page.goto(editorUrl)
-		return
-	}
+	if (editorSession) await page.context().addCookies(editorSession)
 	await page.goto(editorUrl)
-	const destination = new URL(editorUrl, page.url()).href
-	await page.locator('#svelte-announcer').waitFor({ state: 'attached' })
-	await page.getByLabel('Username', { exact: true }).fill(ADMIN.username)
-	await page.getByLabel('Password', { exact: true }).fill(ADMIN.password)
-	await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-	await expect(page).toHaveURL(destination)
-	editorSession = await page.context().cookies()
+	if (!editorSession) {
+		const destination = new URL(editorUrl, page.url()).href
+		await page.locator('#svelte-announcer').waitFor({ state: 'attached' })
+		await page.getByLabel('Username', { exact: true }).fill(ADMIN.username)
+		await page.getByLabel('Password', { exact: true }).fill(ADMIN.password)
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+		await expect(page).toHaveURL(destination)
+		editorSession = await page.context().cookies()
+	}
+	// The toolbar is server-rendered; CodeMirror's textbox only exists after mount.
+	await expect(page.getByRole('textbox')).toBeEditable()
 }
 
 test.beforeEach(async ({ page }) => {
