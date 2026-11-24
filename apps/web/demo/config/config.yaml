@@ -125,6 +125,7 @@ pieces:
   - type: snippets
     templates:
       icon:
+        file: ./content/templates/snippet/icon.svelte
         name: code-snippet
         mapping:
           files:
@@ -133,7 +134,7 @@ pieces:
               file: file
               type: type
       page:
-        name: snippet
+        file: ./content/templates/snippet/page.svelte
         mapping:
           files:
             each: files
@@ -144,7 +145,7 @@ pieces:
               type: type
           dateUpdated: date_updated
       opengraph:
-        name: code-snippet
+        file: ./content/templates/snippet/opengraph.svelte
         mapping:
           files:
             each: files

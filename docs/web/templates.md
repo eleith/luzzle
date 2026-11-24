@@ -194,7 +194,7 @@ pages: { field: page_count, default: 100 }
 ```
 
 Use `{ value: 'Anonymous' }` for literal text. For arrays, map each item; this is
-a snippet page's `files` mapping:
+the [demo snippet page](../../apps/web/demo/content/templates/snippet/page.svelte)’s `files` mapping:
 
 ```yaml
 files:
@@ -203,7 +203,12 @@ files:
     file: file
     name: name
     format: format
+    type: type
 ```
+
+The mapping describes each file; it does not generate downloads or highlighted code.
+The demo sets `fields.attachments` and `fields.highlight` to `["files[*].file"]`
+so the page can look up those outputs using the mapped file key.
 
 Missing or `null` metadata counts as absent: a `field` binding uses its default,
 an absent `each` produces an empty list, and template defaults apply otherwise.
