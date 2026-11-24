@@ -52,7 +52,7 @@ test('unknown explicit names and unsupported fields do not silently fall back', 
 		assert.throws(() => configure(templates));
 });
 
-for (const role of ['icon', 'page']) {
+for (const role of ['icon', 'page', 'opengraph']) {
 	test(`a local ${role} file accepts its own mappings and optional built-in fallback`, () => {
 		const file = `./content/templates/${role}/example.svelte`;
 		const mapping = { heading: { field: 'headline', default: 'Untitled' } };
@@ -76,7 +76,3 @@ for (const role of ['icon', 'page']) {
 			assert.throws(() => configure({ [role]: invalid }));
 	});
 }
-
-test('opengraph does not support local files', () => {
-	assert.throws(() => configure({ opengraph: { file: './template.svelte' } }));
-});

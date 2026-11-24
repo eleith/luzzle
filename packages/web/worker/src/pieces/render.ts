@@ -9,6 +9,8 @@ import { mapOpengraphTemplate } from '@luzzle/web.templates/pieces/fields'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 import { generateThemeCss } from '@luzzle/web.theme'
 import { readConfiguredAsset } from '@luzzle/web.config/assets'
+import { renderAuthoredOpengraph } from '@luzzle/web.templates/server'
+import { opengraphCaches, type OpengraphMode } from './authored-opengraph.js'
 
 const OpengraphImageWidth = 1200
 const OpengraphImageHeight = 630
@@ -47,16 +49,9 @@ async function loadStaticAssets(config: TemplateConfig) {
 	}
 }
 
-function loadLocalImageResources(body: string, assetsDir: string, pathsByUrl: Map<string, string>) {
-	const urls = new Set<string>()
-	for (const m of body.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)) {
-		urls.add(m[1])
-	}
-
+function loadLocalImageResources(assetsDir: string, pathsByUrl: Map<string, string>) {
 	const resources: { src: string; data: Buffer }[] = []
-	for (const url of urls) {
-		const assetPath = pathsByUrl.get(url)
-		if (!assetPath) continue
+	for (const [url, assetPath] of pathsByUrl) {
 		const diskPath = path.join(assetsDir, assetPath)
 		try {
 			resources.push({ src: url, data: readFileSync(diskPath) })
@@ -70,7 +65,8 @@ function loadLocalImageResources(body: string, assetsDir: string, pathsByUrl: Ma
 async function renderOpengraphHtml(
 	piece: PublicWebPiece,
 	assets: PublicWebPieceAsset[],
-	config: TemplateConfig
+	config: TemplateConfig,
+	mode: OpengraphMode
 ) {
 	const pieceConfig = config.pieces.find((entry) => entry.type === piece.type)
 	// Resolve rendered image URLs only to the validated paths used to produce them.
@@ -84,6 +80,16 @@ async function renderOpengraphHtml(
 		},
 		() => `/pieces/${piece.type}/${piece.slug}`
 	)
+	const selection = pieceConfig?.templates?.opengraph
+	if (selection && 'file' in selection) {
+		const { html, css } = await renderAuthoredOpengraph(
+			opengraphCaches[mode],
+			selection,
+			piece,
+			helpers
+		)
+		return { rendered: { body: html, head: `<style>${css}</style>` }, pathsByUrl }
+	}
 	const template = mapOpengraphTemplate(piece, pieceConfig)
 	const { getCompiledOpengraphModule } = await import('./compile.js')
 	const component = await getCompiledOpengraphModule(template.name)
@@ -95,7 +101,7 @@ function prepareTakumiMarkup(rendered: { body: string; head: string }) {
 	const head = rendered.head.replace(/:where\(\.svelte-[a-z0-9]+\)/gi, '')
 	const body = rendered.body.replace(/<!--[\s\S]*?-->/g, '').replace(/>\s+</g, '><')
 	const style = `display:flex;width:${OpengraphImageWidth}px;height:${OpengraphImageHeight}px`
-	return { body, html: `${head}<div style="${style}">${body}</div>` }
+	return `${head}<div style="${style}">${body}</div>`
 }
 
 function getAssetsDirectory(config: TemplateConfig, outDir?: string): string {
@@ -109,7 +115,8 @@ export async function renderOpengraphPng(
 	piece: PublicWebPiece,
 	assets: PublicWebPieceAsset[],
 	config: TemplateConfig,
-	outDir?: string
+	outDir?: string,
+	mode: OpengraphMode = 'published'
 ): Promise<Buffer> {
 	const { staticStylesheets, fontData } = await loadStaticAssets(config)
 	// Share images use fixed canvas typography, not responsive browser sizing.
@@ -118,17 +125,13 @@ export async function renderOpengraphPng(
 		generateThemeCss(config),
 		':root { font-size: calc(var(--font-size-root) * 1px); }',
 	]
-	const { rendered, pathsByUrl } = await renderOpengraphHtml(piece, assets, config)
-	const markup = prepareTakumiMarkup(rendered)
-	const fetchedResources = loadLocalImageResources(
-		markup.body,
-		getAssetsDirectory(config, outDir),
-		pathsByUrl
-	)
+	const { rendered, pathsByUrl } = await renderOpengraphHtml(piece, assets, config, mode)
+	const html = prepareTakumiMarkup(rendered)
+	const fetchedResources = loadLocalImageResources(getAssetsDirectory(config, outDir), pathsByUrl)
 	const globals = config.theme?.globals || {}
 	const fontName =
 		(globals['font-sans-name'] as string | undefined)?.replace(/['"]/g, '') || 'Noto Sans'
-	const response = new ImageResponse(markup.html, {
+	const response = new ImageResponse(html, {
 		width: OpengraphImageWidth,
 		height: OpengraphImageHeight,
 		stylesheets,

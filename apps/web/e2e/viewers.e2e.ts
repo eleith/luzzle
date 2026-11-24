@@ -84,7 +84,7 @@ test('new viewer HTML/data and preview PNG/stream stay private; login returns to
 		previewRegion.getByRole('heading', { name: 'by Olivia Sharer', exact: true })
 	).toBeVisible()
 	await expect(previewRegion).not.toContainText('Ada Reader')
-	const cover = previewRegion.locator('.opengraph-canvas .book-cover img')
+	const cover = previewRegion.locator('.book-cover img')
 	await expect(cover).toHaveAttribute('src', assetUrl(appServer.previews.completed))
 	await expect
 		.poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth))

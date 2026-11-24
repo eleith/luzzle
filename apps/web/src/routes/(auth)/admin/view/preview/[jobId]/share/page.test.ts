@@ -10,6 +10,7 @@ import PreviewLayout from '../+layout.svelte'
 import Page from '../page/+page.svelte'
 import Icon from '../icon/+page.svelte'
 import SharePage from './+page.svelte'
+import { load } from './+page.server.js'
 
 const publishedPiece = {
 	...rawPublishedPiece,
@@ -37,6 +38,7 @@ const { page, resolve } = vi.hoisted(() => ({
 			.replace('[jobId]', () => params.jobId ?? '')
 	})
 }))
+vi.mock('#lib/server/config.js', () => ({ config: { pieces: [] } }))
 vi.mock('$app/state', () => ({ page }))
 vi.mock('$app/forms', () => ({ enhance: vi.fn() }))
 vi.mock('$app/paths', () => ({ resolve }))
@@ -61,10 +63,13 @@ function expectAppNavigation(jobs = ['job']) {
 	]
 	for (const call of resolve.mock.calls) expect(calls).toContainEqual(call)
 }
-type Data = ComponentProps<typeof SharePage>['data']
+type Data = ComponentProps<typeof PreviewLayout>['data'] &
+	Pick<ComponentProps<typeof SharePage>['data'], 'renderedOpengraph' | 'shareUnavailable'>
 type Status = 'waiting' | 'running' | 'completed' | 'failed' | 'expired'
 function data(status: Status = 'completed', png = true): Data {
 	const common = {
+		shareUnavailable: status !== 'completed',
+		renderedOpengraph: null,
 		pieceTypes: ['books'],
 		config: makePublicConfig({
 			url: {
@@ -126,7 +131,13 @@ function tree(props: Data, view: keyof typeof routes = 'share') {
 	const params = { jobId: props.job }
 	const children = createRawSnippet(() => ({
 		render: () =>
-			render(routes[view], { props: { data: { ...props, renderedPage: null }, params } }).body
+			render(routes[view], {
+				props: {
+					data: { ...props, renderedPage: null, renderedIcon: undefined },
+					form: null,
+					params
+				}
+			}).body
 	}))
 	return render(PreviewLayout, { props: { data: props, params, children } }).body.replace(
 		/<!--[^]*?-->/g,
@@ -135,6 +146,40 @@ function tree(props: Data, view: keyof typeof routes = 'share') {
 }
 
 beforeEach(() => vi.clearAllMocks())
+
+test('an authored Share mounts the server fragment and its stylesheet without the client loader', () => {
+	const props = data()
+	props.renderedOpengraph = {
+		html: '<h3 class="card-heading">Draft composition</h3>',
+		css: '.card-heading { color: blue }'
+	}
+	page.data = props
+	const result = render(SharePage, {
+		props: { data: props, params: { jobId: props.job }, form: null }
+	})
+	expect(result.body).toContain(props.renderedOpengraph.html)
+	expect(result.head).toContain(props.renderedOpengraph.css)
+	expect(result.body).not.toContain('Loading browser preview')
+	expect(result.body).toContain('/admin/preview/job/asset/generated/share.png')
+})
+
+test('a failed HTML design reports the failure and keeps the recorded PNG accessible', () => {
+	const html = tree({ ...data(), renderedOpengraph: 'failed' })
+	expect(html).toContain('The configured share HTML could not be rendered.')
+	expect(html).toContain('href="/admin/preview/job/asset/generated/share.png"')
+	expect(html).not.toContain('Loading browser preview')
+})
+
+test('an expired Share response wins over completed data from a stale viewer layout', async () => {
+	const stale = data()
+	const event = { parent: async () => ({ status: 'expired' }) } as unknown as Parameters<
+		typeof load
+	>[0]
+	const update = await load(event)
+	const html = tree({ ...stale, shareUnavailable: update?.shareUnavailable })
+	expect(html).toContain('This share preview is no longer available.')
+	expect(html).not.toMatch(/Loading browser preview|generated\/share.png|Preview &lt;Draft>/)
+})
 
 test('Share SSR displays only the current job PNG and leaves HTML to the client', () => {
 	const props = data()

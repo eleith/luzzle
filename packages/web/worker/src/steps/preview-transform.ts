@@ -47,6 +47,7 @@ export function previewTransformStep(
 				assetKeyToPath: parsed.keyToPath,
 				logger,
 				priorAssets,
+				mode: 'preview',
 				buildAssetUrl: (path) => previewOutputUrl(path, jobId),
 			})
 

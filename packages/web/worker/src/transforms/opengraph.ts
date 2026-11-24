@@ -11,7 +11,8 @@ export async function run({
 	webPiece,
 	config,
 	outDir,
-	priorAssets
+	priorAssets,
+	mode,
 }: TransformInput): Promise<AssetRecord[]> {
 	const ogPath = getOpenGraphPath(webPiece.type, webPiece.key)
 	const outputPath = path.join(outDir, ogPath)
@@ -33,10 +34,10 @@ export async function run({
 		summary: webPiece.summary,
 		keywords: webPiece.keywords,
 		metadata,
-		assets
+		assets,
 	}
 
-	const buffer = await renderOpengraphPng(publicPiece, assets, config, outDir)
+	const buffer = await renderOpengraphPng(publicPiece, assets, config, outDir, mode)
 	const optimized = await sharp(buffer)
 		.png({ palette: true, quality: 90, effort: 7, compressionLevel: 9 })
 		.toBuffer()

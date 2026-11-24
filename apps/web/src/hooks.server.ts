@@ -9,6 +9,7 @@ import { prepareConfiguredStyles, renderConfiguredStyles } from '#lib/server/con
 import { reloadAuthoredTemplates } from '#lib/server/templates/cache.js'
 import { preloadAuthoredPages } from '#lib/server/templates/page.js'
 import { preloadAuthoredIcons } from '#lib/server/templates/icon.js'
+import { preloadAuthoredOpengraphs } from '#lib/server/templates/opengraph.js'
 import '#lib/server/database/index.js'
 import { sequence, type Handle } from '@sveltejs/kit/hooks'
 
@@ -28,7 +29,11 @@ function createAssetPolicy(): Handle {
 
 export async function init() {
 	if (building || reloadAuthoredTemplates) return
-	await Promise.all([preloadAuthoredIcons(config), preloadAuthoredPages(config)])
+	await Promise.all([
+		preloadAuthoredIcons(config),
+		preloadAuthoredPages(config),
+		preloadAuthoredOpengraphs(config)
+	])
 }
 
 const configuredStyles = await prepareStartupStyles()

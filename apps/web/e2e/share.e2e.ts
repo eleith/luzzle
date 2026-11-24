@@ -83,7 +83,7 @@ test('Share opens its PNG, supports client navigation and reports missing genera
 	await expect(page.getByRole('link', { name: /Open generated Takumi PNG/ })).toHaveCount(0)
 })
 
-test('Share displays its PNG or missing-output guidance without JavaScript', async ({
+test('without JavaScript Share renders the authored card for the current record alongside its PNG', async ({
 	page,
 	browser,
 	appServer
@@ -95,32 +95,42 @@ test('Share displays its PNG or missing-output guidance without JavaScript', asy
 	})
 	try {
 		const shell = await context.newPage()
-		for (const [url, title, image] of [
-			[shareUrl, notebook.title, `${appServer.origin}${imagePath}`],
+		const job = appServer.previews.notebook
+		const privateAsset = (file: string) => `/admin/preview/${job}/asset/${encodeURIComponent(file)}`
+		const html = shell.getByRole('region', { name: 'HTML', exact: true })
+		for (const [url, title, summary, cover, png] of [
 			[
-				`/admin/view/preview/${appServer.previews.completed}/share`,
-				fieldGuide.previewTitle,
-				previewImagePath(appServer.previews.completed)
+				shareUrl,
+				notebook.title,
+				notebook.caption,
+				`${appServer.origin}/assets/pieces/${notebook.slug}/published%20meteor.png`,
+				`${appServer.origin}${imagePath}`
+			],
+			[
+				`/admin/view/preview/${job}/share`,
+				notebook.previewTitle,
+				notebook.previewCaption,
+				privateAsset(notebook.previewAsset),
+				privateAsset(notebook.previewShareAsset)
 			]
 		]) {
 			const response = await shell.goto(new URL(url, appServer.origin).href)
 			expect(response?.headers()['cache-control']).toBe('private, no-store')
-			await expect(shell.getByRole('region', { name: 'HTML', exact: true })).toBeVisible()
-			await expect(shell.getByRole('status')).toHaveText('Loading browser preview…')
-			await expect(shell.locator('noscript p')).toHaveText(
-				'JavaScript is required to display the browser preview.'
+			await expect(html.getByRole('heading', { name: title, exact: true })).toBeVisible()
+			await expect(html.getByRole('article')).toHaveCSS('--fixture-share-style', 'applied')
+			await expect(html.getByText(summary, { exact: true })).toBeVisible()
+			await expect(html.getByRole('img', { name: 'Share card cover' })).toHaveAttribute(
+				'src',
+				cover
 			)
-			await expect(shell.locator('noscript p')).toBeVisible()
-			await expect(pngLink(shell, title)).toHaveAttribute('href', image)
-			await expect(pngLink(shell, title)).toBeVisible()
-			await expect(pngImage(shell, title)).toHaveAttribute('src', image)
+			await expect(pngLink(shell, title)).toHaveAttribute('href', png)
 			await expect(pngImage(shell, title)).toBeVisible()
-			await expect
-				.poll(() => pngImage(shell, title).evaluate((img: HTMLImageElement) => img.naturalWidth))
-				.toBeGreaterThan(0)
-			await expect(shell.locator('.opengraph-canvas')).toHaveCount(0)
 		}
+		// Named templates still use the client preview when no file is selected.
 		await shell.goto(new URL(`${fieldGuide.publishedUrl}/share`, appServer.origin).href)
+		await expect(html.locator('noscript p')).toHaveText(
+			'JavaScript is required to display the browser preview.'
+		)
 		await expect(shell.getByRole('main')).toContainText('No generated image available.')
 		await expect(shell.getByRole('link', { name: /Open generated Takumi PNG/ })).toHaveCount(0)
 	} finally {
@@ -150,7 +160,6 @@ test('a failed OG import keeps the generated PNG visible and Reload recovers the
 		.click()
 	await expect(page.getByRole('alert')).toHaveText('The browser preview could not be loaded.')
 	expect(rejected).toBe(true)
-	await expect(page.locator('.opengraph-canvas')).toHaveCount(0)
 	await expect(page.getByRole('status')).toHaveCount(0)
 	await expect(pngLink(page, fieldGuide.previewTitle)).toHaveAttribute(
 		'href',
@@ -166,7 +175,7 @@ test('a failed OG import keeps the generated PNG visible and Reload recovers the
 	await page.getByRole('button', { name: 'Reload', exact: true }).click()
 	await expect(
 		page
-			.locator('.opengraph-canvas')
+			.getByRole('region', { name: 'HTML', exact: true })
 			.getByRole('heading', { name: fieldGuide.previewTitle, exact: true })
 	).toBeVisible()
 	await expect(page.getByRole('alert')).toHaveCount(0)

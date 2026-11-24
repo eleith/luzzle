@@ -77,7 +77,7 @@ pieces:
           url: url
           isbn: isbn
       opengraph:
-        name: book
+        file: ./content/templates/book/opengraph.svelte
         mapping:
           image: cover
           author: author

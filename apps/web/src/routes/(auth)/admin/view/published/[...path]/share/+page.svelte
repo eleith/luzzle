@@ -4,4 +4,8 @@
 	let { data }: PageProps = $props()
 </script>
 
-<ShareViewport piece={data.piece} publishedAt={data.publication.lastPublishedAt} />
+<ShareViewport
+	piece={data.piece}
+	renderedOpengraph={data.renderedOpengraph}
+	publishedAt={data.publication.lastPublishedAt}
+/>

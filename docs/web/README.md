@@ -66,21 +66,21 @@ tabs. Configure a [local page](templates.md#use-a-local-page-on-public-piece-url
 [icon](templates.md#use-a-local-icon-on-piece-listings) to render that tab without
 JavaScript. Published uses the published piece and public assets; Preview uses the
 selected job’s draft data and protected assets. Built-in Page and Icon designs in
-the admin viewer and Share’s browser preview still require JavaScript.
+the admin viewer and built-in Share HTML designs still require JavaScript.
 Overview and Share’s generated image remain usable without it. Public piece pages still render without JavaScript. All admin views and preview
 assets require sign-in.
 
 The **Share** tab has two sections: **HTML** renders the current Open Graph template
-in your browser on a scaled 1200×630 canvas; **Image** displays the recorded Takumi PNG
+as a 1200×630 card scaled to fit (without JavaScript for a [local OG file](templates.md#use-a-local-open-graph-card)); **Image** displays the recorded Takumi PNG
 from that publication or preview job. Click the image to open it in a new tab.
 Compare the two to investigate template and renderer differences; browser rendering is
-a reference, not a guarantee of Takumi's output. The HTML canvas uses the worker's
+a reference, not a guarantee of Takumi's output. The HTML card uses the worker's
 fixed root font size rather than responsive sizing.
 
 After changing templates or colors, publish again or generate a fresh preview before
 comparing: the browser uses current templates and theme, while the PNG records an earlier
 render. If no PNG was generated, Share says so; the browser preview can still render.
-The generated image remains available if JavaScript is disabled or the HTML cannot load.
+You can open the generated image without JavaScript.
 
 When saved Markdown has unpublished changes, Published Overview adds a **Preview**
 row to the Publication table. Its **Generate** action creates a fresh preview

@@ -1,4 +1,4 @@
-import { createTemplateSelectionSchema } from '../config/association.js';
+import { createFileTemplateSelectionSchema } from '../config/association.js';
 import { schema as fallback } from './default/schema.js';
 import { schema as book } from './book/schema.js';
 import { schema as browserWindow } from './browser-window/schema.js';
@@ -30,4 +30,4 @@ export function getOpengraphSchema(name = 'default'): OpengraphDefinition {
 	return template;
 }
 
-export const schema = createTemplateSelectionSchema('opengraph', templates);
+export const schema = createFileTemplateSelectionSchema('opengraph', templates);

@@ -146,6 +146,18 @@ export async function createFixture(directory: string, origin: string) {
 			article { --fixture-page-style: applied; max-width: 48rem; margin-inline: auto }
 		</style>`
 	)
+	await writeFile(
+		path.join(directory, 'notes-share.svelte'),
+		`<script>
+			let { piece, fields, helpers } = $props()
+			const cover = $derived(helpers.getPieceImageUrl(fields.jacket, 500, 'jpg'))
+		</script>
+		<article>
+			<h1>{piece.title}</h1><p>{fields.summary}</p>
+			{#if cover}<img src={cover} alt="Share card cover" />{/if}
+		</article>
+		<style>article { --fixture-share-style: applied }</style>`
+	)
 	const database = path.join(directory, 'data/luzzle.sqlite')
 	await writeFile(
 		path.join(directory, 'config.yaml'),
@@ -165,7 +177,11 @@ export async function createFixture(directory: string, origin: string) {
 							file: `./${notePageFile}`,
 							mapping: { jacket: 'cover', subtitle: 'caption' }
 						},
-						icon: { file: './notes-icon.svelte', mapping: { image: 'cover', label: 'caption' } }
+						icon: { file: './notes-icon.svelte', mapping: { image: 'cover', label: 'caption' } },
+						opengraph: {
+							file: './notes-share.svelte',
+							mapping: { jacket: 'cover', summary: 'caption' }
+						}
 					}
 				},
 				{

@@ -21,7 +21,7 @@
 	{:else if view === 'icon'}
 		<Icon data={{ ...data, renderedIcon: undefined }} {params} form={null} />
 	{:else if view === 'share'}
-		<Share {data} {params} />
+		<Share data={{ ...data, renderedOpengraph: null }} {params} form={null} />
 	{:else}
 		<Overview {data} {params} />
 	{/if}

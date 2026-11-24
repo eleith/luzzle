@@ -1,6 +1,6 @@
 # Templates
 
-Choose built-in templates in YAML. No Svelte files or custom application build needed.
+Choose built-in designs by name or point to trusted, operator-authored Svelte files in YAML. Neither requires a custom application build.
 
 Each type has three independent roles: `icon` for lists/search, `page` for its
 detail page, and `opengraph` for the share image generated during publishing.
@@ -121,8 +121,35 @@ The book passes its palette colors here, as it did in the package design.
 The same trusted-source, server-only and file-reload rules as for icons apply.
 A render error fails the request; it does not silently replace the file with a named
 page. Types without a `file` keep their built-in public route and client-rendered
-admin Page tabs. Share and worker OG output are unchanged. When switching back
-to a named design, remove mapping keys that design does not accept.
+admin Page tabs. When switching back to a named design, remove mapping keys that design does not accept.
+
+## Use a local Open Graph card
+
+Set `templates.opengraph.file` to render the same design in **Share → HTML** and in the
+worker that generates the 1200×630 PNG. For example, the [demo book card](../../apps/web/demo/content/templates/book/opengraph.svelte) uses:
+
+```yaml
+opengraph:
+  file: ./content/templates/book/opengraph.svelte
+  mapping:
+    image: cover
+    author: author
+    pages: pages
+```
+
+Mount the same trusted file in **both web and worker**, relative to each service’s
+working directory. The component receives `piece`, `fields`, and `helpers`; it can
+`import type { ServerOpengraphProps } from '@luzzle/web.templates/opengraphs/props'`.
+Use the image helpers rather than hard-coding delivery URLs: the Share preview uses
+public or job-specific URLs, while the worker supplies local image bytes to Takumi.
+The book also uses `helpers.getOpengraphTitleSize` and `helpers.formatPieceDate`.
+
+**HTML** shows the current template without JavaScript. **Image** shows the PNG
+recorded when you published or generated that preview. Editing the template does
+not rewrite old PNGs. In production, restart web and worker after changing the
+file; generate a fresh Preview or use **More → Publish** for each affected piece.
+If the current card fails to render for a record, Share reports the error without hiding
+its recorded PNG. Without a file, the built-in card still renders in the browser and worker.
 
 ## Map your metadata
 
@@ -202,7 +229,7 @@ images do not change automatically.
 ## Apply your choices
 
 Restart web and worker after config changes, then refresh. To regenerate OG
-images, edit and save affected pieces, then publish again. YAML changes alone
+images, use **More → Publish** in the source editor for affected pieces. YAML changes alone
 do not mark unchanged pieces for republication. No app rebuild or hot reload.
 
 For all field choices, use the [generated schema](../../packages/web/templates/config.schema.json).

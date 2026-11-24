@@ -9,6 +9,11 @@ export type OpengraphProps<Fields> = {
 	helpers: PieceComponentHelpers;
 };
 
+// File-backed templates receive formatting utilities instead of importing runtime modules.
+export type ServerOpengraphProps<Fields> = OpengraphProps<Fields> & {
+	helpers: Pick<typeof import('@luzzle/web.pieces'), 'formatPieceDate' | 'getOpengraphTitleSize'>;
+};
+
 // Preserve each template's field contract without importing the component catalog.
 type ComponentFor<Definition extends OpengraphDefinition> = Definition extends OpengraphDefinition
 	? Component<OpengraphProps<Static<Definition['fields']>>>

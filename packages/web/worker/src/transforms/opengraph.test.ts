@@ -143,7 +143,8 @@ describe('transforms/opengraph', () => {
 			expect.objectContaining({ assets: priorAssets }),
 			priorAssets,
 			input.config,
-			TEMP_DIR
+			TEMP_DIR,
+			undefined
 		)
 		expect(records).toEqual([
 			expect.objectContaining({

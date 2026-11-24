@@ -118,3 +118,28 @@ test('starts the native worker and health server, then lets active work finish b
 		await fs.rm(directory, { recursive: true, force: true })
 	}
 }, 15_000)
+
+test('production refuses to start with an unreadable authored share design', async ({
+	onTestFinished,
+}) => {
+	vi.stubEnv('LUZZLE_DEV', 'false')
+	onTestFinished(() => vi.unstubAllEnvs())
+	const dir = await fs.mkdtemp(path.join(tmpdir(), 'luzzle-worker-'))
+	onTestFinished(() => fs.rm(dir, { recursive: true, force: true }))
+	const config = validateConfig(
+		{
+			paths: { config: path.join(dir, 'config.yaml'), database: path.join(dir, 'app.sqlite') },
+			pieces: [
+				{
+					type: 'books',
+					fields: { title: 'title', date_consumed: 'date' },
+					templates: { opengraph: { file: 'missing/card.svelte' } },
+				},
+			],
+		},
+		{},
+		{ schema: configSchema }
+	)
+	const { main } = await import('./index.js')
+	await expect(main(config, 0)).rejects.toThrow('card.svelte')
+})

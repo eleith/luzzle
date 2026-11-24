@@ -48,7 +48,7 @@ export function createTemplateSelectionSchema(
 
 /** A local Svelte file may declare fields beyond its built-in fallback. */
 export function createFileTemplateSelectionSchema<Name extends string>(
-	role: 'icon' | 'page',
+	role: TemplateRole,
 	templates: readonly (TemplateDefinition & { name: Name })[]
 ) {
 	const builtIn = createTemplateSelectionSchema(role, templates);
@@ -57,7 +57,7 @@ export function createFileTemplateSelectionSchema<Name extends string>(
 			file: Type.String({
 				pattern: '^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\\\\\x00\\r\\n]+\\.svelte$',
 				description:
-					'Trusted local Svelte file, relative to the web process working directory (/app in production Docker), not the mounted config directory.'
+					'Trusted local Svelte file, relative to the working directory of each service that renders it (/app in production Docker), not the mounted config directory.'
 			}),
 			name: Type.Optional(Type.Union(templates.map(({ name }) => Type.Literal(name)))),
 			mapping: Type.Optional(

@@ -188,6 +188,56 @@ describe('pieces/render', () => {
 		15000
 	)
 
+	test('isolates authored card module state and local covers between preview and publish', async () => {
+		const config = makeConfig()
+		const file = path.join(TEMP_DIR, 'card.svelte')
+		writeFileSync(
+			file,
+			`<script module>let firstTitle;</script>
+			<script>let { piece, fields, helpers } = $props(); firstTitle ??= piece.title;</script>
+			{#if firstTitle === piece.title}
+				<div style:background-image={'url(' + helpers.getPieceImageUrl(fields.jacket, 500, 'jpg') + ')'}></div>
+			{/if}
+			<style>div { width:300px; height:300px; background-size:cover }</style>`
+		)
+		config.pieces[0].templates!.opengraph = { file, mapping: { jacket: 'cover' } }
+		const assets = [
+			{
+				asset_key: 'img-key',
+				transformation: 'image.original',
+				asset_path: 'cover.png',
+				mime_type: 'image/png',
+			},
+		]
+		const piece = makePiece(assets)
+		async function writeCover(dir: string, color: string) {
+			mkdirSync(dir, { recursive: true })
+			await sharp({ create: { width: 8, height: 8, channels: 3, background: color } })
+				.png()
+				.toFile(path.join(dir, 'cover.png'))
+		}
+		const previewDir = path.join(TEMP_DIR, 'draft')
+		await writeCover(previewDir, '#cc2299')
+		await writeCover(path.join(TEMP_DIR, 'assets'), '#22bb66')
+
+		const preview = await renderOpengraphPng(
+			{ ...piece, title: 'Draft' },
+			assets,
+			config,
+			previewDir,
+			'preview'
+		)
+		const published = await renderOpengraphPng(piece, assets, config)
+		const coverPixel = (png: Buffer) =>
+			sharp(png)
+				.extract({ left: 100, top: 100, width: 1, height: 1 })
+				.removeAlpha()
+				.raw()
+				.toBuffer()
+		expect((await coverPixel(preview)).toString('hex')).toBe('cc2299')
+		expect((await coverPixel(published)).toString('hex')).toBe('22bb66')
+	})
+
 	test('renders the packaged default component to a PNG without a piece configuration', async () => {
 		const config = makeConfig()
 		config.pieces = []

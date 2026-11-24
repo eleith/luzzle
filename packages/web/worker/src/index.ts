@@ -7,6 +7,8 @@ import { createLogger, createOpenWorkflowLogger, log } from './services/logger.j
 import { createWorkerContext, setWorkerContext } from './services/context.js'
 import { closeOpenWorkflow, initOpenWorkflow } from '@luzzle/web.jobs'
 import { registerWorkflows } from './workflows/index.js'
+import { preloadAuthoredOpengraphFiles } from '@luzzle/web.templates/server'
+import { opengraphCaches, reloadOnChange } from './pieces/authored-opengraph.js'
 import { once } from 'node:events'
 import type { Server } from 'node:http'
 import type { Worker } from 'openworkflow'
@@ -58,6 +60,7 @@ export async function main(
 	}
 
 	try {
+		if (!reloadOnChange) await preloadAuthoredOpengraphFiles(opengraphCaches, config.pieces)
 		const coreResult = await migrate(asCoreDatabase(db))
 		if (coreResult.error)
 			throw new Error('Luzzle core migration failed', { cause: coreResult.error })

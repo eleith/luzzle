@@ -2,9 +2,19 @@
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import { OpengraphImageWidth, OpengraphImageHeight } from '@luzzle/web.pieces'
 	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
+	import ShareCardFrame from './ShareCardFrame.svelte'
+	import TemplateStylesheets from '#lib/templates/TemplateStylesheets.svelte'
 	import ClientOpengraph from './ClientOpengraph.svelte'
 
-	let { piece, publishedAt }: { piece: TemplatedPiece; publishedAt?: number | null } = $props()
+	let {
+		piece,
+		publishedAt,
+		renderedOpengraph
+	}: {
+		piece: TemplatedPiece
+		renderedOpengraph: { html: string; css: string } | 'failed' | null
+		publishedAt?: number | null
+	} = $props()
 	const asset = $derived(piece.assets.find((asset) => asset.transformation === 'opengraph'))
 	const assetUrl = $derived(
 		asset ? getPieceHelpers(piece).getPieceAssetUrl(asset.asset_key, 'opengraph') : undefined
@@ -19,7 +29,20 @@
 <main id="main-content" class="share-viewport" aria-label="Share">
 	<section aria-labelledby="share-html-heading">
 		<h2 id="share-html-heading">HTML</h2>
-		<ClientOpengraph {piece} />
+		{#if renderedOpengraph === 'failed'}
+			<p role="alert">The configured share HTML could not be rendered.</p>
+		{:else if renderedOpengraph}
+			{#if renderedOpengraph.css}
+				<TemplateStylesheets stylesheets={[renderedOpengraph.css]} />
+			{/if}
+			<ShareCardFrame>
+				<!-- Keep the trusted SSR fragment and its hydration markers inside one root. -->
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html `<div style="display:contents">${renderedOpengraph.html}</div>`}
+			</ShareCardFrame>
+		{:else}
+			<ClientOpengraph {piece} />
+		{/if}
 	</section>
 	<section aria-labelledby="share-image-heading">
 		<h2 id="share-image-heading">Image</h2>

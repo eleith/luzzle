@@ -80,7 +80,7 @@ export function mapOpengraphTemplate(
 		'opengraph',
 		definition,
 		piece,
-		config?.templates?.opengraph?.mapping
+		fallbackMapping(config?.templates?.opengraph, definition.fields)
 	);
 }
 

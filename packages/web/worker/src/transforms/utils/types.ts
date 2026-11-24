@@ -5,6 +5,7 @@ import type { Logger } from '../../services/logger.js'
 
 import type { AssetRecord } from '@luzzle/web.jobs'
 import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
+import type { OpengraphMode } from '../../pieces/authored-opengraph.js'
 export type { AssetRecord }
 
 export type TransformInput = {
@@ -14,6 +15,7 @@ export type TransformInput = {
 	pieces: Pieces
 	assetKeyToPath: Map<string, string>
 	logger: Logger
+	mode?: OpengraphMode
 	priorAssets?: PublicWebPieceAsset[]
 	buildAssetUrl?: (path: string) => string | undefined
 }

@@ -190,20 +190,22 @@ test('built-in icon surfaces map shared fields without evaluating external-only 
 	assert.deepEqual(result.templates.icon, { name: 'default', fields: { image: 'cover-key' } });
 });
 
-test('file-backed pages expose only the named fallback and its fields', () => {
-	const result = mapPieceTemplates(piece(), {
-		...config,
-		templates: {
-			...config.templates,
-			page: {
-				name: 'book',
-				file: './private/book.svelte',
-				mapping: {
-					author: 'credits[0].display',
-					custom: { each: 'film.minutes', fields: { x: '$' } }
+for (const role of ['page', 'opengraph']) {
+	test(`file-backed ${role} exposes only the named fallback and its fields`, () => {
+		const result = mapPieceTemplates(piece(), {
+			...config,
+			templates: {
+				...config.templates,
+				[role]: {
+					name: 'book',
+					file: './private/book.svelte',
+					mapping: {
+						author: 'credits[0].display',
+						custom: { each: 'film.minutes', fields: { x: '$' } }
+					}
 				}
 			}
-		}
+		});
+		assert.deepEqual(result.templates[role], { name: 'book', fields: { author: 'Ada' } });
 	});
-	assert.deepEqual(result.templates.page, { name: 'book', fields: { author: 'Ada' } });
-});
+}
