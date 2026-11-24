@@ -1,6 +1,12 @@
 import type { Cookie, Page } from '@playwright/test'
 import { expect, test } from './support/test.js'
-import { ADMIN, completePendingPreview, fieldGuide, notebook } from './support/fixture.js'
+import {
+	ADMIN,
+	completePendingPreview,
+	fieldGuide,
+	fieldNotesTag,
+	notebook
+} from './support/fixture.js'
 
 let viewerSession: Cookie[] | undefined
 
@@ -197,17 +203,57 @@ test('configured Icon viewers render without JavaScript while built-in viewer te
 		'href',
 		fieldGuide.editorUrl
 	)
+})
 
-	// A public page file does not replace either authenticated Page tab.
-	for (const [viewer, title] of [
-		[notebook.publishedUrl, notebook.title],
-		[previewUrl(appServer.previews.notebook), notebook.previewTitle]
-	]) {
-		await page.goto(`${viewer}/page`)
-		await expect(
-			page.getByRole('main').getByRole('heading', { name: title, exact: true, level: 1 })
-		).toBeVisible()
-		await expect(page.locator('.fixture-note-page')).toHaveCount(0)
+test('configured Page tabs render the current piece and its assets without JavaScript', async ({
+	page,
+	browser,
+	appServer
+}) => {
+	const job = appServer.previews.notebook
+	await signIn(page, notebook.publishedUrl)
+	const context = await browser.newContext({
+		baseURL: appServer.origin,
+		javaScriptEnabled: false,
+		storageState: await page.context().storageState()
+	})
+	try {
+		const viewer = await context.newPage()
+		const article = viewer.locator('.fixture-note-page')
+		async function expectPage(path: string, title: string, caption: string, image: string) {
+			const response = await viewer.goto(`${path}/page`)
+			expect(response?.headers()['cache-control']).toBe('private, no-store')
+			await expect(article.getByRole('heading', { name: title, exact: true })).toBeVisible()
+			await expect(article.getByText(caption, { exact: true })).toBeVisible()
+			await expect(article.getByRole('img', { name: 'Notebook cover' })).toHaveAttribute(
+				'src',
+				image
+			)
+			await expect(article).toHaveCSS('--fixture-page-style', 'applied')
+		}
+		await expectPage(
+			notebook.publishedUrl,
+			notebook.title,
+			notebook.caption,
+			`${appServer.origin}/pieces/assets/${notebook.slug}/published%20meteor.png`
+		)
+		await expect(article.getByRole('link', { name: fieldNotesTag.label })).toHaveAttribute(
+			'href',
+			`/tags/${fieldNotesTag.slug}`
+		)
+
+		await expectPage(
+			previewUrl(job),
+			notebook.previewTitle,
+			notebook.previewCaption,
+			assetUrl(job, notebook.previewAsset)
+		)
+		await expect(article.getByRole('link', { name: 'Draft notes' })).toHaveAttribute(
+			'href',
+			'/tags/draft-notes'
+		)
+	} finally {
+		await context.close()
 	}
 })
 

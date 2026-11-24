@@ -17,8 +17,6 @@ type PageContentProps<Fields, Helpers> = {
 	helpers: Helpers;
 };
 
-export type PageNavigation = PageNavbarProps & { position: 'before-content' | 'after-content' };
-
 // File-backed templates cannot import runtime modules. Supply the same utilities as props.
 export type ServerPageProps<Fields> = PageContentProps<
 	Fields,
@@ -27,7 +25,7 @@ export type ServerPageProps<Fields> = PageContentProps<
 			typeof import('@luzzle/web.pieces'),
 			'formatPieceDate' | 'safeExternalUrl' | 'interpolate'
 		> & {
-			requestNavBar(options: PageNavigation): void;
+			requestNavBar(options: PageNavbarProps): void;
 		}
 >;
 

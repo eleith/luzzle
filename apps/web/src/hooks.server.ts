@@ -6,8 +6,9 @@ import { resolveAuthUrl } from '../scripts/runtime-environment.js'
 import { createAssetCspHandle } from '#lib/server/asset-csp.js'
 import { createErrorHandler } from '#lib/server/error-pages.js'
 import { prepareConfiguredStyles, renderConfiguredStyles } from '#lib/server/configured-styles.js'
-import { preloadConfiguredPages } from '#lib/server/templates/page.js'
-import { preloadConfiguredIcons } from '#lib/server/templates/icon.js'
+import { reloadAuthoredTemplates } from '#lib/server/templates/cache.js'
+import { preloadAuthoredPages } from '#lib/server/templates/page.js'
+import { preloadAuthoredIcons } from '#lib/server/templates/icon.js'
 import '#lib/server/database/index.js'
 import { sequence, type Handle } from '@sveltejs/kit/hooks'
 
@@ -26,8 +27,8 @@ function createAssetPolicy(): Handle {
 }
 
 export async function init() {
-	if (building || process.env.LUZZLE_DEV === 'true') return
-	await Promise.all([preloadConfiguredIcons(config), preloadConfiguredPages(config)])
+	if (building || reloadAuthoredTemplates) return
+	await Promise.all([preloadAuthoredIcons(config), preloadAuthoredPages(config)])
 }
 
 const configuredStyles = await prepareStartupStyles()

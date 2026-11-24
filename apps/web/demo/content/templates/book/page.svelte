@@ -5,7 +5,6 @@
 	let { piece, fields, tags, helpers }: ServerPageProps<Fields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	helpers.requestNavBar({
-		position: 'before-content',
 		showRandom: true,
 		background: palette?.background || 'var(--color-surface-container)',
 		color: palette?.bodyText,

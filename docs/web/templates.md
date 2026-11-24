@@ -93,35 +93,36 @@ Set `templates.page.file` on the piece type to replace the body of its public de
 page. `/pieces/<type>/<slug>` renders that file directly; it does not route through
 a named page design. The app supplies SEO metadata and the main landmark. Write the contents of `<main>` (for example, an `<article>` with
 one `<h1>`); use ordinary links for navigation. The page renders without JavaScript.
-In this example `file` selects the public page; `name` is optional and used by
-the admin Page tabs, not as a public fallback.
+The same file renders the admin **Published → Page** and **Preview → Page** tabs;
+no `name` is needed.
 
 ```yaml
 page:
   file: ./content/templates/book/page.svelte
-  name: book
   mapping:
     image: cover
     author: author
 ```
 
 The [demo book page](../../apps/web/demo/content/templates/book/page.svelte) receives
-`piece`, `fields`, `tags` (`{ slug, tag }`), and published `helpers` for assets and
-links. Use `helpers.formatPieceDate`, `helpers.safeExternalUrl`, and `helpers.interpolate`
+`piece`, `fields`, `tags` (`{ slug, tag }`), and `helpers` for assets and links.
+Published uses the public record and asset URLs. Preview uses the completed job’s
+record, tags, and protected asset URLs. Its compiled module is separate from the
+one shared by the public page and Published viewer, not isolated per job.
+For links to public content use root-relative URLs or resolve them against
+`helpers.getPieceUrl()`: a document-relative link in an admin tab resolves under the viewer URL. Use `helpers.formatPieceDate`, `helpers.safeExternalUrl`, and `helpers.interpolate`
 in place of runtime imports when porting a built-in design. Authors can
 `import type { ServerPageProps } from '@luzzle/web.templates/pages/props'`.
 
-No navigation bar is added by default. To include the app’s interactive bar, call
-`helpers.requestNavBar({ position: 'before-content', showRandom: true })` in the template’s
-instance script. Use `'after-content'` to place it below the main content instead.
+No navigation bar is added by default. To include the app’s interactive bar above the page content,
+call `helpers.requestNavBar({ showRandom: true })` in the template’s instance script.
 The book passes its palette colors here, as it did in the package design.
 
 The same trusted-source, server-only and file-reload rules as for icons apply.
 A render error fails the request; it does not silently replace the file with a named
-page. Types without a `file` continue to use their existing built-in routes. The admin
-Published and Preview **Page** tabs still use the built-in `name`, even for types with
-a public page file. Share and worker OG output are unchanged. When removing `file`, remove mapping keys that the built-in page
-does not accept.
+page. Types without a `file` keep their built-in public route and client-rendered
+admin Page tabs. Share and worker OG output are unchanged. When switching back
+to a named design, remove mapping keys that design does not accept.
 
 ## Map your metadata
 

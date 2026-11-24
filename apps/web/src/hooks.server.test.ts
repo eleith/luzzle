@@ -26,8 +26,8 @@ vi.mock('$app/env', () => ({
 }))
 vi.mock('#lib/server/config.js', () => ({ config: fixture.config }))
 // These tests exercise the request hooks. Production startup exercises the real compiler in the HTTP suite.
-vi.mock('#lib/server/templates/page.js', () => ({ preloadConfiguredPages: vi.fn() }))
-vi.mock('#lib/server/templates/icon.js', () => ({ preloadConfiguredIcons: vi.fn() }))
+vi.mock('#lib/server/templates/page.js', () => ({ preloadAuthoredPages: vi.fn() }))
+vi.mock('#lib/server/templates/icon.js', () => ({ preloadAuthoredIcons: vi.fn() }))
 vi.mock('#lib/server/configured-styles.js', () => ({
 	prepareConfiguredStyles: fixture.prepareConfiguredStyles,
 	renderConfiguredStyles: ({ event, resolve }: Parameters<Handle>[0]) => resolve(event)

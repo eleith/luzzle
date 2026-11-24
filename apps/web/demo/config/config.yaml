@@ -69,7 +69,6 @@ pieces:
           pages: pages
       page:
         file: ./content/templates/book/page.svelte
-        name: book
         mapping:
           image: cover
           author: author

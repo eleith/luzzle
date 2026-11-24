@@ -132,7 +132,7 @@ export async function createFixture(directory: string, origin: string) {
 		path.join(directory, notePageFile),
 		`<script>
 			let { piece, fields, tags, helpers } = $props()
-			helpers.requestNavBar({ position: 'after-content', showRandom: true })
+			helpers.requestNavBar({ showRandom: true })
 			const cover = $derived(helpers.getPieceImageUrl(fields.jacket, 500, 'jpg'))
 		</script>
 		<article class="fixture-note-page">
@@ -159,10 +159,9 @@ export async function createFixture(directory: string, origin: string) {
 			pieces: [
 				{
 					type: 'notes',
-					fields: { title: 'title', date_consumed: 'date' },
+					fields: { title: 'title', date_consumed: 'date', tags: 'tags' },
 					templates: {
 						page: {
-							name: 'note',
 							file: `./${notePageFile}`,
 							mapping: { jacket: 'cover', subtitle: 'caption' }
 						},
@@ -376,7 +375,9 @@ async function completeRecordedPreview(
 				title: piece.previewTitle,
 				date: Date.UTC(2024, 0, 1),
 				cover: 'private-cover',
-				...('previewCaption' in piece ? { caption: piece.previewCaption } : {})
+				...('previewCaption' in piece
+					? { caption: piece.previewCaption, tags: ['Draft notes'] }
+					: {})
 			},
 			note: 'Private preview observation.',
 			pathToKey: {},

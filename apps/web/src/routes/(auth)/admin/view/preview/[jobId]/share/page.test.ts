@@ -125,7 +125,8 @@ function tree(props: Data, view: keyof typeof routes = 'share') {
 	page.route.id = `/(auth)/admin/view/preview/[jobId]/${view}`
 	const params = { jobId: props.job }
 	const children = createRawSnippet(() => ({
-		render: () => render(routes[view], { props: { data: props, params } }).body
+		render: () =>
+			render(routes[view], { props: { data: { ...props, renderedPage: null }, params } }).body
 	}))
 	return render(PreviewLayout, { props: { data: props, params, children } }).body.replace(
 		/<!--[^]*?-->/g,

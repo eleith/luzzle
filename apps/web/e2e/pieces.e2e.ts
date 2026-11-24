@@ -161,10 +161,8 @@ test('the external page renders styled content and native sidenotes without Java
 			`/tags/${fieldNotesTag.slug}`
 		)
 		await expect(article).toHaveCSS('--fixture-page-style', 'applied')
-		const navAfterMain = page
-			.getByRole('main')
-			.locator('xpath=following::nav[@aria-label="Global"]')
-		await expect(navAfterMain.getByRole('link', { name: 'random' })).toHaveJSProperty(
+		const nav = page.getByRole('navigation', { name: 'Global' })
+		await expect(nav.getByRole('link', { name: 'random' })).toHaveJSProperty(
 			'href',
 			`${baseURL}/random`
 		)

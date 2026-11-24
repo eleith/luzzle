@@ -1,20 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { resolve } from 'node:path'
 import type { AppConfig } from '#lib/server/config.js'
-import { createTemplateFileCache } from '@luzzle/web.templates/server'
+import { createAuthoredTemplateCaches } from './cache.js'
 import { resolveTemplateFields } from '@luzzle/web.templates/mapping'
 import type { IconProps } from '@luzzle/web.templates/icons/props'
 import type { FieldMappings } from '@luzzle/web.config/mapping'
 import type { PublicWebPiece } from '@luzzle/web.pieces'
 import { createRenderHelpers, type RenderContext } from '#lib/pieces/helpers/render.js'
 
-const cacheOptions = { reloadOnChange: process.env.LUZZLE_DEV === 'true' }
-// Compiled Svelte modules may have mutable module-level state. Never share one
-// between a private draft and the public listing or Published viewer.
-const designs = {
-	published: createTemplateFileCache(cacheOptions),
-	preview: createTemplateFileCache(cacheOptions)
-}
+const designs = createAuthoredTemplateCaches()
 
 export type IconImageProps = Pick<IconProps<unknown>, 'size' | 'lazy'>
 
@@ -25,7 +19,7 @@ export type IconDesign = {
 
 type IconOptions = { filename: string; mapping?: FieldMappings; context: RenderContext }
 
-export async function preloadConfiguredIcons(config: AppConfig) {
+export async function preloadAuthoredIcons(config: AppConfig) {
 	for (const piece of config.pieces) {
 		const icon = piece.templates?.icon
 		if (!icon || !('file' in icon)) continue
@@ -39,10 +33,10 @@ export function publishedIconContext(config: AppConfig): RenderContext {
 }
 
 export function loadPublishedIcon(type: string, config: AppConfig) {
-	return loadConfiguredIcon(type, config, publishedIconContext(config))
+	return loadAuthoredIcon(type, config, publishedIconContext(config))
 }
 
-function loadConfiguredIcon(type: string, config: AppConfig, context: RenderContext) {
+function loadAuthoredIcon(type: string, config: AppConfig, context: RenderContext) {
 	const icon = config.pieces.find((piece) => piece.type === type)?.templates?.icon
 	if (!icon || !('file' in icon)) return
 	// Resolve beside ./config.yaml (the launcher's path), not its symlink target.
@@ -53,14 +47,14 @@ function loadConfiguredIcon(type: string, config: AppConfig, context: RenderCont
 	})
 }
 
-export async function renderConfiguredIcon(
+export async function renderAuthoredIcon(
 	piece: PublicWebPiece,
 	config: AppConfig,
 	props: IconImageProps,
 	context: RenderContext
 ) {
 	try {
-		const design = await loadConfiguredIcon(piece.type, config, context)
+		const design = await loadAuthoredIcon(piece.type, config, context)
 		if (design) return { html: design.render(piece, props), css: design.css }
 	} catch (cause) {
 		console.error(`Cannot render configured icon for ${piece.type}/${piece.slug}`, cause)

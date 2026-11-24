@@ -5,41 +5,45 @@ import {
 	safeExternalUrl,
 	type PublicWebPiece
 } from '@luzzle/web.pieces'
-import type { PageNavigation, ServerPageProps } from '@luzzle/web.templates/pages/props'
+import type { PageNavbarProps, ServerPageProps } from '@luzzle/web.templates/pages/props'
 import { resolveTemplateFields } from '@luzzle/web.templates/mapping'
-import { createTemplateFileCache } from '@luzzle/web.templates/server'
-import { createRenderHelpers } from '#lib/pieces/helpers/render.js'
+import { createAuthoredTemplateCaches } from './cache.js'
+import { createRenderHelpers, type RenderContext } from '#lib/pieces/helpers/render.js'
 import type { AppConfig } from '#lib/server/config.js'
 
-const pages = createTemplateFileCache({ reloadOnChange: process.env.LUZZLE_DEV === 'true' })
+const pages = createAuthoredTemplateCaches()
 
-export async function preloadConfiguredPages(config: AppConfig) {
+export async function preloadAuthoredPages(config: AppConfig) {
 	const seen = new Set<string>()
 	for (const piece of config.pieces) {
 		if (seen.has(piece.type)) continue
 		seen.add(piece.type)
 		const page = piece.templates?.page
-		if (page && 'file' in page) await pages.load(resolve(page.file))
+		if (!page || !('file' in page)) continue
+		const filename = resolve(page.file)
+		await Promise.all([pages.published.load(filename), pages.preview.load(filename)])
 	}
 }
 
-export async function renderPublishedPage(
+export async function renderAuthoredPage(
 	piece: PublicWebPiece,
 	tags: ServerPageProps<unknown>['tags'],
-	config: AppConfig
+	config: AppConfig,
+	context: RenderContext = {
+		mode: 'published',
+		appUrl: config.url.app,
+		assetBaseUrl: config.url.luzzle_assets
+	}
 ) {
 	const page = config.pieces.find((entry) => entry.type === piece.type)?.templates?.page
-	if (!page || !('file' in page))
-		throw new Error(`No page template file configured for ${piece.type}`)
-	const template = await pages.load(resolve(page.file))
-	let requestedNavBar: PageNavigation | undefined
+	// Named and default pages use built-in components, not file-based rendering.
+	if (!page || !('file' in page)) return null
+	const template = await pages[context.mode].load(resolve(page.file))
+	let requestedNavBar: PageNavbarProps | undefined
 	const fields = resolveTemplateFields(piece.metadata, page.mapping)
+	const assetHelpers = createRenderHelpers(piece, context)
 	const helpers: ServerPageProps<unknown>['helpers'] = {
-		...createRenderHelpers(piece, {
-			mode: 'published',
-			appUrl: config.url.app,
-			assetBaseUrl: config.url.luzzle_assets
-		}),
+		...assetHelpers,
 		formatPieceDate,
 		interpolate,
 		safeExternalUrl,
