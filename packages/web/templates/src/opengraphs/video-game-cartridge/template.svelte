@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatPieceDate, getOpengraphTitleSize } from '@luzzle/web.pieces'
+	import { formatPieceDate, getTitleSizeRem } from '@luzzle/web.pieces'
 	import type { OpengraphProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
@@ -8,7 +8,7 @@
 	const iconWidth = 400
 	const iconHeight = (iconWidth * 3) / 2
 	const iconScale = Math.round((iconWidth / 375) * 100) / 100
-	const titleSize = $derived(getOpengraphTitleSize(piece.title))
+	const titleSize = $derived(getTitleSizeRem(piece.title))
 	const imageUrl = $derived(
 		fields.image ? helpers.getPieceImageUrl(fields.image, iconWidth, 'jpg') : undefined
 	)

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatPieceDate, getOpengraphTitleSize } from '@luzzle/web.pieces'
+	import { formatPieceDate, getTitleSizeRem } from '@luzzle/web.pieces'
 	import type { OpengraphProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
@@ -12,7 +12,7 @@
 		fields.image ? helpers.getPieceImageUrl(fields.image, iconWidth, 'jpg') : undefined
 	)
 	const displayUrl = $derived(fields.url || helpers.getPieceUrl())
-	const titleSize = $derived(getOpengraphTitleSize(piece.title))
+	const titleSize = $derived(getTitleSizeRem(piece.title))
 	function getBylineHostname(url?: string): string | undefined {
 		if (!url) return undefined
 		try {

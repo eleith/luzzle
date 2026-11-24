@@ -9,7 +9,7 @@
 	const imageUrl = $derived(
 		fields.image ? helpers.getPieceImageUrl(fields.image, bookWidth, 'jpg') : undefined
 	)
-	const titleSize = $derived(helpers.getOpengraphTitleSize(piece.title))
+	const titleSize = $derived(helpers.getTitleSizeRem(piece.title))
 	const byline = $derived.by(() => {
 		const parts: string[] = []
 		if (fields.pages !== undefined) parts.push(`${fields.pages} pages`)

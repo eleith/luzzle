@@ -11,7 +11,7 @@ date_released: 2022-10-14
 date_viewed: 2026-10-12
 url: https://example.com/films/the-last-light-on-platform-nine
 poster: .assets/films/poster/the-last-light-on-platform-nine.png
-backdrop: .assets/films/backdrop/the-last-light-on-platform-nine.png
+backdrop: .assets/films/backdrop/the-last-light-on-platform-nine-backdrop.png
 keywords: films, mystery, trains, night walks, memory
 ---
 A fictional, mostly nocturnal mystery that makes a railway timetable feel like

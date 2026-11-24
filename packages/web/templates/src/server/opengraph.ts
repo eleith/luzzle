@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import type { FieldMappings } from '@luzzle/web.config/mapping';
 import {
 	formatPieceDate,
-	getOpengraphTitleSize,
+	getTitleSizeRem,
 	type PieceComponentHelpers,
 	type PublicWebPiece
 } from '@luzzle/web.pieces';
@@ -39,7 +39,7 @@ export async function renderAuthoredOpengraph(
 	const html = template.render({
 		piece,
 		fields,
-		helpers: { ...helpers, formatPieceDate, getOpengraphTitleSize }
+		helpers: { ...helpers, formatPieceDate, getTitleSizeRem }
 	});
 	return { html, css: template.css };
 }

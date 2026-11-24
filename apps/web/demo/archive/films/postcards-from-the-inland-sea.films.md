@@ -11,7 +11,7 @@ date_released: 2024-04-19
 date_viewed: 2026-10-13
 url: https://example.com/films/postcards-from-the-inland-sea
 poster: .assets/films/poster/postcards-from-the-inland-sea.png
-backdrop: .assets/films/backdrop/postcards-from-the-inland-sea.png
+backdrop: .assets/films/backdrop/postcards-from-the-inland-sea-backdrop.png
 keywords: films, islands, travel, letters, keeping things
 ---
 A fictional film made of ferry crossings, short conversations and meals that

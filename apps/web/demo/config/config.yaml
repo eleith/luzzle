@@ -92,11 +92,12 @@ pieces:
   - type: films
     templates:
       icon:
+        file: ./content/templates/film/icon.svelte
         name: poster
         mapping:
           image: poster
       page:
-        name: film
+        file: ./content/templates/film/page.svelte
         mapping:
           image: poster
           backdrop: backdrop
@@ -106,7 +107,7 @@ pieces:
           category: type
           people: people
       opengraph:
-        name: poster
+        file: ./content/templates/film/opengraph.svelte
         mapping:
           image: poster
           backdrop: backdrop

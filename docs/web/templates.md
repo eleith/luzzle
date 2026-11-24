@@ -142,7 +142,7 @@ working directory. The component receives `piece`, `fields`, and `helpers`; it c
 `import type { ServerOpengraphProps } from '@luzzle/web.templates/opengraphs/props'`.
 Use the image helpers rather than hard-coding delivery URLs: the Share preview uses
 public or job-specific URLs, while the worker supplies local image bytes to Takumi.
-The book also uses `helpers.getOpengraphTitleSize` and `helpers.formatPieceDate`.
+The book also uses `helpers.getTitleSizeRem` and `helpers.formatPieceDate`.
 
 **HTML** shows the current template without JavaScript. **Image** shows the PNG
 recorded when you published or generated that preview. Editing the template does

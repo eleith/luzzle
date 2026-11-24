@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatPieceDate, getOpengraphTitleSize } from '@luzzle/web.pieces'
+	import { formatPieceDate, getTitleSizeRem } from '@luzzle/web.pieces'
 	import type { OpengraphProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
@@ -10,7 +10,7 @@
 	const imageUrl = $derived(
 		fields.image ? helpers.getPieceImageUrl(fields.image, bookWidth, 'jpg') : undefined
 	)
-	const titleSize = $derived(getOpengraphTitleSize(piece.title))
+	const titleSize = $derived(getTitleSizeRem(piece.title))
 	const byline = $derived.by(() => {
 		const parts: string[] = []
 		if (fields.pages !== undefined) parts.push(`${fields.pages} pages`)

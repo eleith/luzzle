@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatPieceDate, getOpengraphTitleSize } from '@luzzle/web.pieces'
+	import { formatPieceDate, getTitleSizeRem } from '@luzzle/web.pieces'
 	import type { OpengraphProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
@@ -13,7 +13,7 @@
 	const content = $derived(
 		firstSnippet ? helpers.getPieceAssetContent(firstSnippet.file, 'highlight') : undefined
 	)
-	const titleSize = $derived(getOpengraphTitleSize(piece.title))
+	const titleSize = $derived(getTitleSizeRem(piece.title))
 	const byline = $derived.by(() => {
 		const parts: string[] = []
 		if (files.length) {

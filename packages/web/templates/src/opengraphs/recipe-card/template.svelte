@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatPieceDate, getOpengraphTitleSize } from '@luzzle/web.pieces'
+	import { formatPieceDate, getTitleSizeRem } from '@luzzle/web.pieces'
 	import type { OpengraphProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
@@ -9,7 +9,7 @@
 		fields.image ? helpers.getPieceImageUrl(fields.image, 500, 'jpg') : undefined
 	)
 	const ingredients = $derived(fields.ingredients ?? [])
-	const titleSize = $derived(getOpengraphTitleSize(piece.title))
+	const titleSize = $derived(getTitleSizeRem(piece.title))
 	function getTotalMinutes(value: Fields): number | undefined {
 		if (value.totalMinutes !== undefined) return value.totalMinutes
 		if (value.prepMinutes === undefined && value.cookMinutes === undefined) return undefined

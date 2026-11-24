@@ -5,7 +5,7 @@ export {
 	formatPieceYear,
 	formatTrackDuration,
 	getPieceTags,
-	getOpengraphTitleSize,
+	getTitleSizeRem,
 	interpolate,
 	safeExternalUrl,
 	OpengraphImageWidth,
