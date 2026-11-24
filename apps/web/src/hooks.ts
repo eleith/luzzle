@@ -2,10 +2,12 @@ import {
 	LUZZLE_PAGE_TEMPLATES as pageTemplates,
 	LUZZLE_ICON_TEMPLATES as iconTemplates
 } from '$app/env/public'
+import { isPiecesPath } from '#lib/pieces/navigation.js'
 import type { Reroute } from '@sveltejs/kit/hooks'
 
 export const reroute: Reroute = ({ url }) => {
-	const match = /^\/pieces\/([^/]+)(?:\/([^/]+))?\/?$/.exec(url.pathname)
+	if (!isPiecesPath(url.pathname)) return
+	const match = /^\/[^/]+\/([^/]+)(?:\/([^/]+))?\/?$/.exec(url.pathname)
 	if (!match) return
 	const [, encodedType, encodedSlug] = match
 

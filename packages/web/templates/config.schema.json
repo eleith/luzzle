@@ -6775,6 +6775,141 @@
                         }
                       }
                     }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "file"
+                    ],
+                    "properties": {
+                      "file": {
+                        "pattern": "(?:^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\\\\\x00\\r\\n]+\\.svelte$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
+                        "description": "Trusted local Svelte file, relative to the web process working directory (/app in production Docker), not the mounted config directory.",
+                        "type": "string"
+                      },
+                      "name": {
+                        "anyOf": [
+                          {
+                            "const": "default",
+                            "type": "string"
+                          },
+                          {
+                            "const": "article",
+                            "type": "string"
+                          },
+                          {
+                            "const": "book",
+                            "type": "string"
+                          },
+                          {
+                            "const": "film",
+                            "type": "string"
+                          },
+                          {
+                            "const": "music",
+                            "type": "string"
+                          },
+                          {
+                            "const": "note",
+                            "type": "string"
+                          },
+                          {
+                            "const": "recipe",
+                            "type": "string"
+                          },
+                          {
+                            "const": "snippet",
+                            "type": "string"
+                          },
+                          {
+                            "const": "tabletop-game",
+                            "type": "string"
+                          },
+                          {
+                            "const": "video-game",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "mapping": {
+                        "type": "object",
+                        "patternProperties": {
+                          "^(.*)$": {
+                            "$id": "page-external-field",
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "field"
+                                ],
+                                "properties": {
+                                  "field": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "default": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {}
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "page-external-field"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "each",
+                                  "fields"
+                                ],
+                                "properties": {
+                                  "each": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^(.*)$": {
+                                        "$ref": "page-external-field"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
                   }
                 ]
               },

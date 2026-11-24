@@ -1,4 +1,4 @@
-import { createTemplateSelectionSchema } from '../config/association.js';
+import { createFileTemplateSelectionSchema } from '../config/association.js';
 import type { TemplateConfig } from '../config/index.js';
 import { schema as fallback } from './default/schema.js';
 import { schema as article } from './article/schema.js';
@@ -36,12 +36,17 @@ export function selectPageTemplate(config?: TemplateConfig['pieces'][number]): P
 }
 
 export function getPageTemplateNames(pieces: TemplateConfig['pieces']): Record<string, string> {
+	const seen = new Set<string>();
 	const names = new Map<string, string>();
 	for (const piece of pieces) {
 		// Match the first configured type used when hydrating a piece's fields.
-		if (!names.has(piece.type)) names.set(piece.type, selectPageTemplate(piece).name);
+		if (seen.has(piece.type)) continue;
+		seen.add(piece.type);
+		const page = piece.templates?.page;
+		if (page && 'file' in page) continue;
+		names.set(piece.type, selectPageTemplate(piece).name);
 	}
 	return Object.fromEntries(names);
 }
 
-export const schema = createTemplateSelectionSchema('page', templates);
+export const schema = createFileTemplateSelectionSchema('page', templates);

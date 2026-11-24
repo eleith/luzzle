@@ -10,14 +10,31 @@ export type PageNavbarProps = {
 	showRandom?: boolean;
 };
 
-export type PageProps<Fields> = {
+type PageContentProps<Fields, Helpers> = {
 	piece: PublicWebPiece;
 	fields: Fields;
 	tags: Array<{ slug: string; tag: string }>;
-	helpers: PieceComponentHelpers & {
-		navBar: Snippet<[options: PageNavbarProps]>;
-	};
+	helpers: Helpers;
 };
+
+export type PageNavigation = PageNavbarProps & { position: 'before-content' | 'after-content' };
+
+// File-backed templates cannot import runtime modules. Supply the same utilities as props.
+export type ServerPageProps<Fields> = PageContentProps<
+	Fields,
+	PieceComponentHelpers &
+		Pick<
+			typeof import('@luzzle/web.pieces'),
+			'formatPieceDate' | 'safeExternalUrl' | 'interpolate'
+		> & {
+			requestNavBar(options: PageNavigation): void;
+		}
+>;
+
+export type PageProps<Fields> = PageContentProps<
+	Fields,
+	PieceComponentHelpers & { navBar: Snippet<[options: PageNavbarProps]> }
+>;
 
 // Preserve each template's field contract without importing the component catalog.
 type ComponentFor<Definition extends PageDefinition> = Definition extends PageDefinition

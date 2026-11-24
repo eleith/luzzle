@@ -24,16 +24,18 @@ function configure(page) {
 	);
 }
 
-test('public routing metadata keeps the first selection and excludes private field mappings', () => {
-	const configured = configure({ name: 'book', mapping: { author: 'private.author' } }).pieces[0];
+test('only first-selected legacy pages publish a route name', () => {
+	const file = configure({ file: './private/record.svelte' }).pieces[0];
+	const legacy = configure({ name: 'book', mapping: { author: 'private.author' } }).pieces[0];
 	assert.deepEqual(
 		getPageTemplateNames([
-			configured,
-			configure({ name: 'note' }).pieces[0],
-			{ ...configured, type: 'constructor' },
+			file,
+			legacy,
+			{ ...legacy, type: 'constructor' },
+			{ ...file, type: 'constructor' },
 			{ type: 'notes', fields: { title: 'title', date_consumed: 'date' } }
 		]),
-		{ records: 'book', constructor: 'book', notes: 'default' }
+		{ constructor: 'book', notes: 'default' }
 	);
 });
 

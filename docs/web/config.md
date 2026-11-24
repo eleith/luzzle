@@ -27,7 +27,7 @@ stay same-origin. Use Compose service names for internal addresses.
 
 Restart web and worker after config changes; no rebuild is needed.
 [Republish](templates.md#apply-your-choices) to regenerate OG images after OG template
-or font changes. For listing icon changes, [clear cached pages](deployment.md#clear-cached-public-pages) instead.
+or font changes. For listing icon or public detail page changes, [clear cached pages](deployment.md#clear-cached-public-pages) instead.
 
 ## Sign-in
 

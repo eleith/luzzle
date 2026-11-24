@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './support/test.js'
-import { fieldGuide, notebook } from './support/fixture.js'
+import { fieldGuide, fieldNotesTag, notebook, notePageFile } from './support/fixture.js'
 
+const notePageStyle = "xpath=//head/style[contains(., '--fixture-page-style')]"
 const noteIconStyle = "xpath=//head/style[contains(., '--fixture-note-active')]"
 
 async function expectListingLinks(page: Page) {
@@ -132,7 +133,7 @@ for (const listing of ['/pieces', '/pieces/notes']) {
 	})
 }
 
-test('tapping a superscript opens the full sheet even on a wide touch screen', async ({
+test('the external page renders styled content and native sidenotes without JavaScript', async ({
 	browser,
 	baseURL
 }) => {
@@ -146,7 +147,33 @@ test('tapping a superscript opens the full sheet even on a wide touch screen', a
 	})
 	try {
 		const page = await context.newPage()
-		await page.goto(notebook.publicUrl)
+		const response = await page.goto(notebook.publicUrl)
+		expect(response?.status()).toBe(200)
+		const article = page.getByRole('main').locator('.fixture-note-page')
+		await expect(article.getByRole('heading', { name: notebook.title })).toBeVisible()
+		await expect(article.getByText(notebook.caption, { exact: true })).toBeVisible()
+		await expect(article.getByRole('img', { name: 'Notebook cover' })).toHaveAttribute(
+			'src',
+			/published%20meteor\.png$/
+		)
+		await expect(article.getByRole('link', { name: fieldNotesTag.label })).toHaveAttribute(
+			'href',
+			`/tags/${fieldNotesTag.slug}`
+		)
+		await expect(article).toHaveCSS('--fixture-page-style', 'applied')
+		const navAfterMain = page
+			.getByRole('main')
+			.locator('xpath=following::nav[@aria-label="Global"]')
+		await expect(navAfterMain.getByRole('link', { name: 'random' })).toHaveJSProperty(
+			'href',
+			`${baseURL}/random`
+		)
+		expect(await response!.text()).not.toContain(notePageFile)
+		const data = await page.request.get(`${notebook.publicUrl}/__data.json`)
+		expect(data.status()).toBe(200)
+		const body = await data.text()
+		expect(body).toContain('fixture-note-page')
+		expect(body).not.toContain(notePageFile)
 
 		const reference = page.getByRole('button', { name: 'Sidenote 1', exact: true })
 		const note = page.getByRole('note', { name: 'Sidenote 1' })
@@ -230,15 +257,24 @@ test('client navigation refreshes listing and page layout data without reloading
 		await page.getByRole('link', { name: 'Injected client navigation link', exact: true }).click()
 	}
 
-	await page.goto('/')
-	// Wait for hydration before following the real type link.
-	await expect(
-		page.getByRole('navigation', { name: 'Global' }).getByLabel('search', { exact: true })
-	).toHaveAttribute('aria-haspopup', 'dialog')
+	await page.goto(notebook.publicUrl)
+	await expect(page.locator('.fixture-note-page')).toContainText(notebook.caption)
+	const search = page
+		.getByRole('navigation', { name: 'Global' })
+		.getByLabel('search', { exact: true })
+	await expect(search).toHaveAttribute('aria-haspopup', 'dialog')
+	await search.click()
+	await expect(page.getByRole('dialog', { name: 'Search', exact: true })).toBeVisible()
+	await page.keyboard.press('Escape')
 	await page.evaluate(() => {
 		document.documentElement.dataset.listingNavigation = 'same-document'
 		localStorage.setItem('luzzle.admin', 'true')
 	})
+	await page
+		.getByRole('navigation', { name: 'Global' })
+		.getByRole('link', { name: 'main page', exact: true })
+		.click()
+	await expect(page).toHaveURL(`${baseURL}/`)
 	const editSource = page.getByRole('link', { name: 'edit source', exact: true })
 	await expect(editSource).toHaveCount(0)
 	await page.getByRole('main').getByRole('link', { name: fieldGuide.type, exact: true }).click()
@@ -306,17 +342,28 @@ test('client navigation refreshes listing and page layout data without reloading
 	await expect(editSource).toHaveJSProperty('href', `${baseURL}/admin/open/notes/meteor-notebook`)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')
 
+	const article = page.locator('.fixture-note-page')
+	await expect(article).toContainText(notebook.caption)
+	await expect(article).toHaveCSS('--fixture-page-style', 'applied')
+
 	// The same page template must refresh when only the slug changes.
 	await clickInjectedNavigationLink('/pieces/notes/forest-notebook')
 	await expect(page).toHaveURL(`${baseURL}/pieces/notes/forest-notebook`)
 	await expect(page.getByRole('heading', { name: 'Forest Notebook', exact: true })).toBeVisible()
+	await expect(article).not.toContainText(notebook.caption)
+	await expect(article).toHaveCSS('--fixture-page-style', 'applied')
+	await expect(page.locator(notePageStyle)).toHaveCount(1)
 	await expect(page).toHaveTitle('Forest Notebook | E2E Garden')
 	await expect(editSource).toHaveJSProperty('href', `${baseURL}/admin/open/notes/forest-notebook`)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')
 
-	await clickInjectedNavigationLink(fieldGuide.publicUrl)
-	await expect(page).toHaveURL(`${baseURL}${fieldGuide.publicUrl}`)
+	const encodedGuideUrl = '/%70ieces/records/field-guide'
+	await clickInjectedNavigationLink(encodedGuideUrl)
+	await expect(page).toHaveURL(`${baseURL}${encodedGuideUrl}`)
 	await expect(page.getByRole('heading', { name: fieldGuide.title, exact: true })).toBeVisible()
+	await expect(article).toHaveCount(0)
+	await expect(page.locator(notePageStyle)).toHaveCount(0)
+	await expect(page.getByRole('main')).toContainText('by Ada Reader')
 	await expect(page).toHaveTitle(`${fieldGuide.title} | E2E Garden`)
 	await expect(editSource).toHaveJSProperty('href', `${baseURL}/admin/open/records/field-guide`)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')

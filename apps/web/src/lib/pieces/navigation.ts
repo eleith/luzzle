@@ -6,6 +6,15 @@ export function editorHref(file: string): string {
 	return `/admin/piece/${encodeArchivePath(file)}/source`
 }
 
+export function isPiecesPath(pathname: string): boolean {
+	const [, prefix] = pathname.split('/', 2)
+	try {
+		return decodeURIComponent(prefix ?? '') === 'pieces'
+	} catch {
+		return false
+	}
+}
+
 export function publicPieceHref({ type, slug }: { type: string; slug: string }): string {
 	return `/pieces/${encodeURIComponent(type)}/${encodeURIComponent(slug)}`
 }

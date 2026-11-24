@@ -4,7 +4,7 @@
 	import type { PageProps } from './$types'
 	import ContentBanner from '#lib/content/components/ContentBanner.svelte'
 	import IconFragment from '#lib/pieces/components/IconFragment.svelte'
-	import IconStylesheets from '#lib/pieces/components/IconStylesheets.svelte'
+	import TemplateStylesheets from '#lib/templates/TemplateStylesheets.svelte'
 	import ClientListingIcon from '#lib/pieces/components/ClientListingIcon.svelte'
 	import Markdown from '#lib/content/markdown/Markdown.svelte'
 
@@ -27,7 +27,7 @@
 </svelte:head>
 
 {#if data.iconStylesheets.length}
-	<IconStylesheets stylesheets={data.iconStylesheets} />
+	<TemplateStylesheets stylesheets={data.iconStylesheets} />
 {/if}
 
 <div class:centered-content={data.centerContent}>

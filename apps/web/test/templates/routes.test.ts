@@ -642,7 +642,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		}
 	}, 30000)
 
-	test('an external icon is prepared at startup and renders on a direct visit without JavaScript', async () => {
+	test('external icons and pages render from templates prepared at startup', async () => {
 		const original = await readFile(configFilename)
 		const filename = path.join(directory, 'owner-icon.svelte')
 		try {
@@ -656,11 +656,36 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				file: './owner-icon.svelte',
 				mapping: { caption: 'subtitle' }
 			}
+			const pageFile = path.join(directory, 'owner-page.svelte')
+			await writeFile(
+				pageFile,
+				`<script>
+					let { piece } = $props()
+					if (piece.type === 'unconfigured-kind') throw new Error('Private rendering failure')
+				</script><h1 data-owner-page>{piece.title}</h1>`
+			)
+			config.pieces[0].templates.page.file = './owner-page.svelte'
+			// Reuse the second seeded record to exercise a per-record template failure.
+			config.pieces.push({ ...config.pieces[0], type: 'unconfigured-kind' })
 			config.pages = { ...config.pages, home: { latest: false, random: true } }
 			await writeFile(configFilename, JSON.stringify(config))
 			origin = await startBuiltApp()
 			// Production must serve the prepared design even if its source is no longer present.
-			await rm(filename)
+			await Promise.all([rm(filename), rm(pageFile)])
+			const detail = await pageHtml(piecePath)
+			expect(detail).toMatch(/<h1\b[^>]*data-owner-page[^>]*>Real Piece<\/h1>/)
+			expect(detail).not.toContain('aria-label="Global"')
+			const failed = await request('/pieces/unconfigured-kind/real-piece')
+			expect(failed.status).toBe(500)
+			const errorPage = await failed.text()
+			expect(errorPage).toContain('error 500')
+			expect(errorPage).not.toContain('Private rendering failure')
+			const api = await request('/api/pieces?type=cutover-kind', 'application/json')
+			expect(api.status).toBe(200)
+			for (const body of [detail, errorPage, await api.text()]) {
+				expect(body).not.toContain(directory)
+				expect(body).not.toContain('owner-page.svelte')
+			}
 			const listing = await pageHtml('/pieces/cutover-kind')
 			const markup = listing.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
 			expect(markup).toMatch(/<b\b[^>]*data-owner-icon[^>]*>Published metadata<\/b>/)

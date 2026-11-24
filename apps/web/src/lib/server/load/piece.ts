@@ -1,11 +1,13 @@
 import { error } from '@sveltejs/kit'
 import { db } from '#lib/server/database/index.js'
 import { config } from '#lib/server/config.js'
-import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
+import { hydratePublicPiece, withPieceTemplates } from '#lib/pieces/assets.server.js'
 import { assetPathToUrl } from '@luzzle/web.pieces'
 import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 
-export const loadPiece = async ({ params }: { params: { piece?: string; slug?: string } }) => {
+type PieceRequest = { params: { piece?: string; slug?: string } }
+
+export const loadPublicPiece = async ({ params }: PieceRequest) => {
 	const type = params.piece
 	const slug = params.slug
 	if (!type || !isConfiguredPieceType(type)) error(404, 'Unknown piece type')
@@ -22,7 +24,7 @@ export const loadPiece = async ({ params }: { params: { piece?: string; slug?: s
 		return error(404, `piece does not exist`)
 	}
 
-	const piece = await hydrateWithAssets(webPiece)
+	const piece = await hydratePublicPiece(webPiece)
 	const tags = await db
 		.selectFrom('web_pieces_tags')
 		.select(['slug', 'tag'])
@@ -42,4 +44,9 @@ export const loadPiece = async ({ params }: { params: { piece?: string; slug?: s
 			image: assetPathToUrl(ogAsset, config.url.luzzle_assets || config.url.app)
 		}
 	}
+}
+
+export const loadPiece = async (event: PieceRequest) => {
+	const detail = await loadPublicPiece(event)
+	return { ...detail, piece: withPieceTemplates(detail.piece) }
 }

@@ -4,7 +4,7 @@
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import type { IconComponent } from '@luzzle/web.templates/icons/props'
 	import IconFragment from './IconFragment.svelte'
-	import IconStylesheets from './IconStylesheets.svelte'
+	import TemplateStylesheets from '#lib/templates/TemplateStylesheets.svelte'
 	import ClientListingIcon from './ClientListingIcon.svelte'
 	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
 
@@ -19,7 +19,7 @@
 	let focusedPieceId = $state<string | null>(null)
 </script>
 
-<IconStylesheets stylesheets={data.externalIcons?.stylesheets} />
+<TemplateStylesheets stylesheets={data.externalIcons?.stylesheets} />
 
 {#snippet pieceIcon(piece: TemplatedPiece, index: number, active: boolean)}
 	{@const markup = data.externalIcons?.html[index]}

@@ -29,7 +29,7 @@ lazy built-in icons for other rows. The search form, summaries, and navigation r
 
 Tag listings use the same icons and pagination as `/pieces`. Follow **next** or
 **prev** to navigate between pages of up to 50 pieces, with or without JavaScript.
-Each page has its own URL (for example, `/tags/field-notes?page=2`) so it can be bookmarked. Individual public piece pages retain their server-rendered designs.
+Each page has its own URL (for example, `/tags/field-notes?page=2`) so it can be bookmarked. Public piece pages use their built-in design or a [configured Svelte page](templates.md#use-a-local-page-on-public-piece-urls); both render without JavaScript.
 
 ## Using the editor
 

@@ -197,6 +197,18 @@ test('configured Icon viewers render without JavaScript while built-in viewer te
 		'href',
 		fieldGuide.editorUrl
 	)
+
+	// A public page file does not replace either authenticated Page tab.
+	for (const [viewer, title] of [
+		[notebook.publishedUrl, notebook.title],
+		[previewUrl(appServer.previews.notebook), notebook.previewTitle]
+	]) {
+		await page.goto(`${viewer}/page`)
+		await expect(
+			page.getByRole('main').getByRole('heading', { name: title, exact: true, level: 1 })
+		).toBeVisible()
+		await expect(page.locator('.fixture-note-page')).toHaveCount(0)
+	}
 })
 
 async function switchJob(page: Page, href: string) {

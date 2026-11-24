@@ -56,7 +56,7 @@ tabs render the same file. Use the template’s `size` prop: home requests 80px,
 listings 125px, and the admin viewer 500px. Resolve images through `helpers` so
 Published uses public assets and Preview uses assets from the selected preview job.
 Without a file, the Icon tab loads the built-in `name` (or `default`) in the browser.
-Page and Open Graph templates are unchanged. The file can read arbitrary `fields` from `mapping` using the same
+This setting does not select a page or Open Graph design. The file can read arbitrary `fields` from `mapping` using the same
 bindings as below. Only keys supported by the built-in icon are used by its
 fallback; remove any file-only mapping keys when removing `file`.
 
@@ -83,9 +83,45 @@ Production loads configured files at web startup. An unreadable file, compile
 error, or unsupported feature prevents startup; fix the file or remove `file`
 (and any file-only mapping keys), then restart web.
 
-After a source-only edit, restart web in production. After a YAML edit, restart
-web and worker. Then [clear cached listing responses](deployment.md#clear-cached-public-pages)
-and reload open tabs. No app rebuild or republish is needed for listing icons.
+For both local icons and pages: after a source-only edit, restart web in production.
+After a YAML edit, restart web and worker. Then [clear cached HTML and data responses](deployment.md#clear-cached-public-pages)
+for the affected URLs and reload open tabs. No app rebuild or republish is needed.
+
+## Use a local page on public piece URLs
+
+Set `templates.page.file` on the piece type to replace the body of its public detail
+page. `/pieces/<type>/<slug>` renders that file directly; it does not route through
+a named page design. The app supplies SEO metadata and the main landmark. Write the contents of `<main>` (for example, an `<article>` with
+one `<h1>`); use ordinary links for navigation. The page renders without JavaScript.
+In this example `file` selects the public page; `name` is optional and used by
+the admin Page tabs, not as a public fallback.
+
+```yaml
+page:
+  file: ./content/templates/book/page.svelte
+  name: book
+  mapping:
+    image: cover
+    author: author
+```
+
+The [demo book page](../../apps/web/demo/content/templates/book/page.svelte) receives
+`piece`, `fields`, `tags` (`{ slug, tag }`), and published `helpers` for assets and
+links. Use `helpers.formatPieceDate`, `helpers.safeExternalUrl`, and `helpers.interpolate`
+in place of runtime imports when porting a built-in design. Authors can
+`import type { ServerPageProps } from '@luzzle/web.templates/pages/props'`.
+
+No navigation bar is added by default. To include the app’s interactive bar, call
+`helpers.requestNavBar({ position: 'before-content', showRandom: true })` in the template’s
+instance script. Use `'after-content'` to place it below the main content instead.
+The book passes its palette colors here, as it did in the package design.
+
+The same trusted-source, server-only and file-reload rules as for icons apply.
+A render error fails the request; it does not silently replace the file with a named
+page. Types without a `file` continue to use their existing built-in routes. The admin
+Published and Preview **Page** tabs still use the built-in `name`, even for types with
+a public page file. Share and worker OG output are unchanged. When removing `file`, remove mapping keys that the built-in page
+does not accept.
 
 ## Map your metadata
 
@@ -143,8 +179,9 @@ files:
 
 Missing or `null` metadata counts as absent: a `field` binding uses its default,
 an absent `each` produces an empty list, and template defaults apply otherwise.
-Values must match the chosen field types; a page count is a number, not text.
-Invalid values log a warning and use that role's default field values for the
+Built-ins validate the chosen field types; a page count is a number, not text.
+Local templates receive the resolved values without runtime validation against
+an author’s TypeScript types. For a built-in, invalid values log a warning and use that role's default field values for the
 piece. Unknown built-in names, unsupported mapping keys on built-in-only roles,
 and malformed selectors fail config validation.
 

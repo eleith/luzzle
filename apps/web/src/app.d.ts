@@ -15,7 +15,7 @@ declare global {
 			auth(): Promise<Session | null>
 		}
 		interface PageData {
-			piece?: PublicWebPiece | null
+			piece?: Pick<PublicWebPiece, 'type' | 'slug'> | null
 			pieceTypes: string[]
 			session?: Session | null
 			config: AppConfigPublic

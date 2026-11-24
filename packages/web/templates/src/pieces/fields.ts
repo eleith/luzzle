@@ -43,18 +43,20 @@ function mapRole<Schema extends TObject>(
 	}
 }
 
+function fallbackMapping(
+	selection: { file?: string; mapping?: FieldMappings } | undefined,
+	fields: TObject
+): FieldMappings | undefined {
+	// The built-in fallback must not evaluate bindings used only by the local file.
+	if (!selection?.file || !selection.mapping) return selection?.mapping;
+	return Object.fromEntries(
+		Object.entries(selection.mapping).filter(([key]) => Object.hasOwn(fields.properties, key))
+	);
+}
+
 function mapIconTemplate(piece: PublicWebPiece, config?: PieceConfig): PieceTemplateData['icon'] {
 	const definition = selectIconTemplate(config);
-	const icon = config?.templates?.icon;
-	// The built-in fallback must not evaluate bindings used only by the local file.
-	const mapping =
-		icon && 'file' in icon && icon.mapping
-			? Object.fromEntries(
-					Object.entries(icon.mapping).filter(([key]) =>
-						Object.hasOwn(definition.fields.properties, key)
-					)
-				)
-			: icon?.mapping;
+	const mapping = fallbackMapping(config?.templates?.icon, definition.fields);
 	return mapRole<IconDefinition['fields']>('icon', definition, piece, mapping);
 }
 
@@ -64,7 +66,7 @@ function mapPageTemplate(piece: PublicWebPiece, config?: PieceConfig): PieceTemp
 		'page',
 		definition,
 		piece,
-		config?.templates?.page?.mapping
+		fallbackMapping(config?.templates?.page, definition.fields)
 	);
 }
 

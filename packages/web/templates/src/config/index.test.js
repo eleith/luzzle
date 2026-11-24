@@ -52,27 +52,31 @@ test('unknown explicit names and unsupported fields do not silently fall back', 
 		assert.throws(() => configure(templates));
 });
 
-test('a local icon file accepts its own field names, with an optional built-in fallback', () => {
-	const file = './content/templates/icon/example.svelte';
-	const mapping = { heading: { field: 'headline', default: 'Untitled' } };
-	for (const icon of [
-		{ file, mapping },
-		{ file, name: 'book', mapping }
-	]) {
-		assert.deepEqual(configure({ icon }).icon, { name: 'default', ...icon });
-	}
-	for (const invalid of [
-		{ icon: { file, name: 'unknown' } },
-		{ icon: { file, mapping: { heading: { expression: 'headline' } } } },
-		{ page: { file } },
-		{ opengraph: { file } },
-		...[
-			'',
-			'example.js',
-			'/tmp/icon.svelte',
-			'C:\\icons\\book.svelte',
-			'https://host/icon.svelte'
-		].map((file) => ({ icon: { file } }))
-	])
-		assert.throws(() => configure(invalid));
+for (const role of ['icon', 'page']) {
+	test(`a local ${role} file accepts its own mappings and optional built-in fallback`, () => {
+		const file = `./content/templates/${role}/example.svelte`;
+		const mapping = { heading: { field: 'headline', default: 'Untitled' } };
+		for (const selection of [
+			{ file, mapping },
+			{ file, name: 'book', mapping }
+		]) {
+			assert.deepEqual(configure({ [role]: selection })[role], { name: 'default', ...selection });
+		}
+		for (const invalid of [
+			{ file, name: 'unknown' },
+			{ file, mapping: { heading: { expression: 'headline' } } },
+			...[
+				'',
+				'example.js',
+				'/tmp/template.svelte',
+				'C:\\dir\\book.svelte',
+				'https://host/template.svelte'
+			].map((file) => ({ file }))
+		])
+			assert.throws(() => configure({ [role]: invalid }));
+	});
+}
+
+test('opengraph does not support local files', () => {
+	assert.throws(() => configure({ opengraph: { file: './template.svelte' } }));
 });

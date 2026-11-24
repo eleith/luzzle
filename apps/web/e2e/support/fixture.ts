@@ -35,6 +35,7 @@ export const fieldGuide = {
 	previewShareAsset: 'private share image.png'
 }
 
+export const notePageFile = 'notes-page.svelte'
 export const fieldNotesTag = { label: 'Field Notes', slug: 'field-notes' }
 
 export type PreviewJobs = { completed: string; notebook: string; failed: string; pending: string }
@@ -127,6 +128,24 @@ export async function createFixture(directory: string, origin: string) {
 			:global([data-active="true"]) .fixture-note-icon { --fixture-note-active: yes }
 		</style>`
 	)
+	await writeFile(
+		path.join(directory, notePageFile),
+		`<script>
+			let { piece, fields, tags, helpers } = $props()
+			helpers.requestNavBar({ position: 'after-content', showRandom: true })
+			const cover = $derived(helpers.getPieceImageUrl(fields.jacket, 500, 'jpg'))
+		</script>
+		<article class="fixture-note-page">
+			<h1>{piece.title}</h1>
+			{#if fields.subtitle}<p>{fields.subtitle}</p>{/if}
+			{#if cover}<img src={cover} alt="Notebook cover" width="120" />{/if}
+			{@html helpers.getPieceAssetContent(piece.key, 'markdown') || ''}
+			{#each tags as { tag, slug }}<a href="/tags/{slug}">{tag}</a>{/each}
+		</article>
+		<style>
+			article { --fixture-page-style: applied; max-width: 48rem; margin-inline: auto }
+		</style>`
+	)
 	const database = path.join(directory, 'data/luzzle.sqlite')
 	await writeFile(
 		path.join(directory, 'config.yaml'),
@@ -142,7 +161,11 @@ export async function createFixture(directory: string, origin: string) {
 					type: 'notes',
 					fields: { title: 'title', date_consumed: 'date' },
 					templates: {
-						page: { name: 'note' },
+						page: {
+							name: 'note',
+							file: `./${notePageFile}`,
+							mapping: { jacket: 'cover', subtitle: 'caption' }
+						},
 						icon: { file: './notes-icon.svelte', mapping: { image: 'cover', label: 'caption' } }
 					}
 				},

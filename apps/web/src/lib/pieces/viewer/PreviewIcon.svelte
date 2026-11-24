@@ -3,7 +3,7 @@
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import type { Snippet } from 'svelte'
 	import IconFragment from '../components/IconFragment.svelte'
-	import IconStylesheets from '../components/IconStylesheets.svelte'
+	import TemplateStylesheets from '#lib/templates/TemplateStylesheets.svelte'
 	import { getPieceHelpers } from '../helpers/page-state.js'
 	import TemplateStatus from './TemplateStatus.svelte'
 
@@ -29,7 +29,7 @@
 
 {#if renderedIcon}
 	{#if renderedIcon.css}
-		<IconStylesheets stylesheets={[renderedIcon.css]} />
+		<TemplateStylesheets stylesheets={[renderedIcon.css]} />
 	{/if}
 	{#snippet fragment()}
 		<div role="img" aria-label="Icon preview for {piece.title}">

@@ -1,6 +1,6 @@
 import { db } from '#lib/server/database/index.js'
 import type { WebPieces, WebPiecesAsset } from '@luzzle/web.db'
-import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
+import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { mapPieceTemplates, type TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 import { config } from '#lib/server/config.js'
 
@@ -27,7 +27,7 @@ function toPublicAsset(asset: WebPiecesAsset): PublicWebPieceAsset {
 	}
 }
 
-function toPublicPiece(piece: WebPieces, assets: WebPiecesAsset[]): TemplatedPiece {
+function toPublicPiece(piece: WebPieces, assets: WebPiecesAsset[]): PublicWebPiece {
 	const {
 		file_path: _file_path,
 		json_metadata,
@@ -35,12 +35,20 @@ function toPublicPiece(piece: WebPieces, assets: WebPiecesAsset[]): TemplatedPie
 		last_published_at: _last_published_at,
 		...rest
 	} = piece
+	return {
+		...rest,
+		metadata: JSON.parse(json_metadata || '{}'),
+		assets: assets.map(toPublicAsset)
+	}
+}
+
+export async function hydratePublicPiece(piece: WebPieces): Promise<PublicWebPiece> {
+	return toPublicPiece(piece, await fetchAssets([piece.file_path]))
+}
+
+export function withPieceTemplates(piece: PublicWebPiece): TemplatedPiece {
 	return mapPieceTemplates(
-		{
-			...rest,
-			metadata: JSON.parse(json_metadata || '{}'),
-			assets: assets.map(toPublicAsset)
-		},
+		piece,
 		config.pieces.find((entry) => entry.type === piece.type)
 	)
 }
@@ -59,7 +67,9 @@ export async function hydrateWithAssets(
 	const assets = await fetchAssets(paths)
 	const groupedAssets = Object.groupBy(assets, (asset) => asset.piece_file_path)
 
-	const hydrated = pieces.map((piece) => toPublicPiece(piece, groupedAssets[piece.file_path] ?? []))
+	const hydrated = pieces.map((piece) =>
+		withPieceTemplates(toPublicPiece(piece, groupedAssets[piece.file_path] ?? []))
+	)
 
 	return isArray ? hydrated : hydrated[0]
 }

@@ -1,7 +1,7 @@
 import { beforeEach, expect, test, vi } from 'vitest'
-import { loadPiece as load } from './piece.js'
+import { loadPublicPiece as load, loadPiece } from './piece.js'
 
-const { query, hydrateWithAssets, config } = vi.hoisted(() => ({
+const { query, hydratePublicPiece, withPieceTemplates, config } = vi.hoisted(() => ({
 	query: {
 		selectAll: vi.fn().mockReturnThis(),
 		select: vi.fn().mockReturnThis(),
@@ -10,7 +10,8 @@ const { query, hydrateWithAssets, config } = vi.hoisted(() => ({
 		executeTakeFirst: vi.fn(),
 		execute: vi.fn()
 	},
-	hydrateWithAssets: vi.fn(),
+	hydratePublicPiece: vi.fn(),
+	withPieceTemplates: vi.fn(),
 	config: {
 		pieces: [{ type: 'books' }],
 		url: { app: 'https://app.example', luzzle_assets: '' },
@@ -19,7 +20,7 @@ const { query, hydrateWithAssets, config } = vi.hoisted(() => ({
 }))
 vi.mock('#lib/server/database/index.js', () => ({ db: { selectFrom: () => query } }))
 vi.mock('#lib/server/config.js', () => ({ config }))
-vi.mock('#lib/pieces/assets.server.js', () => ({ hydrateWithAssets }))
+vi.mock('#lib/pieces/assets.server.js', () => ({ hydratePublicPiece, withPieceTemplates }))
 
 function event() {
 	return {
@@ -33,7 +34,7 @@ beforeEach(() => {
 	config.url.luzzle_assets = ''
 	query.executeTakeFirst.mockResolvedValue({ id: 'book', file_path: 'book.books.md' })
 	query.execute.mockResolvedValue([{ slug: 'fiction', tag: 'Fiction' }])
-	hydrateWithAssets.mockResolvedValue({
+	hydratePublicPiece.mockResolvedValue({
 		id: 'book',
 		title: 'Book',
 		type: 'books',
@@ -52,7 +53,8 @@ test('public page meta uses the app base when CDN is not configured and retains 
 		}
 	})
 	expect(query.where).toHaveBeenCalledWith('piece_id', '=', 'book')
-	expect(hydrateWithAssets).toHaveBeenCalledOnce()
+	expect(hydratePublicPiece).toHaveBeenCalledOnce()
+	expect(withPieceTemplates).not.toHaveBeenCalled()
 })
 
 test('public meta uses the configured CDN prefix', async () => {
@@ -66,7 +68,7 @@ test.each([
 	{ assets: [] },
 	{ assets: [{ transformation: 'opengraph', asset_path: '../private.png' }] }
 ])('missing or invalid recorded images leave site fallback intact', async ({ assets }) => {
-	hydrateWithAssets.mockResolvedValue({ id: 'book', title: 'Book', type: 'books', assets })
+	hydratePublicPiece.mockResolvedValue({ id: 'book', title: 'Book', type: 'books', assets })
 	expect(await load(event())).toMatchObject({ meta: { image: undefined } })
 })
 
@@ -80,8 +82,8 @@ test('passes hydrated template fields to native rendering, not prepared HTML', a
 			page: { name: 'default', fields: { image: 'cover-key' } }
 		}
 	}
-	hydrateWithAssets.mockResolvedValue(piece)
-	const data = await load(event())
+	withPieceTemplates.mockReturnValue(piece)
+	const data = await loadPiece(event())
 	expect(data).toMatchObject({ piece, tags: [{ slug: 'fiction', tag: 'Fiction' }] })
 	expect(data).not.toHaveProperty('presentation')
 })
@@ -96,5 +98,5 @@ test('unconfigured public piece types fail before querying persisted records', a
 test('missing public pieces remain a 404', async () => {
 	query.executeTakeFirst.mockResolvedValue(undefined)
 	await expect(load(event())).rejects.toMatchObject({ status: 404 })
-	expect(hydrateWithAssets).not.toHaveBeenCalled()
+	expect(hydratePublicPiece).not.toHaveBeenCalled()
 })
