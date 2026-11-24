@@ -2,7 +2,10 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { load } from './+page.server'
 
 const { config, query, selectFrom, sql, hydrateWithAssets } = vi.hoisted(() => ({
-	config: { pieces: [{ type: 'field-notes' }, { type: 'specimens' }] },
+	config: {
+		url: { app: 'https://app.example' },
+		pieces: [{ type: 'field-notes' }, { type: 'specimens' }]
+	},
 	query: {
 		selectAll: vi.fn().mockReturnThis(),
 		where: vi.fn().mockReturnThis(),

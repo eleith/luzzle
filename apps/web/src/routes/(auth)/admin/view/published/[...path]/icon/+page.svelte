@@ -1,7 +1,7 @@
 <script lang="ts">
-	import ClientIcon from '#lib/pieces/viewer/ClientIcon.svelte'
+	import PreviewIcon from '#lib/pieces/viewer/PreviewIcon.svelte'
 	import type { PageProps } from './$types'
 	let { data }: PageProps = $props()
 </script>
 
-<ClientIcon piece={data.piece} />
+<PreviewIcon piece={data.piece} renderedIcon={data.renderedIcon} />

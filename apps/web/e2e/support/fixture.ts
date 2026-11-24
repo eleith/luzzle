@@ -13,6 +13,11 @@ export const notebook = {
 	type: 'notes',
 	slug: 'meteor-notebook',
 	title: 'Meteor Notebook',
+	caption: 'Published observation',
+	previewCaption: 'Unpublished observation',
+	previewTitle: 'Private Meteor Draft',
+	previewAsset: 'draft meteor.png',
+	previewShareAsset: 'draft meteor share.png',
 	publishedAt: Date.UTC(2026, 0, 1)
 }
 
@@ -32,7 +37,7 @@ export const fieldGuide = {
 
 export const fieldNotesTag = { label: 'Field Notes', slug: 'field-notes' }
 
-export type PreviewJobs = { completed: string; failed: string; pending: string }
+export type PreviewJobs = { completed: string; notebook: string; failed: string; pending: string }
 
 const note = `Original observation.
 
@@ -94,7 +99,8 @@ export async function createFixture(directory: string, origin: string) {
 				properties: {
 					title: { type: 'string' },
 					date: { type: 'string', format: 'date' },
-					...(type === 'records' ? { cover: { type: 'string', format: 'asset' } } : {})
+					cover: { type: 'string', format: 'asset' },
+					...(type === 'notes' ? { caption: { type: 'string' } } : {})
 				},
 				required: ['title', 'date'],
 				additionalProperties: false
@@ -109,8 +115,13 @@ export async function createFixture(directory: string, origin: string) {
 	}
 	await writeFile(
 		path.join(directory, 'notes-icon.svelte'),
-		`<script>let { piece, size } = $props()</script>
-		{@html '<!---->'}<a class="fixture-note-icon" data-width={size.width} href="/decorative">{piece.title}</a>
+		`<script>
+			let { piece, fields, helpers, size } = $props()
+			const cover = $derived(helpers.getPieceImageUrl(fields.image, size.width, 'jpg'))
+		</script>
+		{@html '<!---->'}<a class="fixture-note-icon" data-width={size.width} data-caption={fields.label} href="/decorative">
+			{#if cover}<img src={cover} alt="" width="24" />{/if}{piece.title}
+		</a>
 		<style>
 			.fixture-note-icon { --fixture-note-active: no }
 			:global([data-active="true"]) .fixture-note-icon { --fixture-note-active: yes }
@@ -130,7 +141,10 @@ export async function createFixture(directory: string, origin: string) {
 				{
 					type: 'notes',
 					fields: { title: 'title', date_consumed: 'date' },
-					templates: { page: { name: 'note' }, icon: { file: './notes-icon.svelte' } }
+					templates: {
+						page: { name: 'note' },
+						icon: { file: './notes-icon.svelte', mapping: { image: 'cover', label: 'caption' } }
+					}
 				},
 				{
 					type: fieldGuide.type,
@@ -184,7 +198,13 @@ export async function createFixture(directory: string, origin: string) {
 						.content_hash,
 					title: piece.title,
 					note,
-					json_metadata: JSON.stringify({ title: piece.title, date: dateConsumed }),
+					json_metadata: JSON.stringify({
+						title: piece.title,
+						date: dateConsumed,
+						...(piece.slug === notebook.slug
+							? { cover: 'meteor-cover', caption: notebook.caption }
+							: {})
+					}),
 					date_added: consumedAt,
 					date_consumed: consumedAt,
 					last_published_at: notebook.publishedAt
@@ -217,26 +237,31 @@ export async function createFixture(directory: string, origin: string) {
 				}))
 			)
 			.execute()
-		// A recorded output for the Share viewer; this fixture does not run Takumi or publish.
-		const sharePath = `${notebook.slug}/share image.png`
+		// Recorded public images for Share and Icon; no Takumi or Publish job needed.
 		const assetsDirectory = path.join(directory, 'assets/pieces')
 		await mkdir(path.join(assetsDirectory, notebook.slug), { recursive: true })
-		await copyFile(
-			new URL('../../static/images/opengraph.png', import.meta.url),
-			path.join(assetsDirectory, sharePath)
-		)
-		await db
-			.insertInto('web_pieces_assets')
-			.values({
-				piece_file_path: notebook.file,
-				piece_key: notebook.slug,
-				asset_key: notebook.slug,
-				transformation: 'opengraph',
-				asset_path: sharePath,
-				mime_type: 'image/png',
-				is_embedded: 0
-			})
-			.execute()
+		for (const [filename, assetKey, transformation] of [
+			['share image.png', notebook.slug, 'opengraph'],
+			['published meteor.png', 'meteor-cover', 'image.original']
+		]) {
+			const assetPath = `${notebook.slug}/${filename}`
+			await copyFile(
+				new URL('../../static/images/opengraph.png', import.meta.url),
+				path.join(assetsDirectory, assetPath)
+			)
+			await db
+				.insertInto('web_pieces_assets')
+				.values({
+					piece_file_path: notebook.file,
+					piece_key: notebook.slug,
+					asset_key: assetKey,
+					transformation,
+					asset_path: assetPath,
+					mime_type: 'image/png',
+					is_embedded: 0
+				})
+				.execute()
+		}
 	} finally {
 		await db.destroy()
 	}
@@ -256,6 +281,9 @@ async function seedPreviews(directory: string): Promise<PreviewJobs> {
 		const completed = await claim(fieldGuide.file)
 		await seedPreviewAssets(directory, completed)
 		await completeRecordedPreview(backend, completed, workerId)
+		const notebookJob = await claim(notebook.file)
+		await seedPreviewAssets(directory, notebookJob, notebook)
+		await completeRecordedPreview(backend, notebookJob, workerId, notebook)
 		const failed = await claim(notebook.file)
 		await backend.failWorkflowRun({
 			workflowRunId: failed,
@@ -270,7 +298,7 @@ async function seedPreviews(directory: string): Promise<PreviewJobs> {
 		})
 		const pending = await createPreviewRun(backend, fieldGuide.file)
 		await seedPreviewAssets(directory, pending.id)
-		return { completed, failed, pending: pending.id }
+		return { completed, notebook: notebookJob, failed, pending: pending.id }
 	} finally {
 		await backend.stop()
 	}
@@ -291,10 +319,14 @@ function createPreviewRun(backend: BackendSqlite, filePath: string) {
 	})
 }
 
-async function seedPreviewAssets(directory: string, job: string) {
+async function seedPreviewAssets(
+	directory: string,
+	job: string,
+	piece: typeof fieldGuide | typeof notebook = fieldGuide
+) {
 	const assets = path.join(directory, 'assets/previews', job)
 	await mkdir(assets, { recursive: true })
-	for (const asset of [fieldGuide.previewAsset, fieldGuide.previewShareAsset]) {
+	for (const asset of [piece.previewAsset, piece.previewShareAsset]) {
 		await copyFile(
 			new URL('../../static/images/opengraph.png', import.meta.url),
 			path.join(assets, asset)
@@ -302,20 +334,26 @@ async function seedPreviewAssets(directory: string, job: string) {
 	}
 }
 
-async function completeRecordedPreview(backend: BackendSqlite, job: string, workerId: string) {
+async function completeRecordedPreview(
+	backend: BackendSqlite,
+	job: string,
+	workerId: string,
+	piece: typeof fieldGuide | typeof notebook = fieldGuide
+) {
 	// Recorded worker-shaped output, consumed by the real assembler and private asset route.
 	await backend.completeWorkflowRun({
 		workflowRunId: job,
 		workerId,
 		output: {
-			filePath: fieldGuide.file,
-			type: fieldGuide.type,
-			slug: fieldGuide.slug,
-			pieceKey: fieldGuide.slug,
+			filePath: piece.file,
+			type: piece.type,
+			slug: piece.slug,
+			pieceKey: piece.slug,
 			sanitizedFrontmatter: {
-				title: fieldGuide.previewTitle,
+				title: piece.previewTitle,
 				date: Date.UTC(2024, 0, 1),
-				cover: 'private-cover'
+				cover: 'private-cover',
+				...('previewCaption' in piece ? { caption: piece.previewCaption } : {})
 			},
 			note: 'Private preview observation.',
 			pathToKey: {},
@@ -323,19 +361,19 @@ async function completeRecordedPreview(backend: BackendSqlite, job: string, work
 				{
 					asset_key: 'private-cover',
 					transformation: 'image.original',
-					asset_path: fieldGuide.previewAsset,
+					asset_path: piece.previewAsset,
 					mime_type: 'image/png',
 					is_embedded: 0
 				},
 				{
-					asset_key: fieldGuide.slug,
+					asset_key: piece.slug,
 					transformation: 'opengraph',
-					asset_path: fieldGuide.previewShareAsset,
+					asset_path: piece.previewShareAsset,
 					mime_type: 'image/png',
 					is_embedded: 0
 				},
 				{
-					asset_key: fieldGuide.slug,
+					asset_key: piece.slug,
 					transformation: 'markdown',
 					mime_type: 'text/html',
 					is_embedded: 1,

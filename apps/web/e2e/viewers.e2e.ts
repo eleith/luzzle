@@ -21,8 +21,8 @@ async function signIn(page: Page, destination: string) {
 }
 
 const previewUrl = (job: string) => `/admin/view/preview/${job}`
-const assetUrl = (job: string) =>
-	`/admin/preview/${job}/asset/${encodeURIComponent(fieldGuide.previewAsset)}`
+const assetUrl = (job: string, asset = fieldGuide.previewAsset) =>
+	`/admin/preview/${job}/asset/${encodeURIComponent(asset)}`
 const shareAssetUrl = (job: string) =>
 	`/admin/preview/${job}/asset/${encodeURIComponent(fieldGuide.previewShareAsset)}`
 
@@ -32,15 +32,17 @@ test('new viewer HTML/data and preview PNG/stream stay private; login returns to
 	appServer
 }) => {
 	const preview = previewUrl(appServer.previews.completed)
-	for (const viewer of [`${fieldGuide.publishedUrl}/page`, `${preview}/share`]) {
+	for (const [viewer, privateContent] of [
+		[`${previewUrl(appServer.previews.notebook)}/icon`, notebook.previewCaption],
+		[`${preview}/share`, fieldGuide.previewTitle]
+	]) {
 		for (const suffix of ['', '/__data.json']) {
 			const response = await request.get(`${viewer}${suffix}`, {
 				maxRedirects: 0,
 				headers: { accept: 'text/html' }
 			})
 			const body = await response.text()
-			expect(body).not.toContain(fieldGuide.previewTitle)
-			expect(body).not.toContain(fieldGuide.file)
+			expect(body).not.toContain(privateContent)
 			if (!suffix) {
 				expect(response.status()).toBe(302)
 				expect(response.headers().location).toContain('/signin?')
@@ -51,7 +53,7 @@ test('new viewer HTML/data and preview PNG/stream stay private; login returns to
 		}
 	}
 	for (const url of [
-		assetUrl(appServer.previews.completed),
+		assetUrl(appServer.previews.notebook, notebook.previewAsset),
 		shareAssetUrl(appServer.previews.completed),
 		`/api/admin/preview/${appServer.previews.completed}/stream`
 	]) {
@@ -103,9 +105,10 @@ test('new viewer HTML/data and preview PNG/stream stay private; login returns to
 	expect(await data.text()).toContain(fieldGuide.previewTitle)
 })
 
-test('public content works without JavaScript while admin Page and Icon previews are client-only', async ({
+test('configured Icon viewers render without JavaScript while built-in viewer templates load on the client', async ({
 	page,
-	browser
+	browser,
+	appServer
 }) => {
 	await signIn(page, fieldGuide.publishedUrl)
 	const noScript = await browser.newContext({
@@ -130,6 +133,51 @@ test('public content works without JavaScript while admin Page and Icon previews
 			await expect(shell.locator('noscript p')).toBeVisible()
 			await expect(shell.locator('.book, .recipe-card')).toHaveCount(0)
 		}
+		const job = appServer.previews.notebook
+		for (const [url, title, caption, image] of [
+			[
+				`${notebook.publishedUrl}/icon`,
+				notebook.title,
+				notebook.caption,
+				`${appServer.origin}/pieces/assets/${notebook.slug}/published%20meteor.png`
+			],
+			[
+				`${previewUrl(job)}/icon`,
+				notebook.previewTitle,
+				notebook.previewCaption,
+				assetUrl(job, notebook.previewAsset)
+			]
+		]) {
+			const response = await shell.goto(new URL(url, appServer.origin).href)
+			expect(response?.headers()['cache-control']).toBe('private, no-store')
+			const icon = shell.locator('.fixture-note-icon')
+			await expect(icon).toHaveText(title)
+			await expect(icon).toHaveAttribute('data-width', '500')
+			await expect(icon).toHaveAttribute('data-caption', caption)
+			await expect(icon.locator('img')).toHaveAttribute('src', image)
+			await expect
+				.poll(() => icon.locator('img').evaluate((img: HTMLImageElement) => img.naturalWidth))
+				.toBeGreaterThan(0)
+		}
+
+		// Both tabs use this viewport; check its presentation once, on the draft.
+		const viewport = shell.getByRole('main', { name: 'Piece icon' })
+		const image = viewport.getByRole('img', { name: `Icon preview for ${notebook.previewTitle}` })
+		await expect(image).toBeVisible()
+		await expect(image.locator('[inert][aria-hidden="true"] .fixture-note-icon')).toHaveCSS(
+			'--fixture-note-active',
+			'no'
+		)
+		for (const width of [1024, 390]) {
+			await shell.setViewportSize({ width, height: 800 })
+			const available = await viewport.evaluate((el) => {
+				const style = getComputedStyle(el)
+				return el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+			})
+			const frame = await viewport.locator('.icon-frame').boundingBox()
+			expect(frame).not.toBeNull()
+			expect(Math.abs(frame!.width - Math.min(500, available, width))).toBeLessThanOrEqual(1)
+		}
 	} finally {
 		await noScript.close()
 	}
@@ -151,66 +199,23 @@ test('public content works without JavaScript while admin Page and Icon previews
 	)
 })
 
-test('a pending Icon import cannot replace the new template on a same-route piece transition', async ({
-	page
-}) => {
-	await signIn(page, fieldGuide.publishedUrl)
-	const obsoleteModule = Promise.withResolvers<void>()
-	let held = false
-	await page.route('**/*.js', async (route) => {
-		const response = await route.fetch()
-		// The recipe-card renderer's markup is distinct from other production JS chunks.
-		const module = await response.text()
-		if (module.includes('--card-max-height') && module.includes('card-cutouts')) {
-			held = true
-			await obsoleteModule.promise
-		}
-		await route.fulfill({ response })
-	})
-	try {
-		await page.getByRole('link', { name: 'Icon', exact: true }).click()
-		await expect.poll(() => held).toBe(true)
-		await expect(page.getByRole('status')).toMatchAriaSnapshot('- status: Loading icon preview…')
-		// Both URLs use the same Kit route/component: changing tabs would only test unmount.
-		await page.evaluate((href) => {
-			document.documentElement.dataset.iconTransition = 'same-document'
-			document.documentElement.dataset.obsoleteIcon = 'false'
-			new MutationObserver((mutations) => {
-				if (
-					mutations.some((mutation) =>
-						Array.from(mutation.addedNodes).some(
-							(node) =>
-								node instanceof Element &&
-								(node.matches('.recipe-card') || node.querySelector('.recipe-card'))
-						)
-					)
-				)
-					document.documentElement.dataset.obsoleteIcon = 'true'
-			}).observe(document.body, { childList: true, subtree: true })
-			const link = document.createElement('a')
-			link.href = href
-			link.textContent = 'Open notebook icon'
-			document.body.append(link)
-		}, `${notebook.publishedUrl}/icon`)
-		await page.getByRole('link', { name: 'Open notebook icon', exact: true }).click()
-		await expect(page).toHaveURL(new URL(`${notebook.publishedUrl}/icon`, page.url()).href)
-		await expect(page.locator('html')).toHaveAttribute('data-icon-transition', 'same-document')
-		await expect(page.locator('.poster .poster-title')).toHaveText(notebook.title)
-		await expect(page.getByRole('link', { name: 'Back to editor' })).toHaveAttribute(
-			'href',
-			notebook.editorUrl
-		)
-	} finally {
-		obsoleteModule.resolve()
-	}
-	await page.waitForLoadState('networkidle')
-	await expect(page.locator('.poster .poster-title')).toHaveText(notebook.title)
-	await expect(page.locator('.recipe-card')).toHaveCount(0)
-	await expect(page.locator('html')).toHaveAttribute('data-obsolete-icon', 'false')
-})
+async function switchJob(page: Page, href: string) {
+	// A real Kit link transition keeps the document, exercising the outer job key, not a reload.
+	await page.evaluate((href) => {
+		document.documentElement.dataset.jobRemount = 'same-document'
+		const link = document.createElement('a')
+		link.href = href
+		link.textContent = 'Switch preview job'
+		document.body.append(link)
+	}, href)
+	await page.getByRole('link', { name: 'Switch preview job', exact: true }).last().click()
+	await expect(page).toHaveURL(new URL(href, page.url()).href)
+	await expect(page.locator('html')).toHaveAttribute('data-job-remount', 'same-document')
+}
 
 test('job-only Preview URLs remount status and derive Back, retry, published and asset destinations from the job', async ({
 	page,
+	request,
 	appServer
 }) => {
 	const failed = previewUrl(appServer.previews.failed)
@@ -235,16 +240,7 @@ test('job-only Preview URLs remount status and derive Back, retry, published and
 	await page.getByRole('button', { name: 'Generate fresh preview' }).click()
 	expect((await retry).method()).toBe('POST')
 
-	// A real Kit link transition keeps the document, exercising the outer job key, not a reload.
-	await page.evaluate((href) => {
-		document.documentElement.dataset.jobRemount = 'same-document'
-		const link = document.createElement('a')
-		link.href = href
-		link.textContent = 'Open completed preview'
-		document.body.append(link)
-	}, completed)
-	await page.getByRole('link', { name: 'Open completed preview', exact: true }).click()
-	await expect(page.locator('html')).toHaveAttribute('data-job-remount', 'same-document')
+	await switchJob(page, completed)
 	await expect(page.locator('[data-status="completed"]')).toBeVisible()
 	await expect(page.getByRole('main')).toContainText(fieldGuide.file)
 	await expect(page.getByRole('main')).not.toContainText('Recorded preview failure')
@@ -278,6 +274,28 @@ test('job-only Preview URLs remount status and derive Back, retry, published and
 		.poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth))
 		.toBeGreaterThan(0)
 	await expect(page.locator('main img[src*="/pieces/assets/"]')).toHaveCount(0)
+
+	const notebookJob = appServer.previews.notebook
+	await switchJob(page, `${previewUrl(notebookJob)}/icon`)
+	const draftIcon = page.locator('.fixture-note-icon')
+	await expect(draftIcon).toHaveText(notebook.previewTitle)
+	await expect(draftIcon.locator('img')).toHaveAttribute(
+		'src',
+		assetUrl(notebookJob, notebook.previewAsset)
+	)
+	await expect(page.locator('.recipe-card')).toHaveCount(0)
+
+	// The standalone request fixture has none of the signed-in page's cookies.
+	const publicListing = await request.get('/pieces/notes')
+	expect(publicListing.status()).toBe(200)
+	const html = await publicListing.text()
+	expect(html).toContain(`data-caption="${notebook.caption}"`)
+	expect(html).not.toContain(notebook.previewCaption)
+	expect(html).not.toContain('/admin/preview/')
+
+	await switchJob(page, `${failed}/icon`)
+	await expect(page.locator('[data-status="failed"]')).toBeVisible()
+	await expect(draftIcon).toHaveCount(0)
 })
 
 type PreviewStreamEvent = { kind: 'open' | 'close' | 'done'; url: string }

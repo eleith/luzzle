@@ -19,7 +19,7 @@
 	{#if view === 'page'}
 		<Page {data} {params} />
 	{:else if view === 'icon'}
-		<Icon {data} {params} />
+		<Icon data={{ ...data, renderedIcon: undefined }} {params} form={null} />
 	{:else if view === 'share'}
 		<Share {data} {params} />
 	{:else}

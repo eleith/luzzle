@@ -54,6 +54,29 @@ test('one external design renders the mapped cover or fallback for each book on 
 	expect(design.css.trim()).not.toBe('')
 })
 
+test('a module that remembers its first title cannot leak a draft into a published icon', async ({
+	onTestFinished
+}) => {
+	const dir = await mkdtemp(join(tmpdir(), 'icon-cache-'))
+	onTestFinished(() => rm(dir, { recursive: true, force: true }))
+	const filename = join(dir, 'icon.svelte')
+	await writeFile(
+		filename,
+		`<script module>let firstTitle;</script><script>let { piece } = $props(); firstTitle ??= piece.title;</script><b>{firstTitle}</b>`
+	)
+	const appUrl = 'https://app.example'
+	const props = { size: { width: 500 } }
+	const preview = await loadIconDesign({
+		filename,
+		context: { mode: 'preview', appUrl, job: 'draft' }
+	})
+	expect(preview.render({ ...book, title: 'Private draft' }, props)).toContain('Private draft')
+	const published = await loadIconDesign({ filename, context: { mode: 'published', appUrl } })
+	const publicHtml = published.render(book, props)
+	expect(publicHtml).toContain(book.title)
+	expect(publicHtml).not.toContain('Private draft')
+})
+
 test('two placements of one icon get independent IDs, dimensions and loading hints', async ({
 	onTestFinished
 }) => {

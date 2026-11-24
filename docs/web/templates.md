@@ -51,10 +51,12 @@ restores the built-in book icon with the same mapped metadata.
 
 Matching pieces use this file on their **type listing**, the **mixed `/pieces` listing**,
 on every page of a **tag listing**, in **search results** (including type-filtered searches), and in the homepage’s
-**Latest and Random** collections. Home requests a compact 80px icon instead of the
-125px listing icon, so use the template’s `size` prop. Admin icon previews still use the
-built-in `name`, or `default` when omitted. Page and Open Graph templates are
-unchanged. The file can read arbitrary `fields` from `mapping` using the same
+**Latest and Random** collections. The admin **Published → Icon** and **Preview → Icon**
+tabs render the same file. Use the template’s `size` prop: home requests 80px,
+listings 125px, and the admin viewer 500px. Resolve images through `helpers` so
+Published uses public assets and Preview uses assets from the selected preview job.
+Without a file, the Icon tab loads the built-in `name` (or `default`) in the browser.
+Page and Open Graph templates are unchanged. The file can read arbitrary `fields` from `mapping` using the same
 bindings as below. Only keys supported by the built-in icon are used by its
 fallback; remove any file-only mapping keys when removing `file`.
 
@@ -63,6 +65,13 @@ Use a self-contained server-renderable component: it receives `piece`, `fields`,
 event handlers, and effects are not supported. **Templates execute in the web
 server process**; the compiler is not a sandbox. Do not use uploads, archive
 metadata, or request parameters to supply code or filenames.
+
+Preview jobs use a separate compiled template from public pages and the Published
+viewer, even when both use the same file. Within each of those two caches the
+module is reused across requests, not isolated per piece or preview job. Keep
+`piece`, mapped fields, helpers, and asset URLs inside the component instance so a
+later render cannot reuse another piece’s or job’s data. These caches isolate
+module instances, not the server process: templates must still be trusted.
 
 If mapping the external fields or rendering the component throws for a piece,
 only that row uses the built-in icon. Its link and the other rows remain usable.

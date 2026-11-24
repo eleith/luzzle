@@ -62,9 +62,11 @@ page directly and **Published details** opens its admin Overview.
 
 Published viewers live at `/admin/view/published/<file>`; preview viewers use
 `/admin/view/preview/<jobId>`. Both have **Overview**, **Page**, **Icon**, and **Share**
-tabs. Page, Icon, and Share's browser preview load their selected designs on demand
-and require JavaScript. Overview and Share's generated image remain usable without
-it. Public piece pages still render without JavaScript. All admin views and preview
+tabs. If you configure an [icon file](templates.md#use-a-local-icon-on-piece-listings),
+the **Icon** tab displays it without JavaScript. Published uses the published piece and
+public assets; Preview uses the selected job’s draft data and protected assets.
+Built-in Icon designs, Page, and Share’s browser preview still require JavaScript.
+Overview and Share’s generated image remain usable without it. Public piece pages still render without JavaScript. All admin views and preview
 assets require sign-in.
 
 The **Share** tab has two sections: **HTML** renders the current Open Graph template
