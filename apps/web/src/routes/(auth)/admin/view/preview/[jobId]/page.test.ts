@@ -130,7 +130,6 @@ test('completed Preview links its publication and inspects only current-job gene
 	expect(html).toContain('Preview seed line')
 	expect(html).toContain('href="/admin/preview/current-job/asset/generated/cover.jpg"')
 	expect(html).not.toContain('archive/manual.pdf')
-	expect(html).not.toContain('/pieces/assets/')
 	expect(html.indexOf('Preview logs')).toBeLessThan(html.indexOf('Preview assets'))
 	expect(html.match(/<main\b/g)).toHaveLength(1)
 })

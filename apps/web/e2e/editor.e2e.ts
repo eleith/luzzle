@@ -219,7 +219,7 @@ test('asset URL saves update an unchanged editor but never replace a newer draft
 	const editor = page.getByRole('textbox')
 	const save = page.getByRole('button', { name: 'Save', exact: true })
 	const sourceInput = page.locator('input[name="content"]')
-	const assetUrl = `${baseURL}/pieces/assets/${notebook.slug}/share%20image.png`
+	const assetUrl = `${baseURL}/assets/pieces/${notebook.slug}/share%20image.png`
 	const body = `\nBody with ${assetUrl}.\n`
 	const draft = `---\n# formatting may change on URL conversion\ntitle:   "${fieldGuide.title}"\ndate: 2024-01-01\ncover: '${assetUrl}'\n---\n${body}`
 	await editor.press('ControlOrMeta+a')
@@ -236,7 +236,14 @@ test('asset URL saves update an unchanged editor but never replace a newer draft
 	const { frontmatter } = await extractFullMarkdown(savedContent)
 	expect(frontmatter.cover).toMatch(/^\.assets\/.+\/.+\.png$/)
 	expect(savedContent.endsWith(`---\n${body}`)).toBe(true)
-	await readFile(path.join(appServer.directory, 'archive', frontmatter.cover as string))
+	const downloaded = await readFile(
+		path.join(appServer.directory, 'archive', frontmatter.cover as string)
+	)
+	expect(downloaded).toEqual(
+		await readFile(
+			path.join(appServer.directory, 'assets/pieces', notebook.slug, 'share image.png')
+		)
+	)
 	await expect(sourceInput).toHaveValue(savedContent)
 	await expect(editor).toContainText(frontmatter.cover as string)
 	await expect(mode).toHaveText('Normal')

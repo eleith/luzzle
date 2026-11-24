@@ -1,7 +1,6 @@
 import { expect, test, vi } from 'vitest'
 import type { Pieces } from '@luzzle/core'
 import { validateConfig } from '@luzzle/web.config'
-import { assetPathToUrl } from '@luzzle/web.pieces'
 import type { TransformInput } from '../utils/types.js'
 import { makeLogger } from '../../../test/logger.js'
 import { run } from './index.js'
@@ -31,7 +30,7 @@ function makeInput(overrides: Partial<TransformInput> = {}): TransformInput {
 			}),
 		} as unknown as Pieces,
 		assetKeyToPath: new Map(),
-		buildAssetUrl: (path) => assetPathToUrl(path, 'https://cdn.test/garden/'),
+		buildAssetUrl: (path) => `/resolved/${encodeURI(path)}`,
 		logger: makeLogger(),
 		...overrides,
 	}
@@ -79,14 +78,14 @@ test('renders registered originals in body and metadata Markdown using public UR
 
 	const body = records.find((record) => record.transformation === 'markdown')?.content
 	expect(body).toContain(
-		'src="https://cdn.test/garden/pieces/assets/words/piece-key/diagram%20%E9%9B%AA.png"'
+		'src="/resolved/words/piece-key/diagram%20%E9%9B%AA.png"'
 	)
-	expect(body).toContain('href="https://cdn.test/garden/pieces/assets/words/piece-key/C%2B%2B.pdf"')
+	expect(body).toContain('href="/resolved/words/piece-key/C++.pdf"')
 	expect(body).toContain('href="https://example.com"')
 	expect(body).toContain('<code>[Manual](.assets/essay/C++.pdf)</code>')
 	expect(
 		records.find((record) => record.transformation === 'markdown.description')?.content
-	).toContain('href="https://cdn.test/garden/pieces/assets/words/piece-key/C%2B%2B.pdf"')
+	).toContain('href="/resolved/words/piece-key/C++.pdf"')
 	expect(input.logger.warn).not.toHaveBeenCalled()
 })
 

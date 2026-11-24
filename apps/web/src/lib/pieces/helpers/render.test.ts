@@ -1,3 +1,4 @@
+import { assetPathToUrl } from '@luzzle/web.pieces'
 import { expect, test, vi } from 'vitest'
 import type { PublicWebPiece } from '@luzzle/web.pieces'
 import { createRenderHelpers } from './render.js'
@@ -36,7 +37,7 @@ test('the same piece can render with independent published and preview contexts'
 		'/admin/preview/job%202/asset/books/cover.jpg'
 	)
 	expect(published.getPieceAssetUrl('cover', 'image.original')).toBe(
-		'https://cdn.example/pieces/assets/books/cover.jpg'
+		assetPathToUrl('books/cover.jpg', 'https://cdn.example')
 	)
 	expect(preview.getPieceUrl()).toBe('https://public.example/pieces/books/a%20book')
 })

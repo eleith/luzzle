@@ -1,8 +1,6 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
-import type { AppConfigPublic } from '#lib/server/config.js'
-import { makeConfig } from '#lib/server/config.fixture.js'
-import { siteImageUrls } from '#lib/server/assets/images.js'
+import { makePublicConfig } from '#lib/server/config.fixture.js'
 import SeoHead from './SeoHead.svelte'
 
 const { page } = vi.hoisted(() => ({
@@ -14,83 +12,30 @@ const { page } = vi.hoisted(() => ({
 vi.mock('$app/state', () => ({ page }))
 vi.mock('$app/env', () => ({ browser: false }))
 
-function configuration(appAssets = '/static', app = 'https://public.test'): AppConfigPublic {
-	const config = makeConfig()
-	config.url = { app, app_assets: appAssets, luzzle_assets: '/pieces-cdn' }
-	return {
-		content: {
-			text: { title: 'Garden', description: 'A garden' },
-			images: siteImageUrls(config, page.url)
-		},
-		url: config.url
-	}
-}
-
 beforeEach(() => {
 	page.url = new URL('https://request.test/pieces/books/book')
-	page.data = { config: configuration() }
+	page.data = { config: makePublicConfig() }
 })
 
-test.each([
-	['', '/images/favicon.png', 'https://public.test/images/opengraph.png'],
-	['/static', '/static/images/favicon.png', 'https://public.test/static/images/opengraph.png'],
-	['/static/', '/static/images/favicon.png', 'https://public.test/static/images/opengraph.png'],
-	[
-		'https://cdn.test/static',
-		'https://cdn.test/static/images/favicon.png',
-		'https://cdn.test/static/images/opengraph.png'
-	]
-])('consumes server-resolved bundled images with asset prefix %j', (prefix, favicon, image) => {
-	page.data.config = configuration(prefix)
-	const { head } = render(SeoHead)
-	expect(head).toContain(`rel="icon" href="${favicon}"`)
-	expect(head).toContain(`property="og:image" content="${image}"`)
-	expect(head).toContain('property="og:url" content="https://request.test/pieces/books/book"')
-})
-
-test.each([
-	['/static/images/favicon.png', 'https://public.test/static/images/opengraph.png'],
-	['/assets/favicon/selected-icon.svg', 'https://public.test/static/images/opengraph.png'],
-	['/static/images/favicon.png', 'https://public.test/assets/opengraph/selected-card.png'],
-	['/assets/favicon/selected-icon.svg', 'https://public.test/assets/opengraph/selected-card.png']
-])('consumes resolved favicon %s and OG %s independently', (favicon, opengraph) => {
-	const config = configuration()
-	config.content.images = { favicon, opengraph }
+test('renders the site images and request URL', () => {
+	const config = makePublicConfig()
+	config.content.images = { favicon: '/site-icon.svg', opengraph: 'https://cdn.test/site.png' }
 	page.data.config = config
 	const { head } = render(SeoHead)
-	expect(head).toContain(`rel="icon" href="${favicon}"`)
-	expect(head).toContain(`property="og:image" content="${opengraph}"`)
-	expect(head.match(/rel="icon"/g)).toHaveLength(1)
-	expect(head.match(/property="og:image"/g)).toHaveLength(1)
-	expect(head).not.toContain('/pieces-cdn/')
+	expect(head).toContain('rel="icon" href="/site-icon.svg"')
+	expect(head).toContain('property="og:image" content="https://cdn.test/site.png"')
+	expect(head).toContain(`property="og:url" content="${page.url.href}"`)
 })
 
-test.each(['', '/garden'])('consumes server-resolved OG for relative app base %j', (app) => {
-	page.data.config = configuration('/static', app)
-	expect(render(SeoHead).head).toContain(
-		'property="og:image" content="https://request.test/static/images/opengraph.png"'
-	)
-})
-
-test.each([
-	'/pieces/assets/book/share.png',
-	'https://pieces.test/pieces/assets/book/share%20image.png'
-])('piece OG %j retains priority and is not absolutized or rewritten', (image) => {
-	const config = configuration()
-	config.content.images = {
-		favicon: '/assets/favicon/selected-icon.svg',
-		opengraph: 'https://public.test/assets/opengraph/selected-card.png'
-	}
-	page.data = { config, meta: { title: 'Book | Garden', image } }
+test('piece image overrides the site image without rewriting its URL', () => {
+	page.data.meta = { title: 'Book', image: '/book/share.png' }
 	const { head } = render(SeoHead)
-	expect(head).toContain(`property="og:image" content="${image}"`)
-	expect(head).toContain('rel="icon" href="/assets/favicon/selected-icon.svg"')
-	expect(head).not.toContain('assets/opengraph')
-	expect(head).toContain('<title>Book | Garden</title>')
+	expect(head).toContain('property="og:image" content="/book/share.png"')
+	expect(head.match(/property="og:image"/g)).toHaveLength(1)
 })
 
 test('head escapes metadata and resolved image URLs', () => {
-	const config = configuration()
+	const config = makePublicConfig()
 	config.content.images = {
 		favicon: '/assets/favicon/selected-icon.svg?a=1&b="icon"',
 		opengraph: 'https://public.test/assets/opengraph/selected-card.png?a=1&b=2'

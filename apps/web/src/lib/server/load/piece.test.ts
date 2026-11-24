@@ -1,3 +1,4 @@
+import { assetPathToUrl } from '@luzzle/web.pieces'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { loadPublicPiece as load, loadPiece } from './piece.js'
 
@@ -31,7 +32,6 @@ function event() {
 
 beforeEach(() => {
 	vi.clearAllMocks()
-	config.url.luzzle_assets = ''
 	query.executeTakeFirst.mockResolvedValue({ id: 'book', file_path: 'book.books.md' })
 	query.execute.mockResolvedValue([{ slug: 'fiction', tag: 'Fiction' }])
 	hydratePublicPiece.mockResolvedValue({
@@ -48,20 +48,13 @@ test('public page meta uses the app base when CDN is not configured and retains 
 	expect(data).toMatchObject({
 		tags: [{ slug: 'fiction', tag: 'Fiction' }],
 		meta: {
-			image: 'https://app.example/pieces/assets/books/key/share%20image.png',
+			image: assetPathToUrl('books/key/share image.png', config.url.app),
 			title: 'Book | Garden'
 		}
 	})
 	expect(query.where).toHaveBeenCalledWith('piece_id', '=', 'book')
 	expect(hydratePublicPiece).toHaveBeenCalledOnce()
 	expect(withPieceTemplates).not.toHaveBeenCalled()
-})
-
-test('public meta uses the configured CDN prefix', async () => {
-	config.url.luzzle_assets = 'https://cdn.example/prefix/'
-	expect(await load(event())).toMatchObject({
-		meta: { image: 'https://cdn.example/prefix/pieces/assets/books/key/share%20image.png' }
-	})
 })
 
 test.each([

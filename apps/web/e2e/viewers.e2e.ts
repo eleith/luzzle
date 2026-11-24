@@ -26,6 +26,7 @@ async function signIn(page: Page, destination: string) {
 	viewerSession = await page.context().cookies()
 }
 
+const publishedCover = /\/published%20meteor\.png$/
 const previewUrl = (job: string) => `/admin/view/preview/${job}`
 const assetUrl = (job: string, asset = fieldGuide.previewAsset) =>
 	`/admin/preview/${job}/asset/${encodeURIComponent(asset)}`
@@ -141,19 +142,14 @@ test('configured Icon viewers render without JavaScript while built-in viewer te
 		}
 		const job = appServer.previews.notebook
 		for (const [url, title, caption, image] of [
-			[
-				`${notebook.publishedUrl}/icon`,
-				notebook.title,
-				notebook.caption,
-				`${appServer.origin}/pieces/assets/${notebook.slug}/published%20meteor.png`
-			],
+			[`${notebook.publishedUrl}/icon`, notebook.title, notebook.caption, publishedCover],
 			[
 				`${previewUrl(job)}/icon`,
 				notebook.previewTitle,
 				notebook.previewCaption,
 				assetUrl(job, notebook.previewAsset)
 			]
-		]) {
+		] as const) {
 			const response = await shell.goto(new URL(url, appServer.origin).href)
 			expect(response?.headers()['cache-control']).toBe('private, no-store')
 			const icon = shell.locator('.fixture-note-icon')
@@ -220,7 +216,12 @@ test('configured Page tabs render the current piece and its assets without JavaS
 	try {
 		const viewer = await context.newPage()
 		const article = viewer.locator('.fixture-note-page')
-		async function expectPage(path: string, title: string, caption: string, image: string) {
+		async function expectPage(
+			path: string,
+			title: string,
+			caption: string,
+			image: string | RegExp
+		) {
 			const response = await viewer.goto(`${path}/page`)
 			expect(response?.headers()['cache-control']).toBe('private, no-store')
 			await expect(article.getByRole('heading', { name: title, exact: true })).toBeVisible()
@@ -231,12 +232,7 @@ test('configured Page tabs render the current piece and its assets without JavaS
 			)
 			await expect(article).toHaveCSS('--fixture-page-style', 'applied')
 		}
-		await expectPage(
-			notebook.publishedUrl,
-			notebook.title,
-			notebook.caption,
-			`${appServer.origin}/pieces/assets/${notebook.slug}/published%20meteor.png`
-		)
+		await expectPage(notebook.publishedUrl, notebook.title, notebook.caption, publishedCover)
 		await expect(article.getByRole('link', { name: fieldNotesTag.label })).toHaveAttribute(
 			'href',
 			`/tags/${fieldNotesTag.slug}`
@@ -331,7 +327,6 @@ test('job-only Preview URLs remount status and derive Back, retry, published and
 	await expect
 		.poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth))
 		.toBeGreaterThan(0)
-	await expect(page.locator('main img[src*="/pieces/assets/"]')).toHaveCount(0)
 
 	const notebookJob = appServer.previews.notebook
 	await switchJob(page, `${previewUrl(notebookJob)}/icon`)

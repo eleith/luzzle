@@ -157,9 +157,7 @@ test('Share SSR displays only the current job PNG and leaves HTML to the client'
 	expect(html).toContain('id="main-content"')
 	expect(html.match(/<img\b/g)).toHaveLength(1)
 	expect(html).not.toMatch(/generated\/cover\.jpg|data-renderer=|>Preview &lt;Draft></)
-	expect(html).not.toMatch(
-		/https:\/\/(?:public|cdn)\.test|\/pieces\/assets\/|\/admin\/asset\/|published\/cover\.jpg/
-	)
+	expect(html).not.toMatch(/https:\/\/(?:public|cdn)\.test|\/admin\/asset\/|published\/cover\.jpg/)
 	expectAppNavigation(['preview #2'])
 })
 
@@ -175,7 +173,7 @@ test.each([undefined, '../private.png'])(
 		expect(html).toContain('No generated image available.')
 		expect(html).toContain('Loading browser preview…')
 		expect(html).not.toMatch(
-			/<img\b|data-renderer=|Open generated Takumi PNG|\/asset\/|\/pieces\/assets\/|private\.png/
+			/<img\b|data-renderer=|Open generated Takumi PNG|\/asset\/|private\.png/
 		)
 	}
 )

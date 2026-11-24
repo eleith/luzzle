@@ -2,6 +2,7 @@ import { describe, test, expect, afterAll, beforeAll, beforeEach, vi } from 'vit
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import type * as FileSystem from 'node:fs'
 import path from 'node:path'
+import sharp from 'sharp'
 import { validateConfig } from '@luzzle/web.config'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
@@ -187,39 +188,6 @@ describe('pieces/render', () => {
 		15000
 	)
 
-	test.each([
-		[false, 'cover&art.png'],
-		[true, 'cover&art.png'],
-		[false, 'cover&amp;art.png'],
-		[true, 'cover&amp;art.png'],
-		[false, 'cover 100%#?é".png'],
-		[true, 'cover 100%#?é".png'],
-		[false, 'cover%2Fart.png'],
-		[true, 'cover%2Fart.png'],
-	])(
-		'preloads the original special-character filename (preview: %s, file: %s)',
-		async (preview, filename) => {
-			const config = makeConfig()
-			const assetsDir = path.join(TEMP_DIR, preview ? 'preview' : 'assets')
-			const relativePath = `books/k1/${filename}`
-			const diskPath = path.join(assetsDir, relativePath)
-			mkdirSync(path.dirname(diskPath), { recursive: true })
-			writeFileSync(diskPath, onePixelPng)
-			const assets: PublicWebPieceAsset[] = [
-				{
-					asset_key: 'img-key',
-					transformation: 'image.original',
-					asset_path: relativePath,
-					mime_type: 'image/png',
-				},
-			]
-			expectPng(
-				await renderOpengraphPng(makePiece(assets), assets, config, preview ? assetsDir : undefined)
-			)
-			expect(readFileSync).toHaveBeenCalledWith(diskPath)
-		}
-	)
-
 	test('renders the packaged default component to a PNG without a piece configuration', async () => {
 		const config = makeConfig()
 		config.pieces = []
@@ -227,19 +195,22 @@ describe('pieces/render', () => {
 	})
 
 	test.each([false, true])(
-		'preloads mapped default poster and backdrop images (preview: %s)',
+		'renders the mapped cover in the PNG and preloads the backdrop (preview: %s)',
 		async (preview) => {
 			const config = makeConfig()
 			const assetsDir = path.join(TEMP_DIR, preview ? 'preview' : 'assets')
 			const mockImgDir = path.join(assetsDir, 'books/k1')
 			mkdirSync(mockImgDir, { recursive: true })
-			writeFileSync(path.join(mockImgDir, 'cover.png'), onePixelPng)
+			const coverColor = { r: 246, g: 27, b: 218 }
+			await sharp({ create: { width: 8, height: 8, channels: 3, background: coverColor } })
+				.png()
+				.toFile(path.join(mockImgDir, 'cover &amp;&#%2F?é".png'))
 			writeFileSync(path.join(mockImgDir, 'backdrop.png'), onePixelPng)
 			const assets: PublicWebPieceAsset[] = [
 				{
 					asset_key: 'img-key',
 					transformation: 'image.original',
-					asset_path: 'books/k1/cover.png',
+					asset_path: 'books/k1/cover &amp;&#%2F?é".png',
 					mime_type: 'image/png',
 				},
 				{
@@ -250,10 +221,14 @@ describe('pieces/render', () => {
 				},
 			]
 
-			expectPng(
-				await renderOpengraphPng(makePiece(assets), assets, config, preview ? assetsDir : undefined)
+			const png = await renderOpengraphPng(
+				makePiece(assets), assets, config, preview ? assetsDir : undefined
 			)
-			expect(readFileSync).toHaveBeenCalledWith(path.join(mockImgDir, 'cover.png'))
+			const pixels = await sharp(png).removeAlpha().raw().toBuffer()
+			const hasCoverColor = pixels.some((r, i) =>
+				i % 3 === 0 && r === coverColor.r && pixels[i + 1] === coverColor.g && pixels[i + 2] === coverColor.b
+			)
+			expect(hasCoverColor).toBe(true)
 			expect(readFileSync).toHaveBeenCalledWith(path.join(mockImgDir, 'backdrop.png'))
 		}
 	)

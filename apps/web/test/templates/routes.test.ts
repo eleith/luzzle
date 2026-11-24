@@ -13,6 +13,8 @@ const webRoot = fileURLToPath(new URL('../../', import.meta.url))
 const repository = path.resolve(webRoot, '../..')
 const buildDirectory = path.join(webRoot, 'build')
 const piecePath = '/pieces/cutover-kind/real-piece'
+const coverPath = '/assets/pieces/cutover/cover%20small.png'
+const sharePath = '/assets/pieces/share.png'
 const feedCases = [
 	{
 		folder: '/rss/pieces/cutover-kind',
@@ -30,7 +32,7 @@ const feedCases = [
 		title: 'RSS feed | all',
 		description: 'RSS feed for all pieces',
 		discoveryTitle: 'RSS feed',
-		count: 2
+		count: 3
 	},
 	{
 		folder: '/rss/tags/field-notes',
@@ -92,6 +94,8 @@ try {
   };
   await db.insertInto('web_pieces').values([
     row,
+    { ...row, id: 'asset-id', key: 'asset-key', type: 'assets',
+      file_path: 'sample.assets.md', slug: 'sample', title: 'Sample Asset' },
     { ...row, id: 'orphan-id', key: 'orphan-key', type: 'unconfigured-kind',
       file_path: 'orphan.unconfigured-kind.md', title: 'Orphan must not be visible' }
   ]).execute();
@@ -100,7 +104,7 @@ try {
   await db.insertInto('web_pieces_assets').values([
     { ...asset, transformation: 'image.s.jpg', asset_path: 'cutover/cover small.png', mime_type: 'image/png', is_embedded: 0 },
     { ...asset, transformation: 'image.s.png', asset_path: 'cutover/cover small.png', mime_type: 'image/png', is_embedded: 0 },
-    { ...asset, asset_key: row.key, transformation: 'opengraph', asset_path: 'cutover/share.png', mime_type: 'image/png', is_embedded: 0 },
+    { ...asset, asset_key: row.key, transformation: 'opengraph', asset_path: 'share.png', mime_type: 'image/png', is_embedded: 0 },
     { ...asset, asset_key: row.key, piece_asset_path: row.file_path, transformation: 'markdown', mime_type: 'text/html', content: '<p>Published rendered note</p>' }
   ]).execute();
 } finally { await db.destroy(); }
@@ -389,7 +393,7 @@ function expectBuiltIn(html: string) {
 	expect(head.match(/<title>/g)).toHaveLength(1)
 	expect(head).toContain('<title>Real Piece | Cutover Garden</title>')
 	expect(head).toContain('name="description" content="Published route description"')
-	expect(head).toContain('property="og:image" content="/pieces/assets/cutover/share.png"')
+	expect(head).toContain(`property="og:image" content="${sharePath}"`)
 }
 
 async function stopBuiltApp() {
@@ -594,13 +598,14 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		const rendered = (html: string) => html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
 		const before = rendered(await pageHtml())
 		expect(before).toContain('123 min')
-		expect(before).toContain('src="/pieces/assets/cutover/cover%20small.png"')
+		expect(before).toContain(`src="${coverPath}"`)
 		expect(rendered(await pageHtml(listing))).toMatch(/class="poster\b/)
 		const original = await readFile(configFilename)
 		try {
 			const config = JSON.parse(original.toString('utf8'))
 			config.pieces[0].templates.page = { name: 'note' }
 			config.pieces[0].templates.icon.name = 'recipe-card'
+			config.pieces.push({ ...config.pieces[0], type: 'assets' })
 			await writeFile(configFilename, JSON.stringify(config))
 			// Configuration is restart-bound; this server still renders the original selection.
 			expect(rendered(await pageHtml())).toContain('123 min')
@@ -614,8 +619,15 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			expect(page).not.toContain('<img')
 			const icons = rendered(await pageHtml(listing))
 			expect(icons).toMatch(/class="recipe-card\b/)
-			expect(icons).toContain('src="/pieces/assets/cutover/cover%20small.png"')
+			expect(icons).toContain(`src="${coverPath}"`)
 			expect(linkTargets(icons, listing)).toContain(new URL(piecePath, origin).href)
+
+			const assetsDetail = '/pieces/assets/sample'
+			expect(linkTargets(await pageHtml('/pieces/assets'), '/pieces/assets')).toContain(
+				new URL(assetsDetail, origin).href
+			)
+			expect(rendered(await pageHtml(assetsDetail))).toMatch(/<h1[^>]*>Sample Asset<\/h1>/)
+			expect((await request('/pieces/assets/cutover/cover%20small.png')).status).toBe(404)
 
 			for (const pathname of [
 				'/templates/page/note/cutover-kind/real-piece?keep=1',
@@ -995,7 +1007,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				const piece = await pageHtml()
 				expect(htmlHead(piece)).toContain(`rel="icon" href="${favicon}"`)
 				expect(htmlHead(piece)).toContain(
-					'property="og:image" content="https://public.images.test/pieces/assets/cutover/share.png"'
+					`property="og:image" content="https://public.images.test${sharePath}"`
 				)
 				const dataResponse = await request(
 					'/__data.json?x-sveltekit-invalidated=11',
@@ -1362,10 +1374,8 @@ describe('stock pieces and configured site sections through production HTTP', ()
 					`rel="icon" href="${app_assets.replace(/\/+$/, '')}/images/favicon.png"`
 				)
 				const pieces = luzzle_assets.replace(/\/+$/, '')
-				expect(html).toContain(`src="${pieces}/pieces/assets/cutover/cover%20small.png"`)
-				expect(head).toContain(
-					`property="og:image" content="${pieces}/pieces/assets/cutover/share.png"`
-				)
+				expect(html).toContain(`src="${pieces}${coverPath}"`)
+				expect(head).toContain(`property="og:image" content="${pieces}${sharePath}"`)
 				// SeoHead renders page.url: canonical origin keeps its port, never url.app's prefix.
 				expect(head).toContain(`property="og:url" content="${requestOrigin}${piecePath}"`)
 				expect(html).toContain(app)
@@ -1580,13 +1590,16 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			expect(html).toContain(text)
 		expect(html).toContain('href="https://example.com/real-piece"')
 		expect(html).toContain('href="/tags/field-notes"')
-		expect(html).toContain('src="/pieces/assets/cutover/cover%20small.png"')
+		expect(html).toContain(`src="${coverPath}"`)
 		expect(html.indexOf('aria-label="Global"')).toBeLessThan(html.indexOf('<h1'))
-		const image = await request('/pieces/assets/cutover/cover%20small.png')
-		expect(image.status).toBe(200)
-		expect(Buffer.from(await image.arrayBuffer())).toEqual(
-			await readFile(path.join(webRoot, 'static/images/favicon.png'))
-		)
+		const bytes = await readFile(path.join(webRoot, 'static/images/favicon.png'))
+		// A single filename also matches /assets/[kind]/[filename]; the piece handler must win.
+		await writeFile(path.join(directory, 'assets/pieces/share.png'), bytes)
+		for (const pathname of [coverPath, sharePath]) {
+			const image = await request(pathname)
+			expect(image.status).toBe(200)
+			expect(Buffer.from(await image.arrayBuffer())).toEqual(bytes)
+		}
 	})
 
 	test('preserves anonymous admin redirects and private JSON denials', async () => {

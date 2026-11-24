@@ -3,7 +3,7 @@ import { expect, test } from './support/test.js'
 import { ADMIN, fieldGuide, notebook } from './support/fixture.js'
 
 const shareUrl = `${notebook.publishedUrl}/share`
-const imagePath = `/pieces/assets/${notebook.slug}/share%20image.png?v=${notebook.publishedAt}`
+const imagePath = `/assets/pieces/${notebook.slug}/share%20image.png?v=${notebook.publishedAt}`
 const previewImagePath = (job: string) =>
 	`/admin/preview/${job}/asset/${encodeURIComponent(fieldGuide.previewShareAsset)}`
 const pngLink = (page: Page, title: string) =>

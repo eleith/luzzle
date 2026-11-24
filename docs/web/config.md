@@ -22,8 +22,9 @@ paths resolve from `/app`, not `/app/config`:
 
 Web and worker need matching mounts. Set `url.app` to your public URL; it defaults
 to `${LUZZLE_APP_URL:-http://localhost:8080}`. Asset URLs default to same-origin;
-`url.app_assets` and `url.luzzle_assets` accept CDN prefixes. Framework JS/CSS
-stay same-origin. Use Compose service names for internal addresses.
+`url.app_assets` and `url.luzzle_assets` accept CDN prefixes. Published piece files
+use `<url.luzzle_assets or url.app>/assets/pieces/<path>`; private preview files
+and framework JS/CSS stay same-origin. Use Compose service names for internal addresses.
 
 Restart web and worker after config changes; no rebuild is needed.
 [Republish](templates.md#apply-your-choices) to regenerate OG images after OG template

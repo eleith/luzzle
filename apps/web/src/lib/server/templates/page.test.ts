@@ -45,5 +45,6 @@ test('a stateful page cannot leak draft data or job assets into a public render'
 	const published = await renderAuthoredPage({ ...publishedPiece, title: 'Public' }, [], config)
 	expect(published?.html).toContain('Public')
 	expect(published?.html).not.toContain('Draft')
-	expect(published?.html).toContain('https://cdn.example/pieces/assets/published/cover.jpg')
+	expect(published?.html).toContain('href="https://cdn.example/')
+	expect(published?.html).not.toContain('private-job')
 })

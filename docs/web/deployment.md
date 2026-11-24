@@ -55,6 +55,21 @@ Changes to `.env` or mounts require
 To update: back up your data, update `LUZZLE_VERSION` if pinned, then pull and
 start again.
 
+## Published file URLs
+
+Published images and attachments are served at `/assets/pieces/<path>`. When upgrading
+from `/pieces/assets/<path>`, update web, worker, and proxy together and [clear cached
+public pages](#clear-cached-public-pages). There is no redirect: `assets` is now a valid
+piece type under `/pieces/`. If you serve files from a separate CDN, expose the same
+relative files under the new URL prefix there too.
+
+Files, database asset paths, and private preview URLs do not move. Existing Open Graph
+PNGs work without regeneration. If your Markdown does not link to piece assets, no pieces
+need republishing. For each piece whose published Markdown HTML contains old asset URLs,
+use **More → Publish** in the source editor to regenerate it. Relative references in the
+source can stay as written; replace literal old URLs before publishing. Update external
+links separately.
+
 ## Clear cached public pages
 
 Restarting web or the proxy does not remove cached responses. The production

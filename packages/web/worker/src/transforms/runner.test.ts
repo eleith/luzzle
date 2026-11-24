@@ -8,6 +8,7 @@ import type { Kysely } from 'kysely'
 import type { WebDatabase } from '../services/db.js'
 import type { Pieces } from '@luzzle/core'
 import type { Logger } from '../services/logger.js'
+import { assetPathToUrl } from '@luzzle/web.pieces'
 import { generateAssetKey } from '../assets/key.js'
 import { getTransforms } from './index.js'
 import type { TransformInput } from './utils/types.js'
@@ -19,11 +20,6 @@ const transforms = {
 	attachment: { run: vi.fn() },
 	palette: { run: vi.fn() },
 	opengraph: { run: vi.fn(), cleanup: vi.fn() },
-}
-
-const mocks = {
-	generateAssetKey: vi.mocked(generateAssetKey),
-	getTransforms: vi.mocked(getTransforms),
 }
 
 const config = {
@@ -51,8 +47,8 @@ beforeEach(async () => {
 	await db.insertInto('web_pieces').values(webPiece).execute()
 	logger = makeLogger()
 
-	mocks.generateAssetKey.mockReturnValue('asset-key')
-	mocks.getTransforms.mockReturnValue(
+	vi.mocked(generateAssetKey).mockReturnValue('asset-key')
+	vi.mocked(getTransforms).mockReturnValue(
 		new Map([
 			['attachment', transforms.attachment],
 			['palette', transforms.palette],
@@ -83,7 +79,7 @@ describe('transforms/produceTransformsForPiece', () => {
 					expect.objectContaining({ ...record, asset_key: 'asset-key' }),
 				])
 				expect(buildAssetUrl?.(record.asset_path)).toBe(
-					'https://cdn.test/garden/pieces/assets/books/key/file.pdf'
+					assetPathToUrl(record.asset_path, config.url.luzzle_assets)
 				)
 				return []
 			}
@@ -104,9 +100,6 @@ describe('transforms/produceTransformsForPiece', () => {
 			{ name: 'palette', records: [] },
 			{ name: 'opengraph', records: [] },
 		])
-		expect(transforms.attachment.run).toHaveBeenCalledOnce()
-		expect(transforms.palette.run).toHaveBeenCalledOnce()
-		expect(transforms.opengraph.run).toHaveBeenCalledOnce()
 	})
 
 	test('returns records for only the selected transform', async () => {

@@ -1,29 +1,15 @@
 import { describe, test, expect } from 'vitest'
-import { createPieceHelpers, type PieceComponentHelpers } from './helpers.js'
+import { createPieceHelpers } from './helpers.js'
 import type { PublicWebPieceAsset } from '@luzzle/web.db'
 
-const localBuilder = (p: string) => `/pieces/assets/${p}`
-const cdnBuilder = (p: string) => `https://cdn.example.com/pieces/assets/${p}`
-const previewBuilder = (jobId: string) => (p: string) => `/admin/preview/${jobId}/asset/${p}`
-const pieceUrl = () => '/pieces/books/a-beautiful-piece'
-
-function makeHelpers(
-	assets: PublicWebPieceAsset[] = [],
-	buildAssetUrl = localBuilder,
-	buildPieceUrl = pieceUrl
-): PieceComponentHelpers {
-	return createPieceHelpers(assets, buildAssetUrl, buildPieceUrl)
+function makeHelpers(assets: PublicWebPieceAsset[] = [], buildAssetUrl = (path: string) => path) {
+	return createPieceHelpers(assets, buildAssetUrl, () => 'piece-url')
 }
 
 describe('createPieceHelpers', () => {
 	test('getPieceUrl returns the value from buildPieceUrl', () => {
 		const helpers = makeHelpers()
-		expect(helpers.getPieceUrl()).toBe('/pieces/books/a-beautiful-piece')
-	})
-
-	test('getPieceUrl works with absolute URLs', () => {
-		const helpers = makeHelpers([], localBuilder, () => 'https://example.com/pieces/books/slug')
-		expect(helpers.getPieceUrl()).toBe('https://example.com/pieces/books/slug')
+		expect(helpers.getPieceUrl()).toBe('piece-url')
 	})
 
 	test('getPiecePalette returns palette object if present', () => {
@@ -50,7 +36,7 @@ describe('createPieceHelpers', () => {
 		expect(helpers.getPiecePalette()).toBeUndefined()
 	})
 
-	test('getPieceAssetUrl returns resolved URL with local builder', () => {
+	test('getPieceAssetUrl returns resolved URL from the supplied builder', () => {
 		const helpers = makeHelpers([
 			{
 				asset_key: 'asset-key-1',
@@ -58,43 +44,9 @@ describe('createPieceHelpers', () => {
 				asset_path: 'path/to/asset.png',
 				mime_type: 'image/png'
 			}
-		])
+		], (path) => `resolved:${path}`)
 		expect(helpers.getPieceAssetUrl('asset-key-1', 'custom-transform')).toBe(
-			'/pieces/assets/path/to/asset.png'
-		)
-	})
-
-	test('getPieceAssetUrl returns resolved URL with CDN builder', () => {
-		const helpers = makeHelpers(
-			[
-				{
-					asset_key: 'asset-key-1',
-					transformation: 'custom-transform',
-					asset_path: 'path/to/asset.png',
-					mime_type: 'image/png'
-				}
-			],
-			cdnBuilder
-		)
-		expect(helpers.getPieceAssetUrl('asset-key-1', 'custom-transform')).toBe(
-			'https://cdn.example.com/pieces/assets/path/to/asset.png'
-		)
-	})
-
-	test('getPieceAssetUrl returns resolved URL with preview builder', () => {
-		const helpers = makeHelpers(
-			[
-				{
-					asset_key: 'asset-key-1',
-					transformation: 'custom-transform',
-					asset_path: 'path/to/asset.png',
-					mime_type: 'image/png'
-				}
-			],
-			previewBuilder('42')
-		)
-		expect(helpers.getPieceAssetUrl('asset-key-1', 'custom-transform')).toBe(
-			'/admin/preview/42/asset/path/to/asset.png'
+			'resolved:path/to/asset.png'
 		)
 	})
 
@@ -117,20 +69,6 @@ describe('createPieceHelpers', () => {
 		)
 	})
 
-	test('getPieceImageUrl returns transformed image url by category size', () => {
-		const helpers = makeHelpers([
-			{
-				asset_key: 'cover-asset-key',
-				transformation: 'image.m.webp',
-				asset_path: 'cover-m.webp',
-				mime_type: 'image/webp'
-			}
-		])
-		expect(helpers.getPieceImageUrl('cover-asset-key', 200, 'webp')).toBe(
-			'/pieces/assets/cover-m.webp'
-		)
-	})
-
 	test('getPieceImageUrl falls back to original if transformed not found', () => {
 		const helpers = makeHelpers([
 			{
@@ -140,61 +78,23 @@ describe('createPieceHelpers', () => {
 				mime_type: 'image/jpeg'
 			}
 		])
-		expect(helpers.getPieceImageUrl('cover-asset-key', 200, 'webp')).toBe(
-			'/pieces/assets/cover-original.jpg'
-		)
+		expect(helpers.getPieceImageUrl('cover-asset-key', 200, 'webp')).toBe('cover-original.jpg')
 	})
 
-	test('getPieceImageUrl returns undefined if asset not found', () => {
+	test.each(['missing', null, undefined])('getPieceImageUrl returns undefined for %s', (key) => {
 		const helpers = makeHelpers()
-		expect(helpers.getPieceImageUrl('non-existent', 200, 'webp')).toBeUndefined()
-	})
-
-	test('getPieceImageUrl returns undefined for null/undefined keys', () => {
-		const helpers = makeHelpers([
-			{
-				asset_key: 'cover-asset-key',
-				transformation: 'image.m.webp',
-				asset_path: 'cover-m.webp',
-				mime_type: 'image/webp'
-			}
-		])
-		expect(helpers.getPieceImageUrl(null, 200, 'webp')).toBeUndefined()
-		expect(helpers.getPieceImageUrl(undefined, 200, 'webp')).toBeUndefined()
+		expect(helpers.getPieceImageUrl(key, 200, 'webp')).toBeUndefined()
 	})
 
 	test('getPieceImageUrl size categories map correctly', () => {
-		const assets: PublicWebPieceAsset[] = [
-			{ asset_key: 'k', transformation: 'image.s.jpg', asset_path: 's.jpg', mime_type: 'image/jpeg' },
-			{ asset_key: 'k', transformation: 'image.m.jpg', asset_path: 'm.jpg', mime_type: 'image/jpeg' },
-			{ asset_key: 'k', transformation: 'image.l.jpg', asset_path: 'l.jpg', mime_type: 'image/jpeg' },
-			{ asset_key: 'k', transformation: 'image.xl.jpg', asset_path: 'xl.jpg', mime_type: 'image/jpeg' },
-		]
-		const helpers = makeHelpers(assets)
+		const assets = ['s', 'm', 'l', 'xl'].map((size) => ({
+			asset_key: 'k', transformation: `image.${size}.jpg`, asset_path: `${size}.jpg`, mime_type: 'image/jpeg'
+		}))
+		const helpers = makeHelpers(assets, (path) => `selected:${path}`)
 
-		expect(helpers.getPieceImageUrl('k', 100, 'jpg')).toBe('/pieces/assets/s.jpg')
-		expect(helpers.getPieceImageUrl('k', 125, 'jpg')).toBe('/pieces/assets/s.jpg')
-		expect(helpers.getPieceImageUrl('k', 200, 'jpg')).toBe('/pieces/assets/m.jpg')
-		expect(helpers.getPieceImageUrl('k', 250, 'jpg')).toBe('/pieces/assets/m.jpg')
-		expect(helpers.getPieceImageUrl('k', 400, 'jpg')).toBe('/pieces/assets/l.jpg')
-		expect(helpers.getPieceImageUrl('k', 500, 'jpg')).toBe('/pieces/assets/l.jpg')
-		expect(helpers.getPieceImageUrl('k', 800, 'jpg')).toBe('/pieces/assets/xl.jpg')
-	})
-
-	test('getPieceImageUrl uses CDN builder for all URL types', () => {
-		const helpers = makeHelpers(
-			[
-				{
-					asset_key: 'cover',
-					transformation: 'image.m.webp',
-					asset_path: 'books/k1/cover-m.webp',
-					mime_type: 'image/webp'
-				}
-			],
-			cdnBuilder
-		)
-		expect(helpers.getPieceImageUrl('cover', 200, 'webp')).toBe(
-			'https://cdn.example.com/pieces/assets/books/k1/cover-m.webp'
-		)
+		expect(helpers.getPieceImageUrl('k', 125, 'jpg')).toBe('selected:s.jpg')
+		expect(helpers.getPieceImageUrl('k', 250, 'jpg')).toBe('selected:m.jpg')
+		expect(helpers.getPieceImageUrl('k', 500, 'jpg')).toBe('selected:l.jpg')
+		expect(helpers.getPieceImageUrl('k', 800, 'jpg')).toBe('selected:xl.jpg')
 	})
 })

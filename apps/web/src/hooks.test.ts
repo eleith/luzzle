@@ -17,6 +17,8 @@ function route(url: URL) {
 }
 
 test.each([
+	['/pieces/assets', '/templates/icon/default/assets'],
+	['/pieces/assets/image.png', '/templates/page/default/assets/image.png'],
 	['/pieces/books', '/templates/icon/poster/books'],
 	['/pieces/books/', '/templates/icon/poster/books'],
 	['/pieces/field%20notes', '/templates/icon/lined-notebook-paper/field%20notes'],
@@ -40,9 +42,6 @@ test.each([
 	'/pieces/unknown/slug',
 	'/pieces/owner-designed/title',
 	'/pieces/toString',
-	'/pieces/assets',
-	'/pieces/%61ssets/',
-	'/pieces/assets/image.png',
 	'/%E0%A4%A/books/title',
 	'/pieces/%E0%A4%A',
 	'/pieces/%E0%A4%A/slug',

@@ -99,7 +99,7 @@ export const OpengraphImageHeight = 630
 
 export function createPieceHelpers(
 	assets: PublicWebPieceAsset[],
-	buildAssetUrl: (assetPath: string) => string,
+	buildAssetUrl: (assetPath: string) => string | undefined,
 	buildPieceUrl: () => string
 ): PieceComponentHelpers {
 	const getPiecePalette = () => {
@@ -132,7 +132,8 @@ export function createPieceHelpers(
 			const matched = assets.filter((asset) => asset.asset_key === assetKey)
 
 			const transformed = matched.find((a) => a.transformation === transformation)?.asset_path
-			if (transformed) return buildAssetUrl(transformed)
+			const transformedUrl = transformed && buildAssetUrl(transformed)
+			if (transformedUrl) return transformedUrl
 
 			const original = matched.find((a) => a.transformation === 'image.original')?.asset_path
 			if (original) return buildAssetUrl(original)

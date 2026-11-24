@@ -18,7 +18,6 @@ export const reroute: Reroute = ({ url }) => {
 		return // Let Kit handle malformed URLs.
 	}
 
-	if (type === 'assets') return
 	if (encodedSlug) {
 		if (Object.hasOwn(pageTemplates, type)) {
 			return `/templates/page/${pageTemplates[type]}/${encodedType}/${encodedSlug}`

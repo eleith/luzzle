@@ -20,7 +20,7 @@ export function assetPathToUrl(
 ): string | undefined {
 	const encoded = encodeAssetPath(assetPath)
 	if (!encoded) return undefined
-	return joinAssetUrl(`pieces/assets/${encoded}`, base)
+	return joinAssetUrl(`assets/pieces/${encoded}`, base)
 }
 
 export function previewOutputUrl(path: string, job: string): string | undefined {

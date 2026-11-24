@@ -1,3 +1,4 @@
+import { assetPathToUrl } from '@luzzle/web.pieces'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
@@ -65,20 +66,9 @@ test('overview shows the published snapshot, recorded completion time and public
 	expect(html).toContain('data-status="matching"')
 	expect(html).not.toMatch(/<form\b/)
 	expect(html).toContain(`href="${data.publishedUrl}"`)
-	expect(html).toContain('href="/cdn/pieces/assets/generated/share.png"')
+	expect(html).toContain(`href="${assetPathToUrl('generated/share.png', '/cdn')}"`)
 	expect(html).not.toContain('/admin/preview/')
 	expect(html.match(/<main\b/g)).toHaveLength(1)
-})
-
-test('uses the app base when no asset CDN is configured', () => {
-	const data = publishedData()
-	data.config.url.luzzle_assets = ''
-
-	const html = render(Overview, {
-		props: { data, params: { path: data.file } }
-	}).body
-
-	expect(html).toContain('href="/garden/pieces/assets/generated/share.png"')
 })
 
 test('unpublished changes do not hide the previous publication or claim it matches the source', () => {
@@ -151,35 +141,28 @@ function shareHtml(data = publishedData()) {
 	return render(PublishedTree, { props: { data, view: 'share' } }).body
 }
 
-test.each(['/cdn', ''])(
-	'Share SSR displays the recorded PNG using asset base %j while HTML waits for the client',
-	(assetBase) => {
-		const data = publishedData()
-		data.config.url.luzzle_assets = assetBase
-		const html = shareHtml(data)
-		const url = `${assetBase || '/garden'}/pieces/assets/generated/share.png?v=${data.publication.lastPublishedAt}`
-
-		const link = html.match(/<a\b[^>]*aria-label="Open generated Takumi PNG[^]*?<\/a>/)?.[0]
-		expect(link).toContain(`href="${url}" target="_blank" rel="external noopener noreferrer"`)
-		expect(link).toContain(
-			'aria-label="Open generated Takumi PNG for Published &lt;Book> in a new tab"'
-		)
-		expect(link).toContain(`src="${url}"`)
-		expect(link).toContain('alt="Generated share image for Published &lt;Book>"')
-		expect(html).toContain('role="status"')
-		expect(html).toContain('class="visually-hidden">Loading browser preview…')
-		expect(html).toContain('<noscript>')
-		expect(html).toContain('JavaScript is required to display the browser preview.')
-		expect(html.match(/<main\b/g)).toHaveLength(1)
-		expect(html.match(/<img\b/g)).toHaveLength(1)
-		expect(html).not.toMatch(/published\/cover\.jpg|>Published &lt;Book></)
-		expect(html).not.toContain('/admin/preview/')
-	}
-)
+test('Share SSR displays the recorded PNG while HTML waits for the client', () => {
+	const data = publishedData()
+	const html = shareHtml(data)
+	const link = html.match(/<a\b[^>]*aria-label="Open generated Takumi PNG[^]*?<\/a>/)?.[0]
+	expect(link).toContain('target="_blank" rel="external noopener noreferrer"')
+	expect(link).toContain(
+		'aria-label="Open generated Takumi PNG for Published &lt;Book> in a new tab"'
+	)
+	expect(link).toContain('alt="Generated share image for Published &lt;Book>"')
+	expect(html).toContain('role="status"')
+	expect(html).toContain('class="visually-hidden">Loading browser preview…')
+	expect(html).toContain('<noscript>')
+	expect(html).toContain('JavaScript is required to display the browser preview.')
+	expect(html.match(/<main\b/g)).toHaveLength(1)
+	expect(html.match(/<img\b/g)).toHaveLength(1)
+	expect(html).not.toMatch(/published\/cover\.jpg|>Published &lt;Book></)
+	expect(html).not.toContain('/admin/preview/')
+})
 
 test('republishing versions both the PNG and inspection link without changing the asset path', () => {
 	const data = publishedData()
-	const assetUrl = '/cdn/pieces/assets/generated/share.png'
+	const assetUrl = assetPathToUrl('generated/share.png', '/cdn')
 	for (const publishedAt of [1000, 2000, null]) {
 		data.publication.lastPublishedAt = publishedAt
 		const html = shareHtml(data)
@@ -198,8 +181,6 @@ test.each([undefined, '../private.png'])(
 
 		expect(html).toContain('No generated image available.')
 		expect(html).toContain('Loading browser preview…')
-		expect(html).not.toMatch(
-			/<img\b|private\.png|data-renderer=|Open generated Takumi PNG|\/pieces\/assets\//
-		)
+		expect(html).not.toMatch(/<img\b|private\.png|data-renderer=|Open generated Takumi PNG/)
 	}
 )

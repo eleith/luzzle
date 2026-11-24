@@ -20,16 +20,19 @@ test.each([
 ])('invalid recorded path %j remains unlinked', (path) => {
 	expect(encodeAssetPath(path)).toBeUndefined()
 	expect(assetPathToUrl(path, '/garden')).toBeUndefined()
+	if (typeof path === 'string') expect(previewOutputUrl(path, 'job')).toBeUndefined()
 })
 
-test.each(['', '/garden/', 'https://cdn.test/prefix/?old=1#fragment'])(
+test.each([
+	['', ''],
+	['/garden/', '/garden'],
+	['https://cdn.test/prefix/?old=1#fragment', 'https://cdn.test/prefix']
+])(
 	'public URL conversion still preserves base %s and encodes raw segments once',
-	(base) => {
+	(base, prefix) => {
 		const path = 'files/雪 #?%2e%2e <file>.pdf'
 		const encoded = 'files/%E9%9B%AA%20%23%3F%252e%252e%20%3Cfile%3E.pdf'
-		expect(encodeAssetPath(path)).toBe(encoded)
-		const prefix = base.startsWith('https:') ? 'https://cdn.test/prefix' : base.replace(/\/$/, '')
-		expect(assetPathToUrl(path, base)).toBe(`${prefix}/pieces/assets/${encoded}`)
+		expect(assetPathToUrl(path, base)).toBe(`${prefix}/assets/pieces/${encoded}`)
 	}
 )
 
@@ -50,22 +53,6 @@ test.each(['out.png', 'nested/preview/admin/piece/file.txt', '%2e%2e/file%20name
 		)
 	}
 )
-
-test.each([
-	'../x',
-	'a/../x',
-	'/x',
-	'//host/x',
-	'https://host/x',
-	'javascript:x',
-	'x\\y',
-	'',
-	' ',
-	'a//x',
-	'a/./x'
-])('unsafe output path %j never creates a Preview URL', (path) => {
-	expect(previewOutputUrl(path, 'job')).toBeUndefined()
-})
 
 test.each(['', '.', '..', 'a/b', 'a\\b', ' ', 'https://host/job'])(
 	'invalid job %j cannot alter the asset namespace',

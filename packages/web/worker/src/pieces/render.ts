@@ -3,7 +3,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { render } from 'svelte/server'
 import { ImageResponse } from 'takumi-js/response'
-import { createPieceHelpers } from '@luzzle/web.pieces'
+import { assetPathToUrl, createPieceHelpers } from '@luzzle/web.pieces'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { mapOpengraphTemplate } from '@luzzle/web.templates/pieces/fields'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
@@ -12,7 +12,6 @@ import { readConfiguredAsset } from '@luzzle/web.config/assets'
 
 const OpengraphImageWidth = 1200
 const OpengraphImageHeight = 630
-const PIECES_ASSETS_PREFIX = '/pieces/assets/'
 
 async function readFont(config: TemplateConfig): Promise<Buffer | null> {
 	const source = config.content.fonts.sans
@@ -48,7 +47,7 @@ async function loadStaticAssets(config: TemplateConfig) {
 	}
 }
 
-function loadLocalImageResources(body: string, assetsDir: string) {
+function loadLocalImageResources(body: string, assetsDir: string, pathsByUrl: Map<string, string>) {
 	const urls = new Set<string>()
 	for (const m of body.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)) {
 		urls.add(m[1])
@@ -56,11 +55,9 @@ function loadLocalImageResources(body: string, assetsDir: string) {
 
 	const resources: { src: string; data: Buffer }[] = []
 	for (const url of urls) {
-		if (!url.startsWith(PIECES_ASSETS_PREFIX)) continue
-		const diskPath = path.join(
-			assetsDir,
-			decodeURIComponent(url.slice(PIECES_ASSETS_PREFIX.length))
-		)
+		const assetPath = pathsByUrl.get(url)
+		if (!assetPath) continue
+		const diskPath = path.join(assetsDir, assetPath)
 		try {
 			resources.push({ src: url, data: readFileSync(diskPath) })
 		} catch (err) {
@@ -76,15 +73,22 @@ async function renderOpengraphHtml(
 	config: TemplateConfig
 ) {
 	const pieceConfig = config.pieces.find((entry) => entry.type === piece.type)
+	// Resolve rendered image URLs only to the validated paths used to produce them.
+	const pathsByUrl = new Map<string, string>()
 	const helpers = createPieceHelpers(
 		assets,
-		(p) => `${PIECES_ASSETS_PREFIX}${p.split('/').map(encodeURIComponent).join('/')}`,
+		(assetPath) => {
+			const url = assetPathToUrl(assetPath, '')
+			if (url) pathsByUrl.set(url, assetPath)
+			return url
+		},
 		() => `/pieces/${piece.type}/${piece.slug}`
 	)
 	const template = mapOpengraphTemplate(piece, pieceConfig)
 	const { getCompiledOpengraphModule } = await import('./compile.js')
 	const component = await getCompiledOpengraphModule(template.name)
-	return render(component.default, { props: { piece, fields: template.fields, helpers } })
+	const rendered = render(component.default, { props: { piece, fields: template.fields, helpers } })
+	return { rendered, pathsByUrl }
 }
 
 function prepareTakumiMarkup(rendered: { body: string; head: string }) {
@@ -114,8 +118,13 @@ export async function renderOpengraphPng(
 		generateThemeCss(config),
 		':root { font-size: calc(var(--font-size-root) * 1px); }',
 	]
-	const markup = prepareTakumiMarkup(await renderOpengraphHtml(piece, assets, config))
-	const fetchedResources = loadLocalImageResources(markup.body, getAssetsDirectory(config, outDir))
+	const { rendered, pathsByUrl } = await renderOpengraphHtml(piece, assets, config)
+	const markup = prepareTakumiMarkup(rendered)
+	const fetchedResources = loadLocalImageResources(
+		markup.body,
+		getAssetsDirectory(config, outDir),
+		pathsByUrl
+	)
 	const globals = config.theme?.globals || {}
 	const fontName =
 		(globals['font-sans-name'] as string | undefined)?.replace(/['"]/g, '') || 'Noto Sans'

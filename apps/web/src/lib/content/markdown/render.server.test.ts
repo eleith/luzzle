@@ -14,11 +14,8 @@ test('raw HTML is text, not an active HTML override', () => {
 	expect(html).toContain('&lt;script&gt;')
 })
 
-test('rejects dangerous link protocols and preserves ordinary public asset URLs', () => {
+test('rejects dangerous link protocols and permits relative links', () => {
 	expect(renderMarkdown('[bad](javascript:alert(1))')).toContain('href=""')
-	expect(renderMarkdown('![Cover](/pieces/assets/cover.png)')).toContain(
-		'src="/pieces/assets/cover.png"'
-	)
 	expect(renderMarkdown('[relative](other.html)')).toContain('href="other.html"')
 })
 

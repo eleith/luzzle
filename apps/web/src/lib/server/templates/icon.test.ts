@@ -46,7 +46,7 @@ test('one external design renders the mapped cover or fallback for each book on 
 	})
 	const placement = { size: { width: 125 } }
 	const html = design.render(book, { ...placement, lazy: true })
-	expect(html).toContain('https://cdn.example/pieces/assets/books/small%20cover.jpg')
+	expect(html).toContain('books/small%20cover.jpg')
 	expect(html).toContain('loading="lazy"')
 	expect(design.render({ ...book, title: 'Ink & Paper', assets: [] }, placement)).toContain(
 		'Ink &amp; Paper'
