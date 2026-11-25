@@ -1,6 +1,6 @@
 import { render } from 'svelte/server'
 import { expect, test, vi } from 'vitest'
-import { mapPieceTemplates } from '@luzzle/web.templates/pieces/fields'
+import { attachDefaultTemplateData } from '@luzzle/web.templates/pieces/fields'
 import { publishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
 import PieceGrid from './PieceGrid.svelte'
 
@@ -11,7 +11,7 @@ vi.mock('$app/state', () => ({
 }))
 
 const pieces = ['first', 'second', 'third'].map((id) =>
-	mapPieceTemplates({ ...publishedPiece, id, slug: id, title: id })
+	attachDefaultTemplateData({ ...publishedPiece, id, slug: id, title: id })
 )
 const data = { pieces, page: 1, nextPage: null, year: null }
 

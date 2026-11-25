@@ -2,7 +2,7 @@ import { getPieceConfig } from '@luzzle/web.config'
 import { db } from '#lib/server/database/index.js'
 import type { WebPieces, WebPiecesAsset } from '@luzzle/web.db'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
-import { mapPieceTemplates, type TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
+import { attachDefaultTemplateData, type TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 import { config } from '#lib/server/config.js'
 
 type WebPiece = WebPieces & { assets: WebPiecesAsset[] }
@@ -47,8 +47,8 @@ export async function hydratePublicPiece(piece: WebPieces): Promise<PublicWebPie
 	return toPublicPiece(piece, await fetchAssets([piece.file_path]))
 }
 
-export function withPieceTemplates(piece: PublicWebPiece): TemplatedPiece {
-	return mapPieceTemplates(piece, getPieceConfig(config.pieces, piece.type))
+export function withDefaultTemplateData(piece: PublicWebPiece): TemplatedPiece {
+	return attachDefaultTemplateData(piece, getPieceConfig(config.pieces, piece.type))
 }
 
 export async function hydrateWithAssets(piece: WebPieces): Promise<TemplatedPiece>
@@ -66,7 +66,7 @@ export async function hydrateWithAssets(
 	const groupedAssets = Object.groupBy(assets, (asset) => asset.piece_file_path)
 
 	const hydrated = pieces.map((piece) =>
-		withPieceTemplates(toPublicPiece(piece, groupedAssets[piece.file_path] ?? []))
+		withDefaultTemplateData(toPublicPiece(piece, groupedAssets[piece.file_path] ?? []))
 	)
 
 	return isArray ? hydrated : hydrated[0]

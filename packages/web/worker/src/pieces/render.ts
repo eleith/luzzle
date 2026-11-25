@@ -5,7 +5,7 @@ import { createRequire } from 'node:module'
 import { ImageResponse } from 'takumi-js/response'
 import { assetPathToUrl, createPieceHelpers, publicPieceHref } from '@luzzle/web.pieces'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
-import { mapOpengraphTemplate } from '@luzzle/web.templates/pieces/fields'
+import { mapDefaultOpengraphFields } from '@luzzle/web.templates/pieces/fields'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 import { generateThemeCss } from '@luzzle/web.theme'
 import { readConfiguredAsset } from '@luzzle/web.config/assets'
@@ -83,7 +83,7 @@ async function renderOpengraphHtml(
 		const { html, css } = await renderAuthoredOpengraph(cache, selection, piece, helpers)
 		return { html, css, pathsByUrl }
 	}
-	const { fields } = mapOpengraphTemplate(piece, pieceConfig)
+	const fields = mapDefaultOpengraphFields(piece, pieceConfig)
 	const { html, css } = await renderOpengraphFile(cache, defaultOpengraphFile, piece, fields, helpers)
 	return { html, css, pathsByUrl }
 }

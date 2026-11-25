@@ -26,54 +26,54 @@ export interface PieceTemplateData {
 
 export type TemplatedPiece = PublicWebPiece & { templates: PieceTemplateData };
 
-function mapRole<Schema extends TObject>(
+function mapDefaultFields<Schema extends TObject>(
 	role: Role,
-	fields: Schema,
+	fieldSchema: Schema,
 	piece: PublicWebPiece,
 	config?: PieceConfig
-): TemplateData<Static<Schema>> {
-	const mapping = fallbackMapping(config?.templates?.[role], fields);
+): Static<Schema> {
+	const mapping = fallbackMapping(config?.templates?.[role], fieldSchema);
 	try {
-		return {
-			name: 'default',
-			fields: mapTemplateFields(fields, piece.metadata, mapping)
-		};
+		return mapTemplateFields(fieldSchema, piece.metadata, mapping);
 	} catch (error) {
 		if (!(error instanceof TemplateFieldsError)) throw error;
 		console.warn(
-			`Invalid ${role} template fields for ${piece.type}/${piece.slug}: ${error.message}`
+			`Invalid default ${role} template fields for ${piece.type}/${piece.slug}: ${error.message}`
 		);
-		return { name: 'default', fields: mapTemplateFields(fields, {}, {}) };
+		return mapTemplateFields(fieldSchema, {}, {});
 	}
 }
 
 function fallbackMapping(
 	selection: { file?: string; mapping?: FieldMappings } | undefined,
-	fields: TObject
+	fieldSchema: TObject
 ): FieldMappings | undefined {
 	// The built-in fallback must not evaluate bindings used only by the local file.
 	if (!selection?.file || !selection.mapping) return selection?.mapping;
 	return Object.fromEntries(
-		Object.entries(selection.mapping).filter(([key]) => Object.hasOwn(fields.properties, key))
+		Object.entries(selection.mapping).filter(([key]) => Object.hasOwn(fieldSchema.properties, key))
 	);
 }
 
 /** Worker OG rendering does not evaluate icon/page bindings. */
-export function mapOpengraphTemplate(
+export function mapDefaultOpengraphFields(
 	piece: PublicWebPiece,
 	config?: PieceConfig
-): PieceTemplateData['opengraph'] {
-	return mapRole('opengraph', opengraph.fields, piece, config);
+): OpengraphFields {
+	return mapDefaultFields('opengraph', opengraph.fields, piece, config);
 }
 
 /** Keep config/selector expressions on the server; clients receive only public field values. */
-export function mapPieceTemplates(piece: PublicWebPiece, config?: PieceConfig): TemplatedPiece {
+export function attachDefaultTemplateData(
+	piece: PublicWebPiece,
+	config?: PieceConfig
+): TemplatedPiece {
 	return {
 		...piece,
 		templates: {
-			icon: mapRole('icon', icon.fields, piece, config),
-			page: mapRole('page', page.fields, piece, config),
-			opengraph: mapOpengraphTemplate(piece, config)
+			icon: { name: 'default', fields: mapDefaultFields('icon', icon.fields, piece, config) },
+			page: { name: 'default', fields: mapDefaultFields('page', page.fields, piece, config) },
+			opengraph: { name: 'default', fields: mapDefaultOpengraphFields(piece, config) }
 		}
 	};
 }

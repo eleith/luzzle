@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mapPieceTemplates, mapOpengraphTemplate } from '@luzzle/web.templates/pieces/fields';
+import {
+	attachDefaultTemplateData,
+	mapDefaultOpengraphFields
+} from '@luzzle/web.templates/pieces/fields';
 
 function piece() {
 	return {
@@ -44,7 +47,7 @@ const config = {
 
 test('independent defaults receive independent fields from arbitrary metadata', () => {
 	const source = piece();
-	const result = mapPieceTemplates(source, config);
+	const result = attachDefaultTemplateData(source, config);
 	assert.deepEqual(result.templates.icon.fields, { image: 'thumb-key' });
 	assert.deepEqual(result.templates.page.fields, { image: 'cover-key', people: [{ name: 'Ada' }] });
 	assert.deepEqual(result.templates.opengraph.fields, {
@@ -59,7 +62,7 @@ test('independent defaults receive independent fields from arbitrary metadata', 
 test('missing mappings do not guess poster metadata names', () => {
 	const source = piece();
 	source.metadata.poster = 'not-implicitly-selected';
-	const result = mapPieceTemplates(source);
+	const result = attachDefaultTemplateData(source);
 	for (const role of ['icon', 'page', 'opengraph']) {
 		assert.equal(result.templates[role].name, 'default');
 		assert.deepEqual(result.templates[role].fields, {});
@@ -70,7 +73,7 @@ test('invalid mapped values fall back only for the affected role', (t) => {
 	t.mock.method(console, 'warn', () => {});
 	const source = piece();
 	source.metadata.art.thumbnail = 42;
-	const result = mapPieceTemplates(source, config);
+	const result = attachDefaultTemplateData(source, config);
 	assert.deepEqual(result.templates.icon.fields, {});
 	assert.equal(result.templates.page.fields.image, 'cover-key');
 	assert.equal(result.templates.opengraph.fields.image, 'share-key');
@@ -88,13 +91,13 @@ test('worker OG mapping does not evaluate unrelated page bindings', (t) => {
 			}
 		}
 	};
-	assert.equal(mapOpengraphTemplate(piece(), unrelated).fields.image, 'share-key');
+	assert.equal(mapDefaultOpengraphFields(piece(), unrelated).image, 'share-key');
 	assert.equal(warning.mock.callCount(), 0);
 });
 
 for (const role of ['icon', 'page', 'opengraph']) {
 	test(`file-backed ${role} exposes only the generic fallback and its fields`, () => {
-		const result = mapPieceTemplates(piece(), {
+		const result = attachDefaultTemplateData(piece(), {
 			...config,
 			templates: {
 				...config.templates,

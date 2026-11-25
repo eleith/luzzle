@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest'
-import { mapPieceTemplates } from '@luzzle/web.templates/pieces/fields'
+import { attachDefaultTemplateData } from '@luzzle/web.templates/pieces/fields'
 import { publishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
 import { loadPieceListing } from '#lib/server/load/pieces.js'
 import { loadPublishedIcon } from '#lib/server/templates/icon.js'
@@ -13,7 +13,7 @@ test('a failed icon leaves a fallback slot without shifting the following pieceâ
 	onTestFinished
 }) => {
 	const pieces = ['first', 'broken', 'last'].map((slug) =>
-		mapPieceTemplates({ ...publishedPiece, id: slug, slug })
+		attachDefaultTemplateData({ ...publishedPiece, id: slug, slug })
 	)
 	const listing = { pieces, page: 1, nextPage: null, year: null }
 	vi.mocked(loadPieceListing).mockResolvedValue(listing)
