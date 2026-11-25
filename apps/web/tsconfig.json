@@ -8,7 +8,7 @@
 	"include": [
 		"src",
 		"scripts/**/*.test.ts",
-		"test/templates/**/*.ts",
+		"test/http/**/*.ts",
 		"e2e/**/*.ts",
 		"playwright.config.ts",
 		"vite.config.ts",

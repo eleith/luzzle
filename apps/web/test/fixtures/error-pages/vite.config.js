@@ -11,8 +11,8 @@ export default defineConfig({
 	plugins: [
 		sveltekit({
 			compilerOptions: { experimental: { async: true } },
-			adapter: adapter({ out: process.env.TEMPLATE_BUILD_DIR }),
-			outDir: process.env.TEMPLATE_KIT_DIR,
+			adapter: adapter({ out: process.env.FIXTURE_BUILD_DIR }),
+			outDir: process.env.FIXTURE_KIT_DIR,
 			csp: {
 				mode: 'auto',
 				directives: {

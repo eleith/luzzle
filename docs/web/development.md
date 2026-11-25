@@ -131,8 +131,8 @@ a real SQLite index, not your demo or live data. Preview/Publish job requests ar
 intercepted. It runs no worker, LSP or external identity/storage services and does
 not prove live publication.
 
-GitHub and Woodpecker reuse the app build from `test:templates` in their existing
-test jobs. Both use the prebuilt Playwright image used by When/Directory: GHCR on
+`test:http` checks HTTP responses against local production builds. GitHub and
+Woodpecker reuse the app build for the browser tests. Both use the prebuilt Playwright image used by When/Directory: GHCR on
 GitHub, the Gitea mirror on Woodpecker. Keep the image/browser version aligned with
 `@playwright/test`. Failed journeys retain traces, screenshots and server logs
 under `apps/web/test-results`; GitHub uploads those artifacts. There is no second

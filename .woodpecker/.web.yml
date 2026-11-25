@@ -68,7 +68,7 @@ steps:
       - npm install --global corepack@latest
       - corepack enable
       - pnpm --filter @luzzle/web test
-      - pnpm --filter @luzzle/web test:templates
+      - pnpm --filter @luzzle/web test:http
       - pnpm --filter @luzzle/web test:e2e
 
   check-version:

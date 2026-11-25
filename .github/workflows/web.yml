@@ -75,8 +75,8 @@ jobs:
       - name: Test
         run: pnpm run test
 
-      - name: Built-in template HTTP/SSR integration
-        run: pnpm run test:templates
+      - name: HTTP integration tests
+        run: pnpm run test:http
 
       - name: Browser tests
         # The HTTP integration suite already built the real app from this checkout.

@@ -17,7 +17,7 @@
     "lint": "prettier --check . && prettier --config .prettierrc --check '../../packages/web/templates/src/**/*.svelte' && eslint .",
     "format": "prettier --write .",
     "test": "vitest run --silent",
-    "test:templates": "vitest run --config vitest.templates.config.ts --silent",
+    "test:http": "vitest run --config vitest.http.config.ts --silent",
     "test:e2e": "playwright test"
   },
   "engines": {

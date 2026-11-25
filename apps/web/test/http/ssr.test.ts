@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 const exec = promisify(execFile)
-const fixture = fileURLToPath(new URL('../fixtures/templates/', import.meta.url))
+const fixture = fileURLToPath(new URL('../fixtures/error-pages/', import.meta.url))
 const webRoot = fileURLToPath(new URL('../../', import.meta.url))
 let directory: string
 let configFilename: string
@@ -39,7 +39,7 @@ async function request(route = '') {
 beforeAll(async () => {
 	const cache = path.join(webRoot, 'node_modules/.cache')
 	await mkdir(cache, { recursive: true })
-	directory = await mkdtemp(path.join(cache, 'template-ssr-'))
+	directory = await mkdtemp(path.join(cache, 'error-page-ssr-'))
 	configFilename = path.join(directory, 'config.yaml')
 	await writeFile(
 		configFilename,
@@ -51,8 +51,8 @@ beforeAll(async () => {
 	const env = {
 		...process.env,
 		NODE_ENV: 'production',
-		TEMPLATE_BUILD_DIR: buildDirectory,
-		TEMPLATE_KIT_DIR: path.join(directory, 'kit')
+		FIXTURE_BUILD_DIR: buildDirectory,
+		FIXTURE_KIT_DIR: path.join(directory, 'kit')
 	}
 	// Compile once to exercise framework error handling over native HTTP.
 	await exec(process.execPath, [path.join(webRoot, 'node_modules/vite/bin/vite.js'), 'build'], {
