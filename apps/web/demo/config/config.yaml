@@ -213,6 +213,7 @@ pieces:
   - type: recipes
     templates:
       icon:
+        file: ./content/templates/recipe/icon.svelte
         name: recipe-card
         mapping:
           image: photo
@@ -221,7 +222,7 @@ pieces:
             fields:
               item: item
       page:
-        name: recipe
+        file: ./content/templates/recipe/page.svelte
         mapping:
           image: photo
           url: url
@@ -241,7 +242,7 @@ pieces:
           totalMinutes: total_minutes
           dateUpdated: date_updated
       opengraph:
-        name: recipe-card
+        file: ./content/templates/recipe/opengraph.svelte
         mapping:
           image: photo
           source: source
