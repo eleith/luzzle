@@ -63,6 +63,7 @@ describe('previewTransformStep', () => {
 			expect.objectContaining({
 				webPiece: parsed.webPiece,
 				assetKeyToPath: parsed.keyToPath,
+				mode: 'preview',
 				buildAssetUrl: expect.any(Function),
 			})
 		)

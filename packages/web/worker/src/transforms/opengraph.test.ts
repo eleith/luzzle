@@ -78,7 +78,13 @@ describe('transforms/opengraph', () => {
 		mocks.getOpenGraphPath.mockReturnValue('books/key/opengraph.png')
 		mocks.renderOpengraphPng.mockResolvedValue(renderedPng)
 
-		const records = await run(input)
+		const priorAssets = [{
+			asset_key: 'cover',
+			transformation: 'image.original',
+			asset_path: 'books/key/cover.png',
+			mime_type: 'image/png',
+		}]
+		const records = await run({ ...input, priorAssets, mode: 'preview' })
 
 		const output = readFileSync(path.join(TEMP_DIR, 'books/key/opengraph.png'))
 		expect(output.length).toBeLessThan(renderedPng.length)
@@ -91,7 +97,13 @@ describe('transforms/opengraph', () => {
 		const { data, info } = await sharp(output).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
 		expect(data[info.channels - 1]).toBe(128)
 		expect(mocks.getOpenGraphPath).toHaveBeenCalledWith('books', 'key')
-		expect(mocks.renderOpengraphPng).toHaveBeenCalledOnce()
+		expect(mocks.renderOpengraphPng).toHaveBeenCalledExactlyOnceWith(
+			expect.objectContaining({ assets: priorAssets }),
+			priorAssets,
+			input.config,
+			input.outDir,
+			'preview'
+		)
 		expect(records).toEqual([
 			expect.objectContaining({
 				transformation: 'opengraph',
@@ -121,37 +133,5 @@ describe('transforms/opengraph', () => {
 		await expect(run(makeInput())).rejects.toThrow()
 
 		expect(existsSync(path.join(TEMP_DIR, 'books/invalid/opengraph.png'))).toBe(false)
-	})
-
-	test('passes priorAssets to renderOpengraphPng', async () => {
-		mocks.getOpenGraphPath.mockReturnValue('books/key/opengraph.png')
-		mocks.renderOpengraphPng.mockResolvedValue(renderedPng)
-
-		const priorAssets = [
-			{
-				asset_key: 'img-key',
-				transformation: 'image.original',
-				asset_path: 'books/k1/cover.png',
-				mime_type: 'image/png',
-			},
-		]
-
-		const input = makeInput()
-		const records = await run({ ...input, priorAssets })
-
-		expect(mocks.renderOpengraphPng).toHaveBeenCalledWith(
-			expect.objectContaining({ assets: priorAssets }),
-			priorAssets,
-			input.config,
-			TEMP_DIR,
-			undefined
-		)
-		expect(records).toEqual([
-			expect.objectContaining({
-				transformation: 'opengraph',
-				mime_type: 'image/png',
-				asset_path: 'books/key/opengraph.png',
-			}),
-		])
 	})
 })
