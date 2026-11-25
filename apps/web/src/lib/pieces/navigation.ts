@@ -15,10 +15,6 @@ export function isPiecesPath(pathname: string): boolean {
 	}
 }
 
-export function publicPieceHref({ type, slug }: { type: string; slug: string }): string {
-	return `/pieces/${encodeURIComponent(type)}/${encodeURIComponent(slug)}`
-}
-
 export function publicPageUrl(appUrl: string, origin: string, publicPath: string): string {
 	const url = new URL(appUrl || '/', origin)
 	url.pathname = `${url.pathname.replace(/\/+$/, '')}${publicPath}`

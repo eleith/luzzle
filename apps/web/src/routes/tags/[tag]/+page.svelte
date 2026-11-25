@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state'
-	import { publicPageUrl, publicPieceHref } from '#lib/pieces/navigation.js'
+	import { publicPageUrl } from '#lib/pieces/navigation.js'
+	import { publicPieceHref } from '@luzzle/web.pieces'
 	import PieceListing from '#lib/pieces/components/PieceListing.svelte'
 	import PieceGrid from '#lib/pieces/components/PieceGrid.svelte'
 	import type { PageProps } from './$types'

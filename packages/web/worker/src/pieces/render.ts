@@ -3,7 +3,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { render } from 'svelte/server'
 import { ImageResponse } from 'takumi-js/response'
-import { assetPathToUrl, createPieceHelpers } from '@luzzle/web.pieces'
+import { assetPathToUrl, createPieceHelpers, publicPieceHref } from '@luzzle/web.pieces'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { mapOpengraphTemplate } from '@luzzle/web.templates/pieces/fields'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
@@ -78,7 +78,7 @@ async function renderOpengraphHtml(
 			if (url) pathsByUrl.set(url, assetPath)
 			return url
 		},
-		() => `/pieces/${piece.type}/${piece.slug}`
+		() => publicPieceHref(piece, config.url.app)
 	)
 	const selection = pieceConfig?.templates?.opengraph
 	if (selection && 'file' in selection) {

@@ -97,6 +97,10 @@ export function getTitleSizeRem(title: string): number {
 export const OpengraphImageWidth = 1200
 export const OpengraphImageHeight = 630
 
+export function publicPieceHref({ type, slug }: { type: string; slug: string }, appUrl = ''): string {
+	return `${appUrl.replace(/\/+$/, '')}/pieces/${encodeURIComponent(type)}/${encodeURIComponent(slug)}`
+}
+
 export function createPieceHelpers(
 	assets: PublicWebPieceAsset[],
 	buildAssetUrl: (assetPath: string) => string | undefined,

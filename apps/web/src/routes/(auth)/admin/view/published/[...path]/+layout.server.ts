@@ -4,7 +4,8 @@ import { db } from '#lib/server/database/index.js'
 import { config } from '#lib/server/config.js'
 import { getWebPiece } from '#lib/server/pieces.js'
 import { hydrateWithAssets } from '#lib/pieces/assets.server.js'
-import { publicPageUrl, publicPieceHref } from '#lib/pieces/navigation.js'
+import { publicPageUrl } from '#lib/pieces/navigation.js'
+import { publicPieceHref } from '@luzzle/web.pieces'
 import { getMarkdownPublicationStatus } from '#lib/pieces/publication.server.js'
 
 export const load: LayoutServerLoad = async ({ params, url, locals }) => {

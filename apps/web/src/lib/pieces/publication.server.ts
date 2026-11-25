@@ -1,6 +1,6 @@
 import { db } from '#lib/server/database/index.js'
 import { getWebPiece } from '#lib/server/pieces.js'
-import { publicPieceHref } from './navigation.js'
+import { publicPieceHref } from '@luzzle/web.pieces'
 import { MarkdownPublicationStatus, type PiecePublicationState } from './types.js'
 
 export async function getPiecePublicationState(file: string): Promise<PiecePublicationState> {

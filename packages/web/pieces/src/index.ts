@@ -7,6 +7,7 @@ export {
 	getPieceTags,
 	getTitleSizeRem,
 	interpolate,
+	publicPieceHref,
 	safeExternalUrl,
 	OpengraphImageWidth,
 	OpengraphImageHeight
