@@ -99,7 +99,7 @@ async function renderOpengraphHtml(
 
 function prepareTakumiMarkup(rendered: { body: string; head: string }) {
 	const head = rendered.head.replace(/:where\(\.svelte-[a-z0-9]+\)/gi, '')
-	const body = rendered.body.replace(/<!--[\s\S]*?-->/g, '').replace(/>\s+</g, '><')
+	const body = rendered.body.replace(/<!--[\s\S]*?-->/g, '')
 	const style = `display:flex;width:${OpengraphImageWidth}px;height:${OpengraphImageHeight}px`
 	return `${head}<div style="${style}">${body}</div>`
 }
