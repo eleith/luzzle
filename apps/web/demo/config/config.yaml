@@ -324,9 +324,10 @@ pieces:
   - type: tabletop-games
     templates:
       icon:
+        file: ./content/templates/tabletop-game/icon.svelte
         name: playing-cards
       page:
-        name: tabletop-game
+        file: ./content/templates/tabletop-game/page.svelte
         mapping:
           image: cover
           url: url
@@ -335,7 +336,7 @@ pieces:
           playTimeMinutes: play_time_minutes
           playerCount: player_count
       opengraph:
-        name: playing-cards
+        file: ./content/templates/tabletop-game/opengraph.svelte
         mapping:
           backdrop: cover
           publisher: publisher

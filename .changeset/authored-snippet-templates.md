@@ -2,4 +2,4 @@
 '@luzzle/web': patch
 ---
 
-Use the existing terminal icon, file detail page, and Open Graph card as authored templates for demo snippets. Highlighted code and attachment downloads use the current publication or preview job’s assets.
+Use authored Svelte files for the existing icon, page, and Open Graph designs for demo snippets, words, articles, recipes, music, video games, and tabletop games. The generic piece type still uses the built-in defaults.
