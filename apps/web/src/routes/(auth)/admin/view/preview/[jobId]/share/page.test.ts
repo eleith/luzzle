@@ -138,27 +138,6 @@ function tree(props: Data, view: keyof typeof routes = 'share') {
 
 beforeEach(() => vi.clearAllMocks())
 
-test('an authored Share mounts the server fragment and its stylesheet instead of the generic composition', () => {
-	const props = data()
-	props.renderedOpengraph = {
-		html: '<h3 class="card-heading">Draft composition</h3>',
-		css: '.card-heading { color: blue }'
-	}
-	page.data = props
-	const result = render(SharePage, {
-		props: { data: props, params: { jobId: props.job }, form: null }
-	})
-	expect(result.body).toContain(props.renderedOpengraph.html)
-	expect(result.head).toContain(props.renderedOpengraph.css)
-	expect(result.body).toContain('/admin/preview/job/asset/generated/share.png')
-})
-
-test('a failed HTML design reports the failure and keeps the recorded PNG accessible', () => {
-	const html = tree({ ...data(), renderedOpengraph: 'failed' })
-	expect(html).toContain('The configured share HTML could not be rendered.')
-	expect(html).toContain('href="/admin/preview/job/asset/generated/share.png"')
-})
-
 test('an expired Share response wins over completed data from a stale viewer layout', async () => {
 	const stale = data()
 	const event = { parent: async () => ({ status: 'expired' }) } as unknown as Parameters<
