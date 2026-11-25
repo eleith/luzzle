@@ -161,50 +161,40 @@ describe('pieces/render-opengraph-png', () => {
 		expectPng(await renderOpengraphPng(makePiece(), [], config))
 	})
 
-	test.each([false, true])(
-		'renders the mapped cover in the PNG and preloads the backdrop (preview: %s)',
-		async (preview) => {
-			const config = makeConfig()
-			const assetsDir = path.join(TEMP_DIR, preview ? 'preview' : 'assets')
-			const mockImgDir = path.join(assetsDir, 'books/k1')
-			mkdirSync(mockImgDir, { recursive: true })
-			const coverColor = { r: 246, g: 27, b: 218 }
-			await sharp({ create: { width: 8, height: 8, channels: 3, background: coverColor } })
-				.png()
-				.toFile(path.join(mockImgDir, 'cover &amp;&#%2F?é".png'))
-			writeFileSync(path.join(mockImgDir, 'backdrop.png'), onePixelPng)
-			const assets: PublicWebPieceAsset[] = [
-				{
-					asset_key: 'img-key',
-					transformation: 'image.original',
-					asset_path: 'books/k1/cover &amp;&#%2F?é".png',
-					mime_type: 'image/png',
-				},
-				{
-					asset_key: 'backdrop-key',
-					transformation: 'image.l.jpg',
-					asset_path: 'books/k1/backdrop.png',
-					mime_type: 'image/png',
-				},
-			]
+	test('renders the mapped cover in the published PNG and preloads the backdrop', async () => {
+		const config = makeConfig()
+		const mockImgDir = path.join(TEMP_DIR, 'assets/books/k1')
+		mkdirSync(mockImgDir, { recursive: true })
+		const coverColor = { r: 246, g: 27, b: 218 }
+		await sharp({ create: { width: 8, height: 8, channels: 3, background: coverColor } })
+			.png()
+			.toFile(path.join(mockImgDir, 'cover &amp;&#%2F?é".png'))
+		writeFileSync(path.join(mockImgDir, 'backdrop.png'), onePixelPng)
+		const assets: PublicWebPieceAsset[] = [
+			{
+				asset_key: 'img-key',
+				transformation: 'image.original',
+				asset_path: 'books/k1/cover &amp;&#%2F?é".png',
+				mime_type: 'image/png',
+			},
+			{
+				asset_key: 'backdrop-key',
+				transformation: 'image.l.jpg',
+				asset_path: 'books/k1/backdrop.png',
+				mime_type: 'image/png',
+			},
+		]
 
-			const piece = makePiece(assets)
-			piece.date_consumed = Date.UTC(2025, 0, 2)
-			piece.metadata = { ...piece.metadata, released: '2024-01-01', minutes: 0 }
-			const png = await renderOpengraphPng(
-				piece,
-				assets,
-				config,
-				preview ? assetsDir : undefined,
-				preview ? 'preview' : 'published'
-			)
-			expect(vi.mocked(ImageResponse).mock.calls.at(-1)![0]).toContain('2024 · 0 min · 1.2.2025')
-			const pixels = await sharp(png).removeAlpha().raw().toBuffer()
-			const hasCoverColor = pixels.some((r, i) =>
-				i % 3 === 0 && r === coverColor.r && pixels[i + 1] === coverColor.g && pixels[i + 2] === coverColor.b
-			)
-			expect(hasCoverColor).toBe(true)
-			expect(readFileSync).toHaveBeenCalledWith(path.join(mockImgDir, 'backdrop.png'))
-		}
-	)
+		const piece = makePiece(assets)
+		piece.date_consumed = Date.UTC(2025, 0, 2)
+		piece.metadata = { ...piece.metadata, released: '2024-01-01', minutes: 0 }
+		const png = await renderOpengraphPng(piece, assets, config)
+		expect(vi.mocked(ImageResponse).mock.calls.at(-1)![0]).toContain('2024 · 0 min · 1.2.2025')
+		const pixels = await sharp(png).removeAlpha().raw().toBuffer()
+		const hasCoverColor = pixels.some((r, i) =>
+			i % 3 === 0 && r === coverColor.r && pixels[i + 1] === coverColor.g && pixels[i + 2] === coverColor.b
+		)
+		expect(hasCoverColor).toBe(true)
+		expect(readFileSync).toHaveBeenCalledWith(path.join(mockImgDir, 'backdrop.png'))
+	})
 })
