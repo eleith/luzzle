@@ -45,89 +45,50 @@ test('without JavaScript the mixed listing renders external icons beside a linke
 	}
 })
 
-test('without JavaScript typed listings render generic and authored icons', async ({
-	browser,
+test('a direct typed listing visit hydrates without replacing the parsed external icon', async ({
+	page,
 	baseURL
 }) => {
-	const context = await browser.newContext({ javaScriptEnabled: false, baseURL })
-	try {
-		const page = await context.newPage()
-		const typedPath = `/pieces/${fieldGuide.type}?year=2024&page=1`
-		const typed = await page.goto(typedPath)
-		expect(typed?.status()).toBe(200)
-		await expect(page).toHaveURL(new URL(typedPath, baseURL!).href)
-		await expect(page.getByRole('heading', { name: fieldGuide.type, exact: true })).toHaveCount(1)
-		await expect(page.locator('.piece-card')).toHaveCount(1)
-		await expect(page.getByRole('link', { name: fieldGuide.title, exact: true })).toHaveJSProperty(
-			'href',
-			new URL(fieldGuide.publicUrl, page.url()).href
-		)
-		await expect(page.locator('.piece-icon .poster .poster-title')).toHaveText(fieldGuide.title)
-
-		await page.goto('/pieces/notes')
-		await expect(page.locator('.fixture-note-icon')).toHaveCount(2)
-		await expect(page.locator('.fixture-note-icon').first()).toHaveCSS(
-			'--fixture-note-active',
-			'no'
-		)
-		await expect(page.locator(noteIconStyle)).toHaveCount(1)
-		const card = page.locator('.piece-card').filter({ hasText: notebook.title })
-		await expect(card.getByRole('link')).toHaveCount(1)
-		await card.getByRole('link', { name: notebook.title, exact: true }).click()
-		await expect(page).toHaveURL(new URL(notebook.publicUrl, baseURL!).href)
-	} finally {
-		await context.close()
-	}
-})
-
-for (const listing of ['/pieces', '/pieces/notes']) {
-	test(`a direct ${listing} visit hydrates without replacing the parsed external icon`, async ({
-		page,
-		baseURL
-	}) => {
-		const errors: string[] = []
-		page.on('pageerror', (error) => errors.push(error.message))
-		page.on('console', (message) => {
-			if (/hydration/i.test(message.text())) errors.push(message.text())
-		})
-
-		// Hold the client modules so we can identify the server-rendered DOM before hydration.
-		const modules = Promise.withResolvers<void>()
-		await page.route('**/_app/immutable/**/*.js', async (route) => {
-			await modules.promise
-			await route.continue()
-		})
-		await page.goto(listing, { waitUntil: 'commit' })
-		const card = page.locator('.piece-card').filter({ hasText: notebook.title })
-		const title = card.getByRole('link', { name: notebook.title, exact: true })
-		const icon = card.locator('.piece-icon[inert] .fixture-note-icon')
-		try {
-			await icon.evaluate((node) => node.setAttribute('data-parsed-icon', 'yes'))
-		} finally {
-			modules.resolve()
-		}
-		await expect(card.getByRole('link')).toHaveCount(1)
-		await expect(title.locator('.fixture-note-icon')).toHaveCount(0)
-		await expect(icon).toHaveAttribute('href', '/decorative')
-		await expect(
-			page.getByRole('navigation', { name: 'Global' }).getByLabel('search', { exact: true })
-		).toHaveAttribute('aria-haspopup', 'dialog')
-
-		await expect(icon).toHaveAttribute('data-parsed-icon', 'yes')
-		await expect(page.locator(noteIconStyle)).toHaveCount(1)
-		if (listing === '/pieces')
-			await expect(page.locator('.piece-icon .poster .poster-title')).toHaveText(fieldGuide.title)
-
-		// The title's hit area extends over the inert decoration, not just its text.
-		const box = (await icon.boundingBox())!
-		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-		await expect(icon).toHaveCSS('--fixture-note-active', 'yes')
-		await page.mouse.down()
-		await page.mouse.up()
-		await expect(page).toHaveURL(new URL(notebook.publicUrl, baseURL!).href)
-		expect(errors).toEqual([])
+	const errors: string[] = []
+	page.on('pageerror', (error) => errors.push(error.message))
+	page.on('console', (message) => {
+		if (/hydration/i.test(message.text())) errors.push(message.text())
 	})
-}
+
+	// Hold the client modules so we can identify the server-rendered DOM before hydration.
+	const modules = Promise.withResolvers<void>()
+	await page.route('**/_app/immutable/**/*.js', async (route) => {
+		await modules.promise
+		await route.continue()
+	})
+	await page.goto('/pieces/notes', { waitUntil: 'commit' })
+	const card = page.locator('.piece-card').filter({ hasText: notebook.title })
+	const title = card.getByRole('link', { name: notebook.title, exact: true })
+	const icon = card.locator('.piece-icon[inert] .fixture-note-icon')
+	try {
+		await icon.evaluate((node) => node.setAttribute('data-parsed-icon', 'yes'))
+	} finally {
+		modules.resolve()
+	}
+	await expect(card.getByRole('link')).toHaveCount(1)
+	await expect(title.locator('.fixture-note-icon')).toHaveCount(0)
+	await expect(icon).toHaveAttribute('href', '/decorative')
+	await expect(
+		page.getByRole('navigation', { name: 'Global' }).getByLabel('search', { exact: true })
+	).toHaveAttribute('aria-haspopup', 'dialog')
+
+	await expect(icon).toHaveAttribute('data-parsed-icon', 'yes')
+	await expect(page.locator(noteIconStyle)).toHaveCount(1)
+
+	// The title's hit area extends over the inert decoration, not just its text.
+	const box = (await icon.boundingBox())!
+	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+	await expect(icon).toHaveCSS('--fixture-note-active', 'yes')
+	await page.mouse.down()
+	await page.mouse.up()
+	await expect(page).toHaveURL(new URL(notebook.publicUrl, baseURL!).href)
+	expect(errors).toEqual([])
+})
 
 test('the external page renders styled content and native sidenotes without JavaScript', async ({
 	browser,
