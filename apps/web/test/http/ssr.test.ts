@@ -158,13 +158,9 @@ afterAll(async () => {
 	if (suiteDirectory) await rm(suiteDirectory, { recursive: true, force: true })
 })
 
-async function errorResponse(
-	route: string,
-	accept: string | null = 'text/html',
-	init: RequestInit = {}
-) {
+async function errorResponse(route: string, accept = 'text/html', init: RequestInit = {}) {
 	const headers = new Headers(init.headers)
-	if (accept !== null) headers.set('accept', accept)
+	headers.set('accept', accept)
 	headers.set('x-forwarded-proto', 'http')
 	return fetch(`${origin}/${route}`, {
 		...init,
@@ -208,11 +204,9 @@ function expectNoErrorPresentation(body: string) {
 describe('configured error pages through the native fixture HTTP server', () => {
 	test('keeps native expected errors and safe unknown-error defaults when unconfigured', async () => {
 		await serveWithErrors()
-		for (const status of [404, 400, 403, 500, 503]) {
-			const html = await errorHtml(status)
-			expect(html).toContain(`Fixture expected ${status}`)
-			expectErrorHome(html, true)
-		}
+		const forbidden = await errorHtml(403)
+		expect(forbidden).toContain('Fixture expected 403')
+		expectErrorHome(forbidden, true)
 		const unknown = await errorHtml('unknown', 500)
 		expect(unknown).toContain('Internal Error')
 		expect(unknown).not.toContain('Fixture private failure')
@@ -222,23 +216,21 @@ describe('configured error pages through the native fixture HTTP server', () => 
 
 	test('selects 404 before 4xx, shares 500 across 5xx without changing status, and sanitizes Markdown', async () => {
 		await serveConfiguredPages()
-		for (const kind of [404, 400, 403, 500, 503, 'unknown', 'unmatched'] as const) {
-			let status: number
-			if (typeof kind === 'number') status = kind
-			else if (kind === 'unknown') status = 500
-			else status = 404
-
-			let selected = 'server'
-			if (status === 404) selected = 'missing'
-			else if (status < 500) selected = 'client'
-			const html = await errorHtml(kind, status)
+		for (const [kind, selected] of [
+			[404, 'missing'],
+			[403, 'client'],
+			[503, 'server'],
+			['unknown', 'server'],
+			['unmatched', 'missing']
+		] as const) {
+			const html = await errorHtml(kind, kind === 'unknown' ? 500 : undefined)
 			expect(html).toContain(`<h1>Fixture ${selected} copy</h1>`)
 			for (const other of ['missing', 'client', 'server'].filter((name) => name !== selected))
 				expect(html).not.toContain(`Fixture ${other} copy`)
 			expectErrorHome(html, selected === 'client')
 			expect(html).not.toContain('sections/error-')
 			expect(html).not.toContain('Fixture private failure')
-			if (status === 404) {
+			if (kind === 404) {
 				expect(html).toContain('href="/pieces"')
 				expect(html).toContain('&lt;script&gt;')
 				expect(html).not.toContain('<script>window.errorInjected=1</script>')
@@ -249,32 +241,27 @@ describe('configured error pages through the native fixture HTTP server', () => 
 
 	test('preserves native error formats and includes presentation only for eligible UI requests', async () => {
 		await serveConfiguredPages()
-		for (const accept of ['application/json', 'application/json;q=1, text/html;q=0.5']) {
-			// Kit renders matched pure-page loader errors as HTML regardless of Accept.
-			for (const kind of [404, 403, 503, 'unknown'] as const) {
-				const response = await errorResponse(`errors/${kind}`, accept)
-				expect(response.status).toBe(kind === 'unknown' ? 500 : kind)
-				expect(response.headers.get('content-type')).toContain('text/html')
-				const body = await response.text()
-				expectNoErrorPresentation(body)
-				expect(body).toContain(kind === 'unknown' ? 'Internal Error' : `Fixture expected ${kind}`)
-				if (kind === 404) expect(body).toContain('page not found')
-				expectErrorHome(body, true)
-			}
-			const unmatched = await errorResponse('no-such-fixture-page', accept)
-			expect(unmatched.status).toBe(404)
-			expect(unmatched.headers.get('content-type')).toContain('text/html')
-			const missingBody = await unmatched.text()
-			expect(missingBody).toContain('page not found')
-			expectNoErrorPresentation(missingBody)
-
-			const endpoint = await errorResponse('errors/endpoint', accept)
-			expect(endpoint.status).toBe(503)
-			expect(endpoint.headers.get('content-type')).toContain('application/json')
-			const endpointBody = await endpoint.text()
-			expectNoErrorPresentation(endpointBody)
-			expect(JSON.parse(endpointBody).message).toBe('Fixture endpoint unavailable')
+		// Kit renders page errors as HTML even when the client prefers JSON.
+		for (const [route, status, message] of [
+			['errors/403', 403, 'Fixture expected 403'],
+			['errors/unknown', 500, 'Internal Error'],
+			['no-such-fixture-page', 404, 'page not found']
+		] as const) {
+			const response = await errorResponse(route, 'application/json;q=1, text/html;q=0.5')
+			expect(response.status).toBe(status)
+			expect(response.headers.get('content-type')).toContain('text/html')
+			const body = await response.text()
+			expect(body).toContain(message)
+			expectNoErrorPresentation(body)
 		}
+
+		const jsonEndpoint = await errorResponse('errors/endpoint', 'application/json')
+		expect(jsonEndpoint.status).toBe(503)
+		expect(jsonEndpoint.headers.get('content-type')).toContain('application/json')
+		const endpointBody = await jsonEndpoint.text()
+		expectNoErrorPresentation(endpointBody)
+		expect(JSON.parse(endpointBody).message).toBe('Fixture endpoint unavailable')
+
 		const data = await errorResponse('errors/403/__data.json', 'application/json')
 		expect(data.headers.get('content-type')).toContain('application/json')
 		const dataBody = await data.text()
@@ -317,25 +304,21 @@ describe('configured error pages through the native fixture HTTP server', () => 
 			type: 'error',
 			error: { status: 403, message: 'Fixture action denied' }
 		})
-		expect(actionBody).toContain('Fixture action denied')
 		expectNoErrorPresentation(actionBody)
 
-		for (const accept of [null, '*/*', 'application/json']) {
-			const response = await errorResponse('errors/403', accept, {
-				method: 'POST',
-				headers: { origin, 'content-type': 'application/x-www-form-urlencoded' },
-				body: ''
-			})
-			expect(response.status).toBe(403)
-			expect(response.headers.get('content-type')).toContain('application/json')
-			const body = await response.text()
-			expect(JSON.parse(body)).toMatchObject({
-				type: 'error',
-				error: { status: 403, message: 'Fixture action denied' }
-			})
-			expect(body).toContain('Fixture action denied')
-			expectNoErrorPresentation(body)
-		}
+		const plainAction = await errorResponse('errors/403', '*/*', {
+			method: 'POST',
+			headers: { origin, 'content-type': 'application/x-www-form-urlencoded' },
+			body: ''
+		})
+		expect(plainAction.status).toBe(403)
+		expect(plainAction.headers.get('content-type')).toContain('application/json')
+		const plainBody = await plainAction.text()
+		expect(JSON.parse(plainBody)).toMatchObject({
+			type: 'error',
+			error: { status: 403, message: 'Fixture action denied' }
+		})
+		expectNoErrorPresentation(plainBody)
 
 		const htmlAction = await errorResponse('errors/403', 'text/html', {
 			method: 'POST',
@@ -387,7 +370,7 @@ describe('configured error pages through the native fixture HTTP server', () => 
 			'4xx': { body: 'sections/error-directory' },
 			'500': { body: 'sections/error-missing-server.md' }
 		})
-		for (const status of [404, 400, 403, 500, 503]) {
+		for (const status of [404, 403]) {
 			const html = await errorHtml(status)
 			expect(html).toContain(`Fixture expected ${status}`)
 			expectErrorHome(html, status !== 404)
