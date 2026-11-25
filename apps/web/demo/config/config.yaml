@@ -183,12 +183,13 @@ pieces:
   - type: articles
     templates:
       icon:
+        file: ./content/templates/article/icon.svelte
         name: browser-window
         mapping:
           image: banner
           url: url
       page:
-        name: article
+        file: ./content/templates/article/page.svelte
         mapping:
           image: banner
           url: url
@@ -196,7 +197,7 @@ pieces:
           wordCount: word_count
           datePublished: date_published
       opengraph:
-        name: browser-window
+        file: ./content/templates/article/opengraph.svelte
         mapping:
           image: banner
           url: url
