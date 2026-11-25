@@ -9,28 +9,41 @@ export interface ConfigIssue {
 	column?: number;
 }
 
-/** Keep TypeBox values/schemas out of diagnostics; explain the selected auth provider. */
+/** Report the invalid field in the selected config shape, not just "Expected union". */
+function selectedObjectBranch({ path, schema, value }: ValueError): number {
+	if (
+		!TypeGuard.IsUnion(schema) ||
+		!value ||
+		typeof value !== "object" ||
+		Array.isArray(value)
+	)
+		return -1;
+
+	if (path === "/auth") {
+		const credentials = Object.hasOwn(value, "credentials");
+		if (credentials === Object.hasOwn(value, "oidc")) return -1;
+		const provider = credentials ? "credentials" : "oidc";
+		return schema.anyOf.findIndex(
+			(branch) => TypeGuard.IsObject(branch) && provider in branch.properties,
+		);
+	}
+	if (/^\/pieces\/\d+\/templates\/(icon|page|opengraph)$/.test(path)) {
+		const hasFile = Object.hasOwn(value, "file");
+		return schema.anyOf.findIndex(
+			(branch) =>
+				TypeGuard.IsObject(branch) &&
+				Object.hasOwn(branch.properties, "file") === hasFile,
+		);
+	}
+	return -1;
+}
+
+/** Keep TypeBox values and schemas out of diagnostics. */
 export function configIssues(errors: Iterable<ValueError>): ConfigIssue[] {
 	const issues: ConfigIssue[] = [];
 	for (const error of errors) {
-		let details: Iterable<ValueError> = [error];
-		if (
-			error.path === "/auth" &&
-			TypeGuard.IsUnion(error.schema) &&
-			error.value !== null &&
-			typeof error.value === "object"
-		) {
-			const credentials = "credentials" in error.value;
-			const oidc = "oidc" in error.value;
-			if (credentials !== oidc) {
-				const provider = credentials ? "credentials" : "oidc";
-				const branch = error.schema.anyOf.findIndex(
-					(schema) =>
-						TypeGuard.IsObject(schema) && provider in schema.properties,
-				);
-				if (branch !== -1) details = error.errors[branch];
-			}
-		}
+		const index = selectedObjectBranch(error);
+		const details = index < 0 ? [error] : error.errors[index];
 		for (const { path, message } of details) issues.push({ path, message });
 	}
 	return issues;

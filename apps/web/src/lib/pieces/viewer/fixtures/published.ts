@@ -1,3 +1,4 @@
+import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 
 export function asset(
@@ -19,4 +20,13 @@ export const publishedPiece: PublicWebPiece = {
 	date_updated: 2,
 	metadata: { title: 'Serving metadata only' },
 	assets: [asset('image.original', 'published/cover.jpg')]
+}
+
+export const templatedPublishedPiece: TemplatedPiece = {
+	...publishedPiece,
+	templates: {
+		icon: { name: 'default', fields: { image: 'cover' } },
+		page: { name: 'default', fields: { image: 'cover' } },
+		opengraph: { name: 'default', fields: { image: 'cover' } }
+	}
 }

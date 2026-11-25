@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ClientPage from '#lib/pieces/viewer/ClientPage.svelte'
+	import TemplatePage from '#lib/templates/page.svelte'
 	import RenderedPage from '#lib/templates/RenderedPage.svelte'
 	import type { PageProps } from './$types'
 	let { data }: PageProps = $props()
@@ -8,5 +8,5 @@
 {#if data.renderedPage}
 	<RenderedPage page={data.renderedPage} />
 {:else}
-	<ClientPage piece={data.piece} tags={data.tags} />
+	<TemplatePage piece={data.piece} tags={data.tags} />
 {/if}

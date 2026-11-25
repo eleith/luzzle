@@ -1,31 +1,45 @@
 # Templates
 
-Choose built-in designs by name or point to trusted, operator-authored Svelte files in YAML. Neither requires a custom application build.
+Each piece type has three independent roles: `icon` for listings and search,
+`page` for the detail page, and `opengraph` for the share card. Omit any role to
+use its generic built-in `default`; omitting `templates` uses all three defaults.
+To customize a role, point it at a trusted local Svelte file. No app build is needed.
 
-Each type has three independent roles: `icon` for lists/search, `page` for its
-detail page, and `opengraph` for the share image generated during publishing.
-Omit a role to use its `default`. Choosing one role does not choose the others.
+## Migrate a named design
 
-## Pick a look
+**`default` is the only supported `name`.** Former names such as `book`, `note`
+and `poster` fail config validation, even alongside `file`. If a role already has a
+`file`, keep that file and its mapping; remove only the retired `name`. A failed
+icon row now uses `default`.
 
-Icons and Open Graph cards each offer nine named styles, plus `default`:
-`book`, `browser-window`, `code-snippet`, `lined-notebook-paper`, `playing-cards`,
-`poster`, `recipe-card`, `video-game-cartridge`, and `vinyl-record`.
+For a role that selected its design by name alone, migrate before upgrading:
 
-Pages have nine different names, plus `default`:
-`book`, `film`, `article`, `note`, `recipe`, `music`, `snippet`, `video-game`, and
-`tabletop-game`.
+1. Find the look you want in the [demo templates](../../apps/web/demo/content/templates).
+   Copy the relevant `icon.svelte`, `page.svelte`, or `opengraph.svelte` from the
+   matching release into your site's `content/templates/` tree. Use the table below
+   to find the directory for each role.
+2. Replace each non-default `name` with its `file` path, such as
+   `file: ./content/templates/word/page.svelte`. Keep or adapt the role's `mapping`
+   to your frontmatter; the [demo YAML](../../apps/web/demo/config/config.yaml)
+   pairs each file with its selectors. Archive type names need not match directory names.
+3. Mount `./content:/app/content:ro` on web and worker as in the [Compose example](docker-compose.yml).
+   Web reads all three roles; worker needs the Open Graph file to generate PNGs.
+   [Apply the changes](#apply-your-choices) after the files are in place.
 
-For text-first pieces, use `lined-notebook-paper` for icon/OG and `note` for page,
-as in the [minimal config](config.example.yaml). Your archive type and schema
-are independent of template names: `words` can use `note`, `books` can use `book`.
+| Former icon or Open Graph name | Former page name | Demo directory |
+| --- | --- | --- |
+| `book` | `book` | `book/` |
+| `browser-window` | `article` | `article/` |
+| `code-snippet` | `snippet` | `snippet/` |
+| `lined-notebook-paper` | `note` | `word/` |
+| `playing-cards` | `tabletop-game` | `tabletop-game/` |
+| `poster` | `film` | `film/` |
+| `recipe-card` | `recipe` | `recipe/` |
+| `video-game-cartridge` | `video-game` | `video-game/` |
+| `vinyl-record` | `music` | `music/` |
 
-The `recipe` page shows a ring-bound recipe card in its header. The card keeps
-its cream paper and dark ink in both site themes. To use the same card in
-listings and the Icon preview, set `templates.icon.name: recipe-card`
-for the same piece type and map both `icon` and `page` image fields to the same
-photo selector. Map the same ingredient names in both roles to show the same
-short checklist.
+If you don't need a custom look, remove that role's entire config instead.
+To keep default-specific mappings, use `name: default` and only keys supported by that role.
 
 ## Set up types for local templates
 
@@ -79,11 +93,13 @@ icon:
 `file` is a local path relative to the web process’s working directory (beside the
 `config.yaml` alias, `/app` in production Docker), not relative to the physical
 `config/` mount or the requested URL. The demo books listing selects the [3D book icon](../../apps/web/demo/content/templates/book/icon.svelte).
-The demo sets no built-in icon `name`: if the local icon fails to render for a
-piece, its row uses the generic `default` icon. The pieces and search APIs report
-`templates.icon.name: default` and only the fields supported by that fallback
-(`image` in the book example). To choose a different fallback, set `name`
-alongside `file`, for example `name: book`.
+If a local icon fails to render for a piece, its row uses the generic `default`
+icon (mapped image or title). There is no alternate fallback name.
+In `/api/pieces` and `/api/search` results, `templates.icon.name`, `templates.page.name`
+and `templates.opengraph.name` are always `default`, including for file-backed
+roles. Each role's `fields` contains only resolved values supported by its
+default (for the book icon, `image`, not `author` or `pages`), not the authored
+component's extra mapped fields.
 
 For a smaller starting point, copy the [minimal icon starter](../../apps/web/demo/content/templates/icon/example.svelte)
 to `content/templates/book/icon.svelte` and copy its `ExampleIconFields` declaration into your `fields.d.ts`.
@@ -94,7 +110,7 @@ on every page of a **tag listing**, in **search results** (including type-filter
 tabs render the same file. Use the template’s `size` prop: home requests 80px,
 listings 125px, and the admin viewer 500px. Resolve images through `helpers` so
 Published uses public assets and Preview uses assets from the selected preview job.
-Without a file, the Icon tab loads the built-in `name` (or `default`) in the browser.
+Without a file, the Icon tab renders the generic default.
 This setting does not select a page or Open Graph design. The file can read arbitrary `fields` from `mapping` using the same
 bindings as below. Only keys supported by the built-in icon are used by its
 fallback; remove any file-only mapping keys when removing `file`.
@@ -155,12 +171,11 @@ in place of runtime imports when porting a built-in design. Authors can
 
 No navigation bar is added by default. To include the app’s interactive bar above the page content,
 call `helpers.requestNavBar({ showRandom: true })` in the template’s instance script.
-The book passes its palette colors here, as it did in the package design.
+The book passes its palette colors here.
 
 The same trusted-source, server-only and file-reload rules as for icons apply.
-A render error fails the request; it does not silently replace the file with a named
-page. Types without a `file` keep their built-in public route and client-rendered
-admin Page tabs. When switching back to a named design, remove mapping keys that design does not accept.
+A page render error fails the request; there is no per-piece page fallback.
+Without a file, the public route and both admin Page tabs render the generic default.
 
 ## Use a local Open Graph card
 
@@ -188,11 +203,11 @@ recorded when you published or generated that preview. Editing the template does
 not rewrite old PNGs. In production, restart web and worker after changing the
 file; generate a fresh Preview or use **More → Publish** for each affected piece.
 If the current card fails to render for a record, Share reports the error without hiding
-its recorded PNG. Without a file, the built-in card still renders in the browser and worker.
+its recorded PNG. Without a file, Share HTML and the worker both use the default card.
 
 ## Map your metadata
 
-Templates read the metadata fields you map to them. For example, to use built-in book designs instead of local files:
+Templates read the metadata fields you map to them. For example, to use the authored book designs:
 
 ```yaml
 pieces:
@@ -203,19 +218,19 @@ pieces:
       media: [cover]
     templates:
       icon:
-        name: book
+        file: ./content/templates/book/icon.svelte
         mapping:
           image: cover
           author: author
           pages: pages
       page:
-        name: book
+        file: ./content/templates/book/page.svelte
         mapping:
           image: cover
           author: author
           publicationYear: year_first_published
       opengraph:
-        name: book
+        file: ./content/templates/book/opengraph.svelte
         mapping:
           image: cover
           author: author
@@ -251,7 +266,7 @@ so the page can look up those outputs using the mapped file key.
 
 Missing or `null` metadata counts as absent: a `field` binding uses its default,
 an absent `each` produces an empty list, and template defaults apply otherwise.
-Built-ins validate the chosen field types; a page count is a number, not text.
+Default roles validate mapped values against their field types; for example, `runtime` is a number, not text.
 Each demo template imports its role’s field type when it uses mapped fields. Its YAML mapping determines which values it receives.
 Local templates receive the resolved values without runtime validation against
 those TypeScript types. For a built-in, invalid values log a warning and use that role's default field values for the
@@ -277,6 +292,5 @@ Restart web and worker after config changes, then refresh. To regenerate OG
 images, use **More → Publish** in the source editor for affected pieces. YAML changes alone
 do not mark unchanged pieces for republication. No app rebuild or hot reload.
 
-For all field choices, use the [generated schema](../../packages/web/templates/config.schema.json).
-Visual details and defaults live in the built-in [icon](../../packages/web/templates/src/icons),
-[page](../../packages/web/templates/src/pages), and [OG](../../packages/web/templates/src/opengraphs) sources.
+For default role fields, see the [generated config schema](../../packages/web/templates/config.schema.json).
+For authored roles, consult the [demo source and field types](../../apps/web/demo/content/templates).

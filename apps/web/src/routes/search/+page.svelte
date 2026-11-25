@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation'
-	import IconListing from '#lib/pieces/components/IconListing.svelte'
+	import PieceGrid from '#lib/pieces/components/PieceGrid.svelte'
 	import SearchForm from '#lib/components/layout/simple/SearchForm.svelte'
 	import type { PageProps } from './$types'
 
@@ -29,7 +29,7 @@
 	</section>
 {:else}
 	<section aria-labelledby="search-results-title">
-		<IconListing {data}>
+		<PieceGrid {data}>
 			{#snippet header()}
 				<div class="search-header">
 					<h1 id="search-results-title">
@@ -56,7 +56,7 @@
 					</div>
 				</div>
 			{/snippet}
-		</IconListing>
+		</PieceGrid>
 	</section>
 
 	{#if data.nextPage}

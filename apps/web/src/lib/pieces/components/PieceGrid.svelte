@@ -2,19 +2,16 @@
 	import { resolve } from '$app/paths'
 	import type { Snippet } from 'svelte'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-	import type { IconComponent } from '@luzzle/web.templates/icons/props'
 	import IconFragment from './IconFragment.svelte'
 	import TemplateStylesheets from '#lib/templates/TemplateStylesheets.svelte'
-	import ClientListingIcon from './ClientListingIcon.svelte'
-	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
+	import DefaultPieceIcon from './DefaultPieceIcon.svelte'
 
 	type ListingData = {
 		pieces: TemplatedPiece[]
 		externalIcons?: { html: (string | null)[]; stylesheets: string[] }
 	}
 
-	let { data, Icon, header }: { data: ListingData; Icon?: IconComponent; header?: Snippet } =
-		$props()
+	let { data, header }: { data: ListingData; header?: Snippet } = $props()
 	let hoveredPieceId = $state<string | null>(null)
 	let focusedPieceId = $state<string | null>(null)
 </script>
@@ -27,11 +24,8 @@
 	{@const lazy = index >= 5}
 	{#if markup != null}
 		<IconFragment {markup} {active} />
-	{:else if Icon}
-		{@const helpers = getPieceHelpers(piece)}
-		<Icon {piece} fields={piece.templates.icon.fields} {helpers} {size} {lazy} {active} />
 	{:else}
-		<ClientListingIcon {piece} {size} {lazy} {active} />
+		<DefaultPieceIcon {piece} {size} {lazy} {active} />
 	{/if}
 {/snippet}
 
@@ -51,7 +45,7 @@
 			</div>
 			<a
 				class="piece-text"
-				href={resolve(`pieces/${piece.type}/${piece.slug}`)}
+				href={resolve(`pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`)}
 				onpointerenter={() => (hoveredPieceId = piece.id)}
 				onpointerleave={() => (hoveredPieceId = null)}
 				onfocus={(e) => {

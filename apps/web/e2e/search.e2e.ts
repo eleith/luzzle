@@ -32,8 +32,8 @@ test('search filters results and opens a public piece with working history', asy
 	const guideLink = results.getByRole('link', { name: fieldGuide.title, exact: true })
 	const notebookIcon = resultCard(page, notebook.title).locator('.fixture-note-icon')
 	await expect(notebookIcon).toHaveText(notebook.title)
-	const guideIcon = resultCard(page, fieldGuide.title).locator('.recipe-card')
-	await expect(guideIcon.locator('.card-title')).toHaveText(fieldGuide.title)
+	const guideIcon = resultCard(page, fieldGuide.title).locator('.poster')
+	await expect(guideIcon.locator('.poster-title')).toHaveText(fieldGuide.title)
 	await guideLink.hover()
 	await expect(guideIcon).toHaveClass(/\bactive\b/)
 	await notebookLink.hover()
@@ -108,12 +108,14 @@ test('search without JavaScript keeps external icons and fallback results linked
 			await expect(link).toBeVisible()
 			await expect(link).toHaveJSProperty('href', new URL(piece.publicUrl, page.url()).href)
 		}
-		// Both notes render their file-backed icon on the server; the built-in guide icon needs JS.
+		// Authored and generic icons both render on the server.
 		for (const { title } of [notebook, forestNotebook]) {
 			const icon = resultCard(page, title).locator('.piece-icon[inert] .fixture-note-icon')
 			await expect(icon).toHaveText(title)
 		}
-		await expect(resultCard(page, fieldGuide.title).locator('.icon-placeholder')).toBeVisible()
+		await expect(resultCard(page, fieldGuide.title).locator('.poster-title')).toHaveText(
+			fieldGuide.title
+		)
 		await expect(main.getByRole('link', { name: 'more', exact: true })).toHaveCount(0)
 
 		await results.getByRole('link', { name: notebook.title, exact: true }).click()

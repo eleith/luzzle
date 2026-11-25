@@ -23,7 +23,7 @@ test.describe('server-rendered tag listing', () => {
 		await expect(external).toHaveText(notebook.title)
 		await expect(external).toHaveAttribute('data-width', '125')
 		const guide = main.locator('.piece-card').filter({ hasText: fieldGuide.title })
-		await expect(guide.locator('.icon-placeholder')).toBeVisible()
+		await expect(guide.locator('.poster-title')).toHaveText(fieldGuide.title)
 	})
 })
 

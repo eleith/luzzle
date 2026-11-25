@@ -4,7 +4,10 @@ import { render } from 'svelte/server'
 import type { ComponentProps } from 'svelte'
 import { MarkdownPublicationStatus } from '#lib/pieces/types.js'
 import { makePublicConfig } from '#lib/server/config.fixture.js'
-import { publishedPiece as originalPiece, asset } from '#lib/pieces/viewer/fixtures/published.js'
+import {
+	templatedPublishedPiece as originalPiece,
+	asset
+} from '#lib/pieces/viewer/fixtures/published.js'
 import Overview from './+page.svelte'
 import PublishedTree from './fixtures/PublishedTree.svelte'
 
@@ -29,11 +32,6 @@ function publishedData(): ComponentProps<typeof Overview>['data'] {
 		file: 'books/draft #?.books.md',
 		piece: {
 			...originalPiece,
-			templates: {
-				icon: { name: 'default', fields: { image: 'cover' } },
-				page: { name: 'default', fields: { image: 'cover' } },
-				opengraph: { name: 'default', fields: { image: 'cover' } }
-			},
 			assets: [
 				...originalPiece.assets,
 				asset('opengraph', 'generated/share.png', 'piece', 'image/png')
@@ -118,19 +116,16 @@ test('the reset layout retains configured branding and noindex without adding pu
 })
 
 test.each(['page', 'icon'] as const)(
-	'the %s route server-renders a loading state and no-JavaScript notice, not the composition',
+	'the %s route renders the generic composition with published assets',
 	(view) => {
 		const data = publishedData()
 		page.route.id = `/(auth)/admin/view/published/[...path]/${view}`
 
 		const html = render(PublishedTree, { props: { data, view } }).body
 
-		expect(html).toContain('role="status"')
-		expect(html).toContain(`class="visually-hidden">Loading ${view} preview…`)
-		expect(html).toContain('<noscript>')
-		expect(html).toContain(`JavaScript is required to display the ${view} preview.`)
-		expect(html).not.toContain('Published &lt;Book>')
-		expect(html).not.toContain('href="/tags/fiction"')
+		expect(html).toContain('Published &lt;Book>')
+		expect(html).toContain(assetPathToUrl('published/cover.jpg', '/cdn'))
+		expect(html).not.toContain('/admin/preview/')
 		expect(html.match(/<main\b/g)).toHaveLength(1)
 	}
 )
@@ -141,7 +136,7 @@ function shareHtml(data = publishedData()) {
 	return render(PublishedTree, { props: { data, view: 'share' } }).body
 }
 
-test('Share SSR displays the recorded PNG while HTML waits for the client', () => {
+test('Share SSR displays the recorded PNG beside the generic HTML composition', () => {
 	const data = publishedData()
 	const html = shareHtml(data)
 	const link = html.match(/<a\b[^>]*aria-label="Open generated Takumi PNG[^]*?<\/a>/)?.[0]
@@ -150,13 +145,8 @@ test('Share SSR displays the recorded PNG while HTML waits for the client', () =
 		'aria-label="Open generated Takumi PNG for Published &lt;Book> in a new tab"'
 	)
 	expect(link).toContain('alt="Generated share image for Published &lt;Book>"')
-	expect(html).toContain('role="status"')
-	expect(html).toContain('class="visually-hidden">Loading browser preview…')
-	expect(html).toContain('<noscript>')
-	expect(html).toContain('JavaScript is required to display the browser preview.')
+	expect(html).toContain(assetPathToUrl('published/cover.jpg', '/cdn'))
 	expect(html.match(/<main\b/g)).toHaveLength(1)
-	expect(html.match(/<img\b/g)).toHaveLength(1)
-	expect(html).not.toMatch(/published\/cover\.jpg|>Published &lt;Book></)
 	expect(html).not.toContain('/admin/preview/')
 })
 
@@ -173,14 +163,14 @@ test('republishing versions both the PNG and inspection link without changing th
 })
 
 test.each([undefined, '../private.png'])(
-	'Share keeps the browser preview but invents no PNG link for unavailable path %j',
+	'Share keeps the generic HTML composition but invents no PNG link for unavailable path %j',
 	(path) => {
 		const data = publishedData()
 		data.piece.assets.find((asset) => asset.transformation === 'opengraph')!.asset_path = path
 		const html = shareHtml(data)
 
 		expect(html).toContain('No generated image available.')
-		expect(html).toContain('Loading browser preview…')
-		expect(html).not.toMatch(/<img\b|private\.png|data-renderer=|Open generated Takumi PNG/)
+		expect(html).toContain(assetPathToUrl('published/cover.jpg', '/cdn'))
+		expect(html).not.toMatch(/private\.png|Open generated Takumi PNG/)
 	}
 )

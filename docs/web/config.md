@@ -58,7 +58,7 @@ Compose loads `.env`. Reference variables explicitly in YAML:
 - `${VAR:-fallback}` uses the fallback when unset, not when empty.
 - `$$` escapes `$`; `$${VAR}` stays literal.
 
-Expansion happens once in string values; catalog names must be literals.
+Expansion happens once in string values.
 Keep `.env` private. After editing it or changing mounts, run
 `docker compose up -d --force-recreate`.
 

@@ -13,14 +13,19 @@ import type { AppConfig } from '#lib/server/config.js'
 
 const pages = createAuthoredTemplateCaches()
 
+function getAuthoredPageConfig(pieceConfig: AppConfig['pieces'][number] | undefined) {
+	const page = pieceConfig?.templates?.page
+	if (page && 'file' in page) return page
+}
+
 export async function preloadAuthoredPages(config: AppConfig) {
 	const seen = new Set<string>()
 	for (const piece of config.pieces) {
 		if (seen.has(piece.type)) continue
 		seen.add(piece.type)
-		const page = piece.templates?.page
-		if (!page || !('file' in page)) continue
-		const filename = resolve(page.file)
+		const authoredPage = getAuthoredPageConfig(piece)
+		if (!authoredPage) continue
+		const filename = resolve(authoredPage.file)
 		await Promise.all([pages.published.load(filename), pages.preview.load(filename)])
 	}
 }
@@ -35,12 +40,13 @@ export async function renderAuthoredPage(
 		assetBaseUrl: config.url.luzzle_assets
 	}
 ) {
-	const page = config.pieces.find((entry) => entry.type === piece.type)?.templates?.page
-	// Named and default pages use built-in components, not file-based rendering.
-	if (!page || !('file' in page)) return null
-	const template = await pages[context.mode].load(resolve(page.file))
+	const pieceConfig = config.pieces.find((entry) => entry.type === piece.type)
+	const authoredPage = getAuthoredPageConfig(pieceConfig)
+	// Without an authored page, the caller renders the generic page.
+	if (!authoredPage) return null
+	const template = await pages[context.mode].load(resolve(authoredPage.file))
 	let requestedNavBar: PageNavbarProps | undefined
-	const fields = resolveTemplateFields(piece.metadata, page.mapping)
+	const fields = resolveTemplateFields(piece.metadata, authoredPage.mapping)
 	const assetHelpers = createRenderHelpers(piece, context)
 	const helpers: ServerPageProps<unknown>['helpers'] = {
 		...assetHelpers,

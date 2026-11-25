@@ -34,10 +34,7 @@ keep your existing environment override.
 
 Web source reloads through Vite; worker source uses Node watch mode. Rebuild images
 after changing manifests, the lockfile or Dockerfiles. Restart services after YAML
-changes. After changing a page or icon template selection in YAML, also reload open
-browser tabs: each browser document keeps its routing configuration, and SvelteKit caches
-internal route choices during client navigation. Changing a selection among the
-built-in templates does not require rebuilding the app.
+changes and reload open tabs.
 Edit `demo/config/config.yaml`, not the compatibility symlink.
 
 When running outside Docker, start development with `node scripts/manager.js`
@@ -49,39 +46,16 @@ directly bypasses that preparation. No generated `.env` file is needed.
 
 ## Template changes
 
-`@luzzle/web.templates` owns component contracts and client loading through its
-`icons/client`, `pages/client`, and `opengraphs/client` exports. Each accepts a
-selected `name` and `children`, `pending`, and `failed` snippets. Web supplies the
-application UI, navigation, and asset helpers; public SSR routes still import their
-selected component directly.
+**One-time upgrade for existing source checkouts:** If you previously built the
+web app, run `pnpm run clean:template-routes` from `apps/web` **on the old
+revision, before pulling the update**, or start with a fresh checkout. Git can
+leave the old ignored route files in place, and the new revision no longer has
+the cleanup command. Published Docker image users are unaffected.
 
-The public page/icon route adapters are generated from the existing template schema
-catalogs and are ignored by Git. Shared layouts and server loaders remain handwritten.
-Public piece pages use these adapters without an eager catalog fallback; unknown URLs
-use normal framework error handling.
-Do not edit generated `+page.svelte` files; change the template or the generator in
-`scripts/template-routes/generate.js` instead. That folder groups the generate/clean
-entrypoints, shared file helpers, and their behavior test.
-
-After installing and building shared packages, `pnpm run dev`, `build`, `check`, and
-`check:watch` generate adapters before synchronizing Kit's route types. From a fresh
-checkout, run `pnpm run sync:svelte` before relying on editor route types. You can also
-run `pnpm run generate:template-routes` on its own. To remove generated adapters, use
-`pnpm run clean:template-routes`; it preserves shared layouts and unmarked files, and
-requires neither site configuration nor a built template package. Empty directories
-may remain. Do not delete the whole `src/routes/templates` folder: its shared layouts
-are handwritten. The next sync/dev/build/check recreates generated adapters.
-Direct Vite/Kit CLI commands bypass this preparation. Generation does not read `config.yaml`, secrets, or site data; it
-includes every available built-in page/icon template. Production startup only serves
-the compiled build and does not generate routes.
-
-When adding or removing a built-in template, rebuild `@luzzle/web.templates` and
-restart local development. In Docker, rebuild/recreate the web image: built package
-metadata and manifests are not source-mounted, so rebuilding packages on the host is
-not enough. Existing template component edits still hot-reload. Generation writes
-ignored adapters through the web source bind mount using the configured UID/GID.
-Changing a YAML selection among existing templates still only requires a server
-restart and browser reload, not regeneration or rebuilding assets.
+Public piece pages render the authored file or generic default directly at
+`/pieces/<type>/<slug>`; listings render icons at their normal URLs. There are
+no generated per-design route adapters or template-route build/clean steps.
+Running `pnpm run sync:svelte` synchronizes Kit route types only.
 
 Keep template content tests in the package and application behavior tests in web.
 Do not add template CSS inventories, visual snapshots, or style/layout assertions.

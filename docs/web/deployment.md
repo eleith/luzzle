@@ -52,8 +52,12 @@ Republish pieces after font or Open Graph template changes to regenerate OG imag
 Changes to `.env` or mounts require
 `docker compose up -d --force-recreate`.
 
-To update: back up your data, update `LUZZLE_VERSION` if pinned, then pull and
-start again.
+To update: back up your data, [migrate any non-default template names](templates.md#migrate-a-named-design), update `LUZZLE_VERSION` if pinned, then pull and
+start again. **When upgrading from generated template routes**, wait until the new web
+service is healthy, then [clear cached public pages](#clear-cached-public-pages) and
+invalidate the corresponding HTML and SvelteKit data responses at any CDN. Do this
+once even if you already used `default` and did not change your YAML: the page URLs
+are unchanged, but the route data served at those URLs has changed.
 
 ## Published file URLs
 

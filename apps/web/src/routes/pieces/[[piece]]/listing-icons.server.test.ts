@@ -3,7 +3,7 @@ import { mapPieceTemplates } from '@luzzle/web.templates/pieces/fields'
 import { publishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
 import { loadPieceListing } from '#lib/server/load/pieces.js'
 import { loadPublishedIcon } from '#lib/server/templates/icon.js'
-import { load } from './+layout.server'
+import { load } from './+page.server'
 
 vi.mock('#lib/server/config.js', () => ({ config: {} }))
 vi.mock('#lib/server/load/pieces.js', () => ({ loadPieceListing: vi.fn() }))

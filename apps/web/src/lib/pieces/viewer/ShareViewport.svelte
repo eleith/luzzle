@@ -4,7 +4,7 @@
 	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
 	import ShareCardFrame from './ShareCardFrame.svelte'
 	import TemplateStylesheets from '#lib/templates/TemplateStylesheets.svelte'
-	import ClientOpengraph from './ClientOpengraph.svelte'
+	import Opengraph from '@luzzle/web.templates/opengraphs/default'
 
 	let {
 		piece,
@@ -41,7 +41,13 @@
 				{@html `<div style="display:contents">${renderedOpengraph.html}</div>`}
 			</ShareCardFrame>
 		{:else}
-			<ClientOpengraph {piece} />
+			<ShareCardFrame>
+				<Opengraph
+					{piece}
+					fields={piece.templates.opengraph.fields}
+					helpers={getPieceHelpers(piece)}
+				/>
+			</ShareCardFrame>
 		{/if}
 	</section>
 	<section aria-labelledby="share-image-heading">

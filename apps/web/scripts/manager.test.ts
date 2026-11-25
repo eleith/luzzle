@@ -21,8 +21,6 @@ beforeEach(async () => {
 console.log(JSON.stringify({
 	devMode: process.env.LUZZLE_DEV,
 	dev: JSON.parse(process.env.LUZZLE_DEV_SERVER),
-	pages: JSON.parse(process.env.LUZZLE_PAGE_TEMPLATES),
-	icons: JSON.parse(process.env.LUZZLE_ICON_TEMPLATES),
 	host: process.env.HOST,
 	origin: process.env.ORIGIN,
 	protocolHeader: process.env.PROTOCOL_HEADER,
@@ -45,27 +43,18 @@ function run() {
 			PATH: `${path.join(directory, 'bin')}${path.delimiter}${process.env.PATH}`,
 			ORIGIN: 'https://ambient.example',
 			LUZZLE_DEV: undefined,
-			LUZZLE_DEV_SERVER: '{"allowedHosts":true}',
-			LUZZLE_PAGE_TEMPLATES: 'ignored-map',
-			LUZZLE_ICON_TEMPLATES: 'ignored-map'
+			LUZZLE_DEV_SERVER: '{"allowedHosts":true}'
 		},
 		timeout: 10000
 	})
 }
 
-test('development reads working-directory YAML and supplies networking and public routing before Vite starts', async () => {
+test('development reads working-directory YAML and supplies network settings before Vite starts', async () => {
 	await writeFile(
 		path.join(directory, 'config.yaml'),
 		JSON.stringify({
 			url: { app: 'https://manager.example:8443/garden' },
-			network: { public: { host: '127.0.0.1', hmr_port: 8443 } },
-			pieces: [
-				{
-					type: 'words',
-					fields: { title: 'private.title', date_consumed: 'date' },
-					templates: { page: { name: 'note' }, icon: { name: 'lined-notebook-paper' } }
-				}
-			]
+			network: { public: { host: '127.0.0.1', hmr_port: 8443 } }
 		})
 	)
 	const { stdout } = await run()
@@ -78,8 +67,6 @@ test('development reads working-directory YAML and supplies networking and publi
 			allowedHosts: ['localhost', 'manager.example', 'luzzle-web'],
 			hmr: { clientPort: 8443 }
 		},
-		pages: { words: 'note' },
-		icons: { words: 'lined-notebook-paper' },
 		host: '127.0.0.1',
 		protocolHeader: 'x-luzzle-public-protocol',
 		hostHeader: 'x-luzzle-public-authority'

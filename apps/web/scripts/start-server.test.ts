@@ -12,9 +12,7 @@ const absoluteEnvironment = {
 	HOST: '127.0.0.1',
 	PROTOCOL_HEADER: 'x-luzzle-public-protocol',
 	HOST_HEADER: 'x-luzzle-public-authority',
-	PORT_HEADER: '',
-	LUZZLE_PAGE_TEMPLATES: '{"words":"note","books":"default"}',
-	LUZZLE_ICON_TEMPLATES: '{"words":"lined-notebook-paper","books":"default"}'
+	PORT_HEADER: ''
 }
 let directory: string
 
@@ -34,8 +32,6 @@ console.log(JSON.stringify({
 	HOST:process.env.HOST,ORIGIN:process.env.ORIGIN,
 	PROTOCOL_HEADER:process.env.PROTOCOL_HEADER,HOST_HEADER:process.env.HOST_HEADER,
 	PORT_HEADER:process.env.PORT_HEADER,
-	LUZZLE_PAGE_TEMPLATES:process.env.LUZZLE_PAGE_TEMPLATES,
-	LUZZLE_ICON_TEMPLATES:process.env.LUZZLE_ICON_TEMPLATES
 }))`
 	)
 })
@@ -48,8 +44,6 @@ function run(environment: NodeJS.ProcessEnv = {}, args = [entry]) {
 	const inherited = { ...process.env }
 	for (const key of [
 		'HOST',
-		'LUZZLE_PAGE_TEMPLATES',
-		'LUZZLE_ICON_TEMPLATES',
 		'ORIGIN',
 		'PROTOCOL_HEADER',
 		'HOST_HEADER',
@@ -69,15 +63,7 @@ function run(environment: NodeJS.ProcessEnv = {}, args = [entry]) {
 async function configure(app = 'https://Startup.EXAMPLE:443/garden/', authenticated = true) {
 	const config: Record<string, unknown> = {
 		url: { app },
-		network: { public: { host: '127.0.0.1' } },
-		pieces: [
-			{
-				type: 'words',
-				fields: { title: 'private.title', date_consumed: 'date' },
-				templates: { page: { name: 'note' }, icon: { name: 'lined-notebook-paper' } }
-			},
-			{ type: 'books', fields: { title: 'title', date_consumed: 'date' } }
-		]
+		network: { public: { host: '127.0.0.1' } }
 	}
 	if (authenticated) {
 		config.auth = {
@@ -92,8 +78,6 @@ test('working-directory YAML overrides ambient settings before importing the ser
 	await configure()
 	const { stdout } = await run({
 		HOST: 'ignored-host',
-		LUZZLE_PAGE_TEMPLATES: 'ignored-map',
-		LUZZLE_ICON_TEMPLATES: 'ignored-map',
 		ORIGIN: 'not-a-url',
 		PROTOCOL_HEADER: 'x-forwarded-proto',
 		HOST_HEADER: 'x-forwarded-host',
@@ -113,9 +97,7 @@ test('a public relative app URL stays request-derived despite ambient ORIGIN', a
 	})
 	expect(JSON.parse(stdout)).toEqual({
 		HOST: '127.0.0.1',
-		PROTOCOL_HEADER: 'x-forwarded-proto',
-		LUZZLE_PAGE_TEMPLATES: absoluteEnvironment.LUZZLE_PAGE_TEMPLATES,
-		LUZZLE_ICON_TEMPLATES: absoluteEnvironment.LUZZLE_ICON_TEMPLATES
+		PROTOCOL_HEADER: 'x-forwarded-proto'
 	})
 })
 
@@ -135,14 +117,7 @@ test('fresh production startups follow the compatibility symlink after atomic co
 		replacement,
 		JSON.stringify({
 			url: { app: 'https://replacement.example/garden' },
-			network: { public: { host: '0.0.0.0' } },
-			pieces: [
-				{
-					type: 'words',
-					fields: { title: 'title', date_consumed: 'date' },
-					templates: { page: { name: 'default' }, icon: { name: 'default' } }
-				}
-			]
+			network: { public: { host: '0.0.0.0' } }
 		})
 	)
 	await rename(replacement, target)
@@ -151,9 +126,7 @@ test('fresh production startups follow the compatibility symlink after atomic co
 	const second = await run()
 	expect(JSON.parse(second.stdout)).toEqual({
 		...absoluteEnvironment,
-		HOST: '0.0.0.0',
-		LUZZLE_PAGE_TEMPLATES: '{"words":"default"}',
-		LUZZLE_ICON_TEMPLATES: '{"words":"default"}'
+		HOST: '0.0.0.0'
 	})
 })
 

@@ -1,5 +1,3 @@
-import { getPageTemplateNames, getIconTemplateNames } from '@luzzle/web.templates/config'
-
 const protocolHeader = 'x-luzzle-public-protocol'
 const authorityHeader = 'x-luzzle-public-authority'
 
@@ -49,7 +47,7 @@ export function installRequestOrigin(server, origin) {
 }
 
 /**
- * @param {Pick<import('@luzzle/web.templates/config').TemplateConfig, 'network' | 'url' | 'auth' | 'pieces'>} config
+ * @param {Pick<import('@luzzle/web.templates/config').TemplateConfig, 'network' | 'url' | 'auth'>} config
  * @param {NodeJS.ProcessEnv} environment
  * @returns {NodeJS.ProcessEnv}
  */
@@ -57,10 +55,7 @@ export function createServerEnvironment(config, environment = process.env) {
 	/** @type {NodeJS.ProcessEnv} */
 	const env = {
 		...environment,
-		HOST: config.network?.public?.host || '0.0.0.0',
-		// Always derive these public values from YAML, never ambient overrides.
-		LUZZLE_PAGE_TEMPLATES: JSON.stringify(getPageTemplateNames(config.pieces)),
-		LUZZLE_ICON_TEMPLATES: JSON.stringify(getIconTemplateNames(config.pieces))
+		HOST: config.network?.public?.host || '0.0.0.0'
 	}
 	const origin = resolveAppOrigin(config.url.app)
 	if (config.auth && !origin) throw new Error('Authentication requires an absolute url.app')
@@ -84,7 +79,7 @@ function extractHostname(url) {
 }
 
 /**
- * @param {Pick<import('@luzzle/web.templates/config').TemplateConfig, 'network' | 'url' | 'auth' | 'pieces'>} config
+ * @param {Pick<import('@luzzle/web.templates/config').TemplateConfig, 'network' | 'url' | 'auth'>} config
  * @param {NodeJS.ProcessEnv} environment
  * @returns {NodeJS.ProcessEnv}
  */

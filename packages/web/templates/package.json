@@ -10,19 +10,9 @@
 	"files": [
 		"dist",
 		"src/server/*.ts",
-		"src/icons/*/template.svelte",
-		"src/icons/*/helpers.js",
-		"src/icons/catalog.js",
-		"src/icons/lazy.js",
-		"src/icons/client.svelte",
-		"src/pages/*/template.svelte",
-		"src/pages/*/helpers.js",
-		"src/pages/catalog.js",
-		"src/pages/lazy.js",
-		"src/pages/client.svelte",
-		"src/opengraphs/*/template.svelte",
-		"src/opengraphs/lazy.js",
-		"src/opengraphs/client.svelte",
+		"src/icons/default/template.svelte",
+		"src/pages/default/template.svelte",
+		"src/opengraphs/default/template.svelte",
 		"config.schema.json"
 	],
 	"scripts": {
@@ -40,37 +30,24 @@
 				"import": "./dist/server/index.js"
 			}
 		},
-		"./names": {
-			"development": "./src/names.ts",
-			"types": "./dist/names.d.ts",
-			"import": "./dist/names.js"
-		},
-		"./icons": "./src/icons/catalog.js",
-		"./icons/lazy": "./src/icons/lazy.js",
-		"./icons/client": "./src/icons/client.svelte",
 		"./icons/props": {
 			"development": "./src/icons/props.ts",
 			"types": "./dist/icons/props.d.ts",
 			"import": "./dist/icons/props.js"
 		},
-		"./icons/*": "./src/icons/*/template.svelte",
-		"./pages": "./src/pages/catalog.js",
-		"./pages/lazy": "./src/pages/lazy.js",
-		"./pages/client": "./src/pages/client.svelte",
+		"./icons/default": "./src/icons/default/template.svelte",
 		"./pages/props": {
 			"development": "./src/pages/props.ts",
 			"types": "./dist/pages/props.d.ts",
 			"import": "./dist/pages/props.js"
 		},
-		"./pages/*": "./src/pages/*/template.svelte",
-		"./opengraphs/lazy": "./src/opengraphs/lazy.js",
-		"./opengraphs/client": "./src/opengraphs/client.svelte",
+		"./pages/default": "./src/pages/default/template.svelte",
 		"./opengraphs/props": {
 			"development": "./src/opengraphs/props.ts",
 			"types": "./dist/opengraphs/props.d.ts",
 			"import": "./dist/opengraphs/props.js"
 		},
-		"./opengraphs/*": "./src/opengraphs/*/template.svelte",
+		"./opengraphs/default": "./src/opengraphs/default/template.svelte",
 		"./pieces/fields": {
 			"development": "./src/pieces/fields.ts",
 			"types": "./dist/pieces/fields.d.ts",
@@ -86,25 +63,20 @@
 			"types": "./dist/config/schema.d.ts",
 			"import": "./dist/config/schema.js"
 		},
-		"./icons/*/schema": {
-			"development": "./src/icons/*/schema.ts",
-			"types": "./dist/icons/*/schema.d.ts",
-			"import": "./dist/icons/*/schema.js"
+		"./icons/default/schema": {
+			"development": "./src/icons/default/schema.ts",
+			"types": "./dist/icons/default/schema.d.ts",
+			"import": "./dist/icons/default/schema.js"
 		},
-		"./pages/*/schema": {
-			"development": "./src/pages/*/schema.ts",
-			"types": "./dist/pages/*/schema.d.ts",
-			"import": "./dist/pages/*/schema.js"
+		"./pages/default/schema": {
+			"development": "./src/pages/default/schema.ts",
+			"types": "./dist/pages/default/schema.d.ts",
+			"import": "./dist/pages/default/schema.js"
 		},
-		"./opengraphs/schema": {
-			"development": "./src/opengraphs/schema.ts",
-			"types": "./dist/opengraphs/schema.d.ts",
-			"import": "./dist/opengraphs/schema.js"
-		},
-		"./opengraphs/*/schema": {
-			"development": "./src/opengraphs/*/schema.ts",
-			"types": "./dist/opengraphs/*/schema.d.ts",
-			"import": "./dist/opengraphs/*/schema.js"
+		"./opengraphs/default/schema": {
+			"development": "./src/opengraphs/default/schema.ts",
+			"types": "./dist/opengraphs/default/schema.d.ts",
+			"import": "./dist/opengraphs/default/schema.js"
 		},
 		"./config.schema.json": "./config.schema.json",
 		"./mapping": {

@@ -42,28 +42,35 @@ test('a default association can supply its own mapping without a name', () => {
 	});
 });
 
-test('unknown explicit names and unsupported fields do not silently fall back', () => {
-	for (const templates of [
-		{ icon: { name: 'not-a-template' } },
-		{ opengraph: { name: 'not-a-template' } },
-		{ page: { name: 'generic' } },
-		{ icon: { name: 'default', mapping: { unsupported: 'metadata' } } }
-	])
-		assert.throws(() => configure(templates));
+test('retired names fail at the name field, even when a file is provided', () => {
+	for (const role of ['icon', 'page', 'opengraph']) {
+		for (const selection of [{ name: 'book' }, { name: 'book', file: './book.svelte' }]) {
+			assert.throws(
+				() => configure({ [role]: selection }),
+				new RegExp(`/pieces/0/templates/${role}/name: .*default`)
+			);
+		}
+	}
+});
+
+test('unsupported fields do not silently fall back', () => {
+	assert.throws(
+		() => configure({ icon: { mapping: { unsupported: 'metadata' } } }),
+		/mapping\/unsupported/
+	);
 });
 
 for (const role of ['icon', 'page', 'opengraph']) {
-	test(`a local ${role} file accepts its own mappings and optional built-in fallback`, () => {
+	test(`a local ${role} file accepts its own mappings and optional explicit default`, () => {
 		const file = `./content/templates/${role}/example.svelte`;
 		const mapping = { heading: { field: 'headline', default: 'Untitled' } };
 		for (const selection of [
 			{ file, mapping },
-			{ file, name: 'book', mapping }
+			{ file, name: 'default', mapping }
 		]) {
 			assert.deepEqual(configure({ [role]: selection })[role], { name: 'default', ...selection });
 		}
 		for (const invalid of [
-			{ file, name: 'unknown' },
 			{ file, mapping: { heading: { expression: 'headline' } } },
 			...[
 				'',

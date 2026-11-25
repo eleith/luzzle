@@ -81,7 +81,7 @@ and some shared packages used for the web project:
 - `@luzzle/web.jobs` shared job definitions
 - `@luzzle/web.theme` shared css styles and theme types
 - `@luzzle/web.pieces` shared piece definitions and helpers
-- `@luzzle/web.templates` shared template contracts and canonical built-in sources
+- `@luzzle/web.templates` shared template contracts and generic defaults; for custom designs, see the [authored template guide](docs/web/templates.md)
 
 ## Documentation 📖
 

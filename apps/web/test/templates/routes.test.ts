@@ -572,101 +572,34 @@ afterAll(async () => {
 })
 
 describe('stock pieces and configured site sections through production HTTP', () => {
-	test('production rejects a missing launcher map instead of silently using build-time routing', async () => {
-		const environment = { ...childEnv }
-		delete environment.LUZZLE_PAGE_TEMPLATES
-		delete environment.LUZZLE_ICON_TEMPLATES
-		await expect(
-			exec(
-				process.execPath,
-				[
-					'--input-type=module',
-					'-e',
-					"import { pathToFileURL } from 'node:url'; await import(pathToFileURL(process.argv[1]).href)",
-					path.join(buildDirectory, 'handler.js')
-				],
-				{ cwd: directory, env: environment, timeout: 10000 }
-			)
-		).rejects.toMatchObject({
-			code: 1,
-			stderr: expect.stringContaining('Missing routing configuration')
-		})
-	})
-
-	test('YAML remaps page and icon templates after restart without rebuilding or changing public URLs', async () => {
+	test('serves public pieces directly and treats retired template URLs as unmatched', async () => {
 		const listing = '/pieces/cutover-kind?year=2023&page=1'
-		const rendered = (html: string) => html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
-		const before = rendered(await pageHtml())
-		expect(before).toContain('123 min')
-		expect(before).toContain(`src="${coverPath}"`)
-		expect(rendered(await pageHtml(listing))).toMatch(/class="poster\b/)
-		const original = await readFile(configFilename)
-		try {
-			const config = JSON.parse(original.toString('utf8'))
-			config.pieces[0].templates.page = { name: 'note' }
-			config.pieces[0].templates.icon.name = 'recipe-card'
-			config.pieces.push({ ...config.pieces[0], type: 'assets' })
-			await writeFile(configFilename, JSON.stringify(config))
-			// Configuration is restart-bound; this server still renders the original selection.
-			expect(rendered(await pageHtml())).toContain('123 min')
-			await stopBuiltApp()
-			// Reuse the already built application, without invoking the compiler again.
-			origin = await startBuiltApp()
-			const page = rendered(await pageHtml())
-			expect(page).toMatch(/<h1[^>]*>Real Piece<\/h1>/)
-			expect(page).toContain('<p>Published rendered note</p>')
-			expect(page).not.toContain('123 min')
-			expect(page).not.toContain('<img')
-			const icons = rendered(await pageHtml(listing))
-			expect(icons).toMatch(/class="recipe-card\b/)
-			expect(icons).toContain(`src="${coverPath}"`)
-			expect(linkTargets(icons, listing)).toContain(new URL(piecePath, origin).href)
-
-			const assetsDetail = '/pieces/assets/sample'
-			expect(linkTargets(await pageHtml('/pieces/assets'), '/pieces/assets')).toContain(
-				new URL(assetsDetail, origin).href
-			)
-			expect(rendered(await pageHtml(assetsDetail))).toMatch(/<h1[^>]*>Sample Asset<\/h1>/)
-			expect((await request('/pieces/assets/cutover/cover%20small.png')).status).toBe(404)
-
-			for (const pathname of [
-				'/templates/page/note/cutover-kind/real-piece?keep=1',
-				'/%74emplates/%70age/book/cutover-kind/real-piece?keep=1'
-			]) {
-				const internal = await request(pathname)
-				expect(internal.status).toBe(307)
-				expect(internal.headers.get('location')).toBe(`${piecePath}?keep=1`)
-			}
-			// Unselected and encoded internal routes also canonicalize before rendering.
-			for (const pathname of [
-				'/templates/icon/recipe-card/cutover-kind?year=2023&page=2',
-				'/templates/icon/book/cutover-kind?year=2023&page=2',
-				'/%74emplates/%69con/book/cutover-kind?year=2023&page=2'
-			]) {
-				const internal = await request(pathname)
-				expect(internal.status).toBe(307)
-				expect(internal.headers.get('location')).toBe('/pieces/cutover-kind?year=2023&page=2')
-			}
-		} finally {
-			await stopBuiltApp()
-			await writeFile(configFilename, original)
-			origin = await startBuiltApp()
+		expect(linkTargets(await pageHtml(listing), listing)).toContain(new URL(piecePath, origin).href)
+		expect(await pageHtml('/%70ieces/cutover-kind/real-piece')).toMatch(/<h1[^>]*>Real Piece<\/h1>/)
+		for (const path of [
+			'/templates/page/note/cutover-kind/real-piece?keep=1',
+			'/%74emplates/%70age/book/cutover-kind/real-piece?keep=1',
+			'/templates/icon/recipe-card/cutover-kind?year=2023&page=2',
+			'/%74emplates/%69con/book/cutover-kind?year=2023&page=2'
+		]) {
+			const response = await request(path)
+			expect(response.status, path).toBe(404)
+			expect(response.headers.has('location')).toBe(false)
 		}
-	}, 30000)
+	})
 
 	test('external icons and pages render from templates prepared at startup', async () => {
 		const original = await readFile(configFilename)
 		const filename = path.join(directory, 'owner-icon.svelte')
 		try {
-			await stopBuiltApp()
 			await writeFile(
 				filename,
-				`<script>let { fields } = $props();</script><b data-owner-icon>{fields.caption}</b><style>b { color: teal }</style>`
+				`<script>let { piece, fields } = $props(); if (piece.type === 'unconfigured-kind') throw new Error('Private icon failure');</script><b data-owner-icon>{fields.caption}</b><style>b { color: teal }</style>`
 			)
 			const config = JSON.parse(original.toString('utf8'))
 			config.pieces[0].templates.icon = {
 				file: './owner-icon.svelte',
-				mapping: { caption: 'subtitle' }
+				mapping: { image: 'artwork', caption: 'subtitle' }
 			}
 			const pageFile = path.join(directory, 'owner-page.svelte')
 			await writeFile(
@@ -679,8 +612,12 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			config.pieces[0].templates.page.file = './owner-page.svelte'
 			// Reuse the second seeded record to exercise a per-record template failure.
 			config.pieces.push({ ...config.pieces[0], type: 'unconfigured-kind' })
+			config.pieces.push({ type: 'assets', fields: { title: 'title', date_consumed: 'date' } })
 			config.pages = { ...config.pages, home: { latest: false, random: true } }
 			await writeFile(configFilename, JSON.stringify(config))
+			// Editing the config alone must not replace the running page.
+			expectBuiltIn(await pageHtml())
+			await stopBuiltApp()
 			origin = await startBuiltApp()
 			// Production must serve the prepared design even if its source is no longer present.
 			await Promise.all([rm(filename), rm(pageFile)])
@@ -694,7 +631,12 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			expect(errorPage).not.toContain('Private rendering failure')
 			const api = await request('/api/pieces?type=cutover-kind', 'application/json')
 			expect(api.status).toBe(200)
-			for (const body of [detail, errorPage, await api.text()]) {
+			const apiBody = await api.text()
+			expect(JSON.parse(apiBody).pieces[0].templates.icon).toEqual({
+				name: 'default',
+				fields: { image: 'cover-key' }
+			})
+			for (const body of [detail, errorPage, apiBody]) {
 				expect(body).not.toContain(directory)
 				expect(body).not.toContain('owner-page.svelte')
 			}
@@ -703,6 +645,17 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			expect(markup).toMatch(/<b\b[^>]*data-owner-icon[^>]*>Published metadata<\/b>/)
 			expect(markup).toMatch(/<style\b[^>]*>[^<]*color:\s*teal/)
 			expect(listing).not.toContain('owner-icon.svelte')
+			// A failed authored icon falls back per record, not to a blank decoration.
+			const fallback = await pageHtml('/pieces/unconfigured-kind')
+			expect(fallback).toMatch(/class="poster-title[^>]*>Orphan must not be visible<\/div>/)
+			expect(fallback).not.toContain('Private icon failure')
+			const assetsDetail = '/pieces/assets/sample'
+			expect(linkTargets(await pageHtml('/pieces/assets'), '/pieces/assets')).toContain(
+				new URL(assetsDetail, origin).href
+			)
+			expect(await pageHtml(assetsDetail)).toMatch(/<h1[^>]*>Sample Asset<\/h1>/)
+			expect((await request('/pieces/assets/cutover/cover%20small.png')).status).toBe(404)
+
 			const home = (await pageHtml('/')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
 			expect(home).toMatch(
 				/<h2[^>]*>random<\/h2>[\s\S]*?<b\b[^>]*data-owner-icon[^>]*>Published metadata<\/b>/
@@ -880,7 +833,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(linkTargets(emptyYear, '/pieces/cutover-kind')).not.toContain(
 			new URL(piecePath, origin).href
 		)
-		// A reroute must retain pagination and redirect empty pages to the public path.
+		// Empty later pages redirect to the public listing.
 		const emptyPage = await request('/pieces/cutover-kind?year=2023&page=2')
 		expect(emptyPage.status).toBe(302)
 		expect(emptyPage.headers.get('location')).toBe('/pieces/cutover-kind')
@@ -1628,8 +1581,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 		expect(html).toMatch(/<h2[^>]*>latest<\/h2>/)
 		expect(html).not.toMatch(/<h2[^>]*>random<\/h2>/)
 		expect(html).toContain('Real Piece')
-		expect(html.match(/class="icon-placeholder\b/g)).toHaveLength(1)
-		expect(html).not.toMatch(/class="(?:poster|recipe-card|book)\b/)
+		expect(html.match(/class="poster-title\b/g)).toHaveLength(1)
 		expect(html).not.toContain('Orphan must not be visible')
 	})
 
@@ -1652,14 +1604,13 @@ describe('stock pieces and configured site sections through production HTTP', ()
 			(match) => match[1]
 		)
 		expect(visibleCollections).toEqual(headings)
-		// Both collections share lazy decorations without changing which pieces are selected.
+		// Both collections render generic icons without changing which pieces are selected.
 		const count = headings.length
 		expect(html.match(/class="piece-card\b/g) ?? []).toHaveLength(count)
-		expect(html.match(/class="icon-placeholder\b/g) ?? []).toHaveLength(count)
+		expect(html.match(/class="poster-title\b/g) ?? []).toHaveLength(count)
 		expect(
 			linkTargets(html, '/').filter((href) => href === new URL(piecePath, origin).href)
 		).toHaveLength(count)
-		expect(html).not.toMatch(/class="(?:poster|recipe-card|book)\b/)
 		expect(html.includes('Orphan must not be visible')).toBe(false)
 		expect(html).not.toContain(directory)
 	})

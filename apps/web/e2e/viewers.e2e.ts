@@ -84,7 +84,7 @@ test('new viewer HTML/data and preview PNG/stream stay private; login returns to
 		previewRegion.getByRole('heading', { name: 'by Olivia Sharer', exact: true })
 	).toBeVisible()
 	await expect(previewRegion).not.toContainText('Ada Reader')
-	const cover = previewRegion.locator('.book-cover img')
+	const cover = previewRegion.locator('.poster img')
 	await expect(cover).toHaveAttribute('src', assetUrl(appServer.previews.completed))
 	await expect
 		.poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth))
@@ -112,7 +112,7 @@ test('new viewer HTML/data and preview PNG/stream stay private; login returns to
 	expect(await data.text()).toContain(fieldGuide.previewTitle)
 })
 
-test('configured Icon viewers render without JavaScript while built-in viewer templates load on the client', async ({
+test('generic Page and Icon viewers and authored icons render without JavaScript', async ({
 	page,
 	browser,
 	appServer
@@ -126,7 +126,7 @@ test('configured Icon viewers render without JavaScript while built-in viewer te
 		const shell = await noScript.newPage()
 		await shell.goto(new URL(fieldGuide.publicUrl, page.url()).href)
 		await expect(shell.getByRole('heading', { name: fieldGuide.title, exact: true })).toBeVisible()
-		await expect(shell.getByRole('main')).toContainText('by Ada Reader')
+		await expect(shell.getByRole('main')).toContainText('Ada Reader')
 		await expect(shell.getByRole('main')).toContainText('Original observation.')
 		for (const tab of ['page', 'icon']) {
 			const response = await shell.goto(
@@ -134,11 +134,12 @@ test('configured Icon viewers render without JavaScript while built-in viewer te
 			)
 			expect(response?.headers()['cache-control']).toBe('private, no-store')
 			await expect(shell.getByRole('navigation', { name: 'Published views' })).toBeVisible()
-			await expect(shell.locator('noscript p')).toHaveText(
-				`JavaScript is required to display the ${tab} preview.`
-			)
-			await expect(shell.locator('noscript p')).toBeVisible()
-			await expect(shell.locator('.book, .recipe-card')).toHaveCount(0)
+			if (tab === 'page') {
+				await expect(
+					shell.getByRole('heading', { name: fieldGuide.title, exact: true })
+				).toBeVisible()
+				await expect(shell.getByRole('main')).toContainText('Ada Reader')
+			} else await expect(shell.locator('.icon-frame .poster-title')).toHaveText(fieldGuide.title)
 		}
 		const job = appServer.previews.notebook
 		for (const [url, title, caption, image] of [
@@ -187,10 +188,10 @@ test('configured Icon viewers render without JavaScript while built-in viewer te
 	const tabs = page.getByRole('navigation', { name: 'Published views' })
 	await tabs.getByRole('link', { name: 'Page', exact: true }).click()
 	await expect(page.getByRole('heading', { name: fieldGuide.title, exact: true })).toBeVisible()
-	await expect(page.getByRole('main')).toContainText('by Ada Reader')
+	await expect(page.getByRole('main')).toContainText('Ada Reader')
 	await expect(page.getByRole('main')).not.toContainText('Olivia Sharer')
 	await tabs.getByRole('link', { name: 'Icon', exact: true }).click()
-	await expect(page.locator('.recipe-card .card-title')).toHaveText(fieldGuide.title)
+	await expect(page.locator('.poster .poster-title')).toHaveText(fieldGuide.title)
 	await expect(tabs.getByRole('link', { name: 'Icon', exact: true })).toHaveAttribute(
 		'aria-current',
 		'page'
@@ -316,13 +317,14 @@ test('job-only Preview URLs remount status and derive Back, retry, published and
 	await expect(
 		page.getByRole('heading', { name: fieldGuide.previewTitle, exact: true })
 	).toBeVisible()
-	await expect(page.getByRole('main')).toContainText('by Ada Reader')
-	await expect(
-		page.getByRole('img', { name: `Cover of ${fieldGuide.previewTitle}` })
-	).toHaveAttribute('src', assetUrl(appServer.previews.completed))
+	await expect(page.getByRole('main')).toContainText('Ada Reader')
+	await expect(page.locator('.hero-icon img')).toHaveAttribute(
+		'src',
+		assetUrl(appServer.previews.completed)
+	)
 	await tabs.getByRole('link', { name: 'icon', exact: true }).click()
-	await expect(page.locator('.recipe-card .card-title')).toHaveText(fieldGuide.previewTitle)
-	const cover = page.locator('.recipe-card img')
+	await expect(page.locator('.poster .poster-title')).toHaveText(fieldGuide.previewTitle)
+	const cover = page.locator('.poster img')
 	await expect(cover).toHaveAttribute('src', assetUrl(appServer.previews.completed))
 	await expect
 		.poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth))
@@ -336,7 +338,7 @@ test('job-only Preview URLs remount status and derive Back, retry, published and
 		'src',
 		assetUrl(notebookJob, notebook.previewAsset)
 	)
-	await expect(page.locator('.recipe-card')).toHaveCount(0)
+	await expect(page.locator('.poster')).toHaveCount(0)
 
 	// The standalone request fixture has none of the signed-in page's cookies.
 	const publicListing = await request.get('/pieces/notes')

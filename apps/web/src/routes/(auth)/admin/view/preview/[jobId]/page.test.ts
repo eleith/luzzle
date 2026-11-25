@@ -3,7 +3,7 @@ import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
 import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { makePublicConfig } from '#lib/server/config.fixture.js'
-import { publishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
+import { templatedPublishedPiece as publishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
 import Overview from './+page.svelte'
 import PreviewLayout from './+layout.svelte'
 
@@ -81,11 +81,6 @@ const completedPreview = {
 	piece: {
 		...publishedPiece,
 		title: 'Preview <Draft>',
-		templates: {
-			icon: { name: 'default', fields: { image: 'cover' } },
-			page: { name: 'default', fields: { image: 'cover' } },
-			opengraph: { name: 'default', fields: { image: 'cover' } }
-		},
 		assets: [generatedCover, archiveAttachment]
 	},
 	tags: []

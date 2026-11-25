@@ -2,10 +2,9 @@ import { Type } from '@sinclair/typebox';
 import type { TObject } from '@sinclair/typebox';
 import { createFieldMappingSchema } from '@luzzle/web.config/mapping';
 
-export type TemplateRole = 'icon' | 'page' | 'opengraph';
+type TemplateRole = 'icon' | 'page' | 'opengraph';
 
-export interface TemplateDefinition {
-	readonly name: string;
+interface TemplateDefinition {
 	readonly description: string;
 	readonly fields: TObject;
 }
@@ -14,44 +13,19 @@ function createTemplateMappingSchema(role: TemplateRole, template: TemplateDefin
 	const fields = Object.fromEntries(
 		Object.entries(template.fields.properties).map(([field, schema]) => [
 			field,
-			Type.Optional(
-				createFieldMappingSchema(`${role}-${template.name}-${field}`, schema.description)
-			)
+			Type.Optional(createFieldMappingSchema(`${role}-default-${field}`, schema.description))
 		])
 	);
 	return Type.Object(fields, { additionalProperties: false });
 }
 
-/** Compose named template contracts without importing their implementations. */
-export function createTemplateSelectionSchema(
-	role: TemplateRole,
-	templates: readonly TemplateDefinition[]
-) {
-	if (!templates.some((template) => template.name === 'default')) {
-		throw new Error(`The ${role} template catalog must include "default".`);
-	}
-	return Type.Union(
-		templates.map((template) => {
-			const nameOptions = template.name === 'default' ? { default: 'default' } : {};
-			const mapping = createTemplateMappingSchema(role, template);
-			return Type.Object(
-				{
-					name: Type.Literal(template.name, nameOptions),
-					mapping: Type.Optional(mapping)
-				},
-				{ additionalProperties: false, description: template.description }
-			);
-		}),
-		{ default: { name: 'default' } }
+/** A local Svelte file may declare fields beyond its generic fallback. */
+export function createRoleSchema(role: TemplateRole, template: TemplateDefinition) {
+	const name = Type.Literal('default', { default: 'default' });
+	const builtIn = Type.Object(
+		{ name, mapping: Type.Optional(createTemplateMappingSchema(role, template)) },
+		{ additionalProperties: false, description: template.description }
 	);
-}
-
-/** A local Svelte file may declare fields beyond its built-in fallback. */
-export function createFileTemplateSelectionSchema<Name extends string>(
-	role: TemplateRole,
-	templates: readonly (TemplateDefinition & { name: Name })[]
-) {
-	const builtIn = createTemplateSelectionSchema(role, templates);
 	const external = Type.Object(
 		{
 			file: Type.String({
@@ -59,12 +33,12 @@ export function createFileTemplateSelectionSchema<Name extends string>(
 				description:
 					'Trusted local Svelte file, relative to the working directory of each service that renders it (/app in production Docker), not the mounted config directory.'
 			}),
-			name: Type.Optional(Type.Union(templates.map(({ name }) => Type.Literal(name)))),
+			name: Type.Optional(name),
 			mapping: Type.Optional(
 				Type.Record(Type.String(), createFieldMappingSchema(`${role}-external-field`))
 			)
 		},
 		{ additionalProperties: false }
 	);
-	return Type.Union([...builtIn.anyOf, external], { default: builtIn.default });
+	return Type.Union([builtIn, external], { default: { name: 'default' } });
 }

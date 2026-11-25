@@ -4,8 +4,6 @@ import { ADMIN, fieldGuide, notebook } from './support/fixture.js'
 
 const shareUrl = `${notebook.publishedUrl}/share`
 const imagePath = `/assets/pieces/${notebook.slug}/share%20image.png?v=${notebook.publishedAt}`
-const previewImagePath = (job: string) =>
-	`/admin/preview/${job}/asset/${encodeURIComponent(fieldGuide.previewShareAsset)}`
 const pngLink = (page: Page, title: string) =>
 	page.getByRole('link', { name: `Open generated Takumi PNG for ${title} in a new tab` })
 const pngImage = (page: Page, title: string) =>
@@ -126,11 +124,10 @@ test('without JavaScript Share renders the authored card for the current record 
 			await expect(pngLink(shell, title)).toHaveAttribute('href', png)
 			await expect(pngImage(shell, title)).toBeVisible()
 		}
-		// Named templates still use the client preview when no file is selected.
+		// The generic card is also rendered on the server without a recorded PNG.
 		await shell.goto(new URL(`${fieldGuide.publishedUrl}/share`, appServer.origin).href)
-		await expect(html.locator('noscript p')).toHaveText(
-			'JavaScript is required to display the browser preview.'
-		)
+		await expect(html.getByRole('heading', { name: fieldGuide.title, exact: true })).toBeVisible()
+		await expect(html.getByRole('heading', { name: 'by Olivia Sharer' })).toBeVisible()
 		await expect(shell.getByRole('main')).toContainText('No generated image available.')
 		await expect(shell.getByRole('link', { name: /Open generated Takumi PNG/ })).toHaveCount(0)
 	} finally {
@@ -138,51 +135,23 @@ test('without JavaScript Share renders the authored card for the current record 
 	}
 })
 
-test('a failed OG import keeps the generated PNG visible and Reload recovers the browser preview', async ({
+test('a per-record authored HTML failure leaves the private generated PNG usable', async ({
 	page,
 	appServer
 }) => {
-	await signIn(page, `/admin/view/preview/${appServer.previews.completed}`)
-	let rejected = false
-	await page.route('**/*.js', async (route) => {
-		const response = await route.fetch()
-		// Book OG has both of these markup elements; the Page's Book icon does not.
-		const module = await response.text()
-		if (module.includes('book-cover-front') && module.includes('right-panel')) {
-			rejected = true
-			return route.abort('failed')
-		}
-		await route.fulfill({ response })
-	})
-	await page
-		.getByRole('navigation', { name: 'Preview views' })
-		.getByRole('link', { name: 'share', exact: true })
-		.click()
-	await expect(page.getByRole('alert')).toHaveText('The browser preview could not be loaded.')
-	expect(rejected).toBe(true)
-	await expect(page.getByRole('status')).toHaveCount(0)
-	await expect(pngLink(page, fieldGuide.previewTitle)).toHaveAttribute(
-		'href',
-		previewImagePath(appServer.previews.completed)
+	const job = appServer.previews.failedShare
+	await signIn(page, `/admin/view/preview/${job}/share`)
+	await expect(page.getByRole('alert')).toHaveText(
+		'The configured share HTML could not be rendered.'
 	)
-	await expect(pngImage(page, fieldGuide.previewTitle)).toBeVisible()
+	await expect(page.getByRole('main')).not.toContainText('Private missing summary')
+	const image = pngImage(page, notebook.previewTitle)
+	await expect(image).toBeVisible()
 	await expect
-		.poll(() =>
-			pngImage(page, fieldGuide.previewTitle).evaluate((img: HTMLImageElement) => img.naturalWidth)
-		)
+		.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
 		.toBeGreaterThan(0)
-	await page.unroute('**/*.js')
-	await page.getByRole('button', { name: 'Reload', exact: true }).click()
-	await expect(
-		page
-			.getByRole('region', { name: 'HTML', exact: true })
-			.getByRole('heading', { name: fieldGuide.previewTitle, exact: true })
-	).toBeVisible()
-	await expect(page.getByRole('alert')).toHaveCount(0)
-	await expect(pngImage(page, fieldGuide.previewTitle)).toBeVisible()
-	await expect
-		.poll(() =>
-			pngImage(page, fieldGuide.previewTitle).evaluate((img: HTMLImageElement) => img.naturalWidth)
-		)
-		.toBeGreaterThan(0)
+	await expect(pngLink(page, notebook.previewTitle)).toHaveAttribute(
+		'href',
+		`/admin/preview/${job}/asset/${encodeURIComponent(notebook.previewShareAsset)}`
+	)
 })

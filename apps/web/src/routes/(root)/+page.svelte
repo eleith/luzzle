@@ -5,7 +5,7 @@
 	import ContentBanner from '#lib/content/components/ContentBanner.svelte'
 	import IconFragment from '#lib/pieces/components/IconFragment.svelte'
 	import TemplateStylesheets from '#lib/templates/TemplateStylesheets.svelte'
-	import ClientListingIcon from '#lib/pieces/components/ClientListingIcon.svelte'
+	import DefaultPieceIcon from '#lib/pieces/components/DefaultPieceIcon.svelte'
 	import Markdown from '#lib/content/markdown/Markdown.svelte'
 
 	let { data }: PageProps = $props()
@@ -42,7 +42,7 @@
 					<h2>types</h2>
 					<div class="types-list">
 						{#each data.types as type (type)}
-							<a href={resolve(`pieces/${type}`)} class="type-link">{type}</a>
+							<a href={resolve(`pieces/${encodeURIComponent(type)}`)} class="type-link">{type}</a>
 						{/each}
 					</div>
 				{/if}
@@ -63,12 +63,14 @@
 									{#if iconHtml != null}
 										<IconFragment markup={iconHtml} {active} />
 									{:else}
-										<ClientListingIcon {piece} size={{ width: 80 }} lazy={false} {active} />
+										<DefaultPieceIcon {piece} size={{ width: 80 }} lazy={false} {active} />
 									{/if}
 								</div>
 								<a
 									class="piece"
-									href={resolve(`pieces/${piece.type}/${piece.slug}`)}
+									href={resolve(
+										`pieces/${encodeURIComponent(piece.type)}/${encodeURIComponent(piece.slug)}`
+									)}
 									onpointerenter={() => (hoveredPieceId = piece.id)}
 									onpointerleave={() => (hoveredPieceId = null)}
 									onfocus={(e) => {

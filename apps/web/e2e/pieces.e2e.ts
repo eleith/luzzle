@@ -36,9 +36,8 @@ test('without JavaScript the mixed listing renders external icons beside a linke
 			await expect(card.locator('.piece-icon[inert] .fixture-note-icon')).toHaveText(title)
 		}
 		await expect(page.locator(noteIconStyle)).toHaveCount(1)
-		await expect(page.locator('.recipe-card')).toHaveCount(0)
 		const guideCard = page.locator('.piece-card').filter({ hasText: fieldGuide.title })
-		await expect(guideCard.locator('.icon-placeholder')).toBeVisible()
+		await expect(guideCard.locator('.poster-title')).toHaveText(fieldGuide.title)
 		await guideCard.getByRole('link', { name: fieldGuide.title, exact: true }).click()
 		await expect(page).toHaveURL(new URL(fieldGuide.publicUrl, baseURL!).href)
 	} finally {
@@ -46,7 +45,7 @@ test('without JavaScript the mixed listing renders external icons beside a linke
 	}
 })
 
-test('without JavaScript typed listings render their selected built-in or external design', async ({
+test('without JavaScript typed listings render generic and authored icons', async ({
 	browser,
 	baseURL
 }) => {
@@ -63,8 +62,7 @@ test('without JavaScript typed listings render their selected built-in or extern
 			'href',
 			new URL(fieldGuide.publicUrl, page.url()).href
 		)
-		await expect(page.locator('.piece-icon .recipe-card .card-title')).toHaveText(fieldGuide.title)
-		await expect(page.locator('.icon-placeholder')).toHaveCount(0)
+		await expect(page.locator('.piece-icon .poster .poster-title')).toHaveText(fieldGuide.title)
 
 		await page.goto('/pieces/notes')
 		await expect(page.locator('.fixture-note-icon')).toHaveCount(2)
@@ -118,9 +116,7 @@ for (const listing of ['/pieces', '/pieces/notes']) {
 		await expect(icon).toHaveAttribute('data-parsed-icon', 'yes')
 		await expect(page.locator(noteIconStyle)).toHaveCount(1)
 		if (listing === '/pieces')
-			await expect(page.locator('.piece-icon .recipe-card .card-title')).toHaveText(
-				fieldGuide.title
-			)
+			await expect(page.locator('.piece-icon .poster .poster-title')).toHaveText(fieldGuide.title)
 
 		// The title's hit area extends over the inert decoration, not just its text.
 		const box = (await icon.boundingBox())!
@@ -279,17 +275,16 @@ test('client navigation refreshes listing and page layout data without reloading
 	await expect(page).toHaveURL(`${baseURL}/pieces/${fieldGuide.type}`)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')
 	await expect(page.locator('.piece-card')).toHaveCount(1)
-	await expect(page.locator('.piece-icon .recipe-card .card-title')).toHaveText(fieldGuide.title)
+	await expect(page.locator('.piece-icon .poster .poster-title')).toHaveText(fieldGuide.title)
 	await expect(editSource).toHaveCount(0)
 	await expect(page.getByRole('link', { name: fieldGuide.title, exact: true })).toBeVisible()
-	await expect(page.locator('.icon-placeholder')).toHaveCount(0)
 
 	await clickInjectedNavigationLink('/pieces')
 	await expect(page).toHaveURL(`${baseURL}/pieces`)
 	await expectListingLinks(page)
 	await expect(page.locator('.fixture-note-icon')).toHaveCount(2)
 	await expect(page.locator(noteIconStyle)).toHaveCount(1)
-	await expect(page.locator('.piece-icon .recipe-card .card-title')).toHaveText(fieldGuide.title)
+	await expect(page.locator('.piece-icon .poster .poster-title')).toHaveText(fieldGuide.title)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')
 
 	await clickInjectedNavigationLink('/pieces/notes')
@@ -361,7 +356,7 @@ test('client navigation refreshes listing and page layout data without reloading
 	await expect(page.getByRole('heading', { name: fieldGuide.title, exact: true })).toBeVisible()
 	await expect(article).toHaveCount(0)
 	await expect(page.locator(notePageStyle)).toHaveCount(0)
-	await expect(page.getByRole('main')).toContainText('by Ada Reader')
+	await expect(page.getByRole('main')).toContainText('Ada Reader')
 	await expect(page).toHaveTitle(`${fieldGuide.title} | E2E Garden`)
 	await expect(editSource).toHaveJSProperty('href', `${baseURL}/admin/open/records/field-guide`)
 	await expect(page.locator('html')).toHaveAttribute('data-listing-navigation', 'same-document')

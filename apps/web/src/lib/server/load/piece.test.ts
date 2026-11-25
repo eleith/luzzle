@@ -1,8 +1,8 @@
 import { assetPathToUrl } from '@luzzle/web.pieces'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { loadPublicPiece as load, loadPiece } from './piece.js'
+import { loadPublicPiece as load } from './piece.js'
 
-const { query, hydratePublicPiece, withPieceTemplates, config } = vi.hoisted(() => ({
+const { query, hydratePublicPiece, config } = vi.hoisted(() => ({
 	query: {
 		selectAll: vi.fn().mockReturnThis(),
 		select: vi.fn().mockReturnThis(),
@@ -12,7 +12,6 @@ const { query, hydratePublicPiece, withPieceTemplates, config } = vi.hoisted(() 
 		execute: vi.fn()
 	},
 	hydratePublicPiece: vi.fn(),
-	withPieceTemplates: vi.fn(),
 	config: {
 		pieces: [{ type: 'books' }],
 		url: { app: 'https://app.example', luzzle_assets: '' },
@@ -21,7 +20,7 @@ const { query, hydratePublicPiece, withPieceTemplates, config } = vi.hoisted(() 
 }))
 vi.mock('#lib/server/database/index.js', () => ({ db: { selectFrom: () => query } }))
 vi.mock('#lib/server/config.js', () => ({ config }))
-vi.mock('#lib/pieces/assets.server.js', () => ({ hydratePublicPiece, withPieceTemplates }))
+vi.mock('#lib/pieces/assets.server.js', () => ({ hydratePublicPiece }))
 
 function event() {
 	return {
@@ -54,7 +53,6 @@ test('public page meta uses the app base when CDN is not configured and retains 
 	})
 	expect(query.where).toHaveBeenCalledWith('piece_id', '=', 'book')
 	expect(hydratePublicPiece).toHaveBeenCalledOnce()
-	expect(withPieceTemplates).not.toHaveBeenCalled()
 })
 
 test.each([
@@ -63,22 +61,6 @@ test.each([
 ])('missing or invalid recorded images leave site fallback intact', async ({ assets }) => {
 	hydratePublicPiece.mockResolvedValue({ id: 'book', title: 'Book', type: 'books', assets })
 	expect(await load(event())).toMatchObject({ meta: { image: undefined } })
-})
-
-test('passes hydrated template fields to native rendering, not prepared HTML', async () => {
-	const piece = {
-		id: 'book',
-		title: 'Book',
-		type: 'books',
-		assets: [],
-		templates: {
-			page: { name: 'default', fields: { image: 'cover-key' } }
-		}
-	}
-	withPieceTemplates.mockReturnValue(piece)
-	const data = await loadPiece(event())
-	expect(data).toMatchObject({ piece, tags: [{ slug: 'fiction', tag: 'Fiction' }] })
-	expect(data).not.toHaveProperty('presentation')
 })
 
 test('unconfigured public piece types fail before querying persisted records', async () => {

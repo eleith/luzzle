@@ -1,11 +1,8 @@
 <script lang="ts">
-	import LoadIcon from '@luzzle/web.templates/icons/client'
+	import DefaultPieceIcon from '../components/DefaultPieceIcon.svelte'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-	import type { Snippet } from 'svelte'
 	import IconFragment from '../components/IconFragment.svelte'
 	import TemplateStylesheets from '#lib/templates/TemplateStylesheets.svelte'
-	import { getPieceHelpers } from '../helpers/page-state.js'
-	import TemplateStatus from './TemplateStatus.svelte'
 
 	const renderWidth = 500
 	let {
@@ -14,53 +11,28 @@
 	}: { piece: TemplatedPiece; renderedIcon: { html: string; css: string } | undefined } = $props()
 </script>
 
-{#snippet viewport(content: Snippet)}
-	<main
-		id="main-content"
-		class="icon-viewport"
-		aria-label="Piece icon"
-		style:--render-width="{renderWidth}px"
-	>
-		<div class="scale-container">
-			<div class="icon-frame">{@render content()}</div>
-		</div>
-	</main>
-{/snippet}
-
-{#if renderedIcon}
-	{#if renderedIcon.css}
-		<TemplateStylesheets stylesheets={[renderedIcon.css]} />
-	{/if}
-	{#snippet fragment()}
-		<div role="img" aria-label="Icon preview for {piece.title}">
-			<div inert aria-hidden="true">
-				<IconFragment markup={renderedIcon.html} active={false} />
-			</div>
-		</div>
-	{/snippet}
-	{@render viewport(fragment)}
-{:else}
-	<LoadIcon name={piece.templates.icon.name}>
-		{#snippet pending()}
-			<TemplateStatus view="icon" />
-		{/snippet}
-		{#snippet failed()}
-			<TemplateStatus view="icon" failed />
-		{/snippet}
-		{#snippet children(Icon)}
-			{#snippet composition()}
-				<Icon
-					{piece}
-					fields={piece.templates.icon.fields}
-					helpers={getPieceHelpers(piece)}
-					size={{ width: renderWidth }}
-					lazy={false}
-				/>
-			{/snippet}
-			{@render viewport(composition)}
-		{/snippet}
-	</LoadIcon>
+{#if renderedIcon?.css}
+	<TemplateStylesheets stylesheets={[renderedIcon.css]} />
 {/if}
+
+<main
+	id="main-content"
+	class="icon-viewport"
+	aria-label="Piece icon"
+	style:--render-width="{renderWidth}px"
+>
+	<div class="scale-container">
+		<div class="icon-frame" role="img" aria-label="Icon preview for {piece.title}">
+			{#if renderedIcon}
+				<div inert aria-hidden="true">
+					<IconFragment markup={renderedIcon.html} active={false} />
+				</div>
+			{:else}
+				<DefaultPieceIcon {piece} size={{ width: renderWidth }} />
+			{/if}
+		</div>
+	</div>
+</main>
 
 <style>
 	.icon-viewport {

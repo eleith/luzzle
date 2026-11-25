@@ -13,19 +13,9 @@ New to the files underneath? Start with [archives](../archive.md) or the
 
 ## Browsing pieces
 
-Type-specific listings such as `/pieces/books` render their configured icon design
-on the server. They can also use an [operator-supplied Svelte icon](templates.md#use-a-local-icon-on-piece-listings). Icons and cover images are
-available without waiting for JavaScript. Their public URLs and pagination are unchanged.
-
-The mixed listing at `/pieces` and the homepage’s Latest and Random collections
-also render operator-supplied icons on the server. Home requests compact 80px icons.
-Rows without an external file keep their titles and links and load their built-in
-icons in the browser. Pagination and any configured home Markdown also remain
-server-rendered. A small, static puzzle-piece placeholder occupies reserved card
-space until the icon loads. Without JavaScript or after a loading failure, the
-placeholder stays visible and the text links remain usable. Search results, including
-type-filtered searches, render configured external icons on the server and retain
-lazy built-in icons for other rows. The search form, summaries, and navigation remain server-rendered.
+The homepage, `/pieces`, type and tag listings, and search results render each
+piece's [configured icon](templates.md#use-a-local-icon-on-piece-listings) or
+the generic default on the server. Icons and cover images don't require JavaScript.
 
 Tag listings use the same icons and pagination as `/pieces`. Follow **next** or
 **prev** to navigate between pages of up to 50 pieces, with or without JavaScript.
@@ -62,16 +52,13 @@ page directly and **Published details** opens its admin Overview.
 
 Published viewers live at `/admin/view/published/<file>`; preview viewers use
 `/admin/view/preview/<jobId>`. Both have **Overview**, **Page**, **Icon**, and **Share**
-tabs. Configure a [local page](templates.md#use-a-local-page-on-public-piece-urls) or
-[icon](templates.md#use-a-local-icon-on-piece-listings) to render that tab without
-JavaScript. Published uses the published piece and public assets; Preview uses the
-selected job’s draft data and protected assets. Built-in Page and Icon designs in
-the admin viewer and built-in Share HTML designs still require JavaScript.
-Overview and Share’s generated image remain usable without it. Public piece pages still render without JavaScript. All admin views and preview
-assets require sign-in.
+tabs. Page, Icon and Share HTML render without JavaScript, whether using a
+configured file or the role's default. Published uses the published piece and
+public assets; Preview uses the selected job’s draft data and protected assets.
+All admin views and preview assets require sign-in.
 
 The **Share** tab has two sections: **HTML** renders the current Open Graph template
-as a 1200×630 card scaled to fit (without JavaScript for a [local OG file](templates.md#use-a-local-open-graph-card)); **Image** displays the recorded Takumi PNG
+as a 1200×630 card scaled to fit; **Image** displays the recorded Takumi PNG
 from that publication or preview job. Click the image to open it in a new tab.
 Compare the two to investigate template and renderer differences; browser rendering is
 a reference, not a guarantee of Takumi's output. The HTML card uses the worker's

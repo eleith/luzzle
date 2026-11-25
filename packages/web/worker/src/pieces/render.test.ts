@@ -7,7 +7,6 @@ import { validateConfig } from '@luzzle/web.config'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { renderOpengraphPng } from './render.js'
-import { templates } from '@luzzle/web.templates/opengraphs/schema'
 import { ImageResponse } from 'takumi-js/response'
 import type * as TakumiResponse from 'takumi-js/response'
 
@@ -20,10 +19,6 @@ vi.mock('takumi-js/response', async (importOriginal) => {
 		}),
 	}
 })
-
-type OgMapping = NonNullable<
-	NonNullable<TemplateConfig['pieces'][number]['templates']>['opengraph']
->['mapping']
 
 vi.mock('node:fs', async (importOriginal) => {
 	const actual = await importOriginal<typeof FileSystem>()
@@ -110,84 +105,6 @@ describe('pieces/render', () => {
 		)
 	})
 
-	test.each(templates.map((template) => template.name))(
-		'renders the mapped %s card through the actual PNG pipeline',
-		async (name) => {
-			const config = makeConfig()
-			const mappings: Record<string, OgMapping> = {
-				default: { image: 'cover', backdrop: 'background', director: 'author' },
-				book: { image: 'cover', author: 'author', pages: 'leaves' },
-				poster: { image: 'cover', backdrop: 'background', director: 'author' },
-				'browser-window': { image: 'cover', url: 'url', author: 'author', wordCount: 'words' },
-				'lined-notebook-paper': {},
-				'recipe-card': {
-					image: 'cover',
-					source: 'source',
-					ingredients: 'ingredients',
-					prepMinutes: 'prep',
-					cookMinutes: 'cook',
-				},
-				'code-snippet': { files: 'files' },
-				'playing-cards': {
-					backdrop: 'background',
-					publisher: 'publisher',
-					playTimeMinutes: 'playtime',
-				},
-				'video-game-cartridge': {
-					image: 'cover',
-					backdrop: 'background',
-					publisher: 'publisher',
-					platform: 'platform',
-					playTimeMinutes: 'playtime',
-				},
-				'vinyl-record': { image: 'cover', artist: 'author', durationSeconds: 'seconds' },
-			}
-			config.pieces[0].templates!.opengraph = { name, mapping: mappings[name] }
-			const assetsDir = path.join(TEMP_DIR, 'catalog', name)
-			mkdirSync(assetsDir, { recursive: true })
-			writeFileSync(path.join(assetsDir, 'cover.png'), onePixelPng)
-			writeFileSync(path.join(assetsDir, 'backdrop.png'), onePixelPng)
-			const assets: PublicWebPieceAsset[] = [
-				{
-					asset_key: 'img-key',
-					transformation: 'image.original',
-					asset_path: 'cover.png',
-					mime_type: 'image/png',
-				},
-				{
-					asset_key: 'backdrop-key',
-					transformation: 'image.original',
-					asset_path: 'backdrop.png',
-					mime_type: 'image/png',
-				},
-				{
-					asset_key: 'code-key',
-					transformation: 'highlight',
-					content: '<pre><code>let value = 1;</code></pre>',
-					mime_type: 'text/html',
-				},
-			]
-			const piece = makePiece(assets)
-			piece.metadata = {
-				...piece.metadata,
-				leaves: 320,
-				url: 'https://example.test/story',
-				words: 750,
-				source: 'A kitchen',
-				ingredients: [{ item: 'Flour' }],
-				prep: 2,
-				cook: 10,
-				files: [{ file: 'code-key', type: 'snippet', format: 'javascript' }],
-				publisher: 'A studio',
-				platform: 'Console',
-				playtime: 90,
-				seconds: 125,
-			}
-			expectPng(await renderOpengraphPng(piece, assets, config, assetsDir))
-		},
-		15000
-	)
-
 	test('isolates authored card module state and local covers between preview and publish', async () => {
 		const config = makeConfig()
 		const file = path.join(TEMP_DIR, 'card.svelte')
@@ -200,7 +117,7 @@ describe('pieces/render', () => {
 			{/if}
 			<style>div { width:300px; height:300px; background-size:cover }</style>`
 		)
-		config.pieces[0].templates!.opengraph = { file, mapping: { jacket: 'cover' } }
+		config.pieces[0].templates!.opengraph = { name: 'default', file, mapping: { jacket: 'cover' } }
 		const assets = [
 			{
 				asset_key: 'img-key',
@@ -272,7 +189,11 @@ describe('pieces/render', () => {
 			]
 
 			const png = await renderOpengraphPng(
-				makePiece(assets), assets, config, preview ? assetsDir : undefined
+				makePiece(assets),
+				assets,
+				config,
+				preview ? assetsDir : undefined,
+				preview ? 'preview' : 'published'
 			)
 			const pixels = await sharp(png).removeAlpha().raw().toBuffer()
 			const hasCoverColor = pixels.some((r, i) =>

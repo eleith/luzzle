@@ -8,8 +8,9 @@
 
 {#snippet rightItems()}
 	{#if page.params.piece}
-		<a href={resolve(`rss/pieces/${page.params.piece}/feed.html`)} aria-label="rss feed"
-			><BellIcon style="font-size: 1em;" /></a
+		<a
+			href={resolve(`rss/pieces/${encodeURIComponent(page.params.piece)}/feed.html`)}
+			aria-label="rss feed"><BellIcon style="font-size: 1em;" /></a
 		>
 	{:else}
 		<a href={resolve('rss/pieces/feed.html')} aria-label="rss feed"

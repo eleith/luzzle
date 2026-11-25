@@ -45,14 +45,14 @@ test('without JavaScript home renders external icons and a linked fallback at 80
 			await expect(icon).toBeVisible()
 			await expect(icon).toHaveText(title)
 			await expect(icon).toHaveAttribute('data-width', '80')
-			await expect(card.locator('.icon-placeholder')).toHaveCount(0)
+			await expect(card.locator('.poster')).toHaveCount(0)
 			await expect(card.getByRole('link')).toHaveCount(1)
 		}
 		const styles = page.locator("xpath=//head/style[contains(., '--fixture-note-active')]")
 		await expect(styles).toHaveCount(1)
 		const guide = homeCard(page, fieldGuide.title)
-		const fallback = guide.locator('.piece-icon[inert][aria-hidden="true"] .icon-placeholder')
-		await expect(fallback).toBeVisible()
+		const fallback = guide.locator('.piece-icon[inert][aria-hidden="true"] .poster')
+		await expect(fallback).toHaveText(fieldGuide.title)
 		await expect(fallback).toHaveCSS('width', '80px')
 		await guide.getByRole('link', { name: fieldGuide.title, exact: true }).click()
 		await expect(page).toHaveURL(`${baseURL}${fieldGuide.publicUrl}`)
@@ -63,7 +63,7 @@ test('without JavaScript home renders external icons and a linked fallback at 80
 
 test('after hydration the home card links through its external icon', async ({ page, baseURL }) => {
 	await page.goto('/')
-	await expect(homeCard(page, fieldGuide.title).locator('.recipe-card .card-title')).toHaveText(
+	await expect(homeCard(page, fieldGuide.title).locator('.poster .poster-title')).toHaveText(
 		fieldGuide.title
 	)
 	const icon = homeCard(page, notebook.title).locator('.fixture-note-icon')

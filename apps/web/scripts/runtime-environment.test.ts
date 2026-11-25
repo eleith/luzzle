@@ -4,13 +4,12 @@ import { createServer, IncomingMessage, ServerResponse } from 'node:http'
 import { Socket } from 'node:net'
 import {
 	createServerEnvironment,
-	createDevServerEnvironment,
 	installRequestOrigin,
 	resolveAppOrigin,
 	resolveAuthUrl
 } from './runtime-environment.js'
 
-type RuntimeConfig = Pick<TemplateConfig, 'network' | 'url' | 'auth' | 'pieces'>
+type RuntimeConfig = Pick<TemplateConfig, 'network' | 'url' | 'auth'>
 const auth: NonNullable<RuntimeConfig['auth']> = {
 	secret: 'private-session-secret-with-at-least-32-characters',
 	credentials: { username: 'admin', password: 'private-password' }
@@ -18,7 +17,6 @@ const auth: NonNullable<RuntimeConfig['auth']> = {
 
 function config(app = 'https://configured.example/garden', authenticated = false): RuntimeConfig {
 	const configured: RuntimeConfig = {
-		pieces: [],
 		network: {
 			public: { host: '127.0.0.1' },
 			internal: {
@@ -33,36 +31,6 @@ function config(app = 'https://configured.example/garden', authenticated = false
 	return configured
 }
 
-test('startup publishes only YAML-derived template names, replacing any ambient map', () => {
-	const configured = config(undefined, true)
-	configured.pieces = [
-		{
-			type: 'books',
-			fields: { title: 'private.title', date_consumed: 'date' },
-			templates: {
-				page: { name: 'book', mapping: { author: 'private.author' } },
-				icon: { name: 'poster', mapping: { image: 'private.cover' } },
-				opengraph: { name: 'default' }
-			}
-		},
-		{ type: 'words', fields: { title: 'title', date_consumed: 'date' } }
-	]
-	for (const prepare of [createServerEnvironment, createDevServerEnvironment]) {
-		const environment = prepare(configured, {
-			LUZZLE_PAGE_TEMPLATES: 'ambient override',
-			LUZZLE_ICON_TEMPLATES: 'ambient override'
-		})
-		expect(JSON.parse(environment.LUZZLE_PAGE_TEMPLATES!)).toEqual({
-			books: 'book',
-			words: 'default'
-		})
-		expect(JSON.parse(environment.LUZZLE_ICON_TEMPLATES!)).toEqual({
-			books: 'poster',
-			words: 'default'
-		})
-	}
-})
-
 test('absolute YAML replaces ambient header selection without putting the authority in the environment', () => {
 	const result = createServerEnvironment(config('https://configured.example:8443/garden'), {
 		UNRELATED: 'keep',
@@ -74,8 +42,6 @@ test('absolute YAML replaces ambient header selection without putting the author
 	expect(result).toEqual({
 		UNRELATED: 'keep',
 		HOST: '127.0.0.1',
-		LUZZLE_PAGE_TEMPLATES: '{}',
-		LUZZLE_ICON_TEMPLATES: '{}',
 		PROTOCOL_HEADER: 'x-luzzle-public-protocol',
 		HOST_HEADER: 'x-luzzle-public-authority',
 		PORT_HEADER: ''
@@ -99,8 +65,6 @@ test.each([
 	expect(resolveAuthUrl(app)).toBe(expected)
 	expect(createServerEnvironment(config(app, true), {})).toEqual({
 		HOST: '127.0.0.1',
-		LUZZLE_PAGE_TEMPLATES: '{}',
-		LUZZLE_ICON_TEMPLATES: '{}',
 		PROTOCOL_HEADER: 'x-luzzle-public-protocol',
 		HOST_HEADER: 'x-luzzle-public-authority',
 		PORT_HEADER: ''
@@ -118,8 +82,6 @@ test.each(['', '/', '/garden/', 'garden', './garden', '../garden', '//example.co
 		})
 		expect(result).toEqual({
 			HOST: '127.0.0.1',
-			LUZZLE_PAGE_TEMPLATES: '{}',
-			LUZZLE_ICON_TEMPLATES: '{}',
 			PROTOCOL_HEADER: 'x-forwarded-proto',
 			HOST_HEADER: 'x-forwarded-host',
 			PORT_HEADER: 'x-forwarded-port'
@@ -136,9 +98,7 @@ test('relative public mode does not introduce header settings when none were sup
 	expect(
 		createServerEnvironment(config('/garden'), { ORIGIN: 'https://unexpected.example' })
 	).toEqual({
-		HOST: '127.0.0.1',
-		LUZZLE_PAGE_TEMPLATES: '{}',
-		LUZZLE_ICON_TEMPLATES: '{}'
+		HOST: '127.0.0.1'
 	})
 })
 

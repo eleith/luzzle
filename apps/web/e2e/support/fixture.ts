@@ -38,7 +38,13 @@ export const fieldGuide = {
 export const notePageFile = 'notes-page.svelte'
 export const fieldNotesTag = { label: 'Field Notes', slug: 'field-notes' }
 
-export type PreviewJobs = { completed: string; notebook: string; failed: string; pending: string }
+export type PreviewJobs = {
+	completed: string
+	notebook: string
+	failedShare: string
+	failed: string
+	pending: string
+}
 
 const note = `Original observation.
 
@@ -150,6 +156,7 @@ export async function createFixture(directory: string, origin: string) {
 		path.join(directory, 'notes-share.svelte'),
 		`<script>
 			let { piece, fields, helpers } = $props()
+			if (!fields.summary) throw new Error('Private missing summary')
 			const cover = $derived(helpers.getPieceImageUrl(fields.jacket, 500, 'jpg'))
 		</script>
 		<article>
@@ -188,11 +195,14 @@ export async function createFixture(directory: string, origin: string) {
 					type: fieldGuide.type,
 					fields: { title: 'title', date_consumed: 'date' },
 					templates: {
-						page: { name: 'book', mapping: { image: 'cover', author: { value: 'Ada Reader' } } },
-						icon: { name: 'recipe-card', mapping: { image: 'cover' } },
+						page: {
+							name: 'default',
+							mapping: { image: 'cover', people: { value: ['Ada Reader'] } }
+						},
+						icon: { name: 'default', mapping: { image: 'cover' } },
 						opengraph: {
-							name: 'book',
-							mapping: { image: 'cover', author: { value: 'Olivia Sharer' } }
+							name: 'default',
+							mapping: { image: 'cover', director: { value: 'Olivia Sharer' } }
 						}
 					}
 				}
@@ -322,6 +332,13 @@ async function seedPreviews(directory: string): Promise<PreviewJobs> {
 		const notebookJob = await claim(notebook.file)
 		await seedPreviewAssets(directory, notebookJob, notebook)
 		await completeRecordedPreview(backend, notebookJob, workerId, notebook)
+		// This recorded draft has a PNG, but its authored share HTML requires a caption.
+		const failedShare = await claim(notebook.file)
+		await seedPreviewAssets(directory, failedShare, notebook)
+		await completeRecordedPreview(backend, failedShare, workerId, {
+			...notebook,
+			previewCaption: ''
+		})
 		const failed = await claim(notebook.file)
 		await backend.failWorkflowRun({
 			workflowRunId: failed,
@@ -336,7 +353,7 @@ async function seedPreviews(directory: string): Promise<PreviewJobs> {
 		})
 		const pending = await createPreviewRun(backend, fieldGuide.file)
 		await seedPreviewAssets(directory, pending.id)
-		return { completed, notebook: notebookJob, failed, pending: pending.id }
+		return { completed, notebook: notebookJob, failedShare, failed, pending: pending.id }
 	} finally {
 		await backend.stop()
 	}

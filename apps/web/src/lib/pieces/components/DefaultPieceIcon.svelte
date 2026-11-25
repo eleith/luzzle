@@ -1,8 +1,7 @@
 <script lang="ts">
-	import LoadIcon from '@luzzle/web.templates/icons/client'
+	import Icon from '@luzzle/web.templates/icons/default'
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
 	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
-	import ListingIconPlaceholder from './ListingIconPlaceholder.svelte'
 
 	let {
 		piece,
@@ -19,12 +18,4 @@
 	const helpers = $derived(getPieceHelpers(piece))
 </script>
 
-{#snippet placeholder()}
-	<ListingIconPlaceholder width={size.width} />
-{/snippet}
-
-<LoadIcon name={piece.templates.icon.name} pending={placeholder} failed={placeholder}>
-	{#snippet children(Icon)}
-		<Icon {piece} {fields} {size} {lazy} {active} {helpers} />
-	{/snippet}
-</LoadIcon>
+<Icon {piece} {fields} {size} {lazy} {active} {helpers} />

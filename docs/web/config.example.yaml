@@ -48,13 +48,17 @@ pieces:
       summary: summary
       date_consumed: date_published
       tags: tags
-    templates:
-      icon:
-        name: lined-notebook-paper
-      page:
-        name: note
-      opengraph:
-        name: lined-notebook-paper
+    # Omit templates to use the generic defaults. To use the demo notebook look,
+    # copy apps/web/demo/content/templates/word/ into ./content/templates/word/
+    # beside docker-compose.yml, then uncomment these roles. The Compose example
+    # mounts ./content at /app/content in both web and worker.
+    # templates:
+    #   icon:
+    #     file: ./content/templates/word/icon.svelte
+    #   page:
+    #     file: ./content/templates/word/page.svelte
+    #   opengraph:
+    #     file: ./content/templates/word/opengraph.svelte
 # Omitted auth means public-only: no admin editing or publishing.
 # To enable admin access, uncomment this block and supply your own values in .env.
 # Generate a session secret with: openssl rand -hex 32

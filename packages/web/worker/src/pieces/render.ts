@@ -90,10 +90,10 @@ async function renderOpengraphHtml(
 		)
 		return { rendered: { body: html, head: `<style>${css}</style>` }, pathsByUrl }
 	}
-	const template = mapOpengraphTemplate(piece, pieceConfig)
-	const { getCompiledOpengraphModule } = await import('./compile.js')
-	const component = await getCompiledOpengraphModule(template.name)
-	const rendered = render(component.default, { props: { piece, fields: template.fields, helpers } })
+	const { fields } = mapOpengraphTemplate(piece, pieceConfig)
+	const { getDefaultOpengraphModule } = await import('./compile.js')
+	const component = await getDefaultOpengraphModule()
+	const rendered = render(component.default, { props: { piece, fields, helpers } })
 	return { rendered, pathsByUrl }
 }
 

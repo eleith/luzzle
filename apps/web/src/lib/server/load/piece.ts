@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit'
 import { db } from '#lib/server/database/index.js'
 import { config } from '#lib/server/config.js'
-import { hydratePublicPiece, withPieceTemplates } from '#lib/pieces/assets.server.js'
+import { hydratePublicPiece } from '#lib/pieces/assets.server.js'
 import { assetPathToUrl } from '@luzzle/web.pieces'
 import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 
@@ -44,9 +44,4 @@ export const loadPublicPiece = async ({ params }: PieceRequest) => {
 			image: assetPathToUrl(ogAsset, config.url.luzzle_assets || config.url.app)
 		}
 	}
-}
-
-export const loadPiece = async (event: PieceRequest) => {
-	const detail = await loadPublicPiece(event)
-	return { ...detail, piece: withPieceTemplates(detail.piece) }
 }

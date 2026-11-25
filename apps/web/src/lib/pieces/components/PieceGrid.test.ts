@@ -1,9 +1,8 @@
 import { render } from 'svelte/server'
 import { expect, test, vi } from 'vitest'
-import DefaultIcon from '@luzzle/web.templates/icons/default'
 import { mapPieceTemplates } from '@luzzle/web.templates/pieces/fields'
 import { publishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
-import IconListing from './IconListing.svelte'
+import PieceGrid from './PieceGrid.svelte'
 
 vi.mock('$app/navigation', () => ({ afterNavigate: () => {} }))
 vi.mock('$app/paths', () => ({ resolve: (path: string) => `/${path}` }))
@@ -24,8 +23,8 @@ test('renders external fragments in row order, using the built-in icon for a fai
 			'@import url("/icon-font.css");'
 		]
 	}
-	const { head, body } = render(IconListing, {
-		props: { data: { ...data, externalIcons }, Icon: DefaultIcon }
+	const { head, body } = render(PieceGrid, {
+		props: { data: { ...data, externalIcons } }
 	})
 	expect(body).toMatch(
 		/<a href="\/fixture">external first<\/a>[\s\S]*?poster-title[^>]*>second<[\s\S]*?<b>external third<\/b>/

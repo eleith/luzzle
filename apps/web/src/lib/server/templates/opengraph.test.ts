@@ -8,7 +8,7 @@ import { publishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
 import { reloadAuthoredTemplates } from './cache.js'
 import { preloadAuthoredOpengraphs, renderAuthoredOpengraph } from './opengraph.js'
 
-function configured(selection: { file: string } | { name: string }) {
+function configured(selection: { file: string } | { name: 'default' }) {
 	return validateConfig(
 		{
 			url: { app: 'https://app.example', luzzle_assets: 'https://cdn.example' },
@@ -58,7 +58,7 @@ test('a stateful share design keeps draft markup and job output URLs out of publ
 })
 
 test('only non-file selections request the built-in Share composition', async () => {
-	expect(await renderAuthoredOpengraph(publishedPiece, configured({ name: 'book' }))).toBeNull()
+	expect(await renderAuthoredOpengraph(publishedPiece, configured({ name: 'default' }))).toBeNull()
 	const config = configured({ file: 'missing/card.svelte' })
 	using log = vi.spyOn(console, 'error').mockImplementation(() => {})
 	expect(await renderAuthoredOpengraph(publishedPiece, config)).toBe('failed')

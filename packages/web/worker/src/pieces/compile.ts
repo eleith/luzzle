@@ -5,7 +5,6 @@ import { createRequire } from 'node:module'
 import { compile } from 'svelte/compiler'
 import type { Component } from 'svelte'
 import type { PublicWebPiece, PieceComponentHelpers } from '@luzzle/web.pieces'
-import { getOpengraphSchema } from '@luzzle/web.templates/opengraphs/schema'
 import type { PieceTemplateData } from '@luzzle/web.templates/pieces/fields'
 
 type CompiledModule = {
@@ -17,14 +16,12 @@ type CompiledModule = {
 }
 
 const require = createRequire(import.meta.url)
-const compileCache = new Map<string, { mtimeMs: number; mod: CompiledModule }>()
+let cached: { mtimeMs: number; mod: CompiledModule } | undefined
 const compiledDirectory = path.join(import.meta.dirname, '.compiled')
 
-export async function getCompiledOpengraphModule(name: string): Promise<CompiledModule> {
-	const definition = getOpengraphSchema(name)
-	const filename = require.resolve(`@luzzle/web.templates/opengraphs/${definition.name}`)
+export async function getDefaultOpengraphModule(): Promise<CompiledModule> {
+	const filename = require.resolve('@luzzle/web.templates/opengraphs/default')
 	const { mtimeMs } = statSync(filename)
-	const cached = compileCache.get(name)
 	if (cached?.mtimeMs === mtimeMs) return cached.mod
 
 	const { js } = compile(readFileSync(filename, 'utf8'), {
@@ -34,9 +31,9 @@ export async function getCompiledOpengraphModule(name: string): Promise<Compiled
 		dev: false,
 	})
 	mkdirSync(compiledDirectory, { recursive: true })
-	const output = path.join(compiledDirectory, `${name}-${mtimeMs}.js`)
+	const output = path.join(compiledDirectory, `default-${mtimeMs}.js`)
 	writeFileSync(output, js.code, 'utf8')
 	const mod = (await import(pathToFileURL(output).href)) as CompiledModule
-	compileCache.set(name, { mtimeMs, mod })
+	cached = { mtimeMs, mod }
 	return mod
 }

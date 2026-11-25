@@ -8,8 +8,6 @@ node_modules
 .svelte-kit/
 /build
 /test-results/
-/src/routes/templates/icon/*/*/+page.svelte
-/src/routes/templates/page/*/*/*/+page.svelte
 /package-lock.json
 /src/lib/ui/styles/theme.build.css
 /src/lib/pieces/components/custom

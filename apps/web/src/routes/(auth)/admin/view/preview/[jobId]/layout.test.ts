@@ -4,18 +4,9 @@ import { createRawSnippet, type ComponentProps } from 'svelte'
 import { render } from 'svelte/server'
 import { parse } from 'svelte/compiler'
 import { makePublicConfig } from '#lib/server/config.fixture.js'
-import { publishedPiece as rawPublishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
+import { templatedPublishedPiece as publishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
 import PreviewLayout from './+layout.svelte'
 import PreviewResetLayout from '../+layout@.svelte'
-
-const publishedPiece = {
-	...rawPublishedPiece,
-	templates: {
-		icon: { name: 'default', fields: { image: 'cover' } },
-		page: { name: 'default', fields: { image: 'cover' } },
-		opengraph: { name: 'default', fields: { image: 'cover' } }
-	}
-}
 
 const { page, EventSource, resolver, resolve } = vi.hoisted(() => {
 	const resolver = { prefix: '' }

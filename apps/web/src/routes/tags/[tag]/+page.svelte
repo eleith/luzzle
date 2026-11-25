@@ -2,7 +2,7 @@
 	import { page } from '$app/state'
 	import { publicPageUrl, publicPieceHref } from '#lib/pieces/navigation.js'
 	import PieceListing from '#lib/pieces/components/PieceListing.svelte'
-	import IconListing from '#lib/pieces/components/IconListing.svelte'
+	import PieceGrid from '#lib/pieces/components/PieceGrid.svelte'
 	import type { PageProps } from './$types'
 
 	let { data }: PageProps = $props()
@@ -22,5 +22,5 @@
 </svelte:head>
 
 <PieceListing {data} heading="Tag: #{data.tag}">
-	<IconListing {data} />
+	<PieceGrid {data} />
 </PieceListing>
