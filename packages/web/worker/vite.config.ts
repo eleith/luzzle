@@ -18,7 +18,6 @@ export default defineConfig({
 				'test/fixtures/**',
 				'**/*.d.ts',
 				'src/index.ts',
-				'src/pieces/.compiled/**',
 				'src/api/**',
 				'src/transforms/utils/types.ts',
 				'src/transforms/markdown/engine.ts',

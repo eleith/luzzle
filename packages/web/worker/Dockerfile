@@ -47,8 +47,5 @@ RUN mkdir -p /app/queue /app/archive /app/assets /app/rclone /app/config && \
 COPY --from=pruner --chown=:0 --chmod=775 /pruned/dist           /app/dist
 COPY --from=pruner --chown=:0 --chmod=775 /pruned/node_modules   /app/node_modules
 COPY --from=pruner --chown=:0 --chmod=775 /pruned/package.json   /app/package.json
-RUN mkdir -p /app/dist/src/pieces/.compiled && \
-    chgrp 0 /app/dist/src/pieces/.compiled && \
-    chmod 777 /app/dist/src/pieces/.compiled
 EXPOSE 9000
 CMD ["node", "/app/dist/src/index.js"]

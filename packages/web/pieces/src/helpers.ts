@@ -72,21 +72,6 @@ export function formatTrackDuration(seconds?: number | null): string | undefined
 	return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, '0')}`
 }
 
-/** Shared date/duration formatting; layouts and field mappings remain template-owned. */
-export function formatPieceByline(
-	dateConsumed?: number | null,
-	dateReleased?: string | number,
-	runtime?: number
-): string {
-	const parts: string[] = []
-	const released = formatPieceYear(dateReleased)
-	if (released !== undefined) parts.push(String(released))
-	if (runtime !== undefined) parts.push(`${runtime} min`)
-	const consumed = formatPieceDate(dateConsumed)
-	if (consumed) parts.push(consumed)
-	return parts.join(' · ')
-}
-
 export function getTitleSizeRem(title: string): number {
 	if (title.length < 10) return 5
 	if (title.length < 20) return 4

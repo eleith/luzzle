@@ -2,7 +2,6 @@ import { getPieceConfig } from '@luzzle/web.config'
 import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { render } from 'svelte/server'
 import { ImageResponse } from 'takumi-js/response'
 import { assetPathToUrl, createPieceHelpers, publicPieceHref } from '@luzzle/web.pieces'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
@@ -10,8 +9,8 @@ import { mapOpengraphTemplate } from '@luzzle/web.templates/pieces/fields'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 import { generateThemeCss } from '@luzzle/web.theme'
 import { readConfiguredAsset } from '@luzzle/web.config/assets'
-import { renderAuthoredOpengraph } from '@luzzle/web.templates/server'
-import { opengraphCaches, type OpengraphMode } from './authored-opengraph.js'
+import { renderAuthoredOpengraph, renderOpengraphFile } from '@luzzle/web.templates/server'
+import { defaultOpengraphFile, opengraphCaches, type OpengraphMode } from './authored-opengraph.js'
 
 const OpengraphImageWidth = 1200
 const OpengraphImageHeight = 630
@@ -81,28 +80,22 @@ async function renderOpengraphHtml(
 		},
 		() => publicPieceHref(piece, config.url.app)
 	)
+	const cache = opengraphCaches[mode]
 	const selection = pieceConfig?.templates?.opengraph
 	if (selection && 'file' in selection) {
-		const { html, css } = await renderAuthoredOpengraph(
-			opengraphCaches[mode],
-			selection,
-			piece,
-			helpers
-		)
-		return { rendered: { body: html, head: `<style>${css}</style>` }, pathsByUrl }
+		const { html, css } = await renderAuthoredOpengraph(cache, selection, piece, helpers)
+		return { html, css, pathsByUrl }
 	}
 	const { fields } = mapOpengraphTemplate(piece, pieceConfig)
-	const { getDefaultOpengraphModule } = await import('./compile.js')
-	const component = await getDefaultOpengraphModule()
-	const rendered = render(component.default, { props: { piece, fields, helpers } })
-	return { rendered, pathsByUrl }
+	const { html, css } = await renderOpengraphFile(cache, defaultOpengraphFile, piece, fields, helpers)
+	return { html, css, pathsByUrl }
 }
 
-function prepareTakumiMarkup(rendered: { body: string; head: string }) {
-	const head = rendered.head.replace(/:where\(\.svelte-[a-z0-9]+\)/gi, '')
-	const body = rendered.body.replace(/<!--[\s\S]*?-->/g, '')
+function prepareTakumiMarkup(rendered: { html: string; css: string }) {
+	const css = rendered.css.replace(/:where\(\.svelte-[a-z0-9]+\)/gi, '')
+	const body = rendered.html.replace(/<!--[\s\S]*?-->/g, '')
 	const style = `display:flex;width:${OpengraphImageWidth}px;height:${OpengraphImageHeight}px`
-	return `${head}<div style="${style}">${body}</div>`
+	return `<style>${css}</style><div style="${style}">${body}</div>`
 }
 
 function getAssetsDirectory(config: TemplateConfig, outDir?: string): string {
@@ -126,9 +119,9 @@ export async function renderOpengraphPng(
 		generateThemeCss(config),
 		':root { font-size: calc(var(--font-size-root) * 1px); }',
 	]
-	const { rendered, pathsByUrl } = await renderOpengraphHtml(piece, assets, config, mode)
+	const rendered = await renderOpengraphHtml(piece, assets, config, mode)
 	const html = prepareTakumiMarkup(rendered)
-	const fetchedResources = loadLocalImageResources(getAssetsDirectory(config, outDir), pathsByUrl)
+	const fetchedResources = loadLocalImageResources(getAssetsDirectory(config, outDir), rendered.pathsByUrl)
 	const globals = config.theme?.globals || {}
 	const fontName =
 		(globals['font-sans-name'] as string | undefined)?.replace(/['"]/g, '') || 'Noto Sans'

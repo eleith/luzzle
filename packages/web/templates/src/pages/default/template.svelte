@@ -1,12 +1,18 @@
 <script lang="ts">
-	import { formatPieceByline, safeExternalUrl } from '@luzzle/web.pieces'
+	import { formatPieceDate, formatPieceYear, safeExternalUrl } from '@luzzle/web.pieces'
 	import type { PageProps } from '@luzzle/web.templates/pages/props'
 	import type { Fields } from './schema.js'
 
 	let { piece, fields, tags, helpers }: PageProps<Fields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const byline = $derived(
-		formatPieceByline(piece.date_consumed, fields.dateReleased, fields.runtime)
+		[
+			formatPieceYear(fields.dateReleased),
+			fields.runtime !== undefined ? `${fields.runtime} min` : undefined,
+			formatPieceDate(piece.date_consumed)
+		]
+			.filter((part) => part !== undefined)
+			.join(' · ')
 	)
 	const people = $derived(
 		fields.people?.map((person) => (typeof person === 'string' ? person : person.name)).join(', ')

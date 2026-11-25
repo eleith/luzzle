@@ -1,6 +1,5 @@
 export {
 	createPieceHelpers,
-	formatPieceByline,
 	formatPieceDate,
 	formatPieceYear,
 	formatTrackDuration,

@@ -1,6 +1,11 @@
 <script lang="ts">
 	import type { TemplatedPiece } from '@luzzle/web.templates/pieces/fields'
-	import { OpengraphImageWidth, OpengraphImageHeight } from '@luzzle/web.pieces'
+	import {
+		formatPieceDate,
+		getTitleSizeRem,
+		OpengraphImageWidth,
+		OpengraphImageHeight
+	} from '@luzzle/web.pieces'
 	import { getPieceHelpers } from '#lib/pieces/helpers/page-state.js'
 	import ShareCardFrame from './ShareCardFrame.svelte'
 	import TemplateStylesheets from '#lib/templates/TemplateStylesheets.svelte'
@@ -45,7 +50,7 @@
 				<Opengraph
 					{piece}
 					fields={piece.templates.opengraph.fields}
-					helpers={getPieceHelpers(piece)}
+					helpers={{ ...getPieceHelpers(piece), formatPieceDate, getTitleSizeRem }}
 				/>
 			</ShareCardFrame>
 		{/if}

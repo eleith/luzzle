@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { formatPieceByline } from '@luzzle/web.pieces'
 	import type { OpengraphProps } from '../props.js'
 	import type { Fields } from './schema.js'
 
@@ -15,16 +14,18 @@
 	const posterImage = $derived(
 		fields.image ? helpers.getPieceImageUrl(fields.image, posterWidth, 'jpg') : null
 	)
-	const byline = $derived(
-		formatPieceByline(piece.date_consumed, fields.dateReleased, fields.runtime)
-	)
-	function getTitleSize(title: string): number {
-		if (title.length < 10) return 5
-		if (title.length < 20) return 4
-		if (title.length < 40) return 3.2
-		return 2.5
-	}
-	const titleSize = $derived(getTitleSize(piece.title))
+	const byline = $derived.by(() => {
+		const parts: string[] = []
+		if (fields.dateReleased != null) {
+			const year = new Date(fields.dateReleased).getUTCFullYear()
+			if (Number.isFinite(year)) parts.push(String(year))
+		}
+		if (fields.runtime !== undefined) parts.push(`${fields.runtime} min`)
+		const consumed = helpers.formatPieceDate(piece.date_consumed)
+		if (consumed) parts.push(consumed)
+		return parts.join(' · ')
+	})
+	const titleSize = $derived(helpers.getTitleSizeRem(piece.title))
 </script>
 
 <section

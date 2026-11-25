@@ -7,6 +7,7 @@ import {
 	type PublicWebPiece
 } from '@luzzle/web.pieces';
 import { resolveTemplateFields } from '@luzzle/web.templates/mapping';
+import type { OpengraphProps } from '../opengraphs/props.js';
 import type { TemplateConfig } from '../config/index.js';
 import type { createTemplateFileCache } from './file-cache.ts';
 
@@ -31,12 +32,22 @@ export async function renderAuthoredOpengraph(
 	piece: PublicWebPiece,
 	helpers: PieceComponentHelpers
 ) {
-	const template = await cache.load(resolve(selection.file));
 	const fields = resolveTemplateFields(piece.metadata, selection.mapping);
+	return renderOpengraphFile(cache, resolve(selection.file), piece, fields, helpers);
+}
+
+export async function renderOpengraphFile<Fields>(
+	cache: TemplateCache,
+	filename: string,
+	piece: PublicWebPiece,
+	fields: Fields,
+	helpers: PieceComponentHelpers
+) {
+	const template = await cache.load(filename);
 	const html = template.render({
 		piece,
 		fields,
 		helpers: { ...helpers, formatPieceDate, getTitleSizeRem }
-	});
+	} satisfies OpengraphProps<Fields>);
 	return { html, css: template.css };
 }

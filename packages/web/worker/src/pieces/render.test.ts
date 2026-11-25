@@ -39,7 +39,7 @@ const makeConfig = (): TemplateConfig => {
 		page: { name: 'default' },
 		opengraph: {
 			name: 'default',
-			mapping: { image: 'cover', backdrop: 'background', director: 'author' },
+			mapping: { image: 'cover', backdrop: 'background', director: 'author', dateReleased: 'released', runtime: 'minutes' },
 		},
 	}
 	return config
@@ -188,13 +188,17 @@ describe('pieces/render', () => {
 				},
 			]
 
+			const piece = makePiece(assets)
+			piece.date_consumed = Date.UTC(2025, 0, 2)
+			piece.metadata = { ...piece.metadata, released: '2024-01-01', minutes: 0 }
 			const png = await renderOpengraphPng(
-				makePiece(assets),
+				piece,
 				assets,
 				config,
 				preview ? assetsDir : undefined,
 				preview ? 'preview' : 'published'
 			)
+			expect(vi.mocked(ImageResponse).mock.calls.at(-1)![0]).toContain('2024 · 0 min · 1.2.2025')
 			const pixels = await sharp(png).removeAlpha().raw().toBuffer()
 			const hasCoverColor = pixels.some((r, i) =>
 				i % 3 === 0 && r === coverColor.r && pixels[i + 1] === coverColor.g && pixels[i + 2] === coverColor.b
