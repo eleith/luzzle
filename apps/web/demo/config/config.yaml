@@ -165,11 +165,12 @@ pieces:
   - type: words
     templates:
       icon:
+        file: ./content/templates/word/icon.svelte
         name: lined-notebook-paper
       page:
-        name: note
+        file: ./content/templates/word/page.svelte
       opengraph:
-        name: lined-notebook-paper
+        file: ./content/templates/word/opengraph.svelte
     fields:
       title: title
       summary: summary
