@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import { execFile, spawn, type ChildProcess } from 'node:child_process'
 import { once } from 'node:events'
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
@@ -9,6 +9,7 @@ import { promisify } from 'node:util'
 const exec = promisify(execFile)
 const fixture = fileURLToPath(new URL('../fixtures/error-pages/', import.meta.url))
 const webRoot = fileURLToPath(new URL('../../', import.meta.url))
+let suiteDirectory: string
 let directory: string
 let configFilename: string
 let childEnv: NodeJS.ProcessEnv
@@ -39,20 +40,13 @@ async function request(route = '') {
 beforeAll(async () => {
 	const cache = path.join(webRoot, 'node_modules/.cache')
 	await mkdir(cache, { recursive: true })
-	directory = await mkdtemp(path.join(cache, 'error-page-ssr-'))
-	configFilename = path.join(directory, 'config.yaml')
-	await writeFile(
-		configFilename,
-		JSON.stringify({
-			pieces: { 'custom-kind': { fields: { title: 'title', date_consumed: 'date' } } }
-		})
-	)
-	buildDirectory = path.join(directory, 'build')
+	suiteDirectory = await mkdtemp(path.join(cache, 'error-page-ssr-'))
+	buildDirectory = path.join(suiteDirectory, 'build')
 	const env = {
 		...process.env,
 		NODE_ENV: 'production',
 		FIXTURE_BUILD_DIR: buildDirectory,
-		FIXTURE_KIT_DIR: path.join(directory, 'kit')
+		FIXTURE_KIT_DIR: path.join(suiteDirectory, 'kit')
 	}
 	// Compile once to exercise framework error handling over native HTTP.
 	await exec(process.execPath, [path.join(webRoot, 'node_modules/vite/bin/vite.js'), 'build'], {
@@ -62,7 +56,13 @@ beforeAll(async () => {
 		maxBuffer: 2 * 1024 * 1024
 	})
 	childEnv = env
-	await startFixture()
+})
+
+beforeEach(async () => {
+	directory = await mkdtemp(path.join(suiteDirectory, 'case-'))
+	configFilename = path.join(directory, 'config.yaml')
+	await mkdir(path.join(directory, 'sections'))
+	serverErrors = ''
 })
 
 async function startFixture() {
@@ -127,20 +127,35 @@ async function stopFixture() {
 	}
 }
 
-async function restartWithErrors(error: object) {
+async function serveWithErrors(error?: object) {
 	await stopFixture()
-	const config = JSON.parse(await readFile(configFilename, 'utf8'))
-	config.pages = { error }
-	await writeFile(configFilename, JSON.stringify(config))
+	await writeFile(
+		configFilename,
+		JSON.stringify({
+			pieces: { 'custom-kind': { fields: { title: 'title', date_consumed: 'date' } } },
+			...(error && { pages: { error } })
+		})
+	)
 	await startFixture()
 }
 
+async function serveConfiguredPages() {
+	await writeFile(
+		path.join(directory, 'sections/error-404.md'),
+		'# Fixture missing copy\n\nTry [the catalog](/pieces).\n\n<script>window.errorInjected=1</script>\n\n[unsafe](javascript:alert(1))\n\n[data link](data:text/html,unsafe)'
+	)
+	await writeFile(path.join(directory, 'sections/error-4xx.md'), '# Fixture client copy')
+	await writeFile(path.join(directory, 'sections/error-500.md'), '# Fixture server copy')
+	await serveWithErrors({
+		'404': { body: 'sections/error-404.md', home: false },
+		'4xx': { body: 'sections/error-4xx.md' },
+		'500': { body: 'sections/error-500.md', home: false }
+	})
+}
+
+afterEach(stopFixture)
 afterAll(async () => {
-	try {
-		await stopFixture()
-	} finally {
-		if (directory) await rm(directory, { recursive: true, force: true })
-	}
+	if (suiteDirectory) await rm(suiteDirectory, { recursive: true, force: true })
 })
 
 async function errorResponse(
@@ -192,6 +207,7 @@ function expectNoErrorPresentation(body: string) {
 
 describe('configured error pages through the native fixture HTTP server', () => {
 	test('keeps native expected errors and safe unknown-error defaults when unconfigured', async () => {
+		await serveWithErrors()
 		for (const status of [404, 400, 403, 500, 503]) {
 			const html = await errorHtml(status)
 			expect(html).toContain(`Fixture expected ${status}`)
@@ -205,18 +221,7 @@ describe('configured error pages through the native fixture HTTP server', () => 
 	})
 
 	test('selects 404 before 4xx, shares 500 across 5xx without changing status, and sanitizes Markdown', async () => {
-		await mkdir(path.join(directory, 'sections'), { recursive: true })
-		await writeFile(
-			path.join(directory, 'sections/error-404.md'),
-			'# Fixture missing copy\n\nTry [the catalog](/pieces).\n\n<script>window.errorInjected=1</script>\n\n[unsafe](javascript:alert(1))\n\n[data link](data:text/html,unsafe)'
-		)
-		await writeFile(path.join(directory, 'sections/error-4xx.md'), '# Fixture client copy')
-		await writeFile(path.join(directory, 'sections/error-500.md'), '# Fixture server copy')
-		await restartWithErrors({
-			'404': { body: 'sections/error-404.md', home: false },
-			'4xx': { body: 'sections/error-4xx.md' },
-			'500': { body: 'sections/error-500.md', home: false }
-		})
+		await serveConfiguredPages()
 		for (const kind of [404, 400, 403, 500, 503, 'unknown', 'unmatched'] as const) {
 			let status: number
 			if (typeof kind === 'number') status = kind
@@ -243,6 +248,7 @@ describe('configured error pages through the native fixture HTTP server', () => 
 	})
 
 	test('preserves native error formats and includes presentation only for eligible UI requests', async () => {
+		await serveConfiguredPages()
 		for (const accept of ['application/json', 'application/json;q=1, text/html;q=0.5']) {
 			// Kit renders matched pure-page loader errors as HTML regardless of Accept.
 			for (const kind of [404, 403, 503, 'unknown'] as const) {
@@ -347,7 +353,8 @@ describe('configured error pages through the native fixture HTTP server', () => 
 	})
 
 	test('keeps 404 independent of 4xx and supports home-only overrides without inheriting its body', async () => {
-		await restartWithErrors({ '4xx': { body: 'sections/error-4xx.md', home: false } })
+		await writeFile(path.join(directory, 'sections/error-4xx.md'), '# Fixture client copy')
+		await serveWithErrors({ '4xx': { body: 'sections/error-4xx.md', home: false } })
 		for (const kind of [404, 'unmatched'] as const) {
 			const html = await errorHtml(kind)
 			expect(html).toContain('page not found')
@@ -357,7 +364,7 @@ describe('configured error pages through the native fixture HTTP server', () => 
 		const forbidden = await errorHtml(403)
 		expect(forbidden).toContain('<h1>Fixture client copy</h1>')
 		expectErrorHome(forbidden, false)
-		await restartWithErrors({
+		await serveWithErrors({
 			'404': { home: false },
 			'4xx': { body: 'sections/error-4xx.md', home: false },
 			'500': { home: false }
@@ -375,7 +382,7 @@ describe('configured error pages through the native fixture HTTP server', () => 
 	test('falls back safely when the selected Markdown is missing or cannot be read as a file', async () => {
 		// A directory gives a deterministic read failure without relying on chmod or the test UID.
 		await mkdir(path.join(directory, 'sections/error-directory'), { recursive: true })
-		await restartWithErrors({
+		await serveWithErrors({
 			'404': { body: 'sections/error-missing.md', home: false },
 			'4xx': { body: 'sections/error-directory' },
 			'500': { body: 'sections/error-missing-server.md' }
@@ -406,7 +413,7 @@ describe('configured error pages through the native fixture HTTP server', () => 
 		await writeFile(shared, '# Before startup')
 		await writeFile(separate, '# Server before startup')
 		await writeFile(path.join(directory, 'sections/error-new.md'), '# Restart configuration copy')
-		await restartWithErrors({
+		await serveWithErrors({
 			'404': { body: 'sections/error-shared.md' },
 			'4xx': { body: 'sections/error-shared.md' },
 			'500': { body: 'sections/error-separate.md' }
