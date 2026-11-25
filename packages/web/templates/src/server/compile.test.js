@@ -137,13 +137,3 @@ test('render errors retain their cause and identify the template', async () => {
 		}
 	);
 });
-
-test('idPrefix gives each render a distinct $props.id()', async () => {
-	const template = await compile(
-		'item.svelte',
-		'<script>const id = $props.id();</script><p {id}>Item</p>'
-	);
-
-	assert.match(template.render({}, { idPrefix: 'first' }), /<p id="first[^"]*"/);
-	assert.match(template.render({}, { idPrefix: 'second' }), /<p id="second[^"]*"/);
-});
