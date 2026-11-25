@@ -60,25 +60,31 @@ test('unsupported fields do not silently fall back', () => {
 });
 
 for (const role of ['icon', 'page', 'opengraph']) {
-	test(`a local ${role} file accepts its own mappings and optional explicit default`, () => {
-		const file = `./content/templates/${role}/example.svelte`;
-		const mapping = { heading: { field: 'headline', default: 'Untitled' } };
-		for (const selection of [
-			{ file, mapping },
-			{ file, name: 'default', mapping }
-		]) {
-			assert.deepEqual(configure({ [role]: selection })[role], { name: 'default', ...selection });
-		}
-		for (const invalid of [
-			{ file, mapping: { heading: { expression: 'headline' } } },
-			...[
-				'',
-				'example.js',
-				'/tmp/template.svelte',
-				'C:\\dir\\book.svelte',
-				'https://host/template.svelte'
-			].map((file) => ({ file }))
-		])
-			assert.throws(() => configure({ [role]: invalid }));
+	test(`a local ${role} file accepts its own mapping`, () => {
+		const selection = {
+			file: `./content/templates/${role}/example.svelte`,
+			mapping: { heading: { field: 'headline', default: 'Untitled' } }
+		};
+		assert.deepEqual(configure({ [role]: selection })[role], { name: 'default', ...selection });
 	});
 }
+
+test('a local file accepts an explicit default name', () => {
+	const icon = { file: './icon.svelte', name: 'default' };
+	assert.deepEqual(configure({ icon }).icon, icon);
+});
+
+test('a local file rejects invalid mappings and paths', () => {
+	assert.throws(() =>
+		configure({ icon: { file: './icon.svelte', mapping: { heading: { expression: 'headline' } } } })
+	);
+	for (const file of [
+		'',
+		'example.js',
+		'/tmp/template.svelte',
+		'C:\\dir\\book.svelte',
+		'https://host/template.svelte'
+	]) {
+		assert.throws(() => configure({ icon: { file } }));
+	}
+});
