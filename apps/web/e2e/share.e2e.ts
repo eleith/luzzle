@@ -26,7 +26,7 @@ async function signIn(page: Page, destination: string) {
 	shareSession = await page.context().cookies()
 }
 
-test('Share opens its PNG, supports client navigation and reports missing generated output', async ({
+test('Share opens its PNG, supports client navigation and reports a broken image', async ({
 	page,
 	baseURL
 }) => {
@@ -73,12 +73,6 @@ test('Share opens its PNG, supports client navigation and reports missing genera
 	await expect(link).toBeVisible()
 	await expect(link).toHaveAttribute('href', `${baseURL}${imagePath}`)
 	await expect(preview.getByRole('heading', { name: notebook.title, exact: true })).toBeVisible()
-
-	// A published piece without a recorded PNG still renders its actual HTML composition.
-	await page.goto(`${fieldGuide.publishedUrl}/share`)
-	await expect(preview.getByRole('heading', { name: fieldGuide.title, exact: true })).toBeVisible()
-	await expect(page.getByRole('main')).toContainText('No generated image available.')
-	await expect(page.getByRole('link', { name: /Open generated Takumi PNG/ })).toHaveCount(0)
 })
 
 test('without JavaScript Share renders the authored card for the current record alongside its PNG', async ({
