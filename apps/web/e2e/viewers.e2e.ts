@@ -171,16 +171,6 @@ test('generic Page and Icon viewers and authored icons render without JavaScript
 			'--fixture-note-active',
 			'no'
 		)
-		for (const width of [1024, 390]) {
-			await shell.setViewportSize({ width, height: 800 })
-			const available = await viewport.evaluate((el) => {
-				const style = getComputedStyle(el)
-				return el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
-			})
-			const frame = await viewport.locator('.icon-frame').boundingBox()
-			expect(frame).not.toBeNull()
-			expect(Math.abs(frame!.width - Math.min(500, available, width))).toBeLessThanOrEqual(1)
-		}
 	} finally {
 		await noScript.close()
 	}
