@@ -4,7 +4,7 @@ import path from 'node:path'
 import sharp from 'sharp'
 import { run } from './opengraph.js'
 import { getOpenGraphPath } from '../assets/paths.js'
-import { renderOpengraphPng } from '../pieces/render.js'
+import { renderOpengraphPng } from '../pieces/render-opengraph-png.js'
 import type { Config } from '@luzzle/web.config'
 import type { WebPieces } from '../services/db.js'
 import type { Pieces } from '@luzzle/core'
@@ -13,7 +13,7 @@ import { makeLogger } from '../../test/logger.js'
 const TEMP_DIR = path.join(import.meta.dirname, 'temp-opengraph-transform-fixtures')
 let renderedPng: Buffer
 
-vi.mock('../pieces/render.js', () => ({
+vi.mock('../pieces/render-opengraph-png.js', () => ({
 	renderOpengraphPng: vi.fn(),
 }))
 

@@ -6,7 +6,7 @@ import sharp from 'sharp'
 import { validateConfig } from '@luzzle/web.config'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
-import { renderOpengraphPng } from './render.js'
+import { renderOpengraphPng } from './render-opengraph-png.js'
 import { ImageResponse } from 'takumi-js/response'
 import type * as TakumiResponse from 'takumi-js/response'
 
@@ -80,7 +80,7 @@ afterAll(() => {
 	rmSync(TEMP_DIR, { recursive: true, force: true })
 })
 
-describe('pieces/render', () => {
+describe('pieces/render-opengraph-png', () => {
 	test('keeps configured fonts and fixed root sizing in the PNG renderer', async () => {
 		const config = makeConfig()
 		const fontPath = path.resolve(import.meta.dirname, '../../assets/fonts/noto-sans.woff2')

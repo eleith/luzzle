@@ -10,7 +10,7 @@ import type { TemplateConfig } from '@luzzle/web.templates/config'
 import { generateThemeCss } from '@luzzle/web.theme'
 import { readConfiguredAsset } from '@luzzle/web.config/assets'
 import { renderAuthoredOpengraph, renderOpengraphFile } from '@luzzle/web.templates/server'
-import { defaultOpengraphFile, opengraphCaches, type OpengraphMode } from './authored-opengraph.js'
+import { defaultOpengraphFile, opengraphCaches, type OpengraphMode } from './opengraph-file-caches.js'
 
 const OpengraphImageWidth = 1200
 const OpengraphImageHeight = 630

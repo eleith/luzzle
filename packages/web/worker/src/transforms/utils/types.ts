@@ -5,7 +5,7 @@ import type { Logger } from '../../services/logger.js'
 
 import type { AssetRecord } from '@luzzle/web.jobs'
 import type { PublicWebPieceAsset } from '@luzzle/web.pieces'
-import type { OpengraphMode } from '../../pieces/authored-opengraph.js'
+import type { OpengraphMode } from '../../pieces/opengraph-file-caches.js'
 export type { AssetRecord }
 
 export type TransformInput = {
