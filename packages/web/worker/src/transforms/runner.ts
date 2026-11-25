@@ -68,10 +68,9 @@ export async function produceTransformsForPiece(
 				})
 			}
 		} catch (error) {
-			logger.error(`transform.${name} error for ${webPiece.file_path}`, {
-				error: error instanceof Error ? error.message : String(error),
-			})
-			throw error
+			const reason = error instanceof Error ? error.message : String(error)
+			logger.error(`transform.${name} error for ${webPiece.file_path}`, { error: reason })
+			throw new Error(`${name}: ${reason}`, { cause: error })
 		}
 	}
 

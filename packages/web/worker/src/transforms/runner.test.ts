@@ -133,7 +133,7 @@ describe('transforms/produceTransformsForPiece', () => {
 
 		await expect(
 			produceTransformsForPiece(webPiece, config, '/out', {} as Pieces, {}, new Map(), logger)
-		).rejects.toBe(error)
+		).rejects.toMatchObject({ message: 'attachment: boom', cause: error })
 		expect(transforms.palette.run).not.toHaveBeenCalled()
 		expect(transforms.opengraph.run).not.toHaveBeenCalled()
 		expect(logger.error).toHaveBeenCalledWith(
