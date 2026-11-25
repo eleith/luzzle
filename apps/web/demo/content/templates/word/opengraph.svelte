@@ -1,8 +1,7 @@
 <script lang="ts">
-	import type { ServerOpengraphProps } from '@luzzle/web.templates/opengraphs/props'
-	import type { Fields } from '@luzzle/web.templates/opengraphs/lined-notebook-paper/schema'
+	import type { OpengraphProps } from '../props'
 
-	let { piece, helpers }: ServerOpengraphProps<Fields> = $props()
+	let { piece, helpers }: OpengraphProps<Record<string, never>> = $props()
 	const size = { width: 900 }
 	const scale = Math.round((size.width / (375 * 2)) * 100) / 100
 	const byline = $derived.by(() => {

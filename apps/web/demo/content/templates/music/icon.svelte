@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { IconProps } from '../icon/props'
-	import type { Fields } from '@luzzle/web.templates/icons/vinyl-record/schema'
+	import type { IconProps } from '../props'
+	import type { MusicIconFields } from '../fields'
 
-	let { piece, fields, size, helpers, lazy = false }: IconProps<Fields> = $props()
+	let { piece, fields, size, helpers, lazy = false }: IconProps<MusicIconFields> = $props()
 	const scale = $derived(Math.round((size.width / 458) * 100) / 100)
 	const height = $derived(size.height ?? size.width)
 	const imageUrl = $derived(

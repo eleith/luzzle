@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { IconProps } from '@luzzle/web.templates/icons/props'
-	import type { Fields } from '@luzzle/web.templates/icons/code-snippet/schema'
+	import type { IconProps } from '../props'
+	import type { SnippetIconFields } from '../fields'
 
-	let { size, piece, fields, helpers }: IconProps<Fields> = $props()
+	let { size, piece, fields, helpers }: IconProps<SnippetIconFields> = $props()
 	const scale = $derived(Math.round((size.width / 375) * 100) / 100)
 	const files = $derived(fields.files ?? [])
 	const firstSnippet = $derived(files.find((file) => (file.type ?? 'snippet') === 'snippet'))

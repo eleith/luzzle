@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { IconProps } from '@luzzle/web.templates/icons/props'
-	import type { Fields } from '@luzzle/web.templates/icons/browser-window/schema'
+	import type { IconProps } from '../props'
+	import type { ArticleIconFields } from '../fields'
 
-	let { piece, fields, size, helpers, lazy = false }: IconProps<Fields> = $props()
+	let { piece, fields, size, helpers, lazy = false }: IconProps<ArticleIconFields> = $props()
 	const scale = $derived(Math.round((size.width / 375) * 100) / 100)
 	const height = $derived(size.height ?? (size.width * 3) / 2)
 	const imageUrl = $derived(

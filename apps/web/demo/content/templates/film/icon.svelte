@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { IconProps } from '../icon/props'
-	import type { Fields } from '@luzzle/web.templates/icons/poster/schema'
+	import type { IconProps } from '../props'
+	import type { FilmIconFields } from '../fields'
 
-	let { piece, fields, size, helpers, lazy = false }: IconProps<Fields> = $props()
+	let { piece, fields, size, helpers, lazy = false }: IconProps<FilmIconFields> = $props()
 	const scale = $derived(Math.round((size.width / 375) * 100) / 100)
 	const imageUrl = $derived(
 		fields.image ? helpers.getPieceImageUrl(fields.image, size.width, 'jpg') : undefined

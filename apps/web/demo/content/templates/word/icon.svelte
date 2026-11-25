@@ -1,8 +1,7 @@
 <script lang="ts">
-	import type { IconProps } from '@luzzle/web.templates/icons/props'
-	import type { Fields } from '@luzzle/web.templates/icons/lined-notebook-paper/schema'
+	import type { IconProps } from '../props'
 
-	let { piece, size }: IconProps<Fields> = $props()
+	let { piece, size }: IconProps<Record<string, never>> = $props()
 	const scale = $derived(Math.round((size.width / (375 * 2)) * 100) / 100)
 	const height = $derived(size.height ?? size.width * (11 / 8.5))
 </script>

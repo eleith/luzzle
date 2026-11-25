@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerOpengraphProps } from '@luzzle/web.templates/opengraphs/props'
-	import type { Fields } from '@luzzle/web.templates/opengraphs/book/schema'
+	import type { OpengraphProps } from '../props'
+	import type { BookOpengraphFields } from '../fields'
 
-	let { piece, fields, helpers }: ServerOpengraphProps<Fields> = $props()
+	let { piece, fields, helpers }: OpengraphProps<BookOpengraphFields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const bookWidth = 380
 	const bookHeight = (bookWidth * 3) / 2

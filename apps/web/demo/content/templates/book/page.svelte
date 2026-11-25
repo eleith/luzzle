@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerPageProps } from '@luzzle/web.templates/pages/props'
-	import type { Fields } from '@luzzle/web.templates/pages/book/schema'
+	import type { PageProps } from '../props'
+	import type { BookPageFields } from '../fields'
 
-	let { piece, fields, tags, helpers }: ServerPageProps<Fields> = $props()
+	let { piece, fields, tags, helpers }: PageProps<BookPageFields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	helpers.requestNavBar({
 		showRandom: true,

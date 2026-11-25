@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { IconProps } from '../icon/props'
+	import type { IconProps } from '../props'
+	import type { BookIconFields } from '../fields'
 
-	type BookFields = { image?: string; author?: string; pages?: number }
-	let { piece, fields, size, helpers, lazy = false }: IconProps<BookFields> = $props()
+	let { piece, fields, size, helpers, lazy = false }: IconProps<BookIconFields> = $props()
 	const scale = $derived(Math.round((size.width / 375) * 100) / 100)
 	// Match the built-in spine: 1–650 scaled pages spans 25px to half the cover width.
 	const fullness = $derived(Math.max(0, Math.min(1, ((fields.pages ?? 100) * scale - 1) / 649)))

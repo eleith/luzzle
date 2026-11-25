@@ -62,7 +62,6 @@ pieces:
     templates:
       icon:
         file: ./content/templates/book/icon.svelte
-        name: book
         mapping:
           image: cover
           author: author
@@ -93,7 +92,6 @@ pieces:
     templates:
       icon:
         file: ./content/templates/film/icon.svelte
-        name: poster
         mapping:
           image: poster
       page:
@@ -126,7 +124,6 @@ pieces:
     templates:
       icon:
         file: ./content/templates/snippet/icon.svelte
-        name: code-snippet
         mapping:
           files:
             each: files
@@ -166,7 +163,6 @@ pieces:
     templates:
       icon:
         file: ./content/templates/word/icon.svelte
-        name: lined-notebook-paper
       page:
         file: ./content/templates/word/page.svelte
       opengraph:
@@ -184,7 +180,6 @@ pieces:
     templates:
       icon:
         file: ./content/templates/article/icon.svelte
-        name: browser-window
         mapping:
           image: banner
           url: url
@@ -214,7 +209,6 @@ pieces:
     templates:
       icon:
         file: ./content/templates/recipe/icon.svelte
-        name: recipe-card
         mapping:
           image: photo
           ingredients:
@@ -264,7 +258,6 @@ pieces:
     templates:
       icon:
         file: ./content/templates/music/icon.svelte
-        name: vinyl-record
         mapping:
           image: cover
       page:
@@ -295,7 +288,6 @@ pieces:
     templates:
       icon:
         file: ./content/templates/video-game/icon.svelte
-        name: video-game-cartridge
         mapping:
           image: cover
       page:
@@ -325,7 +317,6 @@ pieces:
     templates:
       icon:
         file: ./content/templates/tabletop-game/icon.svelte
-        name: playing-cards
       page:
         file: ./content/templates/tabletop-game/page.svelte
         mapping:

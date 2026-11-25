@@ -1,8 +1,7 @@
 <script lang="ts">
-	import type { ServerPageProps } from '@luzzle/web.templates/pages/props'
-	import type { Fields } from '@luzzle/web.templates/pages/note/schema'
+	import type { PageProps } from '../props'
 
-	let { piece, tags, helpers }: ServerPageProps<Fields> = $props()
+	let { piece, tags, helpers }: PageProps<Record<string, never>> = $props()
 	const renderedNote = $derived(helpers.getPieceAssetContent(piece.key, 'markdown'))
 	const byline = $derived.by(() => {
 		const parts: string[] = []

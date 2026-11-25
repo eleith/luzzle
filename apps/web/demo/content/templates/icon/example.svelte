@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { IconProps } from './props'
+	import type { IconProps } from '../props'
+	import type { ExampleIconFields } from '../fields'
 
-	type Fields = { image?: string }
-	let { piece, fields, helpers, size, lazy }: IconProps<Fields> = $props()
+	let { piece, fields, helpers, size, lazy }: IconProps<ExampleIconFields> = $props()
 	const cover = $derived(helpers.getPieceImageUrl(fields.image, size.width, 'jpg'))
 </script>
 

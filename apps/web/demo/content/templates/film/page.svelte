@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerPageProps } from '@luzzle/web.templates/pages/props'
-	import type { Fields } from '@luzzle/web.templates/pages/film/schema'
+	import type { PageProps } from '../props'
+	import type { FilmPageFields } from '../fields'
 
-	let { piece, fields, tags, helpers }: ServerPageProps<Fields> = $props()
+	let { piece, fields, tags, helpers }: PageProps<FilmPageFields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const byline = $derived.by(() => {
 		const parts: string[] = []

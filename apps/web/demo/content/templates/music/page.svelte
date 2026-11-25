@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerPageProps } from '@luzzle/web.templates/pages/props'
-	import type { Fields } from '@luzzle/web.templates/pages/music/schema'
+	import type { PageProps } from '../props'
+	import type { MusicPageFields } from '../fields'
 
-	let { piece, fields, tags, helpers }: ServerPageProps<Fields> = $props()
+	let { piece, fields, tags, helpers }: PageProps<MusicPageFields> = $props()
 	function formatTrackDuration(seconds?: number | null): string | undefined {
 		if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return undefined
 		const rounded = Math.round(seconds)

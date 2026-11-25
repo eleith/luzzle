@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerOpengraphProps } from '@luzzle/web.templates/opengraphs/props'
-	import type { Fields } from '@luzzle/web.templates/opengraphs/code-snippet/schema'
+	import type { OpengraphProps } from '../props'
+	import type { SnippetOpengraphFields } from '../fields'
 
-	let { piece, fields, helpers }: ServerOpengraphProps<Fields> = $props()
+	let { piece, fields, helpers }: OpengraphProps<SnippetOpengraphFields> = $props()
 	const iconWidth = 800
 	const iconHeight = (iconWidth * 3) / 2
 	const iconScale = Math.round((iconWidth / 375) * 100) / 100

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerOpengraphProps } from '@luzzle/web.templates/opengraphs/props'
-	import type { Fields } from '@luzzle/web.templates/opengraphs/poster/schema'
+	import type { OpengraphProps } from '../props'
+	import type { FilmOpengraphFields } from '../fields'
 
-	let { piece, fields, helpers }: ServerOpengraphProps<Fields> = $props()
+	let { piece, fields, helpers }: OpengraphProps<FilmOpengraphFields> = $props()
 	// A smaller source is sufficient beneath the 80%-opaque background overlay.
 	const backdropImage = $derived(
 		fields.backdrop ? helpers.getPieceImageUrl(fields.backdrop, 500, 'jpg') : null

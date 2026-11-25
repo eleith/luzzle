@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { IconProps } from '@luzzle/web.templates/icons/props'
-	import type { Fields } from '@luzzle/web.templates/icons/recipe-card/schema'
+	import type { IconProps } from '../props'
+	import type { RecipeIconFields } from '../fields'
 
 	function getRecipeCutouts(width: number) {
 		const scale = Math.round((width / 375) * 100) / 100
@@ -32,7 +32,7 @@
 		return { height, path }
 	}
 
-	let { piece, fields, size, helpers, lazy = false }: IconProps<Fields> = $props()
+	let { piece, fields, size, helpers, lazy = false }: IconProps<RecipeIconFields> = $props()
 	const cardWidth = $derived(size.width)
 	const scale = $derived(cardWidth / 375)
 	const cutouts = $derived(getRecipeCutouts(cardWidth))

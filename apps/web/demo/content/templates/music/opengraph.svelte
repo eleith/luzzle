@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerOpengraphProps } from '@luzzle/web.templates/opengraphs/props'
-	import type { Fields } from '@luzzle/web.templates/opengraphs/vinyl-record/schema'
+	import type { OpengraphProps } from '../props'
+	import type { MusicOpengraphFields } from '../fields'
 
-	let { piece, fields, helpers }: ServerOpengraphProps<Fields> = $props()
+	let { piece, fields, helpers }: OpengraphProps<MusicOpengraphFields> = $props()
 	function formatTrackDuration(seconds?: number | null): string | undefined {
 		if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return undefined
 		const rounded = Math.round(seconds)

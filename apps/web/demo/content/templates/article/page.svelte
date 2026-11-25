@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerPageProps } from '@luzzle/web.templates/pages/props'
-	import type { Fields } from '@luzzle/web.templates/pages/article/schema'
+	import type { PageProps } from '../props'
+	import type { ArticlePageFields } from '../fields'
 
-	let { piece, fields, tags, helpers }: ServerPageProps<Fields> = $props()
+	let { piece, fields, tags, helpers }: PageProps<ArticlePageFields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const link = $derived(helpers.safeExternalUrl(fields.url))
 	const publishedYear = $derived.by(() => {

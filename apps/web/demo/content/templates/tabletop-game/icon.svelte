@@ -1,8 +1,7 @@
 <script lang="ts">
-	import type { IconProps } from '@luzzle/web.templates/icons/props'
-	import type { Fields } from '@luzzle/web.templates/icons/playing-cards/schema'
+	import type { IconProps } from '../props'
 
-	let { piece, size, helpers }: IconProps<Fields> = $props()
+	let { piece, size, helpers }: IconProps<Record<string, never>> = $props()
 	const symbolScope = $props.id()
 	const palette = $derived(helpers.getPiecePalette())
 	const scale = $derived(Math.round((size.width / 375) * 100) / 100)

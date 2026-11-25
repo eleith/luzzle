@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerOpengraphProps } from '@luzzle/web.templates/opengraphs/props'
-	import type { Fields } from '@luzzle/web.templates/opengraphs/playing-cards/schema'
+	import type { OpengraphProps } from '../props'
+	import type { TabletopGameOpengraphFields } from '../fields'
 
-	let { piece, fields, helpers }: ServerOpengraphProps<Fields> = $props()
+	let { piece, fields, helpers }: OpengraphProps<TabletopGameOpengraphFields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const iconWidth = 400
 	const iconHeight = (iconWidth * 3) / 2

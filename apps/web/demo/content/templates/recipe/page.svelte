@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerPageProps } from '@luzzle/web.templates/pages/props'
-	import type { Fields } from '@luzzle/web.templates/pages/recipe/schema'
+	import type { PageProps } from '../props'
+	import type { RecipePageFields } from '../fields'
 
-	let { piece, fields, tags, helpers }: ServerPageProps<Fields> = $props()
+	let { piece, fields, tags, helpers }: PageProps<RecipePageFields> = $props()
 	const ingredientScope = $props.id()
 	const palette = $derived(helpers.getPiecePalette())
 	helpers.requestNavBar({
@@ -13,7 +13,7 @@
 	})
 	const ingredients = $derived(fields.ingredients ?? [])
 	const instructions = $derived(fields.instructions ?? [])
-	function getTotalMinutes(value: Fields): number | undefined {
+	function getTotalMinutes(value: RecipePageFields): number | undefined {
 		if (value.totalMinutes !== undefined) return value.totalMinutes
 		if (value.prepMinutes === undefined && value.cookMinutes === undefined) return undefined
 		return (value.prepMinutes ?? 0) + (value.cookMinutes ?? 0)

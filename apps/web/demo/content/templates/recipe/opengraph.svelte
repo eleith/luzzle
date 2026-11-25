@@ -1,15 +1,15 @@
 <script lang="ts">
-	import type { ServerOpengraphProps } from '@luzzle/web.templates/opengraphs/props'
-	import type { Fields } from '@luzzle/web.templates/opengraphs/recipe-card/schema'
+	import type { OpengraphProps } from '../props'
+	import type { RecipeOpengraphFields } from '../fields'
 
-	let { piece, fields, helpers }: ServerOpengraphProps<Fields> = $props()
+	let { piece, fields, helpers }: OpengraphProps<RecipeOpengraphFields> = $props()
 	const palette = $derived(helpers.getPiecePalette())
 	const imageUrl = $derived(
 		fields.image ? helpers.getPieceImageUrl(fields.image, 500, 'jpg') : undefined
 	)
 	const ingredients = $derived(fields.ingredients ?? [])
 	const titleSize = $derived(helpers.getTitleSizeRem(piece.title))
-	function getTotalMinutes(value: Fields): number | undefined {
+	function getTotalMinutes(value: RecipeOpengraphFields): number | undefined {
 		if (value.totalMinutes !== undefined) return value.totalMinutes
 		if (value.prepMinutes === undefined && value.cookMinutes === undefined) return undefined
 		return (value.prepMinutes ?? 0) + (value.cookMinutes ?? 0)

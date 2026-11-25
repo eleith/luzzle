@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ServerPageProps } from '@luzzle/web.templates/pages/props'
-	import type { Fields } from '@luzzle/web.templates/pages/snippet/schema'
+	import type { PageProps } from '../props'
+	import type { SnippetPageFields } from '../fields'
 
-	let { piece, fields, tags, helpers }: ServerPageProps<Fields> = $props()
+	let { piece, fields, tags, helpers }: PageProps<SnippetPageFields> = $props()
 	const files = $derived(fields.files ?? [])
 	const byline = $derived.by(() => {
 		const parts: string[] = []

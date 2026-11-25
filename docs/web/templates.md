@@ -27,6 +27,41 @@ for the same piece type and map both `icon` and `page` image fields to the same
 photo selector. Map the same ingredient names in both roles to show the same
 short checklist.
 
+## Set up types for local templates
+
+Copy or download the standalone [props.d.ts](../../apps/web/demo/content/templates/props.d.ts)
+and save it as `content/templates/props.d.ts`. In the repository’s file viewer,
+select your web release tag (or the commit of your running build) before choosing **Raw**.
+This one file supplies editor types for all three roles. You don’t need a source
+checkout or any installed Luzzle packages to write a template.
+
+Keep your mapped field types in a separate `content/templates/fields.d.ts` beside `props.d.ts`.
+`props.d.ts` comes from Luzzle; `fields.d.ts` belongs to your site. For example, if your
+book icon maps `image`, `author`, and `pages`, declare:
+
+```ts
+// content/templates/fields.d.ts
+export type BookIconFields = { image?: string; author?: string; pages?: number }
+```
+
+Then import both types in `content/templates/book/icon.svelte`. Your editor can complete
+`fields.image` and flag a misspelling like `fields.imgae`:
+
+```svelte
+<script lang="ts">
+  import type { IconProps } from '../props'
+  import type { BookIconFields } from '../fields'
+
+  let { piece, fields, helpers, size, lazy }: IconProps<BookIconFields> = $props()
+</script>
+```
+
+The [demo fields.d.ts](../../apps/web/demo/content/templates/fields.d.ts) has examples for
+all three roles. Optional fields describe what a design can use, not what the demo maps.
+For example, the music page can use `spotifyId`, but won’t receive it until you add a mapping.
+These imports are erased during compilation: neither file is required to render a template,
+and neither changes or validates your YAML.
+
 ## Use a local icon on piece listings
 
 To replace the icons on `/pieces/books`, put a **trusted, operator-authored**
@@ -35,7 +70,6 @@ To replace the icons on `/pieces/books`, put a **trusted, operator-authored**
 ```yaml
 icon:
   file: ./content/templates/book/icon.svelte
-  name: book
   mapping:
     image: cover
     author: author
@@ -45,9 +79,14 @@ icon:
 `file` is a local path relative to the web process’s working directory (beside the
 `config.yaml` alias, `/app` in production Docker), not relative to the physical
 `config/` mount or the requested URL. The demo books listing selects the [3D book icon](../../apps/web/demo/content/templates/book/icon.svelte).
-It shares its editor types with the [minimal starter](../../apps/web/demo/content/templates/icon/example.svelte),
-which is still available to copy with its adjacent `props.d.ts`. Removing just `file`
-restores the built-in book icon with the same mapped metadata.
+The demo sets no built-in icon `name`: if the local icon fails to render for a
+piece, its row uses the generic `default` icon. The pieces and search APIs report
+`templates.icon.name: default` and only the fields supported by that fallback
+(`image` in the book example). To choose a different fallback, set `name`
+alongside `file`, for example `name: book`.
+
+For a smaller starting point, copy the [minimal icon starter](../../apps/web/demo/content/templates/icon/example.svelte)
+to `content/templates/book/icon.svelte` and copy its `ExampleIconFields` declaration into your `fields.d.ts`.
 
 Matching pieces use this file on their **type listing**, the **mixed `/pieces` listing**,
 on every page of a **tag listing**, in **search results** (including type-filtered searches), and in the homepage’s
@@ -112,7 +151,7 @@ one shared by the public page and Published viewer, not isolated per job.
 For links to public content use root-relative URLs or resolve them against
 `helpers.getPieceUrl()`: a document-relative link in an admin tab resolves under the viewer URL. Use `helpers.formatPieceDate`, `helpers.safeExternalUrl`, and `helpers.interpolate`
 in place of runtime imports when porting a built-in design. Authors can
-`import type { ServerPageProps } from '@luzzle/web.templates/pages/props'`.
+`import type { PageProps } from '../props'`.
 
 No navigation bar is added by default. To include the app’s interactive bar above the page content,
 call `helpers.requestNavBar({ showRandom: true })` in the template’s instance script.
@@ -139,7 +178,7 @@ opengraph:
 
 Mount the same trusted file in **both web and worker**, relative to each service’s
 working directory. The component receives `piece`, `fields`, and `helpers`; it can
-`import type { ServerOpengraphProps } from '@luzzle/web.templates/opengraphs/props'`.
+`import type { OpengraphProps } from '../props'`.
 Use the image helpers rather than hard-coding delivery URLs: the Share preview uses
 public or job-specific URLs, while the worker supplies local image bytes to Takumi.
 The book also uses `helpers.getTitleSizeRem` and `helpers.formatPieceDate`.
@@ -153,7 +192,7 @@ its recorded PNG. Without a file, the built-in card still renders in the browser
 
 ## Map your metadata
 
-Templates read the metadata fields you map to them. For example:
+Templates read the metadata fields you map to them. For example, to use built-in book designs instead of local files:
 
 ```yaml
 pieces:
@@ -213,8 +252,9 @@ so the page can look up those outputs using the mapped file key.
 Missing or `null` metadata counts as absent: a `field` binding uses its default,
 an absent `each` produces an empty list, and template defaults apply otherwise.
 Built-ins validate the chosen field types; a page count is a number, not text.
+Each demo template imports its role’s field type when it uses mapped fields. Its YAML mapping determines which values it receives.
 Local templates receive the resolved values without runtime validation against
-an author’s TypeScript types. For a built-in, invalid values log a warning and use that role's default field values for the
+those TypeScript types. For a built-in, invalid values log a warning and use that role's default field values for the
 piece. Unknown built-in names, unsupported mapping keys on built-in-only roles,
 and malformed selectors fail config validation.
 
