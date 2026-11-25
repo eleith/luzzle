@@ -90,7 +90,6 @@ describe('transforms/produceTransformsForPiece', () => {
 			config,
 			'/out',
 			{} as Pieces,
-			{},
 			new Map(),
 			logger
 		)
@@ -102,37 +101,12 @@ describe('transforms/produceTransformsForPiece', () => {
 		])
 	})
 
-	test('returns records for only the selected transform', async () => {
-		const record = {
-			transformation: 'palette',
-			asset_path: null as unknown as string,
-			mime_type: 'application/json',
-			content: '{}',
-			is_embedded: 1 as const,
-		}
-		transforms.palette.run.mockResolvedValueOnce([record])
-
-		const produced = await produceTransformsForPiece(
-			webPiece,
-			config,
-			'/out',
-			{} as Pieces,
-			{ typeFilter: 'palette' },
-			new Map(),
-			logger
-		)
-
-		expect(produced).toEqual([{ name: 'palette', records: [record] }])
-		expect(transforms.attachment.run).not.toHaveBeenCalled()
-		expect(transforms.opengraph.run).not.toHaveBeenCalled()
-	})
-
 	test('rejects failed production without returning a successful result or running later transforms', async () => {
 		const error = new Error('boom')
 		transforms.attachment.run.mockRejectedValueOnce(error)
 
 		await expect(
-			produceTransformsForPiece(webPiece, config, '/out', {} as Pieces, {}, new Map(), logger)
+			produceTransformsForPiece(webPiece, config, '/out', {} as Pieces, new Map(), logger)
 		).rejects.toMatchObject({ message: 'attachment: boom', cause: error })
 		expect(transforms.palette.run).not.toHaveBeenCalled()
 		expect(transforms.opengraph.run).not.toHaveBeenCalled()

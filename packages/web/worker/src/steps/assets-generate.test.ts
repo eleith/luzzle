@@ -91,7 +91,6 @@ describe('assetsGenerateStep', () => {
 			ctx.config,
 			ctx.config.paths.assets,
 			expect.anything(),
-			{},
 			new Map(publication.assetKeyToPath),
 			ctx.logger
 		)

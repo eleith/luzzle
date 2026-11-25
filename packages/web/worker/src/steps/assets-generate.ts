@@ -33,7 +33,6 @@ export const assetsGenerateStep: Step<PreparedPublication[], AssetsGenerateResul
 							config,
 							config.paths.assets,
 							pieces,
-							{},
 							new Map(assetKeyToPath),
 							logger
 						)

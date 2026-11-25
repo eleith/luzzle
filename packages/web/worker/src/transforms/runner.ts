@@ -13,31 +13,20 @@ export type ProducedTransform = {
 	records: AssetRecord[]
 }
 
-export type ProduceOptions = {
-	typeFilter?: string
-}
-
 export async function produceTransformsForPiece(
 	webPiece: WebPieces,
 	config: Config,
 	outDir: string,
 	pieces: Pieces,
-	options: ProduceOptions,
 	assetKeyToPath: Map<string, string>,
 	logger: Logger
 ): Promise<ProducedTransform[]> {
-	const { typeFilter } = options
-	const transforms = getTransforms()
-	const selected = typeFilter
-		? [...transforms.entries()].filter(([name]) => name === typeFilter)
-		: [...transforms.entries()]
-
 	const produced: ProducedTransform[] = []
 	const priorAssets: PublicWebPieceAsset[] = []
 	const buildAssetUrl = (path: string) =>
 		assetPathToUrl(path, config.url.luzzle_assets || config.url.app)
 
-	for (const [name, transform] of selected) {
+	for (const [name, transform] of getTransforms()) {
 		try {
 			const records = await transform.run({
 				webPiece,
